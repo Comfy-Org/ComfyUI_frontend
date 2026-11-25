@@ -6,6 +6,7 @@ import { agentTest } from '@e2e/fixtures/agentPanelFixture'
 import { AgentExecutionHelper } from '@e2e/fixtures/helpers/AgentExecutionHelper'
 import { AgentMultiAutogrowRealignHarness } from '@e2e/fixtures/helpers/AgentMultiAutogrowRealignHarness'
 import { COMFY_SOCKET_SID } from '@e2e/fixtures/agentFollowerHostSocket'
+import { runSuccessFrameFor } from '@e2e/fixtures/data/agent/agentRunOutputOwner'
 import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
 import {
   SOURCE_NODE_ID,
@@ -80,7 +81,8 @@ const outputFilename = (jobId: string) => `${jobId}.png`
 async function createAgentLocalRunRig(
   page: Page,
   socketSid: string,
-  openPeer: () => Promise<AgentLocalRunRig>
+  openPeer: () => Promise<AgentLocalRunRig>,
+  ownsRun: boolean
 ): Promise<AgentLocalRunRig> {
   if (!socketSid) {
     await page.addInitScript(
@@ -123,6 +125,7 @@ async function createAgentLocalRunRig(
 
   const startRunForUser = async (jobId: string) => {
     await execution.enqueueServerRun(jobId)
+    if (ownsRun) harness.hostSocket.send(runSuccessFrameFor(jobId))
     await execution.stallJob(jobId, { nodeId: TARGET_ID })
   }
   const finishRunForUser = (jobId: string) =>
@@ -168,12 +171,13 @@ export const agentLocalRunTest = agentTest.extend<
       const peerContext = await browser.newContext()
       peerContexts.push(peerContext)
       const peerPage = await peerContext.newPage()
-      return createAgentLocalRunRig(peerPage, PEER_SOCKET_SID, openPeer)
+      return createAgentLocalRunRig(peerPage, PEER_SOCKET_SID, openPeer, false)
     }
     const rig = await createAgentLocalRunRig(
       page,
       socketReportsId ? COMFY_SOCKET_SID : '',
-      openPeer
+      openPeer,
+      true
     )
     try {
       await use(rig)

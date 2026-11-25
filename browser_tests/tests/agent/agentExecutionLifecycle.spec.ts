@@ -6,6 +6,7 @@ import {
   SOURCE_NODE_ID,
   TARGET_ID
 } from '@e2e/fixtures/data/agent/agentCrdtMultiAutogrowRealignFixture'
+import { runSuccessFrameFor } from '@e2e/fixtures/data/agent/agentRunOutputOwner'
 import { TestIds } from '@e2e/fixtures/selectors'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
@@ -72,6 +73,7 @@ test.describe(
     }) => {
       const jobId = 'agent-exec-server-run-1'
       await execution.enqueueServerRun(jobId)
+      harness.hostSocket.send(runSuccessFrameFor(jobId))
       await execution.stallJob(jobId, { nodeId: TARGET_ID })
 
       await expect(

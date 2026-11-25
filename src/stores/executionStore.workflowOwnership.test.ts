@@ -1,5 +1,4 @@
-import { reportError } from '@comfyorg/telemetry/reportError'
-import { nextTick } from 'vue'
+import { nextTick, toRaw } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
@@ -27,6 +26,18 @@ function workflow(path: string): LoadedComfyWorkflow {
 
 const workflowA = workflow('workflows/a.json')
 const workflowB = workflow('workflows/b.json')
+const uniqueWorkflow = createMockLoadedWorkflow({
+  path: 'workflows/unique.json',
+  instanceId: 'instance-unique',
+  activeState: { id: 'unique-graph-id' },
+  initialState: { id: 'unique-graph-id' }
+})
+const closedWorkflow = createMockLoadedWorkflow({
+  path: 'workflows/closed.json',
+  instanceId: 'instance-closed',
+  activeState: { id: 'closed-graph-id' },
+  initialState: { id: 'closed-graph-id' }
+})
 
 function promptNode() {
   return { inputs: {}, class_type: 'TestNode', _meta: { title: 'Node' } }
@@ -76,8 +87,60 @@ describe('executionStore workflow ownership', () => {
     expect(store.rememberStampAndCheckActiveWorkflow('job-b')).toBe(false)
   })
 
-  it('accepts a frame that names no job at all', () => {
-    expect(store.rememberStampAndCheckActiveWorkflow(undefined)).toBe(true)
+  it('rejects a frame that names no job at all', () => {
+    expect(store.rememberStampAndCheckActiveWorkflow(undefined)).toBe(false)
+  })
+
+  describe('finding the open tab a job belongs to', () => {
+    it.for<{
+      name: string
+      register: (s: ReturnType<typeof useExecutionStore>) => void
+      expected: LoadedComfyWorkflow | undefined
+    }>([
+      {
+        name: 'the workflow it was queued from',
+        register: () => queueJobFrom('job', workflowB),
+        expected: workflowB
+      },
+      {
+        name: 'the tab instance',
+        register: (s) =>
+          s.ensureSessionWorkflowPath(
+            'job',
+            'workflows/renamed.json',
+            workflowB.instanceId
+          ),
+        expected: workflowB
+      },
+      {
+        name: 'the session path',
+        register: (s) => s.ensureSessionWorkflowPath('job', workflowB.path),
+        expected: workflowB
+      },
+      {
+        name: 'a graph id only one tab holds',
+        register: (s) => {
+          openTabs(uniqueWorkflow)
+          s.registerJobWorkflowIdMapping('job', 'unique-graph-id')
+        },
+        expected: uniqueWorkflow
+      },
+      {
+        name: 'the first tab, for a graph id two tabs share',
+        register: (s) =>
+          s.registerJobWorkflowIdMapping('job', 'shared-graph-id'),
+        expected: workflowA
+      },
+      {
+        name: 'nothing, for a job whose tab is closed',
+        register: () => queueJobFrom('job', closedWorkflow),
+        expected: undefined
+      }
+    ])('resolves $name', ({ register, expected }) => {
+      register(store)
+
+      expect(toRaw(store.openWorkflowForJob('job'))).toBe(expected)
+    })
   })
 
   describe('the session path, when no tab instance is known', () => {
@@ -121,13 +184,13 @@ describe('executionStore workflow ownership', () => {
       ).toBe(true)
     })
 
-    it('ignores the all-zero sentinel rather than comparing it', () => {
+    it('does not place a job by the all-zero sentinel', () => {
       expect(
         store.rememberStampAndCheckActiveWorkflow(
           'job-on-a-fresh-graph',
           zeroUuid
         )
-      ).toBe(true)
+      ).toBe(false)
     })
 
     it('reaches the gate from a real progress_state frame', async () => {
@@ -220,56 +283,27 @@ describe('executionStore workflow ownership', () => {
       ).toBe(false)
     })
 
-    it('stops a tab switch from adopting a foreign job', async () => {
+    it('stops a tab switch from painting a foreign job', async () => {
       foreignJobStarted('job-elsewhere', 'other-graph')
       expect(store.queuedJobs['job-elsewhere']).toBeDefined()
 
       useWorkflowStore().activeWorkflow = workflowB
       await nextTick()
 
-      expect(store.activeJobId).toBeNull()
+      expect(store.rememberStampAndCheckOutputOwner('job-elsewhere')).toBe(
+        false
+      )
+      expect(store.nodeProgressStates).toEqual({})
     })
 
     it('is forgotten with the job', () => {
-      foreignJobStarted('job-elsewhere', 'other-graph')
+      foreignJobStarted('job-focused', 'other-graph')
+      foreignJobStarted('job-here', 'shared-graph-id')
+      expect(store.rememberStampAndCheckActiveWorkflow('job-here')).toBe(true)
 
-      store.forgetFinishedJobs(['job-elsewhere'])
+      store.forgetFinishedJobs(['job-here'])
 
-      expect(
-        store.rememberStampAndCheckActiveWorkflow('job-elsewhere'),
-        'nothing is left to place the job, so the fallback admits it again'
-      ).toBe(true)
-    })
-  })
-
-  describe('reporting a rejected execution_start', () => {
-    function rejectionWarnings() {
-      return vi
-        .mocked(reportError)
-        .mock.calls.filter(
-          ([, options]) =>
-            options.errorType === 'warning_rejecting_unowned_execution_start'
-        )
-    }
-
-    it('does not report a rejection decided by the frame workflow id', () => {
-      fire('execution_start', {
-        prompt_id: 'job-elsewhere',
-        workflow_id: 'other-graph',
-        timestamp: 1
-      })
-
-      expect(store.activeJobId, 'the frame was still rejected').toBeNull()
-      expect(rejectionWarnings()).toHaveLength(0)
-    })
-
-    it('does not report a rejection decided by the session path', () => {
-      store.ensureSessionWorkflowPath('job-b', workflowB.path)
-
-      fire('execution_start', { prompt_id: 'job-b', timestamp: 1 })
-
-      expect(store.activeJobId).toBeNull()
-      expect(rejectionWarnings()).toHaveLength(0)
+      expect(store.rememberStampAndCheckActiveWorkflow('job-here')).toBe(false)
     })
   })
 })

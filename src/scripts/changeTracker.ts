@@ -33,6 +33,7 @@ import { useWidgetHistoryStore } from '@/stores/widgetHistoryStore'
 import { serializeNodeId } from '@comfyorg/graph-model/nodeId'
 import { isSelectOnly } from '@/utils/litegraphUtil'
 import { isModalOpen } from '@/utils/modalUtil'
+import { mergeNodeOutput } from '@/utils/nodeOutputUtil'
 
 import { api } from './api'
 import { emitGraphRestored } from './graphRestore'
@@ -484,6 +485,8 @@ export class ChangeTracker implements WorkflowChangeTracker {
     if (this.nodeOutputs) {
       useNodeOutputStore().restoreOutputs(this.nodeOutputs)
     }
+    const executionStore = useExecutionStore()
+    executionStore.showJobOutputs(executionStore.focusedJobFor(this.workflow))
     if (this.subgraphState) {
       const { navigation } = this.subgraphState
       const firstInvalidIndex = navigation.findIndex(
@@ -870,25 +873,18 @@ export class ChangeTracker implements WorkflowChangeTracker {
 
     api.addEventListener('executed', (e: CustomEvent<ExecutedWsMessage>) => {
       const detail = e.detail
-      const workflow =
-        useExecutionStore().queuedJobs[detail.prompt_id]?.workflow
+      const executionStore = useExecutionStore()
+      const workflow = executionStore.queuedJobs[detail.prompt_id]?.workflow
       const changeTracker = workflow?.changeTracker
       if (!changeTracker) return
+      if (executionStore.focusedJobFor(workflow) !== detail.prompt_id) return
       changeTracker.nodeOutputs ??= {}
       const nodeOutputs = changeTracker.nodeOutputs
       const output = nodeOutputs[detail.node]
-      if (detail.merge && output) {
-        for (const k in detail.output) {
-          const v = output[k]
-          if (v instanceof Array) {
-            output[k] = v.concat(detail.output[k])
-          } else {
-            output[k] = detail.output[k]
-          }
-        }
-      } else {
-        nodeOutputs[detail.node] = detail.output
-      }
+      nodeOutputs[detail.node] =
+        detail.merge && output
+          ? mergeNodeOutput(output, detail.output)
+          : detail.output
     })
   }
 

@@ -841,7 +841,7 @@ export class ComfyApp implements IComfyApp {
 
     api.addEventListener('executed', ({ detail }) => {
       const executionStore = useExecutionStore()
-      const isActive = executionStore.rememberStampAndCheckActiveWorkflow(
+      const isActive = executionStore.rememberStampAndCheckOutputOwner(
         detail.prompt_id,
         detail.workflow_id
       )
@@ -852,13 +852,12 @@ export class ComfyApp implements IComfyApp {
       )
       if (!executionId) return
 
-      if (isActive) {
-        useNodeOutputStore().setNodeOutputsByExecutionId(
-          executionId,
-          detail.output,
-          { merge: detail.merge }
-        )
-      }
+      if (!isActive) return
+      useNodeOutputStore().setNodeOutputsByExecutionId(
+        executionId,
+        detail.output,
+        { merge: detail.merge }
+      )
 
       if (!graph) return
       const node = getNodeByExecutionId(graph, executionId)
@@ -901,10 +900,7 @@ export class ComfyApp implements IComfyApp {
       const blobUrl = createSharedObjectUrl(blob)
       useJobPreviewStore().setPreviewUrl(jobId, blobUrl, displayNodeId)
       if (
-        !useExecutionStore().rememberStampAndCheckActiveWorkflow(
-          jobId,
-          workflowId
-        )
+        !useExecutionStore().rememberStampAndCheckOutputOwner(jobId, workflowId)
       ) {
         releaseSharedObjectUrl(blobUrl)
         return

@@ -25,9 +25,6 @@ async function startExecution(
 ) {
   exec ??= new ExecutionHelper(comfyPage, ws)
   const jobId = await exec.run()
-  // Allow storeJob() to complete before sending WS events
-  await comfyPage.nextFrame()
-  exec.executionStart(jobId)
   return { exec, jobId }
 }
 
@@ -201,7 +198,7 @@ test.describe('Output History', { tag: '@ui' }, () => {
   }) => {
     const ws = await getWebSocket()
     const exec = new ExecutionHelper(comfyPage, ws)
-    const jobId = await exec.run()
+    const jobId = await exec.run({ start: false })
 
     const job: RawJobListItem = {
       id: jobId,
