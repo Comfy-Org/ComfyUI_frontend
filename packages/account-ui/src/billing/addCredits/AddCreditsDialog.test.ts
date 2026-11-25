@@ -271,6 +271,12 @@ describe('AddCreditsDialog amount step', () => {
       balanceAfter: { credits: -840, runsPaused: true },
       afterLine: 'Still negative after this top-up: −840 credits.',
       warns: true
+    },
+    {
+      name: 'a non-negative balance that still keeps runs paused',
+      balanceAfter: { credits: 5, runsPaused: true },
+      afterLine: 'After this top-up: 5 credits.',
+      warns: true
     }
   ])(
     'shows the served balance after $name',

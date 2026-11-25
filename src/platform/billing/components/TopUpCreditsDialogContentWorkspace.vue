@@ -172,13 +172,17 @@
       </p>
       <p v-if="balanceAfter" class="m-0">
         {{
-          $t(
-            balanceAfter.runsPaused
-              ? 'credits.topUp.stillNegativeAfterTopup'
-              : 'credits.topUp.balanceAfterTopup',
-            { credits: formatNumber(Math.abs(balanceAfter.credits)) },
-            Math.abs(balanceAfter.credits)
-          )
+          balanceAfter.credits < 0
+            ? $t(
+                'credits.topUp.stillNegativeAfterTopup',
+                { credits: formatNumber(-balanceAfter.credits) },
+                -balanceAfter.credits
+              )
+            : $t(
+                'credits.topUp.balanceAfterTopup',
+                { credits: formatNumber(balanceAfter.credits) },
+                balanceAfter.credits
+              )
         }}
       </p>
     </div>

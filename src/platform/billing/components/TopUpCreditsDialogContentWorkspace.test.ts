@@ -752,6 +752,12 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       quoted: { balance_after_credits: -840, runs_paused_after: true },
       afterLine: 'Still negative after this top-up: −840 credits.',
       warns: true
+    },
+    {
+      name: 'a non-negative balance that still keeps runs paused',
+      quoted: { balance_after_credits: 5, runs_paused_after: true },
+      afterLine: 'After this top-up: 5 credits.',
+      warns: true
     }
   ])(
     'shows the served balance after $name',

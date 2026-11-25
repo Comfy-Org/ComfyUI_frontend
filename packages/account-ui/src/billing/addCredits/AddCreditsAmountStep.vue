@@ -45,10 +45,13 @@
       </p>
       <p v-if="balanceAfter" class="m-0">
         {{
-          translate(
-            balanceAfter.runsPaused ? 'stillNegativeAfter' : 'balanceAfter',
-            { credits: format.count(Math.abs(balanceAfter.credits)) }
-          )
+          balanceAfter.credits < 0
+            ? translate('stillNegativeAfter', {
+                credits: format.count(-balanceAfter.credits)
+              })
+            : translate('balanceAfter', {
+                credits: format.count(balanceAfter.credits)
+              })
         }}
       </p>
     </div>
