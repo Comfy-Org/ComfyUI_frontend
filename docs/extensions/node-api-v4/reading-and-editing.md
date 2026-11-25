@@ -35,7 +35,11 @@ for (const node of comfy.graph.selection()) {
 
 ## Editing
 
-Each edit is one undo step and returns `false` when its node is gone.
+Each edit is one undo step and returns `false` when its node is gone. After
+an undo or redo, until the user next presses a pointer or a key, turns the
+wheel or drops something, an edit becomes part of the restored state instead: no undo step,
+and redo is kept. That covers what a pack does as a rebuilt node mounts again,
+such as fitting its widgets from a `ResizeObserver`.
 `setProperty` stores a copy of what the workflow saves unchanged; a `Date`, a
 `NaN` or a function inside the value throws, and `undefined` deletes the
 property.
