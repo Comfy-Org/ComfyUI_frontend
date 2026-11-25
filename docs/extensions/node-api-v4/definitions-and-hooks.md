@@ -84,6 +84,10 @@ stop()
   `onCreated`, and `onRemoved` is called for every node they replace, not only
   for a node the user deleted. In a load of another document the handle
   `onRemoved` gets is already retired, as every handle to that document is.
+- In a load's `onCreated` the node has not taken its saved state yet, and
+  that state replaces what an edit sets, so an edit to the node then answers
+  `false` and changes nothing. Make it in `onConfigured`, which runs once the
+  node has its saved state.
 - A hook that throws is reported; the editor and the other hooks go on.
 - Unsubscribing removes the extension's hooks.
 
