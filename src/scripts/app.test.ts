@@ -3740,8 +3740,10 @@ describe('ComfyApp', () => {
         showTheRootGraph()
         const { tracker } = historyOfTheOpenWorkflow()
         const heard: string[] = []
-        comfy.onNodeChanged(({ property, to }) =>
-          heard.push(`${property} ${String(to)}`)
+        onTestFinished(
+          comfy.onNodeChanged(({ property, to }) =>
+            heard.push(`${property} ${String(to)}`)
+          )
         )
         const node = comfy.graph.node('1')
         assert(node)
@@ -4030,11 +4032,13 @@ describe('ComfyApp', () => {
             await app.loadGraphData(replacement, false)
           }
           let armed = true
-          comfy.onWorkflowLoaded(() => {
-            if (!armed) return
-            armed = false
-            comfy.graph.node('1')?.setColor('#123456')
-          })
+          onTestFinished(
+            comfy.onWorkflowLoaded(() => {
+              if (!armed) return
+              armed = false
+              comfy.graph.node('1')?.setColor('#123456')
+            })
+          )
 
           await tracker.undo()
           const redoAfterUndo = tracker.redoQueue.length
@@ -4828,7 +4832,7 @@ describe('ComfyApp', () => {
     ])('tells packs once that $format loaded', async ({ load }) => {
       const { comfy } = nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
       const loaded = vi.fn()
-      comfy.onWorkflowLoaded(loaded)
+      onTestFinished(comfy.onWorkflowLoaded(loaded))
 
       await load()
 
@@ -4838,7 +4842,7 @@ describe('ComfyApp', () => {
     it('does not tell packs a workflow loaded when the load fails', async () => {
       const { comfy } = nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
       const loaded = vi.fn()
-      comfy.onWorkflowLoaded(loaded)
+      onTestFinished(comfy.onWorkflowLoaded(loaded))
       vi.spyOn(app.rootGraph, 'configure').mockImplementationOnce(() => {
         throw new Error('broken workflow')
       })
@@ -4860,7 +4864,9 @@ describe('ComfyApp', () => {
       )
       const before = comfy.workflow.documentId()
       const seen: (string | undefined)[] = []
-      comfy.onWorkflowLoaded((document) => seen.push(document?.id))
+      onTestFinished(
+        comfy.onWorkflowLoaded((document) => seen.push(document?.id))
+      )
 
       await app.loadGraphData(
         workflowWithFixedIdAndOneNode(),
