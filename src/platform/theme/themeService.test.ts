@@ -1,5 +1,6 @@
 import { assert, describe, expect, it, onTestFinished, vi } from 'vitest'
 
+import { downloadBlob } from '@/base/common/downloadUtil'
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { basename, join } from 'node:path'
 
@@ -8,12 +9,14 @@ import { BUILT_IN_THEME_PRESETS } from '@comfyorg/theme-core/builtInThemePresets
 import { themeSchema } from '@comfyorg/theme-core/themePresetSchema'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyApp } from '@/scripts/app'
+import { app } from '@/scripts/app'
 import {
   useLegacyColorPaletteService,
   useThemeService
 } from '@/platform/theme/themeService'
 import { useThemeStore } from '@/platform/theme/themeStore'
 
+vi.mock(import('@/base/common/downloadUtil'))
 vi.mock(import('@/scripts/app'), async () => {
   const { fromPartial } = await import('@total-typescript/shoehorn')
   return {
@@ -21,6 +24,87 @@ vi.mock(import('@/scripts/app'), async () => {
       canvas: { default_connection_color_byType: {}, setDirty: vi.fn() }
     })
   }
+})
+
+describe('color palette missing-palette contracts', () => {
+  it('does not apply a missing palette', async () => {
+    const store = useThemeStore()
+    const initialPaletteId = store.activePresetId
+
+    await useLegacyColorPaletteService().loadColorPalette('missing')
+
+    expect(store.activePresetId).toBe(initialPaletteId)
+    expect(app.canvas.setDirty).not.toHaveBeenCalled()
+    expect(useToast().toasts).toContainEqual(
+      expect.objectContaining({
+        kind: 'error',
+        description: 'Color palette missing not found'
+      })
+    )
+    expect(console.error).toHaveBeenCalledWith(
+      new Error('Color palette missing not found')
+    )
+  })
+
+  it('distinguishes an infrastructure failure from a missing palette', async () => {
+    const store = useThemeStore()
+    const initialPaletteId = store.activePresetId
+    const paletteId = store.presets[0].id
+    const error = new Error('Failed to complete palette')
+    vi.mocked(app.canvas.setDirty).mockImplementationOnce(() => {
+      throw error
+    })
+
+    await expect(
+      useLegacyColorPaletteService().loadColorPalette(paletteId)
+    ).resolves.toBeUndefined()
+
+    expect(store.activePresetId).toBe(initialPaletteId)
+    expect(app.canvas.setDirty).toHaveBeenCalledWith(true, true)
+    expect(useToast().toasts).toContainEqual(
+      expect.objectContaining({
+        kind: 'error',
+        description: error.message
+      })
+    )
+    expect(console.error).toHaveBeenCalledWith(error)
+  })
+
+  it('does not download a missing palette', () => {
+    useLegacyColorPaletteService().exportColorPalette('missing')
+
+    expect(downloadBlob).not.toHaveBeenCalled()
+    expect(useToast().toasts).toContainEqual(
+      expect.objectContaining({
+        kind: 'error',
+        description: 'Color palette missing not found'
+      })
+    )
+    expect(console.error).toHaveBeenCalledWith(
+      new Error('Color palette missing not found')
+    )
+  })
+
+  it('applies an existing palette', async () => {
+    const store = useThemeStore()
+    const paletteId = store.presets[0].id
+
+    await useLegacyColorPaletteService().loadColorPalette(paletteId)
+
+    expect(store.activePresetId).toBe(paletteId)
+    expect(app.canvas.setDirty).toHaveBeenCalledWith(true, true)
+  })
+
+  it('downloads an existing palette', () => {
+    const store = useThemeStore()
+    const paletteId = store.presets[0].id
+
+    useLegacyColorPaletteService().exportColorPalette(paletteId)
+    expect(downloadBlob).toHaveBeenCalledWith(
+      `${paletteId}.json`,
+      expect.any(Blob)
+    )
+  })
 })
 
 const SHADOW_PROPERTY = '--interface-floating-panel-shadow'

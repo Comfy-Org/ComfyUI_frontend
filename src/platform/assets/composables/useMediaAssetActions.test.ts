@@ -117,7 +117,7 @@ vi.mock(import('@/platform/assets/adapters/outputAssetResolver'), { spy: true })
 const mockResolveOutputAssetItems = vi.mocked(resolveOutputAssetItems)
 
 const mockDeleteAsset = vi.hoisted(() =>
-  vi.fn<(id: AssetId) => Promise<void>>()
+  vi.fn<(id: AssetId) => Promise<boolean>>()
 )
 const mockCreateAssetExport = vi.hoisted(() =>
   vi.fn<
@@ -1565,7 +1565,7 @@ describe('useMediaAssetActions', () => {
       mockIsCloud.value = true
       vi.mocked(api.getServerFeature).mockReturnValue(true)
       mockGetAssetType.mockReturnValue('input')
-      mockDeleteAsset.mockResolvedValue(undefined)
+      mockDeleteAsset.mockResolvedValue(true)
       // By default, hasCategory returns true for model categories
       mockHasCategory.mockImplementation(
         (tag: string) => tag === 'checkpoints' || tag === 'loras'
@@ -1671,7 +1671,7 @@ describe('useMediaAssetActions', () => {
       mockIsCloud.value = true
       vi.mocked(api.getServerFeature).mockReturnValue(true)
       mockGetAssetType.mockReturnValue('input')
-      mockDeleteAsset.mockResolvedValue(undefined)
+      mockDeleteAsset.mockResolvedValue(true)
       mockShowDialog.mockImplementation(
         ({ props }: { props: { onConfirm: (confirmed: boolean) => void } }) => {
           props.onConfirm(true)
@@ -1765,14 +1765,14 @@ describe('useMediaAssetActions', () => {
       {
         name: 'file-backed output',
         records: [record],
-        deleteRecord: async () => undefined,
+        deleteRecord: async () => true,
         deletedRecords: ['real-asset-record'],
         deletedHistory: [['history', 'job-distinct-from-asset']]
       },
       {
         name: 'text-only output',
         records: [],
-        deleteRecord: async () => undefined,
+        deleteRecord: async () => true,
         deletedRecords: [],
         deletedHistory: [['history', 'job-distinct-from-asset']]
       },
@@ -2039,6 +2039,7 @@ describe('useMediaAssetActions', () => {
     it('cleans every shared reference only for successful assets after a partial deletion', async () => {
       mockDeleteAsset.mockImplementation(async (id: string) => {
         if (id === 'asset-failed') throw new Error('503 Service Unavailable')
+        return true
       })
       const successfulCallbacks = [vi.fn(), vi.fn()]
       const failedCallback = vi.fn()
@@ -2114,7 +2115,7 @@ describe('useMediaAssetActions', () => {
     })
 
     it('invokes clearNodePreviewCacheForValues with canonical widget-value variants', async () => {
-      mockDeleteAsset.mockResolvedValue(undefined)
+      mockDeleteAsset.mockResolvedValue(true)
       const actions = useMediaAssetActions()
       const asset = createMockAsset({
         id: 'asset-match',
@@ -2159,7 +2160,7 @@ describe('useMediaAssetActions', () => {
     })
 
     it('emits the [output]-annotated variant for output assets, including subfolder', async () => {
-      mockDeleteAsset.mockResolvedValue(undefined)
+      mockDeleteAsset.mockResolvedValue(true)
       mockGetAssetType.mockReturnValue('output')
       const actions = useMediaAssetActions()
       const asset = createMockAsset({
@@ -2199,6 +2200,28 @@ describe('useMediaAssetActions', () => {
       expect(mockMarkMissingMedia).not.toHaveBeenCalled()
       expect(mockCaptureCanvasState).not.toHaveBeenCalled()
     })
+
+    it.fails('treats a refused deletion as failed without clearing workflow values', async () => {
+      mockDeleteAsset.mockResolvedValue(false)
+      const asset = createMockAsset({
+        id: 'asset-refused',
+        name: 'refused.png',
+        hash: 'refused-hash.png'
+      })
+      mockInputAssets.items = [asset]
+
+      await expect(useMediaAssetActions().deleteAssets(asset)).resolves.toBe(
+        false
+      )
+
+      await vi.waitFor(() => expect(mockDeleteAsset).toHaveBeenCalledOnce())
+      expect(mockClearNodePreviewCache).not.toHaveBeenCalled()
+      expect(mockClearWidgetValues).not.toHaveBeenCalled()
+      expect(mockMarkMissingMedia).not.toHaveBeenCalled()
+      expect(mockCaptureCanvasState).not.toHaveBeenCalled()
+      expect(mockInputAssets.items).toEqual([asset])
+      expect(useToast().success).not.toHaveBeenCalled()
+    })
   })
 
   describe('deleteAssets — references added from the deleted asset', () => {
@@ -2235,7 +2258,7 @@ describe('useMediaAssetActions', () => {
     beforeEach(() => {
       mockIsCloud.value = true
       vi.mocked(api.getServerFeature).mockReturnValue(true)
-      mockDeleteAsset.mockResolvedValue(undefined)
+      mockDeleteAsset.mockResolvedValue(true)
       mockShowDialog.mockImplementation(
         ({ props }: { props: { onConfirm: (confirmed: boolean) => void } }) =>
           props.onConfirm(true)
@@ -2942,7 +2965,7 @@ describe('useMediaAssetActions', () => {
       mockIsCloud.value = true
       vi.mocked(api.getServerFeature).mockReturnValue(true)
       mockGetAssetType.mockReturnValue('input')
-      mockDeleteAsset.mockResolvedValue(undefined)
+      mockDeleteAsset.mockResolvedValue(true)
       mockShowDialog.mockImplementation(
         ({ props }: { props: { onConfirm: (confirmed: boolean) => void } }) =>
           props.onConfirm(true)
@@ -2976,12 +2999,12 @@ describe('useMediaAssetActions', () => {
     it('keeps a failed asset listed and removes it once a retry succeeds', async () => {
       mockDeleteAsset
         .mockRejectedValueOnce(new Error('503 Service Unavailable'))
-        .mockResolvedValueOnce(undefined)
+        .mockResolvedValueOnce(true)
       const actions = useMediaAssetActions()
       const asset = createMockAsset({ id: 'asset-503', name: 'retry.png' })
       mockInputAssets.items = [asset]
 
-      await expect(actions.deleteAssets(asset)).resolves.toBe(true)
+      await actions.deleteAssets(asset)
 
       expect(mockInputAssets.items.map((item) => item.id)).toEqual([
         'asset-503'
@@ -3010,9 +3033,18 @@ describe('useMediaAssetActions', () => {
       )
     })
 
+    it.fails('returns false when asset deletion fails', async () => {
+      mockDeleteAsset.mockRejectedValue(new Error('503 Service Unavailable'))
+
+      await expect(
+        useMediaAssetActions().deleteAssets(createMockAsset())
+      ).resolves.toBe(false)
+    })
+
     it('cleans up only the succeeded assets and clears every overlay when part of a batch fails', async () => {
       mockDeleteAsset.mockImplementation(async (id) => {
         if (id === 'asset-failed') throw new Error('503 Service Unavailable')
+        return true
       })
       const assets = [
         createMockAsset({ id: 'asset-first', name: 'first.png' }),

@@ -52,11 +52,27 @@
     "classification": "infrastructure-assertion"
   },
   {
-    "id": "playwright:browser_tests/tests/sidebar/assetPanelDragOntoLoadImageWidget.spec.ts:<expression:title>:1",
+    "id": "playwright:browser_tests/tests/legacyDoNotReplicate/legacyEcosystemConfigureHooks.spec.ts:Lora-Manager-style afterConfigureGraph registry follows a switch back to a retained workflow:1",
     "classification": "live-defect"
   },
   {
-    "id": "playwright:browser_tests/tests/workspace/workflowDraftForeignWindowSignIn.spec.ts:a second window signing in neither wipes drafts nor stops persistence:1",
+    "id": "playwright:browser_tests/tests/legacyDoNotReplicate/legacyEcosystemConfigureHooks.spec.ts:Lora-Manager-style afterConfigureGraph registry reads the graph the undo configured:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "playwright:browser_tests/tests/legacyDoNotReplicate/legacyEcosystemVhsActiveGraph.spec.ts:a finished background job reaches the nodes of the workflow that queued it:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "playwright:browser_tests/tests/legacyDoNotReplicate/legacyEcosystemVhsActiveGraph.spec.ts:a type change queued in one workflow leaves links of the workflow on screen alone:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "playwright:browser_tests/tests/legacyDoNotReplicate/legacyEcosystemVhsActiveGraph.spec.ts:turning the setting off removes preview widgets from every open workflow:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "playwright:browser_tests/tests/sidebar/assetPanelDragOntoLoadImageWidget.spec.ts:<expression:title>:1",
     "classification": "live-defect"
   },
   {
@@ -64,7 +80,7 @@
     "classification": "live-defect"
   },
   {
-    "id": "vitest:src/stores/assetDownloadStore.test.ts:excludes a failed-then-actually-completed task from activeDownloads (PM-1302):1",
+    "id": "vitest:src/platform/assets/stores/assetDownloadStore.test.ts:excludes a failed-then-actually-completed task from activeDownloads (PM-1302):1",
     "classification": "live-defect"
   },
   {
@@ -73,6 +89,198 @@
   },
   {
     "id": "vitest:src/workbench/extensions/agent/crdt/semanticLayoutSeparation.guard.test.ts:omits pos and size from a minted node payload:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "playwright:browser_tests/tests/nodeHelp.spec.ts:Falls back to nonlocalized custom-node docs after a locale request fails:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "playwright:browser_tests/tests/subgraph/subgraphCrud.spec.ts:Empty selection conversion shows an error toast and leaves the graph unchanged:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "playwright:browser_tests/tests/workflow/failureRecovery.spec.ts:keeps the workflow name when its rename request fails:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/components/sidebar/tabs/BaseWorkflowsSidebarTab.test.ts:propagates failed workflow deletion to the tree:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/composables/useNodeHelpContent.test.ts:should ignore a pending request when the node is cleared:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/composables/useNodeHelpContent.test.ts:should log and recover from infrastructure failures:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/composables/useNodeHelpContent.test.ts:should show the unavailable state for a blueprint without a description:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/composables/useNodeHelpContent.test.ts:should show the unavailable state when core help is absent:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/composables/useNodeHelpContent.test.ts:should show the unavailable state when custom help is absent:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/composables/useNodeHelpContent.test.ts:should use core help for Essentials nodes:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/composables/useNodeHelpContent.test.ts:should use custom node fallback help after a localized request fails:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/composables/useNodeHelpContent.test.ts:should use the core base URL for relative Essentials images:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/core/graph/widgets/dynamicWidgets.test.ts:Does not mutate when the dynamic input socket is missing:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/core/graph/widgets/dynamicWidgets.test.ts:Does not mutate when the dynamic widget is missing:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/lib/litegraph/src/LGraphNode.test.ts:does not add a reroute when a floating chain has no link:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/platform/assets/components/AssetCard.test.ts:does not emit deleted when deletion returns false:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/platform/assets/composables/useMediaAssetActions.test.ts:returns false when asset deletion fails:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/platform/assets/composables/useMediaAssetActions.test.ts:treats a refused deletion as failed without clearing workflow values:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/platform/assets/services/assetService.test.ts:confirms the record is absent after DELETE returns %s:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/platform/assets/services/assetService.test.ts:reports and preserves request failures:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/platform/assets/services/assetService.test.ts:returns false when the response is not ok:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/platform/assets/services/assetService.test.ts:returns unknown server state when the request reports failure:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/platform/assets/services/assetService.test.ts:returns unknown server state when the response body is invalid:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/platform/keybindings/presetService.test.ts:returns true after deleting a preset:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/platform/keybindings/presetService.test.ts:returns false when the backend refuses deletion:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/platform/keybindings/presetService.test.ts:returns false when user cancels confirmation:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/platform/workflow/core/services/workflowService.test.ts:does not duplicate a workflow that fails to load:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/platform/workflow/core/services/workflowService.test.ts:does not report success when persistence fails:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/platform/workflow/core/services/workflowService.test.ts:does not save and shows an error when an extension rename fails:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/platform/workflow/core/services/workflowService.test.ts:does not transform the graph when the workflow cannot be loaded:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/platform/workflow/core/services/workflowService.test.ts:shows an error and does not save when renaming fails:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/platform/workflow/management/stores/workflowStore.test.ts:does not open a workflow when loading fails:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/platform/workflow/management/stores/workflowStore.test.ts:does not remove related state when deleting fails:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/platform/workflow/management/stores/workflowStore.test.ts:does not update related state when renaming fails:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/platform/workflow/management/stores/workflowStore.test.ts:preserves the loaded workflow when a forced refresh is invalid:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/platform/workflow/management/stores/workflowStore.test.ts:reattaches a temporary workflow when it is reopened:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/platform/assets/stores/assetsStore.test.ts:rolls back cached metadata when the server outcome is unknown:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/platform/assets/stores/assetsStore.test.ts:rolls back when the server confirms the update was rejected:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/stores/nodeBookmarkStore.test.ts:does not persist a non-folder deletion:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/stores/nodeBookmarkStore.test.ts:does not persist a rename with $name:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/stores/nodeBookmarkStore.test.ts:persists a successful folder deletion:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/stores/subgraphStore.test.ts:should not access the canvas when a blueprint fails to open:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/stores/subgraphStore.test.ts:should reject blueprints with multiple root nodes before registration:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/stores/subgraphStore.test.ts:should reject stale edit and delete requests without mutating:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/stores/subgraphStore.test.ts:should return undefined and log a stale blueprint lookup:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/stores/userFileStore.test.ts:does not change the path when renaming fails:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/stores/userFileStore.test.ts:returns false when deleting fails:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/stores/userFileStore.test.ts:returns undefined and clears loading state on failed load:1",
     "classification": "live-defect"
   }
 ]
