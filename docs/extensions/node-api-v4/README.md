@@ -150,7 +150,7 @@ in these guides against the published types.
   option, a mounted value, a setting) must be one the workflow saves
   unchanged: text, a finite number, a boolean, `null`, or a plain object or
   list of those. `NaN`, a function or `undefined` inside it, a `Date`, an
-  object with `toJSON`, a class instance, a getter, a cycle, and a list with a
+  object with `toJSON` (enumerable or not), a class instance, a getter, a cycle, and a list with a
   hole or a named field are refused,
   and the message names the path, such as `value.list[0]`. `undefined` as the
   whole value deletes a property or an extra.
