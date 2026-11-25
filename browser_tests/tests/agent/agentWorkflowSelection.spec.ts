@@ -1,4 +1,7 @@
 import { expect, mergeTests } from '@playwright/test'
+import type { Page } from '@playwright/test'
+
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
@@ -7,8 +10,80 @@ import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { Tooltip } from '@e2e/fixtures/components/Tooltip'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { workflowSelectionTest } from '@e2e/fixtures/agentWorkflowSelectionFixture'
+import { waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
+import type { WorkspaceStore } from '@e2e/types/globals'
 
 const test = mergeTests(agentTest, workflowSelectionTest)
+
+const BACKGROUND_TAB = 'Unsaved Workflow'
+const BACKGROUND_TAB_PATH = `workflows/${BACKGROUND_TAB}.json`
+const FOREGROUND_TAB = 'Unsaved Workflow (2)'
+
+function isBackgroundTabLoaded(page: Page): Promise<boolean | undefined> {
+  return page.evaluate(
+    (path) =>
+      (
+        window.app!.extensionManager as WorkspaceStore
+      ).workflow.getWorkflowByPath(path)?.isLoaded,
+    BACKGROUND_TAB_PATH
+  )
+}
+
+/**
+ * Leaves `Unsaved Workflow` holding a Note node open in the background, never
+ * loaded in this page session: a reload restores a tab it left unopened. This is
+ * the state a person reaches by working in one workflow, opening another, and
+ * coming back to the first later.
+ */
+async function openWorkflowInBackground(page: Page): Promise<void> {
+  const tabs = page.getByTestId('workflow-tab')
+  // The agent fixture answers the API without a socket, so no client id is
+  // issued and the per-browser-tab pointer that carries open tabs across a
+  // reload is never written. Seed the id the server would have given us.
+  await page.evaluate(() => sessionStorage.setItem('clientId', 'e2e-client'))
+  await page.reload()
+  await waitForCloudApp(page)
+  await expect(tabs).toHaveCount(1)
+  await expect(new Topbar(page).getActiveTab()).toHaveText(BACKGROUND_TAB)
+  await page.evaluate(() => {
+    const workflow = (window.app!.extensionManager as WorkspaceStore).workflow
+      .activeWorkflow!
+    window.app!.graph.add(window.LiteGraph!.createNode('Note'))
+    workflow.changeTracker.checkState()
+  })
+  await page
+    .getByRole('button', {
+      name: enMessages.sideToolbar.newBlankWorkflow,
+      exact: true
+    })
+    .click()
+  await expect(tabs).toHaveCount(2)
+  for (const [store, prefix] of [
+    ['local', 'Comfy.Workflow.DraftIndex.v2:'],
+    ['session', 'Comfy.Workflow.OpenPaths:']
+  ] as const)
+    await expect
+      .poll(() =>
+        page.evaluate(
+          ([which, keyPrefix, path]) => {
+            const storage = which === 'local' ? localStorage : sessionStorage
+            return Object.keys(storage).some(
+              (key) =>
+                key.startsWith(keyPrefix) &&
+                storage.getItem(key)!.includes(`"${path}"`)
+            )
+          },
+          [store, prefix, BACKGROUND_TAB_PATH]
+        )
+      )
+      .toBe(true)
+
+  await page.reload()
+  await waitForCloudApp(page)
+  await expect(tabs).toHaveCount(2)
+  await expect(new Topbar(page).getActiveTab()).toHaveText(FOREGROUND_TAB)
+  await expect.poll(() => isBackgroundTabLoaded(page)).toBe(false)
+}
 
 test.describe('Agent workflow selection', { tag: ['@cloud', '@ui'] }, () => {
   test.beforeEach(async ({ page, workflowSelection }) => {
@@ -235,3 +310,89 @@ test.describe('Agent workflow selection', { tag: ['@cloud', '@ui'] }, () => {
     await expect(plusNodes).not.toHaveAttribute('aria-disabled', 'true')
   })
 })
+
+/**
+ * These start from an unsaved first tab, so they cannot share the save in the
+ * suite above: the pick under test only saves a tab that has no workflow id yet.
+ */
+test.describe(
+  'A workflow opened in the background',
+  { tag: ['@cloud', '@ui'] },
+  () => {
+    test('reaches the agent once its tab is activated', async ({
+      page,
+      toast,
+      workflowSelection
+    }) => {
+      expect(workflowSelection.savedPaths).toHaveLength(0)
+      await openWorkflowInBackground(page)
+      const agentPanel = new AgentPanel(page)
+      await agentPanel.open()
+      const topbar = new Topbar(page)
+
+      await topbar.getWorkflowTab(BACKGROUND_TAB).click()
+      await expect(topbar.getActiveTab()).toHaveText(BACKGROUND_TAB)
+
+      await agentPanel.composer.fill('@')
+      await agentPanel.root
+        .getByRole('menuitem', { name: enMessages.agent.nodes, exact: true })
+        .click()
+      await expect(
+        agentPanel.root.getByRole('menuitem', { name: 'Note', exact: true })
+      ).toBeVisible()
+
+      await expect(
+        toast.withText(enMessages.agent.targetNavigationUnavailable)
+      ).toHaveCount(0)
+      await expect(
+        toast.withText(enMessages.shareWorkflow.saveFailedTitle)
+      ).toHaveCount(0)
+      await expect(
+        agentPanel.root.getByText(enMessages.agent.viewingDifferentWorkflow)
+      ).toHaveCount(0)
+    })
+
+    test('can be referenced while a reload has left it unopened', async ({
+      page,
+      toast,
+      workflowSelection
+    }) => {
+      await openWorkflowInBackground(page)
+      const agentPanel = new AgentPanel(page)
+      await agentPanel.open()
+
+      await agentPanel.composer.fill('@')
+      await agentPanel.root
+        .getByRole('menuitem', {
+          name: enMessages.agent.workflows,
+          exact: true
+        })
+        .click()
+      expect(await isBackgroundTabLoaded(page)).toBe(false)
+      await agentPanel.root
+        .getByRole('menuitem', {
+          name: `${BACKGROUND_TAB} ${enMessages.agent.unsavedWorkflow}`,
+          exact: true
+        })
+        .click()
+      await expect.poll(() => workflowSelection.savedPaths.length).toBe(1)
+      workflowSelection.finishSave(true)
+
+      await expect(
+        agentPanel.root.getByTestId('workflow-reference-chip')
+      ).toContainText(BACKGROUND_TAB)
+      await expect(
+        toast.withText(enMessages.shareWorkflow.saveFailedTitle)
+      ).toHaveCount(0)
+      await expect(new Topbar(page).getActiveTab()).toHaveText(FOREGROUND_TAB)
+
+      const savedGraph = await page.evaluate(async (path) => {
+        const response = await fetch(
+          `/api/userdata/${encodeURIComponent(path)}`
+        )
+        return (await response.json()) as ComfyWorkflowJSON
+      }, workflowSelection.savedPaths[0])
+      expect(savedGraph.nodes.map(({ type }) => type)).toContain('Note')
+    })
+  }
+)
