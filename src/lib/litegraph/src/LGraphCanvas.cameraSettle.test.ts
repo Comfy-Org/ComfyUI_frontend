@@ -90,7 +90,7 @@ describe('LGraphCanvas camera settling in Vue nodes mode', () => {
     const drawnLinkEnd = () =>
       renderLink.mock.calls.findLast(([, , , drawn]) => drawn === link)?.[2]
 
-    return { canvas, target, upper, renderLink, drawnLinkEnd }
+    return { canvas, graph, target, upper, renderLink, drawnLinkEnd }
   }
 
   it('repairs widget input sockets and link endpoints after the camera stops', () => {
@@ -124,5 +124,42 @@ describe('LGraphCanvas camera settling in Vue nodes mode', () => {
 
     expect(target.getInputPos(0)).toEqual([300, 176])
     expect(drawnLinkEnd()).toEqual([300, 176])
+  })
+
+  it('repairs a skipped node after the camera stopped on another graph', () => {
+    const { canvas, graph, target, upper, renderLink, drawnLinkEnd } =
+      createLinkedWidgetInput()
+
+    canvas.draw(true, true)
+    panFrames(canvas, [16, 32, 48])
+    upper.computeSize = () => [100, 60]
+    panFrames(canvas, [64, 80, 96])
+    panFrames(canvas, [112], 520)
+    canvas.setGraph(new LGraph())
+    idleFramesUntil(canvas, 400)
+    canvas.setGraph(graph)
+    expect(canvas.visible_nodes).not.toContain(target)
+    renderLink.mockClear()
+    idleFramesUntil(canvas, 800)
+
+    expect(target.getInputPos(0)).toEqual([300, 176])
+    expect(drawnLinkEnd()).toEqual([300, 176])
+  })
+
+  it('repairs a skipped node after Vue nodes mode was turned off', () => {
+    const { canvas, target, upper } = createLinkedWidgetInput()
+
+    canvas.draw(true, true)
+    panFrames(canvas, [16, 32, 48])
+    upper.computeSize = () => [100, 60]
+    panFrames(canvas, [64, 80, 96])
+    panFrames(canvas, [112], 520)
+    LiteGraph.vueNodesMode = false
+    idleFramesUntil(canvas, 400)
+    LiteGraph.vueNodesMode = true
+    canvas.setDirty(true, true)
+    idleFramesUntil(canvas, 800)
+
+    expect(target.getInputPos(0)).toEqual([300, 176])
   })
 })

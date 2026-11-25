@@ -216,7 +216,9 @@ export function isNodeArrangementCurrent(node: LGraphNode): boolean {
   )
 }
 
-export function markNodeArranged(node: LGraphNode): void {
+export function arrangeVueNode(node: LGraphNode): void {
+  node._setConcreteSlots()
+  if (!node.collapsed) node.arrange()
   nodeArrangements.set(node, {
     stamp: nodeGeometryStamp(node),
     slotCount: nodeSlotCount(node)

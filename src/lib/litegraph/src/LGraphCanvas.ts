@@ -34,8 +34,8 @@ import { nodesInRenderOrder } from '@/renderer/core/canvas/litegraph/arrangeForL
 import {
   getSlotLayoutAtPoint,
   getSlotPosition,
-  isNodeArrangementCurrent,
-  markNodeArranged
+  arrangeVueNode,
+  isNodeArrangementCurrent
 } from '@/renderer/core/canvas/litegraph/slotCalculations'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
@@ -5175,24 +5175,21 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     if (area) ctx.restore()
 
-    if (!LiteGraph.vueNodesMode) return
-    if (this._cameraMoving) {
-      this.dirty_canvas = true
-      return
+    const vueNodesMode = LiteGraph.vueNodesMode
+    if (vueNodesMode) {
+      if (this._cameraMoving) {
+        this.dirty_canvas = true
+        return
+      }
+      if (!wasCameraMoving) return
+      this.dirty_bgcanvas = true
     }
-    if (!wasCameraMoving) return
 
     for (const node of this._arrangeDeferredNodes) {
-      if (node.graph === this.graph) this._arrangeVueNode(node)
+      if (vueNodesMode && node.graph === this.graph) arrangeVueNode(node)
+      else if (node.graph) node._widgetSlotsDirty = true
     }
     this._arrangeDeferredNodes.clear()
-    this.dirty_bgcanvas = true
-  }
-
-  private _arrangeVueNode(node: LGraphNode): void {
-    node._setConcreteSlots()
-    if (!node.collapsed) node.arrange()
-    markNodeArranged(node)
   }
 
   private _getLinkCentreOnPos(e: CanvasPointerEvent): LinkSegment | undefined {
@@ -5516,9 +5513,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         return
       }
 
-      // Prepare concrete slots and compute layout measures without rendering visuals.
       this._arrangeDeferredNodes.delete(node)
-      this._arrangeVueNode(node)
+      arrangeVueNode(node)
       // Skip all node body/widget/title rendering. Vue overlay handles visuals.
       return
     }
