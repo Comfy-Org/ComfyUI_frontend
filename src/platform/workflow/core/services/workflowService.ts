@@ -63,6 +63,7 @@ import {
   useSubgraphNavigationStore
 } from '@/stores/subgraphNavigationStore'
 import { reportError } from '@comfyorg/telemetry/reportError'
+import { UserDataExistsError } from '@comfyorg/api-client/ComfyApi'
 import { useDeprecatedNodesStore } from '@/platform/workflowErrors/nodeReplacement/deprecatedNodesStore'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
@@ -350,6 +351,28 @@ export const useWorkflowService = () => {
     })
   }
 
+  /**
+   * Create the file for a workflow that is not on the server yet. The store
+   * may not know every file on the server, so a file of the same name can
+   * already exist there; then ask before replacing it.
+   * @returns false when the user kept the existing file.
+   */
+  async function saveNewWorkflowFile(
+    workflow: ComfyWorkflow,
+    path: string
+  ): Promise<boolean> {
+    try {
+      await workflowStore.saveWorkflow(workflow)
+      return true
+    } catch (error) {
+      if (!(error instanceof UserDataExistsError)) throw error
+    }
+    if ((await confirmOverwrite(path)) !== true) return false
+    if (workflow.path !== path) return false
+    await workflowStore.saveWorkflow(workflow, { overwrite: true })
+    return true
+  }
+
   async function getFilename(
     defaultName: string,
     extension = '.json'
@@ -541,7 +564,7 @@ export const useWorkflowService = () => {
         target.initialMode = isApp ? 'app' : 'graph'
       }
       target.changeTracker?.prepareForSave()
-      await workflowStore.saveWorkflow(target)
+      if (!(await saveNewWorkflowFile(target, newPath))) return false
     }
 
     useTelemetry()?.trackWorkflowSaved({ is_app: isApp, is_new: true })

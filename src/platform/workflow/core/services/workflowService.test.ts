@@ -59,6 +59,7 @@ import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/mis
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 import { app } from '@/scripts/app'
 import { api } from '@/scripts/api'
+import { UserDataExistsError } from '@comfyorg/api-client/ComfyApi'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import {
   bindCanvasTracker,
@@ -5034,6 +5035,71 @@ describe('useWorkflowService', () => {
         'workflows/my-workflow.json'
       )
       expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(workflow)
+    })
+
+    // CLOUD-FRONTEND-PROD-2SG: a template tab already sits at the target path
+    // and the store does not know the file of that name on the server, so
+    // the create-only save got a 409 that escaped as an error on close.
+    it('asks before replacing a server file the store did not know, then overwrites', async () => {
+      const workflow = createTemporaryWorkflow()
+      workflow.path = 'workflows/image_z_image_turbo.json'
+      vi.mocked(workflowStore.getWorkflowByPath).mockReturnValue(workflow)
+      vi.mocked(workflowStore.saveWorkflow)
+        .mockRejectedValueOnce(
+          new UserDataExistsError(
+            "Error storing user data file 'workflows/image_z_image_turbo.json': 409 "
+          )
+        )
+        .mockResolvedValueOnce()
+      vi.mocked(useDialogService().confirm).mockResolvedValue(true)
+
+      const result = await service.saveWorkflowAs(workflow, {
+        filename: 'image_z_image_turbo'
+      })
+
+      expect(result).toBe(true)
+      expect(useDialogService().confirm).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({
+          type: 'overwrite',
+          itemList: ['workflows/image_z_image_turbo.json']
+        })
+      )
+      expect(workflowStore.saveWorkflow).toHaveBeenNthCalledWith(1, workflow)
+      expect(workflowStore.saveWorkflow).toHaveBeenNthCalledWith(2, workflow, {
+        overwrite: true
+      })
+    })
+
+    it('keeps the server file and reports no save when the overwrite is declined', async () => {
+      const workflow = createTemporaryWorkflow()
+      vi.mocked(workflowStore.getWorkflowByPath).mockReturnValue(null)
+      vi.mocked(workflowStore.saveWorkflow).mockRejectedValueOnce(
+        new UserDataExistsError(
+          "Error storing user data file 'workflows/my-workflow.json': 409 "
+        )
+      )
+      vi.mocked(useDialogService().confirm).mockResolvedValue(false)
+
+      const result = await service.saveWorkflowAs(workflow, {
+        filename: 'my-workflow'
+      })
+
+      expect(result).toBe(false)
+      expect(workflowStore.saveWorkflow).toHaveBeenCalledOnce()
+      expect(useTelemetry()?.trackWorkflowSaved).not.toHaveBeenCalled()
+    })
+
+    it('still throws a save failure that is not an existing file', async () => {
+      const workflow = createTemporaryWorkflow()
+      vi.mocked(workflowStore.getWorkflowByPath).mockReturnValue(null)
+      vi.mocked(workflowStore.saveWorkflow).mockRejectedValueOnce(
+        new Error("Error storing user data file 'workflows/x.json': 500 ")
+      )
+
+      await expect(
+        service.saveWorkflowAs(workflow, { filename: 'x' })
+      ).rejects.toThrow('500')
+      expect(useDialogService().confirm).not.toHaveBeenCalled()
     })
 
     it('refuses to save as a path another unsaved tab holds', async () => {
