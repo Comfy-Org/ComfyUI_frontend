@@ -113,8 +113,9 @@ describe('graphToPrompt widget serialization', () => {
     const graph = new LGraph()
     const node = addNode(graph, 'KSampler')
     node.addWidget('number', 'seed', 42, () => undefined, {})
-    // Mirrors src/scripts/widgets.ts:144 — control_after_generate is excluded
-    // from the API prompt while still being persisted in the workflow file.
+    // Mirrors src/core/graph/widgets/valueControlWidgets.ts —
+    // control_after_generate is excluded from the API prompt while still being
+    // persisted in the workflow file.
     node.addWidget(
       'combo',
       'control_after_generate',
