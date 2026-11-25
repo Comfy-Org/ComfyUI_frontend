@@ -3433,9 +3433,20 @@ describe('ComfyApp', () => {
         }
       )
 
-      it.for(['a load', 'an undo'])(
-        'keeps an edit an afterLoadGraph hook makes through a handle during %s in the state it loads, which the next user undo does not take back',
-        async (kind) => {
+      it.for([
+        {
+          kind: 'a load',
+          reload: async () => {
+            await app.loadGraphData(workflowWithFixedIdAndOneNode(), false)
+          }
+        },
+        {
+          kind: 'an undo',
+          reload: (tracker: ChangeTracker) => tracker.undo()
+        }
+      ])(
+        'keeps an edit an afterLoadGraph hook makes through a handle during $kind in the state it loads, which the next user undo does not take back',
+        async ({ reload }) => {
           const { comfy } = nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
           await app.loadGraphData(workflowWithFixedIdAndOneNode(), false)
           const { tracker } = historyOfTheOpenWorkflow()
@@ -3449,16 +3460,16 @@ describe('ComfyApp', () => {
               return []
             }
           )
-          if (kind === 'a load')
-            await app.loadGraphData(workflowWithFixedIdAndOneNode(), false)
-          else await tracker.undo()
+          await reload(tracker)
           const undoAfterLoad = tracker.undoQueue.length
 
           tracker.userActed()
-          comfy.graph.node('1')?.setMode('bypass')
+          expect(comfy.graph.node('1')?.setMode('bypass')).toBe(true)
+          expect(comfy.graph.node('1')?.getMode()).toBe('bypass')
           await tracker.undo()
 
           expect(edits).toEqual([true])
+          expect(comfy.graph.node('1')?.getMode()).toBe('always')
           expect(tracker.undoQueue).toHaveLength(undoAfterLoad)
           expect(app.rootGraph.getNodeById(toNodeId(1))?.title).toBe(
             'Set by a hook'
