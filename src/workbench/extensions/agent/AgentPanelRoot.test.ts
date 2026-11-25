@@ -5607,8 +5607,6 @@ describe('AgentPanelRoot error context attach (FRONT-4380)', () => {
       store.prompt.references.filter((r) => r.kind === 'error')
     ).toHaveLength(1)
     expect(screen.getAllByTestId('error-reference-chip')).toHaveLength(1)
-    // The chip's problem count changes on each click; the surrounding
-    // whitespace it pads must not grow along with it (FRONT-4380).
     expect(store.draft).toHaveLength(draftAfterFirstClick.length)
 
     await askAgentAboutIssues(allIssuesContext({ count: 4 }))

@@ -360,17 +360,12 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
       (item) => item.kind !== 'error'
     )
     const text = draft.value
-    // Clicking the same "Ask agent about..." affordance again lands the
-    // caret right after the previous click's own trailing separator space
-    // (nothing else has touched the draft since). Reinserting there would
-    // pad another separator on top of it, growing the gap after the chip on
-    // every click (FRONT-4380) — reuse the old chip's slot instead.
-    const replacesInPlace =
+    const reinsertsAtExistingChipSlot =
       existing !== undefined &&
       insertionPoint.value.textOffset === existing.textOffset + 1 &&
       text.length === existing.textOffset + 1 &&
       text[existing.textOffset] === ' '
-    const insertion = replacesInPlace
+    const insertion = reinsertsAtExistingChipSlot
       ? {
           textOffset: existing.textOffset,
           referenceIndex: prompt.value.references
