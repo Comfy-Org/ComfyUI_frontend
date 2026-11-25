@@ -103,6 +103,7 @@ import {
   confirmUnsavedWorkBeforeSwitch,
   unsavedWorkflows
 } from '@/platform/workspace/confirmUnsavedWorkBeforeSwitch'
+import type { UnsavedWorkPrompt } from '@/platform/workspace/confirmUnsavedWorkBeforeSwitch'
 import { openCreateCustomDeploymentDialog } from '@/platform/workspace/openCustomDeploymentDialog'
 import type { BuildStage } from '@/platform/workspace/platformFrame/platformFrameBuild'
 import { usePlatformFrameStore } from '@/platform/workspace/platformFrame/platformFrameStore'
@@ -276,9 +277,12 @@ function report(summary: string, refusal: string | null) {
   useToast().error(summary, { description: refusal, duration: 8000 })
 }
 
-async function confirmSwitchTo(deployment: string): Promise<boolean> {
+async function confirmSwitchTo(
+  deployment: string,
+  prompt?: UnsavedWorkPrompt
+): Promise<boolean> {
   if (unsavedWorkflows().length > 0) isOpen.value = false
-  return confirmUnsavedWorkBeforeSwitch(deployment)
+  return confirmUnsavedWorkBeforeSwitch(deployment, prompt)
 }
 
 async function choose(deploymentId: string | null) {

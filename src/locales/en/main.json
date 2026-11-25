@@ -165,6 +165,7 @@
     "unknownFile": "Unknown file",
     "reconnecting": "Reconnecting",
     "reconnected": "Reconnected",
+    "sessionRevoked": "Your access to this workspace has ended. Sign in again to reconnect.",
     "disconnectedFromBackend": "Disconnected from backend. Check if the server is running.",
     "delete": "Delete",
     "rename": "Rename",
@@ -2746,7 +2747,8 @@
     "failedToLoadHDRI": "Failed to load HDRI file",
     "unsupportedHDRIFormat": "Unsupported file format. Please upload a .hdr or .exr file.",
     "failedToToggleGizmo": "Failed to toggle gizmo",
-    "failedToSetGizmoMode": "Failed to set gizmo mode"
+    "failedToSetGizmoMode": "Failed to set gizmo mode",
+    "batchStoppedOnWorkflowChange": "Queued {queued} of {requested}. Stopped because you switched workflow, so the rest would have run the wrong one."
   },
   "nodeBadge": {
     "partnerNodesCount": "Partner Nodes x {count}"
@@ -4300,6 +4302,7 @@
     "version": "v{version}",
     "labelWithDetail": "{label} · {detail}",
     "status": {
+      "building": "Building",
       "stopped": "Stopped",
       "stopping": "Stopping",
       "failed": "Failed",
@@ -4321,6 +4324,7 @@
     "pickGoneDetail": "This browser now runs on Comfy Cloud. Pick a deployment again to use one.",
     "defaultGone": "The workspace default was deleted, so members start on Comfy Cloud.",
     "defaultGoneOwner": "The workspace default was deleted, so members start on Comfy Cloud. Choose a new one under Workspace default.",
+    "newDeploymentName": "New deployment",
     "noDeployments": "This workspace has no deployments yet.",
     "createCustomDeployment": "Create a custom deployment",
     "manageDeployments": "Manage deployments",
@@ -4373,7 +4377,11 @@
       "message": "Switching to {deployment} reloads the tab. These workflows have changes that aren't saved yet.",
       "tabsReturn": "Your open tabs come back after the reload either way.",
       "switchWithoutSaving": "Switch without saving",
-      "saveAndSwitch": "Save and switch"
+      "saveAndSwitch": "Save and switch",
+      "reloadTitle": "Save your workflows before reloading?",
+      "reloadMessage": "Reloading the tab runs it on {deployment}. These workflows have changes that aren't saved yet.",
+      "reloadWithoutSaving": "Reload without saving",
+      "saveAndReload": "Save and reload"
     },
     "workspaceDefault": "Workspace default",
     "membersStartOn": "Members without their own pick start on",
