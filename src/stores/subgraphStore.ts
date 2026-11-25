@@ -27,7 +27,7 @@ import { useDialogService } from '@/services/dialogService'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import type { UserFile } from '@/stores/userFileStore'
+import type { UserFile, UserFileSaveOptions } from '@/stores/userFileStore'
 import { BLUEPRINT_TYPE_PREFIX } from '@/utils/blueprintUtils'
 import { getErrorMessage } from '@/utils/errorUtil'
 
@@ -88,7 +88,9 @@ export const useSubgraphStore = defineStore('subgraph', () => {
       )
     }
 
-    override async save(): Promise<UserFile> {
+    override async save(
+      options?: Pick<UserFileSaveOptions, 'overwrite'>
+    ): Promise<UserFile> {
       this.validateSubgraph()
       if (
         !this.hasPromptedSave &&
@@ -99,7 +101,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
       }
       // Extract metadata from subgraph.extra to workflow.extra before saving
       this.extractMetadataToWorkflowExtra()
-      const ret = await super.save()
+      const ret = await super.save(options)
       // Force reload to update initialState with saved metadata
       registerNodeDef(await this.load({ force: true }), {
         category: 'Subgraph Blueprints/User'
