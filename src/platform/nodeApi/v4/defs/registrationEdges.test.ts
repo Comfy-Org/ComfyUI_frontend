@@ -419,7 +419,7 @@ describe('registering node types and extensions at the edges', () => {
   )
 
   it('keeps no hook of an apply on a registration that apply replaced', () => {
-    const created = vi.fn()
+    const created: string[] = []
     const stopOriginal = defs.define(packId, { type: 'Replaced' })
     const replace = once(() => {
       stopOriginal()
@@ -429,7 +429,8 @@ describe('registering node types and extensions at the edges', () => {
     })
     onTestFinished(
       defs.extend(packId, 'Replaced', (builder) => {
-        builder.onCreated(created)
+        const appliedTo = defs.get('Replaced')?.title ?? 'none'
+        builder.onCreated(() => created.push(appliedTo))
         replace()
       })
     )
@@ -437,7 +438,7 @@ describe('registering node types and extensions at the edges', () => {
     addedNode('Replaced')
 
     expect(defs.get('Replaced')?.title).toBe('Replacement')
-    expect(created).toHaveBeenCalledOnce()
+    expect(created).toEqual(['Replacement'])
   })
 
   describe('a definition and a host type of the same name', () => {
