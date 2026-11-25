@@ -4907,6 +4907,7 @@
     "modelAssociatedWithLink": "The model associated with the link you provided:",
     "modelName": "Model Name",
     "modelNamePlaceholder": "Enter a name for this model",
+    "modelTypeNotAddable": "This model type can't be added to the canvas from the Model Library. Add a node that loads it, then choose the model there.",
     "modelTypeSelectorLabel": "What type of model is this?",
     "modelTypeSelectorPlaceholder": "Select model type",
     "modelUploaded": "Model successfully imported.",
