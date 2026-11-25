@@ -57,7 +57,8 @@ export interface GraphHandle {
   subgraphs(): readonly GraphScopeHandle[]
   /**
    * Grows when the open document changed since the last reading, whichever of its graphs is on screen: on every edit a
-   * handle applies, every undo, redo and load, and some of the editor's own changes. No reading repeats an earlier one.
+   * handle applies, every undo, redo and load, and some of the editor's own changes. It stays the same while none of
+   * these happens, and never goes back to a value it has left.
    */
   readonly version: number | undefined
   /**

@@ -223,9 +223,9 @@ flowchart TD
       reading's: the version counters (`LGraph._version`) of its root graph
       and of each subgraph definition, with their ids, and the number of
       rebuilds the API is told of. If any mark differs, the reading is one
-      more than the last. So it reads the same whichever graph is on screen,
-      an edit through a handle to an off-screen graph changes it, and no
-      reading repeats an earlier one.
+      more than the last; otherwise it is the same. So it reads the same
+      whichever graph is on screen, an edit through a handle to an off-screen
+      graph changes it, and it never goes back to a value it has left.
     - Every edit a handle applies advances its graph's counter, including
       when the host declines after the runner has started; a refusal, an
       unlinked `disconnect` or a call on a gone entity, which exit before
