@@ -64,6 +64,23 @@ function resetTextWhenReferencesCleared(
   return references.length === 0 && text.trim() === '' ? '' : text
 }
 
+function reusesErrorChipSlot(
+  existing: ComposerReference,
+  references: ComposerReference[],
+  text: string,
+  insertion: ComposerInsertionPoint
+): boolean {
+  const index = references.indexOf(existing)
+  return (
+    insertion.textOffset === existing.textOffset + 1 &&
+    insertion.referenceIndex > index &&
+    references
+      .slice(index + 1, insertion.referenceIndex)
+      .every((item) => item.textOffset === existing.textOffset) &&
+    text[existing.textOffset] === ' '
+  )
+}
+
 function composerReferencePosition(reference: ComposerReference): string {
   return `${composerReferenceKey(reference)}@${reference.textOffset}`
 }
@@ -360,17 +377,21 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
       (item) => item.kind !== 'error'
     )
     const text = draft.value
-    const reinsertsAtExistingChipSlot =
+    const reusedSlot =
       existing !== undefined &&
-      insertionPoint.value.textOffset === existing.textOffset + 1 &&
-      insertionPoint.value.referenceIndex ===
-        prompt.value.references.indexOf(existing) + 1 &&
-      text[existing.textOffset] === ' '
-    const insertion = reinsertsAtExistingChipSlot
+      reusesErrorChipSlot(
+        existing,
+        prompt.value.references,
+        text,
+        insertionPoint.value
+      )
+        ? existing
+        : undefined
+    const insertion = reusedSlot
       ? {
-          textOffset: existing.textOffset,
+          textOffset: reusedSlot.textOffset,
           referenceIndex: prompt.value.references
-            .slice(0, prompt.value.references.indexOf(existing))
+            .slice(0, prompt.value.references.indexOf(reusedSlot))
             .filter((item) => item.kind !== 'error').length
         }
       : {

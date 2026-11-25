@@ -5617,6 +5617,57 @@ describe('AgentPanelRoot error context attach (FRONT-4380)', () => {
     expect(screen.getAllByTestId('error-reference-chip')).toHaveLength(1)
     expect(store.draft).toHaveLength(draftAfterFirstClick.length)
   })
+
+  it('keeps the chip in its slot when another reference shares its separator', async () => {
+    const store = useAgentComposerStore()
+    renderWithSelectedTarget()
+    useAgentPanelStore().enabled = true
+    const textbox = screen.getByRole('textbox')
+    await userEvent.click(textbox)
+    await userEvent.paste('fix this')
+
+    const { askAgentAboutIssues } = useAskAgentAboutIssues()
+    await askAgentAboutIssues(allIssuesContext({ count: 2 }))
+    await screen.findAllByTestId('error-reference-chip')
+    await waitFor(() => expect(store.errorContext).toMatchObject({ count: 2 }))
+
+    const chip = store.prompt.references.find((r) => r.kind === 'error')
+    assert(chip)
+    store.setInsertionPoint({
+      textOffset: chip.textOffset,
+      referenceIndex: store.prompt.references.indexOf(chip) + 1
+    })
+    store.addAttachment({
+      id: 'att-1',
+      name: 'cat.png',
+      ref: 'uploaded_cat.png'
+    })
+    store.referenceAttachment('att-1')
+    await waitFor(() =>
+      expect(store.prompt.references.map((r) => r.kind)).toEqual([
+        'error',
+        'asset'
+      ])
+    )
+    const draftWithNeighbour = store.draft
+
+    await askAgentAboutIssues(allIssuesContext({ count: 3 }))
+    await waitFor(() => expect(store.errorContext).toMatchObject({ count: 3 }))
+    expect(store.draft).toBe(draftWithNeighbour)
+    expect(store.prompt.references.map((r) => r.kind)).toEqual([
+      'error',
+      'asset'
+    ])
+
+    await askAgentAboutIssues(allIssuesContext({ count: 4 }))
+    await waitFor(() => expect(store.errorContext).toMatchObject({ count: 4 }))
+    expect(store.draft).toBe(draftWithNeighbour)
+    expect(store.prompt.references.map((r) => r.kind)).toEqual([
+      'error',
+      'asset'
+    ])
+    expect(screen.getAllByTestId('error-reference-chip')).toHaveLength(1)
+  })
 })
 
 describe('AgentPanelRoot canvas draft on send', () => {

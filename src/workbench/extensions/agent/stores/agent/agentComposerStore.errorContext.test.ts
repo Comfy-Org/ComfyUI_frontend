@@ -98,6 +98,41 @@ describe('agentComposerStore error context', () => {
     expect(store.prompt.references[2]).toMatchObject({ id: 'wf-b' })
   })
 
+  it('reuses the chip slot when a later reference shares the same separator', () => {
+    const store = useAgentComposerStore()
+    store.applyEditorPrompt({
+      text: 'a b',
+      references: [
+        {
+          kind: 'error',
+          id: 'err-1',
+          context: errorContext({ label: 'First' }),
+          textOffset: 1
+        },
+        { kind: 'workflow', id: 'wf-ref', name: 'wf', textOffset: 1 }
+      ]
+    })
+    store.setInsertionPoint({ textOffset: 2, referenceIndex: 2 })
+
+    store.setErrorContext(errorContext({ label: 'Second' }))
+
+    expect(store.prompt.text).toBe('a b')
+    expect(store.prompt.references).toMatchObject([
+      { kind: 'error', context: { label: 'Second' }, textOffset: 1 },
+      { kind: 'workflow', id: 'wf-ref', textOffset: 1 }
+    ])
+    expect(store.insertionPoint).toEqual({ textOffset: 2, referenceIndex: 2 })
+
+    store.setErrorContext(errorContext({ label: 'Third' }))
+
+    expect(store.prompt.text).toBe('a b')
+    expect(store.prompt.references).toMatchObject([
+      { kind: 'error', context: { label: 'Third' }, textOffset: 1 },
+      { kind: 'workflow', id: 'wf-ref', textOffset: 1 }
+    ])
+    expect(store.insertionPoint).toEqual({ textOffset: 2, referenceIndex: 2 })
+  })
+
   it('reinserts at the requested slot when the caret moves past a later reference before repeat attachment', () => {
     const store = useAgentComposerStore()
     store.applyEditorPrompt({
