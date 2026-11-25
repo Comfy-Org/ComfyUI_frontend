@@ -6,7 +6,7 @@ import { useBootDeploymentFullLabel } from '@/platform/workspace/composables/use
 import { takeDeploymentSwitchLanding } from '@/platform/workspace/deploymentSwitchReload'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 
-/** Starts the boot listing; toasts a gone pick or where a switch landed. */
+/** Starts the boot listing; toasts a gone pick once, or where a switch landed. */
 export async function useDeploymentPickAtBoot(): Promise<void> {
   const landedFromSwitch = takeDeploymentSwitchLanding()
   const store = useDeploymentPickStore()
@@ -16,6 +16,7 @@ export async function useDeploymentPickAtBoot(): Promise<void> {
       description: t('deploymentSwitcher.pickGoneDetail'),
       duration: 10000
     })
+    void store.forgetGonePick()
     return
   }
   if (landedFromSwitch) {
