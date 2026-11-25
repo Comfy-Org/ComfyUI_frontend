@@ -414,6 +414,38 @@ test(
   }
 )
 
+test(
+  'double-clicking a resize corner shrinks a node whose last row is an unsized legacy widget',
+  { tag: ['@vue-nodes', '@canvas', '@node'] },
+  async ({ comfyPage }) => {
+    await comfyPage.workflow.loadWorkflow('default')
+    await comfyPage.page.evaluate(() => {
+      const checkpoint = window.app!.graph.nodes.find(
+        ({ type }) => type === 'CheckpointLoaderSimple'
+      )
+      checkpoint?.addCustomWidget({
+        name: 'legacy',
+        type: 'legacy-canvas',
+        value: 0,
+        y: 0,
+        options: {},
+        draw: () => {}
+      })
+    })
+    const node = await comfyPage.vueNodes.getFixtureByTitle('Load Checkpoint')
+    await expect(node.root.getByTestId('node-widget')).toHaveCount(2)
+    const getHeight = () => heightOf(node.root)
+    const initialHeight = await getHeight()
+
+    await node.resizeFromCorner('SE', 0, 100)
+    await expect.poll(getHeight).toBeCloseTo(initialHeight + 100, 0)
+
+    await node.getResizeHandle('SE').dblclick()
+
+    await expect.poll(getHeight).toBeLessThan(initialHeight + 20)
+  }
+)
+
 test.describe(
   'Vue node media preview aspect fit',
   { tag: ['@vue-nodes', '@canvas', '@node'] },

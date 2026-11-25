@@ -577,7 +577,7 @@ function handleResizeDoubleClick(event: MouseEvent) {
   const widget = soleGrowableWidget.value
   const layout = bodyLayout.value
   if (widget) growable.resetWidget(event, widget, soleGrowableMinHeight(widget))
-  else if (layout && !mediaRegions.value.length) {
+  else if (layout && !mediaRegions.value.length && !fillsWithUnsizedRow()) {
     resizeNodeTo(
       layout.minBodyHeight +
         bodyTop.value +
@@ -586,6 +586,16 @@ function handleResizeDoubleClick(event: MouseEvent) {
     )
     useWorkflowStore().activeWorkflow?.changeTracker.captureCanvasState()
   } else growable.fitNode(event)
+}
+
+function fillsWithUnsizedRow() {
+  return (widgetItems.value?.() ?? []).some(
+    (item) =>
+      item.kind === 'control' &&
+      item.growable &&
+      !item.sizing &&
+      item.userHeight === undefined
+  )
 }
 
 const { startResize } = useNodeResize((result) => {
