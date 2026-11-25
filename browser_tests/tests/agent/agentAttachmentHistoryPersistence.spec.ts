@@ -115,15 +115,15 @@ for (const scenario of [
           })
       )
       await page.route(
-        '**/api/assets/asset-first/content?disposition=inline',
+        '**/api/assets/asset-first/content?disposition=inline*',
         (route) => route.fulfill({ path: assetPath('image64x64.webp') })
       )
       await page.route(
-        '**/api/assets/asset-second/content?disposition=inline',
+        '**/api/assets/asset-second/content?disposition=inline*',
         (route) => route.fulfill({ path: assetPath('image32x32.webp') })
       )
       await page.route(
-        '**/api/assets/asset-video/content?disposition=inline',
+        '**/api/assets/asset-video/content?disposition=inline*',
         (route) =>
           route.fulfill({
             path: assetPath('workflowInMedia/workflow.mp4'),
