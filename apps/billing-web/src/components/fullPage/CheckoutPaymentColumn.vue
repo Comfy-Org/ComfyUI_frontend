@@ -133,6 +133,12 @@ watch(formMounted, (mounted) => {
   if (!mounted) tokenizing.value = false
 })
 
+const outcomeBesideColumn = computed(() =>
+  tabbed.value !== undefined || elementLive.value
+    ? undefined
+    : payContext.value.outcome
+)
+
 const tabsLocked = computed(() => locked.value || tokenizing.value)
 
 const copy = computed<StripePaymentCopy>(() => ({
@@ -275,7 +281,7 @@ const copy = computed<StripePaymentCopy>(() => ({
           </template>
         </StripePaymentForm>
       </div>
-      <slot name="after" :busy="tabsLocked" />
+      <slot name="after" :busy="tabsLocked" :outcome="outcomeBesideColumn" />
     </div>
   </section>
 </template>

@@ -1928,6 +1928,54 @@ describe('FullPageTopupView paying with WeChat Pay or Alipay', () => {
     await waitFor(() => expect(hosted).toHaveBeenCalledOnce())
   })
 
+  it('shows the refusal beside the option when the card form failed to load', async () => {
+    renderTopup(
+      { topupQuote: PAYS_ONCE, paymentMethods: { status: 'ok', value: [] } },
+      TOPUP_PATH,
+      (built) => {
+        stubHostedCheckout(built).mockResolvedValue({
+          status: 'error',
+          code: 'REQUEST_FAILED'
+        })
+      }
+    )
+    await screen.findByText('Add credits · Acme Team')
+    form.emit('phase', { phase: 'payment_element_failed', element: 'payment' })
+    const option = await screen.findByRole('button', {
+      name: 'Pay with WeChat Pay or Alipay'
+    })
+    await waitFor(() => expect(option).toBeEnabled())
+
+    await userEvent.click(option)
+
+    expect(
+      await screen.findByText("Payment couldn't be processed")
+    ).toBeVisible()
+    expect(hostedOption()).toBeEnabled()
+  })
+
+  it('lets the customer try again when the purchase cannot be re-read', async () => {
+    const { fake, readTopupPurchase } = renderPurchase(purchaseRead('open'))
+    const hosted = stubHostedCheckout(fake)
+    await screen.findByText('Add credits · Acme Team')
+    const option = await screen.findByRole('button', {
+      name: 'Pay with WeChat Pay or Alipay'
+    })
+    await waitFor(() => expect(option).toBeEnabled())
+    readTopupPurchase.mockResolvedValueOnce({
+      status: 'error',
+      code: 'REQUEST_FAILED'
+    })
+
+    await userEvent.click(option)
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      "Payment couldn't be processed"
+    )
+    expect(hostedOption()).toBeEnabled()
+    expect(hosted).not.toHaveBeenCalled()
+  })
+
   it('locks the option while a new card is being tokenized', async () => {
     renderTopup({
       topupQuote: PAYS_ONCE,

@@ -69,6 +69,18 @@ const ledger = computed(() => {
 })
 
 const ending = computed(() => endingOf(page.value))
+
+const publishableKey = computed(() => stripeKey.value ?? '')
+
+const savesCardOffSession = computed(
+  () => autoTopUpConsent.value?.card.kind === 'none'
+)
+
+const endingWorkspace = computed(
+  () =>
+    session.value?.workspace.name ?? t('checkout.fullPage.ending.thisWorkspace')
+)
+
 const locked = computed(() => isLocked(page.value))
 
 function returnToProduct() {
@@ -89,9 +101,7 @@ function openBillingSettings() {
   <CheckoutEnding
     v-if="ending"
     :screen="ending"
-    :workspace="
-      session?.workspace.name ?? t('checkout.fullPage.ending.thisWorkspace')
-    "
+    :workspace="endingWorkspace"
     :closes-itself="openedByScript"
     @close="close"
     @retry="retryLoad"
@@ -119,12 +129,12 @@ function openBillingSettings() {
         "
         :page
         :charge
-        :publishable-key="stripeKey ?? ''"
+        :publishable-key="publishableKey"
         :can-pay="canPay"
         :reopening
         purchase="credits"
         :saved-methods="savedMethods"
-        :saves-card-off-session="autoTopUpConsent?.card.kind === 'none'"
+        :saves-card-off-session="savesCardOffSession"
         @phase="onPaymentPhase"
         @pay="pay"
         @retry-element="retryElement"
@@ -136,12 +146,11 @@ function openBillingSettings() {
         <template v-if="autoTopUpConsent && page.kind !== 'resolving'" #before>
           <AutoTopUpConsentCard class="mb-6" :consent="autoTopUpConsent" />
         </template>
-        <template
-          v-if="offersHostedMethods && page.kind === 'capture'"
-          #after="{ busy }"
-        >
+        <template v-if="offersHostedMethods" #after="{ busy, outcome }">
           <HostedMethodsOption
-            :disabled="!canPayHosted || busy"
+            :can-pay="canPayHosted"
+            :busy
+            :outcome
             @pay="payWithHostedMethods"
           />
         </template>

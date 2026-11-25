@@ -513,7 +513,10 @@ export function useFullPageTopup() {
 
   const offersHostedMethods = computed(
     () =>
-      hostedMethodsAllowed.value && paysOnce.value && autoTopUp === undefined
+      hostedMethodsAllowed.value &&
+      paysOnce.value &&
+      autoTopUp === undefined &&
+      page.value.kind === 'capture'
   )
 
   const canPayHosted = computed(() => {
@@ -527,20 +530,18 @@ export function useFullPageTopup() {
     )
   })
 
-  async function purchaseStillOpen(): Promise<boolean> {
-    if (purchaseId === undefined) return true
-    const read = await topup.readTopupPurchase(purchaseId)
-    return read.status === 'ok' && read.value.status === 'open'
-  }
-
   async function payWithHostedMethods() {
     if (!canPayHosted.value || !offersHostedMethods.value) return
     if (amountCents === undefined) return
     const mine = ++payGeneration
     dispatch({ type: 'paySubmitted' })
-    const open = await purchaseStillOpen()
+    if (purchaseId === undefined)
+      return requestHostedCheckout(mine, amountCents)
+    const read = await topup.readTopupPurchase(purchaseId)
     if (mine !== payGeneration) return
-    if (open) return requestHostedCheckout(mine, amountCents)
+    if (read.status !== 'ok') return follow(refusalVerdict(read))
+    if (read.value.status === 'open')
+      return requestHostedCheckout(mine, amountCents)
     dispatch({ type: 'payRejectedAsPending' })
     return reconcile()
   }
