@@ -492,12 +492,17 @@ Host changes outside the folder:
   `afterLoadGraph` hooks left it as the loaded state
   (`adoptLoadedGraph()`), so an edit such a hook makes, through a handle or
   not, is part of what the load gives, and the user's next undo does not take
-  it back. A user edit made while a slow `async` hook awaits is absorbed the
-  same way. After an undo or redo, until the user's next action (a pointer
-  press, key press, wheel turn or drop), the next undo or redo, or one second
-  after the restore (`RESTORE_SETTLING_MS`), whichever comes first, it takes a
-  change into the restored state instead of recording it, so a pack reacting
-  to the restore keeps redo (ADR-EXTENSIONS-NODE-API-0075 decision 13).
+  it back. The user's first pointer press, key press, wheel turn or drop
+  while the hooks run ends that: the graph as it is then is the loaded
+  state, and what changes after it, a user edit made while a slow `async`
+  hook awaits included, is an undo step that marks the workflow modified
+  (`beginLoadHooks()`, `endLoadHooks()`); during an undo or redo it also
+  ends the window below. After an undo or redo, until the user's next action
+  (a pointer press, key press, wheel turn or drop), the next undo or redo, or
+  one second after the restore (`RESTORE_SETTLING_MS`), whichever comes
+  first, it takes a change into the restored state instead of recording it,
+  so a pack reacting to the restore keeps redo
+  (ADR-EXTENSIONS-NODE-API-0075 decision 13).
 
 A graph's `configuring` event can cancel a load after `endDocument` and
 `beginDocument()` have run. No core listener cancels. If an extension does,

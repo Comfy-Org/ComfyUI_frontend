@@ -1383,11 +1383,17 @@ export class ComfyApp implements IComfyApp {
   private async completeGraphLoad(
     stopLoading: () => void
   ): Promise<LoadedComfyWorkflow | undefined> {
-    await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
-    const workflow = useWorkflowStore().activeWorkflow ?? undefined
-    workflow?.changeTracker.adoptLoadedGraph()
-    stopLoading()
-    return workflow
+    const tracker = useWorkflowStore().activeWorkflow?.changeTracker
+    tracker?.beginLoadHooks()
+    try {
+      await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
+      const workflow = useWorkflowStore().activeWorkflow ?? undefined
+      stopLoading()
+      workflow?.changeTracker.adoptLoadedGraph()
+      return workflow
+    } finally {
+      tracker?.endLoadHooks()
+    }
   }
 
   private stopLoadingGraph(graph: LGraph) {

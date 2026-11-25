@@ -400,6 +400,8 @@ export class ChangeTracker implements WorkflowChangeTracker {
   private restoreChain?: Promise<void>
   private settlingRestore = false
   private settlingTimer?: ReturnType<typeof setTimeout>
+  private loadHooks?: { userActed: boolean }
+  private userActedInRestore = false
   private readonly statesAcrossALoad = new WeakSet<ComfyWorkflowJSON>()
   private preview?: { interrupt: () => void; rollback: () => void }
 
@@ -442,6 +444,11 @@ export class ChangeTracker implements WorkflowChangeTracker {
    * @internal Not part of the public extension API.
    */
   userActed() {
+    if (this.loadHooks && !this.loadHooks.userActed) {
+      this.loadHooks.userActed = true
+      this.takeLoadedGraph()
+    }
+    if (this._restoringState) this.userActedInRestore = true
     this.endSettling()
   }
 
@@ -461,12 +468,31 @@ export class ChangeTracker implements WorkflowChangeTracker {
   }
 
   /**
-   * Takes the graph as the end of a load leaves it, with what its
-   * `afterLoadGraph` hooks changed, as the loaded state: no undo step.
+   * A load's `afterLoadGraph` hooks start; until {@link endLoadHooks}, the user's first input takes the graph as the loaded state.
+   *
+   * @internal Not part of the public extension API.
+   */
+  beginLoadHooks() {
+    this.loadHooks = { userActed: false }
+  }
+
+  /** @internal Not part of the public extension API. */
+  endLoadHooks() {
+    this.loadHooks = undefined
+  }
+
+  /**
+   * Takes the graph as the end of a load leaves it, with what its `afterLoadGraph` hooks changed, as the loaded state:
+   * no undo step. After a user input while the hooks ran, what changed since that input is an undo step instead.
    *
    * @internal Not part of the public extension API.
    */
   adoptLoadedGraph() {
+    if (!this.loadHooks?.userActed) this.takeLoadedGraph()
+    else this.captureCanvasState()
+  }
+
+  private takeLoadedGraph() {
     const { graph } = this.workflow
     if (!graph || !isActiveTracker(this) || !isCanvasOwner(this)) return
     this.adopt(graph.serialize() as ComfyWorkflowJSON)
@@ -770,17 +796,22 @@ export class ChangeTracker implements WorkflowChangeTracker {
           restored = result !== false && result !== undefined
         } finally {
           this._restoringState = false
+          const userActed = this.userActedInRestore
+          this.userActedInRestore = false
           restored ||=
             !ChangeTracker.graphEqual(this.activeState, previousState) &&
             matchesRestoredTarget(this.activeState, targetState, previousState)
           if (restored) {
             this.pushRestored(target, previousState, restoresHistory)
             if (restoresSavedState) this.initialState = clone(this.activeState)
-            this.beginSettling()
+            if (!userActed) this.beginSettling()
           } else {
             source.push(prevState)
           }
-          if (restored) this.finishRestore(previousState)
+          if (restored) {
+            this.finishRestore(previousState)
+            if (userActed) this.captureCanvasState()
+          }
         }
       }
     }

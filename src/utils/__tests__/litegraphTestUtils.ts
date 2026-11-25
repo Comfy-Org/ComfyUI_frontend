@@ -251,6 +251,8 @@ export function createMockChangeTracker(
     deactivate: vi.fn(),
     prepareForSave: vi.fn(),
     reset: vi.fn(),
+    beginLoadHooks: vi.fn(),
+    endLoadHooks: vi.fn(),
     adoptLoadedGraph: vi.fn(),
     userActed: vi.fn(),
     restore: vi.fn(),
