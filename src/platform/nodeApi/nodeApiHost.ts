@@ -8,16 +8,9 @@ export const useNodeApiHost = defineStore('nodeApiHost', () =>
   createNodeApiHost([useComfyApiStore()])
 )
 
-type Notice = {
-  [K in keyof VersionHost]: VersionHost[K] extends (...args: never[]) => void
-    ? K
-    : never
-}[keyof VersionHost]
-
-/** Fans each host call out to `versions`, in order. */
 export function createNodeApiHost(versions: readonly VersionHost[]) {
   const toEach =
-    <K extends Notice>(call: K) =>
+    <K extends keyof VersionHost>(call: K) =>
     (...args: Parameters<VersionHost[K]>) => {
       for (const version of versions)
         Reflect.apply(version[call], version, args)

@@ -422,11 +422,8 @@ export class ChangeTracker implements WorkflowChangeTracker {
     this.activeState = initialState
   }
 
-  /**
-   * Save the current state, or the state a load gave, as the initial state.
-   * Outside an undo or redo, a load of a state other than the one held makes
-   * an undo or redo across it a load too.
-   */
+  /** Saves the current state, or the state a load gave, as the initial state.
+   * A replacement load outside history restore makes the next undo or redo across its boundary a load too. */
   reset(state?: ComfyWorkflowJSON) {
     if (state) {
       if (!this._restoringState) this.markLoadBoundary(state)

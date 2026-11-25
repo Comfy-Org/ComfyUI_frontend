@@ -16,7 +16,6 @@ interface Entry<THandle extends object, TLive> {
   readonly resolveRoot: GraphResolver
   readonly locate: () => TLive | undefined
   stand(standing: Standing): void
-  /** While set aside, the handle reads only `entity`, the one it named before the restore; `undefined` ends that. */
   setAside(entity: object | undefined): void
 }
 
@@ -43,7 +42,6 @@ interface CacheOptions<TLive> {
   readonly entityOf?: (live: TLive) => object
 }
 
-/** The saved state an undo or redo configures. */
 export type RestoredState = FlattenableWorkflowGraph & { readonly id?: string }
 
 interface Restoring {
@@ -64,7 +62,7 @@ export interface DocumentHandles {
   beginDocument(): void
   /** Before an undo or redo configures `state` into `graph`: until {@link afterHistoryRestore}, a handle to a node of `graph` that `state` lacks, taken before or during the restore, reads only that node, and is not given out for another. */
   beforeHistoryRestore(graph: LGraph, state: RestoredState): void
-  /** Retires each handle whose entity is gone, or was given to another entity during the restore, and whose key its graph, or the root whose ids a gone subgraph shared, could give to a new entity. */
+  /** Retires each handle whose entity is gone and whose key its graph, or the root whose ids a gone subgraph shared, could give to a new entity, and each set-aside one whose key another entity took. */
   afterHistoryRestore(): void
   createCache<THandle extends object, TLive>(
     options?: CacheOptions<TLive>
