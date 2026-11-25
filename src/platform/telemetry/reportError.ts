@@ -263,6 +263,16 @@ function isSentryDeliverySatisfied(
   )
 }
 
+function recordSentryDelivery(
+  errorType: string,
+  sentryMode: SentryReportingMode,
+  delivered: boolean
+): void {
+  if (delivered && sentryMode === 'once_per_page') {
+    sentryErrorTypesDeliveredOnce.add(errorType)
+  }
+}
+
 function dispatch(
   error: Error,
   options: ReportErrorOptions,
@@ -303,9 +313,7 @@ function dispatch(
         level,
         fingerprint
       )
-      if (sentryDelivered && sentryMode === 'once_per_page') {
-        sentryErrorTypesDeliveredOnce.add(errorType)
-      }
+      recordSentryDelivery(errorType, sentryMode, sentryDelivered)
     }
     if (datadogRum) {
       datadogDelivered = dispatchToDatadog(
