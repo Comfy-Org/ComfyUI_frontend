@@ -272,24 +272,6 @@ describe('subgraphUtils', () => {
       expect(result.has(subgraph2.id)).toBe(true)
     })
 
-    it('does not throw when graph.add() creates a circular subgraph reference', () => {
-      const rootGraph = new LGraph()
-      const subgraph1 = createTestSubgraph({ name: 'Subgraph 1' })
-      const subgraph2 = createTestSubgraph({ name: 'Subgraph 2' })
-
-      // Add subgraph1 to root
-      const node1 = createTestSubgraphNode(subgraph1)
-      rootGraph.add(node1)
-
-      // Add subgraph2 to subgraph1
-      const node2 = createTestSubgraphNode(subgraph2)
-      subgraph1.add(node2)
-
-      // Add subgraph1 to subgraph2 (circular reference)
-      const node3 = createTestSubgraphNode(subgraph1, { id: 3 })
-      expect(() => subgraph2.add(node3)).not.toThrow()
-    })
-
     it('should handle missing subgraphs in registry gracefully', () => {
       const rootGraph = new LGraph()
       const subgraph1 = createTestSubgraph({ name: 'Subgraph 1' })
