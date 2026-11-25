@@ -1,8 +1,9 @@
-import { StorageSerializers, useStorage } from '@vueuse/core'
+import { StorageSerializers } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 
 import type { ServerFeatureFlag } from '@/platform/remoteConfig/serverFeatureFlag'
+import { useSafeLocalStorage } from '@/platform/storage/useSafeStorage'
 
 import type { RemoteConfig } from './types'
 
@@ -45,15 +46,13 @@ export const useRemoteConfigStore = defineStore('remoteConfig', () => {
   const agentGrantValidUntil = ref<number>()
   let agentGrantExpiryTimer: ReturnType<typeof setTimeout> | undefined
 
-  const cachedBillingControlEnabled = useStorage<boolean | undefined>(
+  const cachedBillingControlEnabled = useSafeLocalStorage<boolean | undefined>(
     'billing_control_enabled' satisfies `${ServerFeatureFlag.BILLING_CONTROL_ENABLED}`,
-    undefined,
     undefined,
     { serializer: StorageSerializers.boolean }
   )
-  const cachedV1PaymentRecovery = useStorage<boolean | undefined>(
+  const cachedV1PaymentRecovery = useSafeLocalStorage<boolean | undefined>(
     'v1_payment_recovery' satisfies `${ServerFeatureFlag.V1_PAYMENT_RECOVERY}`,
-    undefined,
     undefined,
     { serializer: StorageSerializers.boolean }
   )

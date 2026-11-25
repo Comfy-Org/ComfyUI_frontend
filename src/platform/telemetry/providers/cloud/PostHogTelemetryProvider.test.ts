@@ -1171,34 +1171,74 @@ describe('PostHogTelemetryProvider', () => {
             thread_id: 'thread-1',
             workflow_id: 'workflow-2',
             prev_workflow_id: 'workflow-1',
-            bind_source: 'selector_chip'
+            bind_source: 'active_tab'
           }),
         properties: {
           thread_id: 'thread-1',
           workflow_id: 'workflow-2',
           prev_workflow_id: 'workflow-1',
-          bind_source: 'selector_chip'
+          bind_source: 'active_tab'
         }
       },
       {
         event: TelemetryEvents.AGENT_RUN_APPROVAL_SHOWN,
         track: (provider: PostHogTelemetryProvider) =>
           provider.trackAgentRunApprovalShown({
+            ask_id: 'ask-1',
             turn_id: 'turn-1',
             workflow_id: null
           }),
-        properties: { turn_id: 'turn-1', workflow_id: null }
+        properties: { ask_id: 'ask-1', turn_id: 'turn-1', workflow_id: null }
       },
       {
         event: TelemetryEvents.AGENT_RUN_APPROVAL_RESOLVED,
         track: (provider: PostHogTelemetryProvider) =>
           provider.trackAgentRunApprovalResolved({
+            ask_id: 'ask-1',
+            turn_id: 'turn-1',
             decision: 'open_workflow',
             time_to_decide_ms: 500
           }),
         properties: {
+          ask_id: 'ask-1',
+          turn_id: 'turn-1',
           decision: 'open_workflow',
           time_to_decide_ms: 500
+        }
+      },
+      {
+        event: TelemetryEvents.AGENT_RUN_APPROVAL_ANSWER_FAILED,
+        track: (provider: PostHogTelemetryProvider) =>
+          provider.trackAgentRunApprovalAnswerFailed({
+            ask_id: 'ask-1',
+            turn_id: 'turn-1'
+          }),
+        properties: { ask_id: 'ask-1', turn_id: 'turn-1' }
+      },
+      {
+        event: TelemetryEvents.AGENT_RUN_APPROVAL_RECOVERY_ATTEMPTED,
+        track: (provider: PostHogTelemetryProvider) =>
+          provider.trackAgentRunApprovalRecoveryAttempted({
+            ask_id: 'ask-1',
+            turn_id: 'turn-1',
+            cause: 'reconnect'
+          }),
+        properties: { ask_id: 'ask-1', turn_id: 'turn-1', cause: 'reconnect' }
+      },
+      {
+        event: TelemetryEvents.AGENT_RUN_APPROVAL_RECOVERY_OUTCOME,
+        track: (provider: PostHogTelemetryProvider) =>
+          provider.trackAgentRunApprovalRecoveryOutcome({
+            ask_id: 'ask-1',
+            turn_id: 'turn-1',
+            cause: 'reconnect',
+            outcome: 'restored'
+          }),
+        properties: {
+          ask_id: 'ask-1',
+          turn_id: 'turn-1',
+          cause: 'reconnect',
+          outcome: 'restored'
         }
       },
       {

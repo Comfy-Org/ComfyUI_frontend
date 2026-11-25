@@ -50,7 +50,6 @@ async function startGeneration(
   nodeId: string
 ) {
   const jobId = await exec.run()
-  exec.executionStart(jobId)
   exec.executing(jobId, nodeId)
   exec.nodeRunning(jobId, nodeId, 0, 1)
   ws.send(progressTextFrame(nodeId, RUNNING_STATUS))

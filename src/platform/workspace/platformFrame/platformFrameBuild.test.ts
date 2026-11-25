@@ -148,6 +148,18 @@ describe('keeping a build across a reload', () => {
     expect(readKeptBuild()).toBeNull()
   })
 
+  it('preserves the kept build when storage cannot be read', () => {
+    const build = following()
+    keepBuild(build)
+    const read = vi.spyOn(sessionStorage, 'getItem').mockImplementation(() => {
+      throw new DOMException('Storage denied', 'SecurityError')
+    })
+
+    expect(readKeptBuild()).toBeNull()
+    read.mockRestore()
+    expect(readKeptBuild()).toEqual(build)
+  })
+
   it('drops a build kept too long ago', () => {
     keepBuild(following())
     vi.setSystemTime(NOW + KEPT_BUILD_MAX_AGE_MS + 1)

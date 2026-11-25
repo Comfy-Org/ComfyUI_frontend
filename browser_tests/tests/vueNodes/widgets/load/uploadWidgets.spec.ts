@@ -104,6 +104,24 @@ test.describe('Vue Upload Widgets', { tag: '@vue-nodes' }, () => {
       )
     })
 
+    test.describe('in a viewport shorter than the image picker', () => {
+      test.use({ viewport: { width: 1280, height: 520 } })
+
+      test('fits the image picker without scrolling the panel itself', async ({
+        comfyPage
+      }) => {
+        const dropdown = WidgetSelectDropdownFixture.fromTrigger(
+          comfyPage.vueNodes
+            .getNodeByTitle('Load Image')
+            .getByRole('button', { name: 'image', exact: true })
+        )
+        await dropdown.open()
+
+        await expect(dropdown.menu).toBeInViewport({ ratio: 1 })
+        await expect.poll(() => dropdown.popoverScrolls()).toBe(false)
+      })
+    })
+
     test('keeps a selected image loaded when it is selected again', async ({
       comfyPage
     }) => {

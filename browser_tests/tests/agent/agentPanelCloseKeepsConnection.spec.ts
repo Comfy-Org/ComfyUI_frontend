@@ -105,14 +105,6 @@ test.describe(
       })
 
       await test.step('bind the workflow and run a turn so a follower session exists', async () => {
-        const picker = panel.getByRole('button', {
-          name: enMessages.agent.switchWorkflow
-        })
-        await picker.click()
-        await page
-          .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
-          .click()
-        await expect(picker).toHaveText('Unsaved Workflow')
         await expect.poll(() => hostSocket.connectionCount()).toBe(1)
 
         const composer = panel.getByRole('textbox', {

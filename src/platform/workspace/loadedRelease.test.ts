@@ -169,6 +169,26 @@ describe('loadedReleaseId', () => {
     expect(loadedReleaseId()).toBe('r-2')
   })
 
+  it('retains the release hint when storage cannot be read temporarily', async () => {
+    await bootOn()
+    handledReleaseChange(releaseChanged)
+    const getItem = sessionStorage.getItem.bind(sessionStorage)
+    const read = vi
+      .spyOn(sessionStorage, 'getItem')
+      .mockImplementation((key) => {
+        if (key === KEPT_RELEASE_KEY) throw new Error('Storage unavailable')
+        return getItem(key)
+      })
+
+    takeReleaseKeptForReload()
+    expect(loadedReleaseId()).toBe('r-2')
+    read.mockRestore()
+    takeReleaseKeptForReload()
+
+    expect(loadedReleaseId()).toBe('r-3')
+    expect(sessionStorage.getItem(KEPT_RELEASE_KEY)).toBeNull()
+  })
+
   it.for([
     { booted: 'r-2', listed: 'r-2', loaded: 'r-3' },
     { booted: 'r-2', listed: 'r-3', loaded: 'r-3' },
@@ -277,7 +297,8 @@ describe('handledReleaseChange', () => {
     await vi.advanceTimersByTimeAsync(0)
 
     expect(confirmUnsavedWorkBeforeSwitch).toHaveBeenCalledWith(
-      'Studio Build · production'
+      'Studio Build · production',
+      { reload: true }
     )
   })
 
@@ -294,7 +315,8 @@ describe('handledReleaseChange', () => {
     await vi.advanceTimersByTimeAsync(0)
 
     expect(confirmUnsavedWorkBeforeSwitch).toHaveBeenCalledWith(
-      'the new version'
+      'the new version',
+      { reload: true }
     )
   })
 
@@ -319,7 +341,8 @@ describe('handledReleaseChange', () => {
     await vi.advanceTimersByTimeAsync(0)
 
     expect(confirmUnsavedWorkBeforeSwitch).toHaveBeenCalledWith(
-      'the new version'
+      'the new version',
+      { reload: true }
     )
   })
 
@@ -342,7 +365,8 @@ describe('handledReleaseChange', () => {
     await vi.advanceTimersByTimeAsync(0)
 
     expect(confirmUnsavedWorkBeforeSwitch).toHaveBeenCalledWith(
-      'the new version'
+      'the new version',
+      { reload: true }
     )
     expect(reloadForDeploymentSwitch).toHaveBeenCalledOnce()
   })
@@ -366,7 +390,8 @@ describe('handledReleaseChange', () => {
     await vi.advanceTimersByTimeAsync(0)
 
     expect(confirmUnsavedWorkBeforeSwitch).toHaveBeenCalledWith(
-      'Studio Build · staging'
+      'Studio Build · staging',
+      { reload: true }
     )
   })
 
@@ -419,7 +444,8 @@ describe('handledReleaseChange', () => {
     await vi.advanceTimersByTimeAsync(0)
 
     expect(confirmUnsavedWorkBeforeSwitch).toHaveBeenCalledWith(
-      'the new version'
+      'the new version',
+      { reload: true }
     )
   })
 
@@ -456,7 +482,8 @@ describe('handledReleaseChange', () => {
     await vi.advanceTimersByTimeAsync(0)
 
     expect(confirmUnsavedWorkBeforeSwitch).toHaveBeenCalledWith(
-      'Studio Build · production'
+      'Studio Build · production',
+      { reload: true }
     )
     expect(skipLeavePromptOnce).toHaveBeenCalledOnce()
     expect(reloadForDeploymentSwitch).toHaveBeenCalledOnce()
