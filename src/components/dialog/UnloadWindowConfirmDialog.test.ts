@@ -7,6 +7,7 @@ import {
   skipLeavePromptOnce,
   takeLeavePromptSkip
 } from '@/platform/workflow/management/leavePrompt'
+import type { WorkflowChangeTracker } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { MAX_DRAFTS } from '@/platform/workflow/persistence/base/draftTypes'
@@ -103,6 +104,9 @@ describe('UnloadWindowConfirmDialog', () => {
         isModified: true,
         isTemporary: true,
         lastModified: 0,
+        changeTracker: fromPartial<WorkflowChangeTracker>({
+          hasPreview: false
+        }),
         activeState: structuredClone(blankGraph)
       })
       Object.assign(useWorkflowStore(), {
@@ -117,26 +121,40 @@ describe('UnloadWindowConfirmDialog', () => {
       })
     })
 
-    it('checkpoints the latest active edits before leaving without marking them saved', () => {
-      render(UnloadWindowConfirmDialog)
+    it.for([false, true])(
+      'checkpoints recovery with preview active: %s',
+      (hasPreview) => {
+        const active = useWorkflowStore().activeWorkflow
+        expect(active).toBeDefined()
+        if (active)
+          active.changeTracker = fromPartial<WorkflowChangeTracker>({
+            hasPreview
+          })
+        render(UnloadWindowConfirmDialog)
 
-      expect(leavePage().defaultPrevented).toBe(false)
+        expect(leavePage().defaultPrevented).toBe(false)
 
-      const draft = useWorkflowDraftStoreV2().getDraft('workflows/active.json')
-      expect(JSON.parse(draft?.data ?? 'null')?.extra).toEqual({
-        marker: 'latest edit, not the tracker snapshot'
-      })
-      expect(useWorkflowStore().activeWorkflow?.isModified).toBe(true)
-      expect(
-        JSON.parse(
-          localStorage.getItem(StorageKeys.lastOpenPaths('personal')) ?? 'null'
+        const draft = useWorkflowDraftStoreV2().getDraft(
+          'workflows/active.json'
         )
-      ).toEqual({
-        workspaceId: 'personal',
-        paths: ['workflows/active.json'],
-        activeIndex: 0
-      })
-    })
+        expect(JSON.parse(draft?.data ?? 'null')?.extra).toEqual(
+          hasPreview
+            ? blankGraph.extra
+            : { marker: 'latest edit, not the tracker snapshot' }
+        )
+        expect(useWorkflowStore().activeWorkflow?.isModified).toBe(true)
+        expect(
+          JSON.parse(
+            localStorage.getItem(StorageKeys.lastOpenPaths('personal')) ??
+              'null'
+          )
+        ).toEqual({
+          workspaceId: 'personal',
+          paths: ['workflows/active.json'],
+          activeIndex: 0
+        })
+      }
+    )
 
     it.for([
       { damage: 'none', lastModified: 0, asks: false },

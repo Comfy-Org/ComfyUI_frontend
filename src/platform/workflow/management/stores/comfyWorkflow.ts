@@ -69,6 +69,7 @@ export interface WorkflowChangeTracker {
   undoQueue: ComfyWorkflowJSON[]
   redoQueue: ComfyWorkflowJSON[]
   changeCount: number
+  readonly hasPreview: boolean
   _restoringState: boolean
   ds?: { scale: number; offset: [number, number] }
   nodeOutputs?: Partial<Record<string, ExecutedWsMessage['output']>>
@@ -80,6 +81,7 @@ export interface WorkflowChangeTracker {
   updateModified(previousState?: ComfyWorkflowJSON): void
   captureCanvasState(): void
   markModified(): void
+  beginPreview(interrupt: () => void, rollback?: () => void): () => void
   checkState(): void
   updateState(
     source: ComfyWorkflowJSON[],
@@ -538,7 +540,7 @@ export class ComfyWorkflow extends UserFile {
     const savedFile = await super.save({ force: true })
     if (!tracker || this.changeTracker !== tracker) return savedFile
 
-    tracker.prepareForSave()
+    if (isCanvasOwner(tracker)) tracker.captureCanvasState()
     tracker.initialState = savedState
     this.isModified = !runtime.graphEqual(savedState, tracker.activeState)
     if (draftScope === runtime.getDraftScope()) {
