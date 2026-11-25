@@ -1,17 +1,13 @@
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import {
-  LGraph,
-  LGraphBadge,
-  LGraphCanvas,
-  LGraphNode
-} from '@/lib/litegraph/src/litegraph'
+import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphBadge, LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
 import {
   createMockCanvasRenderingContext2D,
-  stubCanvasGetContext
+  createTestCanvas
 } from '@/utils/__tests__/canvasTestUtils'
 import type { Comfy, BadgeDef } from '@/platform/nodeApi/v4/types'
 import { expectRefusal } from '@/platform/nodeApi/v4/__tests__/refusal'
@@ -195,15 +191,10 @@ describe('node badges', () => {
 
   describe('on the canvas', () => {
     function canvasShowing(node: LGraphNode): LGraphCanvas {
-      stubCanvasGetContext()
-      const element = document.createElement('canvas')
-      element.width = 800
-      element.height = 600
-      element.getBoundingClientRect = () => new DOMRect(0, 0, 800, 600)
-      const canvas = new LGraphCanvas(element, graph, {
-        skip_render: true,
-        skip_events: true
-      })
+      const canvas = createTestCanvas(
+        graph,
+        createMockCanvasRenderingContext2D()
+      )
       canvas.visible_nodes = [node]
       return canvas
     }
