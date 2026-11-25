@@ -153,10 +153,10 @@ function isUnboundedQueryOpener(text: string, start: number): boolean {
 
 const MAX_REDACTABLE_TEXT_LENGTH = 16_384
 const WHITESPACE_PATTERN = /\s/
-const ABSOLUTE_URL_START = /(?:https?:)?\/\/[^\s"'<>?#]+/.source
-const ROOT_RELATIVE_URL_START =
-  /(?<!\d)\/(?!\/|https?:\/\/)(?:[A-Za-z._~%-]|\d(?:[A-Za-z0-9._~%/-]|(?=[?#]))|(?=[?#]))[A-Za-z0-9._~%/-]*/
-    .source
+const ABSOLUTE_URL_HEAD = String.raw`(?:https?:)?\/\/[^\s"'<>?#]`
+const ABSOLUTE_URL_START = `${ABSOLUTE_URL_HEAD}+`
+const ROOT_RELATIVE_URL_HEAD = String.raw`(?<!\d)\/(?!\/|https?:\/\/)(?:[A-Z._~%-]|\d(?:[A-Z0-9._~%/-]|(?=[?#]))|(?=[?#]))[A-Z0-9._~%/-]`
+const ROOT_RELATIVE_URL_START = `${ROOT_RELATIVE_URL_HEAD}*`
 const WORD_OR_PATH_CHAR = `[A-Z0-9._~%/-]`
 const RELATIVE_WORD_CORE =
   /(?!\d+\/\d+[?#])[A-Z0-9_~%-]+(?:[./]+(?:[A-Z0-9_~%-]+|(?=[?#])))*/.source
@@ -164,10 +164,8 @@ const RELATIVE_WORD_CORE_WITH_SEPARATOR =
   /(?!\d+\/\d+[?#])[A-Z0-9_~%-]+(?:[./]+[A-Z0-9_~%-]+)+/.source
 const RELATIVE_URL_START = `(?<!${WORD_OR_PATH_CHAR})${RELATIVE_WORD_CORE}`
 const RELATIVE_URL_START_WITH_SEPARATOR = `(?<!${WORD_OR_PATH_CHAR})${RELATIVE_WORD_CORE_WITH_SEPARATOR}`
-const ABSOLUTE_URL_START_BOUNDED = `(?:https?:)?\\/\\/[^\\s"'<>?#]{1,200}`
-const ROOT_RELATIVE_URL_START_BOUNDED =
-  `(?<!\\d)\\/(?!\\/|https?:\\/\\/)(?:[A-Za-z._~%-]|\\d(?:[A-Za-z0-9._~%/-]|(?=[?#]))|(?=[?#]))` +
-  `[A-Za-z0-9._~%/-]{0,200}`
+const ABSOLUTE_URL_START_BOUNDED = `${ABSOLUTE_URL_HEAD}{1,200}`
+const ROOT_RELATIVE_URL_START_BOUNDED = `${ROOT_RELATIVE_URL_HEAD}{0,200}`
 const URL_START_BOUNDED = `(?:${ABSOLUTE_URL_START_BOUNDED}|${ROOT_RELATIVE_URL_START_BOUNDED}|${RELATIVE_URL_START})`
 
 const QUOTE_IMMEDIATE_END = `\\s|$`
@@ -219,8 +217,10 @@ const RELATIVE_QUERY_OPENER_PATTERN = new RegExp(
 function redactUrlToken(token: string): string {
   let redacted = ''
   let tokenStart = 0
+  const metadataMatch = token.search(/[?#]/)
+  const metadataStart = metadataMatch === -1 ? token.length : metadataMatch
   for (;;) {
-    const boundary = findGluedUrlBoundary(token, tokenStart)
+    const boundary = findGluedUrlBoundary(token, tokenStart, metadataStart)
     if (!boundary) {
       redacted += redactSingleUrlToken(token.slice(tokenStart))
       break
@@ -244,26 +244,16 @@ function redactSingleUrlToken(token: string): string {
   return `${prefix}${authority.slice(userInfoEnd + 1)}${path}${trailing}`
 }
 
-/**
- * Once a query or fragment has opened earlier in the token, a later `//`
- * candidate is always treated as still inside that open metadata - whether
- * or not it's glued on by punctuation - rather than guessing from what
- * follows it whether it's an independent sibling URL or a nested value. A
- * nested URL's own `?`/`#` doesn't retroactively close the outer one, and
- * there's no reliable way to tell "sibling" from "nested value" from the
- * surrounding punctuation alone; failing closed here matches how the rest
- * of this module treats that ambiguity.
- */
 function findGluedUrlBoundary(
   token: string,
-  tokenStart: number
+  tokenStart: number,
+  metadataStart: number
 ): { separator: number; nextUrl: number } | undefined {
   const urlStartPattern = /(?:https?:)?\/\//gi
   urlStartPattern.lastIndex = tokenStart + 1
-  const metadataOpensAt = findMetadataOpenIndex(token, tokenStart)
   for (const match of token.matchAll(urlStartPattern)) {
     const nextUrl = match.index
-    if (metadataOpensAt !== undefined && metadataOpensAt < nextUrl) continue
+    if (nextUrl > metadataStart) return undefined
     const separator = findSeparatorStart(token, nextUrl)
     if (
       match[0] !== '//' ||
@@ -280,19 +270,10 @@ function findGluedUrlBoundary(
 
 function findSeparatorStart(token: string, nextUrl: number): number {
   let separator = nextUrl
-  while (separator > 0 && /[[\](){};,|]/.test(token[separator - 1])) {
+  while (separator > 0 && /[[\](){};,|']/.test(token[separator - 1])) {
     separator--
   }
   return separator
-}
-
-function findMetadataOpenIndex(
-  token: string,
-  from: number
-): number | undefined {
-  const metadataPattern = /[?#]/g
-  metadataPattern.lastIndex = from
-  return metadataPattern.exec(token)?.index
 }
 
 function peelTrailingPunctuation(token: string): {
@@ -383,7 +364,7 @@ export function redactTelemetryError(error: unknown): Error {
     try {
       source = new Error(String(error))
     } catch {
-      source = new Error('[Redacted]')
+      source = new Error(REDACTION_SENTINEL)
     }
   }
   return redactError(
@@ -633,24 +614,10 @@ function readInheritedString(
   return undefined
 }
 
-/**
- * A fresh Error's own `stack` getter is the engine's single shared native
- * function object across every instance in the realm (verified on V8 and
- * used wherever an engine implements `stack` as an accessor at all) - no
- * introspection of a function's `name` or `toString` output can prove
- * native-ness, since both are forgeable (`Function.prototype.bind` always
- * reports native-looking `toString` text, and `name` is configurable), but
- * object identity cannot be forged. An engine that instead exposes `stack`
- * as a plain data property never reaches this check at all.
- */
 const NATIVE_STACK_GETTER = Object.getOwnPropertyDescriptor(
   new Error(),
   'stack'
 )?.get
-
-function isNativeStackGetter(getter: (() => unknown) | undefined): boolean {
-  return getter !== undefined && getter === NATIVE_STACK_GETTER
-}
 
 function hasCustomStackFormatter(): boolean {
   let current: object | null = Error
@@ -690,14 +657,14 @@ function readAccessor(
   if (
     key !== 'stack' ||
     !descriptor.get ||
-    !isNativeStackGetter(descriptor.get) ||
+    descriptor.get !== NATIVE_STACK_GETTER ||
     hasUnsafeStackHeader(source, 'message') ||
     hasUnsafeStackHeader(source, 'name') ||
     hasCustomStackFormatter()
   ) {
     return REDACTION_SENTINEL
   }
-  const stack = descriptor.get.call(source)
+  const stack: unknown = Reflect.apply(descriptor.get, source, [])
   return typeof stack === 'string' ? stack : REDACTION_SENTINEL
 }
 

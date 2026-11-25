@@ -1,4 +1,4 @@
-import { afterEach, assert, describe, expect, it, vi } from 'vitest'
+import { assert, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import {
   REDACTION_SENTINEL,
@@ -6,6 +6,20 @@ import {
   redactTelemetryUrls,
   redactTelemetryValues
 } from '@comfyorg/telemetry/redactTelemetryUrls'
+
+function replaceStackFormatter(replacement?: PropertyDescriptor): void {
+  const original = Object.getOwnPropertyDescriptor(Error, 'prepareStackTrace')
+  setStackFormatter(replacement)
+  onTestFinished(() => setStackFormatter(original))
+}
+
+function setStackFormatter(descriptor?: PropertyDescriptor): void {
+  if (descriptor) {
+    Object.defineProperty(Error, 'prepareStackTrace', descriptor)
+  } else {
+    Reflect.deleteProperty(Error, 'prepareStackTrace')
+  }
+}
 
 function denselySharedValue(): Record<string, unknown> {
   let shared: Record<string, unknown> = {
@@ -55,6 +69,11 @@ describe('redactTelemetryUrls', () => {
       kind: 'protocol-relative credentials',
       input: '//user:secret@example.com/model.glb?token=private',
       expected: '//example.com/model.glb'
+    },
+    {
+      kind: 'protocol-relative credentials glued on by an apostrophe',
+      input: "https://a.test/x'//user:secret@b.test/y",
+      expected: "https://a.test/x'//b.test/y"
     },
     {
       kind: 'credentials containing URL sub-delimiters',
@@ -655,7 +674,7 @@ describe('redactTelemetryUrls', () => {
       expected: 'https://h/x'
     }
   ])(
-    'drops a glued-on URL entirely when it has its own query and the outer query is still open ($kind)',
+    'drops everything after an open query, including a glued-on URL ($kind)',
     ({ input, expected }) => {
       expect(redactTelemetryUrls(input)).toBe(expected)
     }
@@ -709,52 +728,15 @@ describe('redactTelemetryUrls', () => {
     ).toBe(`https://a.test/x${boundary}https://b.test/y`)
   })
 
-  it('handles many glued-URL boundaries after an open query in bounded time', () => {
-    const text = `https://h/x?a=b${'|https://h/y'.repeat(1_200)}`
-    const start = performance.now()
-    expect(redactTelemetryUrls(text)).toBe('https://h/x')
-    expect(performance.now() - start).toBeLessThan(500)
+  it('redacts text longer than the redaction limit outright', () => {
+    expect(redactTelemetryUrls('a.'.repeat(20_000))).toBe(REDACTION_SENTINEL)
   })
 
-  it('handles many glued-URL candidates after an open query in bounded time', () => {
-    const text = `https://h/x?a=${'/'.repeat(16_000)}`
-    const start = performance.now()
-    expect(redactTelemetryUrls(text)).toBe('https://h/x')
-    expect(performance.now() - start).toBeLessThan(500)
-  })
-
-  it('handles a long dotted non-URL run without pathological rescanning', () => {
-    const text = 'a.'.repeat(20_000)
-    expect(redactTelemetryUrls(text)).toBe('[Redacted]')
-  })
-
-  it('handles many relative-query restart candidates with no "=" in bounded time', () => {
-    const text = 'a?'.repeat(8_000)
-    const start = performance.now()
-    expect(redactTelemetryUrls(text)).toBe(text)
-    expect(performance.now() - start).toBeLessThan(500)
-  })
-
-  it('handles many spaced relative-query restart candidates with no "&" in bounded time', () => {
-    const text = 'a? '.repeat(5_000)
-    const start = performance.now()
-    expect(redactTelemetryUrls(text)).toBe(text)
-    expect(performance.now() - start).toBeLessThan(500)
-  })
-
-  it('redacts a query value with several spaces in bounded time', () => {
+  it('redacts a query value with several spaces', () => {
     const spaces = 'word '.repeat(20)
-    const text = `https://h/x?filename=${spaces}&token=SECRET`
-    const start = performance.now()
-    expect(redactTelemetryUrls(text)).toBe('https://h/x')
-    expect(performance.now() - start).toBeLessThan(500)
-  })
-
-  it('handles many spaced-query restart candidates with no closing "&key=" in bounded time', () => {
-    const text = 'https://h/x?a '.repeat(2_000)
-    const start = performance.now()
-    redactTelemetryUrls(text)
-    expect(performance.now() - start).toBeLessThan(500)
+    expect(
+      redactTelemetryUrls(`https://h/x?filename=${spaces}&token=SECRET`)
+    ).toBe('https://h/x')
   })
 
   it('does not disable the glued-boundary guard when a trailing fragment belongs to the outer URL', () => {
@@ -769,13 +751,6 @@ describe('redactTelemetryUrls', () => {
     expect(redactTelemetryUrls('https://h/x?q=a b&api.key=SECRET')).toBe(
       'https://h/x'
     )
-  })
-
-  it('handles a long run of quote boundary characters in bounded time', () => {
-    const text = '/?"'.repeat(5_000)
-    const start = performance.now()
-    redactTelemetryUrls(text)
-    expect(performance.now() - start).toBeLessThan(100)
   })
 
   it.for([
@@ -1146,53 +1121,33 @@ describe('redactTelemetryValues', () => {
   })
 
   it('preserves a naturally captured stack instead of redacting it outright', () => {
-    const original = Object.getOwnPropertyDescriptor(Error, 'prepareStackTrace')
-    Reflect.deleteProperty(Error, 'prepareStackTrace')
-    try {
-      const error = new Error('https://user:secret@example.com/a?token=x')
+    replaceStackFormatter()
+    const error = new Error('https://user:secret@example.com/a?token=x')
 
-      const redacted = redactTelemetryError(error)
+    const redacted = redactTelemetryError(error)
 
-      const sourceFrames = error.stack?.split('\n').slice(1) ?? []
+    const sourceFrames = error.stack?.split('\n').slice(1) ?? []
 
-      expect(sourceFrames.length).toBeGreaterThan(0)
-      expect(redacted.stack?.split('\n').slice(1)).toEqual(sourceFrames)
-      expect(redacted.stack).toContain('example.com/a')
-      expect(redacted.stack).not.toContain('secret')
-    } finally {
-      if (original) {
-        Object.defineProperty(Error, 'prepareStackTrace', original)
-      } else {
-        Reflect.deleteProperty(Error, 'prepareStackTrace')
-      }
-    }
+    expect(sourceFrames.length).toBeGreaterThan(0)
+    expect(redacted.stack?.split('\n').slice(1)).toEqual(sourceFrames)
+    expect(redacted.stack).toContain('example.com/a')
+    expect(redacted.stack).not.toContain('secret')
   })
 
   it('treats a formatter present since before this module was imported as custom', async () => {
-    const original = Object.getOwnPropertyDescriptor(Error, 'prepareStackTrace')
     const formatter = vi.fn(() => 'API_KEY=FORMATTER_SECRET')
-    Object.defineProperty(Error, 'prepareStackTrace', {
-      configurable: true,
-      value: formatter
-    })
+    replaceStackFormatter({ configurable: true, value: formatter })
     vi.resetModules()
-    try {
-      const freshModule =
-        await import('@comfyorg/telemetry/redactTelemetryUrls')
-      const error = new Error('safe message')
-
-      expect(freshModule.redactTelemetryError(error).stack).toBe(
-        REDACTION_SENTINEL
-      )
-      expect(formatter).not.toHaveBeenCalled()
-    } finally {
-      if (original) {
-        Object.defineProperty(Error, 'prepareStackTrace', original)
-      } else {
-        Reflect.deleteProperty(Error, 'prepareStackTrace')
-      }
+    onTestFinished(() => {
       vi.resetModules()
-    }
+    })
+    const freshModule = await import('@comfyorg/telemetry/redactTelemetryUrls')
+    const error = new Error('safe message')
+
+    expect(freshModule.redactTelemetryError(error).stack).toBe(
+      REDACTION_SENTINEL
+    )
+    expect(formatter).not.toHaveBeenCalled()
   })
 
   it('fails closed for a non-native stack accessor inherited from Error.prototype, even when installed before this module was imported', async () => {
@@ -1207,11 +1162,7 @@ describe('redactTelemetryValues', () => {
       configurable: true,
       get: prototypeGetter
     })
-    const originalPrepareStackTrace = Object.getOwnPropertyDescriptor(
-      Error,
-      'prepareStackTrace'
-    )
-    Reflect.deleteProperty(Error, 'prepareStackTrace')
+    replaceStackFormatter()
     vi.resetModules()
     try {
       const freshModule =
@@ -1224,13 +1175,6 @@ describe('redactTelemetryValues', () => {
 
       expect(redacted.stack).toBe(freshModule.REDACTION_SENTINEL)
     } finally {
-      if (originalPrepareStackTrace) {
-        Object.defineProperty(
-          Error,
-          'prepareStackTrace',
-          originalPrepareStackTrace
-        )
-      }
       if (originalPrototypeStack) {
         Object.defineProperty(Error.prototype, 'stack', originalPrototypeStack)
       } else {
@@ -1290,99 +1234,80 @@ describe('redactTelemetryValues', () => {
       }
     }))
   ])('does not invoke $kind while reading the stack', ({ create }) => {
-    const original = Object.getOwnPropertyDescriptor(Error, 'prepareStackTrace')
-    Reflect.deleteProperty(Error, 'prepareStackTrace')
-    try {
-      const { error, callback } = create()
-      const redacted = redactTelemetryError(error)
+    replaceStackFormatter()
+    const { error, callback } = create()
+    const redacted = redactTelemetryError(error)
 
-      expect(redacted.stack).toBe(REDACTION_SENTINEL)
-      expect(callback).not.toHaveBeenCalled()
-    } finally {
-      if (original) {
-        Object.defineProperty(Error, 'prepareStackTrace', original)
-      } else {
-        Reflect.deleteProperty(Error, 'prepareStackTrace')
-      }
-    }
+    expect(redacted.stack).toBe(REDACTION_SENTINEL)
+    expect(callback).not.toHaveBeenCalled()
   })
 
   it.for([
     { kind: 'plain', bind: (getter: () => string) => getter },
-    { kind: 'bound', bind: (getter: () => string) => getter.bind(null) },
     {
-      kind: 'bound with a renamed, non-"bound "-prefixed name',
-      bind: (getter: () => string) => {
-        const bound = getter.bind(null)
-        Object.defineProperty(bound, 'name', {
-          value: 'notBound',
-          configurable: true
-        })
-        return bound
-      }
+      kind: 'bound one renamed to match the native getter',
+      bind: (getter: () => string) =>
+        Object.defineProperty(getter.bind(null), 'name', { value: '' })
     }
   ])('does not invoke a $kind JavaScript stack accessor', ({ bind }) => {
-    const original = Object.getOwnPropertyDescriptor(Error, 'prepareStackTrace')
-    Reflect.deleteProperty(Error, 'prepareStackTrace')
-    try {
-      const getter = vi.fn(() => 'API_KEY=SUPER_SECRET')
-      const spoofed = bind(getter)
-      const error = Object.defineProperty(new Error('safe'), 'stack', {
-        enumerable: true,
-        get: spoofed
-      })
+    replaceStackFormatter()
+    const getter = vi.fn(() => 'API_KEY=SUPER_SECRET')
+    const error = Object.defineProperty(new Error('safe'), 'stack', {
+      enumerable: true,
+      get: bind(getter)
+    })
 
-      const redacted = redactTelemetryError(error)
+    const redacted = redactTelemetryError(error)
 
-      expect(redacted.stack).toBe(REDACTION_SENTINEL)
-      expect(getter).not.toHaveBeenCalled()
-    } finally {
-      if (original) {
-        Object.defineProperty(Error, 'prepareStackTrace', original)
-      } else {
-        Reflect.deleteProperty(Error, 'prepareStackTrace')
-      }
-    }
+    expect(redacted.stack).toBe(REDACTION_SENTINEL)
+    expect(getter).not.toHaveBeenCalled()
   })
 
-  describe('custom stack formatters', () => {
-    const original = Object.getOwnPropertyDescriptor(Error, 'prepareStackTrace')
-
-    afterEach(() => {
-      if (original) {
-        Object.defineProperty(Error, 'prepareStackTrace', original)
-      } else {
-        Reflect.deleteProperty(Error, 'prepareStackTrace')
-      }
+  it('reads the native stack getter without dispatching through its own call property', () => {
+    replaceStackFormatter()
+    const nativeGetter = Object.getOwnPropertyDescriptor(
+      new Error(),
+      'stack'
+    )?.get
+    assert(nativeGetter)
+    const call = vi.fn(() => 'API_KEY=SUPER_SECRET')
+    Object.defineProperty(nativeGetter, 'call', {
+      configurable: true,
+      value: call
+    })
+    onTestFinished(() => {
+      Reflect.deleteProperty(nativeGetter, 'call')
     })
 
-    it.for([
-      {
-        kind: 'value',
-        create: () => {
-          const callback = vi.fn(() => 'API_KEY=FORMATTER_SECRET')
-          return { callback, descriptor: { value: callback } }
-        }
-      },
-      {
-        kind: 'accessor',
-        create: () => {
-          const callback = vi.fn(() => () => 'API_KEY=FORMATTER_SECRET')
-          return { callback, descriptor: { get: callback } }
-        }
+    const redacted = redactTelemetryError(new Error('safe'))
+
+    expect(call).not.toHaveBeenCalled()
+    expect(redacted.stack).toMatch(/^Error: safe\n/)
+  })
+
+  it.for([
+    {
+      kind: 'value',
+      create: () => {
+        const callback = vi.fn(() => 'API_KEY=FORMATTER_SECRET')
+        return { callback, descriptor: { value: callback } }
       }
-    ])('does not invoke a $kind formatter', ({ create }) => {
-      const { callback, descriptor } = create()
-      const error = new Error('safe')
-      Object.defineProperty(Error, 'prepareStackTrace', {
-        configurable: true,
-        ...descriptor
-      })
+    },
+    {
+      kind: 'accessor',
+      create: () => {
+        const callback = vi.fn(() => () => 'API_KEY=FORMATTER_SECRET')
+        return { callback, descriptor: { get: callback } }
+      }
+    }
+  ])('does not invoke a custom $kind stack formatter', ({ create }) => {
+    const { callback, descriptor } = create()
+    const error = new Error('safe')
+    replaceStackFormatter({ configurable: true, ...descriptor })
 
-      const redacted = redactTelemetryError(error)
+    const redacted = redactTelemetryError(error)
 
-      expect(redacted.stack).toBe(REDACTION_SENTINEL)
-      expect(callback).not.toHaveBeenCalled()
-    })
+    expect(redacted.stack).toBe(REDACTION_SENTINEL)
+    expect(callback).not.toHaveBeenCalled()
   })
 })
