@@ -129,7 +129,7 @@ function isActiveTracker(tracker: ChangeTracker): boolean {
   return useWorkflowStore().activeWorkflow?.changeTracker === tracker
 }
 
-function historyShortcut(e: KeyboardEvent): 'undo' | 'redo' | undefined {
+export function historyShortcut(e: KeyboardEvent): 'undo' | 'redo' | undefined {
   if (!(e.ctrlKey || e.metaKey) || e.altKey) return
   const key = e.key.toUpperCase()
   if (key === 'Y' && !e.shiftKey) return 'redo'
@@ -386,6 +386,7 @@ export class ChangeTracker implements WorkflowChangeTracker {
    */
   _restoringState: boolean = false
   private restoreChain?: Promise<void>
+  private preview?: { interrupt: () => void; rollback: () => void }
 
   /** Whether a workflow load is configuring this tracker's graph. */
   get isLoadingGraph(): boolean {
@@ -453,6 +454,7 @@ export class ChangeTracker implements WorkflowChangeTracker {
       reportInactiveTrackerCall('deactivate', this.workflow.path)
       return
     }
+    this.preview?.interrupt()
     if (!this._restoringState && canCaptureCanvas(this)) {
       this.captureCanvasState()
     }
@@ -468,6 +470,7 @@ export class ChangeTracker implements WorkflowChangeTracker {
    */
   prepareForSave() {
     if (isActiveTracker(this) && canCaptureCanvas(this)) {
+      this.preview?.interrupt()
       this.captureCanvasState()
     }
   }
@@ -546,6 +549,7 @@ export class ChangeTracker implements WorkflowChangeTracker {
     const isInsideChangeTransaction = this.changeCount > 0
     if (
       !graph ||
+      this.preview ||
       isInsideChangeTransaction ||
       isUndoRedoing ||
       this.isLoadingGraph ||
@@ -592,6 +596,8 @@ export class ChangeTracker implements WorkflowChangeTracker {
     if (
       !graph ||
       !isActiveTracker(this) ||
+      this.preview ||
+      this.changeCount > 0 ||
       this.isLoadingGraph ||
       isChangeCaptureSuppressed() ||
       !canCaptureCanvas(this)
@@ -635,9 +641,26 @@ export class ChangeTracker implements WorkflowChangeTracker {
     ChangeTracker._checkStateWarned = false
   }
 
+  get hasPreview() {
+    return this.preview !== undefined
+  }
+
+  beginPreview(interrupt: () => void, rollback = interrupt): () => void {
+    this.preview?.interrupt()
+    this.captureCanvasState()
+    const preview = { interrupt, rollback }
+    this.preview = preview
+    return () => {
+      if (this.preview !== preview) return
+      this.preview = undefined
+      if (isActiveTracker(this)) this.captureCanvasState()
+    }
+  }
+
   async updateState(source: ComfyWorkflowJSON[], target: ComfyWorkflowJSON[]) {
     const restore = async () => {
-      if (this._restoringState || source.length === 0) return
+      if (this._restoringState) return
+      this.preview?.rollback()
       const prevState = source.pop()
       if (prevState) {
         const previousState = this.activeState
@@ -750,9 +773,15 @@ export class ChangeTracker implements WorkflowChangeTracker {
       e.preventDefault()
       if (e.repeat || travelFocusedNodeHistory(shortcut)) return
       keyIgnored = false
+      const tracker = getCurrentChangeTracker()
       const selectOnly = isSelectOnly(useApp().canvas)
+      if (!selectOnly && tracker instanceof ChangeTracker) {
+        tracker.preview?.rollback()
+      }
       requestAnimationFrame(async () => {
-        await getCurrentChangeTracker()?.undoRedo(e, selectOnly)
+        if (tracker && tracker === getCurrentChangeTracker()) {
+          await tracker.undoRedo(e, selectOnly)
+        }
       })
     }
 

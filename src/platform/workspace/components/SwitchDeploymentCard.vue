@@ -131,9 +131,7 @@ import MissingItemsTable from '@/platform/workspace/components/MissingItemsTable
 import { useDeploymentLabels } from '@/platform/workspace/composables/useDeploymentLabels'
 import { customDeploymentCreateUrl } from '@/platform/workspace/customDeploymentPitch'
 import type { MissingItemsRow } from '@/platform/workspace/customDeploymentPitch'
-import { reloadForDeploymentSwitch } from '@/platform/workspace/deploymentSwitchReload'
 import { confirmUnsavedWorkBeforeSwitch } from '@/platform/workspace/confirmUnsavedWorkBeforeSwitch'
-import { skipLeavePromptOnce } from '@/platform/workflow/management/leavePrompt'
 import { useDeploymentSwitchGuard } from '@/platform/workspace/composables/useDeploymentSwitchGuard'
 import {
   NEW_DEPLOYMENT_FOR_WORKFLOW,
@@ -157,9 +155,9 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const pickStore = useDeploymentPickStore()
-const { isSwitching: isPicking, changeSinceBoot } = storeToRefs(pickStore)
+const { isSwitching: isPicking } = storeToRefs(pickStore)
 const { deploymentRowLabels, deploymentFullLabel } = useDeploymentLabels()
-const { withoutLeavePrompt } = useDeploymentSwitchGuard()
+const { withoutLeavePrompt, landWhenAlreadyPicked } = useDeploymentSwitchGuard()
 
 const [DefineOption, ReuseOption] = createReusableTemplate<{
   choice: DeploymentChoice
@@ -200,19 +198,14 @@ const isSwitching = computed(() => isSettling.value || isPicking.value)
 function createOnPlatform(event: MouseEvent) {
   if (
     !isSwitching.value &&
-    !openPlatformFrameOnClick(event, NEW_DEPLOYMENT_FOR_WORKFLOW)
+    !openPlatformFrameOnClick(
+      event,
+      NEW_DEPLOYMENT_FOR_WORKFLOW,
+      'workflow_dialog'
+    )
   )
     handOverWorkflowOnClick(event, 'switch-deployment-card')
   emit('done')
-}
-
-function landWhenAlreadyPicked() {
-  if (isPicking.value || changeSinceBoot.value === null) return
-  const keepLeavePrompt = skipLeavePromptOnce()
-  reloadForDeploymentSwitch(() => {
-    keepLeavePrompt()
-    void pickStore.load()
-  })
 }
 
 async function switchDeployment() {

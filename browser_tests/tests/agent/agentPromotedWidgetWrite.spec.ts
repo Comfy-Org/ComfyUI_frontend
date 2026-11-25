@@ -86,7 +86,6 @@ test.describe(
 
       const agentPanel = new AgentPanel(page)
       await agentPanel.open()
-      await agentPanel.selectWorkflow()
       await agentPanel.sendMessage('set the prompt and steps')
       await agentPanel.expectUserMessages(['set the prompt and steps'])
       await hostSocket.waitForSubscribe()

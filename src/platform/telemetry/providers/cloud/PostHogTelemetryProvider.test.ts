@@ -15,6 +15,7 @@ import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 
 import type {
   BootstrapCompleteMetadata,
+  CustomDeploymentTelemetryEvent,
   OnboardingTourStage,
   RunButtonProperties,
   RunOnCloudTelemetryEvent
@@ -913,6 +914,32 @@ describe('PostHogTelemetryProvider', () => {
       )
     })
 
+    it('captures a custom deployment Dialog opened under the server event family', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+      const event: CustomDeploymentTelemetryEvent = {
+        name: 'platform:editor_deploy_opened',
+        properties: {
+          entry: 'run_on_row',
+          step: 'new',
+          workspace_id: 'ws-1',
+          deployment_id: null
+        }
+      }
+
+      provider.trackCustomDeploymentEvent(event)
+
+      expect(hoisted.mockCapture).toHaveBeenCalledExactlyOnceWith(
+        'platform:editor_deploy_opened',
+        {
+          entry: 'run_on_row',
+          step: 'new',
+          workspace_id: 'ws-1',
+          deployment_id: null
+        }
+      )
+    })
+
     it('captures image load failures', async () => {
       const provider = createProvider()
       await vi.dynamicImportSettled()
@@ -924,6 +951,32 @@ describe('PostHogTelemetryProvider', () => {
         { source: 'node_image_preview' }
       )
     })
+
+    it.for([
+      ['completed', TelemetryEvents.ASSET_DOWNLOAD_COMPLETED],
+      ['failed', TelemetryEvents.ASSET_DOWNLOAD_FAILED]
+    ] as const)(
+      'captures a %s asset download',
+      async ([outcome, eventName]) => {
+        const provider = createProvider()
+        await vi.dynamicImportSettled()
+        const metadata = {
+          outcome,
+          phase: 'headers',
+          auth_credential: 'session-cookie',
+          route: 'view',
+          media_kind: 'video',
+          surface: 'node_preview',
+          duration_ms: 80,
+          page_age_ms: 9000,
+          online: true
+        } as const
+
+        provider.trackAssetDownload(metadata)
+
+        expect(hoisted.mockCapture).toHaveBeenCalledWith(eventName, metadata)
+      }
+    )
 
     it('captures the startup breakdown so it is explorable alongside Datadog', async () => {
       const provider = createProvider()
@@ -1118,13 +1171,13 @@ describe('PostHogTelemetryProvider', () => {
             thread_id: 'thread-1',
             workflow_id: 'workflow-2',
             prev_workflow_id: 'workflow-1',
-            bind_source: 'selector_chip'
+            bind_source: 'active_tab'
           }),
         properties: {
           thread_id: 'thread-1',
           workflow_id: 'workflow-2',
           prev_workflow_id: 'workflow-1',
-          bind_source: 'selector_chip'
+          bind_source: 'active_tab'
         }
       },
       {

@@ -70,9 +70,6 @@
       "path": "src/renderer/extensions/vueNodes/widgets/composables/useCurveWidget.ts"
     },
     {
-      "path": "src/renderer/extensions/vueNodes/widgets/composables/useDismissOnCanvasGesture.ts"
-    },
-    {
       "path": "src/renderer/extensions/vueNodes/widgets/composables/useFloatWidget.ts"
     },
     {

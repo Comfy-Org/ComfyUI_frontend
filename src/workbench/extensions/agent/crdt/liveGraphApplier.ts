@@ -727,7 +727,7 @@ const optionLayouts = new WeakMap<object, OptionLayout>()
 
 function optionLayout(node: LGraphNode): OptionLayout {
   const { nodeData } = node.constructor
-  if (!nodeData) return NO_OPTION_LAYOUT
+  if (!nodeData?.inputs) return NO_OPTION_LAYOUT
   const cached = optionLayouts.get(nodeData)
   if (cached) return cached
 

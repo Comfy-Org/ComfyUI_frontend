@@ -28,13 +28,15 @@ import { takeLeavePromptSkip } from '@/platform/workflow/management/leavePrompt'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import {
   DEPLOYMENT_LISTING_BACKSTOP_MS,
-  DEPLOYMENT_START_POLL_MS
+  DEPLOYMENT_START_POLL_MS,
+  DEPLOYMENT_VERSION_WATCH_MS
 } from '@/platform/workspace/api/deploymentListingTimeouts'
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import type {
   BuildStage,
   FollowedBuild
 } from '@/platform/workspace/platformFrame/platformFrameBuild'
+import { trackDeploymentLinkClicked } from '@/platform/workspace/platformFrame/customDeploymentTelemetry'
 import { usePlatformFrameStore } from '@/platform/workspace/platformFrame/platformFrameStore'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -80,6 +82,7 @@ vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
 vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/scripts/api'))
 vi.mock(import('@comfyorg/telemetry/reportError'), { spy: true })
+vi.mock(import('@/platform/workspace/platformFrame/customDeploymentTelemetry'))
 vi.mock(import('@/services/dialogService'))
 vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
@@ -601,6 +604,23 @@ describe('DeploymentSwitcher', () => {
     expect(screen.queryByTestId('deployment-switcher-create')).toBeNull()
   })
 
+  it('counts a Manage deployments click', async () => {
+    mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+    const user = renderSwitcher()
+    await openList(user)
+    document.addEventListener('click', (event) => event.preventDefault(), {
+      once: true
+    })
+
+    await user.click(
+      screen.getByRole('menuitem', { name: 'Manage deployments' })
+    )
+
+    expect(trackDeploymentLinkClicked).toHaveBeenCalledExactlyOnceWith(
+      'manage_deployments'
+    )
+  })
+
   it('says a workspace with no deployments has none yet and opens the creation dialog', async () => {
     mockWorkspaceApi.listDeployments.mockResolvedValue({
       ...listing,
@@ -878,6 +898,29 @@ describe('DeploymentSwitcher', () => {
           retries
         )
       )
+    }
+  )
+
+  it.for([
+    { flag: true, reads: 2 },
+    { flag: false, reads: 1 }
+  ])(
+    'reads once on focus, and every 30 s only with Platform in the editor on: $flag',
+    async ({ flag, reads }) => {
+      Object.assign(useFeatureFlags().flags, {
+        customDeploymentsEditorEnabled: flag
+      })
+      mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+      renderSwitcher()
+      await screen.findByTestId('deployment-switcher-trigger')
+      await vi.advanceTimersByTimeAsync(0)
+
+      window.dispatchEvent(new Event('focus'))
+      await vi.advanceTimersByTimeAsync(0)
+      expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledTimes(2)
+
+      await vi.advanceTimersByTimeAsync(DEPLOYMENT_VERSION_WATCH_MS)
+      expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledTimes(1 + reads)
     }
   )
 

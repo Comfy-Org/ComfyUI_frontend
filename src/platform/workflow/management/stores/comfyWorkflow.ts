@@ -6,6 +6,7 @@ import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import { withGraphIntentSourceForRootGraph } from '@/lib/litegraph/src/graphIntents'
 import type { ExecutedWsMessage } from '@comfyorg/api-client/executionTypes'
 import { UserFile } from '@/stores/userFileStore'
+import type { UserFileSaveOptions } from '@/stores/userFileStore'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
 import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/types'
@@ -69,6 +70,7 @@ export interface WorkflowChangeTracker {
   undoQueue: ComfyWorkflowJSON[]
   redoQueue: ComfyWorkflowJSON[]
   changeCount: number
+  readonly hasPreview: boolean
   _restoringState: boolean
   ds?: { scale: number; offset: [number, number] }
   nodeOutputs?: Partial<Record<string, ExecutedWsMessage['output']>>
@@ -80,6 +82,7 @@ export interface WorkflowChangeTracker {
   updateModified(previousState?: ComfyWorkflowJSON): void
   captureCanvasState(): void
   markModified(): void
+  beginPreview(interrupt: () => void, rollback?: () => void): () => void
   checkState(): void
   updateState(
     source: ComfyWorkflowJSON[],
@@ -526,7 +529,9 @@ export class ComfyWorkflow extends UserFile {
     }
   }
 
-  override async save() {
+  override async save({
+    overwrite
+  }: Pick<UserFileSaveOptions, 'overwrite'> = {}) {
     const tracker = this.changeTracker
     const content = JSON.stringify(
       requireActiveStateForSave(this, 'ComfyWorkflow.save')
@@ -535,10 +540,10 @@ export class ComfyWorkflow extends UserFile {
     const runtime = workflowRuntime()
     const draftScope = runtime.getDraftScope()
     this.content = content
-    const savedFile = await super.save({ force: true })
+    const savedFile = await super.save({ force: true, overwrite })
     if (!tracker || this.changeTracker !== tracker) return savedFile
 
-    tracker.prepareForSave()
+    if (isCanvasOwner(tracker)) tracker.captureCanvasState()
     tracker.initialState = savedState
     this.isModified = !runtime.graphEqual(savedState, tracker.activeState)
     if (draftScope === runtime.getDraftScope()) {

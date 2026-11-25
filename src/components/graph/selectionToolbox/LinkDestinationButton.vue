@@ -6,7 +6,7 @@
       icon="icon-[lucide--locate]"
       data-testid="go-to-link-destination-button"
     />
-    <Menu v-else-if="destinations.length" :items="destinationItems">
+    <Menu v-else-if="destinations.length" class="max-w-80">
       <template #trigger="{ open }">
         <Button
           :tooltip="$t('selectionToolbox.linkDestinations.goToLinkedNode')"
@@ -19,14 +19,21 @@
           <i class="icon-[lucide--chevron-down] size-2.5" />
         </Button>
       </template>
-      <template #item="{ item }">
+      <MenuItem
+        v-for="destination in destinations"
+        :key="destination.node.id"
+        @select="goTo(destination.node.id)"
+      >
         <span class="min-w-0 flex-1 truncate">
-          {{ destinationNames.get(item.key ?? '') }}
+          {{ destinationName(destination) }}
         </span>
-        <span v-if="item.badge" class="ml-4 text-xs text-muted-foreground">
-          {{ item.badge }}
+        <span
+          v-if="destination.kind === 'node'"
+          class="ml-4 text-xs text-muted-foreground"
+        >
+          #{{ destination.node.id }}
         </span>
-      </template>
+      </MenuItem>
     </Menu>
   </span>
 </template>
@@ -39,7 +46,7 @@ import { useI18n } from 'vue-i18n'
 import ToolboxButton from '@/components/graph/selectionToolbox/ToolboxButton.vue'
 import Button from '@comfyorg/design-system/button/Button'
 import Menu from '@comfyorg/design-system/menu/Menu'
-import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
+import MenuItem from '@comfyorg/design-system/menu/MenuItem'
 import type { LinkEnd } from '@/lib/litegraph/src/canvas/linkGeometry'
 import { getSelectedLinkDestinations } from '@/lib/litegraph/src/canvas/linkSelection'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -67,30 +74,6 @@ const singleDestinationButton = computed(() => {
     onClick: () => goTo(destination.node.id)
   }
 })
-
-const destinationNames = computed(
-  () =>
-    new Map<string, string>(
-      destinations.value.map((destination) => [
-        destination.node.id,
-        destinationName(destination)
-      ])
-    )
-)
-
-const destinationItems = computed<MenuItem[]>(() =>
-  destinations.value.map((destination) => {
-    const name = destinationName(destination)
-    const badge =
-      destination.kind === 'node' ? `#${destination.node.id}` : undefined
-    return {
-      key: destination.node.id,
-      label: badge ? `${name} ${badge}` : name,
-      badge,
-      command: () => goTo(destination.node.id)
-    }
-  })
-)
 
 function destinationName(destination: LinkEnd): string {
   switch (destination.kind) {

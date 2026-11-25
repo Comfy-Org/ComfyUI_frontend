@@ -48,7 +48,6 @@ import { GET_CONFIG } from '@comfyorg/graph-model/widgets'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useToast } from '@/components/ui/toast/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { createPromotedMultilineWidget } from '@/renderer/extensions/vueNodes/widgets/utils/multilineTextarea'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -76,7 +75,6 @@ import {
   copyToClipspace,
   pasteFromClipspace
 } from '@/scripts/clipspace'
-import { $el } from '@/scripts/ui/utils'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
@@ -91,9 +89,9 @@ import { useWidgetStore } from '@/stores/widgetStore'
 import { parseNodeId } from '@comfyorg/graph-model/nodeId'
 import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import { isBlueprintType } from '@/utils/blueprintUtils'
+import { copyImageToClipboard } from '@/renderer/core/clipboard/mediaClipboard'
 import { markCoreMediaMenuCallback } from '@/utils/coreMediaMenuActionUtils'
-import { fullResolutionSrc, getImageFileUrl } from '@/utils/hdrFormatUtil'
-import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
+import { getImageFileUrl } from '@/utils/hdrFormatUtil'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import {
@@ -105,44 +103,6 @@ import {
 import { getOrderedInputSpecs } from '@/workbench/utils/nodeDefOrderingUtil'
 
 import { useExtensionService } from '@/platform/extensions/services/extensionService'
-
-async function reencodeAsPngBlob(blob: Blob): Promise<Blob> {
-  let image: ImageBitmap | HTMLImageElement
-  if (typeof window.createImageBitmap === 'undefined') {
-    const img = new Image()
-    const loaded = new Promise<void>((resolve, reject) => {
-      img.onload = () => resolve()
-      img.onerror = () => reject(new Error('Image load failed'))
-    })
-    img.src = URL.createObjectURL(blob)
-    try {
-      await loaded
-    } finally {
-      URL.revokeObjectURL(img.src)
-    }
-    image = img
-  } else {
-    image = await createImageBitmap(blob)
-  }
-
-  const canvas = $el('canvas', { width: image.width, height: image.height })
-  try {
-    const ctx = canvas.getContext('2d')
-    if (!ctx) throw new Error('Could not get canvas context')
-    ctx.drawImage(image, 0, 0)
-  } finally {
-    if ('close' in image && typeof image.close === 'function') {
-      image.close()
-    }
-  }
-
-  return new Promise<Blob>((resolve, reject) => {
-    canvas.toBlob((result) => {
-      if (result) resolve(result)
-      else reject(new Error('PNG conversion failed'))
-    }, 'image/png')
-  })
-}
 
 export function getExtraOptionsForWidget(
   node: LGraphNode,
@@ -197,7 +157,6 @@ function getMinSize(node: LGraphNode) {
  */
 export const useLitegraphService = () => {
   const extensionService = useExtensionService()
-  const toast = useToast()
   const widgetStore = useWidgetStore()
   const canvasStore = useCanvasStore()
   const { toggleSelectedNodesMode } = useSelectedLiteGraphItems()
@@ -669,35 +628,10 @@ export const useLitegraphService = () => {
         {
           content: 'Copy Image',
           callback: markNodeMenuCallback(
-            markCoreMediaMenuCallback(async () => {
-              const url = new URL(fullResolutionSrc(img), img.baseURI)
-              url.searchParams.delete('preview')
-
-              try {
-                const data = await fetch(url)
-                const blob = await data.blob()
-                try {
-                  await navigator.clipboard.write([
-                    new ClipboardItem({ [blob.type]: blob })
-                  ])
-                } catch (error) {
-                  if (blob.type !== 'image/png') {
-                    const pngBlob = await reencodeAsPngBlob(blob)
-                    await navigator.clipboard.write([
-                      new ClipboardItem({ 'image/png': pngBlob })
-                    ])
-                    return
-                  }
-                  throw error
-                }
-              } catch (error) {
-                toast.warning(
-                  t('toastMessages.errorCopyImage', {
-                    error: getErrorMessage(error) ?? t('g.unknownError')
-                  })
-                )
-              }
-            }, 'preview'),
+            markCoreMediaMenuCallback(
+              () => copyImageToClipboard(img),
+              'preview'
+            ),
             null
           )
         }
@@ -733,7 +667,11 @@ export const useLitegraphService = () => {
                   const filename = new URLSearchParams(url.search).get(
                     'filename'
                   )
-                  downloadFile(url.toString(), filename ?? undefined)
+                  downloadFile(
+                    url.toString(),
+                    filename ?? undefined,
+                    'canvas_menu'
+                  )
                 }, 'preview'),
                 null
               )

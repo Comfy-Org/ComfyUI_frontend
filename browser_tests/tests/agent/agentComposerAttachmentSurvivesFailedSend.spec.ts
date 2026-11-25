@@ -52,7 +52,6 @@ test.describe(
       })
 
       await agentPanel.open()
-      await agentPanel.selectWorkflow()
 
       const chip = agentPanel.attachmentChip(ATTACHMENT)
       const messagePreview = agentPanel.conversation.getByRole('img', {

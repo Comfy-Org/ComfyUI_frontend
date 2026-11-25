@@ -43,9 +43,11 @@ import type {
   AgentWorkflowBoundMetadata,
   AgentWorkflowAppliedMetadata,
   AuthErrorMetadata,
+  AssetDownloadMetadata,
   AuthMetadata,
   BeginCheckoutMetadata,
   BootstrapCompleteMetadata,
+  CustomDeploymentTelemetryEvent,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
   ExecutionErrorMetadata,
@@ -163,6 +165,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackImageLoadFailed(metadata: ImageLoadFailureMetadata): void {
     this.dispatch((provider) => provider.trackImageLoadFailed?.(metadata))
+  }
+
+  trackAssetDownload(metadata: AssetDownloadMetadata): void {
+    this.dispatch((provider) => provider.trackAssetDownload?.(metadata))
   }
 
   trackBootstrapComplete(metadata: BootstrapCompleteMetadata): void {
@@ -442,6 +448,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackLocalMcpEvent(event: LocalMcpTelemetryEvent): void {
     this.dispatch((provider) => provider.trackLocalMcpEvent?.(event))
+  }
+
+  trackCustomDeploymentEvent(event: CustomDeploymentTelemetryEvent): void {
+    this.dispatch((provider) => provider.trackCustomDeploymentEvent?.(event))
   }
 
   trackAgentMessageFeedback(metadata: AgentMessageFeedbackMetadata): void {

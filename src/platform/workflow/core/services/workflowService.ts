@@ -64,6 +64,7 @@ import {
   useSubgraphNavigationStore
 } from '@/stores/subgraphNavigationStore'
 import { reportError } from '@comfyorg/telemetry/reportError'
+import { UserDataExistsError } from '@comfyorg/api-client/ComfyApi'
 import { useDeprecatedNodesStore } from '@/platform/workflowErrors/nodeReplacement/deprecatedNodesStore'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
@@ -345,6 +346,22 @@ export const useWorkflowService = () => {
     })
   }
 
+  async function saveNewWorkflowFile(
+    workflow: ComfyWorkflow,
+    path: string
+  ): Promise<boolean> {
+    try {
+      await workflowStore.saveWorkflow(workflow)
+      return true
+    } catch (error) {
+      if (!(error instanceof UserDataExistsError)) throw error
+    }
+    if ((await confirmOverwrite(path)) !== true) return false
+    if (workflow.path !== path) return false
+    await workflowStore.saveWorkflow(workflow, { overwrite: true })
+    return true
+  }
+
   async function getFilename(
     defaultName: string,
     extension = '.json'
@@ -536,7 +553,7 @@ export const useWorkflowService = () => {
         target.initialMode = isApp ? 'app' : 'graph'
       }
       target.changeTracker?.prepareForSave()
-      await workflowStore.saveWorkflow(target)
+      if (!(await saveNewWorkflowFile(target, newPath))) return false
     }
 
     useTelemetry()?.trackWorkflowSaved({ is_app: isApp, is_new: true })
@@ -594,8 +611,19 @@ export const useWorkflowService = () => {
   /**
    * Load a blank workflow
    */
-  const loadBlankWorkflow = () =>
-    queueWorkflowLoad(() => useApp().loadGraphData(blankGraph))
+  const loadBlankWorkflow = async (options: { initiator?: 'user' } = {}) => {
+    const loaded = await queueWorkflowLoad(() =>
+      useApp().loadGraphData(blankGraph)
+    )
+    const activatedWorkflow = typeof loaded === 'object' ? loaded : undefined
+    if (
+      options.initiator === 'user' &&
+      activatedWorkflow !== undefined &&
+      workflowStore.isActive(activatedWorkflow)
+    )
+      workflowStore.reportUserActivation(activatedWorkflow)
+    return loaded
+  }
 
   const reloadCurrentWorkflow = async () => {
     await workflowLoadTail
@@ -811,6 +839,8 @@ export const useWorkflowService = () => {
       isCanvasOwner(workflow.changeTracker) &&
       !options.force
     ) {
+      if (options.initiator === 'user')
+        workflowStore.reportUserActivation(workflow)
       return Promise.resolve(true)
     }
 

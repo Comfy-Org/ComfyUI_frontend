@@ -1,5 +1,6 @@
 import { useDialogService } from '@/services/dialogService'
 import { useToast } from '@/components/ui/toast/toastStore'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { pick } from 'es-toolkit'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
@@ -891,6 +892,16 @@ describe('useCoreCommands', () => {
       expect(app.openClipspace).toHaveBeenCalled()
     })
 
+    it('Comfy.NewBlankWorkflow creates the tab as a user activation', async () => {
+      Object.assign(app.rootGraph, { _nodes: [] })
+
+      await findCmd('Comfy.NewBlankWorkflow').function()
+
+      expect(useWorkflowService().loadBlankWorkflow).toHaveBeenCalledWith({
+        initiator: 'user'
+      })
+    })
+
     it('Comfy.RefreshNodeDefinitions rescans missing models after refreshing combos', async () => {
       const order: string[] = []
       let resolveComboRefresh: () => void = () => {}
@@ -1344,6 +1355,18 @@ describe('useCoreCommands', () => {
 
     it('shows an error toast when the asset cannot start a drag', async () => {
       mockStartModelNodeDrag.mockReturnValue({
+        code: 'INVALID_ASSET',
+        message: 'Asset has no tags defined',
+        assetId: 'asset-1'
+      })
+
+      await selectAssetFromBrowser()
+
+      expect(useToast().error).toHaveBeenCalled()
+    })
+
+    it('shows a warning toast when the model category has no loader node', async () => {
+      mockStartModelNodeDrag.mockReturnValue({
         code: 'NO_PROVIDER',
         message: 'No node provider registered',
         assetId: 'asset-1'
@@ -1351,7 +1374,8 @@ describe('useCoreCommands', () => {
 
       await selectAssetFromBrowser()
 
-      expect(useToast().error).toHaveBeenCalled()
+      expect(useToast().warning).toHaveBeenCalled()
+      expect(useToast().error).not.toHaveBeenCalled()
     })
   })
 })

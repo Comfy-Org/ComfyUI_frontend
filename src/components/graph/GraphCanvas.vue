@@ -4,7 +4,7 @@
       id="graph-canvas"
       ref="canvasRef"
       tabindex="1"
-      class="absolute inset-0 size-full touch-none"
+      class="absolute inset-0 size-full touch-none bg-(image:--bg-img) bg-cover bg-center bg-no-repeat"
     />
     <TransformPane
       v-if="shouldRenderVueNodes && comfyApp.canvas && comfyAppReady"

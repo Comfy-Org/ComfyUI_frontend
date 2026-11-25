@@ -149,6 +149,38 @@ export interface ImageLoadFailureMetadata {
 }
 
 /**
+ * One settled cloud file download. Never carries the URL or filename, which
+ * are user-authored; `media_kind` is derived from the extension only.
+ */
+export interface AssetDownloadMetadata {
+  outcome: 'completed' | 'failed'
+  failure_kind?:
+    | 'http'
+    | 'network'
+    | 'timeout'
+    | 'abort'
+    | 'body_read'
+    | 'unknown'
+  /** HTTP status of a non-OK response. Absent when no response arrived. */
+  status?: number
+  phase: 'headers' | 'body'
+  /** `unreported` when the request failed before attaching a credential. */
+  auth_credential:
+    | 'session-cookie'
+    | 'bearer'
+    | 'api-key'
+    | 'none'
+    | 'unreported'
+  route: 'assets_content' | 'view' | 'other'
+  media_kind: 'image' | 'video' | 'audio' | '3d' | 'text' | 'other'
+  surface: string
+  size_bytes?: number
+  duration_ms: number
+  page_age_ms: number
+  online: boolean
+}
+
+/**
  * One row per session describing how long startup took and where the time
  * went. `total_ms` is measured from navigation start, so it is directly
  * comparable to what a user experiences and can be percentiled across sessions
@@ -761,6 +793,55 @@ export type RunOnCloudTelemetryEvent =
       }
     }
 
+export type CustomDeploymentEntry =
+  | 'extensions'
+  | 'run_on_row'
+  | 'pencil'
+  | 'set_up'
+  | 'workflow_dialog'
+  | 'overview_dialog'
+  | 'model_library'
+  | 'preinstall'
+  | 'errors_panel'
+
+export type CustomDeploymentStep =
+  | 'new'
+  | 'update'
+  | 'nodes'
+  | 'models'
+  | 'preinstall'
+
+export type CustomDeploymentLink = 'build_on_platform' | 'manage_deployments'
+
+export type CustomDeploymentTelemetryEvent =
+  | {
+      readonly name: typeof TelemetryEvents.CUSTOM_DEPLOYMENT_DIALOG_OPENED
+      readonly properties: {
+        readonly entry: CustomDeploymentEntry
+        readonly step: CustomDeploymentStep
+        readonly workspace_id: string | null
+        readonly deployment_id: string | null
+      }
+    }
+  | {
+      readonly name: typeof TelemetryEvents.CUSTOM_DEPLOYMENT_CREATE_CLICKED
+      readonly properties: {
+        readonly kind: 'new' | 'update'
+        readonly workspace_id: string | null
+        readonly deployment_id: string
+        readonly release_id: string
+        readonly build_id: string
+        readonly version: number
+      }
+    }
+  | {
+      readonly name: typeof TelemetryEvents.CUSTOM_DEPLOYMENT_LINK_CLICKED
+      readonly properties: {
+        readonly kind: CustomDeploymentLink
+        readonly workspace_id: string | null
+      }
+    }
+
 /**
  * In-App Agent message rating metadata (PM-98). `vote` is null when the user retracts a
  * prior thumb, which the eval pipeline records as a retraction rather than dropping.
@@ -1308,11 +1389,7 @@ export interface AgentStopClickedMetadata extends Record<string, unknown> {
   turn_id: string
   turn_elapsed_ms: number | null
 }
-export type AgentWorkflowBindSource =
-  | 'active_tab'
-  | 'selector_chip'
-  | 'minted'
-  | 'restored'
+export type AgentWorkflowBindSource = 'active_tab' | 'minted' | 'restored'
 export interface AgentWorkflowBoundMetadata extends Record<string, unknown> {
   thread_id: string
   workflow_id: string
@@ -1728,6 +1805,7 @@ export interface TelemetryProvider {
   trackWebSessionEvent?(event: WebSessionTelemetryEvent): void
   trackSsoEvent?(event: SsoTelemetryEvent): void
   trackImageLoadFailed?(metadata: ImageLoadFailureMetadata): void
+  trackAssetDownload?(metadata: AssetDownloadMetadata): void
   trackUserLoggedIn?(): void
   trackBootstrapComplete?(metadata: BootstrapCompleteMetadata): void
 
@@ -1846,6 +1924,8 @@ export interface TelemetryProvider {
 
   trackLocalMcpEvent?(event: LocalMcpTelemetryEvent): void
 
+  trackCustomDeploymentEvent?(event: CustomDeploymentTelemetryEvent): void
+
   // In-App Agent message rating (PM-98)
   trackAgentMessageFeedback?(metadata: AgentMessageFeedbackMetadata): void
   trackAgentPanelOpened?(metadata: AgentPanelOpenedMetadata): void
@@ -1941,6 +2021,8 @@ export const TelemetryEvents = {
   SSO_SIGN_IN_COMPLETED: SSO_TELEMETRY_EVENT.signInCompleted,
   SSO_WORKSPACE_LANDED: SSO_TELEMETRY_EVENT.workspaceLanded,
   IMAGE_LOAD_FAILED: 'app:image_load_failed',
+  ASSET_DOWNLOAD_COMPLETED: 'app:asset_download_completed',
+  ASSET_DOWNLOAD_FAILED: 'app:asset_download_failed',
   BOOTSTRAP_COMPLETE: 'app:bootstrap_complete',
   THEME_LOADED: 'app:theme_loaded',
 
@@ -2107,6 +2189,10 @@ export const TelemetryEvents = {
   LOCAL_MCP_PATH_SELECTED: 'app:local_mcp_path_selected',
   LOCAL_MCP_CONNECTED: 'app:local_mcp_connected',
 
+  CUSTOM_DEPLOYMENT_DIALOG_OPENED: 'platform:editor_deploy_opened',
+  CUSTOM_DEPLOYMENT_CREATE_CLICKED: 'platform:deployment_create_clicked',
+  CUSTOM_DEPLOYMENT_LINK_CLICKED: 'platform:deployment_link_clicked',
+
   WORKSPACE_SCOPE_MISMATCH: 'workspace_scope_mismatch'
 } as const
 
@@ -2169,6 +2255,7 @@ export type TelemetryEventProperties =
   | WebSessionTelemetryEvent['properties']
   | SsoTelemetryEvent['properties']
   | ImageLoadFailureMetadata
+  | AssetDownloadMetadata
   | BootstrapCompleteMetadata
   | SurveyResponses
   | TemplateMetadata
@@ -2192,6 +2279,7 @@ export type TelemetryEventProperties =
   | UiButtonClickMetadata
   | RunOnCloudTelemetryEvent['properties']
   | LocalMcpTelemetryEvent['properties']
+  | CustomDeploymentTelemetryEvent['properties']
   | WidgetFavoriteToggledMetadata
   | NamedValuesShadowDiffMismatchMetadata
   | NamedValuesShadowDiffSummaryMetadata

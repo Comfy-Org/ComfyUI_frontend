@@ -117,6 +117,7 @@ export function resolveTheme(preset: ThemePreset) {
     dataTypeColors: completedPreset.colors.node_slot,
     canvas: {
       backgroundImage: canvas.BACKGROUND_IMAGE,
+      backgroundMode: preset.canvas_background_mode ?? 'tile',
       clearBackgroundColor: canvas.CLEAR_BACKGROUND_COLOR,
       nodeTitleColor: canvas.NODE_TITLE_COLOR,
       nodeSelectedTitleColor: canvas.NODE_SELECTED_TITLE_COLOR,
