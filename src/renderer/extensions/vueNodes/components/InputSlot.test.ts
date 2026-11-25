@@ -1,6 +1,6 @@
 import { getActivePinia } from 'pinia'
 import { describe, expect, it, vi } from 'vitest'
-import { defineComponent } from 'vue'
+import { defineComponent, h } from 'vue'
 
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
@@ -12,7 +12,10 @@ import type { Settings } from '@comfyorg/settings-core/types'
 import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 
+import TooltipProvider from '@comfyorg/design-system/tooltip/TooltipProvider'
+
 import InputSlot from './InputSlot.vue'
+import SharedNodeTooltip from './SharedNodeTooltip.vue'
 
 vi.mock(
   import('@/renderer/extensions/vueNodes/composables/useSlotLinkReveal'),
@@ -80,13 +83,19 @@ function renderInputSlot(
       (key === 'Comfy.EnableTooltips' ? true : undefined) as Settings[K]
   )
   useNodeDefStore(pinia).addNodeDef(nodeDef)
-  render(InputSlot, {
-    props: { slotData, index: 0, nodeType, dotOnly, standalone },
-    global: {
-      plugins: [i18n, pinia],
-      stubs: { SlotConnectionDot: SlotConnectionDotStub }
+  render(
+    () =>
+      h(TooltipProvider, { delayDuration: 0 }, () => [
+        h(InputSlot, { slotData, index: 0, nodeType, dotOnly, standalone }),
+        h(SharedNodeTooltip)
+      ]),
+    {
+      global: {
+        plugins: [i18n, pinia],
+        stubs: { SlotConnectionDot: SlotConnectionDotStub }
+      }
     }
-  })
+  )
 
   return userEvent.setup()
 }
@@ -103,7 +112,10 @@ describe('InputSlot', () => {
       true
     )
 
-    expect(screen.getByLabelText('Localized Seed')).toBeInTheDocument()
+    expect(screen.getByLabelText('Localized Seed')).toHaveAttribute(
+      'data-slot-type',
+      'INT'
+    )
   })
 
   it('leaves the dot unlabeled when a widget control renders alongside it', () => {
@@ -131,6 +143,10 @@ describe('InputSlot', () => {
     await user.hover(screen.getByText('Localized Seed'))
     expect(await screen.findByRole('tooltip')).toHaveTextContent(
       'Metadata seed tooltip'
+    )
+    expect(screen.getByTestId('tooltip-content')).toHaveAttribute(
+      'data-side',
+      'left'
     )
   })
 

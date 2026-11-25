@@ -1,4 +1,12 @@
-import { describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import type { WatchHandle } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
@@ -12,7 +20,10 @@ import { useTopbarBadgeStore } from '@/stores/topbarBadgeStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { legacyMenuCompat } from '@/lib/litegraph/src/contextMenuCompat'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useApp } from '@/scripts/appInstance'
+import { applyLegacyGraphPatches } from '@/services/legacyGraphPatchCompat'
+import { ComfySettingsDialog } from '@/scripts/ui/settings'
 import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { ComfyExtension } from '@/types/comfy'
@@ -21,6 +32,50 @@ import { isGraphLoadHookOrigin, useExtensionService } from './extensionService'
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('firebase/auth'))
+
+describe('extension setting initialization', () => {
+  type ValidationSetting = Parameters<
+    typeof ComfySettingsDialog.prototype.addSetting<'Comfy.Validation.Workflows'>
+  >[0]
+
+  it.for([
+    {
+      api: 'declarative',
+      register: (setting: ValidationSetting) =>
+        useExtensionService().registerExtension({
+          name: 'test.settings',
+          settings: [setting]
+        })
+    },
+    {
+      api: 'legacy',
+      register: (setting: ValidationSetting) =>
+        new ComfySettingsDialog().addSetting(setting)
+    }
+  ])(
+    'defers $api callbacks until the editor is ready',
+    async ({ register }) => {
+      const store = useSettingStore()
+      store.deferExtensionSettingCallbacks(new AbortController().signal)
+      const onChange = vi.fn()
+
+      register({
+        id: 'Comfy.Validation.Workflows',
+        name: 'Validate workflows',
+        type: 'boolean',
+        defaultValue: false,
+        onChange
+      })
+
+      expect(store.get('Comfy.Validation.Workflows')).toBe(false)
+      expect(onChange).not.toHaveBeenCalled()
+
+      await store.activateExtensionSettingCallbacks()
+
+      expect(onChange).toHaveBeenCalledExactlyOnceWith(false, undefined)
+    }
+  )
+})
 
 describe('invokeExtensionsAsync', () => {
   const HOOK = 'addCustomNodeDefs'
@@ -162,6 +217,23 @@ describe('invokeExtensionsAsync', () => {
     expect(hook.mock.calls[0]).toHaveLength(2)
     expect(hook.mock.calls[0][0]).toBe(defs)
     expect(hook.mock.contexts[0]).toBe(useExtensionStore().extensions[0])
+  })
+
+  it('passes a configure hook the configured graph context after the app', async () => {
+    const hook = vi.fn()
+    register({ name: 'a', afterConfigureGraph: hook })
+    const context = { graph: new LGraph(), workflow: null }
+
+    await useExtensionService().invokeExtensionsAsync(
+      'afterConfigureGraph',
+      [],
+      context
+    )
+
+    const [missingNodeTypes, app, received] = hook.mock.calls[0]
+    expect(missingNodeTypes).toEqual([])
+    expect(app).toHaveProperty('loadGraphData')
+    expect(received).toBe(context)
   })
 
   type HookApp = ReturnType<typeof useApp>
@@ -567,48 +639,114 @@ describe('invokeExtensionsAsync', () => {
       expect(setup).toHaveBeenCalledOnce()
       expect(setup.mock.calls[0]).toHaveLength(1)
     })
-
-    it('attributes sidebar tabs to the extension whose setup registered them', async () => {
-      const app = useApp()
-      const originalManager = Object.getOwnPropertyDescriptor(
-        app,
-        'extensionManager'
-      )
-      const workspaceStore = useWorkspaceStore()
-      Object.defineProperty(app, 'extensionManager', {
-        configurable: true,
-        value: workspaceStore
-      })
-      try {
-        register({
-          name: 'agent.tools.sidebar',
-          setup: (setupApp: ReturnType<typeof useApp>) => {
-            setupApp.extensionManager.registerSidebarTab({
-              id: 'agent-tab',
-              title: 'Agent tab',
-              type: 'vue',
-              component: {}
-            })
-          }
-        })
-
-        await useExtensionService().invokeExtensionsAsync('setup')
-      } finally {
-        if (originalManager)
-          Object.defineProperty(app, 'extensionManager', originalManager)
-        else delete (app as Partial<typeof app>).extensionManager
-      }
-
-      expect(
-        workspaceStore.sidebarTab.sidebarTabs.find(
-          ({ id }) => id === 'agent-tab'
-        )
-      ).toMatchObject({ title: 'Agent tab' })
-      expect(
-        workspaceStore.sidebarTab.getSourceExtensionName('agent-tab')
-      ).toBe('agent.tools.sidebar')
-    })
   })
+})
+
+describe('sidebar tab attribution during setup', () => {
+  type SetupApp = ReturnType<typeof useApp>
+  type TabRegistrar = (setupApp: SetupApp, id: string) => void
+
+  const tab = (id: string) => ({
+    id,
+    title: id,
+    type: 'vue' as const,
+    component: {}
+  })
+  const viaSetupArgument: TabRegistrar = (setupApp, id) =>
+    setupApp.extensionManager.registerSidebarTab(tab(id))
+  const viaImportedApp: TabRegistrar = (_setupApp, id) =>
+    useApp().extensionManager.registerSidebarTab(tab(id))
+
+  let restoreManager = () => {}
+  beforeEach(() => {
+    const app = useApp()
+    const original = Object.getOwnPropertyDescriptor(app, 'extensionManager')
+    Object.defineProperty(app, 'extensionManager', {
+      configurable: true,
+      value: useWorkspaceStore()
+    })
+    restoreManager = () => {
+      if (original) Object.defineProperty(app, 'extensionManager', original)
+      else delete (app as Partial<typeof app>).extensionManager
+    }
+  })
+  afterEach(() => restoreManager())
+
+  const sourceOf = (id: string) =>
+    useWorkspaceStore().sidebarTab.getSourceExtensionName(id)
+
+  it.for([
+    { via: 'setup argument', register: viaSetupArgument, late: false },
+    { via: 'imported app', register: viaImportedApp, late: false },
+    { via: 'setup argument', register: viaSetupArgument, late: true },
+    { via: 'imported app', register: viaImportedApp, late: true }
+  ])(
+    'attributes a tab registered through the $via (late-loaded: $late)',
+    async ({ register, late }) => {
+      const extension: ComfyExtension = {
+        name: 'agent.tools.sidebar',
+        setup: (setupApp: SetupApp) => register(setupApp, 'agent-tab')
+      }
+      useExtensionStore().registerExtension(extension)
+
+      if (late)
+        await useExtensionService().invokeStartupHook([extension], 'setup')
+      else await useExtensionService().invokeExtensionsAsync('setup')
+
+      expect(sourceOf('agent-tab')).toBe('agent.tools.sidebar')
+    }
+  )
+
+  it('does not attribute an imported-app tab registered after an await to a concurrent setup', async () => {
+    useExtensionStore().registerExtension({
+      name: 'Manual.Sidebar',
+      setup: async (setupApp: SetupApp) => {
+        await Promise.resolve()
+        viaImportedApp(setupApp, 'manual-tab')
+      }
+    })
+    useExtensionStore().registerExtension({
+      name: 'agent.tools.sidebar',
+      setup: (setupApp: SetupApp) => viaImportedApp(setupApp, 'agent-tab')
+    })
+
+    await useExtensionService().invokeExtensionsAsync('setup')
+
+    expect(sourceOf('agent-tab')).toBe('agent.tools.sidebar')
+    expect(sourceOf('manual-tab')).toBeUndefined()
+  })
+})
+
+describe('graph patches from late-loaded startup hooks', () => {
+  it.for(['init', 'setup'] as const)(
+    'replays a graph patch from a late %s onto the next root graph',
+    async (hook) => {
+      const app = useApp()
+      const bootGraph = new LGraph()
+      const original = Reflect.get(app, 'rootGraphInternal')
+      Reflect.set(app, 'rootGraphInternal', bootGraph)
+      onTestFinished(() => {
+        Reflect.set(app, 'rootGraphInternal', original)
+      })
+      const added = vi.fn()
+      const extension: ComfyExtension = {
+        name: `late.${hook}.patcher`,
+        [hook]: () => {
+          useApp().rootGraph.onNodeAdded = added
+        }
+      }
+      useExtensionStore().registerExtension(extension)
+
+      await useExtensionService().invokeStartupHook([extension], hook)
+      const nextGraph = new LGraph()
+      applyLegacyGraphPatches(app, nextGraph)
+      Reflect.set(app, 'rootGraphInternal', nextGraph)
+      const node = new LGraphNode('added')
+      nextGraph.onNodeAdded?.(node)
+
+      expect(added).toHaveBeenCalledWith(node)
+    }
+  )
 })
 
 describe('holding new extensions', () => {
@@ -933,7 +1071,9 @@ describe('a disabled extension', () => {
   it('lets an enabled extension run its own command while its settings and widgets initialize', async () => {
     afterCore(['off'])
     const run = vi.fn()
-    const execute = () => useCommandStore().execute('on.cmd')
+    const execute = async (): Promise<void> => {
+      await useCommandStore().execute('on.cmd')
+    }
 
     useExtensionService().registerExtension({
       name: 'on',

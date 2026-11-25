@@ -1,6 +1,7 @@
 import type * as THREE from 'three'
 import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader'
 
+import { MAX_MODEL_LOAD_BYTES } from './constants'
 import type { Load3dHost, MaterialMode } from './interfaces'
 
 export interface ModelLoadContext {
@@ -141,6 +142,19 @@ export interface ModelAdapter {
   defaultCameraPose?(): { size: THREE.Vector3; center: THREE.Vector3 }
 }
 
+/** Raised when a model response exceeds the inline preview limit. */
+export class ModelTooLargeError extends Error {
+  constructor(
+    readonly byteLength: number,
+    readonly maxBytes: number = MAX_MODEL_LOAD_BYTES
+  ) {
+    super(
+      `Model is ${byteLength} bytes, exceeding the ${maxBytes}-byte preview limit`
+    )
+    this.name = 'ModelTooLargeError'
+  }
+}
+
 export async function fetchModelData(
   fetchApi: Load3dHost['fetchApi'],
   path: string,
@@ -152,5 +166,16 @@ export async function fetchModelData(
   if (!response.ok) {
     throw new Error(`Failed to fetch model: ${response.status}`)
   }
-  return response.arrayBuffer()
+
+  const contentLength = Number(response.headers.get('content-length'))
+  if (contentLength > MAX_MODEL_LOAD_BYTES) {
+    await response.body?.cancel().catch(() => undefined)
+    throw new ModelTooLargeError(contentLength)
+  }
+
+  const buffer = await response.arrayBuffer()
+  if (buffer.byteLength > MAX_MODEL_LOAD_BYTES) {
+    throw new ModelTooLargeError(buffer.byteLength)
+  }
+  return buffer
 }

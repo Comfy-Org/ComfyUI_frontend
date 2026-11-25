@@ -19,10 +19,12 @@ import {
   detachNodeFromStores
 } from '@/core/graph/nodeShell/nodeShellLifecycle'
 import type { UUID } from '@/utils/uuid'
-import { createUuidv4, zeroUuid } from '@/utils/uuid'
+import { zeroUuid } from '@comfyorg/graph-model/uuid'
+import { createUuidv4 } from '@/utils/uuid'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import {
   attachGroupLayout,
+  attachIoNodeLayout,
   attachNodeLayout,
   detachGraphLayouts,
   detachGroupLayout,
@@ -32,6 +34,10 @@ import {
 } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { useSelectionStore } from '@/core/selection/selectionStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import {
+  retireMountedGraphSizes,
+  retireMountedNodeSize
+} from '@/renderer/core/layout/store/mountedNodeSizes'
 import { nodesInRenderOrder } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
 import { changeCanvasSelection } from '@/renderer/core/canvas/litegraph/selectionAdapter'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
@@ -124,6 +130,7 @@ import {
   LLink,
   registerLinkTopology,
   resolveLinkTopology,
+  serialisableLinkType,
   unregisterAllLinkTopologies,
   unregisterLinkTopology
 } from './LLink'
@@ -186,6 +193,10 @@ import {
   multiClone,
   splitPositionables
 } from './subgraph/subgraphUtils'
+import {
+  captureSerialisedInputLinks,
+  pruneDanglingSubgraphLinks
+} from './subgraph/pruneDanglingSubgraphLinks'
 import { Alignment, LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
 import type {
   LGraphTriggerAction,
@@ -370,7 +381,9 @@ function teardownOwnedGraphs(owner: LGraph): void {
       node.graph = null
       node.order = order
     }
-    detachGraphLayouts([owner], { removeLayouts: !owner.isRootGraph })
+    detachGraphLayouts([owner], {
+      removeRootKeyedLayouts: !owner.isRootGraph
+    })
   }
 }
 
@@ -441,7 +454,7 @@ function serialiseOwnedTopology(owner: LGraph) {
       origin_slot: link.originSlot,
       target_id: serializeNodeId(link.targetNodeId),
       target_slot: link.targetSlot,
-      type: link.type,
+      type: serialisableLinkType(link.type),
       ...(link.parentId !== undefined && { parentId: link.parentId }),
       ...presentation
     }
@@ -478,21 +491,58 @@ function serialiseStoredNodes(owner: LGraph, sortNodes: boolean) {
     ordered.length !== adapters.size
   ) {
     const liveNodes = [...adapters.values()]
-    const missingState = ordered.find((state) => !adapters.has(state.id))
-    let missingAdapter: LGraphNode | undefined
-    if (missingState === undefined) {
-      const stateIds = new Set(ordered.map((state) => state.id))
-      missingAdapter = liveNodes.find((adapter) => !stateIds.has(adapter.id))
-    }
-    const mismatch = missingState
-      ? `stored node ${missingState.id} has no live adapter`
-      : missingAdapter
-        ? `live node ${missingAdapter.id} has no stored state`
-        : `${ordered.length} stored nodes do not match ${adapters.size} live nodes`
+    const stateIds = new Set(ordered.map((state) => state.id))
+    const storedOnlyState = ordered.find((state) => !adapters.has(state.id))
+    const liveOnlyAdapter = liveNodes.find(
+      (adapter) => !stateIds.has(adapter.id)
+    )
+    const mismatchDetails = storedOnlyState
+      ? liveOnlyAdapter
+        ? {
+            mismatch: `stored node ${storedOnlyState.id} has no live adapter; live node ${liveOnlyAdapter.id} has no stored state`,
+            mismatchKind: 'stored_and_live_diverged',
+            storedOnlyNodeId: storedOnlyState.id,
+            storedOnlyStateGraphId: storedOnlyState.graphId,
+            liveOnlyNodeId: liveOnlyAdapter.id,
+            liveOnlyNodeGraphId: liveOnlyAdapter.graph?.id ?? null,
+            liveOnlyStateGraphId: liveOnlyAdapter._state.graphId,
+            liveOnlyRegistrationRootGraphId:
+              liveOnlyAdapter._graphScope?.rootGraphId ?? null,
+            liveOnlyRegistrationOwningGraphId:
+              liveOnlyAdapter._graphScope?.owningGraphId ?? null
+          }
+        : {
+            mismatch: `stored node ${storedOnlyState.id} has no live adapter`,
+            mismatchKind: 'stored_without_live_adapter',
+            nodeId: storedOnlyState.id,
+            stateGraphId: storedOnlyState.graphId
+          }
+      : liveOnlyAdapter
+        ? {
+            mismatch: `live node ${liveOnlyAdapter.id} has no stored state`,
+            mismatchKind: 'live_without_stored_state',
+            nodeId: liveOnlyAdapter.id,
+            nodeGraphId: liveOnlyAdapter.graph?.id ?? null,
+            stateGraphId: liveOnlyAdapter._state.graphId,
+            registrationRootGraphId:
+              liveOnlyAdapter._graphScope?.rootGraphId ?? null,
+            registrationOwningGraphId:
+              liveOnlyAdapter._graphScope?.owningGraphId ?? null
+          }
+        : {
+            mismatch: `${ordered.length} stored nodes do not match ${adapters.size} live nodes`,
+            mismatchKind: 'count_mismatch'
+          }
     reportError(new Error('Graph serialization state mismatch'), {
       surface: 'graph',
       errorType: 'graph_serialization_state_mismatch',
-      context: { graphId: owner.id, mismatch }
+      sentryMode: 'once_per_page',
+      tags: { outcome: 'degraded' },
+      context: {
+        graphId: owner.id,
+        rootGraphId: owner.rootGraph.id,
+        ...mismatchDetails
+      }
     })
     const nodes = sortNodes
       ? [...liveNodes].sort((a, b) => compareNodeIds(a.id, b.id))
@@ -529,9 +579,6 @@ export class LGraph
   implements LinkNetwork, BaseLGraph, Serialisable<SerialisableGraph>
 {
   static serialisedSchemaVersion = 1 as const
-
-  static STATUS_STOPPED = 1
-  static STATUS_RUNNING = 2
 
   /** @internal */
   static proxyWidgetMigrationFlush?: (
@@ -622,8 +669,11 @@ export class LGraph
     }
     raw._id.value = value
     if (registration) {
-      registration.rootGraph._subgraphs.delete(previousId)
-      registration.rootGraph._subgraphs.set(value, registration.subgraph)
+      const { rootGraph, subgraph } = registration
+      rootGraph._subgraphs.delete(previousId)
+      rootGraph._subgraphs.set(value, subgraph)
+      attachIoNodeLayout(subgraph.inputNode)
+      attachIoNodeLayout(subgraph.outputNode)
     }
   }
 
@@ -661,7 +711,6 @@ export class LGraph
   links: Map<LinkId, LLink> & Record<LinkId, LLink>
   readonly floatingLinks: ReadonlyMap<LinkId, LLink>
   list_of_graphcanvas: LGraphCanvas[] | null
-  status: number = LGraph.STATUS_STOPPED
 
   get state(): LGraphState {
     return useEntityIdStore().get(this.id)
@@ -676,22 +725,8 @@ export class LGraph
   _nodes: (LGraphNode | SubgraphNode)[] = []
   _nodes_by_id: Partial<Record<NodeId, LGraphNode>> = {}
   _nodes_in_order: LGraphNode[] = []
-  _nodes_executable: LGraphNode[] | null = null
   _groups: LGraphGroup[] = []
   iteration: number = 0
-  globaltime: number = 0
-  /** @deprecated Unused */
-  runningtime: number = 0
-  fixedtime: number = 0
-  fixedtime_lapse: number = 0.01
-  elapsed_time: number = 0.01
-  last_update_time: number = 0
-  starttime: number = 0
-  catch_errors: boolean = true
-  execution_timer_id?: ReturnType<typeof setInterval> | number | null
-  errors_in_execution?: boolean
-  /** @deprecated Unused */
-  execution_time!: number
   _last_trigger_time?: number
   filter?: string
   /** Must contain serialisable values, e.g. primitive types */
@@ -843,10 +878,8 @@ export class LGraph
   /**
    * Removes all nodes from this graph
    */
-  clear(): void {
-    this.stop()
-    this.status = LGraph.STATUS_STOPPED
-
+  clear({ preserveMountedNodeSizes = false } = {}): void {
+    if (!preserveMountedNodeSizes) retireMountedGraphSizes(this)
     if (this.isRootGraph) {
       emitGraphIntent({
         type: 'clear',
@@ -891,7 +924,6 @@ export class LGraph
     this._nodes = []
     this._nodes_by_id = {}
     this._nodes_in_order = []
-    this._nodes_executable = null
     this._groups = []
 
     if (this.isRootGraph) this.id = createUuidv4()
@@ -910,17 +942,6 @@ export class LGraph
     this.vars = {}
     // to store custom data
     this.extra = {}
-
-    // timing
-    this.globaltime = 0
-    this.runningtime = 0
-    this.fixedtime = 0
-    this.fixedtime_lapse = 0.01
-    this.elapsed_time = 0.01
-    this.last_update_time = 0
-    this.starttime = 0
-
-    this.catch_errors = true
 
     this.nodes_executing = nodeStatusArray<boolean>()
     this.nodes_actioning = nodeStatusArray<string | boolean>()
@@ -980,135 +1001,11 @@ export class LGraph
   }
 
   /**
-   * @deprecated Will be removed in 0.9
-   * Starts running this graph every interval milliseconds.
-   * @param interval amount of milliseconds between executions, if 0 then it renders to the monitor refresh rate
-   */
-  start(interval?: number): void {
-    if (this.status == LGraph.STATUS_RUNNING) return
-    this.status = LGraph.STATUS_RUNNING
-    this.sendEventToAllNodes('onStart')
-
-    // launch
-    this.starttime = LiteGraph.getTime()
-    this.last_update_time = this.starttime
-    interval ||= 0
-
-    // execute once per frame
-    if (interval == 0 && typeof window != 'undefined') {
-      const on_frame = () => {
-        if (this.execution_timer_id != -1) return
-
-        window.requestAnimationFrame(on_frame)
-        this.runStep(1, !this.catch_errors)
-      }
-      this.execution_timer_id = -1
-      on_frame()
-    } else {
-      // execute every 'interval' ms
-      this.execution_timer_id = setInterval(() => {
-        // execute
-        this.runStep(1, !this.catch_errors)
-      }, interval)
-    }
-  }
-
-  /**
-   * @deprecated Will be removed in 0.9
-   * Stops the execution loop of the graph
-   */
-  stop(): void {
-    if (this.status == LGraph.STATUS_STOPPED) return
-
-    this.status = LGraph.STATUS_STOPPED
-    if (this.execution_timer_id != null) {
-      if (this.execution_timer_id != -1) {
-        clearInterval(this.execution_timer_id)
-      }
-      this.execution_timer_id = null
-    }
-
-    this.sendEventToAllNodes('onStop')
-  }
-
-  /**
-   * Run N steps (cycles) of the graph
-   * @param num number of steps to run, default is 1
-   * @param do_not_catch_errors [optional] if you want to try/catch errors
-   * @param limit max number of nodes to execute (used to execute from start to a node)
-   */
-  runStep(num: number, do_not_catch_errors: boolean, limit?: number): void {
-    num = num || 1
-
-    const start = LiteGraph.getTime()
-    this.globaltime = 0.001 * (start - this.starttime)
-
-    const nodes = this._nodes_executable || this._nodes
-    limit = limit || nodes.length
-
-    if (do_not_catch_errors) {
-      // iterations
-      for (let i = 0; i < num; i++) {
-        for (let j = 0; j < limit; ++j) {
-          const node = nodes[j]
-          // FIXME: Looks like copy/paste broken logic - checks for "on", executes "do"
-          if (node.mode == LGraphEventMode.ALWAYS && node.onExecute) {
-            // wrap node.onExecute();
-            node.doExecute()
-          }
-        }
-
-        this.fixedtime += this.fixedtime_lapse
-      }
-    } else {
-      try {
-        // iterations
-        for (let i = 0; i < num; i++) {
-          for (let j = 0; j < limit; ++j) {
-            const node = nodes[j]
-            if (node.mode == LGraphEventMode.ALWAYS) {
-              node.onExecute?.()
-            }
-          }
-
-          this.fixedtime += this.fixedtime_lapse
-        }
-        this.errors_in_execution = false
-      } catch (error) {
-        this.errors_in_execution = true
-        if (LiteGraph.throw_errors) throw error
-
-        if (LiteGraph.debug) console.error('Error during execution:', error)
-        this.stop()
-      }
-    }
-
-    const now = LiteGraph.getTime()
-    let elapsed = now - start
-    if (elapsed == 0) elapsed = 1
-
-    this.execution_time = 0.001 * elapsed
-    this.globaltime += 0.001 * elapsed
-    this.iteration += 1
-    this.elapsed_time = (now - this.last_update_time) * 0.001
-    this.last_update_time = now
-    this.nodes_executing = nodeStatusArray<boolean>()
-    this.nodes_actioning = nodeStatusArray<string | boolean>()
-    this.nodes_executedAction = nodeStatusArray<string>()
-  }
-
-  /**
    * Updates the graph execution order according to relevance of the nodes (nodes with only outputs have more relevance than
    * nodes with only inputs.
    */
   updateExecutionOrder(): void {
     this._nodes_in_order = this.computeExecutionOrder(false)
-    this._nodes_executable = []
-    for (const node of this._nodes_in_order) {
-      if (node.onExecute) {
-        this._nodes_executable.push(node)
-      }
-    }
   }
 
   // This is more internal, it computes the executable nodes in order and returns it
@@ -1263,33 +1160,6 @@ export class LGraph
     }
 
     this.setDirtyCanvas(true, true)
-  }
-
-  /**
-   * Returns the amount of time the graph has been running in milliseconds
-   * @returns number of milliseconds the graph has been running
-   */
-  getTime(): number {
-    return this.globaltime
-  }
-
-  /**
-   * Returns the amount of time accumulated using the fixedtime_lapse var.
-   * This is used in context where the time increments should be constant
-   * @returns number of milliseconds the graph has been running
-   */
-  getFixedTime(): number {
-    return this.fixedtime
-  }
-
-  /**
-   * Returns the amount of time it took to compute the latest iteration.
-   * Take into account that this number could be not correct
-   * if the nodes are using graphical actions
-   * @returns number of milliseconds it took the last cycle
-   */
-  getElapsedTime(): number {
-    return this.elapsed_time
   }
 
   /**
@@ -1618,6 +1488,7 @@ export class LGraph
         useExecutionOrderStore().remove(graphScopeOf(this), node.id)
         detachNodeFromStores(this, node)
         detachNodeLayout(node)
+        retireMountedNodeSize(this, node.id)
 
         const { list_of_graphcanvas } = this
         if (list_of_graphcanvas) {
@@ -1675,6 +1546,7 @@ export class LGraph
       }
     } finally {
       for (const subgraph of subgraphs) {
+        retireMountedGraphSizes(subgraph)
         unregisterAllLinkTopologies(subgraph)
         unregisterAllRerouteChains(subgraph)
         detachAllNodesFromStores(subgraph)
@@ -2194,13 +2066,18 @@ export class LGraph
     return this.createNormalizedSubgraphs(normalized)
   }
 
-  private createNormalizedSubgraphs(data: ExportedSubgraph[]): Subgraph[] {
+  private createNormalizedSubgraphs(
+    data: ExportedSubgraph[],
+    viewOptions?: { preserveMountedNodeSizes?: boolean }
+  ): Subgraph[] {
     const subgraphs = data.map((definition) =>
       this.createNormalizedSubgraph(definition)
     )
     try {
       for (const definition of topologicalSortSubgraphs(data))
-        this.subgraphs.get(definition.id)?.configure(definition)
+        this.subgraphs
+          .get(definition.id)
+          ?.configure(definition, undefined, viewOptions)
       return subgraphs
     } catch (error) {
       try {
@@ -3099,7 +2976,8 @@ export class LGraph
    */
   configure(
     data: ISerialisedGraph | SerialisableGraph | null | undefined,
-    keep_old?: boolean
+    keep_old?: boolean,
+    viewOptions?: { preserveMountedNodeSizes?: boolean }
   ): boolean | undefined {
     data = runtimeOptional(data)
     if (!data) return
@@ -3126,9 +3004,8 @@ export class LGraph
     return withGraphIntentSource('load', () => {
       beginNamedValuesShadowDiffLoad()
       try {
-        // TODO: Finish typing configure()
         const data = normalizeConfiguredTopology(payload)
-        if (options.clearGraph) this.clear()
+        if (options.clearGraph) this.clear(viewOptions)
         else detachGraphLayouts([this])
 
         this._configureBase(data)
@@ -3267,7 +3144,7 @@ export class LGraph
           const finalSubgraphs = normalized?.subgraphs ?? subgraphs
           effectiveNodesData = normalized?.rootNodes ?? nodesData
 
-          this.createNormalizedSubgraphs(finalSubgraphs)
+          this.createNormalizedSubgraphs(finalSubgraphs, viewOptions)
         }
 
         let error = false
@@ -3564,7 +3441,6 @@ export class Subgraph
   }
 
   /** Clones and registers the subgraph under a new ID. */
-  // fallow-ignore-next-line unused-class-member
   clone(): Subgraph {
     const exported = this.asSerialisable()
     exported.id = createUuidv4()
@@ -3621,12 +3497,17 @@ export class Subgraph
     data:
       | (ISerialisedGraph & ExportedSubgraph)
       | (SerialisableGraph & ExportedSubgraph),
-    keep_old?: boolean
+    keep_old?: boolean,
+    viewOptions?: { preserveMountedNodeSizes?: boolean }
   ): boolean | undefined {
     const normalized = normalizeConfiguredTopology(data)
-    const r = super.configure(normalized, keep_old)
+    const serialisedInputLinks = captureSerialisedInputLinks(normalized.nodes)
+    const r = super.configure(normalized, keep_old, viewOptions)
 
     this._configureSubgraph(normalized)
+    withGraphIntentSource('load', () =>
+      pruneDanglingSubgraphLinks(this, serialisedInputLinks)
+    )
     return r
   }
 

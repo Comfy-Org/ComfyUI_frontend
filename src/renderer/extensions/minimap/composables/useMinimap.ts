@@ -1,57 +1,64 @@
 import {
   useDocumentVisibility,
+  useEventListener,
   useIntervalFn,
   usePreferredReducedMotion,
   useRafFn
 } from '@vueuse/core'
-import { computed, nextTick, ref, shallowRef, watch } from 'vue'
-import type { ShallowRef } from 'vue'
+import { computed, watch } from 'vue'
+import type { CSSProperties, ShallowRef } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
 import {
   getMinimapDecorations,
   minimapDecorationRevision
 } from '@/platform/canvas/minimapDecorationRegistry'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 
-import { MINIMAP_DECORATION_POP_MS } from '@/renderer/extensions/minimap/minimapCanvasRenderer'
-import type { MinimapSettingsKey } from '@/renderer/extensions/minimap/types'
+import { useThemeStore } from '@/platform/theme/themeStore'
+import { useExecutionStore } from '@/stores/executionStore'
+import { MinimapDataSource } from '@/renderer/extensions/minimap/data/MinimapDataSource'
+import {
+  MINIMAP_DECORATION_POP_MS,
+  renderMinimapToCanvas
+} from '@/renderer/extensions/minimap/minimapCanvasRenderer'
+import type {
+  MinimapCanvas,
+  MinimapChange,
+  MinimapSettingsKey
+} from '@/renderer/extensions/minimap/types'
 import { useMinimapGraph } from './useMinimapGraph'
 import { useMinimapInteraction } from './useMinimapInteraction'
-import { useMinimapRenderer } from './useMinimapRenderer'
 import { useMinimapSettings } from './useMinimapSettings'
 import { useMinimapViewport } from './useMinimapViewport'
 
-/** How often to compare digests for state that emits no event; see the poll. */
 const CHANGE_DETECTION_INTERVAL_MS = 100
 
 export function useMinimap({
-  canvasRefMaybe,
-  containerRefMaybe
+  canvasRef,
+  containerRef
 }: {
-  canvasRefMaybe?: Readonly<ShallowRef<HTMLCanvasElement | null>>
-  containerRefMaybe?: Readonly<ShallowRef<HTMLDivElement | null>>
-} = {}) {
+  canvasRef: Readonly<ShallowRef<HTMLCanvasElement | null>>
+  containerRef: Readonly<ShallowRef<HTMLDivElement | null>>
+}) {
   const canvasStore = useCanvasStore()
-  const workflowStore = useWorkflowStore()
   const settingStore = useSettingStore()
-
-  const minimapRef = ref<HTMLElement | null>(null)
-  const canvasRef = canvasRefMaybe ?? shallowRef(null)
-  const containerRef = containerRefMaybe ?? shallowRef(null)
-
-  const visible = ref(true)
-  const initialized = ref(false)
+  const executionStore = useExecutionStore()
+  const themeStore = useThemeStore()
   const motionPreference = usePreferredReducedMotion()
-
+  const documentVisibility = useDocumentVisibility()
   const width = 250
   const height = 200
-
-  const canvas = computed(() => canvasStore.canvas ?? undefined)
-  const graph = computed(
-    () => workflowStore.activeSubgraph ?? canvas.value?.graph ?? undefined
+  const graph = computed(() => canvasStore.currentGraph ?? undefined)
+  const canvas = computed<MinimapCanvas | undefined>(() =>
+    graph.value ? (canvasStore.canvas ?? undefined) : undefined
+  )
+  const active = computed(
+    () =>
+      !!canvas.value &&
+      !!canvasRef.value &&
+      documentVisibility.value !== 'hidden'
   )
   const decorations = computed(() => {
     const revision = minimapDecorationRevision.value
@@ -70,7 +77,6 @@ export function useMinimap({
       : rows
   })
 
-  const settings = useMinimapSettings()
   const {
     nodeColors,
     showLinks,
@@ -79,15 +85,12 @@ export function useMinimap({
     renderError,
     containerStyles,
     panelStyles
-  } = settings
+  } = useMinimapSettings()
 
-  const updateOption = async (key: MinimapSettingsKey, value: boolean) => {
-    await settingStore.set(key, value)
-    renderer.forceFullRedraw()
-    renderer.updateMinimap(viewport.updateBounds, viewport.updateViewport)
-  }
+  const updateOption = (key: MinimapSettingsKey, value: boolean) =>
+    settingStore.set(key, value)
 
-  const viewport = useMinimapViewport(canvas, graph, width, height)
+  const viewport = useMinimapViewport(canvas, width, height)
 
   const interaction = useMinimapInteraction(
     containerRef,
@@ -99,216 +102,138 @@ export function useMinimap({
     canvas
   )
 
-  const canDraw = computed(() => visible.value && !!canvasRef.value)
+  const graphReader = useMinimapGraph(graph)
+  let publishedSource: MinimapDataSource | undefined
 
-  const checkAndRepaint = () => {
-    if (!canDraw.value) return
-    if (graphManager.checkForChanges()) {
-      renderer.updateMinimap(viewport.updateBounds, viewport.updateViewport)
-    }
+  function paint(source: MinimapDataSource, now: number) {
+    if (!active.value || !canvasRef.value) return
+    renderMinimapToCanvas(canvasRef.value, source, {
+      bounds: viewport.bounds.value,
+      scale: viewport.scale.value,
+      settings: {
+        nodeColors: nodeColors.value,
+        showLinks: showLinks.value,
+        showGroups: showGroups.value,
+        renderBypass: renderBypass.value,
+        renderError: renderError.value
+      },
+      width,
+      height,
+      decorations: decorations.value,
+      now
+    })
   }
 
-  const graphManager = useMinimapGraph(graph, () => checkAndRepaint())
+  function refresh(minimum: MinimapChange = 'none', now = performance.now()) {
+    if (!active.value) return
+    const change = graphReader.checkForChanges()
+    if (change === 'none' && minimum === 'none') return
+    const source = new MinimapDataSource(
+      graph.value,
+      executionStore.nodeLocationProgressStates
+    )
+    if (change === 'geometry' || minimum === 'geometry') {
+      viewport.updateBounds(source)
+      viewport.updateViewport()
+    }
+    publishedSource = source
+    paint(source, now)
+  }
 
-  const renderer = useMinimapRenderer(
-    canvasRef,
-    graph,
-    viewport.bounds,
-    viewport.scale,
-    graphManager.updateFlags,
-    settings,
-    width,
-    height,
-    decorations
-  )
+  function hasAnimatingDecorations(now: number) {
+    return decorations.value.some(
+      ({ enteredAt }) =>
+        enteredAt !== undefined && now - enteredAt < MINIMAP_DECORATION_POP_MS
+    )
+  }
 
   const decorationFrames = useRafFn(
     () => {
       const now = performance.now()
-      if (
-        !canDraw.value ||
-        decorations.value.every(
-          ({ enteredAt }) =>
-            enteredAt === undefined ||
-            now - enteredAt >= MINIMAP_DECORATION_POP_MS
-        )
-      ) {
+      if (publishedSource) paint(publishedSource, now)
+      if (!active.value || !hasAnimatingDecorations(now))
         decorationFrames.pause()
-        return
-      }
-      renderer.forceFullRedraw()
-      renderer.updateMinimap(viewport.updateBounds, viewport.updateViewport)
     },
     { immediate: false }
   )
 
-  const shouldAnimateDecorations = computed(
-    () =>
-      initialized.value &&
-      canDraw.value &&
-      decorations.value.some(
-        ({ enteredAt }) =>
-          enteredAt !== undefined &&
-          performance.now() - enteredAt < MINIMAP_DECORATION_POP_MS
-      )
-  )
+  const changeDetection = useIntervalFn(refresh, CHANGE_DETECTION_INTERVAL_MS, {
+    immediate: false
+  })
+
+  useEventListener(window, 'resize', interaction.updateContainerRect)
+  useEventListener(window, 'scroll', interaction.updateContainerRect)
+  useEventListener(window, 'resize', viewport.updateCanvasDimensions)
 
   watch(
-    shouldAnimateDecorations,
-    (active) => {
-      if (!initialized.value || !canDraw.value) {
-        decorationFrames.pause()
-        return
+    [active, canvas, canvasRef, containerRef, graph],
+    ([isActive]) => {
+      changeDetection.pause()
+      viewport.stopViewportSync()
+      decorationFrames.pause()
+      if (!graph.value) {
+        publishedSource = undefined
+        canvasRef.value?.getContext('2d')?.clearRect(0, 0, width, height)
       }
-      renderer.forceFullRedraw()
-      renderer.updateMinimap(viewport.updateBounds, viewport.updateViewport)
-      if (active) decorationFrames.resume()
-      else decorationFrames.pause()
-    },
-    { immediate: true }
-  )
-
-  const { pause: pauseChangeDetection, resume: resumeChangeDetection } =
-    useIntervalFn(checkAndRepaint, CHANGE_DETECTION_INTERVAL_MS, {
-      immediate: false
-    })
-
-  const documentVisibility = useDocumentVisibility()
-  const shouldPoll = computed(
-    () =>
-      initialized.value &&
-      canDraw.value &&
-      documentVisibility.value !== 'hidden'
-  )
-
-  watch(
-    shouldPoll,
-    (active) => {
-      if (active) resumeChangeDetection()
-      else pauseChangeDetection()
-    },
-    { immediate: true }
-  )
-
-  const init = async () => {
-    if (initialized.value) return
-
-    visible.value = settingStore.get('Comfy.Minimap.Visible')
-
-    if (canvas.value && graph.value) {
-      graphManager.init()
-
-      if (containerRef.value) {
-        interaction.updateContainerRect()
-      }
+      if (!isActive) return
+      interaction.updateContainerRect()
       viewport.updateCanvasDimensions()
-
-      window.addEventListener('resize', interaction.updateContainerRect)
-      window.addEventListener('scroll', interaction.updateContainerRect)
-      window.addEventListener('resize', viewport.updateCanvasDimensions)
-
-      renderer.forceFullRedraw()
-      renderer.updateMinimap(viewport.updateBounds, viewport.updateViewport)
-      viewport.updateViewport()
-
-      if (visible.value) viewport.startViewportSync()
-      initialized.value = true
-    }
-  }
-
-  const destroy = () => {
-    pauseChangeDetection()
-    decorationFrames.pause()
-    viewport.stopViewportSync()
-    graphManager.destroy()
-
-    window.removeEventListener('resize', interaction.updateContainerRect)
-    window.removeEventListener('scroll', interaction.updateContainerRect)
-    window.removeEventListener('resize', viewport.updateCanvasDimensions)
-
-    initialized.value = false
-  }
-
-  watch(
-    canvas,
-    async (newCanvas, oldCanvas) => {
-      if (oldCanvas) {
-        graphManager.cleanupEventListeners()
-        pauseChangeDetection()
-        viewport.stopViewportSync()
-        graphManager.destroy()
-        window.removeEventListener('resize', interaction.updateContainerRect)
-        window.removeEventListener('scroll', interaction.updateContainerRect)
-        window.removeEventListener('resize', viewport.updateCanvasDimensions)
-      }
-      if (newCanvas && !initialized.value) {
-        await init()
-      }
+      const now = performance.now()
+      refresh('geometry', now)
+      changeDetection.resume()
+      viewport.startViewportSync()
+      if (hasAnimatingDecorations(now)) decorationFrames.resume()
     },
     { immediate: true, flush: 'post' }
   )
 
-  watch(graph, (newGraph, oldGraph) => {
-    if (newGraph && newGraph !== oldGraph) {
-      graphManager.cleanupEventListeners(oldGraph || undefined)
-      graphManager.setupEventListeners()
-      if (!canDraw.value) return
-      renderer.forceFullRedraw()
-      renderer.updateMinimap(viewport.updateBounds, viewport.updateViewport)
-    }
-  })
+  watch(
+    [
+      nodeColors,
+      showLinks,
+      showGroups,
+      renderBypass,
+      renderError,
+      () => themeStore.activeTheme,
+      decorations
+    ],
+    () => {
+      const now = performance.now()
+      refresh('picture', now)
+      if (active.value && hasAnimatingDecorations(now))
+        decorationFrames.resume()
+      else decorationFrames.pause()
+    },
+    { flush: 'post' }
+  )
 
-  watch(visible, async (isVisible) => {
-    if (isVisible) {
-      if (containerRef.value) {
-        interaction.updateContainerRect()
-      }
-      viewport.updateCanvasDimensions()
+  const viewportStyles = {
+    width: `${width}px`,
+    height: `${height}px`,
+    transformOrigin: '0 0',
+    backgroundColor: 'color-mix(in srgb, var(--foreground) 20%, transparent)',
+    willChange: 'transform',
+    pointerEvents: 'none'
+  } satisfies CSSProperties
 
-      renderer.forceFullRedraw()
-
-      await nextTick()
-      await nextTick()
-
-      renderer.updateMinimap(viewport.updateBounds, viewport.updateViewport)
-      viewport.updateViewport()
-      viewport.startViewportSync()
-    } else {
-      viewport.stopViewportSync()
-    }
-  })
-
-  const toggle = async () => {
-    visible.value = !visible.value
-    await settingStore.set('Comfy.Minimap.Visible', visible.value)
-  }
-
-  const setMinimapRef = (ref: HTMLElement | null) => {
-    minimapRef.value = ref
-  }
-
-  const viewportStyles = computed(() => {
+  const viewportTransforms = computed(() => {
     const transform = viewport.viewportTransform.value
+    const scaleX = transform.width / width
+    const scaleY = transform.height / height
     return {
-      transform: `translate(${transform.x}px, ${transform.y}px)`,
-      width: `${transform.width}px`,
-      height: `${transform.height}px`,
-      border: '2px solid var(--foreground)',
-      backgroundColor: 'color-mix(in srgb, var(--foreground) 20%, transparent)',
-      willChange: 'transform',
-      backfaceVisibility: 'hidden' as const,
-      perspective: '1000px',
-      pointerEvents: 'none' as const
+      box: `translate(${transform.x}px, ${transform.y}px) scale(${scaleX}, ${scaleY})`,
+      horizontalEdge: `scaleY(${1 / (scaleY || 1)})`,
+      verticalEdge: `scaleX(${1 / (scaleX || 1)})`
     }
   })
 
   return {
-    visible: computed(() => visible.value),
-    initialized: computed(() => initialized.value),
+    interactive: computed(() => !!canvas.value),
     decorationCount: computed(() => decorations.value.length),
 
     containerStyles,
     viewportStyles,
+    viewportTransforms,
     panelStyles,
     width,
     height,
@@ -319,16 +244,11 @@ export function useMinimap({
     renderBypass,
     renderError,
 
-    init,
-    destroy,
-    toggle,
-    renderMinimap: renderer.renderMinimap,
     handlePointerDown: interaction.handlePointerDown,
     handlePointerMove: interaction.handlePointerMove,
     handlePointerUp: interaction.handlePointerUp,
     handlePointerCancel: interaction.handlePointerCancel,
     handleWheel: interaction.handleWheel,
-    setMinimapRef,
     updateOption
   }
 }

@@ -43,6 +43,33 @@ describe('syncSlotOffsets', () => {
     ).toEqual({ x: 200, y: 24 })
   })
 
+  it('anchors expanded links at dots inset from the node edge', () => {
+    const nodeId = toNodeId('inset')
+    const node = document.createElement('div')
+    node.dataset.nodeId = String(nodeId)
+    Object.defineProperty(node, 'offsetWidth', { value: 200 })
+    setRect(node, new DOMRect(100, 200, 400, 300))
+
+    const input = document.createElement('div')
+    input.dataset.slotKey = slotId(nodeId, 'input', 0)
+    setRect(input, new DOMRect(108, 248, 24, 40))
+    node.append(input)
+
+    const output = document.createElement('div')
+    output.dataset.slotKey = slotId(nodeId, 'output', 0)
+    setRect(output, new DOMRect(470, 248, 24, 40))
+    node.append(output)
+
+    syncSlotOffsets(node, GRAPH_ID, nodeId)
+
+    expect(
+      layoutStore.getSlotOffset(GRAPH_ID, nodeId, 0, 'input', 'expanded')
+    ).toEqual({ x: 10, y: 4 })
+    expect(
+      layoutStore.getSlotOffset(GRAPH_ID, nodeId, 0, 'output', 'expanded')
+    ).toEqual({ x: 191, y: 4 })
+  })
+
   it('stores collapsed offsets separately from expanded geometry', () => {
     const nodeId = toNodeId('collapsed')
     const node = document.createElement('div')
@@ -80,7 +107,9 @@ describe('syncSlotOffsets', () => {
     layoutStore.updateNodeSlotOffsets(
       GRAPH_ID,
       nodeId,
-      [{ index: 0, type: 'input', position: { x: 1, y: 2 } }],
+      [
+        { index: 0, type: 'input', bounds: { x: 1, y: 2, width: 0, height: 0 } }
+      ],
       'expanded'
     )
 
@@ -100,7 +129,9 @@ describe('syncSlotOffsets', () => {
     layoutStore.updateNodeSlotOffsets(
       GRAPH_ID,
       nodeId,
-      [{ index: 0, type: 'input', position: { x: 1, y: 2 } }],
+      [
+        { index: 0, type: 'input', bounds: { x: 1, y: 2, width: 0, height: 0 } }
+      ],
       'expanded'
     )
 

@@ -1,7 +1,7 @@
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { getActivePinia } from 'pinia'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -114,7 +114,12 @@ describe('WidgetTextPreview', () => {
   it('renders rich markdown when preview_mode is on', () => {
     renderPreview('# Title', { markdown: true })
 
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Title')
+    expect(
+      within(screen.getByRole('region', { name: 'preview_text' })).getByRole(
+        'heading',
+        { level: 1 }
+      )
+    ).toHaveTextContent('Title')
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
   })
 

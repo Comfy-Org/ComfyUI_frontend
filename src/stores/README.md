@@ -152,13 +152,12 @@ The following table lists ALL 46 store instances in the system as of 2026-01-29:
 
 Located in `stores/workspace/`:
 
-| File                 | Store                | Description                                 | Category |
-| -------------------- | -------------------- | ------------------------------------------- | -------- |
-| bottomPanelStore.ts  | useBottomPanelStore  | Controls bottom panel visibility and state  | UI       |
-| colorPaletteStore.ts | useColorPaletteStore | Manages color palette configurations        | UI       |
-| nodeHelpStore.ts     | useNodeHelpStore     | Handles node help and documentation display | UI       |
-| searchBoxStore.ts    | useSearchBoxStore    | Manages search box functionality            | UI       |
-| sidebarTabStore.ts   | useSidebarTabStore   | Controls sidebar tab states and navigation  | UI       |
+| File                | Store               | Description                                 | Category |
+| ------------------- | ------------------- | ------------------------------------------- | -------- |
+| bottomPanelStore.ts | useBottomPanelStore | Controls bottom panel visibility and state  | UI       |
+| nodeHelpStore.ts    | useNodeHelpStore    | Handles node help and documentation display | UI       |
+| searchBoxStore.ts   | useSearchBoxStore   | Manages search box functionality            | UI       |
+| sidebarTabStore.ts  | useSidebarTabStore  | Controls sidebar tab states and navigation  | UI       |
 
 ## Store Development Guidelines
 

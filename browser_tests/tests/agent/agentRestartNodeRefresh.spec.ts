@@ -76,7 +76,6 @@ test.describe(
         const page = comfyPage.page
 
         await agentPanel.open()
-        await agentPanel.selectWorkflow('restart_node_refresh')
 
         const deliverRestartReport = () =>
           test.step('deliver the agent restart report', async () => {

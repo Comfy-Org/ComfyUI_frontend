@@ -1,7 +1,7 @@
 import { datadogRum } from '@datadog/browser-rum'
 import posthog from 'posthog-js'
 import type { CaptureResult } from 'posthog-js'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
 import type {
@@ -9,6 +9,9 @@ import type {
   CheckoutJourneyTelemetryEvent
 } from '@comfyorg/account-core/billing'
 import type { CloudTelemetryConfig } from '@comfyorg/account-core/firebase'
+import { parseBillingEntry } from '@comfyorg/billing-contract'
+
+import { recordBillingEntry } from '@/entry/billingEntry'
 
 import type { SessionIdentity } from '@/telemetry/billingWebTelemetry'
 import {
@@ -146,10 +149,10 @@ describe('trackBillingEvent', () => {
     {
       event: {
         operation: 'capability_read',
-        stage: 'succeeded',
-        outcome: 'success'
+        stage: 'failed',
+        outcome: 'failure'
       },
-      name: 'billing.capability_read.succeeded'
+      name: 'billing.capability_read.failed'
     }
   ])(
     'names the event after its operation and stage as $name',
@@ -391,6 +394,175 @@ describe('trackCheckoutJourneyEvent', () => {
     expect(vi.mocked(posthog.capture).mock.calls.map(([name]) => name)).toEqual(
       ['billing.checkout.submitted']
     )
+  })
+})
+
+describe('the product the customer arrived from', () => {
+  const PLATFORM_ENTRY =
+    '/v1/checkout?product=platform&return_to=platform_billing&plan=standard-monthly'
+  const COMFYUI_ENTRY =
+    '/v1/subscription?product=comfyui&return_to=comfyui_credits'
+  const ENDED: CheckoutJourneyTelemetryEvent = {
+    phase: 'ended',
+    ending_kind: 'success',
+    checkout_journey_id: 'journey-1',
+    checkout_entered_at: '2026-10-01T00:00:00.000Z',
+    assignment_status: 'unavailable',
+    entry_flow: 'initial_subscription',
+    entry_source: 'settings_billing',
+    ui_mode: 'embedded'
+  }
+
+  async function runningTelemetry() {
+    const telemetry = createBillingWebTelemetry()
+    await telemetry.startPostHog({
+      config: Promise.resolve(CONFIGURED),
+      identity: ref<SessionIdentity>({ kind: 'unknown' })
+    })
+    return telemetry
+  }
+
+  const captured = (name: string) =>
+    vi.mocked(posthog.capture).mock.calls.find(([event]) => event === name)?.[1]
+
+  beforeEach(() => {
+    vi.mocked(posthog.capture).mockClear()
+    recordBillingEntry(undefined)
+  })
+
+  afterEach(() => {
+    recordBillingEntry(undefined)
+  })
+
+  it.for<{ name: string; event: BillingTelemetryEvent }>([
+    {
+      name: 'billing.subscription_checkout.succeeded',
+      event: {
+        operation: 'subscription_checkout',
+        stage: 'succeeded',
+        outcome: 'success',
+        billing_op_id: 'op_1'
+      }
+    },
+    {
+      name: 'billing.subscription_checkout.failed',
+      event: {
+        operation: 'subscription_checkout',
+        stage: 'failed',
+        outcome: 'failure',
+        failure_category: 'provider_decline'
+      }
+    },
+    { name: 'billing.operation.succeeded', event: SUCCEEDED },
+    {
+      name: 'billing.operation.failed',
+      event: {
+        operation: 'operation',
+        stage: 'failed',
+        outcome: 'failure',
+        operation_type: 'subscription',
+        failure_category: 'provider_decline'
+      }
+    },
+    {
+      name: 'billing.operation.timeout',
+      event: {
+        operation: 'operation',
+        stage: 'timeout',
+        outcome: 'failure',
+        operation_type: 'topup',
+        failure_category: 'poll_timeout'
+      }
+    },
+    {
+      name: 'billing.topup.succeeded',
+      event: { operation: 'topup', stage: 'succeeded', outcome: 'success' }
+    },
+    {
+      name: 'billing.topup.failed',
+      event: {
+        operation: 'topup',
+        stage: 'failed',
+        outcome: 'failure',
+        failure_category: 'network'
+      }
+    }
+  ])('names the arriving product on $name', async ({ name, event }) => {
+    recordBillingEntry(parseBillingEntry(PLATFORM_ENTRY))
+    const telemetry = await runningTelemetry()
+
+    telemetry.trackBillingEvent(event)
+
+    expect(captured(name)).toMatchObject({
+      product: 'platform',
+      billing_surface: 'billing_web'
+    })
+  })
+
+  it.for<{ phase: 'ended' | 'abandoned' }>([
+    { phase: 'ended' },
+    { phase: 'abandoned' }
+  ])(
+    'names the arriving product on billing.checkout.$phase',
+    async ({ phase }) => {
+      recordBillingEntry(parseBillingEntry(PLATFORM_ENTRY))
+      const telemetry = await runningTelemetry()
+
+      telemetry.trackCheckoutJourneyEvent(
+        phase === 'ended'
+          ? ENDED
+          : { ...ENDED, phase, last_phase: 'submitted', exit: 'page_exit' }
+      )
+
+      expect(
+        vi
+          .mocked(posthog.capture)
+          .mock.calls.find(
+            ([event]) => event === `billing.checkout.${phase}`
+          )?.[1]
+      ).toMatchObject({ product: 'platform', billing_surface: 'billing_web' })
+    }
+  )
+
+  it('names whichever product the current entry came from', async () => {
+    const telemetry = await runningTelemetry()
+    recordBillingEntry(parseBillingEntry(COMFYUI_ENTRY))
+
+    telemetry.trackBillingEvent(SUCCEEDED)
+
+    expect(captured('billing.operation.succeeded')).toMatchObject({
+      product: 'comfyui'
+    })
+  })
+
+  it('claims no product when no entry names one, as on a return page outside the contract', async () => {
+    const telemetry = await runningTelemetry()
+
+    telemetry.trackBillingEvent(SUCCEEDED)
+    telemetry.trackCheckoutJourneyEvent(ENDED)
+
+    expect(captured('billing.operation.succeeded')).not.toHaveProperty(
+      'product'
+    )
+    expect(captured('billing.checkout.ended')).not.toHaveProperty('product')
+  })
+
+  it("keeps the product an event names itself over the entry's", async () => {
+    recordBillingEntry(parseBillingEntry(COMFYUI_ENTRY))
+    const telemetry = await runningTelemetry()
+
+    telemetry.trackBillingEvent({
+      operation: 'web_entry',
+      stage: 'received',
+      outcome: 'pending',
+      product: 'platform',
+      intent: 'checkout',
+      has_plan: true
+    })
+
+    expect(captured('billing.web_entry.received')).toMatchObject({
+      product: 'platform'
+    })
   })
 })
 

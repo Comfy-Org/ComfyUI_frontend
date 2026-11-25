@@ -132,7 +132,8 @@ const zBoundingBoxesInputSpec = zBaseInputOptions.extend({
         })
       })
     )
-    .optional()
+    .optional(),
+  max_boxes: z.number().int().positive().optional()
 })
 
 const zTextareaInputSpec = zBaseInputOptions.extend({

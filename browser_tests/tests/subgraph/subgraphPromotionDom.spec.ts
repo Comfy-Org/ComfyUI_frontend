@@ -143,25 +143,24 @@ test.describe(
           comfyPage
         }) => {
           await comfyPage.workflow.loadWorkflow(
-            'subgraphs/subgraph-with-multiple-promoted-widgets'
+            'subgraphs/subgraph-three-promoted-widgets'
           )
 
           const subgraphNode = comfyPage.vueNodes.getNodeLocator('11')
           const promotedTextareas = subgraphNode.getByRole('textbox')
-          await expect(promotedTextareas).toHaveCount(2)
+          await expect(promotedTextareas).toHaveCount(3)
 
           await openSubgraphById(comfyPage, '11')
 
-          const interiorTextareas = comfyPage.page
-            .locator('[data-node-id]')
-            .getByRole('textbox')
+          const interiorTextareas =
+            comfyPage.vueNodes.nodes.getByRole('textbox')
           await expect(interiorTextareas).toHaveCount(0)
 
           await comfyPage.subgraph.exitViaBreadcrumb()
 
           await expect(
             comfyPage.vueNodes.getNodeLocator('11').getByRole('textbox')
-          ).toHaveCount(2)
+          ).toHaveCount(3)
         })
       }
     )

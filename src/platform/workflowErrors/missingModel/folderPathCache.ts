@@ -1,3 +1,5 @@
+import { isEmpty } from 'es-toolkit/compat'
+
 import { api } from '@/scripts/api'
 
 /**
@@ -22,6 +24,10 @@ export function loadFolderPathsOnce(): Promise<Record<string, string[]>> {
 
   const request: Promise<Record<string, string[]>> = api
     .getFolderPaths()
+    .then((paths) => {
+      if (isEmpty(paths) && pending === request) pending = undefined
+      return paths
+    })
     .catch((error: unknown) => {
       // A failure must not be cached, but only this request may clear it: a
       // reconnect, or a caller that asked after one, may already have put a

@@ -55,7 +55,7 @@ describe('ExecuteButton', () => {
     const commandStore = useCommandStore()
 
     vi.spyOn(canvasStore, 'getCanvas').mockReturnValue(mockCanvas)
-    vi.spyOn(commandStore, 'execute').mockResolvedValue()
+    vi.spyOn(commandStore, 'execute').mockResolvedValue(undefined)
 
     vi.mocked(useSelectionState).mockReturnValue(
       fromPartial<ReturnType<typeof useSelectionState>>({

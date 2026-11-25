@@ -27,7 +27,6 @@ export interface MinimapRenderContext extends Size2D {
   scale: number
   settings: MinimapRenderSettings
   decorations?: readonly ResolvedMinimapNodeDecoration[]
-  nodeProgressStates?: MinimapNodeProgressStates
   now?: number
 }
 
@@ -50,12 +49,7 @@ interface MinimapRenderSettings {
   renderError: boolean
 }
 
-export interface UpdateFlags {
-  bounds: boolean
-  nodes: boolean
-  connections: boolean
-  viewport: boolean
-}
+export type MinimapChange = 'none' | 'picture' | 'geometry'
 
 export type MinimapSettingsKey =
   | 'Comfy.Minimap.NodeColors'
