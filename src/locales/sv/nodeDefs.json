@@ -6345,7 +6345,7 @@
   },
   "GetImageSize": {
     "display_name": "Hämta bildstorlek",
-    "description": "Returnerar bildens bredd och höjd och skickar den vidare oförändrad.",
+    "description": "Returnerar bildens bredd, höjd och batchstorlek.",
     "inputs": {
       "image": {
         "name": "bild"
