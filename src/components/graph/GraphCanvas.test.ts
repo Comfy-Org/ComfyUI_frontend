@@ -88,7 +88,8 @@ vi.mock(import('@/platform/workspace/deploymentHint'), () => ({
  * pins the order the deep-link loaders depend on: dialogs they open must land
  * on top of the overlays `handleStartupOutcome` establishes.
  */
-const mocks = vi.hoisted(() => ({
+const mocks = await vi.hoisted(async () => ({
+  rootGraph: (await import('vue')).shallowRef<LGraph>(),
   handleStartupOutcome: vi.fn(),
   handleUrlWorkflow: vi.fn(),
   initializeWorkflow: vi.fn(),
@@ -124,8 +125,7 @@ vi.mock(
   })
 )
 
-vi.mock<unknown>(import('@/scripts/app'), async () => {
-  const { shallowRef } = await import('vue')
+vi.mock<unknown>(import('@/scripts/app'), () => {
   const canvas = {
     render_canvas_border: false,
     graph: null,
@@ -133,25 +133,21 @@ vi.mock<unknown>(import('@/scripts/app'), async () => {
     setDirty: mocks.setDirty,
     canvas: document.createElement('canvas')
   }
-  const rootGraphInternal = shallowRef<LGraph>()
   return {
     app: {
       vueAppReady: false,
       canvas,
       get graph(): LGraph {
-        return rootGraphInternal.value!
+        return mocks.rootGraph.value!
       },
       get rootGraph(): LGraph {
-        return rootGraphInternal.value!
+        return mocks.rootGraph.value!
       },
       get rootGraphOrUndefined(): LGraph | undefined {
-        return rootGraphInternal.value
+        return mocks.rootGraph.value
       },
       get isGraphReady(): boolean {
-        return !!rootGraphInternal.value
-      },
-      set rootGraph(graph: LGraph | undefined) {
-        rootGraphInternal.value = graph
+        return !!mocks.rootGraph.value
       },
       nodeOutputs: {},
       nodePreviewImages: {},
@@ -229,13 +225,8 @@ beforeEach(() => {
   vi.spyOn(api, 'getGlobalSubgraphs').mockResolvedValue({})
 })
 
-/**
- * Installs (or clears) the mock app's root graph, standing in for the
- * assignment `ComfyApp.setup()` makes. The real class exposes no setter, so the
- * mock's test-only one is reached through a cast.
- */
 function setRootGraph(graph: LGraph | undefined) {
-  ;(app as unknown as { rootGraph: LGraph | undefined }).rootGraph = graph
+  mocks.rootGraph.value = graph
 }
 
 async function mountGraphCanvas(

@@ -57,7 +57,7 @@ const box = (over: Partial<BoundingBox> = {}): BoundingBox => ({
   ...over
 })
 
-const fakeCtx = {
+const fakeCtx = fromPartial<CanvasRenderingContext2D>({
   measureText: (s: string) => ({ width: s.length * 7 }),
   setTransform: () => {},
   clearRect: () => {},
@@ -74,7 +74,7 @@ const fakeCtx = {
   fillStyle: '',
   strokeStyle: '',
   lineWidth: 0
-} as unknown as CanvasRenderingContext2D
+})
 
 function prepCanvas(canvas: HTMLCanvasElement) {
   Object.defineProperty(canvas, 'clientWidth', {
@@ -85,8 +85,7 @@ function prepCanvas(canvas: HTMLCanvasElement) {
     value: 100,
     configurable: true
   })
-  canvas.getContext = (() =>
-    fakeCtx) as unknown as HTMLCanvasElement['getContext']
+  canvas.getContext = vi.fn().mockReturnValue(fakeCtx)
   canvas.getBoundingClientRect = () => ({
     left: 0,
     top: 0,

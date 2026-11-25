@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { describe, expect, it, onTestFinished } from 'vitest'
 
 import {
@@ -89,7 +90,7 @@ describe('warnAboutSlowHasSelectors', () => {
     const theme = sheetAt('/theme.css', 'body:has(.dialog) { color: red }')
     const parent = {
       href: '/style.css',
-      cssRules: [{ styleSheet: theme }] as unknown as CSSRuleList
+      cssRules: fromAny<CSSRuleList, unknown>([{ styleSheet: theme }])
     } as CSSStyleSheet
 
     warnAboutSlowHasSelectors([parent])

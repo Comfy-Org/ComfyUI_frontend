@@ -115,7 +115,7 @@ export function convertContextMenuToOptions(
       option.action = () => {
         try {
           void item.callback?.call(
-            item as unknown as ContextMenuDivElement,
+            createContextMenuTarget(item),
             item.value,
             {},
             undefined,
@@ -141,19 +141,22 @@ function captureDynamicSubmenu(
   let capturedItems: readonly (IContextMenuValue | string | null)[] | undefined
   let capturedOptions: IContextMenuOptions | undefined
   const OriginalContextMenu = LiteGraph.ContextMenu
+  const mockMenu = {
+    close: () => {},
+    root: document.createElement('div')
+  } as ContextMenu
 
   try {
-    LiteGraph.ContextMenu = function (
-      items: readonly (IContextMenuValue | string | null)[],
-      options?: IContextMenuOptions
-    ) {
-      capturedItems = items
-      capturedOptions = options
-      return {
-        close: () => {},
-        root: document.createElement('div')
-      } as unknown as ContextMenu
-    } as unknown as typeof ContextMenu
+    LiteGraph.ContextMenu = new Proxy(OriginalContextMenu, {
+      construct(
+        _target,
+        [items, options]: ConstructorParameters<typeof ContextMenu>
+      ) {
+        capturedItems = items
+        capturedOptions = options
+        return mockMenu
+      }
+    })
 
     try {
       const mockEvent = new MouseEvent('click', {
@@ -163,13 +166,8 @@ function captureDynamicSubmenu(
         clientY: 0
       })
 
-      const mockMenu = {
-        close: () => {},
-        root: document.createElement('div')
-      } as unknown as ContextMenu
-
       void item.callback?.call(
-        item as unknown as ContextMenuDivElement,
+        createContextMenuTarget(item),
         item.value,
         {},
         mockEvent,
@@ -193,6 +191,14 @@ function captureDynamicSubmenu(
 
   console.warn('[ContextMenuConverter] No items captured for:', item.content)
   return undefined
+}
+
+function createContextMenuTarget(
+  item: IContextMenuValue
+): ContextMenuDivElement {
+  const target = document.createElement('div') as ContextMenuDivElement
+  target.value = item
+  return target
 }
 
 function convertSubmenuToOptions(
@@ -233,7 +239,7 @@ function convertSubmenuToOptions(
       action: () => {
         try {
           void item.callback?.call(
-            item as unknown as ContextMenuDivElement,
+            createContextMenuTarget(item),
             item.value,
             {},
             undefined,

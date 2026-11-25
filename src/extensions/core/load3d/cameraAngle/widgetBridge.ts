@@ -16,7 +16,7 @@ import type {
 
 export interface WidgetLike {
   name: string
-  value: unknown
+  value?: unknown
 }
 
 export interface NodeWithWidgets {

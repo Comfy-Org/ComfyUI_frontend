@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { effectScope, nextTick, ref } from 'vue'
 
@@ -410,8 +411,7 @@ describe('useMissingNodes', () => {
     it('reports no missing core nodes instead of traversing an unready graph', () => {
       mockApp.rootGraph = undefined
       mockCollectAllNodes.mockImplementation((graph) => {
-        // Stands in for the real traversal's unconditional `graph.nodes` read.
-        return [...(graph as unknown as Partial<LGraph>).nodes!]
+        return [...graph.nodes]
       })
       useNodeDefStore().nodeDefsByName = {}
 
@@ -456,11 +456,11 @@ describe('useMissingNodes', () => {
     })
 
     it('recomputes once the graph is configured, not just once at graph-ready', () => {
-      const mockGraph = {
+      const mockGraph = fromPartial<LGraph>({
         nodes: [],
         subgraphs: new Map(),
         events: new CustomEventTarget<LGraphEventMap>()
-      } as unknown as LGraph
+      })
       mockApp.rootGraph = mockGraph
       useNodeDefStore().nodeDefsByName = {}
 
@@ -485,11 +485,11 @@ describe('useMissingNodes', () => {
       const { missingCoreNodes } = useMissingNodes()
       expect(missingCoreNodes.value).toEqual({})
 
-      const graph = {
+      const graph = fromPartial<LGraph>({
         nodes: [],
         subgraphs: new Map(),
         events: new CustomEventTarget<LGraphEventMap>()
-      } as unknown as LGraph
+      })
       mockApp.rootGraph = graph
       await nextTick()
       expect(missingCoreNodes.value).toEqual({})

@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { nextTick } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -48,9 +49,11 @@ describe('useLocalMcpStore', () => {
     localStorage.clear()
     trackLocalMcpEvent.mockClear()
     vi.mocked(getJobDetail).mockReset()
-    vi.mocked(useTelemetry).mockReturnValue({
-      trackLocalMcpEvent
-    } as unknown as ReturnType<typeof useTelemetry>)
+    vi.mocked(useTelemetry).mockReturnValue(
+      fromAny<ReturnType<typeof useTelemetry>, unknown>({
+        trackLocalMcpEvent
+      })
+    )
     vi.spyOn(Date, 'now').mockReturnValue(NOW)
   })
 

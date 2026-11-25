@@ -490,6 +490,21 @@ describe('readSubgraphDefinitions', () => {
     expect(projected[0]?.nodes?.map((node) => node.id)).toEqual([1])
   })
 
+  it.for(['name', 'inputNode', 'outputNode'])(
+    'preserves missing %s for registration to validate',
+    (field) => {
+      const definition = createTestSubgraphData()
+      const doc = seed(definition)
+      storedDefinition(doc, definition.id).delete(field)
+
+      const { definitions, malformed } = readSubgraphDefinitions(doc)
+
+      expect(malformed).toEqual([])
+      expect(definitions).toHaveLength(1)
+      expect(definitions[0]).not.toHaveProperty(field)
+    }
+  )
+
   it.for<[string, (definition: Y.Map<unknown>) => void]>([
     ['inputs', (stored) => stored.set('inputs', 'invalid')],
     [

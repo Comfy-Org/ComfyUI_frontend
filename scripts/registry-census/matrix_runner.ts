@@ -1,4 +1,5 @@
 import { createTestingPinia } from '@pinia/testing'
+import { fromAny } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import crypto from 'node:crypto'
 import fs from 'node:fs'
@@ -56,6 +57,16 @@ type WidgetValueStore = ReturnType<typeof useWidgetValueStore>
 type ConvertibleWidget = IBaseWidget & {
   origType?: string
   origComputeSize?: IBaseWidget['computeSize']
+}
+
+type ExtensionNode = Omit<
+  LGraphNode,
+  'flags' | 'inputs' | 'outputs' | 'widgets'
+> & {
+  flags?: LGraphNode['flags'] | null
+  inputs?: LGraphNode['inputs'] | null
+  outputs?: LGraphNode['outputs'] | null
+  widgets?: LGraphNode['widgets'] | null
 }
 
 interface SigNode {
@@ -808,7 +819,8 @@ function recordFormAgreement(
 }
 
 function signature(graph: LGraph, store: WidgetValueStore | undefined) {
-  const nodes = [...graph._nodes]
+  const extensionNodes: ExtensionNode[] = graph._nodes
+  const nodes = [...extensionNodes]
     .sort((a, b) => Number(a.id) - Number(b.id))
     .map((n) => {
       let r: number | string = UNMEASURED
@@ -828,19 +840,19 @@ function signature(graph: LGraph, store: WidgetValueStore | undefined) {
         id: n.id,
         type: n.type,
         mode: n.mode,
-        collapsed: !!n.flags.collapsed,
+        collapsed: !!n.flags?.collapsed,
         widgets: n.widgets?.length ?? 0,
         wn: (n.widgets ?? []).map((w) => `${w.name}=${w.type}`).join(','),
         r,
         st,
-        in: n.inputs.map((_, i: number) => {
+        in: (n.inputs ?? []).map((_, i: number) => {
           try {
             return n.isInputConnected(i) ? 1 : 0
           } catch {
             return 'e'
           }
         }),
-        out: n.outputs.map((_, i: number) => {
+        out: (n.outputs ?? []).map((_, i: number) => {
           try {
             return n.isOutputConnected(i) ? 1 : 0
           } catch {
@@ -1053,9 +1065,9 @@ export async function runPack(
 
   await op('load', () =>
     graph.configure(
-      structuredClone(defaultWorkflow) as unknown as Parameters<
-        typeof graph.configure
-      >[0]
+      fromAny<Parameters<typeof graph.configure>[0], unknown>(
+        structuredClone(defaultWorkflow)
+      )
     )
   )
   const kAfterLoad = byType('KSampler')
@@ -1236,12 +1248,18 @@ export async function runPack(
       }
       n.pos = [1200, 100]
       graph.add(n)
+      const extensionNode: ExtensionNode = n
+      const [inputCount, outputCount, widgetCount] = [
+        extensionNode.inputs,
+        extensionNode.outputs,
+        extensionNode.widgets
+      ].map((slots) => slots?.length ?? 0)
       const parts = [
-        `in=${n.inputs.length}`,
-        `out=${n.outputs.length}`,
-        `w=${n.widgets?.length ?? 0}`
+        `in=${inputCount}`,
+        `out=${outputCount}`,
+        `w=${widgetCount}`
       ]
-      if (n.inputs.length) {
+      if (inputCount) {
         const ck = byType('CheckpointLoaderSimple')
         try {
           const r = ck?.connect(0, n, 0)
@@ -1303,7 +1321,8 @@ export async function runPack(
   })
   await op('graphToPrompt', async () => {
     const p = await app.graphToPrompt(graph)
-    row.prompt = S(p.output)
+    const output: unknown = p.output
+    row.prompt = S(output ?? {})
   })
 
   row.ops = ops

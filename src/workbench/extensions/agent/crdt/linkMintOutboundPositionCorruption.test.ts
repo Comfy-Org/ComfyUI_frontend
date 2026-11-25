@@ -19,7 +19,7 @@
  * hold at that same numeric position, regardless of name or type: PR #18275's
  * live evidence was a VIDEO link's tuple landing on a STRING input.
  */
-import { fromPartial } from '@total-typescript/shoehorn'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, onTestFinished } from 'vitest'
 
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
@@ -155,7 +155,7 @@ function projectedNode(doc: ReturnType<typeof mint>, nodeId: number) {
   if (!Array.isArray(node.outputs)) {
     throw new Error(`node ${nodeId} projected with no outputs array`)
   }
-  return node as unknown as ProjectedNode
+  return fromAny<ProjectedNode, unknown>(node)
 }
 
 function requireInput(

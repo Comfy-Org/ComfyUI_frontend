@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { effectScope, nextTick, ref } from 'vue'
 import type { EffectScope } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -100,13 +101,15 @@ class MockOffscreenCanvas {
 }
 
 function createMockCanvas(context: unknown = { drawImage: vi.fn() }) {
-  return {
-    width: 0,
-    height: 0,
-    getContext: () => context,
-    toBlob: (callback: BlobCallback) =>
-      callback(new Blob(['thumb'], { type: 'image/jpeg' }))
-  } as unknown as HTMLCanvasElement
+  const canvas = document.createElementNS(
+    'http://www.w3.org/1999/xhtml',
+    'canvas'
+  )
+  if (!(canvas instanceof HTMLCanvasElement)) throw new Error('Expected canvas')
+  canvas.getContext = vi.fn().mockReturnValue(context)
+  canvas.toBlob = (callback) =>
+    callback(new Blob(['thumb'], { type: 'image/jpeg' }))
+  return canvas
 }
 
 function installVideoMocks({
@@ -127,7 +130,7 @@ function installVideoMocks({
       if (video.autoEmitMetadata) {
         queueMicrotask(() => video.emit('loadedmetadata'))
       }
-      return video as unknown as HTMLVideoElement
+      return fromAny<HTMLVideoElement, unknown>(video)
     }
     if (tagName === 'canvas') {
       const canvas = createMockCanvas(canvasContext)

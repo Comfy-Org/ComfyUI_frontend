@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -19,7 +20,7 @@ function createNode(widgetType = 'videoedit') {
       options
     })
   )
-  return { node: { addWidget } as unknown as LGraphNode, addWidget }
+  return { node: fromAny<LGraphNode, unknown>({ addWidget }), addWidget }
 }
 
 describe('useVideoEditWidget', () => {

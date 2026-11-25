@@ -267,6 +267,7 @@
   "devDependencies": {
     "@comfyorg/published-package-build": "workspace:*",
     "@comfyorg/test-utils": "workspace:*",
+    "@total-typescript/shoehorn": "catalog:",
     "@types/node": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "firebase": "catalog:",

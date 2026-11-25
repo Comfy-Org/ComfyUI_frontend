@@ -1,26 +1,27 @@
 import { describe, expect, it, vi } from 'vitest'
+import { fromPartial } from '@total-typescript/shoehorn'
 
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 
 import {
   createSceneHoverHandlers,
   useViewportNodeWiring
 } from './useViewportNodeWiring'
-import type { WirableWidget } from './useViewportNodeWiring'
 
-interface FakeNode {
-  widgets: WirableWidget[]
-  onMouseEnter?: () => void
-  onMouseLeave?: () => void
-  onConnectionsChange?: () => void
+class TestNode extends LGraphNode {
+  declare widgets: IBaseWidget[]
+  override onMouseEnter?: () => void
+  override onMouseLeave?: () => void
+  override onConnectionsChange?: () => void
 }
 
-function makeNode(names: string[]): FakeNode {
-  return { widgets: names.map((name) => ({ name, value: 0 })) }
-}
-
-function asGraphNode(node: FakeNode): LGraphNode {
-  return node as unknown as LGraphNode
+function makeNode(names: string[]): TestNode {
+  const node = new TestNode('Viewport')
+  node.widgets = names.map((name) =>
+    fromPartial<IBaseWidget>({ name, value: 0 })
+  )
+  return node
 }
 
 describe('useViewportNodeWiring', () => {
@@ -32,10 +33,10 @@ describe('useViewportNodeWiring', () => {
     const wiring = useViewportNodeWiring()
 
     wiring.wireWidgets(node, ['a', 'b', 'missing'], onChange)
-    node.widgets[0].callback(5, 'extra')
+    node.widgets[0].callback(5, undefined, node)
     node.widgets[2].callback?.(1)
 
-    expect(original).toHaveBeenCalledWith(5, 'extra')
+    expect(original).toHaveBeenCalledWith(5, undefined, node)
     expect(onChange).toHaveBeenCalledTimes(1)
     expect(onChange).toHaveBeenCalledWith(node.widgets[0])
     expect(node.widgets[1].callback).toBeDefined()
@@ -64,7 +65,7 @@ describe('useViewportNodeWiring', () => {
     const onConnectionsChange = vi.fn()
     const wiring = useViewportNodeWiring()
 
-    wiring.wireNode(asGraphNode(node), {
+    wiring.wireNode(node, {
       viewport: () => viewport,
       onConnectionsChange
     })
@@ -87,7 +88,7 @@ describe('useViewportNodeWiring', () => {
     node.onMouseEnter = originalEnter
     const wiring = useViewportNodeWiring()
     wiring.wireWidgets(node, ['a'], vi.fn())
-    wiring.wireNode(asGraphNode(node), { viewport: () => null })
+    wiring.wireNode(node, { viewport: () => null })
     expect(node.onMouseEnter).not.toBe(originalEnter)
 
     wiring.unwire()

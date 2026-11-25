@@ -1,5 +1,7 @@
 import { mergeTests } from '@playwright/test'
 import type { Locator, WebSocketRoute } from '@playwright/test'
+import type { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 
 import {
   comfyExpect as expect,
@@ -23,6 +25,8 @@ const test = mergeTests(comfyPageFixture, webSocketFixture)
 const NODE_TITLE = 'Flux.2 Image'
 const PROMPT = 'a glorious spooky duck in a cathedral'
 const RUNNING_STATUS = 'Status: Running\nTime elapsed: 3s (~117s remaining)'
+
+type WidgetValueStore = ReturnType<typeof useWidgetValueStore>
 
 /** Binary WS frame type 3 (`progress_text`): [u32 type][u32 idLen][id][text]. */
 function progressTextFrame(nodeId: string, text: string): Buffer {
@@ -86,43 +90,49 @@ async function runGeneration(
 }
 
 /** Prompt widget identity as the widget store and litegraph see it. */
-function readPromptWidget(comfyPage: ComfyPage) {
-  return comfyPage.page.evaluate(() => {
+async function readPromptWidget(comfyPage: ComfyPage) {
+  const { graphId, nodeId } = await comfyPage.page.evaluate(() => {
     const node = window.app!.graph.nodes.find(
       (n) => n.type === 'Flux2ImageNode'
     )
     if (!node) throw new Error('Flux2ImageNode is not on the graph')
-    const root = document.getElementById('vue-app') as unknown as {
-      __vue_app__: {
-        config: {
-          globalProperties: { $pinia: { _s: Map<string, unknown> } }
-        }
-      }
-    }
-    const store = root.__vue_app__.config.globalProperties.$pinia._s.get(
-      'widgetValue'
-    ) as {
-      getNodeWidgetIds: (graphId: string, nodeId: number | string) => string[]
-      getWidget: (id: string) => { type: string; value: unknown } | undefined
-    }
-    const graphId = window.app!.rootGraph.id
-    const promptId = `${graphId}:${node.id}:prompt`
-    const progressTextId = `${graphId}:${node.id}:$$node-text-preview`
-    return {
-      nodeId: String(node.id),
-      liteWidgetNames: (node.widgets ?? []).map((w) => w.name),
-      liteWidgetType: node.widgets?.find((w) => w.name === 'prompt')?.type,
-      storeOrderHasPrompt: store
-        .getNodeWidgetIds(graphId, node.id)
-        .includes(promptId),
-      storeType: store.getWidget(promptId)?.type,
-      storeValue: store.getWidget(promptId)?.value,
-      storeHasProgressText: store.getWidget(progressTextId) !== undefined,
-      autogrowInputs: node.inputs
-        .map((input) => input.name)
-        .filter((name) => name.startsWith('model.images.'))
-    }
+    return { graphId: window.app!.rootGraph.id, nodeId: node.id }
   })
+  return comfyPage.page.evaluate(
+    ({ promptId, progressTextId }) => {
+      const node = window.app!.graph.nodes.find(
+        (n) => n.type === 'Flux2ImageNode'
+      )
+      if (!node) throw new Error('Flux2ImageNode is not on the graph')
+      const root = document.getElementById('vue-app')
+      if (!root) throw new Error('Vue app root is not mounted')
+      const vueApp = root.__vue_app__
+      if (!vueApp) throw new Error('Vue app is not mounted')
+      const store = vueApp.config.globalProperties.$pinia._s.get(
+        'widgetValue'
+      ) as WidgetValueStore | undefined
+      if (!store) throw new Error('Widget value store is not initialized')
+      const graphId = window.app!.rootGraph.id
+      return {
+        nodeId: String(node.id),
+        liteWidgetNames: (node.widgets ?? []).map((w) => w.name),
+        liteWidgetType: node.widgets?.find((w) => w.name === 'prompt')?.type,
+        storeOrderHasPrompt: store
+          .getNodeWidgetIds(graphId, node.id)
+          .includes(promptId),
+        storeType: store.getWidget(promptId)?.type,
+        storeValue: store.getWidget(promptId)?.value,
+        storeHasProgressText: store.getWidget(progressTextId) !== undefined,
+        autogrowInputs: node.inputs
+          .map((input) => input.name)
+          .filter((name) => name.startsWith('model.images.'))
+      }
+    },
+    {
+      promptId: widgetId(graphId, nodeId, 'prompt'),
+      progressTextId: widgetId(graphId, nodeId, '$$node-text-preview')
+    }
+  )
 }
 
 test.describe(

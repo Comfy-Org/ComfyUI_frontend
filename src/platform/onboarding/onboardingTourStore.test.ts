@@ -1,7 +1,6 @@
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import type { DetachedWindowAPI } from 'happy-dom'
 import { assert, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
@@ -15,6 +14,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
+import { setHappyDomViewport } from '@/utils/__tests__/happyDomTestUtils'
 import type { AppMode } from '@comfyorg/graph-model/appMode'
 
 import {
@@ -46,12 +46,7 @@ function seenTours(): string[] {
 }
 
 function setViewport(viewport: { width: number; height: number }) {
-  const happyDOM = (window as unknown as { happyDOM?: DetachedWindowAPI })
-    .happyDOM
-  if (!happyDOM) {
-    throw new Error('window.happyDOM is unavailable to set viewport')
-  }
-  happyDOM.setViewport(viewport)
+  setHappyDomViewport(viewport)
 }
 
 function mountStore() {

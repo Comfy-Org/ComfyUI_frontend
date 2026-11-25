@@ -1,7 +1,7 @@
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { readFileSync } from 'node:fs'
 import { applyOps, mint, project } from '@comfyorg/comfy-multi-player'
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
-import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { z } from 'zod'
 
@@ -38,6 +38,7 @@ import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { createUuidv4 } from '@/utils/uuid'
 
+import { toWorkflowJson } from './__fixtures__/workflowJson'
 import {
   PROMOTED_WRITE_CATCH_UP_DEADLINE_MS,
   PROMOTED_WRITE_RETRY_MS,
@@ -177,7 +178,7 @@ const CATALOG: WidgetCatalog = {
 }
 
 function mintDocFrom(graph: LGraph, catalog: WidgetCatalog = CATALOG) {
-  const serialized = graph.serialize() as unknown as WorkflowJSON
+  const serialized = toWorkflowJson(graph.serialize())
   return mint(serialized, catalog)
 }
 
@@ -1502,7 +1503,7 @@ describe('attachDocOpMinter', () => {
         graph.add(source)
         graph.add(video)
       })
-      const workflow = graph.serialize() as unknown as WorkflowJSON
+      const workflow = fromAny<WorkflowJSON, unknown>(graph.serialize())
       const doc = mint(
         {
           ...workflow,
@@ -2221,7 +2222,7 @@ describe('attachDocOpMinter', () => {
         subgraph.inputNode.slots[index].connect(interior.inputs[0], interior)
       }
     })
-    const serialized = graph.serialize() as unknown as WorkflowJSON
+    const serialized = toWorkflowJson(graph.serialize())
     if (hostWidgetValues) {
       const hostNode = serialized.nodes.find(
         (node) => String(node.id) === String(host.id)

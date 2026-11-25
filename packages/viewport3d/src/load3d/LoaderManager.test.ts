@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { isGaussianSplatPLY } from './loader/ply'
@@ -66,7 +66,7 @@ const { meshLoad, meshDisposeModel, splatLoad, pointCloudLoad } = vi.hoisted(
 )
 
 vi.mock(import('./MeshModelAdapter'), () => ({
-  MeshModelAdapter: fromAny(
+  MeshModelAdapter: fromPartial(
     class {
       readonly kind = 'mesh' as const
       readonly extensions = ['stl', 'fbx', 'obj', 'gltf', 'glb'] as const
@@ -78,7 +78,7 @@ vi.mock(import('./MeshModelAdapter'), () => ({
 }))
 
 vi.mock(import('./PointCloudModelAdapter'), () => ({
-  PointCloudModelAdapter: fromAny(
+  PointCloudModelAdapter: fromPartial(
     class {
       readonly kind = 'pointCloud' as const
       readonly extensions = ['ply'] as const
@@ -89,7 +89,7 @@ vi.mock(import('./PointCloudModelAdapter'), () => ({
 }))
 
 vi.mock(import('./SplatModelAdapter'), () => ({
-  SplatModelAdapter: fromAny(
+  SplatModelAdapter: fromPartial(
     class {
       readonly kind = 'splat' as const
       readonly extensions = ['spz', 'splat', 'ksplat', 'ply'] as const
@@ -112,13 +112,6 @@ vi.mock(import('./loader/ply'), () => ({
   isGaussianSplatPLY: vi.fn()
 }))
 
-type LoaderManagerInternals = {
-  pickAdapter(
-    extension: string,
-    fetchBytes: () => Promise<ArrayBuffer>
-  ): Promise<ModelAdapter | null>
-}
-
 const host: Load3dHost = {
   fetchApi: vi.fn(),
   getPLYEngine: () => 'threejs',
@@ -129,13 +122,12 @@ function makeLoaderManager() {
   const modelManager = makeModelManagerStub()
   const eventManager = makeEventManagerStub()
   const lm = new LoaderManager(
-    modelManager as unknown as ConstructorParameters<typeof LoaderManager>[0],
+    fromPartial<ModelManagerInterface>(modelManager),
     eventManager,
     host
   )
-  const internals = lm as unknown as LoaderManagerInternals
   const pick = (ext: string) =>
-    internals.pickAdapter.call(lm, ext, () =>
+    lm['pickAdapter'](ext, () =>
       vi.mocked(fetchModelData)(host.fetchApi, '', '')
     )
   return { lm, modelManager, eventManager, pick }
@@ -209,11 +201,11 @@ describe('LoaderManager', () => {
         load: vi.fn().mockResolvedValue(null)
       } satisfies ModelAdapter
 
-      const modelManager = {
+      const modelManager = fromPartial<ModelManagerInterface>({
         originalMaterials: new WeakMap(),
         clearModel: vi.fn(),
         setupModel: vi.fn()
-      } as unknown as ModelManagerInterface
+      })
       const eventManager: EventManagerInterface = {
         addEventListener: vi.fn(),
         removeEventListener: vi.fn(),
@@ -545,10 +537,9 @@ describe('LoaderManager', () => {
     })
 
     it('dispatches .ply via the adapter matches() tiebreaker, not extension order — a splat adapter whose matches() returns false yields to point-cloud', async () => {
-      const modelManager =
-        makeModelManagerStub() as unknown as ConstructorParameters<
-          typeof LoaderManager
-        >[0]
+      const modelManager = fromPartial<ModelManagerInterface>(
+        makeModelManagerStub()
+      )
       const eventManager = makeEventManagerStub()
       // A splat adapter that ALSO claims '.ply' and is listed first.
       // Without matches(), it would short-circuit. With matches() returning

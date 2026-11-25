@@ -3,6 +3,7 @@ import {
   WIDGET_FORM_KEY,
   nodesMap
 } from '@comfyorg/comfy-multi-player'
+import { fromAny } from '@total-typescript/shoehorn'
 import * as Y from 'yjs'
 
 import type { ExportedSubgraph } from '@comfyorg/graph-model/serialisation'
@@ -189,12 +190,13 @@ function projectSubgraphDefinition(
   source: Y.Map<unknown>,
   excludedDefinitionIds: ReadonlySet<string>
 ): ExportedSubgraph {
-  const definition = Object.fromEntries(
-    [...source.entries()].flatMap(([key, value]) =>
-      projectDefinitionEntry(source, key, value, excludedDefinitionIds)
+  return fromAny<ExportedSubgraph, unknown>(
+    Object.fromEntries(
+      [...source.entries()].flatMap(([key, value]) =>
+        projectDefinitionEntry(source, key, value, excludedDefinitionIds)
+      )
     )
   )
-  return definition as unknown as ExportedSubgraph
 }
 
 function isExcludedDefinition(

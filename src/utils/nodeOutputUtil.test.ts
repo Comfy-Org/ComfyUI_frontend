@@ -37,11 +37,6 @@ describe(isInputPreviewOutput, () => {
   )
 
   it('rejects a non-array images payload', () => {
-    const malformedOutput = { images: { length: 1 } } as unknown as Pick<
-      NodeExecutionOutput,
-      'images'
-    >
-
-    expect(isInputPreviewOutput(malformedOutput)).toBe(false)
+    expect(isInputPreviewOutput({ images: { length: 1 } })).toBe(false)
   })
 })

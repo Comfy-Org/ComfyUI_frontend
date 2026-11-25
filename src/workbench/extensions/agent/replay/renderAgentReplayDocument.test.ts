@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { describe, expect, it } from 'vitest'
 import { Window } from 'happy-dom'
 
@@ -64,11 +65,12 @@ describe('renderAgentReplayDocument', () => {
     expect(replayScript).not.toBeNull()
     window.eval(replayScript?.textContent ?? '')
     const entries = [...window.document.querySelectorAll('[data-at-ms]')].map(
-      (entry) => entry as unknown as { hidden: boolean }
+      (entry) => fromAny<{ hidden: boolean }, unknown>(entry)
     )
-    const setReplayTime = (
-      window as unknown as { setReplayTime: (milliseconds: number) => void }
-    ).setReplayTime
+    const setReplayTime = fromAny<
+      { setReplayTime: (milliseconds: number) => void },
+      unknown
+    >(window).setReplayTime
     expect(entries.map((entry) => entry.hidden)).toEqual([false, true])
 
     setReplayTime(2500)

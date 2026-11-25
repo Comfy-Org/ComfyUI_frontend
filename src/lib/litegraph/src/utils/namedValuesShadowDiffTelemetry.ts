@@ -26,7 +26,7 @@ function createAggregation(): NamedValuesShadowDiffLoadAggregation {
 }
 
 function getBareClassName(node: LGraphNode): string {
-  const ctor = node.constructor as unknown as { name?: string }
+  const ctor = node.constructor as { name?: string }
   return ctor.name ?? 'unknown'
 }
 

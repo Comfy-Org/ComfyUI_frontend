@@ -89,6 +89,7 @@
     "minisearch": "catalog:"
   },
   "devDependencies": {
+    "@total-typescript/shoehorn": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"

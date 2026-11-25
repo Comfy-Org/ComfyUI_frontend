@@ -1482,7 +1482,7 @@ export class ComfyApp implements IComfyApp {
                 onClick: async () => {
                   await this.loadGraphData(
                     migrateLegacyRerouteNodes(
-                      this.rootGraph.serialize() as unknown as WorkflowJSON04
+                      this.rootGraph.serialize() as WorkflowJSON04
                     ),
                     false,
                     false,
@@ -1749,8 +1749,7 @@ export class ComfyApp implements IComfyApp {
           await cancelReplacedLoad()
           return { loaded: false }
         }
-        const configuredGraphData =
-          graph.serialize() as unknown as ComfyWorkflowJSON
+        const configuredGraphData = graph.serialize() as ComfyWorkflowJSON
 
         if (
           !clean &&
@@ -2515,7 +2514,7 @@ export class ComfyApp implements IComfyApp {
           )
           await useWorkflowService().afterLoadNewGraph(
             fileName,
-            graph.serialize() as unknown as ComfyWorkflowJSON,
+            graph.serialize() as ComfyWorkflowJSON,
             graph
           )
           this.scheduleImportFit(graph)
@@ -2881,7 +2880,7 @@ export class ComfyApp implements IComfyApp {
       )
       await useWorkflowService().afterLoadNewGraph(
         fileName ?? null,
-        graph.serialize() as unknown as ComfyWorkflowJSON,
+        graph.serialize() as ComfyWorkflowJSON,
         graph
       )
       this.scheduleImportFit(graph)

@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
@@ -159,8 +160,8 @@ describe('ComboWidget', () => {
       widget = new ComboWidget(
         createMockWidgetConfig({
           name: 'mode',
-          value: value as unknown as string,
-          options: { values: values as unknown as string[] }
+          value: fromAny<string, unknown>(value),
+          options: { values: fromAny<string[], unknown>(values) }
         }),
         node
       )
@@ -175,7 +176,7 @@ describe('ComboWidget', () => {
           value: 'a',
           options: {
             values: ['a'],
-            getOptionLabel: () => 7 as unknown as string
+            getOptionLabel: () => fromAny<string, unknown>(7)
           }
         }),
         node
@@ -261,7 +262,7 @@ describe('ComboWidget', () => {
         createMockWidgetConfig({
           name: 'mode',
           value: 'a',
-          options: { values: undefined as unknown as string[] }
+          options: { values: fromAny<string[], unknown>(undefined) }
         }),
         node
       )

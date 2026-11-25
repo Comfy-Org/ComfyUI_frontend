@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import {
   afterEach,
   assert,
@@ -498,7 +499,7 @@ describe('promoted writes on a host that owns a dynamic combo', () => {
       }
     }
     const saved = toWorkflow(built.serialize())
-    const nested = {
+    const nested = fromAny<WorkflowJSON, unknown>({
       ...saved,
       nodes: saved.nodes.map((node) =>
         String(node.id) === String(host.id)
@@ -521,7 +522,7 @@ describe('promoted writes on a host that owns a dynamic combo', () => {
           }))
         }))
       }
-    } as unknown as WorkflowJSON
+    })
     const hostDoc = mint(nested, catalog)
     onTestFinished(() => hostDoc.destroy())
 

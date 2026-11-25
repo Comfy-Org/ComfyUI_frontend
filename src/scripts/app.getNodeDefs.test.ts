@@ -87,8 +87,8 @@ describe('ComfyApp.getNodeDefs', () => {
   test.for([[null], [undefined], ['a string'], [['x']], [42], [true]])(
     'tolerates a node-def response of %j',
     async ([response]) => {
-      vi.mocked(api.getNodeDefs).mockResolvedValue(
-        response as unknown as Record<string, ComfyNodeDefV1>
+      vi.mocked<() => Promise<unknown>>(api.getNodeDefs).mockResolvedValue(
+        response
       )
 
       await expect(comfyApp.getNodeDefs()).resolves.toEqual({})
@@ -119,13 +119,13 @@ describe('ComfyApp.getNodeDefs', () => {
   })
 
   test('discards malformed entries inside an otherwise valid response', async () => {
-    vi.mocked(api.getNodeDefs).mockResolvedValue({
+    vi.mocked<() => Promise<unknown>>(api.getNodeDefs).mockResolvedValue({
       TestNode: nodeDef({ display_name: 'Good Node' }),
       NullEntry: null,
       NumericCategory: { name: 'NumericCategory', category: 1 },
       NamelessEntry: { category: 'test' },
       StringEntry: 'nope'
-    } as unknown as Record<string, ComfyNodeDefV1>)
+    })
 
     const result = await comfyApp.getNodeDefs()
 

@@ -43,6 +43,7 @@
     "es-toolkit": "catalog:"
   },
   "devDependencies": {
+    "@total-typescript/shoehorn": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "happy-dom": "catalog:",
     "typescript": "catalog:",

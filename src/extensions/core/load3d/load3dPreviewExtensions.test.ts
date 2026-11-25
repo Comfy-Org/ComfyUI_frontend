@@ -104,7 +104,7 @@ function makePreviewNode(
     widgets: FakeWidget[]
   }> = {}
 ): LGraphNode {
-  return {
+  return fromAny<LGraphNode, unknown>({
     constructor: {
       comfyClass: overrides.comfyClass ?? 'PreviewGaussianSplat'
     },
@@ -112,7 +112,7 @@ function makePreviewNode(
     setSize: vi.fn(),
     widgets: overrides.widgets ?? [{ name: 'model_file', value: '' }],
     properties: overrides.properties ?? {}
-  } as unknown as LGraphNode
+  })
 }
 
 function setupBaseMocks() {

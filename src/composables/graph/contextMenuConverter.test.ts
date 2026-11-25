@@ -286,13 +286,18 @@ describe('LiteGraph menu conversion', () => {
       {
         content: 'Save',
         has_submenu: true,
-        callback: () => {
-          new LiteGraph.ContextMenu(['GLB', 'OBJ'], { callback })
+        callback: (_value, _options, event, parentMenu) => {
+          new LiteGraph.ContextMenu(['GLB', 'OBJ'], {
+            event,
+            parentMenu,
+            callback
+          })
         }
       }
     ])
 
     expect(LiteGraph.ContextMenu).toBe(original)
+    expect(console.warn).not.toHaveBeenCalled()
     expect(options[0].submenu?.map((option) => option.label)).toEqual([
       'GLB',
       'OBJ'

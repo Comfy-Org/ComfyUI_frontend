@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { describe, expect, it } from 'vitest'
 import type { CoreManifestEntry } from '@e2e/fixtures/customNode/manifest'
 import {
@@ -157,7 +158,10 @@ describe('customNode manifest', () => {
     ).toThrow(/expectedExtensions/)
     expect(() =>
       assertCoreEntry(
-        { ...validEntry(), expectedExtensions: [42 as unknown as string] },
+        {
+          ...validEntry(),
+          expectedExtensions: [fromAny<string, unknown>(42)]
+        },
         0
       )
     ).toThrow(/expectedExtensions/)

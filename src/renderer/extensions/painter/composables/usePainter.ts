@@ -53,8 +53,9 @@ interface UsePainterOptions {
 }
 
 function capturePointerIfActive(e: PointerEvent): boolean {
+  if (!(e.target instanceof HTMLElement)) return false
   try {
-    ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
+    e.target.setPointerCapture(e.pointerId)
     return true
   } catch {
     return false
@@ -62,8 +63,9 @@ function capturePointerIfActive(e: PointerEvent): boolean {
 }
 
 function releasePointerIfCaptured(e: PointerEvent): boolean {
+  if (!(e.target instanceof HTMLElement)) return false
   try {
-    ;(e.target as HTMLElement).releasePointerCapture(e.pointerId)
+    e.target.releasePointerCapture(e.pointerId)
     return true
   } catch {
     return false
@@ -669,7 +671,8 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
   }
 
   function handleInputImageLoad(e: Event) {
-    const img = e.target as HTMLImageElement
+    if (!(e.currentTarget instanceof HTMLImageElement)) return
+    const img = e.currentTarget
     canvasWidth.value = img.naturalWidth
     canvasHeight.value = img.naturalHeight
   }

@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { ColorAdjustOptions } from '@comfyorg/shared-frontend-utils/colorUtil'
@@ -425,7 +426,7 @@ describe('colorUtil - adjustColor', () => {
   )
 
   it('falls back to black when parsing a non-string color', () => {
-    expect(parseToRgb(0xff0000 as unknown as string)).toEqual({
+    expect(parseToRgb(fromAny<string, unknown>(0xff0000))).toEqual({
       r: 0,
       g: 0,
       b: 0

@@ -1,4 +1,5 @@
 import { encodeRgbaAsPng } from '@comfyorg/mask-editor/pngEncodeUtil'
+import { fromAny } from '@total-typescript/shoehorn'
 
 import { downloadBlob } from '@/base/common/downloadUtil'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -19,8 +20,6 @@ import {
   onTestFinished,
   vi
 } from 'vitest'
-
-import { fromAny } from '@total-typescript/shoehorn'
 
 import { useTelemetry } from '@comfyorg/telemetry'
 
@@ -4476,8 +4475,10 @@ describe('useWorkflowService', () => {
       it('uses the loaded graph as the baseline when the saved file has no node list', async () => {
         const { draft } = restoreDraft()
         const apiFormat = { '1': { class_type: 'KSampler', inputs: {} } }
-        existingWorkflow.changeTracker.initialState =
-          apiFormat as unknown as ComfyWorkflowJSON
+        existingWorkflow.changeTracker.initialState = fromAny<
+          ComfyWorkflowJSON,
+          unknown
+        >(apiFormat)
 
         await expect(
           useWorkflowService().afterLoadNewGraph(
@@ -4534,9 +4535,12 @@ describe('useWorkflowService', () => {
       beforeEach(() => {
         // Runtime fixture, not a compiler-error assertion: reproduce the state
         // the LoadedComfyWorkflow cast claims is impossible.
-        const tracker = existingWorkflow.changeTracker as unknown as {
-          activeState: ComfyWorkflowJSON | null
-        }
+        const tracker = fromAny<
+          {
+            activeState: ComfyWorkflowJSON | null
+          },
+          unknown
+        >(existingWorkflow.changeTracker)
         tracker.activeState = null
       })
 

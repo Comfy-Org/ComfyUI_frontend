@@ -1,6 +1,5 @@
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { Ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { render, screen, waitFor } from '@testing-library/vue'
@@ -18,12 +17,10 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 
 const refreshSpy = vi.fn(() => Promise.resolve())
 
-// Held as a real ref so a test can revoke billing access after mount and the
-// panel's own watcher reacts, the way a workspace switch does. The ref is
-// created inside the factory because `vi.hoisted` runs before Vue is loaded.
-const permission = vi.hoisted(() => ({
-  canManage: null as unknown as Ref<boolean>
-}))
+const permission = await vi.hoisted(async () => {
+  const { ref } = await import('vue')
+  return { canManage: ref(true) }
+})
 vi.mock<unknown>(
   import('@/platform/billing/composables/useBillingUI'),
   async () => {

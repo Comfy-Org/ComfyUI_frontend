@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { onBillingRefresh } from '@/platform/billing/billingRefresh'
 import { disarmHostedBillingReturnRefresh } from '@/platform/billing/openHostedBillingTab'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
@@ -1140,8 +1141,11 @@ describe('useWorkspaceBilling', () => {
     let originalLocation: Location
 
     function stubPortalTab() {
-      const tab = { location: { href: '' }, close: vi.fn() }
-      const open = vi.fn(() => tab as unknown as Window)
+      const tab = fromPartial<Window>({
+        location: { href: '' },
+        close: vi.fn()
+      })
+      const open = vi.fn(() => tab)
       vi.stubGlobal('open', open)
       return { tab, open }
     }
@@ -1257,7 +1261,7 @@ describe('useWorkspaceBilling', () => {
     ] as const)(
       'opens the hosted payment-methods route on %s',
       async ([, railEnabled]) => {
-        const tab = { location: { href: '' } } as unknown as Window
+        const tab = fromPartial<Window>({ location: { href: '' } })
         const openSpy = vi.fn(() => tab)
         vi.stubGlobal('open', openSpy)
         vi.stubEnv('VITE_BILLING_WEB_URL', 'https://billing.comfy.org')
