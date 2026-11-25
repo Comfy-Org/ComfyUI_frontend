@@ -28,6 +28,7 @@ import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { CommandHelper } from '@e2e/fixtures/helpers/CommandHelper'
+import { mockAgentSavedWorkflowSidebarFile } from '@e2e/fixtures/helpers/agentSavedWorkflowSidebarFile'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { mockSavedWorkflowPersistence } from '@e2e/fixtures/utils/savedWorkflowPersistence'
@@ -217,6 +218,7 @@ export class AgentMultiAutogrowRealignHarness {
     })
 
     this.persistence = await mockSavedWorkflowPersistence(page, WORKFLOW_ID)
+    await mockAgentSavedWorkflowSidebarFile(page, WORKFLOW_ID, this.persistence)
 
     await page.route('**/api/prompt', (route) => {
       if (route.request().method() !== 'POST') return route.fallback()
@@ -251,7 +253,6 @@ export class AgentMultiAutogrowRealignHarness {
   async targetActiveWorkflow(): Promise<void> {
     await loadSeedIntoActiveTab(this.page, seed)
     await this.agentPanel.open()
-    await this.agentPanel.selectWorkflow()
   }
 
   async bindAndAwaitFirstTurn(): Promise<void> {
@@ -473,11 +474,24 @@ export class AgentMultiAutogrowRealignHarness {
   async reloadAndReopenSavedWorkflow(): Promise<void> {
     const getsBeforeReload = this.persistence?.servedContentGets() ?? 0
 
+    // This fixture is proving saved-file serialization, not history restore.
+    // The persisted agent turn uses the same workflow id so, without an
+    // explicit out-of-sync response, reload would correctly restore and bind
+    // that history target. The live host document would then replace the
+    // deliberately corrupted file value before this test can assert it.
+    await this.page.route(
+      `**/api/workflows/${WORKFLOW_ID}/sidebar-file`,
+      (route) => route.fulfill({ status: 409 })
+    )
+
     // Evicts the local workflow draft cache so the reopened GET response is
     // the only thing that can satisfy the value assertions.
     await this.page.evaluate(() => {
       for (const key of Object.keys(localStorage)) {
-        if (key.startsWith('Comfy.Workflow.Draft')) {
+        if (
+          key.startsWith('Comfy.Workflow.Draft') ||
+          key.startsWith('Comfy.Agent.ThreadId:')
+        ) {
           localStorage.removeItem(key)
         }
       }
@@ -498,7 +512,10 @@ export class AgentMultiAutogrowRealignHarness {
     // tab (`isBoundWorkflowActive` in AgentPanelRoot.vue).
     const reopenedName = this.savedName()
     if (reopenedName === undefined) throw new Error('workflow was not saved')
-    await this.agentPanel.selectWorkflow(reopenedName)
+    await expect(this.topbar.getWorkflowTab(reopenedName)).toBeVisible({
+      timeout: RELOAD_READY_TIMEOUT
+    })
+    await this.topbar.getWorkflowTab(reopenedName).click()
 
     // Proves the reopen actually read the saved bytes back off the mock,
     // rather than the value assertions being satisfiable by draft or cache

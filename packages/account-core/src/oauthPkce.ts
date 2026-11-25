@@ -17,6 +17,7 @@ export const LOCAL_WEB_CLIENT_ID = 'comfy-local-web'
 
 const AUTHORIZE_PATH = '/oauth/authorize'
 const TOKEN_PATH = '/oauth/token'
+const REVOKE_PATH = '/oauth/revoke'
 /** The `comfy-cloud` resource is seeded issuer-relative at `/api`. */
 const CLOUD_RESOURCE_PATH = '/api'
 const DEFAULT_TOKEN_TIMEOUT_MS = 15_000
@@ -181,8 +182,8 @@ function classify(status: number, body: unknown, now: number): TokenResult {
   }
 }
 
-function tokenEndpoint(issuer: string): URL | undefined {
-  const url = new URL(TOKEN_PATH, issuer)
+function oauthEndpoint(path: string, issuer: string): URL | undefined {
+  const url = new URL(path, issuer)
   if (url.protocol === 'https:') return url
   if (url.protocol === 'http:' && LOOPBACK_HOSTS.has(url.hostname)) return url
   return undefined
@@ -197,7 +198,7 @@ async function postTokenGrant(
     options.timeoutMs ?? DEFAULT_TOKEN_TIMEOUT_MS
   )
   try {
-    const endpoint = tokenEndpoint(options.issuer)
+    const endpoint = oauthEndpoint(TOKEN_PATH, options.issuer)
     if (!endpoint) return { ok: false, reason: 'unavailable' }
     const response = await options.fetchImpl(endpoint.href, {
       method: 'POST',
@@ -246,4 +247,39 @@ export function refreshAccessToken(
     { grant_type: 'refresh_token', refresh_token: refreshToken },
     options
   )
+}
+
+/**
+ * Asks the server to end the sign-in a refresh token belongs to (RFC 7009).
+ * Sent with keepalive so it survives the page closing. Never throws.
+ */
+export async function revokeRefreshToken(
+  refreshToken: string,
+  options: TokenRequestOptions
+): Promise<boolean> {
+  const { signal, release } = timedSignal(
+    options.signal,
+    options.timeoutMs ?? DEFAULT_TOKEN_TIMEOUT_MS
+  )
+  try {
+    const endpoint = oauthEndpoint(REVOKE_PATH, options.issuer)
+    if (!endpoint) return false
+    const response = await options.fetchImpl(endpoint.href, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        token: refreshToken,
+        token_type_hint: 'refresh_token',
+        client_id: options.clientId
+      }),
+      signal,
+      keepalive: true,
+      redirect: 'error'
+    })
+    return response.ok
+  } catch {
+    return false
+  } finally {
+    release()
+  }
 }

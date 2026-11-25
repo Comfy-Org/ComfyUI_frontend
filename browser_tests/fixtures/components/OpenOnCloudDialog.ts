@@ -1,0 +1,64 @@
+import { expect } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
+
+import { BaseDialog } from '@e2e/fixtures/components/BaseDialog'
+
+export class OpenOnCloudDialog extends BaseDialog {
+  readonly deployHeading: Locator
+  readonly deployWithAgentButton: Locator
+  readonly missingModelHeading: Locator
+  readonly signInToUploadButton: Locator
+  readonly uploadButton: Locator
+  readonly openOnCloudButton: Locator
+  private readonly agentOptions: readonly Locator[]
+
+  constructor(page: Page) {
+    super(
+      page,
+      page.getByRole('dialog').filter({
+        has: page.getByRole('heading', {
+          name: /^(Run your workflows on Comfy Cloud|Missing 1 model)$/
+        })
+      })
+    )
+    this.deployHeading = this.root.getByRole('heading', {
+      name: 'Run your workflows on Comfy Cloud',
+      exact: true
+    })
+    this.deployWithAgentButton = this.root.getByRole('button', {
+      name: 'Deploy with your agent',
+      exact: true
+    })
+    this.agentOptions = [
+      'Open in Claude desktop',
+      'Open in Codex',
+      'Copy prompt'
+    ].map((name) => page.getByRole('menuitem', { name, exact: true }))
+    this.missingModelHeading = this.root.getByRole('heading', {
+      name: 'Missing 1 model',
+      exact: true
+    })
+    this.signInToUploadButton = this.root.getByRole('button', {
+      name: 'Sign in to upload',
+      exact: true
+    })
+    this.uploadButton = this.root.getByRole('button', {
+      name: 'Upload',
+      exact: true
+    })
+    this.openOnCloudButton = this.root.getByRole('button', {
+      name: 'Open on Comfy Cloud',
+      exact: true
+    })
+  }
+
+  async expectAgentOptions(): Promise<void> {
+    for (const option of this.agentOptions) {
+      await expect(option).toBeVisible()
+    }
+  }
+
+  missingModel(filename: string): Locator {
+    return this.root.getByText(filename, { exact: true })
+  }
+}

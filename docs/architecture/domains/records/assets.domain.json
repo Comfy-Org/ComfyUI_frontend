@@ -4,56 +4,75 @@
   "description": "Asset records and content: the asset service and query adapters, asset and media-asset schemas, the model asset browser, model upload and import wizard, media assets sidebar panel, media asset actions (download, delete, zip and node-output export, drag), and the asset, download, export, and sidebar-badge stores. Queue and job stores, model-to-node mapping, missing-media and missing-model scans, the litegraph widget base, node widgets that render asset dropdowns, the agent composer asset tray, workflow sharing, and the queue media lightbox remain with their owning domains.",
   "modules": [
     {
-      "path": "src/components/sidebar/tabs/**"
-    },
-    {
-      "path": "src/components/toast/**"
-    },
-    {
-      "path": "src/composables/sidebarTabs/**"
-    },
-    {
-      "path": "src/composables/useProgressBarBackground.ts"
-    },
-    {
-      "path": "src/lib/litegraph/src/widgets/AssetWidget.ts"
+      "path": "packages/assets-core/src/**"
     },
     {
       "path": "src/platform/assets/**"
-    },
-    {
-      "path": "src/stores/assetDownloadStore.ts"
-    },
-    {
-      "path": "src/stores/assetExportStore.ts"
-    },
-    {
-      "path": "src/stores/assetsStore.ts"
-    },
-    {
-      "path": "src/stores/workspace/assetsSidebarBadgeStore.ts"
-    },
-    {
-      "path": "src/utils/__tests__/eventUtils.test.ts"
-    },
-    {
-      "path": "src/utils/eventUtils.ts"
-    },
-    {
-      "path": "src/utils/loaderNodeUtil.ts"
-    },
-    {
-      "path": "src/utils/requestUtil.ts"
     }
   ],
-  "publicEntryPoints": [],
+  "publicEntryPoints": [
+    "packages/assets-core/src/schema.ts",
+    "packages/assets-core/src/metadata.ts",
+    "packages/assets-core/src/filtering.ts",
+    "packages/assets-core/src/media.ts",
+    "packages/assets-core/src/imports.ts",
+    "packages/assets-core/src/selection.ts",
+    "packages/assets-core/src/query.ts",
+    "src/platform/assets/adapters/outputAssetMappers.ts",
+    "src/platform/assets/adapters/outputAssetResolver.ts",
+    "src/platform/assets/components/AssetBrowserModal.vue",
+    "src/platform/assets/components/AssetExportProgressDialog.vue",
+    "src/platform/assets/components/AssetsListItem.vue",
+    "src/platform/assets/components/ModelImportProgressDialog.vue",
+    "src/platform/assets/components/sidebar/AssetsSidebarTab.vue",
+    "src/platform/assets/composables/useAssetBrowserDialog.ts",
+    "src/platform/assets/composables/useAssetDownload.ts",
+    "src/platform/assets/composables/useAssetFilterOptions.ts",
+    "src/platform/assets/composables/useAssetWidgetData.ts",
+    "src/platform/assets/composables/useAssetsUrlLoader.ts",
+    "src/platform/assets/composables/useMediaAssetActions.ts",
+    "src/platform/assets/composables/useModelUpload.ts",
+    "src/platform/assets/constants/assetDrag.ts",
+    "src/platform/assets/constants/assetEvents.ts",
+    "src/platform/assets/integration/assetDrop.ts",
+    "src/platform/assets/integration/createAssetWidget.ts",
+    "src/platform/assets/integration/openModelLibraryBrowser.ts",
+    "src/platform/assets/integration/resolveWidgetValueAsset.ts",
+    "src/platform/assets/integration/startModelNodeDragFromAsset.ts",
+    "src/platform/assets/integration/useAssetsSidebarTab.ts",
+    "src/platform/assets/integration/useModelLibrarySidebarTab.ts",
+    "src/platform/assets/integration/useNodeOutputsExport.ts",
+    "src/platform/assets/services/assetService.ts",
+    "src/platform/assets/stores/assetDownloadStore.ts",
+    "src/platform/assets/stores/assetsStore.ts",
+    "src/platform/assets/stores/useAssetSelectionStore.ts",
+    "src/platform/assets/types/assetDownload.ts",
+    "src/platform/assets/types/modelImport.ts",
+    "src/platform/assets/types/outputAssetMetadata.ts",
+    "src/platform/assets/utils/assetDragUtil.ts",
+    "src/platform/assets/utils/assetPreviewUtil.ts",
+    "src/platform/assets/utils/assetUrlUtil.ts",
+    "src/platform/assets/utils/categoryLabel.ts",
+    "src/platform/assets/utils/mediaIconUtil.ts"
+  ],
   "characterizationScenarios": [
+    {
+      "name": "Portable asset entries preserve normalized data, metadata, filtering, media ordering, import sources, selection, and query identity",
+      "checks": [
+        "packages/assets-core/src/assetMetadataUtils.test.ts",
+        "packages/assets-core/src/media.test.ts",
+        "src/platform/assets/composables/useUploadModelWizard.test.ts",
+        "packages/assets-core/src/marqueeSelectionUtil.test.ts",
+        "packages/assets-core/src/query.test.ts",
+        "src/platform/assets/utils/assetStoragePolicy.test.ts"
+      ]
+    },
     {
       "name": "Asset service and stores fetch, paginate, and cache asset records",
       "checks": [
         "src/platform/assets/services/assetService.test.ts",
         "src/platform/assets/composables/useAssetsQuery.test.ts",
-        "src/stores/assetsStore.test.ts",
+        "src/platform/assets/stores/assetsStore.test.ts",
         "src/platform/assets/utils/assetUrlUtil.test.ts",
         "src/platform/assets/utils/assetPreviewUtil.test.ts"
       ]
@@ -64,10 +83,11 @@
         "src/platform/assets/composables/useAssetBrowser.test.ts",
         "src/platform/assets/composables/useAssetBrowserDialog.test.ts",
         "src/platform/assets/composables/useAssetFilterOptions.test.ts",
-        "src/platform/assets/utils/assetFilterUtils.test.ts",
-        "src/platform/assets/utils/assetSortUtils.test.ts",
-        "src/platform/assets/utils/resolveModelNodeFromAsset.test.ts",
-        "src/platform/assets/utils/createAssetWidget.test.ts",
+        "packages/assets-core/src/assetFilterUtils.test.ts",
+        "packages/assets-core/src/assetSortUtils.test.ts",
+        "src/platform/assets/integration/resolveModelNodeFromAsset.test.ts",
+        "src/platform/assets/integration/startModelNodeDragFromAsset.test.ts",
+        "src/platform/assets/integration/createAssetWidget.test.ts",
         "src/platform/assets/components/AssetBrowserModal.test.ts",
         "browser_tests/tests/browseModelAssets.spec.ts"
       ]
@@ -75,15 +95,15 @@
     {
       "name": "Media assets panel groups, filters, selects, and drags job outputs",
       "checks": [
-        "src/components/sidebar/tabs/AssetsSidebarTab.test.ts",
-        "src/platform/assets/composables/media/assetMappers.test.ts",
-        "src/platform/assets/utils/outputAssetUtil.test.ts",
+        "src/platform/assets/components/sidebar/AssetsSidebarTab.test.ts",
+        "src/platform/assets/adapters/outputAssetMappers.test.ts",
+        "src/platform/assets/adapters/outputAssetResolver.test.ts",
         "src/platform/assets/composables/useOutputStacks.test.ts",
         "src/platform/assets/composables/useMediaAssetFiltering.test.ts",
         "src/platform/assets/composables/useAssetSelection.test.ts",
         "src/platform/assets/composables/useAssetGridSelection.test.ts",
         "src/platform/assets/utils/assetDragUtil.test.ts",
-        "src/stores/workspace/assetsSidebarBadgeStore.test.ts",
+        "src/platform/assets/stores/assetsSidebarBadgeStore.test.ts",
         "browser_tests/tests/sidebar/assetsSidebarTab.spec.ts"
       ]
     },
@@ -91,9 +111,9 @@
       "name": "Deleting assets clears widget values, preview caches, and marks missing media",
       "checks": [
         "src/platform/assets/composables/useMediaAssetActions.test.ts",
-        "src/platform/assets/utils/clearDeletedAssetWidgetValues.test.ts",
-        "src/platform/assets/utils/clearNodePreviewCacheForValues.test.ts",
-        "src/platform/assets/utils/markDeletedAssetsAsMissingMedia.test.ts",
+        "src/platform/assets/integration/clearDeletedAssetWidgetValues.test.ts",
+        "src/platform/assets/integration/clearNodePreviewCacheForValues.test.ts",
+        "src/platform/assets/integration/markDeletedAssetsAsMissingMedia.test.ts",
         "browser_tests/tests/assetDeleteClearsLoadImage.spec.ts"
       ]
     },
@@ -101,7 +121,7 @@
       "name": "Model upload, import, and download tasks report progress",
       "checks": [
         "src/platform/assets/composables/useUploadModelWizard.test.ts",
-        "src/stores/assetDownloadStore.test.ts",
+        "src/platform/assets/stores/assetDownloadStore.test.ts",
         "src/platform/assets/components/UploadModelConfirmation.test.ts",
         "src/platform/assets/components/ModelImportProgressDialog.test.ts"
       ]
@@ -109,35 +129,38 @@
     {
       "name": "Asset and node-output exports build archives and track progress",
       "checks": [
-        "src/stores/assetExportStore.test.ts",
-        "src/platform/assets/composables/useNodeOutputsExport.test.ts",
+        "src/platform/assets/stores/assetExportStore.test.ts",
+        "src/platform/assets/integration/useNodeOutputsExport.test.ts",
         "src/platform/assets/utils/outputExportUtil.test.ts",
         "src/platform/assets/components/AssetExportProgressDialog.test.ts"
       ]
     },
     {
       "name": "Asset download progress toast item shows task progress and completion",
-      "checks": ["src/components/toast/ProgressToastItem.test.ts"]
+      "checks": [
+        "src/platform/assets/components/ModelImportProgressItem.test.ts"
+      ]
     },
     {
       "name": "Dropped assets and files are extracted from drag events, asset queries encode params, and the model library tab opens the asset browser when enabled",
       "checks": [
-        "src/utils/eventUtils.test.ts",
-        "src/utils/__tests__/eventUtils.test.ts",
-        "src/utils/requestUtil.test.ts",
-        "src/composables/sidebarTabs/useModelLibrarySidebarTab.test.ts",
+        "src/platform/assets/integration/assetDrop.test.ts",
+        "packages/assets-core/src/query.test.ts",
+        "src/platform/assets/integration/useModelLibrarySidebarTab.test.ts",
         "src/platform/assets/composables/useMediaAssetActions.test.ts"
       ]
     }
   ],
   "adrs": [
+    "docs/adr/ASSETS-BOUNDARY-0045-portable-data-and-application-integration.md",
     "docs/adr/ASSETS-DRAG-DROP-0035-asset-card-drag-uses-file-url.md",
     "docs/adr/ASSETS-LIFECYCLE-0030-asset-record-and-content-lifecycles.md"
   ],
   "compatibilityPromises": [
-    "Unclassified callers may import asset internals during inventory; imports from classified domains remain subject to cross-domain rules.",
-    "Asset stores and media actions keep depending on the shared queueStore, taskService, modelToNodeStore, workflow stores, litegraph, and dialog services they do not own; this cross-domain coupling stays untracked and is not granted by classification.",
-    "Application composables that open presentation dialogs (useModelUpload, useNodeOutputsExport) and graph-mutating deletion utilities remain untracked coupling debt; classification does not grant dependency exceptions."
+    "External callers use explicit portable package entries or characterized application modules. Internal implementation files are not supported imports.",
+    "Portable asset data operations have no dependency on application state, authenticated transport, framework state, editor classes, or browser objects.",
+    "Application adapters retain queue, workflow, model-provider, dialog, and graph dependencies without transferring those responsibilities into assets.",
+    "Grouped display identity remains distinct from asset-record and stored-content identity. Consolidation preserves existing asset lifecycle and extension widget behavior."
   ],
-  "deepImports": "inventory"
+  "deepImports": "enforced"
 }

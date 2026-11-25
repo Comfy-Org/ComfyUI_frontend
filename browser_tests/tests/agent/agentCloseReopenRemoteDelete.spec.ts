@@ -1,7 +1,5 @@
 import { expect } from '@playwright/test'
 
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 
 // The tab is closed, the host deletes a node while nothing is subscribed, and
@@ -24,8 +22,7 @@ test.describe(
 
     test('does not resurrect a node the host deleted while this client was closed', async ({
       agentConversation,
-      comfyPage,
-      page
+      comfyPage
     }) => {
       test.setTimeout(90_000)
       const deletedNodeId = '3'
@@ -64,14 +61,6 @@ test.describe(
       await test.step('reopen from persistence and receive host catch-up', async () => {
         const before = agentConversation.subscribeCount()
         await comfyPage.workflow.openPersistedWorkflow(savedName)
-        const picker = agentConversation.panel.getByRole('button', {
-          name: enMessages.agent.switchWorkflow
-        })
-        await picker.click()
-        await page
-          .getByRole('menuitemradio', { name: savedName, exact: true })
-          .click()
-        await expect(picker).toHaveText(savedName)
         await agentConversation.sendPrompt()
         await expect
           .poll(() => agentConversation.subscribeCount())
