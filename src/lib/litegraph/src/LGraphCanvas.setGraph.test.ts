@@ -153,44 +153,39 @@ describe('LGraphCanvas camera animation', () => {
       act: (canvas: LGraphCanvas, graph: LGraph) => canvas.setGraph(graph)
     },
     {
-      name: 'starting a canvas drag',
-      act: (canvas: LGraphCanvas) => {
-        canvas.dragging_canvas = true
-      }
-    },
-    {
       name: 'unbinding its events',
       act: (canvas: LGraphCanvas) => canvas.unbindEvents()
     }
-  ])('stops a running camera animation on $name', async ({ act }) => {
+  ])('stops a running camera animation on $name', ({ act }) => {
     const now = vi.spyOn(performance, 'now').mockReturnValue(1000)
     const { canvas, graph } = createCanvasWithSelectedNode()
-    const result = canvas.animateToBounds([3000, 3000, 100, 100], { zoom: 0 })
+    canvas.animateToBounds([3000, 3000, 100, 100], { zoom: 0 })
 
     act(canvas, graph)
     now.mockReturnValue(2000)
     runCanvasFramePhase(canvas, 'update')
 
-    await expect(result).resolves.toBe(false)
     expect([...canvas.ds.offset]).toEqual([0, 0])
   })
 
-  it('moves the camera on its update frames until it lands', async () => {
+  it('moves and redraws the camera on its update frames until it lands', () => {
     const now = vi.spyOn(performance, 'now').mockReturnValue(1000)
     const { canvas } = createCanvasWithSelectedNode()
-    const result = canvas.animateToBounds([3000, 3000, 100, 100], {
+    canvas.animateToBounds([3000, 3000, 100, 100], {
       zoom: 0,
       viewport: [0, 0, 800, 600]
     })
 
+    canvas.dirty_canvas = false
     now.mockReturnValue(1100)
     runCanvasFramePhase(canvas, 'update')
     const midway = [...canvas.ds.offset]
+    const redrawn = canvas.dirty_canvas
     now.mockReturnValue(2000)
     runCanvasFramePhase(canvas, 'update')
 
     expect(midway).not.toEqual([0, 0])
-    await expect(result).resolves.toBe(true)
+    expect(redrawn).toBe(true)
     expect([...canvas.ds.offset]).toEqual([-2650, -2750])
   })
 })

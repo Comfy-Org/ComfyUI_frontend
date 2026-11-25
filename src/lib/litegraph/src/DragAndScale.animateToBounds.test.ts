@@ -15,9 +15,7 @@ function settle(ds: DragAndScale) {
   ds.advanceAnimation(START_TIME + 10_000)
 }
 
-function outcomeNow(result: Promise<boolean>) {
-  return Promise.race([result, Promise.resolve('pending' as const)])
-}
+const noRedraw = () => {}
 
 function cameraOf(ds: DragAndScale) {
   return { offset: [...ds.offset], scale: ds.scale }
@@ -41,7 +39,7 @@ describe('DragAndScale.animateToBounds', () => {
     const ds = createDragAndScale()
     const bounds: Bounds = [0, 0, 100, 100]
 
-    void ds.animateToBounds(bounds, { zoom: 0 })
+    ds.animateToBounds(bounds, noRedraw, { zoom: 0 })
     settle(ds)
 
     expect(screenCenterX(ds, bounds)).toBeCloseTo(800)
@@ -51,7 +49,7 @@ describe('DragAndScale.animateToBounds', () => {
     const ds = createDragAndScale()
     const bounds: Bounds = [0, 0, 100, 100]
 
-    void ds.animateToBounds(bounds, {
+    ds.animateToBounds(bounds, noRedraw, {
       zoom: 0.75,
       viewport: [0, 0, 1100, 900]
     })
@@ -65,7 +63,7 @@ describe('DragAndScale.animateToBounds', () => {
     const ds = createDragAndScale()
     const bounds: Bounds = [0, 0, 100, 100]
 
-    void ds.animateToBounds(bounds, {
+    ds.animateToBounds(bounds, noRedraw, {
       zoom: 0.75,
       viewport: [400, 0, 600, 900]
     })
@@ -79,7 +77,7 @@ describe('DragAndScale.animateToBounds', () => {
     const ds = createDragAndScale()
     const bounds: Bounds = [0, 0, 100, 100]
 
-    void ds.animateToBounds(bounds, {
+    ds.animateToBounds(bounds, noRedraw, {
       zoom: 0.75,
       viewport: [0, 300, 1600, 600]
     })
@@ -93,7 +91,7 @@ describe('DragAndScale.animateToBounds', () => {
     {
       name: 'animated',
       frame: (ds: DragAndScale, bounds: Bounds) => {
-        void ds.animateToBounds(bounds)
+        ds.animateToBounds(bounds, noRedraw)
         settle(ds)
       }
     },
@@ -116,23 +114,9 @@ describe('DragAndScale.animateToBounds', () => {
     }
   )
 
-  it('applies the options of the deprecated setDirty form', () => {
-    const ds = createDragAndScale()
-    const bounds: Bounds = [0, 0, 100, 100]
-
-    void ds.animateToBounds(bounds, () => {}, {
-      zoom: 0.75,
-      viewport: [400, 0, 600, 900]
-    })
-    settle(ds)
-
-    expect(screenCenterX(ds, bounds)).toBeCloseTo(700)
-    expect(ds.scale).toBeCloseTo(1.5)
-  })
-
   it('zooms geometrically around the viewport centre while it travels', () => {
     const ds = createDragAndScale()
-    void ds.animateToBounds([1000, 2000, 300, 300], {
+    ds.animateToBounds([1000, 2000, 300, 300], noRedraw, {
       zoom: 1,
       duration: 400,
       viewport: [0, 0, 1200, 1200]
@@ -145,28 +129,33 @@ describe('DragAndScale.animateToBounds', () => {
     expect((1375 + ds.offset[1]) * ds.scale).toBeCloseTo(600)
   })
 
-  it('resolves true once the camera lands', async () => {
+  it('redraws after each step until the camera lands', () => {
     const ds = createDragAndScale()
-    const landed = ds.animateToBounds([0, 0, 100, 100], { zoom: 0 })
+    const redraw = vi.fn()
+    ds.animateToBounds([0, 0, 100, 100], redraw, { zoom: 0 })
 
+    ds.advanceAnimation(START_TIME + 100)
+    settle(ds)
     settle(ds)
 
-    await expect(outcomeNow(landed)).resolves.toBe(true)
+    expect(redraw).toHaveBeenCalledTimes(2)
   })
 
   it.for([
     ['width', [0, 0, 0, 900]],
     ['height', [0, 0, 1600, 0]]
   ] as const)(
-    'resolves false and leaves the camera for a viewport with no visible $0',
-    async ([, viewport]) => {
+    'leaves the camera for a viewport with no visible $0',
+    ([, viewport]) => {
       const ds = createDragAndScale()
+      const redraw = vi.fn()
       const before = cameraOf(ds)
 
-      const result = ds.animateToBounds([0, 0, 100, 100], { viewport })
+      ds.animateToBounds([0, 0, 100, 100], redraw, { viewport })
+      settle(ds)
 
-      await expect(outcomeNow(result)).resolves.toBe(false)
       expect(cameraOf(ds)).toEqual(before)
+      expect(redraw).not.toHaveBeenCalled()
     }
   )
 
@@ -178,12 +167,14 @@ describe('DragAndScale.animateToBounds', () => {
       }
     },
     {
-      name: 'a zoom',
-      move: (ds: DragAndScale) => ds.changeScale(2, [200, 100])
+      name: 'an in-place pan',
+      move: (ds: DragAndScale) => {
+        ds.offset[0] += 40
+      }
     },
     {
-      name: 'a zoom to the current scale',
-      move: (ds: DragAndScale) => ds.changeScale(ds.scale)
+      name: 'a zoom',
+      move: (ds: DragAndScale) => ds.changeScale(2, [200, 100])
     },
     {
       name: 'a reset',
@@ -202,44 +193,31 @@ describe('DragAndScale.animateToBounds', () => {
     {
       name: 'an animation to an empty viewport',
       move: (ds: DragAndScale) =>
-        void ds.animateToBounds([5000, 6000, 100, 100], {
+        ds.animateToBounds([5000, 6000, 100, 100], noRedraw, {
           viewport: [0, 0, 0, 0]
         })
     }
-  ])('is cancelled at once by $name', async ({ move }) => {
+  ])('leaves the camera to $name', ({ move }) => {
     const ds = createDragAndScale()
-    const result = ds.animateToBounds([3000, 3000, 100, 100], { zoom: 0 })
+    ds.animateToBounds([3000, 3000, 100, 100], noRedraw, { zoom: 0 })
     ds.advanceAnimation(START_TIME + 100)
 
     move(ds)
-
-    await expect(outcomeNow(result)).resolves.toBe(false)
-  })
-
-  it('stops without writing when the camera is changed in place', async () => {
-    const ds = createDragAndScale()
-    const result = ds.animateToBounds([3000, 3000, 100, 100], { zoom: 0 })
-    ds.advanceAnimation(START_TIME + 100)
-
-    ds.offset[0] += 40
     const moved = cameraOf(ds)
     settle(ds)
 
-    await expect(result).resolves.toBe(false)
     expect(cameraOf(ds)).toEqual(moved)
   })
 
-  it('hands the camera to a later animation', async () => {
+  it('hands the camera to a later animation', () => {
     const ds = createDragAndScale()
     const later: Bounds = [-2000, 500, 100, 100]
-    const earlier = ds.animateToBounds([3000, 3000, 100, 100], { zoom: 0 })
+    ds.animateToBounds([3000, 3000, 100, 100], noRedraw, { zoom: 0 })
     ds.advanceAnimation(START_TIME + 100)
 
-    const result = ds.animateToBounds(later, { zoom: 0 })
+    ds.animateToBounds(later, noRedraw, { zoom: 0 })
     settle(ds)
 
-    await expect(earlier).resolves.toBe(false)
-    await expect(result).resolves.toBe(true)
     expect(screenCenterX(ds, later)).toBeCloseTo(800)
     expect(screenCenterY(ds, later)).toBeCloseTo(450)
   })

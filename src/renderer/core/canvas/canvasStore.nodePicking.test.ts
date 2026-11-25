@@ -28,7 +28,9 @@ function setup() {
   onTestFinished(() => canvas.unbindEvents())
   const store = useCanvasStore()
   store.canvas = canvas
-  const animate = vi.spyOn(canvas, 'animateToBounds').mockResolvedValue(true)
+  const animate = vi
+    .spyOn(canvas, 'animateToBounds')
+    .mockImplementation(() => {})
   return { store, canvas, first, second, animate }
 }
 

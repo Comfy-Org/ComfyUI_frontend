@@ -493,7 +493,7 @@ export function useCoreCommands(): ComfyCommand[] {
           toast.error(t('toastMessages.emptyCanvas'))
           return
         }
-        void useApp().canvas.fitViewToSelectionAnimated({
+        useApp().canvas.fitViewToSelectionAnimated({
           viewport: visibleCanvasViewport(useApp().canvas)
         })
       }

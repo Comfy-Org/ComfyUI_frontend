@@ -110,7 +110,8 @@ export class AutoPanController {
 
     if (panX === 0 && panY === 0) return
 
-    ds.offset = [ds.offset[0] - panX, ds.offset[1] - panY]
+    ds.offset[0] -= panX
+    ds.offset[1] -= panY
 
     this.onPan(panX, panY)
   }

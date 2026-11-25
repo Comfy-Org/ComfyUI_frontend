@@ -109,7 +109,7 @@ export async function frameNode(
   if (alreadyFramed(bounds, canvas.ds, viewport)) return
 
   if (glide) await delay(CARD_GLIDE_MS, { signal })
-  void canvas.animateToBounds(bounds, {
+  canvas.animateToBounds(bounds, {
     zoom: focusFill(bounds, viewport),
     duration: FOCUS_DURATION_MS
   })

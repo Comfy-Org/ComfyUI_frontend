@@ -60,7 +60,7 @@ function viewNodes(): void {
   if (!bounds) return
   const canvasRect = canvas.canvas.getBoundingClientRect()
   const panelRect = panel.getBoundingClientRect()
-  void canvas.animateToBounds(bounds, {
+  canvas.animateToBounds(bounds, {
     viewport: [
       panelRect.left - canvasRect.left,
       panelRect.top - canvasRect.top,

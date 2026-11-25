@@ -732,7 +732,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   }
 
   set dragging_canvas(value: boolean) {
-    if (value) this.ds.stopAnimation()
     this.state.draggingCanvas = value
     this._updateCursorStyle()
   }
@@ -4287,16 +4286,20 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     let { scale } = this.ds
 
+    // Detect if this is a trackpad gesture or mouse wheel
     const isTrackpad = this.pointer.isTrackpadGesture(e)
     const isCtrlOrMacMeta =
       e.ctrlKey || (e.metaKey && navigator.platform.includes('Mac'))
     const isZoomModifier = isCtrlOrMacMeta && !e.altKey && !e.shiftKey
 
     if (isZoomModifier || LiteGraph.mouseWheelScroll === 'zoom') {
+      // Zoom mode or modifier key pressed - use wheel for zoom
       if (isTrackpad) {
+        // Trackpad gesture - use smooth scaling
         scale *= 1 + e.deltaY * (1 - this.zoom_speed) * 0.18
         this.ds.changeScale(scale, [e.clientX, e.clientY], false)
       } else {
+        // Mouse wheel - use stepped scaling
         if (e.deltaY < 0) {
           scale *= this.zoom_speed
         } else if (e.deltaY > 0) {
@@ -4305,17 +4308,15 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         this.ds.changeScale(scale, [e.clientX, e.clientY])
       }
     } else {
+      // Trackpads and mice work on significantly different scales
       const factor = isTrackpad ? 0.18 : 0.008_333
 
-      const step = (1 + factor) / scale
-      const [dx, dy] =
-        !isTrackpad && e.shiftKey && e.deltaX === 0
-          ? [e.deltaY, 0]
-          : [e.deltaX, e.deltaY]
-      this.ds.offset = [
-        this.ds.offset[0] - dx * step,
-        this.ds.offset[1] - dy * step
-      ]
+      if (!isTrackpad && e.shiftKey && e.deltaX === 0) {
+        this.ds.offset[0] -= e.deltaY * (1 + factor) * (1 / scale)
+      } else {
+        this.ds.offset[0] -= e.deltaX * (1 + factor) * (1 / scale)
+        this.ds.offset[1] -= e.deltaY * (1 + factor) * (1 / scale)
+      }
     }
 
     this.graph.change()
@@ -4800,14 +4801,14 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    */
   centerOnNode(node: LGraphNode): void {
     const { dpr } = this
-    this.ds.offset = [
+    this.ds.offset[0] =
       -node.pos[0] -
-        node.size[0] * 0.5 +
-        (this.canvas.width * 0.5) / (this.ds.scale * dpr),
+      node.size[0] * 0.5 +
+      (this.canvas.width * 0.5) / (this.ds.scale * dpr)
+    this.ds.offset[1] =
       -node.pos[1] -
-        node.size[1] * 0.5 +
-        (this.canvas.height * 0.5) / (this.ds.scale * dpr)
-    ]
+      node.size[1] * 0.5 +
+      (this.canvas.height * 0.5) / (this.ds.scale * dpr)
     this.setDirty(true, true)
   }
 
@@ -8739,18 +8740,16 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    * Starts an animation to fit the view around the specified selection of nodes.
    * @param bounds The bounds to animate the view to, defined by a rectangle.
    */
-  animateToBounds(
-    bounds: ReadOnlyRect,
-    options: AnimationOptions = {}
-  ): Promise<boolean> {
-    return this.ds.animateToBounds(bounds, options)
+  animateToBounds(bounds: ReadOnlyRect, options: AnimationOptions = {}) {
+    const setDirty = () => this.setDirty(true, true)
+    this.ds.animateToBounds(bounds, setDirty, options)
   }
 
   /**
    * Fits the view to the selected nodes with animation.
    * If nothing is selected, the view is fitted around all items in the graph.
    */
-  fitViewToSelectionAnimated(options: AnimationOptions = {}): Promise<boolean> {
+  fitViewToSelectionAnimated(options: AnimationOptions = {}) {
     const items = this.selectedItems.size
       ? Array.from(this.selectedItems)
       : this.positionableItems
@@ -8760,7 +8759,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         'Attempted to fit to view but could not calculate bounds.'
       )
 
-    return this.ds.animateToBounds(bounds, options)
+    const setDirty = () => this.setDirty(true, true)
+    this.ds.animateToBounds(bounds, setDirty, options)
   }
 
   /** Moves each node to its given position. */

@@ -967,7 +967,7 @@ export const useLitegraphService = () => {
     if (!parsedNodeId) return
     const graphNode = useApp().canvas.graph?.getNodeById(parsedNodeId)
     if (!graphNode) return
-    void useApp().canvas.animateToBounds(graphNode.boundingRect)
+    useApp().canvas.animateToBounds(graphNode.boundingRect)
   }
 
   function ensureBounds(nodes: LGraphNode[]) {

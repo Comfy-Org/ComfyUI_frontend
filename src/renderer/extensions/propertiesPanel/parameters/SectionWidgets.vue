@@ -189,7 +189,7 @@ function handleLocateNode() {
 
   const graphNode = canvasStore.canvas.graph?.getNodeById(targetNode.value.id)
   if (graphNode) {
-    void canvasStore.canvas.animateToBounds(graphNode.boundingRect)
+    canvasStore.canvas.animateToBounds(graphNode.boundingRect)
   }
 }
 

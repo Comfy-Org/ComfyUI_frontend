@@ -6,7 +6,7 @@ import type {
 } from '@comfyorg/shared-frontend-utils/geometry'
 import { readBrowserDpr } from '@/renderer/core/canvas/canvasViewport'
 
-import { EaseFunction } from '@comfyorg/graph-model/globalEnums'
+import type { EaseFunction } from '@comfyorg/graph-model/globalEnums'
 import { Rectangle } from './infrastructure/Rectangle'
 
 export type AnimationOptions = {
@@ -53,7 +53,6 @@ export class DragAndScale {
   }
 
   set offset(value: Point) {
-    this.stopAnimation()
     this.state.offset[0] = value[0]
     this.state.offset[1] = value[1]
   }
@@ -63,7 +62,6 @@ export class DragAndScale {
   }
 
   set scale(value: number) {
-    this.stopAnimation()
     this.state.scale = value
   }
 
@@ -161,7 +159,6 @@ export class DragAndScale {
 
   /** @deprecated Has not been kept up to date */
   mouseDrag(x: number, y: number): void {
-    this.stopAnimation()
     this.offset[0] += x / this.scale
     this.offset[1] += y / this.scale
 
@@ -173,7 +170,6 @@ export class DragAndScale {
     zooming_center?: Point,
     roundToScaleOne = true
   ): void {
-    this.stopAnimation()
     if (value < this.min_scale) {
       value = this.min_scale
     } else if (value > this.max_scale) {
@@ -226,65 +222,39 @@ export class DragAndScale {
   }
 
   /**
-   * Animates the view to fit the specified bounds. Any later camera change cancels it.
+   * Animates the view to fit the specified bounds, calling `setDirty` after each step. Any other camera change cancels it.
    * @param bounds The bounds to animate the view to, defined by a rectangle.
-   * @returns Resolves `true` when the camera lands, `false` when it is cancelled first.
    */
   animateToBounds(
     bounds: ReadOnlyRect,
-    options?: AnimationOptions
-  ): Promise<boolean>
-  /** @deprecated The canvas redraws on camera changes; pass the options as the second argument. */
-  animateToBounds(
-    bounds: ReadOnlyRect,
     setDirty: () => void,
-    options?: AnimationOptions
-  ): Promise<boolean>
-  animateToBounds(
-    bounds: ReadOnlyRect,
-    optionsOrSetDirty?: AnimationOptions | (() => void),
-    legacyOptions?: AnimationOptions
-  ): Promise<boolean> {
-    const {
-      duration = 350,
-      zoom = 0.75,
-      easing = EaseFunction.EASE_IN_OUT_QUAD,
-      viewport
-    } = (typeof optionsOrSetDirty === 'function'
-      ? legacyOptions
-      : optionsOrSetDirty) ?? {}
+    { duration = 350, zoom = 0.75, viewport }: AnimationOptions = {}
+  ): void {
     if (!(duration > 0)) throw new RangeError('Duration must be greater than 0')
 
     this.stopAnimation()
     const frame = this.framingViewport(viewport)
-    if (!frame) return Promise.resolve(false)
+    if (!frame) return
 
-    const target = framingTarget(bounds, frame, {
-      zoom,
-      scale: this.scale,
-      maxScale: this.max_scale
-    })
     const anchor: Point = [frame[0] + frame[2] * 0.5, frame[1] + frame[3] * 0.5]
-    return new Promise((settle) => {
-      this.transition = {
-        startTime: performance.now(),
-        duration,
-        easing,
-        anchor,
-        startScale: this.scale,
-        startCentre: [
-          anchor[0] / this.scale - this.offset[0],
-          anchor[1] / this.scale - this.offset[1]
-        ],
-        targetCentre: [
-          bounds[0] + bounds[2] * 0.5,
-          bounds[1] + bounds[3] * 0.5
-        ],
-        target,
-        written: cloneState(this.state),
-        settle
-      }
-    })
+    this.transition = {
+      startTime: performance.now(),
+      duration,
+      anchor,
+      startScale: this.scale,
+      startCentre: [
+        anchor[0] / this.scale - this.offset[0],
+        anchor[1] / this.scale - this.offset[1]
+      ],
+      targetCentre: [bounds[0] + bounds[2] * 0.5, bounds[1] + bounds[3] * 0.5],
+      target: framingTarget(bounds, frame, {
+        zoom,
+        scale: this.scale,
+        maxScale: this.max_scale
+      }),
+      written: cloneState(this.state),
+      setDirty
+    }
   }
 
   /** Moves a running {@link animateToBounds} to where it is at `now`; the canvas calls it once per frame before drawing. */
@@ -292,31 +262,25 @@ export class DragAndScale {
     const { transition } = this
     if (!transition) return
     if (!statesEqual(this.state, transition.written))
-      return this.endTransition(false)
+      return this.stopAnimation()
     const progress = Math.min(
       (now - transition.startTime) / transition.duration,
       1
     )
     copyState(
       progress < 1
-        ? cameraAt(transition, easeFunctions[transition.easing](progress))
+        ? cameraAt(transition, easeInOutQuad(progress))
         : transition.target,
       this.state
     )
     copyState(this.state, transition.written)
-    if (progress >= 1) this.endTransition(true)
+    if (progress >= 1) this.stopAnimation()
+    transition.setDirty()
   }
 
   /** Stops a running {@link animateToBounds}, leaving the camera where it is. */
   stopAnimation(): void {
-    this.endTransition(false)
-  }
-
-  private endTransition(completed: boolean): void {
-    const { transition } = this
-    if (!transition) return
     this.transition = undefined
-    transition.settle(completed)
   }
 
   private framingViewport(viewport?: ReadOnlyRect): ReadOnlyRect | undefined {
@@ -329,8 +293,9 @@ export class DragAndScale {
   }
 
   reset(): void {
-    this.stopAnimation()
-    copyState({ offset: [0, 0], scale: 1 }, this.state)
+    this.scale = 1
+    this.offset[0] = 0
+    this.offset[1] = 0
   }
 }
 
@@ -363,14 +328,13 @@ function framingTarget(
 type CameraTransition = {
   startTime: number
   duration: number
-  easing: EaseFunction
   anchor: Point
   startScale: number
   startCentre: Point
   targetCentre: Point
   target: DragAndScaleState
   written: DragAndScaleState
-  settle: (completed: boolean) => void
+  setDirty: () => void
 }
 
 function cameraAt(
@@ -389,9 +353,8 @@ function cameraAt(
   }
 }
 
-const easeFunctions: Record<EaseFunction, (t: number) => number> = {
-  [EaseFunction.EASE_IN_OUT_QUAD]: (t) =>
-    t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t
+function easeInOutQuad(t: number): number {
+  return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t
 }
 
 function cloneState({ offset, scale }: DragAndScaleState): DragAndScaleState {

@@ -16087,7 +16087,7 @@ describe('AgentPanelRoot workflow binding', () => {
       const state = setupOwnedSelectionCanvas()
       const other = new LGraphNode('VAE Decode')
       state.subgraph.add(other)
-      vi.spyOn(state.canvas, 'animateToBounds').mockResolvedValue(true)
+      vi.spyOn(state.canvas, 'animateToBounds').mockImplementation(() => {})
       renderWithSelectedTarget()
       useAgentPanelStore().isOpen = true
       await enterNodeSelectionMode()

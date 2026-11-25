@@ -112,7 +112,8 @@ export function useMinimapViewport(
     const viewportWidth = canvasDimensions.value.width / ds.scale
     const viewportHeight = canvasDimensions.value.height / ds.scale
 
-    ds.offset = [-(worldX - viewportWidth / 2), -(worldY - viewportHeight / 2)]
+    ds.offset[0] = -(worldX - viewportWidth / 2)
+    ds.offset[1] = -(worldY - viewportHeight / 2)
 
     c.setDirty(true, true)
   }

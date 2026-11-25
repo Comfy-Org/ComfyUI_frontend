@@ -47,7 +47,7 @@ export function useFocusNode() {
     ) {
       return
     }
-    void activeCanvas.animateToBounds(node.boundingRect, {
+    activeCanvas.animateToBounds(node.boundingRect, {
       viewport: visibleCanvasViewport(activeCanvas)
     })
   }
