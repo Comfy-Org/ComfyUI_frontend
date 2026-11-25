@@ -792,6 +792,8 @@ export type AgentConsentNotOfferedReason =
   | 'dialog_open'
   | 'boot_undecided'
   | 'storage_unavailable'
+  /** A new local user's first session: the Agent waits for the next launch. */
+  | 'first_session_deferred'
 export interface AgentConsentNotOfferedMetadata extends Record<
   string,
   unknown

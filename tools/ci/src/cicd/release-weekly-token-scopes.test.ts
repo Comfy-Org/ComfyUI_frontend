@@ -52,7 +52,7 @@ describe('weekly ComfyUI release PR refresh', () => {
     const { run } = createPrStep()
 
     expect(run).toMatch(
-      /gh api[^\n]*--method PATCH[^\n]*repos\/Comfy-Org\/ComfyUI\/pulls\/\$\{?EXISTING_PR\}?/
+      /gh-retry\.sh api[^\n]*--method PATCH[^\n]*repos\/Comfy-Org\/ComfyUI\/pulls\/\$\{?EXISTING_PR\}?/
     )
     expect(run).toMatch(/-f title=/)
     expect(run).toMatch(/-F body=@\.\.\/pr-body\.txt/)

@@ -14,7 +14,7 @@ import type { useDeploymentModelsFrame } from '@/platform/workspace/platformFram
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
-import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
+import { useAssetDownloadStore } from '@/platform/assets/stores/assetDownloadStore'
 import { useModelStore } from '@/stores/modelStore'
 import type { ComfyModelDef, ModelFolder } from '@/stores/modelStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'

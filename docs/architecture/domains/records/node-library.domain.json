@@ -82,7 +82,7 @@
       "path": "src/composables/node/__mocks__/**"
     },
     {
-      "path": "src/composables/node/startModelNodeDragFromAsset.ts"
+      "path": "src/composables/node/startModelLoaderDrag.ts"
     },
     {
       "path": "src/composables/node/useNodeDragToCanvas.ts"
@@ -221,7 +221,6 @@
       "checks": [
         "src/composables/node/useNodeDragToCanvas.test.ts",
         "src/composables/node/useNodePreviewAndDrag.test.ts",
-        "src/composables/node/startModelNodeDragFromAsset.test.ts",
         "src/composables/useCanvasDrop.test.ts"
       ]
     },

@@ -10,8 +10,8 @@ import type { CloudWorkflowCheckResult } from '@/platform/openOnCloud/cloudWorkf
 import * as localModelUploadApi from '@/platform/openOnCloud/localModelUploadApi'
 import * as rollout from '@/platform/openOnCloud/localOpenOnCloudRollout'
 import { useCloudWorkflowCheckStore } from '@/platform/openOnCloud/stores/cloudWorkflowCheckStore'
-import { modelFileUploadApi } from '@/platform/workspace/api/modelFileUploadApi'
-import type { ModelFileUploadResult } from '@/platform/workspace/api/modelFileUploadApi'
+import { modelFileUploadApi } from '@/platform/assets/services/modelFileUploadApi'
+import type { ModelFileUploadResult } from '@/platform/assets/services/modelFileUploadApi'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import { useLocalModelUploadStore } from './localModelUploadStore'
