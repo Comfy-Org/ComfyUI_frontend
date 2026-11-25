@@ -5900,6 +5900,12 @@ export type ExecutionError = {
    */
   exception_type: string
   /**
+   * Present when ComfyUI rejected the whole prompt at validation (exception_type ValidationError): the rejected nodes, keyed by node id, in the shape ComfyUI's /prompt returns and cleaned and capped like a prompt_outputs_skipped event's node_errors.
+   */
+  node_errors?: {
+    [key: string]: PromptOutputsSkippedNodeError
+  }
+  /**
    * ID of the node that failed
    */
   node_id: string

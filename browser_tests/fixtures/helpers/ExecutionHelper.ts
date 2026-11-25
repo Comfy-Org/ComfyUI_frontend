@@ -4,7 +4,10 @@ import type {
   NodeError,
   PromptFailureResponse
 } from '@comfyorg/api-client/types'
-import type { NodeProgressState } from '@comfyorg/api-client/executionTypes'
+import type {
+  ExecutionErrorWsMessage,
+  NodeProgressState
+} from '@comfyorg/api-client/executionTypes'
 import type {
   PromptOutputsSkippedFrame,
   PromptOutputsSkippedNodeError
@@ -14,6 +17,12 @@ import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { createMockJob } from '@e2e/fixtures/helpers/AssetsHelper'
 
 const PROMPT_ROUTE_PATTERN = /\/api\/prompt$/
+
+type CloudExecutionErrorFrame = {
+  type: 'execution_error'
+  data: Omit<ExecutionErrorWsMessage, 'executed'> &
+    Partial<Pick<ExecutionErrorWsMessage, 'executed'>>
+}
 
 type RunOptions = {
   nodeErrors?: Record<string, NodeError>
@@ -278,7 +287,7 @@ export class ExecutionHelper {
           traceback: [],
           node_errors: nodeErrors
         }
-      })
+      } satisfies CloudExecutionErrorFrame)
     )
   }
 

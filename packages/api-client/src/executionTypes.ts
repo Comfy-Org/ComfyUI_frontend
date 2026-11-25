@@ -1,5 +1,9 @@
 import type { PromptWorkflowMetadata } from '@comfyorg/comfyui-api-types'
-import type { BillingStatusResponse, PromptInfo } from '@comfyorg/ingest-types'
+import type {
+  BillingStatusResponse,
+  ExecutionError,
+  PromptInfo
+} from '@comfyorg/ingest-types'
 import { z } from 'zod'
 import { zNodeId } from '@comfyorg/graph-model/workflowSchema'
 import type { TaskStatus } from './taskSchema'
@@ -111,7 +115,7 @@ export interface ExecutionErrorWsMessage extends ExecutionWsMessageBase {
   traceback?: string[] | null
   current_inputs?: unknown
   current_outputs?: unknown
-  node_errors?: unknown
+  node_errors?: ExecutionError['node_errors']
 }
 export interface ProgressTextWsMessage {
   nodeId: NodeId

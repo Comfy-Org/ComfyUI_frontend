@@ -182,7 +182,9 @@ type CloudValidationDetail = Pick<
   ExecutionErrorWsMessage,
   'exception_message'
 > &
-  Partial<Pick<ExecutionErrorWsMessage, 'exception_type' | 'node_errors'>>
+  Partial<Pick<ExecutionErrorWsMessage, 'exception_type'>> & {
+    node_errors?: unknown
+  }
 
 function relayedRejection(exceptionMessage: string): CloudValidationError {
   return {

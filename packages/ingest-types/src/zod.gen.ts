@@ -3281,6 +3281,31 @@ export const zExchangeTokenRequest = z.object({
 })
 
 /**
+ * One validation error as ComfyUI reports it, with tracebacks and every other field removed. type, message and details are each present only when ComfyUI sent them as strings.
+ */
+export const zPromptOutputsSkippedValidationError = z.object({
+  details: z.string().optional(),
+  extra_info: z
+    .object({
+      input_name: z.union([z.string(), z.number(), z.boolean()]).optional(),
+      received_type: z.union([z.string(), z.number(), z.boolean()]).optional(),
+      received_value: z.union([z.string(), z.number(), z.boolean()]).optional()
+    })
+    .optional(),
+  message: z.string().optional(),
+  type: z.string().optional()
+})
+
+/**
+ * One rejected node in a prompt_outputs_skipped event.
+ */
+export const zPromptOutputsSkippedNodeError = z.object({
+  class_type: z.string(),
+  dependent_outputs: z.array(z.string()),
+  errors: z.array(z.union([z.string(), zPromptOutputsSkippedValidationError]))
+})
+
+/**
  * Detailed execution error information from ComfyUI
  */
 export const zExecutionError = z.object({
@@ -3288,6 +3313,7 @@ export const zExecutionError = z.object({
   current_outputs: z.record(z.string(), z.unknown()),
   exception_message: z.string(),
   exception_type: z.string(),
+  node_errors: z.record(z.string(), zPromptOutputsSkippedNodeError).optional(),
   node_id: z.string(),
   node_type: z.string(),
   traceback: z.array(z.string())
@@ -4643,31 +4669,6 @@ export const zPromptInfo = z.object({
       queue_remaining: z.int().optional()
     })
     .optional()
-})
-
-/**
- * One validation error as ComfyUI reports it, with tracebacks and every other field removed. type, message and details are each present only when ComfyUI sent them as strings.
- */
-export const zPromptOutputsSkippedValidationError = z.object({
-  details: z.string().optional(),
-  extra_info: z
-    .object({
-      input_name: z.union([z.string(), z.number(), z.boolean()]).optional(),
-      received_type: z.union([z.string(), z.number(), z.boolean()]).optional(),
-      received_value: z.union([z.string(), z.number(), z.boolean()]).optional()
-    })
-    .optional(),
-  message: z.string().optional(),
-  type: z.string().optional()
-})
-
-/**
- * One rejected node in a prompt_outputs_skipped event.
- */
-export const zPromptOutputsSkippedNodeError = z.object({
-  class_type: z.string(),
-  dependent_outputs: z.array(z.string()),
-  errors: z.array(z.union([z.string(), zPromptOutputsSkippedValidationError]))
 })
 
 /**
