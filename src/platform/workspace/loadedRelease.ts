@@ -9,10 +9,14 @@ import { fullDeploymentLabel } from '@/platform/workspace/composables/useDeploym
 import { confirmUnsavedWorkBeforeSwitch } from '@/platform/workspace/confirmUnsavedWorkBeforeSwitch'
 import { reloadForDeploymentSwitch } from '@/platform/workspace/deploymentSwitchReload'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
-import { createToastId } from '@/types/toastId'
+import {
+  releaseNoticeId,
+  useReleaseNoticeStore
+} from '@/platform/workspace/stores/releaseNoticeStore'
 
 const KEPT_RELEASE_KEY = 'Comfy.Deployment.ReleaseForReload'
 const RELEASE_CHANGED = 'RELEASE_CHANGED'
+const RUN_NOTICE_OWNER = 'refusedRun'
 
 interface KeptRelease {
   deploymentId: string
@@ -21,7 +25,6 @@ interface KeptRelease {
 }
 
 let keptForThisPage: KeptRelease | null = null
-const noticeId = createToastId()
 
 function isKeptRelease(value: unknown): value is KeptRelease {
   return (
@@ -150,8 +153,9 @@ export function handledReleaseChange(error: unknown): boolean {
     })
   }
   const notice = releaseNotice(releaseId)
+  useReleaseNoticeStore().markShown(RUN_NOTICE_OWNER)
   useToast().info(notice.title, {
-    id: noticeId,
+    id: releaseNoticeId,
     action: {
       label: t('deploymentSwitcher.reload'),
       onClick: () => void reloadOntoNewRelease(notice.target)

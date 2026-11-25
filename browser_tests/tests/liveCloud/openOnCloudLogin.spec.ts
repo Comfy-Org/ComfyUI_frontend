@@ -10,20 +10,14 @@ test.describe(
       comfyPage,
       cloudOrigin
     }) => {
-      await test.step('Load the runnable workflow and check compatibility', async () => {
+      await test.step('Load the runnable workflow', async () => {
         await comfyPage.workflow.loadWorkflow(
           'openOnCloud/01-runnable-on-cloud'
         )
-        await comfyPage.page.getByTestId('cloud-button').click()
-        await expect(
-          comfyPage.page.getByRole('heading', {
-            name: 'Run on Comfy Cloud',
-            exact: true
-          })
-        ).toBeVisible()
       })
 
       await test.step('Open the real Cloud sign-in page for the workflow', async () => {
+        await comfyPage.actionbar.checkCloudCompatibility()
         const cloudTabPromise = comfyPage.page.waitForEvent('popup')
         await comfyPage.page
           .getByRole('button', { name: 'Open on Comfy Cloud', exact: true })
@@ -53,14 +47,7 @@ test.describe(
         await comfyPage.workflow.loadWorkflow(
           'openOnCloud/01-runnable-on-cloud'
         )
-        await comfyPage.page.getByTestId('cloud-button').click()
-        await expect(
-          comfyPage.page.getByRole('heading', {
-            name: 'Run on Comfy Cloud',
-            exact: true
-          })
-        ).toBeVisible()
-
+        await comfyPage.actionbar.checkCloudCompatibility()
         const cloudTabPromise = comfyPage.page.waitForEvent('popup')
         await comfyPage.page
           .getByRole('button', { name: 'Open on Comfy Cloud', exact: true })

@@ -9,16 +9,22 @@
   />
   <DeploySetupCard
     v-else-if="state.kind === 'deploySetup'"
+    :body="$t('openOnCloud.deploySetupDialog.missingNodesBody')"
     :video-sources="DEPLOY_VIDEO_SOURCES"
     :poster-src="DEPLOY_VIDEO_POSTER_SRC"
     @done="emit('done')"
     @dismiss="emit('dismiss')"
   />
   <RunOnCloudCard
-    v-else-if="state.kind === 'ready'"
-    :asks-to-sign-in="state.asksToSignIn"
-    :workspace-id="state.workspaceId"
-    :unchecked-inputs="state.uncheckedInputs"
+    v-else-if="state.kind === 'ready' || !uploadBatch"
+    :asks-to-sign-in="state.kind === 'ready' ? state.asksToSignIn : !isLoggedIn"
+    :workspace-id="state.kind === 'ready' ? state.workspaceId : undefined"
+    :unchecked-inputs="
+      state.kind === 'ready' ? state.uncheckedInputs : undefined
+    "
+    :needs-consent="state.kind !== 'ready'"
+    :checking="state.kind === 'checking' && (!requestCheck || checkRequested)"
+    @check="startCheck"
     @done="emit('done')"
     @dismiss="emit('dismiss')"
   />
@@ -28,7 +34,7 @@
 import { useTelemetry } from '@comfyorg/telemetry'
 import type { RunOnCloudTelemetryEvent } from '@comfyorg/telemetry/types'
 import { storeToRefs } from 'pinia'
-import { computed, toRaw, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, toRaw, watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
@@ -46,8 +52,9 @@ import {
   DEPLOY_VIDEO_SOURCES
 } from '@/platform/workflow/deploy/constants'
 
-const { uploadBatch } = defineProps<{
+const { uploadBatch, requestCheck } = defineProps<{
   uploadBatch?: { models: MissingModel[]; owner: string }
+  requestCheck?: (signal: AbortSignal) => boolean
 }>()
 
 const emit = defineEmits<{
@@ -55,6 +62,15 @@ const emit = defineEmits<{
   dismiss: []
   signInToUpload: []
 }>()
+
+const checkRequested = ref(false)
+const checkConsent = new AbortController()
+onBeforeUnmount(() => checkConsent.abort())
+
+function startCheck() {
+  if (checkRequested.value || !requestCheck?.(checkConsent.signal)) return
+  checkRequested.value = true
+}
 
 const { state: check } = storeToRefs(useCloudWorkflowCheckStore())
 const uploads = useLocalModelUploadStore()
@@ -75,7 +91,8 @@ const uploadModels = computed(() => {
 const state = computed(() => {
   if (uploadModels.value)
     return { kind: 'missingModels' as const, models: uploadModels.value }
-  if (uploadBatch) return { kind: 'checking' as const }
+  if (uploadBatch || (requestCheck && !checkRequested.value))
+    return { kind: 'checking' as const }
   return runOnCloudModalState(check.value, { signedIn: isLoggedIn.value })
 })
 watch([owner, uploadModels], ([currentOwner, models]) => {
