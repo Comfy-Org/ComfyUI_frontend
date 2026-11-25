@@ -327,11 +327,13 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
 
   async function forgetGonePick(): Promise<void> {
     const id = workspaceStore.workspaceId
-    if (!id || state.value.phase !== 'ready' || !sawPickGone.value) return
+    if (!id || state.value.phase !== 'ready') return
+    if (state.value.gonePickedDeploymentId === null) return
     const controller = new AbortController()
     forgettingGonePick = controller
     try {
       await workspaceApi.clearDeployment(id, { signal: controller.signal })
+      await load()
     } catch (err) {
       if (controller.signal.aborted) return
       reportError(err, {

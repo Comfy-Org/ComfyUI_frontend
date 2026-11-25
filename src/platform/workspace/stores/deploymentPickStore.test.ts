@@ -451,7 +451,13 @@ describe('useDeploymentPickStore', () => {
     }
 
     it('replaces the gone pick with Comfy Cloud, without a reload', async () => {
-      mockWorkspaceApi.listDeployments.mockResolvedValue(goneListing)
+      mockWorkspaceApi.listDeployments
+        .mockResolvedValueOnce(goneListing)
+        .mockResolvedValue({
+          ...goneListing,
+          gone_picked_deployment_id: undefined,
+          pick_source: 'browser'
+        })
       mockWorkspaceApi.clearDeployment.mockResolvedValue(undefined)
       const store = useDeploymentPickStore()
       await store.loadOnce()
@@ -464,6 +470,31 @@ describe('useDeploymentPickStore', () => {
       )
       expect(reload).not.toHaveBeenCalled()
       expect(store.goneDeployment).toBe('pick')
+      expect(store.followsWorkspace).toBe(false)
+    })
+
+    it('leaves the pick alone when only a listing older than the one shown said it was gone', async () => {
+      let answerOlder: (reply: WorkspaceDeploymentList) => void = () => {}
+      mockWorkspaceApi.listDeployments
+        .mockReturnValueOnce(
+          new Promise((resolve) => {
+            answerOlder = resolve
+          })
+        )
+        .mockResolvedValue({
+          ...goneListing,
+          gone_picked_deployment_id: undefined
+        })
+      const store = useDeploymentPickStore()
+      const older = store.loadOnce()
+      await store.load()
+      answerOlder(goneListing)
+      await older
+      expect(store.goneDeployment).toBe('pick')
+
+      await store.forgetGonePick()
+
+      expect(mockWorkspaceApi.clearDeployment).not.toHaveBeenCalled()
     })
 
     it.for([
