@@ -1,5 +1,9 @@
 import { defineStore } from 'pinia'
 
+import { createToastId } from '@/types/toastId'
+
+export const releaseNoticeId = createToastId()
+
 export const useReleaseNoticeStore = defineStore('releaseNotice', () => {
   const claims = new Map<string, string | undefined>()
 
