@@ -290,8 +290,9 @@ describe('node definitions', () => {
         builder = given
       })
 
+      assert(builder)
       expect(Object.isFrozen(builder)).toBe(true)
-      expect(Object.isFrozen(builder?.def)).toBe(true)
+      expect(Object.isFrozen(builder.def)).toBe(true)
     })
   })
 
