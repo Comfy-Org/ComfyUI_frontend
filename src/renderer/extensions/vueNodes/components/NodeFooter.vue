@@ -1,5 +1,4 @@
 <template>
-  <!-- Case 1: Subgraph + Error (Dual Tabs) -->
   <div
     v-if="isSubgraph && hasAnyError && showErrorsTabEnabled"
     :class="errorWrapperStyles"
@@ -40,7 +39,6 @@
     </Button>
   </div>
 
-  <!-- Case 1b: Advanced + Error (Dual Tabs, Regular Nodes) -->
   <div
     v-else-if="
       !isSubgraph &&
@@ -96,7 +94,6 @@
     </Button>
   </div>
 
-  <!-- Case 2: Error Only (Full Width) -->
   <div
     v-else-if="hasAnyError && showErrorsTabEnabled"
     :class="errorWrapperStyles"
@@ -119,75 +116,59 @@
     </Button>
   </div>
 
-  <!-- Case 3: Subgraph only (Full Width) -->
-  <div
+  <Button
     v-else-if="isSubgraph"
+    variant="textonly"
+    data-testid="subgraph-enter-button"
     :class="
       cn(
         footerWrapperBase,
-        hasAnyError ? '-mx-1 -mb-2 w-[calc(100%+8px)] pb-1' : 'w-full'
+        tabStyles,
+        'box-border w-full rounded-none bg-node-header text-inherit',
+        hasAnyError && '-mx-1 -mb-1 w-[calc(100%+8px)]',
+        hasAnyError ? 'pt-9 pb-3' : 'pt-8 pb-3',
+        footerRadiusClass
       )
     "
+    :style="headerColorStyle"
+    @pointerup="snapshotDragOnPointerUp"
+    @click.stop="emitIfNotDragged('enterSubgraph')"
   >
-    <Button
-      variant="textonly"
-      data-testid="subgraph-enter-button"
-      :class="
-        cn(
-          tabStyles,
-          'box-border w-full rounded-none bg-node-header text-inherit',
-          hasAnyError ? 'pt-9 pb-3' : 'pt-8 pb-3',
-          footerRadiusClass
-        )
-      "
-      :style="headerColorStyle"
-      @pointerup="snapshotDragOnPointerUp"
-      @click.stop="emitIfNotDragged('enterSubgraph')"
-    >
-      <span class="truncate">{{ t('g.enterSubgraph') }}</span>
-      <i class="icon-[comfy--workflow]" />
-    </Button>
-  </div>
+    <span class="truncate">{{ t('g.enterSubgraph') }}</span>
+    <i class="icon-[comfy--workflow]" />
+  </Button>
 
-  <!-- Case 4: Advanced Footer (Regular Nodes) -->
-  <div
+  <Button
     v-else-if="showAdvancedInputsButton || showAdvancedState"
+    variant="textonly"
+    data-testid="advanced-inputs-button"
     :class="
       cn(
         footerWrapperBase,
-        hasAnyError ? '-mx-1 -mb-2 w-[calc(100%+8px)] pb-1' : 'w-full'
+        tabStyles,
+        'box-border w-full rounded-none bg-node-header text-inherit',
+        hasAnyError && '-mx-1 -mb-1 w-[calc(100%+8px)]',
+        hasAnyError ? 'pt-9 pb-3' : 'pt-8 pb-3',
+        footerRadiusClass
       )
     "
+    :style="headerColorStyle"
+    @pointerup="snapshotDragOnPointerUp"
+    @click.stop="emitIfNotDragged('toggleAdvanced')"
   >
-    <Button
-      variant="textonly"
-      data-testid="advanced-inputs-button"
-      :class="
-        cn(
-          tabStyles,
-          'box-border w-full rounded-none bg-node-header text-inherit',
-          hasAnyError ? 'pt-9 pb-3' : 'pt-8 pb-3',
-          footerRadiusClass
-        )
-      "
-      :style="headerColorStyle"
-      @pointerup="snapshotDragOnPointerUp"
-      @click.stop="emitIfNotDragged('toggleAdvanced')"
-    >
-      <template v-if="showAdvancedState">
-        <span class="truncate">{{
-          t('rightSidePanel.hideAdvancedInputsButton')
-        }}</span>
-        <i class="icon-[lucide--chevron-up]" />
-      </template>
-      <template v-else>
-        <span class="truncate">{{
-          t('rightSidePanel.showAdvancedInputsButton')
-        }}</span>
-        <i class="icon-[lucide--settings-2]" />
-      </template>
-    </Button>
-  </div>
+    <template v-if="showAdvancedState">
+      <span class="truncate">{{
+        t('rightSidePanel.hideAdvancedInputsButton')
+      }}</span>
+      <i class="icon-[lucide--chevron-up]" />
+    </template>
+    <template v-else>
+      <span class="truncate">{{
+        t('rightSidePanel.showAdvancedInputsButton')
+      }}</span>
+      <i class="icon-[lucide--settings-2]" />
+    </template>
+  </Button>
 </template>
 
 <script setup lang="ts">
