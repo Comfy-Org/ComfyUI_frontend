@@ -99,11 +99,12 @@ export function createSlotEdits(
       })
       if (isShared(live.graph)) return false
       runner.apply(live.graph, () => {
-        for (const write of checked.writes) write(live)
-        if (checked.widget === null) delete live.slot.widget
-        else if (checked.widget !== undefined) {
-          live.slot.widget = { name: checked.widget }
+        if (checked.widget === null && live.slot.widget) {
+          delete live.slot.widget
+          delete live.slot.pos
         }
+        for (const write of checked.writes) write(live)
+        if (checked.widget) live.slot.widget = { name: checked.widget }
       })
       return true
     },

@@ -319,7 +319,7 @@ export interface SlotPatch {
 }
 
 export interface InputSlotPatch extends SlotPatch {
-  /** The node's widget this input is the socket of, which no other input may be; `null` for none. */
+  /** The node's widget this input is the socket of, which no other input may be; `null` for none, which also drops the position the widget gave it. */
   readonly widget?: string | null
 }
 

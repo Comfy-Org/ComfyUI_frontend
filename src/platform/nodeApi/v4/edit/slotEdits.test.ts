@@ -157,6 +157,41 @@ describe('slot edits', () => {
       expect(input('x').isWidgetInput).toBe(true)
     })
 
+    describe('when an input stops being a widget’s socket', () => {
+      function laidOutSocket() {
+        target.addWidget('number', 'steps', 1, () => {})
+        input('x').modify({ widget: 'steps' })
+        target._setConcreteSlots()
+        target.arrange()
+        expect(target.inputs[0].pos).toBeDefined()
+      }
+
+      it('drops the position the layout gave it from its widget, so none is saved', () => {
+        laidOutSocket()
+
+        expect(input('x').modify({ widget: null })).toBe(true)
+
+        expect(target.inputs[0].pos).toBeUndefined()
+        expect(target.serialize().inputs?.[0].pos).toBeUndefined()
+      })
+
+      it('takes a position the same patch gives', () => {
+        laidOutSocket()
+
+        input('x').modify({ widget: null, position: { x: 4, y: 6 } })
+
+        expect(target.inputs[0].pos).toEqual([4, 6])
+      })
+
+      it('keeps the position of a plain input that had no widget', () => {
+        input('y').modify({ position: { x: 4, y: 6 } })
+
+        input('y').modify({ widget: null })
+
+        expect(target.inputs[1].pos).toEqual([4, 6])
+      })
+    })
+
     it('lets a slot keep its own name', () => {
       expect(input('x').modify({ name: 'x' })).toBe(true)
     })
