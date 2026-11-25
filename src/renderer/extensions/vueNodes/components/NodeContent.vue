@@ -2,25 +2,30 @@
   <div v-if="renderError" class="node-error p-2 text-sm text-destructive">
     {{ st('nodeErrors.content', 'Node Content Error') }}
   </div>
-  <VideoPreview
-    v-else-if="hasMedia && media?.type === 'video'"
-    :image-urls="media.items.map((item) => resultItemPreviewUrl(item))"
-    :node-id="nodeId"
-    class="lg-node-content mt-2 min-h-0 flex-1"
-  />
-  <AudioPreview
-    v-else-if="hasMedia && media?.type === 'audio'"
-    :audio-urls="media.items.map((item) => resultItemPreviewUrl(item))"
-    class="lg-node-content mt-2 min-h-0 flex-1"
-  />
-  <ImagePreview
-    v-else-if="hasMedia && media?.type === 'image'"
-    :items="media.items"
-    :node-id="nodeId"
-    :full-resolution="nodeData?.flags.fullResolutionPreview"
-    class="lg-node-content min-h-0 flex-1"
-    :style="{ marginTop: `${IMAGE_PREVIEW_MARGIN_TOP}px` }"
-  />
+  <div v-else class="lg-node-content flex min-h-0 flex-1 flex-col">
+    <!-- Default slot for custom content -->
+    <slot>
+      <VideoPreview
+        v-if="hasMedia && media?.type === 'video'"
+        :image-urls="media.items.map((item) => resultItemPreviewUrl(item))"
+        :node-id="nodeId"
+        class="mt-2 flex-auto"
+      />
+      <AudioPreview
+        v-else-if="hasMedia && media?.type === 'audio'"
+        :audio-urls="media.items.map((item) => resultItemPreviewUrl(item))"
+        class="mt-2 flex-auto"
+      />
+      <ImagePreview
+        v-else-if="hasMedia && media?.type === 'image'"
+        :items="media.items"
+        :node-id="nodeId"
+        :full-resolution="nodeData?.flags.fullResolutionPreview"
+        class="flex-auto"
+        :style="{ marginTop: `${IMAGE_PREVIEW_MARGIN_TOP}px` }"
+      />
+    </slot>
+  </div>
 </template>
 
 <script setup lang="ts">
