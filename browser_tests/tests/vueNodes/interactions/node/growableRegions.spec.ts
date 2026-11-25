@@ -566,6 +566,32 @@ test.describe(
       expect(after.height).toBeGreaterThan(before.height + 100)
     })
 
+    test('a subgraph node shares a resize between its promoted preview and promoted textarea', async ({
+      comfyPage
+    }) => {
+      await comfyPage.workflow.loadWorkflow(
+        'subgraphs/subgraph-with-promoted-preview-and-textarea'
+      )
+      await comfyPage.command.executeCommand('Comfy.QueuePrompt')
+      const host = new VueNodeFixture(comfyPage.vueNodes.getNodeLocator('8'))
+      await expect(host.imagePreview.locator('img')).toHaveCount(1, {
+        timeout: 30_000
+      })
+      await expect(host.widgetRow('value')).toBeVisible()
+      const getPreviewHeight = () => heightOf(host.imagePreview)
+      const getTextHeight = () => heightOf(host.widgetRow('value'))
+      const getHeight = () => heightOf(host.root)
+      const initialPreview = await getPreviewHeight()
+      const initialText = await getTextHeight()
+      const initialHeight = await getHeight()
+
+      await host.resizeFromCorner('SE', 0, 200)
+
+      await expect.poll(getHeight).toBeCloseTo(initialHeight + 200, 0)
+      await expect.poll(getPreviewHeight).toBeGreaterThan(initialPreview + 50)
+      await expect.poll(getTextHeight).toBeGreaterThan(initialText + 50)
+    })
+
     test('each preview promoted to a subgraph node resizes on its own', async ({
       comfyPage
     }) => {
