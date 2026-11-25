@@ -198,9 +198,10 @@ This ADR records how the API reaches widgets through those owners.
       host's; what it means to a pack is the API's bridge. So the bridge
       reports neither event while the host is loading or restoring a graph,
       by the change tracker's own test for a write that is not a user's
-      change: `ChangeTracker.isLoadingGraph` (every `loadGraphData`: a load,
-      a tab switch, an undo or redo) or `isChangeCaptureSuppressed()` (the
-      API JSON and A1111 imports). It still records the value, so the first
+      change: the graph on screen loading (`isGraphLoading`, set by every
+      `loadGraphData` into it: a load, a switch to a tab whose graph is not
+      live, an undo or redo) or `isChangeCaptureSuppressed()` (the API JSON
+      and A1111 imports). It still records the value, so the first
       commit after the load is compared with what the load left. The window
       is the tracker's, not just `configure`: it includes the
       `loadedGraphNode`, `afterConfigureGraph` and `afterLoadGraph` hooks,

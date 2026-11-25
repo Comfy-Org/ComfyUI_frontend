@@ -184,8 +184,8 @@ review finding requires it. The counts below are packs, then call sites.
     and nothing grows: a handle goes when its change tracker does. When the
     uid lands, the handle is keyed by it instead and nothing a pack sees
     changes. This is separate from the handle retirement of
-    ADR-EXTENSIONS-NODE-API-0070 decision 10, which still treats a tab switch
-    as a load.
+    ADR-EXTENSIONS-NODE-API-0070 decision 10, which still retires every
+    handle on a tab switch.
 12. `DocumentHandle` (`id` 3 packs, `name` 5, `path` 1) reads the open
     workflow live: `name` is the file name without directory or extension,
     `path` is where it is saved and `undefined` while it has never been, and
@@ -197,10 +197,14 @@ review finding requires it. The counts below are packs, then call sites.
     hook). The host calls `workflowLoaded()` right after it runs the
     `afterLoadGraph` extension hook, on each of the three load paths in
     `app.ts`: a saved workflow (which undo and redo also take), API JSON and
-    an A1111 image. A load that fails or is overtaken returns before the
-    call, so it is not announced. Between the two, one step for all three
-    paths (`completeGraphLoad`) ends the load, clearing
-    `ChangeTracker.isLoadingGraph` or releasing the import's capture
+    an A1111 image; and after the same hook on a switch to an open tab whose
+    graph is still live, which main makes without a load
+    (`switchToWorkflowGraph` in `workflowService.ts`), so a pack that
+    refreshes per-document state there keeps working as a legacy
+    `afterLoadGraph` hook does. A load that fails or is overtaken returns
+    before the call, so it is not announced. Between the two, one step for
+    all three load paths (`completeGraphLoad`) ends the load, ending the
+    graph's load state (`endGraphLoad`) or releasing the import's capture
     suppression, and takes the graph as its hooks left it as the loaded
     state (`adoptLoadedGraph()`): what an `afterLoadGraph` hook changes is
     part of the loaded workflow, which the user's next undo does not take
@@ -217,16 +221,20 @@ review finding requires it. The counts below are packs, then call sites.
     state, not an undo step that would clear redo, and the user's next undo
     does not take it back (the tracker used to take the graph first, so the edit
     was in neither). The same holds for what a pack changes later, after the
-    restore has finished and before the user's next input (a pointer press, a
-    key press, a wheel turn or a drop, which the tracker listens for with its other capture
-    points): a fit from a `ResizeObserver` as the rebuilt node mounts, or slot
+    restore has finished, until the user's next action (a pointer press, a
+    key press, a wheel turn or a drop, which the tracker listens for with its
+    other capture points), the next undo or redo, or one second after the
+    restore (`RESTORE_SETTLING_MS`), whichever comes first: a fit from a `ResizeObserver` as the rebuilt node mounts, or slot
     types settled a microtask or a frame later. The tracker takes each such
     change into the restored state (and into the saved state, when the
     restore went back to it), records no undo step and keeps redo. An undo
     step each would empty the redo queue after every undo of a node such a
     pack touches, which a V1 pack's direct writes never did, since the tracker
-    captured them only at the user's next action. A change after the user's
-    next input, in a gesture or later, is one undo step again. The document's `id` is unchanged for an
+    captured them only at the user's next action. The window is bounded so
+    that an unrelated edit long after the restore (an `onExecuted` edit, say)
+    is not absorbed; the next undo or redo closes it before it restores and
+    opens its own. A change after the window ends, in a gesture or later, is
+    one undo step again. The document's `id` is unchanged for an
     undo or redo, which is how a pack tells them from a load.
 14. `onDocumentActivated` (1 pack) and `onDocumentClosed` (2 packs) watch
     the workflow store only while they have listeners, so an unused event costs
@@ -292,7 +300,7 @@ review finding requires it. The counts below are packs, then call sites.
       It returns `true` once written and `false` for a background, closed
       or missing document, or while a graph loads, which includes an undo's
       or redo's `onWorkflowLoaded` listener (the host calls it before it
-      clears `ChangeTracker.isLoadingGraph`): the change tracker can only
+      ends the graph's load state): the change tracker can only
       capture the graph on the canvas. A load's listener runs after the load
       ends (decision 13), so a write there is the first undo step. Inside an
       A1111 import the host suppresses capture instead of setting that flag,
@@ -515,6 +523,8 @@ Host changes outside the folder:
   removed.
 - `src/renderer/core/canvas/nodeApiCanvasSource.ts` is new and claimed by
   the canvas-renderer domain.
+- `workflowService.ts` calls `workflowLoaded()` after the `afterLoadGraph`
+  hook of a switch to a tab whose graph is still live.
 - `src/scripts/app.ts` calls `workflowLoaded()` after the `afterLoadGraph`
   hook on its three load paths, once the load has ended and
   `adoptLoadedGraph()` has taken the graph as the loaded state (an undo or redo
@@ -627,7 +637,8 @@ the API reports, recorded here with the change that would lift it.
   every other edit does.
 - **Which document is on screen.** `setExtra` and `getExtra` ask the same
   three questions the change tracker asks before it captures the canvas
-  (`activeWorkflow`, `canCaptureCanvas`, `ChangeTracker.isLoadingGraph`);
+  (`activeWorkflow`, `canCaptureCanvas`, and whether the graph on screen
+  is loading, `isGraphLoading` in `graphLoadState.ts`);
   the tracker's own `isActiveTracker` is not exported.
 - **Workflow validation and text replacement.** `validateComfyWorkflow` from
   the workflow schema and `applyTextReplacements` from
