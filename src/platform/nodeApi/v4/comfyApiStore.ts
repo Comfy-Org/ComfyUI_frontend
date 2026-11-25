@@ -28,6 +28,7 @@ export const useComfyApiStore = defineStore('comfyApiV4', () => {
   )
 
   function publish(): void {
+    host.markStarting()
     Object.defineProperty(window, 'comfy_v4', {
       value: comfy,
       enumerable: true,

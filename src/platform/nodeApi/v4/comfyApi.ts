@@ -35,6 +35,8 @@ export interface ComfyApiServices {
 export interface ComfyApiHost extends Omit<VersionHost, 'publish'> {
   /** The extension through which the host tells the API about node types. */
   readonly nodeTypeHooks: NodeTypeHooks
+  /** A startup of the canvas begins: `onReady` waits for its {@link VersionHost.markReady}. */
+  markStarting(): void
 }
 
 /** The published API, the host's side of it, and the edit core every node, slot, link, group and graph edit runs through. */
@@ -95,6 +97,7 @@ export function createComfyApi(services: ComfyApiServices): ComfyApi {
     host: {
       nodeTypeHooks: definitions.nodeTypeHooks,
       reapplyTypeColors: definitions.reapplyTypeColors,
+      markStarting: lifecycle.markStarting,
       markReady: lifecycle.markReady,
       providePacks: packs.provide,
       endDocument: handles.endDocument,

@@ -118,6 +118,22 @@ describe("the app's node API", () => {
     expect(listener).toHaveBeenCalledOnce()
   })
 
+  it('makes a listener added while the canvas starts up again wait for that startup to be ready', async () => {
+    const comfy = publishedApi()
+    useComfyApiStore().markReady()
+    const listener = vi.fn()
+
+    publishedApi()
+    comfy.onReady(listener)
+    await Promise.resolve()
+
+    expect(listener).not.toHaveBeenCalled()
+
+    useComfyApiStore().markReady()
+
+    expect(listener).toHaveBeenCalledOnce()
+  })
+
   it('retires the handles packs hold when the host begins another document', () => {
     const comfy = publishedApi()
     const graph = new LGraph()

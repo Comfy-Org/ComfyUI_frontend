@@ -10,7 +10,7 @@ export interface ServedPack {
 }
 
 export interface VersionHost {
-  /** Puts the version's window slot in place, before extensions load. */
+  /** Puts the version's window slot in place at the start of each startup of the canvas, before extensions load. */
   publish(): void
   markReady(): void
   /** The packs the backend verified, before any pack loads; `undefined` if the backend gave none. */
