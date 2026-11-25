@@ -232,6 +232,21 @@ describe('link edits', () => {
       expect(target.isInputConnected(0)).toBe(false)
     })
 
+    it('removes every link of an output to a node that takes it twice, as one undo step, and keeps the others', () => {
+      target.addInput('again', 'IMAGE')
+      source.connect(0, target, 2)
+      steps.length = 0
+
+      expect(out('image').disconnect(String(target.id))).toBe(true)
+
+      expect([
+        target.isInputConnected(0),
+        target.isInputConnected(2),
+        other.isInputConnected(0)
+      ]).toEqual([false, false, true])
+      expect(steps).toEqual(['before', 'after'])
+    })
+
     it('removes every link of an output through its handle', () => {
       expect(out('image').disconnect()).toBe(true)
 

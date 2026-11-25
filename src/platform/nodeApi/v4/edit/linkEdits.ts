@@ -1,5 +1,6 @@
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { outputLinks } from '@/lib/litegraph/src/node/slotLinks'
 import { useLinkStore } from '@/stores/linkStore'
 
@@ -70,11 +71,11 @@ export function createLinkEdits(
         )
       }
       if (!isSlotConnected(live)) return false
-      return runner.apply(live.graph, () =>
-        live.side === 'input'
-          ? live.node.disconnectInput(live.index)
-          : live.node.disconnectOutput(live.index, targetNode?.node)
-      )
+      return runner.apply(live.graph, () => {
+        if (live.side === 'input') return live.node.disconnectInput(live.index)
+        if (!targetNode) return live.node.disconnectOutput(live.index)
+        return disconnectEveryLinkTo(live, targetNode.node)
+      })
     },
 
     moveLinks(from, to) {
@@ -90,6 +91,14 @@ export function createLinkEdits(
       )
     }
   }
+}
+
+function disconnectEveryLinkTo(output: LiveSlot, target: LGraphNode): boolean {
+  const { graph, node, index } = output
+  return outputLinks(graph, node.id, index)
+    .filter((link) => link.target_id === target.id)
+    .map(() => node.disconnectOutput(index, target))
+    .includes(true)
 }
 
 function assertOneGraph(member: string, a: LiveSlot, b: LiveSlot): void {
