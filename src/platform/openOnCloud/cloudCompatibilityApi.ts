@@ -377,9 +377,11 @@ export interface ConfirmedWorkspaceModels {
 
 /** Resolves null when no verdict is available. */
 export async function checkCloudCompatibility(
-  confirmedUploads?: ConfirmedWorkspaceModels
+  confirmedUploads?: ConfirmedWorkspaceModels,
+  signal?: AbortSignal
 ): Promise<CloudWorkflowCheckResult> {
   try {
+    throwIfAborted(signal)
     const nodes = checkedNodes(app.rootGraph)
     if (!nodes.length) return { kind: 'emptyWorkflow' }
     const unreadableLoader = nodes.find((node) => node.hasUnreadableModels)
@@ -388,7 +390,11 @@ export async function checkCloudCompatibility(
         kind: 'unreadableModelLoader',
         nodeType: unreadableLoader.class_type
       }
-    const { models, unchecked } = await collectModels(nodes)
+    const { models, unchecked } = await awaitWithAbort(
+      collectModels(nodes),
+      signal
+    )
+    throwIfAborted(signal)
     const nodeTypes = [...new Set(nodes.map((node) => node.class_type))]
     const workspaceId = confirmedUploads?.models.some((uploaded) =>
       models.some(
@@ -399,7 +405,8 @@ export async function checkCloudCompatibility(
       ? confirmedUploads.workspaceId
       : undefined
     const verdict = await requestCompatibility(nodeTypes, models, {
-      workspaceId
+      workspaceId,
+      signal
     })
     if (!verdict) return null
     const requireModelVerdict =
@@ -413,6 +420,7 @@ export async function checkCloudCompatibility(
       unchecked
     )
   } catch (error) {
+    if (signal?.aborted) return null
     return giveUp(error)
   }
 }
