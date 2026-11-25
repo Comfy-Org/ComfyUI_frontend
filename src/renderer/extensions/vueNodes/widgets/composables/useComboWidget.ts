@@ -18,6 +18,7 @@ import type {
   InputSpec
 } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import { isComboInputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
+import { getMediaSelectionLimits } from '@comfyorg/object-info-parser'
 import { transformInputSpecV2ToV1 } from '@comfyorg/object-info-parser/migration'
 import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
 import type { BaseDOMWidget } from '@/types/domWidget'
@@ -25,6 +26,7 @@ import type { ComfyWidgetConstructorV2 } from '@/types/widgetConstructor'
 import { addValueControlWidgets } from '@/core/graph/widgets/valueControlWidgets'
 import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
+import { toMediaSelection } from '@/utils/mediaUploadUtil'
 
 import { useRemoteWidget } from './useRemoteWidget'
 
@@ -206,6 +208,22 @@ const addMultiSelectWidget = (
     )
   }
 
+  return widget
+}
+
+const addMediaListWidget = (
+  node: LGraphNode,
+  inputSpec: ComboInputSpec
+): IBaseWidget => {
+  const widget: IBaseWidget = node.addWidget(
+    'combo',
+    inputSpec.name,
+    '',
+    () => {},
+    { values: inputSpec.options ?? [] }
+  )
+  widget.value = toMediaSelection(inputSpec.default)
+  widget.serializeValue = () => toMediaSelection(widget.value)
   return widget
 }
 
@@ -434,6 +452,8 @@ export const useComboWidget = () => {
     if (!isComboInputSpec(inputSpec)) {
       throw new Error(`Invalid input data: ${inputSpec}`)
     }
+    if (getMediaSelectionLimits(inputSpec))
+      return addMediaListWidget(node, inputSpec)
     return inputSpec.multi_select
       ? addMultiSelectWidget(node, inputSpec)
       : addComboWidget(node, inputSpec)

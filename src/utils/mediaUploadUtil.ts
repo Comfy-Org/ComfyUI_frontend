@@ -23,3 +23,14 @@ export function isUntypedOrVideoWithoutExtension(file: File) {
     !hasFilenameExtension(file)
   )
 }
+
+const LEGACY_EMPTY_MEDIA_VALUES: ReadonlySet<string> = new Set(['', '(none)'])
+
+/** The filenames selected in a list-valued media picker, reading a saved single filename or `(none)` from before the node declared `multi_select`. */
+export function toMediaSelection(value: unknown): string[] {
+  if (Array.isArray(value))
+    return value.filter((name): name is string => typeof name === 'string')
+  if (typeof value !== 'string' || LEGACY_EMPTY_MEDIA_VALUES.has(value))
+    return []
+  return [value]
+}

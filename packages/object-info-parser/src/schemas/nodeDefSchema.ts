@@ -22,7 +22,9 @@ const zRemoteWidgetConfig = z.object({
 })
 const zMultiSelectOption = z.object({
   placeholder: z.string().optional(),
-  chip: z.boolean().optional()
+  chip: z.boolean().optional(),
+  min: z.number().int().nonnegative().optional(),
+  max: z.number().int().positive().optional()
 })
 
 export const zBaseInputOptions = z
@@ -181,6 +183,25 @@ export function isMediaUploadComboInput(inputSpec: InputSpec): boolean {
   return (
     isUploadInput && (isComboInputSpecV1(inputSpec) || inputName === 'COMBO')
   )
+}
+
+export interface MediaSelectionLimits {
+  min: number
+  max: number
+}
+
+/** Selection counts for an image or video picker that declares `multi_select`, whose value is a list of filenames. */
+export function getMediaSelectionLimits(
+  options: Pick<
+    ComboInputOptions,
+    'image_upload' | 'animated_image_upload' | 'video_upload' | 'multi_select'
+  >
+): MediaSelectionLimits | undefined {
+  const { image_upload, animated_image_upload, video_upload, multi_select } =
+    options
+  if (!multi_select) return undefined
+  if (!image_upload && !animated_image_upload && !video_upload) return undefined
+  return { min: multi_select.min ?? 0, max: multi_select.max ?? Infinity }
 }
 
 /**

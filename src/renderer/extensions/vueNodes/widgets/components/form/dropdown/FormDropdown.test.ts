@@ -77,6 +77,7 @@ interface MountDropdownOptions {
     onCleanup: (cleanupFn: () => void) => void
   ) => Promise<readonly FormDropdownItem[]>
   multiple?: boolean | number
+  minSelected?: number
   selected?: Set<string>
   searchQuery?: string
   onUpdateSelected?: (selected: Set<string>) => void
@@ -96,6 +97,7 @@ function mountDropdown(
     props: {
       items,
       multiple: options.multiple,
+      minSelected: options.minSelected,
       selected: options.selected,
       searcher: options.searcher,
       searchQuery: options.searchQuery,
@@ -298,6 +300,46 @@ describe('FormDropdown', () => {
     expect(onUpdateSelected).toHaveBeenCalledWith(new Set([secondItem.id]))
     expect(screen.getByRole('button', { name: 'Open' })).toHaveFocus()
   })
+
+  it.for([
+    {
+      name: 'clears a single-select dropdown that allows no selection',
+      multiple: 1,
+      minSelected: 0,
+      selected: ['first'],
+      expected: []
+    },
+    {
+      name: 'deselects while more than the minimum stay selected',
+      multiple: 3,
+      minSelected: 1,
+      selected: ['first', 'second'],
+      expected: ['second']
+    },
+    {
+      name: 'refuses to deselect below the minimum',
+      multiple: 3,
+      minSelected: 1,
+      selected: ['first'],
+      expected: undefined
+    }
+  ])(
+    '$name when a selected item is clicked',
+    async ({ multiple, minSelected, selected, expected }) => {
+      const onUpdateSelected = vi.fn()
+      const { user } = mountDropdown(
+        [createItem('first', 'first.png'), createItem('second', 'second.png')],
+        { multiple, minSelected, selected: new Set(selected), onUpdateSelected }
+      )
+      await openDropdown(user)
+
+      await user.click(screen.getByRole('button', { name: 'first.png' }))
+
+      expect(onUpdateSelected.mock.lastCall).toEqual(
+        expected && [new Set(expected)]
+      )
+    }
+  )
 
   it('does not select when Enter is pressed with an empty search query', async () => {
     const onUpdateSelected = vi.fn()

@@ -41,6 +41,8 @@ interface Props {
    * it specifies the maximum number of selections allowed.
    */
   multiple?: boolean | number
+  /** Fewest selections a user can deselect down to. Defaults to 1 for single select and 0 otherwise. */
+  minSelected?: number
 
   uploadable?: boolean
   disabled?: boolean
@@ -69,6 +71,7 @@ const { t } = useI18n()
 const {
   placeholder,
   multiple = false,
+  minSelected,
   uploadable = false,
   disabled = false,
   accept,
@@ -121,6 +124,9 @@ const maxSelectable = computed(() => {
   return 1
 })
 const isSingleSelect = computed(() => maxSelectable.value === 1)
+const minSelectable = computed(
+  () => minSelected ?? (isSingleSelect.value ? 1 : 0)
+)
 
 const debouncedSearchQuery = refDebounced(searchQuery, 250, { maxWait: 1000 })
 
@@ -246,12 +252,13 @@ function handleFileChange(event: Event) {
 function handleSelection(item: FormDropdownItem, index: number) {
   if (disabled) return
   const itemIsSelected = internalIsSelected(item, index)
-  if (isSingleSelect.value && itemIsSelected) {
-    closeDropdown({ restoreFocus: true })
+  const sel = selected.value
+  if (itemIsSelected && sel.size <= minSelectable.value) {
+    if (isSingleSelect.value) closeDropdown({ restoreFocus: true })
+    else toast.warning(t('widgets.uploadSelect.minSelectionReached'))
     return
   }
 
-  const sel = selected.value
   if (itemIsSelected) {
     sel.delete(item.id)
   } else {

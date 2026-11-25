@@ -11,9 +11,11 @@ import { useAssetWidgetData } from '@/platform/assets/composables/useAssetWidget
 import { useWidgetSelectActions } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectActions'
 import { useWidgetSelectItems } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems'
 import type { ResultItemType } from '@comfyorg/api-client/resultItemTypeSchema'
+import type { MediaSelectionLimits } from '@comfyorg/object-info-parser'
 import type { OwnershipOption } from '@comfyorg/assets-core/filtering'
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
 import type { AssetKind } from '@/types/widgetTypes'
+import { toMediaSelection } from '@/utils/mediaUploadUtil'
 import { pagedItems } from '@/utils/pagedList'
 import {
   PANEL_EXCLUDED_PROPS,
@@ -29,6 +31,7 @@ interface Props {
   uploadSubfolder?: string
   isAssetMode?: boolean
   defaultLayoutMode?: LayoutMode
+  selectionLimits?: MediaSelectionLimits
 }
 
 const props = defineProps<Props>()
@@ -46,12 +49,13 @@ const modelValue = defineModel<WidgetValue>({
     return (Array.isArray(values) ? values[0] : undefined) ?? ''
   }
 })
-const stringModelValue = computed({
-  get: () => {
+const selectionModelValue = computed({
+  get: (): string | string[] | undefined => {
     const value = modelValue.value
+    if (props.selectionLimits) return toMediaSelection(value)
     return value == null ? undefined : String(value)
   },
-  set: (value: string | undefined) => {
+  set: (value: string | string[] | undefined) => {
     modelValue.value = value
   }
 })
@@ -83,7 +87,7 @@ const {
   selectedSet: selected
 } = useWidgetSelectItems({
   getOptionLabel: () => props.widget.options?.getOptionLabel,
-  modelValue: stringModelValue,
+  modelValue: selectionModelValue,
   assetKind: () => props.assetKind,
   assetData,
   isAssetMode: () => props.isAssetMode ?? false,
@@ -95,11 +99,12 @@ const {
 const { updateSelectedItems, handleFilesUpdate } = useWidgetSelectActions({
   dropdownItems: () => pagedItems(items.value),
   locatorId: props.widget.nodeLocatorId,
-  modelValue: stringModelValue,
+  modelValue: selectionModelValue,
   uploadFolder: () => props.uploadFolder,
   uploadSubfolder: () => props.uploadSubfolder,
   widget: () => props.widget,
-  videoOnly: () => props.assetKind === 'video'
+  videoOnly: () => props.assetKind === 'video',
+  selectionLimits: () => props.selectionLimits
 })
 
 const placeholder = computed(() => {
@@ -168,7 +173,8 @@ async function updateFiles(files: File[]) {
       :selected
       :items
       :placeholder
-      :multiple="false"
+      :multiple="selectionLimits?.max ?? false"
+      :min-selected="selectionLimits?.min"
       :uploadable
       :accept
       :filter-options

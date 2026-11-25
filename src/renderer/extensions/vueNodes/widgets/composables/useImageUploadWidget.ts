@@ -6,6 +6,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IComboWidget } from '@comfyorg/graph-model/widgets'
 import type { ResultItem } from '@comfyorg/api-client/executionTypes'
 import type { ResultItemType } from '@comfyorg/api-client/resultItemTypeSchema'
+import { getMediaSelectionLimits } from '@comfyorg/object-info-parser'
 import type { InputSpec } from '@comfyorg/object-info-parser'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useToast } from '@/components/ui/toast/toastStore'
@@ -19,7 +20,8 @@ import {
   ACCEPTED_IMAGE_TYPES,
   ACCEPTED_VIDEO_TYPES,
   isUntypedOrVideoWithoutExtension,
-  isUploadableVideo
+  isUploadableVideo,
+  toMediaSelection
 } from '@/utils/mediaUploadUtil'
 
 function isImageFile(file: File) {
@@ -53,6 +55,7 @@ export const useImageUploadWidget = () => {
     const { imageInputName, allow_batch, image_folder = 'input' } = inputOptions
     const folder: ResultItemType | undefined = image_folder
     const nodeOutputStore = useNodeOutputStore()
+    const selectionLimits = getMediaSelectionLimits(inputOptions)
 
     const isAnimated = !!inputOptions.animated_image_upload
     const isVideo = !!inputOptions.video_upload
@@ -81,13 +84,13 @@ export const useImageUploadWidget = () => {
     // Setup file upload handling
     let rollback: (() => void) | undefined
     const { openFileSelection } = useNodeImageUpload(node, {
-      allow_batch,
+      allow_batch: selectionLimits ? selectionLimits.max > 1 : allow_batch,
       fileFilter,
       accept,
       folder,
       onReject: isVideo ? alertExtensionlessVideo : undefined,
       onUploadStart: (files) => {
-        if (files.length > 0) {
+        if (files.length > 0 && !selectionLimits) {
           const prev = fileComboWidget.value
           fileComboWidget.value = files[0].name
           rollback = () => {
@@ -106,7 +109,13 @@ export const useImageUploadWidget = () => {
           addToComboValues(fileComboWidget, path)
         })
 
-        const newValue = allow_batch ? annotated : annotated[0]
+        const newValue = selectionLimits
+          ? [...toMediaSelection(fileComboWidget.value), ...annotated].slice(
+              -selectionLimits.max
+            )
+          : allow_batch
+            ? annotated
+            : annotated[0]
         const oldValue = fileComboWidget.value
 
         fileComboWidget.value = newValue
@@ -135,30 +144,31 @@ export const useImageUploadWidget = () => {
     )
     uploadWidget.label = t('g.choose_file_to_upload')
 
-    // Add our own callback to the combo widget to render an image when it changes
+    function showSelectedMedia(
+      value: ImageUploadComboWidget['value'] | null | undefined
+    ) {
+      if (!selectionLimits) {
+        if (value != null)
+          nodeOutputStore.setNodeOutputs(node, String(value), { isAnimated })
+        return
+      }
+      const names = toMediaSelection(value)
+      if (names.length)
+        nodeOutputStore.setNodeOutputs(node, names, { isAnimated })
+      else nodeOutputStore.removeNodeOutputsForNode(node)
+    }
+
     fileComboWidget.callback = function () {
+      if (selectionLimits && !Array.isArray(fileComboWidget.value))
+        fileComboWidget.value = toMediaSelection(fileComboWidget.value)
       node.imgs = undefined
-      nodeOutputStore.setNodeOutputs(node, String(fileComboWidget.value), {
-        isAnimated
-      })
+      showSelectedMedia(fileComboWidget.value)
       showCanvasPreview()
       node.graph?.setDirtyCanvas(true)
     }
 
-    // On load if we have a value then render the image
-    // The value isn't set immediately so we need to wait a moment
-    // No change callbacks seem to be fired on initial setting of the value
     requestAnimationFrame(() => {
-      const fileValue = fileComboWidget.value as
-        | string
-        | number
-        | null
-        | undefined
-      if (fileValue != null) {
-        nodeOutputStore.setNodeOutputs(node, String(fileValue), {
-          isAnimated
-        })
-      }
+      showSelectedMedia(fileComboWidget.value)
       showCanvasPreview()
     })
 

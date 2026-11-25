@@ -4550,6 +4550,7 @@
       "placeholderModel": "Select model...",
       "placeholderUnknown": "Select media...",
       "maxSelectionReached": "Maximum selection limit reached",
+      "minSelectionReached": "Minimum selection limit reached",
       "topResult": "Top result: {result}"
     },
     "valueControl": {

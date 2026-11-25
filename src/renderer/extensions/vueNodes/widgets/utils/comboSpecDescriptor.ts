@@ -1,4 +1,6 @@
 import type { ResultItemType } from '@comfyorg/api-client/resultItemTypeSchema'
+import { getMediaSelectionLimits } from '@comfyorg/object-info-parser'
+import type { MediaSelectionLimits } from '@comfyorg/object-info-parser'
 import type { ComboInputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import type { AssetKind } from '@/types/widgetTypes'
 
@@ -7,6 +9,7 @@ export interface ComboSpecDescriptor {
   allowUpload: boolean
   folder: ResultItemType | undefined
   subfolder: string | undefined
+  selectionLimits: MediaSelectionLimits | undefined
 }
 
 export function parseComboSpecDescriptor(
@@ -17,7 +20,8 @@ export function parseComboSpecDescriptor(
       kind: 'unknown',
       allowUpload: false,
       folder: undefined,
-      subfolder: undefined
+      subfolder: undefined,
+      selectionLimits: undefined
     }
   }
 
@@ -53,6 +57,7 @@ export function parseComboSpecDescriptor(
     kind,
     allowUpload,
     folder: mesh_upload ? 'input' : image_folder,
-    subfolder: upload_subfolder
+    subfolder: upload_subfolder,
+    selectionLimits: getMediaSelectionLimits(spec)
   }
 }

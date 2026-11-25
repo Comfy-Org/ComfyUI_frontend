@@ -7,6 +7,7 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { t } from '@/i18n'
 import { resolveWidgetValueAsset } from '@/platform/assets/integration/resolveWidgetValueAsset'
 import type { ResultItem } from '@comfyorg/api-client/executionTypes'
+import type { MediaSelectionLimits } from '@comfyorg/object-info-parser'
 import { ServerFeatureFlag } from '@/platform/remoteConfig/serverFeatureFlag'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { FormDropdownItem } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
@@ -20,7 +21,8 @@ import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 import { parseImageWidgetValue } from '@/utils/imageUtil'
 import {
   isExtensionlessVideo,
-  isUntypedOrVideoWithoutExtension
+  isUntypedOrVideoWithoutExtension,
+  toMediaSelection
 } from '@/utils/mediaUploadUtil'
 import { isResultItemType } from '@/utils/typeGuardUtil'
 
@@ -60,13 +62,14 @@ function addMissingOptionValues(
 }
 
 interface UseWidgetSelectActionsOptions {
-  modelValue: Ref<string | undefined>
+  modelValue: Ref<string | string[] | undefined>
   dropdownItems: MaybeRefOrGetter<readonly FormDropdownItem[]>
   widget: MaybeRefOrGetter<SimplifiedWidget<string | undefined>>
   uploadFolder: MaybeRefOrGetter<ResultItemType | undefined>
   uploadSubfolder: MaybeRefOrGetter<string | undefined>
   locatorId?: MaybeRefOrGetter<NodeLocatorId | undefined>
   videoOnly?: MaybeRefOrGetter<boolean>
+  selectionLimits?: MaybeRefOrGetter<MediaSelectionLimits | undefined>
 }
 
 export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
@@ -81,8 +84,8 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
   }
 
   const showHdrPreviewIfApplicable = wrapWithErrorHandlingAsync(
-    async (widgetValue: string | undefined) => {
-      if (!widgetValue) return
+    async (widgetValue: string | string[] | undefined) => {
+      if (typeof widgetValue !== 'string' || !widgetValue) return
       const { filename, subfolder, type } = parseImageWidgetValue(widgetValue)
       if (!isHdrImageFilename(filename)) return
 
@@ -100,16 +103,20 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
 
   void showHdrPreviewIfApplicable(modelValue.value)
 
-  function updateSelectedItems(selectedItems: Set<string>) {
-    const id =
-      selectedItems.size > 0 ? selectedItems.values().next().value : undefined
-    const name =
-      id == null
-        ? undefined
-        : toValue(dropdownItems).find((item) => item.id === id)?.name
+  function itemName(id: string) {
+    return toValue(dropdownItems).find((item) => item.id === id)?.name
+  }
 
-    modelValue.value = name
-    void showHdrPreviewIfApplicable(name)
+  function updateSelectedItems(selectedItems: Set<string>) {
+    if (toValue(options.selectionLimits)) {
+      modelValue.value = [...selectedItems].flatMap((id) => itemName(id) ?? [])
+    } else {
+      const id =
+        selectedItems.size > 0 ? selectedItems.values().next().value : undefined
+      const name = id == null ? undefined : itemName(id)
+      modelValue.value = name
+      void showHdrPreviewIfApplicable(name)
+    }
     useWorkflowStore().activeWorkflow?.changeTracker.captureCanvasState()
   }
 
@@ -185,8 +192,16 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
 
       const widget = toValue(options.widget)
       addMissingOptionValues(widget, uploadedPaths)
-      modelValue.value = uploadedPaths[0]
-      widget.callback?.(uploadedPaths[0])
+      const limits = toValue(options.selectionLimits)
+      if (limits) {
+        modelValue.value = [
+          ...toMediaSelection(modelValue.value),
+          ...toMediaSelection(uploadedPaths)
+        ].slice(-limits.max)
+      } else {
+        modelValue.value = uploadedPaths[0]
+        widget.callback?.(uploadedPaths[0])
+      }
       showUploadPreview(uploadedResponses[0])
 
       useWorkflowStore().activeWorkflow?.changeTracker.captureCanvasState()

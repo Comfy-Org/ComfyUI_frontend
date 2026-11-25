@@ -9,6 +9,7 @@ import {
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
 import { resolveWidgetValueAsset } from '@/platform/assets/integration/resolveWidgetValueAsset'
 import { isComboInputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
+import { getMediaSelectionLimits } from '@comfyorg/object-info-parser'
 import type { InputSpec as InputSpecV2 } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type {
@@ -29,6 +30,7 @@ import {
 import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
 import { resolveComboValues } from '@/utils/litegraphUtil'
 import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'
+import { toMediaSelection } from '@/utils/mediaUploadUtil'
 
 function isComboWidget(widget: IBaseWidget): widget is IComboWidget {
   return widget.type === 'combo'
@@ -92,6 +94,19 @@ function resolveMediaMissingState(
   return filepath.includes('/') ? undefined : true
 }
 
+function mediaWidgetValues(
+  spec: InputSpecV2 | undefined,
+  widget: IComboWidget
+): string[] {
+  const values =
+    spec && isComboInputSpec(spec) && getMediaSelectionLimits(spec)
+      ? toMediaSelection(widget.value)
+      : [widget.value]
+  return values.filter(
+    (value): value is string => typeof value === 'string' && !!value.trim()
+  )
+}
+
 /** Scan media; includeTemp is only for known deletions, not verification. */
 export function scanNodeMediaCandidates(
   rootGraph: LGraph,
@@ -110,40 +125,34 @@ export function scanNodeMediaCandidates(
   for (const widget of node.widgets) {
     if (!isComboWidget(widget)) continue
 
-    const mediaType = mediaTypeFromSpec(
-      nodeDefStore.getInputSpecForWidget(node, widget.name)
-    )
+    const spec = nodeDefStore.getInputSpecForWidget(node, widget.name)
+    const mediaType = mediaTypeFromSpec(spec)
     if (!mediaType) continue
     if (!isEditableValueOwner(node, widget)) continue
 
-    const value = widget.value
-    if (typeof value !== 'string' || !value.trim()) continue
-    if (!includeTemp && parseAnnotatedPath(value).rootFolder === 'temp')
-      continue
+    const scanned = mediaWidgetValues(spec, widget).filter(
+      (value) => includeTemp || parseAnnotatedPath(value).rootFolder !== 'temp'
+    )
+    if (!scanned.length) continue
 
-    const isMissing = resolveMediaMissingState(widget, value)
-
-    // Label only, and leaf-derived to match missingModelScan: the overlay
-    // formats nodeType directly and a SubgraphNode's own type is a UUID.
     const promotedSource = resolvePromotedWidgetSource(rootGraph, node, widget)
-    const labelNode = promotedSource?.sourceNode ?? node
-
-    const candidate: MissingMediaCandidate = {
-      nodeId: executionId,
-      nodeType: labelNode.type,
-      widgetName: widget.name,
-      mediaType,
-      name: value,
-      isMissing
+    const promotedSources = node.isSubgraphNode()
+      ? buildPromotedWidgetExecutionSources(
+          executionId,
+          resolveActivePromotedWidgetConsumers(node, widget.name)
+        )
+      : undefined
+    for (const value of scanned) {
+      candidates.push({
+        nodeId: executionId,
+        nodeType: (promotedSource?.sourceNode ?? node).type,
+        widgetName: widget.name,
+        mediaType,
+        name: value,
+        isMissing: resolveMediaMissingState(widget, value),
+        ...(promotedSources && { promotedSources })
+      })
     }
-    if (node.isSubgraphNode()) {
-      const consumers = resolveActivePromotedWidgetConsumers(node, widget.name)
-      candidate.promotedSources = buildPromotedWidgetExecutionSources(
-        executionId,
-        consumers
-      )
-    }
-    candidates.push(candidate)
   }
 
   return candidates
@@ -165,7 +174,11 @@ export function isMissingMediaCandidateScopeActive(
   )
   if (!widget) return false
 
-  return widget.value === candidate.name && isEditableValueOwner(node, widget)
+  const value = widget.value
+  const holdsCandidate = Array.isArray(value)
+    ? value.includes(candidate.name)
+    : value === candidate.name
+  return holdsCandidate && isEditableValueOwner(node, widget)
 }
 
 export function isMissingMediaCandidateActive(
