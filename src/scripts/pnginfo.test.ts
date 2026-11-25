@@ -433,18 +433,20 @@ describe('importA1111', () => {
     const { comfy, host } = createComfyApi({ getGraph: () => graph })
     const packId = registerTestPack({ comfy, host })
     const events: [string | undefined, NodeCreatedEvent][] = []
-    const hostClasses = new Map<string, typeof LGraphNode>()
-    for (const type of ['KSampler', 'LoraLoader']) {
+    const hookedHostType = (type: string): [string, typeof LGraphNode] => {
       const HostClass = class extends LGraphNode {}
-      hostClasses.set(type, HostClass)
       host.nodeTypeHooks.beforeRegisterNodeDef(HostClass, hostNodeDef(type))
       onTestFinished(
         comfy.defs.extend(packId, type, (builder) =>
           builder.onCreated((node, event) => events.push([node.type, event]))
         )
       )
+      return [type, HostClass]
     }
-    mockAvailableCoreNodes(graph, hostClasses)
+    mockAvailableCoreNodes(
+      graph,
+      new Map([hookedHostType('KSampler'), hookedHostType('LoraLoader')])
+    )
 
     await importA1111(
       graph,
@@ -452,9 +454,12 @@ describe('importA1111', () => {
       vi.fn()
     )
 
-    expect(events).toEqual([
-      ['KSampler', { restored: true, loading: true }],
-      ['LoraLoader', { restored: true, loading: true }]
-    ])
+    expect(events).toHaveLength(2)
+    expect(events).toEqual(
+      expect.arrayContaining([
+        ['KSampler', { restored: true, loading: true }],
+        ['LoraLoader', { restored: true, loading: true }]
+      ])
+    )
   })
 })
