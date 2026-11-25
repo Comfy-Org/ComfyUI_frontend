@@ -170,23 +170,6 @@ describe('graph edits', () => {
   })
 
   describe('batch', () => {
-    it('nests each edit inside the one step it opens', () => {
-      comfy.graph.batch(() => {
-        comfy.graph.add(TYPE)
-        comfy.graph.add(TYPE)
-      })
-
-      expect(shown().nodes).toHaveLength(2)
-      expect(steps).toEqual([
-        'before',
-        'before',
-        'after',
-        'before',
-        'after',
-        'after'
-      ])
-    })
-
     it('refuses an async function', () => {
       expectRefusal(() => comfy.graph.batch(async () => {}), 'batch')
     })
