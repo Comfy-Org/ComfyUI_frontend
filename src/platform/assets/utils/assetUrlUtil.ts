@@ -13,9 +13,9 @@ import { api } from '@/scripts/api'
 import { isResultItemType } from '@/utils/typeGuardUtil'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 import { isHdrImageFilename, isHdrImageUrl } from '@/utils/hdrFormatUtil'
-import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import { getAssetType } from './assetTypeUtil'
+import { getOutputAssetMetadata } from '@/platform/assets/types/outputAssetMetadata'
+import type { AssetItem } from '@comfyorg/assets-core/schema'
+import { getAssetSubfolder, getAssetType } from '@comfyorg/assets-core/metadata'
 
 export function assetContentUrl(id: string): string {
   return api.apiURL(`/assets/${id}/content?disposition=inline`)
@@ -75,25 +75,6 @@ export function getAssetViewUrl(asset: AssetItem): string {
   })
   if (slash > 0) params.set('subfolder', asset.loader_path.slice(0, slash))
   return api.apiURL(`/view?${params}`)
-}
-
-/**
- * Get the subfolder an asset lives in, relative to its type root
- *
- * Reads `preview_url` first and falls back to `user_metadata`, mirroring how
- * {@link getAssetType} resolves the type.
- *
- * @param asset The asset to get the subfolder for
- * @returns The subfolder, or an empty string when the asset is at the root
- */
-export function getAssetSubfolder(asset: AssetItem): string {
-  const previewSubfolder = new URLSearchParams(
-    (asset.preview_url ?? '').split('?')[1] ?? ''
-  ).get('subfolder')
-  if (previewSubfolder) return previewSubfolder
-
-  const { subfolder } = asset.user_metadata ?? {}
-  return typeof subfolder === 'string' ? subfolder : ''
 }
 
 /**

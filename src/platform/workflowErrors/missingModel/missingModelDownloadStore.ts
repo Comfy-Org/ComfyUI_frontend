@@ -92,6 +92,28 @@ function isActive(state: MissingModelDownloadState): boolean {
   )
 }
 
+const HELD_JOB_STATUSES: readonly unknown[] = [
+  'pending',
+  'downloading',
+  'paused'
+] satisfies ComfyDownloadProgress['status'][]
+
+function isOptionalString(value: unknown): boolean {
+  return value === undefined || typeof value === 'string'
+}
+
+function isListedHeldJob(entry: unknown): entry is ComfyDownloadProgress {
+  if (typeof entry !== 'object' || entry === null) return false
+  const job: Partial<Record<keyof ComfyDownloadProgress, unknown>> = entry
+  return (
+    HELD_JOB_STATUSES.includes(job.status) &&
+    typeof job.filename === 'string' &&
+    typeof job.url === 'string' &&
+    typeof job.directory === 'string' &&
+    isOptionalString(job.id)
+  )
+}
+
 function isHostTerminal(status: ComfyDownloadProgress['status']): boolean {
   return status === 'completed' || status === 'error' || status === 'cancelled'
 }
@@ -184,7 +206,12 @@ export const useMissingModelDownloadStore = defineStore(
     }
 
     function flushRefresh() {
-      if (!refreshPending || missingModelStore.isRefreshingMissingModels) return
+      if (
+        !refreshPending ||
+        missingModelStore.isRefreshingMissingModels ||
+        missingModelStore.isScanningMissingModels
+      )
+        return
       refreshPending = false
       void missingModelStore.refreshMissingModels()
     }
@@ -217,6 +244,7 @@ export const useMissingModelDownloadStore = defineStore(
     }
 
     watch(() => missingModelStore.missingModelCandidates, reopenStillMissing)
+    watch(() => missingModelStore.isScanningMissingModels, flushRefresh)
 
     let finishedBeforeRefresh = new Set<HostDownload>()
     watch(
@@ -277,6 +305,39 @@ export const useMissingModelDownloadStore = defineStore(
       flushRefresh()
     }
 
+    function hasNoLiveState(progress: ComfyDownloadProgress): boolean {
+      const key = keyFor(progress)
+      return (
+        key !== undefined &&
+        (downloads.get(key)?.state.status ?? 'idle') === 'idle'
+      )
+    }
+
+    function seedFromHost(subscription: number) {
+      const bridge = window.__comfyDesktop2
+      if (typeof bridge?.listModelDownloads !== 'function') return
+      const list = bridge.listModelDownloads.bind(bridge)
+      const reportSeedFailure = (error: unknown) =>
+        reportError(error, {
+          surface: 'platform',
+          errorType: 'error_listing_model_downloads'
+        })
+      const seed = (listing: unknown) => {
+        if (subscription !== trackingGeneration) return
+        if (!Array.isArray(listing)) {
+          reportSeedFailure(
+            new TypeError('Desktop listed model downloads as a non-array')
+          )
+          return
+        }
+        for (const entry of listing) {
+          if (isListedHeldJob(entry) && hasNoLiveState(entry))
+            applyHostProgress(entry)
+        }
+      }
+      void Promise.resolve().then(list).then(seed).catch(reportSeedFailure)
+    }
+
     function startTracking(): () => void {
       if (!hostReportsModelDownloadProgress()) return () => undefined
       const subscription = ++trackingGeneration
@@ -288,6 +349,7 @@ export const useMissingModelDownloadStore = defineStore(
         return () => undefined
       }
       tracking.value = true
+      seedFromHost(subscription)
       return () => {
         tracking.value = false
         trackingGeneration++

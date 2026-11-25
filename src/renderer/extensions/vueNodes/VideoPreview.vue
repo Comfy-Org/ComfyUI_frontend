@@ -296,7 +296,7 @@ const handleDownload = () => {
   const item = currentItem.value
   if (!item) return
   try {
-    downloadFile(resultItemUrl(item), item.filename)
+    downloadFile(resultItemUrl(item), item.filename, 'node_preview')
   } catch (error) {
     useToast().error(t('g.error'), {
       description: t('g.failedToDownloadVideo'),

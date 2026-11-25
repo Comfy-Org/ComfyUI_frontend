@@ -16,7 +16,7 @@ const i18n = createI18n({
   messages: { en: {} }
 })
 
-vi.mock(import('@/platform/assets/services/assetService'))
+vi.mock(import('@/platform/assets/services/assetService'), { spy: true })
 
 const WidgetSelectDropdownStub = defineComponent({
   name: 'WidgetSelectDropdown',

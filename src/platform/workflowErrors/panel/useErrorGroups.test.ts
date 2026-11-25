@@ -700,6 +700,7 @@ describe('useErrorGroups', () => {
         details: 'line 1\nline 2',
         isRuntimeError: true,
         exceptionType: 'RuntimeError',
+        jobId: 'test-prompt',
         catalogId: 'execution_failed',
         displayTitle: 'Execution failed',
         displayMessage: 'Node threw an error during execution.',
@@ -1361,9 +1362,8 @@ describe('useErrorGroups', () => {
       store.recordPromptError(promptError)
       await nextTick()
 
-      useSettingStore().settingValues[
-        'Comfy.Workflow.ShowMissingNodesWarning'
-      ] = false
+      useSettingStore().settingValues['Comfy.ErrorSystem.ShowMissingNodes'] =
+        false
       store.retireResolvedMissingNodePromptError()
       await nextTick()
 

@@ -85,7 +85,8 @@ describe('VideoPreview', () => {
 
       expect(downloadFile).toHaveBeenCalledExactlyOnceWith(
         '/api/view?filename=render.mov&type=output&subfolder=',
-        'render.mov'
+        'render.mov',
+        'node_preview'
       )
     })
   })
