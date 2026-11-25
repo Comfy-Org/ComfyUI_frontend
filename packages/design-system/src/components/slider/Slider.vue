@@ -38,9 +38,10 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
     data-slot="slider"
     :class="
       cn(
-        'relative flex w-full cursor-pointer touch-none items-center select-none data-disabled:opacity-50',
-        'before:absolute before:rounded-full before:bg-muted-foreground/20 data-[orientation=horizontal]:before:inset-x-0 data-[orientation=horizontal]:before:h-0.5 data-[orientation=vertical]:before:inset-y-0 data-[orientation=vertical]:before:w-0.5',
-        'data-[orientation=vertical]:h-full data-[orientation=vertical]:min-h-44 data-[orientation=vertical]:w-auto data-[orientation=vertical]:flex-col',
+        'relative flex w-full cursor-pointer touch-none items-center rounded-full bg-muted-foreground/20 select-none data-disabled:opacity-50',
+        'before:absolute before:-inset-2',
+        'data-[orientation=horizontal]:h-0.5',
+        'data-[orientation=vertical]:h-full data-[orientation=vertical]:min-h-44 data-[orientation=vertical]:w-0.5 data-[orientation=vertical]:flex-col',
         props.class
       )
     "
@@ -53,7 +54,7 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
       data-slot="slider-range"
       :class="
         cn(
-          'absolute bg-foreground data-[orientation=horizontal]:h-0.5 data-[orientation=vertical]:w-0.5',
+          'absolute bg-foreground data-[orientation=horizontal]:h-full data-[orientation=vertical]:w-full',
           props.rangeClass
         )
       "
