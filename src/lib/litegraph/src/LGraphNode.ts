@@ -91,6 +91,7 @@ import type { LGraphButtonOptions } from './LGraphButton'
 
 import { canvasClass } from './canvas/canvasClassAccess'
 import { realignGroupWidgetChildLinks } from './linkDeduplication'
+import { slotFloatingLinks } from './LLink'
 import type { LLink } from './LLink'
 import {
   inputHasLink,
@@ -2167,6 +2168,7 @@ export class LGraphNode
       const previous = captureInputLayout(this)
       const nextInputs = [...previous.inputs]
       nextInputs.splice(slot, 1)
+      const removedFloating = slotFloatingLinks(graph, 'input', this.id, slot)
       const result = replaceNodeInputs(
         this,
         previous,
@@ -2175,6 +2177,10 @@ export class LGraphNode
         true
       )
       if (!result.ok) return
+      for (const floatingLink of removedFloating) {
+        if (graph.floatingLinks.get(floatingLink.id) === floatingLink)
+          graph.removeFloatingLink(floatingLink)
+      }
       for (const floatingLink of graph.floatingLinks.values()) {
         if (
           floatingLink.target_id === this.id &&

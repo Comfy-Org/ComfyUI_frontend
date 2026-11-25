@@ -151,6 +151,17 @@ describe('edit edges', () => {
     expect(intoFirst.target_slot).toBe(0)
   })
 
+  it('drops the floating link into a removed input and shifts the later one onto its own input', () => {
+    const intoFirst = floating([-1, -1], [0, 0])
+    const intoSecond = floating([-1, -1], [0, 1])
+
+    expect(handle.inputs.remove('first')).toBe(true)
+
+    expect(graph.floatingLinks.has(intoFirst.id)).toBe(false)
+    expect(graph.floatingLinks.get(intoSecond.id)?.target_slot).toBe(0)
+    expect(node.inputs[0].name).toBe('second')
+  })
+
   it('refuses an empty widget name', () => {
     node.addWidget('number', 'w', 1, () => {})
 
