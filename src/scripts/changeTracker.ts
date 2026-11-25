@@ -796,22 +796,15 @@ export class ChangeTracker implements WorkflowChangeTracker {
           restored = result !== false && result !== undefined
         } finally {
           this._restoringState = false
-          const userActed = this.userActedInRestore
-          this.userActedInRestore = false
-          restored ||=
-            !ChangeTracker.graphEqual(this.activeState, previousState) &&
-            matchesRestoredTarget(this.activeState, targetState, previousState)
-          if (restored) {
-            this.pushRestored(target, previousState, restoresHistory)
-            if (restoresSavedState) this.initialState = clone(this.activeState)
-            if (!userActed) this.beginSettling()
-          } else {
-            source.push(prevState)
-          }
-          if (restored) {
-            this.finishRestore(previousState)
-            if (userActed) this.captureCanvasState()
-          }
+          this.settleRestore(restored, {
+            source,
+            target,
+            prevState,
+            previousState,
+            targetState,
+            restoresHistory,
+            restoresSavedState
+          })
         }
       }
     }
@@ -820,6 +813,40 @@ export class ChangeTracker implements WorkflowChangeTracker {
       restore
     )
     return this.restoreChain
+  }
+
+  private settleRestore(
+    loaded: boolean,
+    step: {
+      source: ComfyWorkflowJSON[]
+      target: ComfyWorkflowJSON[]
+      prevState: ComfyWorkflowJSON
+      previousState: ComfyWorkflowJSON
+      targetState: ComfyWorkflowJSON
+      restoresHistory: boolean
+      restoresSavedState: boolean
+    }
+  ) {
+    const userActed = this.userActedInRestore
+    this.userActedInRestore = false
+    const { previousState } = step
+    const restored =
+      loaded ||
+      (!ChangeTracker.graphEqual(this.activeState, previousState) &&
+        matchesRestoredTarget(
+          this.activeState,
+          step.targetState,
+          previousState
+        ))
+    if (!restored) {
+      step.source.push(step.prevState)
+      return
+    }
+    this.pushRestored(step.target, previousState, step.restoresHistory)
+    if (step.restoresSavedState) this.initialState = clone(this.activeState)
+    if (!userActed) this.beginSettling()
+    this.finishRestore(previousState)
+    if (userActed) this.captureCanvasState()
   }
 
   private finishRestore(previousState: ComfyWorkflowJSON) {
