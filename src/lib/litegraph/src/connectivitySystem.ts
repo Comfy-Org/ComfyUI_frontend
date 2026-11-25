@@ -143,6 +143,19 @@ export function connectFloatingReroute(
 
   const slotType = outputIndex === -1 ? 'input' : 'output'
 
+  const parentReroute = graph.getReroute(afterRerouteId)
+  let floatingChain: { parent: Reroute; link: LLink } | undefined
+  if (parentReroute?.floating?.slotType === 'output') {
+    const link = parentReroute.getFloatingLinks('output')?.[0]
+    if (!link) {
+      console.error(
+        new Error('[connectFloatingReroute] Floating link not found')
+      )
+      return
+    }
+    floatingChain = { parent: parentReroute, link }
+  }
+
   const reroute = graph.setReroute({
     pos,
     parentId: afterRerouteId,
@@ -151,10 +164,7 @@ export function connectFloatingReroute(
   })
   if (!reroute) return
 
-  const parentReroute = graph.getReroute(afterRerouteId)
-  const fromLastFloatingReroute = parentReroute?.floating?.slotType === 'output'
-
-  if (afterRerouteId == null || !fromLastFloatingReroute) {
+  if (!floatingChain) {
     const link = new LLink(
       toLinkId(-1),
       slot.type,
@@ -168,11 +178,8 @@ export function connectFloatingReroute(
     return reroute
   }
 
-  const link = parentReroute.getFloatingLinks('output')?.[0]
-  if (!link) throw new Error('[connectFloatingReroute] Floating link not found')
-
-  link.parentId = reroute.id
-  parentReroute.floating = undefined
+  floatingChain.link.parentId = reroute.id
+  floatingChain.parent.floating = undefined
   return reroute
 }
 

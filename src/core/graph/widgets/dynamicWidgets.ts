@@ -204,19 +204,37 @@ function dynamicComboWidget(
         addNodeInput(node, specToAdd)
       }
   }
-  function placeAddedInputs(start: number, hasAddedWidgets: boolean) {
+  function placeAddedInputs(start: number) {
     const socket = node.inputs.findIndex((i) => i.name === widget.name)
-    if (socket === -1 && node.inputs.length > start && !hasAddedWidgets)
-      throw new Error('Failed to find input socket for ' + widget.name)
     const added = node.inputs.splice(start).map((input) => {
       const existing = node.inputs.findIndex((i) => i.name === input.name)
       return existing === -1 ? input : node.inputs.splice(existing, 1)[0]
     })
     node.inputs.splice(socket + 1 || node.inputs.length, 0, ...added)
   }
+  let initializing = true
+  function optionSpec(value?: string) {
+    return value && ownsChildren() ? options[value] : undefined
+  }
+  function canUpdateWidgets(value?: string) {
+    if (!node.widgets) {
+      console.error(new Error('Dynamic widget node has no widgets'))
+      return false
+    }
+    if (!node.widgets.includes(widget)) {
+      console.error(new Error("Dynamic widget doesn't exist on node"))
+      return false
+    }
+    const hasInput = node.inputs.some((input) => input.name === widget.name)
+    if (optionSpec(value) && !hasInput && !initializing) {
+      console.error(new Error('Failed to find input socket for ' + widget.name))
+      return false
+    }
+    return true
+  }
   const updateWidgets = (value?: string) => {
-    if (!node.widgets) throw new Error('Not Reachable')
-    const newSpec = value && ownsChildren() ? options[value] : undefined
+    if (!node.widgets || !canUpdateWidgets(value)) return
+    const newSpec = optionSpec(value)
     const optionValues = removedWidgetValues.get(activeOption) ?? new Map()
     removedWidgetValues.set(activeOption, optionValues)
     activeOption = value
@@ -235,8 +253,6 @@ function dynamicComboWidget(
     forgetDynamicChildren(node, inputName)
 
     const insertionPoint = node.widgets.indexOf(widget) + 1
-    if (insertionPoint === 0)
-      throw new Error("Dynamic widget doesn't exist on node")
     const startingWidgets = new Set(node.widgets)
     const startingInputLength = node.inputs.length
     addOptionInputs(newSpec)
@@ -244,7 +260,7 @@ function dynamicComboWidget(
     const addedWidgets = remove(node.widgets, (w) => !startingWidgets.has(w))
     node.widgets.splice(insertionPoint, 0, ...addedWidgets)
     syncNodeWidgetOrder(node)
-    placeAddedInputs(startingInputLength, addedWidgets.length > 0)
+    placeAddedInputs(startingInputLength)
     carryLinks(node, removedInputs, inputLinks)
 
     const result = commitMutatedInputs(node, previous, inputLinks)
@@ -273,6 +289,7 @@ function dynamicComboWidget(
       return getState()?.value ?? widgetValue
     },
     set(value) {
+      if (!canUpdateWidgets(value)) return
       const state = getState()
       if (state) state.value = value
       widgetValue = value
@@ -280,6 +297,7 @@ function dynamicComboWidget(
     }
   })
   widget.value = widgetValue
+  initializing = false
   withComfyDynamicCombo(node)
   node.comfyDynamic.dynamicCombo[widget.name] = {
     inputSpec: untypedInputData,
