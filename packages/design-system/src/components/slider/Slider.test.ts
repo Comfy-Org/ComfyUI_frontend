@@ -29,11 +29,18 @@ describe('Slider', () => {
 
   it('exposes min/max/step via ARIA on the thumb', async () => {
     render(Slider, {
-      props: { modelValue: [10], min: 0, max: 200, step: 5 }
+      props: {
+        modelValue: [10],
+        min: 0,
+        max: 200,
+        step: 5,
+        ariaLabel: 'Spacing'
+      }
     })
     await flush()
 
     const thumb = screen.getByRole('slider')
+    expect(thumb).toHaveAccessibleName('Spacing')
     expect(thumb).toHaveAttribute('aria-valuemin', '0')
     expect(thumb).toHaveAttribute('aria-valuemax', '200')
     expect(thumb).toHaveAttribute('aria-valuenow', '10')
