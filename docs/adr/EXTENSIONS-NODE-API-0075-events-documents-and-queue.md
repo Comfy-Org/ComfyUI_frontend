@@ -211,7 +211,17 @@ review finding requires it. The counts below are packs, then call sites.
     the restored graph: a listener's edit there is part of the restored
     state, not an undo step that would clear redo, and the user's next undo
     does not take it back (the tracker used to take the graph first, so the edit
-    was in neither). The document's `id` is unchanged for an
+    was in neither). The same holds for what a pack changes later, after the
+    restore has finished and before the user's next input (a pointer press, a
+    key press, a wheel turn or a drop, which the tracker listens for with its other capture
+    points): a fit from a `ResizeObserver` as the rebuilt node mounts, or slot
+    types settled a microtask or a frame later. The tracker takes each such
+    change into the restored state (and into the saved state, when the
+    restore went back to it), records no undo step and keeps redo. An undo
+    step each would empty the redo queue after every undo of a node such a
+    pack touches, which a V1 pack's direct writes never did, since the tracker
+    captured them only at the user's next action. A change after the user's
+    next input, in a gesture or later, is one undo step again. The document's `id` is unchanged for an
     undo or redo, which is how a pack tells them from a load.
 14. `onDocumentActivated` (1 pack) and `onDocumentClosed` (2 packs) watch
     the workflow store only while they have listeners, so an unused event costs

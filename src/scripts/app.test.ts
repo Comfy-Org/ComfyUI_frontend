@@ -3638,6 +3638,7 @@ describe('ComfyApp', () => {
           const undone = shown()
           await tracker.redo()
           const redone = shown()
+          tracker.userActed()
           comfy.graph.node('1')?.setTitle('a later edit')
           await tracker.undo()
           const laterUndone = shown()
@@ -4037,6 +4038,7 @@ describe('ComfyApp', () => {
 
           await tracker.undo()
           const redoAfterUndo = tracker.redoQueue.length
+          tracker.userActed()
           tracker.captureCanvasState()
           const redoAfterClick = tracker.redoQueue.length
           comfy.graph.node('1')?.setMode('bypass')
