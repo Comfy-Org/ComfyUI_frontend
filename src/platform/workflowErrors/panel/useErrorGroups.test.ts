@@ -4,11 +4,18 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 import type { Positionable } from '@comfyorg/graph-model/interfaces'
 
+import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
-import { createBoundaryLinkedSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import {
+  createBoundaryLinkedSubgraph,
+  createTestSubgraph,
+  createTestSubgraphNode
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/types'
+import { useDeprecatedNodesStore } from '@/platform/workflowErrors/nodeReplacement/deprecatedNodesStore'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
+import { app } from '@/scripts/app'
 import '@/scripts/changeTracker'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import type { useComfyRegistryService } from '@/services/comfyRegistryService'
@@ -22,13 +29,9 @@ import {
   validationError
 } from '@/utils/__tests__/nodeErrorHelpers'
 import {
-  forEachNode,
   getExecutionIdByNode,
-  getNodeByExecutionId,
-  getRootParentNode,
-  mapAllNodes
+  getNodeByExecutionId
 } from '@/utils/graphTraversalUtil'
-import { isLGraphNode } from '@/utils/litegraphUtil'
 
 import { useErrorGroups } from './useErrorGroups'
 import { createUnnormalisableModelErrorFixture } from './__tests__/absorptionFixtures'
@@ -137,8 +140,6 @@ vi.mock(import('@/utils/nodeTitleUtil'), () => ({
   resolveNodeDisplayName: vi.fn(() => '')
 }))
 
-vi.mock(import('@/utils/litegraphUtil'), { spy: true })
-
 vi.mock<unknown>(
   import('@/platform/workflowErrors/missingModel/composables/useMissingModelInteractions'),
   () => ({
@@ -219,21 +220,26 @@ function createErrorGroups() {
   return { store, searchQuery, groups }
 }
 
-function createSelectedNode(id: string): LGraphNode {
-  const node = new LGraphNode('Selected')
+function addNode(id: number, graph: LGraph | Subgraph = app.rootGraph) {
+  const node = new LGraphNode(`Node ${id}`)
   node.id = toNodeId(id)
+  graph.add(node)
   return node
+}
+
+function addSubgraphHost(hostId: number) {
+  const subgraph = createTestSubgraph({ rootGraph: app.rootGraph })
+  app.rootGraph.subgraphs.set(subgraph.id, subgraph)
+  const host = createTestSubgraphNode(subgraph, { id: hostId })
+  app.rootGraph.add(host)
+  return { host, subgraph }
 }
 
 describe('useErrorGroups', () => {
   beforeEach(() => {
     selectedItems.value = []
     mockIsCloud.value = false
-    vi.mocked(isLGraphNode).mockReturnValue(false)
-    vi.mocked(forEachNode).mockImplementation(() => {})
-    vi.mocked(mapAllNodes).mockReturnValue([])
-    vi.mocked(getRootParentNode).mockReturnValue(null)
-    vi.mocked(getNodeByExecutionId).mockReturnValue(null)
+    return () => app.rootGraph.clear()
   })
 
   describe('missingPackGroups', () => {
@@ -694,6 +700,7 @@ describe('useErrorGroups', () => {
         details: 'line 1\nline 2',
         isRuntimeError: true,
         exceptionType: 'RuntimeError',
+        jobId: 'test-prompt',
         catalogId: 'execution_failed',
         displayTitle: 'Execution failed',
         displayMessage: 'Node threw an error during execution.',
@@ -703,6 +710,32 @@ describe('useErrorGroups', () => {
           'This node threw an error during execution. Check its inputs or try a different configuration.'
       })
     })
+
+    it.for([{ traceback: null }, { traceback: undefined }])(
+      'renders a runtime execution error that arrives with traceback $traceback',
+      async ({ traceback }) => {
+        const { store, groups } = createErrorGroups()
+        store.recordExecutionError({
+          ...runtimeError(5),
+          node_type: 'KSampler',
+          exception_type: 'RuntimeError',
+          exception_message: 'boom',
+          traceback
+        })
+        await nextTick()
+
+        const execGroup = groups.allErrorGroups.value.find(
+          (g) => g.type === 'execution'
+        )
+        expect(execGroup?.type).toBe('execution')
+        if (execGroup?.type !== 'execution') return
+        expect(execGroup.cards[0].errors[0]).toMatchObject({
+          message: 'RuntimeError: boom',
+          isRuntimeError: true
+        })
+        expect(execGroup.cards[0].errors[0].details).toBeUndefined()
+      }
+    )
 
     it('renders an unnormalisable execution error as a blocking unlocated card', async () => {
       const { store, groups } = createErrorGroups()
@@ -741,9 +774,9 @@ describe('useErrorGroups', () => {
       expect(groups.errorNodeCount.value).toBe(1)
     })
 
-    it.for([null, undefined])(
-      'excludes prompt and runtime errors without a node ID from affected nodes: %s',
-      async (nodeId) => {
+    it.for([{ nodeId: null }, { nodeId: undefined }])(
+      'excludes prompt and runtime errors without a node ID from affected nodes: $nodeId',
+      async ({ nodeId }) => {
         const { store, groups } = createErrorGroups()
         store.recordPromptError({
           type: 'prompt_no_outputs',
@@ -855,8 +888,7 @@ describe('useErrorGroups', () => {
 
     it('includes prompt error when a node is selected', async () => {
       const { store, groups } = createErrorGroups()
-      vi.mocked(isLGraphNode).mockReturnValue(true)
-      selectedItems.value = [createSelectedNode('1')]
+      selectedItems.value = [addNode(1)]
       store.recordPromptError({
         type: 'prompt_no_outputs',
         message: 'No outputs',
@@ -1241,12 +1273,11 @@ describe('useErrorGroups', () => {
         makeModel('a.safetensors', { nodeId: '1', directory: 'checkpoints' }),
         makeModel('b.safetensors', { nodeId: '2', directory: 'checkpoints' })
       ])
-      vi.mocked(isLGraphNode).mockReturnValue(true)
-      selectedItems.value = [createSelectedNode('1')]
+      const selectedNode = addNode(1)
+      addNode(2)
+      selectedItems.value = [selectedNode]
       await nextTick()
 
-      // Displayed groups never shrink with canvas selection — the count
-      // and list always describe the whole workflow.
       expect(groups.missingModelGroups.value).toHaveLength(1)
       expect(groups.missingModelGroups.value[0].models).toHaveLength(2)
       expect(
@@ -1331,9 +1362,8 @@ describe('useErrorGroups', () => {
       store.recordPromptError(promptError)
       await nextTick()
 
-      useSettingStore().settingValues[
-        'Comfy.Workflow.ShowMissingNodesWarning'
-      ] = false
+      useSettingStore().settingValues['Comfy.ErrorSystem.ShowMissingNodes'] =
+        false
       store.retireResolvedMissingNodePromptError()
       await nextTick()
 
@@ -1760,6 +1790,68 @@ describe('useErrorGroups', () => {
     })
   })
 
+  describe('deprecatedNodeGroups', () => {
+    function seedDeprecatedNodes() {
+      useDeprecatedNodesStore().nodeTypes = [
+        {
+          type: 'ImageBatch',
+          nodeId: '2',
+          isReplaceable: true,
+          replacement: {
+            new_node_id: 'BatchImagesNode',
+            old_node_id: 'ImageBatch',
+            old_widget_ids: null,
+            input_mapping: null,
+            output_mapping: null
+          }
+        },
+        {
+          type: 'TextGenerate',
+          nodeId: '3',
+          isReplaceable: true,
+          replacement: {
+            new_node_id: 'TextGenerateV2',
+            old_node_id: 'TextGenerate',
+            old_widget_ids: null,
+            input_mapping: null,
+            output_mapping: null
+          }
+        }
+      ]
+    }
+
+    it.for([
+      { query: '', expected: ['ImageBatch', 'TextGenerate'] },
+      { query: 'textgen', expected: ['TextGenerate'] },
+      { query: 'BatchImages', expected: ['ImageBatch'] },
+      { query: 'zzzz', expected: [] }
+    ])(
+      'matches "$query" against the deprecated and replacement names',
+      async ({ query, expected }) => {
+        const { groups, searchQuery } = createErrorGroups()
+        seedDeprecatedNodes()
+        searchQuery.value = query
+        await nextTick()
+
+        expect(
+          groups.deprecatedNodeGroups.value.map((group) => group.type)
+        ).toEqual(expected)
+      }
+    )
+
+    it('highlights a selected deprecated node without counting it as an error', async () => {
+      const { groups } = createErrorGroups()
+      selectedItems.value = [addNode(2)]
+      addNode(3)
+      seedDeprecatedNodes()
+      await nextTick()
+
+      expect([...groups.selectionMatchedAssetNodeIds.value]).toEqual(['2'])
+      expect(groups.selectionErrorCount.value).toBe(0)
+      expect(groups.errorNodeCount.value).toBe(0)
+    })
+  })
+
   describe('selection emphasis', () => {
     it.for([
       { selectedId: '65', matched: true },
@@ -1770,11 +1862,14 @@ describe('useErrorGroups', () => {
       'tracks model selection emphasis for node $selectedId: $matched',
       async ({ selectedId, matched }) => {
         const { store, groups } = createErrorGroups()
-        vi.mocked(isLGraphNode).mockReturnValue(true)
-        vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) =>
-          fromAny<LGraphNode, unknown>({ id: nodeId.split(':').at(-1) })
-        )
-        selectedItems.value = [createSelectedNode(selectedId)]
+        const { host, subgraph } = addSubgraphHost(65)
+        const nodesById: Record<string, LGraphNode> = {
+          '65': host,
+          '42': addNode(42, subgraph),
+          '43': addNode(43, subgraph),
+          '99': addNode(99)
+        }
+        selectedItems.value = [nodesById[selectedId]]
         store.surfaceMissingModels([
           {
             ...makeModel('missing.safetensors', { nodeId: '65' }),
@@ -1806,8 +1901,7 @@ describe('useErrorGroups', () => {
 
     it('never marks workflow-level prompt errors as matched by a selection', async () => {
       const { store, groups } = createErrorGroups()
-      vi.mocked(isLGraphNode).mockReturnValue(true)
-      selectedItems.value = [createSelectedNode('1')]
+      selectedItems.value = [addNode(1)]
       store.recordPromptError({
         type: 'prompt_no_outputs',
         message: 'No outputs',
@@ -1844,11 +1938,8 @@ describe('useErrorGroups', () => {
 
     it('matches groups and cards of the selected error node', async () => {
       const { store, groups } = createErrorGroups()
-      vi.mocked(isLGraphNode).mockReturnValue(true)
-      const selectedNode = createSelectedNode('1')
-      vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) =>
-        nodeId === '1' ? selectedNode : createSelectedNode(nodeId)
-      )
+      const selectedNode = addNode(1)
+      addNode(2)
       selectedItems.value = [selectedNode]
       store.recordNodeErrors({
         '1': {
@@ -1871,7 +1962,6 @@ describe('useErrorGroups', () => {
       expect(groups.selectionMatchedCardIds.value.has('node-1')).toBe(true)
       expect(groups.selectionMatchedCardIds.value.has('node-2')).toBe(false)
       expect(groups.selectionMatchedAssetNodeIds.value.size).toBe(0)
-      // Both error groups remain displayed regardless of the selection
       const executionGroups = groups.filteredGroups.value.filter(
         (g) => g.type === 'execution'
       )
@@ -1885,26 +1975,21 @@ describe('useErrorGroups', () => {
     it('narrows missing-node emphasis to packs containing the selected node', async () => {
       const { groups } = createErrorGroups()
       const missingNodesStore = useMissingNodesErrorStore()
-      vi.mocked(isLGraphNode).mockReturnValue(true)
-      vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) =>
-        createSelectedNode(nodeId)
-      )
-      selectedItems.value = [createSelectedNode('2')]
+      const selectedNode = addNode(2)
+      addNode(3)
+      selectedItems.value = [selectedNode]
       missingNodesStore.setMissingNodeTypes([
         makeMissingNodeType('NodeB', { cnrId: 'pack-1', nodeId: '2' }),
         makeMissingNodeType('NodeC', { cnrId: 'pack-2', nodeId: '3' })
       ])
       await nextTick()
 
-      // Emphasis counts only the packs containing the selected node…
       expect(groups.selectionMatchedGroupKeys.value.has('missing_node')).toBe(
         true
       )
       expect(groups.selectionErrorCount.value).toBe(1)
-      // …and marks only the selected node for row highlighting.
       expect(groups.selectionMatchedAssetNodeIds.value.has('2')).toBe(true)
       expect(groups.selectionMatchedAssetNodeIds.value.has('3')).toBe(false)
-      // Display still shows every pack.
       const missingNodeGroup = groups.filteredGroups.value.find(
         (g) => g.type === 'missing_node'
       )
@@ -1914,11 +1999,8 @@ describe('useErrorGroups', () => {
     it('does not emphasize missing-node groups for unrelated selections', async () => {
       const { groups } = createErrorGroups()
       const missingNodesStore = useMissingNodesErrorStore()
-      vi.mocked(isLGraphNode).mockReturnValue(true)
-      vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) =>
-        createSelectedNode(nodeId)
-      )
-      selectedItems.value = [createSelectedNode('99')]
+      addNode(2)
+      selectedItems.value = [addNode(99)]
       missingNodesStore.setMissingNodeTypes([
         makeMissingNodeType('NodeB', { cnrId: 'pack-1', nodeId: '2' })
       ])
@@ -1928,7 +2010,6 @@ describe('useErrorGroups', () => {
         false
       )
       expect(groups.selectionErrorCount.value).toBe(0)
-      // Display is unaffected by the unrelated selection.
       expect(
         groups.filteredGroups.value.find((g) => g.type === 'missing_node')
           ?.count
@@ -1937,14 +2018,8 @@ describe('useErrorGroups', () => {
 
     it('matches errors through graph resolution, not raw execution ids', async () => {
       const { store, groups } = createErrorGroups()
-      vi.mocked(isLGraphNode).mockReturnValue(true)
-      // The error is keyed by a subgraph execution id ('2:5') that resolves
-      // to a different graph node id ('7') at the current graph level.
-      const selectedNode = createSelectedNode('7')
-      vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) =>
-        nodeId === '2:5' ? selectedNode : null
-      )
-      selectedItems.value = [selectedNode]
+      const { subgraph } = addSubgraphHost(2)
+      selectedItems.value = [addNode(5, subgraph)]
       store.recordNodeErrors({
         '2:5': {
           class_type: 'KSampler',
@@ -1958,21 +2033,29 @@ describe('useErrorGroups', () => {
       expect(groups.selectionMatchedCardIds.value.has('node-2:5')).toBe(true)
     })
 
+    it('does not match an unresolved interior id by its last segment', async () => {
+      const { store, groups } = createErrorGroups()
+      addSubgraphHost(2)
+      selectedItems.value = [addNode(5)]
+      store.recordNodeErrors({
+        '2:5': {
+          class_type: 'KSampler',
+          dependent_outputs: [],
+          errors: [{ type: 'value_error', message: 'Bad value', details: '' }]
+        }
+      })
+      await nextTick()
+
+      expect(groups.selectionErrorCount.value).toBe(0)
+      expect(groups.selectionMatchedCardIds.value.has('node-2:5')).toBe(false)
+    })
+
     it('matches interior errors when a subgraph container is selected', async () => {
       const { store, groups } = createErrorGroups()
-      vi.mocked(isLGraphNode).mockReturnValue(true)
-      // A container selection matches interior errors by execution-id prefix,
-      // even when the interior node does not resolve at the current level.
-      const containerNode = fromAny<SubgraphNode, unknown>(
-        Object.assign(Object.create(SubgraphNode.prototype), {
-          _state: { id: '2' }
-        })
-      )
-      vi.mocked(getNodeByExecutionId).mockReturnValue(null)
-      vi.mocked(getExecutionIdByNode).mockReturnValue(
-        fromAny<NodeExecutionId, unknown>('2')
-      )
-      selectedItems.value = [containerNode]
+      const { host, subgraph } = addSubgraphHost(2)
+      addNode(5, subgraph)
+      addNode(9)
+      selectedItems.value = [host]
       store.recordNodeErrors({
         '2:5': {
           class_type: 'KSampler',

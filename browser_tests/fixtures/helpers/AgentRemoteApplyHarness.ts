@@ -140,10 +140,9 @@ export class AgentRemoteApplyHarness {
     await mockWorkflowPersistence(page, WORKFLOW_ID)
   }
 
-  /** Opens the panel and points the composer at the canvas tab. */
+  /** Opens the panel on the active canvas tab. */
   async openAndTarget(): Promise<void> {
     await this.agentPanel.open()
-    await this.agentPanel.selectWorkflow()
   }
 
   /**

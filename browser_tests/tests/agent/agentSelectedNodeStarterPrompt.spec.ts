@@ -32,7 +32,6 @@ test.describe(
       await agentPanel.consentRejectButton.click()
       await expect(agentPanel.consentDialog).toBeHidden()
       await agentPanel.open()
-      await agentPanel.selectWorkflow()
       await expect(
         agentPanel.root.getByRole('button', {
           name: enMessages.agent.suggestedPrompts.local[0],

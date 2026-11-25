@@ -190,12 +190,13 @@ describe('useInviteUrlLoader', () => {
     it.for([
       {
         name: 'dismisses the toast once the switch succeeds',
-        switchWorkspace: () => Promise.resolve(),
+        switchWorkspace: () => Promise.resolve(true),
         toasts: []
       },
       {
         name: 'keeps the toast and reports a failed switch',
-        switchWorkspace: () => Promise.reject(new Error('switch failed')),
+        switchWorkspace: (): Promise<boolean> =>
+          Promise.reject(new Error('switch failed')),
         toasts: [
           expect.objectContaining({
             kind: 'success',
@@ -275,44 +276,47 @@ describe('useInviteUrlLoader', () => {
 
     it.for([
       {
-        name: 'a directory-managed refusal with sso_enabled on shows the directory message',
+        name: 'shows the directory message',
         sso: true,
         code: 'membership_managed_by_directory',
         wrongAccountDialogs: 0,
         toasts: [DIRECTORY_TOAST]
       },
       {
-        name: 'a directory-managed refusal with sso_enabled off opens the wrong-account dialog',
+        name: 'opens the wrong-account dialog',
         sso: false,
         code: 'membership_managed_by_directory',
         wrongAccountDialogs: 1,
         toasts: []
       },
       {
-        name: 'another 403 with sso_enabled on opens the wrong-account dialog',
+        name: 'opens the wrong-account dialog',
         sso: true,
         code: 'ACCESS_DENIED',
         wrongAccountDialogs: 1,
         toasts: []
       }
-    ])('$name', async ({ sso, code, wrongAccountDialogs, toasts }) => {
-      vi.mocked(useFeatureFlags().flags).ssoEnabled = sso
-      mockRouteQuery.value = { invite: 'scim-token' }
-      vi.mocked(useTeamWorkspaceStore().acceptInvite).mockRejectedValue(
-        new WorkspaceApiError('Forbidden', 403, code)
-      )
+    ])(
+      'a $code refusal with sso_enabled $sso $name',
+      async ({ sso, code, wrongAccountDialogs, toasts }) => {
+        vi.mocked(useFeatureFlags().flags).ssoEnabled = sso
+        mockRouteQuery.value = { invite: 'scim-token' }
+        vi.mocked(useTeamWorkspaceStore().acceptInvite).mockRejectedValue(
+          new WorkspaceApiError('Forbidden', 403, code)
+        )
 
-      const { loadInviteFromUrl } = useInviteUrlLoader()
-      await loadInviteFromUrl()
+        const { loadInviteFromUrl } = useInviteUrlLoader()
+        await loadInviteFromUrl()
 
-      expect(
-        useWorkspaceDialogs().showInviteWrongAccountDialog
-      ).toHaveBeenCalledTimes(wrongAccountDialogs)
-      expect(useToast().toasts).toEqual(toasts)
-      expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
-        'invite'
-      )
-    })
+        expect(
+          useWorkspaceDialogs().showInviteWrongAccountDialog
+        ).toHaveBeenCalledTimes(wrongAccountDialogs)
+        expect(useToast().toasts).toEqual(toasts)
+        expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
+          'invite'
+        )
+      }
+    )
 
     it('keeps the toast for a 404 without a parsed API code', async () => {
       mockRouteQuery.value = { invite: 'waf-blocked' }

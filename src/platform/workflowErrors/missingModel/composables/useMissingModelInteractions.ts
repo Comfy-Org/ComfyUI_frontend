@@ -1,11 +1,11 @@
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
-import type { UploadModelSuccess } from '@/platform/assets/composables/useUploadModelWizard'
+import type { UploadModelSuccess } from '@/platform/assets/types/modelImport'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
-import { useAssetsStore } from '@/stores/assetsStore'
-import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
+import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
+import { useAssetDownloadStore } from '@/platform/assets/stores/assetDownloadStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 import type { MissingModelViewModel } from '@/platform/workflowErrors/missingModel/types'
 
@@ -22,7 +22,7 @@ export function getNodeDisplayLabel(
   nodeId: string | number,
   fallback: string
 ): string {
-  const graph = app.rootGraphOrUndefined
+  const graph = useApp().rootGraphOrUndefined
   if (!graph) return fallback
   const node = getNodeByExecutionId(graph, String(nodeId))
   return resolveNodeDisplayName(node, {
@@ -54,7 +54,7 @@ export function useMissingModelInteractions() {
     directory: string | null
   ) {
     const value = store.selectedLibraryModel[key]
-    if (!value || !app.rootGraphOrUndefined) return
+    if (!value || !useApp().rootGraphOrUndefined) return
 
     if (directory) {
       const providers = modelToNodeStore.getAllNodeProviders(directory)
@@ -84,7 +84,7 @@ export function useMissingModelInteractions() {
     referencingNodes: MissingModelViewModel['referencingNodes'],
     value: string
   ) {
-    const graph = app.rootGraphOrUndefined
+    const graph = useApp().rootGraphOrUndefined
     if (!graph) return
 
     for (const ref of referencingNodes) {

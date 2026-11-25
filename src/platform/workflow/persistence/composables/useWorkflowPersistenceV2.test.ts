@@ -1,4 +1,5 @@
 import { useCommandStore } from '@/platform/keybindings/commandStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import {
@@ -14,13 +15,15 @@ import { computed, createApp, defineComponent, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useNewUserService } from '@/services/useNewUserService'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { api } from '@/scripts/api'
 import { blankGraph } from '@/scripts/defaultGraph'
+import { isValidUuid } from '@/utils/formatUtil'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import '@/scripts/changeTracker'
+import { ChangeTracker } from '@/scripts/changeTracker'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import * as storageIO from '@/platform/workflow/persistence/base/storageIO'
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
@@ -177,6 +180,7 @@ vi.mock(import('@/composables/useFeatureFlags'))
 type WorkflowPersistence = ReturnType<typeof useWorkflowPersistenceV2>
 
 beforeEach(() => {
+  useWorkflowStore().provideChangeTracker(ChangeTracker)
   vi.mocked(useCommandStore().execute).mockResolvedValue(undefined)
   openWorkflowMock.mockResolvedValue(true)
 })
@@ -474,6 +478,34 @@ describe('useWorkflowPersistenceV2', () => {
       expect(loadWorkflowsSpy).toHaveBeenCalledOnce()
     })
 
+    it('drops unreachable unscoped drafts after the new-user check', async () => {
+      distributionMocks.isCloud = true
+      const newUserService = useNewUserService()
+      newUserService.reset()
+      localStorage.setItem('Comfy.Workflow.Draft.v2:personal:abc', '{}')
+      localStorage.setItem('Comfy.Workflow.Draft.v2:user-a:personal:abc', '{}')
+
+      mountWorkflowPersistence()
+      const onUserResolved = vi.mocked(useCurrentUser().onUserResolved).mock
+        .calls[0][0]
+      onUserResolved({ id: 'user-a' })
+      await nextTick()
+
+      expect(localStorage.getItem('Comfy.Workflow.Draft.v2:personal:abc')).toBe(
+        '{}'
+      )
+
+      await newUserService.initializeIfNewUser()
+      await nextTick()
+
+      expect(localStorage.getItem('Comfy.Workflow.Draft.v2:personal:abc')).toBe(
+        null
+      )
+      expect(
+        localStorage.getItem('Comfy.Workflow.Draft.v2:user-a:personal:abc')
+      ).toBe('{}')
+    })
+
     it('waits for workflow metadata before restoring tab pointers', async () => {
       const workflowStore = useWorkflowStore()
       const loadWorkflowsSpy = vi.spyOn(workflowStore, 'loadWorkflows')
@@ -610,6 +642,51 @@ describe('useWorkflowPersistenceV2', () => {
 
       expect(draftStore.getDraft(draftPath)?.data).toBe(draftGraph)
     })
+
+    it.for([
+      ['no id', {}],
+      ['a legacy id', { id: 'legacy-workflow-id' }]
+    ] as const)(
+      'keeps the draft of an unsaved background tab with %s when it is first loaded',
+      async ([, idFields]) => {
+        vi.useFakeTimers({ toFake: ['Date'] })
+        onTestFinished(() => {
+          vi.useRealTimers()
+        })
+        const workflowStore = useWorkflowStore()
+        vi.spyOn(workflowStore, 'loadWorkflows').mockResolvedValue()
+        const draftStore = useWorkflowDraftStoreV2()
+        const draftPath = 'workflows/Background.json'
+        draftStore.saveDraft(
+          draftPath,
+          JSON.stringify({ ...blankGraph, ...idFields, extra: { a: 1 } }),
+          { name: 'Background.json', isTemporary: true }
+        )
+        const stored = draftStore.getDraft(draftPath)
+        const active = workflowStore.createTemporary('Active.json')
+        writeTabState([draftPath, active.path], 1)
+        vi.advanceTimersByTime(60_000)
+
+        const { restoreWorkflowTabsState } = mountWorkflowPersistence()
+        await restoreWorkflowTabsState()
+        const background = workflowStore.getWorkflowByPath(draftPath)
+        expect(background?.isLoaded).toBe(false)
+        expect(draftStore.getDraft(draftPath)).toMatchObject({
+          data: stored!.data,
+          updatedAt: stored!.updatedAt
+        })
+
+        await background!.load()
+
+        expect(JSON.parse(draftStore.getDraft(draftPath)!.data).extra).toEqual({
+          a: 1
+        })
+        expect(background!.activeState?.extra).toEqual({ a: 1 })
+        const tabId = background!.initialState?.id
+        expect(isValidUuid(tabId)).toBe(true)
+        expect(background!.activeState?.id).toBe(tabId)
+      }
+    )
 
     it('leaves a reused workflow outside the workflows folder unstamped', async () => {
       vi.useFakeTimers({ toFake: ['Date'] })
@@ -988,29 +1065,137 @@ describe('useWorkflowPersistenceV2', () => {
     })
   })
 
-  it('flushes a pending workflow edit when the page is unloaded', async () => {
+  it.for([false, true])(
+    'flushes a pending draft with preview active: %s',
+    async (hasPreview) => {
+      const workflowStore = useWorkflowStore()
+      const workflow = await workflowStore.createTemporary('Draft.json').load()
+      workflowStore.activeWorkflow = workflow
+      mountWorkflowPersistence()
+      await nextTick()
+
+      const finishPreview = hasPreview
+        ? workflow.changeTracker.beginPreview(() => {})
+        : undefined
+      workflow.changeTracker.activeState = {
+        ...blankGraph,
+        extra: { marker: 'final-edit' }
+      }
+      apiEvents.dispatchEvent(new Event('graphChanged'))
+      mocks.state.currentGraph = { ...blankGraph, extra: { marker: 'live' } }
+
+      const payloadKey = StorageKeys.draftPayload(workflow.path, 'personal')
+      expect(localStorage.getItem(payloadKey)).toBeNull()
+
+      window.dispatchEvent(new PageTransitionEvent('pagehide'))
+      finishPreview?.()
+
+      const payload = JSON.parse(localStorage.getItem(payloadKey)!)
+      expect(JSON.parse(payload.data)).toEqual({
+        ...blankGraph,
+        extra: { marker: hasPreview ? 'final-edit' : 'live' }
+      })
+    }
+  )
+
+  it('keeps the last saved edit after an index write fails during a newer edit', async () => {
     const workflowStore = useWorkflowStore()
     const workflow = await workflowStore.createTemporary('Draft.json').load()
     workflowStore.activeWorkflow = workflow
     mountWorkflowPersistence()
     await nextTick()
 
+    const firstEdit = { ...blankGraph, extra: { marker: 1 } }
+    mocks.state.currentGraph = firstEdit
+    apiEvents.dispatchEvent(new Event('graphChanged'))
+    await vi.runAllTimersAsync()
+
+    const indexKey = StorageKeys.draftIndex('personal')
+    const realSetItem = localStorage.setItem.bind(localStorage)
+    let indexFailureInjected = false
+    vi.spyOn(localStorage, 'setItem').mockImplementation((key, value) => {
+      if (key === indexKey && !indexFailureInjected) {
+        indexFailureInjected = true
+        throw new DOMException('Quota exceeded', 'QuotaExceededError')
+      }
+      return realSetItem(key, value)
+    })
+
+    mocks.state.currentGraph = { ...blankGraph, extra: { marker: 2 } }
+    apiEvents.dispatchEvent(new Event('graphChanged'))
+    await vi.runAllTimersAsync()
+
+    mocks.state.currentGraph = firstEdit
+    apiEvents.dispatchEvent(new Event('graphChanged'))
+    await vi.runAllTimersAsync()
+
+    expect(indexFailureInjected).toBe(true)
+    expect(useWorkflowDraftStoreV2().getDraft(workflow.path)?.data).toBe(
+      JSON.stringify(firstEdit)
+    )
+  })
+
+  it('backs off repeated quota writes and reports one toast per failure episode', async () => {
+    const workflowStore = useWorkflowStore()
+    const workflow = await workflowStore.createTemporary('Draft.json').load()
+    workflowStore.activeWorkflow = workflow
+    mountWorkflowPersistence()
+    await nextTick()
+
+    const setItem = localStorage.setItem.bind(localStorage)
+    const write = vi
+      .spyOn(localStorage, 'setItem')
+      .mockImplementation((key, value) => {
+        if (key.startsWith(StorageKeys.prefixes.draftPayload))
+          throw new DOMException('Full', 'QuotaExceededError')
+        setItem(key, value)
+      })
+    const toastError = vi.spyOn(useToast(), 'error')
+    const payloadWrites = () =>
+      write.mock.calls.filter(([key]) =>
+        key.startsWith(StorageKeys.prefixes.draftPayload)
+      )
+
+    mocks.state.currentGraph = { ...blankGraph, extra: { marker: 1 } }
+    apiEvents.dispatchEvent(new Event('graphChanged'))
+    await vi.advanceTimersByTimeAsync(512)
+
+    mocks.state.currentGraph = { ...blankGraph, extra: { marker: 2 } }
+    apiEvents.dispatchEvent(new Event('graphChanged'))
+    await vi.advanceTimersByTimeAsync(512)
+
+    expect(payloadWrites()).toHaveLength(1)
+    expect(toastError).toHaveBeenCalledOnce()
+
+    await vi.advanceTimersByTimeAsync(5_000)
+    mocks.state.currentGraph = { ...blankGraph, extra: { marker: 3 } }
+    apiEvents.dispatchEvent(new Event('graphChanged'))
+    await vi.advanceTimersByTimeAsync(512)
+
+    expect(payloadWrites()).toHaveLength(2)
+    expect(toastError).toHaveBeenCalledOnce()
+  })
+
+  it('keeps a pending edit recoverable when the server clock is ahead', async () => {
+    const path = 'workflows/Saved.json'
+    const modified = Date.now() + 60_000
+    vi.mocked(api.getUserData).mockResolvedValueOnce(Response.json(blankGraph))
+    const workflow = await new ComfyWorkflow({ path, modified, size: 1 }).load()
+    workflow.isModified = true
+    useWorkflowStore().activeWorkflow = workflow
+    mountWorkflowPersistence()
+    await nextTick()
+
     mocks.state.currentGraph = {
-      nodes: [],
-      extra: { marker: 'final-edit' }
+      ...blankGraph,
+      extra: { marker: 'new edit' }
     }
     apiEvents.dispatchEvent(new Event('graphChanged'))
-
-    const payloadKey = StorageKeys.draftPayload(workflow.path, 'personal')
-    expect(localStorage.getItem(payloadKey)).toBeNull()
-
     window.dispatchEvent(new PageTransitionEvent('pagehide'))
 
-    const payload = JSON.parse(localStorage.getItem(payloadKey)!)
-    expect(JSON.parse(payload.data)).toEqual({
-      nodes: [],
-      extra: { marker: 'final-edit' }
-    })
+    vi.mocked(api.getUserData).mockResolvedValueOnce(Response.json(blankGraph))
+    const reopened = await new ComfyWorkflow({ path, modified, size: 1 }).load()
+    expect(reopened.activeState.extra?.marker).toBe('new edit')
   })
 
   it('does not flush a pending workflow edit after disposal', async () => {
@@ -1056,7 +1241,7 @@ describe('useWorkflowPersistenceV2', () => {
     mountWorkflowPersistence()
 
     mocks.state.currentGraph = {
-      nodes: [],
+      ...blankGraph,
       extra: { marker: 'workspace-a-final-edit' }
     }
     apiEvents.dispatchEvent(new Event('graphChanged'))
@@ -1077,7 +1262,7 @@ describe('useWorkflowPersistenceV2', () => {
       JSON.stringify({ id: destinationWorkspaceId, type: 'team' })
     )
     mocks.state.currentGraph = {
-      nodes: [],
+      ...blankGraph,
       extra: { marker: 'late-source-write' }
     }
     apiEvents.dispatchEvent(new Event('graphChanged'))
@@ -1085,7 +1270,7 @@ describe('useWorkflowPersistenceV2', () => {
 
     const sourcePayload = JSON.parse(localStorage.getItem(sourcePayloadKey)!)
     expect(JSON.parse(sourcePayload.data)).toEqual({
-      nodes: [],
+      ...blankGraph,
       extra: { marker: 'workspace-a-final-edit' }
     })
     expect(localStorage.getItem(destinationPayloadKey)).toBeNull()

@@ -1,7 +1,6 @@
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
-import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { beforeEach, describe, expect, it } from 'vitest'
 
@@ -11,14 +10,17 @@ describe('getShellLayoutSnapshot', () => {
   beforeEach(() => {
     useSettingStore().settingValues = { 'Comfy.UseNewMenu': 'Top' }
     useSidebarTabStore().activeSidebarTabId = null
-    useRightSidePanelStore().isOpen = false
     useBottomPanelStore().bottomPanelVisible = false
     Object.assign(useWorkflowStore(), { openWorkflows: [] })
   })
 
   it('captures the default layout', () => {
     expect(
-      getShellLayoutSnapshot({ view_mode: 'graph', is_app_mode: false })
+      getShellLayoutSnapshot({
+        view_mode: 'graph',
+        is_app_mode: false,
+        right_side_panel_open: false
+      })
     ).toEqual({
       view_mode: 'graph',
       is_app_mode: false,
@@ -34,12 +36,15 @@ describe('getShellLayoutSnapshot', () => {
   it('captures a customized layout', () => {
     localStorage.setItem('Comfy.MenuPosition.Docked', 'false')
     useSidebarTabStore().activeSidebarTabId = 'node-library'
-    useRightSidePanelStore().isOpen = true
     useBottomPanelStore().bottomPanelVisible = true
     Object.assign(useWorkflowStore(), { openWorkflows: [{}, {}, {}] })
 
     expect(
-      getShellLayoutSnapshot({ view_mode: 'app', is_app_mode: true })
+      getShellLayoutSnapshot({
+        view_mode: 'app',
+        is_app_mode: true,
+        right_side_panel_open: true
+      })
     ).toEqual({
       view_mode: 'app',
       is_app_mode: true,

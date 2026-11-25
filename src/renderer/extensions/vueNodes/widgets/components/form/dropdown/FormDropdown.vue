@@ -7,19 +7,21 @@ import {
 } from '@vueuse/core'
 import { PopoverAnchor, PopoverRoot } from 'reka-ui'
 import type { ComponentPublicInstance } from 'vue'
-import { computed, ref, useTemplateRef } from 'vue'
+import { computed, inject, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import { usePopoverViewportDismiss } from '@comfyorg/design-system/lib/popover/usePopoverViewportDismiss'
 import { useToast } from '@/components/ui/toast/toastStore'
-import { useDismissOnCanvasGesture } from '@/renderer/extensions/vueNodes/widgets/composables/useDismissOnCanvasGesture'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 import type {
   FilterOption,
   OwnershipFilterOption,
   OwnershipOption
-} from '@/platform/assets/types/filterTypes'
+} from '@comfyorg/assets-core/filtering'
+import { isPaged, pagedItems, WrappedList } from '@/utils/pagedList'
+import type { MaybePaged } from '@/utils/pagedList'
 
 import FormDropdownInput from './FormDropdownInput.vue'
 import FormDropdownMenu from './FormDropdownMenu.vue'
@@ -28,13 +30,17 @@ import {
   defaultSearcher,
   getDefaultSortOptions
 } from './shared'
-import type { FormDropdownItem, LayoutMode, SortOption } from './types'
+import { AssetKindKey } from './types'
+import type {
+  FormDropdownItem,
+  LayoutMode,
+  SortOption,
+  ThumbnailSize
+} from './types'
 
 interface Props {
   inputId?: string
-  items: FormDropdownItem[]
-  /** Items used for display in the input field. Falls back to items if not provided. */
-  displayItems?: FormDropdownItem[]
+  items: MaybePaged<FormDropdownItem>
   placeholder?: string
   /**
    * If true, allows multiple selections. If a number is provided,
@@ -51,9 +57,6 @@ interface Props {
   ownershipOptions?: OwnershipFilterOption[]
   showBaseModelFilter?: boolean
   baseModelOptions?: FilterOption[]
-  loadingMore?: boolean
-  onLoadMore?: () => unknown
-  canLoadMore?: boolean
   isSelected?: (
     selected: Set<string>,
     item: FormDropdownItem,
@@ -62,15 +65,14 @@ interface Props {
   isUploading?: boolean
   searcher?: (
     query: string,
-    items: FormDropdownItem[],
+    items: readonly FormDropdownItem[],
     onCleanup: (cleanupFn: () => void) => void
-  ) => Promise<FormDropdownItem[]>
+  ) => Promise<readonly FormDropdownItem[]>
 }
 
 const { t } = useI18n()
 
 const {
-  inputId,
   placeholder,
   multiple = false,
   uploadable = false,
@@ -82,7 +84,6 @@ const {
   ownershipOptions,
   showBaseModelFilter,
   baseModelOptions,
-  loadingMore = false,
   isSelected = (selected, item, _index) => selected.has(item.id),
   searcher = defaultSearcher,
   items
@@ -113,6 +114,13 @@ const baseModelSelected = defineModel<Set<string>>('baseModelSelected', {
 const isOpen = defineModel<boolean>('isOpen', { default: false })
 
 const toast = useToast()
+const canvasStore = useCanvasStore()
+const assetKind = inject(AssetKindKey)
+const hasThumbnailSizes = computed(
+  () => assetKind?.value === 'image' || assetKind?.value === 'video'
+)
+const thumbnailSize = ref<ThumbnailSize>('standard')
+let canvasPointerId: number | undefined
 const triggerAnchorRef = useTemplateRef<HTMLElement>('triggerAnchorRef')
 const menuRef = useTemplateRef<ComponentPublicInstance>('menuRef')
 const triggerRef =
@@ -133,7 +141,7 @@ const filteredItems = computedAsync(
   async (onCancel) => {
     if (!isOpen.value) {
       displayedSearchQuery.value = ''
-      return items
+      return pagedItems(items).slice()
     }
 
     const query = debouncedSearchQuery.value
@@ -144,13 +152,13 @@ const filteredItems = computedAsync(
       cleanupFn?.()
     })
 
-    const result = await searcher(query, items, (cb) => {
+    const result = await searcher(query, pagedItems(items).slice(), (cb) => {
       cleanupFn = cb
     })
     if (!cancelled) displayedSearchQuery.value = query
     return result
   },
-  items,
+  pagedItems(items).slice(),
   {
     evaluating: isFiltering
   }
@@ -169,7 +177,7 @@ const selectedSorter = computed<SortOption['sorter']>(() => {
 })
 const sortedItems = computed(() => {
   if (!isOpen.value) {
-    return items
+    return pagedItems(items).slice()
   }
 
   return selectedSorter.value({ items: filteredItems.value }) || []
@@ -222,6 +230,17 @@ useEventListener(
     if (menuEl && path.includes(menuEl)) return
     if (triggerEl && path.includes(triggerEl)) return
     if (path.some(isInsideDropdownPanel)) return
+    const canvas = canvasStore.canvas?.canvas
+    if (
+      canvas &&
+      ((event.button === 0 && path.includes(canvas)) ||
+        (event.button === 1 &&
+          canvas.parentElement &&
+          path.includes(canvas.parentElement)))
+    ) {
+      canvasPointerId = event.pointerId
+      return
+    }
     closeDropdown()
   },
   { capture: true }
@@ -234,7 +253,27 @@ function isInsideDropdownPanel(target: EventTarget): boolean {
   )
 }
 
-useDismissOnCanvasGesture(isOpen, () => closeDropdown())
+useEventListener(
+  window,
+  'pointerup',
+  (event) => {
+    if (event.pointerId !== canvasPointerId) return
+    canvasPointerId = undefined
+    const canvas = canvasStore.canvas
+    const wasPan = canvas?.dragging_canvas && canvas.pointer.dragStarted
+    if (isOpen.value && !wasPan) closeDropdown()
+  },
+  { capture: true }
+)
+
+useEventListener(
+  window,
+  'pointercancel',
+  (event) => {
+    if (event.pointerId === canvasPointerId) canvasPointerId = undefined
+  },
+  { capture: true }
+)
 
 usePopoverViewportDismiss(isOpen, triggerAnchorRef)
 
@@ -281,13 +320,17 @@ async function getTopSearchResult() {
   const query = searchQuery.value
   if (query.trim() === '') return
 
-  const sourceItems = items
+  const sourceItems = pagedItems(items)
   const matches =
     isShowingCurrentSearchResults.value && displayedSearchQuery.value === query
       ? filteredItems.value
-      : await searcher(query, sourceItems, () => {})
+      : await searcher(query, sourceItems.slice(), () => {})
 
-  if (query !== searchQuery.value || sourceItems !== items || !isOpen.value) {
+  if (
+    query !== searchQuery.value ||
+    sourceItems !== pagedItems(items) ||
+    !isOpen.value
+  ) {
     return
   }
 
@@ -313,6 +356,11 @@ function showPicker() {
   triggerRef.value!.showPicker()
   closeDropdown()
 }
+const dropdownItems = computed(() =>
+  isPaged(items)
+    ? new WrappedList(items, () => sortedItems.value)
+    : sortedItems.value
+)
 </script>
 
 <template>
@@ -324,10 +372,8 @@ function showPicker() {
         :files
         :is-open
         :placeholder="placeholderText"
-        :items
-        :display-items
+        :selected-items="pagedItems(items).filter(internalIsSelected)"
         :max-selectable
-        :selected
         :uploadable
         :disabled
         :accept
@@ -341,6 +387,8 @@ function showPicker() {
       </FormDropdownInput>
       <PopoverContent
         align="end"
+        update-position-strategy="always"
+        hide-when-detached
         class="pointer-events-auto w-auto rounded-lg border-none bg-transparent p-0 pt-2 shadow-lg data-[state=closed]:animate-none data-[state=open]:animate-none"
         @interact-outside.prevent
         @close-auto-focus.prevent="focusTrigger"
@@ -353,6 +401,8 @@ function showPicker() {
           v-model:search-query="searchQuery"
           v-model:ownership-selected="ownershipSelected"
           v-model:base-model-selected="baseModelSelected"
+          v-model:thumbnail-size="thumbnailSize"
+          :has-thumbnail-sizes
           :uploadable
           :filter-options
           :sort-options
@@ -361,14 +411,11 @@ function showPicker() {
           :show-base-model-filter
           :base-model-options
           :disabled
-          :items="sortedItems"
+          :items="dropdownItems"
           :candidate-index
           :candidate-label
           :is-selected="internalIsSelected"
           :max-selectable
-          :loading-more
-          :on-load-more
-          :can-load-more
           @close="closeDropdown"
           @search-enter="handleSearchEnter"
           @item-click="handleSelection"
