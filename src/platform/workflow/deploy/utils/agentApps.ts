@@ -10,7 +10,7 @@ const AGENT_APP_LINKS: Record<AgentApp, (encodedPrompt: string) => string> = {
 const SURROGATES = /([\uD800-\uDBFF][\uDC00-\uDFFF])|[\uD800-\uDFFF]/g
 
 function wellFormed(text: string): string {
-  return text.replace(SURROGATES, (_, pair?: string) => pair ?? '�')
+  return text.replace(SURROGATES, (_, pair?: string) => pair ?? '\uFFFD')
 }
 
 function agentAppUrl(app: AgentApp, prompt: string): string {

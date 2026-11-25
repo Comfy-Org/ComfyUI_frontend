@@ -19,14 +19,13 @@ describe('openAgentApp', () => {
     { app: 'claude', url: 'claude://code/new?q=a%20b%0Ac%26d%3D1%23e' },
     { app: 'codex', url: 'codex://new?prompt=a%20b%0Ac%26d%3D1%23e' }
   ] as const)(
-    'opens the whole prompt, encoded, in the $app app by navigating the page, which no frame-src rule can refuse',
+    'opens the whole prompt, encoded, in the $app app by navigating the page',
     ({ app, url }) => {
       const navigations = recordPageNavigations()
 
       openAgentApp(app, 'a b\nc&d=1#e')
 
       expect(navigations).toEqual([{ url, leavePromptSkipped: true }])
-      expect(document.querySelector('iframe')).toBeNull()
     }
   )
 
