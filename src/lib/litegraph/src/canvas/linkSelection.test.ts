@@ -3,7 +3,7 @@ import { assert, describe, expect, it, vi } from 'vitest'
 import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
 import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
 import { LGraph } from '@/lib/litegraph/src/LGraph'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LLink } from '@/lib/litegraph/src/LLink'
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
@@ -12,7 +12,7 @@ import type {
   ReadOnlyRect,
   Point2D as Point
 } from '@comfyorg/shared-frontend-utils/geometry'
-import { LinkRenderType } from '@comfyorg/graph-model/globalEnums'
+import { LinkRenderType, TitleMode } from '@comfyorg/graph-model/globalEnums'
 import { setLinkPolyline } from '@/renderer/core/canvas/linkPolylines'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
@@ -541,6 +541,35 @@ describe('going to the other end of a socket', () => {
 
     expect(destinationIds(subgraph)).toEqual([output.id, target.id])
   })
+
+  it.for([
+    { titleMode: TitleMode.TRANSPARENT_TITLE, nodeFirst: true },
+    { titleMode: TitleMode.NO_TITLE, nodeFirst: false }
+  ])(
+    'orders a node drawn with title mode $titleMode by the top it draws',
+    ({ titleMode, nodeFirst }) => {
+      const subgraph = createTestSubgraph({
+        outputs: [{ name: 'value', type: 'number' }]
+      })
+      const source = createTestNode(subgraph, [], ['number'])
+      class TitleModeNode extends LGraphNode {
+        static title_mode = titleMode
+      }
+      const target = new TitleModeNode('target')
+      target.addInput('input_0', 'number')
+      subgraph.add(target)
+      connect(source, target)
+      const output = subgraph.outputNode
+      output.slots[0].connect(source.outputs[0], source)
+      output.pos = [400, 90]
+      place(target, 400, 110)
+      clickSocket(subgraph, source, 'output')
+
+      expect(destinationIds(subgraph)).toEqual(
+        nodeFirst ? [target.id, output.id] : [output.id, target.id]
+      )
+    }
+  )
 
   it('selects the link of the input it lands on, anchored there', () => {
     const { graph, source, targets, links } = createFanOut()

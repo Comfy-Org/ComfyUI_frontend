@@ -316,11 +316,12 @@ test.describe(
         const encoder = await comfyPage.nodeOps.getNodeRefById(6)
         const { index } = await encoder.getInputByName('clip')
         await comfyPage.vueNodes.getInputSlotConnectionDot('6', index).click()
-        await expect(
-          toolbox.getByRole('button', { name: 'Go to Load Checkpoint' })
-        ).toBeVisible()
+        const goTo = toolbox.getByRole('button', {
+          name: 'Go to Load Checkpoint'
+        })
+        await expect(goTo).toBeVisible()
 
-        await expectElementScreenshot(toolbox, 'link-destination-button.png')
+        await expectElementScreenshot(goTo, 'link-destination-button.png')
       })
 
       await test.step('An output socket opens a picker of its linked nodes', async () => {

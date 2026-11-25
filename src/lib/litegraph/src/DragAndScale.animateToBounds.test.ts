@@ -142,6 +142,32 @@ describe('DragAndScale.animateToBounds', () => {
     expect({ offset: [...ds.offset], scale: ds.scale }).toEqual(moved)
   })
 
+  it('stops for an immediate fit that leaves the camera where it is', () => {
+    const ds = createDragAndScale()
+    ds.animateToBounds([3000, 3000, 100, 100], vi.fn(), { zoom: 0 })
+
+    ds.fitToBounds([750, 400, 100, 100], { zoom: 0 })
+    settle()
+
+    expect({ offset: [...ds.offset], scale: ds.scale }).toEqual({
+      offset: [0, 0],
+      scale: 1
+    })
+  })
+
+  it('stops when a redraw asks it to', () => {
+    const ds = createDragAndScale()
+    ds.animateToBounds([3000, 3000, 100, 100], () => ds.stopAnimation(), {
+      zoom: 0
+    })
+    runFrame(performance.now() + 100)
+    const stopped = { offset: [...ds.offset], scale: ds.scale }
+
+    settle()
+
+    expect({ offset: [...ds.offset], scale: ds.scale }).toEqual(stopped)
+  })
+
   it('hands the camera to a later animation', () => {
     const ds = createDragAndScale()
     const later: Bounds = [-2000, 500, 100, 100]

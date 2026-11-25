@@ -6,7 +6,7 @@
       icon="icon-[lucide--locate]"
       data-testid="go-to-link-destination-button"
     />
-    <Menu v-else-if="destinations.length">
+    <Menu v-else-if="destinations.length" class="max-w-80">
       <template #trigger="{ open }">
         <Button
           :tooltip="$t('selectionToolbox.linkDestinations.goToLinkedNode')"

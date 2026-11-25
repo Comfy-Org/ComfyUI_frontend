@@ -28,9 +28,7 @@ export type LinkEnd = LinkEndNode & {
 export function linkEndTop(end: LinkEnd): number {
   const [, y] = end.node.pos
   const titled =
-    end.kind === 'node' &&
-    end.node.title_mode !== TitleMode.TRANSPARENT_TITLE &&
-    end.node.title_mode !== TitleMode.NO_TITLE
+    end.kind === 'node' && end.node.title_mode !== TitleMode.NO_TITLE
   return titled ? y - litegraph().NODE_TITLE_HEIGHT : y
 }
 

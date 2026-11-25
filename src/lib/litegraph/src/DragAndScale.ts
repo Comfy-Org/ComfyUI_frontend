@@ -230,7 +230,7 @@ export class DragAndScale {
     const targetX = (vx + vw * 0.5) / targetScale - bounds[0] - bounds[2] * 0.5
     const targetY = (vy + vh * 0.5) / targetScale - bounds[1] - bounds[3] * 0.5
 
-    // Apply the changes immediately
+    this.stopAnimation()
     this.offset[0] = targetX
     this.offset[1] = targetY
     this.scale = targetScale
