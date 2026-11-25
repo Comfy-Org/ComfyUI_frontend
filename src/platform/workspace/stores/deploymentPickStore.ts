@@ -288,6 +288,7 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
       errorType: 'error_loading_deployment_listing',
       ...(gotNoResponse(err) && { sentryMode: 'never' }),
       ...(isSessionRefused(err) && {
+        sentryMode: 'never',
         level: 'warning',
         tags: { status: 401, outcome: 'denied' }
       })
