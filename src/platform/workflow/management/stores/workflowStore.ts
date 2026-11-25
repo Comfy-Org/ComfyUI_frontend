@@ -286,7 +286,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     existingWorkflow: ComfyWorkflow,
     path: string
   ): ComfyWorkflow => {
-    // Generate new id when saving existing workflow as a new file
+    existingWorkflow.changeTracker?.prepareForSave()
     const id = generateUUID()
     const state = JSON.parse(
       JSON.stringify(existingWorkflow.activeState)
@@ -647,13 +647,17 @@ export const useWorkflowStore = defineStore('workflow', () => {
   }
 
   /**
-   * Save a workflow.
+   * Save a workflow, loading it first unless it is active.
    * @param workflow The workflow to save.
    */
-  const saveWorkflow = async (workflow: ComfyWorkflow) => {
+  const saveWorkflow = async (
+    workflow: ComfyWorkflow,
+    options: { overwrite?: boolean } = {}
+  ) => {
     isBusy.value = true
     try {
-      await workflow.save()
+      if (!workflow.isLoaded && !isActive(workflow)) await workflow.load()
+      await workflow.save(options)
       // Synchronously detach and re-attach to force refresh the tree objects
       // without an async gap that would cause the tab to disappear.
       const openIndex = detachWorkflow(workflow)

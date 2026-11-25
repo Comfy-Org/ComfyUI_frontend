@@ -1,3 +1,4 @@
+import type { ComfyDownloadProgress } from '@comfyorg/comfyui-desktop-bridge-types'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { attachLegacyUI } from '@/core/legacyUI/attachLegacyUI'
 import { ComfyApp, app as singletonApp } from './app'
@@ -23,7 +24,7 @@ import {
   onTestFinished,
   vi
 } from 'vitest'
-import { effectScope, markRaw, ref } from 'vue'
+import { effectScope, markRaw, nextTick, ref } from 'vue'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useSubgraphService } from '@/services/subgraphService'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -99,6 +100,7 @@ import { createMissingMediaCandidate } from '@/platform/workflowErrors/missingMe
 import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
+import { useMissingModelDownloadStore } from '@/platform/workflowErrors/missingModel/missingModelDownloadStore'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
 import { setTelemetryRegistry } from '@comfyorg/telemetry'
@@ -126,8 +128,8 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { extractFilesFromDragEvent } from '@/utils/eventUtils'
-import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
+import { MIME_ASSET_INFO } from '@/platform/assets/constants/assetDrag'
+import { extractFilesFromDragEvent } from '@/platform/assets/integration/assetDrop'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useCanvasScheduler } from '@/renderer/core/canvas/useCanvasScheduler'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -191,7 +193,7 @@ vi.mock(import('@/scripts/metadata/parser'), () => ({
   getWorkflowDataFromFile: vi.fn()
 }))
 
-vi.mock(import('@/utils/eventUtils'), { spy: true })
+vi.mock(import('@/platform/assets/integration/assetDrop'), { spy: true })
 vi.mock(import('@/scripts/appInstance'), () => ({ useApp: vi.fn() }))
 
 vi.mock(import('@comfyorg/telemetry/reportError'), { spy: true })
@@ -2285,6 +2287,76 @@ describe('ComfyApp', () => {
       }
     })
 
+    it('holds a missing model re-check queued by a finished download until the load has scanned its graph', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      const missingModelStore = useMissingModelStore()
+      const recheck = vi
+        .spyOn(missingModelStore, 'refreshMissingModels')
+        .mockResolvedValue(undefined)
+      const progressListeners: ((progress: ComfyDownloadProgress) => void)[] =
+        []
+      window.__comfyDesktop2 = {
+        isRemote: () => false,
+        downloadModel: async () => true,
+        onDownloadProgress: (listener) => {
+          progressListeners.push(listener)
+          return () => {}
+        }
+      }
+      missingModelStore.setMissingModels([
+        fromPartial<MissingModelCandidate>({
+          name: 'model.safetensors',
+          directory: 'checkpoints',
+          isMissing: true
+        })
+      ])
+      const stopTracking = useMissingModelDownloadStore().startTracking()
+      missingModelStore.isRefreshingMissingModels = true
+      for (const listener of progressListeners) {
+        listener({
+          id: 'job-1',
+          url: 'https://huggingface.co/comfy/test/resolve/main/model.safetensors',
+          filename: 'model.safetensors',
+          directory: 'checkpoints',
+          progress: 1,
+          status: 'completed'
+        })
+      }
+      await nextTick()
+      let finishScan!: () => void
+      let scanStarted!: () => void
+      const loadScanning = new Promise<void>((resolve) => {
+        scanStarted = resolve
+      })
+      vi.mocked(runMissingModelPipeline).mockImplementationOnce(async () => {
+        scanStarted()
+        await new Promise<void>((resolve) => {
+          finishScan = resolve
+        })
+        return {
+          missingModels: [],
+          confirmedCandidates: [],
+          surfaced: Promise.resolve()
+        }
+      })
+      try {
+        const load = app.loadGraphData(createWorkflowGraphData(), false, false)
+        missingModelStore.isRefreshingMissingModels = false
+        await loadScanning
+        await nextTick()
+
+        expect(recheck).not.toHaveBeenCalled()
+
+        finishScan()
+        await load
+        await vi.waitFor(() => expect(recheck).toHaveBeenCalledOnce())
+      } finally {
+        stopTracking()
+        delete window.__comfyDesktop2
+      }
+    })
+
     it('lets a queued root graph switch run ahead of pending asset scans and drops their warnings', async () => {
       app.canvasElRef.value = document.createElement('canvas')
       Reflect.set(app, 'rootGraphInternal', new LGraph())
@@ -3731,6 +3803,50 @@ describe('ComfyApp', () => {
         refusalType: 'CLOUD_SUBSCRIPTION_REQUIRED'
       })
       expect(useExecutionErrorStore().lastPromptError).toBeNull()
+    })
+
+    it('asks for a reload instead of an error when the deployment moved to another release', async () => {
+      prepareEmptyPromptQueue()
+      vi.spyOn(api, 'queuePrompt').mockRejectedValue(
+        new PromptExecutionError(
+          {
+            error: {
+              type: 'RELEASE_CHANGED',
+              message: 'The deployment moved to another release.',
+              release_id: 'r-3'
+            }
+          },
+          409
+        )
+      )
+
+      await expect(app.queuePrompt(0)).resolves.toBe(false)
+
+      expect(useToast().toasts.map((toast) => toast.title)).toEqual([
+        'Runs now go to a different version. Reload to run on it.'
+      ])
+      expect(useExecutionErrorStore().lastPromptError).toBeNull()
+      expect(useExecutionErrorStore().lastNodeErrors).toBeNull()
+    })
+
+    it('handles any other 409 as before', async () => {
+      prepareEmptyPromptQueue()
+      vi.spyOn(api, 'queuePrompt').mockRejectedValue(
+        new PromptExecutionError(
+          {
+            error: { type: 'conflict', message: 'Busy', details: '' },
+            node_errors: {}
+          },
+          409
+        )
+      )
+
+      await app.queuePrompt(0)
+
+      expect(useToast().toasts).toEqual([])
+      expect(useExecutionErrorStore().lastPromptError).toMatchObject({
+        type: 'conflict'
+      })
     })
 
     it('records a rejected submission on the workflow that queued it', async () => {
@@ -6502,15 +6618,10 @@ describe('ComfyApp', () => {
 
   describe('refreshMissingModels', () => {
     it('delegates to the app-independent missing model refresh pipeline', async () => {
-      const graph = {
-        nodes: [],
-        serialize: vi.fn(() => createWorkflowGraphData())
-      }
       const result = {
         missingModels: [],
         confirmedCandidates: []
       }
-      Reflect.set(app, 'rootGraphInternal', graph)
       vi.spyOn(app, 'reloadNodeDefs').mockResolvedValue(true)
       mockRefreshMissingModelPipeline.mockResolvedValue(result)
 
@@ -6519,7 +6630,6 @@ describe('ComfyApp', () => {
       )
 
       expect(mockRefreshMissingModelPipeline).toHaveBeenCalledWith({
-        graph,
         reloadNodeDefs: expect.any(Function),
         missingModelStore: useMissingModelStore(),
         silent: false
@@ -6530,11 +6640,6 @@ describe('ComfyApp', () => {
     })
 
     it('omits the node definition reload when reloadDefs is false', async () => {
-      const graph = {
-        nodes: [],
-        serialize: vi.fn(() => createWorkflowGraphData())
-      }
-      Reflect.set(app, 'rootGraphInternal', graph)
       vi.spyOn(app, 'reloadNodeDefs').mockResolvedValue(true)
       mockRefreshMissingModelPipeline.mockResolvedValue({
         missingModels: [],
@@ -6544,7 +6649,6 @@ describe('ComfyApp', () => {
       await app.refreshMissingModels({ reloadDefs: false })
 
       expect(mockRefreshMissingModelPipeline).toHaveBeenCalledWith({
-        graph,
         reloadNodeDefs: undefined,
         missingModelStore: useMissingModelStore(),
         silent: true

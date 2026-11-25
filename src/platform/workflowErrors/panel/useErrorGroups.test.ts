@@ -1362,9 +1362,8 @@ describe('useErrorGroups', () => {
       store.recordPromptError(promptError)
       await nextTick()
 
-      useSettingStore().settingValues[
-        'Comfy.Workflow.ShowMissingNodesWarning'
-      ] = false
+      useSettingStore().settingValues['Comfy.ErrorSystem.ShowMissingNodes'] =
+        false
       store.retireResolvedMissingNodePromptError()
       await nextTick()
 

@@ -1,4 +1,4 @@
-import { useAssetsStore } from '@/stores/assetsStore'
+import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { AssetInfo, HubWorkflowDetail } from '@comfyorg/ingest-types'

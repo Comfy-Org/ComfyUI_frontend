@@ -151,7 +151,6 @@ test.describe(
       })
 
       await sendUnsavedWorkflowPromptAndWaitForSubscribe(
-        page,
         panel,
         hostSocket,
         'Rebuild the workflow.'

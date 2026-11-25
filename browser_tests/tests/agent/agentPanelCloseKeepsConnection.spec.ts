@@ -64,7 +64,6 @@ test.describe(
       await mockWorkflowPersistence(page, WORKFLOW_ID)
 
       await test.step('bind the workflow and run a turn so a follower session exists', async () => {
-        await agentPanel.selectWorkflow()
         await expect.poll(() => hostSocket.connectionCount()).toBe(1)
 
         await agentPanel.sendMessage('Add a note to the canvas.')

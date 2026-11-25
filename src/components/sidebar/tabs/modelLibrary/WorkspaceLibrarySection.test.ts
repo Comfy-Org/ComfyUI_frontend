@@ -1,15 +1,16 @@
 import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import TooltipProvider from '@comfyorg/design-system/tooltip/TooltipProvider'
 import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
-import { startModelLoaderDrag } from '@/composables/node/startModelNodeDragFromAsset'
+import { startModelLoaderDrag } from '@/composables/node/startModelLoaderDrag'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import enMessages from '@/locales/en/main.json'
 import { assetService } from '@/platform/assets/services/assetService'
+import { useDeploymentLibraryModelsStore } from '@/platform/workspace/stores/deploymentLibraryModelsStore'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import type { ModelFolder } from '@/stores/modelStore'
@@ -20,7 +21,7 @@ import WorkspaceLibrarySection from './WorkspaceLibrarySection.vue'
 
 vi.mock(import('@/scripts/api'))
 vi.mock(import('@/composables/useFeatureFlags'))
-vi.mock(import('@/composables/node/startModelNodeDragFromAsset'))
+vi.mock(import('@/composables/node/startModelLoaderDrag'))
 vi.mock(import('@comfyorg/telemetry/reportError'))
 
 const i18n = createI18n({
@@ -102,6 +103,50 @@ describe('WorkspaceLibrarySection', () => {
     expect(assetService.getWorkspaceLibraryModels).not.toHaveBeenCalledWith(
       'configs'
     )
+  })
+
+  it('marks each model as from the workspace, not as a download a build may not need, and counts them in the header', async () => {
+    library.set('loras', [
+      'detail-tweaker.safetensors',
+      'portrait-detail.safetensors'
+    ])
+    Object.assign(useModelStore(), {
+      modelFolders: [folder('loras'), folder('checkpoints')]
+    })
+    library.set('checkpoints', ['sd_xl_base_1.0.safetensors'])
+    const { user } = renderSection()
+    expect(screen.queryByTestId('workspace-library-count')).toBeNull()
+
+    await user.click(screen.getByRole('button', { name: 'Workspace library' }))
+
+    await waitFor(() =>
+      expect(
+        screen.getAllByRole('img', { name: 'From your workspace' })
+      ).toHaveLength(3)
+    )
+    expect(screen.queryByText(/download/i)).toBeNull()
+    expect(screen.queryByRole('img', { name: /download/i })).toBeNull()
+    expect(
+      screen.getByRole('button', { name: 'Workspace library 3 models' })
+    ).toBeInTheDocument()
+  })
+
+  it('shows no count while a folder it counts has not loaded yet', async () => {
+    library.set('loras', ['detail-tweaker.safetensors'])
+    library.set('checkpoints', [
+      'sd_xl_base_1.0.safetensors',
+      'sd_xl_refiner_1.0.safetensors'
+    ])
+    Object.assign(useModelStore(), {
+      modelFolders: [folder('loras'), folder('checkpoints')]
+    })
+    const libraryModels = useDeploymentLibraryModelsStore()
+    libraryModels.refresh('loras')
+    await libraryModels.waitForSettled('loras')
+
+    renderSection()
+
+    expect(screen.queryByTestId('workspace-library-count')).toBeNull()
   })
 
   it('says so when the library is empty', async () => {

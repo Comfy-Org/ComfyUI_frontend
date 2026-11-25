@@ -7,9 +7,6 @@ outputs:
   retired:
     description: Space-separated retired release branches
     value: ${{ steps.targets.outputs.retired }}
-  minimum:
-    description: Oldest viable release line
-    value: ${{ steps.targets.outputs.minimum }}
   pin-sha:
     description: ComfyUI mainline commit used for the decision
     value: ${{ steps.targets.outputs.pin-sha }}

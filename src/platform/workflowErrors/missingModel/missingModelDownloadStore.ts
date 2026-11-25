@@ -206,7 +206,12 @@ export const useMissingModelDownloadStore = defineStore(
     }
 
     function flushRefresh() {
-      if (!refreshPending || missingModelStore.isRefreshingMissingModels) return
+      if (
+        !refreshPending ||
+        missingModelStore.isRefreshingMissingModels ||
+        missingModelStore.isScanningMissingModels
+      )
+        return
       refreshPending = false
       void missingModelStore.refreshMissingModels()
     }
@@ -239,6 +244,7 @@ export const useMissingModelDownloadStore = defineStore(
     }
 
     watch(() => missingModelStore.missingModelCandidates, reopenStillMissing)
+    watch(() => missingModelStore.isScanningMissingModels, flushRefresh)
 
     let finishedBeforeRefresh = new Set<HostDownload>()
     watch(

@@ -211,7 +211,7 @@ describe('a requiresAuth route whose account leaves the tab', () => {
     )
     const router = await openSurveySignedIn()
 
-    remoteConfigStore.failLoad(true, 401)
+    remoteConfigStore.failLoad(true, { reason: 'http', status: 401 })
     await nextTick()
     useAuthStore().currentUser = null
 

@@ -311,12 +311,11 @@ function useBillingCapabilitiesInternal() {
     )
   })
 
-  function trackCapabilityRead(succeeded: boolean): void {
+  function trackCapabilityReadFailed(): void {
     useTelemetry()?.trackBillingEvent({
       operation: 'capability_read',
-      ...(succeeded
-        ? { stage: 'succeeded', outcome: 'success' }
-        : { stage: 'failed', outcome: 'failure' })
+      stage: 'failed',
+      outcome: 'failure'
     })
   }
 
@@ -498,7 +497,6 @@ function useBillingCapabilitiesInternal() {
 
         const resolvedForScope =
           response.resolved_for.workspace_id === workspaceId
-        trackCapabilityRead(resolvedForScope)
         if (resolvedForScope) {
           readFailures = 0
           readState.value = {
@@ -509,6 +507,7 @@ function useBillingCapabilitiesInternal() {
             refreshAt: nextRefreshAt(response)
           }
         } else {
+          trackCapabilityReadFailed()
           readFailures++
           readState.value = unavailableState(userId, workspaceId)
           reportWorkspaceScopeMismatch(
@@ -538,7 +537,7 @@ function useBillingCapabilitiesInternal() {
           (error instanceof Error && error.name === 'AuthStoreError')
         const sessionLapsed =
           error instanceof WorkspaceApiError && error.status === 401
-        if (!denied) trackCapabilityRead(false)
+        if (!denied) trackCapabilityReadFailed()
         // A transient failure keeps the last good snapshot - stale, not wrong -
         // and retries. A denial is the server answering about this actor, so it
         // replaces the snapshot even mid-revalidation.

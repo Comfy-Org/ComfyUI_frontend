@@ -140,6 +140,22 @@ describe('TelemetryRegistry', () => {
     expect(a.trackRunOnCloudEvent).toHaveBeenCalledExactlyOnceWith(event)
   })
 
+  it('dispatches a custom deployment event to every provider that records it', () => {
+    const a: TelemetryProvider = { trackCustomDeploymentEvent: vi.fn() }
+    const b: TelemetryProvider = {}
+    const registry = new TelemetryRegistry()
+    registry.registerProvider(a)
+    registry.registerProvider(b)
+
+    const event = {
+      name: 'platform:deployment_link_clicked',
+      properties: { kind: 'manage_deployments', workspace_id: 'ws-1' }
+    } as const
+    registry.trackCustomDeploymentEvent(event)
+
+    expect(a.trackCustomDeploymentEvent).toHaveBeenCalledExactlyOnceWith(event)
+  })
+
   it('dispatches unified auth retry outcomes to supporting providers', () => {
     const trackUnifiedAuthRetry = vi.fn()
     const registry = new TelemetryRegistry()

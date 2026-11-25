@@ -587,6 +587,85 @@ describe('refreshRemoteConfig', () => {
     })
   })
 
+  describe('failure reason', () => {
+    function rejectWhenAborted(_input: unknown, init?: RequestInit) {
+      return new Promise<Response>((_resolve, reject) => {
+        const rejectAborted = () =>
+          reject(new DOMException('Aborted', 'AbortError'))
+        if (init?.signal?.aborted) rejectAborted()
+        init?.signal?.addEventListener('abort', rejectAborted)
+      })
+    }
+
+    it.for([
+      {
+        name: 'a non-2xx',
+        respond: () =>
+          vi
+            .mocked(global.fetch)
+            .mockResolvedValue(mockErrorResponse(500, 'Internal Server Error')),
+        expected: { reason: 'http', status: 500 }
+      },
+      {
+        name: 'a network error',
+        respond: () =>
+          vi
+            .mocked(global.fetch)
+            .mockRejectedValue(new TypeError('Failed to fetch')),
+        expected: { reason: 'network' }
+      }
+    ])('records $name', async ({ respond, expected }) => {
+      respond()
+
+      await refreshRemoteConfig({ useAuth: false })
+
+      expect(useRemoteConfigStore().failure).toEqual(expected)
+    })
+
+    it('records a timeout when the fetch timer aborts the read', async () => {
+      vi.useFakeTimers()
+      vi.mocked(global.fetch).mockImplementation(rejectWhenAborted)
+
+      const refreshing = refreshRemoteConfig({ useAuth: false })
+      await vi.advanceTimersByTimeAsync(5_000)
+      await refreshing
+
+      expect(useRemoteConfigStore().failure).toEqual({ reason: 'timeout' })
+      vi.useRealTimers()
+    })
+
+    it('records nothing when the caller cancels the read', async () => {
+      const controller = new AbortController()
+      vi.mocked(global.fetch).mockImplementation(rejectWhenAborted)
+
+      const refreshing = refreshRemoteConfig({
+        useAuth: false,
+        signal: controller.signal
+      })
+      controller.abort()
+      await refreshing
+
+      expect(useRemoteConfigStore().failure).toBeNull()
+    })
+
+    it('clears the reason once a read succeeds', async () => {
+      useRemoteConfigStore().failLoad(false, { reason: 'timeout' })
+      vi.mocked(global.fetch).mockResolvedValue(mockSuccessResponse())
+
+      await refreshRemoteConfig({ useAuth: false })
+
+      expect(useRemoteConfigStore().failure).toBeNull()
+    })
+
+    it('clears the reason when config is invalidated', () => {
+      useRemoteConfigStore().failLoad(false, { reason: 'network' })
+
+      invalidateRemoteConfig()
+
+      expect(useRemoteConfigStore().failure).toBeNull()
+    })
+  })
+
   describe('loadRemoteConfigUntilReady', () => {
     const BOOTSTRAP_RELEASE_MS = 30_000
 

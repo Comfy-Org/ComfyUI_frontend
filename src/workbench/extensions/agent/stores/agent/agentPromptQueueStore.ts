@@ -9,7 +9,8 @@ import type { WorkflowReference } from '@/workbench/extensions/agent/types/workf
 import type {
   PromptQueueDraft,
   PromptQueueEvent,
-  PromptQueueItem
+  PromptQueueItem,
+  PromptQueueState
 } from './promptQueueState'
 import {
   emptyPromptQueue,
@@ -18,9 +19,13 @@ import {
   visiblePromptQueueItems
 } from './promptQueueState'
 
+const MAX_KEPT_QUEUES = 64
+
 export const useAgentPromptQueueStore = defineStore('agentPromptQueue', () => {
   const composer = useAgentComposerStore()
   const panel = useAgentPanelStore()
+  const keptQueues = new Map<string, PromptQueueState>()
+  let activeChatKey: string | null = null
   const state = shallowRef(emptyPromptQueue())
   let nextId = 0
 
@@ -44,13 +49,32 @@ export const useAgentPromptQueueStore = defineStore('agentPromptQueue', () => {
     composer.holdAssets(heldAssetIds())
   }
 
-  function heldAssetIds(): string[] {
-    const ids = state.value.items.flatMap((item) =>
-      item.attachments.map((attachment) => attachment.id)
-    )
-    for (const attachment of state.value.draft?.attachments ?? [])
+  function collectStateAssetIds(
+    queueState: PromptQueueState,
+    ids: string[]
+  ): void {
+    for (const item of queueState.items)
+      for (const attachment of item.attachments) ids.push(attachment.id)
+    for (const attachment of queueState.draft?.attachments ?? [])
       ids.push(attachment.id)
+  }
+
+  function heldAssetIds(): string[] {
+    const ids: string[] = []
+    collectStateAssetIds(state.value, ids)
+    for (const kept of keptQueues.values()) collectStateAssetIds(kept, ids)
     return ids
+  }
+
+  function trimKeptQueues(): void {
+    for (const key of keptQueues.keys()) {
+      if (keptQueues.size <= MAX_KEPT_QUEUES) break
+      keptQueues.delete(key)
+    }
+  }
+
+  function isQueueNonEmpty(queueState: PromptQueueState): boolean {
+    return queueState.items.length > 0 || queueState.runningId !== null
   }
 
   function snapshotDraft(): PromptQueueDraft {
@@ -96,8 +120,30 @@ export const useAgentPromptQueueStore = defineStore('agentPromptQueue', () => {
     return state.value.runningId === id
   }
 
+  function applyToRunningQueue(
+    id: string,
+    event: Extract<PromptQueueEvent, { type: 'finished' | 'released' }>
+  ): void {
+    if (state.value.runningId === id) {
+      dispatch(event)
+      return
+    }
+    for (const [key, kept] of keptQueues) {
+      if (kept.runningId !== id) continue
+      const next = reducePromptQueue(kept, event)
+      if (isQueueNonEmpty(next)) keptQueues.set(key, next)
+      else keptQueues.delete(key)
+      composer.holdAssets(heldAssetIds())
+      return
+    }
+  }
+
+  function release(id: string): void {
+    applyToRunningQueue(id, { type: 'released', id })
+  }
+
   function finish(id: string): void {
-    dispatch({ type: 'finished', id })
+    applyToRunningQueue(id, { type: 'finished', id })
   }
 
   function startEdit(id: string): boolean {
@@ -145,6 +191,47 @@ export const useAgentPromptQueueStore = defineStore('agentPromptQueue', () => {
     dispatch({ type: 'cleared' })
   }
 
+  function activateQueue(key: string): void {
+    if (key === activeChatKey) return
+    const adoptsCurrentContent = activeChatKey === null
+    if (!adoptsCurrentContent && state.value.editingId !== null) cancelEdit()
+    const restored = adoptsCurrentContent ? undefined : keptQueues.get(key)
+    if (restored !== undefined) keptQueues.delete(key)
+    if (activeChatKey !== null) {
+      keptQueues.delete(activeChatKey)
+      if (isQueueNonEmpty(state.value)) {
+        keptQueues.set(activeChatKey, state.value)
+        trimKeptQueues()
+      }
+    }
+    activeChatKey = key
+    if (adoptsCurrentContent) return
+    state.value = restored ?? emptyPromptQueue()
+    composer.holdAssets(heldAssetIds())
+  }
+
+  function rekeyQueue(from: string, to: string): void {
+    if (from === to) return
+    if (activeChatKey === from) {
+      activeChatKey = to
+      keptQueues.delete(to)
+      return
+    }
+    const kept = keptQueues.get(from)
+    if (!kept) return
+    keptQueues.delete(from)
+    keptQueues.set(to, kept)
+    composer.holdAssets(heldAssetIds())
+  }
+
+  function discardQueue(key: string): void {
+    if (key === activeChatKey) clear()
+    else if (keptQueues.delete(key)) {
+      composer.holdAssets(heldAssetIds())
+      composer.releaseUnusedAssets()
+    }
+  }
+
   function clearComposerDraft(): void {
     composer.clearDraft()
   }
@@ -159,6 +246,7 @@ export const useAgentPromptQueueStore = defineStore('agentPromptQueue', () => {
     nextItem,
     enqueueFromComposer,
     begin,
+    release,
     finish,
     startEdit,
     submitEdit,
@@ -166,6 +254,9 @@ export const useAgentPromptQueueStore = defineStore('agentPromptQueue', () => {
     deleteItem,
     toggle,
     clear,
+    activateQueue,
+    rekeyQueue,
+    discardQueue,
     clearComposerDraft
   }
 })

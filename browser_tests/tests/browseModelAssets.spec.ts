@@ -14,7 +14,7 @@ import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import type {
   AssetMetadata,
   AsyncUploadResponse
-} from '@/platform/assets/schemas/assetSchema'
+} from '@comfyorg/assets-core/schema'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
 const CLOUD_ASSETS: Asset[] = [STABLE_CHECKPOINT]

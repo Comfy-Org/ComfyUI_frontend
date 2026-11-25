@@ -169,6 +169,10 @@ export async function mockAgentTurnApi(
     route.fulfill(jsonRoute(runMode))
   )
   await page.route('**/api/agent/threads/*/messages', async (route) => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill(jsonRoute([]))
+      return
+    }
     await beforeAccept?.()
     await route.fulfill(jsonRoute(turnAccepted))
   })
@@ -223,21 +227,11 @@ export async function mockWorkflowPersistence(
 }
 
 export async function sendUnsavedWorkflowPromptAndWaitForSubscribe(
-  page: Page,
   panel: Locator,
   hostSocket: AgentFollowerHostSocket,
   prompt: string,
   { expectedConnections }: { expectedConnections?: number } = {}
 ): Promise<void> {
-  const picker = panel.getByRole('button', {
-    name: enMessages.agent.switchWorkflow
-  })
-  await picker.click()
-  await page
-    .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
-    .click()
-  await expect(picker).toHaveText('Unsaved Workflow')
-
   if (expectedConnections !== undefined)
     await expect
       .poll(() => hostSocket.connectionCount())
@@ -338,8 +332,7 @@ export async function bootAgentApp(
 }
 
 /**
- * Replaces the boot tab's graph in place, so `AgentPanel.selectWorkflow()`
- * still finds it as "Unsaved Workflow". Boot's own default-workflow load is
+ * Replaces the boot tab's graph in place. Boot's own default-workflow load is
  * not awaited by {@link bootAgentApp}, so the active workflow is awaited
  * first. The follower merges a subscribe's catch-up into whatever the canvas
  * already shows; a fake host doc must therefore start from the same graph
@@ -355,14 +348,39 @@ export async function loadIntoBootWorkflow(
 ): Promise<void> {
   await page.waitForFunction(() => {
     const workspace = window.app?.extensionManager as WorkspaceStore | undefined
-    return workspace?.workflow.activeWorkflow != null
+    return (
+      workspace?.workflow.tabsRestored === true &&
+      workspace.workflow.activeWorkflow != null
+    )
   })
   await page.evaluate(async (json) => {
-    const activeWorkflow = (window.app!.extensionManager as WorkspaceStore)
-      .workflow.activeWorkflow!
-    await window.app!.loadGraphData(json, true, true, activeWorkflow)
-    if (json.nodes.length > 0)
-      await window.app!.extensionManager.command.execute('Comfy.Canvas.FitView')
+    const app = window.app!
+    const activeWorkflow = (app.extensionManager as WorkspaceStore).workflow
+      .activeWorkflow!
+    await app.loadGraphData(json, true, true, activeWorkflow)
+    if (json.nodes.length > 0) {
+      await app.extensionManager.command.execute('Comfy.Canvas.FitView')
+      await new Promise<void>((resolve) => {
+        const ds = app.canvas.ds
+        let lastScale = ds.scale
+        let lastX = ds.offset[0]
+        let lastY = ds.offset[1]
+        let settledFrames = 0
+        const waitForSettle = () => {
+          const unchanged =
+            ds.scale === lastScale &&
+            ds.offset[0] === lastX &&
+            ds.offset[1] === lastY
+          settledFrames = unchanged ? settledFrames + 1 : 0
+          lastScale = ds.scale
+          lastX = ds.offset[0]
+          lastY = ds.offset[1]
+          if (settledFrames >= 2) resolve()
+          else requestAnimationFrame(waitForSettle)
+        }
+        requestAnimationFrame(waitForSettle)
+      })
+    }
   }, json)
   await nextFrame(page)
 }

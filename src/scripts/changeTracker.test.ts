@@ -956,6 +956,27 @@ describe('ChangeTracker', () => {
         ])
       })
 
+      it('keeps a transaction undoable when an earlier debounce finishes mid-change', async () => {
+        const initial = createState(1)
+        const changed = structuredClone(initial)
+        changed.nodes[0].pos = [10, 0]
+        const transaction = structuredClone(changed)
+        transaction.nodes[0].pos = [20, 0]
+        const tracker = createTracker(initial)
+        mockCanvasState(changed)
+        tracker.captureCanvasState()
+
+        tracker.beforeChange()
+        mockCanvasState(transaction)
+        await vi.advanceTimersByTimeAsync(50)
+        tracker.afterChange()
+        await tracker.undo()
+
+        expect(tracker.activeState).toEqual(changed)
+        expect(tracker.undoQueue).toEqual([initial])
+        expect(tracker.redoQueue).toEqual([transaction])
+      })
+
       it('does not squash after canvas ownership changes', async () => {
         const initial = createState(1)
         const changed = structuredClone(initial)

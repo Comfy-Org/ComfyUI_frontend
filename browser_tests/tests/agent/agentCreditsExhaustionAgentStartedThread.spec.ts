@@ -16,7 +16,6 @@ test.describe(
   () => {
     test.beforeEach(async ({ agentPanel }) => {
       await agentPanel.open()
-      await agentPanel.selectWorkflow()
     })
 
     test('keeps the card hidden until the first reply, then explains credits on the refusal', async ({

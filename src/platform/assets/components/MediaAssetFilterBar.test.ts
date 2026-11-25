@@ -7,7 +7,7 @@ import { describe, expect, it, vi } from 'vitest'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import MediaAssetFilterBar from '@/platform/assets/components/MediaAssetFilterBar.vue'
 import { MEDIA_ASSET_VIEW_MODE } from '@/platform/assets/components/mediaAssetViewOptions'
-import type { MediaAssetDateFilter } from '@/platform/assets/mediaAssetFilterOptions'
+import type { MediaAssetDateFilter } from '@comfyorg/assets-core/media'
 
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
