@@ -25,7 +25,6 @@ interface CheckoutPromoOptions {
   readonly requote: (promotionCode?: string) => Promise<PreviewSubscribeResult>
   /** Where an applied code outlives a reload or a provider return. */
   readonly memory: PromoMemory
-  /** Where the customer's removal of the link's code outlives a reload. */
   readonly removal?: PromoRemoval
 }
 

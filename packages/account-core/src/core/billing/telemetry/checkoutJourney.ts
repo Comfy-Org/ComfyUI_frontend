@@ -115,7 +115,6 @@ type CheckoutJourneyPromo = {
   result: CheckoutPromoResult
   /** Whether the entry link carried the code; the code itself is never reported. */
   prefilled: boolean
-  /** Whether checkout applied the code itself, without an Apply click. Full-page checkout only. */
   auto_applied?: boolean
 }
 type CheckoutJourneyPayBlocked = {
