@@ -36,6 +36,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 import { useDialogStore } from '@/stores/dialogStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
@@ -61,6 +62,7 @@ const gettingStartedVisible = computed(
 const firstRunHoldsScreen = computed(
   () => firstRunScreenState.value !== 'released'
 )
+const isLocalFirstRun = ref(false)
 const activeTour = ref<EntryPath | null>(null)
 let startupDecision: Promise<boolean> = Promise.resolve(true)
 const ACTIVATION_VISITS_STORAGE_KEY = 'Comfy.AgentPanel.activationVisits'
@@ -128,6 +130,7 @@ vi.mock(
       fromPartial<ReturnType<typeof useFirstRunEntry>>({
         gettingStartedVisible,
         firstRunHoldsScreen,
+        isLocalFirstRun,
         whenStartupDecided: () => startupDecision
       })
   })
@@ -252,6 +255,7 @@ describe('AgentPanel extension flag gate', () => {
     agentStore.isOpen = true
     setAgentReady(false)
     releaseFirstRunScreen()
+    isLocalFirstRun.value = false
     activeTour.value = null
     startupDecision = Promise.resolve(true)
     vi.spyOn(useOnboardingTourStore(), 'activeTour', 'get').mockImplementation(
@@ -755,6 +759,206 @@ describe('AgentPanel extension flag gate', () => {
       await flush()
 
       expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+    })
+  })
+
+  describe("a new local user's first session", () => {
+    const DEFERRED_KEY = 'Comfy.AgentPanel.firstSessionDeferred.default'
+    const deferredReports = async () =>
+      (await notOffered()).mock.calls.filter(
+        ([metadata]) => metadata.reason === 'first_session_deferred'
+      )
+
+    beforeEach(() => {
+      mocks.isCloud = false
+      mocks.isDesktop = true
+      isLocalFirstRun.value = true
+      currentUser.value = null
+      setAgentReady(true)
+      Object.assign(consentStore, { accepted: false, isChecking: false })
+      agentStore.isOpen = false
+      vi.mocked(useAgentConsent().withConsent).mockImplementation(
+        () => new Promise(() => {})
+      )
+    })
+
+    it('keeps the panel closed and the card unoffered without spending an activation visit', async () => {
+      await loadEntryAndSetup()
+      await flush()
+
+      expect(agentStore.open).not.toHaveBeenCalled()
+      expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+      expect(
+        localStorage.getItem(ACTIVATION_VISITS_STORAGE_KEY),
+        'the two automatic opens belong to the following launches'
+      ).toBeNull()
+      expect(await notOffered()).toHaveBeenCalledExactlyOnceWith({
+        reason: 'first_session_deferred'
+      })
+      expect(localStorage.getItem(DEFERRED_KEY)).not.toBeNull()
+    })
+
+    it('stays quiet when the templates dialog closes', async () => {
+      openDialog('global-templates')
+
+      await loadEntryAndSetup()
+      await flush()
+      closeDialog('global-templates')
+      await flush()
+
+      expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+      expect(agentStore.open).not.toHaveBeenCalled()
+    })
+
+    it('stays quiet after the user signs in during the session', async () => {
+      await loadEntryAndSetup()
+      await flush()
+
+      currentUser.value = { id: 'account-a' }
+      Object.assign(consentStore, { identity: 'account-a/workspace-b' })
+      await flush()
+      await flush()
+
+      expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+      expect(agentStore.open).not.toHaveBeenCalled()
+      expect((await notOffered()).mock.calls).toEqual(await deferredReports())
+    })
+
+    it('never shows a panel restored open by an earlier profile, and keeps it for the next launch', async () => {
+      agentStore.isOpen = true
+      let decide: (decided: boolean) => void = () => {}
+      startupDecision = new Promise<boolean>((resolve) => {
+        decide = resolve
+      })
+
+      await loadEntryAndSetup()
+      await flush()
+      expect(agentStore.isVisible, 'hidden before startup decides').toBe(false)
+
+      decide(true)
+      await flush()
+
+      expect(agentStore.isVisible).toBe(false)
+      expect(agentStore.isOpen, 'the stored preference survives').toBe(true)
+      expect(useTelemetry()?.trackAgentPanelOpened).not.toHaveBeenCalled()
+      expect(useTelemetry()?.trackAgentPanelClosed).not.toHaveBeenCalled()
+    })
+
+    it('keeps a restored-open panel hidden when startup times out', async () => {
+      agentStore.isOpen = true
+      startupDecision = Promise.resolve(false)
+
+      await loadEntryAndSetup()
+      await flush()
+
+      expect(agentStore.isVisible).toBe(false)
+      expect(agentStore.isOpen).toBe(true)
+    })
+
+    it('shows a restored-open panel once startup turns out not to be a first run', async () => {
+      isLocalFirstRun.value = false
+      agentStore.isOpen = true
+      let decide: (decided: boolean) => void = () => {}
+      startupDecision = new Promise<boolean>((resolve) => {
+        decide = resolve
+      })
+
+      await loadEntryAndSetup()
+      await flush()
+      expect(agentStore.isVisible).toBe(false)
+
+      decide(true)
+      await flush()
+
+      expect(agentStore.isVisible).toBe(true)
+      expect(localStorage.getItem(DEFERRED_KEY)).toBeNull()
+    })
+
+    it('shows a restored-open panel at once for a user who finished the tutorial', async () => {
+      isLocalFirstRun.value = false
+      agentStore.isOpen = true
+      const settingStore = useSettingStore()
+      const get = settingStore.get.bind(settingStore)
+      const spy = vi
+        .spyOn(settingStore, 'get')
+        .mockImplementation((key) =>
+          key === 'Comfy.TutorialCompleted' ? true : get(key)
+        )
+      onTestFinished(() => spy.mockRestore())
+      startupDecision = new Promise(() => {})
+
+      await loadEntryAndSetup()
+      await flush()
+
+      expect(agentStore.isVisible).toBe(true)
+    })
+
+    it('defers only one launch', async () => {
+      localStorage.setItem(DEFERRED_KEY, 'true')
+
+      await loadEntryAndSetup()
+      await vi.waitFor(() =>
+        expect(agentStore.open).toHaveBeenCalledExactlyOnceWith('activation')
+      )
+      expect(await deferredReports()).toEqual([])
+    })
+
+    it('defers independently for each local user', async () => {
+      localStorage.setItem(DEFERRED_KEY, 'true')
+      localStorage.setItem('Comfy.userId', 'local-user-b')
+
+      await loadEntryAndSetup()
+      await flush()
+
+      expect(agentStore.open).not.toHaveBeenCalled()
+      expect(
+        localStorage.getItem(
+          'Comfy.AgentPanel.firstSessionDeferred.local-user-b'
+        )
+      ).toBe('true')
+    })
+
+    it('does not defer when the deferral cannot be remembered', async () => {
+      const setItem = localStorage.setItem.bind(localStorage)
+      const write = vi
+        .spyOn(localStorage, 'setItem')
+        .mockImplementation((key, value) => {
+          if (key === DEFERRED_KEY) throw new DOMException('denied')
+          setItem(key, value)
+        })
+      onTestFinished(() => write.mockRestore())
+
+      await loadEntryAndSetup()
+      await vi.waitFor(() =>
+        expect(agentStore.open).toHaveBeenCalledExactlyOnceWith('activation')
+      )
+      expect(await deferredReports()).toEqual([])
+    })
+
+    it('leaves cloud alone', async () => {
+      mocks.isCloud = true
+
+      await loadEntryAndSetup()
+      await vi.waitFor(() =>
+        expect(agentStore.open).toHaveBeenCalledExactlyOnceWith('activation')
+      )
+    })
+
+    it('still resumes an accept the sign-in reload interrupted', async () => {
+      currentUser.value = { id: 'account-a' }
+      sessionStorage.setItem(
+        'Comfy.AgentPanel.PendingSignInAccept',
+        JSON.stringify({ draft: 'make it blue', savedAt: Date.now() })
+      )
+      onTestFinished(() =>
+        sessionStorage.removeItem('Comfy.AgentPanel.PendingSignInAccept')
+      )
+
+      await loadEntryAndSetup()
+
+      expect(
+        useAgentConsent().resumeAcceptAfterReload
+      ).toHaveBeenCalledExactlyOnceWith({ draft: 'make it blue' })
     })
   })
 

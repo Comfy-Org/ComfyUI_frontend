@@ -60,7 +60,24 @@ const SurveyFormStub = defineComponent({
   }
 })
 
-async function renderView() {
+const DoubleSubmitFormStub = defineComponent({
+  emits: ['submit'],
+  setup(_, { emit }) {
+    return () =>
+      h(
+        'button',
+        {
+          onClick: () => {
+            emit('submit', { role: 'artist' })
+            emit('submit', { role: 'artist' })
+          }
+        },
+        'Submit survey'
+      )
+  }
+})
+
+async function renderView(surveyForm: object = SurveyFormStub) {
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [
@@ -69,7 +86,8 @@ async function renderView() {
         path: '/user-check',
         name: 'cloud-user-check',
         component: { template: '<div />' }
-      }
+      },
+      { path: '/other', name: 'other', component: { template: '<div />' } }
     ]
   })
   await router.push('/')
@@ -84,7 +102,7 @@ async function renderView() {
         }),
         router
       ],
-      stubs: { DynamicSurveyForm: SurveyFormStub }
+      stubs: { DynamicSurveyForm: surveyForm }
     }
   })
   return { router, ...result }
@@ -231,6 +249,54 @@ describe('CloudSurveyView', () => {
       }
     )
     expect(screen.getByRole('button', { name: 'Submit survey' })).toBeEnabled()
+  })
+
+  it('submits and advances once when submit fires twice before re-render', async () => {
+    const { router } = await renderView(DoubleSubmitFormStub)
+    await waitFor(() =>
+      expect(mocks.getSurveyCompletedStatus).toHaveBeenCalledOnce()
+    )
+
+    await userEvent.click(screen.getByRole('button', { name: 'Submit survey' }))
+
+    await waitFor(() =>
+      expect(router.currentRoute.value.name).toBe('cloud-user-check')
+    )
+    expect(mocks.submitSurvey).toHaveBeenCalledOnce()
+    expect(
+      mocks.trackSurvey.mock.calls.filter(([event]) => event === 'submitted')
+    ).toHaveLength(1)
+    expect(mocks.reportError).not.toHaveBeenCalled()
+    expect(useToast().toasts).toEqual([])
+  })
+
+  it('does not report a navigation that a newer one superseded', async () => {
+    mocks.isSurveyReplayRequested.mockReturnValue(true)
+    mocks.submitSurvey.mockResolvedValue({ status: 'preserved' })
+    const { router } = await renderView()
+    let superseded = false
+    router.beforeEach((to) => {
+      if (to.name !== 'cloud-user-check' || superseded) return true
+      superseded = true
+      void router.push({ name: 'other' })
+      return new Promise<boolean>((resolve) => setTimeout(() => resolve(true)))
+    })
+    await waitFor(() =>
+      expect(mocks.getSurveyCompletedStatus).toHaveBeenCalledOnce()
+    )
+
+    await userEvent.click(screen.getByRole('button', { name: 'Submit survey' }))
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'Submit survey' })
+      ).toBeEnabled()
+    )
+    expect(superseded).toBe(true)
+    expect(router.currentRoute.value.name).toBe('other')
+    expect(mocks.reportError).not.toHaveBeenCalled()
+    expect(mocks.restoreSurveyReplayRequest).not.toHaveBeenCalled()
+    expect(useToast().toasts).toEqual([])
   })
 
   it('does not restore a replay after the account changes', async () => {

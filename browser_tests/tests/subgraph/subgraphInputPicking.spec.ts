@@ -25,9 +25,6 @@ test.describe(
           'subgraphs/shared-definition-two-hosts-promoted-text'
         )
         await agentPanel.open()
-        await agentPanel.selectWorkflow(
-          'shared-definition-two-hosts-promoted-text'
-        )
         await comfyPage.vueNodes.enterSubgraph('11')
         await comfyPage.subgraph.fillInput('text', 'before-picking')
       })

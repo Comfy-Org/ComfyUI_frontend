@@ -9,6 +9,7 @@ import {
   mockWorkflowPersistence
 } from '@e2e/fixtures/agentPanelFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import {
   HOST_OWNED_COMBO_HOST_ID,
@@ -67,9 +68,9 @@ test.describe(
       const hostNode = vueNodes.getNodeLocator(HOST_OWNED_COMBO_HOST_ID)
       await expect(hostNode).toBeVisible()
 
+      await new Topbar(page).saveWorkflowAs('Unsaved Workflow')
       const agentPanel = new AgentPanel(page)
       await agentPanel.open()
-      await agentPanel.selectWorkflow()
       await agentPanel.sendMessage('watch this workflow')
       await agentPanel.expectUserMessages(['watch this workflow'])
       await hostSocket.waitForSubscribe()

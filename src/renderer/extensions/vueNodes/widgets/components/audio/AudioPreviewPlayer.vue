@@ -216,7 +216,7 @@ function showPlaybackError(error: unknown) {
 const handleDownload = () => {
   if (!modelValue.value) return
   try {
-    downloadFile(modelValue.value)
+    downloadFile(modelValue.value, undefined, 'node_preview')
   } catch {
     toast.error(t('g.error'), { description: t('g.failedToDownloadFile') })
   }

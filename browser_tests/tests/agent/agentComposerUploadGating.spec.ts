@@ -52,7 +52,6 @@ test.describe(
     }) => {
       const uploadStatus = agentPanel.root.getByTestId('composer-upload-status')
       await agentPanel.open()
-      await agentPanel.selectWorkflow()
       await agentPanel.composer.fill('Use these images')
       await expect(agentPanel.sendButton).toBeEnabled()
 

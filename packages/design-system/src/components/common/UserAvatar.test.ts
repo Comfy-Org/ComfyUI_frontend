@@ -36,6 +36,16 @@ describe('UserAvatar', () => {
     expect(screen.getByTestId('avatar-icon')).toBeInTheDocument()
   })
 
+  it('renders slotted fallback content instead of the default icon', () => {
+    render(UserAvatar, {
+      props: { label: 'User Avatar', photoUrl: null },
+      slots: { default: '<span>M</span>' }
+    })
+
+    expect(screen.getByText('M')).toBeInTheDocument()
+    expect(screen.queryByTestId('avatar-icon')).not.toBeInTheDocument()
+  })
+
   it('renders with default icon when provided photo Url is null', () => {
     renderComponent({
       photoUrl: null

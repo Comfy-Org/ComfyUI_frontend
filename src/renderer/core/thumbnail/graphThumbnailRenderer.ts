@@ -4,6 +4,7 @@ import {
   calculateNodeBounds
 } from '@/renderer/core/spatial/boundsCalculator'
 
+import { MinimapDataSource } from '@/renderer/extensions/minimap/data/MinimapDataSource'
 import { renderMinimapToCanvas } from '@/renderer/extensions/minimap/minimapCanvasRenderer'
 
 /**
@@ -20,7 +21,6 @@ export function createGraphThumbnail(
   const width = 250
   const height = 200
 
-  // Calculate bounds using spatial calculator
   const bounds = calculateNodeBounds(graph._nodes)
   if (!bounds) {
     return null
@@ -28,13 +28,11 @@ export function createGraphThumbnail(
 
   const scale = calculateMinimapScale(bounds, width, height)
 
-  // Create detached canvas
   const canvas = document.createElement('canvas')
   canvas.width = width
   canvas.height = height
 
-  // Render the minimap
-  renderMinimapToCanvas(canvas, graph, {
+  renderMinimapToCanvas(canvas, new MinimapDataSource(graph), {
     bounds,
     scale,
     settings: {
@@ -50,7 +48,6 @@ export function createGraphThumbnail(
 
   const dataUrl = canvas.toDataURL()
 
-  // Explicit cleanup (optional but good practice)
   const ctx = canvas.getContext('2d')
   if (ctx) {
     ctx.clearRect(0, 0, width, height)

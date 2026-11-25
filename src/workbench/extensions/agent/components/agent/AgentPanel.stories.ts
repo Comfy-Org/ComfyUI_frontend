@@ -23,8 +23,7 @@ const meta: Meta<typeof AgentPanel> = {
     entries: [],
     historyGroups: emptyHistory,
     userName: 'Comfy user',
-    activeTab: { path: 'workflows/portrait.json', name: 'portrait' },
-    workflowTabs: [{ path: 'workflows/portrait.json', name: 'portrait' }]
+    activeTab: { path: 'workflows/portrait.json', name: 'portrait' }
   },
   argTypes: {
     freeUsePlacement: { control: 'select', options: FREE_USE_VARIANTS }

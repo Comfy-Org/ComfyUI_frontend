@@ -21,7 +21,7 @@ test.use({
 test(
   'keeps a node reference chip on one line when the composer wraps',
   { tag: ['@cloud', '@ui'] },
-  async ({ page, workflowSelection }) => {
+  async ({ page }) => {
     await page.locator('#comfy-file-input').setInputFiles({
       name: 'Portrait study.json',
       mimeType: 'application/json',
@@ -29,12 +29,6 @@ test(
     })
     const panel = await new AgentPanel(page).open()
     const editor = panel.getByRole('textbox')
-    await panel
-      .getByRole('button', { name: enMessages.agent.switchWorkflow })
-      .click()
-    await page.getByRole('menuitemradio', { name: /Portrait study/ }).click()
-    await expect.poll(() => workflowSelection.savedPaths.length).toBe(1)
-    workflowSelection.finishSave(true)
     await editor.fill('@')
     await panel
       .getByRole('menuitem', { name: enMessages.agent.nodes, exact: true })
@@ -60,7 +54,7 @@ test(
 test(
   'keeps asset attachments in the tray while inline references follow prompt editing and Undo',
   { tag: ['@cloud', '@ui'] },
-  async ({ page, workflowSelection, assetUpload }) => {
+  async ({ page, assetUpload }) => {
     await page.locator('#comfy-file-input').setInputFiles({
       name: 'Portrait study.json',
       mimeType: 'application/json',
@@ -68,12 +62,6 @@ test(
     })
     const panel = await new AgentPanel(page).open()
     const editor = panel.getByRole('textbox')
-    await panel
-      .getByRole('button', { name: enMessages.agent.switchWorkflow })
-      .click()
-    await page.getByRole('menuitemradio', { name: /Portrait study/ }).click()
-    await expect.poll(() => workflowSelection.savedPaths.length).toBe(1)
-    workflowSelection.finishSave(true)
     await editor.fill('Adjust @')
     await panel
       .getByRole('menuitem', { name: enMessages.agent.nodes, exact: true })
@@ -136,16 +124,9 @@ test(
         exact: true
       })
       .click()
-    await panel
-      .getByRole('button', { name: enMessages.agent.switchWorkflow })
-      .click()
-    await page
-      .getByRole('menuitemradio', { name: 'Unsaved Workflow (2)', exact: true })
-      .click()
-    await expect.poll(() => workflowSelection.savedPaths.length).toBe(2)
-    workflowSelection.finishSave(true)
+    await expect(editor).toHaveText('')
     await expect(editor.getByTestId('node-reference-chip')).toHaveCount(0)
-    await editor.pressSequentially(' @')
+    await editor.fill(' @')
     await panel
       .getByRole('menuitem', { name: enMessages.agent.nodes, exact: true })
       .click()
@@ -165,6 +146,9 @@ test(
     await expect(editor.getByTestId('node-reference-chip')).toHaveCount(0)
     await expect(editor.getByTestId('asset-reference-chip')).toHaveCount(0)
     await expect(panel.getByTestId('composer-node-section')).toHaveCount(0)
+
+    const topbar = new Topbar(page)
+    await topbar.getWorkflowTab('Portrait study').click()
     await expect(
       tray.getByRole('group', { name: 'test_upload_image.png' })
     ).toBeVisible()
@@ -177,9 +161,6 @@ test(
       })
       .click()
     await expect(panel.getByTestId('composer-asset-section')).toHaveCount(0)
-    await expect(
-      panel.getByRole('button', { name: enMessages.agent.switchWorkflow })
-    ).toHaveText('Unsaved Workflow (2)')
   }
 )
 
@@ -195,10 +176,11 @@ test(
     })
     const panel = new AgentPanel(page)
     const editor = (await panel.open()).getByRole('textbox')
-    await panel.workflowPicker.click()
-    await page.getByRole('menuitemradio', { name: /Portrait study/ }).click()
+    const topbar = new Topbar(page)
+    const saving = topbar.saveWorkflowAs('Portrait study')
     await expect.poll(() => workflowSelection.savedPaths.length).toBe(1)
     workflowSelection.finishSave(true)
+    await saving
 
     await editor.fill('Inspect @')
     await panel.root
@@ -217,7 +199,7 @@ test(
       workflowsTab.getPersistedItem('Portrait study'),
       'Portrait renamed'
     )
-    await expect(panel.workflowPicker).toHaveText('Portrait renamed')
+    await expect(topbar.getActiveTab()).toHaveText('Portrait renamed')
     await expect(
       panel.root.getByRole('button', {
         name: 'Remove Color balance #12 reference'
@@ -237,7 +219,6 @@ test(
       .click({ modifiers: ['Control'] })
     await expect(vueNodes.emphasizedNodes).toHaveCount(0)
 
-    const topbar = new Topbar(page)
     await topbar.getWorkflowTab('Unsaved Workflow').click()
     await expect(
       topbar.getWorkflowTab('Unsaved Workflow').and(topbar.getActiveTab())

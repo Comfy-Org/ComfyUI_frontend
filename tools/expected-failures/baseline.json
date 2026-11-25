@@ -92,10 +92,6 @@
     "classification": "live-defect"
   },
   {
-    "id": "vitest:src/stores/assetDownloadStore.test.ts:excludes a failed-then-actually-completed task from activeDownloads (PM-1302):1",
-    "classification": "live-defect"
-  },
-  {
     "id": "vitest:src/stores/subgraphStore.test.ts:should reject blueprints with multiple root nodes before registration:1",
     "classification": "live-defect"
   },
@@ -105,6 +101,10 @@
   },
   {
     "id": "vitest:src/workbench/extensions/agent/crdt/semanticLayoutSeparation.guard.test.ts:omits pos and size from a minted node payload:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/platform/assets/stores/assetDownloadStore.test.ts:excludes a failed-then-actually-completed task from activeDownloads (PM-1302):1",
     "classification": "live-defect"
   }
 ]
