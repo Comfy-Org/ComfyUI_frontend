@@ -24,7 +24,8 @@ export function attachLegacyUI(target: LegacyUITarget = useApp()): () => void {
 
   target.ui = new ComfyUI(target, {
     resetView: () => useLitegraphService().resetView(),
-    restoreOutputs: (outputs) => useNodeOutputStore().restoreOutputs(outputs),
+    restoreOutputs: (outputs) =>
+      useNodeOutputStore().restoreJobOutputs(outputs),
     trackRunButton: (intent) => useRunButtonTelemetry().trackRunButton(intent),
     enterFocusMode: () => {
       useWorkspaceStore().focusMode = true

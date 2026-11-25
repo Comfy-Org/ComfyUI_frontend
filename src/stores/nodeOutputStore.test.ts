@@ -472,13 +472,7 @@ describe('nodeOutputStore restoreOutputs', () => {
     const executionOutput = createMockOutputs([
       { filename: 'ComfyUI_00001.png', subfolder: '', type: 'temp' }
     ])
-    const savedOutputs: Record<string, ExecutedWsMessage['output']> = {
-      '4': executionOutput
-    }
-
-    // Simulate undo: restoreOutputs makes app.nodeOutputs and the ref
-    // share the same underlying object if not handled correctly.
-    store.restoreOutputs(savedOutputs)
+    store.restoreOutputs({ shared: { '4': executionOutput }, instances: {} })
 
     expect(store.nodeOutputs['4']).toStrictEqual(executionOutput)
     expect(store.nodeOutputs['3']).toBeUndefined()
@@ -741,7 +735,7 @@ describe('nodeOutputStore snapshotOutputs / restoreOutputs', () => {
 
     // Tab B: fresh empty workflow (no outputs)
     const tabBSnapshot = store.snapshotOutputs()
-    expect(Object.keys(tabBSnapshot)).toHaveLength(0)
+    expect(tabBSnapshot).toEqual({ shared: {}, instances: {} })
 
     // --- Switch back to Tab A: store Tab B then restore Tab A ---
     store.resetAllOutputsAndPreviews()
@@ -813,11 +807,9 @@ describe('nodeOutputStore snapshotOutputs / restoreOutputs', () => {
 
     const snapshot = store.snapshotOutputs()
 
-    // Mutate the snapshot
-    snapshot['1'].images![0].filename = 'mutated.png'
-    snapshot['99'] = createMockOutputs([{ filename: 'new.png' }])
+    snapshot.shared['1']!.images![0].filename = 'mutated.png'
+    snapshot.shared['99'] = createMockOutputs([{ filename: 'new.png' }])
 
-    // Store should be unchanged
     expect(store.nodeOutputs['1']?.images?.[0]?.filename).toBe('a.png')
     expect(app.nodeOutputs['1']?.images?.[0]?.filename).toBe('a.png')
     expect(store.nodeOutputs['99']).toBeUndefined()
@@ -860,10 +852,7 @@ describe('nodeOutputStore restoreOutputs + execution interaction', () => {
     const inputOutput = createMockOutputs([
       { filename: 'uploaded.png', subfolder: '', type: 'input' }
     ])
-    const savedOutputs: Record<string, ExecutedWsMessage['output']> = {
-      '3': inputOutput
-    }
-    store.restoreOutputs(savedOutputs)
+    store.restoreOutputs({ shared: { '3': inputOutput }, instances: {} })
 
     expect(store.nodeOutputs['3']).toStrictEqual(inputOutput)
 
@@ -889,7 +878,7 @@ describe('nodeOutputStore restoreOutputs + execution interaction', () => {
     const inputOutput = createMockOutputs([
       { filename: 'uploaded.png', subfolder: '', type: 'input' }
     ])
-    store.restoreOutputs({ '3': inputOutput })
+    store.restoreOutputs({ shared: { '3': inputOutput }, instances: {} })
 
     const execOutput = createMockOutputs([
       { filename: 'result.png', subfolder: '', type: 'temp' }

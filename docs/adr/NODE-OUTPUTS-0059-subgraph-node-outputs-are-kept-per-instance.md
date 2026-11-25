@@ -82,9 +82,13 @@ writer for interior nodes.
   does not depend on a renderer.
 - Removing a node's outputs, unpacking a subgraph, resetting, and stashing or
   restoring previews on a workflow switch cover both maps.
-- `snapshotOutputs` returns instance entries keyed by execution ID next to
-  locator entries; `restoreOutputs` sorts each key by resolving it. The two key
-  spaces do not collide: interior locators begin with a UUID.
+- `snapshotOutputs` returns the two maps as separate fields, `shared` and
+  `instances`. The change tracker's `executed` listener writes later runs into
+  both with the same rule as the store, so `restoreOutputs` copies the fields
+  back without resolving keys or depending on their order. A locator and an
+  execution ID can be the same string when a root node's ID equals a
+  definition UUID, so the two never share a map, including the pending preview
+  releases.
 
 ### Extension compatibility
 

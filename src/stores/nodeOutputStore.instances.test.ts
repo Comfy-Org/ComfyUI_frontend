@@ -8,7 +8,10 @@ import {
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { ExecutedWsMessage } from '@comfyorg/api-client/executionTypes'
 import { app } from '@/scripts/app'
-import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import {
+  useNodeOutputStore,
+  writeExecutedOutput
+} from '@/stores/nodeOutputStore'
 import {
   createNodeExecutionId,
   createNodeLocatorId
@@ -186,11 +189,11 @@ describe('nodeOutputStore with two instances of one subgraph definition', () => 
     expect(store.getNodeOutputByExecutionId(secondRun)).toBeUndefined()
   })
 
-  it('restores per-instance outputs recorded for an inactive workflow', () => {
+  it('restores per-instance outputs from a job loaded from history', () => {
     const { firstRun, secondRun } = arrangeTwoInstances()
     const store = useNodeOutputStore()
 
-    store.restoreOutputs({
+    store.restoreJobOutputs({
       [firstRun]: images('hostA.png'),
       [secondRun]: images('hostB.png')
     })
@@ -201,6 +204,27 @@ describe('nodeOutputStore with two instances of one subgraph definition', () => 
     expect(filenames(store.getNodeOutputByExecutionId(secondRun))).toEqual([
       'hostB.png'
     ])
+  })
+
+  it('restores a run recorded after the snapshot over the run the snapshot holds', () => {
+    const { locator, firstRun } = arrangeTwoInstances()
+    const store = useNodeOutputStore()
+    store.setNodeOutputsByExecutionId(firstRun, images('run1.png'))
+    const snapshot = store.snapshotOutputs()
+
+    writeExecutedOutput(snapshot, locator, firstRun, images('run2.png'), {})
+    store.resetAllOutputsAndPreviews()
+    store.restoreOutputs(snapshot)
+
+    expect({
+      instance: filenames(store.getNodeOutputByExecutionId(firstRun)),
+      shared: filenames(store.nodeOutputs[locator]),
+      app: filenames(app.nodeOutputs[locator])
+    }).toEqual({
+      instance: ['run2.png'],
+      shared: ['run2.png'],
+      app: ['run2.png']
+    })
   })
 
   it('exposes the latest output of any instance under the locator on app.nodeOutputs', () => {
@@ -215,7 +239,8 @@ describe('nodeOutputStore with two instances of one subgraph definition', () => 
   })
 
   it('prunes the entries of a subgraph node removed from the root graph', () => {
-    const { rootGraph, second, firstRun, secondRun } = arrangeTwoInstances()
+    const { rootGraph, second, locator, firstRun, secondRun } =
+      arrangeTwoInstances()
     const store = useNodeOutputStore()
     store.setNodeOutputsByExecutionId(firstRun, images('hostA.png'))
     store.setNodeOutputsByExecutionId(secondRun, images('hostB.png'))
@@ -223,8 +248,8 @@ describe('nodeOutputStore with two instances of one subgraph definition', () => 
     rootGraph.remove(second)
 
     const snapshot = store.snapshotOutputs()
-    assert.exists(snapshot[firstRun])
-    expect(snapshot[secondRun]).toBeUndefined()
+    assert.exists(snapshot.instances[locator]?.[firstRun])
+    expect(snapshot.instances[locator]?.[secondRun]).toBeUndefined()
   })
 
   it('prunes the entries of a subgraph node removed inside a definition', () => {
@@ -250,6 +275,9 @@ describe('nodeOutputStore with two instances of one subgraph definition', () => 
 
     outerDefinition.remove(innerHost)
 
-    expect(store.snapshotOutputs()[leafRun]).toBeUndefined()
+    const locator = createNodeLocatorId(innerDefinition.id, leaf.id)
+    expect(
+      store.snapshotOutputs().instances[locator]?.[leafRun]
+    ).toBeUndefined()
   })
 })

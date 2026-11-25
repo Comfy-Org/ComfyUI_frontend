@@ -45,6 +45,7 @@ import {
   resolveNode
 } from '@/utils/litegraphUtil'
 import { isInputPreviewOutput, mergeNodeOutput } from '@/utils/nodeOutputUtil'
+import type { NodeOutputLayers } from '@/utils/nodeOutputUtil'
 import {
   releaseSharedObjectUrl,
   retainSharedObjectUrl
@@ -94,6 +95,7 @@ interface SetOutputOptions {
 type NodePreviewMap = Partial<Record<string, string[]>>
 type InstanceMap<T> = Partial<Record<string, Partial<Record<string, T>>>>
 type InstancePreviewMap = InstanceMap<string[]>
+type RevokeTimers = Partial<Record<string, { stop: () => void }>>
 interface PreviewStash {
   shared: NodePreviewMap
   instances: InstancePreviewMap
@@ -141,6 +143,28 @@ function mergeOutput(
   return preserveInputPreviewImages(existingOutput, merged)
 }
 
+/** Writes one execution's output into both layers and returns the node's new shared output. */
+export function writeExecutedOutput(
+  layers: NodeOutputLayers,
+  nodeLocatorId: NodeLocatorId,
+  executionId: NodeExecutionId,
+  outputs: ExecutedWsMessage['output'] | ResultItem,
+  options: SetOutputOptions
+): ExecutedWsMessage['output'] {
+  const shared = layers.shared[nodeLocatorId]
+  const merged = mergeOutput(shared, outputs, options)
+  layers.shared[nodeLocatorId] = merged
+  if (isInteriorLocator(nodeLocatorId)) {
+    const instances = (layers.instances[nodeLocatorId] ??= {})
+    instances[executionId] = mergeOutput(
+      instances[executionId] ?? inputPreviewOf(shared),
+      outputs,
+      options
+    )
+  }
+  return merged
+}
+
 function forEachDetachedInstance<T>(
   rootGraph: LGraph | undefined,
   instances: InstanceMap<T>,
@@ -157,7 +181,8 @@ function forEachDetachedInstance<T>(
 export const useNodeOutputStore = defineStore('nodeOutput', () => {
   const workflowStore = useWorkflowStore()
   const { nodeIdToNodeLocatorId, nodeToNodeLocatorId } = workflowStore
-  const scheduledRevoke: Partial<Record<string, { stop: () => void }>> = {}
+  const sharedRevokes: RevokeTimers = {}
+  const instanceRevokes: RevokeTimers = {}
   const latestPreview = ref<string[]>([])
   /**
    * Previews belonging to open-but-inactive workflows, keyed by workflow path.
@@ -165,20 +190,20 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
    */
   const stashedPreviews = new Map<string, PreviewStash>()
 
-  function scheduleRevoke(key: string, cb: () => void) {
-    scheduledRevoke[key]?.stop()
+  function scheduleRevoke(timers: RevokeTimers, key: string, cb: () => void) {
+    timers[key]?.stop()
 
     const { stop } = useTimeoutFn(() => {
-      delete scheduledRevoke[key]
+      delete timers[key]
       cb()
     }, PREVIEW_REVOKE_DELAY_MS)
 
-    scheduledRevoke[key] = { stop }
+    timers[key] = { stop }
   }
 
-  function cancelRevoke(key: string) {
-    scheduledRevoke[key]?.stop()
-    delete scheduledRevoke[key]
+  function cancelRevoke(timers: RevokeTimers, key: string) {
+    timers[key]?.stop()
+    delete timers[key]
   }
 
   const nodeOutputs = ref<Partial<Record<string, ExecutedWsMessage['output']>>>(
@@ -463,16 +488,14 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   ) {
     if (outputs == null) return
 
-    const shared = nodeOutputs.value[nodeLocatorId]
-    writeSharedOutputs(nodeLocatorId, mergeOutput(shared, outputs, options))
-    if (!isInteriorLocator(nodeLocatorId)) return
-
-    const instances = (instanceOutputs.value[nodeLocatorId] ??= {})
-    instances[executionId] = mergeOutput(
-      instances[executionId] ?? inputPreviewOf(shared),
+    const shared = writeExecutedOutput(
+      { shared: nodeOutputs.value, instances: instanceOutputs.value },
+      nodeLocatorId,
+      executionId,
       outputs,
       options
     )
+    useApp().nodeOutputs[nodeLocatorId] = clone(shared)
   }
 
   function reportUnresolvedExecutionId(
@@ -509,7 +532,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     if (!nodeLocatorId) return
     writeSharedPreviews(nodeLocatorId, previewImages)
     if (isInteriorLocator(nodeLocatorId)) {
-      cancelRevoke(executionId)
+      cancelRevoke(instanceRevokes, executionId)
       const instances = (instancePreviewImages.value[nodeLocatorId] ??= {})
       releaseUrls(instances[executionId])
       instances[executionId] = retainUrls(previewImages)
@@ -530,7 +553,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     nodeLocatorId: NodeLocatorId,
     previewImages: string[]
   ) {
-    cancelRevoke(nodeLocatorId)
+    cancelRevoke(sharedRevokes, nodeLocatorId)
     releaseUrls(nodePreviewImages.value[nodeLocatorId])
     nodePreviewImages.value[nodeLocatorId] = retainUrls(previewImages)
     useApp().nodePreviewImages[nodeLocatorId] = [...previewImages]
@@ -557,13 +580,13 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     const instanceFrame = instances?.[executionId]
 
     if (!instances || isEqual(sharedFrame, instanceFrame))
-      scheduleRevoke(nodeLocatorId, () => {
+      scheduleRevoke(sharedRevokes, nodeLocatorId, () => {
         if (nodePreviewImages.value[nodeLocatorId] === sharedFrame)
           releaseSharedPreviews(nodeLocatorId)
       })
     if (!instanceFrame) return
 
-    scheduleRevoke(executionId, () => {
+    scheduleRevoke(instanceRevokes, executionId, () => {
       const current = instancePreviewImages.value[nodeLocatorId]
       if (current?.[executionId] !== instanceFrame) return
       releaseUrls(instanceFrame)
@@ -734,7 +757,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
       rootGraph,
       instancePreviewImages.value,
       (group, executionId) => {
-        cancelRevoke(executionId)
+        cancelRevoke(instanceRevokes, executionId)
         releaseUrls(group[executionId])
         delete group[executionId]
       }
@@ -779,27 +802,15 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     return removeOutputsByLocatorId(nodeToNodeLocatorId(node))
   }
 
-  function cloneOutputEntries(
-    entries: [string, ExecutedWsMessage['output'] | undefined][]
-  ): Record<string, ExecutedWsMessage['output']> {
-    return Object.fromEntries(
-      entries.flatMap(([id, output]) => (output ? [[id, clone(output)]] : []))
-    )
-  }
-
-  /** Locator-keyed outputs plus per-instance outputs keyed by execution ID. */
-  function snapshotOutputs(): Record<string, ExecutedWsMessage['output']> {
-    const instanceEntries = Object.values(instanceOutputs.value).flatMap(
-      (group) => Object.entries(group ?? {})
-    )
-    const sharedOfLiveInstances = pickBy(
-      nodeOutputs.value,
-      (_, locatorId) => !outlivedEveryInstance(locatorId)
-    )
-    return cloneOutputEntries([
-      ...instanceEntries,
-      ...Object.entries(sharedOfLiveInstances)
-    ])
+  /** Both output layers, detached from the store. */
+  function snapshotOutputs(): NodeOutputLayers {
+    return clone({
+      shared: pickBy(
+        toRaw(nodeOutputs.value),
+        (_, locatorId) => !outlivedEveryInstance(locatorId)
+      ),
+      instances: toRaw(instanceOutputs.value)
+    })
   }
 
   function outlivedEveryInstance(locatorId: string) {
@@ -836,20 +847,25 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   }
 
   /** Restores a {@link snapshotOutputs} record, keeping each instance's outputs apart. */
-  function restoreOutputs(
+  function restoreOutputs({ shared, instances }: NodeOutputLayers) {
+    nodeOutputs.value = clone(shared)
+    instanceOutputs.value = clone(instances)
+    pruneDetachedInstances()
+    useApp().nodeOutputs = clone(shared)
+  }
+
+  /** Replaces every output with a job's outputs keyed by execution ID. */
+  function restoreJobOutputs(
     outputs: Partial<Record<string, ExecutedWsMessage['output']>>
   ) {
-    const instances: InstanceMap<ExecutedWsMessage['output']> = {}
+    const layers: NodeOutputLayers = { shared: {}, instances: {} }
     for (const [id, output] of Object.entries(outputs)) {
       const executionId = tryNormalizeNodeExecutionId(id)
-      const locatorId = executionId ? resolveLocator(executionId) : undefined
-      if (!output || !locatorId || !isInteriorLocator(locatorId)) continue
-      const group = (instances[locatorId] ??= {})
-      group[id] = output
+      const nodeLocatorId = executionId && resolveLocator(executionId)
+      if (output && executionId && nodeLocatorId)
+        writeExecutedOutput(layers, nodeLocatorId, executionId, output, {})
     }
-    replaceOutputsFromLegacy(outputs)
-    instanceOutputs.value = instances
-    useApp().nodeOutputs = cloneOutputEntries(Object.entries(nodeOutputs.value))
+    restoreOutputs(layers)
   }
 
   function refreshNodeOutputs(node: LGraphNode) {
@@ -928,6 +944,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     setOutputFromLegacy,
     removeOutputFromLegacy,
     restoreOutputs,
+    restoreJobOutputs,
     resetAllOutputsAndPreviews,
 
     nodeOutputs,

@@ -26,14 +26,19 @@ import {
 } from '@/platform/workflow/core/canvasTrackerOwnership'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useExecutionStore } from '@/stores/executionStore'
-import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import {
+  useNodeOutputStore,
+  writeExecutedOutput
+} from '@/stores/nodeOutputStore'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useWidgetHistoryStore } from '@/stores/widgetHistoryStore'
 import { serializeNodeId } from '@comfyorg/graph-model/nodeId'
 import { isSelectOnly } from '@/utils/litegraphUtil'
 import { isModalOpen } from '@/utils/modalUtil'
-import { mergeNodeOutput } from '@/utils/nodeOutputUtil'
+import type { NodeOutputLayers } from '@/utils/nodeOutputUtil'
+import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
+import { tryNormalizeNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 
 import { api } from './api'
 import { emitGraphRestored } from './graphRestore'
@@ -395,7 +400,7 @@ export class ChangeTracker implements WorkflowChangeTracker {
   }
 
   ds?: { scale: number; offset: [number, number] }
-  nodeOutputs?: Partial<Record<string, ExecutedWsMessage['output']>>
+  nodeOutputs?: NodeOutputLayers
 
   private subgraphState?: {
     navigation: string[]
@@ -878,13 +883,19 @@ export class ChangeTracker implements WorkflowChangeTracker {
       const changeTracker = workflow?.changeTracker
       if (!changeTracker) return
       if (executionStore.focusedJobFor(workflow) !== detail.prompt_id) return
-      changeTracker.nodeOutputs ??= {}
-      const nodeOutputs = changeTracker.nodeOutputs
-      const output = nodeOutputs[detail.node]
-      nodeOutputs[detail.node] =
-        detail.merge && output
-          ? mergeNodeOutput(output, detail.output)
-          : detail.output
+      const executionId = tryNormalizeNodeExecutionId(detail.node)
+      const nodeLocatorId =
+        executionId &&
+        executionIdToNodeLocatorId(workflow.graph ?? undefined, executionId)
+      if (!executionId || !nodeLocatorId) return
+      changeTracker.nodeOutputs ??= { shared: {}, instances: {} }
+      writeExecutedOutput(
+        changeTracker.nodeOutputs,
+        nodeLocatorId,
+        executionId,
+        detail.output,
+        { merge: detail.merge }
+      )
     })
   }
 
