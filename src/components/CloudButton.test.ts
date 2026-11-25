@@ -1,5 +1,6 @@
 import userEvent from '@testing-library/user-event'
 import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type { RunOnCloudTelemetryEvent } from '@comfyorg/telemetry/types'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
@@ -49,6 +50,7 @@ vi.mock(
 )
 
 vi.mock(import('@comfyorg/telemetry'))
+vi.mock(import('@comfyorg/telemetry/reportError'))
 vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/scripts/api'))
@@ -622,6 +624,30 @@ describe('Cloud button compatibility checks', () => {
       within(dialog).queryByRole('button', { name: checkLabel })
     ).toBeNull()
     expect(checkCloudCompatibility).toHaveBeenCalledTimes(2)
+  })
+
+  it("reports a failed save of Don't ask again", async () => {
+    vi.mocked(checkCloudCompatibility).mockResolvedValue({ kind: 'canOpen' })
+    const failure = new Error('offline')
+    vi.mocked(api.storeSetting).mockRejectedValueOnce(failure)
+    renderCloudButton()
+    const user = userEvent.setup()
+
+    await user.click(screen.getByTestId('cloud-button'))
+    const consent = await screen.findByRole('dialog', { name: dialogName })
+    await user.click(
+      within(consent).getByRole('checkbox', { name: "Don't ask again" })
+    )
+    await user.click(within(consent).getByRole('button', { name: checkLabel }))
+
+    await waitFor(() =>
+      expect(reportError).toHaveBeenCalledWith(
+        failure,
+        expect.objectContaining({
+          errorType: 'error_saving_cloud_check_consent'
+        })
+      )
+    )
   })
 
   it("keeps asking when Don't ask again is left unchecked", async () => {

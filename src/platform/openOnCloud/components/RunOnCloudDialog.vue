@@ -32,6 +32,7 @@
 
 <script setup lang="ts">
 import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type { RunOnCloudTelemetryEvent } from '@comfyorg/telemetry/types'
 import { storeToRefs } from 'pinia'
 import { computed, onBeforeUnmount, onMounted, ref, toRaw, watch } from 'vue'
@@ -74,7 +75,15 @@ function startCheck(dontAskAgain = false) {
   if (checkRequested.value || !requestCheck?.(checkConsent.signal)) return
   checkRequested.value = true
   if (dontAskAgain)
-    void settingStore.set('Comfy.Cloud.AskBeforeCompatibilityCheck', false)
+    settingStore
+      .set('Comfy.Cloud.AskBeforeCompatibilityCheck', false)
+      .catch((cause: unknown) =>
+        reportError(cause, {
+          surface: 'platform',
+          errorType: 'error_saving_cloud_check_consent',
+          level: 'warning'
+        })
+      )
 }
 
 onMounted(() => {
