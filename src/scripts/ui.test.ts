@@ -1,5 +1,5 @@
 import userEvent from '@testing-library/user-event'
-import { within } from '@testing-library/vue'
+import { screen, within } from '@testing-library/vue'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -48,20 +48,21 @@ describe('ComfyUI file input', () => {
     )
   })
 
-  it('reports rejected imports and resets the selected file', async () => {
+  it('reports rejected imports and resets the selected file', async ({
+    onTestFinished
+  }) => {
     const file = new File([''], 'a1111.png', { type: 'image/png' })
     const error = new Error('import failed')
     vi.mocked(app.handleFile).mockRejectedValue(error)
-    new ComfyUI(app, {
+    const ui = new ComfyUI(app, {
       resetView: vi.fn(),
       restoreOutputs: vi.fn(),
       trackRunButton: vi.fn(),
       enterFocusMode: vi.fn()
     })
-    // oxlint-disable-next-line testing-library/no-node-access -- hidden legacy <input type="file"> has no accessible role or label
-    const fileInput = document.getElementById(
-      'comfy-file-input'
-    ) as HTMLInputElement
+    giveDialogDoublesRemovableElements(ui)
+    onTestFinished(() => ui.dispose())
+    const fileInput = screen.getByTestId<HTMLInputElement>('comfy-file-input')
     Object.defineProperties(fileInput, {
       files: { value: [file], configurable: true },
       value: { value: 'a1111.png', writable: true, configurable: true }
@@ -96,10 +97,7 @@ describe('ComfyUI file input', () => {
     })
     giveDialogDoublesRemovableElements(ui)
     onTestFinished(() => ui.dispose())
-    // oxlint-disable-next-line testing-library/no-node-access -- hidden legacy <input type="file"> has no accessible role or label
-    const fileInput = document.getElementById(
-      'comfy-file-input'
-    ) as HTMLInputElement
+    const fileInput = screen.getByTestId<HTMLInputElement>('comfy-file-input')
     Object.defineProperties(fileInput, {
       files: { value: [file], configurable: true },
       value: { value: 'a1111.png', writable: true, configurable: true }

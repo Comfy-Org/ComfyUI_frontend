@@ -380,6 +380,7 @@ export class ComfyUI {
   setup(containerElement: HTMLElement) {
     const fileInput = $el('input', {
       id: 'comfy-file-input',
+      dataset: { testid: 'comfy-file-input' },
       type: 'file',
       accept: WORKFLOW_ACCEPT_STRING,
       style: { display: 'none' },
