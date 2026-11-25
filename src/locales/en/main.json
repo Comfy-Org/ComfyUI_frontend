@@ -2746,7 +2746,8 @@
     "failedToLoadHDRI": "Failed to load HDRI file",
     "unsupportedHDRIFormat": "Unsupported file format. Please upload a .hdr or .exr file.",
     "failedToToggleGizmo": "Failed to toggle gizmo",
-    "failedToSetGizmoMode": "Failed to set gizmo mode"
+    "failedToSetGizmoMode": "Failed to set gizmo mode",
+    "batchStoppedOnWorkflowChange": "Queued {queued} of {requested}. Stopped because you switched workflow, so the rest would have run the wrong one."
   },
   "nodeBadge": {
     "partnerNodesCount": "Partner Nodes x {count}"
