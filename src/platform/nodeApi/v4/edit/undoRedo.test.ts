@@ -167,6 +167,7 @@ describe('edits through the real change tracker', () => {
 
     comfy.graph.add('EditTest/Announcing')
 
+    expect(titleNow(source)).toBe('Announced')
     expect(tracker.undoQueue).toHaveLength(1)
     await tracker.undo()
     expect(app.rootGraph.nodes).toHaveLength(before)
