@@ -1491,8 +1491,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
     remoteRetryCount: number
   ): boolean {
     if (!owns) return false
-    if (outdated) {
-      if (error instanceof AgentApiError && error.status === 404) return false
+    if (error instanceof AgentApiError && error.status === 404) {
+      if (hasRecheckSupersededSend(threadId, versionAtFetchStart)) return false
+      forgetMissingThread(threadId, isRecheckOnScreen(threadId, generation))
+      return false
+    }
+    if (outdated)
       return shouldRetryOutdatedRecheck(
         threadId,
         versionAtFetchStart,
@@ -1500,12 +1504,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         buffer,
         remoteRetryCount
       )
-    }
     if (hasRecheckSupersededSend(threadId, versionAtFetchStart)) return false
-    if (error instanceof AgentApiError && error.status === 404) {
-      forgetMissingThread(threadId, isRecheckOnScreen(threadId, generation))
-      return false
-    }
     dropFailedRecheckIfNeeded(threadId)
     return false
   }
@@ -3729,7 +3728,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         forThreadLoad: true,
         restoredWorkflow,
         onRestoreFailed,
-        rollbackOnFetchError: keepOpenChatUntilLoaded
+        rollbackOnFetchError: true
       }
     return keepOpenChatUntilLoaded
       ? {

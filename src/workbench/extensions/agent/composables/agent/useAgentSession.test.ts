@@ -15106,7 +15106,7 @@ describe('useAgentSession transcript cache (TC-01..TC-14)', () => {
   it('retains a cached local reply when a late agent_ask_resolved frame arrives after turn completion', async () => {
     const warm = held()
     const recheck = held()
-    const { session, events } = openSession(
+    const { session, events, afterBackgroundRead } = openSession(
       serve({
         'th-1': [warm.answer, recheck.answer],
         'th-2': [ok(rowsOf('th-2', 'Other'))]
@@ -15127,18 +15127,20 @@ describe('useAgentSession transcript cache (TC-01..TC-14)', () => {
     expect(session.isTranscriptReady.value).toBe(true)
     expect(answerShown(session)).toBe('Local ask reply')
     await returning
+    await afterBackgroundRead(() => {
+      warm.release([])
+      recheck.release([])
+    }, 2)
     session.stop()
   })
 
   it('retains a stashed live turn in the recreated cache entry after a reconnect cold load and omits it once settled on server', async () => {
-    const warmAfterDone = held()
     const recheckAfterReturn = held()
-    const { session, events, getMessages } = openSession(
+    const { session, events, getMessages, afterBackgroundRead } = openSession(
       serve({
         'th-1': [
           ok(rowsOf('th-1', 'Older reply')),
           ok(rowsOf('th-1', 'Older reply')),
-          warmAfterDone.answer,
           recheckAfterReturn.answer
         ],
         'th-2': [ok(rowsOf('th-2', 'B reply')), ok(rowsOf('th-2', 'B reply'))]
@@ -15180,6 +15182,9 @@ describe('useAgentSession transcript cache (TC-01..TC-14)', () => {
     expect(answerShown(session)).toBe('Older replyLive partial finished')
     await back
     expect(fetchesExcludingPolls(getMessages, 'th-1')).toBe(3)
+    await afterBackgroundRead(() =>
+      recheckAfterReturn.release(rowsOf('th-1', 'Older reply'))
+    )
     session.stop()
 
     useAgentConversationStore().reset()
@@ -15226,5 +15231,78 @@ describe('useAgentSession transcript cache (TC-01..TC-14)', () => {
       useAgentConversationStore().isKnownChatSettledFromServer('th-3')
     ).toBe(true)
     settled.session.stop()
+  })
+
+  it('forgets a deleted chat when an outdated recheck returns 404 unless a newer send superseded it', async () => {
+    const outdated404 = held()
+    const { session, events, afterBackgroundRead } = openSession(
+      serve({
+        'th-a': [ok(rowsOf('th-a', 'Cached A')), outdated404.answer],
+        'th-b': [ok(rowsOf('th-b', 'Cached B'))]
+      })
+    )
+    const conversation = useAgentConversationStore()
+
+    await session.loadThread('th-a')
+    await session.loadThread('th-b')
+    await session.loadThread('th-a')
+
+    events.emit(doneIn('th-a', 'remote-msg-before-delete'))
+    await afterBackgroundRead(() =>
+      outdated404.fail(new AgentApiError('not found', 404, null))
+    )
+
+    expect(session.threadId.value).toBeNull()
+    expect(session.isTranscriptReady.value).toBe(false)
+    expect(session.isThreadDeleted('th-a')).toBe(true)
+    expect(conversation.isKnownChat('th-a')).toBe(false)
+    expect(localStorage.getItem(StorageKeys.agentThread('personal'))).toBeNull()
+    session.stop()
+  })
+
+  it('rolls back an already-opened cached History fallback when its fallback GET fails without leaking the previous chat rows', async () => {
+    let resolveRestore!: (ready: boolean) => void
+    const restored = vi
+      .fn<() => Promise<boolean> | boolean>()
+      .mockReturnValueOnce(true)
+      .mockReturnValueOnce(true)
+      .mockImplementationOnce(
+        () =>
+          new Promise<boolean>((resolve) => {
+            resolveRestore = resolve
+          })
+      )
+    const fallbackGet = held()
+    const { session, events } = openSession(
+      serve({
+        'th-a': [ok(rowsOf('th-a', 'Answer A'))],
+        'th-b': [ok(rowsOf('th-b', 'Answer B')), fallbackGet.answer]
+      }),
+      {},
+      {
+        workflow: { current: () => undefined, adopted: vi.fn(), restored }
+      }
+    )
+    events.status(true)
+    const conversation = useAgentConversationStore()
+
+    await session.loadThread('th-b')
+    await session.loadThread('th-a')
+    expect(prompts(session)).toEqual(['Prompt in th-a'])
+
+    const reopeningB = session.loadThread('th-b')
+    events.status(false)
+    events.status(true)
+    resolveRestore(true)
+
+    await vi.waitFor(() => expect(conversation.isKnownChat('th-b')).toBe(false))
+    fallbackGet.fail(new AgentApiError('server error', 500, null))
+    expect(await reopeningB).toBe(false)
+    expect(session.threadId.value).toBeNull()
+    expect(prompts(session)).toEqual([])
+    expect(localStorage.getItem(StorageKeys.agentThread('personal'))).toBe(
+      'th-a'
+    )
+    session.stop()
   })
 })

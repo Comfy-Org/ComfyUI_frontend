@@ -5582,5 +5582,180 @@ describe('useAgentConversationStore', () => {
       ).toBe('applied')
       expect(store.getPendingSend('cm-repeat-2')).toBeUndefined()
     })
+
+    it('preserves turn identity for uncertain sends started after on-screen reconciliation prunes the local snapshot', () => {
+      const store = useAgentConversationStore()
+      const firstTurn = toTurnId('msg-1')
+
+      store.setThreadId('th-post-alias')
+      store.recordUser(firstTurn, 'Repeat')
+      store.startTurn(firstTurn)
+      store.recordAcceptedTurn({
+        threadId: 'th-post-alias',
+        turnId: firstTurn,
+        createdHere: true,
+        text: 'Repeat'
+      })
+      store.ingest(
+        chat({
+          type: 'agent_message_done',
+          data: { thread_id: 'th-post-alias', message_id: firstTurn }
+        })
+      )
+
+      const firstHistory: AgentMessages = [
+        {
+          id: 'u-srv-1',
+          thread_id: 'th-post-alias',
+          turn_id: 'srv-1',
+          seq: 1,
+          role: 'user',
+          status: 'complete',
+          content: { text: 'Repeat' }
+        },
+        {
+          id: 'msg-1',
+          thread_id: 'th-post-alias',
+          turn_id: 'srv-1',
+          seq: 2,
+          role: 'assistant',
+          status: 'complete',
+          content: { text: 'First reply' }
+        }
+      ]
+      expect(
+        store.reconcileKnownChat('th-post-alias', firstHistory, true).status
+      ).toBe('applied')
+
+      store.startPendingSend({
+        clientMessageId: 'cm-after-reconcile',
+        origin: { kind: 'thread', threadId: 'th-post-alias' },
+        rawText: 'Repeat',
+        text: 'Repeat',
+        attachments: [],
+        sentAttachments: [],
+        sentTags: [],
+        tags: [],
+        workflowReferences: []
+      })
+      store.failPendingSend('cm-after-reconcile', {
+        kind: 'network',
+        message: 'Network error',
+        uncertain: true
+      })
+
+      store.setThreadId('th-other')
+      store.reset('blank:other')
+      store.setThreadId('th-post-alias')
+      expect(store.hydrateKnownChat('th-post-alias')).toBe(true)
+      expect(store.getPendingSend('cm-after-reconcile')?.status).toBe('failed')
+
+      const secondHistory: AgentMessages = [
+        ...firstHistory,
+        {
+          id: 'u-srv-2',
+          thread_id: 'th-post-alias',
+          turn_id: 'srv-2',
+          seq: 3,
+          role: 'user',
+          status: 'complete',
+          content: { text: 'Repeat' }
+        },
+        {
+          id: 'msg-2',
+          thread_id: 'th-post-alias',
+          turn_id: 'srv-2',
+          seq: 4,
+          role: 'assistant',
+          status: 'complete',
+          content: { text: 'Second reply' }
+        }
+      ]
+      expect(
+        store.reconcileKnownChat('th-post-alias', secondHistory, true).status
+      ).toBe('applied')
+      expect(store.getPendingSend('cm-after-reconcile')).toBeUndefined()
+    })
+
+    it('keeps the restored reply and its prompt under the same display ID across a cold return followed by a cached return while still streaming', () => {
+      const store = useAgentConversationStore()
+      const ackId = toTurnId('t1')
+
+      store.setThreadId('th-display')
+      store.recordUser(ackId, 'Streaming prompt')
+      store.startTurn(ackId)
+      store.ingest(
+        chat({
+          type: 'agent_message_delta',
+          data: {
+            thread_id: 'th-display',
+            message_id: ackId,
+            delta: 'Part 1'
+          }
+        })
+      )
+      store.stashActiveTurn()
+
+      store.setThreadId('th-other')
+      store.reset('blank:other')
+
+      const coldHistory: AgentMessages = [
+        {
+          id: 'u-server',
+          thread_id: 'th-display',
+          turn_id: 'server-turn',
+          seq: 1,
+          role: 'user',
+          status: 'complete',
+          content: { text: 'Streaming prompt' }
+        },
+        {
+          id: ackId,
+          thread_id: 'th-display',
+          turn_id: 'server-turn',
+          seq: 2,
+          role: 'assistant',
+          status: 'streaming',
+          content: { text: 'Part 1' }
+        }
+      ]
+      store.setThreadId('th-display')
+      store.hydrate(coldHistory)
+      store.recordHydratedChat('th-display', coldHistory)
+      store.resumeBackgroundTurn()
+      expect(store.activeTurnId).toBe(ackId)
+
+      store.stashActiveTurn()
+      store.setThreadId('th-other')
+      store.reset('blank:other')
+
+      store.setThreadId('th-display')
+      expect(store.hydrateKnownChat('th-display')).toBe(true)
+      expect(store.activeTurnId).toBe(ackId)
+      expect(
+        store.entries
+          .filter((entry) => entry.role === 'user')
+          .map((entry) => entry.text)
+      ).toEqual(['Streaming prompt'])
+
+      store.ingest(
+        chat({
+          type: 'agent_message_delta',
+          data: {
+            thread_id: 'th-display',
+            message_id: ackId,
+            delta: ' + live'
+          }
+        })
+      )
+      expect(
+        store.entries
+          .filter((entry) => entry.role === 'user')
+          .map((entry) => entry.text)
+      ).toEqual(['Streaming prompt'])
+      expect(store.messages[0].parts).toEqual([
+        { type: 'text', text: 'Part 1 + live', state: 'streaming' }
+      ])
+    })
   })
 })

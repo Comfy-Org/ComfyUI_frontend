@@ -1122,7 +1122,7 @@ export const useAgentConversationStore = defineStore(
       const origin = input.origin ?? currentOrigin()
       const knownTurnIdsAtSend =
         origin.kind === 'thread' && isOriginOnScreen(origin)
-          ? new Set(userTexts.value.keys())
+          ? new Set(knownUserTurnIds())
           : undefined
       const record: PendingSend = {
         ...input,
@@ -1142,8 +1142,29 @@ export const useAgentConversationStore = defineStore(
       return record
     }
 
+    const displayedTurnServerIds = new Map<TurnId, Set<string>>()
+
+    function recordDisplayedTurnAliases(
+      serverTurnToLocal: ReadonlyMap<string, TurnId>
+    ): void {
+      for (const [serverTurnId, localTurnId] of serverTurnToLocal) {
+        if (serverTurnId === localTurnId) continue
+        let aliases = displayedTurnServerIds.get(localTurnId)
+        if (!aliases) {
+          aliases = new Set()
+          displayedTurnServerIds.set(localTurnId, aliases)
+        }
+        aliases.add(serverTurnId)
+      }
+    }
+
     function knownUserTurnIds(): TurnId[] {
-      return [...userTexts.value.keys()]
+      const ids = new Set<TurnId>(userTexts.value.keys())
+      for (const [localTurnId, aliases] of displayedTurnServerIds) {
+        if (!userTexts.value.has(localTurnId)) continue
+        for (const serverTurnId of aliases) ids.add(toTurnId(serverTurnId))
+      }
+      return [...ids]
     }
 
     function capturePendingSendCanvasBaseline(clientMessageId: string): void {
@@ -2314,6 +2335,7 @@ export const useAgentConversationStore = defineStore(
       reportedPaywallImpressions.clear()
       undeliverableAskReporter.reset()
       departedTurns.clear()
+      displayedTurnServerIds.clear()
       clearActive()
     }
 
@@ -2408,6 +2430,7 @@ export const useAgentConversationStore = defineStore(
       const replacedSlot = activeSlot.value
       if (replacedSlot) rememberDepartedActiveTurn('no-live-turn')
       unreconciledSnapshotTurns.clear()
+      displayedTurnServerIds.clear()
       disposeActiveAndSettledTransports()
       clearActive()
       const transcript = normalizeAgentTranscript(
@@ -2819,20 +2842,39 @@ export const useAgentConversationStore = defineStore(
       )
     }
 
+    function normalizedMessageCopy(
+      message: AssistantMessage,
+      turnId: TurnId,
+      settle: boolean
+    ): AssistantMessage {
+      const copy = settle ? settledCopyOf(message) : snapshotMessage(message)
+      copy.id = turnId
+      return copy
+    }
+
     function liveTurnsAsLocalSnapshots(id: string): KnownTurnSnapshot[] {
       const snapshots: KnownTurnSnapshot[] = []
       const seen = new Set<TurnId>()
       const slot = activeSlot.value
       if (slot?.threadId === id && slot.origin !== 'snapshot') {
         seen.add(slot.turnId)
+        const displayId = slot.message.id
         snapshots.push({
           turnId: slot.turnId,
-          userText: userTexts.value.get(slot.turnId),
-          attachments: userAttachments.value.get(slot.turnId),
-          tags: userTags.value.get(slot.turnId),
-          workflowReferences: userWorkflowReferences.value.get(slot.turnId),
-          skillReference: userSkillReferences.value.get(slot.turnId),
-          message: snapshotMessage(slot.message)
+          userText:
+            userTexts.value.get(displayId) ?? userTexts.value.get(slot.turnId),
+          attachments:
+            userAttachments.value.get(displayId) ??
+            userAttachments.value.get(slot.turnId),
+          tags:
+            userTags.value.get(displayId) ?? userTags.value.get(slot.turnId),
+          workflowReferences:
+            userWorkflowReferences.value.get(displayId) ??
+            userWorkflowReferences.value.get(slot.turnId),
+          skillReference:
+            userSkillReferences.value.get(displayId) ??
+            userSkillReferences.value.get(slot.turnId),
+          message: normalizedMessageCopy(slot.message, slot.turnId, false)
         })
       }
       for (const entry of backgroundTurns.values()) {
@@ -2845,7 +2887,7 @@ export const useAgentConversationStore = defineStore(
           tags: entry.tags,
           workflowReferences: entry.workflowReferences,
           skillReference: entry.skillReference,
-          message: snapshotMessage(entry.message)
+          message: normalizedMessageCopy(entry.message, entry.messageId, false)
         })
       }
       return snapshots
@@ -3068,14 +3110,23 @@ export const useAgentConversationStore = defineStore(
       bg: BackgroundTurn | undefined
     ): { message: AssistantMessage; resume?: BackgroundTurn } {
       if (bg && !bg.settled) {
+        bg.message.id = localTurn.turnId
         return { message: bg.message, resume: bg }
       }
       if (bg?.settled) {
         backgroundTurns.delete(bg.messageId)
         retireBackgroundTurn(bg)
-        return { message: settledCopyOf(bg.message) }
+        return {
+          message: normalizedMessageCopy(bg.message, localTurn.turnId, true)
+        }
       }
-      return { message: settledCopyOf(localTurn.message) }
+      return {
+        message: normalizedMessageCopy(
+          localTurn.message,
+          localTurn.turnId,
+          true
+        )
+      }
     }
 
     function applyOverlayTurn(
@@ -3201,6 +3252,7 @@ export const useAgentConversationStore = defineStore(
       aligned: AgentMessages,
       serverHistory: AgentMessages,
       settledServerTurns: ReadonlySet<TurnId>,
+      serverTurnToLocal: ReadonlyMap<string, TurnId>,
       skipIfUnchanged: boolean
     ): {
       nextLocal: KnownTurnSnapshot[]
@@ -3224,6 +3276,7 @@ export const useAgentConversationStore = defineStore(
       hydrate(aligned, {
         skipSnapshotTurns: skipSnapshotTurnsOf(id, known.localTurns)
       })
+      recordDisplayedTurnAliases(serverTurnToLocal)
       latestWorkflowId.value ??= known.latestWorkflowId
       known.latestWorkflowId = latestWorkflowId.value ?? known.latestWorkflowId
       return overlayLocalTurnsOnScreen(id, known, aligned, settledServerTurns)
@@ -3277,6 +3330,7 @@ export const useAgentConversationStore = defineStore(
           aligned,
           serverHistory,
           settledServerTurns,
+          serverTurnToLocal,
           skipIfUnchanged
         )
         if (applied.unchanged)
