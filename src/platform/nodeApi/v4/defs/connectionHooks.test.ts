@@ -523,22 +523,27 @@ describe('connection, property and pointer hooks', () => {
       expect(node.properties.max).toBe(50)
     })
 
-    it('copies the new value once however many hooks read it', () => {
+    it('gives every hook one frozen copy of the new value, apart from the value set', () => {
       const values: unknown[] = []
       changes((event) => values.push(event.value))
       changes((event) => values.push(event.value, event.value))
-      changes(() => {})
       const node = probe()
-      const stringify = vi.spyOn(JSON, 'stringify')
+      const given = { deep: { level: 1 } }
 
-      node.setProperty('max', { deep: 1 })
-      const copies = stringify.mock.calls.length
-      stringify.mockClear()
-      stringify.mockRestore()
+      node.setProperty('max', given)
+      given.deep.level = 2
 
-      expect(copies).toBe(1)
-      expect(new Set(values).size).toBe(1)
-      expect(values).toHaveLength(3)
+      expect(values).toEqual([
+        { deep: { level: 1 } },
+        { deep: { level: 1 } },
+        { deep: { level: 1 } }
+      ])
+      const [first] = values
+      assert(typeof first === 'object' && first !== null && 'deep' in first)
+      expect(new Set(values)).toEqual(new Set([first]))
+      expect(first).not.toBe(given)
+      expect(Object.isFrozen(first)).toBe(true)
+      expect(Object.isFrozen(first.deep)).toBe(true)
     })
 
     it('keeps a refusal the type itself makes, without telling the hooks', () => {
