@@ -264,17 +264,20 @@ describe('node lifecycle hooks', () => {
       expect(graph.getNodeById(peer.id)?.title).toBe('Edited')
     })
 
-    it('applies an edit to a node a load added once the load has run, as to one added outside a load', async () => {
+    it('refuses an edit to a node an import adds until the task that added it ends, and applies one to a node added outside a load at once', async () => {
       const handles: NodeHandle[] = []
       extend((builder) => builder.onCreated((node) => handles.push(node)))
-      withGraphIntentSource('load', () => graph.add(created()))
-      graph.add(created())
+      const imported = created()
+      withGraphIntentSource('load', () => graph.add(imported))
+      const ordinary = added()
+      const [importedHandle, ordinaryHandle] = handles
+
+      expect(importedHandle.setTitle('Too early')).toBe(false)
+      expect(ordinaryHandle.setTitle('Edited')).toBe(true)
       await Promise.resolve()
 
-      expect(handles.map((node) => node.setTitle('Edited'))).toEqual([
-        true,
-        true
-      ])
+      expect(importedHandle.setTitle('Edited')).toBe(true)
+      expect([imported.title, ordinary.title]).toEqual(['Edited', 'Edited'])
     })
 
     it('gives a node in a subgraph a handle in its own graph', () => {
