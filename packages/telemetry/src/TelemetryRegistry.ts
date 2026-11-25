@@ -43,6 +43,7 @@ import type {
   AgentWorkflowBoundMetadata,
   AgentWorkflowAppliedMetadata,
   AuthErrorMetadata,
+  AssetDownloadMetadata,
   AuthMetadata,
   BeginCheckoutMetadata,
   BootstrapCompleteMetadata,
@@ -164,6 +165,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackImageLoadFailed(metadata: ImageLoadFailureMetadata): void {
     this.dispatch((provider) => provider.trackImageLoadFailed?.(metadata))
+  }
+
+  trackAssetDownload(metadata: AssetDownloadMetadata): void {
+    this.dispatch((provider) => provider.trackAssetDownload?.(metadata))
   }
 
   trackBootstrapComplete(metadata: BootstrapCompleteMetadata): void {
