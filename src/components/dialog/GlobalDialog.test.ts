@@ -2,6 +2,8 @@ import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { getActivePinia } from 'pinia'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
+
+vi.mock(import('@/composables/auth/useCurrentUser'))
 import { computed, defineComponent, h, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 

@@ -1,6 +1,8 @@
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
+
+vi.mock(import('@/composables/auth/useCurrentUser'))
 import { h } from 'vue'
 
 import { downloadFile } from '@/base/common/downloadUtil'

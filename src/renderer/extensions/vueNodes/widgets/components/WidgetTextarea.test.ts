@@ -9,6 +9,8 @@ import {
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
+vi.mock(import('@/composables/auth/useCurrentUser'))
+
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import { i18n } from '@/i18n'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'

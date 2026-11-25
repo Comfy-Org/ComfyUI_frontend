@@ -935,7 +935,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
       !stopped &&
       generation === loadGeneration &&
       ownedGeneration === sessionGeneration
-    if (owner.value === null) await until(owner).not.toBeNull()
+    if (owner.value === null) {
+      initializeWorkflowContext(false)
+      await until(owner).not.toBeNull()
+    }
     if (!isCurrent()) return
     const surviving = conversationStore.threadId
     const stored =

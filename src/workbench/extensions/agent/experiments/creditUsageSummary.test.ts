@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
+vi.mock(import('@/composables/auth/useCurrentUser'))
+
 import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'

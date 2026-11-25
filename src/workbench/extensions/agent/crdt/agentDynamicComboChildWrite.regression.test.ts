@@ -8,6 +8,8 @@ import { has } from 'es-toolkit/compat'
 import { render } from '@testing-library/vue'
 import { getActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+
+vi.mock(import('@/composables/auth/useCurrentUser'))
 import { defineComponent, ref } from 'vue'
 import * as Y from 'yjs'
 

@@ -2,6 +2,8 @@ import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import log from 'loglevel'
 import { describe, expect, it, vi } from 'vitest'
+
+vi.mock(import('@/composables/auth/useCurrentUser'))
 import { createI18n } from 'vue-i18n'
 
 import LinkDestinationButton from '@/components/graph/selectionToolbox/LinkDestinationButton.vue'

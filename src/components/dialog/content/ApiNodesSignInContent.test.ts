@@ -1,6 +1,8 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+vi.mock(import('@/composables/auth/useCurrentUser'))
 import { createI18n } from 'vue-i18n'
 
 import { i18n as appI18n } from '@/i18n'

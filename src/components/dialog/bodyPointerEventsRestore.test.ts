@@ -6,7 +6,9 @@ import {
   DropdownMenuRoot,
   DropdownMenuTrigger
 } from 'reka-ui'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+vi.mock(import('@/composables/auth/useCurrentUser'))
 import { defineComponent, h, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 

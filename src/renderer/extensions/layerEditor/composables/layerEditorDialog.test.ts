@@ -1,5 +1,7 @@
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import { expect, it, vi } from 'vitest'
+
+vi.mock(import('@/composables/auth/useCurrentUser'))
 import { createI18n } from 'vue-i18n'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
