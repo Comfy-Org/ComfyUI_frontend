@@ -105,6 +105,18 @@ describe('edits and what a load keeps of them', () => {
       ])
     })
 
+    it('refuses the same rename applied again after a load, since the renamed input is back beside the declared one', () => {
+      handle.inputs.at(0)?.modify({ name: 'renamed' })
+      reloaded()
+      const loaded = comfy.graph.node(String(sampler.id))
+      assert(loaded)
+
+      expectRefusal(
+        () => loaded.inputs.byName('model')?.modify({ name: 'renamed' }),
+        'modify'
+      )
+    })
+
     it("gives a declared slot its type's type, shape and translated name back on a load", () => {
       handle.outputs.at(0)?.modify({
         type: 'IMAGE',
