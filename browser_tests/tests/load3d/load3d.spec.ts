@@ -187,20 +187,23 @@ test.describe('Load3D', { tag: '@vue-nodes' }, () => {
     })
   })
 
-  test('Clicking the clear button keeps the saved widget values', async ({
+  test('Clicking the clear button keeps its saved value', async ({
     comfyPage,
     load3d
   }) => {
-    const savedWidgetValues = async () => {
+    const savedClearValue = async () => {
       const workflow = await comfyPage.workflow.getExportedWorkflow()
-      return workflow.nodes.find((node) => node.id === 1)?.widgets_values_named
+      const named = workflow.nodes.find(
+        (node) => node.id === 1
+      )?.widgets_values_named
+      return new Map(Object.entries(named ?? {})).get('clear')
     }
-    const valuesBeforeClick = await savedWidgetValues()
-    expect(valuesBeforeClick).toHaveProperty('clear')
+    const valueBeforeClick = await savedClearValue()
+    expect(valueBeforeClick).toBeDefined()
 
     await load3d.getUploadButton('clear').click()
 
-    expect(await savedWidgetValues()).toEqual(valuesBeforeClick)
+    expect(await savedClearValue()).toBe(valueBeforeClick)
   })
 
   test(

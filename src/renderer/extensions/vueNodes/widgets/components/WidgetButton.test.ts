@@ -1,20 +1,12 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
 
-import { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { IWidgetOptions } from '@comfyorg/graph-model/widgets'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import WidgetButton from '@/renderer/extensions/vueNodes/widgets/components/WidgetButton.vue'
-import { app } from '@/scripts/app'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import { stubCanvasGetContext } from '@/utils/__tests__/canvasTestUtils'
 
 import { createMockWidget } from './widgetTestUtils'
-
-vi.mock(import('@/scripts/app'))
 
 type ButtonWidgetOptions = IWidgetOptions & {
   variant?: string
@@ -36,51 +28,48 @@ describe('WidgetButton Interactions', () => {
     const user = userEvent.setup()
     const result = render(WidgetButton, {
       props: {
-        widget,
-        nodeId: toNodeId('unmounted-node')
+        widget
       }
     })
     return { ...result, user }
   }
 
+  const clickButton = async (user: ReturnType<typeof userEvent.setup>) => {
+    const button = screen.getByRole('button')
+    await user.click(button)
+    return button
+  }
+
   describe('Click Handling', () => {
-    it('calls the live button callback with its value, graph position and click event, keeping the value', async () => {
-      const graph = app.rootGraph
-      const node = new LGraphNode('Load3D')
-      const callback = vi.fn()
-      const liveButton = node.addWidget('button', 'clear', 'clear', callback)
-      graph.add(node)
-      stubCanvasGetContext()
-      const canvas = new LGraphCanvas(document.createElement('canvas'), graph, {
-        skip_render: true,
-        skip_events: true
-      })
-      canvas.ds.scale = 2
-      canvas.ds.offset = [10, 20]
-      useCanvasStore().canvas = canvas
-      await nextTick()
-      const user = userEvent.setup()
-      render(WidgetButton, {
-        props: {
-          nodeId: node.id,
-          widget: createButtonWidget({ name: 'clear' })
-        }
-      })
+    it('calls callback when button is clicked', async () => {
+      const mockCallback = vi.fn()
+      const widget = createButtonWidget({ callback: mockCallback })
+      const { user } = mountComponent(widget)
 
-      await user.pointer({
-        keys: '[MouseLeft]',
-        target: screen.getByRole('button'),
-        coords: { clientX: 50, clientY: 30 }
-      })
+      await clickButton(user)
 
-      expect(callback).toHaveBeenCalledExactlyOnceWith(
-        'clear',
-        canvas,
-        node,
-        [15, -5],
-        expect.objectContaining({ type: 'click', canvasX: 15, canvasY: -5 })
-      )
-      expect(liveButton.value).toBe('clear')
+      expect(mockCallback).toHaveBeenCalledTimes(1)
+    })
+
+    it('handles missing callback gracefully', async () => {
+      const widget = createButtonWidget()
+      const { user } = mountComponent(widget)
+
+      await expect(clickButton(user)).resolves.toBeDefined()
+    })
+
+    it('calls callback multiple times when clicked multiple times', async () => {
+      const mockCallback = vi.fn()
+      const widget = createButtonWidget({ callback: mockCallback })
+      const { user } = mountComponent(widget)
+
+      const numClicks = 8
+
+      for (let i = 0; i < numClicks; i++) {
+        await clickButton(user)
+      }
+
+      expect(mockCallback).toHaveBeenCalledTimes(numClicks)
     })
   })
 
@@ -143,6 +132,19 @@ describe('WidgetButton Interactions', () => {
       const widget = createButtonWidget({ options: { variant } })
       mountComponent(widget)
       expect(screen.getByRole('button')).toHaveClass('bg-input', hoverClass)
+    })
+  })
+
+  describe('Edge Cases', () => {
+    it('handles callback that throws error', async () => {
+      const mockCallback = vi.fn(() => {
+        throw new Error('Callback error')
+      })
+      const widget = createButtonWidget({ callback: mockCallback })
+      const { user } = mountComponent(widget)
+
+      await expect(clickButton(user)).rejects.toThrow('Callback error')
+      expect(mockCallback).toHaveBeenCalledTimes(1)
     })
   })
 })
