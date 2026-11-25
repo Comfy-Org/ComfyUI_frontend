@@ -8,7 +8,7 @@ export interface MenuOption {
   hasSubmenu?: boolean
   type?: 'divider' | 'category'
   action?: () => void
-  submenu?: SubMenuOption[]
+  submenu?: SubMenuItem[]
   badge?: BadgeVariant
   disabled?: boolean
   isColorPicker?: boolean
@@ -22,6 +22,15 @@ export interface SubMenuOption {
   color?: string
   disabled?: boolean
 }
+
+interface SubMenuDivider {
+  type: 'divider'
+}
+
+type SubMenuItem = SubMenuOption | SubMenuDivider
+
+export const isSubMenuOption = (item: SubMenuItem): item is SubMenuOption =>
+  !('type' in item)
 
 export enum BadgeVariant {
   NEW = 'new'

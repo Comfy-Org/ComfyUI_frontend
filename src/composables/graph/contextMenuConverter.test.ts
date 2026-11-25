@@ -13,6 +13,7 @@ import fr from '@/locales/fr/main.json'
 import { createTestCanvasElement } from '@/utils/__tests__/canvasTestUtils'
 
 import type { MenuOption } from './menuOption'
+import { isSubMenuOption } from './menuOption'
 import {
   buildStructuredMenu,
   convertContextMenuToOptions
@@ -270,12 +271,13 @@ describe('LiteGraph menu conversion', () => {
       }
     ])
 
-    expect(options[0].submenu?.map((option) => option.label)).toEqual([
+    const submenu = options[0].submenu?.filter(isSubMenuOption)
+    expect(submenu?.map((option) => option.label)).toEqual([
       'Run',
       'Unavailable'
     ])
-    expect(options[0].submenu?.[1].disabled).toBe(true)
-    options[0].submenu?.[0].action()
+    expect(submenu?.[1].disabled).toBe(true)
+    submenu?.[0].action()
     expect(callback).toHaveBeenCalledOnce()
   })
 
@@ -293,11 +295,9 @@ describe('LiteGraph menu conversion', () => {
     ])
 
     expect(LiteGraph.ContextMenu).toBe(original)
-    expect(options[0].submenu?.map((option) => option.label)).toEqual([
-      'GLB',
-      'OBJ'
-    ])
-    options[0].submenu?.[1].action()
+    const submenu = options[0].submenu?.filter(isSubMenuOption)
+    expect(submenu?.map((option) => option.label)).toEqual(['GLB', 'OBJ'])
+    submenu?.[1].action()
     expect(callback.mock.calls[0]?.[0]).toBe('OBJ')
   })
 })

@@ -6,7 +6,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useFrameNodes } from './useFrameNodes'
 import { BadgeVariant } from './menuOption'
 import type { MenuOption } from './menuOption'
-import { useNodeArrangement } from './useNodeArrangement'
+import { ARRANGE_ICON, useNodeArrangement } from './useNodeArrangement'
 import { useSelectionOperations } from './useSelectionOperations'
 import { useSubgraphOperations } from './useSubgraphOperations'
 
@@ -19,8 +19,13 @@ export function useSelectionMenuOptions() {
     renameSelection
   } = useSelectionOperations()
 
-  const { alignOptions, distributeOptions, applyAlign, applyDistribute } =
-    useNodeArrangement()
+  const {
+    canArrange,
+    alignOptions,
+    distributeOptions,
+    applyAlign,
+    applyDistribute
+  } = useNodeArrangement()
 
   const { convertToSubgraph, unpackSubgraph, addSubgraphToLibrary } =
     useSubgraphOperations()
@@ -100,39 +105,35 @@ export function useSelectionMenuOptions() {
     }
   ]
 
-  const getAlignmentOptions = (alignTo?: LGraphNode): MenuOption[] => [
-    {
-      id: 'align',
-      label: t('contextMenu.Align Selected To'),
-      icon: 'icon-[lucide--align-start-horizontal]',
-      hasSubmenu: true,
-      submenu: alignOptions.map((align) => ({
+  const getArrangeOption = (alignTo?: LGraphNode): MenuOption => ({
+    id: 'arrange',
+    label: t('contextMenu.Arrange'),
+    icon: ARRANGE_ICON,
+    hasSubmenu: true,
+    submenu: [
+      {
+        label: t('g.tidyUp'),
+        icon: 'icon-[lucide--layout-dashboard]',
+        disabled: !canTidy.value,
+        action: () => tidyUp()
+      },
+      { type: 'divider' },
+      ...alignOptions.map((align) => ({
         label: align.localizedName,
         icon: align.icon,
+        disabled: !canArrange.value,
         action: () => applyAlign(align, alignTo)
       })),
-      action: () => {}
-    },
-    {
-      id: 'distribute',
-      label: t('contextMenu.Distribute Nodes'),
-      icon: 'icon-[lucide--align-center-horizontal]',
-      hasSubmenu: true,
-      submenu: distributeOptions.map((distribute) => ({
+      { type: 'divider' },
+      ...distributeOptions.map((distribute) => ({
         label: distribute.localizedName,
         icon: distribute.icon,
+        disabled: !canArrange.value,
         action: () => applyDistribute(distribute)
-      })),
-      action: () => {}
-    },
-    {
-      id: 'tidyUp',
-      label: t('g.tidyUp'),
-      icon: 'icon-[lucide--layout-dashboard]',
-      disabled: !canTidy.value,
-      action: () => tidyUp()
-    }
-  ]
+      }))
+    ],
+    action: () => {}
+  })
 
   const getDeleteOption = (disabled: boolean): MenuOption => ({
     id: 'delete',
@@ -148,6 +149,6 @@ export function useSelectionMenuOptions() {
     getSubgraphOptions,
     getMultipleNodesOptions,
     getDeleteOption,
-    getAlignmentOptions
+    getArrangeOption
   }
 }
