@@ -1,7 +1,5 @@
-import type { NodeProperty } from '@comfyorg/graph-model/nodeProperty'
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
 import { checkedFields } from '@/platform/nodeApi/v4/checkedFields'
-import { savableValue } from '@/platform/nodeApi/shared/savableValue'
 
 export function checkedString(
   member: string,
@@ -96,13 +94,4 @@ export function checkedOptionalString(
   return value === undefined || value === null
     ? undefined
     : checkedString(member, field, value)
-}
-
-/** A copy of `value` the workflow saves unchanged. Refuses a value it would change or cannot save. */
-export function savableCopy(
-  member: string,
-  field: string,
-  value: unknown
-): NodeProperty {
-  return savableValue(member, value, field)
 }

@@ -74,7 +74,7 @@ export function propertyInstallers({
               refusePackProperty('setValue', name)
               settle('setValue', {
                 kind: 'replaced',
-                value: storableProperty(replacement)
+                value: savableValue('setValue', replacement)
               })
             },
             reject() {
@@ -95,8 +95,4 @@ export function propertyInstallers({
       }
     }
   }
-}
-
-function storableProperty(replacement: unknown): NodeProperty {
-  return savableValue('setValue', replacement)
 }

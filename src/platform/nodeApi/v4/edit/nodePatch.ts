@@ -5,7 +5,10 @@ import { isEqual } from 'es-toolkit'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
-import { isPlainData } from '@/platform/nodeApi/shared/savableValue'
+import {
+  isPlainData,
+  savableValue
+} from '@/platform/nodeApi/shared/savableValue'
 import { checkedFields, isStoreKey } from '@/platform/nodeApi/v4/checkedFields'
 import { MODE_NAMES } from '@/platform/nodeApi/v4/nodeHandle'
 import { refusePackProperty } from '@/platform/nodeApi/v4/packs'
@@ -22,8 +25,7 @@ import {
   checkedNonNegative,
   checkedOptionalString,
   checkedPoint,
-  checkedString,
-  savableCopy
+  checkedString
 } from './checkedArguments'
 import {
   checkedSizeConstraints,
@@ -185,7 +187,7 @@ function checkedProperties(member: string, value: unknown): NodeWrite {
       name,
       property === undefined
         ? undefined
-        : savableCopy(member, `property ${name}`, property)
+        : savableValue(member, property, `property ${name}`)
     ] as const
   })
   return (node) =>
