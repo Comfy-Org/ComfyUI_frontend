@@ -198,14 +198,19 @@ review finding requires it. The counts below are packs, then call sites.
     `afterLoadGraph` extension hook, on each of the three load paths in
     `app.ts`: a saved workflow (which undo and redo also take), API JSON and
     an A1111 image. A load that fails or is overtaken returns before the
-    call, so it is not announced. Between the two, a load first takes the
-    graph as its hooks left it as the loaded state (`adoptLoadedGraph()`)
-    and then ends, clearing `ChangeTracker.isLoadingGraph` or releasing the
-    import's capture suppression: what an `afterLoadGraph` hook changes is
+    call, so it is not announced. Between the two, one step for all three
+    paths (`completeGraphLoad`) ends the load, clearing
+    `ChangeTracker.isLoadingGraph` or releasing the import's capture
+    suppression, and takes the graph as its hooks left it as the loaded
+    state (`adoptLoadedGraph()`): what an `afterLoadGraph` hook changes is
     part of the loaded workflow, which the user's next undo does not take
     back, and an edit a listener makes is the first undo step and marks the
     workflow modified, as "each change is one undo step" says; before, an edit
     made in that window was neither an undo step nor part of the loaded state.
+    A user's input while the hooks run (a pointer press, a key press, a
+    wheel turn or a drop) takes the graph as it is then as the loaded state,
+    and what changes after it is an undo step, so a user edit made while a
+    slow `async` hook awaits is never taken as loaded.
     An undo or redo, a history
     restore or one across a load, announces itself before the tracker takes
     the restored graph: a listener's edit there is part of the restored
@@ -511,15 +516,16 @@ Host changes outside the folder:
 - `src/renderer/core/canvas/nodeApiCanvasSource.ts` is new and claimed by
   the canvas-renderer domain.
 - `src/scripts/app.ts` calls `workflowLoaded()` after the `afterLoadGraph`
-  hook on its three load paths, once `adoptLoadedGraph()` has taken the
-  graph as the loaded state and the load has ended (an undo or redo
+  hook on its three load paths, once the load has ended and
+  `adoptLoadedGraph()` has taken the graph as the loaded state (an undo or redo
   announces itself before the tracker takes the restored graph), and passes
   each file through `importWorkflowFile` in `handleFile`. `app.test.ts` has a
   test for each that fails when its line is removed, on each load path. A V1
   user-visible change: what an `afterLoadGraph` hook changes is now part of
-  the loaded state, and so is an edit the user makes while a slow `async`
-  hook awaits, which is then no undo step and does not mark the workflow
-  modified (a narrow window, flagged with the other host changes).
+  the loaded state, up to the user's first input while the hooks run; an
+  edit the user makes while a slow `async` hook awaits, and what changes
+  after it, is an undo step that marks the workflow modified (flagged with
+  the other host changes).
 - `graphHandle.ts` types its `members` hook as `GraphHandleMembers`;
   `edit/groupHandles.ts` takes a `centerOn` callback and gives each group
   handle `centerOn()`; `edit/nodeHandleMembers.ts` leaves the two view
