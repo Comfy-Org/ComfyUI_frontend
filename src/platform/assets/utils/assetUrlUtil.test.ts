@@ -43,6 +43,7 @@ function createAsset(overrides: Partial<AssetItem> = {}): AssetItem {
 describe(getAssetPreviewUrl, () => {
   it.for([
     {
+      label: 'a video with a stored preview',
       name: 'render.mov',
       preview_id: 'proxy-1',
       preview_url: '/view?filename=original.mov',
@@ -51,6 +52,7 @@ describe(getAssetPreviewUrl, () => {
         'http://localhost:8188/api/assets/proxy-1/content?disposition=inline'
     },
     {
+      label: 'an HDR image with a stored preview',
       name: 'render.exr',
       preview_id: 'proxy-1',
       preview_url: '/view?filename=original.exr',
@@ -59,6 +61,7 @@ describe(getAssetPreviewUrl, () => {
         'http://localhost:8188/api/assets/proxy-1/content?disposition=inline'
     },
     {
+      label: 'an image with a thumbnail',
       name: 'photo.png',
       preview_id: 'proxy-1',
       preview_url: '/view?filename=original.png',
@@ -66,6 +69,7 @@ describe(getAssetPreviewUrl, () => {
       expected: 'http://localhost:8188/api/view?filename=thumbnail.webp'
     },
     {
+      label: 'a video without a stored preview',
       name: 'render.mp4',
       preview_id: undefined,
       preview_url: '/view?filename=original.mp4',
@@ -73,6 +77,7 @@ describe(getAssetPreviewUrl, () => {
       expected: 'http://localhost:8188/api/view?filename=original.mp4'
     },
     {
+      label: 'an image with a signed external URL',
       name: 'photo.png',
       preview_id: undefined,
       preview_url: 'https://cdn.example.com/image.png?signature=original',
@@ -80,6 +85,7 @@ describe(getAssetPreviewUrl, () => {
       expected: 'https://cdn.example.com/image.png?signature=original'
     },
     {
+      label: 'an audio file',
       name: 'sound.wav',
       preview_id: undefined,
       preview_url: '/view?filename=sound.wav',
@@ -87,6 +93,7 @@ describe(getAssetPreviewUrl, () => {
       expected: 'http://localhost:8188/api/view?filename=sound.wav'
     },
     {
+      label: 'an HDR image without a browser-compatible preview',
       name: 'render.exr',
       preview_id: undefined,
       preview_url: '/view?filename=render.exr',
@@ -94,6 +101,7 @@ describe(getAssetPreviewUrl, () => {
       expected: ''
     },
     {
+      label: 'an HDR image with a browser-compatible preview URL',
       name: 'render.exr',
       preview_id: undefined,
       preview_url: '/view?filename=preview.png',
@@ -101,15 +109,19 @@ describe(getAssetPreviewUrl, () => {
       expected: 'http://localhost:8188/api/view?filename=preview.png'
     },
     {
+      label: 'a mesh asset',
       name: 'scene.glb',
       preview_id: undefined,
       preview_url: '/view?filename=scene.glb',
       thumbnail_url: undefined,
       expected: ''
     }
-  ])('selects the display source for $name', ({ expected, ...asset }) => {
-    expect(getAssetPreviewUrl(createAsset(asset))).toBe(expected)
-  })
+  ])(
+    'selects the display source for $label',
+    ({ label: _label, expected, ...asset }) => {
+      expect(getAssetPreviewUrl(createAsset(asset))).toBe(expected)
+    }
+  )
 })
 
 describe('getAssetSubfolder', () => {
