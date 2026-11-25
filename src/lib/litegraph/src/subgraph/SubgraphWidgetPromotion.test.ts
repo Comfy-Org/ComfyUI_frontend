@@ -308,9 +308,39 @@ describe('Hide input', () => {
 
     expect(a.host.isWidgetVisible(hostWidget)).toBe(false)
     expect(a.host.isWidgetRowVisible(hostWidget)).toBe(false)
+    expect(a.host.hasAdvancedWidgets()).toBe(true)
+
+    a.host.toggleAdvanced()
+
+    expect(a.host.showAdvanced).toBe(true)
+    expect(a.host.isWidgetVisible(hostWidget)).toBe(true)
 
     a.host.showInput('value')
     expect(a.host.isWidgetVisible(hostWidget)).toBe(true)
+  })
+
+  it('does not hide an extension widget that shares a promoted input name', () => {
+    const { subgraph } = createTextSubgraph()
+    const a = addHost(subgraph, 'edited-73')
+    const hostWidget = a.hostInput._widget
+    assert.exists(hostWidget)
+    const extensionWidget = a.host.addCustomWidget(
+      fromAny<IBaseWidget, unknown>({
+        name: 'value',
+        type: 'text',
+        value: 'extension',
+        options: {}
+      })
+    )
+
+    expect(a.host.isWidgetVisible(hostWidget)).toBe(true)
+    expect(a.host.isWidgetVisible(extensionWidget)).toBe(true)
+
+    a.host.hideInput('value')
+
+    expect(a.host.isWidgetVisible(hostWidget)).toBe(false)
+    expect(a.host.isWidgetVisible(extensionWidget)).toBe(true)
+    expect(a.host.isWidgetRowVisible(extensionWidget)).toBe(true)
   })
 
   it('saves hidden inputs per instance and restores them on load', () => {

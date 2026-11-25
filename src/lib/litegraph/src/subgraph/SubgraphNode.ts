@@ -127,7 +127,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
   declare widgets: IBaseWidget[]
 
-  /** Widgets added programmatically (e.g. addDOMWidget) outside the promotion system. */
   private readonly _extraWidgets: IBaseWidget[] = []
 
   /**
@@ -179,9 +178,25 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     this.setDirtyCanvas(true, true)
   }
 
-  /** Whether `widget` is the host widget of an input the user hid here. */
   private _isUserHiddenWidget(widget: IBaseWidget): boolean {
-    return this._hiddenInputNames.has(widget.name)
+    if (!this._hiddenInputNames.has(widget.name)) return false
+    const input = this.inputs.find(
+      (candidate) => candidate.name === widget.name
+    )
+    if (!input?.widgetId) return false
+    return input._widget === widget || input.widgetId === widget.widgetId
+  }
+
+  override hasAdvancedWidgets(): boolean {
+    return this.widgets.some((widget) => {
+      const visibility = widget.visibility ?? deriveWidgetVisibility(widget)
+      return (
+        (this._isUserHiddenWidget(widget)
+          ? withUserHiddenOverride(visibility)
+          : visibility
+        ).surfaces.canvas === 'advanced'
+      )
+    })
   }
 
   override isWidgetVisible(widget: IBaseWidget): boolean {
