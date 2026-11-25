@@ -129,7 +129,6 @@ export function addDefinitionHooks(
     builder.onPropertyChanged(hooks.onPropertyChanged)
 }
 
-/** Registers the node type a definition describes, and returns its class. */
 export function registerDefinedType(
   definition: CheckedDefinition,
   { packId, verified }: IssuedPack

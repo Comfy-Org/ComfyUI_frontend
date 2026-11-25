@@ -16,7 +16,6 @@ import { isAwaitingSavedState } from './awaitingSavedState'
 import { slotLocatorOf } from './slotEdits'
 import { isSlotConnected } from './slotSnapshot'
 
-/** The link edits, taking anything a pack passes and checking it. */
 export interface LinkEdits {
   connect(output: unknown, input: unknown): LinkInfo | undefined
   disconnect(slot: unknown, target?: unknown): boolean

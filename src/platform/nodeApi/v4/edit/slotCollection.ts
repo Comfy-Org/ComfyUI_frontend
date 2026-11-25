@@ -12,7 +12,6 @@ import type {
 import { knownSlotId } from './slotIds'
 import { checkedSlotRef, slotIndexOf } from './slotRef'
 
-/** How a collection reaches one side of a node's slots. */
 export interface SlotSideAccess<
   TSlot extends { readonly name: string },
   THandle

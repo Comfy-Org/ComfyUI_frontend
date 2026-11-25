@@ -12,7 +12,6 @@ export interface PackId {
   readonly version: string | undefined
 }
 
-/** The V4 node API: everything a pack can do. */
 export interface Comfy {
   getApiVersion(): ApiVersion
   /** Register from `import.meta`; calls for the same pack return the same `PackId`.
@@ -39,7 +38,6 @@ export interface Comfy {
    * There is one such handle per entity, so `a === b` gives the same answer for two of them.
    */
   sameEntity(a: unknown, b: unknown): boolean
-  /** Node types: their definitions, and the hooks a pack adds to them. */
   readonly defs: DefRegistry
 }
 
@@ -47,7 +45,6 @@ export interface Comfy {
 export interface GraphHandle {
   /** The id of the graph on screen, or `undefined` before there is one. */
   readonly id: string | undefined
-  /** The node with this id in the graph on screen. */
   node(id: string): NodeHandle | undefined
   /** Every node in the graph on screen, in the graph's own order. */
   nodes(): readonly NodeHandle[]
@@ -89,7 +86,6 @@ export interface GraphScopeHandle {
   readonly isDeleted: boolean
   /** A subgraph's name. `undefined` for the root graph. */
   readonly name: string | undefined
-  /** The node with this id in this graph. */
   node(id: string): NodeHandle | undefined
   nodes(): readonly NodeHandle[] | undefined
   /** The groups in this graph, in draw order. */
@@ -106,7 +102,6 @@ export type NodeQueryScope = 'visible' | 'root-and-subgraphs'
 export interface NodeQuery {
   /** Defaults to `'visible'`. */
   readonly scope?: NodeQueryScope
-  /** One type, or any of several. */
   readonly type?: string | readonly string[]
 }
 
@@ -236,11 +231,9 @@ export interface BadgeDef {
   /** The text color. */
   readonly color?: string
   readonly bgColor?: string
-  /** Called when the user clicks the badge. */
   onClick?(): void
 }
 
-/** How `graph.add` starts a node. */
 export interface NodeInit {
   /** The type's own title when left out. */
   readonly title?: string
@@ -273,7 +266,6 @@ export interface GroupHandle {
    */
   readonly isDeleted: boolean
   getTitle(): string | undefined
-  /** The color the group is drawn in. */
   getColor(): string | undefined
   /** The group's rectangle in graph space, title bar included. */
   getBounds(): Bounds | undefined
@@ -373,7 +365,6 @@ export interface InputSlotHandle extends SlotHandle {
    * `false`, changing nothing, while the document is shared with other participants.
    */
   modify(patch: InputSlotPatch): boolean
-  /** Removes the input's link. */
   disconnect(): boolean
 }
 
@@ -426,7 +417,6 @@ export interface SlotCollection<THandle> {
   reorder(names: readonly string[]): boolean
 }
 
-/** Node types: read their definitions, define new ones, and extend those the host registers. */
 export interface DefRegistry {
   /** Replays `apply` for matching types and later registrations; hooks affect newly joined nodes until disposed.
    * Pass the `registerPack` result to scope these hooks and their saved fields to that pack. */
@@ -458,7 +448,6 @@ export interface DefRegistry {
   setTypeColor(type: string, color: string): Unsubscribe
   /** The colors of an entry of the node color menu, such as `red`. */
   nodeColor(name: string): NodeColor | undefined
-  /** True if an output of `outputType` may link to an input of `inputType`. */
   isTypeCompatible(outputType: string, inputType: string): boolean
 }
 
@@ -468,10 +457,6 @@ export interface NodeColor {
   readonly groupColor: string
 }
 
-/**
- * Picks node types: by type name, by any of several names, by a pattern the
- * name matches, by category, or by a test of the definition.
- */
 export type DefSelector =
   | string
   | readonly string[]
@@ -484,7 +469,6 @@ export type DefSelector =
  * given to `extend` returns. Hooks run for nodes in a graph that joined after the extension was made, in the order added.
  */
 export interface NodeDefBuilder {
-  /** The definition of the type being extended. */
   readonly def: NodeDef
   /** A node of the type joined a graph. While a load is about to give it its saved state, an edit to it answers `false`. */
   onCreated(callback: (node: NodeHandle, event: NodeCreatedEvent) => void): void
@@ -542,13 +526,11 @@ export interface NodeDefBuilder {
       event: DragEvent
     ) => boolean | void | Promise<boolean | void>
   ): void
-  /** Adds an entry to the context menu of the type's nodes. */
   addMenuItem(item: NodeMenuItem): void
 }
 
 /** An entry of a node's context menu. It needs `run`, `items`, or both. */
 export interface NodeMenuItem {
-  /** The text, or a function of the node that gives it. */
   readonly label: string | ((node: NodeHandle) => string)
   /** Shown only when this returns `true`. */
   when?(node: NodeHandle): boolean

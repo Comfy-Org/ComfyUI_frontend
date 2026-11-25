@@ -2,7 +2,6 @@ import type { LGraph } from '@/lib/litegraph/src/LGraph'
 
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
 
-/** The open document's undo history: the change tracker's capture. */
 export interface EditHistory {
   beforeChange(): void
   afterChange(): void

@@ -46,7 +46,6 @@ export function checkedNonNegative(
   return number
 }
 
-/** One of the names a lookup table has, as its key. */
 export function checkedChoice<TName extends string>(
   member: string,
   field: string,

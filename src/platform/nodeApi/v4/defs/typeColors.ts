@@ -24,7 +24,6 @@ interface ClaimedType {
   readonly claims: Claim[]
 }
 
-/** The colors of data types and node color names, and the colors packs give their own types. */
 export function createTypeColors(): TypeColors {
   const claimed = new Map<string, ClaimedType>()
 

@@ -20,7 +20,6 @@ import { createNodeHandles } from './nodeHandle'
 import { createPacks } from './packs'
 import type { Comfy } from './types'
 
-/** What the host supplies. */
 export interface ComfyApiServices {
   /** The graph on screen: the root graph, or the subgraph the user is in. */
   getGraph(): LGraph | null
@@ -38,11 +37,9 @@ export interface ComfyApiHost extends Omit<VersionHost, 'publish'> {
   markStarting(): void
 }
 
-/** The published API, the host's side of it, and the edit core every node, slot, link, group and graph edit runs through. */
 export interface ComfyApi {
   comfy: Comfy
   host: ComfyApiHost
-  /** Not published (ADR-EXTENSIONS-NODE-API-0073 decision 1); the core's own tests drive it. */
   edit: EditCore
 }
 

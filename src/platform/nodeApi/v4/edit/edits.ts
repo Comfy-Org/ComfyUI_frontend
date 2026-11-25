@@ -15,7 +15,6 @@ import type { NodeEdits } from './nodeEdits'
 import { createSlotEdits } from './slotEdits'
 import type { SlotEdits } from './slotEdits'
 
-/** The edit core, checking what it is passed: the only place the API changes nodes, slots, links and groups. */
 export type EditCore = NodeEdits &
   GraphEdits &
   GroupEdits &

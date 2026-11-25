@@ -14,10 +14,8 @@ const SAVABLE =
 
 type IsLeaf = (value: object) => boolean
 
-/** How a walk treats what a write refuses and a save would quietly change. */
 interface Walk {
   readonly isLeaf: IsLeaf
-  /** A read copies `undefined` as JSON saves it: a field left out, `null` in a list. */
   readonly asSaved: boolean
 }
 

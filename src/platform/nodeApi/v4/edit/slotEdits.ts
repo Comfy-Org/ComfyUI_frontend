@@ -32,7 +32,6 @@ import {
   checkedSlotType
 } from './slotPatch'
 
-/** The slot edits, taking anything a pack passes and checking it. */
 export interface SlotEdits {
   /** `member` names the call a refusal blames, for a handle method that calls this. */
   updateSlot(slot: unknown, patch: unknown, member?: string): boolean

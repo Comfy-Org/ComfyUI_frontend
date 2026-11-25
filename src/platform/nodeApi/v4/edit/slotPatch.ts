@@ -31,7 +31,6 @@ const PATCH_FIELDS = {
 
 const { widget: _inputOnly, ...OUTPUT_PATCH_FIELDS } = PATCH_FIELDS
 
-/** A checked patch: its writes, the name it needs free, and the widget an input becomes the socket of. */
 export interface CheckedSlotPatch {
   readonly fields: readonly string[]
   readonly writes: readonly SlotWrite[]
@@ -87,7 +86,6 @@ const OPTION_FIELDS = {
   widget: true
 } satisfies Record<keyof SlotOptions, true>
 
-/** The slot fields `addInput` and `addOutput` pass to the host for the options. */
 export function checkedSlotOptions(
   member: string,
   options: unknown,

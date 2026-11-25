@@ -25,7 +25,6 @@ interface LiveGroup {
   readonly group: LGraphGroup
 }
 
-/** The group handle members other modules own: its edit methods. */
 export type GroupHandleMembers = Pick<GroupHandle, 'setBounds'>
 
 export function createGroupHandles(

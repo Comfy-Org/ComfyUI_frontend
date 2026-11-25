@@ -34,7 +34,6 @@ export function reportIfRejected(event: string, returned: unknown): void {
   }
 }
 
-/** Reports a pack callback's failure the way every listener failure is reported. */
 export function reportListenerFailure(event: string, error: unknown): void {
   reportError(error, {
     errorType: 'node_api_listener_failure',

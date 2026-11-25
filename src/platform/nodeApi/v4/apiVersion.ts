@@ -3,7 +3,6 @@ import type { ApiVersion } from './types'
 
 export const API_VERSION: ApiVersion = Object.freeze([4, 0, 0])
 
-/** See `Comfy.isApiVersionAtLeast`. */
 export const isApiVersionAtLeast = (version: string): boolean => {
   const wanted = parseVersion(version)
   for (const [index, part] of wanted.entries()) {

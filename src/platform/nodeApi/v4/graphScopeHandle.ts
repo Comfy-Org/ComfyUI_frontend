@@ -8,7 +8,6 @@ import type {
 import type { NodeHandles } from './nodeHandle'
 import type { GraphScopeHandle } from './types'
 
-/** The graph scope handle members other modules own. */
 export type GraphScopeHandleMembers = Pick<GraphScopeHandle, 'groups'>
 
 /** Gives the one handle for a root graph or a subgraph definition. */

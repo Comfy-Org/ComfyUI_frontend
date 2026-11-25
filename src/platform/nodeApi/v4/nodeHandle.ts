@@ -33,7 +33,6 @@ export interface LiveNode {
   readonly node: LGraphNode
 }
 
-/** The node handle members other modules own, such as its edit methods. */
 export type NodeHandleMembers = Omit<NodeHandle, keyof NodeHandleReads>
 type NodeHandleReads = ReturnType<typeof nodeReads>
 

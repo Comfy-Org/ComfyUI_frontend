@@ -19,7 +19,6 @@ import type { LiveSlot, SlotHandles } from './liveSlot'
 import { checkedSlotRef, slotIndexOf } from './slotRef'
 import { isSlotConnected, slotSnapshotOf, slotTypeOf } from './slotSnapshot'
 
-/** What a slot handle needs: its slot, the edit core and the handles beside it. */
 export interface SlotHandleContext {
   readonly edits: () => EditCore
   readonly nodes: NodeHandles

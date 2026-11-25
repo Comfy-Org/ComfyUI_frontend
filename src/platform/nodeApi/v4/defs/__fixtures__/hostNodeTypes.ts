@@ -21,7 +21,6 @@ export function hostNodeDef(
   }
 }
 
-/** Registers a node type as the host does: its extensions hear of it, then LiteGraph registers it. */
 export function registerHostType(
   hooks: NodeTypeHooks,
   def: ComfyNodeDefV1

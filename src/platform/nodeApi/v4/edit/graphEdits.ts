@@ -8,7 +8,6 @@ import { checkedFields } from '@/platform/nodeApi/v4/checkedFields'
 import { checkedPoint, checkedString } from './checkedArguments'
 import type { EditRunner } from './editRunner'
 
-/** The graph edits, taking anything a pack passes and checking it. */
 export interface GraphEdits {
   /** `member` names the call a refusal blames, for a handle method that calls this. */
   addNode(

@@ -10,7 +10,6 @@ import { slotCollection } from './slotCollection'
 import type { NodePatch } from './nodePatch'
 import { snapshotOf } from './nodeSnapshot'
 
-/** A node handle's edit methods, through the edit core, and its reads of them. */
 export function nodeHandleMembers(
   handle: object,
   edits: EditCore,

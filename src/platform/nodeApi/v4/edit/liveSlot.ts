@@ -18,7 +18,6 @@ export interface SlotPlace {
   readonly index: number
 }
 
-/** A slot as it is now: its graph, its node, its side and where it sits. */
 export type LiveSlot = SlotPlace &
   (
     | { readonly side: 'input'; readonly slot: INodeInputSlot }

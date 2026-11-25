@@ -7,7 +7,6 @@ import { checkedNonNegative, checkedFinite } from './checkedArguments'
 import type { EditRunner } from './editRunner'
 import type { GroupHandles } from './groupHandles'
 
-/** The group edits, taking anything a pack passes and checking it. */
 export interface GroupEdits {
   /** `member` names the call a refusal blames, for a handle method that calls this. */
   updateGroup(group: unknown, patch: unknown, member?: string): boolean

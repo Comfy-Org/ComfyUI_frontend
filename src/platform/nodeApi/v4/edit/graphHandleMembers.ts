@@ -9,7 +9,6 @@ import { linksIn } from './linkInfo'
 
 const NONE: readonly never[] = Object.freeze([])
 
-/** The graph handle's edit methods, through the edit core, and its reads of links and groups. */
 export function graphHandleMembers(
   visible: () => LGraph | undefined,
   graphScopeFor: GraphScopeFor,

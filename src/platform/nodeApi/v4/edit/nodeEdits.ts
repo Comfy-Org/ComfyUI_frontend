@@ -5,7 +5,6 @@ import { checkedNodePatch } from './nodePatch'
 import { assertWidgetSavingKept } from './refusedEdits'
 import { isAwaitingSavedState } from './awaitingSavedState'
 
-/** The node edits, taking anything a pack passes and checking it. */
 export interface NodeEdits {
   /** `member` names the call a refusal blames, for a handle method that calls this. */
   updateNode(node: unknown, patch: unknown, member?: string): boolean

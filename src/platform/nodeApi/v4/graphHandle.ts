@@ -15,7 +15,6 @@ type GraphHandleReads =
   | 'root'
   | 'subgraphs'
 
-/** The graph handle members other modules own. */
 export type GraphHandleMembers = Omit<GraphHandle, GraphHandleReads>
 
 export function createGraphHandle(

@@ -11,7 +11,6 @@ import { isChangeCaptureSuppressed } from '@/services/changeCaptureSuppression'
 
 import { createComfyApi } from './comfyApi'
 
-/** The app's one V4 node API, and the host's side of it. */
 export const useComfyApiStore = defineStore('comfyApiV4', () => {
   const { comfy, host } = createComfyApi({
     getGraph: () => useApp().canvasOrUndefined?.graph ?? null,

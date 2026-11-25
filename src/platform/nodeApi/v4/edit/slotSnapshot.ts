@@ -15,7 +15,6 @@ export function slotTypeOf(slot: { readonly type: ISlotType }): string {
   return String(slot.type)
 }
 
-/** True if a link reaches the slot. */
 export function isSlotConnected({
   graph,
   node,

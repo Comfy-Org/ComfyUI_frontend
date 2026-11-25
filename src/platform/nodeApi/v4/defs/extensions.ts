@@ -20,13 +20,11 @@ import type { HookCallbackLists, HookEntry, HookName } from './nodeHooks'
 export interface NodeType {
   readonly type: string
   readonly category: string
-  /** The class the type's nodes are made from. */
   readonly nodeClass: typeof LGraphNode
   /** A new copy of the type's definition. */
   def(): NodeDef
 }
 
-/** What the extensions need from whoever delivers their hooks. */
 export interface HookInstaller {
   /** Makes sure the nodes made from the type's class call back for each of `hooks`. */
   install(nodeType: NodeType, hooks: readonly HookName[]): void

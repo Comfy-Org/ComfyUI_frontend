@@ -249,7 +249,6 @@ declare global {
     /** For use by extensions and in the browser console. First-party code calls `useApp()` from '@/scripts/appInstance' instead. */
     app?: ComfyApp
 
-    /** The V4 custom-node API, for `/comfy/api/v4.js` to export. */
     comfy_v4?: v4.Comfy
 
     /** For use by extensions and in the browser console. First-party code reads `useApp().rootGraph` instead. */
