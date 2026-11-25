@@ -25,7 +25,7 @@
         :class="
           cn(
             buttonVariants({ variant: 'muted-textonly', size: 'icon' }),
-            'absolute top-6 right-4 shrink-0 rounded-full text-muted-foreground hover:bg-white/10'
+            'absolute top-6 right-4 shrink-0 rounded-full'
           )
         "
         :aria-label="closeLabel"

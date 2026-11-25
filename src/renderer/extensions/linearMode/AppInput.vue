@@ -28,7 +28,7 @@ function togglePromotion() {
 <template>
   <div
     v-if="enable"
-    class="pointer-events-auto relative col-span-2 flex cursor-pointer gap-1"
+    class="pointer-events-auto relative flex min-w-0 cursor-pointer gap-1"
     @pointerdown.capture.stop.prevent="togglePromotion"
     @click.capture.stop.prevent
     @pointerup.capture.stop.prevent
@@ -51,7 +51,7 @@ function togglePromotion() {
     <div
       :class="
         cn(
-          'pointer-events-none grid flex-1 grid-cols-2 items-stretch rounded-lg ring-primary',
+          'pointer-events-none grid min-w-0 flex-1 grid-cols-1 items-stretch rounded-lg ring-primary',
           isPromoted && 'ring-2'
         )
       "

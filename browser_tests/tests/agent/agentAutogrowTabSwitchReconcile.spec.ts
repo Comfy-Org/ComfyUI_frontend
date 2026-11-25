@@ -26,10 +26,10 @@ test.describe(
     }) => {
       await test.step('the node still shows its API-node color and friendly label', async () => {
         await expect.poll(readNodeColor).toEqual(API_NODE_COLOR)
-        await expect(vueNodes.getInputSlotRow(gptNodeId, 0)).not.toContainText(
+        await expect(vueNodes.getInputSlotRow(gptNodeId, 1)).not.toContainText(
           IMAGE_1_NAME
         )
-        await expect(vueNodes.getInputSlotRow(gptNodeId, 0)).toContainText(
+        await expect(vueNodes.getInputSlotRow(gptNodeId, 1)).toContainText(
           IMAGE_1_FRIENDLY_LABEL
         )
         await page

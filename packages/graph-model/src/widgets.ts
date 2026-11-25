@@ -400,9 +400,14 @@ export interface ICompositorWidget extends IBaseWidget<
   value: CompositorWidgetValue
 }
 
+export interface IWidgetBoundingBoxesOptions extends IWidgetOptions {
+  max_boxes?: number
+}
+
 export interface IBoundingBoxesWidget extends IBaseWidget<
   BoundingBox[],
-  'boundingboxes'
+  'boundingboxes',
+  IWidgetBoundingBoxesOptions
 > {
   type: 'boundingboxes'
   value: BoundingBox[]
@@ -521,6 +526,18 @@ export function isWidgetValue(value: unknown): value is TWidgetValue {
 export interface WidgetCallbackOptions {
   isPartialExecution?: boolean
 }
+
+/** The space a widget asks its node for; the row it occupies never shrinks below the minimums. */
+export interface WidgetLayoutSize {
+  minHeight: number
+  maxHeight?: number
+  minWidth: number
+  maxWidth?: number
+}
+
+export type WidgetSizing =
+  | { kind: 'fixed'; height: number }
+  | ({ kind: 'growable' } & WidgetLayoutSize)
 
 /**
  * The base type for all widgets.  Should not be implemented directly.
@@ -678,15 +695,7 @@ export interface IBaseWidget<
    * @param node The node this widget belongs to.
    * @returns The layout size of the widget.
    */
-  computeLayoutSize?(
-    this: IBaseWidget,
-    node: LGraphNode
-  ): {
-    minHeight: number
-    maxHeight?: number
-    minWidth: number
-    maxWidth?: number
-  }
+  computeLayoutSize?(this: IBaseWidget, node: LGraphNode): WidgetLayoutSize
 
   /**
    * Callback for pointerdown events, allowing custom widgets to register callbacks to occur

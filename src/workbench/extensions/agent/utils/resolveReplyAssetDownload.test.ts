@@ -65,8 +65,11 @@ describe('resolveReplyAssetDownload', () => {
     )
 
     expect(resolved.url).toBe('/assets/asset-1/content')
-    await resolved.fetch?.(resolved.url)
-    expect(api.fetchApi).toHaveBeenCalledWith('/assets/asset-1/content')
+    const onAuthCredential = vi.fn()
+    await resolved.fetch?.(resolved.url, onAuthCredential)
+    expect(api.fetchApi).toHaveBeenCalledWith('/assets/asset-1/content', {
+      onAuthCredential
+    })
     expect(fetch).not.toHaveBeenCalled()
   })
 
@@ -75,7 +78,7 @@ describe('resolveReplyAssetDownload', () => {
     const resolved = await resolveReplyAssetDownload(asset(url))
 
     expect(resolved.url).toBe(url)
-    await resolved.fetch?.(resolved.url)
+    await resolved.fetch?.(resolved.url, vi.fn())
     expect(api.fetchApi).not.toHaveBeenCalled()
     expect(fetch).toHaveBeenCalledWith(url, { credentials: 'omit' })
   })

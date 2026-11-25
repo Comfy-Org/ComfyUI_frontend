@@ -2,7 +2,7 @@ import type { Component } from 'vue'
 
 import type { LGraphNode } from '@comfyorg/graph-model/entityRegistry'
 import type { IBaseWidget, IWidgetOptions } from '@comfyorg/graph-model/widgets'
-import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { InputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 
 export interface BaseDOMWidget<
   V extends object | string = object | string
@@ -50,15 +50,6 @@ export interface DOMWidget<
 export type ComponentWidgetCustomProps = Record<string, unknown>
 
 /**
- * Standard props that are handled separately by DomWidget.vue and should be
- * omitted when defining custom props for component widgets
- */
-export type ComponentWidgetStandardProps =
-  | 'modelValue'
-  | 'widget'
-  | 'onUpdate:modelValue'
-
-/**
  * A DOM widget that wraps a Vue component as a litegraph widget.
  */
 export interface ComponentWidget<
@@ -73,6 +64,7 @@ export interface ComponentWidget<
 export interface DOMWidgetOptions<
   V extends object | string
 > extends IWidgetOptions {
+  vueNodeRenderer?: 'dom' | 'native'
   /**
    * Whether to render a placeholder rectangle when zoomed out.
    */

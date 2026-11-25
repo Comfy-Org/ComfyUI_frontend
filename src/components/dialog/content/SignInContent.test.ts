@@ -21,7 +21,6 @@ vi.mock(import('@/utils/hostWhitelist'), () => ({
   isHostWhitelisted: () => true,
   normalizeHost: (host: string) => host
 }))
-vi.mock(import('@/platform/remoteConfig/remoteConfig'))
 
 const inChina = vi.hoisted(() => ({
   value: false,
@@ -114,16 +113,14 @@ afterEach(() => stopDesktopHostSession())
 
 function desktopHostBridge(signInResult: DesktopHostAuthState) {
   return {
-    getState: vi.fn(
-      async (): Promise<DesktopHostAuthState> => ({
-        status: 'signed_out'
-      })
-    ),
+    getState: vi.fn(async (): Promise<DesktopHostAuthState> => ({
+      status: 'signed_out'
+    })),
     getWorkspaceToken: vi.fn(async () => null),
     requestSignIn: vi.fn(async () => signInResult),
-    signOut: vi.fn(
-      async (): Promise<DesktopHostAuthState> => ({ status: 'signed_out' })
-    ),
+    signOut: vi.fn(async (): Promise<DesktopHostAuthState> => ({
+      status: 'signed_out'
+    })),
     onChanged: vi.fn(() => () => {})
   }
 }
@@ -187,6 +184,18 @@ describe('SignInContent', () => {
     expect(
       screen.getByRole('link', { name: 'Privacy Policy' })
     ).toHaveAttribute('href', 'https://comfy.org/privacy-policy/')
+  })
+
+  it('sends a person who needs an API key to the Platform API keys page, naming this dialog', () => {
+    renderSignInContent()
+
+    const href = new URL(
+      screen.getByRole('link', { name: 'Generate key' }).getAttribute('href') ??
+        ''
+    )
+
+    expect(href.pathname).toBe('/profile/api-keys')
+    expect(href.searchParams.get('utm_content')).toBe('sign-in-dialog')
   })
 
   it('withholds the sign-up form while region detection is pending', async () => {

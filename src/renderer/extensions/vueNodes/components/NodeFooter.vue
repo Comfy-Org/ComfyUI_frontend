@@ -2,6 +2,7 @@
   <!-- Case 1: Subgraph + Error (Dual Tabs) -->
   <div
     v-if="isSubgraph && hasAnyError && showErrorsTabEnabled"
+    data-part="node-footer"
     :class="errorWrapperStyles"
   >
     <Button
@@ -52,6 +53,7 @@
       showErrorsTabEnabled &&
       (showAdvancedInputsButton || showAdvancedState)
     "
+    data-part="node-footer"
     :class="errorWrapperStyles"
   >
     <Button
@@ -107,6 +109,7 @@
   <!-- Case 2: Error Only (Full Width) -->
   <div
     v-else-if="hasAnyError && showErrorsTabEnabled"
+    data-part="node-footer"
     :class="errorWrapperStyles"
   >
     <Button
@@ -132,6 +135,7 @@
   <!-- Case 3: Subgraph only (Full Width) -->
   <div
     v-else-if="isSubgraph"
+    data-part="node-footer"
     :class="
       cn(
         footerWrapperBase,
@@ -164,6 +168,7 @@
   <!-- Case 4: Advanced Footer (Regular Nodes) -->
   <div
     v-else-if="showAdvancedInputsButton || showAdvancedState"
+    data-part="node-footer"
     :class="
       cn(
         footerWrapperBase,
@@ -273,8 +278,8 @@ function getBottomRadius(
 ): string {
   if (nodeShape === RenderShape.BOX) return ''
   return nodeShape === RenderShape.CARD || corners === 'right'
-    ? 'rounded-br-xl'
-    : 'rounded-b-xl'
+    ? 'rounded-br-(--node-radius)'
+    : 'rounded-b-(--node-radius)'
 }
 
 const footerRadiusClass = computed(() => getBottomRadius(shape))
@@ -283,7 +288,7 @@ const errorRadiusClass = computed(() => getBottomRadius(shape))
 
 const enterRadiusClass = computed(() => getBottomRadius(shape, 'right'))
 
-const tabStyles = 'pointer-events-auto h-11 text-xs font-normal'
+const tabStyles = 'pointer-events-auto h-11 font-normal'
 const footerWrapperBase = 'isolate -z-1 -mt-5 box-border flex'
 const errorWrapperStyles = cn(
   footerWrapperBase,

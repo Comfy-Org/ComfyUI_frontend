@@ -45,3 +45,9 @@ export async function confirmUnsavedWorkBeforeSwitch(
   }
   return true
 }
+
+export function switchReloadNote(): string {
+  return useSettingStore().get('Comfy.Workflow.Persist')
+    ? t('deploymentSwitcher.switchingNote')
+    : t('deploymentSwitcher.switchingNoteWithoutDrafts')
+}

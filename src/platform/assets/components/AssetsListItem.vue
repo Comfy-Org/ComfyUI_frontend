@@ -56,7 +56,12 @@
       </div>
       <div
         v-if="$slots.secondary || secondaryText"
-        class="min-w-0 text-muted-foreground"
+        :class="
+          cn(
+            'min-w-0',
+            progressBars.length ? 'text-foreground' : 'text-muted-foreground'
+          )
+        "
       >
         <slot v-if="$slots.secondary" name="secondary" />
         <span v-else class="block truncate" :title="secondaryText">
@@ -114,7 +119,7 @@
 import { computed, useId } from 'vue'
 
 import { useRetryableMediaSrc } from '@/composables/media/useRetryableMediaSrc'
-import { useProgressBarBackground } from '@/composables/useProgressBarBackground'
+import { useProgressBarBackground } from '@/platform/assets/composables/useProgressBarBackground'
 import Button from '@comfyorg/design-system/button/Button'
 import { cn } from '@comfyorg/tailwind-utils'
 

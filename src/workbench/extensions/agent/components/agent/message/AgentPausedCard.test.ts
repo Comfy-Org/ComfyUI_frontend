@@ -106,6 +106,40 @@ describe('AgentPausedCard', () => {
     }
   )
 
+  it('says credits do not start a Cloud plan on a no-funds pause without a plan', () => {
+    render(AgentPausedCard, {
+      props: {
+        part: pausedPart(),
+        presentation: {
+          kind: 'subscribed',
+          showUpgrade: false,
+          planCreditLine: 'planRequiredSubscribe'
+        }
+      },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.getByTestId('agent-paywall-plan-note')).toHaveTextContent(
+      "Buying credits doesn't start a Cloud plan. Subscribe to run workflows on Cloud."
+    )
+  })
+
+  it('keeps the plan note off a pause that is not about credits', () => {
+    render(AgentPausedCard, {
+      props: {
+        part: pausedPart({ reason: 'other' }),
+        presentation: {
+          kind: 'subscribed',
+          showUpgrade: false,
+          planCreditLine: 'planRequiredSubscribe'
+        }
+      },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.queryByTestId('agent-paywall-plan-note')).toBeNull()
+  })
+
   it('drops the recheck line when the server names no window', () => {
     render(AgentPausedCard, {
       props: { part: pausedPart({ recheckAfterSeconds: 0 }) },

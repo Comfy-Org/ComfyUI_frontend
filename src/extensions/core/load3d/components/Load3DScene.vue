@@ -7,9 +7,9 @@
     @pointerdown.stop="focusContainer"
     @mousedown.stop
     @contextmenu.stop.prevent
-    @dragover.prevent.stop="handleDragOver"
+    @dragover="handleDragOver"
     @dragleave.stop="handleDragLeave"
-    @drop.prevent.stop="handleDrop"
+    @drop="handleDrop"
   >
     <LoadingOverlay :loading="loading" :loading-message="loadingMessage" />
     <div

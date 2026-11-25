@@ -235,7 +235,7 @@ const arrowStyle = computed(() => {
 })
 
 const cardBorderClass = computed(() =>
-  index.value < 2 ? 'border-secondary' : 'border-smoke-500/20'
+  index.value < 2 ? 'border-muted-foreground' : 'border-smoke-500/20'
 )
 const cardStyle = computed(() => ({
   ...floatingStyles.value,
@@ -286,7 +286,8 @@ useEventListener(
     if (!active.value || !target.value || event.key !== 'Escape') return
     event.preventDefault()
     event.stopPropagation()
-    onSkip()
+    if (isLast.value) onNext()
+    else onSkip()
   },
   { capture: true }
 )
@@ -350,7 +351,7 @@ useEventListener(
             :style="arrowStyle"
             :class="
               cn(
-                'pointer-events-none absolute -right-1.5 size-3 rotate-45 border-t border-r bg-background',
+                'pointer-events-none absolute -right-2 size-4 rotate-45 border-t border-r bg-background',
                 cardBorderClass
               )
             "

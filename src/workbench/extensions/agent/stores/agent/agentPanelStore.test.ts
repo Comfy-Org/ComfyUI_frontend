@@ -128,7 +128,6 @@ describe('agentPanelStore engagement telemetry', () => {
     const store = useConsentedAgentPanelStore()
     store.enabled = true
     await nextTick()
-    store.reportedFreeUseExposure = true
     store.reportedFreeUseImpression = true
 
     store.enabled = false
@@ -140,7 +139,6 @@ describe('agentPanelStore engagement telemetry', () => {
       source: 'restored'
     })
     expect(store.isOpen).toBe(true)
-    expect(store.reportedFreeUseExposure).toBe(false)
     expect(store.reportedFreeUseImpression).toBe(false)
   })
 
@@ -220,6 +218,57 @@ describe('agentPanelStore engagement telemetry', () => {
 
     store.suppressRestoredOpen()
     expect(store.isOpen).toBe(true)
+  })
+
+  it('holds a restored open intent hidden for the page without forgetting it', async () => {
+    localStorage.setItem(OPEN_STORAGE_KEY, 'true')
+    const store = useAgentPanelStore()
+    store.holdRestoredOpen()
+    store.enabled = true
+    await nextTick()
+
+    expect(store.isVisible).toBe(false)
+    expect(store.isOpen).toBe(true)
+    expect(localStorage.getItem(OPEN_STORAGE_KEY)).toBe('true')
+    expect(useTelemetry()!.trackAgentPanelOpened).not.toHaveBeenCalled()
+
+    store.releaseRestoredOpen()
+    await nextTick()
+    expect(store.isVisible).toBe(true)
+    expect(useTelemetry()!.trackAgentPanelOpened).toHaveBeenCalledWith({
+      source: 'restored'
+    })
+  })
+
+  it('shows a held panel when the user opens it', async () => {
+    localStorage.setItem(OPEN_STORAGE_KEY, 'true')
+    const store = useAgentPanelStore()
+    store.holdRestoredOpen()
+    store.enabled = true
+    await nextTick()
+
+    store.suppressRestoredOpen()
+    store.open()
+    await nextTick()
+
+    expect(store.isVisible).toBe(true)
+    expect(
+      useTelemetry()!.trackAgentPanelOpened
+    ).toHaveBeenCalledExactlyOnceWith({ source: 'topbar_button' })
+  })
+
+  it('shows a held panel when the user toggles it', async () => {
+    localStorage.setItem(OPEN_STORAGE_KEY, 'true')
+    const store = useAgentPanelStore()
+    store.holdRestoredOpen()
+    store.enabled = true
+    await nextTick()
+
+    store.toggle()
+    await nextTick()
+
+    expect(store.isVisible).toBe(true)
+    expect(localStorage.getItem(OPEN_STORAGE_KEY)).toBe('true')
   })
 
   it('emits opened on toggle-open and closed with the open duration', () => {
@@ -509,6 +558,23 @@ describe('agentPanelStore open-state persistence', () => {
     expect(store.gateSettled).toBe(false)
     expect(localStorage.getItem(OPEN_STORAGE_KEY)).toBeNull()
   })
+
+  it.for([{ screen: 'chat' }, { screen: 'skills' }] as const)(
+    'reopens on the $screen screen after the panel is closed',
+    async (view) => {
+      const store = useAgentPanelStore()
+      store.open('topbar_button')
+      store.view = view
+
+      store.close('close_button')
+      await nextTick()
+      expect(store.isOpen).toBe(false)
+      store.open('topbar_button')
+      await nextTick()
+
+      expect(store.view).toEqual(view)
+    }
+  )
 })
 
 describe('agentPanelStore width', () => {
@@ -563,7 +629,12 @@ describe('agentPanelStore width', () => {
       reserved: SIDEBAR_CLOSED,
       expected: 844
     },
-    { requested: 2000, windowWidth: 700, reserved: SIDEBAR_OPEN, expected: 332 }
+    {
+      requested: 2000,
+      windowWidth: 700,
+      reserved: SIDEBAR_OPEN,
+      expected: 332
+    }
   ] as const)(
     'clamps a requested $requested to $expected in a $windowWidth window reserving $reserved',
     ({ requested, windowWidth, reserved, expected }) => {

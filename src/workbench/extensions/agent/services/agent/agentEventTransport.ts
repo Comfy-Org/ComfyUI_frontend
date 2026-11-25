@@ -1,6 +1,6 @@
 import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
-import { STALE_AFTER_MS } from '@/workbench/extensions/agent/crdt/agentCrdtDocLifecycle'
+import { STALE_AFTER_MS } from '@/workbench/extensions/agent/crdt/lifecycleTiming'
 import type {
   AskUserResolution,
   AssistantMessage,
@@ -37,16 +37,21 @@ export type AgentChatEvent = Extract<
       | 'agent_active_tab'
       | 'agent_ask'
       | 'agent_ask_resolved'
+      | 'agent_extension_changed'
   }
 >
 type AgentNonTerminalEvent = Exclude<
   AgentChatEvent,
-  { type: 'agent_message_done' }
+  { type: 'agent_message_done' | 'agent_extension_changed' }
 >
 
 type AgentToolCallEvent = Extract<AgentChatEvent, { type: 'agent_tool_call' }>
 type AgentActiveTabEvent = Extract<AgentChatEvent, { type: 'agent_active_tab' }>
 type AgentAskEvent = Extract<AgentChatEvent, { type: 'agent_ask' }>
+type AgentExtensionChangedEvent = Extract<
+  AgentChatEvent,
+  { type: 'agent_extension_changed' }
+>
 type AgentThinkingEvent = Extract<AgentChatEvent, { type: 'agent_thinking' }>
 type AgentAskResolvedEvent = Extract<
   AgentChatEvent,
@@ -111,6 +116,10 @@ function updateSkill(part: ToolPart, skill: string | null | undefined): void {
   if (skill) part.skill = skill
 }
 
+function updateDownload(part: ToolPart, download: string | undefined): void {
+  if (download) part.download = download
+}
+
 export function createAgentEventTransport(
   message: AssistantMessage,
   emit: (m: AssistantMessage) => void,
@@ -121,7 +130,8 @@ export function createAgentEventTransport(
     data: AgentAskEvent['data'],
     reason: UndeliverableAskReason,
     context?: UndeliverableAskContext
-  ) => void = createUndeliverableAskReporter().report
+  ) => void = createUndeliverableAskReporter().report,
+  initialCanvasSyncOutcomeCount?: number
 ): AgentEventTransport {
   let openText: TextPart | null = null
   let draft: TextPart | null = null
@@ -138,7 +148,8 @@ export function createAgentEventTransport(
   let lastTabTargetKey: string | undefined
   const pendingCanvasSync = new Map<ToolPart, PendingCanvasSync>()
   const observedCanvasOps = new Map<string, Set<string>>()
-  const canvasSyncOutcomeAtStart = getCanvasSyncOutcomeCount()
+  const canvasSyncOutcomeAtStart =
+    initialCanvasSyncOutcomeCount ?? getCanvasSyncOutcomeCount()
   const canvasSyncBaseline = new Map<ToolPart, number>()
 
   function clearPendingCanvasSyncTimer(part: ToolPart): void {
@@ -233,7 +244,20 @@ export function createAgentEventTransport(
     return pendingCanvasSync.size > 0
   }
 
+  function settleUnresolvedToolParts(): void {
+    for (const part of message.parts) {
+      if (
+        part.type !== 'tool' ||
+        part.state !== 'streaming' ||
+        part.ok !== undefined
+      )
+        continue
+      part.state = 'done'
+    }
+  }
+
   function dispose(): void {
+    settled = true
     flushPendingCanvasSync()
   }
 
@@ -307,6 +331,7 @@ export function createAgentEventTransport(
     }
     part.name = data.tool_name
     updateSkill(part, data.skill)
+    updateDownload(part, data.download)
     if (data.status !== 'running') {
       resolveToolCallState(part, data.status, data.duration_ms, data)
     }
@@ -344,6 +369,23 @@ export function createAgentEventTransport(
     return true
   }
 
+  function handleExtensionChangedEvent(
+    data: AgentExtensionChangedEvent['data']
+  ): void {
+    dropThinkingDraft()
+    closeOpenText()
+    closeOpenThinking()
+    message.thinking = false
+    message.thinkingText = undefined
+    message.parts.push({
+      type: 'extensionChange',
+      action: data.action,
+      pack: data.pack,
+      agentCreated: data.agent_created,
+      restartRequired: data.restart_required
+    })
+  }
+
   function reportUnrenderedAsk(data: AgentAskEvent['data']): void {
     reportUndeliverableAsk(
       data,
@@ -369,9 +411,18 @@ export function createAgentEventTransport(
     return true
   }
 
-  /** Applies one `agent_thinking` frame: appends its delta to the open
-   * thinking part, opening one first if none is open. */
+  function roundWasRestored(toolCallId: string | undefined): boolean {
+    if (!toolCallId) return false
+    return message.parts.some(
+      (part) => part.type === 'thinking' && part.toolCallId === toolCallId
+    )
+  }
+
   function handleThinkingEvent(data: AgentThinkingEvent['data']): void {
+    if (roundWasRestored(data.tool_call_id)) {
+      dropThinkingDraft()
+      return
+    }
     closeOpenText()
     adoptThinkingDraft()
     message.thinking = true
@@ -551,6 +602,11 @@ export function createAgentEventTransport(
       settle()
       return
     }
+    if (event.type === 'agent_extension_changed') {
+      handleExtensionChangedEvent(event.data)
+      emit(snapshotMessage(message))
+      return
+    }
     if (applyChatEvent(event)) emit(snapshotMessage(message))
   }
 
@@ -560,6 +616,7 @@ export function createAgentEventTransport(
     dropDrafts()
     closeOpenText()
     closeOpenThinking()
+    settleUnresolvedToolParts()
     message.thinking = false
     message.thinkingText = undefined
     message.streaming = false

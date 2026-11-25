@@ -10,8 +10,7 @@ const meta: Meta<typeof ValueControlButton> = {
   tags: ['autodocs'],
   parameters: { layout: 'centered' },
   argTypes: {
-    mode: { control: 'select', options: [...CONTROL_OPTIONS] },
-    variant: { control: 'select', options: ['badge', 'button'] }
+    mode: { control: 'select', options: [...CONTROL_OPTIONS] }
   },
   decorators: [
     (story) => ({
@@ -26,44 +25,30 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const Randomize: Story = {
-  args: { mode: 'randomize', variant: 'badge' }
+  args: { mode: 'randomize' }
 }
 
 export const Fixed: Story = {
-  args: { mode: 'fixed', variant: 'badge' }
+  args: { mode: 'fixed' }
 }
 
 export const Increment: Story = {
-  args: { mode: 'increment', variant: 'badge' }
+  args: { mode: 'increment' }
 }
 
 export const Decrement: Story = {
-  args: { mode: 'decrement', variant: 'badge' }
+  args: { mode: 'decrement' }
 }
 
 export const AllModes: Story = {
   render: () => ({
     components: { ValueControlButton },
     template: `
-      <div class="flex flex-col gap-6">
-        <div>
-          <p class="mb-2 text-sm text-muted-foreground">Badge</p>
-          <div class="flex items-center gap-3">
-            <ValueControlButton mode="randomize" variant="badge" />
-            <ValueControlButton mode="fixed" variant="badge" />
-            <ValueControlButton mode="increment" variant="badge" />
-            <ValueControlButton mode="decrement" variant="badge" />
-          </div>
-        </div>
-        <div>
-          <p class="mb-2 text-sm text-muted-foreground">Button</p>
-          <div class="flex items-center gap-3">
-            <ValueControlButton mode="randomize" variant="button" />
-            <ValueControlButton mode="fixed" variant="button" />
-            <ValueControlButton mode="increment" variant="button" />
-            <ValueControlButton mode="decrement" variant="button" />
-          </div>
-        </div>
+      <div class="flex items-center gap-3">
+        <ValueControlButton mode="randomize" />
+        <ValueControlButton mode="fixed" />
+        <ValueControlButton mode="increment" />
+        <ValueControlButton mode="decrement" />
       </div>
     `
   })

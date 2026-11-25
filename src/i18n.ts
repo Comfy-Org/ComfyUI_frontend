@@ -1,3 +1,5 @@
+import { watchEffect } from 'vue'
+import type { WatchStopHandle } from 'vue'
 import { createI18n } from 'vue-i18n'
 import type { PluralizationRule } from 'vue-i18n'
 
@@ -7,6 +9,7 @@ import {
   resolveSupportedLocale
 } from '@/locales/localeConfig'
 import type { SupportedLocale } from '@/locales/localeConfig'
+import { RUSSIAN_PLURAL_FORM_COUNT } from '@/i18nPluralForms'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
 import enCommands from './locales/en/commands.json' with { type: 'json' }
@@ -299,7 +302,7 @@ const russianPluralRule: PluralizationRule = (
   choicesLength,
   defaultRule
 ) => {
-  if (choicesLength !== 4) {
+  if (choicesLength !== RUSSIAN_PLURAL_FORM_COUNT) {
     return defaultRule ? defaultRule(choice, choicesLength) : 0
   }
 
@@ -350,6 +353,15 @@ export const i18n: AppI18n = {
   },
   install: (app, ...options) => appI18nInstance().install(app, ...options),
   dispose: () => appI18nInstance().dispose()
+}
+
+/** Keeps `<html lang>` on the active UI locale. */
+export function syncDocumentLanguage(
+  root = document.documentElement
+): WatchStopHandle {
+  return watchEffect(() => {
+    root.lang = i18n.global.locale.value
+  })
 }
 
 export const t: AppComposer['t'] = (...args: unknown[]): string =>

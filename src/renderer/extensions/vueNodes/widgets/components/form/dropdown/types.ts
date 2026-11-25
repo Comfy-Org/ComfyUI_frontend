@@ -28,13 +28,13 @@ export interface SortOption<TId extends string = string> {
 
 export type LayoutMode = 'list' | 'grid' | 'list-small'
 
+export type ThumbnailSize = 'compact' | 'standard' | 'large'
+
 export interface FormDropdownInputProps {
+  inputId?: string
   isOpen?: boolean
   placeholder?: string
-  items: FormDropdownItem[]
-  /** Items used for display in the input field. Falls back to items if not provided. */
-  displayItems?: FormDropdownItem[]
-  selected: Set<string>
+  selectedItems: readonly FormDropdownItem[]
   maxSelectable: number
   uploadable: boolean
   disabled: boolean

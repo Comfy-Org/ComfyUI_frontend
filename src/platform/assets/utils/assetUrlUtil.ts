@@ -11,9 +11,10 @@ import { webSessionRequests } from '@comfyorg/api-client/webSessionFetch'
 import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
 import { isResultItemType } from '@/utils/typeGuardUtil'
-import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import { getAssetType } from './assetTypeUtil'
+import { parseUrl } from '@/utils/urlSafety'
+import { getOutputAssetMetadata } from '@/platform/assets/types/outputAssetMetadata'
+import type { AssetItem } from '@comfyorg/assets-core/schema'
+import { getAssetSubfolder, getAssetType } from '@comfyorg/assets-core/metadata'
 
 /** `/view` URL of the asset, typed by its preview URL or tags and placed in its subfolder. */
 export function getAssetUrl(
@@ -42,19 +43,6 @@ export function getAssetViewUrl(asset: AssetItem): string {
   })
   if (slash > 0) params.set('subfolder', asset.loader_path.slice(0, slash))
   return api.apiURL(`/view?${params}`)
-}
-
-/** Subfolder of the asset under its type root, or `''` at the root. */
-export function getAssetSubfolder(
-  asset: Pick<AssetItem, 'preview_url' | 'user_metadata'>
-): string {
-  const previewSubfolder = new URLSearchParams(
-    (asset.preview_url ?? '').split('?')[1] ?? ''
-  ).get('subfolder')
-  if (previewSubfolder) return previewSubfolder
-
-  const { subfolder } = asset.user_metadata ?? {}
-  return typeof subfolder === 'string' ? subfolder : ''
 }
 
 /**
@@ -89,7 +77,7 @@ export function getAssetFileUrl(
  * `undefined` for any other URL, which must not be sent credentials.
  */
 export function getApiMediaRoute(href: string): string | undefined {
-  const url = URL.parse(href, window.location.origin)
+  const url = parseUrl(href, window.location.origin)
   const apiBase = new URL(api.apiURL(''), window.location.origin)
   const basePath = apiBase.pathname.replace(/\/$/, '')
   if (url?.origin !== apiBase.origin) return undefined

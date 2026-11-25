@@ -18,8 +18,8 @@ import type {
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraphData } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { ISerialisedGraph } from '@comfyorg/graph-model/serialisation'
-import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
-import type { InputSpec } from '@/schemas/nodeDefSchema'
+import { transformInputSpecV1ToV2 } from '@comfyorg/object-info-parser/migration'
+import type { InputSpec } from '@comfyorg/object-info-parser'
 import { useLitegraphService } from '@/services/litegraphService'
 import { reportError } from '@comfyorg/telemetry/reportError'
 
@@ -29,9 +29,9 @@ import {
   attachAgentWriteOverwriteWatch,
   describeWidgetValue
 } from './agentWriteOverwrites'
-import { setCrdtDebugEnabled } from './crdtDebugGate'
-import { clearDevEvents, devEvents } from './devPanelLog'
-import type { DevEvent } from './devPanelLog'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
+import { clearDevEvents, devEvents } from './crdtLog'
+import type { DevEvent } from './crdtLog'
 import { FollowerDoc } from './followerDoc'
 
 vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
@@ -286,7 +286,7 @@ function setup({ enabled = true }: { enabled?: boolean } = {}) {
 
 beforeEach(() => {
   LiteGraph.registerNodeType(CLASS, TestSeedance)
-  setCrdtDebugEnabled(true)
+  useRemoteConfigStore().acceptConfig({ 'Comfy.Agent.CrdtDebug': true }, false)
   clearDevEvents()
   onTestFinished(() => {
     clearDevEvents()
