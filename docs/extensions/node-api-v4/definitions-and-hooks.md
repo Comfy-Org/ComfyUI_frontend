@@ -15,8 +15,11 @@ path), or of a folder the backend refused, throws a `TypeError`, and so does a
 pack whose id is a field a node saves (`title`, `properties`, `extensions` and
 the like), which the backend also refuses at startup. Against an older backend
 that does not check packs, the `id` is `folder:` and the folder name as it is
-served (`folder:ComfyUI_MyPack`), and the `version` is `undefined`. A
-registry id has no `:`, so such an id is never a verified pack's.
+served (`folder:ComfyUI_MyPack`), and the `version` is `undefined`. So is a
+folder the backend's list names ambiguously (one id under two folders, or two
+records for one folder, as a stale file can): it loads unverified, and the
+editor logs a warning naming the id and the folders. A registry id has no
+`:`, so such an id is never a verified pack's.
 
 ```ts
 import { comfy } from '/comfy/api/v4.js'

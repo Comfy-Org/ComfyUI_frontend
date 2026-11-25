@@ -11,11 +11,16 @@ object that names the entity and reads it live each time it is asked.
   group, slot, widget and graph-scope handles. It is `false` for anything
   else, `comfy.graph` and a document handle included.
 - A handle belongs to the document it came from and to its own graph, and
-  stops resolving whenever a workflow loads: another document, a return to
-  this document's tab, or a reload of it. It stops as the load starts, before
-  the new graph appears, and from then an edit through it returns `false`,
-  as does an edit through `comfy.graph` or a handle taken before the new
-  graph appears. Take a fresh handle when the document is shown again. A node, widget, group or graph handle survives
+  stops resolving whenever a workflow loads or another tab is shown: another
+  document, a return to this document's tab, or a reload of it. It stops as
+  the load starts, before the new graph appears, and from then an edit
+  through it returns `false`, as does an edit through `comfy.graph` or a
+  handle taken before the new graph appears. Take a fresh handle when the
+  document is shown again. Each open tab keeps its own graph, and the editor
+  can still run a node's callbacks in a tab that is not shown (an undo
+  finishing after a tab switch, a run's results reaching the workflow that
+  queued it); a handle a hook gets there reports `isDeleted` at once, and an
+  edit through it returns `false`. A node, widget, group or graph handle survives
   undo and redo; a slot handle does not, because undo and redo rebuild slots.
   An undo or redo that steps back or forward across a load of another
   workflow into the same tab is a load too.
@@ -122,8 +127,8 @@ console.info(workflow ? Object.keys(workflow) : 'no document yet')
 replaces an open tab that is not on screen because its file changed on the
 server; the file then opens as a new document with a new id.
 
-`onWorkflowLoaded` fires after every load, undo and redo, with the open
-document. After a load, an edit a listener makes is the first undo step and
+`onWorkflowLoaded` fires after every load, undo and redo, and after a switch
+to another open tab, with the open document. After a load, an edit a listener makes is the first undo step and
 marks the workflow modified; after an undo or redo it is part of the
 restored state, and redo is kept. A handle taken before any other load, of
 this document or another, reports `isDeleted` from then on.
