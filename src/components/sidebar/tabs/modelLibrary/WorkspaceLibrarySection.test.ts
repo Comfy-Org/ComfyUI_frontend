@@ -1,5 +1,5 @@
 import userEvent from '@testing-library/user-event'
-import { render, screen, waitFor } from '@testing-library/vue'
+import { render, screen, waitFor, within } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
@@ -32,6 +32,7 @@ const i18n = createI18n({
 })
 
 const library = new Map<string, string[]>()
+const blockedLibrary = new Map<string, string[]>()
 const failOnce = new Set<string>()
 
 function folder(directory: string) {
@@ -54,11 +55,15 @@ function renderSection(searchQuery = '') {
 
 beforeEach(() => {
   library.clear()
+  blockedLibrary.clear()
   failOnce.clear()
   vi.spyOn(assetService, 'getWorkspaceLibraryModels').mockImplementation(
     async (name) => {
       if (failOnce.delete(name)) throw new Error('inventory unavailable')
-      return library.get(name) ?? []
+      return {
+        names: library.get(name) ?? [],
+        blocked: blockedLibrary.get(name) ?? []
+      }
     }
   )
   vi.mocked(useFeatureFlags().flags).runtimeLibraryModelsEnabled = true
@@ -147,6 +152,74 @@ describe('WorkspaceLibrarySection', () => {
     expect(
       screen.getByRole('button', { name: 'Workspace library 3 models' })
     ).toBeInTheDocument()
+  })
+
+  it("lists a model the Build's model rules block after the runnable ones, marked, places no loader for it, and leaves it out of the count", async () => {
+    library.set('loras', ['detail-tweaker.safetensors'])
+    blockedLibrary.set('loras', ['banned-style.safetensors'])
+    vi.mocked(useModelToNodeStore().getNodeProvider).mockReturnValue({
+      nodeDef: fromPartial<ComfyNodeDefImpl>({ name: 'LoraLoader' }),
+      key: 'lora_name'
+    })
+    const { user } = renderSection()
+
+    await user.click(screen.getByRole('button', { name: 'Workspace library' }))
+
+    expect(
+      await screen.findByRole('button', { name: 'Workspace library 1 model' })
+    ).toBeInTheDocument()
+    const [runnable, blocked] = screen.getAllByRole('listitem')
+    expect(runnable).toHaveTextContent('detail-tweaker.safetensors')
+    expect(
+      within(runnable).queryByRole('img', {
+        name: "Blocked by this Build's model rules"
+      })
+    ).toBeNull()
+    expect(blocked).toHaveTextContent('banned-style.safetensors')
+    expect(
+      within(blocked).getByRole('img', {
+        name: "Blocked by this Build's model rules"
+      })
+    ).toHaveAttribute('title', "Blocked by this Build's model rules")
+    expect(within(blocked).queryByRole('button')).toBeNull()
+
+    await user.click(within(blocked).getByText('banned-style.safetensors'))
+
+    expect(startModelLoaderDrag).not.toHaveBeenCalled()
+  })
+
+  it("shows a folder's shelf when every model in it is blocked by the Build's model rules", async () => {
+    blockedLibrary.set('checkpoints', ['banned-base.safetensors'])
+    const { user } = renderSection()
+
+    await user.click(screen.getByRole('button', { name: 'Workspace library' }))
+
+    expect(
+      await screen.findByRole('heading', { name: 'checkpoints' })
+    ).toBeInTheDocument()
+    expect(screen.getByText('banned-base.safetensors')).toBeInTheDocument()
+    expect(
+      screen.queryByText('No models in your workspace library.')
+    ).not.toBeInTheDocument()
+  })
+
+  it('filters the blocked models by the search too', async () => {
+    library.set('loras', ['detail-tweaker.safetensors'])
+    blockedLibrary.set('loras', [
+      'banned-style.safetensors',
+      'other-ban.safetensors'
+    ])
+    const { user } = renderSection('style')
+
+    await user.click(screen.getByRole('button', { name: 'Workspace library' }))
+
+    expect(
+      await screen.findByText('banned-style.safetensors')
+    ).toBeInTheDocument()
+    expect(screen.queryByText('other-ban.safetensors')).toBeNull()
+    expect(
+      screen.queryByRole('button', { name: 'detail-tweaker.safetensors' })
+    ).toBeNull()
   })
 
   it('shows no count while a folder it counts has not loaded yet', async () => {
