@@ -26,6 +26,7 @@ import { useAgentConsentIntroductionStore } from '@/workbench/extensions/agent/s
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 export const CONSENT_DIALOG_KEY = 'agent-consent'
+const SIGNED_IN_USER_TIMEOUT_MS = 10_000
 const CONSENT_MEDIA_BASE = 'https://media.comfy.org/website/comfy-agent'
 const CONSENT_VIDEO_SOURCES = [
   {
@@ -61,7 +62,7 @@ export function useAgentConsent() {
   const agentPanelStore = useAgentPanelStore()
   const composerStore = useAgentComposerStore()
   const toast = useToast()
-  const { isLoggedIn } = useCurrentUser()
+  const { isLoggedIn, resolvedUserInfo } = useCurrentUser()
   const { accepted, identity, isChecking } = storeToRefs(consentStore)
   const { t } = i18n.global
 
@@ -255,6 +256,10 @@ export function useAgentConsent() {
 
   async function saveAcceptanceAfterSignIn(): Promise<string | null> {
     try {
+      if (!resolvedUserInfo.value)
+        await until(resolvedUserInfo).toBeTruthy({
+          timeout: SIGNED_IN_USER_TIMEOUT_MS
+        })
       const decisionIdentity = await consentStore.ensureScope()
       if (!decisionIdentity || !(await consentStore.accept(decisionIdentity))) {
         useTelemetry()?.trackAgentConsentResolved({
