@@ -1215,7 +1215,7 @@ export const useAgentConversationStore = defineStore(
           existing.origin.kind === 'thread' && isOriginOnScreen(existing.origin)
             ? new Set([
                 ...(existing.knownTurnIdsAtSend ?? []),
-                ...userTexts.value.keys()
+                ...knownUserTurnIds()
               ])
             : existing.knownTurnIdsAtSend,
         precedesThreadTranscript: undefined,

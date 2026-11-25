@@ -5677,6 +5677,108 @@ describe('useAgentConversationStore', () => {
       expect(store.getPendingSend('cm-after-reconcile')).toBeUndefined()
     })
 
+    it('includes displayed server turn aliases when retrying a failed send that predated the reconciled turn', () => {
+      const store = useAgentConversationStore()
+      const firstTurn = toTurnId('msg-1')
+
+      store.setThreadId('th-retry-alias')
+      store.startPendingSend({
+        clientMessageId: 'cm-early-fail',
+        origin: { kind: 'thread', threadId: 'th-retry-alias' },
+        rawText: 'Repeat',
+        text: 'Repeat',
+        attachments: [],
+        sentAttachments: [],
+        sentTags: [],
+        tags: [],
+        workflowReferences: []
+      })
+      store.failPendingSend('cm-early-fail', {
+        kind: 'request',
+        message: 'Temporary error'
+      })
+
+      store.recordUser(firstTurn, 'Repeat')
+      store.startTurn(firstTurn)
+      store.recordAcceptedTurn({
+        threadId: 'th-retry-alias',
+        turnId: firstTurn,
+        createdHere: true,
+        text: 'Repeat'
+      })
+      store.ingest(
+        chat({
+          type: 'agent_message_done',
+          data: { thread_id: 'th-retry-alias', message_id: firstTurn }
+        })
+      )
+
+      const firstHistory: AgentMessages = [
+        {
+          id: 'u-srv-1',
+          thread_id: 'th-retry-alias',
+          turn_id: 'srv-1',
+          seq: 1,
+          role: 'user',
+          status: 'complete',
+          content: { text: 'Repeat' }
+        },
+        {
+          id: 'msg-1',
+          thread_id: 'th-retry-alias',
+          turn_id: 'srv-1',
+          seq: 2,
+          role: 'assistant',
+          status: 'complete',
+          content: { text: 'First reply' }
+        }
+      ]
+      expect(
+        store.reconcileKnownChat('th-retry-alias', firstHistory, true).status
+      ).toBe('applied')
+
+      expect(
+        store.retryPendingSend('cm-early-fail', 'cm-retry-1')
+      ).toBeDefined()
+      store.failPendingSend('cm-retry-1', {
+        kind: 'network',
+        message: 'Network error',
+        uncertain: true
+      })
+
+      store.setThreadId('th-other')
+      store.reset('blank:other')
+      store.setThreadId('th-retry-alias')
+      expect(store.hydrateKnownChat('th-retry-alias')).toBe(true)
+      expect(store.getPendingSend('cm-retry-1')?.status).toBe('failed')
+
+      const secondHistory: AgentMessages = [
+        ...firstHistory,
+        {
+          id: 'u-srv-2',
+          thread_id: 'th-retry-alias',
+          turn_id: 'srv-2',
+          seq: 3,
+          role: 'user',
+          status: 'complete',
+          content: { text: 'Repeat' }
+        },
+        {
+          id: 'msg-2',
+          thread_id: 'th-retry-alias',
+          turn_id: 'srv-2',
+          seq: 4,
+          role: 'assistant',
+          status: 'complete',
+          content: { text: 'Retry reply' }
+        }
+      ]
+      expect(
+        store.reconcileKnownChat('th-retry-alias', secondHistory, true).status
+      ).toBe('applied')
+      expect(store.getPendingSend('cm-retry-1')).toBeUndefined()
+    })
+
     it('keeps the restored reply and its prompt under the same display ID across a cold return followed by a cached return while still streaming', () => {
       const store = useAgentConversationStore()
       const ackId = toTurnId('t1')
