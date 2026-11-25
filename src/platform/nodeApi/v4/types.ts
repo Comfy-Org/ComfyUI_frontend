@@ -69,7 +69,7 @@ export interface GraphHandle {
    */
   add(type: string, init?: NodeInit): NodeHandle | undefined
   /**
-   * Runs `edits` now as one undo step, which re-reads the whole graph once, and returns its result.
+   * Runs `edits` now as one undo step, which re-reads the whole graph once, and returns its result; an `async` function throws a `TypeError`.
    * Edits made before a throw stay; edits after it returns are not in the step. Loop inside one batch.
    */
   batch<T>(edits: () => T): T
@@ -169,7 +169,10 @@ export interface NodeHandle {
   setPosition(position: Point): boolean
   /** The size of the node's body, title bar excluded. */
   setSize(size: Size): boolean
-  /** Requests one size that fits them; a resize callback the request runs, and every later resize, may leave them. */
+  /**
+   * Requests one size that fits them, once. A resize callback that runs during the call may set another size, which stands,
+   * and a later resize is not held to them.
+   */
   setSizeConstraints(constraints: SizeConstraints): boolean
   /** Not saved. A pinned node cannot be resized, and unpinning makes it resizable whatever was chosen. */
   setResizable(resizable: boolean): boolean
@@ -411,7 +414,10 @@ export interface SlotCollection<THandle> {
   [Symbol.iterator](): Iterator<THandle>
   /** Adds a slot after the others; not to a subgraph node. `undefined` if the node is gone or its document is shared. */
   add(name: string, type: SlotType, options?: SlotOptions): THandle | undefined
-  /** Removes the slot `ref` names, and its links; not a subgraph node's. `false` if none does or the document is shared. */
+  /**
+   * Removes the slot `ref` names, and its links; not a subgraph node's. `false` if none does or the document is shared.
+   * A name two slots share throws a `TypeError`: pass `{ index }` or the slot's id to pick one.
+   */
   remove(ref: SlotRef): boolean
   /**
    * Puts the slots in the order `names` gives, with their links; names each slot once. Refused on a subgraph node's
