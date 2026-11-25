@@ -218,8 +218,15 @@ describe('useWidgetSelectActions', () => {
         })
       )
       const locatorId = fromPartial<NodeLocatorId>('7')
+      const listPreview = {
+        images: [
+          { filename: 'a.png', subfolder: '', type: 'input' as const },
+          { filename: 'b.png', subfolder: '', type: 'input' as const }
+        ]
+      }
+      useNodeOutputStore().nodeOutputs[locatorId] = listPreview
       const { handleFilesUpdate } = useWidgetSelectActions({
-        modelValue: ref<string | string[] | undefined>(['a.png']),
+        modelValue: ref<string | string[] | undefined>(['a.png', 'b.png']),
         dropdownItems: computed(() => createItems('a.png')),
         widget: () =>
           fromPartial<SimplifiedWidget<string | undefined>>({
@@ -236,7 +243,7 @@ describe('useWidgetSelectActions', () => {
         new File(['test'], 'uploaded.png', { type: 'image/png' })
       ])
 
-      expect(useNodeOutputStore().nodeOutputs[locatorId]).toBeUndefined()
+      expect(useNodeOutputStore().nodeOutputs[locatorId]).toEqual(listPreview)
     })
 
     it('appends an upload to a list-valued picker and keeps the newest up to max', async () => {
