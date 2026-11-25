@@ -63,7 +63,8 @@ describe('Vue Node - Subgraph Functionality', () => {
     else mockApp.rootGraph = undefined
 
     vi.mocked(getNodeByLocatorId).mockReturnValue({
-      isSubgraphNode: (): this is SubgraphNode => isSubgraph
+      isSubgraphNode: (): this is SubgraphNode => isSubgraph,
+      computeSize: (): [number, number] => [140, 26]
     } as LGLGraphNode)
   }
 

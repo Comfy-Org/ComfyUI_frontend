@@ -170,7 +170,7 @@ test('77-3783: a Pay that goes through names the credits added and what they cos
   expect(topups).toHaveLength(1)
 })
 
-test('a saved card the bank challenges is verified on this page and ends on the credits added, never on the hosted invoice', async ({
+test('FRONT-4219: a refused saved-card challenge ends unpaid and Pay starts a fresh top-up', async ({
   page,
   cloud,
   signIn
@@ -179,10 +179,31 @@ test('a saved card the bank challenges is verified on this page and ends on the 
     ...challengeRequiredOperation('op_topup', 'pi_topup_secret'),
     action_url: 'https://invoice.stripe.com/i/e2e_topup'
   }
+  cloud.scenario.operations.op_topup_retry = challengeRequiredOperation(
+    'op_topup_retry',
+    'pi_topup_retry_secret'
+  )
+  const topups = () =>
+    cloud.requests.filter(
+      (request) =>
+        request.method === 'POST' && request.path === '/billing/topup'
+    )
+  cloud.reply('POST', '/billing/topup', () => {
+    const id = topups().length === 1 ? 'op_topup' : 'op_topup_retry'
+    return {
+      body: {
+        amount_cents: 2500,
+        billing_op_id: id,
+        status: 'pending',
+        topup_id: id
+      }
+    }
+  })
   await page.addInitScript(() => {
     Object.assign(window, { __e2eStripeHoldNextAction: true })
   })
   await signIn(TOPUP)
+  await expect(page.getByText('·· 4242')).toBeVisible()
   await payButton(page).click()
 
   await expect
@@ -190,8 +211,41 @@ test('a saved card the bank challenges is verified on this page and ends on the 
     .toEqual([{ clientSecret: 'pi_topup_secret' }])
   await expect(page).toHaveURL(/\/v1\/top-up\?/)
 
+  await page.evaluate(
+    "window.__e2eFakeStripe.releaseNextAction({ paymentIntent: { status: 'requires_action' } })"
+  )
+  const completedAt = new Date().toISOString()
   cloud.scenario.operations.op_topup = {
-    ...succeededOperation('op_topup'),
+    id: 'op_topup',
+    status: 'failed',
+    decline_reason: 'authentication_failed',
+    retryable: true,
+    recovery_action: 'retry',
+    started_at: completedAt,
+    completed_at: completedAt
+  }
+  await expect(
+    page.getByText('Payment not completed', { exact: true })
+  ).toBeVisible()
+  const receipt = page.getByRole('heading', { name: '5,275 credits added' })
+  await expect(receipt).toBeHidden()
+  await expect(payButton(page)).toBeEnabled()
+  expect(topups()).toHaveLength(1)
+  await payButton(page).click()
+
+  await expect
+    .poll(() => page.evaluate('window.__e2eFakeStripe?.nextActionCalls'))
+    .toEqual([
+      { clientSecret: 'pi_topup_secret' },
+      { clientSecret: 'pi_topup_retry_secret' }
+    ])
+  expect(topups()).toHaveLength(2)
+  const [first, retry] = topups()
+  expect(first.idempotencyKey).toEqual(expect.any(String))
+  expect(retry.idempotencyKey).toEqual(expect.any(String))
+  expect(retry.idempotencyKey).not.toBe(first.idempotencyKey)
+  cloud.scenario.operations.op_topup_retry = {
+    ...succeededOperation('op_topup_retry'),
     amount_charged_cents: 2500,
     credits_added: 5275
   }
@@ -199,9 +253,7 @@ test('a saved card the bank challenges is verified on this page and ends on the 
     "window.__e2eFakeStripe.releaseNextAction({ paymentIntent: { status: 'succeeded' } })"
   )
 
-  await expect(
-    page.getByRole('heading', { name: '5,275 credits added' })
-  ).toBeVisible()
+  await expect(receipt).toBeVisible()
   await expect(page).toHaveURL(/\/v1\/top-up\?/)
 })
 

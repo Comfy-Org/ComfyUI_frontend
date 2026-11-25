@@ -160,7 +160,6 @@ test.describe(
     }) => {
       const page = comfyPage.page
       await agentPanel.open()
-      await agentPanel.selectWorkflow()
       await agentPanel.composer.fill('Describe these files')
       await expect(agentPanel.sendButton).toBeEnabled()
 

@@ -21,14 +21,13 @@ import type { CloudWorkflowGaps } from '@/platform/openOnCloud/cloudWorkflowChec
 import {
   isSupportedModelFileName,
   modelFileUploadApi
-} from '@/platform/workspace/api/modelFileUploadApi'
+} from '@/platform/assets/services/modelFileUploadApi'
 import type {
   ModelFileUploadResult,
   StagedModelFile,
   UploadRouteRequest
-} from '@/platform/workspace/api/modelFileUploadApi'
+} from '@/platform/assets/services/modelFileUploadApi'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 
 /** A model Comfy Cloud lacks: its folder and name. */
 export type MissingModel = CloudWorkflowGaps['models'][number]
@@ -524,8 +523,7 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
     const targetWorkspaceId = workspaceId.value
     if (!targetWorkspaceId || batch || isUploading.value || !canUpload(models))
       return
-    const workflows = useWorkflowStore()
-    const workflow = workflows.activeWorkflow
+    const isSameWorkflow = useCloudWorkflowCheckStore().bindWorkflowRevision()
     const sendNewFiles = canSendAll(models)
     const queue = models.flatMap((model) => {
       const pick = pickOf(model)
@@ -573,7 +571,7 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
         refreshCompatibility(
           models,
           current.workspaceId,
-          refreshWorkflow && workflows.activeWorkflow === workflow
+          refreshWorkflow && isSameWorkflow()
         )
     } catch (cause) {
       reportUploadFailure(cause)

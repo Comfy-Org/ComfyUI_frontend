@@ -1072,6 +1072,15 @@
     },
     "modelLibrary": "Model Library",
     "modelLibraryLoadFailed": "Failed to load models. Check the server connection and use Refresh to retry.",
+    "addModelsToDeployment": "Add models to this deployment",
+    "workspaceLibrary": {
+      "title": "Workspace library",
+      "explainer": "Models in your workspace. Ones not in this build download when a job needs them.",
+      "empty": "No models in your workspace library.",
+      "loadFailed": "Couldn't load your workspace library.",
+      "fromWorkspace": "From your workspace",
+      "modelCount": "{count} model | {count} models"
+    },
     "searchResultsCapped": "Showing the first {limit} matches. Refine your search to see more specific results.",
     "downloads": "Downloads",
     "queueProgressOverlay": {
@@ -2785,6 +2794,18 @@
       },
       "mcp:tools:call": {
         "label": "Run workflows on your behalf"
+      },
+      "comfy-mcp:tools:read": {
+        "label": "View the workflow tools available to you"
+      },
+      "comfy-mcp:tools:call": {
+        "label": "Run workflows and partner models on your behalf, using your credits"
+      },
+      "comfy-router:models:read": {
+        "label": "View the Comfy Router model catalog"
+      },
+      "comfy-router:models:invoke": {
+        "label": "Run partner models through Comfy Router, using your credits"
       }
     },
     "workspace": {
@@ -3049,6 +3070,15 @@
       "memberDescription": "Your team has used all its credits. Your workspace admins need to add more credits to run workflows.",
       "memberCta": "Ok, got it"
     },
+    "personalWallet": {
+      "title": "Your personal account is out of credits",
+      "sessionDescription": "This session bills your personal account. To bill a team instead, switch to its workspace.",
+      "sessionNoTeamsDescription": "This session bills your personal account. Add personal credits to continue.",
+      "apiKeyDescription": "This key bills your personal account. Create a team API key or add personal credits.",
+      "switchTo": "Switch to {workspaceName}",
+      "createTeamApiKey": "Create a team API key",
+      "addCredits": "Add personal credits"
+    },
     "credits": "Credits",
     "yourCreditBalance": "Your credit balance",
     "purchaseCredits": "Purchase Credits",
@@ -3154,7 +3184,8 @@
       "apiUsage": "API Usage",
       "gpuUsage": "GPU Usage",
       "apiNodeUsage": "Partner Node Usage",
-      "agentUsage": "Agent Usage"
+      "agentUsage": "Agent Usage",
+      "routerUsage": "Router Usage"
     },
     "unified": {
       "message": "Credits have been unified",
@@ -4307,23 +4338,32 @@
     "workflowNeedsDeployment": {
       "title": "Run this workflow on a custom deployment",
       "installTitle": "Install your missing custom nodes",
-      "installBody": "Deploy a custom Build to add the custom nodes and models Comfy Cloud doesn't have. You set it up on Platform, and it appears under Run on for your workspace.",
+      "installBody": "Create a Custom Build to add the custom nodes and models Comfy Cloud doesn't have. You set it up on Platform, and it appears under Run on for your workspace.",
       "buildOnPlatform": "Build on Platform",
       "missingPacks": "{count} missing node pack | {count} missing node packs",
       "missingNodes": "{count} missing node | {count} missing nodes",
       "missingModels": "{count} missing model | {count} missing models",
       "andMore": "{names}, and {count} more",
       "titleNoneRunIt": "Create a deployment to run this workflow on Comfy Cloud",
+      "titleNoneRunItCustomBuild": "Create a Custom Build to run this workflow on Comfy Cloud",
+      "createCustomBuild": "Create a Custom Build",
       "noneRunIt": "No deployment in this workspace has all of these nodes.",
       "switchBody": "Comfy Cloud is missing these. Switch to a deployment that has them and keep working from there.",
       "switch": "Switch"
     },
     "runsThisWorkflow": "Runs this workflow",
+    "releaseChangedRun": "{deployment} now runs v{version}. Reload to run on it.",
+    "releaseChangedRunNoVersion": "{deployment} now runs a different version. Reload to run on it.",
+    "releaseChangedRunUnknown": "Runs now go to a different version. Reload to run on it.",
+    "releaseChangedRunUnknownTarget": "the new version",
     "missingNodes": "Missing {count} node | Missing {count} nodes",
     "notChecked": "Not checked",
     "releaseChanged": "This deployment now runs a different Release. Reload to get its nodes.",
     "deploymentChanged": "This browser now runs on {deployment}. Reload to get its nodes.",
+    "versionChanged": "{deployment} now runs v{version}. Reload to use its nodes.",
+    "versionChangedNoVersion": "{deployment} now runs a different version. Reload to use its nodes.",
     "reload": "Reload",
+    "later": "Later",
     "failedToSwitch": "Could not switch",
     "unsaved": {
       "title": "Save your workflows before switching?",
@@ -4377,12 +4417,40 @@
       "notReady": "This deployment isn't ready. Click to switch."
     }
   },
+  "platformFrame": {
+    "title": "Custom deployment",
+    "preinstallTitle": "Pre-install models to run this workflow",
+    "getStarted": "Get started",
+    "unanswered": "Platform didn't open here.",
+    "openOnPlatform": "Open on Platform",
+    "updateDeployment": "Update {deployment}",
+    "building": "Building {deployment}",
+    "deploying": "Deploying {deployment}",
+    "buildStep": "step {step} of {of}",
+    "buildTakesMinutes": "This takes a few minutes. You can keep working.",
+    "readyNew": "{deployment} is ready",
+    "switch": "Switch",
+    "switchListingUnavailable": "Your deployments didn't load. Try again from Run on.",
+    "readyUpdate": "{deployment} now runs v{version}.",
+    "readyUpdateReload": "{deployment} now runs v{version}. Reload to use its nodes.",
+    "reload": "Reload",
+    "later": "Later",
+    "finishingOnPrevious": "Finishing your job on v{version}. | Finishing {count} of your jobs on v{version}.",
+    "buildFailed": "Build failed. {deployment} was not deployed.",
+    "deployFailed": "Deployment failed. {deployment} was built but not deployed.",
+    "nothingChanged": "Nothing changed: {deployment} still runs v{version}.",
+    "nothingChangedNoVersion": "Nothing changed: {deployment} still runs as before.",
+    "updateUnfinished": "{deployment} didn't finish updating to v{version}.",
+    "viewDetails": "View details",
+    "updateShortcut": "Press E to update it."
+  },
   "openOnCloud": {
     "deploySetup": "Deploy your setup to Comfy Cloud",
     "deployWithAgent": "Deploy with your agent",
     "deploySetupDialog": {
       "title": "Run your workflows on Comfy Cloud",
       "body": "Deploy your local setup to Comfy Cloud as a Build, then use it in ComfyUI or call it as an autoscaling API.",
+      "missingNodesBody": "Comfy Cloud doesn’t have some of the nodes this workflow uses. Deploy your local setup to Comfy Cloud as a Build, then use it in ComfyUI or call it as an autoscaling API.",
       "pointNodes": "Bring your custom nodes and models",
       "pointGpu": "Run on powerful cloud GPUs",
       "pointPricing": "Pay only while your GPU workers are up, plus storage",
@@ -4404,17 +4472,19 @@
     "desktopTransferUnavailable": "Open on Comfy Cloud is currently unavailable for this editor.",
     "downloadedDetail": "Drop it onto Comfy Cloud in your browser to open it there.",
     "cloudButton": {
-      "tooltip": "Run on Comfy Cloud",
+      "tooltip": "Run this workflow on Comfy Cloud",
       "checking": "Checking Comfy Cloud…",
       "uploading": "Uploading models to Comfy Cloud, {percent}%",
       "resumeUpload": "Resume model upload"
     },
     "runDialog": {
-      "title": "Run on Comfy Cloud",
+      "body": "Open this workflow on Comfy Cloud, or deploy your local setup as a Build if it needs custom nodes.",
+      "pointApi": "Use it in ComfyUI or call it as an API",
+      "sends": "Checking will send this workflow’s node and model names to Comfy Cloud.",
+      "checkCompatibility": "Check compatibility",
       "ready": "Comfy Cloud has every node and model this workflow uses. It opens in a new tab, ready to run.",
     "readyWithUncheckedInputs": "Comfy Cloud has every node and model it could check. It could not check the models for these inputs: {inputs}. It opens in a new tab.",
     "uncheckedInput": "{input} on {nodeType}",
-      "asksToSignIn": "Comfy Cloud will ask you to sign in.",
       "openOnCloud": "Open on Comfy Cloud"
     },
     "agentMenu": {
@@ -4507,6 +4577,12 @@
       "placeholderModel": "Select model...",
       "placeholderUnknown": "Select media...",
       "maxSelectionReached": "Maximum selection limit reached",
+      "thumbnailSize": "Thumbnail size",
+      "thumbnailSizes": {
+        "compact": "Compact",
+        "standard": "Standard",
+        "large": "Large"
+      },
       "topResult": "Top result: {result}"
     },
     "valueControl": {
@@ -4851,6 +4927,7 @@
     "modelAssociatedWithLink": "The model associated with the link you provided:",
     "modelName": "Model Name",
     "modelNamePlaceholder": "Enter a name for this model",
+    "modelTypeNotAddable": "This model type can't be added to the canvas from the Model Library. Add a node that loads it, then choose the model there.",
     "modelTypeSelectorLabel": "What type of model is this?",
     "modelTypeSelectorPlaceholder": "Select model type",
     "modelUploaded": "Model successfully imported.",
@@ -5432,6 +5509,7 @@
     "addToDeploymentBuild": "Add these to {deployment}'s build on Platform, then deploy a new release.",
     "editBuildOnPlatform": "Edit build on Platform",
     "openBuildsOnPlatform": "Open Builds on Platform",
+    "addMissingModelsToBuild": "Add the missing models to the build",
     "severityCountsStatus": "{errors} blocking, {setup} setup required",
     "errorsFilter": "{count} Error | {count} Errors",
     "errorsFilterActive": "{count} Error detected | {count} Errors detected",
@@ -5798,6 +5876,13 @@
         "itemLabel": "{nodeName}",
         "toastTitle": "Insufficient credits",
         "toastMessage": "Add credits to your account to use this node."
+      },
+      "personal_wallet_insufficient_credits": {
+        "title": "Insufficient credits",
+        "message": "This run billed your personal account, which is out of credits.",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Insufficient credits",
+        "toastMessage": "This run billed your personal account, which is out of credits."
       },
       "workspace_insufficient_credits": {
         "title": "Insufficient credits",
@@ -6324,15 +6409,16 @@
     "creditTransitionNotice": "You've used your free agent credits. Further agent activity uses your workspace credits, which may include paid credits.",
     "runNotice": "The agent can modify the graph. Use Run permissions in the composer toolbar to control whether it asks before executing.",
     "runNoticeExpanded": "The agent can modify your workflow. Use Run permissions in the composer toolbar to control whether it asks before executing.",
-    "workflowEditNotice": "The agent can now edit {workflow}. It works on 1 workflow at a time, and you can switch workflows during chat.",
-    "targetFollowsVisibleWorkflow": "Target workflow follows the visible tab until you choose a target, reference nodes, or send a message.",
+    "workflowEditNotice": "The agent can now edit {workflow}. It works on 1 workflow at a time.",
     "viewingDifferentWorkflow": "You’re viewing a different workflow from the target.",
     "showTarget": "Show target",
     "targetWorkflowUnavailable": "The target workflow is no longer available.",
+    "startNewChat": "Start a new chat",
     "canvasIsEmptyAfterTurn": "This canvas is empty — nothing was added to it. There is nothing here to run, save or export yet.",
     "targetWorkflowOpenFailed": "Couldn’t open the target workflow.",
     "openingWorkflowChat": "Opening chat for {workflowName}…",
     "openingChat": "Opening chat…",
+    "loadingWorkflowChats": "Loading the chats for {workflowName}",
     "followedChatOpenFailed": "Couldn’t open the chat for {workflowName}.",
     "retryFollowedChat": "Retry opening the chat for {workflowName}",
     "showTargetWorkflow": "Show target workflow: {workflowName}",
@@ -6535,6 +6621,7 @@
     "assetFetchFailed": "{name} could not be retrieved",
     "assetNotAttachable": "Images, video, audio, 3D models, and text files can be attached",
     "attachmentCountExceeded": "Only {count} files can be attached to one message",
+    "attachmentEmpty": "{name} is empty and could not be attached",
     "attachmentInvalidVideo": "{name} isn’t a valid video file. Remove it and try another file.",
     "attachmentNamesOverflow": "{names} and {count} more",
     "attachmentTooLarge": "{name} is larger than {limit}",
@@ -6543,20 +6630,13 @@
     "attachmentUploadFailed": "{name} could not be uploaded",
     "attachmentsAlreadyAdded": "{name} is already in the asset tray | Skipped {count} duplicate assets",
     "mention": "Mention a node",
-    "changeWorkflowForChat": "Change the workflow that the agent can edit",
     "chatOptions": "Chat options",
     "chooseWorkflow": "Choose a workflow",
     "selectWorkflowForNodes": "Please select a workflow first",
     "switchWorkflowForNodes": "Switch to {workflowName} to add nodes.",
-    "selectWorkflowForAgent": "Select a workflow for agent to work in",
-    "chooseWorkflowForChat": "Choose a workflow for this chat",
-    "searchWorkflows": "Search workflows",
-    "currentTab": "Current tab",
-    "otherOpenWorkflows": "Other open workflows",
     "savingWorkflow": "Saving workflow",
     "unsavedWorkflow": "Unsaved",
     "selectWorkflowToGenerate": "Select a workflow to generate in",
-    "switchWorkflow": "Switch workflow",
     "modelAuto": "Auto",
     "runModeTriggerAsk": "Ask",
     "runModeTriggerAuto": "Auto",
@@ -6614,6 +6694,13 @@
     "noNodesToMention": "No nodes in this workflow",
     "friend": "there",
     "sendFailed": "Message failed to send",
+    "sendFailedOffscreen": "Your message couldn't be sent",
+    "sendFailedOffscreenShow": "Show",
+    "sendFailedNetwork": "Message didn't reach the server. Check your connection and try again.",
+    "sendFailedUncertain": "Could not confirm whether the server received your message. Check your chat before sending again.",
+    "sendFailedDisownedWorkflow": "This workflow is no longer available.",
+    "sendFailedTurnInProgress": "A reply was still running in this chat.",
+    "sendingMessage": "Sending…",
     "recoveredTurnFailed": "The agent could not complete this response.",
     "sendBusy": "A message is already being sent",
     "sendTurnInProgress": "This chat still has a response running. Wait for it to finish, or stop it, then send again.",
@@ -6623,7 +6710,7 @@
     "coachTitle": "Meet your Comfy Agent",
     "coachBody": "Describe your ideas, ask it to build and run workflows. It sees your canvas and files.",
     "coachWorkflowTitle": "The agent edits one workflow at a time",
-    "coachWorkflowBody": "That workflow is named at the top of the message box. Click the name to pick another. Clicking a workflow tab can open its latest chat, unless the message box has a draft.",
+    "coachWorkflowBody": "Each workflow tab has its own chats. Switching tabs switches to that tab's chat.",
     "coachHistoryTitle": "Pick up where you left off",
     "coachHistoryBody": "Previous chats are saved here. Open one to review it or continue working with the agent.",
     "coachHoldNotice": "Your message will send when you finish or skip the tour.",
@@ -6875,5 +6962,26 @@
     "opening": "Opening checkout…",
     "openingDetail": "This takes a few seconds.",
     "openingTabTitle": "Opening checkout · Comfy"
+  },
+  "localMcp": {
+    "title": "Connect your AI agent",
+    "label": "Agent",
+    "description": "Let an AI agent such as Claude or Cursor run workflows on this ComfyUI through Comfy MCP. It runs on your machine.",
+    "connected": "Connected: an agent has run a workflow here through Comfy MCP.",
+    "step1": "1. Install Comfy MCP",
+    "step2": "2. Add it to your client",
+    "step3": "3. Ask your agent to run a workflow",
+    "step3Hint": "Restart your client, then ask it to confirm your local ComfyUI is running and run a workflow. This panel shows Connected after the first run.",
+    "copyConfig": "Copy",
+    "openDocs": "Full setup guide",
+    "clients": {
+      "claudeCode": "Claude Code",
+      "claudeDesktop": "Claude Desktop",
+      "cursor": "Cursor"
+    },
+    "locations": {
+      "claudeDesktop": "Add to claude_desktop_config.json (Settings > Developer > Edit Config), then restart Claude Desktop.",
+      "cursor": "Add to ~/.cursor/mcp.json, or .cursor/mcp.json in a project."
+    }
   }
 }

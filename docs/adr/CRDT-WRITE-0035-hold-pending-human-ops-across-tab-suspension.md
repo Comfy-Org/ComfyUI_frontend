@@ -17,6 +17,27 @@ needed. `pendingOpLedger` and `PendingLocalEdits` were deleted. References to
 the reconcile, to `pendingOpLedger`, and to `LocalIntent` below are
 historical.
 
+Amended 2026-11-18 by BE-26287 (one chat per workflow tab): when the panel
+unbinds from a workflow while its tab is inactive and the sender still holds
+unsettled batches (in flight, queued or unsealed) for that workflow, the
+follower treats that unbind like a pause: it holds them, keeps the projection
+bound and resumes when the panel binds the workflow again.
+`unsyncedHumanOps` separates live pending batches (`recordPendingHumanOps`)
+from blocking unsynced intent (`recordUnsyncedHumanOps` for unbound edits or
+terminally lost batches, plus `unsyncedAtLoad` across reloads or disposed
+recorders), while persisting their union so reload still guards. The panel's
+restore guard (`hasUnsyncedHumanOps`) is skipped only when
+`canResumeHeldWorkflow(workflowId)` holds—that is, the follower holds that
+workflow and `hasBlockingUnsyncedHumanOps` reports no non-replayable intent for
+it—so an unbound edit made before the restore completes still keeps the
+workflow unbound. "A real detach still aborts at once" in the Decision below
+now applies only when the sender holds nothing for the workflow being left. A
+move to another workflow's chat still aborts: `opSender` is one serial queue,
+so a parked batch for one workflow would block another's, and an edit still
+unconfirmed on a direct switch between two tabs with chats settles
+`unconfirmed`. Closing that gap needs per-workflow queues in `opSender` or the
+bounded drain under Alternatives considered.
+
 ## Context
 
 The human write leg (`opSender`) mints each batch against the workflow the

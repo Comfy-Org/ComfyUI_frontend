@@ -2,12 +2,9 @@ import { useDebounceFn } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { onScopeDispose, ref, shallowReactive, watch } from 'vue'
 
-import type {
-  AssetItem,
-  AssetUserMetadata
-} from '@/platform/assets/schemas/assetSchema'
+import type { AssetItem, AssetUserMetadata } from '@comfyorg/assets-core/schema'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useAssetsStore } from '@/stores/assetsStore'
+import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
 
 function unconfirmedUpdates(
   pending: AssetUserMetadata,

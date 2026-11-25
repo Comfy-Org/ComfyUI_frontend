@@ -27,7 +27,6 @@ test.describe('Agent composer bulk attachments', { tag: '@cloud' }, () => {
     })
 
     await agentPanel.open()
-    await agentPanel.selectWorkflow()
     await agentPanel.composer.fill('Compare these references')
     await agentPanel.fileInput.setInputFiles(
       Array.from({ length: ATTACHMENT_COUNT }, (_, index) => ({

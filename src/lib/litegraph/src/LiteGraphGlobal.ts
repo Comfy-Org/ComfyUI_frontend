@@ -455,6 +455,7 @@ export class LiteGraphGlobal {
   // Special Rendering Values pulled out of app.ts patches
   nodeOpacity = 1
   nodeLightness: number | undefined = undefined
+  linkStyle: 'solid' | 'chalk' | undefined = undefined
 
   // TODO: Remove legacy accessors
   LGraph = LGraph

@@ -1,3 +1,4 @@
+import type { FirebaseIdentity } from '@comfyorg/account-core/firebase'
 import type { ComfyDownloadProgress } from '@comfyorg/comfyui-desktop-bridge-types'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -5,15 +6,33 @@ import { nextTick } from 'vue'
 
 import { reportError } from '@comfyorg/telemetry/reportError'
 
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { downloadModel } from '@/platform/workflowErrors/missingModel/missingModelDownload'
 import { useMissingModelDownloadStore } from '@/platform/workflowErrors/missingModel/missingModelDownloadStore'
+import {
+  refreshMissingModelPipeline,
+  runMissingModelPipeline
+} from '@/platform/workflowErrors/missingModel/missingModelPipeline'
+import * as missingModelScan from '@/platform/workflowErrors/missingModel/missingModelScan'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
+import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
 
 vi.mock(import('@/platform/workflowErrors/missingModel/missingModelDownload'), {
   spy: true
 })
 vi.mock(import('@comfyorg/telemetry/reportError'))
+vi.mock(import('@/platform/auth/firebaseIdentity'), () => ({
+  firebaseIdentity: fromPartial<FirebaseIdentity>({
+    onUserChanged: () => () => {},
+    onTokenChanged: () => () => {},
+    currentUser: () => null
+  })
+}))
+vi.mock(import('@/platform/workflowErrors/missingModel/missingModelScan'), {
+  spy: true
+})
 
 const model = {
   name: 'model.safetensors',
@@ -130,6 +149,27 @@ describe(useMissingModelDownloadStore, () => {
 
     expect(refreshMissingModels).toHaveBeenCalledOnce()
   })
+
+  it('re-checks missing models after a load that skips its asset scans', async () => {
+    installDesktopHost()
+    seedMissingModel()
+    const missingModelStore = useMissingModelStore()
+    const refreshMissingModels = vi
+      .spyOn(missingModelStore, 'refreshMissingModels')
+      .mockResolvedValue(undefined)
+    const store = useMissingModelDownloadStore()
+    store.startTracking()
+    missingModelStore.isRefreshingMissingModels = true
+    emitHostProgress('completed')
+    await nextTick()
+
+    missingModelStore.createVerificationAbortController().abort()
+    missingModelStore.isRefreshingMissingModels = false
+    await nextTick()
+
+    expect(refreshMissingModels).toHaveBeenCalledOnce()
+  })
+
   it('mirrors a download of the same destination started elsewhere', () => {
     installDesktopHost()
     const store = useMissingModelDownloadStore()
@@ -264,6 +304,241 @@ describe(useMissingModelDownloadStore, () => {
     expect(store.canResume(model)).toBe(false)
     expect(resumeDownload).not.toHaveBeenCalled()
     expect(hostDownloadModel).not.toHaveBeenCalled()
+  })
+
+  describe('after a reload', () => {
+    function hostJob(
+      status: ComfyDownloadProgress['status'],
+      overrides: Partial<ComfyDownloadProgress> = {}
+    ): ComfyDownloadProgress {
+      return {
+        id: 'job-1',
+        url: model.url,
+        filename: model.name,
+        directory: model.directory,
+        progress: 0.5,
+        status,
+        ...overrides
+      }
+    }
+
+    const otherModel = {
+      ...model,
+      name: 'other.safetensors',
+      url: `${model.url}?other`
+    }
+
+    function flushPromises() {
+      return new Promise((resolve) => setTimeout(resolve))
+    }
+
+    function listJobs(jobs: Promise<ComfyDownloadProgress[]>) {
+      listWithHost(() => jobs)
+    }
+
+    function listWithHost(listModelDownloads: () => unknown) {
+      installDesktopHost()
+      window.__comfyDesktop2 = {
+        ...window.__comfyDesktop2,
+        listModelDownloads: fromAny<
+          () => Promise<ComfyDownloadProgress[]>,
+          () => unknown
+        >(listModelDownloads)
+      }
+    }
+
+    it('shows a paused download the host still holds', async () => {
+      listJobs(Promise.resolve([hostJob('paused')]))
+      const store = useMissingModelDownloadStore()
+
+      store.startTracking()
+
+      await vi.waitFor(() =>
+        expect(store.stateFor(model)).toMatchObject({
+          status: 'downloading',
+          paused: true
+        })
+      )
+    })
+
+    it('keeps progress that arrived before the listing', async () => {
+      let resolveJobs: (jobs: ComfyDownloadProgress[]) => void = () => {}
+      listJobs(new Promise((resolve) => (resolveJobs = resolve)))
+      const store = useMissingModelDownloadStore()
+      store.startTracking()
+
+      emitHostProgress('downloading', { progress: 0.75 })
+      resolveJobs([
+        hostJob('paused'),
+        hostJob('paused', {
+          id: 'job-2',
+          url: otherModel.url,
+          filename: otherModel.name
+        })
+      ])
+      await vi.waitFor(() =>
+        expect(store.stateFor(otherModel)).toMatchObject({ paused: true })
+      )
+
+      expect(store.stateFor(model)).toMatchObject({ paused: false })
+    })
+
+    it('ignores a listing that arrives after tracking stopped', async () => {
+      let resolveJobs: (jobs: ComfyDownloadProgress[]) => void = () => {}
+      listJobs(new Promise((resolve) => (resolveJobs = resolve)))
+      const store = useMissingModelDownloadStore()
+      const stopTracking = store.startTracking()
+
+      stopTracking()
+      resolveJobs([hostJob('paused')])
+      await flushPromises()
+
+      expect(store.stateFor(model).status).toBe('idle')
+    })
+
+    it('shows a held paused download again after tracking restarts', async () => {
+      listJobs(Promise.resolve([]))
+      const store = useMissingModelDownloadStore()
+      const stopTracking = store.startTracking()
+      emitHostProgress('downloading')
+      stopTracking()
+      window.__comfyDesktop2 = {
+        ...window.__comfyDesktop2,
+        listModelDownloads: () => Promise.resolve([hostJob('paused')])
+      }
+
+      store.startTracking()
+
+      await vi.waitFor(() =>
+        expect(store.stateFor(model)).toMatchObject({ paused: true })
+      )
+    })
+
+    it('prefers the held job over a finished one listed for the same file', async () => {
+      listJobs(
+        Promise.resolve([
+          hostJob('error', { id: 'old-job' }),
+          hostJob('paused')
+        ])
+      )
+      const store = useMissingModelDownloadStore()
+
+      store.startTracking()
+
+      await vi.waitFor(() =>
+        expect(store.stateFor(model)).toMatchObject({ paused: true })
+      )
+    })
+
+    it.for([
+      { listing: 'null', value: null },
+      { listing: 'a set of held jobs', value: new Set([hostJob('paused')]) },
+      {
+        listing: 'an object wrapping held jobs',
+        value: { jobs: [hostJob('paused')] }
+      }
+    ])(
+      'reports $listing as an unreadable listing and seeds nothing',
+      async ({ value }) => {
+        listWithHost(() => Promise.resolve(value))
+        const store = useMissingModelDownloadStore()
+
+        store.startTracking()
+
+        await vi.waitFor(() =>
+          expect(reportError).toHaveBeenCalledWith(expect.any(TypeError), {
+            surface: 'platform',
+            errorType: 'error_listing_model_downloads'
+          })
+        )
+        expect(store.stateFor(model).status).toBe('idle')
+      }
+    )
+
+    it.for([
+      { fault: 'no url', overrides: { url: undefined } },
+      { fault: 'a numeric id', overrides: { id: 42 } },
+      { fault: 'no directory', overrides: { directory: undefined } }
+    ])(
+      'skips a held entry with $fault for a file a cancelled download left known',
+      async ({ overrides }) => {
+        listWithHost(() =>
+          Promise.resolve([
+            { ...hostJob('paused'), ...overrides },
+            hostJob('paused', {
+              id: 'job-2',
+              url: otherModel.url,
+              filename: otherModel.name
+            })
+          ])
+        )
+        const store = useMissingModelDownloadStore()
+        store.startTracking()
+
+        emitHostProgress('cancelled', { id: 'job-0' })
+
+        await vi.waitFor(() =>
+          expect(store.stateFor(otherModel)).toMatchObject({ paused: true })
+        )
+        expect(store.stateFor(model).status).toBe('idle')
+      }
+    )
+
+    it('lists the downloads through the bridge it belongs to', async () => {
+      installDesktopHost()
+      const bridge = {
+        ...window.__comfyDesktop2,
+        listModelDownloads() {
+          return Promise.resolve(this === bridge ? [hostJob('paused')] : [])
+        }
+      }
+      window.__comfyDesktop2 = bridge
+      const store = useMissingModelDownloadStore()
+
+      store.startTracking()
+
+      await vi.waitFor(() =>
+        expect(store.stateFor(model)).toMatchObject({ paused: true })
+      )
+    })
+
+    it.for([
+      {
+        host: 'lists a null entry before the held job',
+        listModelDownloads: () => Promise.resolve([null, hostJob('paused')])
+      },
+      {
+        host: 'returns its listing synchronously',
+        listModelDownloads: () => [hostJob('paused')]
+      }
+    ])(
+      'shows the held job when the host $host',
+      async ({ listModelDownloads }) => {
+        listWithHost(listModelDownloads)
+        const store = useMissingModelDownloadStore()
+
+        store.startTracking()
+
+        await vi.waitFor(() =>
+          expect(store.stateFor(model)).toMatchObject({ paused: true })
+        )
+        expect(reportError).not.toHaveBeenCalled()
+      }
+    )
+
+    it('reports a listing the host fails', async () => {
+      const failure = new Error('cannot list')
+      listJobs(Promise.reject(failure))
+
+      useMissingModelDownloadStore().startTracking()
+
+      await vi.waitFor(() =>
+        expect(reportError).toHaveBeenCalledWith(failure, {
+          surface: 'platform',
+          errorType: 'error_listing_model_downloads'
+        })
+      )
+    })
   })
 
   it('does not fail a retry when the earlier request is refused late', async () => {
@@ -815,5 +1090,183 @@ describe(useMissingModelDownloadStore, () => {
     store.download(model)
 
     await vi.waitFor(() => expect(store.stateFor(model).status).toBe('done'))
+  })
+
+  it("opens the loaded workflow's missing models when a re-check queued by a finished download starts during the load", async () => {
+    installDesktopHost()
+    const missingModelStore = useMissingModelStore()
+    const candidate = fromPartial<MissingModelCandidate>({
+      nodeType: 'CheckpointLoaderSimple',
+      widgetName: 'ckpt_name',
+      name: model.name,
+      directory: model.directory,
+      isAssetSupported: true
+    })
+    const graph = fromPartial<LGraph>({ serialize: () => ({}) })
+    const verifications: (() => void)[] = []
+    vi.mocked(missingModelScan.scanAllModelCandidates).mockReturnValue([
+      candidate
+    ])
+    vi.mocked(missingModelScan.enrichWithEmbeddedMetadata).mockImplementation(
+      (candidates) => [...candidates]
+    )
+    vi.mocked(missingModelScan.hasPendingVerification).mockReturnValue(true)
+    vi.mocked(
+      missingModelScan.verifyAssetSupportedCandidates
+    ).mockImplementation(
+      (candidates) =>
+        new Promise<void>((resolve) => {
+          verifications.push(() => {
+            for (const c of candidates) c.isMissing = true
+            resolve()
+          })
+        })
+    )
+    vi.spyOn(api, 'getFolderPaths').mockResolvedValue({})
+    const reloadNodeDefs: (() => void)[] = []
+    const recheck = vi
+      .spyOn(app, 'refreshMissingModels')
+      .mockImplementation(() =>
+        refreshMissingModelPipeline({
+          graph,
+          reloadNodeDefs: () =>
+            new Promise<void>((resolve) => reloadNodeDefs.push(resolve)),
+          missingModelStore,
+          silent: true
+        })
+      )
+    seedMissingModel()
+    const store = useMissingModelDownloadStore()
+    store.startTracking()
+
+    const inFlightRecheck = missingModelStore.refreshMissingModels()
+    reloadNodeDefs.shift()?.()
+    await inFlightRecheck
+    expect(verifications).toHaveLength(1)
+
+    emitHostProgress('completed')
+    await nextTick()
+    expect(recheck).toHaveBeenCalledOnce()
+
+    const onVerified = vi.fn()
+    const load = await runMissingModelPipeline({
+      graph,
+      graphData: fromAny({}),
+      missingModelStore,
+      onVerified
+    })
+    await vi.runAllTimersAsync()
+    for (const resolveReload of reloadNodeDefs.splice(0)) resolveReload()
+    await vi.runAllTimersAsync()
+
+    verifications[1]()
+    await load.surfaced
+
+    expect(onVerified).toHaveBeenCalledWith([candidate])
+  })
+
+  it("opens the loaded workflow's missing models when a re-check reloading node definitions resumes during the load", async () => {
+    const missingModelStore = useMissingModelStore()
+    const candidate = fromPartial<MissingModelCandidate>({
+      nodeType: 'CheckpointLoaderSimple',
+      widgetName: 'ckpt_name',
+      name: model.name,
+      directory: model.directory,
+      isAssetSupported: true
+    })
+    const graph = fromPartial<LGraph>({ serialize: () => ({}) })
+    const verifications: (() => void)[] = []
+    vi.mocked(missingModelScan.scanAllModelCandidates).mockReturnValue([
+      candidate
+    ])
+    vi.mocked(missingModelScan.enrichWithEmbeddedMetadata).mockImplementation(
+      (candidates) => [...candidates]
+    )
+    vi.mocked(missingModelScan.hasPendingVerification).mockReturnValue(true)
+    vi.mocked(
+      missingModelScan.verifyAssetSupportedCandidates
+    ).mockImplementation(
+      (candidates) =>
+        new Promise<void>((resolve) => {
+          verifications.push(() => {
+            for (const c of candidates) c.isMissing = true
+            resolve()
+          })
+        })
+    )
+    vi.spyOn(api, 'getFolderPaths').mockResolvedValue({})
+    let finishReload = () => {}
+    const recheck = refreshMissingModelPipeline({
+      graph,
+      reloadNodeDefs: () =>
+        new Promise<void>((resolve) => {
+          finishReload = resolve
+        }),
+      missingModelStore
+    })
+
+    const onVerified = vi.fn()
+    const load = await runMissingModelPipeline({
+      graph,
+      graphData: fromAny({}),
+      missingModelStore,
+      onVerified
+    })
+    finishReload()
+    await vi.runAllTimersAsync()
+
+    verifications[0]()
+    await load.surfaced
+
+    expect(onVerified).toHaveBeenCalledWith([candidate])
+    await vi.runAllTimersAsync()
+    expect(verifications).toHaveLength(2)
+    verifications[1]()
+    await (
+      await recheck
+    ).surfaced
+  })
+
+  it('re-checks the graph a load switched to while the re-check waited on it', async () => {
+    const missingModelStore = useMissingModelStore()
+    const candidateFor = (name: string) =>
+      fromPartial<MissingModelCandidate>({
+        nodeType: 'CheckpointLoaderSimple',
+        widgetName: 'ckpt_name',
+        name,
+        directory: model.directory,
+        isMissing: true
+      })
+    const previousGraph = fromPartial<LGraph>({ serialize: () => ({}) })
+    const loadedGraph = fromPartial<LGraph>({ serialize: () => ({}) })
+    const loadedCandidate = candidateFor('loaded.safetensors')
+    vi.mocked(missingModelScan.scanAllModelCandidates).mockImplementation(
+      (graph) =>
+        graph === loadedGraph
+          ? [loadedCandidate]
+          : [candidateFor('previous.safetensors')]
+    )
+    vi.mocked(missingModelScan.enrichWithEmbeddedMetadata).mockImplementation(
+      (candidates) => [...candidates]
+    )
+    vi.spyOn(api, 'getFolderPaths').mockResolvedValue({})
+    const rootGraph = vi
+      .spyOn(app, 'rootGraph', 'get')
+      .mockReturnValue(previousGraph)
+    let finishLoad = () => {}
+    const load = missingModelStore.whileWorkflowLoads(
+      () =>
+        new Promise<void>((resolve) => {
+          finishLoad = resolve
+        })
+    )
+
+    const recheck = app.refreshMissingModels({ reloadDefs: false })
+    rootGraph.mockReturnValue(loadedGraph)
+    finishLoad()
+    await load
+
+    const { confirmedCandidates } = await recheck
+    expect(confirmedCandidates).toEqual([loadedCandidate])
   })
 })

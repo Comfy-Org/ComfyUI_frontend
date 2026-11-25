@@ -481,7 +481,7 @@ describe('FormDropdown', () => {
     outside.remove()
   })
 
-  it('closes when the canvas viewport moves', async () => {
+  it('keeps the menu open when the canvas viewport moves', async () => {
     const camera = reactive({ x: 0, y: 0, z: 1 })
     vi.mocked(useTransformState()).camera = camera
     const onUpdateIsOpen = vi.fn()
@@ -495,7 +495,7 @@ describe('FormDropdown', () => {
     camera.x += 77
     await flushPromises()
 
-    expect(onUpdateIsOpen).toHaveBeenLastCalledWith(false)
+    expect(screen.getByTestId('dropdown-menu')).toBeVisible()
   })
 
   it('stays open on a pointerdown inside the menu', async () => {

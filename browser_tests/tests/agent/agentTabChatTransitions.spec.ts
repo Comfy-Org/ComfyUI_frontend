@@ -32,7 +32,9 @@ test.describe(
         await expect(
           tabChats.tab(0).and(tabChats.topbar.getActiveTab())
         ).toBeVisible()
-        await expect(tabChats.panel.workflowPicker).toContainText('Portrait')
+        await expect(tabChats.panel.root.getByRole('note')).toContainText(
+          'Portrait'
+        )
         await expect(tabChats.panel.composer).toBeEditable()
         await expect(
           tabChats.panel.root.getByRole('button', {
@@ -46,17 +48,27 @@ test.describe(
       })
     }
 
-    test('Send routes an A-pinned draft to A while B is selected', async ({
+    test('a draft stays with its chat across a tab change and Send posts it there', async ({
       tabChats
     }) => {
       await tabChats.panel.composer.fill('Draft addressed to Portrait')
       await tabChats.tab(1).click()
-      await expect(tabChats.panel.root.getByRole('note')).toContainText(
-        enMessages.agent.viewingDifferentWorkflow
-      )
+      await expect(tabChats.panel.userMessageBubbles).toHaveText([
+        'Landscape existing request'
+      ])
+      await expect(tabChats.panel.composer).toHaveText('')
+      await expect(
+        tabChats.panel.root.getByText(enMessages.agent.viewingDifferentWorkflow)
+      ).toHaveCount(0)
+
+      await tabChats.tab(0).click()
       await expect(tabChats.panel.userMessageBubbles).toHaveText([
         'Portrait existing request'
       ])
+      await expect(tabChats.panel.composer).toHaveText(
+        'Draft addressed to Portrait'
+      )
+      expect(tabChats.posted).toEqual([])
 
       await tabChats.panel.sendButton.click()
 
@@ -69,12 +81,12 @@ test.describe(
         }
       })
       await expect(
-        tabChats.tab(1).and(tabChats.topbar.getActiveTab())
+        tabChats.tab(0).and(tabChats.topbar.getActiveTab())
       ).toBeVisible()
       await expect(tabChats.working(0)).toBeVisible()
     })
 
-    test('a skill-only draft survives B activation without retargeting A', async ({
+    test('a skill-only draft stays with its chat across a tab change', async ({
       page,
       tabChats
     }) => {
@@ -89,17 +101,26 @@ test.describe(
 
       await tabChats.tab(1).click()
 
+      await expect(tabChats.panel.userMessageBubbles).toHaveText([
+        'Landscape existing request'
+      ])
+      await expect(tabChats.panel.composer).toHaveText('')
+      await expect(
+        tabChats.panel.composer.getByTestId('skill-reference')
+      ).toHaveCount(0)
+
+      await tabChats.tab(0).click()
+
+      await expect(tabChats.panel.userMessageBubbles).toHaveText([
+        'Portrait existing request'
+      ])
       await expect(tabChats.panel.composer).toHaveText(`/${tabChats.skillName}`)
       await expect(
         tabChats.panel.composer.getByTestId('skill-reference')
       ).toHaveCount(1)
-      await expect(tabChats.panel.userMessageBubbles).toHaveText([
-        'Portrait existing request'
-      ])
-      await expect(tabChats.panel.workflowPicker).toContainText('Portrait')
-      await expect(tabChats.panel.root.getByRole('note')).toContainText(
-        enMessages.agent.viewingDifferentWorkflow
-      )
+      await expect(
+        tabChats.panel.root.getByText(enMessages.agent.viewingDifferentWorkflow)
+      ).toHaveCount(0)
       expect(tabChats.posted).toEqual([])
     })
 
@@ -140,7 +161,12 @@ test.describe(
       await expect(tabChats.working(1)).toHaveCount(0)
       await expect(tabChats.updated(1)).toBeVisible()
       await expect(tabChats.updated(0)).toBeVisible()
-      await expect(tabChats.panel.workflowPicker).toContainText('Still Life')
+      await expect(
+        tabChats.tab(2).and(tabChats.topbar.getActiveTab())
+      ).toBeVisible()
+      await expect(tabChats.panel.userMessageBubbles).toHaveText([
+        'Still Life existing request'
+      ])
       expect(tabChats.posted).toHaveLength(2)
     })
   }

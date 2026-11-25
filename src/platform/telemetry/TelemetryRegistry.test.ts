@@ -22,6 +22,8 @@ import type {
   AgentPanelOpenedMetadata,
   AgentPaywallCtaMetadata,
   AgentPaywallShownMetadata,
+  AgentSkillSavedMetadata,
+  AgentSkillSelectedMetadata,
   AgentStarterPromptClickedMetadata,
   AgentWorkflowAppliedMetadata,
   TelemetryProvider
@@ -136,6 +138,22 @@ describe('TelemetryRegistry', () => {
     registry.trackRunOnCloudEvent(event)
 
     expect(a.trackRunOnCloudEvent).toHaveBeenCalledExactlyOnceWith(event)
+  })
+
+  it('dispatches a custom deployment event to every provider that records it', () => {
+    const a: TelemetryProvider = { trackCustomDeploymentEvent: vi.fn() }
+    const b: TelemetryProvider = {}
+    const registry = new TelemetryRegistry()
+    registry.registerProvider(a)
+    registry.registerProvider(b)
+
+    const event = {
+      name: 'platform:deployment_link_clicked',
+      properties: { kind: 'manage_deployments', workspace_id: 'ws-1' }
+    } as const
+    registry.trackCustomDeploymentEvent(event)
+
+    expect(a.trackCustomDeploymentEvent).toHaveBeenCalledExactlyOnceWith(event)
   })
 
   it('dispatches unified auth retry outcomes to supporting providers', () => {
@@ -337,6 +355,7 @@ describe('TelemetryRegistry', () => {
     const messageSentMetadata = {
       attachment_count: 1,
       node_tag_count: 2,
+      skill_count: 1,
       thread_id: 'th-1',
       workflow_id: 'w1',
       client_message_id: 'cm-1',
@@ -370,6 +389,13 @@ describe('TelemetryRegistry', () => {
     const nodeTaggedMetadata = {
       source: 'mention_picker'
     } satisfies AgentNodeTaggedMetadata
+    const skillSelectedMetadata = {
+      source: 'slash_picker'
+    } satisfies AgentSkillSelectedMetadata
+    const skillSavedMetadata = {
+      mode: 'add',
+      outcome: 'saved'
+    } satisfies AgentSkillSavedMetadata
     const workflowAppliedMetadata = {
       workflow_id: 'w1',
       target: 'active_tab_open'
@@ -511,6 +537,17 @@ describe('TelemetryRegistry', () => {
         method: 'trackAgentNodeTagged',
         expected: { ...nodeTaggedMetadata },
         invoke: (registry) => registry.trackAgentNodeTagged(nodeTaggedMetadata)
+      },
+      {
+        method: 'trackAgentSkillSelected',
+        expected: { ...skillSelectedMetadata },
+        invoke: (registry) =>
+          registry.trackAgentSkillSelected(skillSelectedMetadata)
+      },
+      {
+        method: 'trackAgentSkillSaved',
+        expected: { ...skillSavedMetadata },
+        invoke: (registry) => registry.trackAgentSkillSaved(skillSavedMetadata)
       },
       {
         method: 'trackAgentAttachButtonClicked',
