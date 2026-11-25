@@ -487,23 +487,40 @@ describe('installErrorClearingHooks lifecycle', () => {
     expect(node.onConnectionsChange).toBe(chainedAfterFirst)
   })
 
-  it('installs hooks without stack-overflowing on a self-referencing subgraph', () => {
-    const { rootGraph, hostNode } = createSelfReferencingSubgraphRuntime()
-    installErrorClearingHooks(rootGraph)
+  it('restores hooks when disposing a retained self-referencing subgraph', () => {
+    const { rootGraph, hostNode, innerSelfReference } =
+      createSelfReferencingSubgraphRuntime()
+    const originalHostCallback = hostNode.onConnectionsChange
+    const originalInnerCallback = innerSelfReference.onConnectionsChange
+    const cleanup = installErrorClearingHooks(rootGraph)
 
     expect(() => rootGraph.add(hostNode)).not.toThrow()
-    expect(hostNode.onConnectionsChange).toBeDefined()
+    expect(hostNode.onConnectionsChange).not.toBe(originalHostCallback)
+    expect(innerSelfReference.onConnectionsChange).not.toBe(
+      originalInnerCallback
+    )
+
+    cleanup()
+
+    expect(hostNode.onConnectionsChange).toBe(originalHostCallback)
+    expect(innerSelfReference.onConnectionsChange).toBe(originalInnerCallback)
   })
 
   it('restores hooks without stack-overflowing when a self-referencing subgraph host is removed', () => {
-    const { rootGraph, hostNode } = createSelfReferencingSubgraphRuntime()
+    const { rootGraph, hostNode, innerSelfReference } =
+      createSelfReferencingSubgraphRuntime()
     const originalOnConnectionsChange = hostNode.onConnectionsChange
+    const originalInnerOnConnectionsChange =
+      innerSelfReference.onConnectionsChange
 
     const cleanup = installErrorClearingHooks(rootGraph)
     rootGraph.add(hostNode)
 
     expect(() => rootGraph.remove(hostNode)).not.toThrow()
     expect(hostNode.onConnectionsChange).toBe(originalOnConnectionsChange)
+    expect(innerSelfReference.onConnectionsChange).toBe(
+      originalInnerOnConnectionsChange
+    )
 
     cleanup()
   })
