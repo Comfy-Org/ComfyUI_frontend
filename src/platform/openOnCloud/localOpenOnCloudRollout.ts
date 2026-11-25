@@ -20,9 +20,6 @@ const zOpenOnCloudRollout = zGetFeaturesResponse.pick({
 })
 
 type OpenOnCloudRollout = z.infer<typeof zOpenOnCloudRollout>
-// Scopes the once-per-page Sentry budget: each kind (and each HTTP status)
-// gets its own slot, so a credential failure can't consume the one report
-// a later HTTP failure on the same page would otherwise get, and vice versa.
 type RolloutFailureKind =
   | 'network'
   | 'credential'
@@ -58,10 +55,6 @@ function reportRolloutReadFailure(
   kind: RolloutFailureKind,
   httpStatus?: number
 ): void {
-  // Datadog RUM only initializes on Cloud builds, so a self-hosted install has
-  // no remote signal besides Sentry. A fixed per-kind-per-page cap, rather
-  // than suppressing network/unreachable failures outright, keeps that signal
-  // without letting a single kind flood a page.
   reportError(cause, {
     errorType: ['error_loading_open_on_cloud_rollout', kind, httpStatus]
       .filter((part) => part !== undefined)
@@ -129,9 +122,6 @@ async function requestRollout(
         signal: requestSignal
       })
     } catch (cause) {
-      // Every exception the fetch() call itself can raise here — network
-      // failure, CORS, abort, timeout, or a rejected redirect — is some
-      // flavor of "couldn't reach Cloud", not a distinct, actionable kind.
       return { ok: false, retryable: true, cause, kind: 'network' }
     }
     if (!response.ok)
