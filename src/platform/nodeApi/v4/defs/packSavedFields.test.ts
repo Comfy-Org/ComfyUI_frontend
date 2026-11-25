@@ -94,22 +94,16 @@ describe('a pack’s saved fields and identity', () => {
       const [saved] = graph.serialize().nodes
       reloaded()
 
-      expect(saved.extensions).toEqual({
+      const { extensions, ...nodeFields } = saved
+      expect(extensions).toEqual({
         'pack-alpha': { state: 'from alpha' },
         beta: { state: 'from beta' }
       })
-      expect(saved).not.toHaveProperty('state')
-      expect(received.alpha).toEqual([
-        expect.objectContaining({ type: HOST_TYPE, state: 'from alpha' })
-      ])
-      expect(received.beta).toEqual([
-        expect.objectContaining({ type: HOST_TYPE, state: 'from beta' })
-      ])
-      for (const data of [...received.alpha, ...received.beta]) {
-        expect(data).not.toHaveProperty('extensions')
-        expect(data).not.toHaveProperty('pack-alpha')
-        expect(data).not.toHaveProperty('beta')
-      }
+      expect(nodeFields).not.toHaveProperty('state')
+      expect(received).toEqual({
+        alpha: [{ ...nodeFields, state: 'from alpha' }],
+        beta: [{ ...nodeFields, state: 'from beta' }]
+      })
     })
 
     it('keeps saved fields off the node, so they cannot change what it is', () => {
@@ -510,20 +504,7 @@ describe('a pack’s saved fields and identity', () => {
       }
     )
 
-    it('keeps the pack properties a workflow saved as one unit, adding no stamped one it lacks', () => {
-      const [alpha] = served(ALPHA)
-      onTestFinished(api.comfy.defs.define(alpha, { type: 'Alpha/Stamped' }))
-      added('Alpha/Stamped')
-      const saved = graph.serialize()
-      saved.nodes[0].properties = { cnr_id: 'renamed-pack' }
-      const loaded = new LGraph()
-
-      loaded.configure(saved)
-
-      expect(onlyNode(loaded).properties).toEqual({ cnr_id: 'renamed-pack' })
-    })
-
-    it('gives onConfigured the pack properties the workflow saved, without a stamped one it lacks', () => {
+    it('keeps the pack properties a workflow saved as one unit, adding no stamped one it lacks, onConfigured included', () => {
       const [alpha] = served(ALPHA)
       const read: unknown[] = []
       onTestFinished(
@@ -535,10 +516,12 @@ describe('a pack’s saved fields and identity', () => {
       added('Alpha/Stamped')
       const saved = graph.serialize()
       saved.nodes[0].properties = { cnr_id: 'renamed-pack' }
+      const loaded = new LGraph()
 
-      new LGraph().configure(saved)
+      loaded.configure(saved)
 
       expect(read).toEqual([{ cnr_id: 'renamed-pack' }])
+      expect(onlyNode(loaded).properties).toEqual({ cnr_id: 'renamed-pack' })
     })
 
     it('fills the stamp into a node a workflow saved with no pack property', () => {
