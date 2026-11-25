@@ -297,7 +297,9 @@ function checkedWidgets(widgets: unknown): readonly WidgetDef[] {
   if (!Array.isArray(widgets)) {
     throw invalidArgument('define', 'a list of widgets', widgets)
   }
-  return widgets.map((widget: unknown) => checkedWidgetDef(widget, 'define'))
+  return Array.from(widgets, (widget: unknown) =>
+    checkedWidgetDef(widget, 'define')
+  )
 }
 
 function checkedExecution(execution: unknown): CheckedDefinition['execution'] {

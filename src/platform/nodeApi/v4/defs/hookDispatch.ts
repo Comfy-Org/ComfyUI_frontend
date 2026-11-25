@@ -172,7 +172,9 @@ export function createHookDispatch(
     },
     callbacksOf: (node, hook) =>
       isMadeFromKnownClass(node)
-        ? source.callbacksFor(node.type, hook, joined.get(node) ?? 0)
+        ? source
+            .callbacksFor(node, hook, joined.get(node) ?? 0)
+            .map(({ callback }) => callback)
         : [],
     deliverTo: (node, hook, call) =>
       isMadeFromKnownClass(node) ? deliver(node.type, hook, node, call) : [],

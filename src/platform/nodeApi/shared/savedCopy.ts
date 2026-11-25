@@ -71,7 +71,7 @@ function isSavedList(value: SavableValue): value is readonly SavableValue[] {
 
 /** A frozen copy of `value` as a workflow would save it, `undefined` as JSON drops it. Throws for a value it cannot save. */
 export function savedCopy(value: unknown): SavableValue | undefined {
-  const saved = savedValue(value)
+  const saved = savedValue({ value }, 'value')
   if (!saved.ok) throw saved.error
   return saved.value
 }

@@ -137,7 +137,7 @@ export interface GraphHandle {
    */
   add(type: string, init?: NodeInit): NodeHandle | undefined
   /**
-   * Runs `edits` now as one undo step, which re-reads the whole graph once, and returns its result.
+   * Runs `edits` now as one undo step, which re-reads the whole graph once, and returns its result; an `async` function throws a `TypeError`.
    * Edits made before a throw stay; edits after it returns are not in the step. Loop inside one batch.
    */
   batch<T>(edits: () => T): T
