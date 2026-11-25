@@ -133,7 +133,6 @@ import { extractFilesFromDragEvent } from '@/platform/assets/integration/assetDr
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useCanvasScheduler } from '@/renderer/core/canvas/useCanvasScheduler'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { zeroUuid } from '@comfyorg/graph-model/uuid'
 import { graphsAwaitingNodeTypes } from '@/platform/customNodes/lateLoading/lateNodeTypes'
 import type { importA1111 } from './pnginfo'
@@ -6174,16 +6173,13 @@ describe('ComfyApp', () => {
       )
 
       it.for(importPaths)(
-        'fits an import through $path whose nodes land only under the agent panel into the uncovered canvas',
+        'fits an import through $path whose nodes land only under a side panel into the uncovered canvas',
         async ({ importFile }) => {
-          const panel = useAgentPanelStore()
-          panel.enabled = true
-          panel.consentAccepted = true
-          panel.isOpen = true
-          panel.setWidth(420)
-          onTestFinished(() => {
-            panel.isOpen = false
-          })
+          const graphArea = document.createElement('div')
+          graphArea.id = 'graph-canvas-panel'
+          graphArea.getBoundingClientRect = () => new DOMRect(0, 0, 380, 600)
+          document.body.append(graphArea)
+          onTestFinished(() => graphArea.remove())
           mockCanvas.ds.offset = [400, 0]
           mockCanvas.ds.scale = 1
 
