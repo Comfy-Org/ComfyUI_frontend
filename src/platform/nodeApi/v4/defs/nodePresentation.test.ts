@@ -4,7 +4,10 @@ import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { LGraph, LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
-import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
+import {
+  createMockCanvasRenderingContext2D,
+  stubCanvasGetContext
+} from '@/utils/__tests__/canvasTestUtils'
 
 import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
 import type {
@@ -51,10 +54,8 @@ describe('a defined type’s presentation', () => {
   }
 
   function canvasMenu(node: LGraphNode): unknown[] {
+    stubCanvasGetContext()
     const element = document.createElement('canvas')
-    element.getContext = vi
-      .fn()
-      .mockReturnValue(createMockCanvasRenderingContext2D())
     const canvas = new LGraphCanvas(element, graph, {
       skip_render: true,
       skip_events: true

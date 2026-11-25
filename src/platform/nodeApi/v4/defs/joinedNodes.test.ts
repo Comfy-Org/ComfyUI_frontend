@@ -10,7 +10,7 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import '@/scripts/domWidget'
-import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
+import { stubCanvasGetContext } from '@/utils/__tests__/canvasTestUtils'
 
 import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
 import type { ComfyApiHost } from '@/platform/nodeApi/v4/comfyApi'
@@ -72,12 +72,10 @@ describe('which nodes an extension reaches', () => {
   }
 
   function canvasShowing(): LGraphCanvas {
+    stubCanvasGetContext()
     const element = document.createElement('canvas')
     element.width = 800
     element.height = 600
-    element.getContext = vi
-      .fn()
-      .mockReturnValue(createMockCanvasRenderingContext2D())
     element.getBoundingClientRect = vi
       .fn()
       .mockReturnValue({ left: 0, top: 0, width: 800, height: 600 })

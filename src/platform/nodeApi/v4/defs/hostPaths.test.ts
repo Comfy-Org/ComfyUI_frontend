@@ -15,7 +15,7 @@ import {
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
+import { stubCanvasGetContext } from '@/utils/__tests__/canvasTestUtils'
 import { graphToPrompt } from '@/utils/executionUtil'
 
 import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
@@ -34,12 +34,10 @@ vi.mock(import('@/services/litegraphService'))
 const TYPE = 'Pack/HostPath'
 
 function canvasShowing(graph: LGraph): LGraphCanvas {
+  stubCanvasGetContext()
   const element = document.createElement('canvas')
   element.width = 800
   element.height = 600
-  element.getContext = vi
-    .fn()
-    .mockReturnValue(createMockCanvasRenderingContext2D())
   element.getBoundingClientRect = vi
     .fn()
     .mockReturnValue({ left: 0, top: 0, width: 800, height: 600 })

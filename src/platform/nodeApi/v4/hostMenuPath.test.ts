@@ -1,10 +1,10 @@
-import { assert, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { assert, describe, expect, it, onTestFinished } from 'vitest'
 
 import { useContextMenuTranslation } from '@/composables/useContextMenuTranslation'
 import { LGraph, LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { hostNodeDef } from '@/platform/nodeApi/v4/defs/__fixtures__/hostNodeTypes'
 import { useLitegraphService } from '@/services/litegraphService'
-import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
+import { stubCanvasGetContext } from '@/utils/__tests__/canvasTestUtils'
 
 import { registerPublishedTestPack } from './__tests__/testPack'
 import { useComfyApiStore } from './comfyApiStore'
@@ -40,10 +40,8 @@ describe('pack menu entries on the host menu path', () => {
     const node = LiteGraph.createNode('MenuHost')
     assert(node)
     graph.add(node)
+    stubCanvasGetContext()
     const element = document.createElement('canvas')
-    element.getContext = vi
-      .fn()
-      .mockReturnValue(createMockCanvasRenderingContext2D())
     const canvas = new LGraphCanvas(element, graph, {
       skip_render: true,
       skip_events: true
