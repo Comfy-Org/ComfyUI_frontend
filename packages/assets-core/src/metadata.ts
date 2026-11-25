@@ -281,7 +281,7 @@ export function getOutputSubfolder(
 }
 
 export function getAssetType(
-  asset: AssetItem,
+  asset: Pick<AssetItem, 'preview_url' | 'tags'>,
   defaultType: 'input' | 'output' = 'output'
 ): string {
   const urlType = new URLSearchParams(
@@ -290,7 +290,9 @@ export function getAssetType(
   return urlType || asset.tags[0] || defaultType
 }
 
-export function getAssetSubfolder(asset: AssetItem): string {
+export function getAssetSubfolder(
+  asset: Pick<AssetItem, 'preview_url' | 'user_metadata'>
+): string {
   const previewSubfolder = new URLSearchParams(
     (asset.preview_url ?? '').split('?')[1] ?? ''
   ).get('subfolder')

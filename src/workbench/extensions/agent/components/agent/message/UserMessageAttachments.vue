@@ -3,11 +3,11 @@ import { computed } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
-import { api } from '@/scripts/api'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 
 import type { UserAttachment } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
+import { attachmentFileUrl } from '@/workbench/extensions/agent/utils/attachmentFileUrl'
 import type { ReplyAsset } from '@/workbench/extensions/agent/utils/replyAssets'
 import { isReplyAssetKind } from '@/workbench/extensions/agent/utils/replyAssets'
 
@@ -30,7 +30,7 @@ function attachmentUrl(
     kind === 'video' || kind === 'audio' ? item.mediaUrl : item.previewUrl
   if (capturedUrl) return capturedUrl
   if (!item.ref || isHdrImageFilename(item.name)) return
-  return api.apiURL(`/view?filename=${encodeURIComponent(item.ref)}&type=input`)
+  return attachmentFileUrl({ ref: item.ref, id: item.id })
 }
 
 function gridAsset(item: UserAttachment): ReplyAsset | undefined {

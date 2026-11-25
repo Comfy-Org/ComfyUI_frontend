@@ -181,6 +181,7 @@ import {
   agentRequestFailureFingerprint,
   describeAgentRequestFailure
 } from './services/agent/agentRequestFailure'
+import { attachmentFileUrl } from './utils/attachmentFileUrl'
 import {
   createAgentRestClient,
   isLoopbackOnlyRefusal
@@ -3310,9 +3311,7 @@ const attachment = useAttachment({
       ref: filename,
       url: isHdrImageFilename(file.name)
         ? undefined
-        : api.apiURL(
-            `/view?filename=${encodeURIComponent(filename)}&type=input`
-          )
+        : attachmentFileUrl({ ref: filename })
     }
   },
   resolveStoredPreview: async (file, ref) =>

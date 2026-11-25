@@ -2,6 +2,7 @@ import type { Size2D } from '@comfyorg/shared-frontend-utils/geometry'
 import { expect } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
 
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { MIME_ASSET_INFO } from '@/platform/assets/constants/assetDrag'
 import type { MediaKind } from '@comfyorg/assets-core/media'
 import type { parseAssetInfo } from '@/platform/assets/integration/assetDrop'
@@ -57,7 +58,7 @@ export async function expectAssets(
           elements.map((element) => {
             if (element instanceof HTMLImageElement) {
               return {
-                filename: element.alt,
+                label: element.alt,
                 kind: 'image',
                 width: element.naturalWidth,
                 height: element.naturalHeight
@@ -65,11 +66,7 @@ export async function expectAssets(
             }
             if (element instanceof HTMLVideoElement) {
               return {
-                filename: element.currentSrc
-                  ? new URL(element.currentSrc, location.href).searchParams.get(
-                      'filename'
-                    )
-                  : null,
+                label: element.closest('button')?.ariaLabel ?? null,
                 kind: 'video',
                 width: element.videoWidth,
                 height: element.videoHeight
@@ -82,7 +79,10 @@ export async function expectAssets(
     )
     .toEqual(
       assets.map(({ filename, kind, width, height }) => ({
-        filename,
+        label:
+          kind === 'video'
+            ? enMessages.agent.openVideo.replace('{name}', filename)
+            : filename,
         kind,
         width,
         height

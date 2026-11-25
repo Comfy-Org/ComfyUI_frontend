@@ -8,6 +8,11 @@ import type { MediaKind } from '@comfyorg/assets-core/media'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { AgentTurnTab } from '@/stores/workflowTabActivityStore'
 
+import {
+  releaseSharedObjectUrl,
+  retainSharedObjectUrl
+} from '@/utils/objectUrlUtil'
+
 import type {
   AgentMessages,
   RenderedAskKind,
@@ -775,6 +780,8 @@ export const useAgentConversationStore = defineStore(
         userSkillReferences.value.set(turnId, prompt.skillReference)
       else userSkillReferences.value.delete(turnId)
       if (attachments !== undefined && attachments.length > 0) {
+        attachments.forEach(retainAttachmentUrls)
+        userAttachments.value.get(turnId)?.forEach(releaseAttachmentUrls)
         userAttachments.value.set(turnId, attachments)
         rememberAttachmentNames(attachments)
       }
@@ -1919,8 +1926,9 @@ export const useAgentConversationStore = defineStore(
       attachments: readonly UserAttachment[] | undefined,
       target: Set<string>
     ): void {
-      for (const { previewUrl } of attachments ?? []) {
-        if (previewUrl?.startsWith('blob:')) target.add(previewUrl)
+      for (const { previewUrl, mediaUrl } of attachments ?? []) {
+        for (const url of [previewUrl, mediaUrl])
+          if (url?.startsWith('blob:')) target.add(url)
       }
     }
 
@@ -1941,9 +1949,9 @@ export const useAgentConversationStore = defineStore(
       attachments: readonly UserAttachment[] | undefined,
       owned: ReadonlySet<string>
     ): void {
-      for (const { previewUrl } of attachments ?? []) {
-        if (previewUrl?.startsWith('blob:') && !owned.has(previewUrl))
-          URL.revokeObjectURL(previewUrl)
+      for (const { previewUrl, mediaUrl } of attachments ?? []) {
+        for (const url of [previewUrl, mediaUrl])
+          if (url && !owned.has(url)) releaseSharedObjectUrl(url)
       }
     }
 
@@ -2238,6 +2246,16 @@ export const useAgentConversationStore = defineStore(
       for (const settledTransport of settledActiveTransports)
         settledTransport.dispose()
       settledActiveTransports.clear()
+    }
+
+    function retainAttachmentUrls({ previewUrl, mediaUrl }: UserAttachment) {
+      retainSharedObjectUrl(previewUrl)
+      retainSharedObjectUrl(mediaUrl)
+    }
+
+    function releaseAttachmentUrls({ previewUrl, mediaUrl }: UserAttachment) {
+      releaseSharedObjectUrl(previewUrl)
+      releaseSharedObjectUrl(mediaUrl)
     }
 
     function dropAttachmentPreviews(): void {
