@@ -7,7 +7,7 @@ import type {
   WorkflowReferenceOption
 } from '@/workbench/extensions/agent/types/workflowReference'
 
-interface WorkflowReferencePickerOptions {
+interface WorkflowReferencePickerOptions<TCapture = unknown> {
   editor: () => PromptEditor | null
   references: () => WorkflowReference[]
   workflows: () => WorkflowReferenceOption[]
@@ -16,10 +16,16 @@ interface WorkflowReferencePickerOptions {
   resolve: (
     workflow: WorkflowReferenceOption
   ) => Promise<WorkflowReferenceMetadata | undefined>
+  captureInsertion?: (from?: number, to?: number) => TCapture
+  isInsertionLive?: (captured: TCapture) => boolean
+  insertInBackground?: (
+    captured: TCapture,
+    reference: WorkflowReferenceMetadata
+  ) => void
 }
 
-export function useWorkflowReferencePicker(
-  options: WorkflowReferencePickerOptions
+export function useWorkflowReferencePicker<TCapture = unknown>(
+  options: WorkflowReferencePickerOptions<TCapture>
 ) {
   const eligibleWorkflows = computed(() => {
     const selectedIds = new Set(options.references().map(({ id }) => id))
@@ -40,9 +46,17 @@ export function useWorkflowReferencePicker(
     if (options.selecting()) return false
     const insertion = options.editor()?.captureInsertion(from, to)
     if (!insertion) return false
+    const captured = options.captureInsertion?.(from, to)
     try {
       const reference = await options.resolve(workflow)
       if (!reference) return false
+      if (
+        captured !== undefined &&
+        options.isInsertionLive?.(captured) === false
+      ) {
+        options.insertInBackground?.(captured, reference)
+        return true
+      }
       insertion.insert(reference)
       return true
     } finally {

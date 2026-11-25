@@ -135,4 +135,107 @@ describe('useAgentPromptQueueStore', () => {
 
     expect(queue.items[0].target).toEqual(target)
   })
+
+  it('isolates queued items per chat key, keeps stashed attachments alive, and restores edits before switching', () => {
+    const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    const composer = useAgentComposerStore()
+    const queue = useAgentPromptQueueStore()
+    const queuedFile = attachment('tab-a-file')
+
+    queue.activateQueue('thread:a')
+    composer.activateDraft('thread:a')
+    composer.setText('running on A')
+    queue.enqueueFromComposer('running on A', [], [])
+    queue.begin(queue.items[0].id)
+    composer.setText('follow-up on A')
+    composer.addAttachment(queuedFile)
+    queue.enqueueFromComposer('follow-up on A', [queuedFile], [])
+    composer.clearDraft()
+    composer.setText('unsent draft on A')
+    expect(queue.startEdit(queue.items[1].id)).toBe(true)
+    expect(composer.draft).toBe('follow-up on A')
+
+    queue.activateQueue('blank:b')
+    composer.activateDraft('blank:b')
+    expect(queue.items).toEqual([])
+    expect(queue.hasWaiting).toBe(false)
+    expect(composer.draft).toBe('')
+    expect(revoke).not.toHaveBeenCalled()
+
+    queue.activateQueue('thread:a')
+    composer.activateDraft('thread:a')
+    expect(queue.items.map((item) => item.text)).toEqual([
+      'running on A',
+      'follow-up on A'
+    ])
+    expect(queue.editingId).toBeNull()
+    expect(composer.draft).toBe('unsent draft on A')
+    revoke.mockRestore()
+  })
+
+  it('rekeys a blank chat queue to its created thread and finishes stashed running items cleanly', () => {
+    const composer = useAgentComposerStore()
+    const queue = useAgentPromptQueueStore()
+
+    queue.activateQueue('blank:a')
+    composer.setText('first')
+    const first = queue.enqueueFromComposer('first', [], [])
+    queue.begin(first.id)
+    composer.setText('second')
+    queue.enqueueFromComposer('second', [], [])
+    composer.clearDraft()
+
+    queue.activateQueue('blank:b')
+    queue.rekeyQueue('blank:a', 'thread:a')
+    queue.finish(first.id)
+
+    queue.activateQueue('thread:a')
+    expect(queue.runningId).toBeNull()
+    expect(queue.items.map((item) => item.text)).toEqual(['second'])
+
+    queue.discardQueue('thread:a')
+    expect(queue.items).toEqual([])
+  })
+
+  it('preserves the oldest kept queue when activating it at the 64-queue cap', () => {
+    const composer = useAgentComposerStore()
+    const queue = useAgentPromptQueueStore()
+
+    for (let index = 0; index <= 64; index += 1) {
+      queue.activateQueue(`chat:${index}`)
+      composer.setText(`prompt-${index}`)
+      queue.enqueueFromComposer(`prompt-${index}`, [], [])
+      composer.clearDraft()
+    }
+
+    queue.activateQueue('chat:0')
+    expect(queue.items.map((item) => item.text)).toEqual(['prompt-0'])
+  })
+
+  it('releases unused blob attachment previews when discarding an inactive kept queue', () => {
+    const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    const composer = useAgentComposerStore()
+    const queue = useAgentPromptQueueStore()
+    const file = {
+      id: 'queued-blob-1',
+      name: 'cat.png',
+      ref: 'cat.png',
+      previewUrl: 'blob:queued-cat'
+    }
+
+    queue.activateQueue('thread:a')
+    composer.activateDraft('thread:a')
+    composer.setText('with attachment')
+    composer.addAttachment(file)
+    queue.enqueueFromComposer('with attachment', [file], [])
+    composer.clearDraft()
+
+    queue.activateQueue('thread:b')
+    composer.activateDraft('thread:b')
+    expect(revoke).not.toHaveBeenCalled()
+
+    queue.discardQueue('thread:a')
+    expect(revoke).toHaveBeenCalledWith('blob:queued-cat')
+    revoke.mockRestore()
+  })
 })

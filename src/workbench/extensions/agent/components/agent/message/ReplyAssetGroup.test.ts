@@ -427,6 +427,17 @@ describe('ReplyAssetGroup', () => {
     expect(generateModelThumbnail).toHaveBeenCalledOnce()
   })
 
+  it('does not retry a model that is over the preview size limit', async () => {
+    isAssetPreviewSupported.mockReturnValue(true)
+    generateModelThumbnail.mockResolvedValue({ status: 'tooLarge' })
+    renderGroup([model])
+    await waitFor(() => expect(generateModelThumbnail).toHaveBeenCalledOnce())
+
+    await vi.runAllTimersAsync()
+
+    expect(generateModelThumbnail).toHaveBeenCalledOnce()
+  })
+
   it('stops retrying when the renderer queue stays busy', async () => {
     isAssetPreviewSupported.mockReturnValue(true)
     generateModelThumbnail.mockResolvedValue({ status: 'busy' })

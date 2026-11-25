@@ -20,7 +20,10 @@ import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
 import { LGraphEventMode, TitleMode } from '@comfyorg/graph-model/globalEnums'
-import type { LGraphNode as LiteGraphNode } from '@/lib/litegraph/src/litegraph'
+import type {
+  INodeOutputSlot,
+  LGraphNode as LiteGraphNode
+} from '@/lib/litegraph/src/litegraph'
 import type { ResultItem } from '@comfyorg/api-client/executionTypes'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { resizeNodeLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
@@ -46,9 +49,15 @@ type ResizeCallback = (
 
 const mockData = vi.hoisted(() => ({
   mockExecuting: false,
+  mockProgress: undefined as number | undefined,
   mockLgraphNode: null as Record<string, unknown> | null,
   resizeCallback: null as ResizeCallback | null
 }))
+const baseLgraphNodeMock = {
+  hideOutputImages: false,
+  isSubgraphNode: () => false,
+  computeSize: (): [number, number] => [140, 26]
+}
 const mockNodeEventHandlers = vi.hoisted(
   (): ReturnType<typeof useNodeEventHandlers> => ({
     handleNodeCollapse: vi.fn(),
@@ -59,12 +68,7 @@ const mockNodeEventHandlers = vi.hoisted(
 
 vi.mock(import('@/utils/graphTraversalUtil'))
 vi.mocked(getNodeByLocatorId).mockImplementation(() =>
-  fromAny<LiteGraphNode, unknown>(
-    mockData.mockLgraphNode ?? {
-      hideOutputImages: false,
-      isSubgraphNode: () => false
-    }
-  )
+  fromAny<LiteGraphNode, unknown>(mockData.mockLgraphNode ?? baseLgraphNodeMock)
 )
 
 vi.mock(import('@/renderer/core/layout/transform/useTransformState'))
@@ -115,7 +119,7 @@ vi.mock(
   () => ({
     useNodeExecutionState: vi.fn(() => ({
       executing: computed(() => mockData.mockExecuting),
-      progress: computed(() => undefined),
+      progress: computed(() => mockData.mockProgress),
       progressPercentage: computed(() => undefined),
       progressState: computed(() => undefined),
       executionState: computed(() => 'idle' as const)
@@ -253,13 +257,11 @@ describe('LGraphNode', () => {
   beforeEach(() => {
     vi.mocked(getNodeByLocatorId).mockImplementation(() =>
       fromAny<LiteGraphNode, unknown>(
-        mockData.mockLgraphNode ?? {
-          hideOutputImages: false,
-          isSubgraphNode: () => false
-        }
+        mockData.mockLgraphNode ?? baseLgraphNodeMock
       )
     )
     mockData.mockExecuting = false
+    mockData.mockProgress = undefined
     mockData.mockLgraphNode = null
     mockData.resizeCallback = null
     app.dragOverNode = null
@@ -278,12 +280,14 @@ describe('LGraphNode', () => {
     })
   })
 
-  it('should render with data-node-id attribute', () => {
+  it('exposes its id and type as data attributes', () => {
     const { container } = renderLGraphNode({ nodeData: mockNodeData })
 
-    expect(getNodeRoot(container).getAttribute('data-node-id')).toBe(
+    expect(getNodeRoot(container)).toHaveAttribute(
+      'data-node-id',
       'test-node-123'
     )
+    expect(getNodeRoot(container)).toHaveAttribute('data-node-type', 'TestNode')
   })
 
   it('follows a position change after a drag has ended', async () => {
@@ -428,10 +432,7 @@ describe('LGraphNode', () => {
       subgraphs: new Map()
     }
     fakeRootGraph.rootGraph = fakeRootGraph
-    mockData.mockLgraphNode = {
-      hideOutputImages: false,
-      isSubgraphNode: () => false
-    }
+    mockData.mockLgraphNode = { ...baseLgraphNodeMock }
     useCanvasStore().currentGraph = fromAny(fakeRootGraph)
     useWidgetValueStore().registerWidget(
       widgetId('graph-test', mockNodeData.id, 'prompt'),
@@ -502,16 +503,23 @@ describe('LGraphNode', () => {
     expect(overlay).toHaveClass('border-primary')
   })
 
+  it('shows no progress fill while the node is not executing', () => {
+    mockData.mockProgress = 0.35
+
+    renderLGraphNode({ nodeData: mockNodeData })
+
+    expect(screen.queryByTestId('node-progress-fill')).not.toBeInTheDocument()
+  })
+
   it('hides a linked core LoadImage input preview', () => {
     mockData.mockLgraphNode = {
-      hideOutputImages: false,
+      ...baseLgraphNodeMock,
       constructor: {
         comfyClass: 'LoadImage',
         nodeData: { isCoreNode: true }
       },
       inputs: [{ name: 'image', widget: { name: 'image' } }],
-      isInputConnected: vi.fn(() => true),
-      isSubgraphNode: () => false
+      isInputConnected: vi.fn(() => true)
     }
     seedNodeOutputs([{ filename: 'input.png', type: 'input' }])
 
@@ -533,10 +541,10 @@ describe('LGraphNode', () => {
     'renders $previewCount default previews with hideOutputImages=$hideOutputImages',
     ({ hideOutputImages, previewCount }) => {
       mockData.mockLgraphNode = {
+        ...baseLgraphNodeMock,
         hideOutputImages,
         widgets: [{ name: 'custom_widget', type: 'custom' }],
-        onDrawBackground: vi.fn(),
-        isSubgraphNode: () => false
+        onDrawBackground: vi.fn()
       }
       seedNodeOutputs([{ filename: 'comparison.png', type: 'temp' }])
 
@@ -579,14 +587,13 @@ describe('LGraphNode', () => {
 
   it('keeps an executed output preview when the LoadImage selector is linked', () => {
     mockData.mockLgraphNode = {
-      hideOutputImages: false,
+      ...baseLgraphNodeMock,
       constructor: {
         comfyClass: 'LoadImage',
         nodeData: { isCoreNode: true }
       },
       inputs: [{ name: 'image', widget: { name: 'image' } }],
-      isInputConnected: vi.fn(() => true),
-      isSubgraphNode: () => false
+      isInputConnected: vi.fn(() => true)
     }
     seedNodeOutputs([{ filename: 'output.png', type: 'output' }])
 
@@ -618,10 +625,9 @@ describe('LGraphNode', () => {
       useCanvasStore().currentGraph = fromAny(fakeRootGraph)
       const nodeId = toNodeId(rawId)
       mockData.mockLgraphNode = {
+        ...baseLgraphNodeMock,
         id: nodeId,
-        hideOutputImages: false,
-        graph: fakeRootGraph,
-        isSubgraphNode: () => false
+        graph: fakeRootGraph
       }
       useNodeOutputStore().nodeOutputs[createNodeLocatorId(null, nodeId)] = {
         images: [{ filename: 'output.png', type: 'output' }]
@@ -638,13 +644,13 @@ describe('LGraphNode', () => {
   it('restores only the core LoadAudio input player on disconnect', async () => {
     const isAudioLinked = ref(true)
     mockData.mockLgraphNode = {
+      ...baseLgraphNodeMock,
       constructor: {
         comfyClass: 'LoadAudio',
         nodeData: { isCoreNode: true }
       },
       inputs: [{ name: 'audio', widget: { name: 'audio' } }],
-      isInputConnected: vi.fn(() => isAudioLinked.value),
-      isSubgraphNode: () => false
+      isInputConnected: vi.fn(() => isAudioLinked.value)
     }
     // widgetIds/nodeLocatorId derive from canvasStore.rootGraphId
     // (currentGraph.rootGraph.id), so this test needs a minimal root graph.
@@ -863,12 +869,27 @@ describe('LGraphNode', () => {
   })
 
   it.for([
-    { label: 'normal', mode: LGraphEventMode.ALWAYS, expectedOpacity: '0.6' },
-    { label: 'muted', mode: LGraphEventMode.NEVER, expectedOpacity: '0.3' },
-    { label: 'bypassed', mode: LGraphEventMode.BYPASS, expectedOpacity: '0.3' }
+    {
+      label: 'normal',
+      mode: LGraphEventMode.ALWAYS,
+      expectedOpacity: '0.6',
+      expectedModeAttribute: null
+    },
+    {
+      label: 'muted',
+      mode: LGraphEventMode.NEVER,
+      expectedOpacity: '0.3',
+      expectedModeAttribute: 'muted'
+    },
+    {
+      label: 'bypassed',
+      mode: LGraphEventMode.BYPASS,
+      expectedOpacity: '0.3',
+      expectedModeAttribute: 'bypass'
+    }
   ])(
     'composes global opacity with the $label node mode',
-    ({ mode, expectedOpacity }) => {
+    ({ mode, expectedOpacity, expectedModeAttribute }) => {
       vi.mocked(useSettingStore().get).mockImplementation((key) => {
         if (key === 'Comfy.RightSidePanel.ShowErrorsTab') return true
         if (key === 'Comfy.Node.AlwaysShowAdvancedWidgets') return false
@@ -880,6 +901,9 @@ describe('LGraphNode', () => {
       })
 
       expect(getNodeRoot(container).style.opacity).toBe(expectedOpacity)
+      expect(getNodeRoot(container).getAttribute('data-mode')).toBe(
+        expectedModeAttribute
+      )
     }
   )
 
@@ -916,7 +940,7 @@ describe('LGraphNode', () => {
 
   it('should hide advanced footer button while the node is collapsed', () => {
     mockData.mockLgraphNode = {
-      isSubgraphNode: () => false,
+      ...baseLgraphNodeMock,
       widgets: [
         { name: 'advancedWidget', type: 'number', options: { advanced: true } }
       ]
@@ -962,7 +986,7 @@ describe('LGraphNode', () => {
 
   it('should show error-only footer for collapsed nodes with advanced widgets', () => {
     mockData.mockLgraphNode = {
-      isSubgraphNode: () => false,
+      ...baseLgraphNodeMock,
       widgets: [
         { name: 'advancedWidget', type: 'number', options: { advanced: true } }
       ]
@@ -1008,6 +1032,104 @@ describe('LGraphNode', () => {
       expect(regularHasMinWidth).toBe(true)
     })
 
+    it('uses the litegraph computed width as the minimum width', () => {
+      mockData.mockLgraphNode = {
+        ...baseLgraphNodeMock,
+        computeSize: (): [number, number] => [162.4, 26]
+      }
+      const { container } = renderLGraphNode({ nodeData: mockNodeData })
+
+      expect(
+        getNodeRoot(container).style.getPropertyValue('--min-node-width')
+      ).toBe('163px')
+    })
+
+    it.for(['label', 'localized_name'] as const)(
+      'recomputes the minimum width when a slot %s changes',
+      async (field) => {
+        let measuredWidth = 180
+        mockData.mockLgraphNode = {
+          ...baseLgraphNodeMock,
+          computeSize: (): [number, number] => [measuredWidth, 26]
+        }
+        const output: INodeOutputSlot = {
+          name: 'out',
+          type: 'IMAGE',
+          links: [],
+          boundingRect: [0, 0, 0, 0]
+        }
+        const { container, rerender } = renderLGraphNode({
+          nodeData: { ...mockNodeData, outputs: [output] }
+        })
+        const minWidth = () =>
+          getNodeRoot(container).style.getPropertyValue('--min-node-width')
+        expect(minWidth()).toBe('180px')
+
+        measuredWidth = 330
+        await rerender({
+          nodeData: {
+            ...mockNodeData,
+            outputs: [{ ...output, [field]: 'a much longer output label' }]
+          }
+        })
+
+        expect(minWidth()).toBe('330px')
+      }
+    )
+
+    it('measures the minimum width once a node loaded collapsed is expanded', async () => {
+      let collapsed = true
+      mockData.mockLgraphNode = {
+        ...baseLgraphNodeMock,
+        computeSize: (): [number, number] => [collapsed ? 210 : 254, 26]
+      }
+      const { container, rerender } = renderLGraphNode({
+        nodeData: { ...mockNodeData, flags: { collapsed: true } }
+      })
+
+      collapsed = false
+      await rerender({
+        nodeData: { ...mockNodeData, flags: { collapsed: false } }
+      })
+
+      expect(
+        getNodeRoot(container).style.getPropertyValue('--min-node-width')
+      ).toBe('254px')
+    })
+
+    it('recomputes the minimum width when widget visibility changes', async () => {
+      const rootGraph: Record<string, unknown> = {
+        id: 'graph-test',
+        getNodeById: () => mockData.mockLgraphNode,
+        subgraphs: new Map()
+      }
+      rootGraph.rootGraph = rootGraph
+      useCanvasStore().currentGraph = fromAny(rootGraph)
+
+      const store = useWidgetValueStore()
+      const id = widgetId('graph-test', mockNodeData.id, 'longLabel')
+      store.registerWidget(id, { type: 'number', value: 0, options: {} })
+      const visibility = store.getWidgetVisibility(id)!
+      mockData.mockLgraphNode = {
+        ...baseLgraphNodeMock,
+        computeSize: (): [number, number] => [
+          visibility.suppression.byExtension ? 140 : 310,
+          26
+        ]
+      }
+      const { container } = renderLGraphNode({
+        nodeData: { ...mockNodeData, graphId: 'graph-test' }
+      })
+      const minWidth = () =>
+        getNodeRoot(container).style.getPropertyValue('--min-node-width')
+      expect(minWidth()).toBe('310px')
+
+      visibility.suppression.byExtension = true
+      await nextTick()
+
+      expect(minWidth()).toBe('140px')
+    })
+
     it('should use fixed height for reroute nodes', () => {
       const { container } = renderLGraphNode({
         nodeData: mockRerouteNodeData
@@ -1037,8 +1159,8 @@ describe('LGraphNode', () => {
   describe('handleDrop', () => {
     it('clears the native file target when another handler already consumed the drop', async () => {
       mockData.mockLgraphNode = {
-        onDragOver: vi.fn(),
-        isSubgraphNode: () => false
+        ...baseLgraphNodeMock,
+        onDragOver: vi.fn()
       }
       app.dragOverNode = {
         id: toNodeId('previous-node'),
@@ -1055,8 +1177,8 @@ describe('LGraphNode', () => {
 
     it('should set app.dragOverNode and let event bubble', async () => {
       mockData.mockLgraphNode = {
-        onDragOver: vi.fn(),
-        isSubgraphNode: () => false
+        ...baseLgraphNodeMock,
+        onDragOver: vi.fn()
       }
 
       const { container } = renderLGraphNode({ nodeData: mockNodeData })

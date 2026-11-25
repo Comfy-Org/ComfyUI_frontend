@@ -149,10 +149,10 @@ describe('trackBillingEvent', () => {
     {
       event: {
         operation: 'capability_read',
-        stage: 'succeeded',
-        outcome: 'success'
+        stage: 'failed',
+        outcome: 'failure'
       },
-      name: 'billing.capability_read.succeeded'
+      name: 'billing.capability_read.failed'
     }
   ])(
     'names the event after its operation and stage as $name',
