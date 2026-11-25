@@ -31846,7 +31846,7 @@
       },
       "subjects": {
         "name": "Subjekte",
-        "tooltip": "Geben Sie für jedes Subjekt bis zu 3 Referenzbilder an (insgesamt 7 Bilder für alle Subjekte). Verweisen Sie in Prompts über @subject{subject_id} darauf."
+        "tooltip": "Geben Sie für jedes Subjekt bis zu 3 Referenzbilder an (insgesamt 7 Bilder für alle Subjekte). Verweisen Sie in Prompts über {'@'}subject{'{'}subject_id{'}'} darauf."
       }
     },
     "outputs": {

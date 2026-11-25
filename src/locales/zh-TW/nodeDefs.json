@@ -31846,7 +31846,7 @@
       },
       "subjects": {
         "name": "subjects",
-        "tooltip": "每個主體最多可提供 3 張參考圖像（所有主體合計最多 7 張）。可在提示詞中以 @subject{subject_id} 參照。"
+        "tooltip": "每個主體最多可提供 3 張參考圖像（所有主體合計最多 7 張）。可在提示詞中以 {'@'}subject{'{'}subject_id{'}'} 參照。"
       }
     },
     "outputs": {

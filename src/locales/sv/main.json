@@ -3999,7 +3999,7 @@
         },
         "scheduledChange": "Ändras till {plan} den {date}.",
         "stayConfirm": {
-          "body": "Ditt abonnemang ändras inte till {plan} den {date}. Du kan schemalägga en ändring igen när du vill.",
+          "body": "Du behåller {current}, som förnyas den {date}. Du kan schemalägga en ändring igen när du vill.",
           "title": "Avbryt ändringen till {plan}?"
         },
         "unknown": {

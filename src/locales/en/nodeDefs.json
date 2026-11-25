@@ -31676,7 +31676,7 @@
       },
       "subjects": {
         "name": "subjects",
-        "tooltip": "For each subject, provide up to 3 reference images (7 images total across all subjects). Reference them in prompts via @subject{subject_id}."
+        "tooltip": "For each subject, provide up to 3 reference images (7 images total across all subjects). Reference them in prompts via {'@'}subject{'{'}subject_id{'}'}."
       },
       "prompt": {
         "name": "prompt",
