@@ -20,6 +20,7 @@ import { updatePendingWarnings } from '@/platform/workflow/core/utils/pendingWar
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { ModelFile } from '@comfyorg/graph-model/workflowSchema'
 import { api } from '@/scripts/api'
+import { useApp } from '@/scripts/appInstance'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
@@ -58,7 +59,7 @@ interface RunMissingModelPipelineOptions {
 }
 
 interface RefreshMissingModelPipelineOptions {
-  graph: LGraph
+  graph?: LGraph
   reloadNodeDefs?: () => Promise<void>
   missingModelStore: MissingModelPipelineStore
   silent?: boolean
@@ -303,7 +304,8 @@ export async function refreshMissingModelPipeline({
 }: RefreshMissingModelPipelineOptions): Promise<MissingModelPipelineResult> {
   await reloadNodeDefs?.()
   await missingModelStore.untilScanEnds()
-  const graphData: MissingModelWorkflowData = graph.serialize()
+  const scannedGraph = graph ?? useApp().rootGraph
+  const graphData: MissingModelWorkflowData = scannedGraph.serialize()
   const activeWorkflowState =
     useWorkspaceStore().workflow.activeWorkflow?.activeState
   const currentModelMetadata = getCurrentMissingModelMetadata(missingModelStore)
@@ -312,7 +314,7 @@ export async function refreshMissingModelPipeline({
     : currentModelMetadata
 
   return runMissingModelPipeline({
-    graph,
+    graph: scannedGraph,
     graphData: models.length ? { ...graphData, models } : graphData,
     missingModelStore,
     silent

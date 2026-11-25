@@ -1226,4 +1226,47 @@ describe(useMissingModelDownloadStore, () => {
       await recheck
     ).surfaced
   })
+
+  it('re-checks the graph a load switched to while the re-check waited on it', async () => {
+    const missingModelStore = useMissingModelStore()
+    const candidateFor = (name: string) =>
+      fromPartial<MissingModelCandidate>({
+        nodeType: 'CheckpointLoaderSimple',
+        widgetName: 'ckpt_name',
+        name,
+        directory: model.directory,
+        isMissing: true
+      })
+    const previousGraph = fromPartial<LGraph>({ serialize: () => ({}) })
+    const loadedGraph = fromPartial<LGraph>({ serialize: () => ({}) })
+    const loadedCandidate = candidateFor('loaded.safetensors')
+    vi.mocked(missingModelScan.scanAllModelCandidates).mockImplementation(
+      (graph) =>
+        graph === loadedGraph
+          ? [loadedCandidate]
+          : [candidateFor('previous.safetensors')]
+    )
+    vi.mocked(missingModelScan.enrichWithEmbeddedMetadata).mockImplementation(
+      (candidates) => [...candidates]
+    )
+    vi.spyOn(api, 'getFolderPaths').mockResolvedValue({})
+    const rootGraph = vi
+      .spyOn(app, 'rootGraph', 'get')
+      .mockReturnValue(previousGraph)
+    let finishLoad = () => {}
+    const load = missingModelStore.whileWorkflowLoads(
+      () =>
+        new Promise<void>((resolve) => {
+          finishLoad = resolve
+        })
+    )
+
+    const recheck = app.refreshMissingModels({ reloadDefs: false })
+    rootGraph.mockReturnValue(loadedGraph)
+    finishLoad()
+    await load
+
+    const { confirmedCandidates } = await recheck
+    expect(confirmedCandidates).toEqual([loadedCandidate])
+  })
 })

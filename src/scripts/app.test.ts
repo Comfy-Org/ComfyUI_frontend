@@ -6574,15 +6574,10 @@ describe('ComfyApp', () => {
 
   describe('refreshMissingModels', () => {
     it('delegates to the app-independent missing model refresh pipeline', async () => {
-      const graph = {
-        nodes: [],
-        serialize: vi.fn(() => createWorkflowGraphData())
-      }
       const result = {
         missingModels: [],
         confirmedCandidates: []
       }
-      Reflect.set(app, 'rootGraphInternal', graph)
       vi.spyOn(app, 'reloadNodeDefs').mockResolvedValue(true)
       mockRefreshMissingModelPipeline.mockResolvedValue(result)
 
@@ -6591,7 +6586,6 @@ describe('ComfyApp', () => {
       )
 
       expect(mockRefreshMissingModelPipeline).toHaveBeenCalledWith({
-        graph,
         reloadNodeDefs: expect.any(Function),
         missingModelStore: useMissingModelStore(),
         silent: false
@@ -6602,11 +6596,6 @@ describe('ComfyApp', () => {
     })
 
     it('omits the node definition reload when reloadDefs is false', async () => {
-      const graph = {
-        nodes: [],
-        serialize: vi.fn(() => createWorkflowGraphData())
-      }
-      Reflect.set(app, 'rootGraphInternal', graph)
       vi.spyOn(app, 'reloadNodeDefs').mockResolvedValue(true)
       mockRefreshMissingModelPipeline.mockResolvedValue({
         missingModels: [],
@@ -6616,7 +6605,6 @@ describe('ComfyApp', () => {
       await app.refreshMissingModels({ reloadDefs: false })
 
       expect(mockRefreshMissingModelPipeline).toHaveBeenCalledWith({
-        graph,
         reloadNodeDefs: undefined,
         missingModelStore: useMissingModelStore(),
         silent: true

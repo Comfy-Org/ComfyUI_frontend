@@ -1875,7 +1875,6 @@ export class ComfyApp implements IComfyApp {
     options: { silent?: boolean; reloadDefs?: boolean } = {}
   ): Promise<MissingModelPipelineResult> {
     return refreshMissingModelPipeline({
-      graph: this.rootGraph,
       reloadNodeDefs:
         options.reloadDefs === false
           ? undefined
