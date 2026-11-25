@@ -345,7 +345,9 @@ describe('late custom node loading', () => {
     store.attachWorkflow(background, 0)
     store.attachWorkflow(visible, 1)
     await background.load()
-    store.activeWorkflow = await visible.load()
+    const loadedVisible = await visible.load()
+    assert.exists(loadedVisible)
+    store.activeWorkflow = loadedVisible
     background.isModified = true
     const backgroundState = background.activeState
     const tracker = background.changeTracker
@@ -381,7 +383,9 @@ describe('late custom node loading', () => {
     second.adoptGraph(secondGraph)
     store.attachWorkflow(first, 0)
     store.attachWorkflow(second, 1)
-    store.activeWorkflow = await first.load()
+    const loadedFirst = await first.load()
+    assert.exists(loadedFirst)
+    store.activeWorkflow = loadedFirst
     let finishGraphWork = () => {}
     const graphWork = new Promise<void>((resolve) => {
       finishGraphWork = resolve
@@ -398,7 +402,9 @@ describe('late custom node loading', () => {
     expect(first.graph).toBe(firstGraph)
     expect(second.graph).toBe(secondGraph)
 
-    store.activeWorkflow = await second.load()
+    const loadedSecond = await second.load()
+    assert.exists(loadedSecond)
+    store.activeWorkflow = loadedSecond
     finishGraphWork()
     await vi.advanceTimersByTimeAsync(0)
 
@@ -436,7 +442,9 @@ describe('late custom node loading', () => {
     app.activateRootGraph(previousGraph)
     store.attachWorkflow(previous, 0)
     store.attachWorkflow(next, 1)
-    store.activeWorkflow = await previous.load()
+    const loadedPrevious = await previous.load()
+    assert.exists(loadedPrevious)
+    store.activeWorkflow = loadedPrevious
     let graphLoadTail = Promise.resolve()
     vi.mocked(app.enqueueGraphLoad).mockImplementation((operation) => {
       const result = graphLoadTail.then(operation)

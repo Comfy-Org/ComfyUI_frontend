@@ -1374,7 +1374,11 @@ export function useSubscriptionCheckout(
     let checkoutPaymentMethodUrl: string | undefined
     if (response.status === 'needs_payment_method') {
       if (!response.payment_method_url) {
-        throw new Error(t('subscription.preview.stripeUnavailable'))
+        const error = new Error(t('subscription.preview.stripeUnavailable'))
+        console.error(error)
+        trackSubscriptionFailure(context, error)
+        showSubscribeError(error)
+        return
       }
       checkoutPaymentMethodUrl = response.payment_method_url
       // The open runs after `await subscribe(...)`, so it's not a direct user

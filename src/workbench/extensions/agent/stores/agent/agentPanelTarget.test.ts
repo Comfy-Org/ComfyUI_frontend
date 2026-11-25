@@ -1,5 +1,5 @@
 import { useTelemetry } from '@comfyorg/telemetry'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { ChangeTracker } from '@/scripts/changeTracker'
@@ -20,6 +20,8 @@ async function setup() {
   const workflows = useWorkflowStore()
   const target = await workflows.createTemporary('a.json').load()
   const other = await workflows.createTemporary('b.json').load()
+  assert.exists(target)
+  assert.exists(other)
   workflows.openWorkflowsInBackground({ right: [target.path, other.path] })
   const panel = useAgentPanelStore()
   panel.setWorkflowTarget(target)
@@ -47,7 +49,7 @@ describe('Agent target tab lifetime', () => {
     const { workflows, panel, target, other } = await setup()
     vi.spyOn(target, 'rename').mockImplementation(async (path) => {
       target.path = path
-      return target
+      return true
     })
     await workflows.renameWorkflow(target, 'workflows/renamed.json')
     await workflows.closeWorkflow(other)
@@ -66,15 +68,15 @@ const deletedEvent = {
 
 function saveTarget(target: ComfyWorkflow): void {
   target.size = 1
-  vi.spyOn(target, 'delete').mockResolvedValue()
+  vi.spyOn(target, 'delete').mockResolvedValue(true)
 }
 
 function deferDelete(target: ComfyWorkflow): () => void {
   let finishDelete = () => {}
   vi.spyOn(target, 'delete').mockImplementation(
     () =>
-      new Promise<void>((resolve) => {
-        finishDelete = resolve
+      new Promise<boolean>((resolve) => {
+        finishDelete = () => resolve(true)
       })
   )
   return () => finishDelete()
@@ -132,7 +134,7 @@ describe('Agent target deletion', () => {
         saveTarget(target)
         vi.spyOn(target, 'rename').mockImplementation(async (path) => {
           target.path = path
-          return target
+          return true
         })
         await workflows.closeWorkflow(target)
         await nextTick()
@@ -273,9 +275,13 @@ describe('Agent target tracking policy', () => {
   it('leaves the target undecided while startup is unresolved', async () => {
     const workflows = useWorkflowStore()
     const panel = useAgentPanelStore()
-    workflows.activeWorkflow = await workflows.createTemporary('a.json').load()
+    const first = await workflows.createTemporary('a.json').load()
+    assert.exists(first)
+    workflows.activeWorkflow = first
     expect(panel.selectedWorkflow).toBeNull()
-    workflows.activeWorkflow = await workflows.createTemporary('b.json').load()
+    const second = await workflows.createTemporary('b.json').load()
+    assert.exists(second)
+    workflows.activeWorkflow = second
     expect(panel.selectedWorkflow).toBeNull()
     expect(panel.followsVisibleWorkflow).toBe(false)
   })
@@ -285,6 +291,8 @@ describe('Agent target tracking policy', () => {
     const panel = useAgentPanelStore()
     const a = await workflows.createTemporary('a.json').load()
     const b = await workflows.createTemporary('b.json').load()
+    assert.exists(a)
+    assert.exists(b)
     workflows.activeWorkflow = a
     panel.initializeTargetTracking(false)
     expect(panel.selectedWorkflow?.path).toBe(a.path)
@@ -380,7 +388,9 @@ describe('Agent target tracking policy', () => {
     const workflows = useWorkflowStore()
     const panel = useAgentPanelStore()
     panel.initializeTargetTracking(true)
-    workflows.activeWorkflow = await workflows.createTemporary('a.json').load()
+    const active = await workflows.createTemporary('a.json').load()
+    assert.exists(active)
+    workflows.activeWorkflow = active
     expect(panel.selectedWorkflow).toBeNull()
     expect(panel.followsVisibleWorkflow).toBe(false)
     expect(panel.canRestoreWorkflow).toBe(true)

@@ -20,7 +20,9 @@ export interface WorkflowStore {
   openWorkflows: ComfyWorkflow[]
   openedWorkflowIndexShift: (shift: number) => ComfyWorkflow | null
   getMostRecentWorkflow: () => ComfyWorkflow | null
-  openWorkflow: (workflow: ComfyWorkflow) => Promise<LoadedComfyWorkflow>
+  openWorkflow: (
+    workflow: ComfyWorkflow
+  ) => Promise<LoadedComfyWorkflow | undefined>
   openWorkflowsInBackground: (paths: {
     left?: string[]
     right?: string[]
@@ -37,7 +39,7 @@ export interface WorkflowStore {
     workflowData?: ComfyWorkflowJSON
   ) => ComfyWorkflow
   renameWorkflow: (workflow: ComfyWorkflow, newPath: string) => Promise<boolean>
-  deleteWorkflow: (workflow: ComfyWorkflow) => Promise<void>
+  deleteWorkflow: (workflow: ComfyWorkflow) => Promise<boolean>
   saveAs: (existingWorkflow: ComfyWorkflow, path: string) => ComfyWorkflow
   saveWorkflow: (workflow: ComfyWorkflow) => Promise<void>
 

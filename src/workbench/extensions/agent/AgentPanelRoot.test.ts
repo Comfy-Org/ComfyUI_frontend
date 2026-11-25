@@ -492,10 +492,14 @@ beforeEach(() => {
         const replacement = workflowStore.openWorkflows.find(
           (candidate) => candidate.path !== tab.path
         )
-        workflowStore.activeWorkflow = replacement
-          ? await replacement.load()
-          : null
-        if (replacement) options?.onReplacementOpened?.(replacement)
+        if (replacement) {
+          const loaded = await replacement.load()
+          if (!loaded) return false
+          workflowStore.activeWorkflow = loaded
+          options?.onReplacementOpened?.(replacement)
+        } else {
+          workflowStore.activeWorkflow = null
+        }
       }
       await workflowStore.closeWorkflow(tab)
       return true
@@ -506,7 +510,9 @@ beforeEach(() => {
       const known = workflowStore.getWorkflowByPath(tab.path)
       if (known) {
         workflowStore.openWorkflowsInBackground({ right: [tab.path] })
-        workflowStore.activeWorkflow = await known.load()
+        const loaded = await known.load()
+        if (!loaded) return false
+        workflowStore.activeWorkflow = loaded
         if (options?.initiator === 'user')
           workflowStore.reportUserActivation(known)
       }
@@ -766,7 +772,7 @@ function addTab(
       newPath.slice(newPath.lastIndexOf('/') + 1)
     )
     Object.assign(tab, { path: newPath, filename, suffix })
-    return tab
+    return true
   })
   workflowStore.attachWorkflow(tab, workflowStore.openWorkflows.length)
   workflowStore.openWorkflowsInBackground({ right: [tab.path] })
@@ -13474,7 +13480,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
   it('says the target workflow is no longer available after the user deletes it', async () => {
     const target = addTab('workflows/current.json', {
-      delete: vi.fn(async () => {})
+      delete: vi.fn(async () => true)
     })
     workflowStore.activeWorkflow = target
     useAgentWorkflowTabBindingStore().bind('wf-42', target.path)
@@ -13493,7 +13499,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
   it('T1-21: disables sending on a gone-workflow chat and starts a new chat for the visible tab from the notice', async () => {
     const target = addTab('workflows/current.json', {
-      delete: vi.fn(async () => {})
+      delete: vi.fn(async () => true)
     })
     workflowStore.activeWorkflow = target
     useAgentWorkflowTabBindingStore().bind('wf-42', target.path)
@@ -14835,7 +14841,8 @@ describe('AgentPanelRoot workflow binding', () => {
             finishOpen = resolve
           })
           const known = workflowStore.getWorkflowByPath(tab.path)
-          if (opened && known) workflowStore.activeWorkflow = await known.load()
+          const loaded = opened ? await known?.load() : undefined
+          if (loaded) workflowStore.activeWorkflow = loaded
           return opened
         }
       )
@@ -15091,7 +15098,8 @@ describe('AgentPanelRoot workflow binding', () => {
         })
 
         const known = workflowStore.getWorkflowByPath(slow.path)
-        if (known) workflowStore.activeWorkflow = await known.load()
+        const loaded = await known?.load()
+        if (loaded) workflowStore.activeWorkflow = loaded
         return true
       }
     )

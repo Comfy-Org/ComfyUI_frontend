@@ -167,12 +167,13 @@ describe('ModelInfoPanel', () => {
         persisted = { ...persisted, ...payload }
         const response = persisted
         return new Promise((resolve) => {
-          deliverFirstResponse = () => resolve(response)
+          deliverFirstResponse = () =>
+            resolve({ kind: 'updated', asset: response })
         })
       })
       .mockImplementation(async (_id, payload) => {
         persisted = { ...persisted, ...payload }
-        return persisted
+        return { kind: 'updated', asset: persisted }
       })
     const panel = renderPanel(asset)
     await fireEvent.update(

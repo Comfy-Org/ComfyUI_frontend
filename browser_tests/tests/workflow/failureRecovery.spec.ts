@@ -173,7 +173,6 @@ test.describe('Workflow failure recovery', () => {
     await expect(tab.getOpenedItem('rename')).toBeVisible()
     await expect(tab.getOpenedItem('renamed')).toBeHidden()
 
-    test.fail(true, 'A failed workflow rename has no specific error message')
     await expect(comfyPage.toast.toastErrors).toContainText(
       'Failed to rename workflow. Please try again.',
       { timeout: 1000 }
@@ -194,7 +193,7 @@ test.describe('Workflow failure recovery', () => {
 
     expect((await request).method()).toBe('DELETE')
     await expect(comfyPage.toast.toastErrors).toContainText(
-      "Failed to delete file 'workflows/delete.json'"
+      'Failed to delete workflow. Please try again.'
     )
     await expect(workflow).toBeVisible()
     await expect(
@@ -215,7 +214,7 @@ test.describe('Workflow failure recovery', () => {
 
     expect((await request).method()).toBe('GET')
     await expect(comfyPage.toast.toastErrors).toContainText(
-      'Failed to load file: 503'
+      'Failed to load workflow. Please try again.'
     )
     await expect
       .poll(() => comfyPage.nodeOps.getNodeCount())
@@ -236,7 +235,7 @@ test.describe('Workflow failure recovery', () => {
 
     expect((await request).method()).toBe('GET')
     await expect(comfyPage.toast.toastErrors).toContainText(
-      'Failed to load file: 503'
+      'Failed to load workflow. Please try again.'
     )
     await expect.poll(() => tab.getOpenedWorkflowNames()).toEqual(originalNames)
   })

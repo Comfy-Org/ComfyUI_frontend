@@ -4,6 +4,7 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import { useSettingStore } from '@/platform/settings/settingStore'
 import {
   afterEach,
+  assert,
   beforeEach,
   describe,
   expect,
@@ -193,6 +194,7 @@ describe('useWorkflowPersistenceV2', () => {
 
   beforeEach(() => {
     useSettingStore().settingValues['Comfy.Workflow.Persist'] = true
+    openWorkflowMock.mockResolvedValue(true)
     mocks.state.currentGraph = { initial: true }
     mocks.serializeMock.mockImplementation(() => mocks.state.currentGraph)
     api.clientId = 'test-client'
@@ -1068,6 +1070,8 @@ describe('useWorkflowPersistenceV2', () => {
   it('flushes a pending workflow edit when the page is unloaded', async () => {
     const workflowStore = useWorkflowStore()
     const workflow = await workflowStore.createTemporary('Draft.json').load()
+    expect(workflow).toBeDefined()
+    if (!workflow) return
     workflowStore.activeWorkflow = workflow
     mountWorkflowPersistence()
     await nextTick()
@@ -1093,6 +1097,7 @@ describe('useWorkflowPersistenceV2', () => {
   it('keeps the last saved edit after an index write fails during a newer edit', async () => {
     const workflowStore = useWorkflowStore()
     const workflow = await workflowStore.createTemporary('Draft.json').load()
+    assert.exists(workflow)
     workflowStore.activeWorkflow = workflow
     mountWorkflowPersistence()
     await nextTick()
@@ -1129,6 +1134,7 @@ describe('useWorkflowPersistenceV2', () => {
   it('backs off repeated quota writes and reports one toast per failure episode', async () => {
     const workflowStore = useWorkflowStore()
     const workflow = await workflowStore.createTemporary('Draft.json').load()
+    assert.exists(workflow)
     workflowStore.activeWorkflow = workflow
     mountWorkflowPersistence()
     await nextTick()
@@ -1167,6 +1173,7 @@ describe('useWorkflowPersistenceV2', () => {
     const modified = Date.now() + 60_000
     vi.mocked(api.getUserData).mockResolvedValueOnce(Response.json(blankGraph))
     const workflow = await new ComfyWorkflow({ path, modified, size: 1 }).load()
+    assert.exists(workflow)
     workflow.isModified = true
     useWorkflowStore().activeWorkflow = workflow
     mountWorkflowPersistence()
@@ -1178,12 +1185,15 @@ describe('useWorkflowPersistenceV2', () => {
 
     vi.mocked(api.getUserData).mockResolvedValueOnce(Response.json(blankGraph))
     const reopened = await new ComfyWorkflow({ path, modified, size: 1 }).load()
+    assert.exists(reopened)
     expect(reopened.activeState.extra?.marker).toBe('new edit')
   })
 
   it('does not flush a pending workflow edit after disposal', async () => {
     const workflowStore = useWorkflowStore()
     const workflow = await workflowStore.createTemporary('Draft.json').load()
+    expect(workflow).toBeDefined()
+    if (!workflow) return
     workflowStore.activeWorkflow = workflow
     mountWorkflowPersistence()
 
@@ -1220,6 +1230,8 @@ describe('useWorkflowPersistenceV2', () => {
     const workflow = await workflowStore
       .createTemporary('WorkspaceA.json')
       .load()
+    expect(workflow).toBeDefined()
+    if (!workflow) return
     workflowStore.activeWorkflow = workflow
     mountWorkflowPersistence()
 
@@ -1364,6 +1376,8 @@ describe('useWorkflowPersistenceV2', () => {
     const workflow = await workflowStore
       .createTemporary('LogoutRecovery.json')
       .load()
+    expect(workflow).toBeDefined()
+    if (!workflow) return
     workflowStore.activeWorkflow = workflow
     mountWorkflowPersistence()
     mocks.state.currentGraph = { marker: 'stale-source-edit' }
@@ -1418,6 +1432,7 @@ describe('useWorkflowPersistenceV2', () => {
     const sourceWorkflow = await workflowStore
       .createTemporary('AccountA.json')
       .load()
+    assert.exists(sourceWorkflow)
     workflowStore.activeWorkflow = sourceWorkflow
     mountWorkflowPersistence()
 

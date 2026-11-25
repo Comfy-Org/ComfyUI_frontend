@@ -23,7 +23,10 @@ import { generateUUID, isValidUuid } from '@/utils/formatUtil'
 import { reportError } from '@comfyorg/telemetry/reportError'
 
 const ownedGraph = Symbol('ownedGraph')
-const pendingLoads = new WeakMap<ComfyWorkflow, Promise<LoadedComfyWorkflow>>()
+const pendingLoads = new WeakMap<
+  ComfyWorkflow,
+  Promise<LoadedComfyWorkflow | undefined>
+>()
 
 function clearReleasedGraph(graph: LGraph | null): void {
   if (!graph) return
@@ -452,11 +455,12 @@ export class ComfyWorkflow extends UserFile {
    * @returns this
    */
   override load({ force = false }: { force?: boolean } = {}): Promise<
-    this & LoadedComfyWorkflow
+    (this & LoadedComfyWorkflow) | undefined
   > {
     const key = toRaw(this)
     const pending = force ? undefined : pendingLoads.get(key)
-    if (pending) return pending as Promise<this & LoadedComfyWorkflow>
+    if (pending)
+      return pending as Promise<(this & LoadedComfyWorkflow) | undefined>
     const loading = (async () => {
       if (!force && this.isLoaded && this.changeTracker) {
         return this as this & LoadedComfyWorkflow
@@ -468,9 +472,18 @@ export class ComfyWorkflow extends UserFile {
           ? readUsableDraft(runtime, this)
           : null
 
-      await super.load({ force })
+      const previousContent = this.content
+      const previousOriginalContent = this.originalContent
+      if (!(await super.load({ force }))) return
 
-      const initialState = parseStoredWorkflow(this)
+      let initialState: ComfyWorkflowJSON
+      try {
+        initialState = parseStoredWorkflow(this)
+      } catch (error) {
+        this.content = previousContent
+        this.originalContent = previousOriginalContent
+        throw error
+      }
       const previousTracker = this.changeTracker
       this.changeTracker = markRaw(
         runtime.createChangeTracker(this, initialState)

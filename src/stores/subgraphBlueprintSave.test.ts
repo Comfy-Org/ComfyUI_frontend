@@ -73,6 +73,7 @@ describe('subgraph blueprint save on the canvas', () => {
     const stored = workflowStore.getWorkflowByPath('subgraphs/mine.json')
     assert(stored, 'blueprint is in the workflow list')
     const blueprint = await stored.load()
+    assert.exists(blueprint)
     blueprint.adoptGraph(app.rootGraph)
     workflowStore.activeWorkflow = blueprint
     bindCanvasTracker(blueprint.changeTracker)

@@ -414,7 +414,7 @@ export const useWorkflowService = () => {
 
   async function loadForSave(workflow: ComfyWorkflow): Promise<boolean> {
     if (workflow.isLoaded || workflowStore.isActive(workflow)) return true
-    await loadWorkflowInBackground(workflow)
+    if (!(await loadWorkflowInBackground(workflow))) return false
     if (!lostUnsavedEdits(workflow)) return true
     reportWorkflowStateAnomaly(
       'Modified saved workflow lost its edits before saving',
@@ -507,7 +507,7 @@ export const useWorkflowService = () => {
       !occupiedByOther &&
       !existingWorkflow.isTemporary
 
-    if (existingWorkflow && !existingWorkflow.isTemporary) {
+    if (existingWorkflow?.isPersisted) {
       if ((await confirmOverwrite(newPath)) !== true) return false
 
       const stillTarget = () => {
@@ -523,14 +523,10 @@ export const useWorkflowService = () => {
       }
     }
 
-    if (isSelfOverwrite) {
-      workflow.changeTracker?.prepareForSave()
-      await workflowStore.saveWorkflow(workflow)
-    } else {
-      let target: ComfyWorkflow
+    let target = workflow
+    if (!isSelfOverwrite) {
       if (workflow.isTemporary) {
         if (!(await renameWorkflow(workflow, newPath))) return false
-        target = workflow
       } else {
         target = workflowStore.saveAs(workflow, newPath)
         await openWorkflow(target)
@@ -540,9 +536,9 @@ export const useWorkflowService = () => {
         useApp().rootGraph.extra.linearMode = isApp
         target.initialMode = isApp ? 'app' : 'graph'
       }
-      target.changeTracker?.prepareForSave()
-      await workflowStore.saveWorkflow(target)
     }
+    target.changeTracker?.prepareForSave()
+    await workflowStore.saveWorkflow(target)
 
     useTelemetry()?.trackWorkflowSaved({ is_app: isApp, is_new: true })
     return true
@@ -564,17 +560,13 @@ export const useWorkflowService = () => {
       workflow.directory + '/' + appendWorkflowJsonExt(workflow.filename, isApp)
     if (workflow.path !== expectedPath) {
       const existing = workflowStore.getWorkflowByPath(expectedPath)
-      if (existing && !existing.isTemporary) {
-        if ((await confirmOverwrite(expectedPath)) !== true) {
-          await workflowStore.saveWorkflow(workflow)
-          return true
-        }
-        await deleteWorkflow(existing, true)
-      }
-      if (!(await renameWorkflow(workflow, expectedPath))) {
+      const replacesSaved = existing !== null && !existing.isTemporary
+      if (replacesSaved && (await confirmOverwrite(expectedPath)) !== true) {
         await workflowStore.saveWorkflow(workflow)
         return true
       }
+      if (replacesSaved && !(await deleteWorkflow(existing, true))) return false
+      if (!(await renameWorkflow(workflow, expectedPath))) return false
       toast.info(
         t(
           isApp
@@ -711,6 +703,7 @@ export const useWorkflowService = () => {
         presentRootGraph(app, graph, { clean: true, skipAssetScans: true })
         missingNodesErrorStore.setMissingNodeTypes([])
         const loaded = await workflowStore.openWorkflow(workflow)
+        if (!loaded) return false
         bindCanvasTracker(loaded.changeTracker)
         useExecutionErrorStore().setActiveGraph(graph.id, loaded.path)
         useAppModeStore().loadSelections(loaded.activeState.extra?.linearData)
@@ -815,6 +808,8 @@ export const useWorkflowService = () => {
       if (options.failure) options.failure.reason = reason
       return false
     }
+    const failUnlessSuperseded = (reason: OpenWorkflowFailure) =>
+      fail(options.isCurrent?.() === false ? 'superseded' : reason)
     if (options.isCurrent?.() === false)
       return Promise.resolve(fail('superseded'))
     if (closingWorkflowCounts.has(closingKey(workflow)))
@@ -859,8 +854,13 @@ export const useWorkflowService = () => {
 
         const loadFromRemote = !workflow.isLoaded
         const wasModified = workflow.isModified
-        if (loadFromRemote) {
-          await workflow.load()
+        if (loadFromRemote && !(await workflow.load())) {
+          reportError(new Error('Failed to load workflow'), {
+            surface: 'graph',
+            errorType: 'workflow_load_failure'
+          })
+          useSubgraphNavigationStore().endWorkflowNavigation(navigationIntentId)
+          return fail('load_failed')
         }
         if (options.isCurrent?.() === false) {
           if (loadFromRemote) discardSupersededLoad(workflow, wasModified)
@@ -879,10 +879,7 @@ export const useWorkflowService = () => {
         )
         if (loaded === false) {
           useSubgraphNavigationStore().endWorkflowNavigation(navigationIntentId)
-          if (attempt.skipped)
-            return fail(
-              options.isCurrent?.() === false ? 'superseded' : 'load_skipped'
-            )
+          if (attempt.skipped) return failUnlessSuperseded('load_skipped')
           if (options.isCurrent?.() === false) {
             await restoreRetainedWorkflow(workflow)
             return fail('superseded')
@@ -1077,13 +1074,14 @@ export const useWorkflowService = () => {
    */
   const loadWorkflowInBackground = (
     workflow: ComfyWorkflow
-  ): Promise<ComfyWorkflow> =>
+  ): Promise<ComfyWorkflow | undefined> =>
     queueWorkflowLoad(async () => {
-      const loaded: ComfyWorkflow = await workflow.load()
+      const loaded = await workflow.load()
+      if (!loaded) return
       if (loaded.initialMode === undefined)
         loaded.initialMode =
-          linearModeToAppMode(loaded.initialState?.extra?.linearMode) ??
-          linearModeToAppMode(loaded.activeState?.extra?.linearMode)
+          linearModeToAppMode(loaded.initialState.extra?.linearMode) ??
+          linearModeToAppMode(loaded.activeState.extra?.linearMode)
       return loaded
     }, workflow.path)
 
@@ -1094,9 +1092,12 @@ export const useWorkflowService = () => {
     const oldPath = workflow.path
     const graphId = workflow.activeState?.id
     if (!(await workflowStore.renameWorkflow(workflow, newPath))) {
-      toast.error(t('g.error'), {
-        description: t('workflowService.pathInUse', { path: newPath })
-      })
+      const occupant = workflowStore.getWorkflowByPath(newPath)
+      if (occupant && toRaw(occupant) !== toRaw(workflow))
+        toast.error(t('g.error'), {
+          description: t('workflowService.pathInUse', { path: newPath })
+        })
+      else toast.error(t('workflowService.renameFailed'))
       return false
     }
     if (graphId) {
@@ -1140,11 +1141,17 @@ export const useWorkflowService = () => {
       if (workflowStore.isOpen(workflow)) return false
     }
     if (!stillTarget()) return false
-    await workflowStore.deleteWorkflow(workflow)
-    if (!silent) {
+    const deleted = await workflowStore.deleteWorkflow(workflow)
+    if (!silent) reportDeleteOutcome(deleted)
+    return deleted
+  }
+
+  const reportDeleteOutcome = (deleted: boolean) => {
+    if (deleted) {
       toast.info(t('sideToolbar.workflowTab.deleted'), { duration: 1000 })
+    } else {
+      toast.error(t('workflowService.deleteFailed'))
     }
-    return true
   }
 
   /**
@@ -1249,6 +1256,7 @@ export const useWorkflowService = () => {
 
     async function bindToCanvas(workflow: ComfyWorkflow) {
       const loadedWorkflow = await workflowStore.openWorkflow(workflow)
+      if (!loadedWorkflow) return null
       if (useApp().rootGraphOrUndefined !== graph) return null
       bindCanvasTracker(loadedWorkflow.changeTracker)
       activateLoadedGraph(loadedWorkflow)
@@ -1354,6 +1362,10 @@ export const useWorkflowService = () => {
     const canvas = useApp().canvas
     const graph = canvas.graph
     const loadedWorkflow = await workflow.load()
+    if (!loadedWorkflow) {
+      toast.error(t('workflowService.loadFailed'))
+      return
+    }
     if (useApp().canvas !== canvas || canvas.graph !== graph) {
       const replacementKind = useApp().canvas !== canvas ? 'canvas' : 'graph'
       reportError(
@@ -1440,7 +1452,10 @@ export const useWorkflowService = () => {
    * Takes an existing workflow and duplicates it with a new name
    */
   const duplicateWorkflow = async (workflow: ComfyWorkflow) => {
-    if (!workflow.isLoaded) await workflow.load()
+    if (!workflow.isLoaded && !(await workflow.load())) {
+      toast.error(t('workflowService.loadFailed'))
+      return
+    }
     const state = JSON.parse(JSON.stringify(workflow.activeState))
     // Ensure duplicates are always treated as distinct workflows.
     if (state) state.id = generateUUID()

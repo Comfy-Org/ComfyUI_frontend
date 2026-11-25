@@ -106,7 +106,9 @@ function setup({ tabsRestored = true }: { tabsRestored?: boolean } = {}) {
   vi.mocked(useWorkflowService().openWorkflow).mockImplementation(
     async (workflow) => {
       workflows.openWorkflowsInBackground({ right: [workflow.path] })
-      workflows.activeWorkflow = await workflow.load()
+      const loaded = await workflow.load()
+      assert.exists(loaded)
+      workflows.activeWorkflow = loaded
       return true
     }
   )

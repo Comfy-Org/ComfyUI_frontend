@@ -223,13 +223,9 @@ export const useWorkflowStore = defineStore('workflow', () => {
     ).filter(isValidPath)
   }
 
-  /**
-   * Set the workflow as the active workflow.
-   * @param workflow The workflow to open.
-   */
   const openWorkflow = async (
     workflow: ComfyWorkflow
-  ): Promise<LoadedComfyWorkflow> => {
+  ): Promise<LoadedComfyWorkflow | undefined> => {
     if (isActive(workflow)) {
       const isActiveInstance = toRaw(activeWorkflow.value) === toRaw(workflow)
       if (isActiveInstance && workflow.isLoaded)
@@ -243,31 +239,23 @@ export const useWorkflowStore = defineStore('workflow', () => {
         )
     }
 
-    const addedTab = !openWorkflowPaths.value.includes(workflow.path)
-    if (addedTab) openWorkflowPaths.value.push(workflow.path)
     const graphState = useApp().rootGraphOrUndefined?.state
-    const loadedWorkflow = await workflow.load().catch((error: unknown) => {
-      if (addedTab) {
-        openWorkflowPaths.value = openWorkflowPaths.value.filter(
-          (path) => path !== workflow.path
-        )
-      }
-      throw error
-    })
+    const loadedWorkflow = await workflow.load()
+    if (!loadedWorkflow) return
     if (graphState !== useApp().rootGraphOrUndefined?.state) {
       throw new DOMException('Workflow load was replaced', 'AbortError')
+    }
+    workflowLookup.value[workflow.path] = loadedWorkflow
+    if (!openWorkflowPaths.value.includes(workflow.path)) {
+      openWorkflowPaths.value.push(workflow.path)
     }
     activeWorkflow.value = loadedWorkflow
     useApp().canvas.bg_tint = loadedWorkflow.tintCanvasBg
 
-    const historyIndex = tabActivationHistory.value.indexOf(workflow.path)
-    if (historyIndex !== -1) {
-      tabActivationHistory.value.splice(historyIndex, 1)
-    }
-    tabActivationHistory.value.push(workflow.path)
-    if (tabActivationHistory.value.length > MAX_HISTORY_SIZE) {
-      tabActivationHistory.value.shift()
-    }
+    tabActivationHistory.value = [
+      ...tabActivationHistory.value.filter((path) => path !== workflow.path),
+      workflow.path
+    ].slice(-MAX_HISTORY_SIZE)
 
     return loadedWorkflow
   }
@@ -595,17 +583,14 @@ export const useWorkflowStore = defineStore('workflow', () => {
   ): Promise<boolean> => {
     isBusy.value = true
     try {
-      // Capture all needed values upfront
       const oldPath = workflow.path
       const oldKey = workflow.key
       const wasBookmarked = bookmarkStore.isBookmarked(oldPath)
       const draftStore = useWorkflowDraftStoreV2()
 
-      await workflow.rename(newPath)
+      if (!(await workflow.rename(newPath))) return false
       void workflowRenamed.trigger(workflow)
 
-      // Synchronously swap old path for new path in lookup and open paths
-      // to avoid a tab flicker caused by an async gap between detach/attach.
       if (toRaw(workflowLookup.value[oldPath]) === toRaw(workflow))
         delete workflowLookup.value[oldPath]
       workflowLookup.value[workflow.path] = workflow
@@ -616,10 +601,8 @@ export const useWorkflowStore = defineStore('workflow', () => {
 
       draftStore.moveDraft(oldPath, newPath, workflow.key)
 
-      // Move thumbnail from old key to new key (using workflow keys, not full paths)
       const newKey = workflow.key
       moveWorkflowThumbnail(oldKey, newKey)
-      // Update bookmarks
       if (wasBookmarked) {
         await bookmarkStore.setBookmarked(oldPath, false)
         await bookmarkStore.setBookmarked(newPath, true)
@@ -633,14 +616,14 @@ export const useWorkflowStore = defineStore('workflow', () => {
   const deleteWorkflow = async (workflow: ComfyWorkflow) => {
     isBusy.value = true
     try {
-      await workflow.delete()
+      if (!(await workflow.delete())) return false
       useWorkflowDraftStoreV2().removeDraft(workflow.path)
       if (bookmarkStore.isBookmarked(workflow.path)) {
         await bookmarkStore.setBookmarked(workflow.path, false)
       }
-      // Clear thumbnail when workflow is deleted
       clearThumbnail(workflow.key)
       detachWorkflow(workflow)
+      return true
     } finally {
       isBusy.value = false
     }

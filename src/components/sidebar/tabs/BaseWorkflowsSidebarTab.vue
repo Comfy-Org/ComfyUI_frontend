@@ -331,7 +331,7 @@ function workflowLeafActions(
   }
   if (!workflow.isTemporary) {
     actions.handleDelete = async () => {
-      await workflowService.deleteWorkflow(workflow)
+      return await workflowService.deleteWorkflow(workflow)
     }
   }
   return actions

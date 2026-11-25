@@ -440,7 +440,7 @@
   },
   "src/platform/assets/services/assetService.ts": {
     "comfy/no-new-error-throw": {
-      "count": 20
+      "count": 18
     }
   },
   "src/platform/assets/stores/assetsStore.ts": {
@@ -505,7 +505,7 @@
   },
   "src/platform/billing/composables/useSubscriptionCheckout.ts": {
     "comfy/no-new-error-throw": {
-      "count": 3
+      "count": 2
     }
   },
   "src/platform/billing/composables/useTeamPlan.test.ts": {
@@ -976,12 +976,7 @@
   },
   "src/stores/subgraphStore.ts": {
     "comfy/no-new-error-throw": {
-      "count": 4
-    }
-  },
-  "src/stores/userFileStore.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 3
+      "count": 2
     }
   },
   "src/stores/userStore.ts": {
