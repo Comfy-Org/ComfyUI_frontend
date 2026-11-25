@@ -86,6 +86,16 @@ describe('agentComposerStore error context', () => {
       'workflow'
     ])
     expect(store.prompt.references[0]).toMatchObject({ id: 'wf-a' })
+
+    store.setErrorContext(errorContext({ label: 'Second' }))
+
+    expect(store.prompt.references.map((item) => item.kind)).toEqual([
+      'workflow',
+      'error',
+      'workflow'
+    ])
+    expect(store.prompt.references[0]).toMatchObject({ id: 'wf-a' })
+    expect(store.prompt.references[2]).toMatchObject({ id: 'wf-b' })
   })
 
   it('reinserts at the requested slot when the caret moves past a later reference before repeat attachment', () => {
