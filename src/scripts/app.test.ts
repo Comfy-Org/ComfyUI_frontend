@@ -3067,6 +3067,42 @@ describe('ComfyApp', () => {
       expect(comfy.graph.node('1')).not.toBe(kept)
     })
 
+    it('retires the handles of the open workflow when a tab switch shows the live graph of another, and gives working ones there', async () => {
+      const { comfy } = nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
+      onTestFinished(attachLegacyUI(app))
+      vi.mocked(mockCanvas.setGraph).mockImplementation((graph) => {
+        mockCanvas.graph = graph
+      })
+      const workflowService = await useRealWorkflowService()
+      const workflowStore = useWorkflowStore()
+      workflowStore.provideChangeTracker(ChangeTracker)
+      Reflect.set(mockCanvas, 'ds', { scale: 1, offset: [0, 0] })
+      vi.mocked(workflowStore.createNewTemporary).mockRestore()
+      vi.mocked(workflowStore.getWorkflowByPath).mockRestore()
+      vi.mocked(workflowStore.isActive).mockRestore()
+      vi.mocked(workflowStore.openWorkflow).mockRestore()
+      const probe = { '1': { class_type: 'HandleProbe', inputs: {} } }
+      await app.loadApiJson(probe, 'tab-a')
+      const tabA = workflowStore.activeWorkflow
+      assert(tabA?.graph)
+      await app.loadApiJson(probe, 'tab-b')
+      const inB = comfy.graph.node('1')
+      assert(inB)
+
+      await expect(workflowService.openWorkflow(tabA)).resolves.toBe(true)
+
+      expect(app.rootGraph).toBe(tabA.graph)
+      expect(inB.isDeleted).toBe(true)
+      expect(inB.setTitle('Edited in a tab not shown')).toBe(false)
+      const inA = comfy.graph.node('1')
+      assert(inA)
+      expect(inA.isDeleted).toBe(false)
+      expect(inA.setTitle('Edited on screen')).toBe(true)
+      expect(tabA.graph.getNodeById(toNodeId(1))?.title).toBe(
+        'Edited on screen'
+      )
+    })
+
     it.for([
       { restoreHistory: true, drawn: [320, 180] },
       { restoreHistory: false, drawn: [200, 100] }

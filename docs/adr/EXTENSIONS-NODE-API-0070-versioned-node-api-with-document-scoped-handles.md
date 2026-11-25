@@ -134,26 +134,30 @@ look in a particular graph, use `comfy.graph.root()` or
     redo, which rebuild the graph as new objects. Whether the host retires
     it depends on whether a load replaces the document or rebuilds it:
 
-    | Event                                                                                                      | Handle behavior                                                                                                                                                                                         |
-    | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-    | A load of another workflow, a tab switch, or a reload of the open workflow (a language change, late nodes) | `endDocument(graph)` retires every handle when the host freezes the outgoing tracker, and `beginDocument()` again just before configure. Take fresh handles from the loaded document.                   |
-    | Undo or redo from the change tracker's own queue (`restoreHistory`)                                        | A handle whose entity is still there keeps working. A node or group handle whose entity is gone reports `isDeleted`, and reads it again if a later restore brings it back, unless a restore retired it. |
-    | Undo or redo across a load, and Reuse Parameters                                                           | A load: the tracker passes `restoreHistory: false` for those states.                                                                                                                                    |
-    | An API-JSON or A1111 import, which builds the incoming document in the graph it clears                     | `endDocument(graph)` and `beginDocument()` together at the import's freeze, before the clear. Take fresh handles from the imported document.                                                            |
-    | A node moved to another graph, as Convert to Subgraph moves it                                             | A different entity: the old handle reports `isDeleted`. Take a handle in the destination graph.                                                                                                         |
-    | A slot rebuilt by undo or redo                                                                             | Slot handles name slot objects, so a restore that finds one gone retires it. Read `node.inputs` or `node.outputs` again.                                                                                |
+    | Event                                                                                                                                   | Handle behavior                                                                                                                                                                                         |
+    | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+    | A load of another workflow, a switch to a tab whose graph is not live, or a reload of the open workflow (a language change, late nodes) | `endDocument(graph)` retires every handle when the host freezes the outgoing tracker, and `beginDocument()` again just before configure. Take fresh handles from the loaded document.                   |
+    | A switch to an open tab whose graph is still live (#21571)                                                                              | `endDocument(graph)` and `beginDocument()` together when the switch freezes the outgoing tracker; nothing is configured. Take fresh handles from the tab shown.                                         |
+    | Undo or redo from the change tracker's own queue (`restoreHistory`)                                                                     | A handle whose entity is still there keeps working. A node or group handle whose entity is gone reports `isDeleted`, and reads it again if a later restore brings it back, unless a restore retired it. |
+    | Undo or redo across a load, and Reuse Parameters                                                                                        | A load: the tracker passes `restoreHistory: false` for those states.                                                                                                                                    |
+    | An API-JSON or A1111 import, which builds the incoming document in a fresh graph or in the graph it clears                              | `endDocument(graph)` and `beginDocument()` together at the import's freeze, before the clear. Take fresh handles from the imported document.                                                            |
+    | A node moved to another graph, as Convert to Subgraph moves it                                                                          | A different entity: the old handle reports `isDeleted`. Take a handle in the destination graph.                                                                                                         |
+    | A slot rebuilt by undo or redo                                                                                                          | Slot handles name slot objects, so a restore that finds one gone retires it. Read `node.inputs` or `node.outputs` again.                                                                                |
 
-    The host's `loadGraphData` makes the document calls in this order:
+    The host's `loadGraphData` makes the document calls in this order. Each
+    open workflow has its own graph (#21571), so the load configures that
+    workflow's graph, or a fresh one for a workflow not yet open, and the
+    graph it froze is often another object:
 
     ```mermaid
     flowchart TB
         load["ComfyApp.loadGraphData"] --> freeze["beforeLoadNewGraph freezes the outgoing tracker"]
         freeze --> flag{"restoreHistory?"}
-        flag -->|No| ended["endDocument(rootGraph)"]
+        flag -->|No| ended["endDocument(outgoing rootGraph)"]
         ended -->|"clean, validation, beforeConfigureGraph"| begin["beginDocument()"]
-        begin --> replace["rootGraph.configure()"]
-        flag -->|Yes| aside["beforeHistoryRestore(rootGraph, state)"]
-        aside --> restore["rootGraph.configure()"]
+        begin --> replace["graph.configure()"]
+        flag -->|Yes| aside["beforeHistoryRestore(graph, state)"]
+        aside --> restore["graph.configure()"]
         restore -->|finally| retire["afterHistoryRestore()"]
     ```
 
@@ -170,9 +174,14 @@ look in a particular graph, use `comfy.graph.root()` or
       id. The ended graph is told from
       the one the load configures by its id-counter state (`LGraph.state`),
       which every configure replaces, as the host's `isCurrentGraphLoad`
-      check tells them apart. API-JSON and A1111 imports build the incoming
-      document in the graph they clear, so they call `endDocument(graph)` and
-      `beginDocument()` together at the freeze, before the clear. A load
+      check tells them apart. The load runs until the host marks the graph on
+      screen loaded (`isGraphLoading` in `graphLoadState.ts`) or an import's
+      capture suppression ends. API-JSON and A1111 imports build the incoming
+      document in a fresh graph, or in the graph on screen when no workflow
+      owns it, which they clear, so they call `endDocument(graph)` and
+      `beginDocument()` together at the freeze, before either. A switch to a
+      tab whose graph is still live does the same, since it configures
+      nothing. A load
       replaced or failing after the freeze leaves the graph on screen with
       its handles retired; once the load finishes, a fresh handle works.
     - A restore sets the id counters (`state.lastNodeId`, `state.lastGroupId`)
@@ -300,10 +309,18 @@ look in a particular graph, use `comfy.graph.root()` or
 - [ADR-GRAPH-DOCUMENT-0026](GRAPH-DOCUMENT-0026-frontend-document-model.md)
   defines a document as one editing session with a session uid, and says a
   graph reload is not a document transition. The uid does not exist yet, so
-  this API cannot tell a return to an open tab or a reload of the open
-  workflow from a load of another, and retires handles on all of them. When
-  the uid lands it replaces the document counter here, and decision 10 no
-  longer lists a tab switch or a reload as a load.
+  this API cannot tell a reload of the open workflow from a load of another,
+  and retires handles on both. When the uid lands it replaces the document
+  counter here, and decision 10 no longer lists a reload as a load.
+- Since [#21571](https://github.com/Comfy-Org/ComfyUI_frontend/pull/21571)
+  each open workflow keeps its own `LGraph`, and a switch to a tab whose
+  graph is live configures nothing, so that graph could carry a handle's
+  document across the switch. The API still retires every handle on a switch:
+  an edit takes its undo step from the active workflow's tracker (the
+  `history` service), so an edit through a handle to a tab not shown would
+  change a graph whose own tracker neither records it nor marks it modified.
+  Keeping handles across a switch needs the edit core to use the tracker of
+  the handle's own workflow, and then decision 10 drops the switch row.
 - [#23333](https://github.com/Comfy-Org/ComfyUI_frontend/issues/23333): undo
   reissues the id of a node it removed to the next node added, and
   [#23733](https://github.com/Comfy-Org/ComfyUI_frontend/issues/23733) does
@@ -445,11 +462,12 @@ Host changes outside the folder:
 
 - `GraphCanvas.vue` publishes the API before extensions load and marks it
   ready as soon as setup finishes.
-- `src/scripts/app.ts` calls `endDocument(graph)` when it freezes the open
-  document to load another, `beginDocument()` before configuring a saved
-  document or, on the import paths, together with `endDocument`, and
-  `beforeHistoryRestore(graph, state)` and `afterHistoryRestore()` around
-  configuring an undo or redo. `restoreHistory` gains a JSDoc saying
+- `src/scripts/app.ts` calls `endDocument(graph)` with the outgoing root
+  when it freezes the open document to load another, `beginDocument()`
+  before configuring a saved document or, on the import paths, together with
+  `endDocument`, and `beforeHistoryRestore(graph, state)` and
+  `afterHistoryRestore()` around configuring an undo or redo into the
+  workflow's own graph. `restoreHistory` gains a JSDoc saying
   extensions must not set it. An undo or redo keeps the node sizes of the
   state it restores: the load no longer grows each node to its content
   (`computeSize()`) as it does for a saved document. That state was taken
@@ -457,14 +475,17 @@ Host changes outside the folder:
   node computes before a pack fits it again (a mounted widget whose height
   the pack sets from a `ResizeObserver`) is larger, and growing to it made
   the pack's fit a new undo step that emptied the redo queue.
-- `GraphCanvas.vue`, `src/scripts/app.ts`, `themeService.ts` and
-  `extensionLoader.ts` make every call into the API through
-  `useNodeApiHost()` (decision 7).
+- `workflowService.ts` calls `endDocument(graph)` and `beginDocument()`
+  together when a switch to a tab whose graph is still live freezes the
+  outgoing tracker, since that switch does not go through `loadGraphData`.
+- `GraphCanvas.vue`, `src/scripts/app.ts`, `workflowService.ts`,
+  `themeService.ts` and `extensionLoader.ts` make every call into the API
+  through `useNodeApiHost()` (decision 7).
 - `src/scripts/changeTracker.ts` sets `restoreHistory` only for a state from
   its own undo or redo queue, and remembers each state an undo or redo
   pushed across a load and each state next to a load of another state into
   the same workflow (`reset()`), so that restoring it is a load too
-  (decision 10). At the end of a load it takes the graph as the
+  (decision 10). At the end of a load it takes its workflow's graph as the
   `afterLoadGraph` hooks left it as the loaded state
   (`adoptLoadedGraph()`), so an edit such a hook makes, through a handle or
   not, is part of what the load gives, and the user's next undo does not take
