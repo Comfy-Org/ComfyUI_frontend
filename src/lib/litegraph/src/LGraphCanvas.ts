@@ -930,6 +930,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   current_node: LGraphNode | null
   private _cameraMoving = false
   private _cameraMovedAt = -Infinity
+  private readonly _arrangeDeferredNodes = new Set<LGraphNode>()
   private _drawnCamera?: [number, number, number]
   /** used for widgets */
   node_widget?: [LGraphNode, IBaseWidget] | null
@@ -5175,8 +5176,23 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     if (area) ctx.restore()
 
     if (!LiteGraph.vueNodesMode) return
-    if (this._cameraMoving) this.dirty_canvas = true
-    else if (wasCameraMoving) this.dirty_bgcanvas = true
+    if (this._cameraMoving) {
+      this.dirty_canvas = true
+      return
+    }
+    if (!wasCameraMoving) return
+
+    for (const node of this._arrangeDeferredNodes) {
+      if (node.graph === this.graph) this._arrangeVueNode(node)
+    }
+    this._arrangeDeferredNodes.clear()
+    this.dirty_bgcanvas = true
+  }
+
+  private _arrangeVueNode(node: LGraphNode): void {
+    node._setConcreteSlots()
+    if (!node.collapsed) node.arrange()
+    markNodeArranged(node)
   }
 
   private _getLinkCentreOnPos(e: CanvasPointerEvent): LinkSegment | undefined {
@@ -5495,14 +5511,14 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     // We still need to keep slot metrics and layout in sync for hit-testing and links.
     // Interaction system changes coming later, chances are vue nodes mode will be mostly broken on land
     if (LiteGraph.vueNodesMode) {
-      if (this._cameraMoving && isNodeArrangementCurrent(node)) return
+      if (this._cameraMoving && isNodeArrangementCurrent(node)) {
+        this._arrangeDeferredNodes.add(node)
+        return
+      }
 
       // Prepare concrete slots and compute layout measures without rendering visuals.
-      node._setConcreteSlots()
-      if (!node.collapsed) {
-        node.arrange()
-      }
-      markNodeArranged(node)
+      this._arrangeDeferredNodes.delete(node)
+      this._arrangeVueNode(node)
       // Skip all node body/widget/title rendering. Vue overlay handles visuals.
       return
     }

@@ -35,10 +35,10 @@ function createCanvas(graph: LGraph): LGraphCanvas {
   return canvas
 }
 
-function panFrames(canvas: LGraphCanvas, times: number[]): void {
+function panFrames(canvas: LGraphCanvas, times: number[], step = 10): void {
   for (const time of times) {
     now = time
-    canvas.ds.offset[0] += 10
+    canvas.ds.offset[0] += step
     canvas.setDirty(true, true)
     canvas.draw()
   }
@@ -66,7 +66,7 @@ describe('LGraphCanvas camera settling in Vue nodes mode', () => {
     LiteGraph.vueNodesMode = previousVueNodesMode
   })
 
-  it('repairs widget input sockets and link endpoints after the camera stops', () => {
+  function createLinkedWidgetInput() {
     const graph = new LGraph()
     const source = new LGraphNode('Source')
     source.pos = [0, 100]
@@ -90,6 +90,12 @@ describe('LGraphCanvas camera settling in Vue nodes mode', () => {
     const drawnLinkEnd = () =>
       renderLink.mock.calls.findLast(([, , , drawn]) => drawn === link)?.[2]
 
+    return { canvas, target, upper, renderLink, drawnLinkEnd }
+  }
+
+  it('repairs widget input sockets and link endpoints after the camera stops', () => {
+    const { canvas, target, upper, drawnLinkEnd } = createLinkedWidgetInput()
+
     canvas.draw(true, true)
     expect(target.getInputPos(0)).toEqual([300, 136])
     expect(drawnLinkEnd()).toEqual([300, 136])
@@ -98,6 +104,23 @@ describe('LGraphCanvas camera settling in Vue nodes mode', () => {
     upper.computeSize = () => [100, 60]
     panFrames(canvas, [64, 80, 96])
     idleFramesUntil(canvas, 400)
+
+    expect(target.getInputPos(0)).toEqual([300, 176])
+    expect(drawnLinkEnd()).toEqual([300, 176])
+  })
+
+  it('repairs a node that the pan moved out of view before the camera stops', () => {
+    const { canvas, target, upper, renderLink, drawnLinkEnd } =
+      createLinkedWidgetInput()
+
+    canvas.draw(true, true)
+    panFrames(canvas, [16, 32, 48])
+    upper.computeSize = () => [100, 60]
+    panFrames(canvas, [64, 80, 96])
+    panFrames(canvas, [112], 520)
+    expect(canvas.visible_nodes).not.toContain(target)
+    renderLink.mockClear()
+    idleFramesUntil(canvas, 800)
 
     expect(target.getInputPos(0)).toEqual([300, 176])
     expect(drawnLinkEnd()).toEqual([300, 176])
