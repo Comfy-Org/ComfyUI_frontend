@@ -61,7 +61,7 @@ import {
 import { useBilledWorkspace } from '@/composables/useBilledWorkspace'
 import { useCheckoutExit } from '@/composables/useCheckoutExit'
 import type { PayChoice } from '@/composables/useFullPageCheckout'
-import { awaitInPageTopup } from '@/config/checkoutUi'
+import { awaitInPageTopup, awaitTopupHostedMethods } from '@/config/checkoutUi'
 import { awaitBillingWebStripeKey } from '@/config/stripeKey'
 import { useBillingEntry } from '@/entry/billingEntry'
 import { useAutoTopUpSettings } from '@/session/autoTopUpSettings'
@@ -178,6 +178,10 @@ export function useFullPageTopup() {
   const quote = shallowRef<TopupQuote>()
   const inPageTopup = awaitInPageTopup()
   const interactiveAllowed = shallowRef(false)
+  const hostedMethodsAllowed = shallowRef(false)
+  void awaitTopupHostedMethods().then((allowed) => {
+    hostedMethodsAllowed.value = allowed
+  })
   const paysOnce = computed(
     () =>
       interactiveAllowed.value &&
@@ -508,7 +512,8 @@ export function useFullPageTopup() {
   }
 
   const offersHostedMethods = computed(
-    () => paysOnce.value && autoTopUp === undefined
+    () =>
+      hostedMethodsAllowed.value && paysOnce.value && autoTopUp === undefined
   )
 
   const canPayHosted = computed(() => {

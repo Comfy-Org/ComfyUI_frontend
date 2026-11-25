@@ -1758,8 +1758,29 @@ describe('FullPageTopupView paying with WeChat Pay or Alipay', () => {
     return vi.spyOn(fake.client.topup, 'createHostedTopupCheckout')
   }
 
+  const hostedMethodsFlag = (on: boolean) => async () =>
+    new Response(
+      JSON.stringify({
+        unified_billing_settings: true,
+        billing_web_topup_hosted_methods: on
+      })
+    )
+
   beforeEach(() => {
     form.mounts = 0
+    serveFeatures(hostedMethodsFlag(true))
+  })
+
+  it('offers no WeChat Pay or Alipay option while billing_web_topup_hosted_methods is off', async () => {
+    serveFeatures(hostedMethodsFlag(false))
+    renderTopup({
+      topupQuote: PAYS_ONCE,
+      paymentMethods: { status: 'ok', value: [VISA] }
+    })
+    await screen.findByText('Add credits · Acme Team')
+    await waitFor(() => expect(payButton()).toBeEnabled())
+
+    expect(hostedOption()).not.toBeInTheDocument()
   })
 
   it.for([
