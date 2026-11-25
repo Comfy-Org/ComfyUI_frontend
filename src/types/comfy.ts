@@ -491,7 +491,8 @@ export interface ComfyExtension {
   onAuthUserLogout?(): Promise<void> | void
 
   onNodeOutputsUpdated?(
-    nodeOutputs: Partial<Record<NodeLocatorId, NodeExecutionOutput>>
+    nodeOutputs: Partial<Record<NodeLocatorId, NodeExecutionOutput>>,
+    replayedNodes?: ReadonlySet<NodeLocatorId>
   ): void
 
   [key: string]: unknown

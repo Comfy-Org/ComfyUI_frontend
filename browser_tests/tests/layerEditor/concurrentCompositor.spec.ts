@@ -40,7 +40,11 @@ test(
       await compositor.prompt.fill('sheep')
       const sheep = await queuedExecution.capture(() => runButton.click())
       sheep.start()
-      await compositor.showRunningJobs(cat.id, sheep.id)
+      const withoutComposition = await queuedExecution.capture(() =>
+        runButton.click()
+      )
+      withoutComposition.start()
+      await compositor.showRunningJobs(cat.id, sheep.id, withoutComposition.id)
 
       cat.output('1', compositor.output('cat-result.webp'))
       await expect(preview).toHaveAttribute('src', /filename=cat-result\.webp/)
@@ -50,6 +54,18 @@ test(
       const sheepProgress = queuePanel.jobRow(sheep.id).getByText(': 40%')
       await expect(sheepProgress).toBeVisible()
       await expect(preview).toHaveAttribute('src', /filename=cat-result\.webp/)
+      withoutComposition.output('2', { text: ['No compositor output'] })
+      withoutComposition.progress('2', 7, 10)
+
+      await compositor.openEditor.click()
+      await compositor.dogLayer.click()
+      await compositor.x.fill('19')
+      await compositor.x.press('Tab')
+      await compositor.closeEditor.click()
+      await expect(preview).toHaveAttribute('src', /^blob:/)
+
+      await queuePanel.jobRow(withoutComposition.id).getByText(': 70%').click()
+      await expect(preview).toHaveAttribute('src', /^blob:/)
 
       await sheepProgress.click()
       await expect(preview).toHaveAttribute(

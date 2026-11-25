@@ -17,7 +17,7 @@ interface CompositorFixture {
   output: (filename: string) => NodeExecutionOutput
   preview: Locator
   prompt: Locator
-  showRunningJobs: (cat: string, sheep: string) => Promise<void>
+  showRunningJobs: (...jobIds: string[]) => Promise<void>
   x: Locator
 }
 
@@ -64,10 +64,10 @@ export const compositorFixture = mergeTests(
           compositor_canvas: [{ w: 64, h: 64 }]
         }
       },
-      async showRunningJobs(cat: string, sheep: string) {
+      async showRunningJobs(...jobIds) {
         await jobsRoutes.mockJobsScenario({
           history: [],
-          queue: [cat, sheep].map((id) =>
+          queue: jobIds.map((id) =>
             createRouteMockJob({
               id,
               status: 'in_progress',
@@ -77,7 +77,7 @@ export const compositorFixture = mergeTests(
             })
           )
         })
-        queuedExecution.status(2)
+        queuedExecution.status(jobIds.length)
       }
     })
   }
