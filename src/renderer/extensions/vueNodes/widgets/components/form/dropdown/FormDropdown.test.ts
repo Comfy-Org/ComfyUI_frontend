@@ -557,6 +557,23 @@ describe('FormDropdown', () => {
     })
   })
 
+  it('raises a saved size below the minimum to the minimum', async () => {
+    safeSessionStorage.setItem(
+      'Comfy.FormDropdown.PanelSize',
+      JSON.stringify({ width: 288, height: 500 })
+    )
+    onTestFinished(() =>
+      safeSessionStorage.removeItem('Comfy.FormDropdown.PanelSize')
+    )
+    const { user } = mountDropdown([createItem('input-0', 'video1.mp4')])
+    await openDropdown(user)
+
+    expect(screen.getByRole('dialog')).toHaveStyle({
+      width: '320px',
+      height: '500px'
+    })
+  })
+
   it('does not select a search result from multi-select dropdowns', async () => {
     const onUpdateSelected = vi.fn()
     const { user } = mountDropdown(

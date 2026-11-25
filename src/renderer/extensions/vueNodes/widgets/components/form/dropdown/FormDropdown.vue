@@ -28,6 +28,7 @@ import type { MaybePaged } from '@/utils/pagedList'
 import FormDropdownInput from './FormDropdownInput.vue'
 import FormDropdownMenu from './FormDropdownMenu.vue'
 import FormDropdownResizeHandle from './FormDropdownResizeHandle.vue'
+import { atLeastMinimumSize } from './resizePanel'
 import type { PanelSize, ResizeHandle } from './resizePanel'
 import {
   DROPDOWN_PANEL_CLASS,
@@ -133,6 +134,9 @@ const panelSize = useSafeSessionStorage<PanelSize | undefined>(
   'Comfy.FormDropdown.PanelSize',
   undefined,
   { serializer: StorageSerializers.object }
+)
+const shownPanelSize = computed(
+  () => panelSize.value && atLeastMinimumSize(panelSize.value)
 )
 const RESIZE_HANDLES: ResizeHandle[] = [
   'left-edge',
@@ -409,9 +413,9 @@ const dropdownItems = computed(() =>
         hide-when-detached
         :class="DROPDOWN_PANEL_CLASS"
         :style="
-          panelSize && {
-            width: `${panelSize.width}px`,
-            height: `${panelSize.height}px`
+          shownPanelSize && {
+            width: `${shownPanelSize.width}px`,
+            height: `${shownPanelSize.height}px`
           }
         "
         class="group/dropdown pointer-events-auto relative flex h-160 w-103 flex-col overflow-visible rounded-lg border-none bg-transparent p-0 shadow-lg data-[state=closed]:animate-none data-[state=open]:animate-none"

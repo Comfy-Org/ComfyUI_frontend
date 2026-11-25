@@ -43,6 +43,14 @@ export function resizePanel(
   }
 }
 
+/** `size` raised to the minimum panel size, for sizes saved under an older minimum. */
+export function atLeastMinimumSize(size: PanelSize): PanelSize {
+  return {
+    width: Math.max(size.width, MIN_PANEL_SIZE.width),
+    height: Math.max(size.height, MIN_PANEL_SIZE.height)
+  }
+}
+
 /** Whether `handle` grows the panel's right side, which the trigger-aligned popover must shift to keep its left edge in place. */
 export function growsRight(handle: ResizeHandle): boolean {
   return HANDLE_AXES[handle].x === 1
