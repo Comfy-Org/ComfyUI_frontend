@@ -53,6 +53,17 @@ describe('RunOnCloudCard', () => {
     expect(openWorkflowOnCloud).not.toHaveBeenCalled()
   })
 
+  it('explains that the compatible workflow requires signing in to Cloud', () => {
+    render(RunOnCloudCard, {
+      props: { asksToSignIn: true },
+      global: { plugins: [testI18n] }
+    })
+
+    expect(
+      screen.getByText('Comfy Cloud will ask you to sign in.')
+    ).toBeVisible()
+  })
+
   it('waits on a disabled button while Comfy Cloud checks', () => {
     render(RunOnCloudCard, {
       props: { asksToSignIn: false, needsConsent: true, checking: true },

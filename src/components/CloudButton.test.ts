@@ -1,3 +1,4 @@
+import { useTelemetry } from '@/platform/telemetry'
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
@@ -236,6 +237,11 @@ describe('Cloud button compatibility checks', () => {
     expect(button).toHaveFocus()
     expect(checkCloudCompatibility).not.toHaveBeenCalled()
     await user.keyboard('{Enter}')
+
+    expect(useTelemetry()?.trackUiButtonClicked).toHaveBeenCalledWith({
+      button_id: 'run_bar_cloud_clicked',
+      element_group: 'top_menu'
+    })
 
     const dialog = await screen.findByRole('dialog', {
       name: dialogName
@@ -763,7 +769,7 @@ describe('Cloud button compatibility checks', () => {
 
     expect(
       await screen.findByText(
-        /^Comfy Cloud doesn’t have some of the nodes this workflow uses\./
+        /^Comfy Cloud is missing some of the dependencies this workflow uses\./
       )
     ).toBeVisible()
     expect(

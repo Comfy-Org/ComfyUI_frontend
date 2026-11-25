@@ -4157,7 +4157,7 @@
     "deploySetupDialog": {
       "title": "Run your workflows on Comfy Cloud",
       "body": "Deploy your local setup to Comfy Cloud as a Build, then use it in ComfyUI or call it as an autoscaling API.",
-      "missingNodesBody": "Comfy Cloud doesn’t have some of the nodes this workflow uses. Deploy your local setup to Comfy Cloud as a Build, then use it in ComfyUI or call it as an autoscaling API.",
+      "missingDependenciesBody": "Comfy Cloud is missing some of the dependencies this workflow uses. Deploy your local setup to Comfy Cloud as a Build, then use it in ComfyUI or call it as an autoscaling API.",
       "pointNodes": "Bring your custom nodes and models",
       "pointGpu": "Run on powerful cloud GPUs",
       "pointPricing": "Pay only while your GPU workers are up, plus storage"

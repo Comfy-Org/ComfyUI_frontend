@@ -5,7 +5,7 @@
     :poster-src="DEPLOY_VIDEO_POSTER_SRC"
     :body
     :points
-    :note="needsConsent ? t('openOnCloud.runDialog.sends') : undefined"
+    :note
     @dismiss="emit('dismiss')"
   >
     <template #actions>
@@ -75,6 +75,11 @@ const body = computed(() => {
           .join(', ')
       })
     : t('openOnCloud.runDialog.ready')
+})
+
+const note = computed(() => {
+  if (needsConsent) return t('openOnCloud.runDialog.sends')
+  if (asksToSignIn) return t('openOnCloud.runDialog.asksToSignIn')
 })
 
 const primaryLabel = computed(() => {
