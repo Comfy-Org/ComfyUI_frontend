@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
@@ -13,6 +14,7 @@ import { useCloudWorkflowCheckStore } from '@/platform/openOnCloud/stores/cloudW
 import { modelFileUploadApi } from '@/platform/assets/services/modelFileUploadApi'
 import type { ModelFileUploadResult } from '@/platform/assets/services/modelFileUploadApi'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { api } from '@/scripts/api'
 
 import { useLocalModelUploadStore } from './localModelUploadStore'
 
@@ -803,14 +805,45 @@ describe('useLocalModelUploadStore', () => {
       openOnCloudModelUploadEnabled: false
     })
     await checkStore.check()
-    expect(checkCloudCompatibility).toHaveBeenLastCalledWith({
+    expect(vi.mocked(checkCloudCompatibility).mock.lastCall?.[0]).toEqual({
       workspaceId: 'ws-1',
       models
     })
 
     setWorkspace('ws-2')
     await checkStore.check()
-    expect(checkCloudCompatibility).toHaveBeenLastCalledWith(undefined)
+    expect(
+      vi.mocked(checkCloudCompatibility).mock.lastCall?.[0]
+    ).toBeUndefined()
+  })
+
+  it('keeps the uploaded model and waits to check again when the workflow changes during upload', async () => {
+    vi.spyOn(modelFileUploadApi, 'uploadModelFile').mockResolvedValue({
+      ok: true,
+      taskId: TASK_ID
+    })
+    vi.mocked(localModelUploadApi.waitForStoredModel).mockImplementationOnce(
+      async () => {
+        api.dispatchCustomEvent('graphChanged', fromPartial({ nodes: [] }))
+        return { ok: true }
+      }
+    )
+    const models = [lora]
+    const uploads = await prepared(models)
+    uploads.choose(lora, loraFile)
+
+    await uploads.start(models)
+
+    expect(uploads.upload).toEqual({ phase: 'done' })
+    expect(check).not.toHaveBeenCalled()
+
+    check.mockRestore()
+    await useCloudWorkflowCheckStore().check()
+    expect(checkCloudCompatibility).toHaveBeenCalledOnce()
+    expect(vi.mocked(checkCloudCompatibility).mock.lastCall?.[0]).toEqual({
+      workspaceId: 'ws-1',
+      models
+    })
   })
 
   it('preserves pending confirmation across another upload and a fresh verdict', async () => {
@@ -1066,7 +1099,7 @@ describe('useLocalModelUploadStore', () => {
   })
 })
 
-it('rechecks when the workspace changes and ignores the old workspace result', async () => {
+it('discards the old check when the workspace changes and waits for a new check', async () => {
   setWorkspace('ws-1')
   const store = useCloudWorkflowCheckStore()
   let finish: (result: CloudWorkflowCheckResult) => void = () => {}
@@ -1076,14 +1109,13 @@ it('rechecks when the workspace changes and ignores the old workspace result', a
 
   const first = store.check()
   setWorkspace('ws-2')
-  await vi.waitFor(() =>
-    expect(store.state).toEqual({
-      phase: 'answered',
-      verdict: { kind: 'canOpen' }
-    })
-  )
   finish({ kind: 'missing', gaps: { nodePacks: [], models: [lora] } })
   await first
+
+  expect(checkCloudCompatibility).toHaveBeenCalledOnce()
+  expect(store.state.phase).toBe('idle')
+
+  await store.check()
 
   expect(store.state).toEqual({
     phase: 'answered',
