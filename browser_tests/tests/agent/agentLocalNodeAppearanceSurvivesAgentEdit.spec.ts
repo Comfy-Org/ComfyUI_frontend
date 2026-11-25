@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test'
 
-import { RenderShape } from '@/lib/litegraph/src/types/globalEnums'
+import { RenderShape } from '@comfyorg/graph-model/globalEnums'
 
 import { agentTest as test } from '@e2e/fixtures/agentPanelFixture'
 import { NodeAppearanceEditor } from '@e2e/tests/agent/NodeAppearanceEditor'
@@ -60,7 +60,6 @@ test.describe(
         agent.finishTurn('Added a Load Image node named Reference Image.')
         await expect(agent.node(NODE_ID)).toContainText(RENAMED_TITLE)
 
-        test.fail()
         await expect(appearance.wrapper(NODE_ID)).toHaveCSS(
           'background-color',
           userColour
@@ -90,7 +89,6 @@ test.describe(
         agent.finishTurn('Added a Load Image node named Reference Image.')
         await expect(agent.node(NODE_ID)).toContainText(RENAMED_TITLE)
 
-        test.fail()
         await expect(appearance.wrapper(NODE_ID)).toHaveCSS(
           'border-top-left-radius',
           userRadius

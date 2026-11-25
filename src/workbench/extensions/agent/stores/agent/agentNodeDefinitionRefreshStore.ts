@@ -1,10 +1,11 @@
-import { useEventListener } from '@vueuse/core'
+import { until, useEventListener } from '@vueuse/core'
 import { defineStore } from 'pinia'
 
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { serverReportsBootId } from '@/platform/customNodes/serverBootId'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { api } from '@/scripts/api'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 
 import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
@@ -16,7 +17,21 @@ function isSuccessfulRestart(event: AgentWsEvent): boolean {
   )
 }
 
-async function refreshNodeDefinitions(): Promise<boolean> {
+function isSuccessfulCatalogRefresh(event: AgentWsEvent): boolean {
+  return (
+    event.type === 'agent_tool_call' &&
+    event.data.tool_name === 'refresh_catalog' &&
+    event.data.status === 'success'
+  )
+}
+
+type NodeDefinitionRefreshErrorType =
+  | 'failure_refreshing_node_definitions_after_agent_restart'
+  | 'failure_refreshing_node_definitions_after_agent_catalog_refresh'
+
+async function refreshNodeDefinitions(
+  errorType: NodeDefinitionRefreshErrorType
+): Promise<boolean> {
   try {
     await useCommandStore().execute('Comfy.RefreshNodeDefinitions', {
       errorHandler: (error) => {
@@ -27,7 +42,7 @@ async function refreshNodeDefinitions(): Promise<boolean> {
   } catch (error) {
     reportError(error, {
       surface: 'agent',
-      errorType: 'failure_refreshing_node_definitions_after_agent_restart',
+      errorType,
       level: 'warning'
     })
     return false
@@ -63,11 +78,34 @@ export const useAgentNodeDefinitionRefreshStore = defineStore(
     let restartedAt = -Infinity
     let reconnectedAt = -Infinity
     let refreshQueued = false
+    let catalogRefreshQueued = false
     let queue = Promise.resolve()
+    let flagsArrivedThisConnection = true
+
+    async function coreOwnsTheRestartRefresh(): Promise<boolean> {
+      if (!serverReportsBootId()) return false
+      if (!api.serverFeatureFlagsSettled.value) {
+        await until(api.serverFeatureFlagsSettled).toBe(true)
+      }
+      return flagsArrivedThisConnection && serverReportsBootId()
+    }
 
     async function refresh(): Promise<void> {
       refreshQueued = false
-      if (await refreshNodeDefinitions()) await reloadWorkflowWithoutRejecting()
+      if (
+        await refreshNodeDefinitions(
+          'failure_refreshing_node_definitions_after_agent_restart'
+        )
+      ) {
+        await reloadWorkflowWithoutRejecting()
+      }
+    }
+
+    async function refreshCatalog(): Promise<void> {
+      catalogRefreshQueued = false
+      await refreshNodeDefinitions(
+        'failure_refreshing_node_definitions_after_agent_catalog_refresh'
+      )
     }
 
     function enqueueRefresh(): void {
@@ -81,21 +119,42 @@ export const useAgentNodeDefinitionRefreshStore = defineStore(
       })
     }
 
-    function refreshIfRestartNearby(): void {
+    function enqueueCatalogRefresh(): void {
+      if (catalogRefreshQueued) return
+      catalogRefreshQueued = true
+      queue = queue.then(refreshCatalog).catch((error: unknown) => {
+        reportError(error, {
+          surface: 'agent',
+          errorType: 'failure_running_agent_node_definition_refresh'
+        })
+      })
+    }
+
+    async function refreshIfRestartNearby(): Promise<void> {
+      if (await coreOwnsTheRestartRefresh()) return
       if (Math.abs(reconnectedAt - restartedAt) <= RESTART_WINDOW_MS) {
         enqueueRefresh()
       }
     }
 
     function observeAgentEvent(event: AgentWsEvent): void {
+      if (isSuccessfulCatalogRefresh(event)) {
+        enqueueCatalogRefresh()
+        return
+      }
       if (!isSuccessfulRestart(event)) return
       restartedAt = Date.now()
-      refreshIfRestartNearby()
+      void refreshIfRestartNearby()
     }
 
+    useEventListener(api, 'feature_flags', () => {
+      flagsArrivedThisConnection = true
+    })
+
     useEventListener(api, 'reconnected', () => {
+      flagsArrivedThisConnection = false
       reconnectedAt = Date.now()
-      refreshIfRestartNearby()
+      void refreshIfRestartNearby()
     })
 
     return { observeAgentEvent }

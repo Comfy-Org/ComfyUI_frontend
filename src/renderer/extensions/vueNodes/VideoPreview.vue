@@ -25,7 +25,7 @@
       >
         <i class="mb-2 icon-[lucide--video-off] size-12" />
         <p class="text-sm">
-          {{ $t('g.videoFailedToLoad') }}
+          {{ $t(videoFailureMessageKey([errorCode])) }}
         </p>
         <p class="mt-1 text-xs">
           {{ getVideoFilename(currentVideoUrl) }}
@@ -41,6 +41,8 @@
       <!-- Main Video -->
       <video
         v-if="!videoError"
+        ref="videoEl"
+        data-testid="main-video"
         :src="currentVideoUrl"
         :class="
           cn(
@@ -70,7 +72,7 @@
           :aria-label="$t('g.downloadVideo')"
           @click="handleDownload"
         >
-          <i class="icon-[lucide--download] size-4" />
+          <i class="icon-[lucide--download]" />
         </Button>
 
         <!-- Close Button -->
@@ -82,7 +84,7 @@
           :aria-label="$t('g.removeVideo')"
           @click="handleRemove"
         >
-          <i class="icon-[lucide--x] size-4" />
+          <i class="icon-[lucide--x]" />
         </Button>
       </div>
 
@@ -124,15 +126,21 @@
 </template>
 
 <script setup lang="ts">
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useToast } from '@/components/ui/toast/toastStore'
-import { computed, ref, watch } from 'vue'
+import { computed, onScopeDispose, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
-import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
+import {
+  MEDIA_LOAD_TIMEOUT,
+  videoFailureMessageKey
+} from '@/composables/node/useNodeImage'
+import { describeImageLoadFailure } from '@/platform/telemetry/imageFailureDiagnostics'
+import { useTelemetry } from '@comfyorg/telemetry'
+import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { cn } from '@comfyorg/tailwind-utils'
 
 interface VideoPreviewProps {
@@ -144,6 +152,8 @@ interface VideoPreviewProps {
 
 const props = defineProps<VideoPreviewProps>()
 
+const HAVE_METADATA = 1
+
 const { t } = useI18n()
 const nodeOutputStore = useNodeOutputStore()
 
@@ -154,8 +164,12 @@ const isFocused = ref(false)
 const actualDimensions = ref<string | null>(null)
 const videoError = ref(false)
 const showLoader = ref(false)
+const errorCode = ref<number>()
+let loadTimeout: ReturnType<typeof setTimeout> | undefined
+let stallReportedUrl: string | undefined
 
 const videoWrapperEl = ref<HTMLDivElement>()
+const videoEl = ref<HTMLVideoElement>()
 
 // Computed values
 const currentVideoUrl = computed(() => props.imageUrls[currentIndex.value])
@@ -197,15 +211,79 @@ const handleVideoLoad = (event: Event) => {
   }
 }
 
-const handleVideoError = () => {
+const handleVideoError = (event: Event) => {
   showLoader.value = false
   videoError.value = true
   actualDimensions.value = null
+  errorCode.value =
+    event.target instanceof HTMLVideoElement
+      ? event.target.error?.code
+      : undefined
+
+  const failedUrl = currentVideoUrl.value
+  if (!failedUrl || failedUrl === stallReportedUrl) return
+  const mediaErrorCode = errorCode.value
+  void describeImageLoadFailure(failedUrl).then((metadata) => {
+    useTelemetry()?.trackImageLoadFailed({
+      ...metadata,
+      source: 'node_video_preview',
+      attempts: 1,
+      timed_out: false,
+      media_error_code: mediaErrorCode
+    })
+  })
 }
+
+const handleLoadStalled = (stalledUrl: string, video?: HTMLVideoElement) => {
+  loadTimeout = undefined
+  showLoader.value = false
+
+  if (video && video.readyState >= HAVE_METADATA) {
+    if (video.videoWidth && video.videoHeight) {
+      actualDimensions.value = `${video.videoWidth} x ${video.videoHeight}`
+    }
+    return
+  }
+
+  stallReportedUrl = stalledUrl
+  void describeImageLoadFailure(stalledUrl).then((metadata) => {
+    useTelemetry()?.trackImageLoadFailed({
+      ...metadata,
+      source: 'node_video_preview',
+      attempts: 1,
+      timed_out: true
+    })
+  })
+}
+
+watch(
+  [showLoader, currentVideoUrl],
+  ([loading, url]) => {
+    if (loadTimeout !== undefined) {
+      clearTimeout(loadTimeout)
+      loadTimeout = undefined
+    }
+    if (!loading || !url) return
+    stallReportedUrl = undefined
+    loadTimeout = setTimeout(
+      () => handleLoadStalled(url, videoEl.value),
+      MEDIA_LOAD_TIMEOUT
+    )
+  },
+  { immediate: true }
+)
+
+onScopeDispose(() => {
+  if (loadTimeout !== undefined) clearTimeout(loadTimeout)
+})
+
+watch(videoError, (hasError, hadError) => {
+  if (hadError && !hasError) stallReportedUrl = undefined
+})
 
 const handleDownload = () => {
   try {
-    downloadFile(currentVideoUrl.value)
+    downloadFile(currentVideoUrl.value, undefined, 'node_preview')
   } catch (error) {
     useToast().error(t('g.error'), {
       description: t('g.failedToDownloadVideo'),
@@ -291,7 +369,10 @@ const handleKeyDown = (event: KeyboardEvent) => {
 
 const getVideoFilename = (url: string): string => {
   try {
-    return new URL(url).searchParams.get('filename') || 'Unknown file'
+    return (
+      new URL(url, window.location.href).searchParams.get('filename') ||
+      'Unknown file'
+    )
   } catch {
     return 'Invalid URL'
   }

@@ -1,17 +1,19 @@
 import { useElementHover, useEventListener } from '@vueuse/core'
+import { clamp } from 'es-toolkit'
 import type { Ref } from 'vue'
 import { computed, onScopeDispose, ref } from 'vue'
 
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type { AssetItem } from '@comfyorg/assets-core/schema'
 import {
   normalizeMarqueeRect,
   selectMarqueeIds
-} from '@/platform/assets/utils/marqueeSelectionUtil'
+} from '@comfyorg/assets-core/selection'
 import { clipRectToBounds } from '@/utils/mathUtil'
-import type { RectEdges } from '@/utils/mathUtil'
+import type { ReadOnlyRectEdges as RectEdges } from '@comfyorg/shared-frontend-utils/geometry'
 
 const DRAG_THRESHOLD_PX = 4
 const CARD_SELECTOR = '[data-asset-id]'
+const SCROLLER_SELECTOR = '[data-asset-grid-scroller]'
 const INTERACTIVE_SELECTOR =
   'button, input, textarea, select, a[href], [role="slider"], [role="tab"], [contenteditable]'
 
@@ -23,6 +25,15 @@ interface AssetGridSelectionOptions {
   setSelectedIds: (ids: string[], allAssets: AssetItem[]) => void
   selectAll: (assets: AssetItem[]) => void
   isEnabled?: () => boolean
+}
+
+function shiftRectY(rect: RectEdges, dy: number): RectEdges {
+  return {
+    left: rect.left,
+    right: rect.right,
+    top: rect.top + dy,
+    bottom: rect.bottom + dy
+  }
 }
 
 function isTextEntryTarget(element: Element | null): boolean {
@@ -44,7 +55,7 @@ export function useAssetGridSelection(options: AssetGridSelectionOptions) {
     isEnabled = () => true
   } = options
 
-  const marqueeRect = ref<RectEdges | null>(null)
+  const marquee = ref<{ rect: RectEdges; visible: RectEdges } | null>(null)
   const isHoveringPanel = useElementHover(hoverTargetRef)
 
   let startX = 0
@@ -56,42 +67,53 @@ export function useAssetGridSelection(options: AssetGridSelectionOptions) {
   let isDragging = false
   let suppressNextClick = false
   let suppressClickResetTimeout: ReturnType<typeof setTimeout> | null = null
-  let dragCards: { id: string; rect: DOMRect }[] = []
+  const dragCards = new Map<string, RectEdges>()
   let dragBounds: DOMRect | null = null
+  let dragScroller: HTMLElement | null = null
+  let startScrollTop = 0
   let pointerClientX = 0
   let pointerClientY = 0
   let hasPointerSample = false
 
-  function collectCards(container: HTMLElement) {
-    return [...container.querySelectorAll<HTMLElement>(CARD_SELECTOR)].flatMap(
-      (el) => {
-        const id = el.dataset.assetId
-        return id ? [{ id, rect: el.getBoundingClientRect() }] : []
-      }
-    )
+  function recordRenderedCards(container: HTMLElement, dy: number) {
+    for (const el of container.querySelectorAll<HTMLElement>(CARD_SELECTOR)) {
+      const id = el.dataset.assetId
+      if (id) dragCards.set(id, shiftRectY(el.getBoundingClientRect(), dy))
+    }
   }
 
   function snapshotDrag() {
     const container = marqueeContainerRef.value
     if (!container) return
-    dragCards = collectCards(container)
-    dragBounds = container.getBoundingClientRect()
+    dragScroller = container.querySelector<HTMLElement>(SCROLLER_SELECTOR)
+    startScrollTop = dragScroller?.scrollTop ?? 0
+    dragBounds = (dragScroller ?? container).getBoundingClientRect()
   }
 
   function applyMarquee(clientX: number, clientY: number) {
-    if (!dragBounds) return
-    const rect = clipRectToBounds(
-      normalizeMarqueeRect(
-        { x: startX, y: startY },
-        { x: clientX, y: clientY }
-      ),
-      dragBounds
-    )
-    marqueeRect.value = rect
+    const container = marqueeContainerRef.value
+    if (!dragBounds || !container) return
+    const dy = (dragScroller?.scrollTop ?? 0) - startScrollTop
+    recordRenderedCards(container, dy)
+    const pointer = {
+      x: clamp(clientX, dragBounds.left, dragBounds.right),
+      y: clamp(clientY, dragBounds.top, dragBounds.bottom) + dy
+    }
+    const contentRect = normalizeMarqueeRect({ x: startX, y: startY }, pointer)
+    const rect = shiftRectY(contentRect, -dy)
+    marquee.value = { rect, visible: clipRectToBounds(rect, dragBounds) }
+    const cards = [...dragCards].map(([id, rect]) => ({ id, rect }))
     setSelectedIds(
-      [...selectMarqueeIds(dragCards, rect, baseIds, isSubtractive)],
+      [...selectMarqueeIds(cards, contentRect, baseIds, isSubtractive)],
       getAssets()
     )
+  }
+
+  function onScroll() {
+    if (!isDragging) return
+    requestAnimationFrame(() => {
+      if (isDragging) applyMarquee(pointerClientX, pointerClientY)
+    })
   }
 
   function onPointerMove(e: PointerEvent) {
@@ -124,8 +146,8 @@ export function useAssetGridSelection(options: AssetGridSelectionOptions) {
   function endDrag() {
     if (!isTracking) return
     isTracking = false
-    marqueeRect.value = null
-    dragCards = []
+    marquee.value = null
+    dragCards.clear()
     dragBounds = null
     if (isDragging) scheduleSuppressNextClick()
     isDragging = false
@@ -228,6 +250,7 @@ export function useAssetGridSelection(options: AssetGridSelectionOptions) {
   useEventListener(window, 'pointermove', onPointerMove)
   useEventListener(window, ['pointerup', 'pointercancel', 'dragend'], endDrag)
   useEventListener(window, 'click', onClickCapture, { capture: true })
+  useEventListener(window, 'scroll', onScroll, { capture: true, passive: true })
   useEventListener(window, 'keydown', onKeydown, { capture: true })
   useEventListener(window, 'selectstart', preventTextSelection, {
     capture: true
@@ -236,13 +259,14 @@ export function useAssetGridSelection(options: AssetGridSelectionOptions) {
   onScopeDispose(clearSuppressTimer)
 
   const marqueeStyle = computed(() => {
-    const rect = marqueeRect.value
-    if (!rect) return null
+    if (!marquee.value) return null
+    const { rect, visible } = marquee.value
     return {
       left: `${rect.left}px`,
       top: `${rect.top}px`,
       width: `${rect.right - rect.left}px`,
-      height: `${rect.bottom - rect.top}px`
+      height: `${rect.bottom - rect.top}px`,
+      clipPath: `inset(${visible.top - rect.top}px ${rect.right - visible.right}px ${rect.bottom - visible.bottom}px ${visible.left - rect.left}px)`
     }
   })
 

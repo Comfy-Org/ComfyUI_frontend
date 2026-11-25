@@ -3,9 +3,14 @@
     :type
     :disabled="disabled || loading"
     :aria-busy="loading || undefined"
+    :data-variant="variant"
     :class="cn(buttonVariants({ variant, size }), customClass)"
   >
-    <i v-if="loading" class="pi pi-spin pi-spinner" aria-hidden="true" />
+    <i
+      v-if="loading"
+      class="icon-[lucide--loader-circle] animate-spin motion-reduce:animate-none"
+      aria-hidden="true"
+    />
     <template v-if="loading">
       <span class="sr-only"><slot /></span>
     </template>

@@ -27,6 +27,39 @@ function answering(
 }
 
 describe('readValidatedBillingResponse', () => {
+  it.for([
+    { retryAfter: '2400', expected: { retryAfterSeconds: 2400 } },
+    { retryAfter: 'Wed, 21 Oct 2026 07:28:00 GMT', expected: {} },
+    { retryAfter: null, expected: {} }
+  ])(
+    'carries Retry-After $retryAfter only as whole seconds',
+    async ({ retryAfter, expected }) => {
+      const transport: BillingTransport = async () => ({
+        status: 'ok',
+        value: {
+          httpStatus: 429,
+          body: { code: 'TOPUP_RATE_LIMITED', message: 'limit' },
+          header: (name) => (name === 'Retry-After' ? retryAfter : null)
+        }
+      })
+
+      const result = await readValidatedBillingResponse(
+        transport,
+        REQUEST,
+        (body) => Body.safeParse(body)
+      )
+
+      expect(result).toEqual({
+        status: 'error',
+        code: 'REQUEST_FAILED',
+        httpStatus: 429,
+        serverCode: 'TOPUP_RATE_LIMITED',
+        serverMessage: 'limit',
+        ...expected
+      })
+    }
+  )
+
   it('carries the coded server error and its message', async () => {
     const result = await readValidatedBillingResponse(
       answering(400, {

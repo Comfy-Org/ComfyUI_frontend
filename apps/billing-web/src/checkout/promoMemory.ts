@@ -68,13 +68,12 @@ export interface PromoMemory {
 /** A tab without storage, or one that refuses it, remembers nothing and still checks out. */
 function withStorage<T>(
   storage: () => Storage,
-  use: (store: Storage) => T,
-  fallback: T
-): T {
+  use: (store: Storage) => T
+): T | undefined {
   try {
     return use(storage())
   } catch {
-    return fallback
+    return undefined
   }
 }
 
@@ -83,13 +82,11 @@ export function createPromoMemory(
   storage: () => Storage = () => globalThis.sessionStorage
 ): PromoMemory {
   const forget = () =>
-    withStorage(storage, (store) => store.removeItem(STORAGE_KEY), undefined)
+    withStorage(storage, (store) => store.removeItem(STORAGE_KEY))
   return {
     recall: () => {
-      const remembered = withStorage(
-        storage,
-        (store) => parseRemembered(store.getItem(STORAGE_KEY)),
-        undefined
+      const remembered = withStorage(storage, (store) =>
+        parseRemembered(store.getItem(STORAGE_KEY))
       )
       if (remembered?.identity === identity()) return remembered.code
       if (remembered !== undefined) forget()
@@ -98,10 +95,8 @@ export function createPromoMemory(
     keep: (code) => {
       if (code === undefined) return forget()
       const record: Remembered = { identity: identity(), code }
-      withStorage(
-        storage,
-        (store) => store.setItem(STORAGE_KEY, JSON.stringify(record)),
-        undefined
+      withStorage(storage, (store) =>
+        store.setItem(STORAGE_KEY, JSON.stringify(record))
       )
     }
   }

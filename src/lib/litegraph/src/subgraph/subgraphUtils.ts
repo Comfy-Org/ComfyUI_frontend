@@ -5,8 +5,9 @@ import type {
   GraphOrSubgraph,
   Subgraph,
   SubgraphInput,
-  SubgraphNode
-} from '@/lib/litegraph/src/types/entityRegistry'
+  SubgraphNode,
+  SubgraphOutput
+} from '@comfyorg/graph-model/entityRegistry'
 import { isEqual } from 'es-toolkit'
 
 import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
@@ -14,29 +15,27 @@ import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LLink, slotFloatingLinks } from '@/lib/litegraph/src/LLink'
 
 import {
-  captureInputLayout,
   inputLinkId,
   outputLinkIds,
-  replaceNodeInputs
+  updateLinkEndpoints
 } from '@/lib/litegraph/src/node/slotLinks'
 import { Reroute } from '@/lib/litegraph/src/Reroute'
-import type { RerouteId } from '@/types/rerouteId'
-import { toRerouteId } from '@/types/rerouteId'
+import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
+import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
 import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
-import type { Positionable } from '@/lib/litegraph/src/interfaces'
-import type { INodeOutputSlot } from '@/lib/litegraph/src/types/slots'
-import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
+import type { Positionable } from '@comfyorg/graph-model/interfaces'
+import type { INodeOutputSlot } from '@comfyorg/graph-model/slots'
 import { createUuidv4 } from '@/utils/uuid'
 import { nextUniqueName } from '@/lib/litegraph/src/strings'
-import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
+import { UNASSIGNED_NODE_ID } from '@comfyorg/graph-model/nodeId'
 import type {
   ISerialisedNode,
   SerialisableLLink,
   SubgraphIO
-} from '@/lib/litegraph/src/types/serialisation'
+} from '@comfyorg/graph-model/serialisation'
 
 import { SubgraphInputNode } from './SubgraphInputNode'
 
@@ -226,24 +225,31 @@ export function getBoundaryLinks(
 }
 
 export function multiClone(nodes: Iterable<LGraphNode>): ISerialisedNode[] {
-  const clonedNodes: ISerialisedNode[] = []
+  return Array.from(nodes, (node) => structuredClone(node.serialize()))
+}
 
-  // Selectively clone - keep IDs & links
-  for (const node of nodes) {
-    const newNode = LiteGraph.createNode(node.type)
-    const data = structuredClone(node.serialize())
-    if (!newNode) {
-      console.warn('Failed to create node', node.type)
-      clonedNodes.push(data)
-      continue
-    }
+export function isSlotInRange(slot: number, slotCount: number): boolean {
+  return Number.isInteger(slot) && slot >= 0 && slot < slotCount
+}
 
-    // Must be cloned; litegraph "serialize" is mostly shallow clone
-    newNode.configure(data)
-    clonedNodes.push(newNode.serialize())
-  }
-
-  return clonedNodes
+/** Whether either end of an inner link names a node or slot that does not exist. */
+export function isUnresolvableSubgraphLink(
+  subgraph: Subgraph,
+  link: LLink
+): boolean {
+  const originOk =
+    link.origin_id === UNASSIGNED_NODE_ID ||
+    (link.origin_id === SUBGRAPH_INPUT_ID
+      ? isSlotInRange(link.origin_slot, subgraph.inputs.length)
+      : subgraph.getNodeById(link.origin_id)?.outputs[link.origin_slot] !==
+        undefined)
+  const targetOk =
+    link.target_id === UNASSIGNED_NODE_ID ||
+    (link.target_id === SUBGRAPH_OUTPUT_ID
+      ? isSlotInRange(link.target_slot, subgraph.outputs.length)
+      : subgraph.getNodeById(link.target_id)?.inputs[link.target_slot] !==
+        undefined)
+  return !originOk || !targetOk
 }
 
 export function findUnresolvableSubgraphLink(
@@ -252,23 +258,7 @@ export function findUnresolvableSubgraphLink(
   const { subgraph } = subgraphNode
 
   for (const link of subgraph.links.values()) {
-    const originOk =
-      link.origin_id === UNASSIGNED_NODE_ID ||
-      (link.origin_id === SUBGRAPH_INPUT_ID
-        ? Number.isInteger(link.origin_slot) &&
-          link.origin_slot >= 0 &&
-          link.origin_slot < subgraph.inputs.length
-        : subgraph.getNodeById(link.origin_id)?.outputs[link.origin_slot] !==
-          undefined)
-    const targetOk =
-      link.target_id === UNASSIGNED_NODE_ID ||
-      (link.target_id === SUBGRAPH_OUTPUT_ID
-        ? Number.isInteger(link.target_slot) &&
-          link.target_slot >= 0 &&
-          link.target_slot < subgraph.outputs.length
-        : subgraph.getNodeById(link.target_id)?.inputs[link.target_slot] !==
-          undefined)
-    if (!originOk || !targetOk) return link
+    if (isUnresolvableSubgraphLink(subgraph, link)) return link
   }
 }
 
@@ -596,48 +586,30 @@ function* indexedLinks<S>(
   }
 }
 
+function isPermutation(indices: readonly number[], length: number): boolean {
+  return (
+    indices.length === length &&
+    new Set(indices).size === length &&
+    indices.every((i) => Number.isInteger(i) && i >= 0 && i < length)
+  )
+}
+
+/** Reorders the subgraph's inputs; every instance follows on `inputs-reordered`. */
 export function reorderSubgraphInputs(
-  subgraphNode: SubgraphNode,
+  subgraph: Subgraph,
   orderedIndices: readonly number[]
-): void {
-  const subgraph = subgraphNode.subgraph
-
+): boolean {
   const n = subgraph.inputs.length
-  if (subgraphNode.inputs.length !== n) {
-    console.error('reorderSubgraphInputs: host and subgraph inputs differ', {
-      hostInputs: subgraphNode.inputs.length,
-      subgraphInputs: n
-    })
-    return
-  }
-
-  if (
-    orderedIndices.length !== n ||
-    new Set(orderedIndices).size !== orderedIndices.length ||
-    orderedIndices.some((i) => i < 0 || i >= n)
-  ) {
+  if (!isPermutation(orderedIndices, n)) {
     console.error(
       `reorderSubgraphInputs: orderedIndices must be a permutation of 0..${n - 1}`,
       orderedIndices
     )
-    return
+    return false
   }
 
   const oldOrder = subgraph.inputs.map((i) => i.id)
-
-  const previousInputs = captureInputLayout(subgraphNode)
-  const orderedHostInputs = orderedIndices.map(
-    (index) => previousInputs.inputs[index]
-  )
-
-  const result = replaceNodeInputs(
-    subgraphNode,
-    previousInputs,
-    orderedHostInputs
-  )
-  if (!result.ok) return
   reorderInPlace(subgraph.inputs, orderedIndices)
-  subgraphNode.invalidatePromotedViews()
 
   function* innerLinks(input: SubgraphInput): Generator<LLink | undefined> {
     for (const id of input.linkIds) yield subgraph.getLink(id)
@@ -654,6 +626,43 @@ export function reorderSubgraphInputs(
       newOrder
     })
   }
+  return true
+}
+
+/** Reorders the subgraph's outputs; every instance follows on `outputs-reordered`. */
+export function reorderSubgraphOutputs(
+  subgraph: Subgraph,
+  orderedIndices: readonly number[]
+): boolean {
+  const n = subgraph.outputs.length
+  if (!isPermutation(orderedIndices, n)) {
+    console.error(
+      `reorderSubgraphOutputs: orderedIndices must be a permutation of 0..${n - 1}`,
+      orderedIndices
+    )
+    return false
+  }
+
+  function* innerLinks(output: SubgraphOutput): Generator<LLink | undefined> {
+    for (const id of output.linkIds) yield subgraph.getLink(id)
+  }
+  const ordered = orderedIndices.map((i) => subgraph.outputs[i])
+  const updates = [...indexedLinks(ordered, innerLinks)].map(
+    ([slot, link]) => ({ link, patch: { targetSlot: slot } })
+  )
+  if (!updateLinkEndpoints(subgraph, updates)) return false
+
+  const oldOrder = subgraph.outputs.map((o) => o.id)
+  reorderInPlace(subgraph.outputs, orderedIndices)
+  const newOrder = subgraph.outputs.map((o) => o.id)
+  if (!isEqual(oldOrder, newOrder)) {
+    subgraph.events.dispatch('outputs-reordered', {
+      subgraph,
+      oldOrder,
+      newOrder
+    })
+  }
+  return true
 }
 
 export { isSubgraphInput, isSubgraphOutput } from './subgraphTypeGuards'

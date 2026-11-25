@@ -31,7 +31,7 @@ import type { DeployEnv } from '@comfyorg/shared-frontend-utils/telemetry'
 import type { HostedBillingDestination } from '@/platform/billing/billingWeb'
 import { getBillingWebUrl } from '@/platform/billing/billingWeb'
 import { getComfyCloudBaseUrl } from '@/config/comfyApi'
-import { resolveDeployEnv } from '@/platform/telemetry/initDatadogRum'
+import { resolveDeployEnv } from '@comfyorg/telemetry/rumContext'
 
 export type HostedBillingRoute =
   | { readonly kind: 'billing_web'; readonly url: URL }
@@ -40,7 +40,15 @@ export type HostedBillingRoute =
 /** The caller-supplied part of the entry, as opposed to the environment the host resolves for itself. */
 export type HostedBillingRouteFields = Pick<
   BillingEntryInput,
-  'plan' | 'workspaceId' | 'teamCreditStopId' | 'correlationId' | 'source'
+  | 'plan'
+  | 'workspaceId'
+  | 'teamCreditStopId'
+  | 'correlationId'
+  | 'source'
+  | 'operationId'
+  | 'amountCents'
+  | 'autoTopUp'
+  | 'purchaseId'
 >
 
 const PROVIDER: HostedBillingRoute = { kind: 'provider' }

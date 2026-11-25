@@ -7,9 +7,9 @@ import {
   resolveActivePromotedWidgetConsumers
 } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
-import { resolveWidgetValueAsset } from '@/platform/assets/utils/resolveWidgetValueAsset'
-import { isComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { resolveWidgetValueAsset } from '@/platform/assets/integration/resolveWidgetValueAsset'
+import { isComboInputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
+import type { InputSpec as InputSpecV2 } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type {
   MissingMediaCandidate,
@@ -19,17 +19,14 @@ import type {
 } from './types'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type {
-  IBaseWidget,
-  IComboWidget
-} from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget, IComboWidget } from '@comfyorg/graph-model/widgets'
 import {
   collectAllNodes,
   getExecutionIdByNode,
   getNodeByExecutionId,
   isExecutionPathActive
 } from '@/utils/graphTraversalUtil'
-import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
+import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
 import { resolveComboValues } from '@/utils/litegraphUtil'
 import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'
 
@@ -91,7 +88,8 @@ function resolveMediaMissingState(
   const options = resolveComboValues(widget)
   const { filepath, rootFolder } = parseAnnotatedPath(value)
   if (rootFolder !== 'input') return options.includes(value) ? false : undefined
-  return !options.includes(value) && !options.includes(filepath)
+  if (options.includes(value) || options.includes(filepath)) return false
+  return filepath.includes('/') ? undefined : true
 }
 
 /** Scan media; includeTemp is only for known deletions, not verification. */
@@ -189,10 +187,10 @@ export async function verifyMediaCandidates(
   const pending = candidates.filter((c) => c.isMissing === undefined)
   const results = await Promise.allSettled(
     Object.entries(groupBy(pending, (p) => p.name)).map(
-      async ([name, candidates]) => {
+      async ([name, candidateGroup]) => {
         const asset = await resolveWidgetValueAsset(name, { signal })
         const isMissing = asset === undefined ? undefined : asset === null
-        for (const candidate of candidates) candidate.isMissing = isMissing
+        for (const candidate of candidateGroup) candidate.isMissing = isMissing
       }
     )
   )

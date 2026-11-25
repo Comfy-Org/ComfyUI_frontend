@@ -1,7 +1,7 @@
 import { fromAny } from '@total-typescript/shoehorn'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -9,7 +9,7 @@ import { createDefaultLight } from '@comfyorg/viewport3d/lightInfo/types'
 import type { LightInfoEntry } from '@comfyorg/viewport3d/lightInfo/types'
 import enMessages from '@/locales/en/main.json'
 import type { ComfyApp } from '@/scripts/app'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import LightInfo from './LightInfo.vue'
 import { useLightInfo } from '@/extensions/core/load3d/composables/useLightInfo'
@@ -57,9 +57,45 @@ vi.mock(
   }
 )
 
+const rootGraphNode = vi.hoisted(() => ({ current: {} as object | null }))
+
 vi.mock(import('@/scripts/app'), () => ({
-  app: fromAny<ComfyApp, object>({})
+  app: fromAny<ComfyApp, object>({
+    rootGraph: {
+      subgraphs: new Map(),
+      getNodeById: () => rootGraphNode.current
+    }
+  })
 }))
+
+function reloadGraph({ nodeKept }: { nodeKept: boolean }) {
+  rootGraphNode.current = nodeKept ? {} : null
+  onTestFinished(() => {
+    rootGraphNode.current = {}
+  })
+  reloadLiveGraphNodes()
+}
+
+const liveGraphNodes = vi.hoisted(() => ({
+  reloads: new Set<() => void>()
+}))
+
+vi.mock(import('@/composables/useLiveGraphNode'), async () => {
+  const { computed, onScopeDispose, shallowRef } = await import('vue')
+  return {
+    useLiveGraphNode: (resolve) => {
+      const node = shallowRef(resolve() ?? undefined)
+      const reload = () => (node.value = resolve() ?? undefined)
+      liveGraphNodes.reloads.add(reload)
+      onScopeDispose(() => liveGraphNodes.reloads.delete(reload))
+      return computed(() => node.value)
+    }
+  }
+})
+
+function reloadLiveGraphNodes() {
+  for (const reload of liveGraphNodes.reloads) reload()
+}
 
 const i18n = createI18n({
   legacy: false,
@@ -68,7 +104,7 @@ const i18n = createI18n({
 })
 
 function lightState(lights: LightInfoEntry[] = [], selected = 0) {
-  const state = useLightInfo(null)
+  const state = useLightInfo(undefined)
   state.lights.value = lights
   state.selectedIndex.value = lights.length ? selected : -1
   return state
@@ -107,6 +143,30 @@ describe('LightInfo lifecycle', () => {
     expect(state.initialize).toHaveBeenCalledWith(expect.any(HTMLElement))
 
     unmount()
+    expect(state.cleanup).toHaveBeenCalledOnce()
+  })
+
+  it('starts the viewport again, keeping the toolbar state, for the node a reloaded graph holds', async () => {
+    const state = lightState([spot])
+    const { user } = renderComponent()
+    await user.click(screen.getByRole('button', { name: 'Lock camera' }))
+    vi.mocked(state.initialize).mockClear()
+    vi.mocked(state.setCameraLocked).mockClear()
+
+    reloadGraph({ nodeKept: true })
+    await nextTick()
+
+    expect(state.initialize).toHaveBeenCalledOnce()
+    expect(state.setCameraLocked).toHaveBeenCalledWith(true)
+  })
+
+  it('cleans up the viewport when a reload leaves no node behind', async () => {
+    const state = lightState()
+    renderComponent()
+
+    reloadGraph({ nodeKept: false })
+    await nextTick()
+
     expect(state.cleanup).toHaveBeenCalledOnce()
   })
 

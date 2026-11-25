@@ -12,16 +12,18 @@ import type {
   INodeOutputSlot,
   ISerialisedNode
 } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { LegacyWidget } from '@/lib/litegraph/src/widgets/LegacyWidget'
 import { assetService } from '@/platform/assets/services/assetService'
-import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef, InputSpec } from '@comfyorg/object-info-parser'
 import { app } from '@/scripts/app'
-import { CONFIG, GET_CONFIG } from '@/lib/litegraph/src/types/widgets'
+import { CONFIG, GET_CONFIG } from '@comfyorg/graph-model/widgets'
 import { useLinkStore } from '@/stores/linkStore'
-import { graphScopeOf } from '@/types/graphScopeId'
-import { toLinkId } from '@/types/linkId'
-import { serializeNodeId, toNodeId } from '@/types/nodeId'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { createTestLink } from '@/utils/__tests__/litegraphTestUtils'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { serializeNodeId, toNodeId } from '@comfyorg/graph-model/nodeId'
 
 vi.mock(import('@/scripts/app'))
 
@@ -276,6 +278,109 @@ describe('PrimitiveNode', () => {
       false
     )
   })
+
+  it.for(['AUDIOUPLOAD', 'IMAGEUPLOAD', 'WEBCAM'])(
+    'refuses a host-bound %s input',
+    (hostBoundType) => {
+      const primitive = new PrimitiveNode('Primitive')
+      const target = new LGraphNode('Loader')
+      target.addInput('upload', hostBoundType)
+      target.inputs[0].widget = {
+        name: 'upload',
+        [GET_CONFIG]: () => [hostBoundType, {}]
+      }
+
+      expect(
+        primitive.onConnectOutput(0, '*', target.inputs[0], target, 0)
+      ).toBe(false)
+    }
+  )
+
+  it.for(['AUDIOUPLOAD', 'IMAGEUPLOAD', 'WEBCAM'])(
+    'disconnects a host-bound %s link restored from a saved workflow',
+    (hostBoundType) => {
+      const graph = new LGraph()
+      const target = new LGraphNode('Loader')
+      graph.add(target)
+      target.addInput('host_bound', hostBoundType)
+      target.inputs[0].widget = {
+        name: 'host_bound',
+        [GET_CONFIG]: () => [hostBoundType, {}]
+      }
+      const primitive = new PrimitiveNode('Primitive')
+      graph.add(primitive)
+      vi.mocked(app).configuringGraph = true
+      primitive.outputs[0].type = hostBoundType
+      const { id: linkId } = createTestLink(graph, primitive, 0, target, 0)
+      primitive.configure(
+        fromPartial({
+          widgets_values: ['host-bound-value'],
+          outputs: [{ type: hostBoundType, links: [linkId] }]
+        })
+      )
+      vi.mocked(app).configuringGraph = false
+      expect(primitive.isOutputConnected(0)).toBe(true)
+
+      expect(() => primitive.onAfterGraphConfigured()).not.toThrow()
+      expect(primitive.isOutputConnected(0)).toBe(false)
+      expect(target.isInputConnected(0)).toBe(false)
+      expect(primitive.widgets ?? []).toHaveLength(0)
+      expect(
+        useWidgetValueStore().getRestoredWidgetValue(
+          graph.rootGraph.id,
+          primitive.id,
+          { name: 'value', type: 'button', options: {} },
+          0
+        )
+      ).toBeUndefined()
+    }
+  )
+
+  it.for([
+    { order: [0, 1], label: 'after' },
+    { order: [1, 0], label: 'before' }
+  ])(
+    'drops a restored host-bound link $label a compatible link',
+    ({ order }) => {
+      const graph = new LGraph()
+      const compatibleTarget = new LGraphNode('Target')
+      graph.add(compatibleTarget)
+      compatibleTarget.addInput('seed', 'INT')
+      compatibleTarget.inputs[0].widget = {
+        name: 'seed',
+        [GET_CONFIG]: () => ['INT', {}]
+      }
+      const hostBoundTarget = new LGraphNode('LoadImage')
+      graph.add(hostBoundTarget)
+      hostBoundTarget.addInput('upload', 'IMAGEUPLOAD')
+      hostBoundTarget.inputs[0].widget = {
+        name: 'upload',
+        [GET_CONFIG]: () => ['IMAGEUPLOAD', { imageInputName: 'image' }]
+      }
+      const primitive = new PrimitiveNode('Primitive')
+      graph.add(primitive)
+      vi.mocked(app).configuringGraph = true
+      primitive.outputs[0].type = 'INT'
+      const targets = [compatibleTarget, hostBoundTarget]
+      const links = order.map((index) =>
+        createTestLink(graph, primitive, 0, targets[index], 0)
+      )
+      primitive.configure(
+        fromPartial({
+          widgets_values: [42],
+          outputs: [{ type: 'INT', links: links.map(({ id }) => id) }]
+        })
+      )
+      vi.mocked(app).configuringGraph = false
+
+      primitive.onAfterGraphConfigured()
+
+      expect(primitive.isOutputConnected(0)).toBe(true)
+      expect(compatibleTarget.isInputConnected(0)).toBe(true)
+      expect(hostBoundTarget.isInputConnected(0)).toBe(false)
+      expect(primitive.widgets?.[0]).toMatchObject({ value: 42 })
+    }
+  )
 
   it('restores its serialized value through the reroute lifecycle', async () => {
     await widgetInputsExtension.registerCustomNodes?.(app)
@@ -574,6 +679,37 @@ describe('setWidgetConfig', () => {
 
     expect(primitive.isOutputConnected(0)).toBe(true)
   })
+
+  it('does not duplicate widgets when pruning a forbidden link re-enters widget creation', () => {
+    const graph = new LGraph()
+    const compatibleTarget = new LGraphNode('TargetA')
+    graph.add(compatibleTarget)
+    compatibleTarget.addInput('value', 'INT')
+    compatibleTarget.inputs[0].widget = {
+      name: 'value',
+      [GET_CONFIG]: () => ['INT', { min: 0, max: 10 }]
+    }
+
+    const toBeHostBoundTarget = new LGraphNode('TargetB')
+    graph.add(toBeHostBoundTarget)
+    toBeHostBoundTarget.addInput('value', 'INT')
+    toBeHostBoundTarget.inputs[0].widget = {
+      name: 'value',
+      [GET_CONFIG]: () => ['INT', { min: 0, max: 20 }]
+    }
+
+    const primitive = LiteGraph.createNode('PrimitiveNode')
+    if (!(primitive instanceof PrimitiveNode)) throw new Error('not registered')
+    graph.add(primitive)
+    primitive.connect(0, compatibleTarget, 0)
+    primitive.connect(0, toBeHostBoundTarget, 0)
+
+    setWidgetConfig(toBeHostBoundTarget.inputs[0], ['AUDIOUPLOAD', {}])
+
+    expect(toBeHostBoundTarget.isInputConnected(0)).toBe(false)
+    expect(compatibleTarget.isInputConnected(0)).toBe(true)
+    expect(primitive.widgets).toHaveLength(2)
+  })
 })
 
 describe('Comfy.WidgetInputs node-def hooks', () => {
@@ -664,6 +800,22 @@ describe('Comfy.WidgetInputs node-def hooks', () => {
 
       expect(graph.nodes).toHaveLength(1)
     })
+
+    it.for(['AUDIOUPLOAD', 'IMAGEUPLOAD', 'WEBCAM'])(
+      'does not attach a primitive to a host-bound %s input',
+      async (hostBoundType) => {
+        const graph = new LGraph()
+        const node = await targetIn(graph)
+        node.addInput('host_bound', hostBoundType)
+        node.inputs[0].widget = {
+          name: 'host_bound',
+          [GET_CONFIG]: () => [hostBoundType, {}]
+        }
+
+        expect(() => node.onInputDblClick?.(0, fromPartial({}))).not.toThrow()
+        expect(graph.nodes).toHaveLength(1)
+      }
+    )
 
     it('attaches a titled primitive to a widget input', async () => {
       const graph = new LGraph()

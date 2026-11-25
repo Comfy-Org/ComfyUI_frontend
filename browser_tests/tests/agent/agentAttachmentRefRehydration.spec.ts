@@ -35,13 +35,13 @@ test.use({ connectWebSocketToServer: false })
 test(
   'previews a refreshed attachment whose only surviving name is an extensionless ref',
   { tag: ['@cloud', '@ui'] },
-  async ({ page, promptHistory, workflowSelection }, testInfo) => {
-    await page.route(`**/view?filename=${BARE_DIGEST}&type=input`, (route) =>
+  async ({ page, promptHistory }, testInfo) => {
+    await page.route(`**/view?filename=${BARE_DIGEST}&type=input*`, (route) =>
       route.fulfill({ path: assetPath('image64x64.webp') })
     )
     await serveHistory(page, promptHistory.requests, resolvedImageRefs)
 
-    const panel = await openAgentPanel(page, workflowSelection)
+    const panel = await openAgentPanel(page)
     await dropLibraryAsset(page, panel, {
       displayName: 'Beach photo.png',
       ref: BARE_DIGEST,
@@ -75,9 +75,10 @@ test(
 test(
   'drops a blank attachment name the API let through onto a refreshed turn',
   { tag: ['@cloud', '@ui'] },
-  async ({ page, promptHistory, workflowSelection }) => {
-    await page.route(`**/view?filename=${PLAIN_FILENAME}&type=input`, (route) =>
-      route.fulfill({ path: assetPath('image64x64.webp') })
+  async ({ page, promptHistory }) => {
+    await page.route(
+      `**/view?filename=${PLAIN_FILENAME}&type=input*`,
+      (route) => route.fulfill({ path: assetPath('image64x64.webp') })
     )
     // The persisted row contains a blank attachment name.
     await serveHistory(page, promptHistory.requests, (posted) => ({
@@ -85,7 +86,7 @@ test(
       attachments: ['', ...(posted.attachments ?? [])]
     }))
 
-    const panel = await openAgentPanel(page, workflowSelection)
+    const panel = await openAgentPanel(page)
     await dropLibraryAsset(page, panel, {
       displayName: PLAIN_FILENAME,
       ref: PLAIN_FILENAME,
@@ -107,8 +108,8 @@ test(
 test(
   'labels a refreshed attachment with the filename the user attached',
   { tag: ['@cloud', '@ui'] },
-  async ({ page, promptHistory, workflowSelection }) => {
-    await page.route(`**/view?filename=${BARE_DIGEST}&type=input`, (route) =>
+  async ({ page, promptHistory }) => {
+    await page.route(`**/view?filename=${BARE_DIGEST}&type=input*`, (route) =>
       route.fulfill({ path: assetPath('image64x64.webp') })
     )
     await serveHistory(page, promptHistory.requests, (posted) => ({
@@ -123,7 +124,7 @@ test(
       ]
     }))
 
-    const panel = await openAgentPanel(page, workflowSelection)
+    const panel = await openAgentPanel(page)
     await dropLibraryAsset(page, panel, {
       displayName: 'Beach photo.png',
       ref: BARE_DIGEST,
@@ -148,13 +149,13 @@ test(
 test(
   'resumes a thread left mid-turn once, with its attachment',
   { tag: ['@cloud', '@agent', '@ui'] },
-  async ({ page, promptHistory, workflowSelection }) => {
+  async ({ page, promptHistory }) => {
     const serverTurnId = 'e2e-server-turn'
     const persistedAssistantRowId = 'e2e-server-assistant-row'
     const otherThreadId = 'e2e-other-thread'
     let attachmentThreadId = ''
 
-    await page.route(`**/view?filename=${BARE_DIGEST}&type=input`, (route) =>
+    await page.route(`**/view?filename=${BARE_DIGEST}&type=input*`, (route) =>
       route.fulfill({ path: assetPath('image64x64.webp') })
     )
     await page.route('**/api/agent/threads?*', (route) => {
@@ -223,7 +224,7 @@ test(
       return route.fulfill(jsonRoute(messages))
     })
 
-    const panel = await openAgentPanel(page, workflowSelection)
+    const panel = await openAgentPanel(page)
     await dropLibraryAsset(page, panel, {
       displayName: 'Beach photo.png',
       ref: BARE_DIGEST,

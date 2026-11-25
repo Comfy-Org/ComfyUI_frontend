@@ -23,6 +23,11 @@
     "types": ["@webgpu/types"],
     "customConditions": ["@comfyorg/mask-editor"]
   },
-  "include": ["src/**/*.ts"],
-  "exclude": ["src/**/*.test.ts"]
+  "references": [
+    { "path": "../shared-frontend-utils/tsconfig.declarations.json" },
+    { "path": "../design-system/tsconfig.declarations.json" },
+    { "path": "../tailwind-utils/tsconfig.declarations.json" }
+  ],
+  "include": ["src/**/*.ts", "src/**/*.vue"],
+  "exclude": ["src/**/*.test.ts", "src/testing/**"]
 }

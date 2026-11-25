@@ -1,12 +1,10 @@
 import { computed } from 'vue'
 import type { Ref } from 'vue'
 
-import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { getPlanCreditGrant } from '@/platform/billing/subscription/utils/planCreditGrant'
-import { isCloud } from '@/platform/distribution/types'
-import { deriveCreditsCard } from '@/platform/billing/components/billingTab/creditsCard'
-import type { PlanRowState } from '@/platform/billing/components/billingTab/planRow'
+import { deriveCreditsCard } from '@comfyorg/account-core/billing'
+import type { PlanRowState } from '@comfyorg/account-core/billing'
 
 export function useBillingCreditsCard(planRow: Ref<PlanRowState>) {
   const {
@@ -14,9 +12,9 @@ export function useBillingCreditsCard(planRow: Ref<PlanRowState>) {
     billingStatus,
     subscription,
     currentTeamCreditStop,
-    renewalDate
+    nextCreditRefillAt,
+    periodCreditGrant
   } = useBillingContext()
-  const { canManageSubscription } = useBillingCapabilities()
 
   const planPoolCredits = computed(
     () =>
@@ -32,10 +30,10 @@ export function useBillingCreditsCard(planRow: Ref<PlanRowState>) {
       balance: balance.value,
       planKind: planRow.value.kind,
       billingStatus: billingStatus.value,
+      periodCreditGrant: periodCreditGrant.value,
       planPoolCredits: planPoolCredits.value,
-      isCloud,
-      canManageSubscription: canManageSubscription.value,
-      renewalDate: renewalDate.value
+      nextCreditRefillAt: nextCreditRefillAt.value,
+      endDate: planRow.value.kind === 'ending' ? planRow.value.endsAt : null
     })
   )
 

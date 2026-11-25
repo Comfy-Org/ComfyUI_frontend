@@ -1,7 +1,7 @@
 import { SELECTION_BOUNDS_PADDING } from '@/base/common/selectionBounds'
 import type { LGraphCanvas, Rectangle } from '@/lib/litegraph/src/litegraph'
 import { createBounds } from '@/lib/litegraph/src/litegraph'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import type { ComfyExtension } from '@/types/comfy'
 
 /**
@@ -55,9 +55,9 @@ export const selectionBorderExtension: ComfyExtension = {
 
   async init() {
     // Hook into the canvas drawing
-    const originalDrawForeground = app.canvas.onDrawForeground
+    const originalDrawForeground = useApp().canvas.onDrawForeground
 
-    app.canvas.onDrawForeground = function (
+    useApp().canvas.onDrawForeground = function (
       ctx: CanvasRenderingContext2D,
       visibleArea: Rectangle
     ) {
@@ -65,7 +65,7 @@ export const selectionBorderExtension: ComfyExtension = {
       originalDrawForeground?.call(this, ctx, visibleArea)
 
       // Draw our selection border
-      drawSelectionBorder(ctx, app.canvas)
+      drawSelectionBorder(ctx, useApp().canvas)
     }
   }
 }

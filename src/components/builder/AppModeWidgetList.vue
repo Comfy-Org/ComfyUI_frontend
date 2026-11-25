@@ -6,27 +6,27 @@ import WidgetDescription from '@/components/builder/WidgetDescription.vue'
 import { useAppModeWidgetResizing } from '@/components/builder/useAppModeWidgetResizing'
 import { getLoaderDropIndicator } from '@/components/builder/useLoaderDropIndicator'
 import { useResolvedSelectedInputs } from '@/components/builder/useResolvedSelectedInputs'
-import Button from '@/components/ui/button/Button.vue'
-import Menu from '@/components/ui/menu/Menu.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Menu from '@comfyorg/design-system/menu/Menu'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { deriveWidgetRenderState } from '@/lib/litegraph/src/utils/widget'
-import type { WidgetId } from '@/types/widgetId'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import { useMaskEditor } from '@/renderer/extensions/maskEditor/composables/useMaskEditor'
 import DropZone from '@/renderer/extensions/linearMode/DropZone.vue'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { draggableItemClass } from '@/scripts/ui/draggableList'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useLinkStore } from '@/stores/linkStore'
-import { graphScopeOf } from '@/types/graphScopeId'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useTemplateInputDownloadStore } from '@/platform/workflow/templates/stores/templateInputDownloadStore'
 import { cn } from '@comfyorg/tailwind-utils'
 import { HideLayoutFieldKey, WidgetHeightKey } from '@/types/widgetTypes'
-import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
+import { UNASSIGNED_NODE_ID } from '@comfyorg/graph-model/nodeId'
 import { promptRenameWidget } from '@/utils/widgetUtil'
 
 interface WidgetEntry {
@@ -51,8 +51,8 @@ const widgetValueStore = useWidgetValueStore()
 const linkStore = useLinkStore()
 const maskEditor = useMaskEditor()
 
-const { onPointerDown } = useAppModeWidgetResizing((widget, config) =>
-  appModeStore.updateInputConfig(widget, config)
+const { onPointerDown, onPointerUp } = useAppModeWidgetResizing(
+  (widget, config) => appModeStore.updateInputConfig(widget, config)
 )
 
 provide(HideLayoutFieldKey, true)
@@ -147,7 +147,7 @@ async function handleDragDrop() {
     return false
   }
 
-  app.dragOverNode = { id: UNASSIGNED_NODE_ID, onDragDrop }
+  useApp().dragOverNode = { id: UNASSIGNED_NODE_ID, onDragDrop }
 }
 
 defineExpose({ handleDragDrop })
@@ -249,6 +249,8 @@ defineExpose({ handleDragDrop })
       "
       :inert="builderMode || undefined"
       @pointerdown.capture="(e) => onPointerDown(action.widget, e)"
+      @pointerup.capture="onPointerUp"
+      @pointercancel.capture="onPointerUp"
     >
       <DropZone
         :on-drag-over="nodeData.onDragOver"
@@ -261,7 +263,7 @@ defineExpose({ handleDragDrop })
           :widget-ids
           :class="
             cn(
-              'gap-y-3 rounded-lg py-1 [&_textarea]:resize-y **:[.col-span-2]:grid-cols-1',
+              'gap-y-3 rounded-lg py-1 [&_textarea]:basis-auto [&_textarea]:resize-y **:[.col-span-2]:grid-cols-1',
               nodeData.hasErrors && 'ring-2 ring-destructive ring-inset'
             )
           "

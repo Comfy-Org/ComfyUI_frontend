@@ -1,25 +1,39 @@
+import { until } from '@vueuse/core'
 import { defineAsyncComponent, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { i18n } from '@/i18n'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import type {
   AgentConsentDecision,
   AgentConsentOfferExit,
   AgentConsentTrigger
-} from '@/platform/telemetry/types'
-import { reportError } from '@/platform/telemetry/reportError'
+} from '@comfyorg/telemetry/types'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import type { ReportErrorOptions } from '@comfyorg/telemetry/reportError'
+import { SessionRevokedError } from '@/platform/auth/session/sessionRevokedError'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { useDialogStore } from '@/stores/dialogStore'
 import { AGENT_DOCS_URL } from '@/workbench/extensions/agent/agentDocs'
-import { recordConsentOfferDeclined } from '@/workbench/extensions/agent/services/agent/consentOfferDeclined'
+import type { AgentErrorContext } from '@/platform/workflowErrors/agentErrorContext'
+import {
+  clearPendingSignInAccept,
+  writePendingSignInAccept
+} from '@/workbench/extensions/agent/services/agent/pendingSignInAccept'
+import type { PendingSignInAccept } from '@/workbench/extensions/agent/services/agent/pendingSignInAccept'
+import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import { useAgentConsentIntroductionStore } from '@/workbench/extensions/agent/stores/agent/agentConsentIntroductionStore'
+import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { ConsentCardError } from '@/workbench/extensions/agent/types/consentCardError'
 
 export const CONSENT_DIALOG_KEY = 'agent-consent'
+const ERROR_WORKFLOW_RESTORE_TIMEOUT_MS = 10_000
+const SIGNED_IN_USER_TIMEOUT_MS = 10_000
 const CONSENT_MEDIA_BASE = 'https://media.comfy.org/website/comfy-agent'
 const CONSENT_VIDEO_SOURCES = [
   {
@@ -39,9 +53,26 @@ const AgentConsentCard = defineAsyncComponent(
 )
 
 export interface ConsentOfferHooks {
-  onShown?: () => void
   /** Asked right before the card mounts, after every await that precedes it. */
   canShow?: () => boolean
+  /** Told when the user turns the card down rather than accepting it. */
+  onExit?: (exit: 'declined' | 'dismissed') => void
+  /** Kept with a signed-out Agree so the chip comes back after a sign-in reload. */
+  errorContext?: AgentErrorContext
+}
+
+const CARD_ERROR_TYPE = {
+  save: 'agent_consent_setting_write_failure',
+  load: 'agent_consent_setting_load_failure',
+  signIn: 'agent_consent_sign_in_failure'
+} as const satisfies Record<ConsentCardError, string>
+
+function revokedSessionReport(
+  error: unknown
+): Pick<ReportErrorOptions, 'level' | 'tags'> {
+  return error instanceof SessionRevokedError
+    ? { level: 'warning', tags: { failure_code: error.code } }
+    : {}
 }
 
 export function useAgentConsent() {
@@ -49,34 +80,13 @@ export function useAgentConsent() {
   const { showSignInDialog } = useAuthDialogs()
   const consentStore = useAgentConsentStore()
   const introductionStore = useAgentConsentIntroductionStore()
-  const agentPanelStore = useAgentPanelStore()
+  const composerStore = useAgentComposerStore()
+  const conversationStore = useAgentConversationStore()
   const toast = useToast()
-  const { isLoggedIn } = useCurrentUser()
+  const { isLoggedIn, resolvedUserInfo } = useCurrentUser()
   const { accepted, identity, isChecking } = storeToRefs(consentStore)
   const { t } = i18n.global
 
-  /**
-   * Names an ending of the consent request that produced neither a card on
-   * screen nor a decision.
-   *
-   * These are the last silent endings on the automatic consent chain.
-   * `agent_consent_not_offered` means a named surface is holding the offer and
-   * will retry it, and `agent_consent_offer_exited`'s other stages all stop
-   * before the consent scope is resolved - so an attempt that got as far as
-   * asking and still ended with nothing was indistinguishable in product
-   * analytics from a user who was never offered. The failing ones do reach
-   * Sentry and RUM through `reportError`, which is why they were easy to
-   * believe were covered; `reportError` has no PostHog sink, so none of them
-   * were in the funnel denominator `agent_consent_not_offered` is read against.
-   *
-   * `retry_armed` is reported false rather than read, and that is a code reading
-   * rather than a tested fact: `offerConsentUnprompted` calls `dropHold()`
-   * immediately before `withConsent`, the only caller that can re-arm is the
-   * `canShow` hook, and `canShow` runs after every exit reported here. A
-   * re-entrant offer cannot re-arm either - it exits on `autoShowInFlight`
-   * before reaching a hold. If that ordering changes, this becomes wrong
-   * silently, so the property's doc says which ordering it depends on.
-   */
   function reportRequestExit(
     exit: AgentConsentOfferExit,
     trigger: AgentConsentTrigger
@@ -93,17 +103,17 @@ export function useAgentConsent() {
     trigger: AgentConsentTrigger,
     persistOnAccept = true,
     expectedIdentity?: string,
-    { onShown, canShow }: ConsentOfferHooks = {}
+    { canShow, onExit }: ConsentOfferHooks = {},
+    initialError: ConsentCardError | '' = ''
   ): Promise<boolean> {
+    if ((canShow && !canShow()) || dialogStore.isDialogOpen(CONSENT_DIALOG_KEY))
+      return Promise.resolve(false)
     return new Promise<boolean>((resolve) => {
-      if (canShow && !canShow()) {
-        resolve(false)
-        return
-      }
       let settled = false
       let saving = false
       let shown = false
       let saveErrorShown = false
+      let cardError: ConsentCardError | '' = initialError
 
       const reportOutcome = (decision: AgentConsentDecision): void => {
         useTelemetry()?.trackAgentConsentResolved({
@@ -112,15 +122,20 @@ export function useAgentConsent() {
         })
       }
 
+      let scopeChanged = false
       const stopScopeWatch = watch(
         [identity, isLoggedIn],
-        () => dialogStore.closeDialog({ key: CONSENT_DIALOG_KEY }),
+        () => {
+          scopeChanged = true
+          dialogStore.closeDialog({ key: CONSENT_DIALOG_KEY })
+        },
         { flush: 'sync' }
       )
 
       const closeWith = (result: boolean): void => {
         if (settled) return
         settled = true
+        clearPendingSignInAccept()
         stopScopeWatch()
         dialogStore.closeDialog({ key: CONSENT_DIALOG_KEY })
         resolve(result)
@@ -130,19 +145,21 @@ export function useAgentConsent() {
         if (shown) introductionStore.markResponded()
       }
 
-      function handleSaveFailure(error: unknown): void {
+      function showCardError(kind: ConsentCardError, error: unknown): void {
         if (settled) return
         saving = false
-        saveErrorShown = true
+        cardError = kind
+        if (kind === 'save') saveErrorShown = true
         reportError(error, {
           surface: 'agent',
-          errorType: 'agent_consent_setting_write_failure'
+          errorType: CARD_ERROR_TYPE[kind],
+          ...revokedSessionReport(error)
         })
         dialogStore.updateDialog({
           key: CONSENT_DIALOG_KEY,
           contentProps: {
             accepting: false,
-            error: t('agent.consent.saveError')
+            error: kind
           },
           dialogComponentProps: {
             closable: true,
@@ -158,10 +175,38 @@ export function useAgentConsent() {
         closeWith(saved)
       }
 
+      function unlockCard(): void {
+        if (settled) return
+        saving = false
+        dialogStore.updateDialog({
+          key: CONSENT_DIALOG_KEY,
+          contentProps: { accepting: false, error: '' },
+          dialogComponentProps: {
+            closable: true,
+            dismissOnPointerDownOutside: true
+          }
+        })
+      }
+
+      async function retryFailedLoad(): Promise<void> {
+        await consentStore.load()
+        if (expectedIdentity && identity.value !== expectedIdentity) {
+          closeWith(false)
+          return
+        }
+        if (accepted.value) {
+          closeWith(true)
+          return
+        }
+        unlockCard()
+      }
+
       const accept = async (): Promise<void> => {
         if (saving || settled) return
-        markIntroductionResponded()
+        const retrying = cardError
+        if (retrying !== 'load') markIntroductionResponded()
         saving = true
+        cardError = ''
         dialogStore.updateDialog({
           key: CONSENT_DIALOG_KEY,
           contentProps: { accepting: true, error: '' },
@@ -172,12 +217,16 @@ export function useAgentConsent() {
         })
 
         try {
+          if (retrying === 'load') {
+            await retryFailedLoad()
+            return
+          }
           const saved = persistOnAccept
             ? await consentStore.accept(expectedIdentity)
             : true
           finishAcceptance(saved)
         } catch (error) {
-          handleSaveFailure(error)
+          showCardError(retrying === 'load' ? 'load' : 'save', error)
         }
       }
 
@@ -199,24 +248,17 @@ export function useAgentConsent() {
           docsUrl: AGENT_DOCS_URL,
           requiresSignIn: !persistOnAccept,
           accepting: false,
-          error: '',
+          error: initialError,
           onVnodeMounted: () => {
             shown = true
             useTelemetry()?.trackAgentConsentShown({ trigger })
-            if (expectedIdentity && identity.value !== expectedIdentity) return
-            onShown?.()
           },
           onAccept: () => void accept(),
           onReject: () => {
             if (settled) return
             markIntroductionResponded()
             reportOutcome('rejected')
-            if (
-              agentPanelStore.onboarding.persistSkipAsRefusal &&
-              expectedIdentity &&
-              identity.value === expectedIdentity
-            )
-              void recordConsentOfferDeclined()
+            onExit?.('declined')
             closeWith(false)
           }
         },
@@ -227,8 +269,11 @@ export function useAgentConsent() {
             if (settled) return
             settled = true
             stopScopeWatch()
-            if (shown) reportOutcome('dismissed')
-            else reportRequestExit('card_closed_before_mount', trigger)
+            if (shown) {
+              clearPendingSignInAccept()
+              reportOutcome('dismissed')
+              if (!scopeChanged) onExit?.('dismissed')
+            } else reportRequestExit('card_closed_before_mount', trigger)
             resolve(false)
           }
         }
@@ -236,69 +281,135 @@ export function useAgentConsent() {
     })
   }
 
+  async function saveAcceptanceAfterSignIn(): Promise<string | null> {
+    try {
+      if (!resolvedUserInfo.value)
+        await until(resolvedUserInfo).toBeTruthy({
+          timeout: SIGNED_IN_USER_TIMEOUT_MS
+        })
+      const decisionIdentity = await consentStore.ensureScope()
+      if (!decisionIdentity || !(await consentStore.accept(decisionIdentity))) {
+        useTelemetry()?.trackAgentConsentResolved({
+          decision: 'accept_not_persisted',
+          save_error_shown: false
+        })
+        return null
+      }
+      useTelemetry()?.trackAgentConsentResolved({
+        decision: 'accepted',
+        save_error_shown: false
+      })
+      return decisionIdentity
+    } catch (error) {
+      reportError(error, {
+        surface: 'agent',
+        errorType: 'agent_consent_setting_write_failure',
+        ...revokedSessionReport(error)
+      })
+      toast.error(t('g.error'), {
+        description: t('agent.consent.saveError')
+      })
+      return null
+    }
+  }
+
+  function heldDraftText(): string {
+    const heldId = composerStore.gateHold?.clientMessageId
+    if (heldId === undefined) return ''
+    return conversationStore.getPendingSend(heldId)?.text.trim() ?? ''
+  }
+
   async function acceptAfterSignIn(
     trigger: AgentConsentTrigger,
     hooks: ConsentOfferHooks
   ): Promise<string | null> {
-    if (!(await showConsentDialog(trigger, false, undefined, hooks)))
-      return null
-    introductionStore.isContinuingSignIn = true
-    try {
-      try {
-        if (!(await showSignInDialog())) return null
-      } catch (error) {
-        reportError(error, {
-          surface: 'agent',
-          errorType: 'agent_consent_sign_in_failure'
-        })
-        toast.error(t('g.error'), {
-          description: t('agent.consent.signInError')
-        })
+    let cardError: ConsentCardError | '' = ''
+    for (;;) {
+      if (
+        !(await showConsentDialog(trigger, false, undefined, hooks, cardError))
+      )
         return null
-      }
-
+      introductionStore.isContinuingSignIn = true
       try {
-        const decisionIdentity = await consentStore.ensureScope()
-        if (
-          !decisionIdentity ||
-          !(await consentStore.accept(decisionIdentity))
-        ) {
-          useTelemetry()?.trackAgentConsentResolved({
-            decision: 'accept_not_persisted',
-            save_error_shown: false
+        writePendingSignInAccept({
+          draft: heldDraftText(),
+          errorContext: hooks.errorContext
+        })
+        let signedIn: boolean
+        try {
+          signedIn = await showSignInDialog()
+        } catch (error) {
+          clearPendingSignInAccept()
+          reportError(error, {
+            surface: 'agent',
+            errorType: 'agent_consent_sign_in_failure',
+            ...revokedSessionReport(error)
           })
-          return null
+          cardError = 'signIn'
+          continue
         }
-        useTelemetry()?.trackAgentConsentResolved({
-          decision: 'accepted',
-          save_error_shown: false
-        })
-        return decisionIdentity
-      } catch (error) {
-        reportError(error, {
-          surface: 'agent',
-          errorType: 'agent_consent_setting_write_failure'
-        })
-        toast.error(t('g.error'), {
-          description: t('agent.consent.saveError')
-        })
-        return null
+        if (!signedIn) return null
+        clearPendingSignInAccept()
+        return await saveAcceptanceAfterSignIn()
+      } finally {
+        introductionStore.isContinuingSignIn = false
       }
+    }
+  }
+
+  async function errorWorkflowRestored(
+    errorContext: AgentErrorContext,
+    savedIdentity: string
+  ): Promise<boolean> {
+    const { workflowPath } = errorContext
+    if (workflowPath) {
+      const workflowStore = useWorkflowStore()
+      await until(() => workflowStore.activeWorkflow?.path === workflowPath)
+        .toBe(true, { timeout: ERROR_WORKFLOW_RESTORE_TIMEOUT_MS })
+        .catch(() => {})
+    }
+    return (
+      isLoggedIn.value && accepted.value && identity.value === savedIdentity
+    )
+  }
+
+  async function resumeAcceptAfterReload({
+    draft,
+    errorContext
+  }: PendingSignInAccept): Promise<void> {
+    introductionStore.isContinuingSignIn = true
+    let saved: string | null
+    try {
+      saved = await saveAcceptanceAfterSignIn()
     } finally {
       introductionStore.isContinuingSignIn = false
     }
+    if (
+      errorContext &&
+      saved &&
+      (await errorWorkflowRestored(errorContext, saved))
+    ) {
+      const panelStore = useAgentPanelStore()
+      panelStore.view = { screen: 'chat' }
+      panelStore.open('error_context')
+      panelStore.pendingErrorContext = errorContext
+    }
+    if (errorContext && saved && identity.value !== saved) return
+    if (
+      draft &&
+      !composerStore.draft &&
+      composerStore.prompt.references.length === 0 &&
+      composerStore.attachments.length === 0 &&
+      !composerStore.gateHold
+    )
+      composerStore.restorePrompt({ text: draft, references: [] }, [])
   }
 
   async function requestConsentForCurrentUser(
     trigger: AgentConsentTrigger,
     hooks: ConsentOfferHooks
   ): Promise<string | null> {
-    let decisionIdentity: string | null
-    // Which call is in flight, so the catch can tell a scope probe that failed
-    // from a consent read that failed. The error cannot carry that: both raise
-    // `AgentConsentAuthenticationError` with the same "account authentication is
-    // required" message, `ensureScope` from its own missing user and `load` from
-    // the auth header its read needs.
+    let decisionIdentity: string | null = null
     let reading = false
     try {
       decisionIdentity = await consentStore.ensureScope()
@@ -309,33 +420,35 @@ export function useAgentConsent() {
       reading = true
       await consentStore.load()
     } catch (error) {
-      reportRequestExit(
-        reading ? 'consent_read_failed' : 'scope_probe_failed',
-        trigger
-      )
       reportError(error, {
         surface: 'agent',
-        errorType: 'agent_consent_setting_load_failure'
+        errorType: 'agent_consent_setting_load_failure',
+        ...revokedSessionReport(error)
       })
-      toast.error(t('g.error'), {
-        description: t('agent.consent.loadError')
-      })
-      return null
+      if (!reading || !decisionIdentity) {
+        reportRequestExit('scope_probe_failed', trigger)
+        toast.error(t('g.error'), {
+          description: t('agent.consent.loadError')
+        })
+        return null
+      }
+      if (
+        !(await showConsentDialog(
+          trigger,
+          true,
+          decisionIdentity,
+          hooks,
+          'load'
+        ))
+      )
+        return null
+      return decisionIdentity
     }
 
     if (identity.value !== decisionIdentity) {
       reportRequestExit('scope_changed_after_read', trigger)
       return null
     }
-    // Two endings report nothing here, and both are successes rather than
-    // silences. `showConsentDialog` returning false because `canShow` said no is
-    // already named by the surface that took the screen - the caller's hook
-    // holds the offer and `agent_consent_not_offered` carries the reason, so
-    // naming it again would double-count one deferral. And consent that is
-    // already stored skips the card entirely: this runs on to `onAccept`, which
-    // for the automatic offer is the only producer of
-    // `agent_panel_opened(source=automatic_consent)`. Reading the absence of a
-    // card as a failed offer is the error that mis-ranked gc-17.
     if (
       !accepted.value &&
       !(await showConsentDialog(trigger, true, decisionIdentity, hooks))
@@ -349,6 +462,8 @@ export function useAgentConsent() {
     onAccept: () => void,
     hooks: ConsentOfferHooks = {}
   ): Promise<void> {
+    if (introductionStore.isContinuingSignIn)
+      await until(() => introductionStore.isContinuingSignIn).toBe(false)
     const decisionIdentity = isLoggedIn.value
       ? await requestConsentForCurrentUser(trigger, hooks)
       : await acceptAfterSignIn(trigger, hooks)
@@ -361,5 +476,5 @@ export function useAgentConsent() {
     onAccept()
   }
 
-  return { accepted, isChecking, withConsent }
+  return { accepted, isChecking, withConsent, resumeAcceptAfterReload }
 }

@@ -1,16 +1,4 @@
-/**
- * Path Renderer
- *
- * Pure canvas2D rendering utility with no framework dependencies.
- * Renders bezier curves, straight lines, and linear connections between points.
- * Supports arrows, flow animations, and returns Path2D objects for hit detection.
- * Can be reused in any canvas-based project without modification.
- */
-
-export interface Point {
-  x: number
-  y: number
-}
+import type { Point2D as Point } from '@comfyorg/shared-frontend-utils/geometry'
 
 export type Direction = 'left' | 'right' | 'up' | 'down' | 'none'
 export type RenderMode = 'spline' | 'straight' | 'linear'
@@ -49,6 +37,7 @@ interface RenderStyle {
   showCenterMarker?: boolean
   centerMarkerShape?: 'circle' | 'arrow'
   highQuality?: boolean
+  chalk?: boolean
 }
 
 interface RenderColors {
@@ -88,6 +77,49 @@ interface DragLinkData {
 const LINEAR_LINK_OFFSET = 15
 const STRAIGHT_LINK_OFFSET = 10
 const CURVE_SAMPLES = 16
+const CHALK_GRAIN_SIZE = 64
+const CHALK_DUST = 245
+
+const chalkGrains = new Map<string, CanvasPattern | null>()
+
+function seededRandom(seed: number) {
+  let state = seed
+  return () => {
+    state = (state * 1664525 + 1013904223) % 4294967296
+    return state / 4294967296
+  }
+}
+
+/** Lightens RGBA pixels toward chalk dust and scales their alpha by a seeded grain. */
+export function dustWithChalk(pixels: Uint8ClampedArray) {
+  const random = seededRandom(CHALK_GRAIN_SIZE)
+  for (let red = 0; red < pixels.length; red += 4) {
+    for (let channel = red; channel < red + 3; channel++)
+      pixels[channel] += (CHALK_DUST - pixels[channel]) * 0.35
+    const grain = random() < 0.18 ? 0 : (110 + 145 * random()) / 255
+    pixels[red + 3] *= grain
+  }
+}
+
+function chalkGrain(
+  ctx: CanvasRenderingContext2D,
+  color: string
+): CanvasPattern | null {
+  const cached = chalkGrains.get(color)
+  if (cached !== undefined) return cached
+  const tile = document.createElement('canvas')
+  tile.width = tile.height = CHALK_GRAIN_SIZE
+  const tileCtx = tile.getContext('2d')
+  if (!tileCtx) return null
+  tileCtx.fillStyle = color
+  tileCtx.fillRect(0, 0, CHALK_GRAIN_SIZE, CHALK_GRAIN_SIZE)
+  const image = tileCtx.getImageData(0, 0, CHALK_GRAIN_SIZE, CHALK_GRAIN_SIZE)
+  dustWithChalk(image.data)
+  tileCtx.putImageData(image, 0, 0)
+  const pattern = ctx.createPattern(tile, 'repeat')
+  chalkGrains.set(color, pattern)
+  return pattern
+}
 
 function directionOffset(direction: Direction, distance: number): Point {
   switch (direction) {
@@ -182,7 +214,22 @@ export class CanvasPathRenderer {
     ctx.lineWidth = context.style.connectionWidth
     ctx.lineJoin = 'round'
 
-    if (context.style.borderWidth && !context.style.lowQuality) {
+    const grain =
+      context.style.chalk && !context.style.lowQuality && !link.disabled
+        ? chalkGrain(ctx, color)
+        : null
+
+    if (grain) {
+      ctx.lineCap = 'round'
+      this.drawLinkPath(
+        ctx,
+        path,
+        link,
+        context,
+        context.style.connectionWidth * 1.2,
+        grain
+      )
+    } else if (context.style.borderWidth && !context.style.lowQuality) {
       this.drawLinkPath(
         ctx,
         path,
@@ -193,19 +240,21 @@ export class CanvasPathRenderer {
       )
     }
 
-    this.drawLinkPath(
-      ctx,
-      path,
-      link,
-      context,
-      context.style.connectionWidth,
-      color
-    )
+    if (!grain) {
+      this.drawLinkPath(
+        ctx,
+        path,
+        link,
+        context,
+        context.style.connectionWidth,
+        color
+      )
+    }
 
     this.calculateCenterPoint(link, context)
 
     if (context.style.showArrows) {
-      this.drawArrows(ctx, link, context, color)
+      this.drawArrows(ctx, link, context, grain ?? color)
     }
 
     if (
@@ -214,7 +263,7 @@ export class CanvasPathRenderer {
       context.scale >= 0.6 &&
       context.style.highQuality
     ) {
-      this.drawCenterMarker(ctx, link, context, color)
+      this.drawCenterMarker(ctx, link, context, grain ?? color)
     }
 
     if (link.flow && context.animation) {
@@ -249,7 +298,7 @@ export class CanvasPathRenderer {
     link: LinkRenderData,
     context: RenderContext,
     lineWidth: number,
-    color: string
+    color: string | CanvasPattern
   ): void {
     ctx.strokeStyle = color
     ctx.lineWidth = lineWidth
@@ -407,7 +456,7 @@ export class CanvasPathRenderer {
     ctx: CanvasRenderingContext2D,
     link: LinkRenderData,
     context: RenderContext,
-    color: string
+    color: string | CanvasPattern
   ): void {
     if (!context.style.showArrows) return
 
@@ -720,7 +769,7 @@ export class CanvasPathRenderer {
     ctx: CanvasRenderingContext2D,
     link: LinkRenderData,
     context: RenderContext,
-    color: string
+    color: string | CanvasPattern
   ): void {
     if (!link.centerPos) return
 

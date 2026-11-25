@@ -4,9 +4,9 @@ import {
 } from '@/lib/litegraph/src/constants'
 import { assert, describe, expect, it } from 'vitest'
 
-import { toLinkId } from '@/types/linkId'
-import { toNodeId } from '@/types/nodeId'
-import { toRerouteId } from '@/types/rerouteId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
 import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
 
 import type { LGraphState } from '@/lib/litegraph/src/LGraph'
@@ -16,7 +16,7 @@ import type {
   ISerialisedNode,
   SerialisableLLink,
   SerialisableReroute
-} from '@/lib/litegraph/src/types/serialisation'
+} from '@comfyorg/graph-model/serialisation'
 
 import {
   deduplicateSubgraphGroupIds,
@@ -208,6 +208,27 @@ describe('topologicalSortSubgraphs', () => {
     const outer = makeSubgraph('outer', ['inner'])
     const result = topologicalSortSubgraphs([outer, inner])
     expect(result.map((s) => s.id)).toEqual(['inner', 'outer'])
+  })
+
+  it('sorts a parent that nests the same child twice after that child', () => {
+    const inner = makeSubgraph('inner')
+    const outer = makeSubgraph('outer', ['inner', 'inner'])
+
+    expect(topologicalSortSubgraphs([outer, inner])).toEqual([inner, outer])
+  })
+
+  it('sorts acyclic definitions first and keeps a cycle in input order', () => {
+    const a = makeSubgraph('a', ['b'])
+    const b = makeSubgraph('b', ['a'])
+    const inner = makeSubgraph('inner')
+    const outer = makeSubgraph('outer', ['inner'])
+
+    expect(topologicalSortSubgraphs([b, outer, a, inner])).toEqual([
+      inner,
+      outer,
+      b,
+      a
+    ])
   })
 
   it('handles diamond dependencies', () => {

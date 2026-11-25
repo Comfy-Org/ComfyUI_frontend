@@ -104,7 +104,7 @@ import { computed, ref } from 'vue'
 import NodePricingBadge from '@/components/node/NodePricingBadge.vue'
 import NodeProviderBadge from '@/components/node/NodeProviderBadge.vue'
 import LGraphNodePreview from '@/renderer/extensions/vueNodes/components/LGraphNodePreview.vue'
-import { flattenInputSpecs } from '@/schemas/nodeDef/inputSpecUtil'
+import { flattenInputSpecs } from '@/core/graph/nodeDef/inputSpecInterpreter'
 import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 
 const BASE_WIDTH_PX = 200

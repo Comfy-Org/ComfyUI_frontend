@@ -1,4 +1,4 @@
-import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef, InputSpec } from '@comfyorg/object-info-parser'
 
 export const BYTEDANCE_REFERENCE_NODE_TYPE = 'ByteDance2ReferenceNode'
 

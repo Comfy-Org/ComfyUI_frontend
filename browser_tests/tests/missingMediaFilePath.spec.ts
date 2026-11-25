@@ -10,8 +10,8 @@ import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 import type { WorkspaceStore } from '@e2e/types/globals'
 
-const WORKFLOW_WIDGET_VALUE = 'bare_photo.png'
-const WORKFLOW = 'missing/missing_media_bare_filename'
+const WORKFLOW_WIDGET_VALUE = 'nonexistent_test_image_12345.png'
+const WORKFLOW = 'missing/missing_media_single'
 const ASSET_LISTING_URL = /\/api\/assets(?=\?|$)/
 
 async function mockAssetListing(page: Page, assets: Asset[]): Promise<void> {

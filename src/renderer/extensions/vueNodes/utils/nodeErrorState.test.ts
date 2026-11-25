@@ -16,8 +16,8 @@ import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplace
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { createNodeExecutionId } from '@/types/nodeIdentification'
-import { toNodeId } from '@/types/nodeId'
+import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import {
   nodeError,
   runtimeError,
@@ -40,7 +40,7 @@ describe('Vue node error severity', () => {
     vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(true)
     const settings = useSettingStore().settingValues
     settings['Comfy.RightSidePanel.ShowErrorsTab'] = false
-    settings['Comfy.Workflow.ShowMissingNodesWarning'] = true
+    settings['Comfy.ErrorSystem.ShowMissingNodes'] = true
     settings['Comfy.ErrorSystem.ShowMissingModels'] = true
     settings['Comfy.Workflow.ShowMissingMediaWarning'] = true
   })

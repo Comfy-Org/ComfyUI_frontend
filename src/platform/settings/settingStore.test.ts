@@ -1,18 +1,19 @@
 import { beforeEach, describe, expect, expectTypeOf, it, vi } from 'vitest'
 
-import type { Keybinding } from '@/platform/keybindings/types'
-import { useTelemetry } from '@/platform/telemetry'
+import type { Keybinding } from '@comfyorg/keybindings/types'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type { NodeBadgeMode } from '@/types/nodeSource'
-import type { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
+import type { LinkReleaseTriggerAction } from '@comfyorg/settings-core/searchBoxTypes'
 
-import {
-  getSettingInfo,
-  useSettingStore
-} from '@/platform/settings/settingStore'
-import type { SettingParams, Settings } from '@/platform/settings/types'
+import { UnauthorizedError } from '@comfyorg/api-client/ComfyApi'
+import { getSettingInfo } from '@comfyorg/settings-core/settingStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import type { SettingParams, Settings } from '@comfyorg/settings-core/types'
 import { api } from '@/scripts/api'
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
+vi.mock(import('@comfyorg/telemetry/reportError'))
 
 vi.mock(import('@/scripts/api'))
 
@@ -37,6 +38,167 @@ describe('useSettingStore', () => {
     expect(store.settingsById).toEqual({})
   })
 
+  describe('extension callbacks', () => {
+    it('keeps core callbacks immediate while applying the latest extension value once at readiness', async () => {
+      store.deferExtensionSettingCallbacks(new AbortController().signal)
+      const coreCallback = vi.fn()
+      const extensionCallback = vi.fn()
+      store.addSetting({
+        id: 'Comfy.Locale',
+        name: 'Locale',
+        type: 'text',
+        defaultValue: 'en',
+        onChange: coreCallback
+      })
+      store.addExtensionSetting({
+        id: 'Comfy.Validation.Workflows',
+        name: 'Validation',
+        type: 'boolean',
+        defaultValue: false,
+        onChange: extensionCallback
+      })
+
+      await store.applySettingLocally('Comfy.Validation.Workflows', true)
+
+      expect(coreCallback).toHaveBeenCalledExactlyOnceWith('en', undefined)
+      expect(store.get('Comfy.Validation.Workflows')).toBe(true)
+      expect(extensionCallback).not.toHaveBeenCalled()
+
+      await store.activateExtensionSettingCallbacks()
+      await store.activateExtensionSettingCallbacks()
+
+      expect(extensionCallback).toHaveBeenCalledExactlyOnceWith(true, undefined)
+
+      await store.applySettingLocally('Comfy.Validation.Workflows', false)
+
+      expect(extensionCallback).toHaveBeenLastCalledWith(false, true)
+    })
+
+    it('preserves the current editor callbacks when an aborted loader resumes', async () => {
+      const staleEditor = new AbortController()
+      staleEditor.abort()
+      store.deferExtensionSettingCallbacks(new AbortController().signal)
+      const onChange = vi.fn()
+      store.addExtensionSetting({
+        id: 'Comfy.Validation.Workflows',
+        name: 'Validation',
+        type: 'boolean',
+        defaultValue: false,
+        onChange
+      })
+
+      store.deferExtensionSettingCallbacks(staleEditor.signal)
+      await store.activateExtensionSettingCallbacks()
+
+      expect(onChange).toHaveBeenCalledExactlyOnceWith(false, undefined)
+
+      await store.applySettingLocally('Comfy.Validation.Workflows', true)
+
+      expect(onChange).toHaveBeenLastCalledWith(true, false)
+    })
+
+    it('activates late registrations immediately', async () => {
+      store.deferExtensionSettingCallbacks(new AbortController().signal)
+      await store.activateExtensionSettingCallbacks()
+      const onChange = vi.fn()
+
+      store.addExtensionSetting({
+        id: 'Comfy.Validation.Workflows',
+        name: 'Validation',
+        type: 'boolean',
+        defaultValue: true,
+        onChange
+      })
+
+      expect(onChange).toHaveBeenCalledExactlyOnceWith(true, undefined)
+    })
+
+    it('awaits async callbacks before completing activation', async () => {
+      store.deferExtensionSettingCallbacks(new AbortController().signal)
+      let finishCallback = () => {}
+      const callback = new Promise<void>((resolve) => {
+        finishCallback = resolve
+      })
+      store.addExtensionSetting({
+        id: 'Comfy.Validation.Workflows',
+        name: 'Validation',
+        type: 'boolean',
+        defaultValue: false,
+        onChange: () => callback
+      })
+      const activated = vi.fn()
+
+      const activation = store
+        .activateExtensionSettingCallbacks()
+        .then(activated)
+      await Promise.resolve()
+      expect(activated).not.toHaveBeenCalled()
+      finishCallback()
+      await activation
+
+      expect(activated).toHaveBeenCalledOnce()
+    })
+
+    it('discards pending callbacks when the editor is disposed', async () => {
+      const editor = new AbortController()
+      store.deferExtensionSettingCallbacks(editor.signal)
+      const onChange = vi.fn()
+      store.addExtensionSetting({
+        id: 'Comfy.Validation.Workflows',
+        name: 'Validation',
+        type: 'boolean',
+        defaultValue: false,
+        onChange
+      })
+
+      editor.abort()
+      await store.activateExtensionSettingCallbacks()
+      await store.applySettingLocally('Comfy.Validation.Workflows', true)
+
+      expect(onChange).not.toHaveBeenCalled()
+    })
+
+    it.for([
+      {
+        failure: 'synchronous',
+        fail: () => {
+          throw new Error('broken')
+        }
+      },
+      {
+        failure: 'asynchronous',
+        fail: () => Promise.reject(new Error('broken'))
+      }
+    ])('isolates a $failure callback failure', async ({ fail }) => {
+      store.deferExtensionSettingCallbacks(new AbortController().signal)
+      const healthyCallback = vi.fn()
+      store.addExtensionSetting({
+        id: 'Comfy.Locale',
+        name: 'Locale',
+        type: 'text',
+        defaultValue: 'en',
+        onChange: fail
+      })
+      store.addExtensionSetting({
+        id: 'Comfy.Validation.Workflows',
+        name: 'Validation',
+        type: 'boolean',
+        defaultValue: true,
+        onChange: healthyCallback
+      })
+
+      await store.activateExtensionSettingCallbacks()
+
+      expect(healthyCallback).toHaveBeenCalledExactlyOnceWith(true, undefined)
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(new Error('broken'), {
+        errorType: 'failure_running_extension_setting_callback',
+        surface: 'platform',
+        level: 'warning',
+        tags: { setting: 'Comfy.Locale' }
+      })
+    })
+  })
+
   describe('load', () => {
     it('should load settings from API', async () => {
       const mockSettings = { 'Comfy.Locale': 'value' }
@@ -48,6 +210,14 @@ describe('useSettingStore', () => {
 
       expect(store.settingValues).toEqual(mockSettings)
       expect(api.getSettings).toHaveBeenCalled()
+    })
+
+    it('loads settings without the shared status retry stacking on its own backoff', async () => {
+      vi.mocked(api.getSettings).mockResolvedValue({} as Settings)
+
+      await store.load()
+
+      expect(api.getSettings).toHaveBeenCalledWith({ skipStatusRetry: true })
     })
 
     describe('Canvas Navigation override migration', () => {
@@ -128,6 +298,35 @@ describe('useSettingStore', () => {
       expect(store.error).toBeUndefined()
       expect(store.isReady).toBe(true)
       expect(store.settingValues['LiteGraph.Canvas.MinFontSizeForLOD']).toBe(8)
+    })
+
+    it('keeps a 401 as the error without retrying or reporting it', async () => {
+      const unauthorized = new UnauthorizedError(
+        'Failed to load settings: 401 Unauthorized'
+      )
+      vi.mocked(api.getSettings).mockRejectedValue(unauthorized)
+
+      await store.load()
+
+      expect(api.getSettings).toHaveBeenCalledTimes(1)
+      expect(store.error).toBe(unauthorized)
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('still reports a load failure that is not a 401', async () => {
+      store.addSetting({
+        id: 'Comfy.Locale',
+        name: 'Comfy.Locale',
+        type: 'text',
+        defaultValue: 'default'
+      })
+
+      await store.load()
+
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(store.error, {
+        surface: 'platform',
+        errorType: 'error_loading_settings'
+      })
     })
 
     it('should set error if settings are loaded after registration', async () => {
@@ -487,6 +686,56 @@ describe('useSettingStore', () => {
         'Comfy.Locale',
         'differentvalue'
       )
+    })
+
+    it('announces both sides of a refused revertible setting write', async () => {
+      const key = 'Comfy.Extension.DisabledPacks'
+      store.settingValues[key] = ['/extensions/saved/']
+      store.addSetting({
+        id: key,
+        name: key,
+        type: 'hidden',
+        defaultValue: []
+      })
+      const changes: unknown[] = []
+      store.onSettingChanged(({ value }) => changes.push(value))
+      vi.mocked(api.storeSetting).mockResolvedValue(
+        new Response(null, { status: 400, statusText: 'Bad Request' })
+      )
+
+      expect(
+        await store.setWithOutcome(key, ['/extensions/rejected/'])
+      ).toEqual({
+        status: 'refused',
+        statusCode: 400,
+        statusText: 'Bad Request'
+      })
+
+      expect(api.storeSetting).toHaveBeenCalledWith(key, [
+        '/extensions/rejected/'
+      ])
+      expect(store.get(key)).toEqual(['/extensions/saved/'])
+      expect(changes).toEqual([
+        ['/extensions/rejected/'],
+        ['/extensions/saved/']
+      ])
+    })
+
+    it('retains a revertible setting write after an indeterminate response', async () => {
+      const key = 'Comfy.Extension.DisabledPacks'
+      store.settingValues[key] = ['/extensions/saved/']
+      vi.mocked(api.storeSetting).mockResolvedValue(
+        new Response(null, { status: 500, statusText: 'Server Error' })
+      )
+
+      expect(await store.setWithOutcome(key, ['/extensions/pending/'])).toEqual(
+        {
+          status: 'indeterminate',
+          statusCode: 500,
+          statusText: 'Server Error'
+        }
+      )
+      expect(store.get(key)).toEqual(['/extensions/pending/'])
     })
 
     it('awaits an onChange handler before persisting the value', async () => {

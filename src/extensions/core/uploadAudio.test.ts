@@ -7,7 +7,7 @@ import { api } from '@/scripts/api'
 import type { useAudioService } from '@/services/audioService'
 import type { ComfyExtension } from '@/types/comfy'
 import { useToast } from '@/components/ui/toast/toastStore'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 const {
   mockMediaRecorderConstruct,
@@ -39,8 +39,6 @@ vi.mock(import('extendable-media-recorder'), () => ({
     }
   )
 }))
-
-vi.mock(import('@/platform/telemetry/reportError'))
 
 vi.mock(import('@/composables/node/useNodeDragAndDrop'), () => ({
   useNodeDragAndDrop: (_node, options) => {
@@ -143,6 +141,21 @@ describe('Comfy.UploadAudio AUDIOUPLOAD widget', () => {
   beforeEach(() => {
     capturedDragDrop = undefined
     capturedPaste = undefined
+  })
+
+  it('creates the upload button without an input socket', async () => {
+    const AUDIOUPLOAD = await loadAudioUploadWidget()
+    const { node } = createAudioNode()
+
+    AUDIOUPLOAD(node, 'upload')
+
+    expect(node.addWidget).toHaveBeenCalledWith(
+      'button',
+      'upload',
+      '',
+      expect.any(Function),
+      expect.objectContaining({ socketless: true })
+    )
   })
 
   it('does not preview an empty audio option', async () => {

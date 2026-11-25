@@ -5,7 +5,7 @@ import type { ComputedRef } from 'vue'
 import type { TaskItemImpl } from '@/stores/queueStore'
 import type { JobErrorDialogService } from '@/components/queue/job/useJobErrorReporting'
 import { useJobErrorReporting } from '@/components/queue/job/useJobErrorReporting'
-import type { ExecutionError } from '@/platform/remote/comfyui/jobs/jobTypes'
+import type { ExecutionError } from '@comfyorg/api-client/jobTypes'
 
 const createTaskWithError = (
   jobId: string,

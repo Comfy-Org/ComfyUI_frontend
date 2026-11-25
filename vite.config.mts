@@ -50,6 +50,11 @@ const ISOLATED_STORE_TESTS = [
   'src/stores/entityIdStore.test.ts',
   'src/testing/pinia.test.ts'
 ]
+const CENSUS_TESTS = ['scripts/registry-census/*.census.test.ts']
+
+const NODE_ENVIRONMENT_TESTS = [
+  'src/platform/workflow/validation/schemas/shippedTemplates.test.ts'
+]
 
 const CRITICAL_COVERAGE_DIRS = [
   'src/base',
@@ -58,11 +63,14 @@ const CRITICAL_COVERAGE_DIRS = [
   'src/lib/litegraph/src/node',
   'src/lib/litegraph/src/subgraph',
   'src/lib/litegraph/src/utils',
+  'src/platform/assets/adapters',
   'src/platform/assets/composables',
-  'src/platform/assets/mappings',
-  'src/platform/assets/schemas',
+  'src/platform/assets/integration',
   'src/platform/assets/services',
+  'src/platform/assets/stores',
+  'src/platform/assets/types',
   'src/platform/assets/utils',
+  'src/platform/extensions',
   'src/platform/billing/api',
   'src/platform/billing/composables',
   'src/platform/billing/stores',
@@ -88,10 +96,10 @@ const CRITICAL_COVERAGE_DIRS = [
   'src/services',
   'src/stores',
   'src/utils',
-  'src/workbench/extensions/manager/composables',
-  'src/workbench/extensions/manager/services',
-  'src/workbench/extensions/manager/stores',
-  'src/workbench/extensions/manager/utils',
+  'src/platform/customNodes/manager/composables',
+  'src/platform/customNodes/manager/services',
+  'src/platform/customNodes/manager/stores',
+  'src/platform/customNodes/manager/utils',
   'src/workbench/utils'
 ]
 
@@ -702,7 +710,7 @@ export default defineConfig({
     }),
 
     Components({
-      dts: true,
+      dts: !process.env.VITEST,
       resolvers: [
         IconsResolver({
           customCollections: ['comfy']
@@ -736,7 +744,9 @@ export default defineConfig({
           {
             name: 'validate-sentry-upload-config',
             apply: 'build' as const,
-            configResolved: () => resolveSentryUploadConfig(process.env)
+            configResolved: () => {
+              resolveSentryUploadConfig(process.env)
+            }
           },
           ...(SENTRY_UPLOAD ? [sentryVitePlugin(SENTRY_UPLOAD)] : [])
         ]
@@ -984,12 +994,29 @@ export default defineConfig({
             './vitest.timer.setup.ts',
             './vitest.setup.ts'
           ],
-          exclude: ISOLATED_STORE_TESTS,
+          exclude: [...ISOLATED_STORE_TESTS, ...NODE_ENVIRONMENT_TESTS],
           include: [
             'src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
+            'packages/api-client/src/**/*.test.ts',
+            'packages/settings-core/src/**/*.test.ts',
+            'packages/theme-core/src/**/*.test.ts',
+            'packages/telemetry/src/**/*.test.ts',
             'browser_tests/**/*.test.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
             ...FRONTEND_SCRIPT_TESTS
           ]
+        }
+      },
+      {
+        extends: true,
+        test: {
+          name: 'node-environment',
+          environment: 'node',
+          setupFiles: [
+            './vitest.console.setup.ts',
+            './vitest.network.setup.ts',
+            './vitest.timer.setup.ts'
+          ],
+          include: NODE_ENVIRONMENT_TESTS
         }
       },
       {
@@ -1013,7 +1040,7 @@ export default defineConfig({
             './vitest.console.setup.ts',
             './vitest.network.setup.ts'
           ],
-          exclude: FRONTEND_SCRIPT_TESTS,
+          exclude: [...FRONTEND_SCRIPT_TESTS, ...CENSUS_TESTS],
           include: [
             'scripts/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
             'tools/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',

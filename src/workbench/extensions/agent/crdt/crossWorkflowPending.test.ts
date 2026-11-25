@@ -32,7 +32,8 @@ const bridgeState = vi.hoisted(() => {
     follower = {
       updatesApplied: 0,
       doc: {
-        getMap: () => ({ toJSON: () => ({}) })
+        share: new Map(),
+        getMap: () => ({ toJSON: () => ({}), get: () => undefined })
       }
     }
   }
@@ -117,7 +118,7 @@ vi.mock<unknown>(import('./agentCrdtProjection'), () => ({
   }
 }))
 
-vi.mock(import('./devPanelLog'), () => ({
+vi.mock(import('./crdtLog'), () => ({
   recordDevEvent: devLogState.recordDevEvent
 }))
 

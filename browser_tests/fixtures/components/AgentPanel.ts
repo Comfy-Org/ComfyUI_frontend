@@ -25,35 +25,54 @@ export class AgentPanel {
   public readonly activityRows: Locator
   public readonly attachmentChips: Locator
   public readonly closeButton: Locator
+  public readonly chatControls: Locator
   public readonly composer: Locator
   public readonly composerAssetSection: Locator
   public readonly composerPromptArea: Locator
   public readonly composerStack: Locator
+  public readonly consentAcceptButton: Locator
+  public readonly consentContactFormButton: Locator
   public readonly consentDialog: Locator
+  public readonly consentLoadError: Locator
   public readonly consentRejectButton: Locator
+  public readonly conversation: Locator
+  public readonly conversationNewChatButton: Locator
   public readonly copiedButton: Locator
   public readonly copyReportButton: Locator
   public readonly creditsExhaustedPaywall: Locator
   public readonly creditTransitionNotice: Locator
   public readonly debugHeading: Locator
+  public readonly deletePendingButton: Locator
   public readonly dockedPanel: Locator
   public readonly dockedPanelShell: Locator
+  public readonly feedbackButton: Locator
   public readonly fileInput: Locator
+  public readonly footer: Locator
+  public readonly historyButton: Locator
+  public readonly hostFenceNotice: Locator
+  public readonly inlinePaywallCard: Locator
   public readonly loadFailedMessage: Locator
   public readonly loadRetryButton: Locator
+  public readonly newChatButton: Locator
   public readonly nodeSelectionBanner: Locator
   public readonly openButton: Locator
+  public readonly pendingSendError: Locator
+  public readonly referenceMenu: Locator
+  public readonly replyAssetThumbnails: Locator
+  public readonly replyAssetTiles: Locator
   public readonly resizeHandle: Locator
+  public readonly retryPendingButton: Locator
   public readonly root: Locator
   public readonly scrollAssetsRight: Locator
   public readonly sendButton: Locator
+  public readonly sendingSpinner: Locator
   public readonly serverLogsSwitch: Locator
   public readonly settingsSwitch: Locator
   public readonly stopButton: Locator
   public readonly suggestedPrompts: Locator
+  public readonly thinkingShortenedNotices: Locator
   public readonly userMessageBubbles: Locator
   private readonly toasts: ToastHelper
-  public readonly workflowPicker: Locator
   public readonly workflowSwitch: Locator
   public readonly workSummary: Locator
 
@@ -73,6 +92,7 @@ export class AgentPanel {
           exact: true
         })
       )
+    this.chatControls = this.root.getByTestId('agent-panel-chat-controls')
     this.composer = this.root.getByRole('textbox', {
       name: AGENT_COMPOSER_LABEL
     })
@@ -82,8 +102,20 @@ export class AgentPanel {
     this.consentDialog = page.getByRole('dialog', {
       name: enMessages.agent.consent.title
     })
+    this.consentAcceptButton = this.consentDialog.getByRole('button', {
+      name: enMessages.agent.consent.accept
+    })
+    this.consentContactFormButton = this.consentDialog.getByRole('button', {
+      name: enMessages.agent.consent.contactForm
+    })
+    this.consentLoadError = this.consentDialog.getByRole('alert')
     this.consentRejectButton = this.consentDialog.getByRole('button', {
       name: enMessages.agent.consent.reject
+    })
+    this.conversation = this.root.getByTestId('agent-conversation')
+    this.conversationNewChatButton = this.conversation.getByRole('button', {
+      name: enMessages.agent.newChat,
+      exact: true
     })
     this.copiedButton = this.root.getByRole('button', { name: 'Copied' })
     this.copyReportButton = this.root.getByRole('button', {
@@ -96,27 +128,57 @@ export class AgentPanel {
       'agent-credit-transition-notice'
     )
     this.debugHeading = this.root.getByText('CRDT debug', { exact: true })
+    this.deletePendingButton = this.conversation.getByRole('button', {
+      name: enMessages.g.delete,
+      exact: true
+    })
     this.dockedPanel = page.getByTestId('docked-agent-panel')
     this.dockedPanelShell = page.getByTestId('docked-agent-panel-shell')
+    this.feedbackButton = page.getByRole('button', {
+      name: enMessages.agent.feedbackCaption
+    })
     this.fileInput = this.root.getByTestId('agent-file-input')
+    this.footer = this.root.getByTestId('agent-panel-footer')
+    this.historyButton = this.root.getByRole('button', {
+      name: enMessages.agent.showChatHistory
+    })
+    this.hostFenceNotice = this.root.getByTestId('agent-host-fence-notice')
+    this.inlinePaywallCard = this.conversation.getByRole('alert').filter({
+      hasText: enMessages.agent.paywall.title
+    })
     this.loadFailedMessage = this.dockedPanelShell.getByText(
       enMessages.agent.loadFailed
     )
     this.loadRetryButton = this.dockedPanelShell.getByRole('button', {
       name: enMessages.g.retry
     })
+    this.newChatButton = this.root.locator('header').getByRole('button', {
+      name: enMessages.agent.newChat,
+      exact: true
+    })
     this.nodeSelectionBanner = page.getByTestId('node-selection-mode-banner')
     this.openButton = page.getByRole('button', {
       name: enMessages.agent.entryButton,
       exact: true
     })
+    this.pendingSendError = this.root.getByTestId('pending-send-error')
+    this.referenceMenu = this.root.getByTestId('agent-reference-menu')
+    this.replyAssetThumbnails = this.root.getByRole('img', {
+      name: /^mesh-\d+/
+    })
+    this.replyAssetTiles = this.root.getByRole('button', { name: /^mesh-\d+$/ })
     this.resizeHandle = page.getByTestId('agent-panel-resize-handle')
+    this.retryPendingButton = this.conversation.getByRole('button', {
+      name: enMessages.g.retry,
+      exact: true
+    })
     this.scrollAssetsRight = this.root.getByRole('button', {
       name: enMessages.g.scrollRight
     })
     this.sendButton = this.root.getByRole('button', {
       name: enMessages.agent.send
     })
+    this.sendingSpinner = this.root.getByTestId('pending-send-spinner')
     this.serverLogsSwitch = this.root.getByRole('switch', {
       name: 'Server logs'
     })
@@ -128,16 +190,30 @@ export class AgentPanel {
     this.suggestedPrompts = this.root
       .getByTestId('suggested-prompts')
       .getByRole('button', { includeHidden: true })
+    this.thinkingShortenedNotices = this.root.getByTestId(
+      TestIds.agent.thinkingShortened
+    )
     this.userMessageBubbles = this.root.getByTestId('user-message-bubble')
-    this.workflowPicker = this.root.getByRole('button', {
-      name: enMessages.agent.switchWorkflow
-    })
     this.workflowSwitch = this.root.getByRole('switch', {
       name: 'Workflow JSON'
     })
     this.workSummary = this.root.getByRole('button', {
-      name: new RegExp(`^${escapeRegExp(enMessages.agent.worked)}`)
+      name: new RegExp(
+        `^(${[
+          enMessages.agent.worked,
+          enMessages.agent.workedNotConfirmedOnCanvas
+        ]
+          .map(escapeRegExp)
+          .join('|')})`
+      )
     })
+  }
+
+  async openChatFromHistory(title: string): Promise<void> {
+    await this.historyButton.click()
+    const row = this.root.getByRole('button', { name: title, exact: true })
+    await expect(row).toBeEnabled()
+    await row.click()
   }
 
   async scrollAssetsToEnd(): Promise<void> {
@@ -161,6 +237,12 @@ export class AgentPanel {
         .toBeCloseTo(target, 0)
     }
     await expect(this.scrollAssetsRight).toBeDisabled()
+  }
+
+  thinkingShortenedNoticeIn(roundText: string): Locator {
+    return this.activityRows
+      .filter({ hasText: roundText })
+      .getByTestId(TestIds.agent.thinkingShortened)
   }
 
   activityRow(label: string): Locator {
@@ -244,6 +326,27 @@ export class AgentPanel {
     )
   }
 
+  /** Drops a file on the panel without the canvas drag-and-drop harness. */
+  async dispatchFileDrop(file: {
+    name: string
+    type: string
+    contents: string
+  }): Promise<void> {
+    const dataTransfer = await this.page.evaluateHandle(
+      ({ name, type, contents }) => {
+        const transfer = new DataTransfer()
+        transfer.items.add(new File([contents], name, { type }))
+        return transfer
+      },
+      file
+    )
+    try {
+      await this.root.dispatchEvent('drop', { dataTransfer })
+    } finally {
+      await dataTransfer.dispose()
+    }
+  }
+
   async handOverAttachment(
     fileName: string,
     route: () => Promise<void>
@@ -296,6 +399,14 @@ export class AgentPanel {
   /** Opens the panel until its dock is on screen, whatever the dock draws. */
   async openDock(timeout?: number): Promise<Locator> {
     return this.openUntilVisible(this.dockedPanel, timeout)
+  }
+
+  /** Clicks the entry from a known-closed state, for flows the panel never reaches. */
+  async openFromClosed(): Promise<void> {
+    await expect(this.openButton).toBeVisible()
+    if ((await this.openButton.getAttribute('aria-pressed')) === 'true')
+      await this.close()
+    await this.openButton.click()
   }
 
   private async openUntilVisible(
@@ -380,25 +491,6 @@ export class AgentPanel {
       .toEqual(expected)
   }
 
-  /**
-   * Picks the target without waiting for the picker label, which settles only
-   * once the target's save completes.
-   */
-  async chooseWorkflow(name: string = 'Unsaved Workflow'): Promise<void> {
-    await this.workflowPicker.click()
-    await this.page.getByRole('menuitemradio', { name, exact: true }).click()
-  }
-
-  async selectWorkflow(name: string = 'Unsaved Workflow'): Promise<void> {
-    await this.chooseWorkflow(name)
-    await expect(this.workflowPicker).toHaveText(name)
-    await this.page.mouse.move(0, 0)
-    await this.workflowPicker.blur()
-    await expect(
-      this.page.getByRole('tooltip').filter({ visible: true })
-    ).toHaveCount(0)
-  }
-
   /** Denies every turn POST with this admission denial for the rest of the test. */
   async rejectEveryTurn({
     status,
@@ -457,9 +549,26 @@ export class AgentPanel {
     await expect(this.composer).toHaveText('')
   }
 
+  async expectTourCard(
+    title: string,
+    description: string,
+    progress: string
+  ): Promise<Locator> {
+    const card = this.page.getByRole('dialog', { name: title, exact: true })
+    await expect(card).toBeVisible()
+    await expect(card).toHaveAccessibleDescription(description)
+    await expect(card.getByText(progress, { exact: true })).toBeVisible()
+    await expect(this.page.getByTestId('agent-coach-spotlight')).toBeVisible()
+    await expect(card).toBeInViewport({ ratio: 1 })
+    return card
+  }
+
+  tourSkipButton(card: Locator): Locator {
+    return card.getByRole('button', { name: enMessages.agent.skip })
+  }
+
   async enterNodeSelectionMode(): Promise<void> {
     await this.open()
-    await this.selectWorkflow()
     await this.root
       .getByRole('button', { name: enMessages.agent.addToPrompt })
       .click()

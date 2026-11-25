@@ -144,6 +144,7 @@ export type SsoSignInFailureReason =
   | 'org_not_attached'
   | 'server_error'
   | 'network'
+  | 'seat_limit_reached'
 
 interface SsoFlowProperties {
   readonly surface: SsoSurface
@@ -187,7 +188,8 @@ const SSO_FAILURE_REASON: Partial<
   SSO_INVALID_STATE: 'state_mismatch',
   SSO_CONFIRM_EXPIRED: 'state_mismatch',
   SSO_ORG_NOT_ATTACHED: 'org_not_attached',
-  SSO_ORG_MISMATCH: 'org_not_attached'
+  SSO_ORG_MISMATCH: 'org_not_attached',
+  SSO_SEAT_LIMIT_REACHED: 'seat_limit_reached'
 }
 
 /** Reduces an `?sso_error=` code to the reason telemetry reports. */

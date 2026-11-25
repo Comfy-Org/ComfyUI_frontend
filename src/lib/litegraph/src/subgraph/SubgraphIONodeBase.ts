@@ -3,37 +3,53 @@ import type {
   Subgraph,
   SubgraphInput,
   SubgraphOutput
-} from '@/lib/litegraph/src/types/entityRegistry'
+} from '@comfyorg/graph-model/entityRegistry'
 import { toSelectableKey } from '@/core/selection/selectionState'
 import { isSelectedIn, setSelectedIn } from '@/core/selection/selectionStore'
-import { graphScopeOf } from '@/types/graphScopeId'
-import { serializeNodeId } from '@/types/nodeId'
-import type { NodeId } from '@/types/nodeId'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import { serializeNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import type {
   DefaultConnectionColors,
-  Point,
   Positionable,
   CanvasColour
-} from '@/lib/litegraph/src/interfaces'
+} from '@comfyorg/graph-model/interfaces'
+import type {
+  Bounds,
+  PointTuple as Point,
+  Size2D
+} from '@comfyorg/shared-frontend-utils/geometry'
+import type { SlotDirection } from '@comfyorg/graph-model/slotId'
 import type {
   Hoverable,
   CanvasPointerEvent
-} from '@/lib/litegraph/src/types/events'
+} from '@comfyorg/graph-model/events'
 import type {
   INodeInputSlot,
   INodeOutputSlot
-} from '@/lib/litegraph/src/types/slots'
+} from '@comfyorg/graph-model/slots'
+import { isBreakLinkClick } from '@/lib/litegraph/src/canvas/breakLinkClick'
 import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
 import type { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
+import {
+  attachIoNodeLayout,
+  nodeGeometryBuffer,
+  nodePositionView,
+  nodeSizeView,
+  refreshNodeGeometry,
+  setNodePosition,
+  setNodeSize
+} from '@/renderer/core/layout/operations/graphLayoutAttachment'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
 import { snapPoint } from '@/lib/litegraph/src/measure'
-import { CanvasItem } from '@/lib/litegraph/src/types/globalEnums'
+import { CanvasItem } from '@comfyorg/graph-model/globalEnums'
 import type {
   ExportedSubgraphIONode,
   Serialisable
-} from '@/lib/litegraph/src/types/serialisation'
+} from '@comfyorg/graph-model/serialisation'
 
 import type { EmptySubgraphInput } from './EmptySubgraphInput'
 import type { EmptySubgraphOutput } from './EmptySubgraphOutput'
@@ -47,12 +63,36 @@ export abstract class SubgraphIONodeBase<
   static minWidth = 100
   static roundedRadius = 14 // Matches NODE_SLOT_HEIGHT * 0.7 for slot alignment
 
-  private readonly _boundingRect: Rectangle = new Rectangle()
-
   abstract readonly id: NodeId
+  abstract readonly slotDirection: SlotDirection
+
+  private fitted: Point | undefined
+
+  private get measuredSize(): Size2D | undefined {
+    return layoutStore.contentSizeOf(this.subgraph.id, this.id)
+  }
+
+  private get layoutRect(): Rectangle {
+    refreshNodeGeometry(this)
+    const [x, y, width, height] = nodeGeometryBuffer(this)
+    const [fittedWidth, fittedHeight] = this.fitted
+      ? this.fitSize(...this.fitted)
+      : [width, height]
+    return new Rectangle(x, y, fittedWidth, fittedHeight)
+  }
 
   get boundingRect(): Rectangle {
-    return this._boundingRect
+    const { measuredSize, layoutRect } = this
+    if (!measuredSize) return layoutRect
+    const [x, y, width] = layoutRect
+    const offsetX =
+      this.slotDirection === 'output' ? width - measuredSize.width : 0
+    return new Rectangle(
+      x + offsetX,
+      y,
+      measuredSize.width,
+      measuredSize.height
+    )
   }
 
   get selected(): boolean {
@@ -78,19 +118,19 @@ export abstract class SubgraphIONodeBase<
   abstract readonly emptySlot: EmptySubgraphInput | EmptySubgraphOutput
 
   get pos() {
-    return this.boundingRect.pos
+    return nodePositionView(this)
   }
 
   set pos(value) {
-    this.boundingRect.pos = value
+    setNodePosition(this, value)
   }
 
   get size() {
-    return this.boundingRect.size
+    return nodeSizeView(this)
   }
 
   set size(value) {
-    this.boundingRect.size = value
+    setNodeSize(this, value)
   }
 
   protected get sideLineWidth(): number {
@@ -125,22 +165,56 @@ export abstract class SubgraphIONodeBase<
     return true
   }
 
-  abstract onPointerDown(
+  protected abstract dragNewLink(
+    linkConnector: LinkConnector,
+    slot: TSlot
+  ): void
+
+  // fallow-ignore-next-line unused-class-member
+  onPointerDown(
     e: CanvasPointerEvent,
     pointer: CanvasPointer,
     linkConnector: LinkConnector
-  ): void
+  ): void {
+    const slot = this.getSlotInPosition(e.canvasX, e.canvasY)
+    if (!slot) return
+    if (e.button === 2) {
+      this.showSlotContextMenu(slot, e)
+      return
+    }
+    if (e.button !== 0) return
+
+    if (isBreakLinkClick(e)) {
+      pointer.onClick = () => {
+        this.subgraph.beforeChange()
+        slot.disconnect()
+        this.subgraph.afterChange()
+      }
+      return
+    }
+    pointer.onDragStart = () => this.dragNewLink(linkConnector, slot)
+    pointer.onDragEnd = (eUp) => linkConnector.dropLinks(this.subgraph, eUp)
+    pointer.onDoubleClick = () => this.handleSlotDoubleClick(slot, e)
+    pointer.finally = () => linkConnector.reset(true)
+  }
 
   // #region Hoverable
 
   containsPoint(point: Point): boolean {
-    return this.boundingRect.containsPoint(point)
+    return (
+      this.boundingRect.containsPoint(point) ||
+      this.allSlots.some((slot) => slot.boundingRect.containsPoint(point))
+    )
   }
 
-  abstract get slotAnchorX(): number
+  get slotAnchorX(): number {
+    const [x, , width] = this.boundingRect
+    const inset = SubgraphIONodeBase.roundedRadius
+    return this.slotDirection === 'output' ? x + width - inset : x + inset
+  }
 
   onPointerMove(e: CanvasPointerEvent): CanvasItem {
-    const containsPoint = this.boundingRect.containsXy(e.canvasX, e.canvasY)
+    const containsPoint = this.containsPoint([e.canvasX, e.canvasY])
     let underPointer = containsPoint
       ? CanvasItem.SubgraphIoNode
       : CanvasItem.Nothing
@@ -315,24 +389,42 @@ export abstract class SubgraphIONodeBase<
     )
   }
 
-  /** Arrange the slots in this node. */
   arrange(): void {
     const { minWidth, roundedRadius } = SubgraphIONodeBase
-    const [, y] = this.boundingRect
-    const x = this.slotAnchorX
+    const [x, y] = this.boundingRect
+    const { measuredSize, slotDirection } = this
+    const anchorSide = slotDirection === 'output' ? 1 : -1
 
     let maxWidth = minWidth
+    let anchorX = this.slotAnchorX
     let currentY = y + roundedRadius
 
-    for (const slot of this.allSlots) {
+    for (const [index, slot] of this.allSlots.entries()) {
       const [slotWidth, slotHeight] = slot.measure()
-      slot.arrange([x, currentY, slotWidth, slotHeight])
+      const port = layoutStore.getSlotBounds(
+        this.subgraph.id,
+        this.id,
+        index,
+        slotDirection,
+        'expanded'
+      )
+      if (port) {
+        anchorX = x + port.x + (port.width + anchorSide * slotHeight) / 2
+        currentY = y + port.y + (port.height - slotHeight) / 2
+      }
+      slot.arrange([anchorX, currentY, slotWidth, slotHeight])
+      if (port) includePort(slot.boundingRect, x, y, port)
 
       currentY += slotHeight
       if (slotWidth > maxWidth) maxWidth = slotWidth
     }
 
-    this.size = [maxWidth + 2 * roundedRadius, currentY - y + roundedRadius]
+    if (!measuredSize)
+      this.fitted = [maxWidth + 2 * roundedRadius, currentY - y + roundedRadius]
+  }
+
+  protected fitSize(width: number, height: number): Point {
+    return [width, height]
   }
 
   draw(
@@ -345,6 +437,7 @@ export abstract class SubgraphIONodeBase<
       | SubgraphOutput,
     editorAlpha?: number
   ): void {
+    if (this.measuredSize) return
     const { lineWidth, strokeStyle, fillStyle, font, textBaseline } = ctx
     this.drawProtected(ctx, colorContext, fromSlot, editorAlpha)
     Object.assign(ctx, {
@@ -389,23 +482,39 @@ export abstract class SubgraphIONodeBase<
   }
 
   configure(data: ExportedSubgraphIONode): void {
-    this._boundingRect.set(data.bounding)
+    nodeGeometryBuffer(this).set(data.bounding)
+    attachIoNodeLayout(this)
     this.pinned = data.pinned ?? false
   }
 
   asSerialisable(): ExportedSubgraphIONode {
     return {
       id: serializeNodeId(this.id),
-      bounding: this.boundingRect.export(),
+      bounding: this.layoutRect.export(),
       pinned: this.pinned ? true : undefined
     }
   }
+}
+
+function includePort(
+  rect: Rectangle,
+  originX: number,
+  originY: number,
+  { x, y, width, height }: Bounds
+): void {
+  const left = originX + x
+  const top = originY + y
+  rect.resizeTopLeft(Math.min(rect.left, left), Math.min(rect.top, top))
+  rect.resizeBottomRight(
+    Math.max(rect.right, left + width),
+    Math.max(rect.bottom, top + height)
+  )
 }
 
 type RegisteredSubgraphIONode = SubgraphIONodeBase<
   SubgraphInput | SubgraphOutput
 >
 
-declare module '../types/entityRegistry' {
+declare module '@comfyorg/graph-model/entityRegistry' {
   interface SubgraphIONode extends RegisteredSubgraphIONode {}
 }

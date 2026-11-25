@@ -12,7 +12,7 @@ import type {
 import { readBillingErrorCode } from '@comfyorg/account-core/billing'
 import { vi } from 'vitest'
 
-import type { BillingSdk } from './createBillingSdk'
+import type { BillingSdk } from '@comfyorg/billing-core/sdk'
 
 /** A server code minted the one sanctioned way, so a test cannot invent one. */
 export function serverCode(code: string): BillingServerCode | undefined {
@@ -143,7 +143,10 @@ export function fakeBillingSdk() {
     topup: {
       quoteTopup: vi.fn(),
       createTopupCheckout: vi.fn(),
-      createHostedTopupCheckout: vi.fn()
+      createInteractiveTopup: vi.fn(),
+      createHostedTopupCheckout: vi.fn(),
+      createTopupPurchase: vi.fn(),
+      readTopupPurchase: vi.fn()
     },
     commands: {
       subscribe: vi.fn(),

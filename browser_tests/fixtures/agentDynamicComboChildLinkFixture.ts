@@ -2,9 +2,9 @@ import type { Locator, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import { toLinkId } from '@/types/linkId'
-import { toNodeId } from '@/types/nodeId'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import {
   agentTest,
@@ -246,7 +246,6 @@ export const dynamicComboChildLinkTest =
 
       const agentPanel = new AgentPanel(page)
       await agentPanel.open()
-      await agentPanel.selectWorkflow()
       await agentPanel.sendMessage('hello')
       await expect(agentPanel.root.getByText('hello').first()).toBeVisible()
       await hostSocket.waitForSubscribe()

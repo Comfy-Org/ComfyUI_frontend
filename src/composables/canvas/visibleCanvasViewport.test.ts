@@ -5,7 +5,7 @@ import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/ag
 import { visibleCanvasViewport } from './visibleCanvasViewport'
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 describe('visibleCanvasViewport', () => {
   beforeEach(() => {

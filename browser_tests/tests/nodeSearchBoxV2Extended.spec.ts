@@ -34,9 +34,7 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
 
     await comfyPage.page.keyboard.press('Escape')
     await expect(searchBoxV2.input).toBeHidden()
-    await expect
-      .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-      .toBe(initialCount)
+    await comfyPage.expectNodeCount(initialCount)
   })
 
   for (const closeKey of ['Enter', 'Escape'] as const) {
@@ -104,6 +102,47 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
   })
 
   test.describe('Link release', () => {
+    test('Keyboard selection places the ghost at the wire drop without further pointer movement', async ({
+      comfyPage
+    }) => {
+      const { page, searchBoxV2 } = comfyPage
+      await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
+      const sampler = await comfyPage.nodeOps.getNodeRefById(3)
+      const output = await sampler.getOutput(0)
+      const dropPosition = { x: 600, y: 350 }
+
+      await test.step('Drop a wire and select using only the keyboard', async () => {
+        await comfyPage.canvasOps.dragAndDrop(
+          await output.getPosition(),
+          dropPosition
+        )
+        await expect(searchBoxV2.input).toBeVisible()
+        await searchBoxV2.input.pressSequentially('VAE Decode')
+        await expect(searchBoxV2.results.first()).toContainText('VAE Decode')
+        await searchBoxV2.input.press('Enter')
+        await expect(searchBoxV2.dialog).toBeHidden()
+      })
+
+      await test.step('The ghost starts beneath the release point', async () => {
+        await expect
+          .poll(() =>
+            page.evaluate((position) => {
+              const app = window.app!
+              const node = app.graph.nodes.find(
+                ({ id }) => id === app.canvas.state.ghostNodeId
+              )
+              if (!node) return Infinity
+              const [x, y] = app.canvasPosToClientPos([
+                node.pos[0] + node.size[0] / 2,
+                node.pos[1] - 10
+              ])
+              return Math.hypot(x - position.x, y - position.y)
+            }, dropPosition)
+          )
+          .toBeLessThan(2)
+      })
+    })
+
     test('Link release opens search with pre-applied type filter', async ({
       comfyPage
     }) => {
@@ -145,7 +184,7 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
       const refsAfter = await comfyPage.nodeOps.getNodeRefsByType(NODE_TYPE)
       const newNode = refsAfter.find((n) => !idsBefore.has(n.id))
       expect(newNode, 'expected a new CLIPTextEncode node').toBeDefined()
-      const clipInput = await newNode!.getInput(0)
+      const clipInput = await newNode!.getInputByName('clip')
       await clipInput.expectLinkCount(1)
     })
   })
@@ -402,9 +441,7 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
       await searchBoxV2.results.first().click()
       await expect(searchBoxV2.input).toBeHidden()
 
-      await expect
-        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-        .toBe(initialCount + 1)
+      await comfyPage.expectNodeCount(initialCount + 1)
 
       await expect(
         comfyPage.page.locator('[data-node-id][data-ghost]')

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
+import type { MediaKind } from '@comfyorg/assets-core/media'
 import { computed, ref } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -72,12 +72,12 @@ const icon = computed(() => {
     >
       <span class="line-clamp-3">{{ name }}</span>
     </span>
-    <span
+    <i
       v-else
       :role="isMediaIcon ? 'img' : undefined"
       :aria-label="isMediaIcon ? $t(mediaLabel) : undefined"
       :aria-hidden="!isMediaIcon || undefined"
-      :class="cn(icon, 'shrink-0', iconSize)"
+      :class="cn(icon, iconSize)"
     />
   </span>
 </template>

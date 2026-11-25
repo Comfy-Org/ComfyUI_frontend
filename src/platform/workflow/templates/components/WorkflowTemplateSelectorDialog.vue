@@ -1,10 +1,12 @@
 <template>
   <BaseModalLayout
     ref="modalLayout"
+    :labels="modalLayoutLabels"
     :content-title="$t('templateWorkflows.title', 'Workflow Templates')"
     content-padding="none"
     size="md"
     close-button-variant="textonly"
+    @close="handleClose"
   >
     <template #leftPanelHeaderTitle>
       <i class="icon-[comfy--template]" />
@@ -34,7 +36,7 @@
           class="shrink-0 hover:bg-transparent"
           @click="onBackToTemplates"
         >
-          <i aria-hidden="true" class="icon-[lucide--arrow-left] size-4" />
+          <i aria-hidden="true" class="icon-[lucide--arrow-left]" />
           {{ pageTitle }}
         </Button>
       </nav>
@@ -81,7 +83,7 @@
               :variant="selectedType === tab.value ? 'inverted' : 'secondary'"
               :aria-pressed="selectedType === tab.value"
               :aria-label="tab.icon ? tab.label : undefined"
-              class="h-8 shrink-0 px-3 text-xs @max-[30rem]/filters:px-2.5"
+              class="shrink-0 px-3 @max-[30rem]/filters:px-2.5"
               @click="selectedType = tab.value"
             >
               <i v-if="tab.icon" :class="cn(tab.icon, 'size-3.5')" />
@@ -106,7 +108,7 @@
             :aria-expanded="mobileFiltersOpen"
             aria-controls="template-mobile-filters"
             :aria-label="$t('templateWorkflows.filtersButton')"
-            class="ml-auto h-8 shrink-0 px-3 text-xs @[58rem]/filters:hidden"
+            class="ml-auto shrink-0 px-3 @[58rem]/filters:hidden"
             @click="mobileFiltersOpen = !mobileFiltersOpen"
           >
             <i class="icon-[lucide--sliders-horizontal] size-3.5" />
@@ -220,7 +222,7 @@
             variant="ghost"
             rounded="lg"
             :data-testid="`template-workflow-${template.name}`"
-            class="group/card h-full transition-colors hover:bg-secondary/50"
+            class="group/card h-full hover:bg-secondary/50"
             @mouseenter="hoveredTemplate = template.name"
             @mouseleave="hoveredTemplate = null"
             @click="onLoadWorkflow(template, $event)"
@@ -286,7 +288,7 @@
                     class="not-group-hover/card:opacity-0"
                     @click.stop="openTutorial(template)"
                   >
-                    <i class="icon-[lucide--info] size-4" />
+                    <i class="icon-[lucide--info]" />
                   </Button>
                   <PaidTemplateBadge v-if="template.isPartnerNode" />
                 </template>
@@ -410,9 +412,9 @@
         :cloud-url="activeDetailCloudUrl"
         :is-partner-node="activeDetail.template.openSource === false"
         :open-pending="openPending"
-        :model-setup="activeDetailModelSetup"
+        :asset-setup="activeDetailAssetSetup"
         @open-template="onOpenTemplate"
-        @download-models-and-open="onDownloadModelsAndOpen"
+        @download-assets-and-open="onDownloadAssetsAndOpen"
         @download-model="onDownloadModel"
       >
         <template #preview>
@@ -442,61 +444,66 @@ import {
   nextTick,
   onBeforeUnmount,
   onMounted,
-  provide,
   ref,
   watch
 } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useToast } from '@/components/ui/toast/toastStore'
 import type { ComfyTemplateInputAsset } from '@comfyorg/comfyui-desktop-bridge-types'
 
-import CardBottom from '@/components/card/CardBottom.vue'
-import CardContainer from '@/components/card/CardContainer.vue'
-import CardTop from '@/components/card/CardTop.vue'
-import Tag from '@/components/chip/Tag.vue'
+import CardBottom from '@comfyorg/design-system/content-card/CardBottom'
+import CardContainer from '@comfyorg/design-system/content-card/CardContainer'
+import CardTop from '@comfyorg/design-system/content-card/CardTop'
+import Tag from '@comfyorg/design-system/chip/Tag'
 import PaidTemplateBadge from '@/platform/workflow/templates/components/PaidTemplateBadge.vue'
 import TemplateFilterControls from '@/platform/workflow/templates/components/TemplateFilterControls.vue'
 import WorkflowTemplateDetail from '@/platform/workflow/templates/components/WorkflowTemplateDetail.vue'
-import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
+import AsyncSearchInput from '@comfyorg/design-system/search-input/AsyncSearchInput'
 import TemplatePreview from '@/platform/workflow/templates/components/thumbnails/TemplatePreview.vue'
-import Button from '@/components/ui/button/Button.vue'
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
-import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
+import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
+import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import { selectCountBadgeClass } from '@comfyorg/design-system/select.variants'
-import type { SelectOption } from '@/components/ui/select/types'
+import type { SelectOption } from '@comfyorg/design-system/lib/select/types'
 import AppSpinner from '@/components/common/AppSpinner.vue'
-import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
-import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
+import BaseModalLayout from '@comfyorg/design-system/layout/BaseModalLayout'
+import LeftSidePanel from '@comfyorg/design-system/navigation/LeftSidePanel'
 import { useIntersectionObserver } from '@/composables/useIntersectionObserver'
 import { useLazyPagination } from '@/platform/workflow/templates/composables/useLazyPagination'
 import { useTemplateFiltering } from '@/platform/workflow/templates/composables/useTemplateFiltering'
 import type { TemplateSortMode } from '@/platform/workflow/templates/composables/useTemplateFiltering'
 import { getComfyCloudBaseUrl } from '@/config/comfyApi'
 import { formatCategoryLabel } from '@/platform/assets/utils/categoryLabel'
-import { isCloud, isDesktop } from '@/platform/distribution/types'
+import { isCloud } from '@/platform/distribution/types'
+import { isLocalDesktopHost, isSelfHostedBrowser } from '@/utils/envUtil'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { loadFolderPathsOnce } from '@/platform/workflowErrors/missingModel/folderPathCache'
 import {
+  downloadModel,
   isModelDownloadable,
   modelDownloadNeedsFolderPaths
 } from '@/platform/workflowErrors/missingModel/missingModelDownload'
-import { useTelemetry } from '@/platform/telemetry'
-import { reportError } from '@/platform/telemetry/reportError'
+import type { ModelWithUrl } from '@/platform/workflowErrors/missingModel/missingModelDownload'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { getModelFileKey } from '@/platform/workflow/core/utils/modelRequirements'
 import { useTemplateModelAvailability } from '@/platform/workflow/templates/composables/useTemplateModelAvailability'
-import { useTemplateModelRowDownloads } from '@/platform/workflow/templates/composables/useTemplateModelRowDownloads'
+import { useTemplateModelDownloads } from '@/platform/workflow/templates/composables/useTemplateModelDownloads'
 import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import type { PreparedWorkflowTemplate } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import type {
   TemplateInfo,
   TemplateTypeFilter
-} from '@/platform/workflow/templates/types/template'
-import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
+} from '@comfyorg/api-client/templateTypes'
+import { TemplateIncludeOnDistributionEnum } from '@comfyorg/api-client/templateTypes'
 import type {
   TemplateDetailGroup,
   TemplateDetailRow,
-  TemplateModelSetup
+  TemplateAssetSetup
 } from '@/platform/workflow/templates/types/templateDetail'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
+import { getTemplateInputPlan } from '@/platform/workflow/templates/services/templateInputService'
 import {
   filterTemplatesByType,
   getTemplateTags,
@@ -516,9 +523,15 @@ import type {
   TemplateModelSetupResult,
   TemplateModelSetupRow
 } from '@/platform/workflow/templates/utils/templateModelSetup'
-import { resolveTemplateInputAssets } from '@/platform/workflow/templates/utils/templateInputAssets'
-import type { NavGroupData, NavItemData } from '@/types/navTypes'
-import { OnCloseKey } from '@/types/widgetTypes'
+import {
+  getPendingTemplateSampleInputs,
+  resolveTemplateInputAssets
+} from '@/platform/workflow/templates/utils/templateInputAssets'
+import type {
+  NavGroupData,
+  NavItemData
+} from '@comfyorg/design-system/lib/navigation/types'
+import { useModalLayoutLabels } from '@/components/dialog/useModalLayoutLabels'
 import { formatSize } from '@/utils/formatUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -538,8 +551,7 @@ onMounted(() => {
   sessionStartTime.value = Date.now()
 })
 
-// Wrap onClose to track session end
-const onClose = () => {
+const handleClose = () => {
   activeDetail.value?.modelSetup.rowDownloads.dispose()
   invalidateDetailWork()
   const timeSpentSeconds = Math.floor(
@@ -554,7 +566,7 @@ const onClose = () => {
   originalOnClose()
 }
 
-provide(OnCloseKey, onClose)
+const modalLayoutLabels = useModalLayoutLabels()
 
 // Workflow templates store and composable
 const workflowTemplatesStore = useWorkflowTemplatesStore()
@@ -668,6 +680,7 @@ const {
   selectedUseCases,
   selectedRunsOn,
   sortSelection,
+  categorySort,
   hasActiveQuery,
   activeModels,
   activeUseCases,
@@ -705,23 +718,16 @@ watch(searchQuery, (value) => {
  * @param source The origin of the change ('nav' or 'sort').
  */
 const coordinateNavAndSort = (source: 'nav' | 'sort') => {
-  if (hasActiveQuery.value) return
-
   const isPopularNav = selectedNavItem.value === 'popular'
-  const isPopularSort = sortSelection.value === 'popular'
 
   if (source === 'nav') {
-    if (isPopularNav && !isPopularSort) {
-      sortSelection.value = 'popular'
-    } else if (!isPopularNav && isPopularSort) {
-      sortSelection.value = 'default'
-    }
-  } else if (source === 'sort') {
-    // When sort is changed away from 'Popular' while in the 'Popular' category,
-    // reset the category to 'All Templates' to avoid a confusing state.
-    if (isPopularNav && !isPopularSort) {
-      selectedNavItem.value = 'all'
-    }
+    categorySort.value = isPopularNav ? 'popular' : null
+    return
+  }
+
+  if (hasActiveQuery.value) return
+  if (isPopularNav && sortSelection.value !== 'popular') {
+    selectedNavItem.value = 'all'
   }
 }
 
@@ -777,7 +783,7 @@ const hasActiveFilters = computed(
 const mobileFiltersOpen = ref(false)
 const hoveredTemplate = ref<string | null>(null)
 const cardRefs = ref<HTMLElement[]>([])
-type TemplateModelRowDownloads = ReturnType<typeof useTemplateModelRowDownloads>
+type TemplateModelRowDownloads = ReturnType<typeof useTemplateModelDownloads>
 
 type ActiveTemplateModelSetup = {
   result: TemplateModelSetupResult
@@ -877,10 +883,6 @@ const sortOptions = computed(() => [
         }
       ]
     : []),
-  {
-    name: t('templateWorkflows.sort.default', 'Default'),
-    value: 'default'
-  },
   {
     name: t('templateWorkflows.sort.recommended', 'Recommended'),
     value: 'recommended'
@@ -1090,10 +1092,29 @@ function toInputDetailRow(asset: ComfyTemplateInputAsset): TemplateDetailRow {
   }
 }
 
+function getPreparedSampleInputs(
+  prepared: PreparedWorkflowTemplate,
+  inputAssets: readonly ComfyTemplateInputAsset[] = []
+) {
+  const { data, sourceModule } = prepared
+  const inputs = data.template?.io?.inputs
+  if (sourceModule !== 'default' || !data.strict || !inputs?.length) return []
+
+  const { files } = getTemplateInputPlan(
+    data.json,
+    getPendingTemplateSampleInputs(inputs, inputAssets),
+    {
+      restoreNamed: useSettingStore().get('Comfy.Workflow.NamedValuesRestore')
+    }
+  )
+  return [...files.keys()]
+}
+
 function buildTemplateDetailGroups(
   setup: TemplateModelSetupResult,
   rowDownloads: TemplateModelRowDownloads,
-  inputAssets: readonly ComfyTemplateInputAsset[]
+  inputAssets: readonly ComfyTemplateInputAsset[],
+  sampleInputs: ReturnType<typeof getPreparedSampleInputs>
 ): readonly TemplateDetailGroup[] {
   const groups: TemplateDetailGroup[] = []
 
@@ -1108,11 +1129,22 @@ function buildTemplateDetailGroups(
     })
   }
 
-  if (inputAssets.length > 0) {
+  const inputRows = [
+    ...inputAssets.map(toInputDetailRow),
+    ...sampleInputs
+      .filter((file) => !inputAssets.some(({ filename }) => filename === file))
+      .map((file): TemplateDetailRow => ({
+        id: `input:sample:${file}`,
+        kind: 'input',
+        name: file,
+        description: ''
+      }))
+  ]
+  if (inputRows.length > 0) {
     groups.push({
       id: 'input-assets',
       label: t('templateWorkflows.detail.inputAssets'),
-      rows: inputAssets.map(toInputDetailRow)
+      rows: inputRows
     })
   }
 
@@ -1126,7 +1158,8 @@ const activeDetailGroups = computed<readonly TemplateDetailGroup[]>(() => {
   return buildTemplateDetailGroups(
     detail.modelSetup.result,
     detail.modelSetup.rowDownloads,
-    detail.inputAssets
+    detail.inputAssets,
+    getPreparedSampleInputs(detail.prepared)
   )
 })
 
@@ -1137,15 +1170,19 @@ const activeDetailModelDownloadCandidates = computed<
   const setup = activeDetail.value?.modelSetup
   if (!setup || setup.pending) return []
   return setup.result.rows.filter((row) =>
-    isModelDownloadCandidate(row, setup.rowDownloads.stateFor)
+    isModelDownloadCandidate(row, setup.rowDownloads)
   )
 })
 
-const activeDetailModelDownloadsAvailable = computed(
-  () => activeDetailModelDownloadCandidates.value.length > 0
-)
+const activeDetailHasInputDownloads = computed(() => {
+  const detail = activeDetail.value
+  return Boolean(
+    detail &&
+    (getPreparedSampleInputs(detail.prepared, detail.inputAssets).length ||
+      detail.inputAssets.some(({ availability }) => availability === 'missing'))
+  )
+})
 
-/** Withheld unless every candidate declares a size: a partial total reads as complete. */
 const activeDetailModelRequirementsMet = computed(() => {
   const setup = activeDetail.value?.modelSetup
   return Boolean(
@@ -1156,16 +1193,17 @@ const activeDetailModelRequirementsMet = computed(() => {
   )
 })
 
-const activeDetailModelSetup = computed<TemplateModelSetup | undefined>(() => {
+const activeDetailAssetSetup = computed<TemplateAssetSetup | undefined>(() => {
   const setup = activeDetail.value?.modelSetup
   if (!setup) return undefined
   if (setup.pending) return { state: 'resolving' }
+  if (activeDetailHasInputDownloads.value) return { state: 'startable' }
   if (activeDetailModelRequirementsMet.value) return undefined
-  if (!activeDetailModelDownloadsAvailable.value) return undefined
+  if (!activeDetailModelDownloadCandidates.value.length) return undefined
 
   const total = remainingModelDownloadTotal(
     setup.result.rows,
-    setup.rowDownloads.stateFor
+    setup.rowDownloads
   )
   return {
     state: 'startable',
@@ -1230,54 +1268,85 @@ async function updateTemplateModelMetadata(
 
 async function openPreparedTemplate(
   prepared: PreparedWorkflowTemplate,
-  generation: number
+  generation: number,
+  downloadAssets: boolean,
+  inputAssets?: readonly ComfyTemplateInputAsset[]
 ): Promise<void> {
   if (openPending.value || generation !== detailGeneration) return
 
   openPending.value = true
   try {
-    const result = await openPreparedWorkflowTemplate(prepared)
+    const result = await openPreparedWorkflowTemplate(prepared, {
+      downloadAssets,
+      ...(inputAssets && { inputAssets })
+    })
     if (result === 'not-started') return
 
     templateWasSelected.value = result === 'loaded'
-    onClose()
+    handleClose()
   } finally {
     openPending.value = false
   }
 }
 
-async function showModelSetupIfNeeded(
-  template: TemplateInfo,
-  prepared: PreparedWorkflowTemplate,
-  generation: number
-): Promise<boolean> {
-  if (!isDesktop) return false
-
+async function resolveTemplateAssetInventory(
+  templateId: string,
+  prepared: PreparedWorkflowTemplate
+) {
   const requirements = extractTemplateModelRequirementDetails(
     prepared.data.json
   )
   const inputAssetsPromise =
     prepared.sourceModule === 'default'
-      ? resolveTemplateInputAssets(template.name, () => window.__comfyDesktop2)
+      ? resolveTemplateInputAssets(templateId, () => window.__comfyDesktop2)
       : Promise.resolve<readonly ComfyTemplateInputAsset[]>([])
-  if (requirements.length === 0) return false
-
-  // Only the Electron path needs real directories, and resolving them here
-  // rather than mid-dispatch keeps a download from depending on a lookup that
-  // can finish after this view is gone.
-  const [availability, folderPaths] = await Promise.all([
+  const [availability, folderPaths, inputAssets] = await Promise.all([
     resolveModelAvailability(requirements.map(({ model }) => model)),
-    modelDownloadNeedsFolderPaths()
+    requirements.length > 0 && modelDownloadNeedsFolderPaths()
       ? loadFolderPathsOnce().catch(() => ({}))
-      : Promise.resolve({})
+      : Promise.resolve({}),
+    inputAssetsPromise
   ])
-  if (generation !== detailGeneration) return true
-  if (!availability.some(({ status }) => status === 'missing')) return false
+  return { requirements, availability, folderPaths, inputAssets }
+}
 
-  const inputAssets = await inputAssetsPromise
-  if (generation !== detailGeneration) return true
+function offersAssetChoice(): boolean {
+  return isLocalDesktopHost() || isSelfHostedBrowser()
+}
 
-  const rowDownloads = useTemplateModelRowDownloads({ folderPaths })
+function requestModelDownload(
+  rowDownloads: TemplateModelRowDownloads,
+  model: ModelWithUrl
+) {
+  if (isSelfHostedBrowser()) downloadModel(model, {})
+  else rowDownloads.request(model)
+}
+
+async function showAssetSetupIfNeeded(
+  template: TemplateInfo,
+  prepared: PreparedWorkflowTemplate,
+  generation: number
+): Promise<boolean> {
+  if (!offersAssetChoice()) return false
+
+  const { requirements, availability, folderPaths, inputAssets } =
+    await resolveTemplateAssetInventory(template.name, prepared)
+  if (generation !== detailGeneration) return true
+  const hasSampleInputs =
+    getPreparedSampleInputs(prepared, inputAssets).length > 0
+  if (
+    !availability.some(({ status }) => status === 'missing') &&
+    !inputAssets.some(({ availability }) => availability === 'missing') &&
+    !hasSampleInputs
+  )
+    return false
+
+  const rowDownloads = useTemplateModelDownloads(
+    { folderPaths },
+    availability.flatMap(({ model, status }) =>
+      status === 'missing' ? [model] : []
+    )
+  )
   activeDetail.value = {
     template,
     prepared: markRaw(prepared),
@@ -1289,7 +1358,7 @@ async function showModelSetupIfNeeded(
         { status: 'aborted' },
         { isDownloadable: isModelDownloadable }
       ),
-      pending: true,
+      pending: requirements.length > 0,
       rowDownloads
     }
   }
@@ -1299,16 +1368,39 @@ async function showModelSetupIfNeeded(
   if (generation !== detailGeneration) return true
   detailView.value?.focus()
 
-  void updateTemplateModelMetadata(
-    generation,
-    controller,
-    requirements,
-    availability
-  )
+  if (requirements.length > 0) {
+    void updateTemplateModelMetadata(
+      generation,
+      controller,
+      requirements,
+      availability
+    )
+  }
   return true
 }
 
-const onLoadWorkflow = async (template: TemplateInfo, event: MouseEvent) => {
+function handleTemplateSelectionError(
+  error: unknown,
+  prepared: PreparedWorkflowTemplate,
+  generation: number
+) {
+  const isCurrent =
+    generation === detailGeneration &&
+    preparedInFlight === prepared &&
+    !prepared.controller.signal.aborted
+  discardPreparedWorkflowTemplate(prepared)
+  if (!isCurrent) return
+  preparedInFlight = null
+  reportError(error, {
+    surface: 'graph',
+    errorType: 'error_loading_template'
+  })
+  useToast().error(t('g.error'), {
+    description: t('templateWorkflows.error.loading')
+  })
+}
+
+async function onLoadWorkflow(template: TemplateInfo, event: MouseEvent) {
   if (openPending.value) return
 
   invalidateDetailWork()
@@ -1327,12 +1419,18 @@ const onLoadWorkflow = async (template: TemplateInfo, event: MouseEvent) => {
     return
   }
 
-  const didShowModelSetup = await showModelSetupIfNeeded(
-    template,
-    prepared,
-    generation
-  )
-  if (!didShowModelSetup) await openPreparedTemplate(prepared, generation)
+  try {
+    const didShowAssetSetup = await showAssetSetupIfNeeded(
+      template,
+      prepared,
+      generation
+    )
+    if (!didShowAssetSetup) {
+      await openPreparedTemplate(prepared, generation, !offersAssetChoice())
+    }
+  } catch (error) {
+    handleTemplateSelectionError(error, prepared, generation)
+  }
 }
 
 async function onBackToTemplates() {
@@ -1355,19 +1453,25 @@ function onDownloadModel(rowId: string) {
       candidate.status === 'downloadable' &&
       `model:${getModelFileKey(candidate.model)}` === rowId
   )
-  if (row?.status === 'downloadable') setup.rowDownloads.request(row.model)
+  if (row?.status === 'downloadable')
+    requestModelDownload(setup.rowDownloads, row.model)
 }
 
-async function onDownloadModelsAndOpen() {
+async function onDownloadAssetsAndOpen() {
   const detail = activeDetail.value
   const setup = detail?.modelSetup
   if (!detail || !setup || setup.pending || openPending.value) return
 
   for (const row of activeDetailModelDownloadCandidates.value) {
-    setup.rowDownloads.request(row.model)
+    requestModelDownload(setup.rowDownloads, row.model)
   }
 
-  await onOpenTemplate()
+  await openPreparedTemplate(
+    detail.prepared,
+    detailGeneration,
+    true,
+    detail.inputAssets
+  )
 }
 
 function onSelectNavItem(value: string | null) {
@@ -1383,7 +1487,7 @@ const onOpenTemplate = async () => {
   const detail = activeDetail.value
   if (!detail || openPending.value) return
 
-  await openPreparedTemplate(detail.prepared, detailGeneration)
+  await openPreparedTemplate(detail.prepared, detailGeneration, false)
 }
 
 const pageTitle = computed(() => {

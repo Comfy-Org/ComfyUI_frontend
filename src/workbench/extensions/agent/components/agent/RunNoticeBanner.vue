@@ -1,26 +1,31 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import { useAccountStorage } from '@/platform/workflow/persistence/composables/useAccountStorage'
+import Button from '@comfyorg/design-system/button/Button'
+
+import RunNoticeAction from './RunNoticeAction.vue'
 
 const {
   expanded = false,
   workflowName,
+  followsVisibleWorkflow = false,
   genericNoticeReady = false,
+  hideIntro = false,
   context
 } = defineProps<{
   expanded?: boolean
   workflowName?: string
+  followsVisibleWorkflow?: boolean
   genericNoticeReady?: boolean
-  context?: 'following' | 'mismatch' | 'unavailable' | 'emptyCanvas'
+  hideIntro?: boolean
+  context?: 'mismatch' | 'unavailable' | 'emptyCanvas'
 }>()
 
-const emit = defineEmits<{ showTarget: [] }>()
+const emit = defineEmits<{ showTarget: []; newChat: [] }>()
 const dismissed = useAccountStorage(StorageKeys.agentRunNoticeDismissed, false)
 const contextMessages = {
-  following: 'agent.targetFollowsVisibleWorkflow',
   mismatch: 'agent.viewingDifferentWorkflow',
   unavailable: 'agent.targetWorkflowUnavailable',
   emptyCanvas: 'agent.canvasIsEmptyAfterTurn'
@@ -28,11 +33,37 @@ const contextMessages = {
 const defaultNotice = computed(() =>
   expanded ? 'agent.runNoticeExpanded' : 'agent.runNotice'
 )
+const followsNamedWorkflow = computed(
+  () => followsVisibleWorkflow && Boolean(workflowName)
+)
 const visible = computed(
   () =>
     Boolean(context) ||
-    (!dismissed.value && Boolean(workflowName || genericNoticeReady))
+    (!hideIntro &&
+      !dismissed.value &&
+      !followsNamedWorkflow.value &&
+      Boolean(workflowName || genericNoticeReady))
 )
+const liveness = computed(() => (context ? 'polite' : undefined))
+const contextAction = computed(() => {
+  switch (context) {
+    case 'mismatch':
+      return {
+        label: 'agent.showTarget',
+        name: 'agent.showTargetWorkflow',
+        icon: 'icon-[lucide--arrow-up-right]',
+        run: () => emit('showTarget')
+      }
+    case 'unavailable':
+      return {
+        label: 'agent.newChat',
+        name: 'agent.startNewChat',
+        run: () => emit('newChat')
+      }
+    default:
+      return undefined
+  }
+})
 </script>
 
 <template>
@@ -40,26 +71,22 @@ const visible = computed(
     v-if="visible"
     role="note"
     :data-testid="context ? `agent-run-notice-${context}` : undefined"
-    :aria-live="context ? 'polite' : undefined"
+    :aria-live="liveness"
     class="relative flex items-start gap-2 overflow-hidden rounded-lg bg-background p-4 ring-1 ring-border/50 before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-muted"
   >
-    <span
-      class="icon-[heroicons--information-circle-20-solid] size-5 shrink-0 text-muted-foreground"
+    <i
+      aria-hidden="true"
+      class="icon-[heroicons--information-circle-20-solid] size-5 text-muted-foreground"
     />
     <p class="my-0 min-w-0 flex-1 text-sm">
       <template v-if="context">
-        {{ $t(contextMessages[context]) }}
-        <Button
-          v-if="context === 'mismatch'"
-          type="button"
-          variant="muted-textonly"
-          size="sm"
-          :aria-label="$t('agent.showTargetWorkflow', { workflowName })"
-          @click="emit('showTarget')"
-        >
-          {{ $t('agent.showTarget') }}
-          <span class="icon-[lucide--arrow-up-right] size-4" />
-        </Button>
+        {{ $t(contextMessages[context], { workflowName }) }}
+        <RunNoticeAction
+          v-if="contextAction"
+          v-bind="contextAction"
+          :workflow-name="workflowName"
+          @run="contextAction.run"
+        />
       </template>
       <i18n-t
         v-else-if="workflowName"
@@ -83,7 +110,7 @@ const visible = computed(
       class="shrink-0"
       @click="dismissed = true"
     >
-      <span class="icon-[lucide--x] size-5" />
+      <i aria-hidden="true" class="icon-[lucide--x] size-5" />
     </Button>
   </div>
 </template>

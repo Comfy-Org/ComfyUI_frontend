@@ -5,8 +5,11 @@ import { Load3DViewerHelper } from '@e2e/tests/load3d/Load3DViewerHelper'
 export const load3dTest = comfyPageFixture.extend<{
   load3d: Load3DHelper
 }>({
+  viewport: { width: 1280, height: 1000 },
   load3d: async ({ comfyPage }, use) => {
     await comfyPage.workflow.loadWorkflow('3d/load3d_node')
+    const nodeRef = await comfyPage.nodeOps.getNodeRefById(1)
+    await nodeRef.centerOnNode()
 
     const node = comfyPage.vueNodes.getNodeLocator('1')
     await use(new Load3DHelper(node))

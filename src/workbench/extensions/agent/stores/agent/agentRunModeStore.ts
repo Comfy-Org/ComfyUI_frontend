@@ -1,4 +1,4 @@
-import { until } from '@vueuse/core'
+import { createEventHook, until } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed } from 'vue'
 
@@ -50,6 +50,7 @@ export const useAgentRunModeStore = defineStore('agentRunMode', () => {
   const creditLimit = computed(() => preference.value.credit_limit)
   let saveRevision = 0
   let appliedSaveRevision = 0
+  const userSaved = createEventHook<AgentRunModePreference>()
 
   function apply(nextPreference: AgentRunModePreference): void {
     preference.value = nextPreference
@@ -95,6 +96,7 @@ export const useAgentRunModeStore = defineStore('agentRunMode', () => {
       if (owner !== scope.value || revision <= appliedSaveRevision) return
       appliedSaveRevision = revision
       apply(savedPreference)
+      void userSaved.trigger(savedPreference)
     }
     try {
       const sendGate = useAgentSendGateStore()
@@ -109,5 +111,5 @@ export const useAgentRunModeStore = defineStore('agentRunMode', () => {
 
   localPreference()
 
-  return { mode, creditLimit, load, save }
+  return { mode, creditLimit, load, save, onUserSaved: userSaved.on }
 })

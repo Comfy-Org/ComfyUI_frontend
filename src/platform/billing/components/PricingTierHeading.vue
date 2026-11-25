@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import Badge from '@/components/ui/badge/Badge.vue'
+import Badge from '@comfyorg/design-system/badge/Badge'
 
 const { name, isPopular = false } = defineProps<{
   name: string

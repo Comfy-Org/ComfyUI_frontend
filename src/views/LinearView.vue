@@ -14,9 +14,9 @@ import AppModeToolbar from '@/components/appMode/AppModeToolbar.vue'
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
 import SideToolbar from '@/components/sidebar/SideToolbar.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
-import SplitterGroup from '@/components/ui/splitter/SplitterGroup.vue'
-import SplitterPanel from '@/components/ui/splitter/SplitterPanel.vue'
-import SplitterResizeHandle from '@/components/ui/splitter/SplitterResizeHandle.vue'
+import SplitterGroup from '@comfyorg/design-system/splitter/SplitterGroup'
+import SplitterPanel from '@comfyorg/design-system/splitter/SplitterPanel'
+import SplitterResizeHandle from '@comfyorg/design-system/splitter/SplitterResizeHandle'
 import { usePanelSizing } from '@/composables/usePanelSizing'
 import { COACH_IDS } from '@/platform/onboarding/onboardingTours'
 import { vCoachmark } from '@/platform/onboarding/vCoachmark'
@@ -138,7 +138,7 @@ function dragDrop(e: DragEvent) {
 </script>
 <template>
   <MobileDisplay v-if="mobileDisplay" />
-  <div v-else class="absolute flex size-full flex-col" @dragover.prevent>
+  <div v-else class="absolute flex size-full flex-col">
     <div
       class="workflow-tabs-container pointer-events-auto h-(--workflow-tabs-height) w-full border-b border-border/50 shadow-md"
     >

@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
-import type { SingleSelectProps } from '@/components/ui/single-select/types'
+import SingleSelect from '@comfyorg/design-system/single-select/SingleSelect'
+import type { SingleSelectProps } from '@comfyorg/design-system/lib/single-select/types'
 
 type TranslatedProps = 'accessibleLabel' | 'searchLabel' | 'emptyText'
 

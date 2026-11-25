@@ -2,7 +2,8 @@ import type { Mock } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick } from 'vue'
 
-import { api, ComfyApi } from '@/scripts/api'
+import { ComfyApi } from '@comfyorg/api-client/ComfyApi'
+import { api } from '@/scripts/api'
 
 interface MockWebSocket {
   readyState: number
@@ -52,7 +53,11 @@ describe('API Feature Flags', () => {
 
   describe('Feature flags negotiation', () => {
     it("drops the previous account's agent feature when resetting the socket identity", async () => {
-      const resettingApi = new ComfyApi()
+      const resettingApi = new ComfyApi({
+        isCloud: false,
+        featureFlagOverride: () => undefined,
+        onFreeMemory: () => {}
+      })
       resettingApi.serverFeatureFlags.value = {
         account_a_feature: true,
         agent: { state: 'ready' }
@@ -67,7 +72,11 @@ describe('API Feature Flags', () => {
     })
 
     it('marks feature flags stale without clearing them when resetting the socket identity', async () => {
-      const resettingApi = new ComfyApi()
+      const resettingApi = new ComfyApi({
+        isCloud: false,
+        featureFlagOverride: () => undefined,
+        onFreeMemory: () => {}
+      })
       resettingApi.serverFeatureFlags.value = { account_a_feature: true }
       resettingApi.serverFeatureFlagsSettled.value = true
 
@@ -160,6 +169,32 @@ describe('API Feature Flags', () => {
         reason: null
       })
       expect(api.getServerFeature('api_version')).toBe('1.0.0')
+    })
+
+    it('passes Cloud billing_status pushes on without logging an unknown type', () => {
+      void api.init()
+      const data = {
+        billing_status: { has_funds: true, scoped_has_funds: { agent: true } }
+      }
+
+      wsEventHandlers['message']({
+        data: JSON.stringify({ type: 'billing_status', data })
+      })
+      const onBillingStatus = vi.fn()
+      api.addEventListener('billing_status', onBillingStatus)
+      onTestFinished(() =>
+        api.removeEventListener('billing_status', onBillingStatus)
+      )
+      wsEventHandlers['message']({
+        data: JSON.stringify({ type: 'billing_status', data })
+      })
+
+      expect(console.error).not.toHaveBeenCalledWith(
+        'Unknown message type billing_status'
+      )
+      expect(onBillingStatus).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({ detail: data })
+      )
     })
 
     it('takes the agent feature from a handshake reply that follows an earlier agent_status push', () => {
@@ -506,7 +541,11 @@ describe('API Feature Flags', () => {
   })
 
   it('preserves server-pushed graph change signals', async () => {
-    const socketApi = new ComfyApi()
+    const socketApi = new ComfyApi({
+      isCloud: false,
+      featureFlagOverride: () => undefined,
+      onFreeMemory: () => {}
+    })
     const graphChanged = vi.fn()
     const autoQueueGraphChanged = vi.fn()
     socketApi.addEventListener('graphChanged', graphChanged)

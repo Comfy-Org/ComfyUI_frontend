@@ -1,7 +1,7 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { getActivePinia } from 'pinia'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -10,12 +10,9 @@ import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMed
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
-import type {
-  JobListItem,
-  JobStatus
-} from '@/platform/remote/comfyui/jobs/jobTypes'
-import { useTelemetry } from '@/platform/telemetry'
-import { useCommandStore } from '@/stores/commandStore'
+import type { JobListItem, JobStatus } from '@comfyorg/api-client/jobTypes'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
@@ -27,7 +24,23 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
 }))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
+
+const unreadyDeployment = vi.hoisted(() => ({
+  reason: null as 'stopped' | 'starting' | 'failed' | 'notReady' | null
+}))
+vi.mock(
+  import('@/platform/workspace/composables/useUnreadyDeploymentRun'),
+  async () => {
+    const { computed } = await import('vue')
+    return {
+      useUnreadyDeploymentRun: () => ({
+        unreadyReason: computed(() => unreadyDeployment.reason),
+        openSwitcherInsteadOfRun: async () => unreadyDeployment.reason !== null
+      })
+    }
+  }
+)
 
 const BatchCountEditStub = {
   template: '<div data-testid="batch-count-edit" />'
@@ -51,6 +64,14 @@ const i18n = createI18n({
         runWorkflow: 'Run workflow',
         runWorkflowFront: 'Run workflow front',
         runWorkflowMissingResources: 'Workflow contains missing resources'
+      },
+      deploymentSwitcher: {
+        runBlocked: {
+          stopped: 'This deployment is stopped. Click to switch.',
+          starting: 'This deployment is starting. Click to switch.',
+          failed: 'This deployment failed. Click to switch.',
+          notReady: "This deployment isn't ready. Click to switch."
+        }
       },
       subscription: {
         paymentRecovery: {
@@ -208,6 +229,70 @@ describe('ComfyQueueButton', () => {
       expect(getQueueButtonIcon()).toHaveClass('icon-[lucide--play]')
     }
   )
+
+  it.for([
+    {
+      reason: 'stopped',
+      tooltip: 'This deployment is stopped. Click to switch.'
+    },
+    {
+      reason: 'starting',
+      tooltip: 'This deployment is starting. Click to switch.'
+    },
+    { reason: 'failed', tooltip: 'This deployment failed. Click to switch.' },
+    {
+      reason: 'notReady',
+      tooltip: "This deployment isn't ready. Click to switch."
+    }
+  ] as const)(
+    'says the deployment is $reason and still takes the click',
+    async ({ reason, tooltip }) => {
+      unreadyDeployment.reason = reason
+      onTestFinished(() => {
+        unreadyDeployment.reason = null
+      })
+      const { user } = renderQueueButton()
+      const queueButton = screen.getByTestId('queue-button')
+
+      expect(queueButton).toBeEnabled()
+      await user.hover(queueButton)
+      expect(await screen.findByRole('tooltip')).toHaveTextContent(tooltip)
+
+      await user.click(queueButton)
+      expect(useCommandStore().execute).toHaveBeenCalledWith(
+        'Comfy.QueuePrompt',
+        expect.anything()
+      )
+    }
+  )
+
+  it('turns Run on change off from the run options while the deployment is stopped', async () => {
+    unreadyDeployment.reason = 'stopped'
+    onTestFinished(() => {
+      unreadyDeployment.reason = null
+    })
+    useQueueSettingsStore().mode = 'change'
+    const { user } = renderQueueButton()
+
+    await user.click(screen.getByTestId('queue-mode-menu-trigger'))
+    await user.click(screen.getByRole('menuitemradio', { name: 'Run' }))
+
+    expect(useQueueSettingsStore().mode).toBe('disabled')
+  })
+
+  it('keeps the payment message on a locked Run when the deployment is also stopped', async () => {
+    unreadyDeployment.reason = 'stopped'
+    onTestFinished(() => {
+      unreadyDeployment.reason = null
+    })
+    const { user } = renderQueueButton({ paymentRecoveryLock: 'owner' })
+
+    await user.hover(screen.getByTestId('queue-button'))
+
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(
+      'Update payment to restore this subscription'
+    )
+  })
 
   it('keeps Run enabled with the missing-resource warning and tooltip', async () => {
     const { user } = renderQueueButton()

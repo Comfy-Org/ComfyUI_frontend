@@ -1,6 +1,6 @@
 import type { Locator } from '@playwright/test'
 
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import {

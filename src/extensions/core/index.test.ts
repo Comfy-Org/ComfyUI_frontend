@@ -1,7 +1,7 @@
 import { setActivePinia } from 'pinia'
 import { describe, expect, it } from 'vitest'
 
-import { useExtensionStore } from '@/stores/extensionStore'
+import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { createDisposablePinia } from '@/testing/pinia'
 
 const registeredNames = () =>
@@ -49,6 +49,7 @@ describe('core extensions', () => {
       'Comfy.ImageCompositor',
       'Comfy.ImageCrop',
       'Comfy.LayerEditor',
+      'Comfy.LegacyVhsUnbatchWarning',
       'Comfy.Load3DLazy',
       'Comfy.MaskEditor',
       'Comfy.NoteNode',

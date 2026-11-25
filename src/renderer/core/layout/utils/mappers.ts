@@ -1,17 +1,11 @@
+import type { RectTuple as StoredRect } from '@comfyorg/shared-frontend-utils/geometry'
 import * as Y from 'yjs'
 
-import { toGroupId } from '@/types/groupId'
-import type { GroupId } from '@/types/groupId'
-import type { GroupLayout, NodeLayout } from '@/renderer/core/layout/types'
-import { parseNodeId, toNodeId } from '@/types/nodeId'
-import type { NodeId } from '@/types/nodeId'
-
-/**
- * Stored geometry: one `[x, y, width, height]` tuple. Position, size and bounds
- * are views of it rather than fields of their own, so they cannot disagree, and
- * a whole-tuple replace is the write a CRDT register wants.
- */
-export type StoredRect = [x: number, y: number, width: number, height: number]
+import { toGroupId } from '@comfyorg/graph-model/groupId'
+import type { GroupId } from '@comfyorg/graph-model/groupId'
+import type { GroupLayout, NodeLayout } from '@comfyorg/graph-model/layout'
+import { parseNodeId, toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 type StoredNode = {
   id: NodeId

@@ -1,0 +1,20 @@
+# Description: Fails while a PR carries the do-not-merge label; passes in the merge queue so the required check never blocks a queued group
+name: 'CI: Do Not Merge'
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, labeled, unlabeled]
+  merge_group:
+
+permissions: {}
+
+jobs:
+  do-not-merge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    steps:
+      - name: Fail when do-not-merge is set
+        if: github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'do-not-merge')
+        run: |
+          echo "::error::Remove the do-not-merge label to unblock this PR."
+          exit 1

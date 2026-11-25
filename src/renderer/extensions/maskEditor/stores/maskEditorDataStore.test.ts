@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useMaskEditorDataStore } from '@/renderer/extensions/maskEditor/stores/maskEditorDataStore'
 import type { EditorOutputData } from '@/renderer/extensions/maskEditor/stores/maskEditorDataStore'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 const SOURCE_NODE_ID = toNodeId(1)
 const RESET_NODE_ID = toNodeId(42)

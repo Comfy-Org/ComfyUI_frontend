@@ -1,6 +1,6 @@
 import { expect, mergeTests } from '@playwright/test'
 
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import { webSocketFixture } from '@e2e/fixtures/ws'
@@ -76,7 +76,6 @@ test.describe(
         const page = comfyPage.page
 
         await agentPanel.open()
-        await agentPanel.selectWorkflow('restart_node_refresh')
 
         const deliverRestartReport = () =>
           test.step('deliver the agent restart report', async () => {

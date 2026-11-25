@@ -31,7 +31,15 @@ type RefusalCopy =
   | 'sales_managed'
   | 'unfinished'
   | 'change_unnamed'
+  | 'purchase_ended'
   | 'unknown'
+
+const ENDED_PURCHASE_CODES: ReadonlySet<string> = new Set([
+  'PURCHASE_SUPERSEDED',
+  'PURCHASE_EXPIRED',
+  'PURCHASE_NOT_FOUND',
+  'PURCHASE_NOT_PAYABLE_HERE'
+])
 
 const REFUSAL_COPY: Readonly<Record<CapabilityDenialReason, RefusalCopy>> = {
   not_workspace_owner: 'owner',
@@ -56,8 +64,10 @@ const REFUSAL_COPY: Readonly<Record<CapabilityDenialReason, RefusalCopy>> = {
   membership_managed_by_directory: 'unknown',
   personal_workspace_creator: 'unknown',
   workspace_creator: 'unknown',
+  workspace_owner: 'unknown',
   only_owner: 'unknown',
   billing_state_unknown: 'unknown',
+  topup_purchases_paused: 'unknown',
   free_tier_exhausted: 'unknown',
   invite_capacity_reached: 'unknown',
   manual_block: 'unknown',
@@ -66,6 +76,7 @@ const REFUSAL_COPY: Readonly<Record<CapabilityDenialReason, RefusalCopy>> = {
   no_upgrade_available: 'unknown',
   partner_governance_not_entitled: 'unknown',
   plan_ending: 'unknown',
+  plan_not_enterprise: 'unknown',
   project_cap_exceeded: 'unknown',
   rollout_disabled: 'unknown',
   sales_managed: 'sales_managed',
@@ -116,7 +127,7 @@ export type EndingScreen =
       readonly code: string
       readonly receipt?: BillingOperationReceipt
     }
-  | { readonly kind: 'unconfirmed'; readonly code: string }
+  | { readonly kind: 'unconfirmed'; readonly code?: string }
   | {
       readonly kind: 'refused'
       readonly code: string
@@ -157,7 +168,9 @@ export function endingOf(page: CheckoutPage): EndingScreen | undefined {
         code: PLAN_UNAVAILABLE_CODE[page.reason]
       }
     case 'unconfirmed':
-      return { kind: 'unconfirmed', code: page.operationId }
+      return page.operationId === undefined
+        ? { kind: 'unconfirmed' }
+        : { kind: 'unconfirmed', code: page.operationId }
     case 'waiting':
       return waitingEnding(page)
     case 'terminal':
@@ -175,7 +188,7 @@ function refusedEnding(
     return {
       kind: 'refused',
       code,
-      copy: 'unknown',
+      copy: ENDED_PURCHASE_CODES.has(code) ? 'purchase_ended' : 'unknown',
       ...(message === undefined ? {} : { serverMessage: message })
     }
   }

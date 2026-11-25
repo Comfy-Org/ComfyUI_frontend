@@ -7,8 +7,8 @@ import type { useMissingMediaStore } from '@/platform/workflowErrors/missingMedi
 import type { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useApp } from '@/scripts/appInstance'
-import type { NodeError } from '@/platform/remote/comfyui/types'
-import { getParentExecutionIds } from '@/types/nodeIdentification'
+import type { NodeError } from '@comfyorg/api-client/types'
+import { getParentExecutionIds } from '@comfyorg/graph-model/nodeIdentification'
 import { hasErrorForSlot } from '@/utils/executionErrorUtil'
 import { forEachNode, getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 

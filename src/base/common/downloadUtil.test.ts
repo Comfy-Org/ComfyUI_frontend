@@ -8,6 +8,9 @@ import {
   extractFilenameFromContentDisposition,
   openFileInNewTab
 } from '@/base/common/downloadUtil'
+import type { AuthCredential } from '@comfyorg/api-client/authTypes'
+import { useTelemetry } from '@comfyorg/telemetry'
+import type { AssetDownloadMetadata } from '@comfyorg/telemetry/types'
 
 const { mockIsCloud } = vi.hoisted(() => ({
   mockIsCloud: { value: false }
@@ -23,6 +26,7 @@ vi.mock(
 )
 
 vi.mock(import('@/i18n'))
+vi.mock(import('@comfyorg/telemetry'))
 
 let createObjectURLSpy: MockInstance<typeof URL.createObjectURL>
 let revokeObjectURLSpy: MockInstance<typeof URL.revokeObjectURL>
@@ -324,6 +328,166 @@ describe('downloadUtil', () => {
         })
       ).rejects.toBe(networkError)
       expect(mockLink.click).not.toHaveBeenCalled()
+    })
+
+    describe('telemetry', () => {
+      const settled = {
+        auth_credential: 'bearer',
+        route: 'assets_content',
+        media_kind: 'video',
+        surface: 'gallery',
+        duration_ms: 250,
+        page_age_ms: 1250,
+        online: true
+      } satisfies Partial<AssetDownloadMetadata>
+
+      function bearerFetch(respond: () => Promise<Response>) {
+        return (
+          _url: string,
+          onAuthCredential: (credential: AuthCredential) => void
+        ) => {
+          onAuthCredential('bearer')
+          return respond()
+        }
+      }
+
+      beforeEach(() => {
+        vi.spyOn(performance, 'now')
+          .mockReturnValueOnce(1000)
+          .mockReturnValue(1250)
+      })
+
+      it.for([
+        {
+          name: 'completed',
+          respond: () => Promise.resolve(new Response('abcd')),
+          expected: { outcome: 'completed', phase: 'body', size_bytes: 4 }
+        },
+        {
+          name: 'http',
+          respond: () => Promise.resolve(new Response(null, { status: 404 })),
+          expected: {
+            outcome: 'failed',
+            phase: 'headers',
+            failure_kind: 'http',
+            status: 404
+          }
+        },
+        {
+          name: 'network',
+          respond: () => Promise.reject(new TypeError('Failed to fetch')),
+          expected: {
+            outcome: 'failed',
+            phase: 'headers',
+            failure_kind: 'network'
+          }
+        },
+        {
+          name: 'abort',
+          respond: () =>
+            Promise.reject(new DOMException('aborted', 'AbortError')),
+          expected: {
+            outcome: 'failed',
+            phase: 'headers',
+            failure_kind: 'abort'
+          }
+        },
+        {
+          name: 'timeout',
+          respond: () =>
+            Promise.reject(new DOMException('timed out', 'TimeoutError')),
+          expected: {
+            outcome: 'failed',
+            phase: 'headers',
+            failure_kind: 'timeout'
+          }
+        },
+        {
+          name: 'body_read',
+          respond: () => {
+            const response = new Response('abcd')
+            vi.spyOn(response, 'blob').mockRejectedValue(
+              new TypeError('network error')
+            )
+            return Promise.resolve(response)
+          },
+          expected: {
+            outcome: 'failed',
+            phase: 'body',
+            failure_kind: 'body_read'
+          }
+        }
+      ] as const)('reports a $name download', async ({ respond, expected }) => {
+        await downloadFileAsBlob('/api/assets/abc-123/content', {
+          filename: 'clip.mp4',
+          fetch: bearerFetch(respond),
+          surface: 'gallery'
+        }).catch(() => {})
+
+        expect(
+          useTelemetry()?.trackAssetDownload
+        ).toHaveBeenCalledExactlyOnceWith({ ...settled, ...expected })
+      })
+
+      it('rethrows the original error after reporting it', async () => {
+        const networkError = new TypeError('Failed to fetch')
+
+        await expect(
+          downloadFileAsBlob('/api/assets/abc-123/content', {
+            filename: 'clip.mp4',
+            fetch: bearerFetch(() => Promise.reject(networkError))
+          })
+        ).rejects.toBe(networkError)
+      })
+
+      it.for([
+        { origin: 'same-origin', base: '', credential: 'session-cookie' },
+        {
+          origin: 'cross-origin',
+          base: 'https://storage.example.com',
+          credential: 'none'
+        }
+      ] as const)(
+        'reports $credential for a bare $origin fetch',
+        async ({ base, credential }) => {
+          vi.mocked(fetch).mockResolvedValue(new Response('abcd'))
+
+          await downloadFileAsBlob(
+            `${base}/api/view?filename=model.glb&type=output`
+          )
+
+          expect(
+            useTelemetry()?.trackAssetDownload
+          ).toHaveBeenCalledExactlyOnceWith({
+            ...settled,
+            auth_credential: credential,
+            route: 'view',
+            media_kind: '3d',
+            surface: 'unknown',
+            outcome: 'completed',
+            phase: 'body',
+            size_bytes: 4
+          })
+        }
+      )
+
+      it('reports an unreported credential when fetch fails before attaching one', async () => {
+        await downloadFileAsBlob('/api/assets/abc-123/content', {
+          filename: 'clip.mp4',
+          fetch: () => Promise.reject(new Error('auth not ready')),
+          surface: 'gallery'
+        }).catch(() => {})
+
+        expect(
+          useTelemetry()?.trackAssetDownload
+        ).toHaveBeenCalledExactlyOnceWith({
+          ...settled,
+          auth_credential: 'unreported',
+          outcome: 'failed',
+          phase: 'headers',
+          failure_kind: 'unknown'
+        })
+      })
     })
   })
 

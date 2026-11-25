@@ -3,7 +3,7 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'
 import { uploadTempFile } from '@/services/uploadTempFile'
-import { getErrorMessage } from '@/utils/errorUtil'
+import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 
 class Load3dUtils {
   static async uploadTempImage(
@@ -106,6 +106,17 @@ class Load3dUtils {
     ].join('&')
 
     return `/view?${params}`
+  }
+
+  static isSameResourceURL(a: string | null, b: string): boolean {
+    if (!a) return false
+    const withoutRand = (url: string) => {
+      const parsed = new URL(url, window.location.origin)
+      parsed.searchParams.delete('rand')
+      parsed.searchParams.sort()
+      return parsed.toString()
+    }
+    return withoutRand(a) === withoutRand(b)
   }
 
   static async uploadMultipleFiles(files: FileList, subfolder: string = '3d') {

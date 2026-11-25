@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useReconnectQueueRefresh } from '@/composables/useReconnectQueueRefresh'
-import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
+import type { JobListItem } from '@comfyorg/api-client/jobTypes'
 import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
@@ -141,6 +141,152 @@ describe('useReconnectQueueRefresh', () => {
           'execution_success',
           { prompt_id: 'job-1', timestamp: expect.any(Number) }
         ]
+      ])
+    })
+
+    it('sends an expanded node output to the node it is displayed on', async () => {
+      followRun('job-1')
+      vi.mocked(api.getJobDetail).mockResolvedValue({
+        ...makeJob('job-1', 'completed'),
+        outputs: {
+          '15.0.0.3': { images: [image] },
+          '9': { images: [image] }
+        },
+        execution_meta: {
+          '15.0.0.3': {
+            node_id: '15.0.0.3',
+            display_node: '15',
+            parent_node: '15',
+            real_node_id: '5'
+          },
+          '9': { node_id: '9', display_node: '9' },
+          '4': null
+        }
+      })
+
+      await useReconnectQueueRefresh()()
+
+      expect(replayedExecutedFrames()).toEqual([
+        ['executed', expect.objectContaining({ node: '9', display_node: '9' })],
+        [
+          'executed',
+          expect.objectContaining({ node: '15.0.0.3', display_node: '15' })
+        ]
+      ])
+    })
+
+    it.for([
+      ['no metadata', undefined],
+      ['malformed metadata', 'not-an-object'],
+      [
+        'metadata without a display node',
+        { '15.0.0.3': { node_id: '15.0.0.3' } }
+      ]
+    ] as const)(
+      'falls back to the output key when the job detail has %s',
+      async ([, executionMeta]) => {
+        followRun('job-1')
+        vi.mocked(api.getJobDetail).mockResolvedValue({
+          ...makeJob('job-1', 'completed'),
+          outputs: { '15.0.0.3': { images: [image] } },
+          execution_meta: executionMeta
+        })
+
+        await useReconnectQueueRefresh()()
+
+        expect(replayedExecutedFrames()).toEqual([
+          [
+            'executed',
+            expect.objectContaining({
+              node: '15.0.0.3',
+              display_node: '15.0.0.3'
+            })
+          ]
+        ])
+      }
+    )
+
+    it('replays a display node output before the expanded output, as live', async () => {
+      const own = { images: [{ ...image, filename: 'own.png' }] }
+      const child = { images: [{ ...image, filename: 'child.png' }] }
+      followRun('job-1')
+      vi.mocked(api.getJobDetail).mockResolvedValue({
+        ...makeJob('job-1', 'completed'),
+        outputs: { '17:15.0.0.3': child, '17:15': own },
+        execution_meta: {
+          '17:15': { node_id: '17:15', display_node: '17:15' },
+          '17:15.0.0.3': {
+            node_id: '17:15.0.0.3',
+            display_node: '17:15',
+            parent_node: '17:15'
+          }
+        }
+      })
+
+      await useReconnectQueueRefresh()()
+
+      expect(replayedExecutedFrames()).toEqual([
+        [
+          'executed',
+          expect.objectContaining({
+            node: '17:15',
+            display_node: '17:15',
+            output: own
+          })
+        ],
+        [
+          'executed',
+          expect.objectContaining({
+            node: '17:15.0.0.3',
+            display_node: '17:15',
+            output: child
+          })
+        ]
+      ])
+    })
+
+    it('keeps a cached output on its own node when its metadata names the node that first ran it', async () => {
+      followRun('job-1')
+      vi.mocked(api.getJobDetail).mockResolvedValue({
+        ...makeJob('job-1', 'completed'),
+        outputs: { '7': { images: [image] } },
+        execution_meta: { '7': { node_id: '4', display_node: '4' } }
+      })
+
+      await useReconnectQueueRefresh()()
+
+      expect(replayedExecutedFrames()).toEqual([
+        ['executed', expect.objectContaining({ node: '7', display_node: '7' })]
+      ])
+    })
+
+    it('falls back to the output key when the display node is not a node id', async () => {
+      followRun('job-1')
+      vi.mocked(api.getJobDetail).mockResolvedValue({
+        ...makeJob('job-1', 'completed'),
+        outputs: { '7': { images: [image] } },
+        execution_meta: { '7': { node_id: '7', display_node: ':' } }
+      })
+
+      await useReconnectQueueRefresh()()
+
+      expect(replayedExecutedFrames()).toEqual([
+        ['executed', expect.objectContaining({ node: '7', display_node: '7' })]
+      ])
+    })
+
+    it('ignores execution_meta that comes back as a list', async () => {
+      followRun('job-1')
+      vi.mocked(api.getJobDetail).mockResolvedValue({
+        ...makeJob('job-1', 'completed'),
+        outputs: { '0': { images: [image] } },
+        execution_meta: [{ display_node: '9' }]
+      })
+
+      await useReconnectQueueRefresh()()
+
+      expect(replayedExecutedFrames()).toEqual([
+        ['executed', expect.objectContaining({ node: '0', display_node: '0' })]
       ])
     })
 

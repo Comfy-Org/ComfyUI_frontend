@@ -2,8 +2,8 @@ import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import { toNodeId } from '@/types/nodeId'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import {
   agentTest as test,
@@ -209,11 +209,11 @@ async function wireAutogrowNodeAndSwitchTabs(page: Page) {
     page.evaluate((id) => {
       const node = window.app!.graph.getNodeById(id)
       return (node?.inputs ?? [])
-        .filter((input) => input.name.startsWith('model.images.'))
         .map((input, index) => ({
           name: input.name,
           connected: node!.getInputLink(index) !== null
         }))
+        .filter(({ name }) => name.startsWith('model.images.'))
     }, toNodeId(GPT_NODE_ID))
   const readNodeColor = () =>
     page.evaluate((id) => {
@@ -229,10 +229,9 @@ async function wireAutogrowNodeAndSwitchTabs(page: Page) {
       { id: toNodeId(SOURCE_NODE_ID), widget: MARKER_WIDGET }
     )
 
-  await test.step('open the agent panel and target the workflow', async () => {
+  await test.step('open the agent panel', async () => {
     await loadSeedIntoActiveTab(page, seed)
     await agentPanel.open()
-    await agentPanel.selectWorkflow()
   })
 
   await test.step('send a turn so the session binds the workflow', async () => {
@@ -256,7 +255,7 @@ async function wireAutogrowNodeAndSwitchTabs(page: Page) {
       { name: IMAGE_1_NAME, connected: true },
       { name: IMAGE_2_NAME, connected: false }
     ])
-    await expect(vueNodes.getInputSlotRow(gptNodeId, 1)).toContainText(
+    await expect(vueNodes.getInputSlotRow(gptNodeId, 2)).toContainText(
       IMAGE_2_FRIENDLY_LABEL
     )
   })

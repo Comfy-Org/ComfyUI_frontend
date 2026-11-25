@@ -4,8 +4,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick } from 'vue'
 import type { EffectScope } from 'vue'
 
-import type { AutoReloadSettings } from '@/platform/workspace/api/workspaceApi'
-import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import type { AutoReloadSettings } from '@comfyorg/billing-core'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { billingApi } from '@/platform/billing/api/billingApi'
+import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { useAuthStore } from '@/stores/authStore'
@@ -14,8 +16,8 @@ import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPo
 import { useBillingAutoTopUpCard } from './useBillingAutoTopUpCard'
 
 vi.mock(import('firebase/auth'), { spy: true })
-vi.mock(import('@/platform/workspace/api/workspaceApi'))
-vi.mock(import('@/platform/telemetry/reportError'))
+vi.mock(import('@/platform/billing/api/billingApi'))
+vi.mock(import('@comfyorg/telemetry/reportError'))
 
 async function switchBillingScope(actorId: string, workspaceId: string) {
   stubFirebaseAuthHarness()
@@ -55,28 +57,35 @@ function settingsWith(
   status: AutoReloadSettings['status']
 ): AutoReloadSettings {
   return {
+    auto_top_up_conflict: false,
+    card_expiry: null,
     configured: status !== 'off',
     cycle_resets_at: '2026-11-28T00:00:00Z',
+    declined_payment_method: null,
     disabled_reason: null,
     enabled: status === 'on' || status === 'failed',
     last_failure_at: null,
     last_failure_reason: null,
     max_monthly_budget_cents: 100000,
+    max_reload_credits: 100000,
     min_reload_credits: 1000,
     monthly_budget_cents: 20000,
+    monthly_budget_is_default: false,
     paused_by_budget: false,
+    paused_by_budget_remainder: false,
     paused_by_decline: false,
     reload_amount_cents: 2500,
     reload_credits: 5275,
     spent_this_cycle_cents: 0,
     status,
+    target_credits: 6275,
     threshold_credits: 1000
   }
 }
 
 function heldReads() {
   const held: Array<(settings: AutoReloadSettings) => void> = []
-  vi.mocked(workspaceApi.getBillingAutoReload).mockImplementation(
+  vi.mocked(billingApi.getBillingAutoReload).mockImplementation(
     () =>
       new Promise<AutoReloadSettings>((resolve) => {
         held.push(resolve)
@@ -163,7 +172,7 @@ describe('useBillingAutoTopUpCard across a workspace switch', () => {
 
   it('shows loading while a failed read is retried', async () => {
     await switchBillingScope('actor-a', 'workspace-a')
-    vi.mocked(workspaceApi.getBillingAutoReload).mockRejectedValueOnce(
+    vi.mocked(billingApi.getBillingAutoReload).mockRejectedValueOnce(
       new Error('auto reload down')
     )
     const card = mountRead()
@@ -197,14 +206,14 @@ describe('useBillingAutoTopUpCard across a workspace switch', () => {
 
   it('keeps the last settings when a refresh of the same workspace fails', async () => {
     await switchBillingScope('actor-a', 'workspace-a')
-    vi.mocked(workspaceApi.getBillingAutoReload).mockResolvedValueOnce(
+    vi.mocked(billingApi.getBillingAutoReload).mockResolvedValueOnce(
       settingsWith('failed')
     )
     const card = mountRead()
     card.ensureRead()
     await vi.waitFor(() => expect(card.state.value.kind).toBe('loaded'))
 
-    vi.mocked(workspaceApi.getBillingAutoReload).mockRejectedValueOnce(
+    vi.mocked(billingApi.getBillingAutoReload).mockRejectedValueOnce(
       new Error('auto reload down')
     )
     await card.retry()
@@ -212,6 +221,94 @@ describe('useBillingAutoTopUpCard across a workspace switch', () => {
     expect(card.state.value).toMatchObject({
       kind: 'loaded',
       settings: { status: 'failed' }
+    })
+  })
+})
+
+describe('useBillingAutoTopUpCard while a billing operation holds the workspace', () => {
+  let scope: EffectScope
+
+  afterEach(() => scope.stop())
+
+  function mountRead() {
+    scope = effectScope()
+    return scope.run(() => useBillingAutoTopUpCard())!
+  }
+
+  const busy = () =>
+    new WorkspaceApiError(
+      'a subscription change is already in progress',
+      409,
+      'SUBSCRIPTION_CHANGE_IN_PROGRESS',
+      undefined,
+      'getBillingAutoReload'
+    )
+
+  it('does not report the busy answer, keeps the last settings and reads again', async () => {
+    await switchBillingScope('actor-a', 'workspace-a')
+    vi.mocked(billingApi.getBillingAutoReload).mockResolvedValueOnce(
+      settingsWith('on')
+    )
+    const card = mountRead()
+    card.ensureRead()
+    await vi.waitFor(() => expect(card.state.value.kind).toBe('loaded'))
+
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    vi.mocked(billingApi.getBillingAutoReload).mockRejectedValueOnce(busy())
+    await card.retry()
+
+    expect(reportError).not.toHaveBeenCalled()
+    expect(card.state.value).toMatchObject({
+      kind: 'loaded',
+      settings: { status: 'on' }
+    })
+
+    vi.mocked(billingApi.getBillingAutoReload).mockResolvedValueOnce(
+      settingsWith('failed')
+    )
+    await vi.advanceTimersByTimeAsync(5_000)
+    await vi.waitFor(() =>
+      expect(card.state.value).toMatchObject({
+        kind: 'loaded',
+        settings: { status: 'failed' }
+      })
+    )
+    expect(billingApi.getBillingAutoReload).toHaveBeenCalledTimes(3)
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('stops reading again after a few busy answers in a row', async () => {
+    await switchBillingScope('actor-a', 'workspace-a')
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    vi.mocked(billingApi.getBillingAutoReload).mockRejectedValue(busy())
+    const card = mountRead()
+    card.ensureRead()
+    await vi.waitFor(() => expect(card.state.value.kind).toBe('unavailable'))
+
+    for (let i = 0; i < 6; i++) await vi.advanceTimersByTimeAsync(5_000)
+
+    expect(billingApi.getBillingAutoReload).toHaveBeenCalledTimes(4)
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('still reports any other failed read', async () => {
+    await switchBillingScope('actor-a', 'workspace-a')
+    vi.mocked(billingApi.getBillingAutoReload).mockRejectedValueOnce(
+      new WorkspaceApiError(
+        'boom',
+        500,
+        undefined,
+        undefined,
+        'getBillingAutoReload'
+      )
+    )
+    const card = mountRead()
+    card.ensureRead()
+    await vi.waitFor(() => expect(card.state.value.kind).toBe('unavailable'))
+
+    expect(reportError).toHaveBeenCalledWith(expect.any(WorkspaceApiError), {
+      errorType: 'auto_top_up_read_failed',
+      surface: 'billing'
     })
   })
 })

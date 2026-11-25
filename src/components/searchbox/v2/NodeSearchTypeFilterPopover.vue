@@ -4,10 +4,8 @@
       <slot />
     </PopoverTrigger>
     <PopoverContent
-      side="bottom"
-      :side-offset="4"
-      :collision-padding="10"
-      class="z-1001 w-64 rounded-lg border bg-background px-4 py-1 shadow-md will-change-[transform,opacity] data-[side=bottom]:slide-in-from-top-2 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95"
+      class="w-64 rounded-lg px-4 py-1"
+      data-testid="type-filter-popover"
       @open-auto-focus="onOpenAutoFocus"
       @close-auto-focus="onCloseAutoFocus"
       @escape-key-down.prevent
@@ -20,9 +18,7 @@
         @update:model-value="onSelectionChange"
       >
         <div class="mt-2 flex h-8 items-center gap-2 rounded-sm border px-2">
-          <i
-            class="icon-[lucide--search] size-4 shrink-0 text-muted-foreground"
-          />
+          <i class="icon-[lucide--search] text-muted-foreground" />
           <ListboxFilter
             ref="searchFilterRef"
             v-model="searchQuery"
@@ -99,12 +95,13 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { AcceptableValue } from 'reka-ui'
+
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import {
   ListboxContent,
   ListboxFilter,
   ListboxItem,
   ListboxRoot,
-  PopoverContent,
   PopoverRoot,
   PopoverTrigger
 } from 'reka-ui'

@@ -1,5 +1,6 @@
+import { until } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
+import { computed, ref, shallowRef } from 'vue'
 
 import { t } from '@/i18n'
 // oxlint-disable-next-line comfy/no-restricted-paths
@@ -10,8 +11,11 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { getAncestorExecutionIds } from '@/types/nodeIdentification'
-import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
+import { getAncestorExecutionIds } from '@comfyorg/graph-model/nodeIdentification'
+import type {
+  NodeExecutionId,
+  NodeLocatorId
+} from '@comfyorg/graph-model/nodeIdentification'
 import { getActiveGraphNodeIds } from '@/utils/graphTraversalUtil'
 
 /**
@@ -25,6 +29,11 @@ export const useMissingModelStore = defineStore('missingModel', () => {
 
   const missingModelCandidates = ref<MissingModelCandidate[] | null>(null)
   const isRefreshingMissingModels = ref(false)
+  const scanningController = shallowRef<AbortController | null>(null)
+  const workflowLoadsInProgress = ref(0)
+  const isScanningMissingModels = computed(
+    () => workflowLoadsInProgress.value > 0 || scanningController.value !== null
+  )
 
   /** Candidates to display; `null` while the missing models warning is off. */
   const visibleMissingModelCandidates = computed(() =>
@@ -90,7 +99,7 @@ export const useMissingModelStore = defineStore('missingModel', () => {
   })
 
   // Persists across component re-mounts so that download progress
-  // survives tab switches within the right-side panel.
+  // survives tab switches within the properties panel.
   const modelExpandState = ref<Record<string, boolean>>({})
   const selectedLibraryModel = ref<Record<string, string>>({})
   const importTaskIds = ref<Record<string, string>>({})
@@ -102,8 +111,30 @@ export const useMissingModelStore = defineStore('missingModel', () => {
 
   function createVerificationAbortController(): AbortController {
     _verificationAbortController?.abort()
-    _verificationAbortController = new AbortController()
-    return _verificationAbortController
+    const controller = new AbortController()
+    _verificationAbortController = controller
+    scanningController.value = controller
+    controller.signal.addEventListener('abort', () => endScan(controller), {
+      once: true
+    })
+    return controller
+  }
+
+  function endScan(controller: AbortController) {
+    if (scanningController.value === controller) scanningController.value = null
+  }
+
+  async function untilScanEnds() {
+    await until(isScanningMissingModels).toBe(false)
+  }
+
+  async function whileWorkflowLoads<T>(load: () => Promise<T>): Promise<T> {
+    workflowLoadsInProgress.value++
+    try {
+      return await load()
+    } finally {
+      workflowLoadsInProgress.value--
+    }
   }
 
   function setMissingModels(models: MissingModelCandidate[]) {
@@ -115,23 +146,23 @@ export const useMissingModelStore = defineStore('missingModel', () => {
     nodeIds: Set<string>
   ) {
     if (!missingModelCandidates.value) return
-    missingModelCandidates.value = missingModelCandidates.value.filter(
+    const remaining = missingModelCandidates.value.filter(
       (m) =>
         m.name !== modelName ||
         m.nodeId == null ||
         !nodeIds.has(String(m.nodeId))
     )
-    if (!missingModelCandidates.value.length)
-      missingModelCandidates.value = null
+    if (remaining.length === missingModelCandidates.value.length) return
+    missingModelCandidates.value = remaining.length ? remaining : null
   }
 
   function removeMissingModelByWidget(nodeId: string, widgetName: string) {
     if (!missingModelCandidates.value) return
-    missingModelCandidates.value = missingModelCandidates.value.filter(
+    const remaining = missingModelCandidates.value.filter(
       (m) => !(String(m.nodeId) === nodeId && m.widgetName === widgetName)
     )
-    if (!missingModelCandidates.value.length)
-      missingModelCandidates.value = null
+    if (remaining.length === missingModelCandidates.value.length) return
+    missingModelCandidates.value = remaining.length ? remaining : null
   }
 
   function clearInteractionStateForName(name: string) {
@@ -147,6 +178,7 @@ export const useMissingModelStore = defineStore('missingModel', () => {
         .filter((m) => String(m.nodeId) === nodeId)
         .map((m) => m.name)
     )
+    if (removedNames.size === 0) return
     missingModelCandidates.value = missingModelCandidates.value.filter(
       (m) => String(m.nodeId) !== nodeId
     )
@@ -282,19 +314,22 @@ export const useMissingModelStore = defineStore('missingModel', () => {
 
     isRefreshingMissingModels.value = true
     try {
-      await useApp().refreshMissingModels({
+      const { surfaced } = await useApp().refreshMissingModels({
         silent: true,
         reloadDefs: options.reloadDefs
       })
+      const release = () => {
+        isRefreshingMissingModels.value = false
+      }
+      void surfaced.then(release, release)
     } catch (error) {
+      isRefreshingMissingModels.value = false
       if (isAbortError(error)) return
 
       console.error('Failed to refresh missing models:', error)
       useToast().error(t('g.error'), {
         description: t('rightSidePanel.missingModels.refreshFailed')
       })
-    } finally {
-      isRefreshingMissingModels.value = false
     }
   }
 
@@ -302,6 +337,7 @@ export const useMissingModelStore = defineStore('missingModel', () => {
     missingModelCandidates,
     visibleMissingModelCandidates,
     isRefreshingMissingModels,
+    isScanningMissingModels,
     hasMissingModels,
     missingModelCount,
     missingModelNodeIds,
@@ -318,6 +354,9 @@ export const useMissingModelStore = defineStore('missingModel', () => {
     clearMissingModels,
     refreshMissingModels,
     createVerificationAbortController,
+    endScan,
+    untilScanEnds,
+    whileWorkflowLoads,
 
     hasMissingModelOnNode,
     isWidgetMissingModel,

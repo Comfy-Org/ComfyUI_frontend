@@ -267,6 +267,121 @@ describe('awaitCheckoutUiVariant', () => {
   })
 })
 
+describe('awaitUnifiedBillingSettings', () => {
+  it.for<{ name: string; reply: () => Promise<Response>; on: boolean }>([
+    {
+      name: 'true',
+      reply: async () => answer({ unified_billing_settings: true }),
+      on: true
+    },
+    {
+      name: 'false',
+      reply: async () => answer({ unified_billing_settings: false }),
+      on: false
+    },
+    {
+      name: 'a non-boolean value',
+      reply: async () => answer({ unified_billing_settings: 'true' }),
+      on: false
+    },
+    {
+      name: 'an absent key',
+      reply: async () => answer({ firebase_config: {} }),
+      on: false
+    },
+    {
+      name: 'a server error',
+      reply: async () => answer({ unified_billing_settings: true }, 500),
+      on: false
+    },
+    {
+      name: 'a refused request',
+      reply: () => Promise.reject(new TypeError('Failed to fetch')),
+      on: false
+    }
+  ])('answers $on for $name', async ({ reply, on }) => {
+    respondToFetch(FEATURES_URL, reply)
+    const { awaitUnifiedBillingSettings } = await freshCheckoutUi()
+
+    expect(await awaitUnifiedBillingSettings()).toBe(on)
+  })
+
+  it('answers false for a signed-out visitor without asking the server', async () => {
+    h.phase = 'signed-out'
+    const { awaitUnifiedBillingSettings } = await freshCheckoutUi()
+
+    expect(await awaitUnifiedBillingSettings()).toBe(false)
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
+  it('shares one features read with the checkout UI variant', async () => {
+    respondToFetch(FEATURES_URL, () =>
+      answer({
+        billing_web_checkout_ui: 'full_page',
+        unified_billing_settings: true
+      })
+    )
+    const { awaitCheckoutUiVariant, awaitUnifiedBillingSettings } =
+      await freshCheckoutUi()
+
+    expect(
+      await Promise.all([
+        awaitCheckoutUiVariant(),
+        awaitUnifiedBillingSettings()
+      ])
+    ).toEqual(['full_page', true])
+    expect(fetch).toHaveBeenCalledOnce()
+  })
+
+  it.for([true, false])(
+    'honours a JSON dev override of %s without asking the server',
+    async (on) => {
+      localStorage.setItem('ff:unified_billing_settings', JSON.stringify(on))
+      const { awaitUnifiedBillingSettings } = await freshCheckoutUi()
+
+      expect(await awaitUnifiedBillingSettings()).toBe(on)
+      expect(fetch).not.toHaveBeenCalled()
+    }
+  )
+})
+
+describe('awaitPlanChangeCardChoice', () => {
+  it.for<{ name: string; reply: () => Promise<Response>; on: boolean }>([
+    {
+      name: 'true',
+      reply: async () => answer({ billing_web_plan_change_card_choice: true }),
+      on: true
+    },
+    {
+      name: 'false',
+      reply: async () => answer({ billing_web_plan_change_card_choice: false }),
+      on: false
+    },
+    {
+      name: 'a non-boolean value',
+      reply: async () =>
+        answer({ billing_web_plan_change_card_choice: 'true' }),
+      on: false
+    },
+    {
+      name: 'an absent key',
+      reply: async () => answer({ firebase_config: {} }),
+      on: false
+    },
+    {
+      name: 'a server error',
+      reply: async () =>
+        answer({ billing_web_plan_change_card_choice: true }, 500),
+      on: false
+    }
+  ])('answers $on for $name', async ({ reply, on }) => {
+    respondToFetch(FEATURES_URL, reply)
+    const { awaitPlanChangeCardChoice } = await freshCheckoutUi()
+
+    expect(await awaitPlanChangeCardChoice()).toBe(on)
+  })
+})
+
 describe('settleCheckoutUi', () => {
   it.for<{ variant: 'embedded' | 'full_page' }>([
     { variant: 'embedded' },
@@ -291,4 +406,98 @@ describe('settleCheckoutUi', () => {
       expect(settleCheckoutUi(settled, late)).toBe(settled)
     }
   )
+})
+
+describe('awaitInPageTopup', () => {
+  it.for([true, false])(
+    'follows unified_billing_settings: %s outside a handoff tab',
+    async (on) => {
+      respondToFetch(FEATURES_URL, async () =>
+        answer({ unified_billing_settings: on })
+      )
+      const { awaitInPageTopup } = await freshCheckoutUi()
+
+      expect(await awaitInPageTopup()).toBe(on)
+    }
+  )
+})
+
+describe('in a billing handoff tab', () => {
+  async function handoffCheckoutUi(
+    read: () => Promise<'embedded' | 'full_page' | undefined>
+  ) {
+    const checkoutUi = await freshCheckoutUi()
+    const { handoffTab } = await import('@/handoff/handoffTab')
+    handoffTab.value = { kind: 'ended', ending: 'unconfirmed' }
+    checkoutUi.provideHandoffCheckoutUiRead(read)
+    return checkoutUi
+  }
+
+  it.for([
+    { served: 'full_page', expected: 'full_page' },
+    { served: 'embedded', expected: 'embedded' },
+    { served: undefined, expected: 'embedded' }
+  ] as const)(
+    'renders $expected when billing capabilities serve $served',
+    async ({ served, expected }) => {
+      const { awaitCheckoutUiVariant } = await handoffCheckoutUi(() =>
+        Promise.resolve(served)
+      )
+
+      await expect(awaitCheckoutUiVariant()).resolves.toBe(expected)
+      expect(h.ensureFresh).not.toHaveBeenCalled()
+      expect(fetch).not.toHaveBeenCalled()
+    }
+  )
+
+  it('fails closed when the capabilities read rejects', async () => {
+    const { awaitCheckoutUiVariant } = await handoffCheckoutUi(() =>
+      Promise.reject(new Error('offline'))
+    )
+
+    await expect(awaitCheckoutUiVariant()).resolves.toBe('embedded')
+  })
+
+  it('asks billing capabilities once per tab', async () => {
+    const read = vi.fn(() => Promise.resolve('full_page' as const))
+    const { awaitCheckoutUiVariant } = await handoffCheckoutUi(read)
+
+    await awaitCheckoutUiVariant()
+    await awaitCheckoutUiVariant()
+
+    expect(read).toHaveBeenCalledOnce()
+  })
+
+  it('ignores a dev override for the served variant', async () => {
+    localStorage.setItem(
+      'ff:billing_web_checkout_ui',
+      JSON.stringify('full_page')
+    )
+    const { awaitCheckoutUiVariant } = await handoffCheckoutUi(() =>
+      Promise.resolve('embedded')
+    )
+
+    await expect(awaitCheckoutUiVariant()).resolves.toBe('embedded')
+  })
+
+  it('pays top-ups in the page without asking Cloud', async () => {
+    const { awaitInPageTopup } = await handoffCheckoutUi(() =>
+      Promise.resolve('full_page')
+    )
+
+    await expect(awaitInPageTopup()).resolves.toBe(true)
+    expect(h.ensureFresh).not.toHaveBeenCalled()
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
+  it('reads unified billing settings as off without asking Cloud', async () => {
+    localStorage.setItem('ff:unified_billing_settings', JSON.stringify(true))
+    const { awaitUnifiedBillingSettings } = await handoffCheckoutUi(() =>
+      Promise.resolve('full_page')
+    )
+
+    await expect(awaitUnifiedBillingSettings()).resolves.toBe(false)
+    expect(h.ensureFresh).not.toHaveBeenCalled()
+    expect(fetch).not.toHaveBeenCalled()
+  })
 })

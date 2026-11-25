@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
+import { isGraphLoading } from '@/core/graph/graphLoadState'
 import { st } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { isCloud } from '@/platform/distribution/types'
@@ -10,12 +11,14 @@ import {
   dedupeMissingNodeTypes,
   removePendingMissingNodeTypesByExecutionIdPrefix,
   removePendingMissingNodeTypesByNodeId,
-  removePendingMissingNodeTypesByType
+  removePendingMissingNodeTypesByType,
+  updatePendingWarnings
 } from '@/platform/workflow/core/utils/pendingWarnings'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useApp } from '@/scripts/appInstance'
 import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
-import { getAncestorExecutionIds } from '@/types/nodeIdentification'
-import type { NodeExecutionId } from '@/types/nodeIdentification'
+import { getAncestorExecutionIds } from '@comfyorg/graph-model/nodeIdentification'
+import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import { getExecutionIdByNode } from '@/utils/graphTraversalUtil'
 
 interface MissingNodesError {
@@ -59,40 +62,36 @@ export const useMissingNodesErrorStore = defineStore(
       )
     }
 
+    function removeMissingNodes(
+      remove: (
+        types: readonly MissingNodeType[] | undefined
+      ) => MissingNodeType[]
+    ) {
+      const workflow = useWorkflowStore().activeWorkflow
+      const pending = workflow?.pendingWarnings?.missingNodeTypes
+      if (pending && !isGraphLoading(useApp().rootGraphOrUndefined)) {
+        updatePendingWarnings(workflow, { missingNodeTypes: remove(pending) })
+      }
+      if (!missingNodesError.value) return
+      setMissingNodeTypes(remove(missingNodesError.value.nodeTypes))
+    }
+
     function removeMissingNodesByNodeId(nodeId: string) {
-      if (!missingNodesError.value) return
-      const remaining = removePendingMissingNodeTypesByNodeId(
-        missingNodesError.value.nodeTypes,
-        nodeId
+      removeMissingNodes((types) =>
+        removePendingMissingNodeTypesByNodeId(types, nodeId)
       )
-      setMissingNodeTypes(remaining)
     }
 
-    /**
-     * Remove all object-type entries whose nodeId starts with `prefix`.
-     * String entries (group nodes) have no nodeId and are preserved.
-     *
-     * Intended for clearing all interior errors when a subgraph container
-     * is removed. Callers are expected to pass `${execId}:` (with trailing
-     * colon) so that sibling IDs sharing a numeric prefix are not matched.
-     */
     function removeMissingNodesByPrefix(prefix: string) {
-      if (!missingNodesError.value) return
-      const remaining = removePendingMissingNodeTypesByExecutionIdPrefix(
-        missingNodesError.value.nodeTypes,
-        prefix
+      removeMissingNodes((types) =>
+        removePendingMissingNodeTypesByExecutionIdPrefix(types, prefix)
       )
-      setMissingNodeTypes(remaining)
     }
 
-    /** Remove specific node types from the missing nodes list (e.g. after replacement). */
     function removeMissingNodesByType(typesToRemove: string[]) {
-      if (!missingNodesError.value) return
-      const remaining = removePendingMissingNodeTypesByType(
-        missingNodesError.value.nodeTypes,
-        typesToRemove
+      removeMissingNodes((types) =>
+        removePendingMissingNodeTypesByType(types, typesToRemove)
       )
-      setMissingNodeTypes(remaining)
     }
 
     const hasMissingNodes = computed(() => !!visibleMissingNodesError.value)

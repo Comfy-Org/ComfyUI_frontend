@@ -7,9 +7,9 @@
         variant="muted-textonly"
         size="icon"
         :aria-label="$t('g.refresh')"
-        @click="withLoadFailureToast(() => modelStore.refresh())"
+        @click="refreshLibrary()"
       >
-        <i class="icon-[lucide--refresh-cw] size-4" />
+        <i class="icon-[lucide--refresh-cw]" />
       </Button>
       <Button
         v-if="!flags.assetsEnabled"
@@ -20,7 +20,19 @@
         :aria-label="$t('g.loadAllFolders')"
         @click="withLoadFailureToast(() => modelStore.loadModels())"
       >
-        <i class="icon-[lucide--cloud-download] size-4" />
+        <i class="icon-[lucide--cloud-download]" />
+      </Button>
+      <Button
+        v-if="bootDeploymentId"
+        :tooltip="$t('sideToolbar.addModelsToDeployment')"
+        tooltip-side="bottom"
+        variant="muted-textonly"
+        size="icon"
+        :aria-label="$t('sideToolbar.addModelsToDeployment')"
+        data-testid="model-library-add-to-deployment"
+        @click="addModels()"
+      >
+        <i class="icon-[lucide--plus]" />
       </Button>
     </template>
     <template #header>
@@ -29,7 +41,11 @@
           ref="searchBoxRef"
           v-model:model-value="searchQuery"
           :clear-label="$t('g.clear')"
-          :accessible-label="$t('g.search')"
+          :accessible-label="
+            $t('g.searchPlaceholder', {
+              subject: $t('sideToolbar.labels.models')
+            })
+          "
           :placeholder="
             $t('g.searchPlaceholder', {
               subject: $t('sideToolbar.labels.models')
@@ -52,6 +68,10 @@
     </template>
     <template #body>
       <ElectronDownloadItems v-if="isDesktop" />
+      <WorkspaceLibrarySection
+        v-if="bootDeploymentId && flags.runtimeLibraryModelsEnabled"
+        :search-query="activeSearchQuery"
+      />
 
       <TreeExplorer
         v-model:expanded-keys="expandedKeys"
@@ -74,19 +94,22 @@
 import { computed, onMounted, ref, toRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import SearchInput from '@/components/ui/search-input/SearchInput.vue'
-import SidebarTopArea from '@/components/sidebar/tabs/SidebarTopArea.vue'
+import SearchInput from '@comfyorg/design-system/search-input/SearchInput'
+import SidebarTopArea from '@comfyorg/design-system/navigation/SidebarTopArea'
 import TreeExplorer from '@/components/common/TreeExplorer.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import ElectronDownloadItems from '@/components/sidebar/tabs/modelLibrary/ElectronDownloadItems.vue'
 import ModelPreview from '@/components/sidebar/tabs/modelLibrary/ModelPreview.vue'
-import Button from '@/components/ui/button/Button.vue'
-import { startModelLoaderDrag } from '@/composables/node/startModelNodeDragFromAsset'
+import WorkspaceLibrarySection from '@/components/sidebar/tabs/modelLibrary/WorkspaceLibrarySection.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import { startModelLoaderDrag } from '@/composables/node/startModelLoaderDrag'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useDeploymentModelsFrame } from '@/platform/workspace/platformFrame/useDeploymentModelsFrame'
+import { useDeploymentLibraryModelsStore } from '@/platform/workspace/stores/deploymentLibraryModelsStore'
 import { useToast } from '@/components/ui/toast/toastStore'
-import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
+import { useAssetDownloadStore } from '@/platform/assets/stores/assetDownloadStore'
 import type { ComfyModelDef } from '@/stores/modelStore'
 import {
   ModelFolder,
@@ -101,11 +124,13 @@ import { buildTree } from '@/utils/treeUtil'
 
 const modelStore = useModelStore()
 const modelToNodeStore = useModelToNodeStore()
+const workspaceLibrary = useDeploymentLibraryModelsStore()
 const settingStore = useSettingStore()
 const toast = useToast()
 const { t } = useI18n()
 const { flags } = useFeatureFlags()
 const assetDownloadStore = useAssetDownloadStore()
+const { bootDeploymentId, addModels } = useDeploymentModelsFrame()
 const searchBoxRef = ref()
 const searchQuery = ref<string>('')
 /**
@@ -206,14 +231,14 @@ const renderedRoot = computed<TreeExplorerNode<ComfyModelDef>>(() => {
       data: model,
       getIcon() {
         if (model) {
-          return model.image ? 'pi pi-image' : 'pi pi-file'
+          return model.image ? 'icon-[lucide--image]' : 'icon-[lucide--file]'
         }
         if (folder) {
           return folder.state === ResourceState.Loading
-            ? 'pi pi-spin pi-spinner'
-            : 'pi pi-folder'
+            ? 'animate-spin motion-reduce:animate-none icon-[lucide--loader-circle]'
+            : 'icon-[lucide--folder]'
         }
-        return 'pi pi-folder'
+        return 'icon-[lucide--folder]'
       },
       getIconImage() {
         return (model && getModelPreviewUrl(model)) || undefined
@@ -313,6 +338,11 @@ async function withLoadFailureToast(action: () => Promise<unknown>) {
       duration: 5000
     })
   }
+}
+
+async function refreshLibrary() {
+  workspaceLibrary.refreshLoaded()
+  await withLoadFailureToast(() => modelStore.refresh())
 }
 
 onMounted(async () => {

@@ -1,19 +1,16 @@
+import type { Size2D } from '@comfyorg/shared-frontend-utils/geometry'
 import { expect } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
 
-import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
-import type {
-  MediaKind,
-  parseAssetInfo
-} from '@/platform/assets/schemas/mediaAssetSchema'
+import { MIME_ASSET_INFO } from '@/platform/assets/constants/assetDrag'
+import type { MediaKind } from '@comfyorg/assets-core/media'
+import type { parseAssetInfo } from '@/platform/assets/integration/assetDrop'
 
 type DraggedAssetInfo = NonNullable<ReturnType<typeof parseAssetInfo>>
 
-export interface ExpectedAssetPreview {
+export interface ExpectedAssetPreview extends Size2D {
   filename: string
   kind: Extract<MediaKind, 'image' | 'video'>
-  width: number
-  height: number
   visible: boolean
 }
 

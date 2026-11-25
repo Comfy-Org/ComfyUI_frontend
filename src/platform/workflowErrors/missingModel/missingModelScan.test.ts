@@ -1,16 +1,13 @@
-import { useAssetsStore } from '@/stores/assetsStore'
+import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ComboWidgetInventoryStatus } from '@/core/graph/widgets/comboWidgetInventory'
 import { registerComboWidgetInventory } from '@/core/graph/widgets/comboWidgetInventory'
-import type { INodeInputSlot } from '@/lib/litegraph/src/types/slots'
+import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type {
-  IBaseWidget,
-  IComboWidget
-} from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget, IComboWidget } from '@comfyorg/graph-model/widgets'
 import {
   scanAllModelCandidates,
   scanNodeModelCandidates,
@@ -22,10 +19,10 @@ import {
 } from '@/platform/workflowErrors/missingModel/missingModelScan'
 import type { ReleaseModelOptions } from '@/platform/workflowErrors/missingModel/missingModelScan'
 import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { toNodeId } from '@/types/nodeId'
-import { widgetId } from '@/types/widgetId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 type TestNode = Omit<LGraphNode, 'constructor'> & {
   _testExecutionId?: string
 }
@@ -316,6 +313,25 @@ describe('scanNodeModelCandidates', () => {
       name: 'missing_model.safetensors',
       isMissing: true
     })
+  })
+
+  it('suggests available options that match the missing model', () => {
+    const graph = makeGraph([])
+    const node = makeNode(1, 'UNETLoader', [
+      makeComboWidget('unet_name', 'flux1-dev-fp8.safetensors', [
+        'flux1-dev-bf16.safetensors',
+        'flux1-schnell-fp8.safetensors',
+        'Flux\\flux1-dev-fp8.safetensors'
+      ])
+    ])
+
+    const [candidate] = scanNodeModelCandidates(graph, node, noAssetSupport)
+
+    expect(candidate.isMissing).toBe(true)
+    expect(candidate.replacements).toEqual([
+      'Flux\\flux1-dev-fp8.safetensors',
+      'flux1-dev-bf16.safetensors'
+    ])
   })
 
   it('returns empty array for node with no widgets', () => {
@@ -1935,6 +1951,64 @@ describe('verifyAssetSupportedCandidates', () => {
 
     expect(candidates[0].isMissing).toBe(false)
     expect(candidates[1].isMissing).toBeUndefined()
+    expect(
+      mockUpdateModelsForNodeType.mock.calls.filter(
+        ([nodeType]) => nodeType === 'LoraLoader'
+      )
+    ).toHaveLength(2)
+  })
+
+  it('should retry a node type whose asset load fails once, so a missing model still gets a row', async () => {
+    const candidates = [makeAssetCandidate('dreamshaper_8.safetensors')]
+    mockUpdateModelsForNodeType
+      .mockRejectedValueOnce(new Error('transient'))
+      .mockResolvedValue(undefined)
+    mockGetAssets.mockReturnValue([])
+
+    await verifyAssetSupportedCandidates(candidates)
+
+    expect(mockUpdateModelsForNodeType).toHaveBeenCalledTimes(2)
+    expect(candidates[0].isMissing).toBe(true)
+  })
+
+  it('should retry a node type whose asset load the store reports as failed', async () => {
+    const candidates = [makeAssetCandidate('dreamshaper_8.safetensors')]
+    vi.mocked(useAssetsStore().getError)
+      .mockReturnValueOnce(new Error('fetch failed'))
+      .mockReturnValue(undefined)
+    mockGetAssets.mockReturnValue([])
+
+    await verifyAssetSupportedCandidates(candidates)
+
+    expect(mockUpdateModelsForNodeType).toHaveBeenCalledTimes(2)
+    expect(candidates[0].isMissing).toBe(true)
+  })
+
+  it('should not report installed models as missing when the store keeps failing to load them', async () => {
+    const candidates = [makeAssetCandidate('installed.safetensors')]
+    vi.mocked(useAssetsStore().getError).mockReturnValue(
+      new Error('fetch failed')
+    )
+    mockGetAssets.mockReturnValue([])
+
+    await verifyAssetSupportedCandidates(candidates)
+
+    expect(mockUpdateModelsForNodeType).toHaveBeenCalledTimes(2)
+    expect(candidates[0].isMissing).toBeUndefined()
+  })
+
+  it('should not retry a failed asset load after the scan is aborted', async () => {
+    const controller = new AbortController()
+    const candidates = [makeAssetCandidate('model.safetensors')]
+    mockUpdateModelsForNodeType.mockImplementation(async () => {
+      controller.abort()
+      throw new Error('load failed')
+    })
+
+    await verifyAssetSupportedCandidates(candidates, controller.signal)
+
+    expect(mockUpdateModelsForNodeType).toHaveBeenCalledTimes(1)
+    expect(candidates[0].isMissing).toBeUndefined()
   })
 
   it('should leave candidates unresolved when aborted after asset loads settle', async () => {
@@ -2144,10 +2218,14 @@ describe('remote combo inventory', () => {
 
     const verifying = verifyAssetSupportedCandidates(candidates)
     found.settle('ready', ['selected.safetensors'])
-    missing.settle('ready', ['selected.safetensors'])
+    missing.settle('ready', ['selected.safetensors', 'sub/other.safetensors'])
     await verifying
 
     expect(candidates.map((c) => c.isMissing)).toEqual([false, true])
+    expect(candidates.map((c) => c.replacements)).toEqual([
+      undefined,
+      ['sub/other.safetensors']
+    ])
     expect(candidates.some(hasPendingVerification)).toBe(false)
   })
 
