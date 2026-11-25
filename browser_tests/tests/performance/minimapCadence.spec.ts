@@ -24,7 +24,6 @@ test.describe('Minimap change cadence performance', { tag: ['@perf'] }, () => {
       if (!node) throw new Error('Graph has no nodes')
       return String(node.id)
     })
-    // Progress only renders for a job owned by the active workflow, so queue one.
     const jobId = await new ExecutionHelper(comfyPage).run({ start: false })
 
     const measurement = await measureCadence(

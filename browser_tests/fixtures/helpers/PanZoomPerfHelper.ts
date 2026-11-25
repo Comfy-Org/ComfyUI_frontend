@@ -261,7 +261,6 @@ export async function measureProgress(
       window.app!.graph.nodes.slice(0, count).map((node) => String(node.id)),
     PROGRESS_NODES
   )
-  // Progress only renders for a job owned by the active workflow, so queue one.
   const jobId = await new ExecutionHelper(comfyPage).run({ start: false })
   await comfyPage.page.evaluate((jobId) => {
     window.app!.api.dispatchCustomEvent('execution_start', {
