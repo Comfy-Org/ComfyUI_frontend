@@ -17,7 +17,6 @@ export const BILLING_TELEMETRY_EVENTS = {
   BILLING_SUBSCRIPTION_CHECKOUT_TIMEOUT:
     'billing.subscription_checkout.timeout',
   BILLING_OPERATION_STARTED: 'billing.operation.started',
-  BILLING_CAPABILITY_READ_SUCCEEDED: 'billing.capability_read.succeeded',
   BILLING_CAPABILITY_READ_FAILED: 'billing.capability_read.failed',
   BILLING_OPERATION_SUCCEEDED: 'billing.operation.succeeded',
   BILLING_OPERATION_FAILED: 'billing.operation.failed',

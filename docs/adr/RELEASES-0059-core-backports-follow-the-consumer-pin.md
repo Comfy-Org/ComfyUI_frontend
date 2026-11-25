@@ -6,6 +6,10 @@ Date: 2026-11-19
 
 Accepted
 
+[ADR-RELEASES-0062](RELEASES-0062-one-label-requests-core-backports.md) replaces
+the target label decisions below. The policy for branch eligibility and freezes
+still applies.
+
 ## Context
 
 Cloud uses continuous delivery. Core release branches remain useful while ComfyUI consumes them or a newer release is being prepared. A fixed label count can retire a consumed line or keep obsolete targets available.

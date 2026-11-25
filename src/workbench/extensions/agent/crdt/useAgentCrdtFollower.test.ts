@@ -30,7 +30,7 @@ import type { GraphOperation } from './graphOperations'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
 import type { BatchOutcome, OpSenderDeps } from './opSender'
 import { createFakeAgentSocket } from './__fixtures__/agentSocket'
-import { hasUnsyncedHumanOps } from './unsyncedHumanOps'
+import { hasUnsyncedHumanOps, recordUnsyncedHumanOps } from './unsyncedHumanOps'
 
 const bridgeState = (() => {
   const liveSubscriptions = new Map<object, Set<string>>()
@@ -179,7 +179,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
 }))
 
 import { SUBSCRIBE_ACK_TIMEOUT_MS } from './lifecycleTiming'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import { clearDevEvents, devEvents } from './crdtLog'
 import {
   STALE_AFTER_MS,
@@ -290,7 +290,10 @@ describe('useAgentCrdtFollower', () => {
   beforeEach(() => {
     agentSocket = createFakeAgentSocket()
     useAgentPanelStore().enabled = true
-    remoteConfig.value = { 'Comfy.Agent.CrdtDebug': true }
+    useRemoteConfigStore().acceptConfig(
+      { 'Comfy.Agent.CrdtDebug': true },
+      false
+    )
     sessionStorage.clear()
     bridgeState.current = null
     bridgeState.resetLiveSubscriptions()
@@ -407,7 +410,10 @@ describe('useAgentCrdtFollower', () => {
     vi.stubEnv('VITE_AGENT_CRDT_FOLLOWER', 'true')
     window.history.replaceState({}, '', '/?crdtDebug=1&agentCrdtFollower=1')
     localStorage.setItem('Comfy.Agent.CrdtFollower', 'true')
-    remoteConfig.value = { 'Comfy.Agent.CrdtDebug': true }
+    useRemoteConfigStore().acceptConfig(
+      { 'Comfy.Agent.CrdtDebug': true },
+      false
+    )
     expect(useFeatureFlags().flags.agentCrdtDebugEnabled).toBe(true)
 
     useAgentPanelStore().enabled = false
@@ -422,7 +428,10 @@ describe('useAgentCrdtFollower', () => {
     vi.stubEnv('DEV', false)
     vi.stubEnv('VITE_AGENT_CRDT_FOLLOWER', 'false')
     window.history.replaceState({}, '', '/?crdtDebug=0&agentCrdtFollower=0')
-    remoteConfig.value = { 'Comfy.Agent.CrdtDebug': false }
+    useRemoteConfigStore().acceptConfig(
+      { 'Comfy.Agent.CrdtDebug': false },
+      false
+    )
     expect(useFeatureFlags().flags.agentCrdtDebugEnabled).toBe(false)
 
     const { status, unmount } = mountFollower('wf-1')
@@ -1119,8 +1128,44 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
-    it('reports a terminal timeout once the silent-subscribe budget is spent', () => {
+    function spendSilentBudget(): void {
+      dispatchFrame('doc_subscribe_sent', { workflowId: 'wf-1' })
+      vi.advanceTimersByTime(SUBSCRIBE_ACK_TIMEOUT_MS)
+      dispatchFrame('doc_subscribe_sent', { workflowId: 'wf-1' })
+      vi.advanceTimersByTime(SUBSCRIBE_ACK_TIMEOUT_MS)
+      dispatchFrame('doc_subscribe_sent', { workflowId: 'wf-1' })
+      vi.advanceTimersByTime(SUBSCRIBE_ACK_TIMEOUT_MS)
+    }
+
+    it('reopens the events socket before calling a silent subscribe terminal', () => {
       const { unmount, status } = mountFollower('wf-1')
+
+      spendSilentBudget()
+
+      expect(agentSocket.reconnect).toHaveBeenCalledOnce()
+      expect(status().terminal).toBeNull()
+      unmount()
+    })
+
+    it('does not spend the retry budget while the events socket is down', () => {
+      const { unmount, status } = mountFollower('wf-1')
+      dispatchFrame('doc_subscribed', { ok: true, workflow_id: 'wf-1', seq: 1 })
+      agentSocket.drop()
+      bridge().resubscribe.mockReturnValue(false)
+
+      vi.advanceTimersByTime(5 * 60_000)
+
+      expect(bridge().resubscribe).not.toHaveBeenCalled()
+      expect(status().terminal).toBeNull()
+      expect(telemetryState.reportError).not.toHaveBeenCalled()
+      unmount()
+    })
+
+    it('reports a terminal timeout once the reopened socket is silent too', () => {
+      const { unmount, status } = mountFollower('wf-1')
+      spendSilentBudget()
+      agentSocket.drop()
+      agentSocket.open()
       dispatchFrame('doc_subscribe_sent', { workflowId: 'wf-1' })
       vi.advanceTimersByTime(SUBSCRIBE_ACK_TIMEOUT_MS)
       dispatchFrame('doc_subscribe_sent', { workflowId: 'wf-1' })
@@ -1130,6 +1175,7 @@ describe('useAgentCrdtFollower', () => {
 
       vi.advanceTimersByTime(SUBSCRIBE_ACK_TIMEOUT_MS)
 
+      expect(agentSocket.reconnect).toHaveBeenCalledOnce()
       expect(status().terminal).toBe('timeout')
       expect(status().workflowId).toBe('wf-1')
       unmount()
@@ -3656,17 +3702,26 @@ describe('useAgentCrdtFollower', () => {
       workflowId: Ref<string | null>
       isTargetActive: Ref<boolean>
       enqueue: Enqueue
+      holdsWorkflow: (workflowId: string) => boolean
+      canResumeHeldWorkflow: (workflowId: string) => boolean
+      noteUnboundLocalIntent: (target?: string) => void
     } {
       const workflowId = ref<string | null>(initial)
       const isTargetActive = ref(true)
       let enqueue!: Enqueue
+      let holdsWorkflow!: (workflowId: string) => boolean
+      let canResumeHeldWorkflow!: (workflowId: string) => boolean
+      let noteUnboundLocalIntent!: (target?: string) => void
       const host = defineComponent({
         setup() {
-          const { enqueueHumanOperations } = useAgentCrdtFollower(workflowId, {
+          const follower = useAgentCrdtFollower(workflowId, {
             transport: agentSocket.transport,
             isTargetActive
           })
-          enqueue = enqueueHumanOperations
+          enqueue = follower.enqueueHumanOperations
+          holdsWorkflow = follower.holdsWorkflow
+          canResumeHeldWorkflow = follower.canResumeHeldWorkflow
+          noteUnboundLocalIntent = follower.noteUnboundLocalIntent
           return () => null
         }
       })
@@ -3679,7 +3734,16 @@ describe('useAgentCrdtFollower', () => {
       bridge().unsubscribe.mockImplementation(() => {
         bridge().subscribedWorkflowId = null
       })
-      return { unmount, workflowId, isTargetActive, enqueue }
+      bridge().subscribedWorkflowId = initial
+      return {
+        unmount,
+        workflowId,
+        isTargetActive,
+        enqueue,
+        holdsWorkflow,
+        canResumeHeldWorkflow,
+        noteUnboundLocalIntent
+      }
     }
 
     function deleteNode(nodeId: string) {
@@ -3812,21 +3876,252 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
-    it('a real detach while the tab is inactive settles the held batch undeliverable', async () => {
-      const { unmount, workflowId, isTargetActive, enqueue } =
-        mountWriter('wf-1')
-      enqueue([deleteNode('1')])
-      await Promise.resolve()
-      enqueue([deleteNode('2')])
-      isTargetActive.value = false
-      await nextTick()
-      ackSent(0)
+    describe('the follow takes the panel off a workflow whose edits are unconfirmed', () => {
+      function lostEditReports(): unknown[] {
+        return telemetryState.reportError.mock.calls
+          .filter(([, options]) =>
+            options.errorType.startsWith('failure_syncing_agent_edit')
+          )
+          .map(([cause]) => cause)
+      }
 
-      workflowId.value = null
-      await nextTick()
+      async function startUnconfirmed(workflow: string) {
+        const writer = mountWriter(workflow)
+        telemetryState.reportError.mockClear()
+        projectionState.unbind.mockClear()
+        writer.enqueue([deleteNode('1')])
+        await Promise.resolve()
+        writer.enqueue([deleteNode('2')])
+        expect(clientState.sendOps).toHaveBeenCalledTimes(1)
+        return writer
+      }
 
-      expect(await settledStates()).toEqual(['acknowledged', 'undeliverable'])
-      unmount()
+      async function followToBlankTab(writer: ReturnType<typeof mountWriter>) {
+        writer.isTargetActive.value = false
+        await nextTick()
+        writer.workflowId.value = null
+        await nextTick()
+      }
+
+      async function returnToTab(
+        writer: ReturnType<typeof mountWriter>,
+        workflow: string
+      ) {
+        writer.workflowId.value = workflow
+        writer.isTargetActive.value = true
+        await nextTick()
+      }
+
+      it('HC-01: keeps the sent batch and the queued one when the panel loses the workflow after its tab went inactive', async () => {
+        const writer = await startUnconfirmed('wf-hc-01')
+
+        await followToBlankTab(writer)
+
+        expect(clientState.sendOps).toHaveBeenCalledTimes(1)
+        expect(await settledStates()).toEqual([])
+        expect(lostEditReports()).toEqual([])
+        expect(projectionState.unbind).not.toHaveBeenCalled()
+        expect(bridge().unsubscribe).toHaveBeenCalled()
+        expect(hasUnsyncedHumanOps('wf-hc-01')).toBe(true)
+        writer.unmount()
+      })
+
+      it('HC-02: keeps them when the panel loses the workflow in the update that makes its tab inactive', async () => {
+        const writer = await startUnconfirmed('wf-hc-02')
+
+        writer.workflowId.value = null
+        writer.isTargetActive.value = false
+        await nextTick()
+
+        expect(clientState.sendOps).toHaveBeenCalledTimes(1)
+        expect(await settledStates()).toEqual([])
+        expect(lostEditReports()).toEqual([])
+        expect(projectionState.unbind).not.toHaveBeenCalled()
+        expect(hasUnsyncedHumanOps('wf-hc-02')).toBe(true)
+        writer.unmount()
+      })
+
+      it('HC-03: sends the parked batch to the workflow once the panel is back on it', async () => {
+        const writer = await startUnconfirmed('wf-hc-03a')
+        await followToBlankTab(writer)
+        ackSent(0)
+
+        await returnToTab(writer, 'wf-hc-03a')
+
+        expect(bridge().subscribe.mock.lastCall?.[0]).toBe('wf-hc-03a')
+        expect(clientState.sendOps).toHaveBeenCalledTimes(2)
+        expect(clientState.sendOps).toHaveBeenLastCalledWith(
+          'wf-hc-03a',
+          expect.any(String),
+          [expect.objectContaining({ op: 'delete_node', node_id: '2' })]
+        )
+        ackSent(1)
+        expect(await settledStates()).toEqual(['acknowledged', 'acknowledged'])
+        expect(lostEditReports()).toEqual([])
+        expect(hasUnsyncedHumanOps('wf-hc-03a')).toBe(false)
+        writer.unmount()
+      })
+
+      it('HC-03: lets the late result of the sent batch settle it after the return, then sends the queued one', async () => {
+        const writer = await startUnconfirmed('wf-hc-03b')
+        await followToBlankTab(writer)
+
+        await returnToTab(writer, 'wf-hc-03b')
+        expect(clientState.sendOps).toHaveBeenCalledTimes(1)
+        ackSent(0)
+
+        expect(clientState.sendOps).toHaveBeenCalledTimes(2)
+        expect(clientState.sendOps).toHaveBeenLastCalledWith(
+          'wf-hc-03b',
+          expect.any(String),
+          [expect.objectContaining({ op: 'delete_node', node_id: '2' })]
+        )
+        ackSent(1)
+        expect(await settledStates()).toEqual(['acknowledged', 'acknowledged'])
+        expect(lostEditReports()).toEqual([])
+        expect(hasUnsyncedHumanOps('wf-hc-03b')).toBe(false)
+        writer.unmount()
+      })
+
+      it('HC-04: releases the workflow as before when nothing is unsettled', async () => {
+        const writer = mountWriter('wf-hc-04')
+        projectionState.unbind.mockClear()
+
+        await followToBlankTab(writer)
+
+        expect(projectionState.unbind).toHaveBeenCalledWith('wf-hc-04')
+        expect(bridge().unsubscribe).toHaveBeenCalled()
+        expect(writer.holdsWorkflow('wf-hc-04')).toBe(false)
+        writer.unmount()
+      })
+
+      it('HC-05: settles the sent batch unconfirmed and the queued one undeliverable when another workflow is bound', async () => {
+        const writer = await startUnconfirmed('wf-hc-05')
+        await followToBlankTab(writer)
+
+        await returnToTab(writer, 'wf-hc-05-other')
+
+        expect(clientState.sendOps).toHaveBeenCalledTimes(1)
+        expect(await settledStates()).toEqual(['unconfirmed', 'undeliverable'])
+        expect(telemetryState.reportError).toHaveBeenCalledWith(
+          expect.any(Error),
+          expect.objectContaining({
+            tags: expect.objectContaining({ reason: 'retarget' })
+          })
+        )
+        expect(writer.holdsWorkflow('wf-hc-05')).toBe(false)
+        writer.unmount()
+      })
+
+      it('HC-07: still settles the parked batch undeliverable when the resubscribe on return is refused', async () => {
+        const writer = await startUnconfirmed('wf-hc-07')
+        await followToBlankTab(writer)
+        ackSent(0)
+
+        bridge().subscribe.mockImplementation(() => {})
+        await returnToTab(writer, 'wf-hc-07')
+        dispatchFrame('doc_subscribed', { ok: false, workflowId: 'wf-hc-07' })
+
+        expect(clientState.sendOps).toHaveBeenCalledTimes(1)
+        expect(await settledStates()).toEqual(['acknowledged', 'undeliverable'])
+        expect(telemetryState.reportError).toHaveBeenCalledWith(
+          expect.any(Error),
+          expect.objectContaining({
+            tags: expect.objectContaining({ reason: 'subscribe_refused' })
+          })
+        )
+        writer.unmount()
+      })
+
+      it('HC-09: settles the held batches as any teardown does and leaves the workflow recorded as unsynced for the next panel', async () => {
+        const writer = await startUnconfirmed('wf-hc-09')
+        await followToBlankTab(writer)
+
+        writer.unmount()
+
+        expect(await settledStates()).toEqual(['unconfirmed', 'undeliverable'])
+        expect(lostEditReports()).toHaveLength(2)
+        expect(hasUnsyncedHumanOps('wf-hc-09')).toBe(true)
+        expect(clientState.sendOps).toHaveBeenCalledTimes(1)
+      })
+
+      it('HC-10: reports only the held workflow, from the hold until it resumes or ends', async () => {
+        const writer = await startUnconfirmed('wf-hc-10')
+        expect(writer.holdsWorkflow('wf-hc-10')).toBe(false)
+
+        await followToBlankTab(writer)
+        expect(writer.holdsWorkflow('wf-hc-10')).toBe(true)
+        expect(writer.holdsWorkflow('wf-hc-10-other')).toBe(false)
+
+        ackSent(0)
+        await returnToTab(writer, 'wf-hc-10')
+        expect(clientState.sendOps).toHaveBeenCalledTimes(2)
+        expect(writer.holdsWorkflow('wf-hc-10')).toBe(false)
+        writer.unmount()
+      })
+
+      it('HC-11: keeps the parked batch through a detach while its tab is inactive, and settles it undeliverable when another workflow is bound', async () => {
+        const writer = mountWriter('wf-hc-11')
+        writer.enqueue([deleteNode('1')])
+        await Promise.resolve()
+        writer.enqueue([deleteNode('2')])
+        writer.isTargetActive.value = false
+        await nextTick()
+        ackSent(0)
+
+        writer.workflowId.value = null
+        await nextTick()
+        expect(await settledStates()).toEqual(['acknowledged'])
+
+        await returnToTab(writer, 'wf-hc-11-other')
+        expect(await settledStates()).toEqual(['acknowledged', 'undeliverable'])
+        writer.unmount()
+      })
+
+      it('T1-25: canResumeHeldWorkflow turns false once unbound local intent is recorded for the held workflow', async () => {
+        const writer = await startUnconfirmed('wf-t1-25-unbound')
+        expect(writer.canResumeHeldWorkflow('wf-t1-25-unbound')).toBe(false)
+
+        await followToBlankTab(writer)
+        expect(writer.holdsWorkflow('wf-t1-25-unbound')).toBe(true)
+        expect(writer.canResumeHeldWorkflow('wf-t1-25-unbound')).toBe(true)
+
+        writer.noteUnboundLocalIntent('wf-t1-25-unbound')
+        expect(writer.holdsWorkflow('wf-t1-25-unbound')).toBe(true)
+        expect(writer.canResumeHeldWorkflow('wf-t1-25-unbound')).toBe(false)
+        writer.unmount()
+      })
+
+      it('T1-25: canResumeHeldWorkflow is false when a terminally lost edit is also recorded for the held workflow', async () => {
+        const writer = await startUnconfirmed('wf-t1-25-lost')
+        writer.workflowId.value = 'wf-t1-25-other'
+        await nextTick()
+        expect(await settledStates()).toEqual(['unconfirmed', 'undeliverable'])
+
+        await returnToTab(writer, 'wf-t1-25-lost')
+        writer.enqueue([deleteNode('3')])
+        await Promise.resolve()
+        await followToBlankTab(writer)
+
+        expect(writer.holdsWorkflow('wf-t1-25-lost')).toBe(true)
+        expect(writer.canResumeHeldWorkflow('wf-t1-25-lost')).toBe(false)
+        writer.unmount()
+      })
+
+      it('T1-25: canResumeHeldWorkflow is false when another source recorded unsynced ops for the held workflow', async () => {
+        const writer = await startUnconfirmed('wf-t1-25-external')
+        await followToBlankTab(writer)
+        expect(writer.canResumeHeldWorkflow('wf-t1-25-external')).toBe(true)
+
+        recordUnsyncedHumanOps('previous-panel', ['wf-t1-25-external'])
+        try {
+          expect(writer.holdsWorkflow('wf-t1-25-external')).toBe(true)
+          expect(writer.canResumeHeldWorkflow('wf-t1-25-external')).toBe(false)
+        } finally {
+          recordUnsyncedHumanOps('previous-panel', [])
+          writer.unmount()
+        }
+      })
     })
 
     it('returning while the socket is down keeps the held batch and sends it once the subscribe is acknowledged', async () => {
@@ -3992,12 +4287,22 @@ describe('useAgentCrdtFollower', () => {
     const { unmount, status } = mountFollower('wf-1')
     dispatchFrame('doc_subscribed', { ok: true })
     vi.advanceTimersByTime(1000)
-    dispatchFrame('doc_subscribe_sent', { workflowId: 'wf-1' })
+    const spendSilentBudget = (): void => {
+      dispatchFrame('doc_subscribe_sent', { workflowId: 'wf-1' })
+      vi.advanceTimersByTime(SUBSCRIBE_ACK_TIMEOUT_MS)
+      dispatchFrame('doc_subscribe_sent', { workflowId: 'wf-1' })
+      vi.advanceTimersByTime(SUBSCRIBE_ACK_TIMEOUT_MS)
+      dispatchFrame('doc_subscribe_sent', { workflowId: 'wf-1' })
+    }
+    spendSilentBudget()
     vi.advanceTimersByTime(SUBSCRIBE_ACK_TIMEOUT_MS)
-    dispatchFrame('doc_subscribe_sent', { workflowId: 'wf-1' })
-    vi.advanceTimersByTime(SUBSCRIBE_ACK_TIMEOUT_MS)
-    dispatchFrame('doc_subscribe_sent', { workflowId: 'wf-1' })
-    expect(status().connected).toBe(true)
+    expect(agentSocket.reconnect).toHaveBeenCalledOnce()
+    agentSocket.open()
+    bridge().reconnect.mockClear()
+    bridge().resubscribe.mockClear()
+    spendSilentBudget()
+    expect(status().connected).toBe(false)
+    expect(telemetryState.reportError).not.toHaveBeenCalled()
 
     vi.advanceTimersByTime(SUBSCRIBE_ACK_TIMEOUT_MS)
 

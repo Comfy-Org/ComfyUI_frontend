@@ -83,7 +83,6 @@ export class AgentNonValueWidgetRig {
 
     const agentPanel = new AgentPanel(page)
     await agentPanel.open()
-    await agentPanel.selectWorkflow()
     await agentPanel.sendMessage('hello')
     hostSocket.send({
       type: 'agent_message_done',

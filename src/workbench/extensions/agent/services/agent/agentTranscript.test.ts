@@ -88,6 +88,16 @@ describe('normalizeAgentTranscript', () => {
       'wf-a'
     )
   })
+
+  it('restores the latest workflow target from an assistant row when no user row exists', () => {
+    const assistant = {
+      ...row(1, 'assistant', 'turn-agent', 'Want me to wire it up?', 'row-1'),
+      workflow_id: 'wf-agent-started'
+    }
+    expect(normalizeAgentTranscript([assistant]).latestWorkflowId).toBe(
+      'wf-agent-started'
+    )
+  })
   it('orders rows by sequence and groups them by stable turn identity', () => {
     const transcript = normalizeAgentTranscript([
       row(4, 'assistant', 'turn-b', 'Second reply', 'row-4'),

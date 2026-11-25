@@ -1,8 +1,9 @@
 <template>
-  <div v-if="sources.length && !failed" class="relative">
+  <div v-if="showsVideo" class="relative grid">
     <video
       ref="video"
-      v-bind="$attrs"
+      v-bind="attrsWithoutClass"
+      :class="cn('col-start-1 row-start-1', attrsClass)"
       :poster="posterSrc || undefined"
       :autoplay="shouldAutoplay"
       :muted
@@ -10,6 +11,7 @@
       :playsinline="playsInline"
       @play="playing = true"
       @pause="playing = false"
+      @timeupdate="noteFramePlayed"
       @error="failed = true"
     >
       <source
@@ -17,9 +19,15 @@
         :key="source.src"
         :src="source.src"
         :type="source.type"
-        @error="failed = index === sources.length - 1"
+        @error="noteSourceFailed(index)"
       />
     </video>
+    <img
+      v-if="showsPoster"
+      :src="posterSrc"
+      alt=""
+      :class="cn('pointer-events-none col-start-1 row-start-1', attrsClass)"
+    />
     <Button
       v-if="playbackLabels"
       variant="overlay-white"
@@ -28,10 +36,7 @@
       :aria-label="playing ? playbackLabels.pause : playbackLabels.play"
       @click="togglePlayback"
     >
-      <i
-        :class="playing ? 'icon-[lucide--pause]' : 'icon-[lucide--play]'"
-        aria-hidden="true"
-      />
+      <i :class="playbackIcon" aria-hidden="true" />
     </Button>
   </div>
   <slot v-else name="fallback" />
@@ -41,7 +46,10 @@
 import { usePreferredReducedMotion } from '@vueuse/core'
 import { computed, ref, useTemplateRef, watchEffect } from 'vue'
 
+import { cn } from '@comfyorg/tailwind-utils'
+
 import Button from '@comfyorg/design-system/button/Button'
+import { useAttrsClass } from '@comfyorg/design-system/lib/composables/useAttrsClass'
 
 const {
   sources = [],
@@ -63,9 +71,11 @@ const {
 
 defineOptions({ inheritAttrs: false })
 
+const { attrsClass, attrsWithoutClass } = useAttrsClass()
 const video = useTemplateRef('video')
 const failed = ref(false)
 const playing = ref(false)
+const framePlayed = ref(false)
 
 const reducedMotion = usePreferredReducedMotion()
 const shouldAutoplay = computed(
@@ -75,6 +85,20 @@ const shouldAutoplay = computed(
 watchEffect(() => {
   if (autoplay && !shouldAutoplay.value) video.value?.pause()
 })
+
+const showsVideo = computed(() => sources.length > 0 && !failed.value)
+const showsPoster = computed(() => !!posterSrc && !framePlayed.value)
+const playbackIcon = computed(() =>
+  playing.value ? 'icon-[lucide--pause]' : 'icon-[lucide--play]'
+)
+
+function noteSourceFailed(index: number) {
+  failed.value = index === sources.length - 1
+}
+
+function noteFramePlayed() {
+  framePlayed.value ||= (video.value?.currentTime ?? 0) > 0
+}
 
 function togglePlayback() {
   const element = video.value

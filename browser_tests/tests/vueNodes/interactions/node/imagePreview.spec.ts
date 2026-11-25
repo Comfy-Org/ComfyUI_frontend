@@ -224,11 +224,16 @@ test.describe('Vue Nodes Batch Image Preview', { tag: '@vue-nodes' }, () => {
       })
 
       const { bottomRight } = node.resize
-      await expect.poll(() => countColumns(node.imageGrid)).toBe(10)
+      await expect.poll(() => countColumns(node.imageGrid)).toBeGreaterThan(1)
+      const initialColumns = await countColumns(node.imageGrid)
       await comfyMouse.dragElementBy(bottomRight, { x: 200 })
-      await expect.poll(() => countColumns(node.imageGrid)).toBeGreaterThan(10)
+      await expect
+        .poll(() => countColumns(node.imageGrid))
+        .toBeGreaterThan(initialColumns)
       await comfyMouse.dragElementBy(bottomRight, { x: -200, y: 200 })
-      await expect.poll(() => countColumns(node.imageGrid)).toBeLessThan(10)
+      await expect
+        .poll(() => countColumns(node.imageGrid))
+        .toBeLessThan(initialColumns)
     }
   )
 

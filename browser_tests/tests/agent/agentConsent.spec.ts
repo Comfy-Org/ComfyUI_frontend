@@ -122,7 +122,6 @@ test.describe('Manual agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
       await expect(dialog).toHaveCount(0)
       await expect(panel).toBeVisible()
 
-      await agentPanel.selectWorkflow()
       await agentPanel.sendMessage('Build a workflow after accepting consent')
       await expect(agentPanel.userMessageBubbles).toHaveText([
         'Build a workflow after accepting consent'

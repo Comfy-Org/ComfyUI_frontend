@@ -1,3 +1,4 @@
+import type { ComfyDownloadProgress } from '@comfyorg/comfyui-desktop-bridge-types'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { attachLegacyUI } from '@/core/legacyUI/attachLegacyUI'
 import { ComfyApp, app as singletonApp } from './app'
@@ -23,7 +24,7 @@ import {
   onTestFinished,
   vi
 } from 'vitest'
-import { effectScope, markRaw, ref } from 'vue'
+import { effectScope, markRaw, nextTick, ref } from 'vue'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useSubgraphService } from '@/services/subgraphService'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -99,6 +100,7 @@ import { createMissingMediaCandidate } from '@/platform/workflowErrors/missingMe
 import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
+import { useMissingModelDownloadStore } from '@/platform/workflowErrors/missingModel/missingModelDownloadStore'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
 import { setTelemetryRegistry } from '@comfyorg/telemetry'
@@ -126,10 +128,12 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { extractFilesFromDragEvent } from '@/utils/eventUtils'
-import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
+import { MIME_ASSET_INFO } from '@/platform/assets/constants/assetDrag'
+import { extractFilesFromDragEvent } from '@/platform/assets/integration/assetDrop'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useCanvasScheduler } from '@/renderer/core/canvas/useCanvasScheduler'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { zeroUuid } from '@comfyorg/graph-model/uuid'
 import { graphsAwaitingNodeTypes } from '@/platform/customNodes/lateLoading/lateNodeTypes'
 import type { importA1111 } from './pnginfo'
@@ -189,7 +193,7 @@ vi.mock(import('@/scripts/metadata/parser'), () => ({
   getWorkflowDataFromFile: vi.fn()
 }))
 
-vi.mock(import('@/utils/eventUtils'), { spy: true })
+vi.mock(import('@/platform/assets/integration/assetDrop'), { spy: true })
 vi.mock(import('@/scripts/appInstance'), () => ({ useApp: vi.fn() }))
 
 vi.mock(import('@comfyorg/telemetry/reportError'), { spy: true })
@@ -2283,6 +2287,76 @@ describe('ComfyApp', () => {
       }
     })
 
+    it('holds a missing model re-check queued by a finished download until the load has scanned its graph', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      const missingModelStore = useMissingModelStore()
+      const recheck = vi
+        .spyOn(missingModelStore, 'refreshMissingModels')
+        .mockResolvedValue(undefined)
+      const progressListeners: ((progress: ComfyDownloadProgress) => void)[] =
+        []
+      window.__comfyDesktop2 = {
+        isRemote: () => false,
+        downloadModel: async () => true,
+        onDownloadProgress: (listener) => {
+          progressListeners.push(listener)
+          return () => {}
+        }
+      }
+      missingModelStore.setMissingModels([
+        fromPartial<MissingModelCandidate>({
+          name: 'model.safetensors',
+          directory: 'checkpoints',
+          isMissing: true
+        })
+      ])
+      const stopTracking = useMissingModelDownloadStore().startTracking()
+      missingModelStore.isRefreshingMissingModels = true
+      for (const listener of progressListeners) {
+        listener({
+          id: 'job-1',
+          url: 'https://huggingface.co/comfy/test/resolve/main/model.safetensors',
+          filename: 'model.safetensors',
+          directory: 'checkpoints',
+          progress: 1,
+          status: 'completed'
+        })
+      }
+      await nextTick()
+      let finishScan!: () => void
+      let scanStarted!: () => void
+      const loadScanning = new Promise<void>((resolve) => {
+        scanStarted = resolve
+      })
+      vi.mocked(runMissingModelPipeline).mockImplementationOnce(async () => {
+        scanStarted()
+        await new Promise<void>((resolve) => {
+          finishScan = resolve
+        })
+        return {
+          missingModels: [],
+          confirmedCandidates: [],
+          surfaced: Promise.resolve()
+        }
+      })
+      try {
+        const load = app.loadGraphData(createWorkflowGraphData(), false, false)
+        missingModelStore.isRefreshingMissingModels = false
+        await loadScanning
+        await nextTick()
+
+        expect(recheck).not.toHaveBeenCalled()
+
+        finishScan()
+        await load
+        await vi.waitFor(() => expect(recheck).toHaveBeenCalledOnce())
+      } finally {
+        stopTracking()
+        delete window.__comfyDesktop2
+      }
+    })
+
     it('lets a queued root graph switch run ahead of pending asset scans and drops their warnings', async () => {
       app.canvasElRef.value = document.createElement('canvas')
       Reflect.set(app, 'rootGraphInternal', new LGraph())
@@ -2478,6 +2552,21 @@ describe('ComfyApp', () => {
         expect(mockCanvas.draw).toHaveBeenCalledWith(true, true)
         expect(app.hasPendingCamera(graph)).toBe(false)
       })
+
+      it.for([
+        { restoreView: true, pending: true },
+        { restoreView: false, pending: false }
+      ])(
+        'is set by an API JSON import when view restore is $restoreView',
+        async ({ restoreView, pending }) => {
+          useSettingStore().settingValues['Comfy.EnableWorkflowViewRestore'] =
+            restoreView
+
+          await app.loadApiJson({}, 'api-camera')
+
+          expect(app.hasPendingCamera(app.rootGraph)).toBe(pending)
+        }
+      )
     })
 
     it('brackets an API JSON import with graph-load hooks', async () => {
@@ -2493,6 +2582,31 @@ describe('ComfyApp', () => {
           ([hook]) => hook
         )
       ).toEqual(['beforeLoadGraph', 'afterConfigureGraph', 'afterLoadGraph'])
+    })
+
+    it('loads API JSON as a new workflow when no file name is given', async () => {
+      await useRealWorkflowService()
+      const workflowStore = useWorkflowStore()
+      workflowStore.provideChangeTracker(ChangeTracker)
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(mockCanvas, 'ds', createTestDragAndScale())
+      vi.mocked(workflowStore.createNewTemporary).mockRestore()
+      vi.mocked(workflowStore.getWorkflowByPath).mockRestore()
+      vi.mocked(workflowStore.isActive).mockRestore()
+      vi.mocked(workflowStore.openWorkflow).mockRestore()
+
+      await app.loadApiJson({})
+
+      expect(mockWorkflowService.afterLoadNewGraph).toHaveBeenCalledOnce()
+      expect(
+        mockWorkflowService.afterLoadNewGraph.mock.calls[0]?.[0]
+      ).toBeNull()
+      const imported = workflowStore.activeWorkflow
+      assert.exists(imported)
+      expect(imported.isTemporary).toBe(true)
+      expect(imported.graph).toBe(graph)
     })
 
     it('creates subgraph nodes from the returning root when graphs share a definition ID', () => {
@@ -3689,6 +3803,50 @@ describe('ComfyApp', () => {
         refusalType: 'CLOUD_SUBSCRIPTION_REQUIRED'
       })
       expect(useExecutionErrorStore().lastPromptError).toBeNull()
+    })
+
+    it('asks for a reload instead of an error when the deployment moved to another release', async () => {
+      prepareEmptyPromptQueue()
+      vi.spyOn(api, 'queuePrompt').mockRejectedValue(
+        new PromptExecutionError(
+          {
+            error: {
+              type: 'RELEASE_CHANGED',
+              message: 'The deployment moved to another release.',
+              release_id: 'r-3'
+            }
+          },
+          409
+        )
+      )
+
+      await expect(app.queuePrompt(0)).resolves.toBe(false)
+
+      expect(useToast().toasts.map((toast) => toast.title)).toEqual([
+        'Runs now go to a different version. Reload to run on it.'
+      ])
+      expect(useExecutionErrorStore().lastPromptError).toBeNull()
+      expect(useExecutionErrorStore().lastNodeErrors).toBeNull()
+    })
+
+    it('handles any other 409 as before', async () => {
+      prepareEmptyPromptQueue()
+      vi.spyOn(api, 'queuePrompt').mockRejectedValue(
+        new PromptExecutionError(
+          {
+            error: { type: 'conflict', message: 'Busy', details: '' },
+            node_errors: {}
+          },
+          409
+        )
+      )
+
+      await app.queuePrompt(0)
+
+      expect(useToast().toasts).toEqual([])
+      expect(useExecutionErrorStore().lastPromptError).toMatchObject({
+        type: 'conflict'
+      })
     })
 
     it('records a rejected submission on the workflow that queued it', async () => {
@@ -5915,6 +6073,130 @@ describe('ComfyApp', () => {
 
       expect(useWorkflowStore().activeWorkflow).toBe(activeWorkflow)
     })
+
+    describe('an import onto a visible canvas', () => {
+      const importPaths = [
+        {
+          path: 'API JSON',
+          importFile: (app: ComfyApp) =>
+            app.loadApiJson(
+              { '1': { class_type: 'test/ImportCameraNode', inputs: {} } },
+              'import-camera'
+            )
+        },
+        {
+          path: 'A1111',
+          importFile: async (app: ComfyApp) => {
+            vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
+              parameters: 'positive\nNegative prompt: negative\nSteps: 20'
+            })
+            mockImportA1111.mockImplementation(
+              async (_graph, _parameters, beforeGraphClear) => {
+                const graph = await beforeGraphClear?.()
+                assert(graph)
+                graph.add(new LGraphNode('imported'))
+                return 'imported'
+              }
+            )
+            await app.handleFile(
+              createTestFile('import-camera.png', 'image/png')
+            )
+          }
+        }
+      ]
+
+      beforeEach(async () => {
+        await useRealWorkflowService()
+        const workflowStore = useWorkflowStore()
+        workflowStore.provideChangeTracker(ChangeTracker)
+        vi.mocked(workflowStore.createNewTemporary).mockRestore()
+        vi.mocked(workflowStore.getWorkflowByPath).mockRestore()
+        vi.mocked(workflowStore.isActive).mockRestore()
+        vi.mocked(workflowStore.openWorkflow).mockRestore()
+        useSettingStore().settingValues['Comfy.EnableWorkflowViewRestore'] =
+          true
+        LiteGraph.registerNodeType(
+          'test/ImportCameraNode',
+          class extends LGraphNode {}
+        )
+        onTestFinished(() => {
+          delete LiteGraph.registered_node_types['test/ImportCameraNode']
+        })
+        const canvasElement = createTestCanvasElement({
+          cssSize: [800, 600],
+          visible: true
+        })
+        document.body.append(canvasElement)
+        onTestFinished(() => canvasElement.remove())
+        app.canvasElRef.value = canvasElement
+        Reflect.set(app, 'rootGraphInternal', new LGraph())
+        const ds = createTestDragAndScale()
+        Reflect.set(mockCanvas, 'ds', ds)
+        Reflect.set(mockCanvas, 'visible_area', ds.visible_area)
+        Reflect.set(mockCanvas, 'bgcanvas', createTestCanvasElement())
+        vi.mocked(mockCanvas.setGraph).mockImplementation((graph) => {
+          Reflect.set(mockCanvas, 'graph', graph)
+        })
+        useCanvasStore().canvas = mockCanvas
+      })
+
+      it.for(importPaths)(
+        'shows the nodes of a repeated $path import into its active tab instead of the camera saved when leaving it',
+        async ({ importFile }) => {
+          await importFile(app)
+          const importedTab = useWorkflowStore().activeWorkflow
+          mockCanvas.ds.offset = [-5000, -5000]
+
+          await importFile(app)
+
+          expect(useWorkflowStore().activeWorkflow).toBe(importedTab)
+          const [importedNode] = app.rootGraph.nodes
+          mockCanvas.ds.computeVisibleArea(undefined)
+          expect(
+            mockCanvas.ds.visible_area.containsRect(importedNode.boundingRect)
+          ).toBe(true)
+        }
+      )
+
+      it.for(importPaths)(
+        'keeps the camera when an import through $path lands its nodes in the current view',
+        async ({ importFile }) => {
+          mockCanvas.ds.offset = [0, 0]
+          mockCanvas.ds.scale = 1
+
+          await importFile(app)
+
+          expect({
+            offset: [...mockCanvas.ds.offset],
+            scale: mockCanvas.ds.scale
+          }).toEqual({ offset: [0, 0], scale: 1 })
+        }
+      )
+
+      it.for(importPaths)(
+        'fits an import through $path whose nodes land only under the agent panel into the uncovered canvas',
+        async ({ importFile }) => {
+          const panel = useAgentPanelStore()
+          panel.enabled = true
+          panel.consentAccepted = true
+          panel.isOpen = true
+          panel.setWidth(420)
+          onTestFinished(() => {
+            panel.isOpen = false
+          })
+          mockCanvas.ds.offset = [400, 0]
+          mockCanvas.ds.scale = 1
+
+          await importFile(app)
+
+          const [importedNode] = app.rootGraph.nodes
+          mockCanvas.ds.computeVisibleArea([0, 0, 380, 600])
+          expect(
+            mockCanvas.ds.visible_area.containsRect(importedNode.boundingRect)
+          ).toBe(true)
+        }
+      )
+    })
   })
 
   describe('socket handlers', () => {
@@ -6336,15 +6618,10 @@ describe('ComfyApp', () => {
 
   describe('refreshMissingModels', () => {
     it('delegates to the app-independent missing model refresh pipeline', async () => {
-      const graph = {
-        nodes: [],
-        serialize: vi.fn(() => createWorkflowGraphData())
-      }
       const result = {
         missingModels: [],
         confirmedCandidates: []
       }
-      Reflect.set(app, 'rootGraphInternal', graph)
       vi.spyOn(app, 'reloadNodeDefs').mockResolvedValue(true)
       mockRefreshMissingModelPipeline.mockResolvedValue(result)
 
@@ -6353,7 +6630,6 @@ describe('ComfyApp', () => {
       )
 
       expect(mockRefreshMissingModelPipeline).toHaveBeenCalledWith({
-        graph,
         reloadNodeDefs: expect.any(Function),
         missingModelStore: useMissingModelStore(),
         silent: false
@@ -6364,11 +6640,6 @@ describe('ComfyApp', () => {
     })
 
     it('omits the node definition reload when reloadDefs is false', async () => {
-      const graph = {
-        nodes: [],
-        serialize: vi.fn(() => createWorkflowGraphData())
-      }
-      Reflect.set(app, 'rootGraphInternal', graph)
       vi.spyOn(app, 'reloadNodeDefs').mockResolvedValue(true)
       mockRefreshMissingModelPipeline.mockResolvedValue({
         missingModels: [],
@@ -6378,7 +6649,6 @@ describe('ComfyApp', () => {
       await app.refreshMissingModels({ reloadDefs: false })
 
       expect(mockRefreshMissingModelPipeline).toHaveBeenCalledWith({
-        graph,
         reloadNodeDefs: undefined,
         missingModelStore: useMissingModelStore(),
         silent: true
