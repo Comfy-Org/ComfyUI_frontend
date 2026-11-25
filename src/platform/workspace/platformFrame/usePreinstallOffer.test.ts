@@ -196,7 +196,7 @@ describe('usePreinstallOffer', () => {
   )
 
   it('stays closed when nodes are missing and their warning is off', async () => {
-    useSettingStore().settingValues['Comfy.Workflow.ShowMissingNodesWarning'] =
+    useSettingStore().settingValues['Comfy.ErrorSystem.ShowMissingNodes'] =
       false
     startOffer()
     useMissingNodesErrorStore().setMissingNodeTypes(['RgthreePowerLoraLoader'])
