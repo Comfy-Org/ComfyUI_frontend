@@ -59,8 +59,8 @@ export interface GraphHandle {
   /** Every subgraph definition in the open document. */
   subgraphs(): readonly GraphScopeHandle[]
   /**
-   * Counts the open document's changes, the same whichever of its graphs is on screen: every edit a handle applies in
-   * any of them, and some of the editor's own. Every undo, redo and load changes it; an equal reading does not prove no change.
+   * Grows when the open document changed since the last reading, whichever of its graphs is on screen: on every edit a
+   * handle applies, every undo, redo and load, and some of the editor's own changes. No reading repeats an earlier one.
    */
   readonly version: number | undefined
   /**

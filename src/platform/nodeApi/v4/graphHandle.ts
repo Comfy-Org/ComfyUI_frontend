@@ -26,6 +26,7 @@ export function createGraphHandle(
   members: (visible: () => LGraph | undefined) => GraphHandleMembers
 ): GraphHandle {
   const visible = () => getVisibleGraph() ?? undefined
+  const changeSequence = documentChangeSequence(rebuilds)
 
   const reads = {
     get id() {
@@ -33,7 +34,7 @@ export function createGraphHandle(
     },
     get version() {
       const root = visible()?.rootGraph
-      return root && documentVersion(root) + rebuilds() * REBUILD_STEP
+      return root && changeSequence(root)
     },
 
     node: (id: string) => nodes.find(visible(), id),
@@ -57,10 +58,22 @@ export function createGraphHandle(
   return Object.freeze(Object.assign(reads, members(visible)))
 }
 
-const REBUILD_STEP = 2 ** 32
+function documentChangeSequence(rebuilds: () => number) {
+  let sequence = 0
+  let lastMarks = ''
+  return (root: LGraph): number => {
+    const marks = changeMarks(root, rebuilds())
+    if (marks !== lastMarks) {
+      lastMarks = marks
+      sequence++
+    }
+    return sequence
+  }
+}
 
-function documentVersion(root: LGraph): number {
-  let version = root._version
-  for (const subgraph of root.subgraphs.values()) version += subgraph._version
-  return version
+function changeMarks(root: LGraph, rebuilds: number): string {
+  const marks: (string | number)[] = [rebuilds, root.id, root._version]
+  for (const subgraph of root.subgraphs.values())
+    marks.push(subgraph.id, subgraph._version)
+  return marks.join(' ')
 }

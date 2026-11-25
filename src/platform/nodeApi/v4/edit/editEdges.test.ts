@@ -222,7 +222,7 @@ describe('edit edges', () => {
     expectRefusal(() => edit.disconnect(output, innerHandle), 'disconnect')
   })
 
-  it('starts version again on a reload, so a later reading can repeat an earlier one', () => {
+  it('goes on counting through a reload the API is not told of, so a later reading never repeats an earlier one', () => {
     const saved = graph.serialize()
     for (const title of ['One', 'Two', 'Three', 'Four', 'Five']) {
       handle.setTitle(title)
@@ -232,7 +232,7 @@ describe('edit edges', () => {
 
     graph.configure(saved)
 
-    expect(comfy.graph.version).toBeLessThan(edited)
+    expect(comfy.graph.version).toBeGreaterThan(edited)
   })
 
   it('leaves version alone for a disconnect with nothing to disconnect', () => {

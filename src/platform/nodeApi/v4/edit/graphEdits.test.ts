@@ -377,6 +377,43 @@ describe('graph edits', () => {
       expect(onCanvas.graph.version).toBe(atRoot)
     })
 
+    it('changes when removing the last node of a subgraph releases the definition, even one whose count offsets the removal', () => {
+      function documentWithOnePlacement(subgraphCount: number) {
+        const root = new LGraph()
+        const subgraph = createTestSubgraph({ rootGraph: root })
+        root.subgraphs.set(subgraph.id, subgraph)
+        const placement = createTestSubgraphNode(subgraph, {
+          parentGraph: root
+        })
+        root.add(placement)
+        subgraph._version = subgraphCount
+        const { comfy: onRoot } = createComfyApi({ getGraph: () => root })
+        return { root, onRoot, placement: String(placement.id) }
+      }
+      const probe = documentWithOnePlacement(0)
+      const rootBefore = probe.root._version
+      probe.onRoot.graph.node(probe.placement)?.remove()
+      const offset = probe.root._version - rootBefore
+      const { root, onRoot, placement } = documentWithOnePlacement(offset)
+      const before = onRoot.graph.version
+
+      expect(onRoot.graph.node(placement)?.remove()).toBe(true)
+
+      expect(root.subgraphs.size).toBe(0)
+      expect(onRoot.graph.version).not.toBe(before)
+    })
+
+    it('changes when an import clears the graph and builds another in it', () => {
+      const node = comfy.graph.add(TYPE)
+      node?.setTitle('Before the import')
+      const before = comfy.graph.version
+
+      shown().clear()
+      for (let added = 0; added < 3; added++) shown().add(new AddedNode())
+
+      expect(comfy.graph.version).not.toBe(before)
+    })
+
     it('is undefined without a graph on screen', () => {
       graph = null
 
