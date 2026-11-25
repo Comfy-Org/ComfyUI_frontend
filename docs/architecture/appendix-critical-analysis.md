@@ -108,7 +108,7 @@ The documents present branded IDs as an unqualified improvement. They are an imp
 
 > **Resolved (PR 12617).** The pivot honored this concern. `WidgetValueStore`
 > keeps the self-documenting composite as its key, branded as a string
-> (`WidgetId = graphId:nodeId:name`, `src/types/widgetId.ts`), gaining cross-kind
+> (`WidgetId = graphId:nodeId:name`, `packages/graph-model/src/widgetId.ts`), gaining cross-kind
 > safety while preserving the structural meaning the synthetic integer would have
 > shed.
 

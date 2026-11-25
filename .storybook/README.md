@@ -125,7 +125,7 @@ export const WithVariant: Story = {
   - What cases are covered
   - How variants (e.g. size, colors) look in isolation
 - **Example**:  
-  `PackActionButton.vue` wraps the design-system `Button` with additional logic.  
+  A container that wraps the design-system `Button` with install or fetch logic.  
   → Only create a story for the base UI button, not for the wrapper.
 
 ### Suggested Workflow
