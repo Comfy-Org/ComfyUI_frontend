@@ -1828,6 +1828,24 @@ describe('FullPageTopupView paying with WeChat Pay or Alipay', () => {
     }
   )
 
+  it('offers the option as another way to pay, with the one terms note under it', async () => {
+    renderTopup({
+      topupQuote: PAYS_ONCE,
+      paymentMethods: { status: 'ok', value: [VISA] }
+    })
+    await screen.findByText('Add credits · Acme Team')
+    const option = await screen.findByRole('button', {
+      name: 'Pay with WeChat Pay or Alipay'
+    })
+
+    const [terms, ...more] = screen.getAllByText(/By continuing/)
+    expect(more).toHaveLength(0)
+    expect(
+      option.compareDocumentPosition(terms) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy()
+    expect(screen.getByText('or')).toBeVisible()
+  })
+
   it('keeps the customer on the page with the refusal when the hosted checkout is refused', async () => {
     const assign = vi
       .spyOn(window.location, 'assign')

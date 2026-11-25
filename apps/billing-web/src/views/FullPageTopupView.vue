@@ -135,6 +135,7 @@ function openBillingSettings() {
         purchase="credits"
         :saved-methods="savedMethods"
         :saves-card-off-session="savesCardOffSession"
+        :option-below="offersHostedMethods"
         @phase="onPaymentPhase"
         @pay="pay"
         @retry-element="retryElement"
