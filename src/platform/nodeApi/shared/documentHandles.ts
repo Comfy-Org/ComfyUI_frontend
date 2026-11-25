@@ -44,6 +44,10 @@ interface CacheOptions<TLive> {
 
 export type RestoredState = FlattenableWorkflowGraph & { readonly id?: string }
 
+type Ending =
+  | { readonly phase: 'staging'; readonly graph: LGraph }
+  | { readonly phase: 'configuring'; readonly outgoingState: LGraph['state'] }
+
 interface Restoring {
   readonly outgoingState: LGraph['state']
   readonly nodesByGraph: ReadonlyMap<string, ReadonlySet<string>>
@@ -56,7 +60,7 @@ interface Retirable {
 }
 
 export interface DocumentHandles {
-  /** Retires every handle made so far; until the load that ends `graph`'s document finishes, a handle made in it is retired as soon as it is made. */
+  /** Retires every handle made so far; until the next document begins every handle made is retired as soon as it is made, and after that, until the load finishes, one made in `graph` as it was then. */
   endDocument(graph: LGraph): void
   /** Retires every handle made so far. */
   beginDocument(): void
@@ -79,14 +83,15 @@ export function createDocumentHandles(
 ): DocumentHandles {
   let documentNumber = 0
   let rebuildCount = 0
-  let endedGraphState: LGraph['state'] | undefined
+  let ending: Ending | undefined
   let restoring: Restoring | undefined
   const handlesMade = new WeakSet<object>()
   const caches = new Set<Retirable>()
 
-  function stateOfEndedDocument(): LGraph['state'] | undefined {
-    if (!isLoading()) endedGraphState = undefined
-    return endedGraphState
+  function isEndedIn(graph: LGraph): boolean {
+    if (!isLoading()) ending = undefined
+    if (!ending) return false
+    return ending.phase === 'staging' || ending.outgoingState === graph.state
   }
 
   function followGraph(graph: LGraph, standingAtBirth: Standing) {
@@ -127,9 +132,13 @@ export function createDocumentHandles(
   return {
     endDocument(graph) {
       retireAllHandles()
-      endedGraphState = graph.state
+      ending = { phase: 'staging', graph }
     },
-    beginDocument: retireAllHandles,
+    beginDocument() {
+      retireAllHandles()
+      if (ending?.phase === 'staging')
+        ending = { phase: 'configuring', outgoingState: ending.graph.state }
+    },
     beforeHistoryRestore(graph, state) {
       const nodesByGraph = nodeIdsByGraph(state)
       restoring = { outgoingState: graph.state, nodesByGraph }
@@ -231,7 +240,7 @@ export function createDocumentHandles(
           const outgoing = setAside.get(entries)?.get(key)
           if (outgoing?.locate() !== undefined) return outgoing.handle
 
-          const ended = graph.state === stateOfEndedDocument()
+          const ended = isEndedIn(graph)
           const { resolveGraph, resolveRoot, stand } = followGraph(
             graph,
             ended ? 'retired' : 'live'

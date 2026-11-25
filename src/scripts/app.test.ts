@@ -3564,6 +3564,82 @@ describe('ComfyApp', () => {
       expect(comfy.graph.node('1')).not.toBe(takenDuringLoad)
     })
 
+    it.for([{ clean: true }, { clean: false }])(
+      'refuses an edit to the graph between the freeze and the configure, which would discard it (clean $clean)',
+      async ({ clean }) => {
+        const { comfy } = nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
+        await app.loadGraphData(workflowWithFixedIdAndOneNode(), false)
+        const staged: (NodeHandle | undefined)[] = []
+        let hookRunsLeft = 1
+        mockExtensionService.invokeExtensionsAsync.mockImplementation(
+          async (hook) => {
+            if (hook !== 'beforeConfigureGraph' || !hookRunsLeft--) return []
+            staged.push(comfy.graph.add('HandleProbe'))
+            return []
+          }
+        )
+
+        await app.loadGraphData(workflowWithFixedIdAndOneNode(), clean)
+
+        expect(staged).toEqual([undefined])
+        expect(app.rootGraph.nodes.map(({ id }) => String(id))).toEqual(['1'])
+      }
+    )
+
+    async function importA1111ImageWithProbe() {
+      vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
+        parameters: 'positive\nNegative prompt: negative\nSteps: 20'
+      })
+      mockImportA1111.mockImplementation(
+        async (incomingGraph, _parameters, beforeGraphClear) => {
+          await beforeGraphClear?.()
+          incomingGraph.clear()
+          const probe = LiteGraph.createNode('HandleProbe')
+          assert(probe)
+          incomingGraph.add(probe)
+          return 'imported'
+        }
+      )
+      await app.handleFile(createTestFile('a1111.png', 'image/png'))
+    }
+
+    it.for([
+      {
+        format: 'API JSON',
+        load: () =>
+          app.loadApiJson(
+            { '1': { class_type: 'HandleProbe', inputs: {} } },
+            'probe.json'
+          )
+      },
+      { format: 'an A1111 image', load: () => importA1111ImageWithProbe() }
+    ])(
+      'refuses an edit to the outgoing document once $format freezes it, and keeps the handles of the import',
+      async ({ load }) => {
+        const { comfy, takenWhileLoading } =
+          nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
+        await app.loadGraphData(workflowWithFixedIdAndOneNode(), false)
+        const before = comfy.graph.node('1')
+        assert(before)
+        takenWhileLoading.length = 0
+        const edits: (boolean | undefined)[] = []
+        app.rootGraph.nodes[0].onRemoved = () => {
+          edits.push(
+            before.setTitle('Lost'),
+            comfy.graph.node('1')?.setTitle('Lost too')
+          )
+        }
+
+        await load()
+
+        expect(edits).toEqual([false, false])
+        expect(before.isDeleted).toBe(true)
+        expect(takenWhileLoading.map(({ isDeleted }) => isDeleted)).toEqual([
+          false
+        ])
+      }
+    )
+
     it.for(['a legacy onRemoved', 'a V4 onRemoved hook'])(
       'gives %s the outgoing node retired when a load that does not clean first replaces it with a node of the same id',
       async (removal) => {

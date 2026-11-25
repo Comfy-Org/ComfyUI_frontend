@@ -2562,6 +2562,7 @@ export class ComfyApp implements IComfyApp {
               useMissingNodesErrorStore().setMissingNodeTypes([])
             }
             releaseCaptureSuppression = beginChangeCaptureSuppression()
+            this.beginImportedDocument()
             graph = this.rootGraphForLoad(null, true)
             this.activateRootGraph(graph)
             return graph
@@ -2737,6 +2738,11 @@ export class ComfyApp implements IComfyApp {
     })
   }
 
+  private beginImportedDocument() {
+    useNodeApiHost().endDocument(this.rootGraph)
+    useNodeApiHost().beginDocument()
+  }
+
   async loadApiJson(
     apiData: ComfyApiWorkflow,
     fileName?: string,
@@ -2761,6 +2767,7 @@ export class ComfyApp implements IComfyApp {
       const replaceCanvas = useWorkflowService().beforeLoadNewGraph(false)
       replaceCanvas()
       releaseCaptureSuppression = beginChangeCaptureSuppression()
+      this.beginImportedDocument()
       const graph = this.rootGraphForLoad(null, true)
       this.activateRootGraph(graph)
       withGraphIntentSource('load', () => this.clean())

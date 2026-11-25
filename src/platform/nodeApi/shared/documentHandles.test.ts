@@ -151,6 +151,7 @@ describe('document handles', () => {
     const before = probes.handleFor(root, 'k', graphProbe)
 
     handles.endDocument(root)
+    handles.beginDocument()
     const outgoing = probes.handleFor(root, 'k', graphProbe)
     root.configure(root.serialize())
     const incoming = probes.handleFor(root, 'k', graphProbe)
@@ -161,6 +162,28 @@ describe('document handles', () => {
     expect(outgoing.resolveGraph()).toBeUndefined()
     expect(incoming.resolveGraph()).toBe(root)
     expect(probes.handleFor(root, 'k', graphProbe)).toBe(incoming)
+  })
+
+  it('retires each handle made between the end of a document and the begin of the next, in the graph a load cleared to stage the next one too', () => {
+    const { handles, probes } = handlesWithProbes(
+      () => true,
+      undefined,
+      () => true
+    )
+    const root = new LGraph()
+
+    handles.endDocument(root)
+    root.clear()
+    const staged = probes.handleFor(root, 'k', graphProbe)
+    handles.beginDocument()
+    const stagedAfterBegin = probes.handleFor(root, 'other', graphProbe)
+    root.configure(root.serialize())
+    const incoming = probes.handleFor(root, 'k', graphProbe)
+
+    expect(staged.resolveGraph()).toBeUndefined()
+    expect(stagedAfterBegin.resolveGraph()).toBeUndefined()
+    expect(incoming).not.toBe(staged)
+    expect(incoming.resolveGraph()).toBe(root)
   })
 
   it('gives working handles in the graph a load ended once the load gives up without configuring it', () => {
