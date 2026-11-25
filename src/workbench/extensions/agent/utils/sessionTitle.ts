@@ -35,7 +35,7 @@ export function deriveSessionTitle(
 ): string | undefined {
   const firstUser = entries.find(
     (entry): entry is Extract<ConversationEntry, { role: 'user' }> =>
-      entry.role === 'user'
+      entry.role === 'user' && entry.pending?.status !== 'failed'
   )
   const text = firstUser?.text.trim() ?? ''
   return truncatedTitle(text) || undefined

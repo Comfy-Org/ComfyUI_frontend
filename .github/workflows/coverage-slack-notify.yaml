@@ -80,7 +80,7 @@ jobs:
       - name: Resolve the unit coverage baseline
         id: unit-baseline
         if: steps.pr-meta.outputs.skip != 'true'
-        run: pnpm exec tsx scripts/cicd/coverage-unit-baseline.ts
+        run: pnpm exec tsx tools/ci/src/cicd/coverage-unit-baseline.ts
 
       # warn: a run whose shards failed uploads nothing, and that has to leave
       # unit out of the report rather than turn the notifier red.
@@ -130,7 +130,7 @@ jobs:
 
       - name: Order E2E coverage against this commit
         id: e2e-order
-        run: pnpm exec tsx scripts/cicd/coverage-e2e-order.ts
+        run: pnpm exec tsx tools/ci/src/cicd/coverage-e2e-order.ts
 
       # An incomplete shard merge is not comparable with a whole one, so it
       # must neither be reported nor stored as the baseline the next run
@@ -143,7 +143,7 @@ jobs:
         if: steps.e2e-order.outputs.usable == 'true'
         run: |
           META=temp/e2e-coverage/coverage-metadata.json
-          COMPLETE=$(pnpm exec tsx scripts/coverage-metadata.ts "$META")
+          COMPLETE=$(pnpm exec tsx tools/ci/src/coverage-metadata.ts "$META")
           echo "complete=$COMPLETE" >> "$GITHUB_OUTPUT"
           if [ "$COMPLETE" != 'true' ]; then
             echo "::warning::E2E coverage is not a verified whole shard merge; skipping E2E trend reporting. Metadata: $(cat "$META" 2>/dev/null || echo absent)"
@@ -161,7 +161,7 @@ jobs:
           # instead of hedging every single report.
           UNIT_SPAN_FROM: ${{ steps.unit-baseline.outputs.spanned == 'true' && steps.unit-baseline.outputs.ancestor || '' }}
         run: |
-          PAYLOAD=$(pnpm exec tsx scripts/coverage-slack-notify.ts \
+          PAYLOAD=$(pnpm exec tsx tools/ci/src/coverage-slack-notify.ts \
             --pr-url="$PR_URL" \
             --pr-number="$PR_NUMBER" \
             --author="$PR_AUTHOR" \
@@ -184,7 +184,7 @@ jobs:
           SLACK_PAYLOAD: ${{ steps.slack-payload.outputs.payload }}
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
           SLACK_CHANNEL_ID: ${{ vars.COVERAGE_SLACK_CHANNEL_ID }}
-        run: scripts/cicd/post-slack-coverage-report.sh
+        run: tools/ci/src/cicd/post-slack-coverage-report.sh
 
       # success(), not always(): the download above defaults to
       # workflow_conclusion=success, so a baseline saved by a failing run can

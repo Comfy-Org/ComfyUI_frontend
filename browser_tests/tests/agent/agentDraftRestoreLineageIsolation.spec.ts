@@ -106,7 +106,6 @@ test.describe(
       await expect(nodes.getNodeLocator(String(STALE_NODE_ID))).toBeVisible()
       const panel = new AgentPanel(page)
       await panel.open()
-      await panel.selectWorkflow()
       await panel.sendMessage('Inspect this restored workflow.')
 
       await expect.poll(() => hostSocket.subscribeCount()).toBeGreaterThan(0)

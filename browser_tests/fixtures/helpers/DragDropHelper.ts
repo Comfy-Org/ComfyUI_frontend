@@ -8,6 +8,24 @@ import { getMimeType } from '@e2e/fixtures/utils/mimeTypeUtil'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import { nextFrame } from '@e2e/fixtures/utils/timing'
 
+type DragDropOptions = {
+  dropPosition?: Position
+  waitForUpload?: boolean
+  preserveNativePropagation?: boolean
+}
+
+function readDropFixture(resolvedPath: string): Buffer {
+  try {
+    return readFileSync(resolvedPath)
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error)
+    throw new Error(
+      `Failed to read drag-and-drop fixture at "${resolvedPath}": ${reason}`,
+      { cause: error }
+    )
+  }
+}
+
 export class DragDropHelper {
   constructor(private readonly page: Page) {}
 
@@ -37,17 +55,17 @@ export class DragDropHelper {
     options: {
       fileName?: string
       filePath?: string
+      /** Overrides the MIME type inferred from the file name. */
+      fileType?: string
       generatedFile?: { name: string; type: string; byteLength: number }
       url?: string
-      dropPosition?: Position
-      waitForUpload?: boolean
-      preserveNativePropagation?: boolean
-    } = {}
+    } & DragDropOptions = {}
   ): Promise<void> {
     const {
       dropPosition = { x: 100, y: 100 },
       fileName,
       filePath,
+      fileType,
       generatedFile,
       url,
       waitForUpload = false,
@@ -76,19 +94,10 @@ export class DragDropHelper {
     if (fileName || filePath) {
       const resolvedPath = filePath ?? assetPath(fileName!)
       const displayName = fileName ?? basename(resolvedPath)
-      let buffer: Buffer
-      try {
-        buffer = readFileSync(resolvedPath)
-      } catch (error) {
-        const reason = error instanceof Error ? error.message : String(error)
-        throw new Error(
-          `Failed to read drag-and-drop fixture at "${resolvedPath}": ${reason}`,
-          { cause: error }
-        )
-      }
+      const buffer = readDropFixture(resolvedPath)
 
       evaluateParams.fileName = displayName
-      evaluateParams.fileType = getMimeType(displayName)
+      evaluateParams.fileType = fileType ?? getMimeType(displayName)
       evaluateParams.buffer = [...new Uint8Array(buffer)]
     }
 
@@ -108,7 +117,7 @@ export class DragDropHelper {
         params.byteLength === undefined
           ? params.buffer && new Uint8Array(params.buffer)
           : new Uint8Array(params.byteLength)
-      if (bytes && params.fileName && params.fileType) {
+      if (bytes && params.fileName && params.fileType !== undefined) {
         const file = new File([bytes], params.fileName, {
           type: params.fileType
         })
@@ -187,38 +196,28 @@ export class DragDropHelper {
 
   async dragAndDropFile(
     fileName: string,
-    options: {
-      dropPosition?: Position
-      waitForUpload?: boolean
-      preserveNativePropagation?: boolean
-    } = {}
+    options: DragDropOptions = {}
   ): Promise<void> {
     return this.dragAndDropExternalResource({ fileName, ...options })
   }
 
   async dragAndDropFilePath(
     filePath: string,
-    options: { dropPosition?: Position; waitForUpload?: boolean } = {}
+    options: DragDropOptions = {}
   ): Promise<void> {
     return this.dragAndDropExternalResource({ filePath, ...options })
   }
 
   async dragAndDropGeneratedFile(
     generatedFile: { name: string; type: string; byteLength: number },
-    options: {
-      dropPosition?: Position
-      preserveNativePropagation?: boolean
-    } = {}
+    options: DragDropOptions = {}
   ): Promise<void> {
     return this.dragAndDropExternalResource({ generatedFile, ...options })
   }
 
   async dragAndDropURL(
     url: string,
-    options: {
-      dropPosition?: Position
-      preserveNativePropagation?: boolean
-    } = {}
+    options: DragDropOptions = {}
   ): Promise<void> {
     return this.dragAndDropExternalResource({ url, ...options })
   }

@@ -17,6 +17,10 @@ for (const mode of ['canvas', 'vue'] as const) {
     `Image preview workflow scope (${mode} mode)`,
     { tag: mode === 'vue' ? ['@vue-nodes'] : [] },
     () => {
+      test.use({
+        initialSettings: { 'Comfy.Node.DownscaleImagePreviews': false }
+      })
+
       const held: Route[] = []
       let releaseHeld = false
 

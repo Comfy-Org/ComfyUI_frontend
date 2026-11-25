@@ -4,23 +4,26 @@ import { useI18n } from 'vue-i18n'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { st } from '@/i18n'
-import { civitaiImportSource } from '@/platform/assets/importSources/civitaiImportSource'
-import { huggingfaceImportSource } from '@/platform/assets/importSources/huggingfaceImportSource'
-import type {
-  AssetItem,
-  AssetMetadata
-} from '@/platform/assets/schemas/assetSchema'
+import {
+  civitaiImportSource,
+  huggingfaceImportSource,
+  validateSourceUrl
+} from '@comfyorg/assets-core/imports'
+import type { AssetItem, AssetMetadata } from '@comfyorg/assets-core/schema'
 import { assetService } from '@/platform/assets/services/assetService'
-import type { ImportSource } from '@/platform/assets/types/importSource'
+import type { ImportSource } from '@comfyorg/assets-core/imports'
 import {
   getAssetFilename,
   stripModelTypePrefix,
   toModelTypeTag
-} from '@/platform/assets/utils/assetMetadataUtils'
-import { validateSourceUrl } from '@/platform/assets/utils/importSourceUtil'
-import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
-import { useAssetsStore } from '@/stores/assetsStore'
+} from '@comfyorg/assets-core/metadata'
+import { useAssetDownloadStore } from '@/platform/assets/stores/assetDownloadStore'
+import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
+import type {
+  UploadModelSuccess,
+  UploadModelTypeMismatch
+} from '@/platform/assets/types/modelImport'
 
 interface WizardData {
   url: string
@@ -36,33 +39,6 @@ interface ModelTypeOption {
 }
 
 const MODEL_ROOT_TAG = 'models'
-
-export interface UploadModelSuccess {
-  filename: string
-  modelType?: string
-  taskId?: string
-  status: 'processing' | 'success'
-}
-
-export interface UploadModelTypeMismatch {
-  importedModelType?: string
-  importedModelTypeLabel?: string
-  requiredModelType: string
-  requiredModelTypeLabel: string
-}
-
-interface MissingModelUploadContext {
-  kind: 'missing-model-resolution'
-  missingModelName: string
-  requiredModelType: string
-  replacementTargets: Array<{
-    nodeId: string
-    nodeLabel: string
-    widgetName: string
-  }>
-}
-
-export type UploadModelDialogContext = MissingModelUploadContext
 
 interface UploadModelWizardOptions {
   requiredModelType?: string

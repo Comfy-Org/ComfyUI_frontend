@@ -1,7 +1,6 @@
 import type { AgentPostMessageRequest } from '@comfyorg/ingest-types'
 import { expect, mergeTests } from '@playwright/test'
 
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { zComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 
 import defaultWorkflow from '@e2e/assets/default.json' with { type: 'json' }
@@ -58,8 +57,8 @@ test.describe(
       const secondPrompt = 'Is it still connected?'
 
       await test.step('another tab owns the workflow id the server remembers', async () => {
+        await comfyPage.menu.topbar.saveWorkflowAs('Unsaved Workflow')
         await agentPanel.open()
-        await agentPanel.selectWorkflow()
       })
 
       const { severedLink, targetInput, unboundTab } =
@@ -73,10 +72,9 @@ test.describe(
             .locator('.workflow-label')
             .innerText()
           expect(unboundTab).toMatch(/^Unsaved Workflow/)
-          await agentPanel.root
-            .getByRole('button', { name: enMessages.agent.newChat })
-            .click()
-          await expect(agentPanel.workflowPicker).toHaveText(unboundTab)
+          await expect(comfyPage.menu.topbar.getActiveTab()).toHaveText(
+            unboundTab
+          )
           const targetNode = await comfyPage.nodeOps.getNodeRefById(6)
           const targetInput = await targetNode.getInputByName('clip')
           const severedLink = {
@@ -103,7 +101,9 @@ test.describe(
         const socket = await getAgentSocket()
         pushAgentEvent(socket, MESSAGE_DONE_EVENT)
         await agentPanel.expectTurnSettled()
-        await expect(agentPanel.workflowPicker).toHaveText(unboundTab)
+        await expect(comfyPage.menu.topbar.getActiveTab()).toHaveText(
+          unboundTab
+        )
       })
 
       await test.step('the user severs the link on the selected canvas', async () => {

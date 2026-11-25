@@ -7,7 +7,7 @@ import { useI18n } from 'vue-i18n'
 
 import Loader from '@/components/loader/Loader.vue'
 import ToastPanel from '@comfyorg/design-system/toast/ToastPanel'
-import ProgressToastItem from '@/components/toast/ProgressToastItem.vue'
+import ProgressToastItem from '@/platform/assets/components/ModelImportProgressItem.vue'
 import Button from '@comfyorg/design-system/button/Button'
 import { usePopoverViewportDismiss } from '@comfyorg/design-system/lib/popover/usePopoverViewportDismiss'
 import { useErrorHandling } from '@/composables/useErrorHandling'
@@ -16,7 +16,7 @@ import type { TaskId } from '@/platform/tasks/services/taskService'
 import {
   isDownloadCancelled,
   useAssetDownloadStore
-} from '@/stores/assetDownloadStore'
+} from '@/platform/assets/stores/assetDownloadStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { t } = useI18n()
@@ -170,7 +170,7 @@ async function cancelDownload(taskId: TaskId) {
                   size="sm"
                   :class="
                     cn(
-                      'w-full justify-start bg-transparent',
+                      'w-full justify-start',
                       activeFilter === option.value && 'bg-muted'
                     )
                   "

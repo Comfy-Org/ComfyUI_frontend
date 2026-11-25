@@ -6,7 +6,7 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 import type { ComfyExtension } from '@/types/comfy'
 
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 
 interface SlotDefaultsExtension extends ComfyExtension {
   suggestionsNumber: { value: number } | null
@@ -97,7 +97,7 @@ export const slotDefaultsExtension: SlotDefaultsExtension = {
   suggestionsNumber: null,
   init(this: SlotDefaultsExtension) {
     LiteGraph.search_filter_enabled = true
-    this.suggestionsNumber = app.ui.settings.addSetting({
+    this.suggestionsNumber = useApp().ui.settings.addSetting({
       id: 'Comfy.NodeSuggestions.number',
       category: ['Comfy', 'Node Search Box', 'NodeSuggestions'],
       name: 'Number of nodes suggestions',

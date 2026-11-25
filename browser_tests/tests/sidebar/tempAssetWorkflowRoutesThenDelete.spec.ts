@@ -360,7 +360,7 @@ for (const option of [
           comfyPage.vueNodes.getWidgetRowByLabel('Load Image', 'image')
         )
 
-        await dropdown.selectOption(`${option.asset.name} [temp]`)
+        await dropdown.selectOption(option.asset.name)
         await expect.poll(() => imageWidget.getValue()).toBe(option.written)
 
         const row = await openAssetRow(comfyPage, option.asset, asCard)

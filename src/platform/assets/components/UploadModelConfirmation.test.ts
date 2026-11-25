@@ -6,7 +6,7 @@ import { ref, shallowRef } from 'vue'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useModelTypes } from '@/platform/assets/composables/useModelTypes'
-import type { UploadModelDialogContext } from '@/platform/assets/composables/useUploadModelWizard'
+import type { UploadModelDialogContext } from '@/platform/assets/types/modelImport'
 
 import UploadModelConfirmation from './UploadModelConfirmation.vue'
 
