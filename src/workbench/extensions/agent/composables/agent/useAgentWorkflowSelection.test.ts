@@ -5,7 +5,6 @@ import { getActivePinia } from 'pinia'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick } from 'vue'
 
-import { useToast } from '@/components/ui/toast/toastStore'
 import { i18n } from '@/i18n'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
@@ -117,7 +116,6 @@ function setup({ tabsRestored = true }: { tabsRestored?: boolean } = {}) {
       setup() {
         selection = useAgentWorkflowSelection({
           resolver,
-          canSelectTarget: () => true,
           warnWorkflowUnavailable: vi.fn(),
           warnRestoreFailed
         })
@@ -1542,48 +1540,11 @@ describe('historical workflow restoration', () => {
   })
 })
 
-describe('picking a target tab', () => {
+describe('picking a workflow reference', () => {
   beforeEach(() => localStorage.clear())
 
-  it('loads an unsaved tab a reload left unopened before saving it', async () => {
-    const { selection, workflows, panel, listCloudWorkflows } = setup()
-    const graph = { ...blankGraph, id: 'b6c1d1e6-7f00-4a7e-9a52-0d1a2b3c4d5e' }
-    const restored = workflows.createTemporary(
-      'Unsaved Workflow (2).json',
-      graph
-    )
-    workflows.openWorkflowsInBackground({ right: [restored.path] })
-    expect(restored.isLoaded).toBe(false)
-    let saved = false
-    vi.spyOn(restored, 'isTemporary', 'get').mockImplementation(() => !saved)
-    vi.mocked(useWorkflowService().saveWorkflowAs).mockImplementationOnce(
-      async (tab) => {
-        if (!tab.isLoaded)
-          throw new Error('Cannot save a workflow before it is loaded')
-        saved = true
-        return true
-      }
-    )
-    listCloudWorkflows.mockImplementation(async () =>
-      listing([
-        { id: 'wf-current', name: 'current' },
-        ...(saved ? [{ id: 'wf-restored', name: 'Unsaved Workflow (2)' }] : [])
-      ])
-    )
-    const toast = useToast()
-
-    expect(await selection.selectTarget(restored.path)).toBe(true)
-
-    expect(useWorkflowService().saveWorkflowAs).toHaveBeenCalledWith(restored, {
-      filename: 'Unsaved Workflow (2)'
-    })
-    expect(panel.selectedWorkflow?.path).toBe(restored.path)
-    expect(workflows.activeWorkflow?.path).toBe(restored.path)
-    expect(toast.toasts).toHaveLength(0)
-  })
-
   it('does not save a second copy when loading the tab finds it already saved', async () => {
-    const { selection, workflows, panel, listCloudWorkflows } = setup()
+    const { selection, workflows, listCloudWorkflows } = setup()
     const restored = workflows.createTemporary('Restored.json', {
       ...blankGraph,
       id: '0f7a3c52-0d55-4e43-9d1e-6a8d5c2b7e11'
@@ -1605,10 +1566,17 @@ describe('picking a target tab', () => {
       ])
     )
 
-    expect(await selection.selectTarget(restored.path)).toBe(true)
+    expect(
+      await selection.selectReference(
+        {
+          name: 'Restored',
+          tabPath: restored.path
+        },
+        'thread:1'
+      )
+    ).toMatchObject({ id: 'wf-restored' })
 
     expect(useWorkflowService().saveWorkflowAs).not.toHaveBeenCalled()
-    expect(panel.selectedWorkflow?.path).toBe(restored.path)
   })
 
   it('keeps the visible workflow when an unopened unsaved tab is picked as a reference', async () => {
@@ -1636,13 +1604,82 @@ describe('picking a target tab', () => {
     )
 
     expect(
-      await selection.selectReference({
-        name: 'Reference',
-        tabPath: restored.path
-      })
+      await selection.selectReference(
+        {
+          name: 'Reference',
+          tabPath: restored.path
+        },
+        'thread:1'
+      )
     ).toMatchObject({ id: 'wf-reference' })
 
     expect(workflows.activeWorkflow?.path).toBe(current.path)
     expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
+  })
+
+  it('tracks saving state per draft, allows already-saved picks, and rekeys when a blank chat becomes a thread', async () => {
+    const { selection, workflows, listCloudWorkflows } = setup()
+    const scratch = workflows.createTemporary('Scratch.json', {
+      ...blankGraph,
+      id: '7d2b4e6f-1a3c-4b5d-8e9f-0a1b2c3d4e5f'
+    })
+    const otherScratch = workflows.createTemporary('Other.json', {
+      ...blankGraph,
+      id: '8e3c5f7a-2b4d-5c6e-9f0a-1b2c3d4e5f60'
+    })
+    workflows.openWorkflowsInBackground({
+      right: [scratch.path, otherScratch.path]
+    })
+    let finishSave!: () => void
+    let saved = false
+    vi.spyOn(scratch, 'isTemporary', 'get').mockImplementation(() => !saved)
+    vi.mocked(useWorkflowService().saveWorkflowAs).mockImplementationOnce(
+      () =>
+        new Promise<boolean>((resolve) => {
+          finishSave = () => {
+            saved = true
+            resolve(true)
+          }
+        })
+    )
+    listCloudWorkflows.mockImplementation(async () =>
+      listing([
+        { id: 'wf-current', name: 'current' },
+        { id: 'wf-saved', name: 'saved' },
+        ...(saved ? [{ id: 'wf-scratch', name: 'Scratch' }] : [])
+      ])
+    )
+
+    const saving = selection.selectReference(
+      { name: 'Scratch', tabPath: scratch.path },
+      'blank:tab-a'
+    )
+    await waitFor(() => expect(finishSave).toBeTypeOf('function'))
+    expect(selection.savingReferenceFor('blank:tab-a')).toBe(true)
+    expect(selection.savingReferenceFor('thread:b')).toBe(false)
+
+    expect(
+      await selection.selectReference(
+        { id: 'wf-saved', name: 'saved' },
+        'thread:b'
+      )
+    ).toEqual({ id: 'wf-saved', name: 'saved' })
+    expect(selection.savingReferenceFor('blank:tab-a')).toBe(true)
+
+    expect(
+      await selection.selectReference(
+        { name: 'Other', tabPath: otherScratch.path },
+        'thread:b'
+      )
+    ).toBeUndefined()
+    expect(selection.savingReferenceFor('blank:tab-a')).toBe(true)
+
+    selection.rekeySavingReference('blank:tab-a', 'thread:a')
+    expect(selection.savingReferenceFor('blank:tab-a')).toBe(false)
+    expect(selection.savingReferenceFor('thread:a')).toBe(true)
+
+    finishSave()
+    expect(await saving).toMatchObject({ id: 'wf-scratch' })
+    expect(selection.savingReferenceFor('thread:a')).toBe(false)
   })
 })

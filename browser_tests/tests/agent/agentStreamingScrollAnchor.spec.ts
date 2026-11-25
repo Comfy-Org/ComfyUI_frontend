@@ -35,7 +35,6 @@ test.describe(
       postedMessages
     }) => {
       await agentPanel.open()
-      await agentPanel.selectWorkflow()
 
       const socket = await getAgentSocket()
       await agentPanel.sendMessage('Explain this workflow in detail')

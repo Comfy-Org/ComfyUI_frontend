@@ -254,6 +254,11 @@ export class UnauthorizedError extends Error {
   readonly status = 401
 }
 
+/** A 409 on a create-only user data write: the file already exists. */
+export class UserDataExistsError extends Error {
+  readonly status = 409
+}
+
 const CLIENT_ID_STORAGE_KEY = 'clientId'
 
 let reportedClientIdStorageFailure = false
@@ -534,6 +539,7 @@ export class ComfyApi extends EventTarget {
    * The API key for the comfy org account if the user logged in via API key.
    */
   apiKey?: string
+  loadedReleaseId?: string
 
   constructor(private readonly ports: ComfyApiPorts) {
     super()
@@ -1466,7 +1472,10 @@ export class ComfyApi extends EventTarget {
     const res = await this.fetchApi('/prompt', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        ...(this.loadedReleaseId && {
+          'Comfy-Loaded-Release': this.loadedReleaseId
+        })
       },
       body: JSON.stringify(body)
     })
@@ -1848,6 +1857,7 @@ export class ComfyApi extends EventTarget {
       stringify?: boolean
       throwOnError?: boolean
       full_info?: boolean
+      reportConflict?: boolean
     } = {
       overwrite: true,
       stringify: true,
@@ -1865,29 +1875,32 @@ export class ComfyApi extends EventTarget {
     })
     if (resp.status !== 200) {
       const message = `Error storing user data file '${file}': ${resp.status} ${resp.statusText}`
+      const exists = resp.status === 409 && !overwrite
       // The reported message and route are file-independent: the literal file
       // name (and `route`, which embeds it) is unbounded cardinality and
       // would fragment Sentry grouping into one bucket per file instead of
       // one for this failure mode — exactly what buried PM-1906's alerts.
-      reportError(
-        new Error(
-          `Error storing user data file: ${resp.status} ${resp.statusText}`
-        ),
-        {
-          errorType: 'userdata_store_failure',
-          surface: 'platform',
-          tags: {
-            status: resp.status,
-            overwrite,
-            full_info: fullInfo
-          },
-          context: {
-            file,
-            route: `/userdata/{file}?overwrite=${overwrite}&full_info=${fullInfo}`
+      if (!exists || options.reportConflict !== false)
+        reportError(
+          new Error(
+            `Error storing user data file: ${resp.status} ${resp.statusText}`
+          ),
+          {
+            errorType: 'userdata_store_failure',
+            surface: 'platform',
+            tags: {
+              status: resp.status,
+              overwrite,
+              full_info: fullInfo
+            },
+            context: {
+              file,
+              route: `/userdata/{file}?overwrite=${overwrite}&full_info=${fullInfo}`
+            }
           }
-        }
-      )
+        )
       if (options.throwOnError !== false) {
+        if (exists) throw new UserDataExistsError(message)
         throw new Error(message)
       }
     }

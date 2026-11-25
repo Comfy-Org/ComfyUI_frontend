@@ -22,6 +22,17 @@
           aria-hidden="true"
         />
         {{ $t('sideToolbar.workspaceLibrary.title') }}
+        <Badge
+          v-if="modelCount > 0"
+          variant="badge"
+          severity="secondary"
+          :aria-label="
+            $t('sideToolbar.workspaceLibrary.modelCount', modelCount)
+          "
+          data-testid="workspace-library-count"
+        >
+          {{ modelCount }}
+        </Badge>
       </Button>
       <Button
         variant="muted-textonly"
@@ -49,30 +60,34 @@
           {{ $t('g.retry') }}
         </Button>
       </div>
-      <p
-        v-else-if="!libraryShelves.length"
-        class="m-0 text-xs text-muted-foreground"
-      >
-        {{ $t('sideToolbar.workspaceLibrary.empty') }}
-      </p>
       <p v-else-if="!shelves.length" class="m-0 text-xs text-muted-foreground">
-        {{ $t('g.noResults') }}
+        {{ $t(emptyMessageKey) }}
       </p>
       <div v-for="shelf in shelves" :key="shelf.folder">
         <h3 class="m-0 text-xs font-medium text-muted-foreground">
           {{ shelf.folder }}
         </h3>
         <ul class="m-0 list-none p-0">
-          <li v-for="name in shelf.names" :key="name">
+          <li
+            v-for="name in shelf.names"
+            :key="name"
+            class="flex items-center gap-1"
+          >
             <Button
               variant="textonly"
               size="sm"
-              class="w-full justify-start font-normal"
+              class="min-w-0 flex-1 justify-start font-normal"
               :title="name"
               @click="place(shelf.folder, name)"
             >
               <span class="min-w-0 truncate">{{ name }}</span>
             </Button>
+            <i
+              role="img"
+              :aria-label="$t('sideToolbar.workspaceLibrary.fromWorkspace')"
+              :title="$t('sideToolbar.workspaceLibrary.fromWorkspace')"
+              class="icon-[lucide--cloud] size-3.5 text-muted-foreground"
+            />
           </li>
         </ul>
       </div>
@@ -84,27 +99,25 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import { computed, onScopeDispose, ref, useId, watch } from 'vue'
 
+import Badge from '@comfyorg/design-system/badge/Badge'
 import Button from '@comfyorg/design-system/button/Button'
 import { startModelLoaderDrag } from '@/composables/node/startModelLoaderDrag'
 import {
+  WORKER_MODEL_FOLDERS,
   deploymentDownloads,
   useDeploymentLibraryModelsStore
 } from '@/platform/workspace/stores/deploymentLibraryModelsStore'
-import { useModelStore } from '@/stores/modelStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 
 const { searchQuery = '' } = defineProps<{ searchQuery?: string }>()
 
-const modelStore = useModelStore()
 const modelToNodeStore = useModelToNodeStore()
 const library = useDeploymentLibraryModelsStore()
 const listId = useId()
 const isOpen = ref(false)
 
 const folders = computed(() =>
-  modelStore.modelFolders
-    .map((folder) => folder.directory)
-    .filter((folder) => deploymentDownloads(folder))
+  [...WORKER_MODEL_FOLDERS].filter((folder) => deploymentDownloads(folder))
 )
 
 const libraryShelves = computed(() =>
@@ -123,6 +136,21 @@ const shelves = computed(() => {
     }))
     .filter((shelf) => shelf.names.length > 0)
 })
+
+const emptyMessageKey = computed(() =>
+  libraryShelves.value.length
+    ? 'g.noResults'
+    : 'sideToolbar.workspaceLibrary.empty'
+)
+
+const modelCount = computed(() =>
+  folders.value.every((folder) => library.hasLoaded(folder))
+    ? libraryShelves.value.reduce(
+        (total, shelf) => total + shelf.names.length,
+        0
+      )
+    : 0
+)
 
 const isLoading = computed(
   () =>

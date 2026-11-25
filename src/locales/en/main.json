@@ -422,11 +422,11 @@
     "nodeSlotsError": "Node Slots Error",
     "nodeWidgetsError": "Node Widgets Error",
     "frameNodes": "Frame Nodes",
-    "arrange": "Arrange",
-    "arrangeVertically": "Arrange vertically",
-    "arrangeHorizontally": "Arrange horizontally",
-    "arrangeAsGrid": "Arrange as grid",
-    "arrangeSpacing": "Arrangement spacing",
+    "tidyUp": "Tidy up",
+    "tidyUpTooltip": "Line the nodes up in rows and columns and even out the gaps",
+    "gapHandle": "Gap between nodes",
+    "gapValue": "{value} canvas unit | {value} canvas units",
+    "mixedGaps": "Mixed",
     "listening": "Listening...",
     "ready": "Ready",
     "play": "Play",
@@ -1077,7 +1077,9 @@
       "title": "Workspace library",
       "explainer": "Models in your workspace. Ones not in this build download when a job needs them.",
       "empty": "No models in your workspace library.",
-      "loadFailed": "Couldn't load your workspace library."
+      "loadFailed": "Couldn't load your workspace library.",
+      "fromWorkspace": "From your workspace",
+      "modelCount": "{count} model | {count} models"
     },
     "searchResultsCapped": "Showing the first {limit} matches. Refine your search to see more specific results.",
     "downloads": "Downloads",
@@ -1144,6 +1146,9 @@
       "dirtyCloseAnyway": "Close anyway",
       "confirmOverwriteTitle": "Overwrite existing file?",
       "confirmOverwrite": "The file below already exists. Would you like to overwrite it?",
+      "bookmarkSaveFailed": "Your bookmark change wasn't saved. Check your connection and try again.",
+      "renamedButBookmarksNotUpdated": "Workflow renamed, but your bookmarks couldn't be updated",
+      "deletedButBookmarksNotUpdated": "Workflow deleted, but your bookmarks couldn't be updated",
       "workflowTreeType": {
         "browse": "Browse",
         "bookmarks": "Bookmarks",
@@ -2741,7 +2746,8 @@
     "failedToLoadHDRI": "Failed to load HDRI file",
     "unsupportedHDRIFormat": "Unsupported file format. Please upload a .hdr or .exr file.",
     "failedToToggleGizmo": "Failed to toggle gizmo",
-    "failedToSetGizmoMode": "Failed to set gizmo mode"
+    "failedToSetGizmoMode": "Failed to set gizmo mode",
+    "batchStoppedOnWorkflowChange": "Queued {queued} of {requested}. Stopped because you switched workflow, so the rest would have run the wrong one."
   },
   "nodeBadge": {
     "partnerNodesCount": "Partner Nodes x {count}"
@@ -2792,6 +2798,18 @@
       },
       "mcp:tools:call": {
         "label": "Run workflows on your behalf"
+      },
+      "comfy-mcp:tools:read": {
+        "label": "View the workflow tools available to you"
+      },
+      "comfy-mcp:tools:call": {
+        "label": "Run workflows and partner models on your behalf, using your credits"
+      },
+      "comfy-router:models:read": {
+        "label": "View the Comfy Router model catalog"
+      },
+      "comfy-router:models:invoke": {
+        "label": "Run partner models through Comfy Router, using your credits"
       }
     },
     "workspace": {
@@ -4283,6 +4301,7 @@
     "version": "v{version}",
     "labelWithDetail": "{label} · {detail}",
     "status": {
+      "building": "Building",
       "stopped": "Stopped",
       "stopping": "Stopping",
       "failed": "Failed",
@@ -4304,6 +4323,7 @@
     "pickGoneDetail": "This browser now runs on Comfy Cloud. Pick a deployment again to use one.",
     "defaultGone": "The workspace default was deleted, so members start on Comfy Cloud.",
     "defaultGoneOwner": "The workspace default was deleted, so members start on Comfy Cloud. Choose a new one under Workspace default.",
+    "newDeploymentName": "New deployment",
     "noDeployments": "This workspace has no deployments yet.",
     "createCustomDeployment": "Create a custom deployment",
     "manageDeployments": "Manage deployments",
@@ -4324,30 +4344,43 @@
     "workflowNeedsDeployment": {
       "title": "Run this workflow on a custom deployment",
       "installTitle": "Install your missing custom nodes",
-      "installBody": "Deploy a custom Build to add the custom nodes and models Comfy Cloud doesn't have. You set it up on Platform, and it appears under Run on for your workspace.",
+      "installBody": "Create a Custom Build to add the custom nodes and models Comfy Cloud doesn't have. You set it up on Platform, and it appears under Run on for your workspace.",
       "buildOnPlatform": "Build on Platform",
       "missingPacks": "{count} missing node pack | {count} missing node packs",
       "missingNodes": "{count} missing node | {count} missing nodes",
       "missingModels": "{count} missing model | {count} missing models",
       "andMore": "{names}, and {count} more",
       "titleNoneRunIt": "Create a deployment to run this workflow on Comfy Cloud",
+      "titleNoneRunItCustomBuild": "Create a Custom Build to run this workflow on Comfy Cloud",
+      "createCustomBuild": "Create a Custom Build",
       "noneRunIt": "No deployment in this workspace has all of these nodes.",
       "switchBody": "Comfy Cloud is missing these. Switch to a deployment that has them and keep working from there.",
       "switch": "Switch"
     },
     "runsThisWorkflow": "Runs this workflow",
+    "releaseChangedRun": "{deployment} now runs v{version}. Reload to run on it.",
+    "releaseChangedRunNoVersion": "{deployment} now runs a different version. Reload to run on it.",
+    "releaseChangedRunUnknown": "Runs now go to a different version. Reload to run on it.",
+    "releaseChangedRunUnknownTarget": "the new version",
     "missingNodes": "Missing {count} node | Missing {count} nodes",
     "notChecked": "Not checked",
     "releaseChanged": "This deployment now runs a different Release. Reload to get its nodes.",
     "deploymentChanged": "This browser now runs on {deployment}. Reload to get its nodes.",
+    "versionChanged": "{deployment} now runs v{version}. Reload to use its nodes.",
+    "versionChangedNoVersion": "{deployment} now runs a different version. Reload to use its nodes.",
     "reload": "Reload",
+    "later": "Later",
     "failedToSwitch": "Could not switch",
     "unsaved": {
       "title": "Save your workflows before switching?",
       "message": "Switching to {deployment} reloads the tab. These workflows have changes that aren't saved yet.",
       "tabsReturn": "Your open tabs come back after the reload either way.",
       "switchWithoutSaving": "Switch without saving",
-      "saveAndSwitch": "Save and switch"
+      "saveAndSwitch": "Save and switch",
+      "reloadTitle": "Save your workflows before reloading?",
+      "reloadMessage": "Reloading the tab runs it on {deployment}. These workflows have changes that aren't saved yet.",
+      "reloadWithoutSaving": "Reload without saving",
+      "saveAndReload": "Save and reload"
     },
     "workspaceDefault": "Workspace default",
     "membersStartOn": "Members without their own pick start on",
@@ -4405,8 +4438,9 @@
     "deploying": "Deploying {deployment}",
     "buildStep": "step {step} of {of}",
     "buildTakesMinutes": "This takes a few minutes. You can keep working.",
-    "readyNew": "{deployment} is ready. Choose it under Run on.",
-    "openRunOn": "Open Run on",
+    "readyNew": "{deployment} is ready",
+    "switch": "Switch",
+    "switchListingUnavailable": "Your deployments didn't load. Try again from Run on.",
     "readyUpdate": "{deployment} now runs v{version}.",
     "readyUpdateReload": "{deployment} now runs v{version}. Reload to use its nodes.",
     "reload": "Reload",
@@ -4426,6 +4460,7 @@
     "deploySetupDialog": {
       "title": "Run your workflows on Comfy Cloud",
       "body": "Deploy your local setup to Comfy Cloud as a Build, then use it in ComfyUI or call it as an autoscaling API.",
+      "missingNodesBody": "Comfy Cloud doesn’t have some of the nodes this workflow uses. Deploy your local setup to Comfy Cloud as a Build, then use it in ComfyUI or call it as an autoscaling API.",
       "pointNodes": "Bring your custom nodes and models",
       "pointGpu": "Run on powerful cloud GPUs",
       "pointPricing": "Pay only while your GPU workers are up, plus storage",
@@ -4447,17 +4482,19 @@
     "desktopTransferUnavailable": "Open on Comfy Cloud is currently unavailable for this editor.",
     "downloadedDetail": "Drop it onto Comfy Cloud in your browser to open it there.",
     "cloudButton": {
-      "tooltip": "Run on Comfy Cloud",
+      "tooltip": "Run this workflow on Comfy Cloud",
       "checking": "Checking Comfy Cloud…",
       "uploading": "Uploading models to Comfy Cloud, {percent}%",
       "resumeUpload": "Resume model upload"
     },
     "runDialog": {
-      "title": "Run on Comfy Cloud",
+      "body": "Open this workflow on Comfy Cloud, or deploy your local setup as a Build if it needs custom nodes.",
+      "pointApi": "Use it in ComfyUI or call it as an API",
+      "sends": "Checking will send this workflow’s node and model names to Comfy Cloud.",
+      "checkCompatibility": "Check compatibility",
       "ready": "Comfy Cloud has every node and model this workflow uses. It opens in a new tab, ready to run.",
     "readyWithUncheckedInputs": "Comfy Cloud has every node and model it could check. It could not check the models for these inputs: {inputs}. It opens in a new tab.",
     "uncheckedInput": "{input} on {nodeType}",
-      "asksToSignIn": "Comfy Cloud will ask you to sign in.",
       "openOnCloud": "Open on Comfy Cloud"
     },
     "agentMenu": {
@@ -4550,6 +4587,12 @@
       "placeholderModel": "Select model...",
       "placeholderUnknown": "Select media...",
       "maxSelectionReached": "Maximum selection limit reached",
+      "thumbnailSize": "Thumbnail size",
+      "thumbnailSizes": {
+        "compact": "Compact",
+        "standard": "Standard",
+        "large": "Large"
+      },
       "topResult": "Top result: {result}"
     },
     "valueControl": {
@@ -4894,6 +4937,7 @@
     "modelAssociatedWithLink": "The model associated with the link you provided:",
     "modelName": "Model Name",
     "modelNamePlaceholder": "Enter a name for this model",
+    "modelTypeNotAddable": "This model type can't be added to the canvas from the Model Library. Add a node that loads it, then choose the model there.",
     "modelTypeSelectorLabel": "What type of model is this?",
     "modelTypeSelectorPlaceholder": "Select model type",
     "modelUploaded": "Model successfully imported.",
@@ -6375,15 +6419,16 @@
     "creditTransitionNotice": "You've used your free agent credits. Further agent activity uses your workspace credits, which may include paid credits.",
     "runNotice": "The agent can modify the graph. Use Run permissions in the composer toolbar to control whether it asks before executing.",
     "runNoticeExpanded": "The agent can modify your workflow. Use Run permissions in the composer toolbar to control whether it asks before executing.",
-    "workflowEditNotice": "The agent can now edit {workflow}. It works on 1 workflow at a time, and you can switch workflows during chat.",
-    "targetFollowsVisibleWorkflow": "Target workflow follows the visible tab until you choose a target, reference nodes, or send a message.",
+    "workflowEditNotice": "The agent can now edit {workflow}. It works on 1 workflow at a time.",
     "viewingDifferentWorkflow": "You’re viewing a different workflow from the target.",
     "showTarget": "Show target",
     "targetWorkflowUnavailable": "The target workflow is no longer available.",
+    "startNewChat": "Start a new chat",
     "canvasIsEmptyAfterTurn": "This canvas is empty — nothing was added to it. There is nothing here to run, save or export yet.",
     "targetWorkflowOpenFailed": "Couldn’t open the target workflow.",
     "openingWorkflowChat": "Opening chat for {workflowName}…",
     "openingChat": "Opening chat…",
+    "loadingWorkflowChats": "Loading the chats for {workflowName}",
     "followedChatOpenFailed": "Couldn’t open the chat for {workflowName}.",
     "retryFollowedChat": "Retry opening the chat for {workflowName}",
     "showTargetWorkflow": "Show target workflow: {workflowName}",
@@ -6595,20 +6640,13 @@
     "attachmentUploadFailed": "{name} could not be uploaded",
     "attachmentsAlreadyAdded": "{name} is already in the asset tray | Skipped {count} duplicate assets",
     "mention": "Mention a node",
-    "changeWorkflowForChat": "Change the workflow that the agent can edit",
     "chatOptions": "Chat options",
     "chooseWorkflow": "Choose a workflow",
     "selectWorkflowForNodes": "Please select a workflow first",
     "switchWorkflowForNodes": "Switch to {workflowName} to add nodes.",
-    "selectWorkflowForAgent": "Select a workflow for agent to work in",
-    "chooseWorkflowForChat": "Choose a workflow for this chat",
-    "searchWorkflows": "Search workflows",
-    "currentTab": "Current tab",
-    "otherOpenWorkflows": "Other open workflows",
     "savingWorkflow": "Saving workflow",
     "unsavedWorkflow": "Unsaved",
     "selectWorkflowToGenerate": "Select a workflow to generate in",
-    "switchWorkflow": "Switch workflow",
     "modelAuto": "Auto",
     "runModeTriggerAsk": "Ask",
     "runModeTriggerAuto": "Auto",
@@ -6682,7 +6720,7 @@
     "coachTitle": "Meet your Comfy Agent",
     "coachBody": "Describe your ideas, ask it to build and run workflows. It sees your canvas and files.",
     "coachWorkflowTitle": "The agent edits one workflow at a time",
-    "coachWorkflowBody": "That workflow is named at the top of the message box. Click the name to pick another. Clicking a workflow tab can open its latest chat, unless the message box has a draft.",
+    "coachWorkflowBody": "Each workflow tab has its own chats. Switching tabs switches to that tab's chat.",
     "coachHistoryTitle": "Pick up where you left off",
     "coachHistoryBody": "Previous chats are saved here. Open one to review it or continue working with the agent.",
     "coachHoldNotice": "Your message will send when you finish or skip the tour.",

@@ -91,6 +91,13 @@ function isFailure(message: FrameMessage): boolean {
   return message.type === 'build-failed' || message.type === 'deploy-failed'
 }
 
+function withDeploymentId(
+  build: FollowedBuild,
+  deploymentId: string
+): FollowedBuild {
+  return deploymentId ? { ...build, deploymentId } : build
+}
+
 export function advanceBuild(
   build: FollowedBuild,
   message: FrameMessage
@@ -101,7 +108,12 @@ export function advanceBuild(
     case 'build-progress':
       return { ...build, progress: { step: message.step, of: message.of } }
     case 'deploy-sent':
-      return { ...build, stage: 'deploying' }
+      return {
+        ...withDeploymentId(build, message.deploymentId),
+        stage: 'deploying'
+      }
+    case 'deployment-ready':
+      return withDeploymentId(build, message.deploymentId)
     case 'build-failed':
     case 'deploy-failed':
       return { ...build, stage: 'failed' }

@@ -63,6 +63,7 @@ import {
   useSubgraphNavigationStore
 } from '@/stores/subgraphNavigationStore'
 import { reportError } from '@comfyorg/telemetry/reportError'
+import { UserDataExistsError } from '@comfyorg/api-client/ComfyApi'
 import { useDeprecatedNodesStore } from '@/platform/workflowErrors/nodeReplacement/deprecatedNodesStore'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
@@ -350,6 +351,22 @@ export const useWorkflowService = () => {
     })
   }
 
+  async function saveNewWorkflowFile(
+    workflow: ComfyWorkflow,
+    path: string
+  ): Promise<boolean> {
+    try {
+      await workflowStore.saveWorkflow(workflow)
+      return true
+    } catch (error) {
+      if (!(error instanceof UserDataExistsError)) throw error
+    }
+    if ((await confirmOverwrite(path)) !== true) return false
+    if (workflow.path !== path) return false
+    await workflowStore.saveWorkflow(workflow, { overwrite: true })
+    return true
+  }
+
   async function getFilename(
     defaultName: string,
     extension = '.json'
@@ -541,7 +558,7 @@ export const useWorkflowService = () => {
         target.initialMode = isApp ? 'app' : 'graph'
       }
       target.changeTracker?.prepareForSave()
-      await workflowStore.saveWorkflow(target)
+      if (!(await saveNewWorkflowFile(target, newPath))) return false
     }
 
     useTelemetry()?.trackWorkflowSaved({ is_app: isApp, is_new: true })
@@ -599,8 +616,19 @@ export const useWorkflowService = () => {
   /**
    * Load a blank workflow
    */
-  const loadBlankWorkflow = () =>
-    queueWorkflowLoad(() => useApp().loadGraphData(blankGraph))
+  const loadBlankWorkflow = async (options: { initiator?: 'user' } = {}) => {
+    const loaded = await queueWorkflowLoad(() =>
+      useApp().loadGraphData(blankGraph)
+    )
+    const activatedWorkflow = typeof loaded === 'object' ? loaded : undefined
+    if (
+      options.initiator === 'user' &&
+      activatedWorkflow !== undefined &&
+      workflowStore.isActive(activatedWorkflow)
+    )
+      workflowStore.reportUserActivation(activatedWorkflow)
+    return loaded
+  }
 
   const reloadCurrentWorkflow = async () => {
     await workflowLoadTail
@@ -816,6 +844,8 @@ export const useWorkflowService = () => {
       isCanvasOwner(workflow.changeTracker) &&
       !options.force
     ) {
+      if (options.initiator === 'user')
+        workflowStore.reportUserActivation(workflow)
       return Promise.resolve(true)
     }
 
@@ -1080,7 +1110,8 @@ export const useWorkflowService = () => {
   ): Promise<boolean> => {
     const oldPath = workflow.path
     const graphId = workflow.activeState?.id
-    if (!(await workflowStore.renameWorkflow(workflow, newPath))) {
+    const result = await workflowStore.renameWorkflow(workflow, newPath)
+    if (result === false) {
       toast.error(t('g.error'), {
         description: t('workflowService.pathInUse', { path: newPath })
       })
@@ -1088,6 +1119,9 @@ export const useWorkflowService = () => {
     }
     if (graphId) {
       useExecutionErrorStore().moveRunErrors(graphId, oldPath, workflow.path)
+    }
+    if (result === 'bookmarks-not-updated') {
+      toast.warning(t('sideToolbar.workflowTab.renamedButBookmarksNotUpdated'))
     }
     return true
   }
@@ -1127,8 +1161,10 @@ export const useWorkflowService = () => {
       if (workflowStore.isOpen(workflow)) return false
     }
     if (!stillTarget()) return false
-    await workflowStore.deleteWorkflow(workflow)
-    if (!silent) {
+    const unbookmarked = await workflowStore.deleteWorkflow(workflow)
+    if (!unbookmarked) {
+      toast.warning(t('sideToolbar.workflowTab.deletedButBookmarksNotUpdated'))
+    } else if (!silent) {
       toast.info(t('sideToolbar.workflowTab.deleted'), { duration: 1000 })
     }
     return true

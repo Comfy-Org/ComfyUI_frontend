@@ -18,7 +18,7 @@ interface LibraryFolder {
 
 const NO_NAMES: readonly string[] = []
 
-const WORKER_MODEL_FOLDERS = new Set([
+export const WORKER_MODEL_FOLDERS = new Set([
   'checkpoints',
   'loras',
   'vae',
@@ -173,6 +173,10 @@ export const useDeploymentLibraryModelsStore = defineStore(
       return loaded(folder)?.status ?? 'ready'
     }
 
+    function hasLoaded(folder: string): boolean {
+      return loaded(folder)?.status === 'ready'
+    }
+
     /**
      * Loads the folder and calls back each time its names change, until the returned stop is called.
      */
@@ -215,6 +219,7 @@ export const useDeploymentLibraryModelsStore = defineStore(
       watchFolder,
       namesIn,
       statusOf,
+      hasLoaded,
       waitForSettled,
       refresh,
       refreshLoaded

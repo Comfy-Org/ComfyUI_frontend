@@ -111,7 +111,6 @@ import { useFreeUsePlacement } from './experiments/freeUsePlacement'
 import AgentPanel from './components/agent/AgentPanel.vue'
 import AgentCreditTransitionNotice from './components/agent/AgentCreditTransitionNotice.vue'
 import AgentHostFenceNotice from './components/agent/AgentHostFenceNotice.vue'
-import RunNoticeBanner from './components/agent/RunNoticeBanner.vue'
 import { agentBoundWorkflowIdKey } from './components/agent/agentBoundWorkflowId'
 import AgentGraphActivityBar from './components/AgentGraphActivityBar.vue'
 import OnboardingCoach from './components/agent/OnboardingCoach.vue'
@@ -123,7 +122,11 @@ import {
 import type { ActiveTab } from './types/activeTab'
 import type { SelectedNode } from './composables/agent/useCanvasSelection'
 import type { ComposerAttachment } from './types/composerAttachment'
-import type { WorkflowReference } from './types/workflowReference'
+import type {
+  WorkflowReference,
+  WorkflowReferenceMetadata,
+  WorkflowReferenceOption
+} from './types/workflowReference'
 import {
   selectedNodeKey,
   useCanvasSelection
@@ -182,6 +185,10 @@ import {
   isLoopbackOnlyRefusal
 } from './services/agent/agentRestClient'
 import { useAgentChatHistoryRefresh } from './composables/agent/useAgentChatHistoryRefresh'
+import {
+  draftKeyForOrigin,
+  useAgentChatDrafts
+} from './composables/agent/useAgentChatDrafts'
 import { useAgentWorkflowChatFollow } from './composables/agent/useAgentWorkflowChatFollow'
 import { ensureSignedIn, hasAgentCredential } from './services/agent/agentAuth'
 import { captureOutgoingCredentialForHandoff } from './services/agent/agentOwnerHandoff'
@@ -203,6 +210,7 @@ import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 import { toSocketIdentity, useAgentPageSession } from './agentPageSession'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
+import { useAgentOpenChatsStore } from './stores/agent/agentOpenChatsStore'
 import { useAgentNodeDefinitionRefreshStore } from './stores/agent/agentNodeDefinitionRefreshStore'
 import { agentMessageText } from './utils/agentMessageText'
 import { parseSkillReferenceText } from './utils/skillReferenceText'
@@ -248,6 +256,7 @@ const {
 } = useBillingContext()
 const conversationStore = useAgentConversationStore()
 const history = useAgentChatHistoryStore()
+const openChats = useAgentOpenChatsStore()
 const { accepted: consentAccepted, identity: consentIdentity } = storeToRefs(
   useAgentConsentStore()
 )
@@ -613,8 +622,10 @@ const workflowResolver = useAgentWorkflowResolver({
 })
 const {
   refreshCloudWorkflowIds,
+  refreshCloudWorkflowListing,
   forgetCloudWorkflowId,
   cloudIdFor,
+  authoritativeCloudIdFor,
   boundOrOpenWorkflowFor,
   storedWorkflowFor,
   openWorkflowFor,
@@ -622,24 +633,25 @@ const {
   openTabsSnapshot
 } = workflowResolver
 const {
-  isSelecting: workflowSelecting,
-  selectingTarget,
-  savingReference,
-  onVisibleWorkflowChanged,
-  selectTarget: onSelectWorkflowTarget,
-  selectReference: onSelectWorkflowReference,
+  savingReferenceFor,
+  rekeySavingReference,
+  selectReference: selectWorkflowReference,
   restoreTarget: onWorkflowRestored,
   adoptTarget: adoptWorkflowTarget,
   requestReferences: onRequestWorkflowReferences,
   cancelSelection: cancelWorkflowSelection
 } = useAgentWorkflowSelection({
   resolver: workflowResolver,
-  canSelectTarget: () => !isSending.value && status.value === 'idle',
   warnWorkflowUnavailable,
   warnRestoreFailed,
   onTargetBound: (workflowId, previousWorkflowId, source) =>
     reportWorkflowBound(workflowId, previousWorkflowId, source)
 })
+function onSelectWorkflowReference(
+  option: WorkflowReferenceOption
+): Promise<WorkflowReferenceMetadata | undefined> {
+  return selectWorkflowReference(option, chatDrafts.draftKey.value)
+}
 const tabActivity = useWorkflowTabActivityStore()
 const CREATING_TAB_MIN_DURATION_MS = 500
 // Opens at the template's view so the follower's first nodes land on screen.
@@ -981,32 +993,32 @@ watch(
 
 const workflowDetached = computed(() => selectedTarget.value === null)
 
-// Resolves the tab a turn is attributed to. `null` (the send had no origin
-// tab) resolves to nothing rather than falling back to the selected target, so
-// re-attaching during prepare() cannot pull a later tab into this turn.
 function originWorkflow(origin?: TurnOrigin): ComfyWorkflow | undefined {
   if (origin === null) return undefined
-  return (
-    (origin === undefined
-      ? selectedTarget.value
-      : workflowStore.openWorkflows.find(
-          (workflow) => workflow.path === origin.tabPath
-        )) ?? undefined
+  if (origin === undefined) return selectedTarget.value ?? undefined
+  if (origin.tabInstanceId !== undefined)
+    return workflowStore.openWorkflows.find(
+      (workflow) => workflow.instanceId === origin.tabInstanceId
+    )
+  return workflowStore.openWorkflows.find(
+    (workflow) => workflow.path === origin.tabPath
   )
 }
 
 function targetWorkflowTurnContext(
   origin?: TurnOrigin
 ): WorkflowTurnContext | undefined {
-  if (workflowDetached.value) return undefined
+  if (origin === undefined && workflowDetached.value) return undefined
   const target = originWorkflow(origin)
   if (!target) return undefined
   const id = cloudIdFor(target)
-  if (id === undefined && !target.isTemporary && origin !== undefined)
-    return undefined
   return id === undefined
-    ? { tabPath: target.path }
-    : { id, tabPath: target.path }
+    ? {
+        tabPath: target.path,
+        tabInstanceId: target.instanceId,
+        canMint: target.isTemporary
+      }
+    : { id, tabPath: target.path, tabInstanceId: target.instanceId }
 }
 
 function serializedCanvas(target: ComfyWorkflow) {
@@ -1016,7 +1028,7 @@ function serializedCanvas(target: ComfyWorkflow) {
 }
 
 function targetWorkflowDraft(origin?: TurnOrigin): DraftSnapshot | undefined {
-  if (workflowDetached.value) return undefined
+  if (origin === undefined && workflowDetached.value) return undefined
   const target = originWorkflow(origin)
   if (!target) return undefined
   const documentId = cloudIdFor(target)
@@ -1078,15 +1090,6 @@ const editableWorkflowId = computed(() => {
   return target ? cloudIdFor(target) : undefined
 })
 
-const workflowTabs = computed<ActiveTab[]>(() =>
-  workflowStore.openWorkflows.map((tab) => ({
-    path: tab.path,
-    name: tab.filename,
-    isPersisted: tab.isPersisted,
-    modified: tab.isModified
-  }))
-)
-
 function onWorkflowAdopted(
   workflowId: string,
   sent: WorkflowTurnContext | undefined,
@@ -1122,7 +1125,8 @@ async function onWorkflowRestoredAndBound(
 }
 
 function bindRestoredWorkflow(workflowId: string): void {
-  if (hasUnsyncedHumanOps(workflowId)) return
+  if (hasUnsyncedHumanOps(workflowId) && !canResumeHeldWorkflow(workflowId))
+    return
   if (boundWorkflowId.value !== workflowId) bindWorkflow(workflowId)
 }
 
@@ -1205,13 +1209,27 @@ function observeAgentEvent(event: AgentWsEvent): void {
   registerAgentRunJobOwner(event)
 }
 
+const pendingSendChatVersions = new Map<string, number>()
+
+function recordSendChatVersion(
+  clientMessageId: string,
+  workflow: ComfyWorkflow | undefined
+): void {
+  const workflowId = workflow ? cloudIdFor(workflow) : undefined
+  pendingSendChatVersions.set(
+    clientMessageId,
+    workflowId === undefined ? 0 : openChats.versionFor(workflowId)
+  )
+}
+
 const {
   sendMessage,
   stopTurn,
   isSending: sessionIsSending,
+  isHydrating,
   isTranscriptReady,
   newChat,
-  openBlankChat,
+  openBlankChat: reopenBlankChat,
   start,
   stop,
   entries,
@@ -1221,6 +1239,7 @@ const {
   notices,
   threadId,
   loadThread,
+  isThreadDeleted,
   boundWorkflowId,
   bindWorkflow,
   reportWorkflowBound,
@@ -1231,8 +1250,22 @@ const {
   events,
   onThreadStarted: (source) =>
     useTelemetry()?.trackAgentThreadStarted({ source }),
-  onBackgroundTurnAccepted: (ack, text) => {
+  onBlankSendAccepted: (blankChatId, acceptedThreadId) => {
+    chatDrafts.rekeyBlankDraft(blankChatId, acceptedThreadId)
+    rekeySavingReference(
+      blankChatId,
+      draftKeyForOrigin({ kind: 'thread', threadId: acceptedThreadId })
+    )
+  },
+  onBackgroundTurnAccepted: (ack, text, workflowId, sendId) => {
     if (history.isDeleted(ack.thread_id)) return
+    if (workflowId !== undefined) {
+      const expectedVersion = pendingSendChatVersions.get(sendId)
+      if (expectedVersion === undefined)
+        openChats.remember(workflowId, ack.thread_id)
+      else
+        openChats.rememberIfCurrent(workflowId, ack.thread_id, expectedVersion)
+    }
     history.rememberSession({
       id: ack.thread_id,
       title:
@@ -1275,6 +1308,7 @@ const {
       }
     },
     disowned: forgetCloudWorkflowId,
+    ownsWorkflowId: (workflowId) => storedWorkflowFor(workflowId) !== null,
     tabs: openTabsSnapshot,
     activeTab: enqueueActiveTab,
     draft: targetWorkflowDraft,
@@ -1295,8 +1329,42 @@ provide(
   computed(() => boundWorkflowId.value ?? undefined)
 )
 
+function blankChatIdFor(workflow: ComfyWorkflow | null): string {
+  return conversationStore.blankChatIdForTab(workflow?.instanceId ?? null)
+}
+
+const gateHoldOnCurrentChat = computed(() => {
+  const held = composerStore.gateHold
+  if (held === null) return false
+  const pending = conversationStore.getPendingSend(held.clientMessageId)
+  return (
+    pending !== undefined && conversationStore.isOriginOnScreen(pending.origin)
+  )
+})
+
 const isSending = computed(
-  () => sessionIsSending.value || composerStore.gateHold !== null
+  () => sessionIsSending.value || gateHoldOnCurrentChat.value
+)
+
+conversationStore.adoptInitialBlankTab(
+  workflowStore.activeWorkflow?.instanceId ?? null
+)
+const chatDrafts = useAgentChatDrafts({
+  threadId,
+  activeBlankChatId: computed(() => conversationStore.activeBlankChatId)
+})
+const activeBlankChatTabPath = computed(() => {
+  const tabKey = conversationStore.tabKeyForBlankChat(
+    conversationStore.activeBlankChatId
+  )
+  if (tabKey === null) return workflowStore.activeWorkflow?.path ?? null
+  return (
+    workflowStore.openWorkflows.find((wf) => wf.instanceId === tabKey)?.path ??
+    null
+  )
+})
+const savingReferenceForCurrentDraft = computed(() =>
+  savingReferenceFor(chatDrafts.draftKey.value)
 )
 
 const isBoundWorkflowActive = computed(() => {
@@ -1335,7 +1403,8 @@ const {
   isPreMintBinding,
   docHasSubgraphDefinition,
   notifyWidgetWriteRefused,
-  subscriptionSent
+  subscriptionSent,
+  canResumeHeldWorkflow
 } = useAgentCrdtFollower(boundWorkflowId, {
   transport: docTransport,
   userId: () => agentUserId.value,
@@ -1514,8 +1583,10 @@ function adoptRestoredWorkflowTab(workflowId: string): void {
     restored !== null &&
     threadId !== null &&
     bindingStore.tabPathFor(workflowId) === restored.path
-  )
+  ) {
     conversationStore.adoptThreadTab(threadId, restored.instanceId)
+    openChats.remember(workflowId, threadId)
+  }
 }
 
 async function restoreThreadWorkflow(
@@ -1860,8 +1931,9 @@ function onApprovalShown(
   turnId: string,
   workflowId: string | null
 ): void {
-  if (!conversationStore.recordApprovalShown(askId, Date.now())) return
+  if (!conversationStore.recordApprovalShown(askId, turnId, Date.now())) return
   useTelemetry()?.trackAgentRunApprovalShown({
+    ask_id: askId,
     turn_id: turnId,
     workflow_id: workflowId
   })
@@ -1871,12 +1943,15 @@ function trackApprovalResolved(
   askId: string,
   decision: AgentRunApprovalDecision,
   decidedAt = Date.now(),
-  shownAt = conversationStore.approvalShownAt(askId)
+  shownAt = conversationStore.approvalShownAt(askId),
+  turnId = conversationStore.approvalTurnId(askId)
 ): void {
-  if (shownAt === undefined) return
+  if (shownAt === undefined || turnId === undefined) return
   if (decision !== 'open_workflow')
     conversationStore.forgetApprovalTiming(askId)
   useTelemetry()?.trackAgentRunApprovalResolved({
+    ask_id: askId,
+    turn_id: turnId,
     decision,
     time_to_decide_ms: Math.max(0, decidedAt - shownAt)
   })
@@ -1891,10 +1966,31 @@ async function onAnswerAsk(
   answer: AgentAnswerRequest
 ): Promise<void> {
   const shownAt = conversationStore.approvalShownAt(askId)
+  const turnId = conversationStore.approvalTurnId(askId)
+  const isRunApproval = conversationStore.askKind(askId) === 'runApproval'
   const decidedAt = Date.now()
   const decision = runApprovalDecision(answer)
-  if ((await answerAsk(askId, answer)) && decision)
-    trackApprovalResolved(askId, decision, decidedAt, shownAt)
+  if (
+    await answerAsk(askId, answer, () =>
+      trackRunApprovalAnswerFailure(askId, turnId, isRunApproval)
+    )
+  ) {
+    if (decision)
+      trackApprovalResolved(askId, decision, decidedAt, shownAt, turnId)
+    return
+  }
+}
+
+function trackRunApprovalAnswerFailure(
+  askId: string,
+  turnId: string | undefined,
+  isRunApproval = true
+): void {
+  if (!isRunApproval) return
+  useTelemetry()?.trackAgentRunApprovalAnswerFailed({
+    ask_id: askId,
+    turn_id: turnId ?? null
+  })
 }
 
 function runApprovalDecision(
@@ -1914,8 +2010,11 @@ useAutoModeRunApprovals({
       (askId) => conversationStore.askKind(askId) === 'runApproval'
     ),
   approve: (askId) => {
+    const turnId = conversationStore.approvalTurnId(askId)
     conversationStore.forgetApprovalTiming(askId)
-    void answerAsk(askId, { selected: ['run'] })
+    void answerAsk(askId, { selected: ['run'] }, () =>
+      trackRunApprovalAnswerFailure(askId, turnId)
+    )
   }
 })
 
@@ -2047,46 +2146,47 @@ const hostFenced = computed(() => hostFenceMessage.value !== undefined)
 let startedRefreshes = 0
 let fencedAtRefresh = 0
 
-const { refreshHistory: runHistoryRefresh } = useAgentChatHistoryRefresh({
-  listThreads: rest.listThreads,
-  history,
-  untitledChat: () => t('agent.untitledChat'),
-  onFailure: (failure, uiTreatment) => {
-    if (failure.status === 'incomplete') {
-      warnIncompleteHistory(failure.reason, uiTreatment === 'error_overlay')
-      return
-    }
-    const error = failure.cause
-    const diagnostics = describeAgentRequestFailure(error)
-    reportError(error, {
-      surface: 'agent',
-      errorType: 'agent_thread_list_load_failed',
-      tags: diagnostics,
-      fingerprint: agentRequestFailureFingerprint(
-        'agent_thread_list_load_failed',
-        diagnostics
-      )
-    })
-    const loopbackOnly = isLoopbackOnlyRefusal(error)
-    if (loopbackOnly) {
-      hostFenceMessage.value = error.message
-      fencedAtRefresh = startedRefreshes
-    } else if (uiTreatment === 'error_overlay')
-      surfaceAgentError(
-        'agent_api_failed',
-        error instanceof Error ? error.message : String(error)
-      )
-    trackAgentError(
-      'thread_list_load_failed',
-      'pre_acceptance',
-      loopbackOnly ? 'inline_notice' : uiTreatment,
-      {
-        retryable: isRetryableRequestFailure(error, false),
-        diagnostics
+const { refreshHistory: runHistoryRefresh, hasCompleteCoverage } =
+  useAgentChatHistoryRefresh({
+    listThreads: rest.listThreads,
+    history,
+    untitledChat: () => t('agent.untitledChat'),
+    onFailure: (failure, uiTreatment) => {
+      if (failure.status === 'incomplete') {
+        warnIncompleteHistory(failure.reason, uiTreatment === 'error_overlay')
+        return
       }
-    )
-  }
-})
+      const error = failure.cause
+      const diagnostics = describeAgentRequestFailure(error)
+      reportError(error, {
+        surface: 'agent',
+        errorType: 'agent_thread_list_load_failed',
+        tags: diagnostics,
+        fingerprint: agentRequestFailureFingerprint(
+          'agent_thread_list_load_failed',
+          diagnostics
+        )
+      })
+      const loopbackOnly = isLoopbackOnlyRefusal(error)
+      if (loopbackOnly) {
+        hostFenceMessage.value = error.message
+        fencedAtRefresh = startedRefreshes
+      } else if (uiTreatment === 'error_overlay')
+        surfaceAgentError(
+          'agent_api_failed',
+          error instanceof Error ? error.message : String(error)
+        )
+      trackAgentError(
+        'thread_list_load_failed',
+        'pre_acceptance',
+        loopbackOnly ? 'inline_notice' : uiTreatment,
+        {
+          retryable: isRetryableRequestFailure(error, false),
+          diagnostics
+        }
+      )
+    }
+  })
 
 async function refreshHistory(
   ...args: Parameters<typeof runHistoryRefresh>
@@ -2126,19 +2226,42 @@ const historyGroups = computed(() => {
   )
 })
 
+function openBlankChat(source?: Parameters<typeof newChat>[0]): void {
+  newChat(source, blankChatIdFor(workflowStore.activeWorkflow))
+}
+
+function showBlankChatForVisibleWorkflow(): void {
+  const visibleBlankId = blankChatIdFor(workflowStore.activeWorkflow)
+  const alreadyShowsIt =
+    threadId.value === null &&
+    agentPanelStore.followsVisibleWorkflow &&
+    conversationStore.activeBlankChatId === visibleBlankId
+  if (alreadyShowsIt) return
+  openBlankChat()
+  agentPanelStore.startFollowingVisibleWorkflow()
+}
+
 const workflowChatFollow = useAgentWorkflowChatFollow({
   activeWorkflow: () => workflowStore.activeWorkflow,
   selectedTarget: () => selectedTarget.value,
   currentThreadId: () => threadId.value,
-  sessions: () => history.sessions,
+  chatsFor: history.sessionsFor,
+  openChatFor: openChats.recall,
+  forgetOpenChat: openChats.forget,
   followsVisibleWorkflow: () => agentPanelStore.followsVisibleWorkflow,
-  hasDraft: () => composerStore.hasDraft,
   userEngaged,
-  cloudIdFor,
-  refreshCloudWorkflowIds,
+  hasBlankPendingSend: (workflow) =>
+    conversationStore.hasPendingSendForOrigin({
+      kind: 'blank',
+      blankChatId: blankChatIdFor(workflow)
+    }),
+  cloudIdFor: authoritativeCloudIdFor,
+  refreshCloudWorkflowListing,
   refreshHistory,
+  isHistoryComplete: (workflowId) => hasCompleteCoverage(workflowId),
   loadThread,
-  clearDraft: () => composerStore.setText(''),
+  isThreadMissing: (id) => isThreadDeleted(id) || history.isDeleted(id),
+  showBlankChat: showBlankChatForVisibleWorkflow,
   trackThreadStarted: () =>
     useTelemetry()?.trackAgentThreadStarted({ source: 'history_select' }),
   restoreThreadWorkflow,
@@ -2147,12 +2270,21 @@ const workflowChatFollow = useAgentWorkflowChatFollow({
 })
 
 const {
-  failure: followFailure,
+  landing,
   openingWorkflowName,
   followTab,
   retireFollow,
   retryFollow: onRetryFollow
 } = workflowChatFollow
+
+watch(
+  [threadId, boundWorkflowId, editableWorkflowId],
+  ([id, workflowId, targetWorkflowId]) => {
+    if (id !== null && workflowId !== null && workflowId === targetWorkflowId)
+      openChats.remember(workflowId, id)
+  },
+  { immediate: true, flush: 'sync' }
+)
 
 watch(
   threadId,
@@ -2177,6 +2309,7 @@ async function onSelectHistory(
   id: string,
   isCurrent: () => boolean
 ): Promise<boolean> {
+  offscreenShowGeneration += 1
   retireFollow()
   if (
     !conversationStore.hasPendingSendForBlankChat(
@@ -2186,7 +2319,6 @@ async function onSelectHistory(
     provisionalTitles.value.delete(conversationStore.activeBlankChatId)
   if (currentChatReady.value && id === threadId.value)
     return onShowTarget(isCurrent, warnRestoreFailed)
-  promptQueueStore.clear()
   const cancelled = composerStore.cancelGateHold()
   if (cancelled !== null)
     withdrawSubmission(
@@ -2210,7 +2342,7 @@ function userEngaged(): boolean {
   return (
     composerStore.hasDraft ||
     isSending.value ||
-    workflowSelecting.value ||
+    savingReferenceForCurrentDraft.value ||
     promptQueueStore.hasWaiting
   )
 }
@@ -2229,15 +2361,29 @@ watch(
   workflowChatFollow.activeWorkflowChanged
 )
 
-workflowStore.onUserActivation((workflow) => void followTab(workflow))
+workflowStore.onUserActivation((workflow) => {
+  if (workflow.instanceId !== pendingShowTabInstanceId)
+    offscreenShowGeneration += 1
+  void followTab(workflow)
+})
 
 watch(userEngaged, workflowChatFollow.userEngagementChanged)
+
+watch(
+  threadId,
+  (id) => {
+    if (id !== null && !workflowChatFollow.isOpeningThread(id)) retireFollow()
+  },
+  { flush: 'sync' }
+)
 
 const mountedOn = workflowStore.activeWorkflow
 if (
   mountedOn !== null &&
   selectedTarget.value !== null &&
-  selectedTarget.value.path !== mountedOn.path
+  (selectedTarget.value.path !== mountedOn.path ||
+    (threadId.value === null &&
+      conversationStore.activeBlankChatId !== blankChatIdFor(mountedOn)))
 )
   void followTab(mountedOn)
 
@@ -2429,42 +2575,44 @@ async function signedInForSend(
   )
 }
 
-function armPendingSend(
-  attachments: ComposerAttachment[],
-  nodes: SelectedNode[],
+function recordSendTelemetry(
+  turnOrigin: TurnOrigin,
+  originThreadId: string | null,
+  attachmentsCount: number,
+  nodesCount: number,
   meta: SubmissionMeta
 ): void {
-  const originContext = targetWorkflowTurnContext()
+  const originContext = targetWorkflowTurnContext(turnOrigin)
   pendingTelemetry.set(meta.clientMessageId, {
     metadata: {
-      attachment_count: attachments.length,
-      node_tag_count: nodes.length,
+      attachment_count: attachmentsCount,
+      node_tag_count: nodesCount,
       skill_count: meta.skillCount,
-      thread_id: threadId.value,
+      thread_id: originThreadId,
       workflow_id: originContext?.id ?? null,
       client_message_id: meta.clientMessageId,
       input_method: meta.inputMethod,
       starter_prompt_id: meta.starterPrompt?.id ?? null,
       starter_prompt_click_id: meta.starterPrompt?.clickId ?? null
     },
-    origin:
-      originContext === undefined ? null : { tabPath: originContext.tabPath }
+    origin: originContext === undefined ? null : turnOrigin
   })
 }
 
 function resolveSendSelection(
   nodes: SelectedNode[] | ((target: ComfyWorkflow | null) => SelectedNode[]),
+  capturedWorkflow: ComfyWorkflow | undefined,
   stagedTarget?: ComfyWorkflow
 ): {
-  selectionWorkflow: ComfyWorkflow | null
+  selectionWorkflow: ComfyWorkflow | null | undefined
   sentNodes: SelectedNode[]
 } | null {
   const selectionWorkflow =
     typeof nodes !== 'function' && nodes.length > 0 && stagedTarget
       ? stagedTarget
-      : selectedTarget.value
+      : capturedWorkflow
   const sentNodes =
-    typeof nodes === 'function' ? nodes(selectionWorkflow) : nodes
+    typeof nodes === 'function' ? nodes(selectionWorkflow ?? null) : nodes
   if (
     stagedTarget !== undefined &&
     sentNodes.length > 0 &&
@@ -2485,45 +2633,81 @@ async function sendTurn(
   stagedTarget?: ComfyWorkflow
 ): Promise<DraftSendOutcome> {
   const submissionId = composerStore.gateHold?.id
-  if (!(await ensureSendAllowed(submissionId, meta.clientMessageId, isCurrent)))
-    return 'withdrawn'
-  const selection = resolveSendSelection(nodes, stagedTarget)
-  if (selection === null) return 'withdrawn'
-  const { selectionWorkflow, sentNodes } = selection
-  armPendingSend(attachments, sentNodes, meta)
-  releaseGate?.()
-  const sentUsageScope = proactive.scope.value
   try {
-    const sent = await sendWithFundsRecheck((onAccepted) =>
-      sendMessage(
-        text,
-        attachments,
-        sentNodes,
-        references,
-        () => (selectionWorkflow ? cloudIdFor(selectionWorkflow) : undefined),
-        meta.clientMessageId,
-        () => {
-          composerStore.clearPendingSendDraft(meta.clientMessageId)
-          proactive.accepted(sentUsageScope)
-          onAccepted()
-        }
-      )
+    if (
+      !(await ensureSendAllowed(submissionId, meta.clientMessageId, isCurrent))
     )
-    return sent ? 'sent' : 'failed'
+      return 'withdrawn'
+    const originThreadId = threadId.value
+    const targetWorkflow = stagedTarget ?? selectedTarget.value ?? null
+    const targetTabPath = targetWorkflow?.path ?? null
+    const targetTabInstanceId = targetWorkflow?.instanceId ?? null
+    const turnOrigin: TurnOrigin =
+      targetTabPath === null
+        ? null
+        : {
+            tabPath: targetTabPath,
+            tabInstanceId: targetTabInstanceId ?? undefined
+          }
+    const selection = resolveSendSelection(
+      nodes,
+      originWorkflow(turnOrigin),
+      stagedTarget
+    )
+    if (selection === null) return 'withdrawn'
+    const { selectionWorkflow, sentNodes } = selection
+    recordSendChatVersion(
+      meta.clientMessageId,
+      stagedTarget ?? selectionWorkflow ?? undefined
+    )
+    recordSendTelemetry(
+      turnOrigin,
+      originThreadId,
+      attachments.length,
+      sentNodes.length,
+      meta
+    )
+    releaseGate?.()
+    const sentUsageScope = proactive.scope.value
+    try {
+      const sent = await sendWithFundsRecheck((onAccepted) =>
+        sendMessage(
+          text,
+          attachments,
+          sentNodes,
+          references,
+          () => (selectionWorkflow ? cloudIdFor(selectionWorkflow) : undefined),
+          meta.clientMessageId,
+          () => {
+            composerStore.clearPendingSendDraft(meta.clientMessageId)
+            proactive.accepted(sentUsageScope)
+            onAccepted()
+          },
+          targetTabPath,
+          targetTabInstanceId
+        )
+      )
+      return sent ? 'sent' : 'failed'
+    } finally {
+      if (proactive.scope.value === sentUsageScope) void proactive.refresh()
+      reportPendingSend(meta.clientMessageId)
+    }
   } finally {
-    if (proactive.scope.value === sentUsageScope) void proactive.refresh()
-    reportPendingSend(meta.clientMessageId)
+    pendingSendChatVersions.delete(meta.clientMessageId)
   }
 }
 
 const { submit: submitDraft, withdrawSubmission } = useAgentDraftSubmission({
   canSubmit: () =>
-    !workflowSelecting.value &&
+    !savingReferenceForCurrentDraft.value &&
     !isSending.value &&
-    !attachment.derivingWorkflow.value,
+    !attachment.derivingWorkflow.value &&
+    composerStore.gateHold === null,
   onSubmit: agentPanelStore.retainWorkflowTarget,
   onRejected: sendGates.rejectDraft,
   target: () => selectedTarget.value,
+  activeTabPath: () =>
+    activeBlankChatTabPath.value ?? workflowStore.activeWorkflow?.path ?? null,
   editableWorkflowId: () => editableWorkflowId.value,
   workspaceId: () => workspaceStore.activeWorkspaceId ?? null,
   selection: {
@@ -2554,10 +2738,15 @@ const { submit: submitDraft, withdrawSubmission } = useAgentDraftSubmission({
     )
 })
 
+const promptQueueBusy = computed(
+  () => isHydrating.value || isStreaming.value || isSending.value
+)
+
 const { handleComposerSend, settleActiveAndPump } = useAgentPromptQueue({
-  isBusy: () => isStreaming.value || isSending.value,
+  isBusy: () => promptQueueBusy.value,
   submitDraft,
   sendItem: async (item) => {
+    const startGeneration = chatDrafts.draftGeneration.value
     const clientMessageId = uuidv4()
     const assetIds = item.attachments.map(({ id }) => id)
     if (assetIds.length > 0)
@@ -2567,6 +2756,11 @@ const { handleComposerSend, settleActiveAndPump } = useAgentPromptQueue({
       )
     const parsed = parseSkillReferenceText(item.text, item.references)
     composerStore.holdPendingSendDraft(clientMessageId, {
+      tabPath:
+        activeBlankChatTabPath.value ??
+        workflowStore.activeWorkflow?.path ??
+        item.target?.path ??
+        selectedTarget.value?.path,
       text: item.text,
       workflowReferences: item.references,
       expectedText: parsed.text,
@@ -2574,22 +2768,28 @@ const { handleComposerSend, settleActiveAndPump } = useAgentPromptQueue({
       knownTurnIds: conversationStore.knownUserTurnIds()
     })
     try {
-      return (
-        (await sendTurn(
-          item.text,
-          item.attachments,
-          (target) => queuedNodesFor(item, target),
-          item.references,
-          {
-            clientMessageId,
-            inputMethod: 'typed',
-            starterPrompt: null,
-            skillCount: promptSkillCount(item.prompt)
-          },
-          undefined,
-          () => promptQueueStore.runningId === item.id
-        )) === 'sent'
+      const outcome = await sendTurn(
+        item.text,
+        item.attachments,
+        (target) => queuedNodesFor(item, target),
+        item.references,
+        {
+          clientMessageId,
+          inputMethod: 'typed',
+          starterPrompt: null,
+          skillCount: promptSkillCount(item.prompt)
+        },
+        undefined,
+        () =>
+          promptQueueStore.runningId === item.id &&
+          chatDrafts.draftGeneration.value === startGeneration
       )
+      if (
+        outcome === 'withdrawn' &&
+        chatDrafts.draftGeneration.value !== startGeneration
+      )
+        return 'deferred'
+      return outcome === 'sent'
     } finally {
       if (!conversationStore.getPendingSend(clientMessageId)) {
         composerStore.clearPendingSendDraft(clientMessageId)
@@ -2605,9 +2805,9 @@ const { handleComposerSend, settleActiveAndPump } = useAgentPromptQueue({
   }
 })
 watch(
-  () => isStreaming.value || isSending.value,
-  (busy, wasBusy) => {
-    if (wasBusy && !busy) void settleActiveAndPump()
+  [promptQueueBusy, chatDrafts.draftKey],
+  ([busy, key], [wasBusy, previousKey]) => {
+    if (!busy && (wasBusy || key !== previousKey)) void settleActiveAndPump()
   }
 )
 void until(currentChatReady)
@@ -2641,7 +2841,10 @@ function retryablePendingSend(clientMessageId: string) {
   )
     return null
   if (!canRetryPendingFailure(pending.failure)) return null
-  if (workflowSelecting.value || conversationStore.isOriginBusy(pending.origin))
+  if (
+    savingReferenceFor(draftKeyForOrigin(pending.origin)) ||
+    conversationStore.isOriginBusy(pending.origin)
+  )
     return null
   return pending
 }
@@ -2666,13 +2869,27 @@ function buildRetryMetadata(
   }
 }
 
+function pendingSendTurnOrigin(
+  retried: Pick<
+    NonNullable<ReturnType<typeof conversationStore.getPendingSend>>,
+    'targetTabPath' | 'targetTabInstanceId'
+  >
+): TurnOrigin {
+  if (retried.targetTabPath)
+    return {
+      tabPath: retried.targetTabPath,
+      tabInstanceId: retried.targetTabInstanceId ?? undefined
+    }
+  if (retried.targetTabInstanceId)
+    return { tabPath: '', tabInstanceId: retried.targetTabInstanceId }
+  return null
+}
+
 function recordRetryTelemetry(
   retryClientMessageId: string,
   retried: NonNullable<ReturnType<typeof conversationStore.getPendingSend>>
 ): TurnOrigin {
-  const turnOrigin: TurnOrigin = retried.targetTabPath
-    ? { tabPath: retried.targetTabPath }
-    : null
+  const turnOrigin = pendingSendTurnOrigin(retried)
   const workflowId = targetWorkflowTurnContext(turnOrigin)?.id ?? null
   pendingTelemetry.set(retryClientMessageId, {
     metadata: buildRetryMetadata(retryClientMessageId, retried, workflowId),
@@ -2685,10 +2902,9 @@ async function dispatchRetryPendingSend(
   retryClientMessageId: string,
   retried: NonNullable<ReturnType<typeof conversationStore.getPendingSend>>
 ): Promise<void> {
-  const selectionWorkflow = retried.targetTabPath
-    ? originWorkflow({ tabPath: retried.targetTabPath })
-    : undefined
+  const selectionWorkflow = originWorkflow(pendingSendTurnOrigin(retried))
   const sentUsageScope = proactive.scope.value
+  recordSendChatVersion(retryClientMessageId, selectionWorkflow)
   try {
     await sendWithFundsRecheck((onAccepted) =>
       sendMessage(
@@ -2703,10 +2919,12 @@ async function dispatchRetryPendingSend(
           proactive.accepted(sentUsageScope)
           onAccepted()
         },
-        retried.targetTabPath ?? null
+        retried.targetTabPath ?? null,
+        retried.targetTabInstanceId ?? null
       )
     )
   } finally {
+    pendingSendChatVersions.delete(retryClientMessageId)
     if (proactive.scope.value === sentUsageScope) void proactive.refresh()
     reportPendingSend(retryClientMessageId)
     if (!conversationStore.getPendingSend(retryClientMessageId))
@@ -2740,8 +2958,7 @@ async function onRetryPendingSend(clientMessageId: string): Promise<void> {
 }
 
 function onStop(method: AgentStopMethod): void {
-  const held = composerStore.gateHold
-  if (held !== null) {
+  if (gateHoldOnCurrentChat.value) {
     const cancelled = composerStore.cancelGateHold()
     if (sendHeldByCoach.value)
       releaseCoachCompletionWaiters(
@@ -2774,12 +2991,13 @@ function onDeleteHistory(id: string): void {
     id === history.activeId ||
     (history.activeId === null && id === threadId.value)
   history.remove(id)
+  openChats.forget(id)
+  chatDrafts.discardChatDraft(id)
   // Deleting the open chat also ends it; a dead thread must not stay editable.
   if (isCurrent) onNewChat('history_delete')
 }
 
 function resetComposerForChatSwitch(): void {
-  promptQueueStore.clear()
   if (
     !conversationStore.hasPendingSendForBlankChat(
       conversationStore.activeBlankChatId
@@ -2795,11 +3013,89 @@ function resetComposerForChatSwitch(): void {
     )
   cancelWorkflowSelection()
   canvasStore.stopNodePicking()
-  attachment.cancelAllUploads()
   replaceSelectionTags([])
   dismissedSelectionSignature.value = null
   errorAttachRun++
-  composerStore.clearDraft()
+}
+
+function openFailedBlankTab(blankChatId: string): ComfyWorkflow | undefined {
+  const tabKey = conversationStore.tabKeyForBlankChat(blankChatId)
+  if (tabKey === null) return undefined
+  return workflowStore.openWorkflows.find(
+    (workflow) => workflow.instanceId === tabKey
+  )
+}
+
+function dismissOffscreenFailureToast(toastId: ToastId): void {
+  toast.dismiss(toastId)
+  offscreenFailureToasts.delete(toastId)
+}
+
+function isOffscreenBlankSendCurrent(
+  blankChatId: string,
+  originWorkspaceId: string | null
+): boolean {
+  const activeWorkspace = workspaceStore.activeWorkspaceId ?? null
+  return (
+    activeWorkspace === originWorkspaceId &&
+    conversationStore.hasPendingSendForBlankChat(blankChatId, activeWorkspace)
+  )
+}
+
+function reopenOffscreenBlankFallback(
+  blankChatId: string,
+  toastId: ToastId
+): void {
+  if (!reopenBlankChat(blankChatId)) return
+  void proactive.refresh()
+  agentPanelStore.startFollowingVisibleWorkflow()
+  dismissOffscreenFailureToast(toastId)
+}
+
+let offscreenShowGeneration = 0
+let pendingShowTabInstanceId: string | null = null
+
+async function activateAndShowFailedBlankTab(
+  originTab: ComfyWorkflow,
+  blankChatId: string,
+  toastId: ToastId,
+  originWorkspaceId: string | null,
+  showGeneration: number
+): Promise<void> {
+  const isShowCurrent = () =>
+    showGeneration === offscreenShowGeneration &&
+    isOffscreenBlankSendCurrent(blankChatId, originWorkspaceId)
+  let activated: boolean
+  pendingShowTabInstanceId = originTab.instanceId
+  try {
+    activated = await workflowService.openWorkflow(originTab, {
+      initiator: 'user',
+      isCurrent: isShowCurrent
+    })
+  } catch {
+    activated = false
+  } finally {
+    if (showGeneration === offscreenShowGeneration)
+      pendingShowTabInstanceId = null
+  }
+  if (showGeneration !== offscreenShowGeneration) return
+  if (!isOffscreenBlankSendCurrent(blankChatId, originWorkspaceId)) {
+    dismissOffscreenFailureToast(toastId)
+    return
+  }
+  if (activated) {
+    retireFollow()
+    conversationStore.setBlankChatIdForTab(originTab.instanceId, blankChatId)
+    if (
+      threadId.value !== null ||
+      conversationStore.activeBlankChatId !== blankChatId
+    )
+      reopenBlankChat(blankChatId)
+    agentPanelStore.startFollowingVisibleWorkflow()
+    dismissOffscreenFailureToast(toastId)
+    return
+  }
+  reopenOffscreenBlankFallback(blankChatId, toastId)
 }
 
 function showOffscreenBlankSend(
@@ -2807,22 +3103,34 @@ function showOffscreenBlankSend(
   toastId: ToastId,
   originWorkspaceId: string | null
 ): void {
-  toast.dismiss(toastId)
-  offscreenFailureToasts.delete(toastId)
-  const activeWorkspace = workspaceStore.activeWorkspaceId ?? null
-  if (activeWorkspace !== originWorkspaceId) return
-  if (
-    !conversationStore.hasPendingSendForBlankChat(blankChatId, activeWorkspace)
-  )
+  const showGeneration = ++offscreenShowGeneration
+  if (!isOffscreenBlankSendCurrent(blankChatId, originWorkspaceId)) {
+    dismissOffscreenFailureToast(toastId)
     return
+  }
   agentPanelStore.open()
   agentPanelStore.view = { screen: 'chat' }
   retireFollow()
   resetComposerForChatSwitch()
-  if (openBlankChat(blankChatId)) {
-    void proactive.refresh()
-    agentPanelStore.startFollowingVisibleWorkflow()
+  const originTab = openFailedBlankTab(blankChatId)
+  if (originTab === undefined) {
+    reopenOffscreenBlankFallback(blankChatId, toastId)
+    return
   }
+  if (workflowStore.activeWorkflow?.path === originTab.path) {
+    conversationStore.setBlankChatIdForTab(originTab.instanceId, blankChatId)
+    reopenOffscreenBlankFallback(blankChatId, toastId)
+    return
+  }
+  if (selectedTarget.value?.path === originTab.path)
+    agentPanelStore.startFollowingVisibleWorkflow()
+  void activateAndShowFailedBlankTab(
+    originTab,
+    blankChatId,
+    toastId,
+    originWorkspaceId,
+    showGeneration
+  )
 }
 
 function notifyOffscreenBlankSendFailed({
@@ -2854,17 +3162,62 @@ function notifyOffscreenBlankSendFailed({
   })
 }
 
+function discardBlankComposerBeforeNewChat(): void {
+  const targetBlankOrigin = {
+    kind: 'blank' as const,
+    blankChatId: blankChatIdFor(workflowStore.activeWorkflow)
+  }
+  if (
+    threadId.value !== null ||
+    conversationStore.activeBlankChatId !== targetBlankOrigin.blankChatId
+  )
+    return
+  for (const discardedId of conversationStore.discardFailedPendingSends(
+    targetBlankOrigin,
+    workspaceStore.activeWorkspaceId ?? null
+  )) {
+    composerStore.clearPendingSendDraft(discardedId)
+    composerStore.releaseRetainedAssets(pendingAssetOwnerKey(discardedId))
+  }
+  for (const { id } of composerStore.attachments) attachment.cancelUpload(id)
+  chatDrafts.resetUploadScope(targetBlankOrigin.blankChatId)
+}
+
+function advanceBlankTabIfPending(): void {
+  const targetBlankOrigin = {
+    kind: 'blank' as const,
+    blankChatId: blankChatIdFor(workflowStore.activeWorkflow)
+  }
+  if (conversationStore.hasPendingSendForOrigin(targetBlankOrigin))
+    conversationStore.advanceBlankChatIdForTab(
+      workflowStore.activeWorkflow?.instanceId ?? null
+    )
+}
+
 function onNewChat(
   source: 'new_chat_button' | 'history_back' | 'history_delete'
 ): void {
+  offscreenShowGeneration += 1
   retireFollow()
   if (source === 'history_back') {
-    newChat()
+    openBlankChat()
     agentPanelStore.startFollowingVisibleWorkflow()
     return
   }
+  if (source === 'history_delete') {
+    resetComposerForChatSwitch()
+    advanceBlankTabIfPending()
+    openBlankChat(source)
+    void proactive.refresh()
+    agentPanelStore.startFollowingVisibleWorkflow()
+    return
+  }
+  discardBlankComposerBeforeNewChat()
   resetComposerForChatSwitch()
-  newChat(source)
+  advanceBlankTabIfPending()
+  openBlankChat(source)
+  composerStore.clearDraft()
+  promptQueueStore.clear()
   void proactive.refresh()
   agentPanelStore.startFollowingVisibleWorkflow()
 }
@@ -2887,7 +3240,6 @@ watch(
   () => workflowStore.activeWorkflow,
   () => {
     canvasStore.stopNodePicking()
-    onVisibleWorkflowChanged()
   },
   { flush: 'sync' }
 )
@@ -2900,10 +3252,11 @@ start({
     (agentPanelStore.view.selection.status === 'idle' &&
       threadId.value === agentPanelStore.view.previousThreadId)
 })
-watch(threadId, composerStore.trackDraftThread, {
-  immediate: true,
-  flush: 'sync'
-})
+watch(
+  [threadId, activeBlankChatTabPath],
+  ([id, tabPath]) => composerStore.trackDraftThread(id, tabPath),
+  { immediate: true, flush: 'sync' }
+)
 
 watch(
   () => agentPanelStore.pendingCloudHandoff,
@@ -2979,8 +3332,11 @@ const attachment = useAttachment({
   maxBytes: () => flags.maxUploadSize ?? MAX_ATTACHMENT_BYTES,
   onError: warnAttachment,
   onDuplicate: notifyDuplicateAttachments,
+  draftScope: () => chatDrafts.uploadScope(),
   staged: () => composerStore.attachments,
   stage: composerStore.addAttachment,
+  stagedForSource: composerStore.attachmentsOwning,
+  stageForSource: composerStore.addAttachmentForSource,
   update: composerStore.updateAttachment,
   remove: composerStore.removeAttachment
 })
@@ -3237,7 +3593,9 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
       :select-history="onSelectHistory"
       :current-chat-ready="currentChatReady"
       :opening-workflow-name="openingWorkflowName"
+      :landing="landing"
       :session-id="threadId"
+      :chat-key="chatDrafts.draftKey.value"
       :custom-title="
         history.titleFor(threadId) ??
         historyGroups.current.find((session) => session.id === threadId)
@@ -3250,16 +3608,17 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
       :has-node-selection-mode-addition="hasNodeSelectionModeAddition"
       :node-reference-disabled-reason="nodeReferenceDisabledReason"
       :select-workflow-reference="onSelectWorkflowReference"
-      :saving-reference="savingReference"
+      :saving-reference="savingReferenceForCurrentDraft"
       :available-workflows="availableWorkflowReferences"
       :editable-workflow-id="editableWorkflowId"
       :active-tab="selectedTargetTab"
-      :workflow-tabs="workflowTabs"
       :visible-tab-path="workflowStore.activeWorkflow?.path ?? null"
       :follows-visible-workflow="agentPanelStore.followsVisibleWorkflow"
-      :selecting-tab-path="selectingTarget?.path ?? null"
-      :select-tab="onSelectWorkflowTarget"
       :workflow-detached="workflowDetached"
+      :target-restoring="
+        agentPanelStore.canRestoreWorkflow ||
+        (threadId !== null && history.activeId !== threadId)
+      "
       :target-unavailable="agentPanelStore.targetUnavailable"
       :canvas-empty-after-turn="canvasEmptyAfterTurn"
       :deriving-workflow="attachment.derivingWorkflow.value"
@@ -3271,7 +3630,7 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
         crdtStatus.terminal === 'retry_exhausted' ||
         crdtStatus.terminal === 'timeout'
       "
-      :retry-blocked="workflowSelecting"
+      :retry-blocked="savingReferenceForCurrentDraft"
       :free-use-placement="freeUsePlacement"
       @free-use-notice="onFreeUseNotice"
       @send="handleComposerSend"
@@ -3297,6 +3656,7 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
       @standing-paywall-shown="onStandingPaywallShown"
       @retry-sync="retrySubscription"
       @new-chat="onNewChat"
+      @retry-landing="onRetryFollow"
       @start-tour="restartCoach"
       @toggle-size="agentPanelStore.toggleMaximize()"
       @close="onClosePanel"
@@ -3321,12 +3681,6 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
         />
       </template>
       <template #composerNotice>
-        <RunNoticeBanner
-          v-if="followFailure"
-          context="followFailed"
-          :workflow-name="followFailure.filename"
-          @retry="onRetryFollow"
-        />
         <AgentCreditTransitionNotice
           v-if="showCreditTransitionNotice"
           data-testid="agent-credit-transition-notice"

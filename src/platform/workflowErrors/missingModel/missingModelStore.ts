@@ -1,5 +1,6 @@
+import { until } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
+import { computed, ref, shallowRef } from 'vue'
 
 import { t } from '@/i18n'
 // oxlint-disable-next-line comfy/no-restricted-paths
@@ -28,6 +29,11 @@ export const useMissingModelStore = defineStore('missingModel', () => {
 
   const missingModelCandidates = ref<MissingModelCandidate[] | null>(null)
   const isRefreshingMissingModels = ref(false)
+  const scanningController = shallowRef<AbortController | null>(null)
+  const workflowLoadsInProgress = ref(0)
+  const isScanningMissingModels = computed(
+    () => workflowLoadsInProgress.value > 0 || scanningController.value !== null
+  )
 
   /** Candidates to display; `null` while the missing models warning is off. */
   const visibleMissingModelCandidates = computed(() =>
@@ -105,8 +111,30 @@ export const useMissingModelStore = defineStore('missingModel', () => {
 
   function createVerificationAbortController(): AbortController {
     _verificationAbortController?.abort()
-    _verificationAbortController = new AbortController()
-    return _verificationAbortController
+    const controller = new AbortController()
+    _verificationAbortController = controller
+    scanningController.value = controller
+    controller.signal.addEventListener('abort', () => endScan(controller), {
+      once: true
+    })
+    return controller
+  }
+
+  function endScan(controller: AbortController) {
+    if (scanningController.value === controller) scanningController.value = null
+  }
+
+  async function untilScanEnds() {
+    await until(isScanningMissingModels).toBe(false)
+  }
+
+  async function whileWorkflowLoads<T>(load: () => Promise<T>): Promise<T> {
+    workflowLoadsInProgress.value++
+    try {
+      return await load()
+    } finally {
+      workflowLoadsInProgress.value--
+    }
   }
 
   function setMissingModels(models: MissingModelCandidate[]) {
@@ -309,6 +337,7 @@ export const useMissingModelStore = defineStore('missingModel', () => {
     missingModelCandidates,
     visibleMissingModelCandidates,
     isRefreshingMissingModels,
+    isScanningMissingModels,
     hasMissingModels,
     missingModelCount,
     missingModelNodeIds,
@@ -325,6 +354,9 @@ export const useMissingModelStore = defineStore('missingModel', () => {
     clearMissingModels,
     refreshMissingModels,
     createVerificationAbortController,
+    endScan,
+    untilScanEnds,
+    whileWorkflowLoads,
 
     hasMissingModelOnNode,
     isWidgetMissingModel,

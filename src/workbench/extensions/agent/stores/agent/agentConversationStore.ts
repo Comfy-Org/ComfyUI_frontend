@@ -2,7 +2,7 @@ import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
 import { createEventHook } from '@vueuse/core'
 import { isEqual } from 'es-toolkit'
 import { defineStore } from 'pinia'
-import { computed, ref, shallowReactive, shallowRef } from 'vue'
+import { computed, ref, shallowReactive, shallowRef, watch } from 'vue'
 
 import type { MediaKind } from '@comfyorg/assets-core/media'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -122,6 +122,7 @@ interface PendingSend {
   skillReference?: SkillReference
   assetIds?: readonly string[]
   targetTabPath?: string | null
+  targetTabInstanceId?: string | null
   inputMethod?: AgentInputMethod
   starterPrompt?: AgentStarterPromptSource | null
   status: PendingSendStatus
@@ -623,7 +624,10 @@ export const useAgentConversationStore = defineStore(
     const demotedSnapshotByStash = new Map<TurnId, TurnId>()
     const restoredBackgroundMessageIds = new Set<TurnId>()
     const reportedPaywallImpressions = new Set<TurnId>()
-    const approvalShownAtByAsk = new Map<string, number>()
+    const approvalShownAtByAsk = new Map<
+      string,
+      { shownAt: number; turnId: string }
+    >()
     const shownApprovalIds = new Set<string>()
     const undeliverableAskReporter = createUndeliverableAskReporter()
     const departedTurns = new Map<string, 'no-live-turn' | 'settled-turn'>()
@@ -701,15 +705,23 @@ export const useAgentConversationStore = defineStore(
         updateBackgroundTurn(turnId, { pendingAskIds })
     }
 
-    function recordApprovalShown(askId: string, shownAt: number): boolean {
+    function recordApprovalShown(
+      askId: string,
+      turnId: string,
+      shownAt: number
+    ): boolean {
       if (shownApprovalIds.has(askId)) return false
       shownApprovalIds.add(askId)
-      approvalShownAtByAsk.set(askId, shownAt)
+      approvalShownAtByAsk.set(askId, { shownAt, turnId })
       return true
     }
 
     function approvalShownAt(askId: string): number | undefined {
-      return approvalShownAtByAsk.get(askId)
+      return approvalShownAtByAsk.get(askId)?.shownAt
+    }
+
+    function approvalTurnId(askId: string): string | undefined {
+      return approvalShownAtByAsk.get(askId)?.turnId
     }
 
     function forgetApprovalTiming(askId: string): void {
@@ -883,6 +895,10 @@ export const useAgentConversationStore = defineStore(
         retiredAsks.get(key)?.has(askId) === true ||
         provisionalRetiredAsks.get(key)?.has(askId) === true
       )
+    }
+
+    function isAskPermanentlyRetired(askId: string, owner?: string): boolean {
+      return retiredAsks.get(threadKey(owner))?.has(askId) === true
     }
 
     function confirmAskPending(askId: string, owner?: string): void {
@@ -1081,6 +1097,7 @@ export const useAgentConversationStore = defineStore(
       workflowReferences: WorkflowReference[]
       assetIds?: readonly string[]
       targetTabPath?: string | null
+      targetTabInstanceId?: string | null
       inputMethod?: AgentInputMethod
       starterPrompt?: AgentStarterPromptSource | null
     }): PendingSend {
@@ -1253,20 +1270,29 @@ export const useAgentConversationStore = defineStore(
       return pendingSends.get(clientMessageId)
     }
 
-    function hasPendingSendForBlankChat(
-      blankChatId: string,
+    function hasPendingSendForOrigin(
+      origin: PendingSendOrigin,
       workspaceId?: string | null
     ): boolean {
       for (const send of pendingSends.values()) {
         if (
-          send.origin.kind === 'blank' &&
-          send.origin.blankChatId === blankChatId &&
+          originsEqual(send.origin, origin) &&
           (workspaceId === undefined ||
             (send.workspaceId ?? null) === workspaceId)
         )
           return true
       }
       return false
+    }
+
+    function hasPendingSendForBlankChat(
+      blankChatId: string,
+      workspaceId?: string | null
+    ): boolean {
+      return hasPendingSendForOrigin(
+        { kind: 'blank', blankChatId },
+        workspaceId
+      )
     }
 
     function discardPendingSendsOutsideWorkspace(
@@ -1287,6 +1313,71 @@ export const useAgentConversationStore = defineStore(
       return removed
     }
 
+    const tabBlankChatIds = new Map<string, string>()
+    const blankChatTabs = new Map<string, string>()
+    let hasAssignedBlankTab = false
+
+    watch(openTabPaths, (nextOpen, prevOpen) => {
+      for (const tabKey of prevOpen.keys()) {
+        if (nextOpen.has(tabKey)) continue
+        tabBlankChatIds.delete(tabKey)
+        for (const [blankChatId, mappedTabKey] of blankChatTabs) {
+          if (mappedTabKey === tabKey) blankChatTabs.delete(blankChatId)
+        }
+      }
+    })
+
+    function setBlankChatIdForTab(tabKey: string, blankChatId: string): void {
+      tabBlankChatIds.set(tabKey, blankChatId)
+      blankChatTabs.set(blankChatId, tabKey)
+    }
+
+    function tabKeyForBlankChat(blankChatId: string): string | null {
+      return blankChatTabs.get(blankChatId) ?? null
+    }
+
+    function adoptInitialBlankTab(tabKey: string | null): void {
+      if (hasAssignedBlankTab || threadId.value !== null) return
+      if (hasPendingSendForOrigin(currentOrigin())) return
+      if (tabKey === null) return
+      const blankChatId = blankChatIdForTab(tabKey)
+      activeBlankChatId.value = blankChatId
+      hasAssignedBlankTab = true
+    }
+
+    function blankChatIdForTab(tabKey: string | null): string {
+      const key = tabKey ?? ''
+      const blankChatId = tabBlankChatIds.get(key) ?? `blank:${key}`
+      if (tabKey !== null) blankChatTabs.set(blankChatId, tabKey)
+      return blankChatId
+    }
+
+    function advanceBlankChatIdForTab(tabKey: string | null): string {
+      const next = nextBlankChatId()
+      const key = tabKey ?? ''
+      tabBlankChatIds.set(key, next)
+      if (tabKey !== null) blankChatTabs.set(next, tabKey)
+      return next
+    }
+
+    function discardFailedPendingSends(
+      origin: PendingSendOrigin,
+      workspaceId?: string | null
+    ): string[] {
+      const discardedIds: string[] = []
+      for (const [id, send] of pendingSends) {
+        if (
+          send.status === 'failed' &&
+          originsEqual(send.origin, origin) &&
+          (workspaceId === undefined ||
+            (send.workspaceId ?? null) === workspaceId)
+        ) {
+          pendingSends.delete(id)
+          discardedIds.push(id)
+        }
+      }
+      return discardedIds
+    }
     function updatePendingAttachmentPreview(
       id: string,
       previewUrl: string
@@ -1644,6 +1735,9 @@ export const useAgentConversationStore = defineStore(
         message: slot.message,
         transport: slot.transport,
         userText: userTexts.value.get(slot.message.id),
+        attachments: userAttachments.value.get(slot.message.id),
+        tags: userTags.value.get(slot.message.id),
+        workflowReferences: userWorkflowReferences.value.get(slot.message.id),
         skillReference: userSkillReferences.value.get(slot.message.id),
         settled: false,
         tab: slot.tab,
@@ -1773,13 +1867,13 @@ export const useAgentConversationStore = defineStore(
       return true
     }
 
-    /**
-     * PM-1575: flush what the discarded transport still holds rather than
-     * leaving it reachable only by its own STALE_AFTER_MS fallback.
-     */
     function retireBackgroundTurn(entry: BackgroundTurn): void {
       rememberDepartedTurn(entry.threadId, entry.messageId, 'settled-turn')
       entry.transport.dispose()
+      revokeUnownedBlobPreviews(
+        entry.attachments,
+        collectOwnedBlobPreviews(true)
+      )
     }
 
     function latestBackgroundTurn(
@@ -1821,12 +1915,55 @@ export const useAgentConversationStore = defineStore(
       if (items?.length) target.set(id, items)
     }
 
+    function addBlobPreviews(
+      attachments: readonly UserAttachment[] | undefined,
+      target: Set<string>
+    ): void {
+      for (const { previewUrl } of attachments ?? []) {
+        if (previewUrl?.startsWith('blob:')) target.add(previewUrl)
+      }
+    }
+
+    function collectOwnedBlobPreviews(
+      includeUserAttachments: boolean
+    ): Set<string> {
+      const owned = new Set<string>()
+      if (includeUserAttachments) {
+        for (const attachments of userAttachments.value.values())
+          addBlobPreviews(attachments, owned)
+      }
+      for (const entry of backgroundTurns.values())
+        addBlobPreviews(entry.attachments, owned)
+      return owned
+    }
+
+    function revokeUnownedBlobPreviews(
+      attachments: readonly UserAttachment[] | undefined,
+      owned: ReadonlySet<string>
+    ): void {
+      for (const { previewUrl } of attachments ?? []) {
+        if (previewUrl?.startsWith('blob:') && !owned.has(previewUrl))
+          URL.revokeObjectURL(previewUrl)
+      }
+    }
+
     function restoreBackgroundUserText(entry: BackgroundTurn): void {
       const id = entry.message.id
-      if (entry.userText === undefined) return
+      if (entry.userText === undefined) {
+        revokeUnownedBlobPreviews(
+          entry.attachments,
+          collectOwnedBlobPreviews(true)
+        )
+        return
+      }
       if (!userTexts.value.has(id)) userTexts.value.set(id, entry.userText)
       if (!userAttachments.value.has(id))
         setIfNonEmpty(userAttachments.value, id, entry.attachments)
+      else
+        revokeUnownedBlobPreviews(
+          entry.attachments,
+          collectOwnedBlobPreviews(true)
+        )
       if (!userTags.value.has(id)) setIfNonEmpty(userTags.value, id, entry.tags)
       if (!userWorkflowReferences.value.has(id))
         setIfNonEmpty(
@@ -1878,18 +2015,20 @@ export const useAgentConversationStore = defineStore(
       if (entry) {
         rememberDepartedTurn(entry.threadId, entry.messageId, 'settled-turn')
         entry.transport.settle()
-        // This turn is being dropped from the map here, unlike the
-        // agent_message_done path in ingestBackgroundTurnEvent -- nothing
-        // will keep it reachable afterwards, so flush its held parts now.
         entry.transport.dispose()
         backgroundTurns.delete(entry.messageId)
+        revokeUnownedBlobPreviews(
+          entry.attachments,
+          collectOwnedBlobPreviews(true)
+        )
         return entry.messageId
       }
       return null
     }
 
     function dropBackgroundTurns(): void {
-      for (const entry of backgroundTurns.values()) {
+      const discarded = Array.from(backgroundTurns.values())
+      for (const entry of discarded) {
         rememberDepartedTurn(
           entry.threadId,
           entry.messageId,
@@ -1899,6 +2038,9 @@ export const useAgentConversationStore = defineStore(
         entry.transport.dispose()
       }
       backgroundTurns.clear()
+      const owned = collectOwnedBlobPreviews(true)
+      for (const entry of discarded)
+        revokeUnownedBlobPreviews(entry.attachments, owned)
     }
 
     function liveTurns(): LiveTurn[] {
@@ -2022,6 +2164,10 @@ export const useAgentConversationStore = defineStore(
       return entry.message
     }
 
+    function liveTurnMessageId(turn: LiveTurn): string | null {
+      return liveTurnMessage(turn)?.id ?? null
+    }
+
     function reconcileApprovalParts(
       turn: LiveTurn,
       pendingAskId?: string,
@@ -2095,11 +2241,9 @@ export const useAgentConversationStore = defineStore(
     }
 
     function dropAttachmentPreviews(): void {
-      for (const attachments of userAttachments.value.values()) {
-        for (const { previewUrl } of attachments) {
-          if (previewUrl?.startsWith('blob:')) URL.revokeObjectURL(previewUrl)
-        }
-      }
+      const retainedByBackground = collectOwnedBlobPreviews(false)
+      for (const attachments of userAttachments.value.values())
+        revokeUnownedBlobPreviews(attachments, retainedByBackground)
       userAttachments.value = new Map()
     }
 
@@ -2117,8 +2261,9 @@ export const useAgentConversationStore = defineStore(
       resolvedPaywallIds.value = new Set()
       dropAttachmentPreviews()
       attachmentNamesByThread.clear()
-      threadId.value = null
       activeBlankChatId.value = blankChatId ?? nextBlankChatId()
+      threadId.value = null
+      hasAssignedBlankTab = true
       forgetAllApprovals()
       hydratedMessageIds = new Set()
       hydratedTurnIds = new Map()
@@ -2512,12 +2657,19 @@ export const useAgentConversationStore = defineStore(
       moveTurnToTab,
       adoptThreadTab,
       threadId,
-      activeBlankChatId,
+      activeBlankChatId: computed(() => activeBlankChatId.value),
+      adoptInitialBlankTab,
+      blankChatIdForTab,
+      advanceBlankChatIdForTab,
+      setBlankChatIdForTab,
+      tabKeyForBlankChat,
       currentOrigin,
       isOriginOnScreen,
       hasSendingPendingSend,
       hasSendingForOrigin,
       isOriginBusy,
+      hasPendingSendForOrigin,
+      discardFailedPendingSends,
       startPendingSend,
       capturePendingSendCanvasBaseline,
       failPendingSend,
@@ -2535,6 +2687,7 @@ export const useAgentConversationStore = defineStore(
       latestWorkflowId,
       recordApprovalShown,
       approvalShownAt,
+      approvalTurnId,
       forgetApprovalTiming,
       forgetApproval,
       recordUser,
@@ -2555,6 +2708,7 @@ export const useAgentConversationStore = defineStore(
       commitAsk,
       retireAsk,
       isAskRetired,
+      isAskPermanentlyRetired,
       confirmAskPending,
       reconcileApprovalParts,
       startTurn,
@@ -2567,6 +2721,7 @@ export const useAgentConversationStore = defineStore(
       settleBackgroundTurn,
       dropBackgroundTurns,
       liveTurns,
+      liveTurnMessageId,
       turnUsesSkill,
       historySkillNames,
       settleTurn,

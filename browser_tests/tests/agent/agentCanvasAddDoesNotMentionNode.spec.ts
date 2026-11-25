@@ -16,14 +16,12 @@ test.describe(
 
       await test.step('target a blank tab revisited with the Agent open', async () => {
         await agentPanel.open()
-        await agentPanel.selectWorkflow()
         await topbar.newWorkflowButton.click()
         await expect(topbar.getActiveTab()).toHaveText('Unsaved Workflow (2)')
         await topbar.getTab(0).click()
         await expect(topbar.getActiveTab()).toHaveText('Unsaved Workflow')
         await topbar.getTab(1).click()
         await expect(topbar.getActiveTab()).toHaveText('Unsaved Workflow (2)')
-        await agentPanel.selectWorkflow('Unsaved Workflow (2)')
 
         await expect(agentPanel.composer).toBeEmpty()
       })

@@ -17,11 +17,7 @@ import {
   zAgentTurnAccepted
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
-import {
-  agentTest,
-  bootAgentApp,
-  mockWorkflowPersistence
-} from '@e2e/fixtures/agentPanelFixture'
+import { agentTest, bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { AGENT_SOCKET_URL } from '@e2e/fixtures/agentSocket'
@@ -40,8 +36,6 @@ const SUBSCRIBE_TIMEOUT = 15_000
 const SEND_LABEL = enMessages.agent.send
 const STOP_LABEL = enMessages.agent.stop
 const NEW_CHAT_LABEL = enMessages.agent.newChat
-const SWITCH_WORKFLOW_LABEL = enMessages.agent.switchWorkflow
-const HOME_WORKFLOW_ID = '00000000-0000-4000-8000-000000000000'
 
 export interface AgentBoundWorkflow {
   workflowId: string
@@ -117,19 +111,6 @@ export class AgentTwoSessionCrdtHarness {
       })
     ])
     await this.agentPanel.open(PANEL_MOUNT_TIMEOUT)
-    await this.selectHomeTarget()
-  }
-
-  private async selectHomeTarget(): Promise<void> {
-    await mockWorkflowPersistence(this.page, HOME_WORKFLOW_ID)
-    const picker = this.panel.getByRole('button', {
-      name: SWITCH_WORKFLOW_LABEL
-    })
-    await picker.click()
-    await this.page
-      .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
-      .click()
-    await expect(picker).toHaveText('Unsaved Workflow')
   }
 
   private async startThread(prompt: string): Promise<AgentThread> {
