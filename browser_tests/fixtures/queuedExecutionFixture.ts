@@ -20,7 +20,7 @@ export const queuedExecutionFixture = mergeTests(
   webSocketFixture
 ).extend<{
   queuedExecution: {
-    nextJob: () => Promise<QueuedJob>
+    capture: (submit: () => Promise<void>) => Promise<QueuedJob>
     status: (remaining: number) => void
   }
 }>({
@@ -38,13 +38,16 @@ export const queuedExecutionFixture = mergeTests(
     })
 
     await use({
-      async nextJob() {
-        const response = await page.waitForResponse(
-          (response) =>
-            promptUrl(new URL(response.url())) &&
-            response.request().method() === 'POST' &&
-            response.ok()
-        )
+      async capture(submit) {
+        const [response] = await Promise.all([
+          page.waitForResponse(
+            (response) =>
+              promptUrl(new URL(response.url())) &&
+              response.request().method() === 'POST' &&
+              response.ok()
+          ),
+          submit()
+        ])
         const { prompt_id: id } = acceptedPrompt.parse(await response.json())
         return {
           id,

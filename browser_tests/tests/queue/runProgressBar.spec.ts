@@ -14,10 +14,9 @@ wstest.describe('Docked actionbar run progress bar', { tag: ['@ui'] }, () => {
   wstest(
     'stays flush with the actionbar bottom while a job runs',
     async ({ comfyPage, queuedExecution }) => {
-      const [job] = await Promise.all([
-        queuedExecution.nextJob(),
+      const job = await queuedExecution.capture(() =>
         comfyPage.runButton.click()
-      ])
+      )
       job.start()
       job.progress('3', 13, 20)
 
@@ -30,10 +29,9 @@ wstest.describe('Docked actionbar run progress bar', { tag: ['@ui'] }, () => {
   wstest(
     'grows with reported progress and clears when the job ends',
     async ({ comfyPage, queuedExecution }) => {
-      const [job] = await Promise.all([
-        queuedExecution.nextJob(),
+      const job = await queuedExecution.capture(() =>
         comfyPage.runButton.click()
-      ])
+      )
       job.start()
       job.progress('3', 5, 20)
 
@@ -54,16 +52,12 @@ wstest.describe('Docked actionbar run progress bar', { tag: ['@ui'] }, () => {
       const topbar = comfyPage.menu.topbar
       const { runButton } = comfyPage
 
-      const [visibleJob] = await Promise.all([
-        queuedExecution.nextJob(),
-        runButton.click()
-      ])
+      const visibleJob = await queuedExecution.capture(() => runButton.click())
       await topbar.newWorkflowButton.click()
       await comfyPage.workflow.waitForWorkflowIdle()
-      const [backgroundJob] = await Promise.all([
-        queuedExecution.nextJob(),
+      const backgroundJob = await queuedExecution.capture(() =>
         runButton.click()
-      ])
+      )
       await topbar.getTab(0).click()
       await comfyPage.workflow.waitForWorkflowIdle()
 
@@ -93,10 +87,9 @@ wstest.describe('Queue progress overlay', { tag: ['@ui'] }, () => {
   wstest(
     'updates visual progress without changing layout width',
     async ({ comfyPage, queuedExecution }) => {
-      const [job] = await Promise.all([
-        queuedExecution.nextJob(),
+      const job = await queuedExecution.capture(() =>
         comfyPage.runButton.click()
-      ])
+      )
       job.start()
       job.progress('3', 5, 20)
 
@@ -150,10 +143,9 @@ wstest.describe('Node progress bar', { tag: ['@ui', '@vue-nodes'] }, () => {
       const nodeId = await comfyPage.page.evaluate(() =>
         String(window.app!.graph.nodes[0].id)
       )
-      const [job] = await Promise.all([
-        queuedExecution.nextJob(),
+      const job = await queuedExecution.capture(() =>
         comfyPage.runButton.click()
-      ])
+      )
       job.start()
       job.progress(nodeId, 5, 20)
 

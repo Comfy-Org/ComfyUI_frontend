@@ -92,10 +92,7 @@ test(
     const { queuePanel, runButton } = comfyPage
 
     await test.step('arrange the dog and render the saved composition', async () => {
-      const [initial] = await Promise.all([
-        queuedExecution.nextJob(),
-        runButton.click()
-      ])
+      const initial = await queuedExecution.capture(() => runButton.click())
       initial.start()
       initial.output('1', compositor.output('park.webp'))
       initial.finish()
@@ -108,10 +105,7 @@ test(
       await compositor.closeEditor.click()
       await expect(preview).toHaveAttribute('src', /^blob:/)
 
-      const [dog] = await Promise.all([
-        queuedExecution.nextJob(),
-        runButton.click()
-      ])
+      const dog = await queuedExecution.capture(() => runButton.click())
       dog.start()
       dog.output('1', compositor.output('dog-result.webp'))
       dog.finish()
@@ -120,16 +114,10 @@ test(
 
     await test.step('keep the cat visible while the sheep run reports output', async () => {
       await compositor.prompt.fill('cat')
-      const [cat] = await Promise.all([
-        queuedExecution.nextJob(),
-        runButton.click()
-      ])
+      const cat = await queuedExecution.capture(() => runButton.click())
       cat.start()
       await compositor.prompt.fill('sheep')
-      const [sheep] = await Promise.all([
-        queuedExecution.nextJob(),
-        runButton.click()
-      ])
+      const sheep = await queuedExecution.capture(() => runButton.click())
       sheep.start()
       await compositor.showRunningJobs(cat.id, sheep.id)
 

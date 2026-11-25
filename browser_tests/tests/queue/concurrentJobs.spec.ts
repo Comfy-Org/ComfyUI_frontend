@@ -29,21 +29,12 @@ test.describe('Concurrent jobs', { tag: ['@vue-nodes', '@ui'] }, () => {
     const { topbar } = comfyPage.menu
 
     await previewImageTab(comfyPage)
-    const [jobA] = await Promise.all([
-      queuedExecution.nextJob(),
-      runButton.click()
-    ])
+    const jobA = await queuedExecution.capture(() => runButton.click())
     const tabA = topbar.getTab(1)
 
     const nodeB = await previewImageTab(comfyPage)
-    const [jobB1] = await Promise.all([
-      queuedExecution.nextJob(),
-      runButton.click()
-    ])
-    const [jobB2] = await Promise.all([
-      queuedExecution.nextJob(),
-      runButton.click()
-    ])
+    const jobB1 = await queuedExecution.capture(() => runButton.click())
+    const jobB2 = await queuedExecution.capture(() => runButton.click())
 
     await jobsRoutes.mockJobsScenario({
       history: [],
