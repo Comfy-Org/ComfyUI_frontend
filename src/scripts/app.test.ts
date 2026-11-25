@@ -3176,12 +3176,15 @@ describe('ComfyApp', () => {
 
       await expect(app.queuePrompt(0, 2)).resolves.toBe(true)
 
-      expect(queuePrompt).toHaveBeenCalledOnce()
-      expect(useToast().warning).toHaveBeenCalledWith(
-        queueBatchStoppedToast(1, 2)
-      )
-      releaseHook()
-      await load
+      try {
+        expect(queuePrompt).toHaveBeenCalledOnce()
+        expect(useToast().warning).toHaveBeenCalledWith(
+          queueBatchStoppedToast(1, 2)
+        )
+      } finally {
+        releaseHook()
+        await load
+      }
     })
 
     it('stops a batch when its queueing graph is reconfigured in place by a load that finishes before the next iteration runs', async () => {

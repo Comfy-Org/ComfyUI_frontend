@@ -2029,6 +2029,7 @@ export class ComfyApp implements IComfyApp {
           queueingGraphGeneration
         } = this.queueItems.pop()!
         let queuedCount = 0
+        let acceptedCount = 0
         const workflowExecutionIntent: WorkflowExecutionIntent = {
           trigger_source: normalizeExecutionTriggerSource(
             workflowQueueIntent?.trigger_source
@@ -2055,6 +2056,7 @@ export class ComfyApp implements IComfyApp {
             break
           }
           let executionContext: ExecutionContext | undefined
+          let submissionAccepted = false
           if (telemetry) {
             try {
               executionContext = getExecutionContext()
@@ -2134,6 +2136,7 @@ export class ComfyApp implements IComfyApp {
             delete api.authToken
             delete api.apiKey
             delete api.loadedReleaseId
+            submissionAccepted = Boolean(res.prompt_id)
             if (!res.prompt_id) {
               telemetry?.trackExecutionOutcome({
                 startTime,
@@ -2293,6 +2296,9 @@ export class ComfyApp implements IComfyApp {
           }
 
           queuedCount++
+          if (submissionAccepted) {
+            acceptedCount++
+          }
 
           executeWidgetsCallback(queuedNodes, 'afterQueued', {
             isPartialExecution
@@ -2306,7 +2312,7 @@ export class ComfyApp implements IComfyApp {
         if (stoppedOnWorkflowChange) {
           useToast().warning(
             t('toastMessages.batchStoppedOnWorkflowChange', {
-              queued: queuedCount,
+              queued: acceptedCount,
               requested: batchCount
             })
           )
