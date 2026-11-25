@@ -46,7 +46,9 @@ test.describe(
     test('opens the Missing models dialog when Cloud lacks a checkpoint', async ({
       comfyPage,
       checkCloudCompatibility,
-      openOnCloudDialog
+      openOnCloudDialog,
+      cloudOrigin,
+      request
     }) => {
       const checkpoint = '3Guofeng3_v32Light.safetensors'
       await comfyPage.workflow.loadWorkflow(
@@ -60,7 +62,13 @@ test.describe(
 
       await expect(openOnCloudDialog.missingModelHeading).toBeVisible()
       await expect(openOnCloudDialog.missingModel(checkpoint)).toBeVisible()
-      await expect(openOnCloudDialog.uploadsUnavailableNotice).toBeVisible()
+      const features = await request.get(`${cloudOrigin}/api/features`)
+      expect(features.ok()).toBe(true)
+      const rolloutEnabled =
+        (await features.json()).open_on_cloud_model_upload_enabled === true
+      await expect(openOnCloudDialog.signInToUploadButton).toHaveCount(
+        rolloutEnabled ? 1 : 0
+      )
       await expect(openOnCloudDialog.uploadButton).toHaveCount(0)
       await comfyPage.attachScreenshot('missing-cloud-model.png', {
         runInCI: true

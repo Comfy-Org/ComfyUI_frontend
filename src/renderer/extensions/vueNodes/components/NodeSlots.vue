@@ -5,6 +5,7 @@
   <div
     v-else
     ref="slots"
+    data-part="node-slots"
     :class="
       cn(
         'flex min-w-0 justify-between',

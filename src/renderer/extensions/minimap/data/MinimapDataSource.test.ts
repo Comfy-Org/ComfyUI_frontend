@@ -71,20 +71,23 @@ describe('MinimapDataSource', () => {
     ])
   })
 
-  it('uses graph-scoped execution state', () => {
-    const node = graphNode('node1', [0, 0])
-    const subgraph = createMockLGraph({
-      id: SUBGRAPH_ID,
-      isRootGraph: false,
-      rootGraph: rootGraph(),
-      _nodes: [node]
-    })
-    const source = new MinimapDataSource(subgraph, {
-      [createNodeLocatorId(SUBGRAPH_ID, node.id)]: { state: 'running' }
-    })
+  it.for(['node1', 'node:1'])(
+    'uses graph-scoped execution state for %s',
+    (id) => {
+      const node = graphNode(id, [0, 0])
+      const subgraph = createMockLGraph({
+        id: SUBGRAPH_ID,
+        isRootGraph: false,
+        rootGraph: rootGraph(),
+        _nodes: [node]
+      })
+      const source = new MinimapDataSource(subgraph, {
+        [createNodeLocatorId(SUBGRAPH_ID, node.id)]: { state: 'running' }
+      })
 
-    expect(source.getNodes()).toMatchObject([{ executionState: 'running' }])
-  })
+      expect(source.getNodes()).toMatchObject([{ executionState: 'running' }])
+    }
+  )
 
   it('handles an empty graph', () => {
     const source = new MinimapDataSource(rootGraph())

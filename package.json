@@ -1,6 +1,6 @@
 {
   "name": "@comfyorg/comfyui-frontend",
-  "version": "1.61.5",
+  "version": "1.61.8",
   "private": true,
   "description": "Official front-end implementation of ComfyUI",
   "homepage": "https://comfy.org",
@@ -103,9 +103,11 @@
     "@comfyorg/account-core": "workspace:*",
     "@comfyorg/account-ui": "workspace:*",
     "@comfyorg/api-client": "workspace:*",
+    "@comfyorg/assets-core": "workspace:*",
     "@comfyorg/billing-contract": "workspace:*",
     "@comfyorg/billing-core": "workspace:*",
     "@comfyorg/comfy-multi-player": "catalog:",
+    "@comfyorg/comfyui-api-types": "workspace:*",
     "@comfyorg/comfyui-desktop-bridge-types": "catalog:",
     "@comfyorg/comfyui-electron-types": "catalog:",
     "@comfyorg/design-system": "workspace:*",
@@ -261,5 +263,5 @@
     "node": ">=26.8.2 <27",
     "pnpm": ">=11.3"
   },
-  "packageManager": "pnpm@11.28.10"
+  "packageManager": "pnpm@12.23.0"
 }

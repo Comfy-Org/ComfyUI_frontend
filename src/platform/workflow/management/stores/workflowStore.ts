@@ -22,6 +22,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
 // oxlint-disable-next-line comfy/no-restricted-paths
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
+import { UnauthorizedError } from '@comfyorg/api-client/ComfyApi'
 import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'
 import { getDefaultWorkflow } from '@/platform/workflow/core/services/defaultWorkflowService'
@@ -514,7 +515,16 @@ export const useWorkflowStore = defineStore('workflow', () => {
       )
     },
     undefined,
-    { immediate: false }
+    {
+      immediate: false,
+      onError: (error) => {
+        if (error instanceof UnauthorizedError) return
+        reportError(error, {
+          surface: 'graph',
+          errorType: 'error_listing_workflows'
+        })
+      }
+    }
   )
 
   async function syncWorkflows(dir: string = '') {
@@ -637,12 +647,13 @@ export const useWorkflowStore = defineStore('workflow', () => {
   }
 
   /**
-   * Save a workflow.
+   * Save a workflow, loading it first unless it is active.
    * @param workflow The workflow to save.
    */
   const saveWorkflow = async (workflow: ComfyWorkflow) => {
     isBusy.value = true
     try {
+      if (!workflow.isLoaded && !isActive(workflow)) await workflow.load()
       await workflow.save()
       // Synchronously detach and re-attach to force refresh the tree objects
       // without an async gap that would cause the tab to disappear.

@@ -25,11 +25,6 @@ import type {
   NodeReplacement
 } from '@/platform/workflowErrors/nodeReplacement/types'
 import { useToast } from '@/components/ui/toast/toastStore'
-import {
-  removePendingMissingNodeTypesByNodeId,
-  removePendingMissingNodeTypesByType,
-  updatePendingWarnings
-} from '@/platform/workflow/core/utils/pendingWarnings'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { sanitizeNodeName } from '@/scripts/app'
 import { useApp } from '@/scripts/appInstance'
@@ -501,16 +496,6 @@ function removeReplacedServerTypes(
   if (!types.length) return
   useMissingNodesErrorStore().removeMissingNodesByType(types)
   useDeprecatedNodesStore().removeByType(types)
-
-  const activeWorkflow = useWorkflowStore().activeWorkflow
-  if (!activeWorkflow) return
-
-  updatePendingWarnings(activeWorkflow, {
-    missingNodeTypes: removePendingMissingNodeTypesByType(
-      activeWorkflow.pendingWarnings?.missingNodeTypes,
-      types
-    )
-  })
 }
 
 function replacePlaceholder(
@@ -554,17 +539,7 @@ function replaceMissingNode(
   if (!replacement?.editorOnly || !replacePlaceholder(node, replacement))
     return false
 
-  const executionId = String(match.nodeId)
-  useMissingNodesErrorStore().removeMissingNodesByNodeId(executionId)
-  const workflow = useWorkflowStore().activeWorkflow
-  if (workflow) {
-    updatePendingWarnings(workflow, {
-      missingNodeTypes: removePendingMissingNodeTypesByNodeId(
-        workflow.pendingWarnings?.missingNodeTypes,
-        executionId
-      )
-    })
-  }
+  useMissingNodesErrorStore().removeMissingNodesByNodeId(String(match.nodeId))
   return true
 }
 

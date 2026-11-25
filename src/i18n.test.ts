@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
 import type * as I18nModule from './i18n'
 
@@ -11,6 +12,7 @@ let mergeCustomNodesI18n: typeof I18nModule.mergeCustomNodesI18n
 let resolveSupportedLocale: typeof I18nModule.resolveSupportedLocale
 let setActiveLocale: typeof I18nModule.setActiveLocale
 let te: typeof I18nModule.te
+let syncDocumentLanguage: typeof I18nModule.syncDocumentLanguage
 
 async function importI18nModule() {
   const i18nModule = await import('./i18n')
@@ -23,6 +25,7 @@ async function importI18nModule() {
   resolveSupportedLocale = i18nModule.resolveSupportedLocale
   setActiveLocale = i18nModule.setActiveLocale
   te = i18nModule.te
+  syncDocumentLanguage = i18nModule.syncDocumentLanguage
 }
 
 // Mock the JSON imports before importing i18n module
@@ -549,6 +552,23 @@ describe('i18n', () => {
     it('honors prioritized navigator.languages', async () => {
       // First preference unsupported, second shipped — should land on French.
       expect(await setActiveLocale(['de-DE', 'fr-CA', 'en'])).toBe('fr')
+    })
+
+    it('keeps the document language on the active locale', async () => {
+      const root = document.createElement('html')
+      root.lang = 'en'
+      await setActiveLocale('zh')
+      const stop = syncDocumentLanguage(root)
+
+      try {
+        expect(root.lang).toBe('zh')
+
+        await setActiveLocale('pt-BR')
+        await nextTick()
+        expect(root.lang).toBe('pt-BR')
+      } finally {
+        stop()
+      }
     })
   })
 
