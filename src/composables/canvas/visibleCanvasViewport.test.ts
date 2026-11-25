@@ -1,15 +1,20 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { createTestDragAndScale } from '@/utils/__tests__/canvasTestUtils'
-import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { visibleCanvasViewport } from './visibleCanvasViewport'
 
-function mountGraphArea(left: number, right: number) {
-  const graphArea = document.createElement('div')
-  graphArea.id = 'graph-canvas-panel'
-  graphArea.getBoundingClientRect = () =>
-    new DOMRect(left, 40, right - left, 500)
-  document.body.append(graphArea)
+type Cover = { selector: string; left: number; right: number }
+
+const LEFT_PANEL = '#first-side-panel'
+const RIGHT_PANEL = '#last-side-panel'
+const AGENT_PANEL = '[data-testid="docked-agent-panel"]'
+
+function mountCover({ selector, left, right }: Cover) {
+  const element = document.createElement('div')
+  if (selector.startsWith('#')) element.id = selector.slice(1)
+  else element.dataset.testid = 'docked-agent-panel'
+  element.getBoundingClientRect = () => new DOMRect(left, 0, right - left, 600)
+  document.body.append(element)
 }
 
 function canvasAt(left: number, width = 1000, height = 600) {
@@ -20,74 +25,77 @@ function canvasAt(left: number, width = 1000, height = 600) {
   return { ds }
 }
 
-vi.mock(import('@comfyorg/telemetry'))
-
 describe('visibleCanvasViewport', () => {
   afterEach(() => {
-    document.getElementById('graph-canvas-panel')?.remove()
-    localStorage.clear()
-  })
-
-  it('uses the whole canvas before the graph area mounts', () => {
-    expect(visibleCanvasViewport(canvasAt(0))).toEqual([0, 0, 1000, 600])
+    document.body.replaceChildren()
   })
 
   it.for([
     {
+      name: 'no panel',
+      canvasLeft: 0,
+      covers: [],
+      expected: [0, 0, 1000, 600]
+    },
+    {
+      name: 'a hidden panel',
+      canvasLeft: 0,
+      covers: [{ selector: RIGHT_PANEL, left: 0, right: 0 }],
+      expected: [0, 0, 1000, 600]
+    },
+    {
       name: 'a properties panel on the right',
       canvasLeft: 0,
-      graphArea: [0, 700],
+      covers: [{ selector: RIGHT_PANEL, left: 700, right: 1000 }],
       expected: [0, 0, 700, 600]
     },
     {
       name: 'a sidebar on the left and the agent panel on the right',
       canvasLeft: 0,
-      graphArea: [300, 800],
+      covers: [
+        { selector: LEFT_PANEL, left: 64, right: 300 },
+        { selector: AGENT_PANEL, left: 800, right: 1000 }
+      ],
       expected: [300, 0, 500, 600]
+    },
+    {
+      name: 'an agent panel floating over the properties panel',
+      canvasLeft: 0,
+      covers: [
+        { selector: RIGHT_PANEL, left: 700, right: 1000 },
+        { selector: AGENT_PANEL, left: 500, right: 1000 }
+      ],
+      expected: [0, 0, 500, 600]
     },
     {
       name: 'a canvas that starts right of the page edge',
       canvasLeft: 50,
-      graphArea: [350, 850],
+      covers: [
+        { selector: LEFT_PANEL, left: 114, right: 350 },
+        { selector: RIGHT_PANEL, left: 850, right: 1050 }
+      ],
       expected: [300, 0, 500, 600]
     },
     {
-      name: 'a graph area wider than the canvas',
+      name: 'panels that leave no width',
       canvasLeft: 0,
-      graphArea: [-20, 1200],
-      expected: [0, 0, 1000, 600]
-    },
-    {
-      name: 'panels that leave no graph area',
-      canvasLeft: 0,
-      graphArea: [400, 400],
+      covers: [
+        { selector: LEFT_PANEL, left: 0, right: 600 },
+        { selector: RIGHT_PANEL, left: 500, right: 1000 }
+      ],
       expected: [0, 0, 1000, 600]
     }
-  ] as const)(
-    'keeps the full height and the uncovered width beside $name',
-    ({ canvasLeft, graphArea, expected }) => {
-      mountGraphArea(graphArea[0], graphArea[1])
+  ] satisfies {
+    name: string
+    canvasLeft: number
+    covers: Cover[]
+    expected: number[]
+  }[])(
+    'keeps the full height and the uncovered width with $name',
+    ({ canvasLeft, covers, expected }) => {
+      covers.forEach(mountCover)
 
       expect(visibleCanvasViewport(canvasAt(canvasLeft))).toEqual(expected)
-    }
-  )
-
-  it.for([
-    { name: 'overlays the canvas', reserved: 700, expected: [64, 0, 460, 600] },
-    { name: 'is docked beside it', reserved: 0, expected: [64, 0, 960, 600] }
-  ])(
-    'stops at the agent panel only when it $name',
-    ({ reserved, expected }) => {
-      vi.stubGlobal('innerWidth', 1024)
-      const panel = useAgentPanelStore()
-      panel.enabled = true
-      panel.consentAccepted = true
-      panel.isOpen = true
-      panel.setWidth(500)
-      panel.setReservedWorkspaceWidth(reserved)
-      mountGraphArea(64, 1024)
-
-      expect(visibleCanvasViewport(canvasAt(0, 1024))).toEqual(expected)
     }
   )
 })

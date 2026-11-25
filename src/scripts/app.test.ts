@@ -6175,11 +6175,11 @@ describe('ComfyApp', () => {
       it.for(importPaths)(
         'fits an import through $path whose nodes land only under a side panel into the uncovered canvas',
         async ({ importFile }) => {
-          const graphArea = document.createElement('div')
-          graphArea.id = 'graph-canvas-panel'
-          graphArea.getBoundingClientRect = () => new DOMRect(0, 0, 380, 600)
-          document.body.append(graphArea)
-          onTestFinished(() => graphArea.remove())
+          const sidePanel = document.createElement('div')
+          sidePanel.id = 'last-side-panel'
+          sidePanel.getBoundingClientRect = () => new DOMRect(380, 0, 420, 600)
+          document.body.append(sidePanel)
+          onTestFinished(() => sidePanel.remove())
           mockCanvas.ds.offset = [400, 0]
           mockCanvas.ds.scale = 1
 

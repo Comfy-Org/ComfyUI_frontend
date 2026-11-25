@@ -97,15 +97,15 @@ test.describe('Errors tab - Missing models', { tag: '@ui' }, () => {
       { tag: '@vue-nodes' },
       async ({ comfyPage }) => {
         const node = comfyPage.vueNodes.getNodeLocator('1')
-        const graphArea = comfyPage.page.locator('#graph-canvas-panel')
+        const sidePanel = comfyPage.page.locator('#last-side-panel')
         const framing = async () => {
           const canvasBox = await comfyPage.canvas.boundingBox()
-          const areaBox = await graphArea.boundingBox()
+          const panelBox = await sidePanel.boundingBox()
           const nodeBox = await node.boundingBox()
-          if (!canvasBox || !areaBox || !nodeBox)
+          if (!canvasBox || !panelBox || !nodeBox)
             return { centred: false, fits: false }
           const distance = Math.hypot(
-            nodeBox.x + nodeBox.width / 2 - (areaBox.x + areaBox.width / 2),
+            nodeBox.x + nodeBox.width / 2 - (canvasBox.x + panelBox.x) / 2,
             nodeBox.y +
               nodeBox.height / 2 -
               (canvasBox.y + canvasBox.height / 2)
@@ -113,7 +113,8 @@ test.describe('Errors tab - Missing models', { tag: '@ui' }, () => {
           return {
             centred: distance < 2,
             fits:
-              nodeBox.width < areaBox.width && nodeBox.height < canvasBox.height
+              nodeBox.width < panelBox.x - canvasBox.x &&
+              nodeBox.height < canvasBox.height
           }
         }
         expect((await framing()).centred).toBe(false)

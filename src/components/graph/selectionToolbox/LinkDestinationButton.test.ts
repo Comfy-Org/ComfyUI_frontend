@@ -192,11 +192,11 @@ describe('LinkDestinationButton', () => {
   )
 
   it('centres the source in the uncovered canvas at the current zoom in one step when animations are turned off', async () => {
-    const graphArea = document.createElement('div')
-    graphArea.id = 'graph-canvas-panel'
-    graphArea.getBoundingClientRect = () => new DOMRect(0, 0, 500, 600)
-    document.body.append(graphArea)
-    onTestFinished(() => graphArea.remove())
+    const sidePanel = document.createElement('div')
+    sidePanel.id = 'last-side-panel'
+    sidePanel.getBoundingClientRect = () => new DOMRect(500, 0, 500, 600)
+    document.body.append(sidePanel)
+    onTestFinished(() => sidePanel.remove())
     const ds = createTestDragAndScale(1000, 600)
     ds.scale = 1.7
     ds.offset = [13, 29]
