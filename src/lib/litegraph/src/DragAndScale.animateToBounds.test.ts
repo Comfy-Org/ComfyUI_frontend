@@ -7,20 +7,16 @@ type Bounds = [number, number, number, number]
 
 const START_TIME = 1000
 
-let pendingFrames: Map<number, FrameRequestCallback>
-
 function createDragAndScale() {
   return new DragAndScale(createTestCanvasElement({ width: 1600, height: 900 }))
 }
 
-function runFrame(timestamp: number) {
-  const callbacks = [...pendingFrames.values()]
-  pendingFrames.clear()
-  for (const callback of callbacks) callback(timestamp)
+function settle(ds: DragAndScale) {
+  ds.advanceAnimation(START_TIME + 10_000)
 }
 
-function settle() {
-  runFrame(START_TIME + 10_000)
+function outcomeNow(result: Promise<boolean>) {
+  return Promise.race([result, Promise.resolve('pending' as const)])
 }
 
 function cameraOf(ds: DragAndScale) {
@@ -37,17 +33,8 @@ function screenCenterY(ds: DragAndScale, bounds: Bounds) {
 
 describe('DragAndScale.animateToBounds', () => {
   beforeEach(() => {
-    pendingFrames = new Map()
-    let nextFrame = 0
     vi.stubGlobal('devicePixelRatio', 1)
     vi.spyOn(performance, 'now').mockReturnValue(START_TIME)
-    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
-      pendingFrames.set(++nextFrame, callback)
-      return nextFrame
-    })
-    vi.stubGlobal('cancelAnimationFrame', (frame: number) =>
-      pendingFrames.delete(frame)
-    )
   })
 
   it('centers bounds on the full canvas by default', () => {
@@ -55,7 +42,7 @@ describe('DragAndScale.animateToBounds', () => {
     const bounds: Bounds = [0, 0, 100, 100]
 
     void ds.animateToBounds(bounds, { zoom: 0 })
-    settle()
+    settle(ds)
 
     expect(screenCenterX(ds, bounds)).toBeCloseTo(800)
   })
@@ -68,7 +55,7 @@ describe('DragAndScale.animateToBounds', () => {
       zoom: 0.75,
       viewport: [0, 0, 1100, 900]
     })
-    settle()
+    settle(ds)
 
     expect(screenCenterX(ds, bounds)).toBeCloseTo(550)
     expect(ds.scale).toBeCloseTo(2.25)
@@ -82,7 +69,7 @@ describe('DragAndScale.animateToBounds', () => {
       zoom: 0.75,
       viewport: [400, 0, 600, 900]
     })
-    settle()
+    settle(ds)
 
     expect(screenCenterX(ds, bounds)).toBeCloseTo(700)
     expect(ds.scale).toBeCloseTo(1.5)
@@ -96,7 +83,7 @@ describe('DragAndScale.animateToBounds', () => {
       zoom: 0.75,
       viewport: [0, 300, 1600, 600]
     })
-    settle()
+    settle(ds)
 
     expect(screenCenterY(ds, bounds)).toBeCloseTo(600)
     expect(ds.scale).toBeCloseTo(1.5)
@@ -107,7 +94,7 @@ describe('DragAndScale.animateToBounds', () => {
       name: 'animated',
       frame: (ds: DragAndScale, bounds: Bounds) => {
         void ds.animateToBounds(bounds)
-        settle()
+        settle(ds)
       }
     },
     {
@@ -137,7 +124,7 @@ describe('DragAndScale.animateToBounds', () => {
       viewport: [0, 0, 1200, 1200]
     })
 
-    runFrame(START_TIME + 200)
+    ds.advanceAnimation(START_TIME + 200)
 
     expect(ds.scale).toBeCloseTo(2)
     expect((875 + ds.offset[0]) * ds.scale).toBeCloseTo(600)
@@ -148,10 +135,9 @@ describe('DragAndScale.animateToBounds', () => {
     const ds = createDragAndScale()
     const landed = ds.animateToBounds([0, 0, 100, 100], { zoom: 0 })
 
-    settle()
+    settle(ds)
 
-    await expect(landed).resolves.toBe(true)
-    expect(pendingFrames.size).toBe(0)
+    await expect(outcomeNow(landed)).resolves.toBe(true)
   })
 
   it.for([
@@ -165,8 +151,7 @@ describe('DragAndScale.animateToBounds', () => {
 
       const result = ds.animateToBounds([0, 0, 100, 100], { viewport })
 
-      await expect(result).resolves.toBe(false)
-      expect(pendingFrames.size).toBe(0)
+      await expect(outcomeNow(result)).resolves.toBe(false)
       expect(cameraOf(ds)).toEqual(before)
     }
   )
@@ -210,22 +195,21 @@ describe('DragAndScale.animateToBounds', () => {
   ])('is cancelled at once by $name', async ({ move }) => {
     const ds = createDragAndScale()
     const result = ds.animateToBounds([3000, 3000, 100, 100], { zoom: 0 })
-    runFrame(START_TIME + 100)
+    ds.advanceAnimation(START_TIME + 100)
 
     move(ds)
 
-    expect(pendingFrames.size).toBe(0)
-    await expect(result).resolves.toBe(false)
+    await expect(outcomeNow(result)).resolves.toBe(false)
   })
 
   it('stops without writing when the camera is changed in place', async () => {
     const ds = createDragAndScale()
     const result = ds.animateToBounds([3000, 3000, 100, 100], { zoom: 0 })
-    runFrame(START_TIME + 100)
+    ds.advanceAnimation(START_TIME + 100)
 
     ds.offset[0] += 40
     const moved = cameraOf(ds)
-    settle()
+    settle(ds)
 
     await expect(result).resolves.toBe(false)
     expect(cameraOf(ds)).toEqual(moved)
@@ -235,10 +219,10 @@ describe('DragAndScale.animateToBounds', () => {
     const ds = createDragAndScale()
     const later: Bounds = [-2000, 500, 100, 100]
     const earlier = ds.animateToBounds([3000, 3000, 100, 100], { zoom: 0 })
-    runFrame(START_TIME + 100)
+    ds.advanceAnimation(START_TIME + 100)
 
     const result = ds.animateToBounds(later, { zoom: 0 })
-    settle()
+    settle(ds)
 
     await expect(earlier).resolves.toBe(false)
     await expect(result).resolves.toBe(true)

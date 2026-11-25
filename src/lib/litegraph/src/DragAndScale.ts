@@ -43,7 +43,7 @@ export class DragAndScale {
   dragging?: boolean
   viewport?: Rect
   private viewportSize?: [number, number]
-  private transition?: { frame: number; settle: (completed: boolean) => void }
+  private transition?: CameraTransition
 
   onredraw?(das: DragAndScale): void
   onChanged?(scale: number, offset: Point): void
@@ -245,49 +245,52 @@ export class DragAndScale {
     const frame = this.framingViewport(viewport)
     if (!frame) return Promise.resolve(false)
 
-    const ease = easeFunctions[easing]
     const target = framingTarget(bounds, frame, {
       zoom,
       scale: this.scale,
       maxScale: this.max_scale
     })
     const anchor: Point = [frame[0] + frame[2] * 0.5, frame[1] + frame[3] * 0.5]
-    const startScale = this.scale
-    const startCentre: Point = [
-      anchor[0] / startScale - this.offset[0],
-      anchor[1] / startScale - this.offset[1]
-    ]
-    const targetCentre: Point = [
-      bounds[0] + bounds[2] * 0.5,
-      bounds[1] + bounds[3] * 0.5
-    ]
-    const cameraAt = (t: number): DragAndScaleState => {
-      const scale = startScale * (target.scale / startScale) ** t
-      return {
-        scale,
-        offset: [
-          anchor[0] / scale -
-            (startCentre[0] + (targetCentre[0] - startCentre[0]) * t),
-          anchor[1] / scale -
-            (startCentre[1] + (targetCentre[1] - startCentre[1]) * t)
-        ]
-      }
-    }
-
-    const startTimestamp = performance.now()
-    const written = cloneState(this.state)
     return new Promise((settle) => {
-      const step = (timestamp: number) => {
-        if (!statesEqual(this.state, written)) return this.endTransition(false)
-        const progress = Math.min((timestamp - startTimestamp) / duration, 1)
-        copyState(progress < 1 ? cameraAt(ease(progress)) : target, this.state)
-        copyState(this.state, written)
-        if (progress >= 1) return this.endTransition(true)
-        transition.frame = requestAnimationFrame(step)
+      this.transition = {
+        startTime: performance.now(),
+        duration,
+        easing,
+        anchor,
+        startScale: this.scale,
+        startCentre: [
+          anchor[0] / this.scale - this.offset[0],
+          anchor[1] / this.scale - this.offset[1]
+        ],
+        targetCentre: [
+          bounds[0] + bounds[2] * 0.5,
+          bounds[1] + bounds[3] * 0.5
+        ],
+        target,
+        written: cloneState(this.state),
+        settle
       }
-      const transition = { frame: requestAnimationFrame(step), settle }
-      this.transition = transition
     })
+  }
+
+  /** Moves a running {@link animateToBounds} to where it is at `now`; the canvas calls it once per frame before drawing. */
+  advanceAnimation(now: number): void {
+    const { transition } = this
+    if (!transition) return
+    if (!statesEqual(this.state, transition.written))
+      return this.endTransition(false)
+    const progress = Math.min(
+      (now - transition.startTime) / transition.duration,
+      1
+    )
+    copyState(
+      progress < 1
+        ? cameraAt(transition, easeFunctions[transition.easing](progress))
+        : transition.target,
+      this.state
+    )
+    copyState(this.state, transition.written)
+    if (progress >= 1) this.endTransition(true)
   }
 
   /** Stops a running {@link animateToBounds}, leaving the camera where it is. */
@@ -299,7 +302,6 @@ export class DragAndScale {
     const { transition } = this
     if (!transition) return
     this.transition = undefined
-    cancelAnimationFrame(transition.frame)
     transition.settle(completed)
   }
 
@@ -340,6 +342,35 @@ function framingTarget(
     offset: [
       (vx + vw * 0.5) / scale - bounds[0] - bounds[2] * 0.5,
       (vy + vh * 0.5) / scale - bounds[1] - bounds[3] * 0.5
+    ]
+  }
+}
+
+type CameraTransition = {
+  startTime: number
+  duration: number
+  easing: EaseFunction
+  anchor: Point
+  startScale: number
+  startCentre: Point
+  targetCentre: Point
+  target: DragAndScaleState
+  written: DragAndScaleState
+  settle: (completed: boolean) => void
+}
+
+function cameraAt(
+  { anchor, startScale, startCentre, targetCentre, target }: CameraTransition,
+  t: number
+): DragAndScaleState {
+  const scale = startScale * (target.scale / startScale) ** t
+  return {
+    scale,
+    offset: [
+      anchor[0] / scale -
+        (startCentre[0] + (targetCentre[0] - startCentre[0]) * t),
+      anchor[1] / scale -
+        (startCentre[1] + (targetCentre[1] - startCentre[1]) * t)
     ]
   }
 }

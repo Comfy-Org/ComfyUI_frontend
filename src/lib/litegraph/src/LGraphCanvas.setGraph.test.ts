@@ -12,6 +12,7 @@ import { selectableKeyOf } from '@/renderer/core/canvas/litegraph/selectionAdapt
 import { useSelectionStore } from '@/core/selection/selectionStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
+import { runCanvasFramePhase } from '@/lib/litegraph/src/canvas/canvasFrame'
 
 vi.mock(import('@/renderer/core/layout/store/layoutStore'))
 
@@ -162,21 +163,34 @@ describe('LGraphCanvas camera animation', () => {
       act: (canvas: LGraphCanvas) => canvas.unbindEvents()
     }
   ])('stops a running camera animation on $name', async ({ act }) => {
-    let pendingFrame: FrameRequestCallback | undefined
-    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
-      pendingFrame = callback
-      return 1
-    })
-    vi.stubGlobal('cancelAnimationFrame', () => {
-      pendingFrame = undefined
-    })
+    const now = vi.spyOn(performance, 'now').mockReturnValue(1000)
     const { canvas, graph } = createCanvasWithSelectedNode()
     const result = canvas.animateToBounds([3000, 3000, 100, 100], { zoom: 0 })
 
     act(canvas, graph)
-    pendingFrame?.(performance.now() + 1000)
+    now.mockReturnValue(2000)
+    runCanvasFramePhase(canvas, 'update')
 
     await expect(result).resolves.toBe(false)
     expect([...canvas.ds.offset]).toEqual([0, 0])
+  })
+
+  it('moves the camera on its update frames until it lands', async () => {
+    const now = vi.spyOn(performance, 'now').mockReturnValue(1000)
+    const { canvas } = createCanvasWithSelectedNode()
+    const result = canvas.animateToBounds([3000, 3000, 100, 100], {
+      zoom: 0,
+      viewport: [0, 0, 800, 600]
+    })
+
+    now.mockReturnValue(1100)
+    runCanvasFramePhase(canvas, 'update')
+    const midway = [...canvas.ds.offset]
+    now.mockReturnValue(2000)
+    runCanvasFramePhase(canvas, 'update')
+
+    expect(midway).not.toEqual([0, 0])
+    await expect(result).resolves.toBe(true)
+    expect([...canvas.ds.offset]).toEqual([-2650, -2750])
   })
 })
