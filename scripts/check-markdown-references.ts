@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process'
 import { existsSync, lstatSync, readFileSync, readdirSync } from 'node:fs'
 import { posix } from 'node:path'
 
-import { isMainModule } from './isMainModule'
+import { isMainModule } from '@comfyorg/ci/isMainModule'
 
 export type RepoIndex = {
   paths: ReadonlySet<string>
