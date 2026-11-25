@@ -12,6 +12,7 @@ import { ensureSessionCookie } from '@/platform/auth/session/sessionCookieAccess
 import { isCloud } from '@/platform/distribution/types'
 import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
 import { ingestApiUrl } from '@/platform/remote/ingest/ingestApiUrl'
+import { safeSessionStorage } from '@/base/storage/safeStorage'
 import { WorkspaceAuthError } from '@/platform/workspace/stores/workspaceAuthError'
 import {
   MAX_SCHEDULED_REFRESH_RETRIES,
@@ -286,14 +287,16 @@ export function createLegacyWorkspaceTokenRail({
     ownerUid: string
   ): void {
     persistWorkspaceIdentity(workspace)
-    try {
-      sessionStorage.setItem(WORKSPACE_STORAGE_KEYS.TOKEN, token)
-      sessionStorage.setItem(
+    const persisted =
+      safeSessionStorage.setItem(WORKSPACE_STORAGE_KEYS.TOKEN, token) ===
+        'ok' &&
+      safeSessionStorage.setItem(
         WORKSPACE_STORAGE_KEYS.EXPIRES_AT,
         expiresAt.toString()
-      )
-      sessionStorage.setItem(WORKSPACE_STORAGE_KEYS.OWNER_UID, ownerUid)
-    } catch {
+      ) === 'ok' &&
+      safeSessionStorage.setItem(WORKSPACE_STORAGE_KEYS.OWNER_UID, ownerUid) ===
+        'ok'
+    if (!persisted) {
       console.warn('Failed to persist workspace token to sessionStorage')
     }
   }
@@ -303,26 +306,22 @@ export function createLegacyWorkspaceTokenRail({
     workspaceToken.value = null
     workspaceTokenExpiresAt.value = null
     workspaceTokenOwnerUid.value = null
-    try {
-      sessionStorage.removeItem(WORKSPACE_STORAGE_KEYS.TOKEN)
-      sessionStorage.removeItem(WORKSPACE_STORAGE_KEYS.EXPIRES_AT)
-      sessionStorage.removeItem(WORKSPACE_STORAGE_KEYS.OWNER_UID)
-    } catch {
-      console.warn(
-        'Failed to retire legacy workspace token from sessionStorage'
-      )
-    }
+    safeSessionStorage.removeItem(WORKSPACE_STORAGE_KEYS.TOKEN)
+    safeSessionStorage.removeItem(WORKSPACE_STORAGE_KEYS.EXPIRES_AT)
+    safeSessionStorage.removeItem(WORKSPACE_STORAGE_KEYS.OWNER_UID)
   }
 
   function readStoredSession(): StoredSession | null {
-    const workspaceJson = sessionStorage.getItem(
+    const workspaceJson = safeSessionStorage.getItem(
       WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE
     )
-    const token = sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.TOKEN)
-    const expiresAtStr = sessionStorage.getItem(
+    const token = safeSessionStorage.getItem(WORKSPACE_STORAGE_KEYS.TOKEN)
+    const expiresAtStr = safeSessionStorage.getItem(
       WORKSPACE_STORAGE_KEYS.EXPIRES_AT
     )
-    const ownerUid = sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.OWNER_UID)
+    const ownerUid = safeSessionStorage.getItem(
+      WORKSPACE_STORAGE_KEYS.OWNER_UID
+    )
     if (!workspaceJson || !token || !expiresAtStr || !ownerUid) return null
     if (!isCurrentUser(ownerUid)) return null
 

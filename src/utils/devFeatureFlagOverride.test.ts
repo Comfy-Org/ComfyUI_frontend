@@ -5,6 +5,7 @@ import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 describe('getDevOverride', () => {
   it('returns undefined when localStorage is unavailable', () => {
     vi.stubGlobal('localStorage', undefined)
+
     expect(getDevOverride('some_flag')).toBeUndefined()
   })
 

@@ -1,8 +1,4 @@
-import {
-  StorageSerializers,
-  createEventHook,
-  useLocalStorage
-} from '@vueuse/core'
+import { StorageSerializers, createEventHook } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import {
   computed,
@@ -15,6 +11,7 @@ import {
 import { v4 as uuidv4 } from 'uuid'
 import { z } from 'zod'
 
+import { useSafeLocalStorage } from '@/platform/storage/useSafeStorage'
 import {
   getWorkspaceId,
   StorageKeys
@@ -1058,12 +1055,12 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     else if (keptDrafts.delete(key)) releaseUnusedAssets()
   }
 
-  const savedDraft = useLocalStorage<unknown>(
+  const savedDraft = useSafeLocalStorage<unknown>(
     StorageKeys.agentComposerDraft(getWorkspaceId()),
     null,
     { serializer: StorageSerializers.object }
   )
-  const savedPendingBackups = useLocalStorage<unknown>(
+  const savedPendingBackups = useSafeLocalStorage<unknown>(
     StorageKeys.agentPendingSendDraft(getWorkspaceId()),
     null,
     {
