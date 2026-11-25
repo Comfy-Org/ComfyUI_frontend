@@ -1,4 +1,3 @@
-import { mergeTests } from '@playwright/test'
 import type { z } from 'zod'
 
 import type {
@@ -6,18 +5,13 @@ import type {
   zJobsListResponse
 } from '@comfyorg/api-client/jobTypes'
 
-import {
-  comfyExpect as expect,
-  comfyPageFixture
-} from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
-import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
+import { comfyExpect as expect } from '@e2e/fixtures/ComfyPage'
+import type { QueuedExecution } from '@e2e/fixtures/queuedExecutionFixture'
+import { queuedExecutionFixture as test } from '@e2e/fixtures/queuedExecutionFixture'
 import { TestIds } from '@e2e/fixtures/selectors'
-import { webSocketFixture } from '@e2e/fixtures/ws'
 
 type JobsListResponse = z.infer<typeof zJobsListResponse>
-
-const test = mergeTests(comfyPageFixture, webSocketFixture)
 
 const QUEUE_ROUTE = /\/api\/jobs\?[^/]*status=in_progress,pending/
 const HISTORY_ROUTE = /\/api\/jobs\?[^/]*status=completed/
@@ -53,7 +47,7 @@ async function mockJobsRoute(
 
 async function startRunOwnedByAnotherClient(
   comfyPage: ComfyPage,
-  exec: ExecutionHelper
+  queuedExecution: QueuedExecution
 ): Promise<void> {
   await mockJobsRoute(comfyPage, HISTORY_ROUTE, emptyJobsBody)
   const queueFetches = await mockJobsRoute(
@@ -65,7 +59,7 @@ async function startRunOwnedByAnotherClient(
       ])
     )
   )
-  exec.status(1)
+  queuedExecution.status(1)
   await expect.poll(queueFetches).toBeGreaterThanOrEqual(1)
 }
 
@@ -75,15 +69,13 @@ test.describe(
   () => {
     test('is enabled while a run this client did not queue is active (PM-2219)', async ({
       comfyPage,
-      getWebSocket
+      queuedExecution
     }) => {
-      const ws = await getWebSocket()
-      const exec = new ExecutionHelper(comfyPage, ws)
       const cancel = comfyPage.actionbar.cancelButton
 
       await expect(cancel).toBeDisabled()
 
-      await startRunOwnedByAnotherClient(comfyPage, exec)
+      await startRunOwnedByAnotherClient(comfyPage, queuedExecution)
 
       await expect(cancel).toBeEnabled()
       await expect(cancel).toHaveAttribute('data-variant', 'destructive')
@@ -91,13 +83,11 @@ test.describe(
 
     test('cancelling an Agent-started run interrupts that run (PM-2219)', async ({
       comfyPage,
-      getWebSocket
+      queuedExecution
     }) => {
-      const ws = await getWebSocket()
-      const exec = new ExecutionHelper(comfyPage, ws)
       const cancel = comfyPage.actionbar.cancelButton
 
-      await startRunOwnedByAnotherClient(comfyPage, exec)
+      await startRunOwnedByAnotherClient(comfyPage, queuedExecution)
       await expect(cancel).toBeEnabled()
 
       const interrupted = comfyPage.page.waitForRequest(
@@ -112,10 +102,8 @@ test.describe(
 
     test('stays disabled when several runs from other clients are active', async ({
       comfyPage,
-      getWebSocket
+      queuedExecution
     }) => {
-      const ws = await getWebSocket()
-      const exec = new ExecutionHelper(comfyPage, ws)
       const cancel = comfyPage.actionbar.cancelButton
 
       await mockJobsRoute(comfyPage, HISTORY_ROUTE, emptyJobsBody)
@@ -137,7 +125,7 @@ test.describe(
           ])
         )
       )
-      exec.status(2)
+      queuedExecution.status(2)
       await expect(
         comfyPage.page.getByTestId(TestIds.queue.overlayToggle)
       ).toContainText('2 active')
@@ -148,10 +136,8 @@ test.describe(
 
     test('stays disabled when the backend has nothing running', async ({
       comfyPage,
-      getWebSocket
+      queuedExecution
     }) => {
-      const ws = await getWebSocket()
-      const exec = new ExecutionHelper(comfyPage, ws)
       const cancel = comfyPage.actionbar.cancelButton
 
       await mockJobsRoute(comfyPage, HISTORY_ROUTE, emptyJobsBody)
@@ -160,7 +146,7 @@ test.describe(
         QUEUE_ROUTE,
         emptyJobsBody
       )
-      exec.status(0)
+      queuedExecution.status(0)
       await expect.poll(queueFetches).toBeGreaterThanOrEqual(1)
 
       await expect(cancel).toBeDisabled()
@@ -169,15 +155,16 @@ test.describe(
 
     test('is enabled while a run this client queued is active', async ({
       comfyPage,
-      getWebSocket
+      queuedExecution
     }) => {
-      const ws = await getWebSocket()
-      const exec = new ExecutionHelper(comfyPage, ws)
       const cancel = comfyPage.actionbar.cancelButton
 
       await expect(cancel).toBeDisabled()
 
-      const jobId = await exec.run()
+      const job = await queuedExecution.capture(() =>
+        comfyPage.runButton.click()
+      )
+      job.start()
 
       await expect(cancel).toBeEnabled()
 
@@ -188,7 +175,7 @@ test.describe(
       await cancel.click()
 
       const request = await interrupted
-      expect(request.postDataJSON()).toEqual({ prompt_id: jobId })
+      expect(request.postDataJSON()).toEqual({ prompt_id: job.id })
     })
   }
 )

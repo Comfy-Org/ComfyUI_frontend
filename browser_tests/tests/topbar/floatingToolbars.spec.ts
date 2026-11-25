@@ -1,16 +1,13 @@
 import { expect, mergeTests } from '@playwright/test'
 
 import { canvasMenuFixture } from '@e2e/fixtures/canvasMenuFixture'
-import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
-import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
+import { queuedExecutionFixture } from '@e2e/fixtures/queuedExecutionFixture'
 import {
   readBackgroundColor,
   resolveColorVariable
 } from '@e2e/fixtures/utils/cssColors'
 import { readPanelStyle } from '@e2e/fixtures/utils/panelStyle'
-import { webSocketFixture } from '@e2e/fixtures/ws'
-
-const test = mergeTests(comfyPageFixture, webSocketFixture, canvasMenuFixture)
+const test = mergeTests(queuedExecutionFixture, canvasMenuFixture)
 
 test.describe('Floating toolbars', { tag: ['@ui', '@canvas'] }, () => {
   test.use({ initialSettings: { 'Comfy.Graph.CanvasMenu': true } })
@@ -58,7 +55,7 @@ test.describe('Floating toolbars', { tag: ['@ui', '@canvas'] }, () => {
 
   test('cancel run button is secondary while idle and destructive while running', async ({
     comfyPage,
-    getWebSocket
+    queuedExecution
   }) => {
     const cancel = comfyPage.actionbar.cancelButton
     const [secondary, destructive] = await Promise.all([
@@ -70,8 +67,8 @@ test.describe('Floating toolbars', { tag: ['@ui', '@canvas'] }, () => {
     await expect(cancel).toBeDisabled()
     await expect.poll(() => readBackgroundColor(cancel)).toBe(secondary)
 
-    const exec = new ExecutionHelper(comfyPage, await getWebSocket())
-    await exec.run()
+    const job = await queuedExecution.capture(() => comfyPage.runButton.click())
+    job.start()
 
     await expect(cancel).toBeEnabled()
     await expect.poll(() => readBackgroundColor(cancel)).toBe(destructive)

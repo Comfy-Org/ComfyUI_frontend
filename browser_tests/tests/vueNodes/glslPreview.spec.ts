@@ -1,16 +1,10 @@
-import type { Locator, WebSocketRoute } from '@playwright/test'
-import { mergeTests } from '@playwright/test'
+import type { Locator } from '@playwright/test'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
-import {
-  comfyPageFixture,
-  comfyExpect as expect
-} from '@e2e/fixtures/ComfyPage'
-import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
+import { comfyExpect as expect } from '@e2e/fixtures/ComfyPage'
+import type { QueuedExecution } from '@e2e/fixtures/queuedExecutionFixture'
+import { queuedExecutionFixture as test } from '@e2e/fixtures/queuedExecutionFixture'
 import { getPromotedWidgetNames } from '@e2e/fixtures/utils/promotedWidgets'
-import { webSocketFixture } from '@e2e/fixtures/ws'
-
-const test = mergeTests(comfyPageFixture, webSocketFixture)
 
 const GLSL_NODE_ID = '1'
 const GLSL_NODE_TITLE = 'GLSL Shader'
@@ -84,17 +78,15 @@ class GLSLShaderNode {
     })
   }
 
-  /**
-   * Fire `execution_start` + `executed` with an image output for this node,
-   * which satisfies the `hasExecutionOutput` gate in `useGLSLPreview`.
-   */
-  async simulateExecutionOutput(ws: WebSocketRoute) {
-    const exec = new ExecutionHelper(this.comfyPage, ws)
-    const jobId = await exec.run()
-    exec.executed(jobId, this.nodeId, {
+  async simulateExecutionOutput(queuedExecution: QueuedExecution) {
+    const job = await queuedExecution.capture(() =>
+      this.comfyPage.runButton.click()
+    )
+    job.start()
+    job.output(this.nodeId, {
       images: [{ filename: 'glsl_test.png', subfolder: '', type: 'output' }]
     })
-    exec.executionSuccess(jobId)
+    job.finish()
   }
 
   async getPreviewSrc(): Promise<string | null> {
@@ -192,9 +184,8 @@ test.describe('GLSL Shader Preview', { tag: ['@vue-nodes', '@node'] }, () => {
 
     test('renders a blob preview into the node after execution', async ({
       comfyPage,
-      getWebSocket
+      queuedExecution
     }) => {
-      const ws = await getWebSocket()
       const glsl = new GLSLShaderNode(comfyPage, GLSL_NODE_ID, GLSL_NODE_TITLE)
 
       await test.step('no preview is present before execution', async () => {
@@ -202,7 +193,7 @@ test.describe('GLSL Shader Preview', { tag: ['@vue-nodes', '@node'] }, () => {
       })
 
       await test.step('execution populates preview with a blob URL', async () => {
-        await glsl.simulateExecutionOutput(ws)
+        await glsl.simulateExecutionOutput(queuedExecution)
 
         await expect(glsl.previewImage).toBeVisible()
         await glsl.waitForBlobSrc()
@@ -211,12 +202,11 @@ test.describe('GLSL Shader Preview', { tag: ['@vue-nodes', '@node'] }, () => {
 
     test('refreshes the preview when the fragment shader is edited', async ({
       comfyPage,
-      getWebSocket
+      queuedExecution
     }) => {
-      const ws = await getWebSocket()
       const glsl = new GLSLShaderNode(comfyPage, GLSL_NODE_ID, GLSL_NODE_TITLE)
 
-      await glsl.simulateExecutionOutput(ws)
+      await glsl.simulateExecutionOutput(queuedExecution)
       const initialSrc = await glsl.waitForBlobSrc()
 
       await test.step('editing the shader replaces the blob URL', async () => {
@@ -230,9 +220,8 @@ test.describe('GLSL Shader Preview', { tag: ['@vue-nodes', '@node'] }, () => {
 
     test('custom size_mode controls rendered resolution', async ({
       comfyPage,
-      getWebSocket
+      queuedExecution
     }) => {
-      const ws = await getWebSocket()
       const glsl = new GLSLShaderNode(comfyPage, GLSL_NODE_ID, GLSL_NODE_TITLE)
 
       await test.step('switch size_mode to custom and set width/height', async () => {
@@ -248,7 +237,7 @@ test.describe('GLSL Shader Preview', { tag: ['@vue-nodes', '@node'] }, () => {
       })
 
       await test.step('executed preview uses the custom resolution', async () => {
-        await glsl.simulateExecutionOutput(ws)
+        await glsl.simulateExecutionOutput(queuedExecution)
 
         await expect(glsl.previewImage).toBeVisible()
         await glsl.waitForBlobSrc()
@@ -260,9 +249,8 @@ test.describe('GLSL Shader Preview', { tag: ['@vue-nodes', '@node'] }, () => {
 
     test('live-updates the preview when size_mode is toggled', async ({
       comfyPage,
-      getWebSocket
+      queuedExecution
     }) => {
-      const ws = await getWebSocket()
       const glsl = new GLSLShaderNode(comfyPage, GLSL_NODE_ID, GLSL_NODE_TITLE)
 
       // Default 512x512 falls out of `getResolution`'s DEFAULT_SIZE when no
@@ -271,7 +259,7 @@ test.describe('GLSL Shader Preview', { tag: ['@vue-nodes', '@node'] }, () => {
       const CUSTOM = { width: 64, height: 64 }
 
       await test.step('initial from_input render uses default size', async () => {
-        await glsl.simulateExecutionOutput(ws)
+        await glsl.simulateExecutionOutput(queuedExecution)
         await expect.poll(() => glsl.getPreviewNaturalSize()).toEqual(DEFAULT)
       })
 
@@ -294,9 +282,8 @@ test.describe('GLSL Shader Preview', { tag: ['@vue-nodes', '@node'] }, () => {
 
     test('live-updates the preview when width or height widget changes', async ({
       comfyPage,
-      getWebSocket
+      queuedExecution
     }) => {
-      const ws = await getWebSocket()
       const glsl = new GLSLShaderNode(comfyPage, GLSL_NODE_ID, GLSL_NODE_TITLE)
 
       await test.step('render initial 16x32 preview in custom mode', async () => {
@@ -307,7 +294,7 @@ test.describe('GLSL Shader Preview', { tag: ['@vue-nodes', '@node'] }, () => {
         await glsl.heightInput.fill('32')
         await glsl.heightInput.blur()
 
-        await glsl.simulateExecutionOutput(ws)
+        await glsl.simulateExecutionOutput(queuedExecution)
         await expect
           .poll(() => glsl.getPreviewNaturalSize())
           .toEqual({ width: 16, height: 32 })
@@ -338,9 +325,8 @@ test.describe('GLSL Shader Preview', { tag: ['@vue-nodes', '@node'] }, () => {
 
     test('logs a compile failure then recovers when shader becomes valid again', async ({
       comfyPage,
-      getWebSocket
+      queuedExecution
     }) => {
-      const ws = await getWebSocket()
       const glsl = new GLSLShaderNode(comfyPage, GLSL_NODE_ID, GLSL_NODE_TITLE)
 
       // Captures every `[GLSL] shader compilation failed` warning emitted
@@ -351,7 +337,7 @@ test.describe('GLSL Shader Preview', { tag: ['@vue-nodes', '@node'] }, () => {
           msg.text().includes('[GLSL] shader compilation failed')
       })
 
-      await glsl.simulateExecutionOutput(ws)
+      await glsl.simulateExecutionOutput(queuedExecution)
       const goodSrc = await glsl.waitForBlobSrc()
 
       await glsl.shaderTextbox.fill('not valid glsl at all')
@@ -371,9 +357,8 @@ test.describe('GLSL Shader Preview', { tag: ['@vue-nodes', '@node'] }, () => {
 
     test('refreshes preview when upstream PrimitiveFloat value changes', async ({
       comfyPage,
-      getWebSocket
+      queuedExecution
     }) => {
-      const ws = await getWebSocket()
       const glsl = new GLSLShaderNode(comfyPage, GLSL_NODE_ID, GLSL_NODE_TITLE)
       const floatValueInput = comfyPage.vueNodes.getWidgetByName(
         PRIMITIVE_FLOAT_NODE_TITLE,
@@ -381,7 +366,7 @@ test.describe('GLSL Shader Preview', { tag: ['@vue-nodes', '@node'] }, () => {
       )
 
       await glsl.shaderTextbox.fill(FLOAT_RED_SHADER)
-      await glsl.simulateExecutionOutput(ws)
+      await glsl.simulateExecutionOutput(queuedExecution)
       const initialSrc = await glsl.waitForBlobSrc()
       await glsl.expectEveryPixelToBe([64, 0, 0, 255], 2)
 
@@ -406,9 +391,8 @@ test.describe('GLSL Shader Preview', { tag: ['@vue-nodes', '@node'] }, () => {
 
     test('uses upstream image dimensions', async ({
       comfyPage,
-      getWebSocket
+      queuedExecution
     }) => {
-      const ws = await getWebSocket()
       const glsl = new GLSLShaderNode(comfyPage, GLSL_NODE_ID, GLSL_NODE_TITLE)
 
       await dropImageOntoLoadImage(
@@ -417,7 +401,7 @@ test.describe('GLSL Shader Preview', { tag: ['@vue-nodes', '@node'] }, () => {
         'image64x64.webp'
       )
 
-      await glsl.simulateExecutionOutput(ws)
+      await glsl.simulateExecutionOutput(queuedExecution)
       await glsl.waitForBlobSrc()
       await expect
         .poll(() => glsl.getPreviewNaturalSize())
@@ -426,9 +410,8 @@ test.describe('GLSL Shader Preview', { tag: ['@vue-nodes', '@node'] }, () => {
 
     test('ensures shaders are correctly executed', async ({
       comfyPage,
-      getWebSocket
+      queuedExecution
     }) => {
-      const ws = await getWebSocket()
       const glsl = new GLSLShaderNode(comfyPage, GLSL_NODE_ID, GLSL_NODE_TITLE)
 
       await dropImageOntoLoadImage(
@@ -437,7 +420,7 @@ test.describe('GLSL Shader Preview', { tag: ['@vue-nodes', '@node'] }, () => {
         'image64x64.webp'
       )
       await glsl.shaderTextbox.fill(RED_SHADER)
-      await glsl.simulateExecutionOutput(ws)
+      await glsl.simulateExecutionOutput(queuedExecution)
       await glsl.waitForBlobSrc()
 
       await expect
@@ -454,16 +437,15 @@ test.describe('GLSL Shader Preview', { tag: ['@vue-nodes', '@node'] }, () => {
 
     test('refreshes preview when upstream PrimitiveInt value changes', async ({
       comfyPage,
-      getWebSocket
+      queuedExecution
     }) => {
-      const ws = await getWebSocket()
       const glsl = new GLSLShaderNode(comfyPage, GLSL_NODE_ID, GLSL_NODE_TITLE)
       const intValueInput = comfyPage.vueNodes.getWidgetByName(
         PRIMITIVE_INT_NODE_TITLE,
         'value'
       )
 
-      await glsl.simulateExecutionOutput(ws)
+      await glsl.simulateExecutionOutput(queuedExecution)
       const initialSrc = await glsl.waitForBlobSrc()
 
       await test.step('changing the upstream int value re-renders the preview', async () => {
@@ -488,16 +470,15 @@ test.describe('GLSL Shader Preview', { tag: ['@vue-nodes', '@node'] }, () => {
 
     test('upstream PrimitiveBoolean value flows through as the u_bool0 uniform', async ({
       comfyPage,
-      getWebSocket
+      queuedExecution
     }) => {
-      const ws = await getWebSocket()
       const glsl = new GLSLShaderNode(comfyPage, GLSL_NODE_ID, GLSL_NODE_TITLE)
       const booleanToggle = comfyPage.vueNodes
         .getNodeByTitle(PRIMITIVE_BOOLEAN_NODE_TITLE)
         .getByRole('switch', { name: 'value' })
 
       await test.step('boolean=false renders blue', async () => {
-        await glsl.simulateExecutionOutput(ws)
+        await glsl.simulateExecutionOutput(queuedExecution)
         await glsl.waitForBlobSrc()
         // Blue (non-max channel) through RGBA16F → PNG round-trip can drift by 2.
         await glsl.expectEveryPixelToBe([0, 0, 255, 255], 2)
@@ -524,9 +505,8 @@ test.describe('GLSL Shader Preview', { tag: ['@vue-nodes', '@node'] }, () => {
 
     test('renders a GLSL blob preview on the outer subgraph node', async ({
       comfyPage,
-      getWebSocket
+      queuedExecution
     }) => {
-      const ws = await getWebSocket()
       // Inside a subgraph, the GLSL renderer writes the blob preview to the
       // INNER GLSLShader's locator; the outer subgraph node surfaces it via
       // the promoted-preview path (ImagePreview component), not LivePreview.
@@ -537,7 +517,7 @@ test.describe('GLSL Shader Preview', { tag: ['@vue-nodes', '@node'] }, () => {
         'GLSL Subgraph'
       )
 
-      await subgraph.simulateExecutionOutput(ws)
+      await subgraph.simulateExecutionOutput(queuedExecution)
       await expect(subgraph.previewImage).toBeVisible()
       await subgraph.waitForBlobSrc()
       await subgraph.expectEveryPixelToBe([255, 0, 0, 255])
@@ -555,9 +535,8 @@ test.describe('GLSL Shader Preview', { tag: ['@vue-nodes', '@node'] }, () => {
 
     test('extracts uniform sources from inner upstream widgets', async ({
       comfyPage,
-      getWebSocket
+      queuedExecution
     }) => {
-      const ws = await getWebSocket()
       // Inner PrimitiveFloat is wired to the inner GLSLShader's floats.u_float0
       // input. useGLSLUniforms.extractUniformSources should pick it up and feed
       // 1.0 as u_float0 — shader outputs vec4(u_float0, 0, 0, 1) → red.
@@ -567,7 +546,7 @@ test.describe('GLSL Shader Preview', { tag: ['@vue-nodes', '@node'] }, () => {
         'GLSL Subgraph With Float'
       )
 
-      await subgraph.simulateExecutionOutput(ws)
+      await subgraph.simulateExecutionOutput(queuedExecution)
       await expect(subgraph.previewImage).toBeVisible()
       await subgraph.waitForBlobSrc()
       await subgraph.expectEveryPixelToBe([255, 0, 0, 255])
@@ -588,9 +567,8 @@ test.describe('GLSL Shader Preview', { tag: ['@vue-nodes', '@node'] }, () => {
     // GLSL preview renderer.
     test('reflects promoted host widget edits in the preview', async ({
       comfyPage,
-      getWebSocket
+      queuedExecution
     }) => {
-      const ws = await getWebSocket()
       const subgraph = new GLSLShaderNode(
         comfyPage,
         SUBGRAPH_NODE_ID,
@@ -610,7 +588,7 @@ test.describe('GLSL Shader Preview', { tag: ['@vue-nodes', '@node'] }, () => {
       })
 
       // Interior float defaults to 1.0; shader writes vec4(u_float0, 0, 0, 1).
-      await subgraph.simulateExecutionOutput(ws)
+      await subgraph.simulateExecutionOutput(queuedExecution)
       const initialSrc = await subgraph.waitForBlobSrc()
       await subgraph.expectEveryPixelToBe([255, 0, 0, 255], 2)
 

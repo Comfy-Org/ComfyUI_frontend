@@ -1,13 +1,5 @@
-import { mergeTests } from '@playwright/test'
-
-import {
-  comfyPageFixture,
-  comfyExpect as expect
-} from '@e2e/fixtures/ComfyPage'
-import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
-import { webSocketFixture } from '@e2e/fixtures/ws'
-
-const test = mergeTests(comfyPageFixture, webSocketFixture)
+import { comfyExpect as expect } from '@e2e/fixtures/ComfyPage'
+import { queuedExecutionFixture as test } from '@e2e/fixtures/queuedExecutionFixture'
 
 const SAVE_IMAGE_NODE = '9'
 const KSAMPLER_NODE = '3'
@@ -31,17 +23,18 @@ test.describe('App mode save keeps run history', { tag: '@ui' }, () => {
 
   test('first save as app does not clear previously generated outputs', async ({
     comfyPage,
-    getWebSocket
+    queuedExecution
   }) => {
-    const ws = await getWebSocket()
-    const exec = new ExecutionHelper(comfyPage, ws)
-    const jobId = await exec.run()
+    const job = await queuedExecution.capture(() =>
+      comfyPage.appMode.runButton.click()
+    )
+    job.start()
 
     await expect(
       comfyPage.appMode.outputHistory.inProgressItems.first()
     ).toBeVisible()
 
-    exec.executed(jobId, SAVE_IMAGE_NODE, imageOutput('persist-output.png'))
+    job.output(SAVE_IMAGE_NODE, imageOutput('persist-output.png'))
 
     await expect(
       comfyPage.appMode.outputHistory.imageOutputs.first()

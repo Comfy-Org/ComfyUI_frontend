@@ -1,21 +1,13 @@
-import { mergeTests } from '@playwright/test'
-
-import {
-  comfyExpect as expect,
-  comfyPageFixture
-} from '@e2e/fixtures/ComfyPage'
-import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
+import { comfyExpect as expect } from '@e2e/fixtures/ComfyPage'
 import {
   addSaveVideo,
   canvasVideo,
   output,
   videoPreviewSize
 } from '@e2e/fixtures/helpers/nodeOutputPreview'
+import { queuedExecutionFixture as test } from '@e2e/fixtures/queuedExecutionFixture'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import { mockViewFiles } from '@e2e/fixtures/utils/viewFileMocks'
-import { webSocketFixture } from '@e2e/fixtures/ws'
-
-const test = mergeTests(comfyPageFixture, webSocketFixture)
 
 const WIDE = 'video-preview-wide.webm'
 const PORTRAIT = 'video-preview-portrait.webm'
@@ -40,7 +32,7 @@ test.describe('Save Video preview', () => {
 
   test('canvas renderer shows the newest run at its own size, or says it cannot be played', async ({
     comfyPage,
-    getWebSocket
+    queuedExecution
   }) => {
     const { page } = comfyPage
     let slowRequested = false
@@ -54,16 +46,16 @@ test.describe('Save Video preview', () => {
         await route.fulfill({ status: 404 })
       }
     )
-    const execution = new ExecutionHelper(comfyPage, await getWebSocket())
     const nodeId = await addSaveVideo(comfyPage)
     const landscape = { decoded: true, portrait: false }
 
-    const jobId = await execution.run()
-    execution.executed(jobId, nodeId, output(SLOW))
+    const job = await queuedExecution.capture(() => comfyPage.runButton.click())
+    job.start()
+    job.output(nodeId, output(SLOW))
     await expect
       .poll(() => canvasVideo(page).then(() => slowRequested))
       .toBe(true)
-    execution.executed(jobId, nodeId, output(WIDE))
+    job.output(nodeId, output(WIDE))
     await expect.poll(() => canvasVideo(page)).toEqual(landscape)
     const slowFailed = page.waitForRequest(
       (request) =>
@@ -75,7 +67,7 @@ test.describe('Save Video preview', () => {
     expect(await canvasVideo(page)).toEqual(landscape)
     const wide = await videoPreviewSize(page, nodeId)
 
-    execution.executed(jobId, nodeId, output(PORTRAIT))
+    job.output(nodeId, output(PORTRAIT))
     await expect
       .poll(() => canvasVideo(page))
       .toEqual({ decoded: true, portrait: true })
@@ -84,7 +76,7 @@ test.describe('Save Video preview', () => {
     expect(portrait.nodeWidth).toBe(wide.nodeWidth)
     expect(portrait.minHeight).toBeGreaterThan(wide.minHeight)
 
-    execution.executed(jobId, nodeId, output(PRORES))
+    job.output(nodeId, output(PRORES))
     await expect.poll(() => canvasVideo(page)).toBeNull()
     await expect(
       page.locator('.comfy-img-preview').getByText(CANT_PLAY)
@@ -94,13 +86,15 @@ test.describe('Save Video preview', () => {
   test(
     'Vue nodes renderer names the output the browser cannot play',
     { tag: '@vue-nodes' },
-    async ({ comfyPage, getWebSocket }) => {
-      const execution = new ExecutionHelper(comfyPage, await getWebSocket())
+    async ({ comfyPage, queuedExecution }) => {
       const nodeId = await addSaveVideo(comfyPage)
       const node = comfyPage.vueNodes.getNodeLocator(nodeId)
 
-      const jobId = await execution.run()
-      execution.executed(jobId, nodeId, output(PRORES))
+      const job = await queuedExecution.capture(() =>
+        comfyPage.runButton.click()
+      )
+      job.start()
+      job.output(nodeId, output(PRORES))
       await expect(node.getByText(CANT_PLAY)).toBeVisible()
       await expect(node.getByText(PRORES)).toBeVisible()
     }

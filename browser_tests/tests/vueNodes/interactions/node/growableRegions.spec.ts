@@ -1,12 +1,10 @@
-import { mergeTests } from '@playwright/test'
-
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import { VideoPreview } from '@e2e/fixtures/components/VideoPreview'
-import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
+import { queuedExecutionFixture as wstest } from '@e2e/fixtures/queuedExecutionFixture'
 import {
   boxAspectRatio,
   heightOf,
@@ -14,9 +12,6 @@ import {
 } from '@e2e/fixtures/utils/locatorBox'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
-import { webSocketFixture } from '@e2e/fixtures/ws'
-
-const wstest = mergeTests(test, webSocketFixture)
 
 test.describe(
   'Vue node growable regions',
@@ -435,7 +430,7 @@ test.describe(
 
     wstest(
       'double-clicking a corner of a wide video output node widens the node until the video fits',
-      async ({ comfyPage, getWebSocket }) => {
+      async ({ comfyPage, queuedExecution }) => {
         const filename = 'video-preview-wide.webm'
         await comfyPage.page.route(
           (url) =>
@@ -443,12 +438,14 @@ test.describe(
             url.searchParams.get('filename') === filename,
           (route) => route.fulfill({ path: assetPath(`video/${filename}`) })
         )
-        const execution = new ExecutionHelper(comfyPage, await getWebSocket())
         await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
         await comfyPage.searchBoxV2.addNode('Preview Image')
         const node = await comfyPage.vueNodes.getFixtureByTitle('Preview Image')
-        const jobId = await execution.run()
-        execution.executed(jobId, '1', {
+        const job = await queuedExecution.capture(() =>
+          comfyPage.runButton.click()
+        )
+        job.start()
+        job.output('1', {
           images: [{ filename, subfolder: '', type: 'output' }],
           animated: [true]
         })
@@ -472,13 +469,15 @@ test.describe(
 
     wstest(
       'a fitted Save Image preview still grows when the node is resized',
-      async ({ comfyPage, getWebSocket }) => {
-        const execution = new ExecutionHelper(comfyPage, await getWebSocket())
+      async ({ comfyPage, queuedExecution }) => {
         await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
         await comfyPage.searchBoxV2.addNode('Save Image')
         const node = await comfyPage.vueNodes.getFixtureByTitle('Save Image')
-        const jobId = await execution.run()
-        execution.executed(jobId, '1', {
+        const job = await queuedExecution.capture(() =>
+          comfyPage.runButton.click()
+        )
+        job.start()
+        job.output('1', {
           images: [{ filename: 'example.png', type: 'input' }]
         })
         await node.waitForImageLoaded('example.png')
@@ -590,19 +589,21 @@ test.describe(
 
     wstest(
       'an image grid uses content fitting even when only one thumbnail loads',
-      async ({ comfyPage, getWebSocket }) => {
+      async ({ comfyPage, queuedExecution }) => {
         const missing = 'missing-thumbnail.exr'
         await comfyPage.page.route(
           (url) => url.searchParams.get('filename') === missing,
           (route) => route.fulfill({ status: 404 })
         )
-        const execution = new ExecutionHelper(comfyPage, await getWebSocket())
         await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
         await comfyPage.searchBoxV2.addNode('Preview Image')
         const node = await comfyPage.vueNodes.getFixtureByTitle('Preview Image')
         const file = { filename: 'example.png', type: 'input' }
-        const jobId = await execution.run()
-        execution.executed(jobId, '1', {
+        const job = await queuedExecution.capture(() =>
+          comfyPage.runButton.click()
+        )
+        job.start()
+        job.output('1', {
           images: [file, { ...file, filename: missing }]
         })
         await expect(node.imageGrid.getByRole('button')).toHaveCount(2)

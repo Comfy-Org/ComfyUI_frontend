@@ -1,14 +1,9 @@
-import { mergeTests } from '@playwright/test'
-
 import {
   comfyPageFixture as test,
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
-import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
+import { queuedExecutionFixture as wstest } from '@e2e/fixtures/queuedExecutionFixture'
 import { heightOf } from '@e2e/fixtures/utils/locatorBox'
-import { webSocketFixture } from '@e2e/fixtures/ws'
-
-const wstest = mergeTests(test, webSocketFixture)
 
 test.describe('Preview as Text node', () => {
   test('does not include preview widget values in the API prompt', async ({
@@ -49,8 +44,7 @@ test.describe('Preview as Text node', () => {
 
   wstest(
     'switches between Markdown and plain text in the classic renderer',
-    async ({ comfyPage, getWebSocket }) => {
-      const execution = new ExecutionHelper(comfyPage, await getWebSocket())
+    async ({ comfyPage, queuedExecution }) => {
       const source = '# Heading\n\nSome **bold** text'
 
       await comfyPage.menu.topbar.newWorkflowButton.click()
@@ -62,8 +56,11 @@ test.describe('Preview as Text node', () => {
           y: 200
         }
       )
-      const jobId = await execution.run()
-      execution.executed(jobId, String(node.id), { text: [source] })
+      const job = await queuedExecution.capture(() =>
+        comfyPage.runButton.click()
+      )
+      job.start()
+      job.output(String(node.id), { text: [source] })
 
       const plaintext = comfyPage.page.getByRole('textbox', {
         name: 'preview_text'
@@ -99,9 +96,7 @@ test.describe('Preview as Text node', () => {
   wstest(
     'restoring workflow restores state',
     { tag: '@vue-nodes' },
-    async ({ comfyPage, getWebSocket }) => {
-      const execution = new ExecutionHelper(comfyPage, await getWebSocket())
-
+    async ({ comfyPage, queuedExecution }) => {
       await comfyPage.menu.topbar.newWorkflowButton.click()
       await comfyPage.searchBoxV2.addNode('Preview as Text')
       const node = await comfyPage.vueNodes.getFixtureByTitle('Preview as Text')
@@ -112,8 +107,11 @@ test.describe('Preview as Text node', () => {
 
       await test.step('node previews execution result', async () => {
         const id = await comfyPage.vueNodes.getNodeIdByTitle('Preview as Text')
-        const jobId = await execution.run()
-        execution.executed(jobId, id, { text: 'massive fennec ears' })
+        const job = await queuedExecution.capture(() =>
+          comfyPage.runButton.click()
+        )
+        job.start()
+        job.output(id, { text: 'massive fennec ears' })
         await expect(preview).toHaveValue('massive fennec ears')
       })
 
@@ -133,9 +131,7 @@ test.describe('Preview as Text node', () => {
   wstest(
     'Save Text previews its execution result',
     { tag: '@vue-nodes' },
-    async ({ comfyPage, getWebSocket }) => {
-      const execution = new ExecutionHelper(comfyPage, await getWebSocket())
-
+    async ({ comfyPage, queuedExecution }) => {
       await comfyPage.menu.topbar.newWorkflowButton.click()
       await comfyPage.searchBoxV2.addNode('Save Text')
       const preview = comfyPage.vueNodes.getWidgetByName(
@@ -143,20 +139,23 @@ test.describe('Preview as Text node', () => {
         'preview_text'
       )
       const id = await comfyPage.vueNodes.getNodeIdByTitle('Save Text')
-      const jobId = await execution.run()
+      const job = await queuedExecution.capture(() =>
+        comfyPage.runButton.click()
+      )
+      job.start()
 
       await test.step('shows the saved text', async () => {
-        execution.executed(jobId, id, { text: ['saved notes'] })
+        job.output(id, { text: ['saved notes'] })
         await expect(preview).toHaveValue('saved notes')
       })
 
       await test.step('replaces it with the next output', async () => {
-        execution.executed(jobId, id, { text: ['revised notes'] })
+        job.output(id, { text: ['revised notes'] })
         await expect(preview).toHaveValue('revised notes')
       })
 
       await test.step('clears it when the output is empty', async () => {
-        execution.executed(jobId, id, null)
+        job.output(id, null)
         await expect(preview).toHaveValue('')
       })
     }
@@ -165,8 +164,7 @@ test.describe('Preview as Text node', () => {
   wstest(
     'keeps its size and scrolls when switching long output to Markdown',
     { tag: '@vue-nodes' },
-    async ({ comfyPage, getWebSocket }) => {
-      const execution = new ExecutionHelper(comfyPage, await getWebSocket())
+    async ({ comfyPage, queuedExecution }) => {
       const source = Array.from(
         { length: 40 },
         (_, index) => `- item ${index + 1}`
@@ -180,8 +178,11 @@ test.describe('Preview as Text node', () => {
         'Preview as Text',
         'preview_text'
       )
-      const jobId = await execution.run()
-      execution.executed(jobId, id, { text: [source] })
+      const job = await queuedExecution.capture(() =>
+        comfyPage.runButton.click()
+      )
+      job.start()
+      job.output(id, { text: [source] })
       await expect(preview).toHaveValue(source)
       const plaintextHeight = await heightOf(node.root)
 
@@ -204,9 +205,7 @@ test.describe('Preview as Text node', () => {
   wstest(
     'renders the payloads users reported blank',
     { tag: '@vue-nodes' },
-    async ({ comfyPage, getWebSocket }) => {
-      const execution = new ExecutionHelper(comfyPage, await getWebSocket())
-
+    async ({ comfyPage, queuedExecution }) => {
       await comfyPage.menu.topbar.newWorkflowButton.click()
       await comfyPage.searchBoxV2.addNode('Preview as Text')
       const preview = comfyPage.vueNodes.getWidgetByName(
@@ -214,7 +213,10 @@ test.describe('Preview as Text node', () => {
         'preview_text'
       )
       const id = await comfyPage.vueNodes.getNodeIdByTitle('Preview as Text')
-      const jobId = await execution.run()
+      const job = await queuedExecution.capture(() =>
+        comfyPage.runButton.click()
+      )
+      job.start()
 
       const payloads = [
         ['compact JSON from an LLM node', '{"name":"Comfy","emoji":"🌟"}'],
@@ -226,13 +228,13 @@ test.describe('Preview as Text node', () => {
 
       for (const [label, text] of payloads) {
         await test.step(label, async () => {
-          execution.executed(jobId, id, { text: [text] })
+          job.output(id, { text: [text] })
           await expect(preview).toHaveValue(text)
         })
       }
 
       await test.step('numeric output from Get Video Components', async () => {
-        execution.executed(jobId, id, { text: 23.976 })
+        job.output(id, { text: 23.976 })
         await expect(preview).toHaveValue('23.976')
       })
 
@@ -250,19 +252,19 @@ test.describe('Preview as Text node', () => {
 
       for (const [label, output, recoveredText] of malformedOutputs) {
         await test.step(`${label} does not wedge the widget`, async () => {
-          execution.executed(jobId, id, output)
+          job.output(id, output)
           await expect(preview).toHaveValue('')
 
-          execution.executed(jobId, id, { text: [recoveredText] })
+          job.output(id, { text: [recoveredText] })
           await expect(preview).toHaveValue(recoveredText)
         })
       }
 
       await test.step('undefined output does not wedge the widget', async () => {
-        execution.executed(jobId, id, undefined)
+        job.output(id, undefined)
         await expect(preview).toHaveValue('')
 
-        execution.executed(jobId, id, { text: ['recovered from nullish'] })
+        job.output(id, { text: ['recovered from nullish'] })
         await expect(preview).toHaveValue('recovered from nullish')
       })
     }

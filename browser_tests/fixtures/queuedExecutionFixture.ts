@@ -10,19 +10,24 @@ const acceptedPrompt = z.object({ prompt_id: z.string() })
 interface QueuedJob {
   finish: () => void
   id: string
-  output: (node: string, output: Record<string, unknown>) => void
+  output: (
+    node: string,
+    output: Parameters<ExecutionHelper['executed']>[2]
+  ) => void
   progress: (node: string, value: number, max: number) => void
   start: () => void
+}
+
+export interface QueuedExecution {
+  capture: (submit: () => Promise<void>) => Promise<QueuedJob>
+  status: (remaining: number) => void
 }
 
 export const queuedExecutionFixture = mergeTests(
   comfyPageFixture,
   webSocketFixture
 ).extend<{
-  queuedExecution: {
-    capture: (submit: () => Promise<void>) => Promise<QueuedJob>
-    status: (remaining: number) => void
-  }
+  queuedExecution: QueuedExecution
 }>({
   async queuedExecution({ comfyPage, getWebSocket }, use) {
     const { page } = comfyPage
