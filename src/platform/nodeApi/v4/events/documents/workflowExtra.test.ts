@@ -14,9 +14,9 @@ import { app } from '@/scripts/app'
 import { beginGraphLoad, endGraphLoad } from '@/core/graph/graphLoadState'
 import { ChangeTracker } from '@/scripts/changeTracker'
 
-import { useComfyApiStore } from '@/platform/nodeApi/v4/comfyApiStore'
 import type { Comfy, DocumentHandle } from '@/platform/nodeApi/v4/types'
 import { expectRefusal } from '@/platform/nodeApi/v4/__tests__/refusal'
+import { publishedApi } from '@/platform/nodeApi/v4/__tests__/publishedApi'
 
 vi.mock(import('@/scripts/app'))
 vi.mock(import('@/scripts/api'))
@@ -68,10 +68,7 @@ describe('workflow extra', () => {
       onScreen.changeTracker.reset(fromAny(app.rootGraph.serialize()))
       return true
     })
-    delete window.comfy_v4
-    useComfyApiStore().publish()
-    assert(window.comfy_v4)
-    comfy = window.comfy_v4
+    comfy = publishedApi()
     const current = comfy.workflow.current()
     assert(current)
     document = current
