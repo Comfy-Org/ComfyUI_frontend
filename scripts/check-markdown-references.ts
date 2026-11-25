@@ -81,7 +81,8 @@ const PLACEHOLDER_SEGMENT =
 const PLACEHOLDER_CHARACTERS = /[<>*{}$[\]…]|\.\.\./
 const URL_SCHEME = /^[a-z][a-z\d+.-]*:|^\/\//i
 const INLINE_CODE = /(`+)(.+?)\1/g
-const LINK_TARGET = /\]\(\s*<?([^)\s>]+)>?(?:\s+["'][^)]*)?\)/g
+const LINK_TARGET =
+  /\]\(\s*<?((?:[^()\s>]|\([^()\s]*\))+)>?(?:\s+["'][^)]*)?\)/g
 const LINK_DEFINITION = /^\s{0,3}\[[^\]]+\]:\s*<?(\S+?)>?(?:\s|$)/
 const FENCE = /^\s{0,3}(`{3,}|~{3,})/
 
