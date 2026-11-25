@@ -754,8 +754,6 @@ describe('LGraphNode', () => {
       node.serialize_widgets = true
 
       node.addWidget('number', 'seed', 42, null)
-      // options.serialize is the API-prompt flag (read by graphToPrompt in
-      // src/utils/executionUtil.ts). It must not affect the workflow file.
       node.addWidget('combo', 'control_after_generate', 'fixed', null, {
         values: ['fixed', 'increment'],
         serialize: false

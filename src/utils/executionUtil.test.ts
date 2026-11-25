@@ -113,9 +113,6 @@ describe('graphToPrompt widget serialization', () => {
     const graph = new LGraph()
     const node = addNode(graph, 'KSampler')
     node.addWidget('number', 'seed', 42, () => undefined, {})
-    // Mirrors src/core/graph/widgets/valueControlWidgets.ts —
-    // control_after_generate is excluded from the API prompt while still being
-    // persisted in the workflow file.
     node.addWidget(
       'combo',
       'control_after_generate',
@@ -136,8 +133,6 @@ describe('graphToPrompt widget serialization', () => {
     const node = addNode(graph, 'KSampler')
     node.addWidget('number', 'seed', 42, () => undefined, {})
     const preview = node.addWidget('number', 'preview', 7, () => undefined, {})
-    // widget.serialize is the workflow-persistence flag. The two flags are
-    // independent: this one must not affect the API prompt.
     preview.serialize = false
 
     expect(await promptInputs(graph, node)).toEqual({ seed: 42, preview: 7 })
