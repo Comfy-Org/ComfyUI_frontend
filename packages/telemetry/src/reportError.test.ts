@@ -194,6 +194,73 @@ describe('reportError', () => {
     )
   })
 
+  it('keeps a Datadog diagnostic while excluding it from Sentry', async () => {
+    installDesktopBridge()
+    const { reportError } = await loadReportError()
+
+    reportError(new Error('expected extension failure'), {
+      surface: 'platform',
+      errorType: 'error_loading_extension',
+      sentryMode: 'never'
+    })
+
+    expect(captureException).not.toHaveBeenCalled()
+    expect(addError).toHaveBeenCalledOnce()
+    expect(captureDesktopException).toHaveBeenCalledOnce()
+  })
+
+  it('buffers a Sentry-excluded diagnostic until Datadog becomes available', async () => {
+    datadogLive(false)
+    const { reportError, flushErrorReports } = await loadReportError()
+
+    reportError(new Error('expected extension failure'), {
+      surface: 'platform',
+      errorType: 'error_loading_extension',
+      sentryMode: 'never'
+    })
+
+    expect(captureException).not.toHaveBeenCalled()
+    expect(addError).not.toHaveBeenCalled()
+
+    datadogLive(true)
+    flushErrorReports()
+
+    expect(captureException).not.toHaveBeenCalled()
+    expect(addError).toHaveBeenCalledOnce()
+  })
+
+  it('sends one Sentry event per error type while keeping every Datadog event', async () => {
+    const { reportError } = await loadReportError()
+    const options = {
+      surface: 'graph' as const,
+      errorType: 'graph_serialization_state_mismatch',
+      sentryMode: 'once_per_page' as const
+    }
+
+    reportError(new Error('first mismatch'), options)
+    reportError(new Error('second mismatch'), options)
+
+    expect(captureException).toHaveBeenCalledOnce()
+    expect(addError).toHaveBeenCalledTimes(2)
+
+    reportError(new Error('different bounded diagnostic'), {
+      surface: 'graph',
+      errorType: 'graph_connection_state_mismatch',
+      sentryMode: 'once_per_page'
+    })
+
+    expect(captureException).toHaveBeenCalledTimes(2)
+    expect(addError).toHaveBeenCalledTimes(3)
+
+    reportError(new Error('unrelated first-party failure'), {
+      surface: 'platform',
+      errorType: 'resource_load_error'
+    })
+
+    expect(captureException).toHaveBeenCalledTimes(3)
+    expect(addError).toHaveBeenCalledTimes(4)
+  })
+
   it('does not report an error again after its complete diagnostic was emitted', async () => {
     const { markErrorReported, reportError } = await loadReportError()
     const error = new Error('backend-controlled message')
@@ -663,22 +730,38 @@ describe('reportError', () => {
     expect(addError).toHaveBeenCalledTimes(2)
   })
 
-  it('retries only Sentry when its cloud delivery fails', async () => {
-    mockIsCloud.value = true
-    captureException.mockImplementationOnce(() => {
-      throw new Error('sentry exploded')
-    })
-    const { reportError, flushErrorReports } = await loadReportError()
+  it.for([
+    {
+      mode: 'default',
+      options: {
+        surface: 'platform',
+        errorType: 'invariant_assert'
+      }
+    },
+    {
+      mode: 'once per page',
+      options: {
+        surface: 'graph',
+        errorType: 'graph_serialization_state_mismatch',
+        sentryMode: 'once_per_page'
+      }
+    }
+  ] as const)(
+    'retries only Sentry when its cloud $mode delivery fails',
+    async ({ options }) => {
+      mockIsCloud.value = true
+      captureException.mockImplementationOnce(() => {
+        throw new Error('sentry exploded')
+      })
+      const { reportError, flushErrorReports } = await loadReportError()
 
-    reportError(new Error('boom'), {
-      surface: 'platform',
-      errorType: 'invariant_assert'
-    })
-    flushErrorReports()
+      reportError(new Error('boom'), options)
+      flushErrorReports()
 
-    expect(captureException).toHaveBeenCalledTimes(2)
-    expect(addError).toHaveBeenCalledOnce()
-  })
+      expect(captureException).toHaveBeenCalledTimes(2)
+      expect(addError).toHaveBeenCalledOnce()
+    }
+  )
 
   it('writes the failure to the console so callers need no second sink', async () => {
     const { reportError } = await loadReportError()

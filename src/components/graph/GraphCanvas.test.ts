@@ -16,6 +16,7 @@ import { createI18n } from 'vue-i18n'
 
 import type { Toast } from '@/components/ui/toast/toastStore'
 import { IS_CONTROL_WIDGET } from '@/core/graph/widgets/controlWidgetMarker'
+import { UnauthorizedError } from '@comfyorg/api-client/ComfyApi'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
@@ -239,23 +240,18 @@ function setRootGraph(graph: LGraph | undefined) {
 
 async function mountGraphCanvas(
   stubs: Record<string, unknown> = {},
-  errorHandler?: (error: unknown) => void
+  errorHandler?: (error: unknown) => void,
+  { settingsReady = true }: { settingsReady?: boolean } = {}
 ) {
-  // Handed to the component rather than left to the active-Pinia fallback, so
-  // the readiness gates below are set on the instance startup actually reads.
   const pinia = getActivePinia()!
   vi.mocked(useReleaseStore().initialize).mockResolvedValue(undefined)
   app.canvas.graph = null
   setRootGraph(undefined)
 
-  // Startup waits on both readiness gates before it reaches the tour hand-off.
-  useSettingStore().isReady = true
+  useSettingStore().isReady = settingsReady
   useBootstrapStore().isI18nReady = true
 
   render(GraphCanvas, {
-    // Child components are stubbed: this covers the startup sequence, not the
-    // canvas chrome. `shallow` is forwarded verbatim to Vue Test Utils' mount,
-    // which honours it — @testing-library/vue just omits it from its own type.
     shallow: true,
     global: {
       plugins: [
@@ -267,7 +263,6 @@ async function mountGraphCanvas(
     }
   } as RenderOptions<typeof GraphCanvas>)
 
-  // The startup sequence is a chain of awaits; flush until it settles.
   for (let i = 0; i < 50; i++) {
     await nextTick()
     await Promise.resolve()
@@ -330,11 +325,15 @@ describe('GraphCanvas first-run tour wiring', () => {
     const failure = new Error('init failed')
     mocks.initializeWorkflow.mockRejectedValue(failure)
     const errors: unknown[] = []
+    const complete = vi.spyOn(bootstrapTracer, 'complete')
 
     await mountGraphCanvas({}, (error) => errors.push(error))
 
     expect(errors).toEqual([failure])
     expect(useWorkflowStore().tabsRestored).toBe(true)
+    expect(complete).toHaveBeenCalledExactlyOnceWith('failed', {
+      error: failure
+    })
   })
 
   it('offers the tour over a workflow that arrived from the URL', async () => {
@@ -346,6 +345,58 @@ describe('GraphCanvas first-run tour wiring', () => {
       undefined
     )
   })
+})
+
+describe('GraphCanvas settings startup failure', () => {
+  it('attributes an unauthorized settings failure to the settings phase and reloads', async () => {
+    vi.spyOn(window.location, 'reload').mockReturnValue()
+    const complete = vi.spyOn(bootstrapTracer, 'complete')
+    const noteFailure = vi.spyOn(bootstrapTracer, 'noteFailure')
+    const error = new UnauthorizedError('expired session')
+    useSettingStore().error = error
+
+    await mountGraphCanvas({}, undefined, { settingsReady: false })
+
+    expect(noteFailure).toHaveBeenCalledExactlyOnceWith(
+      'bootstrap/settings',
+      error
+    )
+    expect(complete).toHaveBeenCalledExactlyOnceWith('failed', { error })
+    expect(noteFailure.mock.invocationCallOrder[0]).toBeLessThan(
+      complete.mock.invocationCallOrder[0]
+    )
+    expect(window.location.reload).toHaveBeenCalledOnce()
+  })
+
+  it.for(['Comfy.userId', 'Comfy.userName'])(
+    'fails startup instead of reloading when %s cannot be cleared',
+    async (key) => {
+      vi.spyOn(window.location, 'reload').mockReturnValue()
+      const complete = vi.spyOn(bootstrapTracer, 'complete')
+      const removalError = new DOMException('denied', 'SecurityError')
+      const removeItem = window.localStorage.removeItem.bind(
+        window.localStorage
+      )
+      vi.spyOn(window.localStorage, 'removeItem').mockImplementation(
+        (storageKey) => {
+          if (storageKey === key) throw removalError
+          removeItem(storageKey)
+        }
+      )
+      useSettingStore().error = new UnauthorizedError('expired session')
+      const errors: unknown[] = []
+
+      await mountGraphCanvas({}, (error) => errors.push(error), {
+        settingsReady: false
+      })
+
+      expect(errors).toEqual([removalError])
+      expect(complete).toHaveBeenCalledExactlyOnceWith('failed', {
+        error: removalError
+      })
+      expect(window.location.reload).not.toHaveBeenCalled()
+    }
+  )
 })
 
 describe('GraphCanvas legacy settings bridge', () => {
@@ -1063,7 +1114,7 @@ describe('deployment model options at startup', () => {
       await vi.advanceTimersByTimeAsync(0)
 
       expect(useWorkspaceStore().spinner).toBe(false)
-      expect(complete).toHaveBeenCalledExactlyOnceWith('completed')
+      expect(complete).toHaveBeenCalledExactlyOnceWith('completed', undefined)
       expect(mocks.initializeWorkflow).toHaveBeenCalledOnce()
     }
   )

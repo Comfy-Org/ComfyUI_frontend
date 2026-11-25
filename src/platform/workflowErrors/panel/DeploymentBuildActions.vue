@@ -33,11 +33,14 @@
         :rel="platformLinkRel()"
         class="w-full no-underline"
         data-testid="deployment-build-platform"
+        @click="addMissingModelsOnClick"
       >
         {{
-          deployment.build_id
-            ? $t('rightSidePanel.editBuildOnPlatform')
-            : $t('rightSidePanel.openBuildsOnPlatform')
+          addsMissingModels
+            ? $t('rightSidePanel.addMissingModelsToBuild')
+            : deployment.build_id
+              ? $t('rightSidePanel.editBuildOnPlatform')
+              : $t('rightSidePanel.openBuildsOnPlatform')
         }}
         <i
           class="icon-[lucide--square-arrow-out-up-right]"
@@ -83,6 +86,9 @@ import { useDeploymentSwitchGuard } from '@/platform/workspace/composables/useDe
 import type { MissingBuildPack } from '@/platform/workspace/deploymentBuildBrief'
 import { deploymentBuildBrief } from '@/platform/workspace/deploymentBuildBrief'
 import { missingNodeTypeName } from '@/platform/workspace/missingForDeployment'
+import { usePlatformFrameStore } from '@/platform/workspace/platformFrame/platformFrameStore'
+import { openPlatformFrameOnClick } from '@/platform/workspace/platformFrame/platformFrameWaysIn'
+import { deploymentModelsRequest } from '@/platform/workspace/platformFrame/useDeploymentModelsFrame'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import {
   platformSurfaceLink,
@@ -108,6 +114,25 @@ useEventListener(window, 'focus', () => {
   lastListingRefreshAt = Date.now()
   void deploymentPick.load()
 })
+
+const platformFrames = usePlatformFrameStore()
+const addsMissingModels = computed(
+  () =>
+    missingPackGroups.length === 0 &&
+    missingModelGroups.length > 0 &&
+    platformFrames.isAvailable()
+)
+
+function addMissingModelsOnClick(event: MouseEvent) {
+  if (!addsMissingModels.value) return
+  openPlatformFrameOnClick(
+    event,
+    deploymentModelsRequest(deployment.deployment_id, {
+      handsOverWorkflow: true
+    }),
+    'errors_panel'
+  )
+}
 
 const buildUrl = computed(() =>
   platformSurfaceLink(

@@ -145,6 +145,8 @@ export const useKeybindingStore = defineStore('keybinding', () => {
   }
 
   function addDefaultKeybinding(keybinding: KeybindingImpl) {
+    const existing = defaultKeybindings.value[keybinding.combo.serialize()]
+    if (existing?.equals(keybinding)) return
     addKeybinding(defaultKeybindings, keybinding, { existOk: false })
     const pending = pendingUnsetKeybindings.value.find((unset) =>
       unset.equals(keybinding)

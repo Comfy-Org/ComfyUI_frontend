@@ -1071,7 +1071,9 @@ describe('a disabled extension', () => {
   it('lets an enabled extension run its own command while its settings and widgets initialize', async () => {
     afterCore(['off'])
     const run = vi.fn()
-    const execute = () => useCommandStore().execute('on.cmd')
+    const execute = async (): Promise<void> => {
+      await useCommandStore().execute('on.cmd')
+    }
 
     useExtensionService().registerExtension({
       name: 'on',

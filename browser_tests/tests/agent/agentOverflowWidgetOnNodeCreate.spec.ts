@@ -165,7 +165,6 @@ test.describe(
 
       await test.step('open the agent panel and target the workflow', async () => {
         await agentPanel.open()
-        await agentPanel.selectWorkflow()
       })
 
       await test.step('send a turn so the session binds the workflow', async () => {

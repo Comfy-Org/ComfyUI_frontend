@@ -42,7 +42,7 @@ import type {
   WorkflowSavedMetadata,
   WorkspaceInviteMetadata
 } from '@comfyorg/telemetry/types'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import {
   OnboardingTourEvents,
@@ -92,8 +92,9 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
   private disabledEvents = new Set<TelemetryEventName>(DEFAULT_DISABLED_EVENTS)
 
   constructor() {
+    const remoteConfigStore = useRemoteConfigStore()
     watch(
-      remoteConfig,
+      () => remoteConfigStore.config,
       (config) => {
         this.configureDisabledEvents(config)
       },

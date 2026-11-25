@@ -12,9 +12,14 @@ export type PromptQueueRow = {
   status: PromptQueueRowStatus
 }
 
-const { items, expanded = true } = defineProps<{
+const {
+  items,
+  expanded = true,
+  editDisabled = false
+} = defineProps<{
   items: readonly PromptQueueRow[]
   expanded?: boolean
+  editDisabled?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -94,7 +99,7 @@ function statusIcon(status: PromptQueueRowStatus): string {
           size="icon-sm"
           :tooltip="t('agent.queue.edit')"
           :aria-label="t('agent.queue.edit')"
-          :disabled="item.status === 'running'"
+          :disabled="item.status === 'running' || editDisabled"
           :class="index > 0 && laterRowActionClass"
           @click="emit('edit', item.id)"
         >

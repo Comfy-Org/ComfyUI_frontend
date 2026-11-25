@@ -14,10 +14,12 @@
 
 <script setup lang="ts">
 import { useEventListener } from '@vueuse/core'
-import { computed, onMounted, watch } from 'vue'
+import { computed, onMounted, provide, watch } from 'vue'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import { useAgentExtensionNotices } from '@/composables/useAgentExtensionNotices'
+import { AskAgentPortKey } from '@/platform/workflowErrors/askAgentPort'
+import { createAskAgentPort } from '@/workbench/extensions/agent/composables/agent/createAskAgentPort'
 import config from '@/config'
 import TooltipProvider from '@comfyorg/design-system/tooltip/TooltipProvider'
 import SessionReconnecting from '@/platform/auth/session/components/SessionReconnecting.vue'
@@ -40,6 +42,7 @@ import {
 import { useConflictDetection } from '@/platform/customNodes/manager/composables/useConflictDetection'
 
 registerExtensionDialogService(createExtensionDialogService())
+provide(AskAgentPortKey, createAskAgentPort())
 const workspaceStore = useWorkspaceStore()
 useApp().extensionManager = useWorkspaceStore()
 

@@ -69,8 +69,8 @@
     "name": "Activer les options du mode développeur (sauvegarde API, etc.)"
   },
   "Comfy_DisableFloatRounding": {
-    "name": "Désactiver l'arrondi par défaut du widget flottant.",
-    "tooltip": "(nécessite le rechargement de la page) Impossible de désactiver l'arrondi lorsque l'arrondi est défini par le nœud dans le backend."
+    "name": "Désactiver l’arrondi par défaut des widgets de nombres à virgule flottante (obsolète).",
+    "tooltip": "(nécessite de recharger la page) Obsolète et activé par défaut. Le désactiver arrondit les valeurs flottantes modifiées au nombre de décimales correspondant au pas du widget. L’arrondi défini par le nœud s’applique toujours."
   },
   "Comfy_DisableSliders": {
     "name": "Désactiver les curseurs du widget de nœud"
@@ -469,7 +469,7 @@
     "name": "Afficher les médias manquants dans l’onglet Problèmes",
     "tooltip": "Lorsqu’ils sont désactivés, les images, vidéos et fichiers audio d’entrée introuvables ne sont pas répertoriés dans l’onglet Problèmes et leurs nœuds ne sont pas mis en évidence."
   },
-  "Comfy_Workflow_ShowMissingNodesWarning": {
+  "Comfy_ErrorSystem_ShowMissingNodes": {
     "name": "Afficher les nœuds manquants dans l’onglet Problèmes",
     "tooltip": "Lorsqu’ils sont désactivés, les packs de nœuds manquants ne sont pas répertoriés dans l’onglet Problèmes et leurs nœuds ne sont pas mis en évidence. Le workflow ne peut toujours pas s’exécuter tant qu’ils ne sont pas installés."
   },

@@ -56,6 +56,8 @@ import { app } from '@/scripts/app'
 import { beginGraphLoad, endGraphLoad } from '@/core/graph/graphLoadState'
 import { api } from '@/scripts/api'
 import { ChangeTracker } from '@/scripts/changeTracker'
+import { onGraphRestored } from '@/scripts/graphRestore'
+import type { GraphRestore } from '@/scripts/graphRestore'
 import {
   bindCanvasTracker,
   invalidateCanvasTracker
@@ -954,6 +956,27 @@ describe('ChangeTracker', () => {
         ])
       })
 
+      it('keeps a transaction undoable when an earlier debounce finishes mid-change', async () => {
+        const initial = createState(1)
+        const changed = structuredClone(initial)
+        changed.nodes[0].pos = [10, 0]
+        const transaction = structuredClone(changed)
+        transaction.nodes[0].pos = [20, 0]
+        const tracker = createTracker(initial)
+        mockCanvasState(changed)
+        tracker.captureCanvasState()
+
+        tracker.beforeChange()
+        mockCanvasState(transaction)
+        await vi.advanceTimersByTimeAsync(50)
+        tracker.afterChange()
+        await tracker.undo()
+
+        expect(tracker.activeState).toEqual(changed)
+        expect(tracker.undoQueue).toEqual([initial])
+        expect(tracker.redoQueue).toEqual([transaction])
+      })
+
       it('does not squash after canvas ownership changes', async () => {
         const initial = createState(1)
         const changed = structuredClone(initial)
@@ -1702,6 +1725,62 @@ describe('ChangeTracker', () => {
   })
 
   describe('undo and redo', () => {
+    function recordRestores(): GraphRestore[] {
+      const restores: GraphRestore[] = []
+      onTestFinished(onGraphRestored((restore) => restores.push(restore)))
+      return restores
+    }
+
+    it.for(['undo', 'redo'] as const)(
+      "announces the %s with its workflow's graph and the state before and after it",
+      async (direction) => {
+        const restored = createState(1)
+        const changed = createState(2)
+        const tracker = createTracker(changed)
+        const history = { undo: tracker.undoQueue, redo: tracker.redoQueue }
+        history[direction].push(restored)
+        const restores = recordRestores()
+
+        await tracker[direction]()
+
+        expect(restores).toEqual([
+          {
+            workflow: tracker.workflow,
+            graph: app.rootGraph,
+            previous: changed,
+            next: restored
+          }
+        ])
+      }
+    )
+
+    it('announces no restore when the load restores nothing', async () => {
+      const tracker = createTracker(createState(2))
+      tracker.undoQueue.push(createState(1))
+      vi.mocked(app.loadGraphData).mockImplementationOnce(async () => false)
+      const restores = recordRestores()
+
+      await tracker.undo()
+
+      expect(restores).toEqual([])
+    })
+
+    it('announces a restore that finishes after another workflow became active, for its own workflow', async () => {
+      const tracker = createTracker(createState(2))
+      tracker.undoQueue.push(createState(1))
+      vi.mocked(app.loadGraphData).mockImplementationOnce(async () => {
+        createTracker(createState(3))
+        return true
+      })
+      const restores = recordRestores()
+
+      await tracker.undo()
+
+      expect(restores.map(({ workflow }) => workflow)).toEqual([
+        tracker.workflow
+      ])
+    })
+
     it('keeps Redo after Undo normalizes an interior node size', async () => {
       const initial = await createSubgraphState()
       const changed = structuredClone(initial)

@@ -56,15 +56,11 @@ function applyLegacyCssVars(theme: Theme, target: ThemeTarget) {
       target.style.setProperty(`--${key}`, value)
     }
   }
-  if (target.backgroundImage) {
-    target.style.setProperty('--bg-img', `url('${target.backgroundImage}')`)
-  } else {
-    target.style.removeProperty('--bg-img')
-  }
 }
 
 function applyLiteGraphGlobals(theme: Theme) {
-  const values = theme.preset.colors.litegraph_base
+  const { NODE_LIGHTNESS, LINK_STYLE, ...values } =
+    theme.preset.colors.litegraph_base
   if (typeof values.NODE_DEFAULT_SHAPE === 'string') {
     console.warn(
       `litegraph_base.NODE_DEFAULT_SHAPE only accepts [${[
@@ -76,6 +72,8 @@ function applyLiteGraphGlobals(theme: Theme) {
   }
   Object.assign(LiteGraph, {
     ...values,
+    nodeLightness: NODE_LIGHTNESS,
+    linkStyle: LINK_STYLE,
     NODE_DEFAULT_SHAPE:
       typeof values.NODE_DEFAULT_SHAPE === 'string'
         ? LiteGraph.ROUND_SHAPE
@@ -86,16 +84,14 @@ function applyLiteGraphGlobals(theme: Theme) {
 function applyCanvasColors(
   theme: Theme,
   canvas: LGraphCanvas,
-  backgroundImage?: string
+  wallpaper: string
 ) {
   canvas.node_title_color = theme.canvas.nodeTitleColor
   canvas.default_link_color = theme.canvas.linkColor
-  if (backgroundImage) {
-    canvas.clear_background_color = 'transparent'
-  } else {
-    canvas.background_image = theme.canvas.backgroundImage
-    canvas.clear_background_color = theme.canvas.clearBackgroundColor
-  }
+  canvas.background_image = wallpaper ? '' : theme.canvas.backgroundImage
+  canvas.clear_background_color = wallpaper
+    ? 'transparent'
+    : theme.canvas.clearBackgroundColor
   canvas._pattern = undefined
 }
 
@@ -115,9 +111,16 @@ function applyDataTypeColors(theme: Theme, target: ThemeTarget) {
 }
 
 export function applyTheme(theme: Theme, target: ThemeTarget) {
+  const wallpaper =
+    target.backgroundImage ||
+    (theme.canvas.backgroundMode === 'cover'
+      ? theme.canvas.backgroundImage
+      : '')
+  if (wallpaper) target.style.setProperty('--bg-img', `url('${wallpaper}')`)
+  else target.style.removeProperty('--bg-img')
   if (target.canvas) {
     applyLiteGraphGlobals(theme)
-    applyCanvasColors(theme, target.canvas, target.backgroundImage)
+    applyCanvasColors(theme, target.canvas, wallpaper)
   }
   applyCssTokens(theme, target.style)
   applyDataTypeColors(theme, target)

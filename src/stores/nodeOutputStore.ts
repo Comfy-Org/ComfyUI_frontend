@@ -44,7 +44,7 @@ import {
   isVideoNode,
   resolveNode
 } from '@/utils/litegraphUtil'
-import { isInputPreviewOutput } from '@/utils/nodeOutputUtil'
+import { isInputPreviewOutput, mergeNodeOutput } from '@/utils/nodeOutputUtil'
 import {
   releaseSharedObjectUrl,
   retainSharedObjectUrl
@@ -131,30 +131,13 @@ function inputPreviewOf(
   return isInputPreviewOutput(output) ? { images: output.images } : undefined
 }
 
-function concatOutputArrays(
-  existingOutput: ExecutedWsMessage['output'],
-  outputs: ExecutedWsMessage['output']
-): ExecutedWsMessage['output'] {
-  const mergedOutput = { ...existingOutput }
-  for (const [key, newValue] of Object.entries(outputs)) {
-    const existingValue = existingOutput[key]
-    mergedOutput[key] =
-      Array.isArray(existingValue) && Array.isArray(newValue)
-        ? existingValue.concat(newValue)
-        : newValue
-  }
-  return mergedOutput
-}
-
 function mergeOutput(
   existingOutput: ExecutedWsMessage['output'] | undefined,
   outputs: ExecutedWsMessage['output'] | ResultItem,
   { merge }: SetOutputOptions
 ): ExecutedWsMessage['output'] {
   const merged =
-    merge && existingOutput
-      ? concatOutputArrays(existingOutput, outputs)
-      : outputs
+    merge && existingOutput ? mergeNodeOutput(existingOutput, outputs) : outputs
   return preserveInputPreviewImages(existingOutput, merged)
 }
 
@@ -510,6 +493,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
       surface: 'graph',
       errorType: 'failure_resolving_node_output_execution_id',
       level: 'warning',
+      sentryMode: 'never',
       tags: { executionId },
       context: {
         filenames: filenames?.length ? filenames : undefined

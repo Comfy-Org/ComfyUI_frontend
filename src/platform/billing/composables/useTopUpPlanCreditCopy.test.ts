@@ -6,14 +6,12 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { usePlanCreditLine } from '@/platform/billing/composables/useTopUpPlanCreditCopy'
-import { useFreeTierQuota } from '@/platform/billing/subscription/composables/useFreeTierQuota'
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
-vi.mock(import('@/platform/billing/subscription/composables/useFreeTierQuota'))
 
 function endedSalesManagedWorkspace() {
   vi.mocked(useBillingContext).mockReturnValue(
@@ -27,9 +25,6 @@ function endedSalesManagedWorkspace() {
       canTopUp: computed(() => true),
       planKind: computed(() => receiveServerFact('plan_kind', 'sales_managed'))
     })
-  )
-  vi.mocked(useFreeTierQuota).mockReturnValue(
-    fromPartial({ available: ref(0) })
   )
 }
 

@@ -1,7 +1,11 @@
 import type * as THREE from 'three'
 
 import { MeshModelAdapter } from './MeshModelAdapter'
-import { createAdapterRef, fetchModelData } from './ModelAdapter'
+import {
+  ModelTooLargeError,
+  createAdapterRef,
+  fetchModelData
+} from './ModelAdapter'
 import type {
   AdapterRef,
   ModelAdapter,
@@ -202,6 +206,7 @@ export class LoaderManager implements LoaderManagerInterface {
     this.eventManager.emitEvent('modelLoadingEnd', null)
     if (options?.silent) throw error
     console.error('Error loading model:', error)
+    if (error instanceof ModelTooLargeError) return 'too-large'
     return isNotFoundError(error) ? 'not-found' : 'failed'
   }
 
