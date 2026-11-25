@@ -4220,7 +4220,7 @@ describe('useWorkflowService', () => {
         ])
       })
 
-      it('makes an undo across a load of another file into the open tab a load, through the real tracker (E28)', async () => {
+      it('makes an undo across a load of another file into the open tab a load, through the real tracker', async () => {
         current = createModeTestWorkflow({ path: 'workflows/repeat.json' })
         const before = makeWorkflowData({ step: 'before' })
         const tracker = new ChangeTracker(current, before)
