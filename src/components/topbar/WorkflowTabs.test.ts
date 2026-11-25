@@ -544,6 +544,21 @@ describe('WorkflowTabs agent entry button', () => {
     expect(useAgentPanelStore().isVisible).toBe(true)
   })
 
+  it('keeps a restored-open preference when consent is dismissed', async () => {
+    const store = useAgentPanelStore()
+    store.isOpen = true
+    store.holdRestoredOpen()
+    withConsent.mockResolvedValueOnce()
+    const { user } = renderComponent()
+
+    await user.click(
+      screen.getByRole('button', { name: enMessages.agent.entryButton })
+    )
+
+    expect(store.isOpen).toBe(true)
+    expect(store.isVisible).toBe(false)
+  })
+
   it('hides the restored panel entry while consent is checked, then shows it pressed', async () => {
     useAgentPanelStore().isOpen = true
     consentChecking.value = true

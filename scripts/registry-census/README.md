@@ -1,10 +1,13 @@
 # Registry corpus & ecosystem matrix
 
-A required PR and merge-queue gate that mirrors every registry pack (~5,100)
-and executes the frontend JS of the ~1,900 that ship any against relevant
-commits under review, then reports a population verdict. The aggregate check
-still appears on docs- and site-only pull requests after verifying that every
-expensive matrix dependency was skipped.
+A release-candidate gate that mirrors every registry pack (~5,100) and executes
+the frontend JS of the ~1,900 that ship any, then reports a population verdict.
+The expensive matrix runs only on same-repository `version-bump-*` and
+`chore/corpus-pins` pull requests with relevant changes or 3,000 or more
+changed files, on relevant pushes to `main`, and on manual dispatches. Its
+aggregate check still appears on ordinary
+pull requests and merge-queue candidates, but passes as not applicable after
+verifying that every expensive matrix dependency was skipped.
 
 **The corpus size and the executed count are different numbers, and the verdict
 is against the executed count.** Roughly 3,100 packs ship no extension-shaped JS
@@ -108,6 +111,12 @@ URLs or subdirectories, and packs outside the archive/staging budget are
 recorded but do not consume that outage floor. The minimum count of five
 failed targets keeps a small local `--limit` smoke run from acting like a
 census.
+
+Ordinary pull requests and merge-queue candidates do not execute the matrix,
+even when they change source the matrix measures. They receive only the
+successful aggregate not-applicable check. The first automatic execution after
+such a change is the relevant push to `main`; release-candidate pull requests
+execute it earlier.
 
 The cache key covers the pin set plus the fetch and validation code, and
 Actions caches are immutable. Main normally provides the shared entry that
@@ -431,7 +440,7 @@ object.
 Reported by `summarize_form_agreement.py`, which prints a count, the grouped
 shares, a per-verdict table with pack and node-class attribution, and every
 disagreeing node by name. `summarize_matrix.py` does **not** read these fields
-and there is no floor on them, so nothing here can turn the required gate red.
+and there is no floor on them, so nothing here can turn the release gate red.
 A run whose rows carry no form telemetry reports `UNMEASURED` rather than zero
 violations: a channel that stopped firing must not read as agreement.
 
@@ -482,7 +491,7 @@ the runner is ephemeral and tokenless.
 
 ## Runbook
 
-The required gate is red. In order:
+The release gate is red. In order:
 
 1. **Exit 2 — verdict withheld.** This is a harness failure, not an ecosystem
    result. Read the banner: short population (a shard died — check the
@@ -506,11 +515,12 @@ The required gate is red. In order:
    silence it.
 
 **Blast radius:** the workflow reports one aggregate check named
-`Custom Nodes Ecosystem Matrix test` for every pull request and merge-queue
+`Custom Nodes Ecosystem Matrix test` on every pull request and merge-queue
 candidate. Branch protection should require that aggregate, not the internal
-legacy and Vue `matrix-verdict` jobs. On a relevant change, a red, skipped, or
-cancelled dependency makes the aggregate red. On an irrelevant pull request,
-the aggregate passes only after all expensive dependencies report skipped.
+legacy and Vue `matrix-verdict` jobs. On a qualifying release-candidate pull
+request, a red, skipped, or cancelled dependency makes the aggregate red. On
+ordinary pull requests and every merge-queue candidate, the aggregate passes
+only after all expensive dependencies report skipped.
 
 ## Detection proof (counter-evidence)
 

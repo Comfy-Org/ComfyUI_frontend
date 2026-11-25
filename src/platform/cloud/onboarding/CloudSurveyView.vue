@@ -17,7 +17,11 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { isNavigationFailure, useRouter } from 'vue-router'
+import {
+  isNavigationFailure,
+  NavigationFailureType,
+  useRouter
+} from 'vue-router'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
@@ -70,6 +74,7 @@ onMounted(async () => {
 })
 
 const onSubmitSurvey = async (payload: Record<string, unknown>) => {
+  if (isSubmitting.value) return
   if (!onboardingSurveyEnabled.value) {
     await router.replace({ name: 'cloud-user-check' })
     return
@@ -104,6 +109,7 @@ const onSubmitSurvey = async (payload: Record<string, unknown>) => {
 async function advanceFromSurvey(replaying: boolean, replayOwner: string) {
   try {
     const failure = await router.push({ name: 'cloud-user-check' })
+    if (isNavigationFailure(failure, NavigationFailureType.cancelled)) return
     if (isNavigationFailure(failure)) throw failure
   } catch (error) {
     if (replaying && useAuthStore().userId === replayOwner)

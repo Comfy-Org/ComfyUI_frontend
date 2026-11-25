@@ -129,7 +129,6 @@ test.describe(
       const vueNodes = new VueNodeHelpers(page)
       const agentPanel = new AgentPanel(page)
       await agentPanel.open()
-      await agentPanel.selectWorkflow()
       await agentPanel.sendMessage('Have a look at this workflow')
       await hostSocket.waitForSubscribe()
       await expect(vueNodes.getNodeLocator(String(SEED_NODE_ID))).toBeVisible()

@@ -31,7 +31,7 @@ describe('RunNoticeBanner', () => {
   it('keeps naming the workflow after the generic notice becomes ready', async () => {
     const { rerender } = mount()
     expect(screen.getByRole('note')).toHaveTextContent(
-      'The agent can now edit 3d_hunyuan-v2.1. It works on 1 workflow at a time, and you can switch workflows during chat.'
+      'The agent can now edit 3d_hunyuan-v2.1. It works on 1 workflow at a time.'
     )
 
     await rerender({
@@ -39,7 +39,7 @@ describe('RunNoticeBanner', () => {
       genericNoticeReady: true
     })
     expect(screen.getByRole('note')).toHaveTextContent(
-      'The agent can now edit 3d_hunyuan-v2.1. It works on 1 workflow at a time, and you can switch workflows during chat.'
+      'The agent can now edit 3d_hunyuan-v2.1. It works on 1 workflow at a time.'
     )
   })
 
@@ -99,47 +99,78 @@ describe('RunNoticeBanner', () => {
     expect(localStorage.getItem(STORAGE_KEY)).toBe('true')
   })
 
-  it('says the target is unavailable despite educational dismissal, without actions', () => {
+  it('says the target is unavailable despite educational dismissal and offers a New chat action', async () => {
     localStorage.setItem(STORAGE_KEY, 'true')
-    render(RunNoticeBanner, {
+    const { emitted } = render(RunNoticeBanner, {
       props: { context: 'unavailable' },
       global: { plugins: [i18n] }
     })
     expect(screen.getByRole('note')).toHaveTextContent(
       i18n.global.t('agent.targetWorkflowUnavailable')
     )
-    expect(screen.queryByRole('button')).toBeNull()
-  })
-
-  it('names the workflow whose chat failed to open, with a retry for it', async () => {
-    const { emitted } = render(RunNoticeBanner, {
-      props: { context: 'followFailed', workflowName: 'portrait' },
-      global: { plugins: [i18n] }
-    })
-    expect(screen.getByRole('note')).toHaveTextContent(
-      i18n.global.t('agent.followedChatOpenFailed', {
-        workflowName: 'portrait'
-      })
-    )
+    expect(screen.queryByRole('button', { name: 'Dismiss' })).toBeNull()
     await userEvent.click(
       screen.getByRole('button', {
-        name: i18n.global.t('agent.retryFollowedChat', {
-          workflowName: 'portrait'
-        })
+        name: i18n.global.t('agent.startNewChat')
       })
     )
-    expect(emitted('retry')).toHaveLength(1)
+    expect(emitted('newChat')).toHaveLength(1)
   })
 
-  it('explains all three ways to decide the target', () => {
-    render(RunNoticeBanner, {
-      props: { context: 'following', workflowName: 'portrait' },
-      global: { plugins: [i18n] }
-    })
-    expect(screen.getByRole('note')).toHaveTextContent(
-      'Target workflow follows the visible tab until you choose a target, reference nodes, or send a message.'
+  describe('for a chat that follows the visible tab', () => {
+    function mountFollowing(props: Record<string, unknown> = {}) {
+      return render(RunNoticeBanner, {
+        props: {
+          workflowName: 'portrait',
+          followsVisibleWorkflow: true,
+          genericNoticeReady: true,
+          ...props
+        },
+        global: { plugins: [i18n] }
+      })
+    }
+
+    it.for([
+      { isDismissed: false, expectedStored: 'false' },
+      { isDismissed: true, expectedStored: 'true' }
+    ])(
+      'says nothing, with the edit notice dismissed: $isDismissed',
+      ({ isDismissed, expectedStored }) => {
+        if (isDismissed) localStorage.setItem(STORAGE_KEY, 'true')
+
+        mountFollowing()
+
+        expect(screen.queryByRole('note')).toBeNull()
+        expect(localStorage.getItem(STORAGE_KEY)).toBe(expectedStored)
+      }
     )
-    expect(screen.queryByText(/The agent can now edit/)).toBeNull()
+
+    it('shows the edit notice once the chat stops following', async () => {
+      const { rerender } = mountFollowing()
+      expect(screen.queryByRole('note')).toBeNull()
+
+      await rerender({ followsVisibleWorkflow: false })
+
+      expect(screen.getByRole('note')).toHaveTextContent(
+        'The agent can now edit portrait. It works on 1 workflow at a time.'
+      )
+    })
+
+    it('still shows context notices when following the visible tab', () => {
+      mountFollowing({ context: 'mismatch' })
+
+      expect(screen.getByRole('note')).toHaveTextContent(
+        i18n.global.t('agent.viewingDifferentWorkflow')
+      )
+    })
+
+    it('still shows the targetless notice when no workflow is named', () => {
+      mountFollowing({ workflowName: '' })
+
+      expect(screen.getByRole('note')).toHaveTextContent(
+        i18n.global.t('agent.runNotice')
+      )
+    })
   })
 })
 

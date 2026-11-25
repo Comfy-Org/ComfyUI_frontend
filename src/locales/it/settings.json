@@ -469,7 +469,7 @@
     "name": "Mostra i contenuti multimediali mancanti nella scheda Problemi",
     "tooltip": "Se disabilitato, le immagini, i video e gli audio di input non trovati non vengono elencati nella scheda Problemi e i relativi nodi non vengono evidenziati."
   },
-  "Comfy_Workflow_ShowMissingNodesWarning": {
+  "Comfy_ErrorSystem_ShowMissingNodes": {
     "name": "Mostra i nodi mancanti nella scheda Problemi",
     "tooltip": "Se disabilitato, i pacchetti di nodi mancanti non vengono elencati nella scheda Problemi e i relativi nodi non vengono evidenziati. Il workflow non può comunque essere eseguito finché non vengono installati."
   },

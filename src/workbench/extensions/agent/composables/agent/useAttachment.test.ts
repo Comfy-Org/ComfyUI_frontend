@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
@@ -571,6 +571,22 @@ describe('useAttachment', () => {
     expect(onError).toHaveBeenCalledWith('huge.png is larger than 20 MB')
   })
 
+  it('rejects an empty file before staging or uploading', async () => {
+    const upload = vi.fn()
+    const onError = vi.fn()
+    const registry = chipRegistry()
+    const { addFiles } = useAttachment({ upload, onError, ...registry })
+
+    await addFiles([fileOfSize('blank.png', 0)])
+
+    expect(registry.chips).toEqual([])
+    expect(upload).not.toHaveBeenCalled()
+    expect(reportError).not.toHaveBeenCalled()
+    expect(onError).toHaveBeenCalledExactlyOnceWith(
+      'blank.png is empty and could not be attached'
+    )
+  })
+
   it('uses the resolved limit for each file', async () => {
     const upload = vi.fn(async (file: File) => ({ ref: file.name }))
     const maxBytes = vi.fn((file: File) =>
@@ -1111,6 +1127,24 @@ describe('useAttachment', () => {
     expect(upload).not.toHaveBeenCalled()
   })
 
+  it('removes an empty deferred chip without uploading or reporting', async () => {
+    const upload = vi.fn()
+    const onError = vi.fn()
+    const registry = chipRegistry()
+    const { addDeferredFile } = useAttachment({ upload, onError, ...registry })
+
+    await expect(
+      addDeferredFile('blank.png', async () => fileOfSize('blank.png', 0))
+    ).resolves.toBe('failed')
+
+    expect(registry.chips).toEqual([])
+    expect(upload).not.toHaveBeenCalled()
+    expect(reportError).not.toHaveBeenCalled()
+    expect(onError).toHaveBeenCalledExactlyOnceWith(
+      'blank.png is empty and could not be attached'
+    )
+  })
+
   it('removes an oversized deferred chip and reports the resolved limit', async () => {
     const upload = vi.fn()
     const onError = vi.fn()
@@ -1625,5 +1659,155 @@ describe('useAttachment', () => {
     ])
 
     expect(onUploaded).toHaveBeenCalledOnce()
+  })
+
+  describe('per-draft upload concurrency (T1-15)', () => {
+    let activeUploader:
+      | {
+          settleAll: () => Promise<void>
+        }
+      | undefined
+
+    function createDeferredUploader(
+      refFor: (name: string) => string = (name) => name
+    ) {
+      const started: string[] = []
+      const pending = new Map<string, () => void>()
+      const batches: Promise<unknown>[] = []
+      const upload = vi.fn(
+        (file: File) =>
+          new Promise<{ ref: string }>((resolve) => {
+            started.push(file.name)
+            pending.set(file.name, () => {
+              pending.delete(file.name)
+              resolve({ ref: refFor(file.name) })
+            })
+          })
+      )
+      const uploader = {
+        upload,
+        started,
+        pendingCount: () => pending.size,
+        track: <T>(batch: Promise<T>): Promise<T> => {
+          batches.push(batch)
+          return batch
+        },
+        finish: (name: string) => {
+          pending.get(name)?.()
+        },
+        settleAll: async () => {
+          for (const resolve of pending.values()) resolve()
+          await Promise.allSettled(batches)
+        }
+      }
+      activeUploader = uploader
+      return uploader
+    }
+
+    afterEach(async () => {
+      await activeUploader?.settleAll()
+      activeUploader = undefined
+    })
+
+    it('UQ-01 UQ-02: starts a new upload in another draft at once while the left draft holds three in flight', async () => {
+      let currentDraft = 'thread:a'
+      const uploader = createDeferredUploader()
+      const registry = chipRegistry()
+      const { addFiles } = useAttachment({
+        upload: uploader.upload,
+        draftScope: () => currentDraft,
+        ...registry
+      })
+
+      void uploader.track(
+        addFiles([
+          fileOfSize('a1.png', 1),
+          fileOfSize('a2.png', 1),
+          fileOfSize('a3.png', 1)
+        ])
+      )
+      await vi.waitFor(() =>
+        expect(uploader.started).toEqual(['a1.png', 'a2.png', 'a3.png'])
+      )
+
+      currentDraft = 'blank:tab-b'
+      void uploader.track(addFiles([fileOfSize('b1.png', 1)]))
+      await Promise.resolve()
+
+      expect(uploader.started).toEqual(['a1.png', 'a2.png', 'a3.png', 'b1.png'])
+    })
+
+    it('UQ-03: caps concurrent uploads within one draft at three', async () => {
+      const uploader = createDeferredUploader()
+      const registry = chipRegistry()
+      const { addFiles } = useAttachment({
+        upload: uploader.upload,
+        draftScope: () => 'thread:a',
+        ...registry
+      })
+
+      void uploader.track(
+        addFiles([
+          fileOfSize('a1.png', 1),
+          fileOfSize('a2.png', 1),
+          fileOfSize('a3.png', 1),
+          fileOfSize('a4.png', 1)
+        ])
+      )
+      await vi.waitFor(() => expect(uploader.started).toHaveLength(3))
+      await Promise.resolve()
+      expect(uploader.started).toEqual(['a1.png', 'a2.png', 'a3.png'])
+
+      uploader.finish('a1.png')
+      await vi.waitFor(() => expect(uploader.started).toHaveLength(4))
+      expect(uploader.started).toEqual(['a1.png', 'a2.png', 'a3.png', 'a4.png'])
+    })
+
+    it('UQ-04: delivers a kept draft upload completion only to its own draft', async () => {
+      const store = useAgentComposerStore()
+      let currentDraft = 'thread:a'
+      const uploader = createDeferredUploader((name) => `uploaded-${name}`)
+      const { addFiles } = useAttachment({
+        upload: uploader.upload,
+        draftScope: () => currentDraft,
+        staged: () => store.attachments,
+        stage: store.addAttachment,
+        update: store.updateAttachment,
+        remove: store.removeAttachment
+      })
+      store.activateDraft('thread:a')
+      const batchA = uploader.track(
+        addFiles([
+          fileOfSize('a1.png', 1),
+          fileOfSize('a2.png', 1),
+          fileOfSize('a3.png', 1)
+        ])
+      )
+      await vi.waitFor(() => expect(uploader.pendingCount()).toBe(3))
+
+      currentDraft = 'thread:b'
+      store.activateDraft('thread:b')
+      const batchB = uploader.track(addFiles([fileOfSize('b1.png', 1)]))
+      await vi.waitFor(() => expect(uploader.pendingCount()).toBe(4))
+
+      uploader.finish('a1.png')
+      uploader.finish('a2.png')
+      uploader.finish('a3.png')
+      await batchA
+
+      expect(store.attachments.map(({ name }) => name)).toEqual(['b1.png'])
+
+      uploader.finish('b1.png')
+      await batchB
+
+      store.activateDraft('thread:a')
+      expect(
+        store.attachments.map(({ ref, uploading }) => ({ ref, uploading }))
+      ).toEqual([
+        { ref: 'uploaded-a1.png', uploading: false },
+        { ref: 'uploaded-a2.png', uploading: false },
+        { ref: 'uploaded-a3.png', uploading: false }
+      ])
+    })
   })
 })
