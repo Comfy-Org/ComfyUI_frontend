@@ -458,6 +458,31 @@ describe('WidgetSelectDefault', () => {
     }
   )
 
+  it('matches terms split between a custom label and its raw value', async () => {
+    const { user } = renderComponent(
+      createWidget(
+        [
+          'studio/portrait.safetensors',
+          'archive/portrait.safetensors',
+          'archive/a.safetensors',
+          'archive/b.safetensors',
+          'archive/c.safetensors'
+        ],
+        {
+          getOptionLabel: (value: string) =>
+            value.startsWith('studio') ? 'Approved' : `Draft ${value}`
+        }
+      ),
+      ''
+    )
+    await openDropdown(user)
+    await user.type(
+      screen.getByRole('combobox', { name: 'Search' }),
+      'approved portrait'
+    )
+    expect(optionLabels()).toEqual(['Approved'])
+  })
+
   it('navigates into and out of folders with the keyboard before selecting a file', async () => {
     const { user, onUpdate } = renderComponent(
       createWidget(['studio/models/portrait.safetensors']),

@@ -13,7 +13,6 @@ interface ComboOption {
   label: string
   rawValue: NonNullable<WidgetValue>
   value: string
-  searchKeys: string[]
 }
 
 interface ComboFolder {
@@ -115,6 +114,12 @@ export function useComboOptions(
         ? (fileParts(selected)?.slice(0, -1) ?? [])
         : []
   })
+  const searchIndex = computed(() =>
+    scoped.value.map((option) => ({
+      option,
+      text: `${option.value}\n${option.label}`.toLocaleLowerCase()
+    }))
+  )
   const browseOptions = computed(() => {
     const terms = searchQuery.value
       .toLocaleLowerCase()
@@ -122,11 +127,9 @@ export function useComboOptions(
       .filter(Boolean)
     if (!hasFolders.value || terms.length)
       return terms.length
-        ? scoped.value.filter((option) =>
-            option.searchKeys.some((key) =>
-              terms.every((term) => key.includes(term))
-            )
-          )
+        ? searchIndex.value
+            .filter(({ text }) => terms.every((term) => text.includes(term)))
+            .map(({ option }) => option)
         : scoped.value
     return getComboFolderRows(scoped.value, directory.value)
   })
@@ -174,16 +177,12 @@ export function resolveComboValues(
 function resolveOptions(options: IWidgetOptions | undefined): ComboOption[] {
   return resolveComboValues(options?.values).map((rawValue) => {
     const value = String(rawValue)
-    const label = getOptionLabel(value, options?.getOptionLabel)
     return {
       kind: 'value',
       key: `value:${value}`,
       value,
       rawValue,
-      label,
-      searchKeys: [
-        ...new Set([value.toLocaleLowerCase(), label.toLocaleLowerCase()])
-      ]
+      label: getOptionLabel(value, options?.getOptionLabel)
     }
   })
 }
