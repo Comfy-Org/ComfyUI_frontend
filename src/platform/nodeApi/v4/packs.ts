@@ -9,10 +9,10 @@ import type { PackId } from './types'
 
 export interface IssuedPack {
   readonly packId: PackId
-  /** `folder:` and the served folder segment, the key the pack's fields save under without verification. */
-  readonly folderKey: string
-  /** True if the backend verified the pack; a verified pack stamps its nodes and moves its {@link folderKey} entry to its id. */
+  /** True if the backend verified the pack; a verified pack stamps its nodes. */
   readonly verified: boolean
+  /** The `folder:` entry a verified pack reads and moves to its id: its own folder's, when the folder names its id in any case. */
+  readonly adopts?: string
 }
 
 export interface Packs {
@@ -88,7 +88,13 @@ export function createPacks(extensionsUrl: () => string): Packs {
       const packId =
         byId.get(id) ??
         issue(
-          { folderKey: folderKeyOf(segment), verified: true },
+          {
+            verified: true,
+            adopts:
+              segment.toLowerCase() === id.toLowerCase()
+                ? folderKeyOf(segment)
+                : undefined
+          },
           id,
           version ?? undefined
         )
@@ -151,8 +157,7 @@ export function createPacks(extensionsUrl: () => string): Packs {
     }
     const folderKey = folderKeyOf(segment)
     const packId =
-      unverified.get(folderKey) ??
-      issue({ folderKey, verified: false }, folderKey)
+      unverified.get(folderKey) ?? issue({ verified: false }, folderKey)
     unverified.set(folderKey, packId)
     return packId
   }

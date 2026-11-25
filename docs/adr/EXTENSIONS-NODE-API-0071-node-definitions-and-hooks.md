@@ -576,22 +576,30 @@ flowchart TD
       has no `:` (decision 43), so a folder key is never a pack's id, and two
       folders whose names differ only in case are two packs with two
       entries.
-    - A verified pack saves under its id only. It reads `extensions[id]` and,
-      when there is none, `extensions["folder:<its own segment>"]`, the key
-      the same pack saved under against a backend that does not verify. An
-      entry it read there moves: the first serialization after the load
-      writes it under the id and deletes the folder entry. It never reads or
-      moves a key that is neither its id nor its own folder key, so the entry
-      of a pack that is not installed stays in the workflow untouched.
-      Nothing had been released under the earlier bare folder keys, so
-      nothing migrates them.
+    - A verified pack saves under its id only. It reads `extensions[id]`.
+      When there is none, and only when its served segment names its id in
+      any case (folder `My_Pack` for id `my_pack`), it reads
+      `extensions["folder:<its own segment>"]`, the key the same pack saved
+      under against a backend that does not verify. An entry it read there
+      moves: the first serialization after the load writes it under the id
+      and deletes the folder entry.
+    - A folder key records where a pack was served, not which pack wrote the
+      entry: another machine can have an unrelated pack installed under the
+      same folder name. Only a folder that names the pack's verified id, which
+      the registry keeps unique, ties the entry to it, so a pack served from any other folder neither reads
+      nor moves its folder key, and the entry stays in the workflow untouched
+      for whichever pack wrote it. A pack never reads or moves a key that is
+      neither its id nor that folder key, so the entry of a pack that is not
+      installed is kept too. Nothing had been released under the earlier bare
+      folder keys, so nothing migrates them.
     - A newer frontend on a backend without `/extension_packs` (opt-in setups
       such as `--front-end-version`, and Cloud until its ingest passes the
       route through) uses folder keys. Once a verifying backend has saved a
       workflow, such a frontend no longer sees the fields saved under the id,
       and what it saves goes under its folder key, which a verifying backend
-      does not read back while the entry under the id exists. Both are kept
-      in the workflow.
+      does not read back while the entry under the id exists (and never,
+      for a pack whose folder does not name its id). Both are kept in the
+      workflow.
     - The `ServedPack` type in `shared/versionHost.ts` and the zod schema in
       `extensionPacks.ts` describe the same record; the dependency rules keep
       the host's parse apart from the API's type.

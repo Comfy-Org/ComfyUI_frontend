@@ -84,12 +84,12 @@ export function createLifecycleDispatch({
       folderEntriesRead.set(node, read.set(folderKey, id))
       return entry
     }
-    return ({ packId, folderKey, verified }) => {
+    return ({ packId, adopts }) => {
       const known = views.get(packId.id)
       if (known) return known
       const own =
         entryOf(packId.id) ??
-        (verified ? fromFolder(folderKey, packId.id) : undefined)
+        (adopts ? fromFolder(adopts, packId.id) : undefined)
       const view = own
         ? Object.freeze({ ...legacyFields(), ...canonical(), ...own })
         : base()
