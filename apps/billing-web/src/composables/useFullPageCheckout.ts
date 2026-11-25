@@ -55,11 +55,13 @@ import { methodKindOf } from '@/checkout/checkoutJourney'
 import { endingOf } from '@/checkout/endingScreen'
 import { platformPlansUrl } from '@/checkout/platformLinks'
 import { createOperationChannel } from '@/checkout/operationChannel'
+import type { Promotion } from '@/checkout/promoAutoApply'
 import {
   createAutoApplyClaim,
   autoAppliesCode,
   awaitPromotion
 } from '@/checkout/promoAutoApply'
+import type { PromoRemoval } from '@/checkout/promoMemory'
 import { promoEntryLive, promoRejectionOf } from '@/checkout/promoEntry'
 import {
   checkoutIdentity,
@@ -244,6 +246,10 @@ export function useFullPageCheckout() {
   journey.enter()
   const planChangeCardChoice = awaitPlanChangeCardChoice()
   const promotion = awaitPromotion()
+  let servedPromotion: Promotion | null = null
+  void promotion.then((served) => {
+    servedPromotion = served
+  })
 
   const page = shallowRef<CheckoutPage>(
     arrivalPage({ entry, error: unreadableLink })
@@ -355,8 +361,8 @@ export function useFullPageCheckout() {
   const promo = useCheckoutPromo({
     prefill: entry.value,
     memory: promoMemory,
-    removal: createPromoRemoval(() =>
-      checkoutIdentity(entry.value, billedWorkspace())
+    removal: campaignRemoval(
+      createPromoRemoval(() => checkoutIdentity(entry.value, billedWorkspace()))
     ),
     live: () => promoLive.value,
     requote: async (promotionCode) => {
@@ -505,6 +511,15 @@ export function useFullPageCheckout() {
     if (!claimAutoApply()) return false
     journey.markPromoAutoApply(true)
     return true
+  }
+
+  function campaignRemoval(removal: PromoRemoval): PromoRemoval {
+    return {
+      removed: removal.removed,
+      remember: (code) => {
+        if (autoAppliesCode(servedPromotion, code)) removal.remember(code)
+      }
+    }
   }
 
   async function autoApplyCarriedPromo() {

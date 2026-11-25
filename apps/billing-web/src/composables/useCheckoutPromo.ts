@@ -42,7 +42,13 @@ export function useCheckoutPromo({
   removal
 }: CheckoutPromoOptions) {
   const entry = shallowRef<PromoEntry>(
-    initialPromoEntry(removal?.removed() ? undefined : prefill, memory.recall())
+    initialPromoEntry(
+      prefill?.promotionCode !== undefined &&
+        removal?.removed(prefill.promotionCode)
+        ? undefined
+        : prefill,
+      memory.recall()
+    )
   )
 
   function isCarriedCode(code: string): boolean {
@@ -107,7 +113,7 @@ export function useCheckoutPromo({
       type: result.status === 'ok' ? 'removeSettled' : 'removeFailed'
     })
     if (result.status === 'ok' && isCarriedCode(current.code))
-      removal?.remember()
+      removal?.remember(current.code)
   }
 
   return {

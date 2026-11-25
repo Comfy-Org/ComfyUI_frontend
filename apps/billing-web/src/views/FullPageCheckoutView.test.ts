@@ -3166,6 +3166,25 @@ describe('FullPageCheckoutView promo codes', () => {
       expect(reloaded.previewSubscribe).toHaveBeenCalledOnce()
     })
 
+    it('still offers a different link-carried code after the campaign code was removed', async () => {
+      await renderCheckout({}, quotesWithCampaign, CAMPAIGN_PATH)
+      await screen.findByText('−$5.60')
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Remove BLACKFRIDAY26' })
+      )
+      await screen.findByRole('button', { name: 'Add promo code' })
+      cleanup()
+
+      await renderCheckout(
+        {},
+        quotesWithCampaign,
+        `${CHECKOUT_PATH}&promo=LAUNCH20`
+      )
+      await screen.findByText('Subscribe to Creator Plan · Acme Team')
+
+      expect(promoField()).toHaveValue('LAUNCH20')
+    })
+
     it('reports to error tracking when the automatic Apply could not be checked', async () => {
       vi.mocked(datadogRum.getInitConfiguration).mockReturnValue({
         clientToken: 'pub',
@@ -3253,6 +3272,23 @@ describe('FullPageCheckoutView promo codes', () => {
       expect(screen.getAllByText('$28.00')).toHaveLength(2)
       expect(datadogRum.addError).not.toHaveBeenCalled()
     })
+  })
+
+  it('with the auto-apply flag off, a manually removed link code is offered again after a reload', async () => {
+    await renderCheckout({}, quotesByCode, `${CHECKOUT_PATH}&promo=LAUNCH20`)
+    await screen.findByText('Subscribe to Creator Plan · Acme Team')
+    await userEvent.click(screen.getByRole('button', { name: 'Apply' }))
+    await screen.findByText('−$5.60')
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Remove LAUNCH20' })
+    )
+    await screen.findByRole('button', { name: 'Add promo code' })
+    cleanup()
+
+    await renderCheckout({}, quotesByCode, `${CHECKOUT_PATH}&promo=LAUNCH20`)
+    await screen.findByText('Subscribe to Creator Plan · Acme Team')
+
+    expect(promoField()).toHaveValue('LAUNCH20')
   })
 
   it('a Pay over a typed, unapplied code applies it and waits for a second Pay at the new total', async () => {

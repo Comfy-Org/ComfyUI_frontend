@@ -134,30 +134,33 @@ describe('createPromoRemoval', () => {
     'ws-team'
   )
 
-  it('remembers a removal for this checkout across a fresh reader', () => {
-    createPromoRemoval(() => PRO).remember()
+  it('remembers a removed code for this checkout across a fresh reader, in any letters', () => {
+    createPromoRemoval(() => PRO).remember('BLACKFRIDAY26')
 
-    expect(createPromoRemoval(() => PRO).removed()).toBe(true)
+    expect(createPromoRemoval(() => PRO).removed(' blackfriday26 ')).toBe(true)
   })
 
   it('keeps each checkout separate, after moving to another and back', () => {
-    createPromoRemoval(() => PRO).remember()
-    createPromoRemoval(() => CREATOR).remember()
+    createPromoRemoval(() => PRO).remember('BLACKFRIDAY26')
+    createPromoRemoval(() => CREATOR).remember('BLACKFRIDAY26')
 
-    expect(createPromoRemoval(() => PRO).removed()).toBe(true)
+    expect(createPromoRemoval(() => PRO).removed('BLACKFRIDAY26')).toBe(true)
   })
 
-  it('reads no removal for a checkout that has none, or without storage', () => {
-    createPromoRemoval(() => PRO).remember()
+  it('does not hide a different code, another checkout, or anything without storage', () => {
+    createPromoRemoval(() => PRO).remember('BLACKFRIDAY26')
 
-    expect(createPromoRemoval(() => CREATOR).removed()).toBe(false)
+    expect(createPromoRemoval(() => PRO).removed('LAUNCH20')).toBe(false)
+    expect(createPromoRemoval(() => CREATOR).removed('BLACKFRIDAY26')).toBe(
+      false
+    )
     expect(
       createPromoRemoval(
         () => PRO,
         () => {
           throw new Error('storage blocked')
         }
-      ).removed()
+      ).removed('BLACKFRIDAY26')
     ).toBe(false)
   })
 })

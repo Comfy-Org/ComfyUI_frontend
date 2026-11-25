@@ -105,12 +105,12 @@ export function createPromoMemory(
 const REMOVED_KEY = 'comfy.billing-web.checkout-promo-removed.v1'
 
 export interface PromoRemoval {
-  /** Whether the customer removed the link's code from this checkout in this tab. */
-  readonly removed: () => boolean
-  readonly remember: () => void
+  /** Whether the customer removed `code` from this checkout in this tab. */
+  readonly removed: (code: string) => boolean
+  readonly remember: (code: string) => void
 }
 
-function removedCheckouts(raw: string | null): string[] {
+function removedPairs(raw: string | null): string[] {
   if (raw === null) return []
   try {
     const value: unknown = JSON.parse(raw)
@@ -122,22 +122,24 @@ function removedCheckouts(raw: string | null): string[] {
   }
 }
 
-/** Remembers, per checkout and tab, that the customer removed the code the link carried, so a reload does not offer it again. */
+/** Remembers, per checkout, code and tab, that the customer removed a code, so a reload does not offer that code again. */
 export function createPromoRemoval(
   identity: () => string,
   storage: () => Storage = () => globalThis.sessionStorage
 ): PromoRemoval {
+  const pairOf = (code: string) =>
+    JSON.stringify([identity(), code.trim().toUpperCase()])
   return {
-    removed: () =>
+    removed: (code) =>
       withStorage(storage, (store) =>
-        removedCheckouts(store.getItem(REMOVED_KEY)).includes(identity())
+        removedPairs(store.getItem(REMOVED_KEY)).includes(pairOf(code))
       ) ?? false,
-    remember: () =>
+    remember: (code) =>
       withStorage(storage, (store) => {
-        const removed = removedCheckouts(store.getItem(REMOVED_KEY))
-        const checkout = identity()
-        if (!removed.includes(checkout))
-          store.setItem(REMOVED_KEY, JSON.stringify([...removed, checkout]))
+        const removed = removedPairs(store.getItem(REMOVED_KEY))
+        const pair = pairOf(code)
+        if (!removed.includes(pair))
+          store.setItem(REMOVED_KEY, JSON.stringify([...removed, pair]))
       })
   }
 }
