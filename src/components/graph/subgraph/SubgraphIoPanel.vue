@@ -15,6 +15,7 @@ import type {
   InputValueSource
 } from '@/core/graph/subgraph/resolveInputValueSource'
 import { SubgraphIONodeBase } from '@/lib/litegraph/src/subgraph/SubgraphIONodeBase'
+import { subgraphInputHeightId } from '@/lib/litegraph/src/subgraph/subgraphInputHeights'
 import type { SubgraphInputNode } from '@/lib/litegraph/src/subgraph/SubgraphInputNode'
 import type { SubgraphOutputNode } from '@/lib/litegraph/src/subgraph/SubgraphOutputNode'
 import {
@@ -136,7 +137,8 @@ function portFieldsOf(port: Port) {
     portTestId: isAddPort
       ? `subgraph-add-${direction}`
       : `subgraph-${direction}-port`,
-    portLabel: isAddPort ? undefined : port.displayName
+    portLabel: isAddPort ? undefined : port.displayName,
+    heightId: isSubgraphInput(port) ? subgraphInputHeightId(port) : undefined
   }
 }
 
@@ -223,7 +225,7 @@ function isDimmed(port: Port) {
 }
 
 const panel = useTemplateRef('panel')
-const { style, startResize } = useSubgraphIoLayout(
+const { style, startResize, resizeHeight } = useSubgraphIoLayout(
   () => ioNode,
   panel,
   () => slots.value
@@ -306,6 +308,7 @@ function forwardUnlessOnButton(event: PointerEvent) {
   <div
     ref="panel"
     :data-testid="side.testId"
+    data-subgraph-io-panel
     :inert="canvasStore.isPickingNodes"
     role="group"
     :aria-label="title"
@@ -389,6 +392,10 @@ function forwardUnlessOnButton(event: PointerEvent) {
             :source="row.editable"
             :label="row.port.displayName"
             :status="row.status"
+            :height-id="row.heightId"
+            :resizable="!canvasStore.isReadOnly && !ioNode.pinned"
+            @resize="resizeHeight"
+            @commit="captureEdits"
           />
         </div>
         <div

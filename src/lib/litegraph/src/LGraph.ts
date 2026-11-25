@@ -170,6 +170,7 @@ import {
 } from './measure'
 import { warnDeprecated } from './utils/feedback'
 import { SubgraphInput } from './subgraph/SubgraphInput'
+import { adoptSubgraphInputHeights } from './subgraph/subgraphInputHeights'
 import { SubgraphInputNode } from './subgraph/SubgraphInputNode'
 import { SubgraphOutput } from './subgraph/SubgraphOutput'
 import { SubgraphOutputNode } from './subgraph/SubgraphOutputNode'
@@ -3484,6 +3485,7 @@ export class Subgraph
         this.inputs.push(subgraphInput)
         this.events.dispatch('input-added', { input: subgraphInput })
       }
+      adoptSubgraphInputHeights(this.inputNode, inputs)
     }
 
     if (outputs) {

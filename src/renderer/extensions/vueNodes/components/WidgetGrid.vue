@@ -175,6 +175,7 @@ function rowSizing(
   if (!growable)
     return {
       growable,
+      fills: false,
       flexClass: 'flex-none',
       style: { minHeight },
       controlClass: 'grid min-w-0 grid-cols-1 self-center'
@@ -184,6 +185,7 @@ function rowSizing(
   const fills = userHeight === undefined
   return {
     growable,
+    fills,
     maxHeight,
     flexClass: fills ? 'grow shrink-0' : 'flex-none',
     style: fills
@@ -384,7 +386,7 @@ async function restoreRowFocus(name: string) {
 }
 
 const expands = computed(
-  () => renderedRows.value.some((row) => row.growable) || undefined
+  () => renderedRows.value.some((row) => row.fills) || undefined
 )
 
 const layoutKey = computed(() =>

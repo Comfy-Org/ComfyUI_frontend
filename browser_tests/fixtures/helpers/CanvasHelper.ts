@@ -4,6 +4,7 @@ import type { Locator, Page } from '@playwright/test'
 import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
 import { TestIds } from '@e2e/fixtures/selectors'
 import type { Position } from '@e2e/fixtures/types'
+import { heightOf } from '@e2e/fixtures/utils/locatorBox'
 import { nextFrame } from '@e2e/fixtures/utils/timing'
 import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
@@ -218,6 +219,11 @@ export class CanvasHelper {
     return this.page.evaluate(() => {
       return window.app!.canvas.ds.scale
     })
+  }
+
+  /** The locator's rendered height in graph units, or a negative value while it has no box. */
+  async graphHeightOf(locator: Locator): Promise<number> {
+    return (await heightOf(locator)) / (await this.getScale())
   }
 
   async setScale(scale: number): Promise<void> {

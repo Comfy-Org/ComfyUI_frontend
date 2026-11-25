@@ -1,15 +1,27 @@
 <script setup lang="ts">
 import { omit } from 'es-toolkit'
-import { computed } from 'vue'
+import { computed, provide } from 'vue'
 
 import type { EditableInputValueSource } from '@/core/graph/subgraph/resolveInputValueSource'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import WidgetGrid from '@/renderer/extensions/vueNodes/components/WidgetGrid.vue'
 import { useProcessedWidgets } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
+import {
+  growableRegionsKey,
+  useGrowableRegions
+} from '@/renderer/extensions/vueNodes/layout/useGrowableRegions'
 
-const { source, label, status } = defineProps<{
+const { source, label, status, heightId, resizable } = defineProps<{
   source: EditableInputValueSource | undefined
   label: string
   status: string | undefined
+  heightId: WidgetId | undefined
+  resizable: boolean
+}>()
+
+const emit = defineEmits<{
+  resize: [height: number]
+  commit: []
 }>()
 
 const { processedWidgets } = useProcessedWidgets(
@@ -20,6 +32,17 @@ const { processedWidgets } = useProcessedWidgets(
 const widgets = computed(() =>
   processedWidgets.value.map((widget) => omit(widget, ['slotMetadata']))
 )
+
+const growable = useGrowableRegions({
+  regionId: () => heightId,
+  resizeNode: (height) => emit('resize', height),
+  onCommit: () => emit('commit'),
+  rootSelector: '[data-subgraph-io-panel]'
+})
+provide(growableRegionsKey, {
+  heightOf: growable.heightOf,
+  handle: computed(() => (resizable ? growable.handle : undefined))
+})
 </script>
 
 <template>
