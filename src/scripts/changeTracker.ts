@@ -640,6 +640,10 @@ export class ChangeTracker implements WorkflowChangeTracker {
     ChangeTracker._checkStateWarned = false
   }
 
+  get hasPreview() {
+    return this.preview !== undefined
+  }
+
   beginPreview(interrupt: () => void, rollback = interrupt): () => void {
     this.preview?.interrupt()
     this.captureCanvasState()

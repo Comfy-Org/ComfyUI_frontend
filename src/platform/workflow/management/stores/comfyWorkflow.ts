@@ -66,6 +66,7 @@ export interface WorkflowChangeTracker {
   undoQueue: ComfyWorkflowJSON[]
   redoQueue: ComfyWorkflowJSON[]
   changeCount: number
+  readonly hasPreview: boolean
   _restoringState: boolean
   ds?: { scale: number; offset: [number, number] }
   nodeOutputs?: Partial<Record<string, ExecutedWsMessage['output']>>
