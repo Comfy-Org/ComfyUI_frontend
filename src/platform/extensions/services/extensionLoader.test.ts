@@ -9,6 +9,7 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 import { publishedApi } from '@/platform/nodeApi/v4/__tests__/publishedApi'
 import { expectRefusal } from '@/platform/nodeApi/v4/__tests__/refusal'
 import { moduleUrl } from '@/platform/nodeApi/v4/__tests__/testPack'
+import { useNodeApiHost } from '@/platform/nodeApi/nodeApiHost'
 import { api } from '@/scripts/api'
 import { FETCH_RESPONSE_HEADERS_TIMEOUT_MS } from '@comfyorg/api-client/apiTimeouts'
 
@@ -245,6 +246,47 @@ describe('extension loading', () => {
       })
       expect(console.warn).toHaveBeenCalledOnce()
     })
+
+    it.for([
+      {
+        name: 'records',
+        late: () =>
+          Response.json([
+            { segment: 'My_Pack', id: 'my-pack', version: '1.0.0' }
+          ])
+      },
+      {
+        name: 'a refusal',
+        late: () => new Response('Not Found', { status: 404 })
+      }
+    ])(
+      'keeps the records of the startup that replaced a disposed one when the disposed one’s lookup answers $name late',
+      async ({ late }) => {
+        const comfy = publishedApi()
+        let answerLate: (response: Response) => void = () => {}
+        let request: AbortSignal | undefined
+        const customExtensionLoaded = backendAnswers((signal) => {
+          request = signal
+          return new Promise((resolve) => (answerLate = resolve))
+        })
+        const disposed = new AbortController()
+
+        const loading = loadExtensions(disposed.signal)
+        disposed.abort()
+        useNodeApiHost().providePacks([
+          { segment: 'My_Pack', id: 'my-pack', version: '2.0.0' }
+        ])
+        answerLate(late())
+        await loading
+
+        expect(comfy.registerPack({ url: moduleUrl('My_Pack') })).toEqual({
+          id: 'my-pack',
+          version: '2.0.0'
+        })
+        expect(customExtensionLoaded).not.toHaveBeenCalled()
+        expect(request?.aborted).toBe(true)
+      }
+    )
 
     it.for([
       {

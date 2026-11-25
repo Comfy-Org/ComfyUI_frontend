@@ -17,7 +17,7 @@ import { installErrorNodeWidgets } from '@/scripts/errorNodeWidgets'
 
 /**
  * Registers the core extensions, then loads the custom node scripts the backend serves.
- * Late custom nodes stop turning on when `signal` aborts.
+ * A startup `signal` aborted before the extension list and pack records arrive does neither; late custom nodes stop turning on when it aborts.
  */
 export async function loadExtensions(
   signal: AbortSignal = new AbortController().signal
@@ -37,8 +37,9 @@ export async function loadExtensions(
     : undefined
   const [extensions, servedPacks] = await Promise.all([
     api.getExtensions(),
-    fetchExtensionPacks()
+    fetchExtensionPacks(signal)
   ])
+  if (signal.aborted) return
   useNodeApiHost().providePacks(servedPacks)
   extensionStore.loadExtensionPaths(
     extensions

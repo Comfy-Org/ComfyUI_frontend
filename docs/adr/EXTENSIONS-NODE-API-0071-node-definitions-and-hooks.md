@@ -546,7 +546,9 @@ flowchart TD
       verified records at `GET /extension_packs`, one per served folder
       (`segment`). The extension loader fetches them beside the extension
       list and gives them to the API through `useNodeApiHost().providePacks()`
-      before any custom script loads, so `registerPack` is synchronous.
+      before any custom script loads, so `registerPack` is synchronous. A
+      startup the canvas disposes before they arrive stops its request and
+      gives none, so it cannot replace the records of the startup after it.
     - A list that gives one id for two folders, or two records for one
       folder (a stale or hand-edited file), says nothing reliable about
       those folders: each of them gets no record, so `registerPack` refuses

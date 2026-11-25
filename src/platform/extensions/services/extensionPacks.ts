@@ -1,3 +1,4 @@
+import { combineAbortSignals } from '@comfyorg/api-client/abortSignal'
 import { FETCH_RESPONSE_HEADERS_TIMEOUT_MS } from '@comfyorg/api-client/apiTimeouts'
 import { z } from 'zod'
 
@@ -21,8 +22,13 @@ function unverified(reason: unknown): undefined {
   return undefined
 }
 
-/** The V4 packs the backend verified; `undefined` when it gives none, as an older backend does, an unusable reply, or none within the request bound. */
-export async function fetchExtensionPacks(): Promise<ServedPacks | undefined> {
+/**
+ * The V4 packs the backend verified; `undefined` when it gives none, as an older backend does, an unusable reply, or none
+ * within the request bound. The request stops, silently, when `startup` aborts.
+ */
+export async function fetchExtensionPacks(
+  startup?: AbortSignal
+): Promise<ServedPacks | undefined> {
   const deadline = new AbortController()
   const timer = setTimeout(
     () =>
@@ -35,13 +41,15 @@ export async function fetchExtensionPacks(): Promise<ServedPacks | undefined> {
     const response = await api.fetchApi('/extension_packs', {
       cache: 'no-store',
       skipStatusRetry: true,
-      signal: deadline.signal
+      signal: startup
+        ? combineAbortSignals([deadline.signal, startup])
+        : deadline.signal
     })
     if (!response.ok) return unverified(`status ${response.status}`)
     const parsed = zServedPacks.safeParse(await response.json())
     return parsed.success ? parsed.data : unverified(parsed.error.message)
   } catch (error) {
-    return unverified(error)
+    return startup?.aborted ? undefined : unverified(error)
   } finally {
     clearTimeout(timer)
   }
