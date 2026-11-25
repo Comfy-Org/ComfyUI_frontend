@@ -118,7 +118,9 @@ look in a particular graph, use `comfy.graph.root()` or
 9. A handle is a frozen object carrying identity that reads its entity each
    time it is used. It exposes no host object. A value it returns is a
    frozen copy, and a property value is copied as the workflow would save
-   it. Identity (`id`, `graphId`, `isDeleted`, `type`) is a property; a
+   it, under its own name, so a `toJSON` that reads its key gives what the
+   workflow saves; a property behind a getter that throws reads as
+   `undefined` and is reported once. Identity (`id`, `graphId`, `isDeleted`, `type`) is a property; a
    node's and a widget's live state is read through a method (`getTitle()`,
    `isPinned()`). The fields of slots, graph scopes and documents that V2
    exposed as properties (`slot.name`, `scope.name`, `graph.version`) stay
@@ -292,15 +294,6 @@ look in a particular graph, use `comfy.graph.root()` or
     and stops neither the host nor another listener. A disposer removes only
     its own registration and is safe to call again. A listener added during
     a delivery waits for the next one.
-
-## Known gaps in the current code
-
-These are places where the code at this point does not yet meet the decisions
-above. Each is open work for this API, not part of the contract.
-
-- **Saved values (decision 13).** A property whose value has a `toJSON` that
-  reads its key reads differently through `getProperty(name)` and
-  `getProperties()[name]`.
 
 ## Open work in the host
 

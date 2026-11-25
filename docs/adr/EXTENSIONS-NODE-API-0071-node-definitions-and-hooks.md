@@ -111,8 +111,11 @@ flowchart LR
    kept, and the other extensions still apply. One that returns a promise has
    its rejection reported, and a hook it adds after its first `await` is
    refused because the builder closed when `apply` returned. An extension
-   made, or a type defined, inside an `apply` applies once to each type. A
-   definition that cannot be read is reported and skipped, and the extension
+   made, or a type defined, inside an `apply` applies once to each type. An
+   `apply` whose type was unregistered or registered again while it ran
+   keeps none of its hooks: the new registration has its own application,
+   and the abandoned one would add a second set to it. A definition that
+   cannot be read is reported and skipped, and the extension
    stays whole.
 7. The disposer stops later applications and removes the hooks already
    added, even those of an `apply` that calls its own disposer, and is safe
@@ -120,8 +123,9 @@ flowchart LR
 8. `get(type)` gives a new frozen copy of the definition each time: type,
    title, category, description, inputs, outputs, hidden inputs and whether
    it is an output node. Inputs are the required ones then the optional ones,
-   in the order the server declared them. An input's `options` and the
-   hidden inputs are frozen JSON copies. A combo input carries its `values`
+   in the order the server declared them, read list by list so an optional
+   input with a numeric name does not move ahead of the required ones. An
+   input's `options` and the hidden inputs are frozen JSON copies. A combo input carries its `values`
    from either combo spelling the server uses. The title, description and
    input `localizedName` are the ones the editor shows, in the user's
    language; a type with no display name, or a definition given `''` as its
@@ -179,21 +183,33 @@ is a subgraph placed as a node: `registerSubgraphNodeDef` does not call
 11. A definition is checked whole before anything is registered: a plain
     object of the documented fields only; a type name that is non-empty, not
     an `Object.prototype` member and not registered yet; text for the title,
-    category and description; slots of exactly a text `name` and a `type`
+    category and description; slot lists with no holes (a hole is read as a
+    missing slot and refused, since the class could not make a node); slots
+    of exactly a text `name` and a `type`
     that slot edits accept (ADR-EXTENSIONS-NODE-API-0073 decision 16: the
     host's slot-type registry fails to make a node otherwise); for an output
     an optional `shape` of `'default'`, `'optional'`, `'list'` or
     `'directional'`; an `execution` of `'backend'` or `'frontend'`; and a
     presentation of `title` (`'default'` or `'hidden'`), `resizable` and
     `collapsible` (booleans) only. A slot name may be empty, because a stored
-    pack declares one.
+    pack declares one. Whether the type name is taken is checked last, after
+    every read of the definition and just before the class registers,
+    against LiteGraph's registry and the type the host is registering: a
+    getter in the definition that defined the same name meanwhile keeps its
+    registration and the outer call is refused, and so is a `define` from an
+    `apply` for the type the host is registering, whose extensions run before
+    LiteGraph has it.
 12. The disposer unregisters the type and removes it from the index only if
     the type is still the one this call registered. A type the host has
     registered under the same name since is left alone.
 13. `refresh()` asks the host to reload the node definitions and resolves to
-    the host's answer: `false` when the host did not apply them (it answers
-    so when late custom-node hooks are owed and the fetch fails). A failure
-    of the reload itself rejects, as the host's reload does. The outcome
+    the host's answer: `false` when the host did not apply them, which it
+    answers when the server refuses the fetch with an error status; the
+    definitions the editor has are kept and `onRefreshed` is not told. The
+    host checks the status on every reload and reports a refusal
+    (`node_defs_reload_failed`, or `late_extension_failed` while late
+    custom-node hooks are owed). A failure of the reload itself, such as a
+    network error, rejects, as the host's reload does. The outcome
     stays a `boolean`, as the error-handling guidance asks for a command, so
     a caller can tell an unapplied reload from a failed one.
 14. `onRefreshed(listener)` is told after every reload, whoever asked for it,
@@ -241,7 +257,9 @@ is a subgraph placed as a node: `registerSubgraphNodeDef` does not call
       each reached extension's hooks, in the order the extensions were made.
       A failing hook is reported and the others run. A hook removed during a
       delivery, even by an earlier hook of it, is skipped, and one added
-      during it waits for the next. A hook sees a frozen copy and changes the
+      during it waits for the next. A callback is known by the application
+      that added it, not by the function, so a function two extensions share
+      is still called for the one that stays. A hook sees a frozen copy and changes the
       outcome only where its contract says (`onBeforeConnect` refuses with
       `false`, `onSerialize` returns fields, the property event's `setValue`
       and `reject`, `onDragOver` and `onDrop` answer `true`); with several
@@ -306,7 +324,10 @@ is a subgraph placed as a node: `registerSubgraphNodeDef` does not call
     `onRemoved` and `onSerialize`. They are applied as an extension of that
     registration only, run before any other extension's hooks on the type,
     and are removed by its disposer; a type registered later under the same
-    name does not get them.
+    name does not get them. They reach only nodes made from that
+    registration's class, or a class that extends it: a node of an earlier
+    definition of the name that joins a graph again after the type was
+    defined anew does not hear the new definition's hooks.
 
 Both join paths deliver `onCreated` before `onConfigured`, although
 `LGraphNode.configure` can run before or after `LGraph.add`:
@@ -340,10 +361,16 @@ flowchart TD
     the type's own method refuses, the hooks are not asked; otherwise any
     hook returning `false` refuses. A hook that throws is reported and does
     not refuse. LiteGraph makes the link at the slot indices it read before
-    it asked, so the dispatcher reads both ends (node, graph, slot at the
-    index) before the hooks run, and refuses the link unless each node is
-    still in that graph with the same slot at that index. A subgraph's own
-    input or output at the other end is not checked.
+    it asked, so a hook that removes a slot through the API, or a legacy
+    method asked after the hooks (the other node's `onConnectOutput`, or a
+    wrapper a pack put over the dispatcher), could have the link land on the
+    slot that moved into its place. No wrapper sees every callback, so the
+    check is the host's, where it commits the link: `connectSlots`,
+    `SubgraphInput.connect` and `SubgraphOutput.connect` read each node's
+    membership of the graph and its slot at the index before they ask, and
+    refuse the link (`null`, or no link from a subgraph's input or output)
+    unless both are unchanged once every callback has answered. A subgraph's
+    own input or output at the other end is not a node and is not checked.
 27. `onPropertyChanged` hears every call of the node's `onPropertyChanged`:
     `setProperty`, and each property `configure` restores. `value` is a lazy
     frozen copy as a workflow would save it. `setValue` stores a copy of a
@@ -413,7 +440,10 @@ flowchart TD
     throws or gives something unusable is left out for that open and
     reported the first time only. An empty submenu needs `run` to stay
     visible. Entries sort by `order` (default 0), ties in insertion order. A
-    `run` for a node removed since the menu opened does nothing.
+    `run`, in a submenu too, does nothing for a node removed since the menu
+    opened, or once the extension that added the item is disposed: the entry
+    the menu holds checks at the click that the item is still one of the
+    node's, since disposal cannot reach a closure the menu kept.
 32. `typeColor(type)` reads the host's link-color table
     (`LGraphCanvas.link_type_colors`); a missing or empty entry gives
     `undefined`, not the default link color.
@@ -579,26 +609,6 @@ flowchart TD
 These are places where the code at this point does not yet meet the decisions
 above. Each is open work for this API, not part of the contract.
 
-- **Registration (decisions 3, 6, 11, 17).** The duplicate-type check runs
-  before every read of the definition the pack controls (a slot name behind
-  a getter can define the same type first) and does not see a host
-  registration still in progress. A sparse slot list passes the check and
-  fails when the node is constructed. An `apply` that unregisters its type
-  and defines a replacement still stores its hooks on the replacement. A
-  node of a replaced type, removed and added again, hears the replacement
-  definition's own hooks. Two registrations of one callback function, one
-  disposed by an earlier hook of the same delivery, both still run.
-- **Definitions (decision 8).** An optional input named by an integer, such
-  as `0`, is listed before the required inputs.
-- **Refresh (decision 13).** The ordinary reload does not check the HTTP
-  status: an error reply that is JSON becomes an empty definition list,
-  `onRefreshed` listeners run, and `refresh()` resolves `true`.
-- **Connections (decision 26).** The check runs inside the dispatcher, so a
-  legacy `onConnectOutput` or `onConnectInput` that runs after it can still
-  remove the input the hooks accepted, and the host then commits the link to
-  the slot at that index.
-- **Menus (decision 31).** A menu entry the host collected before the
-  extension was disposed still runs the removed `run` when clicked.
 - **Backend.** The backend check and `/extension_packs` are a release
   dependency: ComfyUI's side is
   [Comfy-Org/ComfyUI#17746](https://github.com/Comfy-Org/ComfyUI/pull/17746),
@@ -665,7 +675,10 @@ above. Each is open work for this API, not part of the contract.
   palette; the extension store lists the extension as always enabled,
   reading its name from `defs/nodeTypeHooksName.ts`, the host's only runtime
   import from the API's folder. Every other host call reaches the API
-  through the node API host.
+  through the node API host. LiteGraph's three link commits refuse a link
+  whose ends a connection callback moved (decision 26, `slotStays` in
+  `node/slotLinks.ts`), and the editor's definition reload checks the HTTP
+  status on every reload (decision 13).
 
 ## What this feature replaces or duplicates, and why
 

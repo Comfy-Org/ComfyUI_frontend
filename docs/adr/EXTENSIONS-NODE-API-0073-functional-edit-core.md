@@ -154,8 +154,11 @@ flowchart TD
      negative. `size` goes through `node.setSize`, so `onResize` runs.
 7. `sizeConstraints` resizes the node into the limits once: width and height
    are clamped between their minimum and maximum, and `autoHeight` first
-   sets the height to `node.computeSize()`'s. A later resize, by the user or
-   a pack, is not held to them. Each limit must be finite and zero or more,
+   sets the height to `node.computeSize()`'s. The fitted size is requested
+   once, through `setSize`; the node's `onResize` runs inside that call and
+   may set another size, which stands, so the size when the call returns can
+   be outside the limits. A later resize, by the user or a pack, is not held
+   to them either. Each limit must be finite and zero or more,
    and a minimum may not exceed its maximum. Holding a node to limits needs a
    host owner both renderers honor (see "Known gaps in the host").
 8. `resizable` sets the node's flag to the pack's choice unless the node is
@@ -183,7 +186,12 @@ flowchart TD
     add to a subgraph that is not on screen. It makes the node with
     `LiteGraph.createNode`, with its title and position, before `LGraph.add`,
     so the graph's `onNodeAdded`, the layout store and `node:added` see it
-    where it will stay. It returns the new node's handle, or `undefined`,
+    where it will stay. The title goes through `createNode`'s options, as
+    `createNode` replaces a falsy title argument with the type's, so a title
+    given as `''` is kept. The type is checked to be registered first; then
+    making the node and adding it run inside the edit's one transaction, so
+    an edit the node's creation callback (`onNodeCreated`) makes through the
+    API is part of the same undo step. It returns the new node's handle, or `undefined`,
     adding nothing, if the graph is gone or the type is not registered: a
     pack's backend nodes may not be installed, so a missing type is a state
     of the app, not a mistake in the pack.
@@ -271,7 +279,11 @@ flowchart TD
       finds a slot only when it is the only one so named.
     - A `widget` the node does not have, or one another input is already the
       socket of, is refused; `widget: null` (or `undefined`, when the patch
-      names it) makes the input a plain socket again. A `position` for an
+      names it) makes the input a plain socket again and drops the position
+      the host's layout wrote on it from the widget's row, which the canvas
+      would otherwise draw and the workflow save as the input's own; a
+      position in the same patch is then applied, and an input that had no
+      widget keeps its position. A `position` for an
       input that is, or the same patch makes, a widget's socket is refused:
       the host places such an input by its widget and does not save its
       position.
@@ -287,7 +299,10 @@ flowchart TD
 17. `addInput` and `addOutput` append through `node.addInput` and
     `node.addOutput` with the same name rule. `removeSlot` removes one through
     `removeInput` or `removeOutput`, which drop its links and shift the later
-    slots' links.
+    slots' links, floating links (links detached onto a reroute) included:
+    `removeInput` now removes the floating links into the input it removes,
+    once the inputs are replaced, instead of leaving them at that index for
+    the input that moves up (a core change; #24205 does not cover it).
 18. `reorderSlots(node, side, names)` takes each slot's name once and moves
     the slots with their links in one step. Inputs go through the host's
     `captureInputLayout` and `replaceNodeInputs`; outputs through one
@@ -295,8 +310,9 @@ flowchart TD
     re-pointed link before it moves any, then the output list. Link ids do
     not change. Floating links (links detached onto a reroute) of reordered
     outputs move with them; floating links of reordered inputs keep their
-    slot index, as `replaceNodeInputs` leaves them
-    ([#23466](https://github.com/Comfy-Org/ComfyUI_frontend/issues/23466)).
+    slot index, as `replaceNodeInputs` leaves them, on whichever input moved
+    there ([#23466](https://github.com/Comfy-Org/ComfyUI_frontend/issues/23466);
+    the host fix is PR #24205, see "Known gaps in the host").
     If the store refuses, nothing moves and the call answers `false`. An
     order the slots already have answers `true` with no step and no version
     change.
@@ -306,6 +322,10 @@ flowchart TD
     `disconnect(slot, target?)` removes an input's link, or an output's links
     (only those to `target` if given), through `disconnectInput` and
     `disconnectOutput`; a slot with no link answers `false` without a step.
+    The host's `disconnectOutput` given a target removes its first link to
+    that node only, so for a target the API calls it once for each link to
+    it, in the same step, and an output that feeds two inputs of the target
+    loses both links.
     `moveLinks(from, to)` re-points every link of one output to another output
     of the same node through `updateEndpoints`, keeping the link ids, and
     does not check types again, so a pack can move links before retyping the
@@ -384,17 +404,29 @@ leaves the graph feeding execution the wrong data.
     JSDoc state what a load gives back, and `loadLimits.test.ts` records it
     and fails when the host starts keeping such an edit. A pack that needs
     one to last applies it again where the node is created or configured,
-    after accounting for the slots the load reconstructed.
+    except a rename of a declared input: after a load the node has the
+    declared input back, unlinked, beside the renamed one that holds the
+    saved link, so the same rename is refused as a name the node already
+    has. Such a pack reconciles the two slots itself (links the renamed
+    input's source to the declared input and removes the renamed one), or
+    shows another name with `label`, which a load keeps.
 
 25. Widget saving. A backend type, a Note, a MarkdownNote and a PrimitiveNode
     turn `serialize_widgets` on in their constructors, and the flag is not
     saved, so after `false` the next load turns saving on again with no
     widget values to restore. `serializeWidgets: false` is applied as the
-    host applies it, except on a Note, a MarkdownNote or a PrimitiveNode,
-    where it is refused: their widgets hold only what the user typed and no
-    pack owns those types, so a pack would erase the user's content at the
-    next undo, redo or reload. None of the six stored V2 calls that turn
-    widget saving off targets those types.
+    host applies it, except on a node whose widgets hold only what the user
+    typed (a note's text, a primitive's value), where it is refused: no pack
+    owns such a node, so a pack would erase the user's content at the next
+    undo, redo or reload. The node's class says so with the static
+    `widgetsHoldUserContent`, a field of LiteGraph's node constructor type
+    that the host's `Note`, `MarkdownNote` and `PrimitiveNode` classes set,
+    so the rule has one owner and a type that later holds user content (a
+    pack's own note) opts in by setting it. The refusal names the property,
+    not the types. Two other host lists name the notes (the change tracker's
+    non-executable types, app mode's hidden types); they answer other
+    questions and stay as they are. None of the six stored V2 calls that
+    turn widget saving off targets those three types.
 26. A subgraph node's slots are its subgraph's inputs and outputs, which
     execution maps by position; an edit to the node's own list would feed a
     source to another input. So every slot edit on a subgraph node is
@@ -404,7 +436,8 @@ leaves the graph feeding execution the wrong data.
     that places the subgraph, because the host leaves any other placement
     in the old order with its links feeding other inputs; a subgraph placed
     once inside a subgraph that is itself placed several times is one node.
-    Floating input links keep their index, as in decision 18. A pack edits
+    Floating input links keep their index, as in decision 18 (#23466, PR
+    #24205). A pack edits
     the subgraph's inputs and outputs in the subgraph.
 
 ### Local edits and shared delivery
@@ -493,7 +526,7 @@ document is no longer open.
 | `updateNode` `collapsed`                 | `LGraphNode.collapse(true)`: flag and a `set_node_field` graph intent                                                                                                   | One step                                                               | `false`                                |
 | `updateNode` `color`, `bgColor`, `shape` | `LGraphNode` setters: node state store                                                                                                                                  | One step                                                               | `false`                                |
 | `updateNode` `properties`                | `LGraphNode.setProperty` per name: `onPropertyChanged`, property widgets; `undefined` then deletes the name                                                             | One step                                                               | `false`                                |
-| `updateNode` `serializeWidgets`          | `LGraphNode.serialize_widgets`; `false` refused on a Note, MarkdownNote or PrimitiveNode (decision 25)                                                                  | One step; a load gives the type's own value                            | `false`                                |
+| `updateNode` `serializeWidgets`          | `LGraphNode.serialize_widgets`; `false` refused on a node whose class sets `widgetsHoldUserContent` (decision 25)                                                       | One step; a load gives the type's own value                            | `false`                                |
 | `updateNode` `position`                  | `LGraphNode.pos` setter: a `moveNode` layout operation                                                                                                                  | One step                                                               | `false`                                |
 | `updateNode` `size`, `sizeConstraints`   | `LGraphNode.setSize`: a `resizeNode` layout operation, then `onResize`                                                                                                  | One step                                                               | `false`                                |
 | `updateNode` `resizable`                 | `LGraphNode.resizable` (node state store); the host's unpin sets it to `true`                                                                                           | No step: not saved                                                     | `false`                                |
@@ -544,37 +577,6 @@ Nothing in this feature existed only for the sandbox the earlier API was
 built for. Its closed proxies are replaced by frozen objects, as in
 ADR-EXTENSIONS-NODE-API-0070.
 
-## Known gaps in the current code
-
-These are places where the code at this point does not yet meet the decisions
-above. Each is open work for this API, not part of the contract.
-
-- **Creation (decision 11).** `LiteGraph.createNode`, and the
-  `onNodeCreated` it calls, run before `EditRunner.apply`, so an edit a
-  creation callback makes through V4 is a separate transaction from the
-  add. An empty `init.title` is replaced by the type's title, because
-  `createNode` falls back on a falsy title.
-- **Size constraints (decision 7).** `setSize` calls `onResize`
-  synchronously, so a node's own resize callback can replace the fitted size
-  before the edit returns.
-- **Widget sockets (decision 16).** The host writes a measured position into
-  a widget input's `pos`; `widget: null` removes the binding but leaves that
-  position, which is then saved as an explicit one.
-- **Removing an input (decision 17).** `removeInput` leaves a floating link
-  at the removed index, where it then addresses the input that takes that
-  index.
-- **Targeted disconnect (decision 19).** `disconnect(output, target)` uses
-  the host's `disconnectOutput(slot, target)`, which stops at the first link
-  to `target`; a second link from the output to the same node stays, and
-  the call answers `true`.
-- **Reapplying a slot edit (decision 24).** Applying a rename of a declared
-  input again after a load fails: the load has made both the declared input
-  and the renamed one, so the rename is refused as a duplicate name. The
-  pack has to reconcile the two slots and their links instead.
-- **Connections.** A legacy connection callback can still move an endpoint
-  after the before-connect check (ADR-EXTENSIONS-NODE-API-0071, "Known gaps
-  in the current code").
-
 ## Known gaps in the host
 
 - **A load gives back slots a type makes** (decision 24). Ticket draft:
@@ -600,10 +602,18 @@ above. Each is open work for this API, not part of the contract.
   honor". _Direction:_ a min/max size in the node's layout state, read by
   `useNodeResize` and by LiteGraph's resize.
 - **Floating links on an input reorder** (decision 18).
-  `replaceNodeInputs` does not move floating links, while `removeInput` and
-  `removeOutput` do, so the link keeps its index and addresses whichever
-  input now has it
-  ([#23466](https://github.com/Comfy-Org/ComfyUI_frontend/issues/23466)).
+  `replaceNodeInputs` does not move floating links, so after an input
+  reorder a floating link names whichever input moved to its index. This is
+  a wrong result, not an intended one, and the API does not work around it.
+  Filed as
+  [#23466](https://github.com/Comfy-Org/ComfyUI_frontend/issues/23466); the
+  fix is open as
+  [PR #24205](https://github.com/Comfy-Org/ComfyUI_frontend/pull/24205),
+  which makes `replaceNodeInputs` move each floating link to its input's
+  new slot. The V4 tests that cover it (`editEdges`, `editContracts`,
+  `loadLimits`) assert the result #24205 gives and are marked `it.fails`
+  with the PR in their titles, so they are switched to plain tests once it
+  lands.
 - **No intent for re-pointed links or slot edits** (decision 27,
   [#23382](https://github.com/Comfy-Org/ComfyUI_frontend/issues/23382)). The
   API refuses these edits on a shared document and applies them everywhere
