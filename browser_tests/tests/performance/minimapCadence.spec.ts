@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 import {
   expectFramesToSpanMeasurementWindow,
   measureCadence
@@ -23,17 +24,19 @@ test.describe('Minimap change cadence performance', { tag: ['@perf'] }, () => {
       if (!node) throw new Error('Graph has no nodes')
       return String(node.id)
     })
+    // Progress only renders for a job owned by the active workflow, so queue one.
+    const jobId = await new ExecutionHelper(comfyPage).run({ start: false })
 
     const measurement = await measureCadence(
       comfyPage,
       'minimap-progress-execution-cadence',
       (update) =>
         comfyPage.page.evaluate(
-          ({ nodeId, update }) => {
+          ({ nodeId, update, jobId }) => {
             const api = window.app?.api
             if (!api) throw new Error('window.app.api is not available')
             api.dispatchCustomEvent('progress_state', {
-              prompt_id: 'minimap-perf-job',
+              prompt_id: jobId,
               nodes: {
                 [nodeId]: {
                   value: update,
@@ -41,12 +44,12 @@ test.describe('Minimap change cadence performance', { tag: ['@perf'] }, () => {
                   state: update % 2 === 0 ? 'finished' : 'running',
                   node_id: nodeId,
                   display_node_id: nodeId,
-                  prompt_id: 'minimap-perf-job'
+                  prompt_id: jobId
                 }
               }
             })
           },
-          { nodeId, update }
+          { nodeId, update, jobId }
         )
     )
     expectFramesToSpanMeasurementWindow(measurement)
