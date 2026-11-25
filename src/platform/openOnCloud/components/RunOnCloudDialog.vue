@@ -9,6 +9,7 @@
   />
   <DeploySetupCard
     v-else-if="state.kind === 'deploySetup'"
+    :body="$t('openOnCloud.deploySetupDialog.missingNodesBody')"
     :video-sources="DEPLOY_VIDEO_SOURCES"
     :poster-src="DEPLOY_VIDEO_POSTER_SRC"
     @done="emit('done')"
@@ -23,7 +24,7 @@
     "
     :needs-consent="state.kind !== 'ready'"
     :checking="state.kind !== 'ready' && checkRequested"
-    @request-open="startCheck"
+    @check="startCheck"
     @done="emit('done')"
     @dismiss="emit('dismiss')"
   />
@@ -33,7 +34,7 @@
 import { useTelemetry } from '@comfyorg/telemetry'
 import type { RunOnCloudTelemetryEvent } from '@comfyorg/telemetry/types'
 import { storeToRefs } from 'pinia'
-import { computed, onBeforeUnmount, ref, toRaw, watch } from 'vue'
+import { computed, ref, toRaw, watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
@@ -42,10 +43,6 @@ import DeploySetupCard from '@/platform/openOnCloud/components/DeploySetupCard.v
 import RunOnCloudCard from '@/platform/openOnCloud/components/RunOnCloudCard.vue'
 import MissingModelsCard from '@/platform/openOnCloud/components/MissingModelsCard.vue'
 import type { RunOnCloudModalState } from '@/platform/openOnCloud/runOnCloudModalState'
-import {
-  openWorkflowOnCloud,
-  reserveCloudTab
-} from '@/platform/openOnCloud/openWorkflowOnCloud'
 import { runOnCloudModalState } from '@/platform/openOnCloud/runOnCloudModalState'
 import { useCloudWorkflowCheckStore } from '@/platform/openOnCloud/stores/cloudWorkflowCheckStore'
 import { useLocalModelUploadStore } from '@/platform/openOnCloud/stores/localModelUploadStore'
@@ -67,15 +64,10 @@ const emit = defineEmits<{
 }>()
 
 const checkRequested = ref(false)
-let reservation: ReturnType<typeof reserveCloudTab>
-
-onBeforeUnmount(() => reservation?.close())
 
 function startCheck() {
-  if (checkRequested.value) return
-  if (!requestCheck?.()) return
+  if (checkRequested.value || !requestCheck?.()) return
   checkRequested.value = true
-  reservation = reserveCloudTab()
 }
 
 const { state: check } = storeToRefs(useCloudWorkflowCheckStore())
@@ -140,17 +132,6 @@ watch(
   state,
   (shown) => {
     if (shown.kind === 'checking') return
-    const pending = reservation
-    reservation = undefined
-    if (pending && shown.kind === 'ready' && !shown.uncheckedInputs.length) {
-      void openWorkflowOnCloud(
-        pending.tabs,
-        shown.asksToSignIn ? undefined : shown.workspaceId
-      ).finally(pending.close)
-      emit('done')
-      return
-    }
-    pending?.close()
     useTelemetry()?.trackRunOnCloudEvent(dialogShownEvent(shown))
   },
   { immediate: true }

@@ -9,10 +9,7 @@ import { computed, nextTick } from 'vue'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import {
-  openWorkflowOnCloud,
-  reserveCloudTab
-} from '@/platform/openOnCloud/openWorkflowOnCloud'
+import { openWorkflowOnCloud } from '@/platform/openOnCloud/openWorkflowOnCloud'
 import { openRunOnCloudDialog } from '@/platform/openOnCloud/openRunOnCloudDialog'
 import { checkCloudCompatibility } from '@/platform/openOnCloud/cloudCompatibilityApi'
 import type {
@@ -59,9 +56,9 @@ vi.mock(import('@/platform/openOnCloud/openRunOnCloudDialog'), { spy: true })
 
 await import('@/platform/openOnCloud/components/RunOnCloudDialog.vue')
 
+const checkLabel = 'Check compatibility'
 const openLabel = 'Open on Comfy Cloud'
-const reservedTabs = { open: vi.fn(), openDisowned: vi.fn() }
-const releaseTab = vi.fn()
+const dialogName = 'Run your workflows on Comfy Cloud'
 
 function renderCloudButton() {
   return render(
@@ -75,6 +72,10 @@ function renderCloudButton() {
 
 async function requestCloudCheck(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByTestId('cloud-button'))
+  await user.click(await screen.findByRole('button', { name: checkLabel }))
+}
+
+async function openCheckedWorkflow(user: ReturnType<typeof userEvent.setup>) {
   await user.click(await screen.findByRole('button', { name: openLabel }))
 }
 
@@ -88,10 +89,6 @@ function deferredVerdict() {
 
 describe('Cloud button compatibility checks', () => {
   beforeEach(() => {
-    vi.mocked(reserveCloudTab).mockReturnValue({
-      tabs: reservedTabs,
-      close: releaseTab
-    })
     vi.mocked(openWorkflowOnCloud).mockResolvedValue(undefined)
     Object.assign(useFeatureFlags().flags, {
       openOnCloudModelUploadEnabled: true
@@ -241,30 +238,26 @@ describe('Cloud button compatibility checks', () => {
     await user.keyboard('{Enter}')
 
     const dialog = await screen.findByRole('dialog', {
-      name: 'Run on Comfy Cloud'
+      name: dialogName
     })
     expect(
       within(dialog).getByText(
-        /Comfy Cloud runs ComfyUI workflows on cloud GPUs/
-      )
-    ).toBeVisible()
-    expect(
-      within(dialog).getByText(
-        /sends this workflow’s node types and model filenames/
+        'Checking will send this workflow’s node and model names to Comfy Cloud.'
       )
     ).toBeVisible()
     expect(checkCloudCompatibility).not.toHaveBeenCalled()
 
-    expect(reserveCloudTab).not.toHaveBeenCalled()
+    await user.click(within(dialog).getByRole('button', { name: checkLabel }))
+
+    const open = await within(dialog).findByRole('button', { name: openLabel })
+    expect(checkCloudCompatibility).toHaveBeenCalledOnce()
     expect(openWorkflowOnCloud).not.toHaveBeenCalled()
 
-    await user.click(within(dialog).getByRole('button', { name: openLabel }))
+    await user.click(open)
 
-    await waitFor(() =>
-      expect(openWorkflowOnCloud).toHaveBeenCalledExactlyOnceWith(
-        reservedTabs,
-        undefined
-      )
+    expect(openWorkflowOnCloud).toHaveBeenCalledExactlyOnceWith(
+      undefined,
+      undefined
     )
     expect(dialog).not.toBeInTheDocument()
     expect(checkCloudCompatibility).toHaveBeenCalledOnce()
@@ -284,7 +277,7 @@ describe('Cloud button compatibility checks', () => {
     await user.click(screen.getByTestId('cloud-button'))
 
     expect(
-      await screen.findByRole('dialog', { name: 'Run on Comfy Cloud' })
+      await screen.findByRole('dialog', { name: dialogName })
     ).toBeVisible()
   })
 
@@ -306,7 +299,8 @@ describe('Cloud button compatibility checks', () => {
     const user = userEvent.setup({ pointerEventsCheck: 0 })
 
     await requestCloudCheck(user)
-    await waitFor(() => expect(openWorkflowOnCloud).toHaveBeenCalledOnce())
+    await openCheckedWorkflow(user)
+    expect(openWorkflowOnCloud).toHaveBeenCalledOnce()
 
     await user.click(
       screen.getByRole('button', { name: 'Resume model upload' })
@@ -479,9 +473,9 @@ describe('Cloud button compatibility checks', () => {
 
     await user.click(screen.getByTestId('cloud-button'))
     const dialog = await screen.findByRole('dialog', {
-      name: 'Run on Comfy Cloud'
+      name: dialogName
     })
-    await user.click(within(dialog).getByRole('button', { name: openLabel }))
+    await user.click(within(dialog).getByRole('button', { name: checkLabel }))
 
     expect(
       within(dialog).getByRole('button', { name: 'Checking Comfy Cloud…' })
@@ -493,7 +487,6 @@ describe('Cloud button compatibility checks', () => {
       gaps: { models: [model], nodePacks: [] }
     })
     expect(await within(dialog).findByText(model.name)).toBeVisible()
-    expect(releaseTab).toHaveBeenCalledOnce()
     expect(openWorkflowOnCloud).not.toHaveBeenCalled()
     expect(screen.getByRole('dialog')).toBe(dialog)
     expect(checkCloudCompatibility).toHaveBeenCalledOnce()
@@ -504,28 +497,28 @@ describe('Cloud button compatibility checks', () => {
     const user = userEvent.setup()
     await user.click(screen.getByTestId('cloud-button'))
     const dialog = await screen.findByRole('dialog', {
-      name: 'Run on Comfy Cloud'
+      name: dialogName
     })
 
-    await user.click(within(dialog).getByRole('button', { name: 'Cancel' }))
+    await user.click(within(dialog).getByRole('button', { name: 'Close' }))
 
     expect(dialog).not.toBeInTheDocument()
     expect(checkCloudCompatibility).not.toHaveBeenCalled()
   })
 
-  it('closes the reserved tab and skips the handoff if the user cancels during a check', async () => {
+  it('skips the handoff if the user closes the dialog during a check', async () => {
     const response = deferredVerdict()
     vi.mocked(checkCloudCompatibility).mockReturnValue(response.promise)
     renderCloudButton()
     const user = userEvent.setup()
     await requestCloudCheck(user)
 
-    await user.click(screen.getByRole('button', { name: 'Cancel' }))
+    await user.click(screen.getByRole('button', { name: 'Close' }))
     response.resolve({ kind: 'canOpen' })
     await response.promise
     await nextTick()
 
-    expect(releaseTab).toHaveBeenCalledOnce()
+    expect(screen.queryByRole('dialog')).toBeNull()
     expect(openWorkflowOnCloud).not.toHaveBeenCalled()
   })
 
@@ -547,7 +540,7 @@ describe('Cloud button compatibility checks', () => {
     await user.click(screen.getByTestId('cloud-button'))
     expect(checkCloudCompatibility).toHaveBeenCalledOnce()
 
-    await user.click(await screen.findByRole('button', { name: openLabel }))
+    await user.click(await screen.findByRole('button', { name: checkLabel }))
 
     expect(await screen.findByTestId('missing-models-card')).toBeVisible()
     expect(checkCloudCompatibility).toHaveBeenCalledTimes(2)
@@ -574,7 +567,8 @@ describe('Cloud button compatibility checks', () => {
     expect(openWorkflowOnCloud).not.toHaveBeenCalled()
     vi.mocked(checkCloudCompatibility).mockResolvedValue({ kind: 'canOpen' })
     await requestCloudCheck(user)
-    await waitFor(() => expect(openWorkflowOnCloud).toHaveBeenCalledOnce())
+    await openCheckedWorkflow(user)
+    expect(openWorkflowOnCloud).toHaveBeenCalledOnce()
     expect(checkCloudCompatibility).toHaveBeenCalledTimes(2)
   })
 
@@ -588,9 +582,10 @@ describe('Cloud button compatibility checks', () => {
     vi.mocked(checkCloudCompatibility).mockResolvedValue({ kind: 'canOpen' })
     await user.click(screen.getByTestId('cloud-button'))
     expect(checkCloudCompatibility).toHaveBeenCalledOnce()
-    await user.click(await screen.findByRole('button', { name: openLabel }))
+    await user.click(await screen.findByRole('button', { name: checkLabel }))
+    await openCheckedWorkflow(user)
 
-    await waitFor(() => expect(openWorkflowOnCloud).toHaveBeenCalledOnce())
+    expect(openWorkflowOnCloud).toHaveBeenCalledOnce()
     expect(checkCloudCompatibility).toHaveBeenCalledTimes(2)
   })
 
@@ -646,7 +641,7 @@ describe('Cloud button compatibility checks', () => {
     )
   })
 
-  it('opens the dialog when Cloud is missing nodes or models', async () => {
+  it('says nodes are missing and offers a Build when Cloud lacks a node pack', async () => {
     vi.mocked(checkCloudCompatibility).mockResolvedValue({
       kind: 'missing',
       gaps: { nodePacks: ['ImpactWildcard'], models: [] }
@@ -656,11 +651,15 @@ describe('Cloud button compatibility checks', () => {
 
     await requestCloudCheck(user)
 
-    await waitFor(() =>
-      expect(useDialogStore().isDialogOpen('global-run-on-comfy-cloud')).toBe(
-        true
+    expect(
+      await screen.findByText(
+        /^Comfy Cloud doesn’t have some of the nodes this workflow uses\./
       )
-    )
+    ).toBeVisible()
+    expect(
+      screen.getByRole('link', { name: 'Deploy on Platform' })
+    ).toBeVisible()
+    expect(screen.queryByRole('button', { name: openLabel })).toBeNull()
     expect(useToast().toasts).toEqual([])
   })
 

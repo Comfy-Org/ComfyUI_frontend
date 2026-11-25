@@ -35,11 +35,11 @@
           {{ $t('openOnCloud.deploySetupDialog.title') }}
         </DialogTitle>
         <p class="my-0 text-sm/5 text-muted-foreground">
-          {{ $t('openOnCloud.deploySetupDialog.body') }}
+          {{ body ?? $t('openOnCloud.deploySetupDialog.body') }}
         </p>
         <ul class="my-0 flex list-none flex-col gap-2 p-0">
           <li
-            v-for="point in points"
+            v-for="point in points ?? buildPoints"
             :key="point"
             class="flex items-start gap-2.5 text-sm/5 text-foreground/75"
           >
@@ -50,6 +50,9 @@
             {{ point }}
           </li>
         </ul>
+        <p v-if="note" class="my-0 text-sm/5 text-muted-foreground">
+          {{ note }}
+        </p>
         <DeploymentDocsLink class="@xl:hidden" />
       </div>
 
@@ -57,24 +60,26 @@
         class="flex flex-col-reverse gap-2.5 @xl:flex-row @xl:items-center @xl:justify-end"
       >
         <DeploymentDocsLink class="hidden @xl:mr-auto @xl:inline-flex" />
-        <Button
-          variant="secondary"
-          size="lg"
-          class="w-full no-underline @xl:w-auto"
-          as="a"
-          :href="platformUrl"
-          target="_blank"
-          :rel="platformLinkRel()"
-          @click="openPlatform"
-          @auxclick.middle="openPlatform($event, false)"
-        >
-          {{ $t('deployToComfyApi.deployOnPlatform') }}
-          <i
-            class="icon-[lucide--square-arrow-out-up-right]"
-            aria-hidden="true"
-          />
-        </Button>
-        <DeploySetupAgentMenu @done="emit('done')" />
+        <slot name="actions">
+          <Button
+            variant="secondary"
+            size="lg"
+            class="w-full no-underline @xl:w-auto"
+            as="a"
+            :href="platformUrl"
+            target="_blank"
+            :rel="platformLinkRel()"
+            @click="openPlatform"
+            @auxclick.middle="openPlatform($event, false)"
+          >
+            {{ $t('deployToComfyApi.deployOnPlatform') }}
+            <i
+              class="icon-[lucide--square-arrow-out-up-right]"
+              aria-hidden="true"
+            />
+          </Button>
+          <DeploySetupAgentMenu @done="emit('done')" />
+        </slot>
       </footer>
     </section>
   </DeploymentDialogFrame>
@@ -101,9 +106,18 @@ import {
   platformLinkWindowFeatures
 } from '@/platform/workspace/utils/platformLink'
 
-const { videoSources = [], posterSrc = '' } = defineProps<{
+const {
+  videoSources = [],
+  posterSrc = '',
+  body,
+  points,
+  note
+} = defineProps<{
   videoSources?: ComponentProps<typeof Video>['sources']
   posterSrc?: string
+  body?: string
+  points?: string[]
+  note?: string
 }>()
 
 const emit = defineEmits<{
@@ -112,17 +126,17 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const buildPoints = [
+  t('openOnCloud.deploySetupDialog.pointNodes'),
+  t('openOnCloud.deploySetupDialog.pointGpu'),
+  t('openOnCloud.deploySetupDialog.pointPricing')
+]
 const platformUrl = computed(() =>
   platformSurfaceLink(
     '/profile/deploy?onboarding=custom_comfy_cloud',
     'deploy-setup-card'
   )
 )
-const points = [
-  t('openOnCloud.deploySetupDialog.pointNodes'),
-  t('openOnCloud.deploySetupDialog.pointGpu'),
-  t('openOnCloud.deploySetupDialog.pointPricing')
-]
 
 function trackPlatformClick() {
   useTelemetry()?.trackUiButtonClicked({

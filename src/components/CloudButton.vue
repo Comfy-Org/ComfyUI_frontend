@@ -3,11 +3,7 @@
     v-if="showCloudAction || isUploading"
     variant="secondary"
     size="icon"
-    :tooltip="
-      isChecking || isUploading
-        ? buttonLabel
-        : t('openOnCloud.cloudButton.checkTooltip')
-    "
+    :tooltip="buttonLabel"
     tooltip-side="bottom"
     :aria-label="buttonLabel"
     :aria-busy="isChecking || undefined"

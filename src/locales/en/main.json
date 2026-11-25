@@ -4426,6 +4426,7 @@
     "deploySetupDialog": {
       "title": "Run your workflows on Comfy Cloud",
       "body": "Deploy your local setup to Comfy Cloud as a Build, then use it in ComfyUI or call it as an autoscaling API.",
+      "missingNodesBody": "Comfy Cloud doesn’t have some of the nodes this workflow uses. Deploy your local setup to Comfy Cloud as a Build, then use it in ComfyUI or call it as an autoscaling API.",
       "pointNodes": "Bring your custom nodes and models",
       "pointGpu": "Run on powerful cloud GPUs",
       "pointPricing": "Pay only while your GPU workers are up, plus storage",
@@ -4447,19 +4448,19 @@
     "desktopTransferUnavailable": "Open on Comfy Cloud is currently unavailable for this editor.",
     "downloadedDetail": "Drop it onto Comfy Cloud in your browser to open it there.",
     "cloudButton": {
-      "tooltip": "Open workflow on Comfy Cloud",
-      "checkTooltip": "Open this workflow on Comfy Cloud\nSends node types and model filenames after you confirm.",
-      "checkDisclosure": "Comfy Cloud runs ComfyUI workflows on cloud GPUs.\n\nOpening sends this workflow’s node types and model filenames to check compatibility. If it can run, the workflow is sent to Comfy Cloud and opens in a new tab.",
+      "tooltip": "Run this workflow on Comfy Cloud",
       "checking": "Checking Comfy Cloud…",
       "uploading": "Uploading models to Comfy Cloud, {percent}%",
       "resumeUpload": "Resume model upload"
     },
     "runDialog": {
-      "title": "Run on Comfy Cloud",
+      "body": "Open this workflow on Comfy Cloud, or deploy your local setup as a Build if it needs custom nodes.",
+      "pointApi": "Use it in ComfyUI or call it as an API",
+      "sends": "Checking will send this workflow’s node and model names to Comfy Cloud.",
+      "checkCompatibility": "Check compatibility",
       "ready": "Comfy Cloud has every node and model this workflow uses. It opens in a new tab, ready to run.",
     "readyWithUncheckedInputs": "Comfy Cloud has every node and model it could check. It could not check the models for these inputs: {inputs}. It opens in a new tab.",
     "uncheckedInput": "{input} on {nodeType}",
-      "asksToSignIn": "Comfy Cloud will ask you to sign in.",
       "openOnCloud": "Open on Comfy Cloud"
     },
     "agentMenu": {
