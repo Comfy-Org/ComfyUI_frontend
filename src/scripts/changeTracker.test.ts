@@ -2161,6 +2161,113 @@ describe('ChangeTracker', () => {
       expect(tracker.activeState).toEqual(hooked)
     })
 
+    describe('the end of a load', () => {
+      it('takes its own workflow graph as the loaded state, not the root graph on screen', () => {
+        const workflow = new ComfyWorkflow({
+          path: '/test/own-graph.json',
+          modified: 0,
+          size: 0
+        })
+        workflow.adoptGraph(new LGraph())
+        const tracker = markRaw(new ChangeTracker(workflow, createState(1)))
+        useWorkflowStore().activeWorkflow = fromPartial({
+          changeTracker: tracker
+        })
+        bindCanvasTracker(tracker)
+        mockCanvasState(createState(3))
+
+        tracker.adoptLoadedGraph()
+
+        expect(tracker.activeState.nodes).toEqual([])
+        expect(tracker.initialState.nodes).toEqual([])
+      })
+
+      it.for([
+        { owner: 'another tracker owns the canvas', active: true },
+        { owner: 'another workflow is active', active: false }
+      ])(
+        'leaves the loaded state and the saved baseline alone when $owner',
+        ({ active }) => {
+          const saved = createState(1)
+          const tracker = createTracker(saved)
+          const edited = structuredClone(saved)
+          edited.nodes[0].widgets_values = [2]
+          tracker.activeState = edited
+          if (active) bindCanvasTracker(createTracker(createState(4)))
+          else bindCanvasTracker(tracker)
+          if (active)
+            useWorkflowStore().activeWorkflow = fromPartial({
+              changeTracker: tracker
+            })
+          else
+            useWorkflowStore().activeWorkflow = fromPartial({
+              changeTracker: createTracker(createState(4))
+            })
+          mockCanvasState(createState(5))
+
+          tracker.adoptLoadedGraph()
+
+          expect(tracker.activeState).toBe(edited)
+          expect(tracker.initialState).toEqual(saved)
+        }
+      )
+    })
+
+    describe('the window after a restore, and the saved state', () => {
+      it('ends the window at a load, so the next change is an undo step', async () => {
+        const initial = createState(1)
+        const changed = structuredClone(initial)
+        changed.nodes[0].widgets_values = [2]
+        const tracker = createTracker(changed)
+        tracker.undoQueue.push(initial)
+        await tracker.undo()
+        const loaded = structuredClone(initial)
+        loaded.nodes[0].widgets_values = [7]
+        tracker.reset(loaded)
+        const edited = structuredClone(loaded)
+        edited.nodes[0].widgets_values = [8]
+        mockCanvasState(edited)
+
+        tracker.captureCanvasState()
+
+        expect(tracker.undoQueue.at(-1)).toEqual(loaded)
+        expect(tracker.activeState).toEqual(edited)
+      })
+
+      it.for([
+        { to: 'the saved state', modified: false },
+        { to: 'another state', modified: true }
+      ])(
+        'leaves the workflow modified $modified when a pack changes it after an undo to $to',
+        async ({ to, modified }) => {
+          const saved = createState(1)
+          const middle = structuredClone(saved)
+          middle.nodes[0].widgets_values = [2]
+          const latest = structuredClone(saved)
+          latest.nodes[0].widgets_values = [3]
+          const tracker = createTracker(saved)
+          tracker.activeState = latest
+          tracker.undoQueue.push(
+            ...(to === 'the saved state' ? [saved] : [saved, middle])
+          )
+          const workflow = useWorkflowStore().activeWorkflow
+          assert.exists(workflow)
+          vi.mocked(useWorkflowStore().getWorkflowByPath).mockReturnValue(
+            workflow
+          )
+          await tracker.undo()
+          const fitted = structuredClone(tracker.activeState)
+          fitted.nodes[0].size = [100, 178]
+          mockCanvasState(fitted)
+
+          tracker.captureCanvasState()
+
+          expect(tracker.activeState).toEqual(fitted)
+          expect(workflow.isModified).toBe(modified)
+        }
+      )
+    })
+
     it('clears Redo for an intentional resize after normalized Undo', async () => {
       const initial = createState(1)
       const changed = structuredClone(initial)
