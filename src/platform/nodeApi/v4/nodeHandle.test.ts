@@ -269,14 +269,16 @@ describe('node handles', () => {
       expect(reportError).toHaveBeenCalledOnce()
     })
 
-    it('copies text inside a property value, and reads a property saved as undefined', () => {
+    it('copies text inside a property value, and reads a property saved as undefined, one named like an Object member included', () => {
       const { node, handle } = add()
       node.properties.label = { text: 'Seed' }
       node.properties.unset = undefined
+      Object.assign(node.properties, { constructor: undefined })
 
       expect(handle.getProperties()).toEqual({ label: { text: 'Seed' } })
       expect(handle.getProperty('label')).toEqual({ text: 'Seed' })
       expect(handle.getProperty('unset')).toBeUndefined()
+      expect(handle.getProperty('constructor')).toBeUndefined()
     })
 
     it('reads one property as the workflow would save it', () => {

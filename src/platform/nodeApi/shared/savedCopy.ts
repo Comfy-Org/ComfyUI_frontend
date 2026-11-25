@@ -18,7 +18,10 @@ function savedValue(holder: object, key: string): SavedValue {
   try {
     const saved: { readonly [key: string]: SavableValue | undefined } =
       JSON.parse(JSON.stringify(holder))
-    return { ok: true, value: deepFreeze(saved[key]) }
+    return {
+      ok: true,
+      value: Object.hasOwn(saved, key) ? deepFreeze(saved[key]) : undefined
+    }
   } catch (error) {
     return { ok: false, error }
   }
