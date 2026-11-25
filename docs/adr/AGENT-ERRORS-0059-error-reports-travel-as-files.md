@@ -67,14 +67,15 @@ consolidating onto this builder must not inherit it: workflow redaction, or
 explicit user consent at upload time, is a precondition for including the
 workflow section in an auto-attached report, not a follow-up.
 
-**Settings stay on by default, redacted by key shape only.** Unlike the
-workflow section, settings are attached automatically; the report's key-shape
-redactor replaces values under recognized credential-like keys at every
-depth, but a custom node that names a secret something else reaches the
-report unredacted. The settings section already carries this caveat in its
-own warning banner, and that banner is the accepted mitigation today, not a
-precondition still to be built. Gating settings behind the same consent step
-as the workflow section is open for revisit if the banner proves insufficient.
+**Settings are excluded from automatic upload until the user reviews and
+explicitly agrees to share them.** The report's key-shape redactor replaces
+values under recognized credential-like keys at every depth, but a custom
+node that names a secret something else, `serviceCode` rather than `apiKey`,
+reaches the report unredacted. A warning banner next to a value that has
+already left the browser does not give the user a chance to withhold it, so
+the banner documents the residual risk without closing it. Settings join the
+workflow section under the same precondition: redaction or explicit
+per-setting consent at upload time, not a follow-up.
 
 **Server logs are opt-in, not attached by default.** Nobody objected during the
 comment window, so this is the author's call rather than a ratified one, and the
