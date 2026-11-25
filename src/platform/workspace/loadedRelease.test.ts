@@ -277,7 +277,8 @@ describe('handledReleaseChange', () => {
     await vi.advanceTimersByTimeAsync(0)
 
     expect(confirmUnsavedWorkBeforeSwitch).toHaveBeenCalledWith(
-      'Studio Build · production'
+      'Studio Build · production',
+      { reload: true }
     )
   })
 
@@ -294,7 +295,8 @@ describe('handledReleaseChange', () => {
     await vi.advanceTimersByTimeAsync(0)
 
     expect(confirmUnsavedWorkBeforeSwitch).toHaveBeenCalledWith(
-      'the new version'
+      'the new version',
+      { reload: true }
     )
   })
 
@@ -319,7 +321,8 @@ describe('handledReleaseChange', () => {
     await vi.advanceTimersByTimeAsync(0)
 
     expect(confirmUnsavedWorkBeforeSwitch).toHaveBeenCalledWith(
-      'the new version'
+      'the new version',
+      { reload: true }
     )
   })
 
@@ -342,7 +345,8 @@ describe('handledReleaseChange', () => {
     await vi.advanceTimersByTimeAsync(0)
 
     expect(confirmUnsavedWorkBeforeSwitch).toHaveBeenCalledWith(
-      'the new version'
+      'the new version',
+      { reload: true }
     )
     expect(reloadForDeploymentSwitch).toHaveBeenCalledOnce()
   })
@@ -366,7 +370,8 @@ describe('handledReleaseChange', () => {
     await vi.advanceTimersByTimeAsync(0)
 
     expect(confirmUnsavedWorkBeforeSwitch).toHaveBeenCalledWith(
-      'Studio Build · staging'
+      'Studio Build · staging',
+      { reload: true }
     )
   })
 
@@ -419,7 +424,8 @@ describe('handledReleaseChange', () => {
     await vi.advanceTimersByTimeAsync(0)
 
     expect(confirmUnsavedWorkBeforeSwitch).toHaveBeenCalledWith(
-      'the new version'
+      'the new version',
+      { reload: true }
     )
   })
 
@@ -456,7 +462,8 @@ describe('handledReleaseChange', () => {
     await vi.advanceTimersByTimeAsync(0)
 
     expect(confirmUnsavedWorkBeforeSwitch).toHaveBeenCalledWith(
-      'Studio Build · production'
+      'Studio Build · production',
+      { reload: true }
     )
     expect(skipLeavePromptOnce).toHaveBeenCalledOnce()
     expect(reloadForDeploymentSwitch).toHaveBeenCalledOnce()

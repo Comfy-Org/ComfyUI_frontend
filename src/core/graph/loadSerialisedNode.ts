@@ -6,6 +6,7 @@ import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useExtensionService } from '@/platform/extensions/services/extensionService'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { isModelFileName } from '@/platform/workflowErrors/missingModel/missingModelScan'
 
 export function createMissingNode(
   type: string,
@@ -84,7 +85,9 @@ function resetInvalidComboValue(
   const availableValues: readonly unknown[] = values
   if (
     widget.value == null ||
-    (resetInvalidValues && !availableValues.includes(widget.value))
+    (resetInvalidValues &&
+      !availableValues.includes(widget.value) &&
+      !(typeof widget.value === 'string' && isModelFileName(widget.value)))
   ) {
     widget.value = values[0]
   }
