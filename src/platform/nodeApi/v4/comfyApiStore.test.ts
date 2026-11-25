@@ -312,10 +312,9 @@ describe("the app's node API", () => {
     const comfy = publishedApi()
     const packId = registerPublishedTestPack(comfy)
     useExtensionService().registerExtension(uploadImageExtension)
-    const loader = () =>
-      hostNodeDef('ImageLoader', {
-        input: { required: { image: [['a.png'], { image_upload: true }] } }
-      })
+    const declared = hostNodeDef('ImageLoader', {
+      input: { required: { image: [['a.png'], { image_upload: true }] } }
+    })
     const hasUpload = (def: NodeDef) =>
       def.inputs.some((input) => input.type === 'IMAGEUPLOAD')
     const seen: string[][] = []
@@ -327,13 +326,19 @@ describe("the app's node API", () => {
     )
     onTestFinished(comfy.defs.extend(packId, hasUpload, before))
 
-    await useLitegraphService().registerNodeDef('ImageLoader', loader())
+    await useLitegraphService().registerNodeDef('ImageLoader', declared)
     const after = vi.fn()
     onTestFinished(comfy.defs.extend(packId, hasUpload, after))
 
-    expect(seen).toEqual([
-      comfy.defs.get('ImageLoader')?.inputs.map((input) => input.name)
+    expect(Object.keys(declared.input?.required ?? {})).toEqual([
+      'image',
+      'upload'
     ])
-    expect(after.mock.calls.length).toBe(before.mock.calls.length)
+    expect(seen).toEqual([['image']])
+    expect(
+      comfy.defs.get('ImageLoader')?.inputs.map((input) => input.name)
+    ).toEqual(['image'])
+    expect(before).not.toHaveBeenCalled()
+    expect(after).not.toHaveBeenCalled()
   })
 })
