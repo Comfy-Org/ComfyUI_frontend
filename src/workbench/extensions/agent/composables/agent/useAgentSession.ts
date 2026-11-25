@@ -2864,8 +2864,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
     )
       return
     if (conversationStore.isAskRetired(pendingAsk.ask_id, turn.threadId)) {
-      // No recovery was attempted: the server had already resolved this ask
-      // through another path before polling found it.
       if (
         trackRunApproval &&
         conversationStore.isAskPermanentlyRetired(
@@ -2970,18 +2968,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
     })
   }
 
-  /**
-   * Routes an inbound `agent_ask`. One already in the ledger is an ask
-   * recovery has supplied, or one the user has finished with; dropping it on
-   * the id rather than on the rendered parts is what stops a frame delayed
-   * past its own resolution from drawing a card over a resumed reply.
-   *
-   * A frame is only ledgered once its card is actually on screen. `ingest`
-   * has nowhere to route one that arrives before its turn is in memory -- the
-   * window between subscribing and the first history fetch landing -- and
-   * ledgering a frame the store dropped would convince recovery the ask had
-   * been delivered, leaving the panel with no card at all.
-   */
   function deliverAsk(
     event: Extract<AgentWsEvent, { type: 'agent_ask' }>
   ): void {
@@ -3007,14 +2993,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (conversationStore.isAskShown(turn, askId)) recordDeliveredAsk(askId)
   }
 
-  /**
-   * The ask's own broadcast turned up, so the poll that restored it was racing
-   * an in-flight frame rather than replacing a lost one. Withdrawing the
-   * warning is right; dropping the telemetry with it is not -- the attempt was
-   * already counted, and an attempt with no terminal outcome leaves PM-1738
-   * unable to tell a recovered approval from an unresolved one. Report it as
-   * `superseded` so `restored` keeps meaning "a frame was lost".
-   */
   function supersedeLateAskReport(threadId: string, askId: string): void {
     const scheduled = lateAskReports.get(lateAskReportKey(threadId, askId))
     withdrawLateAskReport(threadId, askId)

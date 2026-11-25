@@ -6043,11 +6043,6 @@ describe('useAgentSession (v1 composition root)', () => {
     }
   })
 
-  // The warning is withdrawn because nothing was lost, but the attempt has
-  // already been counted -- so the chain still has to terminate, and not as
-  // `restored`, which is what keeps that outcome readable as "a frame was
-  // lost". An attempt with no outcome leaves PM-1738 unable to tell a
-  // recovered approval from an unresolved one.
   it('(g30) a broadcast that merely lagged the poll renders one card, is not reported, and settles the recovery as superseded', async () => {
     vi.useFakeTimers()
     try {
@@ -6375,8 +6370,6 @@ describe('useAgentSession (v1 composition root)', () => {
       await vi.advanceTimersByTimeAsync(31_000)
 
       expect(approvalParts(second)).toHaveLength(0)
-      // Already answered (in the shared conversation store), so this never
-      // reaches the recovery path at all -- no attempt, no outcome.
       expect(
         telemetry.trackAgentRunApprovalRecoveryAttempted
       ).not.toHaveBeenCalled()

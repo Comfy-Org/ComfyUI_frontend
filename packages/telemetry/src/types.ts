@@ -1330,24 +1330,6 @@ export interface AgentRunApprovalRecoveryAttemptedMetadata extends Record<
   turn_id: string
   cause: AgentRunApprovalRecoveryCause
 }
-/**
- * `retired` carries no prior `recovery_attempted` event: the ask was already
- * resolved through another path, so nothing was attempted. `not_found`,
- * `restored` and `superseded` always follow one.
- *
- * `restored` and `superseded` both mean the card is on screen, and the split
- * is what keeps `restored` readable as "a frame was lost": the server writes
- * the ask row before it publishes the frame, so a poll can restore an ask
- * whose broadcast is merely in flight. When that broadcast then arrives, the
- * recovery is reported `superseded` instead -- no frame was lost, and the
- * recovery was unnecessary rather than unsuccessful.
- *
- * Cardinality is not 1:1, so count terminal outcomes rather than summing them
- * against the attempt: `recovery_attempted` is emitted at most once per
- * `ask_id`, while `recovery_outcome` is emitted at most once per
- * (`ask_id`, `outcome`). One ask that a poll reports `not_found` and a later
- * poll restores therefore produces one attempt and two outcomes.
- */
 export type AgentRunApprovalRecoveryOutcome =
   | 'restored'
   | 'superseded'
