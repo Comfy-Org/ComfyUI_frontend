@@ -3455,6 +3455,28 @@ describe('ComfyApp', () => {
       }
     )
 
+    it('keeps the handle to a node an undo would remove when a listener cancels the configure', async () => {
+      const { comfy } = nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
+      await app.loadGraphData(workflowWithFixedIdAndOneNode(), false)
+      const beforeAdding = structuredClone(
+        app.rootGraph.serialize()
+      ) as ComfyWorkflowJSON
+      const kept = comfy.graph.add('HandleProbe')
+      assert(kept)
+      app.rootGraph.events.addEventListener('configuring', (event) =>
+        event.preventDefault()
+      )
+
+      await app.loadGraphData(beforeAdding, false, false, null, {
+        restoreHistory: true
+      })
+
+      expect(app.rootGraph.getNodeById(toNodeId(kept.id))).toBeDefined()
+      expect(kept.isDeleted).toBe(false)
+      expect(kept.getTitle()).toBe('HandleProbe')
+      expect(comfy.graph.node(kept.id)).toBe(kept)
+    })
+
     it('retires the handle to a node a failed undo lost, even after another node is added', async () => {
       const { comfy } = nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
       class FailsToConfigure extends LGraphNode {

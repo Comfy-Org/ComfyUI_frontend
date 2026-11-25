@@ -345,6 +345,20 @@ describe('document handles', () => {
       expect(handleFor(root, '2')).toBe(takenByCallback)
     })
 
+    it('keeps a handle it set aside when the restore leaves its node in place, as a cancelled configure does, even if its key could be given again', () => {
+      const { handles, occupants, handleFor } = nodeProbes(true)
+      const root = new LGraph()
+      const node = {}
+      occupants.set('2', node)
+      const lacked = handleFor(root, '2')
+
+      handles.beforeHistoryRestore(root, restoring(root, []))
+      handles.afterHistoryRestore()
+
+      expect(lacked.read()).toBe(node)
+      expect(handleFor(root, '2')).toBe(lacked)
+    })
+
     it('keeps a handle whose node was already gone from reading a newcomer that takes its id during the restore', () => {
       const { handles, occupants, handleFor } = nodeProbes(false)
       const root = new LGraph()

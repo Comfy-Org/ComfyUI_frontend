@@ -187,7 +187,12 @@ export function createDocumentHandles(
         key: string,
         entry: Entry<THandle, TLive>
       ) {
+        const stillNamed = entry.locate() !== undefined
         entry.setAside(undefined)
+        if (stillNamed && !entries.has(key)) {
+          entries.set(key, entry)
+          return
+        }
         const givenToAnother = entries.has(key) || entry.locate() !== undefined
         if (givenToAnother || canReissue(entry, key)) entry.stand('retired')
         else entries.set(key, entry)
