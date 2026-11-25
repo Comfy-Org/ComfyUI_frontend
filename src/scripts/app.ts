@@ -1821,6 +1821,7 @@ export class ComfyApp implements IComfyApp {
           return { loaded: undefined }
         }
         await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
+        useWorkflowStore().activeWorkflow?.changeTracker.adoptLoadedGraph()
         endGraphLoad(graph)
         activatedWorkflow = useWorkflowStore().activeWorkflow ?? undefined
 
@@ -2603,6 +2604,7 @@ export class ComfyApp implements IComfyApp {
           )
           this.scheduleImportFit(graph)
           await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
+          useWorkflowStore().activeWorkflow?.changeTracker.adoptLoadedGraph()
           return
         } catch (error) {
           if (!lifecycle.started) throw error
@@ -2975,6 +2977,7 @@ export class ComfyApp implements IComfyApp {
       )
       this.scheduleImportFit(graph)
       await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
+      useWorkflowStore().activeWorkflow?.changeTracker.adoptLoadedGraph()
       lifecycleCompleted = true
       if (missingNodeTypes.length) {
         this.showMissingNodesError(missingNodeTypes, options)

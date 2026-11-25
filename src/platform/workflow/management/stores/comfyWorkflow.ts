@@ -75,6 +75,7 @@ export interface WorkflowChangeTracker {
   ds?: { scale: number; offset: [number, number] }
   nodeOutputs?: Partial<Record<string, ExecutedWsMessage['output']>>
   reset(state?: ComfyWorkflowJSON): void
+  adoptLoadedGraph(): void
   store(): void
   deactivate(): void
   prepareForSave(): void
