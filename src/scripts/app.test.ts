@@ -3113,7 +3113,7 @@ describe('ComfyApp', () => {
       }
     )
 
-    it('retires the handles of the open workflow when a tab switch shows the live graph of another, and gives working ones there', async () => {
+    async function twoLiveTabs() {
       const { comfy } = nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
       onTestFinished(attachLegacyUI(app))
       vi.mocked(mockCanvas.setGraph).mockImplementation((graph) => {
@@ -3130,23 +3130,48 @@ describe('ComfyApp', () => {
       const probe = { '1': { class_type: 'HandleProbe', inputs: {} } }
       await app.loadApiJson(probe, 'tab-a')
       const tabA = workflowStore.activeWorkflow
-      assert(tabA?.graph)
+      assert(tabA?.graph && tabA.changeTracker)
       await app.loadApiJson(probe, 'tab-b')
+      return { comfy, workflowService, tabA, graphA: tabA.graph }
+    }
+
+    it('retires the handles of the open workflow when a tab switch shows the live graph of another, and gives working ones there', async () => {
+      const { comfy, workflowService, tabA, graphA } = await twoLiveTabs()
       const inB = comfy.graph.node('1')
       assert(inB)
 
       await expect(workflowService.openWorkflow(tabA)).resolves.toBe(true)
 
-      expect(app.rootGraph).toBe(tabA.graph)
+      expect(app.rootGraph).toBe(graphA)
       expect(inB.isDeleted).toBe(true)
       expect(inB.setTitle('Edited in a tab not shown')).toBe(false)
       const inA = comfy.graph.node('1')
       assert(inA)
       expect(inA.isDeleted).toBe(false)
       expect(inA.setTitle('Edited on screen')).toBe(true)
-      expect(tabA.graph.getNodeById(toNodeId(1))?.title).toBe(
-        'Edited on screen'
+      expect(graphA.getNodeById(toNodeId(1))?.title).toBe('Edited on screen')
+    })
+
+    it('records what a legacy afterLoadGraph hook changes on a switch to a live tab as an undo step, and keeps that tab’s saved baseline', async () => {
+      const { workflowService, tabA, graphA } = await twoLiveTabs()
+      const tracker = tabA.changeTracker
+      assert(tracker)
+      const baseline = structuredClone(tracker.initialState)
+      mockExtensionService.invokeExtensionsAsync.mockImplementation(
+        async (hook) => {
+          const node = graphA.getNodeById(toNodeId(1))
+          if (hook === 'afterLoadGraph' && node)
+            node.title = 'Set on the switch'
+        }
       )
+
+      await workflowService.openWorkflow(tabA)
+      tracker.captureCanvasState()
+
+      expect(tracker.undoQueue).toHaveLength(1)
+      expect(tracker.activeState.nodes[0]?.title).toBe('Set on the switch')
+      expect(tracker.initialState).toEqual(baseline)
+      expect(tabA.isModified).toBe(true)
     })
 
     it.for([
