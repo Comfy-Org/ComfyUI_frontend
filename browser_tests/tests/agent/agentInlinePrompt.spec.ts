@@ -11,7 +11,8 @@ test(
   'preserves inline workflow references through Send, history and Edit',
   { tag: ['@cloud', '@ui'] },
   async ({ page, workflowSelection, promptHistory }) => {
-    await new AgentPanel(page).open()
+    const agentPanel = new AgentPanel(page)
+    await agentPanel.open()
     await page
       .getByRole('button', {
         name: enMessages.sideToolbar.newBlankWorkflow,
@@ -114,6 +115,8 @@ test(
     ).toBeVisible()
     await panel.getByRole('button', { name: enMessages.agent.newChat }).click()
     await expect(panel.getByTestId('user-message-bubble')).toHaveCount(0)
+    await agentPanel.close()
+    await agentPanel.open()
     const historyReads = promptHistory.historyReads()
     await panel
       .getByRole('button', { name: enMessages.agent.showChatHistory })
