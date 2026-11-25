@@ -121,28 +121,30 @@ describe('edits on a graph bound to a shared document', () => {
     }
   )
 
-  it.for(EDITS_WITHOUT_INTENT)(
-    'refuses %s inside a subgraph of the shared document',
-    ([, edit, refused]) => {
-      const interior = subgraphInterior()
-      const pair = wiredPair(interior)
-      boundRootGraphId = root.id
+  it('refuses an edit inside a subgraph of the shared document, changing nothing', () => {
+    const interior = subgraphInterior()
+    const { target } = wiredPair(interior)
+    boundRootGraphId = root.id
+    const saved = JSON.stringify(root.serialize())
 
-      expect(edit(pair)).toBe(refused)
-      expect(steps).toEqual([])
-    }
-  )
+    expect(target.inputs.reorder(['b', 'a'])).toBe(false)
 
-  it.for(EDITS_WITHOUT_INTENT)(
-    'applies %s when another document is the shared one',
-    ([, edit, refused]) => {
-      const pair = wiredPair(root)
-      boundRootGraphId = new LGraph().id
+    expect(JSON.stringify(root.serialize())).toBe(saved)
+    expect(steps).toEqual([])
+  })
 
-      expect(edit(pair)).not.toBe(refused)
-      expect(steps).toEqual(['before', 'after'])
-    }
-  )
+  it('applies the edit when another document is the shared one', () => {
+    const { target } = wiredPair(root)
+    boundRootGraphId = new LGraph().id
+
+    expect(target.inputs.reorder(['b', 'a'])).toBe(true)
+
+    expect(target.inputs.names()).toEqual(['b', 'a'])
+    expect(Array.from(root.links.values(), (link) => link.target_slot)).toEqual(
+      [1]
+    )
+    expect(steps).toEqual(['before', 'after'])
+  })
 
   it("refuses reordering a subgraph node's inputs", () => {
     onTestFinished(enableSubgraphNodeCreation(root))
