@@ -55,7 +55,7 @@ const zExecutionError = z
     traceback: z.array(z.string()).nullish(),
     current_inputs: z.unknown().optional(),
     current_outputs: z.unknown().optional(),
-    node_errors: zIngestExecutionError.shape.node_errors
+    node_errors: zIngestExecutionError.shape.node_errors.catch(undefined)
   })
   .passthrough()
 
