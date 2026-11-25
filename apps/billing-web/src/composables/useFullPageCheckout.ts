@@ -57,7 +57,8 @@ import { platformPlansUrl } from '@/checkout/platformLinks'
 import { createOperationChannel } from '@/checkout/operationChannel'
 import {
   createAutoApplyClaim,
-  isAutoApplyPromoCode
+  autoAppliesCode,
+  awaitPromotion
 } from '@/checkout/promoAutoApply'
 import { promoEntryLive, promoRejectionOf } from '@/checkout/promoEntry'
 import { checkoutIdentity, createPromoMemory } from '@/checkout/promoMemory'
@@ -76,10 +77,7 @@ import { useBilledWorkspace } from '@/composables/useBilledWorkspace'
 import { useCheckoutExit } from '@/composables/useCheckoutExit'
 import { useCheckoutJourney } from '@/composables/useCheckoutJourney'
 import { useCheckoutPromo } from '@/composables/useCheckoutPromo'
-import {
-  awaitPlanChangeCardChoice,
-  awaitPromoAutoApply
-} from '@/config/checkoutUi'
+import { awaitPlanChangeCardChoice } from '@/config/checkoutUi'
 import { awaitBillingWebStripeKey } from '@/config/stripeKey'
 import { useBillingEntry } from '@/entry/billingEntry'
 import type { BillingEntryState } from '@/entry/billingEntry'
@@ -241,7 +239,7 @@ export function useFullPageCheckout() {
   const journey = useCheckoutJourney('full_page')
   journey.enter()
   const planChangeCardChoice = awaitPlanChangeCardChoice()
-  const promoAutoApply = awaitPromoAutoApply()
+  const promotion = awaitPromotion()
 
   const page = shallowRef<CheckoutPage>(
     arrivalPage({ entry, error: unreadableLink })
@@ -492,7 +490,7 @@ export function useFullPageCheckout() {
     if (preview.value && !acceptsPromoCode(preview.value)) promo.withdraw()
     await reconciliationSettled()
     dispatch(event)
-    if (isAutoApplyPromoCode(arrival.promotionCode) && (await promoAutoApply))
+    if (autoAppliesCode(await promotion, arrival.promotionCode))
       await autoApplyCarriedPromo()
   }
 

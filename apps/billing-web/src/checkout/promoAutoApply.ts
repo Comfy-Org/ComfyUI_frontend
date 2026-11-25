@@ -1,10 +1,35 @@
+import { pendingServerFact } from '@comfyorg/account-core/billing'
+
+import { awaitPromoAutoApply } from '@/config/checkoutUi'
+
 const STORAGE_KEY = 'comfy.billing-web.checkout-promo-auto-applied.v1'
 
-const AUTO_APPLY_PROMO_CODE = 'BLACKFRIDAY26'
+/** The offer Cloud serves on `GET /api/billing/promotion`. */
+export interface Promotion {
+  readonly promotionCode: string
+  readonly autoApply: boolean
+}
 
-/** Whether `code` is the one promo code checkout applies from a link without an Apply click. */
-export function isAutoApplyPromoCode(code: string | undefined): boolean {
-  return code?.trim().toUpperCase() === AUTO_APPLY_PROMO_CODE
+/** Never rejects. The promotion on offer, or `null` for none. */
+export async function awaitPromotion(): Promise<Promotion | null> {
+  const promoAutoApplyOn = await awaitPromoAutoApply()
+  return pendingServerFact(
+    'BE-27548',
+    promoAutoApplyOn
+      ? { promotionCode: 'BLACKFRIDAY26', autoApply: true }
+      : null
+  )
+}
+
+/** Whether checkout applies the link's `code` itself: it is the promotion's own code and the promotion auto-applies. */
+export function autoAppliesCode(
+  promotion: Promotion | null,
+  code: string | undefined
+): boolean {
+  return (
+    promotion?.autoApply === true &&
+    code?.trim().toUpperCase() === promotion.promotionCode.toUpperCase()
+  )
 }
 
 /** Claims a checkout's one automatic Apply for this tab; `false` once claimed or without storage, so a removed code stays removed on reload. */

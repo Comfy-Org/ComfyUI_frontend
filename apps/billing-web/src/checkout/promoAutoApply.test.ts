@@ -1,7 +1,11 @@
 import {
-  createAutoApplyClaim,
-  isAutoApplyPromoCode
+  autoAppliesCode,
+  awaitPromotion,
+  createAutoApplyClaim
 } from '@/checkout/promoAutoApply'
+import { awaitPromoAutoApply } from '@/config/checkoutUi'
+
+vi.mock(import('@/config/checkoutUi'), { spy: true })
 
 function memoryStorage(): Storage {
   const items = new Map<string, string>()
@@ -17,14 +21,60 @@ function memoryStorage(): Storage {
   }
 }
 
-describe('isAutoApplyPromoCode', () => {
+describe('awaitPromotion', () => {
   it.for([
-    { code: 'BLACKFRIDAY26', expected: true },
-    { code: ' blackfriday26 ', expected: true },
-    { code: 'LAUNCH20', expected: false },
-    { code: undefined, expected: false }
-  ])('$code → $expected', ({ code, expected }) => {
-    expect(isAutoApplyPromoCode(code)).toBe(expected)
+    {
+      flag: true,
+      expected: { promotionCode: 'BLACKFRIDAY26', autoApply: true }
+    },
+    { flag: false, expected: null }
+  ])(
+    'serves $expected while the stand-in flag reads $flag',
+    async ({ flag, expected }) => {
+      vi.mocked(awaitPromoAutoApply).mockResolvedValue(flag)
+
+      expect(await awaitPromotion()).toEqual(expected)
+    }
+  )
+})
+
+describe('autoAppliesCode', () => {
+  const promotion = { promotionCode: 'BLACKFRIDAY26', autoApply: true }
+
+  it.for([
+    {
+      name: 'the promotion code',
+      promo: promotion,
+      code: 'BLACKFRIDAY26',
+      expected: true
+    },
+    {
+      name: 'the promotion code in other letters',
+      promo: promotion,
+      code: ' blackfriday26 ',
+      expected: true
+    },
+    {
+      name: 'another code',
+      promo: promotion,
+      code: 'LAUNCH20',
+      expected: false
+    },
+    { name: 'no code', promo: promotion, code: undefined, expected: false },
+    {
+      name: 'no promotion',
+      promo: null,
+      code: 'BLACKFRIDAY26',
+      expected: false
+    },
+    {
+      name: 'a promotion that does not auto-apply',
+      promo: { ...promotion, autoApply: false },
+      code: 'BLACKFRIDAY26',
+      expected: false
+    }
+  ])('$name → $expected', ({ promo, code, expected }) => {
+    expect(autoAppliesCode(promo, code)).toBe(expected)
   })
 })
 
