@@ -22,7 +22,7 @@ const RECOVERY_OUTCOME = 'app:agent_run_approval_recovery_outcome'
 test.describe.configure({ timeout: 180_000 })
 test.use({
   connectWebSocketToServer: false,
-  workflowSelectionFeatures: { enable_telemetry: true }
+  turnLockFeatures: { enable_telemetry: true }
 })
 
 function soleAskId(properties: Record<string, unknown>[]): string | undefined {
