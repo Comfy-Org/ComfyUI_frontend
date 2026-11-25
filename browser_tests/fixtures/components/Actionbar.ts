@@ -24,6 +24,8 @@ function isPromptRequest(request: Request): boolean {
 export class ComfyActionbar {
   public readonly root: Locator
   public readonly card: Locator
+  public readonly topMenuActions: Locator
+  public readonly cloudButton: Locator
   public readonly queueButton: ComfyQueueButton
   public readonly cancelButton: Locator
   public readonly propertiesButton: Locator
@@ -34,6 +36,10 @@ export class ComfyActionbar {
   constructor(public readonly page: Page) {
     this.root = page.locator('.actionbar-container')
     this.card = page.getByTestId(TestIds.topbar.actionBarCard)
+    this.topMenuActions = page.getByTestId(TestIds.topbar.topMenuActions)
+    this.cloudButton = this.topMenuActions.getByTestId(
+      TestIds.topbar.cloudButton
+    )
     this.queueButton = new ComfyQueueButton(this)
     this.cancelButton = this.root.getByRole('button', {
       name: 'Cancel current run'
@@ -44,6 +50,13 @@ export class ComfyActionbar {
     this.inlineProgressNodeFill = page.getByTestId(
       TestIds.topbar.queueInlineProgressNodeFill
     )
+  }
+
+  async checkCloudCompatibility() {
+    await this.cloudButton.click()
+    await this.page
+      .getByRole('button', { name: 'Check compatibility', exact: true })
+      .click()
   }
 
   /**

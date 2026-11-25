@@ -16,7 +16,7 @@ import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import { useMaskEditor } from '@/renderer/extensions/maskEditor/composables/useMaskEditor'
 import DropZone from '@/renderer/extensions/linearMode/DropZone.vue'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { draggableItemClass } from '@/scripts/ui/draggableList'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useLinkStore } from '@/stores/linkStore'
@@ -51,8 +51,8 @@ const widgetValueStore = useWidgetValueStore()
 const linkStore = useLinkStore()
 const maskEditor = useMaskEditor()
 
-const { onPointerDown } = useAppModeWidgetResizing((widget, config) =>
-  appModeStore.updateInputConfig(widget, config)
+const { onPointerDown, onPointerUp } = useAppModeWidgetResizing(
+  (widget, config) => appModeStore.updateInputConfig(widget, config)
 )
 
 provide(HideLayoutFieldKey, true)
@@ -147,7 +147,7 @@ async function handleDragDrop() {
     return false
   }
 
-  app.dragOverNode = { id: UNASSIGNED_NODE_ID, onDragDrop }
+  useApp().dragOverNode = { id: UNASSIGNED_NODE_ID, onDragDrop }
 }
 
 defineExpose({ handleDragDrop })
@@ -249,6 +249,8 @@ defineExpose({ handleDragDrop })
       "
       :inert="builderMode || undefined"
       @pointerdown.capture="(e) => onPointerDown(action.widget, e)"
+      @pointerup.capture="onPointerUp"
+      @pointercancel.capture="onPointerUp"
     >
       <DropZone
         :on-drag-over="nodeData.onDragOver"
@@ -261,7 +263,7 @@ defineExpose({ handleDragDrop })
           :widget-ids
           :class="
             cn(
-              'gap-y-3 rounded-lg py-1 [&_textarea]:resize-y **:[.col-span-2]:grid-cols-1',
+              'gap-y-3 rounded-lg py-1 [&_textarea]:basis-auto [&_textarea]:resize-y **:[.col-span-2]:grid-cols-1',
               nodeData.hasErrors && 'ring-2 ring-destructive ring-inset'
             )
           "

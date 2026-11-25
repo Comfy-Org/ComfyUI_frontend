@@ -24,7 +24,7 @@ const devLogState = vi.hoisted(() => ({
   recordDevEvent: vi.fn()
 }))
 
-vi.mock(import('./devPanelLog'), () => ({
+vi.mock(import('./crdtLog'), () => ({
   recordDevEvent: devLogState.recordDevEvent
 }))
 

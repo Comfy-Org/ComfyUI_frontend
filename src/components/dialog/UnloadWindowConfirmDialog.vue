@@ -8,6 +8,7 @@ import { onBeforeUnmount, onMounted } from 'vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { takeLeavePromptSkip } from '@/platform/workflow/management/leavePrompt'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { checkpointWorkflowRecovery } from '@/platform/workflow/persistence/workflowRecovery'
 
 const settingStore = useSettingStore()
 const workflowStore = useWorkflowStore()
@@ -16,7 +17,8 @@ const handleBeforeUnload = (event: BeforeUnloadEvent) => {
   if (takeLeavePromptSkip()) return undefined
   if (
     settingStore.get('Comfy.Window.UnloadConfirmation') &&
-    workflowStore.modifiedWorkflows.length > 0
+    workflowStore.modifiedWorkflows.length > 0 &&
+    !checkpointWorkflowRecovery()
   ) {
     event.preventDefault()
     return true

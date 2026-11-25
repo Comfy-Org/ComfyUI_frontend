@@ -2,12 +2,12 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type { AssetItem } from '@comfyorg/assets-core/schema'
 import { useOutputStacks } from '@/platform/assets/composables/useOutputStacks'
-import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
+import { resolveOutputAssetItems } from '@/platform/assets/adapters/outputAssetResolver'
 import { getOutputKey } from '@/platform/assets/utils/outputKeyUtil'
 
-vi.mock(import('@/platform/assets/utils/outputAssetUtil'))
+vi.mock(import('@/platform/assets/adapters/outputAssetResolver'))
 
 type Deferred<T> = {
   promise: Promise<T>

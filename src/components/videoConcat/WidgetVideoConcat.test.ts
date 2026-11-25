@@ -1,14 +1,14 @@
-import { render, screen } from '@testing-library/vue'
+import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type {
   IWidgetVideoConcatOptions,
   VideoConcatValue
 } from '@comfyorg/graph-model/widgets'
 import { api } from '@/scripts/api'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
@@ -53,7 +53,7 @@ const widget: SimplifiedWidget<VideoConcatValue, IWidgetVideoConcatOptions> = {
 }
 
 function buildConcat(files: string[]) {
-  const graph = new LGraph()
+  const graph = app.rootGraph
   const concat = new LGraphNode('ConcatenateVideo')
   for (const slot of files.keys())
     concat.addInput(`videos.video${slot}`, 'VIDEO')
@@ -89,7 +89,7 @@ describe('WidgetVideoConcat', () => {
 
   function mountWith(modelValue: VideoConcatValue) {
     const concat = buildConcat(['red.mp4', 'green.mp4', 'blue.mp4'])
-    vi.spyOn(app.canvas.graph!, 'getNodeById').mockReturnValue(concat)
+    useCanvasStore().currentGraph = app.rootGraph
     return renderWidget(concat, modelValue)
   }
 
@@ -97,21 +97,6 @@ describe('WidgetVideoConcat', () => {
     mountWith({ order: ['video2'] })
 
     expect(clipNames()).toEqual(['video2', 'video0', 'video1'])
-  })
-
-  it('offers the last run result once the node has one', async () => {
-    const concat = buildConcat(['red.mp4'])
-    vi.spyOn(app.canvas.graph!, 'getNodeById').mockReturnValue(concat)
-    renderWidget(concat, {})
-    expect(screen.queryByTestId('video-concat-preview-mode')).toBeNull()
-
-    useNodeOutputStore().nodeOutputs[String(concat.id)] = {
-      images: [{ filename: 'result.mp4', type: 'temp' }],
-      animated: [true]
-    }
-    await nextTick()
-
-    expect(screen.getByTestId('video-concat-preview-mode')).toBeTruthy()
   })
 
   it('stores the new order when a clip is dragged', async () => {

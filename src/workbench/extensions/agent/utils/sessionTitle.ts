@@ -5,11 +5,13 @@ import type { ConversationEntry } from '@/workbench/extensions/agent/stores/agen
 
 const MAX_DERIVED_TITLE_LENGTH = 60
 
-const graphemeSegmenter = once(() =>
-  typeof Intl.Segmenter === 'function'
-    ? new Intl.Segmenter(undefined, { granularity: 'grapheme' })
+const graphemeSegmenter = once(() => {
+  // oxlint-disable-next-line no-restricted-properties
+  const Segmenter = Intl.Segmenter
+  return typeof Segmenter === 'function'
+    ? new Segmenter(undefined, { granularity: 'grapheme' })
     : undefined
-)
+})
 
 function truncatedTitle(text: string): string {
   const segmenter = graphemeSegmenter()
@@ -33,7 +35,7 @@ export function deriveSessionTitle(
 ): string | undefined {
   const firstUser = entries.find(
     (entry): entry is Extract<ConversationEntry, { role: 'user' }> =>
-      entry.role === 'user'
+      entry.role === 'user' && entry.pending?.status !== 'failed'
   )
   const text = firstUser?.text.trim() ?? ''
   return truncatedTitle(text) || undefined

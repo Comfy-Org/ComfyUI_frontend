@@ -19,9 +19,13 @@ const SNAPSHOT: CapabilitiesSnapshot = {
     can_view_team_usage: false,
     can_edit_workspace: false,
     can_manage_auto_top_up: false,
+    can_view_auto_top_up: false,
+    can_view_auto_top_up_member_notice: false,
     can_manage_subscription: false,
     can_open_plans: false,
     can_run_workflows: false,
+    can_set_budgets: false,
+    can_set_hard_caps: false,
     can_upgrade: false,
     can_reactivate: false,
     can_revert_scheduled_change: false,
@@ -70,6 +74,34 @@ describe('projectBillingCapabilities', () => {
       ).toStrictEqual(served)
     }
   )
+
+  it('passes auto_top_up_member_view through to the capabilities read', () => {
+    const served = {
+      status: 'on',
+      threshold_credits: 1000,
+      target_credits: 6275,
+      cycle_resets_at: null,
+      monthly_budget_is_default: false
+    } as const
+
+    expect(
+      projectBillingCapabilities({ ...SNAPSHOT, autoTopUpMemberView: served })
+        .auto_top_up_member_view
+    ).toStrictEqual(served)
+  })
+
+  it('passes the served billing notice facts through to the capabilities read', () => {
+    expect(
+      projectBillingCapabilities({
+        ...SNAPSHOT,
+        billingNoticeAudience: 'none',
+        endingNoticeStartsAt: '2026-11-12T00:00:00Z'
+      })
+    ).toMatchObject({
+      billing_notice_audience: 'none',
+      ending_notice_starts_at: '2026-11-12T00:00:00Z'
+    })
+  })
 
   it('reads the snapshot back as the response the composable holds', () => {
     expect(projectBillingCapabilities(SNAPSHOT)).toStrictEqual({

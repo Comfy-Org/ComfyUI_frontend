@@ -1,10 +1,10 @@
 import {
-  downloadModel,
   isTrustedHuggingFaceUrl,
   openGatedRepoPage
 } from '@/platform/workflowErrors/missingModel/missingModelDownload'
 import type { ModelWithUrl } from '@/platform/workflowErrors/missingModel/missingModelDownload'
 import { fetchAndStoreModelMetadata } from '@/platform/workflowErrors/missingModel/missingModelMetadata'
+import { useMissingModelDownloadStore } from '@/platform/workflowErrors/missingModel/missingModelDownloadStore'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 
 export function useMissingModelDownload() {
@@ -25,7 +25,7 @@ export function useMissingModelDownload() {
   }
 
   function downloadMissingModel(model: ModelWithUrl): void {
-    downloadModel(model, store.folderPaths)
+    useMissingModelDownloadStore().download(model)
   }
 
   // Always try the bridge: it opens in the user's Electron session. isRemote()

@@ -121,6 +121,7 @@ describe('a human-added node across a tab switch', () => {
     const minter = attachDocOpMinter({
       isEnabled: () => true,
       isDocBound: () => isTargetActive.value,
+      isBoundWorkflow: () => true,
       enqueue: followerApi.enqueueHumanOperations,
       getGraph: () => graph,
       boundRootGraphId: () => null,
@@ -220,7 +221,7 @@ describe('a human-added node across a tab switch', () => {
     {
       name: 'a frontend-only (virtual) node',
       type: 'TestVirtual',
-      widgetsValues: ['x']
+      widgetsValues: { name: 'x' }
     }
   ])(
     'keeps $name and delivers a batch queued behind its in-flight add across a tab switch with an advancing host',

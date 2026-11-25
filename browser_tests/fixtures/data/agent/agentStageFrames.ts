@@ -57,6 +57,8 @@ export const STAGE_FRAME_TITLES = STAGE_FRAMES_TEMPLATE.groups
   .map(({ title }) => title)
   .sort()
 
+export const STAGE_FRAME_IDLESS_TITLES = ['Stage 😀', 'Stage 😁']
+
 export const STAGE_FRAMES_CATALOG: WidgetCatalog = {
   types: { MarkdownNote: { widget_order: ['text'] } }
 }
@@ -64,3 +66,48 @@ export const STAGE_FRAMES_CATALOG: WidgetCatalog = {
 export const STAGE_FRAMES_INSERT_OPS: RecordedGraphOperation[] = [
   { op: 'insert_workflow', workflow: STAGE_FRAMES_TEMPLATE }
 ]
+
+export const EXISTING_FRAME_TITLE = 'Existing node frame'
+
+/** A workflow that carries only a group drawn around the existing node. */
+export const EXISTING_FRAME_INSERT_OPS: RecordedGraphOperation[] = [
+  {
+    op: 'insert_workflow',
+    workflow: {
+      nodes: [],
+      links: [],
+      groups: [
+        {
+          id: 1,
+          title: EXISTING_FRAME_TITLE,
+          bounding: [-20, -60, 360, 280],
+          color: '#3f789e',
+          font_size: 24,
+          flags: {}
+        }
+      ]
+    }
+  }
+]
+
+/**
+ * The same insertion with groups that carry no `id`, the shape an agent
+ * writes when it only names a frame and its bounds (FE 1.60 QA REG04).
+ */
+export const STAGE_FRAMES_INSERT_OPS_WITHOUT_GROUP_IDS: RecordedGraphOperation[] =
+  [
+    {
+      op: 'insert_workflow',
+      workflow: {
+        ...STAGE_FRAMES_TEMPLATE,
+        groups: STAGE_FRAME_IDLESS_TITLES.map((title) => {
+          const {
+            id: _id,
+            title: _title,
+            ...group
+          } = STAGE_FRAMES_TEMPLATE.groups[0]
+          return { ...group, title }
+        })
+      }
+    }
+  ]

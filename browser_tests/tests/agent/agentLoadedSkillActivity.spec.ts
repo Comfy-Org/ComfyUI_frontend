@@ -16,7 +16,6 @@ test.describe('Loaded skill activity', { tag: ['@cloud', '@ui'] }, () => {
     getAgentSocket
   }) => {
     await agentPanel.open()
-    await agentPanel.selectWorkflow()
     await agentPanel.sendMessage('Use the comfy-director skill')
     await expect.poll(() => acceptedTurns).toHaveLength(1)
 

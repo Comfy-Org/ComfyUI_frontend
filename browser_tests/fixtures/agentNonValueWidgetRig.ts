@@ -83,7 +83,6 @@ export class AgentNonValueWidgetRig {
 
     const agentPanel = new AgentPanel(page)
     await agentPanel.open()
-    await agentPanel.selectWorkflow()
     await agentPanel.sendMessage('hello')
     hostSocket.send({
       type: 'agent_message_done',
@@ -163,7 +162,6 @@ export class AgentNonValueWidgetRig {
   seedField(): Locator {
     return this.vueNodes
       .getNodeLocator(String(this.config.samplerNodeId))
-      .getByLabel('seed', { exact: true })
-      .getByRole('spinbutton')
+      .getByRole('spinbutton', { name: 'seed', exact: true })
   }
 }

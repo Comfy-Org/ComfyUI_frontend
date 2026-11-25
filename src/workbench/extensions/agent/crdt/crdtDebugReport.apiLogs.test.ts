@@ -22,6 +22,7 @@ describe('collectCrdtDebugReport over the real api.getLogs and a mocked transpor
           enabled: true,
           connected: false,
           canvasMayBeStale: false,
+          canvasStaleCause: null,
           workflowId: 'doc-1',
           updatesApplied: 0,
           lastFrameType: null,

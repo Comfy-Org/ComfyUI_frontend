@@ -27,7 +27,6 @@ test.describe('Agent starter prompt baseline', { tag: '@cloud' }, () => {
     const prompt = enMessages.agent.suggestedPrompts.treatment.cloud[0]
 
     await agentPanel.open()
-    await agentPanel.selectWorkflow()
     await agentPanel.root.getByRole('button', { name: prompt }).click()
     await expect(agentPanel.composer).toHaveText(prompt)
     await agentPanel.sendButton.click()

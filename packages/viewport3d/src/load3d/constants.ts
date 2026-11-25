@@ -29,6 +29,9 @@ export const SUPPORTED_HDRI_EXTENSIONS_ACCEPT = [
 
 export const LOAD3D_NONE_MODEL = 'none'
 
+/** Maximum model response size accepted for inline preview. */
+export const MAX_MODEL_LOAD_BYTES = 50 * 1024 * 1024
+
 export const DIRECT_EXPORT_FORMATS = new Set(['ply', 'spz', 'splat', 'ksplat'])
 
 interface ExportFormatOption {
