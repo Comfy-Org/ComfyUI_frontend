@@ -3380,6 +3380,89 @@ describe('ComfyApp', () => {
         return added
       }
 
+      describe('a pack that fits a mounted widget to its content each time the node mounts', () => {
+        function packThatFitsWhenMounted() {
+          const { comfy, packId } =
+            nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
+          class Fitted extends LGraphNode {
+            constructor(title?: string) {
+              super(title ?? 'Fitted')
+              this.serialize_widgets = true
+              this.addWidget('number', 'width', 512, () => {}, {})
+            }
+          }
+          LiteGraph.registerNodeType('Fitted', Fitted)
+          const [[nodeTypeHooks]] = vi.mocked(
+            mockExtensionService.registerExtension
+          ).mock.calls
+          nodeTypeHooks.beforeRegisterNodeDef?.(
+            LiteGraph.registered_node_types.Fitted,
+            hostNodeDef('Fitted'),
+            app
+          )
+          const resized: (() => void)[] = []
+          onTestFinished(
+            comfy.defs.extend(packId, 'Fitted', (builder) =>
+              builder.onCreated((node) => {
+                const mounted = node.widgets.mount({
+                  name: 'preview',
+                  render: () => {}
+                })
+                resized.push(() => {
+                  mounted?.setHeight(40)
+                  node.setSizeConstraints({ autoHeight: true })
+                })
+              })
+            )
+          )
+          const observeResizes = () => {
+            for (const fit of resized.splice(0)) fit()
+          }
+          return { comfy, observeResizes }
+        }
+
+        it.for([
+          {
+            step: 'a widget value',
+            take: (node: NodeHandle) => node.widgets.get('width')?.setValue(513)
+          },
+          {
+            step: 'removing the node',
+            take: (node: NodeHandle) => node.remove()
+          }
+        ])(
+          'keeps redo after undoing $step, when the fit runs again as the restored node mounts',
+          async ({ take }) => {
+            const { comfy, observeResizes } = packThatFitsWhenMounted()
+            await app.loadGraphData(workflowWithFixedIdAndOneNode(), false)
+            const { tracker } = historyOfTheOpenWorkflow()
+            const added = comfy.graph.add('Fitted')
+            assert(added)
+            observeResizes()
+            take(added)
+            const taken = structuredClone(
+              app.rootGraph.serialize()
+            ) as ComfyWorkflowJSON
+            const undoSteps = tracker.undoQueue.length
+
+            await tracker.undo()
+            observeResizes()
+
+            expect([
+              tracker.undoQueue.length,
+              tracker.redoQueue.length
+            ]).toEqual([undoSteps - 1, 1])
+            await tracker.redo()
+            expect(
+              ChangeTracker.graphEqual(
+                app.rootGraph.serialize() as ComfyWorkflowJSON,
+                taken
+              )
+            ).toBe(true)
+          }
+        )
+      })
+
       describe('a pack that settles the types of a node’s slots some time after the node is created', () => {
         const later = {
           'a microtask': () =>
