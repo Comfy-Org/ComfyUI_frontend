@@ -497,6 +497,7 @@ function serialiseStoredNodes(owner: LGraph, sortNodes: boolean) {
     reportError(new Error('Graph serialization state mismatch'), {
       surface: 'graph',
       errorType: 'graph_serialization_state_mismatch',
+      sentryMode: 'once_per_page',
       context: { graphId: owner.id, mismatch }
     })
     const nodes = sortNodes

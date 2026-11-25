@@ -13,6 +13,7 @@ export type Surface =
   | 'assets'
   | 'workspace'
   | 'platform'
+export type SentryReportingMode = 'always' | 'once_per_page' | 'never'
 export interface ReportErrorOptions {
   errorType: string
   surface: Surface
@@ -21,6 +22,7 @@ export interface ReportErrorOptions {
   level?: 'warning' | 'error'
   fingerprint?: string[]
   logToConsole?: boolean
+  sentryMode?: SentryReportingMode
 }
 export interface ErrorReporterDependencies {
   captureException: typeof Sentry.captureException
@@ -53,6 +55,7 @@ const NO_DELIVERY: DeliveryState = {
 const pendingReports: PendingReport[] = []
 const MAX_PENDING_REPORTS = 25
 const reportedErrors = new WeakSet<Error>()
+const sentryErrorTypesDeliveredOnce = new Set<string>()
 export function markErrorReported(error: Error): void {
   reportedErrors.add(error)
 }
@@ -197,21 +200,53 @@ function dispatchToDatadog(
     return false
   }
 }
+function isSentryDeliverySatisfied(
+  errorType: string,
+  sentryMode: SentryReportingMode
+): boolean {
+  if (sentryMode === 'never') return true
+  return (
+    sentryMode === 'once_per_page' &&
+    sentryErrorTypesDeliveredOnce.has(errorType)
+  )
+}
+function recordSentryDelivery(
+  errorType: string,
+  sentryMode: SentryReportingMode,
+  delivered: boolean
+): void {
+  if (delivered && sentryMode === 'once_per_page') {
+    sentryErrorTypesDeliveredOnce.add(errorType)
+  }
+}
 function dispatch(
   error: Error,
   options: ReportErrorOptions,
   alreadyDelivered: DeliveryState = NO_DELIVERY
 ): DeliveryState {
-  const { errorType, surface, level, fingerprint } = options
+  const {
+    errorType,
+    surface,
+    level,
+    fingerprint,
+    sentryMode = 'always'
+  } = options
   const context = definedEntriesOf(options.context)
   const bucket = getFrontendBucket()
   const tags = {
     ...definedTagsOf(options.tags),
     ...(bucket ? { bucket } : {})
   }
-  const sentryLive = !alreadyDelivered.sentry && dependencies?.isSentryEnabled()
+  const sentryDeliverySatisfied = isSentryDeliverySatisfied(
+    errorType,
+    sentryMode
+  )
+  const sentryLive =
+    !alreadyDelivered.sentry &&
+    !sentryDeliverySatisfied &&
+    dependencies?.isSentryEnabled()
   const datadogRum = alreadyDelivered.datadog ? undefined : liveDatadogRum()
-  let sentryDelivered = alreadyDelivered.sentry
+  let sentryDelivered = alreadyDelivered.sentry || sentryDeliverySatisfied
   let datadogDelivered = alreadyDelivered.datadog
   dispatching = true
   try {
@@ -225,6 +260,7 @@ function dispatch(
         level,
         fingerprint
       )
+      recordSentryDelivery(errorType, sentryMode, sentryDelivered)
     }
     if (datadogRum) {
       datadogDelivered = dispatchToDatadog(
@@ -254,10 +290,15 @@ function enqueuePendingReport(report: PendingReport): void {
     pendingReports.push(report)
   }
 }
-function isPending(delivered: DeliveryState): boolean {
-  return dependencies?.isCloud()
-    ? !delivered.sentry || !delivered.datadog
-    : !delivered.sentry && !delivered.datadog && !delivered.desktop
+function isPending(
+  delivered: DeliveryState,
+  { sentryMode = 'always' }: ReportErrorOptions
+): boolean {
+  if (dependencies?.isCloud()) return !delivered.sentry || !delivered.datadog
+  if (sentryMode === 'never') {
+    return !delivered.datadog && !delivered.desktop
+  }
+  return !delivered.sentry && !delivered.datadog && !delivered.desktop
 }
 function hasLiveSink(): boolean {
   try {
@@ -279,7 +320,7 @@ export function flushErrorReports(): void {
     const { error, options } = report
     try {
       const delivered = dispatch(error, options, report.delivered)
-      if (isPending(delivered)) {
+      if (isPending(delivered, options)) {
         enqueuePendingReport({ error, options, delivered })
       }
     } catch (reporterFailure) {
@@ -308,7 +349,7 @@ export function reportError(cause: unknown, options: ReportErrorOptions): void {
     flushErrorReports()
     const error = toError(cause)
     const delivered = dispatch(error, options)
-    if (isPending(delivered)) {
+    if (isPending(delivered, options)) {
       enqueuePendingReport({ error, options, delivered })
     }
   } catch (reporterFailure) {

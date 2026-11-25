@@ -101,6 +101,7 @@ describe('LGraph Serialisation', () => {
       {
         surface: 'graph',
         errorType: 'graph_serialization_state_mismatch',
+        sentryMode: 'once_per_page',
         context: {
           graphId: graph.id,
           mismatch: `live node ${adapterOnly.id} has no stored state`
