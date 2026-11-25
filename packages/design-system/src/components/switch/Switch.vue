@@ -16,9 +16,6 @@ const {
 
 const modelValue = defineModel<boolean>({ default: false })
 
-// SwitchRoot toggles on Enter from its own keydown handler, so `.prevent` on a
-// fallthrough listener cannot stop it and `.stop` would swallow the global
-// Ctrl/Cmd+Enter shortcut. Veto the resulting update instead.
 let toggleRequestedByModifiedEnter = false
 
 function trackModifiedEnter(event: KeyboardEvent) {
