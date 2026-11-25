@@ -22,13 +22,11 @@ export type SavedViewOf = (
   pack: IssuedPack
 ) => Readonly<Record<string, unknown>>
 
-/** What one `onSerialize` hook returned, and the id of the pack it saves under. */
 interface PackFields {
   readonly pack: string
   readonly fields: unknown
 }
 
-/** What a pack gives each hook: a callback, bound to its pack for the saved fields, or for `addMenuItem` the checked item. */
 export interface HookCallbacks {
   onCreated: (node: NodeHandle, event: NodeCreatedEvent) => void
   onConfigured: (node: NodeHandle, savedFor: SavedViewOf) => void

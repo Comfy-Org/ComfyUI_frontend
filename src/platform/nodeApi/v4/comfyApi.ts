@@ -27,13 +27,11 @@ export interface ComfyApiServices {
   getGraph(): LGraph | null
   /** The open document's undo history; without it an edit is no undo step. */
   history?(): EditHistory | undefined
-  /** True while the host loads or restores a graph. */
   isLoading?(): boolean
   /** The URL extension folders are served under, base path included; `/extensions/` of the page by default. */
   extensionsUrl?(): string
 }
 
-/** What the host drives, each call as {@link VersionHost} describes it; the store publishes. A pack never sees this. */
 export interface ComfyApiHost extends Omit<VersionHost, 'publish'> {
   /** The extension through which the host tells the API about node types. */
   readonly nodeTypeHooks: NodeTypeHooks

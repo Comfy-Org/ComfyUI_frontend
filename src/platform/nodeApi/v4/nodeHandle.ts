@@ -129,7 +129,6 @@ function nodeReads(
   }
 }
 
-/** The public name of each node mode that has one. */
 export const MODE_NAMES: ReadonlyMap<LGraphEventMode, NodeMode> = new Map([
   [LGraphEventMode.ALWAYS, 'always'],
   [LGraphEventMode.NEVER, 'never'],
