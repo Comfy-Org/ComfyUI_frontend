@@ -13,8 +13,9 @@ object that names the entity and reads it live each time it is asked.
 - A handle belongs to the document it came from and to its own graph, and
   stops resolving whenever a workflow loads: another document, a return to
   this document's tab, or a reload of it. It stops as the load starts, before
-  the new graph appears, and from then an edit through it returns `false`. Take a fresh handle when the
-  document is shown again. A node, widget, group or graph handle survives
+  the new graph appears, and from then an edit through it returns `false`,
+  as does an edit through `comfy.graph` or a handle taken before the new
+  graph appears. Take a fresh handle when the document is shown again. A node, widget, group or graph handle survives
   undo and redo; a slot handle does not, because undo and redo rebuild slots.
   An undo or redo that steps back or forward across a load of another
   workflow into the same tab is a load too.
