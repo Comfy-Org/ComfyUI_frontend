@@ -15,6 +15,9 @@ import { assetPath } from '@e2e/fixtures/utils/paths'
 import { mockViewFiles } from '@e2e/fixtures/utils/viewFileMocks'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
+const promptRoute = '**/api/prompt'
+const jobIds = ['initial-dog', 'dog', 'cat', 'sheep'] as const
+
 interface CompositorFixture {
   execution: ExecutionHelper
   preview: Locator
@@ -50,6 +53,13 @@ const test = mergeTests(
     })
     await comfyPage.workflow.loadWorkflow('layerEditor/concurrentCompositor')
     const execution = new ExecutionHelper(comfyPage, await getWebSocket())
+    const jobs = jobIds.values()
+    await page.route(promptRoute, async (route) => {
+      if (route.request().method() !== 'POST') return route.fallback()
+      const { value: jobId, done } = jobs.next()
+      if (done) return route.fulfill({ status: 400 })
+      await route.fulfill({ json: { prompt_id: jobId, node_errors: {} } })
+    })
     const dialog = page.getByRole('dialog').filter({
       has: page.getByTestId('layer-panel-row')
     })
@@ -101,10 +111,19 @@ test(
   },
   async ({ comfyPage, compositor }) => {
     const { execution, preview } = compositor
-    const { queuePanel } = comfyPage
+    const { page, queuePanel, runButton } = comfyPage
+    const [initial, dog, cat, sheep] = jobIds
+    const promptAccepted = () =>
+      page.waitForResponse(
+        (response) =>
+          new URL(response.url()).pathname === '/api/prompt' &&
+          response.request().method() === 'POST' &&
+          response.ok()
+      )
 
     await test.step('arrange the dog and render the saved composition', async () => {
-      const initial = await execution.run()
+      await Promise.all([promptAccepted(), runButton.click()])
+      execution.executionStart(initial)
       compositor.executed(initial, 'park.webp')
       execution.executionSuccess(initial)
 
@@ -116,7 +135,8 @@ test(
       await compositor.closeEditor.click()
       await expect(preview).toHaveAttribute('src', /^blob:/)
 
-      const dog = await execution.run()
+      await Promise.all([promptAccepted(), runButton.click()])
+      execution.executionStart(dog)
       compositor.executed(dog, 'dog-result.webp')
       execution.executionSuccess(dog)
       await expect(preview).toHaveAttribute('src', /filename=dog-result\.webp/)
@@ -124,9 +144,11 @@ test(
 
     await test.step('keep the cat visible while the sheep run reports output', async () => {
       await compositor.prompt.fill('cat')
-      const cat = await execution.run()
+      await Promise.all([promptAccepted(), runButton.click()])
+      execution.executionStart(cat)
       await compositor.prompt.fill('sheep')
-      const sheep = await execution.run()
+      await Promise.all([promptAccepted(), runButton.click()])
+      execution.executionStart(sheep)
       await compositor.showRunningJobs(cat, sheep)
 
       compositor.executed(cat, 'cat-result.webp')
