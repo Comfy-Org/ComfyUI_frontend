@@ -2651,52 +2651,130 @@ describe('DeploymentSwitcher with Platform in the editor', () => {
     }
   )
 
-  it('shows a first build once when its deployment is listed before deploy-sent names it', async () => {
-    const created = 'dep-c4c4c4c4-0000-4000-8000-000000000004'
-    mockWorkspaceApi.listDeployments.mockResolvedValue({
-      ...listing,
-      items: [
-        ...listing.items,
-        {
-          deployment_id: created,
-          deployment_name: 'lora-stack-demo',
-          release_id: 'r-4',
-          release_version: 1,
-          status: 'queued',
-          can_start: false,
-          created_at: '2026-11-25T00:00:00Z'
-        }
-      ]
-    })
-    Object.assign(usePlatformFrameStore(), {
-      build: {
-        kind: 'new',
-        buildId: 'b-4',
-        accountId: 'uid-ana',
-        workspaceId: 'ws-1',
-        deploymentId: '',
-        deploymentName: 'lora-stack-demo',
-        releaseId: 'r-4',
-        version: 1,
-        previousReleaseId: null,
-        previousVersion: null,
-        stage: 'building',
-        progress: null,
-        startedAt: 0
-      } satisfies FollowedBuild
-    })
-    const user = renderSwitcher()
-    await openList(user)
+  const INTENDED = 'dep-c4c4c4c4-0000-4000-8000-000000000004'
+  const SIBLING = 'dep-c5c5c5c5-0000-4000-8000-000000000005'
+  const PLACEHOLDER = 'b-4'
 
-    expect(
-      screen.getAllByRole('menuitemradio', { name: /lora-stack-demo/ })
-    ).toHaveLength(1)
-    expect(
-      within(screen.getByTestId(`deployment-row-${created}`)).queryAllByTestId(
-        'deployment-row-spinner'
-      )
-    ).toHaveLength(1)
-  })
+  function firstBuildDeployment(
+    deployment_id: string,
+    deployment_name: string,
+    created_at: string
+  ): WorkspaceDeployment {
+    return {
+      deployment_id,
+      deployment_name,
+      release_id: 'r-4',
+      release_version: 1,
+      status: 'queued',
+      can_start: false,
+      created_at
+    }
+  }
+
+  const intendedListed = firstBuildDeployment(
+    INTENDED,
+    'lora-stack-demo',
+    '2026-11-25T00:00:00Z'
+  )
+  const siblingListed = firstBuildDeployment(
+    SIBLING,
+    'lora-stack-staging',
+    '2026-11-25T00:01:00Z'
+  )
+
+  function spinnersByRow(): Record<string, number | null> {
+    return Object.fromEntries(
+      [INTENDED, SIBLING, PLACEHOLDER].map((id) => {
+        const row = screen.queryByTestId(`deployment-row-${id}`)
+        return [
+          id,
+          row === null
+            ? null
+            : within(row).queryAllByTestId('deployment-row-spinner').length
+        ]
+      })
+    )
+  }
+
+  it.for<{
+    when: string
+    listed: WorkspaceDeployment[]
+    deploymentId: string
+    deploymentName: string
+    spinners: Record<string, number | null>
+  }>([
+    {
+      when: 'nothing is listed yet',
+      listed: [],
+      deploymentId: '',
+      deploymentName: 'lora-stack-demo',
+      spinners: { [INTENDED]: null, [SIBLING]: null, [PLACEHOLDER]: 1 }
+    },
+    {
+      when: 'its deployment is listed before deploy-sent names it',
+      listed: [intendedListed],
+      deploymentId: '',
+      deploymentName: 'lora-stack-demo',
+      spinners: { [INTENDED]: 1, [SIBLING]: null, [PLACEHOLDER]: null }
+    },
+    {
+      when: 'another deployment of its release is listed first',
+      listed: [siblingListed, intendedListed],
+      deploymentId: '',
+      deploymentName: 'lora-stack-demo',
+      spinners: { [INTENDED]: 1, [SIBLING]: 0, [PLACEHOLDER]: null }
+    },
+    {
+      when: 'only another deployment of its release is listed',
+      listed: [siblingListed],
+      deploymentId: '',
+      deploymentName: 'lora-stack-demo',
+      spinners: { [INTENDED]: null, [SIBLING]: 0, [PLACEHOLDER]: 1 }
+    },
+    {
+      when: 'deploy-sent names its deployment',
+      listed: [siblingListed, intendedListed],
+      deploymentId: INTENDED,
+      deploymentName: 'lora-stack-demo',
+      spinners: { [INTENDED]: 1, [SIBLING]: 0, [PLACEHOLDER]: null }
+    },
+    {
+      when: 'it has no name to match before deploy-sent',
+      listed: [siblingListed],
+      deploymentId: '',
+      deploymentName: '',
+      spinners: { [INTENDED]: null, [SIBLING]: 0, [PLACEHOLDER]: 1 }
+    }
+  ])(
+    'spins only the first build of its own deployment when $when',
+    async ({ listed, deploymentId, deploymentName, spinners }) => {
+      mockWorkspaceApi.listDeployments.mockResolvedValue({
+        ...listing,
+        items: [...listing.items, ...listed]
+      })
+      Object.assign(usePlatformFrameStore(), {
+        build: {
+          kind: 'new',
+          buildId: PLACEHOLDER,
+          accountId: 'uid-ana',
+          workspaceId: 'ws-1',
+          deploymentId,
+          deploymentName,
+          releaseId: 'r-4',
+          version: 1,
+          previousReleaseId: null,
+          previousVersion: null,
+          stage: deploymentId ? 'deploying' : 'building',
+          progress: null,
+          startedAt: 0
+        } satisfies FollowedBuild
+      })
+      const user = renderSwitcher()
+      await openList(user)
+
+      expect(spinnersByRow()).toEqual(spinners)
+    }
+  )
 
   it('shows the usual status again once a build fails', async () => {
     mockWorkspaceApi.listDeployments.mockResolvedValue(listing)

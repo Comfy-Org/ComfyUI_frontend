@@ -295,8 +295,12 @@ export function useDeploymentRows() {
   }
 
   function listedBuildDeploymentId(build: FollowedBuild): string | undefined {
-    return deployments.value.find((d) => d.release_id === build.releaseId)
-      ?.deployment_id
+    if (!build.deploymentName) return undefined
+    return deployments.value.find(
+      (d) =>
+        d.release_id === build.releaseId &&
+        d.deployment_name === build.deploymentName
+    )?.deployment_id
   }
 
   const buildingValue = computed(() => {
