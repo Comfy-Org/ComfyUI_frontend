@@ -130,7 +130,6 @@ test.describe(
           await agentPanel.open()
           const opened = await getAgentSocket()
           opened.onMessage((message) => outboundFrames.push(String(message)))
-          await agentPanel.selectWorkflow()
           await agentPanel.sendMessage('wire the source into the sink')
           await expect
             .poll(() => outboundFrames, { timeout: 15_000 })

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, ref } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
@@ -13,11 +13,13 @@ import { deriveSessionTitle } from '@/workbench/extensions/agent/utils/sessionTi
 const {
   blocked = false,
   sessionId = null,
+  chatKey,
   customTitle,
   entries
 } = defineProps<{
   blocked?: boolean
   sessionId?: string | null
+  chatKey?: string
   customTitle?: string
   entries: ConversationEntry[]
 }>()
@@ -30,6 +32,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
+const activeChatKey = computed(() => chatKey ?? sessionId ?? '')
 const sessionTitle = computed(() => customTitle || deriveSessionTitle(entries))
 const displayTitle = computed(
   () => sessionTitle.value || t('agent.newChatTitle')
@@ -37,10 +40,22 @@ const displayTitle = computed(
 
 const renaming = ref(false)
 const renameDraft = ref('')
+let renameChatKey: string | null = null
 const renameInput = ref<InstanceType<typeof Input>>()
 const titleButton = ref<InstanceType<typeof Button>>()
 
+watch(
+  activeChatKey,
+  () => {
+    if (!renaming.value) return
+    renaming.value = false
+    renameChatKey = null
+  },
+  { flush: 'sync' }
+)
+
 async function startRename(): Promise<void> {
+  renameChatKey = activeChatKey.value
   renameDraft.value = sessionTitle.value ?? ''
   renaming.value = true
   await nextTick()
@@ -50,6 +65,7 @@ async function startRename(): Promise<void> {
 
 async function exitRename(): Promise<void> {
   renaming.value = false
+  renameChatKey = null
   await nextTick()
   const button: unknown = titleButton.value?.$el
   if (button instanceof HTMLButtonElement) button.focus()
@@ -68,6 +84,11 @@ function onRenameKeydown(event: KeyboardEvent): void {
 
 function commitRename(): void {
   if (!renaming.value) return
+  if (renameChatKey !== activeChatKey.value) {
+    renaming.value = false
+    renameChatKey = null
+    return
+  }
   void exitRename()
   const title = renameDraft.value.trim()
   if (title !== '' && title !== sessionTitle.value) emit('renameChat', title)

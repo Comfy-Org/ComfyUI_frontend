@@ -21,7 +21,7 @@ test.use({ connectWebSocketToServer: false })
 test(
   'restores the transcript at its latest message after a browser refresh',
   { tag: ['@cloud', '@ui'] },
-  async ({ page, promptHistory, workflowSelection }) => {
+  async ({ page, promptHistory }) => {
     await expect(
       page.getByTestId('integrated-tab-bar-actions')
     ).toHaveAttribute('data-agent-gate-settled', 'true', { timeout: 8_000 })
@@ -35,16 +35,6 @@ test(
       })
       .click()
     await expect(panel).toBeVisible()
-    // The panel does not auto-bind the tab open when it mounts; the composer
-    // gates Send behind an explicit target (agent.selectWorkflowForAgent).
-    await panel
-      .getByRole('button', { name: enMessages.agent.switchWorkflow })
-      .click()
-    await page
-      .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
-      .click()
-    await expect.poll(() => workflowSelection.savedPaths.length).toBe(1)
-    workflowSelection.finishSave(true)
     const editor = panel.getByRole('textbox')
 
     const firstMessage = 'Earlier conversation context. '.repeat(80)

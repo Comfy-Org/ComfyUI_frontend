@@ -63,7 +63,6 @@ test.describe(
       })
 
       await agentPanel.open()
-      await agentPanel.selectWorkflow()
 
       const panel = agentPanel.root
       const stopButton = panel.getByRole('button', {
@@ -128,7 +127,6 @@ test.describe(
         { tag: '@ui' },
         async ({ agentPanel, getAgentSocket, postedMessages, page }) => {
           await agentPanel.open()
-          await agentPanel.selectWorkflow()
           await agentPanel.composer.fill(PROMPT)
           await agentPanel.sendButton.click()
           await expect.poll(() => postedMessages.length).toBe(1)

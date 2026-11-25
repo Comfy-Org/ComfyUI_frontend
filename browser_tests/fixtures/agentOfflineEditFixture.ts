@@ -1,3 +1,4 @@
+import { expect } from '@playwright/test'
 import type { APIRequestContext, Locator, Page } from '@playwright/test'
 
 import type { WidgetCatalog } from '@comfyorg/comfy-multi-player'
@@ -136,7 +137,6 @@ class AgentOfflineEditScenario {
 
   async buildAgentPromptNodes(): Promise<void> {
     await this.panel.open()
-    await this.panel.selectWorkflow()
     await this.panel.sendMessage('Add two prompt nodes.')
     await this.hostSocket.waitForSubscribe()
     this.hostSocket.send(
@@ -188,7 +188,10 @@ class AgentOfflineEditScenario {
     )
     await this.page.reload({ waitUntil: 'domcontentloaded' })
     await this.panel.open()
-    await this.panel.selectWorkflow(SAVED_NAME)
+    await expect(this.topbar.getWorkflowTab(SAVED_NAME)).toBeVisible({
+      timeout: 30_000
+    })
+    await this.topbar.getWorkflowTab(SAVED_NAME).click()
     return (await restored).ok()
   }
 
