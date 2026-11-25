@@ -196,8 +196,8 @@ flowchart TD
       `nodes`, `add`, `links`, `groups`) asks the canvas again each time, so
       two calls a moment apart reach different graphs if the user opened or
       left a subgraph in between. A handle it gives does not follow the user:
-      a node, slot, widget or group handle edits its entity in the entity's
-      own graph, on screen or not. A pack that needs one graph for several
+      a node, slot or group handle edits its entity in the entity's own
+      graph, on screen or not. A pack that needs one graph for several
       graph-level calls compares `comfy.graph.id`, or reaches a particular
       graph through `root()` and `subgraphs()`.
     - `GraphScopeHandle` has no `add`, `batch` or `version`: no stored pack
@@ -207,27 +207,30 @@ flowchart TD
 13. `comfy.graph.links()` lists the links of the graph on screen as frozen
     `LinkInfo` records sorted by link id. `comfy.graph.version` counts the
     changes to the open document:
-    - It is the sum of the version counters (`LGraph._version`) of the
-      document's root graph and each subgraph definition, so it reads the
-      same whichever of them is on screen, and an edit through a handle to an
-      off-screen graph changes it.
+    - Each reading compares the document's change marks with the last
+      reading's: the version counters (`LGraph._version`) of its root graph
+      and of each subgraph definition, with their ids, and the number of
+      rebuilds the API is told of. If any mark differs, the reading is one
+      more than the last. So it reads the same whichever graph is on screen,
+      an edit through a handle to an off-screen graph changes it, and no
+      reading repeats an earlier one.
     - Every edit a handle applies advances its graph's counter, including
       when the host declines after the runner has started; a refusal, an
       unlinked `disconnect` or a call on a gone entity, which exit before
-      `apply`, does not. `workflow.setExtra` advances the root graph's
-      (`workflowExtra.test.ts`). The host advances a counter for some of its
-      own changes and not others: nodes and links added or removed, a node
+      `apply`, does not. The host advances a counter for some of its own
+      changes and not others: nodes and links added or removed, a node
       collapsed or pinned, and a widget value committed through
       `BaseWidget.setValue` count; a move and a color do not
       (`graphEdits.test.ts`).
     - An undo, a redo or a load rebuilds the graphs and restarts their
-      counters, and a subgraph definition released with its last node takes
-      its count with it. So the reading adds the number of rebuilds the API
-      is told of (a document beginning or ending, a restore finishing) times
-      2^32, and an undo and the redo after it read differently, as the two
-      stored readers, which poll or fingerprint it, need.
-    - A different reading says that the document changed; an equal one does
-      not say that nothing did. The JSDoc names no host change that does or
+      counters; the rebuild count (a document beginning or ending, a restore
+      finishing) and the root id a clear replaces are among the marks, so an
+      undo and the redo after it read differently, as the two stored readers,
+      which poll or fingerprint it, need. A subgraph definition released
+      with its last node, or a clear the API is not told of, changes the
+      marks too, so the reading after it is new.
+    - An equal reading says that nothing the marks count changed; a move or
+      a color is not counted. The JSDoc names no host change that does or
       does not count, because which of them count is the host's to change,
       and a host fix must not change what v4 is documented to do
       (ADR-EXTENSIONS-NODE-API-0070 decision 1).
@@ -546,12 +549,6 @@ ADR-EXTENSIONS-NODE-API-0070.
 These are places where the code at this point does not yet meet the decisions
 above. Each is open work for this API, not part of the contract.
 
-- **Edits during a load.** An edit a load hook makes in `afterLoadGraph`
-  applies and returns `true`, but capture is still suppressed, so it gets no
-  undo step of its own and can be folded into the step of the next,
-  unrelated change. An edit to the staging graph a `clean: true` load or an
-  import has cleared returns `true` and is discarded by configure
-  (ADR-EXTENSIONS-NODE-API-0070, "Known gaps in the current code").
 - **Creation (decision 11).** `LiteGraph.createNode`, and the
   `onNodeCreated` it calls, run before `EditRunner.apply`, so an edit a
   creation callback makes through V4 is a separate transaction from the
@@ -574,10 +571,6 @@ above. Each is open work for this API, not part of the contract.
   input again after a load fails: the load has made both the declared input
   and the renamed one, so the rename is refused as a duplicate name. The
   pack has to reconcile the two slots and their links instead.
-- **Version (decision 13).** API-JSON and A1111 imports do not count as
-  rebuilds, and removing a subgraph's last placement drops that subgraph's
-  counter from the sum, so in those cases a reading after a change can
-  equal one before it, although the JSDoc says every load changes it.
 - **Connections.** A legacy connection callback can still move an endpoint
   after the before-connect check (ADR-EXTENSIONS-NODE-API-0071, "Known gaps
   in the current code").
@@ -713,8 +706,8 @@ above. Each is open work for this API, not part of the contract.
   node, so any other edit to it applies on screen, answers `true` and is not
   saved, as an edit the editor makes to such a node.
 - Every edit advances its graph's version, including edits LiteGraph does
-  not count (a title, a color); `comfy.graph.version` sums the document's
-  graphs, so it sees an edit in any of them, and it does not see changes
+  not count (a title, a color); `comfy.graph.version` reads the counters of
+  the document's graphs, so it sees an edit in any of them, and it does not see changes
   made outside the API that LiteGraph does not count. Each reading walks the
   document's subgraph definitions once.
 - The node handle carries the edit methods through the `membersFor`

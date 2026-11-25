@@ -68,10 +68,15 @@ look in a particular graph, use `comfy.graph.root()` or
 
 ### Publish before loading packs
 
-7. `public/comfy/api/v4.js` is a static file outside the application bundle.
-   It exports the API the host puts in `window.comfy_v4`, a slot named for
-   the version, and an import map entry in `index.html` resolves the module
-   path under the configured base path.
+7. `/comfy/api/v4.js` is a module outside the application bundle, so it
+   cannot import the API. Its source is
+   `src/platform/nodeApi/v4/publishedModule.ts`; `publishedNodeApiPlugin` in
+   `build/plugins/` serves it at that URL in development and emits it there
+   in a build. It exports the API the host puts in `window.comfy_v4`, a slot
+   named for the version, and an import map entry in `index.html` resolves
+   the module path under the configured base path. A browser test loads a
+   pack that imports it and checks that the pack's hook runs
+   (`browser_tests/tests/nodeApi/publishedV4Module.spec.ts`).
    - Each version's store (`useComfyApiStore` for v4) holds that version's one
      API. The host never reads the slot back and never calls a version's
      store: every host call goes through one dispatcher, `useNodeApiHost` in
@@ -101,8 +106,12 @@ look in a particular graph, use `comfy.graph.root()` or
    A listener registered after that runs on the next microtask, never inside
    the call that registers it; this is how a pack that
    [loads late](EXTENSION-LOADING-0048-late-custom-nodes-turn-on-after-the-editor-opens.md)
-   hears it. The graph is empty at `onReady`, and the first load retires any
-   handle taken then.
+   hears it. A second ready signal of one startup changes nothing. The canvas
+   publishes the API again each time it starts up (a return to the graph
+   view mounts it again), and publishing resets readiness, so a listener
+   registered while that startup loads extensions waits for its setup, not
+   the earlier one's. The graph is empty at `onReady`, and the first load
+   retires any handle taken then.
 
 ### Keep a handle only as long as it names its entity
 
@@ -128,7 +137,7 @@ look in a particular graph, use `comfy.graph.root()` or
     | A load of another workflow, a tab switch, or a reload of the open workflow (a language change, late nodes) | `endDocument(graph)` retires every handle when the host freezes the outgoing tracker, and `beginDocument()` again just before configure. Take fresh handles from the loaded document.                   |
     | Undo or redo from the change tracker's own queue (`restoreHistory`)                                        | A handle whose entity is still there keeps working. A node or group handle whose entity is gone reports `isDeleted`, and reads it again if a later restore brings it back, unless a restore retired it. |
     | Undo or redo across a load, and Reuse Parameters                                                           | A load: the tracker passes `restoreHistory: false` for those states.                                                                                                                                    |
-    | A root graph clear, as API-JSON and A1111 imports do                                                       | `LGraph.clear()` gives the root a new id, so the handles report `isDeleted` with no call.                                                                                                               |
+    | An API-JSON or A1111 import, which builds the incoming document in the graph it clears                     | `endDocument(graph)` and `beginDocument()` together at the import's freeze, before the clear. Take fresh handles from the imported document.                                                            |
     | A node moved to another graph, as Convert to Subgraph moves it                                             | A different entity: the old handle reports `isDeleted`. Take a handle in the destination graph.                                                                                                         |
     | A slot rebuilt by undo or redo                                                                             | Slot handles name slot objects, so a restore that finds one gone retires it. Read `node.inputs` or `node.outputs` again.                                                                                |
 
@@ -141,23 +150,29 @@ look in a particular graph, use `comfy.graph.root()` or
         flag -->|No| ended["endDocument(rootGraph)"]
         ended -->|"clean, validation, beforeConfigureGraph"| begin["beginDocument()"]
         begin --> replace["rootGraph.configure()"]
-        flag -->|Yes| aside["beforeHistoryRestore(state)"]
+        flag -->|Yes| aside["beforeHistoryRestore(rootGraph, state)"]
         aside --> restore["rootGraph.configure()"]
         restore -->|finally| retire["afterHistoryRestore()"]
     ```
 
     - The outgoing document ends at the freeze, several awaits before the
-      configure. Until that load finishes, a handle taken in the ended graph
-      is retired as it is made, so an edit through it returns `false` instead
-      of changing a document that is no longer saved or tracked. That
-      includes a handle a removal hook takes while a `clean: false` configure
-      removes the outgoing nodes after `beginDocument()`: it would otherwise
-      read the incoming node with the same id. The ended graph is told from
+      configure. Until the next document begins, every handle taken is
+      retired as it is made, so an edit through it returns `false` instead of
+      changing a document that is no longer saved or tracked. That includes
+      the empty graph a load with `clean: true` stages before its configure,
+      which the configure discards: an edit there would report success and
+      be lost. From `beginDocument()` until the load finishes, a handle taken
+      in the graph as it was then is retired too. That includes a handle a
+      removal hook takes while a `clean: false` configure removes the
+      outgoing nodes: it would otherwise read the incoming node with the same
+      id. The ended graph is told from
       the one the load configures by its id-counter state (`LGraph.state`),
       which every configure replaces, as the host's `isCurrentGraphLoad`
-      check tells them apart. A load replaced or failing after the freeze
-      leaves the graph on screen with its handles retired; once the load
-      finishes, a fresh handle works.
+      check tells them apart. API-JSON and A1111 imports build the incoming
+      document in the graph they clear, so they call `endDocument(graph)` and
+      `beginDocument()` together at the freeze, before the clear. A load
+      replaced or failing after the freeze leaves the graph on screen with
+      its handles retired; once the load finishes, a fresh handle works.
     - A restore sets the id counters (`state.lastNodeId`, `state.lastGroupId`)
       from the state it loads, so an undo to before a node was added rewinds
       the counter and the next node added takes that id. When the restore
@@ -172,14 +187,18 @@ look in a particular graph, use `comfy.graph.root()` or
       loads, and a handle to the newest group it removes is retired.
     - A restore runs node callbacks while it configures, and an `onAdded`
       that adds a node would take the id the rewound counter gives. So just
-      before configure the host calls `beforeHistoryRestore(state)`, which
-      sets aside each cached node and widget handle whose node `state`
-      lacks: until the restore finishes it reads only the object it named,
-      so a removal hook gets the pack's own handle and reads its node, and a
-      lookup that finds another node under the id makes a new handle.
-      `afterHistoryRestore()` then retires a set-aside handle whose id
-      another node took or the counter could give again, and puts back the
-      others.
+      before configure the host calls `beforeHistoryRestore(graph, state)`,
+      which sets aside each cached node handle whose node `state` lacks:
+      until the restore finishes it reads only the object it named, so a
+      removal hook gets the pack's own handle and reads its node, and a
+      lookup that finds another node under the id makes a new handle. A
+      handle a removal hook takes for the first time, for a node `state`
+      lacks, is set aside the same way: the outgoing graph is told from the
+      cleared one by its id-counter state, as for `endDocument`.
+      `afterHistoryRestore()` then puts back a set-aside handle whose node is
+      still there, as when a listener cancels the configure, retires one
+      whose id another node took or the counter could give again, and puts
+      back the others.
     - The change tracker marks a load `restoreHistory` only for a state from
       its own undo or redo queue that rebuilds the open document. A state
       from elsewhere (the saved workflow of an earlier run that Reuse
@@ -248,7 +267,9 @@ look in a particular graph, use `comfy.graph.root()` or
     - A value to be stored is one the workflow saves unchanged: text, a
       finite number, a boolean, `null`, or a plain object or list of those,
       at most 1000 deep. A cycle, a getter, a function, `undefined` inside an
-      object, `NaN`, a `Date`, a `toJSON` and a class instance are refused,
+      object, `NaN`, a `Date`, a `toJSON` (enumerable or not, as
+      `JSON.stringify` calls either; its descriptor is read and the hook never
+      called) and a class instance are refused,
       naming the path (`value.list[0]`). One walk checks and copies the value
       (`shared/savableValue.ts`), and the stored copy is not frozen. A
       property value already on a node that the workflow could not save,
@@ -277,30 +298,8 @@ look in a particular graph, use `comfy.graph.root()` or
 These are places where the code at this point does not yet meet the decisions
 above. Each is open work for this API, not part of the contract.
 
-- **Readiness (decision 8).** A second `markReady` drains a listener
-  registered since the first one synchronously, not on the next microtask.
-  The store keeps `ready` when the canvas remounts without a new Pinia, so a
-  listener registered while the next startup loads extensions runs before
-  that startup's setup has finished.
-- **A handle first obtained during a restore (decision 10).**
-  `beforeHistoryRestore` sets aside only the handles already cached. A handle
-  a removal callback asks for for the first time while an undo or redo
-  clears the graph enters the cache as live and then resolves the incoming
-  node that reuses its id. The same has been reported for a handle taken in
-  `onRemoved` during a `clean: false` load.
-- **A vetoed restore (decision 10).** When a `configuring` listener cancels
-  an undo or redo before the graph is cleared, `afterHistoryRestore()` still
-  settles the set-aside handles, so the handle to a node that stayed on
-  screen can be retired.
-- **The staging graph of a load (decision 10).** With `clean: true` the host
-  clears the root after `endDocument`, so the cleared root no longer matches
-  the ended state, and an edit to it (a `comfy.graph.add`) returns `true`
-  until configure discards it. The API-JSON and A1111 imports freeze the
-  tracker and clear the root without calling `endDocument`.
-- **Saved values (decision 13).** A plain object with a non-enumerable
-  `toJSON` is accepted and copied as its fields, although the workflow saves
-  what `toJSON` returns. A property whose value has a `toJSON` that reads its
-  key reads differently through `getProperty(name)` and
+- **Saved values (decision 13).** A property whose value has a `toJSON` that
+  reads its key reads differently through `getProperty(name)` and
   `getProperties()[name]`.
 
 ## Open work in the host
@@ -343,9 +342,10 @@ above. Each is open work for this API, not part of the contract.
   spelling.
 - An unversioned `window.comfy` or a "latest" module. Every pack that used it
   would break when the next version is published.
-- Build the published module into the bundle. Its chunk name changes per
-  build, and it would need the application's singletons; the versioned slot
-  is one line and works in development and production alike.
+- Build the published module into the application bundle. Its chunk name
+  changes per build, and it would need the application's singletons; the
+  versioned slot is one line, and the module is emitted on its own at a fixed
+  URL.
 - Have the host find its side of the API through `window.comfy_v4`. A pack
   that wrapped the global, as packs wrap `app` today, would then stop handle
   retirement for every pack.
@@ -356,9 +356,6 @@ above. Each is open work for this API, not part of the contract.
   handle, so identity depended on garbage collection.
 - Throw on a read of a deleted handle. Converted packs read handles
   defensively and rely on `undefined`.
-- Call `beginDocument()` on every load path. On the import paths it changed
-  nothing a test could observe, because clearing already retires the
-  handles.
 - A separate load method for undo and redo instead of `restoreHistory`. It
   would repeat the load pipeline of about five hundred lines, and comparing
   graph ids cannot tell an undo from a reload of the same workflow.
@@ -430,8 +427,11 @@ above. Each is open work for this API, not part of the contract.
   to `GraphCanvas.vue`, `app.ts`, `themeService.ts` and `extensionLoader.ts`.
   `ServedPack`, the backend's record of a verified pack, is in `shared/`,
   because every version takes it from the same host.
-- **The published module.** A static file, not one generated by the build;
-  see "Consequences".
+- **The published module.** Authored in TypeScript, so the module that
+  exports the API is checked against the API's types. The build already
+  emits importable modules for `window.comfyAPI`, but only in production
+  builds; this module needs the same URL in development, so it has its own
+  plugin rather than joining that one.
 
 ## Consequences
 
@@ -454,8 +454,9 @@ Host changes outside the folder:
   ready as soon as setup finishes.
 - `src/scripts/app.ts` calls `endDocument(graph)` when it freezes the open
   document to load another, `beginDocument()` before configuring a saved
-  document, and `beforeHistoryRestore(state)` and `afterHistoryRestore()`
-  around configuring an undo or redo. `restoreHistory` gains a JSDoc saying
+  document or, on the import paths, together with `endDocument`, and
+  `beforeHistoryRestore(graph, state)` and `afterHistoryRestore()` around
+  configuring an undo or redo. `restoreHistory` gains a JSDoc saying
   extensions must not set it.
 - `GraphCanvas.vue`, `src/scripts/app.ts`, `themeService.ts` and
   `extensionLoader.ts` make every call into the API through
@@ -464,10 +465,12 @@ Host changes outside the folder:
   its own undo or redo queue, and remembers each state an undo or redo
   pushed across a load and each state next to a load of another state into
   the same workflow (`reset()`), so that restoring it is a load too
-  (decision 10).
-
-Handle retirement on import depends on `LGraph.clear()` assigning a new root
-id; a test fails if that stops.
+  (decision 10). At the end of a load it takes the graph as the
+  `afterLoadGraph` hooks left it as the loaded state
+  (`adoptLoadedGraph()`), so an edit such a hook makes, through a handle or
+  not, is part of what the load gives, and the user's next undo does not take
+  it back. A user edit made while a slow `async` hook awaits is absorbed the
+  same way.
 
 A graph's `configuring` event can cancel a load after `endDocument` and
 `beginDocument()` have run. No core listener cancels. If an extension does,
@@ -484,8 +487,7 @@ included: with 10,000 nodes made and deleted, each with a node, a widget and
 a slot handle taken, the handles hold 144 MB (14.4 KB a node) until the next
 load, and each undo walks them in about 30 ms. A node handle with its members
 is 9.6 KB, about 60 closures; shrinking it, not weakening the hold, is how to
-lower this. API-JSON and A1111 imports clear the graph without a load, so
-handles taken before one stay held, unreadable, until a load, undo or redo.
+lower this.
 
 Adding a version adds wiring beside this one: an import map entry in
 `index.html`, a `Window` entry in `src/types/index.ts`, an ignore entry in
@@ -497,10 +499,9 @@ handle caches, so a v4 handle and a v5 handle to one node are two objects and
 `sameEntity` of the two is `false`. A pack that moves to a new version one
 file at a time compares the handles each file takes from one version.
 
-`public/comfy/api/v4.js` is a JavaScript file in a TypeScript-only
-repository. The build emits importable modules for `window.comfyAPI` only in
-production builds; a static file serves development and production alike.
-`knip.config.ts` lists it, because nothing in the build imports it. A pack
+`knip.config.ts` lists `publishedModule.ts` as an entry, because nothing in
+the app imports it. Release and desktop packaging take `comfy/api/v4.js` from
+the build output, not from `public/`. A pack
 types the import through the published `v4` namespace and a declaration
 mapped to `/comfy/api/v4.js` in its own `tsconfig.json`
 (ADR-EXTENSIONS-NODE-API-0077, decision 3).

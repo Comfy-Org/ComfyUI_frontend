@@ -371,9 +371,10 @@ flowchart TD
     ([#24162](https://github.com/Comfy-Org/ComfyUI_frontend/issues/24162)),
     and once it lands the hook fires under Vue nodes with no change here.
     Each renderer claim the JSDoc makes is tested: the canvas paths in
-    `defs/hostPaths.test.ts` and `app.test.ts`, Vue nodes by mounting
-    `LGraphNode.vue` on a real graph and canvas
-    (`LGraphNode.nodeApi.test.ts`).
+    `defs/hostPaths.test.ts`, the drop through the editor's own `drop`
+    handler in `app.test.ts`, and Vue nodes by mounting `LGraphNode.vue` on
+    a real graph and canvas (`LGraphNode.nodeApi.test.ts`: hover, drag-over,
+    and the node dropped on becoming the drop target).
     - `onDragOver` and `onDrop` get the node's handle and the browser's
       `DragEvent`. Both renderers call `onDragOver` while a drag is over the
       node; the node is the drop target if the type's own method accepts or
@@ -511,10 +512,12 @@ flowchart TD
       folder segment and gives that record's `PackId`; every module of a pack
       gets the same object. It throws a `TypeError` for a `meta` with no text
       `url`, a URL not under `<base>/extensions/<segment>/`, a segment with
-      no record, and an id that is a field the node saves or `extensions`,
-      since the configure view spreads each pack's entry over the node's
-      fields. The backend refuses such ids at startup; both read the one list
-      of the node's saved fields (`NODE_CANONICAL_FIELDS` here).
+      no record, an id that is not a registry id (the workflow schema's
+      `cnr_id`: letters, digits, `.`, `_` and `-`, so never a `:`), and an id
+      that is a field the node saves or `extensions`, since the configure view
+      spreads each pack's entry over the node's fields. The backend refuses
+      such ids at startup; both read the one list of the node's saved fields
+      (`NODE_CANONICAL_FIELDS` here).
     - The registry keeps names unique and owner-checked only for packs
       published to it: a git-only pack whose `[project] name` matches
       another author's registry pack is given that id.
@@ -522,39 +525,50 @@ flowchart TD
       anything else, a copy included, with a `TypeError`.
 44. An older backend has no `/extension_packs`, and Cloud can run a newer
     frontend against one. A failure to get the records (an error status, a
-    network error, a reply that is not JSON or not a list of records) means
-    no verification is available: the loader logs it once, and
-    `registerPack` gives a `PackId` whose id is the decoded, lower-cased
-    folder segment and whose version is `undefined`. Such a `PackId` stamps
-    nothing (decision 45) and reads and saves under the folder name.
-    - A verified pack saves under its id only. It reads `extensions[id]` and
-      then the lower-cased folder entry, so a workflow saved under an older
-      backend is found when the folder and the project name differ, but only
-      when the folder name is no other pack's id in the records. An entry it
-      read there moves: the first serialization after the load writes it
-      under the id and deletes the folder entry. A folder name that is
-      another verified pack's id is neither read nor moved.
+    network error, a reply that is not JSON or not a list of records, or a
+    reply not read to its end within the bound `api.fetchApi` sets on
+    headers, which the lookup applies to the body too) means no verification
+    is available: the loader logs it once, and `registerPack` gives a
+    `PackId` whose id is `folder:` and the decoded folder segment exactly as
+    served (`folder:ComfyUI_MyPack`), and whose version is `undefined`. Such a
+    `PackId` stamps nothing (decision 45) and saves under that id.
+    - The two key spaces are disjoint: a verified id is a registry id, which
+      has no `:` (decision 43), so a folder key is never a pack's id, and two
+      folders whose names differ only in case are two packs with two
+      entries.
+    - A verified pack saves under its id only. It reads `extensions[id]` and,
+      when there is none, `extensions["folder:<its own segment>"]`, the key
+      the same pack saved under against a backend that does not verify. An
+      entry it read there moves: the first serialization after the load
+      writes it under the id and deletes the folder entry. It never reads or
+      moves a key that is neither its id nor its own folder key, so the entry
+      of a pack that is not installed stays in the workflow untouched.
+      Nothing had been released under the earlier bare folder keys, so
+      nothing migrates them.
     - A newer frontend on a backend without `/extension_packs` (opt-in setups
       such as `--front-end-version`, and Cloud until its ingest passes the
-      route through) uses folder-name ids. Once a verifying backend has saved
-      a workflow, such a frontend no longer sees the fields of a pack whose
-      id differs from its folder, and what it saves goes under the folder
-      name, which a verifying backend does not read back while the entry
-      under the id exists. Both are kept in the workflow.
+      route through) uses folder keys. Once a verifying backend has saved a
+      workflow, such a frontend no longer sees the fields saved under the id,
+      and what it saves goes under its folder key, which a verifying backend
+      does not read back while the entry under the id exists. Both are kept
+      in the workflow.
     - The `ServedPack` type in `shared/versionHost.ts` and the zod schema in
       `extensionPacks.ts` describe the same record; the dependency rules keep
       the host's parse apart from the API's type.
 45. `define` stamps `properties.cnr_id` with the pack's id and
     `properties.ver` with its version, when there is one, on each node of its
     types as the node is constructed, so a workflow opened without the pack
-    names the pack to install. Each is stamped only when the workflow schema
-    takes it (`zNodePackMetadata`, as `executionUtil` checks before it sends
-    them): a PEP 440 version such as `7.8` is not semver, and stamping it
-    would make every saved workflow fail validation. `aux_id`, the GitHub
+    names the pack to install. The workflow schema takes every id
+    `registerPack` gives (decision 43); the version is stamped only when the
+    schema takes it (`zNodePackMetadata`, as `executionUtil` checks before it
+    sends them): a PEP 440 version such as `7.8` is not semver, and stamping
+    it would make every saved workflow fail validation. `aux_id`, the GitHub
     repository id the missing-node dialog falls back to, is not stamped. A
     workflow's saved pack properties are kept as one unit: if it saved any of
-    the three, a stamped one it lacks is removed on load, so a load never
-    makes a pair that never existed. A node saved with none of them gains the
+    the three, a stamped one it lacks is removed on load, before the node
+    takes the saved state, so a load never makes a pair that never existed
+    and no hook the load calls (`onPropertyChanged`, `onConfigured`) sees
+    one. A node saved with none of them gains the
     stamp when it loads, the one exception to "a load never rewrites saved
     data" (decision 27). A pack cannot change `cnr_id`, `aux_id` or `ver`:
     `setProperty`, the edit core's property patch and
@@ -565,15 +579,6 @@ flowchart TD
 These are places where the code at this point does not yet meet the decisions
 above. Each is open work for this API, not part of the contract.
 
-- **Pack entries (decisions 43, 44).** The records list only installed packs,
-  so a verified pack whose lower-cased folder name is the id of a pack that
-  is not installed reads that pack's entry and moves it under its own id on
-  the next save. Without verification, two folders that differ only in case
-  get one `PackId` and share one entry. The lookup's timeout covers the
-  response headers but not the body, so a stalled body holds pack loading.
-- **Stamps (decision 45).** The saved pack properties are made whole after
-  the node's `configure` returns, so an `onConfigured` hook on a node saved
-  with an old `cnr_id` and no `ver` reads the installed `ver` beside it.
 - **Registration (decisions 3, 6, 11, 17).** The duplicate-type check runs
   before every read of the definition the pack controls (a slot name behind
   a getter can define the same type first) and does not see a host
