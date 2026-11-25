@@ -6,6 +6,13 @@ import type { ISlotType, Positionable } from '@comfyorg/graph-model/interfaces'
 
 let isGraphNode: (item: Positionable) => item is LGraphNode
 
+export function legacyArrayItem<T>(
+  items: readonly T[],
+  index: number
+): T | undefined {
+  return items[index]
+}
+
 export function provideGraphNodeGuard(guard: typeof isGraphNode): void {
   isGraphNode = guard
 }

@@ -1,8 +1,7 @@
-import { fromAny } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 import {
-  extractFilesFromDragEvent,
-  fetchDroppedAsset,
+  fetchDroppedFile,
+  getDroppedFiles,
   hasAudioType,
   hasImageType,
   hasVideoType,
@@ -79,19 +78,18 @@ describe('withHdrImageType', () => {
   })
 })
 
-describe('extractFilesFromDragEvent', () => {
-  it('returns an untyped .exr drop as an image', async () => {
-    const event = fromAny<DragEvent, unknown>({
-      dataTransfer: { files: [new File(['data'], 'sky.exr')] }
-    })
+describe('getDroppedFiles', () => {
+  it('returns an untyped .exr drop as an image', () => {
+    const dataTransfer = new DataTransfer()
+    dataTransfer.items.add(new File(['data'], 'sky.exr'))
 
-    const [file] = await extractFilesFromDragEvent(event)
+    const [file] = getDroppedFiles(dataTransfer)
 
     expect(hasImageType(file)).toBe(true)
   })
 })
 
-describe('fetchDroppedAsset', () => {
+describe('fetchDroppedFile', () => {
   function stubFetch(resolvedUrl: string) {
     const response = new Response(new Blob(['x'], { type: 'image/png' }))
     Object.defineProperty(response, 'url', { value: resolvedUrl })
@@ -111,7 +109,7 @@ describe('fetchDroppedAsset', () => {
     ]
   ] as const)('%s', async ([, resolvedUrl, want]) => {
     stubFetch(resolvedUrl)
-    const file = await fetchDroppedAsset(
+    const file = await fetchDroppedFile(
       {
         name: 'display label',
         uri: 'https://api/assets/abc/content',
@@ -124,7 +122,7 @@ describe('fetchDroppedAsset', () => {
 
   it('still prefers an explicit filename parameter over everything', async () => {
     stubFetch('https://storage/bucket/deadbeef.png?filename=real%20name.png')
-    const file = await fetchDroppedAsset(
+    const file = await fetchDroppedFile(
       {
         name: 'display label',
         uri: 'https://api/assets/abc/content',
@@ -137,7 +135,7 @@ describe('fetchDroppedAsset', () => {
 
   it('keeps the file when the storage path has a malformed escape', async () => {
     stubFetch('https://storage/bucket/%E0%A4%A')
-    const file = await fetchDroppedAsset(
+    const file = await fetchDroppedFile(
       {
         name: 'display label',
         uri: 'https://api/assets/abc/content',
@@ -150,7 +148,7 @@ describe('fetchDroppedAsset', () => {
 
   it('still yields a file when only the malformed segment could name it', async () => {
     stubFetch('https://storage/bucket/%E0%A4%A.png')
-    const file = await fetchDroppedAsset(
+    const file = await fetchDroppedFile(
       {
         name: 'fallback.bin',
         uri: 'https://api/assets/abc/content',
@@ -163,7 +161,7 @@ describe('fetchDroppedAsset', () => {
 
   it('falls back to the display label when nothing else carries an extension', async () => {
     stubFetch('https://storage/bucket/deadbeef')
-    const file = await fetchDroppedAsset(
+    const file = await fetchDroppedFile(
       {
         name: 'fallback.png',
         uri: 'https://api/assets/abc/content',
@@ -176,7 +174,7 @@ describe('fetchDroppedAsset', () => {
 
   it('keeps the display label as the name by default', async () => {
     stubFetch('https://storage/bucket/deadbeef.png?filename=real%20name.png')
-    const file = await fetchDroppedAsset({
+    const file = await fetchDroppedFile({
       name: 'display label',
       uri: 'https://api/assets/abc/content',
       ref: 'cat.png'

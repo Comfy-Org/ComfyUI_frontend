@@ -1,4 +1,5 @@
-import type { BillingStatus } from '@comfyorg/ingest-types'
+import { cloudCreditBannersAllowed } from './cloudCreditBanners'
+import type { PlanRowFacts } from './planRow'
 
 export type BillingStatusBannerKind =
   | 'paused'
@@ -16,7 +17,7 @@ export interface BillingStatusBannerFacts {
   audience: BillingStatusBannerAudience | null
   enterpriseEndingNotice: EnterpriseEndingNotice | null
   isLoaded: boolean
-  billingStatus: BillingStatus | null
+  billingStatus: PlanRowFacts['billingStatus']
   canAccessSubscriptionFeatures: boolean
   hasFunds: boolean | null
   isCancelled: boolean
@@ -32,6 +33,7 @@ export interface BillingStatusBannerFacts {
   runDeniedPastDue: boolean
   unifiedBillingSettingsEnabled: boolean
   isActive: boolean
+  subscriptionState: PlanRowFacts['subscriptionState']
 }
 
 function deriveEnterpriseBanner(
@@ -43,12 +45,10 @@ function deriveEnterpriseBanner(
 }
 
 function deriveLifecycleNotice(
-  facts: BillingStatusBannerFacts,
-  audience: BillingStatusBannerAudience
+  facts: BillingStatusBannerFacts
 ): BillingStatusBannerKind | null {
   if (facts.isCancelled && facts.endDate) return 'ending'
   const showsPlanChange =
-    audience === 'team' &&
     facts.hasScheduledChange &&
     !facts.isCancelled &&
     facts.canManage &&
@@ -66,12 +66,11 @@ function showsPastDueOutOfCredits(facts: BillingStatusBannerFacts): boolean {
 
 function cloudCreditBannersOpen(facts: BillingStatusBannerFacts): boolean {
   if (!facts.unifiedBillingSettingsEnabled) return true
-  return facts.isActive
+  return cloudCreditBannersAllowed(facts.subscriptionState, facts.isActive)
 }
 
 function deriveNoticeBanner(
-  facts: BillingStatusBannerFacts,
-  audience: BillingStatusBannerAudience
+  facts: BillingStatusBannerFacts
 ): BillingStatusBannerKind | null {
   if (!facts.billingControlEnabled) return null
   const creditsOpen = cloudCreditBannersOpen(facts)
@@ -80,7 +79,7 @@ function deriveNoticeBanner(
   if (creditsOpen && facts.hasFunds === false && !facts.outOfCreditsDismissed) {
     return 'outOfCredits'
   }
-  return deriveLifecycleNotice(facts, audience)
+  return deriveLifecycleNotice(facts)
 }
 
 function hasPlanEnded(
@@ -101,5 +100,5 @@ export function deriveBillingStatusBanner(
     return facts.planEndedDismissed ? null : 'planEnded'
   }
   if (facts.enterpriseEndingNotice) return deriveEnterpriseBanner(facts)
-  return audience ? deriveNoticeBanner(facts, audience) : null
+  return audience ? deriveNoticeBanner(facts) : null
 }

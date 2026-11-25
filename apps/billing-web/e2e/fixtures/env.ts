@@ -16,6 +16,8 @@ export const E2E_ORIGIN = `http://localhost:${E2E_PORT}`
 
 export const CLOUD_ORIGIN = 'https://testcloud.comfy.org'
 
+export const PLATFORM_ORIGIN = 'https://testplatform.comfy.org'
+
 export const E2E_VITE_ENV = {
   VITE_BILLING_ENV: 'test',
   VITE_STRIPE_PUBLISHABLE_KEY: 'pk_e2e_fake_key_not_real'

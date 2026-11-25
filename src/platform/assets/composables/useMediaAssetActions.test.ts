@@ -1,10 +1,11 @@
 import { useDialogStore } from '@/stores/dialogStore'
-import { useAssetsStore } from '@/stores/assetsStore'
-import { useAssetExportStore } from '@/stores/assetExportStore'
+import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
+import { useAssetExportStore } from '@/platform/assets/stores/assetExportStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { CreateAssetExportData } from '@comfyorg/ingest-types'
+import { ComfyApi } from '@comfyorg/api-client/ComfyApi'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -13,26 +14,25 @@ import { createApp, defineComponent, h, provide, ref } from 'vue'
 
 import { i18n } from '@/i18n'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { unflattenOutputAssets } from '@/platform/assets/composables/media/assetMappers'
-import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
-import {
-  MediaAssetKey,
-  parseAssetInfo
-} from '@/platform/assets/schemas/mediaAssetSchema'
-import type { AssetId, AssetItem } from '@/platform/assets/schemas/assetSchema'
-import type { AssetMeta } from '@/platform/assets/schemas/mediaAssetSchema'
+import { unflattenOutputAssets } from '@/platform/assets/adapters/outputAssetMappers'
+import { getOutputAssetMetadata } from '@/platform/assets/types/outputAssetMetadata'
+import { assetService } from '@/platform/assets/services/assetService'
+import { MediaAssetKey } from '@/platform/assets/composables/mediaAssetContext'
+import { parseAssetInfo } from '@/platform/assets/integration/assetDrop'
+import type { AssetId, AssetItem } from '@comfyorg/assets-core/schema'
+import type { AssetMeta } from '@comfyorg/assets-core/media'
 import { seedMediaNodeDefs } from '@/platform/workflowErrors/missingMedia/__fixtures__/promotedMedia'
 import { scanNodeMediaCandidates } from '@/platform/workflowErrors/missingMedia/missingMediaScan'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 import { api } from '@/scripts/api'
 import { useLitegraphService } from '@/services/litegraphService'
 import { markGraphLoadFailurePresented } from '@/services/graphLoadFailure'
-import { detectNodeTypeFromFilename } from '@/utils/loaderNodeUtil'
-import { clearDeletedAssetWidgetValues } from '@/platform/assets/utils/clearDeletedAssetWidgetValues'
-import { clearNodePreviewCacheForValues } from '@/platform/assets/utils/clearNodePreviewCacheForValues'
-import { markDeletedAssetsAsMissingMedia } from '@/platform/assets/utils/markDeletedAssetsAsMissingMedia'
-import { getAssetType } from '@/platform/assets/utils/assetTypeUtil'
-import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
+import { detectNodeTypeFromFilename } from '@/platform/assets/integration/loaderNodeUtil'
+import { clearDeletedAssetWidgetValues } from '@/platform/assets/integration/clearDeletedAssetWidgetValues'
+import { clearNodePreviewCacheForValues } from '@/platform/assets/integration/clearNodePreviewCacheForValues'
+import { markDeletedAssetsAsMissingMedia } from '@/platform/assets/integration/markDeletedAssetsAsMissingMedia'
+import { getAssetType } from '@comfyorg/assets-core/metadata'
+import { resolveOutputAssetItems } from '@/platform/assets/adapters/outputAssetResolver'
 import { startAssetDrag } from '@/platform/assets/utils/assetDragUtil'
 import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { useMediaAssetActions as createMediaAssetActions } from './useMediaAssetActions'
@@ -94,12 +94,12 @@ vi.mock(import('@/platform/workflow/utils/workflowExtractionUtil'), () => ({
 
 vi.mock(import('@/services/litegraphService'))
 
-vi.mock(import('@/utils/loaderNodeUtil'))
+vi.mock(import('@/platform/assets/integration/loaderNodeUtil'))
 const mockDetectNodeTypeFromFilename = vi.mocked(detectNodeTypeFromFilename)
 
 vi.mock(import('@/utils/typeGuardUtil'), { spy: true })
 
-vi.mock(import('@/platform/assets/utils/assetTypeUtil'), { spy: true })
+vi.mock(import('@comfyorg/assets-core/metadata'), { spy: true })
 const mockGetAssetType = vi.mocked(getAssetType)
 
 const mockGetOutputAssetMetadata = vi.hoisted(() =>
@@ -109,14 +109,11 @@ const mockGetOutputAssetMetadata = vi.hoisted(() =>
     ) => Record<string, unknown> | null
   >(() => null)
 )
-vi.mock<unknown>(
-  import('@/platform/assets/schemas/assetMetadataSchema'),
-  () => ({
-    getOutputAssetMetadata: mockGetOutputAssetMetadata
-  })
-)
+vi.mock<unknown>(import('@/platform/assets/types/outputAssetMetadata'), () => ({
+  getOutputAssetMetadata: mockGetOutputAssetMetadata
+}))
 
-vi.mock(import('@/platform/assets/utils/outputAssetUtil'), { spy: true })
+vi.mock(import('@/platform/assets/adapters/outputAssetResolver'), { spy: true })
 const mockResolveOutputAssetItems = vi.mocked(resolveOutputAssetItems)
 
 const mockDeleteAsset = vi.hoisted(() =>
@@ -131,6 +128,7 @@ const mockCreateAssetExport = vi.hoisted(() =>
 )
 vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
   assetService: {
+    getAssetDetails: vi.fn<typeof assetService.getAssetDetails>(),
     deleteAsset: mockDeleteAsset,
     createAssetExport: mockCreateAssetExport
   }
@@ -175,12 +173,15 @@ const mockRemoveNodeOutputsForNode = vi.hoisted(() => vi.fn())
 
 const mockCaptureCanvasState = vi.hoisted(() => vi.fn())
 
-vi.mock(import('@/platform/assets/utils/clearNodePreviewCacheForValues'), {
-  spy: true
-})
+vi.mock(
+  import('@/platform/assets/integration/clearNodePreviewCacheForValues'),
+  {
+    spy: true
+  }
+)
 const mockClearNodePreviewCache = vi.mocked(clearNodePreviewCacheForValues)
 
-vi.mock(import('@/platform/assets/utils/clearDeletedAssetWidgetValues'), {
+vi.mock(import('@/platform/assets/integration/clearDeletedAssetWidgetValues'), {
   spy: true
 })
 const mockClearWidgetValues = vi.mocked(clearDeletedAssetWidgetValues)
@@ -190,9 +191,12 @@ vi.mock(import('@/platform/workflowErrors/missingMedia/missingMediaScan'), {
 })
 const mockScanNodeMediaCandidates = vi.mocked(scanNodeMediaCandidates)
 
-vi.mock(import('@/platform/assets/utils/markDeletedAssetsAsMissingMedia'), {
-  spy: true
-})
+vi.mock(
+  import('@/platform/assets/integration/markDeletedAssetsAsMissingMedia'),
+  {
+    spy: true
+  }
+)
 const mockMarkMissingMedia = vi.mocked(markDeletedAssetsAsMissingMedia)
 
 function createMockAsset(overrides: Partial<AssetItem> = {}): AssetItem {
@@ -863,12 +867,18 @@ describe('useMediaAssetActions', () => {
       const contentUrl = 'http://localhost:8188/api/assets/team-owned/content'
       expect(mockDownloadFileAsBlob).toHaveBeenCalledWith(
         contentUrl,
-        expect.objectContaining({ fetch: expect.any(Function) })
+        expect.objectContaining({
+          fetch: expect.any(Function),
+          surface: 'gallery'
+        })
       )
 
       const { fetch: authedFetch } = mockDownloadFileAsBlob.mock.calls[0][1]
-      await authedFetch(contentUrl)
-      expect(api.fetchApi).toHaveBeenCalledWith(contentUrl)
+      const onAuthCredential = vi.fn()
+      await authedFetch(contentUrl, onAuthCredential)
+      expect(api.fetchApi).toHaveBeenCalledWith(contentUrl, {
+        onAuthCredential
+      })
     })
 
     it('preserves successful OSS downloads when another file fails', async () => {
@@ -1707,7 +1717,7 @@ describe('useMediaAssetActions', () => {
       vi.mocked(api.getServerFeature).mockReturnValue(false)
       mockGetAssetType.mockReturnValue('output')
       mockGetOutputAssetMetadata.mockReturnValue({ jobId: 'job-1' })
-      vi.mocked(api.deleteItem).mockResolvedValue(undefined)
+      vi.mocked(api.deleteItem).mockResolvedValue(true)
       const actions = useMediaAssetActions()
       const asset = createMockAsset({
         id: 'asset-1',
@@ -1722,6 +1732,155 @@ describe('useMediaAssetActions', () => {
       expect(mockDeleteAsset).not.toHaveBeenCalled()
       expect(useToast().success).toHaveBeenCalled()
     })
+  })
+
+  describe('deleteAssets - job-backed App history', () => {
+    const record = createMockAsset({
+      id: 'real-asset-record',
+      name: 'output.png',
+      tags: ['output']
+    })
+    const selection = createMockAsset({
+      id: 'job-distinct-from-asset',
+      name: 'output.png',
+      tags: ['output'],
+      user_metadata: { jobId: 'job-distinct-from-asset' }
+    })
+
+    beforeEach(() => {
+      mockIsCloud.value = true
+      vi.mocked(api.getServerFeature).mockReturnValue(true)
+      mockGetOutputAssetMetadata.mockImplementation(
+        (metadata) => metadata ?? null
+      )
+      mockShowDialog.mockImplementation(
+        ({ props }: { props: { onConfirm: (confirmed: boolean) => void } }) =>
+          props.onConfirm(true)
+      )
+      vi.mocked(assetService.getAssetDetails).mockResolvedValue(record)
+      vi.mocked(api.deleteItem).mockResolvedValue(true)
+    })
+
+    it.for([
+      {
+        name: 'file-backed output',
+        records: [record],
+        deleteRecord: async () => undefined,
+        deletedRecords: ['real-asset-record'],
+        deletedHistory: [['history', 'job-distinct-from-asset']]
+      },
+      {
+        name: 'text-only output',
+        records: [],
+        deleteRecord: async () => undefined,
+        deletedRecords: [],
+        deletedHistory: [['history', 'job-distinct-from-asset']]
+      },
+      {
+        name: 'failed record deletion',
+        records: [record],
+        deleteRecord: async () => {
+          throw new Error('503 Service Unavailable')
+        },
+        deletedRecords: ['real-asset-record'],
+        deletedHistory: []
+      }
+    ])(
+      'deletes the correct identities for $name',
+      async ({ records, deleteRecord, deletedRecords, deletedHistory }) => {
+        vi.mocked(api.getJobAssets).mockResolvedValue({
+          assets: records,
+          complete: true
+        })
+        mockDeleteAsset.mockImplementation(deleteRecord)
+
+        await useMediaAssetActions().deleteAssets(selection)
+
+        expect(mockDeleteAsset.mock.calls.map(([id]) => id)).toEqual(
+          deletedRecords
+        )
+        expect(
+          vi.mocked(api.deleteItem).mock.calls.map(([type, id]) => [type, id])
+        ).toEqual(deletedHistory)
+      }
+    )
+
+    it.for([
+      {
+        name: 'successful history deletion',
+        response: async () => new Response(null, { status: 200 }),
+        successes: 1,
+        errors: 0
+      },
+      {
+        name: 'HTTP failure',
+        response: async () => new Response(null, { status: 503 }),
+        successes: 0,
+        errors: 1
+      },
+      {
+        name: 'network failure',
+        response: async (): Promise<Response> => {
+          throw new Error('Offline')
+        },
+        successes: 0,
+        errors: 1
+      }
+    ])(
+      'reports $name for a text-only job',
+      async ({ response, successes, errors }) => {
+        const client = new ComfyApi({
+          isCloud: false,
+          featureFlagOverride: () => undefined,
+          onFreeMemory: () => undefined
+        })
+        vi.spyOn(client, 'fetchApi').mockImplementation(response)
+        vi.mocked(api.deleteItem).mockImplementation(
+          client.deleteItem.bind(client)
+        )
+        vi.mocked(api.getJobAssets).mockResolvedValue({
+          assets: [],
+          complete: true
+        })
+
+        await useMediaAssetActions().deleteAssets(selection)
+
+        expect(useToast().success).toHaveBeenCalledTimes(successes)
+        expect(useToast().error).toHaveBeenCalledTimes(errors)
+      }
+    )
+
+    it.for([
+      {
+        name: 'incomplete asset listing',
+        complete: false,
+        readRecord: async () => record
+      },
+      {
+        name: 'failed asset lookup',
+        complete: true,
+        readRecord: async (): Promise<AssetItem> => {
+          throw new Error('503 Service Unavailable')
+        }
+      }
+    ])(
+      'preserves assets and history after an $name',
+      async ({ complete, readRecord }) => {
+        vi.mocked(api.getJobAssets).mockResolvedValue({
+          assets: [record],
+          complete
+        })
+        vi.mocked(assetService.getAssetDetails).mockImplementation(readRecord)
+
+        await expect(
+          useMediaAssetActions().deleteAssets(selection)
+        ).resolves.toBe(false)
+
+        expect(mockDeleteAsset).not.toHaveBeenCalled()
+        expect(api.deleteItem).not.toHaveBeenCalled()
+        expect(useToast().error).toHaveBeenCalled()
+      }
+    )
   })
 
   describe('deleteAssets - cancellation', () => {

@@ -15,7 +15,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { useApp } from '@/scripts/appInstance'
 import type { ComfyApp } from '@/types/comfy'
-import { ChangeTracker } from '@/scripts/changeTracker'
+import { isGraphLoading } from '@/core/graph/graphLoadState'
 import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
@@ -111,7 +111,7 @@ export const useAppModeStore = defineStore('appMode', () => {
       outputs: rawOutputs.flatMap((nodeId) => {
         const parsedNodeId = parseNodeId(nodeId)
         if (!parsedNodeId) return []
-        return ChangeTracker.isLoadingGraph || resolveNode(parsedNodeId)
+        return isGraphLoading(rootGraph) || resolveNode(parsedNodeId)
           ? [parsedNodeId]
           : []
       })
@@ -191,10 +191,13 @@ export const useAppModeStore = defineStore('appMode', () => {
     resolvedInputs: LinearInput[],
     resolvedOutputs: NodeId[]
   ) {
-    if (ChangeTracker.isLoadingGraph) return
-
     const app = useApp()
-    if (!app.isGraphReady || !app.rootGraph.nodes.length) return
+    if (
+      !app.isGraphReady ||
+      isGraphLoading(app.rootGraph) ||
+      !app.rootGraph.nodes.length
+    )
+      return
 
     const hadConfig = !!(data?.inputs?.length || data?.outputs?.length)
     if (!hadConfig || resolvedInputs.length || resolvedOutputs.length) return
@@ -234,30 +237,26 @@ export const useAppModeStore = defineStore('appMode', () => {
     resetSelectedToWorkflow
   )
 
+  function writeLinearData(inputs: LinearInput[], outputs: NodeId[]) {
+    const app = useApp()
+    if (!app.isGraphReady || isGraphLoading(app.rootGraph)) return
+    app.rootGraph.extra.linearData = {
+      inputs: inputs.map(([id, name, config]): LinearInput =>
+        config
+          ? [id, name, JSON.parse(JSON.stringify(config)) as InputWidgetConfig]
+          : [id, name]
+      ),
+      outputs: [...outputs]
+    }
+    workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
+  }
+
   watch(
     () =>
       isBuilderMode.value
         ? { inputs: selectedInputs.value, outputs: selectedOutputs.value }
         : null,
-    (data) => {
-      if (!data || ChangeTracker.isLoadingGraph) return
-      if (!useApp().isGraphReady) return
-      const graph = useApp().rootGraph
-      const extra = graph.extra
-      extra.linearData = {
-        inputs: data.inputs.map(([id, name, config]): LinearInput =>
-          config
-            ? [
-                id,
-                name,
-                JSON.parse(JSON.stringify(config)) as InputWidgetConfig
-              ]
-            : [id, name]
-        ),
-        outputs: [...data.outputs]
-      }
-      workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
-    },
+    (data) => data && writeLinearData(data.inputs, data.outputs),
     { deep: true }
   )
 
@@ -324,6 +323,8 @@ export const useAppModeStore = defineStore('appMode', () => {
     if (index === -1) return
     const [id, type, options] = selectedInputs.value[index]
     selectedInputs.value.splice(index, 1, [id, type, { ...options, ...config }])
+    if (!isBuilderMode.value)
+      writeLinearData(selectedInputs.value, selectedOutputs.value)
   }
 
   return {

@@ -1,4 +1,3 @@
-import type { DesktopLoginCodeRedeemResponse } from '@comfyorg/ingest-types'
 import { expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
 
@@ -8,6 +7,11 @@ import frMessages from '@/locales/fr/main.json' with { type: 'json' }
 import { agentConsentTest as test } from '@e2e/fixtures/agentConsentFixture'
 import { agentConsentTelemetryTest as telemetryTest } from '@e2e/fixtures/agentConsentTelemetryFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import {
+  DESKTOP_LOGIN_HANDOFF_URL,
+  fulfillDesktopLoginRedeem
+} from '@e2e/fixtures/utils/desktopLoginHandoff'
+import { trackDialogFlash } from '@e2e/fixtures/utils/flashDetector'
 import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 async function requestConsentFromOpenPanel(page: Page): Promise<void> {
@@ -118,7 +122,6 @@ test.describe('Manual agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
       await expect(dialog).toHaveCount(0)
       await expect(panel).toBeVisible()
 
-      await agentPanel.selectWorkflow()
       await agentPanel.sendMessage('Build a workflow after accepting consent')
       await expect(agentPanel.userMessageBubbles).toHaveText([
         'Build a workflow after accepting consent'
@@ -730,26 +733,15 @@ telemetryTest.describe(
   'Agent activation behind a desktop sign-in approval',
   { tag: ['@cloud', '@ui'] },
   () => {
-    telemetryTest.use({
-      agentConsentAccepted: false,
-      initialUrl:
-        '/?desktop_login_code=dlc_e2eApprovalCodeFE2808abcdefghijklmnopqrstu'
-    })
+    telemetryTest.use({ agentConsentAccepted: false })
 
     telemetryTest.beforeEach(async ({ page }) => {
-      await page.route('**/api/auth/desktop-login-codes/redeem', (route) =>
-        route.fulfill({
-          status: 200,
-          json: {
-            status: 'redeemed'
-          } satisfies DesktopLoginCodeRedeemResponse
-        })
-      )
+      await fulfillDesktopLoginRedeem(page)
     })
 
     telemetryTest(
-      'waits for the approval before offering consent',
-      async ({ comfyPage, agentPanel, consentTelemetry }) => {
+      'approves on the dedicated page without ever offering consent',
+      async ({ comfyPage, agentPanel }) => {
         const page = comfyPage.page
         const approval = page.getByRole('dialog', {
           name: enMessages.desktopLogin.confirmSummary
@@ -757,38 +749,47 @@ telemetryTest.describe(
         const consent = page.getByRole('dialog', {
           name: enMessages.agent.consent.title
         })
+        const success = page.getByRole('heading', {
+          name: enMessages.desktopLogin.successSummary,
+          exact: true
+        })
         const approve = approval.getByRole('button', {
           name: enMessages.g.confirm
         })
+        const visitedPaths: string[] = []
+        const consentFlash = await trackDialogFlash(
+          page,
+          enMessages.agent.consent.title
+        )
 
         await telemetryTest.step(
-          'The approval owns the screen and the offer waits behind it',
+          'The handoff lands on the dedicated approval page, not the workspace',
           async () => {
-            await expect(approval).toBeVisible()
+            await comfyPage.goto({ url: DESKTOP_LOGIN_HANDOFF_URL })
             await expect
-              .poll(
-                () =>
-                  consentTelemetry.some(
-                    ({ event, properties }) =>
-                      event === 'app:agent_consent_not_offered' &&
-                      properties.reason === 'dialog_open'
-                  ),
-                { timeout: 15_000 }
-              )
-              .toBe(true)
-            await approve.click({ trial: true })
+              .poll(() => new URL(page.url()).pathname, { timeout: 15_000 })
+              .toBe('/cloud/desktop-login')
+            await expect(approval).toBeVisible()
             await expect(consent).toHaveCount(0)
-            await expect(agentPanel.root).toBeVisible()
+            await expect(agentPanel.root).toHaveCount(0)
           }
         )
 
         await telemetryTest.step(
-          'Approving clears the screen, then the card shows over the activated panel',
+          'Approving confirms the sign-in and the page never enters the workspace',
           async () => {
+            page.on('framenavigated', (frame) => {
+              if (frame === page.mainFrame())
+                visitedPaths.push(new URL(frame.url()).pathname)
+            })
             await approve.click()
             await expect(approval).toHaveCount(0)
-            await expect(consent).toBeVisible()
-            await expect(agentPanel.root).toBeVisible()
+            await expect(success).toBeVisible()
+            await expect(consent).toHaveCount(0)
+            await expect(agentPanel.root).toHaveCount(0)
+            expect(new URL(page.url()).pathname).toBe('/cloud/desktop-login')
+            expect(visitedPaths).not.toContain('/')
+            expect(await consentFlash.hasFlashed()).toBe(false)
           }
         )
       }
@@ -800,7 +801,7 @@ telemetryTest.describe(
         agentOnboardingCompleted: false
       })
 
-      test('shows the coach after the approval closes', async ({
+      test('never shows the coach on the approval page', async ({
         comfyPage,
         agentPanel
       }) => {
@@ -808,14 +809,24 @@ telemetryTest.describe(
         const approval = page.getByRole('dialog', {
           name: enMessages.desktopLogin.confirmSummary
         })
+        const success = page.getByRole('heading', {
+          name: enMessages.desktopLogin.successSummary,
+          exact: true
+        })
         const coach = page.getByRole('dialog', {
           name: enMessages.agent.coachTitle
         })
+        const coachFlash = await trackDialogFlash(
+          page,
+          enMessages.agent.coachTitle
+        )
 
+        await comfyPage.goto({ url: DESKTOP_LOGIN_HANDOFF_URL })
+        await expect
+          .poll(() => new URL(page.url()).pathname, { timeout: 15_000 })
+          .toBe('/cloud/desktop-login')
         await expect(approval).toBeVisible()
-        await expect(agentPanel.root).toBeVisible()
-        await expect(page.getByTestId('agent-entry-separator')).toHaveCount(1)
-        await expect(page.getByRole('dialog')).toHaveCount(1)
+        await expect(agentPanel.root).toHaveCount(0)
         await expect(coach).toHaveCount(0)
 
         await approval
@@ -823,7 +834,9 @@ telemetryTest.describe(
           .click()
 
         await expect(approval).toHaveCount(0)
-        await expect(coach).toBeVisible()
+        await expect(success).toBeVisible()
+        await expect(coach).toHaveCount(0)
+        expect(await coachFlash.hasFlashed()).toBe(false)
       })
     })
   }

@@ -1,6 +1,6 @@
 import { t } from '@/i18n'
-import type { AssetSortOption } from '@/platform/assets/types/filterTypes'
-import { sortAssets } from '@/platform/assets/utils/assetSortUtils'
+import type { AssetSortOption } from '@comfyorg/assets-core/filtering'
+import { sortAssets } from '@comfyorg/assets-core/filtering'
 
 import type { FormDropdownItem, SortOption } from './types'
 
@@ -14,7 +14,7 @@ export const DROPDOWN_PANEL_CLASS = 'comfy-form-dropdown-panel'
 
 export async function defaultSearcher(
   query: string,
-  items: FormDropdownItem[]
+  items: readonly FormDropdownItem[]
 ) {
   if (query.trim() === '') return items
   const words = query.trim().toLowerCase().split(' ')

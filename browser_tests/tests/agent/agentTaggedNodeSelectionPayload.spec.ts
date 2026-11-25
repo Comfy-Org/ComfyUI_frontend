@@ -42,9 +42,12 @@ test.describe(
       expect(sentTurn(postedMessages).selection?.node_ids).toEqual([
         String(node.id)
       ])
+      expect(JSON.parse(postedMessages[0])).not.toHaveProperty(
+        'canvas_selection'
+      )
     })
 
-    test('does not send an ordinary canvas selection', async ({
+    test('sends an ordinary canvas selection as context, not as the turn selection', async ({
       agentPanel,
       comfyPage,
       postedMessages
@@ -52,7 +55,6 @@ test.describe(
       const node = await addNodeBesideAgentPanel(comfyPage, 'KSampler')
 
       await agentPanel.open()
-      await agentPanel.selectWorkflow()
       await node.click('title')
       await expect
         .poll(() => comfyPage.nodeOps.getSelectedNodeIds())
@@ -65,6 +67,9 @@ test.describe(
 
       await expect.poll(() => postedMessages).toHaveLength(1)
       expect(sentTurn(postedMessages).selection).toBeUndefined()
+      expect(JSON.parse(postedMessages[0])).toMatchObject({
+        canvas_selection: { node_ids: [String(node.id)] }
+      })
     })
   }
 )

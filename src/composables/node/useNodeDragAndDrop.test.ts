@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
+import { MIME_ASSET_INFO } from '@/platform/assets/constants/assetDrag'
 import { useNodeDragAndDrop } from './useNodeDragAndDrop'
 
 function createFile(name: string, type = 'image/png'): File {
@@ -229,7 +229,7 @@ describe('useNodeDragAndDrop', () => {
       name: 'aa7ecf08.wav'
     }
   ])(
-    'onDragDrop names a fetched asset-card file $name from asset info $assetInfo',
+    'onDragDrop names a fetched asset-card file $name from filename $assetInfo.filename and display name "$assetInfo.display_name"',
     async ({ assetInfo, name }) => {
       const onDrop = vi.fn().mockResolvedValue([])
       vi.mocked(fetch).mockResolvedValue(

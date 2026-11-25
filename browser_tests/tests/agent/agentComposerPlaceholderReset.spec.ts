@@ -32,7 +32,6 @@ test.describe(
       await comfyPage.nextFrame()
 
       await agentPanel.open()
-      await agentPanel.selectWorkflow()
       const panel = agentPanel.root
       const placeholder = panel.getByText(enMessages.agent.placeholder, {
         exact: true
