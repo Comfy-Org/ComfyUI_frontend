@@ -57,24 +57,19 @@ later ship as v1.40.2). Same commits, no divergence — the branch just prevents
 Cloud uses continuous delivery from `main`; numbered cloud release branches
 are retired. Core backports remain available for the current ComfyUI frontend
 pin, upcoming release lines, and previous lines within the 72-hour rollback
-window. Older lines are frozen and their target labels removed. See
+window. Older lines are frozen. See
 [the core backport policy](adr/RELEASES-0059-core-backports-follow-the-consumer-pin.md).
 
-1. Add `needs-backport` + version label to the merged PR
-2. `pr-backport.yaml` cherry-picks and creates a backport PR
-3. Conflicts produce a comment with details and an agent prompt
+Add `needs-backport` before or after merging a PR to `main`. The workflow
+tries to cherry-pick the fix to every eligible core branch. Close a generated
+PR if that branch doesn't need the fix. If a cherry-pick conflicts, the
+workflow comments on the original PR. Resolve the conflict by hand only if
+the branch needs the fix.
 
-Release labels alone do not start the backport. A merged PR with a
-viable `core/X.Y` label but no `needs-backport` gets a comment saying
-the backport did not run. Each label is warned about once, and labels whose
-target already has an open or merged backport PR are left out.
-
-To re-check a finished PR, run `pr-backport.yaml` by hand with its PR number.
-The PR does not need `needs-backport` for this. Without `force_rerun`, targets
-with an open or merged backport PR the workflow can find are reported and
-skipped. Every other viable release label is cherry-picked: a backport that was on
-hold starts, and one whose backport PR was closed without merging is opened
-again. Remove the release label first if that target should stay skipped.
+To retry, run **PR Backport** with the merged PR number. Manual dispatch
+uses the same branch policy and doesn't require a label. Normal runs skip
+generated PRs that are open, merged, or closed. `force_rerun` bypasses these
+checks. To backport to just one branch, cherry-pick there by hand.
 
 ### Desktop partner-node token backports (FRONT-3925)
 
