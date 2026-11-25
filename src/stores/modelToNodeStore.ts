@@ -27,6 +27,7 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
   const isReady = computed(
     () => Object.keys(nodeDefStore.nodeDefsByName).length > 0
   )
+  let registeredNodeDefs: Record<string, ComfyNodeDefImpl> | undefined
 
   const registeredNodeTypes = computed<
     Partial<Record<string, string | RegExp>>
@@ -168,13 +169,18 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
   }
 
   function registerDefaults() {
-    if (Object.keys(nodeDefStore.nodeDefsByName).length === 0) {
+    const { nodeDefsByName } = nodeDefStore
+    if (
+      nodeDefsByName === registeredNodeDefs ||
+      Object.keys(nodeDefsByName).length === 0
+    ) {
       return
     }
+    registeredNodeDefs = nodeDefsByName
 
     for (const [modelType, nodeClass, key] of MODEL_NODE_MAPPINGS) {
-      if (!Object.hasOwn(nodeDefStore.nodeDefsByName, nodeClass)) continue
-      const nodeDef = nodeDefStore.nodeDefsByName[nodeClass]
+      if (!Object.hasOwn(nodeDefsByName, nodeClass)) continue
+      const nodeDef = nodeDefsByName[nodeClass]
 
       const providers = (modelToNodeMap.value[modelType] ??= [])
       const alreadyRegistered = providers.some(
