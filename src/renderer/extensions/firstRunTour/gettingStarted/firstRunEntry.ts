@@ -154,7 +154,7 @@ export const useFirstRunEntry = createSharedComposable(() => {
       if (outcome === 'restored') return
       if (settingStore.get('Comfy.TutorialCompleted')) return
     }
-    if (!isCloud) localFirstRun.value = true
+    localFirstRun.value = !isCloud
 
     if (outcome === 'url-intent') {
       if (decision === 'complete') await markTutorialCompleted()

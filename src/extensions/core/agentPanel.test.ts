@@ -958,7 +958,7 @@ describe('AgentPanel extension flag gate', () => {
 
       expect(
         useAgentConsent().resumeAcceptAfterReload
-      ).toHaveBeenCalledExactlyOnceWith({ draft: 'make it blue' })
+      ).toHaveBeenCalledExactlyOnceWith('make it blue')
     })
   })
 
