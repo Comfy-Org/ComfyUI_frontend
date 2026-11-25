@@ -275,6 +275,7 @@ const copy = computed<StripePaymentCopy>(() => ({
           </template>
         </StripePaymentForm>
       </div>
+      <slot name="after" :busy="tabsLocked" />
     </div>
   </section>
 </template>

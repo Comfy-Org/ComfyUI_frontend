@@ -11,6 +11,7 @@ import CheckoutEnding from '@/components/fullPage/CheckoutEnding.vue'
 import type { CheckoutCharge } from '@/components/fullPage/CheckoutPaymentColumn.vue'
 import CheckoutPaymentColumn from '@/components/fullPage/CheckoutPaymentColumn.vue'
 import CheckoutSummaryColumn from '@/components/fullPage/CheckoutSummaryColumn.vue'
+import HostedMethodsOption from '@/components/fullPage/HostedMethodsOption.vue'
 import { useFullPageTopup } from '@/composables/useFullPageTopup'
 import { useBillingWebStripeKey } from '@/config/stripeKey'
 import { useBilledScope } from '@/session/billingWebAuth'
@@ -33,6 +34,9 @@ const {
   close,
   retryLoad,
   pay,
+  offersHostedMethods,
+  canPayHosted,
+  payWithHostedMethods,
   reopening,
   continueVerification,
   onPaymentPhase,
@@ -131,6 +135,15 @@ function openBillingSettings() {
       >
         <template v-if="autoTopUpConsent && page.kind !== 'resolving'" #before>
           <AutoTopUpConsentCard class="mb-6" :consent="autoTopUpConsent" />
+        </template>
+        <template
+          v-if="offersHostedMethods && page.kind === 'capture'"
+          #after="{ busy }"
+        >
+          <HostedMethodsOption
+            :disabled="!canPayHosted || busy"
+            @pay="payWithHostedMethods"
+          />
         </template>
       </CheckoutPaymentColumn>
     </div>

@@ -453,17 +453,25 @@ export function useFullPageTopup() {
     dispatch({ type: 'payFailed', outcome })
   }
 
-  async function payWithAutoTopUp(amount: number, choice: EntryAutoTopUp) {
-    const mine = ++payGeneration
-    dispatch({ type: 'paySubmitted' })
+  async function requestHostedCheckout(
+    mine: number,
+    amount: number,
+    choice?: EntryAutoTopUp
+  ) {
     const result = await topup.createHostedTopupCheckout({
       amountCents: amount,
       returnUrl: new URL(TOPUP_RETURN_PATH, window.location.origin).href,
-      autoTopUp: topupAutoTopUpOf(choice)
+      ...(choice === undefined ? {} : { autoTopUp: topupAutoTopUpOf(choice) })
     })
     if (mine !== payGeneration) return
     if (result.status === 'ok') return window.location.assign(result.url)
     await follow(refusalVerdict(result))
+  }
+
+  function payOnHostedCheckout(amount: number, choice: EntryAutoTopUp) {
+    const mine = ++payGeneration
+    dispatch({ type: 'paySubmitted' })
+    return requestHostedCheckout(mine, amount, choice)
   }
 
   function refusePay(code: string) {
@@ -495,8 +503,41 @@ export function useFullPageTopup() {
       )
     )
       return refusePay(PURCHASE_NOT_PAYABLE_HERE)
-    if (hosted !== undefined) return payWithAutoTopUp(amountCents, hosted)
+    if (hosted !== undefined) return payOnHostedCheckout(amountCents, hosted)
     return payDirect(choice, amountCents)
+  }
+
+  const offersHostedMethods = computed(
+    () => paysOnce.value && autoTopUp === undefined
+  )
+
+  const canPayHosted = computed(() => {
+    const current = page.value
+    return (
+      current.kind === 'capture' &&
+      current.attempt.kind !== 'sent' &&
+      current.outcome?.kind !== 'reconciling' &&
+      quote.value !== undefined &&
+      !moneyInFlight.value
+    )
+  })
+
+  async function purchaseStillOpen(): Promise<boolean> {
+    if (purchaseId === undefined) return true
+    const read = await topup.readTopupPurchase(purchaseId)
+    return read.status === 'ok' && read.value.status === 'open'
+  }
+
+  async function payWithHostedMethods() {
+    if (!canPayHosted.value || !offersHostedMethods.value) return
+    if (amountCents === undefined) return
+    const mine = ++payGeneration
+    dispatch({ type: 'paySubmitted' })
+    const open = await purchaseStillOpen()
+    if (mine !== payGeneration) return
+    if (open) return requestHostedCheckout(mine, amountCents)
+    dispatch({ type: 'payRejectedAsPending' })
+    return reconcile()
   }
 
   const { returnLink, openedByScript, close } = useCheckoutExit(page)
@@ -527,6 +568,9 @@ export function useFullPageTopup() {
     retryLoad,
     reconcile,
     pay,
+    offersHostedMethods,
+    canPayHosted,
+    payWithHostedMethods,
     reopening: shallowReadonly(reopening),
     continueVerification: purchase.continueVerification
   }
