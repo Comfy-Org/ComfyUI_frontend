@@ -6,6 +6,7 @@ import { computed, defineComponent, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 import { fromPartial } from '@total-typescript/shoehorn'
 
+import type { CanvasEventDetail } from '@comfyorg/graph-model/events'
 import { CORE_SETTINGS } from '@/platform/settings/constants/coreSettings'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { Settings } from '@comfyorg/settings-core/types'
@@ -135,6 +136,7 @@ describe('NodeSearchBoxPopover', () => {
     useCanvasStore().canvas = fromPartial({
       linkConnector: {
         events: new EventTarget(),
+        renderLinks: [],
         reset: vi.fn()
       },
       setDirty: vi.fn()
@@ -337,6 +339,62 @@ describe('NodeSearchBoxPopover', () => {
         nodeDef,
         expect.objectContaining({ pos: expect.any(Array) }),
         expect.objectContaining({ ghost: true, dragEvent })
+      )
+    })
+
+    it('should position keyboard-selected ghosts at the opening click before any pointer movement', async () => {
+      const { emitAddNodeV2 } = renderComponent({
+        'Comfy.NodeSearchBoxImpl': 'default',
+        'Comfy.NodeSearchBoxImpl.FollowCursor': true
+      })
+      document.dispatchEvent(
+        new CustomEvent<CanvasEventDetail>('litegraph:canvas', {
+          detail: {
+            subType: 'empty-double-click',
+            originalEvent: fromPartial({
+              clientX: 613,
+              clientY: 327,
+              canvasX: 513,
+              canvasY: 277
+            })
+          }
+        })
+      )
+
+      emitAddNodeV2(nodeDef)
+      await nextTick()
+
+      expect(useLitegraphService().addNodeOnGraph).toHaveBeenCalledWith(
+        nodeDef,
+        expect.anything(),
+        expect.objectContaining({
+          ghost: true,
+          dragEvent: expect.objectContaining({ clientX: 613, clientY: 327 })
+        })
+      )
+    })
+
+    it('should position keyboard-selected ghosts at the current pointer', async () => {
+      const user = userEvent.setup()
+      const { emitAddNodeV2 } = renderComponent({
+        'Comfy.NodeSearchBoxImpl': 'default',
+        'Comfy.NodeSearchBoxImpl.FollowCursor': true
+      })
+      await user.pointer({
+        target: screen.getByTestId('search-content-v2'),
+        coords: { x: 731, y: 284 }
+      })
+
+      emitAddNodeV2(nodeDef)
+      await nextTick()
+
+      expect(useLitegraphService().addNodeOnGraph).toHaveBeenCalledWith(
+        nodeDef,
+        expect.anything(),
+        expect.objectContaining({
+          ghost: true,
+          dragEvent: expect.objectContaining({ clientX: 731, clientY: 284 })
+        })
       )
     })
   })

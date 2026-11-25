@@ -6,15 +6,16 @@ import type {
 import { zErrorResponse, zGlobalSetting } from '@comfyorg/ingest-types/zod'
 
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
+import { isCloud } from '@/platform/distribution/types'
+import { api } from '@/scripts/api'
 import {
   fetchWithUnifiedRemint,
   shouldRemintCloudRequest
 } from '@/platform/auth/unified/remintRetry'
-import { isCloud } from '@/platform/distribution/types'
-import { api } from '@/scripts/api'
 import type { WebSessionSend } from '@comfyorg/api-client/webSessionFetch'
 import type { AuthHeader } from '@comfyorg/api-client/authTypes'
 import { retryingSend } from '@comfyorg/api-client/fetchWithRetry'
+import { sessionRevokedRefusal } from '@/platform/auth/session/sessionRevokedError'
 
 export class GlobalSettingsApiError extends Error {
   constructor(
@@ -42,6 +43,18 @@ async function responseBody(response: Response): Promise<unknown> {
   }
 }
 
+async function refusalBodyOrUndefined(response: Response): Promise<unknown> {
+  return response.json().catch(() => undefined)
+}
+
+function refusalError(status: number, body: unknown): Error {
+  const message = `Global setting request failed: ${status}`
+  return (
+    sessionRevokedRefusal(message, status, body) ??
+    new GlobalSettingsApiError(message, status)
+  )
+}
+
 type GlobalSettingsAuth = AuthHeader | WebSessionSend
 
 function sendGlobalSetting(
@@ -64,10 +77,7 @@ function sendGlobalSetting(
 
 async function storedSetting(response: Response): Promise<GlobalSetting> {
   if (!response.ok) {
-    throw new GlobalSettingsApiError(
-      `Global setting request failed: ${response.status}`,
-      response.status
-    )
+    throw refusalError(response.status, await refusalBodyOrUndefined(response))
   }
   const payload = zGlobalSetting.safeParse(await responseBody(response))
   if (!payload.success) {

@@ -2,15 +2,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { reportError } from '@comfyorg/telemetry/reportError'
 
+import { AgentCrdtDocLifecycle } from './agentCrdtDocLifecycle'
 import {
-  AgentCrdtDocLifecycle,
   STALE_AFTER_MS,
   SUBSCRIBE_ACK_TIMEOUT_MS,
   SUBSCRIBE_CATCHUP_GRACE_MS
-} from './agentCrdtDocLifecycle'
-import { recordDevEvent } from './devPanelLog'
+} from './lifecycleTiming'
+import { recordDevEvent } from './crdtLog'
 
-vi.mock(import('./devPanelLog'), () => ({ recordDevEvent: vi.fn() }))
+vi.mock(import('./crdtLog'), () => ({ recordDevEvent: vi.fn() }))
 
 const WORKFLOW_ID = 'wf-1'
 const GAVE_UP_REPORT = {
@@ -24,7 +24,7 @@ const GAVE_UP_REPORT = {
  * The `resubscribe` double models the bridge: a successful send re-dispatches
  * `doc_subscribe_sent`, which the composable routes back into the lifecycle.
  */
-function wire() {
+function wire(reconnectTransport?: () => void) {
   let workflowId: string | null = WORKFLOW_ID
   const onGaveUp = vi.fn()
   const resubscribe = vi.fn(() => {
@@ -34,7 +34,8 @@ function wire() {
   const lifecycle = new AgentCrdtDocLifecycle(
     () => workflowId,
     resubscribe,
-    onGaveUp
+    onGaveUp,
+    reconnectTransport
   )
   return {
     lifecycle,
@@ -386,6 +387,124 @@ describe('AgentCrdtDocLifecycle ack timeout', () => {
 
     vi.advanceTimersByTime(3 * SUBSCRIBE_ACK_TIMEOUT_MS)
     expect(resubscribe).toHaveBeenCalledTimes(3)
+  })
+})
+
+describe('AgentCrdtDocLifecycle socket loss', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+  })
+
+  it('a closed socket parks a confirmed channel instead of spending the retry budget', () => {
+    const resubscribe = vi.fn(() => false)
+    const onGaveUp = vi.fn()
+    const lifecycle = new AgentCrdtDocLifecycle(
+      () => WORKFLOW_ID,
+      resubscribe,
+      onGaveUp
+    )
+    lifecycle.onSubscribeConfirmed()
+
+    lifecycle.onSocketClosed()
+    vi.advanceTimersByTime(5 * 60_000)
+
+    expect(resubscribe).not.toHaveBeenCalled()
+    expect(onGaveUp).not.toHaveBeenCalled()
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('a closed socket cancels an unanswered subscribe and a pending backoff', () => {
+    const { lifecycle, resubscribe, onGaveUp } = wire()
+    lifecycle.onSubscribeSent(WORKFLOW_ID)
+    lifecycle.onSubscribeRefused()
+
+    lifecycle.onSocketClosed()
+    lifecycle.refresh()
+    vi.advanceTimersByTime(5 * 60_000)
+
+    expect(resubscribe).not.toHaveBeenCalled()
+    expect(onGaveUp).not.toHaveBeenCalled()
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('a closed socket cancels a subscribe that is still awaiting its ack', () => {
+    const { lifecycle, resubscribe, onGaveUp } = wire()
+    lifecycle.onSubscribeSent(WORKFLOW_ID)
+
+    lifecycle.onSocketClosed()
+    vi.advanceTimersByTime(5 * 60_000)
+
+    expect(resubscribe).not.toHaveBeenCalled()
+    expect(onGaveUp).not.toHaveBeenCalled()
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('the reconnect after a closed socket starts a fresh budget', () => {
+    const { lifecycle, resubscribe, onGaveUp } = wire()
+    lifecycle.onSubscribeSent(WORKFLOW_ID)
+    vi.advanceTimersByTime(2 * SUBSCRIBE_ACK_TIMEOUT_MS)
+    lifecycle.onSocketClosed()
+
+    lifecycle.onReconnected()
+    lifecycle.onSubscribeSent(WORKFLOW_ID)
+    vi.advanceTimersByTime(2 * SUBSCRIBE_ACK_TIMEOUT_MS)
+
+    expect(resubscribe).toHaveBeenCalledTimes(4)
+    expect(onGaveUp).not.toHaveBeenCalled()
+  })
+
+  it('reopens the socket once, instead of giving up, when an open socket never answers', () => {
+    const reconnectTransport = vi.fn()
+    const { lifecycle, resubscribe, onGaveUp } = wire(reconnectTransport)
+    lifecycle.onSubscribeSent(WORKFLOW_ID)
+
+    vi.advanceTimersByTime(3 * SUBSCRIBE_ACK_TIMEOUT_MS)
+
+    expect(resubscribe).toHaveBeenCalledTimes(2)
+    expect(reconnectTransport).toHaveBeenCalledOnce()
+    expect(onGaveUp).not.toHaveBeenCalled()
+    expect(reportError).not.toHaveBeenCalled()
+
+    vi.advanceTimersByTime(5 * 60_000)
+    expect(resubscribe).toHaveBeenCalledTimes(2)
+    expect(reconnectTransport).toHaveBeenCalledOnce()
+  })
+
+  it('gives up and reports when the reopened socket is silent too', () => {
+    const reconnectTransport = vi.fn()
+    const { lifecycle, resubscribe, onGaveUp } = wire(reconnectTransport)
+    lifecycle.onSubscribeSent(WORKFLOW_ID)
+    vi.advanceTimersByTime(3 * SUBSCRIBE_ACK_TIMEOUT_MS)
+
+    lifecycle.onSocketClosed()
+    lifecycle.onReconnected()
+    lifecycle.onSubscribeSent(WORKFLOW_ID)
+    vi.advanceTimersByTime(3 * SUBSCRIBE_ACK_TIMEOUT_MS)
+
+    expect(resubscribe).toHaveBeenCalledTimes(4)
+    expect(reconnectTransport).toHaveBeenCalledOnce()
+    expect(onGaveUp).toHaveBeenCalledExactlyOnceWith('timeout')
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(
+      expect.any(Error),
+      GAVE_UP_REPORT
+    )
+  })
+
+  it('a confirm on the reopened socket allows one more reopen later', () => {
+    const reconnectTransport = vi.fn()
+    const { lifecycle, onGaveUp } = wire(reconnectTransport)
+    lifecycle.onSubscribeSent(WORKFLOW_ID)
+    vi.advanceTimersByTime(3 * SUBSCRIBE_ACK_TIMEOUT_MS)
+    lifecycle.onSocketClosed()
+    lifecycle.onReconnected()
+    lifecycle.onSubscribeSent(WORKFLOW_ID)
+    lifecycle.onSubscribeConfirmed()
+
+    lifecycle.onSubscribeSent(WORKFLOW_ID)
+    vi.advanceTimersByTime(3 * SUBSCRIBE_ACK_TIMEOUT_MS)
+
+    expect(reconnectTransport).toHaveBeenCalledTimes(2)
+    expect(onGaveUp).not.toHaveBeenCalled()
   })
 })
 

@@ -1,10 +1,11 @@
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
-import type { UploadModelSuccess } from '@/platform/assets/composables/useUploadModelWizard'
+import type { UploadModelSuccess } from '@/platform/assets/types/modelImport'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
-import { useAssetsStore } from '@/stores/assetsStore'
-import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
+import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
+import { useAssetDownloadStore } from '@/platform/assets/stores/assetDownloadStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
-import { app } from '@/scripts/app'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useApp } from '@/scripts/appInstance'
 import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 import type { MissingModelViewModel } from '@/platform/workflowErrors/missingModel/types'
 
@@ -21,7 +22,7 @@ export function getNodeDisplayLabel(
   nodeId: string | number,
   fallback: string
 ): string {
-  const graph = app.rootGraphOrUndefined
+  const graph = useApp().rootGraphOrUndefined
   if (!graph) return fallback
   const node = getNodeByExecutionId(graph, String(nodeId))
   return resolveNodeDisplayName(node, {
@@ -35,6 +36,7 @@ export function useMissingModelInteractions() {
   const assetsStore = useAssetsStore()
   const assetDownloadStore = useAssetDownloadStore()
   const modelToNodeStore = useModelToNodeStore()
+  const workflowStore = useWorkflowStore()
 
   function toggleModelExpand(key: string) {
     store.modelExpandState[key] = !isModelExpanded(key)
@@ -52,10 +54,7 @@ export function useMissingModelInteractions() {
     directory: string | null
   ) {
     const value = store.selectedLibraryModel[key]
-    if (!value) return
-
-    const graph = app.rootGraphOrUndefined
-    if (!graph) return
+    if (!value || !useApp().rootGraphOrUndefined) return
 
     if (directory) {
       const providers = modelToNodeStore.getAllNodeProviders(directory)
@@ -75,20 +74,34 @@ export function useMissingModelInteractions() {
       })
     }
 
+    delete store.selectedLibraryModel[key]
+    delete store.importTaskIds[key]
+    replaceModelOnNodes(modelName, referencingNodes, value)
+  }
+
+  function replaceModelOnNodes(
+    modelName: string,
+    referencingNodes: MissingModelViewModel['referencingNodes'],
+    value: string
+  ) {
+    const graph = useApp().rootGraphOrUndefined
+    if (!graph) return
+
     for (const ref of referencingNodes) {
       const node = getNodeByExecutionId(graph, String(ref.nodeId))
       if (node) {
         const widget = node.widgets?.find((w) => w.name === ref.widgetName)
         if (widget) {
+          const oldValue = widget.value
           widget.value = value
           widget.callback?.(value)
+          node.onWidgetChanged?.(widget.name, value, oldValue, widget)
         }
         node.graph?.setDirtyCanvas(true, true)
       }
     }
+    workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
 
-    delete store.selectedLibraryModel[key]
-    delete store.importTaskIds[key]
     const nodeIdSet = new Set(referencingNodes.map((ref) => String(ref.nodeId)))
     store.removeMissingModelByNameOnNodes(modelName, nodeIdSet)
   }
@@ -134,6 +147,7 @@ export function useMissingModelInteractions() {
     toggleModelExpand,
     isModelExpanded,
     confirmLibrarySelect,
+    replaceModelOnNodes,
     getDownloadStatus,
     handleUploadedModelImport
   }

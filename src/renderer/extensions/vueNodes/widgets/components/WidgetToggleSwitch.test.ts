@@ -89,6 +89,25 @@ describe('WidgetToggleSwitch Value Binding', () => {
     expect(onModelUpdate).toHaveBeenCalledWith(true)
   })
 
+  it.for([{}, { on: 'enabled', off: 'disabled' }])(
+    'toggles from either state through the widget label with options=%j',
+    async (options) => {
+      let currentValue = false
+      const { user } = mountComponent(
+        createToggleWidget(false, options),
+        false,
+        (value) => (currentValue = value ?? currentValue)
+      )
+      const label = screen.getByText('test_toggle')
+
+      await user.click(label)
+      expect(currentValue).toBe(true)
+
+      await user.click(label)
+      expect(currentValue).toBe(false)
+    }
+  )
+
   it.for([
     { name: 'switch', options: {}, role: 'switch', label: 'test_toggle' },
     {

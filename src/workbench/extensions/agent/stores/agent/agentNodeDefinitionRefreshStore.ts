@@ -1,7 +1,8 @@
-import { useEventListener } from '@vueuse/core'
+import { until, useEventListener } from '@vueuse/core'
 import { defineStore } from 'pinia'
 
 import { reportError } from '@comfyorg/telemetry/reportError'
+import { serverReportsBootId } from '@/platform/customNodes/serverBootId'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { api } from '@/scripts/api'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
@@ -79,6 +80,15 @@ export const useAgentNodeDefinitionRefreshStore = defineStore(
     let refreshQueued = false
     let catalogRefreshQueued = false
     let queue = Promise.resolve()
+    let flagsArrivedThisConnection = true
+
+    async function coreOwnsTheRestartRefresh(): Promise<boolean> {
+      if (!serverReportsBootId()) return false
+      if (!api.serverFeatureFlagsSettled.value) {
+        await until(api.serverFeatureFlagsSettled).toBe(true)
+      }
+      return flagsArrivedThisConnection && serverReportsBootId()
+    }
 
     async function refresh(): Promise<void> {
       refreshQueued = false
@@ -120,7 +130,8 @@ export const useAgentNodeDefinitionRefreshStore = defineStore(
       })
     }
 
-    function refreshIfRestartNearby(): void {
+    async function refreshIfRestartNearby(): Promise<void> {
+      if (await coreOwnsTheRestartRefresh()) return
       if (Math.abs(reconnectedAt - restartedAt) <= RESTART_WINDOW_MS) {
         enqueueRefresh()
       }
@@ -133,12 +144,17 @@ export const useAgentNodeDefinitionRefreshStore = defineStore(
       }
       if (!isSuccessfulRestart(event)) return
       restartedAt = Date.now()
-      refreshIfRestartNearby()
+      void refreshIfRestartNearby()
     }
 
+    useEventListener(api, 'feature_flags', () => {
+      flagsArrivedThisConnection = true
+    })
+
     useEventListener(api, 'reconnected', () => {
+      flagsArrivedThisConnection = false
       reconnectedAt = Date.now()
-      refreshIfRestartNearby()
+      void refreshIfRestartNearby()
     })
 
     return { observeAgentEvent }

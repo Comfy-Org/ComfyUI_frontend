@@ -21,34 +21,41 @@ describe('skill pack error responses', () => {
 
   it.for([
     {
+      case: 'the error field',
       status: 400,
       body: { error: 'Instructions are required' },
       message: 'Instructions are required'
     },
     {
+      case: 'the error field',
       status: 409,
       body: { error: 'Total size exceeds the configured budget' },
       message: 'Total size exceeds the configured budget'
     },
     {
+      case: 'a message with a code',
       status: 404,
       body: { code: 'NOT_FOUND', message: 'Skills are unavailable' },
       message: 'Skills are unavailable'
     },
     {
+      case: 'a message with an error code',
       status: 404,
       body: { error: 'NOT_FOUND', message: 'Skills are unavailable' },
       message: 'Skills are unavailable'
     }
-  ])('preserves HTTP $status and the corrective message', async (testCase) => {
-    vi.mocked(api.fetchApi).mockResolvedValue(
-      Response.json(testCase.body, { status: testCase.status })
-    )
+  ])(
+    'preserves HTTP $status and the corrective message from $case',
+    async (testCase) => {
+      vi.mocked(api.fetchApi).mockResolvedValue(
+        Response.json(testCase.body, { status: testCase.status })
+      )
 
-    await expect(listSkillPacks()).rejects.toMatchObject({
-      name: 'SkillPacksApiError',
-      status: testCase.status,
-      message: testCase.message
-    })
-  })
+      await expect(listSkillPacks()).rejects.toMatchObject({
+        name: 'SkillPacksApiError',
+        status: testCase.status,
+        message: testCase.message
+      })
+    }
+  )
 })

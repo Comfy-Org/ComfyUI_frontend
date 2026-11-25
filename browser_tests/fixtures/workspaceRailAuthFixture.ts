@@ -10,6 +10,7 @@ import {
   withUnsubscribed
 } from '@e2e/fixtures/helpers/SubscriptionHelper'
 import { mockWorkspace, workspace } from '@e2e/fixtures/utils/workspaceMocks'
+import { mockTopupQuote } from '@e2e/fixtures/utils/topupQuoteRoute'
 
 type CreateCustomerResponse =
   operations['createCustomer']['responses']['201']['content']['application/json']
@@ -44,6 +45,7 @@ export const workspaceRailAuthFixture = base.extend<{ comfyPage: ComfyPage }>({
     await page.route('**/api/billing/payment-methods', (route) =>
       route.fulfill({ json: [] satisfies ListSavedPaymentMethodsResponse })
     )
+    await mockTopupQuote(page)
     await page.route('**/customers', (route) =>
       route.fulfill({
         status: 201,

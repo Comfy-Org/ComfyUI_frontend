@@ -1,4 +1,6 @@
 import { reportError } from '@comfyorg/telemetry/reportError'
+import { isEmpty } from 'es-toolkit/compat'
+
 import { api } from '@/scripts/api'
 
 type FolderPaths = Record<string, string[]>
@@ -21,14 +23,20 @@ export function loadFolderPathsOnce(): Promise<FolderPaths | undefined> {
   }
   if (pending) return pending
 
-  const request = api.getFolderPaths().catch((error: unknown) => {
-    if (pending === request) pending = undefined
-    reportError(error, {
-      errorType: 'failure_loading_folder_paths',
-      surface: 'platform'
+  const request = api
+    .getFolderPaths()
+    .then((paths) => {
+      if (isEmpty(paths) && pending === request) pending = undefined
+      return paths
     })
-    return undefined
-  })
+    .catch((error: unknown) => {
+      if (pending === request) pending = undefined
+      reportError(error, {
+        errorType: 'failure_loading_folder_paths',
+        surface: 'platform'
+      })
+      return undefined
+    })
   pending = request
   return request
 }

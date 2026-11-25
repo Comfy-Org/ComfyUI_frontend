@@ -30,12 +30,14 @@ import UserMessage from './message/UserMessage.vue'
 const {
   entries,
   conversationId,
+  retryBlocked = false,
   paywallPresentation = DEFAULT_AGENT_PAYWALL_PRESENTATION,
   editableTurnId = null,
   answeringAskIds = new Set<string>()
 } = defineProps<{
   entries: ConversationEntry[]
   conversationId?: string | null
+  retryBlocked?: boolean
   paywallPresentation?: AgentPaywallPresentation
   editableTurnId?: TurnId | null
   answeringAskIds?: ReadonlySet<string>
@@ -48,11 +50,26 @@ const emit = defineEmits<{
   approvalShown: [askId: string, turnId: string, workflowId: string | null]
   openReferenceWorkflow: [workflowId: string, workflowName: string]
   paywallAction: [action: AgentPaywallAction, surface: AgentPaywallSurface]
+  retryPending: [clientMessageId: string]
+  deletePending: [clientMessageId: string]
+  newChat: []
 }>()
 
 const { t } = useI18n()
 const skills = useSkillPacksStore()
 const conversation = useAgentConversationStore()
+
+function isRetryDisabled(entry: ConversationEntry): boolean {
+  if (retryBlocked) return true
+  if (entry.role !== 'user' || entry.pending?.status !== 'failed') return false
+  const pending = conversation.getPendingSend(entry.pending.clientMessageId)
+  return pending ? conversation.isOriginBusy(pending.origin) : false
+}
+const hasSendingMessage = computed(() =>
+  entries.some(
+    (entry) => entry.role === 'user' && entry.pending?.status === 'sending'
+  )
+)
 const hasSkills = computed(() =>
   entries.some((entry) => entry.role === 'user' && entry.skillReference)
 )
@@ -118,14 +135,9 @@ function scrollToLatest(): void {
   atBottom.value = true
   const target = Math.max(0, element.scrollHeight - element.clientHeight)
   clearPendingProgrammaticScroll()
-  const willMove =
-    element.scrollHeight > element.clientHeight &&
-    Math.abs(element.scrollTop - target) > bottomGracePx
-  if (willMove) {
-    pendingProgrammaticScroll = {
-      target,
-      frame: requestAnimationFrame(clearPendingProgrammaticScroll)
-    }
+  pendingProgrammaticScroll = {
+    target,
+    frame: requestAnimationFrame(clearPendingProgrammaticScroll)
   }
   if (typeof element.scrollTo === 'function') {
     element.scrollTo({ top: target, behavior: 'instant' })
@@ -168,7 +180,9 @@ useResizeObserver(scrollContainer, followLatestAfterResize)
 
 const latestContentSignal = computed(() => {
   const last = entries.at(-1)
-  if (!last || !('parts' in last)) return `${entries.length}`
+  if (!last) return '0'
+  if (!('parts' in last))
+    return `${entries.length}:${last.pending?.status ?? ''}:${last.pending?.failure?.message ?? ''}`
   const tail = last.parts.at(-1)
   const tailText = tail && 'text' in tail ? tail.text.length : 0
   const settled = last.parts.filter(
@@ -242,11 +256,20 @@ watch(
               :tags="entry.tags"
               :workflow-references="entry.workflowReferences"
               :skill-reference="entry.skillReference"
+              :pending="entry.pending"
+              :retry-disabled="isRetryDisabled(entry)"
+              :paywall-presentation
               :editable="entry.id === editableTurnId"
               @edit="emit('editPrompt', $event)"
               @open-reference-workflow="
                 (workflowId: string, workflowName: string) =>
                   emit('openReferenceWorkflow', workflowId, workflowName)
+              "
+              @retry-pending="emit('retryPending', $event)"
+              @delete-pending="emit('deletePending', $event)"
+              @new-chat="emit('newChat')"
+              @paywall-action="
+                (action, surface) => emit('paywallAction', action, surface)
               "
             />
             <AgentMessage
@@ -271,6 +294,14 @@ watch(
           </template>
         </div>
       </div>
+    </div>
+
+    <div
+      role="status"
+      :aria-label="hasSendingMessage ? t('agent.sendingMessage') : undefined"
+      class="sr-only"
+    >
+      {{ hasSendingMessage ? t('agent.sendingMessage') : '' }}
     </div>
 
     <Button

@@ -94,20 +94,20 @@ for (const scenario of [
   test(
     `keeps ${scenario.name} after refresh and chat switching`,
     { tag: ['@cloud', '@ui'] },
-    async ({ page, promptHistory, workflowSelection }, testInfo) => {
+    async ({ page, promptHistory }, testInfo) => {
       const filenames = scenario.assets.map((asset) => asset.filename)
       let attachmentThreadId: string | undefined
 
       await page.route(
-        `**/view?filename=${firstImage.filename}&type=input`,
+        `**/view?filename=${firstImage.filename}&type=input*`,
         (route) => route.fulfill({ path: assetPath('image64x64.webp') })
       )
       await page.route(
-        `**/view?filename=${secondImage.filename}&type=input`,
+        `**/view?filename=${secondImage.filename}&type=input*`,
         (route) => route.fulfill({ path: assetPath('image32x32.webp') })
       )
       await page.route(
-        `**/view?filename=${video.filename}&type=input`,
+        `**/view?filename=${video.filename}&type=input*`,
         (route) =>
           route.fulfill({
             path: assetPath('workflowInMedia/workflow.mp4'),
@@ -171,14 +171,6 @@ for (const scenario of [
           exact: true
         })
         .click()
-      await panel
-        .getByRole('button', { name: enMessages.agent.switchWorkflow })
-        .click()
-      await page
-        .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
-        .click()
-      await expect.poll(() => workflowSelection.savedPaths.length).toBe(1)
-      workflowSelection.finishSave(true)
 
       // Simulate dropping a generated asset card into the composer, the same
       // way agentBatchOutputAttachment.spec.ts does: the real drag source puts

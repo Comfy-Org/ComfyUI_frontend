@@ -1,6 +1,6 @@
 <template>
   <div
-    v-if="first"
+    v-if="first && !deploymentDialogAppeared"
     class="flex w-full items-center gap-2 pr-8"
     data-testid="error-overlay-deployment-offer"
   >
@@ -28,7 +28,7 @@
     </Button>
   </div>
   <div
-    v-else-if="customDeploymentOffered"
+    v-else-if="customDeploymentOffered && !deploymentDialogAppeared"
     class="flex w-full items-center gap-2 pr-8"
     data-testid="error-overlay-custom-deployment-offer"
   >
@@ -40,7 +40,7 @@
       variant="secondary"
       size="unset"
       class="min-h-8 shrink-0 rounded-lg px-3 py-2 text-xs font-normal"
-      @click="openWorkflowNeedsDeploymentDialog()"
+      @click="setUpCustomDeployment"
     >
       {{ t('errorOverlay.setUpCustomDeployment') }}
     </Button>
@@ -48,13 +48,19 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { whenever } from '@vueuse/core'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
 import { useCustomDeploymentOffered } from '@/platform/workspace/composables/useCustomDeploymentOffered'
 import { useMissingNodeDeploymentOffer } from '@/platform/workspace/composables/useMissingNodeDeploymentOffer'
-import { openWorkflowNeedsDeploymentDialog } from '@/platform/workspace/openCustomDeploymentDialog'
+import {
+  isWorkflowNeedsDeploymentDialogOpen,
+  openWorkflowNeedsDeploymentDialog
+} from '@/platform/workspace/openCustomDeploymentDialog'
+import { usePlatformFrameStore } from '@/platform/workspace/platformFrame/platformFrameStore'
+import { NEW_DEPLOYMENT_FOR_WORKFLOW } from '@/platform/workspace/platformFrame/platformFrameWaysIn'
 
 const { t } = useI18n()
 const { offer, choose, isSwitching, openSwitcher } =
@@ -62,10 +68,24 @@ const { offer, choose, isSwitching, openSwitcher } =
 const customDeploymentOffered = useCustomDeploymentOffered(
   () => offer.value?.kind === 'none'
 )
+const deploymentDialogAppeared = ref(false)
+whenever(
+  isWorkflowNeedsDeploymentDialogOpen,
+  () => {
+    deploymentDialogAppeared.value = true
+  },
+  { immediate: true }
+)
 
 const choices = computed(() =>
   offer.value?.kind === 'choices' ? offer.value.choices : []
 )
 const first = computed(() => choices.value[0])
 const moreCount = computed(() => choices.value.length - 1)
+
+function setUpCustomDeployment() {
+  if (usePlatformFrameStore().open(NEW_DEPLOYMENT_FOR_WORKFLOW, 'set_up'))
+    return
+  void openWorkflowNeedsDeploymentDialog()
+}
 </script>

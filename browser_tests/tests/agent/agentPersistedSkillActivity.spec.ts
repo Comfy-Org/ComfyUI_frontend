@@ -9,12 +9,9 @@ test.use({ connectWebSocketToServer: false })
 test(
   'names the loaded skill in a reloaded work summary',
   { tag: ['@cloud', '@ui'] },
-  async ({ agentPanel, promptHistory, workflowSelection }) => {
+  async ({ agentPanel, promptHistory }) => {
     await test.step('completes a turn that loaded a named skill', async () => {
       await agentPanel.open()
-      await agentPanel.chooseWorkflow()
-      await expect.poll(() => workflowSelection.savedPaths.length).toBe(1)
-      workflowSelection.finishSave(true)
       await agentPanel.sendMessage('Use the comfy-director skill')
       await expect.poll(() => promptHistory.requests.length).toBe(1)
 

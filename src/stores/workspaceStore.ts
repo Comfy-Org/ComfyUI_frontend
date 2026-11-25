@@ -7,7 +7,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { Settings } from '@comfyorg/settings-core/types'
-import { useColorPaletteService } from '@/services/colorPaletteService'
+import { useLegacyColorPaletteService } from '@/platform/theme/themeService'
 import type {
   SidebarTabExtension,
   ToastManager,
@@ -94,7 +94,7 @@ function workspaceStoreSetup() {
       )
   }))
   const workflow = computed(() => useWorkflowStore())
-  const colorPalette = useColorPaletteService()
+  const colorPalette = useLegacyColorPaletteService()
   const bottomPanel = useBottomPanelStore()
 
   const authStore = useAuthStore()

@@ -382,7 +382,7 @@ not implement those experiments or claim that full gating is the best policy.
 ## Notes
 
 Reproduce the measurement with
-`pnpm exec tsx scripts/cicd/analyze-pr-ci-runtime.ts --cohort 25 --commits 5 --refresh`.
+`pnpm exec tsx tools/ci/src/cicd/analyze-pr-ci-runtime.ts --cohort 25 --commits 5 --refresh`.
 Omit `--refresh` to reuse the local snapshot. JSON output includes source SHAs,
 job/run URLs, runner labels, coverage gaps, and individual elapsed times.
 

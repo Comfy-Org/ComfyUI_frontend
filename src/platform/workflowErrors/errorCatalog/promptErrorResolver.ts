@@ -1,10 +1,11 @@
 import type { ResolvedErrorMessage, RunErrorMessageSource } from './types'
 
+import { promptRefusalMessageKey } from './accountPreconditionRouting'
 import type { ErrorResolveContext } from './catalogI18n'
 import { translateCatalogMessage } from './catalogI18n'
 import { resolveRuntimeCatalogCopy } from './runtimeErrorCopy'
 import { resolveRuntimeCatalogMatch } from './runtimeErrorMatcher'
-import { st } from '@/i18n'
+import { st, t } from '@/i18n'
 
 // Resolves prompt-level errors and non-node-scoped failures before falling
 // back to prompt-specific catalog keys.
@@ -35,14 +36,22 @@ export function resolvePromptErrorMessage(
   error: Extract<RunErrorMessageSource, { kind: 'prompt' }>['error'],
   context: ErrorResolveContext
 ): ResolvedErrorMessage {
+  const refusalMessageKey = context.isCloud
+    ? promptRefusalMessageKey(error)
+    : undefined
+  if (refusalMessageKey) {
+    return {
+      displayTitle: t('subscription.plansLink.runRefusedTitle'),
+      displayMessage: t(refusalMessageKey)
+    }
+  }
+
   const promptExceptionMessage = getPromptExceptionMessage(error)
   const runtimeMatch = resolveRuntimeCatalogMatch({
     exceptionType: error.type,
     exceptionMessage: promptExceptionMessage
   })
   if (runtimeMatch) {
-    // Leave toast copy to node-scoped errors where a node-specific
-    // action/message is safe.
     return resolveRuntimeCatalogCopy(
       runtimeMatch.catalogId,
       promptExceptionMessage || error.message,

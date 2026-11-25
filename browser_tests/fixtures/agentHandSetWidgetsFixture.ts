@@ -195,7 +195,6 @@ class AgentHandSetWidgetsScenario {
 
   async agentBuildsNodes(): Promise<void> {
     await this.panel.open()
-    await this.panel.selectWorkflow()
     await this.panel.sendMessage('Add a KSampler and a Load Image node.')
     await this.hostSocket.waitForSubscribe()
     this.hostSocket.send(
@@ -229,12 +228,19 @@ class AgentHandSetWidgetsScenario {
   }
 
   async askQuestion(): Promise<AgentPostMessageRequest> {
+    const accepted = this.page.waitForResponse(
+      (response) =>
+        response.request().method() === 'POST' &&
+        /\/api\/agent\/threads\/[^/]+\/messages$/.test(response.url())
+    )
     await this.panel.sendMessage(QUESTION)
     await expect.poll(() => this.posts.length).toBe(2)
+    await accepted
     return this.posts[1]
   }
 
   async finishQuestionTurn(): Promise<void> {
+    await expect(this.panel.stopButton).toBeVisible()
     this.hostSocket.send(done(SECOND_MESSAGE_ID))
     await expect(this.panel.sendButton).toBeVisible()
   }

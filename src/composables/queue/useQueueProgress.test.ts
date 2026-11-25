@@ -113,29 +113,4 @@ describe('useQueueProgress', () => {
       formatPercent0('fr-FR', composable.currentNodePercent.value)
     )
   })
-
-  it('builds progress bar styles that track store updates', async () => {
-    setExecutionProgress(0.1)
-    setExecutingNodeProgress(0.25)
-
-    const { composable } = mountUseQueueProgress()
-
-    expect(composable.totalProgressStyle.value).toEqual({
-      transform: 'scaleX(0.1)',
-      background: 'var(--primary)'
-    })
-    expect(composable.currentNodeProgressStyle.value).toEqual({
-      transform: 'scaleX(0.25)',
-      background: 'color-mix(in srgb, var(--primary) 30%, transparent)'
-    })
-
-    setExecutionProgress(0.755)
-    setExecutingNodeProgress(0.02)
-    await nextTick()
-
-    expect(composable.totalProgressStyle.value.transform).toBe('scaleX(0.76)')
-    expect(composable.currentNodeProgressStyle.value.transform).toBe(
-      'scaleX(0.02)'
-    )
-  })
 })

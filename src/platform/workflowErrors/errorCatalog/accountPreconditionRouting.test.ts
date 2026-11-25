@@ -4,6 +4,8 @@ import {
   isAccountPreconditionCatalogId,
   preconditionForCatalogId,
   promptErrorHasLockedCredits,
+  promptRefusalPrecondition,
+  withRefusalReason,
   resolveAccountPrecondition
 } from './accountPreconditionRouting'
 import {
@@ -128,6 +130,26 @@ describe('resolveAccountPrecondition', () => {
     ).toBe('subscription')
   })
 
+  it.for([
+    {
+      message:
+        'Payment Required: This session is set to bill your personal account, which is out of credits.',
+      expected: 'personal_wallet_session'
+    },
+    {
+      message:
+        'Payment Required: This API key bills your personal account, which is out of credits.',
+      expected: 'personal_wallet_api_key'
+    }
+  ])('routes a personal-wallet 402 to $expected', ({ message, expected }) => {
+    expect(
+      resolveAccountPrecondition({
+        exceptionType: 'RuntimeError',
+        exceptionMessage: message
+      })
+    ).toBe(expected)
+  })
+
   it('returns undefined for an ordinary workflow error', () => {
     expect(
       resolveAccountPrecondition({
@@ -187,5 +209,56 @@ describe('promptErrorHasLockedCredits', () => {
     )
     expect(promptErrorHasLockedCredits('a plain string error')).toBe(false)
     expect(promptErrorHasLockedCredits(null)).toBe(false)
+  })
+})
+
+describe('promptRefusalPrecondition', () => {
+  it.for([
+    ['subscription_inactive', 'subscription'],
+    ['no_funds', 'credits']
+  ] as const)(
+    'routes the served reason %s to the %s precondition',
+    ([reason, precondition]) => {
+      expect(
+        promptRefusalPrecondition({
+          type: 'PAYMENT_REQUIRED',
+          message: 'Subscription or credits required to queue workflows',
+          reason
+        })
+      ).toBe(precondition)
+    }
+  )
+
+  it.for([
+    [{ type: 'PAYMENT_REQUIRED', reason: 'manual_block' }],
+    [{ type: 'PAYMENT_REQUIRED', reason: 7 }],
+    [{ type: 'PAYMENT_REQUIRED' }],
+    ['a plain string error'],
+    [null]
+  ])('names no precondition for %o', ([error]) => {
+    expect(promptRefusalPrecondition(error)).toBeUndefined()
+  })
+})
+
+describe('withRefusalReason', () => {
+  const promptError = {
+    type: 'PAYMENT_REQUIRED',
+    message: 'Subscription or credits required to queue workflows',
+    details: ''
+  }
+
+  it('carries the reason Cloud served onto the prompt error', () => {
+    expect(
+      withRefusalReason(promptError, { ...promptError, reason: 'manual_block' })
+    ).toEqual({ ...promptError, reason: 'manual_block' })
+  })
+
+  it.for([
+    [{ type: 'PAYMENT_REQUIRED', reason: 7 }],
+    [{ type: 'PAYMENT_REQUIRED' }],
+    ['a plain string error'],
+    [undefined]
+  ])('leaves the prompt error as it is for %o', ([served]) => {
+    expect(withRefusalReason(promptError, served)).toEqual(promptError)
   })
 })

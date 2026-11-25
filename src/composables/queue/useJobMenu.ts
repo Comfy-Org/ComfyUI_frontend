@@ -171,7 +171,7 @@ export function useJobMenu(
     if (!item) return
     const result: AugmentedResultItem | undefined = item.taskRef?.previewOutput
     if (!result) return
-    downloadFile(resultItemUrl(result))
+    downloadFile(resultItemUrl(result), undefined, 'job_menu')
   }
 
   /**
