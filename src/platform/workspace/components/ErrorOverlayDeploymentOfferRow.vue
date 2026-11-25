@@ -1,26 +1,26 @@
 <template>
   <div
     v-if="first && !deploymentDialogAppeared"
-    class="flex w-full items-center gap-2 pr-8"
+    class="flex w-full items-center gap-2"
     data-testid="error-overlay-deployment-offer"
   >
-    <span class="size-4 shrink-0" aria-hidden="true" />
+    <span class="size-5 shrink-0" aria-hidden="true" />
     <span class="min-w-0 flex-1 truncate text-sm text-foreground">
       {{ t('errorOverlay.runsOn', { deployment: first.label }) }}
     </span>
     <Button
       v-if="moreCount > 0"
       variant="muted-textonly"
-      size="unset"
-      class="min-h-8 shrink-0 rounded-lg px-2 py-2 text-xs font-normal"
+      size="sm"
+      class="shrink-0"
       @click="openSwitcher()"
     >
       {{ t('errorOverlay.moreDeployments', { count: moreCount }) }}
     </Button>
     <Button
       variant="secondary"
-      size="unset"
-      class="min-h-8 shrink-0 rounded-lg px-3 py-2 text-xs font-normal"
+      size="sm"
+      class="shrink-0"
       :disabled="isSwitching"
       @click="choose(first.deploymentId)"
     >
@@ -29,17 +29,17 @@
   </div>
   <div
     v-else-if="customDeploymentOffered && !deploymentDialogAppeared"
-    class="flex w-full items-center gap-2 pr-8"
+    class="flex w-full items-center gap-2"
     data-testid="error-overlay-custom-deployment-offer"
   >
-    <span class="size-4 shrink-0" aria-hidden="true" />
+    <span class="size-5 shrink-0" aria-hidden="true" />
     <span class="min-w-0 flex-1 truncate text-sm text-foreground">
       {{ t('errorOverlay.runOnCustomDeployment') }}
     </span>
     <Button
       variant="secondary"
-      size="unset"
-      class="min-h-8 shrink-0 rounded-lg px-3 py-2 text-xs font-normal"
+      size="sm"
+      class="shrink-0"
       @click="setUpCustomDeployment"
     >
       {{ t('errorOverlay.setUpCustomDeployment') }}
