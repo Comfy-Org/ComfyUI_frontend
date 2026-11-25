@@ -1644,16 +1644,13 @@
     }
   },
   "packages/telemetry/src/redactTelemetryUrls.ts": {
-    "regexp/no-dupe-characters-character-class": {
-      "count": 13
-    },
     "typescript/no-restricted-types": {
-      "count": 2
+      "count": 4
     }
   },
   "packages/telemetry/src/types.ts": {
     "typescript/no-restricted-types": {
-      "count": 28
+      "count": 29
     }
   },
   "packages/viewport3d/src/cameraAngle/CameraAngleViewport.test.ts": {
@@ -2268,6 +2265,16 @@
       "count": 7
     }
   },
+  "src/components/graph/selectionGrid/SelectionGapHandles.vue": {
+    "typescript/no-restricted-types": {
+      "count": 1
+    }
+  },
+  "src/components/graph/selectionGrid/useGapDragSession.ts": {
+    "typescript/no-restricted-types": {
+      "count": 2
+    }
+  },
   "src/components/graph/selectionToolbox/ColorPickerButton.vue": {
     "typescript/no-restricted-types": {
       "count": 3
@@ -2573,11 +2580,6 @@
   "src/composables/graph/contextMenuConverter.ts": {
     "typescript/no-restricted-types": {
       "count": 4
-    }
-  },
-  "src/composables/graph/useArrangeSession.ts": {
-    "typescript/no-restricted-types": {
-      "count": 2
     }
   },
   "src/composables/graph/useErrorClearingHooks.ts": {
@@ -5776,7 +5778,7 @@
   },
   "src/platform/workflow/persistence/base/draftCacheV2.ts": {
     "typescript/no-restricted-types": {
-      "count": 4
+      "count": 5
     }
   },
   "src/platform/workflow/persistence/base/storageIO.ts": {
@@ -5797,6 +5799,11 @@
   "src/platform/workflow/persistence/composables/useWorkflowTabState.ts": {
     "typescript/no-restricted-types": {
       "count": 3
+    }
+  },
+  "src/platform/workflow/persistence/stores/workflowDraftStoreV2.crossTab.test.ts": {
+    "typescript/no-restricted-types": {
+      "count": 1
     }
   },
   "src/platform/workflow/persistence/stores/workflowDraftStoreV2.test.ts": {
@@ -6258,6 +6265,11 @@
   "src/platform/workspace/api/workspaceApi.ts": {
     "typescript/no-restricted-types": {
       "count": 1
+    }
+  },
+  "src/platform/workspace/components/DeploymentSwitcher.test.ts": {
+    "typescript/no-restricted-types": {
+      "count": 2
     }
   },
   "src/platform/workspace/components/DeploymentSwitcher.vue": {
@@ -7868,7 +7880,7 @@
   },
   "src/stores/executionStore.ts": {
     "typescript/no-restricted-types": {
-      "count": 20
+      "count": 23
     }
   },
   "src/stores/jobModelDownloadStore.ts": {
@@ -8832,7 +8844,7 @@
       "count": 1
     },
     "typescript/no-restricted-types": {
-      "count": 26
+      "count": 27
     }
   },
   "src/workbench/extensions/agent/stores/agent/agentGraphActivityStore.ts": {

@@ -1931,8 +1931,9 @@ function onApprovalShown(
   turnId: string,
   workflowId: string | null
 ): void {
-  if (!conversationStore.recordApprovalShown(askId, Date.now())) return
+  if (!conversationStore.recordApprovalShown(askId, turnId, Date.now())) return
   useTelemetry()?.trackAgentRunApprovalShown({
+    ask_id: askId,
     turn_id: turnId,
     workflow_id: workflowId
   })
@@ -1942,12 +1943,15 @@ function trackApprovalResolved(
   askId: string,
   decision: AgentRunApprovalDecision,
   decidedAt = Date.now(),
-  shownAt = conversationStore.approvalShownAt(askId)
+  shownAt = conversationStore.approvalShownAt(askId),
+  turnId = conversationStore.approvalTurnId(askId)
 ): void {
-  if (shownAt === undefined) return
+  if (shownAt === undefined || turnId === undefined) return
   if (decision !== 'open_workflow')
     conversationStore.forgetApprovalTiming(askId)
   useTelemetry()?.trackAgentRunApprovalResolved({
+    ask_id: askId,
+    turn_id: turnId,
     decision,
     time_to_decide_ms: Math.max(0, decidedAt - shownAt)
   })
@@ -1962,10 +1966,31 @@ async function onAnswerAsk(
   answer: AgentAnswerRequest
 ): Promise<void> {
   const shownAt = conversationStore.approvalShownAt(askId)
+  const turnId = conversationStore.approvalTurnId(askId)
+  const isRunApproval = conversationStore.askKind(askId) === 'runApproval'
   const decidedAt = Date.now()
   const decision = runApprovalDecision(answer)
-  if ((await answerAsk(askId, answer)) && decision)
-    trackApprovalResolved(askId, decision, decidedAt, shownAt)
+  if (
+    await answerAsk(askId, answer, () =>
+      trackRunApprovalAnswerFailure(askId, turnId, isRunApproval)
+    )
+  ) {
+    if (decision)
+      trackApprovalResolved(askId, decision, decidedAt, shownAt, turnId)
+    return
+  }
+}
+
+function trackRunApprovalAnswerFailure(
+  askId: string,
+  turnId: string | undefined,
+  isRunApproval = true
+): void {
+  if (!isRunApproval) return
+  useTelemetry()?.trackAgentRunApprovalAnswerFailed({
+    ask_id: askId,
+    turn_id: turnId ?? null
+  })
 }
 
 function runApprovalDecision(
@@ -1985,8 +2010,11 @@ useAutoModeRunApprovals({
       (askId) => conversationStore.askKind(askId) === 'runApproval'
     ),
   approve: (askId) => {
+    const turnId = conversationStore.approvalTurnId(askId)
     conversationStore.forgetApprovalTiming(askId)
-    void answerAsk(askId, { selected: ['run'] })
+    void answerAsk(askId, { selected: ['run'] }, () =>
+      trackRunApprovalAnswerFailure(askId, turnId)
+    )
   }
 })
 

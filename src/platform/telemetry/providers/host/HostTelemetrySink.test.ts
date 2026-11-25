@@ -513,19 +513,66 @@ describe('HostTelemetrySink', () => {
       name: TelemetryEvents.AGENT_RUN_APPROVAL_SHOWN,
       track: (sink: HostTelemetrySink) =>
         sink.trackAgentRunApprovalShown({
+          ask_id: 'ask-1',
           turn_id: 'turn-1',
           workflow_id: 'workflow-1'
         }),
-      properties: { turn_id: 'turn-1', workflow_id: 'workflow-1' }
+      properties: {
+        ask_id: 'ask-1',
+        turn_id: 'turn-1',
+        workflow_id: 'workflow-1'
+      }
     },
     {
       name: TelemetryEvents.AGENT_RUN_APPROVAL_RESOLVED,
       track: (sink: HostTelemetrySink) =>
         sink.trackAgentRunApprovalResolved({
+          ask_id: 'ask-1',
+          turn_id: 'turn-1',
           decision: 'cancel',
           time_to_decide_ms: 300
         }),
-      properties: { decision: 'cancel', time_to_decide_ms: 300 }
+      properties: {
+        ask_id: 'ask-1',
+        turn_id: 'turn-1',
+        decision: 'cancel',
+        time_to_decide_ms: 300
+      }
+    },
+    {
+      name: TelemetryEvents.AGENT_RUN_APPROVAL_ANSWER_FAILED,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentRunApprovalAnswerFailed({
+          ask_id: 'ask-1',
+          turn_id: 'turn-1'
+        }),
+      properties: { ask_id: 'ask-1', turn_id: 'turn-1' }
+    },
+    {
+      name: TelemetryEvents.AGENT_RUN_APPROVAL_RECOVERY_ATTEMPTED,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentRunApprovalRecoveryAttempted({
+          ask_id: 'ask-1',
+          turn_id: 'turn-1',
+          cause: 'hydrate'
+        }),
+      properties: { ask_id: 'ask-1', turn_id: 'turn-1', cause: 'hydrate' }
+    },
+    {
+      name: TelemetryEvents.AGENT_RUN_APPROVAL_RECOVERY_OUTCOME,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentRunApprovalRecoveryOutcome({
+          ask_id: 'ask-1',
+          turn_id: 'turn-1',
+          cause: 'hydrate',
+          outcome: 'not_found'
+        }),
+      properties: {
+        ask_id: 'ask-1',
+        turn_id: 'turn-1',
+        cause: 'hydrate',
+        outcome: 'not_found'
+      }
     },
     {
       name: TelemetryEvents.AGENT_RUN_MODE_CHANGED,

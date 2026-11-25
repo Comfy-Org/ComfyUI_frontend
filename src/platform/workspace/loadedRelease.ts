@@ -84,7 +84,8 @@ function changedReleaseId(error: unknown): string | null | undefined {
 }
 
 async function reloadOntoNewRelease(deployment: string) {
-  if (!(await confirmUnsavedWorkBeforeSwitch(deployment))) return
+  if (!(await confirmUnsavedWorkBeforeSwitch(deployment, { reload: true })))
+    return
   const store = useDeploymentPickStore()
   if (store.isSwitching) return
   skipLeavePromptOnce()

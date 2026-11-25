@@ -17,7 +17,12 @@ import { selectedCanvasNodes } from '@/renderer/core/canvas/litegraph/selectionA
 import { resolveDynamicInputSpec } from '@/core/graph/widgets/dynamicInputSpec'
 import { setBackendNodeText, st, t } from '@/i18n'
 import { normalizeI18nKey } from '@/utils/formatUtil'
-import { beginGraphLoad, endGraphLoad } from '@/core/graph/graphLoadState'
+import {
+  beginGraphLoad,
+  endGraphLoad,
+  getGraphLoadGeneration,
+  isGraphLoading
+} from '@/core/graph/graphLoadState'
 import { registerApp } from '@/scripts/appRegistry'
 import {
   clipspace,
@@ -188,6 +193,7 @@ import {
   refreshMissingModelPipeline,
   runMissingModelPipeline
 } from '@/platform/workflowErrors/missingModel/missingModelPipeline'
+import { isModelFileName } from '@/platform/workflowErrors/missingModel/missingModelScan'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import type {
   MissingModelCandidate,
@@ -295,6 +301,16 @@ function isOwnedByWorkflow(graph: LGraph): boolean {
   )
 }
 
+function hasQueueingGraphReloadedInPlace(
+  graph: LGraph,
+  queueingGraphGeneration: number
+): boolean {
+  return (
+    isGraphLoading(graph) ||
+    getGraphLoadGeneration(graph) !== queueingGraphGeneration
+  )
+}
+
 function createNodeOutputsMutationView(
   outputs: Partial<Record<string, NodeExecutionOutput>>,
   commit: (id: string, output: NodeExecutionOutput | undefined) => void
@@ -379,6 +395,9 @@ export class ComfyApp implements IComfyApp {
     requestId: number
     queueNodeIds?: NodeExecutionId[]
     workflowQueueIntent?: WorkflowQueueIntent
+    queueingWorkflowKey: string | undefined
+    queueingGraph: LGraph
+    queueingGraphGeneration: number
   }[] = []
   private nextQueueRequestId = 1
   /**
@@ -822,7 +841,7 @@ export class ComfyApp implements IComfyApp {
 
     api.addEventListener('executed', ({ detail }) => {
       const executionStore = useExecutionStore()
-      const isActive = executionStore.rememberStampAndCheckActiveWorkflow(
+      const isActive = executionStore.rememberStampAndCheckOutputOwner(
         detail.prompt_id,
         detail.workflow_id
       )
@@ -833,13 +852,12 @@ export class ComfyApp implements IComfyApp {
       )
       if (!executionId) return
 
-      if (isActive) {
-        useNodeOutputStore().setNodeOutputsByExecutionId(
-          executionId,
-          detail.output,
-          { merge: detail.merge }
-        )
-      }
+      if (!isActive) return
+      useNodeOutputStore().setNodeOutputsByExecutionId(
+        executionId,
+        detail.output,
+        { merge: detail.merge }
+      )
 
       if (!graph) return
       const node = getNodeByExecutionId(graph, executionId)
@@ -882,10 +900,7 @@ export class ComfyApp implements IComfyApp {
       const blobUrl = createSharedObjectUrl(blob)
       useJobPreviewStore().setPreviewUrl(jobId, blobUrl, displayNodeId)
       if (
-        !useExecutionStore().rememberStampAndCheckActiveWorkflow(
-          jobId,
-          workflowId
-        )
+        !useExecutionStore().rememberStampAndCheckOutputOwner(jobId, workflowId)
       ) {
         releaseSharedObjectUrl(blobUrl)
         return
@@ -1726,6 +1741,10 @@ export class ComfyApp implements IComfyApp {
                       (reset_invalid_values &&
                         !values.includes(
                           widget.value as string | number | boolean
+                        ) &&
+                        !(
+                          typeof widget.value === 'string' &&
+                          isModelFileName(widget.value)
                         )))
                   ) {
                     widget.value = values[0]
@@ -1922,12 +1941,21 @@ export class ComfyApp implements IComfyApp {
       return false
     }
     const requestId = this.nextQueueRequestId++
+    const queueingWorkflow = useWorkspaceStore().workflow.activeWorkflow as
+      | ComfyWorkflow
+      | undefined
     this.queueItems.push({
       number,
       batchCount,
       queueNodeIds,
       requestId,
-      workflowQueueIntent: intent
+      workflowQueueIntent: intent,
+      queueingWorkflowKey:
+        queueingWorkflow?.instanceId ?? queueingWorkflow?.path,
+      queueingGraph: queueingWorkflow?.graph ?? this.rootGraph,
+      queueingGraphGeneration: getGraphLoadGeneration(
+        queueingWorkflow?.graph ?? this.rootGraph
+      )
     })
     api.dispatchCustomEvent('promptQueueing', {
       requestId,
@@ -2006,9 +2034,13 @@ export class ComfyApp implements IComfyApp {
           batchCount,
           queueNodeIds,
           requestId,
-          workflowQueueIntent
+          workflowQueueIntent,
+          queueingWorkflowKey,
+          queueingGraph,
+          queueingGraphGeneration
         } = this.queueItems.pop()!
         let queuedCount = 0
+        let acceptedCount = 0
         const workflowExecutionIntent: WorkflowExecutionIntent = {
           trigger_source: normalizeExecutionTriggerSource(
             workflowQueueIntent?.trigger_source
@@ -2019,8 +2051,25 @@ export class ComfyApp implements IComfyApp {
         )
 
         const isPartialExecution = !!queueNodeIds?.length
+        let stoppedOnWorkflowChange = false
         for (let i = 0; i < batchCount; i++) {
+          const currentWorkflow = useWorkspaceStore().workflow
+            .activeWorkflow as ComfyWorkflow | undefined
+          const currentWorkflowKey =
+            currentWorkflow?.instanceId ?? currentWorkflow?.path
+          if (
+            currentWorkflowKey !== queueingWorkflowKey ||
+            this.rootGraph !== queueingGraph ||
+            hasQueueingGraphReloadedInPlace(
+              queueingGraph,
+              queueingGraphGeneration
+            )
+          ) {
+            stoppedOnWorkflowChange = true
+            break
+          }
           let executionContext: ExecutionContext | undefined
+          let submissionAccepted = false
           if (telemetry) {
             try {
               executionContext = getExecutionContext()
@@ -2032,7 +2081,9 @@ export class ComfyApp implements IComfyApp {
             }
           }
 
-          forEachNode(this.rootGraph, (node) => {
+          const queuedNodes = collectAllNodes(queueingGraph)
+
+          forEachNode(queueingGraph, (node) => {
             for (const widget of node.widgets ?? []) {
               widget.beforeQueued?.({ isPartialExecution })
             }
@@ -2044,7 +2095,7 @@ export class ComfyApp implements IComfyApp {
           const queuedRunErrorKey = executionErrorStore.captureRunErrorKey()
           const queuedMode = getWorkflowMode(queuedWorkflow)
           const startTime = performance.now()
-          const p = await this.graphToPrompt(this.rootGraph).catch(
+          const p = await this.graphToPrompt(queueingGraph).catch(
             (error: unknown) => {
               telemetry?.trackExecutionOutcome({
                 startTime,
@@ -2062,7 +2113,15 @@ export class ComfyApp implements IComfyApp {
               throw error
             }
           )
-          const queuedNodes = collectAllNodes(this.rootGraph)
+          if (
+            hasQueueingGraphReloadedInPlace(
+              queueingGraph,
+              queueingGraphGeneration
+            )
+          ) {
+            stoppedOnWorkflowChange = true
+            break
+          }
           let workflowContext: WorkflowExecutionContext | undefined
           if (executionContext) {
             workflowContext = toWorkflowExecutionContext(executionContext, {
@@ -2100,6 +2159,7 @@ export class ComfyApp implements IComfyApp {
             delete api.authToken
             delete api.apiKey
             delete api.loadedReleaseId
+            submissionAccepted = Boolean(res.prompt_id)
             if (!res.prompt_id) {
               telemetry?.trackExecutionOutcome({
                 startTime,
@@ -2259,6 +2319,9 @@ export class ComfyApp implements IComfyApp {
           }
 
           queuedCount++
+          if (submissionAccepted) {
+            acceptedCount++
+          }
 
           executeWidgetsCallback(queuedNodes, 'afterQueued', {
             isPartialExecution
@@ -2267,6 +2330,15 @@ export class ComfyApp implements IComfyApp {
             applyPromotedWidgetControl(node, 'afterQueued')
           }
           useFreeTierQuota().trackRun()
+        }
+
+        if (stoppedOnWorkflowChange) {
+          useToast().warning(
+            t('toastMessages.batchStoppedOnWorkflowChange', {
+              queued: acceptedCount,
+              requested: batchCount
+            })
+          )
         }
 
         if (queuedCount > 0) {
