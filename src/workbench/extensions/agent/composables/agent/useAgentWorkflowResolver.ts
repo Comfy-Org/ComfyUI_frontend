@@ -58,6 +58,7 @@ export function useAgentWorkflowResolver({
 }: WorkflowResolverDeps) {
   const cloudIndex = ref<WorkflowReferenceMetadata[]>([])
   const listedCloudIds = ref<ReadonlySet<string>>(new Set())
+  const ambiguousCloudNames = ref<ReadonlySet<string>>(new Set())
   const listingComplete = ref(false)
   let refreshGeneration = 0
   let latestRefreshPromise: Promise<CloudWorkflowRefreshOutcome> | null = null
@@ -67,7 +68,9 @@ export function useAgentWorkflowResolver({
       counts.set(name, (counts.get(name) ?? 0) + 1)
     return new Map(
       cloudIndex.value.flatMap(({ id, name }) =>
-        counts.get(name) === 1 ? [[name, id] as const] : []
+        counts.get(name) === 1 && !ambiguousCloudNames.value.has(name)
+          ? [[name, id] as const]
+          : []
       )
     )
   })
@@ -81,9 +84,18 @@ export function useAgentWorkflowResolver({
           return await (latestRefreshPromise ?? Promise.resolve('failed'))
         listedCloudIds.value = new Set(entries.map(({ id }) => id))
         listingComplete.value = complete
-        cloudIndex.value = entries.flatMap(({ id, name }) =>
+        const nextIndex = entries.flatMap(({ id, name }) =>
           name === undefined ? [] : [{ id, name }]
         )
+        const nameCounts = new Map<string, number>()
+        for (const { name } of nextIndex)
+          nameCounts.set(name, (nameCounts.get(name) ?? 0) + 1)
+        ambiguousCloudNames.value = new Set(
+          Array.from(nameCounts.entries()).flatMap(([name, count]) =>
+            count > 1 ? [name] : []
+          )
+        )
+        cloudIndex.value = nextIndex
         return complete ? 'complete' : 'incomplete'
       } catch (error) {
         if (generation !== refreshGeneration)

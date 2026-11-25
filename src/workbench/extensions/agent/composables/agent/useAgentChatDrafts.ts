@@ -1,4 +1,4 @@
-import { computed, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 
 import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
@@ -58,9 +58,12 @@ export function useAgentChatDrafts(options: {
       : draftKeyForOrigin({ kind: 'thread', threadId: options.threadId.value })
   )
 
+  const draftGeneration = ref(0)
+
   watch(
     draftKey,
     (key) => {
+      draftGeneration.value += 1
       promptQueueStore.activateQueue(key)
       composerStore.activateDraft(key)
     },
@@ -97,6 +100,7 @@ export function useAgentChatDrafts(options: {
 
   return {
     draftKey,
+    draftGeneration,
     uploadScope,
     resetUploadScope,
     rekeyBlankDraft,

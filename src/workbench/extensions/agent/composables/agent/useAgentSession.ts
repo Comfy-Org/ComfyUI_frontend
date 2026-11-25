@@ -107,16 +107,12 @@ interface SentTag {
 export interface WorkflowTurnContext {
   id?: string
   tabPath: string
+  tabInstanceId?: string
   canMint?: boolean
 }
 
-/**
- * Workflow lookup context: omitted resolves the currently selected target,
- * `null` pins the absence of a target, and `{ tabPath }` pins its identity.
- * A send captures this before preparation so later selections cannot change
- * which workflow owns the turn.
- */
-export type TurnOrigin = { tabPath: string } | null
+/** Workflow lookup context pinned at send start, or `null` when absent. */
+export type TurnOrigin = { tabPath: string; tabInstanceId?: string } | null
 
 type PromptEditState =
   | { phase: 'idle' }
@@ -1717,7 +1713,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     threadId: string
   ): void {
     if (origin.kind === 'blank')
-      onBlankSendAccepted?.(origin.blankChatId, threadId)
+      runAcceptedTurnSideEffect(
+        () => onBlankSendAccepted?.(origin.blankChatId, threadId),
+        'agent_thread_activated_callback_failed'
+      )
   }
 
   function acceptBackgroundTurn({
@@ -2041,25 +2040,36 @@ export function useAgentSession(deps: AgentSessionDeps) {
     sendId: string,
     origin: PendingSendOrigin,
     clientMessageId: string | undefined,
-    targetTabPath: string | null | undefined
+    targetTabPath: string | null | undefined,
+    targetTabInstanceId: string | null | undefined
   ): {
     originContext: WorkflowTurnContext | undefined
     turnOrigin: TurnOrigin
   } | null {
-    if (targetTabPath === undefined) {
+    if (targetTabPath === undefined && targetTabInstanceId === undefined) {
       const originContext = workflow?.current()
       return {
         originContext,
         turnOrigin:
           originContext === undefined
             ? null
-            : { tabPath: originContext.tabPath }
+            : {
+                tabPath: originContext.tabPath,
+                tabInstanceId: originContext.tabInstanceId
+              }
       }
     }
     const turnOrigin: TurnOrigin =
-      targetTabPath === null ? null : { tabPath: targetTabPath }
+      targetTabPath !== null && targetTabPath !== undefined
+        ? {
+            tabPath: targetTabPath,
+            tabInstanceId: targetTabInstanceId ?? undefined
+          }
+        : targetTabInstanceId !== null && targetTabInstanceId !== undefined
+          ? { tabPath: '', tabInstanceId: targetTabInstanceId }
+          : null
     const originContext = workflow?.current(turnOrigin)
-    if (targetTabPath !== null && originContext === undefined) {
+    if (turnOrigin !== null && originContext === undefined) {
       failTargetUnavailable(
         sendId,
         origin,
@@ -2305,7 +2315,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     selectionWorkflowId,
     clientMessageId,
     onAccepted,
-    targetTabPath
+    targetTabPath,
+    targetTabInstanceId
   }: {
     sendId: string
     origin: PendingSendOrigin
@@ -2317,12 +2328,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
     clientMessageId?: string
     onAccepted?: () => void
     targetTabPath?: string | null
+    targetTabInstanceId?: string | null
   }): Promise<boolean> {
     const resolved = resolveOriginContext(
       sendId,
       origin,
       clientMessageId,
-      targetTabPath
+      targetTabPath,
+      targetTabInstanceId
     )
     if (!resolved) return false
     const generation = loadGeneration
@@ -2424,9 +2437,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
     attachments: SentAttachment[] = [],
     tags: SentTag[] = [],
     workflowReferences: WorkflowReference[] = [],
-    targetTabPath: string | null = workflow?.current()?.tabPath ?? null
+    targetTabPath?: string | null,
+    targetTabInstanceId?: string | null
   ): void {
     if (conversationStore.getPendingSend(sendId)) return
+    const fallbackOrigin =
+      targetTabPath === undefined && targetTabInstanceId === undefined
+        ? workflow?.current()
+        : undefined
     conversationStore.startPendingSend({
       clientMessageId: sendId,
       origin,
@@ -2438,7 +2456,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
       sentTags: tags,
       tags: toTagStrings(tags),
       workflowReferences,
-      targetTabPath
+      targetTabPath:
+        fallbackOrigin !== undefined
+          ? fallbackOrigin.tabPath
+          : (targetTabPath ?? null),
+      targetTabInstanceId:
+        fallbackOrigin !== undefined
+          ? (fallbackOrigin.tabInstanceId ?? null)
+          : (targetTabInstanceId ?? null)
     })
   }
 
@@ -2450,7 +2475,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     selectionWorkflowId?: () => string | undefined,
     clientMessageId?: string,
     onAccepted?: () => void,
-    targetTabPath?: string | null
+    targetTabPath?: string | null,
+    targetTabInstanceId?: string | null
   ): Promise<boolean> {
     const sendId = clientMessageId ?? createUuidv4()
     const existingPending = conversationStore.getPendingSend(sendId)
@@ -2464,7 +2490,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
         attachments,
         tags,
         workflowReferences,
-        targetTabPath
+        targetTabPath,
+        targetTabInstanceId
       )
       recordFailedPendingSend(sendId, origin, {
         kind: 'request',
@@ -2479,7 +2506,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
       attachments,
       tags,
       workflowReferences,
-      targetTabPath
+      targetTabPath,
+      targetTabInstanceId
     )
     promptEditState.value = { phase: 'idle' }
     const releaseSendGate = sendGateStore.begin()
@@ -2494,7 +2522,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
         selectionWorkflowId,
         clientMessageId,
         onAccepted,
-        targetTabPath
+        targetTabPath,
+        targetTabInstanceId
       })
     } finally {
       releaseSendGate()

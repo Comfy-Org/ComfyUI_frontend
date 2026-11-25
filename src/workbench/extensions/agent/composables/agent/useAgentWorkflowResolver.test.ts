@@ -728,4 +728,32 @@ describe('Server copy of a workflow', () => {
       errorType: 'failure_reading_agent_workflow_content'
     })
   })
+
+  it('keeps an ambiguous cloud name unresolved after forgetting one duplicate until a newer listing resolves it', async () => {
+    const portrait = workflow('workflows/Portrait.json', 'Portrait')
+    const { resolver, bindings, listCloudWorkflows } = setup(
+      [portrait],
+      [
+        { id: 'wf-portrait-1', name: 'Portrait' },
+        { id: 'wf-portrait-2', name: 'Portrait' }
+      ]
+    )
+
+    expect(await resolver.refreshCloudWorkflowListing()).toBe('complete')
+    expect(resolver.authoritativeCloudIdFor(portrait)).toBeUndefined()
+
+    resolver.forgetCloudWorkflowId('wf-portrait-1')
+    expect(resolver.authoritativeCloudIdFor(portrait)).toBeUndefined()
+    expect(resolver.cloudIdFor(portrait)).toBeUndefined()
+
+    bindings.bind('wf-portrait-2', portrait.path)
+    expect(resolver.authoritativeCloudIdFor(portrait)).toBe('wf-portrait-2')
+    bindings.unbind(portrait.path)
+
+    listCloudWorkflows.mockResolvedValueOnce(
+      listing([{ id: 'wf-portrait-2', name: 'Portrait' }])
+    )
+    expect(await resolver.refreshCloudWorkflowListing()).toBe('complete')
+    expect(resolver.authoritativeCloudIdFor(portrait)).toBe('wf-portrait-2')
+  })
 })

@@ -1108,6 +1108,47 @@ describe('AgentPanel', () => {
     expect(screen.getByRole('button', { name: 'Before title' })).toHaveFocus()
   })
 
+  it('cancels an active title edit without renaming when switching to another chat or blank tab', async () => {
+    const user = userEvent.setup()
+    const { emitted, rerender } = render(AgentPanel, {
+      props: {
+        entries: [],
+        historyGroups: createHistoryGroups(),
+        sessionId: null,
+        chatKey: 'blank:tab-a',
+        customTitle: 'Tab A title'
+      },
+      global: {
+        plugins: [i18n],
+        stubs: {
+          Composer: true,
+          EmptyState: true,
+          PanelHeader: true
+        }
+      }
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Tab A title' }))
+    await nextTick()
+    const renameInput = screen.getByRole('textbox', {
+      name: i18n.global.t('g.rename')
+    })
+    await user.clear(renameInput)
+    await user.type(renameInput, 'Edited A title')
+
+    await rerender({
+      sessionId: null,
+      chatKey: 'blank:tab-b',
+      customTitle: 'Tab B title'
+    })
+    await nextTick()
+
+    expect(
+      screen.queryByRole('textbox', { name: i18n.global.t('g.rename') })
+    ).not.toBeInTheDocument()
+    expect(emitted().renameChat).toBeUndefined()
+  })
+
   it('cancels chat rename without emitting a rename', async () => {
     const user = userEvent.setup()
     const { emitted } = render(AgentPanel, {

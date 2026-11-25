@@ -78,9 +78,12 @@ const zSavedWorkflowReference = z.object({
 
 const zSavedDraft = z.object({
   threadId: z.string().nullable(),
+  tabPath: z.string().optional(),
   text: z.string(),
   workflowReferences: z.array(zSavedWorkflowReference)
 })
+
+type SavedDraft = z.infer<typeof zSavedDraft>
 
 const zPendingSendBackup = z.object({
   clientMessageId: z.string(),
@@ -664,6 +667,45 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     return true
   }
 
+  function attachmentsOwning(
+    sourceId: string
+  ): readonly ComposerAttachment[] | undefined {
+    if (attachmentIds.value.includes(sourceId)) return attachments.value
+    for (const kept of keptDrafts.values()) {
+      if (kept.attachmentIds.includes(sourceId))
+        return kept.attachmentIds.flatMap((id) => assetsById.get(id) ?? [])
+    }
+    return undefined
+  }
+
+  function addAttachmentForSource(
+    sourceId: string,
+    attachment: ComposerAttachment
+  ): boolean {
+    if (attachmentIds.value.includes(sourceId)) return addAttachment(attachment)
+    if (assetsById.has(attachment.id) || retiredAssets.has(attachment.id))
+      return false
+    for (const [key, kept] of keptDrafts) {
+      if (!kept.attachmentIds.includes(sourceId)) continue
+      const existing = kept.attachmentIds.flatMap(
+        (id) => assetsById.get(id) ?? []
+      )
+      if (
+        attachment.sourceKey &&
+        existing.some((item) => item.sourceKey === attachment.sourceKey)
+      )
+        return false
+      assetsById.set(attachment.id, { ...attachment })
+      keptDrafts.set(key, {
+        ...kept,
+        attachmentIds: [...kept.attachmentIds, attachment.id]
+      })
+      ensureThumbnail(attachment)
+      return true
+    }
+    return false
+  }
+
   function referenceAttachment(id: string): boolean {
     const attachment = assetsById.get(id)
     if (!attachment || !attachmentIds.value.includes(id)) return false
@@ -729,6 +771,13 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     if (attachmentIds.value.includes(id)) {
       attachmentIds.value = attachmentIds.value.filter((item) => item !== id)
       ++revision.value
+    }
+    for (const [key, kept] of keptDrafts) {
+      if (!kept.attachmentIds.includes(id)) continue
+      keptDrafts.set(key, {
+        ...kept,
+        attachmentIds: kept.attachmentIds.filter((item) => item !== id)
+      })
     }
     removeReference(`asset:${id}`)
   }
@@ -966,7 +1015,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     captured: CapturedReferenceInsertion,
     reference: WorkflowReferenceMetadata
   ): void {
-    activeCaptures.delete(captured)
+    if (!activeCaptures.delete(captured)) return
     const key = captured.draftKey
     if (key === activeDraftKey) {
       updateDraft(
@@ -985,6 +1034,9 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
   }
 
   function discardDraft(key: string): void {
+    for (const captured of activeCaptures) {
+      if (captured.draftKey === key) activeCaptures.delete(captured)
+    }
     if (key === activeDraftKey) clearDraft()
     else if (keptDrafts.delete(key)) releaseUnusedAssets()
   }
@@ -1004,6 +1056,8 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     }
   )
   const draftThreadId = ref<string | null>()
+  const draftTabPath = ref<string | null>()
+  let deferredSavedBlankDraft: SavedDraft | null = null
   const deferredReloadBackups = shallowRef<PendingSendBackup[]>([])
 
   function readPendingSendBackups(): PendingSendBackup[] {
@@ -1182,14 +1236,24 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     )
   }
 
-  watch([draftState, draftThreadId], ([state, threadId]) => {
-    if (threadId === undefined) return
-    const references = workflowReferences.value
-    savedDraft.value =
-      state.text.trim() !== '' || references.length > 0
-        ? { threadId, text: state.text, workflowReferences: references }
+  watch(
+    [draftState, draftThreadId, draftTabPath],
+    ([state, threadId, tabPath]) => {
+      if (threadId === undefined) return
+      if (threadId === null && tabPath === null) return
+      const references = workflowReferences.value
+      const hasContent = state.text.trim() !== '' || references.length > 0
+      if (!hasContent && deferredSavedBlankDraft !== null) return
+      savedDraft.value = hasContent
+        ? {
+            threadId,
+            ...(threadId === null && tabPath !== undefined ? { tabPath } : {}),
+            text: state.text,
+            workflowReferences: references
+          }
         : null
-  })
+    }
+  )
 
   function discardPendingSendBackupsForThread(threadId: string): void {
     deferredReloadBackups.value = deferredReloadBackups.value.filter(
@@ -1248,25 +1312,67 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     if (threadId === null) restoreDeferredBlankBackup(activeTabPath)
   }
 
+  function restoreDeferredSavedBlankDraft(activeTabPath?: string | null): void {
+    if (!activeTabPath || deferredSavedBlankDraft?.tabPath !== activeTabPath)
+      return
+    const saved = deferredSavedBlankDraft
+    deferredSavedBlankDraft = null
+    if (!hasDraft.value)
+      replaceDraft({
+        text: saved.text,
+        workflowReferences: saved.workflowReferences,
+        attachments: []
+      })
+  }
+
+  function restoreInitialSavedDraft(
+    threadId: string | null,
+    activeTabPath?: string | null
+  ): void {
+    const saved = zSavedDraft.nullable().safeParse(savedDraft.value)
+    if (!saved.success) {
+      savedDraft.value = null
+      return
+    }
+    const data = saved.data
+    if (data === null) return
+    if (data.threadId !== null) {
+      if (data.threadId === threadId && !hasDraft.value)
+        replaceDraft({
+          text: data.text,
+          workflowReferences: data.workflowReferences,
+          attachments: []
+        })
+      return
+    }
+    if (activeTabPath === undefined) {
+      if (data.tabPath === undefined && threadId === null && !hasDraft.value)
+        replaceDraft({
+          text: data.text,
+          workflowReferences: data.workflowReferences,
+          attachments: []
+        })
+      return
+    }
+    if (data.tabPath === undefined) return
+    deferredSavedBlankDraft = data
+    if (threadId === null) restoreDeferredSavedBlankDraft(activeTabPath)
+  }
+
   function trackDraftThread(
     threadId: string | null,
     activeTabPath?: string | null
   ): void {
     if (draftThreadId.value === undefined) {
-      const saved = zSavedDraft.nullable().safeParse(savedDraft.value)
-      if (!saved.success) savedDraft.value = null
-      else if (saved.data?.threadId === threadId && !hasDraft.value)
-        replaceDraft({
-          text: saved.data.text,
-          workflowReferences: saved.data.workflowReferences,
-          attachments: []
-        })
+      restoreInitialSavedDraft(threadId, activeTabPath)
       if (savedPendingBackups.value !== null)
         restoreInitialPendingBackups(threadId, activeTabPath)
     } else if (threadId === null) {
+      restoreDeferredSavedBlankDraft(activeTabPath)
       restoreDeferredBlankBackup(activeTabPath)
     }
     draftThreadId.value = threadId
+    draftTabPath.value = activeTabPath
   }
 
   return {
@@ -1310,6 +1416,8 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     setNodes,
     setSelectionModeNodeKeys,
     addAttachment,
+    attachmentsOwning,
+    addAttachmentForSource,
     referenceAttachment,
     updateAttachment,
     removeAttachment,

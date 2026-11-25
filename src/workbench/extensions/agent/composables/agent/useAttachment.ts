@@ -73,6 +73,10 @@ export interface UseAttachmentOptions {
   draftScope?: () => string
   staged: () => readonly ComposerAttachment[]
   stage: (attachment: ComposerAttachment) => boolean
+  stagedForSource?: (
+    sourceId: string
+  ) => readonly ComposerAttachment[] | undefined
+  stageForSource?: (sourceId: string, attachment: ComposerAttachment) => boolean
   update: (id: string, patch: Partial<ComposerAttachment>) => void
   remove: (id: string) => void
 }
@@ -585,24 +589,64 @@ export function useAttachment(options: UseAttachmentOptions) {
     return id ? { file, outcome: 'upload', id } : { file, outcome: 'duplicate' }
   }
 
+  function sourceStaged(id: string): readonly ComposerAttachment[] | undefined {
+    if (options.stagedForSource) return options.stagedForSource(id)
+    const current = options.staged()
+    return current.some((item) => item.id === id) ? current : undefined
+  }
+
+  function hasOwnedSource(id: string): boolean {
+    return sourceStaged(id) !== undefined
+  }
+
+  function admitForSource(sourceId: string, sourceKey: string): Admission {
+    const staged = sourceStaged(sourceId)
+    if (!staged) return 'too_many'
+    if (staged.length < MAX_TURN_ATTACHMENTS) return 'admitted'
+    return staged.some((item) => item.sourceKey === sourceKey)
+      ? 'duplicate'
+      : 'too_many'
+  }
+
+  function stageDerived(
+    sourceId: string,
+    name: string,
+    sourceKey: string
+  ): string | undefined {
+    const id = `upload-${++stagedCount}:${name}`
+    const next: ComposerAttachment = {
+      id,
+      name,
+      ref: '',
+      uploading: true,
+      sourceKey
+    }
+    const ok = options.stageForSource
+      ? options.stageForSource(sourceId, next)
+      : options.stage(next)
+    if (!ok) return undefined
+    pending.add(id)
+    return id
+  }
+
   async function attachDerivedWorkflows(
     sources: readonly { id: string; file: File }[],
     scope: string
   ): Promise<void> {
     const candidates = sources.filter(
-      ({ id }) => deriving.value.has(id) && hasCurrentSource(id)
+      ({ id }) => deriving.value.has(id) && hasOwnedSource(id)
     )
     const lifted: Array<{ id: string; file: File }> = []
     try {
       for (const { id, file } of candidates) {
-        if (!deriving.value.has(id) || !hasCurrentSource(id)) continue
+        if (!deriving.value.has(id) || !hasOwnedSource(id)) continue
         const extraction = extractionFinished.then(() => {
-          if (!deriving.value.has(id) || !hasCurrentSource(id)) return undefined
+          if (!deriving.value.has(id) || !hasOwnedSource(id)) return undefined
           return deriveWorkflowFile(file).catch(() => undefined)
         })
         extractionFinished = extraction.then(() => undefined)
         const derived = await extraction
-        if (derived && deriving.value.has(id) && hasCurrentSource(id))
+        if (derived && deriving.value.has(id) && hasOwnedSource(id))
           lifted.push({ id, file: derived })
       }
     } finally {
@@ -611,12 +655,12 @@ export function useAttachment(options: UseAttachmentOptions) {
     if (!lifted.length) return
 
     const staged = lifted
-      .filter(({ id }) => hasCurrentSource(id))
+      .filter(({ id }) => hasOwnedSource(id))
       .flatMap(({ id, file }) => {
         const sourceKey = `${DERIVED_WORKFLOW_SOURCE_PREFIX}${id}`
-        if (admit(sourceKey) !== 'admitted') return []
+        if (admitForSource(id, sourceKey) !== 'admitted') return []
         if (exceedsAttachmentLimit(file) || exceedsImportLimit(file)) return []
-        const derivedId = stage(file.name, sourceKey)
+        const derivedId = stageDerived(id, file.name, sourceKey)
         return derivedId ? [{ id: derivedId, file }] : []
       })
 

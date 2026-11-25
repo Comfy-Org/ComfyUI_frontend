@@ -977,6 +977,32 @@ describe('composer draft persistence (PM-2002)', () => {
     sender.clearDraft()
     await nextTick()
 
+    const reloadedUnmatched = await reloadPage()
+    reloadedUnmatched.trackDraftThread('thread-a')
+    reloadedUnmatched.reconcilePendingSendDraft('thread-a', [
+      { turnId: 'turn-1', text: 'Earlier' }
+    ])
+    expect(reloadedUnmatched.draft).toBe(' make it blue')
+    expect(reloadedUnmatched.workflowReferences).toEqual([
+      { id: 'wf-1', name: 'Hero', textOffset: 0 }
+    ])
+
+    const senderMatched = await reloadPage()
+    senderMatched.trackDraftThread('thread-a')
+    senderMatched.setText(' make it blue')
+    senderMatched.setWorkflowReferences([
+      { id: 'wf-1', name: 'Hero', textOffset: 0 }
+    ])
+    const matchedGateId = senderMatched.startGateHold('cm-chip', undefined, {
+      expectedText: ' make it blue',
+      knownTurnIds: ['turn-1']
+    })
+    senderMatched.releaseGateHold(matchedGateId)
+    senderMatched.setText('Follow-up draft')
+    await nextTick()
+    senderMatched.clearDraft()
+    await nextTick()
+
     const reloaded = await reloadPage()
     reloaded.trackDraftThread('thread-a')
     reloaded.reconcilePendingSendDraft('thread-a', [
@@ -1228,6 +1254,38 @@ describe('composer draft persistence (PM-2002)', () => {
 
     expect(reloaded.draft).toBe('Retried message')
   })
+
+  it('restores a saved blank draft only onto its own workflow tab and ignores legacy blank drafts without a tab path', async () => {
+    const sender = useAgentComposerStore()
+    sender.trackDraftThread(null, 'workflows/a.json')
+    sender.setText('Draft on workflow A')
+    await nextTick()
+
+    const reloadedOnB = await reloadPage()
+    reloadedOnB.trackDraftThread(null, null)
+    expect(reloadedOnB.hasDraft).toBe(false)
+
+    reloadedOnB.activateDraft('blank:tab-b')
+    reloadedOnB.trackDraftThread(null, 'workflows/b.json')
+    expect(reloadedOnB.hasDraft).toBe(false)
+
+    reloadedOnB.activateDraft('blank:tab-a')
+    reloadedOnB.trackDraftThread(null, 'workflows/a.json')
+    expect(reloadedOnB.draft).toBe('Draft on workflow A')
+
+    const key = StorageKeys.agentComposerDraft(getWorkspaceId())
+    localStorage.setItem(
+      key,
+      JSON.stringify({
+        threadId: null,
+        text: 'Legacy draft without tab',
+        workflowReferences: []
+      })
+    )
+    const reloadedLegacy = await reloadPage()
+    reloadedLegacy.trackDraftThread(null, 'workflows/b.json')
+    expect(reloadedLegacy.hasDraft).toBe(false)
+  })
 })
 
 describe('composer prompt origin (PM-1474 F11)', () => {
@@ -1343,5 +1401,35 @@ describe('composer prompt origin (PM-1474 F11)', () => {
     store.setText('never mind, do this instead')
 
     expect(store.promptOrigin).toBe('typed')
+  })
+
+  it('drops background workflow reference completions for a discarded chat while still inserting into a live empty chat', () => {
+    const store = useAgentComposerStore()
+    store.activateDraft('thread:a')
+    const discardedCapture = store.captureReferenceInsertion()
+
+    store.activateDraft('thread:live')
+    const liveCapture = store.captureReferenceInsertion()
+
+    store.activateDraft('thread:b')
+    store.discardDraft('thread:a')
+
+    store.insertWorkflowReferenceInDraft(discardedCapture, {
+      id: 'wf-dead',
+      name: 'Dead'
+    })
+    store.insertWorkflowReferenceInDraft(liveCapture, {
+      id: 'wf-live',
+      name: 'Live'
+    })
+
+    store.activateDraft('thread:a')
+    expect(store.hasDraft).toBe(false)
+    expect(store.workflowReferences).toEqual([])
+
+    store.activateDraft('thread:live')
+    expect(store.workflowReferences).toEqual([
+      { id: 'wf-live', name: 'Live', textOffset: 0 }
+    ])
   })
 })

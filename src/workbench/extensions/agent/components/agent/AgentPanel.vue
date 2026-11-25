@@ -72,6 +72,7 @@ const {
   paywallPresentation = DEFAULT_AGENT_PAYWALL_PRESENTATION,
   creditsExhausted = false,
   sessionId = null,
+  chatKey,
   currentChatReady = false,
   customTitle,
   openingWorkflowName,
@@ -119,6 +120,7 @@ const {
    */
   creditsExhausted?: boolean
   sessionId?: string | null
+  chatKey?: string
   currentChatReady?: boolean
   customTitle?: string
   openingWorkflowName?: string
@@ -404,6 +406,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
       <AgentPanelChatControls
         :blocked
         :session-id
+        :chat-key
         :custom-title
         :entries
         @open-history="onOpenHistory"

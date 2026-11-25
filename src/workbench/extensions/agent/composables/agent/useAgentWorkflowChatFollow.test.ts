@@ -556,7 +556,7 @@ describe('useAgentWorkflowChatFollow', () => {
     })
     h.chats.set('wf-b', [
       chat('th-deleted', 'wf-b', 200),
-      chat('th-remaining', 'wf-b', 100)
+      chat('th-stale-cached', 'wf-b', 100)
     ])
     h.loadThread.mockImplementation(async (id: string) => {
       if (id === 'th-deleted') return false
@@ -564,7 +564,7 @@ describe('useAgentWorkflowChatFollow', () => {
       return true
     })
     h.refreshHistory.mockImplementation(async () => {
-      h.chats.set('wf-b', [chat('th-remaining', 'wf-b', 100)])
+      h.chats.set('wf-b', [chat('th-refreshed', 'wf-b', 150)])
       return 'complete'
     })
     h.setActive(h.workflowB)
@@ -573,10 +573,59 @@ describe('useAgentWorkflowChatFollow', () => {
 
     expect(h.loadThread.mock.calls.map(([id]) => id)).toEqual([
       'th-deleted',
-      'th-remaining'
+      'th-refreshed'
     ])
-    expect(h.getThreadId()).toBe('th-remaining')
+    expect(h.getThreadId()).toBe('th-refreshed')
     expect(h.follow.landing.value).toBeNull()
+  })
+
+  it('tries the next fresh history candidate when the newest fresh chat returns 404 and stops on transient errors', async () => {
+    const missing = new Set<string>(['th-fresh-deleted'])
+    const h = createHarness({
+      isThreadMissing: (id) => missing.has(id)
+    })
+    h.refreshHistory.mockImplementation(async () => {
+      h.chats.set('wf-b', [
+        chat('th-fresh-deleted', 'wf-b', 200),
+        chat('th-fresh-live', 'wf-b', 100)
+      ])
+      return 'complete'
+    })
+    h.loadThread.mockImplementation(async (id: string) => {
+      if (id === 'th-fresh-deleted') return false
+      h.setThreadId(id)
+      return true
+    })
+    h.setActive(h.workflowB)
+
+    await h.follow.followTab(h.workflowB)
+
+    expect(h.loadThread.mock.calls.map(([id]) => id)).toEqual([
+      'th-fresh-deleted',
+      'th-fresh-live'
+    ])
+    expect(h.getThreadId()).toBe('th-fresh-live')
+    expect(h.follow.landing.value).toBeNull()
+
+    const transient = createHarness({
+      isThreadMissing: () => false
+    })
+    transient.refreshHistory.mockImplementation(async () => {
+      transient.chats.set('wf-b', [
+        chat('th-error', 'wf-b', 200),
+        chat('th-second', 'wf-b', 100)
+      ])
+      return 'complete'
+    })
+    transient.loadThread.mockResolvedValue(false)
+    transient.setActive(transient.workflowB)
+
+    await transient.follow.followTab(transient.workflowB)
+
+    expect(transient.loadThread.mock.calls.map(([id]) => id)).toEqual([
+      'th-error'
+    ])
+    expect(transient.follow.landing.value?.status).toBe('failed')
   })
 
   it('settles on blank when the cached newest chat is missing (404) and refresh confirms no chats remain', async () => {

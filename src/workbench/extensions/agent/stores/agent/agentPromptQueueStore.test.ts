@@ -196,4 +196,19 @@ describe('useAgentPromptQueueStore', () => {
     queue.discardQueue('thread:a')
     expect(queue.items).toEqual([])
   })
+
+  it('preserves the oldest kept queue when activating it at the 64-queue cap', () => {
+    const composer = useAgentComposerStore()
+    const queue = useAgentPromptQueueStore()
+
+    for (let index = 0; index <= 64; index += 1) {
+      queue.activateQueue(`chat:${index}`)
+      composer.setText(`prompt-${index}`)
+      queue.enqueueFromComposer(`prompt-${index}`, [], [])
+      composer.clearDraft()
+    }
+
+    queue.activateQueue('chat:0')
+    expect(queue.items.map((item) => item.text)).toEqual(['prompt-0'])
+  })
 })

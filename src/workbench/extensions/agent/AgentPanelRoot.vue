@@ -993,17 +993,15 @@ watch(
 
 const workflowDetached = computed(() => selectedTarget.value === null)
 
-// Resolves the tab a turn is attributed to. `null` (the send had no origin
-// tab) resolves to nothing rather than falling back to the selected target, so
-// re-attaching during prepare() cannot pull a later tab into this turn.
 function originWorkflow(origin?: TurnOrigin): ComfyWorkflow | undefined {
   if (origin === null) return undefined
-  return (
-    (origin === undefined
-      ? selectedTarget.value
-      : workflowStore.openWorkflows.find(
-          (workflow) => workflow.path === origin.tabPath
-        )) ?? undefined
+  if (origin === undefined) return selectedTarget.value ?? undefined
+  if (origin.tabInstanceId !== undefined)
+    return workflowStore.openWorkflows.find(
+      (workflow) => workflow.instanceId === origin.tabInstanceId
+    )
+  return workflowStore.openWorkflows.find(
+    (workflow) => workflow.path === origin.tabPath
   )
 }
 
@@ -1015,8 +1013,12 @@ function targetWorkflowTurnContext(
   if (!target) return undefined
   const id = cloudIdFor(target)
   return id === undefined
-    ? { tabPath: target.path, canMint: target.isTemporary }
-    : { id, tabPath: target.path }
+    ? {
+        tabPath: target.path,
+        tabInstanceId: target.instanceId,
+        canMint: target.isTemporary
+      }
+    : { id, tabPath: target.path, tabInstanceId: target.instanceId }
 }
 
 function serializedCanvas(target: ComfyWorkflow) {
@@ -2277,6 +2279,7 @@ async function onSelectHistory(
   id: string,
   isCurrent: () => boolean
 ): Promise<boolean> {
+  offscreenShowGeneration += 1
   retireFollow()
   if (
     !conversationStore.hasPendingSendForBlankChat(
@@ -2328,7 +2331,11 @@ watch(
   workflowChatFollow.activeWorkflowChanged
 )
 
-workflowStore.onUserActivation((workflow) => void followTab(workflow))
+workflowStore.onUserActivation((workflow) => {
+  if (workflow.instanceId !== pendingShowTabInstanceId)
+    offscreenShowGeneration += 1
+  void followTab(workflow)
+})
 
 watch(userEngaged, workflowChatFollow.userEngagementChanged)
 
@@ -2603,11 +2610,16 @@ async function sendTurn(
     )
       return 'withdrawn'
     const originThreadId = threadId.value
-    const targetTabPath = stagedTarget
-      ? stagedTarget.path
-      : (selectedTarget.value?.path ?? null)
+    const targetWorkflow = stagedTarget ?? selectedTarget.value ?? null
+    const targetTabPath = targetWorkflow?.path ?? null
+    const targetTabInstanceId = targetWorkflow?.instanceId ?? null
     const turnOrigin: TurnOrigin =
-      targetTabPath === null ? null : { tabPath: targetTabPath }
+      targetTabPath === null
+        ? null
+        : {
+            tabPath: targetTabPath,
+            tabInstanceId: targetTabInstanceId ?? undefined
+          }
     const selection = resolveSendSelection(
       nodes,
       originWorkflow(turnOrigin),
@@ -2642,7 +2654,8 @@ async function sendTurn(
             proactive.accepted(sentUsageScope)
             onAccepted()
           },
-          targetTabPath
+          targetTabPath,
+          targetTabInstanceId
         )
       )
       return sent ? 'sent' : 'failed'
@@ -2704,7 +2717,7 @@ const { handleComposerSend, settleActiveAndPump } = useAgentPromptQueue({
   isBusy: () => promptQueueBusy.value,
   submitDraft,
   sendItem: async (item) => {
-    const itemChatKey = chatDrafts.draftKey.value
+    const startGeneration = chatDrafts.draftGeneration.value
     const clientMessageId = uuidv4()
     const assetIds = item.attachments.map(({ id }) => id)
     if (assetIds.length > 0)
@@ -2740,9 +2753,12 @@ const { handleComposerSend, settleActiveAndPump } = useAgentPromptQueue({
         undefined,
         () =>
           promptQueueStore.runningId === item.id &&
-          chatDrafts.draftKey.value === itemChatKey
+          chatDrafts.draftGeneration.value === startGeneration
       )
-      if (outcome === 'withdrawn' && chatDrafts.draftKey.value !== itemChatKey)
+      if (
+        outcome === 'withdrawn' &&
+        chatDrafts.draftGeneration.value !== startGeneration
+      )
         return 'deferred'
       return outcome === 'sent'
     } finally {
@@ -2824,13 +2840,27 @@ function buildRetryMetadata(
   }
 }
 
+function pendingSendTurnOrigin(
+  retried: Pick<
+    NonNullable<ReturnType<typeof conversationStore.getPendingSend>>,
+    'targetTabPath' | 'targetTabInstanceId'
+  >
+): TurnOrigin {
+  if (retried.targetTabPath)
+    return {
+      tabPath: retried.targetTabPath,
+      tabInstanceId: retried.targetTabInstanceId ?? undefined
+    }
+  if (retried.targetTabInstanceId)
+    return { tabPath: '', tabInstanceId: retried.targetTabInstanceId }
+  return null
+}
+
 function recordRetryTelemetry(
   retryClientMessageId: string,
   retried: NonNullable<ReturnType<typeof conversationStore.getPendingSend>>
 ): TurnOrigin {
-  const turnOrigin: TurnOrigin = retried.targetTabPath
-    ? { tabPath: retried.targetTabPath }
-    : null
+  const turnOrigin = pendingSendTurnOrigin(retried)
   const workflowId = targetWorkflowTurnContext(turnOrigin)?.id ?? null
   pendingTelemetry.set(retryClientMessageId, {
     metadata: buildRetryMetadata(retryClientMessageId, retried, workflowId),
@@ -2843,9 +2873,7 @@ async function dispatchRetryPendingSend(
   retryClientMessageId: string,
   retried: NonNullable<ReturnType<typeof conversationStore.getPendingSend>>
 ): Promise<void> {
-  const selectionWorkflow = retried.targetTabPath
-    ? originWorkflow({ tabPath: retried.targetTabPath })
-    : undefined
+  const selectionWorkflow = originWorkflow(pendingSendTurnOrigin(retried))
   const sentUsageScope = proactive.scope.value
   recordSendChatVersion(retryClientMessageId, selectionWorkflow)
   try {
@@ -2862,7 +2890,8 @@ async function dispatchRetryPendingSend(
           proactive.accepted(sentUsageScope)
           onAccepted()
         },
-        retried.targetTabPath ?? null
+        retried.targetTabPath ?? null,
+        retried.targetTabInstanceId ?? null
       )
     )
   } finally {
@@ -2994,20 +3023,33 @@ function reopenOffscreenBlankFallback(
   dismissOffscreenFailureToast(toastId)
 }
 
+let offscreenShowGeneration = 0
+let pendingShowTabInstanceId: string | null = null
+
 async function activateAndShowFailedBlankTab(
   originTab: ComfyWorkflow,
   blankChatId: string,
   toastId: ToastId,
-  originWorkspaceId: string | null
+  originWorkspaceId: string | null,
+  showGeneration: number
 ): Promise<void> {
+  const isShowCurrent = () =>
+    showGeneration === offscreenShowGeneration &&
+    isOffscreenBlankSendCurrent(blankChatId, originWorkspaceId)
   let activated: boolean
+  pendingShowTabInstanceId = originTab.instanceId
   try {
     activated = await workflowService.openWorkflow(originTab, {
-      initiator: 'user'
+      initiator: 'user',
+      isCurrent: isShowCurrent
     })
   } catch {
     activated = false
+  } finally {
+    if (showGeneration === offscreenShowGeneration)
+      pendingShowTabInstanceId = null
   }
+  if (showGeneration !== offscreenShowGeneration) return
   if (!isOffscreenBlankSendCurrent(blankChatId, originWorkspaceId)) {
     dismissOffscreenFailureToast(toastId)
     return
@@ -3031,6 +3073,7 @@ function showOffscreenBlankSend(
   toastId: ToastId,
   originWorkspaceId: string | null
 ): void {
+  const showGeneration = ++offscreenShowGeneration
   if (!isOffscreenBlankSendCurrent(blankChatId, originWorkspaceId)) {
     dismissOffscreenFailureToast(toastId)
     return
@@ -3055,7 +3098,8 @@ function showOffscreenBlankSend(
     originTab,
     blankChatId,
     toastId,
-    originWorkspaceId
+    originWorkspaceId,
+    showGeneration
   )
 }
 
@@ -3122,9 +3166,18 @@ function advanceBlankTabIfPending(): void {
 function onNewChat(
   source: 'new_chat_button' | 'history_back' | 'history_delete'
 ): void {
+  offscreenShowGeneration += 1
   retireFollow()
   if (source === 'history_back') {
     openBlankChat()
+    agentPanelStore.startFollowingVisibleWorkflow()
+    return
+  }
+  if (source === 'history_delete') {
+    resetComposerForChatSwitch()
+    advanceBlankTabIfPending()
+    openBlankChat(source)
+    void proactive.refresh()
     agentPanelStore.startFollowingVisibleWorkflow()
     return
   }
@@ -3251,6 +3304,8 @@ const attachment = useAttachment({
   draftScope: () => chatDrafts.uploadScope(),
   staged: () => composerStore.attachments,
   stage: composerStore.addAttachment,
+  stagedForSource: composerStore.attachmentsOwning,
+  stageForSource: composerStore.addAttachmentForSource,
   update: composerStore.updateAttachment,
   remove: composerStore.removeAttachment
 })
@@ -3509,6 +3564,7 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
       :opening-workflow-name="openingWorkflowName"
       :landing="landing"
       :session-id="threadId"
+      :chat-key="chatDrafts.draftKey.value"
       :custom-title="
         history.titleFor(threadId) ??
         historyGroups.current.find((session) => session.id === threadId)

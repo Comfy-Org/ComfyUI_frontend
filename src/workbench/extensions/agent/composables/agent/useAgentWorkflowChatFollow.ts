@@ -274,18 +274,40 @@ export function useAgentWorkflowChatFollow(deps: FollowDeps) {
       .find((chat) => !excludedThreadIds.has(chat.id))
   }
 
-  async function openLatestChat(
+  async function openFreshCandidates(
     operation: FollowOperation,
     workflowId: string,
-    threadId: string,
+    excluded: Set<string>,
+    complete: boolean,
     ignoreDraftGate = false
   ): Promise<void> {
-    const outcome = await openFollowedChat(
-      operation,
-      { threadId, workflowId },
-      () => isOpeningWanted(operation, threadId, ignoreDraftGate)
-    )
-    if (outcome === 'failed') showList(operation, 'failed')
+    for (
+      let candidate = nextCandidateChat(workflowId, excluded);
+      candidate !== undefined;
+      candidate = nextCandidateChat(workflowId, excluded)
+    ) {
+      if (!canOpen(operation, ignoreDraftGate)) {
+        retireIfCurrent(operation)
+        return
+      }
+      const outcome = await openFollowedChat(
+        operation,
+        { threadId: candidate.id, workflowId },
+        () => isOpeningWanted(operation, candidate.id, ignoreDraftGate)
+      )
+      if (outcome === 'settled') return
+      if (!deps.isThreadMissing?.(candidate.id)) {
+        showList(operation, 'failed')
+        return
+      }
+      excluded.add(candidate.id)
+    }
+    const hasUnconfirmed = deps
+      .chatsFor(workflowId)
+      .some((chat) => !deps.isThreadMissing?.(chat.id))
+    if (complete && !hasUnconfirmed)
+      dispatch({ type: 'opening_done', generation: operation.generation })
+    else showList(operation, 'failed')
   }
 
   async function recoverMissingCachedChat(
@@ -300,28 +322,13 @@ export function useAgentWorkflowChatFollow(deps: FollowDeps) {
     showList(operation, 'loading')
     const refreshOutcome = await refreshing
     if (!isCurrent(operation)) return
-    const next = nextCandidateChat(workflowId, excluded)
-    if (refreshOutcome !== 'complete') {
-      if (next !== undefined && canOpen(operation, ignoreDraftGate)) {
-        await openLatestChat(operation, workflowId, next.id, ignoreDraftGate)
-        return
-      }
-      showList(operation, 'failed')
-      return
-    }
-    const hasRemaining = deps
-      .chatsFor(workflowId)
-      .some((chat) => chat.id !== missingThreadId)
-    if (!hasRemaining) {
-      dispatch({ type: 'opening_done', generation: operation.generation })
-      return
-    }
-    if (next === undefined) return showList(operation, 'failed')
-    if (!canOpen(operation, ignoreDraftGate)) {
-      retireIfCurrent(operation)
-      return
-    }
-    await openLatestChat(operation, workflowId, next.id, ignoreDraftGate)
+    await openFreshCandidates(
+      operation,
+      workflowId,
+      excluded,
+      refreshOutcome === 'complete',
+      ignoreDraftGate
+    )
   }
 
   async function landOnKnownChats(
@@ -382,31 +389,13 @@ export function useAgentWorkflowChatFollow(deps: FollowDeps) {
     showList(operation, 'loading')
     const outcome = await deps.refreshHistory('none', workflowId)
     if (!isCurrent(operation)) return
-    if (outcome !== 'complete') {
-      const candidate = nextCandidateChat(workflowId, excluded)
-      if (candidate !== undefined && canOpen(operation, ignoreDraftGate)) {
-        await openLatestChat(
-          operation,
-          workflowId,
-          candidate.id,
-          ignoreDraftGate
-        )
-        return
-      }
-      showList(operation, 'failed')
-      return
-    }
-    if (deps.chatsFor(workflowId).length === 0) {
-      dispatch({ type: 'opening_done', generation: operation.generation })
-      return
-    }
-    const candidate = nextCandidateChat(workflowId, excluded)
-    if (candidate === undefined) return showList(operation, 'failed')
-    if (!canOpen(operation, ignoreDraftGate)) {
-      retireIfCurrent(operation)
-      return
-    }
-    await openLatestChat(operation, workflowId, candidate.id, ignoreDraftGate)
+    await openFreshCandidates(
+      operation,
+      workflowId,
+      excluded,
+      outcome === 'complete',
+      ignoreDraftGate
+    )
   }
 
   function hasImmediateBlankLanding(workflow: ComfyWorkflow): boolean {

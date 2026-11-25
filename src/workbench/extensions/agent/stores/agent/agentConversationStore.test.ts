@@ -4962,5 +4962,34 @@ describe('useAgentConversationStore', () => {
       expect(store.activeBlankChatId).toBe('blank:tab-b')
       expect(store.entries).toEqual([])
     })
+
+    it('preserves user attachments, tags, and workflow references when stashing an active turn and resuming after hydration', () => {
+      const store = useAgentConversationStore()
+      const attachments = [{ name: 'cat.png', ref: 'cat.png' }]
+      const tags = ['KSampler']
+      const workflowReferences = [{ id: 'wf-ref', name: 'Ref', textOffset: 0 }]
+
+      store.setThreadId('th-stash')
+      store.recordUser(
+        T1,
+        'use this node',
+        attachments,
+        tags,
+        workflowReferences
+      )
+      store.startTurn(T1)
+      store.stashActiveTurn()
+
+      store.hydrate([])
+      store.resumeBackgroundTurn()
+
+      const userEntry = store.entries.find((entry) => entry.role === 'user')
+      expect(userEntry).toMatchObject({
+        text: 'use this node',
+        attachments,
+        tags,
+        workflowReferences
+      })
+    })
   })
 })

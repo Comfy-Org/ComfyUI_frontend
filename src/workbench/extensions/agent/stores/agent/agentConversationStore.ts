@@ -122,6 +122,7 @@ interface PendingSend {
   skillReference?: SkillReference
   assetIds?: readonly string[]
   targetTabPath?: string | null
+  targetTabInstanceId?: string | null
   inputMethod?: AgentInputMethod
   starterPrompt?: AgentStarterPromptSource | null
   status: PendingSendStatus
@@ -1081,6 +1082,7 @@ export const useAgentConversationStore = defineStore(
       workflowReferences: WorkflowReference[]
       assetIds?: readonly string[]
       targetTabPath?: string | null
+      targetTabInstanceId?: string | null
       inputMethod?: AgentInputMethod
       starterPrompt?: AgentStarterPromptSource | null
     }): PendingSend {
@@ -1710,6 +1712,9 @@ export const useAgentConversationStore = defineStore(
         message: slot.message,
         transport: slot.transport,
         userText: userTexts.value.get(slot.message.id),
+        attachments: userAttachments.value.get(slot.message.id),
+        tags: userTags.value.get(slot.message.id),
+        workflowReferences: userWorkflowReferences.value.get(slot.message.id),
         skillReference: userSkillReferences.value.get(slot.message.id),
         settled: false,
         tab: slot.tab,

@@ -681,10 +681,16 @@ describe('Composer', () => {
 
   it('keeps Stop enabled while running even without a workflow target', async () => {
     const { emitted } = mount({ hasWorkflowTarget: false, streaming: true })
+    const box = screen.getByRole('textbox')
     const stop = screen.getByRole('button', { name: 'Stop' })
 
     expect(stop).toBeEnabled()
-    await userEvent.click(stop)
+    await userEvent.click(box)
+    await userEvent.type(box, 'draft while running')
+
+    const stopAfterTyping = screen.getByRole('button', { name: 'Stop' })
+    expect(stopAfterTyping).toBeEnabled()
+    await userEvent.click(stopAfterTyping)
     expect(emitted().stop).toHaveLength(1)
   })
 

@@ -195,6 +195,8 @@ export const useAgentPromptQueueStore = defineStore('agentPromptQueue', () => {
     if (key === activeChatKey) return
     const adoptsCurrentContent = activeChatKey === null
     if (!adoptsCurrentContent && state.value.editingId !== null) cancelEdit()
+    const restored = adoptsCurrentContent ? undefined : keptQueues.get(key)
+    if (restored !== undefined) keptQueues.delete(key)
     if (activeChatKey !== null) {
       keptQueues.delete(activeChatKey)
       if (isQueueNonEmpty(state.value)) {
@@ -204,8 +206,6 @@ export const useAgentPromptQueueStore = defineStore('agentPromptQueue', () => {
     }
     activeChatKey = key
     if (adoptsCurrentContent) return
-    const restored = keptQueues.get(key)
-    keptQueues.delete(key)
     state.value = restored ?? emptyPromptQueue()
     composer.holdAssets(heldAssetIds())
   }

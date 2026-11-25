@@ -155,7 +155,11 @@ const showStop = computed(
   () =>
     running.value &&
     !editing.value &&
-    (!composer.canSend.value || derivingWorkflow || openingChat)
+    (!composer.canSend.value ||
+      !hasWorkflowTarget ||
+      workflowSelecting ||
+      derivingWorkflow ||
+      openingChat)
 )
 
 const editorRef =

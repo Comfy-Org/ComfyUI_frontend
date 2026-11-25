@@ -12388,4 +12388,38 @@ describe('useAgentSession optimistic and chat-owned sends (PR 0)', () => {
       ).toBe(true)
     )
   })
+
+  it('still installs the accepted turn when onBlankSendAccepted throws', async () => {
+    const conversation = useAgentConversationStore()
+    const events = fakeEvents()
+    const postMessage = vi.fn().mockResolvedValue({
+      thread_id: 'th-blank-cb',
+      message_id: 'msg-blank-cb'
+    })
+    const onBlankSendAccepted = vi.fn(() => {
+      throw new Error('blank callback failed')
+    })
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: events.source,
+      onBlankSendAccepted
+    })
+    session.start()
+
+    const sent = await session.sendMessage(
+      'First blank message',
+      [],
+      [],
+      [],
+      () => undefined,
+      'cm-blank-cb'
+    )
+
+    expect(sent).toBe(true)
+    expect(onBlankSendAccepted).toHaveBeenCalledOnce()
+    expect(conversation.threadId).toBe('th-blank-cb')
+    expect(conversation.messages.map((message) => message.id)).toContain(
+      'msg-blank-cb'
+    )
+  })
 })

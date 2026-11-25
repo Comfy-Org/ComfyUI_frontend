@@ -331,6 +331,7 @@ import { useAgentGraphActivityStore } from './stores/agent/agentGraphActivitySto
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import { useAgentComposerStore } from './stores/agent/agentComposerStore'
 import { useAgentOpenChatsStore } from './stores/agent/agentOpenChatsStore'
+import { useAgentPromptQueueStore } from './stores/agent/agentPromptQueueStore'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
 import { createFakeAgentSocket } from './crdt/__fixtures__/agentSocket'
 import { createAgentEventSource } from './services/agent/agentEventSource'
@@ -8608,6 +8609,212 @@ describe('AgentPanelRoot history', () => {
           expect(useToast().toasts).toHaveLength(0)
         }
       )
+
+      it('does not retry a closed unsaved tab into a replacement tab that reuses its path, while still retrying a renamed open origin', async () => {
+        const original = addTab('workflows/Unsaved Workflow.json', {
+          instanceId: 'unsaved-orig',
+          isTemporary: true
+        })
+        const second = addTab('workflows/second.json', {
+          instanceId: 'tab-second'
+        })
+        workflowStore.activeWorkflow = original
+        let failFirstPost!: () => void
+        const postCalls: unknown[] = []
+        stubWorkflowBoundHistory(
+          [],
+          {},
+          {
+            post: (body) => {
+              postCalls.push(body)
+              if (postCalls.length === 1)
+                return new Promise<Response>((_, reject) => {
+                  failFirstPost = () => reject(new TypeError('Failed to fetch'))
+                })
+              return Promise.resolve(
+                json(202, {
+                  thread_id: 'th-retry-ok',
+                  message_id: 'msg-retry-ok'
+                })
+              )
+            }
+          }
+        )
+        render(AgentPanelRoot, { global: { plugins: [i18n] } })
+        await sendFromComposer('closed unsaved retry')
+
+        await activateTabAsUser(second)
+        await settleFollow()
+        await workflowStore.closeWorkflow(original)
+        addTab('workflows/Unsaved Workflow.json', {
+          instanceId: 'unsaved-replacement',
+          isTemporary: true
+        })
+
+        failFirstPost()
+        await vi.waitFor(() => expect(useToast().toasts).toHaveLength(1))
+        useToast().toasts[0].actions[0].onClick()
+        await vi.waitFor(() =>
+          expect(userPrompts()).toEqual(['closed unsaved retry'])
+        )
+
+        await userEvent.click(
+          await screen.findByRole('button', { name: 'Retry' })
+        )
+        await vi.waitFor(() =>
+          expect(screen.getByTestId('pending-send-error')).toHaveTextContent(
+            i18n.global.t('agent.targetNavigationUnavailable')
+          )
+        )
+        expect(postCalls).toHaveLength(1)
+      })
+
+      it('retries a failed send on a still-open origin tab even after its path changes', async () => {
+        const original = addTab('workflows/Unsaved Workflow.json', {
+          instanceId: 'unsaved-open',
+          isTemporary: true
+        })
+        workflowStore.activeWorkflow = original
+        let attempt = 0
+        let failFirstPost!: () => void
+        stubWorkflowBoundHistory(
+          [],
+          {},
+          {
+            post: () => {
+              attempt += 1
+              if (attempt === 1)
+                return new Promise<Response>((_, reject) => {
+                  failFirstPost = () => reject(new TypeError('Failed to fetch'))
+                })
+              return Promise.resolve(
+                json(202, {
+                  thread_id: 'th-renamed-retry',
+                  message_id: 'msg-renamed-retry'
+                })
+              )
+            }
+          }
+        )
+        render(AgentPanelRoot, { global: { plugins: [i18n] } })
+        await sendFromComposer('renamed open origin retry')
+        failFirstPost()
+        await screen.findByRole('button', { name: 'Retry' })
+
+        original.path = 'workflows/Renamed.json'
+        await userEvent.click(screen.getByRole('button', { name: 'Retry' }))
+
+        await vi.waitFor(() => expect(attempt).toBe(2))
+        await vi.waitFor(() =>
+          expect(useAgentConversationStore().threadId).toBe('th-renamed-retry')
+        )
+      })
+
+      it('does not let a pending Show overwrite a newer New chat choice', async () => {
+        const first = addTab('workflows/first.json')
+        const second = addTab('workflows/second.json')
+        workflowStore.activeWorkflow = first
+        let failFirstPost!: () => void
+        stubWorkflowBoundHistory(
+          [],
+          {},
+          {
+            post: () =>
+              new Promise<Response>((_, reject) => {
+                failFirstPost = () => reject(new TypeError('Failed to fetch'))
+              })
+          }
+        )
+        render(AgentPanelRoot, { global: { plugins: [i18n] } })
+        await sendFromComposer('pending show prompt')
+
+        await activateTabAsUser(second)
+        await settleFollow()
+
+        failFirstPost()
+        await vi.waitFor(() => expect(useToast().toasts).toHaveLength(1))
+
+        let resolveOpen!: (opened: boolean) => void
+        let capturedIsCurrent: (() => boolean) | undefined
+        vi.mocked(useWorkflowService().openWorkflow).mockImplementationOnce(
+          (_workflow, options) => {
+            capturedIsCurrent = options?.isCurrent
+            return new Promise<boolean>((resolve) => {
+              resolveOpen = resolve
+            })
+          }
+        )
+
+        useToast().toasts[0].actions[0].onClick()
+        await vi.waitFor(() => expect(resolveOpen).toBeTypeOf('function'))
+
+        await userEvent.click(
+          screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+        )
+        expect(capturedIsCurrent?.()).toBe(false)
+
+        resolveOpen(true)
+        await settleFollow()
+
+        expect(userPrompts()).toEqual([])
+      })
+
+      it('preserves tab B kept blank draft and prompt queue when deleting chat A while tab B is visible', async () => {
+        const tabA = addTab('workflows/a.json', { instanceId: 'tab-a' })
+        const tabB = addTab('workflows/b.json', { instanceId: 'tab-b' })
+        workflowStore.activeWorkflow = tabB
+        useAgentWorkflowTabBindingStore().bind('wf-a', tabA.path)
+        const postBodies: unknown[] = []
+        stubWorkflowBoundHistory(
+          [
+            agentThread({
+              id: 'th-a',
+              title: 'Chat A',
+              last_message_at: '2026-09-22T09:00:00Z',
+              workflow_id: 'wf-a'
+            })
+          ],
+          { 'th-a': { workflowId: 'wf-a' } },
+          {
+            post: (body) => {
+              postBodies.push(body)
+              return new Promise<Response>(() => {})
+            }
+          }
+        )
+        render(AgentPanelRoot, { global: { plugins: [i18n] } })
+        await settleFollow()
+
+        await typeInComposer('Keep B draft')
+        useAgentPromptQueueStore().enqueueFromComposer('Keep B queued', [], [])
+
+        await activateTabAsUser(tabA)
+        await vi.waitFor(() =>
+          expect(useAgentConversationStore().threadId).toBe('th-a')
+        )
+
+        workflowStore.activeWorkflow = tabB
+        await nextTick()
+
+        await userEvent.click(
+          screen.getByRole('button', {
+            name: i18n.global.t('agent.chatOptions')
+          })
+        )
+        await userEvent.click(
+          await screen.findByRole('menuitem', {
+            name: i18n.global.t('g.delete')
+          })
+        )
+        await settleFollow()
+
+        expect(useAgentConversationStore().threadId).toBeNull()
+        expect(useAgentComposerStore().draft).toBe('Keep B draft')
+        expect(
+          useAgentPromptQueueStore().items.map((item) => item.text)
+        ).toEqual(['Keep B queued'])
+        expect(postBodies).toHaveLength(1)
+      })
 
       it('does not let a late background ACK overwrite a newer chat selection on the same tab', async () => {
         const first = addTab('workflows/first.json')
