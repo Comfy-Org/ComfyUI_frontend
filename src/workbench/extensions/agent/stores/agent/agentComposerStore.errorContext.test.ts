@@ -43,6 +43,21 @@ describe('agentComposerStore error context', () => {
     ])
   })
 
+  it('reuses the chip slot on repeated clicks even when text follows the chip', () => {
+    const store = useAgentComposerStore()
+    store.applyEditorPrompt({ text: 'ab', references: [] })
+    store.setInsertionPoint({ textOffset: 1, referenceIndex: 0 })
+
+    store.setErrorContext(errorContext({ label: 'First' }))
+    expect(store.prompt.text).toBe('a b')
+
+    store.setErrorContext(errorContext({ label: 'Second' }))
+    expect(store.prompt.text).toBe('a b')
+
+    store.setErrorContext(errorContext({ label: 'Third' }))
+    expect(store.prompt.text).toBe('a b')
+  })
+
   it('inserts between two references at the same offset when the caret is between them', () => {
     const store = useAgentComposerStore()
     store.applyEditorPrompt({
