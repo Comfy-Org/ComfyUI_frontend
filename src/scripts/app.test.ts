@@ -3023,40 +3023,76 @@ describe('ComfyApp', () => {
       const graph = new LGraph()
       Reflect.set(app, 'rootGraphInternal', graph)
       onTestFinished(attachLegacyUI(app))
+      workflow.adoptGraph(graph)
       useWorkflowStore().activeWorkflow = markLoaded(workflow)
       vi.spyOn(app, 'graphToPrompt').mockResolvedValue({
         output: {},
         workflow: createWorkflowGraphData()
       })
       vi.spyOn(api, 'dispatchCustomEvent').mockImplementation(() => true)
+      return workflow
     }
 
-    it('stops a batch when the active workflow changes mid-batch, and still serialises per item', async () => {
-      prepareEmptyPromptQueue()
-      let serialised = 0
-      vi.spyOn(app, 'graphToPrompt').mockImplementation(async () => {
-        serialised++
-        return { output: {}, workflow: createWorkflowGraphData() }
-      })
+    function addSeedNode(graph: LGraph) {
+      vi.mocked(executeWidgetsCallback).mockReset()
+      const node = new LGraphNode('Seed')
+      node.comfyClass = 'Seed'
+      const seed = node.addWidget('number', 'seed', 0, () => {})
+      seed.afterQueued = () => {
+        seed.value = Number(seed.value) + 1
+      }
+      graph.add(node)
+      return { node, seed }
+    }
 
+    function queueBatchStoppedToast(queued: number, requested: number) {
+      return t('toastMessages.batchStoppedOnWorkflowChange', {
+        queued,
+        requested
+      })
+    }
+
+    it('stops a batch when the active workflow changes mid-batch, after submitting each item with its own widget values', async () => {
+      prepareEmptyPromptQueue()
+      vi.mocked(app.graphToPrompt).mockRestore()
+      const { node } = addSeedNode(app.rootGraph)
       const otherWorkflow = new ComfyWorkflow({
         path: 'workflows/other.json',
         modified: 0,
         size: 0
       })
-      const submitted: string[] = []
-      vi.spyOn(api, 'queuePrompt').mockImplementation(() => {
-        submitted.push(`job-${submitted.length + 1}`)
-        if (submitted.length === 2) {
+      const seeds: unknown[] = []
+      vi.spyOn(api, 'queuePrompt').mockImplementation((_number, data) => {
+        seeds.push(data.output[String(node.id)].inputs.seed)
+        if (seeds.length === 2) {
           useWorkflowStore().activeWorkflow = markLoaded(otherWorkflow)
         }
-        return Promise.resolve({ prompt_id: submitted[submitted.length - 1] })
+        return Promise.resolve({ prompt_id: `job-${seeds.length}` })
       })
 
       await expect(app.queuePrompt(0, 3)).resolves.toBe(true)
 
-      expect(submitted).toEqual(['job-1', 'job-2'])
-      expect(serialised).toBe(2)
+      expect(seeds).toEqual([0, 1])
+    })
+
+    it('advances widgets of the submitted workflow when another graph is shown during serialization', async () => {
+      prepareEmptyPromptQueue()
+      const queued = addSeedNode(app.rootGraph)
+      const otherGraph = new LGraph()
+      const other = addSeedNode(otherGraph)
+      vi.spyOn(app, 'graphToPrompt').mockImplementation(async () => {
+        Reflect.set(app, 'rootGraphInternal', otherGraph)
+        return { output: {}, workflow: createWorkflowGraphData() }
+      })
+      const queuePrompt = vi
+        .spyOn(api, 'queuePrompt')
+        .mockResolvedValue({ prompt_id: 'job-1' })
+
+      await expect(app.queuePrompt(0, 2)).resolves.toBe(true)
+
+      expect(queuePrompt).toHaveBeenCalledOnce()
+      expect(queued.seed.value).toBe(1)
+      expect(other.seed.value).toBe(0)
     })
 
     it('pins a queued batch to the workflow active when it was queued, not the one active once authentication resolves', async () => {
@@ -3103,43 +3139,49 @@ describe('ComfyApp', () => {
       )
     })
 
-    it('refuses to submit while an in-place graph load is replacing the active workflow mid-batch', async () => {
-      prepareEmptyPromptQueue()
-      const payloads: ComfyApiWorkflow[] = []
-      vi.spyOn(app, 'graphToPrompt').mockImplementation(async (graph) => ({
-        output: Object.fromEntries(
-          graph!._nodes.map((node) => [
-            String(node.id),
-            { class_type: node.type, inputs: {} }
-          ])
-        ),
-        workflow: createWorkflowGraphData()
-      }))
-
-      const submitted: string[] = []
-      vi.spyOn(api, 'queuePrompt').mockImplementation((_number, data) => {
-        submitted.push(`job-${submitted.length + 1}`)
-        payloads.push(data.output)
-        if (submitted.length === 1) {
-          ChangeTracker.isLoadingGraph = true
-          app.rootGraph.add(new LGraphNode('mid-load-node'))
+    it.for([
+      {
+        load: 'an in-place reload of the queueing workflow',
+        start: (workflow: ComfyWorkflow) =>
+          app.loadGraphData(createWorkflowGraphData(), true, true, workflow)
+      },
+      {
+        load: 'an API JSON import',
+        start: () => app.loadApiJson({}, 'imported.json')
+      }
+    ])('stops a batch while $load has not finished', async ({ start }) => {
+      const workflow = prepareEmptyPromptQueue()
+      useWorkflowStore().attachWorkflow(workflow)
+      app.canvasElRef.value = document.createElement('canvas')
+      let releaseHook!: () => void
+      const hookHeld = new Promise<void>((resolve) => {
+        releaseHook = resolve
+      })
+      let hookReached = false
+      mockExtensionService.invokeExtensionsAsync.mockImplementation(
+        async (hook: string) => {
+          if (hook !== 'afterConfigureGraph') return
+          hookReached = true
+          await hookHeld
         }
-        return Promise.resolve({ prompt_id: submitted[submitted.length - 1] })
-      })
-      onTestFinished(() => {
-        ChangeTracker.isLoadingGraph = false
-      })
+      )
+      let load: Promise<unknown> | undefined
+      const queuePrompt = vi
+        .spyOn(api, 'queuePrompt')
+        .mockImplementation(async () => {
+          load ??= start(workflow)
+          await vi.waitFor(() => expect(hookReached).toBe(true))
+          return { prompt_id: 'job-1' }
+        })
 
       await expect(app.queuePrompt(0, 2)).resolves.toBe(true)
 
-      expect(submitted).toEqual(['job-1'])
-      expect(payloads).toEqual([{}])
+      expect(queuePrompt).toHaveBeenCalledOnce()
       expect(useToast().warning).toHaveBeenCalledWith(
-        t('toastMessages.batchStoppedOnWorkflowChange', {
-          queued: 1,
-          requested: 2
-        })
+        queueBatchStoppedToast(1, 2)
       )
+      releaseHook()
+      await load
     })
 
     it('waits for workspace authentication before submitting the prompt', async () => {

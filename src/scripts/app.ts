@@ -17,7 +17,11 @@ import { selectedCanvasNodes } from '@/renderer/core/canvas/litegraph/selectionA
 import { resolveDynamicInputSpec } from '@/core/graph/widgets/dynamicInputSpec'
 import { setBackendNodeText, st, t } from '@/i18n'
 import { normalizeI18nKey } from '@/utils/formatUtil'
-import { beginGraphLoad, endGraphLoad } from '@/core/graph/graphLoadState'
+import {
+  beginGraphLoad,
+  endGraphLoad,
+  isGraphLoading
+} from '@/core/graph/graphLoadState'
 import { registerApp } from '@/scripts/appRegistry'
 import {
   clipspace,
@@ -380,6 +384,7 @@ export class ComfyApp implements IComfyApp {
     queueNodeIds?: NodeExecutionId[]
     workflowQueueIntent?: WorkflowQueueIntent
     queueingWorkflowKey: string | undefined
+    queueingGraph: LGraph
   }[] = []
   private nextQueueRequestId = 1
   /**
@@ -1933,7 +1938,8 @@ export class ComfyApp implements IComfyApp {
       requestId,
       workflowQueueIntent: intent,
       queueingWorkflowKey:
-        queueingWorkflow?.instanceId ?? queueingWorkflow?.path
+        queueingWorkflow?.instanceId ?? queueingWorkflow?.path,
+      queueingGraph: queueingWorkflow?.graph ?? this.rootGraph
     })
     api.dispatchCustomEvent('promptQueueing', {
       requestId,
@@ -2013,7 +2019,8 @@ export class ComfyApp implements IComfyApp {
           queueNodeIds,
           requestId,
           workflowQueueIntent,
-          queueingWorkflowKey
+          queueingWorkflowKey,
+          queueingGraph
         } = this.queueItems.pop()!
         let queuedCount = 0
         const workflowExecutionIntent: WorkflowExecutionIntent = {
@@ -2034,7 +2041,8 @@ export class ComfyApp implements IComfyApp {
             currentWorkflow?.instanceId ?? currentWorkflow?.path
           if (
             currentWorkflowKey !== queueingWorkflowKey ||
-            ChangeTracker.isLoadingGraph
+            this.rootGraph !== queueingGraph ||
+            isGraphLoading(queueingGraph)
           ) {
             stoppedOnWorkflowChange = true
             break
@@ -2051,7 +2059,7 @@ export class ComfyApp implements IComfyApp {
             }
           }
 
-          forEachNode(this.rootGraph, (node) => {
+          forEachNode(queueingGraph, (node) => {
             for (const widget of node.widgets ?? []) {
               widget.beforeQueued?.({ isPartialExecution })
             }
@@ -2063,7 +2071,7 @@ export class ComfyApp implements IComfyApp {
           const queuedRunErrorKey = executionErrorStore.captureRunErrorKey()
           const queuedMode = getWorkflowMode(queuedWorkflow)
           const startTime = performance.now()
-          const p = await this.graphToPrompt(this.rootGraph).catch(
+          const p = await this.graphToPrompt(queueingGraph).catch(
             (error: unknown) => {
               telemetry?.trackExecutionOutcome({
                 startTime,
@@ -2081,7 +2089,7 @@ export class ComfyApp implements IComfyApp {
               throw error
             }
           )
-          const queuedNodes = collectAllNodes(this.rootGraph)
+          const queuedNodes = collectAllNodes(queueingGraph)
           let workflowContext: WorkflowExecutionContext | undefined
           if (executionContext) {
             workflowContext = toWorkflowExecutionContext(executionContext, {
