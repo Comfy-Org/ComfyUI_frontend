@@ -55,3 +55,12 @@ export function trackDeploymentLinkClicked(kind: CustomDeploymentLink) {
     }
   })
 }
+
+export function trackDeploymentLinkOpened(
+  event: MouseEvent,
+  kind: CustomDeploymentLink
+) {
+  setTimeout(() => {
+    if (!event.defaultPrevented) trackDeploymentLinkClicked(kind)
+  })
+}
