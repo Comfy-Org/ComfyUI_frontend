@@ -1,9 +1,9 @@
-import { useStorage } from '@vueuse/core'
 import type { UseStorageOptions } from '@vueuse/core'
 import { computed } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { isCloud } from '@/platform/distribution/types'
+import { useSafeLocalStorage } from '@/platform/storage/useSafeStorage'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { accountScope } from '@/platform/workflow/persistence/base/accountScope'
 import { agentStorage } from '@/platform/workflow/persistence/base/agentStorage'
@@ -25,15 +25,15 @@ export function useAccountStorage<T>(
   options: UseStorageOptions<T> = {},
   scope = useAccountScope()
 ) {
-  return useStorage(
+  return useSafeLocalStorage(
     () => (scope.value === null ? '' : key(scope.value)),
     initial,
-    agentStorage,
     {
       ...options,
       flush: 'sync',
       writeDefaults: false,
       listenToStorageChanges: false
-    }
+    },
+    agentStorage
   )
 }

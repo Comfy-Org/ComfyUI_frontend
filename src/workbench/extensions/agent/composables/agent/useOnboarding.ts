@@ -1,4 +1,5 @@
-import { useEventListener, useStorage } from '@vueuse/core'
+import { useEventListener } from '@vueuse/core'
+import { useSafeLocalStorage } from '@/platform/storage/useSafeStorage'
 import { computed, reactive, ref, toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
@@ -172,7 +173,12 @@ export function useOnboarding(
   steps: MaybeRefOrGetter<CoachStep[]>,
   storageKey: string
 ) {
-  const seenLocally = useStorage(storageKey, false, agentStorage)
+  const seenLocally = useSafeLocalStorage(
+    storageKey,
+    false,
+    undefined,
+    agentStorage
+  )
   useEventListener(window, 'storage', (event) => {
     if (event.key === storageKey || event.key === null)
       seenLocally.value = localStorageRecordsSeen(storageKey)

@@ -20,6 +20,7 @@ import {
 import { v4 as uuidv4 } from 'uuid'
 import { useI18n } from 'vue-i18n'
 
+import { safeLocalStorage } from '@/base/storage/safeStorage'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTelemetry } from '@comfyorg/telemetry'
@@ -110,7 +111,10 @@ import { useFreeUsePlacement } from './experiments/freeUsePlacement'
 import AgentPanel from './components/agent/AgentPanel.vue'
 import AgentCreditTransitionNotice from './components/agent/AgentCreditTransitionNotice.vue'
 import AgentHostFenceNotice from './components/agent/AgentHostFenceNotice.vue'
-import { agentBoundWorkflowIdKey } from './components/agent/agentBoundWorkflowId'
+import {
+  agentBoundWorkflowActiveKey,
+  agentBoundWorkflowIdKey
+} from './components/agent/agentBoundWorkflowId'
 import AgentGraphActivityBar from './components/AgentGraphActivityBar.vue'
 import OnboardingCoach from './components/agent/OnboardingCoach.vue'
 import {
@@ -665,10 +669,9 @@ const settingStore = useSettingStore()
 const crdtLogLevel = computed({
   get: () => settingStore.get('Comfy.Agent.CrdtDebug.Level'),
   set: (level: CrdtLogLevel) => {
-    try {
-      localStorage.setItem('Comfy.Agent.CrdtDebug.level', level)
-    } catch (error) {
-      reportError(error, {
+    const outcome = safeLocalStorage.write('Comfy.Agent.CrdtDebug.level', level)
+    if (outcome.result !== 'ok') {
+      reportError(outcome.error, {
         surface: 'agent',
         errorType: 'failure_saving_crdt_debug_level_mirror',
         level: 'warning'
@@ -1366,6 +1369,8 @@ const isBoundWorkflowActive = computed(() => {
   )
 })
 
+provide(agentBoundWorkflowActiveKey, isBoundWorkflowActive)
+
 // The CRDT follower is the inbound content channel: subscribes to the
 // session's bound workflow while its tab is active. Suspending the background
 // subscription makes reopening pull state-vector catch-up only after the
@@ -1920,8 +1925,9 @@ function onApprovalShown(
   turnId: string,
   workflowId: string | null
 ): void {
-  if (!conversationStore.recordApprovalShown(askId, Date.now())) return
+  if (!conversationStore.recordApprovalShown(askId, turnId, Date.now())) return
   useTelemetry()?.trackAgentRunApprovalShown({
+    ask_id: askId,
     turn_id: turnId,
     workflow_id: workflowId
   })
@@ -1931,12 +1937,15 @@ function trackApprovalResolved(
   askId: string,
   decision: AgentRunApprovalDecision,
   decidedAt = Date.now(),
-  shownAt = conversationStore.approvalShownAt(askId)
+  shownAt = conversationStore.approvalShownAt(askId),
+  turnId = conversationStore.approvalTurnId(askId)
 ): void {
-  if (shownAt === undefined) return
+  if (shownAt === undefined || turnId === undefined) return
   if (decision !== 'open_workflow')
     conversationStore.forgetApprovalTiming(askId)
   useTelemetry()?.trackAgentRunApprovalResolved({
+    ask_id: askId,
+    turn_id: turnId,
     decision,
     time_to_decide_ms: Math.max(0, decidedAt - shownAt)
   })
@@ -1951,10 +1960,31 @@ async function onAnswerAsk(
   answer: AgentAnswerRequest
 ): Promise<void> {
   const shownAt = conversationStore.approvalShownAt(askId)
+  const turnId = conversationStore.approvalTurnId(askId)
+  const isRunApproval = conversationStore.askKind(askId) === 'runApproval'
   const decidedAt = Date.now()
   const decision = runApprovalDecision(answer)
-  if ((await answerAsk(askId, answer)) && decision)
-    trackApprovalResolved(askId, decision, decidedAt, shownAt)
+  if (
+    await answerAsk(askId, answer, () =>
+      trackRunApprovalAnswerFailure(askId, turnId, isRunApproval)
+    )
+  ) {
+    if (decision)
+      trackApprovalResolved(askId, decision, decidedAt, shownAt, turnId)
+    return
+  }
+}
+
+function trackRunApprovalAnswerFailure(
+  askId: string,
+  turnId: string | undefined,
+  isRunApproval = true
+): void {
+  if (!isRunApproval) return
+  useTelemetry()?.trackAgentRunApprovalAnswerFailed({
+    ask_id: askId,
+    turn_id: turnId ?? null
+  })
 }
 
 function runApprovalDecision(
@@ -1974,8 +2004,11 @@ useAutoModeRunApprovals({
       (askId) => conversationStore.askKind(askId) === 'runApproval'
     ),
   approve: (askId) => {
+    const turnId = conversationStore.approvalTurnId(askId)
     conversationStore.forgetApprovalTiming(askId)
-    void answerAsk(askId, { selected: ['run'] })
+    void answerAsk(askId, { selected: ['run'] }, () =>
+      trackRunApprovalAnswerFailure(askId, turnId)
+    )
   }
 })
 

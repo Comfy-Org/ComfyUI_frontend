@@ -61,6 +61,25 @@ describe('account persistence', () => {
     }
   )
 
+  it.for([['localStorage'], ['localStorage', 'sessionStorage']] as const)(
+    'isolates accounts with denied storage %s',
+    (denied) => {
+      for (const backend of denied)
+        vi.spyOn(window, backend, 'get').mockImplementation(() => {
+          throw new DOMException('Access is denied', 'SecurityError')
+        })
+      const state = lifetime.run(() =>
+        useAccountStorage(StorageKeys.agentThread, '')
+      )!
+      state.value = 'alice-thread'
+      identity.value = { id: 'bob' }
+      expect(state.value).toBe('')
+      state.value = 'bob-thread'
+      identity.value = { id: 'alice' }
+      expect(state.value).toBe('alice-thread')
+    }
+  )
+
   it('persists consecutive writes in the same tick', () => {
     const state = lifetime.run(() =>
       useAccountStorage(StorageKeys.agentChatTitles, {})

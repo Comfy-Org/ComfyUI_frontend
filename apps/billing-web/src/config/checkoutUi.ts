@@ -196,6 +196,11 @@ export function awaitPlanChangeCardChoice(): Promise<boolean> {
   return awaitFlag('billing_web_plan_change_card_choice', parseBoolean, false)
 }
 
+/** Never rejects; `false` unless Cloud serves `billing_web_promo_auto_apply: true`. */
+export function awaitPromoAutoApply(): Promise<boolean> {
+  return awaitFlag('billing_web_promo_auto_apply', parseBoolean, false)
+}
+
 /**
  * Never rejects. Whether a top-up pays in the page with a saved or new card: a
  * handoff tab always does (it exists only under `local_billing_web`), any other

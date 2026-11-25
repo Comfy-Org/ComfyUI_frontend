@@ -2,6 +2,7 @@ import { useEventListener } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, toRaw, watch } from 'vue'
 
+import { safeLocalStorage } from '@/base/storage/safeStorage'
 import { areWorkflowIdsEquivalent } from '@/platform/workflow/core/utils/workflowId'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -126,12 +127,8 @@ export const useAgentWorkflowTabBindingStore = defineStore(
       { flush: 'sync' }
     )
     function isStorageEventForBindings(event: StorageEvent): boolean {
-      try {
-        if (event.storageArea !== localStorage) return false
-      } catch {
-        return false
-      }
       return (
+        safeLocalStorage.isStorageArea(event.storageArea) &&
         scope.value !== null &&
         (event.key === null || event.key === storageKey.value)
       )

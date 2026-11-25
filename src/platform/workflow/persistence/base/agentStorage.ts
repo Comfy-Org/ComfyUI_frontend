@@ -1,5 +1,7 @@
 import type { StorageLike } from '@vueuse/core'
 
+import { safeLocalStorage } from '@/base/storage/safeStorage'
+
 import { StorageKeys } from './storageKeys'
 
 function legacyKeys(key: string): { owned: string[]; unowned: string[] } {
@@ -39,23 +41,24 @@ function legacyKeys(key: string): { owned: string[]; unowned: string[] } {
 export const agentStorage: StorageLike = {
   getItem(key) {
     if (!key) return null
-    let value = localStorage.getItem(key)
+    let value = safeLocalStorage.asStorage().getItem(key)
     const { owned, unowned } = legacyKeys(key)
     for (const legacy of owned) {
-      const previous = localStorage.getItem(legacy)
+      const previous = safeLocalStorage.asStorage().getItem(legacy)
       if (value === null && previous !== null) {
-        localStorage.setItem(key, previous)
+        safeLocalStorage.asStorage().setItem(key, previous)
         value = previous
       }
-      localStorage.removeItem(legacy)
+      safeLocalStorage.asStorage().removeItem(legacy)
     }
-    for (const legacy of unowned) localStorage.removeItem(legacy)
+    for (const legacy of unowned)
+      safeLocalStorage.asStorage().removeItem(legacy)
     return value
   },
   setItem(key, value) {
-    if (key) localStorage.setItem(key, value)
+    if (key) safeLocalStorage.asStorage().setItem(key, value)
   },
   removeItem(key) {
-    if (key) localStorage.removeItem(key)
+    if (key) safeLocalStorage.asStorage().removeItem(key)
   }
 }

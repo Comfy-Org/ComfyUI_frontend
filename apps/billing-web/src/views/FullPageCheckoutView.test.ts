@@ -29,7 +29,10 @@ import {
 
 import type { OperationNotice } from '@/checkout/operationChannel'
 
-import { awaitPlanChangeCardChoice } from '@/config/checkoutUi'
+import {
+  awaitPlanChangeCardChoice,
+  awaitPromoAutoApply
+} from '@/config/checkoutUi'
 import { recordBillingEntry } from '@/entry/billingEntry'
 import { handoffTab } from '@/handoff/handoffTab'
 import { createBillingI18n } from '@/i18n'
@@ -96,6 +99,7 @@ vi.mock(import('@/config/checkoutUi'), { spy: true })
 
 beforeEach(() => {
   vi.mocked(awaitPlanChangeCardChoice).mockResolvedValue(false)
+  vi.mocked(awaitPromoAutoApply).mockResolvedValue(false)
 })
 
 vi.mock(import('@/entry/workspaceBinding'), () => ({
@@ -3059,6 +3063,232 @@ describe('FullPageCheckoutView promo codes', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'Apply' }))
     expect(await screen.findByText('−$5.60')).toBeInTheDocument()
+  })
+
+  describe('with billing_web_promo_auto_apply on', () => {
+    const CAMPAIGN_QUOTE = previewOf({
+      quote_id: 'q_campaign',
+      amount_due_cents: 2240,
+      promotion_code: 'BLACKFRIDAY26',
+      discounts: [
+        { kind: 'promotion', code: 'BLACKFRIDAY26', amount_off_cents: 560 }
+      ]
+    })
+
+    function quotesWithCampaign(fake: FakeBillingClient) {
+      fake.previewSubscribe.mockImplementation(async ({ promotionCode }) => {
+        if (promotionCode === undefined)
+          return { status: 'ok', value: previewOf({ quote_id: 'q_1' }) }
+        if (promotionCode.toUpperCase() === 'BLACKFRIDAY26')
+          return { status: 'ok', value: CAMPAIGN_QUOTE }
+        return promotionCode.toUpperCase() === 'LAUNCH20'
+          ? { status: 'ok', value: LAUNCH20_QUOTE }
+          : refusedWith('PROMOTION_CODE_INVALID')
+      })
+    }
+
+    const CAMPAIGN_PATH = `${CHECKOUT_PATH}&promo=BLACKFRIDAY26`
+
+    beforeEach(() => {
+      vi.mocked(awaitPromoAutoApply).mockResolvedValue(true)
+    })
+
+    it('prices the campaign code from the URL without an Apply click, and Pay binds it', async () => {
+      const fake = await renderCheckout({}, quotesWithCampaign, CAMPAIGN_PATH)
+      await screen.findByText('Subscribe to Creator Plan · Acme Team')
+
+      expect(await screen.findByText('−$5.60')).toBeInTheDocument()
+      expect(screen.getAllByText('$22.40')).toHaveLength(2)
+      expect(
+        screen.getByRole('button', { name: 'Remove BLACKFRIDAY26' })
+      ).toBeEnabled()
+
+      reportPhase({ phase: 'payment_element_ready', element: 'payment' })
+      await waitFor(() => expect(payButton()).toBeEnabled())
+      form.emit('confirm', 'ctoken_1')
+      await waitFor(() =>
+        expect(fake.subscribe).toHaveBeenCalledWith(
+          expect.objectContaining({
+            promotion_code: 'BLACKFRIDAY26',
+            quote_id: 'q_campaign'
+          })
+        )
+      )
+    })
+
+    it('leaves any other code from the URL typed until Apply', async () => {
+      const fake = await renderCheckout(
+        {},
+        quotesWithCampaign,
+        `${CHECKOUT_PATH}&promo=LAUNCH20`
+      )
+      await screen.findByText('Subscribe to Creator Plan · Acme Team')
+      reportPhase({ phase: 'payment_element_ready', element: 'payment' })
+      await waitFor(() => expect(payButton()).toBeEnabled())
+
+      expect(promoField()).toHaveValue('LAUNCH20')
+      expect(screen.getAllByText('$28.00')).toHaveLength(2)
+      expect(fake.previewSubscribe).toHaveBeenCalledOnce()
+    })
+
+    it('keeps a removed campaign code off after a reload, through Pay', async () => {
+      await renderCheckout({}, quotesWithCampaign, CAMPAIGN_PATH)
+      await screen.findByText('−$5.60')
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Remove BLACKFRIDAY26' })
+      )
+      await screen.findByRole('button', { name: 'Add promo code' })
+      cleanup()
+
+      const reloaded = await renderCheckout(
+        {},
+        quotesWithCampaign,
+        CAMPAIGN_PATH
+      )
+      await screen.findByText('Subscribe to Creator Plan · Acme Team')
+      reportPhase({ phase: 'payment_element_ready', element: 'payment' })
+      await waitFor(() => expect(payButton()).toBeEnabled())
+
+      expect(
+        screen.getByRole('button', { name: 'Add promo code' })
+      ).toBeInTheDocument()
+      expect(screen.queryByText('−$5.60')).not.toBeInTheDocument()
+
+      form.emit('confirm', 'ctoken_1')
+      await waitFor(() =>
+        expect(reloaded.subscribe).toHaveBeenCalledWith(
+          expect.objectContaining({ quote_id: 'q_1' })
+        )
+      )
+      expect(reloaded.subscribe).toHaveBeenCalledWith(
+        expect.not.objectContaining({ promotion_code: expect.anything() })
+      )
+      expect(reloaded.previewSubscribe).toHaveBeenCalledOnce()
+    })
+
+    it('still offers a different link-carried code after the campaign code was removed', async () => {
+      await renderCheckout({}, quotesWithCampaign, CAMPAIGN_PATH)
+      await screen.findByText('−$5.60')
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Remove BLACKFRIDAY26' })
+      )
+      await screen.findByRole('button', { name: 'Add promo code' })
+      cleanup()
+
+      await renderCheckout(
+        {},
+        quotesWithCampaign,
+        `${CHECKOUT_PATH}&promo=LAUNCH20`
+      )
+      await screen.findByText('Subscribe to Creator Plan · Acme Team')
+
+      expect(promoField()).toHaveValue('LAUNCH20')
+    })
+
+    it('reports to error tracking when the automatic Apply could not be checked', async () => {
+      vi.mocked(datadogRum.getInitConfiguration).mockReturnValue({
+        clientToken: 'pub',
+        applicationId: 'app'
+      })
+      await renderCheckout(
+        {},
+        (fake) =>
+          fake.previewSubscribe.mockImplementation(async ({ promotionCode }) =>
+            promotionCode === undefined
+              ? { status: 'ok', value: previewOf({ quote_id: 'q_1' }) }
+              : { status: 'error', code: 'REQUEST_FAILED' }
+          ),
+        CAMPAIGN_PATH
+      )
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        "We couldn't check this code. Try again."
+      )
+      await waitFor(() =>
+        expect(datadogRum.addError).toHaveBeenCalledWith(
+          expect.objectContaining({ name: 'promo_auto_apply_unchecked' }),
+          expect.objectContaining({
+            error_type: 'promo_auto_apply_unchecked',
+            ui_mode: 'full_page'
+          })
+        )
+      )
+      expect(
+        JSON.stringify(vi.mocked(datadogRum.addError).mock.calls)
+      ).not.toMatch(/blackfriday26/i)
+    })
+
+    it('does not report a failed manual Apply as the automatic one when the flag answers late', async () => {
+      vi.mocked(datadogRum.getInitConfiguration).mockReturnValue({
+        clientToken: 'pub',
+        applicationId: 'app'
+      })
+      let answerFlag: (on: boolean) => void = () => {}
+      vi.mocked(awaitPromoAutoApply).mockReturnValue(
+        new Promise((resolve) => {
+          answerFlag = resolve
+        })
+      )
+      const fake = await renderCheckout(
+        {},
+        (fake) =>
+          fake.previewSubscribe.mockImplementation(async ({ promotionCode }) =>
+            promotionCode === undefined
+              ? { status: 'ok', value: previewOf({ quote_id: 'q_1' }) }
+              : { status: 'error', code: 'REQUEST_FAILED' }
+          ),
+        CAMPAIGN_PATH
+      )
+      await screen.findByText('Subscribe to Creator Plan · Acme Team')
+      await userEvent.click(screen.getByRole('button', { name: 'Apply' }))
+      await screen.findByRole('alert')
+
+      answerFlag(true)
+      await userEvent.click(screen.getByRole('button', { name: 'Apply' }))
+      await waitFor(() =>
+        expect(fake.previewSubscribe).toHaveBeenCalledTimes(3)
+      )
+
+      expect(datadogRum.addError).not.toHaveBeenCalled()
+    })
+
+    it('leaves a refused campaign code typed under its error at the full total', async () => {
+      await renderCheckout(
+        {},
+        (fake) =>
+          fake.previewSubscribe.mockImplementation(async ({ promotionCode }) =>
+            promotionCode === undefined
+              ? { status: 'ok', value: previewOf({ quote_id: 'q_1' }) }
+              : refusedWith('PROMOTION_CODE_INVALID')
+          ),
+        CAMPAIGN_PATH
+      )
+      await screen.findByText('Subscribe to Creator Plan · Acme Team')
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        "This code isn't valid."
+      )
+      expect(promoField()).toHaveValue('BLACKFRIDAY26')
+      expect(screen.getAllByText('$28.00')).toHaveLength(2)
+      expect(datadogRum.addError).not.toHaveBeenCalled()
+    })
+  })
+
+  it('with the auto-apply flag off, a manually removed link code is offered again after a reload', async () => {
+    await renderCheckout({}, quotesByCode, `${CHECKOUT_PATH}&promo=LAUNCH20`)
+    await screen.findByText('Subscribe to Creator Plan · Acme Team')
+    await userEvent.click(screen.getByRole('button', { name: 'Apply' }))
+    await screen.findByText('−$5.60')
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Remove LAUNCH20' })
+    )
+    await screen.findByRole('button', { name: 'Add promo code' })
+    cleanup()
+
+    await renderCheckout({}, quotesByCode, `${CHECKOUT_PATH}&promo=LAUNCH20`)
+    await screen.findByText('Subscribe to Creator Plan · Acme Team')
+
+    expect(promoField()).toHaveValue('LAUNCH20')
   })
 
   it('a Pay over a typed, unapplied code applies it and waits for a second Pay at the new total', async () => {

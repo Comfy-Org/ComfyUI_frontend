@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import Button from '@comfyorg/design-system/button/Button'
-import { useEventListener, useLocalStorage } from '@vueuse/core'
+import { useEventListener } from '@vueuse/core'
 import {
   computed,
   nextTick,
@@ -18,6 +18,7 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { resolveDeployEnv } from '@comfyorg/telemetry/rumContext'
 import { reportError } from '@comfyorg/telemetry/reportError'
+import { useSafeLocalStorage } from '@/platform/storage/useSafeStorage'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
@@ -183,9 +184,9 @@ const VERDICT_TONE: Record<string, string> = {
   'not-reached': 'text-muted-foreground border-border'
 }
 
-const open = useLocalStorage(StorageKeys.agentCrdtPanelOpen, false)
+const open = useSafeLocalStorage(StorageKeys.agentCrdtPanelOpen, false)
 const tab = ref<'status' | 'log' | 'merge'>('status')
-const dismissed = useLocalStorage(StorageKeys.agentCrdtPanelHidden, false)
+const dismissed = useSafeLocalStorage(StorageKeys.agentCrdtPanelHidden, false)
 const chipButton = useTemplateRef<HTMLButtonElement>('chipButton')
 const closeButton = useTemplateRef<HTMLButtonElement>('closeButton')
 

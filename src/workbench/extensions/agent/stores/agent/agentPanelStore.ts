@@ -1,5 +1,5 @@
 import type { AgentErrorContext } from '@/platform/workflowErrors/agentErrorContext'
-import { useEventListener, useLocalStorage, useWindowSize } from '@vueuse/core'
+import { useEventListener, useWindowSize } from '@vueuse/core'
 import { clamp } from 'es-toolkit'
 import { defineStore } from 'pinia'
 import {
@@ -23,6 +23,7 @@ import type {
   AgentPanelOpenedMetadata,
   AgentTargetUnavailableMetadata
 } from '@comfyorg/telemetry/types'
+import { useSafeLocalStorage } from '@/platform/storage/useSafeStorage'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
@@ -78,7 +79,7 @@ export type AgentPanelView =
 export const useAgentPanelStore = defineStore('agentPanel', () => {
   const enabled = ref(false)
   const consentAccepted = ref(false)
-  const isOpen = useLocalStorage(StorageKeys.agentPanelOpen, false, {
+  const isOpen = useSafeLocalStorage(StorageKeys.agentPanelOpen, false, {
     writeDefaults: false
   })
   const hasEverOpened = useAccountStorage(
