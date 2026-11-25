@@ -68,14 +68,16 @@ explicit user consent at upload time, is a precondition for including the
 workflow section in an auto-attached report, not a follow-up.
 
 **Settings are excluded from automatic upload until the user reviews and
-explicitly agrees to share them.** The report's key-shape redactor replaces
-values under recognized credential-like keys at every depth, but a custom
-node that names a secret something else, `serviceCode` rather than `apiKey`,
-reaches the report unredacted. A warning banner next to a value that has
-already left the browser does not give the user a chance to withhold it, so
-the banner documents the residual risk without closing it. Settings join the
-workflow section under the same precondition: redaction or explicit
-per-setting consent at upload time, not a follow-up.
+explicitly agrees, per setting, to share them.** The report's key-shape
+redactor replaces values under recognized credential-like keys at every
+depth, but a custom node that names a secret something else, `serviceCode`
+rather than `apiKey`, reaches the report unredacted. A warning banner next to
+a value that has already left the browser does not give the user a chance to
+withhold it, so the banner documents the residual risk without closing it.
+Unlike the workflow section above, redaction is not an accepted alternative
+here: the same incomplete key-shape gap applies to settings, so per-setting
+review and consent is the only precondition for including a setting in an
+auto-attached report, not a follow-up.
 
 **Server logs are opt-in, not attached by default.** Nobody objected during the
 comment window, so this is the author's call rather than a ratified one, and the
