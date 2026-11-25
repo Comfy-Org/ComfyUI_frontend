@@ -138,7 +138,7 @@ look in a particular graph, use `comfy.graph.root()` or
     | Event                                                                                                                                   | Handle behavior                                                                                                                                                                                         |
     | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
     | A load of another workflow, a switch to a tab whose graph is not live, or a reload of the open workflow (a language change, late nodes) | `endDocument(graph)` retires every handle when the host freezes the outgoing tracker, and `beginDocument()` again just before configure. Take fresh handles from the loaded document.                   |
-    | A switch to an open tab whose graph is still live (#21571)                                                                              | `endDocument(graph)` and `beginDocument()` together when the switch freezes the outgoing tracker; nothing is configured. Take fresh handles from the tab shown.                                         |
+    | A switch to an open tab whose graph is still live (#21571)                                                                              | `beginDocument()` when the switch freezes the outgoing tracker; nothing is configured. Take fresh handles from the tab shown.                                                                           |
     | Undo or redo from the change tracker's own queue (`restoreHistory`)                                                                     | A handle whose entity is still there keeps working. A node or group handle whose entity is gone reports `isDeleted`, and reads it again if a later restore brings it back, unless a restore retired it. |
     | Undo or redo across a load, and Reuse Parameters                                                                                        | A load: the tracker passes `restoreHistory: false` for those states.                                                                                                                                    |
     | An API-JSON or A1111 import, which builds the incoming document in a fresh graph or in the graph it clears                              | `endDocument(graph)` and `beginDocument()` together at the import's freeze, before the clear. Take fresh handles from the imported document.                                                            |
@@ -175,18 +175,26 @@ look in a particular graph, use `comfy.graph.root()` or
       id. The ended graph is told from
       the one the load configures by its id-counter state (`LGraph.state`),
       which every configure replaces, as the host's `isCurrentGraphLoad`
-      check tells them apart. The load runs until the host marks the graph on
-      screen loaded (`isGraphLoading` in `graphLoadState.ts`) or an import's
-      capture suppression ends. API-JSON and A1111 imports build the incoming
+      check tells them apart. API-JSON and A1111 imports build the incoming
       document in a fresh graph, or in the graph on screen when no workflow
       owns it, which they clear, so they call `endDocument(graph)` and
       `beginDocument()` together at the freeze, before either. A switch to a
-      tab whose graph is still live does the same, since it configures
-      nothing. A load
+      tab whose graph is still live configures nothing, so it only calls
+      `beginDocument()`; it is not a load for the adopt step either (see
+      "Host changes"). A load
       replaced or failing after the freeze leaves the graph on screen with
       its handles retired. The host ends that phase: when a load or an
       import stops, finished, failed or replaced, it calls `loadEnded()`,
       and from then a fresh handle works. A lookup never ends it.
+    - Each open workflow keeps its own graph (#21571), and the host runs node
+      callbacks in graphs not on screen: an undo or redo queued behind a tab
+      switch restores its workflow in the background, and a job's results
+      reach the nodes of the workflow that queued it. A handle made in a graph
+      whose root is not the one on screen is retired as it is made, and never
+      given out for a handle of the document on screen with the same graph id
+      and key, so an edit through it returns `false` instead of changing a
+      graph whose tracker would not record it. Such a restore makes no
+      document call, so the handles of the document on screen stay.
     - A restore sets the id counters (`state.lastNodeId`, `state.lastGroupId`)
       from the state it loads, so an undo to before a node was added rewinds
       the counter and the next node added takes that id. When the restore
@@ -478,9 +486,15 @@ Host changes outside the folder:
   node computes before a pack fits it again (a mounted widget whose height
   the pack sets from a `ResizeObserver`) is larger, and growing to it made
   the pack's fit a new undo step that emptied the redo queue.
-- `workflowService.ts` calls `endDocument(graph)` and `beginDocument()`
-  together when a switch to a tab whose graph is still live freezes the
-  outgoing tracker, since that switch does not go through `loadGraphData`.
+- `workflowService.ts` calls `beginDocument()` when a switch to a tab whose
+  graph is still live freezes the outgoing tracker, since that switch does
+  not go through `loadGraphData`. It does not call `adoptLoadedGraph()`:
+  the switch rebuilds nothing and keeps the tab's tracker, whose saved
+  baseline the adopt step would overwrite, so what a legacy `afterLoadGraph`
+  hook changes on a switch is an undo step at the next capture and marks the
+  tab modified, as on main.
+- A background restore (`app.ts`, a workflow whose graph is not on screen)
+  makes no document call.
 - `GraphCanvas.vue`, `src/scripts/app.ts`, `workflowService.ts`,
   `themeService.ts` and `extensionLoader.ts` make every call into the API
   through `useNodeApiHost()` (decision 7).

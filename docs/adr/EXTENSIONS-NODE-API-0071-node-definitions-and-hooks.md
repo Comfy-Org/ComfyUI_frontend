@@ -712,10 +712,17 @@ above. Each is open work for this API, not part of the contract.
   import from the API's folder. Every other host call reaches the API
   through the node API host. LiteGraph's three link commits refuse a link
   whose ends a connection callback moved (decision 26, `slotStays` in
-  `node/slotLinks.ts`), `LGraph.configure` and `LGraphNode.configure` mark
-  and end a loaded node's wait for its saved state (`awaitingSavedState.ts`,
-  decision 18), and the editor's definition reload checks the HTTP status on
-  every reload (decision 13).
+  `node/slotLinks.ts`). That is visible to V1 code too: a legacy
+  `onConnectInput` or `onConnectOutput` that removes or replaces the slot it
+  is asked about, or its node, now has the link refused (`null`), where
+  before the link landed on whatever slot then held that index.
+  `LGraph.configure` and `LGraphNode.configure` mark and end a loaded node's
+  wait for its saved state (`awaitingSavedState.ts`, decision 18), and the
+  editor's definition reload checks the HTTP status on every reload
+  (decision 13). A refused reload with no late custom-node hooks owed is
+  now reported, as `node_defs_reload_failed`; before, the editor did not
+  check the status then. A refusal while hooks are owed is still reported as
+  `late_extension_failed`, so a dashboard watching that key sees no change.
 
 ## What this feature replaces or duplicates, and why
 
