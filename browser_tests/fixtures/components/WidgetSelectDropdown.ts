@@ -8,6 +8,7 @@ export class WidgetSelectDropdownFixture {
   public readonly trigger: Locator
   public readonly menu: Locator
   public readonly popover: Locator
+  public readonly resizeHandle: Locator
 
   constructor(
     public readonly root: Locator,
@@ -18,6 +19,7 @@ export class WidgetSelectDropdownFixture {
     const page = root.page()
     this.menu = page.getByTestId(TestIds.widgets.formDropdownMenu)
     this.popover = page.getByRole('dialog').filter({ has: this.menu })
+    this.resizeHandle = this.popover.getByRole('button', { name: 'Resize' })
   }
 
   static fromTrigger(trigger: Locator): WidgetSelectDropdownFixture {
@@ -33,6 +35,17 @@ export class WidgetSelectDropdownFixture {
     await expect(this.menu).toBeVisible()
     await this.menu.getByText(name, { exact: true }).click()
     await expect(this.menu).toBeHidden()
+  }
+
+  async dragResizeHandle(by: { x: number; y: number }): Promise<void> {
+    const box = await this.resizeHandle.boundingBox()
+    if (!box) throw new Error('Resize handle is not visible')
+    const mouse = this.root.page().mouse
+    const start = { x: box.x + box.width / 2, y: box.y + box.height / 2 }
+    await mouse.move(start.x, start.y)
+    await mouse.down()
+    await mouse.move(start.x + by.x, start.y + by.y, { steps: 10 })
+    await mouse.up()
   }
 
   async popoverScrolls(): Promise<boolean> {

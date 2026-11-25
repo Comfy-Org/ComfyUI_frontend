@@ -122,6 +122,45 @@ test.describe('Vue Upload Widgets', { tag: '@vue-nodes' }, () => {
       })
     })
 
+    test.describe('with room to grow the image picker', () => {
+      test.use({ viewport: { width: 1280, height: 1000 } })
+
+      test('resizes the image picker from its free corner', async ({
+        comfyPage
+      }) => {
+        const dropdown = WidgetSelectDropdownFixture.fromTrigger(
+          comfyPage.vueNodes
+            .getNodeByTitle('Load Image')
+            .getByRole('button', { name: 'image', exact: true })
+        )
+        await dropdown.open()
+        await expect(dropdown.menu).toBeVisible()
+        const box = async () => (await dropdown.popover.boundingBox())!
+        const before = await box()
+
+        await test.step('dragging down-left grows the panel', async () => {
+          await dropdown.dragResizeHandle({ x: -120, y: 80 })
+          await expect
+            .poll(async () => (await box()).width)
+            .toBeCloseTo(before.width + 120, 0)
+          await expect
+            .poll(async () => (await box()).height)
+            .toBeCloseTo(before.height + 80, 0)
+          await expect(dropdown.popover).toBeInViewport({ ratio: 1 })
+          await expect(dropdown.menu).toBeVisible()
+        })
+
+        await test.step('arrow keys resize from the grip', async () => {
+          const dragged = await box()
+          await dropdown.resizeHandle.focus()
+          await comfyPage.page.keyboard.press('ArrowRight')
+          await expect
+            .poll(async () => (await box()).width)
+            .toBeCloseTo(dragged.width - 16, 0)
+        })
+      })
+    })
+
     test('keeps a selected image loaded when it is selected again', async ({
       comfyPage
     }) => {
