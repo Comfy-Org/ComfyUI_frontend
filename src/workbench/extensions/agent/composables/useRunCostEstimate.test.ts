@@ -13,6 +13,7 @@ import type { useNodePricing } from '@/composables/node/useNodePricing'
 import type { ComfyApp } from '@/scripts/app'
 
 import { useRunCostEstimate } from './useRunCostEstimate'
+import type { RunCostEstimateState } from './useRunCostEstimate'
 
 const estimateGraphRunCost =
   vi.fn<ReturnType<typeof useNodePricing>['estimateGraphRunCost']>()
@@ -41,7 +42,7 @@ const costEstimate = (minUsd: number): ApiNodeCostEstimate => ({
 })
 
 function mountEstimate(isEstimable: Ref<boolean>) {
-  const seen = ref<ApiNodeCostEstimate | null>(null)
+  const seen = ref<RunCostEstimateState>({ status: 'idle' })
   render(
     defineComponent({
       setup() {
@@ -74,7 +75,10 @@ describe('useRunCostEstimate', () => {
     await nextTick()
     await nextTick()
 
-    expect(seen.value).toEqual(costEstimate(0.05))
+    expect(seen.value).toEqual({
+      status: 'available',
+      estimate: costEstimate(0.05)
+    })
   })
 
   it('reports nothing while the asked-for workflow is not on canvas', async () => {
@@ -84,7 +88,7 @@ describe('useRunCostEstimate', () => {
     await nextTick()
     await nextTick()
 
-    expect(seen.value).toBeNull()
+    expect(seen.value).toEqual({ status: 'idle' })
     expect(estimateGraphRunCost).not.toHaveBeenCalled()
   })
 
@@ -100,10 +104,10 @@ describe('useRunCostEstimate', () => {
     await nextTick()
     await nextTick()
 
-    expect(seen.value).toBeNull()
+    expect(seen.value).toEqual({ status: 'idle' })
   })
 
-  it('reports the failure once and clears the estimate when estimation rejects', async () => {
+  it('reports the failure once and marks the estimate unavailable', async () => {
     const cause = new Error('boom')
     estimateGraphRunCost.mockRejectedValue(cause)
 
@@ -111,7 +115,7 @@ describe('useRunCostEstimate', () => {
     await nextTick()
     await nextTick()
 
-    expect(seen.value).toBeNull()
+    expect(seen.value).toEqual({ status: 'unavailable' })
     expect(reportError).toHaveBeenCalledOnce()
     expect(reportError).toHaveBeenCalledWith(
       cause,
@@ -125,7 +129,10 @@ describe('useRunCostEstimate', () => {
     const seen = mountEstimate(ref(true))
     await nextTick()
     await nextTick()
-    expect(seen.value).toEqual(costEstimate(0.05))
+    expect(seen.value).toEqual({
+      status: 'available',
+      estimate: costEstimate(0.05)
+    })
 
     estimateGraphRunCost.mockResolvedValue(costEstimate(0.1))
     const apiEvents: EventTarget = api
@@ -133,6 +140,9 @@ describe('useRunCostEstimate', () => {
     await nextTick()
     await nextTick()
 
-    expect(seen.value).toEqual(costEstimate(0.1))
+    expect(seen.value).toEqual({
+      status: 'available',
+      estimate: costEstimate(0.1)
+    })
   })
 })

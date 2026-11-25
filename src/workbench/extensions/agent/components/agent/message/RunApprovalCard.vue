@@ -42,11 +42,14 @@ const workflowLabel = computed(
 const isEstimable = computed(
   () => hideWorkflowName.value && boundWorkflowActive.value
 )
-const estimate = useRunCostEstimate(isEstimable)
+const estimateState = useRunCostEstimate(isEstimable)
 
 const costLine = computed(() => {
-  const read = estimate.value
-  if (!read) return null
+  const state = estimateState.value
+  if (state.status === 'idle') return null
+  if (state.status === 'unavailable')
+    return t('agent.runApproval.estimateUnavailable')
+  const read = state.estimate
   if (read.pricedCount > 0)
     return t('agent.runApproval.estimateAtLeast', {
       credits: formatCreditsRangeValue(read.minUsd, read.maxUsd)

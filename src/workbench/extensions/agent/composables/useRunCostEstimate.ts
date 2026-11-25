@@ -10,29 +10,36 @@ import { api } from '@/scripts/api'
 import { useNodePricing } from '@/composables/node/useNodePricing'
 import { useApp } from '@/scripts/appInstance'
 
-/** The api-node cost of the graph on canvas, or null while it is not estimable. */
+export type RunCostEstimateState =
+  | { status: 'idle' }
+  | { status: 'available'; estimate: ApiNodeCostEstimate }
+  | { status: 'unavailable' }
+
+/** The api-node cost state of the graph on canvas. */
 export function useRunCostEstimate(
   isEstimable: Readonly<Ref<boolean>>
-): Readonly<Ref<ApiNodeCostEstimate | null>> {
+): Readonly<Ref<RunCostEstimateState>> {
   const { estimateGraphRunCost } = useNodePricing()
-  const estimate = ref<ApiNodeCostEstimate | null>(null)
+  const state = ref<RunCostEstimateState>({ status: 'idle' })
   let generation = 0
 
   async function read(): Promise<void> {
     const mine = ++generation
     if (!isEstimable.value) {
-      estimate.value = null
+      state.value = { status: 'idle' }
       return
     }
     try {
       const next = await estimateGraphRunCost(useApp().graph)
-      if (mine === generation) estimate.value = next
+      if (mine === generation) {
+        state.value = { status: 'available', estimate: next }
+      }
     } catch (cause) {
       reportError(cause, {
         surface: 'agent',
         errorType: 'run_cost_estimate_failed'
       })
-      if (mine === generation) estimate.value = null
+      if (mine === generation) state.value = { status: 'unavailable' }
     }
   }
 
@@ -40,5 +47,5 @@ export function useRunCostEstimate(
   watch(isEstimable, read)
   useEventListener(api, 'graphChanged', read)
 
-  return estimate
+  return state
 }

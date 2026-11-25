@@ -9,15 +9,16 @@ import {
   agentBoundWorkflowActiveKey,
   agentBoundWorkflowIdKey
 } from '@/workbench/extensions/agent/components/agent/agentBoundWorkflowId'
+import type { RunCostEstimateState } from '@/workbench/extensions/agent/composables/useRunCostEstimate'
 
 import RunApprovalCard from './RunApprovalCard.vue'
 
-let estimate = ref<ApiNodeCostEstimate | null>(null)
+let estimateState = ref<RunCostEstimateState>({ status: 'idle' })
 
 vi.mock(
   import('@/workbench/extensions/agent/composables/useRunCostEstimate'),
   () => ({
-    useRunCostEstimate: () => estimate
+    useRunCostEstimate: () => estimateState
   })
 )
 
@@ -41,8 +42,8 @@ function costEstimate(
   }
 }
 
-function renderCard(next: ApiNodeCostEstimate | null) {
-  estimate = ref(next)
+function renderCard(next: RunCostEstimateState) {
+  estimateState = ref(next)
   return render(RunApprovalCard, {
     props: {
       part: {
@@ -65,14 +66,15 @@ const costLine = () => screen.queryByTestId('run-approval-cost')
 
 describe('RunApprovalCard cost estimate', () => {
   it('shows the api-node floor the user is approving against', async () => {
-    renderCard(
-      costEstimate({
+    renderCard({
+      status: 'available',
+      estimate: costEstimate({
         minUsd: 1,
         maxUsd: 1,
         pricedCount: 2,
         coverage: 'complete'
       })
-    )
+    })
 
     await waitFor(() =>
       expect(costLine()).toHaveTextContent('at least 211 credits')
@@ -80,14 +82,15 @@ describe('RunApprovalCard cost estimate', () => {
   })
 
   it('keeps a range as a range', async () => {
-    renderCard(
-      costEstimate({
+    renderCard({
+      status: 'available',
+      estimate: costEstimate({
         minUsd: 1,
         maxUsd: 2,
         pricedCount: 1,
         coverage: 'complete'
       })
-    )
+    })
 
     await waitFor(() =>
       expect(costLine()).toHaveTextContent('at least 211-422 credits')
@@ -95,8 +98,9 @@ describe('RunApprovalCard cost estimate', () => {
   })
 
   it('still shows the floor when a node is priced per unit, never a zero', async () => {
-    renderCard(
-      costEstimate({
+    renderCard({
+      status: 'available',
+      estimate: costEstimate({
         minUsd: 1,
         maxUsd: 1,
         pricedCount: 1,
@@ -115,7 +119,7 @@ describe('RunApprovalCard cost estimate', () => {
         coverage: 'partial',
         isLowerBound: true
       })
-    )
+    })
 
     await waitFor(() =>
       expect(costLine()).toHaveTextContent('at least 211 credits')
@@ -123,8 +127,9 @@ describe('RunApprovalCard cost estimate', () => {
   })
 
   it('says the estimate is unavailable rather than implying free', async () => {
-    renderCard(
-      costEstimate({
+    renderCard({
+      status: 'available',
+      estimate: costEstimate({
         unpriced: [
           {
             nodeType: 'OpenAIChat',
@@ -133,7 +138,7 @@ describe('RunApprovalCard cost estimate', () => {
         ],
         coverage: 'none'
       })
-    )
+    })
 
     await waitFor(() =>
       expect(costLine()).toHaveTextContent('not available for this workflow')
@@ -141,7 +146,7 @@ describe('RunApprovalCard cost estimate', () => {
   })
 
   it('claims nothing when the workflow has no api nodes', async () => {
-    renderCard(costEstimate())
+    renderCard({ status: 'available', estimate: costEstimate() })
 
     expect(
       screen.getByText('Comfy Agent wants to run this workflow.')
@@ -149,9 +154,18 @@ describe('RunApprovalCard cost estimate', () => {
     expect(costLine()).toBeNull()
   })
 
-  it('claims nothing when the graph cannot be read', async () => {
-    renderCard(null)
+  it('claims nothing before the graph is read', async () => {
+    renderCard({ status: 'idle' })
 
     expect(costLine()).toBeNull()
+  })
+
+  it('shows unavailable after estimation fails and keeps Run enabled', async () => {
+    renderCard({ status: 'unavailable' })
+
+    await waitFor(() =>
+      expect(costLine()).toHaveTextContent('not available for this workflow')
+    )
+    expect(screen.getByRole('button', { name: 'Run' })).toBeEnabled()
   })
 })
