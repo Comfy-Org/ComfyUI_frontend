@@ -341,6 +341,15 @@ class TabChatTransitions {
     this.agentSocket.send(JSON.stringify(event))
   }
 
+  setAssistantReply(index: number, text: string): void {
+    const threadId = THREADS[index]
+    const assistant = this.transcripts[threadId].findLast(
+      (message) => message.role === 'assistant'
+    )
+    if (!assistant) throw new Error('No assistant row in fixture transcript')
+    assistant.content = { ...assistant.content, text }
+  }
+
   complete(index: number): void {
     const threadId = THREADS[index]
     const assistant = this.transcripts[threadId].findLast(

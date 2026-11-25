@@ -5437,5 +5437,150 @@ describe('useAgentConversationStore', () => {
       expect(revoke).toHaveBeenCalledWith('blob:known-bg-cat')
       revoke.mockRestore()
     })
+
+    it('enforces the 12-chat known-cache limit across live turns without dropping live background transports', () => {
+      const store = useAgentConversationStore()
+
+      for (let i = 1; i <= 13; i += 1) {
+        const threadId = `th-live-${i}`
+        const turnId = toTurnId(`msg-live-${i}`)
+        store.setThreadId(threadId)
+        store.recordUser(turnId, `Prompt ${i}`)
+        store.startTurn(turnId)
+        store.recordAcceptedTurn({
+          threadId,
+          turnId,
+          createdHere: true,
+          text: `Prompt ${i}`
+        })
+        store.ingest(
+          chat({
+            type: 'agent_message_delta',
+            data: {
+              thread_id: threadId,
+              message_id: turnId,
+              delta: `Part ${i}`
+            }
+          })
+        )
+        store.stashActiveTurn()
+      }
+
+      expect(store.isKnownChat('th-live-1')).toBe(false)
+      expect(store.isKnownChat('th-live-2')).toBe(true)
+      expect(store.isKnownChat('th-live-13')).toBe(true)
+      expect(store.liveTurns()).toHaveLength(13)
+
+      store.ingest(
+        chat({
+          type: 'agent_message_delta',
+          data: {
+            thread_id: 'th-live-1',
+            message_id: 'msg-live-1',
+            delta: ' + more'
+          }
+        })
+      )
+      store.setThreadId('th-live-1')
+      store.hydrate([])
+      store.resumeBackgroundTurn()
+      expect(store.activeTurnId).toBe(toTurnId('msg-live-1'))
+      expect(store.messages[0].parts).toEqual([
+        { type: 'text', text: 'Part 1 + more', state: 'streaming' }
+      ])
+    })
+
+    it('preserves reconciled turn aliases in pending sends when an off-screen warm prunes a local snapshot', () => {
+      const store = useAgentConversationStore()
+      const firstTurn = toTurnId('msg-1')
+
+      store.setThreadId('th-alias')
+      store.recordUser(firstTurn, 'Repeat')
+      store.startTurn(firstTurn)
+      store.recordAcceptedTurn({
+        threadId: 'th-alias',
+        turnId: firstTurn,
+        createdHere: true,
+        text: 'Repeat'
+      })
+      store.ingest(
+        chat({
+          type: 'agent_message_done',
+          data: { thread_id: 'th-alias', message_id: firstTurn }
+        })
+      )
+
+      store.startPendingSend({
+        clientMessageId: 'cm-repeat-2',
+        origin: { kind: 'thread', threadId: 'th-alias' },
+        rawText: 'Repeat',
+        text: 'Repeat',
+        attachments: [],
+        sentAttachments: [],
+        sentTags: [],
+        tags: [],
+        workflowReferences: []
+      })
+      store.failPendingSend('cm-repeat-2', {
+        kind: 'network',
+        message: 'Network error',
+        uncertain: true
+      })
+
+      store.setThreadId('th-other')
+      const warmHistory: AgentMessages = [
+        {
+          id: 'u-srv-1',
+          thread_id: 'th-alias',
+          turn_id: 'srv-1',
+          seq: 1,
+          role: 'user',
+          status: 'complete',
+          content: { text: 'Repeat' }
+        },
+        {
+          id: 'msg-1',
+          thread_id: 'th-alias',
+          turn_id: 'srv-1',
+          seq: 2,
+          role: 'assistant',
+          status: 'complete',
+          content: { text: 'First reply' }
+        }
+      ]
+      expect(
+        store.reconcileKnownChat('th-alias', warmHistory, false).status
+      ).toBe('applied')
+
+      store.setThreadId('th-alias')
+      expect(store.hydrateKnownChat('th-alias')).toBe(true)
+      expect(store.getPendingSend('cm-repeat-2')?.status).toBe('failed')
+
+      const secondHistory: AgentMessages = [
+        ...warmHistory,
+        {
+          id: 'u-srv-2',
+          thread_id: 'th-alias',
+          turn_id: 'srv-2',
+          seq: 3,
+          role: 'user',
+          status: 'complete',
+          content: { text: 'Repeat' }
+        },
+        {
+          id: 'msg-2',
+          thread_id: 'th-alias',
+          turn_id: 'srv-2',
+          seq: 4,
+          role: 'assistant',
+          status: 'complete',
+          content: { text: 'Second reply' }
+        }
+      ]
+      expect(
+        store.reconcileKnownChat('th-alias', secondHistory, true).status
+      ).toBe('applied')
+      expect(store.getPendingSend('cm-repeat-2')).toBeUndefined()
+    })
   })
 })

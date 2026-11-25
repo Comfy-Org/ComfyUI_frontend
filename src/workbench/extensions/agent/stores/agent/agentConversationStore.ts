@@ -2688,17 +2688,26 @@ export const useAgentConversationStore = defineStore(
       return false
     }
 
+    function evictKnownChatEntries(
+      protectedId: string,
+      includeLive: boolean,
+      evicted: KnownTurnSnapshot[]
+    ): void {
+      for (const [oldest, oldestState] of knownChats) {
+        if (knownChats.size <= KEPT_KNOWN_CHATS) break
+        if (oldest === protectedId) continue
+        if (!includeLive && threadHasLiveTurn(oldest)) continue
+        knownChats.delete(oldest)
+        evicted.push(...oldestState.localTurns)
+      }
+    }
+
     function touchKnownChatEntry(id: string, state: KnownChatState): void {
       knownChats.delete(id)
       knownChats.set(id, state)
       const evicted: KnownTurnSnapshot[] = []
-      for (const [oldest, oldestState] of knownChats) {
-        if (knownChats.size <= KEPT_KNOWN_CHATS) break
-        if (oldest !== id && !threadHasLiveTurn(oldest)) {
-          knownChats.delete(oldest)
-          evicted.push(...oldestState.localTurns)
-        }
-      }
+      evictKnownChatEntries(id, false, evicted)
+      evictKnownChatEntries(id, true, evicted)
       if (evicted.length > 0) revokeDetachedPreviews(evicted)
     }
 
@@ -2794,6 +2803,13 @@ export const useAgentConversationStore = defineStore(
       return knownChats.has(id)
     }
 
+    function hasKnownLocalTurn(id: string, turnId: TurnId): boolean {
+      return (
+        knownChats.get(id)?.localTurns.some((turn) => turn.turnId === turnId) ??
+        false
+      )
+    }
+
     function isKnownChatSettledFromServer(id: string): boolean {
       const known = knownChats.get(id)
       return (
@@ -2803,13 +2819,77 @@ export const useAgentConversationStore = defineStore(
       )
     }
 
+    function liveTurnsAsLocalSnapshots(id: string): KnownTurnSnapshot[] {
+      const snapshots: KnownTurnSnapshot[] = []
+      const seen = new Set<TurnId>()
+      const slot = activeSlot.value
+      if (slot?.threadId === id && slot.origin !== 'snapshot') {
+        seen.add(slot.turnId)
+        snapshots.push({
+          turnId: slot.turnId,
+          userText: userTexts.value.get(slot.turnId),
+          attachments: userAttachments.value.get(slot.turnId),
+          tags: userTags.value.get(slot.turnId),
+          workflowReferences: userWorkflowReferences.value.get(slot.turnId),
+          skillReference: userSkillReferences.value.get(slot.turnId),
+          message: snapshotMessage(slot.message)
+        })
+      }
+      for (const entry of backgroundTurns.values()) {
+        if (entry.threadId !== id || seen.has(entry.messageId)) continue
+        seen.add(entry.messageId)
+        snapshots.push({
+          turnId: entry.messageId,
+          userText: entry.userText,
+          attachments: entry.attachments,
+          tags: entry.tags,
+          workflowReferences: entry.workflowReferences,
+          skillReference: entry.skillReference,
+          message: snapshotMessage(entry.message)
+        })
+      }
+      return snapshots
+    }
+
+    function expandSendKnownTurnIds(
+      send: PendingSend,
+      serverTurnToLocal: ReadonlyMap<string, TurnId>
+    ): void {
+      const known = send.knownTurnIdsAtSend
+      if (known === undefined) return
+      let expanded: Set<string> | undefined
+      for (const [serverTurnId, localTurnId] of serverTurnToLocal) {
+        if (known.has(localTurnId) && !known.has(serverTurnId)) {
+          expanded ??= new Set(known)
+          expanded.add(serverTurnId)
+        }
+      }
+      if (expanded !== undefined) send.knownTurnIdsAtSend = expanded
+    }
+
+    function aliasKnownPendingSendTurns(
+      id: string,
+      serverTurnToLocal: ReadonlyMap<string, TurnId>
+    ): void {
+      if (serverTurnToLocal.size === 0) return
+      for (const send of pendingSends.values()) {
+        if (send.origin.kind === 'thread' && send.origin.threadId === id)
+          expandSendKnownTurnIds(send, serverTurnToLocal)
+      }
+    }
+
     function nextHydratedKnownEntry(
       existing: KnownChatState | undefined,
+      candidateLocalTurns: readonly KnownTurnSnapshot[],
       history: AgentMessages,
       settledServerTurns: ReadonlySet<TurnId>,
       workflowId?: string
     ): { entry: KnownChatState; dropped: KnownTurnSnapshot[] } {
       const resolvedWorkflow = workflowId ?? latestWorkflowIdOf(history)
+      const nextLocal = pruneSettledLocalTurns(
+        candidateLocalTurns,
+        settledServerTurns
+      )
       if (!existing) {
         return {
           entry: {
@@ -2818,15 +2898,11 @@ export const useAgentConversationStore = defineStore(
             version: 1,
             baseHistory: history,
             latestWorkflowId: resolvedWorkflow,
-            localTurns: []
+            localTurns: nextLocal
           },
           dropped: []
         }
       }
-      const nextLocal = pruneSettledLocalTurns(
-        existing.localTurns,
-        settledServerTurns
-      )
       return {
         entry: {
           createdHere: existing.createdHere,
@@ -2846,17 +2922,22 @@ export const useAgentConversationStore = defineStore(
       workflowId?: string
     ): void {
       const existing = knownChats.get(id)
+      const candidateLocalTurns = existing
+        ? existing.localTurns
+        : liveTurnsAsLocalSnapshots(id)
       const alignment = alignKnownChatHistory(
         history,
         existing ? existing.baseHistory : [],
-        existing ? existing.localTurns : []
+        candidateLocalTurns
       )
       if (alignment.status !== 'aligned') {
         invalidateKnownChat(id)
         return
       }
+      aliasKnownPendingSendTurns(id, alignment.serverTurnToLocal)
       const { entry, dropped } = nextHydratedKnownEntry(
         existing,
+        candidateLocalTurns,
         history,
         alignment.settledServerTurns,
         workflowId
@@ -3168,7 +3249,12 @@ export const useAgentConversationStore = defineStore(
         return { status: alignment.status }
       }
 
-      const { history: aligned, settledServerTurns } = alignment
+      const {
+        history: aligned,
+        settledServerTurns,
+        serverTurnToLocal
+      } = alignment
+      aliasKnownPendingSendTurns(id, serverTurnToLocal)
       const dropped = known.localTurns.filter((turn) =>
         settledServerTurns.has(turn.turnId)
       )
@@ -3324,6 +3410,7 @@ export const useAgentConversationStore = defineStore(
       bumpKnownChatVersion,
       knownChatVersion,
       isKnownChat,
+      hasKnownLocalTurn,
       isKnownChatSettledFromServer,
       recordHydratedChat,
       recallKnownChat,

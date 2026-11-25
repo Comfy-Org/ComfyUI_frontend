@@ -33,6 +33,7 @@ type KnownChatAlignment =
       status: 'aligned'
       history: AgentMessages
       settledServerTurns: Set<TurnId>
+      serverTurnToLocal: Map<string, TurnId>
     }
   | { status: 'ambiguous' }
   | { status: 'unowned-streaming' }
@@ -142,7 +143,8 @@ export function alignKnownChatHistory(
     return {
       status: 'aligned',
       history,
-      settledServerTurns: settledAssistantTurnIds(history)
+      settledServerTurns: settledAssistantTurnIds(history),
+      serverTurnToLocal: new Map()
     }
   }
 
@@ -193,7 +195,8 @@ export function alignKnownChatHistory(
   return {
     status: 'aligned',
     history: aligned,
-    settledServerTurns: settledAssistantTurnIds(aligned)
+    settledServerTurns: settledAssistantTurnIds(aligned),
+    serverTurnToLocal
   }
 }
 

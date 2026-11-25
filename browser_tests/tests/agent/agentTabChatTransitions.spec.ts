@@ -269,10 +269,11 @@ test.describe(
         await expect(blankTabChats.panel.stopButton).toHaveCount(0)
         await expect(blankTabChats.opening(1)).toHaveCount(0)
 
+        blankTabChats.setAssistantReply(1, 'Persisted reply in B')
         await pendingB.release()
 
         await expect(blankTabChats.panel.userMessageBubbles).toHaveText(['hi'])
-        await expect(assistantReplies).toHaveText(['Reply in B'])
+        await expect(assistantReplies).toHaveText(['Persisted reply in B'])
       })
     })
   }

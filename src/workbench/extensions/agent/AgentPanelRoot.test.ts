@@ -9635,15 +9635,20 @@ describe('AgentPanelRoot history', () => {
             name: i18n.global.t('agent.showChatHistory')
           })
         )
-        await screen.findByRole('button', {
+        const firstChatButton = await screen.findByRole('button', {
           name: 'First chat'
         })
+        const historyButtons = screen
+          .getAllByRole('button')
+          .filter((button) =>
+            ['First chat', 'Second chat'].includes(button.textContent.trim())
+          )
+        const firstChatIndex = historyButtons.indexOf(firstChatButton)
+        expect(firstChatIndex).toBeGreaterThanOrEqual(0)
         await userEvent.click(
-          screen
-            .getAllByRole('button', {
-              name: i18n.global.t('agent.chatOptions')
-            })
-            .at(-1)!
+          screen.getAllByRole('button', {
+            name: i18n.global.t('agent.chatOptions')
+          })[firstChatIndex]
         )
         await userEvent.click(
           await screen.findByRole('menuitem', {
