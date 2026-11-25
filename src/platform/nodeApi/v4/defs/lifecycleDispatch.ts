@@ -9,6 +9,10 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
 import { savedRecord } from '@/platform/nodeApi/shared/savedCopy'
+import {
+  awaitSavedState,
+  savedStateTaken
+} from '@/platform/nodeApi/v4/edit/awaitingSavedState'
 import type {
   ExecutionResult,
   NodeCreatedEvent
@@ -97,6 +101,7 @@ export function createLifecycleDispatch({
   function nodeAdded(node: LGraphNode, loading: boolean): void {
     const saved = configuredBeforeAdded.get(node)
     configuredBeforeAdded.delete(node)
+    if (loading && !saved) awaitSavedState(node)
     if (!isMadeFromKnownClass(node)) return
     const event: NodeCreatedEvent = Object.freeze({
       restored: loading || saved !== undefined,
@@ -112,6 +117,7 @@ export function createLifecycleDispatch({
     onConfigure(target, type) {
       const previous = target.onConfigure
       target.onConfigure = function (data) {
+        savedStateTaken(this)
         previous?.call(this, data)
         const configured = { data, legacy: legacyExtensionFields(this) }
         if (isInGraph(this)) deliverConfigured(type, this, configured)

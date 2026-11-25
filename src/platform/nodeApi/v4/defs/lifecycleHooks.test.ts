@@ -196,6 +196,67 @@ describe('node lifecycle hooks', () => {
       expect(order).toEqual(['created true Saved', 'configured Saved'])
     })
 
+    it('refuses an edit to a node a load has not given its saved state yet, and applies one made once it has', () => {
+      class WithModel extends LGraphNode {
+        constructor(title?: string) {
+          super(title ?? 'WithModel')
+          this.addInput('model', 'MODEL')
+        }
+      }
+      host.nodeTypeHooks.beforeRegisterNodeDef(
+        WithModel,
+        hostNodeDef('Pack/WithModel')
+      )
+      LiteGraph.registerNodeType('Pack/WithModel', WithModel)
+      const saved = new LGraph()
+      const original = LiteGraph.createNode('Pack/WithModel')
+      assert(original)
+      original.title = 'Saved'
+      saved.add(original)
+      const edits: [string, unknown][] = []
+      onTestFinished(
+        defs.extend(packId, 'Pack/WithModel', (builder) => {
+          builder.onCreated((node) => {
+            edits.push(
+              ['title', node.setTitle('Set when created')],
+              ['slot', node.inputs.byName('model')?.modify({ label: 'Model' })],
+              ['added slot', node.inputs.add('extra', 'INT')]
+            )
+          })
+          builder.onConfigured((node) => {
+            edits.push(['configured', node.setTitle('Set when configured')])
+          })
+        })
+      )
+
+      graph.configure(saved.serialize())
+
+      const [loaded] = graph.nodes
+      expect(edits).toEqual([
+        ['title', false],
+        ['slot', false],
+        ['added slot', undefined],
+        ['configured', true]
+      ])
+      expect(loaded.title).toBe('Set when configured')
+      expect(loaded.inputs.map(({ name, label }) => [name, label])).toEqual([
+        ['model', undefined]
+      ])
+    })
+
+    it('applies an edit to a node a load added once the load has run, as to one added outside a load', async () => {
+      const handles: NodeHandle[] = []
+      extend((builder) => builder.onCreated((node) => handles.push(node)))
+      withGraphIntentSource('load', () => graph.add(created()))
+      graph.add(created())
+      await Promise.resolve()
+
+      expect(handles.map((node) => node.setTitle('Edited'))).toEqual([
+        true,
+        true
+      ])
+    })
+
     it('gives a node in a subgraph a handle in its own graph', () => {
       const subgraph = createTestSubgraph({ rootGraph: graph })
       graph.subgraphs.set(subgraph.id, subgraph)

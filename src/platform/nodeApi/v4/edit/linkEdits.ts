@@ -12,6 +12,7 @@ import { linkInfoOf } from './linkInfo'
 import type { LiveSlot, SlotHandles } from './liveSlot'
 import { liveNodeOf } from './nodeEdits'
 import { isShared } from './sharedDocument'
+import { isAwaitingSavedState } from './awaitingSavedState'
 import { slotLocatorOf } from './slotEdits'
 import { isSlotConnected } from './slotSnapshot'
 
@@ -52,6 +53,8 @@ export function createLinkEdits(
       const to = slotOn('connect', 'input', input)
       if (!from || !to) return undefined
       assertOneGraph('connect', from, to)
+      if (isAwaitingSavedState(from.node) || isAwaitingSavedState(to.node))
+        return undefined
       const link = runner.apply(from.graph, () =>
         from.node.connect(from.index, to.node, to.index)
       )
@@ -70,7 +73,8 @@ export function createLinkEdits(
           target
         )
       }
-      if (!isSlotConnected(live)) return false
+      if (!isSlotConnected(live) || isAwaitingSavedState(live.node))
+        return false
       return runner.apply(live.graph, () => {
         if (live.side === 'input') return live.node.disconnectInput(live.index)
         if (!targetNode) return live.node.disconnectOutput(live.index)
@@ -85,7 +89,8 @@ export function createLinkEdits(
       if (source.node !== destination.node) {
         throw invalidArgument('moveLinks', 'two outputs of one node', to)
       }
-      if (isShared(source.graph)) return undefined
+      if (isShared(source.graph) || isAwaitingSavedState(source.node))
+        return undefined
       return runner.apply(source.graph, () =>
         moveOutputLinks(source, destination)
       )

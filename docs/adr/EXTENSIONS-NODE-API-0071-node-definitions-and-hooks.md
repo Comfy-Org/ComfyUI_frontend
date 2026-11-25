@@ -283,6 +283,15 @@ is a subgraph placed as a node: `registerSubgraphNodeDef` does not call
     `onConfigured` right after `onCreated` and overwrites what `onCreated`
     set from defaults. Telling a paste apart needs the host to mark clipboard
     adds.
+    - A load (`LGraph.configure`, which undo and redo use too) adds every node
+      before it configures any, so during the load's `onCreated` the node has
+      not taken its saved state, which then replaces what an edit set. Until
+      it does, an edit to it through the API (its title, a slot, a link, an
+      added slot) is refused: it answers `false` or `undefined` and changes
+      nothing, so the answer does not claim an edit the load undoes. The mark
+      ends when the node is configured or, for an import that adds nodes and
+      gives them no saved state, when the task that added it ends. A pack
+      that needs the edit makes it in `onConfigured`.
 19. `onConfigured` gives a frozen JSON copy, made only when a hook asks, of
     the saved node's own fields (`isNodeCanonicalField`), the top-level
     fields legacy extensions saved on it (`legacyExtensionFields`), and over

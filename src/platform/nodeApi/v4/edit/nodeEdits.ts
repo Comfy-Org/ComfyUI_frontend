@@ -3,6 +3,7 @@ import type { LiveNode, NodeHandles } from '@/platform/nodeApi/v4/nodeHandle'
 import type { EditRunner } from './editRunner'
 import { checkedNodePatch } from './nodePatch'
 import { assertWidgetSavingKept } from './refusedEdits'
+import { isAwaitingSavedState } from './awaitingSavedState'
 
 /** The node edits, taking anything a pack passes and checking it. */
 export interface NodeEdits {
@@ -21,6 +22,7 @@ export function createNodeEdits(
       const { writes, stopsSavingWidgets } = checkedNodePatch(patch, member)
       if (!live) return false
       if (stopsSavingWidgets) assertWidgetSavingKept(member, live.node)
+      if (isAwaitingSavedState(live.node)) return false
       return runner.apply(live.graph, () =>
         writes.map((write) => write(live.node)).every((kept) => kept !== false)
       )

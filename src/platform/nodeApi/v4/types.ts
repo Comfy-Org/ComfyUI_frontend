@@ -486,7 +486,7 @@ export type DefSelector =
 export interface NodeDefBuilder {
   /** The definition of the type being extended. */
   readonly def: NodeDef
-  /** A node of the type joined a graph. */
+  /** A node of the type joined a graph. While a load is about to give it its saved state, an edit to it answers `false`. */
   onCreated(callback: (node: NodeHandle, event: NodeCreatedEvent) => void): void
   /**
    * A node took saved state: `data` is the saved node, with the fields legacy extensions saved on it and, over both,

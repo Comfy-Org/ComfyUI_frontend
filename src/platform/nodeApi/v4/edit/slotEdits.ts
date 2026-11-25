@@ -24,6 +24,7 @@ import type { SlotHandles } from './liveSlot'
 import { liveNodeOf } from './nodeEdits'
 import { assertNotSubgraphNode, assertPositionShown } from './refusedEdits'
 import { isShared } from './sharedDocument'
+import { isAwaitingSavedState } from './awaitingSavedState'
 import {
   assertFitsNode,
   checkedSlotOptions,
@@ -80,7 +81,8 @@ export function createSlotEdits(
       name: slotName,
       widget: extra.widget?.name
     })
-    if (isShared(live.graph)) return undefined
+    if (isShared(live.graph) || isAwaitingSavedState(live.node))
+      return undefined
     return { ...live, slotName, slotType, extra }
   }
 
@@ -97,7 +99,7 @@ export function createSlotEdits(
         widget: checked.widget,
         except: live.slot
       })
-      if (isShared(live.graph)) return false
+      if (isShared(live.graph) || isAwaitingSavedState(live.node)) return false
       runner.apply(live.graph, () => {
         if (checked.widget === null && live.slot.widget) {
           delete live.slot.widget
@@ -145,7 +147,7 @@ export function createSlotEdits(
       const live = slotLocatorOf(slots, member, slot).locate()
       if (!live) return false
       assertNotSubgraphNode(member, live.node)
-      if (isShared(live.graph)) return false
+      if (isShared(live.graph) || isAwaitingSavedState(live.node)) return false
       runner.apply(live.graph, () => {
         if (live.side === 'input') live.node.removeInput(live.index)
         else live.node.removeOutput(live.index)
@@ -166,7 +168,7 @@ export function createSlotEdits(
         assertPlacedOnce(member, host)
       else assertNotSubgraphNode(member, host)
       if (moved.every((was, now) => was === now)) return true
-      if (isShared(graph)) return false
+      if (isShared(graph) || isAwaitingSavedState(host)) return false
       return runner.apply(graph, () => {
         if (host.isSubgraphNode()) return reorderSubgraphNodeInputs(host, moved)
         if (slotSide === 'input') return reorderInputs(host, moved)
