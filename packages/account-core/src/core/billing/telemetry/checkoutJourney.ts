@@ -279,10 +279,18 @@ function getChoicePayload(event: CheckoutJourneyPhaseEvent) {
     ...('method_kind' in event &&
       event.method_kind !== undefined && { method_kind: event.method_kind }),
     ...('result' in event && { result: event.result }),
-    ...('prefilled' in event && { prefilled: event.prefilled }),
-    ...('auto_applied' in event &&
-      event.auto_applied !== undefined && { auto_applied: event.auto_applied }),
+    ...getPromoPayload(event),
     ...('reason' in event && { reason: event.reason })
+  }
+}
+
+function getPromoPayload(event: CheckoutJourneyPhaseEvent) {
+  if (event.phase !== 'promo') return {}
+  return {
+    prefilled: event.prefilled,
+    ...(event.auto_applied !== undefined && {
+      auto_applied: event.auto_applied
+    })
   }
 }
 
