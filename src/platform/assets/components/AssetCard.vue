@@ -118,7 +118,8 @@
         </div>
         <Button
           v-if="interactive"
-          v-tooltip.top="useDisabledReason"
+          :tooltip="useDisabledReason"
+          tooltip-side="top"
           variant="secondary"
           size="lg"
           :aria-disabled="!canUseAsset"
