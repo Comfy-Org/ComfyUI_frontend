@@ -145,16 +145,16 @@ describe('graph edits', () => {
     })
 
     it.for([
-      ['nothing', undefined],
-      ['the graph on screen', 'graph'],
-      ['a graph id', 'id'],
-      ['a look-alike object', { id: 'x', isDeleted: false }]
-    ])('refuses %s in place of a graph handle', ([, given]) => {
-      const graphArgument =
-        given === 'graph' ? comfy.graph : given === 'id' ? shown().id : given
-
+      { name: 'nothing', given: () => undefined },
+      { name: 'the graph on screen', given: () => comfy.graph },
+      { name: 'a graph id', given: () => shown().id },
+      {
+        name: 'a look-alike object',
+        given: () => ({ id: 'x', isDeleted: false })
+      }
+    ])('refuses $name in place of a graph handle', ({ given }) => {
       expect(() =>
-        Reflect.apply(edit.addNode, undefined, [graphArgument, TYPE])
+        Reflect.apply(edit.addNode, undefined, [given(), TYPE])
       ).toThrow('addNode needs a graph handle')
       expect(shown().nodes).toHaveLength(0)
     })

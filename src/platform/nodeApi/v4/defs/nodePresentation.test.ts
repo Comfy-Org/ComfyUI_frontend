@@ -150,14 +150,20 @@ describe('a defined type’s presentation', () => {
   })
 
   describe('refusals', () => {
-    it.for([
+    it.for<{ name: string; presentation: unknown }>([
       { name: 'a presentation that is not an object', presentation: 'none' },
       { name: 'a presentation that is null', presentation: null },
-      { name: 'chrome, which no renderer can leave out', field: 'chrome' },
-      { name: 'sizing, which no renderer holds fixed', field: 'sizing' },
+      {
+        name: 'chrome, which no renderer can leave out',
+        presentation: { title: 'hidden', chrome: 'none' }
+      },
+      {
+        name: 'sizing, which no renderer holds fixed',
+        presentation: { title: 'hidden', sizing: 'none' }
+      },
       {
         name: 'pinnedInteraction, which no renderer passes through',
-        field: 'pinnedInteraction'
+        presentation: { title: 'hidden', pinnedInteraction: 'none' }
       },
       { name: 'a title the host has no mode for', presentation: { title: 2 } },
       {
@@ -168,22 +174,24 @@ describe('a defined type’s presentation', () => {
         name: 'a collapsible that is not true or false',
         presentation: { collapsible: 0 }
       },
-      { name: 'a field Object.prototype has', field: 'constructor' },
+      {
+        name: 'a field Object.prototype has',
+        presentation: { title: 'hidden', constructor: 'none' }
+      },
       { name: 'a title that is null', presentation: { title: null } },
       { name: 'a resizable that is null', presentation: { resizable: null } },
       {
         name: 'a collapsible that is null',
         presentation: { collapsible: null }
       }
-    ])('refuses $name and registers nothing', ({ presentation, field }) => {
-      const given = field ? { title: 'hidden', [field]: 'none' } : presentation
+    ])('refuses $name and registers nothing', ({ presentation }) => {
       const before = Object.keys(LiteGraph.registered_node_types)
 
       expectRefusal(
         () =>
           Reflect.apply(defs.define, defs, [
             packId,
-            { type: 'Pack/Refused', presentation: given }
+            { type: 'Pack/Refused', presentation }
           ]),
         'define'
       )

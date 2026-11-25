@@ -50,13 +50,17 @@ describe('app readiness', () => {
   })
 
   it.for([
-    { name: 'before readiness', readyFirst: false },
-    { name: 'after readiness, before its microtask', readyFirst: true }
-  ])('never runs a listener unsubscribed $name', async ({ readyFirst }) => {
+    { name: 'before readiness', arrange: () => {} },
+    {
+      name: 'after readiness, before its microtask',
+      arrange: (lifecycle: ReturnType<typeof createAppLifecycle>) =>
+        lifecycle.markReady()
+    }
+  ])('never runs a listener unsubscribed $name', async ({ arrange }) => {
     const lifecycle = createAppLifecycle()
     const control = vi.fn()
     const listener = vi.fn()
-    if (readyFirst) lifecycle.markReady()
+    arrange(lifecycle)
 
     const stop = lifecycle.onReady(listener)
     lifecycle.onReady(control)
