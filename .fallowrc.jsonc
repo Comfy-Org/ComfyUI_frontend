@@ -32,7 +32,11 @@
   },
 
   // Runtime entry points fallow cannot infer.
-  "entry": ["index.html", "src/main.ts"],
+  "entry": [
+    "index.html",
+    "src/main.ts",
+    "src/platform/nodeApi/v4/publishedModule.ts"
+  ],
 
   // Keep tooling and test roots reachable without treating their imports as
   // production runtime dependencies.
