@@ -29,12 +29,12 @@ vi.mock(import('@/composables/useReconnectQueueRefresh'), () => {
 vi.mock(import('@/composables/useReconnectingNotification'), () => {
   const onReconnected = vi.fn()
   const onReconnecting = vi.fn()
-  const onAuthRevoked = vi.fn()
+  const onRevokedSocketEnded = vi.fn()
   return {
     useReconnectingNotification: () => ({
       onReconnected,
       onReconnecting,
-      onAuthRevoked
+      onRevokedSocketEnded
     })
   }
 })
@@ -70,9 +70,11 @@ describe('useServerReconnectLifecycle', () => {
   it('shows the access-lost notification when the server revokes the socket', () => {
     startLifecycle()
 
-    api.dispatchCustomEvent('auth_revoked')
+    api.dispatchCustomEvent('revokedSocketEnded')
 
-    expect(useReconnectingNotification().onAuthRevoked).toHaveBeenCalledOnce()
+    expect(
+      useReconnectingNotification().onRevokedSocketEnded
+    ).toHaveBeenCalledOnce()
     expect(useReconnectQueueRefresh()).not.toHaveBeenCalled()
   })
 

@@ -196,8 +196,7 @@ interface FrontendApiCalls {
   graphCleared: never
   reconnecting: never
   reconnected: never
-  /** The server revoked the socket's credential and a re-minted one was refused too; the socket stays closed until the next reset. */
-  auth_revoked: never
+  revokedSocketEnded: never
 }
 
 export type PromptQueueingEventPayload = FrontendApiCalls['promptQueueing']
@@ -1358,7 +1357,7 @@ export class ComfyApi extends EventTarget {
     this.socket = null
     this.lastServerCloseReason = undefined
     this.revokedSocketEnded = true
-    this.dispatchCustomEvent('auth_revoked')
+    this.dispatchCustomEvent('revokedSocketEnded')
   }
 
   private async replaceSocket(): Promise<void> {

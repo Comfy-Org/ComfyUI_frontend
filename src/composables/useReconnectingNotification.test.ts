@@ -126,11 +126,11 @@ describe('useReconnectingNotification', () => {
 
   describe('access revoked', () => {
     it('replaces the reconnecting toast with a persistent access-lost toast', () => {
-      const { onReconnecting, onAuthRevoked } = setupComposable()
+      const { onReconnecting, onRevokedSocketEnded } = setupComposable()
 
       onReconnecting()
       vi.advanceTimersByTime(2000)
-      onAuthRevoked()
+      onRevokedSocketEnded()
 
       expect(useToast().toasts).toEqual([
         expect.objectContaining({
@@ -143,10 +143,10 @@ describe('useReconnectingNotification', () => {
     })
 
     it('cancels a reconnecting toast that has not shown yet', () => {
-      const { onReconnecting, onAuthRevoked } = setupComposable()
+      const { onReconnecting, onRevokedSocketEnded } = setupComposable()
 
       onReconnecting()
-      onAuthRevoked()
+      onRevokedSocketEnded()
       vi.advanceTimersByTime(2000)
 
       expect(useToast().toasts.map(({ title }) => title)).toEqual([
@@ -155,28 +155,28 @@ describe('useReconnectingNotification', () => {
     })
 
     it('signs the user out from the toast action', async () => {
-      const { onAuthRevoked } = setupComposable()
+      const { onRevokedSocketEnded } = setupComposable()
 
-      onAuthRevoked()
+      onRevokedSocketEnded()
       await useToast().toasts[0].actions[0].onClick()
 
       expect(useCurrentUser().handleSignOut).toHaveBeenCalledOnce()
     })
 
     it('clears the access-lost toast once realtime reconnects', () => {
-      const { onAuthRevoked, onReconnected } = setupComposable()
+      const { onRevokedSocketEnded, onReconnected } = setupComposable()
 
-      onAuthRevoked()
+      onRevokedSocketEnded()
       onReconnected()
 
       expect(useToast().toasts).toEqual([])
     })
 
     it('clears the access-lost toast when the user signs out', () => {
-      const { onAuthRevoked } = setupComposable()
+      const { onRevokedSocketEnded } = setupComposable()
       const [[signedOut]] = vi.mocked(useCurrentUser().onUserLogout).mock.calls
 
-      onAuthRevoked()
+      onRevokedSocketEnded()
       signedOut()
 
       expect(useToast().toasts).toEqual([])

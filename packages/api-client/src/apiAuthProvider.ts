@@ -7,7 +7,7 @@ export interface RetrySignalLifecycle {
 }
 
 export interface AuthTokenRequest {
-  /** Prefer a newly minted credential; a provider that cannot mint returns its cached one. */
+  /** Asks for a newly minted credential. `undefined` means none was minted; a provider that cannot enforce freshness may return its current one. */
   forceRefresh?: boolean
 }
 

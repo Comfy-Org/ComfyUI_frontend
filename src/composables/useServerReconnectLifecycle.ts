@@ -8,13 +8,13 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 
 /** Runs every app behaviour for a ComfyUI `/ws` disconnect and reconnect until the calling scope is disposed. */
 export function useServerReconnectLifecycle(): void {
-  const { onReconnecting, onReconnected, onAuthRevoked } =
+  const { onReconnecting, onReconnected, onRevokedSocketEnded } =
     useReconnectingNotification()
   const refreshQueueOnReconnect = useReconnectQueueRefresh()
   const refreshNodeDefinitionsOnReconnect = useReconnectNodeDefinitionRefresh()
 
   useEventListener(api, 'reconnecting', onReconnecting)
-  useEventListener(api, 'auth_revoked', onAuthRevoked)
+  useEventListener(api, 'revokedSocketEnded', onRevokedSocketEnded)
   useEventListener(api, 'reconnected', async () => {
     onReconnected()
     void refreshNodeDefinitionsOnReconnect()

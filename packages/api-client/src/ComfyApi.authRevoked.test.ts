@@ -86,7 +86,7 @@ describe('ComfyApi realtime socket after a revoked credential', () => {
   const getAuthToken = vi.fn(
     async (_request?: AuthTokenRequest) => mintableToken
   )
-  const onAuthRevoked = vi.fn()
+  const onRevokedSocketEnded = vi.fn()
 
   const forcedRefreshCount = () =>
     getAuthToken.mock.calls.filter(([request]) => request?.forceRefresh).length
@@ -101,11 +101,11 @@ describe('ComfyApi realtime socket after a revoked credential', () => {
     FakeWebSocket.instances = []
     mintableToken = 'token'
     getAuthToken.mockClear()
-    onAuthRevoked.mockClear()
+    onRevokedSocketEnded.mockClear()
     vi.stubGlobal('WebSocket', FakeWebSocket)
     api = new ComfyApi(ports)
     api.setAuthProvider({ ...anonymousApiAuthProvider, getAuthToken })
-    api.addEventListener('auth_revoked', onAuthRevoked)
+    api.addEventListener('revokedSocketEnded', onRevokedSocketEnded)
     await api.resetSocket()
   })
 
@@ -128,7 +128,7 @@ describe('ComfyApi realtime socket after a revoked credential', () => {
     expect(FakeWebSocket.instances).toHaveLength(7)
     expect(forcedRefreshCount()).toBe(6)
     expect(api.socket).toBe(latestSocket())
-    expect(onAuthRevoked).not.toHaveBeenCalled()
+    expect(onRevokedSocketEnded).not.toHaveBeenCalled()
   })
 
   it('recovers when a refreshed attempt opens after a transient close', async () => {
@@ -139,7 +139,7 @@ describe('ComfyApi realtime socket after a revoked credential', () => {
     latestSocket().simulateOpen()
 
     expect(api.socket).toBe(latestSocket())
-    expect(onAuthRevoked).not.toHaveBeenCalled()
+    expect(onRevokedSocketEnded).not.toHaveBeenCalled()
   })
 
   it('stops reconnecting when a refreshed socket that opened is revoked again', async () => {
@@ -148,7 +148,7 @@ describe('ComfyApi realtime socket after a revoked credential', () => {
 
     expect(FakeWebSocket.instances).toHaveLength(2)
     expect(api.socket).toBeNull()
-    expect(onAuthRevoked).toHaveBeenCalledOnce()
+    expect(onRevokedSocketEnded).toHaveBeenCalledOnce()
   })
 
   it('resumes normal reconnects once the refreshed attempt opens', async () => {
@@ -162,7 +162,7 @@ describe('ComfyApi realtime socket after a revoked credential', () => {
 
     expect(FakeWebSocket.instances).toHaveLength(4)
     expect(forcedRefreshCount()).toBe(1)
-    expect(onAuthRevoked).not.toHaveBeenCalled()
+    expect(onRevokedSocketEnded).not.toHaveBeenCalled()
   })
 
   it.for([
@@ -180,7 +180,7 @@ describe('ComfyApi realtime socket after a revoked credential', () => {
 
       expect(FakeWebSocket.instances).toHaveLength(3)
       expect(forcedRefreshCount()).toBe(0)
-      expect(onAuthRevoked).not.toHaveBeenCalled()
+      expect(onRevokedSocketEnded).not.toHaveBeenCalled()
     }
   )
 
@@ -192,7 +192,7 @@ describe('ComfyApi realtime socket after a revoked credential', () => {
 
     expect(FakeWebSocket.instances).toHaveLength(1)
     expect(forcedRefreshCount()).toBeGreaterThanOrEqual(5)
-    expect(onAuthRevoked).not.toHaveBeenCalled()
+    expect(onRevokedSocketEnded).not.toHaveBeenCalled()
 
     mintableToken = 'token'
     await vi.advanceTimersByTimeAsync(RECONNECT_WINDOW_MS)
@@ -210,7 +210,7 @@ describe('ComfyApi realtime socket after a revoked credential', () => {
     expect(FakeWebSocket.instances).toHaveLength(2)
     expect(forcedRefreshCount()).toBe(2)
     expect(latestSocket().url).toContain('token=token')
-    expect(onAuthRevoked).not.toHaveBeenCalled()
+    expect(onRevokedSocketEnded).not.toHaveBeenCalled()
   })
 
   it('keeps refreshing the web session of a revoked session socket that cannot open', async () => {
@@ -226,12 +226,16 @@ describe('ComfyApi realtime socket after a revoked credential', () => {
 
     expect(refreshSession).toHaveBeenCalledTimes(3)
     expect(api.socket).toBe(latestSocket())
-    expect(onAuthRevoked).not.toHaveBeenCalled()
+    expect(onRevokedSocketEnded).not.toHaveBeenCalled()
   })
 
   it('announces the disconnect before ending a refreshed socket that is revoked again', async () => {
     const events: string[] = []
-    for (const type of ['status', 'reconnecting', 'auth_revoked'] as const) {
+    for (const type of [
+      'status',
+      'reconnecting',
+      'revokedSocketEnded'
+    ] as const) {
       api.addEventListener(type, () => events.push(type))
     }
 
@@ -239,7 +243,7 @@ describe('ComfyApi realtime socket after a revoked credential', () => {
     events.length = 0
     await revokeOpenSocket()
 
-    expect(events).toEqual(['status', 'reconnecting', 'auth_revoked'])
+    expect(events).toEqual(['status', 'reconnecting', 'revokedSocketEnded'])
   })
 
   it('announces the reconnect when a reset recovers an ended revoked socket', async () => {

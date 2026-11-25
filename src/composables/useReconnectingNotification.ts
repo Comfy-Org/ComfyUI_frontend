@@ -64,7 +64,7 @@ export function useReconnectingNotification() {
     }
   }
 
-  function onAuthRevoked() {
+  function onRevokedSocketEnded() {
     stop()
     toast.dismiss(reconnectingToastId)
     toast.error(t('g.sessionRevoked'), {
@@ -73,5 +73,5 @@ export function useReconnectingNotification() {
     })
   }
 
-  return { onReconnecting, onReconnected, onAuthRevoked }
+  return { onReconnecting, onReconnected, onRevokedSocketEnded }
 }
