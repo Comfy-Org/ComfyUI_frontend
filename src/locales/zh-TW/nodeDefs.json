@@ -20027,6 +20027,39 @@
       }
     }
   },
+  "OpenAIChatNodeV2": {
+    "description": "使用 OpenAI 的 GPT 模型產生文字回應。提供文字提示，並可選擇加入圖片或檔案作為背景資訊。",
+    "display_name": "OpenAI ChatGPT",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用於產生回應的模型。"
+      },
+      "model_max_output_tokens": {
+        "name": "最大輸出詞元數"
+      },
+      "model_prompt": {
+        "name": "提示"
+      },
+      "model_reasoning_effort": {
+        "name": "推理強度"
+      },
+      "model_seed": {
+        "name": "種子"
+      },
+      "model_system_prompt": {
+        "name": "系統提示"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "OpenAIGPTImage1": {
     "description": "透過 OpenAI 的 GPT Image 2 端點同步產生影像。",
     "display_name": "OpenAI GPT Image 2",
