@@ -506,6 +506,39 @@ describe('installErrorClearingHooks lifecycle', () => {
     expect(innerSelfReference.onConnectionsChange).toBe(originalInnerCallback)
   })
 
+  it('restores hooks when disposing a retained ancestor subgraph cycle', () => {
+    const rootGraph = new LGraph()
+    const first = createTestSubgraph({ rootGraph })
+    const second = createTestSubgraph({ rootGraph })
+    const back = createTestSubgraphNode(first, {
+      parentGraph: second,
+      id: 30
+    })
+    second.add(back)
+    const middle = createTestSubgraphNode(second, {
+      parentGraph: first,
+      id: 20
+    })
+    first.add(middle)
+    const host = createTestSubgraphNode(first, {
+      parentGraph: rootGraph,
+      id: 10
+    })
+    rootGraph.add(host)
+    const nodes = [host, middle, back]
+    const originals = nodes.map((node) => node.onConnectionsChange)
+
+    const cleanup = installErrorClearingHooks(rootGraph)
+
+    for (const [index, node] of nodes.entries()) {
+      expect(node.onConnectionsChange).not.toBe(originals[index])
+    }
+
+    cleanup()
+
+    expect(nodes.map((node) => node.onConnectionsChange)).toEqual(originals)
+  })
+
   it('restores hooks without stack-overflowing when a self-referencing subgraph host is removed', () => {
     const { rootGraph, hostNode, innerSelfReference } =
       createSelfReferencingSubgraphRuntime()
