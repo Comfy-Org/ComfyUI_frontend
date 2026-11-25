@@ -190,6 +190,15 @@ function openUploadBatch(models: MissingModel[] | undefined) {
   )
 }
 
+watch(
+  () => showCloudAction,
+  (shown) => {
+    if (!shown && closeRunOnCloudDialog({ keepUploadBatch: true }))
+      checkStore.invalidate()
+  },
+  { flush: 'sync' }
+)
+
 watch([check, isUploading], ([current, uploading]) => {
   if (uploading) return
   if (current.phase === 'idle') {

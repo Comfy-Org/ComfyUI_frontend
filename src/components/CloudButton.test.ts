@@ -173,6 +173,39 @@ describe('Cloud button compatibility checks', () => {
     expect(store.state.phase).toBe('idle')
   })
 
+  it('cancels compatibility when Cloud is disabled and keeps upload recovery available', async () => {
+    const response = deferredVerdict()
+    vi.mocked(checkCloudCompatibility).mockReturnValueOnce(response.promise)
+    const models = [{ folder: 'loras', name: 'retry.safetensors' }]
+    const uploads = useLocalModelUploadStore()
+    uploads.upload = { phase: 'failed', reason: 'failed', models }
+    uploads.retryBatches = [models]
+    vi.spyOn(uploads, 'canFinish').mockReturnValue(true)
+    const { rerender } = render(
+      {
+        components: { CloudButton, GlobalDialog },
+        props: { showCloudAction: Boolean },
+        template:
+          '<CloudButton :show-cloud-action="showCloudAction" /><GlobalDialog />'
+      },
+      { props: { showCloudAction: true }, global: { plugins: [testI18n] } }
+    )
+    const user = userEvent.setup()
+
+    await requestCloudCheck(user)
+    const signal = vi.mocked(checkCloudCompatibility).mock.lastCall?.[1]
+    expect(signal?.aborted).toBe(false)
+
+    await rerender({ showCloudAction: false })
+
+    expect(signal?.aborted).toBe(true)
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(screen.getByTestId('cloud-upload-recovery-button')).toBeVisible()
+    response.resolve({ kind: 'canOpen' })
+    await response.promise
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
   it.for([
     {
       flag: true,
