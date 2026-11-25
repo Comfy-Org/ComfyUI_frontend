@@ -5,6 +5,7 @@ import { assert, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LGraph } from '@/lib/litegraph/src/litegraph'
+import { app } from '@/scripts/app'
 import { isDOMWidget } from '@/scripts/domWidget'
 import type { InputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import { useStringWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useStringWidget'
@@ -15,18 +16,7 @@ import {
 
 const createDOMWidgetNode = useDOMWidgetTestNodes()
 
-const { canvasMock } = vi.hoisted(() => ({
-  canvasMock: {
-    processMouseDown: vi.fn(),
-    processMouseMove: vi.fn(),
-    processMouseUp: vi.fn(),
-    processMouseWheel: vi.fn()
-  }
-}))
-
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: { rootGraph: { id: 'root' }, canvas: canvasMock }
-}))
+vi.mock(import('@/scripts/app'))
 
 function createStringWidget(node: LGraphNode) {
   const inputSpec: InputSpec = {
@@ -44,6 +34,7 @@ function createStringWidget(node: LGraphNode) {
 describe('useStringWidget (multiline)', () => {
   function setup() {
     vi.clearAllMocks()
+    app.rootGraph.id = 'root'
     const node = createDOMWidgetNode()
     const widget = createStringWidget(node)
     const callback = vi.fn<NonNullable<typeof widget.callback>>()
@@ -51,7 +42,7 @@ describe('useStringWidget (multiline)', () => {
     const inputEl = widget.element
     document.body.append(inputEl)
     onTestFinished(() => inputEl.remove())
-    return { node, widget, inputEl, callback }
+    return { node, widget, inputEl, callback, canvasMock: app.canvas }
   }
 
   function setupInGraph() {
@@ -88,8 +79,13 @@ describe('useStringWidget (multiline)', () => {
     expect(store.getWidget(widgetId(graph.id, node.id, 'prompt'))).toBe(
       undefined
     )
-    widget.element.value = 'textarea only'
-    expect(widget.value).toBe('edited')
+    widget.element.value = 'written to the element'
+    expect(
+      store.getWidget(widgetId(graph.id, node.id, 'loras.1.text'))?.value
+    ).toBe('written to the element')
+    expect(store.getWidget(widgetId(graph.id, node.id, 'prompt'))).toBe(
+      undefined
+    )
   })
 
   it('keeps a sibling widget value when its own name is made unique while it is added', () => {
@@ -164,20 +160,6 @@ describe('useStringWidget (multiline)', () => {
     ).toBe('other')
   })
 
-  it('does not throw when a saved value is restored synchronously during construction', () => {
-    const { graph, node } = setupInGraph()
-    useWidgetValueStore().setNodeWidgetRestoration(graph.id, node.id, {
-      positional: ['restored-value'],
-      restoreNamed: false
-    })
-
-    expect(() => {
-      const widget = createStringWidget(node)
-      expect(widget.value).toBe('restored-value')
-      expect(widget.element.value).toBe('restored-value')
-    }).not.toThrow()
-  })
-
   it('fires the input listener callback independently of the value setter', () => {
     const node = createDOMWidgetNode()
     stubWidgetValueCallbacks(node)
@@ -191,8 +173,20 @@ describe('useStringWidget (multiline)', () => {
     expect(callback).toHaveBeenCalledWith('hello')
   })
 
+  it('takes an extension write to its element as the widget value without firing the callback', () => {
+    const { widget, inputEl, callback } = setup()
+    widget.value = 'typed'
+    callback.mockClear()
+
+    inputEl.value = 'typed <lora:B:1.0>'
+
+    expect(widget.value).toBe('typed <lora:B:1.0>')
+    expect(inputEl.value).toBe('typed <lora:B:1.0>')
+    expect(callback).not.toHaveBeenCalled()
+  })
+
   it('forwards middle-click pointer events and ctrl+wheel to the canvas while alive', () => {
-    const { inputEl } = setup()
+    const { inputEl, canvasMock } = setup()
     inputEl.dispatchEvent(new PointerEvent('pointerdown', { button: 1 }))
     inputEl.dispatchEvent(new PointerEvent('pointermove', { buttons: 4 }))
     inputEl.dispatchEvent(new PointerEvent('pointerup', { button: 1 }))
@@ -205,7 +199,7 @@ describe('useStringWidget (multiline)', () => {
   })
 
   it('detaches every listener when the widget is removed', () => {
-    const { widget, inputEl, callback } = setup()
+    const { widget, inputEl, callback, canvasMock } = setup()
     widget.onRemove?.()
 
     inputEl.value = 'after'

@@ -197,7 +197,7 @@ test.describe('Subgraph Lifecycle', { tag: ['@subgraph'] }, () => {
       await comfyPage.contextMenu.clickMenuItemExact('Unpack Subgraph')
     }
 
-    async function reopenRightSidePanel(comfyPage: ComfyPage) {
+    async function reopenPropertiesPanel(comfyPage: ComfyPage) {
       const { propertiesPanel } = comfyPage.menu
       await propertiesPanel.toggleButton.click()
       await expect(propertiesPanel.root).toBeHidden()
@@ -297,7 +297,7 @@ test.describe('Subgraph Lifecycle', { tag: ['@subgraph'] }, () => {
     }) => {
       const nullGraphErrors = await unpackAndCaptureNullGraphErrors(comfyPage, {
         defer: deferSelectionChange,
-        duringWindow: reopenRightSidePanel
+        duringWindow: reopenPropertiesPanel
       })
       expect(
         nullGraphErrors,
@@ -313,7 +313,7 @@ test.describe('Subgraph Lifecycle', { tag: ['@subgraph'] }, () => {
 
       const nullGraphErrors = await unpackAndCaptureNullGraphErrors(comfyPage, {
         defer: deferSelectionChange,
-        duringWindow: reopenRightSidePanel
+        duringWindow: reopenPropertiesPanel
       })
       expect(
         nullGraphErrors,

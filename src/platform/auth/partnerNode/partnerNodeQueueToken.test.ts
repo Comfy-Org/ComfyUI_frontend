@@ -130,9 +130,13 @@ describe('queueAuthToken', () => {
       workspaceId = 'ws-a'
     ): DesktopHostAuthState => ({ status: 'signed_in', userId, workspaceId })
 
-    async function startHostSession(state: DesktopHostAuthState) {
+    async function startHostSession(
+      state: DesktopHostAuthState,
+      desktop: Pick<DesktopHostAuthBridge, 'getPartnerNodeToken'> = {}
+    ) {
       const listeners = new Set<(next: DesktopHostAuthState) => void>()
       const bridge = fromPartial<DesktopHostAuthBridge>({
+        ...desktop,
         getState: async () => state,
         signOut: vi.fn(async () => ({ status: 'signed_out' }) as const),
         getWorkspaceToken: async (workspaceId: string) =>
@@ -214,6 +218,124 @@ describe('queueAuthToken', () => {
         expect(fetchRequests(MINT_URL)).toHaveLength(mints)
       }
     )
+
+    describe('on a Desktop that mints the partner-node token itself', () => {
+      it('queues the token Desktop hands over and mints nothing', async () => {
+        const getPartnerNodeToken = vi.fn(
+          async () => 'desktop-partner-node-token'
+        )
+        await startHostSession(signedInAs('host-a'), { getPartnerNodeToken })
+        respondWithPartnerNodeToken()
+
+        await expect(queueAuthToken('host-token', 'ws-a')).resolves.toBe(
+          'desktop-partner-node-token'
+        )
+        expect(getPartnerNodeToken).toHaveBeenCalledExactlyOnceWith('ws-a')
+        expect(fetchRequests(MINT_URL)).toHaveLength(0)
+      })
+
+      it.for([
+        {
+          name: 'Desktop has no token',
+          getPartnerNodeToken: async () => null
+        },
+        {
+          name: 'the bridge call fails',
+          getPartnerNodeToken: async () => {
+            throw new Error('ipc failed')
+          }
+        }
+      ])('mints as before when $name', async ({ getPartnerNodeToken }) => {
+        await startHostSession(signedInAs('host-a'), { getPartnerNodeToken })
+        respondWithPartnerNodeToken()
+
+        await expect(queueAuthToken('host-token', 'ws-a')).resolves.toBe(
+          'partner-node-token'
+        )
+        const [mint] = fetchRequests(MINT_URL)
+        expect(mint.headers.get('Authorization')).toBe(
+          'Bearer host-oauth-token'
+        )
+      })
+
+      it('does not queue a token that lands after another account signed in', async () => {
+        let handOver: (token: string) => void = () => {}
+        const { push } = await startHostSession(signedInAs('host-a'), {
+          getPartnerNodeToken: () =>
+            new Promise<string>((resolve) => {
+              handOver = resolve
+            })
+        })
+        respondToFetch(MINT_URL, () => new Response(null, { status: 403 }))
+
+        const queued = queueAuthToken('host-token', 'ws-a')
+        await push(signedInAs('host-b'))
+        handOver('partner-node-token-of-host-a')
+
+        await expect(queued).resolves.toBe('host-token')
+      })
+
+      it('does not mint for the account that signed in during the lookup', async () => {
+        let handOver: (token: string | null) => void = () => {}
+        const { push } = await startHostSession(signedInAs('host-a'), {
+          getPartnerNodeToken: () =>
+            new Promise<string | null>((resolve) => {
+              handOver = resolve
+            })
+        })
+        respondWithPartnerNodeToken()
+
+        const queued = queueAuthToken('host-token', 'ws-a')
+        await push(signedInAs('host-b'))
+        handOver(null)
+
+        await expect(queued).resolves.toBe('host-token')
+        expect(fetchRequests(MINT_URL)).toHaveLength(0)
+      })
+
+      it('queues the workspace token when the same account switches workspace during the mint', async () => {
+        let answerMint: (response: Response) => void = () => {}
+        const { push } = await startHostSession(signedInAs('host-a'), {
+          getPartnerNodeToken: async () => null
+        })
+        respondToFetch(
+          MINT_URL,
+          () =>
+            new Promise<Response>((resolve) => {
+              answerMint = resolve
+            })
+        )
+
+        const queued = queueAuthToken('host-token', 'ws-a')
+        await vi.waitFor(() => expect(fetchRequests(MINT_URL)).toHaveLength(1))
+        await push(signedInAs('host-a', 'ws-b'))
+        answerMint(
+          Response.json({
+            token: 'partner-node-token',
+            expires_at: new Date(Date.now() + 90 * 60 * 1000).toISOString(),
+            user_id: 'uid-1',
+            workspace: { id: 'ws-a', name: 'Team', type: 'team' },
+            role: 'owner',
+            permissions: []
+          })
+        )
+
+        await expect(queued).resolves.toBe('host-token')
+      })
+
+      it('does not ask Desktop with the flag off', async () => {
+        vi.mocked(useFeatureFlags().flags).partnerNodeTokenEnabled = false
+        const getPartnerNodeToken = vi.fn(
+          async () => 'desktop-partner-node-token'
+        )
+        await startHostSession(signedInAs('host-a'), { getPartnerNodeToken })
+
+        await expect(queueAuthToken('host-token', 'ws-a')).resolves.toBe(
+          'host-token'
+        )
+        expect(getPartnerNodeToken).not.toHaveBeenCalled()
+      })
+    })
 
     it('keeps the host token and mints nothing with the flag off', async () => {
       vi.mocked(useFeatureFlags().flags).partnerNodeTokenEnabled = false

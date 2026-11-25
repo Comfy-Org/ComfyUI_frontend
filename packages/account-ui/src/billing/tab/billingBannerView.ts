@@ -12,6 +12,8 @@ export type BillingBannerAction =
   | 'resumePlan'
   | 'choosePlan'
   | 'contactSales'
+  | 'finishPayment'
+  | 'viewPlans'
 
 export interface BillingBannerText {
   readonly title: string
@@ -34,6 +36,11 @@ export type BillingBannerView = BillingBannerText &
         readonly dismissKey: string | null
       }
     | {
+        readonly kind: 'planNotStarted'
+        readonly action: 'finishPayment' | 'verifyPayment' | 'viewPlans' | null
+        readonly href: string | null
+      }
+    | {
         readonly kind: 'topupCheckout'
         readonly action: 'addCredits' | null
         readonly dismissKey: string
@@ -50,8 +57,8 @@ export type BillingBannerView = BillingBannerText &
       }
     | {
         readonly kind: 'autoTopUp'
-        readonly action: 'updatePayment'
-        readonly href: string
+        readonly action: 'updatePayment' | null
+        readonly href: string | null
       }
     | {
         readonly kind: 'credit'
@@ -149,6 +156,11 @@ export function billingBannerLook(view: BillingBannerView): BillingBannerLook {
         ...look(view.muted, false, view.action, view.href, view.dismissKey),
         windowBreakpoint: true
       }
+    case 'planNotStarted':
+      return {
+        ...look(true, false, view.action, view.href),
+        windowBreakpoint: true
+      }
     case 'topupCheckout':
       return look(true, true, view.action, null, view.dismissKey)
     case 'parked':
@@ -178,6 +190,7 @@ function look(
 const STACK_ORDER: readonly BillingBannerKind[] = [
   'paused',
   'planCheckout',
+  'planNotStarted',
   'topupCheckout',
   'parked',
   'planStatus',
@@ -188,6 +201,7 @@ const STACK_ORDER: readonly BillingBannerKind[] = [
 const CREDIT_SUPPRESSORS: ReadonlySet<BillingBannerKind> = new Set([
   'paused',
   'planCheckout',
+  'planNotStarted',
   'topupCheckout'
 ])
 
@@ -196,13 +210,23 @@ const CREDIT_KINDS: ReadonlySet<BillingBannerKind> = new Set([
   'credit'
 ])
 
-/** The Billing tab banner stack: fixed order, credit banners hidden behind a paused or checkout banner. */
+/** Whether a shown paused, checkout or plan-not-started banner hides the credit banners. */
+export function suppressesCreditBanners(
+  kinds: readonly BillingBannerKind[]
+): boolean {
+  return kinds.some((kind) => CREDIT_SUPPRESSORS.has(kind))
+}
+
+/** The Billing tab banner stack: fixed order, credit banners hidden behind a paused or checkout banner, plan-not-started behind a plan checkout. */
 export function selectBillingBanners(
   views: readonly BillingBannerView[]
 ): BillingBannerView[] {
-  const suppressCredit = views.some(({ kind }) => CREDIT_SUPPRESSORS.has(kind))
+  const kinds = views.map(({ kind }) => kind)
+  const suppressCredit = suppressesCreditBanners(kinds)
+  const hidePlanNotStarted = kinds.includes('planCheckout')
   return views
     .filter(({ kind }) => !(suppressCredit && CREDIT_KINDS.has(kind)))
+    .filter(({ kind }) => !(hidePlanNotStarted && kind === 'planNotStarted'))
     .toSorted(
       (a, b) => STACK_ORDER.indexOf(a.kind) - STACK_ORDER.indexOf(b.kind)
     )

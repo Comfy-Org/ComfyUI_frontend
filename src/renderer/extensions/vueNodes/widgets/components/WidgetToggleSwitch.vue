@@ -11,12 +11,8 @@
       type="single"
       :model-value="modelValue ? 'on' : 'off'"
       :disabled="Boolean(widget.options?.read_only)"
-      :class="
-        cn(
-          WidgetInputBaseClass,
-          'flex w-full min-w-0 items-center justify-center gap-1 p-1'
-        )
-      "
+      :class="cn(WidgetInputBaseClass, 'w-full min-w-0 p-1')"
+      data-part="widget-toggle-group"
       @update:model-value="(v) => handleOptionChange(v as string)"
     >
       <ToggleGroupItem
@@ -25,6 +21,7 @@
         :aria-label="widget.options?.off ?? t('widgets.boolean.false')"
         size="sm"
         class="flex-1 truncate"
+        data-part="widget-toggle-option"
       >
         {{ widget.options?.off ?? t('widgets.boolean.false') }}
       </ToggleGroupItem>
@@ -34,6 +31,7 @@
         :aria-label="widget.options?.on ?? t('widgets.boolean.true')"
         size="sm"
         class="flex-1 truncate"
+        data-part="widget-toggle-option"
       >
         {{ widget.options?.on ?? t('widgets.boolean.true') }}
       </ToggleGroupItem>
@@ -51,6 +49,7 @@
     >
       <Switch
         :id="inputId"
+        data-part="widget-switch"
         :model-value
         :disabled="Boolean(widget.options?.disabled)"
         :readonly="Boolean(widget.options?.read_only)"

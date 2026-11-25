@@ -12,7 +12,6 @@
       <UserAvatar
         v-if="isCurrentUser && photoUrl"
         :label="$t('auth.login.userAvatar')"
-        class="size-8"
         :photo-url="photoUrl"
         icon-class="size-5"
       />

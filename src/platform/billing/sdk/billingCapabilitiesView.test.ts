@@ -24,6 +24,8 @@ const SNAPSHOT: CapabilitiesSnapshot = {
     can_manage_subscription: false,
     can_open_plans: false,
     can_run_workflows: false,
+    can_set_budgets: false,
+    can_set_hard_caps: false,
     can_upgrade: false,
     can_reactivate: false,
     can_revert_scheduled_change: false,
@@ -86,6 +88,19 @@ describe('projectBillingCapabilities', () => {
       projectBillingCapabilities({ ...SNAPSHOT, autoTopUpMemberView: served })
         .auto_top_up_member_view
     ).toStrictEqual(served)
+  })
+
+  it('passes the served billing notice facts through to the capabilities read', () => {
+    expect(
+      projectBillingCapabilities({
+        ...SNAPSHOT,
+        billingNoticeAudience: 'none',
+        endingNoticeStartsAt: '2026-11-12T00:00:00Z'
+      })
+    ).toMatchObject({
+      billing_notice_audience: 'none',
+      ending_notice_starts_at: '2026-11-12T00:00:00Z'
+    })
   })
 
   it('reads the snapshot back as the response the composable holds', () => {

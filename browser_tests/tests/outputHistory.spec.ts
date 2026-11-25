@@ -25,9 +25,6 @@ async function startExecution(
 ) {
   exec ??= new ExecutionHelper(comfyPage, ws)
   const jobId = await exec.run()
-  // Allow storeJob() to complete before sending WS events
-  await comfyPage.nextFrame()
-  exec.executionStart(jobId)
   return { exec, jobId }
 }
 
@@ -172,13 +169,36 @@ test.describe('Output History', { tag: '@ui' }, () => {
     ).toBeVisible()
   })
 
+  test('Completed text output appears in App mode', async ({
+    comfyPage,
+    getWebSocket
+  }) => {
+    const ws = await getWebSocket()
+    const { exec, jobId } = await startExecution(comfyPage, ws)
+    const content = 'Inline text output'
+
+    await exec.completeWithHistory(jobId, {
+      nodeId: SAVE_IMAGE_NODE,
+      mediaType: 'text',
+      content
+    })
+
+    await expect(comfyPage.appMode.outputHistory.inProgressItems).toHaveCount(0)
+    await expect(
+      comfyPage.appMode.outputHistory.historyItems.first()
+    ).toBeVisible()
+    await expect(
+      comfyPage.appMode.centerPanel.getByText(content, { exact: true })
+    ).toBeVisible()
+  })
+
   test('Cancel button sends interrupt during execution', async ({
     comfyPage,
     getWebSocket
   }) => {
     const ws = await getWebSocket()
     const exec = new ExecutionHelper(comfyPage, ws)
-    const jobId = await exec.run()
+    const jobId = await exec.run({ start: false })
 
     const job: RawJobListItem = {
       id: jobId,
@@ -242,7 +262,13 @@ test.describe('Output History', { tag: '@ui' }, () => {
     ).toBeVisible()
 
     // Job completes with history mock - in-progress items fully resolved
-    await exec.completeWithHistory(jobId, SAVE_IMAGE_NODE, 'lifecycle_out.png')
+    await exec.completeWithHistory(jobId, {
+      filename: 'lifecycle_out.png',
+      subfolder: '',
+      type: 'output',
+      nodeId: SAVE_IMAGE_NODE,
+      mediaType: 'images'
+    })
 
     await expect(comfyPage.appMode.outputHistory.inProgressItems).toHaveCount(0)
     // Output now appears as a history item
@@ -352,7 +378,13 @@ test.describe('Output History', { tag: '@ui' }, () => {
       )
     )
     await expect(comfyPage.appMode.outputHistory.imageOutputs).toHaveCount(100)
-    await exec.completeWithHistory(jobId, SAVE_IMAGE_NODE, 'image_000.png')
+    await exec.completeWithHistory(jobId, {
+      filename: 'image_000.png',
+      subfolder: '',
+      type: 'output',
+      nodeId: SAVE_IMAGE_NODE,
+      mediaType: 'images'
+    })
 
     await expect(comfyPage.appMode.outputHistory.historyItems).toHaveCount(100)
 

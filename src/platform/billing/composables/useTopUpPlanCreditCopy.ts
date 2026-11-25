@@ -2,8 +2,9 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { AddCreditsPlanLine } from '@comfyorg/account-core/billing'
-import { topUpPlanCreditLine } from '@/platform/billing/topUpPlanCreditLine'
-import type { TopUpPlanCreditLine } from '@/platform/billing/topUpPlanCreditLine'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { planCreditLine } from '@/platform/billing/topUpPlanCreditLine'
+import type { PlanCreditLine } from '@/platform/billing/topUpPlanCreditLine'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useFreeTierQuota } from '@/platform/billing/subscription/composables/useFreeTierQuota'
@@ -12,27 +13,31 @@ import { isCloud } from '@/platform/distribution/types'
 export const TOP_UP_PLAN_CREDIT_LINE_KEYS = {
   planRequiredFreeRuns: 'credits.topUp.planRequiredFreeRuns',
   planRequiredSubscribe: 'credits.topUp.planRequiredSubscribe',
-  planRequiredResubscribe: 'credits.topUp.planRequiredResubscribe'
+  planRequiredResubscribe: 'credits.topUp.planRequiredResubscribe',
+  planRequiredContactSales: 'credits.topUp.planRequiredContactSales'
 } as const
 
 const ADD_CREDITS_LINES = {
   planRequiredFreeRuns: 'free_runs',
   planRequiredSubscribe: 'no_plan',
-  planRequiredResubscribe: 'ended'
-} as const satisfies Record<TopUpPlanCreditLine, AddCreditsPlanLine>
+  planRequiredResubscribe: 'ended',
+  planRequiredContactSales: 'ended_sales_managed'
+} as const satisfies Record<PlanCreditLine, AddCreditsPlanLine>
 
 /** Which plan-required line applies on Cloud, or null when none does. */
 export function usePlanCreditLine() {
   const { isInitialized, subscriptionState } = useBillingContext()
-  const { canTopUp } = useBillingCapabilities()
+  const { canTopUp, planKind } = useBillingCapabilities()
   const { available: freeRunsRemaining } = useFreeTierQuota()
+  const { flags } = useFeatureFlags()
 
   return computed(() =>
-    topUpPlanCreditLine({
+    planCreditLine({
       isCloud,
       isBillingInitialized: isInitialized.value,
       canTopUp: canTopUp.value,
       subscriptionState: subscriptionState.value,
+      planKind: flags.billingNewUxEnabled ? planKind.value : null,
       freeRunsRemaining: freeRunsRemaining.value
     })
   )

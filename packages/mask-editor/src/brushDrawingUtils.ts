@@ -4,7 +4,8 @@ import type {
 } from '@comfyorg/shared-frontend-utils/geometry'
 import QuickLRU from '@alloc/quick-lru'
 
-import { hexToRgb, parseToRgb } from './color'
+import { hexToRgb } from '@comfyorg/shared-frontend-utils/colorUtil'
+import { parseToRgb } from './color'
 import { BrushShape } from './types'
 export type { Extents as DirtyRect } from '@comfyorg/shared-frontend-utils/geometry'
 

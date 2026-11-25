@@ -1,9 +1,10 @@
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { assetService } from '@/platform/assets/services/assetService'
 import { api } from '@/scripts/api'
-import { useAssetsStore } from '@/stores/assetsStore'
+import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
 
 import { getAssetContentId } from './assetUrlUtil'
+import { cappedTotalParams } from './cappedTotalParams'
 
 interface AssetRecord {
   id: string
@@ -24,7 +25,11 @@ export function isAssetPreviewSupported(): boolean {
 async function fetchOwnAssets(
   params: Record<string, string>
 ): Promise<AssetRecord[]> {
-  const query = new URLSearchParams({ ...params, include_public: 'false' })
+  const query = new URLSearchParams({
+    ...params,
+    include_public: 'false',
+    ...cappedTotalParams()
+  })
   const res = await api.fetchApi(`/assets?${query}`)
   if (!res.ok) return []
   const data = await res.json()

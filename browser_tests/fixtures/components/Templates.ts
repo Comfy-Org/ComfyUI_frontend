@@ -31,6 +31,11 @@ export class ComfyTemplates {
     await templateCard.getByRole('img').click()
   }
 
+  /** The detail panel the dialog shows for a selected template. */
+  detail(title: string): Locator {
+    return this.page.getByRole('article', { name: title })
+  }
+
   async getAllTemplates(): Promise<TemplateInfo[]> {
     const templates: WorkflowTemplates[] = await this.page.evaluate(() =>
       window.app!.api.getCoreWorkflowTemplates()

@@ -6,6 +6,7 @@ import type { CheckoutChallengeBillingEvent } from './checkoutChallengeEvent'
 import type { CheckoutRedirectBillingEvent } from './checkoutRedirectEvent'
 import type { DowngradeToPersonalBillingEvent } from './downgradeToPersonalEvent'
 import type { EntryBillingEvent } from './entryEvent'
+import type { LocalHandoffBillingEvent } from './localHandoffEvent'
 import type { BillingOperationBillingEvent } from './operationEvent'
 import type { PlatformHandoffBillingEvent } from './platformHandoffEvent'
 import type { PortalBillingEvent } from './portalEvent'
@@ -41,6 +42,7 @@ export type BillingTelemetryEvent = {
   | AutoTopUpCardBillingEvent
   | AutoTopUpOfferBillingEvent
   | PlatformHandoffBillingEvent
+  | LocalHandoffBillingEvent
   | CheckoutChallengeBillingEvent
   | CheckoutRedirectBillingEvent
 )

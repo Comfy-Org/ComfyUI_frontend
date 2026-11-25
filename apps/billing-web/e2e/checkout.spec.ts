@@ -7,10 +7,10 @@
 import type { BillingOpStatusResponse } from '@comfyorg/ingest-types'
 
 import type { MockCloud } from './fixtures/cloud'
-import { CLOUD_ORIGIN, E2E_USER } from './fixtures/env'
+import { CLOUD_ORIGIN, E2E_USER, PLATFORM_ORIGIN } from './fixtures/env'
 import {
   expectPlanlessLinkToLeaveFor,
-  expectStraightToPricingTable
+  expectStraightToPlatformPlans
 } from './fixtures/planless'
 import {
   challengeRequiredOperation,
@@ -150,6 +150,7 @@ test('a reactivating upgrade taller than the frame scrolls to its confirm', asyn
     transition_type: 'upgrade',
     requires_reactivation_confirmation: true,
     requires_reactivation_charge_confirmation: true,
+    cancel_at: new Date(Date.now() + 86_400_000).toISOString(),
     cost_today_cents: 90_000,
     amount_due_cents: 90_000,
     current_plan: {
@@ -425,12 +426,12 @@ test('a checkout link naming a team credit stop quotes it along with the plan', 
   })
 })
 
-test.describe('a checkout link that names no plan goes back to the host to choose one', () => {
+test.describe('a checkout link that names no plan goes to Platform Plans to choose one', () => {
   test('on the Team tab when the link names a team', async ({ page }) => {
     await expectPlanlessLinkToLeaveFor(
       page,
       { workspace: 'ws_team_e2e', team_credit_stop_id: 'stop_700' },
-      `${CLOUD_ORIGIN}/?pricing=team&workspace=ws_team_e2e`
+      `${PLATFORM_ORIGIN}/settings/billing/plans?pricing=team&stop=stop_700&workspace=ws_team_e2e`
     )
   })
 
@@ -471,7 +472,7 @@ test.describe('a checkout link that names no plan goes back to the host to choos
   })
 
   test('for a signed-out visitor', async ({ page }) => {
-    await expectStraightToPricingTable(page, 'ws_team_e2e')
+    await expectStraightToPlatformPlans(page, 'ws_team_e2e')
   })
 
   test('for a signed-in customer, in the tab they signed in on', async ({
@@ -483,7 +484,7 @@ test.describe('a checkout link that names no plan goes back to the host to choos
       page.getByRole('button', { name: 'Pay and subscribe' })
     ).toBeVisible()
 
-    await expectStraightToPricingTable(page, 'ws_e2e')
+    await expectStraightToPlatformPlans(page, 'ws_e2e')
   })
 
   test('for a signed-in customer the host opens a new tab for, before that tab has a session', async ({
@@ -492,7 +493,7 @@ test.describe('a checkout link that names no plan goes back to the host to choos
   }) => {
     await signIn(CHECKOUT)
 
-    await expectStraightToPricingTable(await context.newPage(), 'ws_e2e')
+    await expectStraightToPlatformPlans(await context.newPage(), 'ws_e2e')
   })
 
   test('for a signed-in customer whose link names a workspace they cannot manage, never the refusal', async ({
@@ -507,7 +508,7 @@ test.describe('a checkout link that names no plan goes back to the host to choos
     }))
     const tab = await context.newPage()
 
-    await expectStraightToPricingTable(tab, 'ws_not_a_member')
+    await expectStraightToPlatformPlans(tab, 'ws_not_a_member')
     await expect(tab.getByRole('alert')).toHaveCount(0)
   })
 })

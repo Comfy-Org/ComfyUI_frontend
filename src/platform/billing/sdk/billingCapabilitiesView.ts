@@ -20,8 +20,14 @@ export function projectBillingCapabilities(
     ...(snapshot.autoTopUpSetup === undefined
       ? {}
       : { auto_top_up_setup: snapshot.autoTopUpSetup }),
+    ...(snapshot.billingNoticeAudience === undefined
+      ? {}
+      : { billing_notice_audience: snapshot.billingNoticeAudience }),
     capabilities: snapshot.capabilities,
     denied_reasons: snapshot.denials,
+    ...(snapshot.endingNoticeStartsAt === undefined
+      ? {}
+      : { ending_notice_starts_at: snapshot.endingNoticeStartsAt }),
     expires_at: new Date(snapshot.freshUntil).toISOString(),
     resolved_for: {
       user_id: snapshot.scope.userId,

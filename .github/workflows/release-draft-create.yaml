@@ -78,13 +78,21 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: dist-files
+      - name: Create release token
+        id: release_token
+        if: vars.RELEASE_APP_CLIENT_ID != ''
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with: &release_token_inputs
+          client-id: ${{ vars.RELEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-workflows: write
       - name: Create release
         id: create_release
+        continue-on-error: true
         uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2.5.0
-        with:
-          # GITHUB_TOKEN is refused on core/* lines — 403 "Resource not
-          # accessible by integration" with contents: write granted.
-          token: ${{ secrets.PR_GH_TOKEN }}
+        with: &release_inputs
+          token: ${{ steps.retry_token.outputs.token || steps.release_token.outputs.token || secrets.PR_GH_TOKEN }}
           files: |
             dist.zip
             dist-desktop.zip
@@ -97,14 +105,56 @@ jobs:
           prerelease: >-
             ${{ needs.build.outputs.is_prerelease == 'true' }}
           generate_release_notes: true
+      - name: Wait for release token rate limit reset
+        if: steps.create_release.outcome == 'failure'
+        continue-on-error: true
+        timeout-minutes: 65
+        env:
+          GH_TOKEN: ${{ steps.retry_token.outputs.token || steps.release_token.outputs.token || secrets.PR_GH_TOKEN }}
+        run: |
+          quota=$(gh api rate_limit --jq '.resources.core | "\(.remaining) \(.reset)"')
+          read -r remaining reset <<<"$quota"
+          wait_seconds=$((reset - $(date +%s) + 5))
+          if ((remaining < 100 && wait_seconds > 0)); then
+            echo "$remaining API calls left; waiting ${wait_seconds}s for the reset."
+            sleep "$wait_seconds"
+          fi
+      - name: Refresh release token
+        id: retry_token
+        if: >-
+          steps.create_release.outcome == 'failure' &&
+          vars.RELEASE_APP_CLIENT_ID != ''
+        continue-on-error: true
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with: *release_token_inputs
+      - name: Retry create release
+        if: steps.create_release.outcome == 'failure'
+        uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2.5.0
+        with: *release_inputs
 
   publish_types:
+    name: Publish @comfyorg/comfyui-frontend-types
     needs: build
-    uses: ./.github/workflows/release-npm-types.yaml
-    with:
-      version: ${{ needs.build.outputs.version }}
-      ref: ${{ github.event.pull_request.merge_commit_sha }}
-    secrets: inherit
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - name: Dispatch the trusted types publish workflow
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.build.outputs.version }}
+          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+        run: |
+          set -euo pipefail
+          RUN_ID=$(gh api --method POST \
+            "repos/$GITHUB_REPOSITORY/actions/workflows/release-npm-types.yaml/dispatches" \
+            -f ref=main \
+            -F return_run_details=true \
+            -f "inputs[version]=$VERSION" \
+            -f "inputs[dist_tag]=latest" \
+            -f "inputs[ref]=$MERGE_SHA" \
+            --jq '.workflow_run_id')
+          gh run watch "$RUN_ID" --repo "$GITHUB_REPOSITORY" --exit-status --interval 15
 
   # GITHUB_TOKEN releases emit no events, so the reconciler's own trigger never fires.
   enforce_latest:
@@ -115,6 +165,7 @@ jobs:
     uses: ./.github/workflows/release-enforce-latest.yaml
     secrets:
       PR_GH_TOKEN: ${{ secrets.PR_GH_TOKEN }}
+      RELEASE_APP_PRIVATE_KEY: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
 
   comment_release_summary:
     name: Comment Release Summary

@@ -293,7 +293,11 @@ test.describe(
     test('preserves user-set width and height across stream ready', async ({
       comfyPage
     }) => {
-      await comfyPage.workflow.loadWorkflow('nodes/webcam_capture_preset')
+      await comfyPage.workflow.loadWorkflow('nodes/webcam_capture', {
+        nodes: {
+          1: { widgets_values: [null, 123, 456, true] }
+        }
+      })
       const webcam = new WebcamCaptureFixture(comfyPage)
       await webcam.waitForStreamReady()
 

@@ -1,7 +1,10 @@
+import { fromPartial } from '@total-typescript/shoehorn'
+import type { WebSession } from '@comfyorg/account-core/webSession'
 import { setTelemetryRegistry } from '@comfyorg/telemetry'
 import { TelemetryRegistry } from '@comfyorg/telemetry/TelemetryRegistry'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
+import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import type { BillingCapabilitiesResponse } from '@comfyorg/ingest-types'
 import type { AxiosResponse, InternalAxiosRequestConfig } from 'axios'
@@ -14,7 +17,11 @@ import type { EffectScope } from 'vue'
 import { projectBillingCapabilities } from '@/platform/billing/sdk/billingCapabilitiesView'
 import { attachCapabilityRevisionInterceptor } from '@/platform/remote/ingest/capabilityRevision'
 import { billingApi } from '@/platform/billing/api/billingApi'
+import { refreshBillingAccount } from '@/platform/billing/billingAccountRefresh'
+import { setLocalBillingWebEnabled } from '@/platform/billing/localBillingWebEnabled'
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
+import { handleAxiosError } from '@/platform/remote/ingest/ingestApi'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 
 import { useBillingCapabilities } from './useBillingCapabilities'
 import { describeServerFactGate } from '@/utils/__tests__/serverFactGate'
@@ -62,6 +69,7 @@ function capabilitiesResponse(
 ): BillingCapabilitiesResponse {
   return {
     auto_top_up_enabled: false,
+    billing_web_checkout_ui: 'full_page',
     resolved_for: {
       user_id: 'canonical-user-1',
       workspace_id: workspaceId
@@ -88,6 +96,8 @@ function capabilitiesResponse(
       can_manage_subscription: false,
       can_open_plans: false,
       can_run_workflows: false,
+      can_set_budgets: false,
+      can_set_hard_caps: false,
       can_upgrade: false,
       can_downgrade_to_personal: true,
       ...overrides
@@ -232,14 +242,14 @@ describe('useBillingCapabilities', () => {
     [
       'allowed',
       () => Promise.resolve(capabilitiesResponse(true)),
-      'succeeded',
-      'success'
+      undefined,
+      undefined
     ],
     [
       'policy denied',
       () => Promise.resolve(capabilitiesResponse(false)),
-      'succeeded',
-      'success'
+      undefined,
+      undefined
     ],
     [
       'access denied',
@@ -255,9 +265,15 @@ describe('useBillingCapabilities', () => {
       () => Promise.reject(new Error('network failed')),
       'failed',
       'failure'
+    ],
+    [
+      'resolved for another workspace',
+      () => Promise.resolve(capabilitiesResponse(true, 'workspace-2')),
+      'failed',
+      'failure'
     ]
   ] as const)(
-    'records capability reads when %s',
+    'records only failed capability reads, here %s',
     async ([, response, stage, outcome]) => {
       const record = vi.fn()
       const registry = new TelemetryRegistry()
@@ -387,6 +403,25 @@ describe('useBillingCapabilities', () => {
     expect(billingCapabilities.deleteWorkspaceDenial.value).toBe(
       'plan_not_ended'
     )
+  })
+
+  it('exposes the reason the server named for refusing Plans', async () => {
+    const response = capabilitiesResponse(
+      true,
+      'workspace-1',
+      true,
+      {},
+      { can_open_plans: false }
+    )
+    response.denied_reasons = { can_open_plans: 'not_original_owner' }
+    vi.mocked(billingApi.getBillingCapabilities).mockResolvedValueOnce(response)
+
+    expect(billingCapabilities.openPlansDenial.value).toBeUndefined()
+
+    await billingCapabilities.initialize()
+
+    expect(billingCapabilities.canOpenPlans.value).toBe(false)
+    expect(billingCapabilities.openPlansDenial.value).toBe('not_original_owner')
   })
 
   it('exposes the top-up denial and billing management as the server sent them', async () => {
@@ -607,6 +642,40 @@ describe('useBillingCapabilities', () => {
     expect(billingCapabilities.isReady.value).toBe(true)
     expect(billingCapabilities.snapshotAuthoritative.value).toBe(false)
   })
+
+  it.for([
+    {
+      name: 'a legacy-rail 401',
+      error: new WorkspaceApiError('authentication required', 401),
+      sentryMode: 'never'
+    },
+    {
+      name: 'a 403',
+      error: new WorkspaceApiError('Forbidden', 403),
+      sentryMode: 'always'
+    },
+    {
+      name: 'an outage',
+      error: new Error('unavailable'),
+      sentryMode: 'always'
+    }
+  ])(
+    'reports $name once, keeping only an ended session out of Sentry',
+    async ({ error, sentryMode }) => {
+      vi.mocked(billingApi.getBillingCapabilities).mockRejectedValueOnce(error)
+
+      await billingCapabilities.initialize()
+
+      expect(mockReportError).toHaveBeenCalledExactlyOnceWith(
+        error,
+        expect.objectContaining({
+          errorType: 'billing_capabilities_read_failure'
+        })
+      )
+      const [, options] = mockReportError.mock.calls[0]
+      expect(options.sentryMode).toBe(sentryMode)
+    }
+  )
 
   it('fails closed when the endpoint denies the current actor', async () => {
     vi.mocked(billingApi.getBillingCapabilities).mockRejectedValueOnce(
@@ -1168,6 +1237,163 @@ describe('useBillingCapabilities', () => {
     expect(billingCapabilities.isReady.value).toBe(true)
   })
 
+  describe('a read denied because the web session lapsed', () => {
+    const LAPSE_RECOVERY_FLAG = 'ff:web_session_lapse_recovery_enabled'
+    const sessionFor = (id: string) =>
+      fromPartial<WebSession>({ user: { id, email: `${id}@example.com` } })
+
+    async function denyThenRestoreSession() {
+      const webSession = useCloudWebSessionStore()
+      webSession.state = {
+        phase: 'signed_in',
+        session: sessionFor('firebase-user-1')
+      }
+      vi.mocked(billingApi.getBillingCapabilities)
+        .mockRejectedValueOnce(
+          new WorkspaceApiError('authentication required', 401)
+        )
+        .mockResolvedValueOnce(capabilitiesResponse(true))
+      await billingCapabilities.initialize()
+      expect(billingCapabilities.canTopUp.value).toBe(false)
+
+      webSession.state = {
+        phase: 'signed_in',
+        session: sessionFor('firebase-user-1')
+      }
+      await vi.advanceTimersByTimeAsync(0)
+    }
+
+    afterEach(() => {
+      localStorage.removeItem(LAPSE_RECOVERY_FLAG)
+    })
+
+    it('stays denied after the session is restored with the flag off', async () => {
+      await denyThenRestoreSession()
+
+      expect(billingApi.getBillingCapabilities).toHaveBeenCalledOnce()
+      expect(billingCapabilities.canTopUp.value).toBe(false)
+    })
+
+    it('reads again once the session is restored with the flag on', async () => {
+      localStorage.setItem(LAPSE_RECOVERY_FLAG, 'true')
+
+      await denyThenRestoreSession()
+
+      expect(billingApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
+      expect(billingCapabilities.canTopUp.value).toBe(true)
+    })
+
+    it('reads again when the flag arrives after the session is restored', async () => {
+      await denyThenRestoreSession()
+      expect(billingApi.getBillingCapabilities).toHaveBeenCalledOnce()
+
+      const remoteConfigStore = useRemoteConfigStore()
+      remoteConfigStore.acceptConfig(
+        {
+          ...remoteConfigStore.config,
+          web_session_lapse_recovery_enabled: true
+        },
+        false
+      )
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(billingApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
+      expect(billingCapabilities.canTopUp.value).toBe(true)
+    })
+
+    it.for([
+      { name: '403', error: new WorkspaceApiError('forbidden', 403) },
+      {
+        name: 'AuthStoreError',
+        error: Object.assign(new Error('no token'), { name: 'AuthStoreError' })
+      }
+    ])(
+      'leaves a $name denial alone on a session heartbeat',
+      async ({ error }) => {
+        localStorage.setItem(LAPSE_RECOVERY_FLAG, 'true')
+        const webSession = useCloudWebSessionStore()
+        webSession.state = {
+          phase: 'signed_in',
+          session: sessionFor('firebase-user-1')
+        }
+        vi.mocked(billingApi.getBillingCapabilities).mockRejectedValueOnce(
+          error
+        )
+        await billingCapabilities.initialize()
+
+        webSession.state = {
+          phase: 'signed_in',
+          session: sessionFor('firebase-user-1')
+        }
+        await vi.advanceTimersByTimeAsync(0)
+
+        expect(billingApi.getBillingCapabilities).toHaveBeenCalledOnce()
+      }
+    )
+
+    it('does not read again once its scope is disposed mid-flight', async () => {
+      useCloudWebSessionStore().state = {
+        phase: 'signed_in',
+        session: sessionFor('firebase-user-1')
+      }
+      let rejectRead: (error: Error) => void = () => {}
+      vi.mocked(billingApi.getBillingCapabilities).mockReturnValueOnce(
+        new Promise((_resolve, reject) => {
+          rejectRead = reject
+        })
+      )
+      const initialized = billingCapabilities.initialize()
+      const remoteConfigStore = useRemoteConfigStore()
+      remoteConfigStore.acceptConfig(
+        {
+          ...remoteConfigStore.config,
+          web_session_lapse_recovery_enabled: true
+        },
+        false
+      )
+      await vi.advanceTimersByTimeAsync(0)
+
+      scope.stop()
+      rejectRead(new WorkspaceApiError('authentication required', 401))
+      await initialized
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(billingApi.getBillingCapabilities).toHaveBeenCalledOnce()
+    })
+
+    it('reads again when the flag arrives while the denied read is in flight', async () => {
+      useCloudWebSessionStore().state = {
+        phase: 'signed_in',
+        session: sessionFor('firebase-user-1')
+      }
+      let rejectRead: (error: Error) => void = () => {}
+      vi.mocked(billingApi.getBillingCapabilities)
+        .mockReturnValueOnce(
+          new Promise((_resolve, reject) => {
+            rejectRead = reject
+          })
+        )
+        .mockResolvedValueOnce(capabilitiesResponse(true))
+      const initialized = billingCapabilities.initialize()
+
+      const remoteConfigStore = useRemoteConfigStore()
+      remoteConfigStore.acceptConfig(
+        {
+          ...remoteConfigStore.config,
+          web_session_lapse_recovery_enabled: true
+        },
+        false
+      )
+      await vi.advanceTimersByTimeAsync(0)
+      rejectRead(new WorkspaceApiError('authentication required', 401))
+      await initialized
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(billingApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
+      expect(billingCapabilities.canTopUp.value).toBe(true)
+    })
+  })
+
   it('paces the refresh on a fixed interval when the snapshot arrives expired', async () => {
     vi.mocked(billingApi.getBillingCapabilities).mockResolvedValue(
       capabilitiesResponse(true, 'workspace-1', true, {
@@ -1327,6 +1553,163 @@ describe('useBillingCapabilities', () => {
     expect(billingCapabilities.canTopUp.value).toBe(true)
   })
 
+  describe('refresh() on local with local_billing_web on', () => {
+    beforeEach(() => {
+      mockIsCloud.value = false
+      setLocalBillingWebEnabled(true)
+    })
+
+    afterEach(() => setLocalBillingWebEnabled(false))
+
+    it.for([
+      ['resolves', () => Promise.resolve(capabilitiesResponse(false))],
+      ['fails', () => Promise.reject(new Error('unavailable'))]
+    ] as const)(
+      'reads once more when refresh() is called during a read that %s',
+      async ([, settleEarlierRead]) => {
+        let releaseEarlierRead!: () => void
+        vi.mocked(billingApi.getBillingCapabilities)
+          .mockImplementationOnce(() =>
+            new Promise<void>((resolve) => {
+              releaseEarlierRead = resolve
+            }).then(settleEarlierRead)
+          )
+          .mockResolvedValue(capabilitiesResponse(true))
+
+        void billingCapabilities.initialize()
+        const refreshed = billingCapabilities.refresh()
+        expect(billingApi.getBillingCapabilities).toHaveBeenCalledOnce()
+
+        releaseEarlierRead()
+        await refreshed
+
+        expect(billingApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
+        expect(billingCapabilities.canTopUp.value).toBe(true)
+      }
+    )
+
+    it('settles several refresh() calls made during one read after one later read', async () => {
+      const reads = capabilityReadsThroughInterceptor()
+      vi.mocked(billingApi.getBillingCapabilities).mockImplementation(
+        reads.read
+      )
+      let settledRefreshes = 0
+      const countSettled = () => {
+        settledRefreshes++
+      }
+
+      void billingCapabilities.initialize()
+      void billingCapabilities.refresh().then(countSettled)
+      void billingCapabilities.refresh().then(countSettled)
+      void billingCapabilities.refresh().then(countSettled)
+      await reads.release(capabilitiesResponse(false))
+      expect(settledRefreshes).toBe(0)
+
+      await reads.release(capabilitiesResponse(true))
+
+      expect(settledRefreshes).toBe(3)
+      expect(billingApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
+      expect(billingCapabilities.canTopUp.value).toBe(true)
+    })
+
+    it('reads once more when refresh() joins a read that a mutation also invalidated', async () => {
+      let resolveEarlierRead!: (value: BillingCapabilitiesResponse) => void
+      vi.mocked(billingApi.getBillingCapabilities)
+        .mockImplementationOnce(
+          () =>
+            new Promise<BillingCapabilitiesResponse>((resolve) => {
+              resolveEarlierRead = resolve
+            })
+        )
+        .mockResolvedValue(
+          capabilitiesResponse(true, 'workspace-1', true, { revision: 9 })
+        )
+
+      void billingCapabilities.initialize()
+      await emitMutationRevision('5')
+      const refreshed = billingCapabilities.refresh()
+      resolveEarlierRead(
+        capabilitiesResponse(false, 'workspace-1', true, { revision: 7 })
+      )
+      await refreshed
+
+      expect(billingApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
+      expect(billingCapabilities.canTopUp.value).toBe(true)
+    })
+
+    it('reads once when refresh() is called with no read in flight', async () => {
+      vi.mocked(billingApi.getBillingCapabilities).mockResolvedValue(
+        capabilitiesResponse(true)
+      )
+      await billingCapabilities.initialize()
+
+      await billingCapabilities.refresh()
+
+      expect(billingApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
+    })
+
+    it('does not read again for a refresh() whose scope is disposed during the earlier read', async () => {
+      let resolveEarlierRead!: (value: BillingCapabilitiesResponse) => void
+      vi.mocked(billingApi.getBillingCapabilities)
+        .mockImplementationOnce(
+          () =>
+            new Promise<BillingCapabilitiesResponse>((resolve) => {
+              resolveEarlierRead = resolve
+            })
+        )
+        .mockResolvedValue(capabilitiesResponse(true))
+
+      void billingCapabilities.initialize()
+      const refreshed = billingCapabilities.refresh()
+      scope.stop()
+      resolveEarlierRead(capabilitiesResponse(false))
+      await refreshed
+
+      expect(billingApi.getBillingCapabilities).toHaveBeenCalledOnce()
+    })
+
+    it('reads once more for a return to the tab during the read an earlier return started', async () => {
+      let releaseEarlierRead!: () => void
+      vi.mocked(billingApi.getBillingCapabilities)
+        .mockImplementationOnce(() =>
+          new Promise<void>((resolve) => {
+            releaseEarlierRead = resolve
+          }).then(() => capabilitiesResponse(false))
+        )
+        .mockResolvedValue(capabilitiesResponse(true))
+
+      void refreshBillingAccount(new Event('focus'))
+      const laterReturn = refreshBillingAccount(new Event('focus'))
+      expect(billingApi.getBillingCapabilities).toHaveBeenCalledOnce()
+
+      releaseEarlierRead()
+      await laterReturn
+
+      expect(billingApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
+      expect(billingCapabilities.canTopUp.value).toBe(true)
+    })
+  })
+
+  it('issues no later read for refresh() during a read with local_billing_web off', async () => {
+    let resolveEarlierRead!: (value: BillingCapabilitiesResponse) => void
+    vi.mocked(billingApi.getBillingCapabilities)
+      .mockImplementationOnce(
+        () =>
+          new Promise<BillingCapabilitiesResponse>((resolve) => {
+            resolveEarlierRead = resolve
+          })
+      )
+      .mockResolvedValue(capabilitiesResponse(true))
+
+    void billingCapabilities.initialize()
+    const refreshed = billingCapabilities.refresh()
+    resolveEarlierRead(capabilitiesResponse(false))
+    await refreshed
+
+    expect(billingApi.getBillingCapabilities).toHaveBeenCalledOnce()
+    expect(billingCapabilities.canTopUp.value).toBe(false)
+  })
+
   it('retries an unreadable endpoint until the read succeeds', async () => {
     vi.spyOn(Math, 'random').mockReturnValue(0)
     vi.mocked(billingApi.getBillingCapabilities)
@@ -1431,6 +1814,47 @@ describe('useBillingCapabilities', () => {
     expect(billingApi.getBillingCapabilities).toHaveBeenCalledOnce()
     expect(billingCapabilities.canTopUp.value).toBe(false)
   })
+
+  it.for([
+    {
+      failure: 'a request aborted before any response',
+      error: new AxiosError('Request aborted', AxiosError.ECONNABORTED),
+      sentryMode: 'never'
+    },
+    {
+      failure: 'a 503 response',
+      error: new AxiosError(
+        'Request failed with status code 503',
+        AxiosError.ERR_BAD_RESPONSE,
+        undefined,
+        undefined,
+        fromPartial<AxiosResponse>({ status: 503, data: {}, headers: {} })
+      ),
+      sentryMode: 'always'
+    }
+  ])(
+    'reports $failure on the legacy rail with Sentry mode $sentryMode',
+    async ({ error, sentryMode }) => {
+      vi.mocked(billingApi.getBillingCapabilities).mockImplementation(() => {
+        try {
+          handleAxiosError(error, 'getBillingCapabilities')
+        } catch (thrown) {
+          return Promise.reject(thrown)
+        }
+      })
+
+      await billingCapabilities.initialize()
+
+      expect(mockReportError).toHaveBeenCalledOnce()
+      expect(mockReportError).toHaveBeenCalledWith(
+        expect.any(WorkspaceApiError),
+        expect.objectContaining({
+          errorType: 'billing_capabilities_read_failure',
+          sentryMode
+        })
+      )
+    }
+  )
 })
 
 describe('useBillingCapabilities on the SDK rail', () => {
@@ -1449,6 +1873,33 @@ describe('useBillingCapabilities on the SDK rail', () => {
     scope.stop()
     railState.rail = null
   })
+
+  it.for([
+    { name: 'with its 401', httpStatus: 401 },
+    { name: 'before any response', httpStatus: undefined }
+  ])(
+    'keeps a NOT_AUTHENTICATED read $name out of Sentry and publishes no capabilities',
+    async ({ httpStatus }) => {
+      readCapabilities.mockResolvedValueOnce({
+        status: 'error',
+        code: 'NOT_AUTHENTICATED',
+        ...(httpStatus === undefined ? {} : { httpStatus })
+      })
+
+      await billingCapabilities.initialize()
+
+      expect(billingCapabilities.isReady.value).toBe(true)
+      expect(billingCapabilities.hasResolvedCapabilities.value).toBe(false)
+      expect(billingCapabilities.canTopUp.value).toBe(false)
+      expect(mockReportError).toHaveBeenCalledExactlyOnceWith(
+        expect.any(WorkspaceApiError),
+        expect.objectContaining({
+          errorType: 'billing_capabilities_read_failure',
+          sentryMode: 'never'
+        })
+      )
+    }
+  )
 
   it('applies the server capability read through the rail and leaves the legacy client alone', async () => {
     readCapabilities.mockResolvedValueOnce({
@@ -1494,6 +1945,8 @@ describe('useBillingCapabilities on the SDK rail', () => {
           can_manage_subscription: false,
           can_open_plans: false,
           can_run_workflows: false,
+          can_set_budgets: false,
+          can_set_hard_caps: false,
           can_upgrade: false
         },
         denials: {
@@ -1570,6 +2023,40 @@ describe('useBillingCapabilities on the SDK rail', () => {
       await vi.advanceTimersByTimeAsync(600_000)
       expect(readCapabilities.mock.calls.length).toBeGreaterThanOrEqual(reads)
       if (reads === 1) expect(readCapabilities).toHaveBeenCalledOnce()
+    }
+  )
+
+  it.for([
+    {
+      failure: 'REQUEST_FAILED with no response',
+      result: { status: 'error', code: 'REQUEST_FAILED' },
+      sentryMode: 'never'
+    },
+    {
+      failure: 'REQUEST_FAILED at 503',
+      result: { status: 'error', code: 'REQUEST_FAILED', httpStatus: 503 },
+      sentryMode: 'always'
+    },
+    {
+      failure: 'MALFORMED_RESPONSE with no response status',
+      result: { status: 'error', code: 'MALFORMED_RESPONSE' },
+      sentryMode: 'always'
+    }
+  ])(
+    'reports $failure on the rail with Sentry mode $sentryMode',
+    async ({ result, sentryMode }) => {
+      readCapabilities.mockResolvedValue(result)
+
+      await billingCapabilities.initialize()
+
+      expect(mockReportError).toHaveBeenCalledOnce()
+      expect(mockReportError).toHaveBeenCalledWith(
+        expect.objectContaining({ code: result.code }),
+        expect.objectContaining({
+          errorType: 'billing_capabilities_read_failure',
+          sentryMode
+        })
+      )
     }
   )
 

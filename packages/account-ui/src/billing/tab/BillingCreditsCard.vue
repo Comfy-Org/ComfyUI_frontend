@@ -44,7 +44,7 @@
 
       <div
         :class="
-          cn('flex flex-col rounded-xl border border-card', classes?.surface)
+          cn('flex flex-col rounded-xl border border-border', classes?.surface)
         "
         data-testid="billing-credits-surface"
       >
@@ -71,7 +71,7 @@
           <ReuseAddCredits v-if="state.kind === 'noPlan' && showAddCredits" />
         </div>
 
-        <div v-if="state.kind === 'plan'" class="flex border-t border-card">
+        <div v-if="state.kind === 'plan'" class="flex border-t border-border">
           <BillingCreditsPlanCell
             :plan="state"
             :copy

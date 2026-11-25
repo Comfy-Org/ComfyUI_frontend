@@ -24,27 +24,11 @@ import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
 import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import { createPlan } from '@e2e/fixtures/data/billingPlans'
 import { CLOUD_SELF_EMAIL } from '@e2e/fixtures/helpers/CloudAuthHelper'
-import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
+import { billingClient } from '@e2e/fixtures/utils/billingClient'
 import { APP_URL, setupCloudApp } from '@e2e/fixtures/utils/cloudAppSetup'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { keepPricingTableInApp } from '@e2e/fixtures/utils/platformPlans'
 import { member, workspace } from '@e2e/fixtures/utils/workspaceMocks'
-
-/**
- * The SDK rails held against the legacy flow they replace: each row either
- * runs a mixed-rail session end to end, or runs the same scenario with the
- * rails off and on and asserts the customer sees the same thing.
- *
- * The transport tells the rails apart: the SDK runs on `fetch` and keys every
- * write, the legacy workspace client runs on axios' XHR adapter and keys none.
- */
-interface Rails {
-  subscription: boolean
-  topup: boolean
-}
-
-const RAILS_OFF: Rails = { subscription: false, topup: false }
-const SUBSCRIPTION_RAIL_ONLY: Rails = { subscription: true, topup: false }
 
 const OPERATION_ID = 'op-e2e-parity'
 const PORTAL_URL = 'https://billing.example/portal'
@@ -166,18 +150,13 @@ interface ParityRoutes {
 }
 
 interface ParitySetup {
-  rails: Rails
   status?: BillingStatusResponse
   paymentMethods?: SavedPaymentMethod[]
 }
 
 async function setupParity(
   page: Page,
-  {
-    rails,
-    status = ACTIVE_STANDARD,
-    paymentMethods = [SAVED_CARD]
-  }: ParitySetup
+  { status = ACTIVE_STANDARD, paymentMethods = [SAVED_CARD] }: ParitySetup
 ): Promise<ParityRoutes> {
   const ws = workspace('personal', 'owner')
   const server: BillingServer = {
@@ -225,16 +204,9 @@ async function setupParity(
       })
     ],
     features: {
-      billing_control_enabled: true,
-      unified_cloud_auth: true,
-      billing_sdk_subscription_enabled: rails.subscription,
-      billing_sdk_topup_enabled: rails.topup
+      billing_control_enabled: true
     } satisfies RemoteConfig,
     billingCapabilities: createWorkspaceBillingCapabilities(ws)
-  })
-  await new FeatureFlagHelper(page).seedServerFlags({
-    billing_sdk_subscription_enabled: rails.subscription,
-    billing_sdk_topup_enabled: rails.topup
   })
 
   await page.route('**/api/settings', (route) =>
@@ -316,11 +288,6 @@ function idempotencyKey(request: Request): string | undefined {
   return request.headers()['idempotency-key']
 }
 
-/** Which transport issued the request, and so which rail served it. */
-function transport(request: Request): string {
-  return request.resourceType()
-}
-
 async function bootApp(page: Page) {
   await page.goto(APP_URL)
   await waitForCloudApp(page)
@@ -381,19 +348,16 @@ function creditsLabel(micros: number): string {
  * Opens the portal from Plan & Credits, changes the plan on the server as the
  * portal would, and comes back: the panel must re-read and show the change.
  */
-async function expectPortalReturnRefresh(
-  page: Page,
-  rails: Rails,
-  expectedTransport: 'xhr' | 'fetch'
-) {
-  const routes = await setupParity(page, { rails })
+async function expectPortalReturnRefresh(page: Page) {
+  const expectedTransport = 'sdk'
+  const routes = await setupParity(page, {})
   await bootApp(page)
   const panel = await openPlanAndCredits(page)
   await expect(panel.getByText(/Renews on/)).toBeVisible()
 
   await panel.getByRole('button', { name: 'Billing & invoices' }).click()
   await expect.poll(() => routes.openedUrls()).toEqual([PORTAL_URL])
-  expect(routes.portalRequests.map(transport)).toEqual([expectedTransport])
+  expect(routes.portalRequests.map(billingClient)).toEqual([expectedTransport])
 
   routes.server.status = CANCELLED_STANDARD
   const readsBeforeReturn = routes.statusRequests.length
@@ -403,7 +367,7 @@ async function expectPortalReturnRefresh(
   await expect(panel.getByText(/Renews on/)).toBeHidden()
   const readsOnReturn = routes.statusRequests.slice(readsBeforeReturn)
   expect(readsOnReturn.length).toBeGreaterThan(0)
-  expect(new Set(readsOnReturn.map(transport))).toEqual(
+  expect(new Set(readsOnReturn.map(billingClient))).toEqual(
     new Set([expectedTransport])
   )
 }
@@ -442,37 +406,11 @@ async function topUpThenUpgrade(
 test.describe('Billing rail parity', { tag: '@cloud' }, () => {
   test.beforeEach(({ page }) => keepPricingTableInApp(page))
 
-  test.describe('with only the subscription rail on', () => {
-    test('mints checkout on the legacy transport and refreshes the balance', async ({
-      page
-    }) => {
-      const routes = await setupParity(page, { rails: SUBSCRIPTION_RAIL_ONLY })
-      await bootApp(page)
-      const readsBeforePurchase = routes.balanceRequests.length
-
-      await buyFiftyDollars(page, routes)
-
-      expect(routes.topupRequests).toHaveLength(1)
-      const [checkout] = routes.topupRequests
-      expect(transport(checkout)).toBe('xhr')
-      expect(idempotencyKey(checkout)).toBeUndefined()
-      expect(checkout.postDataJSON()).toEqual({
-        amount_cents: 5_000,
-        return_url: expect.any(String),
-        idempotency_key: expect.stringMatching(/^[0-9a-f-]{36}$/i)
-      })
-      expect(routes.balanceRequests.length).toBeGreaterThan(readsBeforePurchase)
-      const panel = await openPlanAndCredits(page)
-      await expect(totalCredits(panel)).toContainText(
-        creditsLabel(OPENING_BALANCE_MICROS + TOPUP_MICROS)
-      )
-      expect(routes.subscribeRequests).toHaveLength(0)
-    })
-
+  test.describe('on the SDK rail', () => {
     test('subscribes on the SDK transport and names the new plan', async ({
       page
     }) => {
-      const routes = await setupParity(page, { rails: SUBSCRIPTION_RAIL_ONLY })
+      const routes = await setupParity(page, {})
       await page.goto(`${APP_URL}/?pricing=creator&cycle=yearly`)
 
       await confirmCreatorUpgrade(page)
@@ -482,25 +420,25 @@ test.describe('Billing rail parity', { tag: '@cloud' }, () => {
       await expect(successSummary(page)).toContainText('$336')
       expect(routes.subscribeRequests).toHaveLength(1)
       const [subscribe] = routes.subscribeRequests
-      expect(transport(subscribe)).toBe('fetch')
+      expect(billingClient(subscribe)).toBe('sdk')
       expect(idempotencyKey(subscribe)).toBeTruthy()
       expect(subscribe.postDataJSON()).toMatchObject({
         plan_slug: 'creator-annual',
         idempotency_key: idempotencyKey(subscribe)
       })
       expect(routes.previewRequests.length).toBeGreaterThan(0)
-      expect(routes.previewRequests.map(transport)).not.toContain('xhr')
+      expect(routes.previewRequests.map(billingClient)).not.toContain('legacy')
       expect(routes.topupRequests).toHaveLength(0)
     })
 
     test('completes a top-up and then a subscribe in one session, and totals both', async ({
       page
     }) => {
-      const routes = await setupParity(page, { rails: SUBSCRIPTION_RAIL_ONLY })
+      const routes = await setupParity(page, {})
       const panel = await topUpThenUpgrade(page, routes)
 
-      expect(routes.topupRequests.map(transport)).toEqual(['xhr'])
-      expect(routes.subscribeRequests.map(transport)).toEqual(['fetch'])
+      expect(routes.topupRequests.map(billingClient)).toEqual(['sdk'])
+      expect(routes.subscribeRequests.map(billingClient)).toEqual(['sdk'])
       await expect(
         panel.getByRole('heading', { name: 'Creator Yearly' })
       ).toBeVisible()
@@ -513,23 +451,17 @@ test.describe('Billing rail parity', { tag: '@cloud' }, () => {
   })
 
   test.describe('returning from the billing portal', () => {
-    test('re-reads the plan on the legacy transport and renders the change', async ({
-      page
-    }) => {
-      await expectPortalReturnRefresh(page, RAILS_OFF, 'xhr')
-    })
-
     test('re-reads the plan on the SDK transport and renders the same change', async ({
       page
     }) => {
-      await expectPortalReturnRefresh(page, SUBSCRIPTION_RAIL_ONLY, 'fetch')
+      await expectPortalReturnRefresh(page)
     })
   })
 
   test('resumes a cancelled plan on the SDK transport without charging again', async ({
     page
   }) => {
-    const routes = await setupParity(page, { rails: SUBSCRIPTION_RAIL_ONLY })
+    const routes = await setupParity(page, {})
     await bootApp(page)
 
     const cancelDialog = new CancelSubscriptionDialog(page)
@@ -542,10 +474,10 @@ test.describe('Billing rail parity', { tag: '@cloud' }, () => {
 
     await expect(panel.getByText(/Renews on/)).toBeVisible()
     await expect(panel.getByText(/Ends on/)).toBeHidden()
-    expect(routes.cancelRequests.map(transport)).toEqual(['fetch'])
+    expect(routes.cancelRequests.map(billingClient)).toEqual(['sdk'])
     expect(routes.resubscribeRequests).toHaveLength(1)
     const [resume] = routes.resubscribeRequests
-    expect(transport(resume)).toBe('fetch')
+    expect(billingClient(resume)).toBe('sdk')
     expect(idempotencyKey(resume)).toBeTruthy()
     expect(routes.subscribeRequests).toHaveLength(0)
     expect(routes.topupRequests).toHaveLength(0)

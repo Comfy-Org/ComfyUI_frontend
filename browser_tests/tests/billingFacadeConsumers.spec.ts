@@ -12,7 +12,9 @@ import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import { createBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import { expectPlatformPlansOpened } from '@e2e/fixtures/utils/platformPlans'
+import { mockWebSessionServer } from '@e2e/fixtures/utils/webSessionMocks'
 import {
+  mockWorkspaceList,
   mockWorkspaceTokenMint,
   workspace
 } from '@e2e/fixtures/utils/workspaceMocks'
@@ -75,8 +77,6 @@ async function mockCloudBoot(
       })
     )
   )
-  // TutorialCompleted suppresses the new-user template browser, whose modal
-  // overlay would otherwise intercept clicks on the topbar.
   await page.route('**/api/settings', (r) =>
     r.fulfill(jsonRoute({ 'Comfy.TutorialCompleted': true }))
   )
@@ -85,29 +85,12 @@ async function mockCloudBoot(
   await page.route('**/api/object_info', (r) => r.fulfill(jsonRoute({})))
   await page.route('**/api/global_subgraphs', (r) => r.fulfill(jsonRoute({})))
   await page.route('**/api/i18n', (r) => r.fulfill(jsonRoute({})))
-  await page.route('**/api/auth/session', (r) =>
-    r.fulfill(jsonRoute({ token: 'mock-workspace-token' }))
-  )
+  await mockWebSessionServer(page)
   await mockWorkspaceTokenMint(page, workspace('personal', 'owner'))
   await page.route('**/releases**', (r) => r.fulfill(jsonRoute([])))
 
-  // Single personal workspace.
-  await page.route('**/api/workspaces', (r) =>
-    r.fulfill(
-      jsonRoute({
-        workspaces: [
-          {
-            id: 'ws-personal',
-            name: 'Personal Workspace',
-            type: 'personal',
-            role: 'owner'
-          }
-        ]
-      })
-    )
-  )
+  await mockWorkspaceList(page, [workspace('personal', 'owner')])
 
-  // Cloud personal workspaces route through `/api/billing/*`.
   await page.route('**/api/billing/status', (r) => {
     billingRequests.workspaceStatus++
     return r.fulfill(jsonRoute(resolvedSubscriptionStatus))
@@ -171,6 +154,39 @@ test.describe('Billing facade consumers (FE-933)', { tag: '@cloud' }, () => {
     await expectPlatformPlansOpened(page, () =>
       page.getByTestId('subscribe-to-run-button').click()
     )
+  })
+
+  test.describe('Team plan', () => {
+    test.beforeEach(async ({ page }, testInfo) => {
+      testInfo.setTimeout(60_000)
+
+      await mockCloudBoot(
+        page,
+        {
+          is_active: true,
+          subscription_tier: 'TEAM',
+          subscription_duration: 'MONTHLY'
+        },
+        { billing_new_ux_enabled: true }
+      )
+      await mockWorkspaceList(page, [
+        { ...workspace('personal', 'owner'), subscription_tier: 'TEAM' }
+      ])
+      await bootApp(page)
+    })
+
+    test('uses the Team plan color in the profile menu header (FRONT-4174)', async ({
+      page
+    }) => {
+      await page.getByRole('button', { name: 'Current user' }).click()
+      const header = page.getByTestId('workspace-switcher-trigger')
+      const avatar = header.getByText('P', { exact: true })
+      await expect(avatar).toBeVisible()
+      await expect(avatar).toHaveCSS(
+        'background-color',
+        'oklch(0.508 0.097 148)'
+      )
+    })
   })
 
   test('keeps the free-tier quota inside the top action bars', async ({

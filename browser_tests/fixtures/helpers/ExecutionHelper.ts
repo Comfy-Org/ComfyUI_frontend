@@ -5,6 +5,10 @@ import type {
   PromptFailureResponse
 } from '@comfyorg/api-client/types'
 import type { NodeProgressState } from '@comfyorg/api-client/executionTypes'
+import type {
+  PromptOutputsSkippedFrame,
+  PromptOutputsSkippedNodeError
+} from '@comfyorg/ingest-types'
 import type { RawJobListItem } from '@comfyorg/api-client/jobTypes'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { createMockJob } from '@e2e/fixtures/helpers/AssetsHelper'
@@ -12,6 +16,7 @@ import { createMockJob } from '@e2e/fixtures/helpers/AssetsHelper'
 const PROMPT_ROUTE_PATTERN = /\/api\/prompt$/
 
 type RunOptions = {
+  start?: boolean
   nodeErrors?: Record<string, NodeError>
   onPromptRequest?: (requestBody: unknown) => void | Promise<void>
   beforePromptResponse?: (jobId: string) => void | Promise<void>
@@ -69,16 +74,15 @@ export class ExecutionHelper {
     return this.ws
   }
 
-  /**
-   * Intercept POST /api/prompt, execute Comfy.QueuePrompt, and return
-   * the synthetic job ID.
-   *
-   * The app receives a valid PromptResponse so storeJob() fires
-   * and registers the job against the active workflow path.
-   */
+  /** Queues the active workflow against a mocked /api/prompt and returns its job id. */
   async run(options: RunOptions = {}): Promise<string> {
     const jobId = `test-job-${++this.jobCounter}`
-    const { nodeErrors = {}, onPromptRequest, beforePromptResponse } = options
+    const {
+      start = this.ws !== undefined,
+      nodeErrors = {},
+      onPromptRequest,
+      beforePromptResponse
+    } = options
 
     let fulfilled!: () => void
     const prompted = new Promise<void>((r) => {
@@ -105,6 +109,7 @@ export class ExecutionHelper {
 
     await this.command.executeCommand('Comfy.QueuePrompt')
     await prompted
+    if (start) this.executionStart(jobId)
 
     return jobId
   }
@@ -255,6 +260,19 @@ export class ExecutionHelper {
     )
   }
 
+  /** Send `prompt_outputs_skipped` WS event for outputs Cloud skipped. */
+  outputsSkipped(
+    jobId: string,
+    nodeErrors: Record<string, PromptOutputsSkippedNodeError>
+  ): void {
+    this.requireWs().send(
+      JSON.stringify({
+        type: 'prompt_outputs_skipped',
+        data: { prompt_id: jobId, node_errors: nodeErrors }
+      } satisfies PromptOutputsSkippedFrame)
+    )
+  }
+
   /** Send `execution_interrupted` WS event (user-initiated stop). */
   executionInterrupted(jobId: string, nodeId: string): void {
     this.requireWs().send(
@@ -317,19 +335,12 @@ export class ExecutionHelper {
    */
   async completeWithHistory(
     jobId: string,
-    nodeId: string,
-    filename: string
+    previewOutput: NonNullable<RawJobListItem['preview_output']>
   ): Promise<void> {
     this.completedJobs.push(
       createMockJob({
         id: jobId,
-        preview_output: {
-          filename,
-          subfolder: '',
-          type: 'output',
-          nodeId,
-          mediaType: 'images'
-        }
+        preview_output: previewOutput
       })
     )
 

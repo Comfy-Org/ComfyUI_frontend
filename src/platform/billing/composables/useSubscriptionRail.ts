@@ -15,7 +15,7 @@ import { useBillingOperationStore } from '@/platform/billing/stores/billingOpera
  */
 export function useSubscriptionRail(): SubscriptionRail | null {
   const { flags } = useFeatureFlags()
-  return flags.billingSdkSubscriptionRailEnabled ? useBillingSdkStore() : null
+  return flags.billingSdkRailEnabled ? useBillingSdkStore() : null
 }
 
 /**
@@ -26,9 +26,7 @@ export function useSubscriptionRail(): SubscriptionRail | null {
  */
 export function useSubscriptionOperationView() {
   const { flags } = useFeatureFlags()
-  const sdkStore = flags.billingSdkSubscriptionRailEnabled
-    ? useBillingSdkStore()
-    : null
+  const sdkStore = flags.billingSdkRailEnabled ? useBillingSdkStore() : null
   const operationStore = useBillingOperationStore()
 
   const isSettingUp = computed(() =>

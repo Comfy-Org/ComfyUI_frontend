@@ -22,7 +22,10 @@ import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { mockCloudBootRoutes } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
-import { mockWorkspaceTokenMint } from '@e2e/fixtures/utils/workspaceMocks'
+import {
+  mockWorkspaceList,
+  mockWorkspaceTokenMint
+} from '@e2e/fixtures/utils/workspaceMocks'
 
 interface RoleChangeRequest {
   url: string
@@ -45,7 +48,9 @@ interface MemberMockState {
 export class CloudWorkspaceMockHelper {
   constructor(private readonly page: Page) {}
 
-  async openPlanAndCreditsSettings(): Promise<Locator> {
+  async openPlanAndCreditsSettings(
+    navLabel = 'Plan & Credits'
+  ): Promise<Locator> {
     await this.page.goto(
       process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
     )
@@ -64,7 +69,7 @@ export class CloudWorkspaceMockHelper {
     await dialog.waitFor({ state: 'visible' })
     await dialog
       .locator('nav')
-      .getByRole('button', { name: 'Plan & Credits', exact: true })
+      .getByRole('button', { name: navLabel, exact: true })
       .click()
     return dialog.getByRole('main')
   }
@@ -103,10 +108,6 @@ export class CloudWorkspaceMockHelper {
 
     await mockCloudBootRoutes(page, {
       features: CLOUD_REMOTE_CONFIG,
-      // A non-empty settings payload with TutorialCompleted marks the user as
-      // returning, so the new-user Templates dialog never auto-opens to block
-      // the Settings button. Errors tab off suppresses the model-folder 401
-      // toast.
       settings: {
         'Comfy.TutorialCompleted': true,
         'Comfy.RightSidePanel.ShowErrorsTab': false
@@ -114,9 +115,7 @@ export class CloudWorkspaceMockHelper {
     })
     await mockWorkspaceTokenMint(page, activeWorkspace)
 
-    await page.route('**/api/workspaces', (r) =>
-      r.fulfill(jsonRoute({ workspaces: [activeWorkspace] }))
-    )
+    await mockWorkspaceList(page, [activeWorkspace])
 
     await page.route('**/api/workspace/members**', (route: Route) => {
       const request = route.request()
@@ -127,8 +126,6 @@ export class CloudWorkspaceMockHelper {
         state.patches.push({ url, role })
         const member = state.members.find((m) => m.id === id)
         if (member) member.role = role
-        // Echo the updated row like the real BE; the store merges only the role
-        // locally, so the response body shape is not load-bearing.
         return route.fulfill(jsonRoute(member))
       }
       return route.fulfill(

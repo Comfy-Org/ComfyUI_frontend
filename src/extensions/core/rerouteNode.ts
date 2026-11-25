@@ -8,7 +8,7 @@ import type { ISlotType } from '@comfyorg/graph-model/interfaces'
 import { outputLinks } from '@/lib/litegraph/src/node/slotLinks'
 import { slotTypeKey } from '@/lib/litegraph/src/utils/type'
 
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { getWidgetConfig, mergeIfValid, setWidgetConfig } from './widgetInputs'
 import type { ComfyExtension } from '@/types/comfy'
 
@@ -58,7 +58,7 @@ export const rerouteNodeExtension: ComfyExtension = {
       ) {
         const { graph } = this
         if (!graph) return
-        if (app.configuringGraph) return
+        if (useApp().configuringGraph) return
 
         // Prevent multiple connections to different types when we have no input
         if (connected && type === LiteGraph.OUTPUT) {
@@ -191,7 +191,7 @@ export const rerouteNodeExtension: ComfyExtension = {
                 this.outputs[0].name = ''
               }
               this.setSize(this.computeSize())
-              app.canvas.setDirty(true, true)
+              useApp().canvas.setDirty(true, true)
             }
           },
           {

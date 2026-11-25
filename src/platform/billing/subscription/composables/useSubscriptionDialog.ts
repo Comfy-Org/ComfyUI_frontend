@@ -173,12 +173,24 @@ export const useSubscriptionDialog = () => {
       trackPaywallShown(paymentIntentSourceOf(options))
       return
     }
-    await showPlansLinkDialog({
-      title: t('subscription.plansLink.blockedTitle'),
-      body: t('subscription.plansLink.blockedBody'),
-      linkLabel: t('subscription.plansLink.openPlansPage')
-    })
+    await showPlansLinkDialog(
+      options?.resumingCheckout
+        ? {
+            title: t('subscription.plansLink.checkoutUnfinishedTitle'),
+            body: t('subscription.plansLink.checkoutUnfinishedBody'),
+            linkLabel: t('subscription.plansLink.openPlansPage')
+          }
+        : {
+            title: t('subscription.plansLink.blockedTitle'),
+            body: t('subscription.plansLink.blockedBody'),
+            linkLabel: t('subscription.plansLink.openPlansPage')
+          }
+    )
     trackEntry()
+  }
+
+  function usesPlansLinkDialog(): boolean {
+    return flags.billingNewUxEnabled && !flags.pricingTableFallback
   }
 
   async function showPricingTable(
@@ -206,15 +218,13 @@ export const useSubscriptionDialog = () => {
       const trackEntry = () =>
         trackPaywallEntry(reason, paymentIntentSource, refusalType)
 
-      if (!options?.resumingCheckout) {
-        if (!flags.pricingTableFallback) {
-          await handOffToPlatformPlans(options, trackEntry)
-          return true
-        }
-        if (openPlatformPlans()) {
-          trackPaywallShown(paymentIntentSource)
-          return true
-        }
+      if (usesPlansLinkDialog()) {
+        await handOffToPlatformPlans(options, trackEntry)
+        return true
+      }
+      if (!options?.resumingCheckout && openPlatformPlans()) {
+        trackPaywallShown(paymentIntentSource)
+        return true
       }
 
       const nonDismissableDialogProps = {
@@ -330,7 +340,7 @@ export const useSubscriptionDialog = () => {
       return
     }
 
-    const operation = flags.billingSdkSubscriptionRailEnabled
+    const operation = flags.billingSdkRailEnabled
       ? await useBillingSdkStore().recoverPendingOperation(pending.operationId)
       : await useBillingOperationStore().startOperation(
           pending.operationId,

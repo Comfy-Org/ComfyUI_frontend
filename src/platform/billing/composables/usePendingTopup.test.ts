@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
-import type { AuditLog } from '@/services/customerEventsService'
+import type { AuditLog } from '@/platform/billing/api/customerEventsService'
 
 import { usePendingTopup } from './usePendingTopup'
 

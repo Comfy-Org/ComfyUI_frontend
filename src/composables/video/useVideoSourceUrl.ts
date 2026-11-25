@@ -7,7 +7,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
@@ -29,7 +29,7 @@ function resolveFileWidgetVideoUrl(rawValue: unknown): string | undefined {
 
   const params = new URLSearchParams({ filename, subfolder, type })
   appendCloudResParam(params, filename)
-  return api.apiURL(`/view?${params}${app.getPreviewFormatParam()}`)
+  return api.apiURL(`/view?${params}${useApp().getPreviewFormatParam()}`)
 }
 
 function stripRandParam(url: string): string {

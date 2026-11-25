@@ -32,9 +32,10 @@ test.describe('API-key login billing surfaces', () => {
       0
     )
     await expect(popover).toContainText(API_KEY_BALANCE_DISPLAY)
-    await expect(popover.getByTestId('add-credits-button')).toBeVisible()
+    await popover.getByTestId('credits-menu-item').hover()
+    await expect(page.getByTestId('add-credits-button')).toBeVisible()
 
-    await popover.getByTestId('plans-credits-menu-item').click()
+    await popover.getByTestId('workspace-settings-menu-item').click()
 
     const settingsDialog = comfyPage.settingDialog
     await settingsDialog.waitForVisible()

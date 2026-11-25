@@ -20,28 +20,15 @@ import {
 import { CancelSubscriptionDialog } from '@e2e/fixtures/components/CancelSubscriptionDialog'
 import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import { CLOUD_SELF_EMAIL } from '@e2e/fixtures/helpers/CloudAuthHelper'
-import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
 import { APP_URL, setupCloudApp } from '@e2e/fixtures/utils/cloudAppSetup'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { keepPricingTableInApp } from '@e2e/fixtures/utils/platformPlans'
 import { member, workspace } from '@e2e/fixtures/utils/workspaceMocks'
 
 /**
- * The progress toasts a pending billing operation raises, held equal across
- * the legacy flow and the SDK rails. The rails swap the transport and the store
- * that watches an operation settle, so a toast the legacy poller raised is
- * easy to lose on the other side without any value on screen changing.
- * Every row runs once per rail and asserts the same thing.
+ * The progress toasts a pending billing operation raises on the SDK rail,
+ * whose lifecycle store, not the legacy poller, watches an operation settle.
  */
-interface Rails {
-  subscription: boolean
-  topup: boolean
-}
-
-const RAIL_MATRIX = [
-  { name: 'legacy', rails: { subscription: false, topup: false } },
-  { name: 'SDK', rails: { subscription: true, topup: true } }
-] as const satisfies readonly { name: string; rails: Rails }[]
 
 const OPERATION_ID = 'op-e2e-progress-toast'
 const HOSTED_PAYMENT_URL =
@@ -167,7 +154,6 @@ interface BillingServer {
 }
 
 interface ToastSetup {
-  rails: Rails
   status?: BillingStatusResponse
   operation?: BillingOpStatusResponse
   subscribeResponse?: SubscribeResponse
@@ -176,7 +162,6 @@ interface ToastSetup {
 async function setupToastParity(
   page: Page,
   {
-    rails,
     status = ACTIVE_STANDARD,
     operation = PROCESSING_OPERATION,
     subscribeResponse = {
@@ -202,16 +187,9 @@ async function setupToastParity(
       })
     ],
     features: {
-      billing_control_enabled: true,
-      unified_cloud_auth: true,
-      billing_sdk_subscription_enabled: rails.subscription,
-      billing_sdk_topup_enabled: rails.topup
+      billing_control_enabled: true
     } satisfies RemoteConfig,
     billingCapabilities: createWorkspaceBillingCapabilities(ws)
-  })
-  await new FeatureFlagHelper(page).seedServerFlags({
-    billing_sdk_subscription_enabled: rails.subscription,
-    billing_sdk_topup_enabled: rails.topup
   })
 
   await page.route('**/api/settings', (route) =>
@@ -269,56 +247,79 @@ const successHeading = (page: Page) =>
 test.describe('Billing progress toast parity', { tag: '@cloud' }, () => {
   test.beforeEach(({ page }) => keepPricingTableInApp(page))
 
-  for (const { name, rails } of RAIL_MATRIX) {
-    test.describe(`on the ${name} rail`, () => {
-      test('announces a processing subscribe and clears it once it settles', async ({
-        page,
-        toast
-      }) => {
-        const server = await setupToastParity(page, { rails })
+  test.describe('on the SDK rail', () => {
+    test('announces a processing subscribe and clears it once it settles', async ({
+      page,
+      toast
+    }) => {
+      const server = await setupToastParity(page, {})
 
-        await confirmCreatorUpgrade(page)
-        const processingToast = toast.toastLoadings.filter({
-          hasText: SUBSCRIPTION_PROCESSING
-        })
-        await expect(processingToast).toBeVisible()
+      await confirmCreatorUpgrade(page)
+      const processingToast = toast.toastLoadings.filter({
+        hasText: SUBSCRIPTION_PROCESSING
+      })
+      await expect(processingToast).toBeVisible()
 
-        server.operation = SETTLED_OPERATION
-        await returnToTab(page)
+      server.operation = SETTLED_OPERATION
+      await returnToTab(page)
 
-        await expect(successHeading(page)).toBeVisible()
-        await expect(processingToast).toBeHidden()
+      await expect(successHeading(page)).toBeVisible()
+      await expect(processingToast).toBeHidden()
+    })
+
+    test('asks for verification while a subscribe waits on the hosted payment page', async ({
+      page,
+      toast
+    }) => {
+      await setupToastParity(page, {
+        operation: VERIFICATION_OPERATION,
+        subscribeResponse: {
+          billing_op_id: OPERATION_ID,
+          status: 'needs_payment_method',
+          payment_method_url: HOSTED_PAYMENT_URL
+        }
       })
 
-      test('asks for verification while a subscribe waits on the hosted payment page', async ({
-        page,
-        toast
-      }) => {
-        await setupToastParity(page, {
-          rails,
-          operation: VERIFICATION_OPERATION,
-          subscribeResponse: {
-            billing_op_id: OPERATION_ID,
-            status: 'needs_payment_method',
-            payment_method_url: HOSTED_PAYMENT_URL
-          }
-        })
+      await confirmCreatorUpgrade(page)
 
-        await confirmCreatorUpgrade(page)
+      await expect(
+        toast.toastWarnings.filter({ hasText: SUBSCRIPTION_ACTION_REQUIRED })
+      ).toBeVisible()
+      await expect(toast.withText(SUBSCRIPTION_PROCESSING)).toBeHidden()
+    })
 
-        await expect(
-          toast.toastWarnings.filter({ hasText: SUBSCRIPTION_ACTION_REQUIRED })
-        ).toBeVisible()
-        await expect(toast.withText(SUBSCRIPTION_PROCESSING)).toBeHidden()
+    test('stays quiet after a reload finds the subscribe parked on a payment method', async ({
+      page,
+      toast
+    }) => {
+      await setupToastParity(page, {
+        operation: PARKED_OPERATION,
+        status: {
+          ...ACTIVE_STANDARD,
+          pending_billing_op_id: OPERATION_ID,
+          pending_billing_op_type: 'subscription'
+        }
       })
 
-      test('stays quiet after a reload finds the subscribe parked on a payment method', async ({
-        page,
-        toast
+      const firstRead = operationRead(page)
+      await page.goto(APP_URL)
+      await waitForCloudApp(page)
+      await firstRead
+      await operationRead(page)
+
+      await expect(toast.withText(SUBSCRIPTION_PROCESSING)).toHaveCount(0)
+      await expect(toast.withText(SUBSCRIPTION_ACTION_REQUIRED)).toHaveCount(0)
+    })
+
+    for (const { parked, operation } of [
+      { parked: false, operation: PROCESSING_OPERATION },
+      { parked: true, operation: PARKED_OPERATION }
+    ]) {
+      test(`${parked ? 'hides' : 'shows'} the setting-up panel in Settings for a ${parked ? 'parked' : 'processing'} subscribe after a reload`, async ({
+        page
       }) => {
         await setupToastParity(page, {
-          rails,
-          operation: PARKED_OPERATION,
+          operation,
           status: {
             ...ACTIVE_STANDARD,
             pending_billing_op_id: OPERATION_ID,
@@ -326,119 +327,85 @@ test.describe('Billing progress toast parity', { tag: '@cloud' }, () => {
           }
         })
 
-        const firstRead = operationRead(page)
-        await page.goto(APP_URL)
+        const adopted = page.waitForResponse(
+          `**/api/billing/ops/${OPERATION_ID}`
+        )
+        await page.goto(`${APP_URL}/?settings=plan-credits`)
         await waitForCloudApp(page)
-        await firstRead
-        await operationRead(page)
+        await adopted
 
-        await expect(toast.withText(SUBSCRIPTION_PROCESSING)).toHaveCount(0)
-        await expect(toast.withText(SUBSCRIPTION_ACTION_REQUIRED)).toHaveCount(
-          0
+        const settings = page.getByRole('dialog')
+        await expect(
+          settings.getByText(ACTIVE_STANDARD_PLAN_NAME).first()
+        ).toBeVisible({ visible: parked })
+        await expect(settings.getByText(SUBSCRIPTION_PROCESSING)).toHaveCount(
+          parked ? 0 : 1
         )
       })
+    }
 
-      for (const { parked, operation } of [
-        { parked: false, operation: PROCESSING_OPERATION },
-        { parked: true, operation: PARKED_OPERATION }
-      ]) {
-        test(`${parked ? 'hides' : 'shows'} the setting-up panel in Settings for a ${parked ? 'parked' : 'processing'} subscribe after a reload`, async ({
-          page
-        }) => {
-          await setupToastParity(page, {
-            rails,
-            operation,
-            status: {
-              ...ACTIVE_STANDARD,
-              pending_billing_op_id: OPERATION_ID,
-              pending_billing_op_type: 'subscription'
-            }
-          })
-
-          const adopted = page.waitForResponse(
-            `**/api/billing/ops/${OPERATION_ID}`
-          )
-          await page.goto(`${APP_URL}/?settings=plan-credits`)
-          await waitForCloudApp(page)
-          await adopted
-
-          const settings = page.getByRole('dialog')
-          await expect(
-            settings.getByText(ACTIVE_STANDARD_PLAN_NAME).first()
-          ).toBeVisible({ visible: parked })
-          await expect(settings.getByText(SUBSCRIPTION_PROCESSING)).toHaveCount(
-            parked ? 0 : 1
-          )
-        })
-      }
-
-      test('asks again for verification after a reload finds the subscribe still waiting', async ({
-        page,
-        toast
-      }) => {
-        await setupToastParity(page, {
-          rails,
-          operation: VERIFICATION_OPERATION,
-          status: {
-            ...ACTIVE_STANDARD,
-            pending_billing_op_id: OPERATION_ID,
-            pending_billing_op_type: 'subscription',
-            action_url: HOSTED_PAYMENT_URL
-          }
-        })
-
-        const actionRequired = toast.withText(SUBSCRIPTION_ACTION_REQUIRED)
-        await page.goto(APP_URL)
-        await waitForCloudApp(page)
-        await expect(actionRequired).toBeVisible()
-
-        await page.reload()
-        await waitForCloudApp(page)
-
-        await expect(actionRequired).toBeVisible()
+    test('asks again for verification after a reload finds the subscribe still waiting', async ({
+      page,
+      toast
+    }) => {
+      await setupToastParity(page, {
+        operation: VERIFICATION_OPERATION,
+        status: {
+          ...ACTIVE_STANDARD,
+          pending_billing_op_id: OPERATION_ID,
+          pending_billing_op_type: 'subscription',
+          action_url: HOSTED_PAYMENT_URL
+        }
       })
 
-      test('announces a processing top-up found at boot and clears it once it settles', async ({
-        page,
-        toast
-      }) => {
-        const server = await setupToastParity(page, {
-          rails,
-          status: {
-            ...ACTIVE_STANDARD,
-            pending_billing_op_id: OPERATION_ID,
-            pending_billing_op_type: 'topup'
-          }
-        })
-        await page.goto(APP_URL)
-        await waitForCloudApp(page)
+      const actionRequired = toast.withText(SUBSCRIPTION_ACTION_REQUIRED)
+      await page.goto(APP_URL)
+      await waitForCloudApp(page)
+      await expect(actionRequired).toBeVisible()
 
-        const processingToast = toast.toastLoadings.filter({
-          hasText: TOPUP_PROCESSING
-        })
-        await expect(processingToast).toBeVisible()
+      await page.reload()
+      await waitForCloudApp(page)
 
-        server.operation = SETTLED_OPERATION
-        server.status = ACTIVE_STANDARD
-        await returnToTab(page)
-
-        await expect(processingToast).toBeHidden()
-      })
-
-      test('raises no progress toast for a cancel', async ({ page, toast }) => {
-        await setupToastParity(page, { rails, operation: SETTLED_OPERATION })
-        await page.goto(APP_URL)
-        await waitForCloudApp(page)
-
-        const cancel = new CancelSubscriptionDialog(page)
-        await cancel.open(ACTIVE_STANDARD.renewal_date)
-        await cancel.confirmCancel()
-
-        await expect(toast.withText(/Processing payment/)).toHaveCount(0)
-        await expect(toast.withText(SUBSCRIPTION_ACTION_REQUIRED)).toHaveCount(
-          0
-        )
-      })
+      await expect(actionRequired).toBeVisible()
     })
-  }
+
+    test('announces a processing top-up found at boot and clears it once it settles', async ({
+      page,
+      toast
+    }) => {
+      const server = await setupToastParity(page, {
+        status: {
+          ...ACTIVE_STANDARD,
+          pending_billing_op_id: OPERATION_ID,
+          pending_billing_op_type: 'topup'
+        }
+      })
+      await page.goto(APP_URL)
+      await waitForCloudApp(page)
+
+      const processingToast = toast.toastLoadings.filter({
+        hasText: TOPUP_PROCESSING
+      })
+      await expect(processingToast).toBeVisible()
+
+      server.operation = SETTLED_OPERATION
+      server.status = ACTIVE_STANDARD
+      await returnToTab(page)
+
+      await expect(processingToast).toBeHidden()
+    })
+
+    test('raises no progress toast for a cancel', async ({ page, toast }) => {
+      await setupToastParity(page, { operation: SETTLED_OPERATION })
+      await page.goto(APP_URL)
+      await waitForCloudApp(page)
+
+      const cancel = new CancelSubscriptionDialog(page)
+      await cancel.open(ACTIVE_STANDARD.renewal_date)
+      await cancel.confirmCancel()
+
+      await expect(toast.withText(/Processing payment/)).toHaveCount(0)
+      await expect(toast.withText(SUBSCRIPTION_ACTION_REQUIRED)).toHaveCount(0)
+    })
+  })
 })

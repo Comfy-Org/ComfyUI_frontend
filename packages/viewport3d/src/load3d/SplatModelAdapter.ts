@@ -2,6 +2,7 @@ import { SplatMesh } from '@sparkjsdev/spark'
 import * as THREE from 'three'
 
 import { isGaussianSplatPLY } from './loader/ply'
+import { isSpzV4 } from './loader/spz'
 
 import type {
   ModelAdapter,
@@ -38,13 +39,14 @@ export class SplatModelAdapter implements ModelAdapter {
     fetchBytes: () => Promise<ArrayBuffer>
   ): Promise<ModelLoadResult> {
     const arrayBuffer = await fetchBytes()
+    const isStoredYUp = isSpzV4(arrayBuffer)
 
     const splatMesh = new SplatMesh({
       fileBytes: arrayBuffer,
       fileName: filename
     })
     await splatMesh.initialized
-    splatMesh.quaternion.set(1, 0, 0, 0)
+    if (!isStoredYUp) splatMesh.quaternion.set(1, 0, 0, 0)
     ctx.setOriginalModel(splatMesh)
 
     const splatGroup = new THREE.Group()

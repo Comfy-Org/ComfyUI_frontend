@@ -12,9 +12,7 @@ const {
   inputId,
   isOpen,
   placeholder = 'Select...',
-  items,
-  displayItems,
-  selected,
+  selectedItems,
   maxSelectable,
   uploadable,
   disabled,
@@ -28,16 +26,11 @@ const emit = defineEmits<{
   (e: 'file-change', event: Event): void
 }>()
 
-const selectedItems = computed(() => {
-  const itemsToSearch = displayItems ?? items
-  return itemsToSearch.filter((item) => selected.has(item.id))
-})
-
 const theButtonStyle = computed(() =>
   cn(
     'border-0 bg-input text-muted-foreground outline-none',
     disabled ? 'cursor-not-allowed' : 'cursor-pointer hover:bg-muted',
-    selectedItems.value.length > 0 && 'text-foreground'
+    selectedItems.length > 0 && 'text-foreground'
   )
 )
 
@@ -78,6 +71,7 @@ defineExpose({ focus, showPicker })
     <button
       :id="inputId"
       ref="buttonRef"
+      data-part="dropdown-trigger"
       :class="
         cn(
           theButtonStyle,
@@ -90,7 +84,10 @@ defineExpose({ focus, showPicker })
       "
       @click="emit('select-click', $event)"
     >
-      <span class="min-w-0 flex-1 truncate py-2 text-left">
+      <span
+        class="min-w-0 flex-1 truncate py-2 text-left"
+        data-part="dropdown-summary"
+      >
         <span v-if="!selectedItems.length">
           {{ placeholder }}
         </span>
@@ -118,6 +115,7 @@ defineExpose({ focus, showPicker })
           'flex size-8 items-center justify-center rounded-r-lg border-l border-node-border'
         )
       "
+      data-part="dropdown-upload"
     >
       <Loader v-if="isUploading" size="sm" />
       <i v-else class="icon-[lucide--folder-search]" aria-hidden="true" />

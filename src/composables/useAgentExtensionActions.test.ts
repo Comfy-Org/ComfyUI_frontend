@@ -29,7 +29,7 @@ async function loadSettings(values: Partial<Settings> = {}) {
 }
 
 describe('useAgentExtensionActions', () => {
-  it('persists the disable, publishes it locally, then reloads', async () => {
+  it('saves and publishes the disable, then reloads', async () => {
     const settingStore = await loadSettings()
     vi.mocked(api.storeSetting).mockResolvedValue(new Response())
     const reload = vi.spyOn(window.location, 'reload').mockReturnValue()

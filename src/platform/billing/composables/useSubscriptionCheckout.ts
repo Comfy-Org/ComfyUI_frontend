@@ -1481,8 +1481,6 @@ export function useSubscriptionCheckout(
     }
   }
 
-  // The SDK rail's subscribe resolves only once the operation settles, which a
-  // checkout parked on the customer does not do until they act on it.
   function releaseSubmitOnceParked(mutationToken: number): () => void {
     if (!subscriptionRail) return () => {}
     const stop = watch(
@@ -1490,6 +1488,8 @@ export function useSubscriptionCheckout(
       (operation) => {
         if (!operation) return
         stop()
+        if (checkoutMutationOwner !== mutationToken) return
+        activeCheckoutOperationId.value = operation.opId
         releaseSubmit(mutationToken)
       }
     )

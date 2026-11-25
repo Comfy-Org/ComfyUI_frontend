@@ -4,6 +4,7 @@ import { nextTick, ref, shallowRef, effectScope } from 'vue'
 import type { EffectScope, ShallowRef } from 'vue'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 
 import {
   getLoad3dOutputCache,
@@ -384,7 +385,7 @@ describe('useLoad3d', () => {
     })
 
     it('should accept ref as parameter', () => {
-      const nodeRef = shallowRef<LGraphNode | null>(mockNode)
+      const nodeRef = shallowRef<LGraphNode | undefined>(mockNode)
       const composable = useLoad3d(nodeRef)
 
       expect(composable.sceneConfig.value.backgroundColor).toBe('#282828')
@@ -637,11 +638,11 @@ describe('useLoad3d', () => {
     })
 
     it('disposes the kept Load3d when the reload drops its node', async () => {
-      const nodeRef = shallowRef<LGraphNode | null>(mockNode)
+      const nodeRef = shallowRef<LGraphNode | undefined>(mockNode)
       await useLoad3d(nodeRef).initializeLoad3d(document.createElement('div'))
       mockNode.onRemoved?.()
 
-      nodeRef.value = null
+      nodeRef.value = undefined
       await nextTick()
 
       expect(mockLoad3d.remove).toHaveBeenCalledOnce()
@@ -717,12 +718,12 @@ describe('useLoad3d', () => {
     })
 
     it('releases the Load3d when its node leaves the graph', async () => {
-      const nodeRef = shallowRef<LGraphNode | null>(mockNode)
+      const nodeRef = shallowRef<LGraphNode | undefined>(mockNode)
       const composable = useLoad3d(nodeRef)
       await composable.initializeLoad3d(document.createElement('div'))
       mockNode.graph = null
 
-      nodeRef.value = null
+      nodeRef.value = undefined
       await nextTick()
 
       expect(mockLoad3d.remove).toHaveBeenCalledOnce()
@@ -1525,11 +1526,11 @@ describe('useLoad3d', () => {
     })
 
     it('disposes the Load3d when its widget unmounts after a reload dropped its node', async () => {
-      const nodeRef = shallowRef<LGraphNode | null>(mockNode)
+      const nodeRef = shallowRef<LGraphNode | undefined>(mockNode)
       const composable = useLoad3d(nodeRef)
       await composable.initializeLoad3d(document.createElement('div'))
 
-      nodeRef.value = null
+      nodeRef.value = undefined
       scope.stop()
       composable.cleanup()
       await nextTick()
@@ -1600,6 +1601,46 @@ describe('useLoad3d', () => {
 
       expect(modelWidget.value).toBe('previous.glb')
     })
+
+    it.for([
+      { outcome: 'loaded', expected: ['uploaded/model.glb'] },
+      { outcome: 'cancelled', expected: [] }
+    ] as const)(
+      'records $expected in the undo history when the dropped model is $outcome',
+      async ({ outcome, expected }) => {
+        const modelWidget = fromPartial<IWidget>({
+          name: 'model_file',
+          value: 'previous.glb',
+          type: 'text'
+        })
+        mockNode.widgets ??= []
+        mockNode.widgets.push(modelWidget)
+        const snapshots: unknown[] = []
+        useWorkflowStore().activeWorkflow = fromPartial({
+          changeTracker: {
+            captureCanvasState: () => snapshots.push(modelWidget.value)
+          }
+        })
+        vi.mocked(Load3dUtils.uploadFile).mockResolvedValue(
+          'uploaded/model.glb'
+        )
+        vi.mocked(Load3dUtils.splitFilePath).mockReturnValue([
+          'uploaded',
+          'model.glb'
+        ])
+        vi.mocked(Load3dUtils.getResourceURL).mockReturnValue(
+          '/api/view/uploaded/model.glb'
+        )
+        assert.exists(mockLoad3d.loadModel)
+        vi.mocked(mockLoad3d.loadModel).mockResolvedValueOnce(outcome)
+
+        const composable = useLoad3d(mockNode)
+        await composable.initializeLoad3d(document.createElement('div'))
+        await composable.handleModelDrop(new File([''], 'model.glb'))
+
+        expect(snapshots).toEqual(expected)
+      }
+    )
 
     it('should use resource folder for upload subfolder', async () => {
       mockNode.properties['Resource Folder'] = 'subfolder'
@@ -1733,7 +1774,7 @@ describe('useLoad3d', () => {
 
   describe('edge cases', () => {
     it('should handle null node ref', () => {
-      const nodeRef = ref(null)
+      const nodeRef = ref<LGraphNode>()
       const composable = useLoad3d(nodeRef)
 
       const callback = vi.fn()

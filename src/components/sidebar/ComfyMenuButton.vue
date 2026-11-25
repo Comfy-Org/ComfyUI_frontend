@@ -15,7 +15,7 @@
         :aria-label="t('sideToolbar.labels.menu')"
         :class="
           cn(
-            'flex h-(--sidebar-item-height) w-(--sidebar-width) shrink-0 flex-col rounded-none p-2 hover:bg-accent',
+            'flex h-(--sidebar-item-height) w-(--sidebar-width) shrink-0 flex-col rounded-none p-2',
             open && 'bg-muted hover:bg-muted'
           )
         "

@@ -113,6 +113,7 @@ const PLAN = {
 }
 
 const AUTO_TOP_UP_OFF = {
+  auto_top_up_conflict: false,
   card_expiry: null,
   configured: false,
   cycle_resets_at: null,
@@ -184,6 +185,8 @@ function capabilitiesBody(overrides: Record<string, unknown> = {}) {
       can_manage_subscription: false,
       can_open_plans: false,
       can_run_workflows: false,
+      can_set_budgets: false,
+      can_set_hard_caps: false,
       can_upgrade: false,
       can_subscribe_self_serve: false,
       can_top_up: true

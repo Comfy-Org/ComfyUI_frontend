@@ -7,6 +7,8 @@ import {
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
+import { forgetPaymentLinkWorkspace } from '@/platform/billing/subscription/utils/paymentLinkWorkspace'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import { useUrlActionLoaders } from './useUrlActionLoaders'
 import type { useWorkflowLinkUrlLoader } from '@/platform/workflow/management/composables/useWorkflowLinkUrlLoader'
@@ -141,6 +143,25 @@ vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: mocks.reportError
 }))
 
+function setActiveWorkspace(id: string) {
+  Object.assign(useTeamWorkspaceStore(), { activeWorkspace: { id } })
+}
+
+function stripFromUrl(...params: string[]) {
+  const query = { ...router.currentRoute.value.query }
+  for (const param of params) delete query[param]
+  return router.replace({ query })
+}
+
+function expectPaymentLoadersCalledWith(workspaceLinkRefused: boolean) {
+  expect(mocks.loadTopUp).toHaveBeenCalledExactlyOnceWith({
+    workspaceLinkRefused
+  })
+  expect(mocks.loadPricingTable).toHaveBeenCalledExactlyOnceWith({
+    workspaceLinkRefused
+  })
+}
+
 describe('useUrlActionLoaders', () => {
   beforeEach(async () => {
     mockIsCloud.value = true
@@ -173,6 +194,8 @@ describe('useUrlActionLoaders', () => {
     }))
     vi.mocked(useRouter).mockReturnValue(router)
     await router.replace({ path: '/', query: {} })
+    forgetPaymentLinkWorkspace()
+    setActiveWorkspace('workspace-b')
   })
 
   // Most loaders fire their cleanup replace without waiting for it, so with two
@@ -516,7 +539,7 @@ describe('useUrlActionLoaders', () => {
     ).toHaveBeenCalledOnce()
   })
 
-  it('lets a newer workflow-id link held in a navigation guard land instead of cancelling it', async () => {
+  it('skips the later loaders and lets a newer workflow-id link held in a navigation guard land', async () => {
     await router.replace({ query: { workflowId: 'workflow-a', topup: '1' } })
     workflowLinkUrlLoader.openWorkflowLinkFromUrl.mockResolvedValue('opened')
     workflowLinkUrlLoader.isLinkSettled.mockImplementation(
@@ -536,7 +559,8 @@ describe('useUrlActionLoaders', () => {
     releaseGuard()
     await newerLink
 
-    expect(mocks.loadTopUp).toHaveBeenCalledOnce()
+    expect(mocks.loadTopUp).not.toHaveBeenCalled()
+    expect(mocks.loadSettings).not.toHaveBeenCalled()
     expect(router.currentRoute.value.query).toEqual({
       workflowId: 'workflow-b'
     })
@@ -706,5 +730,100 @@ describe('useUrlActionLoaders', () => {
     expect(
       useSubscriptionDialog().resumePendingPricingFlow
     ).toHaveBeenCalledOnce()
+  })
+
+  describe('payment links that name a workspace', () => {
+    it.for([
+      {
+        name: 'no workspace',
+        query: { topup: '1', pricing: '1' },
+        refused: false
+      },
+      {
+        name: 'the active workspace',
+        query: { topup: '1', pricing: '1', workspace: 'workspace-b' },
+        refused: false
+      },
+      {
+        name: 'a workspace the viewer could not switch to',
+        query: { topup: '1', pricing: '1', workspace: 'workspace-a' },
+        refused: true
+      },
+      {
+        name: 'an invalid workspace',
+        query: { topup: '1', pricing: '1', workspace: '' },
+        refused: true
+      }
+    ])(
+      'passes workspaceLinkRefused $refused for $name',
+      async ({ query, refused }) => {
+        await router.replace({ query })
+        mocks.loadWorkspace.mockImplementationOnce(async () => {
+          await stripFromUrl('workspace')
+          return false
+        })
+
+        await useUrlActionLoaders().runUrlActionLoaders()
+
+        expectPaymentLoadersCalledWith(refused)
+      }
+    )
+
+    it('refuses payment when a deployment link consumed the workspace target', async () => {
+      await router.replace({
+        query: {
+          workspace: 'workspace-a',
+          deployment: 'standard',
+          topup: '1',
+          pricing: '1'
+        }
+      })
+      mocks.loadDeployment.mockImplementationOnce(async () => {
+        await stripFromUrl('workspace', 'deployment')
+        return false
+      })
+
+      await useUrlActionLoaders().runUrlActionLoaders()
+
+      expect(mocks.loadWorkspace).toHaveBeenCalledOnce()
+      expectPaymentLoadersCalledWith(true)
+    })
+
+    it.for([
+      { landedOn: 'workspace-a', refused: false },
+      { landedOn: 'workspace-b', refused: true }
+    ])(
+      'after a switch reload landing on $landedOn, passes workspaceLinkRefused $refused',
+      async ({ landedOn, refused }) => {
+        await router.replace({
+          query: { workspace: 'workspace-a', topup: '1', pricing: '1' }
+        })
+        mocks.loadWorkspace.mockImplementationOnce(async () => {
+          await stripFromUrl('workspace')
+          return true
+        })
+        await useUrlActionLoaders().runUrlActionLoaders()
+        expect(mocks.loadTopUp).not.toHaveBeenCalled()
+
+        setActiveWorkspace(landedOn)
+        await useUrlActionLoaders().runUrlActionLoaders()
+
+        expectPaymentLoadersCalledWith(refused)
+      }
+    )
+
+    it('forgets the remembered workspace once the payment links are handled', async () => {
+      await router.replace({
+        query: { workspace: 'workspace-a', topup: '1', pricing: '1' }
+      })
+      await useUrlActionLoaders().runUrlActionLoaders()
+      mocks.loadTopUp.mockClear()
+      mocks.loadPricingTable.mockClear()
+
+      await router.replace({ query: { topup: '1', pricing: '1' } })
+      await useUrlActionLoaders().runUrlActionLoaders()
+
+      expectPaymentLoadersCalledWith(false)
+    })
   })
 })

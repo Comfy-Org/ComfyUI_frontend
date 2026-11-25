@@ -9,7 +9,7 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 import { isLiveAgentTurnWrite } from './agentRemoteProvenance'
-import { recordDevEvent } from './devPanelLog'
+import { recordDevEvent } from './crdtLog'
 
 type OverwritingEditKind = 'canvas-edit' | 'undo-redo-restore' | 'graph-load'
 

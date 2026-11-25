@@ -11,7 +11,7 @@ import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { decodePng } from '@/utils/__fixtures__/decodePng'
+import * as imageOutput from '@comfyorg/mask-editor/imageOutput'
 import { useMaskEditorSaver } from './useMaskEditorSaver'
 
 let mockDataStore: ReturnType<typeof useMaskEditorDataStore>
@@ -143,7 +143,6 @@ describe('useMaskEditorSaver', () => {
       }
     )
 
-    // Mock Image constructor so loadImageFromUrl resolves
     vi.stubGlobal(
       'Image',
       class MockImage {
@@ -166,25 +165,20 @@ describe('useMaskEditorSaver', () => {
     const store = useNodeOutputStore()
     const locatorId = String(mockNode.id)
 
-    // Precondition: node has never been executed, no outputs exist
     expect(app.nodeOutputs[locatorId]).toBeUndefined()
 
     const { save } = useMaskEditorSaver()
     await save()
 
-    // After mask editor save, the node must have outputs in the store
-    // so the image preview displays correctly (not blank).
-    // Bug: the old code used updateNodeImages which silently no-ops
-    // when there are no pre-existing outputs for the node.
     expect(store.nodeOutputs[locatorId]).toBeDefined()
     expect(store.nodeOutputs[locatorId]?.images?.length).toBeGreaterThan(0)
     expect(
       useWidgetValueStore().getWidget(
         widgetId('maskeditor-saver-test', toNodeId(42), 'image')
       )?.value
-    ).toBe('clipspace-painted-masked-123.png [input]')
+    ).toBe('clipspace/clipspace-painted-masked-123.png')
     expect(mockNode.properties['image']).toBe(
-      'clipspace-painted-masked-123.png [input]'
+      'clipspace/clipspace-painted-masked-123.png'
     )
   })
 
@@ -228,69 +222,102 @@ describe('useMaskEditorSaver', () => {
     expect(mockNode.widgets?.[0].value).toBe('original.png [input]')
   })
 
-  it('omits subfolder from the upload FormData under the unified contract', async () => {
-    const { save } = useMaskEditorSaver()
-    await save()
+  it('uploads every layer into the clipspace subfolder so they stay out of the input list', async () => {
+    await useMaskEditorSaver().save()
 
-    // The unified contract uploads to /upload/image with only image + type;
-    // subfolder is intentionally omitted (the server assigns it). Assert it
-    // here so the next reader knows the omission is deliberate, not accidental.
-    expect(api.fetchApi).toHaveBeenCalledWith(
-      '/upload/image',
-      expect.objectContaining({ method: 'POST' })
-    )
-    const [, init] = vi.mocked(api.fetchApi).mock.calls[0]
-    const body = init?.body as FormData
-    expect(body).toBeInstanceOf(FormData)
-    expect(body.get('type')).toBe('input')
-    expect(body.get('subfolder')).toBeNull()
+    const uploads = vi.mocked(api.fetchApi).mock.calls.map(([route, init]) => {
+      const body = init?.body as FormData
+      return [route, body.get('type'), body.get('subfolder')]
+    })
+    expect(uploads).toEqual([
+      ['/upload/image', 'input', 'clipspace'],
+      ['/upload/image', 'input', 'clipspace'],
+      ['/upload/image', 'input', 'clipspace'],
+      ['/upload/image', 'input', 'clipspace']
+    ])
   })
 
-  it('uploads masked layers with inverted mask alpha and preserved RGB', async () => {
-    // Seed a distinct opaque color per pixel, mask the first half of the
-    // canvas, then decode the uploaded blobs and verify both the applied
-    // alpha and that the RGB survives where the alpha is 0 (the pixels a
-    // canvas-derived blob would serialize as black).
-    const imgPixels = new Uint8ClampedArray(CANVAS_BYTES)
-    for (let p = 0; p < CANVAS_BYTES / 4; p++) {
-      imgPixels[p * 4] = (p * 7) % 256
-      imgPixels[p * 4 + 1] = (p * 11) % 256
-      imgPixels[p * 4 + 2] = (p * 13) % 256
-      imgPixels[p * 4 + 3] = 255
-    }
-    const maskPixels = new Uint8ClampedArray(CANVAS_BYTES)
-    for (let p = 0; p < CANVAS_BYTES / 8; p++) {
-      maskPixels[p * 4 + 3] = 255
-    }
-    mockEditorStore.imgCanvas = createMockCanvas(imgPixels)
-    mockEditorStore.maskCanvas = createMockCanvas(maskPixels)
-    mockEditorStore.rgbCanvas = createMockCanvas()
+  it('references the saved image by filename when the server flattens subfolders', async () => {
+    vi.mocked(api.fetchApi).mockImplementation(async () =>
+      Response.json({
+        name: 'clipspace-painted-masked-123.png',
+        subfolder: '',
+        type: 'input'
+      })
+    )
 
-    const { save } = useMaskEditorSaver()
-    await save()
+    await useMaskEditorSaver().save()
 
-    expect(api.fetchApi).toHaveBeenCalledTimes(4)
-    const decodedUploads = []
-    for (const [, init] of vi.mocked(api.fetchApi).mock.calls) {
-      const body = init?.body as FormData
-      const file = body.get('image') as Blob
-      try {
-        decodedUploads.push(decodePng(new Uint8Array(await file.arrayBuffer())))
-      } catch {
-        // not an encoder-produced PNG (canvas-derived layer)
+    expect(mockNode.properties['image']).toBe(
+      'clipspace-painted-masked-123.png'
+    )
+  })
+
+  it('uploads each named product after setting the local preview', async () => {
+    vi.spyOn(Date, 'now').mockReturnValue(456)
+    const append = vi.spyOn(FormData.prototype, 'append')
+    vi.spyOn(imageOutput, 'createImageOutput').mockResolvedValue({
+      maskedImage: { canvas: createMockCanvas(), blob: new Blob(['mask']) },
+      paintLayer: { canvas: createMockCanvas(), blob: new Blob(['paint']) },
+      paintedImage: { canvas: createMockCanvas(), blob: new Blob(['painted']) },
+      paintedMaskedImage: {
+        canvas: createMockCanvas(),
+        blob: new Blob(['painted-masked'])
       }
-    }
+    })
+    const uploads: Record<string, string> = {}
+    vi.mocked(api.fetchApi).mockImplementation(async (_route, init) => {
+      expect(mockNode.imgs?.[0].src).toBe('data:image/png;base64,mock')
+      if (!(init?.body instanceof FormData)) throw new Error('Missing upload')
+      const file = init.body.get('image')
+      if (!(file instanceof File)) throw new Error('Missing image file')
+      const imageAppend = append.mock.calls.find(
+        ([name], index) =>
+          name === 'image' && append.mock.contexts[index] === init.body
+      )
+      const filename = imageAppend?.[2]
+      if (!filename) throw new Error('Missing image filename')
+      uploads[filename] = await file.text()
+      return Response.json({ name: `server-${filename}`, type: 'input' })
+    })
 
-    expect(decodedUploads).toHaveLength(2)
-    for (const { width, height, pixels } of decodedUploads) {
-      expect(width).toBe(CANVAS_SIZE)
-      expect(height).toBe(CANVAS_SIZE)
-      for (let i = 0; i < pixels.length; i += 4) {
-        expect(pixels[i + 3]).toBe(255 - maskPixels[i + 3])
-        expect(pixels[i]).toBe(imgPixels[i])
-        expect(pixels[i + 1]).toBe(imgPixels[i + 1])
-        expect(pixels[i + 2]).toBe(imgPixels[i + 2])
+    await useMaskEditorSaver().save()
+
+    expect(uploads).toEqual({
+      'clipspace-mask-456.png': 'mask',
+      'clipspace-paint-456.png': 'paint',
+      'clipspace-painted-456.png': 'painted',
+      'clipspace-painted-masked-456.png': 'painted-masked'
+    })
+    expect(mockDataStore.outputData).toMatchObject({
+      maskedImage: { ref: { filename: 'server-clipspace-mask-456.png' } },
+      paintLayer: { ref: { filename: 'server-clipspace-paint-456.png' } },
+      paintedImage: { ref: { filename: 'server-clipspace-painted-456.png' } },
+      paintedMaskedImage: {
+        ref: { filename: 'server-clipspace-painted-masked-456.png' }
       }
-    }
+    })
+    expect(mockNode.images?.[0].filename).toBe(
+      'server-clipspace-painted-masked-456.png'
+    )
+  })
+
+  it('retains the local preview without updating server references when an upload fails', async () => {
+    vi.spyOn(Date, 'now').mockReturnValue(456)
+    vi.mocked(api.fetchApi)
+      .mockResolvedValueOnce(Response.json({ name: 'first-upload.png' }))
+      .mockResolvedValueOnce(new Response('upload rejected', { status: 500 }))
+
+    await expect(useMaskEditorSaver().save()).rejects.toThrow(
+      'Failed to upload clipspace-paint-456.png (500: upload rejected)'
+    )
+
+    expect(api.fetchApi).toHaveBeenCalledTimes(2)
+    expect(mockNode.imgs?.[0].src).toBe('data:image/png;base64,mock')
+    expect(mockDataStore.outputData?.maskedImage.ref.filename).toBe(
+      'clipspace-mask-456.png'
+    )
+    expect(mockNode.widgets?.[0].value).toBe('original.png [input]')
+    expect(useNodeOutputStore().nodeOutputs['42']).toBeUndefined()
   })
 })

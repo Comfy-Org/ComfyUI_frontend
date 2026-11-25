@@ -11,12 +11,12 @@ import type {
   FilterOption,
   OwnershipFilterOption,
   OwnershipOption
-} from '@/platform/assets/types/filterTypes'
+} from '@comfyorg/assets-core/filtering'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import AsyncSearchInput from '@comfyorg/design-system/search-input/AsyncSearchInput'
 import { DROPDOWN_PANEL_CLASS } from './shared'
-import type { LayoutMode, SortOption } from './types'
+import type { LayoutMode, SortOption, ThumbnailSize } from './types'
 
 const { t } = useI18n()
 
@@ -27,12 +27,14 @@ defineProps<{
   showBaseModelFilter?: boolean
   baseModelOptions?: FilterOption[]
   candidateLabel?: string
+  hasThumbnailSizes?: boolean
 }>()
 const emit = defineEmits<{
   (e: 'search-enter'): void
 }>()
 
 const layoutMode = defineModel<LayoutMode>('layoutMode')
+const thumbnailSize = defineModel<ThumbnailSize>('thumbnailSize')
 const searchQuery = defineModel<string>('searchQuery')
 const sortSelected = defineModel<string>('sortSelected')
 const ownershipSelected = defineModel<OwnershipOption>('ownershipSelected', {
@@ -52,10 +54,17 @@ const actionPopoverClass = cn(
 )
 
 const layoutSwitchItemStyle =
-  'size-6 flex justify-center items-center rounded-sm cursor-pointer transition-all duration-150 hover:scale-108 hover:text-foreground active:scale-95'
+  'size-6 flex rounded-sm transition-all duration-150 hover:scale-108 hover:text-foreground active:scale-95'
 
 const sortTriggerRef = useTemplateRef('sortTriggerRef')
 const isSortPopoverOpen = ref(false)
+const isThumbnailSizeOpen = ref(false)
+const thumbnailSizes: ThumbnailSize[] = ['compact', 'standard', 'large']
+
+function selectThumbnailSize(size: ThumbnailSize) {
+  thumbnailSize.value = size
+  isThumbnailSizeOpen.value = false
+}
 
 function closeSortPopover() {
   isSortPopoverOpen.value = false
@@ -140,7 +149,7 @@ function handleSearchEnter(event: KeyboardEvent) {
           :class="
             cn(
               actionButtonStyle,
-              'relative w-8 hover:outline-muted-foreground active:scale-95'
+              'hover:outline-muted-foreground active:scale-95'
             )
           "
         >
@@ -166,11 +175,59 @@ function handleSearchEnter(event: KeyboardEvent) {
             :key="item.name"
             variant="textonly"
             size="unset"
-            :class="cn('flex h-6 items-center justify-between text-left')"
+            class="flex h-6 justify-between text-left"
             @click="handleSortSelected(item)"
           >
             <span>{{ item.name }}</span>
             <i v-if="sortSelected === item.id" class="icon-[lucide--check]" />
+          </Button>
+        </div>
+      </PopoverContent>
+    </PopoverRoot>
+
+    <PopoverRoot
+      v-if="hasThumbnailSizes && layoutMode === 'grid'"
+      v-model:open="isThumbnailSizeOpen"
+    >
+      <PopoverTrigger as-child>
+        <Button
+          :aria-label="t('widgets.uploadSelect.thumbnailSize')"
+          :title="t('widgets.uploadSelect.thumbnailSize')"
+          variant="textonly"
+          size="icon"
+          :class="
+            cn(
+              actionButtonStyle,
+              'hover:outline-muted-foreground active:scale-95'
+            )
+          "
+        >
+          <div
+            v-if="thumbnailSize !== 'standard'"
+            class="absolute top-[-2px] left-[-2px] size-2 rounded-full bg-muted-foreground"
+          />
+          <i class="icon-[lucide--image-upscale]" aria-hidden="true" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="start" :class="actionPopoverClass">
+        <div
+          class="flex min-w-32 flex-col gap-2 rounded-lg bg-node p-2 outline -outline-offset-1 outline-node-border"
+        >
+          <Button
+            v-for="size in thumbnailSizes"
+            :key="size"
+            variant="textonly"
+            size="unset"
+            class="flex h-6 justify-between text-left"
+            :aria-pressed="thumbnailSize === size"
+            @click="selectThumbnailSize(size)"
+          >
+            <span>{{ t(`widgets.uploadSelect.thumbnailSizes.${size}`) }}</span>
+            <i
+              v-if="thumbnailSize === size"
+              class="icon-[lucide--check]"
+              aria-hidden="true"
+            />
           </Button>
         </div>
       </PopoverContent>
@@ -190,7 +247,7 @@ function handleSearchEnter(event: KeyboardEvent) {
           :class="
             cn(
               actionButtonStyle,
-              'relative w-8 hover:outline-muted-foreground active:scale-95'
+              'hover:outline-muted-foreground active:scale-95'
             )
           "
         >
@@ -216,7 +273,7 @@ function handleSearchEnter(event: KeyboardEvent) {
             :key="item.value"
             variant="textonly"
             size="unset"
-            :class="cn('flex h-6 items-center justify-between text-left')"
+            class="flex h-6 justify-between text-left"
             @click="handleOwnershipSelected(item)"
           >
             <span>{{ item.name }}</span>
@@ -243,7 +300,7 @@ function handleSearchEnter(event: KeyboardEvent) {
           :class="
             cn(
               actionButtonStyle,
-              'relative w-8 hover:outline-muted-foreground active:scale-95'
+              'hover:outline-muted-foreground active:scale-95'
             )
           "
         >
@@ -269,7 +326,7 @@ function handleSearchEnter(event: KeyboardEvent) {
             :key="item.value"
             variant="textonly"
             size="unset"
-            :class="cn('flex h-6 items-center justify-between text-left')"
+            class="flex h-6 justify-between text-left"
             @click="toggleBaseModelSelection(item)"
           >
             <span>{{ item.name }}</span>
@@ -282,7 +339,7 @@ function handleSearchEnter(event: KeyboardEvent) {
           <Button
             variant="textonly"
             size="unset"
-            :class="cn('flex h-6 items-center justify-between text-left')"
+            class="flex h-6 justify-between text-left"
             @click="baseModelSelected = new Set()"
           >
             {{ t('g.clearFilters') }}
@@ -304,12 +361,7 @@ function handleSearchEnter(event: KeyboardEvent) {
         :title="t('assetBrowser.listView')"
         variant="textonly"
         size="unset"
-        :class="
-          cn(
-            layoutSwitchItemStyle,
-            layoutMode === 'list' && 'bg-muted text-foreground'
-          )
-        "
+        :class="cn(layoutSwitchItemStyle, layoutMode === 'list' && 'bg-muted')"
         @click="layoutMode = 'list'"
       >
         <i class="icon-[lucide--list]" />
@@ -319,12 +371,7 @@ function handleSearchEnter(event: KeyboardEvent) {
         :title="t('assetBrowser.gridView')"
         variant="textonly"
         size="unset"
-        :class="
-          cn(
-            layoutSwitchItemStyle,
-            layoutMode === 'grid' && 'bg-muted text-foreground'
-          )
-        "
+        :class="cn(layoutSwitchItemStyle, layoutMode === 'grid' && 'bg-muted')"
         @click="layoutMode = 'grid'"
       >
         <i class="icon-[lucide--layout-grid]" />

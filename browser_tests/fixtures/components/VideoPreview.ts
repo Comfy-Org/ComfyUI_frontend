@@ -1,3 +1,4 @@
+import { expect } from '@playwright/test'
 import type { Locator } from '@playwright/test'
 
 export class VideoPreview {
@@ -18,6 +19,15 @@ export class VideoPreview {
       name: 'Download video'
     })
   }
+  async uploadAndLoad(path: string) {
+    await this.upload.setInputFiles(path)
+    await expect
+      .poll(() =>
+        this.video.evaluate((video: HTMLVideoElement) => video.videoWidth)
+      )
+      .toBeGreaterThan(0)
+  }
+
   async videoSrc() {
     return await this.video.getAttribute('src')
   }

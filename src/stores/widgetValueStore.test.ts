@@ -186,7 +186,6 @@ describe('useWidgetValueStore', () => {
     it('clears omitted render state when a widget id is recycled', () => {
       const store = useWidgetValueStore()
       store.registerWidget(seedA, state('number', 5), {
-        hasLayoutSize: true,
         tooltip: 'old'
       })
 
@@ -737,7 +736,9 @@ describe('useWidgetValueStore', () => {
     it('clearNode removes only the target node values, render state, and order', () => {
       const store = useWidgetValueStore()
       const sibling = widgetId(graphA, toNodeId('node-2'), 'seed')
-      store.registerWidget(seedA, state('number', 1), { hasLayoutSize: true })
+      store.registerWidget(seedA, state('number', 1), {
+        tooltip: 'seed'
+      })
       store.registerWidget(sibling, state('number', 2))
 
       store.clearNode(graphA, toNodeId('node-1'))

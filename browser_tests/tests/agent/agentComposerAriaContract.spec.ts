@@ -12,7 +12,6 @@ test.describe(
       agentPanel
     }) => {
       await agentPanel.open()
-      await agentPanel.selectWorkflow()
 
       await expect(agentPanel.composer).toHaveRole('textbox')
       await expect(agentPanel.composer).toHaveAttribute(
@@ -27,7 +26,6 @@ test.describe(
       agentPanel
     }) => {
       await agentPanel.open()
-      await agentPanel.selectWorkflow()
 
       await expect(agentPanel.root.getByTestId(REFERENCE_MENU_ID)).toBeHidden()
       await expect(agentPanel.composer).not.toHaveAttribute('aria-controls')
@@ -41,7 +39,6 @@ test.describe(
       page
     }) => {
       await agentPanel.open()
-      await agentPanel.selectWorkflow()
       await agentPanel.composer.fill('@')
 
       const menu = agentPanel.root.getByTestId(REFERENCE_MENU_ID)
@@ -64,7 +61,6 @@ test.describe(
       agentPanel
     }) => {
       await agentPanel.open()
-      await agentPanel.selectWorkflow()
       await agentPanel.composer.fill('@')
       await expect(agentPanel.root.getByTestId(REFERENCE_MENU_ID)).toBeVisible()
 

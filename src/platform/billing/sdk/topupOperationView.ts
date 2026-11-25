@@ -186,10 +186,23 @@ export function projectTopupResult(
   }
 }
 
-/** The hosted Checkout URL, or the failure as the error the dialog handles. */
+/** A quote's credits, and whether Cloud named a payment configuration for paying it in the page. */
+export interface TopupQuoteFacts {
+  readonly credits: number
+  readonly paymentConfigured: boolean
+}
+
+export type HostedCheckoutSession = Pick<
+  Extract<HostedTopupCheckoutResult, { status: 'ok' }>,
+  'url' | 'sessionId'
+>
+
+/** The hosted Checkout session, or the failure as the error the dialog handles. */
 export function projectHostedTopupCheckoutResult(
   result: HostedTopupCheckoutResult
-): string {
-  if (result.status === 'ok') return result.url
-  throw topupFailureError(result)
+): HostedCheckoutSession {
+  if (result.status !== 'ok') throw topupFailureError(result)
+  return result.sessionId === undefined
+    ? { url: result.url }
+    : { url: result.url, sessionId: result.sessionId }
 }

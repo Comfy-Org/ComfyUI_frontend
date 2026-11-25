@@ -82,7 +82,7 @@ const isDecrementDisabled = computed(() => batchCount.value <= minQueueCount)
 const inputClass =
   'h-full min-w-0 flex-1 border-none bg-secondary pl-1 pr-0 text-center text-sm font-normal tabular-nums text-foreground outline-none'
 const stepButtonClass =
-  'h-1/2 w-full rounded-none border-none p-0 text-muted-foreground hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50'
+  'h-1/2 w-full rounded-none p-0 text-muted-foreground disabled:cursor-not-allowed'
 const incrementButtonClass = 'rounded-tr-none border-b border-border/50'
 const decrementButtonClass = 'rounded-br-none'
 

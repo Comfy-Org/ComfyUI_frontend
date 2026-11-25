@@ -7,7 +7,7 @@
     <div :style="mergedGridStyle">
       <div
         v-for="(item, i) in renderedItems"
-        :key="item.key"
+        :key="item.key ?? item.id"
         data-virtual-grid-item
       >
         <slot name="item" :item :index="state.start + i" />
@@ -28,6 +28,8 @@ import { clamp, debounce } from 'es-toolkit/compat'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import type { CSSProperties } from 'vue'
 
+type HasKeyOrId = { key: string; id?: string } | { key?: string; id: string }
+
 type GridState = {
   start: number
   end: number
@@ -44,7 +46,7 @@ const {
   onLoadMore,
   canLoadMore = false
 } = defineProps<{
-  items: (T & { key: string })[]
+  items: readonly (T & HasKeyOrId)[]
   gridStyle: CSSProperties
   bufferRows?: number
   resizeDebounce?: number

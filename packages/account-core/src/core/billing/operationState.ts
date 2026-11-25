@@ -12,6 +12,7 @@
  * state.
  */
 import {
+  zAcceptedAutoTopUpSettings,
   zBillingOpChargeBreakdown,
   zBillingOpChargeReason,
   zBillingOpReceiptPlan,
@@ -41,6 +42,13 @@ const ReceiptPlanSchema = zBillingOpReceiptPlan.extend({
 
 export const BillingOpStatusSchema = zBillingOpStatusResponse.extend({
   amount_charged_cents: wireCents.optional(),
+  auto_top_up: zAcceptedAutoTopUpSettings
+    .extend({
+      monthly_budget_cents: wireCents,
+      target_credits: wireCents,
+      threshold_credits: wireCents
+    })
+    .optional(),
   credits_added: wireCents.optional(),
   charge_breakdown: ChargeBreakdownSchema.optional(),
   plan: ReceiptPlanSchema.optional(),
@@ -171,6 +179,10 @@ export type FailedBillingOperation = BillingOperationIdentity & {
  */
 export interface BillingOperationReceipt {
   readonly amountChargedCents?: number
+  /** Whether the auto top-up this purchase asked for came on; absent when it asked for none. */
+  readonly autoTopUpActivation?: NonNullable<
+    BillingOpStatus['auto_top_up_activation']
+  >
   readonly chargeBreakdown?: BillingChargeBreakdown
   readonly creditsAdded?: number
   readonly plan?: BillingOperationPlan
@@ -332,6 +344,9 @@ function receiptOf(
     ...(status.amount_charged_cents === undefined
       ? {}
       : { amountChargedCents: status.amount_charged_cents }),
+    ...(status.auto_top_up_activation === undefined
+      ? {}
+      : { autoTopUpActivation: status.auto_top_up_activation }),
     ...(status.charge_breakdown === undefined
       ? {}
       : { chargeBreakdown: status.charge_breakdown }),
@@ -363,6 +378,14 @@ export function isGrantLanding(state: BillingOperationState): boolean {
     state.phase === 'succeeded' &&
     state.receipt?.amountChargedCents !== undefined &&
     state.receipt.creditsAdded === undefined
+  )
+}
+
+/** The charge went through and the server is still turning on the auto top-up it asked for. */
+export function isAutoTopUpActivating(state: BillingOperationState): boolean {
+  return (
+    state.phase === 'succeeded' &&
+    state.receipt?.autoTopUpActivation === 'pending'
   )
 }
 

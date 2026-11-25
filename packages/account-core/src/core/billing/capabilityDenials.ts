@@ -55,6 +55,7 @@ export type CapabilityDenialReason =
   | 'no_upgrade_available'
   | 'partner_governance_not_entitled'
   | 'plan_ending'
+  | 'plan_not_enterprise'
   | 'project_cap_exceeded'
   | 'rollout_disabled'
   | 'sales_managed'
@@ -107,6 +108,7 @@ const KNOWN_REASONS: Readonly<
   no_upgrade_available: true,
   partner_governance_not_entitled: true,
   plan_ending: true,
+  plan_not_enterprise: true,
   project_cap_exceeded: true,
   rollout_disabled: true,
   sales_managed: true,

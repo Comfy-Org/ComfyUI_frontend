@@ -1,21 +1,20 @@
-import { afterEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import {
   cloudEditorUrl,
   isLocalOrigin
 } from '@/platform/openOnCloud/localHandoffProtocol'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 
 describe(cloudEditorUrl, () => {
-  afterEach(() => {
-    remoteConfig.value = {}
-  })
-
   it('retains the configured employee rollout override in a new Cloud tab', () => {
-    remoteConfig.value = {
-      comfy_cloud_base_url:
-        'https://fe-pr-22949.testenvs.comfy.org/?ff=open_on_cloud_enabled:true'
-    }
+    useRemoteConfigStore().acceptConfig(
+      {
+        comfy_cloud_base_url:
+          'https://fe-pr-22949.testenvs.comfy.org/?ff=open_on_cloud_enabled:true'
+      },
+      false
+    )
 
     expect(cloudEditorUrl('workflow-transfer')).toBe(
       'https://fe-pr-22949.testenvs.comfy.org/?ff=open_on_cloud_enabled%3Atrue&from_local=workflow-transfer'

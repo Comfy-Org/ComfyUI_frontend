@@ -438,17 +438,22 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
     const { canvas } = getMinimapLocators(comfyPage)
     await expect(canvas).toBeVisible()
 
-    // Default workflow has content
     await expect.poll(() => hasCanvasContent(canvas)).toBe(true)
+    const previousImage = await canvas.evaluate((el: HTMLCanvasElement) =>
+      el.toDataURL()
+    )
 
-    // Load a very different workflow
     await comfyPage.workflow.loadWorkflow('large-graph-workflow')
     await comfyPage.nextFrame()
 
-    // Minimap should still have content (different workflow, still has nodes)
     await expect
-      .poll(() => hasCanvasContent(canvas), { timeout: 5000 })
-      .toBe(true)
+      .poll(async () => ({
+        hasContent: await hasCanvasContent(canvas),
+        changed:
+          (await canvas.evaluate((el: HTMLCanvasElement) => el.toDataURL())) !==
+          previousImage
+      }))
+      .toEqual({ hasContent: true, changed: true })
   })
 
   test('Minimap viewport position reflects canvas pan state', async ({

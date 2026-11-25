@@ -1,5 +1,7 @@
 @import '../packages/design-system/src/css/theme.css';
+@import '../packages/mask-editor/src/ui/style.css';
 
+@source '../packages/mask-editor/src/ui';
 @source '../packages/design-system/src/components';
 @source not '../packages/design-system/src/components/**/*.test.ts';
 @source not '../packages/design-system/src/components/**/*.md';

@@ -66,7 +66,7 @@ export function useAgentHandoff(distribution: Distribution = DISTRIBUTION) {
     return {
       brief: buildAgentHandoffDocument({ distribution, inputs }),
       downloadWorkflow() {
-        if (distribution === 'desktop') return
+        if (distribution !== 'cloud') return
         downloadBlob(
           inputs.workflowFileName,
           new Blob([JSON.stringify(graph, null, 2)], {

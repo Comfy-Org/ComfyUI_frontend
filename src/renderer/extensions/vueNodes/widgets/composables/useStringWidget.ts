@@ -30,13 +30,6 @@ function addMultilineWidget(
 
   let owner: IBaseWidget | undefined
   let ownState: WidgetState | undefined
-  /**
-   * Resolves the store entry under the widget's current name and adopts it as
-   * its own, or returns undefined once the widget has left its node and the
-   * entry belongs to another widget. The widget is found by its element
-   * because `addDOMWidget` can invoke `setValue` synchronously, while restoring
-   * a saved value, before the `widget` binding it returns is initialized.
-   */
   function adoptOwnEntry():
     | { id: WidgetId; state: WidgetState | undefined }
     | undefined {
@@ -55,6 +48,7 @@ function addMultilineWidget(
   }
 
   const widgetOptions: DOMWidgetOptions<string> = {
+    vueNodeRenderer: 'native',
     getValue(): string {
       const value = adoptOwnEntry()?.state?.value
       return typeof value === 'string' ? value : inputEl.value

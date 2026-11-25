@@ -142,8 +142,7 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
    * show, read from the latest listing: `release` when its deployment now
    * runs another Release, `deployment` when it now runs on another
    * deployment or Comfy Cloud with other nodes (an owner changed the
-   * default it follows, or its pick is gone). Jobs already run on the new
-   * one; only a reload brings its nodes. Null when nothing changed.
+   * default it follows, or its pick is gone). Null when nothing changed.
    */
   const changeSinceBoot = computed(() => {
     const boot = bootDeployment.value
@@ -182,6 +181,8 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     )
   }
   const switcherOpenAsks = shallowRef(0)
+  /** How many mounted switchers can answer `requestSwitcherOpen`. */
+  const switcherMounts = shallowRef(0)
 
   function requestSwitcherOpen() {
     switcherOpenAsks.value++
@@ -200,7 +201,7 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
    */
   let latestRequest = 0
   let lastApplied = 0
-  let reportedLoadFailure = false
+  const reportedLoadFailures = new Set<'sentry' | 'datadogOnly'>()
   let requestBeforeStart: ReadonlyMap<string, number> = new Map()
 
   function load(): Promise<void> {
@@ -279,12 +280,18 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     ) {
       setUnconfirmedCloudHint(workspaceId)
     }
-    if (reportedLoadFailure || workspaceStore.workspaceId !== workspaceId)
+    const datadogOnly = gotNoResponse(err) || isSessionRefused(err)
+    const reportKind = datadogOnly ? 'datadogOnly' : 'sentry'
+    if (
+      reportedLoadFailures.has(reportKind) ||
+      workspaceStore.workspaceId !== workspaceId
+    )
       return
-    reportedLoadFailure = true
+    reportedLoadFailures.add(reportKind)
     reportError(err, {
       surface: 'workspace',
       errorType: 'error_loading_deployment_listing',
+      ...(datadogOnly && { sentryMode: 'never' }),
       ...(isSessionRefused(err) && {
         level: 'warning',
         tags: { status: 401, outcome: 'denied' }
@@ -579,7 +586,8 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     followWorkspace,
     setDefault,
     defaultMovesThisBrowser,
-    requestSwitcherOpen
+    requestSwitcherOpen,
+    switcherMounts
   }
 })
 
@@ -619,6 +627,10 @@ function isTransient(err: unknown): boolean {
   return (
     status === undefined || status === 408 || status === 429 || status >= 500
   )
+}
+
+function gotNoResponse(err: unknown): boolean {
+  return err instanceof WorkspaceApiError && err.status === undefined
 }
 
 function isSessionRefused(err: unknown): boolean {

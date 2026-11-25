@@ -5,6 +5,10 @@ import { expect } from '@playwright/test'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { getWav } from '@e2e/fixtures/components/AudioPreview'
 import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
+import {
+  routeObjectInfoFromSetupApi,
+  setComboInputOptions
+} from '@e2e/fixtures/utils/objectInfo'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import {
   expectRegionScreenshot,
@@ -220,6 +224,15 @@ test.describe(
 )
 
 test.describe('Image widget', { tag: ['@screenshot', '@widget'] }, () => {
+  test.beforeEach(async ({ page }) => {
+    await routeObjectInfoFromSetupApi(page, (objectInfo) =>
+      setComboInputOptions(objectInfo, 'LoadImage', 'image', [
+        'example.png',
+        'image32x32.webp'
+      ])
+    )
+  })
+
   test('Can load image', async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
     const [loadImageNode] =

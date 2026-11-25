@@ -107,6 +107,29 @@ const noTooltipDirective = {
     'Use the Button tooltip prop or the design-system Tooltip compound instead of v-tooltip.'
 }
 
+const tooltipProviderRestriction = {
+  selector: "VElement[rawName='TooltipProvider']",
+  message:
+    'App.vue owns the tooltip provider. Add a nested provider only for a surface with its own open delay, and list it here.'
+}
+
+const tooltipProviderSurfaces = [
+  'src/components/graph/SelectionToolbox.vue',
+  'src/renderer/core/layout/transform/TransformPane.vue'
+]
+
+const graphCanvasTemplates = [
+  'src/components/graph/**/*.vue',
+  'src/renderer/**/*.vue'
+]
+
+const transformBindingRestriction = {
+  selector:
+    "VAttribute[directive=true][key.name.name='bind'][key.argument.name='style'] Property:matches([computed=false][key.name=/^(transform|translate|scale|rotate)$/], [key.value=/^(transform|translate|scale|rotate)$/]):not(CallExpression Property)",
+  message:
+    'A bound transform makes Chrome recomposite the whole page each time it changes. Set it with useCompositedTransform, or list the file here when the transform only changes outside pan, zoom and drag.'
+}
+
 const agentPlatformChannelRestrictions = [
   {
     selector:
@@ -213,6 +236,16 @@ const layerClassRestriction = {
     'Use a named layer for cross-component ordering; keep local stacking inside an isolated owner.'
 }
 
+const arbitraryVariantWithHas = '\\[(?:[^\\[\\]]|\\[[^\\[\\]]*\\])*:has\\('
+
+const compoundVariantPrefixes = '(?:(?:not|in|peer|group)-)*'
+
+const nestedHasClassRestriction = {
+  pattern: `(?:^|:)${compoundVariantPrefixes}(?:group-|not-in-)${compoundVariantPrefixes}(?:has-|${arbitraryVariantWithHas})|(?:^|:)(?:not-)?has-.+:\\*{1,2}:`,
+  message:
+    'This compiles to :has() inside :is() or :not() ahead of a descendant combinator, which makes Chrome restyle the whole document on any DOM insertion. Use an arbitrary variant such as [.group:has(:focus-visible)_&]: instead.'
+}
+
 const tailwindConfigs = defineConfig([
   betterTailwindcss.configs.recommended,
   {
@@ -246,7 +279,11 @@ const tailwindConfigs = defineConfig([
         'error',
         { collapse: false }
       ],
-      'better-tailwindcss/no-deprecated-classes': 'error'
+      'better-tailwindcss/no-deprecated-classes': 'error',
+      'better-tailwindcss/no-restricted-classes': [
+        'error',
+        { restrict: [nestedHasClassRestriction] }
+      ]
     }
   },
   {
@@ -255,7 +292,7 @@ const tailwindConfigs = defineConfig([
     rules: {
       'better-tailwindcss/no-restricted-classes': [
         'error',
-        { restrict: [layerClassRestriction] }
+        { restrict: [layerClassRestriction, nestedHasClassRestriction] }
       ]
     }
   },
@@ -271,6 +308,7 @@ const tailwindConfigs = defineConfig([
         {
           restrict: [
             layerClassRestriction,
+            nestedHasClassRestriction,
             {
               pattern: specializedThemeClassPattern,
               message:
@@ -368,7 +406,8 @@ export default defineConfig([
           'src/**/*.vue',
           'apps/billing-web/**/*.vue',
           'packages/account-ui/**/*.vue',
-          'packages/layer-editor-ui/**/*.vue'
+          'packages/layer-editor-ui/**/*.vue',
+          'packages/mask-editor/src/ui/**/*.vue'
         ],
         plugins: { 'template-classes': templateClasses },
         rules: {
@@ -500,20 +539,40 @@ export default defineConfig([
       {
         name: 'comfy/single-tooltip-provider',
         files: ['src/**/*.vue'],
+        ignores: ['src/App.vue', ...tooltipProviderSurfaces],
+        rules: {
+          'vue/no-restricted-syntax': [
+            'error',
+            noTooltipDirective,
+            tooltipProviderRestriction
+          ]
+        }
+      },
+      {
+        name: 'comfy/composited-transform',
+        files: graphCanvasTemplates,
         ignores: [
-          'src/App.vue',
-          'src/components/graph/SelectionToolbox.vue',
-          'src/renderer/core/layout/transform/TransformPane.vue'
+          ...tooltipProviderSurfaces,
+          'src/renderer/extensions/linearMode/MobileDisplay.vue',
+          'src/renderer/extensions/vueNodes/components/LGraphNode.vue'
         ],
         rules: {
           'vue/no-restricted-syntax': [
             'error',
             noTooltipDirective,
-            {
-              selector: "VElement[rawName='TooltipProvider']",
-              message:
-                'App.vue owns the tooltip provider. Add a nested provider only for a surface with its own open delay, and list it here.'
-            }
+            tooltipProviderRestriction,
+            transformBindingRestriction
+          ]
+        }
+      },
+      {
+        name: 'comfy/composited-transform-tooltip-surfaces',
+        files: tooltipProviderSurfaces,
+        rules: {
+          'vue/no-restricted-syntax': [
+            'error',
+            noTooltipDirective,
+            transformBindingRestriction
           ]
         }
       }
@@ -522,6 +581,7 @@ export default defineConfig([
   ...(
     [
       ['src', settings],
+      ['packages/mask-editor/src/ui', settings],
       ['apps/billing-web', billingWebI18nSettings]
     ] as const
   ).map(([root, treeSettings]) => ({
@@ -538,7 +598,6 @@ export default defineConfig([
       '**/*.test.ts',
       '**/*.stories.ts',
       '**/CrdtDevPanel.vue',
-      '**/restoreOpMinter.ts',
       '**/crdtLog.ts'
     ],
     rules: {
@@ -563,6 +622,40 @@ export default defineConfig([
             "CallExpression[callee.property.name=/^(split|lastIndexOf)$/]:matches([arguments.0.value='.'], [arguments.0.value='/'], [arguments.0.value='\\\\'])",
           message:
             'Use the platform filename utilities (getFilenameDetails, getPathDetails).'
+        }
+      ]
+    }
+  },
+  {
+    name: 'comfy/mask-editor-package-direction',
+    files: ['packages/mask-editor/src/**/*.{ts,vue}'],
+    ignores: ['**/*.test.ts'],
+    plugins: { 'import-x': importX },
+    settings,
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@/*'],
+              message:
+                'Keep application integration in the mask-editor host adapters.'
+            }
+          ]
+        }
+      ],
+      'import-x/no-restricted-paths': [
+        'error',
+        {
+          zones: [
+            {
+              target: './packages/mask-editor/src',
+              from: './src',
+              message:
+                'Keep application integration in the mask-editor host adapters.'
+            }
+          ]
         }
       ]
     }

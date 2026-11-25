@@ -15,19 +15,21 @@ vi.mock<unknown>(import('axios'), () => ({
 import { useComfyRegistryService } from '@/services/comfyRegistryService'
 
 describe('useComfyRegistryService', () => {
-  it.for([null, undefined, '', 'undefined'])(
-    'does not query for node name %s',
-    async (nodeName) => {
-      const result = await Reflect.apply(
-        useComfyRegistryService().inferPackFromNodeName,
-        undefined,
-        [nodeName]
-      )
+  it.for([
+    { case: 'null', nodeName: null },
+    { case: 'undefined', nodeName: undefined },
+    { case: 'an empty string', nodeName: '' },
+    { case: 'the string "undefined"', nodeName: 'undefined' }
+  ])('does not query for node name $case', async ({ nodeName }) => {
+    const result = await Reflect.apply(
+      useComfyRegistryService().inferPackFromNodeName,
+      undefined,
+      [nodeName]
+    )
 
-      expect(result).toBeNull()
-      expect(mockRegistryApiClient.get).not.toHaveBeenCalled()
-    }
-  )
+    expect(result).toBeNull()
+    expect(mockRegistryApiClient.get).not.toHaveBeenCalled()
+  })
 
   it('returns registry data for a valid node name', async () => {
     const expected = { id: 'pack-id' }

@@ -41,7 +41,7 @@ describe('promoted subgraph widget options reassignment', () => {
 })
 
 describe('promotedInputWidgets', () => {
-  it('keeps promoted widgets that are hidden from the right side panel', () => {
+  it('keeps promoted widgets that are hidden from the properties panel', () => {
     const subgraph = createTestSubgraph()
     const host = createTestSubgraphNode(subgraph)
 

@@ -135,7 +135,7 @@ const fetchData = async (
   const sessionRes = await fetchOnSession(config, controller)
   if (sessionRes) return pickKey(sessionRes.data, response_key)
 
-  const authHeaders = await getAuthHeaders()
+  const authHeaders = isSameOrigin(route) ? await getAuthHeaders() : {}
 
   const res = await axios.get(route, {
     params: query_params,

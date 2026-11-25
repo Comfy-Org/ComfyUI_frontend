@@ -17,11 +17,10 @@ import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { keepPricingTableInApp } from '@e2e/fixtures/utils/platformPlans'
+import { mockWebSessionServer } from '@e2e/fixtures/utils/webSessionMocks'
 import {
-  keepPricingTableInApp,
-  PLATFORM_PLANS_PATH
-} from '@e2e/fixtures/utils/platformPlans'
-import {
+  mockWorkspaceList,
   mockWorkspaceTokenMint,
   workspace
 } from '@e2e/fixtures/utils/workspaceMocks'
@@ -111,8 +110,6 @@ async function mockCloudBoot(page: Page): Promise<CloudBootRequests> {
       })
     )
   )
-  // TutorialCompleted suppresses the new-user template browser, whose modal
-  // overlay would otherwise intercept the Settings click.
   await page.route('**/api/settings', (r) =>
     r.fulfill(jsonRoute({ 'Comfy.TutorialCompleted': true }))
   )
@@ -121,14 +118,10 @@ async function mockCloudBoot(page: Page): Promise<CloudBootRequests> {
   await page.route('**/api/object_info', (r) => r.fulfill(jsonRoute({})))
   await page.route('**/api/global_subgraphs', (r) => r.fulfill(jsonRoute({})))
   await page.route('**/api/i18n', (r) => r.fulfill(jsonRoute({})))
-  await page.route('**/api/auth/session', (r) =>
-    r.fulfill(jsonRoute({ token: 'mock-workspace-token' }))
-  )
+  await mockWebSessionServer(page)
   await page.route('**/releases**', (r) => r.fulfill(jsonRoute([])))
   await mockWorkspaceTokenMint(page, workspace('personal', 'owner'))
-  await page.route('**/api/workspaces', (r) =>
-    r.fulfill(jsonRoute({ workspaces: [workspace('personal', 'owner')] }))
-  )
+  await mockWorkspaceList(page, [workspace('personal', 'owner')])
 
   await page.route('**/api/billing/status', (r) => {
     statusRequests.push(r.request())
@@ -241,10 +234,11 @@ async function openedBillingEntry(page: Page) {
   }
 }
 
-/** The avatar menu's Plans and pricing entry. */
-async function clickPlansAndPricing(page: Page) {
-  await page.getByRole('button', { name: 'Current user' }).click()
-  await page.getByTestId('plans-pricing-menu-item').click()
+async function openPricingFromPlanAndCredits(page: Page) {
+  const content = await openPlanAndCredits(page)
+  await content
+    .getByRole('button', { name: /Upgrade Plan|Change plan/ })
+    .click()
 }
 
 const pricingHeading = (page: Page) =>
@@ -398,31 +392,6 @@ test.describe('Hosted billing destination (FE-2218)', { tag: '@cloud' }, () => {
       .poll(() => statusRequests.length)
       .toBeGreaterThan(requestsBeforeReturn)
   })
-
-  for (const destination of ['stripe', 'billing_web'] as const) {
-    test(`hands the avatar menu's Plans and pricing off to the platform Plans page while the destination is ${destination}`, async ({
-      page
-    }) => {
-      test.setTimeout(60_000)
-      await mockCloudBoot(page)
-      await bootApp(page)
-      if (destination === 'billing_web') {
-        await new FeatureFlagHelper(page).setServerFlagsPersistent({
-          hosted_billing_destination: 'billing_web'
-        })
-      }
-
-      await clickPlansAndPricing(page)
-
-      await expect
-        .poll(async () => {
-          const url = await openedUrl(page)
-          return url && new URL(url).pathname
-        })
-        .toBe(PLATFORM_PLANS_PATH)
-      await expect(pricingDialog(page)).toHaveCount(0)
-    })
-  }
 })
 
 test.describe('Hosted billing checkout handoff', { tag: '@cloud' }, () => {
@@ -439,7 +408,7 @@ test.describe('Hosted billing checkout handoff', { tag: '@cloud' }, () => {
       hosted_billing_destination: 'billing_web'
     })
 
-    await clickPlansAndPricing(page)
+    await openPricingFromPlanAndCredits(page)
     await expect(pricingHeading(page)).toBeVisible()
     await standardTierButton(page).click()
 
@@ -452,7 +421,7 @@ test.describe('Hosted billing checkout handoff', { tag: '@cloud' }, () => {
           return_to: 'comfyui_workspace',
           plan: 'standard-yearly',
           workspace: 'ws-personal',
-          source: 'avatar_menu_plans'
+          source: 'settings_billing_panel'
         },
         carriesReadableJourney: true
       })
@@ -471,7 +440,7 @@ test.describe('Hosted billing checkout handoff', { tag: '@cloud' }, () => {
       hosted_billing_destination: 'billing_web'
     })
 
-    await clickPlansAndPricing(page)
+    await openPricingFromPlanAndCredits(page)
     await expect(pricingHeading(page)).toBeVisible()
     await standardTierButton(page).click()
 
@@ -486,7 +455,7 @@ test.describe('Hosted billing checkout handoff', { tag: '@cloud' }, () => {
     await mockStandardPlan(page)
     await bootApp(page)
 
-    await clickPlansAndPricing(page)
+    await openPricingFromPlanAndCredits(page)
     await expect(pricingHeading(page)).toBeVisible()
     await standardTierButton(page).click()
 

@@ -1,20 +1,17 @@
 import { render, screen } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { useRafFn } from '@vueuse/core'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import { nextTick } from 'vue'
 
+import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
+import { runCanvasFramePhase } from '@/lib/litegraph/src/canvas/canvasFrame'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 import SelectionRectangle from './SelectionRectangle.vue'
 
-type RafCallback = Parameters<typeof useRafFn>[0]
-
-const rafCallbacks: RafCallback[] = []
-vi.mock(import('@vueuse/core'), { spy: true })
-
 function dragRectangle(eDown: [number, number], eMove: [number, number]) {
-  useCanvasStore().canvas = fromPartial({
+  const canvas = fromPartial<LGraphCanvas>({
+    canvas: document.createElement('canvas'),
     dragging_rectangle: [
       eDown[0],
       eDown[1],
@@ -26,21 +23,12 @@ function dragRectangle(eDown: [number, number], eMove: [number, number]) {
       eMove: { safeOffsetX: eMove[0], safeOffsetY: eMove[1] }
     }
   })
-  rafCallbacks[rafCallbacks.length - 1](
-    fromPartial({ delta: 0, timestamp: performance.now() })
-  )
+  useCanvasStore().canvas = canvas
+  return canvas
 }
 
 describe('SelectionRectangle', () => {
-  beforeEach(() => {
-    vi.mocked(useRafFn).mockImplementation((cb) => {
-      rafCallbacks.push(cb)
-      return fromPartial({ pause: vi.fn(), resume: vi.fn() })
-    })
-  })
-
   afterEach(() => {
-    rafCallbacks.length = 0
     useCanvasStore().canvas = null
   })
 
@@ -52,7 +40,9 @@ describe('SelectionRectangle', () => {
     async ({ eDown, eMove }) => {
       render(SelectionRectangle)
 
-      dragRectangle([...eDown], [...eMove])
+      const canvas = dragRectangle([...eDown], [...eMove])
+      await nextTick()
+      runCanvasFramePhase(canvas, 'update')
       await nextTick()
 
       const rect = screen.getByTestId('selection-rectangle')

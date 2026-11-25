@@ -45,6 +45,25 @@ export class AppModeWidgetHelper {
     await widget.locator('textarea').fill(value)
   }
 
+  /** Drag a textarea widget's native resize grip vertically. */
+  async resizeTextareaBy(key: string, deltaY: number) {
+    const box = await this.getWidgetItem(key).locator('textarea').boundingBox()
+    if (!box) throw new Error(`Textarea for ${key} has no layout`)
+
+    const bottomRightCorner = {
+      x: box.x + box.width - 3,
+      y: box.y + box.height - 3
+    }
+    await this.page.mouse.move(bottomRightCorner.x, bottomRightCorner.y)
+    await this.page.mouse.down()
+    await this.page.mouse.move(
+      bottomRightCorner.x,
+      bottomRightCorner.y + deltaY,
+      { steps: 10 }
+    )
+    await this.page.mouse.up()
+  }
+
   /**
    * Set a number input widget value (INT or FLOAT).
    * Targets the last input inside the widget — this works for both

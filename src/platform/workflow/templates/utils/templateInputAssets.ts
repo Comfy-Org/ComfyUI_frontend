@@ -1,3 +1,4 @@
+import type { TemplateInput } from '@comfyorg/api-client/templateSchema'
 import { promiseTimeout } from '@vueuse/core'
 
 import type {
@@ -33,6 +34,21 @@ export async function resolveTemplateInputAssets(
   } catch {
     return []
   }
+}
+
+export function getPendingTemplateSampleInputs(
+  inputs: readonly TemplateInput[],
+  assets: readonly ComfyTemplateInputAsset[]
+): TemplateInput[] {
+  return inputs.filter(
+    (input) =>
+      !assets.some(
+        (asset) =>
+          asset.filename === input.file &&
+          asset.mediaType === input.mediaType &&
+          asset.availability === 'present'
+      )
+  )
 }
 
 export function startMissingTemplateInputDownloads(

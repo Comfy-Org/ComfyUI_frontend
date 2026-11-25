@@ -8,6 +8,9 @@ import type { PropType } from 'vue'
 import { computed, defineComponent, h, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
+import { ChangeTracker } from '@/scripts/changeTracker'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -142,14 +145,14 @@ vi.mock(import('./WorkflowTab.vue'), () => ({
 vi.mock(import('./CurrentUserButton.vue'), () => ({
   default: defineComponent({
     name: 'CurrentUserButtonStub',
-    render: () => h('div')
+    render: () => h('div', { 'data-testid': 'current-user-button' })
   })
 }))
 
 vi.mock(import('./LoginButton.vue'), () => ({
   default: defineComponent({
     name: 'LoginButtonStub',
-    render: () => h('div')
+    render: () => h('div', { 'data-testid': 'login-button' })
   })
 }))
 
@@ -172,6 +175,7 @@ function renderComponent(errorHandler?: (error: unknown) => void) {
 }
 
 beforeEach(() => {
+  useWorkflowStore().provideChangeTracker(ChangeTracker)
   delete window.__comfyDesktop2
   vi.mocked(useTelemetry).mockReturnValue(fromPartial(telemetry))
   consentChecking.value = false
@@ -221,6 +225,79 @@ describe('WorkflowTabs feedback button', () => {
     expect(
       screen.queryByRole('button', { name: 'Feedback' })
     ).not.toBeInTheDocument()
+  })
+})
+
+describe('WorkflowTabs profile button', () => {
+  beforeEach(() => {
+    useCurrentUser().isLoggedIn = computed(() => true)
+  })
+
+  function setBillingNewUx(enabled: boolean) {
+    const remoteConfigStore = useRemoteConfigStore()
+    remoteConfigStore.acceptConfig(
+      { ...remoteConfigStore.config, billing_new_ux_enabled: enabled },
+      false
+    )
+  }
+
+  it('keeps the profile button in the top bar while billing_new_ux_enabled is off', () => {
+    setBillingNewUx(false)
+    renderComponent()
+
+    expect(screen.getByTestId('current-user-button')).toBeInTheDocument()
+    expect(screen.queryByTestId('login-button')).not.toBeInTheDocument()
+  })
+
+  it('moves the profile button out of the top bar while billing_new_ux_enabled is on', () => {
+    setBillingNewUx(true)
+    renderComponent()
+
+    expect(screen.queryByTestId('current-user-button')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('login-button')).not.toBeInTheDocument()
+  })
+
+  it('keeps the profile button in the top bar in builder mode, where the sidebar is hidden', async () => {
+    setBillingNewUx(true)
+    const workflowStore = useWorkflowStore()
+    const workflow = await workflowStore
+      .createTemporary('Builder workflow.json')
+      .load()
+    workflow.activeMode = 'builder:inputs'
+    workflowStore.activeWorkflow = workflow
+    renderComponent()
+
+    expect(screen.getByTestId('current-user-button')).toBeInTheDocument()
+  })
+
+  it('keeps the login button in the top bar when signed out with billing_new_ux_enabled off', () => {
+    setBillingNewUx(false)
+    useCurrentUser().isLoggedIn = computed(() => false)
+    renderComponent()
+
+    expect(screen.getByTestId('login-button')).toBeInTheDocument()
+  })
+
+  it('moves the login button out of the top bar when signed out with billing_new_ux_enabled on', () => {
+    setBillingNewUx(true)
+    useCurrentUser().isLoggedIn = computed(() => false)
+    renderComponent()
+
+    expect(screen.queryByTestId('login-button')).not.toBeInTheDocument()
+  })
+
+  it('keeps the login button in the top bar in builder mode, where the sidebar is hidden', async () => {
+    setBillingNewUx(true)
+    useCurrentUser().isLoggedIn = computed(() => false)
+    const workflowStore = useWorkflowStore()
+    const workflow = await workflowStore
+      .createTemporary('Builder workflow.json')
+      .load()
+    workflow.activeMode = 'builder:inputs'
+    workflowStore.activeWorkflow = workflow
+    renderComponent()
+
+    expect(screen.getByTestId('login-button')).toBeInTheDocument()
   })
 })
 
@@ -465,6 +542,21 @@ describe('WorkflowTabs agent entry button', () => {
 
     expect(withConsent).toHaveBeenCalledTimes(2)
     expect(useAgentPanelStore().isVisible).toBe(true)
+  })
+
+  it('keeps a restored-open preference when consent is dismissed', async () => {
+    const store = useAgentPanelStore()
+    store.isOpen = true
+    store.holdRestoredOpen()
+    withConsent.mockResolvedValueOnce()
+    const { user } = renderComponent()
+
+    await user.click(
+      screen.getByRole('button', { name: enMessages.agent.entryButton })
+    )
+
+    expect(store.isOpen).toBe(true)
+    expect(store.isVisible).toBe(false)
   })
 
   it('hides the restored panel entry while consent is checked, then shows it pressed', async () => {

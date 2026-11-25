@@ -25,6 +25,7 @@ import type { HostedTopupCheckoutResult, TopupResult } from './topup'
 import {
   INTERACTIVE_TOPUP_ROUTE,
   TOPUP_CHECKOUT_ROUTE,
+  TOPUP_PURCHASES_ROUTE,
   TOPUP_QUOTE_ROUTE,
   TOPUP_ROUTE,
   createTopupCommand
@@ -110,6 +111,8 @@ const CAPABILITIES = {
   can_manage_subscription: false,
   can_open_plans: false,
   can_run_workflows: false,
+  can_set_budgets: false,
+  can_set_hard_caps: false,
   can_upgrade: false,
   can_subscribe_self_serve: false,
   can_top_up: true
@@ -602,10 +605,19 @@ describe('createInteractiveTopup', () => {
       name: 'only the saved card the customer chose',
       payment: { savedPaymentMethodId: 'pm_chosen' },
       sent: { saved_payment_method_id: 'pm_chosen' }
+    },
+    {
+      name: 'a saved card and the auto top-up it turns on',
+      payment: { savedPaymentMethodId: 'pm_chosen' },
+      autoTopUp: { threshold_credits: 1000, target_credits: 5000 },
+      sent: {
+        saved_payment_method_id: 'pm_chosen',
+        auto_top_up: { threshold_credits: 1000, target_credits: 5000 }
+      }
     }
   ])(
     'pays once with $name under the caller key, never asking to save or default',
-    async ({ payment, sent }) => {
+    async ({ payment, sent, autoTopUp }) => {
       const { command, calls, routes } = harness()
 
       await expect(
@@ -613,7 +625,8 @@ describe('createInteractiveTopup', () => {
           command.createInteractiveTopup({
             amountCents: 1000,
             payment,
-            idempotencyKey: 'attempt-key'
+            idempotencyKey: 'attempt-key',
+            ...(autoTopUp === undefined ? {} : { autoTopUp })
           })
         )
       ).resolves.toMatchObject({ status: 'ok', creditsReconciled: true })
@@ -733,6 +746,28 @@ describe('createHostedTopupCheckout', () => {
         idempotencyKey: 'key-1'
       }
     ])
+  })
+
+  it('sends the auto top-up settings with the purchase', async () => {
+    const { command, calls } = harness()
+    const autoTopUp = {
+      threshold_credits: 1000,
+      target_credits: 5000,
+      monthly_budget_cents: null
+    }
+
+    await command.createHostedTopupCheckout({
+      amountCents: 1000,
+      returnUrl: RETURN_URL,
+      autoTopUp
+    })
+
+    expect(postedBodies(calls)[0].body).toEqual({
+      amount_cents: 1000,
+      return_url: RETURN_URL,
+      auto_top_up: autoTopUp,
+      idempotency_key: 'key-1'
+    })
   })
 
   it('refuses when the server resolved can_top_up false, without a POST', async () => {
@@ -872,6 +907,75 @@ describe('createHostedTopupCheckout', () => {
       serverCode: 'INVALID_RETURN_URL',
       serverMessage: 'stripe: return_url origin not allowlisted'
     })
+  })
+})
+
+describe('server-owned top-up purchases', () => {
+  const PURCHASE = {
+    purchase_id: 'tpp_1',
+    status: 'processing',
+    amount_cents: 2500,
+    expires_at: '2027-09-30T12:00:00.000Z',
+    billing_op_id: 'op-1',
+    billing_op_status: 'pending'
+  }
+
+  it('opens a purchase with the amount and auto top-up, and reads its latest attempt back', async () => {
+    const { command, answer, calls } = harness()
+    answer(
+      'POST',
+      TOPUP_PURCHASES_ROUTE,
+      httpOk({ ...PURCHASE, status: 'open' })
+    )
+    answer('GET', `${TOPUP_PURCHASES_ROUTE}/tpp_1`, httpOk(PURCHASE))
+
+    await expect(
+      command.createTopupPurchase({
+        amountCents: 2500,
+        autoTopUp: { threshold_credits: 1000, target_credits: 5000 }
+      })
+    ).resolves.toEqual({
+      status: 'ok',
+      value: { purchaseId: 'tpp_1', status: 'open', billingOpId: 'op-1' }
+    })
+    await expect(command.readTopupPurchase('tpp_1')).resolves.toEqual({
+      status: 'ok',
+      value: { purchaseId: 'tpp_1', status: 'processing', billingOpId: 'op-1' }
+    })
+    expect(postedBodies(calls)).toEqual([
+      {
+        body: {
+          amount_cents: 2500,
+          auto_top_up: { threshold_credits: 1000, target_credits: 5000 }
+        },
+        idempotencyKey: undefined
+      }
+    ])
+  })
+
+  it('sends the purchase with a Pay, and keeps a refusal of another account’s purchase apart from a missing route', async () => {
+    const { command, answer, calls } = harness()
+    answer(
+      'POST',
+      INTERACTIVE_TOPUP_ROUTE,
+      httpStatus(404, { code: 'PURCHASE_NOT_FOUND', message: 'not yours' })
+    )
+
+    await expect(
+      settle(
+        command.createInteractiveTopup({
+          amountCents: 1000,
+          payment: { savedPaymentMethodId: 'pm_chosen' },
+          idempotencyKey: 'attempt-key',
+          purchaseId: 'tpp_1'
+        })
+      )
+    ).resolves.toMatchObject({
+      status: 'error',
+      httpStatus: 404,
+      serverCode: 'PURCHASE_NOT_FOUND'
+    })
+    expect(postedBodies(calls)[0].body).toMatchObject({ purchase_id: 'tpp_1' })
   })
 })
 

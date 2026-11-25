@@ -417,10 +417,11 @@ first falsifiable check a CI check. That rule has to scan outside the existing
 
 **Stage 2 — every operation producer joins the session.** Remove the op
 producers and the sender from component teardown; hold and replay instead.
-**Every** producer, not a subset: `AgentPanelRoot.vue:1737-1796` detaches
-`docOpMinter` _and_ `restoreOpMinter` (`:1769`, `:1772`), so moving only the
-first leaves a restore or undo edit made after a panel close unable to reach
-the session's replay path — the same defect in a narrower window. If a producer
+**Every** producer, not a subset: `docOpMinter` mints both live edits and
+undo/redo restores, and holds a background restore until its document can
+receive it, so moving its edit path without that restore queue leaves a
+restore made after a panel close unable to reach the session's replay path —
+the same defect in a narrower window. If a producer
 is deliberately left behind, the lifetime guarantee and the acceptance tests
 must be narrowed to say so explicitly rather than reading as covering all
 writes.

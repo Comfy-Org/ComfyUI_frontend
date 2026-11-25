@@ -2,8 +2,8 @@ import { cloneDeep, uniq } from 'es-toolkit/compat'
 
 import { resolveNodeDefText } from '@/i18n'
 import {
-  collectSearchableInputTypes,
-  collectSearchableOutputTypes
+  inputSpecInterpreter,
+  validatedInputSpecInterpreter
 } from '@/core/graph/nodeDef/inputSpecInterpreter'
 import { transformNodeDefV1ToV2 } from '@comfyorg/object-info-parser/migration'
 import type {
@@ -138,19 +138,15 @@ export class ComfyNodeDefImpl
     return def
   }
 
-  constructor(def: ComfyNodeDefV1) {
+  constructor(
+    def: ComfyNodeDefV1,
+    { validateInputs = false }: { validateInputs?: boolean } = {}
+  ) {
     const obj = ComfyNodeDefImpl._migrateDefaultInput(def)
 
-    /**
-     * Copy fields that are declared on this class but not explicitly assigned
-     * below (e.g. `search_aliases`) straight from the source definition.
-     * `display_name` and `description` are held out: they are accessors with no
-     * setter, so assigning them here would throw.
-     */
     const { display_name, description, ...assignable } = obj
     Object.assign(this, assignable)
 
-    // Initialize V1 fields
     this.name = obj.name
     this.backendDisplayName = display_name || undefined
     this.backendDescription = description || undefined
@@ -178,14 +174,14 @@ export class ComfyNodeDefImpl
       this.python_module.split('.')[0]
     )
 
-    // Initialize V2 fields
     const defV2 = transformNodeDefV1ToV2(obj)
     this.inputs = defV2.inputs
     this.outputs = defV2.outputs
     this.hidden = defV2.hidden
 
-    // Initialize node source
     this.nodeSource = getNodeSource(obj.python_module, this.essentials_category)
+    const { collectSearchableInputTypes, collectSearchableOutputTypes } =
+      validateInputs ? validatedInputSpecInterpreter : inputSpecInterpreter
     this.inputTypes = uniq(
       Object.values(this.inputs).flatMap(collectSearchableInputTypes)
     )

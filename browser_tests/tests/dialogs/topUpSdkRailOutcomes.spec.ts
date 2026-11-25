@@ -13,7 +13,7 @@ import { cloudAppFixture as test } from '@e2e/fixtures/cloudAppFixture'
 import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
 import { createBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import { makeWorkspaceTokenResponse } from '@e2e/fixtures/data/workspaceAuthFixtures'
-import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
+import { billingClient } from '@e2e/fixtures/utils/billingClient'
 import { APP_URL, setupCloudApp } from '@e2e/fixtures/utils/cloudAppSetup'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { recordOpenedUrl } from '@e2e/fixtures/utils/recordOpenedUrl'
@@ -27,9 +27,7 @@ const HOSTED_URL = 'https://pay.stripe.example/invoice/op-e2e-topup-outcome'
 const CHECKOUT_URL = 'https://checkout.stripe.com/c/pay/cs_test_outcome'
 
 const RAIL_FEATURES = {
-  billing_control_enabled: true,
-  unified_cloud_auth: true,
-  billing_sdk_topup_enabled: true
+  billing_control_enabled: true
 } satisfies RemoteConfig
 
 const BALANCE = {
@@ -99,9 +97,6 @@ async function setupTopUp(
   await page.route('**/api/settings', (route) =>
     route.fulfill(jsonRoute({ 'Comfy.TutorialCompleted': true }))
   )
-  await new FeatureFlagHelper(page).serveServerFlagsOnHandshake({
-    billing_sdk_topup_enabled: true
-  })
 
   await page.route('**/api/billing/balance', (route) =>
     route.fulfill(jsonRoute(BALANCE))
@@ -177,7 +172,7 @@ test.describe('Top-up rail outcomes', { tag: '@cloud' }, () => {
       CHECKOUT_URL
     )
     expect(routes.checkoutRequests).toHaveLength(1)
-    expect(routes.checkoutRequests[0].resourceType()).toBe('fetch')
+    expect(billingClient(routes.checkoutRequests[0])).toBe('sdk')
     expect(routes.purchaseRequests).toHaveLength(0)
   })
 

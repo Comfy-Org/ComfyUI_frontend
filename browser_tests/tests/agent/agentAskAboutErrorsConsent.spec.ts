@@ -4,6 +4,7 @@ import { agentConsentTest as test } from '@e2e/fixtures/agentConsentFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
+import { sentTurn } from '@e2e/tests/agent/agentPanelMocks'
 
 test.describe('Ask agent about errors', { tag: ['@cloud', '@ui'] }, () => {
   test.use({
@@ -17,7 +18,8 @@ test.describe('Ask agent about errors', { tag: ['@cloud', '@ui'] }, () => {
 
   test('asks for consent before the panel opens and attaches the error only after Agree', async ({
     comfyPage,
-    agentConsentWrites
+    agentConsentWrites,
+    postedMessages
   }) => {
     const page = comfyPage.page
     const agentPanel = new AgentPanel(page)
@@ -56,6 +58,21 @@ test.describe('Ask agent about errors', { tag: ['@cloud', '@ui'] }, () => {
       await expect(chip).toBeVisible()
       await expect(agentPanel.composer).toBeFocused()
       await expectElementScreenshot(chip, 'ask-agent-error-reference-chip.png')
+    })
+
+    await test.step('Sending carries the error identity in a Ref line', async () => {
+      await page.keyboard.type('why?')
+      await agentPanel.sendButton.click()
+
+      await expect.poll(() => postedMessages.length).toBe(1)
+      const refLine = sentTurn(postedMessages)
+        .content.split('\n')
+        .find((line) => line.trimStart().startsWith('Ref: '))
+      expect(refLine).toBeDefined()
+      expect(JSON.parse(refLine!.trim().slice('Ref: '.length))).toMatchObject({
+        catalog_id: 'missing_node',
+        node_type: 'UNKNOWN NODE'
+      })
     })
   })
 })

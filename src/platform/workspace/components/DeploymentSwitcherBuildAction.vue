@@ -8,9 +8,10 @@
       <a
         :href="buildsUrl"
         target="_blank"
-        rel="noopener noreferrer"
+        :rel="platformLinkRel()"
         class="text-foreground no-underline"
         data-testid="deployment-switcher-builds"
+        @click="trackDeploymentLinkClicked('manage_deployments')"
       >
         <i
           class="icon-[lucide--arrow-up-right] size-3.5 text-muted-foreground"
@@ -35,12 +36,20 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
+
 import MenuItem from '@comfyorg/design-system/menu/MenuItem'
 import TextTooltip from '@comfyorg/design-system/tooltip/TextTooltip'
-import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
+import { trackDeploymentLinkClicked } from '@/platform/workspace/platformFrame/customDeploymentTelemetry'
+import {
+  platformSurfaceLink,
+  platformLinkRel
+} from '@/platform/workspace/utils/platformLink'
 import { switcherItemClass } from './deploymentSwitcherStyles'
 
 const { hasDeployments } = defineProps<{ hasDeployments: boolean }>()
 const emit = defineEmits<{ createCustomDeployment: [] }>()
-const buildsUrl = `${getComfyPlatformBaseUrl()}/profile/builds`
+const buildsUrl = computed(() =>
+  platformSurfaceLink('/profile/builds', 'deployment-switcher')
+)
 </script>

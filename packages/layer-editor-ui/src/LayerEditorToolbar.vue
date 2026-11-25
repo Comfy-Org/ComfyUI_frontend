@@ -9,7 +9,7 @@
     >
       <ToggleGroupItem
         value="pointer"
-        class="size-8 flex-none rounded-full p-0"
+        class="size-8 rounded-full p-0"
         :title="t('layerEditor.selectTool')"
         :aria-label="t('layerEditor.selectTool')"
       >
@@ -17,7 +17,7 @@
       </ToggleGroupItem>
       <ToggleGroupItem
         value="hand"
-        class="size-8 flex-none rounded-full p-0"
+        class="size-8 rounded-full p-0"
         :title="t('layerEditor.handTool')"
         :aria-label="t('layerEditor.handTool')"
       >

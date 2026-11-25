@@ -1,9 +1,19 @@
 import { render } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { describe, expect, it, vi } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { useToast } from '@/components/ui/toast/toastStore'
+import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { useImageMenuOptions } from './useImageMenuOptions'
@@ -19,7 +29,9 @@ const i18n = createI18n({
         'Copy Image': 'Copy Image',
         'Paste Image': 'Paste Image',
         'Save Image': 'Save Image',
-        'Download Images': 'Download Images'
+        'Download Images': 'Download Images',
+        'Show Full Resolution': 'Show Full Resolution',
+        'Show Downscaled Preview': 'Show Downscaled Preview'
       }
     }
   }
@@ -170,6 +182,63 @@ describe('useImageMenuOptions', () => {
     })
   })
 
+  describe('Copy Image action', () => {
+    function createCopyImageFixture() {
+      const display = document.createElement('img')
+      display.src =
+        'https://app.example/api/view?filename=output.png&preview=webp'
+      const node = createMockLGraphNode({ imgs: [display], imageIndex: 0 })
+      const { getImageMenuOptions } = mountComposable()
+      const copy = getImageMenuOptions(node).find(
+        (option) => option.label === 'Copy Image'
+      )
+      assert.exists(copy?.action)
+
+      return copy.action
+    }
+
+    it('copies full-resolution PNG bytes without exporting the displayed image', async () => {
+      const copy = createCopyImageFixture()
+      vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation(() => {
+        throw new DOMException(
+          'Tainted canvases may not be exported.',
+          'SecurityError'
+        )
+      })
+      const png = new Blob(['original pixels'], { type: 'image/png' })
+      vi.mocked(fetch).mockResolvedValue(new Response(png))
+      const write = vi
+        .spyOn(navigator.clipboard, 'write')
+        .mockResolvedValue(undefined)
+
+      const copying = copy()
+      expect(write).toHaveBeenCalledOnce()
+      await copying
+
+      expect(fetch).toHaveBeenCalledWith(
+        new URL('https://app.example/api/view?filename=output.png')
+      )
+      const copied = await write.mock.calls[0][0][0].getType('image/png')
+      expect(await copied.text()).toBe('original pixels')
+    })
+
+    it('warns when the original cannot be fetched', async () => {
+      const copy = createCopyImageFixture()
+      vi.mocked(fetch).mockResolvedValue(new Response(null, { status: 403 }))
+      vi.spyOn(navigator.clipboard, 'write').mockImplementation(
+        async ([item]) => {
+          await item.getType('image/png')
+        }
+      )
+
+      await copy()
+
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({ kind: 'warning' })
+      ])
+    })
+  })
+
   describe('pasteImage action', () => {
     it('reads clipboard and calls pasteFiles on the node', async () => {
       const node = createImageNode()
@@ -230,6 +299,99 @@ describe('useImageMenuOptions', () => {
       await pasteOption!.action!()
 
       expect(node.pasteFiles).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('getPreviewResolutionOption', () => {
+    function useVueNodes(enabled: boolean) {
+      LiteGraph.vueNodesMode = enabled
+      onTestFinished(() => {
+        LiteGraph.vueNodesMode = false
+      })
+    }
+
+    function outputImages(count: number) {
+      vi.spyOn(useNodeOutputStore(), 'getNodeOutputs').mockReturnValue({
+        images: Array.from({ length: count }, (_, i) => ({
+          filename: `image${i}.png`,
+          type: 'output' as const
+        }))
+      })
+    }
+
+    beforeEach(() => {
+      useSettingStore().settingValues['Comfy.Node.DownscaleImagePreviews'] =
+        true
+    })
+
+    it.for([
+      {
+        name: 'offers full resolution for a single image',
+        vueNodes: true,
+        images: 1,
+        flags: {},
+        label: 'Show Full Resolution'
+      },
+      {
+        name: 'offers the downscaled preview once full resolution is on',
+        vueNodes: true,
+        images: 1,
+        flags: { fullResolutionPreview: true },
+        label: 'Show Downscaled Preview'
+      },
+      {
+        name: 'is absent for a grid of images',
+        vueNodes: true,
+        images: 2,
+        flags: {},
+        label: undefined
+      },
+      {
+        name: 'is absent on the classic canvas, which never downscales',
+        vueNodes: false,
+        images: 1,
+        flags: {},
+        label: undefined
+      },
+      {
+        name: 'is absent when downscaling is turned off globally',
+        vueNodes: true,
+        images: 1,
+        flags: {},
+        downscale: false,
+        label: undefined
+      }
+    ])('$name', ({ vueNodes, images, flags, downscale = true, label }) => {
+      useVueNodes(vueNodes)
+      useSettingStore().settingValues['Comfy.Node.DownscaleImagePreviews'] =
+        downscale
+      outputImages(images)
+      const { getPreviewResolutionOption } = mountComposable()
+
+      expect(
+        getPreviewResolutionOption(createImageNode({ flags }))?.label
+      ).toBe(label)
+    })
+
+    it('persists the toggle through workflow serialization', () => {
+      useVueNodes(true)
+      outputImages(1)
+      const { getPreviewResolutionOption } = mountComposable()
+      const node = new LGraphNode('PreviewImage')
+      node.previewMediaType = 'image'
+
+      getPreviewResolutionOption(node)?.action?.()
+      const restored = new LGraphNode('PreviewImage')
+      restored.previewMediaType = 'image'
+      restored.configure(node.serialize())
+
+      expect(getPreviewResolutionOption(restored)?.label).toBe(
+        'Show Downscaled Preview'
+      )
+      getPreviewResolutionOption(restored)?.action?.()
+      expect(restored.serialize().flags).not.toHaveProperty(
+        'fullResolutionPreview'
+      )
     })
   })
 })

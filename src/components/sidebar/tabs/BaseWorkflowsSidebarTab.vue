@@ -175,9 +175,9 @@ import { useAppMode } from '@/composables/useAppMode'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useSearchQueryTracking } from '@/platform/telemetry/searchQuery/useSearchQueryTracking'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import { useWorkflowBookmarkStore } from '@/platform/workflow/management/stores/workflowBookmarkStore'
 import {
   ComfyWorkflow,
-  useWorkflowBookmarkStore,
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
@@ -322,11 +322,12 @@ function workflowLeafActions(
   const actions: Partial<TreeExplorerNode<ComfyWorkflow>> = {
     contextMenuItems: () => workflowContextMenuItems(workflow),
     draggable: true,
-    handleRename: (newName: string) =>
-      workflowService.renameWorkflow(
+    handleRename: async (newName: string) => {
+      await workflowService.renameWorkflow(
         workflow,
         renamedWorkflowPath(workflow, type, newName)
       )
+    }
   }
   if (!workflow.isTemporary) {
     actions.handleDelete = async () => {

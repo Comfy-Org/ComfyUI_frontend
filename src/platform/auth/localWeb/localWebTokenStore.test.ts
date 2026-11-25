@@ -115,12 +115,14 @@ describe('createStorageTokenStore', () => {
     expect(store.readWorkspace('ws-1')).toEqual(renewed)
   })
 
-  it('forgets the tokens on clear', () => {
+  it('forgets the tokens on clear and returns every sign-in it forgot', () => {
     const storage = memoryStorage()
     const store = createStorageTokenStore(storage, new EventTarget())
+    const otherWorkspace = { ...TOKENS, refreshToken: 'refresh-ws2' }
     store.write(TOKENS)
+    store.writeWorkspace('ws-2', otherWorkspace)
 
-    store.clear()
+    expect(store.clear()).toEqual([TOKENS, otherWorkspace])
 
     expect(store.read()).toBeUndefined()
     expect(storage.items.has(LOCAL_WEB_TOKENS_KEY)).toBe(false)

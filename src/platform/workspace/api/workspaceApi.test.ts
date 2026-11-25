@@ -594,6 +594,30 @@ describe('workspaceApi', () => {
       expect(mockAxiosInstance.post).not.toHaveBeenCalled()
     })
 
+    it('does not read a released top-up checkout when authorization finishes late', async () => {
+      let finishAuth!: (headers: typeof AUTH_HEADER) => void
+      const pendingAuth = new Promise<typeof AUTH_HEADER>((resolve) => {
+        finishAuth = resolve
+      })
+      vi.mocked(auth.getWorkspaceAuthHeader).mockReturnValue(pendingAuth)
+      const controller = new AbortController()
+      const checkout = billingApi.getTopupCheckout('cs_1', controller.signal)
+      controller.abort()
+      finishAuth(AUTH_HEADER)
+      await expect(checkout).rejects.toMatchObject({ name: 'AbortError' })
+      expect(mockAxiosInstance.get).not.toHaveBeenCalled()
+    })
+
+    it('forwards top-up checkout read cancellation to the transport', async () => {
+      mockAxiosInstance.get.mockResolvedValue({ data: {} })
+      const controller = new AbortController()
+      await billingApi.getTopupCheckout('cs_1', controller.signal)
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith(
+        '/api/billing/topup/checkouts/cs_1',
+        { headers: AUTH_HEADER, timeout: 10_000, signal: controller.signal }
+      )
+    })
+
     it('forwards deployment selection cancellation to the transport', async () => {
       mockAxiosInstance.put.mockResolvedValue({})
       const controller = new AbortController()

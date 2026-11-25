@@ -12,20 +12,30 @@ import { onCapabilityRevision } from '@/platform/remote/ingest/capabilityRevisio
 import type { BillingCapabilitiesRead } from '@comfyorg/billing-core'
 import { parseBillingTopUpDenial } from '@comfyorg/billing-core'
 import { billingApi } from '@/platform/billing/api/billingApi'
+import { localBillingWebEnabled } from '@/platform/billing/localBillingWebEnabled'
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import { readOnRail } from '@/platform/billing/composables/readOnRail'
+import { sessionEndedReporting } from '@/platform/billing/composables/sessionEndedReporting'
 import { useBillingReadRail } from '@/platform/billing/composables/useBillingReadRail'
 import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 import { reportWorkspaceScopeMismatch } from '@/platform/billing/telemetry/workspaceTelemetryContext'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
 
 type CapabilityReadState =
   | { status: 'idle' }
   | {
-      status: 'pending' | 'denied'
+      status: 'pending'
       authUid: string
       workspaceId: string
+    }
+  | {
+      status: 'denied'
+      authUid: string
+      workspaceId: string
+      sessionLapsed: boolean
     }
   | {
       status: 'unavailable'
@@ -79,8 +89,21 @@ function readCapabilitiesResponse(
   )
 }
 
+function isUnansweredRead(error: unknown): boolean {
+  return (
+    error instanceof WorkspaceApiError &&
+    error.status === undefined &&
+    (error.code === undefined || error.code === 'REQUEST_FAILED')
+  )
+}
+
 function useBillingCapabilitiesInternal() {
   const authStore = useAuthStore()
+  const webSession = useCloudWebSessionStore()
+  const { flags } = useFeatureFlags()
+  function lapseRecoveryEnabled(): boolean {
+    return flags.webSessionLapseRecoveryEnabled
+  }
   const apiKeyAuthStore = useApiKeyAuthStore()
   const workspaceStore = useWorkspaceIdentity()
   const actorId = computed(
@@ -132,6 +155,12 @@ function useBillingCapabilitiesInternal() {
     receiveServerFact(
       'can_open_plans',
       capabilities.value?.can_open_plans ?? false
+    )
+  )
+  const openPlansDenial = computed(() =>
+    receiveServerFact(
+      'denied_reasons.can_open_plans',
+      resolvedResponse.value?.denied_reasons?.can_open_plans
     )
   )
   const canCancel = computed(() => capabilities.value?.can_cancel ?? false)
@@ -282,12 +311,11 @@ function useBillingCapabilitiesInternal() {
     )
   })
 
-  function trackCapabilityRead(succeeded: boolean): void {
+  function trackCapabilityReadFailed(): void {
     useTelemetry()?.trackBillingEvent({
       operation: 'capability_read',
-      ...(succeeded
-        ? { stage: 'succeeded', outcome: 'success' }
-        : { stage: 'failed', outcome: 'failure' })
+      stage: 'failed',
+      outcome: 'failure'
     })
   }
 
@@ -372,7 +400,9 @@ function useBillingCapabilitiesInternal() {
     void fetchCapabilities()
   })
 
+  let disposed = false
   onScopeDispose(() => {
+    disposed = true
     clearRefreshTimer()
     stopRevisionListener()
   })
@@ -423,6 +453,7 @@ function useBillingCapabilitiesInternal() {
     else resetRead()
 
     const requestId = ++latestRequestId
+    const recoveryEnabledAtStart = lapseRecoveryEnabled()
     const controller = new AbortController()
     const abortRequest = () => controller.abort()
     if (signal?.aborted) controller.abort()
@@ -466,7 +497,6 @@ function useBillingCapabilitiesInternal() {
 
         const resolvedForScope =
           response.resolved_for.workspace_id === workspaceId
-        trackCapabilityRead(resolvedForScope)
         if (resolvedForScope) {
           readFailures = 0
           readState.value = {
@@ -477,6 +507,7 @@ function useBillingCapabilitiesInternal() {
             refreshAt: nextRefreshAt(response)
           }
         } else {
+          trackCapabilityReadFailed()
           readFailures++
           readState.value = unavailableState(userId, workspaceId)
           reportWorkspaceScopeMismatch(
@@ -504,7 +535,9 @@ function useBillingCapabilitiesInternal() {
           (error instanceof WorkspaceApiError &&
             (error.status === 401 || error.status === 403)) ||
           (error instanceof Error && error.name === 'AuthStoreError')
-        if (!denied) trackCapabilityRead(false)
+        const sessionLapsed =
+          error instanceof WorkspaceApiError && error.status === 401
+        if (!denied) trackCapabilityReadFailed()
         // A transient failure keeps the last good snapshot - stale, not wrong -
         // and retries. A denial is the server answering about this actor, so it
         // replaces the snapshot even mid-revalidation.
@@ -517,10 +550,15 @@ function useBillingCapabilitiesInternal() {
           }
         } else {
           readState.value = denied
-            ? { status: 'denied', authUid: userId, workspaceId }
+            ? { status: 'denied', authUid: userId, workspaceId, sessionLapsed }
             : unavailableState(userId, workspaceId)
         }
         scheduleRefresh()
+        refetchAfterSettle =
+          sessionLapsed &&
+          !recoveryEnabledAtStart &&
+          lapseRecoveryEnabled() &&
+          webSession.state.phase === 'signed_in'
         // A sustained outage retries on a timer, so reporting every attempt
         // would emit one warning a minute for as long as the tab is open.
         if (!denied && !firstFailure) return
@@ -528,13 +566,15 @@ function useBillingCapabilitiesInternal() {
           surface: 'workspace',
           errorType: 'billing_capabilities_read_failure',
           level: 'warning',
+          sentryMode: isUnansweredRead(error) ? 'never' : 'always',
           tags: {
             status:
               error instanceof WorkspaceApiError
                 ? (error.status ?? 'unknown')
                 : 'unknown',
             outcome: denied ? 'denied' : 'unavailable'
-          }
+          },
+          ...sessionEndedReporting(error)
         })
       } finally {
         signal?.removeEventListener('abort', abortRequest)
@@ -543,7 +583,7 @@ function useBillingCapabilitiesInternal() {
           // Deferred to here so the refetch is not deduped onto the request
           // it replaces. It cannot loop: this one is issued after the revision
           // that marked it, so only a further mutation can mark it in turn.
-          if (refetchAfterSettle) void fetchCapabilities()
+          if (refetchAfterSettle && !disposed) void fetchCapabilities()
         }
       }
     })()
@@ -571,7 +611,12 @@ function useBillingCapabilitiesInternal() {
   }
 
   async function refresh(): Promise<void> {
+    const requestIdAtCall = latestRequestId
     await initialize()
+    if (!localBillingWebEnabled.value || disposed) return
+    const noReadStartedSinceCall = latestRequestId === requestIdAtCall
+    if (noReadStartedSinceCall) await initialize()
+    else await activeRequest?.promise
   }
 
   watch(
@@ -587,12 +632,28 @@ function useBillingCapabilitiesInternal() {
     }
   )
 
+  watch(
+    [() => webSession.state, lapseRecoveryEnabled],
+    ([state, recoveryEnabled]) => {
+      const read = readState.value
+      if (
+        state.phase === 'signed_in' &&
+        read.status === 'denied' &&
+        read.sessionLapsed &&
+        recoveryEnabled
+      ) {
+        void fetchCapabilities()
+      }
+    }
+  )
+
   return {
     canTopUp,
     topUpDenial,
     canManageBilling,
     canSubscribeSelfServe,
     canOpenPlans,
+    openPlansDenial,
     canCancel,
     canReactivate,
     canRevertScheduledChange,

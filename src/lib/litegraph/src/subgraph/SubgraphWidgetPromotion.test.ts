@@ -1,5 +1,5 @@
 import { fromAny } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
   ExportedSubgraphInstance,
@@ -448,6 +448,32 @@ describe('SubgraphWidgetPromotion', () => {
         promotedInputs(subgraphNode).length
       )
       expect(promotedInputs(subgraphNode)).toHaveLength(0)
+    })
+
+    it('keeps the host value and adopts the new target constraints when a disconnected input is reconnected', async () => {
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: 'number', type: 'INT' }]
+      })
+      const host = createTestSubgraphNode(subgraph)
+      subgraph.rootGraph.add(host)
+      const a = createNodeWithWidget('A', 'number', 17, 'INT')
+      const b = createNodeWithWidget('B', 'number', 29, 'INT')
+      b.widget.options.max = 500
+      subgraph.add(a.node)
+      subgraph.add(b.node)
+      const slot = subgraph.inputs[0]
+      slot.connect(a.input, a.node)
+      const widget = () => host.widgets.find((entry) => entry.name === 'number')
+      const initial = widget()
+      assert.exists(initial)
+      initial.value = 77
+
+      slot.disconnect()
+      await Promise.resolve()
+
+      expect(widget()).toBeUndefined()
+      slot.connect(b.input, b.node)
+      expect(widget()).toMatchObject({ value: 77, options: { max: 500 } })
     })
 
     it('keeps the host widget promoted while another interior widget is still connected', async () => {
@@ -1394,6 +1420,47 @@ describe('SubgraphWidgetPromotion', () => {
             String(hostNode.id)
           )
         ).toEqual([{ name: 'preview', ...exposure12 }])
+      })
+
+      it('addresses legacy video and animation previews by the canvas preview name once per source, keeping nested host exposure names', () => {
+        const subgraph = createTestSubgraph()
+        const nestedHost = createTestSubgraphNode(createTestSubgraph(), {
+          id: 13
+        })
+        subgraph.add(nestedHost)
+        const hostNode = createTestSubgraphNode(subgraph)
+        hostNode.properties.previewExposures = [
+          {
+            name: 'video-preview',
+            sourceNodeId: '12',
+            sourcePreviewName: 'video-preview'
+          },
+          { name: CANVAS, sourceNodeId: '12', sourcePreviewName: CANVAS },
+          {
+            name: 'animation',
+            sourceNodeId: '14',
+            sourcePreviewName: '$$comfy_animation_preview'
+          },
+          {
+            name: 'nested',
+            sourceNodeId: '13',
+            sourcePreviewName: 'video-preview'
+          }
+        ]
+        hostNode._internalConfigureAfterSlots()
+
+        expect(
+          usePreviewExposureStore()
+            .getExposures(hostNode.rootGraph.id, String(hostNode.id))
+            .map(({ sourceNodeId, sourcePreviewName }) => [
+              sourceNodeId,
+              sourcePreviewName
+            ])
+        ).toEqual([
+          ['12', CANVAS],
+          ['14', CANVAS],
+          ['13', 'video-preview']
+        ])
       })
 
       it('moves a nested host raw-ID entry to its owner-scoped locator', () => {

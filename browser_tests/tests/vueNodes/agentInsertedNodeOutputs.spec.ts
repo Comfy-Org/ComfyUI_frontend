@@ -20,11 +20,12 @@ test.describe('Agent-inserted node outputs', { tag: '@vue-nodes' }, () => {
     getWebSocket
   }) => {
     const ws = await getWebSocket()
-    await comfyPage.workflow.loadWorkflow('vueNodes/agent-inserted-save-image')
+    await comfyPage.workflow.loadWorkflow('nodes/single_save_image_node', {
+      nodes: { 9: { id: INSERTED_NODE_ID } }
+    })
 
     const exec = new ExecutionHelper(comfyPage, ws)
     const jobId = await exec.run()
-    exec.executionStart(jobId)
     exec.executing(jobId, INSERTED_NODE_ID)
     exec.executed(jobId, INSERTED_NODE_ID, {
       images: [{ filename: 'example.png', subfolder: '', type: 'input' }]
@@ -46,7 +47,9 @@ test.describe('Agent-inserted node outputs', { tag: '@vue-nodes' }, () => {
     page
   }) => {
     const ws = await getWebSocket()
-    await comfyPage.workflow.loadWorkflow('vueNodes/agent-inserted-save-image')
+    await comfyPage.workflow.loadWorkflow('nodes/single_save_image_node', {
+      nodes: { 9: { id: INSERTED_NODE_ID } }
+    })
 
     const unresolvedReports: string[] = []
     page.on('console', (message) => {
@@ -61,7 +64,6 @@ test.describe('Agent-inserted node outputs', { tag: '@vue-nodes' }, () => {
     const jobId = await exec.run()
     const staleExecutionId =
       'insert:0fbd38ecb13037d0b3b0ca78b8a20a5a:root:node:404'
-    exec.executionStart(jobId)
     exec.executing(jobId, staleExecutionId)
     exec.executed(jobId, staleExecutionId, null)
     exec.executed(jobId, staleExecutionId, {
@@ -101,7 +103,6 @@ test.describe('Agent-inserted node outputs', { tag: '@vue-nodes' }, () => {
     const exec = new ExecutionHelper(comfyPage, ws)
     const jobId = await exec.run()
     const executionId = `${INSERTED_HOST_ID}:${INSERTED_INTERIOR_ID}`
-    exec.executionStart(jobId)
     exec.executing(jobId, executionId)
     exec.executed(jobId, executionId, {
       images: [{ filename: 'example.png', subfolder: '', type: 'input' }]

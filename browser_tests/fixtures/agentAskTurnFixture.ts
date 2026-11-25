@@ -11,11 +11,7 @@ import type {
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
-import {
-  agentTest,
-  bootAgentApp,
-  mockWorkflowPersistence
-} from '@e2e/fixtures/agentPanelFixture'
+import { agentTest, bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
 import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
@@ -104,16 +100,6 @@ async function startAskTurn(
   )
   await new AgentPanel(page).open(30_000)
 
-  await mockWorkflowPersistence(page, ASK_WORKFLOW_ID)
-
-  const picker = panel.getByRole('button', {
-    name: enMessages.agent.switchWorkflow
-  })
-  await picker.click()
-  await page
-    .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
-    .click()
-  await expect(picker).toHaveText('Unsaved Workflow')
   await expect.poll(() => hostSocket.connectionCount()).toBeGreaterThan(0)
 
   await panel.getByRole('textbox', { name: AGENT_COMPOSER_LABEL }).fill(prompt)

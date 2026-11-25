@@ -157,6 +157,7 @@ describe('useBillingCapabilities workspace scope mismatch', () => {
   ): BillingCapabilitiesResponse {
     return {
       auto_top_up_enabled: false,
+      billing_web_checkout_ui: 'full_page',
       resolved_for: {
         user_id: 'canonical-user-1',
         workspace_id: resolvedWorkspaceId
@@ -184,6 +185,8 @@ describe('useBillingCapabilities workspace scope mismatch', () => {
         can_manage_subscription: false,
         can_open_plans: false,
         can_run_workflows: false,
+        can_set_budgets: false,
+        can_set_hard_caps: false,
         can_upgrade: false
       },
       rollout_defaults_applied: {

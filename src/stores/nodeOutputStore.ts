@@ -1,7 +1,7 @@
 import { useTimeoutFn } from '@vueuse/core'
 import { mapKeys } from 'es-toolkit'
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, toRaw } from 'vue'
 
 import type {
   LGraph,
@@ -15,11 +15,16 @@ import type {
   ResultItem
 } from '@comfyorg/api-client/executionTypes'
 import type { ResultItemType } from '@comfyorg/api-client/resultItemTypeSchema'
+import { parseNodeOutput } from '@/stores/resultItemParsing'
+import { resultItemPreviewUrl, resultItemUrl } from '@/utils/resultItemUrl'
 import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'
 import { clone } from '@/scripts/utils'
 import { reportError } from '@comfyorg/telemetry/reportError'
-import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import {
+  createNodeLocatorId,
+  parseNodeLocatorId
+} from '@comfyorg/graph-model/nodeIdentification'
 import type {
   NodeExecutionId,
   NodeLocatorId
@@ -37,7 +42,7 @@ import {
   isVideoNode,
   resolveNode
 } from '@/utils/litegraphUtil'
-import { isInputPreviewOutput } from '@/utils/nodeOutputUtil'
+import { isInputPreviewOutput, mergeNodeOutput } from '@/utils/nodeOutputUtil'
 import {
   releaseSharedObjectUrl,
   retainSharedObjectUrl
@@ -87,6 +92,14 @@ interface SetOutputOptions {
 type NodePreviewMap = Partial<Record<string, string[]>>
 type RuntimeOutput = Pick<ExecutedWsMessage['output'], 'animated'> & {
   images?: (ResultItem | null)[]
+}
+
+function locatesInGraph(
+  rootGraph: LGraph | undefined,
+  nodeLocatorId: string
+): boolean {
+  const subgraphUuid = parseNodeLocatorId(nodeLocatorId)?.subgraphUuid
+  return !subgraphUuid || !!rootGraph?.subgraphs.has(subgraphUuid)
 }
 
 export const useNodeOutputStore = defineStore('nodeOutput', () => {
@@ -157,13 +170,53 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     return isImageOutputs(node, outputs) ? useApp().getPreviewFormatParam() : ''
   }
 
+  const randParamByOutputs = new WeakMap<object, string>()
+
+  function randParamFor(outputs: ExecutedWsMessage['output']): string {
+    const key = toRaw(outputs)
+    let rand = randParamByOutputs.get(key)
+    if (rand === undefined) {
+      rand = useApp().getRandParam()
+      randParamByOutputs.set(key, rand)
+    }
+    return rand
+  }
+
+  function getNodeOutputItems(
+    node: LGraphNode,
+    outputs = getNodeOutputs(node)
+  ) {
+    if (!outputs) return []
+    const rand = randParamFor(outputs)
+    return parseNodeOutput(node.id, outputs).map((item) => {
+      const { filepath, rootFolder } = parseAnnotatedPath(
+        item.filename,
+        item.type
+      )
+      const result = {
+        ...item,
+        filename:
+          node.comfyClass === 'LoadImageOutput' ? item.filename : filepath,
+        type: rootFolder
+      }
+      return {
+        ...result,
+        url: result.url ?? resultItemUrl(result) + rand,
+        previewUrl: resultItemPreviewUrl(result, {
+          previewFormat: getPreviewParam(node, outputs),
+          rand
+        })
+      }
+    })
+  }
+
   function buildImageUrls(
     node: LGraphNode,
     outputs: ExecutedWsMessage['output'] | undefined
   ): string[] | undefined {
     if (!outputs?.images?.length) return
 
-    const rand = useApp().getRandParam()
+    const rand = randParamFor(outputs)
     const previewParam = getPreviewParam(node, outputs)
 
     return outputs.images.filter(isResultItem).map((image) => {
@@ -236,16 +289,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     }
 
     if (options.merge && existingOutput) {
-      const mergedOutput = { ...existingOutput }
-      for (const [key, newValue] of Object.entries(outputs)) {
-        const existingValue = existingOutput[key]
-
-        if (Array.isArray(existingValue) && Array.isArray(newValue)) {
-          mergedOutput[key] = existingValue.concat(newValue)
-        } else {
-          mergedOutput[key] = newValue
-        }
-      }
+      const mergedOutput = mergeNodeOutput(existingOutput, outputs)
       nodeOutputs.value[nodeLocatorId] = mergedOutput
       useApp().nodeOutputs[nodeLocatorId] = clone(mergedOutput)
       return
@@ -326,14 +370,22 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   ) {
     const rootGraph = useApp().rootGraphOrUndefined
     const nodeLocatorId = executionIdToNodeLocatorId(rootGraph, executionId)
-    if (
-      !nodeLocatorId ||
-      (rootGraph && !getNodeByLocatorId(rootGraph, nodeLocatorId))
-    ) {
+    const node =
+      rootGraph && nodeLocatorId
+        ? getNodeByLocatorId(rootGraph, nodeLocatorId)
+        : undefined
+    if (!nodeLocatorId || (rootGraph && !node)) {
       reportUnresolvedExecutionId(executionId, outputs)
       return
     }
-    setOutputsByLocatorId(nodeLocatorId, outputs, options)
+    const emptyTextOutput =
+      outputs == null &&
+      (node?.comfyClass === 'PreviewAny' || node?.comfyClass === 'SaveText')
+    setOutputsByLocatorId(
+      nodeLocatorId,
+      emptyTextOutput ? {} : outputs,
+      emptyTextOutput ? {} : options
+    )
   }
 
   function reportUnresolvedExecutionId(
@@ -354,6 +406,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
       surface: 'graph',
       errorType: 'failure_resolving_node_output_execution_id',
       level: 'warning',
+      sentryMode: 'never',
       tags: { executionId },
       context: {
         filenames: filenames?.length ? filenames : undefined
@@ -452,20 +505,36 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     }
   }
 
-  /**
-   * Move the live previews into the stash so `app.clean()` cannot revoke them
-   * while `workflowPath` is loaded out of the editor. Preview frames arrive
-   * over the websocket and cannot be re-fetched, so releasing their object
-   * URLs on a tab switch loses them for good.
-   */
   function stashPreviewsForWorkflow(workflowPath: string) {
     discardClosedWorkflowPreviews()
-    discardPreviewsForWorkflow(workflowPath)
 
     const previews = nodePreviewImages.value
     if (Object.keys(previews).length) {
+      discardPreviewsForWorkflow(workflowPath)
       stashedPreviews.set(workflowPath, previews)
     }
+    nodePreviewImages.value = {}
+    useApp().nodePreviewImages = {}
+  }
+
+  function addLivePreviewsToStash(workflowPath: string) {
+    const stashed = stashedPreviews.get(workflowPath)
+    if (!stashed) {
+      stashPreviewsForWorkflow(workflowPath)
+      return
+    }
+
+    const superseded: Record<string, string[]> = {}
+    for (const [nodeLocatorId, urls] of Object.entries(
+      nodePreviewImages.value
+    )) {
+      if (!urls) continue
+
+      const replaced = stashed[nodeLocatorId]
+      if (replaced) superseded[nodeLocatorId] = replaced
+      stashed[nodeLocatorId] = urls
+    }
+    releasePreviewUrls(superseded)
     nodePreviewImages.value = {}
     useApp().nodePreviewImages = {}
   }
@@ -478,16 +547,16 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     stashedPreviews.delete(workflowPath)
 
     const live = nodePreviewImages.value
-    const superseded: Record<string, string[]> = {}
+    const rootGraph = useApp().rootGraphOrUndefined
+    const released: Record<string, string[]> = {}
     for (const [nodeLocatorId, urls] of Object.entries(stashed)) {
       if (!urls) continue
 
-      // A preview that arrived while the graph was loading wins; the stashed
-      // copy for that node then has no owner left to release it.
-      if (live[nodeLocatorId]) superseded[nodeLocatorId] = urls
+      if (live[nodeLocatorId] || !locatesInGraph(rootGraph, nodeLocatorId))
+        released[nodeLocatorId] = urls
       else live[nodeLocatorId] = urls
     }
-    releasePreviewUrls(superseded)
+    releasePreviewUrls(released)
     nodePreviewImages.value = { ...live }
     useApp().nodePreviewImages = clone(nodePreviewImages.value)
   }
@@ -603,6 +672,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
 
   return {
     getNodeOutputs,
+    getNodeOutputItems,
     getNodeImageUrls,
     getNodeImageUrlsByExecutionId,
     getNodeOutputByExecutionId,
@@ -625,6 +695,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     revokeAllPreviews,
     revokeSubgraphPreviews,
     stashPreviewsForWorkflow,
+    addLivePreviewsToStash,
     restorePreviewsForWorkflow,
     discardPreviewsForWorkflow,
     removeNodeOutputs,

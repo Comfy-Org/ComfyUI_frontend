@@ -3,6 +3,7 @@
     as="div"
     orientation="vertical"
     :loop="true"
+    data-slot="node-search-categories"
     class="group/categories flex min-h-0 flex-col overflow-y-auto py-2.5 select-none"
   >
     <!-- Preset categories -->
