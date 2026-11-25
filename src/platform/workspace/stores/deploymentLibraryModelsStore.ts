@@ -8,7 +8,7 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
+import { useAssetDownloadStore } from '@/platform/assets/stores/assetDownloadStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 
 interface LibraryFolder {

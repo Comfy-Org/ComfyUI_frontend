@@ -181,19 +181,17 @@ describe('AgentSkillList', () => {
     expect(screen.queryByText('No skills yet')).toBeNull()
   })
 
-  it('says skills are unavailable, and drops the stale list, when the routes answer 404', async () => {
+  it('keeps the cached skills when a refresh 404s', async () => {
     vi.mocked(listSkillPacks).mockRejectedValueOnce(
       new SkillPacksApiError('missing', 404)
     )
-    seedCatalog([LANDSCAPE])
+    const skills = seedCatalog([LANDSCAPE])
     mount()
 
-    expect(
-      await screen.findByText("Skills aren't available right now.")
-    ).toBeVisible()
-    expect(screen.queryByText('landscape')).toBeNull()
-    expect(screen.getByRole('button', { name: 'Back to chat' })).toBeVisible()
-    expect(screen.queryByRole('button', { name: 'Add skill' })).toBeNull()
+    await waitFor(() => expect(skills.loadFailed).toBe(true))
+
+    expect(screen.getByText('landscape')).toBeVisible()
+    expect(screen.queryByRole('alert')).toBeNull()
   })
 
   it('does not ask the server when skills are not enabled', () => {

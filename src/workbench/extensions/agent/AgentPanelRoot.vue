@@ -48,12 +48,13 @@ import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyW
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useAppMode } from '@/composables/useAppMode'
-import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
+import { MIME_ASSET_INFO } from '@/platform/assets/constants/assetDrag'
+import { getDroppedAsset } from '@/platform/assets/integration/assetDrop'
 import { findServerPreviewUrl } from '@/platform/assets/utils/assetPreviewUtil'
-import { fetchDroppedAsset, getDroppedAsset } from '@/utils/eventUtils'
+import type { DroppedAsset } from '@/platform/assets/integration/assetDrop'
+import { fetchDroppedFile } from '@/utils/eventUtils'
 import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
-import type { DroppedAsset } from '@/utils/eventUtils'
-import { useAssetsStore } from '@/stores/assetsStore'
+import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
 import {
   AGENT_ATTACH_ACCEPT,
   agentAttachRefVerdict,
@@ -219,7 +220,6 @@ import { startCrdtLog } from './crdt/crdtLog'
 import type { CrdtLogLevel } from './crdt/crdtLogLevel'
 import { attachAgentWriteOverwriteWatch } from './crdt/agentWriteOverwrites'
 import { attachDocOpMinter } from './crdt/docOpMinter'
-import { attachRestoreOpMinter } from './crdt/restoreOpMinter'
 import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
 
 const CrdtDevPanel = defineAsyncComponent(
@@ -606,6 +606,8 @@ const workflowResolver = useAgentWorkflowResolver({
   bindings: bindingStore,
   listCloudWorkflows: () => rest.listCloudWorkflows(),
   getCloudWorkflow: (workflowId) => rest.getCloudWorkflow(workflowId),
+  getWorkflowDraft: (workflowId) => rest.getWorkflowDraft(workflowId),
+  getWorkflowContent: (workflowId) => rest.getWorkflowContent(workflowId),
   getWorkflowSidebarFile: (workflowId) =>
     rest.getWorkflowSidebarFile(workflowId)
 })
@@ -1415,6 +1417,12 @@ const docOpMinter = attachDocOpMinter({
   isDocBound: followerCanDeliver,
   onUnboundLocalIntent: noteUnboundLocalIntent,
   onUnboundVisibleIntent: noteUnboundVisibleIntent,
+  isBoundWorkflow: (workflow) => {
+    const bound = boundWorkflowId.value
+    return (
+      bound !== null && boundOrOpenWorkflowFor(bound)?.path === workflow.path
+    )
+  },
   enqueue: enqueueHumanOperations,
   getGraph: () => (useApp().isGraphReady ? useApp().rootGraph : null),
   boundRootGraphId,
@@ -1426,33 +1434,13 @@ const docOpMinter = attachDocOpMinter({
   docHasSubgraphDefinition,
   onWidgetWriteRefused: notifyWidgetWriteRefused
 })
-const isChangeTrackerRestoring = () =>
-  workflowStore.activeWorkflow?.changeTracker?._restoringState === true
-const restoreOpMinter = attachRestoreOpMinter({
-  isEnabled: () => agentPanelStore.enabled,
-  isDocBound: followerCanDeliver,
-  isBoundWorkflow: (workflow) => {
-    const bound = boundWorkflowId.value
-    return (
-      bound !== null && boundOrOpenWorkflowFor(bound)?.path === workflow.path
-    )
-  },
-  enqueue: enqueueHumanOperations,
-  onUnboundLocalIntent: () =>
-    noteUnboundLocalIntent(boundWorkflowId.value ?? undefined),
-  docInputNames: (nodeId) => {
-    const parsed = parseNodeId(nodeId)
-    return parsed === null ? null : docInputNames(parsed)
-  },
-  isRestoringState: (workflow) =>
-    workflow.changeTracker?._restoringState === true
-})
 watch([() => crdtStatus.value.connected, boundWorkflowId], () =>
-  restoreOpMinter.deliverHeld()
+  docOpMinter.deliverHeldRestores()
 )
 const agentWriteOverwriteWatch = attachAgentWriteOverwriteWatch({
   isEnabled: () => agentPanelStore.enabled,
-  isRestoringState: isChangeTrackerRestoring
+  isRestoringState: () =>
+    workflowStore.activeWorkflow?.changeTracker?._restoringState === true
 })
 const { flags } = useFeatureFlags()
 const isCrdtDevPanelEnabled = computed(
@@ -1971,9 +1959,6 @@ onBeforeUnmount(() => {
     },
     detachDocOpMinter: () => {
       docOpMinter.detach()
-    },
-    detachRestoreOpMinter: () => {
-      restoreOpMinter.detach()
     },
     detachAgentWriteOverwriteWatch: () => {
       agentWriteOverwriteWatch.detach()
@@ -3180,7 +3165,7 @@ async function attachDroppedAsset(event: DragEvent): Promise<boolean> {
 
   const result = await attachment.addDeferredFile(
     asset.name,
-    (signal) => fetchDroppedAsset(asset, { signal, nameFromSource: true }),
+    (signal) => fetchDroppedFile(asset, { signal, nameFromSource: true }),
     sourceKey
   )
   if (result === 'fetch_failed')

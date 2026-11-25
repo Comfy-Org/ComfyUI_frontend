@@ -242,14 +242,14 @@ describe('useBillingCapabilities', () => {
     [
       'allowed',
       () => Promise.resolve(capabilitiesResponse(true)),
-      'succeeded',
-      'success'
+      undefined,
+      undefined
     ],
     [
       'policy denied',
       () => Promise.resolve(capabilitiesResponse(false)),
-      'succeeded',
-      'success'
+      undefined,
+      undefined
     ],
     [
       'access denied',
@@ -265,9 +265,15 @@ describe('useBillingCapabilities', () => {
       () => Promise.reject(new Error('network failed')),
       'failed',
       'failure'
+    ],
+    [
+      'resolved for another workspace',
+      () => Promise.resolve(capabilitiesResponse(true, 'workspace-2')),
+      'failed',
+      'failure'
     ]
   ] as const)(
-    'records capability reads when %s',
+    'records only failed capability reads, here %s',
     async ([, response, stage, outcome]) => {
       const record = vi.fn()
       const registry = new TelemetryRegistry()

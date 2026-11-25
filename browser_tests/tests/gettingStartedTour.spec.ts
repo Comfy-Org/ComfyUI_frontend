@@ -9,7 +9,7 @@ import type { SupportedTemplateId } from '@/renderer/extensions/firstRunTour/rol
 
 import type { PromptResponse } from '@comfyorg/ingest-types'
 
-import type { AssetResponse } from '@/platform/assets/schemas/assetSchema'
+import type { AssetResponse } from '@comfyorg/assets-core/schema'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import type { BillingStatusResponse } from '@comfyorg/billing-core'
 

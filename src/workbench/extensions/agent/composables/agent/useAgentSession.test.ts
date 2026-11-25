@@ -106,6 +106,8 @@ function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
       created_at: '2026-09-11T10:00:00Z',
       updated_at: '2026-09-11T10:00:00Z'
     })),
+    getWorkflowDraft: vi.fn(async () => ({})),
+    getWorkflowContent: vi.fn(async () => ({})),
     getWorkflowSidebarFile: vi.fn(async (workflowId: string) => ({
       path: `workflows/${workflowId}.json`
     })),
