@@ -59,6 +59,9 @@
     "name": "Show selection toolbox",
     "tooltip": "Display a floating toolbar when nodes are selected, providing quick access to common actions."
   },
+  "Comfy_Cloud_AskBeforeCompatibilityCheck": {
+    "name": "Ask before sending node and model names to check Comfy Cloud compatibility"
+  },
   "Comfy_ConfirmClear": {
     "name": "Require confirmation when clearing workflow"
   },

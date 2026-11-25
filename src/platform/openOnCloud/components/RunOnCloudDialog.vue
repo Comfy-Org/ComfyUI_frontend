@@ -34,7 +34,7 @@
 import { useTelemetry } from '@comfyorg/telemetry'
 import type { RunOnCloudTelemetryEvent } from '@comfyorg/telemetry/types'
 import { storeToRefs } from 'pinia'
-import { computed, onBeforeUnmount, ref, toRaw, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, toRaw, watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
@@ -46,6 +46,7 @@ import type { RunOnCloudModalState } from '@/platform/openOnCloud/runOnCloudModa
 import { runOnCloudModalState } from '@/platform/openOnCloud/runOnCloudModalState'
 import { useCloudWorkflowCheckStore } from '@/platform/openOnCloud/stores/cloudWorkflowCheckStore'
 import { useLocalModelUploadStore } from '@/platform/openOnCloud/stores/localModelUploadStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import type { MissingModel } from '@/platform/openOnCloud/stores/localModelUploadStore'
 import {
   DEPLOY_VIDEO_POSTER_SRC,
@@ -67,10 +68,19 @@ const checkRequested = ref(false)
 const checkConsent = new AbortController()
 onBeforeUnmount(() => checkConsent.abort())
 
-function startCheck() {
+const settingStore = useSettingStore()
+
+function startCheck(dontAskAgain = false) {
   if (checkRequested.value || !requestCheck?.(checkConsent.signal)) return
   checkRequested.value = true
+  if (dontAskAgain)
+    void settingStore.set('Comfy.Cloud.AskBeforeCompatibilityCheck', false)
 }
+
+onMounted(() => {
+  if (settingStore.get('Comfy.Cloud.AskBeforeCompatibilityCheck') === false)
+    startCheck()
+})
 
 const { state: check } = storeToRefs(useCloudWorkflowCheckStore())
 const uploads = useLocalModelUploadStore()
