@@ -42,7 +42,7 @@ import type { Point2D } from '@comfyorg/shared-frontend-utils/geometry'
 import { onCanvasFrame } from '@/lib/litegraph/src/canvas/canvasFrame'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { activeGuides } from '@/renderer/core/canvas/smartGuides/smartGuidesState'
-import type { SmartGuide } from '@/renderer/core/canvas/smartGuides/snapSolver'
+import type { SmartGuide } from '@comfyorg/graph-model/arrange/snapSolver'
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 
 type LineGuide = Extract<SmartGuide, { kind: 'line' }>

@@ -1,15 +1,19 @@
 import { describe, expect, it } from 'vitest'
 
 import { buildSnapIndex, snapMove, snapResize } from './snapSolver'
-import type { SnapBox, SnapOptions } from './snapSolver'
+import type { VisualBox } from './arrange'
 
-const box = (
+import type { SnapOptions } from './snapSolver'
+
+function box(
   x: number,
   y: number,
   width: number,
   height: number,
   titleHeight = 0
-): SnapBox => ({ x, y, width, height, titleHeight })
+): VisualBox {
+  return { x, y, width, height, titleHeight }
+}
 
 const edgesOnly: SnapOptions = {
   edges: true,

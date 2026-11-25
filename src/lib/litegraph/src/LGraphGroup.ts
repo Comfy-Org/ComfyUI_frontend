@@ -15,7 +15,7 @@ import {
 } from '@comfyorg/shared-frontend-utils/colorUtil'
 
 import { canvasClass } from './canvas/canvasClassAccess'
-import { GROUP_RESIZE_REACH } from './canvas/cornerResize'
+import { GROUP_RESIZE_REACH } from '@comfyorg/graph-model/arrange/cornerResize'
 import { LGraphNode } from './LGraphNode'
 import { strokeShape } from './draw'
 import { createMutationView } from './infrastructure/createMutationView'

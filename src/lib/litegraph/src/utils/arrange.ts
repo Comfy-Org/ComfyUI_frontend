@@ -2,7 +2,20 @@ import type {
   Point2D,
   RectSide as Direction
 } from '@comfyorg/shared-frontend-utils/geometry'
-import type { LGraphNode } from '@comfyorg/graph-model/entityRegistry'
+import { arrangePlacements } from '@comfyorg/graph-model/arrange/arrange'
+import type {
+  AlignAction,
+  Axis,
+  Placement,
+  VisualBox
+} from '@comfyorg/graph-model/arrange/arrange'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+
+import type { Positionable } from '@comfyorg/graph-model/interfaces'
+
+import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
+import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { computeUnionBounds } from '@/utils/mathUtil'
 
 export interface NewNodePosition {
   node: LGraphNode
@@ -16,11 +29,67 @@ export interface IBoundaryNodes {
   left: LGraphNode
 }
 
+/** The node's visual bounds, title band included. */
+export function nodeBox(node: LGraphNode): VisualBox {
+  const [x, y, width, height] = node.boundingRect
+  const titleHeight = Math.max(0, Math.min(height, node.boundingOffset[1]))
+  return { x, y, width, height, titleHeight }
+}
+
+/** The visual bounds of any canvas item; only nodes and groups have a title band. */
+export function positionableBox(item: Positionable): VisualBox {
+  if (item instanceof LGraphNode) return nodeBox(item)
+  const [x, y, width, height] = item.boundingRect
+  const titleHeight = item instanceof LGraphGroup ? item.titleHeight : 0
+  return {
+    x,
+    y,
+    width,
+    height,
+    titleHeight: Math.max(0, Math.min(height, titleHeight))
+  }
+}
+
+/** The union of the items' visual bounds, with the title band of the topmost item. */
+export function unionBox(items: Positionable[]): VisualBox | undefined {
+  const bounds = computeUnionBounds(items.map((item) => item.boundingRect))
+  if (!bounds) return
+  const top = items.reduce((a, b) =>
+    b.boundingRect[1] < a.boundingRect[1] ? b : a
+  )
+  return { ...bounds, titleHeight: positionableBox(top).titleHeight }
+}
+
+/** Each node's current placement, by id. */
+export function placementsOf(nodes: LGraphNode[]): Map<NodeId, Placement> {
+  return new Map(
+    nodes.map((node) => [
+      node.id,
+      { position: { x: node.pos[0], y: node.pos[1] }, box: nodeBox(node) }
+    ])
+  )
+}
+
+function arrangeNodes(
+  nodes: LGraphNode[],
+  action: AlignAction,
+  reference?: LGraphNode
+): NewNodePosition[] {
+  const movable = nodes.filter((node) => !node.pinned)
+  const after = arrangePlacements(
+    placementsOf(movable),
+    action,
+    reference && nodeBox(reference)
+  )
+  return movable.flatMap((node) => {
+    const placement = after.get(node.id)
+    return placement ? [{ node, newPos: placement.position }] : []
+  })
+}
+
 /**
  * Finds the nodes that are farthest in all four directions, representing the boundary of the nodes.
- * @param nodes The nodes to check the edges of
- * @returns An object listing the furthest node (edge) in all four directions.
- * `null` if no nodes were supplied or the first node was falsy.
+ * @returns `null` if no nodes were supplied.
  */
 export function getBoundaryNodes(nodes: LGraphNode[]): IBoundaryNodes | null {
   if (nodes.length === 0) return null
@@ -41,114 +110,22 @@ export function getBoundaryNodes(nodes: LGraphNode[]): IBoundaryNodes | null {
     if (x < left.pos[0]) left = node
   }
 
-  return {
-    top,
-    right,
-    bottom,
-    left
-  }
+  return { top, right, bottom, left }
 }
 
-/**
- * Distributes nodes evenly along a horizontal or vertical plane.
- * @param nodes The nodes to distribute
- * @param horizontal If true, distributes along the horizontal plane.  Otherwise, the vertical plane.
- */
+/** Positions that space the unpinned nodes' visual boxes evenly along `axis` between the outermost ones. */
 export function distributeNodes(
   nodes: LGraphNode[],
-  horizontal?: boolean
+  axis: Axis
 ): NewNodePosition[] {
-  const nodeCount = nodes.length
-  if (!(nodeCount > 1)) return []
-
-  const index = horizontal ? 0 : 1
-
-  let total = 0
-  let highest = -Infinity
-
-  for (const node of nodes) {
-    total += node.size[index]
-
-    const high = node.pos[index] + node.size[index]
-    if (high > highest) highest = high
-  }
-  const sorted = [...nodes].sort((a, b) => a.pos[index] - b.pos[index])
-  const lowest = sorted[0].pos[index]
-
-  const gap = (highest - lowest - total) / (nodeCount - 1)
-  let startAt = lowest
-  for (let i = 0; i < nodeCount; i++) {
-    const node = sorted[i]
-    node.pos[index] = startAt + gap * i
-    startAt += node.size[index]
-  }
-  const newPositions = sorted.map((node): NewNodePosition => ({
-    node,
-    newPos: {
-      x: node.pos[0],
-      y: node.pos[1]
-    }
-  }))
-  return newPositions
+  return arrangeNodes(nodes, axis === 'x' ? 'distributeX' : 'distributeY')
 }
 
-/**
- * Aligns all nodes along the edge of a node.
- * @param nodes The nodes to align
- * @param direction The edge to align nodes on
- * @param align_to The node to align all other nodes to.  If undefined, the farthest node will be used.
- */
+/** Positions that line the unpinned nodes up on one edge of the selection, or of `align_to` when given. */
 export function alignNodes(
   nodes: LGraphNode[],
   direction: Direction,
   align_to?: LGraphNode
 ): NewNodePosition[] {
-  const boundary =
-    align_to === undefined
-      ? getBoundaryNodes(nodes)
-      : { top: align_to, right: align_to, bottom: align_to, left: align_to }
-
-  if (boundary === null) return []
-
-  const nodePositions = nodes.map((node): NewNodePosition => {
-    switch (direction) {
-      case 'right':
-        return {
-          node,
-          newPos: {
-            x: boundary.right.pos[0] + boundary.right.size[0] - node.size[0],
-            y: node.pos[1]
-          }
-        }
-      case 'left':
-        return {
-          node,
-          newPos: {
-            x: boundary.left.pos[0],
-            y: node.pos[1]
-          }
-        }
-      case 'top':
-        return {
-          node,
-          newPos: {
-            x: node.pos[0],
-            y: boundary.top.pos[1]
-          }
-        }
-      case 'bottom':
-        return {
-          node,
-          newPos: {
-            x: node.pos[0],
-            y: boundary.bottom.pos[1] + boundary.bottom.size[1] - node.size[1]
-          }
-        }
-    }
-  })
-
-  for (const { node, newPos } of nodePositions) {
-    node.setPos(newPos.x, newPos.y)
-  }
-  return nodePositions
+  return arrangeNodes(nodes, direction, align_to)
 }

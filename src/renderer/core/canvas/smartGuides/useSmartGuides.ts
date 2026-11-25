@@ -13,9 +13,12 @@ export function useSmartGuides() {
   const settingStore = useSettingStore()
   const extensionStore = useExtensionStore()
 
-  const extensionActive = () =>
-    extensionStore.isExtensionInstalled(SMART_GUIDES_EXTENSION) &&
-    extensionStore.isExtensionEnabled(SMART_GUIDES_EXTENSION)
+  function extensionActive() {
+    return (
+      extensionStore.isExtensionInstalled(SMART_GUIDES_EXTENSION) &&
+      extensionStore.isExtensionEnabled(SMART_GUIDES_EXTENSION)
+    )
+  }
 
   onScopeDispose(
     registerGestureSnapProvider(

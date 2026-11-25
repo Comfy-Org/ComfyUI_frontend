@@ -247,10 +247,9 @@ import {
 } from './canvas/gestureSnap'
 import type { ResizeSnap } from './canvas/gestureSnap'
 import {
-  clampToMinimum,
-  resizeCornerAt,
-  resizeFromCorner
-} from './canvas/cornerResize'
+  resizeBox,
+  resizeCornerAt
+} from '@comfyorg/graph-model/arrange/cornerResize'
 import { resolveConnectingLinkColor } from './utils/linkColors'
 import { slotTypeKey } from './utils/type'
 import { BaseWidget } from './widgets/BaseWidget'
@@ -1558,7 +1557,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       const canvas = LGraphCanvas.active_canvas
       const newPositions = distributeNodes(
         selectedCanvasNodes(canvas),
-        value === 'Horizontally'
+        value === 'Horizontally' ? 'x' : 'y'
       )
       canvas.applyNodePositions(newPositions)
       canvas.setDirty(true, true)
@@ -2986,26 +2985,22 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         pointer.onDrag = (eMove) => {
           if (this.read_only || !pointer.dragStarted) return
 
-          const resized = resizeFromCorner(
+          const bounds = resizeBox(
             start,
             corner,
-            eMove.canvasX - e.canvasX,
-            eMove.canvasY - e.canvasY,
-            this._snapToGrid
-          )
-          const snapped =
-            resizeSnap?.resize(resized, corner, {
-              snapToGrid: !!this._snapToGrid,
-              min: {
+            { x: eMove.canvasX - e.canvasX, y: eMove.canvasY - e.canvasY },
+            {
+              grid: this._snapToGrid,
+              minAt: () => ({
                 width: LGraphGroup.minWidth,
                 height: LGraphGroup.minHeight
-              }
-            }) ?? resized
-          const bounds = clampToMinimum(
-            snapped,
-            corner,
-            LGraphGroup.minWidth,
-            LGraphGroup.minHeight
+              }),
+              snap: (box, min) =>
+                resizeSnap?.resize(box, corner, {
+                  snapToGrid: !!this._snapToGrid,
+                  min
+                }) ?? box
+            }
           )
           group.setBounds(bounds.x, bounds.y, bounds.width, bounds.height)
           this.dirty_bgcanvas = true
@@ -3306,31 +3301,23 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           pointer.onDrag = (eMove) => {
             if (this.read_only || !pointer.dragStarted) return
 
-            const deltaX = eMove.canvasX - x
-            const deltaY = eMove.canvasY - y
-
-            const resized = resizeFromCorner(
-              startBounds,
-              resizeDirection,
-              deltaX,
-              deltaY,
-              this._snapToGrid
-            )
             const min = node.computeSize()
             if (this._snapToGrid) {
               snapPoint(min, this._snapToGrid, 'ceil')
             }
-            const snapped =
-              resizeSnap?.resize(resized, resizeDirection, {
-                snapToGrid: !!this._snapToGrid,
-                min: { width: min[0], height: min[1] }
-              }) ?? resized
-
-            const bounds = clampToMinimum(
-              snapped,
+            const bounds = resizeBox(
+              startBounds,
               resizeDirection,
-              min[0],
-              min[1]
+              { x: eMove.canvasX - x, y: eMove.canvasY - y },
+              {
+                grid: this._snapToGrid,
+                minAt: () => ({ width: min[0], height: min[1] }),
+                snap: (box, minSize) =>
+                  resizeSnap?.resize(box, resizeDirection, {
+                    snapToGrid: !!this._snapToGrid,
+                    min: minSize
+                  }) ?? box
+              }
             )
 
             node.pos = [bounds.x, bounds.y]

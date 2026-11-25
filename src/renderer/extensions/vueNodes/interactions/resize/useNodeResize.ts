@@ -3,16 +3,14 @@ import { attempt } from 'es-toolkit'
 import { ref } from 'vue'
 
 import type {
+  Bounds,
   CompassCorners,
   Point2D as Point,
   Size2D as Size
 } from '@comfyorg/shared-frontend-utils/geometry'
 import type { Positionable } from '@comfyorg/graph-model/interfaces'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import {
-  clampToMinimum,
-  resizeFromCorner
-} from '@/lib/litegraph/src/canvas/cornerResize'
+import { resizeBox } from '@comfyorg/graph-model/arrange/cornerResize'
 import { startResizeSnap } from '@/lib/litegraph/src/canvas/gestureSnap'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
@@ -124,41 +122,38 @@ export function useNodeResize(
 
       const activeCorner = resizeCorner.value
       const snapToGrid = shouldSnap(moveEvent)
-      const resized = resizeFromCorner(
-        { ...resizeStartPosition.value, ...resizeStartSize.value },
-        activeCorner,
-        deltaX,
-        deltaY,
-        snapToGrid ? gridSize.value : 0,
-        'ceil'
-      )
-
-      const titleBand = resized.height - removeNodeTitleHeight(resized.height)
-      const body = { ...resized, height: resized.height - titleBand }
       const minWidth =
         parseFloat(
           nodeElement.style.getPropertyValue('--min-node-width') || '0'
         ) || MIN_NODE_WIDTH
-      const rawWidth = Math.max(body.width, minWidth)
-      const rawMinHeight = measureMinContentHeight(rawWidth)
-      const snapped =
-        resizeSnap?.resize(body, activeCorner, {
-          snapToGrid,
-          min: { width: minWidth, height: rawMinHeight - titleBand }
-        }) ?? body
-      const withTitle = { ...snapped, height: snapped.height + titleBand }
-
-      const width = Math.max(withTitle.width, minWidth)
+      function snapBody(box: Bounds, min: Size): Bounds {
+        if (!resizeSnap) return box
+        const titleBand = box.height - removeNodeTitleHeight(box.height)
+        const snapped = resizeSnap.resize(
+          { ...box, height: box.height - titleBand },
+          activeCorner,
+          { snapToGrid, min: { ...min, height: min.height - titleBand } }
+        )
+        return { ...snapped, height: snapped.height + titleBand }
+      }
       const {
         x: newX,
         y: newY,
         width: newWidth,
         height: newHeight
-      } = clampToMinimum(
-        withTitle,
+      } = resizeBox(
+        { ...resizeStartPosition.value, ...resizeStartSize.value },
         activeCorner,
-        minWidth,
-        width === rawWidth ? rawMinHeight : measureMinContentHeight(width)
+        { x: deltaX, y: deltaY },
+        {
+          grid: snapToGrid ? gridSize.value : 0,
+          sizeRounding: 'ceil',
+          minAt: (width) => ({
+            width: minWidth,
+            height: measureMinContentHeight(Math.max(width, minWidth))
+          }),
+          snap: snapBody
+        }
       )
 
       const payload: ResizeCallbackPayload = {

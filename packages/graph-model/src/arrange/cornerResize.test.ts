@@ -4,6 +4,7 @@ import type { CompassCorners } from '@comfyorg/shared-frontend-utils/geometry'
 
 import {
   clampToMinimum,
+  resizeBox,
   resizeCornerAt,
   resizeFromCorner
 } from './cornerResize'
@@ -81,4 +82,34 @@ describe('clampToMinimum', () => {
       expect([x, y, width, height]).toEqual(expected)
     }
   )
+})
+
+describe('resizeBox', () => {
+  const min = { width: 140, height: 80 }
+
+  it('lets the snap adjust the box, then grows it back to the minimum from the dragged corner', () => {
+    const { x, y, width, height } = resizeBox(
+      start,
+      'NW',
+      { x: 150, y: 0 },
+      {
+        minAt: () => min,
+        snap: (box) => ({ ...box, y: box.y + 90, height: 30 })
+      }
+    )
+    expect([x, y, width, height]).toEqual([163, 81, 140, 80])
+  })
+
+  it('clamps to the minimum measured at the snapped width', () => {
+    const { width, height } = resizeBox(
+      start,
+      'SE',
+      { x: 10, y: 0 },
+      {
+        minAt: (width) => ({ width: 140, height: width - 70 }),
+        snap: (box) => ({ ...box, width: 250 })
+      }
+    )
+    expect([width, height]).toEqual([250, 180])
+  })
 })

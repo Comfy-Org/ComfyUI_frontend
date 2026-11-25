@@ -1,20 +1,17 @@
 import { computed } from 'vue'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  arrangePlacements,
+  boxesOf,
+  lanesAlong
+} from '@comfyorg/graph-model/arrange/arrange'
+import type { AlignAction, Axis } from '@comfyorg/graph-model/arrange/arrange'
+import { placementsOf } from '@/lib/litegraph/src/utils/arrange'
 import { useSelectionState } from '@/composables/graph/useSelectionState'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import {
-  alignBoxes,
-  lanesAlong
-} from '@/renderer/core/canvas/smartGuides/alignBoxes'
-import type { AlignAction } from '@/renderer/core/canvas/smartGuides/alignBoxes'
-import {
-  nodePlacement,
-  positionForBox
-} from '@/renderer/core/canvas/smartGuides/dragSnapSession'
 import { distributeSession } from '@/renderer/core/canvas/smartGuides/smartGuidesState'
-import type { Axis } from '@/renderer/core/canvas/smartGuides/snapSolver'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
 
@@ -23,11 +20,13 @@ const DISTRIBUTE_AXIS: Partial<Record<AlignAction, Axis>> = {
   distributeY: 'y'
 }
 
-const isMatchSize = (action: AlignAction) =>
-  action === 'matchWidth' || action === 'matchHeight'
+function isMatchSize(action: AlignAction) {
+  return action === 'matchWidth' || action === 'matchHeight'
+}
 
-const isResizable = (node: LGraphNode) =>
-  !node.flags.collapsed && node.resizable !== false
+function isResizable(node: LGraphNode) {
+  return !node.flags.collapsed && node.resizable !== false
+}
 
 export function useAlignSelection() {
   const { selectedNodes } = useSelectionState()
@@ -54,27 +53,24 @@ export function useAlignSelection() {
     const nodes = nodesFor(action)
     if (!rootGraphId || !canvas || !canAlign(action)) return
 
-    const placements = nodes.map(nodePlacement)
-    const before = placements.map(({ box }) => box)
-    const after = alignBoxes(before, action)
+    const before = placementsOf(nodes)
+    const after = arrangePlacements(before, action)
     mutations.batchMoveNodes(
       rootGraphId,
-      placements.flatMap((placement, i) =>
-        after[i].x === before[i].x && after[i].y === before[i].y
+      [...after].flatMap(([nodeId, { position }]) => {
+        const was = before.get(nodeId)?.position
+        return was?.x === position.x && was.y === position.y
           ? []
-          : [
-              {
-                nodeId: placement.node.id,
-                position: positionForBox(placement, after[i])
-              }
-            ]
-      )
+          : [{ nodeId, position }]
+      })
     )
-    nodes.forEach((node, i) => {
-      const { width, height, titleHeight } = after[i]
-      if (width === before[i].width && height === before[i].height) return
-      node.setSize([width, height - titleHeight])
-    })
+    for (const node of nodes) {
+      const box = after.get(node.id)?.box
+      const was = before.get(node.id)?.box
+      if (!box || (box.width === was?.width && box.height === was.height))
+        continue
+      node.setSize([box.width, box.height - box.titleHeight])
+    }
     canvas.setDirty(true, true)
     workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
 
@@ -84,9 +80,7 @@ export function useAlignSelection() {
         ? {
             graph: canvas.graph,
             axis,
-            lanes: lanesAlong(after, axis).map((lane) =>
-              lane.map((index) => nodes[index].id)
-            ),
+            lanes: lanesAlong(boxesOf(after), axis),
             selectionSize: canvas.selectedItems.size
           }
         : null

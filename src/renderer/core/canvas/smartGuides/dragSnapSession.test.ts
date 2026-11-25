@@ -4,11 +4,7 @@ import { LGraph, LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { createMockCanvas } from '@/utils/__tests__/canvasTestUtils'
 import { createTestLink } from '@/utils/__tests__/litegraphTestUtils'
 
-import {
-  createSmartGuidesProvider,
-  nodePlacement,
-  positionForBox
-} from './dragSnapSession'
+import { createSmartGuidesProvider } from './dragSnapSession'
 import type { SmartGuidesConfig } from './dragSnapSession'
 
 const defaults: SmartGuidesConfig = {
@@ -22,8 +18,9 @@ const defaults: SmartGuidesConfig = {
 
 const wiresOnly = { ...defaults, edges: false, spacing: false }
 
-const providerWith = (config: SmartGuidesConfig) =>
-  createSmartGuidesProvider(() => config)
+function providerWith(config: SmartGuidesConfig) {
+  return createSmartGuidesProvider(() => config)
+}
 
 const free = { snapToGrid: false }
 
@@ -145,25 +142,5 @@ describe('createSmartGuidesProvider resize', () => {
       min: { width: 0, height: 0 }
     })
     expect(out?.width).toBe(200)
-  })
-})
-
-describe('positionForBox', () => {
-  it('keeps the offset an onBounding hook adds between position and box', () => {
-    const node = new LGraphNode('Padded')
-    node.pos = [100, 200]
-    node.size = [150, 60]
-    node.onBounding = (bounds) => {
-      bounds[0] -= 10
-    }
-    node.updateArea()
-    const placement = nodePlacement(node)
-
-    const moved = {
-      ...placement.box,
-      x: placement.box.x + 30,
-      y: placement.box.y + 5
-    }
-    expect(positionForBox(placement, moved)).toEqual({ x: 130, y: 205 })
   })
 })

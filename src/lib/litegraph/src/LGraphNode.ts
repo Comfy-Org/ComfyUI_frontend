@@ -878,13 +878,22 @@ export class LGraphNode
 
   /** @inheritdoc {@link boundingRect} */
   private _boundingRect: Rectangle = new Rectangle()
+  private _measuredPos: Point | undefined
   /**
    * Cached node position & area as `x, y, width, height`.  Includes changes made by {@link onBounding}, if present.
    *
-   * Determines the node hitbox and other rendering effects.  Calculated once at the start of every frame.
+   * Determines the node hitbox and other rendering effects.  Measured once at the start of every frame, and moved with the node until the next measure.
    */
   get boundingRect(): ReadOnlyRectangle {
-    return this._boundingRect
+    const bounds = this._boundingRect
+    const measured = this._measuredPos
+    if (!measured) return bounds
+    const [x, y] = this.pos
+    bounds[0] += x - measured[0]
+    bounds[1] += y - measured[1]
+    measured[0] = x
+    measured[1] = y
+    return bounds
   }
 
   /** The offset from {@link pos} to the top-left of {@link boundingRect}. */
@@ -2567,6 +2576,7 @@ export class LGraphNode
   updateArea(ctx?: CanvasRenderingContext2D): void {
     const bounds = this._boundingRect
     this.measure(bounds, ctx)
+    this._measuredPos = [this.pos[0], this.pos[1]]
     this.onBounding?.(bounds)
 
     const renderArea = this._renderArea

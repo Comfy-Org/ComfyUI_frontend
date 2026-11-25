@@ -806,7 +806,6 @@ describe('AgentCrdtProjection catch-up over a live graph', () => {
     onTestFinished(destroy)
 
     source.pos = [680, 20]
-    expect([...source.boundingRect]).not.toEqual(renderedBox(source))
 
     hostEdit(
       () =>

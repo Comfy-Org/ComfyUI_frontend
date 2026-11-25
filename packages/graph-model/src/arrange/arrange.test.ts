@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest'
 
-import { alignBoxes, laneBox, lanesAlong } from './alignBoxes'
-import type { AlignAction } from './alignBoxes'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import {
+  alignBoxes,
+  arrangePlacements,
+  laneBox,
+  lanesAlong,
+  placeBox
+} from './arrange'
+import type { AlignAction } from './arrange'
 
 const a = { x: 10, y: 0, width: 100, height: 60, titleHeight: 30 }
 const b = { x: 200, y: 50, width: 40, height: 90, titleHeight: 0 }
@@ -52,13 +59,15 @@ describe('alignBoxes', () => {
   })
 
   it('moves a selected grid column by column, keeping each column aligned', () => {
-    const cell = (x: number, y: number) => ({
-      x,
-      y,
-      width: 100,
-      height: 50,
-      titleHeight: 0
-    })
+    function cell(x: number, y: number) {
+      return {
+        x,
+        y,
+        width: 100,
+        height: 50,
+        titleHeight: 0
+      }
+    }
     const grid = [
       cell(0, 0),
       cell(150, 0),
@@ -113,6 +122,29 @@ describe('alignBoxes', () => {
   })
 })
 
+describe('placeBox', () => {
+  it('keeps the offset between position and box when the box moves', () => {
+    const placement = {
+      position: { x: 100, y: 200 },
+      box: { x: 90, y: 170, width: 150, height: 90, titleHeight: 30 }
+    }
+    const moved = { ...placement.box, x: 120, y: 175 }
+    expect(placeBox(placement, moved).position).toEqual({ x: 130, y: 205 })
+  })
+})
+
+describe('arrangePlacements', () => {
+  it('returns each new placement under its own node id', () => {
+    const placements = new Map([
+      [toNodeId(7), { position: { x: 210, y: 80 }, box: { ...b, x: 200 } }],
+      [toNodeId(3), { position: { x: 10, y: 30 }, box: a }]
+    ])
+    const after = arrangePlacements(placements, 'left')
+    expect(after.get(toNodeId(7))?.position).toEqual({ x: 20, y: 80 })
+    expect(after.get(toNodeId(3))?.position).toEqual({ x: 10, y: 30 })
+  })
+})
+
 describe('lanesAlong', () => {
   it('reports the lanes a distribution moved as units, evenly spaced as lane boxes', () => {
     const boxes = [0, 105, 125, 500].map((x, i) => ({
@@ -123,13 +155,15 @@ describe('lanesAlong', () => {
       titleHeight: 0
     }))
     const after = alignBoxes(boxes, 'distributeX')
-    const lanes = lanesAlong(after, 'x')
+    const ids = ['a', 'b', 'c', 'd'].map(toNodeId)
+    const byId = new Map(ids.map((id, i) => [id, after[i]]))
+    const lanes = lanesAlong(byId, 'x')
     expect(after.map((box) => box.x)).toEqual([0, 240, 260, 500])
-    expect(lanes).toEqual([[0], [1, 2], [3]])
+    expect(lanes).toEqual([['a'], ['b', 'c'], ['d']])
     expect(
       lanes.map((lane) => {
         const { x, width } = laneBox(
-          lane.map((i) => after[i]),
+          lane.flatMap((id) => byId.get(id) ?? []),
           'x'
         )
         return [x, width]
