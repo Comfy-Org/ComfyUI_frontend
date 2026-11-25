@@ -39,6 +39,7 @@ const litegraphBaseSchema = z.object({
   ]),
   NODE_WIDGET_GAP: z.number(),
   NODE_LIGHTNESS: z.number().optional(),
+  LINK_STYLE: z.enum(['solid', 'chalk']).optional(),
   NODE_BOX_OUTLINE_COLOR: z.string(),
   NODE_BYPASS_BGCOLOR: z.string(),
   NODE_ERROR_COLOUR: z.string(),
@@ -137,19 +138,12 @@ export const themePresetSchema = z
     name: z.string(),
     colors: partialColorsSchema,
     light_theme: z.boolean().optional(),
-    stylesheet: z.string().optional()
+    stylesheet: z.string().optional(),
+    canvas_background_mode: z.enum(['tile', 'cover']).optional()
   })
   .passthrough()
 
-const completedPresetSchema = z
-  .object({
-    id: z.string(),
-    name: z.string(),
-    light_theme: z.boolean().optional(),
-    stylesheet: z.string().optional(),
-    colors: colorsSchema
-  })
-  .passthrough()
+const completedPresetSchema = themePresetSchema.extend({ colors: colorsSchema })
 
 export type Colors = z.infer<typeof colorsSchema>
 export type ThemeTokens = z.infer<typeof themeSchema>
