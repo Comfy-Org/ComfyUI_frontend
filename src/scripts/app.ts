@@ -1380,6 +1380,16 @@ export class ComfyApp implements IComfyApp {
     }
   }
 
+  private async completeGraphLoad(
+    stopLoading: () => void
+  ): Promise<LoadedComfyWorkflow | undefined> {
+    await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
+    const workflow = useWorkflowStore().activeWorkflow ?? undefined
+    workflow?.changeTracker.adoptLoadedGraph()
+    stopLoading()
+    return workflow
+  }
+
   private stopLoadingGraph(graph: LGraph) {
     endGraphLoad(graph)
     useNodeApiHost().loadEnded()
@@ -1829,10 +1839,9 @@ export class ComfyApp implements IComfyApp {
           )
           return { loaded: undefined }
         }
-        await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
-        useWorkflowStore().activeWorkflow?.changeTracker.adoptLoadedGraph()
-        this.stopLoadingGraph(graph)
-        activatedWorkflow = useWorkflowStore().activeWorkflow ?? undefined
+        activatedWorkflow = await this.completeGraphLoad(() =>
+          this.stopLoadingGraph(graph)
+        )
 
         const activeMissingNodeTypes = missingNodeTypes.filter(
           (n) =>
@@ -2612,9 +2621,10 @@ export class ComfyApp implements IComfyApp {
             graph
           )
           this.scheduleImportFit(graph)
-          await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
-          useWorkflowStore().activeWorkflow?.changeTracker.adoptLoadedGraph()
-          useNodeApiHost().loadEnded()
+          await this.completeGraphLoad(() => {
+            releaseCaptureSuppression?.()
+            useNodeApiHost().loadEnded()
+          })
           return
         } catch (error) {
           if (!lifecycle.started) throw error
@@ -2987,9 +2997,10 @@ export class ComfyApp implements IComfyApp {
         graph
       )
       this.scheduleImportFit(graph)
-      await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
-      useWorkflowStore().activeWorkflow?.changeTracker.adoptLoadedGraph()
-      useNodeApiHost().loadEnded()
+      await this.completeGraphLoad(() => {
+        releaseCaptureSuppression?.()
+        useNodeApiHost().loadEnded()
+      })
       lifecycleCompleted = true
       if (missingNodeTypes.length) {
         this.showMissingNodesError(missingNodeTypes, options)
