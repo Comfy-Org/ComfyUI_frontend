@@ -6,7 +6,6 @@ export const V4_PACK_RECORDS: ServedPack[] = [
 ]
 export const V4_MODEL_LABEL = 'Model, labelled by a V4 pack'
 
-/** Pack script that imports the published V4 module and labels the `model` input of each KSampler the user adds. */
 export const v4PackSource = `
 import { comfy } from '/comfy/api/v4.js'
 
