@@ -26,8 +26,8 @@ const test = comfyPageFixture.extend({
           ADDED_IMAGE
         ])
         mergeComboInputOptions(objectInfo, 'LoadImage', 'image', {
-          multiselect: true,
-          multi_select: { min: 0, max: 2 }
+          min: 0,
+          max: 2
         })
       }
     )

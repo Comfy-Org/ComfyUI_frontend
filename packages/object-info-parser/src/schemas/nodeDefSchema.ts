@@ -22,9 +22,7 @@ const zRemoteWidgetConfig = z.object({
 })
 const zMultiSelectOption = z.object({
   placeholder: z.string().optional(),
-  chip: z.boolean().optional(),
-  min: z.number().int().nonnegative().optional(),
-  max: z.number().int().positive().optional()
+  chip: z.boolean().optional()
 })
 
 export const zBaseInputOptions = z
@@ -106,6 +104,10 @@ export const zComboInputOptions = zBaseInputOptions.extend({
   animated_image_upload: z.boolean().optional(),
   options: z.array(zComboOption).optional(),
   remote: zRemoteWidgetConfig.optional(),
+  /** Fewest files an image or video picker accepts; setting it or `max` makes the value a list. */
+  min: z.number().int().nonnegative().optional(),
+  /** Most files an image or video picker accepts; setting it or `min` makes the value a list. */
+  max: z.number().int().positive().optional(),
   /** Whether the widget is a multi-select widget. */
   multi_select: zMultiSelectOption.optional()
 })
@@ -190,18 +192,19 @@ export interface MediaSelectionLimits {
   max: number
 }
 
-/** Selection counts for an image or video picker that declares `multi_select`, whose value is a list of filenames. */
+/** Selection counts for an image or video picker that sets `min` or `max`, making its value a list of filenames. An unset bound keeps the single-file default of 1. */
 export function getMediaSelectionLimits(
   options: Pick<
     ComboInputOptions,
-    'image_upload' | 'animated_image_upload' | 'video_upload' | 'multi_select'
+    'image_upload' | 'animated_image_upload' | 'video_upload' | 'min' | 'max'
   >
 ): MediaSelectionLimits | undefined {
-  const { image_upload, animated_image_upload, video_upload, multi_select } =
+  const { image_upload, animated_image_upload, video_upload, min, max } =
     options
-  if (!multi_select) return undefined
+  if (min === undefined && max === undefined) return undefined
   if (!image_upload && !animated_image_upload && !video_upload) return undefined
-  return { min: multi_select.min ?? 0, max: multi_select.max ?? Infinity }
+  const resolvedMin = min ?? 1
+  return { min: resolvedMin, max: max ?? Math.max(1, resolvedMin) }
 }
 
 /**

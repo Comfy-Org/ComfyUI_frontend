@@ -229,13 +229,14 @@ describe('useComboWidget', () => {
     expect(widget).toBe(mockWidget)
   })
 
-  it('creates an empty list-valued combo for an image picker that declares multi_select', () => {
+  it('creates an empty list-valued combo for an image picker that declares min and max', () => {
     const widget = useComboWidget()(
       createMockNode(),
       createMockInputSpec({
         options: ['a.png', 'b.png'],
         image_upload: true,
-        multi_select: { min: 0, max: 2 }
+        min: 0,
+        max: 2
       })
     )
 
@@ -248,14 +249,14 @@ describe('useComboWidget', () => {
     { saved: 'photo.png', queued: ['photo.png'] },
     { saved: ['b.png', 'a.png'], queued: ['b.png', 'a.png'] }
   ])(
-    'queues a saved $saved as a list on a multi_select video picker',
+    'queues a saved $saved as a list on a video picker that declares max',
     async ({ saved, queued }) => {
       const node = createMockNode()
       const widget = useComboWidget()(
         node,
         createMockInputSpec({
           video_upload: true,
-          multi_select: { max: 3 }
+          max: 3
         })
       )
       widget.value = saved

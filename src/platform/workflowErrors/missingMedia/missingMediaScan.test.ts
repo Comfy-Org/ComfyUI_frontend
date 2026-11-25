@@ -432,7 +432,7 @@ describe('scanNodeMediaCandidates', () => {
       ...createMediaNodeDef('PickMany', 'images', 'image_upload'),
       input: {
         required: {
-          images: [[], { image_upload: true, multi_select: { min: 0, max: 3 } }]
+          images: [[], { image_upload: true, min: 0, max: 3 }]
         }
       }
     })
