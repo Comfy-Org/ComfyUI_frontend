@@ -663,31 +663,36 @@ const negativeBalanceCredits = computed(() => {
   return centsToCredits(-cents)
 })
 
-const balanceQuoteCents = computed(() =>
+const balanceQuoteRequest = computed(() =>
   negativeBalanceCredits.value !== null && isValidAmount.value
-    ? payAmount.value * 100
+    ? {
+        amountCents: payAmount.value * 100,
+        key: `${payAmount.value * 100}:${negativeBalanceCredits.value}`
+      }
     : null
 )
+const balanceQuoteKey = computed(() => balanceQuoteRequest.value?.key ?? null)
 const balanceQuote = shallowRef<{
-  amountCents: number
+  key: string
   balanceAfter: TopupBalanceAfter
 } | null>(null)
 let balanceQuoteScope: AbortController | undefined
 watchDebounced(
-  balanceQuoteCents,
-  async (amountCents) => {
+  balanceQuoteKey,
+  async () => {
     balanceQuoteScope?.abort()
-    if (amountCents === null) return
+    const request = balanceQuoteRequest.value
+    if (request === null) return
     const scope = new AbortController()
     balanceQuoteScope = scope
-    const quoted = await quoteTopup(amountCents, scope.signal)
+    const quoted = await quoteTopup(request.amountCents, scope.signal)
     if (scope.signal.aborted || quoted?.balanceAfter === undefined) return
-    balanceQuote.value = { amountCents, balanceAfter: quoted.balanceAfter }
+    balanceQuote.value = { key: request.key, balanceAfter: quoted.balanceAfter }
   },
   { debounce: 300, immediate: true }
 )
 const balanceAfter = computed(() =>
-  balanceQuote.value?.amountCents === balanceQuoteCents.value
+  balanceQuote.value?.key === balanceQuoteKey.value
     ? balanceQuote.value.balanceAfter
     : undefined
 )

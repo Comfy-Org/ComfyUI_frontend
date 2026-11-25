@@ -783,6 +783,48 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     }
   )
 
+  it('requotes the balance after when the current balance changes', async () => {
+    const quoteFor = (balanceAfter: number) => ({
+      amount_cents: 11_400,
+      credits: 24_054,
+      expires_at: '2027-11-02T00:00:00Z',
+      balance_after_credits: balanceAfter,
+      runs_paused_after: balanceAfter <= 0
+    })
+    const quote = vi
+      .spyOn(billingApi, 'quoteTopup')
+      .mockResolvedValueOnce(quoteFor(2_954))
+      .mockResolvedValueOnce(quoteFor(-840))
+    const balance = ref<BalanceInfo>({
+      amountMicros: -10_000,
+      currency: 'usd',
+      effectiveBalanceMicros: -10_000,
+      effectiveBalanceAuthoritative: true,
+      suggestedTopupAmountCents: 11_400
+    })
+    Object.assign(mockBillingContext(), { balance })
+    renderDialog()
+    expect(
+      await screen.findByText('After this top-up: 2,954 credits.')
+    ).toBeInTheDocument()
+
+    balance.value = {
+      ...balance.value,
+      amountMicros: -13_794,
+      effectiveBalanceMicros: -13_794
+    }
+
+    await vi.waitFor(() =>
+      expect(
+        screen.queryByText('After this top-up: 2,954 credits.')
+      ).not.toBeInTheDocument()
+    )
+    expect(
+      await screen.findByText('Still negative after this top-up: −840 credits.')
+    ).toBeInTheDocument()
+    expect(quote).toHaveBeenCalledTimes(2)
+  })
+
   it('shows only the current balance when the quote has no balance after', async () => {
     const quote = vi.spyOn(billingApi, 'quoteTopup').mockResolvedValue({
       amount_cents: 11_400,

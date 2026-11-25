@@ -266,6 +266,7 @@ const dialog = useAddCreditsDialog({
   ports,
   initialAmount: initialAddCreditsAmount(suggestedTopupCents),
   autoTopUp: autoTopUpFields.request,
+  balanceCredits: () => negativeBalanceCredits,
   facts: () => ({
     bounds: bounds.value,
     canTopUp,

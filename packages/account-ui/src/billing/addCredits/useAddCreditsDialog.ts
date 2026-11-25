@@ -78,6 +78,8 @@ export interface AddCreditsDialogOptions {
   readonly facts: MaybeRefOrGetter<AddCreditsFacts>
   readonly initialAmount: AddCreditsAmount
   readonly autoTopUp?: MaybeRefOrGetter<AddCreditsAutoTopUpRequest>
+  /** The balance a quote is read against; a change requests a fresh quote. */
+  readonly balanceCredits?: MaybeRefOrGetter<number | undefined>
   readonly onLanded?: () => void
 }
 
@@ -168,24 +170,30 @@ export function useAddCreditsDialog(options: AddCreditsDialogOptions) {
         : undefined
   )
 
+  const quoteKey = computed(() =>
+    quotedCents.value === undefined
+      ? undefined
+      : `${quotedCents.value}:${toValue(options.balanceCredits)}`
+  )
   const quoteRead = shallowRef<{
-    readonly cents: number
+    readonly key: string
     readonly quote: AddCreditsQuote
   }>()
   const quote = computed<AddCreditsQuote | undefined>(() => {
-    const cents = quotedCents.value
-    if (cents === undefined) return undefined
-    return quoteRead.value?.cents === cents
+    const key = quoteKey.value
+    if (key === undefined) return undefined
+    return quoteRead.value?.key === key
       ? quoteRead.value.quote
       : { status: 'loading' }
   })
 
   let quoteScope: AbortController | undefined
   watch(
-    quotedCents,
-    async (cents) => {
+    quoteKey,
+    async (key) => {
       quoteScope?.abort()
-      if (cents === undefined) return
+      const cents = quotedCents.value
+      if (key === undefined || cents === undefined) return
       const scope = new AbortController()
       quoteScope = scope
       const result = await ports
@@ -193,7 +201,7 @@ export function useAddCreditsDialog(options: AddCreditsDialogOptions) {
         .catch((): AddCreditsQuoteResult => ({ status: 'error' }))
       if (scope.signal.aborted) return
       quoteRead.value = {
-        cents,
+        key,
         quote: result.status === 'ok' ? result : { status: 'unavailable' }
       }
     },

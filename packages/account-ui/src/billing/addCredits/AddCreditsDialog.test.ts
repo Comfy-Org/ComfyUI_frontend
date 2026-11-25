@@ -296,6 +296,27 @@ describe('AddCreditsDialog amount step', () => {
     }
   )
 
+  it('requotes the balance after when the current balance changes', async () => {
+    const { ports, rerender } = renderDialog(
+      { negativeBalanceCredits: 1_895, suggestedTopupCents: 11400 },
+      { credits: 2_325, runsPaused: false }
+    )
+    expect(
+      await screen.findByText('After this top-up: 2,325 credits.')
+    ).toBeVisible()
+
+    ports.balanceAfter = { credits: -840, runsPaused: true }
+    await rerender({ negativeBalanceCredits: 5_060 })
+
+    expect(
+      await screen.findByText('Still negative after this top-up: −840 credits.')
+    ).toBeVisible()
+    expect(
+      screen.queryByText('After this top-up: 2,325 credits.')
+    ).not.toBeInTheDocument()
+    expect(ports.quotes).toEqual([11400, 11400])
+  })
+
   it('renders the plan line it is given', () => {
     renderDialog({ planLine: 'ended' })
 
