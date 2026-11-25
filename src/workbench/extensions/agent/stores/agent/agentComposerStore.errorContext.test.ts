@@ -50,12 +50,21 @@ describe('agentComposerStore error context', () => {
 
     store.setErrorContext(errorContext({ label: 'First' }))
     expect(store.prompt.text).toBe('a b')
+    expect(store.prompt.references).toMatchObject([
+      { kind: 'error', context: { label: 'First' }, textOffset: 1 }
+    ])
 
     store.setErrorContext(errorContext({ label: 'Second' }))
     expect(store.prompt.text).toBe('a b')
+    expect(store.prompt.references).toMatchObject([
+      { kind: 'error', context: { label: 'Second' }, textOffset: 1 }
+    ])
 
     store.setErrorContext(errorContext({ label: 'Third' }))
     expect(store.prompt.text).toBe('a b')
+    expect(store.prompt.references).toMatchObject([
+      { kind: 'error', context: { label: 'Third' }, textOffset: 1 }
+    ])
   })
 
   it('inserts between two references at the same offset when the caret is between them', () => {
