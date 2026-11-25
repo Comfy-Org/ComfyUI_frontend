@@ -2227,7 +2227,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.ds.stopAnimation()
     if (newGraph === graph) return
 
-    // Drop any in-flight ghost so listeners don't outlive the graph it belongs to
     cancelGhostPlacement(this)
 
     releaseCanvasSelection(this)
