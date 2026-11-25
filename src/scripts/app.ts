@@ -62,7 +62,8 @@ import type {
   WorkflowOpenSource,
   WorkflowQueueIntent
 } from '@comfyorg/telemetry/types'
-import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
+import { MIME_ASSET_INFO } from '@/platform/assets/constants/assetDrag'
+import { extractFilesFromDragEvent } from '@/platform/assets/integration/assetDrop'
 import { restoreDynamicGroupInputs } from '@/platform/workflow/core/utils/restoreDynamicGroupInputs'
 import { updatePendingWarnings } from '@/platform/workflow/core/utils/pendingWarnings'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
@@ -171,6 +172,7 @@ import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 import { normalizePromptError } from '@/utils/executionErrorUtil'
 import { graphToPrompt, unwrapExportedWidgetValue } from '@/utils/executionUtil'
+import { promptBuildErrorFingerprint } from '@/platform/workflow/execution/promptBuildErrorFingerprint'
 import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
 import { getCnrIdFromProperties } from '@/platform/workflowErrors/nodeReplacement/cnrIdUtil'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
@@ -193,6 +195,7 @@ import { runMissingMediaPipeline } from '@/platform/workflowErrors/missingMedia/
 
 import { getWorkflowMode } from '@comfyorg/graph-model/appMode'
 import { anyItemOverlapsRect } from '@/utils/mathUtil'
+import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
 import { warnAboutSlowHasSelectors } from '@/utils/slowHasSelectorUtil'
 import { ensureNonZeroUuid } from '@/utils/uuid'
 import {
@@ -232,7 +235,6 @@ import type { ComfyAppMenu } from './ui/menu/index'
 import { clone } from './utils'
 import { ensureCorrectLayoutScale } from '@/renderer/extensions/vueNodes/layout/ensureCorrectLayoutScale'
 import {
-  extractFilesFromDragEvent,
   hasAudioType,
   hasImageType,
   hasVideoType,
@@ -1006,6 +1008,38 @@ export class ComfyApp implements IComfyApp {
     })
   }
 
+  private cancelPendingCamera(graph: LGraph): void {
+    useCanvasScheduler().cancel('graph-load-camera')
+    this.pendingCameras.delete(graph)
+  }
+
+  private scheduleImportFit(graph: LGraph): void {
+    if (!useSettingStore().get('Comfy.EnableWorkflowViewRestore')) return
+    this.pendingCameras.set(graph, {
+      workflow: null,
+      fit: () => this.fitViewUnlessGraphInView(graph)
+    })
+    this.scheduleCameraRestore(graph)
+  }
+
+  private fitViewUnlessGraphInView(graph: LGraph): void {
+    const { ds } = this.canvas
+    const [x, y, width, height] = visibleCanvasViewport(this.canvas)
+    const [left, top] = ds.convertCanvasToOffset([x, y])
+    if (
+      width &&
+      height &&
+      !anyItemOverlapsRect(graph._nodes, [
+        left,
+        top,
+        width / ds.scale,
+        height / ds.scale
+      ])
+    ) {
+      useLitegraphService().fitView()
+    }
+  }
+
   private rootGraphForLoad(
     workflow: ComfyWorkflow | null,
     clean: boolean
@@ -1577,15 +1611,7 @@ export class ComfyApp implements IComfyApp {
           } else if (savedCameraState) {
             this.canvas.ds.offset = savedCameraState.offset
             this.canvas.ds.scale = savedCameraState.scale
-
-            this.canvas.ds.computeVisibleArea(this.canvas.viewport)
-            if (
-              this.canvas.visible_area.width &&
-              this.canvas.visible_area.height &&
-              !anyItemOverlapsRect(graph._nodes, this.canvas.visible_area)
-            ) {
-              useLitegraphService().fitView()
-            }
+            this.fitViewUnlessGraphInView(graph)
           } else {
             useLitegraphService().fitView()
           }
@@ -2025,6 +2051,12 @@ export class ComfyApp implements IComfyApp {
                 success: false,
                 failureReason: 'prompt_build_failed',
                 ...workflowExecutionIntent
+              })
+              reportError(error, {
+                surface: 'graph',
+                errorType: 'error_building_prompt',
+                fingerprint: promptBuildErrorFingerprint(error),
+                logToConsole: false
               })
               throw error
             }
@@ -2466,6 +2498,7 @@ export class ComfyApp implements IComfyApp {
               )
             }
           }
+          this.cancelPendingCamera(graph)
           await withGraphIntentSource('load', () =>
             useExtensionService().invokeExtensionsAsync(
               'afterConfigureGraph',
@@ -2478,6 +2511,7 @@ export class ComfyApp implements IComfyApp {
             graph.serialize() as unknown as ComfyWorkflowJSON,
             graph
           )
+          this.scheduleImportFit(graph)
           await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
           return
         } catch (error) {
@@ -2616,7 +2650,7 @@ export class ComfyApp implements IComfyApp {
 
   async loadApiJson(
     apiData: ComfyApiWorkflow,
-    fileName: string,
+    fileName?: string,
     options: { deferWarnings?: boolean } = {}
   ): Promise<void | false> {
     return this.enqueueImport(() =>
@@ -2626,7 +2660,7 @@ export class ComfyApp implements IComfyApp {
 
   private async loadApiJsonNow(
     apiData: ComfyApiWorkflow,
-    fileName: string,
+    fileName: string | undefined,
     options: { deferWarnings?: boolean }
   ): Promise<void> {
     let lifecycleStarted = false
@@ -2829,6 +2863,7 @@ export class ComfyApp implements IComfyApp {
         }
         graph.arrange()
       })
+      this.cancelPendingCamera(graph)
 
       await withGraphIntentSource('load', () =>
         useExtensionService().invokeExtensionsAsync(
@@ -2838,10 +2873,11 @@ export class ComfyApp implements IComfyApp {
         )
       )
       await useWorkflowService().afterLoadNewGraph(
-        fileName,
+        fileName ?? null,
         graph.serialize() as unknown as ComfyWorkflowJSON,
         graph
       )
+      this.scheduleImportFit(graph)
       await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
       lifecycleCompleted = true
       if (missingNodeTypes.length) {

@@ -31,6 +31,9 @@ const GUIDANCE =
   'and do not treat passing graph validation as resolving missing assets, inputs, or runtime failures. ' +
   'Ask me for any file or decision you cannot supply automatically.'
 
+const REF_GUIDANCE =
+  'A Ref line names the error catalog id and, when known, the failed job id; look that job up rather than guessing which run failed.'
+
 function dataText(value: string): string {
   return value.replaceAll(FENCE, "'''")
 }
@@ -51,6 +54,17 @@ function formatNodeReference(problem: AgentErrorProblem): string {
   return singleLine(parts.join(', '))
 }
 
+function formatProblemRef(problem: AgentErrorProblem): string | undefined {
+  if (!problem.catalogId && !problem.jobId) return undefined
+  const ref = {
+    catalog_id: problem.catalogId || undefined,
+    job_id: problem.jobId || undefined,
+    node_id: problem.nodeId || undefined,
+    node_type: problem.nodeType?.slice(0, MAX_LINE_LENGTH) || undefined
+  }
+  return `   Ref: ${dataText(JSON.stringify(ref))}`
+}
+
 function truncateDetails(details: string): string {
   const trimmed = details.trim()
   if (trimmed.length <= MAX_PROBLEM_DETAILS_LENGTH) return trimmed
@@ -65,6 +79,8 @@ function formatProblem(problem: AgentErrorProblem, index: number): string {
     }`,
     `   ${singleLine(problem.message)}`
   ]
+  const ref = formatProblemRef(problem)
+  if (ref) lines.push(ref)
   if (problem.details?.trim()) {
     const details = dataText(truncateDetails(problem.details)).replaceAll(
       '\n',
@@ -90,6 +106,7 @@ export function formatAgentErrorContext(
 
   const listed = context.problems.slice(0, MAX_LISTED_PROBLEMS)
   const omitted = context.problems.length - listed.length
+  const hasRef = listed.some((problem) => problem.catalogId || problem.jobId)
   const block = [
     ...header,
     '',
@@ -100,7 +117,7 @@ export function formatAgentErrorContext(
     ...(omitted > 0 ? [`${omitted} more problems not listed`] : []),
     FENCE,
     '',
-    GUIDANCE
+    hasRef ? `${GUIDANCE} ${REF_GUIDANCE}` : GUIDANCE
   ].join('\n')
 
   return userText ? `${userText}\n\n${block}` : block
