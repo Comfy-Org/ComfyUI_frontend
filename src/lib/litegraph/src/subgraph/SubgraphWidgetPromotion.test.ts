@@ -476,6 +476,26 @@ describe('SubgraphWidgetPromotion', () => {
       expect(widget()).toMatchObject({ value: 77, options: { max: 500 } })
     })
 
+    it('keeps the host value when the same source is reconnected after a disconnect', async () => {
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: 'value', type: 'number' }]
+      })
+      const { node: interior } = createNodeWithWidget('InteriorNode')
+      const hostNode = setupPromotedWidget(subgraph, interior)
+      writePromotedWidgetValue(hostNode, 0, 99)
+
+      interior.disconnectInput(0, true)
+      await Promise.resolve()
+
+      // The deferred demotion must have run before the reconnect, or a
+      // reconnect that lands while `_pendingDemotionToken` is still set is
+      // treated as a rewire and this case passes vacuously.
+      expect(hostNode.widgets).toHaveLength(0)
+      subgraph.inputNode.slots[0].connect(interior.inputs[0], interior)
+
+      expect(promotedWidgetStateByName(hostNode, 'value').value).toBe(99)
+    })
+
     it('keeps the host widget promoted while another interior widget is still connected', async () => {
       const subgraph = createTestSubgraph({
         inputs: [{ name: 'value', type: 'number' }]
@@ -1838,23 +1858,6 @@ describe('Promoted widget rewire desync (PM-1328 / PM-1253 / PM-1254)', () => {
 
     expect(hostNode.widgets).toHaveLength(4)
     expect(promotedInputs(hostNode)).toHaveLength(4)
-  })
-})
-
-describe('Promoted widget demotion store ownership', () => {
-  it('keeps the host value across an ordinary disconnect so re-promoting the slot restores it', async () => {
-    const subgraph = createTestSubgraph({
-      inputs: [{ name: 'value', type: 'number' }]
-    })
-    const { node: interior } = createNodeWithWidget('InteriorNode')
-    const hostNode = setupPromotedWidget(subgraph, interior)
-    writePromotedWidgetValue(hostNode, 0, 99)
-
-    interior.disconnectInput(0, true)
-    await Promise.resolve()
-    subgraph.inputNode.slots[0].connect(interior.inputs[0], interior)
-
-    expect(promotedWidgetStateByName(hostNode, 'value').value).toBe(99)
   })
 })
 

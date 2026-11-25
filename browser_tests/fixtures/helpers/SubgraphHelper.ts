@@ -392,7 +392,10 @@ export class SubgraphHelper {
    *
    * Must be called from inside the subgraph.
    */
-  async detachPromotedInput(interiorNode: NodeReference, inputName: string) {
+  async disconnectPromotedInput(
+    interiorNode: NodeReference,
+    inputName: string
+  ) {
     const slotIndex = await this.page.evaluate(
       ([nodeId, name]) => {
         const node = window.app!.canvas.graph!.getNodeById(nodeId)
@@ -423,7 +426,7 @@ export class SubgraphHelper {
     interiorNode: NodeReference,
     inputName: string
   ): Promise<void> {
-    const slot = await this.detachPromotedInput(interiorNode, inputName)
+    const slot = await this.disconnectPromotedInput(interiorNode, inputName)
 
     await this.connectFromInput(interiorNode, slot.index, inputName)
     await slot.expectLinkCount(1, 'Interior link should be restored')

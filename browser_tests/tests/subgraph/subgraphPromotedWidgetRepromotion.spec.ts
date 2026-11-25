@@ -11,7 +11,7 @@ test.describe(
     }) => {
       await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
       const host = comfyPage.vueNodes.getNodeLocator('2')
-      const hostWidget = host.getByLabel('steps', { exact: true })
+      const hostWidget = comfyPage.vueNodes.getWidgetRowByLabel(host, 'steps')
 
       await test.step('Promote the interior widget and edit it on the host', async () => {
         await comfyPage.vueNodes.enterSubgraph('2')
@@ -27,7 +27,7 @@ test.describe(
       await test.step('Detach the interior link and leave the subgraph', async () => {
         await comfyPage.vueNodes.enterSubgraph('2')
         const ksampler = await comfyPage.nodeOps.getNodeRefById('1')
-        await comfyPage.subgraph.detachPromotedInput(ksampler, 'steps')
+        await comfyPage.subgraph.disconnectPromotedInput(ksampler, 'steps')
         await comfyPage.subgraph.exitViaBreadcrumb()
 
         await expect(host).toBeVisible()
@@ -36,12 +36,9 @@ test.describe(
 
       await test.step('Promote the same slot again', async () => {
         await comfyPage.vueNodes.enterSubgraph('2')
-        const ksampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
-        const fromSlot = ksampler.getSlot('steps')
-        const toPosition = await comfyPage.subgraph
-          .getInputSlot('steps')
-          .getPosition()
-        await fromSlot.dragTo(comfyPage.canvas, { targetPosition: toPosition })
+        const interior = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+        const fromSlot = interior.getSlot('steps')
+        await fromSlot.dragTo(comfyPage.subgraph.inputSocket('steps'))
         await expect
           .poll(() => comfyPage.vueNodes.isSlotConnected(fromSlot))
           .toBe(true)
