@@ -13,7 +13,7 @@ import {
   promoRejectionOf,
   reducePromoEntry
 } from '@/checkout/promoEntry'
-import type { PromoMemory } from '@/checkout/promoMemory'
+import type { PromoMemory, PromoRemoval } from '@/checkout/promoMemory'
 import { codeToRemember } from '@/checkout/promoMemory'
 
 interface CheckoutPromoOptions {
@@ -25,6 +25,8 @@ interface CheckoutPromoOptions {
   readonly requote: (promotionCode?: string) => Promise<PreviewSubscribeResult>
   /** Where an applied code outlives a reload or a provider return. */
   readonly memory: PromoMemory
+  /** Where the customer's removal of the link's code outlives a reload. */
+  readonly removal?: PromoRemoval
 }
 
 /**
@@ -37,11 +39,19 @@ export function useCheckoutPromo({
   prefill,
   live,
   requote,
-  memory
+  memory,
+  removal
 }: CheckoutPromoOptions) {
   const entry = shallowRef<PromoEntry>(
-    initialPromoEntry(prefill, memory.recall())
+    initialPromoEntry(removal?.removed() ? undefined : prefill, memory.recall())
   )
+
+  function isCarriedCode(code: string): boolean {
+    return (
+      prefill?.promotionCode !== undefined &&
+      code.toUpperCase() === prefill.promotionCode.trim().toUpperCase()
+    )
+  }
 
   function dispatch(event: PromoEntryEvent) {
     const kept = codeToRemember(entry.value)
@@ -90,12 +100,15 @@ export function useCheckoutPromo({
   }
 
   async function remove() {
-    if (!live() || entry.value.kind !== 'applied') return
+    const current = entry.value
+    if (!live() || current.kind !== 'applied') return
     dispatch({ type: 'removeRequested' })
     const result = await requote()
     dispatch({
       type: result.status === 'ok' ? 'removeSettled' : 'removeFailed'
     })
+    if (result.status === 'ok' && isCarriedCode(current.code))
+      removal?.remember()
   }
 
   return {

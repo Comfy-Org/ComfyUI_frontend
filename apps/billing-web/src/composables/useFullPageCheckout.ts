@@ -61,7 +61,11 @@ import {
   awaitPromotion
 } from '@/checkout/promoAutoApply'
 import { promoEntryLive, promoRejectionOf } from '@/checkout/promoEntry'
-import { checkoutIdentity, createPromoMemory } from '@/checkout/promoMemory'
+import {
+  checkoutIdentity,
+  createPromoMemory,
+  createPromoRemoval
+} from '@/checkout/promoMemory'
 import type { PayVerdict } from '@/checkout/payVerdict'
 import {
   outcomeFor,
@@ -351,6 +355,9 @@ export function useFullPageCheckout() {
   const promo = useCheckoutPromo({
     prefill: entry.value,
     memory: promoMemory,
+    removal: createPromoRemoval(() =>
+      checkoutIdentity(entry.value, billedWorkspace())
+    ),
     live: () => promoLive.value,
     requote: async (promotionCode) => {
       const arrival = entry.value

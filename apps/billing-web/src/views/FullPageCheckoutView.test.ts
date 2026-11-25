@@ -3131,7 +3131,7 @@ describe('FullPageCheckoutView promo codes', () => {
       expect(fake.previewSubscribe).toHaveBeenCalledOnce()
     })
 
-    it('does not apply the campaign code again after the customer removed it and reloaded', async () => {
+    it('keeps a removed campaign code off after a reload, through Pay', async () => {
       await renderCheckout({}, quotesWithCampaign, CAMPAIGN_PATH)
       await screen.findByText('−$5.60')
       await userEvent.click(
@@ -3149,8 +3149,20 @@ describe('FullPageCheckoutView promo codes', () => {
       reportPhase({ phase: 'payment_element_ready', element: 'payment' })
       await waitFor(() => expect(payButton()).toBeEnabled())
 
-      expect(promoField()).toHaveValue('BLACKFRIDAY26')
+      expect(
+        screen.getByRole('button', { name: 'Add promo code' })
+      ).toBeInTheDocument()
       expect(screen.queryByText('−$5.60')).not.toBeInTheDocument()
+
+      form.emit('confirm', 'ctoken_1')
+      await waitFor(() =>
+        expect(reloaded.subscribe).toHaveBeenCalledWith(
+          expect.objectContaining({ quote_id: 'q_1' })
+        )
+      )
+      expect(reloaded.subscribe).toHaveBeenCalledWith(
+        expect.not.objectContaining({ promotion_code: expect.anything() })
+      )
       expect(reloaded.previewSubscribe).toHaveBeenCalledOnce()
     })
 
