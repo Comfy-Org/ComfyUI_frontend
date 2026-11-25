@@ -565,7 +565,23 @@ describe('useDeploymentPickStore', () => {
       expect(mockWorkspaceApi.clearDeployment).toHaveBeenCalledOnce()
     })
 
-    it('is cancelled, unreported, when the workspace changes', async () => {
+    it('can be asked again after a request that failed', async () => {
+      mockWorkspaceApi.listDeployments.mockResolvedValue(goneListing)
+      mockWorkspaceApi.clearDeployment
+        .mockRejectedValueOnce(
+          new WorkspaceApiError('Service unavailable', 503)
+        )
+        .mockResolvedValue(undefined)
+      const store = useDeploymentPickStore()
+      await store.loadOnce()
+
+      await store.forgetGonePick()
+      await store.forgetGonePick()
+
+      expect(mockWorkspaceApi.clearDeployment).toHaveBeenCalledTimes(2)
+    })
+
+    it('is cancelled, unreported, when the workspace change', async () => {
       mockWorkspaceApi.listDeployments.mockResolvedValue(goneListing)
       mockWorkspaceApi.clearDeployment.mockImplementation(
         (_workspaceId: string, options: { signal: AbortSignal }) =>
@@ -617,7 +633,9 @@ describe('useDeploymentPickStore', () => {
 
     it.for([
       new WorkspaceApiError('Failed to fetch'),
-      new WorkspaceApiError('Unauthorized', 401)
+      new WorkspaceApiError('Unauthorized', 401),
+      new WorkspaceApiError('Forbidden', 403),
+      new WorkspaceApiError('Not found', 404)
     ])(
       'keeps a failure the listing would keep out of Sentry out of it too: %s',
       async (error) => {

@@ -334,20 +334,24 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     forgettingGonePick = controller
     try {
       await workspaceApi.clearDeployment(id, { signal: controller.signal })
-      await load()
     } catch (err) {
-      if (controller.signal.aborted) return
-      reportError(err, {
-        surface: 'workspace',
-        errorType: 'error_forgetting_gone_deployment_pick',
-        level: 'warning',
-        ...((gotNoResponse(err) || isSessionRefused(err)) && {
-          sentryMode: 'never'
-        })
-      })
+      if (!controller.signal.aborted) reportForgetFailure(err)
+      return
     } finally {
       forgettingGonePick = null
     }
+    await load()
+  }
+
+  function reportForgetFailure(err: unknown) {
+    const datadogOnly =
+      gotNoResponse(err) || isSessionRefused(err) || isRefused(err)
+    reportError(err, {
+      surface: 'workspace',
+      errorType: 'error_forgetting_gone_deployment_pick',
+      level: 'warning',
+      ...(datadogOnly && { sentryMode: 'never' })
+    })
   }
 
   watch(
@@ -669,16 +673,18 @@ function isSessionRefused(err: unknown): boolean {
   return err instanceof WorkspaceApiError && err.status === 401
 }
 
+function isRefused(err: unknown): boolean {
+  return (
+    err instanceof WorkspaceApiError &&
+    (err.status === 403 || err.status === 404)
+  )
+}
+
 function loadFailure(
   err: unknown,
   onFailure: (err: unknown) => void
 ): DeploymentPickEvent {
-  if (
-    err instanceof WorkspaceApiError &&
-    (err.status === 403 || err.status === 404)
-  ) {
-    return { type: 'loadRefused' }
-  }
+  if (isRefused(err)) return { type: 'loadRefused' }
   onFailure(err)
   return { type: 'loadFailed' }
 }
