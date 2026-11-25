@@ -34,7 +34,7 @@ export function nodeDefFromHost(
     title:
       resolveNodeDefText('display_name', type, textOf(hostDef.display_name)) ||
       type,
-    category: textOf(hostDef.category) ?? '',
+    category: categoryOfHostDef(hostDef),
     description: resolveNodeDefText(
       'description',
       type,
