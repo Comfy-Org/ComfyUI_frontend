@@ -337,7 +337,10 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
       reportError(err, {
         surface: 'workspace',
         errorType: 'error_forgetting_gone_deployment_pick',
-        level: 'warning'
+        level: 'warning',
+        ...((gotNoResponse(err) || isSessionRefused(err)) && {
+          sentryMode: 'never'
+        })
       })
     }
   }

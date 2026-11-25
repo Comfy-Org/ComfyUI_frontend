@@ -543,6 +543,28 @@ describe('useDeploymentPickStore', () => {
       })
       expect(store.state.phase).toBe('ready')
     })
+
+    it.for([
+      new WorkspaceApiError('Failed to fetch'),
+      new WorkspaceApiError('Unauthorized', 401)
+    ])(
+      'keeps a failure the listing would keep out of Sentry out of it too: %s',
+      async (error) => {
+        mockWorkspaceApi.listDeployments.mockResolvedValue(goneListing)
+        mockWorkspaceApi.clearDeployment.mockRejectedValue(error)
+        const store = useDeploymentPickStore()
+        await store.loadOnce()
+
+        await store.forgetGonePick()
+
+        expect(reportError).toHaveBeenCalledExactlyOnceWith(error, {
+          surface: 'workspace',
+          errorType: 'error_forgetting_gone_deployment_pick',
+          level: 'warning',
+          sentryMode: 'never'
+        })
+      }
+    )
   })
 
   it('stops saying the pick is gone once a later listing shows a picked deployment', async () => {
