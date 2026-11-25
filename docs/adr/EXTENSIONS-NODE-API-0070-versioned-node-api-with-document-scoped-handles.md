@@ -210,7 +210,8 @@ look in a particular graph, use `comfy.graph.root()` or
     - A restore runs node callbacks while it configures, and an `onAdded`
       that adds a node would take the id the rewound counter gives. So just
       before configure the host calls `beforeHistoryRestore(graph, state)`,
-      which sets aside each cached node handle whose node `state` lacks:
+      which sets aside each cached node and widget handle whose node `state`
+      lacks:
       until the restore finishes it reads only the object it named, so a
       removal hook gets the pack's own handle and reads its node, and a
       lookup that finds another node under the id makes a new handle. A

@@ -205,11 +205,11 @@ flowchart TD
     of the open document, whatever graph its edits touch, off-screen ones
     included.
     - Every `comfy.graph` member that reads or acts on a graph (`id`, `node`,
-      `nodes`, `add`, `links`, `groups`) asks the canvas again each time, so
-      two calls a moment apart reach different graphs if the user opened or
-      left a subgraph in between. A handle it gives does not follow the user:
-      a node, slot or group handle edits its entity in the entity's own
-      graph, on screen or not. A pack that needs one graph for several
+      `nodes`, `add`, `links`, `groups`, the selection and the view) asks the
+      canvas again each time, so two calls a moment apart reach different
+      graphs if the user opened or left a subgraph in between. A handle it
+      gives does not follow the user: a node, slot, widget or group handle
+      edits its entity in the entity's own graph, on screen or not. A pack that needs one graph for several
       graph-level calls compares `comfy.graph.id`, or reaches a particular
       graph through `root()` and `subgraphs()`.
     - `GraphScopeHandle` has no `add`, `batch` or `version`: no stored pack
@@ -229,8 +229,9 @@ flowchart TD
     - Every edit a handle applies advances its graph's counter, including
       when the host declines after the runner has started; a refusal, an
       unlinked `disconnect` or a call on a gone entity, which exit before
-      `apply`, does not. The host advances a counter for some of its own
-      changes and not others: nodes and links added or removed, a node
+      `apply`, does not. `workflow.setExtra` advances the root graph's
+      (`workflowExtra.test.ts`). The host advances a counter for some of its
+      own changes and not others: nodes and links added or removed, a node
       collapsed or pinned, and a widget value committed through
       `BaseWidget.setValue` count; a move and a color do not
       (`graphEdits.test.ts`).
