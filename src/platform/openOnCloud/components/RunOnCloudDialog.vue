@@ -34,7 +34,7 @@
 import { useTelemetry } from '@comfyorg/telemetry'
 import type { RunOnCloudTelemetryEvent } from '@comfyorg/telemetry/types'
 import { storeToRefs } from 'pinia'
-import { computed, ref, toRaw, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, toRaw, watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
@@ -54,7 +54,7 @@ import {
 
 const { uploadBatch, requestCheck } = defineProps<{
   uploadBatch?: { models: MissingModel[]; owner: string }
-  requestCheck?: () => boolean
+  requestCheck?: (signal: AbortSignal) => boolean
 }>()
 
 const emit = defineEmits<{
@@ -64,9 +64,11 @@ const emit = defineEmits<{
 }>()
 
 const checkRequested = ref(false)
+const checkConsent = new AbortController()
+onBeforeUnmount(() => checkConsent.abort())
 
 function startCheck() {
-  if (checkRequested.value || !requestCheck?.()) return
+  if (checkRequested.value || !requestCheck?.(checkConsent.signal)) return
   checkRequested.value = true
 }
 

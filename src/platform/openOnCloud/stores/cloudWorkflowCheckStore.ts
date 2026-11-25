@@ -15,24 +15,43 @@ import type {
   CloudWorkflowCheckState
 } from '@/platform/openOnCloud/cloudWorkflowCheck'
 import { reduceCloudWorkflowCheck } from '@/platform/openOnCloud/cloudWorkflowCheck'
+import { bindLocalOpenOnCloudGrant } from '@/platform/openOnCloud/localOpenOnCloudRollout'
 
 export const useCloudWorkflowCheckStore = defineStore(
   'cloudWorkflowCheck',
   () => {
-    const { isLoggedIn, resolvedUserInfo } = useCurrentUser()
+    const { isApiKeyLogin, isLoggedIn, resolvedUserInfo } = useCurrentUser()
     const { flags } = useFeatureFlags()
     const workspaces = useTeamWorkspaceStore()
     const state = shallowRef<CloudWorkflowCheckState>({ phase: 'idle' })
     let lastRun = 0
+    let refreshingGrantFor: CloudWorkflowCheckState | undefined
     let confirmedUploads: ConfirmedWorkspaceModels | undefined
 
     function dispatch(event: CloudWorkflowCheckEvent) {
       state.value = reduceCloudWorkflowCheck(state.value, event)
     }
 
-    async function check(): Promise<void> {
+    async function check({
+      refreshUploadGrant = false,
+      canRequest
+    }: {
+      refreshUploadGrant?: boolean
+      canRequest?: () => boolean
+    } = {}): Promise<void> {
       const run = ++lastRun
       dispatch({ type: 'started', run })
+      if (refreshUploadGrant) {
+        const started = state.value
+        refreshingGrantFor = started
+        await bindLocalOpenOnCloudGrant().revalidate()
+        if (refreshingGrantFor === started) refreshingGrantFor = undefined
+        if (state.value !== started) return
+        if (canRequest && !canRequest()) {
+          invalidate()
+          return
+        }
+      }
       const result = await checkCloudCompatibility(confirmedUploads)
       if (result?.kind === 'canOpen' || result?.kind === 'missing') {
         dispatch({ type: 'answered', run, verdict: result })
@@ -70,21 +89,35 @@ export const useCloudWorkflowCheckStore = defineStore(
       [
         isLoggedIn,
         () => resolvedUserInfo.value?.id,
-        () =>
-          workspaces.activeWorkspaceId ?? desktopHostUser.value?.workspaceId,
-        () => flags.openOnCloudModelUploadEnabled
+        () => workspaces.activeWorkspaceId ?? desktopHostUser.value?.workspaceId
       ],
       (
         [signedIn, userId, workspaceId],
         [wasSignedIn, previousUser, previousWorkspace]
       ) => {
-        if (
-          signedIn !== wasSignedIn ||
-          userId !== previousUser ||
-          workspaceId !== previousWorkspace
-        )
+        const identityChanged =
+          signedIn !== wasSignedIn || userId !== previousUser
+        if (identityChanged || workspaceId !== previousWorkspace)
           confirmedUploads = undefined
-        invalidate()
+
+        const initializingWorkspaceForCheck =
+          !identityChanged &&
+          !previousWorkspace &&
+          !!workspaceId &&
+          signedIn &&
+          !isApiKeyLogin.value &&
+          flags.openOnCloudModelUploadEnabled &&
+          workspaces.initState === 'loading' &&
+          state.value.phase === 'checking'
+
+        if (!initializingWorkspaceForCheck) invalidate()
+      },
+      { flush: 'sync' }
+    )
+    watch(
+      () => flags.openOnCloudModelUploadEnabled,
+      () => {
+        if (state.value !== refreshingGrantFor) invalidate()
       },
       { flush: 'sync' }
     )

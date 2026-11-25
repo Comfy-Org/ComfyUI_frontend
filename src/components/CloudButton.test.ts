@@ -9,6 +9,7 @@ import { computed, nextTick } from 'vue'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import * as localOpenOnCloudRollout from '@/platform/openOnCloud/localOpenOnCloudRollout'
 import { openWorkflowOnCloud } from '@/platform/openOnCloud/openWorkflowOnCloud'
 import { openRunOnCloudDialog } from '@/platform/openOnCloud/openRunOnCloudDialog'
 import { checkCloudCompatibility } from '@/platform/openOnCloud/cloudCompatibilityApi'
@@ -21,6 +22,7 @@ import CloudButton from '@/components/CloudButton.vue'
 import { useLocalModelUploadStore } from '@/platform/openOnCloud/stores/localModelUploadStore'
 import { useCloudWorkflowCheckStore } from '@/platform/openOnCloud/stores/cloudWorkflowCheckStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { api } from '@/scripts/api'
 import { useDialogStore } from '@/stores/dialogStore'
 import { testI18n } from '@/utils/__tests__/testI18n'
@@ -468,6 +470,73 @@ describe('Cloud button compatibility checks', () => {
 
     const card = await screen.findByTestId('missing-models-card')
     expect(within(card).getByText(older.name)).toBeVisible()
+  })
+
+  it('checks once in the same dialog when refreshing the upload grant enables uploads', async () => {
+    const { flags } = useFeatureFlags()
+    Object.assign(flags, { openOnCloudModelUploadEnabled: false })
+    useLocalModelUploadStore().retryBatches = [
+      [{ folder: 'loras', name: 'retry.safetensors' }]
+    ]
+    let finishRefresh!: () => void
+    const refresh = new Promise<void>((resolve) => {
+      finishRefresh = resolve
+    })
+    vi.spyOn(
+      localOpenOnCloudRollout,
+      'bindLocalOpenOnCloudGrant'
+    ).mockReturnValueOnce({
+      isCurrent: () => true,
+      revalidate: async () => {
+        await refresh
+        Object.assign(flags, { openOnCloudModelUploadEnabled: true })
+        return true
+      },
+      allowsModelTransfer: async () => true
+    })
+    vi.mocked(checkCloudCompatibility).mockResolvedValue({ kind: 'canOpen' })
+    renderCloudButton()
+    const user = userEvent.setup()
+    await user.click(screen.getByTestId('cloud-button'))
+    const dialog = await screen.findByRole('dialog', { name: dialogName })
+    await user.click(within(dialog).getByRole('button', { name: checkLabel }))
+
+    expect(
+      within(dialog).getByRole('button', { name: 'Checking Comfy Cloud…' })
+    ).toBeDisabled()
+    expect(checkCloudCompatibility).not.toHaveBeenCalled()
+    finishRefresh()
+
+    expect(
+      await within(dialog).findByRole('button', { name: openLabel })
+    ).toBeEnabled()
+    expect(checkCloudCompatibility).toHaveBeenCalledOnce()
+  })
+
+  it('shows the first signed-in result when the check initializes its workspace', async () => {
+    const workspaceId = 'ws-personal'
+    Object.assign(useCurrentUser(), { isLoggedIn: computed(() => true) })
+    vi.mocked(checkCloudCompatibility).mockImplementationOnce(async () => {
+      const workspaces = useTeamWorkspaceStore()
+      Object.assign(workspaces, { initState: 'loading' })
+      await nextTick()
+      Object.assign(workspaces, { activeWorkspaceId: workspaceId })
+      Object.assign(workspaces, { initState: 'ready' })
+      return { kind: 'canOpen', workspaceId }
+    })
+    renderCloudButton()
+    const user = userEvent.setup()
+    await user.click(screen.getByTestId('cloud-button'))
+    const dialog = await screen.findByRole('dialog', { name: dialogName })
+    await user.click(within(dialog).getByRole('button', { name: checkLabel }))
+    await user.click(
+      await within(dialog).findByRole('button', { name: openLabel })
+    )
+
+    expect(openWorkflowOnCloud).toHaveBeenCalledExactlyOnceWith(
+      undefined,
+      workspaceId
+    )
   })
 
   it('shows the result of the confirmed check in the same dialog', async () => {

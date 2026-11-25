@@ -75,7 +75,7 @@ export function openRunOnCloudDialog(
     requestCheck
   }: {
     uploadBatch?: { models: MissingModel[]; owner: string }
-    requestCheck?: () => boolean
+    requestCheck?: (signal: AbortSignal) => boolean
   } = {}
 ): Promise<boolean> {
   return openCardDialog(

@@ -80,7 +80,6 @@ import { useTelemetry } from '@comfyorg/telemetry'
 import type { RunOnCloudTelemetryEvent } from '@comfyorg/telemetry/types'
 import ProgressRing from '@/platform/openOnCloud/components/ProgressRing.vue'
 import type { CloudWorkflowBlocker } from '@/platform/openOnCloud/cloudWorkflowCheck'
-import { bindLocalOpenOnCloudGrant } from '@/platform/openOnCloud/localOpenOnCloudRollout'
 import {
   closeRunOnCloudDialog,
   openRunOnCloudDialog
@@ -187,12 +186,15 @@ function openModal() {
   )
 }
 
-function requestCheck(): boolean {
+function requestCheck(signal: AbortSignal): boolean {
   if (!isMounted || isChecking.value || !showCloudAction || isUploading.value)
     return false
-  if (!flags.openOnCloudModelUploadEnabled && retryBatches.value.length)
-    void bindLocalOpenOnCloudGrant().revalidate()
-  void checkStore.check()
+  void checkStore.check({
+    refreshUploadGrant:
+      !flags.openOnCloudModelUploadEnabled && retryBatches.value.length > 0,
+    canRequest: () =>
+      !signal.aborted && isMounted && showCloudAction && !isUploading.value
+  })
   return true
 }
 
