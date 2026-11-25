@@ -75,6 +75,32 @@ describe(checkCloudCompatibility, () => {
     vi.spyOn(useAuthStore(), 'getAuthHeader').mockResolvedValue(null)
   })
 
+  it('does not send workflow metadata if consent is withdrawn during auth', async () => {
+    workflowHas(node('KSampler'))
+    let finishAuth!: (value: null) => void
+    let reportAuthRequested!: () => void
+    const auth = new Promise<null>((resolve) => {
+      finishAuth = resolve
+    })
+    const authRequested = new Promise<void>((resolve) => {
+      reportAuthRequested = resolve
+    })
+    vi.mocked(useAuthStore().getAuthHeader).mockImplementation(() => {
+      reportAuthRequested()
+      return auth
+    })
+    const controller = new AbortController()
+
+    const check = checkCloudCompatibility(controller.signal)
+    await authRequested
+    controller.abort()
+    await expect(check).resolves.toBeNull()
+    finishAuth(null)
+
+    expect(fetch).not.toHaveBeenCalled()
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
   it('opens a workflow when Cloud omits the optional missing models', async () => {
     workflowHas(node('KSampler'))
     cloudAnswers(Response.json({ cloud: { missing_node_types: [] } }))

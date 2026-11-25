@@ -1,9 +1,13 @@
-import { createTimeoutSignal } from '@comfyorg/api-client/abortSignal'
+import {
+  combineAbortSignals,
+  createTimeoutSignal,
+  throwIfAborted
+} from '@comfyorg/api-client/abortSignal'
 import type { CompatibilityModel } from '@comfyorg/ingest-types'
 import { zCheckCloudCompatibilityResponse } from '@comfyorg/ingest-types/zod'
 import { reportError } from '@comfyorg/telemetry/reportError'
 
-import { getComfyCloudBaseUrl } from '@/config/comfyApi'
+import { trustedCloudHandoffOrigin } from '@/platform/openOnCloud/localHandoffProtocol'
 import type {
   ExecutableLGraphNode,
   ExecutionId,
@@ -230,19 +234,47 @@ async function collectModels(nodes: CheckedNode[]): Promise<CollectedModels> {
   }
 }
 
+function awaitWithAbort<T>(
+  operation: Promise<T>,
+  signal?: AbortSignal
+): Promise<T> {
+  if (!signal) return operation
+  return new Promise((resolve, reject) => {
+    const onAbort = () =>
+      reject(signal.reason ?? new DOMException('Aborted', 'AbortError'))
+    if (signal.aborted) onAbort()
+    else signal.addEventListener('abort', onAbort, { once: true })
+    void operation
+      .then(resolve, reject)
+      .finally(() => signal.removeEventListener('abort', onAbort))
+  })
+}
+
 async function postCompatibilityCheck(
+  origin: string,
   nodeTypes: string[],
-  models: CompatibilityModel[]
+  models: CompatibilityModel[],
+  signal?: AbortSignal
 ): Promise<Response> {
-  const auth = await useAuthStore().getAuthHeader()
-  return fetch(new URL('/api/cloud/compatibility', getComfyCloudBaseUrl()), {
+  const timeout = createTimeoutSignal(10_000)
+  const requestSignal = signal
+    ? combineAbortSignals([signal, timeout])
+    : timeout
+  throwIfAborted(requestSignal)
+  const auth = await awaitWithAbort(
+    useAuthStore().getAuthHeader(),
+    requestSignal
+  )
+  throwIfAborted(requestSignal)
+  return fetch(new URL('/api/cloud/compatibility', origin), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...auth },
     body: JSON.stringify({
       node_types: nodeTypes,
       models
     }),
-    signal: createTimeoutSignal(10_000)
+    redirect: 'error',
+    signal: requestSignal
   })
 }
 
@@ -271,8 +303,11 @@ function cloudVerdict(
 }
 
 /** Resolves null when no verdict is available. */
-export async function checkCloudCompatibility(): Promise<CloudWorkflowCheckResult> {
+export async function checkCloudCompatibility(
+  signal?: AbortSignal
+): Promise<CloudWorkflowCheckResult> {
   try {
+    throwIfAborted(signal)
     const nodes = checkedNodes(app.rootGraph)
     if (!nodes.length) return { kind: 'emptyWorkflow' }
     const unreadableLoader = nodes.find((node) => node.hasUnreadableModels)
@@ -281,15 +316,23 @@ export async function checkCloudCompatibility(): Promise<CloudWorkflowCheckResul
         kind: 'unreadableModelLoader',
         nodeType: unreadableLoader.class_type
       }
-    const collected = await collectModels(nodes)
+    const collected = await awaitWithAbort(collectModels(nodes), signal)
     const nodeTypes = [...new Set(nodes.map((node) => node.class_type))]
-    const response = await postCompatibilityCheck(nodeTypes, collected.models)
+    const origin = trustedCloudHandoffOrigin()
+    if (!origin) return giveUp(new Error('Cloud API origin unavailable'))
+    const response = await postCompatibilityCheck(
+      origin,
+      nodeTypes,
+      collected.models,
+      signal
+    )
     if (!response.ok)
       return giveUp(
         new Error(`Cloud compatibility returned ${response.status}`)
       )
     return cloudVerdict(await response.json(), collected.unchecked)
   } catch (error) {
+    if (signal?.aborted) return null
     return giveUp(error)
   }
 }

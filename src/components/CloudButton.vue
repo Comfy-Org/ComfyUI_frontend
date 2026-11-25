@@ -2,14 +2,11 @@
   <Button
     variant="secondary"
     size="icon"
-    :tooltip
+    :tooltip="buttonLabel"
     tooltip-side="bottom"
-    :aria-label="tooltip"
+    :aria-label="buttonLabel"
     :aria-busy="isChecking || undefined"
     data-testid="cloud-button"
-    @pointerenter="prefetch"
-    @keydown.enter="prefetch"
-    @keydown.space="prefetch"
     @click="openModal"
   >
     <ProgressRing v-if="isChecking" :percent="25" class="size-4 animate-spin" />
@@ -19,7 +16,7 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
@@ -39,22 +36,17 @@ const checkStore = useCloudWorkflowCheckStore()
 const { state: check } = storeToRefs(checkStore)
 
 const isChecking = computed(() => check.value.phase === 'checking')
-const opensWhenAnswered = ref(false)
 let isMounted = true
 onBeforeUnmount(() => {
   isMounted = false
   closeRunOnCloudDialog()
 })
 
-const tooltip = computed(() =>
+const buttonLabel = computed(() =>
   isChecking.value
     ? t('openOnCloud.cloudButton.checking')
     : t('openOnCloud.cloudButton.tooltip')
 )
-
-function prefetch() {
-  if (check.value.phase === 'idle') void checkStore.check()
-}
 
 function failureMessage(blocker: CloudWorkflowBlocker | null): string {
   switch (blocker?.kind) {
@@ -69,44 +61,28 @@ function failureMessage(blocker: CloudWorkflowBlocker | null): string {
   }
 }
 
-function showModal() {
-  const current = check.value
-  if (current.phase === 'failed') {
-    toast.error(failureMessage(current.blocker))
-    return
-  }
-  void openRunOnCloudDialog(() => isMounted && check.value === current)
-}
-
 function openModal() {
   useTelemetry()?.trackUiButtonClicked({
     button_id: 'run_bar_cloud_clicked',
     element_group: 'top_menu'
   })
-  const { phase } = check.value
-  if (phase === 'answered') {
-    showModal()
-    return
-  }
-  opensWhenAnswered.value = true
-  if (phase === 'idle' || phase === 'failed') void checkStore.check()
+  if (isChecking.value) return
+  void openRunOnCloudDialog(() => isMounted, { requestCheck })
 }
 
-watch(
-  () => check.value.phase,
-  (phase) => {
-    if (phase === 'idle') {
-      opensWhenAnswered.value = false
-      closeRunOnCloudDialog()
-      return
-    }
-    if (phase === 'checking') {
-      if (closeRunOnCloudDialog()) opensWhenAnswered.value = true
-      return
-    }
-    if (!opensWhenAnswered.value) return
-    opensWhenAnswered.value = false
-    showModal()
+function requestCheck(signal: AbortSignal): boolean {
+  if (!isMounted || isChecking.value) return false
+  void checkStore.check(signal)
+  return true
+}
+
+watch(check, (current) => {
+  if (current.phase === 'idle') {
+    closeRunOnCloudDialog()
+    return
   }
-)
+  if (current.phase === 'failed' && closeRunOnCloudDialog()) {
+    toast.error(failureMessage(current.blocker))
+  }
+})
 </script>

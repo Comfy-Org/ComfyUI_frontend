@@ -15,26 +15,44 @@ import { reduceCloudWorkflowCheck } from '@/platform/openOnCloud/cloudWorkflowCh
 export const useCloudWorkflowCheckStore = defineStore(
   'cloudWorkflowCheck',
   () => {
-    const { isLoggedIn } = useCurrentUser()
+    const { isLoggedIn, resolvedUserInfo } = useCurrentUser()
     const state = shallowRef<CloudWorkflowCheckState>({ phase: 'idle' })
     let lastRun = 0
+    let activeCheck: AbortController | undefined
 
     function dispatch(event: CloudWorkflowCheckEvent) {
       state.value = reduceCloudWorkflowCheck(state.value, event)
     }
 
-    async function check(): Promise<void> {
-      const run = ++lastRun
-      dispatch({ type: 'started', run })
-      const result = await checkCloudCompatibility()
-      if (result?.kind === 'canOpen' || result?.kind === 'missing') {
-        dispatch({ type: 'answered', run, verdict: result })
-      } else {
-        dispatch({ type: 'failed', run, blocker: result })
+    async function check(signal?: AbortSignal): Promise<void> {
+      if (signal?.aborted) return
+      activeCheck?.abort()
+      const controller = new AbortController()
+      activeCheck = controller
+      const cancelPendingCheck = () => {
+        if (activeCheck === controller) invalidate()
+      }
+      signal?.addEventListener('abort', cancelPendingCheck, { once: true })
+
+      try {
+        const run = ++lastRun
+        dispatch({ type: 'started', run })
+        const result = await checkCloudCompatibility(controller.signal)
+        if (controller.signal.aborted) return
+        if (result?.kind === 'canOpen' || result?.kind === 'missing') {
+          dispatch({ type: 'answered', run, verdict: result })
+        } else {
+          dispatch({ type: 'failed', run, blocker: result })
+        }
+      } finally {
+        signal?.removeEventListener('abort', cancelPendingCheck)
+        if (activeCheck === controller) activeCheck = undefined
       }
     }
 
     function invalidate() {
+      activeCheck?.abort()
+      activeCheck = undefined
       dispatch({ type: 'invalidated' })
     }
 
@@ -42,8 +60,8 @@ export const useCloudWorkflowCheckStore = defineStore(
     useEventListener(api, 'graphChanged', invalidate)
     watch(() => workflowStore.activeWorkflow, invalidate, { flush: 'sync' })
 
-    watch(isLoggedIn, () => {
-      if (state.value.phase !== 'idle') void check()
+    watch([isLoggedIn, () => resolvedUserInfo.value?.id], invalidate, {
+      flush: 'sync'
     })
 
     return { state, check }
