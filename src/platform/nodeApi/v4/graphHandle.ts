@@ -1,3 +1,5 @@
+import { isEqual } from 'es-toolkit'
+
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 
 import type { GraphScopeFor } from './graphScopeHandle'
@@ -59,10 +61,10 @@ export function createGraphHandle(
 
 function documentChangeSequence(rebuilds: () => number) {
   let sequence = 0
-  let lastMarks = ''
+  let lastMarks: readonly (string | number)[] = []
   return (root: LGraph): number => {
     const marks = changeMarks(root, rebuilds())
-    if (marks !== lastMarks) {
+    if (!isEqual(marks, lastMarks)) {
       lastMarks = marks
       sequence++
     }
@@ -70,9 +72,9 @@ function documentChangeSequence(rebuilds: () => number) {
   }
 }
 
-function changeMarks(root: LGraph, rebuilds: number): string {
+function changeMarks(root: LGraph, rebuilds: number): (string | number)[] {
   const marks: (string | number)[] = [rebuilds, root.id, root._version]
   for (const subgraph of root.subgraphs.values())
     marks.push(subgraph.id, subgraph._version)
-  return marks.join(' ')
+  return marks
 }
