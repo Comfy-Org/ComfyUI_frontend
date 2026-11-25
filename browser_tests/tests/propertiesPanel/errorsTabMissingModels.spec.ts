@@ -82,6 +82,43 @@ test.describe('Errors tab - Missing models', { tag: '@ui' }, () => {
     ).toHaveCount(2)
   })
 
+  test(
+    'Locate centres the referencing node in the canvas',
+    { tag: '@vue-nodes' },
+    async ({ comfyPage }) => {
+      await loadWorkflowAndOpenErrorsTab(comfyPage, 'missing/missing_models')
+      await comfyPage.page.evaluate(() => {
+        window.app!.canvas.ds.offset = [-2000, -1500]
+        window.app!.canvas.setDirty(true, true)
+      })
+      await comfyPage.nextFrame()
+
+      const node = comfyPage.vueNodes.getNodeLocator('1')
+      const framing = async () => {
+        const canvasBox = await comfyPage.canvas.boundingBox()
+        const nodeBox = await node.boundingBox()
+        if (!canvasBox || !nodeBox) return { centred: false, fits: false }
+        const distance = Math.hypot(
+          nodeBox.x + nodeBox.width / 2 - (canvasBox.x + canvasBox.width / 2),
+          nodeBox.y + nodeBox.height / 2 - (canvasBox.y + canvasBox.height / 2)
+        )
+        return {
+          centred: distance < 2,
+          fits:
+            nodeBox.width < canvasBox.width && nodeBox.height < canvasBox.height
+        }
+      }
+      expect((await framing()).centred).toBe(false)
+
+      await comfyPage.page
+        .getByTestId(TestIds.dialogs.missingModelsGroup)
+        .getByTestId(TestIds.dialogs.missingModelLocate)
+        .click()
+
+      await expect.poll(framing).toEqual({ centred: true, fits: true })
+    }
+  )
+
   test.describe('Validation absorption', () => {
     test.use({
       initialSettings: {
