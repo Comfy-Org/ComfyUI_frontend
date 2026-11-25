@@ -1,3 +1,4 @@
+import { withWorkspaceLink } from '@comfyorg/account-core/workspaceLink'
 import { z } from 'zod'
 
 import {
@@ -38,13 +39,13 @@ export function localHandoffWorkflow(
   return { type: WORKFLOW, nonce, filename, workflow }
 }
 
-export function cloudEditorUrl(nonce?: string): string {
+export function cloudEditorUrl(nonce?: string, workspaceId?: string): string {
   const configured = new URL(getComfyCloudBaseUrl())
   const url = new URL('/', configured)
   for (const override of configured.searchParams.getAll('ff'))
     url.searchParams.append('ff', override)
   if (nonce) url.searchParams.set(LOCAL_HANDOFF_PARAM, nonce)
-  return url.href
+  return workspaceId ? withWorkspaceLink(url, workspaceId).href : url.href
 }
 
 export function trustedCloudHandoffOrigin(): string | undefined {

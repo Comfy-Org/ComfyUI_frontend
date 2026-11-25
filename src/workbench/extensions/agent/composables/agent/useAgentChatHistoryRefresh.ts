@@ -193,5 +193,9 @@ export function useAgentChatHistoryRefresh({
     return applyRefreshResult(result, generation, uiTreatment, workflowId)
   }
 
-  return { refreshHistory }
+  function hasCompleteCoverage(workflowId?: string): boolean {
+    return coverage(workflowId) > 0
+  }
+
+  return { refreshHistory, hasCompleteCoverage }
 }

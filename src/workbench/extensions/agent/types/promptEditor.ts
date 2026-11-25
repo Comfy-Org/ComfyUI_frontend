@@ -13,7 +13,7 @@ export interface PromptEditor {
     reference: SkillReferenceMetadata,
     from?: number,
     to?: number
-  ) => void
+  ) => boolean
   captureInsertion: (
     from?: number,
     to?: number

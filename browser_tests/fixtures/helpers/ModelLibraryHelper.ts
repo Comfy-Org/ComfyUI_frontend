@@ -1,7 +1,7 @@
 import type { Page, Route } from '@playwright/test'
 
 import type { ModelFolderInfo } from '@comfyorg/api-client/types'
-import type { ModelFile } from '@/platform/assets/schemas/assetSchema'
+import type { ModelFile } from '@comfyorg/assets-core/schema'
 
 const modelFoldersRoutePattern = /\/api\/experiment\/models$/
 const modelFilesRoutePattern = /\/api\/experiment\/models\/([^?]+)/

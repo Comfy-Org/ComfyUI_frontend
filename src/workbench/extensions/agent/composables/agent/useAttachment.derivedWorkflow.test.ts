@@ -527,4 +527,52 @@ describe('useAttachment derived workflows', () => {
       'second.workflow.json'
     ])
   })
+
+  it('extracts and attaches a derived workflow to an inactive kept draft after switching tabs mid-upload', async () => {
+    const store = useAgentComposerStore()
+    let currentDraft = 'thread:a'
+    const imageUpload = deferred<{ ref: string }>()
+    const upload = vi.fn(async (file: File) => {
+      if (file.name === 'source.png') return await imageUpload.promise
+      return { ref: `uploaded-${file.name}` }
+    })
+    vi.mocked(deriveWorkflowFile).mockResolvedValue(
+      workflowFile('source.workflow.json')
+    )
+    const { addFiles, derivingWorkflow } = useAttachment({
+      upload,
+      draftScope: () => currentDraft,
+      staged: () => store.attachments,
+      stage: store.addAttachment,
+      stagedForSource: store.attachmentsOwning,
+      stageForSource: store.addAttachmentForSource,
+      update: store.updateAttachment,
+      remove: store.removeAttachment
+    })
+
+    store.activateDraft('thread:a')
+    const adding = addFiles([imageFile('source.png')])
+
+    currentDraft = 'thread:b'
+    store.activateDraft('thread:b')
+    expect(derivingWorkflow.value).toBe(false)
+
+    imageUpload.resolve({ ref: 'uploaded-source.png' })
+    await adding
+
+    await vi.waitFor(() =>
+      expect(
+        upload.mock.calls.some(([file]) => file.name === 'source.workflow.json')
+      ).toBe(true)
+    )
+    expect(store.attachments).toEqual([])
+
+    store.activateDraft('thread:a')
+    await vi.waitFor(() =>
+      expect(store.attachments.map(({ name }) => name)).toEqual([
+        'source.png',
+        'source.workflow.json'
+      ])
+    )
+  })
 })

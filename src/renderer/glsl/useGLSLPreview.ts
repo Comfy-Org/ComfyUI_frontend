@@ -144,7 +144,7 @@ function createInnerPreview(
   let rendererReady = false
   let renderRequestId = 0
 
-  const innerGLSLNode = (() => {
+  const initialInnerGLSLNode = (() => {
     const node = nodeRef.value
     if (!node?.isSubgraphNode()) return null
     const subgraph = node.subgraph as Subgraph | undefined
@@ -152,6 +152,18 @@ function createInnerPreview(
       subgraph?.nodes.filter((n) => n.type === GLSL_NODE_TYPE) ?? []
     return shaders.length === 1 ? shaders[0] : null
   })()
+
+  const innerLocatorId = initialInnerGLSLNode
+    ? nodeToNodeLocatorId(initialInnerGLSLNode)
+    : null
+
+  function getInnerGLSLNode(): LGraphNode | null {
+    const inner = initialInnerGLSLNode
+    if (!inner) return null
+    const node = nodeRef.value
+    if (!node?.isSubgraphNode()) return null
+    return inner.graph === node.subgraph ? inner : null
+  }
 
   const ownerSubgraphNode = (() => {
     const node = nodeRef.value
@@ -183,9 +195,7 @@ function createInnerPreview(
     const locatorId = nodeToNodeLocatorId(node)
     if (outputs[locatorId]?.images?.length) return true
 
-    const inner = innerGLSLNode
-    if (inner) {
-      const innerLocatorId = nodeToNodeLocatorId(inner)
+    if (innerLocatorId && getInnerGLSLNode()) {
       if (outputs[innerLocatorId]?.images?.length) return true
     }
 
@@ -216,7 +226,7 @@ function createInnerPreview(
         ?.value as string | undefined
     }
 
-    const inner = innerGLSLNode
+    const inner = getInnerGLSLNode()
     if (inner) {
       return widgetValueStore.getWidget(
         widgetId(gId, inner.id, 'fragment_shader')
@@ -227,7 +237,7 @@ function createInnerPreview(
   })
 
   const rendererConfig = computed(() => {
-    const inner = innerGLSLNode
+    const inner = getInnerGLSLNode()
     if (inner) return getAutogrowLimits(inner)
 
     const node = nodeRef.value
@@ -244,7 +254,7 @@ function createInnerPreview(
 
   const uniformSources = computed(() => {
     const node = nodeRef.value
-    const inner = innerGLSLNode
+    const inner = getInnerGLSLNode()
     if (!node?.isSubgraphNode() || !inner) return null
     return extractUniformSources(inner, node.subgraph, node)
   })
@@ -302,7 +312,9 @@ function createInnerPreview(
     const gId = graphId.value
     if (!gId) return null
 
-    const sizeModeNodeId = innerGLSLNode ? innerGLSLNode.id : nodeId.value
+    const sizeModeNodeId = initialInnerGLSLNode
+      ? getInnerGLSLNode()?.id
+      : nodeId.value
     if (sizeModeNodeId == null) return null
 
     const sizeMode = widgetValueStore.getWidget(
@@ -343,9 +355,8 @@ function createInnerPreview(
   let lastRendererConfig: GLSLRendererConfig | null = null
 
   function revokePreview(): void {
-    const inner = innerGLSLNode
-    if (inner) {
-      nodeOutputStore.revokePreviewsByLocatorId(nodeToNodeLocatorId(inner))
+    if (innerLocatorId) {
+      nodeOutputStore.revokePreviewsByLocatorId(innerLocatorId)
       return
     }
     const node = nodeRef.value
@@ -444,10 +455,11 @@ function createInnerPreview(
       if (requestId !== renderRequestId || isDisposed()) return
       const blobUrl = createSharedObjectUrl(blob)
       try {
-        const inner = innerGLSLNode
-        if (inner) {
-          const innerLocatorId = nodeToNodeLocatorId(inner)
-          nodeOutputStore.setNodePreviewsByLocatorId(innerLocatorId, [blobUrl])
+        if (innerLocatorId) {
+          if (getInnerGLSLNode())
+            nodeOutputStore.setNodePreviewsByLocatorId(innerLocatorId, [
+              blobUrl
+            ])
         } else {
           const nId = nodeId.value
           if (nId != null) {

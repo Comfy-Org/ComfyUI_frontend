@@ -221,6 +221,13 @@ export function useFeatureFlags() {
         served
       )
     },
+    get openOnCloudModelUploadEnabled(): boolean {
+      return (
+        this.openOnCloudEnabled &&
+        localOpenOnCloudRollout.value?.open_on_cloud_model_upload_enabled ===
+          true
+      )
+    },
     get openOnCloudUseLocalAgentEnabled() {
       const served = isCloud
         ? remoteConfig().open_on_cloud_use_local_agent_enabled
@@ -284,6 +291,12 @@ export function useFeatureFlags() {
         false
       )
     },
+    get customDeploymentsEditorEnabled() {
+      return resolveStrictBooleanFlag(
+        ServerFeatureFlag.CUSTOM_DEPLOYMENTS_EDITOR_ENABLED,
+        remoteConfig().custom_deployments_editor_enabled
+      )
+    },
     get hostedBillingDestination() {
       return hostedBillingDestination()
     },
@@ -318,6 +331,15 @@ export function useFeatureFlags() {
       return resolveStrictBooleanFlag(
         ServerFeatureFlag.LOCAL_WEB_SSO,
         remoteConfig().local_web_sso
+      )
+    },
+    /** Comfy MCP connect surface; local installs only, off unless served true. */
+    get localMcpConnectEnabled() {
+      if (isCloud) return false
+
+      return resolveStrictBooleanFlag(
+        ServerFeatureFlag.LOCAL_MCP_CONNECT,
+        remoteConfig().local_mcp_connect
       )
     },
     get billingControlEnabled() {
@@ -443,6 +465,8 @@ export function startFeatureFlagTelemetry() {
       [ServerFeatureFlag.USER_SECRETS_ENABLED]: flags.userSecretsEnabled,
       [ServerFeatureFlag.NODE_REPLACEMENTS]: flags.nodeReplacementsEnabled,
       [ServerFeatureFlag.OPEN_ON_CLOUD_ENABLED]: flags.openOnCloudEnabled,
+      [ServerFeatureFlag.OPEN_ON_CLOUD_MODEL_UPLOAD_ENABLED]:
+        flags.openOnCloudModelUploadEnabled,
       [ServerFeatureFlag.OPEN_ON_CLOUD_USE_LOCAL_AGENT_ENABLED]:
         flags.openOnCloudUseLocalAgentEnabled,
       [ServerFeatureFlag.NODE_LIBRARY_ESSENTIALS_ENABLED]:
@@ -450,6 +474,8 @@ export function startFeatureFlagTelemetry() {
       [ServerFeatureFlag.COMFYHUB_UPLOAD_ENABLED]: flags.comfyHubUploadEnabled,
       [ServerFeatureFlag.COMFYHUB_PROFILE_GATE_ENABLED]:
         flags.comfyHubProfileGateEnabled,
+      [ServerFeatureFlag.CUSTOM_DEPLOYMENTS_EDITOR_ENABLED]:
+        flags.customDeploymentsEditorEnabled,
       [ServerFeatureFlag.HOSTED_BILLING_DESTINATION]:
         flags.hostedBillingDestination,
       [ServerFeatureFlag.SHOW_SIGNIN_BUTTON]: flags.showSignInButton,

@@ -16,6 +16,7 @@ import {
   useRemoteConfigStore
 } from '@/platform/remoteConfig/remoteConfigStore'
 import { reportAssertFailure } from '@/platform/telemetry/assertFailureReporter'
+import { reportFirebaseConfigSource } from '@/platform/telemetry/firebaseConfigSourceTelemetry'
 import { initSentry } from '@/platform/telemetry/initSentry'
 import {
   markStoresPending,
@@ -42,7 +43,8 @@ import { startLocalOpenOnCloudRollout } from '@/platform/openOnCloud/localOpenOn
 import App from './App.vue'
 // Intentionally relative import to ensure the CSS is loaded in the right order (after litegraph.css)
 import './assets/css/style.css'
-import { i18n, t } from './i18n'
+import { i18n, syncDocumentLanguage, t } from './i18n'
+import { installTranslationSafeDomOps } from '@/base/dom/translationSafeDomOps'
 
 const isCloud = __DISTRIBUTION__ === 'cloud'
 const hasHostTelemetryBridge = Boolean(window.__comfyDesktop2?.Telemetry)
@@ -134,6 +136,7 @@ function initFirebaseIdentity(): void {
     firebaseIdentity.initialize()
   } finally {
     phaseFirebase.stop()
+    if (isCloud) reportFirebaseConfigSource()
   }
 }
 
@@ -204,6 +207,8 @@ async function bootstrap(pinia: Pinia): Promise<void> {
   initFirebaseIdentity()
 
   const router = await bootstrapTracer.settle('startup/router', createAppRouter)
+  installTranslationSafeDomOps()
+  syncDocumentLanguage()
   const app = createApp(App)
 
   initErrorReporting(app, pinia)

@@ -61,7 +61,6 @@ test.describe(
 
       await test.step('a ready agent opens the panel and offers the skill', async () => {
         await agentPanel.open()
-        await agentPanel.selectWorkflow()
         await agentPanel.composer.fill('/')
         await expect(skillOption).toBeVisible()
       })

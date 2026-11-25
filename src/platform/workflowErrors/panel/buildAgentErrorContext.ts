@@ -30,8 +30,9 @@ function problemMessage(error: ErrorItem): string {
 }
 
 function executionProblems(cards: ErrorCardData[]): AgentErrorProblem[] {
-  return cards.flatMap((card) =>
-    card.errors.map((error) => ({
+  return cards.flatMap((card) => {
+    const nodeId = card.nodeId ?? card.graphNodeId ?? card.rawNodeId
+    return card.errors.map((error) => ({
       category: error.isRuntimeError
         ? ('execution_failure' as const)
         : ('validation' as const),
@@ -39,11 +40,11 @@ function executionProblems(cards: ErrorCardData[]): AgentErrorProblem[] {
       jobId: error.jobId,
       message: problemMessage(error),
       details: error.details ?? error.displayDetails,
-      nodeId: card.nodeId ?? card.graphNodeId ?? card.rawNodeId,
-      nodeType: card.title,
+      nodeId,
+      nodeType: nodeId == null ? undefined : card.title,
       nodeTitle: card.nodeTitle
     }))
-  )
+  })
 }
 
 interface NodeUse {
