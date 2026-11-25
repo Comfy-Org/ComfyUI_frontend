@@ -82,15 +82,20 @@ test.describe(
       cloudOrigin
     }) => {
       await comfyPage.workflow.loadWorkflow('openOnCloud/01-runnable-on-cloud')
+      let openedTabs = 0
+      comfyPage.page.on('popup', () => openedTabs++)
       const compatibility = await checkCloudCompatibility()
       expect(compatibility.missing_node_types).toEqual([])
       expect(compatibility.missing_models ?? []).toEqual([])
+      await expect(openOnCloudDialog.openOnCloudButton).toBeVisible()
+      expect(openedTabs).toBe(0)
 
       const [cloudTab] = await Promise.all([
         comfyPage.page.waitForEvent('popup'),
         openOnCloudDialog.openOnCloudButton.click()
       ])
       await expect.poll(() => new URL(cloudTab.url()).origin).toBe(cloudOrigin)
+      expect(openedTabs).toBe(1)
       await expect(openOnCloudDialog.root).toBeHidden()
       await cloudTab.close()
     })

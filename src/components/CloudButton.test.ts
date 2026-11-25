@@ -240,16 +240,21 @@ describe('Cloud button compatibility checks', () => {
     const dialog = await screen.findByRole('dialog', {
       name: dialogName
     })
-    expect(
-      within(dialog).getByText(
+    expect(dialog).toHaveAccessibleDescription(
+      expect.stringContaining(
         'Checking will send this workflow’s node and model names to Comfy Cloud.'
       )
-    ).toBeVisible()
+    )
     expect(checkCloudCompatibility).not.toHaveBeenCalled()
 
     await user.click(within(dialog).getByRole('button', { name: checkLabel }))
 
     const open = await within(dialog).findByRole('button', { name: openLabel })
+    expect(dialog).toHaveAccessibleDescription(
+      expect.stringContaining(
+        'Comfy Cloud has every node and model this workflow uses.'
+      )
+    )
     expect(checkCloudCompatibility).toHaveBeenCalledOnce()
     expect(openWorkflowOnCloud).not.toHaveBeenCalled()
 

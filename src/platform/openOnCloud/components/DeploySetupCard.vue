@@ -34,25 +34,31 @@
         <DialogTitle class="my-0 text-xl @xl:text-2xl">
           {{ $t('openOnCloud.deploySetupDialog.title') }}
         </DialogTitle>
-        <p class="my-0 text-sm/5 text-muted-foreground">
-          {{ body ?? $t('openOnCloud.deploySetupDialog.body') }}
-        </p>
-        <ul class="my-0 flex list-none flex-col gap-2 p-0">
-          <li
-            v-for="point in points ?? buildPoints"
-            :key="point"
-            class="flex items-start gap-2.5 text-sm/5 text-foreground/75"
-          >
-            <i
-              class="mt-0.75 icon-[lucide--check] size-3.5 text-muted-foreground"
-              aria-hidden="true"
-            />
-            {{ point }}
-          </li>
-        </ul>
-        <p v-if="note" class="my-0 text-sm/5 text-muted-foreground">
-          {{ note }}
-        </p>
+        <div
+          :id="dialogRoot?.descriptionId"
+          class="flex flex-col gap-3 text-sm/5 text-muted-foreground"
+          aria-live="polite"
+        >
+          <p class="my-0">
+            {{ body ?? $t('openOnCloud.deploySetupDialog.body') }}
+          </p>
+          <ul class="my-0 flex list-none flex-col gap-2 p-0">
+            <li
+              v-for="point in points ?? buildPoints"
+              :key="point"
+              class="flex items-start gap-2.5 text-foreground/75"
+            >
+              <i
+                class="mt-0.75 icon-[lucide--check] size-3.5 text-muted-foreground"
+                aria-hidden="true"
+              />
+              {{ point }}
+            </li>
+          </ul>
+          <p v-if="note" class="my-0">
+            {{ note }}
+          </p>
+        </div>
         <DeploymentDocsLink class="@xl:hidden" />
       </div>
 
@@ -86,6 +92,7 @@
 </template>
 
 <script setup lang="ts">
+import { injectDialogRootContext } from 'reka-ui'
 import { computed, onScopeDispose } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { ComponentProps } from 'vue-component-type-helpers'
@@ -126,6 +133,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const dialogRoot = injectDialogRootContext(null)
 const buildPoints = [
   t('openOnCloud.deploySetupDialog.pointNodes'),
   t('openOnCloud.deploySetupDialog.pointGpu'),
