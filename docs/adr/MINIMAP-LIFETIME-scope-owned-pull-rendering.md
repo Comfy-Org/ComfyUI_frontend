@@ -1,4 +1,4 @@
-# ADR-MINIMAP-LIFETIME-0061: Scope-owned minimap rendering
+# ADR-MINIMAP-LIFETIME-scope-owned-pull-rendering: Scope-owned minimap rendering
 
 Date: 2026-11-22
 

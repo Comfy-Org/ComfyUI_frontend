@@ -1,4 +1,4 @@
-# ADR-ASSETS-BOUNDARY-0045: Portable asset data and application integration
+# ADR-ASSETS-BOUNDARY-portable-data-and-application-integration: Portable asset data and application integration
 
 Date: 2026-11-11
 

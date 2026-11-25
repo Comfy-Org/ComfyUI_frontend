@@ -20,7 +20,8 @@ const CITED_PROPOSALS_AWAITING_OWNER_STATUS = new Set([
   'GRAPH-DOCUMENT-frontend-document-model',
   'GRAPH-DOCUMENT-graph-activation-and-document-objects-for-in-app-agent-targets',
   'PACKAGES-ACCOUNT-UI-payment-ui-belongs-to-the-shared-account-ui-package',
-  'PERF-BENCHMARKS-performance-evidence-and-regression-framework'
+  'PERF-BENCHMARKS-performance-evidence-and-regression-framework',
+  'RELEASES-one-label-requests-core-backports'
 ])
 const ADR_CITATION_PATTERN =
   /(?<![A-Za-z0-9-])ADR-(([A-Z][A-Z0-9]*(?:-[A-Z][A-Z0-9]*)*)(?:-(\d{4}))?(?:-[a-z][a-z0-9]*(?:-[a-z0-9]+)*)?)(?![0-9])/g

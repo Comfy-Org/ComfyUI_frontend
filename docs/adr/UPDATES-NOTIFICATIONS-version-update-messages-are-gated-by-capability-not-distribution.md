@@ -1,4 +1,4 @@
-# ADR-UPDATES-NOTIFICATIONS-0048: Version-update messages are gated by capability, not distribution
+# ADR-UPDATES-NOTIFICATIONS-version-update-messages-are-gated-by-capability-not-distribution: Version-update messages are gated by capability, not distribution
 
 Date: 2026-11-19
 

@@ -152,7 +152,7 @@
     }
   ],
   "adrs": [
-    "docs/adr/ASSETS-BOUNDARY-0045-portable-data-and-application-integration.md",
+    "docs/adr/ASSETS-BOUNDARY-portable-data-and-application-integration.md",
     "docs/adr/ASSETS-DRAG-DROP-asset-card-drag-uses-file-url.md",
     "docs/adr/ASSETS-LIFECYCLE-asset-record-and-content-lifecycles.md"
   ],
