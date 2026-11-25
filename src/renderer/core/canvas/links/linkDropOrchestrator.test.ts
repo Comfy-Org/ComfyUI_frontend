@@ -130,4 +130,26 @@ describe('resolveSlotTargetCandidate', () => {
       })
     ).toEqual({ layout: createSlotLayout(), compatible: true })
   })
+
+  it('targets a Reroute body input without a derived anchor', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('Reroute')
+    node.type = 'Reroute'
+    node.id = NODE_ID
+    node.addInput('', 'number')
+    graph.add(node)
+    getGraphSlotLayout.mockReturnValue(createSlotLayout())
+
+    const target = document.createElement('div')
+    target.dataset.nodeId = String(NODE_ID)
+    const { adapter } = createAdapter()
+
+    expect(
+      resolveNodeSurfaceSlotCandidate(target, {
+        adapter,
+        graph,
+        session: createSlotLinkDragContext()
+      })
+    ).toEqual({ layout: createSlotLayout(), compatible: true })
+  })
 })

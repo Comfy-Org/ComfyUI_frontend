@@ -120,6 +120,7 @@ export const resolveNodeSurfaceSlotCandidate = (
   const key = getSlotKey(nodeId, index, isInput)
   const rendered =
     node.flags.collapsed ||
+    node.type === 'Reroute' ||
     getVueSlotAnchor(
       graph.rootGraph.id,
       nodeId,
