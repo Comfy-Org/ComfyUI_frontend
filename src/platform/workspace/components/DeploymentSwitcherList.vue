@@ -190,7 +190,7 @@ const listedSections = computed(() =>
 )
 
 function updateLabel(row: DeploymentRow): string | null {
-  if (!updatesInEditor.value || row.deploymentId === null) return null
+  if (!updatesInEditor.value || !row.updatable) return null
   return t(
     'platformFrame.updateDeployment',
     { deployment: row.title },

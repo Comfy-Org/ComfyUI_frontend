@@ -50,6 +50,7 @@ export interface DeploymentRow extends DeploymentRowLabels, MarkedRow {
   actionIcon: string | null
   ariaLabel: string | undefined
   problem: DeploymentStartProblem | null
+  updatable: boolean
 }
 
 interface DeploymentSection<Row> {
@@ -259,7 +260,8 @@ export function useDeploymentRows() {
       note: note(mark, label, null),
       ...actionFor('pick', label),
       ...switchOffer(COMFY_CLOUD_ROW),
-      problem: null
+      problem: null,
+      updatable: false
     }
   }
 
@@ -290,7 +292,8 @@ export function useDeploymentRows() {
       ),
       ...actionFor(action, label),
       ...(action === 'pick' ? switchOffer(labels.value) : {}),
-      problem: problemFor(label, start)
+      problem: problemFor(label, start),
+      updatable: true
     }
   }
 
@@ -313,7 +316,8 @@ export function useDeploymentRows() {
     build: FollowedBuild,
     value: string
   ): DeploymentRow {
-    const label = build.deploymentName
+    const label =
+      build.deploymentName || t('deploymentSwitcher.newDeploymentName')
     return {
       value,
       deploymentId: value,
@@ -325,7 +329,8 @@ export function useDeploymentRows() {
       mark: null,
       note: text(REASON_KEYS.notReady, label),
       ...actionFor('none', label),
-      problem: null
+      problem: null,
+      updatable: Boolean(build.deploymentId)
     }
   }
 

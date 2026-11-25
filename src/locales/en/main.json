@@ -4322,6 +4322,7 @@
     "pickGoneDetail": "This browser now runs on Comfy Cloud. Pick a deployment again to use one.",
     "defaultGone": "The workspace default was deleted, so members start on Comfy Cloud.",
     "defaultGoneOwner": "The workspace default was deleted, so members start on Comfy Cloud. Choose a new one under Workspace default.",
+    "newDeploymentName": "New deployment",
     "noDeployments": "This workspace has no deployments yet.",
     "createCustomDeployment": "Create a custom deployment",
     "manageDeployments": "Manage deployments",

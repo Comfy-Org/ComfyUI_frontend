@@ -2776,6 +2776,99 @@ describe('DeploymentSwitcher with Platform in the editor', () => {
     }
   )
 
+  function followFirstBuild(deploymentId: string, deploymentName: string) {
+    Object.assign(usePlatformFrameStore(), {
+      build: {
+        kind: 'new',
+        buildId: PLACEHOLDER,
+        accountId: 'uid-ana',
+        workspaceId: 'ws-1',
+        deploymentId,
+        deploymentName,
+        releaseId: 'r-4',
+        version: 1,
+        previousReleaseId: null,
+        previousVersion: null,
+        stage: deploymentId ? 'deploying' : 'building',
+        progress: null,
+        startedAt: 0
+      } satisfies FollowedBuild
+    })
+  }
+
+  it.for([
+    {
+      offers: 'offers no',
+      when: 'before deploy-sent',
+      deploymentId: '',
+      pencils: 0,
+      keys: null
+    },
+    {
+      offers: 'offers an',
+      when: 'once deploy-sent names its deployment',
+      deploymentId: INTENDED,
+      pencils: 1,
+      keys: 'E'
+    }
+  ])(
+    '$offers update on the Building row $when',
+    async ({ deploymentId, pencils, keys }) => {
+      Object.assign(useFeatureFlags().flags, {
+        customDeploymentsEditorEnabled: true
+      })
+      mockWorkspaceApi.listDeployments.mockResolvedValue({
+        ...listing,
+        items: []
+      })
+      followFirstBuild(deploymentId, 'lora-stack-demo')
+      const user = renderSwitcher()
+      await openList(user)
+
+      const row = screen.getByTestId(
+        `deployment-row-${deploymentId || PLACEHOLDER}`
+      )
+      expect(within(row).queryAllByTestId('deployment-row-edit')).toHaveLength(
+        pencils
+      )
+      expect(row.getAttribute('aria-keyshortcuts')).toBe(keys)
+    }
+  )
+
+  it('opens no update with E on the Building row before deploy-sent', async () => {
+    Object.assign(useFeatureFlags().flags, {
+      customDeploymentsEditorEnabled: true
+    })
+    mockWorkspaceApi.listDeployments.mockResolvedValue({
+      ...listing,
+      items: []
+    })
+    followFirstBuild('', 'lora-stack-demo')
+    const user = renderSwitcher()
+    await openList(user)
+
+    screen.getByTestId(`deployment-row-${PLACEHOLDER}`).focus()
+    await user.keyboard('e')
+
+    expect(framedAt()).toBeNull()
+  })
+
+  it('names a Building row with no deployment name yet New deployment', async () => {
+    mockWorkspaceApi.listDeployments.mockResolvedValue({
+      ...listing,
+      items: []
+    })
+    followFirstBuild('', '')
+    const user = renderSwitcher()
+    await openList(user)
+
+    const row = screen.getByTestId(`deployment-row-${PLACEHOLDER}`)
+    expect(row).toHaveTextContent(/^New deployment/)
+    expect(row).toHaveAccessibleDescription(
+      "New deployment isn't ready. Pick it once it's ready."
+    )
+  })
+
   it('shows the usual status again once a build fails', async () => {
     mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
     following('failed', null)
