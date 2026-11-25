@@ -144,6 +144,34 @@ describe('useDeploymentPickStore', () => {
     })
   })
 
+  it('still reports a later Sentry-bound failure after a Datadog-only 401 on the same page', async () => {
+    const refused = new WorkspaceApiError('invalid session cookie', 401)
+    const outage = new WorkspaceApiError('Service unavailable', 503)
+    mockWorkspaceApi.listDeployments.mockRejectedValue(refused)
+    const store = useDeploymentPickStore()
+
+    const boot = store.loadOnce()
+    await vi.advanceTimersByTimeAsync(DEPLOYMENT_LISTING_BACKSTOP_MS)
+    await boot
+    mockWorkspaceApi.listDeployments.mockRejectedValue(outage)
+    const reload = store.load()
+    await vi.advanceTimersByTimeAsync(DEPLOYMENT_LISTING_BACKSTOP_MS)
+    await reload
+
+    expect(reportError).toHaveBeenCalledTimes(2)
+    expect(reportError).toHaveBeenNthCalledWith(1, refused, {
+      surface: 'workspace',
+      errorType: 'error_loading_deployment_listing',
+      sentryMode: 'never',
+      level: 'warning',
+      tags: { status: 401, outcome: 'denied' }
+    })
+    expect(reportError).toHaveBeenNthCalledWith(2, outage, {
+      surface: 'workspace',
+      errorType: 'error_loading_deployment_listing'
+    })
+  })
+
   it('reports failed lookups once per page, however often they fail', async () => {
     const error = new WorkspaceApiError('Service unavailable', 503)
     mockWorkspaceApi.listDeployments.mockRejectedValue(error)
