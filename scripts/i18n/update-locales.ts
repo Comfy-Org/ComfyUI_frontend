@@ -47,7 +47,7 @@ import {
   mapWithConcurrency,
   translateLocaleItems
 } from './translate'
-import { isMainModule } from '../isMainModule'
+import { isMainModule } from '@comfyorg/ci/isMainModule'
 
 interface SourcePlan {
   filename: string

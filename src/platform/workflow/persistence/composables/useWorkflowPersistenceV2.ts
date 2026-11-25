@@ -35,6 +35,7 @@ import { PERSIST_DEBOUNCE_MS } from '@/platform/workflow/persistence/base/draftT
 import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftTypes'
 import {
   clearAllWorkspaceStorage,
+  clearUnscopedDraftStorage,
   clearWorkflowRestoreState,
   completeWorkflowLogoutTransition,
   prepareWorkflowLogoutTransition,
@@ -45,7 +46,16 @@ import { useWorkflowTabState } from './useWorkflowTabState'
 import { useSharedWorkflowUrlLoader } from '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'
 import { useTemplateUrlLoader } from '@/platform/workflow/templates/composables/useTemplateUrlLoader'
 import { api } from '@/scripts/api'
+import { useNewUserService } from '@/services/useNewUserService'
 import { useApp } from '@/scripts/appInstance'
+
+const PERSIST_RETRY_BACKOFF_MS = 5_000
+
+async function clearUnscopedDraftsAfterNewUserCheck(): Promise<void> {
+  const newUserService = useNewUserService()
+  await until(() => newUserService.isNewUser() !== null).toBe(true)
+  clearUnscopedDraftStorage()
+}
 
 export function useWorkflowPersistenceV2() {
   const { t } = useI18n()
@@ -96,22 +106,53 @@ export function useWorkflowPersistenceV2() {
   )
 
   const lastSavedJsonByPath = ref<Record<string, string>>({})
+  const persistenceRetryAfterByPath = new Map<string, number>()
+  const reportedPersistenceFailurePaths = new Set<string>()
 
   watch(workflowPersistenceEnabled, (enabled) => {
     if (!enabled) {
       draftStore.reset()
       lastSavedJsonByPath.value = {}
+      persistenceRetryAfterByPath.clear()
+      reportedPersistenceFailurePaths.clear()
     }
   })
+
+  function shouldBackOffPersistence(workflowPath: string): boolean {
+    const retryAfter = persistenceRetryAfterByPath.get(workflowPath)
+    return retryAfter !== undefined && Date.now() < retryAfter
+  }
+
+  function recordPersistenceFailure(workflowPath: string): void {
+    persistenceRetryAfterByPath.set(
+      workflowPath,
+      Date.now() + PERSIST_RETRY_BACKOFF_MS
+    )
+    if (reportedPersistenceFailurePaths.has(workflowPath)) return
+
+    reportedPersistenceFailurePaths.add(workflowPath)
+    toast.error(t('g.error'), {
+      description: t('toastMessages.failedToSaveDraft')
+    })
+  }
+
+  function clearPersistenceFailure(workflowPath: string): void {
+    persistenceRetryAfterByPath.delete(workflowPath)
+    reportedPersistenceFailurePaths.delete(workflowPath)
+  }
 
   const persistCurrentWorkflow = () => {
     if (!workflowPersistenceEnabled.value) return
     const activeWorkflow = workflowStore.activeWorkflow
     if (!activeWorkflow) return
 
-    const graphData = useApp().rootGraph.serialize()
-    const workflowJson = JSON.stringify(graphData)
     const workflowPath = activeWorkflow.path
+    if (shouldBackOffPersistence(workflowPath)) return
+
+    const graph = activeWorkflow.changeTracker.hasPreview
+      ? activeWorkflow.activeState
+      : useApp().rootGraph.serialize()
+    const workflowJson = JSON.stringify(graph)
 
     if (workflowJson === lastSavedJsonByPath.value[workflowPath]) return
 
@@ -123,12 +164,11 @@ export function useWorkflowPersistenceV2() {
     )
 
     if (!saved) {
-      toast.error(t('g.error'), {
-        description: t('toastMessages.failedToSaveDraft')
-      })
+      recordPersistenceFailure(workflowPath)
       return
     }
 
+    clearPersistenceFailure(workflowPath)
     tabState.setActivePath(workflowPath)
 
     lastSavedJsonByPath.value[workflowPath] = workflowJson
@@ -196,6 +236,7 @@ export function useWorkflowPersistenceV2() {
   })
   onUserResolved((user) => {
     if (!isCloud) return
+    void clearUnscopedDraftsAfterNewUserCheck()
     stopPendingWorkspaceReadinessWatcher()
     const previousSubject = resolvedAuthSubject
     resolvedAuthSubject = user.id

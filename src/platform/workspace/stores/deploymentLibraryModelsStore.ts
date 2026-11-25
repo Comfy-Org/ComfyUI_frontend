@@ -8,7 +8,7 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
+import { useAssetDownloadStore } from '@/platform/assets/stores/assetDownloadStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 
 interface LibraryFolder {
@@ -111,11 +111,7 @@ export const useDeploymentLibraryModelsStore = defineStore(
       }
     )
 
-    onScopeDispose(
-      assetService.onAssetsChanged(() => {
-        for (const folder of folders.keys()) refresh(folder)
-      })
-    )
+    onScopeDispose(assetService.onAssetsChanged(refreshLoaded))
 
     function folderFor(nodeType: string, widgetName: string) {
       if (!assetService.isAssetBrowserEligible(nodeType, widgetName)) {
@@ -161,6 +157,10 @@ export const useDeploymentLibraryModelsStore = defineStore(
       )
     }
 
+    function refreshLoaded() {
+      for (const folder of folders.keys()) refresh(folder)
+    }
+
     function loaded(folder: string): LibraryFolder | undefined {
       return flags.runtimeLibraryModelsEnabled ? folders.get(folder) : undefined
     }
@@ -171,6 +171,10 @@ export const useDeploymentLibraryModelsStore = defineStore(
 
     function statusOf(folder: string): ComboWidgetInventoryStatus {
       return loaded(folder)?.status ?? 'ready'
+    }
+
+    function hasLoaded(folder: string): boolean {
+      return loaded(folder)?.status === 'ready'
     }
 
     /**
@@ -215,8 +219,10 @@ export const useDeploymentLibraryModelsStore = defineStore(
       watchFolder,
       namesIn,
       statusOf,
+      hasLoaded,
       waitForSettled,
-      refresh
+      refresh,
+      refreshLoaded
     }
   }
 )

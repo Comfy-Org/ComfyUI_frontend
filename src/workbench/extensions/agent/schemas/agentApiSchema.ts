@@ -274,7 +274,8 @@ const zAgentThinkingData = z
   .object({
     delta: z.string(),
     message_id: z.string(),
-    thread_id: z.string()
+    thread_id: z.string(),
+    tool_call_id: z.string().optional().catch(undefined)
   })
   .passthrough()
 
@@ -444,9 +445,3 @@ export function parseAgentWsEvent(
 export const zAgentIdentity = zGeneratedAgentIdentity.extend({
   user_id: z.string().min(1)
 })
-
-/** The server's `agent` feature, pushed again on every change. */
-export interface AgentServerFeature {
-  state: 'starting' | 'ready' | 'failed'
-  reason?: string | null
-}

@@ -80,20 +80,14 @@ test.describe(
       })
 
       const panel = page.locator('#agent-panel-root')
-      const targetPicker = panel.getByRole('button', {
-        name: enMessages.agent.switchWorkflow
-      })
       const topbar = new Topbar(page)
 
-      await test.step('user opens the Agent and pins it to the tab they started on', async () => {
+      await test.step('user opens the Agent and saves the tab they started on', async () => {
         await new AgentPanel(page).open()
-        await targetPicker.click()
-        await page
-          .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
-          .click()
+        const saving = topbar.saveWorkflowAs('Unsaved Workflow')
         await expect.poll(() => workflowSelection.savedPaths.length).toBe(1)
         workflowSelection.finishSave(true)
-        await expect(targetPicker).toHaveText('Unsaved Workflow')
+        await saving
       })
 
       await test.step('user opens a brand new tab and starts a chat on it', async () => {
@@ -107,7 +101,6 @@ test.describe(
         await panel
           .getByRole('button', { name: enMessages.agent.newChat })
           .click()
-        await expect(targetPicker).toHaveText('Unsaved Workflow (2)')
       })
 
       // The user puts something on the new tab before asking about it: the

@@ -129,7 +129,7 @@ const inputAttrs = computed(() => ({
     @pointerup.stop
   >
     <template #label>
-      <WidgetLayoutFieldLabel :widget :input-id class="pl-2" />
+      <WidgetLayoutFieldLabel :widget :input-id class="pl-2" data-leading />
     </template>
     <template #between><slot name="between" /></template>
     <template #background>

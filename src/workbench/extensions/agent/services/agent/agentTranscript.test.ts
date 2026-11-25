@@ -88,6 +88,16 @@ describe('normalizeAgentTranscript', () => {
       'wf-a'
     )
   })
+
+  it('restores the latest workflow target from an assistant row when no user row exists', () => {
+    const assistant = {
+      ...row(1, 'assistant', 'turn-agent', 'Want me to wire it up?', 'row-1'),
+      workflow_id: 'wf-agent-started'
+    }
+    expect(normalizeAgentTranscript([assistant]).latestWorkflowId).toBe(
+      'wf-agent-started'
+    )
+  })
   it('orders rows by sequence and groups them by stable turn identity', () => {
     const transcript = normalizeAgentTranscript([
       row(4, 'assistant', 'turn-b', 'Second reply', 'row-4'),
@@ -453,7 +463,12 @@ describe('normalizeAgentTranscript', () => {
     const transcript = normalizeAgentTranscript([message])
 
     expect(transcript.messages[0].parts).toEqual([
-      { type: 'thinking', text: 'Looking it up.', state: 'done' },
+      {
+        type: 'thinking',
+        text: 'Looking it up.',
+        state: 'done',
+        toolCallId: 'call-1'
+      },
       {
         type: 'tool',
         callId: 'call-1',
@@ -461,7 +476,12 @@ describe('normalizeAgentTranscript', () => {
         state: 'done',
         ok: true
       },
-      { type: 'thinking', text: 'The audit row is gone.', state: 'done' },
+      {
+        type: 'thinking',
+        text: 'The audit row is gone.',
+        state: 'done',
+        toolCallId: 'call-missing'
+      },
       { type: 'text', text: 'Done', state: 'done' }
     ])
   })

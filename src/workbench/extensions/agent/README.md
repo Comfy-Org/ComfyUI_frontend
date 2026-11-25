@@ -37,7 +37,11 @@ The panel speaks one contract on the cloud and on the local agent:
   is not observed here; outside the agent, `platform/customNodes/useReconnectNodeDefinitionRefresh.ts`
   (wired in `composables/useServerReconnectLifecycle.ts`, local only) checks `/object_info` on every
   reconnect and, when it lists node types the page lacks, refreshes
-  definitions and reloads the open workflow if it holds one of them.
+  definitions and reloads the open workflow if it holds one of them. When
+  ComfyUI reports a `server_boot_id` feature flag, that core path instead
+  refreshes definitions and reloads the open workflow once per real restart
+  (a new boot id), and this store leaves restarts to it; it still refreshes
+  definitions after `refresh_catalog`.
 - **Saved workflows, `GET /api/workflows`**. Saved tabs resolve through the
   saved-workflow index on every backend.
 - **Credential** (`services/agent/agentAuth.ts`). In the cloud, agent requests
@@ -98,13 +102,24 @@ new scope. Desktop/Local sign-in continuation authenticates before saving.
 
 `agent_consent_not_offered` names why an automatic offer was not made.
 
-| `reason`              | Why                                         | Retried                |
-| --------------------- | ------------------------------------------- | ---------------------- |
-| `first_run_screen`    | Getting Started or another first-run screen | When it closes         |
-| `tour_active`         | Another onboarding tour                     | When it ends           |
-| `dialog_open`         | Another dialog                              | When it closes         |
-| `boot_undecided`      | The startup decision did not settle         | No, for this page load |
-| `storage_unavailable` | localStorage cannot be written              | No, for this page load |
+| `reason`                 | Why                                         | Retried                |
+| ------------------------ | ------------------------------------------- | ---------------------- |
+| `first_run_screen`       | Getting Started or another first-run screen | When it closes         |
+| `tour_active`            | Another onboarding tour                     | When it ends           |
+| `dialog_open`            | Another dialog                              | When it closes         |
+| `boot_undecided`         | The startup decision did not settle         | No, for this page load |
+| `storage_unavailable`    | localStorage cannot be written              | No, for this page load |
+| `first_session_deferred` | A new local user's first launch             | No, for this page load |
+
+On a non-cloud build, the launch that shows a new user the template browser
+(nothing restored, `Comfy.TutorialCompleted` unset) is left to the templates:
+the panel does not auto-open, the launch does not count toward the two
+activation launches, and the card is not offered unprompted, including after a
+dialog closes or the user signs in. A panel restored open from an earlier
+profile stays hidden from the first paint, without forgetting it, so the next
+launch restores it. The Agent button and keybinding work as usual.
+`Comfy.AgentPanel.firstSessionDeferred` in localStorage bounds this to one
+launch; if it cannot be written, the launch is not deferred.
 
 `agent_consent_offer_exited` covers every other ending. Split queries by
 `exit`; a total is not a quantity.
@@ -139,7 +154,9 @@ After consent succeeds, the first Agent open starts a three-card tour of the
 panel, composer and chat history, all inside the Agent panel. **Next** advances
 through the cards; **Done** on the last card, **Skip** on any earlier card and
 Escape once a card is on screen all dismiss the tour and mark it complete. The
-last card has no **Skip**: there is nothing left to skip.
+last card has no **Skip**: there is nothing left to skip. Escape on the last
+card counts as **Done** in `agent_onboarding_step` (`action: finish`); on an
+earlier card it counts as **Skip**.
 
 A card placed beside its target carries an arrow pointing at it; cards placed
 anywhere else never do. The arrow is also hidden when it would not actually
@@ -150,10 +167,12 @@ screen, the highlighted area included, does not respond while a card is up; a
 click there briefly outlines the card and moves focus to it
 so the user finds the controls instead of clicking the highlight.
 
-Completion is device-local in `localStorage`, scoped to the authenticated user
-and active workspace; with either unresolved there is no scope to record, so no
-tour is shown at all. It does not sync through Global Settings. A different
-user or workspace on the same device gets its own tour. The legacy unscoped
+Completion is scoped to the authenticated user and active workspace; with
+either unresolved there is no scope to record, so no tour is shown at all. It
+is written to `localStorage` and to the hidden user setting
+`Comfy.AgentPanel.OnboardedScopes`, and the tour counts as seen if either says
+so. The setting keeps Desktop from showing the tour again when its local
+origin (port) changes. A different user or workspace gets its own tour. The legacy unscoped
 completion flag is adopted once by the current scope, then removed.
 
 The tour waits rather than marking itself complete when its target is not yet

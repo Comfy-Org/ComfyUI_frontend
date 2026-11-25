@@ -7,6 +7,7 @@ import {
   skipLeavePromptOnce,
   takeLeavePromptSkip
 } from '@/platform/workflow/management/leavePrompt'
+import type { WorkflowChangeTracker } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { MAX_DRAFTS } from '@/platform/workflow/persistence/base/draftTypes'
@@ -103,6 +104,9 @@ describe('UnloadWindowConfirmDialog', () => {
         isModified: true,
         isTemporary: true,
         lastModified: 0,
+        changeTracker: fromPartial<WorkflowChangeTracker>({
+          hasPreview: false
+        }),
         activeState: structuredClone(blankGraph)
       })
       Object.assign(useWorkflowStore(), {
@@ -117,26 +121,40 @@ describe('UnloadWindowConfirmDialog', () => {
       })
     })
 
-    it('checkpoints the latest active edits before leaving without marking them saved', () => {
-      render(UnloadWindowConfirmDialog)
+    it.for([false, true])(
+      'checkpoints recovery with preview active: %s',
+      (hasPreview) => {
+        const active = useWorkflowStore().activeWorkflow
+        expect(active).toBeDefined()
+        if (active)
+          active.changeTracker = fromPartial<WorkflowChangeTracker>({
+            hasPreview
+          })
+        render(UnloadWindowConfirmDialog)
 
-      expect(leavePage().defaultPrevented).toBe(false)
+        expect(leavePage().defaultPrevented).toBe(false)
 
-      const draft = useWorkflowDraftStoreV2().getDraft('workflows/active.json')
-      expect(JSON.parse(draft?.data ?? 'null')?.extra).toEqual({
-        marker: 'latest edit, not the tracker snapshot'
-      })
-      expect(useWorkflowStore().activeWorkflow?.isModified).toBe(true)
-      expect(
-        JSON.parse(
-          localStorage.getItem(StorageKeys.lastOpenPaths('personal')) ?? 'null'
+        const draft = useWorkflowDraftStoreV2().getDraft(
+          'workflows/active.json'
         )
-      ).toEqual({
-        workspaceId: 'personal',
-        paths: ['workflows/active.json'],
-        activeIndex: 0
-      })
-    })
+        expect(JSON.parse(draft?.data ?? 'null')?.extra).toEqual(
+          hasPreview
+            ? blankGraph.extra
+            : { marker: 'latest edit, not the tracker snapshot' }
+        )
+        expect(useWorkflowStore().activeWorkflow?.isModified).toBe(true)
+        expect(
+          JSON.parse(
+            localStorage.getItem(StorageKeys.lastOpenPaths('personal')) ??
+              'null'
+          )
+        ).toEqual({
+          workspaceId: 'personal',
+          paths: ['workflows/active.json'],
+          activeIndex: 0
+        })
+      }
+    )
 
     it.for([
       { damage: 'none', lastModified: 0, asks: false },
@@ -260,58 +278,76 @@ describe('UnloadWindowConfirmDialog', () => {
       }
     )
 
-    it.for([
-      { reason: 'capacity', count: MAX_DRAFTS, blockPayload: false },
-      { reason: 'quota', count: 2, blockPayload: true }
-    ])(
-      'keeps inactive recovery drafts when checkpointing fails at $reason',
-      ({ count, blockPayload }) => {
-        const inactive = Array.from({ length: count }, (_, index) =>
-          fromPartial<ComfyWorkflow>({
-            path: `workflows/inactive${index}.json`,
-            key: `inactive${index}.json`,
-            isModified: true,
-            isTemporary: true,
-            lastModified: 0,
-            activeState: structuredClone(blankGraph)
-          })
-        )
-        seedRecoveryDrafts(inactive)
-        const active = useWorkflowStore().activeWorkflow
-        Object.assign(useWorkflowStore(), {
-          openWorkflows: [...inactive, active],
-          modifiedWorkflows: [...inactive, active]
+    it('keeps inactive recovery drafts when checkpointing fails at quota', () => {
+      const count = 2
+      const inactive = Array.from({ length: count }, (_, index) =>
+        fromPartial<ComfyWorkflow>({
+          path: `workflows/inactive${index}.json`,
+          key: `inactive${index}.json`,
+          isModified: true,
+          isTemporary: true,
+          lastModified: 0,
+          activeState: structuredClone(blankGraph)
         })
-        const indexKey = StorageKeys.draftIndex('personal')
-        const previousIndex = localStorage.getItem(indexKey)
-        const previousPayloads = inactive.map((workflow) =>
+      )
+      seedRecoveryDrafts(inactive)
+      const active = useWorkflowStore().activeWorkflow
+      Object.assign(useWorkflowStore(), {
+        openWorkflows: [...inactive, active],
+        modifiedWorkflows: [...inactive, active]
+      })
+      const indexKey = StorageKeys.draftIndex('personal')
+      const previousIndex = localStorage.getItem(indexKey)
+      const previousPayloads = inactive.map((workflow) =>
+        localStorage.getItem(
+          StorageKeys.draftPayload(workflow.path, 'personal')
+        )
+      )
+      const setItem = localStorage.setItem.bind(localStorage)
+      vi.spyOn(localStorage, 'setItem').mockImplementation((key, value) => {
+        if (
+          key === StorageKeys.draftPayload('workflows/active.json', 'personal')
+        )
+          throw new DOMException('Full', 'QuotaExceededError')
+        setItem(key, value)
+      })
+      render(UnloadWindowConfirmDialog)
+
+      expect(leavePage().defaultPrevented).toBe(true)
+      expect(localStorage.getItem(indexKey)).toBe(previousIndex)
+      expect(
+        inactive.map((workflow) =>
           localStorage.getItem(
             StorageKeys.draftPayload(workflow.path, 'personal')
           )
         )
-        const setItem = localStorage.setItem.bind(localStorage)
-        vi.spyOn(localStorage, 'setItem').mockImplementation((key, value) => {
-          if (
-            blockPayload &&
-            key ===
-              StorageKeys.draftPayload('workflows/active.json', 'personal')
-          )
-            throw new DOMException('Full', 'QuotaExceededError')
-          setItem(key, value)
-        })
-        render(UnloadWindowConfirmDialog)
+      ).toEqual(previousPayloads)
+    })
 
-        expect(leavePage().defaultPrevented).toBe(true)
-        expect(localStorage.getItem(indexKey)).toBe(previousIndex)
-        expect(
-          inactive.map((workflow) =>
-            localStorage.getItem(
-              StorageKeys.draftPayload(workflow.path, 'personal')
-            )
-          )
-        ).toEqual(previousPayloads)
-      }
-    )
+    it('checkpoints a new active draft beyond the legacy capacity', () => {
+      const inactive = Array.from({ length: MAX_DRAFTS }, (_, index) =>
+        fromPartial<ComfyWorkflow>({
+          path: `workflows/inactive${index}.json`,
+          key: `inactive${index}.json`,
+          isModified: true,
+          isTemporary: true,
+          lastModified: 0,
+          activeState: structuredClone(blankGraph)
+        })
+      )
+      seedRecoveryDrafts(inactive)
+      const active = useWorkflowStore().activeWorkflow
+      Object.assign(useWorkflowStore(), {
+        openWorkflows: [...inactive, active],
+        modifiedWorkflows: [...inactive, active]
+      })
+      render(UnloadWindowConfirmDialog)
+
+      expect(leavePage().defaultPrevented).toBe(false)
+      expect(
+        useWorkflowDraftStoreV2().getDraft('workflows/active.json')
+      ).not.toBeNull()
+    })
 
     it('warns when draft persistence is disabled', () => {
       useSettingStore().settingValues['Comfy.Workflow.Persist'] = false

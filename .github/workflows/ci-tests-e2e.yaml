@@ -79,20 +79,20 @@ jobs:
           COLLECT_COVERAGE: 'true'
 
       - name: Load timings from the last successful main E2E run
-        run: pnpm exec tsx scripts/cicd/load-playwright-timings.ts
+        run: pnpm exec tsx tools/ci/src/cicd/load-playwright-timings.ts
         env:
           GH_TOKEN: ${{ github.token }}
           PLAYWRIGHT_SHARD_TIMINGS_DIR: ${{ runner.temp }}/playwright-shard-timings
 
       - name: Plan cloud shards by historical duration
-        run: pnpm exec playwright test --project=cloud --list --reporter=./scripts/cicd/plan-playwright-shards.ts
+        run: pnpm exec playwright test --project=cloud --list --reporter=./tools/ci/src/cicd/plan-playwright-shards.ts
         env:
           PLAYWRIGHT_SHARD_TIMINGS_DIR: ${{ runner.temp }}/playwright-shard-timings
           PLAYWRIGHT_SHARD_TOTAL: '4'
           PLAYWRIGHT_SHARD_PLAN_DIR: ${{ runner.temp }}/playwright-shard-plans/cloud
 
       - name: Plan chromium shards by historical duration
-        run: pnpm exec playwright test --project=chromium --list --reporter=./scripts/cicd/plan-playwright-shards.ts
+        run: pnpm exec playwright test --project=chromium --list --reporter=./tools/ci/src/cicd/plan-playwright-shards.ts
         env:
           PLAYWRIGHT_SHARD_TIMINGS_DIR: ${{ runner.temp }}/playwright-shard-timings
           PLAYWRIGHT_SHARD_TOTAL: '16'
@@ -455,8 +455,7 @@ jobs:
           set -euo pipefail
           version=$(awk '
             in_entry && !/^        / { in_entry = 0 }
-            /^importers:/ { in_importers = 1; next }
-            in_importers && /^[^ ]/ { exit }
+            /^[^ ]/ { in_importers = /^importers:$/; in_root = 0; next }
             in_importers && /^  [^ ]/ { in_root = ($0 == "  .:"); next }
             in_root && /^      .@playwright\/test.:$/ { in_entry = 1; next }
             in_entry && /^        version: / { sub(/^        version: /, ""); sub(/\(.*/, ""); print; exit }
@@ -619,7 +618,7 @@ jobs:
           SUMMARY_FILE: playwright-section.md
           BRANCH_NAME: ${{ github.head_ref }}
         run: |
-          bash ./scripts/cicd/pr-playwright-deploy-and-comment.sh \
+          bash ./tools/ci/src/cicd/pr-playwright-deploy-and-comment.sh \
             "${{ github.event.pull_request.number }}" \
             "$BRANCH_NAME" \
             "completed"

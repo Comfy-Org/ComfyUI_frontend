@@ -679,6 +679,7 @@ export const useExecutionStore = defineStore('execution', () => {
         surface: 'graph',
         errorType: 'warning_rejecting_unowned_execution_start',
         level: 'warning',
+        sentryMode: 'never',
         context: {
           jobId,
           activeJobId: activeJobId.value,

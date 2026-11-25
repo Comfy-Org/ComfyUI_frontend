@@ -1,3 +1,7 @@
+import {
+  copyToCanvasClipboard,
+  pasteFromCanvasClipboard
+} from '@/core/graph/clipboard/canvasClipboard'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
@@ -27,7 +31,7 @@ import {
 import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useSubscriptionPaywall } from '@/platform/billing/composables/useSubscriptionPaywall'
-import { openModelLibraryBrowser } from '@/platform/assets/composables/openModelLibraryBrowser'
+import { openModelLibraryBrowser } from '@/platform/assets/integration/openModelLibraryBrowser'
 import { isSalesManagedTier } from '@/platform/billing/subscription/constants/tierPricing'
 import { subscribeToRunDialogOptions } from '@/platform/billing/subscription/utils/subscribeToRunDialogOptions'
 import { isCloud } from '@/platform/distribution/types'
@@ -54,7 +58,7 @@ import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDi
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { useDialogService } from '@/services/dialogService'
 import { useLitegraphService } from '@/services/litegraphService'
-import { useAssetsStore } from '@/stores/assetsStore'
+import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
 import type { ComfyCommand } from '@comfyorg/keybindings/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useModelStore } from '@/stores/modelStore'
@@ -201,7 +205,7 @@ export function useCoreCommands(): ComfyCommand[] {
       category: 'essentials' as const,
       function: async () => {
         const previousWorkflowHadNodes = useApp().rootGraph._nodes.length > 0
-        await workflowService.loadBlankWorkflow()
+        await workflowService.loadBlankWorkflow({ initiator: 'user' })
         telemetry?.trackWorkflowCreated({
           workflow_type: 'blank',
           previous_workflow_had_nodes: previousWorkflowHadNodes
@@ -388,7 +392,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Refresh Node Definitions',
       category: 'essentials' as const,
       function: async () => {
-        await Promise.all([
+        const [reloaded] = await Promise.all([
           useApp().refreshComboInNodes(),
           modelStore.refresh()
         ])
@@ -396,6 +400,7 @@ export function useCoreCommands(): ComfyCommand[] {
         if (!isCloud) {
           await missingModelStore.refreshMissingModels({ reloadDefs: false })
         }
+        return reloaded
       }
     },
     {
@@ -1028,7 +1033,11 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Copy',
       function: () => {
         if (useApp().canvas.selectedItems.size) {
-          useApp().canvas.copyToClipboard()
+          if (!copyToCanvasClipboard(useApp().canvas).stored) {
+            toast.error(t('g.error'), {
+              description: t('clipboard.errorMessage')
+            })
+          }
         }
       }
     },
@@ -1038,7 +1047,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Paste',
       mutatesGraph: true,
       function: () => {
-        useApp().canvas.pasteFromClipboard()
+        pasteFromCanvasClipboard(useApp().canvas)
       }
     },
     {
@@ -1047,7 +1056,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: () => t('menuLabels.Paste with Connect'),
       mutatesGraph: true,
       function: () => {
-        useApp().canvas.pasteFromClipboard({ connectInputs: true })
+        pasteFromCanvasClipboard(useApp().canvas, { connectInputs: true })
       }
     },
     {

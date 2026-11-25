@@ -1,6 +1,10 @@
+import { withWorkspaceLink } from '@comfyorg/account-core/workspaceLink'
 import { z } from 'zod'
 
-import { getComfyCloudBaseUrl } from '@/config/comfyApi'
+import {
+  getBuildTimeComfyCloudBaseUrl,
+  getComfyCloudBaseUrl
+} from '@/config/comfyApi'
 import { handsPopupsToSystemBrowser } from '@/platform/distribution/desktopBrowser'
 
 export const LOCAL_HANDOFF_PARAM = 'from_local'
@@ -35,17 +39,24 @@ export function localHandoffWorkflow(
   return { type: WORKFLOW, nonce, filename, workflow }
 }
 
-export function cloudEditorUrl(nonce?: string): string {
+export function cloudEditorUrl(nonce?: string, workspaceId?: string): string {
   const configured = new URL(getComfyCloudBaseUrl())
   const url = new URL('/', configured)
   for (const override of configured.searchParams.getAll('ff'))
     url.searchParams.append('ff', override)
   if (nonce) url.searchParams.set(LOCAL_HANDOFF_PARAM, nonce)
-  return url.href
+  return workspaceId ? withWorkspaceLink(url, workspaceId).href : url.href
 }
 
-export function cloudOrigin(): string {
-  return new URL(getComfyCloudBaseUrl()).origin
+export function trustedCloudHandoffOrigin(): string | undefined {
+  try {
+    const trusted = new URL(getBuildTimeComfyCloudBaseUrl())
+    const configured = new URL(getComfyCloudBaseUrl())
+    if (trusted.protocol === 'https:' && configured.origin === trusted.origin)
+      return trusted.origin
+  } catch {
+    return undefined
+  }
 }
 
 const LOCAL_HOSTNAME =
@@ -65,5 +76,8 @@ export function isLocalOrigin(origin: string): boolean {
 
 /** The Cloud receiver accepts a browser handoff only from a local origin. */
 export function canHandOffToCloud(): boolean {
-  return handsPopupsToSystemBrowser() || isLocalOrigin(window.location.origin)
+  return (
+    !!trustedCloudHandoffOrigin() &&
+    (handsPopupsToSystemBrowser() || isLocalOrigin(window.location.origin))
+  )
 }

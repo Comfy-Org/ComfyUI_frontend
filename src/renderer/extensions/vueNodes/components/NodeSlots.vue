@@ -5,6 +5,7 @@
   <div
     v-else
     ref="slots"
+    data-part="node-slots"
     :class="
       cn(
         'flex min-w-0 justify-between',
@@ -21,6 +22,7 @@
         v-for="(input, index) in filteredInputs"
         :key="`input-${input.name}-${getActualInputIndex(input, index)}`"
         :slot-data="input"
+        :dot-only="unified"
         :node-type="nodeData?.type || ''"
         :node-id="nodeData.id"
         :has-error="inputHasError(input)"
@@ -37,6 +39,7 @@
         v-for="(output, index) in nodeData.outputs"
         :key="`output-${output.name}-${index}`"
         :slot-data="output"
+        :dot-only="unified"
         :node-type="nodeData?.type || ''"
         :node-id="nodeData.id"
         :index="index"
