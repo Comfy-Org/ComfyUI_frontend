@@ -74,9 +74,6 @@ onMounted(async () => {
 })
 
 const onSubmitSurvey = async (payload: Record<string, unknown>) => {
-  // A second submit can arrive before the button re-renders as disabled
-  // (double click, Enter + click). Handling it would store the survey twice
-  // and start a second navigation that cancels the first.
   if (isSubmitting.value) return
   if (!onboardingSurveyEnabled.value) {
     await router.replace({ name: 'cloud-user-check' })
@@ -112,8 +109,6 @@ const onSubmitSurvey = async (payload: Record<string, unknown>) => {
 async function advanceFromSurvey(replaying: boolean, replayOwner: string) {
   try {
     const failure = await router.push({ name: 'cloud-user-check' })
-    // A newer navigation superseded this one; the router follows that one,
-    // so onboarding did not fail.
     if (isNavigationFailure(failure, NavigationFailureType.cancelled)) return
     if (isNavigationFailure(failure)) throw failure
   } catch (error) {
