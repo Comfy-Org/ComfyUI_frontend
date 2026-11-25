@@ -74,6 +74,19 @@ export function useCheckoutPromo({
     )
   }
 
+  function holdsCarriedCode(): boolean {
+    const current = entry.value
+    return (
+      current.kind === 'editing' &&
+      prefill?.promotionCode !== undefined &&
+      current.draft === prefill.promotionCode
+    )
+  }
+
+  async function applyCarried() {
+    if (holdsCarriedCode()) await apply()
+  }
+
   async function remove() {
     if (!live() || entry.value.kind !== 'applied') return
     dispatch({ type: 'removeRequested' })
@@ -97,6 +110,8 @@ export function useCheckoutPromo({
     edit: (draft: string) => intend({ type: 'edited', draft }),
     dismiss: () => intend({ type: 'dismissed' }),
     apply,
+    /** Applies the code the entry URL carried, while the field still holds it untouched. */
+    applyCarried,
     remove,
     expire: () => dispatch({ type: 'expired' }),
     /** The quote takes no code, so whatever the link carried is dropped. */

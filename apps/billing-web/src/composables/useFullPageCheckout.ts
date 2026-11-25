@@ -72,7 +72,10 @@ import { useBilledWorkspace } from '@/composables/useBilledWorkspace'
 import { useCheckoutExit } from '@/composables/useCheckoutExit'
 import { useCheckoutJourney } from '@/composables/useCheckoutJourney'
 import { useCheckoutPromo } from '@/composables/useCheckoutPromo'
-import { awaitPlanChangeCardChoice } from '@/config/checkoutUi'
+import {
+  awaitPlanChangeCardChoice,
+  awaitPromoAutoApply
+} from '@/config/checkoutUi'
 import { awaitBillingWebStripeKey } from '@/config/stripeKey'
 import { useBillingEntry } from '@/entry/billingEntry'
 import type { BillingEntryState } from '@/entry/billingEntry'
@@ -233,6 +236,7 @@ export function useFullPageCheckout() {
   const journey = useCheckoutJourney('full_page')
   journey.enter()
   const planChangeCardChoice = awaitPlanChangeCardChoice()
+  const promoAutoApply = awaitPromoAutoApply()
 
   const page = shallowRef<CheckoutPage>(
     arrivalPage({ entry, error: unreadableLink })
@@ -480,6 +484,7 @@ export function useFullPageCheckout() {
     if (preview.value && !acceptsPromoCode(preview.value)) promo.withdraw()
     await reconciliationSettled()
     dispatch(event)
+    if (await promoAutoApply) await promo.applyCarried()
   }
 
   function arrivalOf(

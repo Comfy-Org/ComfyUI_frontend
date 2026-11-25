@@ -14,7 +14,10 @@ import { BILLING_CLIENT_KEY } from '@comfyorg/account-ui/billing'
 import type { StripePaymentPhase } from '@comfyorg/account-ui/billing/stripe'
 import { parseBillingEntry } from '@comfyorg/billing-contract'
 
-import { awaitPlanChangeCardChoice } from '@/config/checkoutUi'
+import {
+  awaitPlanChangeCardChoice,
+  awaitPromoAutoApply
+} from '@/config/checkoutUi'
 import { recordBillingEntry } from '@/entry/billingEntry'
 import { createBillingI18n } from '@/i18n'
 import type {
@@ -190,6 +193,7 @@ const vueErrors: unknown[] = []
 
 beforeEach(() => {
   vi.mocked(awaitPlanChangeCardChoice).mockResolvedValue(false)
+  vi.mocked(awaitPromoAutoApply).mockResolvedValue(false)
   vueErrors.length = 0
 })
 

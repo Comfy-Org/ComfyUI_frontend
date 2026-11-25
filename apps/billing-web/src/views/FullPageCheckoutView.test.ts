@@ -29,7 +29,10 @@ import {
 
 import type { OperationNotice } from '@/checkout/operationChannel'
 
-import { awaitPlanChangeCardChoice } from '@/config/checkoutUi'
+import {
+  awaitPlanChangeCardChoice,
+  awaitPromoAutoApply
+} from '@/config/checkoutUi'
 import { recordBillingEntry } from '@/entry/billingEntry'
 import { handoffTab } from '@/handoff/handoffTab'
 import { createBillingI18n } from '@/i18n'
@@ -96,6 +99,7 @@ vi.mock(import('@/config/checkoutUi'), { spy: true })
 
 beforeEach(() => {
   vi.mocked(awaitPlanChangeCardChoice).mockResolvedValue(false)
+  vi.mocked(awaitPromoAutoApply).mockResolvedValue(false)
 })
 
 vi.mock(import('@/entry/workspaceBinding'), () => ({
@@ -3059,6 +3063,62 @@ describe('FullPageCheckoutView promo codes', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'Apply' }))
     expect(await screen.findByText('−$5.60')).toBeInTheDocument()
+  })
+
+  describe('with billing_web_promo_auto_apply on', () => {
+    beforeEach(() => {
+      vi.mocked(awaitPromoAutoApply).mockResolvedValue(true)
+    })
+
+    it('prices a code from the URL without an Apply click, and Pay binds it', async () => {
+      const fake = await renderCheckout(
+        {},
+        quotesByCode,
+        `${CHECKOUT_PATH}&promo=LAUNCH20`
+      )
+      await screen.findByText('Subscribe to Creator Plan · Acme Team')
+
+      expect(await screen.findByText('−$5.60')).toBeInTheDocument()
+      expect(screen.getAllByText('$22.40')).toHaveLength(2)
+      expect(
+        screen.getByRole('button', { name: 'Remove LAUNCH20' })
+      ).toBeEnabled()
+
+      reportPhase({ phase: 'payment_element_ready', element: 'payment' })
+      await waitFor(() => expect(payButton()).toBeEnabled())
+      form.emit('confirm', 'ctoken_1')
+      await waitFor(() =>
+        expect(fake.subscribe).toHaveBeenCalledWith(
+          expect.objectContaining({
+            promotion_code: 'LAUNCH20',
+            quote_id: 'q_promo'
+          })
+        )
+      )
+    })
+
+    it('leaves a refused URL code typed under its error at the full total', async () => {
+      await renderCheckout({}, quotesByCode, `${CHECKOUT_PATH}&promo=NOPE`)
+      await screen.findByText('Subscribe to Creator Plan · Acme Team')
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        "This code isn't valid."
+      )
+      expect(promoField()).toHaveValue('NOPE')
+      expect(screen.getAllByText('$28.00')).toHaveLength(2)
+    })
+
+    it('quotes once and opens no promo field when the URL carries no code', async () => {
+      const fake = await renderCheckout({}, quotesByCode)
+      await screen.findByText('Subscribe to Creator Plan · Acme Team')
+      reportPhase({ phase: 'payment_element_ready', element: 'payment' })
+      await waitFor(() => expect(payButton()).toBeEnabled())
+
+      expect(fake.previewSubscribe).toHaveBeenCalledOnce()
+      expect(
+        screen.getByRole('button', { name: 'Add promo code' })
+      ).toBeInTheDocument()
+    })
   })
 
   it('a Pay over a typed, unapplied code applies it and waits for a second Pay at the new total', async () => {
