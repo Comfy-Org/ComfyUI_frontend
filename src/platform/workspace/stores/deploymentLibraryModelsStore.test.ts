@@ -93,10 +93,7 @@ describe('useDeploymentLibraryModelsStore', () => {
       new Response(
         JSON.stringify({
           assets: [
-            row(
-              '3f0b6c1e-0000-4000-8000-000000000021',
-              'unmarked.safetensors'
-            ),
+            row('3f0b6c1e-0000-4000-8000-000000000021', 'unmarked.safetensors'),
             {
               ...row(
                 '3f0b6c1e-0000-4000-8000-000000000022',
