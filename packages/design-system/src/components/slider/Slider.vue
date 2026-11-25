@@ -5,7 +5,6 @@ import {
   SliderRange,
   SliderRoot,
   SliderThumb,
-  SliderTrack,
   useForwardPropsEmits
 } from 'reka-ui'
 import { ref } from 'vue'
@@ -39,7 +38,8 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
     data-slot="slider"
     :class="
       cn(
-        'relative flex w-full touch-none items-center select-none data-disabled:opacity-50',
+        'relative flex w-full cursor-pointer touch-none items-center select-none data-disabled:opacity-50',
+        'before:absolute before:rounded-full before:bg-muted-foreground/20 data-[orientation=horizontal]:before:inset-x-0 data-[orientation=horizontal]:before:h-0.5 data-[orientation=vertical]:before:inset-y-0 data-[orientation=vertical]:before:w-0.5',
         'data-[orientation=vertical]:h-full data-[orientation=vertical]:min-h-44 data-[orientation=vertical]:w-auto data-[orientation=vertical]:flex-col',
         props.class
       )
@@ -49,28 +49,15 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
     @slide-move="() => setPressed(true)"
     @slide-end="() => setPressed(false)"
   >
-    <SliderTrack
-      data-slot="slider-track"
+    <SliderRange
+      data-slot="slider-range"
       :class="
         cn(
-          'relative grow overflow-hidden rounded-full bg-muted-foreground/20',
-          'cursor-pointer overflow-visible',
-          `before:absolute before:-inset-2 before:block before:bg-transparent`,
-          'data-[orientation=horizontal]:h-0.5 data-[orientation=horizontal]:w-full',
-          'data-[orientation=vertical]:h-full data-[orientation=vertical]:w-0.5'
+          'absolute bg-foreground data-[orientation=horizontal]:h-0.5 data-[orientation=vertical]:w-0.5',
+          props.rangeClass
         )
       "
-    >
-      <SliderRange
-        data-slot="slider-range"
-        :class="
-          cn(
-            'absolute bg-foreground data-[orientation=horizontal]:h-full data-[orientation=vertical]:w-full',
-            props.rangeClass
-          )
-        "
-      />
-    </SliderTrack>
+    />
 
     <SliderThumb
       v-for="(_, key) in modelValue"

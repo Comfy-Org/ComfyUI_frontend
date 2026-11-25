@@ -32,15 +32,10 @@
         <slot name="label" />
         <slot name="between" />
         <div
-          class="relative my-0.25 ml-auto min-h-0 min-w-[4ch] touch-pan-y self-stretch py-1.5 after:absolute after:inset-0 after:z-10 after:cursor-ew-resize focus-within:touch-auto focus-within:after:hidden"
+          class="relative my-0.25 ml-auto min-h-0 min-w-[4ch] touch-pan-y self-stretch px-2 py-1.5 before:invisible before:block before:truncate before:content-[attr(data-value)] after:absolute after:inset-0 after:z-10 after:cursor-ew-resize focus-within:touch-auto focus-within:after:hidden"
+          data-part="widget-value"
+          :data-value="draft ?? displayValue ?? modelValue"
         >
-          <span
-            aria-hidden="true"
-            class="invisible block truncate px-2"
-            data-part="widget-value"
-          >
-            {{ draft ?? displayValue ?? modelValue }}
-          </span>
           <input
             ref="inputField"
             v-bind="inputAttrs"
