@@ -33,6 +33,9 @@ import type {
   AgentPanelRenderStalledMetadata,
   AgentPaywallCtaMetadata,
   AgentPaywallShownMetadata,
+  AgentRunApprovalAnswerFailedMetadata,
+  AgentRunApprovalRecoveryAttemptedMetadata,
+  AgentRunApprovalRecoveryOutcomeMetadata,
   AgentRunApprovalResolvedMetadata,
   AgentRunApprovalShownMetadata,
   AgentRunModeChangedMetadata,
@@ -472,6 +475,27 @@ export class HostTelemetrySink implements TelemetryProvider {
     metadata: AgentRunApprovalResolvedMetadata
   ): void {
     this.capture(TelemetryEvents.AGENT_RUN_APPROVAL_RESOLVED, metadata)
+  }
+
+  trackAgentRunApprovalAnswerFailed(
+    metadata: AgentRunApprovalAnswerFailedMetadata
+  ): void {
+    this.capture(TelemetryEvents.AGENT_RUN_APPROVAL_ANSWER_FAILED, metadata)
+  }
+
+  trackAgentRunApprovalRecoveryAttempted(
+    metadata: AgentRunApprovalRecoveryAttemptedMetadata
+  ): void {
+    this.capture(
+      TelemetryEvents.AGENT_RUN_APPROVAL_RECOVERY_ATTEMPTED,
+      metadata
+    )
+  }
+
+  trackAgentRunApprovalRecoveryOutcome(
+    metadata: AgentRunApprovalRecoveryOutcomeMetadata
+  ): void {
+    this.capture(TelemetryEvents.AGENT_RUN_APPROVAL_RECOVERY_OUTCOME, metadata)
   }
 
   trackAgentRunModeChanged(metadata: AgentRunModeChangedMetadata): void {
