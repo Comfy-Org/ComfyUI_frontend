@@ -3154,6 +3154,39 @@ describe('FullPageCheckoutView promo codes', () => {
       expect(reloaded.previewSubscribe).toHaveBeenCalledOnce()
     })
 
+    it('reports to error tracking when the automatic Apply could not be checked', async () => {
+      vi.mocked(datadogRum.getInitConfiguration).mockReturnValue({
+        clientToken: 'pub',
+        applicationId: 'app'
+      })
+      await renderCheckout(
+        {},
+        (fake) =>
+          fake.previewSubscribe.mockImplementation(async ({ promotionCode }) =>
+            promotionCode === undefined
+              ? { status: 'ok', value: previewOf({ quote_id: 'q_1' }) }
+              : { status: 'error', code: 'REQUEST_FAILED' }
+          ),
+        CAMPAIGN_PATH
+      )
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        "We couldn't check this code. Try again."
+      )
+      await waitFor(() =>
+        expect(datadogRum.addError).toHaveBeenCalledWith(
+          expect.objectContaining({ name: 'promo_auto_apply_unchecked' }),
+          expect.objectContaining({
+            error_type: 'promo_auto_apply_unchecked',
+            ui_mode: 'full_page'
+          })
+        )
+      )
+      expect(
+        JSON.stringify(vi.mocked(datadogRum.addError).mock.calls)
+      ).not.toMatch(/blackfriday26/i)
+    })
+
     it('leaves a refused campaign code typed under its error at the full total', async () => {
       await renderCheckout(
         {},
@@ -3172,6 +3205,7 @@ describe('FullPageCheckoutView promo codes', () => {
       )
       expect(promoField()).toHaveValue('BLACKFRIDAY26')
       expect(screen.getAllByText('$28.00')).toHaveLength(2)
+      expect(datadogRum.addError).not.toHaveBeenCalled()
     })
   })
 

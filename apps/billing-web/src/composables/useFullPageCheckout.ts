@@ -3,7 +3,7 @@ import {
   useEventListener,
   useIntervalFn
 } from '@vueuse/core'
-import { computed, shallowReadonly, shallowRef, watch } from 'vue'
+import { computed, nextTick, shallowReadonly, shallowRef, watch } from 'vue'
 
 import {
   useBillingClient,
@@ -89,6 +89,7 @@ import {
   checkoutAttemptOf,
   createSubscriptionCheckoutTelemetry
 } from '@/telemetry/subscriptionCheckoutTelemetry'
+import { reportBillingWebError } from '@/telemetry/rum'
 
 /**
  * What Pay charges: a new method's token, a saved method, or the method on
@@ -492,7 +493,23 @@ export function useFullPageCheckout() {
     await reconciliationSettled()
     dispatch(event)
     if (isAutoApplyPromoCode(arrival.promotionCode) && (await promoAutoApply))
-      await promo.applyCarried(claimAutoApply)
+      await autoApplyCarriedPromo()
+  }
+
+  async function autoApplyCarriedPromo() {
+    journey.markPromoAutoApply(true)
+    await promo.applyCarried(claimAutoApply)
+    await nextTick()
+    journey.markPromoAutoApply(false)
+    const settled = promo.entry.value
+    if (settled.kind === 'rejected' && settled.reason === 'unchecked')
+      reportBillingWebError(
+        new Error('Checkout could not check the promo code it applied itself'),
+        {
+          errorType: 'promo_auto_apply_unchecked',
+          context: { ui_mode: 'full_page' }
+        }
+      )
   }
 
   function arrivalOf(

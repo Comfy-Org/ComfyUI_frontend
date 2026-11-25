@@ -115,6 +115,8 @@ type CheckoutJourneyPromo = {
   result: CheckoutPromoResult
   /** Whether the entry link carried the code; the code itself is never reported. */
   prefilled: boolean
+  /** Whether checkout applied the code itself, without an Apply click. Full-page checkout only. */
+  auto_applied?: boolean
 }
 type CheckoutJourneyPayBlocked = {
   phase: 'pay_blocked'
@@ -278,6 +280,8 @@ function getChoicePayload(event: CheckoutJourneyPhaseEvent) {
       event.method_kind !== undefined && { method_kind: event.method_kind }),
     ...('result' in event && { result: event.result }),
     ...('prefilled' in event && { prefilled: event.prefilled }),
+    ...('auto_applied' in event &&
+      event.auto_applied !== undefined && { auto_applied: event.auto_applied }),
     ...('reason' in event && { reason: event.reason })
   }
 }
