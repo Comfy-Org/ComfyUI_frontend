@@ -62,7 +62,7 @@ describe('account persistence', () => {
   )
 
   it.for([['localStorage'], ['localStorage', 'sessionStorage']] as const)(
-    'isolates accounts with denied storage %s',
+    'isolates accounts with denied storage %s (case %#)',
     (denied) => {
       for (const backend of denied)
         vi.spyOn(window, backend, 'get').mockImplementation(() => {
