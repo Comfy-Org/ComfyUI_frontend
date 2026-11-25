@@ -735,6 +735,47 @@ describe('LiveGraphApplier', () => {
     expect(result.failureCount).toBe(1)
   })
 
+  it('still reports a missing value control on a node whose definition has no inputs', () => {
+    TestPlainWidgets.nodeData = fromPartial<
+      NonNullable<LGraphNode['constructor']['nodeData']>
+    >({ name: 'TestPlainWidgets' })
+    onTestFinished(() => {
+      TestPlainWidgets.nodeData = undefined
+    })
+    const { doc, applyCollected, applyEdit } = setup({
+      nodes: [
+        {
+          id: 1,
+          type: 'TestPlainWidgets',
+          pos: [0, 0],
+          size: [210, 100],
+          widgets_values: [11, 20]
+        }
+      ],
+      links: []
+    })
+
+    applyCollected()
+    const result = applyEdit(() => {
+      const widgets = nodesMap(doc).get('1')?.get('widgets')
+      assert(widgets instanceof Y.Map)
+      widgets.set('control_after_generate', 'increment')
+    })
+
+    expect(result.failureCount).toBe(1)
+    expect(reportError).not.toHaveBeenCalledWith(
+      expect.any(TypeError),
+      expect.anything()
+    )
+    expect(reportError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message:
+          "Node 1 (TestPlainWidgets) has no widget 'control_after_generate'"
+      }),
+      expect.objectContaining({ errorType: 'agent_graph_widget_missing' })
+    )
+  })
+
   it('still reports a missing widget the node definition declares', () => {
     TestPlainWidgets.nodeData = fromPartial<
       NonNullable<LGraphNode['constructor']['nodeData']>

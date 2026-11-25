@@ -731,7 +731,7 @@ const optionLayouts = new WeakMap<object, OptionLayout>()
 
 function optionLayout(node: LGraphNode): OptionLayout {
   const { nodeData } = node.constructor
-  if (!nodeData) return NO_OPTION_LAYOUT
+  if (!nodeData?.inputs) return NO_OPTION_LAYOUT
   const cached = optionLayouts.get(nodeData)
   if (cached) return cached
 
@@ -940,7 +940,7 @@ function selectionDependentAbsence(node: LGraphNode, name: string): boolean {
  */
 function removedValueControl(node: LGraphNode, name: string): boolean {
   const { nodeData } = node.constructor
-  if (!nodeData) return false
+  if (!nodeData?.inputs) return false
   const declared = Object.values(nodeData.inputs).some(
     (spec) => constructedValueControlName(spec) === name
   )
