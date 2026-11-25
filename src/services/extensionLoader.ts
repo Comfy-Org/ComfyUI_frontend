@@ -99,6 +99,7 @@ export function reportExtensionLoadFailures(
     errorType: EXTENSION_LOAD_ERROR_TYPE,
     surface: 'platform',
     level: 'warning',
+    sentryMode: 'never',
     tags: { failed_extension_count: failures.length },
     context: {
       failures: reportedFailures,

@@ -929,6 +929,7 @@ describe('Store-driven serialization parity', () => {
       {
         surface: 'graph',
         errorType: 'graph_serialization_state_mismatch',
+        sentryMode: 'once_per_page',
         context: {
           graphId: graph.id,
           mismatch: expect.stringMatching(/stored node .* has no live adapter/)
