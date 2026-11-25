@@ -51,4 +51,17 @@ describe(useAgentAppLaunch, () => {
       ).toEqual(toasts)
     }
   )
+
+  it('keeps one prompt-copied toast however many times an app is opened', async () => {
+    vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue()
+    const { launchAgentApp } = useAgentAppLaunch()
+
+    await launchAgentApp('claude', 'Deploy')
+    await launchAgentApp('codex', 'Deploy')
+    await launchAgentApp('claude', 'Deploy again')
+
+    expect(useToast().toasts.map(({ title }) => title)).toEqual([
+      'Prompt copied. If the app asks you to sign in first, paste it after you sign in.'
+    ])
+  })
 })

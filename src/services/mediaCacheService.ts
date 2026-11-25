@@ -27,7 +27,7 @@ class MediaCacheService {
     this.maxSize = options.maxSize ?? 100
     this.maxAge = options.maxAge ?? 30 * 60 * 1000
     this.startCleanupInterval()
-    window.addEventListener('beforeunload', this.destroyOnUnload)
+    window.addEventListener('pagehide', this.destroyOnUnload)
   }
 
   private startCleanupInterval() {
@@ -193,7 +193,7 @@ class MediaCacheService {
   }
 
   destroy() {
-    window.removeEventListener('beforeunload', this.destroyOnUnload)
+    window.removeEventListener('pagehide', this.destroyOnUnload)
     if (this.cleanupInterval) {
       clearInterval(this.cleanupInterval)
       this.cleanupInterval = null
