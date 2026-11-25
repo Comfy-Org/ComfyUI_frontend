@@ -117,11 +117,8 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
     return findProvidersWithFallback(modelType)?.[0]
   }
 
-  function hasNodeProvider(modelType: unknown): boolean {
-    return (
-      typeof modelType === 'string' &&
-      findProvidersWithFallback(modelType) !== undefined
-    )
+  function hasNodeProvider(modelType: string): boolean {
+    return findProvidersWithFallback(modelType)?.[0] !== undefined
   }
 
   /**
