@@ -364,6 +364,20 @@ describe('FormDropdown', () => {
     expect([...onUpdateSelected.mock.lastCall![0]]).toEqual(['first', 'third'])
   })
 
+  it('ignores a rearranged selection once the dropdown is disabled', async () => {
+    const onUpdateSelected = vi.fn()
+    const { user, rerender } = mountDropdown(
+      [createItem('first', 'first.png'), createItem('second', 'second.png')],
+      { multiple: 2, selected: new Set(['first', 'second']), onUpdateSelected }
+    )
+    await openDropdown(user)
+    await rerender({ disabled: true })
+
+    await user.click(screen.getByRole('button', { name: 'Reverse selection' }))
+
+    expect(onUpdateSelected).not.toHaveBeenCalled()
+  })
+
   it('does not select when Enter is pressed with an empty search query', async () => {
     const onUpdateSelected = vi.fn()
     const { user } = mountDropdown(

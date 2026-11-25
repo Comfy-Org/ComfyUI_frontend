@@ -286,6 +286,11 @@ function handleSelection(item: FormDropdownItem, index: number) {
   }
 }
 
+function reorderSelection(ids: string[]) {
+  if (disabled) return
+  selected.value = new Set(ids)
+}
+
 async function getTopSearchResult() {
   const query = searchQuery.value
   if (query.trim() === '') return
@@ -387,7 +392,7 @@ const dropdownItems = computed(() =>
           @search-enter="handleSearchEnter"
           @item-click="handleSelection"
           @show-picker="showPicker"
-          @reorder="selected = new Set($event)"
+          @reorder="reorderSelection"
         />
       </PopoverContent>
     </PopoverRoot>
