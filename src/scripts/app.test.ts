@@ -4031,15 +4031,17 @@ describe('ComfyApp', () => {
           app
         )
         const removed: [string, WidgetHandle | undefined, unknown][] = []
-        comfy.defs.extend(packId, 'HandleProbe', (builder) => {
-          builder.onCreated((node) => {
-            node.widgets.add({ type: 'number', name: 'level', value: 3 })
+        onTestFinished(
+          comfy.defs.extend(packId, 'HandleProbe', (builder) => {
+            builder.onCreated((node) => {
+              node.widgets.add({ type: 'number', name: 'level', value: 3 })
+            })
+            builder.onRemoved((node) => {
+              const widget = node.widgets.get('level')
+              removed.push([node.id, widget, widget?.getValue()])
+            })
           })
-          builder.onRemoved((node) => {
-            const widget = node.widgets.get('level')
-            removed.push([node.id, widget, widget?.getValue()])
-          })
-        })
+        )
         await app.loadGraphData(workflowWithFixedIdAndOneNode(), false)
         const { tracker } = historyOfTheOpenWorkflow()
         const kept = await addedProbe(comfy)
@@ -4313,21 +4315,23 @@ describe('ComfyApp', () => {
           app
         )
         const heard: string[] = []
-        comfy.defs.extend(packId, 'HandleProbe', (builder) =>
-          builder.onCreated((node) => {
-            node.setSerializeWidgets(true)
-            const mounted = node.widgets.mount({
-              name: 'm',
-              defaultValue: 'default',
-              render: () => {}
+        onTestFinished(
+          comfy.defs.extend(packId, 'HandleProbe', (builder) =>
+            builder.onCreated((node) => {
+              node.setSerializeWidgets(true)
+              const mounted = node.widgets.mount({
+                name: 'm',
+                defaultValue: 'default',
+                render: () => {}
+              })
+              mounted?.on('change', (to, from) =>
+                heard.push(`change ${String(from)} ${String(to)}`)
+              )
+              mounted?.on('activate', (value) =>
+                heard.push(`activate ${String(value)}`)
+              )
             })
-            mounted?.on('change', (to, from) =>
-              heard.push(`change ${String(from)} ${String(to)}`)
-            )
-            mounted?.on('activate', (value) =>
-              heard.push(`activate ${String(value)}`)
-            )
-          })
+          )
         )
         return { heard }
       }
@@ -4822,12 +4826,14 @@ describe('ComfyApp', () => {
       useComfyApiStore().publish()
       assert(window.comfy_v4)
       const packId = registerPublishedTestPack(window.comfy_v4)
-      window.comfy_v4.defs.define(packId, {
-        type: 'Pack/Constant',
-        execution: 'frontend',
-        outputs: [{ name: 'out', type: 'STRING' }],
-        resolve: () => ({ 0: { literal: 'answered' } })
-      })
+      onTestFinished(
+        window.comfy_v4.defs.define(packId, {
+          type: 'Pack/Constant',
+          execution: 'frontend',
+          outputs: [{ name: 'out', type: 'STRING' }],
+          resolve: () => ({ 0: { literal: 'answered' } })
+        })
+      )
       const graph = new LGraph()
       const constant = addNodeOfType(graph, 'Pack/Constant')
       const consumer = addBackendNode(graph, 'Consumer', { inputs: ['x'] })
@@ -8359,11 +8365,13 @@ describe('ComfyApp', () => {
       assert(window.comfy_v4)
       const { defs } = window.comfy_v4
       const packId = registerPublishedTestPack(window.comfy_v4)
-      defs.define(packId, { type: 'Pack/Preview' })
+      onTestFinished(defs.define(packId, { type: 'Pack/Preview' }))
       const previews: [string | undefined, Blob][] = []
-      defs.extend(packId, 'Pack/Preview', (builder) =>
-        builder.onPreview((node, frame) =>
-          previews.push([node.graphId, frame.blob])
+      onTestFinished(
+        defs.extend(packId, 'Pack/Preview', (builder) =>
+          builder.onPreview((node, frame) =>
+            previews.push([node.graphId, frame.blob])
+          )
         )
       )
       const subgraph = createTestSubgraph({ rootGraph: graph })

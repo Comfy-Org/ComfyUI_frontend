@@ -1,5 +1,13 @@
 import { reportError } from '@comfyorg/telemetry/reportError'
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 
 import {
   LGraph,
@@ -37,11 +45,15 @@ describe('prompt and preview hooks', () => {
     graph = new LGraph()
     ;({ comfy, host } = createComfyApi({ getGraph: () => graph }))
     packId = registerTestPack({ comfy, host })
-    comfy.defs.define(packId, { type: STASH, execution: 'backend' })
+    onTestFinished(
+      comfy.defs.define(packId, { type: STASH, execution: 'backend' })
+    )
   })
 
   function extend(apply: (builder: NodeDefBuilder) => void) {
-    return comfy.defs.extend(packId, STASH, apply)
+    const stop = comfy.defs.extend(packId, STASH, apply)
+    onTestFinished(stop)
+    return stop
   }
 
   function addStash(target: LGraph = graph): LGraphNode {
@@ -327,7 +339,7 @@ describe('prompt and preview hooks', () => {
     it('gives nothing for a node that is not there, or of another type', () => {
       const heard = previewsHeard()
       const other = addNodeOfType(graph, STASH)
-      comfy.defs.define(packId, { type: 'Pack/Other' })
+      onTestFinished(comfy.defs.define(packId, { type: 'Pack/Other' }))
       const unrelated = addNodeOfType(graph, 'Pack/Other')
 
       host.deliverPreview(graph, '999', new Blob([]))

@@ -2,7 +2,15 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 
 import {
   LGraph,
@@ -50,7 +58,7 @@ describe('a frontend node type with a resolver', () => {
   })
 
   function defineWire(resolve: Resolver, type = WIRE) {
-    return comfy.defs.define(packId, {
+    const stop = comfy.defs.define(packId, {
       type,
       execution: 'frontend',
       inputs: [
@@ -63,6 +71,8 @@ describe('a frontend node type with a resolver', () => {
       ],
       resolve
     })
+    onTestFinished(stop)
+    return stop
   }
 
   function defineWireAnswering(answerFor: (wireId: string) => unknown) {
@@ -146,11 +156,13 @@ describe('a frontend node type with a resolver', () => {
         const input = nodesOfType('Pack/Setter').at(0)?.input('value')
         return { out: input ? { forwardTo: input } : { omit: true } }
       })
-      comfy.defs.define(packId, {
-        type: 'Pack/Setter',
-        execution: 'frontend',
-        inputs: [{ name: 'value', type: 'STRING' }]
-      })
+      onTestFinished(
+        comfy.defs.define(packId, {
+          type: 'Pack/Setter',
+          execution: 'frontend',
+          inputs: [{ name: 'value', type: 'STRING' }]
+        })
+      )
       const source = addBackendNode(graph, 'Source', { outputs: ['text'] })
       const setter = addNodeOfType(graph, 'Pack/Setter')
       source.connect(0, setter, 0)
@@ -183,15 +195,17 @@ describe('a frontend node type with a resolver', () => {
     })
 
     it("passes the consumer's type on, so a bypassed node behind a forward picks the input of that type", async () => {
-      comfy.defs.define(packId, {
-        type: 'Pack/AnyWire',
-        execution: 'frontend',
-        inputs: [{ name: 'in', type: '*' }],
-        outputs: [{ name: 'out', type: '*' }],
-        resolve: ({ self }) => ({
-          0: { forwardTo: { nodeId: self.id, input: 0 } }
+      onTestFinished(
+        comfy.defs.define(packId, {
+          type: 'Pack/AnyWire',
+          execution: 'frontend',
+          inputs: [{ name: 'in', type: '*' }],
+          outputs: [{ name: 'out', type: '*' }],
+          resolve: ({ self }) => ({
+            0: { forwardTo: { nodeId: self.id, input: 0 } }
+          })
         })
-      })
+      )
       const { consumer, wanted } = bypassedChoiceFeeding('Pack/AnyWire')
 
       expect(await consumerInput(consumer)).toEqual([String(wanted.id), 0])
@@ -271,12 +285,14 @@ describe('a frontend node type with a resolver', () => {
     })
 
     it('passes the input through for a frontend node with no resolver at all', async () => {
-      comfy.defs.define(packId, {
-        type: WIRE,
-        execution: 'frontend',
-        inputs: [{ name: 'in', type: 'STRING' }],
-        outputs: [{ name: 'out', type: 'STRING' }]
-      })
+      onTestFinished(
+        comfy.defs.define(packId, {
+          type: WIRE,
+          execution: 'frontend',
+          inputs: [{ name: 'in', type: 'STRING' }],
+          outputs: [{ name: 'out', type: 'STRING' }]
+        })
+      )
       const { source, consumer } = sourceWireConsumer()
 
       expect(await consumerInput(consumer)).toEqual([String(source.id), 0])
@@ -811,7 +827,9 @@ describe('a frontend node type with a resolver', () => {
   })
 
   it('leaves the executable nodes untouched when no type is resolved or supplied', () => {
-    comfy.defs.define(packId, { type: 'Pack/Plain', execution: 'frontend' })
+    onTestFinished(
+      comfy.defs.define(packId, { type: 'Pack/Plain', execution: 'frontend' })
+    )
     const nodes = new Map<string, ExecutableLGraphNode>()
     const set = vi.spyOn(nodes, 'set')
     const read = vi.spyOn(nodes, Symbol.iterator)
@@ -862,12 +880,14 @@ describe('a frontend node type with a resolver', () => {
 
   it('resolves only the nodes of a type with a resolver', async () => {
     defineWire(() => ({ 0: { literal: 'x' } }))
-    comfy.defs.define(packId, {
-      type: 'Pack/Plain',
-      execution: 'frontend',
-      inputs: [{ name: 'in', type: 'STRING' }],
-      outputs: [{ name: 'out', type: 'STRING' }]
-    })
+    onTestFinished(
+      comfy.defs.define(packId, {
+        type: 'Pack/Plain',
+        execution: 'frontend',
+        inputs: [{ name: 'in', type: 'STRING' }],
+        outputs: [{ name: 'out', type: 'STRING' }]
+      })
+    )
     const { consumer } = sourceWireConsumer()
     const source = addBackendNode(graph, 'Source', { outputs: ['text'] })
     const plain = addNodeOfType(graph, 'Pack/Plain')

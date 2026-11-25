@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
@@ -89,7 +89,7 @@ describe('workflow.open', () => {
       id: 'cg-image-filter',
       version: '7.8'
     })
-    api.comfy.defs.define(packId, { type: 'Filter/Defined' })
+    onTestFinished(api.comfy.defs.define(packId, { type: 'Filter/Defined' }))
     api.comfy.graph.add('Filter/Defined')
     const saved = JSON.parse(JSON.stringify(graph.serialize()))
     vi.spyOn(app, 'loadGraphData').mockResolvedValue(true)

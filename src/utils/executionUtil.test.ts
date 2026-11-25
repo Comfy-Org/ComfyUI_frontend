@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
 
 import type { CurveData } from '@comfyorg/graph-model/curve'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
@@ -246,19 +246,23 @@ describe('graphToPrompt with the node API', () => {
       const { comfy, host } = createComfyApi({ getGraph: () => null })
       const packId = registerTestPack({ comfy, host })
       const graph = workflowWithoutResolvers(() => {
-        comfy.defs.define(packId, {
-          type: 'Pack/Plain',
-          execution: 'frontend',
-          inputs: [{ name: 'in', type: 'STRING' }],
-          outputs: [{ name: 'out', type: 'STRING' }]
-        })
-        if (resolves) {
+        onTestFinished(
           comfy.defs.define(packId, {
-            type: 'Pack/Unused',
+            type: 'Pack/Plain',
             execution: 'frontend',
-            outputs: [{ name: 'out', type: 'STRING' }],
-            resolve: () => ({ 0: { literal: 'unused' } })
+            inputs: [{ name: 'in', type: 'STRING' }],
+            outputs: [{ name: 'out', type: 'STRING' }]
           })
+        )
+        if (resolves) {
+          onTestFinished(
+            comfy.defs.define(packId, {
+              type: 'Pack/Unused',
+              execution: 'frontend',
+              outputs: [{ name: 'out', type: 'STRING' }],
+              resolve: () => ({ 0: { literal: 'unused' } })
+            })
+          )
         }
       })
 
@@ -283,9 +287,13 @@ describe('graphToPrompt with the node API', () => {
   it('leaves out of a node the inputs its onPromptSerialize hooks name', async () => {
     const { comfy, host } = createComfyApi({ getGraph: () => null })
     const packId = registerTestPack({ comfy, host })
-    comfy.defs.define(packId, { type: 'Pack/Stash', execution: 'backend' })
-    comfy.defs.extend(packId, 'Pack/Stash', (builder) =>
-      builder.onPromptSerialize(() => ({ omitInputs: ['text'] }))
+    onTestFinished(
+      comfy.defs.define(packId, { type: 'Pack/Stash', execution: 'backend' })
+    )
+    onTestFinished(
+      comfy.defs.extend(packId, 'Pack/Stash', (builder) =>
+        builder.onPromptSerialize(() => ({ omitInputs: ['text'] }))
+      )
     )
     const graph = new LGraph()
     const stash = addNodeOfType(graph, 'Pack/Stash')
@@ -302,12 +310,14 @@ describe('graphToPrompt with the node API', () => {
   it('builds the inputs a resolved node feeds from what its resolver answers', async () => {
     const { comfy, host } = createComfyApi({ getGraph: () => null })
     const packId = registerTestPack({ comfy, host })
-    comfy.defs.define(packId, {
-      type: 'Pack/Constant',
-      execution: 'frontend',
-      outputs: [{ name: 'out', type: 'STRING' }],
-      resolve: () => ({ 0: { literal: 'answered' } })
-    })
+    onTestFinished(
+      comfy.defs.define(packId, {
+        type: 'Pack/Constant',
+        execution: 'frontend',
+        outputs: [{ name: 'out', type: 'STRING' }],
+        resolve: () => ({ 0: { literal: 'answered' } })
+      })
+    )
     const graph = new LGraph()
     const constant = addNodeOfType(graph, 'Pack/Constant')
     const consumer = addBackendNode(graph, 'Consumer', { inputs: ['x'] })
