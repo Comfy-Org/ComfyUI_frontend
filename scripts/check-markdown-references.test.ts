@@ -1,6 +1,9 @@
 import { describe, expect, test } from 'vitest'
 
-import { findBrokenReferences } from './check-markdown-references'
+import {
+  findBrokenReferences,
+  referencesRemovedPath
+} from './check-markdown-references'
 import type { RepoIndex } from './check-markdown-references'
 
 const index: RepoIndex = {
@@ -119,6 +122,21 @@ describe('findBrokenReferences', () => {
           index
         ).map((finding) => finding.targets)
       ).toEqual([targets])
+    }
+  )
+
+  test.for([
+    ['inline module path', '`src/stores/gone`', true],
+    ['link to the removed file', '[gone](/src/stores/gone.ts)', true],
+    ['extensionless link', '[gone](/src/stores/gone)', false]
+  ] as const)(
+    'matches a removed module against an %s: %s',
+    ([, markdown, expected]) => {
+      const [finding] = findBrokenReferences('AGENTS.md', markdown, index)
+
+      expect(
+        referencesRemovedPath(finding, new Set(['src/stores/gone.ts']))
+      ).toBe(expected)
     }
   )
 })

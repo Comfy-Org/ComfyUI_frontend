@@ -14,6 +14,7 @@ type Finding = {
   line: number
   message: string
   targets: string[]
+  inferExtensions: boolean
 }
 
 const PNPM_BUILTINS = [
@@ -198,7 +199,8 @@ function classifyLines(contents: string): { text: string; fenced: boolean }[] {
 function commandIssues(code: string, index: RepoIndex): LineIssue[] {
   return findUndefinedPnpmCommands(code, index).map((command) => ({
     message: `pnpm command "${command}" is not defined`,
-    targets: []
+    targets: [],
+    inferExtensions: false
   }))
 }
 
@@ -212,7 +214,13 @@ function proseIssues(
     ...code.split(/\s+/).flatMap((token) => {
       const targets = checkCodePath(token, documentDirectory, index)
       return targets
-        ? [{ message: `path "${token}" does not exist`, targets }]
+        ? [
+            {
+              message: `path "${token}" does not exist`,
+              targets,
+              inferExtensions: true
+            }
+          ]
         : []
     })
   ])
@@ -223,7 +231,13 @@ function proseIssues(
   ].flatMap((target) => {
     const targets = checkLinkTarget(target, documentDirectory, index)
     return targets
-      ? [{ message: `link "${target}" does not resolve`, targets }]
+      ? [
+          {
+            message: `link "${target}" does not resolve`,
+            targets,
+            inferExtensions: false
+          }
+        ]
       : []
   })
   return [...codeIssues, ...linkIssues]
@@ -241,6 +255,16 @@ export function findBrokenReferences(
       ? commandIssues(text, index)
       : proseIssues(text, documentDirectory, index)
     ).map((issue) => ({ line: lineIndex + 1, ...issue }))
+  )
+}
+
+/** Reports whether a finding's reference names one of the removed paths. */
+export function referencesRemovedPath(
+  { targets, inferExtensions }: Omit<Finding, 'line' | 'message'>,
+  removed: ReadonlySet<string>
+): boolean {
+  return targets.some((target) =>
+    inferExtensions ? exists(removed, target) : removed.has(target)
   )
 }
 
@@ -323,9 +347,7 @@ function main(argv: string[]): number {
   )
   function isReported(file: string, finding: Finding): boolean {
     return (
-      !changed ||
-      changed.has(file) ||
-      finding.targets.some((target) => exists(removed, target))
+      !changed || changed.has(file) || referencesRemovedPath(finding, removed)
     )
   }
 
