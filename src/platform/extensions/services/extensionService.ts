@@ -13,6 +13,7 @@ import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
+import { useThemeService } from '@/platform/theme/themeService'
 import type {
   ComfyApp,
   ComfyExtension,
@@ -202,6 +203,11 @@ export const useExtensionService = () => {
     extension.settings?.forEach(addSetting)
     if (contributes) {
       useBottomPanelStore().registerExtensionBottomPanelTabs(extension)
+      if (extension.themes)
+        void useThemeService().registerProvidedThemes(
+          extension.name,
+          extension.themes
+        )
     }
     if (extension.getCustomWidgets) {
       void (async () => {

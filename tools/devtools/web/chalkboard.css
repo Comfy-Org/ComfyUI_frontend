@@ -1,0 +1,14 @@
+:root[data-theme='devtools-chalkboard'] .lg-node {
+  border: 2px dashed rgb(244 241 232 / 0.55);
+  border-radius: 4px;
+
+  [data-part='node-title'] {
+    color: #f4f1e8;
+    letter-spacing: 0.04em;
+  }
+
+  [data-part='widget-label'],
+  [data-part='slot-label'] {
+    color: rgb(244 241 232 / 0.75);
+  }
+}

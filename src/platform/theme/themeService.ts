@@ -21,8 +21,34 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 import { applyTheme } from './applyTheme'
 import { useThemeStore } from './themeStore'
+import type { ProvidedTheme } from './themeStore'
 
 let latestThemeSwitch = 0
+let activeStylesheet: HTMLStyleElement | undefined
+
+function loadThemeStylesheet(url: string) {
+  const element = document.createElement('style')
+  element.dataset.themeStylesheet = url
+  element.textContent = `@import url(${JSON.stringify(url)}) layer(presets);`
+  return new Promise<HTMLStyleElement | undefined>((resolve) => {
+    element.addEventListener('load', () => resolve(element), { once: true })
+    element.addEventListener(
+      'error',
+      () => {
+        element.remove()
+        console.warn(`Theme stylesheet ${url} failed to load`)
+        resolve(undefined)
+      },
+      { once: true }
+    )
+    document.head.append(element)
+  })
+}
+
+function replaceActiveStylesheet(next: HTMLStyleElement | undefined) {
+  if (activeStylesheet !== next) activeStylesheet?.remove()
+  activeStylesheet = next
+}
 
 function availableCustomPresetId(id: string, presets: ThemePresets) {
   let candidate = `${id}-custom`
@@ -82,9 +108,6 @@ export const useThemeService = () => {
       if (activeId === id) activeId = newId
     }
     themeStore.customPresets = migrated
-    if (!Object.hasOwn(themeStore.presetsLookup, activeId)) {
-      activeId = DEFAULT_THEME_PRESET.id
-    }
     if (!conflicts.length && activeId === previousId) return
 
     await settingStore.setMany({
@@ -129,6 +152,14 @@ export const useThemeService = () => {
     const theme = resolveTheme(preset)
     const root = document.documentElement
     const themeSwitch = ++latestThemeSwitch
+    const stylesheetUrl = themeStore.stylesheetUrlFor(id)
+    const stylesheet = stylesheetUrl
+      ? await loadThemeStylesheet(stylesheetUrl)
+      : undefined
+    if (themeSwitch !== latestThemeSwitch) {
+      stylesheet?.remove()
+      return
+    }
     root.dataset.paletteSwitching = ''
     try {
       applyTheme(theme, {
@@ -139,6 +170,7 @@ export const useThemeService = () => {
       })
       if (theme.stylesheet) root.dataset.theme = theme.stylesheet
       else delete root.dataset.theme
+      replaceActiveStylesheet(stylesheet)
       themeStore.activePresetId = id
     } finally {
       requestAnimationFrame(() =>
@@ -148,6 +180,35 @@ export const useThemeService = () => {
           persistSplashColors()
         })
       )
+    }
+  }
+
+  async function registerProvidedThemes(
+    source: string,
+    themes: readonly ProvidedTheme[]
+  ) {
+    for (const theme of themes) {
+      const parsed = themePresetSchema.safeParse(theme.preset)
+      if (!parsed.success) {
+        console.warn(
+          `${source} provided an invalid theme`,
+          fromZodError(parsed.error).message
+        )
+        continue
+      }
+      const result = themeStore.addProvidedTheme(source, {
+        preset: parsed.data,
+        stylesheetUrl: theme.stylesheetUrl
+      })
+      if (!result.added) {
+        console.warn(
+          `${source} provided theme ${parsed.data.id}, which ${result.owner} already provides`
+        )
+        continue
+      }
+      const storedId = settingStore.get('Comfy.ColorPalette')
+      if (storedId === parsed.data.id && themeStore.activePresetId !== storedId)
+        await setActiveTheme(storedId)
     }
   }
 
@@ -180,6 +241,7 @@ export const useThemeService = () => {
       deleteCustomThemePreset
     ),
     setActiveTheme: wrapWithErrorHandlingAsync(setActiveTheme),
+    registerProvidedThemes: wrapWithErrorHandlingAsync(registerProvidedThemes),
     exportThemePreset: wrapWithErrorHandling(exportThemePreset),
     importThemePreset: wrapWithErrorHandlingAsync(importThemePreset)
   }

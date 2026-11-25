@@ -53,7 +53,7 @@ describe('saved legacy theme migration', () => {
     expect(useThemeStore().presetsLookup.spooky).toEqual(custom)
   })
 
-  it('replaces a saved selection absent from the preset registry with Dark', async () => {
+  it('keeps a saved selection absent from the preset registry for an extension that registers later', async () => {
     vi.mocked(api.getSettings).mockResolvedValue(
       fromPartial<Settings>({ 'Comfy.ColorPalette': 'missing-theme' })
     )
@@ -63,11 +63,8 @@ describe('saved legacy theme migration', () => {
 
     await useThemeService().loadCustomThemePresets()
 
-    expect(settings.get('Comfy.ColorPalette')).toBe('dark')
-    expect(api.storeSettings).toHaveBeenCalledWith({
-      'Comfy.CustomColorPalettes': {},
-      'Comfy.ColorPalette': 'dark'
-    })
+    expect(settings.get('Comfy.ColorPalette')).toBe('missing-theme')
+    expect(api.storeSettings).not.toHaveBeenCalled()
   })
 
   it.for(['custom_dark', 'dark', undefined])(

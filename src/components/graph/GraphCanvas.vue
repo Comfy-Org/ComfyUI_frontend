@@ -205,6 +205,7 @@ import { ChangeTracker } from '@/scripts/changeTracker'
 import { IS_CONTROL_WIDGET } from '@/core/graph/widgets/controlWidgetMarker'
 import { updateControlWidgetLabel } from '@/core/graph/widgets/valueControlWidgets'
 import { loadExtensions } from '@/platform/extensions/services/extensionLoader'
+import { DEFAULT_THEME_PRESET } from '@comfyorg/theme-core/builtInThemePresets'
 import { useThemeService } from '@/platform/theme/themeService'
 import { useNewUserService } from '@/services/useNewUserService'
 import { collapseOutsideSelectionOnPrimaryPointerDown } from '@/workbench/eventHelpers'
@@ -434,7 +435,11 @@ watch(
   async ([canvas, currentPaletteId]) => {
     if (!canvas) return
 
-    await themeService.setActiveTheme(currentPaletteId)
+    await themeService.setActiveTheme(
+      currentPaletteId in themeStore.presetsLookup
+        ? currentPaletteId
+        : DEFAULT_THEME_PRESET.id
+    )
   }
 )
 

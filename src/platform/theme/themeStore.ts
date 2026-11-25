@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { mapValues } from 'es-toolkit'
 import { computed, ref } from 'vue'
 
 import {
@@ -12,12 +13,24 @@ import type {
   ThemePresets
 } from '@comfyorg/theme-core/themePresetSchema'
 
+/** A theme an extension provides: a palette preset and an optional stylesheet URL. */
+export interface ProvidedTheme {
+  preset: ThemePreset
+  stylesheetUrl?: string
+}
+
+interface RegisteredTheme extends ProvidedTheme {
+  source: string
+}
+
 export const useThemeStore = defineStore('theme', () => {
   const customPresets = ref<ThemePresets>({})
+  const providedThemes = ref<Partial<Record<string, RegisteredTheme>>>({})
   const activePresetId = ref<string>(DEFAULT_THEME_PRESET.id)
   const presetsLookup = computed<Partial<ThemePresets>>(() => ({
     ...BUILT_IN_THEME_PRESETS,
-    ...customPresets.value
+    ...customPresets.value,
+    ...mapValues(providedThemes.value, (theme) => theme?.preset)
   }))
   const presets = computed(() =>
     Object.values(presetsLookup.value).filter(
@@ -52,7 +65,21 @@ export const useThemeStore = defineStore('theme', () => {
   }
 
   function isCustomPreset(id: string) {
-    return id in customPresets.value
+    return id in customPresets.value && !(id in providedThemes.value)
+  }
+
+  function addProvidedTheme(source: string, theme: ProvidedTheme) {
+    const id = theme.preset.id
+    const owner =
+      providedThemes.value[id]?.source ??
+      (Object.hasOwn(BUILT_IN_THEME_PRESETS, id) ? 'core' : undefined)
+    if (owner) return { added: false as const, owner }
+    providedThemes.value[id] = { ...theme, source }
+    return { added: true as const }
+  }
+
+  function stylesheetUrlFor(id: string) {
+    return providedThemes.value[id]?.stylesheetUrl
   }
 
   return {
@@ -64,6 +91,8 @@ export const useThemeStore = defineStore('theme', () => {
     colorScheme,
     toNodeColor,
     isCustomPreset,
+    addProvidedTheme,
+    stylesheetUrlFor,
     addCustomPreset,
     deleteCustomPreset
   }

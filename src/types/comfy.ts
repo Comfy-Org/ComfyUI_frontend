@@ -11,6 +11,7 @@ import type {
 import type { MissingModelPipelineResult } from '@/platform/workflowErrors/missingModel/types'
 import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 import type { SettingParams } from '@comfyorg/settings-core/types'
+import type { ProvidedTheme } from '@/platform/theme/themeStore'
 import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
@@ -332,6 +333,10 @@ export interface ComfyExtension {
    * Settings to add to the settings menu
    */
   settings?: SettingParams[]
+  /**
+   * Themes to list in the palette picker while the extension is loaded
+   */
+  themes?: ProvidedTheme[]
   /**
    * Bottom panel tabs to add to the bottom panel
    */
