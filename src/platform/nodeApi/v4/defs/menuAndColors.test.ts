@@ -261,6 +261,38 @@ describe('node menus and colors', () => {
       expect(run).not.toHaveBeenCalled()
     })
 
+    it.for([
+      {
+        name: 'an entry',
+        item: (run: () => void) => ({ label: 'Run', run }),
+        entryOf: (menu: IContextMenuValue[]) => menu[0]
+      },
+      {
+        name: 'a submenu entry',
+        item: (run: () => void) => ({
+          label: 'Pick',
+          items: [{ label: 'First', run }]
+        }),
+        entryOf: (menu: IContextMenuValue[]) =>
+          (menu[0]?.submenu?.options ?? []).find(
+            (option): option is IContextMenuValue =>
+              typeof option === 'object' && option !== null
+          )
+      }
+    ])(
+      'does not run $name of an extension disposed since the menu opened',
+      ({ item, entryOf }) => {
+        const run = vi.fn()
+        const stop = withItems(item(run))
+        const entry = entryOf(menuOf(added()))
+
+        stop()
+        click(entry)
+
+        expect(run).not.toHaveBeenCalled()
+      }
+    )
+
     it('keeps the submenu it was given, whatever the pack changes later', () => {
       const items = [{ label: 'First', run: () => {} }]
       withItems({ label: 'Pick', items })

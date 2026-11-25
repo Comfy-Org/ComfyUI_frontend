@@ -76,7 +76,11 @@ export function createHookDispatch(
     reportListenerFailure('addMenuItem', error)
   }
 
-  function menuEntryReportedOnce(item: CheckedMenuItem, handle: NodeHandle) {
+  function menuEntryReportedOnce(
+    item: CheckedMenuItem,
+    node: LGraphNode,
+    handle: NodeHandle
+  ) {
     const asked = <T>(answer: T): T => {
       if (answer instanceof Promise) {
         answer.catch((error: unknown) => reportMenuItemOnce(item, error))
@@ -84,7 +88,11 @@ export function createHookDispatch(
       return answer
     }
     try {
-      return menuEntry(item, handle, asked)
+      return menuEntry(item, handle, asked, () =>
+        source
+          .callbacksFor(node, 'addMenuItem', joined.get(node) ?? 0)
+          .some(({ callback }) => callback === item)
+      )
     } catch (error) {
       reportMenuItemOnce(item, error)
       return undefined
@@ -164,7 +172,7 @@ export function createHookDispatch(
         node,
         (item, handle) => ({
           order: item.order,
-          entry: menuEntryReportedOnce(item, handle)
+          entry: menuEntryReportedOnce(item, node, handle)
         })
       )
       return entries

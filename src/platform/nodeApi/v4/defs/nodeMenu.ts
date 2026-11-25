@@ -88,7 +88,8 @@ export function checkedMenuItem(item: unknown): CheckedMenuItem {
 export function menuEntry(
   item: CheckedMenuItem,
   node: NodeHandle,
-  asked: <T>(answer: T) => T
+  asked: <T>(answer: T) => T,
+  isLive: () => boolean
 ): IContextMenuValue | undefined {
   if (item.when && asked(item.when(node)) !== true) return undefined
   const label =
@@ -107,18 +108,22 @@ export function menuEntry(
       submenu: {
         options: items.map((child) => ({
           content: child.label,
-          callback: () => runOn(child.run, node)
+          callback: () => runOn(child.run, node, isLive)
         }))
       }
     }
   }
   const { run } = item
   if (!run) return undefined
-  return { content: label, callback: () => runOn(run, node) }
+  return { content: label, callback: () => runOn(run, node, isLive) }
 }
 
-function runOn(run: (node: NodeHandle) => void, node: NodeHandle): void {
-  if (node.isDeleted) return
+function runOn(
+  run: (node: NodeHandle) => void,
+  node: NodeHandle,
+  isLive: () => boolean
+): void {
+  if (node.isDeleted || !isLive()) return
   callListener('addMenuItem', () => run(node))
 }
 
