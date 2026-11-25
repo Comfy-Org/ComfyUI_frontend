@@ -116,6 +116,7 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
 
   async function uploadFile(
     file: File,
+    timeoutMs: number,
     isPasted: boolean = false,
     formFields: Partial<{ type: ResultItemType }> = {}
   ) {
@@ -131,7 +132,7 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
     const resp = await api.fetchApi('/upload/image', {
       method: 'POST',
       body,
-      timeoutMs: uploadTimeoutMs(file.size)
+      timeoutMs
     })
 
     if (resp.status !== 200) {
@@ -150,8 +151,9 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
 
   async function uploadFiles(files: File[]): Promise<UploadResponse[]> {
     const folder = toValue(options.uploadFolder) ?? 'input'
+    const timeoutMs = uploadTimeoutMs(files)
     const uploadPromises = files.map((file) =>
-      uploadFile(file, false, { type: folder })
+      uploadFile(file, timeoutMs, false, { type: folder })
     )
     return (await Promise.all(uploadPromises)).filter((data) => !!data)
   }

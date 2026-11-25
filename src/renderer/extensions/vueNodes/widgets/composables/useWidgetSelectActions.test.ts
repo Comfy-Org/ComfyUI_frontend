@@ -166,6 +166,33 @@ describe('useWidgetSelectActions', () => {
       expect(mockCaptureCanvasState).toHaveBeenCalledOnce()
     })
 
+    it('gives each concurrent upload the response timeout of the whole batch', async () => {
+      vi.mocked(api.fetchApi).mockImplementation(async () =>
+        Response.json({ name: 'a.png', subfolder: '' })
+      )
+      const { handleFilesUpdate } = useWidgetSelectActions({
+        modelValue: ref<string | undefined>(),
+        dropdownItems: computed(() => []),
+        widget: () =>
+          fromPartial<SimplifiedWidget<string | undefined>>({
+            name: 'test',
+            type: 'combo',
+            options: { values: [] }
+          }),
+        uploadFolder: () => 'input',
+        uploadSubfolder: () => undefined
+      })
+
+      await handleFilesUpdate([
+        new File([new Uint8Array(2_621_440)], 'a.png'),
+        new File([new Uint8Array(2_621_440)], 'b.png')
+      ])
+
+      expect(
+        vi.mocked(api.fetchApi).mock.calls.map(([, init]) => init?.timeoutMs)
+      ).toEqual([140_000, 140_000])
+    })
+
     it('adds uploaded path to widget values array', async () => {
       vi.mocked(api.fetchApi).mockResolvedValue(
         fromPartial<Response>({
