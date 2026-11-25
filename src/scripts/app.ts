@@ -290,6 +290,29 @@ export function sanitizeNodeName(string: string) {
   })
 }
 
+const originalMissingTypeField = 'comfyOriginalMissingType'
+
+function restoreOriginalMissingTypes(
+  graph: LGraph,
+  originalMissingTypes: ReadonlyMap<FlattenableWorkflowNode, string>
+): void {
+  if (originalMissingTypes.size === 0) return
+  for (const owner of [graph, ...graph.subgraphs.values()]) {
+    for (const live of owner.nodes) {
+      const serial = live.last_serialization
+      if (!serial) continue
+      const originalType = Reflect.get(serial, originalMissingTypeField)
+      if (typeof originalType === 'string') serial.type = originalType
+      Reflect.deleteProperty(serial, originalMissingTypeField)
+      Reflect.deleteProperty(live, originalMissingTypeField)
+    }
+  }
+  for (const [node, originalType] of originalMissingTypes) {
+    node.type = originalType
+    Reflect.deleteProperty(node, originalMissingTypeField)
+  }
+}
+
 function isOwnedByWorkflow(graph: LGraph): boolean {
   return useWorkflowStore().workflows.some(
     (workflow) => workflow.graph === graph
@@ -1430,6 +1453,7 @@ export class ComfyApp implements IComfyApp {
         })
       }
     }
+    const originalMissingTypes = new Map<FlattenableWorkflowNode, string>()
     try {
       beginGraphLoad(graph)
       let reset_invalid_values = false
@@ -1521,14 +1545,14 @@ export class ComfyApp implements IComfyApp {
             return
           }
           for (const n of nodes) {
-            if (!(n.type in LiteGraph.registered_node_types)) {
+            const originalType = originalMissingTypes.get(n) ?? n.type
+            if (!(originalType in LiteGraph.registered_node_types)) {
               const isMuted =
                 n.mode === LGraphEventMode.NEVER ||
                 n.mode === LGraphEventMode.BYPASS
               if (!isMuted) {
-                const replacement = nodeReplacementStore.getReplacementFor(
-                  n.type
-                )
+                const replacement =
+                  nodeReplacementStore.getReplacementFor(originalType)
                 const cnrId = getCnrIdFromProperties(
                   n.properties as Record<string, unknown> | undefined
                 )
@@ -1537,7 +1561,7 @@ export class ComfyApp implements IComfyApp {
                   : String(n.id)
 
                 missingNodeTypes.push({
-                  type: n.type,
+                  type: originalType,
                   nodeId: executionId,
                   cnrId,
                   ...(displayName && {
@@ -1548,7 +1572,12 @@ export class ComfyApp implements IComfyApp {
                 })
               }
 
-              n.type = sanitizeNodeName(n.type)
+              if (!originalMissingTypes.has(n))
+                Object.assign(n, {
+                  [originalMissingTypeField]: originalType
+                })
+              originalMissingTypes.set(n, originalType)
+              n.type = sanitizeNodeName(originalType)
             }
           }
         }
@@ -1647,6 +1676,7 @@ export class ComfyApp implements IComfyApp {
           graph.configure(graphData as ISerialisedGraph, undefined, {
             preserveMountedNodeSizes: options.restoreHistory
           })
+          restoreOriginalMissingTypes(graph, originalMissingTypes)
 
           const originalMainGraphRenderer = graph.extra.workflowRendererVersion
 
@@ -1869,6 +1899,7 @@ export class ComfyApp implements IComfyApp {
         useExecutionErrorStore().retireResolvedMissingNodePromptError()
       }
     } finally {
+      restoreOriginalMissingTypes(graph, originalMissingTypes)
       if (graph !== this.rootGraph) {
         for (const subgraph of this.rootGraph.subgraphs.values()) {
           useSubgraphService().registerNewSubgraph(

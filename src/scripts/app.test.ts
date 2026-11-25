@@ -1,7 +1,7 @@
 import type { ComfyDownloadProgress } from '@comfyorg/comfyui-desktop-bridge-types'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { attachLegacyUI } from '@/core/legacyUI/attachLegacyUI'
-import { ComfyApp, app as singletonApp } from './app'
+import { ComfyApp, app as singletonApp, sanitizeNodeName } from './app'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
@@ -312,6 +312,20 @@ function createWorkflowGraphData(): ComfyWorkflowJSON {
     extra: {},
     version: 0.4
   }
+}
+
+function isReportedMissingNode(
+  entry: unknown
+): entry is { type: string; nodeId: string } {
+  if (entry === null || typeof entry !== 'object') return false
+  if (!('type' in entry) || !('nodeId' in entry)) return false
+  return typeof entry.type === 'string' && typeof entry.nodeId === 'string'
+}
+
+function hasMarker(node: object | null | undefined): boolean {
+  if (node == null || !('widgets_values' in node)) return false
+  const values = node.widgets_values
+  return Array.isArray(values) && values[0] === 'marker'
 }
 
 describe('ComfyApp', () => {
@@ -649,6 +663,223 @@ describe('ComfyApp', () => {
       const [migrated] = reload.mock.calls[0]
       expect(migrated?.nodes.map((node) => node.type)).not.toContain('Reroute')
       expect(useToast().toasts).toEqual([])
+    })
+
+    function reportedMissingNodeTypes(): { type: string; nodeId: string }[] {
+      const calls = mockExtensionService.invokeExtensionsAsync.mock.calls
+      let reported: { type: string; nodeId: string }[] = []
+      for (const call of calls) {
+        const [hook, types] = call
+        if (hook !== 'afterConfigureGraph' || !Array.isArray(types)) continue
+        const next: { type: string; nodeId: string }[] = []
+        for (const entry of types) {
+          if (!isReportedMissingNode(entry)) continue
+          next.push({ type: entry.type, nodeId: entry.nodeId })
+        }
+        reported = next
+      }
+      return reported
+    }
+
+    async function loadSingleNode(type: string) {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      mockExtensionService.invokeExtensionsAsync.mockClear()
+      const workflow = {
+        ...createWorkflowGraphData(),
+        last_node_id: 1,
+        nodes: [
+          {
+            id: 1,
+            type,
+            pos: [0, 0],
+            size: [300, 120],
+            flags: {},
+            order: 0,
+            mode: 0,
+            properties: {},
+            widgets_values: [0.5]
+          }
+        ]
+      } satisfies ComfyWorkflowJSON
+      await app.loadGraphData(workflow, false, true, null)
+      return workflow
+    }
+
+    it('gate0-24292: keeps the exact type of a missing node through load and serialize', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      const type = 'LayerColor: Brightness & Contrast'
+      const workflow = {
+        ...createWorkflowGraphData(),
+        last_node_id: 1,
+        nodes: [
+          {
+            id: 1,
+            type,
+            pos: [0, 0],
+            size: [300, 120],
+            flags: {},
+            order: 0,
+            mode: 0,
+            properties: {},
+            widgets_values: [0.5]
+          }
+        ]
+      } satisfies ComfyWorkflowJSON
+
+      await app.loadGraphData(workflow, false, true, null)
+
+      expect(workflow.nodes[0].type).toBe(type)
+      const saved = app.rootGraph.serialize()
+      expect(saved.nodes.map((n) => n.type)).toEqual([type])
+    })
+
+    it.for([
+      { label: 'less-than', type: 'Pack: A < B' },
+      { label: 'greater-than', type: 'Pack: A > B' },
+      { label: 'double-quote', type: 'Pack: A " B' },
+      { label: 'single-quote', type: "Pack: A ' B" },
+      { label: 'backtick', type: 'Pack: A ` B' },
+      { label: 'equals', type: 'Pack: A = B' },
+      { label: 'mix', type: 'Pack: <&>="\'`' }
+    ])('keeps a missing node type containing $label', async ({ type }) => {
+      const workflow = await loadSingleNode(type)
+      expect(workflow.nodes[0].type).toBe(type)
+      const saved = app.rootGraph.serialize()
+      expect(saved.nodes.map((node) => node.type)).toEqual([type])
+      expect(saved.nodes[0]).not.toHaveProperty('comfyOriginalMissingType')
+      expect(reportedMissingNodeTypes()).toEqual([{ type, nodeId: '1' }])
+    })
+
+    it('keeps distinct missing types that sanitize to the same string', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      const first = 'A&B'
+      const second = 'A<B'
+      const workflow = {
+        ...createWorkflowGraphData(),
+        last_node_id: 2,
+        nodes: [first, second].map((type, index) => ({
+          id: index + 1,
+          type,
+          pos: [0, index * 160],
+          size: [300, 120],
+          flags: {},
+          order: index,
+          mode: 0,
+          properties: {},
+          widgets_values: [0.5]
+        }))
+      } satisfies ComfyWorkflowJSON
+
+      await app.loadGraphData(workflow, false, true, null)
+
+      expect(workflow.nodes.map((node) => node.type)).toEqual([first, second])
+      const saved = app.rootGraph.serialize()
+      expect(saved.nodes.map((node) => node.type)).toEqual([first, second])
+    })
+
+    it('keeps a missing placeholder live type sanitized', async () => {
+      const type = 'LayerColor: Brightness & Contrast'
+      await loadSingleNode(type)
+      const live = app.rootGraph.getNodeById(toNodeId(1))
+      expect(live?.type).toBe(sanitizeNodeName(type))
+      expect(reportedMissingNodeTypes()).toEqual([{ type, nodeId: '1' }])
+    })
+
+    it('leaves a registered node type that contains stripped characters unchanged', async () => {
+      const type = 'Registered & Node'
+      LiteGraph.registerNodeType(type, class extends LGraphNode {})
+      onTestFinished(() => {
+        delete LiteGraph.registered_node_types[type]
+      })
+      const workflow = await loadSingleNode(type)
+      expect(workflow.nodes[0].type).toBe(type)
+      const live = app.rootGraph.getNodeById(toNodeId(1))
+      expect(live?.type).toBe(type)
+      expect(live?.constructor).not.toBe(LGraphNode)
+      const saved = app.rootGraph.serialize()
+      expect(saved.nodes.map((node) => node.type)).toEqual([type])
+    })
+
+    it('keeps the original type of one missing subgraph node used by two containers', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      mockExtensionService.invokeExtensionsAsync.mockClear()
+      const type = 'Shared: Brightness & Contrast'
+      const subgraphId = '11111111-1111-4111-8111-111111111111'
+      onTestFinished(() => {
+        delete LiteGraph.registered_node_types[subgraphId]
+      })
+      const workflow = zComfyWorkflow.parse({
+        ...createWorkflowGraphData(),
+        last_node_id: 7,
+        nodes: [1, 2].map((id, index) => ({
+          id,
+          type: subgraphId,
+          pos: [0, index * 180],
+          size: [200, 100],
+          flags: {},
+          order: index,
+          mode: 0,
+          properties: {}
+        })),
+        definitions: {
+          subgraphs: [
+            {
+              id: subgraphId,
+              version: 1,
+              revision: 0,
+              name: 'Shared',
+              state: {
+                lastNodeId: 7,
+                lastLinkId: 0,
+                lastGroupId: 0,
+                lastRerouteId: 0
+              },
+              inputNode: { id: -10, bounding: [0, 0, 120, 60] },
+              outputNode: { id: -20, bounding: [200, 0, 120, 60] },
+              nodes: [
+                {
+                  id: 7,
+                  type,
+                  pos: [0, 0],
+                  size: [200, 80],
+                  flags: {},
+                  order: 0,
+                  mode: 0,
+                  properties: {},
+                  widgets_values: ['marker']
+                }
+              ]
+            }
+          ]
+        }
+      })
+
+      await app.loadGraphData(workflow, false, true, null)
+      useNodeDefStore().removeNodeDef(subgraphId)
+
+      expect(reportedMissingNodeTypes()).toEqual([
+        { type, nodeId: '1:7' },
+        { type, nodeId: '2:7' }
+      ])
+      const defined = workflow.definitions?.subgraphs[0]?.nodes.find(hasMarker)
+      expect(defined?.type).toBe(type)
+      const saved = app.rootGraph.serialize()
+      const savedSubgraphs = saved.definitions?.subgraphs ?? []
+      const savedInner = savedSubgraphs
+        .flatMap((definition) => definition.nodes)
+        .find(hasMarker)
+      expect(savedInner?.type).toBe(type)
+      expect(savedInner).not.toHaveProperty('comfyOriginalMissingType')
+      const live = [...app.rootGraph.subgraphs.values()].flatMap((subgraph) => [
+        ...subgraph.nodes
+      ])
+      expect(
+        live.filter((node) => node.type === sanitizeNodeName(type))
+      ).toHaveLength(1)
     })
 
     it('replaces canvas ownership after preparing the outgoing workflow', async () => {
