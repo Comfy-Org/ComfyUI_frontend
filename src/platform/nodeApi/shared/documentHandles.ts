@@ -60,13 +60,13 @@ interface Retirable {
 }
 
 export interface DocumentHandles {
-  /** Retires every handle made so far; until the next document begins every handle made is retired as soon as it is made, and after that, until the load finishes, one made in `graph` as it was then. */
+  /** Retires current handles; new handles stay retired through staging, then only for the outgoing graph until load ends. */
   endDocument(graph: LGraph): void
   /** Retires every handle made so far. */
   beginDocument(): void
-  /** Before an undo or redo configures `state` into `graph`: until {@link afterHistoryRestore}, a handle to a node of `graph` that `state` lacks, taken before or during the restore, reads only that node, and is not given out for another. */
+  /** Until settlement, handles to nodes omitted by this restore read only their outgoing entities. */
   beforeHistoryRestore(graph: LGraph, state: RestoredState): void
-  /** Retires each handle whose entity is gone and whose key its graph, or the root whose ids a gone subgraph shared, could give to a new entity, and each set-aside one whose key another entity took. */
+  /** Retires missing handles with reissuable keys and set-aside handles whose keys another entity took. */
   afterHistoryRestore(): void
   createCache<THandle extends object, TLive>(
     options?: CacheOptions<TLive>
