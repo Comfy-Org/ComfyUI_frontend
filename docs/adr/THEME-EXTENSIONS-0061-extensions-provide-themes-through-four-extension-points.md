@@ -108,8 +108,9 @@ hook contract, then the link registry.
 ## Consequences
 
 The listed hooks become API: renaming a `data-part` or changing what a state
-attribute means is a breaking change for extensions, and the guard test makes
-that visible in review. The hooks exist only when Vue nodes render; with
+attribute means is a breaking change for extensions. The guard test catches a
+renamed or moved hook; a change in what a state attribute means still relies on
+review. The hooks exist only when Vue nodes render; with
 LiteGraph-rendered nodes a theme stylesheet changes no nodes, while its tokens
 and link style still apply.
 
