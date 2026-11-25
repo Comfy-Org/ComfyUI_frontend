@@ -27,15 +27,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, shallowRef } from 'vue'
-import { useEventListener, useMutationObserver } from '@vueuse/core'
+import { onMounted, onUnmounted, ref, shallowRef } from 'vue'
 
 import { reportError } from '@comfyorg/telemetry/reportError'
 import Menu from '@comfyorg/design-system/menu/Menu'
-import {
-  getMenuAnchorPosition,
-  isMenuDismissalClick
-} from '@comfyorg/design-system/lib/menu/menuAnchor'
+import { getMenuAnchorPosition } from '@comfyorg/design-system/lib/menu/menuAnchor'
 import { usePointMenu } from '@comfyorg/design-system/lib/menu/usePointMenu'
 import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 import {
@@ -48,7 +44,7 @@ import {
 } from '@/composables/graph/nodeMenuBoundary'
 import { useNodeCustomization } from '@/composables/graph/useNodeCustomization'
 import { withNodeMenuSource } from '@/lib/litegraph/src/canvas/nodeMenuSource'
-import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
@@ -81,28 +77,6 @@ const menuReference = {
 }
 
 const menuItems = shallowRef<MenuItem[]>([])
-const nativeMenu = shallowRef<InstanceType<typeof LiteGraph.ContextMenu>>()
-const nativeRoot = shallowRef<HTMLElement>()
-const nativeOpen = ref(false)
-let nativeShownFrom: EventTarget | null = null
-let nativeDismissingPress: Node | null = null
-useEventListener(
-  document,
-  'pointerdown',
-  ({ target }) => {
-    nativeDismissingPress = null
-    if (!nativeOpen.value || !(target instanceof Node)) return
-    if (!nativeMenu.value?.containsNode(target)) nativeDismissingPress = target
-  },
-  { capture: true }
-)
-useMutationObserver(
-  nativeRoot,
-  () => {
-    nativeOpen.value = nativeMenu.value?.root.isConnected ?? false
-  },
-  { childList: true }
-)
 
 function placeAtEvent(event: Event) {
   if (event.type === 'contextmenu') event.preventDefault()
@@ -116,22 +90,12 @@ function placeAtEvent(event: Event) {
 }
 
 const {
-  open: vueOpen,
+  open: isOpen,
   menuProps,
-  show: showVue,
-  hide: hideVue,
-  toggle: toggleVue
+  show: showMenu,
+  hide,
+  toggle: toggleMenu
 } = usePointMenu(placeAtEvent)
-
-const isOpen = computed(() => vueOpen.value || nativeOpen.value)
-
-function closeNative() {
-  nativeMenu.value?.close()
-  nativeMenu.value = undefined
-  nativeRoot.value = undefined
-  nativeOpen.value = false
-  nativeDismissingPress = null
-}
 
 function collectNodeMenu(node: LGraphNode | null | undefined) {
   const source = () =>
@@ -157,66 +121,24 @@ function collectNodeMenu(node: LGraphNode | null | undefined) {
   }
 }
 
-function prepare(event: Event): boolean {
-  if (event.type === 'contextmenu') event.preventDefault()
-  closeNative()
+function prepare() {
   bump()
   const selected = canvasStore.selectedItems.filter(isLGraphNode)
   const node = invocationContext.value
     ? canvasStore.currentGraph?.getNodeById(invocationContext.value.nodeId)
     : selected[0]
-  const result = projectNodeMenu(collectNodeMenu(node))
-  if (result.kind === 'vue') {
-    menuItems.value = result.items
-    return true
-  }
-  showNative(event, node, result.items)
-  return false
-}
-
-function showNative(
-  event: Event,
-  node: LGraphNode | null | undefined,
-  items: Parameters<typeof projectNodeMenu>[0]
-) {
-  hideVue()
-  const { x, y } = getMenuAnchorPosition(event)
   if (node) LGraphCanvas.active_node = node
-  nativeMenu.value = new LiteGraph.ContextMenu(items, {
-    event: event instanceof MouseEvent ? event : undefined,
-    left: x,
-    top: y,
-    extra: node
-  })
-  if (
-    event.type === 'click' &&
-    event instanceof MouseEvent &&
-    event.detail === 0
-  ) {
-    nativeMenu.value.root.style.left = `${x}px`
-    nativeMenu.value.root.style.top = `${y}px`
-  }
-  nativeShownFrom = event.currentTarget
-  nativeRoot.value = nativeMenu.value.root.parentElement ?? undefined
-  nativeOpen.value = nativeMenu.value.root.isConnected
+  menuItems.value = projectNodeMenu(collectNodeMenu(node), node ?? undefined)
 }
 
 function show(event: Event) {
-  if (prepare(event)) showVue(event)
-}
-
-function hide() {
-  closeNative()
-  hideVue()
+  prepare()
+  showMenu(event)
 }
 
 function toggle(event: Event) {
-  if (
-    nativeOpen.value ||
-    isMenuDismissalClick(event, nativeShownFrom, nativeDismissingPress)
-  )
-    hide()
-  else if (vueOpen.value || prepare(event)) toggleVue(event)
+  if (!isOpen.value) prepare()
+  toggleMenu(event)
 }
 
 onMounted(() => {
@@ -224,7 +146,6 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
-  closeNative()
   registerNodeOptionsInstance(null)
 })
 </script>

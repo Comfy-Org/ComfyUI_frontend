@@ -1,22 +1,33 @@
-import { assert, describe, expect, it } from 'vitest'
+import { assert, describe, expect, it, vi } from 'vitest'
 
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
-import { closureOnly } from '@/scripts/nodeMenu'
 
 import { projectNodeMenu, toLegacyNodeMenu } from './nodeMenuBoundary'
 
+vi.mock(import('@comfyorg/telemetry/reportError'))
+
+function choose(
+  item: MenuItem | undefined,
+  originalEvent = new Event('select', { cancelable: true })
+) {
+  assert(item?.command)
+  item.command({ originalEvent, item })
+  return originalEvent
+}
+
 describe('node menu compatibility boundary', () => {
-  it('does not turn curated action results into native keep-open signals', () => {
+  it('does not turn curated action results into keep-open signals', () => {
     let opened = false
     const items = toLegacyNodeMenu(
       [{ label: 'Open panel', action: () => (opened = true) }],
       ''
     )
-    const item = items[0]
-    assert(item?.callback)
-    const result = Reflect.apply(item.callback, undefined, [])
+    const event = choose(projectNodeMenu(items, undefined)[0])
     expect(opened).toBe(true)
-    expect(result).toBeUndefined()
+    expect(event.defaultPrevented).toBe(false)
   })
 
   it('keeps an extension-disabled shape unavailable after projection', () => {
@@ -33,102 +44,113 @@ describe('node menu compatibility boundary', () => {
     const child = items[0]?.submenu?.options[0]
     assert(child && typeof child !== 'string')
     child.disabled = true
-    const result = projectNodeMenu(items)
-    assert(result.kind === 'vue')
-    expect(result.items[0]?.radioGroup).toBeUndefined()
-    expect(result.items[0]?.items).toMatchObject([
-      { label: 'Round', disabled: true }
-    ])
+    const [shape] = projectNodeMenu(items, undefined)
+    expect(shape.radioGroup).toBeUndefined()
+    expect(shape.items).toMatchObject([{ label: 'Round', disabled: true }])
   })
 
-  it.for([
-    { content: 'Native title', title: 'Displayed title' },
-    { content: 'Native class', className: 'extension-menu' },
-    { content: '<strong>Native HTML</strong>' },
-    { content: 'Imperative submenu', has_submenu: true },
-    {
-      content: 'Submenu with context',
-      submenu: { options: ['Child'], extra: { nodeId: 42 } }
+  it('passes the legacy callback contract only when the item is chosen', () => {
+    const node = new LGraphNode('Target')
+    const calls: unknown[][] = []
+    const item: IContextMenuValue = {
+      content: 'Legacy',
+      callback(...args) {
+        calls.push([this.value, ...args])
+      }
     }
-  ] satisfies IContextMenuValue[])(
-    'keeps native presentation for $content',
-    (item) => {
-      const items = [item]
-      expect(projectNodeMenu(items)).toEqual({ kind: 'native', items })
-    }
-  )
+    const [projected] = projectNodeMenu([item], node)
+    expect(calls).toEqual([])
 
-  it('requires native execution after a wrapper replaces a declared closure', () => {
-    let effects = 0
-    const items = toLegacyNodeMenu(
+    choose(projected)
+
+    expect(calls).toHaveLength(1)
+    const [receiverValue, value, , event, , extra] = calls[0]
+    expect(receiverValue).toBe(item)
+    expect(value).toBe(item)
+    expect(event).toBeInstanceOf(MouseEvent)
+    expect(extra).toBe(node)
+  })
+
+  it('keeps the menu open when a legacy callback returns true', () => {
+    const [projected] = projectNodeMenu(
+      [{ content: 'Stay open', callback: () => true }],
+      undefined
+    )
+    expect(choose(projected).defaultPrevented).toBe(true)
+  })
+
+  it('runs a submenu callback with its own context for each child', () => {
+    const seen: unknown[] = []
+    const [parent] = projectNodeMenu(
       [
         {
-          label: 'Action',
-          action: () => {
-            effects++
+          content: 'Layout',
+          submenu: {
+            options: ['Left', 'Right'],
+            extra: { nodeId: 42 },
+            callback: (value) => {
+              seen.push(value)
+            }
           }
         }
       ],
-      ''
+      undefined
     )
-    const item = items[0]
-    assert(item?.callback)
-    const previous = item.callback
-    item.callback = function (...args) {
-      return previous.apply(this, args)
+    choose(parent.items?.[1])
+    expect(seen).toEqual(['Right'])
+  })
+
+  it.for([
+    {
+      item: { content: 'Plain', title: 'Displayed title' },
+      label: 'Displayed title'
+    },
+    { item: { content: '<strong>Bold</strong> text' }, label: 'Bold text' }
+  ] satisfies { item: IContextMenuValue; label: string }[])(
+    'labels $item.content as $label',
+    ({ item, label }) => {
+      expect(projectNodeMenu([item], undefined)[0]?.label).toBe(label)
     }
+  )
 
-    expect(projectNodeMenu(items)).toEqual({ kind: 'native', items })
-    expect(effects).toBe(0)
-  })
-
-  it('keeps undeclared leaf callbacks native even without submenus', () => {
-    let effects = 0
-    const items = [
-      {
-        content: 'Native leaf',
-        callback: () => {
-          effects++
+  it('reports a throwing extension callback once and lets the menu close', () => {
+    const error = new Error('extension failed')
+    const [projected] = projectNodeMenu(
+      [
+        {
+          content: 'Broken',
+          callback: () => {
+            throw error
+          }
         }
-      }
-    ]
-
-    expect(projectNodeMenu(items)).toEqual({ kind: 'native', items })
-    expect(effects).toBe(0)
+      ],
+      undefined
+    )
+    expect(choose(projected).defaultPrevented).toBe(false)
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(error, {
+      surface: 'graph',
+      errorType: 'error_running_node_menu_callback'
+    })
   })
 
-  it('preserves duplicate labels and declared nested leaf effects', () => {
+  it('preserves duplicate labels and runs only the chosen nested leaf', () => {
     const effects: string[] = []
-    const result = projectNodeMenu([
-      {
-        content: 'Parent',
-        submenu: {
-          options: [
-            {
-              content: 'Same',
-              callback: closureOnly(() => {
-                effects.push('first')
-              })
-            },
-            {
-              content: 'Same',
-              callback: closureOnly(() => {
-                effects.push('second')
-              })
-            }
-          ]
+    const [parent] = projectNodeMenu(
+      [
+        {
+          content: 'Parent',
+          submenu: {
+            options: [
+              { content: 'Same', callback: () => void effects.push('first') },
+              { content: 'Same', callback: () => void effects.push('second') }
+            ]
+          }
         }
-      }
-    ])
-    assert(result.kind === 'vue')
-    expect(effects).toEqual([])
-    expect(result.items[0]?.items?.map((item) => item.label)).toEqual([
-      'Same',
-      'Same'
-    ])
-    const second = result.items[0]?.items?.[1]
-    assert(second?.command)
-    second.command({ originalEvent: new Event('select'), item: second })
+      ],
+      undefined
+    )
+    expect(parent.items?.map((item) => item.label)).toEqual(['Same', 'Same'])
+    choose(parent.items?.[1])
     expect(effects).toEqual(['second'])
   })
 })

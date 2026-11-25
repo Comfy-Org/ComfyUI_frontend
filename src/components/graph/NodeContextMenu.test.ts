@@ -20,7 +20,6 @@ import en from '@/locales/en/main.json'
 import fr from '@/locales/fr/main.json'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { createTestCanvasElement } from '@/utils/__tests__/canvasTestUtils'
-import { closureOnly } from '@/scripts/nodeMenu'
 
 import NodeContextMenu from './NodeContextMenu.vue'
 
@@ -47,9 +46,9 @@ describe('NodeContextMenu', () => {
     node.getExtraMenuOptions = () => [
       {
         content: 'Copier',
-        callback: closureOnly(() => {
+        callback: () => {
           node.title = 'Extension executed'
-        })
+        }
       }
     ]
     graph.add(node)
@@ -185,7 +184,7 @@ describe('NodeContextMenu', () => {
     expect(await screen.findByRole('menu')).toBeVisible()
   })
 
-  describe('native fallback', () => {
+  describe('legacy extension actions', () => {
     beforeEach(async () => {
       const graph = new LGraph()
       const canvas = new LGraphCanvas(createTestCanvasElement(), graph, {
@@ -194,7 +193,12 @@ describe('NodeContextMenu', () => {
       })
       const node = new LGraphNode('Extension node')
       node.getExtraMenuOptions = () => [
-        { content: 'Native action', callback() {} }
+        {
+          content: 'Native action',
+          callback(_value, _options, _event, _menu, extra) {
+            if (extra instanceof LGraphNode) extra.title = 'Legacy executed'
+          }
+        }
       ]
       graph.add(node)
       const store = useCanvasStore()
@@ -222,6 +226,19 @@ describe('NodeContextMenu', () => {
       expect(
         await screen.findByRole('menuitem', { name: 'Native action' })
       ).toBeVisible()
+    })
+
+    it('runs an undeclared callback with its node when chosen in the Vue menu', async () => {
+      renderWithControls()
+      await userEvent.click(
+        screen.getByRole('button', { name: 'More options' })
+      )
+      await userEvent.click(
+        await screen.findByRole('menuitem', { name: 'Native action' })
+      )
+      expect(useCanvasStore().currentGraph?.nodes[0]?.title).toBe(
+        'Legacy executed'
+      )
     })
 
     it('keeps selection actions for a node selected with a group', async () => {

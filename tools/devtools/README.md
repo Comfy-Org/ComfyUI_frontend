@@ -51,16 +51,15 @@ Playwright tests rather than the devtools extension.
 
 - [Custom Scripts SwapResolution](https://github.com/pythongosssss/ComfyUI-Custom-Scripts/blob/609f3afaa74b2f88ef9ce8d939626065e3247469/web/js/swapResolution.js)
   wraps the previous node hook, swaps the actual width and height widgets, and
-  returns the previous hook's result. The fixture adds an explicit closure-only
-  declaration so the same action can use Vue presentation.
+  returns the previous hook's result.
 - [Custom Scripts NodeFinder](https://github.com/pythongosssss/ComfyUI-Custom-Scripts/blob/609f3afaa74b2f88ef9ce8d939626065e3247469/web/js/nodeFinder.js)
   groups graph nodes by type, orders them by horizontal position, and centers
   the chosen node through nested declarative menus. The original wraps the
   canvas menu; the fixture applies this addition to the node menu to exercise
   its compatibility boundary. Execution-following features are not reproduced.
 - [rgthree Connections Layout and menu helper](https://github.com/rgthree/rgthree-comfy/blob/bc48c6aaeca87bedbc14245d89f9bc6be37a630e/web/comfyui/utils.js)
-  inserts a submenu after Shape, opens a real native menu with the supplied
-  event and parent, and writes the selected `connections_layout` property.
+  inserts a submenu after Shape, opens a real native menu from its callback,
+  and writes the selected `connections_layout` property.
   The fixture preserves that imperative callback and global child-menu callback.
   It does not reproduce rgthree's connection-position renderer overrides.
 

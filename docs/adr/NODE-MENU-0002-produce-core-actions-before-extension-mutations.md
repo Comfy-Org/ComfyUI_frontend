@@ -4,7 +4,9 @@ Date: 2026-11-17
 
 ## Status
 
-Accepted
+Superseded
+
+Superseded by ADR-NODE-MENU-0003.
 
 Supersedes ADR-NODE-MENU-0001.
 

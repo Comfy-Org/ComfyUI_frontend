@@ -1,6 +1,5 @@
 import type { LiteGraphGlobal } from '@/lib/litegraph/src/LiteGraphGlobal'
 import { app } from '@/scripts/app'
-import { closureOnly } from '@/scripts/nodeMenu'
 
 declare const LiteGraph: LiteGraphGlobal
 
@@ -17,7 +16,7 @@ app.registerExtension({
       options.push(
         {
           content: 'Swap width/height',
-          callback: closureOnly(() => {
+          callback: () => {
             const width = this.widgets?.find(
               (widget) => widget.name === 'width'
             )
@@ -29,7 +28,7 @@ app.registerExtension({
             width.value = height.value
             height.value = value
             app.graph.setDirtyCanvas(true)
-          })
+          }
         },
         null
       )
@@ -55,7 +54,7 @@ app.registerExtension({
                 .toSorted((a, b) => a.pos[0] - b.pos[0])
                 .map((target) => ({
                   content: `${target.getTitle()} - #${target.id} (${target.pos[0]}, ${target.pos[1]})`,
-                  callback: closureOnly(() => app.canvas.centerOnNode(target))
+                  callback: () => app.canvas.centerOnNode(target)
                 }))
             }
           }))

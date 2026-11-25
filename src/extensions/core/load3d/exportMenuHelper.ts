@@ -4,7 +4,6 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import type Load3d from '@comfyorg/viewport3d/load3d/Load3d'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useLoad3dService } from '@/extensions/core/load3d/services/load3dService'
-import { closureOnly } from '@/scripts/nodeMenu'
 
 const EXPORT_FORMATS = [
   { label: 'GLB', value: 'glb' },
@@ -24,7 +23,7 @@ export function createExportMenuItems(
       submenu: {
         options: EXPORT_FORMATS.map((format) => ({
           content: format.label,
-          callback: closureOnly(() => {
+          callback: () => {
             void (async () => {
               try {
                 await load3d.exportModel(format.value)
@@ -42,7 +41,7 @@ export function createExportMenuItems(
                 )
               }
             })()
-          })
+          }
         }))
       }
     }

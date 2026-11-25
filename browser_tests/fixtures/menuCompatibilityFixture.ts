@@ -51,7 +51,6 @@ const menuCompatibilityFixture = base.extend<{
                 }
               })
               .outputText.replaceAll('@/scripts/app', '/scripts/app.js')
-              .replaceAll('@/scripts/nodeMenu', '/scripts/nodeMenu.js')
             await route.fulfill({ contentType: 'text/javascript', body })
           }
         }

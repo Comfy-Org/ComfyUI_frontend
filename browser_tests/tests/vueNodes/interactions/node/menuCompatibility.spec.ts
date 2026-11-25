@@ -76,13 +76,13 @@ test.describe('Explicit node menu compatibility', { tag: '@vue-nodes' }, () => {
       .toBeLessThan(3)
   })
 
-  test.describe('Native connection layout', () => {
+  test.describe('Imperative connection layout', () => {
     test.use({
       menuScenario: 'native',
       initialSettings: { 'Comfy.Canvas.SelectionToolbox': true }
     })
 
-    test('anchors keyboard activation to the opening control', async ({
+    test('opens the Vue menu from the keyboard with the legacy item', async ({
       comfyPage
     }) => {
       const node =
@@ -93,21 +93,15 @@ test.describe('Explicit node menu compatibility', { tag: '@vue-nodes' }, () => {
         name: 'More Options',
         exact: true
       })
-      await expect(button).toBeVisible()
-      await button.hover()
       await button.focus()
       await button.press('Enter')
-      const menu = comfyPage.page.locator('.litecontextmenu')
-      await expect(menu).toBeVisible()
-      const anchor = await button.boundingBox()
-      const bounds = await menu.boundingBox()
-      if (!anchor || !bounds)
-        throw new Error('Expected menu and opening control bounds')
-      expect(bounds.x).toBeCloseTo(anchor.x, 0)
-      expect(bounds.y).toBeCloseTo(anchor.y, 0)
+      await expect(
+        comfyPage.page.getByRole('menuitem', { name: 'Connections Layout' })
+      ).toBeVisible()
+      await expect(comfyPage.page.locator('.litecontextmenu')).toHaveCount(0)
     })
 
-    test('opens the imperative submenu and applies its selected property', async ({
+    test('runs the imperative submenu from the Vue menu and applies its selected property', async ({
       comfyPage
     }) => {
       const node =
@@ -116,10 +110,10 @@ test.describe('Explicit node menu compatibility', { tag: '@vue-nodes' }, () => {
       const fixture =
         await comfyPage.vueNodes.getFixtureByTitle('Empty Latent Image')
       await comfyPage.contextMenu.openFor(fixture.header)
+      await expect(comfyPage.page.locator('.litecontextmenu')).toHaveCount(0)
       const layout = comfyPage.page.getByRole('menuitem', {
-        name: /^Connections Layout/
+        name: 'Connections Layout'
       })
-      await expect(layout).toBeVisible()
       await expect(comfyPage.contextMenu.menuItem('Right -> Left')).toHaveCount(
         0
       )
@@ -133,12 +127,6 @@ test.describe('Explicit node menu compatibility', { tag: '@vue-nodes' }, () => {
         .toMatchObject({
           connections_layout: ['Right', 'Left']
         })
-      await expect(comfyPage.page.locator('.litecontextmenu')).toHaveCount(0)
-      await comfyPage.contextMenu.openFor(fixture.header)
-      await comfyPage.contextMenu.dispatchFor(fixture.header)
-      await expect(comfyPage.page.locator('.litecontextmenu')).toHaveCount(1)
-      const sampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
-      await comfyPage.contextMenu.dispatchFor(sampler.header)
       await expect(comfyPage.page.locator('.litecontextmenu')).toHaveCount(0)
     })
   })

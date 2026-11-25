@@ -1,11 +1,17 @@
 import type {
   MenuItem,
+  MenuItemCommandEvent,
   MenuItemRadioGroup,
   MenuItemSubmenu
 } from '@comfyorg/design-system/lib/menu/types'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
-import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
-import { closureOnly, isClosureOnly } from '@/scripts/nodeMenu'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type {
+  ContextMenuDivElement,
+  IContextMenuOptions,
+  IContextMenuValue
+} from '@/lib/litegraph/src/types/contextMenu'
 
 import type { MenuOption } from './menuOption'
 
@@ -49,72 +55,73 @@ export function toLegacyNodeMenu(
     } else {
       const { action } = option
       if (action)
-        item.callback = closureOnly(() => {
+        item.callback = () => {
           action()
-        })
+        }
       presentation.set(item, metadata)
     }
     return item
   })
 }
 
+/** Projects a final legacy node menu into Vue items; callbacks run only when chosen. */
 export function projectNodeMenu(
-  items: LegacyItems
-): { kind: 'vue'; items: MenuItem[] } | { kind: 'native'; items: LegacyItems } {
-  const projected = projectItems(items)
-  return projected
-    ? { kind: 'vue', items: projected }
-    : { kind: 'native', items }
+  items: LegacyItems,
+  node: LGraphNode | undefined
+): MenuItem[] {
+  return projectItems(items, { extra: node })
 }
 
-function projectItems(items: LegacyItems): MenuItem[] | undefined {
-  const result: MenuItem[] = []
-  for (const item of items) {
-    const projected = projectItem(item)
-    if (!projected) return
-    result.push(projected)
-  }
-  return result
+function projectItems(
+  items: LegacyItems,
+  menuOptions: IContextMenuOptions
+): MenuItem[] {
+  return items.map((item) => projectItem(item, menuOptions))
 }
 
-function projectItem(item: LegacyItems[number]): MenuItem | undefined {
+function projectItem(
+  item: LegacyItems[number],
+  menuOptions: IContextMenuOptions
+): MenuItem {
   if (item === null) return { separator: true }
-  if (typeof item === 'string') return { label: item }
-  if (!canProjectCallback(item)) return
-  if (usesNativePresentation(item)) return
+  if (typeof item === 'string')
+    return {
+      label: item,
+      command: menuOptions.callback
+        ? (event) => runLegacyCallbacks(item, menuOptions, event)
+        : undefined
+    }
   const metadata = presentation.get(item)
-  const base = { ...metadata, label: item.content, disabled: item.disabled }
-  if (item.submenu) {
-    const submenu = projectSubmenu(item.submenu, metadata?.shape)
-    return submenu && { ...base, ...submenu }
+  const base = {
+    ...metadata,
+    label: legacyLabel(item),
+    disabled: item.disabled,
+    class: item.className
   }
-  const callback = item.callback
+  if (item.submenu)
+    return { ...base, ...projectSubmenu(item.submenu, metadata) }
   return {
     ...base,
-    command: callback ? () => Reflect.apply(callback, undefined, []) : undefined
+    command:
+      item.callback || menuOptions.callback
+        ? (event) => runLegacyCallbacks(item, menuOptions, event)
+        : undefined
   }
 }
 
-function canProjectCallback(item: IContextMenuValue): boolean {
-  return !item.callback || (isClosureOnly(item.callback) && !item.submenu)
-}
-
-function usesNativePresentation(item: IContextMenuValue): boolean {
-  return Boolean(
-    item.title ||
-    item.className ||
-    /<[a-z][\s\S]*>/i.test(item.content ?? '') ||
-    (item.has_submenu && !item.submenu)
-  )
+function legacyLabel(item: IContextMenuValue): string {
+  if (item.content && /<[a-z][\s\S]*>/i.test(item.content))
+    return new DOMParser().parseFromString(item.content, 'text/html').body
+      .textContent
+  return item.title ?? item.content ?? ''
 }
 
 function projectSubmenu(
   submenu: NonNullable<IContextMenuValue['submenu']>,
-  shape: string | undefined
-): MenuItemSubmenu | MenuItemRadioGroup | undefined {
-  if (Object.keys(submenu).some((key) => key !== 'options')) return
-  const children = projectItems(submenu.options)
-  if (!children) return
+  metadata: Presentation | undefined
+): MenuItemSubmenu | MenuItemRadioGroup {
+  const children = projectItems(submenu.options, submenu)
+  const shape = metadata?.shape
   if (
     shape === undefined ||
     children.some((child) => child.disabled || child.separator || child.items)
@@ -123,15 +130,88 @@ function projectSubmenu(
   return {
     radioGroup: {
       value: shape,
-      options: children.map((child, index) => ({
+      options: children.map((child) => ({
         label: String(child.label ?? ''),
         value: String(child.label ?? ''),
-        command: () => {
-          const entry = submenu.options[index]
-          if (entry && typeof entry !== 'string' && entry.callback)
-            Reflect.apply(entry.callback, undefined, [])
-        }
+        command: () =>
+          child.command?.({
+            originalEvent: new MouseEvent('click'),
+            item: child
+          })
       }))
     }
   }
+}
+
+function runLegacyCallbacks(
+  item: IContextMenuValue | string,
+  menuOptions: IContextMenuOptions,
+  { originalEvent }: MenuItemCommandEvent
+) {
+  const receiver: ContextMenuDivElement = Object.assign(
+    document.createElement('div'),
+    { value: item }
+  )
+  const event = legacyPointerEvent(originalEvent)
+  const calls: (() => unknown)[] = []
+  if (menuOptions.callback) {
+    const { callback } = menuOptions
+    calls.push(() =>
+      Reflect.apply(callback, receiver, [
+        item,
+        menuOptions,
+        event,
+        undefined,
+        menuOptions.node
+      ])
+    )
+  }
+  if (
+    typeof item === 'object' &&
+    item.callback &&
+    !menuOptions.ignore_item_callbacks
+  ) {
+    const { callback } = item
+    calls.push(() =>
+      Reflect.apply(callback, receiver, [
+        item,
+        menuOptions,
+        event,
+        undefined,
+        menuOptions.extra
+      ])
+    )
+  }
+  const keepOpen = calls
+    .map((call) => runExtensionCallback(call))
+    .some((result) => result === true)
+  if (keepOpen) originalEvent.preventDefault()
+}
+
+function runExtensionCallback(call: () => unknown): unknown {
+  try {
+    const result = call()
+    if (result instanceof Promise) result.catch(reportCallbackError)
+    return result
+  } catch (error) {
+    reportCallbackError(error)
+  }
+}
+
+function reportCallbackError(error: unknown) {
+  reportError(error, {
+    surface: 'graph',
+    errorType: 'error_running_node_menu_callback'
+  })
+}
+
+function legacyPointerEvent(event: Event): MouseEvent {
+  if (event instanceof MouseEvent) return event
+  const row = document.activeElement?.getBoundingClientRect()
+  return new MouseEvent('click', {
+    bubbles: true,
+    cancelable: true,
+    clientX: row?.right ?? 0,
+    clientY: row?.top ?? 0
+  })
 }
