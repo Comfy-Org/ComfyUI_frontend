@@ -2,10 +2,10 @@
 import { useElementHover, useFocusWithin } from '@vueuse/core'
 import { onBeforeUnmount, useTemplateRef, watch } from 'vue'
 
-import TagRemoveButton from '@comfyorg/design-system/chip/TagRemoveButton'
 import type { MediaKind } from '@comfyorg/assets-core/media'
 
 import AssetThumbnail from './AssetThumbnail.vue'
+import InlineReferenceRemoveButton from './InlineReferenceRemoveButton.vue'
 
 import { inlineReferenceChipClass } from './inlineReferenceChipStyles'
 
@@ -41,6 +41,9 @@ onBeforeUnmount(() => emit('highlight', false))
       class="size-4 shrink-0"
     />
     <span class="max-w-56 min-w-0 truncate">{{ name }}</span>
-    <TagRemoveButton :aria-label="removeLabel" @click.stop="emit('remove')" />
+    <InlineReferenceRemoveButton
+      :label="removeLabel"
+      @remove="emit('remove')"
+    />
   </span>
 </template>

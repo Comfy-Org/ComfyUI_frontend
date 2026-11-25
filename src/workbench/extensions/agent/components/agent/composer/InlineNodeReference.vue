@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import TagRemoveButton from '@comfyorg/design-system/chip/TagRemoveButton'
-
+import InlineReferenceRemoveButton from './InlineReferenceRemoveButton.vue'
 import { inlineReferenceChipClass } from './inlineReferenceChipStyles'
 
 const { title, nodeId, removeLabel } = defineProps<{
@@ -16,6 +15,9 @@ const emit = defineEmits<{ remove: [] }>()
     <i aria-hidden="true" class="icon-[comfy--node] size-3" />
     <span class="max-w-56 min-w-0 truncate">{{ title }}</span>
     <span class="shrink-0 text-muted-foreground">{{ ` #${nodeId}` }}</span>
-    <TagRemoveButton :aria-label="removeLabel" @click.stop="emit('remove')" />
+    <InlineReferenceRemoveButton
+      :label="removeLabel"
+      @remove="emit('remove')"
+    />
   </span>
 </template>

@@ -1,17 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import Button from '@comfyorg/design-system/button/Button'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { AgentErrorContext } from '@/platform/workflowErrors/agentErrorContext'
 
-import {
-  inlineReferenceChipClass,
-  inlineReferenceRemoveAnchorClass,
-  inlineReferenceRemoveBadgeClass,
-  inlineReferenceRemoveButtonClass
-} from './inlineReferenceChipStyles'
+import InlineReferenceRemoveButton from './InlineReferenceRemoveButton.vue'
+import { inlineReferenceChipClass } from './inlineReferenceChipStyles'
 
 const { context, removeLabel, countLabel } = defineProps<{
   context: AgentErrorContext
@@ -53,20 +48,10 @@ const problemList = computed(() =>
     >
       {{ context.count }}
     </span>
-    <span :class="inlineReferenceRemoveAnchorClass">
-      <Button
-        type="button"
-        variant="textonly"
-        size="icon-sm"
-        :aria-label="removeLabel"
-        data-testid="error-reference-remove"
-        :class="inlineReferenceRemoveButtonClass"
-        @click.stop="emit('remove')"
-      >
-        <span :class="inlineReferenceRemoveBadgeClass">
-          <i aria-hidden="true" class="icon-[lucide--x] size-2" />
-        </span>
-      </Button>
-    </span>
+    <InlineReferenceRemoveButton
+      :label="removeLabel"
+      data-testid="error-reference-remove"
+      @remove="emit('remove')"
+    />
   </span>
 </template>

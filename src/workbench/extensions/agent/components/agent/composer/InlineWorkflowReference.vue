@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-import TagRemoveButton from '@comfyorg/design-system/chip/TagRemoveButton'
 import Button from '@comfyorg/design-system/button/Button'
 
+import InlineReferenceRemoveButton from './InlineReferenceRemoveButton.vue'
 import { inlineReferenceChipClass } from './inlineReferenceChipStyles'
 
 const { name, unavailable = false } = defineProps<{
@@ -36,15 +36,15 @@ function open(): void {
       :title="
         unavailable ? t('agent.workflowReferenceUnavailableReason') : undefined
       "
-      class="min-w-0"
+      class="h-auto min-w-0 gap-1 p-0 font-normal hover:bg-transparent aria-disabled:cursor-not-allowed"
       @click="open"
     >
       <i aria-hidden="true" class="icon-[comfy--workflow] size-3" />
       <span class="max-w-56 min-w-0 truncate">{{ name }}</span>
     </Button>
-    <TagRemoveButton
-      :aria-label="t('agent.removeWorkflowReference', { name })"
-      @click.stop="emit('remove')"
+    <InlineReferenceRemoveButton
+      :label="t('agent.removeWorkflowReference', { name })"
+      @remove="emit('remove')"
     />
   </span>
 </template>
