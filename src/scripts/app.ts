@@ -300,6 +300,16 @@ function isOwnedByWorkflow(graph: LGraph): boolean {
   )
 }
 
+function hasQueueingGraphReloadedInPlace(
+  graph: LGraph,
+  queueingGraphGeneration: number
+): boolean {
+  return (
+    isGraphLoading(graph) ||
+    getGraphLoadGeneration(graph) !== queueingGraphGeneration
+  )
+}
+
 function createNodeOutputsMutationView(
   outputs: Partial<Record<string, NodeExecutionOutput>>,
   commit: (id: string, output: NodeExecutionOutput | undefined) => void
@@ -2049,8 +2059,10 @@ export class ComfyApp implements IComfyApp {
           if (
             currentWorkflowKey !== queueingWorkflowKey ||
             this.rootGraph !== queueingGraph ||
-            isGraphLoading(queueingGraph) ||
-            getGraphLoadGeneration(queueingGraph) !== queueingGraphGeneration
+            hasQueueingGraphReloadedInPlace(
+              queueingGraph,
+              queueingGraphGeneration
+            )
           ) {
             stoppedOnWorkflowChange = true
             break
@@ -2067,6 +2079,8 @@ export class ComfyApp implements IComfyApp {
               )
             }
           }
+
+          const queuedNodes = collectAllNodes(queueingGraph)
 
           forEachNode(queueingGraph, (node) => {
             for (const widget of node.widgets ?? []) {
@@ -2098,7 +2112,15 @@ export class ComfyApp implements IComfyApp {
               throw error
             }
           )
-          const queuedNodes = collectAllNodes(queueingGraph)
+          if (
+            hasQueueingGraphReloadedInPlace(
+              queueingGraph,
+              queueingGraphGeneration
+            )
+          ) {
+            stoppedOnWorkflowChange = true
+            break
+          }
           let workflowContext: WorkflowExecutionContext | undefined
           if (executionContext) {
             workflowContext = toWorkflowExecutionContext(executionContext, {

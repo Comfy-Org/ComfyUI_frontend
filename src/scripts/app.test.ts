@@ -3216,6 +3216,37 @@ describe('ComfyApp', () => {
       )
     })
 
+    it('refuses a prompt whose queueing graph reloads while widget serialization is suspended', async () => {
+      const workflow = prepareEmptyPromptQueue()
+      useWorkflowStore().attachWorkflow(workflow)
+      app.canvasElRef.value = document.createElement('canvas')
+      const queued = addSeedNode(app.rootGraph)
+      let releaseSerialization!: () => void
+      const serializationHeld = new Promise<void>((resolve) => {
+        releaseSerialization = resolve
+      })
+      let serializationStarted = false
+      vi.spyOn(app, 'graphToPrompt').mockImplementation(async () => {
+        serializationStarted = true
+        await serializationHeld
+        return { output: {}, workflow: createWorkflowGraphData() }
+      })
+      const queuePrompt = vi.spyOn(api, 'queuePrompt')
+
+      const submission = app.queuePrompt(0, 2)
+      await vi.waitFor(() => expect(serializationStarted).toBe(true))
+      await app.loadGraphData(createWorkflowGraphData(), false, false, workflow)
+      releaseSerialization()
+
+      await expect(submission).resolves.toBe(true)
+
+      expect(queuePrompt).not.toHaveBeenCalled()
+      expect(queued.seed.value).toBe(0)
+      expect(useToast().warning).toHaveBeenCalledWith(
+        queueBatchStoppedToast(0, 2)
+      )
+    })
+
     it('waits for workspace authentication before submitting the prompt', async () => {
       prepareEmptyPromptQueue()
       let resolveToken: (token: string) => void = () => {}
