@@ -57,6 +57,8 @@ import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 import { setupInlinePromptEditorDom } from './components/agent/composer/inlinePromptEditorTestSetup'
 import { useAgentConsent } from './composables/agent/useAgentConsent'
 import type { ConsentOfferHooks } from './composables/agent/useAgentConsent'
+import { useAskAgentAboutIssues } from './composables/agent/useAskAgentAboutIssues'
+import type { AgentErrorContext } from '@/platform/workflowErrors/agentErrorContext'
 import { useFreeUsePlacement } from './experiments/freeUsePlacement'
 
 setupInlinePromptEditorDom()
@@ -5557,6 +5559,65 @@ describe('AgentPanelRoot attach flow', () => {
     view.unmount()
     expect(revoke).toHaveBeenCalledTimes(1)
     revoke.mockRestore()
+  })
+})
+
+describe('AgentPanelRoot error context attach (FRONT-4380)', () => {
+  beforeEach(() => {
+    const tab = addTab('workflows/current.json')
+    workflowStore.activeWorkflow = tab
+  })
+
+  function allIssuesContext(
+    overrides: Partial<AgentErrorContext> = {}
+  ): AgentErrorContext {
+    return {
+      scope: 'card',
+      count: 2,
+      label: 'All issues',
+      severity: 'warning',
+      problems: [
+        { category: 'missing_media', message: 'image missing' },
+        { category: 'missing_media', message: 'video missing' }
+      ],
+      ...overrides
+    }
+  }
+
+  it('does not stack a duplicate chip or pad extra spaces when "Ask agent about all issues" is clicked repeatedly', async () => {
+    const store = useAgentComposerStore()
+    renderWithSelectedTarget()
+    useAgentPanelStore().enabled = true
+    const textbox = screen.getByRole('textbox')
+    await userEvent.click(textbox)
+    await userEvent.paste('I need help with 2 workflow issues')
+
+    const { askAgentAboutIssues } = useAskAgentAboutIssues()
+    await askAgentAboutIssues(allIssuesContext({ count: 2 }))
+    await screen.findAllByTestId('error-reference-chip')
+    await waitFor(() => expect(store.errorContext).toMatchObject({ count: 2 }))
+    expect(
+      store.prompt.references.filter((r) => r.kind === 'error')
+    ).toHaveLength(1)
+    const draftAfterFirstClick = store.draft
+
+    await askAgentAboutIssues(allIssuesContext({ count: 3 }))
+    await waitFor(() => expect(store.errorContext).toMatchObject({ count: 3 }))
+    expect(
+      store.prompt.references.filter((r) => r.kind === 'error')
+    ).toHaveLength(1)
+    expect(screen.getAllByTestId('error-reference-chip')).toHaveLength(1)
+    // The chip's problem count changes on each click; the surrounding
+    // whitespace it pads must not grow along with it (FRONT-4380).
+    expect(store.draft).toHaveLength(draftAfterFirstClick.length)
+
+    await askAgentAboutIssues(allIssuesContext({ count: 4 }))
+    await waitFor(() => expect(store.errorContext).toMatchObject({ count: 4 }))
+    expect(
+      store.prompt.references.filter((r) => r.kind === 'error')
+    ).toHaveLength(1)
+    expect(screen.getAllByTestId('error-reference-chip')).toHaveLength(1)
+    expect(store.draft).toHaveLength(draftAfterFirstClick.length)
   })
 })
 

@@ -353,18 +353,40 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
   }
 
   function setErrorContext(context: AgentErrorContext): void {
+    const existing = prompt.value.references.find(
+      (item) => item.kind === 'error'
+    )
     const references = prompt.value.references.filter(
       (item) => item.kind !== 'error'
     )
+    const text = draft.value
+    // Clicking the same "Ask agent about..." affordance again lands the
+    // caret right after the previous click's own trailing separator space
+    // (nothing else has touched the draft since). Reinserting there would
+    // pad another separator on top of it, growing the gap after the chip on
+    // every click (FRONT-4380) — reuse the old chip's slot instead.
+    const replacesInPlace =
+      existing !== undefined &&
+      insertionPoint.value.textOffset === existing.textOffset + 1 &&
+      text.length === existing.textOffset + 1 &&
+      text[existing.textOffset] === ' '
+    const insertion = replacesInPlace
+      ? {
+          textOffset: existing.textOffset,
+          referenceIndex: prompt.value.references
+            .slice(0, prompt.value.references.indexOf(existing))
+            .filter((item) => item.kind !== 'error').length
+        }
+      : {
+          textOffset: insertionPoint.value.textOffset,
+          referenceIndex: prompt.value.references
+            .slice(0, insertionPoint.value.referenceIndex)
+            .filter((item) => item.kind !== 'error').length
+        }
     const inserted = insertComposerReference(
-      { text: draft.value, references },
+      { text, references },
       { kind: 'error', id: uuidv4(), context, textOffset: 0 },
-      {
-        textOffset: insertionPoint.value.textOffset,
-        referenceIndex: prompt.value.references
-          .slice(0, insertionPoint.value.referenceIndex)
-          .filter((item) => item.kind !== 'error').length
-      }
+      insertion
     )
     insertionPoint.value = inserted.insertion
     promptOrigin.value = 'error_context'
