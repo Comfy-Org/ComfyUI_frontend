@@ -15,7 +15,9 @@ const KEYBOARD_MOVES: Record<string, { x: number; y: number }> = {
 const size = defineModel<PanelSize>('size')
 const handleRef = useTemplateRef<HTMLElement>('handleRef')
 
-let drag: { panel: PanelMeasure; x: number; y: number } | undefined
+let drag:
+  | { pointerId: number; panel: PanelMeasure; x: number; y: number }
+  | undefined
 
 type PanelMeasure = { start: PanelSize; max: PanelSize; growsUp: boolean }
 
@@ -39,22 +41,28 @@ function resizeFrom(panel: PanelMeasure, pointer: { x: number; y: number }) {
 }
 
 function onPointerDown(event: PointerEvent) {
+  if (drag) return
   const panel = measurePanel()
   if (!panel) return
   handleRef.value?.setPointerCapture(event.pointerId)
-  drag = { panel, x: event.clientX, y: event.clientY }
+  drag = {
+    pointerId: event.pointerId,
+    panel,
+    x: event.clientX,
+    y: event.clientY
+  }
 }
 
 function onPointerMove(event: PointerEvent) {
-  if (!drag) return
+  if (drag?.pointerId !== event.pointerId) return
   resizeFrom(drag.panel, {
     x: event.clientX - drag.x,
     y: event.clientY - drag.y
   })
 }
 
-function onPointerEnd() {
-  drag = undefined
+function onPointerEnd(event: PointerEvent) {
+  if (drag?.pointerId === event.pointerId) drag = undefined
 }
 
 function onKeydown(event: KeyboardEvent) {
