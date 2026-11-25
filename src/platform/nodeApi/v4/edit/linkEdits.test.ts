@@ -137,19 +137,18 @@ describe('link edits', () => {
     })
 
     it.for([
-      ['an input in place of the output', 'swap'],
-      ['a node in place of a slot', 'node'],
-      ['nothing', 'nothing']
-    ])('refuses %s', ([, how]) => {
-      const args =
-        how === 'swap'
-          ? [into(targetHandle, 'pixels'), out('image')]
-          : how === 'node'
-            ? [sourceHandle, into(targetHandle, 'pixels')]
-            : [out('image'), undefined]
-
+      {
+        name: 'an input in place of the output',
+        args: () => [into(targetHandle, 'pixels'), out('image')]
+      },
+      {
+        name: 'a node in place of a slot',
+        args: () => [sourceHandle, into(targetHandle, 'pixels')]
+      },
+      { name: 'nothing', args: () => [out('image'), undefined] }
+    ])('refuses $name', ({ args }) => {
       expectRefusal(
-        () => Reflect.apply(edit.connect, undefined, args),
+        () => Reflect.apply(edit.connect, undefined, args()),
         'connect'
       )
       expect(steps).toEqual([])
@@ -264,22 +263,28 @@ describe('link edits', () => {
     })
 
     it.for([
-      [
-        'a target for an input',
-        () => [into(targetHandle, 'pixels'), otherHandle]
-      ],
-      [
-        'a target that is not a node handle',
-        () => [out('image'), String(other.id)]
-      ],
-      ['an id that is not text', () => [out('image')]]
-    ] as const)('refuses %s', ([name, args]) => {
-      const call =
-        name === 'an id that is not text'
-          ? () => Reflect.apply(out('image').disconnect, undefined, [5])
-          : () => Reflect.apply(edit.disconnect, undefined, [...args()])
-
-      expectRefusal(call, 'disconnect')
+      {
+        name: 'a target for an input',
+        refused: () =>
+          Reflect.apply(edit.disconnect, undefined, [
+            into(targetHandle, 'pixels'),
+            otherHandle
+          ])
+      },
+      {
+        name: 'a target that is not a node handle',
+        refused: () =>
+          Reflect.apply(edit.disconnect, undefined, [
+            out('image'),
+            String(other.id)
+          ])
+      },
+      {
+        name: 'an id that is not text',
+        refused: () => Reflect.apply(out('image').disconnect, undefined, [5])
+      }
+    ])('refuses $name', ({ refused }) => {
+      expectRefusal(refused, 'disconnect')
       expect([target.isInputConnected(0), other.isInputConnected(0)]).toEqual([
         true,
         true
