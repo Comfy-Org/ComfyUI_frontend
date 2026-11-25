@@ -276,6 +276,14 @@ function withCloudRefusalReason(promptError: PromptError, error: unknown) {
     : promptError
 }
 
+function growToContent(node: LGraphNode, snapTo: number): void {
+  const size = node.computeSize()
+  size[0] = Math.max(node.size[0], size[0])
+  size[1] = Math.max(node.size[1], size[1])
+  snapPoint(size, snapTo, 'ceil')
+  node.setSize(size)
+}
+
 function isMeshModelFile(file: File): boolean {
   const name = file.name.toLowerCase()
   return SUPPORTED_MESH_EXTENSIONS.has(name.slice(name.lastIndexOf('.')))
@@ -1707,11 +1715,7 @@ export class ComfyApp implements IComfyApp {
           : 0
         withGraphIntentSource('load', () =>
           forEachNode(graph, (node) => {
-            const size = node.computeSize()
-            size[0] = Math.max(node.size[0], size[0])
-            size[1] = Math.max(node.size[1], size[1])
-            snapPoint(size, snapTo, 'ceil')
-            node.setSize(size)
+            if (!restoreHistory) growToContent(node, snapTo)
             if (node.widgets) {
               for (const widget of node.widgets) {
                 if (

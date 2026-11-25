@@ -450,7 +450,13 @@ Host changes outside the folder:
   document or, on the import paths, together with `endDocument`, and
   `beforeHistoryRestore(graph, state)` and `afterHistoryRestore()` around
   configuring an undo or redo. `restoreHistory` gains a JSDoc saying
-  extensions must not set it.
+  extensions must not set it. An undo or redo keeps the node sizes of the
+  state it restores: the load no longer grows each node to its content
+  (`computeSize()`) as it does for a saved document. That state was taken
+  from the live graph, so its sizes already fit the content; what a rebuilt
+  node computes before a pack fits it again (a mounted widget whose height
+  the pack sets from a `ResizeObserver`) is larger, and growing to it made
+  the pack's fit a new undo step that emptied the redo queue.
 - `GraphCanvas.vue`, `src/scripts/app.ts`, `themeService.ts` and
   `extensionLoader.ts` make every call into the API through
   `useNodeApiHost()` (decision 7).

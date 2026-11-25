@@ -92,8 +92,8 @@ export interface LoadGraphDataOptions {
   /** Graph to load, produced at the front of the queue; undefined skips the load. */
   resolveGraphData?: () => ComfyWorkflowJSON | undefined
   /**
-   * Set by the change tracker when an undo or redo rebuilds the open document; keeps mounted node sizes
-   * and API handles. Extensions must not set it.
+   * Set by the change tracker when an undo or redo rebuilds the open document; keeps the saved and mounted node
+   * sizes and API handles. Extensions must not set it.
    */
   restoreHistory?: boolean
 }
