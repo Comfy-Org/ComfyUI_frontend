@@ -47,6 +47,7 @@ import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 
 import GraphCanvas from './GraphCanvas.vue'
+import { withoutPublishedApi } from '@/platform/nodeApi/v4/__tests__/publishedApi'
 const distribution = vi.hoisted(() => ({ isCloud: false }))
 vi.mock(import('@/platform/distribution/types'), () => ({
   DISTRIBUTION: 'localhost' as const,
@@ -303,9 +304,7 @@ it('does not expose a disposed canvas after custom themes finish loading', async
 })
 
 describe('GraphCanvas node API', () => {
-  beforeEach(() => {
-    delete window.comfy_v4
-  })
+  beforeEach(withoutPublishedApi)
 
   it('publishes the node API before extension modules load', async () => {
     const seenWhileLoading = vi.fn()

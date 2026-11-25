@@ -6,14 +6,12 @@ import { hostNodeDef } from '@/platform/nodeApi/v4/defs/__fixtures__/hostNodeTyp
 import { useLitegraphService } from '@/services/litegraphService'
 import { stubCanvasGetContext } from '@/utils/__tests__/canvasTestUtils'
 
+import { publishedApi } from './__tests__/publishedApi'
 import { registerPublishedTestPack } from './__tests__/testPack'
-import { useComfyApiStore } from './comfyApiStore'
 
 describe('pack menu entries on the host menu path', () => {
   it('reach the menu the canvas builds for a node, which both renderers open', async () => {
-    useComfyApiStore().publish()
-    const { comfy_v4: comfy } = window
-    assert(comfy)
+    const comfy = publishedApi()
     const packId = registerPublishedTestPack(comfy)
     comfy.defs.extend(packId, 'MenuHost', (builder) =>
       builder.addMenuItem({ label: 'From a pack', run: () => {} })

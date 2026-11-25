@@ -21,15 +21,9 @@ import { uploadImageExtension } from '@/extensions/core/uploadImage'
 import { app } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
 
+import { publishedApi, withoutPublishedApi } from './__tests__/publishedApi'
 import { registerPublishedTestPack } from './__tests__/testPack'
 import { useComfyApiStore } from './comfyApiStore'
-
-function publishedApi() {
-  useComfyApiStore().publish()
-  const { comfy_v4 } = window
-  assert(comfy_v4)
-  return comfy_v4
-}
 
 function showOnCanvas(graph: LGraph) {
   const previousCanvas = app.canvasOrUndefined
@@ -42,9 +36,7 @@ function showOnCanvas(graph: LGraph) {
 }
 
 describe("the app's node API", () => {
-  beforeEach(() => {
-    delete window.comfy_v4
-  })
+  beforeEach(withoutPublishedApi)
 
   it('publishes the same API however often it is published', () => {
     const first = publishedApi()

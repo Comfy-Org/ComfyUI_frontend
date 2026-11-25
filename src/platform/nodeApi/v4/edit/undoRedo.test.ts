@@ -10,8 +10,8 @@ import {
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
-import { useComfyApiStore } from '@/platform/nodeApi/v4/comfyApiStore'
 import type { Comfy, NodeHandle } from '@/platform/nodeApi/v4/types'
+import { publishedApi } from '@/platform/nodeApi/v4/__tests__/publishedApi'
 
 vi.mock(import('@/scripts/app'))
 vi.mock(import('@/scripts/api'))
@@ -51,10 +51,7 @@ describe('edits through the real change tracker', () => {
       tracker.reset(fromAny(app.rootGraph.serialize()))
       return true
     })
-    delete window.comfy_v4
-    useComfyApiStore().publish()
-    assert(window.comfy_v4)
-    comfy = window.comfy_v4
+    comfy = publishedApi()
   })
 
   function handleOf(node: LGraphNode): NodeHandle {

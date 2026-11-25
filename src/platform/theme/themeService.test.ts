@@ -7,7 +7,6 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { BUILT_IN_THEME_PRESETS } from '@comfyorg/theme-core/builtInThemePresets'
 import { themeSchema } from '@comfyorg/theme-core/themePresetSchema'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { useComfyApiStore } from '@/platform/nodeApi/v4/comfyApiStore'
 import { hostNodeDef } from '@/platform/nodeApi/v4/defs/__fixtures__/hostNodeTypes'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { ComfyApp } from '@/scripts/app'
@@ -16,6 +15,7 @@ import {
   useThemeService
 } from '@/platform/theme/themeService'
 import { useThemeStore } from '@/platform/theme/themeStore'
+import { publishedApi } from '@/platform/nodeApi/v4/__tests__/publishedApi'
 
 vi.mock(import('@/scripts/app'), async () => {
   const { fromPartial } = await import('@total-typescript/shoehorn')
@@ -504,12 +504,7 @@ describe('pack colors across palettes', () => {
     useNodeDefStore().updateNodeDefs([
       hostNodeDef('PipeMaker', { output: ['PACK_PIPE'], output_name: ['pipe'] })
     ])
-    useComfyApiStore().publish()
-    const published = window.comfy_v4
-    assert(published)
-    onTestFinished(() => {
-      delete window.comfy_v4
-    })
+    const published = publishedApi()
     published.defs.setTypeColor('PACK_PIPE', '#a1b2c3')
 
     await useThemeService().setActiveTheme('dark')

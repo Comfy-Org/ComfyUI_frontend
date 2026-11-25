@@ -7,7 +7,7 @@ import { app } from '@/scripts/app'
 
 import { createNodeApiHost, useNodeApiHost } from './nodeApiHost'
 import type { VersionHost } from './shared/versionHost'
-import { publishedApi } from './v4/__tests__/publishedApi'
+import { publishedApi, withoutPublishedApi } from './v4/__tests__/publishedApi'
 import { moduleUrl, TEST_PACK } from './v4/__tests__/testPack'
 import { createComfyApi } from './v4/comfyApi'
 import { useComfyApiStore } from './v4/comfyApiStore'
@@ -43,7 +43,7 @@ describe('the node API host', () => {
   let host: ReturnType<typeof createNodeApiHost>
 
   beforeEach(() => {
-    delete window.comfy_v4
+    withoutPublishedApi()
     graph = new LGraph()
     graph.add(new LGraphNode('Kept'))
     showOnCanvas(graph)
