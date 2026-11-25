@@ -116,17 +116,16 @@ function convertToMenuItem(option: MenuOption): NodeMenuItem {
       icon: option.icon,
       disabled: option.disabled,
       shortcut: option.shortcut,
-      items: option.submenu.map(
-        (sub): NodeMenuItem =>
-          isSubMenuOption(sub)
-            ? {
-                label: sub.label,
-                icon: sub.icon,
-                color: sub.color,
-                disabled: sub.disabled,
-                command: sub.action
-              }
-            : { separator: true }
+      items: option.submenu.map((sub): NodeMenuItem =>
+        isSubMenuOption(sub)
+          ? {
+              label: sub.label,
+              icon: sub.icon,
+              color: sub.color,
+              disabled: sub.disabled,
+              command: sub.action
+            }
+          : { separator: true }
       )
     }
   }

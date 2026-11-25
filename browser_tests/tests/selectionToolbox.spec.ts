@@ -259,7 +259,9 @@ test.describe('Selection Toolbox', { tag: ['@screenshot', '@ui'] }, () => {
     await test.step('align from the More Options menu', async () => {
       await comfyPage.canvasOps.clickEmptySpace()
       await comfyPage.nodeOps.selectNodes(titles)
-      await page.getByTestId('more-options-button').click()
+      await comfyPage.selectionToolbox
+        .getByRole('button', { name: 'More Options', exact: true })
+        .click()
       await comfyPage.contextMenu.menuItem('Arrange').click()
       const arrange = page.getByRole('menu', { name: 'Arrange', exact: true })
       await arrange

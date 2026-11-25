@@ -296,10 +296,7 @@ describe('LiteGraph menu conversion', () => {
 
     expect(LiteGraph.ContextMenu).toBe(original)
     const submenu = options[0].submenu?.filter(isSubMenuOption)
-    expect(submenu?.map((option) => option.label)).toEqual([
-      'GLB',
-      'OBJ'
-    ])
+    expect(submenu?.map((option) => option.label)).toEqual(['GLB', 'OBJ'])
     submenu?.[1].action()
     expect(callback.mock.calls[0]?.[0]).toBe('OBJ')
   })
