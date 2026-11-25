@@ -135,6 +135,10 @@ test.describe('Vue Upload Widgets', { tag: '@vue-nodes' }, () => {
         )
         await dropdown.open()
         await expect(dropdown.menu).toBeVisible()
+        await expect(
+          dropdown.popover,
+          'Picker opens below the trigger, so dragging down grows it'
+        ).toHaveAttribute('data-side', 'bottom')
         const box = async () => (await dropdown.popover.boundingBox())!
         const before = await box()
 
