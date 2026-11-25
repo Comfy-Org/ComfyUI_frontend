@@ -17,8 +17,11 @@ test.describe(
       })
 
       await test.step('Open the real Cloud sign-in page for the workflow', async () => {
-        const cloudTabPromise = comfyPage.page.waitForEvent('popup')
         await comfyPage.actionbar.checkCloudCompatibility()
+        const cloudTabPromise = comfyPage.page.waitForEvent('popup')
+        await comfyPage.page
+          .getByRole('button', { name: 'Open on Comfy Cloud', exact: true })
+          .click()
         const cloudTab = await cloudTabPromise
         await expect
           .poll(() => new URL(cloudTab.url()).origin)
@@ -44,8 +47,11 @@ test.describe(
         await comfyPage.workflow.loadWorkflow(
           'openOnCloud/01-runnable-on-cloud'
         )
-        const cloudTabPromise = comfyPage.page.waitForEvent('popup')
         await comfyPage.actionbar.checkCloudCompatibility()
+        const cloudTabPromise = comfyPage.page.waitForEvent('popup')
+        await comfyPage.page
+          .getByRole('button', { name: 'Open on Comfy Cloud', exact: true })
+          .click()
         const cloudTab = await cloudTabPromise
 
         await test.step('Sign in with email in the Cloud tab', async () => {
