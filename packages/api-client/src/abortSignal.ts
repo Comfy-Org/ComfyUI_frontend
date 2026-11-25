@@ -38,3 +38,28 @@ export function createTimeoutSignal(milliseconds: number): AbortSignal {
   )
   return controller.signal
 }
+
+/** Native `signal.throwIfAborted()` is missing on Chrome < 100 and Safari < 15.4. */
+export function throwIfAborted(signal: AbortSignal | undefined): void {
+  if (!signal?.aborted) return
+  throw signal.reason === undefined
+    ? new DOMException('This operation was aborted', 'AbortError')
+    : signal.reason
+}
+
+/** Stops waiting on an operation whose underlying API does not accept a signal. */
+export function awaitWithAbort<T>(
+  operation: Promise<T>,
+  signal?: AbortSignal
+): Promise<T> {
+  if (!signal) return operation
+  return new Promise((resolve, reject) => {
+    const onAbort = () =>
+      reject(signal.reason ?? new DOMException('Aborted', 'AbortError'))
+    if (signal.aborted) onAbort()
+    else signal.addEventListener('abort', onAbort, { once: true })
+    void operation
+      .then(resolve, reject)
+      .finally(() => signal.removeEventListener('abort', onAbort))
+  })
+}

@@ -78,10 +78,15 @@ const isIntegratedTabBar = computed(
   () => settingStore.get('Comfy.UI.TabBarLayout') !== 'Legacy'
 )
 const isSignedIn = computed(() => isCloud || isLoggedIn.value)
-const showCurrentUser = computed(
-  () => isSignedIn.value && (!flags.billingNewUxEnabled || isBuilderMode.value)
+const isProfileInTopbar = computed(
+  () => !flags.billingNewUxEnabled || isBuilderMode.value
 )
-const showLoginButton = computed(() => !isSignedIn.value)
+const showCurrentUser = computed(
+  () => isSignedIn.value && isProfileInTopbar.value
+)
+const showLoginButton = computed(
+  () => !isSignedIn.value && isProfileInTopbar.value
+)
 const comfyAgentNotReady = computed(() =>
   agentPanelStore.enabled || agentPanelStore.comfyAgent?.state === 'ready'
     ? undefined
@@ -90,7 +95,7 @@ const comfyAgentNotReady = computed(() =>
 const showAgentEntry = computed(
   () =>
     (agentPanelStore.enabled || comfyAgentNotReady.value !== undefined) &&
-    !(agentPanelStore.isOpen && isChecking.value)
+    !(agentPanelStore.isVisible && isChecking.value)
 )
 
 function openFeedback() {
@@ -110,7 +115,6 @@ async function onAgentEntryClick(): Promise<void> {
       return
     }
 
-    agentPanelStore.suppressRestoredOpen()
     await withConsent('button_click', () => {
       if (!agentPanelStore.enabled) return
       useTelemetry()?.trackAgentEntryButtonClicked({

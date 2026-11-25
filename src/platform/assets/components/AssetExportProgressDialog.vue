@@ -8,8 +8,8 @@ import Button from '@comfyorg/design-system/button/Button'
 import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
 import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
 import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
-import type { AssetExport } from '@/stores/assetExportStore'
-import { useAssetExportStore } from '@/stores/assetExportStore'
+import type { AssetExport } from '@/platform/assets/stores/assetExportStore'
+import { useAssetExportStore } from '@/platform/assets/stores/assetExportStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { t } = useI18n()

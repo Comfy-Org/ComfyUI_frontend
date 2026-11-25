@@ -25,7 +25,8 @@ jobs:
     if: >
       (github.event_name == 'pull_request_target' &&
        github.event.pull_request.merged == true &&
-       contains(github.event.pull_request.labels.*.name, 'needs-backport')) ||
+       contains(github.event.pull_request.labels.*.name, 'needs-backport') &&
+       (github.event.action == 'closed' || github.event.label.name == 'needs-backport')) ||
       github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     permissions:
@@ -75,74 +76,17 @@ jobs:
           # which silently aborted the whole job (see PR #12804 backport).
           token: ${{ secrets.PR_GH_TOKEN }}
 
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Resolve viable release targets
+        id: viable
+        uses: ./.github/actions/core-release-targets
+
       - name: Configure git
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-
-      - name: Collect backport targets
-        id: targets
-        env:
-          GH_REPO: ${{ github.repository }}
-        run: |
-          TARGETS=()
-          declare -A SEEN=()
-
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            LABELS=$(gh pr view ${{ inputs.pr_number }} --json labels | jq -r '.labels[].name')
-          else
-            LABELS=$(jq -r '.pull_request.labels[].name' "$GITHUB_EVENT_PATH")
-          fi
-
-          add_target() {
-            local label="$1"
-            local target="$2"
-
-            if [ -z "$target" ]; then
-              return
-            fi
-
-            target=$(echo "$target" | xargs)
-
-            if [ -z "$target" ] || [ -n "${SEEN[$target]}" ]; then
-              return
-            fi
-
-            if git ls-remote --exit-code origin "$target" >/dev/null 2>&1; then
-              TARGETS+=("$target")
-              SEEN["$target"]=1
-            else
-              echo "::warning::Label '${label}' references missing branch '${target}'"
-            fi
-          }
-
-          while IFS= read -r label; do
-            [ -z "$label" ] && continue
-
-            if [[ "$label" =~ ^branch:(.+)$ ]]; then
-              add_target "$label" "${BASH_REMATCH[1]}"
-            elif [[ "$label" =~ ^backport:(.+)$ ]]; then
-              add_target "$label" "${BASH_REMATCH[1]}"
-            elif [[ "$label" =~ ^core\/([0-9]+)\.([0-9]+)$ ]]; then
-              SAFE_MAJOR="${BASH_REMATCH[1]}"
-              SAFE_MINOR="${BASH_REMATCH[2]}"
-              add_target "$label" "core/${SAFE_MAJOR}.${SAFE_MINOR}"
-            elif [[ "$label" =~ ^cloud\/([0-9]+)\.([0-9]+)$ ]]; then
-              SAFE_MAJOR="${BASH_REMATCH[1]}"
-              SAFE_MINOR="${BASH_REMATCH[2]}"
-              add_target "$label" "cloud/${SAFE_MAJOR}.${SAFE_MINOR}"
-            elif [[ "$label" =~ ^[0-9]+\.[0-9]+$ ]]; then
-              add_target "$label" "core/${label}"
-            fi
-          done <<< "$LABELS"
-
-          if [ "${#TARGETS[@]}" -eq 0 ]; then
-            echo "::error::No backport targets found (use labels like '1.24' or 'branch:release/hotfix')"
-            exit 1
-          fi
-
-          echo "targets=${TARGETS[*]}" >> $GITHUB_OUTPUT
-          echo "Found backport targets: ${TARGETS[*]}"
 
       - name: Filter already backported targets
         id: filter-targets
@@ -154,14 +98,13 @@ jobs:
           PR_NUMBER: >-
             ${{ github.event_name == 'workflow_dispatch' && inputs.pr_number
             || github.event.pull_request.number }}
-          REQUESTED_TARGETS: ${{ steps.targets.outputs.targets }}
+          ACTIVE_CORE_TARGETS: ${{ steps.viable.outputs.active }}
         run: |
           set -euo pipefail
 
-          if [ -z "$REQUESTED_TARGETS" ]; then
-            echo "skip=true" >> $GITHUB_OUTPUT
-            echo "pending-targets=" >> $GITHUB_OUTPUT
-            exit 0
+          if [ -z "$ACTIVE_CORE_TARGETS" ]; then
+            echo "::error::No viable core release targets found"
+            exit 1
           fi
 
           FORCE_RERUN=false
@@ -175,10 +118,10 @@ jobs:
 
           PENDING=()
           SKIPPED=()
-          MERGED=()
+          HAS_OPEN_BACKPORT=false
           REUSED=()
 
-          for target in $REQUESTED_TARGETS; do
+          for target in $ACTIVE_CORE_TARGETS; do
             SAFE_TARGET=$(echo "$target" | tr '/' '-')
             BACKPORT_BRANCH="backport-${PR_NUMBER}-to-${SAFE_TARGET}"
 
@@ -187,20 +130,22 @@ jobs:
               continue
             fi
 
-            MERGED_PR=$(
+            EXISTING_PR=$(
               gh pr list \
-                --state merged \
+                --state all \
                 --head "${BACKPORT_BRANCH}" \
                 --base "${target}" \
-                --json number,isCrossRepository \
-                --jq 'map(select(.isCrossRepository | not)) |
-                  if length > 0 then .[0].number else "" end'
+                --json number,state,isCrossRepository \
+                --jq 'map(select(.isCrossRepository | not))
+                  | sort_by(if .state == "MERGED" then 0 elif .state == "OPEN" then 1 else 2 end)
+                  | .[0] | select(. != null) | [.state, .number] | @tsv'
             )
-            if [ -n "$MERGED_PR" ]; then
-              SKIPPED+=("${target} (merged PR #${MERGED_PR})")
-              MERGED+=("$target")
-              continue
-            fi
+            read -r PR_STATE BACKPORT_PR_NUMBER <<< "$EXISTING_PR"
+            case "$PR_STATE" in
+              MERGED) SKIPPED+=("${target} (merged PR #${BACKPORT_PR_NUMBER})"); continue ;;
+              OPEN) SKIPPED+=("${target} (PR #${BACKPORT_PR_NUMBER})"); HAS_OPEN_BACKPORT=true; continue ;;
+              CLOSED) SKIPPED+=("${target} (closed PR #${BACKPORT_PR_NUMBER})"); continue ;;
+            esac
 
             MANUAL_PR=$(
               gh pr list \
@@ -213,7 +158,7 @@ jobs:
                   ($target | ascii_downcase) as $t |
                   map(select(
                     (.isCrossRepository | not) and
-                    (.headRefName | test("^backport-[0-9]+-to-") | not) and
+                    (.headRefName | test("^backport-[0-9]+-to-") and (test("^backport-\($pr)-to-") | not) | not) and
                     (.title | ascii_downcase |
                       startswith("[backport \($t)]") or
                       startswith("[\($t)]")) and
@@ -228,24 +173,11 @@ jobs:
             )
             if [ -n "$MANUAL_PR" ]; then
               SKIPPED+=("${target} (merged PR #${MANUAL_PR}, made by hand)")
-              MERGED+=("$target")
               continue
             fi
 
             if printf '%s\n' "${EXISTING_BRANCHES[@]:-}" |
               grep -Fq "refs/heads/${BACKPORT_BRANCH}"; then
-              OPEN_PR=$(
-                gh pr list \
-                  --state open \
-                  --head "${BACKPORT_BRANCH}" \
-                  --json number \
-                  --jq 'if length > 0 then .[0].number else "" end'
-              )
-              if [ -n "$OPEN_PR" ]; then
-                SKIPPED+=("${target} (PR #${OPEN_PR})")
-                continue
-              fi
-
               REUSED+=("$BACKPORT_BRANCH")
             fi
 
@@ -259,10 +191,10 @@ jobs:
           echo "pending-targets=${PENDING_JOINED}" >> $GITHUB_OUTPUT
           echo "reused-branches=${REUSED[*]:-}" >> $GITHUB_OUTPUT
 
-          if [ -z "$PENDING_JOINED" ] && [ "${#MERGED[@]}" -eq "${#SKIPPED[@]}" ]; then
-            echo "all-merged=true" >> $GITHUB_OUTPUT
+          if [ -z "$PENDING_JOINED" ] && [ "$HAS_OPEN_BACKPORT" = false ]; then
+            echo "all-resolved=true" >> $GITHUB_OUTPUT
           else
-            echo "all-merged=false" >> $GITHUB_OUTPUT
+            echo "all-resolved=false" >> $GITHUB_OUTPUT
           fi
 
           if [ -z "$PENDING_JOINED" ]; then
@@ -288,7 +220,7 @@ jobs:
           PR_NUMBER: ${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.pull_request.number }}
           GH_REPO: ${{ github.repository }}
           PENDING_TARGETS: ${{ steps.filter-targets.outputs.pending-targets }}
-        run: bash scripts/cicd/pr-backport-commits.sh
+        run: bash tools/ci/src/cicd/pr-backport-commits.sh
 
       - name: Create PR for each successful backport
         id: create-prs
@@ -548,12 +480,9 @@ jobs:
             fi
           done
 
-      # Only clear needs-backport once every target succeeded. If any target
-      # failed, the label stays so a re-run retries the remainder (targets that
-      # already landed are skipped by "Filter already backported targets").
       - name: Remove needs-backport label
         if: >-
-          steps.filter-targets.outputs.all-merged == 'true' ||
+          steps.filter-targets.outputs.all-resolved == 'true' ||
           (steps.filter-targets.outputs.skip != 'true' &&
            steps.backport.outputs.failed == '' &&
            steps.create-prs.outputs.pr-create-failed == '')
@@ -602,78 +531,3 @@ jobs:
             echo "::error::Backport branches were pushed but PR creation failed: ${PR_CREATE_FAILED}"
           fi
           exit 1
-
-  warn-missing-needs-backport:
-    if: >
-      github.event_name == 'pull_request_target' &&
-      github.event.pull_request.merged == true &&
-      !contains(github.event.pull_request.labels.*.name, 'needs-backport')
-    runs-on: ubuntu-latest
-    permissions:
-      issues: write
-      pull-requests: read
-    steps:
-      - name: Comment when release labels lack needs-backport
-        env:
-          # Reads use the job token so a busy hour on the shared token cannot
-          # fail the merge. Only the comment needs the shared token: the job
-          # token is refused with HTTP 403 when posting on this repo.
-          GH_TOKEN: ${{ github.token }}
-          POST_TOKEN: ${{ secrets.PR_GH_TOKEN || secrets.GH_TOKEN }}
-          GH_REPO: ${{ github.repository }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: |
-          set -euo pipefail
-
-          LABELS=$(gh api --paginate "repos/${GH_REPO}/issues/${PR_NUMBER}/labels" --jq '.[].name' || GH_TOKEN="${POST_TOKEN}" gh api --paginate "repos/${GH_REPO}/issues/${PR_NUMBER}/labels" --jq '.[].name')
-          if grep -qx 'needs-backport' <<<"${LABELS}"; then
-            echo "PR #${PR_NUMBER} now has needs-backport; the backport job handles it."
-            exit 0
-          fi
-
-          RELEASE_LABEL='^(core|cloud)/[0-9]+\.[0-9]+$'
-
-          # Most merges carry no release label. Stop before the comment
-          # lookup so they cost one call against the shared token's limit.
-          if ! grep -qE -- "${RELEASE_LABEL}" <<<"${LABELS}"; then
-            echo "PR #${PR_NUMBER} has no release labels."
-            exit 0
-          fi
-
-          WARNED=$(gh api --paginate \
-            "repos/${GH_REPO}/issues/${PR_NUMBER}/comments" --jq '.[]
-              | select(.user.login == "comfy-pr-bot" or .user.login == "github-actions[bot]")
-              | (.body // "")
-              | capture("^<!-- pr-backport:missing-needs-backport (?<labels>[^>]*) -->").labels
-              | split(" ")[]')
-
-          PENDING=()
-          while IFS= read -r label; do
-            if [[ ! "${label}" =~ ${RELEASE_LABEL} ]] ||
-              grep -qxF -- "${label}" <<<"${WARNED}"; then
-              continue
-            fi
-            BACKPORT_BRANCH="backport-${PR_NUMBER}-to-${label//\//-}"
-            BACKPORT_PRS=$(gh api \
-              "repos/${GH_REPO}/pulls?state=all&base=${label}&head=${GH_REPO%%/*}:${BACKPORT_BRANCH}" \
-              --jq 'map(select(.state == "open" or .merged_at != null)) | length')
-            if [ "${BACKPORT_PRS}" -eq 0 ]; then
-              PENDING+=("${label}")
-            fi
-          done <<<"${LABELS}"
-
-          if [ "${#PENDING[@]}" -eq 0 ]; then
-            echo "No unwarned release labels without a backport on PR #${PR_NUMBER}."
-            exit 0
-          fi
-
-          LABEL_LIST=$(printf '`%s` ' "${PENDING[@]}")
-          BODY="<!-- pr-backport:missing-needs-backport ${PENDING[*]} -->
-          **Backport did not run.** This PR has release labels with no backport (${LABEL_LIST% }) and no \`needs-backport\` label, which is what starts the PR Backport workflow.
-
-          To backport, add the \`needs-backport\` label. If the backport is intentionally on hold, ignore this comment."
-
-          if ! GH_TOKEN="${POST_TOKEN}" gh api --silent --method POST \
-            "repos/${GH_REPO}/issues/${PR_NUMBER}/comments" -f "body=${BODY}"; then
-            echo "::warning::Could not comment on PR #${PR_NUMBER} (it may be locked, or the token may be out of quota). Backport did not run for ${PENDING[*]}: add the needs-backport label to start it."
-          fi

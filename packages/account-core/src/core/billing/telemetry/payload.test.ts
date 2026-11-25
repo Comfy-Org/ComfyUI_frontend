@@ -133,8 +133,8 @@ describe('the billing payload allowlist', () => {
       | BillingTelemetryEvent
       | {
           operation: 'capability_read'
-          stage: 'succeeded'
-          outcome: 'success'
+          stage: 'failed'
+          outcome: 'failure'
           unlisted_field: string
         }
 

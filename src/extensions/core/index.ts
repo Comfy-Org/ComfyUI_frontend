@@ -1,5 +1,4 @@
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { useSessionCookie } from '@/platform/auth/session/useSessionCookie'
 import { clearOAuthRequestId } from '@/platform/cloud/oauth/oauthState'
 import { isCloud, isNightly } from '@/platform/distribution/types'
 import { useExtensionService } from '@/platform/extensions/services/extensionService'
@@ -20,6 +19,7 @@ import { imageCompareExtension } from './imageCompare'
 import { imageCompositorExtension } from './imageCompositor'
 import { imageCropExtension } from './imageCrop'
 import { layerEditorExtension } from './layerEditor'
+import { legacyVhsUnbatchWarningExtension } from './legacyVhsUnbatchWarning'
 import { load3dLazyExtension } from './load3d/load3dLazy'
 import { maskEditorExtension } from '@/renderer/extensions/maskEditor/extension'
 import { noteNodeExtension } from './noteNode'
@@ -54,6 +54,7 @@ const baseCoreExtensions: ComfyExtension[] = [
   imageCompositorExtension,
   imageCropExtension,
   layerEditorExtension,
+  legacyVhsUnbatchWarningExtension,
   load3dLazyExtension,
   maskEditorExtension,
   noteNodeExtension,
@@ -128,12 +129,27 @@ function wireSessionCookieLogoutFallback(): () => void {
   const { onUserLogout } = useCurrentUser()
   return onUserLogout(() => {
     clearOAuthRequestId()
-    void useSessionCookie().deleteSession()
+  })
+}
+
+function failAgentPanelLoad(error: Error) {
+  if (__DISTRIBUTION__ !== 'cloud') throw error
+  reportError(error, {
+    surface: 'agent',
+    errorType: 'error_loading_agent_panel_extension'
   })
 }
 
 async function loadAgentPanelExtension() {
-  const agentPanelModule: unknown = await import('./agentPanel')
+  let agentPanelModule: unknown
+  try {
+    agentPanelModule = await import('./agentPanel')
+  } catch (cause) {
+    failAgentPanelLoad(
+      new Error('Failed to load the Agent panel extension module', { cause })
+    )
+    return
+  }
   const registerAgentPanelExtension =
     typeof agentPanelModule === 'object' &&
     agentPanelModule !== null &&
@@ -142,14 +158,11 @@ async function loadAgentPanelExtension() {
       : undefined
 
   if (typeof registerAgentPanelExtension !== 'function') {
-    const error = new TypeError(
-      'Agent panel extension module did not provide a registration function'
+    failAgentPanelLoad(
+      new TypeError(
+        'Agent panel extension module did not provide a registration function'
+      )
     )
-    if (__DISTRIBUTION__ !== 'cloud') throw error
-    reportError(error, {
-      surface: 'agent',
-      errorType: 'error_loading_agent_panel_extension'
-    })
     return
   }
 

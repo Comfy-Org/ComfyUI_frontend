@@ -4,19 +4,18 @@
 
 All releases use `release-version-bump.yaml`. Effects differ by bump type:
 
-| Bump       | Target     | Creates branches?                     | GitHub release               |
-| ---------- | ---------- | ------------------------------------- | ---------------------------- |
-| Minor      | `main`     | `core/` + `cloud/` for previous minor | Published, "latest"          |
-| Patch      | `main`     | No                                    | Published, "latest"          |
-| Patch      | `core/X.Y` | No                                    | **Draft** (uncheck "latest") |
-| Prerelease | any        | No                                    | Draft + prerelease           |
+| Bump       | Target     | Creates branches?          | GitHub release               |
+| ---------- | ---------- | -------------------------- | ---------------------------- |
+| Minor      | `main`     | `core/` for previous minor | Published, "latest"          |
+| Patch      | `main`     | No                         | Published, "latest"          |
+| Patch      | `core/X.Y` | No                         | **Draft** (uncheck "latest") |
+| Prerelease | any        | No                         | Draft + prerelease           |
 
 ## Generated API types on release branches
 
 Never hand-edit files under `packages/ingest-types/src`, including in a
 backport. The Cloud repository owns the source OpenAPI contract and generates
-the frontend package for `main` and every active `cloud/x.y` line named in its
-`frontend-version.json`. A release branch must accept that generated contract
+the frontend package. A release branch must accept that generated contract
 or a newer one; unrelated generated changes are expected when a release line
 has fallen behind.
 
@@ -24,8 +23,8 @@ If a backport needs a generated type, update the Cloud OpenAPI source and use
 the typegen automation. Do not copy or recreate one declaration in a generated
 file.
 
-**Minor bump** (e.g. 1.41→1.42): freezes the previous minor into `core/1.41`
-and `cloud/1.41`, branched from the commit _before_ the bump. Nightly patch
+**Minor bump** (e.g. 1.41→1.42): creates `core/1.41` for the previous minor,
+branched from the commit _before_ the bump. Nightly patch
 bumps on `main` are convenience snapshots — no branches created.
 
 The minor bump is scheduled automatically: `release-version-bump.yaml` runs a
@@ -33,7 +32,7 @@ The minor bump is scheduled automatically: `release-version-bump.yaml` runs a
 auto-merge on the resulting `version-bump-*` PR (marked with the
 `weekly-release-cut` label, which exempts it from the nightly stale-PR closer),
 so once its checks pass the merge
-triggers `release-branch-create.yaml` and the `core/` + `cloud/` cut is
+triggers `release-branch-create.yaml` and the `core/` cut is
 hands-off. The separate nightly `0 0 * * *` cron stays a **patch** bump.
 
 **Patch on `core/X.Y`**: publishes a hotfix draft release. Must not be marked
@@ -55,21 +54,22 @@ later ship as v1.40.2). Same commits, no divergence — the branch just prevents
 
 ## Backporting
 
-1. Add `needs-backport` + version label to the merged PR
-2. `pr-backport.yaml` cherry-picks and creates a backport PR
-3. Conflicts produce a comment with details and an agent prompt
+Cloud uses continuous delivery from `main`; numbered cloud release branches
+are retired. Core backports remain available for the current ComfyUI frontend
+pin, upcoming release lines, and previous lines within the 72-hour rollback
+window. Older lines are frozen. See
+[the core backport policy](adr/RELEASES-0059-core-backports-follow-the-consumer-pin.md).
 
-Release labels alone do not start the backport. A merged PR with a
-`core/X.Y` or `cloud/X.Y` label but no `needs-backport` gets a comment saying
-the backport did not run. Each label is warned about once, and labels whose
-target already has an open or merged backport PR are left out.
+Add `needs-backport` before or after merging a PR to `main`. The workflow
+tries to cherry-pick the fix to every eligible core branch. Close a generated
+PR if that branch doesn't need the fix. If a cherry-pick conflicts, the
+workflow comments on the original PR. Resolve the conflict by hand only if
+the branch needs the fix.
 
-To re-check a finished PR, run `pr-backport.yaml` by hand with its PR number.
-The PR does not need `needs-backport` for this. Without `force_rerun`, targets
-with an open or merged backport PR the workflow can find are reported and
-skipped. Every other release label is cherry-picked: a backport that was on
-hold starts, and one whose backport PR was closed without merging is opened
-again. Remove the release label first if that target should stay skipped.
+To retry, run **PR Backport** with the merged PR number. Manual dispatch
+uses the same branch policy and doesn't require a label. Normal runs skip
+generated PRs that are open, merged, or closed. `force_rerun` bypasses these
+checks. To backport to just one branch, cherry-pick there by hand.
 
 ### Desktop partner-node token backports (FRONT-3925)
 
@@ -248,12 +248,11 @@ downgrade or do nothing.
 
 ## Workflows
 
-| Workflow                         | Purpose                                          |
-| -------------------------------- | ------------------------------------------------ |
-| `release-version-bump.yaml`      | Bump version, create Release PR                  |
-| `release-draft-create.yaml`      | Build + publish to GitHub Releases/npm           |
-| `release-branch-create.yaml`     | Create `core/` + `cloud/` branches (minor/major) |
-| `release-weekly-comfyui.yaml`    | Auto-patch, PyPI publish, ComfyUI pin PR         |
-| `pr-backport.yaml`               | Cherry-pick fixes to stable branches             |
-| `cloud-backport-tag.yaml`        | Tag cloud branch merges                          |
-| `pr-assign-release-sheriff.yaml` | Assign the sheriff to backport/release/bot PRs   |
+| Workflow                         | Purpose                                        |
+| -------------------------------- | ---------------------------------------------- |
+| `release-version-bump.yaml`      | Bump version, create Release PR                |
+| `release-draft-create.yaml`      | Build + publish to GitHub Releases/npm         |
+| `release-branch-create.yaml`     | Create `core/` branches (minor/major)          |
+| `release-weekly-comfyui.yaml`    | Auto-patch, PyPI publish, ComfyUI pin PR       |
+| `pr-backport.yaml`               | Cherry-pick fixes to stable branches           |
+| `pr-assign-release-sheriff.yaml` | Assign the sheriff to backport/release/bot PRs |

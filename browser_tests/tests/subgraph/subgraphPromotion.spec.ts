@@ -718,10 +718,7 @@ test(
       const ksampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
 
       const fromSlot = ksampler.getSlot('steps')
-      const toPos = await comfyPage.subgraph
-        .getInputSlot()
-        .getOpenSlotPosition()
-      await fromSlot.dragTo(comfyPage.canvas, { targetPosition: toPos })
+      await fromSlot.dragTo(comfyPage.subgraph.addInputSocket)
       const isConnected = () => comfyPage.vueNodes.isSlotConnected(fromSlot)
       await expect.poll(isConnected).toBe(true)
 
@@ -762,18 +759,6 @@ test(
     const subgraph = await comfyPage.vueNodes.getFixtureByTitle('New Subgraph')
 
     await test.step('Promote both image previews', async () => {
-      await expect
-        .poll(() =>
-          comfyPage.page.evaluate(() =>
-            window.app!.graph.nodes.flatMap((node) =>
-              node.isSubgraphNode()
-                ? node.subgraph.nodes.map((inner) => inner.imgs?.length ?? 0)
-                : []
-            )
-          )
-        )
-        .toEqual([1, 1])
-
       await editor.togglePromotion(subgraph.root, {
         nodeId: '1',
         widgetName: '$$canvas-image-preview',
@@ -814,10 +799,7 @@ test(
       const ksampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
 
       const fromSlot = ksampler.getSlot('steps')
-      const toPos = await comfyPage.subgraph
-        .getInputSlot()
-        .getOpenSlotPosition()
-      await fromSlot.dragTo(comfyPage.canvas, { targetPosition: toPos })
+      await fromSlot.dragTo(comfyPage.subgraph.addInputSocket)
       const isConnected = () => comfyPage.vueNodes.isSlotConnected(fromSlot)
       await expect.poll(isConnected).toBe(true)
 

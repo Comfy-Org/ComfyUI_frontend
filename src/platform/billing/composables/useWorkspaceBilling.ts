@@ -54,6 +54,7 @@ import type {
   BillingActions,
   BillingPortalOutcome,
   BillingState,
+  BillingStatusReadOptions,
   SubscriptionInfo
 } from '@/platform/billing/composables/types'
 
@@ -209,6 +210,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
   const isInitialized = ref(false)
   const isLoading = ref(false)
   const error = ref<string | null>(null)
+  const lastBalanceReadFailed = ref(false)
 
   const statusData = shallowRef<BillingStatusResponse | null>(null)
   const statusReadAuthoritative = ref(true)
@@ -297,6 +299,9 @@ export function useWorkspaceBilling(): WorkspaceBilling {
   const subscriptionPaymentRecovery = computed(
     () => billingPlans.subscriptionPaymentRecovery.value
   )
+  const statusPaymentRecovery = computed(
+    () => statusData.value?.subscription_payment_recovery ?? null
+  )
   const currentTeamCreditStop = computed(
     () => statusData.value?.team_credit_stop ?? null
   )
@@ -370,7 +375,9 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     return adoption
   }
 
-  async function fetchStatus(): Promise<void> {
+  async function fetchStatus(
+    options?: BillingStatusReadOptions
+  ): Promise<void> {
     adoption = Promise.resolve(false)
     const requestId = ++latestBillingReadIds.status
     const workspaceId = workspaceStore.activeWorkspace?.id
@@ -379,7 +386,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     error.value = null
     try {
       const status = rail
-        ? await readOnRail(rail.readStatus, 'getBillingStatus')
+        ? await readOnRail(() => rail.readStatus(options), 'getBillingStatus')
         : await billingApi.getBillingStatus()
       if (
         status === undefined ||
@@ -403,7 +410,9 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     }
   }
 
-  async function fetchBalance(): Promise<void> {
+  async function fetchBalance(
+    options?: BillingStatusReadOptions
+  ): Promise<void> {
     const requestId = ++latestBillingReadIds.balance
     const workspaceId = workspaceStore.activeWorkspace?.id
     const rail: BillingReadRail | null = useBillingReadRail()
@@ -411,16 +420,18 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     error.value = null
     try {
       const balance = rail
-        ? await readOnRail(rail.readBalance, 'getBillingBalance')
+        ? await readOnRail(() => rail.readBalance(options), 'getBillingBalance')
         : await billingApi.getBillingBalance()
       if (
         balance !== undefined &&
         !isStaleBillingRead('balance', requestId, workspaceId)
       ) {
         balanceData.value = balance
+        lastBalanceReadFailed.value = false
       }
     } catch (err) {
       if (isStaleBillingRead('balance', requestId, workspaceId)) return
+      lastBalanceReadFailed.value = true
       error.value =
         err instanceof Error ? err.message : 'Failed to fetch balance'
       throw err
@@ -858,11 +869,13 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     currentPlanSlug,
     teamCreditStops,
     subscriptionPaymentRecovery,
+    statusPaymentRecovery,
     currentTeamCreditStop,
     maxSeats,
     occupiedSeats,
     isLoading,
     error,
+    balanceReadFailed: computed(() => lastBalanceReadFailed.value),
     canAccessSubscriptionFeatures,
     isFreeTier,
     billingStatus,

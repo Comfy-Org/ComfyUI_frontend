@@ -325,16 +325,20 @@ against the whole page. Tag them `@a11y`; they run in the regular projects.
 Merge `accessibilityFixture` from `@e2e/fixtures/accessibilityFixture` with
 `comfyPageFixture`, open the surface through its page object, assert the state
 it must reach, then call
-`accessibility.expectOnlyKnownViolations(['rule-id', …])`.
+`accessibility.expectOnlyKnownViolations({ 'rule-id': elementCount })`. The
+helper waits for running animations and transitions to end before scanning.
 
-- The list allows axe rule IDs on that surface. The assertion fails on any
-  other rule and on a listed rule that no longer fires, so a fix deletes its
-  entry. Never add a rule ID to make a new failure pass; fix the component.
+- Each entry allows that axe rule to fail on exactly that many elements; an
+  unlisted rule allows none. The assertion fails when a rule fails on more
+  elements, and also on fewer, so a fix lowers the count or deletes the entry
+  at zero. Never add a rule ID or raise a count to make a new failure pass; fix
+  the component.
 - For a narrower scan, pass a builder as the second argument, such as
   `accessibility.makeAxeBuilder().include('[role="dialog"]')`. Prefer listing a
   known rule ID to `exclude()`, which drops the element from every rule.
-- The `axe-violations` attachment holds every violation axe reported, known
-  ones included.
+- A failure lists each rule over its count with every failing element; the
+  count cannot say which element is new. The `axe-violations` attachment holds
+  every violation axe reported, known ones included.
 - axe cannot see nodes drawn on the LiteGraph canvas and does not check
   keyboard operation, focus order, or screen-reader output. Cover those with
   behavioral tests.

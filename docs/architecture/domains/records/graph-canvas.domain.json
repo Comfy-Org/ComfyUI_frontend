@@ -7,12 +7,6 @@
       "path": "src/base/common/selectionBounds.ts"
     },
     {
-      "path": "src/composables/useCopy.ts"
-    },
-    {
-      "path": "src/composables/usePaste.ts"
-    },
-    {
       "path": "src/extensions/core/contextMenuFilter.ts"
     },
     {
@@ -56,9 +50,6 @@
     },
     {
       "path": "src/lib/litegraph/src/canvas/captureGesture.ts"
-    },
-    {
-      "path": "src/lib/litegraph/src/canvas/clipboardStorage.ts"
     },
     {
       "path": "src/lib/litegraph/src/canvas/getCanvasContextMenuTarget.ts"
@@ -115,9 +106,6 @@
       "path": "src/types/badgeData.ts"
     },
     {
-      "path": "src/utils/vintageClipboard.ts"
-    },
-    {
       "path": "src/workbench/eventHelpers.ts"
     }
   ],
@@ -162,13 +150,6 @@
       ]
     },
     {
-      "name": "Canvas copy and paste route through clipboard storage and paste media into nodes",
-      "checks": [
-        "src/composables/useCopy.test.ts",
-        "src/composables/usePaste.test.ts"
-      ]
-    },
-    {
       "name": "Node badges derive id, lifecycle, source, and credit parts including pricing inputs and subgraph aggregation",
       "checks": [
         "src/systems/badgeSystem.test.ts",
@@ -194,7 +175,7 @@
       ]
     },
     {
-      "name": "Canvas copy and paste ignore editable targets and text selections",
+      "name": "DOM text selection arbitration preserves editing and collapses outside selections",
       "checks": ["src/workbench/eventHelpers.test.ts"]
     }
   ],

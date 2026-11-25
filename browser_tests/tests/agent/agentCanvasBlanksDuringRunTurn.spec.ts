@@ -13,7 +13,7 @@ import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApi
 import {
   STALE_AFTER_MS,
   SUBSCRIBE_CATCHUP_GRACE_MS
-} from '@/workbench/extensions/agent/crdt/agentCrdtDocLifecycle'
+} from '@/workbench/extensions/agent/crdt/lifecycleTiming'
 
 import {
   agentTest as test,
@@ -226,15 +226,6 @@ async function driveThroughDocReset(
     }
     return route.fulfill(jsonRoute(workflows))
   })
-
-  const picker = panel.getByRole('button', {
-    name: enMessages.agent.switchWorkflow
-  })
-  await picker.click()
-  await page
-    .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
-    .click()
-  await expect(picker).toHaveText('Unsaved Workflow')
 
   await expect.poll(() => hostSocket.connectionCount()).toBeGreaterThan(0)
 

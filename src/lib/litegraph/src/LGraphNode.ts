@@ -35,11 +35,12 @@ import {
   nodePositionView,
   nodeSizeBuffer,
   nodeSizeView,
+  readNodeRenderingSize,
   refreshNodeGeometry,
   setNodePosition,
   setNodeSize
 } from '@/renderer/core/layout/operations/graphLayoutAttachment'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { readMountedNodeSize } from '@/renderer/core/layout/store/mountedNodeSizes'
 import { isSelectedIn, setSelectedIn } from '@/core/selection/selectionStore'
 import { toSelectableKey } from '@/core/selection/selectionState'
 import type {
@@ -50,6 +51,7 @@ import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 import type { DOMWidget, DOMWidgetOptions } from '@/types/domWidget'
 import { useExecutionOrderStore } from '@/stores/executionOrderStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useWidgetComponents } from '@/stores/widgetComponents'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
 import type { GraphScope } from '@comfyorg/graph-model/graphScopeId'
@@ -188,7 +190,12 @@ import {
   diffNamedValuesShadow
 } from './utils/namedValuesShadowDiff'
 import { reportNamedValuesShadowDiff } from './utils/namedValuesShadowDiffTelemetry'
-import { distributeSpace } from './utils/spaceDistribution'
+import { layoutNodeBody } from './utils/nodeBodyLayout'
+import {
+  getWidgetSizing,
+  minRowHeight,
+  widgetRowSizings
+} from './utils/widgetLayout'
 import { truncateText } from './utils/textUtils'
 import { BaseWidget } from './widgets/BaseWidget'
 import { toConcreteWidget } from './widgets/widgetMap'
@@ -641,8 +648,9 @@ export class LGraphNode
 
   /** The fg color used to render the node. */
   get renderingColor(): string {
+    const color = this.color || this.constructor.color
     const baseColor =
-      this.color || this.constructor.color || LiteGraph.NODE_DEFAULT_COLOR
+      typeof color === 'string' && color ? color : LiteGraph.NODE_DEFAULT_COLOR
     return adjustColor(baseColor, { lightness: LiteGraph.nodeLightness })
   }
 
@@ -827,7 +835,7 @@ export class LGraphNode
   declare isLoading?: boolean
   declare isUploading?: boolean
   declare previewMediaType?: 'image' | 'video' | 'audio' | 'model'
-  /** If true, output images are stored but not rendered below the node */
+  /** Only false enables the default executed-output preview in Vue mode. */
   declare hideOutputImages?: boolean
 
   declare preview?: string[]
@@ -932,12 +940,12 @@ export class LGraphNode
    * The size of the node used for rendering.
    */
   get renderingSize(): Size {
-    const renderedSize = refreshNodeGeometry(this)
-    if (!this.flags.collapsed) return renderedSize
-
-    const contentSize = this.graph
-      ? layoutStore.contentSizeOf(this.graph.rootGraph.id, this.id)
-      : undefined
+    const collapsed = !!this.flags.collapsed
+    const contentSize =
+      LiteGraph.vueNodesMode && this.graph
+        ? readMountedNodeSize(this.graph, this.id, { collapsed })
+        : undefined
+    if (!collapsed) return readNodeRenderingSize(this, contentSize)
     return [
       contentSize?.width ??
         this._collapsed_width ??
@@ -1335,6 +1343,8 @@ export class LGraphNode
     )
     const namedValues = restoration.named
     const graphId = this.graph?.rootGraph.id ?? zeroUuid
+    if (info.properties)
+      useWidgetComponents().prepareNode(this.properties, info.properties)
     try {
       useWidgetValueStore().setNodeWidgetRestoration(
         graphId,
@@ -1360,7 +1370,8 @@ export class LGraphNode
         }
 
         let positionalIndex = 0
-        for (const widget of this.widgets) {
+        for (let index = 0; index < this.widgets.length; index++) {
+          const widget = this.widgets[index]
           if (widget.serialize === false) continue
           const restored = useWidgetValueStore().getRestoredWidgetValue(
             graphId,
@@ -1402,6 +1413,8 @@ export class LGraphNode
       clearWidgetRestorationSlots(this)
       useWidgetValueStore().clearNodeWidgetRestoration(graphId, this.id)
     }
+    if (info.properties && this.graph?.getNodeById(this.id) === this)
+      useWidgetComponents().adoptNode(graphId, this.id, this.properties)
   }
 
   /**
@@ -1412,7 +1425,6 @@ export class LGraphNode
   }
 
   serializeFromStoreState(state: NodeState): ISerialisedNode {
-    // create serialization object
     const o: ISerialisedNode = {
       id: serializeNodeId(state.id),
       type: state.type,
@@ -1424,12 +1436,20 @@ export class LGraphNode
       showAdvanced: state.showAdvanced
     }
 
-    // special case for when there were errors
+    o.properties = LiteGraph.cloneObject(state.properties)
+    if (this.graph?.getNodeById(this.id) === this)
+      useWidgetComponents().writeNode(
+        this.graph.rootGraph.id,
+        state.id,
+        o.properties
+      )
+
     if (this.constructor === LGraphNode && state.lastSerialization)
       return {
         ...LiteGraph.cloneObject(state.lastSerialization),
         mode: o.mode,
-        pos: o.pos
+        pos: o.pos,
+        properties: o.properties
       }
 
     o.inputs = state.inputs.map((input, i) =>
@@ -1441,8 +1461,6 @@ export class LGraphNode
 
     if (state.title && state.title != this.constructor.title)
       o.title = state.title
-
-    o.properties = LiteGraph.cloneObject(state.properties)
 
     const { widgets } = this
     if (widgets?.length && this.serialize_widgets)
@@ -2186,7 +2204,6 @@ export class LGraphNode
     )
     const size = out ?? [0, 0]
     rows = Math.max(rows, 1)
-    // although it should be graphcanvas.inner_text_font size
     const font_size = LiteGraph.NODE_TEXT_SIZE
 
     const padLeft = LiteGraph.NODE_TITLE_HEIGHT
@@ -2217,7 +2234,6 @@ export class LGraphNode
     }
 
     const minWidth = LiteGraph.NODE_WIDTH * (widgets?.length ? 1.5 : 1)
-    // Text + slot width + centre padding
     const centrePadding = input_width && output_width ? 5 : 0
     const slotsWidth =
       input_width +
@@ -2225,7 +2241,6 @@ export class LGraphNode
       2 * LiteGraph.NODE_SLOT_HEIGHT +
       centrePadding
 
-    // Total distance from edge of node to the inner edge of the widget 'previous' arrow button
     const widgetMargin =
       BaseWidget.margin + BaseWidget.arrowMargin + BaseWidget.arrowWidth
     const widgetPadding = BaseWidget.minValueWidth + 2 * widgetMargin
@@ -2235,31 +2250,25 @@ export class LGraphNode
     size[1] =
       (this.constructor.slot_start_y || 0) + rows * LiteGraph.NODE_SLOT_HEIGHT
 
-    // Get widget height & expand size if necessary
     let widgets_height = 0
     if (widgets?.length) {
       for (const widget of widgets) {
         if (!this.isWidgetRowVisible(widget)) continue
 
-        let widget_height = 0
-        if (widget.computeSize) {
-          widget_height += widget.computeSize(size[0])[1]
-        } else if (widget.computeLayoutSize) {
-          // Expand widget width if necessary
-          const { minHeight, minWidth } = widget.computeLayoutSize(this)
+        const sizing = getWidgetSizing(widget, this, size[0])
+        const widget_height = sizing
+          ? minRowHeight(sizing)
+          : LiteGraph.NODE_WIDGET_HEIGHT
+        if (sizing?.kind === 'growable') {
+          const { minWidth } = sizing
           const widgetWidth = minWidth + widgetPadding
           if (widgetWidth > size[0]) size[0] = widgetWidth
-
-          widget_height += minHeight
-        } else {
-          widget_height += LiteGraph.NODE_WIDGET_HEIGHT
         }
         widgets_height += widget_height + LiteGraph.NODE_WIDGET_GAP
       }
       widgets_height += 8
     }
 
-    // compute height using widgets height
     if (this.widgets_up) size[1] = Math.max(size[1], widgets_height)
     else if (this.widgets_start_y != null)
       size[1] = Math.max(size[1], widgets_height + this.widgets_start_y)
@@ -2277,7 +2286,6 @@ export class LGraphNode
       size[1] = this.constructor.min_height
     }
 
-    // margin
     size[1] += 6
 
     return size
@@ -2437,19 +2445,6 @@ export class LGraphNode
     if (this.id !== UNASSIGNED_NODE_ID && isNodeBindable(widget)) {
       widget.setNodeId(this.id)
     }
-
-    if (widget.serialize === false) return widget
-
-    const positionalIndex =
-      this.widgets.filter((candidate) => candidate.serialize !== false).length -
-      1
-    const restored = useWidgetValueStore().getRestoredWidgetValue(
-      this.graph?.rootGraph.id ?? zeroUuid,
-      this.id,
-      widget,
-      positionalIndex
-    )
-    if (restored) widget.value = restored.value
 
     return widget
   }
@@ -4092,89 +4087,34 @@ export class LGraphNode
     }
   }
 
-  /**
-   * Arranges the node's widgets vertically.
-   * Sets following properties on each widget:
-   * -  {@link IBaseWidget.computedHeight}
-   * -  {@link IBaseWidget.y}
-   * @param widgetStartY The y-coordinate of the first widget
-   */
   private _arrangeWidgets(widgetStartY: number): void {
     if (!this.widgets || !this.widgets.length) return
 
     const bodyHeight = this.bodyHeight
     const startY =
       this.widgets_start_y ?? (this.widgets_up ? 0 : widgetStartY) + 2
-
-    let freeSpace = bodyHeight - startY
-
-    // Collect fixed height widgets first
-    let fixedWidgetHeight = 0
-    const growableWidgets: {
-      minHeight: number
-      prefHeight?: number
-      w: IBaseWidget
-    }[] = []
-
     const visibleWidgets = this.getLayoutWidgets()
-
-    for (const w of visibleWidgets) {
-      if (w.computeSize) {
-        const height = w.computeSize()[1] + LiteGraph.NODE_WIDGET_GAP
-        w.computedHeight = height
-        fixedWidgetHeight += height
-      } else if (w.computeLayoutSize) {
-        const { minHeight, maxHeight } = w.computeLayoutSize(this)
-        growableWidgets.push({
-          minHeight,
-          prefHeight: maxHeight,
-          w
-        })
-      } else {
-        const height = LiteGraph.NODE_WIDGET_HEIGHT + LiteGraph.NODE_WIDGET_GAP
-        w.computedHeight = height
-        fixedWidgetHeight += height
-      }
+    const layout = layoutNodeBody(
+      bodyHeight,
+      startY,
+      widgetRowSizings(
+        visibleWidgets,
+        this,
+        LiteGraph.NODE_WIDGET_HEIGHT,
+        LiteGraph.NODE_WIDGET_GAP
+      )
+    )
+    this.freeWidgetSpace = layout.freeSpace
+    for (const [i, widget] of visibleWidgets.entries()) {
+      const row = layout.rows[i]
+      widget.y = row.y
+      widget.computedHeight = row.height
     }
 
-    // Calculate remaining space for DOM widgets
-    freeSpace -= fixedWidgetHeight
-    this.freeWidgetSpace = freeSpace
+    if (!this.graph) return
 
-    // Prepare space requests for distribution
-    const spaceRequests = growableWidgets.map((d) => ({
-      minSize: d.minHeight,
-      maxSize: d.prefHeight
-    }))
-
-    // Distribute space among DOM widgets
-    const allocations = distributeSpace(Math.max(0, freeSpace), spaceRequests)
-
-    // Apply computed heights
-    for (const [i, d] of growableWidgets.entries()) {
-      d.w.computedHeight = allocations[i]
-    }
-
-    // Position widgets
-    let y = startY
-    for (const w of visibleWidgets) {
-      w.y = y
-      y += w.computedHeight ?? 0
-    }
-
-    if (!this.graph) throw new NullGraphError()
-
-    // Grow the node if necessary.
-    // Ref: https://github.com/Comfy-Org/ComfyUI_frontend/issues/2652
-    // TODO: Move the layout logic before drawing of the node shape, so we don't
-    // need to trigger extra round of rendering.
-    // In Vue mode, the DOM is the source of truth for node sizing — the
-    // ResizeObserver feeds measurements back to the layout store.  Allowing
-    // LiteGraph to also call setSize() here creates an infinite feedback loop
-    // (LG grows node → CSS min-height increases → textarea fills extra space →
-    // ResizeObserver reports larger size → LG grows node again).
-    if (!LiteGraph.vueNodesMode && y > bodyHeight) {
-      this.setSize([this.size[0], y])
+    if (!LiteGraph.vueNodesMode && layout.contentHeight > bodyHeight) {
+      this.setSize([this.size[0], layout.contentHeight])
       this.graph.setDirtyCanvas(false, true)
     }
   }

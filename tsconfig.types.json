@@ -47,6 +47,8 @@
     "dist",
     "**/*.vue",
     "**/*.spec.ts",
-    "**/*.test.ts"
+    "**/*.test.ts",
+    "**/__mocks__/**",
+    "**/__fixtures__/**"
   ]
 }

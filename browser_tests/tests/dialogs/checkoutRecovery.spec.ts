@@ -288,7 +288,7 @@ test.describe('Redirect checkout recovery', { tag: '@cloud' }, () => {
   test.describe('with billing_new_ux_enabled on', () => {
     test.use({ billingNewUx: true })
 
-    test('links to the Plans page instead of reopening the old checkout when reconciliation fails', async ({
+    test('says the checkout did not finish and links to the Plans page when reconciliation fails', async ({
       page
     }) => {
       await seedPendingCheckout(page, PENDING_CREATOR_CHECKOUT)
@@ -312,7 +312,12 @@ test.describe('Redirect checkout recovery', { tag: '@cloud' }, () => {
 
       const plansDialog = page.getByTestId('platform-plans-link-dialog')
       await cloudAppExpect(
-        plansDialog.getByText("Plans page didn't open")
+        plansDialog.getByText("Your checkout didn't finish")
+      ).toBeVisible()
+      await expect(
+        plansDialog.getByText(
+          'Open the Plans page to try again. Your browser blocked it from opening on its own.'
+        )
       ).toBeVisible()
       await expect(
         plansDialog.getByRole('link', { name: 'Open Plans page' })

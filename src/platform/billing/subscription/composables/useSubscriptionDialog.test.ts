@@ -35,7 +35,7 @@ import { registerRefreshOnReturn } from '@/platform/billing/refreshOnReturn'
 import { onBillingRefresh } from '@/platform/billing/billingRefresh'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import { useFreeTierQuota } from './useFreeTierQuota'
 import { useSubscriptionDialog } from './useSubscriptionDialog'
 
@@ -346,13 +346,16 @@ describe('useSubscriptionDialog', () => {
       'explains a refused run for a served $state plan with $remaining of $allowance free runs left',
       async ({ state, remaining, allowance, body }) => {
         mockSubscriptionState.value = state
-        remoteConfig.value = {
-          free_tier_balance: {
-            allowance,
-            used: allowance - remaining,
-            remaining
-          }
-        }
+        useRemoteConfigStore().acceptConfig(
+          {
+            free_tier_balance: {
+              allowance,
+              used: allowance - remaining,
+              remaining
+            }
+          },
+          false
+        )
         useFreeTierQuota()
         await nextTick()
         const { showPricingTable } = useSubscriptionDialog()
@@ -1155,14 +1158,15 @@ describe('useSubscriptionDialog', () => {
         expect(mockShowLayoutDialog).not.toHaveBeenCalled()
       })
 
-      it('explains a blocked Plans tab with a link instead of the pricing table', async () => {
+      it('says the checkout did not finish when the Plans tab is blocked', async () => {
         vi.mocked(openBillingUrl).mockReturnValue(false)
 
         await resumeFailedCheckout()
 
         expect(mockShowLayoutDialog).toHaveBeenCalledOnce()
         expect(shownDialogProps()).toMatchObject({
-          title: "Plans page didn't open",
+          title: "Your checkout didn't finish",
+          body: 'Open the Plans page to try again. Your browser blocked it from opening on its own.',
           linkLabel: 'Open Plans page'
         })
       })

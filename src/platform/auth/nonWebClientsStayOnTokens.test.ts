@@ -19,7 +19,6 @@ import { installDesktopLoginRedemption } from '@/platform/cloud/onboarding/deskt
 import * as distributionTypes from '@/platform/distribution/types'
 import { capturePreservedQuery } from '@/platform/navigation/preservedQueryManager'
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { api } from '@/scripts/api'
 import type { ComfyApp } from '@/scripts/app'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
@@ -151,7 +150,7 @@ function jsonResponse(body: unknown, status = 200): Response {
   })
 }
 
-function installFetchRecorder(features: Record<string, unknown>) {
+function installFetchRecorder() {
   const all: RecordedRequest[] = []
   let mintCount = 0
 
@@ -173,7 +172,7 @@ function installFetchRecorder(features: Record<string, unknown>) {
     }
     switch (`${request.method} ${request.path}`) {
       case 'GET /api/features':
-        return jsonResponse(features)
+        return jsonResponse({})
       case 'POST /api/auth/session':
         return jsonResponse({ success: true })
       case 'POST /api/auth/token':
@@ -224,17 +223,6 @@ async function sendApiCalls() {
   })
 }
 
-const API_KEY_SESSION_ROWS = [{ name: 'unified_web_session true', uws: true }]
-
-const FEATURE_ROWS = [
-  { name: 'unified_web_session absent' },
-  { name: 'unified_web_session false', uws: false }
-]
-
-function featuresFor(row: { uws?: boolean }) {
-  return row.uws === undefined ? {} : { unified_web_session: row.uws }
-}
-
 const FEATURES_BOOTSTRAP: RecordedRequest = {
   method: 'GET',
   path: '/api/features',
@@ -259,7 +247,7 @@ const apiCalls = (auth: Record<string, string>): RecordedRequest[] => [
   }
 ]
 
-const API_KEY_GOLDEN: RecordedRequest[] = [
+const apiKeyGolden = (): RecordedRequest[] => [
   FEATURES_BOOTSTRAP,
   {
     method: 'POST',
@@ -316,62 +304,52 @@ describe('clients the web session leaves on tokens', () => {
   afterEach(() => {
     hooks?.stop()
     hooks = undefined
-    remoteConfig.value = {}
   })
 
-  it.for([...FEATURE_ROWS, ...API_KEY_SESSION_ROWS])(
-    "an API-key identity on cloud keeps today's headers and never touches a session ($name)",
-    async (row) => {
-      localStorage.setItem('comfy_api_key', API_KEY)
-      const recorder = installFetchRecorder(featuresFor(row))
-      await refreshRemoteConfig({ useAuth: false })
-      hooks = wireSessionCookieExtension()
-      identity.resolveSignedOut()
+  it("an API-key identity on cloud keeps today's headers and never touches a session", async () => {
+    localStorage.setItem('comfy_api_key', API_KEY)
+    const recorder = installFetchRecorder()
+    await refreshRemoteConfig({ useAuth: false })
+    hooks = wireSessionCookieExtension()
+    identity.resolveSignedOut()
 
-      await sendApiCalls()
-      await vi.advanceTimersByTimeAsync(0)
+    await sendApiCalls()
+    await vi.advanceTimersByTimeAsync(0)
 
-      expect(recorder.all).toEqual(API_KEY_GOLDEN)
-      expectNoSessionTraffic(recorder.all)
-    }
-  )
+    expect(recorder.all).toEqual(apiKeyGolden())
+    expectNoSessionTraffic(recorder.all)
+  })
 
-  it.for(API_KEY_SESSION_ROWS)(
-    'booting the cloud identity with a stored API key never touches a session ($name)',
-    async (row) => {
-      localStorage.setItem('comfy_api_key', API_KEY)
-      const recorder = installFetchRecorder(featuresFor(row))
-      await refreshRemoteConfig({ useAuth: false })
-      useAuthStore()
-      identity.resolveSignedOut()
+  it('booting the cloud identity with a stored API key never touches a session', async () => {
+    localStorage.setItem('comfy_api_key', API_KEY)
+    const recorder = installFetchRecorder()
+    await refreshRemoteConfig({ useAuth: false })
+    useAuthStore()
+    identity.resolveSignedOut()
 
-      await bootCloudIdentity()
-      await vi.advanceTimersByTimeAsync(0)
+    await bootCloudIdentity()
+    await vi.advanceTimersByTimeAsync(0)
 
-      expectNoSessionTraffic(recorder.all)
-      expect(useCloudWebSessionStore().isActive()).toBe(false)
-    }
-  )
+    expectNoSessionTraffic(recorder.all)
+    expect(useCloudWebSessionStore().isActive()).toBe(false)
+  })
 
-  it.for(API_KEY_SESSION_ROWS)(
-    'an API-key workspace switch never touches a session ($name)',
-    async (row) => {
-      localStorage.setItem('comfy_api_key', API_KEY)
-      const recorder = installFetchRecorder(featuresFor(row))
-      await refreshRemoteConfig({ useAuth: false })
-      hooks = wireSessionCookieExtension()
-      identity.resolveSignedOut()
-      await vi.advanceTimersByTimeAsync(0)
-      recorder.all.length = 0
+  it('an API-key workspace switch never touches a session', async () => {
+    localStorage.setItem('comfy_api_key', API_KEY)
+    const recorder = installFetchRecorder()
+    await refreshRemoteConfig({ useAuth: false })
+    hooks = wireSessionCookieExtension()
+    identity.resolveSignedOut()
+    await vi.advanceTimersByTimeAsync(0)
+    recorder.all.length = 0
 
-      await useWorkspaceAuthStore()
-        .switchWorkspace('ws-team')
-        .catch(() => {})
-      await vi.advanceTimersByTimeAsync(0)
+    await useWorkspaceAuthStore()
+      .switchWorkspace('ws-team')
+      .catch(() => {})
+    await vi.advanceTimersByTimeAsync(0)
 
-      expectNoSessionTraffic(recorder.all)
-    }
-  )
+    expectNoSessionTraffic(recorder.all)
+  })
 
   it.for<{ target: RequestTarget; method: string }>([
     { target: 'ingest', method: 'GET' },
@@ -382,7 +360,7 @@ describe('clients the web session leaves on tokens', () => {
     'the web-session request authorizer sends the stored API key header alone on $target $method',
     async ({ target, method }) => {
       localStorage.setItem('comfy_api_key', API_KEY)
-      installFetchRecorder({})
+      installFetchRecorder()
       const getSession = vi.fn(() => undefined)
       const fetchImpl = vi.fn<typeof fetch>()
       const mint = createSessionTokenMint({
@@ -407,54 +385,44 @@ describe('clients the web session leaves on tokens', () => {
     }
   )
 
-  it.for(FEATURE_ROWS)(
-    'a localhost frontend signs in, refreshes and calls the API with no session or cloud credential ($name)',
-    async (row) => {
-      vi.mocked(distributionTypes).isCloud = false
-      api.setAuthProvider(anonymousApiAuthProvider)
-      const recorder = installFetchRecorder(featuresFor(row))
-      await refreshRemoteConfig({ useAuth: false })
-      hooks = wireSessionCookieExtension()
+  it('a localhost frontend signs in, refreshes and calls the API with no session or cloud credential', async () => {
+    vi.mocked(distributionTypes).isCloud = false
+    api.setAuthProvider(anonymousApiAuthProvider)
+    const recorder = installFetchRecorder()
+    await refreshRemoteConfig({ useAuth: false })
+    hooks = wireSessionCookieExtension()
 
-      identity.signIn(FIREBASE_USER)
-      identity.refreshIdToken()
-      await vi.advanceTimersByTimeAsync(ONE_HOUR_MS)
-      await sendApiCalls()
+    identity.signIn(FIREBASE_USER)
+    identity.refreshIdToken()
+    await vi.advanceTimersByTimeAsync(ONE_HOUR_MS)
+    await sendApiCalls()
 
-      expect(recorder.all).toEqual(LOCALHOST_GOLDEN)
-      expectNoSessionTraffic(recorder.all)
-    }
-  )
+    expect(recorder.all).toEqual(LOCALHOST_GOLDEN)
+    expectNoSessionTraffic(recorder.all)
+  })
 
-  it.for(FEATURE_ROWS)(
-    'Desktop login approval redeems with the Firebase bearer token and no cookie ($name)',
-    async (row) => {
-      const recorder = installFetchRecorder(featuresFor(row))
-      await refreshRemoteConfig({ useAuth: false })
-      hooks = wireSessionCookieExtension()
-      identity.signIn(FIREBASE_USER)
-      await vi.advanceTimersByTimeAsync(0)
-      recorder.all.length = 0
+  it('Desktop login approval redeems with the Firebase bearer token and no cookie', async () => {
+    const recorder = installFetchRecorder()
+    await refreshRemoteConfig({ useAuth: false })
+    hooks = wireSessionCookieExtension()
+    identity.signIn(FIREBASE_USER)
+    await vi.advanceTimersByTimeAsync(0)
+    recorder.all.length = 0
 
-      const router = createRouter({
-        history: createMemoryHistory(),
-        routes: [
-          { path: '/:pathMatch(.*)*', component: { template: '<div />' } }
-        ]
-      })
-      installDesktopLoginRedemption(router)
-      capturePreservedQuery(
-        'desktop_login',
-        {
-          desktop_login_code: `dlc_${row.name.replace(/\W/g, '_').padEnd(43, 'A')}`
-        },
-        ['desktop_login_code']
-      )
-      await router.push('/trigger')
-      await vi.advanceTimersByTimeAsync(0)
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: '/:pathMatch(.*)*', component: { template: '<div />' } }]
+    })
+    installDesktopLoginRedemption(router)
+    capturePreservedQuery(
+      'desktop_login',
+      { desktop_login_code: `dlc_${'A'.repeat(43)}` },
+      ['desktop_login_code']
+    )
+    await router.push('/trigger')
+    await vi.advanceTimersByTimeAsync(0)
 
-      expect(recorder.all).toEqual(DESKTOP_REDEEM)
-      expectNoSessionTraffic(recorder.all)
-    }
-  )
+    expect(recorder.all).toEqual(DESKTOP_REDEEM)
+    expectNoSessionTraffic(recorder.all)
+  })
 })

@@ -107,6 +107,29 @@ const noTooltipDirective = {
     'Use the Button tooltip prop or the design-system Tooltip compound instead of v-tooltip.'
 }
 
+const tooltipProviderRestriction = {
+  selector: "VElement[rawName='TooltipProvider']",
+  message:
+    'App.vue owns the tooltip provider. Add a nested provider only for a surface with its own open delay, and list it here.'
+}
+
+const tooltipProviderSurfaces = [
+  'src/components/graph/SelectionToolbox.vue',
+  'src/renderer/core/layout/transform/TransformPane.vue'
+]
+
+const graphCanvasTemplates = [
+  'src/components/graph/**/*.vue',
+  'src/renderer/**/*.vue'
+]
+
+const transformBindingRestriction = {
+  selector:
+    "VAttribute[directive=true][key.name.name='bind'][key.argument.name='style'] Property:matches([computed=false][key.name=/^(transform|translate|scale|rotate)$/], [key.value=/^(transform|translate|scale|rotate)$/]):not(CallExpression Property)",
+  message:
+    'A bound transform makes Chrome recomposite the whole page each time it changes. Set it with useCompositedTransform, or list the file here when the transform only changes outside pan, zoom and drag.'
+}
+
 const agentPlatformChannelRestrictions = [
   {
     selector:
@@ -516,20 +539,40 @@ export default defineConfig([
       {
         name: 'comfy/single-tooltip-provider',
         files: ['src/**/*.vue'],
+        ignores: ['src/App.vue', ...tooltipProviderSurfaces],
+        rules: {
+          'vue/no-restricted-syntax': [
+            'error',
+            noTooltipDirective,
+            tooltipProviderRestriction
+          ]
+        }
+      },
+      {
+        name: 'comfy/composited-transform',
+        files: graphCanvasTemplates,
         ignores: [
-          'src/App.vue',
-          'src/components/graph/SelectionToolbox.vue',
-          'src/renderer/core/layout/transform/TransformPane.vue'
+          ...tooltipProviderSurfaces,
+          'src/renderer/extensions/linearMode/MobileDisplay.vue',
+          'src/renderer/extensions/vueNodes/components/LGraphNode.vue'
         ],
         rules: {
           'vue/no-restricted-syntax': [
             'error',
             noTooltipDirective,
-            {
-              selector: "VElement[rawName='TooltipProvider']",
-              message:
-                'App.vue owns the tooltip provider. Add a nested provider only for a surface with its own open delay, and list it here.'
-            }
+            tooltipProviderRestriction,
+            transformBindingRestriction
+          ]
+        }
+      },
+      {
+        name: 'comfy/composited-transform-tooltip-surfaces',
+        files: tooltipProviderSurfaces,
+        rules: {
+          'vue/no-restricted-syntax': [
+            'error',
+            noTooltipDirective,
+            transformBindingRestriction
           ]
         }
       }
@@ -555,7 +598,6 @@ export default defineConfig([
       '**/*.test.ts',
       '**/*.stories.ts',
       '**/CrdtDevPanel.vue',
-      '**/restoreOpMinter.ts',
       '**/crdtLog.ts'
     ],
     rules: {
