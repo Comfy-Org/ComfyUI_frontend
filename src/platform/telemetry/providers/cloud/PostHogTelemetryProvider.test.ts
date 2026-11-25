@@ -15,6 +15,7 @@ import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 
 import type {
   BootstrapCompleteMetadata,
+  CustomDeploymentTelemetryEvent,
   OnboardingTourStage,
   RunButtonProperties,
   RunOnCloudTelemetryEvent
@@ -679,6 +680,7 @@ describe('PostHogTelemetryProvider', () => {
       provider.trackAgentMessageSent({
         attachment_count: 1,
         node_tag_count: 2,
+        skill_count: 1,
         thread_id: 'thread-1',
         workflow_id: 'workflow-1',
         client_message_id: 'client-message-1',
@@ -692,6 +694,7 @@ describe('PostHogTelemetryProvider', () => {
         {
           attachment_count: 1,
           node_tag_count: 2,
+          skill_count: 1,
           thread_id: 'thread-1',
           workflow_id: 'workflow-1',
           client_message_id: 'client-message-1',
@@ -911,6 +914,32 @@ describe('PostHogTelemetryProvider', () => {
       )
     })
 
+    it('captures a custom deployment Dialog opened under the server event family', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+      const event: CustomDeploymentTelemetryEvent = {
+        name: 'platform:editor_deploy_opened',
+        properties: {
+          entry: 'run_on_row',
+          step: 'new',
+          workspace_id: 'ws-1',
+          deployment_id: null
+        }
+      }
+
+      provider.trackCustomDeploymentEvent(event)
+
+      expect(hoisted.mockCapture).toHaveBeenCalledExactlyOnceWith(
+        'platform:editor_deploy_opened',
+        {
+          entry: 'run_on_row',
+          step: 'new',
+          workspace_id: 'ws-1',
+          deployment_id: null
+        }
+      )
+    })
+
     it('captures image load failures', async () => {
       const provider = createProvider()
       await vi.dynamicImportSettled()
@@ -922,6 +951,32 @@ describe('PostHogTelemetryProvider', () => {
         { source: 'node_image_preview' }
       )
     })
+
+    it.for([
+      ['completed', TelemetryEvents.ASSET_DOWNLOAD_COMPLETED],
+      ['failed', TelemetryEvents.ASSET_DOWNLOAD_FAILED]
+    ] as const)(
+      'captures a %s asset download',
+      async ([outcome, eventName]) => {
+        const provider = createProvider()
+        await vi.dynamicImportSettled()
+        const metadata = {
+          outcome,
+          phase: 'headers',
+          auth_credential: 'session-cookie',
+          route: 'view',
+          media_kind: 'video',
+          surface: 'node_preview',
+          duration_ms: 80,
+          page_age_ms: 9000,
+          online: true
+        } as const
+
+        provider.trackAssetDownload(metadata)
+
+        expect(hoisted.mockCapture).toHaveBeenCalledWith(eventName, metadata)
+      }
+    )
 
     it('captures the startup breakdown so it is explorable alongside Datadog', async () => {
       const provider = createProvider()
@@ -1116,34 +1171,74 @@ describe('PostHogTelemetryProvider', () => {
             thread_id: 'thread-1',
             workflow_id: 'workflow-2',
             prev_workflow_id: 'workflow-1',
-            bind_source: 'selector_chip'
+            bind_source: 'active_tab'
           }),
         properties: {
           thread_id: 'thread-1',
           workflow_id: 'workflow-2',
           prev_workflow_id: 'workflow-1',
-          bind_source: 'selector_chip'
+          bind_source: 'active_tab'
         }
       },
       {
         event: TelemetryEvents.AGENT_RUN_APPROVAL_SHOWN,
         track: (provider: PostHogTelemetryProvider) =>
           provider.trackAgentRunApprovalShown({
+            ask_id: 'ask-1',
             turn_id: 'turn-1',
             workflow_id: null
           }),
-        properties: { turn_id: 'turn-1', workflow_id: null }
+        properties: { ask_id: 'ask-1', turn_id: 'turn-1', workflow_id: null }
       },
       {
         event: TelemetryEvents.AGENT_RUN_APPROVAL_RESOLVED,
         track: (provider: PostHogTelemetryProvider) =>
           provider.trackAgentRunApprovalResolved({
+            ask_id: 'ask-1',
+            turn_id: 'turn-1',
             decision: 'open_workflow',
             time_to_decide_ms: 500
           }),
         properties: {
+          ask_id: 'ask-1',
+          turn_id: 'turn-1',
           decision: 'open_workflow',
           time_to_decide_ms: 500
+        }
+      },
+      {
+        event: TelemetryEvents.AGENT_RUN_APPROVAL_ANSWER_FAILED,
+        track: (provider: PostHogTelemetryProvider) =>
+          provider.trackAgentRunApprovalAnswerFailed({
+            ask_id: 'ask-1',
+            turn_id: 'turn-1'
+          }),
+        properties: { ask_id: 'ask-1', turn_id: 'turn-1' }
+      },
+      {
+        event: TelemetryEvents.AGENT_RUN_APPROVAL_RECOVERY_ATTEMPTED,
+        track: (provider: PostHogTelemetryProvider) =>
+          provider.trackAgentRunApprovalRecoveryAttempted({
+            ask_id: 'ask-1',
+            turn_id: 'turn-1',
+            cause: 'reconnect'
+          }),
+        properties: { ask_id: 'ask-1', turn_id: 'turn-1', cause: 'reconnect' }
+      },
+      {
+        event: TelemetryEvents.AGENT_RUN_APPROVAL_RECOVERY_OUTCOME,
+        track: (provider: PostHogTelemetryProvider) =>
+          provider.trackAgentRunApprovalRecoveryOutcome({
+            ask_id: 'ask-1',
+            turn_id: 'turn-1',
+            cause: 'reconnect',
+            outcome: 'restored'
+          }),
+        properties: {
+          ask_id: 'ask-1',
+          turn_id: 'turn-1',
+          cause: 'reconnect',
+          outcome: 'restored'
         }
       },
       {
@@ -1154,6 +1249,18 @@ describe('PostHogTelemetryProvider', () => {
             to: 'auto'
           }),
         properties: { from: 'ask_approval', to: 'auto' }
+      },
+      {
+        event: TelemetryEvents.AGENT_SKILL_SELECTED,
+        track: (provider: PostHogTelemetryProvider) =>
+          provider.trackAgentSkillSelected({ source: 'slash_picker' }),
+        properties: { source: 'slash_picker' }
+      },
+      {
+        event: TelemetryEvents.AGENT_SKILL_SAVED,
+        track: (provider: PostHogTelemetryProvider) =>
+          provider.trackAgentSkillSaved({ mode: 'add', outcome: 'rejected' }),
+        properties: { mode: 'add', outcome: 'rejected' }
       },
       {
         event: TelemetryEvents.AGENT_THREAD_STARTED,

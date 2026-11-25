@@ -23,12 +23,14 @@
           cn(
             WidgetInputBaseClass,
             'h-auto min-w-[4ch] truncate',
-            size === 'large' ? 'py-3' : 'text-xs triangle-icons:py-0',
+            size === 'large' ? 'py-3' : 'text-xs',
             'h-full px-2 text-right not-disabled:bg-transparent focus-visible:ring-0 aria-invalid:ring-0',
             loading && 'pl-9'
           )
         "
         :size="1"
+        data-part="widget-text-input"
+        :data-size="size"
         :aria-label="widget.name"
         :aria-invalid="invalid || undefined"
         :readonly="isReadOnly"

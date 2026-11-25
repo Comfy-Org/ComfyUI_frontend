@@ -142,6 +142,7 @@ webSocketTest.describe(
         )
 
         await execution.run({
+          start: false,
           beforePromptResponse: async (jobId) => {
             execution.executionError(jobId, '17', 'Early execution failure')
             await errorReceived

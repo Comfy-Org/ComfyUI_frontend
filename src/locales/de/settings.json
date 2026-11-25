@@ -469,7 +469,7 @@
     "name": "Fehlende Medien im Probleme-Tab anzeigen",
     "tooltip": "Wenn deaktiviert, werden nicht gefundene Eingabebilder, Videos und Audiodateien nicht im Probleme-Tab aufgeführt und ihre Nodes nicht hervorgehoben."
   },
-  "Comfy_Workflow_ShowMissingNodesWarning": {
+  "Comfy_ErrorSystem_ShowMissingNodes": {
     "name": "Fehlende Nodes im Probleme-Tab anzeigen",
     "tooltip": "Wenn deaktiviert, werden fehlende Node-Pakete nicht im Probleme-Tab aufgeführt und ihre Nodes nicht hervorgehoben. Der Workflow kann weiterhin nicht ausgeführt werden, bis sie installiert sind."
   },

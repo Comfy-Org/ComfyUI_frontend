@@ -13,7 +13,6 @@ const props = defineProps<{
   class?: ClassValue
   hasError?: boolean
   multi?: boolean
-  connected?: boolean
   slotKey?: SlotId
 }>()
 
@@ -57,10 +56,10 @@ const slotClass = computed(() =>
 <template>
   <div
     data-testid="slot-connection-dot"
+    data-part="slot-dot"
     :class="
       cn(
-        'group/slot relative flex size-6 items-center justify-center [--slot-fallback-color:#AAA] after:absolute after:inset-y-0 after:w-5/2 triangle-icons:[--slot-fallback-color:#778]',
-        connected && 'triangle-icons:[--slot-fallback-color:#7F7]',
+        'group/slot relative flex size-6 items-center justify-center [--slot-fallback-color:#AAA] after:absolute after:inset-y-0 after:w-5/2',
         props.class
       )
     "

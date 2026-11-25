@@ -1,5 +1,5 @@
 import type { AgentErrorContext } from '@/platform/workflowErrors/agentErrorContext'
-import { useEventListener, useLocalStorage, useWindowSize } from '@vueuse/core'
+import { useEventListener, useWindowSize } from '@vueuse/core'
 import { clamp } from 'es-toolkit'
 import { defineStore } from 'pinia'
 import {
@@ -23,6 +23,7 @@ import type {
   AgentPanelOpenedMetadata,
   AgentTargetUnavailableMetadata
 } from '@comfyorg/telemetry/types'
+import { useSafeLocalStorage } from '@/platform/storage/useSafeStorage'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
@@ -66,6 +67,7 @@ type TargetTracking =
 
 export type AgentPanelView =
   | { screen: 'chat' }
+  | { screen: 'skills' }
   | {
       screen: 'history'
       previousThreadId: string | null
@@ -77,11 +79,11 @@ export type AgentPanelView =
 export const useAgentPanelStore = defineStore('agentPanel', () => {
   const enabled = ref(false)
   const consentAccepted = ref(false)
-  const isOpen = useLocalStorage(OPEN_STORAGE_KEY, false, {
+  const isOpen = useSafeLocalStorage(OPEN_STORAGE_KEY, false, {
     writeDefaults: false
   })
   /** Whether the panel has ever been shown to this user, on any visit. */
-  const hasEverOpened = useLocalStorage(DISCOVERED_STORAGE_KEY, false, {
+  const hasEverOpened = useSafeLocalStorage(DISCOVERED_STORAGE_KEY, false, {
     writeDefaults: false
   })
   const gateSettled = ref(false)
@@ -248,7 +250,10 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     reportedCreditUsageExposure.value = false
   }
 
-  const isVisible = computed(() => enabled.value && isOpen.value)
+  const restoredOpenHeld = ref(false)
+  const isVisible = computed(
+    () => enabled.value && isOpen.value && !restoredOpenHeld.value
+  )
 
   watch(isVisible, (visible) => {
     if (!visible) {
@@ -290,7 +295,9 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   function open(
     source: AgentPanelOpenedMetadata['source'] = 'topbar_button'
   ): void {
-    if (isOpen.value) return
+    const wasHeld = restoredOpenHeld.value
+    restoredOpenHeld.value = false
+    if (isOpen.value && !wasHeld) return
     isOpen.value = true
     startOpenEpoch()
     useTelemetry()?.trackAgentPanelOpened({ source })
@@ -310,7 +317,16 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   function suppressRestoredOpen(): void {
     if (!isOpen.value || isVisible.value) return
     isOpen.value = false
+    restoredOpenHeld.value = false
     openedAt = null
+  }
+
+  function holdRestoredOpen(): void {
+    if (isOpen.value) restoredOpenHeld.value = true
+  }
+
+  function releaseRestoredOpen(): void {
+    restoredOpenHeld.value = false
   }
 
   useEventListener(window, 'pagehide', () => {
@@ -329,7 +345,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   })
 
   function toggle(): void {
-    if (isOpen.value) close('topbar_button')
+    if (isOpen.value && !restoredOpenHeld.value) close('topbar_button')
     else open()
   }
 
@@ -455,6 +471,8 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     toggle,
     close,
     suppressRestoredOpen,
+    holdRestoredOpen,
+    releaseRestoredOpen,
     setWidth,
     setReservedWorkspaceWidth,
     toggleMaximize

@@ -70,17 +70,17 @@
 import { computed, onMounted } from 'vue'
 
 import UploadModelConfirmation from '@/platform/assets/components/UploadModelConfirmation.vue'
-import UploadModelFilePicker from '@/platform/workspace/components/UploadModelFilePicker.vue'
-import UploadModelFileUpload from '@/platform/workspace/components/UploadModelFileUpload.vue'
+import UploadModelFilePicker from '@/platform/assets/components/UploadModelFilePicker.vue'
+import UploadModelFileUpload from '@/platform/assets/components/UploadModelFileUpload.vue'
 import UploadModelFooter from '@/platform/assets/components/UploadModelFooter.vue'
 import UploadModelProgress from '@/platform/assets/components/UploadModelProgress.vue'
 import UploadModelUrlInput from '@/platform/assets/components/UploadModelUrlInput.vue'
 import { useModelTypes } from '@/platform/assets/composables/useModelTypes'
-import { useUploadModelFile } from '@/platform/workspace/composables/useUploadModelFile'
+import { useUploadModelFile } from '@/platform/assets/composables/useUploadModelFile'
 import type {
   UploadModelDialogContext,
   UploadModelSuccess
-} from '@/platform/assets/composables/useUploadModelWizard'
+} from '@/platform/assets/types/modelImport'
 import { useUploadModelWizard } from '@/platform/assets/composables/useUploadModelWizard'
 import { useDialogStore } from '@/stores/dialogStore'
 

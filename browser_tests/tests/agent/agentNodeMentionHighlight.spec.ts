@@ -45,7 +45,6 @@ for (const mode of renderModes) {
         })
         await comfyPage.nextFrame()
         await agentPanel.open()
-        await agentPanel.selectWorkflow()
         await comfyPage.canvasOps.waitForViewToSettle()
       })
 

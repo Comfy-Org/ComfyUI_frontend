@@ -476,13 +476,15 @@ import type { TemplateSortMode } from '@/platform/workflow/templates/composables
 import { getComfyCloudBaseUrl } from '@/config/comfyApi'
 import { formatCategoryLabel } from '@/platform/assets/utils/categoryLabel'
 import { isCloud } from '@/platform/distribution/types'
-import { isLocalDesktopHost } from '@/utils/envUtil'
+import { isLocalDesktopHost, isSelfHostedBrowser } from '@/utils/envUtil'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { loadFolderPathsOnce } from '@/platform/workflowErrors/missingModel/folderPathCache'
 import {
+  downloadModel,
   isModelDownloadable,
   modelDownloadNeedsFolderPaths
 } from '@/platform/workflowErrors/missingModel/missingModelDownload'
+import type { ModelWithUrl } from '@/platform/workflowErrors/missingModel/missingModelDownload'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { getModelFileKey } from '@/platform/workflow/core/utils/modelRequirements'
@@ -1308,12 +1310,24 @@ async function resolveTemplateAssetInventory(
   return { requirements, availability, folderPaths, inputAssets }
 }
 
+function offersAssetChoice(): boolean {
+  return isLocalDesktopHost() || isSelfHostedBrowser()
+}
+
+function requestModelDownload(
+  rowDownloads: TemplateModelRowDownloads,
+  model: ModelWithUrl
+) {
+  if (isSelfHostedBrowser()) downloadModel(model, {})
+  else rowDownloads.request(model)
+}
+
 async function showAssetSetupIfNeeded(
   template: TemplateInfo,
   prepared: PreparedWorkflowTemplate,
   generation: number
 ): Promise<boolean> {
-  if (!isLocalDesktopHost()) return false
+  if (!offersAssetChoice()) return false
 
   const { requirements, availability, folderPaths, inputAssets } =
     await resolveTemplateAssetInventory(template.name, prepared)
@@ -1412,7 +1426,7 @@ async function onLoadWorkflow(template: TemplateInfo, event: MouseEvent) {
       generation
     )
     if (!didShowAssetSetup) {
-      await openPreparedTemplate(prepared, generation, !isLocalDesktopHost())
+      await openPreparedTemplate(prepared, generation, !offersAssetChoice())
     }
   } catch (error) {
     handleTemplateSelectionError(error, prepared, generation)
@@ -1439,7 +1453,8 @@ function onDownloadModel(rowId: string) {
       candidate.status === 'downloadable' &&
       `model:${getModelFileKey(candidate.model)}` === rowId
   )
-  if (row?.status === 'downloadable') setup.rowDownloads.request(row.model)
+  if (row?.status === 'downloadable')
+    requestModelDownload(setup.rowDownloads, row.model)
 }
 
 async function onDownloadAssetsAndOpen() {
@@ -1448,7 +1463,7 @@ async function onDownloadAssetsAndOpen() {
   if (!detail || !setup || setup.pending || openPending.value) return
 
   for (const row of activeDetailModelDownloadCandidates.value) {
-    setup.rowDownloads.request(row.model)
+    requestModelDownload(setup.rowDownloads, row.model)
   }
 
   await openPreparedTemplate(

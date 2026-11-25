@@ -2,6 +2,7 @@ import { expect } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { promptHistoryTest as test } from '@e2e/fixtures/agentPromptHistoryFixture'
 
 test.use({ connectWebSocketToServer: false })
@@ -27,11 +28,11 @@ test(
     const panel = page.locator('#agent-panel-root')
     const editor = panel.getByRole('textbox')
     const chips = editor.getByTestId('workflow-reference-chip')
-    const targetPicker = panel.getByRole('button', {
-      name: enMessages.agent.switchWorkflow
-    })
     await expect(page.getByTestId('workflow-tab')).toHaveCount(3)
-    await expect(targetPicker).toHaveText('Unsaved Workflow (3)')
+    const savingTarget = new Topbar(page).saveWorkflowAs('Unsaved Workflow (3)')
+    await expect.poll(() => workflowSelection.savedPaths.length).toBe(1)
+    workflowSelection.finishSave(true)
+    await savingTarget
     await editor.fill('Before @ after')
     await expect(editor).toHaveText('Before @ after')
     await editor.press('ArrowLeft')
@@ -49,7 +50,7 @@ test(
         exact: true
       })
       .click()
-    await expect.poll(() => workflowSelection.savedPaths.length).toBe(1)
+    await expect.poll(() => workflowSelection.savedPaths.length).toBe(2)
     await editor.pressSequentially(' while saving')
     workflowSelection.finishSave(true)
     await expect(editor).toHaveText(
@@ -67,12 +68,11 @@ test(
         exact: true
       })
       .click()
-    await expect.poll(() => workflowSelection.savedPaths.length).toBe(2)
+    await expect.poll(() => workflowSelection.savedPaths.length).toBe(3)
     workflowSelection.finishSave(true)
     const text =
       'Before Unsaved Workflow between Unsaved Workflow (2) while saving after'
     await expect(editor).toHaveText(text)
-    await expect(targetPicker).toHaveText('Unsaved Workflow (3)')
     await editor.press('ArrowLeft')
     await editor.press('Backspace')
     await expect(chips).toHaveCount(1)
@@ -88,28 +88,21 @@ test(
       .click()
     await expect(editor).toHaveText(text)
     await expect(chips).toHaveCount(2)
-    await targetPicker.click()
-    await page
-      .getByRole('menuitemradio', { name: /Unsaved Workflow \(3\)/ })
-      .click()
-    await expect.poll(() => workflowSelection.savedPaths.length).toBe(3)
-    workflowSelection.finishSave(true)
-    await expect(editor).toHaveText(text)
     await panel
       .getByRole('button', { name: enMessages.agent.send, exact: true })
       .click()
     await expect.poll(() => promptHistory.requests.length).toBe(1)
     expect(promptHistory.requests[0]).toMatchObject({
       content:
-        'Before [Unsaved Workflow](workflow://a81718a4-02ae-41e6-ae85-000000000001) between [Unsaved Workflow (2)](workflow://a81718a4-02ae-41e6-ae85-000000000002) while saving after',
-      workflow_id: 'a81718a4-02ae-41e6-ae85-000000000003',
+        'Before [Unsaved Workflow](workflow://a81718a4-02ae-41e6-ae85-000000000002) between [Unsaved Workflow (2)](workflow://a81718a4-02ae-41e6-ae85-000000000003) while saving after',
+      workflow_id: 'a81718a4-02ae-41e6-ae85-000000000001',
       workflow_references: [
         {
-          workflow_id: 'a81718a4-02ae-41e6-ae85-000000000001',
+          workflow_id: 'a81718a4-02ae-41e6-ae85-000000000002',
           name: 'Unsaved Workflow'
         },
         {
-          workflow_id: 'a81718a4-02ae-41e6-ae85-000000000002',
+          workflow_id: 'a81718a4-02ae-41e6-ae85-000000000003',
           name: 'Unsaved Workflow (2)'
         }
       ]

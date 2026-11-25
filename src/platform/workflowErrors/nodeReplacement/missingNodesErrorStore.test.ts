@@ -14,8 +14,7 @@ import { useMissingNodesErrorStore } from './missingNodesErrorStore'
 describe('missingNodesErrorStore', () => {
   beforeEach(() => {
     useSettingStore().settingValues['Comfy.RightSidePanel.ShowErrorsTab'] = true
-    useSettingStore().settingValues['Comfy.Workflow.ShowMissingNodesWarning'] =
-      true
+    useSettingStore().settingValues['Comfy.ErrorSystem.ShowMissingNodes'] = true
   })
 
   describe('setMissingNodeTypes', () => {
@@ -38,9 +37,8 @@ describe('missingNodesErrorStore', () => {
       ]
       expect(store.surfaceMissingNodes(types)).toBe(true)
 
-      useSettingStore().settingValues[
-        'Comfy.Workflow.ShowMissingNodesWarning'
-      ] = false
+      useSettingStore().settingValues['Comfy.ErrorSystem.ShowMissingNodes'] =
+        false
 
       expect(store.surfaceMissingNodes(types)).toBe(false)
       expect(store.missingNodesError?.nodeTypes).toHaveLength(1)
@@ -48,9 +46,8 @@ describe('missingNodesErrorStore', () => {
       expect(store.hasMissingNodes).toBe(false)
       expect(store.missingNodeCount).toBe(0)
 
-      useSettingStore().settingValues[
-        'Comfy.Workflow.ShowMissingNodesWarning'
-      ] = true
+      useSettingStore().settingValues['Comfy.ErrorSystem.ShowMissingNodes'] =
+        true
 
       expect(store.hasMissingNodes).toBe(true)
     })

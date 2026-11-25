@@ -47,11 +47,12 @@ while [ $# -gt 0 ]; do
   esac
 done
 matches=$(jq -c --arg state "$state" --arg head "$head" --arg base "$base" '
-  map(select(.state == $state
+  map(select(($state == "all" or .state == $state)
     and ($base == "" or .base == $base)
     and ($head == "" or .head == $head)))
   | map({
       number,
+      state: (.state | ascii_upcase),
       headRefName: .head,
       isCrossRepository: (.crossRepository // false),
       title: (.title // ""),
@@ -68,7 +69,7 @@ done
 `
 
 interface StubPr {
-  state: 'open' | 'merged'
+  state: 'open' | 'merged' | 'closed'
   head: string
   base: string
   number: number
@@ -119,7 +120,7 @@ function runFilter({
         EVENT_NAME: forceRerun ? 'workflow_dispatch' : 'pull_request_target',
         FORCE_RERUN_INPUT: String(forceRerun),
         PR_NUMBER: '21829',
-        REQUESTED_TARGETS: targets.join(' '),
+        ACTIVE_CORE_TARGETS: targets.join(' '),
         STUB_PRS: JSON.stringify(prs),
         STUB_BRANCHES: branches.join(' ')
       },
@@ -146,6 +147,26 @@ const mergedCore157: StubPr = {
 }
 
 describe('pr-backport filter-targets', () => {
+  it('attempts every active branch without target labels', () => {
+    expect(runFilter({ targets: ['core/1.59', 'core/1.60'] })).toMatchObject({
+      skip: 'false',
+      'pending-targets': 'core/1.59 core/1.60'
+    })
+  })
+
+  it('respects a closed backport even after its source branch is deleted', () => {
+    expect(
+      runFilter({
+        targets: ['core/1.57', 'core/1.58', 'core/1.59'],
+        prs: [{ ...mergedCore157, state: 'closed' }]
+      })
+    ).toMatchObject({
+      skip: 'false',
+      'pending-targets': 'core/1.58 core/1.59',
+      'already-exists': 'core/1.57 (closed PR #21880)'
+    })
+  })
+
   it('attempts only the new target when an old target was already merged', () => {
     expect(
       runFilter({ targets: ['core/1.57', 'cloud/1.58'], prs: [mergedCore157] })
@@ -153,7 +174,7 @@ describe('pr-backport filter-targets', () => {
       skip: 'false',
       'pending-targets': 'cloud/1.58',
       'already-exists': 'core/1.57 (merged PR #21880)',
-      'all-merged': 'false'
+      'all-resolved': 'false'
     })
   })
 
@@ -172,16 +193,19 @@ describe('pr-backport filter-targets', () => {
           }
         ]
       })
-    ).toMatchObject({ skip: 'true', 'all-merged': 'false' })
+    ).toMatchObject({ skip: 'true', 'all-resolved': 'false' })
   })
 
-  it('skips the run when every target was already merged', () => {
+  it('resolves the request when its only target was closed', () => {
     expect(
-      runFilter({ targets: ['core/1.57'], prs: [mergedCore157] })
+      runFilter({
+        targets: ['core/1.57'],
+        prs: [{ ...mergedCore157, state: 'closed' }]
+      })
     ).toMatchObject({
       skip: 'true',
       'pending-targets': '',
-      'all-merged': 'true'
+      'all-resolved': 'true'
     })
   })
 
@@ -214,7 +238,7 @@ describe('pr-backport filter-targets', () => {
       })
     ).toMatchObject({
       skip: 'true',
-      'all-merged': 'false',
+      'all-resolved': 'false',
       'already-exists': 'core/1.57 (PR #21881)'
     })
   })
@@ -236,7 +260,7 @@ describe('pr-backport filter-targets', () => {
         skip: 'true',
         'pending-targets': '',
         'already-exists': 'core/1.57 (merged PR #22001, made by hand)',
-        'all-merged': 'true'
+        'all-resolved': 'true'
       })
     })
 
@@ -285,7 +309,7 @@ describe('pr-backport filter-targets', () => {
     ])('recognises $name', ({ pr }) => {
       expect(runFilter({ targets: ['core/1.57'], prs: [pr] })).toMatchObject({
         skip: 'true',
-        'all-merged': 'true'
+        'all-resolved': 'true'
       })
     })
 
@@ -381,7 +405,7 @@ describe('pr-backport filter-targets', () => {
             }
           ]
         })
-      ).toMatchObject({ skip: 'true', 'all-merged': 'true' })
+      ).toMatchObject({ skip: 'true', 'all-resolved': 'true' })
     })
 
     it('prefers the bot backport when both exist', () => {

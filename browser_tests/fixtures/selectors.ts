@@ -186,7 +186,8 @@ export const TestIds = {
     innerWrapper: 'node-inner-wrapper',
     mainImage: 'main-image',
     slotConnectionDot: 'slot-connection-dot',
-    imageGrid: 'image-grid'
+    imageGrid: 'image-grid',
+    progressFill: 'node-progress-fill'
   },
   selectionToolbox: {
     root: 'selection-toolbox',

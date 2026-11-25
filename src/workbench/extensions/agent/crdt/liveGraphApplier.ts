@@ -53,7 +53,7 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 import { zComfyNode, zGroup } from '@comfyorg/graph-model/workflowSchema'
 import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import { inputSpecTree } from '@/core/graph/nodeDef/inputSpecInterpreter'
-import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
+import { isValueControlMode } from '@/core/graph/widgets/valueControl'
 import type { LinkId } from '@comfyorg/graph-model/linkId'
 import { parseLinkId, toLinkId } from '@comfyorg/graph-model/linkId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
@@ -64,6 +64,7 @@ import { withLiveAgentTurnWrites } from './agentRemoteProvenance'
 import {
   allSubgraphDefinitions,
   readSubgraphDefinitions,
+  readSubgraphInteriorTypes,
   readSubgraphInteriorWidgets
 } from './agentSubgraphDefinitions'
 import type {
@@ -726,7 +727,7 @@ const optionLayouts = new WeakMap<object, OptionLayout>()
 
 function optionLayout(node: LGraphNode): OptionLayout {
   const { nodeData } = node.constructor
-  if (!nodeData) return NO_OPTION_LAYOUT
+  if (!nodeData?.inputs) return NO_OPTION_LAYOUT
   const cached = optionLayouts.get(nodeData)
   if (cached) return cached
 
@@ -884,6 +885,34 @@ function widestSelectionWidgetCount(node: LGraphNode): number {
       ),
     widgets.length
   )
+}
+
+const SYNTHESIZED_CONTROL_NAMES = [
+  'control_after_generate',
+  'control_filter_list'
+] as const
+
+function synthesizedWidgetName(name: string): boolean {
+  return SYNTHESIZED_CONTROL_NAMES.some(
+    (control) => name === control || name.endsWith(` ${control}`)
+  )
+}
+
+function explicitControlName(input: object, name: string): boolean {
+  const { control_after_generate: afterGenerate, control_filter_list: filter } =
+    input as Record<string, unknown>
+  if (filter === name) return true
+  return afterGenerate === name && !isValueControlMode(afterGenerate)
+}
+
+function undeclaredByNodeDefinition(node: LGraphNode, name: string): boolean {
+  const inputs = node.constructor.nodeData?.inputs
+  if (inputs === undefined) return false
+  if (synthesizedWidgetName(name)) return false
+  if (name.includes('.') || name.startsWith('_extra_')) return false
+  if (Object.values(inputs).some((input) => explicitControlName(input, name)))
+    return false
+  return !Object.hasOwn(inputs, name)
 }
 
 function selectionDependentAbsence(node: LGraphNode, name: string): boolean {
@@ -1269,28 +1298,93 @@ export class LiveGraphApplier {
 
   private registerDefinitions(graph: LGraph, doc: Y.Doc): void {
     const rootGraph = graph.rootGraph
-    const missing = allSubgraphDefinitions(readSubgraphDefinitions(doc))
+    const { definitions, malformed } = readSubgraphDefinitions(doc)
+    for (const { id, issues } of malformed) {
+      this.reportDefinitionFailure(
+        graph,
+        String(id),
+        new Error(
+          `Agent subgraph definition ${String(id)} is malformed: ${issues}`
+        )
+      )
+    }
+    const missing = allSubgraphDefinitions(definitions)
       .map((definition) => ({ ...definition, definitions: undefined }))
       .filter((definition) => !rootGraph.subgraphs.has(definition.id))
-    if (missing.length === 0) return
+    const failed = new Set(malformed.map(({ id }) => String(id)))
+    const registrable = this.withoutFailedDependents(graph, missing, failed)
+    if (registrable.length === 0) return
     const reserved = docRootIds(doc)
-    for (const definition of topologicalSortSubgraphs(missing)) {
-      const failure = tryCreateSubgraph(rootGraph, definition, reserved)
+    if (tryCreateSubgraphs(rootGraph, registrable, reserved) === undefined) {
+      for (const definition of registrable) {
+        this.recordRegisteredDefinition(rootGraph, definition)
+      }
+      return
+    }
+    this.registerIndividually(graph, registrable, failed, reserved)
+  }
+
+  private withoutFailedDependents(
+    graph: LGraph,
+    definitions: ExportedSubgraph[],
+    failed: Set<string>
+  ): ExportedSubgraph[] {
+    let registrable = topologicalSortSubgraphs(definitions)
+    let failedBefore: number
+    do {
+      failedBefore = failed.size
+      registrable = registrable.filter((definition) => {
+        const failure = nestedDefinitionFailure(definition, failed)
+        if (failure === undefined) return true
+        failed.add(definition.id)
+        this.reportDefinitionFailure(graph, definition.id, failure)
+        return false
+      })
+    } while (failed.size > failedBefore)
+    return registrable
+  }
+
+  private registerIndividually(
+    graph: LGraph,
+    definitions: ExportedSubgraph[],
+    failed: Set<string>,
+    reserved: { nodeIds: NodeId[]; linkIds: number[] }
+  ): void {
+    for (const definition of topologicalSortSubgraphs(definitions)) {
+      const failure =
+        nestedDefinitionFailure(definition, failed) ??
+        tryCreateSubgraphs(graph.rootGraph, [definition], reserved)
       if (failure === undefined) {
-        this.reported.delete(`definition:${definition.id}`)
-        this.recordInteriorIds(rootGraph, definition)
+        this.recordRegisteredDefinition(graph.rootGraph, definition)
         continue
       }
-      this.incrementFailureCount()
-      if (this.reported.has(`definition:${definition.id}`)) continue
-      this.reported.add(`definition:${definition.id}`)
-      reportError(failure, {
-        surface: 'agent',
-        errorType: 'agent_subgraph_definitions_failed',
-        tags: { ...AGENT_APPLY_TAGS, outcome: 'degraded' },
-        context: { graphId: graph.id, definitionId: definition.id }
-      })
+      failed.add(definition.id)
+      this.reportDefinitionFailure(graph, definition.id, failure)
     }
+  }
+
+  private recordRegisteredDefinition(
+    rootGraph: LGraph,
+    definition: ExportedSubgraph
+  ): void {
+    this.reported.delete(`definition:${definition.id}`)
+    this.recordInteriorIds(rootGraph, definition)
+  }
+
+  private reportDefinitionFailure(
+    graph: LGraph,
+    definitionId: string,
+    failure: unknown
+  ): void {
+    this.incrementFailureCount()
+    if (this.reported.has(`definition:${definitionId}`)) return
+    this.reported.add(`definition:${definitionId}`)
+    reportError(failure, {
+      surface: 'agent',
+      errorType: 'agent_subgraph_definitions_failed',
+      tags: { ...AGENT_APPLY_TAGS, outcome: 'degraded' },
+      context: { graphId: graph.id, definitionId }
+    })
   }
 
   private recordInteriorIds(
@@ -1575,6 +1669,7 @@ export class LiveGraphApplier {
     const hasFull = full !== undefined && full.size > 0
     if (!hasGranular && !hasFull) return
     const docInteriors = readSubgraphInteriorWidgets(doc)
+    const docTypes = readSubgraphInteriorTypes(doc)
     const targets = interiorSyncTargets(granular, full, docInteriors)
     for (const [definitionId, nodes] of targets) {
       this.try(context, () =>
@@ -1583,6 +1678,7 @@ export class LiveGraphApplier {
           definitionId,
           nodes,
           docInteriors,
+          docTypes.get(definitionId),
           mode
         )
       )
@@ -1594,6 +1690,7 @@ export class LiveGraphApplier {
     definitionId: string,
     nodes: ReadonlyMap<string, ReadonlySet<string> | 'all'>,
     docInteriors: ReturnType<typeof readSubgraphInteriorWidgets>,
+    docTypes: ReadonlyMap<string, string | undefined> | undefined,
     mode: ApplyMode
   ): void {
     const subgraph = graph.rootGraph.subgraphs.get(definitionId)
@@ -1615,6 +1712,11 @@ export class LiveGraphApplier {
         ? subgraph.getNodeById(mapped)
         : subgraph.getNodeById(toNodeId(nodeId))
       if (!live) continue
+      const docType = docTypes?.get(nodeId)
+      if (docType !== undefined && docType !== live.type) {
+        this.reportInteriorTypeMismatch(definitionId, nodeId, docType, live)
+        continue
+      }
       this.applyInteriorWidgets(live, widgets, names, mode)
       this.propagateInteriorToHosts(
         graph,
@@ -1625,6 +1727,26 @@ export class LiveGraphApplier {
         mode
       )
     }
+  }
+
+  private reportInteriorTypeMismatch(
+    definitionId: string,
+    nodeId: string,
+    docType: string,
+    live: LGraphNode
+  ): void {
+    this.reportOnce(
+      `interior-type:${definitionId}:${nodeId}`,
+      `Subgraph interior node ${nodeId} is ${docType} in the document but ${live.type} on the canvas`,
+      'agent_graph_interior_type_mismatch',
+      {
+        definitionId,
+        documentNodeId: nodeId,
+        documentType: docType,
+        liveNodeId: live.id,
+        liveType: live.type
+      }
+    )
   }
 
   private propagateInteriorToHosts(
@@ -1811,6 +1933,10 @@ export class LiveGraphApplier {
       if (hiddenRowController(node, name)) continue
       if (selectionDependentAbsence(node, name)) continue
       if (!reportMissing && overflowWidgetIndex(name) === null) continue
+      if (undeclaredByNodeDefinition(node, name)) {
+        this.incrementFailureCount()
+        continue
+      }
       if (placeholder) this.incrementFailureCount()
       else this.reportMissingWidget(node, name)
     }
@@ -2206,21 +2332,22 @@ export class LiveGraphApplier {
     { moveCollisions }: { moveCollisions: boolean }
   ): void {
     const createdSet = new Set(created)
-    const rect = (item: LGraphNode | LGraphGroup): PlacementRect => ({
-      x: item.pos[0],
-      y: item.pos[1],
-      width: item.size[0],
-      height: item.size[1]
+    const groupRect = (group: LGraphGroup): PlacementRect => ({
+      x: group.pos[0],
+      y: group.pos[1],
+      width: group.size[0],
+      height: group.size[1]
     })
     const createdNodes = graph._nodes.filter((node) => createdSet.has(node.id))
     const existingNodes = graph._nodes.filter(
       (node) => !createdSet.has(node.id)
     )
     const ctx = this.deps.getCanvas?.()?.ctx ?? undefined
+    const measureNow = (node: LGraphNode) => pendingBounds(node, ctx)
     const existingBounds = existingNodes.map((node) =>
-      isRendered(node) ? node.boundingRect : pendingBounds(node, ctx)
+      isRendered(node) ? node.boundingRect : measureNow(node)
     )
-    const createdBounds = createdNodes.map((node) => pendingBounds(node, ctx))
+    const createdBounds = createdNodes.map(measureNow)
     const framesOnlyExisting = (group: LGraphGroup) =>
       framesAny(group, existingBounds) && !framesAny(group, createdBounds)
     const kept = createdGroups.filter(framesOnlyExisting)
@@ -2231,11 +2358,16 @@ export class LiveGraphApplier {
     const incoming = [...createdNodes, ...placedGroups]
     const offset = placementOffset({
       existing: [
-        ...existingNodes,
-        ...graph.groups.filter((group) => !placedGroups.includes(group))
-      ].map(rect),
+        ...existingNodes.map((node) => toPlacementRect(measureNow(node))),
+        ...graph.groups
+          .filter((group) => !placedGroups.includes(group))
+          .map(groupRect)
+      ],
       viewport: this.deps.viewportBounds?.() ?? null,
-      incoming: incoming.map(rect),
+      incoming: [
+        ...createdBounds.map(toPlacementRect),
+        ...placedGroups.map(groupRect)
+      ],
       moveCollisions
     })
     if (!offset) return
@@ -2243,6 +2375,10 @@ export class LiveGraphApplier {
       item.pos = [item.pos[0] + offset.dx, item.pos[1] + offset.dy]
     }
   }
+}
+
+function toPlacementRect([x, y, width, height]: ReadOnlyRect): PlacementRect {
+  return { x, y, width, height }
 }
 
 /** True once a frame has measured the node; until then its bounds are zero. */
@@ -2265,6 +2401,13 @@ function pendingBounds(
   const out: Rect = [0, 0, 0, 0]
   const collapsedWidth = node._collapsed_width
   node.measure(out, ctx)
+  if (
+    ctx === undefined &&
+    node.flags.collapsed &&
+    collapsedWidth !== undefined
+  ) {
+    out[2] = Math.max(out[2], collapsedWidth)
+  }
   node._collapsed_width = collapsedWidth
   return out
 }
@@ -2540,32 +2683,39 @@ function docRootIds(doc: Y.Doc): { nodeIds: NodeId[]; linkIds: number[] } {
   return { nodeIds, linkIds }
 }
 
-function tryCreateSubgraph(
-  rootGraph: LGraph,
+function nestedDefinitionFailure(
   definition: ExportedSubgraph,
+  failed: ReadonlySet<string>
+): Error | undefined {
+  if (!definition.nodes?.some(({ type }) => failed.has(type))) return undefined
+  return new Error(
+    `Agent subgraph definition ${definition.id} nests a definition that failed to register`
+  )
+}
+
+function tryCreateSubgraphs(
+  rootGraph: LGraph,
+  definitions: ExportedSubgraph[],
   reserved: { nodeIds: NodeId[]; linkIds: number[] }
 ): unknown {
-  if (!isUuidShapedSubgraphId(definition.id)) {
-    return new Error(
-      `Agent subgraph definition id is not a UUID: ${definition.id}`
-    )
-  }
   try {
     withNamedValuesRestore(() =>
-      rootGraph.createSubgraphs([definition], reserved)
+      rootGraph.createSubgraphs(definitions, reserved)
     )
     return undefined
   } catch (cause) {
-    const halfBuilt = rootGraph.subgraphs.get(definition.id)
-    if (halfBuilt) {
-      try {
-        rootGraph.releaseSubgraphs([halfBuilt])
-      } catch (rollbackCause) {
-        return new AggregateError(
-          [cause, rollbackCause],
-          `Agent subgraph definition ${definition.id} failed to register and roll back`
-        )
-      }
+    const halfBuilt = definitions.flatMap(
+      (definition) => rootGraph.subgraphs.get(definition.id) ?? []
+    )
+    if (halfBuilt.length === 0) return cause
+    try {
+      rootGraph.releaseSubgraphs(halfBuilt)
+    } catch (rollbackCause) {
+      return new AggregateError(
+        [cause, rollbackCause],
+        'Agent subgraph definitions failed to register and roll back',
+        { cause }
+      )
     }
     return cause
   }

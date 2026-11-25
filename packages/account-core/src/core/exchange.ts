@@ -183,9 +183,6 @@ export async function exchangeToken(
     try {
       idToken = await abortable(user.getIdToken(), controller.signal)
     } catch (error) {
-      // A missing identity token is NOT_AUTHENTICATED; an identity failure
-      // carrying that code keeps it, anything else (including our own abort)
-      // stays in the transient bucket.
       const coded =
         !controller.signal.aborted &&
         typeof error === 'object' &&
@@ -224,8 +221,6 @@ export async function exchangeToken(
     const skewMs = clockSkewMs(response, now())
     let rawBody: unknown
     try {
-      // The timeout stays armed through the body read: headers arriving does
-      // not bound the body, and a stalled body must abort like a stalled connect.
       rawBody = await abortable(response.json(), controller.signal)
     } catch {
       return unusableBody(
