@@ -36,6 +36,7 @@ function capabilities(): Capabilities {
     can_manage_partner_node_access: false,
     can_view_pending_invites: false,
     can_view_team_usage: false,
+    can_view_workspace_usage: false,
     can_reactivate: false,
     can_revert_scheduled_change: false,
     can_run_workflows: true,
@@ -93,6 +94,7 @@ expectTypeOf<Capabilities>().toEqualTypeOf<{
   can_view_own_usage?: boolean | undefined
   can_view_pending_invites: boolean
   can_view_team_usage: boolean
+  can_view_workspace_usage: boolean
 }>()
 expectTypeOf<ServerDenialReason>().toEqualTypeOf<
   Exclude<CapabilityDenialReason, 'unspecified'>

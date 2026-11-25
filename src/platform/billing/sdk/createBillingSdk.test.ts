@@ -69,6 +69,7 @@ const CAPABILITIES = {
     can_manage_partner_node_access: false,
     can_view_pending_invites: false,
     can_view_team_usage: false,
+    can_view_workspace_usage: false,
     can_edit_workspace: false,
     can_manage_auto_top_up: false,
     can_view_auto_top_up: false,
