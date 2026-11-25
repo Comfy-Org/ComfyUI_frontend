@@ -20,9 +20,24 @@ const zOpenOnCloudRollout = zGetFeaturesResponse.pick({
 })
 
 type OpenOnCloudRollout = z.infer<typeof zOpenOnCloudRollout>
+// Scopes the once-per-page Sentry budget: each kind (and each HTTP status)
+// gets its own slot, so a credential failure can't consume the one report
+// a later HTTP failure on the same page would otherwise get, and vice versa.
+type RolloutFailureKind =
+  | 'network'
+  | 'credential'
+  | 'http'
+  | 'parse'
+  | 'unknown'
 type RolloutAttempt =
   | { ok: true; data: OpenOnCloudRollout }
-  | { ok: false; retryable: boolean; cause: unknown; unreachable?: boolean }
+  | {
+      ok: false
+      retryable: boolean
+      cause: unknown
+      kind: RolloutFailureKind
+      httpStatus?: number
+    }
 
 const rollout = shallowRef<OpenOnCloudRollout>()
 export const UPLOAD_ROLLOUT_REFRESH_MS = 15_000
@@ -38,21 +53,27 @@ let currentSession: RolloutSession | undefined
 
 export const localOpenOnCloudRollout = readonly(rollout)
 
-function isUnreachable(cause: unknown): boolean {
-  return (
-    cause instanceof TypeError ||
-    (cause instanceof DOMException &&
-      (cause.name === 'AbortError' || cause.name === 'TimeoutError'))
-  )
-}
-
-function reportRolloutReadFailure(cause: unknown, unreachable: boolean): void {
+function reportRolloutReadFailure(
+  cause: unknown,
+  kind: RolloutFailureKind,
+  httpStatus?: number
+): void {
+  // Datadog RUM only initializes on Cloud builds, so a self-hosted install has
+  // no remote signal besides Sentry. A fixed per-kind-per-page cap, rather
+  // than suppressing network/unreachable failures outright, keeps that signal
+  // without letting a single kind flood a page.
   reportError(cause, {
-    errorType: 'error_loading_open_on_cloud_rollout',
+    errorType: ['error_loading_open_on_cloud_rollout', kind, httpStatus]
+      .filter((part) => part !== undefined)
+      .join('_'),
     surface: 'platform',
     level: 'warning',
-    sentryMode: unreachable ? 'never' : 'once_per_page',
-    tags: { outcome: 'degraded', unreachable }
+    sentryMode: 'once_per_page',
+    tags: {
+      outcome: 'degraded',
+      failureKind: kind,
+      ...(httpStatus !== undefined ? { httpStatus } : {})
+    }
   })
 }
 
@@ -65,10 +86,16 @@ async function parseRolloutResponse(
     return {
       ok: false,
       retryable: false,
-      cause: served.error
+      cause: served.error,
+      kind: 'parse'
     }
   } catch (cause) {
-    return { ok: false, retryable: !(cause instanceof SyntaxError), cause }
+    return {
+      ok: false,
+      retryable: !(cause instanceof SyntaxError),
+      cause,
+      kind: 'parse'
+    }
   }
 }
 
@@ -89,7 +116,8 @@ async function requestRollout(
       return {
         ok: false,
         retryable: true,
-        cause: new Error('Cloud rollout credential unavailable')
+        cause: new Error('Cloud rollout credential unavailable'),
+        kind: 'credential'
       }
     let response: Response
     try {
@@ -101,22 +129,22 @@ async function requestRollout(
         signal: requestSignal
       })
     } catch (cause) {
-      return {
-        ok: false,
-        retryable: true,
-        cause,
-        unreachable: isUnreachable(cause)
-      }
+      // Every exception the fetch() call itself can raise here — network
+      // failure, CORS, abort, timeout, or a rejected redirect — is some
+      // flavor of "couldn't reach Cloud", not a distinct, actionable kind.
+      return { ok: false, retryable: true, cause, kind: 'network' }
     }
     if (!response.ok)
       return {
         ok: false,
         retryable: response.status === 429 || response.status >= 500,
-        cause: new Error(`Cloud features HTTP ${response.status}`)
+        cause: new Error(`Cloud features HTTP ${response.status}`),
+        kind: 'http',
+        httpStatus: response.status
       }
     return await parseRolloutResponse(response)
   } catch (cause) {
-    return { ok: false, retryable: true, cause }
+    return { ok: false, retryable: true, cause, kind: 'unknown' }
   }
 }
 
@@ -148,7 +176,7 @@ async function fetchRollout(
       signal
     )
   } catch (cause) {
-    return { ok: false, retryable: false, cause }
+    return { ok: false, retryable: false, cause, kind: 'unknown' }
   }
 }
 
@@ -173,7 +201,7 @@ async function readRollout(
   if (!result) return false
   if (!result.retryable) rollout.value = undefined
   if (retry) session.startupRetryPending = result.retryable
-  reportRolloutReadFailure(result.cause, result.unreachable === true)
+  reportRolloutReadFailure(result.cause, result.kind, result.httpStatus)
   return false
 }
 
