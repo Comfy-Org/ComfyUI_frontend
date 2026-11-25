@@ -15,17 +15,25 @@ export async function openModelLibraryBrowser(): Promise<void> {
     title: t('sideToolbar.modelLibrary'),
     onAssetSelected: (asset) => {
       const error = startModelNodeDragFromAsset(asset, 'asset_browser')
-      if (error) {
-        reportError(new Error(error.message), {
-          surface: 'assets',
-          errorType: 'model_node_creation_failure',
-          tags: { code: error.code },
-          context: { assetId: error.assetId, details: error.details }
+      if (!error) return
+
+      const noProvider = error.code === 'NO_PROVIDER'
+      reportError(new Error(error.message), {
+        surface: 'assets',
+        errorType: 'model_node_creation_failure',
+        tags: { code: error.code },
+        context: { assetId: error.assetId, details: error.details },
+        ...(noProvider && { level: 'warning', sentryMode: 'never' })
+      })
+      if (noProvider) {
+        toast.warning(t('assetBrowser.errorModelTypeNotSupported'), {
+          description: t('assetBrowser.modelTypeNotAddable')
         })
-        toast.error(t('g.error'), {
-          description: t('assetBrowser.failedToCreateNode')
-        })
+        return
       }
+      toast.error(t('g.error'), {
+        description: t('assetBrowser.failedToCreateNode')
+      })
     }
   })
 }

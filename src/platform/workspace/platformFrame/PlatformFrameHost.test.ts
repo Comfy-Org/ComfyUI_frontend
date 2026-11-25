@@ -85,7 +85,10 @@ describe('PlatformFrameHost', () => {
 
   it('frames the Platform page in a sandbox', async () => {
     renderHost()
-    usePlatformFrameStore().open({ step: 'new', startAtNodes: true })
+    usePlatformFrameStore().open(
+      { step: 'new', startAtNodes: true },
+      'extensions'
+    )
     await nextTick()
 
     const frame = screen.getByTestId('platform-frame')
@@ -98,7 +101,7 @@ describe('PlatformFrameHost', () => {
 
   it('offers Open on Platform when the page does not answer within 10 s', async () => {
     renderHost()
-    usePlatformFrameStore().open({ step: 'new' })
+    usePlatformFrameStore().open({ step: 'new' }, 'extensions')
     await nextTick()
 
     await vi.advanceTimersByTimeAsync(PLATFORM_FRAME_UNANSWERED_MS)
@@ -125,7 +128,7 @@ describe('PlatformFrameHost', () => {
     'points Open on Platform at the page for $label',
     async ({ request, path }) => {
       renderHost()
-      usePlatformFrameStore().open(request)
+      usePlatformFrameStore().open(request, 'extensions')
       await nextTick()
 
       await vi.advanceTimersByTimeAsync(PLATFORM_FRAME_UNANSWERED_MS)
@@ -143,7 +146,7 @@ describe('PlatformFrameHost', () => {
     { way: 'Escape', close: 'escape' }
   ])('closes on $way', async ({ close }) => {
     const user = renderHost()
-    usePlatformFrameStore().open({ step: 'new' })
+    usePlatformFrameStore().open({ step: 'new' }, 'extensions')
     await nextTick()
 
     if (close === 'button')
@@ -157,7 +160,10 @@ describe('PlatformFrameHost', () => {
 
   it('frames the pre-install screen in a smaller dialog', async () => {
     renderHost()
-    usePlatformFrameStore().open({ step: 'preinstall', deploymentId: 'dep-1' })
+    usePlatformFrameStore().open(
+      { step: 'preinstall', deploymentId: 'dep-1' },
+      'preinstall'
+    )
     await nextTick()
 
     const dialog = screen.getByRole('dialog', {
@@ -172,7 +178,10 @@ describe('PlatformFrameHost', () => {
 
   it('keeps the full-size dialog for the other screens', async () => {
     renderHost()
-    usePlatformFrameStore().open({ step: 'update', deploymentId: 'dep-1' })
+    usePlatformFrameStore().open(
+      { step: 'update', deploymentId: 'dep-1' },
+      'pencil'
+    )
     await nextTick()
 
     expect(
@@ -250,7 +259,7 @@ describe('PlatformFrameHost', () => {
     const runOn = screen.getByRole('button', { name: 'Run on' })
     runOn.focus()
 
-    usePlatformFrameStore().open({ step: 'new' })
+    usePlatformFrameStore().open({ step: 'new' }, 'extensions')
     await vi.waitFor(() => expect(frame).toHaveFocus())
     await user.keyboard('{Escape}')
 
@@ -275,7 +284,7 @@ describe('PlatformFrameHost', () => {
         setup: () => ({
           cardOpen,
           create: () => {
-            usePlatformFrameStore().open({ step: 'new' })
+            usePlatformFrameStore().open({ step: 'new' }, 'extensions')
             cardOpen.value = false
           }
         }),
@@ -366,7 +375,7 @@ describe('PlatformFrameHost', () => {
 
   it('moves focus into the frame when it opens and keeps Tab inside the dialog', async () => {
     const user = renderHost()
-    usePlatformFrameStore().open({ step: 'new' })
+    usePlatformFrameStore().open({ step: 'new' }, 'extensions')
 
     const frame = await screen.findByTestId('platform-frame')
     await vi.waitFor(() => expect(frame).toHaveFocus())
@@ -387,7 +396,7 @@ describe('PlatformFrameHost', () => {
     )
     const runOn = screen.getByRole('button', { name: 'Run on' })
     runOn.focus()
-    usePlatformFrameStore().open({ step: 'new' })
+    usePlatformFrameStore().open({ step: 'new' }, 'extensions')
     const frame = await screen.findByTestId('platform-frame')
     await vi.waitFor(() => expect(frame).toHaveFocus())
 

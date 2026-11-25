@@ -15,33 +15,76 @@ import type {
   CloudWorkflowCheckState
 } from '@/platform/openOnCloud/cloudWorkflowCheck'
 import { reduceCloudWorkflowCheck } from '@/platform/openOnCloud/cloudWorkflowCheck'
+import { bindLocalOpenOnCloudGrant } from '@/platform/openOnCloud/localOpenOnCloudRollout'
 
 export const useCloudWorkflowCheckStore = defineStore(
   'cloudWorkflowCheck',
   () => {
-    const { isLoggedIn, resolvedUserInfo } = useCurrentUser()
+    const { isApiKeyLogin, isLoggedIn, resolvedUserInfo } = useCurrentUser()
     const { flags } = useFeatureFlags()
     const workspaces = useTeamWorkspaceStore()
     const state = shallowRef<CloudWorkflowCheckState>({ phase: 'idle' })
+    const workflowRevision = shallowRef(0)
     let lastRun = 0
+    let activeCheck:
+      | { controller: AbortController; refreshingGrant: boolean }
+      | undefined
     let confirmedUploads: ConfirmedWorkspaceModels | undefined
 
     function dispatch(event: CloudWorkflowCheckEvent) {
       state.value = reduceCloudWorkflowCheck(state.value, event)
     }
 
-    async function check(): Promise<void> {
-      const run = ++lastRun
-      dispatch({ type: 'started', run })
-      const result = await checkCloudCompatibility(confirmedUploads)
-      if (result?.kind === 'canOpen' || result?.kind === 'missing') {
-        dispatch({ type: 'answered', run, verdict: result })
-      } else {
-        dispatch({ type: 'failed', run, blocker: result })
+    async function check({
+      refreshUploadGrant = false,
+      canRequest,
+      signal
+    }: {
+      refreshUploadGrant?: boolean
+      canRequest?: () => boolean
+      signal?: AbortSignal
+    } = {}): Promise<void> {
+      if (signal?.aborted) return
+      activeCheck?.controller.abort()
+      const controller = new AbortController()
+      const pending = { controller, refreshingGrant: refreshUploadGrant }
+      activeCheck = pending
+      const cancelPendingCheck = () => {
+        if (activeCheck === pending) invalidate()
+      }
+      signal?.addEventListener('abort', cancelPendingCheck, { once: true })
+
+      try {
+        const run = ++lastRun
+        dispatch({ type: 'started', run })
+        if (refreshUploadGrant) {
+          await bindLocalOpenOnCloudGrant().revalidate()
+          pending.refreshingGrant = false
+          if (controller.signal.aborted) return
+          if (canRequest && !canRequest()) {
+            invalidate()
+            return
+          }
+        }
+        const result = await checkCloudCompatibility(
+          confirmedUploads,
+          controller.signal
+        )
+        if (controller.signal.aborted) return
+        if (result?.kind === 'canOpen' || result?.kind === 'missing') {
+          dispatch({ type: 'answered', run, verdict: result })
+        } else {
+          dispatch({ type: 'failed', run, blocker: result })
+        }
+      } finally {
+        signal?.removeEventListener('abort', cancelPendingCheck)
+        if (activeCheck === pending) activeCheck = undefined
       }
     }
 
     function invalidate() {
+      activeCheck?.controller.abort()
+      activeCheck = undefined
       dispatch({ type: 'invalidated' })
     }
 
@@ -62,33 +105,65 @@ export const useCloudWorkflowCheckStore = defineStore(
       confirmedUploads = { workspaceId, models: [...combined.values()] }
     }
 
+    function invalidateWorkflow() {
+      workflowRevision.value++
+      invalidate()
+    }
+
+    function bindWorkflowRevision() {
+      const revision = workflowRevision.value
+      return () => revision === workflowRevision.value
+    }
+
     const workflowStore = useWorkflowStore()
-    useEventListener(api, 'graphChanged', invalidate)
-    watch(() => workflowStore.activeWorkflow, invalidate, { flush: 'sync' })
+    useEventListener(api, 'graphChanged', invalidateWorkflow)
+    watch(() => workflowStore.activeWorkflow, invalidateWorkflow, {
+      flush: 'sync'
+    })
 
     watch(
       [
         isLoggedIn,
         () => resolvedUserInfo.value?.id,
-        () =>
-          workspaces.activeWorkspaceId ?? desktopHostUser.value?.workspaceId,
-        () => flags.openOnCloudModelUploadEnabled
+        () => workspaces.activeWorkspaceId ?? desktopHostUser.value?.workspaceId
       ],
       (
         [signedIn, userId, workspaceId],
         [wasSignedIn, previousUser, previousWorkspace]
       ) => {
-        if (
-          signedIn !== wasSignedIn ||
-          userId !== previousUser ||
-          workspaceId !== previousWorkspace
-        )
+        const identityChanged =
+          signedIn !== wasSignedIn || userId !== previousUser
+        if (identityChanged || workspaceId !== previousWorkspace)
           confirmedUploads = undefined
-        if (state.value.phase !== 'idle') void check()
+
+        const initializingWorkspaceForCheck =
+          !identityChanged &&
+          !previousWorkspace &&
+          !!workspaceId &&
+          signedIn &&
+          !isApiKeyLogin.value &&
+          flags.openOnCloudModelUploadEnabled &&
+          workspaces.initState === 'loading' &&
+          state.value.phase === 'checking'
+
+        if (!initializingWorkspaceForCheck) invalidate()
+      },
+      { flush: 'sync' }
+    )
+    watch(
+      () => flags.openOnCloudModelUploadEnabled,
+      () => {
+        if (!activeCheck?.refreshingGrant) invalidate()
       },
       { flush: 'sync' }
     )
 
-    return { state, check, invalidate, rememberConfirmedUploads }
+    return {
+      state,
+      check,
+      invalidate,
+      bindWorkflowRevision,
+      rememberConfirmedUploads
+    }
   }
 )

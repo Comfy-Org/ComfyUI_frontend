@@ -1344,6 +1344,18 @@ describe('useCoreCommands', () => {
 
     it('shows an error toast when the asset cannot start a drag', async () => {
       mockStartModelNodeDrag.mockReturnValue({
+        code: 'INVALID_ASSET',
+        message: 'Asset has no tags defined',
+        assetId: 'asset-1'
+      })
+
+      await selectAssetFromBrowser()
+
+      expect(useToast().error).toHaveBeenCalled()
+    })
+
+    it('shows a warning toast when the model category has no loader node', async () => {
+      mockStartModelNodeDrag.mockReturnValue({
         code: 'NO_PROVIDER',
         message: 'No node provider registered',
         assetId: 'asset-1'
@@ -1351,7 +1363,8 @@ describe('useCoreCommands', () => {
 
       await selectAssetFromBrowser()
 
-      expect(useToast().error).toHaveBeenCalled()
+      expect(useToast().warning).toHaveBeenCalled()
+      expect(useToast().error).not.toHaveBeenCalled()
     })
   })
 })

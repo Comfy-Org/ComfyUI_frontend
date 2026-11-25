@@ -534,6 +534,7 @@ export class ComfyApi extends EventTarget {
    * The API key for the comfy org account if the user logged in via API key.
    */
   apiKey?: string
+  loadedReleaseId?: string
 
   constructor(private readonly ports: ComfyApiPorts) {
     super()
@@ -1466,7 +1467,10 @@ export class ComfyApi extends EventTarget {
     const res = await this.fetchApi('/prompt', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        ...(this.loadedReleaseId && {
+          'Comfy-Loaded-Release': this.loadedReleaseId
+        })
       },
       body: JSON.stringify(body)
     })

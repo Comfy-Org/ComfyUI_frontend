@@ -733,7 +733,11 @@ export const useLitegraphService = () => {
                   const filename = new URLSearchParams(url.search).get(
                     'filename'
                   )
-                  downloadFile(url.toString(), filename ?? undefined)
+                  downloadFile(
+                    url.toString(),
+                    filename ?? undefined,
+                    'canvas_menu'
+                  )
                 }, 'preview'),
                 null
               )

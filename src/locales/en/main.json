@@ -1077,7 +1077,9 @@
       "title": "Workspace library",
       "explainer": "Models in your workspace. Ones not in this build download when a job needs them.",
       "empty": "No models in your workspace library.",
-      "loadFailed": "Couldn't load your workspace library."
+      "loadFailed": "Couldn't load your workspace library.",
+      "fromWorkspace": "From your workspace",
+      "modelCount": "{count} model | {count} models"
     },
     "searchResultsCapped": "Showing the first {limit} matches. Refine your search to see more specific results.",
     "downloads": "Downloads",
@@ -4324,23 +4326,32 @@
     "workflowNeedsDeployment": {
       "title": "Run this workflow on a custom deployment",
       "installTitle": "Install your missing custom nodes",
-      "installBody": "Deploy a custom Build to add the custom nodes and models Comfy Cloud doesn't have. You set it up on Platform, and it appears under Run on for your workspace.",
+      "installBody": "Create a Custom Build to add the custom nodes and models Comfy Cloud doesn't have. You set it up on Platform, and it appears under Run on for your workspace.",
       "buildOnPlatform": "Build on Platform",
       "missingPacks": "{count} missing node pack | {count} missing node packs",
       "missingNodes": "{count} missing node | {count} missing nodes",
       "missingModels": "{count} missing model | {count} missing models",
       "andMore": "{names}, and {count} more",
       "titleNoneRunIt": "Create a deployment to run this workflow on Comfy Cloud",
+      "titleNoneRunItCustomBuild": "Create a Custom Build to run this workflow on Comfy Cloud",
+      "createCustomBuild": "Create a Custom Build",
       "noneRunIt": "No deployment in this workspace has all of these nodes.",
       "switchBody": "Comfy Cloud is missing these. Switch to a deployment that has them and keep working from there.",
       "switch": "Switch"
     },
     "runsThisWorkflow": "Runs this workflow",
+    "releaseChangedRun": "{deployment} now runs v{version}. Reload to run on it.",
+    "releaseChangedRunNoVersion": "{deployment} now runs a different version. Reload to run on it.",
+    "releaseChangedRunUnknown": "Runs now go to a different version. Reload to run on it.",
+    "releaseChangedRunUnknownTarget": "the new version",
     "missingNodes": "Missing {count} node | Missing {count} nodes",
     "notChecked": "Not checked",
     "releaseChanged": "This deployment now runs a different Release. Reload to get its nodes.",
     "deploymentChanged": "This browser now runs on {deployment}. Reload to get its nodes.",
+    "versionChanged": "{deployment} now runs v{version}. Reload to use its nodes.",
+    "versionChangedNoVersion": "{deployment} now runs a different version. Reload to use its nodes.",
     "reload": "Reload",
+    "later": "Later",
     "failedToSwitch": "Could not switch",
     "unsaved": {
       "title": "Save your workflows before switching?",
@@ -4405,8 +4416,9 @@
     "deploying": "Deploying {deployment}",
     "buildStep": "step {step} of {of}",
     "buildTakesMinutes": "This takes a few minutes. You can keep working.",
-    "readyNew": "{deployment} is ready. Choose it under Run on.",
-    "openRunOn": "Open Run on",
+    "readyNew": "{deployment} is ready",
+    "switch": "Switch",
+    "switchListingUnavailable": "Your deployments didn't load. Try again from Run on.",
     "readyUpdate": "{deployment} now runs v{version}.",
     "readyUpdateReload": "{deployment} now runs v{version}. Reload to use its nodes.",
     "reload": "Reload",
@@ -4426,6 +4438,7 @@
     "deploySetupDialog": {
       "title": "Run your workflows on Comfy Cloud",
       "body": "Deploy your local setup to Comfy Cloud as a Build, then use it in ComfyUI or call it as an autoscaling API.",
+      "missingNodesBody": "Comfy Cloud doesn’t have some of the nodes this workflow uses. Deploy your local setup to Comfy Cloud as a Build, then use it in ComfyUI or call it as an autoscaling API.",
       "pointNodes": "Bring your custom nodes and models",
       "pointGpu": "Run on powerful cloud GPUs",
       "pointPricing": "Pay only while your GPU workers are up, plus storage",
@@ -4447,17 +4460,19 @@
     "desktopTransferUnavailable": "Open on Comfy Cloud is currently unavailable for this editor.",
     "downloadedDetail": "Drop it onto Comfy Cloud in your browser to open it there.",
     "cloudButton": {
-      "tooltip": "Run on Comfy Cloud",
+      "tooltip": "Run this workflow on Comfy Cloud",
       "checking": "Checking Comfy Cloud…",
       "uploading": "Uploading models to Comfy Cloud, {percent}%",
       "resumeUpload": "Resume model upload"
     },
     "runDialog": {
-      "title": "Run on Comfy Cloud",
+      "body": "Open this workflow on Comfy Cloud, or deploy your local setup as a Build if it needs custom nodes.",
+      "pointApi": "Use it in ComfyUI or call it as an API",
+      "sends": "Checking will send this workflow’s node and model names to Comfy Cloud.",
+      "checkCompatibility": "Check compatibility",
       "ready": "Comfy Cloud has every node and model this workflow uses. It opens in a new tab, ready to run.",
     "readyWithUncheckedInputs": "Comfy Cloud has every node and model it could check. It could not check the models for these inputs: {inputs}. It opens in a new tab.",
     "uncheckedInput": "{input} on {nodeType}",
-      "asksToSignIn": "Comfy Cloud will ask you to sign in.",
       "openOnCloud": "Open on Comfy Cloud"
     },
     "agentMenu": {
@@ -4550,6 +4565,12 @@
       "placeholderModel": "Select model...",
       "placeholderUnknown": "Select media...",
       "maxSelectionReached": "Maximum selection limit reached",
+      "thumbnailSize": "Thumbnail size",
+      "thumbnailSizes": {
+        "compact": "Compact",
+        "standard": "Standard",
+        "large": "Large"
+      },
       "topResult": "Top result: {result}"
     },
     "valueControl": {
@@ -4894,6 +4915,7 @@
     "modelAssociatedWithLink": "The model associated with the link you provided:",
     "modelName": "Model Name",
     "modelNamePlaceholder": "Enter a name for this model",
+    "modelTypeNotAddable": "This model type can't be added to the canvas from the Model Library. Add a node that loads it, then choose the model there.",
     "modelTypeSelectorLabel": "What type of model is this?",
     "modelTypeSelectorPlaceholder": "Select model type",
     "modelUploaded": "Model successfully imported.",

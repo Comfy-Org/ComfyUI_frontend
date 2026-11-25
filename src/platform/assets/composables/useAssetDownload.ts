@@ -19,7 +19,8 @@ export function useAssetDownload() {
         return downloadFileAsBlob(file.url, {
           filename: file.filename,
           fetch: file.fetch,
-          preferResponseFilename: file.preferResponseFilename
+          preferResponseFilename: file.preferResponseFilename,
+          surface: file.surface
         })
       } catch (error) {
         return Promise.reject(error)

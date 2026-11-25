@@ -3,14 +3,11 @@
     v-if="showCloudAction || isUploading"
     variant="secondary"
     size="icon"
-    :tooltip
+    :tooltip="buttonLabel"
     tooltip-side="bottom"
-    :aria-label="tooltip"
+    :aria-label="buttonLabel"
     :aria-busy="isChecking || undefined"
     data-testid="cloud-button"
-    @pointerenter="prefetch"
-    @keydown.enter="prefetch"
-    @keydown.space="prefetch"
     @click="openModal"
   >
     <ProgressRing
@@ -71,7 +68,7 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
 import { DropdownMenuRoot, DropdownMenuTrigger } from 'reka-ui'
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
@@ -83,7 +80,6 @@ import { useTelemetry } from '@comfyorg/telemetry'
 import type { RunOnCloudTelemetryEvent } from '@comfyorg/telemetry/types'
 import ProgressRing from '@/platform/openOnCloud/components/ProgressRing.vue'
 import type { CloudWorkflowBlocker } from '@/platform/openOnCloud/cloudWorkflowCheck'
-import { bindLocalOpenOnCloudGrant } from '@/platform/openOnCloud/localOpenOnCloudRollout'
 import {
   closeRunOnCloudDialog,
   openRunOnCloudDialog
@@ -124,14 +120,13 @@ const recoverableModels = computed(() => {
     : recoverableBatches.value[0]
 })
 const isChecking = computed(() => check.value.phase === 'checking')
-const opensWhenAnswered = ref(false)
 let isMounted = true
 onBeforeUnmount(() => {
   isMounted = false
   closeRunOnCloudDialog()
 })
 
-const tooltip = computed(() => {
+const buttonLabel = computed(() => {
   if (isUploading.value)
     return t('openOnCloud.cloudButton.uploading', {
       percent: uploadPercent.value
@@ -140,11 +135,6 @@ const tooltip = computed(() => {
     ? t('openOnCloud.cloudButton.checking')
     : t('openOnCloud.cloudButton.tooltip')
 })
-
-function prefetch() {
-  if (showCloudAction && !isUploading.value && check.value.phase === 'idle')
-    void checkStore.check()
-}
 
 type CheckFailureProperties = Extract<
   RunOnCloudTelemetryEvent,
@@ -179,20 +169,6 @@ function checkFailure(blocker: CloudWorkflowBlocker | null): {
   }
 }
 
-function showModal() {
-  const current = check.value
-  if (current.phase === 'failed') {
-    const { message, properties } = checkFailure(current.blocker)
-    useTelemetry()?.trackRunOnCloudEvent({
-      name: 'app:run_on_cloud_check_failed',
-      properties
-    })
-    toast.error(message)
-    return
-  }
-  void openRunOnCloudDialog(() => isMounted && check.value === current)
-}
-
 function openModal() {
   if (!showCloudAction && !isUploading.value) return
   useTelemetry()?.trackUiButtonClicked({
@@ -203,20 +179,27 @@ function openModal() {
     openUploadBatch(activeModels.value)
     return
   }
-  if (!flags.openOnCloudModelUploadEnabled && retryBatches.value.length)
-    void bindLocalOpenOnCloudGrant().revalidate()
-  const { phase } = check.value
-  if (phase === 'answered') {
-    showModal()
-    return
-  }
-  opensWhenAnswered.value = true
-  if (phase === 'idle' || phase === 'failed') void checkStore.check()
+  if (isChecking.value) return
+  void openRunOnCloudDialog(
+    () => isMounted && showCloudAction && !isUploading.value,
+    { requestCheck }
+  )
+}
+
+function requestCheck(signal: AbortSignal): boolean {
+  if (!isMounted || isChecking.value || !showCloudAction || isUploading.value)
+    return false
+  void checkStore.check({
+    refreshUploadGrant:
+      !flags.openOnCloudModelUploadEnabled && retryBatches.value.length > 0,
+    canRequest: () => isMounted && showCloudAction && !isUploading.value,
+    signal
+  })
+  return true
 }
 
 function openUploadBatch(models: MissingModel[] | undefined) {
   if (!models || (!isUploading.value && !canRecoverBatch(models))) return
-  opensWhenAnswered.value = false
   const uploadBatch = { models, owner: owner.value }
   void openRunOnCloudDialog(
     () =>
@@ -228,23 +211,22 @@ function openUploadBatch(models: MissingModel[] | undefined) {
   )
 }
 
-watch(
-  () => check.value.phase,
-  (phase) => {
-    if (isUploading.value) return
-    if (phase === 'idle') {
-      opensWhenAnswered.value = false
-      closeRunOnCloudDialog({ keepUploadBatch: true })
-      return
-    }
-    if (phase === 'checking') {
-      if (closeRunOnCloudDialog({ keepUploadBatch: true }))
-        opensWhenAnswered.value = true
-      return
-    }
-    if (!opensWhenAnswered.value) return
-    opensWhenAnswered.value = false
-    showModal()
+watch([check, isUploading], ([current, uploading]) => {
+  if (uploading) return
+  if (current.phase === 'idle') {
+    closeRunOnCloudDialog({ keepUploadBatch: true })
+    return
   }
-)
+  if (
+    current.phase === 'failed' &&
+    closeRunOnCloudDialog({ keepUploadBatch: true })
+  ) {
+    const { message, properties } = checkFailure(current.blocker)
+    useTelemetry()?.trackRunOnCloudEvent({
+      name: 'app:run_on_cloud_check_failed',
+      properties
+    })
+    toast.error(message)
+  }
+})
 </script>
