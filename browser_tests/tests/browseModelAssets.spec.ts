@@ -7,7 +7,10 @@ import type {
 } from '@comfyorg/ingest-types'
 import { createCloudAssetsFixture } from '@e2e/fixtures/assetApiFixture'
 import { cloudAppFixture, waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
-import { STABLE_CHECKPOINT } from '@e2e/fixtures/data/assetFixtures'
+import {
+  STABLE_CHECKPOINT,
+  UNSUPPORTED_QWEN_TTS
+} from '@e2e/fixtures/data/assetFixtures'
 import { bootCloud, mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
@@ -17,12 +20,6 @@ import type {
 } from '@comfyorg/assets-core/schema'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
-const UNSUPPORTED_QWEN_TTS: Asset = {
-  ...STABLE_CHECKPOINT,
-  id: 'test-qwen-tts-001',
-  name: 'Qwen3-TTS-12Hz-0.6B-CustomVoice.safetensors',
-  tags: ['models', 'qwen-tts/Qwen3-TTS-12Hz-0.6B-CustomVoice']
-}
 const CLOUD_ASSETS: Asset[] = [STABLE_CHECKPOINT, UNSUPPORTED_QWEN_TTS]
 
 const test = createCloudAssetsFixture(CLOUD_ASSETS)

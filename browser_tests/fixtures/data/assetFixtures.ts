@@ -112,6 +112,13 @@ export const STABLE_CHECKPOINT: Asset = createModelAsset({
   updated_at: '2025-01-15T10:30:00Z'
 })
 
+export const UNSUPPORTED_QWEN_TTS: Asset = {
+  ...STABLE_CHECKPOINT,
+  id: 'test-qwen-tts-001',
+  name: 'Qwen3-TTS-12Hz-0.6B-CustomVoice.safetensors',
+  tags: ['models', 'qwen-tts/Qwen3-TTS-12Hz-0.6B-CustomVoice']
+}
+
 export const STABLE_CHECKPOINT_2: Asset = createModelAsset({
   id: 'test-checkpoint-002',
   name: 'v1-5-pruned-emaonly.safetensors',
