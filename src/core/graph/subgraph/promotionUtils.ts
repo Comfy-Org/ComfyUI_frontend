@@ -5,6 +5,7 @@ import { t } from '@/i18n'
 import type { IContextMenuValue } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { markNodeMenuCallback } from '@/lib/litegraph/src/types/nodeMenu'
+import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { LinkId } from '@comfyorg/graph-model/linkId'
 import { hostInputOf } from '@/lib/litegraph/src/subgraph/hostInput'
@@ -179,19 +180,20 @@ function applySubgraphInputOrder(
   subgraphNode: SubgraphNode,
   orderedIndices: readonly number[]
 ): void {
-  const hostInputAt = (index: number) =>
-    hostInputOf(subgraphNode, subgraphNode.subgraph.inputs[index])
-  const widgetValues = subgraphNode.subgraph.inputs.map((_, index) => {
-    const id = hostInputAt(index)?.widgetId
-    if (!id) return undefined
-    return useWidgetValueStore().getWidget(id)?.value
-  })
+  const { subgraph } = subgraphNode
+  const widgetIdOf = (input: SubgraphInput) =>
+    hostInputOf(subgraphNode, input)?.widgetId
+  const widgetValues = new Map(
+    subgraph.inputs.map((input) => {
+      const id = widgetIdOf(input)
+      return [input, id && useWidgetValueStore().getWidget(id)?.value] as const
+    })
+  )
 
-  if (!reorderSubgraphInputs(subgraphNode.subgraph, orderedIndices)) return
+  if (!reorderSubgraphInputs(subgraph, orderedIndices)) return
 
-  for (const [newIndex, oldIndex] of orderedIndices.entries()) {
-    const value = widgetValues[oldIndex]
-    const id = hostInputAt(newIndex)?.widgetId
+  for (const [input, value] of widgetValues) {
+    const id = widgetIdOf(input)
     if (value === undefined || !id) continue
     useWidgetValueStore().setValue(id, value)
   }

@@ -62,10 +62,10 @@ function subgraphHostWithPromotedInputs(
   const subgraph: Subgraph = createTestSubgraph({
     inputs: names.map((name) => ({ name, type: 'number' as const }))
   })
-  for (const [index, name] of names.entries()) {
-    const interior = interiorNode(name, index + 1)
+  for (const [index, input] of [...subgraph.inputs].entries()) {
+    const interior = interiorNode(input.name, index + 1)
     subgraph.add(interior)
-    subgraph.inputNode.slots[index].connect(interior.inputs[0], interior)
+    input.connect(interior.inputs[0], interior)
   }
   const host = createTestSubgraphNode(subgraph)
   host.serialize_widgets = true

@@ -190,7 +190,7 @@ test.describe(
           .poll(() => input.getLink())
           .toMatchObject({
             origin_id: '-10',
-            origin_slot: 1,
+            origin_slot: 0,
             target_id: target.id,
             target_slot: 1
           })

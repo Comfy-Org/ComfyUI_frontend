@@ -156,9 +156,9 @@ describe('subgraph IO renderer measurements', () => {
     const panel = document.createElement('div')
     Object.defineProperty(panel, 'offsetHeight', { value: 100 })
     panel.getBoundingClientRect = () => new DOMRect(0, 0, 100, 100)
-    const rows = [10, 40].map((top) => {
+    const rows = [10, 40].map((top, index) => {
       const row = panel.appendChild(document.createElement('div'))
-      row.dataset.subgraphPort = ''
+      row.dataset.subgraphPort = String(index)
       row.getBoundingClientRect = () => new DOMRect(0, top, 10, 10)
       return row
     })
@@ -174,7 +174,8 @@ describe('subgraph IO renderer measurements', () => {
     await nextTick()
     expect(graph.inputNode.slots.map((slot) => slot.pos[1])).toEqual([15, 45])
 
-    panel.prepend(rows[1])
+    rows[0].dataset.subgraphPort = '1'
+    rows[1].dataset.subgraphPort = '0'
     slots.value = [...slots.value]
     await nextTick()
 
