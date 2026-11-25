@@ -134,7 +134,7 @@ watch(formMounted, (mounted) => {
 })
 
 const outcomeBesideColumn = computed(() =>
-  tabbed.value !== undefined || elementLive.value
+  tabbed.value?.tab === 'saved' || elementLive.value
     ? undefined
     : payContext.value.outcome
 )

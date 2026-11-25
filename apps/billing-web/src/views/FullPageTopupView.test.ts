@@ -1954,6 +1954,38 @@ describe('FullPageTopupView paying with WeChat Pay or Alipay', () => {
     expect(hostedOption()).toBeEnabled()
   })
 
+  it('shows the refusal beside the option on Add new when the card form failed to load', async () => {
+    renderTopup(
+      {
+        topupQuote: PAYS_ONCE,
+        paymentMethods: { status: 'ok', value: [VISA] }
+      },
+      TOPUP_PATH,
+      (built) => {
+        stubHostedCheckout(built).mockResolvedValue({
+          status: 'error',
+          code: 'REQUEST_FAILED'
+        })
+      }
+    )
+    await screen.findByText('Add credits · Acme Team')
+    await userEvent.click(
+      await screen.findByRole('tab', { name: 'Add new payment' })
+    )
+    form.emit('phase', { phase: 'payment_element_failed', element: 'payment' })
+    const option = await screen.findByRole('button', {
+      name: 'Pay with WeChat Pay or Alipay'
+    })
+    await waitFor(() => expect(option).toBeEnabled())
+
+    await userEvent.click(option)
+
+    expect(
+      await screen.findByText("Payment couldn't be processed")
+    ).toBeVisible()
+    expect(hostedOption()).toBeEnabled()
+  })
+
   it('lets the customer try again when the purchase cannot be re-read', async () => {
     const { fake, readTopupPurchase } = renderPurchase(purchaseRead('open'))
     const hosted = stubHostedCheckout(fake)
