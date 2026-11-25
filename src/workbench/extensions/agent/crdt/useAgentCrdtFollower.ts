@@ -16,6 +16,7 @@ import {
 } from '@comfyorg/comfy-multi-player'
 import type { Op } from '@comfyorg/comfy-multi-player'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
@@ -31,16 +32,13 @@ import type {
   AgentCrdtTerminalState,
   AgentCrdtStatus
 } from './agentCrdtStatus'
-import {
-  AgentCrdtDocLifecycle,
-  STALE_AFTER_MS,
-  SUBSCRIBE_CATCHUP_GRACE_MS
-} from './agentCrdtDocLifecycle'
+import { AgentCrdtDocLifecycle } from './agentCrdtDocLifecycle'
+import { STALE_AFTER_MS, SUBSCRIBE_CATCHUP_GRACE_MS } from './lifecycleTiming'
 import { AgentCrdtProjection } from './agentCrdtProjection'
 import type { DocNodeDelta, FrameOutcome } from './agentCrdtProjection'
 import { createLoggedTransport } from './agentCrdtTransport'
 import type { AgentDocFrameTransport } from './agentDocFrameTransport'
-import { recordDevEvent } from './devPanelLog'
+import { recordDevEvent } from './crdtLog'
 import type { CrdtDebugSnapshot } from './crdtSnapshot'
 import { readCrdtSnapshot } from './crdtSnapshot'
 import { DocFrameClient } from './docFrameClient'
@@ -66,6 +64,7 @@ import { createRejectedOpNotifier } from './rejectedOpNotice'
 import type { LostEdits } from './rejectedOpNotice'
 import {
   forgetUnsyncedAtLoad,
+  hasBlockingUnsyncedHumanOps,
   recordUnsyncedHumanOps,
   releaseUnsyncedHumanOpsRecorder
 } from './unsyncedHumanOps'
@@ -294,6 +293,7 @@ type AgentCrdtApplierDeps = Omit<
 
 export interface AgentCrdtFollowerOptions {
   transport: AgentDocFrameTransport
+  diagnosticsEnabled?: () => boolean
   userId?: () => string | null
   isTargetActive?: Ref<boolean>
   /**
@@ -312,6 +312,7 @@ export function useAgentCrdtFollower(
   workflowId: Ref<string | null>,
   {
     transport,
+    diagnosticsEnabled,
     userId = () => null,
     isTargetActive = ref(true),
     getGraph = () => null,
@@ -322,6 +323,7 @@ export function useAgentCrdtFollower(
   }: AgentCrdtFollowerOptions
 ) {
   const productGate = useAgentPanelStore()
+  const { flags } = useFeatureFlags()
   const follower = shallowRef<ReturnType<typeof startAgentCrdtFollower>>()
   const disabledStatus: AgentCrdtStatus = {
     enabled: false,
@@ -363,6 +365,8 @@ export function useAgentCrdtFollower(
           events,
           applierDeps,
           canvasFor,
+          diagnosticsEnabled:
+            diagnosticsEnabled ?? (() => flags.agentCrdtDebugEnabled),
           knownLineageFor
         })
       )
@@ -393,11 +397,16 @@ export function useAgentCrdtFollower(
       follower.value?.docPromotedWidgets(nodeId) ?? null,
     mayWritePromotedHost: (nodeId: NodeId) =>
       follower.value?.mayWritePromotedHost(nodeId) ?? false,
+    isPreMintBinding: () => follower.value?.isPreMintBinding() ?? false,
     docHasSubgraphDefinition: (definitionId: string) =>
       follower.value?.docHasSubgraphDefinition(definitionId) ?? false,
     notifyWidgetWriteRefused: (nodeId: string | number, widgetName: string) =>
       follower.value?.notifyWidgetWriteRefused(nodeId, widgetName),
-    subscriptionSent: () => follower.value?.subscriptionSent() ?? false
+    subscriptionSent: () => follower.value?.subscriptionSent() ?? false,
+    holdsWorkflow: (workflowId: string) =>
+      follower.value?.holdsWorkflow(workflowId) ?? false,
+    canResumeHeldWorkflow: (workflowId: string) =>
+      follower.value?.canResumeHeldWorkflow(workflowId) ?? false
   }
 }
 
@@ -405,6 +414,7 @@ function startAgentCrdtFollower(
   workflowId: Ref<string | null>,
   {
     transport,
+    diagnosticsEnabled,
     userId,
     isTargetActive,
     getGraph,
@@ -444,7 +454,9 @@ function startAgentCrdtFollower(
     dropped: 0
   })
 
-  const client = new DocFrameClient(createLoggedTransport(transport))
+  const client = new DocFrameClient(
+    createLoggedTransport(transport, diagnosticsEnabled)
+  )
   const bridge = new LayoutFollowerBridge(client)
   const lifecycle = new AgentCrdtDocLifecycle(
     () => subscribedWorkflowId.value,
@@ -452,7 +464,8 @@ function startAgentCrdtFollower(
     (reason) => {
       connected.value = false
       terminal.value = reason
-    }
+    },
+    () => transport.reconnect()
   )
   const tabId = createUuidv4()
   const ownActor = (): string => `human:${userId() ?? 'anonymous'}:${tabId}`
@@ -604,9 +617,11 @@ function startAgentCrdtFollower(
 
   const workflowsWithUnsyncedOps = new Set<string>()
   const recordUnsynced = (): void => {
-    const unsynced = new Set(workflowsWithUnsyncedOps)
-    for (const { workflowId } of sender.pendingOps()) unsynced.add(workflowId)
-    recordUnsyncedHumanOps(tabId, unsynced)
+    recordUnsyncedHumanOps(
+      tabId,
+      workflowsWithUnsyncedOps,
+      sender.pendingOps().map(({ workflowId }) => workflowId)
+    )
   }
   const noteSettledHumanOps = (
     outcome: BatchOutcome,
@@ -1129,6 +1144,7 @@ function startAgentCrdtFollower(
     if (!live) {
       if (connected.value) markCanvasStale('socket_closed')
       connected.value = false
+      lifecycle.onSocketClosed()
       return
     }
     connected.value = false
@@ -1179,10 +1195,10 @@ function startAgentCrdtFollower(
     subscribedWorkflowId.value = next
   }
   // The bound workflow whose tab went inactive while the sender still held
-  // batches for it. A tab switch pauses the subscription without rebinding
-  // the session, so those batches are held rather than aborted (see
-  // ADR-CRDT-WRITE-0035); anything else that moves the binding releases
-  // them into the normal abort path.
+  // batches for it. Leaving its tab—or detaching while unconfirmed edits
+  // remain—suspends the sender instead of aborting those batches (see
+  // ADR-CRDT-WRITE-0035); retargeting to another workflow releases them into
+  // the normal abort path.
   let heldForWorkflowId: string | null = null
   const releaseHeldOps = (): void => {
     heldForWorkflowId = null
@@ -1225,6 +1241,18 @@ function startAgentCrdtFollower(
     releaseHeldOps()
   }
 
+  const workflowToHold = (
+    next: string | null,
+    previousWorkflowId: string | null
+  ): string | null => {
+    if (previousWorkflowId === null) return null
+    if (next === previousWorkflowId) return previousWorkflowId
+    const hasUnsettledOps = sender
+      .pendingOps()
+      .some(({ workflowId }) => workflowId === previousWorkflowId)
+    return next === null && hasUnsettledOps ? previousWorkflowId : null
+  }
+
   // A tab switch keeps the projection bound: whatever the doc collects while
   // the tab is away is applied on return, instead of the live graph being
   // rebuilt from the whole doc over the human's edits.
@@ -1233,11 +1261,12 @@ function startAgentCrdtFollower(
     previousWorkflowId: string | null
   ): void => {
     if (next !== null) initialBind = false
-    if (next !== null && next === previousWorkflowId) {
+    const held = workflowToHold(next, previousWorkflowId)
+    if (held !== null) {
       if (connected.value || canvasMayBeStale.value)
         markCanvasStale('tab_inactive')
       connected.value = false
-      holdOpsForInactiveTab(next)
+      holdOpsForInactiveTab(held)
       return
     }
     connected.value = false
@@ -1386,13 +1415,18 @@ function startAgentCrdtFollower(
       bridge.isSubscribeBaselineIntegrated ||
       (sentAddsToCurrentDoc().has(String(nodeId)) &&
         readDocPromotedWidgets(bridge.follower.doc, String(nodeId)) === null),
+    isPreMintBinding: () => bridge.isPreMintBaseline,
     docHasSubgraphDefinition: (definitionId: string) =>
       readSubgraphDefinitionIds(bridge.follower.doc).includes(definitionId),
     notifyWidgetWriteRefused: (nodeId: string | number, widgetName: string) =>
       rejectedOpNotifier.notifyWidgetWriteRefused(nodeId, widgetName),
     subscriptionSent: () =>
       bridge.subscribedWorkflowId !== null &&
-      bridge.subscribedWorkflowId === subscribedWorkflowId.value
+      bridge.subscribedWorkflowId === subscribedWorkflowId.value,
+    holdsWorkflow: (workflowId: string) => heldForWorkflowId === workflowId,
+    canResumeHeldWorkflow: (workflowId: string) =>
+      heldForWorkflowId === workflowId &&
+      !hasBlockingUnsyncedHumanOps(workflowId, tabId)
   }
 }
 

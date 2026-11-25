@@ -69,8 +69,8 @@
     "name": "Geliştirici modu seçeneklerini etkinleştir (API kaydetme, vb.)"
   },
   "Comfy_DisableFloatRounding": {
-    "name": "Varsayılan ondalık sayı widget yuvarlamasını devre dışı bırak.",
-    "tooltip": "(sayfanın yeniden yüklenmesini gerektirir) Arka uçtaki düğüm tarafından yuvarlama ayarlandığında yuvarlama devre dışı bırakılamaz."
+    "name": "Varsayılan kayan noktalı sayı bileşeni yuvarlamasını devre dışı bırak (kullanımdan kaldırıldı).",
+    "tooltip": "(sayfanın yeniden yüklenmesini gerektirir) Kullanımdan kaldırılmıştır ve varsayılan olarak açıktır. Kapatıldığında, düzenlenen kayan noktalı değerler bileşen adımının ondalık basamaklarına yuvarlanır. Düğüm tarafından tanımlanan yuvarlama her zaman uygulanır."
   },
   "Comfy_DisableSliders": {
     "name": "Düğüm widget kaydırıcılarını devre dışı bırak"
@@ -469,7 +469,7 @@
     "name": "Sorunlar sekmesinde eksik medyayı göster",
     "tooltip": "Devre dışı bırakıldığında, bulunamayan giriş görüntüleri, videoları ve ses dosyaları sorunlar sekmesinde listelenmez ve düğümleri vurgulanmaz."
   },
-  "Comfy_Workflow_ShowMissingNodesWarning": {
+  "Comfy_ErrorSystem_ShowMissingNodes": {
     "name": "Sorunlar sekmesinde eksik düğümleri göster",
     "tooltip": "Devre dışı bırakıldığında, eksik düğüm paketleri sorunlar sekmesinde listelenmez ve düğümleri vurgulanmaz. İş akışı, yüklenene kadar yine de çalıştırılamaz."
   },

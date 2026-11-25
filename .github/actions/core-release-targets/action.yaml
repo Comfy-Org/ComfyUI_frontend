@@ -7,9 +7,6 @@ outputs:
   retired:
     description: Space-separated retired release branches
     value: ${{ steps.targets.outputs.retired }}
-  minimum:
-    description: Oldest viable release line
-    value: ${{ steps.targets.outputs.minimum }}
   pin-sha:
     description: ComfyUI mainline commit used for the decision
     value: ${{ steps.targets.outputs.pin-sha }}
@@ -27,4 +24,4 @@ runs:
       shell: bash
       env:
         COMFYUI_PIN_REPOSITORY: ${{ runner.temp }}/comfyui-pin
-      run: pnpm exec tsx scripts/cicd/core-release-targets.ts
+      run: pnpm exec tsx tools/ci/src/cicd/core-release-targets.ts

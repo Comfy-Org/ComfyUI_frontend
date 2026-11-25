@@ -169,11 +169,17 @@
       class="flex items-center gap-2 p-2"
       data-testid="current-user-identity"
     >
-      <span
-        aria-hidden="true"
-        class="flex size-8 shrink-0 items-center justify-center rounded-full bg-foreground text-sm font-medium text-background uppercase"
-        >{{ monogram }}</span
+      <UserAvatar
+        :label="$t('auth.login.userAvatar')"
+        :photo-url="userPhotoUrl"
+        class="shrink-0"
       >
+        <span
+          aria-hidden="true"
+          class="flex size-full items-center justify-center bg-secondary text-sm font-semibold text-muted-foreground uppercase"
+          >{{ monogram }}</span
+        >
+      </UserAvatar>
       <div class="flex min-w-0 flex-1 flex-col">
         <span class="truncate text-sm text-foreground">{{
           userDisplayName || $t('g.user')
@@ -228,6 +234,7 @@ import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
 import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
 import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
+import UserAvatar from '@comfyorg/design-system/common/UserAvatar'
 import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import ProfileMenuCreditsFlyout from '@/platform/account/components/ProfileMenuCreditsFlyout.vue'
@@ -289,8 +296,13 @@ const switcherOpen = computed({
     else if (flyout.value === 'switcher') flyout.value = 'none'
   }
 })
-const { userDisplayName, userEmail, handleSignOut, isApiKeyLogin } =
-  useCurrentUser()
+const {
+  userDisplayName,
+  userEmail,
+  userPhotoUrl,
+  handleSignOut,
+  isApiKeyLogin
+} = useCurrentUser()
 const { balance, isLoading, fetchBalance } = useBillingContext()
 const settingsDialog = useSettingsDialog()
 const { showCreateWorkspaceDialog } = useWorkspaceDialogs()

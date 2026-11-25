@@ -8,6 +8,14 @@
       "to": { "circular": true }
     },
     {
+      "name": "assets-core-is-independent-of-application-runtime",
+      "severity": "error",
+      "from": { "path": "^packages/assets-core/src/" },
+      "to": {
+        "path": "^(src/|packages/(api-client|account-core|account-ui|graph-model)/|node_modules/(vue|pinia|@vueuse)/|node_modules/\\.pnpm/[^/]+/node_modules/(vue|pinia|@vueuse)/)"
+      }
+    },
+    {
       "name": "agent-feedback-through-platform-support",
       "severity": "error",
       "from": { "path": "^src/workbench/extensions/agent/" },
@@ -43,7 +51,12 @@
     "tsPreCompilationDeps": "specify",
     "doNotFollow": { "path": "node_modules" },
     "exclude": {
-      "path": ["\\.(test|spec|stories)\\.ts$", "/__tests?__/", "/test/"]
+      "path": [
+        "\\.(test|spec|stories)\\.ts$",
+        "/__tests?__/",
+        "/test/",
+        "^src/__ecs_matrix__/"
+      ]
     },
     "enhancedResolveOptions": {
       "extensions": [".ts", ".mts", ".js", ".vue", ".json"],

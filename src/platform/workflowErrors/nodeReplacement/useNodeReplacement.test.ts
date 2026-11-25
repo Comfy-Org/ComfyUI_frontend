@@ -659,7 +659,30 @@ describe('useNodeReplacement', () => {
         link,
         placeholder.outputs[0]
       )
-      expect(incrementVersion).toHaveBeenCalledOnce()
+      expect(incrementVersion).toHaveBeenCalledTimes(2)
+    })
+
+    it('changes the graph version so cached render order drops the placeholder', () => {
+      const graph = createReplacementGraph()
+      const placeholder = addSlottedNode(graph, 'OldNode', [], [])
+      markPlaceholder(placeholder)
+      const versionBefore = graph._version
+      vi.mocked(LiteGraph.createNode).mockReturnValue(
+        createSlottedNode('NewNode')
+      )
+
+      useNodeReplacement().replaceNodesInPlace([
+        makeMissingNodeType('OldNode', {
+          new_node_id: 'NewNode',
+          old_node_id: 'OldNode',
+          old_widget_ids: null,
+          input_mapping: null,
+          output_mapping: null
+        })
+      ])
+
+      expect(graph._nodes.map((node) => node.type)).toEqual(['NewNode'])
+      expect(graph._version).toBeGreaterThan(versionBefore)
     })
 
     it('bails out before lifecycle when endpoint validation rejects', () => {

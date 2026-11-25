@@ -1,0 +1,29 @@
+{
+  "population": {
+    "classes": 3857,
+    "coreClasses": 998,
+    "packClasses": 2859,
+    "packs": 97,
+    "pythonModules": 287
+  },
+  "projectedAt": "2026-11-18T07:03:49Z",
+  "projection": {
+    "bytes": 2999099,
+    "droppedOptionKeys": ["tooltip", "description"],
+    "keptNodeFields": [
+      "input",
+      "input_order",
+      "output",
+      "output_name",
+      "output_node",
+      "python_module"
+    ],
+    "sha256": "300541ac7adbe662374a07b11445693ee29b1b2274a4b1729862e9ad188cd8fe"
+  },
+  "source": {
+    "bytes": 8992925,
+    "path": "services/ingest/data/object_info.json",
+    "repo": "Comfy-Org/cloud",
+    "sha256": "51d69a3a87d18f7ed4042734395f7e61b145637a0584413a1af5c2d17f312fe2"
+  }
+}

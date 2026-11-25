@@ -2,14 +2,15 @@ import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { TabsTrigger } from 'reka-ui'
-import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Mock } from 'vitest'
 import type { PropType } from 'vue'
 import { computed, defineComponent, h, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
+import { ChangeTracker } from '@/scripts/changeTracker'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -174,6 +175,7 @@ function renderComponent(errorHandler?: (error: unknown) => void) {
 }
 
 beforeEach(() => {
+  useWorkflowStore().provideChangeTracker(ChangeTracker)
   delete window.__comfyDesktop2
   vi.mocked(useTelemetry).mockReturnValue(fromPartial(telemetry))
   consentChecking.value = false
@@ -232,11 +234,11 @@ describe('WorkflowTabs profile button', () => {
   })
 
   function setBillingNewUx(enabled: boolean) {
-    const previous = remoteConfig.value
-    remoteConfig.value = { ...previous, billing_new_ux_enabled: enabled }
-    onTestFinished(() => {
-      remoteConfig.value = previous
-    })
+    const remoteConfigStore = useRemoteConfigStore()
+    remoteConfigStore.acceptConfig(
+      { ...remoteConfigStore.config, billing_new_ux_enabled: enabled },
+      false
+    )
   }
 
   it('keeps the profile button in the top bar while billing_new_ux_enabled is off', () => {
@@ -540,6 +542,21 @@ describe('WorkflowTabs agent entry button', () => {
 
     expect(withConsent).toHaveBeenCalledTimes(2)
     expect(useAgentPanelStore().isVisible).toBe(true)
+  })
+
+  it('keeps a restored-open preference when consent is dismissed', async () => {
+    const store = useAgentPanelStore()
+    store.isOpen = true
+    store.holdRestoredOpen()
+    withConsent.mockResolvedValueOnce()
+    const { user } = renderComponent()
+
+    await user.click(
+      screen.getByRole('button', { name: enMessages.agent.entryButton })
+    )
+
+    expect(store.isOpen).toBe(true)
+    expect(store.isVisible).toBe(false)
   })
 
   it('hides the restored panel entry while consent is checked, then shows it pressed', async () => {

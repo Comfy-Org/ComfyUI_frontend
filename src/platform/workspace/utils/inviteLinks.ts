@@ -1,3 +1,4 @@
+import { writeClipboardText } from '@/base/common/clipboard'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { reportError } from '@comfyorg/telemetry/reportError'
 
@@ -28,39 +29,14 @@ export function formatInviteLinksForCopy(
   return rows.map(({ email, url }) => `${email}\t${url}`).join('\n')
 }
 
-/**
- * Copies text to the clipboard with no built-in user feedback — each caller
- * owns its own affordance (inline label swap in the dialog, a toast on the
- * pending tab). Returns whether the copy succeeded.
- */
+/** Copies text without user feedback and reports invite-copy failures. */
 export async function copyTextSilently(text: string): Promise<boolean> {
-  try {
-    await navigator.clipboard.writeText(text)
-    return true
-  } catch {
-    const el = document.createElement('textarea')
-    el.value = text
-    el.style.position = 'fixed'
-    el.style.opacity = '0'
-    document.body.appendChild(el)
-    try {
-      el.select()
-      const copied = document.execCommand('copy')
-      if (!copied) {
-        reportError(new Error('execCommand copy reported failure'), {
-          errorType: 'error_copying_invite_link',
-          surface: 'workspace'
-        })
-      }
-      return copied
-    } catch (error) {
-      reportError(error, {
-        errorType: 'error_copying_invite_link',
-        surface: 'workspace'
-      })
-      return false
-    } finally {
-      el.remove()
-    }
+  const copied = await writeClipboardText(text)
+  if (!copied) {
+    reportError(new Error('Clipboard copy reported failure'), {
+      errorType: 'error_copying_invite_link',
+      surface: 'workspace'
+    })
   }
+  return copied
 }

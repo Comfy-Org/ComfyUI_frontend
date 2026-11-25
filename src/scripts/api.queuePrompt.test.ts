@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import type { MockInstance } from 'vitest'
 
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
@@ -65,5 +65,34 @@ describe('api queuePrompt workflow_metadata', () => {
     const body = await postedBody(zeroUuid)
 
     expect(body.extra_data.extra_pnginfo.workflow.id).toBe(zeroUuid)
+  })
+})
+
+describe('api queuePrompt loaded release', () => {
+  let fetchApiSpy: MockInstance<typeof api.fetchApi>
+
+  beforeEach(() => {
+    fetchApiSpy = vi.spyOn(api, 'fetchApi').mockResolvedValue(promptResponse())
+    onTestFinished(() => {
+      delete api.loadedReleaseId
+    })
+  })
+
+  async function postedHeaders() {
+    await api.queuePrompt(0, { output: {}, workflow: workflowWithId('w-1') })
+    const [, init] = fetchApiSpy.mock.calls[0]
+    return init?.headers
+  }
+
+  it('names the release this page loaded', async () => {
+    api.loadedReleaseId = 'r-2'
+
+    expect(await postedHeaders()).toMatchObject({
+      'Comfy-Loaded-Release': 'r-2'
+    })
+  })
+
+  it('sends no release when the page loaded none', async () => {
+    expect(await postedHeaders()).not.toHaveProperty('Comfy-Loaded-Release')
   })
 })

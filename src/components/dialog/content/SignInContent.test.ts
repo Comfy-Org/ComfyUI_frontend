@@ -21,7 +21,6 @@ vi.mock(import('@/utils/hostWhitelist'), () => ({
   isHostWhitelisted: () => true,
   normalizeHost: (host: string) => host
 }))
-vi.mock(import('@/platform/remoteConfig/remoteConfig'))
 
 const inChina = vi.hoisted(() => ({
   value: false,
