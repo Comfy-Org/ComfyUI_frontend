@@ -649,8 +649,6 @@ export const useWorkflowStore = defineStore('workflow', () => {
   /**
    * Save a workflow, loading it first unless it is active.
    * @param workflow The workflow to save.
-   * @param options.overwrite Replace a file already on the server even
-   * though this workflow is not persisted yet.
    */
   const saveWorkflow = async (
     workflow: ComfyWorkflow,

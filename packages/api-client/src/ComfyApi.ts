@@ -1857,10 +1857,6 @@ export class ComfyApi extends EventTarget {
       stringify?: boolean
       throwOnError?: boolean
       full_info?: boolean
-      /**
-       * Report a 409 on a create-only write. Pass false when the caller
-       * handles the conflict itself (e.g. by asking to overwrite).
-       */
       reportConflict?: boolean
     } = {
       overwrite: true,

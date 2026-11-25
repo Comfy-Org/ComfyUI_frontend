@@ -5037,9 +5037,6 @@ describe('useWorkflowService', () => {
       expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(workflow)
     })
 
-    // CLOUD-FRONTEND-PROD-2SG: a template tab already sits at the target path
-    // and the store does not know the file of that name on the server, so
-    // the create-only save got a 409 that escaped as an error on close.
     it('asks before replacing a server file the store did not know, then overwrites', async () => {
       const workflow = createTemporaryWorkflow()
       workflow.path = 'workflows/image_z_image_turbo.json'

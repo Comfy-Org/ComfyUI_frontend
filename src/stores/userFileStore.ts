@@ -141,9 +141,6 @@ export class UserFile {
   /**
    * Saves the file to the remote storage.
    * @param force Whether to force the save even if the file is not modified.
-   * @param overwrite Replace a file already on the server. Defaults to
-   * whether this file is persisted; a create-only save of a file that
-   * already exists throws {@link UserDataExistsError}.
    */
   async save({
     force = false,

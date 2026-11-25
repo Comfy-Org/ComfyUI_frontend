@@ -134,10 +134,9 @@ describe('useUserFileStore', () => {
       it('overwrites from a temporary file when asked to', async () => {
         const file = UserFile.createTemporary('file1.txt')
         file.content = 'content'
-        vi.mocked(api.storeUserData).mockResolvedValue({
-          status: 200,
-          json: () => Promise.resolve({ modified: 456, size: 200 })
-        } as Response)
+        vi.mocked(api.storeUserData).mockResolvedValue(
+          Response.json({ modified: 456, size: 200 })
+        )
 
         await file.save({ overwrite: true })
 

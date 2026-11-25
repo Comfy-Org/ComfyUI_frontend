@@ -351,12 +351,6 @@ export const useWorkflowService = () => {
     })
   }
 
-  /**
-   * Create the file for a workflow that is not on the server yet. The store
-   * may not know every file on the server, so a file of the same name can
-   * already exist there; then ask before replacing it.
-   * @returns false when the user kept the existing file.
-   */
   async function saveNewWorkflowFile(
     workflow: ComfyWorkflow,
     path: string
