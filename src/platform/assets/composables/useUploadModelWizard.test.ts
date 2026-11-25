@@ -5,12 +5,12 @@ import type { App } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { AsyncUploadResponse } from '@/platform/assets/schemas/assetSchema'
+import type { AsyncUploadResponse } from '@comfyorg/assets-core/schema'
 import type { AssetDownloadWsMessage } from '@comfyorg/api-client/executionTypes'
 import { taskService } from '@/platform/tasks/services/taskService'
 import { api } from '@/scripts/api'
-import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
-import { useAssetsStore } from '@/stores/assetsStore'
+import { useAssetDownloadStore } from '@/platform/assets/stores/assetDownloadStore'
+import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 
 import { useUploadModelWizard } from './useUploadModelWizard'
@@ -23,28 +23,6 @@ vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
     deleteAsset: vi.fn()
   }
 }))
-
-vi.mock<unknown>(
-  import('@/platform/assets/importSources/civitaiImportSource'),
-  () => ({
-    civitaiImportSource: {
-      name: 'Civitai',
-      hostnames: ['civitai.com', 'civitai.red'],
-      fetchMetadata: vi.fn()
-    }
-  })
-)
-
-vi.mock<unknown>(
-  import('@/platform/assets/importSources/huggingfaceImportSource'),
-  () => ({
-    huggingfaceImportSource: {
-      name: 'HuggingFace',
-      hostnames: ['huggingface.co'],
-      fetchMetadata: vi.fn()
-    }
-  })
-)
 
 vi.mock(import('@/scripts/api'))
 

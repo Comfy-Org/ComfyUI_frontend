@@ -1,3 +1,4 @@
+import type { FirebaseIdentity } from '@comfyorg/account-core/firebase'
 import type { ComfyDownloadProgress } from '@comfyorg/comfyui-desktop-bridge-types'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -5,15 +6,33 @@ import { nextTick } from 'vue'
 
 import { reportError } from '@comfyorg/telemetry/reportError'
 
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { downloadModel } from '@/platform/workflowErrors/missingModel/missingModelDownload'
 import { useMissingModelDownloadStore } from '@/platform/workflowErrors/missingModel/missingModelDownloadStore'
+import {
+  refreshMissingModelPipeline,
+  runMissingModelPipeline
+} from '@/platform/workflowErrors/missingModel/missingModelPipeline'
+import * as missingModelScan from '@/platform/workflowErrors/missingModel/missingModelScan'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
+import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
 
 vi.mock(import('@/platform/workflowErrors/missingModel/missingModelDownload'), {
   spy: true
 })
 vi.mock(import('@comfyorg/telemetry/reportError'))
+vi.mock(import('@/platform/auth/firebaseIdentity'), () => ({
+  firebaseIdentity: fromPartial<FirebaseIdentity>({
+    onUserChanged: () => () => {},
+    onTokenChanged: () => () => {},
+    currentUser: () => null
+  })
+}))
+vi.mock(import('@/platform/workflowErrors/missingModel/missingModelScan'), {
+  spy: true
+})
 
 const model = {
   name: 'model.safetensors',
@@ -130,6 +149,27 @@ describe(useMissingModelDownloadStore, () => {
 
     expect(refreshMissingModels).toHaveBeenCalledOnce()
   })
+
+  it('re-checks missing models after a load that skips its asset scans', async () => {
+    installDesktopHost()
+    seedMissingModel()
+    const missingModelStore = useMissingModelStore()
+    const refreshMissingModels = vi
+      .spyOn(missingModelStore, 'refreshMissingModels')
+      .mockResolvedValue(undefined)
+    const store = useMissingModelDownloadStore()
+    store.startTracking()
+    missingModelStore.isRefreshingMissingModels = true
+    emitHostProgress('completed')
+    await nextTick()
+
+    missingModelStore.createVerificationAbortController().abort()
+    missingModelStore.isRefreshingMissingModels = false
+    await nextTick()
+
+    expect(refreshMissingModels).toHaveBeenCalledOnce()
+  })
+
   it('mirrors a download of the same destination started elsewhere', () => {
     installDesktopHost()
     const store = useMissingModelDownloadStore()
@@ -1050,5 +1090,183 @@ describe(useMissingModelDownloadStore, () => {
     store.download(model)
 
     await vi.waitFor(() => expect(store.stateFor(model).status).toBe('done'))
+  })
+
+  it("opens the loaded workflow's missing models when a re-check queued by a finished download starts during the load", async () => {
+    installDesktopHost()
+    const missingModelStore = useMissingModelStore()
+    const candidate = fromPartial<MissingModelCandidate>({
+      nodeType: 'CheckpointLoaderSimple',
+      widgetName: 'ckpt_name',
+      name: model.name,
+      directory: model.directory,
+      isAssetSupported: true
+    })
+    const graph = fromPartial<LGraph>({ serialize: () => ({}) })
+    const verifications: (() => void)[] = []
+    vi.mocked(missingModelScan.scanAllModelCandidates).mockReturnValue([
+      candidate
+    ])
+    vi.mocked(missingModelScan.enrichWithEmbeddedMetadata).mockImplementation(
+      (candidates) => [...candidates]
+    )
+    vi.mocked(missingModelScan.hasPendingVerification).mockReturnValue(true)
+    vi.mocked(
+      missingModelScan.verifyAssetSupportedCandidates
+    ).mockImplementation(
+      (candidates) =>
+        new Promise<void>((resolve) => {
+          verifications.push(() => {
+            for (const c of candidates) c.isMissing = true
+            resolve()
+          })
+        })
+    )
+    vi.spyOn(api, 'getFolderPaths').mockResolvedValue({})
+    const reloadNodeDefs: (() => void)[] = []
+    const recheck = vi
+      .spyOn(app, 'refreshMissingModels')
+      .mockImplementation(() =>
+        refreshMissingModelPipeline({
+          graph,
+          reloadNodeDefs: () =>
+            new Promise<void>((resolve) => reloadNodeDefs.push(resolve)),
+          missingModelStore,
+          silent: true
+        })
+      )
+    seedMissingModel()
+    const store = useMissingModelDownloadStore()
+    store.startTracking()
+
+    const inFlightRecheck = missingModelStore.refreshMissingModels()
+    reloadNodeDefs.shift()?.()
+    await inFlightRecheck
+    expect(verifications).toHaveLength(1)
+
+    emitHostProgress('completed')
+    await nextTick()
+    expect(recheck).toHaveBeenCalledOnce()
+
+    const onVerified = vi.fn()
+    const load = await runMissingModelPipeline({
+      graph,
+      graphData: fromAny({}),
+      missingModelStore,
+      onVerified
+    })
+    await vi.runAllTimersAsync()
+    for (const resolveReload of reloadNodeDefs.splice(0)) resolveReload()
+    await vi.runAllTimersAsync()
+
+    verifications[1]()
+    await load.surfaced
+
+    expect(onVerified).toHaveBeenCalledWith([candidate])
+  })
+
+  it("opens the loaded workflow's missing models when a re-check reloading node definitions resumes during the load", async () => {
+    const missingModelStore = useMissingModelStore()
+    const candidate = fromPartial<MissingModelCandidate>({
+      nodeType: 'CheckpointLoaderSimple',
+      widgetName: 'ckpt_name',
+      name: model.name,
+      directory: model.directory,
+      isAssetSupported: true
+    })
+    const graph = fromPartial<LGraph>({ serialize: () => ({}) })
+    const verifications: (() => void)[] = []
+    vi.mocked(missingModelScan.scanAllModelCandidates).mockReturnValue([
+      candidate
+    ])
+    vi.mocked(missingModelScan.enrichWithEmbeddedMetadata).mockImplementation(
+      (candidates) => [...candidates]
+    )
+    vi.mocked(missingModelScan.hasPendingVerification).mockReturnValue(true)
+    vi.mocked(
+      missingModelScan.verifyAssetSupportedCandidates
+    ).mockImplementation(
+      (candidates) =>
+        new Promise<void>((resolve) => {
+          verifications.push(() => {
+            for (const c of candidates) c.isMissing = true
+            resolve()
+          })
+        })
+    )
+    vi.spyOn(api, 'getFolderPaths').mockResolvedValue({})
+    let finishReload = () => {}
+    const recheck = refreshMissingModelPipeline({
+      graph,
+      reloadNodeDefs: () =>
+        new Promise<void>((resolve) => {
+          finishReload = resolve
+        }),
+      missingModelStore
+    })
+
+    const onVerified = vi.fn()
+    const load = await runMissingModelPipeline({
+      graph,
+      graphData: fromAny({}),
+      missingModelStore,
+      onVerified
+    })
+    finishReload()
+    await vi.runAllTimersAsync()
+
+    verifications[0]()
+    await load.surfaced
+
+    expect(onVerified).toHaveBeenCalledWith([candidate])
+    await vi.runAllTimersAsync()
+    expect(verifications).toHaveLength(2)
+    verifications[1]()
+    await (
+      await recheck
+    ).surfaced
+  })
+
+  it('re-checks the graph a load switched to while the re-check waited on it', async () => {
+    const missingModelStore = useMissingModelStore()
+    const candidateFor = (name: string) =>
+      fromPartial<MissingModelCandidate>({
+        nodeType: 'CheckpointLoaderSimple',
+        widgetName: 'ckpt_name',
+        name,
+        directory: model.directory,
+        isMissing: true
+      })
+    const previousGraph = fromPartial<LGraph>({ serialize: () => ({}) })
+    const loadedGraph = fromPartial<LGraph>({ serialize: () => ({}) })
+    const loadedCandidate = candidateFor('loaded.safetensors')
+    vi.mocked(missingModelScan.scanAllModelCandidates).mockImplementation(
+      (graph) =>
+        graph === loadedGraph
+          ? [loadedCandidate]
+          : [candidateFor('previous.safetensors')]
+    )
+    vi.mocked(missingModelScan.enrichWithEmbeddedMetadata).mockImplementation(
+      (candidates) => [...candidates]
+    )
+    vi.spyOn(api, 'getFolderPaths').mockResolvedValue({})
+    const rootGraph = vi
+      .spyOn(app, 'rootGraph', 'get')
+      .mockReturnValue(previousGraph)
+    let finishLoad = () => {}
+    const load = missingModelStore.whileWorkflowLoads(
+      () =>
+        new Promise<void>((resolve) => {
+          finishLoad = resolve
+        })
+    )
+
+    const recheck = app.refreshMissingModels({ reloadDefs: false })
+    rootGraph.mockReturnValue(loadedGraph)
+    finishLoad()
+    await load
+
+    const { confirmedCandidates } = await recheck
+    expect(confirmedCandidates).toEqual([loadedCandidate])
   })
 })

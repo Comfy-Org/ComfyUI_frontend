@@ -43,6 +43,7 @@ export class DragAndScale {
   dragging?: boolean
   viewport?: Rect
   private viewportSize?: [number, number]
+  private animationFrame?: number
 
   onredraw?(das: DragAndScale): void
   onChanged?(scale: number, offset: Point): void
@@ -83,14 +84,7 @@ export class DragAndScale {
    * @returns `true` if the current state has changed from the previous state, otherwise `false`.
    */
   private _stateHasChanged(): boolean {
-    const current = this.state
-    const previous = this.lastState
-
-    return (
-      current.scale !== previous.scale ||
-      current.offset[0] !== previous.offset[0] ||
-      current.offset[1] !== previous.offset[1]
-    )
+    return !statesEqual(this.state, this.lastState)
   }
 
   computeVisibleArea(viewport: Rect | undefined): void {
@@ -236,7 +230,7 @@ export class DragAndScale {
     const targetX = (vx + vw * 0.5) / targetScale - bounds[0] - bounds[2] * 0.5
     const targetY = (vy + vh * 0.5) / targetScale - bounds[1] - bounds[3] * 0.5
 
-    // Apply the changes immediately
+    this.stopAnimation()
     this.offset[0] = targetX
     this.offset[1] = targetY
     this.scale = targetScale
@@ -281,8 +275,6 @@ export class DragAndScale {
       const targetScaleX = (zoom * vw) / Math.max(bounds[2], 300)
       const targetScaleY = (zoom * vh) / Math.max(bounds[3], 300)
 
-      // Choose the smaller scale to ensure the node fits into the viewport
-      // Ensure we don't go over the max scale
       targetScale = Math.min(targetScaleX, targetScaleY, this.max_scale)
     }
     const scaledWidth = cw / targetScale
@@ -293,7 +285,14 @@ export class DragAndScale {
     const targetX2 = targetX - scaledWidth
     const targetY2 = targetY - scaledHeight
 
+    this.stopAnimation()
+    const written: DragAndScaleState = { offset: [0, 0], scale: 0 }
+    copyState(this.state, written)
     const animate = (timestamp: number) => {
+      if (!statesEqual(this.state, written)) {
+        this.animationFrame = undefined
+        return
+      }
       const elapsed = timestamp - startTimestamp
       const progress = Math.min(elapsed / duration, 1)
       const easedProgress = easeFunction(progress)
@@ -312,15 +311,19 @@ export class DragAndScale {
         this.scale = Math.min(cw / currentWidth, ch / currentHeight)
       }
 
+      copyState(this.state, written)
+      this.animationFrame =
+        progress < 1 ? requestAnimationFrame(animate) : undefined
       setDirty()
-
-      if (progress < 1) {
-        animationId = requestAnimationFrame(animate)
-      } else {
-        cancelAnimationFrame(animationId)
-      }
     }
-    let animationId = requestAnimationFrame(animate)
+    this.animationFrame = requestAnimationFrame(animate)
+  }
+
+  /** Stops a running {@link animateToBounds}, leaving the camera where it is. */
+  stopAnimation(): void {
+    if (this.animationFrame === undefined) return
+    cancelAnimationFrame(this.animationFrame)
+    this.animationFrame = undefined
   }
 
   reset(): void {
@@ -328,6 +331,14 @@ export class DragAndScale {
     this.offset[0] = 0
     this.offset[1] = 0
   }
+}
+
+function statesEqual(a: DragAndScaleState, b: DragAndScaleState): boolean {
+  return (
+    a.scale === b.scale &&
+    a.offset[0] === b.offset[0] &&
+    a.offset[1] === b.offset[1]
+  )
 }
 
 /**

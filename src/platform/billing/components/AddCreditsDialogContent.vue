@@ -150,7 +150,8 @@ function trackTopupStarted(amountCents: number): void {
     stage: 'started',
     outcome: 'pending',
     payment_intent_source: source,
-    amount_cents: amountCents
+    amount_cents: amountCents,
+    plan_line: planLine.value ?? 'none'
   })
   if (checkoutReached) return
   const journey = activeOwnedJourney()

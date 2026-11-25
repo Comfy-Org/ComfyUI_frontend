@@ -35,7 +35,7 @@ const REPRESENTATIVE_VIDEO = {
 test(
   'renders a nested video output from its media URL, not its display name',
   { tag: ['@cloud', '@agent'] },
-  async ({ page, agentPanel, workflowSelection, promptHistory }) => {
+  async ({ page, agentPanel, promptHistory }) => {
     // The boot fixture already routed `/api/assets` to an empty list, so these
     // are registered afterwards on purpose: Playwright matches the most
     // recently registered route first.
@@ -69,9 +69,6 @@ test(
     await page.route(/\/api\/view\?.*/, serveVideo)
 
     const panel = await agentPanel.open()
-    await agentPanel.chooseWorkflow()
-    await expect.poll(() => workflowSelection.savedPaths.length).toBe(1)
-    workflowSelection.finishSave(true)
 
     const assets = new AssetsSidebarTab(page)
     await assets.open()

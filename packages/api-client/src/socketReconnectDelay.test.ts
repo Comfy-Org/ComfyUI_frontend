@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { socketReconnectDelayMs } from './socketReconnectDelay'
 
@@ -11,7 +11,10 @@ describe('socketReconnectDelayMs', () => {
     'spreads an opened Cloud socket reconnect to $delayMs ms when random is $random',
     ({ random, delayMs }) => {
       expect(
-        socketReconnectDelayMs({ isCloud: true, opened: true }, () => random)
+        socketReconnectDelayMs(
+          { isCloud: true, opened: true, failedConnects: 0 },
+          () => random
+        )
       ).toBe(delayMs)
     }
   )
@@ -21,6 +24,21 @@ describe('socketReconnectDelayMs', () => {
     { name: 'a local socket that never opened', isCloud: false, opened: false },
     { name: 'a Cloud socket that never opened', isCloud: true, opened: false }
   ])('reconnects $name after a fixed 300 ms', ({ isCloud, opened }) => {
-    expect(socketReconnectDelayMs({ isCloud, opened }, () => 0.5)).toBe(300)
+    expect(
+      socketReconnectDelayMs({ isCloud, opened, failedConnects: 0 }, () => 0.5)
+    ).toBe(300)
   })
+
+  it.for([{ isCloud: false }, { isCloud: true }])(
+    'backs off a socket that keeps failing to open (isCloud: $isCloud)',
+    ({ isCloud }) => {
+      vi.spyOn(Math, 'random').mockReturnValue(0)
+      expect(
+        socketReconnectDelayMs(
+          { isCloud, opened: false, failedConnects: 2 },
+          () => 0.5
+        )
+      ).toBe(1_200)
+    }
+  )
 })

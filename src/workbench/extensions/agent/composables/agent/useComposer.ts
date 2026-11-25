@@ -1,4 +1,6 @@
 import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
+import type { ComposerInsertionPoint } from '@/workbench/extensions/agent/types/composerPrompt'
+import type { WorkflowReferenceMetadata } from '@/workbench/extensions/agent/types/workflowReference'
 import { storeToRefs } from 'pinia'
 import { computed, getCurrentScope, onScopeDispose } from 'vue'
 import { v4 as uuidv4 } from 'uuid'
@@ -88,6 +90,19 @@ export function useComposer(options: UseComposerOptions) {
     })
   }
 
+  function captureReferenceTarget(
+    from?: number,
+    to?: number,
+    point?: ComposerInsertionPoint
+  ) {
+    const captured = store.captureReferenceInsertion(from, to, point)
+    return {
+      isLive: () => store.isCapturedInsertionLive(captured),
+      insert: (reference: WorkflowReferenceMetadata) =>
+        store.insertWorkflowReferenceInDraft(captured, reference)
+    }
+  }
+
   return {
     draft,
     attachments,
@@ -103,6 +118,7 @@ export function useComposer(options: UseComposerOptions) {
     setInsertionPoint: store.setInsertionPoint,
     setSkillScope: store.setSkillScope,
     removeReference: store.removeReference,
+    captureReferenceTarget,
     workflowReferences,
     canSend,
     submit,

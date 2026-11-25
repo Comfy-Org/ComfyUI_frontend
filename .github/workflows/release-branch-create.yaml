@@ -15,7 +15,6 @@ jobs:
       contains(github.event.pull_request.labels.*.name, 'Release')
     permissions:
       contents: write
-      issues: write # labels are applied through the issues API
 
     steps:
       - name: Create release token
@@ -152,27 +151,6 @@ jobs:
 
           echo "results=$BRANCH_NAME|$STATUS|$PREV_VERSION" >> "$GITHUB_OUTPUT"
 
-      - name: Ensure release labels
-        if: steps.check_version.outputs.is_minor_bump == 'true'
-        env:
-          GH_TOKEN: ${{ secrets.PR_GH_TOKEN || secrets.GITHUB_TOKEN }}
-        run: |
-          set -euo pipefail
-
-          BRANCH_BASE="${{ steps.check_version.outputs.branch_base }}"
-
-          if [[ -z "$BRANCH_BASE" ]]; then
-            echo "::error::Branch base not set; unable to manage labels"
-            exit 1
-          fi
-
-          LABEL="core/${BRANCH_BASE}"
-          gh label create "$LABEL" \
-            --color "4361ee" \
-            --description "Backport PRs for core ${BRANCH_BASE}" \
-            --force
-          echo "✅ Ensured label $LABEL"
-
       - name: Post summary
         if: always() && steps.check_version.outputs.is_minor_bump == 'true'
         run: |
@@ -223,9 +201,5 @@ jobs:
 
           ### Backporting Changes
 
-          To backport a fix:
-          1. Create your fix on \`main\` first
-          2. Cherry-pick to the target release branch
-          3. Create a PR targeting that branch
-          4. Apply the matching \`core/x.y\` label
+          Add \`needs-backport\` to a fix on \`main\` to request a backport to every eligible core branch.
           EOF

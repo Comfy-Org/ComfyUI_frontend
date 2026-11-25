@@ -15,6 +15,7 @@ import { computed, createApp, defineComponent, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useNewUserService } from '@/services/useNewUserService'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { api } from '@/scripts/api'
 import { blankGraph } from '@/scripts/defaultGraph'
@@ -475,6 +476,34 @@ describe('useWorkflowPersistenceV2', () => {
       await pending
 
       expect(loadWorkflowsSpy).toHaveBeenCalledOnce()
+    })
+
+    it('drops unreachable unscoped drafts after the new-user check', async () => {
+      distributionMocks.isCloud = true
+      const newUserService = useNewUserService()
+      newUserService.reset()
+      localStorage.setItem('Comfy.Workflow.Draft.v2:personal:abc', '{}')
+      localStorage.setItem('Comfy.Workflow.Draft.v2:user-a:personal:abc', '{}')
+
+      mountWorkflowPersistence()
+      const onUserResolved = vi.mocked(useCurrentUser().onUserResolved).mock
+        .calls[0][0]
+      onUserResolved({ id: 'user-a' })
+      await nextTick()
+
+      expect(localStorage.getItem('Comfy.Workflow.Draft.v2:personal:abc')).toBe(
+        '{}'
+      )
+
+      await newUserService.initializeIfNewUser()
+      await nextTick()
+
+      expect(localStorage.getItem('Comfy.Workflow.Draft.v2:personal:abc')).toBe(
+        null
+      )
+      expect(
+        localStorage.getItem('Comfy.Workflow.Draft.v2:user-a:personal:abc')
+      ).toBe('{}')
     })
 
     it('waits for workflow metadata before restoring tab pointers', async () => {
@@ -1036,30 +1065,38 @@ describe('useWorkflowPersistenceV2', () => {
     })
   })
 
-  it('flushes a pending workflow edit when the page is unloaded', async () => {
-    const workflowStore = useWorkflowStore()
-    const workflow = await workflowStore.createTemporary('Draft.json').load()
-    workflowStore.activeWorkflow = workflow
-    mountWorkflowPersistence()
-    await nextTick()
+  it.for([false, true])(
+    'flushes a pending draft with preview active: %s',
+    async (hasPreview) => {
+      const workflowStore = useWorkflowStore()
+      const workflow = await workflowStore.createTemporary('Draft.json').load()
+      workflowStore.activeWorkflow = workflow
+      mountWorkflowPersistence()
+      await nextTick()
 
-    mocks.state.currentGraph = {
-      nodes: [],
-      extra: { marker: 'final-edit' }
+      const finishPreview = hasPreview
+        ? workflow.changeTracker.beginPreview(() => {})
+        : undefined
+      workflow.changeTracker.activeState = {
+        ...blankGraph,
+        extra: { marker: 'final-edit' }
+      }
+      apiEvents.dispatchEvent(new Event('graphChanged'))
+      mocks.state.currentGraph = { ...blankGraph, extra: { marker: 'live' } }
+
+      const payloadKey = StorageKeys.draftPayload(workflow.path, 'personal')
+      expect(localStorage.getItem(payloadKey)).toBeNull()
+
+      window.dispatchEvent(new PageTransitionEvent('pagehide'))
+      finishPreview?.()
+
+      const payload = JSON.parse(localStorage.getItem(payloadKey)!)
+      expect(JSON.parse(payload.data)).toEqual({
+        ...blankGraph,
+        extra: { marker: hasPreview ? 'final-edit' : 'live' }
+      })
     }
-    apiEvents.dispatchEvent(new Event('graphChanged'))
-
-    const payloadKey = StorageKeys.draftPayload(workflow.path, 'personal')
-    expect(localStorage.getItem(payloadKey)).toBeNull()
-
-    window.dispatchEvent(new PageTransitionEvent('pagehide'))
-
-    const payload = JSON.parse(localStorage.getItem(payloadKey)!)
-    expect(JSON.parse(payload.data)).toEqual({
-      nodes: [],
-      extra: { marker: 'final-edit' }
-    })
-  })
+  )
 
   it('keeps the last saved edit after an index write fails during a newer edit', async () => {
     const workflowStore = useWorkflowStore()
@@ -1068,7 +1105,8 @@ describe('useWorkflowPersistenceV2', () => {
     mountWorkflowPersistence()
     await nextTick()
 
-    mocks.state.currentGraph = { version: 1 }
+    const firstEdit = { ...blankGraph, extra: { marker: 1 } }
+    mocks.state.currentGraph = firstEdit
     apiEvents.dispatchEvent(new Event('graphChanged'))
     await vi.runAllTimersAsync()
 
@@ -1083,17 +1121,17 @@ describe('useWorkflowPersistenceV2', () => {
       return realSetItem(key, value)
     })
 
-    mocks.state.currentGraph = { version: 2 }
+    mocks.state.currentGraph = { ...blankGraph, extra: { marker: 2 } }
     apiEvents.dispatchEvent(new Event('graphChanged'))
     await vi.runAllTimersAsync()
 
-    mocks.state.currentGraph = { version: 1 }
+    mocks.state.currentGraph = firstEdit
     apiEvents.dispatchEvent(new Event('graphChanged'))
     await vi.runAllTimersAsync()
 
     expect(indexFailureInjected).toBe(true)
     expect(useWorkflowDraftStoreV2().getDraft(workflow.path)?.data).toBe(
-      '{"version":1}'
+      JSON.stringify(firstEdit)
     )
   })
 
@@ -1105,31 +1143,36 @@ describe('useWorkflowPersistenceV2', () => {
     await nextTick()
 
     const setItem = localStorage.setItem.bind(localStorage)
-    vi.spyOn(localStorage, 'setItem').mockImplementation((key, value) => {
-      if (key.startsWith(StorageKeys.prefixes.draftPayload))
-        throw new DOMException('Full', 'QuotaExceededError')
-      setItem(key, value)
-    })
+    const write = vi
+      .spyOn(localStorage, 'setItem')
+      .mockImplementation((key, value) => {
+        if (key.startsWith(StorageKeys.prefixes.draftPayload))
+          throw new DOMException('Full', 'QuotaExceededError')
+        setItem(key, value)
+      })
     const toastError = vi.spyOn(useToast(), 'error')
-    mocks.serializeMock.mockClear()
+    const payloadWrites = () =>
+      write.mock.calls.filter(([key]) =>
+        key.startsWith(StorageKeys.prefixes.draftPayload)
+      )
 
-    mocks.state.currentGraph = { version: 1 }
+    mocks.state.currentGraph = { ...blankGraph, extra: { marker: 1 } }
     apiEvents.dispatchEvent(new Event('graphChanged'))
     await vi.advanceTimersByTimeAsync(512)
 
-    mocks.state.currentGraph = { version: 2 }
+    mocks.state.currentGraph = { ...blankGraph, extra: { marker: 2 } }
     apiEvents.dispatchEvent(new Event('graphChanged'))
     await vi.advanceTimersByTimeAsync(512)
 
-    expect(mocks.serializeMock).toHaveBeenCalledTimes(1)
+    expect(payloadWrites()).toHaveLength(1)
     expect(toastError).toHaveBeenCalledOnce()
 
     await vi.advanceTimersByTimeAsync(5_000)
-    mocks.state.currentGraph = { version: 3 }
+    mocks.state.currentGraph = { ...blankGraph, extra: { marker: 3 } }
     apiEvents.dispatchEvent(new Event('graphChanged'))
     await vi.advanceTimersByTimeAsync(512)
 
-    expect(mocks.serializeMock).toHaveBeenCalledTimes(2)
+    expect(payloadWrites()).toHaveLength(2)
     expect(toastError).toHaveBeenCalledOnce()
   })
 
@@ -1143,7 +1186,10 @@ describe('useWorkflowPersistenceV2', () => {
     mountWorkflowPersistence()
     await nextTick()
 
-    mocks.state.currentGraph = { ...blankGraph, extra: { marker: 'new edit' } }
+    mocks.state.currentGraph = {
+      ...blankGraph,
+      extra: { marker: 'new edit' }
+    }
     apiEvents.dispatchEvent(new Event('graphChanged'))
     window.dispatchEvent(new PageTransitionEvent('pagehide'))
 
@@ -1195,7 +1241,7 @@ describe('useWorkflowPersistenceV2', () => {
     mountWorkflowPersistence()
 
     mocks.state.currentGraph = {
-      nodes: [],
+      ...blankGraph,
       extra: { marker: 'workspace-a-final-edit' }
     }
     apiEvents.dispatchEvent(new Event('graphChanged'))
@@ -1216,7 +1262,7 @@ describe('useWorkflowPersistenceV2', () => {
       JSON.stringify({ id: destinationWorkspaceId, type: 'team' })
     )
     mocks.state.currentGraph = {
-      nodes: [],
+      ...blankGraph,
       extra: { marker: 'late-source-write' }
     }
     apiEvents.dispatchEvent(new Event('graphChanged'))
@@ -1224,7 +1270,7 @@ describe('useWorkflowPersistenceV2', () => {
 
     const sourcePayload = JSON.parse(localStorage.getItem(sourcePayloadKey)!)
     expect(JSON.parse(sourcePayload.data)).toEqual({
-      nodes: [],
+      ...blankGraph,
       extra: { marker: 'workspace-a-final-edit' }
     })
     expect(localStorage.getItem(destinationPayloadKey)).toBeNull()

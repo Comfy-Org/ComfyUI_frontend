@@ -98,6 +98,27 @@ describe('LGraphCanvas graph replacement', () => {
     }
   )
 
+  it.for([
+    { name: 'another graph', target: () => new LGraph() },
+    { name: 'the same graph', target: (graph: LGraph) => graph }
+  ])('stops a running camera animation when set to $name', ({ target }) => {
+    let pendingFrame: FrameRequestCallback | undefined
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+      pendingFrame = callback
+      return 1
+    })
+    vi.stubGlobal('cancelAnimationFrame', () => {
+      pendingFrame = undefined
+    })
+    const { canvas, graph } = createCanvasWithSelectedNode()
+    canvas.animateToBounds([3000, 3000, 100, 100], { zoom: 0 })
+
+    canvas.setGraph(target(graph))
+    pendingFrame?.(performance.now() + 1000)
+
+    expect([...canvas.ds.offset]).toEqual([0, 0])
+  })
+
   it('records the opened subgraph on the canvas', () => {
     const { canvas, graph } = createCanvasWithSelectedNode()
     const subgraph = createTestSubgraph({ rootGraph: graph })
