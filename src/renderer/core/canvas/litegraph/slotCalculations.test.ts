@@ -1,5 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { assert, beforeEach, describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
@@ -510,7 +510,7 @@ describe('Vue slot geometry of a node attached to the layout store', () => {
     graph.add(node)
     node._setConcreteSlots()
     node.arrange()
-    if (!input.pos) throw new Error('Expected an arranged widget input')
+    assert.exists(input.pos)
 
     input.pos[1] = 50
     expect(node.getInputPos(0)).toEqual([300, 450])

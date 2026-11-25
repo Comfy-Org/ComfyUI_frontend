@@ -7,27 +7,21 @@ import {
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
+import {
+  createMockCanvasRenderingContext2D,
+  createTestCanvasElement
+} from '@/utils/__tests__/canvasTestUtils'
 import { createTestLink } from '@/utils/__tests__/litegraphTestUtils'
 
+let now = 0
+
 function createCanvas(graph: LGraph): LGraphCanvas {
-  const canvasElement = document.createElement('canvas')
-  canvasElement.width = 800
-  canvasElement.height = 600
   const foregroundContext = createMockCanvasRenderingContext2D()
-  Object.defineProperty(foregroundContext, 'canvas', { value: canvasElement })
-  canvasElement.getContext = vi.fn().mockReturnValue(foregroundContext)
-  canvasElement.getBoundingClientRect = vi.fn().mockReturnValue({
-    left: 0,
-    top: 0,
-    right: 800,
-    bottom: 600,
-    width: 800,
-    height: 600,
-    x: 0,
-    y: 0,
-    toJSON: () => ({})
+  const canvasElement = createTestCanvasElement({
+    ctx: foregroundContext,
+    cssSize: [800, 600]
   })
+  Object.defineProperty(foregroundContext, 'canvas', { value: canvasElement })
 
   const canvas = new LGraphCanvas(canvasElement, graph, {
     skip_render: true,
@@ -41,9 +35,24 @@ function createCanvas(graph: LGraph): LGraphCanvas {
   return canvas
 }
 
+function panFrames(canvas: LGraphCanvas, times: number[]): void {
+  for (const time of times) {
+    now = time
+    canvas.ds.offset[0] += 10
+    canvas.setDirty(true, true)
+    canvas.draw()
+  }
+}
+
+function idleFramesUntil(canvas: LGraphCanvas, end: number): void {
+  while (now + 16 <= end) {
+    now += 16
+    canvas.draw()
+  }
+}
+
 describe('LGraphCanvas camera settling in Vue nodes mode', () => {
   let previousVueNodesMode: boolean
-  let now: number
 
   beforeEach(() => {
     previousVueNodesMode = LiteGraph.vueNodesMode
@@ -85,19 +94,10 @@ describe('LGraphCanvas camera settling in Vue nodes mode', () => {
     expect(target.getInputPos(0)).toEqual([300, 136])
     expect(drawnLinkEnd()).toEqual([300, 136])
 
-    for (now = 16; now <= 48; now += 16) {
-      canvas.ds.offset[0] += 10
-      canvas.setDirty(true, true)
-      canvas.draw()
-    }
+    panFrames(canvas, [16, 32, 48])
     upper.computeSize = () => [100, 60]
-    for (now = 64; now <= 96; now += 16) {
-      canvas.ds.offset[0] += 10
-      canvas.setDirty(true, true)
-      canvas.draw()
-    }
-
-    for (now = 112; now <= 400; now += 16) canvas.draw()
+    panFrames(canvas, [64, 80, 96])
+    idleFramesUntil(canvas, 400)
 
     expect(target.getInputPos(0)).toEqual([300, 176])
     expect(drawnLinkEnd()).toEqual([300, 176])
