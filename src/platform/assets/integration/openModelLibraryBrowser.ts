@@ -17,9 +17,6 @@ export async function openModelLibraryBrowser(): Promise<void> {
       const error = startModelNodeDragFromAsset(asset, 'asset_browser')
       if (!error) return
 
-      // Some model folders are intentionally unmapped (their loaders take
-      // model ids, or no loader node exists), so NO_PROVIDER is an expected
-      // outcome: explain it instead of reporting a crash to Sentry.
       const noProvider = error.code === 'NO_PROVIDER'
       reportError(new Error(error.message), {
         surface: 'assets',
