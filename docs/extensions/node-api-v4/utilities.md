@@ -80,6 +80,34 @@ const loras = await comfy.models.list('loras')
 console.info(loras?.length ?? 'the server did not list them')
 ```
 
+V4 has two versions, one for each half. The frontend's is the module you
+import: `comfy.getApiVersion()` and `comfy.isApiVersionAtLeast`. The
+backend's is what `comfy.backend.getApiVersion()` resolves, once the server
+has sent its feature flags: a version such as `4.0.0`, or `undefined` when
+the ComfyUI it runs on has no V4. Check it before relying on V4 Python nodes:
+
+```ts
+import { comfy } from '/comfy/api/v4.js'
+
+const backendV4 = await comfy.backend.getApiVersion()
+if (backendV4 === undefined) {
+  comfy.commands.notify({
+    severity: 'warn',
+    summary: 'MyPack needs a ComfyUI with the V4 node API'
+  })
+}
+```
+
+Two rules hold for the events a pack's Python sends with `ui.send` and its
+frontend hears with `comfy.backend.on`:
+
+- Name the event `<pack>.<event>`, such as `mypack.progress`. The backend
+  refuses to send one of the message types the frontend acts on itself, such
+  as `progress` or `executed`.
+- Subscribe before Python sends it. The frontend drops a message no listener
+  has asked for, so call `comfy.backend.on` when the pack loads, not when the
+  first message is expected.
+
 ## System readings
 
 `comfy.system.monitor()` reads what the backend's `/system_stats` reports: the
