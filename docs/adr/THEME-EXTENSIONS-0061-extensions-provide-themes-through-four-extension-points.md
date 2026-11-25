@@ -45,22 +45,24 @@ the API is proven by its first consumer.
    preset is validated with `themePresetSchema` and listed in the palette
    picker with the extension as its source. Provided themes are held in memory,
    never written to `Comfy.CustomColorPalettes`, and exist only while their
-   extension is loaded. While the selected palette's extension has not
-   registered, core renders the default without writing `Comfy.ColorPalette`
-   or showing an error, and applies the stored theme once the extension
-   registers. Today's fallback for a missing custom palette writes the default
-   back to the setting, which would erase the selection whenever an extension
-   registers after startup, as late custom nodes do
-   (ADR-EXTENSION-LOADING-0048), or fails to load once. An id that collides
-   with a built-in or user palette is rejected with one console warning.
+   extension is loaded. Core cannot tell an extension that has not registered
+   yet from one that was uninstalled, or from a deleted custom palette, so the
+   rule covers every unknown stored id: core keeps `Comfy.ColorPalette`, renders
+   the default without showing an error, and applies the stored theme if a
+   preset with that id appears. This replaces today's write-back in
+   `loadCustomThemePresets` for custom palettes too. That write-back would
+   erase the selection whenever an extension registers after startup, as late
+   custom nodes do (ADR-EXTENSION-LOADING-0048), or fails to load once. An id
+   that collides with a built-in or user palette is rejected with one console
+   warning.
 2. **Stylesheet by URL.** A preset's `stylesheet` may be the existing id or
    `{ id, url }`. While that theme is active, core imports the URL into the
-   `presets` cascade layer and removes it when the theme changes. Applying the
-   theme waits for the stylesheet: tokens, canvas settings and `data-theme`
-   commit together once it has loaded, so switching themes does not flash
-   unstyled nodes. A newer switch cancels a pending load, so the latest
-   selection wins. If the stylesheet fails to load, the theme applies without
-   it and core logs one warning.
+   `presets` cascade layer and removes it when the next theme commits, not when
+   the switch starts. Applying the theme waits for the stylesheet: tokens,
+   canvas settings and `data-theme` commit together once it has loaded, so
+   switching themes does not flash unstyled nodes. A newer switch cancels a
+   pending load, so the latest selection wins. If the stylesheet fails to load,
+   the theme applies without it and core logs one warning.
 3. **Public style hooks.** The `data-part` names and the state attributes above
    are a documented, versioned contract for the node root and its parts. A
    test snapshots each hook name and the node part it sits on, and fails when
