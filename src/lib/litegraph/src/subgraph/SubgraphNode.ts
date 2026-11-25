@@ -8,6 +8,7 @@ import type {
   Subgraph,
   SubgraphInput
 } from '@comfyorg/graph-model/entityRegistry'
+import { shallowReactive } from 'vue'
 import { once, uniqBy } from 'es-toolkit'
 import cloneDeep from 'es-toolkit/compat/cloneDeep'
 
@@ -140,8 +141,9 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
    * Names of promoted inputs the user hid on this instance. Hiding moves the
    * host widget to the advanced tier on every surface; the input, its links
    * and its value are untouched. Serialized as `properties.hiddenInputs`.
+   * Reactive so Vue-rendered surfaces re-evaluate on Hide/Show.
    */
-  private readonly _hiddenInputNames = new Set<string>()
+  private readonly _hiddenInputNames = shallowReactive(new Set<string>())
 
   isInputHidden(name: string): boolean {
     return this._hiddenInputNames.has(name)

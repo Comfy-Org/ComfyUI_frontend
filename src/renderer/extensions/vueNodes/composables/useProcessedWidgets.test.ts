@@ -699,6 +699,20 @@ describe('promoted subgraph widgets', () => {
     expect(processWithAdvanced(false).visible).toBe(true)
   })
 
+  it('re-evaluates a cached Vue node widget when the user hides it', () => {
+    const { graph, hostNode } = setupComplexPromotionFixture()
+    const inputName = hostNode.inputs[0]?.name
+    if (!inputName) throw new Error('Expected a promoted host input')
+    const visible = computed(() => processHostWidget(graph, hostNode).visible)
+    expect(visible.value).toBe(true)
+
+    hostNode.hideInput(inputName)
+    expect(visible.value).toBe(false)
+
+    hostNode.showInput(inputName)
+    expect(visible.value).toBe(true)
+  })
+
   it('surfaces raw interior errors on the host widget', () => {
     const { graph, hostNode } = setupComplexPromotionFixture()
     recordInteriorError()
