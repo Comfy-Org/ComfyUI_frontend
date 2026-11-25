@@ -10,6 +10,7 @@ import { publishedApi } from '@/platform/nodeApi/v4/__tests__/publishedApi'
 import { expectRefusal } from '@/platform/nodeApi/v4/__tests__/refusal'
 import { moduleUrl } from '@/platform/nodeApi/v4/__tests__/testPack'
 import { api } from '@/scripts/api'
+import { FETCH_RESPONSE_HEADERS_TIMEOUT_MS } from '@comfyorg/api-client/apiTimeouts'
 
 import { loadExtensions } from './extensionLoader'
 
@@ -176,7 +177,9 @@ describe('extension loading', () => {
   describe('the V4 packs the backend verified', () => {
     let loads = 0
 
-    function backendAnswers(packs: () => Promise<Response>) {
+    function backendAnswers(
+      packs: (signal: AbortSignal | undefined) => Promise<Response>
+    ) {
       const fileURL = api.fileURL.bind(api)
       const customExtensionLoaded = vi.fn()
       vi.stubGlobal('customExtensionLoaded', customExtensionLoaded)
@@ -188,10 +191,10 @@ describe('extension loading', () => {
           ? `data:text/javascript,globalThis.customExtensionLoaded();void ${++loads}`
           : fileURL(route)
       )
-      vi.spyOn(api, 'fetchApi').mockImplementation((route) =>
-        route === '/extension_packs'
-          ? packs()
-          : Promise.reject(new Error(`unexpected ${route}`))
+      vi.mocked(fetch).mockImplementation((input, init) =>
+        String(input).endsWith('/extension_packs')
+          ? packs(init?.signal ?? undefined)
+          : Promise.reject(new Error(`unexpected ${String(input)}`))
       )
       return customExtensionLoaded
     }
@@ -216,6 +219,31 @@ describe('extension loading', () => {
         'registerPack'
       )
       expect(console.warn).not.toHaveBeenCalled()
+    })
+
+    it('loads the packs unverified when the answer stops before its end, after the request bound', async () => {
+      const comfy = publishedApi()
+      const customExtensionLoaded = backendAnswers(async (signal) => {
+        const body = new ReadableStream({
+          start(controller) {
+            signal?.addEventListener('abort', () =>
+              controller.error(signal.reason)
+            )
+          }
+        })
+        return new Response(body, { status: 200 })
+      })
+
+      const loaded = loadExtensions()
+      await vi.advanceTimersByTimeAsync(FETCH_RESPONSE_HEADERS_TIMEOUT_MS)
+
+      await expect(loaded).resolves.toBeUndefined()
+      expect(customExtensionLoaded).toHaveBeenCalledOnce()
+      expect(comfy.registerPack({ url: moduleUrl('My_Pack') })).toEqual({
+        id: 'folder:My_Pack',
+        version: undefined
+      })
+      expect(console.warn).toHaveBeenCalledOnce()
     })
 
     it.for([
