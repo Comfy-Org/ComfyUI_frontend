@@ -1,11 +1,19 @@
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { LGraph, LGraphBadge, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraph,
+  LGraphBadge,
+  LGraphCanvas,
+  LGraphNode
+} from '@/lib/litegraph/src/litegraph'
 
 import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
-import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
-import type { Comfy } from '@/platform/nodeApi/v4/types'
+import {
+  createMockCanvasRenderingContext2D,
+  stubCanvasGetContext
+} from '@/utils/__tests__/canvasTestUtils'
+import type { Comfy, BadgeDef } from '@/platform/nodeApi/v4/types'
 import { expectRefusal } from '@/platform/nodeApi/v4/__tests__/refusal'
 
 function drawn(node: LGraphNode): LGraphBadge[] {
@@ -186,17 +194,28 @@ describe('node badges', () => {
   })
 
   describe('on the canvas', () => {
-    function badgeHitAt(node: LGraphNode, x: number, y: number) {
-      return node.badges
-        .map((badge) => (badge instanceof LGraphBadge ? badge : badge()))
-        .find(
-          ({ onClick, boundingRect: [left, top, width, height] }) =>
-            onClick &&
-            x >= left &&
-            x < left + width &&
-            y >= top &&
-            y < top + height
-        )
+    function canvasShowing(node: LGraphNode): LGraphCanvas {
+      stubCanvasGetContext()
+      const element = document.createElement('canvas')
+      element.width = 800
+      element.height = 600
+      element.getBoundingClientRect = () => new DOMRect(0, 0, 800, 600)
+      const canvas = new LGraphCanvas(element, graph, {
+        skip_render: true,
+        skip_events: true
+      })
+      canvas.visible_nodes = [node]
+      return canvas
+    }
+
+    function pointer(type: string, [clientX, clientY]: readonly number[]) {
+      return new PointerEvent(type, {
+        clientX,
+        clientY,
+        isPrimary: true,
+        button: 0,
+        buttons: type === 'pointerdown' ? 1 : 0
+      })
     }
 
     function drawnCenter(node: LGraphNode) {
@@ -204,23 +223,26 @@ describe('node badges', () => {
       const [badge] = drawn(node)
       const [x, y, width, height] = badge.boundingRect
       expect(width).toBeGreaterThan(0)
-      return [x + width / 2, y + height / 2] as const
+      return [node.pos[0] + x + width / 2, node.pos[1] + y + height / 2]
     }
 
-    it.for(['object', 'function'] as const)(
-      'clicks a %s badge where it was drawn',
-      (form) => {
-        const { node, handle } = add()
-        const onClick = vi.fn()
-        const badge = { text: 'Go', onClick }
-        handle.addBadge(form === 'object' ? badge : () => badge)
+    it.for([
+      { name: 'an object', given: (badge: BadgeDef) => badge },
+      { name: 'a function', given: (badge: BadgeDef) => () => badge }
+    ])('clicks $name badge where it was drawn', ({ given }) => {
+      const { node, handle } = add()
+      node.pos = [100, 100]
+      node.size = [200, 100]
+      const onClick = vi.fn()
+      handle.addBadge(given({ text: 'Go', onClick }))
+      const canvas = canvasShowing(node)
+      const center = drawnCenter(node)
 
-        const [x, y] = drawnCenter(node)
-        badgeHitAt(node, x, y)?.onClick?.(new MouseEvent('click'))
+      canvas.processMouseDown(pointer('pointerdown', center))
+      canvas.processMouseUp(pointer('pointerup', center))
 
-        expect(onClick).toHaveBeenCalledOnce()
-      }
-    )
+      expect(onClick).toHaveBeenCalledOnce()
+    })
 
     it('draws a badge added after the node was first drawn, and leaves out one removed since, on the next draw', () => {
       const { node, handle } = add()
