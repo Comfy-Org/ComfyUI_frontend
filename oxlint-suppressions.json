@@ -240,11 +240,6 @@
       "count": 1
     }
   },
-  "packages/telemetry/src/redactTelemetryUrls.ts": {
-    "regexp/no-dupe-characters-character-class": {
-      "count": 13
-    }
-  },
   "packages/viewport3d/src/load3d/HDRIManager.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 2

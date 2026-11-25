@@ -103,24 +103,21 @@ import Badge from '@comfyorg/design-system/badge/Badge'
 import Button from '@comfyorg/design-system/button/Button'
 import { startModelLoaderDrag } from '@/composables/node/startModelLoaderDrag'
 import {
+  WORKER_MODEL_FOLDERS,
   deploymentDownloads,
   useDeploymentLibraryModelsStore
 } from '@/platform/workspace/stores/deploymentLibraryModelsStore'
-import { useModelStore } from '@/stores/modelStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 
 const { searchQuery = '' } = defineProps<{ searchQuery?: string }>()
 
-const modelStore = useModelStore()
 const modelToNodeStore = useModelToNodeStore()
 const library = useDeploymentLibraryModelsStore()
 const listId = useId()
 const isOpen = ref(false)
 
 const folders = computed(() =>
-  modelStore.modelFolders
-    .map((folder) => folder.directory)
-    .filter((folder) => deploymentDownloads(folder))
+  [...WORKER_MODEL_FOLDERS].filter((folder) => deploymentDownloads(folder))
 )
 
 const libraryShelves = computed(() =>

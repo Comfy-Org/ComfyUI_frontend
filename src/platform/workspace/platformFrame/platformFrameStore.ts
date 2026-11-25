@@ -309,7 +309,8 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
   }
 
   async function reloadOntoVersion(deployment: string) {
-    if (!(await confirmUnsavedWorkBeforeSwitch(deployment))) return
+    if (!(await confirmUnsavedWorkBeforeSwitch(deployment, { reload: true })))
+      return
     const pickStore = useDeploymentPickStore()
     if (pickStore.isSwitching) return
     skipLeavePromptOnce()
