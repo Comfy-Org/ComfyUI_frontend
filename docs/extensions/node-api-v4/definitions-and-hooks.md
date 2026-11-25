@@ -106,16 +106,20 @@ the same name, and the node's field wins over a V1 one.
 
 An entry saved against a backend that does not check packs, under
 `folder:` and the pack's own folder, is found too when there is none under
-the id, and it moves under the id as soon as the loaded node is serialized:
-the loaded state, any snapshot and the saved workflow hold it there. A pack
-reads no other entry: one saved under a plain name that is not its id stays
-as it is, whoever saved it, an absent pack included. A newer editor on a
+the id, if the folder is named as the id in any case (folder `My_Pack` for
+id `my_pack`). It moves under the id as soon as the loaded node is
+serialized: the loaded state, any snapshot and the saved workflow hold it
+there. A folder name says where a pack was installed, not which pack it was,
+so a pack in a folder named otherwise does not read its folder's entry,
+which may be another pack's from another machine; the entry stays as it is.
+A pack reads no other entry: one saved under a plain name that is not its id
+stays as it is, whoever saved it, an absent pack included. A newer editor on a
 backend without `/extension_packs` (an opt-in setup such as
 `--front-end-version`, or Cloud for now) names packs by their folders. Once a
 verifying backend has saved a workflow, such an editor does not see the
 fields saved under the id, and what the pack saves there goes under its
 folder key, which a verifying backend reads only while the workflow has no
-entry under the id. The fields of both stay in the workflow.
+entry under the id, and only for a folder named as the id. The fields of both stay in the workflow.
 
 ```ts
 import { comfy } from '/comfy/api/v4.js'
