@@ -1036,31 +1036,38 @@ describe('useWorkflowPersistenceV2', () => {
     })
   })
 
-  it('flushes the committed edit, not a live preview, when the page is unloaded', async () => {
-    const workflowStore = useWorkflowStore()
-    const workflow = await workflowStore.createTemporary('Draft.json').load()
-    workflowStore.activeWorkflow = workflow
-    mountWorkflowPersistence()
-    await nextTick()
+  it.for([false, true])(
+    'flushes a pending draft with preview active: %s',
+    async (hasPreview) => {
+      const workflowStore = useWorkflowStore()
+      const workflow = await workflowStore.createTemporary('Draft.json').load()
+      workflowStore.activeWorkflow = workflow
+      mountWorkflowPersistence()
+      await nextTick()
 
-    workflow.changeTracker.activeState = {
-      ...blankGraph,
-      extra: { marker: 'final-edit' }
+      const finishPreview = hasPreview
+        ? workflow.changeTracker.beginPreview(() => {})
+        : undefined
+      workflow.changeTracker.activeState = {
+        ...blankGraph,
+        extra: { marker: 'final-edit' }
+      }
+      apiEvents.dispatchEvent(new Event('graphChanged'))
+      mocks.state.currentGraph = { ...blankGraph, extra: { marker: 'live' } }
+
+      const payloadKey = StorageKeys.draftPayload(workflow.path, 'personal')
+      expect(localStorage.getItem(payloadKey)).toBeNull()
+
+      window.dispatchEvent(new PageTransitionEvent('pagehide'))
+      finishPreview?.()
+
+      const payload = JSON.parse(localStorage.getItem(payloadKey)!)
+      expect(JSON.parse(payload.data)).toEqual({
+        ...blankGraph,
+        extra: { marker: hasPreview ? 'final-edit' : 'live' }
+      })
     }
-    apiEvents.dispatchEvent(new Event('graphChanged'))
-    mocks.state.currentGraph = { ...blankGraph, extra: { marker: 'preview' } }
-
-    const payloadKey = StorageKeys.draftPayload(workflow.path, 'personal')
-    expect(localStorage.getItem(payloadKey)).toBeNull()
-
-    window.dispatchEvent(new PageTransitionEvent('pagehide'))
-
-    const payload = JSON.parse(localStorage.getItem(payloadKey)!)
-    expect(JSON.parse(payload.data)).toEqual({
-      ...blankGraph,
-      extra: { marker: 'final-edit' }
-    })
-  })
+  )
 
   it('keeps the last saved edit after an index write fails during a newer edit', async () => {
     const workflowStore = useWorkflowStore()
@@ -1070,7 +1077,7 @@ describe('useWorkflowPersistenceV2', () => {
     await nextTick()
 
     const firstEdit = { ...blankGraph, extra: { marker: 1 } }
-    workflow.changeTracker.activeState = firstEdit
+    mocks.state.currentGraph = firstEdit
     apiEvents.dispatchEvent(new Event('graphChanged'))
     await vi.runAllTimersAsync()
 
@@ -1085,11 +1092,11 @@ describe('useWorkflowPersistenceV2', () => {
       return realSetItem(key, value)
     })
 
-    workflow.changeTracker.activeState = { ...blankGraph, extra: { marker: 2 } }
+    mocks.state.currentGraph = { ...blankGraph, extra: { marker: 2 } }
     apiEvents.dispatchEvent(new Event('graphChanged'))
     await vi.runAllTimersAsync()
 
-    workflow.changeTracker.activeState = firstEdit
+    mocks.state.currentGraph = firstEdit
     apiEvents.dispatchEvent(new Event('graphChanged'))
     await vi.runAllTimersAsync()
 
@@ -1120,11 +1127,11 @@ describe('useWorkflowPersistenceV2', () => {
         key.startsWith(StorageKeys.prefixes.draftPayload)
       )
 
-    workflow.changeTracker.activeState = { ...blankGraph, extra: { marker: 1 } }
+    mocks.state.currentGraph = { ...blankGraph, extra: { marker: 1 } }
     apiEvents.dispatchEvent(new Event('graphChanged'))
     await vi.advanceTimersByTimeAsync(512)
 
-    workflow.changeTracker.activeState = { ...blankGraph, extra: { marker: 2 } }
+    mocks.state.currentGraph = { ...blankGraph, extra: { marker: 2 } }
     apiEvents.dispatchEvent(new Event('graphChanged'))
     await vi.advanceTimersByTimeAsync(512)
 
@@ -1132,7 +1139,7 @@ describe('useWorkflowPersistenceV2', () => {
     expect(toastError).toHaveBeenCalledOnce()
 
     await vi.advanceTimersByTimeAsync(5_000)
-    workflow.changeTracker.activeState = { ...blankGraph, extra: { marker: 3 } }
+    mocks.state.currentGraph = { ...blankGraph, extra: { marker: 3 } }
     apiEvents.dispatchEvent(new Event('graphChanged'))
     await vi.advanceTimersByTimeAsync(512)
 
@@ -1150,7 +1157,7 @@ describe('useWorkflowPersistenceV2', () => {
     mountWorkflowPersistence()
     await nextTick()
 
-    workflow.changeTracker.activeState = {
+    mocks.state.currentGraph = {
       ...blankGraph,
       extra: { marker: 'new edit' }
     }
@@ -1204,7 +1211,7 @@ describe('useWorkflowPersistenceV2', () => {
     workflowStore.activeWorkflow = workflow
     mountWorkflowPersistence()
 
-    workflow.changeTracker.activeState = {
+    mocks.state.currentGraph = {
       ...blankGraph,
       extra: { marker: 'workspace-a-final-edit' }
     }
@@ -1225,7 +1232,7 @@ describe('useWorkflowPersistenceV2', () => {
       WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE,
       JSON.stringify({ id: destinationWorkspaceId, type: 'team' })
     )
-    workflow.changeTracker.activeState = {
+    mocks.state.currentGraph = {
       ...blankGraph,
       extra: { marker: 'late-source-write' }
     }

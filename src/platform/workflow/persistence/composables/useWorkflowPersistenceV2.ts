@@ -141,7 +141,10 @@ export function useWorkflowPersistenceV2() {
     const workflowPath = activeWorkflow.path
     if (shouldBackOffPersistence(workflowPath)) return
 
-    const workflowJson = JSON.stringify(activeWorkflow.activeState)
+    const graph = activeWorkflow.changeTracker.hasPreview
+      ? activeWorkflow.activeState
+      : useApp().rootGraph.serialize()
+    const workflowJson = JSON.stringify(graph)
 
     if (workflowJson === lastSavedJsonByPath.value[workflowPath]) return
 
