@@ -1110,7 +1110,8 @@ export const useWorkflowService = () => {
   ): Promise<boolean> => {
     const oldPath = workflow.path
     const graphId = workflow.activeState?.id
-    if (!(await workflowStore.renameWorkflow(workflow, newPath))) {
+    const result = await workflowStore.renameWorkflow(workflow, newPath)
+    if (result === false) {
       toast.error(t('g.error'), {
         description: t('workflowService.pathInUse', { path: newPath })
       })
@@ -1118,6 +1119,9 @@ export const useWorkflowService = () => {
     }
     if (graphId) {
       useExecutionErrorStore().moveRunErrors(graphId, oldPath, workflow.path)
+    }
+    if (result === 'bookmarks-not-updated') {
+      toast.warning(t('sideToolbar.workflowTab.renamedButBookmarksNotUpdated'))
     }
     return true
   }
@@ -1157,8 +1161,10 @@ export const useWorkflowService = () => {
       if (workflowStore.isOpen(workflow)) return false
     }
     if (!stillTarget()) return false
-    await workflowStore.deleteWorkflow(workflow)
-    if (!silent) {
+    const unbookmarked = await workflowStore.deleteWorkflow(workflow)
+    if (!unbookmarked) {
+      toast.warning(t('sideToolbar.workflowTab.deletedButBookmarksNotUpdated'))
+    } else if (!silent) {
       toast.info(t('sideToolbar.workflowTab.deleted'), { duration: 1000 })
     }
     return true

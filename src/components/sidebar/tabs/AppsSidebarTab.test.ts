@@ -5,10 +5,8 @@ import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useAppMode } from '@/composables/useAppMode'
-import {
-  useWorkflowStore,
-  useWorkflowBookmarkStore
-} from '@/platform/workflow/management/stores/workflowStore'
+import { useWorkflowBookmarkStore } from '@/platform/workflow/management/stores/workflowBookmarkStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
 

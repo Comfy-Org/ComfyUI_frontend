@@ -3627,7 +3627,7 @@ describe('useWorkflowService', () => {
       const workflowStore = useWorkflowStore()
       const deleteSpy = vi
         .spyOn(workflowStore, 'deleteWorkflow')
-        .mockResolvedValue()
+        .mockResolvedValue(true)
       const workflow = unreadableWorkflow()
       vi.spyOn(workflowStore, 'getWorkflowByPath').mockReturnValue(workflow)
 
@@ -3645,7 +3645,7 @@ describe('useWorkflowService', () => {
       const workflowStore = useWorkflowStore()
       const deleteSpy = vi
         .spyOn(workflowStore, 'deleteWorkflow')
-        .mockResolvedValue()
+        .mockResolvedValue(true)
       const workflow = unreadableWorkflow('workflows/reused.json')
       await useWorkflowService().openWorkflow(workflow)
       const { options } = shownToast()
@@ -3670,7 +3670,7 @@ describe('useWorkflowService', () => {
       const workflowStore = useWorkflowStore()
       const deleteSpy = vi
         .spyOn(workflowStore, 'deleteWorkflow')
-        .mockResolvedValue()
+        .mockResolvedValue(true)
       const workflow = unreadableWorkflow('workflows/raced.json')
       const lookup = vi
         .spyOn(workflowStore, 'getWorkflowByPath')
@@ -3707,7 +3707,7 @@ describe('useWorkflowService', () => {
       const workflowStore = useWorkflowStore()
       const deleteSpy = vi
         .spyOn(workflowStore, 'deleteWorkflow')
-        .mockResolvedValue()
+        .mockResolvedValue(true)
       const workflow = unreadableWorkflow('workflows/repaired.json')
       vi.spyOn(workflowStore, 'getWorkflowByPath').mockReturnValue(workflow)
       const service = useWorkflowService()
@@ -3740,7 +3740,7 @@ describe('useWorkflowService', () => {
       const workflowStore = useWorkflowStore()
       const deleteSpy = vi
         .spyOn(workflowStore, 'deleteWorkflow')
-        .mockResolvedValue()
+        .mockResolvedValue(true)
       const workflow = unreadableWorkflow('workflows/flaky.json')
       vi.spyOn(workflowStore, 'getWorkflowByPath').mockReturnValue(workflow)
       const service = useWorkflowService()
@@ -5090,6 +5090,61 @@ describe('useWorkflowService', () => {
     })
   })
 
+  describe('bookmarks of a renamed or deleted workflow', () => {
+    function serveBookmarkIndexRefusingWrites(favorites: string[]) {
+      vi.spyOn(api, 'getUserData').mockImplementation(
+        async () => new Response(JSON.stringify({ favorites }), { status: 200 })
+      )
+      vi.spyOn(api, 'storeUserData').mockImplementation(
+        async () => new Response(null, { status: 500 })
+      )
+    }
+
+    it.for([
+      {
+        name: 'renamed',
+        operation: 'renameWorkflow',
+        act: (workflow: ComfyWorkflow) =>
+          useWorkflowService().renameWorkflow(
+            workflow,
+            'workflows/renamed.json'
+          ),
+        pathsAfter: ['workflows/renamed.json'],
+        warning: 'sideToolbar.workflowTab.renamedButBookmarksNotUpdated'
+      },
+      {
+        name: 'deleted',
+        operation: 'deleteWorkflow',
+        act: (workflow: ComfyWorkflow) =>
+          useWorkflowService().deleteWorkflow(workflow),
+        pathsAfter: [],
+        warning: 'sideToolbar.workflowTab.deletedButBookmarksNotUpdated'
+      }
+    ] as const)(
+      'completes a $name workflow and warns once, with no action, that its bookmark was not updated',
+      async ({ operation, act, pathsAfter, warning }) => {
+        serveBookmarkIndexRefusingWrites(['workflows/draft.json'])
+        vi.mocked(useDialogService().confirm).mockResolvedValue(true)
+        const workflowStore = useWorkflowStore()
+        const workflow = workflowStore.createTemporary('draft.json')
+
+        expect(await act(workflow)).toBe(true)
+
+        expect(workflowStore.workflows.map(({ path }) => path)).toEqual(
+          pathsAfter
+        )
+        expect(useToast().toasts).toEqual([
+          expect.objectContaining({
+            kind: 'warning',
+            title: t(warning),
+            actions: []
+          })
+        ])
+        expect(workflowStore[operation]).toHaveBeenCalledTimes(1)
+      }
+    )
+  })
+
   describe('saveWorkflowAs', () => {
     let workflowStore: ReturnType<typeof useWorkflowStore>
     let service: ReturnType<typeof useWorkflowService>
@@ -5200,7 +5255,7 @@ describe('useWorkflowService', () => {
       const occupant = createTemporaryWorkflow()
       occupant.path = 'workflows/my-workflow.json'
       vi.mocked(workflowStore.getWorkflowByPath).mockReturnValue(occupant)
-      vi.spyOn(workflowStore, 'deleteWorkflow').mockResolvedValue()
+      vi.spyOn(workflowStore, 'deleteWorkflow').mockResolvedValue(true)
 
       const result = await service.saveWorkflowAs(workflow, {
         filename: 'my-workflow'
@@ -5222,7 +5277,7 @@ describe('useWorkflowService', () => {
       vi.mocked(workflowStore.getWorkflowByPath)
         .mockReturnValueOnce(occupant)
         .mockReturnValue(null)
-      vi.spyOn(workflowStore, 'deleteWorkflow').mockResolvedValue()
+      vi.spyOn(workflowStore, 'deleteWorkflow').mockResolvedValue(true)
       vi.mocked(useDialogService().confirm).mockResolvedValue(true)
 
       const result = await service.saveWorkflowAs(workflow, {
@@ -5245,7 +5300,7 @@ describe('useWorkflowService', () => {
         .mockReturnValueOnce(occupant)
         .mockReturnValue(null)
       vi.spyOn(workflowStore, 'isOpen').mockReturnValue(false)
-      vi.spyOn(workflowStore, 'deleteWorkflow').mockResolvedValue()
+      vi.spyOn(workflowStore, 'deleteWorkflow').mockResolvedValue(true)
       vi.mocked(useDialogService().confirm).mockResolvedValue(true)
 
       const result = await service.saveWorkflowAs(workflow, {
@@ -5702,7 +5757,7 @@ describe('useWorkflowService', () => {
 
       const existing = createSaveableWorkflow('workflows/test.app.json')
       vi.spyOn(workflowStore, 'getWorkflowByPath').mockReturnValue(existing)
-      vi.spyOn(workflowStore, 'deleteWorkflow').mockResolvedValue()
+      vi.spyOn(workflowStore, 'deleteWorkflow').mockResolvedValue(true)
       vi.mocked(useDialogService().confirm).mockResolvedValue(true)
 
       await service.saveWorkflow(workflow)
