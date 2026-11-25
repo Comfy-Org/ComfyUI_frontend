@@ -104,6 +104,7 @@
       <img
         v-if="
           !imageError &&
+          mainImageSrc &&
           displayUrls[currentIndex] &&
           !failedHdrPreviews[currentIndex]
         "
