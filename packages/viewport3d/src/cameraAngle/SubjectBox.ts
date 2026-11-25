@@ -1,3 +1,4 @@
+import type { Size2D } from '@comfyorg/shared-frontend-utils/geometry'
 import * as THREE from 'three'
 
 import { computeSubjectTransform } from '#/cameraInfo/cameraTransform'
@@ -78,10 +79,7 @@ function centerCropToSquare(texture: THREE.Texture): void {
 }
 
 function textureAspect(texture: THREE.Texture): number {
-  const image = texture.image as
-    | { width?: number; height?: number }
-    | null
-    | undefined
+  const image = texture.image as Partial<Size2D> | null | undefined
   const width = image?.width ?? 0
   const height = image?.height ?? 0
   return width > 0 && height > 0 ? width / height : 1

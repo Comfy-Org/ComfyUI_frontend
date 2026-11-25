@@ -1,14 +1,14 @@
-import { storeToRefs } from 'pinia'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useToast } from '@/components/ui/toast/toastStore'
 
 import {
   deleteSkillPack as deleteSkillPackApi,
   SkillPacksApiError
 } from '@/platform/skills/api/skillsApi'
+import { skillPacksReporting } from '@/platform/skills/api/skillPacksReporting'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 import type { SkillPack } from '@/platform/skills/types'
 
@@ -16,12 +16,15 @@ export function useSkillPacks() {
   const { t } = useI18n()
   const toast = useToast()
   const store = useSkillPacksStore()
-  const { packs, loading, hasLoaded } = storeToRefs(store)
 
   const operatingPackName = ref<string | null>(null)
 
   function reportUnexpected(error: unknown, errorType: string) {
-    reportError(error, { errorType, surface: 'agent' })
+    reportError(error, {
+      errorType,
+      surface: 'agent',
+      ...skillPacksReporting(error)
+    })
     toast.error(t('g.error'), {
       description:
         error instanceof SkillPacksApiError
@@ -30,42 +33,46 @@ export function useSkillPacks() {
     })
   }
 
-  async function fetchSkillPacks() {
+  async function fetchSkillPacks(): Promise<boolean> {
     try {
-      await store.fetchPacks()
+      return await store.fetchPacks()
     } catch (error) {
       reportUnexpected(error, 'error_fetching_agent_skill_packs')
+      return false
     }
   }
 
   /**
    * Delete 404 means missing pack or disabled gate; re-list to distinguish them.
    */
-  async function deleteSkillPack(pack: SkillPack) {
+  async function deleteSkillPack(pack: SkillPack): Promise<boolean> {
     const requestScope = store.scope
     operatingPackName.value = pack.name
     try {
       await deleteSkillPackApi(pack.name)
       store.removePack(pack.name, requestScope)
+      return true
     } catch (error) {
-      if (!store.isCurrentScope(requestScope)) return
+      if (!store.isCurrentScope(requestScope)) return false
       if (error instanceof SkillPacksApiError && error.status === 404) {
         store.removePack(pack.name, requestScope)
-        await fetchSkillPacks()
-        return
+        const listingApplied = await fetchSkillPacks()
+        return (
+          listingApplied &&
+          store.isCurrentScope(requestScope) &&
+          store.routesAvailable &&
+          !store.packs.some((existing) => existing.name === pack.name)
+        )
       }
       reportUnexpected(error, 'error_deleting_agent_skill_pack')
+      return false
     } finally {
       operatingPackName.value = null
     }
   }
 
   return {
-    packs,
-    loading,
-    hasLoaded,
     operatingPackName,
-    fetchSkillPacks,
     deleteSkillPack
   }
 }

@@ -1,0 +1,82 @@
+<template>
+  <DeploymentDialogFrame
+    data-testid="run-on-cloud-card"
+    @dismiss="emit('dismiss')"
+  >
+    <section class="flex flex-col gap-4 px-9 pt-9 pb-8">
+      <DialogTitle class="my-0 pr-8 text-2xl/8 font-bold tracking-tight">
+        {{ $t('openOnCloud.runDialog.title') }}
+      </DialogTitle>
+      <p class="my-0 text-sm/5 text-muted-foreground">
+        {{ readyMessage }}
+      </p>
+      <p v-if="asksToSignIn" class="my-0 text-sm/5 text-muted-foreground">
+        {{ $t('openOnCloud.runDialog.asksToSignIn') }}
+      </p>
+      <footer class="flex items-center justify-end gap-2.5 pt-3">
+        <Button variant="secondary" size="lg" @click="emit('dismiss')">
+          {{ $t('g.cancel') }}
+        </Button>
+        <Button
+          variant="inverted"
+          size="lg"
+          data-testid="run-on-cloud-primary"
+          @click="openOnCloud"
+        >
+          {{ $t('openOnCloud.runDialog.openOnCloud') }}
+          <i class="icon-[lucide--external-link]" aria-hidden="true" />
+        </Button>
+      </footer>
+    </section>
+  </DeploymentDialogFrame>
+</template>
+
+<script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import type { UncheckedModelInput } from '@/platform/openOnCloud/cloudWorkflowCheck'
+import { openWorkflowOnCloud } from '@/platform/openOnCloud/openWorkflowOnCloud'
+import DeploymentDialogFrame from '@/platform/workspace/components/DeploymentDialogFrame.vue'
+
+const {
+  asksToSignIn,
+  workspaceId,
+  uncheckedInputs = []
+} = defineProps<{
+  asksToSignIn: boolean
+  workspaceId?: string
+  uncheckedInputs?: UncheckedModelInput[]
+}>()
+
+const { t } = useI18n()
+
+const readyMessage = computed(() =>
+  uncheckedInputs.length
+    ? t('openOnCloud.runDialog.readyWithUncheckedInputs', {
+        inputs: uncheckedInputs
+          .map(({ nodeType, input }) =>
+            t('openOnCloud.runDialog.uncheckedInput', { nodeType, input })
+          )
+          .join(', ')
+      })
+    : t('openOnCloud.runDialog.ready')
+)
+
+const emit = defineEmits<{
+  done: []
+  dismiss: []
+}>()
+
+function openOnCloud() {
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'run_on_cloud_open_on_cloud_clicked',
+    element_group: 'run_on_cloud'
+  })
+  void openWorkflowOnCloud(undefined, asksToSignIn ? undefined : workspaceId)
+  emit('done')
+}
+</script>

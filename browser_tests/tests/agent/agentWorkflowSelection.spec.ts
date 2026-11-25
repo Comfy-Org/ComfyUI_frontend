@@ -1,5 +1,7 @@
 import { expect, mergeTests } from '@playwright/test'
 
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import { agentTest } from '@e2e/fixtures/agentPanelFixture'
@@ -7,6 +9,8 @@ import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { Tooltip } from '@e2e/fixtures/components/Tooltip'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { workflowSelectionTest } from '@e2e/fixtures/agentWorkflowSelectionFixture'
+import { waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
+import type { WorkspaceStore } from '@e2e/types/globals'
 
 const test = mergeTests(agentTest, workflowSelectionTest)
 
@@ -29,8 +33,8 @@ test.describe(
       await expect.poll(() => workflowSelection.savedPaths.length).toBe(1)
       workflowSelection.finishSave(true)
       const workflowIcon = panel.getByTestId('workflow-selector-icon')
-      await expect(workflowIcon).toHaveCSS('width', '16px')
-      await expect(workflowIcon).toHaveCSS('height', '16px')
+      await expect(workflowIcon).toHaveCSS('width', '14px')
+      await expect(workflowIcon).toHaveCSS('height', '14px')
       await panel
         .getByRole('button', {
           name: enMessages.agent.runModeTriggerAsk,
@@ -93,7 +97,20 @@ test.describe(
         .click()
       await expect(tabs).toHaveCount(1)
       workflowSelection.resumeWorkflowLookups()
-      await expect(composer).toHaveText('Keep this interrupted draft')
+      await expect(composer).toHaveText('')
+      await expect(panel.getByTestId('user-message-bubble')).toBeVisible()
+      await expect(panel.getByTestId('user-message-bubble')).toHaveText([
+        'Keep this interrupted draft'
+      ])
+      await expect(panel.getByTestId('pending-send-error')).toBeVisible()
+      await expect(panel.getByTestId('pending-send-error')).toContainText(
+        enMessages.agent.targetNavigationUnavailable
+      )
+      await expect(
+        panel
+          .getByTestId('agent-conversation')
+          .getByRole('button', { name: enMessages.g.retry, exact: true })
+      ).toHaveCount(0)
       await expect(
         panel.getByText(enMessages.agent.selectWorkflowForAgent)
       ).toBeVisible()
@@ -150,7 +167,15 @@ test.describe(
       await composer.fill('Start in this workflow')
       await composer.press('Enter')
       await expect.poll(() => workflowSelection.postedMessages.length).toBe(1)
-      await expect(composer).toHaveText('Start in this workflow')
+      await expect(composer).toHaveText('')
+      await expect(panel.getByTestId('user-message-bubble')).toBeVisible()
+      await expect(panel.getByTestId('user-message-bubble')).toHaveText([
+        'Start in this workflow'
+      ])
+      await expect(panel.getByTestId('pending-send-error')).toBeVisible()
+      await expect(panel.getByTestId('pending-send-error')).toContainText(
+        enMessages.agent.sendFailed
+      )
       await composer.fill('@')
       await panel
         .getByRole('menuitem', {
@@ -235,8 +260,15 @@ test.describe(
       await composer.fill('Start in this workflow')
       await composer.press('Enter')
       await expect.poll(() => workflowSelection.postedMessages.length).toBe(1)
-      await expect(composer).toHaveText('Start in this workflow')
-      await composer.fill('')
+      await expect(composer).toHaveText('')
+      await expect(panel.getByTestId('user-message-bubble')).toBeVisible()
+      await expect(panel.getByTestId('user-message-bubble')).toHaveText([
+        'Start in this workflow'
+      ])
+      await expect(panel.getByTestId('pending-send-error')).toBeVisible()
+      await expect(panel.getByTestId('pending-send-error')).toContainText(
+        enMessages.agent.sendFailed
+      )
       await page
         .getByRole('button', {
           name: enMessages.sideToolbar.newBlankWorkflow,
@@ -426,7 +458,15 @@ test.describe(
 
       await composer.press('Enter')
       await expect.poll(() => workflowSelection.postedMessages.length).toBe(1)
-      await expect(composer).toHaveText('Find a workflow for skin upscaling')
+      await expect(composer).toHaveText('')
+      await expect(panel.getByTestId('user-message-bubble')).toBeVisible()
+      await expect(panel.getByTestId('user-message-bubble')).toHaveText([
+        'Find a workflow for skin upscaling'
+      ])
+      await expect(panel.getByTestId('pending-send-error')).toBeVisible()
+      await expect(panel.getByTestId('pending-send-error')).toContainText(
+        enMessages.agent.sendFailed
+      )
 
       const editorTabs = page.getByTestId('workflow-tab')
       const targetTab = editorTabs
@@ -504,7 +544,7 @@ test.describe(
         panel.getByRole('button', { name: enMessages.agent.switchWorkflow })
       ).toHaveText('Unsaved Workflow')
 
-      for (let index = 0; index < 8; index++) {
+      for (let index = 0; index < 12; index++) {
         await page
           .getByRole('button', {
             name: enMessages.sideToolbar.newBlankWorkflow,
@@ -578,6 +618,77 @@ test.describe(
       ).toHaveText('Unsaved Workflow')
       await expect(page.getByRole('dialog')).toHaveCount(0)
       expect(workflowSelection.postedMessages).toHaveLength(0)
+    })
+
+    test('picks an unsaved tab a reload left unopened', async ({
+      page,
+      toast,
+      workflowSelection
+    }) => {
+      const tabs = page.getByTestId('workflow-tab')
+      await expect(tabs).toHaveCount(1)
+      await page.evaluate(() => {
+        const workflow = (window.app!.extensionManager as WorkspaceStore)
+          .workflow.activeWorkflow!
+        window.app!.graph.add(window.LiteGraph!.createNode('Note'))
+        workflow.changeTracker.checkState()
+      })
+      await page
+        .getByRole('button', {
+          name: enMessages.sideToolbar.newBlankWorkflow,
+          exact: true
+        })
+        .click()
+      await expect(tabs).toHaveCount(2)
+      await expect
+        .poll(() =>
+          page.evaluate(() =>
+            Object.keys(localStorage).some(
+              (key) =>
+                key.startsWith('Comfy.Workflow.DraftIndex.v2:') &&
+                localStorage
+                  .getItem(key)!
+                  .includes('"workflows/Unsaved Workflow.json"')
+            )
+          )
+        )
+        .toBe(true)
+
+      await page.reload()
+      await waitForCloudApp(page)
+      await expect(tabs).toHaveCount(2)
+
+      await test.step('the background tab is restored unloaded', async () => {
+        await expect
+          .poll(() =>
+            page.evaluate(
+              () =>
+                (
+                  window.app!.extensionManager as WorkspaceStore
+                ).workflow.getWorkflowByPath('workflows/Unsaved Workflow.json')
+                  ?.isLoaded
+            )
+          )
+          .toBe(false)
+      })
+
+      const agentPanel = new AgentPanel(page)
+      await agentPanel.open()
+      await agentPanel.chooseWorkflow('Unsaved Workflow')
+      await expect.poll(() => workflowSelection.savedPaths.length).toBe(1)
+      workflowSelection.finishSave(true)
+
+      await expect(agentPanel.workflowPicker).toHaveText('Unsaved Workflow')
+      await expect(
+        toast.withText(enMessages.shareWorkflow.saveFailedTitle)
+      ).toHaveCount(0)
+      const savedGraph = await page.evaluate(async (path) => {
+        const response = await fetch(
+          `/api/userdata/${encodeURIComponent(path)}`
+        )
+        return (await response.json()) as ComfyWorkflowJSON
+      }, workflowSelection.savedPaths[0])
+      expect(savedGraph.nodes.map(({ type }) => type)).toContain('Note')
     })
   }
 )

@@ -1,12 +1,13 @@
 import { computed, ref } from 'vue'
 
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 
 import { AgentApiError } from '@/workbench/extensions/agent/services/agent/agentRestClient'
 import type {
   AgentRestClient,
+  CloudWorkflowRecord,
   OpenTabsSnapshot
 } from '@/workbench/extensions/agent/services/agent/agentRestClient'
 import type { useAgentWorkflowTabBindingStore } from '@/workbench/extensions/agent/stores/agent/agentWorkflowTabBindingStore'
@@ -26,15 +27,31 @@ type WorkflowResolverDeps = {
   >
   listCloudWorkflows: AgentRestClient['listCloudWorkflows']
   getCloudWorkflow: AgentRestClient['getCloudWorkflow']
+  getWorkflowDraft: AgentRestClient['getWorkflowDraft']
+  getWorkflowContent: AgentRestClient['getWorkflowContent']
+  getWorkflowSidebarFile: AgentRestClient['getWorkflowSidebarFile']
 }
 
 export type CloudWorkflowLifecycle = 'live' | 'gone' | 'unknown'
+type CloudWorkflowRow = CloudWorkflowRecord | 'gone' | 'unknown'
+export type ServerWorkflowContent =
+  | { outcome: 'found'; content: Record<string, unknown> }
+  | { outcome: 'none' }
+  | { outcome: 'failed'; cause: unknown }
+export type SidebarWorkflowResolution =
+  | { outcome: 'found'; path: string; workflow: ComfyWorkflow | null }
+  | { outcome: 'gone' }
+  | { outcome: 'out_of_sync' }
+  | { outcome: 'failed'; cause: unknown }
 
 export function useAgentWorkflowResolver({
   workflows,
   bindings,
   listCloudWorkflows,
-  getCloudWorkflow
+  getCloudWorkflow,
+  getWorkflowDraft,
+  getWorkflowContent,
+  getWorkflowSidebarFile
 }: WorkflowResolverDeps) {
   const cloudIndex = ref<WorkflowReferenceMetadata[]>([])
   const listedCloudIds = ref<ReadonlySet<string>>(new Set())
@@ -169,12 +186,11 @@ export function useAgentWorkflowResolver({
    * Only a 404 proves deletion. A 403 can come from auth middleware for reasons
    * unrelated to the workflow, so it stays `unknown` like every other failure.
    */
-  async function cloudWorkflowLifecycle(
+  async function cloudWorkflowRow(
     workflowId: string
-  ): Promise<CloudWorkflowLifecycle> {
+  ): Promise<CloudWorkflowRow> {
     try {
-      await getCloudWorkflow(workflowId)
-      return 'live'
+      return await getCloudWorkflow(workflowId)
     } catch (error) {
       if (error instanceof AgentApiError && error.status === 404) return 'gone'
       reportError(error, {
@@ -185,8 +201,73 @@ export function useAgentWorkflowResolver({
     }
   }
 
+  async function cloudWorkflowLifecycle(
+    workflowId: string
+  ): Promise<CloudWorkflowLifecycle> {
+    const row = await cloudWorkflowRow(workflowId)
+    return typeof row === 'string' ? row : 'live'
+  }
+
+  async function serverWorkflowContent(
+    row: CloudWorkflowRecord
+  ): Promise<ServerWorkflowContent> {
+    let draftFailure: unknown
+    try {
+      return { outcome: 'found', content: await getWorkflowDraft(row.id) }
+    } catch (error) {
+      if (!(error instanceof AgentApiError && error.status === 404)) {
+        draftFailure = error
+        reportError(error, {
+          surface: 'agent',
+          errorType: 'failure_reading_agent_workflow_draft'
+        })
+      }
+    }
+    if (row.latest_version < 1)
+      return draftFailure === undefined
+        ? { outcome: 'none' }
+        : { outcome: 'failed', cause: draftFailure }
+    try {
+      return { outcome: 'found', content: await getWorkflowContent(row.id) }
+    } catch (error) {
+      if (error instanceof AgentApiError && error.status === 404)
+        return draftFailure === undefined
+          ? { outcome: 'none' }
+          : { outcome: 'failed', cause: draftFailure }
+      reportError(error, {
+        surface: 'agent',
+        errorType: 'failure_reading_agent_workflow_content'
+      })
+      return { outcome: 'failed', cause: error }
+    }
+  }
+
   function storedWorkflowFor(workflowId: string): ComfyWorkflow | null {
     return resolveWorkflow(workflowId, workflows.workflows)
+  }
+
+  function savedWorkflowAtPath(path: string): ComfyWorkflow | null {
+    const workflow = workflows.getWorkflowByPath(path)
+    return workflow?.isTemporary ? null : workflow
+  }
+
+  async function storedWorkflowByCloudPath(
+    workflowId: string
+  ): Promise<SidebarWorkflowResolution> {
+    try {
+      const { path } = await getWorkflowSidebarFile(workflowId)
+      return {
+        outcome: 'found',
+        path,
+        workflow: savedWorkflowAtPath(path)
+      }
+    } catch (cause) {
+      if (cause instanceof AgentApiError) {
+        if (cause.status === 404) return { outcome: 'gone' }
+        if (cause.status === 409) return { outcome: 'out_of_sync' }
+      }
+      return { outcome: 'failed', cause }
+    }
   }
 
   function openWorkflowFor(workflowId: string): ComfyWorkflow | null {
@@ -258,8 +339,12 @@ export function useAgentWorkflowResolver({
     boundOrOpenWorkflowFor,
     cachedOpenWorkflowFor,
     storedWorkflowFor,
+    savedWorkflowAtPath,
+    storedWorkflowByCloudPath,
     cloudListingOmits,
     cloudWorkflowLifecycle,
+    cloudWorkflowRow,
+    serverWorkflowContent,
     openWorkflowFor,
     availableWorkflowReferences,
     openTabsSnapshot,

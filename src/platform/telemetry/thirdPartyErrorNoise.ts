@@ -4,6 +4,8 @@ import { isThirdPartyErrorNoise } from '@comfyorg/shared-frontend-utils/telemetr
 
 import { isAbortError } from '@/utils/typeGuardUtil'
 
+import { classifyTelemetryErrorOrigin } from './errorOrigin'
+
 function messageFrom(value: unknown): string | undefined {
   try {
     if (typeof value === 'string') return value
@@ -67,6 +69,43 @@ export function sentryThirdPartyErrorFilter(
       exceptionMessages.every(isThirdPartyErrorNoise)
       ? null
       : event
+  } catch {
+    return event
+  }
+}
+
+export function tagSentryNonFirstPartyOrigin(event: ErrorEvent): ErrorEvent {
+  try {
+    const frames = event.exception?.values?.at(-1)?.stacktrace?.frames ?? []
+    let path: string | undefined
+    for (let index = frames.length - 1; index >= 0; index--) {
+      const candidate = frames[index]?.abs_path ?? frames[index]?.filename
+      const normalized = candidate?.trim()
+      if (
+        normalized &&
+        normalized !== '<anonymous>' &&
+        normalized !== '[native code]' &&
+        normalized !== 'native'
+      ) {
+        path = normalized
+        break
+      }
+    }
+    if (!path) return event
+
+    const origin = classifyTelemetryErrorOrigin(path)
+    if (origin.origin === 'first_party') return event
+
+    return {
+      ...event,
+      tags: {
+        ...event.tags,
+        error_origin: origin.origin,
+        ...(origin.origin === 'extension' && {
+          extension: origin.extension
+        })
+      }
+    }
   } catch {
     return event
   }

@@ -18,7 +18,7 @@
 # The label is derived from the branch naming convention instead
 # (`backport-<pr>-to-<target>`), which the workflow generates and which manual
 # backports follow because the failure comment tells them to. The rule itself
-# lives in scripts/cicd/backport-label.ts so it can be unit tested.
+# lives in tools/ci/src/cicd/backport-label.ts so it can be unit tested.
 name: 'PR: Label Backport'
 
 on:
@@ -44,7 +44,7 @@ jobs:
   label:
     name: Apply the backport label
     # Cheap gate so an unrelated PR does not spin up a runner. The real rule is
-    # in scripts/cicd/backport-label.ts and is re-applied to live PR state below.
+    # in tools/ci/src/cicd/backport-label.ts and is re-applied to live PR state below.
     if: >-
       github.repository == 'Comfy-Org/ComfyUI_frontend' &&
       (github.event_name != 'pull_request_target' ||
@@ -86,7 +86,7 @@ jobs:
 
       - name: Plan missing labels
         id: plan
-        run: pnpm exec tsx scripts/cicd/plan-backport-labels.ts --prs prs.json
+        run: pnpm exec tsx tools/ci/src/cicd/plan-backport-labels.ts --prs prs.json
 
       - name: Apply the backport label
         if: steps.plan.outputs.numbers != ''

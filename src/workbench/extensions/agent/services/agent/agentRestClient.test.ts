@@ -4,15 +4,14 @@ import type {
 } from '@comfyorg/ingest-types'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import {
-  markErrorReported,
-  reportError
-} from '@/platform/telemetry/reportError'
-import type { AuthCredential, AuthScheme } from '@/types/authTypes'
+import { markErrorReported, reportError } from '@comfyorg/telemetry/reportError'
+import type { AuthCredential, AuthScheme } from '@comfyorg/api-client/authTypes'
 import * as authRejection from '@/platform/auth/authRejection'
 import { api } from '@/scripts/api'
 
 import { withAgentAuth } from './agentAuth'
+import { rememberPreviousCredentialForHandoff } from './agentOwnerHandoff'
+import { describeAgentRequestFailure } from './agentRequestFailure'
 
 import type {
   AgentThreadSummary,
@@ -20,13 +19,15 @@ import type {
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 vi.mock(import('@/scripts/api'))
-vi.mock(import('@/platform/telemetry/reportError'))
 vi.mock(import('./agentAuth'))
 
 import {
   AgentApiError,
+  AgentOwnerHandoffFailedError,
   AgentResponseUnreadableError,
-  createAgentRestClient
+  createAgentRestClient,
+  isCredentialNotOwnerRefusal,
+  isLoopbackOnlyRefusal
 } from './agentRestClient'
 import type { AgentRestClient } from './agentRestClient'
 
@@ -73,6 +74,23 @@ function reportedError(): Error {
   const cause = vi.mocked(reportError).mock.calls.at(-1)?.[0]
   if (!(cause instanceof Error)) throw new Error('no Error was reported')
   return cause
+}
+
+function agentApiDiagnostics(requestPath: string, requestStatus: number) {
+  return {
+    request_path: requestPath,
+    request_status: requestStatus,
+    request_error: 'AgentApiError'
+  }
+}
+
+function agentApiFingerprint(requestPath: string) {
+  return [
+    'agent-request-failure',
+    'agent_api_auth_rejected',
+    requestPath,
+    'AgentApiError'
+  ]
 }
 
 function contentType(init: RequestInit): string | undefined {
@@ -130,9 +148,18 @@ describe('agentRestClient route + method', () => {
     expect(lastCall().route).toBe('/agent/threads/t1%2Fx/messages')
   })
 
-  it.for([undefined, [], [{ workflow_id: 'ref', name: 'Reference' }]])(
-    'serializes explicit workflow references independently of open tabs: %j',
-    async (workflowReferences) => {
+  it.for<
+    [
+      string,
+      Parameters<AgentRestClient['postMessage']>[1]['workflowReferences']
+    ]
+  >([
+    ['omitted references', undefined],
+    ['an empty reference list', []],
+    ['one reference', [{ workflow_id: 'ref', name: 'Reference' }]]
+  ])(
+    'serializes explicit workflow references independently of open tabs: %s',
+    async ([, workflowReferences]) => {
       respond(jsonResponse(202, turnAccepted))
       const input = {
         content: 'compare',
@@ -410,29 +437,69 @@ describe('listThreads pagination', () => {
     })
   })
 
+  it('filters every page by workflow id', async () => {
+    respond(
+      threadPage(['th-new'], { has_more: true, next_cursor: 'older page' })
+    )
+    respond(threadPage(['th-old'], { has_more: false }))
+
+    const result = await makeClient().listThreads({ workflowId: 'wf/one' })
+
+    expect(vi.mocked(api.fetchApi).mock.calls.map(([route]) => route)).toEqual([
+      '/agent/threads?workflow_id=wf%2Fone&limit=100',
+      '/agent/threads?workflow_id=wf%2Fone&limit=100&after=older%20page'
+    ])
+    expect(result).toMatchObject({
+      status: 'complete',
+      threads: [{ id: 'th-new' }, { id: 'th-old' }]
+    })
+  })
+
   it.for([
     {
       reason: 'missing_cursor',
+      ids: ['th-1'],
       pages: () => [threadPage(['th-1'], { has_more: true })]
     },
     {
       reason: 'repeated_cursor',
+      ids: ['th-1', 'th-2'],
       pages: () => [
         threadPage(['th-1'], { has_more: true, next_cursor: 'a' }),
         threadPage(['th-2'], { has_more: true, next_cursor: 'a' })
       ]
     }
   ])(
-    'returns $reason without partial threads when paging stops before the last page',
-    async ({ reason, pages }) => {
+    'returns $reason with the threads it did fetch when paging stops before the last page',
+    async ({ reason, ids, pages }) => {
       pages().forEach(respond)
 
-      await expect(makeClient().listThreads()).resolves.toEqual({
+      await expect(makeClient().listThreads()).resolves.toMatchObject({
         status: 'incomplete',
-        reason
+        reason,
+        threads: ids.map((id) => ({ id }))
       })
     }
   )
+
+  it('lists a repeated page once when every cursor answers with page 1', async () => {
+    const page1 = () =>
+      threadPage(['th-1', 'th-2'], {
+        has_more: true,
+        next_cursor: 'a'
+      })
+    respond(page1())
+    respond(page1())
+
+    await expect(makeClient().listThreads()).resolves.toEqual({
+      status: 'incomplete',
+      reason: 'repeated_cursor',
+      threads: [
+        expect.objectContaining({ id: 'th-1' }),
+        expect.objectContaining({ id: 'th-2' })
+      ]
+    })
+  })
 
   it('passes the caller abort signal to every page request', async () => {
     respond(threadPage(['th-1'], { has_more: true, next_cursor: 'page-2' }))
@@ -446,13 +513,14 @@ describe('listThreads pagination', () => {
     ).toEqual([signal, signal])
   })
 
-  it('returns a failure without partial threads when a later page fails', async () => {
+  it('returns the threads already fetched when a later page fails', async () => {
     respond(threadPage(['th-1'], { has_more: true, next_cursor: 'page-2' }))
     respond(jsonResponse(503, { error: 'unavailable' }))
 
     await expect(makeClient().listThreads()).resolves.toEqual({
-      status: 'failed',
-      cause: expect.objectContaining({ name: 'AgentApiError', status: 503 })
+      status: 'incomplete',
+      reason: 'request_failed',
+      threads: [expect.objectContaining({ id: 'th-1' })]
     })
   })
   it.for([
@@ -573,6 +641,84 @@ describe('getCloudWorkflow', () => {
   )
 })
 
+describe('getWorkflowSidebarFile', () => {
+  it('GETs the encoded sidebar-file path and returns its workflow path', async () => {
+    respond(
+      jsonResponse(200, {
+        path: 'workflows/projects/saved.json',
+        modified: 1_793_000_000_000,
+        size: 456
+      })
+    )
+
+    await expect(makeClient().getWorkflowSidebarFile('wf/1')).resolves.toEqual({
+      path: 'workflows/projects/saved.json'
+    })
+
+    const { route, init } = lastCall()
+    expect(route).toBe('/workflows/wf%2F1/sidebar-file')
+    expect(init.method).toBe('GET')
+  })
+
+  it.for([404, 409, 500])(
+    'rejects with status %i so unavailable and failed lookups stay distinct',
+    async (status) => {
+      respond(jsonResponse(status, { error: 'nope' }))
+
+      await expect(
+        makeClient().getWorkflowSidebarFile('wf-1')
+      ).rejects.toMatchObject({ name: 'AgentApiError', status })
+    }
+  )
+})
+
+describe('getWorkflowDraft', () => {
+  it('GETs the agent draft by encoded workflow id and returns its content', async () => {
+    const content = { nodes: [], links: [], version: 0.4 }
+    respond(jsonResponse(200, { content, version: 7 }))
+
+    await expect(makeClient().getWorkflowDraft('wf/1')).resolves.toEqual(
+      content
+    )
+
+    const { route, init } = lastCall()
+    expect(route).toBe('/agent/draft?workflow_id=wf%2F1')
+    expect(init.method).toBe('GET')
+  })
+
+  it('rejects a missing draft with status 404', async () => {
+    respond(jsonResponse(404, { error: 'no draft' }))
+
+    await expect(makeClient().getWorkflowDraft('wf-1')).rejects.toMatchObject({
+      name: 'AgentApiError',
+      status: 404
+    })
+  })
+})
+
+describe('getWorkflowContent', () => {
+  it('GETs the encoded content path and returns the workflow JSON', async () => {
+    const workflowJson = { nodes: [{ id: 1 }], links: [], version: 0.4 }
+    respond(
+      jsonResponse(200, {
+        id: 'v-1',
+        version: 2,
+        created_by: 'user-1',
+        created_at: '2026-09-11T10:00:00Z',
+        workflow_json: workflowJson
+      })
+    )
+
+    await expect(makeClient().getWorkflowContent('wf/1')).resolves.toEqual(
+      workflowJson
+    )
+
+    const { route, init } = lastCall()
+    expect(route).toBe('/workflows/wf%2F1/content')
+    expect(init.method).toBe('GET')
+  })
+})
+
 describe('postMessage wire body', () => {
   const buildVersion = `${__COMFYUI_FRONTEND_VERSION__}+${__COMFYUI_FRONTEND_COMMIT__}`
 
@@ -589,13 +735,31 @@ describe('postMessage wire body', () => {
     const parsed = JSON.parse(init.body as string) as Record<string, unknown>
     expect(parsed).toEqual({
       content: 'build it',
-      ask_kinds: ['run_approval', 'ask_user', 'delete_approval'],
+      ask_kinds: ['run_approval', 'ask_user', 'delete_approval', 'paused'],
       workflow_id: 'wf-9',
       selection: { nodeId: 3 },
       attachments: ['a1'],
       client_version: buildVersion
     })
     expect(contentType(init)).toBe('application/json')
+  })
+
+  it('sends a plain canvas selection as canvas_selection, apart from selection', async () => {
+    respond(jsonResponse(202, turnAccepted))
+    await makeClient().postMessage('t1', {
+      content: 'what is this',
+      canvasSelection: { node_ids: ['7'], workflow_id: 'wf-9' }
+    })
+
+    const parsed = JSON.parse(String(lastCall().init.body)) as Record<
+      string,
+      unknown
+    >
+    expect(parsed.canvas_selection).toEqual({
+      node_ids: ['7'],
+      workflow_id: 'wf-9'
+    })
+    expect(parsed).not.toHaveProperty('selection')
   })
 
   it('sends current_tab_unbound when the turn comes from a tab with no workflow', async () => {
@@ -607,7 +771,7 @@ describe('postMessage wire body', () => {
 
     expect(JSON.parse(String(lastCall().init.body))).toEqual({
       content: 'add a node',
-      ask_kinds: ['run_approval', 'ask_user', 'delete_approval'],
+      ask_kinds: ['run_approval', 'ask_user', 'delete_approval', 'paused'],
       current_tab_unbound: true,
       client_version: buildVersion
     })
@@ -619,7 +783,7 @@ describe('postMessage wire body', () => {
 
     expect(JSON.parse(String(lastCall().init.body))).toEqual({
       content: 'just text',
-      ask_kinds: ['run_approval', 'ask_user', 'delete_approval'],
+      ask_kinds: ['run_approval', 'ask_user', 'delete_approval', 'paused'],
       client_version: buildVersion
     })
   })
@@ -637,7 +801,7 @@ describe('postMessage wire body', () => {
 
     expect(JSON.parse(String(lastCall().init.body))).toEqual({
       content: 'build it',
-      ask_kinds: ['run_approval', 'ask_user', 'delete_approval'],
+      ask_kinds: ['run_approval', 'ask_user', 'delete_approval', 'paused'],
       client_message_id: '3f2504e0-4f89-41d3-9a0c-0305e82c3301',
       client_version: buildVersion
     })
@@ -663,7 +827,7 @@ describe('postMessage wire body', () => {
 
     expect(JSON.parse(String(lastCall().init.body))).toEqual({
       content: 'run it',
-      ask_kinds: ['run_approval', 'ask_user', 'delete_approval'],
+      ask_kinds: ['run_approval', 'ask_user', 'delete_approval', 'paused'],
       client_id: 'tab-socket-id',
       client_version: buildVersion
     })
@@ -687,7 +851,7 @@ describe('postMessage wire body', () => {
 
     expect(JSON.parse(String(lastCall().init.body))).toEqual({
       content: "what's on my canvas",
-      ask_kinds: ['run_approval', 'ask_user', 'delete_approval'],
+      ask_kinds: ['run_approval', 'ask_user', 'delete_approval', 'paused'],
       draft: { content: { nodes: [{ id: 1, type: 'LoadImage' }], links: [] } },
       client_version: buildVersion
     })
@@ -892,9 +1056,12 @@ describe('error mapping', () => {
     expect(Reflect.get(apiError, 'retryAfterSeconds')).toBe(5)
   })
 
-  it('falls back to statusText and undefined body for a non-JSON error response', async () => {
+  it('uses bounded request context instead of an unhelpful status text', async () => {
     respond(
-      new Response('gateway boom', { status: 502, statusText: 'Bad Gateway' })
+      new Response('gateway boom', {
+        status: 502,
+        statusText: 'No error message'
+      })
     )
 
     const error = await makeClient()
@@ -902,12 +1069,46 @@ describe('error mapping', () => {
       .catch((e: unknown) => e)
 
     if (!(error instanceof AgentApiError)) throw error
-    expect(error.message).toBe('Bad Gateway')
+    expect(error.message).toBe(
+      'Agent request failed (HTTP 502, get_thread_messages)'
+    )
     expect(error.status).toBe(502)
     expect(error.body).toBeUndefined()
   })
 
-  it('falls back to the HTTP status when the response has no error body or status text', async () => {
+  it('keeps a useful status text inside the bounded fallback', async () => {
+    respond(
+      new Response('gateway boom', {
+        status: 502,
+        statusText: 'Bad Gateway'
+      })
+    )
+
+    const error = await makeClient()
+      .getMessages('t1')
+      .catch((caught: unknown) => caught)
+
+    expect(error).toBeInstanceOf(AgentApiError)
+    expect((error as AgentApiError).message).toBe(
+      'Agent request failed (HTTP 502 Bad Gateway, get_thread_messages)'
+    )
+  })
+
+  it('bounds status text included in the fallback', async () => {
+    const statusText = 'x'.repeat(200)
+    respond(new Response('gateway boom', { status: 502, statusText }))
+
+    const error = await makeClient()
+      .getMessages('t1')
+      .catch((caught: unknown) => caught)
+
+    expect(error).toBeInstanceOf(AgentApiError)
+    expect((error as AgentApiError).message).toBe(
+      `Agent request failed (HTTP 502 ${'x'.repeat(80)}, get_thread_messages)`
+    )
+  })
+
+  it('falls back to the HTTP status and operation when the response has no error body', async () => {
     respond(new Response('', { status: 503 }))
 
     const error = await makeClient()
@@ -916,7 +1117,20 @@ describe('error mapping', () => {
 
     expect(error).toBeInstanceOf(AgentApiError)
     expect((error as AgentApiError).message).toBe(
-      'Agent request failed (HTTP 503)'
+      'Agent request failed (HTTP 503, get_thread_messages)'
+    )
+  })
+
+  it('uses the bounded fallback when a structured error message is blank', async () => {
+    respond(jsonResponse(503, { error: '   ' }))
+
+    const error = await makeClient()
+      .getMessages('t1')
+      .catch((caught: unknown) => caught)
+
+    expect(error).toBeInstanceOf(AgentApiError)
+    expect((error as AgentApiError).message).toBe(
+      'Agent request failed (HTTP 503, get_thread_messages)'
     )
   })
 
@@ -966,8 +1180,10 @@ describe('error mapping', () => {
         status: 401,
         authScheme: 'web-session',
         credential: 'unreported',
-        backendReason: 'auth_method_not_allowed'
+        backendReason: 'auth_method_not_allowed',
+        ...agentApiDiagnostics('/agent/threads/{threadId}/messages', 401)
       },
+      fingerprint: agentApiFingerprint('/agent/threads/{threadId}/messages'),
       level: 'warning'
     })
   })
@@ -987,7 +1203,8 @@ describe('error mapping', () => {
       status: 403,
       authScheme: 'cloud-auth-header',
       credential: 'unreported',
-      backendReason: 'other'
+      backendReason: 'other',
+      ...agentApiDiagnostics('/agent/threads/{threadId}/messages', 403)
     })
   })
 
@@ -1003,7 +1220,8 @@ describe('error mapping', () => {
       status: 401,
       authScheme: 'none',
       credential: 'unreported',
-      backendReason: 'other'
+      backendReason: 'other',
+      ...agentApiDiagnostics('/agent/threads/{threadId}/messages', 401)
     })
   })
 
@@ -1019,7 +1237,24 @@ describe('error mapping', () => {
       status: 401,
       authScheme: 'unreported',
       credential: 'unreported',
-      backendReason: 'other'
+      backendReason: 'other',
+      ...agentApiDiagnostics('/agent/threads/{threadId}/messages', 401)
+    })
+  })
+
+  it('does not classify the client fallback as backend refusal text', async () => {
+    respondWithAuthScheme(new Response('', { status: 401 }), 'web-session')
+
+    await makeClient()
+      .getMessages('t-1')
+      .catch((e: unknown) => e)
+
+    expect(reportedTags()).toEqual({
+      operation: 'get_thread_messages',
+      status: 401,
+      authScheme: 'web-session',
+      credential: 'unreported',
+      ...agentApiDiagnostics('/agent/threads/{threadId}/messages', 401)
     })
   })
 
@@ -1051,8 +1286,10 @@ describe('error mapping', () => {
         credential: 'session-cookie',
         backendReason: 'auth_method_not_allowed',
         backendErrorType: 'auth_type_not_allowed',
-        acceptedMethods: 'bearer_jwt,x_api_key'
+        acceptedMethods: 'bearer_jwt,x_api_key',
+        ...agentApiDiagnostics('/agent/run-mode', 403)
       },
+      fingerprint: agentApiFingerprint('/agent/run-mode'),
       level: 'warning'
     })
     expect(reportedError().message).toBe(
@@ -1108,7 +1345,8 @@ describe('error mapping', () => {
       authScheme: 'web-session',
       credential: 'session-cookie',
       backendReason: 'auth_method_not_allowed',
-      backendErrorCode: 'UNAUTHORIZED'
+      backendErrorCode: 'UNAUTHORIZED',
+      ...agentApiDiagnostics('/agent/run-mode', 401)
     })
   })
 
@@ -1134,7 +1372,8 @@ describe('error mapping', () => {
       status: 403,
       authScheme: 'cloud-auth-header',
       credential: 'bearer',
-      backendReason: 'other'
+      backendReason: 'other',
+      ...agentApiDiagnostics('/agent/run-mode', 403)
     })
     expect(vi.mocked(reportError).mock.calls.at(-1)?.[1].context).toBe(
       undefined
@@ -1185,7 +1424,8 @@ describe('error mapping', () => {
       operation: 'get_run_mode',
       status: 403,
       authScheme: 'cloud-auth-header',
-      credential: 'bearer'
+      credential: 'bearer',
+      ...agentApiDiagnostics('/agent/run-mode', 403)
     })
   })
 
@@ -1204,7 +1444,11 @@ describe('error mapping', () => {
       status: 403,
       authScheme: 'cloud-auth-header',
       credential: 'unreported',
-      backendReason: 'other'
+      backendReason: 'other',
+      ...agentApiDiagnostics(
+        '/agent/threads/{threadId}/asks/{askId}/answer',
+        403
+      )
     })
     const serialized = JSON.stringify([
       reportedError().message,
@@ -1230,7 +1474,11 @@ describe('error mapping', () => {
       status: 403,
       authScheme: 'cloud-auth-header',
       credential: 'unreported',
-      backendReason: 'other'
+      backendReason: 'other',
+      ...agentApiDiagnostics(
+        '/agent/threads/{threadId}/messages/{messageId}/cancel',
+        403
+      )
     })
     const serialized = JSON.stringify([
       reportedError().message,
@@ -1265,15 +1513,14 @@ describe('error mapping', () => {
       .listCloudWorkflows()
       .catch((e: unknown) => e)
 
-    // The second page's route is `/workflows?limit=100&after=cursor-secret`;
-    // only the operation name may reach telemetry.
     expect(lastCall().route).toContain('cursor-secret')
     expect(reportedTags()).toEqual({
       operation: 'list_cloud_workflows',
       status: 401,
       authScheme: 'cloud-auth-header',
       credential: 'unreported',
-      backendReason: 'other'
+      backendReason: 'other',
+      ...agentApiDiagnostics('/workflows', 401)
     })
   })
 
@@ -1303,6 +1550,73 @@ describe('error mapping', () => {
     expect(markErrorReported).toHaveBeenCalledExactlyOnceWith(error)
   })
 
+  describe("the local host's loopback-fence refusal (cloud#14874)", () => {
+    const refusal = {
+      error:
+        'The agent only works when ComfyUI is opened on the computer it runs on, by a local address. Open http://127.0.0.1:8188 in a browser on that computer to use the agent.',
+      code: 'agent_loopback_only'
+    }
+
+    it('does not report it as an auth rejection', async () => {
+      respondWithAuthScheme(jsonResponse(403, refusal), 'web-session')
+
+      const error = await makeClient()
+        .getRunMode()
+        .catch((e: unknown) => e)
+
+      expect(reportError).not.toHaveBeenCalled()
+      expect(markErrorReported).not.toHaveBeenCalled()
+      expect(error).toBeInstanceOf(AgentApiError)
+    })
+
+    it("carries the host's own sentence to the caller for display", async () => {
+      respondWithAuthScheme(jsonResponse(403, refusal), 'web-session')
+
+      const error = await makeClient()
+        .listThreads()
+        .then((listing) => (listing.status === 'failed' ? listing.cause : null))
+
+      expect(error).toMatchObject({ status: 403, message: refusal.error })
+      expect(isLoopbackOnlyRefusal(error)).toBe(true)
+    })
+
+    it.for([
+      ['a 403 with no code at all', 403, { error: 'access denied' }],
+      ['another 403 code', 403, { error: 'nope', code: 'origin_not_allowed' }],
+      ['the same code on a 401', 401, refusal],
+      [
+        'the code with no message',
+        403,
+        { error: '', code: 'agent_loopback_only' }
+      ]
+    ] as const)(
+      'still reports %s as an auth rejection',
+      async ([, status, body]) => {
+        respondWithAuthScheme(jsonResponse(status, body), 'web-session')
+
+        const error = await makeClient()
+          .getRunMode()
+          .catch((e: unknown) => e)
+
+        expect(reportedTags()).toMatchObject({
+          operation: 'get_run_mode',
+          status
+        })
+        expect(isLoopbackOnlyRefusal(error)).toBe(false)
+      }
+    )
+
+    it.for([
+      ['undefined', undefined],
+      ['null', null],
+      ['the bare code string', 'agent_loopback_only'],
+      ['a number', 42],
+      ['an empty object', {}]
+    ] as const)('is false for %s rather than throwing', ([, value]) => {
+      expect(isLoopbackOnlyRefusal(value)).toBe(false)
+    })
+  })
+
   it('does not report auth telemetry for a non-auth error status', async () => {
     respond(jsonResponse(503, { error: 'unavailable' }))
 
@@ -1311,6 +1625,104 @@ describe('error mapping', () => {
       .catch((e: unknown) => e)
 
     expect(reportError).not.toHaveBeenCalled()
+  })
+
+  describe("the local agent's owner-handoff refusal (BE-25360)", () => {
+    const refusal = { code: 'credential_not_owner' }
+
+    beforeEach(() => {
+      rememberPreviousCredentialForHandoff(null)
+    })
+
+    it('does not report it as an auth rejection', async () => {
+      rememberPreviousCredentialForHandoff('previous-cred')
+      respond(jsonResponse(403, refusal))
+      respond(new Response(null, { status: 204 }))
+      respond(jsonResponse(200, { mode: 'auto', credit_limit: null }))
+
+      await makeClient().getRunMode()
+
+      expect(reportError).not.toHaveBeenCalled()
+      expect(markErrorReported).not.toHaveBeenCalled()
+    })
+
+    it('hands off to the new account and retries the refused request on 204', async () => {
+      rememberPreviousCredentialForHandoff('previous-cred')
+      respond(jsonResponse(403, refusal))
+      respond(new Response(null, { status: 204 }))
+      respond(jsonResponse(200, { mode: 'auto', credit_limit: null }))
+
+      const result = await makeClient().getRunMode()
+
+      expect(result).toEqual({ mode: 'auto', credit_limit: null })
+      expect(api.fetchApi).toHaveBeenCalledTimes(3)
+      const [handoffRoute, handoffInit] = vi.mocked(api.fetchApi).mock.calls[1]
+      expect(handoffRoute).toBe('/agent/owner')
+      expect(handoffInit?.method).toBe('POST')
+      expect(JSON.parse(handoffInit?.body as string)).toEqual({
+        previous_credential: 'previous-cred'
+      })
+    })
+
+    it('spends the pending credential at most once', async () => {
+      rememberPreviousCredentialForHandoff('previous-cred')
+      respond(jsonResponse(403, refusal))
+      respond(new Response(null, { status: 204 }))
+      respond(jsonResponse(200, { mode: 'auto', credit_limit: null }))
+      await makeClient().getRunMode()
+
+      respond(jsonResponse(403, refusal))
+      const error = await makeClient()
+        .getRunMode()
+        .catch((e: unknown) => e)
+
+      expect(error).toBeInstanceOf(AgentApiError)
+      expect(api.fetchApi).toHaveBeenCalledTimes(4)
+    })
+
+    it('falls back to telling the user to restart ComfyUI when the handoff call itself is refused', async () => {
+      rememberPreviousCredentialForHandoff('stale-previous-cred')
+      respond(jsonResponse(403, refusal))
+      respond(jsonResponse(403, { error: 'the previous credential is stale' }))
+
+      const error = await makeClient()
+        .getRunMode()
+        .catch((e: unknown) => e)
+
+      expect(error).toBeInstanceOf(AgentOwnerHandoffFailedError)
+      expect((error as Error).cause).toBeInstanceOf(AgentApiError)
+      expect(api.fetchApi).toHaveBeenCalledTimes(2)
+    })
+
+    it('surfaces the original refusal unchanged when no previous credential was remembered', async () => {
+      respond(jsonResponse(403, refusal))
+
+      const error = await makeClient()
+        .getRunMode()
+        .catch((e: unknown) => e)
+
+      expect(error).toBeInstanceOf(AgentApiError)
+      expect(error).not.toBeInstanceOf(AgentOwnerHandoffFailedError)
+      expect(api.fetchApi).toHaveBeenCalledTimes(1)
+    })
+
+    it.for([
+      ['a 403 with no code at all', 403, { error: 'access denied' }],
+      ['another 403 code', 403, { error: 'nope', code: 'origin_not_allowed' }],
+      ['the same code on a 401', 401, refusal]
+    ] as const)('is false for %s', async ([, status, body]) => {
+      expect(
+        isCredentialNotOwnerRefusal(new AgentApiError('x', status, body))
+      ).toBe(false)
+    })
+
+    it.for([
+      ['undefined', undefined],
+      ['null', null],
+      ['the bare code string', 'credential_not_owner']
+    ] as const)('is false for %s rather than throwing', ([, value]) => {
+      expect(isCredentialNotOwnerRefusal(value)).toBe(false)
+    })
   })
 
   it('keeps a genuinely unreadable POST response distinct without exposing its route', async () => {
@@ -1334,7 +1746,7 @@ describe('error mapping', () => {
     new TypeError('Failed to fetch'),
     new DOMException('The operation was aborted', 'AbortError')
   ])(
-    'preserves transport failure identity after response headers',
+    'preserves $name transport failure identity after response headers',
     async (cause) => {
       const response = jsonResponse(200, [])
       vi.spyOn(response, 'json').mockRejectedValueOnce(cause)
@@ -1346,6 +1758,23 @@ describe('error mapping', () => {
       })
     }
   )
+
+  it('treats a non-SyntaxError body read failure after 202 headers on postMessage as unreadable', async () => {
+    const response = jsonResponse(202, {
+      thread_id: 't1',
+      message_id: 'm1'
+    })
+    vi.spyOn(response, 'json').mockRejectedValueOnce(
+      new TypeError('network stream dropped')
+    )
+    respond(response)
+
+    const error = await makeClient()
+      .postMessage('t1', { content: 'hi' })
+      .catch((e: unknown) => e)
+
+    expect(error).toBeInstanceOf(AgentResponseUnreadableError)
+  })
 })
 
 describe('Retry-After contract', () => {
@@ -1525,37 +1954,47 @@ describe('user auth on agent requests', () => {
     })
   })
 
-  const calls: [
-    string,
-    (client: AgentRestClient) => Promise<unknown>,
-    unknown
-  ][] = [
-    [
-      'POST messages',
-      (c) => c.postMessage('new', { content: 'hi' }),
-      turnAccepted
-    ],
-    ['GET messages', (c) => c.getMessages('t1'), []],
-    [
-      'POST answer',
-      (c) => c.answerAsk('t1', 'ask-1', { selected: ['allow'] }),
-      { status: 'answered' }
-    ],
-    ['the credential refresh', (c) => c.refreshCredential(), emptyThreadPage]
-  ]
+  it('hands the request its own method, headers and body to be authorized', async () => {
+    respond(jsonResponse(202, turnAccepted))
 
-  it.for(calls)(
-    'sends the user auth header with %s',
-    async ([, call, body]) => {
-      respond(jsonResponse(200, body))
+    await makeClient().postMessage('new', { content: 'hi' })
 
-      await call(makeClient())
+    expect(withAgentAuth).toHaveBeenCalledOnce()
+    const [authorizing] = vi.mocked(withAgentAuth).mock.calls[0]
+    expect(authorizing.method).toBe('POST')
+    expect(new Headers(authorizing.headers).get('Content-Type')).toBe(
+      'application/json'
+    )
+    expect(JSON.parse(String(authorizing.body))).toMatchObject({
+      content: 'hi'
+    })
+  })
 
-      expect(new Headers(lastCall().init.headers).get('Authorization')).toBe(
-        'Bearer id-token'
-      )
-    }
-  )
+  it('fetches with the authorized init rather than rebuilding one', async () => {
+    respond(jsonResponse(200, []))
+
+    await makeClient().getMessages('t1')
+
+    expect(lastCall().init).toBe(
+      await vi.mocked(withAgentAuth).mock.results[0].value
+    )
+    expect(new Headers(lastCall().init.headers).get('Authorization')).toBe(
+      'Bearer id-token'
+    )
+  })
+
+  it('refreshes the credential with the cheapest authorized request', async () => {
+    respond(jsonResponse(200, emptyThreadPage))
+
+    await makeClient().refreshCredential()
+
+    const { route, init } = lastCall()
+    expect(route).toBe('/agent/threads?limit=1')
+    expect(init.method).toBe('GET')
+    expect(new Headers(init.headers).get('Authorization')).toBe(
+      'Bearer id-token'
+    )
+  })
 
   it('sends no auth header for a signed-out user', async () => {
     vi.mocked(withAgentAuth).mockImplementation(async (init) => init)
@@ -1566,5 +2005,75 @@ describe('user auth on agent requests', () => {
     expect(new Headers(lastCall().init.headers).has('Authorization')).toBe(
       false
     )
+  })
+})
+
+describe('usage status', () => {
+  it('reads whether the agent has been used from the usage-status endpoint', async () => {
+    respond(jsonResponse(200, { has_used_agent: false }))
+
+    await expect(makeClient().getUsageStatus()).resolves.toEqual({
+      has_used_agent: false
+    })
+    expect(lastCall().route).toBe('/agent/usage-status')
+  })
+
+  it('rejects a successful response missing has_used_agent', async () => {
+    respond(jsonResponse(200, {}))
+
+    await expect(makeClient().getUsageStatus()).rejects.toMatchObject({
+      name: 'ZodError',
+      issues: expect.arrayContaining([
+        expect.objectContaining({ path: ['has_used_agent'] })
+      ])
+    })
+  })
+
+  it('rejects with the HTTP status when the request fails', async () => {
+    respond(jsonResponse(500, { error: 'unavailable' }))
+
+    await expect(makeClient().getUsageStatus()).rejects.toMatchObject({
+      name: 'AgentApiError',
+      status: 500
+    })
+  })
+})
+
+describe('postMessage request timeout', () => {
+  it('aborts a stalled body read at 60s, records failure diagnostics, and rejects with AgentResponseUnreadableError', async () => {
+    vi.useFakeTimers()
+    try {
+      vi.mocked(api.fetchApi).mockImplementationOnce(async (_route, init) => {
+        const signal = init?.signal
+        return {
+          ok: true,
+          status: 202,
+          json: () =>
+            new Promise((_resolve, reject) => {
+              signal?.addEventListener('abort', () => reject(signal.reason), {
+                once: true
+              })
+            })
+        } as Response
+      })
+
+      const sending = makeClient().postMessage('new', { content: 'stalled' })
+      const caught = sending.catch((error: unknown) => error)
+
+      await vi.advanceTimersByTimeAsync(60_000)
+
+      const failure = await caught
+      expect(failure).toBeInstanceOf(AgentResponseUnreadableError)
+      expect((failure as Error).cause).toMatchObject({
+        name: 'TimeoutError'
+      })
+      expect(lastCall().init.signal?.aborted).toBe(true)
+      expect(describeAgentRequestFailure(failure)).toEqual({
+        request_path: '/agent/threads/{threadId}/messages',
+        request_error: 'AgentResponseUnreadableError'
+      })
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })

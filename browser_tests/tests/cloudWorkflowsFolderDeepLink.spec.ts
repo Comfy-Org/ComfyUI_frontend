@@ -3,7 +3,7 @@ import { readFileSync } from 'fs'
 import { expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
 
-import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
+import type { UserDataFullInfo } from '@comfyorg/api-client/types'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { assetPath } from '@e2e/fixtures/utils/paths'

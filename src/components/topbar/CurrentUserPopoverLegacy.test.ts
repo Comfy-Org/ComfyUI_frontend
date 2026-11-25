@@ -1,6 +1,7 @@
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
-import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
@@ -11,7 +12,10 @@ import { createI18n } from 'vue-i18n'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import type { BalanceInfo, SubscriptionInfo } from '@/composables/billing/types'
+import type {
+  BalanceInfo,
+  SubscriptionInfo
+} from '@/platform/billing/composables/types'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
@@ -30,6 +34,8 @@ beforeEach(() => {
   billing.balance = computed(() => mockBalance.value)
   billing.isLoading = mockIsLoading
   billing.isTeamPlan = computed(() => mockIsTeamPlan.value)
+  mockBalanceReadFailed.value = false
+  billing.balanceReadFailed = computed(() => mockBalanceReadFailed.value)
   vi.mocked(useBillingContext).mockReturnValue(billing)
 
   window.open = vi.fn()
@@ -41,7 +47,7 @@ afterAll(() => {
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
-vi.mock(import('@/composables/billing/useBillingDialogs'))
+vi.mock(import('@/platform/billing/composables/useBillingDialogs'))
 
 function makeSubscription(
   overrides: Partial<SubscriptionInfo> = {}
@@ -65,18 +71,19 @@ const mockCanAccessSubscriptionFeatures = ref(true)
 const mockTier = ref<SubscriptionInfo['tier']>('CREATOR')
 const mockSubscription = ref<SubscriptionInfo | null>(makeSubscription())
 const mockBalance = ref<BalanceInfo | null>(null)
+const mockBalanceReadFailed = ref(false)
 const mockIsLoading = ref(false)
 const mockIsTeamPlan = ref(false)
 
-vi.mock(import('@/composables/billing/useBillingContext'))
+vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
-vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
+vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 
 vi.mock(import('@/base/credits/comfyCredits'), () => ({
   formatCreditsFromCents: vi.fn(({ cents }) => (cents / 100).toString())
 }))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 describe('CurrentUserPopoverLegacy', () => {
   beforeEach(() => {
@@ -135,6 +142,22 @@ describe('CurrentUserPopoverLegacy', () => {
     renderComponent()
 
     expect(useBillingContext().fetchBalance).toHaveBeenCalled()
+  })
+
+  it('reports a failed balance read once instead of leaving it unhandled', async () => {
+    const failure = new Error('Balance temporarily unavailable')
+    vi.mocked(useBillingContext().fetchBalance).mockRejectedValueOnce(failure)
+
+    renderComponent()
+
+    await vi.waitFor(() =>
+      expect(reportError).toHaveBeenCalledWith(failure, {
+        surface: 'billing',
+        errorType: 'error_refreshing_balance',
+        level: 'warning'
+      })
+    )
+    expect(reportError).toHaveBeenCalledOnce()
   })
 
   describe('subscription tier badge', () => {
@@ -363,19 +386,39 @@ describe('CurrentUserPopoverLegacy', () => {
       expect(screen.getByText('1000')).toBeInTheDocument()
     })
 
-    it('falls back to 0 when the facade reports no balance', () => {
+    it('shows a failed balance read as unavailable, not as 0 credits', () => {
+      mockBalance.value = null
+      mockBalanceReadFailed.value = true
+
+      renderComponent()
+
+      expect(
+        screen.getByTestId('credits-balance-unavailable')
+      ).toHaveTextContent('—')
+      expect(
+        screen.getByText("Couldn't load your balance.")
+      ).toBeInTheDocument()
+      expect(screen.queryByText('0')).not.toBeInTheDocument()
+    })
+
+    it('does not report an unread balance as failed before any read failed', () => {
       mockBalance.value = null
 
       renderComponent()
 
-      expect(formatCreditsFromCents).toHaveBeenCalledWith({
-        cents: 0,
-        locale: 'en',
-        numberOptions: {
-          minimumFractionDigits: 0,
-          maximumFractionDigits: 2
-        }
-      })
+      expect(
+        screen.queryByTestId('credits-balance-unavailable')
+      ).not.toBeInTheDocument()
+    })
+
+    it('keeps a known zero balance as 0', () => {
+      mockBalance.value = { amountMicros: 0, currency: 'usd' }
+
+      renderComponent()
+
+      expect(
+        screen.queryByTestId('credits-balance-unavailable')
+      ).not.toBeInTheDocument()
       expect(screen.getByText('0')).toBeInTheDocument()
     })
   })
@@ -434,19 +477,14 @@ describe('CurrentUserPopoverLegacy', () => {
 
       const trigger = screen.getByTestId('workspace-switcher-trigger')
       expect(trigger).toHaveAttribute('aria-expanded', 'false')
-      expect(trigger).toHaveAttribute('aria-haspopup', 'menu')
-      expect(trigger).toHaveAttribute(
-        'aria-controls',
-        'workspace-switcher-panel'
-      )
+      expect(trigger).toHaveAttribute('aria-haspopup', 'dialog')
       expect(screen.queryByTestId('workspace-switcher-panel')).toBeNull()
 
       await user.click(trigger)
 
-      const panel = screen.getByTestId('workspace-switcher-panel')
-      expect(panel).toBeInTheDocument()
-      expect(panel).toHaveAttribute('id', 'workspace-switcher-panel')
-      expect(panel).toHaveAttribute('role', 'menu')
+      const panel = screen.getByRole('dialog')
+      expect(panel).toBe(screen.getByTestId('workspace-switcher-panel'))
+      expect(trigger).toHaveAttribute('aria-controls', panel.id)
       expect(trigger).toHaveAttribute('aria-expanded', 'true')
     })
 
@@ -464,10 +502,15 @@ describe('CurrentUserPopoverLegacy', () => {
     })
 
     it('closes the keyboard-opened workspace name tooltip on Escape', async () => {
+      Object.assign(useTeamWorkspaceStore(), {
+        workspaceName: 'Personal Workspace'
+      })
       const { user } = renderComponent(readyWorkspaceState)
 
       screen.getByTestId('workspace-switcher-trigger').focus()
-      expect(await screen.findByRole('tooltip')).toBeInTheDocument()
+      expect(await screen.findByRole('tooltip')).toHaveTextContent(
+        'Personal Workspace'
+      )
 
       await user.keyboard('{Escape}')
       expect(screen.queryByRole('tooltip')).toBeNull()

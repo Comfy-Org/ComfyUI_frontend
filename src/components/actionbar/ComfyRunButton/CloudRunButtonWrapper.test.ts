@@ -5,12 +5,12 @@ import { computed, nextTick, ref } from 'vue'
 
 import { createI18n } from 'vue-i18n'
 
-import TopbarSubscribeButton from '@/components/topbar/TopbarSubscribeButton.vue'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import TopbarSubscribeButton from '@/platform/billing/components/TopbarSubscribeButton.vue'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { BillingStatus } from '@/platform/workspace/api/workspaceApi'
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
-import { usePaymentRecoveryDialog } from '@/platform/workspace/composables/usePaymentRecoveryDialog'
+import type { BillingStatus } from '@comfyorg/billing-core'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { usePaymentRecoveryDialog } from '@/platform/billing/composables/usePaymentRecoveryDialog'
 
 import CloudRunButtonWrapper from './CloudRunButtonWrapper.vue'
 
@@ -22,18 +22,18 @@ const mockPaymentRecoveryLock = ref<'owner' | 'member' | null>(null)
 const showPaymentRecoveryDialog = vi.fn()
 const refreshCapabilities = vi.fn(async () => undefined)
 
-vi.mock(import('@/composables/billing/useBillingContext'))
+vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: true
 }))
 
 vi.mock(
-  import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
+  import('@/platform/billing/subscription/composables/useSubscriptionDialog')
 )
 
-vi.mock(import('@/platform/workspace/composables/usePaymentRecoveryDialog'))
-vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
+vi.mock(import('@/platform/billing/composables/usePaymentRecoveryDialog'))
+vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 
 vi.mock<unknown>(
   import('@/components/actionbar/ComfyRunButton/ComfyQueueButton.vue'),
@@ -49,10 +49,10 @@ vi.mock<unknown>(
 )
 
 vi.mock<unknown>(
-  import('@/platform/cloud/subscription/components/SubscribeToRun.vue'),
+  import('@/platform/billing/subscription/components/SubscribeToRun.vue'),
   async () => {
     const { registerSubscribeToRunPrompt } =
-      await import('@/platform/cloud/subscription/composables/useSubscribeCtaPresence')
+      await import('@/platform/billing/subscription/composables/useSubscribeCtaPresence')
     return {
       default: {
         name: 'SubscribeToRun',

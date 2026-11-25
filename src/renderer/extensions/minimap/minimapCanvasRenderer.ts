@@ -1,9 +1,8 @@
-import { toLightThemeNodeColor } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import type { CompactRect } from '@comfyorg/shared-frontend-utils/geometry'
 import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { useThemeStore } from '@/platform/theme/themeStore'
 
-import { MinimapDataSource } from './data/MinimapDataSource'
+import type { MinimapDataSource } from './data/MinimapDataSource'
 import type {
   MinimapNodeData,
   MinimapNodeExecutionState,
@@ -16,7 +15,13 @@ const BYPASS_COLOR = '#6a246a'
 
 type MinimapColors = ReturnType<typeof readMinimapColors>
 
-let cachedColors: { key: string; colors: MinimapColors } | undefined
+let cachedColors:
+  | {
+      palette: ReturnType<typeof useThemeStore>['activeTheme']
+      colorScheme: ReturnType<typeof useThemeStore>['colorScheme']
+      colors: MinimapColors
+    }
+  | undefined
 
 function resolveThemeColor(token: string): string {
   const probe = document.createElement('span')
@@ -27,7 +32,7 @@ function resolveThemeColor(token: string): string {
   return color
 }
 
-function readMinimapColors(isLightTheme: boolean, activityOutline: string) {
+function readMinimapColors(lightensNodes: boolean, activityOutline: string) {
   const primary = resolveThemeColor('primary')
   const mutedForeground = resolveThemeColor('muted-foreground')
   return {
@@ -42,20 +47,24 @@ function readMinimapColors(isLightTheme: boolean, activityOutline: string) {
     runningColor: '#00FF00',
     successColor: '#239B23',
     activityOutlineColor: activityOutline,
-    isLightTheme
+    lightensNodes
   }
 }
 
 function getMinimapColors(): MinimapColors {
-  const colorPaletteStore = useColorPaletteStore()
-  const palette = colorPaletteStore.completedActivePalette
-  const key = `${palette.id}:${colorPaletteStore.colorScheme}`
-  if (cachedColors?.key !== key) {
+  const themeStore = useThemeStore()
+  const palette = themeStore.activeTheme
+  const colorScheme = themeStore.colorScheme
+  if (
+    cachedColors?.palette !== palette ||
+    cachedColors.colorScheme !== colorScheme
+  ) {
     cachedColors = {
-      key,
+      palette,
+      colorScheme,
       colors: readMinimapColors(
-        colorPaletteStore.colorScheme === 'light',
-        palette.colors.litegraph_base.NODE_SELECTED_TITLE_COLOR
+        Boolean(palette.canvas.nodeLightness),
+        palette.canvas.nodeSelectedTitleColor
       )
     }
   }
@@ -76,9 +85,7 @@ function getNodeColor(
 
   if (settings.nodeColors) {
     if (node.bgcolor) {
-      return colors.isLightTheme
-        ? toLightThemeNodeColor(node.bgcolor)
-        : node.bgcolor
+      return useThemeStore().toNodeColor(node.bgcolor)
     }
     return colors.nodeColorDefault
   }
@@ -108,7 +115,7 @@ function renderGroups(
     if (context.settings.nodeColors) {
       color = group.color ?? colors.groupColorDefault
 
-      if (colors.isLightTheme) {
+      if (colors.lightensNodes) {
         color = `color-mix(in srgb, ${color} 50%, transparent)`
       }
     }
@@ -158,9 +165,6 @@ function renderNodeDecorations(
   }
 }
 
-/**
- * Render nodes on the minimap with performance optimizations
- */
 function renderNodes(
   ctx: CanvasRenderingContext2D,
   dataSource: MinimapDataSource,
@@ -174,17 +178,14 @@ function renderNodes(
 
   ctx.save()
 
-  // Group nodes by color for batch rendering (performance optimization)
   const nodesByColor = new Map<
     string,
-    Array<{
-      x: number
-      y: number
-      w: number
-      h: number
-      hasErrors?: boolean
-      executionState?: MinimapNodeExecutionState | null
-    }>
+    Array<
+      CompactRect & {
+        hasErrors?: boolean
+        executionState?: MinimapNodeExecutionState | null
+      }
+    >
   >()
 
   for (const node of nodes) {
@@ -209,7 +210,6 @@ function renderNodes(
     })
   }
 
-  // Batch render nodes by color
   for (const [color, nodes] of nodesByColor) {
     ctx.fillStyle = color
     for (const node of nodes) {
@@ -244,9 +244,6 @@ function renderNodes(
   ctx.restore()
 }
 
-/**
- * Render connections on the minimap
- */
 function renderConnections(
   ctx: CanvasRenderingContext2D,
   dataSource: MinimapDataSource,
@@ -284,7 +281,6 @@ function renderConnections(
     const inputX = x2
     const inputY = y2 + link.targetNode.height * context.scale * 0.2
 
-    // Draw connection line
     ctx.beginPath()
     ctx.moveTo(outputX, outputY)
     ctx.lineTo(inputX, inputY)
@@ -293,38 +289,28 @@ function renderConnections(
     connections.push({ x1: outputX, y1: outputY, x2: inputX, y2: inputY })
   }
 
-  // Render connection slots on top
   ctx.fillStyle = colors.slotColor
   for (const conn of connections) {
-    // Output slot
     ctx.beginPath()
     ctx.arc(conn.x1, conn.y1, slotRadius, 0, Math.PI * 2)
     ctx.fill()
 
-    // Input slot
     ctx.beginPath()
     ctx.arc(conn.x2, conn.y2, slotRadius, 0, Math.PI * 2)
     ctx.fill()
   }
 }
 
-/**
- * Render a graph to a minimap canvas
- */
 export function renderMinimapToCanvas(
   canvas: HTMLCanvasElement,
-  graph: LGraph,
+  dataSource: MinimapDataSource,
   context: MinimapRenderContext
 ) {
   const ctx = canvas.getContext('2d')
   if (!ctx) return
 
-  // Clear canvas
   ctx.clearRect(0, 0, context.width, context.height)
 
-  const dataSource = new MinimapDataSource(graph, context.nodeProgressStates)
-
-  // Fast path for empty graph
   if (!dataSource.hasData()) {
     return
   }
@@ -333,7 +319,6 @@ export function renderMinimapToCanvas(
   const offsetX = (context.width - context.bounds.width * context.scale) / 2
   const offsetY = (context.height - context.bounds.height * context.scale) / 2
 
-  // Render in correct order: groups -> links -> nodes
   if (context.settings.showGroups) {
     renderGroups(ctx, dataSource, offsetX, offsetY, context, colors)
   }

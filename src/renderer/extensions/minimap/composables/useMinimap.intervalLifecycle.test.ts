@@ -1,282 +1,294 @@
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { fromPartial } from '@total-typescript/shoehorn'
-/**
- * Lifecycle tests for the minimap's change-detection interval, run against the
- * real `useIntervalFn` with fake timers. The main useMinimap test file mocks
- * the vueuse timing primitives wholesale, which cannot catch a polling loop
- * that fails to stop on hide/destroy or resumes eagerly on show.
- */
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, shallowRef } from 'vue'
-import type {
-  LGraph,
-  LGraphNode,
-  LGraphCanvas
-} from '@/lib/litegraph/src/litegraph'
-import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
-import { toNodeId } from '@/types/nodeId'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
+import { effectScope, nextTick, shallowRef } from 'vue'
 
-import { createMockLinks } from '@/utils/__tests__/litegraphTestUtils'
+import type { LGraphEventMap } from '@comfyorg/graph-model/LGraphEventMap'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
+import type { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import {
   createMockCanvasRenderingContext2D,
-  createMockMinimapCanvas
+  createTestCanvasElement
 } from '@/utils/__tests__/canvasTestUtils'
 
-const mockNodes = fromPartial<LGraphNode[]>([
-  {
-    constructor: {},
-    id: toNodeId('node1'),
-    pos: [0, 0],
-    size: [100, 50],
-    renderingSize: [100, 50],
-    outputs: []
-  },
-  {
-    constructor: {},
-    id: toNodeId('node2'),
-    pos: [200, 100],
-    size: [150, 75],
-    renderingSize: [150, 75],
-    outputs: []
-  }
-])
-
-const mockGraph = fromPartial<LGraph>({
-  id: 'root',
-  rootGraph: { id: 'root' },
-  _groups: [],
-  _nodes: mockNodes,
-  links: createMockLinks([]),
-  getNodeById: vi.fn((id: string) => mockNodes.find((n) => n.id === id)),
-  setDirtyCanvas: vi.fn(),
-  events: {
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn()
-  }
-})
-
-const canvasElement = document.createElement('canvas')
-canvasElement.width = 1000
-canvasElement.height = 800
-Object.defineProperties(canvasElement, {
-  clientWidth: { value: 1000 },
-  clientHeight: { value: 800 }
-})
-const mockCanvas = fromPartial<LGraphCanvas>({
-  graph: mockGraph,
-  canvas: canvasElement,
-  ds: { scale: 1, offset: [0, 0] },
-  setDirty: vi.fn()
-})
+import { useMinimap } from './useMinimap'
 
 vi.mock(import('@/scripts/api'))
 vi.mock(import('@/scripts/app'))
 
-import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
-
-const POLL_MS = 100
+async function mountMinimap(mounted = true) {
+  const node = createMockLGraphNode({
+    id: toNodeId('node'),
+    pos: [0, 0],
+    renderingSize: [100, 50],
+    mode: 0
+  })
+  const graph = fromPartial<LGraph>({
+    id: 'root',
+    rootGraph: { id: 'root' },
+    isRootGraph: true,
+    _nodes: [node],
+    _groups: [],
+    events: new CustomEventTarget<LGraphEventMap>()
+  })
+  const host = fromPartial<LGraphCanvas>({
+    graph,
+    canvas: createTestCanvasElement({ width: 1000, height: 800 }),
+    ds: { scale: 1, offset: [0, 0] },
+    dpr: 1,
+    setDirty: vi.fn()
+  })
+  useCanvasStore().canvas = host
+  await nextTick()
+  useCanvasStore().currentGraph = graph
+  const context = createMockCanvasRenderingContext2D()
+  const element = createTestCanvasElement({
+    width: 250,
+    height: 200,
+    ctx: context
+  })
+  const canvasRef = shallowRef<HTMLCanvasElement | null>(
+    mounted ? element : null
+  )
+  const container = document.createElement('div')
+  vi.spyOn(container, 'getBoundingClientRect').mockReturnValue(
+    new DOMRect(0, 0, 250, 200)
+  )
+  const scope = effectScope()
+  onTestFinished(() => scope.stop())
+  const added = vi.spyOn(graph.events, 'addEventListener')
+  const removed = vi.spyOn(graph.events, 'removeEventListener')
+  const minimap = scope.run(() =>
+    useMinimap({ canvasRef, containerRef: shallowRef(container) })
+  )
+  assert.exists(minimap)
+  await nextTick()
+  await vi.advanceTimersByTimeAsync(100)
+  return {
+    graph,
+    host,
+    node,
+    context,
+    element,
+    canvasRef,
+    scope,
+    minimap,
+    added,
+    removed,
+    container
+  }
+}
 
 beforeEach(() => {
-  app.canvas.graph = mockGraph
-  vi.mocked(api.apiURL).mockReturnValue('http://localhost:8188')
-  useCanvasStore().canvas = fromPartial(mockCanvas)
-  vi.mocked(useSettingStore().get).mockReturnValue(true)
-  vi.mocked(useSettingStore().set).mockResolvedValue(undefined)
+  vi.useFakeTimers({ shouldAdvanceTime: false })
+  vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible')
 })
 
-describe('useMinimap change-detection interval', () => {
-  let context: CanvasRenderingContext2D
-  let active: { destroy: () => void } | null = null
+describe('minimap scoped scheduling', () => {
+  it('tracks camera motion on viewport frames without repainting the graph', async () => {
+    const { host, minimap, context } = await mountMinimap()
+    const before = minimap.viewportTransforms.value.box
+    vi.mocked(context.clearRect).mockClear()
+    host.ds.offset[0] = -125
 
-  async function initMinimap() {
-    const canvasElement = createMockMinimapCanvas({
-      getContext: vi
-        .fn()
-        .mockImplementation((id) =>
-          id === '2d' ? context : null
-        ) as HTMLCanvasElement['getContext']
-    })
-    const container = {
-      getBoundingClientRect: vi.fn(() => new DOMRect(0, 0, 250, 200))
-    }
+    await vi.advanceTimersByTimeAsync(32)
 
-    const minimap = useMinimap({
-      containerRefMaybe: shallowRef(
-        container as Partial<HTMLDivElement> as HTMLDivElement
-      ),
-      canvasRefMaybe: shallowRef(canvasElement)
-    })
-    await minimap.init()
+    expect(minimap.viewportTransforms.value.box).not.toBe(before)
+    expect(context.clearRect).not.toHaveBeenCalled()
+  })
+
+  it('does not activate a queued late mount after disposal', async () => {
+    const { scope, canvasRef, element, context } = await mountMinimap(false)
+    canvasRef.value = element
+    scope.stop()
+
     await nextTick()
-    await vi.runOnlyPendingTimersAsync()
-    active = minimap
-    return minimap
-  }
+    await vi.advanceTimersByTimeAsync(500)
 
-  function drawCalls(): number {
-    return (
-      vi.mocked(context.clearRect).mock.calls.length +
-      vi.mocked(context.fillRect).mock.calls.length
+    expect(context.clearRect).not.toHaveBeenCalled()
+  })
+
+  it('detects direct mutations on the next 100ms tick, not on viewport frames', async () => {
+    const { node, context } = await mountMinimap()
+    vi.mocked(context.clearRect).mockClear()
+    node.pos[0] += 50
+
+    await vi.advanceTimersByTimeAsync(99)
+    expect(context.clearRect).not.toHaveBeenCalled()
+    await vi.advanceTimersByTimeAsync(1)
+    expect(context.clearRect).toHaveBeenCalledTimes(1)
+  })
+
+  it('starts fully paused in an initially hidden document and refreshes on return', async () => {
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden')
+    const { node, host, context, minimap } = await mountMinimap()
+    const before = minimap.viewportTransforms.value
+    node.pos[0] += 50
+    host.ds.offset[0] += 80
+    await vi.advanceTimersByTimeAsync(500)
+    expect(context.clearRect).not.toHaveBeenCalled()
+    expect(minimap.viewportTransforms.value).toBe(before)
+
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible')
+    document.dispatchEvent(new Event('visibilitychange'))
+    await nextTick()
+
+    expect(context.clearRect).toHaveBeenCalled()
+    expect(minimap.viewportTransforms.value).not.toBe(before)
+  })
+
+  it('pauses hidden work and resumes polling only after a full interval', async () => {
+    const { node, context } = await mountMinimap()
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden')
+    document.dispatchEvent(new Event('visibilitychange'))
+    await nextTick()
+    vi.mocked(context.clearRect).mockClear()
+    node.pos[0] += 50
+    await vi.advanceTimersByTimeAsync(500)
+    expect(context.clearRect).not.toHaveBeenCalled()
+
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible')
+    document.dispatchEvent(new Event('visibilitychange'))
+    await nextTick()
+    expect(context.clearRect).toHaveBeenCalled()
+    vi.mocked(context.clearRect).mockClear()
+    node.pos[0] += 50
+    await vi.advanceTimersByTimeAsync(99)
+    expect(context.clearRect).not.toHaveBeenCalled()
+    await vi.advanceTimersByTimeAsync(1)
+    expect(context.clearRect).toHaveBeenCalledTimes(1)
+  })
+
+  it('paints when template refs mount late and when the bitmap canvas is replaced', async () => {
+    const { context, canvasRef, element } = await mountMinimap(false)
+    await vi.advanceTimersByTimeAsync(300)
+    expect(context.clearRect).not.toHaveBeenCalled()
+    canvasRef.value = element
+    await nextTick()
+    expect(context.clearRect).toHaveBeenCalled()
+
+    const replacementContext = createMockCanvasRenderingContext2D()
+    canvasRef.value = createTestCanvasElement({
+      width: 250,
+      height: 200,
+      ctx: replacementContext
+    })
+    await nextTick()
+
+    expect(replacementContext.clearRect).toHaveBeenCalledWith(0, 0, 250, 200)
+    expect(replacementContext.fillRect).toHaveBeenCalled()
+  })
+
+  it('remeasures a replacement host canvas and refreshes an unchanged graph', async () => {
+    const { host, context, minimap } = await mountMinimap()
+    const before = minimap.viewportTransforms.value.box
+    vi.mocked(context.clearRect).mockClear()
+
+    useCanvasStore().canvas = fromPartial<LGraphCanvas>({
+      graph: host.graph,
+      canvas: createTestCanvasElement({ width: 1600, height: 900 }),
+      ds: host.ds,
+      dpr: host.dpr,
+      setDirty: vi.fn()
+    })
+    await nextTick()
+
+    expect(minimap.viewportTransforms.value.box).not.toBe(before)
+    expect(context.clearRect).toHaveBeenCalled()
+  })
+
+  it('clears and disables interaction on graph null, then paints its restoration', async () => {
+    const { graph, host, context, minimap, removed } = await mountMinimap()
+    vi.mocked(context.clearRect).mockClear()
+    useCanvasStore().currentGraph = null
+    await nextTick()
+    expect(context.clearRect).toHaveBeenCalledWith(0, 0, 250, 200)
+    expect(removed).toHaveBeenCalledWith('configured', expect.any(Function))
+    minimap.handlePointerDown(
+      new PointerEvent('pointerdown', { clientX: 80, clientY: 70 })
     )
-  }
+    minimap.handleWheel(new WheelEvent('wheel', { deltaY: -100 }))
+    expect(host.setDirty).not.toHaveBeenCalled()
+    expect(host.ds.scale).toBe(1)
 
-  const moveNode = () => {
-    mockNodes[0].pos = [mockNodes[0].pos[0] + 50, mockNodes[0].pos[1]]
-  }
-
-  beforeEach(() => {
-    vi.useFakeTimers()
-    context = createMockCanvasRenderingContext2D()
-    mockNodes[0].pos = [0, 0]
-  })
-
-  afterEach(() => {
-    // The graph is module scope and each init() layers another set of wrappers
-    // onto its callbacks, so tear down before the next test builds its own.
-    active?.destroy()
-    active = null
-  })
-
-  it('polls on the interval and redraws when the graph changed', async () => {
-    await initMinimap()
-    const before = drawCalls()
-
-    moveNode()
-    await vi.advanceTimersByTimeAsync(POLL_MS + 10)
-
-    expect(drawCalls()).toBeGreaterThan(before)
-  })
-
-  it('does not redraw while the graph is unchanged', async () => {
-    await initMinimap()
-    await vi.advanceTimersByTimeAsync(POLL_MS + 10)
-    const settled = drawCalls()
-
-    await vi.advanceTimersByTimeAsync(POLL_MS * 5)
-
-    expect(drawCalls()).toBe(settled)
-  })
-
-  it('stops polling when hidden and resumes only after the next interval', async () => {
-    const minimap = await initMinimap()
-
-    // Hide: subsequent graph changes must not be picked up.
-    await minimap.toggle()
+    vi.mocked(context.clearRect).mockClear()
+    useCanvasStore().currentGraph = graph
     await nextTick()
-    const hidden = drawCalls()
-
-    moveNode()
-    await vi.advanceTimersByTimeAsync(POLL_MS * 5)
-    expect(drawCalls()).toBe(hidden)
-
-    // Show again: the visibility watcher repaints the stale state immediately.
-    await minimap.toggle()
-    await nextTick()
-    await vi.advanceTimersByTimeAsync(0)
-    const afterShow = drawCalls()
-    expect(afterShow).toBeGreaterThan(hidden)
-
-    // A change made after showing is only observed by polling: nothing before
-    // the interval elapses, a redraw after it does.
-    moveNode()
-    await vi.advanceTimersByTimeAsync(POLL_MS - 20)
-    expect(drawCalls()).toBe(afterShow)
-
-    await vi.advanceTimersByTimeAsync(40)
-    expect(drawCalls()).toBeGreaterThan(afterShow)
+    expect(context.clearRect).toHaveBeenCalled()
   })
 
-  it('never starts polling in a document that was already hidden', async () => {
-    // A background tab (middle-click, session restore) is hidden before mount,
-    // so no visibilitychange ever fires and a transition-only guard would leave
-    // the loop running for as long as the tab stays parked.
-    const visibility = vi
-      .spyOn(document, 'visibilityState', 'get')
-      .mockReturnValue('hidden')
+  it('repaints identical configured content on the next bounded poll', async () => {
+    const { graph, context } = await mountMinimap()
+    vi.mocked(context.clearRect).mockClear()
+    graph.events.dispatch('configured')
 
-    try {
-      await initMinimap()
-      const atInit = drawCalls()
+    await vi.advanceTimersByTimeAsync(100)
 
-      moveNode()
-      await vi.advanceTimersByTimeAsync(POLL_MS * 5)
+    expect(context.clearRect).toHaveBeenCalled()
+  })
 
-      expect(drawCalls()).toBe(atInit)
-    } finally {
-      visibility.mockRestore()
+  it.for(['stop', 'null-before-stop', 'replacement-before-stop'])(
+    'releases captured listeners and queued work on %s',
+    async (transition) => {
+      const {
+        graph,
+        node,
+        context,
+        scope,
+        minimap,
+        added,
+        removed,
+        container
+      } = await mountMinimap()
+      const replacement = fromPartial<LGraph>({
+        id: 'replacement',
+        rootGraph: { id: 'replacement' },
+        isRootGraph: true,
+        _nodes: graph._nodes,
+        _groups: [],
+        events: new CustomEventTarget<LGraphEventMap>()
+      })
+      const replacementAdded = vi.spyOn(replacement.events, 'addEventListener')
+      const nextGraphs: Record<string, LGraph | null> = {
+        stop: graph,
+        'null-before-stop': null,
+        'replacement-before-stop': replacement
+      }
+      useCanvasStore().currentGraph = nextGraphs[transition]
+      scope.stop()
+      const configuredListener = added.mock.calls.find(
+        ([name]) => name === 'configured'
+      )?.[1]
+      expect(configuredListener).toBeDefined()
+      expect(removed).toHaveBeenCalledWith('configured', configuredListener)
+      const before = minimap.viewportTransforms.value
+      vi.mocked(context.clearRect).mockClear()
+      vi.mocked(container.getBoundingClientRect).mockClear()
+      node.pos[0] += 100
+      graph.events.dispatch('configured')
+      window.dispatchEvent(new Event('resize'))
+      window.dispatchEvent(new Event('scroll'))
+      document.dispatchEvent(new Event('visibilitychange'))
+      await nextTick()
+      await vi.advanceTimersByTimeAsync(600)
+
+      expect(replacementAdded).not.toHaveBeenCalledWith(
+        'configured',
+        expect.any(Function)
+      )
+      expect(context.clearRect).not.toHaveBeenCalled()
+      expect(container.getBoundingClientRect).not.toHaveBeenCalled()
+      expect(minimap.viewportTransforms.value).toBe(before)
     }
-  })
-
-  it('a graphChanged event with nothing drawn changed does not repaint', async () => {
-    // graphChanged fires for zIndex (every widget pointerdown), widget values
-    // and title edits. The event is a hint to compare digests, not a command
-    // to repaint.
-    const { api } = await import('@/scripts/api')
-    await initMinimap()
-    await vi.advanceTimersByTimeAsync(POLL_MS + 10)
-    const settled = drawCalls()
-
-    const graphChangedHandler = vi
-      .mocked(api.addEventListener)
-      .mock.calls.find(([name]) => name === 'graphChanged')?.[1] as () => void
-    expect(graphChangedHandler).toBeTypeOf('function')
-
-    graphChangedHandler()
-    await vi.advanceTimersByTimeAsync(POLL_MS * 6)
-    expect(drawCalls()).toBe(settled)
-
-    // The same path must still repaint when the picture did change.
-    moveNode()
-    graphChangedHandler()
-    await vi.advanceTimersByTimeAsync(POLL_MS + 10)
-    expect(drawCalls()).toBeGreaterThan(settled)
-  })
-
-  it('starts polling when the canvas mounts after init', async () => {
-    // In the real component init() runs synchronously from the immediate
-    // canvas watcher, before the template ref has mounted, so a start decision
-    // taken inside init() sees a null canvasRef and never starts the loop.
-    const canvasRef = shallowRef<HTMLCanvasElement | null>(null)
-    const container = {
-      getBoundingClientRect: vi.fn(() => new DOMRect(0, 0, 250, 200))
-    }
-    const minimap = useMinimap({
-      containerRefMaybe: shallowRef(
-        container as Partial<HTMLDivElement> as HTMLDivElement
-      ),
-      canvasRefMaybe: canvasRef
-    })
-    active = minimap
-    await minimap.init()
-    await nextTick()
-
-    // Template ref mounts after init.
-    canvasRef.value = createMockMinimapCanvas({
-      getContext: vi
-        .fn()
-        .mockImplementation((id) =>
-          id === '2d' ? context : null
-        ) as HTMLCanvasElement['getContext']
-    })
-    await nextTick()
-    await vi.runOnlyPendingTimersAsync()
-
-    moveNode()
-    await vi.advanceTimersByTimeAsync(POLL_MS + 10)
-
-    expect(drawCalls()).toBeGreaterThan(0)
-  })
-
-  it('stops polling after destroy', async () => {
-    const minimap = await initMinimap()
-    minimap.destroy()
-    const atDestroy = drawCalls()
-
-    moveNode()
-    await vi.advanceTimersByTimeAsync(POLL_MS * 5)
-
-    expect(drawCalls()).toBe(atDestroy)
-  })
+  )
 })

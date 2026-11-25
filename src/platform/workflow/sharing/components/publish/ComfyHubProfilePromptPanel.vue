@@ -16,10 +16,10 @@
       <div
         class="flex size-12 items-center justify-center rounded-full border border-dashed"
       >
-        <i class="icon-[lucide--user] size-4 text-muted-foreground" />
+        <i class="icon-[lucide--user] text-muted-foreground" />
       </div>
       <span class="inline-flex items-center gap-1 text-sm text-foreground">
-        <i class="icon-[lucide--plus] size-4" />
+        <i class="icon-[lucide--plus]" />
         {{ $t('comfyHubPublish.createProfileCta') }}
       </span>
     </Button>
@@ -27,7 +27,7 @@
 </template>
 
 <script setup lang="ts">
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 
 const emit = defineEmits<{
   requestProfile: []

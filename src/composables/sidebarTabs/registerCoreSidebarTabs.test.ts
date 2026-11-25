@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { registerCoreSidebarTabs } from '@/composables/sidebarTabs/registerCoreSidebarTabs'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import type { SidebarTabExtension } from '@/types/extensionTypes'
@@ -20,7 +20,7 @@ const stubTab = (id: string): SidebarTabExtension => ({
   component: {}
 })
 
-vi.mock(import('@/composables/sidebarTabs/useAssetsSidebarTab'), () => ({
+vi.mock(import('@/platform/assets/integration/useAssetsSidebarTab'), () => ({
   useAssetsSidebarTab: () => stubTab('assets')
 }))
 vi.mock(import('@/composables/sidebarTabs/useJobHistorySidebarTab'), () => ({
@@ -29,9 +29,12 @@ vi.mock(import('@/composables/sidebarTabs/useJobHistorySidebarTab'), () => ({
 vi.mock(import('@/composables/sidebarTabs/useNodeLibrarySidebarTab'), () => ({
   useNodeLibrarySidebarTab: () => stubTab('node-library')
 }))
-vi.mock(import('@/composables/sidebarTabs/useModelLibrarySidebarTab'), () => ({
-  useModelLibrarySidebarTab: () => stubTab('model-library')
-}))
+vi.mock(
+  import('@/platform/assets/integration/useModelLibrarySidebarTab'),
+  () => ({
+    useModelLibrarySidebarTab: () => stubTab('model-library')
+  })
+)
 vi.mock(
   import('@/platform/workflow/management/composables/useWorkflowsSidebarTab'),
   () => ({ useWorkflowsSidebarTab: () => stubTab('workflows') })
@@ -40,6 +43,10 @@ vi.mock(
   import('@/platform/workflow/management/composables/useAppsSidebarTab'),
   () => ({ useAppsSidebarTab: () => stubTab('apps') })
 )
+
+vi.mock(import('@/platform/localMcp/registerLocalMcpSurface'), () => ({
+  registerLocalMcpSurface: vi.fn()
+}))
 
 const coreTabIds = [
   'assets',

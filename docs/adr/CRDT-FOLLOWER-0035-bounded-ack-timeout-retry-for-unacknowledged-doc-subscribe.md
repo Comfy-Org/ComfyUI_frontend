@@ -169,6 +169,42 @@ reported terminal state.
   canvas until a reconnect, a retarget or a reset; user-facing messaging is
   deferred.
 
+## Amendment (2026-11-22): socket loss is not a silent server
+
+Production data answered the open question above. Most give-ups (both the
+silent-ack and the exhausted-retry reports) follow a socket the server had
+already closed (`read_timeout` or `abnormal_closure`, often a laptop sleeping
+or a frozen mobile tab), and the client's next events socket opens seconds
+after the give-up. Two client gaps caused that:
+
+- While the socket was down, sends failed and each failure spent one attempt
+  of the refusal backoff (about 31 s in total). The events socket reconnects
+  on its own backoff of up to 30 s with jitter, so the budget often ran out
+  just before the socket came back.
+- After a sleep, the browser can keep a dead socket in the open state for a
+  while. Three subscribes went into it, nothing answered, and the follower
+  gave up before the browser noticed the close.
+
+Changes:
+
+- A socket close parks the lifecycle: the ack timer, the refusal backoff and
+  the recency probe stop, and nothing is spent or reported until the
+  reconnect, which already resets the budgets and resubscribes.
+- When the silent budget is spent on a socket that claims to be open, the
+  lifecycle reopens the events socket once (the same `reconnect()` the
+  credential refusal uses) instead of giving up. The reopen is spent per
+  silent episode and survives the reconnect it causes. Only a confirm or a
+  retarget releases it. A server that is also silent on the fresh socket is
+  still reported as `timeout` after a further 45 s.
+
+Rejected: a longer refusal budget (it only moves the race), and reopening the
+socket on the first silent attempt (a host that answers in about 15 s is
+still live, and reopening drops the agent chat stream that uses the same
+socket).
+
+Known limit: a socket that never reconnects no longer produces a doc-subscribe
+report. The events socket's own failure reporting covers that case.
+
 ## Notes
 
 - Source files: `src/workbench/extensions/agent/crdt/layoutFollowerBridge.ts`,

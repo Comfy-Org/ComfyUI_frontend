@@ -24,6 +24,7 @@ const representativeFrames = [
       data: {
         workflowId: 'wf-1',
         seq: 1,
+        lineageSeq: 1,
         update: Uint8Array.of(1, 2, 3)
       }
     }
@@ -121,6 +122,7 @@ describe('doc frame wire contract', () => {
       data: {
         workflowId: 'wf-1',
         seq: Number.MAX_SAFE_INTEGER,
+        lineageSeq: 1,
         update: Uint8Array.of(1)
       }
     })

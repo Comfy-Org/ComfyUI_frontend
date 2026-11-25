@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
-import type { MissingModelCandidate } from '@/platform/missingModel/types'
+import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
 import {
   nodeError,
   runtimeError,
   validationError
 } from '@/utils/__tests__/nodeErrorHelpers'
 
-import { createUnnormalisableModelErrorFixture } from '@/components/rightSidePanel/errors/__tests__/absorptionFixtures'
+import { createUnnormalisableModelErrorFixture } from '@/platform/workflowErrors/panel/__tests__/absorptionFixtures'
 import { classifyPanelErrors } from './errorSeverityClassification'
 import type { ErrorSeverityInput } from './errorSeverityClassification'
 

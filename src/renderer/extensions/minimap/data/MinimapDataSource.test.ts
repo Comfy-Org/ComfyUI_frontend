@@ -1,7 +1,7 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it } from 'vitest'
 
-import type { INodeOutputSlot } from '@/lib/litegraph/src/types/slots'
+import type { INodeOutputSlot } from '@comfyorg/graph-model/slots'
 import type {
   LGraph,
   LGraphGroup,
@@ -9,10 +9,13 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import { MinimapDataSource } from '@/renderer/extensions/minimap/data/MinimapDataSource'
 import { useLinkStore } from '@/stores/linkStore'
-import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
-import { toLinkId } from '@/types/linkId'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
-import { toNodeId } from '@/types/nodeId'
+import {
+  toOwningGraphId,
+  toRootGraphId
+} from '@comfyorg/graph-model/graphScopeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import {
   createMockLGraph,
   createMockLGraphNode
@@ -68,20 +71,23 @@ describe('MinimapDataSource', () => {
     ])
   })
 
-  it('uses graph-scoped execution state', () => {
-    const node = graphNode('node1', [0, 0])
-    const subgraph = createMockLGraph({
-      id: SUBGRAPH_ID,
-      isRootGraph: false,
-      rootGraph: rootGraph(),
-      _nodes: [node]
-    })
-    const source = new MinimapDataSource(subgraph, {
-      [createNodeLocatorId(SUBGRAPH_ID, node.id)]: { state: 'running' }
-    })
+  it.for(['node1', 'node:1'])(
+    'uses graph-scoped execution state for %s',
+    (id) => {
+      const node = graphNode(id, [0, 0])
+      const subgraph = createMockLGraph({
+        id: SUBGRAPH_ID,
+        isRootGraph: false,
+        rootGraph: rootGraph(),
+        _nodes: [node]
+      })
+      const source = new MinimapDataSource(subgraph, {
+        [createNodeLocatorId(SUBGRAPH_ID, node.id)]: { state: 'running' }
+      })
 
-    expect(source.getNodes()).toMatchObject([{ executionState: 'running' }])
-  })
+      expect(source.getNodes()).toMatchObject([{ executionState: 'running' }])
+    }
+  )
 
   it('handles an empty graph', () => {
     const source = new MinimapDataSource(rootGraph())

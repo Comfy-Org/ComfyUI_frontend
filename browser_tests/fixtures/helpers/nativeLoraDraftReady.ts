@@ -2,16 +2,18 @@ import type {
   ActivePathPointer,
   DraftPayloadV2
 } from '@/platform/workflow/persistence/base/draftTypes'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 
 export const nativeLoraDraftReady = ({
   path,
   draftKey,
-  expected
+  expected,
+  subject
 }: {
   path: string
   draftKey: string
   expected: ComfyWorkflowJSON
+  subject?: string
 }) => {
   type WidgetStateGraph = {
     nodes?: readonly {
@@ -45,10 +47,13 @@ export const nativeLoraDraftReady = ({
       sessionStorage.getItem(`Comfy.Workflow.ActivePath:${clientId}`)!
     )
     if (pointer?.path !== path) return false
+    const draftScope =
+      subject === undefined
+        ? pointer.workspaceId
+        : `${encodeURIComponent(subject)}:${pointer.workspaceId}`
+    const draftStorageKey = `Comfy.Workflow.Draft.v2:${draftScope}:${draftKey}`
     const payload: DraftPayloadV2 | null = JSON.parse(
-      localStorage.getItem(
-        `Comfy.Workflow.Draft.v2:${pointer.workspaceId}:${draftKey}`
-      )!
+      localStorage.getItem(draftStorageKey)!
     )
     if (typeof payload?.data !== 'string') return false
     const persisted: ComfyWorkflowJSON | null = JSON.parse(payload.data)

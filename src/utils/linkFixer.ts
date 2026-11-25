@@ -24,19 +24,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-import type { INodeOutputSlot } from '@/lib/litegraph/src/types/slots'
+import type { INodeOutputSlot } from '@comfyorg/graph-model/slots'
 import { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'
 import { NodeOutputSlot } from '@/lib/litegraph/src/node/NodeOutputSlot'
 import { outputLinkIds } from '@/lib/litegraph/src/node/slotLinks'
-import { toLinkId } from '@/types/linkId'
-import { parseNodeId } from '@/types/nodeId'
-import type { SerializedNodeId } from '@/types/nodeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { parseNodeId } from '@comfyorg/graph-model/nodeId'
+import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import type { SerialisedLLinkArray } from '@/lib/litegraph/src/LLink'
 import type { LGraph, LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
 import type {
   ISerialisedGraph,
   ISerialisedNode
-} from '@/lib/litegraph/src/types/serialisation'
+} from '@comfyorg/graph-model/serialisation'
 
 type FixableSerialisedGraph = Omit<ISerialisedGraph, 'links'> & {
   links: (SerialisedLLinkArray | null)[]

@@ -12,7 +12,7 @@
       @click="exitFocusMode"
       @contextmenu="showNativeSystemMenu"
     >
-      <i class="pi pi-bars" />
+      <i class="icon-[lucide--menu]" />
     </Button>
     <div class="window-actions-spacer" />
   </div>
@@ -21,9 +21,9 @@
 <script setup lang="ts">
 import { watchEffect } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { showNativeSystemMenu } from '@/utils/envUtil'
 
@@ -38,9 +38,9 @@ watchEffect(() => {
     return
   }
   if (workspaceState.focusMode) {
-    app.ui.menuContainer.style.display = 'none'
+    useApp().ui.menuContainer.style.display = 'none'
   } else {
-    app.ui.menuContainer.style.display = 'block'
+    useApp().ui.menuContainer.style.display = 'block'
   }
 })
 </script>

@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
-import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
+import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
+import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
+import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 const { workflowPath } = defineProps<{ workflowPath: string }>()
@@ -22,9 +22,9 @@ const agentPanelStore = useAgentPanelStore()
       <span
         role="img"
         :aria-label="t('agent.targetForThisChat')"
-        class="inline-flex size-2.5 shrink-0 text-brand-yellow"
+        class="inline-flex size-3.5 shrink-0"
       >
-        <i class="icon-[comfy--comfy-c] size-full" />
+        <i class="icon-[lucide--focus] size-3.5 text-credit" />
       </span>
     </TooltipTrigger>
     <TooltipContent side="right">{{

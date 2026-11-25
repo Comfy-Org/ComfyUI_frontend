@@ -2,13 +2,13 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type {
   IColorWidgetOptions,
   INumericWidget
-} from '@/lib/litegraph/src/types/widgets'
+} from '@comfyorg/graph-model/widgets'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import { isIntInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { InputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
+import { isIntInputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import type { ComfyWidgetConstructorV2 } from '@/types/widgetConstructor'
 import { addValueControlWidget } from '@/core/graph/widgets/valueControlWidgets'
-import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
+import { transformInputSpecV2ToV1 } from '@comfyorg/object-info-parser/migration'
 
 function onValueChange(this: INumericWidget, v: number) {
   // For integers, always round to the nearest step

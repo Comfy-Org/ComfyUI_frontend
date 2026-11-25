@@ -5,14 +5,18 @@ import { nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
 
 import { i18n } from '@/i18n'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import type { NavGroupData } from '@/types/navTypes'
+import type { NavGroupData } from '@comfyorg/design-system/lib/navigation/types'
+import type { SettingDialogProps } from '@comfyorg/settings-core/types'
 
 import SettingDialog from './SettingDialog.vue'
 
 const settingUiMocks = vi.hoisted(() => ({
   navGroups: null as unknown as Ref<NavGroupData[]>
 }))
+const unifiedBillingSettingsEnabled = ref(false)
 const defaultCategory = ref({
   key: 'workspace-allowlist',
   label: 'Allowlist',
@@ -22,7 +26,8 @@ const searchMocks = vi.hoisted(() => ({
   inSearch: null as unknown as Ref<boolean>,
   matchedNavItemKeys: null as unknown as Ref<Set<string>>,
   searchQuery: null as unknown as Ref<string>,
-  searchResultsCategories: null as unknown as Ref<Set<string>>
+  searchResultsCategories: null as unknown as Ref<Set<string>>,
+  handleSearch: vi.fn()
 }))
 
 vi.mock<unknown>(
@@ -32,6 +37,7 @@ vi.mock<unknown>(
       defaultCategory,
       settingCategories: { value: [] },
       navGroups: settingUiMocks.navGroups,
+      unifiedBillingSettingsEnabled,
       findCategoryByKey: (key: string) =>
         settingUiMocks.navGroups.value
           .flatMap(({ items }) => items)
@@ -59,13 +65,13 @@ vi.mock<unknown>(
       inSearch: searchMocks.inSearch,
       searchResultsCategories: searchMocks.searchResultsCategories,
       matchedNavItemKeys: searchMocks.matchedNavItemKeys,
-      handleSearch: vi.fn(),
+      handleSearch: searchMocks.handleSearch,
       getSearchResults: () => []
     })
   })
 )
 
-vi.mock(import('@/composables/billing/useBillingContext'))
+vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
 vi.mock(
   import('@/platform/telemetry/searchQuery/useSearchQueryTracking'),
@@ -88,9 +94,6 @@ beforeEach(() => {
         role: 'owner',
         created_at: '2026-01-01T00:00:00Z',
         joined_at: '2026-01-01T00:00:00Z',
-        isSubscribed: true,
-        subscriptionPlan: null,
-        subscriptionTier: null,
         members: [],
         pendingInvites: [],
         membersLoaded: true,
@@ -120,20 +123,28 @@ beforeEach(() => {
       ]
     }
   ])
+  unifiedBillingSettingsEnabled.value = false
   searchMocks.inSearch = ref(false)
   searchMocks.matchedNavItemKeys = ref(new Set<string>())
   searchMocks.searchQuery = ref('')
   searchMocks.searchResultsCategories = ref(new Set<string>())
+  searchMocks.handleSearch = vi.fn()
 })
 
-function renderDialog() {
+function renderDialog({
+  modal = false,
+  props = {}
+}: { modal?: boolean; props?: Partial<SettingDialogProps> } = {}) {
   return render(SettingDialog, {
-    props: { onClose: vi.fn() },
+    props: { onClose: vi.fn(), ...props },
     global: {
       plugins: [i18n],
       stubs: {
-        BaseModalLayout: {
-          template: `
+        ...(modal
+          ? {}
+          : {
+              BaseModalLayout: {
+                template: `
             <div>
               <slot name="leftPanel" />
               <slot name="header" />
@@ -141,7 +152,8 @@ function renderDialog() {
                 <slot name="content" />
               </div>
             </div>`
-        },
+              }
+            }),
         NavItem: { template: '<button><slot /></button>' },
         NavTitle: true,
         SearchInput: true,
@@ -165,6 +177,31 @@ async function scrollPanelTo(scrollTop: number) {
   nested.scrollTop = scrollTop
   await fireEvent.scroll(nested)
 }
+
+it.for([
+  {
+    state: 'off',
+    enabled: false,
+    variantClass: 'bg-secondary',
+    iconClass: 'icon-[lucide--x]'
+  },
+  {
+    state: 'on',
+    enabled: true,
+    variantClass: 'bg-transparent',
+    iconClass: 'icon-[lucide--x]'
+  }
+])(
+  'passes the $state close control through the settings modal',
+  async ({ enabled, variantClass, iconClass }) => {
+    unifiedBillingSettingsEnabled.value = enabled
+    renderDialog({ modal: true })
+
+    const close = screen.getByRole('button', { name: 'Close dialog' })
+    expect(close).toHaveClass(variantClass)
+    expect(close).toContainHTML(iconClass)
+  }
+)
 
 it('falls back when the active navigation item becomes unavailable', async () => {
   renderDialog()
@@ -192,12 +229,79 @@ it('falls back when the active navigation item becomes unavailable', async () =>
   ).not.toBeInTheDocument()
 })
 
+it('navigates to a panel requested while the dialog is already open', async () => {
+  defaultCategory.value = { key: 'workspace', label: 'Workspace', children: [] }
+  searchMocks.inSearch.value = true
+  searchMocks.searchQuery.value = 'allow'
+  const onClose = vi.fn()
+  const { rerender } = renderDialog({
+    props: { onClose, defaultPanel: 'workspace', navigationRequestId: 1 }
+  })
+  expect(await screen.findByText('workspace panel')).toBeInTheDocument()
+
+  await rerender({
+    onClose,
+    defaultPanel: 'workspace-allowlist',
+    navigationRequestId: 2
+  })
+
+  expect(
+    await screen.findByText('workspace-allowlist panel')
+  ).toBeInTheDocument()
+  expect(screen.queryByText('workspace panel')).not.toBeInTheDocument()
+  expect(searchMocks.searchQuery.value).toBe('')
+  expect(searchMocks.handleSearch).toHaveBeenCalledWith('', expect.anything())
+})
+
+it('navigates to a repeated panel request made after moving away in-dialog', async () => {
+  defaultCategory.value = { key: 'workspace', label: 'Workspace', children: [] }
+  const user = userEvent.setup()
+  const onClose = vi.fn()
+  const { rerender } = renderDialog({
+    props: { onClose, defaultPanel: 'workspace', navigationRequestId: 1 }
+  })
+  expect(await screen.findByText('workspace panel')).toBeInTheDocument()
+
+  await user.click(screen.getByRole('button', { name: 'Allowlist' }))
+  expect(
+    await screen.findByText('workspace-allowlist panel')
+  ).toBeInTheDocument()
+
+  await rerender({ onClose, defaultPanel: 'workspace', navigationRequestId: 2 })
+
+  expect(await screen.findByText('workspace panel')).toBeInTheDocument()
+  expect(
+    screen.queryByText('workspace-allowlist panel')
+  ).not.toBeInTheDocument()
+})
+
+it('ignores a requested panel that the current navigation does not offer', async () => {
+  const onClose = vi.fn()
+  const { rerender } = renderDialog({
+    props: {
+      onClose,
+      defaultPanel: 'workspace-allowlist',
+      navigationRequestId: 1
+    }
+  })
+  expect(
+    await screen.findByText('workspace-allowlist panel')
+  ).toBeInTheDocument()
+
+  await rerender({ onClose, defaultPanel: 'secrets', navigationRequestId: 2 })
+
+  expect(
+    await screen.findByText('workspace-allowlist panel')
+  ).toBeInTheDocument()
+})
+
 it('shows the workspace identity in the dialog header on workspace sections', async () => {
   renderDialog()
 
-  expect(
-    await screen.findByRole('heading', { name: 'Acme Team' })
-  ).toBeInTheDocument()
+  expect(await screen.findByRole('heading', { name: 'Acme Team' })).toHaveClass(
+    'text-base',
+    'font-bold'
+  )
   expect(screen.getByTestId('ws-pic')).toBeInTheDocument()
 })
 
@@ -266,4 +370,36 @@ it('restores the collapsed header when switching sections', async () => {
   expect(
     await screen.findByRole('heading', { name: 'Acme Team' })
   ).toBeInTheDocument()
+})
+
+it('reports a failed balance read from the Credits section once instead of leaving it unhandled', async () => {
+  const failure = new Error('Balance temporarily unavailable')
+  const billing = useBillingContext()
+  vi.mocked(billing.fetchBalance).mockRejectedValueOnce(failure)
+  vi.mocked(useBillingContext).mockReturnValue(billing)
+  settingUiMocks.navGroups.value = [
+    {
+      title: 'Workspace',
+      items: [
+        {
+          id: 'workspace-allowlist',
+          label: 'Allowlist',
+          icon: 'icon-[lucide--list-checks]'
+        },
+        { id: 'credits', label: 'Credits', icon: 'icon-[lucide--coins]' }
+      ]
+    }
+  ]
+  renderDialog()
+
+  await userEvent.click(screen.getByRole('button', { name: 'Credits' }))
+
+  await vi.waitFor(() =>
+    expect(reportError).toHaveBeenCalledWith(failure, {
+      surface: 'billing',
+      errorType: 'error_refreshing_balance',
+      level: 'warning'
+    })
+  )
+  expect(reportError).toHaveBeenCalledOnce()
 })

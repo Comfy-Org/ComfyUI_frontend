@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
 
 import {
@@ -14,8 +14,6 @@ import {
   MAX_TURN_ATTACHMENTS,
   useAttachment
 } from './useAttachment'
-
-vi.mock(import('@/platform/telemetry/reportError'))
 
 function fileOfSize(name: string, size: number, type = 'image/png'): File {
   const file = new File(['x'], name, { type })
@@ -573,6 +571,22 @@ describe('useAttachment', () => {
     expect(onError).toHaveBeenCalledWith('huge.png is larger than 20 MB')
   })
 
+  it('rejects an empty file before staging or uploading', async () => {
+    const upload = vi.fn()
+    const onError = vi.fn()
+    const registry = chipRegistry()
+    const { addFiles } = useAttachment({ upload, onError, ...registry })
+
+    await addFiles([fileOfSize('blank.png', 0)])
+
+    expect(registry.chips).toEqual([])
+    expect(upload).not.toHaveBeenCalled()
+    expect(reportError).not.toHaveBeenCalled()
+    expect(onError).toHaveBeenCalledExactlyOnceWith(
+      'blank.png is empty and could not be attached'
+    )
+  })
+
   it('uses the resolved limit for each file', async () => {
     const upload = vi.fn(async (file: File) => ({ ref: file.name }))
     const maxBytes = vi.fn((file: File) =>
@@ -635,7 +649,10 @@ describe('useAttachment', () => {
       upload,
       validate
     })
-    const files = [fileOfSize('cat.png', 1024), fileOfSize('clip.mp4', 1024)]
+    const files = [
+      fileOfSize('cat.jpg', 1024, 'image/jpeg'),
+      fileOfSize('clip.mp4', 1024)
+    ]
     const pending = addFiles(files)
     cancelAllUploads()
     validate.mockReturnValue(true)
@@ -649,7 +666,7 @@ describe('useAttachment', () => {
     expect(remove).toHaveBeenCalledTimes(removals)
     expect(registry.chips).toEqual(replacements)
     expect(registry.chips.map(({ name, ref }) => ({ name, ref }))).toEqual([
-      { name: 'cat.png', ref: 'cat.png' },
+      { name: 'cat.jpg', ref: 'cat.jpg' },
       { name: 'clip.mp4', ref: 'clip.mp4' }
     ])
     expect(upload).toHaveBeenCalledTimes(2)
@@ -1110,6 +1127,24 @@ describe('useAttachment', () => {
     expect(upload).not.toHaveBeenCalled()
   })
 
+  it('removes an empty deferred chip without uploading or reporting', async () => {
+    const upload = vi.fn()
+    const onError = vi.fn()
+    const registry = chipRegistry()
+    const { addDeferredFile } = useAttachment({ upload, onError, ...registry })
+
+    await expect(
+      addDeferredFile('blank.png', async () => fileOfSize('blank.png', 0))
+    ).resolves.toBe('failed')
+
+    expect(registry.chips).toEqual([])
+    expect(upload).not.toHaveBeenCalled()
+    expect(reportError).not.toHaveBeenCalled()
+    expect(onError).toHaveBeenCalledExactlyOnceWith(
+      'blank.png is empty and could not be attached'
+    )
+  })
+
   it('removes an oversized deferred chip and reports the resolved limit', async () => {
     const upload = vi.fn()
     const onError = vi.fn()
@@ -1147,6 +1182,7 @@ describe('useAttachment', () => {
     expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
       surface: 'agent',
       errorType: 'agent_attachment_upload_failed',
+      fingerprint: ['agent_attachment_upload_failed', 'unknown'],
       tags: {
         failure_kind: 'caught_unexpected',
         feature_area: 'agent',
@@ -1184,6 +1220,11 @@ describe('useAttachment', () => {
       expectedCause: 'unreadable_response'
     },
     {
+      label: 'a network failure',
+      cause: new TypeError('Failed to fetch'),
+      expectedCause: 'network'
+    },
+    {
       label: 'an upload error with a timeout-like message',
       cause: new Error('Timed out after an upstream timeout'),
       expectedCause: 'unknown'
@@ -1200,6 +1241,7 @@ describe('useAttachment', () => {
       expect(reportError).toHaveBeenCalledWith(
         expect.any(Error),
         expect.objectContaining({
+          fingerprint: ['agent_attachment_upload_failed', expectedCause],
           tags: expect.objectContaining({
             upload_failure_cause: expectedCause,
             file_type: 'image/png',
@@ -1553,6 +1595,7 @@ describe('useAttachment', () => {
       expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
         surface: 'agent',
         errorType: 'agent_attachment_fetch_failed',
+        fingerprint: ['agent_attachment_fetch_failed', 'timeout'],
         tags: expect.objectContaining({
           feature_area: 'agent',
           integration_target: 'assets',

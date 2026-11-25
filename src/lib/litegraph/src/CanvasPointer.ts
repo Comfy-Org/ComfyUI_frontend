@@ -7,8 +7,8 @@ import type {
   GestureState
 } from './canvas/reduceGesture'
 import { idleGesture, reduceGesture } from './canvas/reduceGesture'
-import type { CompassCorners } from './interfaces'
-import type { CanvasPointerEvent } from './types/events'
+import type { CompassCorners } from '@comfyorg/shared-frontend-utils/geometry'
+import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
 
 function positionOf(e: PointerEvent): GesturePoint {
   return { x: e.clientX, y: e.clientY }
@@ -99,6 +99,9 @@ export class CanvasPointer {
   eMove?: CanvasPointerEvent
   /** The last pointerup event for the primary button */
   eUp?: CanvasPointerEvent
+
+  /** Screen-space travel already applied by canvas panning since the last pointerdown */
+  panTravel: [number, number] = [0, 0]
 
   /** Currently detected input device type */
   detectedDevice: 'mouse' | 'trackpad' = 'mouse'
@@ -468,6 +471,7 @@ export class CanvasPointer {
         this.isDown = false
         this.isDouble = false
         this.resizeDirection = undefined
+        this.panTravel = [0, 0]
 
         if (this.clearEventsOnReset) {
           this.eDown = undefined
@@ -477,4 +481,10 @@ export class CanvasPointer {
       }
     }
   }
+}
+
+type RegisteredCanvasPointer = CanvasPointer
+
+declare module '@comfyorg/graph-model/entityRegistry' {
+  interface CanvasPointer extends RegisteredCanvasPointer {}
 }

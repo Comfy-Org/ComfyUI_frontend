@@ -1,7 +1,7 @@
 import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
-} from '@/platform/workflow/validation/schemas/workflowSchema'
+} from '@comfyorg/graph-model/workflowSchema'
 import { ASCII, ComfyMetadataTags } from '@/types/metadataTypes'
 import type {
   ComfyMetadata,
@@ -10,9 +10,8 @@ import type {
 import { readFileAsArrayBuffer } from '@/utils/fileUtil'
 import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
 
-// Set max read high, as atoms are stored near end of file
-// while search is made to be efficient.
 const MAX_READ_BYTES = 64 * 1024 * 1024
+const LARGE_HEADER_BYTES = 16
 
 const BOX_TYPES = {
   USER_DATA: [0x75, 0x64, 0x74, 0x61],
@@ -251,17 +250,69 @@ const parseIsobmffMetadata = (data: Uint8Array): ComfyMetadata => {
   return metadata
 }
 
+const readFileRange = async (
+  file: File,
+  start: number,
+  end: number
+): Promise<Uint8Array | null> => {
+  const buffer = await readFileAsArrayBuffer(
+    new File([file.slice(start, end)], file.name)
+  )
+  return buffer ? new Uint8Array(buffer) : null
+}
+
+const readBoxSize = (header: Uint8Array): number | null => {
+  if (header.length < SIZES.HEADER) return null
+  const size = readUint32(header, 0) >>> 0
+  if (size !== 1) return size >= SIZES.HEADER ? size : null
+  if (header.length < LARGE_HEADER_BYTES) return null
+  const largeSize =
+    (readUint32(header, 8) >>> 0) * 2 ** 32 + (readUint32(header, 12) >>> 0)
+  return largeSize >= LARGE_HEADER_BYTES ? largeSize : null
+}
+
+const findTopLevelMetadataBox = async (
+  file: File
+): Promise<IsobmffBoxContentRange> => {
+  let movieBox: IsobmffBoxContentRange = null
+  let pos = 0
+  while (pos + SIZES.HEADER <= file.size) {
+    const header = await readFileRange(file, pos, pos + LARGE_HEADER_BYTES)
+    if (!header) break
+    const size = readBoxSize(header)
+    if (!size || size > file.size - pos) break
+
+    const box = { start: pos, end: pos + size }
+    if (bufferMatchesBoxType(header, 4, BOX_TYPES.USER_DATA)) return box
+    if (!movieBox && bufferMatchesBoxType(header, 4, BOX_TYPES.MOVIE))
+      movieBox = box
+
+    pos += size
+  }
+  return movieBox
+}
+
+const readMetadataRegion = async (file: File): Promise<Uint8Array | null> => {
+  if (file.size > MAX_READ_BYTES) {
+    const box = await findTopLevelMetadataBox(file)
+    if (box && box.end - box.start <= MAX_READ_BYTES)
+      return readFileRange(file, box.start, box.end)
+  }
+  const buffer = await readFileAsArrayBuffer(file, MAX_READ_BYTES)
+  return buffer ? new Uint8Array(buffer) : null
+}
+
 /**
  * Extracts ComfyUI Workflow metadata from an ISO Base Media File Format (ISOBMFF) file
  * (e.g., MP4, MOV) by parsing the `udta.meta.keys` and `udta.meta.ilst` boxes.
  * @param file - The file to extract metadata from.
  */
 export async function getFromIsobmffFile(file: File): Promise<ComfyMetadata> {
-  const buffer = await readFileAsArrayBuffer(file, MAX_READ_BYTES)
-  if (!buffer) return {}
+  const data = await readMetadataRegion(file)
+  if (!data) return {}
 
   try {
-    return parseIsobmffMetadata(new Uint8Array(buffer))
+    return parseIsobmffMetadata(data)
   } catch (e) {
     console.error('Parser: Error parsing ISOBMFF metadata:', e)
     return {}

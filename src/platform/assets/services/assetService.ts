@@ -1,3 +1,9 @@
+import type {
+  ImportPublishedAssetsRequest,
+  ListAssetsData
+} from '@comfyorg/ingest-types'
+import { uniq } from 'es-toolkit'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { fromZodError } from 'zod-validation-error'
 import { z } from 'zod'
 
@@ -9,24 +15,29 @@ import {
   assetFilenameSchema,
   assetItemSchema,
   assetResponseSchema,
+  assetUpdatedSchema,
   asyncUploadResponseSchema,
   tagsOperationResultSchema
-} from '@/platform/assets/schemas/assetSchema'
+} from '@comfyorg/assets-core/schema'
 import type {
   AssetId,
   AssetItem,
   AssetMetadata,
   AssetResponse,
+  AssetUpdated,
   AssetUpdatePayload,
   AsyncUploadResponse,
   ModelFile,
   TagsOperationResult
-} from '@/platform/assets/schemas/assetSchema'
+} from '@comfyorg/assets-core/schema'
 import {
   getAssetCategories,
   getAssetFilename,
-  isModelTypeCovered
-} from '@/platform/assets/utils/assetMetadataUtils'
+  isModelTypeCovered,
+  MODELS_TAG,
+  MISSING_TAG
+} from '@comfyorg/assets-core/metadata'
+import { cappedTotalParams } from '@/platform/assets/utils/cappedTotalParams'
 import { isCloud } from '@/platform/distribution/types'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { api } from '@/scripts/api'
@@ -51,6 +62,7 @@ interface AssetRequestOptions extends PaginationOptions {
   includeTags: string[]
   excludeTags?: string[]
   includePublic?: boolean
+  workspaceLibrary?: boolean
   after?: string
   signal?: AbortSignal
 }
@@ -198,11 +210,6 @@ const DEFAULT_LIMIT = 500
 // trips on pathological pagination.
 const MAX_PAGINATION_BATCHES = 1000
 
-export const MODELS_TAG = 'models'
-export const INPUT_TAG = 'input'
-export const OUTPUT_TAG = 'output'
-/** Asset tag used by the backend for placeholder records that are not installed. */
-export const MISSING_TAG = 'missing'
 const DEFAULT_EXCLUDED_ASSET_TAGS = [MISSING_TAG]
 const EMPTY_PAGE: AssetResponse = { assets: [], total: 0, has_more: false }
 
@@ -235,6 +242,10 @@ function compareLoaderPaths(a: string, b: string): number {
   }
   return 0
 }
+
+const WORKSPACE_LIBRARY_PARAM = 'workspace_library' satisfies keyof NonNullable<
+  ListAssetsData['query']
+>
 
 /**
  * Validates asset response data using Zod schema
@@ -269,6 +280,8 @@ function validateUploadedAssetResponse(
  * Not exposed globally - used internally by ComfyApi
  */
 function createAssetService() {
+  const assetChangeListeners = new Set<() => void>()
+
   /**
    * Model assets bucketed by folder category, built from a single walk of the
    * `models` tag rather than a fetch per category. Shared by the folder list
@@ -308,6 +321,7 @@ function createAssetService() {
       offset,
       after,
       includePublic,
+      workspaceLibrary,
       signal
     } = options
     const normalizedIncludeTags = normalizeAssetTags(includeTags)
@@ -315,13 +329,12 @@ function createAssetService() {
 
     const queryParams = new URLSearchParams({
       include_tags: normalizedIncludeTags.join(','),
-      limit: limit.toString()
+      limit: limit.toString(),
+      ...cappedTotalParams()
     })
     if (normalizedExcludeTags.length > 0) {
       queryParams.set('exclude_tags', normalizedExcludeTags.join(','))
     }
-    // `after` (keyset cursor) takes precedence over `offset`; the server ignores
-    // `offset` when a cursor is supplied, so we avoid sending a redundant param.
     if (after !== undefined) {
       queryParams.set('after', after)
     } else if (offset !== undefined && offset > 0) {
@@ -329,6 +342,9 @@ function createAssetService() {
     }
     if (includePublic !== undefined) {
       queryParams.set('include_public', includePublic ? 'true' : 'false')
+    }
+    if (workspaceLibrary) {
+      queryParams.set(WORKSPACE_LIBRARY_PARAM, 'true')
     }
 
     const url = `${ASSETS_ENDPOINT}?${queryParams.toString()}`
@@ -607,7 +623,6 @@ function createAssetService() {
       return EMPTY_PAGE
     }
 
-    // Find the category for this node type using efficient O(1) lookup
     const modelToNodeStore = useModelToNodeStore()
     const category = modelToNodeStore.getCategoryForNodeType(nodeType)
 
@@ -615,9 +630,15 @@ function createAssetService() {
       return EMPTY_PAGE
     }
 
-    // Fetch assets for this category using same API pattern as getAssetModels
     return await handleAssetRequest(
-      { includeTags: [MODELS_TAG, category], limit, offset, after, signal },
+      {
+        includeTags: [MODELS_TAG, category],
+        limit,
+        offset,
+        after,
+        includePublic: true,
+        signal
+      },
       `assets for ${nodeType}`
     )
   }
@@ -695,6 +716,20 @@ function createAssetService() {
     )
   }
 
+  async function getWorkspaceLibraryAssetsPage(
+    options: AssetPaginationOptions = {}
+  ): Promise<AssetResponse> {
+    return handleAssetRequest(
+      {
+        ...options,
+        includeTags: [MODELS_TAG],
+        includePublic: false,
+        workspaceLibrary: true
+      },
+      'workspace library models'
+    )
+  }
+
   /**
    * Gets every asset for a tag by walking paginated asset API responses.
    *
@@ -719,8 +754,21 @@ function createAssetService() {
       signal
     }: Pick<AssetPaginationOptions, 'limit' | 'signal'> = {}
   ): Promise<AssetItem[]> {
+    return walkAssetPages(`tag '${tag}'`, signal, (after) =>
+      getAssetsPageByTag(tag, includePublic, {
+        limit: limit > 0 ? limit : DEFAULT_LIMIT,
+        after,
+        signal
+      })
+    )
+  }
+
+  async function walkAssetPages(
+    label: string,
+    signal: AbortSignal | undefined,
+    fetchPage: (after: string | undefined) => Promise<AssetResponse>
+  ): Promise<AssetItem[]> {
     const assets: AssetItem[] = []
-    const pageSize = limit > 0 ? limit : DEFAULT_LIMIT
     let after: string | undefined
     let batchCount = 0
 
@@ -728,16 +776,12 @@ function createAssetService() {
       if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
       if (batchCount++ >= MAX_PAGINATION_BATCHES) {
         console.warn(
-          `Paginated walk for tag '${tag}' hit the ${MAX_PAGINATION_BATCHES}-batch backstop; returning a truncated listing.`
+          `Paginated walk for ${label} hit the ${MAX_PAGINATION_BATCHES}-batch backstop; returning a truncated listing.`
         )
         return assets
       }
 
-      const data = await getAssetsPageByTag(tag, includePublic, {
-        limit: pageSize,
-        after,
-        signal
-      })
+      const data = await fetchPage(after)
       const batch = data.assets
       if (batch.length === 0) {
         return assets
@@ -755,22 +799,55 @@ function createAssetService() {
   }
 
   /**
-   * Deletes an asset by ID
-   * Only available in cloud environment
-   *
-   * @param id - The asset ID (UUID)
-   * @returns Promise<void>
-   * @throws Error if deletion fails
+   * Lists the unique loader names in one folder of the workspace library.
    */
+  async function getWorkspaceLibraryModels(folder: string): Promise<string[]> {
+    const assets = await walkAssetPages(
+      `workspace library folder '${folder}'`,
+      undefined,
+      (after) =>
+        handleAssetRequest(
+          {
+            includeTags: [MODELS_TAG, folder],
+            includePublic: false,
+            workspaceLibrary: true,
+            limit: DEFAULT_LIMIT,
+            after
+          },
+          `workspace library models in ${folder}`
+        )
+    )
+    return uniq(
+      assets
+        .map((asset) => asset.loader_path ?? getAssetFilename(asset))
+        .filter((name) => assetFilenameSchema.safeParse(name).success)
+    )
+  }
+
   async function deleteAsset(id: AssetId): Promise<void> {
     const res = await api.fetchApi(`${ASSETS_ENDPOINT}/${id}`, {
       method: 'DELETE'
     })
 
-    if (!res.ok) {
+    if (!res.ok && res.status !== 404) {
       throw new Error(
         `Unable to delete asset ${id}: Server returned ${res.status}`
       )
+    }
+    notifyAssetsChanged()
+  }
+
+  function notifyAssetsChanged() {
+    for (const listener of assetChangeListeners) listener()
+  }
+
+  /**
+   * Calls back after this client deletes an asset, adds or removes an asset's tags, or an import finishes at once; returns the unsubscribe.
+   */
+  function onAssetsChanged(callback: () => void): () => void {
+    assetChangeListeners.add(callback)
+    return () => {
+      assetChangeListeners.delete(callback)
     }
   }
 
@@ -780,13 +857,13 @@ function createAssetService() {
    *
    * @param id - The asset ID (UUID)
    * @param newData - The data to update
-   * @returns Promise<AssetItem>
+   * @returns Promise<AssetUpdated>
    * @throws Error if update fails
    */
   async function updateAsset(
     id: AssetId,
     newData: AssetUpdatePayload
-  ): Promise<AssetItem> {
+  ): Promise<AssetUpdated> {
     const res = await api.fetchApi(`${ASSETS_ENDPOINT}/${id}`, {
       method: 'PUT',
       headers: {
@@ -801,7 +878,7 @@ function createAssetService() {
       )
     }
 
-    const newAsset = assetItemSchema.safeParse(await res.json())
+    const newAsset = assetUpdatedSchema.safeParse(await res.json())
     if (newAsset.success) {
       return newAsset.data
     }
@@ -956,6 +1033,7 @@ function createAssetService() {
         `Unable to add tags to asset ${id}: Server returned ${res.status}`
       )
     }
+    notifyAssetsChanged()
 
     const result = await res.json()
     const parseResult = tagsOperationResultSchema.safeParse(result)
@@ -986,6 +1064,7 @@ function createAssetService() {
         `Unable to remove tags from asset ${id}: Server returned ${res.status}`
       )
     }
+    notifyAssetsChanged()
 
     const result = await res.json()
     const parseResult = tagsOperationResultSchema.safeParse(result)
@@ -1043,6 +1122,12 @@ function createAssetService() {
           )
         )
       }
+      if (
+        result.data.type === 'async' &&
+        result.data.task.status === 'completed'
+      ) {
+        notifyAssetsChanged()
+      }
       return result.data
     }
 
@@ -1058,7 +1143,28 @@ function createAssetService() {
         )
       )
     }
+    notifyAssetsChanged()
     return result.data
+  }
+
+  async function importPublishedAssets(
+    body: ImportPublishedAssetsRequest
+  ): Promise<{ ok: true } | { ok: false; status: number | null }> {
+    let response: Response
+    try {
+      response = await api.fetchApi('/assets/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      })
+    } catch (error) {
+      reportError(error, {
+        errorType: 'failure_importing_published_assets',
+        surface: 'assets'
+      })
+      return { ok: false, status: null }
+    }
+    return response.ok ? { ok: true } : { ok: false, status: response.status }
   }
 
   async function createAssetExport(
@@ -1103,7 +1209,10 @@ function createAssetService() {
     getAssetsByTag,
     getAssetsPageByTag,
     getAllAssetsByTag,
+    getWorkspaceLibraryModels,
+    getWorkspaceLibraryAssetsPage,
     deleteAsset,
+    onAssetsChanged,
     updateAsset,
     addAssetTags,
     removeAssetTags,
@@ -1111,6 +1220,7 @@ function createAssetService() {
     uploadAssetFromUrl,
     uploadAssetFromBase64,
     uploadAssetAsync,
+    importPublishedAssets,
     createAssetExport,
     getExportDownloadUrl
   }

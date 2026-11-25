@@ -1,11 +1,16 @@
-import { assert, describe, expect, it, vi } from 'vitest'
+import { getActivePinia } from 'pinia'
+import { describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
-import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
+import {
+  getWorkspaceId,
+  StorageKeys
+} from '@/platform/workflow/persistence/base/storageKeys'
 
 import { useAgentComposerStore } from './agentComposerStore'
 
 describe('composer reference ownership', () => {
-  it('does not let late pasted-name metadata overwrite a submitted draft or invalidate failure recovery', () => {
+  it('does not let late pasted-name metadata overwrite a withdrawn gate-held draft', () => {
     const store = useAgentComposerStore()
     store.setSkillScope('scope')
     const reference = {
@@ -19,9 +24,7 @@ describe('composer reference ownership', () => {
     store.restorePrompt({ text: ' colors', references: [reference] })
     const snapshot = {
       prompt: store.prompt,
-      attachments: [],
-      nodes: [],
-      target: createMockLoadedWorkflow({ path: 'workflows/target.json' })
+      attachments: []
     }
     const resolved = {
       text: ' colors',
@@ -29,14 +32,12 @@ describe('composer reference ownership', () => {
         { ...reference, description: 'Resolved', resolvePastedName: undefined }
       ]
     }
-    const id = store.startSubmission(snapshot)
+    const id = store.startGateHold('cm-1')
     store.resolveSkillMetadata(resolved)
     expect(store.prompt).toEqual({ text: '', references: [] })
-    store.settleSubmission(id, false)
-    const failed = store.takeFailedSubmission()
-    expect(failed).toEqual(snapshot)
-    assert.exists(failed)
-    store.restorePrompt(failed.prompt, failed.attachments)
+    expect(store.cancelGateHold()?.clientMessageId).toBe('cm-1')
+    store.releaseGateHold(id)
+    store.restorePrompt(snapshot.prompt, snapshot.attachments)
     store.resolveSkillMetadata(resolved)
     expect(store.prompt.references[0]).toMatchObject({
       description: 'Resolved'
@@ -69,7 +70,25 @@ describe('composer reference ownership', () => {
     expect(store.prompt).toEqual({ text: 'Keep this', references: [workflow] })
   })
 
-  it('releases invalidated snapshot previews while retaining the current tray and ignoring repeated invalidation and stale settlement', () => {
+  it('keeps held attachment previews when the draft is cleared', () => {
+    const store = useAgentComposerStore()
+    const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    const held = {
+      id: 'held',
+      name: 'held.png',
+      ref: 'held.png',
+      previewUrl: 'blob:held'
+    }
+    store.addAttachment(held)
+    store.holdAssets(['held'])
+    store.clearDraft()
+    expect(revoke).not.toHaveBeenCalled()
+    store.restorePrompt({ text: 'back', references: [] }, [held])
+    expect(store.attachments).toEqual([held])
+    revoke.mockRestore()
+  })
+
+  it('releases obsolete previews while retaining assets explicitly retained by an owner key', () => {
     const store = useAgentComposerStore()
     const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
     const retained = {
@@ -85,20 +104,17 @@ describe('composer reference ownership', () => {
       previewUrl: 'blob:old'
     })
     store.addAttachment(retained)
-    const id = store.startSubmission({
-      prompt: store.prompt,
-      attachments: store.attachments,
-      nodes: [],
-      target: createMockLoadedWorkflow({ path: 'workflows/target.json' })
-    })
+    store.retainAssets('pending:cm-1', ['old', 'retained'])
+    const gateId = store.startGateHold('cm-1')
     store.restorePrompt({ text: 'New draft', references: [] }, [retained])
-    store.invalidateSubmission()
-    store.invalidateSubmission()
-    store.settleSubmission(id, false)
+    store.releaseRetainedAssets('pending:cm-1')
+    expect(store.cancelGateHold()?.clientMessageId).toBe('cm-1')
+    expect(store.cancelGateHold()).toBeNull()
+    store.releaseGateHold(gateId)
+    store.releaseUnusedAssets()
     expect(revoke).toHaveBeenCalledExactlyOnceWith('blob:old')
     expect(store.attachments).toEqual([retained])
     expect(store.draft).toBe('New draft')
-    expect(store.takeFailedSubmission()).toBeUndefined()
     expect(store.referenceAttachment('old')).toBe(false)
     expect(store.referenceAttachment('retained')).toBe(true)
   })
@@ -317,6 +333,416 @@ describe('composer draft reset (PM-1331)', () => {
   })
 })
 
+describe('composer draft presence', () => {
+  type ComposerStore = ReturnType<typeof useAgentComposerStore>
+
+  it.for([
+    { draft: 'empty', fill: () => {}, expected: false },
+    {
+      draft: 'whitespace only',
+      fill: (store: ComposerStore) => store.setText('  \n '),
+      expected: false
+    },
+    {
+      draft: 'text',
+      fill: (store: ComposerStore) => store.setText('make it blue'),
+      expected: true
+    },
+    {
+      draft: 'an attachment',
+      fill: (store: ComposerStore) =>
+        store.addAttachment({ id: 'a-1', name: 'cat.png', ref: 'cat.png' }),
+      expected: true
+    },
+    {
+      draft: 'a node reference',
+      fill: (store: ComposerStore) => {
+        store.setNodeScope('workflow-A')
+        store.setNodes([{ id: '1', title: 'KSampler' }])
+      },
+      expected: true
+    },
+    {
+      draft: 'a workflow reference',
+      fill: (store: ComposerStore) =>
+        store.setWorkflowReferences([
+          { id: 'wf-portrait', name: 'portrait', textOffset: 0 }
+        ]),
+      expected: true
+    },
+    {
+      draft: 'a skill reference',
+      fill: (store: ComposerStore) => {
+        store.setSkillScope('workspace-a')
+        store.restorePrompt({
+          text: ' ',
+          references: [
+            {
+              kind: 'skill',
+              name: 'portrait',
+              description: '',
+              scope: 'workspace-a',
+              textOffset: 0
+            }
+          ]
+        })
+      },
+      expected: true
+    }
+  ])('reports $draft as a draft: $expected', ({ fill, expected }) => {
+    const store = useAgentComposerStore()
+    fill(store)
+    expect(store.hasDraft).toBe(expected)
+  })
+})
+
+describe('composer draft persistence (PM-2002)', () => {
+  async function reloadPage() {
+    await nextTick()
+    const store = useAgentComposerStore()
+    store.$dispose()
+    delete getActivePinia()?.state.value[store.$id]
+    return useAgentComposerStore()
+  }
+
+  it('does not restore a draft into a different chat', async () => {
+    const store = useAgentComposerStore()
+    store.trackDraftThread('thread-a')
+    store.setText('Only for thread A')
+
+    const otherChat = await reloadPage()
+    otherChat.trackDraftThread('thread-b')
+    expect(otherChat.hasDraft).toBe(false)
+  })
+
+  it('restores text and workflow references, dropping node references and attachments', async () => {
+    const store = useAgentComposerStore()
+    store.trackDraftThread('thread-a')
+    store.setText('Use  as the style')
+    store.setWorkflowReferences([
+      { id: 'wf-portrait', name: 'portrait', textOffset: 4 }
+    ])
+    store.setNodeScope('tab-1')
+    store.setNodes([{ id: '7', title: 'KSampler' }])
+    store.addAttachment({ id: 'a-1', name: 'cat.png', ref: 'cat.png' })
+    const text = store.draft
+
+    const restored = await reloadPage()
+    restored.trackDraftThread('thread-a')
+    expect(restored.prompt).toEqual({
+      text,
+      references: [
+        { kind: 'workflow', id: 'wf-portrait', name: 'portrait', textOffset: 4 }
+      ]
+    })
+    expect(restored.attachments).toEqual([])
+  })
+
+  it.for([
+    { threadId: null, text: null, workflowReferences: [] },
+    { threadId: null, text: 'Hi', workflowReferences: null },
+    { threadId: null, text: 'Hi', workflowReferences: [{ id: 'wf' }] },
+    { threadId: null, text: 'Hi', workflowReferences: ['wf'] }
+  ])(
+    'discards a malformed saved draft %j and keeps the composer usable',
+    async (saved) => {
+      const key = StorageKeys.agentComposerDraft(getWorkspaceId())
+      localStorage.setItem(key, JSON.stringify(saved))
+
+      const store = useAgentComposerStore()
+      expect(() => store.trackDraftThread(null)).not.toThrow()
+      expect(store.hasDraft).toBe(false)
+      await nextTick()
+      expect(localStorage.getItem(key)).toBeNull()
+
+      store.setText('Make it blue')
+      expect(store.prompt).toEqual({ text: 'Make it blue', references: [] })
+    }
+  )
+
+  it('restores an in-flight blank-chat send across reload and forgets it once accepted or cleared', async () => {
+    const sent = useAgentComposerStore()
+    sent.trackDraftThread(null)
+    sent.setText('Make it blue')
+    await nextTick()
+    const id = sent.startGateHold('cm-1')
+    sent.releaseGateHold(id)
+
+    const reloadedDuringSend = await reloadPage()
+    reloadedDuringSend.trackDraftThread(null)
+    expect(reloadedDuringSend.draft).toBe('Make it blue')
+
+    const acceptedId = reloadedDuringSend.startGateHold('cm-2')
+    reloadedDuringSend.releaseGateHold(acceptedId)
+    reloadedDuringSend.clearPendingSendDraft('cm-2')
+    const afterAccept = await reloadPage()
+    afterAccept.trackDraftThread(null)
+    expect(afterAccept.hasDraft).toBe(false)
+
+    afterAccept.setText('Make it red')
+    await nextTick()
+    afterAccept.clearDraft()
+    const afterClear = await reloadPage()
+    afterClear.trackDraftThread(null)
+    expect(afterClear.hasDraft).toBe(false)
+  })
+
+  it('reconciles a reloaded in-flight thread send against hydrated history so it restores only when the server has no new copy', async () => {
+    const sender = useAgentComposerStore()
+    sender.trackDraftThread('thread-a')
+    sender.setText('Repeat prompt')
+    const gateId = sender.startGateHold('cm-1', undefined, {
+      expectedText: 'Repeat prompt',
+      knownTurnIds: ['turn-1']
+    })
+    sender.releaseGateHold(gateId)
+    expect(sender.hasDraft).toBe(false)
+
+    const acceptedReload = await reloadPage()
+    acceptedReload.trackDraftThread('thread-a')
+    expect(acceptedReload.hasDraft).toBe(false)
+    acceptedReload.reconcilePendingSendDraft('thread-a', [
+      { turnId: 'turn-1', text: 'Repeat prompt' },
+      { turnId: 'turn-2', text: 'Repeat prompt' }
+    ])
+    expect(acceptedReload.hasDraft).toBe(false)
+
+    const senderDropped = await reloadPage()
+    senderDropped.trackDraftThread('thread-a')
+    senderDropped.setText('Repeat prompt')
+    senderDropped.startGateHold('cm-2', undefined, {
+      expectedText: 'Repeat prompt',
+      knownTurnIds: ['turn-1']
+    })
+
+    const droppedReload = await reloadPage()
+    droppedReload.trackDraftThread('thread-a')
+    expect(droppedReload.hasDraft).toBe(false)
+    droppedReload.reconcilePendingSendDraft('thread-a', [
+      { turnId: 'turn-1', text: 'Repeat prompt' }
+    ])
+    expect(droppedReload.draft).toBe('Repeat prompt')
+  })
+
+  it('matches a leading @workflow chip with preserved leading space and keeps in-flight backup when a follow-up draft is typed', async () => {
+    const sender = useAgentComposerStore()
+    sender.trackDraftThread('thread-a')
+    sender.setText(' make it blue')
+    sender.setWorkflowReferences([{ id: 'wf-1', name: 'Hero', textOffset: 0 }])
+    const gateId = sender.startGateHold('cm-chip', undefined, {
+      expectedText: ' make it blue',
+      knownTurnIds: ['turn-1']
+    })
+    sender.releaseGateHold(gateId)
+
+    sender.setText('Follow-up draft')
+    await nextTick()
+    sender.clearDraft()
+    await nextTick()
+
+    const reloaded = await reloadPage()
+    reloaded.trackDraftThread('thread-a')
+    reloaded.reconcilePendingSendDraft('thread-a', [
+      { turnId: 'turn-1', text: 'Earlier' },
+      { turnId: 'turn-2', text: '[Hero](workflow://wf-1) make it blue' }
+    ])
+    expect(reloaded.hasDraft).toBe(false)
+  })
+
+  it('rebinds adopted blank-chat pending send backups to the created thread so reload restores them', async () => {
+    const first = useAgentComposerStore()
+    first.trackDraftThread(null)
+    first.holdPendingSendDraft('cm-failed', {
+      text: 'Failed before thread creation',
+      expectedText: 'Failed before thread creation',
+      workflowReferences: []
+    })
+
+    first.rebindPendingSendDrafts(['cm-failed'], 'th-adopted', 'turn-accepted')
+
+    const reloaded = await reloadPage()
+    reloaded.trackDraftThread('th-adopted')
+    reloaded.reconcilePendingSendDraft('th-adopted', [
+      { turnId: 'turn-accepted', text: 'Accepted thread starter' }
+    ])
+
+    expect(reloaded.draft).toBe('Failed before thread creation')
+  })
+
+  it('keeps an unmatched reload backup in storage without re-offering it mid-session when a draft already exists', async () => {
+    const first = useAgentComposerStore()
+    first.trackDraftThread('thread-a')
+    first.holdPendingSendDraft('cm-unmatched', {
+      text: 'Recover me later',
+      expectedText: 'Recover me later',
+      workflowReferences: []
+    })
+
+    const reloaded = await reloadPage()
+    reloaded.trackDraftThread('thread-a')
+    reloaded.setText('User started typing')
+    reloaded.reconcilePendingSendDraft('thread-a', [])
+
+    expect(reloaded.draft).toBe('User started typing')
+
+    reloaded.clearDraft()
+    reloaded.reconcilePendingSendDraft('thread-a', [])
+    expect(reloaded.hasDraft).toBe(false)
+
+    const reloadedAgain = await reloadPage()
+    reloadedAgain.trackDraftThread('thread-a')
+    reloadedAgain.reconcilePendingSendDraft('thread-a', [])
+    expect(reloadedAgain.draft).toBe('Recover me later')
+  })
+
+  it('removes only matched and restored reload backups while preserving older unmatched backups and other threads', async () => {
+    const first = useAgentComposerStore()
+    first.trackDraftThread('thread-b')
+    first.holdPendingSendDraft('cm-other-thread', {
+      text: 'Other thread prompt',
+      expectedText: 'Other thread prompt',
+      workflowReferences: []
+    })
+    first.trackDraftThread('thread-a')
+    first.holdPendingSendDraft('cm-matched', {
+      text: 'Persisted prompt',
+      expectedText: 'Persisted prompt',
+      workflowReferences: []
+    })
+    first.holdPendingSendDraft('cm-older-unmatched', {
+      text: 'Older failed prompt',
+      expectedText: 'Older failed prompt',
+      workflowReferences: []
+    })
+    first.holdPendingSendDraft('cm-latest-unmatched', {
+      text: 'Latest failed prompt',
+      expectedText: 'Latest failed prompt',
+      workflowReferences: []
+    })
+
+    const reloaded = await reloadPage()
+    reloaded.trackDraftThread('thread-a')
+    reloaded.reconcilePendingSendDraft('thread-a', [
+      { turnId: 'turn-1', text: 'Persisted prompt' }
+    ])
+    expect(reloaded.draft).toBe('Latest failed prompt')
+
+    reloaded.clearDraft()
+    await nextTick()
+
+    const reloadedAgain = await reloadPage()
+    reloadedAgain.trackDraftThread('thread-a')
+    reloadedAgain.reconcilePendingSendDraft('thread-a', [
+      { turnId: 'turn-1', text: 'Persisted prompt' }
+    ])
+    expect(reloadedAgain.draft).toBe('Older failed prompt')
+
+    reloadedAgain.clearDraft()
+    await nextTick()
+
+    const reloadedAfterMatchedRemoved = await reloadPage()
+    reloadedAfterMatchedRemoved.trackDraftThread('thread-a')
+    reloadedAfterMatchedRemoved.reconcilePendingSendDraft('thread-a', [])
+    expect(reloadedAfterMatchedRemoved.hasDraft).toBe(false)
+
+    const reloadedOtherThread = await reloadPage()
+    reloadedOtherThread.trackDraftThread('thread-b')
+    reloadedOtherThread.reconcilePendingSendDraft('thread-b', [])
+    expect(reloadedOtherThread.draft).toBe('Other thread prompt')
+  })
+
+  it('keeps unrestored blank-chat reload backups in storage when a draft exists or multiple backups are saved', async () => {
+    const first = useAgentComposerStore()
+    first.trackDraftThread(null)
+    first.holdPendingSendDraft('cm-blank-1', {
+      text: 'Earlier blank prompt',
+      expectedText: 'Earlier blank prompt',
+      workflowReferences: []
+    })
+    first.holdPendingSendDraft('cm-blank-2', {
+      text: 'Latest blank prompt',
+      expectedText: 'Latest blank prompt',
+      workflowReferences: []
+    })
+    first.setText('Typed draft')
+
+    const reloadedWithDraft = await reloadPage()
+    reloadedWithDraft.trackDraftThread(null)
+    expect(reloadedWithDraft.draft).toBe('Typed draft')
+
+    reloadedWithDraft.clearDraft()
+    await nextTick()
+
+    const reloadedFirst = await reloadPage()
+    reloadedFirst.trackDraftThread(null)
+    expect(reloadedFirst.draft).toBe('Latest blank prompt')
+
+    reloadedFirst.clearDraft()
+    await nextTick()
+
+    const reloadedSecond = await reloadPage()
+    reloadedSecond.trackDraftThread(null)
+    expect(reloadedSecond.draft).toBe('Earlier blank prompt')
+  })
+
+  it('batch-rebinds multiple adopted blank-chat backups and preserves each across reload even when text matches the starter', async () => {
+    const first = useAgentComposerStore()
+    first.trackDraftThread(null)
+    first.holdPendingSendDraft('cm-fail-1', {
+      text: 'Accepted thread starter',
+      expectedText: 'Accepted thread starter',
+      workflowReferences: []
+    })
+    first.holdPendingSendDraft('cm-fail-2', {
+      text: 'Second failed prompt',
+      expectedText: 'Second failed prompt',
+      workflowReferences: []
+    })
+
+    first.rebindPendingSendDrafts(
+      ['cm-fail-1', 'cm-fail-2'],
+      'th-adopted',
+      'turn-accepted'
+    )
+
+    const reloaded = await reloadPage()
+    reloaded.trackDraftThread('th-adopted')
+    reloaded.reconcilePendingSendDraft('th-adopted', [
+      { turnId: 'turn-accepted', text: 'Accepted thread starter' }
+    ])
+    expect(reloaded.draft).toBe('Second failed prompt')
+
+    reloaded.clearDraft()
+    await nextTick()
+
+    const reloadedSecond = await reloadPage()
+    reloadedSecond.trackDraftThread('th-adopted')
+    reloadedSecond.reconcilePendingSendDraft('th-adopted', [
+      { turnId: 'turn-accepted', text: 'Accepted thread starter' }
+    ])
+    expect(reloadedSecond.draft).toBe('Accepted thread starter')
+  })
+
+  it('transfers pending send backups to a retried clientMessageId and threadId', async () => {
+    const first = useAgentComposerStore()
+    first.trackDraftThread(null)
+    first.holdPendingSendDraft('cm-old', {
+      text: 'Retried message',
+      expectedText: 'Retried message',
+      workflowReferences: []
+    })
+
+    first.transferPendingSendDraft('cm-old', 'cm-new', 'th-retried')
+    first.clearPendingSendDraft('cm-old')
+
+    const reloaded = await reloadPage()
+    reloaded.trackDraftThread('th-retried')
+    reloaded.reconcilePendingSendDraft('th-retried', [])
+
+    expect(reloaded.draft).toBe('Retried message')
+  })
+})
+
 describe('composer prompt origin (PM-1474 F11)', () => {
   it('starts out typed and stays typed while the user writes', () => {
     const store = useAgentComposerStore()
@@ -347,29 +773,18 @@ describe('composer prompt origin (PM-1474 F11)', () => {
     const store = useAgentComposerStore()
     store.markSuggestedPrompt()
 
-    store.startSubmission({
-      prompt: store.prompt,
-      attachments: [],
-      nodes: [],
-      target: createMockLoadedWorkflow({ path: 'workflows/target.json' })
-    })
+    store.startGateHold('cm-1')
 
     expect(store.promptOrigin).toBe('typed')
   })
 
-  it('gives the origin back when a failed send returns the draft to the composer', () => {
+  it('restores the prompt origin when a withdrawn gate hold returns the draft', () => {
     const store = useAgentComposerStore()
     store.setText('Upscale this image')
     store.markSuggestedPrompt()
-    const id = store.startSubmission({
-      prompt: store.prompt,
-      attachments: [],
-      nodes: [],
-      target: createMockLoadedWorkflow({ path: 'workflows/target.json' })
-    })
-    store.settleSubmission(id, false)
-
-    expect(store.takeFailedSubmission()).toBeDefined()
+    store.startGateHold('cm-1')
+    store.cancelGateHold()
+    store.restoreSubmissionMeta('suggestion', null)
 
     expect(store.promptOrigin).toBe('suggestion')
   })
@@ -390,12 +805,7 @@ describe('composer prompt origin (PM-1474 F11)', () => {
       clickId: 'click-1'
     })
 
-    store.startSubmission({
-      prompt: store.prompt,
-      attachments: [],
-      nodes: [],
-      target: createMockLoadedWorkflow({ path: 'workflows/target.json' })
-    })
+    store.startGateHold('cm-1')
 
     expect(store.promptOrigin).toBe('typed')
     expect(store.starterPrompt).toBeNull()
@@ -429,27 +839,6 @@ describe('composer prompt origin (PM-1474 F11)', () => {
     })
   })
 
-  it('gives the chip back with the origin when a failed send returns the draft', () => {
-    const store = useAgentComposerStore()
-    store.setText('Find the best workflow for skin upscaling')
-    store.markSuggestedPrompt({ id: 'slot_3', clickId: 'click-1' })
-    const id = store.startSubmission({
-      prompt: store.prompt,
-      attachments: [],
-      nodes: [],
-      target: createMockLoadedWorkflow({ path: 'workflows/target.json' })
-    })
-    store.settleSubmission(id, false)
-
-    expect(store.takeFailedSubmission()).toBeDefined()
-
-    expect(store.promptOrigin).toBe('suggestion')
-    expect(store.starterPrompt).toEqual({
-      id: 'slot_3',
-      clickId: 'click-1'
-    })
-  })
-
   it('drops the chip when the prompt is reopened through the edit action instead', () => {
     const store = useAgentComposerStore()
     store.markSuggestedPrompt({ id: 'slot_3', clickId: 'click-1' })
@@ -460,20 +849,11 @@ describe('composer prompt origin (PM-1474 F11)', () => {
     expect(store.starterPrompt).toBeNull()
   })
 
-  it('leaves the origin alone when the failed draft is too stale to restore', () => {
+  it('leaves the origin typed after a gate hold clears when the user writes something new', () => {
     const store = useAgentComposerStore()
     store.markSuggestedPrompt()
-    const id = store.startSubmission({
-      prompt: store.prompt,
-      attachments: [],
-      nodes: [],
-      target: createMockLoadedWorkflow({ path: 'workflows/target.json' })
-    })
-    store.settleSubmission(id, false)
-    // The user has moved on and written something of their own since.
+    store.startGateHold('cm-1')
     store.setText('never mind, do this instead')
-
-    expect(store.takeFailedSubmission()).toBeUndefined()
 
     expect(store.promptOrigin).toBe('typed')
   })

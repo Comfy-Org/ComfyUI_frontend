@@ -1,18 +1,19 @@
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import axios from 'axios'
 import { describe, expect, it, vi } from 'vitest'
-import { defineComponent, ref } from 'vue'
+import { defineComponent, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { DialogPortal } from 'reka-ui'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useNodeFrequencyStore } from '@/stores/nodeFrequencyStore'
 import { FuseFilter } from '@/utils/fuseUtil'
 import NodeSearchBox from './NodeSearchBox.vue'
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 const i18n = createI18n({
   legacy: false,
@@ -100,6 +101,7 @@ describe('NodeSearchBox', () => {
       data: () => ({ filterVisible: false })
     })
     render(Parent, { global: { plugins: [i18n] } })
+    expect(screen.getByRole('combobox', { name: 'Search nodes' })).toBeVisible()
 
     await userEvent
       .setup()
@@ -125,6 +127,52 @@ describe('NodeSearchBox', () => {
     expect(useTelemetry()?.trackNodeSearch).toHaveBeenCalledExactlyOnceWith({
       query: 'ksampler'
     })
+  })
+
+  it('shows a node definition registered after the query was searched', async () => {
+    vi.useFakeTimers()
+    renderComponent()
+
+    await fireEvent.update(screen.getByRole('combobox'), 'dragon')
+    await vi.advanceTimersByTimeAsync(100)
+    expect(screen.queryByRole('option', { name: 'Dragon Blueprint' })).toBe(
+      null
+    )
+
+    useNodeDefStore().registerBlueprintNodeDef(
+      new ComfyNodeDefImpl({
+        name: 'SubgraphBlueprint.dragon',
+        display_name: 'Dragon Blueprint',
+        category: 'Subgraph Blueprints',
+        python_module: 'blueprint',
+        description: '',
+        input: {},
+        output: [],
+        output_is_list: [],
+        output_name: [],
+        output_node: false
+      })
+    )
+
+    await nextTick()
+
+    expect(
+      screen.getByRole('option', { name: 'Dragon Blueprint' })
+    ).toBeVisible()
+  })
+
+  it('shows frequent nodes that load after the box opened', async () => {
+    vi.useFakeTimers()
+    renderComponent()
+    expect(screen.queryByRole('option', { name: 'KSampler' })).toBeNull()
+
+    const nodeFrequencyStore = useNodeFrequencyStore()
+    nodeFrequencyStore.isLoaded = false
+    vi.spyOn(axios, 'get').mockResolvedValue({ data: { KSampler: 1 } })
+    await nodeFrequencyStore.loadNodeFrequencies()
+    await vi.advanceTimersByTimeAsync(100)
+
+    expect(screen.getByRole('option', { name: 'KSampler' })).toBeVisible()
   })
 
   it.for([50, 100])(

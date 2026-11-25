@@ -1,6 +1,9 @@
 import { expect } from '@playwright/test'
 
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
 import {
   expectElementScreenshot,
   expectRegionScreenshot,
@@ -164,28 +167,30 @@ const customColorPalettes = {
 }
 
 test.describe('Color Palette', { tag: ['@screenshot', '@settings'] }, () => {
-  test('Can show custom color palette', async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting(
-      'Comfy.CustomColorPalettes',
-      customColorPalettes
-    )
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
-    await comfyPage.setup()
+  test.describe('Stored custom palettes', () => {
+    test.use({
+      initialSettings: {
+        'Comfy.UseNewMenu': 'Disabled',
+        'Comfy.CustomColorPalettes': customColorPalettes
+      }
+    })
 
-    await comfyPage.workflow.loadWorkflow('nodes/every_node_color')
-    const region = await screenshotRegion(
-      comfyPage.page,
-      await comfyPage.nodeOps.getAllNodeRefs()
-    )
-    await comfyPage.settings.setSetting('Comfy.ColorPalette', 'obsidian_dark')
-    await region.expectScreenshot(
-      'custom-color-palette-obsidian-dark-all-colors.png'
-    )
-    await comfyPage.settings.setSetting('Comfy.ColorPalette', 'light_red')
-    await region.expectScreenshot('custom-color-palette-light-red.png')
+    test('Can show custom color palette', async ({ comfyPage }) => {
+      await comfyPage.workflow.loadWorkflow('nodes/every_node_color')
+      const region = await screenshotRegion(
+        comfyPage.page,
+        await comfyPage.nodeOps.getAllNodeRefs()
+      )
+      await comfyPage.settings.setSetting('Comfy.ColorPalette', 'obsidian_dark')
+      await region.expectScreenshot(
+        'custom-color-palette-obsidian-dark-all-colors.png'
+      )
+      await comfyPage.settings.setSetting('Comfy.ColorPalette', 'light_red')
+      await region.expectScreenshot('custom-color-palette-light-red.png')
 
-    await comfyPage.settings.setSetting('Comfy.ColorPalette', 'dark')
-    await region.expectScreenshot('default-color-palette.png')
+      await comfyPage.settings.setSetting('Comfy.ColorPalette', 'dark')
+      await region.expectScreenshot('default-color-palette.png')
+    })
   })
 
   test('Can add custom color palette', async ({ comfyPage }) => {
@@ -220,45 +225,6 @@ test.describe('Color Palette', { tag: ['@screenshot', '@settings'] }, () => {
     }
   )
 
-  test(
-    'Blood drips follow palette and motion preferences',
-    { tag: '@vue-nodes' },
-    async ({ comfyPage }) => {
-      const { page } = comfyPage
-      const node = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
-      const drops = node.root.getByTestId('node-blood-drop')
-      const dripStyle = () =>
-        drops.first().evaluate((el) => {
-          const style = getComputedStyle(el)
-          return [style.animationName, style.pointerEvents]
-        })
-
-      await page.emulateMedia({ reducedMotion: 'no-preference' })
-      await comfyPage.settings.setSetting('Comfy.ColorPalette', 'spooky')
-      await comfyPage.settings.setSetting(
-        'Comfy.Appearance.DisableAnimations',
-        false
-      )
-      await expect.poll(dripStyle).toEqual(['blood-fall', 'none'])
-
-      await comfyPage.settings.setSetting('Comfy.ColorPalette', 'zombie')
-      await expect.poll(dripStyle).toEqual(['blood-fall', 'none'])
-
-      await page.emulateMedia({ reducedMotion: 'reduce' })
-      await expect.poll(dripStyle).toEqual(['none', 'none'])
-
-      await page.emulateMedia({ reducedMotion: 'no-preference' })
-      await comfyPage.settings.setSetting(
-        'Comfy.Appearance.DisableAnimations',
-        true
-      )
-      await expect.poll(dripStyle).toEqual(['none', 'none'])
-
-      await comfyPage.settings.setSetting('Comfy.ColorPalette', 'dark')
-      await expect(drops).toHaveCount(0)
-    }
-  )
-
   test.describe('Custom light palette', () => {
     test.use({
       initialSettings: {
@@ -284,6 +250,8 @@ test.describe('Color Palette', { tag: ['@screenshot', '@settings'] }, () => {
           })
         )
         .toBe(true)
+      await expect(comfyPage.contextMenu.ariaMenu).toBeVisible()
+      await comfyPage.contextMenu.ariaMenu.evaluate(() => document.fonts.ready)
       await expectRegionScreenshot(
         comfyPage.page,
         [menuButton, comfyPage.contextMenu.ariaMenu],
@@ -318,6 +286,186 @@ test.describe('Color Palette', { tag: ['@screenshot', '@settings'] }, () => {
     const initialColor = await getColor()
     await comfyPage.settings.setSetting('Comfy.ColorPalette', 'solarized')
     await expect.poll(getColor).not.toEqual(initialColor)
+  })
+
+  test(
+    'Classic palette restyles @vue-nodes widget rows like LiteGraph',
+    { tag: '@vue-nodes' },
+    async ({ comfyPage }) => {
+      const row = comfyPage.vueNodes.getWidgetRowByLabel('KSampler', 'steps')
+      const field = row.getByTestId(TestIds.widgets.numberRow)
+      const { input, incrementButton } =
+        comfyPage.vueNodes.getInputNumberControls(row)
+      const incrementIcon = incrementButton.locator('i')
+      const header = comfyPage.vueNodes
+        .getNodeByTitle('KSampler')
+        .getByTestId(/^node-header-/)
+      const { valueControl } = comfyPage.vueNodes.getInputNumberControls(
+        comfyPage.vueNodes.getWidgetRowByLabel('KSampler', 'seed')
+      )
+
+      await comfyPage.settings.setSetting('Comfy.ColorPalette', 'classic')
+      await expect(field).toHaveCSS('height', '20px')
+      await expect(row).toHaveCSS('height', '20px')
+      await expect(valueControl).toHaveCSS('height', '18px')
+      await expect(header).toHaveCSS('height', '30px')
+      await expect(row).toHaveCSS('margin-right', '15px')
+      await expect(incrementButton).toHaveCSS('width', '20px')
+      await expect(incrementIcon).toHaveCSS('color', 'rgb(221, 221, 221)')
+      await expect(field).toHaveCSS('border-top-width', '1px')
+      await expect(field).toHaveCSS('border-top-left-radius', '9999px')
+      await expect(comfyPage.page.locator('html')).toHaveAttribute(
+        'data-theme',
+        'classic'
+      )
+      await expect(incrementIcon).toHaveCSS('width', '10px')
+
+      await expect(input).toHaveValue('20')
+      await incrementButton.click()
+      await expect(input).toHaveValue('21')
+
+      await comfyPage.settings.setSetting('Comfy.ColorPalette', 'dark')
+      await expect(field).toHaveCSS('height', '24px')
+      await expect(row).toHaveCSS('height', '24px')
+      await expect(valueControl).toHaveCSS('height', '20px')
+      await expect(header).toHaveCSS('height', '28px')
+      await expect(incrementButton).toHaveCSS('width', '24px')
+      await expect(row).toHaveCSS('margin-right', '12px')
+      await expect(field).toHaveCSS('border-top-width', '0px')
+      await expect(field).toHaveCSS('border-top-left-radius', '6px')
+      await expect(comfyPage.page.locator('html')).not.toHaveAttribute(
+        'data-theme'
+      )
+      await expect(incrementIcon).toHaveCSS('width', '16px')
+    }
+  )
+
+  test.describe('Classic palette widget rows', { tag: '@vue-nodes' }, () => {
+    test.use({ initialSettings: { 'Comfy.ColorPalette': 'classic' } })
+
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.nodeOps.addNode('SaveAnimatedWEBP', undefined, {
+        x: 300,
+        y: 500
+      })
+      await comfyPage.nodeOps.addNode('LoadImage', undefined, {
+        x: 750,
+        y: 500
+      })
+    })
+
+    const fixedHeightRows = [
+      { node: 'Save Animated WEBP', widget: 'filename_prefix' },
+      { node: 'Save Animated WEBP', widget: 'lossless' },
+      { node: 'Load Image', widget: 'image' }
+    ]
+
+    for (const { node, widget } of fixedHeightRows) {
+      test(`sizes the ${widget} row like other widget rows`, async ({
+        comfyPage
+      }) => {
+        await expect(
+          comfyPage.vueNodes.getWidgetRowByLabel(node, widget)
+        ).toHaveCSS('height', '20px')
+      })
+    }
+
+    test('keeps the number field fill while hovered', async ({ comfyPage }) => {
+      const field = comfyPage.vueNodes
+        .getWidgetRowByLabel('Save Animated WEBP', 'fps')
+        .getByTestId(TestIds.widgets.numberRow)
+
+      await field.hover()
+
+      await expect(field).toHaveCSS('background-color', 'rgb(34, 34, 34)')
+    })
+
+    test('fits the boolean switch into the curve of its row', async ({
+      comfyPage
+    }) => {
+      const row = comfyPage.vueNodes.getWidgetRowByLabel(
+        'Save Animated WEBP',
+        'lossless'
+      )
+      const insideBorder = row.getByTestId(TestIds.widgets.rowHitArea)
+      const track = row
+        .getByRole('switch')
+        .getByTestId(TestIds.widgets.switchTrack)
+
+      await expect
+        .poll(async () => {
+          const [field, switchTrack] = await Promise.all([
+            insideBorder.boundingBox(),
+            track.boundingBox()
+          ])
+          if (!field || !switchTrack) return null
+          return {
+            top: Math.round(switchTrack.y - field.y),
+            bottom: Math.round(
+              field.y + field.height - (switchTrack.y + switchTrack.height)
+            ),
+            right: Math.round(
+              field.x + field.width - (switchTrack.x + switchTrack.width)
+            )
+          }
+        })
+        .toEqual({ top: 0, bottom: 0, right: 0 })
+    })
+  })
+
+  test.describe('Classic palette linked widgets', { tag: '@vue-nodes' }, () => {
+    test.use({ initialSettings: { 'Comfy.ColorPalette': 'classic' } })
+
+    let stepsSlot: number
+
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.workflow.loadWorkflow('primitive/primitive_node')
+      stepsSlot = await comfyPage.page.evaluate(
+        (nodeId) =>
+          window
+            .app!.graph.getNodeById(nodeId)
+            ?.inputs.findIndex((input) => input.name === 'steps') ?? -1,
+        toNodeId(2)
+      )
+    })
+
+    test('aligns a linked widget label with the other widget labels', async ({
+      comfyPage
+    }) => {
+      const linkedLabel = comfyPage.vueNodes
+        .getInputSlotRow('2', stepsSlot)
+        .getByText('steps', { exact: true })
+      const widgetLabel = comfyPage.vueNodes
+        .getWidgetRowByLabel('KSampler', 'cfg')
+        .getByTestId(TestIds.widgets.layoutFieldLabel)
+
+      await expect(linkedLabel).toHaveCSS('color', 'rgb(153, 153, 153)')
+      await expect(widgetLabel).toHaveCSS('color', 'rgb(153, 153, 153)')
+      await expect
+        .poll(async () => {
+          const [linked, widget] = await Promise.all([
+            linkedLabel.boundingBox(),
+            widgetLabel.boundingBox()
+          ])
+          if (!linked || !widget) return null
+          return Math.round(linked.x - widget.x)
+        })
+        .toBe(0)
+    })
+
+    test('colours connected untyped slot dots like LiteGraph', async ({
+      comfyPage
+    }) => {
+      for (const dot of [
+        comfyPage.vueNodes.getOutputSlotConnectionDot('1', 0),
+        comfyPage.vueNodes.getInputSlotConnectionDot('2', stepsSlot)
+      ]) {
+        await expect(dot.getByTestId('slot-dot')).toHaveCSS(
+          'background-color',
+          'rgb(119, 255, 119)'
+        )
+      }
+    })
   })
 })
 

@@ -3,7 +3,7 @@ import type { WorkflowResponse } from '@comfyorg/ingest-types'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { reactive } from 'vue'
 
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 
 import type { CloudWorkflowEntry } from '@/workbench/extensions/agent/schemas/agentApiSchema'
@@ -12,8 +12,6 @@ import type { CloudWorkflowListing } from '@/workbench/extensions/agent/services
 import { useAgentWorkflowTabBindingStore } from '@/workbench/extensions/agent/stores/agent/agentWorkflowTabBindingStore'
 
 import { useAgentWorkflowResolver } from './useAgentWorkflowResolver'
-
-vi.mock(import('@/platform/telemetry/reportError'))
 
 function workflow(
   path: string,
@@ -42,24 +40,43 @@ function setup(
     }
   })
   const bindings = useAgentWorkflowTabBindingStore()
-  const listCloudWorkflows = vi.fn(
-    async (): Promise<CloudWorkflowListing> => listing(cloud)
+  const listCloudWorkflows = vi.fn(async (): Promise<CloudWorkflowListing> =>
+    listing(cloud)
   )
   const getCloudWorkflow = vi.fn(
     async (workflowId: string): Promise<WorkflowResponse> =>
       cloudRow(workflowId)
   )
+  const getWorkflowSidebarFile = vi.fn(async (workflowId: string) => ({
+    path: `workflows/${workflowId}.json`
+  }))
+  const getWorkflowDraft = vi.fn(
+    async (_workflowId: string): Promise<Record<string, unknown>> => {
+      throw new AgentApiError('no draft', 404, undefined)
+    }
+  )
+  const getWorkflowContent = vi.fn(
+    async (_workflowId: string): Promise<Record<string, unknown>> => {
+      throw new AgentApiError('no version', 404, undefined)
+    }
+  )
   const resolver = useAgentWorkflowResolver({
     workflows,
     bindings,
     listCloudWorkflows,
-    getCloudWorkflow
+    getCloudWorkflow,
+    getWorkflowDraft,
+    getWorkflowContent,
+    getWorkflowSidebarFile
   })
   return {
     workflows,
     bindings,
     listCloudWorkflows,
     getCloudWorkflow,
+    getWorkflowSidebarFile,
+    getWorkflowDraft,
+    getWorkflowContent,
     resolver
   }
 }
@@ -552,5 +569,99 @@ describe('Cloud workflow lifecycle', () => {
     getCloudWorkflow.mockRejectedValueOnce(new TypeError('Failed to fetch'))
 
     expect(await resolver.cloudWorkflowLifecycle('cloud-a')).toBe('unknown')
+  })
+})
+
+describe('Server copy of a workflow', () => {
+  beforeEach(() => localStorage.clear())
+
+  const draft = { nodes: [], links: [], version: 0.4 }
+  const saved = { nodes: [{ id: 1 }], links: [], version: 0.4 }
+
+  it('prefers the agent draft over the newest saved version', async () => {
+    const { resolver, getWorkflowDraft, getWorkflowContent } = setup([])
+    getWorkflowDraft.mockResolvedValueOnce(draft)
+
+    expect(
+      await resolver.serverWorkflowContent({
+        ...cloudRow('cloud-a'),
+        latest_version: 2
+      })
+    ).toEqual({ outcome: 'found', content: draft })
+
+    expect(getWorkflowContent).not.toHaveBeenCalled()
+  })
+
+  it('falls back to the newest saved version, quietly, when the agent has no draft', async () => {
+    const { resolver, getWorkflowContent } = setup([])
+    getWorkflowContent.mockResolvedValueOnce(saved)
+
+    expect(
+      await resolver.serverWorkflowContent({
+        ...cloudRow('cloud-a'),
+        latest_version: 2
+      })
+    ).toEqual({ outcome: 'found', content: saved })
+
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('has nothing for a version-less workflow with no draft, without asking for a version', async () => {
+    const { resolver, getWorkflowContent } = setup([])
+
+    expect(await resolver.serverWorkflowContent(cloudRow('cloud-a'))).toEqual({
+      outcome: 'none'
+    })
+
+    expect(getWorkflowContent).not.toHaveBeenCalled()
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('reports a failed draft read and still tries the saved version', async () => {
+    const { resolver, getWorkflowDraft, getWorkflowContent } = setup([])
+    const error = new AgentApiError('upstream failed', 502, undefined)
+    getWorkflowDraft.mockRejectedValueOnce(error)
+    getWorkflowContent.mockResolvedValueOnce(saved)
+
+    expect(
+      await resolver.serverWorkflowContent({
+        ...cloudRow('cloud-a'),
+        latest_version: 1
+      })
+    ).toEqual({ outcome: 'found', content: saved })
+
+    expect(reportError).toHaveBeenCalledWith(error, {
+      surface: 'agent',
+      errorType: 'failure_reading_agent_workflow_draft'
+    })
+  })
+
+  it('keeps a failed draft read of a version-less workflow distinct from no content', async () => {
+    const { resolver, getWorkflowDraft } = setup([])
+    const error = new AgentApiError('upstream failed', 502, undefined)
+    getWorkflowDraft.mockRejectedValueOnce(error)
+
+    expect(await resolver.serverWorkflowContent(cloudRow('cloud-a'))).toEqual({
+      outcome: 'failed',
+      cause: error
+    })
+  })
+
+  it('reports a failed saved-version read as a failure, not as no content', async () => {
+    const { resolver, getWorkflowContent } = setup([])
+    const error = new AgentApiError('upstream failed', 500, undefined)
+    getWorkflowContent.mockRejectedValueOnce(error)
+
+    expect(
+      await resolver.serverWorkflowContent({
+        ...cloudRow('cloud-a'),
+        latest_version: 1
+      })
+    ).toEqual({ outcome: 'failed', cause: error })
+
+    expect(reportError).toHaveBeenCalledWith(error, {
+      surface: 'agent',
+      errorType: 'failure_reading_agent_workflow_content'
+    })
   })
 })

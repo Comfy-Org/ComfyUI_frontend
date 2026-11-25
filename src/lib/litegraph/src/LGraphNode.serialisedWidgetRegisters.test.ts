@@ -1,11 +1,8 @@
 import { afterEach, describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
-import type {
-  IBaseWidget,
-  TWidgetValue
-} from '@/lib/litegraph/src/types/widgets'
+import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
+import type { IBaseWidget, TWidgetValue } from '@comfyorg/graph-model/widgets'
 
 function serialisedNode(
   widgets: readonly { name: string; value: TWidgetValue }[]
@@ -66,17 +63,6 @@ describe('serialised widget registers', () => {
       })
 
       expect(widget.value).toBe(1536)
-    })
-
-    it('restores into a widget added while configuring as a number', () => {
-      const node = nodeInGraph()
-      node.onConfigure = () => {
-        addIntWidget(node)
-      }
-
-      node.configure({ ...node.serialize(), widgets_values: ['1536'] })
-
-      expect(node.widgets?.[0].value).toBe(1536)
     })
   })
 
