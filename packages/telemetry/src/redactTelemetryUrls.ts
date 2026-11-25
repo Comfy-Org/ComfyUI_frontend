@@ -244,6 +244,16 @@ function redactSingleUrlToken(token: string): string {
   return `${prefix}${authority.slice(userInfoEnd + 1)}${path}${trailing}`
 }
 
+/**
+ * Once a query or fragment has opened earlier in the token, a later `//`
+ * candidate is always treated as still inside that open metadata - whether
+ * or not it's glued on by punctuation - rather than guessing from what
+ * follows it whether it's an independent sibling URL or a nested value. A
+ * nested URL's own `?`/`#` doesn't retroactively close the outer one, and
+ * there's no reliable way to tell "sibling" from "nested value" from the
+ * surrounding punctuation alone; failing closed here matches how the rest
+ * of this module treats that ambiguity.
+ */
 function findGluedUrlBoundary(
   token: string,
   tokenStart: number
@@ -251,19 +261,14 @@ function findGluedUrlBoundary(
   const urlStartPattern = /(?:https?:)?\/\//gi
   urlStartPattern.lastIndex = tokenStart + 1
   const metadataOpensAt = findMetadataOpenIndex(token, tokenStart)
-  const nextDelimiterPositions = buildNextDelimiterPositions(token)
   for (const match of token.matchAll(urlStartPattern)) {
     const nextUrl = match.index
+    if (metadataOpensAt !== undefined && metadataOpensAt < nextUrl) continue
     const separator = findSeparatorStart(token, nextUrl)
     if (
-      !isInsideOpenMetadata(
-        token,
-        metadataOpensAt,
-        nextUrl,
-        separator < nextUrl,
-        nextDelimiterPositions
-      ) &&
-      (match[0] !== '//' || separator < nextUrl || token[nextUrl - 1] === '/')
+      match[0] !== '//' ||
+      separator < nextUrl ||
+      token[nextUrl - 1] === '/'
     ) {
       return {
         separator: token[nextUrl - 1] === '/' ? nextUrl - 1 : separator,
@@ -288,28 +293,6 @@ function findMetadataOpenIndex(
   const metadataPattern = /[?#]/g
   metadataPattern.lastIndex = from
   return metadataPattern.exec(token)?.index
-}
-
-function buildNextDelimiterPositions(token: string): number[] {
-  const positions: number[] = Array.from({ length: token.length + 1 })
-  positions[token.length] = token.length
-  for (let index = token.length - 1; index >= 0; index--) {
-    positions[index] = /[?#&]/.test(token[index]) ? index : positions[index + 1]
-  }
-  return positions
-}
-
-function isInsideOpenMetadata(
-  token: string,
-  metadataOpensAt: number | undefined,
-  nextUrl: number,
-  hasSeparator: boolean,
-  nextDelimiterPositions: number[]
-): boolean {
-  if (metadataOpensAt === undefined || metadataOpensAt >= nextUrl) return false
-  if (!hasSeparator) return true
-  const delimiter = nextDelimiterPositions[nextUrl]
-  return delimiter === token.length || token[delimiter] === '&'
 }
 
 function peelTrailingPunctuation(token: string): {
@@ -650,23 +633,23 @@ function readInheritedString(
   return undefined
 }
 
-const NATIVE_FUNCTION_TOSTRING_PATTERN =
-  /^function\s*[^\s(]*\([^)]*\)\s*\{\s*\[native code\]\s*\}$/
-
-function isNativeFunction(value: unknown): boolean {
-  if (typeof value !== 'function') return false
-  if (value.name.startsWith('bound ')) return false
-  try {
-    return NATIVE_FUNCTION_TOSTRING_PATTERN.test(
-      Function.prototype.toString.call(value)
-    )
-  } catch {
-    return false
-  }
-}
+/**
+ * A fresh Error's own `stack` getter is the engine's single shared native
+ * function object across every instance in the realm (verified on V8 and
+ * used wherever an engine implements `stack` as an accessor at all) - no
+ * introspection of a function's `name` or `toString` output can prove
+ * native-ness, since both are forgeable (`Function.prototype.bind` always
+ * reports native-looking `toString` text, and `name` is configurable), but
+ * object identity cannot be forged. An engine that instead exposes `stack`
+ * as a plain data property never reaches this check at all.
+ */
+const NATIVE_STACK_GETTER = Object.getOwnPropertyDescriptor(
+  new Error(),
+  'stack'
+)?.get
 
 function isNativeStackGetter(getter: (() => unknown) | undefined): boolean {
-  return getter !== undefined && isNativeFunction(getter)
+  return getter !== undefined && getter === NATIVE_STACK_GETTER
 }
 
 function hasCustomStackFormatter(): boolean {

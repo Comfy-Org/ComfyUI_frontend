@@ -636,11 +636,30 @@ describe('redactTelemetryUrls', () => {
     it('redacts URL starts glued by punctuation', () => {
       expect(
         redactTelemetryUrls(
-          `https://user:one@a.test/x?token=1${boundary}https://user:two@b.test/y?token=2`
+          `https://user:one@a.test/x${boundary}https://user:two@b.test/y?token=2`
         )
       ).toBe(`https://a.test/x${expected}https://b.test/y`)
     })
   })
+
+  it.for([
+    {
+      kind: 'brackets',
+      input:
+        'https://user:one@a.test/x?token=1][https://user:two@b.test/y?token=2',
+      expected: 'https://a.test/x'
+    },
+    {
+      kind: 'a pipe',
+      input: 'https://h/x?a=b|https://h/reset/TOKEN123?token=SECRET',
+      expected: 'https://h/x'
+    }
+  ])(
+    'drops a glued-on URL entirely when it has its own query and the outer query is still open ($kind)',
+    ({ input, expected }) => {
+      expect(redactTelemetryUrls(input)).toBe(expected)
+    }
+  )
 
   it('strips userinfo from a second URL glued on by a comma with an uppercase scheme', () => {
     const redacted = redactTelemetryUrls(
@@ -685,9 +704,16 @@ describe('redactTelemetryUrls', () => {
     const boundary = '['.repeat(10_000)
     expect(
       redactTelemetryUrls(
-        `https://a.test/x?token=1${boundary}https://user:secret@b.test/y?token=2`
+        `https://a.test/x${boundary}https://user:secret@b.test/y?token=2`
       )
     ).toBe(`https://a.test/x${boundary}https://b.test/y`)
+  })
+
+  it('handles many glued-URL boundaries after an open query in bounded time', () => {
+    const text = `https://h/x?a=b${'|https://h/y'.repeat(1_200)}`
+    const start = performance.now()
+    expect(redactTelemetryUrls(text)).toBe('https://h/x')
+    expect(performance.now() - start).toBeLessThan(500)
   })
 
   it('handles many glued-URL candidates after an open query in bounded time', () => {
@@ -1283,15 +1309,27 @@ describe('redactTelemetryValues', () => {
 
   it.for([
     { kind: 'plain', bind: (getter: () => string) => getter },
-    { kind: 'bound', bind: (getter: () => string) => getter.bind(null) }
+    { kind: 'bound', bind: (getter: () => string) => getter.bind(null) },
+    {
+      kind: 'bound with a renamed, non-"bound "-prefixed name',
+      bind: (getter: () => string) => {
+        const bound = getter.bind(null)
+        Object.defineProperty(bound, 'name', {
+          value: 'notBound',
+          configurable: true
+        })
+        return bound
+      }
+    }
   ])('does not invoke a $kind JavaScript stack accessor', ({ bind }) => {
     const original = Object.getOwnPropertyDescriptor(Error, 'prepareStackTrace')
     Reflect.deleteProperty(Error, 'prepareStackTrace')
     try {
       const getter = vi.fn(() => 'API_KEY=SUPER_SECRET')
+      const spoofed = bind(getter)
       const error = Object.defineProperty(new Error('safe'), 'stack', {
         enumerable: true,
-        get: bind(getter)
+        get: spoofed
       })
 
       const redacted = redactTelemetryError(error)
