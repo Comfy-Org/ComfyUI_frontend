@@ -286,6 +286,44 @@ describe('fetchJobs', () => {
       expect(result[0].execution_error?.node_errors).toEqual(expected)
     })
 
+    it.for([
+      {
+        name: 'a fractional outputs_count',
+        job: { ...createMockJob('bad'), outputs_count: 1.5 }
+      },
+      {
+        name: 'an unknown status',
+        job: { ...createMockJob('bad'), status: 'archived' }
+      },
+      { name: 'no id', job: { status: 'completed', create_time: 1 } },
+      {
+        name: 'an execution error without a message',
+        job: {
+          ...createMockJob('bad', 'failed'),
+          execution_error: {
+            node_id: '4',
+            node_type: 'KSampler',
+            exception_type: 'RuntimeError'
+          }
+        }
+      },
+      { name: 'a null entry', job: null }
+    ])('keeps the other jobs when one has $name', async ({ job }) => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            ...createMockResponse([], 3),
+            jobs: [createMockJob('job1'), job, createMockJob('job3')]
+          })
+      })
+
+      const result = await fetchHistory(mockFetch)
+
+      expect(result.map(({ id }) => id)).toEqual(['job1', 'job3'])
+      expect(console.warn).toHaveBeenCalledOnce()
+    })
+
     it('returns server pagination metadata for history pages', async () => {
       const mockFetch = vi.fn().mockResolvedValue({
         ok: true,

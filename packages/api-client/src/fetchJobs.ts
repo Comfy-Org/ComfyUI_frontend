@@ -22,6 +22,7 @@ import {
   zJobAssetsResponse,
   zJobDetail,
   zJobsListResponse,
+  zRawJobListItem,
   zWorkflowContainer
 } from './jobTypes'
 
@@ -34,6 +35,13 @@ interface FetchJobsRawResult {
 }
 
 class JobsApiError extends Error {}
+
+function parseJobListItem(job: unknown): RawJobListItem[] {
+  const parsed = zRawJobListItem.safeParse(job)
+  if (parsed.success) return [parsed.data]
+  console.warn('[Jobs API] Dropping a job outside the contract:', parsed.error)
+  return []
+}
 
 interface FetchJobsOptions {
   throwOnError?: boolean
@@ -69,7 +77,7 @@ async function fetchJobsRaw(
     }
     const data = zJobsListResponse.parse(await res.json())
     return {
-      jobs: data.jobs,
+      jobs: data.jobs.flatMap(parseJobListItem),
       total: data.pagination.total,
       offset: data.pagination.offset,
       limit: data.pagination.limit,
