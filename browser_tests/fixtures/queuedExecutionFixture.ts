@@ -1,7 +1,10 @@
 import { mergeTests } from '@playwright/test'
 import { z } from 'zod'
 
-import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
+import {
+  comfyExpect as expect,
+  comfyPageFixture
+} from '@e2e/fixtures/ComfyPage'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
@@ -57,6 +60,26 @@ export const queuedExecutionFixture = mergeTests(
           submit()
         ])
         const { prompt_id: id } = acceptedPrompt.parse(await response.json())
+        await expect
+          .poll(
+            () =>
+              page.evaluate((jobId) => {
+                const executionStore = document
+                  .getElementById('vue-app')
+                  ?.__vue_app__?.config.globalProperties.$pinia._s.get(
+                    'execution'
+                  )
+                const job: unknown = executionStore?.queuedJobs[jobId]
+                return (
+                  typeof job === 'object' &&
+                  job !== null &&
+                  'workflow' in job &&
+                  !!job.workflow
+                )
+              }, id),
+            { message: `Waiting for ComfyUI to register queued job ${id}` }
+          )
+          .toBe(true)
         return {
           finish() {
             execution.executionSuccess(id)
