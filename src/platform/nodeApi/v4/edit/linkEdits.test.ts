@@ -247,6 +247,27 @@ describe('link edits', () => {
       expect(steps).toEqual(['before', 'after'])
     })
 
+    it('removes only the links it selected when a callback of the first removal moves the others', () => {
+      target.addInput('again', 'IMAGE')
+      target.addInput('late', 'IMAGE')
+      source.connect(0, target, 2)
+      let moved = false
+      target.onConnectionsChange = (_type, slot, connected) => {
+        if (moved || connected) return
+        moved = true
+        target.disconnectInput(slot === 0 ? 2 : 0)
+        source.connect(0, target, 3)
+      }
+
+      expect(out('image').disconnect(String(target.id))).toBe(true)
+
+      expect([0, 2, 3].map((slot) => target.isInputConnected(slot))).toEqual([
+        false,
+        false,
+        true
+      ])
+    })
+
     it('removes every link of an output through its handle', () => {
       expect(out('image').disconnect()).toBe(true)
 

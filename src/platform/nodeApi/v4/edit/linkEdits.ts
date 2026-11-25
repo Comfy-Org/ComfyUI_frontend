@@ -1,6 +1,6 @@
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
 import { outputLinks } from '@/lib/litegraph/src/node/slotLinks'
 import { useLinkStore } from '@/stores/linkStore'
 
@@ -99,9 +99,17 @@ export function createLinkEdits(
 
 function disconnectEveryLinkTo(output: LiveSlot, target: LGraphNode): boolean {
   const { graph, node, index } = output
+  const stillSelected = (link: LLink) =>
+    graph.links.get(link.id) === link &&
+    link.origin_id === node.id &&
+    link.origin_slot === index &&
+    link.target_id === target.id &&
+    target.inputs[link.target_slot]?.link === link.id
   return outputLinks(graph, node.id, index)
     .filter((link) => link.target_id === target.id)
-    .map(() => node.disconnectOutput(index, target))
+    .map(
+      (link) => stillSelected(link) && target.disconnectInput(link.target_slot)
+    )
     .includes(true)
 }
 

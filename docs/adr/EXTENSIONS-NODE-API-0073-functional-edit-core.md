@@ -327,9 +327,11 @@ flowchart TD
     (only those to `target` if given), through `disconnectInput` and
     `disconnectOutput`; a slot with no link answers `false` without a step.
     The host's `disconnectOutput` given a target removes its first link to
-    that node only, so for a target the API calls it once for each link to
-    it, in the same step, and an output that feeds two inputs of the target
-    loses both links.
+    that node only, so for a target the API selects the output's links to it
+    when called and removes each through the target's `disconnectInput`, in
+    the same step: an output that feeds two inputs of the target loses both
+    links. A selected link a connection callback of an earlier removal took
+    away or moved is left alone, and a link a callback made is not removed.
     `moveLinks(from, to)` re-points every link of one output to another output
     of the same node through `updateEndpoints`, keeping the link ids, and
     does not check types again, so a pack can move links before retyping the
