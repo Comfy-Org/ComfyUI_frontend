@@ -96,28 +96,26 @@
     </Button>
   </div>
 
-  <div
+  <Button
     v-else-if="hasAnyError && showErrorsTabEnabled"
     data-part="node-footer"
-    :class="errorWrapperStyles"
+    variant="textonly"
+    :class="
+      cn(
+        footerWrapperBase,
+        '-mx-1 -mb-1 w-[calc(100%+8px)]',
+        tabStyles,
+        'box-border rounded-none pt-9 pb-3',
+        errorColorClass,
+        footerRadiusClass
+      )
+    "
+    @pointerup="snapshotDragOnPointerUp"
+    @click.stop="emitIfNotDragged('openErrors')"
   >
-    <Button
-      variant="textonly"
-      :class="
-        cn(
-          tabStyles,
-          'box-border w-full rounded-none pt-9 pb-3',
-          errorColorClass,
-          footerRadiusClass
-        )
-      "
-      @pointerup="snapshotDragOnPointerUp"
-      @click.stop="emitIfNotDragged('openErrors')"
-    >
-      <span class="truncate">{{ errorLabel }}</span>
-      <i class="icon-[lucide--info]" />
-    </Button>
-  </div>
+    <span class="truncate">{{ errorLabel }}</span>
+    <i class="icon-[lucide--info]" />
+  </Button>
 
   <Button
     v-else-if="isSubgraph"
