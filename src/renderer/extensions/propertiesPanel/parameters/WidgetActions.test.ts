@@ -329,7 +329,8 @@ describe('WidgetActions', () => {
     expect(promotedInputWidgets(host)).toHaveLength(1)
     expect(
       useWidgetValueStore().getWidgetVisibility(hostInput.widgetId)?.surfaces
-    ).toEqual({ canvas: 'advanced', vueNode: 'advanced', panel: 'advanced' })
+    ).toEqual({ canvas: 'shown', vueNode: 'shown', panel: 'shown' })
+    expect(host.isWidgetVisible(promotedWidget)).toBe(false)
   })
 
   it('offers "Show input" on a hidden host row and shows it again', async () => {

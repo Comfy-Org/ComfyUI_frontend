@@ -60,10 +60,11 @@ import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
-import type { WidgetVisibilityComponent } from '@/types/widgetVisibility'
 import {
   deriveWidgetVisibility,
-  setWidgetAdvanced
+  isWidgetVisibleOnSurface,
+  occupiesCanvasRow,
+  withUserHiddenOverride
 } from '@/types/widgetVisibility'
 
 import { ExecutableNodeDTO } from './ExecutableNodeDTO'
@@ -163,42 +164,50 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     this._reapplyInputVisibility(name)
   }
 
-  /** Surface tiers each hidden host widget had before {@link hideInput}. */
-  private readonly _preHideSurfaces = new Map<
-    string,
-    WidgetVisibilityComponent['surfaces']
-  >()
-
-  /**
-   * Writes the hidden/shown tier straight onto the existing host widget's
-   * store visibility. Never re-resolves or re-registers the widget, so its
-   * binding, options and value are left alone.
-   */
+  /** Hidden is read at render time; stored tiers are never written. */
   private _reapplyInputVisibility(name: string): void {
     const input = this.inputs.find((candidate) => candidate.name === name)
-    const visibility = input?.widgetId
-      ? useWidgetValueStore().getWidgetVisibility(input.widgetId)
-      : undefined
-    if (visibility) {
-      if (this._hiddenInputNames.has(name)) {
-        this._preHideSurfaces.set(name, { ...visibility.surfaces })
-        setWidgetAdvanced(visibility, true)
-      } else {
-        const previous = this._preHideSurfaces.get(name)
-        if (previous) Object.assign(visibility.surfaces, previous)
-        else setWidgetAdvanced(visibility, false)
-        this._preHideSurfaces.delete(name)
-      }
-    }
-    this.invalidatePromotedViews()
-    // Panels refresh off promotion events; no re-registration happens here.
-    if (input?._widget) {
+    const widget = input ? this._projectPromotedWidget(input) : undefined
+    if (widget) {
       this.subgraph.events.dispatch('widget-promoted', {
-        widget: input._widget,
+        widget,
         subgraphNode: this
       })
     }
     this.setDirtyCanvas(true, true)
+  }
+
+  /** Whether `widget` is the host widget of an input the user hid here. */
+  private _isUserHiddenWidget(widget: IBaseWidget): boolean {
+    return this._hiddenInputNames.has(widget.name)
+  }
+
+  override isWidgetVisible(widget: IBaseWidget): boolean {
+    if (!this._isUserHiddenWidget(widget)) return super.isWidgetVisible(widget)
+    return (
+      !this.collapsed &&
+      isWidgetVisibleOnSurface(
+        withUserHiddenOverride(
+          widget.visibility ?? deriveWidgetVisibility(widget)
+        ),
+        'canvas',
+        { showAdvanced: this.showAdvanced ?? false }
+      )
+    )
+  }
+
+  override isWidgetRowVisible(widget: IBaseWidget): boolean {
+    if (!this._isUserHiddenWidget(widget))
+      return super.isWidgetRowVisible(widget)
+    return (
+      !this.collapsed &&
+      occupiesCanvasRow(
+        withUserHiddenOverride(
+          widget.visibility ?? deriveWidgetVisibility(widget)
+        ),
+        { showAdvanced: this.showAdvanced ?? false }
+      )
+    )
   }
 
   private _readHiddenInputNames(property: unknown): void {
@@ -875,9 +884,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       interiorWidget.visibility ?? deriveWidgetVisibility(interiorWidget)
     )
     visibility.suppression.byConnection = false
-    if (this._hiddenInputNames.has(subgraphInput.name)) {
-      setWidgetAdvanced(visibility, true)
-    }
     const registered = store.registerWidget(
       id,
       {

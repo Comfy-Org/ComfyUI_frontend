@@ -5,7 +5,8 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import {
   deriveWidgetVisibility,
-  isWidgetVisibleOnSurface
+  isWidgetVisibleOnSurface,
+  withUserHiddenOverride
 } from '@/types/widgetVisibility'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 
@@ -28,7 +29,11 @@ export function computedSectionDataList(nodes: MaybeRefOrGetter<LGraphNode[]>) {
       const shownWidgets = widgets
         .filter((w) =>
           isWidgetVisibleOnSurface(
-            w.visibility ?? deriveWidgetVisibility(w),
+            node.isSubgraphNode() && node.isInputHidden(w.name)
+              ? withUserHiddenOverride(
+                  w.visibility ?? deriveWidgetVisibility(w)
+                )
+              : (w.visibility ?? deriveWidgetVisibility(w)),
             'panel',
             { showAdvanced: includesAdvanced.value }
           )

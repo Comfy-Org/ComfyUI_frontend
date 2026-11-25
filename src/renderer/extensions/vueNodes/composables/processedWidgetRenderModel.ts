@@ -39,7 +39,10 @@ import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import type { WidgetState } from '@comfyorg/graph-model/widgetState'
 import type { LinkTopology } from '@comfyorg/graph-model/linkTopology'
 import { getControlWidget } from '@/types/simplifiedWidget'
-import { isWidgetVisibleOnSurface } from '@/types/widgetVisibility'
+import {
+  isWidgetVisibleOnSurface,
+  withUserHiddenOverride
+} from '@/types/widgetVisibility'
 import type { WidgetVisibilityComponent } from '@/types/widgetVisibility'
 import type {
   LinkedUpstreamInfo,
@@ -378,12 +381,16 @@ function resolveWidgetComponent(
 
 function resolveWidgetPresentation(
   widgetState: WidgetState,
-  visibility: WidgetVisibilityComponent | undefined,
+  storedVisibility: WidgetVisibilityComponent | undefined,
   slotInfo: WidgetSlotMetadata | undefined,
   view: { showAdvanced: boolean; hiddenByUser: boolean }
 ) {
   const { linked, promoted, originNodeId, originOutputName } = slotInfo ?? {}
   const options: IWidgetOptions = { ...widgetState.options }
+  const visibility =
+    view.hiddenByUser && storedVisibility
+      ? withUserHiddenOverride(storedVisibility)
+      : storedVisibility
   const advanced = visibility
     ? visibility.surfaces.vueNode === 'advanced'
     : (options.advanced ?? false)

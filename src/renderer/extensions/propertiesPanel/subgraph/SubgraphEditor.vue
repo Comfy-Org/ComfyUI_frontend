@@ -290,9 +290,18 @@ function nodeWidgets(n: LGraphNode): WidgetItem[] {
   return getPromotableWidgets(n).map((w) => [n, w])
 }
 
+/**
+ * Grouped promotions (dynamic combo, autogrow) bind no single host widget, so
+ * Hide input does not apply to them; their toggle stays disabled as on main.
+ */
+function canToggleHidden(row: PromotedRow): boolean {
+  return row.hidden || row.input.widgetId != null
+}
+
 function togglePromotedRowHidden(row: PromotedRow) {
   const subgraphNode = activeNode.value
   if (!subgraphNode) return
+  if (!canToggleHidden(row)) return
   if (row.hidden) subgraphNode.showInput(row.input.name)
   else subgraphNode.hideInput(row.input.name)
   refreshPromotedRows()
@@ -343,7 +352,7 @@ function showAll() {
   }
 }
 function hideAll() {
-  const shownRows: ActiveRow[] = [
+  const shownRows = [
     ...filteredActivePromoted.value,
     ...filteredActivePreviews.value
   ]
@@ -387,7 +396,7 @@ onMounted(() => {
       </div>
 
       <div
-        v-if="filteredActive.length"
+        v-if="filteredActivePromoted.length || filteredActivePreviews.length"
         data-testid="subgraph-editor-shown-section"
         class="flex flex-col border-b"
       >
@@ -415,6 +424,7 @@ onMounted(() => {
             :is-physical="isRowLinked(row)"
             :is-draggable="!searchQuery"
             is-shown
+            :toggle-disabled="!canToggleHidden(row)"
             @toggle-visibility="togglePromotedRowHidden(row)"
           />
         </DraggableList>

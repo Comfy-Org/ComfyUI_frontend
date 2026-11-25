@@ -12,6 +12,7 @@ const {
   isDraggable = false,
   isPhysical = false,
   isShown = false,
+  toggleDisabled = false,
   class: className
 } = defineProps<{
   nodeTitle: string
@@ -19,6 +20,7 @@ const {
   isDraggable?: boolean
   isPhysical?: boolean
   isShown?: boolean
+  toggleDisabled?: boolean
   class?: ClassValue
 }>()
 defineEmits<{ toggleVisibility: [] }>()
@@ -66,6 +68,7 @@ const toggleLabel = computed(() =>
       size="sm"
       data-testid="subgraph-widget-toggle"
       :aria-label="toggleLabel"
+      :disabled="toggleDisabled"
       @click.stop="$emit('toggleVisibility')"
     >
       <i :class="icon" :data-testid="isPhysical ? 'icon-link' : 'icon-eye'" />

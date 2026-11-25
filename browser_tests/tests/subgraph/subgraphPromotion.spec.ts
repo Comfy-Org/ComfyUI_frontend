@@ -793,7 +793,7 @@ test(
     await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
     const { editor } = comfyPage.subgraph
     const subgraphNode = comfyPage.vueNodes.getNodeLocator('2')
-    const steps = comfyPage.vueNodes.getWidgetByName('New Subgraph', 'steps')
+    const steps = subgraphNode.getByLabel('steps', { exact: true })
 
     await test.step('Enter subgraph and link widget to input', async () => {
       await comfyPage.vueNodes.enterSubgraph('2')
@@ -820,5 +820,6 @@ test(
     await toggleButton.click()
 
     await expect(steps, 'widget hidden after the toggle').toBeHidden()
+    await expect(subgraphNode, 'host node kept after the toggle').toBeVisible()
   }
 )

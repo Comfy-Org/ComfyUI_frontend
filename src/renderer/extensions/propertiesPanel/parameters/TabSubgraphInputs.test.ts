@@ -1,7 +1,6 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen, within } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
@@ -243,8 +242,28 @@ describe('TabSubgraphInputs', () => {
     return { outerHost, innerHost }
   }
 
+  it('does not copy an inner host Hide onto a shown outer host on reconfigure', () => {
+    const { outerHost, innerHost } = buildNestedHostWithPromotedSeed()
+    innerHost.hideInput('seed')
+
+    outerHost.configure(outerHost.serialize())
+
+    const outerId = outerHost.inputs.at(0)?.widgetId
+    if (!outerId) throw new Error('Expected a promoted outer host widget')
+    expect(outerHost.isInputHidden('seed')).toBe(false)
+    expect(
+      useWidgetValueStore().getWidgetVisibility(outerId)?.surfaces
+    ).toEqual({ canvas: 'shown', vueNode: 'shown', panel: 'shown' })
+  })
+
   it('hides a two-level nested promotion via Hide input and restores it via Show input', async () => {
-    const { outerHost } = buildNestedHostWithPromotedSeed()
+    const { outerHost, innerHost } = buildNestedHostWithPromotedSeed()
+    const store = useWidgetValueStore()
+    const outerId = outerHost.inputs.at(0)?.widgetId
+    const innerId = innerHost.inputs.at(0)?.widgetId
+    if (!outerId || !innerId) throw new Error('Expected promoted host widgets')
+    store.setValue(outerId, 7)
+    store.setValue(innerId, 13)
 
     render(TabSubgraphInputs, {
       props: { node: outerHost },
@@ -267,26 +286,25 @@ describe('TabSubgraphInputs', () => {
 
     const user = userEvent.setup()
     await user.click(screen.getByTestId('widget-actions-hide-input-button'))
-    await nextTick()
 
+    await user.click(await screen.findByText('Advanced Inputs'))
     expect(
       screen.queryByTestId('widget-actions-hide-input-button')
     ).not.toBeInTheDocument()
+    expect(outerHost.isInputHidden('seed')).toBe(true)
+    expect(store.getWidget(outerId)?.value).toBe(7)
+    expect(store.getWidget(innerId)?.value).toBe(13)
 
-    await user.click(screen.getByText('Advanced Inputs'))
-
-    const advancedRowMenuButton = screen.getByTestId(
-      'widget-actions-menu-button'
-    )
-    await user.click(advancedRowMenuButton)
-
+    await user.click(await screen.findByTestId('widget-actions-menu-button'))
     const menu = await screen.findByRole('menu')
     await user.click(within(menu).getByRole('menuitem', { name: /Show input/ }))
-    await nextTick()
 
     expect(
-      screen.getByTestId('widget-actions-hide-input-button')
+      await screen.findByTestId('widget-actions-hide-input-button')
     ).toBeInTheDocument()
     expect(screen.queryByText('Advanced Inputs')).not.toBeInTheDocument()
+    expect(outerHost.isInputHidden('seed')).toBe(false)
+    expect(store.getWidget(outerId)?.value).toBe(7)
+    expect(store.getWidget(innerId)?.value).toBe(13)
   })
 })

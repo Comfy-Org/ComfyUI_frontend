@@ -218,6 +218,22 @@ export function setWidgetAdvanced(
 }
 
 /**
+ * Effective visibility of a promoted host widget the user hid on one subgraph
+ * instance (Hide input): every `shown` surface reads as `advanced`. A read-time
+ * view over the stored tiers, which stay the widget's own policy, so Show,
+ * reload and later policy writes never need a snapshot.
+ */
+export function withUserHiddenOverride(
+  visibility: WidgetVisibilityComponent
+): WidgetVisibilityComponent {
+  const surfaces = { ...visibility.surfaces }
+  for (const surface of WIDGET_SURFACES) {
+    if (surfaces[surface] === 'shown') surfaces[surface] = 'advanced'
+  }
+  return { surfaces, suppression: visibility.suppression }
+}
+
+/**
  * Legacy `widget.hidden` write. All legacy hiding — registration metadata,
  * legacy hidden type markers, and runtime extension writes — is extension
  * suppression, so un-hiding restores the widget's static surface tiers.
