@@ -65,6 +65,7 @@ function folderKeyOf(segment: string): string {
 export function createPacks(extensionsUrl: () => string): Packs {
   const issued = new WeakMap<object, IssuedPack>()
   let served: ReadonlyMap<string, PackId> | undefined
+  const verified = new Map<string, PackId>()
   const unverified = new Map<string, PackId>()
 
   function issue(
@@ -93,22 +94,31 @@ export function createPacks(extensionsUrl: () => string): Packs {
       if (segmentsOf.get(id)?.size !== 1 || recordsAt.get(segment) !== 1) {
         continue
       }
-      bySegment.set(
-        segment,
-        issue(
-          {
-            verified: true,
-            adopts:
-              segment.toLowerCase() === id.toLowerCase()
-                ? folderKeyOf(segment)
-                : undefined
-          },
-          id,
-          version ?? undefined
-        )
-      )
+      bySegment.set(segment, verifiedAt(segment, id, version ?? undefined))
     }
     served = bySegment
+  }
+
+  function verifiedAt(
+    segment: string,
+    id: string,
+    version: string | undefined
+  ): PackId {
+    const known = verified.get(segment)
+    if (known?.id === id && known.version === version) return known
+    const packId = issue(
+      {
+        verified: true,
+        adopts:
+          segment.toLowerCase() === id.toLowerCase()
+            ? folderKeyOf(segment)
+            : undefined
+      },
+      id,
+      version
+    )
+    verified.set(segment, packId)
+    return packId
   }
 
   function segmentOf(url: string): string {

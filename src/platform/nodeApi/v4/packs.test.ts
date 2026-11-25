@@ -46,6 +46,18 @@ describe('registerPack', () => {
       )
     })
 
+    it('gives the same PackId again when the backend gives the same record at a later startup, and a new one for a changed record', () => {
+      const first = registered(`${BASE}ComfyUI_Anchors/a.js`)
+
+      api.host.providePacks([{ ...ANCHORS }])
+      const again = registered(`${BASE}ComfyUI_Anchors/b.js`)
+      api.host.providePacks([{ ...ANCHORS, version: '1.3.0' }])
+      const updated = registered(`${BASE}ComfyUI_Anchors/b.js`)
+
+      expect(again).toBe(first)
+      expect(updated).toEqual({ id: 'comfyui-anchors', version: '1.3.0' })
+    })
+
     it('reads the module path without its query or fragment', () => {
       expect(
         registered(`${BASE}ComfyUI_Anchors/main.js?v=3&retry=1#top`).id

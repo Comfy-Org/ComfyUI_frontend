@@ -556,7 +556,8 @@ flowchart TD
     - `registerPack` reads `meta.url`, takes its path below the install's
       `<base>/extensions/` (an install may run under a prefix), decodes the
       folder segment and gives that record's `PackId`; every module of a pack
-      gets the same object. It throws a `TypeError` for a `meta` with no text
+      gets the same object, at a later startup of the app too while the
+      backend gives the same record. It throws a `TypeError` for a `meta` with no text
       `url`, a URL not under `<base>/extensions/<segment>/`, a segment with
       no record, an id that is not a registry id (the workflow schema's
       `cnr_id`: letters, digits, `.`, `_` and `-`, so never a `:`), and an id
