@@ -165,6 +165,7 @@
     "unknownFile": "Unknown file",
     "reconnecting": "Reconnecting",
     "reconnected": "Reconnected",
+    "sessionRevoked": "Your access to this workspace has ended. Sign in again to reconnect.",
     "disconnectedFromBackend": "Disconnected from backend. Check if the server is running.",
     "delete": "Delete",
     "rename": "Rename",
