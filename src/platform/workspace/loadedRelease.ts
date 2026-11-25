@@ -9,10 +9,14 @@ import { fullDeploymentLabel } from '@/platform/workspace/composables/useDeploym
 import { confirmUnsavedWorkBeforeSwitch } from '@/platform/workspace/confirmUnsavedWorkBeforeSwitch'
 import { reloadForDeploymentSwitch } from '@/platform/workspace/deploymentSwitchReload'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
-import { releaseNoticeId } from '@/platform/workspace/stores/releaseNoticeStore'
+import {
+  releaseNoticeId,
+  useReleaseNoticeStore
+} from '@/platform/workspace/stores/releaseNoticeStore'
 
 const KEPT_RELEASE_KEY = 'Comfy.Deployment.ReleaseForReload'
 const RELEASE_CHANGED = 'RELEASE_CHANGED'
+const RUN_NOTICE_OWNER = 'refusedRun'
 
 interface KeptRelease {
   deploymentId: string
@@ -149,6 +153,7 @@ export function handledReleaseChange(error: unknown): boolean {
     })
   }
   const notice = releaseNotice(releaseId)
+  useReleaseNoticeStore().markShown(RUN_NOTICE_OWNER)
   useToast().info(notice.title, {
     id: releaseNoticeId,
     action: {

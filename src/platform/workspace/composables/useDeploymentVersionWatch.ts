@@ -95,7 +95,12 @@ export function useDeploymentVersionWatch({
         )
   }
 
+  function dismissOwnNotice() {
+    if (releaseNotices.isShownBy(NOTICE_OWNER)) toast.dismiss(releaseNoticeId)
+  }
+
   function showNotice(change: 'release' | 'deployment', key: string) {
+    releaseNotices.markShown(NOTICE_OWNER)
     toast.info(noticeTitle(change), {
       id: releaseNoticeId,
       actions: [
@@ -136,11 +141,11 @@ export function useDeploymentVersionWatch({
     settledKey = key
     const change = changeSinceBoot.value
     if (key === null || change === null || key === dismissedKey) {
-      toast.dismiss(releaseNoticeId)
+      dismissOwnNotice()
       return
     }
     if (change === 'release' && !mayTellOfRelease()) {
-      toast.dismiss(releaseNoticeId)
+      dismissOwnNotice()
       return
     }
     showNotice(change, key)

@@ -14,5 +14,15 @@ export const useReleaseNoticeStore = defineStore('releaseNotice', () => {
     return true
   }
 
-  return { claim }
+  let shownBy: string | undefined
+
+  function markShown(owner: string) {
+    shownBy = owner
+  }
+
+  function isShownBy(owner: string): boolean {
+    return shownBy === owner
+  }
+
+  return { claim, markShown, isShownBy }
 })

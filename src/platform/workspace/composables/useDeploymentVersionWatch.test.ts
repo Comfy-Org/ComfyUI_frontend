@@ -308,6 +308,20 @@ describe('useDeploymentVersionWatch', () => {
     expect(useToast().toasts[0].actions[0].label).toBe('Reload')
   })
 
+  it('keeps a refused Run asking to reload when the editor already told of the version', async () => {
+    listDeployments.mockResolvedValueOnce(booted).mockResolvedValue(moved)
+    await bootWatch()
+    expect(useReleaseNoticeStore().claim('r-3')).toBe(true)
+    handledReleaseChange(runRefused)
+
+    await vi.advanceTimersByTimeAsync(DEPLOYMENT_VERSION_WATCH_MS)
+
+    expect(titles()).toEqual([
+      'Runs now go to a different version. Reload to run on it.'
+    ])
+    expect(useToast().toasts[0].actions[0].label).toBe('Reload')
+  })
+
   it('still asks a refused Run to reload after Later closed the version notice', async () => {
     listDeployments.mockResolvedValueOnce(booted).mockResolvedValue(moved)
     await bootWatch()
