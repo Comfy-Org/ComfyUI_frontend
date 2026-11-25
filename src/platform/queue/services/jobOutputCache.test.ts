@@ -120,6 +120,18 @@ describe('jobOutputCache', () => {
       expect(api.getJobDetail).toHaveBeenCalledWith(job.id)
     })
 
+    it('returns preview outputs without fetching details for a running job', async () => {
+      const previewOutput = createResultItem('preview')
+      const job: JobListItem = {
+        ...createMockJob(uniqueId('task'), 3),
+        status: 'in_progress'
+      }
+      const task = new TaskItemImpl(job, {}, [previewOutput])
+
+      expect(await getOutputsForTask(task)).toEqual([previewOutput])
+      expect(api.getJobDetail).not.toHaveBeenCalled()
+    })
+
     it('caches loaded tasks', async () => {
       const fullOutputs = [createResultItem('full-1')]
 

@@ -64,7 +64,7 @@ export async function getOutputsForTask(
   latestTaskRequestId = requestId
 
   const outputsCount = task.outputsCount ?? 0
-  const needsLazyLoad = outputsCount > 1
+  const needsLazyLoad = task.isHistory && outputsCount > 1
 
   if (!needsLazyLoad) {
     return [...task.previewableOutputs]
