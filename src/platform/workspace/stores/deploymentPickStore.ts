@@ -324,11 +324,13 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
   }
 
   let forgettingGonePick: AbortController | null = null
+  let forgottenGonePickId: string | null = null
 
   async function forgetGonePick(): Promise<void> {
     const id = workspaceStore.workspaceId
     if (!id || state.value.phase !== 'ready') return
-    if (state.value.gonePickedDeploymentId === null) return
+    const goneId = state.value.gonePickedDeploymentId
+    if (goneId === null || goneId === forgottenGonePickId) return
     if (forgettingGonePick) return
     const controller = new AbortController()
     forgettingGonePick = controller
@@ -340,6 +342,7 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     } finally {
       forgettingGonePick = null
     }
+    forgottenGonePickId = goneId
     await load()
   }
 

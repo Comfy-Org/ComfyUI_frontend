@@ -565,7 +565,21 @@ describe('useDeploymentPickStore', () => {
       expect(mockWorkspaceApi.clearDeployment).toHaveBeenCalledOnce()
     })
 
-    it('can be asked again after a request that failed', async () => {
+    it('does not send a second request when the listing after it fails', async () => {
+      mockWorkspaceApi.listDeployments
+        .mockResolvedValueOnce(goneListing)
+        .mockRejectedValue(new WorkspaceApiError('Service unavailable', 503))
+      mockWorkspaceApi.clearDeployment.mockResolvedValue(undefined)
+      const store = useDeploymentPickStore()
+      await store.loadOnce()
+
+      await store.forgetGonePick()
+      await store.forgetGonePick()
+
+      expect(mockWorkspaceApi.clearDeployment).toHaveBeenCalledOnce()
+    })
+
+    it('can be asked again after a request that faile', async () => {
       mockWorkspaceApi.listDeployments.mockResolvedValue(goneListing)
       mockWorkspaceApi.clearDeployment
         .mockRejectedValueOnce(
