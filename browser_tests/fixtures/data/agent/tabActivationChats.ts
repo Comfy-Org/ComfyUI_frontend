@@ -21,14 +21,6 @@ export const UNBOUND_REQUEST = 'What does a KSampler do?'
 export const UNRESTORABLE_REQUEST = 'Continue the missing workflow'
 export const LANDSCAPE_DRAFT = 'Now add a sunset'
 
-export const tabActivationTranscriptReads = [
-  PORTRAIT_THREAD_ID,
-  LANDSCAPE_THREAD_ID,
-  PORTRAIT_THREAD_ID,
-  UNBOUND_THREAD_ID,
-  LANDSCAPE_THREAD_ID
-]
-
 const EMPTY_WORKFLOW: ComfyWorkflowJSON = {
   last_node_id: 0,
   last_link_id: 0,

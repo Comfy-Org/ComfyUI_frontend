@@ -4914,5 +4914,186 @@ describe('useAgentConversationStore', () => {
         store.entries.filter((entry) => entry.role === 'user')
       ).toHaveLength(1)
     })
+
+    it('tracks per-tab blank chat ids and discards only failed pending sends for an origin', () => {
+      const store = useAgentConversationStore()
+      store.adoptInitialBlankTab('tab-a')
+      expect(store.activeBlankChatId).toBe('blank:tab-a')
+      expect(store.currentOrigin()).toEqual({
+        kind: 'blank',
+        blankChatId: 'blank:tab-a'
+      })
+
+      store.startPendingSend({
+        clientMessageId: 'cm-sending',
+        text: 'still sending',
+        attachments: [],
+        tags: [],
+        workflowReferences: []
+      })
+      store.startPendingSend({
+        clientMessageId: 'cm-failed',
+        workspaceId: 'ws-a',
+        text: 'failed',
+        attachments: [],
+        tags: [],
+        workflowReferences: []
+      })
+      store.failPendingSend('cm-failed', {
+        kind: 'network',
+        message: 'offline'
+      })
+      store.startPendingSend({
+        clientMessageId: 'cm-failed-other-ws',
+        origin: { kind: 'blank', blankChatId: 'blank:tab-a' },
+        workspaceId: 'ws-b',
+        text: 'failed in workspace b',
+        attachments: [],
+        tags: [],
+        workflowReferences: []
+      })
+      store.failPendingSend('cm-failed-other-ws', {
+        kind: 'network',
+        message: 'offline'
+      })
+      store.startPendingSend({
+        clientMessageId: 'cm-failed-b',
+        origin: { kind: 'blank', blankChatId: 'blank:tab-b' },
+        workspaceId: 'ws-a',
+        text: 'failed on tab b',
+        attachments: [],
+        tags: [],
+        workflowReferences: []
+      })
+      store.failPendingSend('cm-failed-b', {
+        kind: 'network',
+        message: 'offline'
+      })
+
+      expect(
+        store.hasPendingSendForOrigin({
+          kind: 'blank',
+          blankChatId: 'blank:tab-a'
+        })
+      ).toBe(true)
+      expect(
+        store.discardFailedPendingSends(
+          {
+            kind: 'blank',
+            blankChatId: 'blank:tab-a'
+          },
+          'ws-a'
+        )
+      ).toEqual(['cm-failed'])
+      expect(store.getPendingSend('cm-failed')).toBeUndefined()
+      expect(store.getPendingSend('cm-sending')).toBeDefined()
+      expect(store.getPendingSend('cm-failed-other-ws')).toBeDefined()
+      expect(store.getPendingSend('cm-failed-b')).toBeDefined()
+
+      store.reset('blank:tab-b')
+      expect(store.activeBlankChatId).toBe('blank:tab-b')
+      expect(store.getPendingSend('cm-failed-b')).toBeDefined()
+      expect(store.entries.map((entry) => entry.role)).toEqual(['user'])
+    })
+
+    it('preserves user attachments, tags, and workflow references when stashing an active turn and keeps blob previews alive until released', () => {
+      const revoke = vi
+        .spyOn(URL, 'revokeObjectURL')
+        .mockImplementation(() => {})
+      const store = useAgentConversationStore()
+      const attachments = [
+        { name: 'cat.png', ref: 'cat.png', previewUrl: 'blob:stashed-cat' }
+      ]
+      const tags = ['KSampler']
+      const workflowReferences = [{ id: 'wf-ref', name: 'Ref', textOffset: 0 }]
+
+      store.setThreadId('th-stash')
+      store.recordUser(
+        T1,
+        'use this node',
+        attachments,
+        tags,
+        workflowReferences
+      )
+      store.startTurn(T1)
+      store.stashActiveTurn()
+      store.reset('blank:other')
+
+      expect(revoke).not.toHaveBeenCalledWith('blob:stashed-cat')
+
+      store.setThreadId('th-stash')
+      store.hydrate([])
+      expect(revoke).not.toHaveBeenCalledWith('blob:stashed-cat')
+
+      store.resumeBackgroundTurn()
+
+      const userEntry = store.entries.find((entry) => entry.role === 'user')
+      expect(userEntry).toMatchObject({
+        text: 'use this node',
+        attachments,
+        tags,
+        workflowReferences
+      })
+
+      store.stashActiveTurn()
+      store.reset('blank:after')
+      expect(revoke).not.toHaveBeenCalledWith('blob:stashed-cat')
+
+      store.dropBackgroundTurns()
+      expect(revoke).toHaveBeenCalledWith('blob:stashed-cat')
+      revoke.mockRestore()
+    })
+
+    it('revokes a stashed blob preview when a settled background turn is retired by a persisted transcript copy', () => {
+      const revoke = vi
+        .spyOn(URL, 'revokeObjectURL')
+        .mockImplementation(() => {})
+      const store = useAgentConversationStore()
+      store.setThreadId('th-retire')
+      store.recordUser(
+        T1,
+        'with image',
+        [{ name: 'cat.png', ref: 'cat.png', previewUrl: 'blob:persisted-cat' }],
+        [],
+        []
+      )
+      store.startTurn(T1)
+      store.stashActiveTurn()
+      store.ingest({
+        type: 'agent_message_done',
+        data: { thread_id: 'th-retire', message_id: T1 }
+      })
+      store.reset('blank:other')
+      expect(revoke).not.toHaveBeenCalledWith('blob:persisted-cat')
+
+      store.setThreadId('th-retire')
+      store.hydrate([
+        {
+          id: 'u-1',
+          thread_id: 'th-retire',
+          turn_id: T1,
+          seq: 1,
+          role: 'user',
+          status: 'complete',
+          content: {
+            text: 'with image',
+            attachments: [{ filename: 'cat.png', type: 'input' }]
+          }
+        },
+        {
+          id: T1,
+          thread_id: 'th-retire',
+          turn_id: T1,
+          seq: 2,
+          role: 'assistant',
+          status: 'complete',
+          content: { text: 'done' }
+        }
+      ])
+      store.resumeBackgroundTurn()
+
+      expect(revoke).toHaveBeenCalledWith('blob:persisted-cat')
+      revoke.mockRestore()
+    })
   })
 })
