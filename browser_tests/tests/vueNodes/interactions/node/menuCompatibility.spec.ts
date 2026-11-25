@@ -1,5 +1,5 @@
 import { comfyExpect as expect } from '@e2e/fixtures/ComfyPage'
-import { test } from '@e2e/fixtures/menuCompatibilityFixture'
+import { test } from '@e2e/fixtures/ecosystemSimulacraFixture'
 import { openContextMenu } from '@e2e/fixtures/utils/contextMenuTestHelpers'
 
 test.describe('Explicit node menu compatibility', { tag: '@vue-nodes' }, () => {
@@ -63,7 +63,7 @@ test.describe('Explicit node menu compatibility', { tag: '@vue-nodes' }, () => {
     ).toEqual(offset)
     await comfyPage.page
       .getByRole('menuitem', { name: /^KSampler - #/ })
-      .click()
+      .press('Enter')
     const canvas = await comfyPage.canvas.boundingBox()
     if (!canvas) throw new Error('Expected the graph canvas')
     await expect
@@ -78,7 +78,6 @@ test.describe('Explicit node menu compatibility', { tag: '@vue-nodes' }, () => {
 
   test.describe('Imperative connection layout', () => {
     test.use({
-      menuScenario: 'native',
       initialSettings: { 'Comfy.Canvas.SelectionToolbox': true }
     })
 
@@ -132,8 +131,6 @@ test.describe('Explicit node menu compatibility', { tag: '@vue-nodes' }, () => {
   })
 
   test.describe('Ecosystem simulacra', () => {
-    test.use({ menuScenario: 'ecosystem' })
-
     test('disables an rgthree queue item until an output node is selected, then runs it', async ({
       comfyPage
     }) => {

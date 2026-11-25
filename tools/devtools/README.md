@@ -44,10 +44,11 @@ This directory was created as part of issue #4683 to merge the ComfyUI_devtools 
 
 ## Node menu compatibility fixtures
 
-The menu extension reproduces reduced custom-node menu additions against the
-real frontend. It contains no substitute core producer, converter, or renderer.
-Synthetic removal, reordering, and complete-override probes belong to the
-Playwright tests rather than the devtools extension.
+`web/ecosystemSimulacra.js` includes reduced custom-node menu additions that run
+against the real frontend when `Comfy.DevTools.EcosystemSimulacra` is `true`
+in localStorage. They contain no substitute core producer, converter, or
+renderer. Synthetic removal, reordering, and complete-override probes belong to
+the Playwright tests rather than the devtools extension.
 
 - [Custom Scripts SwapResolution](https://github.com/pythongosssss/ComfyUI-Custom-Scripts/blob/609f3afaa74b2f88ef9ce8d939626065e3247469/web/js/swapResolution.js)
   wraps the previous node hook, swaps the actual width and height widgets, and
@@ -63,8 +64,7 @@ Playwright tests rather than the devtools extension.
   The fixture preserves that imperative callback and global child-menu callback.
   It does not reproduce rgthree's connection-position renderer overrides.
 
-The `ecosystem` scenario adds patterns that stress the legacy callback
-contract:
+These additions stress the legacy callback contract:
 
 - [rgthree Queue Selected Output Nodes](https://github.com/rgthree/rgthree-comfy/blob/bc48c6aaeca87bedbc14245d89f9bc6be37a630e/src_web/comfyui/menu_queue_node.ts)
   inserts an item with `className`, an `&nbsp;` entity, and `disabled` until an

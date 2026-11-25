@@ -13,7 +13,6 @@
     "**/*.ts",
     "../browser_tests/types/**/*.d.ts",
     "../src/types/**/*.d.ts",
-    "../src/types/index.ts",
     "../global.d.ts"
   ]
 }
