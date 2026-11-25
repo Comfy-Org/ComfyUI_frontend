@@ -31846,7 +31846,7 @@
       },
       "subjects": {
         "name": "subjects",
-        "tooltip": "برای هر subject، تا ۳ تصویر مرجع ارائه دهید (در مجموع ۷ تصویر برای همه subjects). در پرامپت‌ها با {'@'}subject{'{'}subject_id{'}'} به آن‌ها ارجاع دهید."
+        "tooltip": "برای هر subject، تا ۳ تصویر مرجع ارائه دهید (در مجموع ۷ تصویر برای همه subjects). در پرامپت‌ها با @subject{subject_id} به آن‌ها ارجاع دهید."
       }
     },
     "outputs": {

@@ -31846,7 +31846,7 @@
       },
       "subjects": {
         "name": "subjects",
-        "tooltip": "Per ogni soggetto, fornisci fino a 3 immagini di riferimento (7 immagini totali tra tutti i soggetti). Fai riferimento nei prompt tramite {'@'}subject{'{'}subject_id{'}'}."
+        "tooltip": "Per ogni soggetto, fornisci fino a 3 immagini di riferimento (7 immagini totali tra tutti i soggetti). Fai riferimento nei prompt tramite @subject{subject_id}."
       }
     },
     "outputs": {

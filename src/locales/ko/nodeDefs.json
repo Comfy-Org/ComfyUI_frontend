@@ -31846,7 +31846,7 @@
       },
       "subjects": {
         "name": "subjects",
-        "tooltip": "각 subject마다 최대 3개의 참조 이미지를 제공합니다 (전체 subject 합계 7장). 프롬프트에서 {'@'}subject{'{'}subject_id{'}'}로 참조하세요."
+        "tooltip": "각 subject마다 최대 3개의 참조 이미지를 제공합니다 (전체 subject 합계 7장). 프롬프트에서 @subject{subject_id}로 참조하세요."
       }
     },
     "outputs": {

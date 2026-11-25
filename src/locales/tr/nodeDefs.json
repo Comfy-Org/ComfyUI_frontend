@@ -31846,7 +31846,7 @@
       },
       "subjects": {
         "name": "konular",
-        "tooltip": "Her konu için en fazla 3 referans görüntü sağlayın (tüm konular için toplam 7 görüntü). İstemlerde {'@'}subject{'{'}subject_id{'}'} ile referans verin."
+        "tooltip": "Her konu için en fazla 3 referans görüntü sağlayın (tüm konular için toplam 7 görüntü). İstemlerde @subject{subject_id} ile referans verin."
       }
     },
     "outputs": {

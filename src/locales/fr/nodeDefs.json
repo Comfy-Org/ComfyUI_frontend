@@ -31846,7 +31846,7 @@
       },
       "subjects": {
         "name": "sujets",
-        "tooltip": "Pour chaque sujet, fournissez jusqu’à 3 images de référence (7 images au total pour tous les sujets). Référencez-les dans les invites via {'@'}subject{'{'}subject_id{'}'}."
+        "tooltip": "Pour chaque sujet, fournissez jusqu’à 3 images de référence (7 images au total pour tous les sujets). Référencez-les dans les invites via @subject{subject_id}."
       }
     },
     "outputs": {

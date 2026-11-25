@@ -31846,7 +31846,7 @@
       },
       "subjects": {
         "name": "subjects",
-        "tooltip": "每个主体最多提供3张参考图像（所有主体共7张）。可通过 {'@'}subject{'{'}subject_id{'}'} 在提示中引用。"
+        "tooltip": "每个主体最多提供3张参考图像（所有主体共7张）。可通过 @subject{subject_id} 在提示中引用。"
       }
     },
     "outputs": {
