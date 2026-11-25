@@ -4,12 +4,7 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 import { findCoveredButtonPoints } from '@e2e/fixtures/utils/hitTestSweep'
 
-const palettes = [
-  { palette: 'dark', slotCoversDecrementEdge: true },
-  { palette: 'classic', slotCoversDecrementEdge: false }
-]
-
-for (const { palette, slotCoversDecrementEdge } of palettes) {
+for (const palette of ['dark', 'classic']) {
   test.describe(
     `Widget row hit targets in the ${palette} palette`,
     { tag: ['@vue-nodes', '@widget'] },
@@ -19,10 +14,6 @@ for (const { palette, slotCoversDecrementEdge } of palettes) {
       test('every enabled KSampler widget button receives clicks across its width', async ({
         comfyPage
       }) => {
-        test.fail(
-          slotCoversDecrementEdge,
-          'The widget input slot grab area covers the left 3px of the decrement button'
-        )
         const [node] = await comfyPage.nodeOps.getNodeRefsByType('KSampler')
         await node.centerOnNode()
         const buttons = comfyPage.vueNodes

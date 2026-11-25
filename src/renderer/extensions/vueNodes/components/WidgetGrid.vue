@@ -246,7 +246,7 @@ const rowKinds = {
     standalone: false,
     testId: 'node-widget',
     slotClass:
-      'h-(--node-widget-height) min-h-full w-3 opacity-0 transition-opacity duration-150 group-hover:opacity-100 has-[.lg-slot--compatible,.lg-slot--connected]:opacity-100'
+      'h-(--node-widget-height) min-h-full w-3 **:data-[part=slot-dot]:after:inset-[0_-6px_0_-9px] **:data-[part=slot-dot]:after:w-auto opacity-0 transition-opacity duration-150 group-hover:opacity-100 has-[.lg-slot--compatible,.lg-slot--connected]:opacity-100'
   },
   socket: { ...socketRow, standalone: true },
   convertedSocket: { ...socketRow, standalone: false }
