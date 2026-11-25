@@ -53,7 +53,7 @@ interface LegacyMouseEvent {
 export interface CanvasPointerEvent extends PointerEvent, CanvasMouseEvent {}
 
 /** MouseEvent with canvasX/Y and deltaX/Y properties */
-interface CanvasMouseEvent
+export interface CanvasMouseEvent
   extends MouseEvent, Readonly<CanvasPointerExtensions>, LegacyMouseEvent {}
 
 export type CanvasEventDetail =

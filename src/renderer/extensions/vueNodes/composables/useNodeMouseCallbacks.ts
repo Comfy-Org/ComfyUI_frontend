@@ -4,21 +4,34 @@ import type { MaybeRefOrGetter } from 'vue'
 
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
+import type { CanvasMouseEvent } from '@comfyorg/graph-model/events'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { cancelNodePress } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
 
-type MouseCallbackInvoker = (
-  node: LGraphNode,
-  event: CanvasPointerEvent,
-  pos: Point,
-  canvas: LGraphCanvas
-) => boolean | void
+interface DeliveredEvents {
+  onMouseEnter: PointerEvent
+  onMouseMove: PointerEvent
+  onMouseLeave: PointerEvent
+  onMouseDown: PointerEvent
+  onDblClick: MouseEvent
+}
 
-const invokers = {
+type MouseCallback = keyof DeliveredEvents
+
+type CanvasEventFor<C extends MouseCallback> = DeliveredEvents[C] &
+  CanvasMouseEvent
+
+const invokers: {
+  [C in MouseCallback]: (
+    node: LGraphNode,
+    event: CanvasEventFor<C>,
+    pos: Point,
+    canvas: LGraphCanvas
+  ) => boolean | void
+} = {
   onMouseEnter: (node, event) => node.onMouseEnter?.(event),
   onMouseMove: (node, event, pos, canvas) =>
     node.onMouseMove?.(event, pos, canvas),
@@ -27,18 +40,16 @@ const invokers = {
     node.onMouseDown?.(event, pos, canvas),
   onDblClick: (node, event, pos, canvas) =>
     node.onDblClick?.(event, pos, canvas)
-} satisfies Record<string, MouseCallbackInvoker>
-
-type MouseCallback = keyof typeof invokers
+}
 
 const OWN_DOUBLE_CLICK_TARGETS = '.lg-slot, .lg-node-widget'
 
 const reportedFailures = new Set<string>()
 
-function toCanvasPointerEvent(
+function toCanvasEvent<E extends MouseEvent>(
   canvas: LGraphCanvas,
-  event: MouseEvent
-): CanvasPointerEvent {
+  event: E
+): E & CanvasMouseEvent {
   canvas.adjustMouseEvent(event)
   return event
 }
@@ -82,15 +93,15 @@ export function useNodeMouseCallbacks(
   const canvasStore = useCanvasStore()
   let hoveredNode: LGraphNode | undefined
 
-  function deliver(
+  function deliver<C extends MouseCallback>(
     node: LGraphNode | undefined,
-    callback: MouseCallback,
-    pointerEvent: MouseEvent
+    callback: C,
+    domEvent: DeliveredEvents[C]
   ): boolean {
     const canvas = canvasStore.canvas
     if (!canvas || !node?.[callback]) return false
     canvas.setDirty(true)
-    const event = toCanvasPointerEvent(canvas, pointerEvent)
+    const event = toCanvasEvent(canvas, domEvent)
     try {
       const pos: Point = [
         event.canvasX - node.pos[0],

@@ -162,7 +162,10 @@ import {
   outputAsSerialisable
 } from './node/slotUtils'
 import type { NodeLike } from './types/NodeLike'
-import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
+import type {
+  CanvasMouseEvent,
+  CanvasPointerEvent
+} from '@comfyorg/graph-model/events'
 import {
   LGraphEventMode,
   NodeSlotType,
@@ -1168,7 +1171,7 @@ export class LGraphNode
   /** @param pos Offset from {@link LGraphNode.pos}. */
   onDblClick?(
     this: LGraphNode,
-    e: CanvasPointerEvent,
+    e: CanvasMouseEvent,
     pos: Point,
     canvas: LGraphCanvas
   ): void

@@ -161,16 +161,33 @@ describe('useNodeMouseCallbacks', () => {
     node.pos = [100, 200]
     graph.add(node)
     const canvas = createCanvas(graph)
-    const clicks: { pos: number[]; canvas: LGraphCanvas }[] = []
-    node.onDblClick = (_e, pos, eventCanvas) => {
-      clicks.push({ pos: [...pos], canvas: eventCanvas })
+    const clicks: {
+      event: { type: string; canvasX: number; canvasY: number }
+      isPointerEvent: boolean
+      pos: number[]
+      canvas: LGraphCanvas
+    }[] = []
+    node.onDblClick = (e, pos, eventCanvas) => {
+      clicks.push({
+        event: { type: e.type, canvasX: e.canvasX, canvasY: e.canvasY },
+        isPointerEvent: 'pointerId' in e,
+        pos: [...pos],
+        canvas: eventCanvas
+      })
     }
     await nextTick()
 
     const pointer = await renderHoverHost(node.id)
     pointer.doubleClick()
 
-    expect(clicks).toEqual([{ pos: [30, 45], canvas }])
+    expect(clicks).toEqual([
+      {
+        event: { type: 'dblclick', canvasX: 130, canvasY: 245 },
+        isPointerEvent: false,
+        pos: [30, 45],
+        canvas
+      }
+    ])
   })
 
   it('leaves a double click on a widget or a slot to it, as the canvas renderer does', async () => {
@@ -192,21 +209,25 @@ describe('useNodeMouseCallbacks', () => {
   it.for([
     {
       mode: 'read-only',
+      nodeAllowsInteraction: true,
       restrict: (canvas: LGraphCanvas) => (canvas.read_only = true)
     },
     {
       mode: 'select-only',
+      nodeAllowsInteraction: true,
       restrict: (canvas: LGraphCanvas) => (canvas.selectOnly = true)
     },
     {
       mode: 'non-interactive',
+      nodeAllowsInteraction: false,
       restrict: (canvas: LGraphCanvas) => (canvas.allow_interaction = false)
     }
   ])(
-    'does not call onDblClick while the canvas is $mode',
-    async ({ restrict }) => {
+    'does not call onDblClick while the canvas is $mode (node allow_interaction: $nodeAllowsInteraction)',
+    async ({ restrict, nodeAllowsInteraction }) => {
       const graph = new LGraph()
       const node = new LGraphNode('Opener')
+      node.flags.allow_interaction = nodeAllowsInteraction
       graph.add(node)
       restrict(createCanvas(graph))
       const onDblClick = vi.fn()
