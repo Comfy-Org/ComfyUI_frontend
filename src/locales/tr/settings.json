@@ -469,7 +469,7 @@
     "name": "Sorunlar sekmesinde eksik medyayı göster",
     "tooltip": "Devre dışı bırakıldığında, bulunamayan giriş görüntüleri, videoları ve ses dosyaları sorunlar sekmesinde listelenmez ve düğümleri vurgulanmaz."
   },
-  "Comfy_Workflow_ShowMissingNodesWarning": {
+  "Comfy_ErrorSystem_ShowMissingNodes": {
     "name": "Sorunlar sekmesinde eksik düğümleri göster",
     "tooltip": "Devre dışı bırakıldığında, eksik düğüm paketleri sorunlar sekmesinde listelenmez ve düğümleri vurgulanmaz. İş akışı, yüklenene kadar yine de çalıştırılamaz."
   },

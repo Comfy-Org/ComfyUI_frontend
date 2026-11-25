@@ -45,6 +45,11 @@ describe('useCreditUsageSummary', () => {
     experiment.expose()
     expect(useTelemetry()?.trackAgentCreditUsageExposure).not.toHaveBeenCalled()
 
+    useRemoteConfigStore().acceptConfig({}, true)
+    expect(experiment.assignment.value).toBe('control')
+    experiment.expose()
+    expect(useTelemetry()?.trackAgentCreditUsageExposure).not.toHaveBeenCalled()
+
     const malformedConfig: Record<string, unknown> = {
       [CREDIT_USAGE_SUMMARY_FLAG]: 'unexpected'
     }

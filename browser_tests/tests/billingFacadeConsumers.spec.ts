@@ -156,6 +156,39 @@ test.describe('Billing facade consumers (FE-933)', { tag: '@cloud' }, () => {
     )
   })
 
+  test.describe('Team plan', () => {
+    test.beforeEach(async ({ page }, testInfo) => {
+      testInfo.setTimeout(60_000)
+
+      await mockCloudBoot(
+        page,
+        {
+          is_active: true,
+          subscription_tier: 'TEAM',
+          subscription_duration: 'MONTHLY'
+        },
+        { billing_new_ux_enabled: true }
+      )
+      await mockWorkspaceList(page, [
+        { ...workspace('personal', 'owner'), subscription_tier: 'TEAM' }
+      ])
+      await bootApp(page)
+    })
+
+    test('uses the Team plan color in the profile menu header (FRONT-4174)', async ({
+      page
+    }) => {
+      await page.getByRole('button', { name: 'Current user' }).click()
+      const header = page.getByTestId('workspace-switcher-trigger')
+      const avatar = header.getByText('P', { exact: true })
+      await expect(avatar).toBeVisible()
+      await expect(avatar).toHaveCSS(
+        'background-color',
+        'oklch(0.508 0.097 148)'
+      )
+    })
+  })
+
   test('keeps the free-tier quota inside the top action bars', async ({
     page
   }) => {

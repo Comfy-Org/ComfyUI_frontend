@@ -22,8 +22,8 @@
 import { whenever } from '@vueuse/core'
 
 import { useImageQuiet } from '@/composables/useImageQuiet'
-import type { AssetMeta } from '@/platform/assets/schemas/mediaAssetSchema'
-import { getAssetDisplayName } from '@/platform/assets/utils/assetMetadataUtils'
+import type { AssetMeta } from '@comfyorg/assets-core/media'
+import { getAssetDisplayName } from '@comfyorg/assets-core/metadata'
 
 const { asset } = defineProps<{
   asset: AssetMeta

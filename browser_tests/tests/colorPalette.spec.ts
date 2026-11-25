@@ -1,5 +1,7 @@
 import { expect } from '@playwright/test'
 
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 import {
@@ -312,7 +314,10 @@ test.describe('Color Palette', { tag: ['@screenshot', '@settings'] }, () => {
       await expect(incrementIcon).toHaveCSS('color', 'rgb(221, 221, 221)')
       await expect(field).toHaveCSS('border-top-width', '1px')
       await expect(field).toHaveCSS('border-top-left-radius', '9999px')
-      await expect(field).toHaveCSS('--node-icon-style', 'triangle')
+      await expect(comfyPage.page.locator('html')).toHaveAttribute(
+        'data-theme',
+        'classic'
+      )
       await expect(incrementIcon).toHaveCSS('width', '10px')
 
       await expect(input).toHaveValue('20')
@@ -328,7 +333,9 @@ test.describe('Color Palette', { tag: ['@screenshot', '@settings'] }, () => {
       await expect(row).toHaveCSS('margin-right', '12px')
       await expect(field).toHaveCSS('border-top-width', '0px')
       await expect(field).toHaveCSS('border-top-left-radius', '6px')
-      await expect(field).toHaveCSS('--node-icon-style', 'chevron')
+      await expect(comfyPage.page.locator('html')).not.toHaveAttribute(
+        'data-theme'
+      )
       await expect(incrementIcon).toHaveCSS('width', '16px')
     }
   )
@@ -363,6 +370,16 @@ test.describe('Color Palette', { tag: ['@screenshot', '@settings'] }, () => {
       })
     }
 
+    test('keeps the number field fill while hovered', async ({ comfyPage }) => {
+      const field = comfyPage.vueNodes
+        .getWidgetRowByLabel('Save Animated WEBP', 'fps')
+        .getByTestId(TestIds.widgets.numberRow)
+
+      await field.hover()
+
+      await expect(field).toHaveCSS('background-color', 'rgb(34, 34, 34)')
+    })
+
     test('fits the boolean switch into the curve of its row', async ({
       comfyPage
     }) => {
@@ -393,6 +410,61 @@ test.describe('Color Palette', { tag: ['@screenshot', '@settings'] }, () => {
           }
         })
         .toEqual({ top: 0, bottom: 0, right: 0 })
+    })
+  })
+
+  test.describe('Classic palette linked widgets', { tag: '@vue-nodes' }, () => {
+    test.use({ initialSettings: { 'Comfy.ColorPalette': 'classic' } })
+
+    let stepsSlot: number
+
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.workflow.loadWorkflow('primitive/primitive_node')
+      stepsSlot = await comfyPage.page.evaluate(
+        (nodeId) =>
+          window
+            .app!.graph.getNodeById(nodeId)
+            ?.inputs.findIndex((input) => input.name === 'steps') ?? -1,
+        toNodeId(2)
+      )
+    })
+
+    test('aligns a linked widget label with the other widget labels', async ({
+      comfyPage
+    }) => {
+      const linkedLabel = comfyPage.vueNodes
+        .getInputSlotRow('2', stepsSlot)
+        .getByText('steps', { exact: true })
+      const widgetLabel = comfyPage.vueNodes
+        .getWidgetRowByLabel('KSampler', 'cfg')
+        .getByTestId(TestIds.widgets.layoutFieldLabel)
+
+      await expect(linkedLabel).toHaveCSS('color', 'rgb(153, 153, 153)')
+      await expect(widgetLabel).toHaveCSS('color', 'rgb(153, 153, 153)')
+      await expect
+        .poll(async () => {
+          const [linked, widget] = await Promise.all([
+            linkedLabel.boundingBox(),
+            widgetLabel.boundingBox()
+          ])
+          if (!linked || !widget) return null
+          return Math.round(linked.x - widget.x)
+        })
+        .toBe(0)
+    })
+
+    test('colours connected untyped slot dots like LiteGraph', async ({
+      comfyPage
+    }) => {
+      for (const dot of [
+        comfyPage.vueNodes.getOutputSlotConnectionDot('1', 0),
+        comfyPage.vueNodes.getInputSlotConnectionDot('2', stepsSlot)
+      ]) {
+        await expect(dot.getByTestId('slot-dot')).toHaveCSS(
+          'background-color',
+          'rgb(119, 255, 119)'
+        )
+      }
     })
   })
 })

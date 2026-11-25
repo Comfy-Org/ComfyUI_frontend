@@ -21,7 +21,7 @@ describe('Error System settings', () => {
 
     expect(ordered).toEqual([
       'Comfy.RightSidePanel.ShowErrorsTab',
-      'Comfy.Workflow.ShowMissingNodesWarning',
+      'Comfy.ErrorSystem.ShowMissingNodes',
       'Comfy.ErrorSystem.ShowMissingModels',
       'Comfy.Workflow.ShowMissingMediaWarning'
     ])

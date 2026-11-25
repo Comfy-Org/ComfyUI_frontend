@@ -18,7 +18,9 @@ used to follow different onboarding policies, chosen from the host at runtime.
 
 Revised 2026-10-24: Cloud and Desktop share one onboarding policy, and no
 module checks the host for it. Revised 2026-10-27: a signed-out Agree is kept
-across a sign-in that reloads or leaves the page.
+across a sign-in that reloads or leaves the page. Revised 2026-11-24: a new
+local user's first session defers unprompted Agent surfaces until the next
+launch.
 
 Keep an introduction-response marker separate from the existing
 account/workspace consent setting. Only Agree or Skip sets this marker; display
@@ -28,13 +30,19 @@ account and workspace. Signed-out users can respond, the response survives
 restarts, and a scope that has not answered still gets the card on the launches
 below.
 
-The panel opens automatically on the first two launches (the activation
-visits), whether or not the user skipped consent or closed the panel. On those
-launches, an unanswered scope also gets the consent card over the panel once
-the screen is clear, including after signing in or switching to an unanswered
-account or workspace during that launch. Later launches show no automatic
-card, even when the panel was left open. Whether a launch is one of these is
-read once, before it claims its visit.
+Except during a new local user's first session, the panel opens automatically
+on the first two activation visits, whether or not the user skipped consent or
+closed the panel. On those visits, an unanswered scope also gets the consent
+card over the panel once the screen is clear, including after signing in or
+switching to an unanswered account or workspace during that launch. Later
+launches show no automatic card, even when the panel was left open. Whether a
+launch is one of these is read once, before it claims its visit.
+
+On a new local user's first session, the templates experience is the only
+unprompted onboarding surface. The Agent panel and consent card stay hidden
+unless the user opens the Agent, and that session does not claim an activation
+visit. The next two launches are therefore the two normal activation visits.
+Cloud and existing local users are unchanged.
 
 After that, consent is asked when the user needs it: the Agent entry button
 asks before it opens a closed panel, and Send asks before the first message.

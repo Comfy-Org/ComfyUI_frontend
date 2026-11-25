@@ -97,6 +97,5 @@ if (
   })
   setOutput('active', targets.active.join(' '))
   setOutput('retired', targets.retired.join(' '))
-  setOutput('minimum', targets.minimum)
   setOutput('pin-sha', targets.pinSha)
 }

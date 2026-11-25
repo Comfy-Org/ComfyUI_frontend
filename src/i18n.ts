@@ -1,3 +1,5 @@
+import { watchEffect } from 'vue'
+import type { WatchStopHandle } from 'vue'
 import { createI18n } from 'vue-i18n'
 import type { PluralizationRule } from 'vue-i18n'
 
@@ -351,6 +353,15 @@ export const i18n: AppI18n = {
   },
   install: (app, ...options) => appI18nInstance().install(app, ...options),
   dispose: () => appI18nInstance().dispose()
+}
+
+/** Keeps `<html lang>` on the active UI locale. */
+export function syncDocumentLanguage(
+  root = document.documentElement
+): WatchStopHandle {
+  return watchEffect(() => {
+    root.lang = i18n.global.locale.value
+  })
 }
 
 export const t: AppComposer['t'] = (...args: unknown[]): string =>

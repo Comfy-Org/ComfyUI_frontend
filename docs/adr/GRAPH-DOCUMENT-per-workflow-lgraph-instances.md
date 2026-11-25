@@ -67,9 +67,10 @@ Undo/redo can finish after its tab has been switched away, so it may configure
 a background graph while another one is visible. `beforeConfigureGraph` and
 `afterConfigureGraph` therefore receive a trailing `{ graph, workflow }`
 argument after `app`, naming the graph being configured; extensions act on
-that graph, not on `app.rootGraph`. In-tree consumers (group-node migration and
-the agent restore minter) read it; the minter holds the operations of a
-background restore of the Agent-bound workflow until its document resubscribes.
+that graph, not on `app.rootGraph`; group-node migration reads it. The
+ChangeTracker announces each finished undo/redo for its own workflow and
+graph, and the Agent's `docOpMinter` holds the operations of a background
+restore of the Agent-bound workflow until its document resubscribes.
 A forced reload that fails reconfigures the
 owned graph from a snapshot taken before it was cleared, so the workflow keeps
 its contents and its root id.
