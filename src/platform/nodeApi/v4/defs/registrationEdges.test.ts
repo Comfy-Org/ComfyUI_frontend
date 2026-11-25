@@ -216,10 +216,12 @@ describe('registering node types and extensions at the edges', () => {
       })
       const earlier = addedNode('Redefined')
       first()
-      defs.define(packId, {
-        type: 'Redefined',
-        onRemoved: () => heard.push('second')
-      })
+      onTestFinished(
+        defs.define(packId, {
+          type: 'Redefined',
+          onRemoved: () => heard.push('second')
+        })
+      )
       graph.remove(earlier)
       graph.add(earlier)
 
@@ -366,13 +368,17 @@ describe('registering node types and extensions at the edges', () => {
 
     it('refuses a definition of a type the host is registering, and leaves the host’s type whole', () => {
       let refusal: unknown
-      defs.extend(packId, 'Sampler', () => {
-        try {
-          defs.define(packId, { type: 'Sampler', title: 'Pack' })
-        } catch (error) {
-          refusal = error
-        }
-      })
+      onTestFinished(
+        defs.extend(packId, 'Sampler', () => {
+          try {
+            onTestFinished(
+              defs.define(packId, { type: 'Sampler', title: 'Pack' })
+            )
+          } catch (error) {
+            refusal = error
+          }
+        })
+      )
 
       const hostClass = registerHost('Sampler')
 
@@ -384,8 +390,10 @@ describe('registering node types and extensions at the edges', () => {
     })
 
     it('still lets an apply define a type no one has', () => {
-      defs.extend(packId, 'Sampler', () =>
-        defs.define(packId, { type: 'Sampler/Helper' })
+      onTestFinished(
+        defs.extend(packId, 'Sampler', () =>
+          defs.define(packId, { type: 'Sampler/Helper' })
+        )
       )
 
       registerHost('Sampler')
@@ -415,12 +423,16 @@ describe('registering node types and extensions at the edges', () => {
     const stopOriginal = defs.define(packId, { type: 'Replaced' })
     const replace = once(() => {
       stopOriginal()
-      defs.define(packId, { type: 'Replaced', title: 'Replacement' })
+      onTestFinished(
+        defs.define(packId, { type: 'Replaced', title: 'Replacement' })
+      )
     })
-    defs.extend(packId, 'Replaced', (builder) => {
-      builder.onCreated(created)
-      replace()
-    })
+    onTestFinished(
+      defs.extend(packId, 'Replaced', (builder) => {
+        builder.onCreated(created)
+        replace()
+      })
+    )
 
     addedNode('Replaced')
 
