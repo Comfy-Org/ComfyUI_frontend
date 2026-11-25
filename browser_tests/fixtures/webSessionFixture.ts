@@ -12,8 +12,6 @@ import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import {
   WEB_SESSION,
   WEB_SESSION_COOKIE,
-  WEB_SESSION_ANONYMOUS_FEATURES,
-  WEB_SESSION_FEATURES,
   WEB_SESSION_MINT,
   currentWorkspace
 } from '@e2e/fixtures/data/webSession'
@@ -116,22 +114,7 @@ export const webSessionTest = comfyPageFixture.extend<WebSessionFixtures>({
     await page.route('**/api/features', async (route) => {
       const response = await route.fetch()
       const backendFeatures: RemoteConfig = await response.json()
-      const headers = await route.request().allHeaders()
-      const credentialed =
-        'x-comfy-client' in headers &&
-        'cookie' in headers &&
-        headers['cookie'].includes(WEB_SESSION_COOKIE.name)
-      await route.fulfill(
-        jsonRoute(
-          credentialed
-            ? { ...backendFeatures, ...WEB_SESSION_FEATURES, ...serverFeatures }
-            : {
-                ...backendFeatures,
-                ...WEB_SESSION_ANONYMOUS_FEATURES,
-                ...serverFeatures
-              }
-        )
-      )
+      await route.fulfill(jsonRoute({ ...backendFeatures, ...serverFeatures }))
     })
 
     await page.route('**/api/auth/session', async (route) => {

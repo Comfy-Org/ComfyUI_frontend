@@ -15,7 +15,7 @@ import {
   PrimitiveNode,
   widgetInputsExtension
 } from '@/extensions/core/widgetInputs'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 import { GET_CONFIG } from '@comfyorg/graph-model/widgets'
 import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'

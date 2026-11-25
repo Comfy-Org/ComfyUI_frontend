@@ -25,12 +25,23 @@ export async function getFromPngBuffer(
   while (offset < pngData.length) {
     const length = dataView.getUint32(offset)
     const type = String.fromCharCode(...pngData.slice(offset + 4, offset + 8))
+    const chunkEnd = offset + 8 + length
+
+    if (type === 'IEND') break
+
+    if (chunkEnd > pngData.length) {
+      console.error(`PNG chunk "${type}" runs past the end of the file`)
+      break
+    }
 
     if (type === 'tEXt' || type === 'comf' || type === 'iTXt') {
-      let keyword_end = offset + 8
-      while (pngData[keyword_end] !== 0) {
-        keyword_end++
+      const keywordLength = pngData.subarray(offset + 8, chunkEnd).indexOf(0)
+      if (keywordLength === -1) {
+        console.error(`PNG chunk "${type}" has an unterminated keyword`)
+        offset += 12 + length
+        continue
       }
+      const keyword_end = offset + 8 + keywordLength
       const keyword = String.fromCharCode(
         ...pngData.slice(offset + 8, keyword_end)
       )
@@ -40,7 +51,6 @@ export async function getFromPngBuffer(
       let compressionMethod = 0
 
       if (type === 'iTXt') {
-        const chunkEnd = offset + 8 + length
         isCompressed = pngData[textStart] === 1
         compressionMethod = pngData[textStart + 1]
         textStart += 2
@@ -56,7 +66,7 @@ export async function getFromPngBuffer(
         if (textStart < chunkEnd) textStart++
       }
 
-      let contentArraySegment = pngData.slice(textStart, offset + 8 + length)
+      let contentArraySegment = pngData.slice(textStart, chunkEnd)
 
       if (isCompressed) {
         if (compressionMethod === 0) {
@@ -96,8 +106,11 @@ export async function getFromPngFile(
         reject(new Error('Failed to read file as ArrayBuffer'))
         return
       }
-      const result = await getFromPngBuffer(buffer)
-      resolve(result)
+      try {
+        resolve(await getFromPngBuffer(buffer))
+      } catch (error) {
+        reject(error)
+      }
     }
     reader.onerror = () => reject(reader.error)
     reader.onabort = () => reject(new Error('FileReader aborted'))

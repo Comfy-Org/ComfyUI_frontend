@@ -1,5 +1,5 @@
-import type { BillingFailed, BillingSucceeded } from './stages'
+import type { BillingFailed } from './stages'
 
 export type CapabilityReadBillingEvent = {
   operation: 'capability_read'
-} & (BillingSucceeded | Pick<BillingFailed, 'stage' | 'outcome'>)
+} & Pick<BillingFailed, 'stage' | 'outcome'>

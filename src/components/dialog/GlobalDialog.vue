@@ -16,10 +16,10 @@
           "
           :surface="item.dialogComponentProps.headless ? 'none' : 'card'"
           :maximized="!!item.dialogComponentProps.maximized"
+          :grows-down="!!item.dialogComponentProps.growsDown"
           :data-dialog-key="item.key"
           @escape-key-down="
-            (e) =>
-              item.dialogComponentProps.closable === false && e.preventDefault()
+            (e) => onRekaEscapeKeyDown(item.dialogComponentProps, e)
           "
           @pointer-down-outside="
             (e) => onRekaPointerDownOutside(item.dialogComponentProps, e)
@@ -99,6 +99,10 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
+import { provide } from 'vue'
+
+import { LocalAgentPanelPortKey } from '@/platform/openOnCloud/localAgentPanelPort'
+import { useOpenAgentPanel } from '@/workbench/extensions/agent/composables/agent/useOpenAgentPanel'
 
 import Dialog from '@comfyorg/design-system/dialog/Dialog'
 import DialogClose from '@comfyorg/design-system/dialog/DialogClose'
@@ -109,9 +113,14 @@ import DialogMaximize from '@comfyorg/design-system/dialog/DialogMaximize'
 import DialogOverlay from '@comfyorg/design-system/dialog/DialogOverlay'
 import DialogPortal from '@comfyorg/design-system/dialog/DialogPortal'
 import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
-import { onRekaPointerDownOutside } from '@/components/dialog/dialogDismissGuards'
+import {
+  onRekaEscapeKeyDown,
+  onRekaPointerDownOutside
+} from '@/components/dialog/dialogDismissGuards'
 import type { DialogInstance } from '@/stores/dialogStore'
 import { useDialogStore } from '@/stores/dialogStore'
+
+provide(LocalAgentPanelPortKey, useOpenAgentPanel('cloud_button'))
 
 const dialogStore = useDialogStore()
 

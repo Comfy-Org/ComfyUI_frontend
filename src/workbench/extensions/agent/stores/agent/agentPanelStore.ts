@@ -1,3 +1,4 @@
+import type { AgentErrorContext } from '@/platform/workflowErrors/agentErrorContext'
 import { useEventListener, useLocalStorage, useWindowSize } from '@vueuse/core'
 import { clamp } from 'es-toolkit'
 import { defineStore } from 'pinia'
@@ -11,7 +12,7 @@ import {
   watch
 } from 'vue'
 
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { readComfyAgentFeature } from '@/platform/remoteConfig/comfyAgentFeature'
 import {
   SIDEBAR_MIN_WIDTH,
   SIDE_TOOLBAR_WIDTH
@@ -19,18 +20,19 @@ import {
 import { useTelemetry } from '@comfyorg/telemetry'
 import type {
   AgentPanelCloseSource,
-  AgentPanelOpenedMetadata
+  AgentPanelOpenedMetadata,
+  AgentTargetUnavailableMetadata
 } from '@comfyorg/telemetry/types'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
-import type { AgentServerFeature } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import type {
   CreditTransitionNoticeEvent,
   CreditTransitionNoticeState
 } from './creditTransitionNoticeState'
 import { reduceCreditTransitionNotice } from './creditTransitionNoticeState'
+import type { HeldGate } from '@/workbench/extensions/agent/composables/agent/useAgentSendGates'
 
 const PANEL_MIN_WIDTH = 420
 const PANEL_MAX_WIDTH = 960
@@ -64,6 +66,7 @@ type TargetTracking =
 
 export type AgentPanelView =
   | { screen: 'chat' }
+  | { screen: 'skills' }
   | {
       screen: 'history'
       previousThreadId: string | null
@@ -83,26 +86,18 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     writeDefaults: false
   })
   const gateSettled = ref(false)
+  const heldSendGate = ref<HeldGate | null>(null)
   const view = shallowRef<AgentPanelView>({ screen: 'chat' })
-  const { flags: featureFlags } = useFeatureFlags()
   const flagsSettled = computed(() => api.serverFeatureFlagsSettled.value)
   /** The server's `agent` feature; undefined unless its state is known. */
-  const comfyAgent = computed(() => {
-    if (import.meta.env.VITE_AGENT_STANDALONE === 'true') return undefined
-    const agent = featureFlags.agent
-    return agent?.state === 'starting' ||
-      agent?.state === 'ready' ||
-      agent?.state === 'failed'
-      ? (agent as AgentServerFeature)
-      : undefined
-  })
+  const comfyAgent = computed(readComfyAgentFeature)
   const maximized = ref(false)
   const draggedWidth = ref(PANEL_MIN_WIDTH)
   const reservedWorkspaceWidth = ref(SIDE_TOOLBAR_WIDTH + SIDEBAR_MIN_WIDTH)
   const reportedExhaustionIdentity = ref<string | null>(null)
   const billingRefreshedAcceptances = ref(0)
-  const reportedFreeUseExposure = ref(false)
   const reportedFreeUseImpression = ref(false)
+  const reportedCreditUsageExposure = ref(false)
   const fundsRechecks = ref(new Map<number, string>())
   const fundsRecheckTimeouts = new Map<number, ReturnType<typeof setTimeout>>()
   const fundsRecheckFinished = new Map<number, () => void>()
@@ -110,6 +105,8 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   const creditTransitionNotice = shallowRef<CreditTransitionNoticeState | null>(
     null
   )
+  const pendingCloudHandoff = ref<string | null>(null)
+  const pendingErrorContext = shallowRef<AgentErrorContext | null>(null)
   const dismissedSelectionSignature = ref<string | null>(null)
   const workflowStore = useWorkflowStore()
   const targetTracking = ref<TargetTracking>({ mode: 'uninitialized' })
@@ -167,7 +164,10 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
         : { mode: 'retained', workflow }
   }
 
-  function markWorkflowTargetUnavailable(): void {
+  function markWorkflowTargetUnavailable(
+    report: AgentTargetUnavailableMetadata
+  ): void {
+    useTelemetry()?.trackAgentTargetUnavailable(report)
     targetTracking.value = {
       mode: 'retained',
       workflow: null,
@@ -225,7 +225,12 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
       const [workflow] = args
       if (!workflow.isTemporary)
         after(() => {
-          if (isRetainedTarget(workflow)) markWorkflowTargetUnavailable()
+          if (isRetainedTarget(workflow))
+            markWorkflowTargetUnavailable({
+              cause: 'workflow_deleted',
+              workflow_id: null,
+              startup_tab_restore_settled: null
+            })
         })
     } else if (name === 'renameWorkflow') {
       const [workflow] = args
@@ -240,11 +245,14 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   function startOpenEpoch(): void {
     openedAt = Date.now()
     teardownReported = false
-    reportedFreeUseExposure.value = false
     reportedFreeUseImpression.value = false
+    reportedCreditUsageExposure.value = false
   }
 
-  const isVisible = computed(() => enabled.value && isOpen.value)
+  const restoredOpenHeld = ref(false)
+  const isVisible = computed(
+    () => enabled.value && isOpen.value && !restoredOpenHeld.value
+  )
 
   watch(isVisible, (visible) => {
     if (!visible) {
@@ -286,7 +294,9 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   function open(
     source: AgentPanelOpenedMetadata['source'] = 'topbar_button'
   ): void {
-    if (isOpen.value) return
+    const wasHeld = restoredOpenHeld.value
+    restoredOpenHeld.value = false
+    if (isOpen.value && !wasHeld) return
     isOpen.value = true
     startOpenEpoch()
     useTelemetry()?.trackAgentPanelOpened({ source })
@@ -306,7 +316,16 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   function suppressRestoredOpen(): void {
     if (!isOpen.value || isVisible.value) return
     isOpen.value = false
+    restoredOpenHeld.value = false
     openedAt = null
+  }
+
+  function holdRestoredOpen(): void {
+    if (isOpen.value) restoredOpenHeld.value = true
+  }
+
+  function releaseRestoredOpen(): void {
+    restoredOpenHeld.value = false
   }
 
   useEventListener(window, 'pagehide', () => {
@@ -325,7 +344,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   })
 
   function toggle(): void {
-    if (isOpen.value) close('topbar_button')
+    if (isOpen.value && !restoredOpenHeld.value) close('topbar_button')
     else open()
   }
 
@@ -412,14 +431,15 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     isVisible,
     hasEverOpened,
     gateSettled,
+    heldSendGate,
     view,
     interruptHistorySelection,
     flagsSettled,
     comfyAgent,
     reportedExhaustionIdentity,
     billingRefreshedAcceptances,
-    reportedFreeUseExposure,
     reportedFreeUseImpression,
+    reportedCreditUsageExposure,
     creditTransitionNotice: readonly(creditTransitionNotice),
     observeAgentScopedFunds,
     claimCreditTransitionNoticeImpression,
@@ -436,6 +456,8 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     open,
     targetTracking,
     followsVisibleWorkflow,
+    pendingErrorContext,
+    pendingCloudHandoff,
     initializeTargetTracking,
     retainWorkflowTarget,
     startFollowingVisibleWorkflow,
@@ -448,6 +470,8 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     toggle,
     close,
     suppressRestoredOpen,
+    holdRestoredOpen,
+    releaseRestoredOpen,
     setWidth,
     setReservedWorkspaceWidth,
     toggleMaximize

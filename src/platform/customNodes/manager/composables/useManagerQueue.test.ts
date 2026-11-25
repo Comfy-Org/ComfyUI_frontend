@@ -4,7 +4,7 @@ import { ref } from 'vue'
 
 import { app } from '@/scripts/app'
 import { useManagerQueue } from '@/platform/customNodes/manager/composables/useManagerQueue'
-import type { components } from '@/platform/customNodes/manager/types/generatedManagerTypes'
+import type { components } from '@comfyorg/api-client/generatedManagerTypes'
 
 vi.mock(import('@/scripts/app'))
 

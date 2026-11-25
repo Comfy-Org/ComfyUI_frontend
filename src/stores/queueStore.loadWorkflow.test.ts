@@ -1,10 +1,7 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type {
-  JobDetail,
-  JobListItem
-} from '@/platform/remote/comfyui/jobs/jobTypes'
+import type { JobDetail, JobListItem } from '@comfyorg/api-client/jobTypes'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import type { ComfyApp } from '@/scripts/app'
 import { provideExtensionService } from '@/platform/extensions/services/extensionServiceAccess'
@@ -20,7 +17,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock(import('@/platform/assets/composables/media/assetMappers'))
+vi.mock(import('@/platform/assets/adapters/outputAssetMappers'), { spy: true })
 
 provideExtensionService(() => ({ invokeExtensions: vi.fn() }))
 

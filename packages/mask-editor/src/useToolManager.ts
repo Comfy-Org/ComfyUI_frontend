@@ -35,11 +35,11 @@ export function useToolManager(
       newActiveLayerOnSet: 'rgb'
     },
     [Tools.MaskBucket]: {
-      cursor: "url('/cursor/paintBucket.png') 30 25, auto",
+      cursor: `url('${new URL('./assets/cursors/paintBucket.png', import.meta.url).href}') 30 25, auto`,
       newActiveLayerOnSet: 'mask'
     },
     [Tools.MaskColorFill]: {
-      cursor: "url('/cursor/colorSelect.png') 15 25, auto",
+      cursor: `url('${new URL('./assets/cursors/colorSelect.png', import.meta.url).href}') 15 25, auto`,
       newActiveLayerOnSet: 'mask'
     }
   }

@@ -9,7 +9,7 @@ import { useServerLogs } from '@/platform/customNodes/manager/services/useServer
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { useComfyRegistryService } from '@/services/comfyRegistryService'
 
 import { normalizePackKeys } from '@/platform/customNodes/manager/utils/packUtils'
@@ -20,7 +20,7 @@ import type {
   RegistryPack,
   TaskLog
 } from '@/platform/customNodes/manager/types/comfyManagerTypes'
-import type { components } from '@/platform/customNodes/manager/types/generatedManagerTypes'
+import type { components } from '@comfyorg/api-client/generatedManagerTypes'
 import { versionStatusFilters } from '@/platform/customNodes/manager/utils/nodePackVersionUtil'
 
 type InstallPackParams = components['schemas']['InstallPackParams']
@@ -92,7 +92,7 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
   )
 
   useEventListener(
-    app.api,
+    useApp().api,
     ['cm-task-started', 'cm-task-completed'],
     (
       event: CustomEvent<

@@ -3,8 +3,6 @@ import { fn } from 'storybook/test'
 
 import '@/workbench/extensions/agent/agentPanel.css'
 
-import { AGENT_FREE_USE_PLACEMENTS } from '@comfyorg/telemetry/types'
-
 import FreeUseNotice from './FreeUseNotice.vue'
 import { FREE_USE_NOTICE_DISMISSED_KEY } from './freeUseNoticeDismissal'
 
@@ -25,29 +23,14 @@ const meta: Meta<typeof FreeUseNotice> = {
   tags: ['autodocs'],
   parameters: { layout: 'centered' },
   globals: { theme: 'dark' },
-  args: { placement: 'top-banner', onNotice: fn() },
-  argTypes: {
-    placement: { control: 'select', options: AGENT_FREE_USE_PLACEMENTS }
-  },
+  args: { onNotice: fn() },
   decorators: [clearFreeUseNoticeDismissals]
 }
 
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** Cell b: full-bleed under the panel header. */
 export const Default: Story = {}
-
-/** Cell e: inset inside the input box, which supplies its own container. */
-export const InsideInput: Story = {
-  args: { placement: 'inside-input' },
-  decorators: [
-    () => ({
-      template:
-        '<div class="rounded-lg border border-border/50 bg-secondary"><story /></div>'
-    })
-  ]
-}
 
 // The notice is a translucent blue over whatever sits behind it, so the copy
 // and the link both have to stay legible when base-background flips. Theme is
@@ -55,10 +38,5 @@ export const InsideInput: Story = {
 // export to get visual coverage at all — as in RunNoticeBanner and
 // AgentConsentCard beside it.
 export const DefaultLight: Story = {
-  globals: { theme: 'light' }
-}
-
-export const InsideInputLight: Story = {
-  ...InsideInput,
   globals: { theme: 'light' }
 }

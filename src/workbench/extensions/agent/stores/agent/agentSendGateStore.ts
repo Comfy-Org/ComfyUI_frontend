@@ -4,7 +4,7 @@ import { computed, ref } from 'vue'
 import {
   AUTH_INIT_TIMEOUT_MS,
   FETCH_RESPONSE_HEADERS_TIMEOUT_MS
-} from '@/scripts/apiTimeouts'
+} from '@comfyorg/api-client/apiTimeouts'
 
 /**
  * A 401 remint, which runs BETWEEN the two response-headers timers: `api.ts`

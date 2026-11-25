@@ -1,4 +1,4 @@
-import type { AuditLog } from '@/services/customerEventsService'
+import type { AuditLog } from '@/platform/billing/api/customerEventsService'
 
 const STORAGE_KEY = 'pending_topup_timestamp'
 const MAX_AGE_MS = 24 * 60 * 60 * 1000 // 24 hours
@@ -43,7 +43,8 @@ export function usePendingTopup() {
 
     const completedTopup = events.find(
       (e) =>
-        e.event_type === 'credit_added' &&
+        (e.event_type === 'credit_added' ||
+          e.event_type === 'topup_completed') &&
         e.createdAt &&
         new Date(e.createdAt).getTime() > timestamp
     )

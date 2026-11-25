@@ -398,6 +398,22 @@ describe('BaseWidget store integration', () => {
   })
 
   describe('metadata properties after registration', () => {
+    it('reinstates the type accessor over a shadowing own property', () => {
+      const widget = createTestWidget(node)
+      Object.defineProperty(widget, 'type', {
+        configurable: true,
+        enumerable: true,
+        writable: true,
+        value: 'number'
+      })
+
+      widget.setNodeId(toNodeId(1))
+      widget.type = fromAny('hidden')
+
+      expect(widget.type).toBe('hidden')
+      expect(widget.visibility.suppression.byExtension).toBe(true)
+    })
+
     it('reads from store when registered', () => {
       const widget = createTestWidget(node, {
         name: 'storeWidget',
@@ -735,5 +751,38 @@ describe('BaseWidget store integration', () => {
       widget.value = 88
       expect(widget.value).toBe(88)
     })
+  })
+})
+
+describe('BaseWidget.setValue', () => {
+  let node: LGraphNode
+
+  beforeEach(() => {
+    const graph = new LGraph()
+    node = new LGraphNode('TestNode')
+    node.id = toNodeId(1)
+    graph.add(node)
+  })
+
+  it('accepts a call without options, as extension wrappers make it', () => {
+    const widget = createTestWidget(node)
+    const callbackValues: unknown[] = []
+    widget.callback = (value) => callbackValues.push(value)
+
+    widget.setValue(7)
+
+    expect(widget.value).toBe(7)
+    expect(callbackValues).toEqual([7])
+  })
+
+  it('keeps the value and skips the callback when a number widget receives NaN', () => {
+    const widget = createTestWidget(node)
+    const callbackValues: unknown[] = []
+    widget.callback = (value) => callbackValues.push(value)
+
+    widget.setValue(Number.NaN, { node })
+
+    expect(widget.value).toBe(42)
+    expect(callbackValues).toEqual([])
   })
 })

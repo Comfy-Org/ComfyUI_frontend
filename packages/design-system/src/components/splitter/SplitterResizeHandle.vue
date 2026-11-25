@@ -21,11 +21,11 @@ const forwarded = useForwardPropsEmits(restProps, emit)
     :class="
       cn(
         'relative z-10 flex w-px shrink-0 items-center justify-center bg-border outline-none',
-        'after:absolute after:inset-y-0 after:left-1/2 after:w-1 after:-translate-x-1/2',
+        'after:absolute after:inset-y-0 after:left-1/2 after:w-2.75 after:-translate-x-1/2 pointer-coarse:data-[orientation=horizontal]:after:w-7.75',
         'hover:bg-primary data-[state=drag]:bg-primary',
         'focus-visible:ring-1 focus-visible:ring-ring',
         'data-[orientation=vertical]:h-px data-[orientation=vertical]:w-full',
-        'data-[orientation=vertical]:after:inset-x-0 data-[orientation=vertical]:after:top-1/2 data-[orientation=vertical]:after:h-1 data-[orientation=vertical]:after:w-full data-[orientation=vertical]:after:translate-x-0 data-[orientation=vertical]:after:-translate-y-1/2',
+        'data-[orientation=vertical]:after:inset-x-0 data-[orientation=vertical]:after:top-1/2 data-[orientation=vertical]:after:h-2.75 data-[orientation=vertical]:after:w-full data-[orientation=vertical]:after:translate-x-0 data-[orientation=vertical]:after:-translate-y-1/2 pointer-coarse:data-[orientation=vertical]:after:h-7.75',
         className
       )
     "

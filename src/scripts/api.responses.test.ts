@@ -4,8 +4,9 @@ import type { WorkflowApiAssetsResponse } from '@comfyorg/ingest-types'
 import type {
   PromptFailureResponse,
   PromptResponse
-} from '@/platform/remote/comfyui/types'
-import { api, PromptExecutionError } from '@/scripts/api'
+} from '@comfyorg/api-client/types'
+import { PromptExecutionError } from '@comfyorg/api-client/ComfyApi'
+import { api } from '@/scripts/api'
 
 describe('ComfyApi response boundaries', () => {
   it('models prompt success separately from prompt failure', () => {
@@ -29,6 +30,31 @@ describe('ComfyApi response boundaries', () => {
         message: 'Gateway rejected prompt'
       }).toString()
     ).toBe('Gateway rejected prompt')
+  })
+
+  it.for([
+    {
+      name: 'empty details, as core ComfyUI sends',
+      error: {
+        type: 'prompt_outputs_failed_validation',
+        message: 'Prompt outputs failed validation',
+        details: ''
+      },
+      expected: 'Prompt outputs failed validation'
+    },
+    {
+      name: 'details',
+      error: {
+        type: 'invalid_prompt',
+        message: 'Invalid prompt',
+        details:
+          'Cannot execute because a node is missing the class_type property.'
+      },
+      expected:
+        'Invalid prompt: Cannot execute because a node is missing the class_type property.'
+    }
+  ])('formats a prompt-level error with $name', ({ error, expected }) => {
+    expect(new PromptExecutionError({ error }).toString()).toBe(expected)
   })
 
   it.for([

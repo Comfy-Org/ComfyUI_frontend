@@ -23,10 +23,16 @@
       "path": "./packages/ingest-types/tsconfig.declarations.json"
     },
     {
+      "path": "./packages/comfyui-api-types/tsconfig.declarations.json"
+    },
+    {
       "path": "./packages/registry-types/tsconfig.declarations.json"
     },
     {
       "path": "./packages/shared-frontend-utils/tsconfig.declarations.json"
+    },
+    {
+      "path": "./packages/assets-core/tsconfig.declarations.json"
     },
     {
       "path": "./packages/billing-contract/tsconfig.declarations.json"
@@ -51,6 +57,12 @@
     },
     {
       "path": "./packages/keybindings/tsconfig.declarations.json"
+    },
+    {
+      "path": "./packages/settings-core/tsconfig.declarations.json"
+    },
+    {
+      "path": "./packages/api-client/tsconfig.declarations.json"
     }
   ]
 }

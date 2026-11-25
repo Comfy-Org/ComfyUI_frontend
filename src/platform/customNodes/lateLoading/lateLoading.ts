@@ -2,11 +2,11 @@ import { until, useEventListener } from '@vueuse/core'
 import { delay } from 'es-toolkit'
 import { effectScope, ref } from 'vue'
 
+import { combineAbortSignals } from '@comfyorg/api-client/abortSignal'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useUserBusy } from '@/platform/customNodes/useUserBusy'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { couldBootOnDeployment } from '@/platform/workspace/composables/waitForDeploymentPick'
 import { useApp } from '@/scripts/appInstance'
 import type { StartupHookFailure } from '@/platform/extensions/services/extensionService'
@@ -22,6 +22,7 @@ import type {
   CpuServerWatch
 } from './cpuServerStep'
 import { isBeingSetUp, watchCpuServer } from './cpuServerStep'
+import { markOpenGraphsAwaitingNodeTypes } from './lateNodeTypes'
 import {
   showFailedToast,
   showReadyToast,
@@ -148,13 +149,10 @@ function watchLateWork(signal: AbortSignal, onAbort: () => void) {
 }
 
 async function rebuildOpenWorkflow() {
-  const workflow = useWorkflowStore().activeWorkflow
-  const baseline = workflow?.changeTracker.initialState
-  const wasModified = workflow?.isModified ?? false
+  await useApp().enqueueGraphLoad(async () => {
+    markOpenGraphsAwaitingNodeTypes()
+  })
   await useWorkflowService().reloadCurrentWorkflow()
-  if (!workflow || !baseline) return
-  workflow.changeTracker.initialState = baseline
-  workflow.isModified = wasModified
 }
 
 function reportLateCustomNodeFailure(
@@ -387,7 +385,7 @@ function startLateRun(
   const watching = new AbortController()
   const server = watchCpuServer(
     firstReading,
-    AbortSignal.any([run.signal, watching.signal])
+    combineAbortSignals([run.signal, watching.signal])
   )
   useExtensionStore().holdNewCustomNodes()
   void turnOnLateCustomNodes(

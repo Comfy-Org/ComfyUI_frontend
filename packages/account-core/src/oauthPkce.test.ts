@@ -7,7 +7,8 @@ import {
   exchangeAuthorizationCode,
   localRedirectUri,
   readAuthorizationResponse,
-  refreshAccessToken
+  refreshAccessToken,
+  revokeRefreshToken
 } from './oauthPkce'
 
 const ISSUER = 'https://cloud.example.test'
@@ -293,5 +294,73 @@ describe('token grant failures', () => {
     })
 
     expect(fetchImpl.mock.calls[0][0]).toBe('http://localhost:8000/oauth/token')
+  })
+})
+
+describe('revokeRefreshToken', () => {
+  it('asks the server to end the sign-in with the refresh token and client', async () => {
+    const fetchImpl = vi.fn<typeof fetch>(async () => new Response(null))
+
+    await expect(
+      revokeRefreshToken('refresh-1', tokenOptions(fetchImpl))
+    ).resolves.toBe(true)
+
+    const [url, init] = fetchImpl.mock.calls[0]
+    expect(url).toBe(`${ISSUER}/oauth/revoke`)
+    expect(init).toMatchObject({
+      method: 'POST',
+      keepalive: true,
+      redirect: 'error'
+    })
+    expect(Object.fromEntries(new URLSearchParams(String(init?.body)))).toEqual(
+      {
+        token: 'refresh-1',
+        token_type_hint: 'refresh_token',
+        client_id: 'comfy-local-web'
+      }
+    )
+  })
+
+  it.for([
+    {
+      name: 'a network failure',
+      fetchImpl: vi.fn<typeof fetch>(async () =>
+        Promise.reject(new TypeError('offline'))
+      )
+    },
+    {
+      name: 'a server error',
+      fetchImpl: vi.fn<typeof fetch>(
+        async () => new Response(null, { status: 500 })
+      )
+    }
+  ])('reports $name as not revoked without throwing', async ({ fetchImpl }) => {
+    await expect(
+      revokeRefreshToken('refresh-1', tokenOptions(fetchImpl))
+    ).resolves.toBe(false)
+  })
+
+  it('reports a malformed issuer as not revoked without throwing', async () => {
+    const fetchImpl = vi.fn<typeof fetch>()
+
+    await expect(
+      revokeRefreshToken('refresh-1', {
+        ...tokenOptions(fetchImpl),
+        issuer: 'not a url'
+      })
+    ).resolves.toBe(false)
+    expect(fetchImpl).not.toHaveBeenCalled()
+  })
+
+  it('never sends a refresh token to a non-HTTPS issuer', async () => {
+    const fetchImpl = vi.fn<typeof fetch>()
+
+    await expect(
+      revokeRefreshToken('refresh-1', {
+        ...tokenOptions(fetchImpl),
+        issuer: 'http://cloud.example.test'
+      })
+    ).resolves.toBe(false)
+    expect(fetchImpl).not.toHaveBeenCalled()
   })
 })

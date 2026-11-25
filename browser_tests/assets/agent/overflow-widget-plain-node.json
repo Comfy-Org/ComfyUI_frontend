@@ -1,0 +1,22 @@
+{
+  "nodes": [
+    {
+      "id": 2647,
+      "type": "TestCatalogShortPlainNode",
+      "pos": [0, 0],
+      "size": [270, 160],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [{ "name": "IMAGE", "type": "IMAGE", "links": [] }],
+      "properties": {},
+      "widgets_values": [11, 99]
+    }
+  ],
+  "links": [],
+  "groups": [],
+  "config": {},
+  "extra": {},
+  "version": 0.4
+}

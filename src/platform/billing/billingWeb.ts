@@ -1,6 +1,6 @@
 import type { HostedBillingDestination } from '@comfyorg/account-core/billing'
 
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 
 const LOCAL_HOSTNAMES = new Set(['localhost', '127.0.0.1', '[::1]'])
 
@@ -55,7 +55,7 @@ function validateBillingWebUrl(value: string): URL | null {
  * hosted-billing rollout already takes for an unresolved destination.
  */
 export function getBillingWebUrl(): URL | null {
-  const fromServer = remoteConfig.value.billing_web_url
+  const fromServer = useRemoteConfigStore().config.billing_web_url
   if (typeof fromServer === 'string' && fromServer !== '') {
     return validateBillingWebUrl(fromServer)
   }

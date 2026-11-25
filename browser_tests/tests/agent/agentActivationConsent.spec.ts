@@ -30,7 +30,6 @@ test.describe(
         'true'
       )
 
-      await agentPanel.selectWorkflow()
       await agentPanel.composer.fill('Build a product photo workflow')
       await agentPanel.sendButton.click()
 
@@ -38,6 +37,10 @@ test.describe(
         name: enMessages.agent.consent.title
       })
       await expect(dialog).toBeVisible()
+      await expect(agentPanel.userMessageBubbles).toHaveText([
+        'Build a product photo workflow'
+      ])
+      await expect(agentPanel.sendingSpinner).toBeVisible()
       expect(postedMessages).toHaveLength(0)
 
       let releaseConsentSave = () => {}
@@ -63,7 +66,6 @@ test.describe(
       postedMessages
     }) => {
       const page = comfyPage.page
-      await agentPanel.selectWorkflow()
       await agentPanel.composer.fill('Build a product photo workflow')
       await agentPanel.sendButton.click()
 
@@ -71,10 +73,14 @@ test.describe(
         name: enMessages.agent.consent.title
       })
       await expect(dialog).toBeVisible()
+      await expect(agentPanel.userMessageBubbles).toHaveText([
+        'Build a product photo workflow'
+      ])
       await page.keyboard.press('Escape')
 
       await expect(dialog).toHaveCount(0)
       expect(postedMessages).toHaveLength(0)
+      await expect(agentPanel.userMessageBubbles).toHaveCount(0)
       await expect(agentPanel.composer).toHaveText(
         'Build a product photo workflow'
       )
@@ -126,7 +132,6 @@ test.describe(
 
       await test.step('Skipping the coach permits one send without another consent card', async () => {
         await coach.getByRole('button', { name: enMessages.agent.skip }).click()
-        await agentPanel.selectWorkflow()
         await agentPanel.sendMessage('Build a product photo workflow')
         await expect.poll(() => postedMessages).toHaveLength(1)
         await expect(consent).toHaveCount(0)
@@ -160,7 +165,6 @@ test.describe(
 
         await expect(agentPanel.root).toBeVisible()
         await expect(consent).toHaveCount(0)
-        await agentPanel.selectWorkflow()
         await agentPanel.composer.fill('Build a product photo workflow')
         await agentPanel.sendButton.click()
 
@@ -173,7 +177,6 @@ test.describe(
         const coachTitles = [
           enMessages.agent.coachTitle,
           enMessages.agent.coachWorkflowTitle,
-          enMessages.agent.coachGraphTitle,
           enMessages.agent.coachHistoryTitle
         ]
         await expect(
@@ -224,7 +227,6 @@ test.describe(
       })
       const draft = 'Build a product photo workflow'
 
-      await agentPanel.selectWorkflow()
       await agentPanel.composer.fill(draft)
       await agentPanel.sendButton.click()
       await consent
@@ -232,6 +234,7 @@ test.describe(
         .click()
 
       await expect(coach).toBeVisible()
+      await expect(agentPanel.userMessageBubbles).toHaveText([draft])
       await expect(coach.getByTestId('agent-coach-hold-notice')).toHaveText(
         enMessages.agent.coachHoldNotice
       )
@@ -241,6 +244,7 @@ test.describe(
       await expect(agentPanel.root).toHaveCount(0)
       await agentPanel.openButton.click()
       await expect(agentPanel.root).toBeVisible()
+      await expect(agentPanel.userMessageBubbles).toHaveCount(0)
       await expect(agentPanel.composer).toHaveText(draft)
       expect(postedMessages).toHaveLength(0)
 
@@ -264,7 +268,6 @@ test.describe(
         name: enMessages.agent.coachTitle
       })
 
-      await agentPanel.selectWorkflow()
       await agentPanel.composer.fill('Build a product photo workflow')
       await agentPanel.sendButton.click()
       await consent
@@ -293,7 +296,6 @@ test.describe(
       postedMessages
     }) => {
       await expect(agentPanel.root).toBeVisible()
-      await agentPanel.selectWorkflow()
       await agentPanel.composer.fill('Build a product photo workflow')
       await agentPanel.sendButton.click()
 

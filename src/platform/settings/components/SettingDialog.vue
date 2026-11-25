@@ -103,7 +103,7 @@
         </template>
         <template v-else-if="activeSettingCategory">
           <CurrentUserMessage v-if="activeSettingCategory.label === 'Comfy'" />
-          <ColorPaletteMessage
+          <ThemePresetMessage
             v-if="activeSettingCategory.label === 'Appearance'"
           />
           <SettingsPanel
@@ -131,7 +131,7 @@ import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspa
 import { useSettingsHeaderCollapse } from '@/platform/settings/composables/useSettingsHeaderCollapse'
 import { cn } from '@comfyorg/tailwind-utils'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import ColorPaletteMessage from '@/platform/settings/components/ColorPaletteMessage.vue'
+import ThemePresetMessage from '@/platform/theme/ThemePresetMessage.vue'
 import SettingsPanel from '@/platform/settings/components/SettingsPanel.vue'
 import { useSettingSearch } from '@/platform/settings/composables/useSettingSearch'
 import { useSettingUI } from '@/platform/settings/composables/useSettingUI'
@@ -141,7 +141,7 @@ import type {
   ISettingGroup,
   SettingDialogProps,
   SettingParams
-} from '@/platform/settings/types'
+} from '@comfyorg/settings-core/types'
 import { useModalLayoutLabels } from '@/components/dialog/useModalLayoutLabels'
 import { flattenTree } from '@/utils/treeUtil'
 

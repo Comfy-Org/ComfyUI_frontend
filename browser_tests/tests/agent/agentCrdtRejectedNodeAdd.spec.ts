@@ -4,7 +4,7 @@ import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
@@ -253,7 +253,6 @@ test.describe(
       const vueNodes = new VueNodeHelpers(page)
       const agentPanel = new AgentPanel(page)
       await agentPanel.open()
-      await agentPanel.selectWorkflow()
       await agentPanel.sendMessage('Have a look at this workflow')
       await hostSocket.waitForSubscribe()
       const seedNode = vueNodes.getNodeLocator(SEED_NODE_ID)

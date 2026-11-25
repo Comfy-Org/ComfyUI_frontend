@@ -59,7 +59,7 @@ test.describe(
       await comfyPage.nextFrame()
 
       await expect(widget).toBeVisible()
-      await expect(widget.getByRole('spinbutton')).toHaveValue('37')
+      await expect(widget).toHaveValue('37')
       await expect
         .poll(() =>
           comfyPage.page.evaluate(() => {
@@ -229,7 +229,7 @@ test.describe(
       await comfyPage.nextFrame()
 
       await expect(widget).toBeVisible()
-      await expect(widget.getByRole('spinbutton')).toHaveValue('40')
+      await expect(widget).toHaveValue('40')
     })
   }
 )

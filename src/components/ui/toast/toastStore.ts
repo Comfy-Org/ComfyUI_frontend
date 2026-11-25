@@ -18,19 +18,31 @@ export interface Toast {
   description?: string
 }
 
+const isAction = (candidate: unknown): candidate is ToastAction =>
+  typeof candidate === 'object' &&
+  candidate !== null &&
+  'label' in candidate &&
+  typeof candidate.label === 'string' &&
+  'onClick' in candidate &&
+  typeof candidate.onClick === 'function'
+
+function toActions(options: ToastOptions): ToastAction[] {
+  const supplied: unknown[] = [options.action]
+  if (Array.isArray(options.actions)) supplied.push(...options.actions)
+  return supplied.filter(isAction)
+}
+
 export const useToast = defineStore('toast', () => {
   const toasts = ref<Toast[]>([])
   const held = ref(false)
+  const closedByUser = new Set<ToastId>()
 
   function add(kind: ToastKind, title: string, options: ToastOptions = {}) {
     const id = options.id ?? createToastId()
     toasts.value = [
       ...toasts.value.filter((toast) => toast.id !== id),
       {
-        actions: [
-          ...(options.action ? [options.action] : []),
-          ...(options.actions ?? [])
-        ],
+        actions: toActions(options),
         closable: options.closable ?? true,
         description: options.description,
         duration: options.duration ?? Number.POSITIVE_INFINITY,
@@ -80,6 +92,15 @@ export const useToast = defineStore('toast', () => {
     return removed
   }
 
+  function close(id: ToastId): boolean {
+    closedByUser.add(id)
+    return dismiss(id)
+  }
+
+  function takeClosedByUser(id: ToastId): boolean {
+    return closedByUser.delete(id)
+  }
+
   function dismissAll() {
     toasts.value = []
   }
@@ -94,6 +115,8 @@ export const useToast = defineStore('toast', () => {
     loading,
     update,
     dismiss,
+    close,
+    takeClosedByUser,
     dismissAll
   }
 })

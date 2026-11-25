@@ -11,7 +11,7 @@ test.beforeEach(async ({ comfyPage }) => {
       init?.method === 'POST' &&
       /\/agent\/threads\/[^/]+\/messages$/.test(String(input))
         ? new Response('gateway did not return an Agent error body', {
-            status: 503,
+            status: 500,
             statusText: 'No error message'
           })
         : originalFetch(input, init)
@@ -23,13 +23,12 @@ test(
   { tag: '@cloud' },
   async ({ agentPanel }) => {
     await agentPanel.open()
-    await agentPanel.selectWorkflow()
 
     await agentPanel.sendMessage('Build a product photo workflow')
 
     await expect(
       agentPanel.root.getByText(
-        `${enMessages.agent.sendFailed}: Agent request failed (HTTP 503, post_thread_message)`,
+        `${enMessages.agent.sendFailed}: Agent request failed (HTTP 500, post_thread_message)`,
         { exact: true }
       )
     ).toBeVisible()
