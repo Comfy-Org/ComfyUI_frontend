@@ -3082,7 +3082,7 @@
     "expiresDate": "Upphör att gälla {date}",
     "renewsOnDate": "Förnyas på {date}",
     "endsOnDate": "Slutar den {date}",
-    "changesToPlanOnDate": "Ändringar i {plan} på {date}",
+    "changesToPlanOnDate": "Ändras till {plan} den {date}",
     "manageSubscription": "Hantera prenumeration",
     "billingAndInvoices": "FAKTURERING OCH FAKTUROR",
     "manageBilling": "Hantera fakturering",

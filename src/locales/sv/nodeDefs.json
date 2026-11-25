@@ -23990,7 +23990,7 @@
       },
       "quad": {
         "name": "fyrhörning",
-        "tooltip": "Denna parameter är föråldrad och gör ingenting."
+        "tooltip": "Utdata med fyrhörningsnät. Tripo levererar fyrhörningsnät som FBX, så resultatet visas i FBX-utgången medan GLB-utgången är tom."
       },
       "geometry_quality": {
         "name": "geometrikvalitet"
@@ -25396,7 +25396,7 @@
       },
       "prompt": {
         "name": "prompt",
-        "tooltip": "När funktionen är aktiverad innehåller videon genererat tal och bakgrundsmusik baserat på prompten."
+        "tooltip": "Textbeskrivningen som styr videogenereringen. När ljud är aktiverat genereras tal och bakgrundsmusik utifrån prompten."
       },
       "audio": {
         "name": "ljud",
