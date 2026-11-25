@@ -649,9 +649,17 @@ describe('DeploymentSwitcher', () => {
   })
 
   it('counts a Manage deployments click once when a script cancels and replays it', async () => {
+    vi.useFakeTimers()
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
     sendRealLinkTelemetry()
     mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
-    const user = renderSwitcher()
+    render(DeploymentSwitcher, { global: { plugins: [i18n] } })
+    const user = userEvent.setup({
+      pointerEventsCheck: 0,
+      advanceTimers: vi.advanceTimersByTime
+    })
     await openList(user)
     const builds = screen.getByRole('menuitem', { name: 'Manage deployments' })
     let replayed = false
@@ -668,8 +676,9 @@ describe('DeploymentSwitcher', () => {
 
     await user.click(builds)
 
-    await waitFor(() => expect(replayed).toBe(true))
-    await new Promise((resolve) => setTimeout(resolve, 20))
+    await vi.advanceTimersByTimeAsync(20)
+
+    expect(replayed).toBe(true)
     expect(sentLinkEvents()).toEqual([MANAGE_DEPLOYMENTS_EVENT])
   })
 
