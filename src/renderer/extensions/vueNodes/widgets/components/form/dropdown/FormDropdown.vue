@@ -25,6 +25,8 @@ import type { MaybePaged } from '@/utils/pagedList'
 
 import FormDropdownInput from './FormDropdownInput.vue'
 import FormDropdownMenu from './FormDropdownMenu.vue'
+import FormDropdownResizeHandle from './FormDropdownResizeHandle.vue'
+import type { PanelSize } from './resizePanel'
 import {
   DROPDOWN_PANEL_CLASS,
   defaultSearcher,
@@ -125,6 +127,7 @@ const triggerAnchorRef = useTemplateRef<HTMLElement>('triggerAnchorRef')
 const menuRef = useTemplateRef<ComponentPublicInstance>('menuRef')
 const triggerRef =
   useTemplateRef<InstanceType<typeof FormDropdownInput>>('triggerRef')
+const panelSize = ref<PanelSize>()
 const displayedSearchQuery = ref('')
 const isFiltering = ref(false)
 
@@ -390,7 +393,14 @@ const dropdownItems = computed(() =>
         update-position-strategy="always"
         :side-offset="12"
         hide-when-detached
-        class="pointer-events-auto flex h-160 w-103 flex-col overflow-hidden rounded-lg border-none bg-transparent p-0 shadow-lg data-[state=closed]:animate-none data-[state=open]:animate-none"
+        :class="DROPDOWN_PANEL_CLASS"
+        :style="
+          panelSize && {
+            width: `${panelSize.width}px`,
+            height: `${panelSize.height}px`
+          }
+        "
+        class="group/dropdown pointer-events-auto relative flex h-160 w-103 flex-col overflow-hidden rounded-lg border-none bg-transparent p-0 shadow-lg data-[state=closed]:animate-none data-[state=open]:animate-none"
         @interact-outside.prevent
         @close-auto-focus.prevent="focusTrigger"
       >
@@ -422,6 +432,7 @@ const dropdownItems = computed(() =>
           @item-click="handleSelection"
           @show-picker="showPicker"
         />
+        <FormDropdownResizeHandle v-model:size="panelSize" />
       </PopoverContent>
     </PopoverRoot>
   </div>

@@ -73,7 +73,7 @@ type LayoutConfig = {
 
 const LAYOUT_CONFIGS: Record<LayoutMode, LayoutConfig> = {
   grid: {
-    maxColumns: 4,
+    maxColumns: 8,
     itemHeight: 120,
     minItemWidth: 96,
     gap: 'var(--spacing-4) var(--spacing-2)'
@@ -91,7 +91,7 @@ const LAYOUT_CONFIGS: Record<LayoutMode, LayoutConfig> = {
 }
 
 const thumbnailLayouts = {
-  compact: { maxColumns: 5, itemHeight: 104, minItemWidth: 76 },
+  compact: { maxColumns: 10, itemHeight: 104, minItemWidth: 76 },
   standard: LAYOUT_CONFIGS.grid,
   large: { maxColumns: 1, itemHeight: 412 }
 } satisfies Record<

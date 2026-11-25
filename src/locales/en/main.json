@@ -4581,6 +4581,7 @@
     "backFromFolder": "Back: {name}",
     "uploadSelect": {
       "placeholder": "Select...",
+      "resize": "Resize",
       "placeholderImage": "Select image...",
       "placeholderAudio": "Select audio...",
       "placeholderVideo": "Select video...",
