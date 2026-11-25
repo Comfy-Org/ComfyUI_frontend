@@ -252,11 +252,11 @@ describe('node badges', () => {
 
       handle.addBadge({ text: 'Late' })
       remove()
-      vi.mocked(context.fillText).mockClear()
-      node.drawBadges(context)
+      const nextFrame = createMockCanvasRenderingContext2D()
+      node.drawBadges(nextFrame)
 
       expect(
-        vi.mocked(context.fillText).mock.calls.map(([text]) => text)
+        vi.mocked(nextFrame.fillText).mock.calls.map(([text]) => text)
       ).toEqual(['Late'])
     })
 
