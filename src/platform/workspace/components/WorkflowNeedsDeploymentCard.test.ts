@@ -23,6 +23,7 @@ import {
   reduceDeploymentPick
 } from '@/platform/workspace/deploymentPickState'
 import { trackDeploymentLinkClicked } from '@/platform/workspace/platformFrame/customDeploymentTelemetry'
+import { usePlatformFrameStore } from '@/platform/workspace/platformFrame/platformFrameStore'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { testI18n } from '@/utils/__tests__/testI18n'
 
@@ -261,6 +262,25 @@ describe('WorkflowNeedsDeploymentCard', () => {
     expect(screen.getByTestId('custom-deployment-note')).toHaveTextContent(
       'No deployment in this workspace has all of these nodes.'
     )
+  })
+
+  it('asks for a Custom Build when no deployment runs it and the build opens in the editor', () => {
+    vi.spyOn(usePlatformFrameStore(), 'isAvailable').mockReturnValue(true)
+
+    renderCard({
+      checked: {
+        production: { kind: 'missing', nodeTypes: ['BiRefNet'] }
+      }
+    })
+
+    expect(
+      screen.getByRole('heading', {
+        name: 'Create a Custom Build to run this workflow on Comfy Cloud'
+      })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('link', { name: 'Create a custom build' })
+    ).toBeInTheDocument()
   })
 
   it('copies a brief that lists every missing pack, node and model', async () => {

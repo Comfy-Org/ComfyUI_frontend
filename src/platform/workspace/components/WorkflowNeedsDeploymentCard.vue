@@ -41,6 +41,7 @@ import {
 } from '@/platform/workspace/missingForDeployment'
 import { openWorkflowForCheck } from '@/platform/workspace/openWorkflowForCheck'
 import { trackDeploymentLinkClicked } from '@/platform/workspace/platformFrame/customDeploymentTelemetry'
+import { usePlatformFrameStore } from '@/platform/workspace/platformFrame/platformFrameStore'
 import { NEW_DEPLOYMENT_FOR_WORKFLOW } from '@/platform/workspace/platformFrame/platformFrameWaysIn'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { workflowDeploymentOffer } from '@/platform/workspace/workflowDeploymentOffer'
@@ -48,6 +49,7 @@ import { workflowDeploymentOffer } from '@/platform/workspace/workflowDeployment
 const NAMES_SHOWN = 3
 
 const { t } = useI18n()
+const frames = usePlatformFrameStore()
 const { markFor } = useDeploymentCompatibility()
 const missingModelStore = useMissingModelStore()
 
@@ -124,6 +126,24 @@ const missing = computed<MissingItemsRow[]>(() => [
   )
 ])
 
+function noneRunItCopy() {
+  if (!frames.isAvailable())
+    return {
+      title: t('deploymentSwitcher.workflowNeedsDeployment.titleNoneRunIt'),
+      platformLabel: t(
+        'deploymentSwitcher.workflowNeedsDeployment.buildOnPlatform'
+      )
+    }
+  return {
+    title: t(
+      'deploymentSwitcher.workflowNeedsDeployment.titleNoneRunItCustomBuild'
+    ),
+    platformLabel: t(
+      'deploymentSwitcher.workflowNeedsDeployment.createCustomBuild'
+    )
+  }
+}
+
 const pitch = computed<CustomDeploymentPitch>(() => ({
   ...customDeploymentPitch(),
   body: t('deploymentSwitcher.workflowNeedsDeployment.installBody'),
@@ -135,7 +155,7 @@ const pitch = computed<CustomDeploymentPitch>(() => ({
   missing: missing.value,
   ...(offer.kind === 'noneRunIt'
     ? {
-        title: t('deploymentSwitcher.workflowNeedsDeployment.titleNoneRunIt'),
+        ...noneRunItCopy(),
         note: t('deploymentSwitcher.workflowNeedsDeployment.noneRunIt')
       }
     : { title: t('deploymentSwitcher.workflowNeedsDeployment.installTitle') })

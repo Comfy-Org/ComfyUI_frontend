@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { reportError } from '@comfyorg/telemetry/reportError'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { DEPLOYMENT_LISTING_BACKSTOP_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
 import { captureOpenWorkflow } from '@/platform/workspace/platformWorkflowHandoff'
 import {
   loadedEvent,
@@ -28,6 +29,7 @@ import {
   usePlatformFrameStore
 } from './platformFrameStore'
 import type { PlatformFrameRequest } from './platformFrameUrl'
+import { NEW_DEPLOYMENT_FROM_NODES } from './platformFrameWaysIn'
 
 const env = vi.hoisted(() => ({
   cloud: true,
@@ -169,6 +171,31 @@ describe('usePlatformFrameStore', () => {
       workflow: { nodes: [] }
     })
     expect(captureOpenWorkflow).toHaveBeenCalledOnce()
+  })
+
+  it('hands the open workflow to the page when Extensions opens it on Custom nodes', async () => {
+    const store = usePlatformFrameStore()
+    const { frame, postMessage } = framedWindow()
+
+    store.open(NEW_DEPLOYMENT_FROM_NODES, 'extensions')
+    store.attach(frame)
+    receive({ type: 'ready', signedIn: true, userId: 'uid-ana' }, frame)
+
+    expect(query(store.session?.url ?? '')).toMatchObject({
+      step: 'new',
+      start: 'nodes'
+    })
+    await vi.waitFor(() =>
+      expect(postMessage).toHaveBeenCalledWith(
+        {
+          type: 'workflow',
+          nonce: store.session?.nonce,
+          filename: 'portrait.json',
+          workflow: { nodes: [] }
+        },
+        PLATFORM
+      )
+    )
   })
 
   it('gives each session a fresh nonce Platform accepts', () => {
@@ -620,6 +647,235 @@ describe('following a build after the dialog closes', () => {
 
     expect(toastTitles()).toEqual(['portrait-upscale now runs v2.'])
     expect(useReleaseNoticeStore().claim('r-2')).toBe(false)
+  })
+
+  const NEW_DEPLOYMENT: Deployment = {
+    ...RUNNING,
+    deployment_id: 'dep-9',
+    release_id: 'r-9',
+    build_id: 'b-9'
+  }
+
+  const startedNew = {
+    ...started,
+    kind: 'new',
+    buildId: 'b-9',
+    releaseId: 'r-9',
+    version: 1,
+    deploymentId: ''
+  }
+
+  function readyNewDeployment() {
+    const pickStore = useDeploymentPickStore()
+    pickStore.state = listing([RUNNING])
+    const load = vi.spyOn(pickStore, 'load').mockImplementation(async () => {
+      pickStore.state = listing([RUNNING, NEW_DEPLOYMENT])
+    })
+    const store = usePlatformFrameStore()
+    const { frame } = framedWindow()
+    store.open({ step: 'new', startAtNodes: true }, 'extensions')
+    store.attach(frame)
+    receive(startedNew, frame)
+    receive(
+      { type: 'deploy-sent', releaseId: 'r-9', deploymentId: 'dep-9' },
+      frame
+    )
+    receive(
+      { type: 'deployment-ready', deploymentId: 'dep-9', releaseId: 'r-9' },
+      frame
+    )
+    const [toast] = useToast().toasts
+    return { pickStore, toast, load }
+  }
+
+  it('switches to the deployment Platform made from Switch, though the build started without its id', async () => {
+    const { pickStore, toast } = readyNewDeployment()
+    const pick = vi.spyOn(pickStore, 'pick').mockResolvedValue(null)
+
+    expect(toast.title).toBe('portrait-upscale is ready')
+    expect(toast.actions.map((action) => action.label)).toEqual(['Switch'])
+    toast.actions[0].onClick()
+
+    await vi.waitFor(() =>
+      expect(pick).toHaveBeenCalledExactlyOnceWith('dep-9')
+    )
+  })
+
+  function listingPicking(items: Deployment[], picked: string) {
+    return reduceDeploymentPick(
+      { phase: 'idle' },
+      loadedEvent({
+        builds_visible: true,
+        items,
+        picked_deployment_id: picked
+      })
+    )
+  }
+
+  it('reloads onto the new deployment from Switch when another tab has already picked it', async () => {
+    const reload = vi.fn()
+    vi.stubGlobal('location', { reload })
+    const { pickStore, toast, load } = readyNewDeployment()
+    Object.assign(pickStore, { bootDeployment: RUNNING })
+    load.mockImplementation(async () => {
+      pickStore.state = listingPicking([RUNNING, NEW_DEPLOYMENT], 'dep-9')
+    })
+
+    toast.actions[0].onClick()
+
+    await vi.waitFor(() => expect(reload).toHaveBeenCalledOnce())
+  })
+
+  it('reloads nothing from Switch when this tab already runs on the new deployment', async () => {
+    const reload = vi.fn()
+    vi.stubGlobal('location', { reload })
+    const { pickStore, toast, load } = readyNewDeployment()
+    Object.assign(pickStore, { bootDeployment: NEW_DEPLOYMENT })
+    load.mockImplementation(async () => {
+      pickStore.state = listingPicking([RUNNING, NEW_DEPLOYMENT], 'dep-9')
+    })
+    const pick = vi.spyOn(pickStore, 'pick')
+
+    await toast.actions[0].onClick()
+
+    expect(pick).toHaveBeenCalledExactlyOnceWith('dep-9')
+    expect(reload).not.toHaveBeenCalled()
+  })
+
+  it('says the deployments did not load, rather than switch nothing, when the listing is unavailable', async () => {
+    const { pickStore, toast, load } = readyNewDeployment()
+    load.mockImplementation(async () => {
+      pickStore.state = { phase: 'hidden' }
+    })
+    useToast().dismissAll()
+
+    toast.actions[0].onClick()
+
+    await vi.waitFor(() =>
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({
+          kind: 'error',
+          title: 'Could not switch',
+          description: "Your deployments didn't load. Try again from Run on."
+        })
+      ])
+    )
+  })
+
+  it('gives up on Switch with Could not switch when the listing never answers', async () => {
+    vi.useFakeTimers()
+    const { pickStore, toast, load } = readyNewDeployment()
+    load.mockReturnValue(new Promise<void>(() => {}))
+    const pick = vi.spyOn(pickStore, 'pick').mockResolvedValue(null)
+    useToast().dismissAll()
+
+    toast.actions[0].onClick()
+    await vi.advanceTimersByTimeAsync(DEPLOYMENT_LISTING_BACKSTOP_MS - 1)
+    expect(useToast().toasts).toEqual([])
+
+    await vi.advanceTimersByTimeAsync(1)
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        kind: 'error',
+        title: 'Could not switch',
+        description: "Your deployments didn't load. Try again from Run on."
+      })
+    ])
+    expect(pick).not.toHaveBeenCalled()
+  })
+
+  it('opens Run on to start the new deployment, rather than pick it, once it has stopped', async () => {
+    const { pickStore, toast, load } = readyNewDeployment()
+    load.mockImplementation(async () => {
+      pickStore.state = listing([
+        RUNNING,
+        { ...NEW_DEPLOYMENT, status: 'stopped', can_start: true }
+      ])
+    })
+    const pick = vi.spyOn(pickStore, 'pick').mockResolvedValue(null)
+
+    toast.actions[0].onClick()
+
+    await vi.waitFor(() => expect(pickStore.switcherOpenAsks).toBe(1))
+    expect(pick).not.toHaveBeenCalled()
+  })
+
+  it('switches to the new deployment the listing shows when a resumed build lands while the page is quiet', async () => {
+    vi.useFakeTimers()
+    const pickStore = useDeploymentPickStore()
+    pickStore.state = listing([RUNNING])
+    const load = vi.spyOn(pickStore, 'load').mockResolvedValue()
+    const store = usePlatformFrameStore()
+    const { frame } = framedWindow()
+    store.open({ step: 'new', startAtNodes: true }, 'extensions')
+    store.attach(frame)
+    receive(startedNew, frame)
+    reloadEditor(store)
+    load.mockImplementation(async () => {
+      pickStore.state = listing([RUNNING, NEW_DEPLOYMENT])
+    })
+    const pick = vi.spyOn(pickStore, 'pick').mockResolvedValue(null)
+
+    store.resume()
+    await vi.advanceTimersByTimeAsync(PLATFORM_FRAME_RESUME_CHECK_MS)
+    const [toast] = useToast().toasts
+    toast.actions[0].onClick()
+
+    await vi.waitFor(() =>
+      expect(pick).toHaveBeenCalledExactlyOnceWith('dep-9')
+    )
+  })
+
+  it('switches to the deployment Platform named, not a newer one on the same release, when a resumed build lands', async () => {
+    vi.useFakeTimers()
+    const OTHER_ON_RELEASE: Deployment = {
+      ...NEW_DEPLOYMENT,
+      deployment_id: 'dep-10'
+    }
+    const pickStore = useDeploymentPickStore()
+    pickStore.state = listing([RUNNING])
+    const load = vi.spyOn(pickStore, 'load').mockResolvedValue()
+    const store = usePlatformFrameStore()
+    const { frame } = framedWindow()
+    store.open({ step: 'new', startAtNodes: true }, 'extensions')
+    store.attach(frame)
+    receive(startedNew, frame)
+    receive(
+      { type: 'deploy-sent', releaseId: 'r-9', deploymentId: 'dep-9' },
+      frame
+    )
+    reloadEditor(store)
+    load.mockImplementation(async () => {
+      pickStore.state = listing([OTHER_ON_RELEASE, NEW_DEPLOYMENT, RUNNING])
+    })
+    const pick = vi.spyOn(pickStore, 'pick').mockResolvedValue(null)
+
+    store.resume()
+    await vi.advanceTimersByTimeAsync(PLATFORM_FRAME_RESUME_CHECK_MS)
+    const [toast] = useToast().toasts
+    toast.actions[0].onClick()
+
+    await vi.waitFor(() =>
+      expect(pick).toHaveBeenCalledExactlyOnceWith('dep-9')
+    )
+  })
+
+  it('says so when the switch to the new deployment is refused', async () => {
+    const { pickStore, toast } = readyNewDeployment()
+    vi.spyOn(pickStore, 'pick').mockResolvedValue('Not allowed')
+    useToast().dismissAll()
+
+    toast.actions[0].onClick()
+
+    await vi.waitFor(() =>
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({
+          kind: 'error',
+          title: 'Could not switch',
+          description: 'Not allowed'
+        })
+      ])
+    )
   })
 
   it('keeps the build for a reload until it is ready', () => {

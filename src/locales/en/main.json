@@ -1077,7 +1077,9 @@
       "title": "Workspace library",
       "explainer": "Models in your workspace. Ones not in this build download when a job needs them.",
       "empty": "No models in your workspace library.",
-      "loadFailed": "Couldn't load your workspace library."
+      "loadFailed": "Couldn't load your workspace library.",
+      "fromWorkspace": "From your workspace",
+      "modelCount": "{count} model | {count} models"
     },
     "searchResultsCapped": "Showing the first {limit} matches. Refine your search to see more specific results.",
     "downloads": "Downloads",
@@ -4331,6 +4333,8 @@
       "missingModels": "{count} missing model | {count} missing models",
       "andMore": "{names}, and {count} more",
       "titleNoneRunIt": "Create a deployment to run this workflow on Comfy Cloud",
+      "titleNoneRunItCustomBuild": "Create a Custom Build to run this workflow on Comfy Cloud",
+      "createCustomBuild": "Create a custom build",
       "noneRunIt": "No deployment in this workspace has all of these nodes.",
       "switchBody": "Comfy Cloud is missing these. Switch to a deployment that has them and keep working from there.",
       "switch": "Switch"
@@ -4412,8 +4416,9 @@
     "deploying": "Deploying {deployment}",
     "buildStep": "step {step} of {of}",
     "buildTakesMinutes": "This takes a few minutes. You can keep working.",
-    "readyNew": "{deployment} is ready. Choose it under Run on.",
-    "openRunOn": "Open Run on",
+    "readyNew": "{deployment} is ready",
+    "switch": "Switch",
+    "switchListingUnavailable": "Your deployments didn't load. Try again from Run on.",
     "readyUpdate": "{deployment} now runs v{version}.",
     "readyUpdateReload": "{deployment} now runs v{version}. Reload to use its nodes.",
     "reload": "Reload",
