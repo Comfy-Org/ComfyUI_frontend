@@ -18,6 +18,12 @@ import { hostNodeDef, registerHostType } from './__fixtures__/hostNodeTypes'
 import { expectRefusal } from '@/platform/nodeApi/v4/__tests__/refusal'
 import { registerTestPack } from '@/platform/nodeApi/v4/__tests__/testPack'
 
+function oneHole(): unknown[] {
+  const list: unknown[] = []
+  list.length = 1
+  return list
+}
+
 describe('registering node types and extensions at the edges', () => {
   let graph: LGraph
   let defs: DefRegistry
@@ -366,6 +372,22 @@ describe('registering node types and extensions at the edges', () => {
       expect(defs.has('Sampler/Helper')).toBe(true)
     })
   })
+
+  it.for([
+    { name: 'inputs', definition: { type: 'Sparse', inputs: oneHole() } },
+    { name: 'outputs', definition: { type: 'Sparse', outputs: oneHole() } }
+  ])(
+    'refuses $name with a hole before registering anything',
+    ({ definition }) => {
+      expectRefusal(
+        () => Reflect.apply(defs.define, defs, [packId, definition]),
+        'define'
+      )
+
+      expect(defs.has('Sparse')).toBe(false)
+      expect(LiteGraph.registered_node_types['Sparse']).toBeUndefined()
+    }
+  )
 
   describe('a definition and a host type of the same name', () => {
     it('runs the definition’s hooks only for the type it defined', () => {

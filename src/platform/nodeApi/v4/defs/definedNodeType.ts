@@ -237,7 +237,7 @@ function checkedSlots(
   if (!Array.isArray(slots)) {
     throw invalidArgument('define', `a list of ${field}`, slots)
   }
-  return slots.map((given: unknown, index) => {
+  return Array.from(slots, (given: unknown, index) => {
     const known: Readonly<Record<string, true>> = SLOT_FIELDS[field]
     const slot = checkedFields('define', `${field}[${index}]`, given, known)
     const shape =
