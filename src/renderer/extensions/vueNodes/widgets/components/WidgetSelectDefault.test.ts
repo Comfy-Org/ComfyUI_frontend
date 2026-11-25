@@ -422,6 +422,42 @@ describe('WidgetSelectDefault', () => {
     expect(onUpdate).toHaveBeenCalledWith('archive/portrait.safetensors')
   })
 
+  it.for([
+    {
+      query: 'studio port',
+      labels: ['studio/models/portrait_03.safetensors']
+    },
+    {
+      query: 'port STUDIO',
+      labels: ['studio/models/portrait_03.safetensors']
+    },
+    {
+      query: '  trait  ',
+      labels: [
+        'studio/models/portrait_03.safetensors',
+        'archive/portrait.safetensors'
+      ]
+    },
+    { query: 'studio archive', labels: [] }
+  ])(
+    'matches every whitespace-separated term of "$query" anywhere in the path',
+    async ({ query, labels }) => {
+      const { user } = renderComponent(
+        createWidget([
+          'studio/models/portrait_03.safetensors',
+          'studio/landscape.safetensors',
+          'archive/portrait.safetensors'
+        ]),
+        '',
+        undefined,
+        true
+      )
+      await openDropdown(user)
+      await user.type(screen.getByRole('combobox', { name: 'Search' }), query)
+      expect(optionLabels()).toEqual(labels)
+    }
+  )
+
   it('navigates into and out of folders with the keyboard before selecting a file', async () => {
     const { user, onUpdate } = renderComponent(
       createWidget(['studio/models/portrait.safetensors']),

@@ -115,13 +115,16 @@ export function useComboOptions(
         : []
   })
   const browseOptions = computed(() => {
-    const query = searchQuery.value.trim().toLocaleLowerCase()
-    if (!hasFolders.value || query)
-      return query
+    const terms = searchQuery.value
+      .toLocaleLowerCase()
+      .split(/\s+/)
+      .filter(Boolean)
+    if (!hasFolders.value || terms.length)
+      return terms.length
         ? scoped.value.filter(
             (option) =>
-              option.value.toLocaleLowerCase().includes(query) ||
-              option.label.toLocaleLowerCase().includes(query)
+              containsAll(option.value, terms) ||
+              containsAll(option.label, terms)
           )
         : scoped.value
     return getComboFolderRows(scoped.value, directory.value)
@@ -199,6 +202,11 @@ function getOptionLabel(
     console.error('[WidgetSelectDefault] Failed to map option label', error)
     return value
   }
+}
+
+function containsAll(text: string, terms: string[]) {
+  const haystack = text.toLocaleLowerCase()
+  return terms.every((term) => haystack.includes(term))
 }
 
 function fileParts(value: string) {
