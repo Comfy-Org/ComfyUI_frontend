@@ -67,6 +67,7 @@ describe('findBrokenReferences', () => {
     ['link with balanced parentheses', '[v2](../../docs/guide(v2).md)'],
     ['pnpm in prose', 'pnpm warns when engines differ'],
     ['pnpm builtin', '`pnpm install`'],
+    ['quoted pnpm script', '`pnpm "test:unit"`'],
     ['pnpm binary', '`pnpm vitest run`'],
     ['pnpm placeholder', '`pnpm <script>`'],
     ['pnpm line continuation', '`pnpm --filter @comfyorg/x \\`']

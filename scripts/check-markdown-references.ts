@@ -170,7 +170,7 @@ function pnpmCommand(tokens: string[]): string | undefined {
   const [token, ...rest] = tokens
   if (PNPM_OPTIONS_WITH_VALUE.has(token)) return pnpmCommand(rest.slice(1))
   if (token.startsWith('-') || token === 'run') return pnpmCommand(rest)
-  return token.replace(/[`'".,:)]+$/, '')
+  return token.replace(/^['"]+/, '').replace(/[`'".,:)]+$/, '')
 }
 
 type LineIssue = Omit<Finding, 'line'>
