@@ -15,7 +15,12 @@ import type { MaybePaged } from '@/utils/pagedList'
 import FormDropdownMenuActions from './FormDropdownMenuActions.vue'
 import FormDropdownMenuFilter from './FormDropdownMenuFilter.vue'
 import FormDropdownMenuItem from './FormDropdownMenuItem.vue'
-import type { FormDropdownItem, LayoutMode, SortOption } from './types'
+import type {
+  FormDropdownItem,
+  LayoutMode,
+  SortOption,
+  ThumbnailSize
+} from './types'
 
 interface Props {
   items: MaybePaged<FormDropdownItem>
@@ -29,6 +34,7 @@ interface Props {
   baseModelOptions?: FilterOption[]
   candidateIndex?: number
   candidateLabel?: string
+  hasThumbnailSizes?: boolean
 }
 
 const {
@@ -52,6 +58,7 @@ const emit = defineEmits<{
 
 const filterSelected = defineModel<string>('filterSelected')
 const layoutMode = defineModel<LayoutMode>('layoutMode')
+const thumbnailSize = defineModel<ThumbnailSize>('thumbnailSize')
 const sortSelected = defineModel<string>('sortSelected')
 const searchQuery = defineModel<string>('searchQuery')
 const ownershipSelected = defineModel<OwnershipOption>('ownershipSelected')
@@ -85,9 +92,24 @@ const LAYOUT_CONFIGS: Record<LayoutMode, LayoutConfig> = {
   }
 }
 
-const layoutConfig = computed<LayoutConfig>(
-  () => LAYOUT_CONFIGS[layoutMode.value ?? 'grid']
-)
+const thumbnailLayouts = {
+  compact: { maxColumns: 5, itemHeight: 104, itemWidth: 69 },
+  standard: LAYOUT_CONFIGS.grid,
+  large: { maxColumns: 1, itemHeight: 412, itemWidth: 380 }
+} satisfies Record<
+  ThumbnailSize,
+  Pick<LayoutConfig, 'maxColumns' | 'itemHeight' | 'itemWidth'>
+>
+
+const layoutConfig = computed<LayoutConfig>(() => {
+  const layout = layoutMode.value ?? 'grid'
+  return layout === 'grid'
+    ? {
+        ...LAYOUT_CONFIGS.grid,
+        ...thumbnailLayouts[thumbnailSize.value ?? 'standard']
+      }
+    : LAYOUT_CONFIGS[layout]
+})
 
 const gridStyle = computed<CSSProperties>(() => ({
   display: 'grid',
@@ -129,6 +151,8 @@ const onWheel = (event: WheelEvent) => {
       v-model:search-query="searchQuery"
       v-model:ownership-selected="ownershipSelected"
       v-model:base-model-selected="baseModelSelected"
+      v-model:thumbnail-size="thumbnailSize"
+      :has-thumbnail-sizes
       :sort-options
       :show-ownership-filter
       :ownership-options
@@ -149,7 +173,7 @@ const onWheel = (event: WheelEvent) => {
     </div>
     <VirtualGrid
       v-else
-      :key="layoutMode"
+      :key="layoutMode === 'grid' ? thumbnailSize : layoutMode"
       :items="menuItems"
       :grid-style
       :max-columns="layoutConfig.maxColumns"

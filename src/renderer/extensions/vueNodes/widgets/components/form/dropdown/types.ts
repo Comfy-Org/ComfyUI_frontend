@@ -28,6 +28,8 @@ export interface SortOption<TId extends string = string> {
 
 export type LayoutMode = 'list' | 'grid' | 'list-small'
 
+export type ThumbnailSize = 'compact' | 'standard' | 'large'
+
 export interface FormDropdownInputProps {
   inputId?: string
   isOpen?: boolean

@@ -469,7 +469,7 @@
     "name": "在問題分頁中顯示缺少的媒體",
     "tooltip": "停用時，找不到的輸入影像、影片和音訊不會列在問題分頁中，其節點也不會醒目顯示。"
   },
-  "Comfy_Workflow_ShowMissingNodesWarning": {
+  "Comfy_ErrorSystem_ShowMissingNodes": {
     "name": "在問題分頁中顯示缺少的節點",
     "tooltip": "停用時，缺少的節點套件不會列在問題分頁中，其節點也不會醒目顯示。在安裝前，工作流程仍無法執行。"
   },

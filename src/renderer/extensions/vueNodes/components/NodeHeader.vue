@@ -13,14 +13,21 @@
     :data-testid="`node-header-${nodeData?.id || ''}`"
     @dblclick="handleDoubleClick"
   >
-    <div class="flex min-w-0 items-center justify-between gap-1">
-      <div class="relative mr-auto flex min-w-0 items-center gap-1">
+    <div
+      class="flex min-w-0 items-center justify-between gap-1"
+      data-part="node-header-row"
+    >
+      <div
+        class="relative mr-auto flex min-w-0 items-center gap-1"
+        data-part="node-header-lead"
+      >
         <div class="flex shrink-0 items-center px-0.5">
           <Button
             size="icon-sm"
             variant="textonly"
             class="text-inherit hover:bg-transparent"
             data-testid="node-collapse-button"
+            data-part="node-collapse-button"
             :aria-label="$t(collapsed ? 'g.expand' : 'g.collapse')"
             :aria-expanded="!collapsed"
             @click.stop="handleCollapse"
@@ -66,7 +73,11 @@
         </div>
       </div>
 
-      <NodeBadge v-if="statusBadge" v-bind="statusBadge" />
+      <NodeBadge
+        v-if="statusBadge"
+        v-bind="statusBadge"
+        data-part="node-status-badge"
+      />
       <i
         v-if="isPinned"
         class="icon-[comfy--pin]"

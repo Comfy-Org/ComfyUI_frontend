@@ -1,5 +1,6 @@
 import { useToast } from '@/components/ui/toast/toastStore'
 import { t } from '@/i18n'
+import { switchReloadNote } from '@/platform/workspace/confirmUnsavedWorkBeforeSwitch'
 import type { FollowedBuild } from '@/platform/workspace/platformFrame/platformFrameBuild'
 import { useReleaseNoticeStore } from '@/platform/workspace/stores/releaseNoticeStore'
 import { useQueueStore } from '@/stores/queueStore'
@@ -52,14 +53,14 @@ function finishingLine(build: FollowedBuild): string | undefined {
 }
 
 interface ReadyActions {
-  openRunOn: () => void
+  switchTo: () => Promise<void>
   reload: (() => void) | null
 }
 
 export function noticeBuildReady(
   build: FollowedBuild,
   id: ToastId,
-  { openRunOn, reload }: ReadyActions
+  { switchTo, reload }: ReadyActions
 ) {
   const toast = useToast()
   if (build.kind === 'new') {
@@ -67,7 +68,8 @@ export function noticeBuildReady(
       t('platformFrame.readyNew', named(build), { escapeParameter: false }),
       {
         id,
-        action: { label: t('platformFrame.openRunOn'), onClick: openRunOn }
+        description: switchReloadNote(),
+        action: { label: t('platformFrame.switch'), onClick: switchTo }
       }
     )
     return

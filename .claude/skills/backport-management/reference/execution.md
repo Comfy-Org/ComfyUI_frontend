@@ -62,10 +62,13 @@ Use the result to:
 
 ## Step 1: Label-Driven Automation (Batch)
 
+Use this step only for fixes approved for every eligible core branch. Use
+Step 3 for fixes approved for a subset.
+
 ```bash
 for pr in $PR_LIST; do
   gh api repos/Comfy-Org/ComfyUI_frontend/issues/$pr/labels \
-    -f "labels[]=needs-backport" -f "labels[]=TARGET_BRANCH" --silent
+    -f "labels[]=needs-backport" --silent
   sleep 2
 done
 

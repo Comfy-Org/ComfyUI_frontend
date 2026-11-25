@@ -33,6 +33,37 @@ describe('RunOnCloudCard', () => {
     })
   })
 
+  it('asks to check before anything opens, and says what the check sends', async () => {
+    const onCheck = vi.fn()
+    render(RunOnCloudCard, {
+      props: { asksToSignIn: false, needsConsent: true, onCheck },
+      global: { plugins: [testI18n] }
+    })
+
+    expect(
+      screen.getByText(
+        'Checking will send this workflow’s node and model names to Comfy Cloud.'
+      )
+    ).toBeVisible()
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Check compatibility' })
+    )
+
+    expect(onCheck).toHaveBeenCalledOnce()
+    expect(openWorkflowOnCloud).not.toHaveBeenCalled()
+  })
+
+  it('waits on a disabled button while Comfy Cloud checks', () => {
+    render(RunOnCloudCard, {
+      props: { asksToSignIn: false, needsConsent: true, checking: true },
+      global: { plugins: [testI18n] }
+    })
+
+    expect(
+      screen.getByRole('button', { name: 'Checking Comfy Cloud…' })
+    ).toBeDisabled()
+  })
+
   it('names each linked model input Comfy Cloud could not check', () => {
     render(RunOnCloudCard, {
       props: {

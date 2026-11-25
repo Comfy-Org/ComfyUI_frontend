@@ -1017,6 +1017,41 @@ describe('useAgentConsent', () => {
     ])
   })
 
+  it('waits for a sign-in to resolve its account before saving consent', async () => {
+    const authState = reactive<{ loggedIn: boolean; identity: string | null }>({
+      loggedIn: false,
+      identity: null
+    })
+    useCurrentUser().isLoggedIn = computed(() => authState.loggedIn)
+    useCurrentUser().resolvedUserInfo = computed(() =>
+      authState.identity ? { id: authState.identity } : null
+    )
+    vi.mocked(useAuthDialogs().showSignInDialog).mockImplementationOnce(
+      async () => {
+        setTimeout(() => {
+          authState.loggedIn = true
+          authState.identity = 'account-a'
+        }, 0)
+        return true
+      }
+    )
+    fetchWithUnifiedRemint.mockResolvedValueOnce(savedResponse())
+    const onOpen = vi.fn()
+
+    const request = useAgentConsent().withConsent('button_click', onOpen)
+    const dialog = await waitForConsentDialog()
+    ;(dialog.contentProps.onAccept as () => void)()
+    await request
+
+    expect(reportError).not.toHaveBeenCalled()
+    expect(fetchWithUnifiedRemint).toHaveBeenCalledOnce()
+    expect(onOpen).toHaveBeenCalledOnce()
+    expect(telemetry.trackAgentConsentResolved.mock.calls).toEqual([
+      [{ decision: 'accepted_pending_sign_in', save_error_shown: false }],
+      [{ decision: 'accepted', save_error_shown: false }]
+    ])
+  })
+
   it('asks for consent again after a user cancels sign-in', async () => {
     useCurrentUser().isLoggedIn = computed(() => false)
     useCurrentUser().resolvedUserInfo = computed(() => null)
@@ -1058,8 +1093,16 @@ describe('useAgentConsent', () => {
 
   it('reports when signed-out acceptance cannot resolve a persistence scope', async () => {
     useCurrentUser().isLoggedIn = computed(() => false)
-    useCurrentUser().resolvedUserInfo = computed(() => null)
-    vi.mocked(useAuthDialogs().showSignInDialog).mockResolvedValueOnce(true)
+    const signedIn = ref(false)
+    useCurrentUser().resolvedUserInfo = computed(() =>
+      signedIn.value ? { id: 'account-a' } : null
+    )
+    vi.mocked(useAuthDialogs().showSignInDialog).mockImplementationOnce(
+      async () => {
+        signedIn.value = true
+        return true
+      }
+    )
     vi.spyOn(useAgentConsentStore(), 'ensureScope').mockResolvedValueOnce(null)
     const onOpen = vi.fn()
 
@@ -1077,8 +1120,16 @@ describe('useAgentConsent', () => {
 
   it('reports when signed-out acceptance resolves but does not persist', async () => {
     useCurrentUser().isLoggedIn = computed(() => false)
-    useCurrentUser().resolvedUserInfo = computed(() => null)
-    vi.mocked(useAuthDialogs().showSignInDialog).mockResolvedValueOnce(true)
+    const signedIn = ref(false)
+    useCurrentUser().resolvedUserInfo = computed(() =>
+      signedIn.value ? { id: 'account-a' } : null
+    )
+    vi.mocked(useAuthDialogs().showSignInDialog).mockImplementationOnce(
+      async () => {
+        signedIn.value = true
+        return true
+      }
+    )
     vi.spyOn(useAgentConsentStore(), 'ensureScope').mockResolvedValueOnce(
       'account-a/workspace-a'
     )
@@ -1337,8 +1388,15 @@ describe('useAgentConsent', () => {
     })
 
     it('clears the held draft when sign-in completes in the page', async () => {
-      signedOut()
-      vi.mocked(useAuthDialogs().showSignInDialog).mockResolvedValueOnce(true)
+      const account = ref<{ id: string } | null>(null)
+      useCurrentUser().isLoggedIn = computed(() => false)
+      useCurrentUser().resolvedUserInfo = computed(() => account.value)
+      vi.mocked(useAuthDialogs().showSignInDialog).mockImplementationOnce(
+        async () => {
+          account.value = { id: 'account-a' }
+          return true
+        }
+      )
       scopeResolves()
       vi.spyOn(useAgentConsentStore(), 'accept').mockResolvedValueOnce(true)
 

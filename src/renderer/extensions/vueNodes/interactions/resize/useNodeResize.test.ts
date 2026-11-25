@@ -56,7 +56,7 @@ function createMockNodeElement(
   minContentHeight = 150
 ): HTMLElement {
   const element = document.createElement('div')
-  element.style.setProperty('min-width', `${MIN_NODE_WIDTH}px`)
+  element.style.setProperty('--min-node-width', `${MIN_NODE_WIDTH}px`)
   element.getBoundingClientRect = () => {
     const nodeHeight = element.style.getPropertyValue('--node-height')
     const h = nodeHeight === '0px' ? minContentHeight : height
@@ -275,7 +275,7 @@ describe('useNodeResize', () => {
       getMinContentHeight: () => number
     ): HTMLElement {
       const element = document.createElement('div')
-      element.style.setProperty('min-width', `${MIN_NODE_WIDTH}px`)
+      element.style.setProperty('--min-node-width', `${MIN_NODE_WIDTH}px`)
       element.getBoundingClientRect = () => {
         const nodeHeight = element.style.getPropertyValue('--node-height')
         const h = nodeHeight === '0px' ? getMinContentHeight() : height
@@ -450,7 +450,7 @@ describe('useNodeResize', () => {
       // 280; when width >= 350, content fits in 150.
       const breakpointAwareElement = (() => {
         const element = document.createElement('div')
-        element.style.setProperty('min-width', `${MIN_NODE_WIDTH}px`)
+        element.style.setProperty('--min-node-width', `${MIN_NODE_WIDTH}px`)
         element.getBoundingClientRect = () => {
           const nodeHeight = element.style.getPropertyValue('--node-height')
           if (nodeHeight === '0px') {

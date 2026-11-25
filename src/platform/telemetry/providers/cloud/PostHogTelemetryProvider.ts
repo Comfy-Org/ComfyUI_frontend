@@ -68,12 +68,14 @@ import type {
   AgentWorkflowBoundMetadata,
   AgentWorkflowAppliedMetadata,
   AuthErrorMetadata,
+  AssetDownloadMetadata,
   AuthMetadata,
   ImageLoadFailureMetadata,
   UnifiedAuthRefreshMetadata,
   UnifiedAuthRetryMetadata,
   BeginCheckoutMetadata,
   BootstrapCompleteMetadata,
+  CustomDeploymentTelemetryEvent,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
   ExecutionErrorMetadata,
@@ -516,6 +518,15 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.IMAGE_LOAD_FAILED, metadata)
   }
 
+  trackAssetDownload(metadata: AssetDownloadMetadata): void {
+    this.trackEvent(
+      metadata.outcome === 'completed'
+        ? TelemetryEvents.ASSET_DOWNLOAD_COMPLETED
+        : TelemetryEvents.ASSET_DOWNLOAD_FAILED,
+      metadata
+    )
+  }
+
   trackBootstrapComplete(metadata: BootstrapCompleteMetadata): void {
     this.trackEvent(TelemetryEvents.BOOTSTRAP_COMPLETE, metadata)
   }
@@ -825,6 +836,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
   }
 
   trackRunOnCloudEvent(event: RunOnCloudTelemetryEvent): void {
+    this.trackEvent(event.name, event.properties)
+  }
+
+  trackCustomDeploymentEvent(event: CustomDeploymentTelemetryEvent): void {
     this.trackEvent(event.name, event.properties)
   }
 

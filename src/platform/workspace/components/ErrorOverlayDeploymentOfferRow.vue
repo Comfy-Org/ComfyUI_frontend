@@ -84,7 +84,8 @@ const first = computed(() => choices.value[0])
 const moreCount = computed(() => choices.value.length - 1)
 
 function setUpCustomDeployment() {
-  if (usePlatformFrameStore().open(NEW_DEPLOYMENT_FOR_WORKFLOW)) return
+  if (usePlatformFrameStore().open(NEW_DEPLOYMENT_FOR_WORKFLOW, 'set_up'))
+    return
   void openWorkflowNeedsDeploymentDialog()
 }
 </script>
