@@ -15470,6 +15470,91 @@
       }
     }
   },
+  "MeshyImageToReliefNode": {
+    "description": "Wandeln Sie ein Foto in ein Flachreliefmodell und eine 16-Bit-Tiefenkarte für 3D-Druck, Lasergravur und CNC-Fräsen um. Nur die verbundenen Ausgaben werden generiert und heruntergeladen; ist keine Modellausgabe verbunden, gibt die Aufgabe nur die Tiefenkarte zurück.",
+    "display_name": "Meshy: Bild zu Relief",
+    "inputs": {
+      "base": {
+        "name": "base",
+        "tooltip": "none entfernt den Hintergrund und erstellt keine Grundplatte."
+      },
+      "base_base_thickness_mm": {
+        "name": "base_thickness_mm"
+      },
+      "bend": {
+        "name": "bend",
+        "tooltip": "convex wölbt die Vorderseite nach außen, concave krümmt sie nach innen."
+      },
+      "carving_mode": {
+        "name": "carving_mode",
+        "tooltip": "emboss hebt die näheren Bereiche des Fotos an, engrave vertieft sie."
+      },
+      "color_mapping": {
+        "name": "color_mapping",
+        "tooltip": "Färbt die Dateien GLB, OBJ, FBX und USDZ mit dem Foto ein. STL und 3MF bleiben weiß."
+      },
+      "control_after_generate": {
+        "name": "Steuerung nach Generierung"
+      },
+      "image": {
+        "name": "Bild",
+        "tooltip": "Dunkle Motive auf hellem Hintergrund werden hervorgehoben. Transparenz wird vor dem Upload entfernt; legen Sie ein transparentes Logo daher zuerst auf einen weißen Hintergrund."
+      },
+      "mesh_resolution": {
+        "name": "mesh_resolution",
+        "tooltip": "Mesh-Punkte entlang der längeren Seite des Fotos. Bei 1024 ist die GLB etwa 50 MB und die STL etwa 105 MB groß, bei 2048 etwa 200 MB bzw. 420 MB; eine Biegung verdoppelt diese Werte."
+      },
+      "relief_type": {
+        "name": "relief_type",
+        "tooltip": "low: flache Gravur für Lasergravur, CNC und Plaketten. high: tiefere Gravur für 3D-gedruckte Objekte."
+      },
+      "relief_type_carving_depth_mm": {
+        "name": "carving_depth_mm"
+      },
+      "seed": {
+        "name": "Seed",
+        "tooltip": "Der Seed steuert, ob der Node erneut ausgeführt wird; die Ergebnisse sind unabhängig vom Seed nicht deterministisch. Ändern Sie ihn, um eine Ausgabe anzufordern, die nach dem letzten Durchlauf verbunden wurde."
+      },
+      "size_mm": {
+        "name": "size_mm",
+        "tooltip": "Länge der längeren Seite des Fotos auf dem Modell, flach gemessen, bevor es gebogen wird."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "1": {
+        "name": "STL",
+        "tooltip": null
+      },
+      "2": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": null
+      },
+      "4": {
+        "name": "USDZ",
+        "tooltip": null
+      },
+      "5": {
+        "name": "3MF",
+        "tooltip": null
+      },
+      "6": {
+        "name": "depth_map",
+        "tooltip": "Tiefenkarte mit dem vollständigen 16-Bit-Bereich; Bild speichern (Erweitert) schreibt sie als 16-Bit-PNG."
+      },
+      "7": {
+        "name": "Vorschau",
+        "tooltip": null
+      }
+    }
+  },
   "MeshyMultiImageToModelNode": {
     "display_name": "Meshy: Mehrere Bilder zu Modell",
     "inputs": {
@@ -15765,6 +15850,44 @@
         "tooltip": null
       },
       "3": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyTextureN1Node": {
+    "description": "Texturieren Sie ein zuvor erstelltes Modell mit Meshy N1 anhand von 1 bis 4 Referenzansichten desselben Objekts.",
+    "display_name": "Meshy: Modell texturieren (N1)",
+    "inputs": {
+      "enable_original_uv": {
+        "name": "enable_original_uv",
+        "tooltip": "Verwenden Sie die ursprünglichen UVs des Modells, anstatt neue UVs zu generieren. Wenn diese Option aktiviert ist, bewahrt Meshy vorhandene Texturen des hochgeladenen Modells. Hat das Modell keine ursprünglichen UVs, kann die Qualität der Ausgabe geringer sein."
+      },
+      "extra_views": {
+        "name": "Zusätzliche Ansichten",
+        "tooltip": "Weitere Ansichten desselben Objekts, in beliebiger Reihenfolge. Zusammen mit front_view maximal 4 Bilder."
+      },
+      "front_view": {
+        "name": "front_view",
+        "tooltip": "Die Ansicht, die Meshy als Vorderseite behandelt. Ein Bild texturiert die Vorderseite und lässt die Rückseite unverändert; fügen Sie in extra_views Rück- und Seitenansichten hinzu, um eine originalgetreue Rückseite zu erhalten."
+      },
+      "meshy_task_id": {
+        "name": "meshy_task_id"
+      },
+      "model": {
+        "name": "Modell"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "2": {
         "name": "FBX",
         "tooltip": null
       }

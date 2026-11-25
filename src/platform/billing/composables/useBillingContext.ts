@@ -279,7 +279,10 @@ function useBillingContextInternal(): BillingContext {
       try {
         await initialize()
       } catch (err) {
-        console.error('Failed to initialize billing context:', err)
+        reportError(err, {
+          surface: 'billing',
+          errorType: 'error_initializing_billing_context'
+        })
       }
       await runOwedFreshStatusRead()
     },

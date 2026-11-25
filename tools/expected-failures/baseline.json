@@ -80,15 +80,15 @@
     "classification": "live-defect"
   },
   {
-    "id": "vitest:src/stores/assetDownloadStore.test.ts:excludes a failed-then-actually-completed task from activeDownloads (PM-1302):1",
-    "classification": "live-defect"
-  },
-  {
     "id": "vitest:src/workbench/extensions/agent/crdt/docOpMinter.test.ts:applies a human edit of a dotted dynamic child the pinned catalog does not list:1",
     "classification": "live-defect"
   },
   {
     "id": "vitest:src/workbench/extensions/agent/crdt/semanticLayoutSeparation.guard.test.ts:omits pos and size from a minted node payload:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/platform/assets/stores/assetDownloadStore.test.ts:excludes a failed-then-actually-completed task from activeDownloads (PM-1302):1",
     "classification": "live-defect"
   }
 ]

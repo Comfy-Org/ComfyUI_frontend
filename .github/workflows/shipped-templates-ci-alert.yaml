@@ -1,0 +1,42 @@
+name: 'Shipped templates CI alert'
+
+on:
+  workflow_run:
+    workflows: ['CI: Shipped Templates']
+    types: [completed]
+
+permissions:
+  contents: read
+
+jobs:
+  notify:
+    if: >-
+      github.event.workflow_run.event == 'schedule' &&
+      github.event.workflow_run.conclusion != 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Post failure to frontend releases
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_CHANNEL_ID: ${{ vars.SLACK_FRONTEND_RELEASES_CHANNEL_ID }}
+          RUN_URL: ${{ github.event.workflow_run.html_url }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          if [ -z "$SLACK_CHANNEL_ID" ]; then
+            echo "::warning::SLACK_FRONTEND_RELEASES_CHANNEL_ID is unset — skipping Slack notification."
+            exit 0
+          fi
+
+          TEXT="Scheduled shipped-templates schema check failed at ${SHA:0:7}. A shipped template may no longer validate against the frontend workflow schema. ${RUN_URL}"
+          BODY=$(jq -n --arg ch "$SLACK_CHANNEL_ID" --arg text "$TEXT" \
+            '{channel: $ch, text: $text}')
+          RESPONSE=$(curl -sS -X POST \
+            --connect-timeout 10 --max-time 30 \
+            -H "Authorization: Bearer $SLACK_BOT_TOKEN" \
+            -H 'Content-Type: application/json' \
+            -d "$BODY" \
+            https://slack.com/api/chat.postMessage)
+          if ! jq -e '.ok == true' <<<"$RESPONSE" >/dev/null; then
+            echo "Slack rejected the notification: $(jq -r '.error // "unparseable response"' <<<"$RESPONSE")"
+            exit 1
+          fi

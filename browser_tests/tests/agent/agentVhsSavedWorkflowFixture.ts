@@ -201,7 +201,6 @@ export const test = mergeTests(agentTest, webSocketFixture).extend<{
     const panel = new AgentPanel(page)
     await panel.open()
     const host = new VhsDocumentHost(await getAgentSocket())
-    await panel.selectWorkflow()
     await use({ panel, host, canvas: new VhsSavedWorkflowCanvas(page) })
   }
 })

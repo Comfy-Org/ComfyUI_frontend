@@ -1,5 +1,7 @@
 import { reportError } from '@comfyorg/telemetry/reportError'
 
+import { sessionEndedReporting } from '@/platform/billing/composables/sessionEndedReporting'
+
 const REPORT_INTERVAL_MS = 5 * 60_000
 let lastReportedAt = Number.NEGATIVE_INFINITY
 
@@ -16,7 +18,8 @@ export function refreshBalanceInBackground(
       reportError(error, {
         surface: 'billing',
         errorType: 'error_refreshing_balance',
-        level: 'warning'
+        level: 'warning',
+        ...sessionEndedReporting(error)
       })
     }
   )

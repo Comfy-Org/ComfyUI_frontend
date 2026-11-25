@@ -423,6 +423,44 @@ describe('useGLSLPreview', () => {
       expect(preview.hideExecutedOutput.value).toBe(true)
     })
 
+    it('does not read links from a shader node removed from the subgraph', async () => {
+      const subgraph = createTestSubgraph()
+      const graph = subgraph.rootGraph
+      const owner = createTestSubgraphNode(subgraph)
+      graph.add(owner)
+
+      const source = new LGraphNode('PrimitiveFloat', 'PrimitiveFloat')
+      source.addWidget('number', 'value', 0.5, () => {})
+      source.addOutput('FLOAT', 'FLOAT')
+      subgraph.add(source)
+
+      const shader = new LGraphNode('GLSLShader', 'GLSLShader')
+      shader.addInput('floats.u_float0', 'FLOAT')
+      subgraph.add(shader)
+      source.connect(0, shader, 0)
+
+      useWidgetValueStore().registerWidget(
+        widgetId(graph.id, shader.id, 'fragment_shader'),
+        { type: 'customtext', options: {}, value: 'void main() {}' }
+      )
+      useNodeOutputStore().nodeOutputs[String(owner.id)] = {
+        images: [{ filename: 'shader.png', subfolder: '', type: 'temp' }]
+      }
+
+      const preview = useGLSLPreview(shallowRef(owner))
+      onTestFinished(preview.dispose)
+      await vi.advanceTimersByTimeAsync(100)
+      expect(mockRendererFactory.setFloatUniform).toHaveBeenCalledWith(0, 0.5)
+
+      mockRendererFactory.setFloatUniform.mockClear()
+      subgraph.remove(shader)
+      expect(shader.graph).toBeNull()
+
+      await nextTick()
+      await vi.advanceTimersByTimeAsync(100)
+      expect(mockRendererFactory.setFloatUniform).not.toHaveBeenCalled()
+    })
+
     it('revokes the live preview and reveals the executed output when the input is unavailable', async () => {
       const node = createMockNode({
         inputs: [{ name: 'images.image0', link: 10 }],

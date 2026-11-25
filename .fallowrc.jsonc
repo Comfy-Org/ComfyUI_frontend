@@ -9,6 +9,7 @@
       "@comfyorg/account-core",
       "@comfyorg/account-ui",
       "@comfyorg/api-client",
+      "@comfyorg/assets-core",
       "@comfyorg/billing-contract",
       "@comfyorg/billing-core",
       "@comfyorg/comfyui-api-types",

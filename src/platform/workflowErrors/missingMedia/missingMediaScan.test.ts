@@ -5,13 +5,13 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
 import type { IComboWidget } from '@comfyorg/graph-model/widgets'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type { AssetItem } from '@comfyorg/assets-core/schema'
 import {
   createMediaNodeDef,
   seedMediaNodeDefs
 } from '@/platform/workflowErrors/missingMedia/__fixtures__/promotedMedia'
 import { api } from '@/scripts/api'
-import { useAssetsStore } from '@/stores/assetsStore'
+import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import {
   isMissingMediaCandidateScopeActive,
@@ -795,13 +795,15 @@ describe('verifyMediaCandidates', () => {
     stubAssets({})
     const { signal } = new AbortController()
     const candidates = [
-      makeCandidate('1', 'clipspace/bb22.png [input]', { isMissing: undefined })
+      makeCandidate('1', 'clipspace/blake3:bb22 [input]', {
+        isMissing: undefined
+      })
     ]
 
     await verifyMediaCandidates(candidates, { signal })
 
     expect(hashLookups()).toEqual([
-      ['/assets?hash=bb22.png&include_public=true&limit=1', { signal }]
+      ['/assets?hash=blake3%3Abb22&include_public=true&limit=1', { signal }]
     ])
   })
 

@@ -115,6 +115,15 @@ describe('useImageUploadWidget', () => {
     vi.stubGlobal('requestAnimationFrame', vi.fn())
   })
 
+  it('creates the upload button without an input socket', () => {
+    const { node } = createUploadNode()
+
+    construct(node)
+
+    const uploadWidget = node.widgets?.find((w) => w.name === 'upload')
+    expect(uploadWidget?.options.socketless).toBe(true)
+  })
+
   it('emits onWidgetChanged after upload changes the combo widget value', () => {
     const { fileComboWidget, node, onWidgetChanged } = createUploadNode()
 
