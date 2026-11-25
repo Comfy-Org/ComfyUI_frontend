@@ -2,6 +2,7 @@ import { expect } from '@playwright/test'
 
 import { agentConsentTest as test } from '@e2e/fixtures/agentConsentFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { openErrorsTab } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 import { sentTurn } from '@e2e/tests/agent/agentPanelMocks'
@@ -58,6 +59,23 @@ test.describe('Ask agent about errors', { tag: ['@cloud', '@ui'] }, () => {
       await expect(chip).toBeVisible()
       await expect(agentPanel.composer).toBeFocused()
       await expectElementScreenshot(chip, 'ask-agent-error-reference-chip.png')
+    })
+
+    await test.step('Repeat clicks on the persistent errors-footer control reuse the chip slot', async () => {
+      const normalizedComposerText = async () =>
+        (await agentPanel.composer.innerText()).replace(/\s+/g, ' ').trim()
+
+      await page.keyboard.type(' more context')
+      await openErrorsTab(comfyPage)
+      const footerAskAgent = page.getByTestId('errors-footer-ask-agent')
+
+      await footerAskAgent.click()
+      await expect(chip).toHaveCount(1)
+      const textAfterFirstClick = await normalizedComposerText()
+
+      await footerAskAgent.click()
+      await expect(chip).toHaveCount(1)
+      await expect.poll(normalizedComposerText).toBe(textAfterFirstClick)
     })
 
     await test.step('Sending carries the error identity in a Ref line', async () => {
