@@ -6,7 +6,7 @@
   />
   <DeploySetupCard
     v-else-if="state.kind === 'deploySetup'"
-    :body="$t('openOnCloud.deploySetupDialog.missingNodesBody')"
+    :body="$t('openOnCloud.deploySetupDialog.missingDependenciesBody')"
     :video-sources="DEPLOY_VIDEO_SOURCES"
     :poster-src="DEPLOY_VIDEO_POSTER_SRC"
     @done="emit('done')"
@@ -14,6 +14,7 @@
   />
   <RunOnCloudCard
     v-else
+    :asks-to-sign-in="state.kind === 'ready' && state.asksToSignIn"
     :unchecked-inputs="
       state.kind === 'ready' ? state.uncheckedInputs : undefined
     "

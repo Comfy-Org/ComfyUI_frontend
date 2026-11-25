@@ -1,3 +1,4 @@
+import { useTelemetry } from '@comfyorg/telemetry'
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
@@ -140,6 +141,11 @@ describe('Cloud button compatibility checks', () => {
     expect(checkCloudCompatibility).not.toHaveBeenCalled()
     await user.keyboard('{Enter}')
 
+    expect(useTelemetry()?.trackUiButtonClicked).toHaveBeenCalledWith({
+      button_id: 'run_bar_cloud_clicked',
+      element_group: 'top_menu'
+    })
+
     const dialog = await screen.findByRole('dialog', {
       name: 'Run your workflows on Comfy Cloud'
     })
@@ -214,6 +220,25 @@ describe('Cloud button compatibility checks', () => {
 
     expect(dialog).not.toBeInTheDocument()
     expect(checkCloudCompatibility).not.toHaveBeenCalled()
+  })
+
+  it('cancels the pending check when the confirmation dialog closes', async () => {
+    const response = deferredVerdict()
+    vi.mocked(checkCloudCompatibility).mockReturnValue(response.promise)
+    renderCloudButton()
+    const user = userEvent.setup()
+
+    await requestCloudCheck(user)
+    const signal = vi.mocked(checkCloudCompatibility).mock.lastCall?.[0]
+    expect(signal?.aborted).toBe(false)
+    await user.click(
+      within(screen.getByRole('dialog')).getByRole('button', { name: 'Close' })
+    )
+
+    expect(signal?.aborted).toBe(true)
+    response.resolve({ kind: 'canOpen' })
+    await response.promise
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
   it('requires a new confirmation after the workflow is edited', async () => {
