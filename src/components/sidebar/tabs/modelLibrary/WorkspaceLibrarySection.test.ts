@@ -16,6 +16,7 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import type { ModelFolder } from '@/stores/modelStore'
 import { useModelStore } from '@/stores/modelStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 import WorkspaceLibrarySection from './WorkspaceLibrarySection.vue'
 
@@ -242,4 +243,37 @@ describe('WorkspaceLibrarySection', () => {
       'detail-tweaker.safetensors'
     )
   })
+
+  it.for([
+    ['unet', 'UNETLoader', 'unet_name'],
+    ['clip', 'CLIPLoader', 'clip_name'],
+    ['t2i_adapter', 'ControlNetLoader', 'control_net_name']
+  ])(
+    'places the %s loader for a model in that legacy folder',
+    async ([legacyFolder, loaderName, key]) => {
+      useNodeDefStore().nodeDefsByName = {
+        [loaderName]: fromPartial<ComfyNodeDefImpl>({ name: loaderName })
+      }
+      library.set(legacyFolder, ['legacy-model.safetensors'])
+      const { user } = renderSection()
+
+      await user.click(
+        screen.getByRole('button', { name: 'Workspace library' })
+      )
+      await user.click(
+        await screen.findByRole('button', { name: 'legacy-model.safetensors' })
+      )
+
+      expect(assetService.getWorkspaceLibraryModels).toHaveBeenCalledWith(
+        legacyFolder
+      )
+      expect(startModelLoaderDrag).toHaveBeenCalledWith(
+        expect.objectContaining({
+          nodeDef: expect.objectContaining({ name: loaderName }),
+          key
+        }),
+        'legacy-model.safetensors'
+      )
+    }
+  )
 })
