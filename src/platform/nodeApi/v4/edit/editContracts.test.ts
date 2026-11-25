@@ -258,12 +258,12 @@ describe('edit contracts', () => {
       return added
     }
 
-    it('into an input stay at the slot index the host leaves them at', () => {
+    it.fails('move with the inputs they enter, once the host moves them (#23466, PR #24205)', () => {
       const intoSecond = floating([-1, -1], [0, 1])
 
       expect(handle.inputs.reorder(['second', 'first'])).toBe(true)
 
-      expect(intoSecond.target_slot).toBe(1)
+      expect(intoSecond.target_slot).toBe(0)
     })
 
     it('move with the outputs they leave', () => {

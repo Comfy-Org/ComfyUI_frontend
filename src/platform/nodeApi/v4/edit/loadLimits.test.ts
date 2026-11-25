@@ -436,7 +436,7 @@ describe('edits and what a load keeps of them', () => {
       expect(sourceFeeding()).toEqual(fedBySources)
     })
 
-    it('leaves the floating links of its inputs at their slot index, as the host does', () => {
+    it.fails('moves the floating links of its inputs with their inputs, once the host does (#23466, PR #24205)', () => {
       const intoSecond = graph.addFloatingLink(
         new LLink(
           toLinkId(-1),
@@ -451,7 +451,7 @@ describe('edits and what a load keeps of them', () => {
 
       expect(subgraphHandle.inputs.reorder(['second', 'first'])).toBe(true)
 
-      expect(intoSecond.target_slot).toBe(1)
+      expect(intoSecond.target_slot).toBe(0)
     })
 
     it('refuses to add, remove, change or reorder outputs of its slots', () => {

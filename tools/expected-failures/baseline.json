@@ -60,6 +60,18 @@
     "classification": "live-defect"
   },
   {
+    "id": "vitest:src/platform/nodeApi/v4/edit/editContracts.test.ts:move with the inputs they enter, once the host moves them (#23466, PR #24205):1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/platform/nodeApi/v4/edit/editEdges.test.ts:moves a floating link into an input with its input through a three-way reorder, once the host does (#23466, PR #24205):1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/platform/nodeApi/v4/edit/loadLimits.test.ts:moves the floating links of its inputs with their inputs, once the host does (#23466, PR #24205):1",
+    "classification": "live-defect"
+  },
+  {
     "id": "vitest:src/platform/workflow/persistence/base/hashUtil.test.ts:produces different hashes for known collision paths:1",
     "classification": "live-defect"
   },

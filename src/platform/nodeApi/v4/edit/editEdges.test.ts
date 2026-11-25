@@ -143,12 +143,13 @@ describe('edit edges', () => {
     expect(fromSecond.origin_slot).toBe(1)
   })
 
-  it('leaves a floating link into an input at its slot index through a three-way reorder, as the host does', () => {
+  it.fails('moves a floating link into an input with its input through a three-way reorder, once the host does (#23466, PR #24205)', () => {
     const intoFirst = floating([-1, -1], [0, 0])
+    const intoThird = floating([-1, -1], [0, 2])
 
     expect(handle.inputs.reorder(['second', 'third', 'first'])).toBe(true)
 
-    expect(intoFirst.target_slot).toBe(0)
+    expect([intoFirst.target_slot, intoThird.target_slot]).toEqual([2, 1])
   })
 
   it('drops the floating link into a removed input and shifts the later one onto its own input', () => {
