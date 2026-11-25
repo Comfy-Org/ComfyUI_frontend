@@ -76,12 +76,12 @@ console.info(everySampler.length, subgraphNames)
 ```
 
 `comfy.graph.version` counts the changes to the whole open document, so it
-reads the same whichever of its graphs is on screen. Every edit through a
-handle advances it, in any graph of the document, `workflow.setExtra`
-included, and so do some of the editor's own changes, but not all: a move or
-a color does not. Every undo, redo and load changes it, so an undo and the
-redo after it read differently; a different reading means the document
-changed, and an equal one does not prove that nothing did.
+reads the same whichever of its graphs is on screen. It grows when the
+document changed since the last reading: on every edit through a handle, in
+any graph of the document, `workflow.setExtra` included, on every undo, redo
+and load, so an undo and the redo after it read differently, and on some of
+the editor's own changes, but not all: a move or a color does not count. A
+reading never repeats an earlier one.
 
 ```ts
 import { comfy } from '/comfy/api/v4.js'
