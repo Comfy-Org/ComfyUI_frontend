@@ -1938,8 +1938,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
       activeTurnId !== null &&
       (conflict.active_message_id === undefined ||
         activeTurnId === conflict.active_message_id)
-    if (reattachGeneration === refusedTurnReattachGeneration)
+    if (reattachGeneration === refusedTurnReattachGeneration) {
       refusedTurnReattachGeneration++
+      hydrationRevision.value += 1
+    }
     return adoptedActiveTurn
   }
 

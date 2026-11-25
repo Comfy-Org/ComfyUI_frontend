@@ -12452,4 +12452,57 @@ describe('useAgentSession optimistic and chat-owned sends (PR 0)', () => {
     await staleLoad
     expect(session.isHydrating.value).toBe(false)
   })
+
+  it('clears isHydrating immediately when a 409 reattachment hydration times out', async () => {
+    vi.useFakeTimers()
+    try {
+      const conversation = useAgentConversationStore()
+      const events = fakeEvents()
+      let resolveReattach!: (rows: []) => void
+      const getMessages = vi.fn(
+        () =>
+          new Promise<[]>((resolve) => {
+            resolveReattach = resolve
+          })
+      )
+      const postMessage = vi.fn().mockRejectedValueOnce(
+        new AgentApiError(
+          'a turn is already in progress for this thread',
+          409,
+          {
+            error: 'a turn is already in progress for this thread',
+            type: 'TURN_IN_PROGRESS',
+            active_message_id: 'turn-active',
+            turn_id: 'turn-active'
+          }
+        )
+      )
+      const session = useAgentSession({
+        rest: fakeRest({ postMessage, getMessages }),
+        events: events.source
+      })
+      session.start({ restore: false })
+      conversation.setThreadId('th-reattach')
+
+      const sending = session.sendMessage(
+        'second prompt',
+        [],
+        [],
+        [],
+        () => undefined,
+        'cm-409-timeout'
+      )
+      await vi.waitFor(() => expect(getMessages).toHaveBeenCalledOnce())
+      expect(session.isHydrating.value).toBe(true)
+
+      await vi.advanceTimersByTimeAsync(15_000)
+      expect(await sending).toBe(false)
+      expect(session.isHydrating.value).toBe(false)
+
+      resolveReattach([])
+      await Promise.resolve()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
 })

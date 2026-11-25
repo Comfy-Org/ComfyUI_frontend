@@ -1852,13 +1852,13 @@ export const useAgentConversationStore = defineStore(
       return true
     }
 
-    /**
-     * PM-1575: flush what the discarded transport still holds rather than
-     * leaving it reachable only by its own STALE_AFTER_MS fallback.
-     */
     function retireBackgroundTurn(entry: BackgroundTurn): void {
       rememberDepartedTurn(entry.threadId, entry.messageId, 'settled-turn')
       entry.transport.dispose()
+      revokeUnownedBlobPreviews(
+        entry.attachments,
+        collectOwnedBlobPreviews(true)
+      )
     }
 
     function latestBackgroundTurn(
