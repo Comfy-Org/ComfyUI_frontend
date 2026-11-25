@@ -3743,14 +3743,17 @@ describe('ComfyApp', () => {
       ) as ComfyWorkflowJSON
       const kept = comfy.graph.add('HandleProbe')
       assert(kept)
-      app.rootGraph.events.addEventListener('configuring', (event) =>
+      let vetoes = 0
+      app.rootGraph.events.addEventListener('configuring', (event) => {
+        vetoes++
         event.preventDefault()
-      )
+      })
 
       await app.loadGraphData(beforeAdding, false, false, null, {
         restoreHistory: true
       })
 
+      expect(vetoes).toBe(1)
       expect(app.rootGraph.getNodeById(toNodeId(kept.id))).toBeDefined()
       expect(kept.isDeleted).toBe(false)
       expect(kept.getTitle()).toBe('HandleProbe')
