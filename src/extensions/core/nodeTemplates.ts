@@ -51,8 +51,11 @@ type TemplatesLoad =
 async function fetchTemplates(): Promise<TemplatesLoad> {
   try {
     const res = await api.getUserData(file)
-    if (res.status === 200)
-      return { ok: true, templates: (await res.json()) ?? [] }
+    if (res.status === 200) {
+      const body = await res.text()
+      if (!body.trim()) return { ok: true, templates: [] }
+      return { ok: true, templates: JSON.parse(body) ?? [] }
+    }
     if (res.status === 404) return { ok: true, templates: [] }
     return { ok: false, cause: `${res.status} ${res.statusText}` }
   } catch (cause) {
