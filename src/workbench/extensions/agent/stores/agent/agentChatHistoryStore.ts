@@ -14,6 +14,8 @@ export interface ChatSession {
   updatedAt: number
   titleSource: 'server' | 'fallback'
   workflowId?: string
+  /** First user message as listed by the server; absent when none. */
+  preview?: string
   lastActivityAt?: number
 }
 

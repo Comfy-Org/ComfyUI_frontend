@@ -1916,6 +1916,11 @@ export const useAgentConversationStore = defineStore(
       ]
     }
 
+    /** Threads with a turn still running, whether displayed or stashed. */
+    const liveThreadIds = computed<ReadonlySet<string>>(
+      () => new Set(liveTurns().map((turn) => turn.threadId))
+    )
+
     function liveTurnSkillState(
       turn: LiveTurn
     ): Pick<BackgroundTurn, 'message' | 'skillReference'> | undefined {
@@ -2567,6 +2572,7 @@ export const useAgentConversationStore = defineStore(
       settleBackgroundTurn,
       dropBackgroundTurns,
       liveTurns,
+      liveThreadIds,
       turnUsesSkill,
       historySkillNames,
       settleTurn,
