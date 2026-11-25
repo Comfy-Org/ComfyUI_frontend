@@ -58,6 +58,7 @@ function openCustomDeploymentDialog(
     {
       pitch,
       frameRequest,
+      frameEntry: frameRequest ? 'overview_dialog' : undefined,
       videoSources: DEPLOY_VIDEO_SOURCES,
       posterSrc: DEPLOY_VIDEO_POSTER_SRC
     }

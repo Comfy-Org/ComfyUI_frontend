@@ -1,8 +1,9 @@
-import { StorageSerializers, useStorage } from '@vueuse/core'
+import { StorageSerializers } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 
 import type { ServerFeatureFlag } from '@/platform/remoteConfig/serverFeatureFlag'
+import { useSafeLocalStorage } from '@/platform/storage/useSafeStorage'
 
 import type { RemoteConfig } from './types'
 
@@ -16,6 +17,11 @@ type AuthenticatedRemoteConfigLoadState =
   | 'loading'
   | 'authenticated'
   | 'error'
+
+export type RemoteConfigFailure =
+  | { reason: 'timeout' }
+  | { reason: 'http'; status: number }
+  | { reason: 'network' }
 
 const AGENT_GRANT_FALLBACK_MS = 15 * 60_000
 
@@ -35,19 +41,18 @@ export const useRemoteConfigStore = defineStore('remoteConfig', () => {
   const authenticatedLoadState =
     ref<AuthenticatedRemoteConfigLoadState>('unloaded')
   const errorStatus = ref<number | null>(null)
+  const failure = ref<RemoteConfigFailure | null>(null)
   const agentGrant = ref<boolean>()
   const agentGrantValidUntil = ref<number>()
   let agentGrantExpiryTimer: ReturnType<typeof setTimeout> | undefined
 
-  const cachedBillingControlEnabled = useStorage<boolean | undefined>(
+  const cachedBillingControlEnabled = useSafeLocalStorage<boolean | undefined>(
     'billing_control_enabled' satisfies `${ServerFeatureFlag.BILLING_CONTROL_ENABLED}`,
-    undefined,
     undefined,
     { serializer: StorageSerializers.boolean }
   )
-  const cachedV1PaymentRecovery = useStorage<boolean | undefined>(
+  const cachedV1PaymentRecovery = useSafeLocalStorage<boolean | undefined>(
     'v1_payment_recovery' satisfies `${ServerFeatureFlag.V1_PAYMENT_RECOVERY}`,
-    undefined,
     undefined,
     { serializer: StorageSerializers.boolean }
   )
@@ -88,6 +93,7 @@ export const useRemoteConfigStore = defineStore('remoteConfig', () => {
   function acceptConfig(next: RemoteConfig, authenticated: boolean): void {
     publishConfig(next)
     errorStatus.value = null
+    failure.value = null
     loadState.value = authenticated ? 'authenticated' : 'anonymous'
     if (!authenticated) {
       authenticatedLoadState.value = 'unloaded'
@@ -100,7 +106,12 @@ export const useRemoteConfigStore = defineStore('remoteConfig', () => {
     grantAgentForSession(next['agent-in-app-experience'] === true)
   }
 
-  function failLoad(authenticated: boolean, status?: number): void {
+  function failLoad(
+    authenticated: boolean,
+    reason: RemoteConfigFailure | null = null
+  ): void {
+    failure.value = reason
+    const status = reason?.reason === 'http' ? reason.status : undefined
     const identityRejected = authenticated && (status === 401 || status === 403)
     errorStatus.value = identityRejected ? status : null
     if (identityRejected) {
@@ -123,6 +134,7 @@ export const useRemoteConfigStore = defineStore('remoteConfig', () => {
       ...(comfy_platform_base_url && { comfy_platform_base_url })
     })
     errorStatus.value = null
+    failure.value = null
     loadState.value = 'unloaded'
     authenticatedLoadState.value = 'unloaded'
     clearAgentGrant()
@@ -136,6 +148,7 @@ export const useRemoteConfigStore = defineStore('remoteConfig', () => {
       () => authenticatedLoadState.value === 'authenticated'
     ),
     errorStatus: computed(() => errorStatus.value),
+    failure: computed(() => failure.value),
     agentGrant: computed(() => agentGrant.value),
     agentGrantValidUntil: computed(() => agentGrantValidUntil.value),
     cachedBillingControlEnabled: computed(

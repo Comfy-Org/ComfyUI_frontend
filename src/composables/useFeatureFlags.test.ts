@@ -1176,7 +1176,7 @@ describe('useFeatureFlags', () => {
     it('drops the grant when the session itself is gone', () => {
       const store = useRemoteConfigStore()
       store.acceptConfig({ 'agent-in-app-experience': true }, true)
-      store.failLoad(true, 401)
+      store.failLoad(true, { reason: 'http', status: 401 })
 
       const { flags } = useFeatureFlags()
       expect(flags.agentInAppExperienceEnabled).toBe(false)

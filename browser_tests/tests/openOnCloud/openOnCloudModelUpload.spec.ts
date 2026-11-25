@@ -15,7 +15,7 @@ test.describe('Open on Cloud: upload the models Comfy Cloud lacks', () => {
     const { page } = comfyPage
     await comfyPage.workflow.loadWorkflow('openOnCloud/missing-uploadable-lora')
 
-    await page.getByTestId('cloud-button').click()
+    await comfyPage.actionbar.checkCloudCompatibility()
     const card = page.getByTestId('missing-models-card')
     await expect(card.getByText(LOCAL_MODEL_FILE.name)).toBeVisible()
     await card.getByRole('button', { name: 'Sign in to upload' }).click()
@@ -92,7 +92,7 @@ test.describe('Open on Cloud: upload the models Comfy Cloud lacks', () => {
   }) => {
     const { page } = comfyPage
     await comfyPage.workflow.loadWorkflow('openOnCloud/missing-uploadable-lora')
-    await page.getByTestId('cloud-button').click()
+    await comfyPage.actionbar.checkCloudCompatibility()
     const card = page.getByTestId('missing-models-card')
     await card.getByRole('button', { name: 'Sign in to upload' }).click()
     const signIn = new SignInDialog(page)
@@ -127,7 +127,7 @@ test.describe('Open on Cloud upload rollout disabled', () => {
   }) => {
     const { page } = comfyPage
     await comfyPage.workflow.loadWorkflow('openOnCloud/missing-uploadable-lora')
-    await page.getByTestId('cloud-button').click()
+    await comfyPage.actionbar.checkCloudCompatibility()
 
     const card = page.getByTestId('missing-models-card')
     await expect(card.getByText(LOCAL_MODEL_FILE.name)).toBeVisible()

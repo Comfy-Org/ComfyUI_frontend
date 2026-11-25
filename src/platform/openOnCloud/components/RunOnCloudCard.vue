@@ -1,61 +1,72 @@
 <template>
-  <DeploymentDialogFrame
+  <DeploySetupCard
     data-testid="run-on-cloud-card"
+    :video-sources="DEPLOY_VIDEO_SOURCES"
+    :poster-src="DEPLOY_VIDEO_POSTER_SRC"
+    :body
+    :points
+    :note="needsConsent ? t('openOnCloud.runDialog.sends') : undefined"
     @dismiss="emit('dismiss')"
   >
-    <section class="flex flex-col gap-4 px-9 pt-9 pb-8">
-      <DialogTitle class="my-0 pr-8 text-2xl/8 font-bold tracking-tight">
-        {{ $t('openOnCloud.runDialog.title') }}
-      </DialogTitle>
-      <p class="my-0 text-sm/5 text-muted-foreground">
-        {{ readyMessage }}
-      </p>
-      <p v-if="asksToSignIn" class="my-0 text-sm/5 text-muted-foreground">
-        {{ $t('openOnCloud.runDialog.asksToSignIn') }}
-      </p>
-      <footer class="flex items-center justify-end gap-2.5 pt-3">
-        <Button variant="secondary" size="lg" @click="emit('dismiss')">
-          {{ $t('g.cancel') }}
-        </Button>
-        <Button
-          variant="inverted"
-          size="lg"
-          data-testid="run-on-cloud-primary"
-          @click="openOnCloud"
-        >
-          {{ $t('openOnCloud.runDialog.openOnCloud') }}
-          <i class="icon-[lucide--external-link]" aria-hidden="true" />
-        </Button>
-      </footer>
-    </section>
-  </DeploymentDialogFrame>
+    <template #actions>
+      <Button
+        variant="inverted"
+        size="lg"
+        class="w-full @xl:w-auto"
+        data-testid="run-on-cloud-primary"
+        :disabled="checking"
+        @click="needsConsent ? emit('check') : openOnCloud()"
+      >
+        {{ primaryLabel }}
+        <i
+          v-if="!needsConsent"
+          class="icon-[lucide--external-link]"
+          aria-hidden="true"
+        />
+      </Button>
+    </template>
+  </DeploySetupCard>
 </template>
 
 <script setup lang="ts">
 import Button from '@comfyorg/design-system/button/Button'
-import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { UncheckedModelInput } from '@/platform/openOnCloud/cloudWorkflowCheck'
+import DeploySetupCard from '@/platform/openOnCloud/components/DeploySetupCard.vue'
 import { openWorkflowOnCloud } from '@/platform/openOnCloud/openWorkflowOnCloud'
-import DeploymentDialogFrame from '@/platform/workspace/components/DeploymentDialogFrame.vue'
+import {
+  DEPLOY_VIDEO_POSTER_SRC,
+  DEPLOY_VIDEO_SOURCES
+} from '@/platform/workflow/deploy/constants'
 
 const {
   asksToSignIn,
   workspaceId,
-  uncheckedInputs = []
+  uncheckedInputs = [],
+  needsConsent = false,
+  checking = false
 } = defineProps<{
   asksToSignIn: boolean
   workspaceId?: string
   uncheckedInputs?: UncheckedModelInput[]
+  needsConsent?: boolean
+  checking?: boolean
 }>()
 
 const { t } = useI18n()
 
-const readyMessage = computed(() =>
-  uncheckedInputs.length
+const points = [
+  t('openOnCloud.deploySetupDialog.pointNodes'),
+  t('openOnCloud.deploySetupDialog.pointGpu'),
+  t('openOnCloud.runDialog.pointApi')
+]
+
+const body = computed(() => {
+  if (needsConsent) return t('openOnCloud.runDialog.body')
+  return uncheckedInputs.length
     ? t('openOnCloud.runDialog.readyWithUncheckedInputs', {
         inputs: uncheckedInputs
           .map(({ nodeType, input }) =>
@@ -64,9 +75,17 @@ const readyMessage = computed(() =>
           .join(', ')
       })
     : t('openOnCloud.runDialog.ready')
-)
+})
+
+const primaryLabel = computed(() => {
+  if (checking) return t('openOnCloud.cloudButton.checking')
+  return needsConsent
+    ? t('openOnCloud.runDialog.checkCompatibility')
+    : t('openOnCloud.runDialog.openOnCloud')
+})
 
 const emit = defineEmits<{
+  check: []
   done: []
   dismiss: []
 }>()

@@ -112,7 +112,6 @@ async function attachAgent(
   await test.step('the agent is attached to the workflow', async () => {
     const agentPanel = new AgentPanel(page)
     await agentPanel.open()
-    await agentPanel.selectWorkflow()
     await agentPanel.sendMessage('Have a look at this workflow')
     await hostSocket.waitForSubscribe()
     await expect

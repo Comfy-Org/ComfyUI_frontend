@@ -73,7 +73,6 @@ export class AgentPanel {
   public readonly thinkingShortenedNotices: Locator
   public readonly userMessageBubbles: Locator
   private readonly toasts: ToastHelper
-  public readonly workflowPicker: Locator
   public readonly workflowSwitch: Locator
   public readonly workSummary: Locator
 
@@ -195,9 +194,6 @@ export class AgentPanel {
       TestIds.agent.thinkingShortened
     )
     this.userMessageBubbles = this.root.getByTestId('user-message-bubble')
-    this.workflowPicker = this.root.getByRole('button', {
-      name: enMessages.agent.switchWorkflow
-    })
     this.workflowSwitch = this.root.getByRole('switch', {
       name: 'Workflow JSON'
     })
@@ -495,25 +491,6 @@ export class AgentPanel {
       .toEqual(expected)
   }
 
-  /**
-   * Picks the target without waiting for the picker label, which settles only
-   * once the target's save completes.
-   */
-  async chooseWorkflow(name: string = 'Unsaved Workflow'): Promise<void> {
-    await this.workflowPicker.click()
-    await this.page.getByRole('menuitemradio', { name, exact: true }).click()
-  }
-
-  async selectWorkflow(name: string = 'Unsaved Workflow'): Promise<void> {
-    await this.chooseWorkflow(name)
-    await expect(this.workflowPicker).toHaveText(name)
-    await this.page.mouse.move(0, 0)
-    await this.workflowPicker.blur()
-    await expect(
-      this.page.getByRole('tooltip').filter({ visible: true })
-    ).toHaveCount(0)
-  }
-
   /** Denies every turn POST with this admission denial for the rest of the test. */
   async rejectEveryTurn({
     status,
@@ -592,7 +569,6 @@ export class AgentPanel {
 
   async enterNodeSelectionMode(): Promise<void> {
     await this.open()
-    await this.selectWorkflow()
     await this.root
       .getByRole('button', { name: enMessages.agent.addToPrompt })
       .click()
