@@ -224,6 +224,34 @@ describe('ComfyApi realtime socket after a revoked credential', () => {
     expect(onAuthRevoked).not.toHaveBeenCalled()
   })
 
+  it('announces the disconnect before ending a refreshed socket that is revoked again', async () => {
+    const events: string[] = []
+    for (const type of ['status', 'reconnecting', 'auth_revoked'] as const) {
+      api.addEventListener(type, () => events.push(type))
+    }
+
+    await revokeOpenSocket()
+    events.length = 0
+    await revokeOpenSocket()
+
+    expect(events).toEqual(['status', 'reconnecting', 'auth_revoked'])
+  })
+
+  it('announces the reconnect when a reset recovers an ended revoked socket', async () => {
+    const onReconnected = vi.fn()
+    api.addEventListener('reconnected', onReconnected)
+    await revokeOpenSocket()
+    await revokeOpenSocket()
+    onReconnected.mockClear()
+
+    await api.resetSocket()
+    latestSocket().simulateOpen()
+    await api.resetSocket()
+    latestSocket().simulateOpen()
+
+    expect(onReconnected).toHaveBeenCalledOnce()
+  })
+
   it('connects again with a cached credential after a reset ends the revoked state', async () => {
     await revokeOpenSocket()
     await revokeOpenSocket()

@@ -495,6 +495,7 @@ export class ComfyApi extends EventTarget {
   /** The reason of the last 1008 (policy violation) close, until a socket opens. */
   private lastServerCloseReason: string | undefined
   private revokedRetryFailures = 0
+  private revokedSocketEnded = false
 
   private authProvider: ApiAuthProvider = anonymousApiAuthProvider
 
@@ -1111,7 +1112,8 @@ export class ComfyApi extends EventTarget {
         })
       )
 
-      if (isReconnect) {
+      if (isReconnect || this.revokedSocketEnded) {
+        this.revokedSocketEnded = false
         this.dispatchCustomEvent('reconnected')
       }
     })
@@ -1131,6 +1133,8 @@ export class ComfyApi extends EventTarget {
       const closeReason =
         event.code === POLICY_VIOLATION_CLOSE_CODE ? event.reason : undefined
       if (revokedRetry && opened && closeReason === 'auth_revoked') {
+        this.dispatchCustomEvent('status', null)
+        this.dispatchCustomEvent('reconnecting')
         this.endRevokedSocket()
         return
       }
@@ -1365,6 +1369,7 @@ export class ComfyApi extends EventTarget {
     this.socket = null
     this.lastServerCloseReason = undefined
     this.revokedRetryFailures = 0
+    this.revokedSocketEnded = true
     this.dispatchCustomEvent('auth_revoked')
   }
 
