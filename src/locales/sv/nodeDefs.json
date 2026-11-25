@@ -25392,7 +25392,7 @@
       },
       "subjects": {
         "name": "motiv",
-        "tooltip": "Ange högst 3 referensbilder för varje motiv (sammanlagt 7 bilder för alla motiv). Referera till dem i promptar via @subject{subject_id}."
+        "tooltip": "Ange högst 3 referensbilder för varje motiv (sammanlagt 7 bilder för alla motiv). Referera till dem i promptar via {'@'}subject{'{'}subject_id{'}'}."
       },
       "prompt": {
         "name": "prompt",
