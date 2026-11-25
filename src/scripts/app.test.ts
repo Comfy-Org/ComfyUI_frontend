@@ -3299,6 +3299,48 @@ describe('ComfyApp', () => {
         return { started: hasStarted, resume: () => resume() }
       }
 
+      it('keeps the recorded size of a node an undo rebuilds, where a load grows it to its content', async () => {
+        nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
+        class GrowsToContent extends LGraphNode {
+          override computeSize(): [number, number] {
+            return [400, 300]
+          }
+        }
+        LiteGraph.registerNodeType('GrowsToContent', GrowsToContent)
+        const saved = workflowWithFixedIdAndOneNode()
+        await app.loadGraphData(
+          {
+            ...saved,
+            nodes: saved.nodes.map((node) => ({
+              ...node,
+              type: 'GrowsToContent'
+            }))
+          },
+          false
+        )
+        const { tracker } = historyOfTheOpenWorkflow()
+        const sizeNow = () => [
+          ...(app.rootGraph.getNodeById(toNodeId(1))?.size ?? [])
+        ]
+        expect(sizeNow()).toEqual([400, 300])
+        app.rootGraph.getNodeById(toNodeId(1))?.setSize([120, 80])
+        tracker.captureCanvasState()
+        tracker.userActed()
+        const node = app.rootGraph.getNodeById(toNodeId(1))
+        assert(node)
+        node.title = 'Titled'
+        tracker.captureCanvasState()
+
+        await tracker.undo()
+
+        expect(sizeNow()).toEqual([120, 80])
+        await app.loadGraphData(
+          structuredClone(app.rootGraph.serialize()) as ComfyWorkflowJSON,
+          false
+        )
+        expect(sizeNow()).toEqual([400, 300])
+      })
+
       async function addedProbe(comfy: Comfy): Promise<NodeHandle> {
         const added = comfy.graph.add('HandleProbe')
         assert(added)
