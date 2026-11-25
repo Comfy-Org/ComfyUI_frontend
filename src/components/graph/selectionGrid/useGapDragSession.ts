@@ -35,7 +35,7 @@ function layoutAtGap(
   return computeGapLayout(grid, bar.axis, bar.boundary, gap - bar.gap)
 }
 
-export function useGapDragSession() {
+export function useGapDragSession(onNudgesSettled?: () => void) {
   const { gridNodes, measure, capturePositions, moveBoxes, recordUndoStep } =
     useSelectionGrid()
   const canvasStore = useCanvasStore()
@@ -45,11 +45,10 @@ export function useGapDragSession() {
   let pendingFrame: number | null = null
   let finishNudges: (() => void) | undefined
 
-  const currentBar = (nodes: LGraphNode[], key: string) => {
-    const boxes = measure(nodes)
-    const grid = detectSelectionGrid(boxes)
+  function currentBar(nodes: LGraphNode[], key: string) {
+    const grid = detectSelectionGrid(measure(nodes))
     const bar = computeGapBars(grid).find((candidate) => candidate.key === key)
-    return bar && { bar, grid, boxes }
+    return bar && { bar, grid }
   }
 
   const cancelPendingFrame = () => {
@@ -74,6 +73,7 @@ export function useGapDragSession() {
     const finish = finishNudges
     finishNudges = undefined
     finish()
+    onNudgesSettled?.()
     return true
   }
 
@@ -179,10 +179,7 @@ export function useGapDragSession() {
 
   watch(() => canvasStore.currentGraph, leaveGraph, { flush: 'sync' })
 
-  tryOnScopeDispose(() => {
-    cancel()
-    commitNudges()
-  })
+  tryOnScopeDispose(leaveGraph)
 
   return {
     drag: readonly(drag),

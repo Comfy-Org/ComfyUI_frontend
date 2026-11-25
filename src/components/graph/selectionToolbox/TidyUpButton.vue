@@ -25,9 +25,13 @@
             :min="MIN_TIDY_GAP"
             :max="MAX_TIDY_GAP"
             :step="1"
+            :disabled="!canTidy"
             :aria-label="t('g.gapHandle')"
+            @pointerdown.capture="onSliderPointerDown"
+            @pointerup.capture="onSliderPointerEnd"
+            @pointercancel="onSliderPointerEnd"
+            @lostpointercapture="onSliderPointerEnd"
             @update:model-value="onSliderUpdate"
-            @value-commit="onSliderCommit"
           />
           <span class="min-w-6 shrink-0 text-right text-xs tabular-nums">
             {{ hasMixedGaps ? t('g.mixedGaps') : gap }}
@@ -81,14 +85,18 @@ const { gap, hasMixedGaps, handles, start, previewGap, commitGap, finish } =
 const lift = defineModel<number>('lift', { default: 0 })
 
 const isOpen = ref(false)
+let sliderPointer: number | undefined
 
 watch(isOpen, (open) => {
   lift.value = open ? LIFT_WHILE_OPEN : 0
   if (open) start()
-  else finish()
+  else {
+    sliderPointer = undefined
+    finish()
+  }
 })
 
-const hasSameNodes = <T>(nodes: T[], previous: T[]) => {
+function hasSameNodes<T>(nodes: T[], previous: T[]) {
   const previousNodes = new Set(previous)
   return (
     nodes.length === previousNodes.size &&
@@ -96,17 +104,17 @@ const hasSameNodes = <T>(nodes: T[], previous: T[]) => {
   )
 }
 
-watch(gridNodes, (nodes, previous) => {
-  if (!hasSameNodes(nodes, previous)) isOpen.value = false
+watch([gridNodes, canTidy], ([nodes, eligible], [previous]) => {
+  if (!eligible || !hasSameNodes(nodes, previous)) isOpen.value = false
 })
 
 onBeforeUnmount(() => {
   lift.value = 0
 })
 
-const keepOpenForToolboxAndHandles = (
+function keepOpenForToolboxAndHandles(
   event: FocusOutsideEvent | PointerDownOutsideEvent
-) => {
+) {
   const { target } = event.detail.originalEvent
   if (
     target instanceof Element &&
@@ -116,16 +124,21 @@ const keepOpenForToolboxAndHandles = (
   }
 }
 
-const applySliderGap = (
-  value: number[] | undefined,
-  apply: (gap: number) => void
-) => {
-  const next = value?.[0]
-  if (next !== undefined) apply(next)
+function onSliderPointerDown(event: PointerEvent) {
+  if (canTidy.value && event.button === 0 && sliderPointer === undefined)
+    sliderPointer = event.pointerId
 }
 
-const onSliderUpdate = (value: number[] | undefined) =>
-  applySliderGap(value, previewGap)
+function onSliderPointerEnd(event: PointerEvent) {
+  if (sliderPointer !== event.pointerId) return
+  sliderPointer = undefined
+  finish()
+}
 
-const onSliderCommit = (value: number[]) => applySliderGap(value, commitGap)
+function onSliderUpdate(value: number[] | undefined) {
+  const next = value?.[0]
+  if (next === undefined || !canTidy.value) return
+  if (sliderPointer === undefined) commitGap(next)
+  else previewGap(next)
+}
 </script>

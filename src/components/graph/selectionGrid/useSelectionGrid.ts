@@ -66,23 +66,35 @@ function positionAlongLink(
   if (!from || !to || !fromShift || !toShift) return undefined
   const start = from.getOutputPos(link.origin_slot)
   const end = to.getInputPos(link.target_slot)
-  let sockets = preview.sockets.get(linkId)
-  if (!sockets) {
-    sockets = [[...start], [...end]]
-    preview.sockets.set(linkId, sockets)
-  }
-  const [originalStart, originalEnd] = sockets
+  const sockets: [PointTuple, PointTuple] = preview.sockets.get(linkId) ?? [
+    [...start],
+    [...end]
+  ]
+  preview.sockets.set(linkId, sockets)
+  return projectReroute(
+    preview.original,
+    sockets,
+    [start[0] + fromShift.x, start[1] + fromShift.y],
+    [end[0] + toShift.x, end[1] + toShift.y]
+  )
+}
+
+function projectReroute(
+  [x, y]: PointTuple,
+  [originalStart, originalEnd]: [PointTuple, PointTuple],
+  start: PointTuple,
+  end: PointTuple
+): Point2D {
   const dx = originalEnd[0] - originalStart[0]
   const dy = originalEnd[1] - originalStart[1]
-  const [x, y] = preview.original
   const ox = x - originalStart[0]
   const oy = y - originalStart[1]
   const squaredLength = dx * dx + dy * dy
   const t = squaredLength
     ? clamp((ox * dx + oy * dy) / squaredLength, 0, 1)
     : 0.5
-  const targetDx = end[0] + toShift.x - start[0] - fromShift.x
-  const targetDy = end[1] + toShift.y - start[1] - fromShift.y
+  const targetDx = end[0] - start[0]
+  const targetDy = end[1] - start[1]
   const rotation =
     targetDx || targetDy
       ? Math.atan2(targetDy, targetDx) - Math.atan2(dy, dx)
@@ -92,13 +104,11 @@ function positionAlongLink(
   return {
     x:
       start[0] +
-      fromShift.x +
       t * targetDx +
       offsetX * Math.cos(rotation) -
       offsetY * Math.sin(rotation),
     y:
       start[1] +
-      fromShift.y +
       t * targetDy +
       offsetX * Math.sin(rotation) +
       offsetY * Math.cos(rotation)

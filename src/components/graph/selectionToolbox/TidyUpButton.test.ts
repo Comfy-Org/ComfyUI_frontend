@@ -144,6 +144,16 @@ describe('TidyUpButton', () => {
     unmount()
   })
 
+  it('closes the gap bar and clears the lift when the canvas locks', async () => {
+    const { lift } = renderButton()
+    await openBar()
+
+    useCanvasStore().isReadOnly = true
+
+    await waitFor(() => expect(screen.queryByRole('slider')).toBeNull())
+    expect(lift.value).toBe(0)
+  })
+
   it('ignores the slider while a gap handle is being dragged', async () => {
     selectRow()
     const InputSlider = defineComponent({
@@ -274,7 +284,8 @@ describe('TidyUpButton', () => {
     const slider = await screen.findByRole('slider')
     const handle = await screen.findByRole('spinbutton')
 
-    await user.type(slider, 'a')
+    await user.pointer({ target: slider, keys: '[MouseLeft>]' })
+    await user.type(slider, 'a', { skipClick: true })
     expect(second.pos[0] - first.pos[0] - 160).toBe(30)
     handle.focus()
     await user.keyboard('[ArrowRight>]')
@@ -285,6 +296,7 @@ describe('TidyUpButton', () => {
 
     expect(second.pos[0] - first.pos[0] - 160).toBe(32)
     expect(slider).toHaveAttribute('aria-valuenow', '32')
+    await user.pointer({ target: slider, keys: '[/MouseLeft]' })
     unmount()
   })
 })

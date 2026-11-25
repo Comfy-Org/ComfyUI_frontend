@@ -7,11 +7,11 @@ export const MIN_TIDY_GAP = 0
 export const MAX_TIDY_GAP = 48
 
 export interface LayoutBox {
-  id: NodeId
-  x: number
-  y: number
-  width: number
-  height: number
+  readonly id: NodeId
+  readonly x: number
+  readonly y: number
+  readonly width: number
+  readonly height: number
 }
 
 export interface BoxPosition {
@@ -23,16 +23,16 @@ export interface BoxPosition {
 export type GapAxis = 'x' | 'y'
 
 interface GridCell {
-  box: LayoutBox
-  row: number
-  column: number
+  readonly box: LayoutBox
+  readonly row: number
+  readonly column: number
 }
 
 export interface SelectionGrid {
-  canAdjustGaps: boolean
-  cells: GridCell[]
-  rowCount: number
-  columnCount: number
+  readonly canAdjustGaps: boolean
+  readonly cells: readonly GridCell[]
+  readonly rowCount: number
+  readonly columnCount: number
 }
 
 export interface GapBar {
@@ -211,7 +211,7 @@ function anyPair(
 }
 
 function neighbourPairs(
-  cells: GridCell[],
+  cells: readonly GridCell[],
   axis: GapAxis
 ): Array<[GridCell, GridCell]> {
   const keyOf = (line: number, track: number) => `${line}:${track}`
@@ -230,7 +230,7 @@ function neighbourPairs(
 }
 
 function isAlignedAlong(
-  cells: GridCell[],
+  cells: readonly GridCell[],
   axis: GapAxis,
   count: number
 ): boolean {
@@ -245,7 +245,7 @@ function isAlignedAlong(
 }
 
 function canAdjustGaps(
-  cells: GridCell[],
+  cells: readonly GridCell[],
   rowCount: number,
   columnCount: number
 ): boolean {
@@ -283,7 +283,7 @@ export function detectSelectionGrid(boxes: LayoutBox[]): SelectionGrid {
   }
 }
 
-function topLeftCell(cells: GridCell[]): GridCell {
+function topLeftCell(cells: readonly GridCell[]): GridCell {
   return cells.reduce((best, cell) =>
     cell.row < best.row || (cell.row === best.row && cell.column < best.column)
       ? cell
@@ -541,30 +541,32 @@ export function computeGapLayout(
   })
 }
 
-function clearanceAcross(
-  grid: SelectionGrid,
-  axis: GapAxis,
-  boundary: number
-): number {
+function axisClearances(grid: SelectionGrid, axis: GapAxis): number[] {
   const crossAxis = crossAxisOf(axis)
-  const before = grid.cells.filter(
-    (cell) => trackIndexOf(cell, axis) <= boundary
+  const tracks = Array.from(
+    { length: trackCountOf(grid, axis) },
+    (): GridCell[] => []
   )
-  const after = grid.cells.filter((cell) => trackIndexOf(cell, axis) > boundary)
-  let clearance = Number.POSITIVE_INFINITY
-  for (const late of after) {
-    for (const early of before) {
-      if (
-        spansOverlap(spanOf(early.box, crossAxis), spanOf(late.box, crossAxis))
-      ) {
-        clearance = Math.min(
-          clearance,
-          startAlong(late, axis) - endAlong(early, axis)
-        )
+  for (const cell of grid.cells) tracks[trackIndexOf(cell, axis)].push(cell)
+  const minimumByTrack = tracks.map(() => Number.POSITIVE_INFINITY)
+  return tracks.slice(0, -1).map((before, boundary) => {
+    let clearance = Number.POSITIVE_INFINITY
+    for (let index = boundary + 1; index < tracks.length; index++) {
+      for (const early of before) {
+        const span = spanOf(early.box, crossAxis)
+        for (const late of tracks[index]) {
+          if (spansOverlap(span, spanOf(late.box, crossAxis))) {
+            minimumByTrack[index] = Math.min(
+              minimumByTrack[index],
+              startAlong(late, axis) - endAlong(early, axis)
+            )
+          }
+        }
       }
+      clearance = Math.min(clearance, minimumByTrack[index])
     }
-  }
-  return clearance
+    return clearance
+  })
 }
 
 function overlapCentre(a: AxisSpan, b: AxisSpan): number {
@@ -604,10 +606,7 @@ function barBetween(
 export function computeGapBars(grid: SelectionGrid): GapBar[] {
   if (!grid.canAdjustGaps) return []
   return AXES.flatMap((axis) => {
-    const clearances = Array.from(
-      { length: Math.max(0, trackCountOf(grid, axis) - 1) },
-      (_, boundary) => clearanceAcross(grid, axis, boundary)
-    )
+    const clearances = axisClearances(grid, axis)
     return neighbourPairs(grid.cells, axis).map(([before, after]) =>
       barBetween(before, after, axis, clearances[trackIndexOf(before, axis)])
     )

@@ -63,6 +63,17 @@ test.describe('Connections beside gap handles', () => {
         })
         await handle.press('Shift+ArrowRight')
         await expect(handle).toHaveAttribute('aria-valuenow', '10')
+        const bounds = await handle.boundingBox()
+        if (!bounds) throw new Error('Gap handle is not visible')
+        await handle.hover()
+        await comfyMouse.drag({
+          x: bounds.x + bounds.width / 2 + 25,
+          y: bounds.y + bounds.height / 2
+        })
+        await expect(handle).not.toHaveAttribute('aria-valuenow', '10')
+        await page.keyboard.press('Escape')
+        await comfyMouse.drop()
+        await expect(handle).toHaveAttribute('aria-valuenow', '10')
         await handle.press('Shift+ArrowRight')
         await expect(handle).toHaveAttribute('aria-valuenow', '20')
 
@@ -133,6 +144,43 @@ test.describe('Selection Toolbox', { tag: ['@screenshot', '@ui'] }, () => {
 
     await comfyPage.keyboard.undo()
     await expect.poll(positions).toEqual(before)
+  })
+
+  test('releases a slider preview that returns to its starting gap', async ({
+    comfyPage,
+    comfyMouse
+  }) => {
+    const { page } = comfyPage
+    await comfyPage.workflow.loadWorkflow('nodes/note_nodes')
+    await comfyPage.canvasOps.pan({ x: 350, y: 250 })
+    await comfyPage.nodeOps.selectNodes(['Note', 'Markdown Note'])
+    const node = await comfyPage.nodeOps.getNodeRefByTitle('Markdown Note')
+    const position = async () =>
+      Array.from(await node.getProperty<[number, number]>('pos'))
+    await page.getByRole('button', { name: 'Tidy up', exact: true }).click()
+    const slider = page.getByRole('slider', { name: 'Gap between nodes' })
+    const handle = page.getByRole('spinbutton', { name: 'Gap between nodes' })
+    await slider.press('Home')
+    await expect(handle).toHaveAttribute('aria-valuenow', '0')
+    const before = await position()
+
+    const bounds = await slider.boundingBox()
+    if (!bounds) throw new Error('Gap slider is not visible')
+    const origin = {
+      x: bounds.x + bounds.width / 2,
+      y: bounds.y + bounds.height / 2
+    }
+    await slider.hover()
+    await comfyMouse.drag({ x: origin.x + 30, y: origin.y })
+    await expect(handle).not.toHaveAttribute('aria-valuenow', '0')
+    await comfyMouse.move({ x: origin.x - 10, y: origin.y })
+    await expect(handle).toHaveAttribute('aria-valuenow', '0')
+    await comfyMouse.drop()
+
+    await slider.press('ArrowRight')
+    await expect(handle).toHaveAttribute('aria-valuenow', '1')
+    await comfyPage.keyboard.undo()
+    await expect.poll(position).toEqual(before)
   })
 
   test('cancels gap previews and undoes a held nudge as one edit', async ({

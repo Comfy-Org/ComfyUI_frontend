@@ -60,6 +60,7 @@
 <script setup lang="ts">
 import { useElementBounding, useEventListener, useRafFn } from '@vueuse/core'
 import { cn } from '@comfyorg/tailwind-utils'
+import { isEqual } from 'es-toolkit'
 import { computed, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -155,14 +156,17 @@ const isDraggingNodes = computed(
   () => isDraggingCanvasItems.value || layoutStore.isDraggingVueNodes.value
 )
 
-const bars = shallowRef<GapBar[]>([])
+const measuredBoxes = shallowRef<LayoutBox[]>([])
+const slots = shallowRef<{ x: number; y: number }[]>([])
+const bars = computed(() =>
+  computeGapBars(detectSelectionGrid(measuredBoxes.value))
+)
 const viewport = shallowRef<Viewport>({
   scale: 1,
   offsetX: 0,
   offsetY: 0,
   lowQuality: false
 })
-let measuredBoxes: LayoutBox[] = []
 let dragListeners: AbortController | undefined
 
 const isSameBox = (a: LayoutBox, b: LayoutBox | undefined) =>
@@ -194,17 +198,22 @@ const syncViewport = (): Viewport => {
   return next
 }
 
-const syncBars = () => {
+function sampleGeometry() {
   const boxes = measure()
-  if (isSameBoxes(boxes, measuredBoxes)) return
-  measuredBoxes = boxes
-  bars.value = computeGapBars(detectSelectionGrid(boxes))
+  if (!isSameBoxes(boxes, measuredBoxes.value)) measuredBoxes.value = boxes
+  const points = gridNodes.value
+    .flatMap((node) => [
+      ...node.inputs.map((_, index) => node.getInputPos(index)),
+      ...node.outputs.map((_, index) => node.getOutputPos(index))
+    ])
+    .map(([x, y]) => ({ x, y }))
+  if (!isEqual(points, slots.value)) slots.value = points
 }
 
 const { pause, resume } = useRafFn(
   () => {
     const { lowQuality } = syncViewport()
-    if (!lowQuality && !isDraggingNodes.value) syncBars()
+    if (!lowQuality && !isDraggingNodes.value) sampleGeometry()
   },
   { immediate: false }
 )
@@ -217,39 +226,59 @@ watch(
       return
     }
     pause()
-    measuredBoxes = []
-    bars.value = []
+    measuredBoxes.value = []
+    slots.value = []
   },
   { immediate: true }
 )
 
 const screenBars = computed((): ScreenBar[] => {
-  const { scale, lowQuality } = viewport.value
+  const { scale, offsetX, offsetY, lowQuality } = viewport.value
   if (isDraggingNodes.value || lowQuality) return []
   const { left, top, right, bottom } = canvasBounds
-  const slots = gridNodes.value.flatMap((node) => [
-    ...node.inputs.map((_, index) => node.getInputPos(index)),
-    ...node.outputs.map((_, index) => node.getOutputPos(index))
-  ])
   return bars.value
     .map((bar) => {
-      const [x, y] = canvas.convertOffsetToCanvas([bar.x, bar.y])
-      let halfHitWidth = (bar.gap * scale) / 2
-      for (const [slotX, slotY] of slots) {
-        const dx = Math.abs(slotX - bar.x) * scale
-        const dy = Math.abs(slotY - bar.y) * scale
-        const along = bar.axis === 'x' ? dx : dy
-        const across = bar.axis === 'x' ? dy : dx
-        const radius = SLOT_HIT_RADIUS * scale
-        if (across < HANDLE_HALF_LENGTH + radius) {
-          halfHitWidth = Math.min(halfHitWidth, along - radius)
+      const x = (bar.x + offsetX) * scale + left.value
+      const y = (bar.y + offsetY) * scale + top.value
+      const radius = SLOT_HIT_RADIUS * scale
+      const reach = HANDLE_HALF_LENGTH + radius
+      const horizontal = bar.axis === 'x'
+      const clearances = slots.value.map((slot) => {
+        const dx = (slot.x - bar.x) * scale
+        const dy = (slot.y - bar.y) * scale
+        return {
+          available: Math.abs(horizontal ? dx : dy) - radius,
+          across: horizontal ? dy : dx
         }
+      })
+      function halfHitWidthAt(offset: number) {
+        return clearances.reduce(
+          (width, { available, across }) =>
+            Math.abs(across - offset) < reach
+              ? Math.min(width, available)
+              : width,
+          (bar.gap * scale) / 2
+        )
       }
+      const min = horizontal ? top.value - y : left.value - x
+      const max = horizontal ? bottom.value - y : right.value - x
+      const crossOffset =
+        halfHitWidthAt(0) <= 0 && bar.gap > 0
+          ? (clearances
+              .filter(({ available }) => available <= 0)
+              .flatMap(({ across }) => [
+                Math.floor(across - reach),
+                Math.ceil(across + reach)
+              ])
+              .filter((offset) => offset >= min && offset <= max)
+              .sort((a, b) => Math.abs(a) - Math.abs(b))
+              .find((offset) => halfHitWidthAt(offset) > 0) ?? 0)
+          : 0
       return {
         ...bar,
-        left: x + left.value,
-        top: y + top.value,
-        screenGap: Math.max(0, 2 * halfHitWidth),
+        left: x + (horizontal ? 0 : crossOffset),
+        top: y + (horizontal ? crossOffset : 0),
+        screenGap: Math.max(0, 2 * halfHitWidthAt(crossOffset)),
         draggedGap:
           drag.value?.bar.key === bar.key ? Math.round(drag.value.gap) : null
       }

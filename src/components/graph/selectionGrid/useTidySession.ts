@@ -19,36 +19,40 @@ export function useTidySession() {
   const { gridNodes, measure, tidyUp, recordUndoStep, capturePositions } =
     useSelectionGrid()
   const workflowStore = useWorkflowStore()
-  const handles = useGapDragSession()
+  const handles = useGapDragSession(showLaidOutGap)
 
   const gap = ref(DEFAULT_TIDY_GAP)
   const hasMixedGaps = ref(false)
   let nodes: LGraphNode[] = []
-  let previewGrid: SelectionGrid | undefined
-  let finishPreview: (() => void) | undefined
-  let pendingFrame: number | null = null
+  let preview:
+    | {
+        grid: SelectionGrid
+        release: () => void
+        frame?: number
+      }
+    | undefined
 
-  const dropPendingPreview = () => {
-    if (pendingFrame === null) return
-    cancelAnimationFrame(pendingFrame)
-    pendingFrame = null
+  function dropPendingPreview() {
+    if (preview?.frame === undefined) return
+    cancelAnimationFrame(preview.frame)
+    preview.frame = undefined
   }
 
-  const applyGap = (nextGap: number) => {
-    tidyUp(nodes, { gap: nextGap, captureUndo: false, grid: previewGrid })
+  function applyGap(nextGap: number) {
+    tidyUp(nodes, { gap: nextGap, captureUndo: false, grid: preview?.grid })
   }
 
-  const start = () => {
+  function start() {
     finish()
     hasMixedGaps.value = false
     nodes = [...gridNodes.value]
     gap.value = tidyUp(nodes)
   }
 
-  const previewGap = (nextGap: number) => {
+  function previewGap(nextGap: number) {
     if (handles.drag.value) return
-    if (!finishPreview) {
-      previewGrid = detectSelectionGrid(measure(nodes))
+    if (!preview) {
+      const grid = detectSelectionGrid(measure(nodes))
       const restore = capturePositions(nodes)
       const previousGap = gap.value
       const previousMixed = hasMixedGaps.value
@@ -58,45 +62,49 @@ export function useTidySession() {
           restore()
           gap.value = previousGap
           hasMixedGaps.value = previousMixed
-          const settle = finishPreview
-          finishPreview = undefined
-          settle?.()
+          releasePreview()
         }) ?? recordUndoStep
-      finishPreview = () => {
-        previewGrid = undefined
-        restore('commit')
-        finishCapture()
+      preview = {
+        grid,
+        release() {
+          restore('commit')
+          finishCapture()
+        }
       }
     }
     hasMixedGaps.value = false
     gap.value = nextGap
     dropPendingPreview()
-    pendingFrame = requestAnimationFrame(() => {
-      pendingFrame = null
+    const active = preview
+    active.frame = requestAnimationFrame(() => {
+      active.frame = undefined
       applyGap(nextGap)
     })
   }
 
-  const commitGap = (nextGap: number) => {
+  function releasePreview() {
+    const release = preview?.release ?? recordUndoStep
+    preview = undefined
+    release()
+  }
+
+  function commitGap(nextGap: number) {
     if (handles.drag.value) return
     hasMixedGaps.value = false
     dropPendingPreview()
     gap.value = nextGap
     applyGap(nextGap)
-    const settle = finishPreview ?? recordUndoStep
-    finishPreview = undefined
-    settle()
+    releasePreview()
   }
 
-  const showLaidOutGap = () => {
+  function showLaidOutGap() {
     const laidOutGap = tidiedGapOf(measure())
     hasMixedGaps.value = laidOutGap === undefined
     if (laidOutGap !== undefined) gap.value = laidOutGap
   }
 
-  const finish = () => {
-    if (finishPreview) commitGap(gap.value)
-    else dropPendingPreview()
+  function finish() {
+    if (preview) commitGap(gap.value)
   }
 
   tryOnScopeDispose(finish)
@@ -112,7 +120,6 @@ export function useTidySession() {
       ...handles,
       start(bar: GapBar) {
         finish()
-        if (handles.commitNudges()) showLaidOutGap()
         handles.start(bar)
       },
       commit() {
@@ -122,9 +129,6 @@ export function useTidySession() {
       nudge(bar: GapBar, step: number) {
         finish()
         handles.nudge(bar, step)
-      },
-      commitNudges() {
-        if (handles.commitNudges()) showLaidOutGap()
       }
     }
   }
