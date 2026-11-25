@@ -2,14 +2,14 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 import type { SavedCopier } from '@/platform/nodeApi/shared/savedCopy'
 import type { NodeHandle } from '@/platform/nodeApi/v4/types'
-import type { HookCallbacks, HookName } from './nodeHooks'
+import type { HookCallbacks, HookEntry, HookName } from './nodeHooks'
 
 export interface HookSource {
   callbacksFor<K extends HookName>(
-    type: string,
+    node: LGraphNode,
     hook: K,
     joined: number
-  ): readonly HookCallbacks[K][]
+  ): readonly HookEntry<K>[]
   demand(hook: HookName): number
   /** The number of extensions made so far; a node that joins a graph is stamped with it. */
   clock(): number

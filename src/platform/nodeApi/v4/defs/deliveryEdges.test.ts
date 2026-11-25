@@ -66,6 +66,18 @@ describe('delivering hooks at the edges', () => {
     expect(control).toHaveBeenCalledOnce()
   })
 
+  it('calls a function two extensions share only for the one still subscribed, after a hook unsubscribed the other', () => {
+    const shared = vi.fn()
+    let stopFirst = () => {}
+    extend((builder) => builder.onCreated(() => stopFirst()))
+    stopFirst = extend((builder) => builder.onCreated(shared))
+    extend((builder) => builder.onCreated(shared))
+
+    addedNode()
+
+    expect(shared).toHaveBeenCalledOnce()
+  })
+
   describe('a node of a class the API did not register', () => {
     it('hears no hook, by name or by class, from a class a legacy pack registered over the type', () => {
       const onCreated = vi.fn()

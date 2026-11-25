@@ -54,8 +54,8 @@ export function createDefRegistry(
   const dispatch = createHookDispatch(
     nodes,
     {
-      callbacksFor: (type, hook, joined) =>
-        extensions.callbacksFor(type, hook, joined),
+      callbacksFor: (node, hook, joined) =>
+        extensions.callbacksFor(node, hook, joined),
       demand: (hook) => extensions.demand(hook),
       clock: () => extensions.clock(),
       revision: () => extensions.revision()

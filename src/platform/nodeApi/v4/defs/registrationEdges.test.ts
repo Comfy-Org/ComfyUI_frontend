@@ -207,6 +207,26 @@ describe('registering node types and extensions at the edges', () => {
 
       expect(heard).toEqual(['second'])
     })
+
+    it('runs no hook of a later definition for a node of an earlier one that joins again', () => {
+      const heard: string[] = []
+      const first = defs.define(packId, {
+        type: 'Redefined',
+        onRemoved: () => heard.push('first')
+      })
+      const earlier = addedNode('Redefined')
+      first()
+      defs.define(packId, {
+        type: 'Redefined',
+        onRemoved: () => heard.push('second')
+      })
+      graph.remove(earlier)
+      graph.add(earlier)
+
+      graph.remove(earlier)
+
+      expect(heard).toEqual([])
+    })
   })
 
   describe('an apply that returns a promise', () => {

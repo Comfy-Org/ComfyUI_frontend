@@ -92,21 +92,25 @@ export function createHookDispatch(
   }
 
   const deliver: Deliver = (type, hook, node, call) => {
+    if (node.type !== type) return []
     const stamp = joined.get(node) ?? 0
-    const callbacks = source.callbacksFor(type, hook, stamp)
+    const entries = source.callbacksFor(node, hook, stamp)
     const { graph } = node
-    if (callbacks.length === 0 || node.type !== type) return []
-    if (!graph || !isInGraph(node)) return []
+    if (entries.length === 0 || !graph || !isInGraph(node)) return []
     const handle = nodes.find(graph, String(node.id))
     if (!handle) return []
     let revision = source.revision()
-    let current: ReadonlySet<unknown> | undefined
-    return callbacks.map((callback) => {
+    let live: ReadonlySet<object> | undefined
+    return entries.map(({ application, callback }) => {
       if (source.revision() !== revision) {
         revision = source.revision()
-        current = new Set<unknown>(source.callbacksFor(type, hook, stamp))
+        live = new Set(
+          source
+            .callbacksFor(node, hook, stamp)
+            .map((entry) => entry.application)
+        )
       }
-      return !current || current.has(callback)
+      return !live || live.has(application)
         ? callListener(hook, () => call(callback, handle))
         : undefined
     })

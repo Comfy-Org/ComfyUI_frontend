@@ -14,7 +14,7 @@ import type {
 } from '@/platform/nodeApi/v4/types'
 import type { SelectorCandidate, TypeSelection } from './defSelector'
 import { HOOK_NAMES, createNodeDefBuilder } from './nodeHooks'
-import type { HookCallbackLists, HookCallbacks, HookName } from './nodeHooks'
+import type { HookCallbackLists, HookEntry, HookName } from './nodeHooks'
 
 /** A node type that extensions apply to: one the host registered, or one a pack defined. */
 export interface NodeType {
@@ -40,7 +40,7 @@ interface Extension {
   readonly apply: (builder: NodeDefBuilder) => void
   readonly appliedTo: Set<string>
   readonly sequence: number
-  readonly ownType: boolean
+  readonly ownClass: typeof LGraphNode | undefined
 }
 
 interface Application {
@@ -67,12 +67,12 @@ export interface Extensions {
   nodeType(type: string): NodeType | undefined
   /** Every type, in the order it first registered. */
   nodeTypes(): readonly NodeType[]
-  /** The callbacks for `hook` on `type` of the extensions made before a node joined, in the order they were added. */
+  /** The callbacks for `hook` on the node's type of the extensions made before it joined that reach its class, in the order they were added. */
   callbacksFor<K extends HookName>(
-    type: string,
+    node: LGraphNode,
     hook: K,
     joined: number
-  ): readonly HookCallbacks[K][]
+  ): readonly HookEntry<K>[]
   /** How many applied extensions have a callback for `hook`. */
   demand(hook: HookName): number
   /** The number of extensions made so far. */
@@ -136,7 +136,7 @@ export function createExtensions(installer: HookInstaller): Extensions {
         { extension, callbacks: applied }
       ].sort(
         (first, second) =>
-          Number(second.extension.ownType) - Number(first.extension.ownType) ||
+          Number(isOwn(second.extension)) - Number(isOwn(first.extension)) ||
           first.extension.sequence - second.extension.sequence
       )
     )
@@ -173,7 +173,7 @@ export function createExtensions(installer: HookInstaller): Extensions {
         apply,
         appliedTo: new Set(),
         sequence: ++sequence,
-        ownType: false
+        ownClass: undefined
       }),
 
     extendOwnType: (nodeType, pack, apply) =>
@@ -183,7 +183,7 @@ export function createExtensions(installer: HookInstaller): Extensions {
         apply,
         appliedTo: new Set(),
         sequence: ++sequence,
-        ownType: true
+        ownClass: nodeType.nodeClass
       }),
 
     typeRegistered(nodeType) {
@@ -205,15 +205,27 @@ export function createExtensions(installer: HookInstaller): Extensions {
 
     nodeType: (type) => nodeTypes.get(type),
     nodeTypes: () => Array.from(nodeTypes.values()),
-    callbacksFor(type, hook, joined) {
-      return (applications.get(type) ?? [])
-        .filter(({ extension }) => extension.sequence <= joined)
-        .flatMap(({ callbacks }) => callbacks[hook])
+    callbacksFor(node, hook, joined) {
+      return (applications.get(node.type) ?? [])
+        .filter(
+          ({ extension: { sequence, ownClass } }) =>
+            sequence <= joined && (!ownClass || node instanceof ownClass)
+        )
+        .flatMap((application) =>
+          application.callbacks[hook].map((callback) => ({
+            application,
+            callback
+          }))
+        )
     },
     clock: () => sequence,
     demand: (hook) => demand.get(hook) ?? 0,
     revision: () => revision
   }
+}
+
+function isOwn(extension: Extension): boolean {
+  return extension.ownClass !== undefined
 }
 
 function candidateFor(nodeType: NodeType): SelectorCandidate {

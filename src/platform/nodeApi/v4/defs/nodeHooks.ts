@@ -75,6 +75,12 @@ export const HOOK_NAMES = [
 /** The callbacks one extension added to one type, by hook, in the order it added them. */
 export type HookCallbackLists = { readonly [K in HookName]: HookCallbacks[K][] }
 
+/** A callback with the application that added it, which identifies it while that application stays. */
+export interface HookEntry<K extends HookName> {
+  readonly application: object
+  readonly callback: HookCallbacks[K]
+}
+
 interface OpenBuilder {
   readonly builder: NodeDefBuilder
   readonly callbacks: HookCallbackLists
