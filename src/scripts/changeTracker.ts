@@ -402,6 +402,7 @@ export class ChangeTracker implements WorkflowChangeTracker {
   private settlingTimer?: ReturnType<typeof setTimeout>
   private loadHooks?: { userActed: boolean }
   private userActedInRestore = false
+  private configuredInRestore?: ComfyWorkflowJSON
   private readonly statesAcrossALoad = new WeakSet<ComfyWorkflowJSON>()
   private preview?: { interrupt: () => void; rollback: () => void }
 
@@ -436,6 +437,8 @@ export class ChangeTracker implements WorkflowChangeTracker {
     if (state && !this._restoringState) this.markLoadBoundary(state)
     if (!this._restoringState) this.endSettling()
     this.adopt(state)
+    if (this._restoringState && state)
+      this.configuredInRestore = this.activeState
   }
 
   /**
@@ -829,6 +832,8 @@ export class ChangeTracker implements WorkflowChangeTracker {
   ) {
     const userActed = this.userActedInRestore
     this.userActedInRestore = false
+    const configured = this.configuredInRestore
+    this.configuredInRestore = undefined
     const { previousState } = step
     const restored =
       loaded ||
@@ -845,11 +850,14 @@ export class ChangeTracker implements WorkflowChangeTracker {
     this.pushRestored(step.target, previousState, step.restoresHistory)
     if (step.restoresSavedState) this.initialState = clone(this.activeState)
     if (!userActed) this.beginSettling()
-    this.finishRestore(previousState)
+    this.finishRestore(previousState, configured ?? this.activeState)
     if (userActed) this.captureCanvasState()
   }
 
-  private finishRestore(previousState: ComfyWorkflowJSON) {
+  private finishRestore(
+    previousState: ComfyWorkflowJSON,
+    restoredState: ComfyWorkflowJSON
+  ) {
     const { workflow } = this
     const { graph } = workflow
     this.updateModified(previousState)
@@ -859,7 +867,7 @@ export class ChangeTracker implements WorkflowChangeTracker {
         workflow,
         graph,
         previous: previousState,
-        next: this.activeState
+        next: restoredState
       })
   }
 

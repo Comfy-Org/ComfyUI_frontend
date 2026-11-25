@@ -2140,6 +2140,27 @@ describe('ChangeTracker', () => {
       })
     })
 
+    it('announces the state the restore configured, not what an afterLoadGraph hook changed after it', async () => {
+      const restored = createState(1)
+      const tracker = createTracker(createState(2))
+      tracker.undoQueue.push(restored)
+      bindCanvasTracker(tracker)
+      const hooked = structuredClone(restored)
+      hooked.nodes[0].title = 'Set by a hook'
+      vi.mocked(app.loadGraphData).mockImplementationOnce(async () => {
+        tracker.reset(restored)
+        mockCanvasState(hooked)
+        tracker.adoptLoadedGraph()
+        return true
+      })
+      const restores = recordRestores()
+
+      await tracker.undo()
+
+      expect(restores.map(({ next }) => next)).toEqual([restored])
+      expect(tracker.activeState).toEqual(hooked)
+    })
+
     it('clears Redo for an intentional resize after normalized Undo', async () => {
       const initial = createState(1)
       const changed = structuredClone(initial)
