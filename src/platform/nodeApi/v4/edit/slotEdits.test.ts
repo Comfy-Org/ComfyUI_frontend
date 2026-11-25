@@ -190,55 +190,79 @@ describe('slot edits', () => {
       )
     })
 
-    const unusable: [string, 'input' | 'output', unknown][] = [
-      ['a patch that is not an object', 'input', 'x'],
-      ['a field slots do not have', 'input', { tooltip: 'x' }],
-      ['a widget on an output', 'output', { widget: 'steps' }],
-      ['a name that is not text', 'input', { name: 3 }],
-      ['a label that is not text', 'input', { label: 3 }],
-      ['an empty type', 'input', { type: '' }],
-      ['an empty list of types', 'input', { type: [] }],
-      ['a list with a type that is not text', 'output', { type: ['INT', 1] }],
-      ['an unknown shape', 'input', { shape: 'star' }],
-      ['an unknown direction', 'input', { direction: 'sideways' }],
-      ['a NaN position', 'input', { position: { x: Number.NaN, y: 0 } }],
-      ['a color that is not text', 'output', { color: 1 }],
-      ['a widget name that is not text', 'input', { widget: 1 }],
-      ['a name another input has', 'input', { name: 'y' }],
-      ['a name another output has', 'output', { name: 'b' }],
-      ['a widget the node does not have', 'input', { widget: 'missing' }]
-    ]
+    const anInput = { slot: () => input('x'), saved: () => target.inputs }
+    const anOutput = { slot: () => output('a'), saved: () => source.outputs }
 
-    it.for(unusable)(
-      'refuses %s before changing anything',
-      ([, side, patch]) => {
-        source.addWidget('number', 'steps', 1, () => {})
-        const slot = side === 'input' ? input('x') : output('a')
-        const before = JSON.stringify(
-          side === 'input' ? target.inputs : source.outputs
-        )
-        const version = graph._version
-
-        expect(() =>
-          Reflect.apply(slot.modify, undefined, [{ label: 'Changed' }])
-        ).not.toThrow()
-        const afterControl = JSON.stringify(
-          side === 'input' ? target.inputs : source.outputs
-        )
-        const controlVersion = graph._version
-
-        expectRefusal(
-          () => Reflect.apply(slot.modify, undefined, [patch]),
-          'modify'
-        )
-        expect(afterControl).not.toBe(before)
-        expect(
-          JSON.stringify(side === 'input' ? target.inputs : source.outputs)
-        ).toBe(afterControl)
-        expect(graph._version).toBe(controlVersion)
-        expect(controlVersion).toBeGreaterThan(version)
+    it.for<{
+      name: string
+      on: typeof anInput | typeof anOutput
+      patch: unknown
+    }>([
+      { name: 'a patch that is not an object', on: anInput, patch: 'x' },
+      {
+        name: 'a field slots do not have',
+        on: anInput,
+        patch: { tooltip: 'x' }
+      },
+      {
+        name: 'a widget on an output',
+        on: anOutput,
+        patch: { widget: 'steps' }
+      },
+      { name: 'a name that is not text', on: anInput, patch: { name: 3 } },
+      { name: 'a label that is not text', on: anInput, patch: { label: 3 } },
+      { name: 'an empty type', on: anInput, patch: { type: '' } },
+      { name: 'an empty list of types', on: anInput, patch: { type: [] } },
+      {
+        name: 'a list with a type that is not text',
+        on: anOutput,
+        patch: { type: ['INT', 1] }
+      },
+      { name: 'an unknown shape', on: anInput, patch: { shape: 'star' } },
+      {
+        name: 'an unknown direction',
+        on: anInput,
+        patch: { direction: 'sideways' }
+      },
+      {
+        name: 'a NaN position',
+        on: anInput,
+        patch: { position: { x: Number.NaN, y: 0 } }
+      },
+      { name: 'a color that is not text', on: anOutput, patch: { color: 1 } },
+      {
+        name: 'a widget name that is not text',
+        on: anInput,
+        patch: { widget: 1 }
+      },
+      { name: 'a name another input has', on: anInput, patch: { name: 'y' } },
+      { name: 'a name another output has', on: anOutput, patch: { name: 'b' } },
+      {
+        name: 'a widget the node does not have',
+        on: anInput,
+        patch: { widget: 'missing' }
       }
-    )
+    ])('refuses $name before changing anything', ({ on, patch }) => {
+      source.addWidget('number', 'steps', 1, () => {})
+      const slot = on.slot()
+      const before = JSON.stringify(on.saved())
+      const version = graph._version
+
+      expect(() =>
+        Reflect.apply(slot.modify, undefined, [{ label: 'Changed' }])
+      ).not.toThrow()
+      const afterControl = JSON.stringify(on.saved())
+      const controlVersion = graph._version
+
+      expectRefusal(
+        () => Reflect.apply(slot.modify, undefined, [patch]),
+        'modify'
+      )
+      expect(afterControl).not.toBe(before)
+      expect(JSON.stringify(on.saved())).toBe(afterControl)
+      expect(graph._version).toBe(controlVersion)
+      expect(controlVersion).toBeGreaterThan(version)
+    })
 
     it('changes nothing for a slot that is gone, and still refuses an unusable patch', () => {
       const slot = input('z')
@@ -253,14 +277,12 @@ describe('slot edits', () => {
     })
 
     it.for([
-      ['nothing', undefined],
-      ['a node handle', 'node'],
-      ['a slot name', 'x']
-    ])('refuses %s in place of a slot handle', ([, given]) => {
-      const slot = given === 'node' ? targetHandle : given
-
+      { name: 'nothing', given: () => undefined },
+      { name: 'a node handle', given: () => targetHandle },
+      { name: 'a slot name', given: () => 'x' }
+    ])('refuses $name in place of a slot handle', ({ given }) => {
       expect(() =>
-        Reflect.apply(edit.updateSlot, undefined, [slot, { label: 'x' }])
+        Reflect.apply(edit.updateSlot, undefined, [given(), { label: 'x' }])
       ).toThrow('updateSlot needs a slot handle')
     })
   })
@@ -309,21 +331,39 @@ describe('slot edits', () => {
       expect(target.inputs[3].widget).toEqual({ name: 'steps' })
     })
 
+    const inputs = () => targetHandle.inputs
+    const outputs = () => sourceHandle.outputs
+
     it.for([
-      ['a name the side already has', 'input', ['x', 'INT']],
-      ['a type that is not text', 'output', ['d', 5]],
-      ['options that are not an object', 'input', ['w', 'INT', 'optional']],
-      ['an unknown option', 'input', ['w', 'INT', { label: 'W' }]],
-      ['a widget on an output', 'output', ['d', 'INT', { widget: 'x' }]],
-      [
-        'a widget the node does not have',
-        'input',
-        ['w', 'INT', { widget: 'nope' }]
-      ],
-      ['an unknown shape', 'output', ['d', 'INT', { shape: 'hex' }]]
-    ] as const)('refuse %s before adding anything', ([, side, args]) => {
-      const collection =
-        side === 'input' ? targetHandle.inputs : sourceHandle.outputs
+      { name: 'a name the side already has', on: inputs, args: ['x', 'INT'] },
+      { name: 'a type that is not text', on: outputs, args: ['d', 5] },
+      {
+        name: 'options that are not an object',
+        on: inputs,
+        args: ['w', 'INT', 'optional']
+      },
+      {
+        name: 'an unknown option',
+        on: inputs,
+        args: ['w', 'INT', { label: 'W' }]
+      },
+      {
+        name: 'a widget on an output',
+        on: outputs,
+        args: ['d', 'INT', { widget: 'x' }]
+      },
+      {
+        name: 'a widget the node does not have',
+        on: inputs,
+        args: ['w', 'INT', { widget: 'nope' }]
+      },
+      {
+        name: 'an unknown shape',
+        on: outputs,
+        args: ['d', 'INT', { shape: 'hex' }]
+      }
+    ])('refuse $name before adding anything', ({ on, args }) => {
+      const collection = on()
       const length = collection.length
 
       expectRefusal(
@@ -440,19 +480,31 @@ describe('slot edits', () => {
       })
     })
 
-    it.for(['input', 'output'] as const)(
-      'leaves the %s order, the saved links and the undo history alone when the order is unchanged',
-      (side) => {
+    it.for([
+      {
+        side: 'input',
+        node: () => targetHandle,
+        slots: () => targetHandle.inputs,
+        names: ['x', 'y', 'z']
+      },
+      {
+        side: 'output',
+        node: () => sourceHandle,
+        slots: () => sourceHandle.outputs,
+        names: ['a', 'b', 'c']
+      }
+    ] as const)(
+      'leaves the $side order, the saved links and the undo history alone when the order is unchanged',
+      ({ side, node, slots, names }) => {
         source.connect(0, target, 0)
         source.connect(2, target, 2)
         source.connect(1, target, 1)
-        const node = side === 'output' ? sourceHandle : targetHandle
-        const names = side === 'output' ? ['a', 'b', 'c'] : ['x', 'y', 'z']
         const saved = JSON.stringify(graph.serialize().links)
         const version = graph._version
 
-        expect(edit.reorderSlots(node, side, names)).toBe(true)
+        expect(edit.reorderSlots(node(), side, names)).toBe(true)
 
+        expect(slots().names()).toEqual(names)
         expect(JSON.stringify(graph.serialize().links)).toBe(saved)
         expect(steps).toEqual([])
         expect(graph._version).toBe(version)
@@ -460,21 +512,51 @@ describe('slot edits', () => {
     )
 
     it.for([
-      ['a list that leaves a slot out', 'input', ['x', 'y']],
-      ['a list with a slot twice', 'input', ['x', 'x', 'y']],
-      ['a list with a name no slot has', 'output', ['a', 'b', 'q']],
-      ['something that is not a list', 'output', 'a,b,c'],
-      ['a list with something that is not a name', 'input', ['x', 'y', 3]],
-      ['a side that is neither', 'inputs', ['x', 'y', 'z']]
-    ] as const)('refuses %s before moving anything', ([, side, names]) => {
+      {
+        name: 'a list that leaves a slot out',
+        node: () => targetHandle,
+        side: 'input',
+        names: ['x', 'y']
+      },
+      {
+        name: 'a list with a slot twice',
+        node: () => targetHandle,
+        side: 'input',
+        names: ['x', 'x', 'y']
+      },
+      {
+        name: 'a list with a name no slot has',
+        node: () => sourceHandle,
+        side: 'output',
+        names: ['a', 'b', 'q']
+      },
+      {
+        name: 'something that is not a list',
+        node: () => sourceHandle,
+        side: 'output',
+        names: 'a,b,c'
+      },
+      {
+        name: 'a list with something that is not a name',
+        node: () => targetHandle,
+        side: 'input',
+        names: ['x', 'y', 3]
+      },
+      {
+        name: 'a side that is neither',
+        node: () => sourceHandle,
+        side: 'outputs',
+        names: ['c', 'b', 'a']
+      }
+    ])('refuses $name before moving anything', ({ node, side, names }) => {
       const before = [
         target.inputs.map(({ name }) => name),
         source.outputs.map(({ name }) => name)
       ]
-      const node = side === 'output' ? sourceHandle : targetHandle
 
       expectRefusal(
-        () => Reflect.apply(edit.reorderSlots, undefined, [node, side, names]),
+        () =>
+          Reflect.apply(edit.reorderSlots, undefined, [node(), side, names]),
         'reorderSlots'
       )
       expect([
@@ -493,9 +575,12 @@ describe('slot edits', () => {
       )
     })
 
-    it.for(['input', 'output'] as const)(
-      'says no and moves nothing when the link store refuses the %s links',
-      (side) => {
+    it.for([
+      { side: 'input', node: () => targetHandle, names: ['z', 'y', 'x'] },
+      { side: 'output', node: () => sourceHandle, names: ['c', 'b', 'a'] }
+    ] as const)(
+      'says no and moves nothing when the link store refuses the $side links',
+      ({ side, node, names }) => {
         source.connect(0, target, 0)
         vi.spyOn(useLinkStore(), 'updateEndpoints').mockReturnValue({
           ok: false,
@@ -506,9 +591,7 @@ describe('slot edits', () => {
           source.outputs.map(({ name }) => name)
         ]
 
-        const names = side === 'input' ? ['z', 'y', 'x'] : ['c', 'b', 'a']
-        const node = side === 'input' ? targetHandle : sourceHandle
-        expect(edit.reorderSlots(node, side, names)).toBe(false)
+        expect(edit.reorderSlots(node(), side, names)).toBe(false)
 
         expect([
           target.inputs.map(({ name }) => name),
