@@ -15,11 +15,8 @@ export interface PackId {
 /** The V4 node API: everything a pack can do. */
 export interface Comfy {
   getApiVersion(): ApiVersion
-  /**
-   * The id of the pack whose module this is: pass `import.meta`. Every module of a pack gets the same object. Throws a
-   * `TypeError` for a module not served under `/extensions/<folder>/`, of a folder the backend did not verify, or of a
-   * pack whose id is a field a node saves (`title`, `properties`, `extensions` and the like).
-   */
+  /** Register from `import.meta`; calls for the same pack return the same `PackId`.
+   * Throws `TypeError` for an invalid module URL, an unrecognized pack when verification is available, or an id naming a node field. */
   registerPack(meta: { readonly url: string }): PackId
   /**
    * True if this API is `version` or newer. `version` is written `v4.0.0`:
@@ -425,11 +422,8 @@ export interface SlotCollection<THandle> {
 
 /** Node types: read their definitions, define new ones, and extend those the host registers. */
 export interface DefRegistry {
-  /**
-   * Calls `apply` for each node type `selector` picks, now and each time a type registers, a reload of the
-   * definitions included; its hooks reach the nodes that join a graph after this call, not those already there.
-   * Unsubscribing removes them. `packId` is what `registerPack` gave; its hooks save under its `id`.
-   */
+  /** Replays `apply` for matching types and later registrations; hooks affect newly joined nodes until disposed.
+   * Pass the `registerPack` result to scope these hooks and their saved fields to that pack. */
   extend(
     packId: PackId,
     selector: DefSelector,
@@ -601,11 +595,8 @@ export interface PropertyChangeEvent {
   readonly name: string
   /** A frozen copy of the new value, as a workflow would save it. */
   readonly value: unknown
-  /**
-   * Stores `value` instead, frozen, as a workflow would save it; the last call wins. A load keeps the value it
-   * restores, as it does on `reject`. Throws a `TypeError` for `undefined`, a value a workflow cannot save, the
-   * property `cnr_id`, `aux_id` or `ver`, and once the hook has returned.
-   */
+  /** Stores a detached workflow-savable value; the last call wins, and a load keeps its restored value.
+   * Throws `TypeError` for an unsavable value, a reserved pack property or a call after the hook returns. */
   setValue(value: unknown): void
   /** Keeps the property's earlier value, or a restored one. Throws a `TypeError` once the hook has returned. */
   reject(): void
