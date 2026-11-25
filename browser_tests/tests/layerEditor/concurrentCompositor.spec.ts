@@ -19,14 +19,16 @@ const promptRoute = '**/api/prompt'
 const jobIds = ['initial-dog', 'dog', 'cat', 'sheep'] as const
 
 interface CompositorFixture {
-  execution: ExecutionHelper
   preview: Locator
   openEditor: Locator
   dogLayer: Locator
   x: Locator
   closeEditor: Locator
   prompt: Locator
-  executed: (job: string, filename: string) => void
+  start: (job: string) => Promise<void>
+  render: (job: string, filename: string) => void
+  finish: (job: string, filename: string) => void
+  progress: (job: string, value: number, max: number) => void
   showRunningJobs: (cat: string, sheep: string) => Promise<void>
 }
 
@@ -63,9 +65,17 @@ const test = mergeTests(
     const dialog = page.getByRole('dialog').filter({
       has: page.getByTestId('layer-panel-row')
     })
+    const render = (job: string, filename: string) => {
+      const output: NodeExecutionOutput = {
+        images: [{ filename, type: 'temp' }],
+        compositor_layers: [park, dog],
+        compositor_inputs: ['park', 'dog'],
+        compositor_canvas: [{ w: 64, h: 64 }]
+      }
+      execution.executed(job, '1', output)
+    }
 
     await use({
-      execution,
       preview: page.getByTestId('compositor-preview'),
       openEditor: page.getByTestId('compositor-open-button'),
       dogLayer: dialog
@@ -74,14 +84,22 @@ const test = mergeTests(
       x: dialog.getByRole('spinbutton', { name: 'X', exact: true }),
       closeEditor: dialog.getByRole('button', { name: 'Close', exact: true }),
       prompt: vueNodes.getWidgetByName('Animal prompt', 'text'),
-      executed(job: string, filename: string) {
-        const output: NodeExecutionOutput = {
-          images: [{ filename, type: 'temp' }],
-          compositor_layers: [park, dog],
-          compositor_inputs: ['park', 'dog'],
-          compositor_canvas: [{ w: 64, h: 64 }]
-        }
-        execution.executed(job, '1', output)
+      async start(job) {
+        await page.waitForResponse(
+          (response) =>
+            new URL(response.url()).pathname === '/api/prompt' &&
+            response.request().method() === 'POST' &&
+            response.ok()
+        )
+        execution.executionStart(job)
+      },
+      render,
+      finish(job, filename) {
+        render(job, filename)
+        execution.executionSuccess(job)
+      },
+      progress(job, value, max) {
+        execution.nodeRunning(job, '2', value, max)
       },
       async showRunningJobs(cat: string, sheep: string) {
         await jobsRoutes.mockJobsScenario({
@@ -110,22 +128,13 @@ test(
     tag: ['@vue-nodes', '@ui']
   },
   async ({ comfyPage, compositor }) => {
-    const { execution, preview } = compositor
-    const { page, queuePanel, runButton } = comfyPage
+    const { preview } = compositor
+    const { queuePanel, runButton } = comfyPage
     const [initial, dog, cat, sheep] = jobIds
-    const promptAccepted = () =>
-      page.waitForResponse(
-        (response) =>
-          new URL(response.url()).pathname === '/api/prompt' &&
-          response.request().method() === 'POST' &&
-          response.ok()
-      )
 
     await test.step('arrange the dog and render the saved composition', async () => {
-      await Promise.all([promptAccepted(), runButton.click()])
-      execution.executionStart(initial)
-      compositor.executed(initial, 'park.webp')
-      execution.executionSuccess(initial)
+      await Promise.all([compositor.start(initial), runButton.click()])
+      compositor.finish(initial, 'park.webp')
 
       await compositor.openEditor.click()
       await compositor.dogLayer.click()
@@ -135,27 +144,23 @@ test(
       await compositor.closeEditor.click()
       await expect(preview).toHaveAttribute('src', /^blob:/)
 
-      await Promise.all([promptAccepted(), runButton.click()])
-      execution.executionStart(dog)
-      compositor.executed(dog, 'dog-result.webp')
-      execution.executionSuccess(dog)
+      await Promise.all([compositor.start(dog), runButton.click()])
+      compositor.finish(dog, 'dog-result.webp')
       await expect(preview).toHaveAttribute('src', /filename=dog-result\.webp/)
     })
 
     await test.step('keep the cat visible while the sheep run reports output', async () => {
       await compositor.prompt.fill('cat')
-      await Promise.all([promptAccepted(), runButton.click()])
-      execution.executionStart(cat)
+      await Promise.all([compositor.start(cat), runButton.click()])
       await compositor.prompt.fill('sheep')
-      await Promise.all([promptAccepted(), runButton.click()])
-      execution.executionStart(sheep)
+      await Promise.all([compositor.start(sheep), runButton.click()])
       await compositor.showRunningJobs(cat, sheep)
 
-      compositor.executed(cat, 'cat-result.webp')
+      compositor.render(cat, 'cat-result.webp')
       await expect(preview).toHaveAttribute('src', /filename=cat-result\.webp/)
 
-      compositor.executed(sheep, 'sheep-result.webp')
-      execution.nodeRunning(sheep, '2', 4, 10)
+      compositor.render(sheep, 'sheep-result.webp')
+      compositor.progress(sheep, 4, 10)
       const sheepProgress = queuePanel.jobRow(sheep).getByText(': 40%')
       await expect(sheepProgress).toBeVisible()
       await expect(preview).toHaveAttribute('src', /filename=cat-result\.webp/)
