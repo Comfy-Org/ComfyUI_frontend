@@ -155,8 +155,9 @@ export function registerDefinedType(
     override configure(info: ISerialisedNode): void {
       const saved = info.properties ?? {}
       if ([...PACK_PROPERTIES].some((key) => Object.hasOwn(saved, key))) {
-        for (const key of Object.keys(stamp)) {
-          if (!Object.hasOwn(saved, key)) delete this.properties[key]
+        for (const key of PACK_PROPERTIES) {
+          if (Object.hasOwn(saved, key)) this.properties[key] = saved[key]
+          else delete this.properties[key]
         }
       }
       super.configure(info)

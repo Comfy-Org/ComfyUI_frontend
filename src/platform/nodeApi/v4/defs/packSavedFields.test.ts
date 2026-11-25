@@ -459,6 +459,42 @@ describe('a pack’s saved fields and identity', () => {
       })
     })
 
+    it.for([
+      { cnr_id: 'older-name', ver: '0.9.0' },
+      { ver: '0.9.0', cnr_id: 'older-name' }
+    ])(
+      'gives each property hook of a load the pack properties the workflow saved, in key order %j',
+      (properties) => {
+        const [alpha] = served(ALPHA)
+        const read: unknown[] = []
+        onTestFinished(
+          api.comfy.defs.define(alpha, {
+            type: 'Alpha/Stamped',
+            onPropertyChanged: (node, { name }) => {
+              read.push({
+                name,
+                cnr_id: node.getProperty('cnr_id'),
+                ver: node.getProperty('ver')
+              })
+            }
+          })
+        )
+        added('Alpha/Stamped')
+        const saved = graph.serialize()
+        saved.nodes[0].properties = properties
+
+        new LGraph().configure(saved)
+
+        expect(read).toEqual(
+          Object.keys(properties).map((name) => ({
+            name,
+            cnr_id: 'older-name',
+            ver: '0.9.0'
+          }))
+        )
+      }
+    )
+
     it.for(['7.8', '0.0.1.0'])(
       'stamps no version %s the workflow schema refuses, so the saved workflow still validates',
       async (version) => {

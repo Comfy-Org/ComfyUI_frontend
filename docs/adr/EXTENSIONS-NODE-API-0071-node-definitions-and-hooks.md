@@ -622,10 +622,10 @@ flowchart TD
     it would make every saved workflow fail validation. `aux_id`, the GitHub
     repository id the missing-node dialog falls back to, is not stamped. A
     workflow's saved pack properties are kept as one unit: if it saved any of
-    the three, a stamped one it lacks is removed on load, before the node
-    takes the saved state, so a load never makes a pair that never existed
-    and no hook the load calls (`onPropertyChanged`, `onConfigured`) sees
-    one. A node saved with none of them gains the
+    the three, the node takes all of them, and loses a stamped one it
+    lacks, before the host restores its properties one by one, so a load
+    never makes a pair that never existed and no hook the load calls
+    (`onPropertyChanged`, in any key order, or `onConfigured`) sees one. A node saved with none of them gains the
     stamp when it loads, the one exception to "a load never rewrites saved
     data" (decision 27). A pack cannot change `cnr_id`, `aux_id` or `ver`:
     `setProperty`, the edit core's property patch and
