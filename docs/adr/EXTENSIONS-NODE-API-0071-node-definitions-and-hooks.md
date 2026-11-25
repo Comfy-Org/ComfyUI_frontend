@@ -661,8 +661,8 @@ above. Each is open work for this API, not part of the contract.
   but no definitions. The API's index holds one frozen JSON copy of each
   definition (4 ms to 12 ms for 1,000 types).
 - Hear `onCreated` through the prototype's `onAdded`. It runs before the
-  host's graph intent, so it cannot tell a load from an import, and
-  `ChangeTracker.isLoadingGraph` is set only for `loadGraphData`.
+  host's graph intent, so it cannot tell a load from an import, and the
+  graph's load state (`isGraphLoading`) is set only for `loadGraphData`.
 - Hear node lifecycle through each graph's `node:added` and `node:removed`.
   A listener per graph would have to follow every graph the host makes and
   replaces, and `node:removed` fires after the node has left, too late to
