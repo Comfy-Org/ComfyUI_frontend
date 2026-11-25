@@ -18,7 +18,7 @@ interface LibraryFolder {
 
 const NO_NAMES: readonly string[] = []
 
-const WORKER_MODEL_FOLDERS = new Set([
+export const WORKER_MODEL_FOLDERS = new Set([
   'checkpoints',
   'loras',
   'vae',

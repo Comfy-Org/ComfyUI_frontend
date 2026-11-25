@@ -31,6 +31,7 @@ const i18n = createI18n({
 })
 
 const library = new Map<string, string[]>()
+const failOnce = new Set<string>()
 
 function folder(directory: string) {
   return fromPartial<ModelFolder>({ directory })
@@ -52,8 +53,12 @@ function renderSection(searchQuery = '') {
 
 beforeEach(() => {
   library.clear()
+  failOnce.clear()
   vi.spyOn(assetService, 'getWorkspaceLibraryModels').mockImplementation(
-    async (name) => library.get(name) ?? []
+    async (name) => {
+      if (failOnce.delete(name)) throw new Error('inventory unavailable')
+      return library.get(name) ?? []
+    }
   )
   vi.mocked(useFeatureFlags().flags).runtimeLibraryModelsEnabled = true
   Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-1' })
@@ -64,9 +69,6 @@ beforeEach(() => {
     can_start: false,
     created_at: '2026-10-01T00:00:00Z'
   }
-  Object.assign(useModelStore(), {
-    modelFolders: [folder('loras'), folder('configs')]
-  })
 })
 
 describe('WorkspaceLibrarySection', () => {
@@ -100,9 +102,27 @@ describe('WorkspaceLibrarySection', () => {
     ).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'loras' })).toBeInTheDocument()
     expect(assetService.getWorkspaceLibraryModels).toHaveBeenCalledWith('loras')
-    expect(assetService.getWorkspaceLibraryModels).not.toHaveBeenCalledWith(
-      'configs'
-    )
+  })
+
+  it('lists workspace models in folders the deployment itself does not have', async () => {
+    Object.assign(useModelStore(), {
+      modelFolders: [
+        folder('diffusion_models'),
+        folder('text_encoders'),
+        folder('vae')
+      ]
+    })
+    library.set('loras', ['be26685_test_lora.safetensors'])
+    const { user } = renderSection()
+
+    await user.click(screen.getByRole('button', { name: 'Workspace library' }))
+
+    expect(
+      await screen.findByRole('button', {
+        name: 'be26685_test_lora.safetensors'
+      })
+    ).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'loras' })).toBeInTheDocument()
   })
 
   it('marks each model as from the workspace, not as a download a build may not need, and counts them in the header', async () => {
@@ -110,9 +130,6 @@ describe('WorkspaceLibrarySection', () => {
       'detail-tweaker.safetensors',
       'portrait-detail.safetensors'
     ])
-    Object.assign(useModelStore(), {
-      modelFolders: [folder('loras'), folder('checkpoints')]
-    })
     library.set('checkpoints', ['sd_xl_base_1.0.safetensors'])
     const { user } = renderSection()
     expect(screen.queryByTestId('workspace-library-count')).toBeNull()
@@ -137,9 +154,6 @@ describe('WorkspaceLibrarySection', () => {
       'sd_xl_base_1.0.safetensors',
       'sd_xl_refiner_1.0.safetensors'
     ])
-    Object.assign(useModelStore(), {
-      modelFolders: [folder('loras'), folder('checkpoints')]
-    })
     const libraryModels = useDeploymentLibraryModelsStore()
     libraryModels.refresh('loras')
     await libraryModels.waitForSettled('loras')
@@ -188,9 +202,7 @@ describe('WorkspaceLibrarySection', () => {
   })
 
   it('reads the library again on retry', async () => {
-    vi.mocked(assetService.getWorkspaceLibraryModels).mockRejectedValueOnce(
-      new Error('inventory unavailable')
-    )
+    failOnce.add('loras')
     library.set('loras', ['detail-tweaker.safetensors'])
     const { user } = renderSection()
 
@@ -203,7 +215,11 @@ describe('WorkspaceLibrarySection', () => {
     expect(
       screen.queryByText("Couldn't load your workspace library.")
     ).not.toBeInTheDocument()
-    expect(assetService.getWorkspaceLibraryModels).toHaveBeenCalledTimes(2)
+    expect(
+      vi
+        .mocked(assetService.getWorkspaceLibraryModels)
+        .mock.calls.filter(([name]) => name === 'loras')
+    ).toHaveLength(2)
   })
 
   it('places a loader for the model that was clicked', async () => {
