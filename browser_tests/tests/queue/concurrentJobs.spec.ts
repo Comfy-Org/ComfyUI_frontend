@@ -11,7 +11,9 @@ import { queuedExecutionFixture } from '@e2e/fixtures/queuedExecutionFixture'
 const test = mergeTests(queuedExecutionFixture, jobsRouteFixture)
 
 const image = { filename: 'example.png', type: 'input' }
-const images = (count: number) => ({ images: Array(count).fill(image) })
+function images(count: number) {
+  return { images: Array(count).fill(image) }
+}
 
 async function previewImageTab(comfyPage: ComfyPage) {
   await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')

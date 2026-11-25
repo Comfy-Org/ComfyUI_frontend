@@ -8,11 +8,11 @@ import { webSocketFixture } from '@e2e/fixtures/ws'
 const acceptedPrompt = z.object({ prompt_id: z.string() })
 
 interface QueuedJob {
-  id: string
-  start: () => void
-  progress: (node: string, value: number, max: number) => void
-  output: (node: string, output: Record<string, unknown>) => void
   finish: () => void
+  id: string
+  output: (node: string, output: Record<string, unknown>) => void
+  progress: (node: string, value: number, max: number) => void
+  start: () => void
 }
 
 export const queuedExecutionFixture = mergeTests(
@@ -24,11 +24,14 @@ export const queuedExecutionFixture = mergeTests(
     status: (remaining: number) => void
   }
 }>({
-  queuedExecution: async ({ comfyPage, getWebSocket }, use) => {
+  async queuedExecution({ comfyPage, getWebSocket }, use) {
     const { page } = comfyPage
     const execution = new ExecutionHelper(comfyPage, await getWebSocket())
-    const promptUrl = (url: URL) => url.pathname === '/api/prompt'
     let jobCount = 0
+
+    function promptUrl(url: URL) {
+      return url.pathname === '/api/prompt'
+    }
 
     await page.route(promptUrl, async (route) => {
       if (route.request().method() !== 'POST') return route.fallback()
@@ -50,15 +53,24 @@ export const queuedExecutionFixture = mergeTests(
         ])
         const { prompt_id: id } = acceptedPrompt.parse(await response.json())
         return {
+          finish() {
+            execution.executionSuccess(id)
+          },
           id,
-          start: () => execution.executionStart(id),
-          progress: (node, value, max) =>
-            execution.nodeRunning(id, node, value, max),
-          output: (node, output) => execution.executed(id, node, output),
-          finish: () => execution.executionSuccess(id)
+          output(node, output) {
+            execution.executed(id, node, output)
+          },
+          progress(node, value, max) {
+            execution.nodeRunning(id, node, value, max)
+          },
+          start() {
+            execution.executionStart(id)
+          }
         }
       },
-      status: (remaining) => execution.status(remaining)
+      status(remaining) {
+        execution.status(remaining)
+      }
     })
   }
 })

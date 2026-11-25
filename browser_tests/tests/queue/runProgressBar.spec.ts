@@ -154,7 +154,7 @@ wstest.describe('Node progress bar', { tag: ['@ui', '@vue-nodes'] }, () => {
       const fill = node.getByTestId(TestIds.node.progressFill)
       await expect(fill).toBeVisible()
 
-      const trackPlacement = async () => {
+      async function trackPlacement() {
         const [nodeBox, headerBox, trackBox] = await Promise.all(
           [node, vueNode.header, fill.locator('..')].map((locator) =>
             locator.boundingBox()
@@ -173,13 +173,14 @@ wstest.describe('Node progress bar', { tag: ['@ui', '@vue-nodes'] }, () => {
         .poll(trackPlacement)
         .toEqual({ left: 0, widthBeyondNode: 0, centerBelowHeader: 0 })
 
-      const filledFraction = () =>
-        fill.evaluate((element) => {
+      function filledFraction() {
+        return fill.evaluate((element) => {
           const track = element.parentElement!.getBoundingClientRect()
           return (
             (element.getBoundingClientRect().right - track.left) / track.width
           )
         })
+      }
       await expect.poll(filledFraction).toBeCloseTo(0.25, 2)
 
       job.progress(nodeId, 18, 20)

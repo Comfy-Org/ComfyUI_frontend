@@ -12,27 +12,26 @@ import { assetPath } from '@e2e/fixtures/utils/paths'
 import { mockViewFiles } from '@e2e/fixtures/utils/viewFileMocks'
 
 interface CompositorFixture {
-  preview: Locator
-  openEditor: Locator
-  dogLayer: Locator
-  x: Locator
   closeEditor: Locator
-  prompt: Locator
+  dogLayer: Locator
+  openEditor: Locator
   output: (filename: string) => NodeExecutionOutput
+  preview: Locator
+  prompt: Locator
   showRunningJobs: (cat: string, sheep: string) => Promise<void>
+  x: Locator
 }
 
 const test = mergeTests(queuedExecutionFixture, jobsRouteFixture).extend<{
   compositor: CompositorFixture
 }>({
-  compositor: async ({ comfyPage, queuedExecution, jobsRoutes }, use) => {
+  async compositor({ comfyPage, queuedExecution, jobsRoutes }, use) {
     const { page, vueNodes } = comfyPage
     const park = { filename: 'park.webp', type: 'temp' }
     const dog = { filename: 'dog.webp', type: 'temp' }
-    const webp = (file: string) => ({
-      contentType: 'image/webp',
-      path: assetPath(file)
-    })
+    function webp(file: string) {
+      return { contentType: 'image/webp', path: assetPath(file) }
+    }
 
     await mockViewFiles(page, {
       'park.webp': webp('image64x64.webp'),
@@ -55,12 +54,14 @@ const test = mergeTests(queuedExecutionFixture, jobsRouteFixture).extend<{
       x: dialog.getByRole('spinbutton', { name: 'X', exact: true }),
       closeEditor: dialog.getByRole('button', { name: 'Close', exact: true }),
       prompt: vueNodes.getWidgetByName('Animal prompt', 'text'),
-      output: (filename) => ({
-        images: [{ filename, type: 'temp' }],
-        compositor_layers: [park, dog],
-        compositor_inputs: ['park', 'dog'],
-        compositor_canvas: [{ w: 64, h: 64 }]
-      }),
+      output(filename) {
+        return {
+          images: [{ filename, type: 'temp' }],
+          compositor_layers: [park, dog],
+          compositor_inputs: ['park', 'dog'],
+          compositor_canvas: [{ w: 64, h: 64 }]
+        }
+      },
       async showRunningJobs(cat: string, sheep: string) {
         await jobsRoutes.mockJobsScenario({
           history: [],
