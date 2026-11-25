@@ -1647,11 +1647,11 @@
     "inputs": {
       "text_prompt": {
         "name": "textprompt",
-        "tooltip": "Beskriv röst(er), känsla, tempo, atmosfär, bakgrundsmusik och ljudeffekter och inkludera replikerna (ange karaktärernas namn i replikerna för dialog). I läget 'audio reference' hänvisar du till anslutna klipp i ordning som {'@'}Audio1, {'@'}Audio2 och {'@'}Audio3. Med den flerspråkiga modellen kan en citerad replik börja med ett tidsstämpelintervall som styr när och hur länge den uttalas, t.ex. \"[5.5s:8.0s] Vänta på mig!\". Skriv prompten på samma språk som replikerna. Högst 3 000 tecken."
+        "tooltip": "Beskriv röst(er), känsla, tempo, atmosfär, bakgrundsmusik och ljudeffekter och inkludera replikerna (ange karaktärernas namn i replikerna för dialog). I läget 'audio reference' hänvisar du till anslutna klipp i ordning som @Audio1, @Audio2 och @Audio3. Med den flerspråkiga modellen kan en citerad replik börja med ett tidsstämpelintervall som styr när och hur länge den uttalas, t.ex. \"[5.5s:8.0s] Vänta på mig!\". Skriv prompten på samma språk som replikerna. Högst 3 000 tecken."
       },
       "reference_mode": {
         "name": "referensläge",
-        "tooltip": "Hur rösten ska konditioneras: 'text only' (beskriv allt i prompten), 'audio reference' (klona upp till tre röster, märkta {'@'}Audio1–3), 'image reference' (härled en röst från en karaktärsbild) eller 'preset voice' (välj en inbyggd namngiven röst som läser prompten)."
+        "tooltip": "Hur rösten ska konditioneras: 'text only' (beskriv allt i prompten), 'audio reference' (klona upp till tre röster, märkta @Audio1–3), 'image reference' (härled en röst från en karaktärsbild) eller 'preset voice' (välj en inbyggd namngiven röst som läser prompten)."
       },
       "sample_rate": {
         "name": "samplingsfrekvens",
@@ -25392,7 +25392,7 @@
       },
       "subjects": {
         "name": "motiv",
-        "tooltip": "Ange högst 3 referensbilder för varje motiv (sammanlagt 7 bilder för alla motiv). Referera till dem i promptar via {'@'}subject{'{'}subject_id{'}'}."
+        "tooltip": "Ange högst 3 referensbilder för varje motiv (sammanlagt 7 bilder för alla motiv). Referera till dem i promptar via @subject{subject_id}."
       },
       "prompt": {
         "name": "prompt",
