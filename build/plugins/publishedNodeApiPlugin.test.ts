@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
@@ -94,17 +94,37 @@ describe.for([
   })
 })
 
-describe('index.html', () => {
-  it('maps /comfy/api/v4.js to the path the frontend is served from', () => {
-    const source = readFileSync(
-      join(REPOSITORY_ROOT, 'index.html'),
-      'utf8'
-    ).match(/<script type="importmap">\s*([\s\S]*?)\s*<\/script>/)?.[1]
-
-    expect(
-      JSON.parse((source ?? '{}').replaceAll('%BASE_URL%', '/ComfyUI/'))
-    ).toMatchObject({
-      imports: { '/comfy/api/v4.js': '/ComfyUI/comfy/api/v4.js' }
+describe.for([
+  { base: '', mapped: './comfy/api/v4.js' },
+  { base: '/ComfyUI/', mapped: '/ComfyUI/comfy/api/v4.js' }
+])('the index.html built with base "$base"', ({ base, mapped }) => {
+  it('maps /comfy/api/v4.js to the module the build emits beside it', async () => {
+    const files = await builtFiles({
+      root: REPOSITORY_ROOT,
+      base,
+      publicDir: false,
+      plugins: [
+        publishedNodeApiPlugin(),
+        {
+          name: 'empty-app-entry',
+          enforce: 'pre',
+          resolveId: (id) =>
+            id.endsWith('src/bootstrap.ts') ? '\0empty-app-entry' : null,
+          load: (id) => (id === '\0empty-app-entry' ? '' : null)
+        }
+      ]
     })
+    const importMap = assetSource(files, 'index.html')?.match(
+      /<script type="importmap">\s*([\s\S]*?)\s*<\/script>/
+    )?.[1]
+    const document = new URL(`https://example.test${base || '/ComfyUI/'}`)
+
+    expect(JSON.parse(importMap ?? '{}')).toEqual({
+      imports: { '/comfy/api/v4.js': mapped }
+    })
+    expect(new URL(mapped, document).href).toBe(
+      new URL('comfy/api/v4.js', document).href
+    )
+    expect(assetSource(files, 'comfy/api/v4.js')).toContain('comfy_v4')
   })
 })
