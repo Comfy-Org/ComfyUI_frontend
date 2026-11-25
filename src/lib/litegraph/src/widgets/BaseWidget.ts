@@ -14,7 +14,10 @@ import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
 import { litegraph } from '@/lib/litegraph/src/litegraphInstance'
 import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
-import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import type {
+  IBaseWidget,
+  WidgetLayoutSize
+} from '@comfyorg/graph-model/widgets'
 import type { NodeBindable } from '@/lib/litegraph/src/utils/type'
 import { deriveWidgetRenderState } from '@/lib/litegraph/src/utils/widget'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -118,12 +121,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
 
   declare computedHeight?: number
   declare serialize?: boolean
-  computeLayoutSize?(node: LGraphNode): {
-    minHeight: number
-    maxHeight?: number
-    minWidth: number
-    maxWidth?: number
-  }
+  computeLayoutSize?(node: LGraphNode): WidgetLayoutSize
 
   private _node: LGraphNode
   /** The node that this widget belongs to. */
@@ -148,6 +146,8 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     const nodeId = this._state.nodeId
     if (!graphId || nodeId === undefined) {
       this._name = value
+      if (graphId && this.node.widgets?.includes(this))
+        this.setNodeId(this.node.id)
       return
     }
 
@@ -757,23 +757,5 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
 
     node.onWidgetChanged?.(extensionValue(this.name) ?? '', v, oldValue, this)
     if (node.graph) node.graph.incrementVersion()
-  }
-
-  /**
-   * Clones the widget.
-   * @param node The node that will own the cloned widget.
-   * @returns A new widget with the same properties as the original
-   * @remarks Subclasses with custom constructors must override this method.
-   *
-   * Correctly and safely typing this is currently not possible (practical?) in TypeScript 5.8.
-   */
-  createCopyForNode(node: LGraphNode): this {
-    const WidgetConstructor = this.constructor as new (
-      widget: TWidget,
-      node: LGraphNode
-    ) => this
-    const cloned = new WidgetConstructor(this as unknown as TWidget, node)
-    cloned.value = this.value
-    return cloned
   }
 }

@@ -39,6 +39,20 @@ describe('loadFolderPathsOnce', () => {
     expect(getFolderPaths).toHaveBeenCalledTimes(2)
   })
 
+  it('does not cache an empty fallback', async () => {
+    const getFolderPaths = vi
+      .spyOn(api, 'getFolderPaths')
+      .mockResolvedValueOnce({})
+      .mockResolvedValue({ vae: ['/models/vae'] })
+
+    await expect(loadFolderPathsOnce()).resolves.toEqual({})
+    await expect(loadFolderPathsOnce()).resolves.toEqual({
+      vae: ['/models/vae']
+    })
+
+    expect(getFolderPaths).toHaveBeenCalledTimes(2)
+  })
+
   it('lets a rejection from before a reconnect leave the newer request alone', async () => {
     let rejectStale!: (reason: Error) => void
     const stale = new Promise<Record<string, string[]>>((_, reject) => {

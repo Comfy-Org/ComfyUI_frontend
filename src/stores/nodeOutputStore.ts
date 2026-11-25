@@ -379,14 +379,22 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   ) {
     const rootGraph = useApp().rootGraphOrUndefined
     const nodeLocatorId = executionIdToNodeLocatorId(rootGraph, executionId)
-    if (
-      !nodeLocatorId ||
-      (rootGraph && !getNodeByLocatorId(rootGraph, nodeLocatorId))
-    ) {
+    const node =
+      rootGraph && nodeLocatorId
+        ? getNodeByLocatorId(rootGraph, nodeLocatorId)
+        : undefined
+    if (!nodeLocatorId || (rootGraph && !node)) {
       reportUnresolvedExecutionId(executionId, outputs)
       return
     }
-    setOutputsByLocatorId(nodeLocatorId, outputs, options)
+    const emptyTextOutput =
+      outputs == null &&
+      (node?.comfyClass === 'PreviewAny' || node?.comfyClass === 'SaveText')
+    setOutputsByLocatorId(
+      nodeLocatorId,
+      emptyTextOutput ? {} : outputs,
+      emptyTextOutput ? {} : options
+    )
   }
 
   function reportUnresolvedExecutionId(
@@ -407,6 +415,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
       surface: 'graph',
       errorType: 'failure_resolving_node_output_execution_id',
       level: 'warning',
+      sentryMode: 'never',
       tags: { executionId },
       context: {
         filenames: filenames?.length ? filenames : undefined
@@ -505,18 +514,12 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     }
   }
 
-  /**
-   * Move the live previews into the stash so `app.clean()` cannot revoke them
-   * while `workflowPath` is loaded out of the editor. Preview frames arrive
-   * over the websocket and cannot be re-fetched, so releasing their object
-   * URLs on a tab switch loses them for good.
-   */
   function stashPreviewsForWorkflow(workflowPath: string) {
     discardClosedWorkflowPreviews()
-    discardPreviewsForWorkflow(workflowPath)
 
     const previews = nodePreviewImages.value
     if (Object.keys(previews).length) {
+      discardPreviewsForWorkflow(workflowPath)
       stashedPreviews.set(workflowPath, previews)
     }
     nodePreviewImages.value = {}

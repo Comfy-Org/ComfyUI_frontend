@@ -54,7 +54,10 @@ function titleFor(state: PlanRowState, copy: PlanRowCopy): string {
     case 'unknown':
       return copy.unknownTitle
     case 'ended':
-      return state.planName ?? copy.unknownTitle
+      return (
+        state.planName ??
+        (state.salesManaged ? copy.salesManagedTitle : copy.unknownTitle)
+      )
     case 'salesManaged':
       return state.planName ?? copy.salesManagedTitle
     default:

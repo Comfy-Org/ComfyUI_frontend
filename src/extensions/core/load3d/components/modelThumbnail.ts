@@ -1,3 +1,4 @@
+import { throwIfAborted } from '@comfyorg/api-client/abortSignal'
 import { TimeoutError } from 'es-toolkit'
 
 import { load3dHost } from '@/extensions/core/load3d/load3dHost'
@@ -21,13 +22,16 @@ let rendererKeepAlive: SharedRendererHandle | null = null
 
 /**
  * Outcome of an offscreen thumbnail render. `cancelled` is separated from
- * `failed` so a caller that walked away is not reported as a fault.
+ * `failed` so a caller that walked away is not reported as a fault, and
+ * `tooLarge` marks a model the loader refuses by design (over the preview
+ * size limit), which is neither reported nor worth retrying.
  */
 export type ModelThumbnailResult =
   | { status: 'rendered'; dataUrl: string }
   | { status: 'cancelled' }
   | { status: 'busy' }
   | { status: 'timedOut' }
+  | { status: 'tooLarge' }
   | { status: 'failed' }
 
 /**
@@ -104,6 +108,7 @@ function renderThumbnailWithTimeout(
       (error: unknown): ModelThumbnailResult => {
         if (error === RENDER_CANCELLED) return { status: 'cancelled' }
         if (error instanceof TimeoutError) return { status: 'timedOut' }
+        if (isModelTooLargeError(error)) return { status: 'tooLarge' }
         reportError(redactTelemetryError(error), {
           errorType: 'agent_model_thumbnail_generation_failure',
           surface: 'agent'
@@ -112,6 +117,10 @@ function renderThumbnailWithTimeout(
       }
     )
   }
+}
+
+function isModelTooLargeError(error: unknown): boolean {
+  return error instanceof Error && error.name === 'ModelTooLargeError'
 }
 
 function renderThumbnailJob(
@@ -127,7 +136,7 @@ function renderThumbnailJob(
   const operation = (async () => {
     const { acquireSharedRenderer } =
       await import('@comfyorg/viewport3d/three/sharedWebGLRenderer')
-    deadline.signal.throwIfAborted()
+    throwIfAborted(deadline.signal)
     rendererKeepAlive ??= acquireSharedRenderer()
     return renderThumbnailInner(modelUrl, assetName, deadline.signal)
   })()
@@ -200,7 +209,7 @@ async function renderThumbnailInner(
 ): Promise<string> {
   const { createLoad3d } =
     await import('@comfyorg/viewport3d/load3d/createLoad3d')
-  signal.throwIfAborted()
+  throwIfAborted(signal)
 
   const load3d = createLoad3d(document.createElement('div'), load3dHost, {
     width: 256,
@@ -223,9 +232,9 @@ async function renderThumbnailInner(
     })
     if (outcome === 'cancelled') throw RENDER_CANCELLED
     if (outcome !== 'loaded') throw RENDER_FAILED
-    signal.throwIfAborted()
+    throwIfAborted(signal)
     const dataUrl = await load3d.captureThumbnail(256, 256)
-    signal.throwIfAborted()
+    throwIfAborted(signal)
     if (isAssetPreviewSupported()) {
       void fetch(dataUrl)
         .then((response) => response.blob())

@@ -21,7 +21,7 @@ import { createPlan } from '@e2e/fixtures/data/billingPlans'
 import { makeWorkspaceTokenResponse } from '@e2e/fixtures/data/workspaceAuthFixtures'
 import { CLOUD_SELF_EMAIL } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import type { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
-import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
+import { billingClient } from '@e2e/fixtures/utils/billingClient'
 import { APP_URL, setupCloudApp } from '@e2e/fixtures/utils/cloudAppSetup'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { keepPricingTableInApp } from '@e2e/fixtures/utils/platformPlans'
@@ -43,10 +43,7 @@ import {
  * (`subscriptionSdkRailOutcomes.spec.ts`).
  */
 const RAIL_FEATURES = {
-  billing_control_enabled: true,
-  unified_cloud_auth: true,
-  billing_sdk_topup_enabled: true,
-  billing_sdk_subscription_enabled: true
+  billing_control_enabled: true
 } satisfies RemoteConfig
 
 const OPERATION_ID = 'op-e2e-recovery'
@@ -129,13 +126,6 @@ async function recordHostedOpens(page: Page) {
     ])
 }
 
-async function enableRails(page: Page) {
-  await new FeatureFlagHelper(page).serveServerFlagsOnHandshake({
-    billing_sdk_topup_enabled: true,
-    billing_sdk_subscription_enabled: true
-  })
-}
-
 interface TopupRoutes {
   readonly pollRequests: Request[]
   setOperation: (next: BillingOpStatusResponse) => void
@@ -156,7 +146,6 @@ async function setupTopUp(page: Page): Promise<TopupRoutes> {
   await page.route('**/api/settings', (route) =>
     route.fulfill(jsonRoute({ 'Comfy.TutorialCompleted': true }))
   )
-  await enableRails(page)
 
   await page.route('**/api/billing/balance', (route) =>
     route.fulfill(jsonRoute(BALANCE))
@@ -196,10 +185,6 @@ async function returnToTab(page: Page) {
 
 const successToast = (toast: ToastHelper) =>
   toast.toastSuccesses.filter({ hasText: 'Credits added successfully' })
-
-function transports(requests: Request[]): string[] {
-  return requests.map((request) => request.resourceType())
-}
 
 function operationIdsPolled(requests: Request[]): Set<string> {
   return new Set(
@@ -268,7 +253,6 @@ async function setupSubscription(
   await page.route('**/api/settings', (route) =>
     route.fulfill(jsonRoute({ 'Comfy.TutorialCompleted': true }))
   )
-  if (features.billing_sdk_subscription_enabled) await enableRails(page)
 
   await page.route('**/api/billing/payment-methods', (route) =>
     route.fulfill(jsonRoute([SAVED_CARD]))
@@ -379,7 +363,6 @@ async function setupTwoWorkspaces(
   await page.route('**/api/settings', (route) =>
     route.fulfill(jsonRoute({ 'Comfy.TutorialCompleted': true }))
   )
-  await enableRails(page)
   await mockWorkspaceList(page, [...billing.keys()])
   await page.route('**/api/auth/token', (route) => {
     const { workspace_id } = route.request().postDataJSON() as {
@@ -488,7 +471,7 @@ test.describe('Billing recovery on the SDK rails', { tag: '@cloud' }, () => {
       await expect(teamContent.getByText('usage-in-team')).toBeVisible()
       await expect(teamContent.getByText('usage-in-personal')).toHaveCount(0)
       const teamRead = routes.eventRequests.at(-1)!
-      expect(teamRead.resourceType()).toBe('fetch')
+      expect(billingClient(teamRead)).toBe('sdk')
       expect(teamRead.headers()['authorization']).toBe(
         `Bearer mock-workspace-token-${TEAM.id}`
       )
@@ -538,7 +521,7 @@ test.describe('Billing recovery on the SDK rails', { tag: '@cloud' }, () => {
     await returnToTab(page)
 
     await expect(successToast(toast)).toBeVisible({ timeout: 45_000 })
-    expect(transports(routes.pollRequests)).not.toContain('xhr')
+    expect(routes.pollRequests.map(billingClient)).not.toContain('legacy')
     expect(await routes.hostedOpens()).toEqual([])
   })
 

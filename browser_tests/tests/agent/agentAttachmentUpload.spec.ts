@@ -90,7 +90,6 @@ test.describe('Agent attachment cancellation', { tag: '@cloud' }, () => {
         exact: true
       })
       await agentPanel.open()
-      await agentPanel.selectWorkflow()
       const panel = page.locator('#agent-panel-root')
       const composer = agentPanel.composer
       const send = panel.getByRole('button', { name: 'Send', exact: true })
@@ -134,7 +133,6 @@ test.describe('Agent attachment validation', { tag: ['@cloud', '@ui'] }, () => {
     agentPanel
   }) => {
     await agentPanel.open()
-    await agentPanel.selectWorkflow()
     await agentPanel.composer.fill('Describe this video')
     await expect(agentPanel.sendButton).toBeEnabled()
     await agentPanel.fileInput.setInputFiles({

@@ -10,6 +10,7 @@
       v-if="viewMode === 'grid'"
       ref="gridEl"
       data-testid="image-grid"
+      data-image-preview-grid
       class="relative grid w-full flex-1 gap-1 rounded-sm p-1 contain-size"
       :style="{ gridTemplateColumns: `repeat(${gridCols}, 1fr)` }"
     >
@@ -34,7 +35,7 @@
             decoding="async"
             class="size-full object-contain"
             @load="updateAspectRatio($event, index)"
-            @error="failedHdrPreviews[index] = isHdrResult(items[index])"
+            @error="handleThumbnailError($event, index)"
           />
         </div>
         <div
@@ -103,6 +104,7 @@
       <img
         v-if="
           !imageError &&
+          mainImageSrc &&
           displayUrls[currentIndex] &&
           !failedHdrPreviews[currentIndex]
         "
@@ -121,7 +123,7 @@
         draggable="false"
         class="pointer-events-none absolute inset-0 block size-full object-contain"
         @load="handleImageLoad"
-        @error="handleImageError(displayUrls[currentIndex])"
+        @error="mainImageSrc && handleImageError(displayUrls[currentIndex])"
       />
       <button
         v-else-if="!imageError && isHdr"
@@ -285,7 +287,8 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import Button from '@comfyorg/design-system/button/Button'
 import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import { useMaskEditor } from '@/renderer/extensions/maskEditor/composables/useMaskEditor'
-import { useNodeOutputsExport } from '@/platform/assets/composables/useNodeOutputsExport'
+import { useNodeOutputsExport } from '@/platform/assets/integration/useNodeOutputsExport'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { describeImageLoadFailure } from '@/platform/telemetry/imageFailureDiagnostics'
 import { openHdrViewer } from '@/services/hdrViewerService'
@@ -308,14 +311,20 @@ const PRELOAD_MIN_SCALE = 1
 interface ImagePreviewProps {
   readonly items: readonly AugmentedResultItem[]
   readonly nodeId?: NodeId
+  readonly fullResolution?: boolean
 }
 
-const { items, nodeId } = defineProps<ImagePreviewProps>()
+const {
+  items,
+  nodeId,
+  fullResolution = false
+} = defineProps<ImagePreviewProps>()
 
 const { t } = useI18n()
 const maskEditor = useMaskEditor()
 const nodeOutputStore = useNodeOutputStore()
 const { getDisplayImage } = useImagePreviewStore()
+const settingStore = useSettingStore()
 const { hasMultipleOutputs, showOutputsExportDialog } = useNodeOutputsExport()
 const toast = useToast()
 
@@ -358,14 +367,29 @@ const imageKeys = computed(() =>
 const gridUrls = computed(() =>
   items.map((item) => getGridThumbnailUrl(resultItemPreviewUrl(item)))
 )
-const isHdr = computed(() => isHdrResult(items[currentIndex.value]))
+const isHdr = computed(
+  () => items.length > 0 && isHdrResult(items[currentIndex.value])
+)
+const hasMultipleImages = computed(() => items.length > 1)
+const downscaleEnabled = computed(() =>
+  settingStore.get('Comfy.Node.DownscaleImagePreviews')
+)
+const showFullResolution = computed(
+  () => !downscaleEnabled.value || (fullResolution && !hasMultipleImages.value)
+)
 
 const currentImageUrl = computed(
   () => displayUrls.value[currentIndex.value] ?? ''
 )
 const displayImage = computedAsync(async () => {
   const source = currentImageUrl.value
-  if (viewMode.value !== 'gallery' || !source || isHdr.value) return undefined
+  if (
+    viewMode.value !== 'gallery' ||
+    !source ||
+    isHdr.value ||
+    showFullResolution.value
+  )
+    return undefined
   return getDisplayImage(source, DISPLAY_MAX_EDGE)
 })
 const currentDisplayImage = computed(() =>
@@ -375,14 +399,15 @@ const currentDisplayImage = computed(() =>
 )
 const displayImageUrl = useObjectUrl(() => currentDisplayImage.value?.blob)
 const mainImageSrc = computed(() =>
-  isHdr.value
+  isHdr.value || showFullResolution.value
     ? currentImageUrl.value
     : currentDisplayImage.value?.blob
       ? displayImageUrl.value
       : currentDisplayImage.value?.source
 )
-const isDownscaled = computed(() => !!currentDisplayImage.value?.blob)
-const hasMultipleImages = computed(() => items.length > 1)
+const isDownscaled = computed(
+  () => !showFullResolution.value && !!currentDisplayImage.value?.blob
+)
 const canExportOutputs = computed(() => {
   const node = nodeId ? resolveNode(nodeId) : undefined
   return !!node && hasMultipleOutputs(node)
@@ -395,7 +420,8 @@ const gridCols = computed(() => {
 const { camera } = useTransformState()
 const isZoomedIn = computed(() => camera.z >= PRELOAD_MIN_SCALE)
 const preloadUrls = computed(() => {
-  if (!hasMultipleImages.value || !isZoomedIn.value) return []
+  if (!downscaleEnabled.value || !hasMultipleImages.value || !isZoomedIn.value)
+    return []
   const count = items.length
   const candidates =
     viewMode.value === 'grid'
@@ -435,6 +461,15 @@ watch(
   { immediate: true }
 )
 
+watch(
+  [showFullResolution, mainImageSrc],
+  ([fullRes, src], [previousFullRes, previousSrc]) => {
+    if (fullRes === previousFullRes) return
+    imageError.value = false
+    if (src !== previousSrc) startDelayedLoader()
+  }
+)
+
 let isUnmounted = false
 onBeforeUnmount(() => {
   isUnmounted = true
@@ -463,6 +498,12 @@ function updateAspectRatio(event: Event, index: number) {
   if (naturalWidth && naturalHeight) {
     imageAspectRatio.value = naturalWidth / naturalHeight
   }
+}
+
+function handleThumbnailError(event: Event, index: number) {
+  if (!(event.target instanceof HTMLImageElement) || !event.target.isConnected)
+    return
+  failedHdrPreviews.value[index] = isHdrResult(items[index])
 }
 
 async function handleImageError(failedUrl: string) {
@@ -497,7 +538,11 @@ async function handleOpenLayerEditor() {
 
 function handleDownload() {
   try {
-    downloadFile(resultItemUrl(items[currentIndex.value]))
+    downloadFile(
+      resultItemUrl(items[currentIndex.value]),
+      undefined,
+      'node_preview'
+    )
   } catch {
     toast.error(t('g.error'), {
       description: t('g.failedToDownloadImage')

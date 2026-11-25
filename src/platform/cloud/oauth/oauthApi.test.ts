@@ -5,7 +5,8 @@ import {
   fetchOAuthConsentChallenge,
   redirectHost,
   submitOAuthConsentDecision,
-  verifiedClient
+  verifiedClient,
+  verifiedClientIcon
 } from '@/platform/cloud/oauth/oauthApi'
 import type { OAuthConsentChallenge } from '@/platform/cloud/oauth/oauthApi'
 
@@ -395,6 +396,7 @@ describe('submitOAuthConsentDecision', () => {
 describe('redirectHost', () => {
   it.for([
     ['https://chatgpt.com/connector/oauth/abc123', 'chatgpt.com'],
+    ['https://www.cursor.com/agents/mcp/oauth/callback', 'www.cursor.com'],
     ['http://127.0.0.1:50632/cb', undefined],
     ['http://127.0.0.2/cb', undefined],
     ['http://localhost:8080/cb', undefined],
@@ -411,8 +413,11 @@ describe('redirectHost', () => {
 describe('verifiedClient', () => {
   const chatgpt = { platform: 'chatgpt', display_name: 'ChatGPT' } as const
 
+  const cursor = { platform: 'cursor', display_name: 'Cursor' } as const
+
   it.for([
     ['a dynamic client with a known platform', 'dynamic', chatgpt, chatgpt],
+    ['a dynamic client verified as Cursor', 'dynamic', cursor, cursor],
     ['a first-party client', 'first_party', chatgpt, undefined],
     ['a client without provenance', undefined, chatgpt, undefined],
     ['a dynamic client without one', 'dynamic', undefined, undefined],
@@ -435,5 +440,15 @@ describe('verifiedClient', () => {
         verified_client: verified
       })
     ).toEqual(expected)
+  })
+})
+
+describe('verifiedClientIcon', () => {
+  it.for([
+    ['chatgpt', 'icon-[comfy--openai]'],
+    ['claude', 'icon-[comfy--anthropic]'],
+    ['cursor', 'icon-[comfy--cursor]']
+  ] as const)('maps %s to %s', ([platform, icon]) => {
+    expect(verifiedClientIcon(platform)).toBe(icon)
   })
 })

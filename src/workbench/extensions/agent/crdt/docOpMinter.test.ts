@@ -22,9 +22,14 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { reportError } from '@comfyorg/telemetry/reportError'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+import { validateComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
+import { emitGraphRestored } from '@/scripts/graphRestore'
 import { transformInputSpecV1ToV2 } from '@comfyorg/object-info-parser/migration'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@comfyorg/object-info-parser'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toRootGraphId } from '@comfyorg/graph-model/graphScopeId'
@@ -84,6 +89,24 @@ class TestAutogrowSink extends LGraphNode {
         { name: IMAGES_GROUP, isOptional: false }
       )
     )
+  }
+}
+
+class TestIntSource extends LGraphNode {
+  constructor() {
+    super('Test Int Source')
+    this.addOutput('INT', 'INT')
+  }
+}
+
+class TestLoadVideo extends LGraphNode {
+  constructor() {
+    super('Test Load Video')
+    this.addInput('frame_load_cap', 'INT', {
+      widget: { name: 'frame_load_cap' }
+    })
+    this.addWidget('number', 'frame_load_cap', 1000, () => {})
+    this.serialize_widgets = true
   }
 }
 
@@ -147,7 +170,9 @@ const CATALOG: WidgetCatalog = {
     TestSource: { widget_order: ['steps'] },
     TestSink: { widget_order: [] },
     TestAutogrowSink: { widget_order: [] },
-    TestPrompt: { widget_order: ['text'] }
+    TestPrompt: { widget_order: ['text'] },
+    TestIntSource: { widget_order: [] },
+    TestLoadVideo: { widget_order: ['frame_load_cap'] }
   }
 }
 
@@ -199,6 +224,14 @@ function afterFlush(): Promise<void> {
   return new Promise((resolve) => queueMicrotask(resolve))
 }
 
+async function workflowJson(graph: LGraph): Promise<ComfyWorkflowJSON> {
+  const state = await validateComfyWorkflow(graph.serialize(), (error) => {
+    throw new Error(error)
+  })
+  if (!state) throw new Error('graph did not serialize to a valid workflow')
+  return JSON.parse(JSON.stringify(state)) as ComfyWorkflowJSON
+}
+
 function dynamicComboScenario(graph: LGraph) {
   const resizeType: ComfyNodeDefV1['input'] = {
     required: {
@@ -215,6 +248,16 @@ function dynamicComboScenario(graph: LGraph) {
               inputs: { required: { match: ['IMAGE,MASK', {}] } }
             }
           ]
+        }
+      ],
+      images: [
+        'COMFY_AUTOGROW_V3',
+        {
+          template: {
+            input: { required: { image: ['IMAGE', {}] } },
+            names: ['image_1', 'image_2', 'image_3'],
+            min: 0
+          }
         }
       ]
     }
@@ -240,6 +283,10 @@ function dynamicComboScenario(graph: LGraph) {
       name: 'resize_type'
     })
   )
+  useLitegraphService().addNodeInput(
+    resize,
+    transformInputSpecV1ToV2(resizeType.required!.images, { name: 'images' })
+  )
   withGraphIntentSource('load', () => {
     graph.add(source)
     graph.add(resize)
@@ -261,6 +308,12 @@ function dynamicComboScenario(graph: LGraph) {
   return { source, resize, doc, catalog, match }
 }
 
+function temporaryWorkflowFor(graph: LGraph) {
+  const workflow = useWorkflowStore().createTemporary(`${createUuidv4()}.json`)
+  workflow.adoptGraph(graph)
+  return workflow
+}
+
 function seedGraph(graph: LGraph) {
   const source = new TestSource()
   const sink = new TestSink()
@@ -278,6 +331,8 @@ beforeEach(() => {
   LiteGraph.registerNodeType('TestSource', TestSource)
   LiteGraph.registerNodeType('TestSink', TestSink)
   LiteGraph.registerNodeType('TestAutogrowSink', TestAutogrowSink)
+  LiteGraph.registerNodeType('TestIntSource', TestIntSource)
+  LiteGraph.registerNodeType('TestLoadVideo', TestLoadVideo)
   LiteGraph.registerNodeType('TestNote', TestNote)
   LiteGraph.registerNodeType('TestPrompt', TestPrompt)
   LiteGraph.registerNodeType('TestDynamicGroup', TestDynamicGroup)
@@ -295,6 +350,7 @@ describe('attachDocOpMinter', () => {
   let docWidgetValue: DocOpMinterDeps['docWidgetValue']
   let docPromotedWidgets: DocOpMinterDeps['docPromotedWidgets']
   let mayWrite: boolean
+  let preMint: boolean
   let docDefinitionIds: Set<string>
   let graphAvailable: boolean
   let unbound: boolean
@@ -303,6 +359,7 @@ describe('attachDocOpMinter', () => {
   let dynamicComboDocs: Set<ReturnType<typeof mint>>
   let unboundLocalIntents: number
   let unboundVisibleIntents: number
+  let boundWorkflow: ComfyWorkflow
 
   function registeredDynamicComboScenario() {
     const scenario = dynamicComboScenario(graph)
@@ -320,6 +377,7 @@ describe('attachDocOpMinter', () => {
     docWidgetValue = () => undefined
     docPromotedWidgets = () => null
     mayWrite = true
+    preMint = false
     docDefinitionIds = new Set()
     graphAvailable = true
     unbound = false
@@ -328,9 +386,11 @@ describe('attachDocOpMinter', () => {
     dynamicComboDocs = new Set()
     unboundLocalIntents = 0
     unboundVisibleIntents = 0
+    boundWorkflow = fromPartial<ComfyWorkflow>({ path: 'workflows/bound.json' })
     minter = attachDocOpMinter({
       isEnabled: () => enabled,
       isDocBound: () => bound,
+      isBoundWorkflow: (workflow) => workflow === boundWorkflow,
       onUnboundLocalIntent: () => unboundLocalIntents++,
       onUnboundVisibleIntent: () => unboundVisibleIntents++,
       enqueue: (operations) => minted.push(...operations),
@@ -341,6 +401,7 @@ describe('attachDocOpMinter', () => {
         docWidgetValue(nodeId, widgetName),
       docPromotedWidgets: (nodeId) => docPromotedWidgets(nodeId),
       mayWritePromotedHost: () => mayWrite,
+      isPreMintBinding: () => preMint,
       docHasSubgraphDefinition: (id) => docDefinitionIds.has(id),
       onWidgetWriteRefused: (nodeId, widgetName) =>
         refusals.push([nodeId, widgetName])
@@ -379,6 +440,88 @@ describe('attachDocOpMinter', () => {
           operations: ['add_node']
         })
       })
+    )
+  })
+
+  describe('FRONT-3756: positional values a pack hook appends', () => {
+    function packNode(type: string, appendPositional: boolean): LGraphNode {
+      const node = new LGraphNode(type)
+      node.type = type
+      node.serialize_widgets = true
+      node.addWidget('text', 'prompt', 'a', () => {})
+      if (appendPositional)
+        node.onSerialize = (data: ISerialisedNode) => {
+          data.widgets_values = [...(data.widgets_values ?? []), 'pack-private']
+        }
+      return node
+    }
+
+    function droppedReports() {
+      return vi
+        .mocked(reportError)
+        .mock.calls.filter(
+          ([, meta]) =>
+            meta.errorType === 'agent_wire_positional_values_dropped'
+        )
+    }
+
+    it('reports each dropping node type once per session, across flushes', async () => {
+      graph.add(packNode('PositionalPack', true))
+      await afterFlush()
+      graph.add(packNode('OtherPositionalPack', true))
+      await afterFlush()
+      graph.add(packNode('PositionalPack', true))
+      graph.add(packNode('OtherPositionalPack', true))
+      await afterFlush()
+
+      expect(minted.length).toBeGreaterThan(0)
+      expect(droppedReports()).toEqual(
+        ['PositionalPack', 'OtherPositionalPack'].map((nodeType) => [
+          new Error('agent_wire_positional_values_dropped'),
+          expect.objectContaining({
+            surface: 'agent',
+            context: { nodeType, positional: 2, named: 1 }
+          })
+        ])
+      )
+    })
+
+    it('stays silent when positional and named values line up', async () => {
+      graph.add(packNode('PlainPack', false))
+      await afterFlush()
+
+      expect(droppedReports()).toEqual([])
+    })
+
+    it.for([
+      {
+        case: 'a virtual node with duplicate widget names',
+        build: () => {
+          const note = new TestNote()
+          note.addWidget('text', 'text', 'b', () => {})
+          return note
+        }
+      },
+      {
+        case: 'a subgraph host',
+        build: () => seedPromotedHost().host
+      }
+    ])(
+      'keeps the positional payload and stays silent for $case',
+      ({ build }) => {
+        const node = build()
+        node.onSerialize = (data: ISerialisedNode) => {
+          data.widgets_values = [...(data.widgets_values ?? []), 'pack-private']
+        }
+        const dropped = vi.fn()
+
+        const snapshot = wireNodeSnapshot(node, dropped)
+
+        expect(dropped).not.toHaveBeenCalled()
+        expect(snapshot?.widgets_values).toEqual(
+          node.serialize().widgets_values
+        )
+      }
     )
   })
 
@@ -527,6 +670,358 @@ describe('attachDocOpMinter', () => {
     })
   })
 
+  describe('an undo/redo restore mints what the restored change would', () => {
+    type Seeded = ReturnType<typeof seedGraph>
+
+    async function restoreThrough(
+      change: (seeded: Seeded) => unknown,
+      workflow = boundWorkflow
+    ) {
+      const seeded = seedGraph(graph)
+      const previous = await workflowJson(graph)
+      const expected = withGraphIntentSource('load', () => change(seeded))
+      emitGraphRestored({
+        workflow,
+        graph,
+        previous,
+        next: await workflowJson(graph)
+      })
+      await afterFlush()
+      return expected
+    }
+
+    it.for([
+      {
+        change: 'a node move',
+        act: ({ source }: Seeded) => {
+          source.pos = [300, 200]
+          return []
+        }
+      },
+      {
+        change: 'a node move and rename',
+        act: ({ source }: Seeded) => {
+          source.pos = [300, 200]
+          source.title = 'Renamed'
+          return [
+            {
+              op: 'set_node_field',
+              node_id: source.id,
+              field: 'title',
+              value: 'Renamed'
+            }
+          ]
+        }
+      },
+      {
+        change: 'a node removal',
+        act: ({ sink, link }: Seeded) => {
+          graph.remove(sink)
+          return [
+            { op: 'delete_node', node_id: sink.id, removed_links: [link.id] }
+          ]
+        }
+      },
+      {
+        change: 'a node addition and its link',
+        act: ({ source }: Seeded) => {
+          const sink = new TestSink()
+          sink.pos = [40, 0]
+          graph.add(sink)
+          source.connect(0, sink, 0)
+          return [
+            {
+              op: 'add_node',
+              node_id: sink.id,
+              class_type: 'TestSink',
+              pos: [40, 0],
+              node: expect.objectContaining({ type: 'TestSink' })
+            },
+            {
+              op: 'connect',
+              link_id: sink.inputs[0].link,
+              from_node: source.id,
+              from_slot: 0,
+              to_node: sink.id,
+              to_slot: 0,
+              link_type: 'IMAGE'
+            }
+          ]
+        }
+      },
+      {
+        change: 'a link removal between surviving nodes',
+        act: ({ sink, link }: Seeded) => {
+          sink.disconnectInput(0)
+          return [
+            { op: 'disconnect', link_id: link.id, to_node: sink.id, to_slot: 0 }
+          ]
+        }
+      },
+      {
+        change: 'a widget value',
+        act: ({ source }: Seeded) => {
+          source.widgets![0].value = 42
+          return [
+            {
+              op: 'set_widget',
+              node_id: source.id,
+              widget: 'steps',
+              value: 42
+            }
+          ]
+        }
+      },
+      {
+        change: 'a mode',
+        act: ({ source }: Seeded) => {
+          source.mode = LGraphEventMode.BYPASS
+          return [
+            {
+              op: 'set_node_field',
+              node_id: source.id,
+              field: 'mode',
+              value: LGraphEventMode.BYPASS
+            }
+          ]
+        }
+      },
+      {
+        change: 'a collapse',
+        act: ({ source }: Seeded) => {
+          source.collapse()
+          return [
+            {
+              op: 'set_node_field',
+              node_id: source.id,
+              field: 'flags.collapsed',
+              value: true
+            }
+          ]
+        }
+      },
+      {
+        change: 'a pin',
+        act: ({ source }: Seeded) => {
+          source.pin(true)
+          return [
+            {
+              op: 'set_node_field',
+              node_id: source.id,
+              field: 'flags.pinned',
+              value: true
+            }
+          ]
+        }
+      }
+    ])('$change', async ({ act }) => {
+      const expected = await restoreThrough(act)
+
+      expect(minted).toEqual(expected)
+    })
+
+    it.for([
+      { gate: 'the product is disabled', disable: () => (enabled = false) },
+      { gate: 'the minter is detached', disable: () => minter.detach() }
+    ])('mints nothing while $gate', async ({ disable }) => {
+      disable()
+
+      await restoreThrough(({ sink }) => graph.remove(sink))
+
+      expect(minted).toEqual([])
+    })
+
+    it.for([
+      { delivery: 'can receive ops', canDeliver: true },
+      { delivery: 'cannot receive ops', canDeliver: false }
+    ])(
+      'leaves the document alone when the restored workflow is not the bound one and its document $delivery',
+      async ({ canDeliver }) => {
+        bound = canDeliver
+        const other = fromPartial<ComfyWorkflow>({
+          path: 'workflows/other.json'
+        })
+
+        await restoreThrough(({ sink }) => graph.remove(sink), other)
+        minter.deliverHeldRestores()
+        await afterFlush()
+
+        expect({ minted, unboundLocalIntents }).toEqual({
+          minted: [],
+          unboundLocalIntents: 0
+        })
+      }
+    )
+
+    it('records a restore its document cannot receive yet as unsynced', async () => {
+      bound = false
+
+      await restoreThrough(({ sink }) => graph.remove(sink))
+
+      expect({ minted, unboundLocalIntents }).toEqual({
+        minted: [],
+        unboundLocalIntents: 1
+      })
+    })
+
+    it('delivers a held restore once its document can receive it again', async () => {
+      bound = false
+      let removed: Seeded | undefined
+      await restoreThrough((seeded) => {
+        removed = seeded
+        graph.remove(seeded.sink)
+      })
+      assert(removed)
+      const { sink, link } = removed
+
+      bound = true
+      minter.deliverHeldRestores()
+      minter.deliverHeldRestores()
+      await afterFlush()
+
+      expect(minted).toEqual([
+        { op: 'delete_node', node_id: sink.id, removed_links: [link.id] }
+      ])
+    })
+
+    it('delivers a held restore as it was accepted, not as the graph reads at delivery', async () => {
+      bound = false
+      let added: InstanceType<typeof TestSink> | undefined
+      let renamed: Seeded['source'] | undefined
+      await restoreThrough(({ source }) => {
+        added = new TestSink()
+        added.pos = [40, 0]
+        graph.add(added)
+        source.title = 'Renamed'
+        renamed = source
+      })
+      assert(added)
+      assert(renamed)
+      const addedId = added.id
+
+      graph.remove(added)
+      renamed.title = 'Later'
+      bound = true
+      minter.deliverHeldRestores()
+      await afterFlush()
+
+      expect(minted).toEqual([
+        {
+          op: 'set_node_field',
+          node_id: renamed.id,
+          field: 'title',
+          value: 'Renamed'
+        },
+        {
+          op: 'add_node',
+          node_id: addedId,
+          class_type: 'TestSink',
+          pos: [40, 0],
+          node: expect.objectContaining({ type: 'TestSink' })
+        }
+      ])
+    })
+
+    it('drops a held restore once the panel is bound to another workflow', async () => {
+      bound = false
+      await restoreThrough(({ sink }) => graph.remove(sink))
+
+      boundWorkflow = fromPartial<ComfyWorkflow>({
+        path: 'workflows/next.json'
+      })
+      bound = true
+      minter.deliverHeldRestores()
+      await afterFlush()
+
+      expect(minted).toEqual([])
+    })
+
+    it("mints into the restored workflow's own graph, not the canvas graph", async () => {
+      graphAvailable = false
+
+      await restoreThrough(({ sink }) => graph.remove(sink))
+
+      expect(minted).toEqual([expect.objectContaining({ op: 'delete_node' })])
+    })
+
+    function seedSubgraphInterior() {
+      const subgraph = createTestSubgraph({ rootGraph: graph })
+      graph.subgraphs.set(subgraph.id, subgraph)
+      const host = createTestSubgraphNode(subgraph)
+      const interior = seedGraph(subgraph)
+      withGraphIntentSource('load', () => graph.add(host))
+      return { subgraph, host, ...interior }
+    }
+
+    it.for([
+      {
+        change: 'an interior widget value',
+        act: ({ host, source }: ReturnType<typeof seedSubgraphInterior>) => {
+          source.widgets![0].value = 42
+          return {
+            minted: [
+              {
+                op: 'set_widget',
+                node_id: source.id,
+                widget: 'steps',
+                value: 42,
+                path: [String(host.id), String(source.id)],
+                inner_widget: 'steps'
+              }
+            ],
+            reported: []
+          }
+        }
+      },
+      {
+        change: 'an interior node removal',
+        act: ({ subgraph, sink }: ReturnType<typeof seedSubgraphInterior>) => {
+          subgraph.remove(sink)
+          return {
+            minted: [],
+            reported: ['agent_crdt_unrepresentable_subgraph_node_delete']
+          }
+        }
+      },
+      {
+        change: 'an interior link removal',
+        act: ({ sink }: ReturnType<typeof seedSubgraphInterior>) => {
+          sink.disconnectInput(0)
+          return {
+            minted: [],
+            reported: ['agent_crdt_unrepresentable_subgraph_disconnect']
+          }
+        }
+      },
+      {
+        change: 'an interior rename',
+        act: ({ source }: ReturnType<typeof seedSubgraphInterior>) => {
+          source.title = 'Renamed'
+          return {
+            minted: [],
+            reported: ['agent_crdt_unrepresentable_subgraph_set_node_field']
+          }
+        }
+      }
+    ])('$change', async ({ act }) => {
+      const seeded = seedSubgraphInterior()
+      const previous = await workflowJson(graph)
+      const expected = withGraphIntentSource('load', () => act(seeded))
+      emitGraphRestored({
+        workflow: boundWorkflow,
+        graph,
+        previous,
+        next: await workflowJson(graph)
+      })
+      await afterFlush()
+
+      expect(minted).toEqual(expected.minted)
+      expect(
+        vi.mocked(reportError).mock.calls.map(([, meta]) => meta.errorType)
+      ).toEqual(expected.reported)
+    })
+  })
+
   it('mints nothing for the same commands issued as agent-remote writes', async () => {
     const { source, sink } = seedGraph(graph)
 
@@ -602,6 +1097,22 @@ describe('attachDocOpMinter', () => {
     expect(unboundLocalIntents).toBe(0)
     expect(unboundVisibleIntents).toBe(2)
     expect(minted).toEqual([])
+  })
+
+  it('marks a visible-workflow edit while another workflow is bound and delivering, instead of reporting it lost', async () => {
+    const { source } = seedGraph(graph)
+    rootGraphId = toRootGraphId('other-root-graph')
+
+    source.widgets![0].value = 5
+    graph.add(new TestSource())
+    await afterFlush()
+
+    expect(minted).toEqual([])
+    expect(unboundLocalIntents).toBe(0)
+    expect(unboundVisibleIntents).toBe(2)
+    expect(
+      vi.mocked(reportError).mock.calls.map(([, meta]) => meta.errorType)
+    ).toEqual(['agent_crdt_op_for_unbound_graph'])
   })
 
   it('snapshots a pasted node after its same-tick configure, folding the widget and field writes into add_node', async () => {
@@ -687,6 +1198,7 @@ describe('attachDocOpMinter', () => {
     minter = attachDocOpMinter({
       isEnabled: () => true,
       isDocBound: () => true,
+      isBoundWorkflow: (workflow) => workflow === boundWorkflow,
       enqueue,
       getGraph: () => graph,
       boundRootGraphId: () => rootGraphId,
@@ -783,28 +1295,56 @@ describe('attachDocOpMinter', () => {
       return { source, sink }
     }
 
+    async function restoreThrough(change: () => void) {
+      const previous = await workflowJson(graph)
+      withGraphIntentSource('load', change)
+      emitGraphRestored({
+        workflow: boundWorkflow,
+        graph,
+        previous,
+        next: await workflowJson(graph)
+      })
+    }
+
     it.for([
       {
         action: 'connect',
-        act: (source: LGraphNode, sink: LGraphNode) => {
+        edit: 'a live edit',
+        act: async (source: LGraphNode, sink: LGraphNode) => {
           sink.disconnectInput(1)
           source.connect(0, sink, 1)
         }
       },
       {
         action: 'disconnect',
-        act: (_source: LGraphNode, sink: LGraphNode) => {
+        edit: 'a live edit',
+        act: async (_source: LGraphNode, sink: LGraphNode) => {
           sink.disconnectInput(1)
+        }
+      },
+      {
+        action: 'connect',
+        edit: 'an undo/redo restore',
+        act: async (source: LGraphNode, sink: LGraphNode) => {
+          withGraphIntentSource('load', () => sink.disconnectInput(1))
+          await restoreThrough(() => source.connect(0, sink, 1))
+        }
+      },
+      {
+        action: 'disconnect',
+        edit: 'an undo/redo restore',
+        act: async (_source: LGraphNode, sink: LGraphNode) => {
+          await restoreThrough(() => sink.disconnectInput(1))
         }
       }
     ])(
-      "$action mints the doc index of the live slot's name, not its live index",
+      "$action from $edit mints the doc index of the live slot's name, not its live index",
       async ({ action, act }) => {
         const { source, sink } = seedReorderedSink()
         docInputNames = (nodeId) =>
           nodeId === sink.id ? ['image', 'mask'] : null
 
-        act(source, sink)
+        await act(source, sink)
         await afterFlush()
 
         expect(minted.at(-1)).toMatchObject({
@@ -842,39 +1382,97 @@ describe('attachDocOpMinter', () => {
       ).toEqual(['agent_crdt_link_slot_not_in_doc'])
     })
 
+    it.for([
+      { label: 'a declared input', declares: true },
+      { label: 'an input the definition does not declare', declares: false }
+    ])(
+      'names the class and both input lists when the document lacks $label',
+      async ({ declares }) => {
+        useNodeDefStore().addNodeDef({
+          name: 'PipeSink',
+          display_name: 'Pipe Sink',
+          category: 'test',
+          python_module: 'custom_nodes.test',
+          description: '',
+          input: {
+            required: declares
+              ? { mask: ['MASK', {}], basic_pipe: ['BASIC_PIPE', {}] }
+              : { mask: ['MASK', {}] }
+          },
+          output: [],
+          output_name: [],
+          output_is_list: [],
+          output_node: false
+        })
+        const source = new LGraphNode('Pipe Source')
+        source.addOutput('basic_pipe', 'BASIC_PIPE')
+        const sink = new LGraphNode('Pipe Sink', 'PipeSink')
+        sink.addInput('mask', 'MASK')
+        sink.addInput('basic_pipe', 'BASIC_PIPE')
+        withGraphIntentSource('load', () => {
+          graph.add(source)
+          graph.add(sink)
+        })
+        docInputNames = (nodeId) => (nodeId === sink.id ? ['mask'] : null)
+
+        source.connect(0, sink, 1)
+        await afterFlush()
+
+        expect(minted).toEqual([])
+        expect(reportError).toHaveBeenCalledWith(
+          expect.any(Error),
+          expect.objectContaining({
+            errorType: 'agent_crdt_link_slot_not_in_doc',
+            context: {
+              action: 'connect',
+              linkId: sink.inputs[1].link,
+              nodeId: sink.id,
+              input: 'basic_pipe',
+              classType: 'PipeSink',
+              declared: declares,
+              liveInputs: ['mask', 'basic_pipe'],
+              docInputs: ['mask']
+            }
+          })
+        )
+      }
+    )
+
     it('grows an autogrow slot the document lacks instead of naming a live index, and the applier appends it', async () => {
       const sources = [new TestSource(), new TestSource(), new TestSource()]
       const sink = new TestAutogrowSink()
       withGraphIntentSource('load', () => {
         for (const source of sources) graph.add(source)
         graph.add(sink)
-        sources[0].connect(0, sink, 0)
+        sources[0].connect(0, sink, 1)
       })
       const doc = mintDocFrom(graph)
       docInputNames = (nodeId) =>
         readDocSlotNames(doc, String(nodeId), 'inputs')
       expect(docInputs(doc, sink.id)).toEqual([
-        { name: `${IMAGES_GROUP}.image_1`, link: sink.inputs[0].link },
+        { name: IMAGES_GROUP, link: null },
+        { name: `${IMAGES_GROUP}.image_1`, link: sink.inputs[1].link },
         { name: `${IMAGES_GROUP}.image_2`, link: null }
       ])
 
-      sources[1].connect(0, sink, 1)
+      sources[1].connect(0, sink, 2)
       await afterFlush()
       expect(minted).toEqual([
-        expect.objectContaining({ op: 'connect', to_slot: 1 })
+        expect.objectContaining({ op: 'connect', to_slot: 2 })
       ])
       expect(applyMinted(doc, minted)).toEqual(['applied'])
       minted.length = 0
 
       expect(sink.inputs.map(({ name }) => name)).toEqual([
+        IMAGES_GROUP,
         `${IMAGES_GROUP}.image_1`,
         `${IMAGES_GROUP}.image_2`,
         `${IMAGES_GROUP}.image_3`
       ])
-      sources[2].connect(0, sink, 2)
+      sources[2].connect(0, sink, 3)
       await afterFlush()
 
-      const handWired = sink.inputs[2].link
+      const handWired = sink.inputs[3].link
       expect(minted).toEqual([
         {
           op: 'connect',
@@ -889,9 +1487,59 @@ describe('attachDocOpMinter', () => {
       ])
       expect(applyMinted(doc, minted)).toEqual(['applied'])
       expect(docInputs(doc, sink.id)).toEqual([
-        { name: `${IMAGES_GROUP}.image_1`, link: sink.inputs[0].link },
-        { name: `${IMAGES_GROUP}.image_2`, link: sink.inputs[1].link },
+        { name: IMAGES_GROUP, link: null },
+        { name: `${IMAGES_GROUP}.image_1`, link: sink.inputs[1].link },
+        { name: `${IMAGES_GROUP}.image_2`, link: sink.inputs[2].link },
         { name: `${IMAGES_GROUP}.image_3`, link: handWired }
+      ])
+      doc.destroy()
+    })
+
+    it('grows a widget input the agent-built document lacks when an undo/redo restore brings its link back', async () => {
+      const source = new TestIntSource()
+      const video = new TestLoadVideo()
+      withGraphIntentSource('load', () => {
+        graph.add(source)
+        graph.add(video)
+      })
+      const workflow = graph.serialize() as unknown as WorkflowJSON
+      const doc = mint(
+        {
+          ...workflow,
+          nodes: workflow.nodes.map((node) =>
+            String(node.id) === String(video.id)
+              ? { ...node, inputs: [] }
+              : node
+          )
+        },
+        CATALOG
+      )
+      docInputNames = (nodeId) =>
+        readDocSlotNames(doc, String(nodeId), 'inputs')
+
+      await restoreThrough(() => source.connect(0, video, 0))
+      await afterFlush()
+
+      const restored = video.inputs[0].link
+      expect(minted).toEqual([
+        {
+          op: 'connect',
+          link_id: restored,
+          from_node: source.id,
+          from_slot: 0,
+          to_node: video.id,
+          to_slot: null,
+          link_type: 'INT',
+          grow: {
+            name: 'frame_load_cap',
+            type: 'INT',
+            widget: 'frame_load_cap'
+          }
+        }
+      ])
+      expect(applyMinted(doc, minted)).toEqual(['applied'])
+      expect(docInputs(doc, video.id)).toEqual([
+        { name: 'frame_load_cap', link: restored }
       ])
       doc.destroy()
     })
@@ -915,45 +1563,64 @@ describe('attachDocOpMinter', () => {
       )
     })
 
-    it('grows a dynamic-combo child while its local selection is still in flight', async () => {
-      const { source, resize, doc } = registeredDynamicComboScenario()
-      docInputNames = (nodeId) =>
-        readDocSlotNames(doc, String(nodeId), 'inputs')
-      docWidgetValue = (nodeId, widgetName) =>
-        readDocWidgetValue(doc, String(nodeId), widgetName)
-      const selector = resize.widgets?.[0]
-      assert(selector)
-      withGraphIntentSource('load', () => {
-        selector.value = 'scale by multiplier'
-      })
-
-      selector.value = 'match size'
-      await afterFlush()
-      expect(minted).toEqual([
-        expect.objectContaining({
-          op: 'set_widget',
-          node_id: resize.id,
-          widget: 'resize_type',
-          value: 'match size'
+    it.for([
+      {
+        edit: 'a live edit',
+        apply: async (selectAndConnect: () => void) => {
+          selectAndConnect()
+        }
+      },
+      {
+        edit: 'an undo/redo restore',
+        apply: async (selectAndConnect: () => void) => {
+          const previous = await workflowJson(graph)
+          withGraphIntentSource('load', selectAndConnect)
+          emitGraphRestored({
+            workflow: boundWorkflow,
+            graph,
+            previous,
+            next: await workflowJson(graph)
+          })
+        }
+      }
+    ])(
+      'grows a dynamic-combo child selected in the same $edit',
+      async ({ apply }) => {
+        const { source, resize, doc } = registeredDynamicComboScenario()
+        resize.serialize_widgets = true
+        docInputNames = (nodeId) =>
+          readDocSlotNames(doc, String(nodeId), 'inputs')
+        docWidgetValue = (nodeId, widgetName) =>
+          readDocWidgetValue(doc, String(nodeId), widgetName)
+        const selector = resize.widgets?.[0]
+        assert(selector)
+        withGraphIntentSource('load', () => {
+          selector.value = 'scale by multiplier'
         })
-      ])
-      minted.length = 0
 
-      const match = resize.findInputSlot('resize_type.match')
-      expect(match).toBeGreaterThanOrEqual(0)
-      source.connect(0, resize, match)
-      await afterFlush()
-
-      expect(minted).toEqual([
-        expect.objectContaining({
-          op: 'connect',
-          to_node: resize.id,
-          to_slot: null,
-          grow: { name: 'resize_type.match', type: 'IMAGE,MASK' }
+        await apply(() => {
+          selector.value = 'match size'
+          source.connect(0, resize, resize.findInputSlot('resize_type.match'))
         })
-      ])
-      expect(reportError).not.toHaveBeenCalled()
-    })
+        await afterFlush()
+
+        expect(minted).toEqual([
+          expect.objectContaining({
+            op: 'set_widget',
+            node_id: resize.id,
+            widget: 'resize_type',
+            value: 'match size'
+          }),
+          expect.objectContaining({
+            op: 'connect',
+            to_node: resize.id,
+            to_slot: null,
+            grow: { name: 'resize_type.match', type: 'IMAGE,MASK' }
+          })
+        ])
+        expect(reportError).not.toHaveBeenCalled()
+      }
+    )
 
     it('refuses a dynamic-combo child after the document supersedes its pending selection', async () => {
       const { source, resize, doc, catalog } = registeredDynamicComboScenario()
@@ -1301,6 +1968,101 @@ describe('attachDocOpMinter', () => {
       expect(reportError).not.toHaveBeenCalled()
     })
 
+    it('cancels an unsent dynamic-combo grow when its added source is removed in the same tick', async () => {
+      const { source, resize, doc, catalog, match } =
+        registeredDynamicComboScenario()
+      expect(
+        applyMinted(
+          doc,
+          [
+            {
+              op: 'set_widget',
+              node_id: resize.id,
+              widget: 'resize_type',
+              value: 'match size'
+            }
+          ],
+          catalog
+        )
+      ).toEqual(['applied'])
+      docInputNames = (nodeId) =>
+        readDocSlotNames(doc, String(nodeId), 'inputs')
+      docWidgetValue = (nodeId, widgetName) =>
+        readDocWidgetValue(doc, String(nodeId), widgetName)
+
+      const unsentSource = new TestSource()
+      graph.add(unsentSource)
+      unsentSource.connect(0, resize, match)
+      graph.remove(unsentSource)
+      await afterFlush()
+      expect(minted).toEqual([])
+
+      source.connect(0, resize, match)
+      await afterFlush()
+      expect(minted).toEqual([
+        expect.objectContaining({
+          op: 'connect',
+          from_node: source.id,
+          to_slot: null,
+          grow: { name: 'resize_type.match', type: 'IMAGE,MASK' }
+        })
+      ])
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('keeps an autogrow edit off an in-flight dynamic-combo grow on the same node', async () => {
+      const { source, resize, doc, catalog, match } =
+        registeredDynamicComboScenario()
+      expect(
+        applyMinted(
+          doc,
+          [
+            {
+              op: 'set_widget',
+              node_id: resize.id,
+              widget: 'resize_type',
+              value: 'match size'
+            }
+          ],
+          catalog
+        )
+      ).toEqual(['applied'])
+      docInputNames = (nodeId) =>
+        readDocSlotNames(doc, String(nodeId), 'inputs')
+      docWidgetValue = (nodeId, widgetName) =>
+        readDocWidgetValue(doc, String(nodeId), widgetName)
+
+      source.connect(0, resize, match)
+      await afterFlush()
+      source.connect(0, resize, resize.findInputSlot('images.image_1'))
+      await afterFlush()
+      source.connect(0, resize, resize.findInputSlot('images.image_2'))
+      await afterFlush()
+      resize.disconnectInput(resize.findInputSlot('images.image_2'))
+      await afterFlush()
+      expect(applyMinted(doc, minted, catalog)).toEqual([
+        'applied',
+        'applied',
+        'applied'
+      ])
+      minted.length = 0
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+      await afterFlush()
+      expect(applyMinted(doc, minted, catalog, 2)).toEqual(['applied'])
+
+      expect(docInputs(doc, resize.id, catalog)).toEqual([
+        { name: 'resize_type.multiplier', link: null },
+        { name: 'resize_type', link: null },
+        { name: 'images', link: null },
+        {
+          name: 'images.image_1',
+          link: resize.inputs[resize.findInputSlot('images.image_1')].link
+        },
+        { name: 'resize_type.match', link: resize.inputs[match].link },
+        { name: 'images.image_2', link: null }
+      ])
+    })
+
     it('drops a deferred dynamic-combo operation when its grow never lands', async () => {
       const { source, resize, doc, catalog, match } =
         registeredDynamicComboScenario()
@@ -1356,44 +2118,65 @@ describe('attachDocOpMinter', () => {
       ])
     })
 
-    it('drops pending dynamic-combo state when its node is removed', async () => {
-      const { source, resize, doc, catalog, match } =
-        registeredDynamicComboScenario()
-      expect(
-        applyMinted(
-          doc,
-          [
-            {
-              op: 'set_widget',
-              node_id: resize.id,
-              widget: 'resize_type',
-              value: 'match size'
-            }
-          ],
-          catalog
-        )
-      ).toEqual(['applied'])
-      docInputNames = (nodeId) =>
-        readDocSlotNames(doc, String(nodeId), 'inputs')
-      docWidgetValue = (nodeId, widgetName) =>
-        readDocWidgetValue(doc, String(nodeId), widgetName)
+    it.for([
+      {
+        removal: 'a live removal',
+        remove: async (node: LGraphNode) => graph.remove(node)
+      },
+      {
+        removal: 'an undo/redo restore',
+        remove: async (node: LGraphNode) => {
+          const previous = await workflowJson(graph)
+          withGraphIntentSource('load', () => graph.remove(node))
+          emitGraphRestored({
+            workflow: boundWorkflow,
+            graph,
+            previous,
+            next: await workflowJson(graph)
+          })
+        }
+      }
+    ])(
+      'drops pending dynamic-combo state when $removal removes its node',
+      async ({ remove }) => {
+        const { source, resize, doc, catalog, match } =
+          registeredDynamicComboScenario()
+        expect(
+          applyMinted(
+            doc,
+            [
+              {
+                op: 'set_widget',
+                node_id: resize.id,
+                widget: 'resize_type',
+                value: 'match size'
+              }
+            ],
+            catalog
+          )
+        ).toEqual(['applied'])
+        docInputNames = (nodeId) =>
+          readDocSlotNames(doc, String(nodeId), 'inputs')
+        docWidgetValue = (nodeId, widgetName) =>
+          readDocWidgetValue(doc, String(nodeId), widgetName)
 
-      source.connect(0, resize, match)
-      await afterFlush()
-      minted.length = 0
-      resize.disconnectInput(match)
-      graph.remove(resize)
-      await afterFlush()
-      expect(minted).toEqual([
-        expect.objectContaining({ op: 'delete_node', node_id: resize.id })
-      ])
-      minted.length = 0
+        source.connect(0, resize, match)
+        await afterFlush()
+        minted.length = 0
+        resize.disconnectInput(match)
+        await remove(resize)
+        await afterFlush()
+        expect(minted).toEqual([
+          expect.objectContaining({ op: 'delete_node', node_id: resize.id })
+        ])
+        minted.length = 0
 
-      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_CATCH_UP_DEADLINE_MS)
+        await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_CATCH_UP_DEADLINE_MS)
 
-      expect(minted).toEqual([])
-      expect(reportError).not.toHaveBeenCalled()
-    })
+        expect(minted).toEqual([])
+        expect(reportError).not.toHaveBeenCalled()
+      }
+    )
   })
 
   it('mints a live subgraph-interior widget write with the subgraph-node path', async () => {
@@ -1882,6 +2665,49 @@ describe('attachDocOpMinter', () => {
           errorType: 'agent_crdt_promoted_widget_doc_not_synced'
         })
       )
+      doc.destroy()
+    })
+
+    it('stays on the canvas, unrefused, when the workflow has no document yet', async () => {
+      const { host, doc } = seedPromotedHost()
+      mayWrite = false
+      preMint = true
+
+      host.widgets[1].value = 'seed bumped by Run'
+      await afterFlush()
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_CATCH_UP_DEADLINE_MS)
+
+      expect(minted).toEqual([])
+      expect(refusals).toEqual([])
+      expect(reportError).not.toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'agent_crdt_promoted_widget_doc_not_synced'
+        })
+      )
+      expect(unboundLocalIntents).toBe(1)
+      expect(host.widgets[1].value).toBe('seed bumped by Run')
+      expect(vi.getTimerCount()).toBe(0)
+      doc.destroy()
+    })
+
+    it('still lands when the first document mint arrives before the deadline', async () => {
+      const { host, doc } = seedPromotedHost()
+      mayWrite = false
+      preMint = true
+
+      host.widgets[1].value = 'before the mint'
+      await afterFlush()
+      await vi.advanceTimersByTimeAsync(10_000)
+      preMint = false
+      mayWrite = true
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+
+      expect(
+        minted.map((op) => (op.op === 'set_widget' ? op.value : op.op))
+      ).toEqual(['before the mint'])
+      expect(refusals).toEqual([])
+      expect(unboundLocalIntents).toBe(0)
       doc.destroy()
     })
 
@@ -2457,6 +3283,27 @@ describe('attachDocOpMinter', () => {
     )
   })
 
+  it('defines a subgraph whose interior node the document created, so the host accepts the batch', async () => {
+    const { inner, outer, doc } = handAddedPromotedHost()
+    const interior = outer.nodes.find((node) => node.type === 'TestPrompt')
+    assert.exists(interior)
+    interior.configure(
+      Object.assign(interior.serialize(), { __incarnation: '0' })
+    )
+    expect(interior.serialize()).toHaveProperty('__incarnation')
+    await afterFlush()
+
+    const definitions = minted.filter((op) => op.op === 'define_subgraph')
+    expect(definitions.map((op) => op.subgraph_id)).toEqual([
+      inner.id,
+      outer.id
+    ])
+    for (const op of definitions)
+      for (const node of op.subgraph_definition.nodes)
+        expect(node).not.toHaveProperty('__incarnation')
+    expect(applyMinted(doc, minted)).toEqual(['applied', 'applied', 'applied'])
+  })
+
   it('does not redefine a subgraph the document already holds', async () => {
     const { inner, outer } = handAddedPromotedHost()
     docDefinitionIds.add(inner.id)
@@ -2626,38 +3473,63 @@ describe('attachDocOpMinter', () => {
     ])
   })
 
-  it('keeps a large widget edit inside the cost budget by leaving the previous value off the wire', async () => {
-    const held = 'c'.repeat(140_000)
-    const node = new TestPrompt()
-    withGraphIntentSource('load', () => {
-      graph.add(node)
-      node.widgets![0].value = held
-    })
-    await afterFlush()
-    const doc = mintDocFrom(graph)
-    const counterfactualDoc = mintDocFrom(graph)
+  it.for([
+    {
+      edit: 'edit',
+      act: async (node: LGraphNode, value: string) => {
+        node.widgets![0].value = value
+      }
+    },
+    {
+      edit: 'undo/redo restore',
+      act: async (node: LGraphNode, value: string) => {
+        const previous = await workflowJson(graph)
+        withGraphIntentSource('load', () => {
+          node.widgets![0].value = value
+        })
+        emitGraphRestored({
+          workflow: boundWorkflow,
+          graph,
+          previous,
+          next: await workflowJson(graph)
+        })
+      }
+    }
+  ])(
+    'keeps a large widget $edit inside the cost budget by leaving the previous value off the wire',
+    async ({ act }) => {
+      const held = 'c'.repeat(140_000)
+      const node = new TestPrompt()
+      withGraphIntentSource('load', () => {
+        graph.add(node)
+        node.widgets![0].value = held
+      })
+      await afterFlush()
+      const doc = mintDocFrom(graph)
+      const counterfactualDoc = mintDocFrom(graph)
 
-    node.widgets![0].value = `${held}x`
-    await afterFlush()
+      await act(node, `${held}x`)
+      await afterFlush()
 
-    expect(minted).toHaveLength(1)
-    const mintedKeys = Object.keys(minted[0])
-    expect(mintedKeys).toHaveLength(4)
-    expect(mintedKeys).toEqual(
-      expect.arrayContaining(['node_id', 'op', 'value', 'widget'])
-    )
-    expect(minted[0]).not.toHaveProperty('old')
-    expect(applyMinted(doc, minted)).toEqual(['applied'])
-    expect(readDocWidgetValue(doc, String(node.id), 'text')).toBe(`${held}x`)
-    expect(
-      applyMinted(counterfactualDoc, [
-        { ...minted[0], old: held } as GraphOperation
-      ])
-    ).toEqual(['rejected'])
+      expect(minted).toHaveLength(1)
+      const mintedKeys = Object.keys(minted[0])
+      expect(mintedKeys).toHaveLength(4)
+      expect(mintedKeys).toEqual(
+        expect.arrayContaining(['node_id', 'op', 'value', 'widget'])
+      )
+      expect(minted[0]).not.toHaveProperty('old')
+      expect(applyMinted(doc, minted)).toEqual(['applied'])
+      expect(readDocWidgetValue(doc, String(node.id), 'text')).toBe(`${held}x`)
+      expect(
+        applyMinted(counterfactualDoc, [
+          { ...minted[0], old: held } as GraphOperation
+        ])
+      ).toEqual(['rejected'])
 
-    doc.destroy()
-    counterfactualDoc.destroy()
-  })
+      doc.destroy()
+      counterfactualDoc.destroy()
+    }
+  )
 
   it('uses the store serialize flag when a projected widget omits it', async () => {
     const { source } = seedGraph(graph)
@@ -2983,6 +3855,113 @@ describe('attachDocOpMinter', () => {
       'agent_crdt_op_for_unbound_graph',
       'agent_crdt_op_for_unbound_graph'
     ])
+  })
+
+  describe('closing a workflow tab disposes its graph', () => {
+    it.for([
+      {
+        name: 'release on close',
+        dispose: (workflow: ReturnType<typeof temporaryWorkflowFor>) =>
+          workflow.releaseGraph()
+      },
+      {
+        name: 'replacement by a new graph',
+        dispose: (workflow: ReturnType<typeof temporaryWorkflowFor>) =>
+          workflow.adoptGraph(new LGraph())
+      }
+    ])('mints no clear of the bound document on $name', async ({ dispose }) => {
+      seedGraph(graph)
+      const workflow = temporaryWorkflowFor(graph)
+      await afterFlush()
+
+      dispose(workflow)
+      await afterFlush()
+
+      expect(graph.nodes).toEqual([])
+      expect(minted).toEqual([])
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('mints no clear once the closed bound tab no longer resolves a root graph id', async () => {
+      seedGraph(graph)
+      const workflow = temporaryWorkflowFor(graph)
+      await afterFlush()
+      unbound = true
+
+      workflow.releaseGraph()
+      await afterFlush()
+
+      expect(minted).toEqual([])
+    })
+
+    it('reports nothing when a background tab releases a graph that is not bound', async () => {
+      const background = new LGraph()
+      seedGraph(background)
+      const workflow = temporaryWorkflowFor(background)
+      await afterFlush()
+
+      workflow.releaseGraph()
+      await afterFlush()
+
+      expect(background.nodes).toEqual([])
+      expect(minted).toEqual([])
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('mints an edit a removal callback makes to the bound graph while a background tab is disposed', async () => {
+      const { source: bound } = seedGraph(graph)
+      const background = new LGraph()
+      const { source: disposed } = seedGraph(background)
+      disposed.onRemoved = () => {
+        bound.title = 'Renamed by an extension'
+      }
+      const workflow = temporaryWorkflowFor(background)
+      await afterFlush()
+
+      workflow.releaseGraph()
+      await afterFlush()
+
+      expect(bound.title).toBe('Renamed by an extension')
+      expect(minted).toEqual([
+        {
+          op: 'set_node_field',
+          node_id: bound.id,
+          field: 'title',
+          value: 'Renamed by an extension'
+        }
+      ])
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('mints that edit when a subgraph of the disposed tab shares the bound graph’s id', async () => {
+      const { source: bound } = seedGraph(graph)
+      const background = new LGraph()
+      const { source: disposed } = seedGraph(background)
+      const colliding = createTestSubgraph({
+        rootGraph: background,
+        id: graph.id
+      })
+      background.subgraphs.set(colliding.id, colliding)
+      expect(colliding.id).toBe(graph.id)
+      disposed.onRemoved = () => {
+        bound.title = 'Renamed across a shared id'
+      }
+      const workflow = temporaryWorkflowFor(background)
+      await afterFlush()
+
+      workflow.releaseGraph()
+      await afterFlush()
+
+      expect(minted).toEqual([
+        {
+          op: 'set_node_field',
+          node_id: bound.id,
+          field: 'title',
+          value: 'Renamed across a shared id'
+        }
+      ])
+      expect(reportError).not.toHaveBeenCalled()
+    })
   })
 
   describe('DynamicGroup rows', () => {
@@ -3632,5 +4611,123 @@ describe('wireNodeSnapshot widget form (schema A24)', () => {
     new LGraph().add(node)
 
     expect(wireNodeSnapshot(node)).not.toHaveProperty('widgets_values_form')
+  })
+
+  describe('FRONT-3710: widgets the pinned catalog does not list', () => {
+    function addThenEdit(
+      node: LGraphNode,
+      edits: { widget: string; value: unknown }[],
+      catalog: WidgetCatalog
+    ) {
+      const snapshot = wireNodeSnapshot(node)
+      assert.exists(snapshot)
+      const doc = mint({ nodes: [], links: [] }, catalog)
+      const outcomes = applyMinted(
+        doc,
+        [
+          {
+            op: 'add_node',
+            node_id: node.id,
+            class_type: node.type,
+            pos: [0, 0],
+            node: snapshot
+          },
+          ...edits.map(({ widget, value }): GraphOperation => ({
+            op: 'set_widget',
+            node_id: node.id,
+            widget,
+            value
+          }))
+        ],
+        catalog
+      )
+      const projected = project(doc, catalog).nodes
+      doc.destroy()
+      return { outcomes, projected }
+    }
+
+    it.for<{ catalogCase: string; catalog: WidgetCatalog }>([
+      {
+        catalogCase: 'lists no widgets for the class',
+        catalog: { types: { PackSeed: { widget_order: [] } } }
+      },
+      {
+        catalogCase: 'does not list the class',
+        catalog: { types: {} }
+      }
+    ])(
+      'applies a human edit of a companion linked from an extension-only widget when the catalog $catalogCase',
+      ({ catalog }) => {
+        useNodeDefStore().addNodeDef(
+          nodeDef('PackSeed', { image: ['IMAGE', {}] })
+        )
+        const node = nodeWith('PackSeed', (n) => {
+          n.addInput('image', 'IMAGE')
+          const seed = n.addWidget('number', 'seed', 1, () => {})
+          const control = n.addWidget(
+            'combo',
+            'control_after_generate',
+            'fixed',
+            () => {},
+            { values: ['fixed', 'randomize'] }
+          )
+          seed.linkedWidgets = [control]
+        })
+
+        const { outcomes, projected } = addThenEdit(
+          node,
+          [{ widget: 'control_after_generate', value: 'randomize' }],
+          catalog
+        )
+
+        expect(outcomes).toEqual(['applied', 'applied'])
+        expect(projected).toEqual([
+          expect.objectContaining({
+            widgets_values: { seed: 1, control_after_generate: 'randomize' }
+          })
+        ])
+      }
+    )
+
+    it.fails('applies a human edit of a dotted dynamic child the pinned catalog does not list', () => {
+      useNodeDefStore().addNodeDef(
+        nodeDef('Dynamic', { mode: ['COMFY_DYNAMICCOMBO_V3', {}] })
+      )
+      const node = nodeWith('Dynamic', (n) => {
+        n.addWidget('combo', 'mode', 'a', () => {}, { values: ['a', 'b'] })
+        n.addWidget('number', 'mode.steps', 4, () => {})
+        n.addWidget('number', 'mode.x', 1, () => {})
+      })
+      const catalog: WidgetCatalog = {
+        types: {
+          Dynamic: {
+            widget_order: ['mode', 'mode.steps'],
+            dynamic_combos: {
+              mode: {
+                default: 'a',
+                options: {
+                  a: {
+                    widgets: ['mode.steps'],
+                    defaults: { 'mode.steps': 4 }
+                  },
+                  b: {
+                    widgets: ['mode.other'],
+                    defaults: { 'mode.other': 0 }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+
+      const { outcomes } = addThenEdit(
+        node,
+        [{ widget: 'mode.x', value: 7 }],
+        catalog
+      )
+
+      expect(outcomes).toEqual(['applied', 'applied'])
+    })
   })
 })

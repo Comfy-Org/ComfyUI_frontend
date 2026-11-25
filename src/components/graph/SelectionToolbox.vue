@@ -1,9 +1,5 @@
 <template>
-  <div
-    ref="toolboxRef"
-    style="transform: translate(var(--tb-x), var(--tb-y))"
-    class="pointer-events-none fixed top-0 left-0 z-40"
-  >
+  <div ref="toolboxRef" class="pointer-events-none fixed top-0 left-0 z-40">
     <Transition name="slide-up">
       <div
         v-if="visible"
@@ -11,9 +7,10 @@
         class="selection-toolbox pointer-events-auto floating-panel"
         @wheel="canvasInteractions.forwardEventToCanvas"
       >
-        <TooltipProvider :delay-duration="1000">
+        <TooltipProvider>
           <div class="flex h-8 gap-1">
             <template v-if="hasLinkSelection">
+              <LinkDestinationButton />
               <ToolboxButton
                 v-if="linksHidden"
                 :label="$t('commands.Comfy_Canvas_ShowSelectedLinks.label')"
@@ -150,6 +147,7 @@ import { computed, ref } from 'vue'
 import ArrangeButton from '@/components/graph/selectionToolbox/ArrangeButton.vue'
 import ColorPickerButton from '@/components/graph/selectionToolbox/ColorPickerButton.vue'
 import ExecuteButton from '@/components/graph/selectionToolbox/ExecuteButton.vue'
+import LinkDestinationButton from '@/components/graph/selectionToolbox/LinkDestinationButton.vue'
 import ToolboxButton from '@/components/graph/selectionToolbox/ToolboxButton.vue'
 import TooltipProvider from '@comfyorg/design-system/tooltip/TooltipProvider'
 import { useSelectionToolboxPosition } from '@/composables/canvas/useSelectionToolboxPosition'

@@ -16,7 +16,6 @@ test.describe(
   () => {
     test.beforeEach(async ({ agentPanel }) => {
       await agentPanel.open()
-      await agentPanel.selectWorkflow()
     })
 
     test('keeps the card hidden until the first reply, then explains credits on the refusal', async ({
@@ -48,7 +47,10 @@ test.describe(
             name: enMessages.agent.paywall.addCredits
           })
         ).toBeVisible()
-        await expect(agentPanel.root.getByRole('alert')).toHaveCount(1)
+        await expect(agentPanel.creditsExhaustedPaywall).toHaveCount(1)
+        await expect(
+          agentPanel.root.getByTestId('agent-credits-exhausted-paywall')
+        ).toHaveCount(0)
       })
     })
 

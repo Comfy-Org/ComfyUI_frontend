@@ -1,6 +1,6 @@
 import type { AutoTopUpSetup } from '@comfyorg/ingest-types'
 import type { AutoReloadSettings } from '@comfyorg/billing-core'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { computed } from 'vue'
 
 import { useTelemetry } from '@comfyorg/telemetry'
@@ -10,12 +10,15 @@ import {
   canManageAutoTopUpFact
 } from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { openPlatformBillingHandoff } from '@/platform/billing/localBillingHandoff'
+import { setLocalBillingWebEnabled } from '@/platform/billing/localBillingWebEnabled'
 
 import { useAutoTopUpSetupOffer } from './useAutoTopUpSetupOffer'
 
 vi.mock(import('@/platform/billing/api/billingApi'))
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 vi.mock(import('@comfyorg/telemetry'))
+vi.mock(import('@/platform/billing/localBillingHandoff'))
 vi.mock(import('@/platform/workspace/utils/platformLink'), () => ({
   platformLink: (path: string, correlationId?: string) =>
     `https://platform.test${path}&correlation_id=${correlationId}`
@@ -79,6 +82,24 @@ describe('useAutoTopUpSetupOffer', () => {
     }
   )
 
+  it('still offers setup where billing opens through a local handoff, and Set up opens Platform billing through one', async () => {
+    onTestFinished(() => setLocalBillingWebEnabled(false))
+    setLocalBillingWebEnabled(true)
+    const { setupUrl, open } = await serve()
+
+    await expect(setupUrl()).resolves.toEqual(expect.any(String))
+    open()
+
+    expect(openPlatformBillingHandoff).toHaveBeenCalledOnce()
+    expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        operation: 'platform_handoff',
+        target: 'auto_top_up',
+        action: 'turn_on'
+      })
+    )
+  })
+
   it('offers nothing once auto top-up is already on', async () => {
     const { setupUrl } = await serve({ status: 'on' })
 
@@ -125,10 +146,11 @@ describe('useAutoTopUpSetupOffer', () => {
   })
 
   it('reports the Set up click as a Turn on handoff', async () => {
-    const { track } = await serve()
+    const { open } = await serve()
 
-    track()
+    open()
 
+    expect(openPlatformBillingHandoff).not.toHaveBeenCalled()
     expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith(
       expect.objectContaining({
         operation: 'platform_handoff',

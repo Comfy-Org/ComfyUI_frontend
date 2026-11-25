@@ -18,7 +18,7 @@ import { addToComboValues } from '@/utils/litegraphUtil'
 import {
   ACCEPTED_IMAGE_TYPES,
   ACCEPTED_VIDEO_TYPES,
-  isExtensionlessVideo,
+  isUntypedOrVideoWithoutExtension,
   isUploadableVideo
 } from '@/utils/mediaUploadUtil'
 
@@ -64,7 +64,7 @@ export const useImageUploadWidget = () => {
 
     const fileFilter = isVideo ? isUploadableVideo : isImageFile
     function alertExtensionlessVideo(files: File[]) {
-      if (!files.some(isExtensionlessVideo)) return false
+      if (!files.some(isUntypedOrVideoWithoutExtension)) return false
       useToast().warning(t('g.videoFilenameExtensionRequired'))
       return true
     }
@@ -129,6 +129,7 @@ export const useImageUploadWidget = () => {
       () => openFileSelection(),
       {
         serialize: false,
+        socketless: true,
         surfaces: { canvas: 'shown', vueNode: 'never', panel: 'never' }
       }
     )

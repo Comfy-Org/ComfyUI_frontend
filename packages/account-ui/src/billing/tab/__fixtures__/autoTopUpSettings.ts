@@ -6,6 +6,7 @@ type AutoReloadSettings = Extract<
 >['settings']
 
 export const configuredSettings: AutoReloadSettings = {
+  auto_top_up_conflict: false,
   card_expiry: null,
   configured: true,
   cycle_resets_at: '2026-11-28T00:00:00Z',

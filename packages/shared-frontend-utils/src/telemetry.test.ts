@@ -9,6 +9,8 @@ import {
 const EXTENSION_ERROR = 'Invalid call to runtime.sendMessage(). Tab not found.'
 const MESSAGING_ERROR =
   '[messaging] In this JS context, only one listener can be setup for queryMediaBinding'
+const CLIPBOARD_EXTENSION_ERROR =
+  "Failed to execute 'readText' on 'Clipboard': Document is not focused."
 
 describe('isThirdPartyErrorNoise', () => {
   it.for([
@@ -20,7 +22,10 @@ describe('isThirdPartyErrorNoise', () => {
     MESSAGING_ERROR,
     `Error: ${MESSAGING_ERROR}`,
     `Unhandled promise rejection: ${MESSAGING_ERROR}`,
-    `Unhandled promise rejection: Error: ${MESSAGING_ERROR}`
+    `Unhandled promise rejection: Error: ${MESSAGING_ERROR}`,
+    CLIPBOARD_EXTENSION_ERROR,
+    `NotAllowedError: ${CLIPBOARD_EXTENSION_ERROR}`,
+    `Unhandled promise rejection: NotAllowedError: ${CLIPBOARD_EXTENSION_ERROR}`
   ])('identifies the extension tab error in %s', (message) => {
     expect(isThirdPartyErrorNoise(message)).toBe(true)
   })
@@ -30,7 +35,9 @@ describe('isThirdPartyErrorNoise', () => {
     `Application failed: ${EXTENSION_ERROR}`,
     `Application failed: ${MESSAGING_ERROR}`,
     'Only one listener can be setup for the websocket channel',
-    '[messaging] Receiving end does not exist'
+    '[messaging] Receiving end does not exist',
+    `Application failed: ${CLIPBOARD_EXTENSION_ERROR}`,
+    "Failed to execute 'writeText' on 'Clipboard': Document is not focused."
   ])('does not suppress %s', (message) => {
     expect(isThirdPartyErrorNoise(message)).toBe(false)
   })
