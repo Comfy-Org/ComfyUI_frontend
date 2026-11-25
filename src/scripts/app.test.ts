@@ -3492,6 +3492,8 @@ describe('ComfyApp', () => {
           }
         )
         await app.loadGraphData(structuredClone(tracker.activeState), false)
+        expect(app.rootGraph.nodes[0]?.color).toBe('#123456')
+        expect(tracker.activeState.nodes[0]?.color).toBe('#123456')
         const restores = vi.spyOn(app, 'loadGraphData')
 
         await tracker.undo()
