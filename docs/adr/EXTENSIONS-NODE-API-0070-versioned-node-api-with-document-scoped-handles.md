@@ -110,7 +110,8 @@ look in a particular graph, use `comfy.graph.root()` or
    publishes the API again each time it starts up (a return to the graph
    view mounts it again), and publishing resets readiness, so a listener
    registered while that startup loads extensions waits for its setup, not
-   the earlier one's. The graph is empty at `onReady`, and the first load
+   the earlier one's; so does one whose microtask comes after the next
+   startup began. The graph is empty at `onReady`, and the first load
    retires any handle taken then.
 
 ### Keep a handle only as long as it names its entity

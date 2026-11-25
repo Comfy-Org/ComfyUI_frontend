@@ -10,11 +10,14 @@ interface AppLifecycle {
 export function createAppLifecycle(): AppLifecycle {
   const waiting = createListeners('onReady')
   let ready = false
+  const deliverIfReady = () => {
+    if (ready) waiting.drain()
+  }
 
   return {
     onReady(listener) {
       const stop = waiting.subscribe(listener)
-      if (ready) queueMicrotask(waiting.drain)
+      if (ready) queueMicrotask(deliverIfReady)
       return stop
     },
 

@@ -72,6 +72,26 @@ describe('app readiness', () => {
     expect(control).toHaveBeenCalledOnce()
   })
 
+  it('holds a listener added once the app starts up again until that startup is ready, though an earlier one scheduled a delivery', async () => {
+    const lifecycle = createAppLifecycle()
+    lifecycle.markReady()
+    const scheduled = vi.fn()
+    const next = vi.fn()
+
+    lifecycle.onReady(scheduled)
+    lifecycle.markStarting()
+    lifecycle.onReady(next)
+    await Promise.resolve()
+
+    expect(scheduled).not.toHaveBeenCalled()
+    expect(next).not.toHaveBeenCalled()
+
+    lifecycle.markReady()
+
+    expect(scheduled).toHaveBeenCalledOnce()
+    expect(next).toHaveBeenCalledOnce()
+  })
+
   it('runs a listener that another listener adds while the app becomes ready', async () => {
     const lifecycle = createAppLifecycle()
     const nested = vi.fn()
