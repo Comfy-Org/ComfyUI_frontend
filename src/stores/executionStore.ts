@@ -658,10 +658,10 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function showActiveJobProgress() {
-    const jobId = activeJobId.value
+    const activeId = activeJobId.value
     const shown =
-      jobId && rememberStampAndCheckActiveWorkflow(jobId)
-        ? (nodeProgressStatesByJob.value[jobId] ?? {})
+      activeId && rememberStampAndCheckActiveWorkflow(activeId)
+        ? (nodeProgressStatesByJob.value[activeId] ?? {})
         : {}
     nodeProgressStates.value = shown
   }
@@ -1205,8 +1205,8 @@ export const useExecutionStore = defineStore('execution', () => {
    * during the disconnect window.
    */
   function clearActiveJobIfStale(activeJobIds: Set<JobId>) {
-    const id = activeJobId.value
-    if (id && !activeJobIds.has(id)) resetExecutionState(id)
+    const activeId = activeJobId.value
+    if (activeId && !activeJobIds.has(activeId)) resetExecutionState(activeId)
   }
 
   function forgetFinishedJobs(jobIds: Iterable<JobId>) {
@@ -1244,9 +1244,11 @@ export const useExecutionStore = defineStore('execution', () => {
     useJobPreviewStore().clearPreview(jobId)
     jobIdToWorkflow.delete(jobId)
     jobIdToStampedWorkflowId.delete(jobId)
-    if (jobId in queuedJobs.value)
-      void jobReset.trigger(queuedJobs.value[jobId])
-    delete queuedJobs.value[jobId]
+    if (jobId in queuedJobs.value) {
+      const job = queuedJobs.value[jobId]
+      delete queuedJobs.value[jobId]
+      void jobReset.trigger(job)
+    }
     cancelPendingProgressUpdates(jobId)
   }
 

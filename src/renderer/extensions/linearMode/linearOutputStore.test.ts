@@ -30,6 +30,10 @@ function setJobWorkflowPath(jobId: string, path: string) {
   useExecutionStore().jobIdToSessionWorkflowPath = next
 }
 
+function endJob(jobId: string) {
+  useExecutionStore().forgetFinishedJobs([jobId])
+}
+
 function setLiveJobs(...jobIds: string[]) {
   useExecutionStore().queuedJobs = Object.fromEntries(
     jobIds.map((jobId) => [jobId, { nodes: {} }])
@@ -354,6 +358,7 @@ describe('linearOutputStore', () => {
     store.onNodeExecuted('job-1', makeExecutedDetail('job-1'))
 
     setJobWorkflowPath('job-2', 'workflows/test-workflow.json')
+    endJob('job-1')
     setLiveJobs('job-2')
     useExecutionStore().activeJobId = 'job-2'
     await nextTick()
@@ -489,7 +494,11 @@ describe('linearOutputStore', () => {
     // Node 1 sends latent then executes
     store.onLatentPreview('job-1', 'blob:node1-latent', '1')
     vi.advanceTimersByTime(16)
-    store.onNodeExecuted('job-1', makeExecutedDetail('job-1', undefined, '1'))
+    const detail = makeExecutedDetail('job-1', undefined, '1')
+    useExecutionStore().queuedJobs = {
+      'job-1': { nodes: { '1': true }, outputs: { '1': detail.output } }
+    }
+    store.onNodeExecuted('job-1', detail)
 
     // Stale latent for node 1 arrives after it already executed
     store.onLatentPreview('job-1', 'blob:node1-stale', '1')
@@ -1124,6 +1133,7 @@ describe('linearOutputStore', () => {
       store.onNodeExecuted('job-a', makeExecutedDetail('job-a', undefined, '1'))
 
       setJobWorkflowPath('job-b', 'workflows/app-a.json')
+      endJob('job-a')
       setLiveJobs('job-b')
       useExecutionStore().activeJobId = 'job-b'
       await nextTick()
@@ -1263,7 +1273,7 @@ describe('linearOutputStore', () => {
       await nextTick()
 
       // Dog finishes, cat starts (activeJobId transitions on dog tab)
-      setLiveJobs('job-cat')
+      endJob('job-dog')
       useExecutionStore().activeJobId = 'job-cat'
       await nextTick()
 

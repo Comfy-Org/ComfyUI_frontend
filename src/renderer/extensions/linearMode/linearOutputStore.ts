@@ -28,13 +28,6 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
   const isFollowing = ref(true)
   const trackedJobId = ref<JobId | null>(null)
   const pendingResolve = ref(new Set<JobId>())
-  const executedNodeIdsByJob = new Map<JobId, Set<string>>()
-
-  function executedNodeIds(jobId: JobId): Set<string> {
-    let ids = executedNodeIdsByJob.get(jobId)
-    if (!ids) executedNodeIdsByJob.set(jobId, (ids = new Set()))
-    return ids
-  }
 
   const activeWorkflowInProgressItems = computed(() => {
     const path = workflowStore.activeWorkflow?.path
@@ -74,7 +67,6 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
       autoSelect(`slot:${pending.id}`, jobId)
       return
     }
-    executedNodeIdsByJob.delete(jobId)
 
     const item: InProgressItem = {
       id: makeItemId(jobId),
@@ -88,7 +80,8 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
 
   let raf: number | null = null
   function onLatentPreview(jobId: JobId, url: string, nodeId?: string) {
-    if (nodeId && executedNodeIds(jobId).has(nodeId)) return
+    const outputs = executionStore.queuedJobs[jobId]?.outputs
+    if (nodeId && outputs && Object.hasOwn(outputs, nodeId)) return
 
     // Issue in Firefox where it doesnt seem to always re-render, wrapping in RAF fixes it
     if (raf) cancelAnimationFrame(raf)
@@ -125,7 +118,6 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
 
   function onNodeExecuted(jobId: JobId, detail: ExecutedWsMessage) {
     const nodeId = String(detail.display_node || detail.node)
-    executedNodeIds(jobId).add(nodeId)
     if (raf) {
       cancelAnimationFrame(raf)
       raf = null
@@ -191,7 +183,6 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
       pendingResolve.value = new Set()
     }
 
-    executedNodeIdsByJob.delete(jobId)
     if (trackedJobId.value === jobId) {
       if (raf) {
         cancelAnimationFrame(raf)
@@ -312,12 +303,7 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
         onJobComplete(jobId)
   }
 
-  watch(
-    () => Object.keys(executionStore.queuedJobs),
-    () => {
-      if (isAppMode.value) completeEndedJobs()
-    }
-  )
+  executionStore.onJobReset(completeEndedJobs)
 
   watch(
     () => jobPreviewStore.nodePreviewsByPromptId,
