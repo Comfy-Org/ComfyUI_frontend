@@ -1,4 +1,4 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
@@ -12,27 +12,38 @@ import {
 import {
   LGraphEventMode,
   NodeSlotType
-} from '@/lib/litegraph/src/types/globalEnums'
+} from '@comfyorg/graph-model/globalEnums'
 import {
   createMissingMediaCandidate,
   createPromotedMediaRuntime,
   createPromotedMissingMediaCandidate,
   deferMediaVerification
-} from '@/platform/missingMedia/__fixtures__/promotedMedia'
-import * as missingMediaScan from '@/platform/missingMedia/missingMediaScan'
-import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
-import * as missingModelScan from '@/platform/missingModel/missingModelScan'
-import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
-import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+} from '@/platform/workflowErrors/missingMedia/__fixtures__/promotedMedia'
+import * as missingMediaScan from '@/platform/workflowErrors/missingMedia/missingMediaScan'
+import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
+import * as missingModelScan from '@/platform/workflowErrors/missingModel/missingModelScan'
+import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
+import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { cloudReleaseModelOptions } from '@/platform/workflowErrors/missingModel/releaseModelOptions'
 import { app } from '@/scripts/app'
-import { ChangeTracker } from '@/scripts/changeTracker'
+import { beginGraphLoad, endGraphLoad } from '@/core/graph/graphLoadState'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { createNodeExecutionId } from '@/types/nodeIdentification'
-import { toNodeId } from '@/types/nodeId'
+import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { seedRequiredInputMissingNodeError } from '@/utils/__tests__/executionErrorTestUtils'
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
-import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
-import type { MissingModelCandidate } from '@/platform/missingModel/types'
+import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/types'
+import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
+
+vi.mock(
+  import('@/platform/workflowErrors/missingModel/releaseModelOptions'),
+  () => ({
+    cloudReleaseModelOptions: vi.fn(),
+    releaseModelOptions: vi.fn()
+  })
+)
 
 function stubAppRootGraph(graph: LGraph | undefined) {
   vi.spyOn(app, 'rootGraphOrUndefined', 'get').mockReturnValue(graph)
@@ -547,13 +558,14 @@ describe('installErrorClearingHooks lifecycle', () => {
   it('keeps an added-node scan pending until async verification settles', async () => {
     const graph = new LGraph()
     stubAppRootGraph(graph)
-    const candidate = fromAny<MissingModelCandidate, unknown>({
+    const candidate: MissingModelCandidate = {
       nodeId: '1',
       nodeType: 'CheckpointLoaderSimple',
       widgetName: 'ckpt_name',
       name: 'pending.safetensors',
+      isAssetSupported: true,
       isMissing: undefined
-    })
+    }
     vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockReturnValue([
       candidate
     ])
@@ -602,13 +614,14 @@ describe('installErrorClearingHooks lifecycle', () => {
   it('waits for started verification when a later scan stage fails', async () => {
     const graph = new LGraph()
     stubAppRootGraph(graph)
-    const candidate = fromAny<MissingModelCandidate, unknown>({
+    const candidate: MissingModelCandidate = {
       nodeId: '1',
       nodeType: 'CheckpointLoaderSimple',
       widgetName: 'ckpt_name',
       name: 'pending.safetensors',
+      isAssetSupported: true,
       isMissing: undefined
-    })
+    }
     vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockReturnValue([
       candidate
     ])
@@ -627,7 +640,6 @@ describe('installErrorClearingHooks lifecycle', () => {
         resolveVerification = resolve
       })
     })
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
     installErrorClearingHooks(graph)
 
     const node = new LGraphNode('CheckpointLoaderSimple')
@@ -643,7 +655,7 @@ describe('installErrorClearingHooks lifecycle', () => {
     )
     await Promise.resolve()
     expect(store.hasPendingAddedNodeErrorScan(graph, executionId)).toBe(true)
-    expect(warn).not.toHaveBeenCalledWith(
+    expect(console.warn).not.toHaveBeenCalledWith(
       '[useErrorClearingHooks] added-node scan failed:',
       scanError
     )
@@ -652,7 +664,7 @@ describe('installErrorClearingHooks lifecycle', () => {
     await vi.waitFor(() =>
       expect(store.hasPendingAddedNodeErrorScan(graph, executionId)).toBe(false)
     )
-    expect(warn).toHaveBeenCalledWith(
+    expect(console.warn).toHaveBeenCalledWith(
       '[useErrorClearingHooks] added-node scan failed:',
       scanError
     )
@@ -677,13 +689,14 @@ describe('installErrorClearingHooks lifecycle', () => {
   it('continues async verification after hooks are disposed', async () => {
     const graph = new LGraph()
     stubAppRootGraph(graph)
-    const candidate = fromAny<MissingModelCandidate, unknown>({
+    const candidate: MissingModelCandidate = {
       nodeId: '1',
       nodeType: 'CheckpointLoaderSimple',
       widgetName: 'ckpt_name',
       name: 'pending.safetensors',
+      isAssetSupported: true,
       isMissing: undefined
-    })
+    }
     vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockReturnValue([
       candidate
     ])
@@ -755,13 +768,14 @@ describe('installErrorClearingHooks lifecycle', () => {
   it('does not surface verification from replaced nodes in the same root graph', async () => {
     const graph = new LGraph()
     stubAppRootGraph(graph)
-    const candidate = fromAny<MissingModelCandidate, unknown>({
+    const candidate: MissingModelCandidate = {
       nodeId: '1',
       nodeType: 'CheckpointLoaderSimple',
       widgetName: 'ckpt_name',
       name: 'same.safetensors',
+      isAssetSupported: true,
       isMissing: undefined
-    })
+    }
     vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockReturnValue([
       candidate
     ])
@@ -818,13 +832,14 @@ describe('installErrorClearingHooks lifecycle', () => {
       () => undefined,
       { values: [] }
     )
-    const candidate = fromAny<MissingModelCandidate, unknown>({
+    const candidate: MissingModelCandidate = {
       nodeId: '1',
       nodeType: 'CheckpointLoaderSimple',
       widgetName: 'ckpt_name',
       name: 'old.safetensors',
+      isAssetSupported: true,
       isMissing: undefined
-    })
+    }
     vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockReturnValue([
       candidate
     ])
@@ -854,13 +869,14 @@ describe('installErrorClearingHooks lifecycle', () => {
     stubAppRootGraph(graph)
     const node = new LGraphNode('CheckpointLoaderSimple')
     node.id = toNodeId(1)
-    const candidate = fromAny<MissingModelCandidate, unknown>({
+    const candidate: MissingModelCandidate = {
       nodeId: '1',
       nodeType: 'CheckpointLoaderSimple',
       widgetName: 'ckpt_name',
       name: 'pending.safetensors',
+      isAssetSupported: true,
       isMissing: undefined
-    })
+    }
     vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockReturnValue([
       candidate
     ])
@@ -914,7 +930,7 @@ describe('installErrorClearingHooks lifecycle', () => {
     graph.remove(node)
 
     expect(store.hasPendingAddedNodeErrorScan(graph, executionId)).toBe(false)
-    expect(verifySpy.mock.calls[0][1].signal?.aborted).toBe(true)
+    expect(verifySpy.mock.calls[0][1]?.signal?.aborted).toBe(true)
 
     resolveVerification()
     await vi.waitFor(() => expect(candidate.isMissing).toBe(true))
@@ -957,17 +973,14 @@ describe('onNodeRemoved clears missing asset errors by execution ID', () => {
 
     const modelStore = useMissingModelStore()
     modelStore.setMissingModels([
-      fromAny<
-        Parameters<typeof modelStore.setMissingModels>[0][number],
-        unknown
-      >({
+      {
         nodeId: String(node.id),
         nodeType: 'CheckpointLoaderSimple',
         widgetName: 'ckpt_name',
         isAssetSupported: false,
         name: 'model.safetensors',
         isMissing: true
-      })
+      }
     ])
 
     graph.remove(node)
@@ -1027,15 +1040,50 @@ describe('onNodeRemoved clears missing asset errors by execution ID', () => {
       details: ''
     })
 
-    ChangeTracker.isLoadingGraph = true
+    beginGraphLoad(graph)
     try {
       graph.remove(node)
     } finally {
-      ChangeTracker.isLoadingGraph = false
+      endGraphLoad(graph)
     }
 
     expect(nodesStore.missingNodesError).toBeNull()
     expect(executionErrorStore.lastPromptError?.type).toBe('missing_node_type')
+  })
+
+  it("keeps another workflow's saved missing nodes while a load mutes and bypasses nodes with their IDs", () => {
+    const unresolved = [
+      { type: 'MissingInFirstA', nodeId: '1', isReplaceable: false },
+      { type: 'MissingInFirstB', nodeId: '2', isReplaceable: false }
+    ]
+    const firstWorkflow = fromPartial<LoadedComfyWorkflow>({
+      path: 'workflows/first.json',
+      pendingWarnings: { missingNodeTypes: unresolved }
+    })
+    useWorkflowStore().activeWorkflow = firstWorkflow
+
+    const secondGraph = new LGraph()
+    const muted = new LGraphNode('MutedInSecond')
+    muted.id = toNodeId(1)
+    const bypassed = new LGraphNode('BypassedInSecond')
+    bypassed.id = toNodeId(2)
+    stubAppRootGraph(secondGraph)
+    installErrorClearingHooks(secondGraph)
+
+    beginGraphLoad(secondGraph)
+    try {
+      secondGraph.configure({
+        ...secondGraph.serialize(),
+        nodes: [
+          { ...muted.serialize(), mode: LGraphEventMode.NEVER },
+          { ...bypassed.serialize(), mode: LGraphEventMode.BYPASS }
+        ]
+      })
+    } finally {
+      endGraphLoad(secondGraph)
+    }
+
+    expect(firstWorkflow.pendingWarnings?.missingNodeTypes).toEqual(unresolved)
   })
 
   it('retires the surviving prompt error once the load settles', () => {
@@ -1061,15 +1109,14 @@ describe('onNodeRemoved clears missing asset errors by execution ID', () => {
       details: ''
     })
 
-    ChangeTracker.isLoadingGraph = true
+    beginGraphLoad(graph)
     try {
       graph.remove(node)
     } finally {
-      ChangeTracker.isLoadingGraph = false
+      endGraphLoad(graph)
     }
     expect(executionErrorStore.lastPromptError?.type).toBe('missing_node_type')
 
-    // loadGraphData runs this after clearing isLoadingGraph.
     executionErrorStore.retireResolvedMissingNodePromptError()
 
     expect(executionErrorStore.lastPromptError).toBeNull()
@@ -1143,17 +1190,14 @@ describe('onNodeRemoved clears missing asset errors by execution ID', () => {
 
     const modelStore = useMissingModelStore()
     modelStore.setMissingModels([
-      fromAny<
-        Parameters<typeof modelStore.setMissingModels>[0][number],
-        unknown
-      >({
+      {
         nodeId: String(node.id),
         nodeType: 'CheckpointLoaderSimple',
         widgetName: 'ckpt_name',
         isAssetSupported: false,
         name: 'model.safetensors',
         isMissing: true
-      })
+      }
     ])
 
     graph.clear()
@@ -1162,10 +1206,6 @@ describe('onNodeRemoved clears missing asset errors by execution ID', () => {
   })
 
   it('removes subgraph interior node missing model error using parentId:nodeId', () => {
-    // Regression: node.graph is nulled before onNodeRemoved fires, so
-    // getExecutionIdByNode returned null and removal fell back to the
-    // local node id. Errors stored under "parentId:nodeId" were never
-    // removed for subgraph interior nodes.
     const subgraph = createTestSubgraph()
     const interiorNode = new LGraphNode('CheckpointLoaderSimple')
     subgraph.add(interiorNode)
@@ -1175,25 +1215,19 @@ describe('onNodeRemoved clears missing asset errors by execution ID', () => {
     rootGraph.add(subgraphNode)
 
     stubAppRootGraph(rootGraph)
-    // Hooks are installed on whichever graph is currently active in
-    // the canvas; when the user is inside the subgraph, that is the
-    // graph whose onNodeRemoved fires for interior deletions.
     installErrorClearingHooks(subgraph)
 
     const interiorExecId = `${subgraphNode.id}:${interiorNode.id}`
     const modelStore = useMissingModelStore()
     modelStore.setMissingModels([
-      fromAny<
-        Parameters<typeof modelStore.setMissingModels>[0][number],
-        unknown
-      >({
+      {
         nodeId: interiorExecId,
         nodeType: 'CheckpointLoaderSimple',
         widgetName: 'ckpt_name',
         isAssetSupported: false,
         name: 'model.safetensors',
         isMissing: true
-      })
+      }
     ])
 
     subgraph.remove(interiorNode)
@@ -1217,17 +1251,14 @@ describe('onNodeRemoved clears missing asset errors by execution ID', () => {
 
     const mediaStore = useMissingMediaStore()
     mediaStore.setMissingMedia([
-      fromAny<
-        Parameters<typeof mediaStore.setMissingMedia>[0][number],
-        unknown
-      >({
+      {
         nodeId: interiorExecId,
         nodeType: 'LoadImage',
         widgetName: 'image',
         mediaType: 'image',
         name: 'cat.png',
         isMissing: true
-      })
+      }
     ])
 
     const nodesStore = useMissingNodesErrorStore()
@@ -1482,6 +1513,31 @@ describe('realtime scan verifies pending cloud candidates', () => {
       expect(store.missingMediaCandidates).toHaveLength(1)
       expect(store.missingMediaCandidates![0].name).toBe('cloud_image.png')
     })
+  })
+
+  it('hands the scan the lookup of the models the boot Release has', async () => {
+    const releaseModelOptions = vi.fn(async () => ['release.safetensors'])
+    vi.mocked(cloudReleaseModelOptions).mockReturnValue(releaseModelOptions)
+    const graph = new LGraph()
+    const node = new LGraphNode('CheckpointLoaderSimple')
+    node.mode = LGraphEventMode.BYPASS
+    graph.add(node)
+    stubAppRootGraph(graph)
+    const scanSpy = vi
+      .spyOn(missingModelScan, 'scanNodeModelCandidates')
+      .mockReturnValue([])
+    vi.spyOn(missingMediaScan, 'scanNodeMediaCandidates').mockReturnValue([])
+
+    installErrorClearingHooks(graph)
+    setNodeMode(graph, node, LGraphEventMode.ALWAYS)
+
+    expect(scanSpy).toHaveBeenCalledWith(
+      graph,
+      node,
+      expect.any(Function),
+      expect.any(Function),
+      releaseModelOptions
+    )
   })
 
   it('does not add candidates that remain confirmed-present after verification', async () => {
@@ -1796,31 +1852,26 @@ describe('scan skips interior of bypassed subgraph containers', () => {
       rootGraph,
       outerSubgraphNode,
       expect.any(Function),
-      expect.any(Function)
+      expect.any(Function),
+      undefined
     )
     expect(modelScanSpy).toHaveBeenCalledWith(
       rootGraph,
       leafNode,
       expect.any(Function),
-      expect.any(Function)
+      expect.any(Function),
+      undefined
     )
     expect(modelScanSpy).toHaveBeenCalledWith(
       rootGraph,
       innerSubgraphNode,
       expect.any(Function),
-      expect.any(Function)
+      expect.any(Function),
+      undefined
     )
-    expect(mediaScanSpy).toHaveBeenCalledWith(
-      rootGraph,
-      outerSubgraphNode,
-      false
-    )
-    expect(mediaScanSpy).toHaveBeenCalledWith(rootGraph, leafNode, false)
-    expect(mediaScanSpy).toHaveBeenCalledWith(
-      rootGraph,
-      innerSubgraphNode,
-      false
-    )
+    expect(mediaScanSpy).toHaveBeenCalledWith(rootGraph, outerSubgraphNode)
+    expect(mediaScanSpy).toHaveBeenCalledWith(rootGraph, leafNode)
+    expect(mediaScanSpy).toHaveBeenCalledWith(rootGraph, innerSubgraphNode)
   })
 
   it('removes host-keyed promoted missing models when a source ancestor is bypassed', () => {
@@ -1831,7 +1882,7 @@ describe('scan skips interior of bypassed subgraph containers', () => {
 
     const modelStore = useMissingModelStore()
     modelStore.setMissingModels([
-      fromAny<MissingModelCandidate, unknown>({
+      {
         nodeId: '65',
         sourceExecutionId: createNodeExecutionId([65, 77, 1]),
         nodeType: 'CheckpointLoaderSimple',
@@ -1839,7 +1890,7 @@ describe('scan skips interior of bypassed subgraph containers', () => {
         isAssetSupported: false,
         name: 'fake.safetensors',
         isMissing: true
-      })
+      }
     ])
 
     innerSubgraphNode.mode = LGraphEventMode.BYPASS
@@ -1929,7 +1980,7 @@ describe('scan skips interior of bypassed subgraph containers', () => {
     const { rootGraph, outerSubgraph, innerSubgraphNode, outerSubgraphNode } =
       createNestedSubgraphRuntime()
     stubAppRootGraph(rootGraph)
-    const hostCandidate = fromAny<MissingModelCandidate, unknown>({
+    const hostCandidate: MissingModelCandidate = {
       nodeId: '65',
       sourceExecutionId: createNodeExecutionId([65, 77, 1]),
       nodeType: 'CheckpointLoaderSimple',
@@ -1937,7 +1988,7 @@ describe('scan skips interior of bypassed subgraph containers', () => {
       isAssetSupported: false,
       name: 'fake.safetensors',
       isMissing: true
-    })
+    }
     vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockImplementation(
       (_rootGraph, node) => (node === outerSubgraphNode ? [hostCandidate] : [])
     )

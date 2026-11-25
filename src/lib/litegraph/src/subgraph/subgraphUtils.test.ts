@@ -9,7 +9,7 @@ import {
 import type { UUID } from '@/lib/litegraph/src/litegraph'
 import { useLinkStore } from '@/stores/linkStore'
 
-import { reorderSubgraphInputs } from './subgraphUtils'
+import { reorderSubgraphInputs, reorderSubgraphOutputs } from './subgraphUtils'
 import {
   createTestSubgraph,
   createTestSubgraphNode,
@@ -22,7 +22,47 @@ describe('subgraphUtils', () => {
   })
 
   describe('reorderSubgraphInputs', () => {
-    it('logs and preserves mismatched host and subgraph inputs', () => {
+    it('moves every instance and both sides of each link into the new order', () => {
+      const subgraph = createTestSubgraph({
+        inputs: [
+          { name: 'first', type: 'STRING' },
+          { name: 'second', type: 'INT' },
+          { name: 'third', type: 'FLOAT' }
+        ]
+      })
+      const interior = new LGraphNode('Interior')
+      interior.addInput('in', 'FLOAT')
+      subgraph.add(interior)
+      const innerLink = subgraph.inputs[2].connect(interior.inputs[0], interior)
+      const graph = subgraph.rootGraph
+      const linkedHost = createTestSubgraphNode(subgraph)
+      graph.add(linkedHost)
+      const otherHost = createTestSubgraphNode(subgraph)
+      graph.add(otherHost)
+      const source = new LGraphNode('Source')
+      source.addOutput('out', 'FLOAT')
+      graph.add(source)
+      const outerLink = source.connect(0, linkedHost, 2)
+
+      reorderSubgraphInputs(subgraph, [2, 0, 1])
+
+      const order = ['third', 'first', 'second']
+      expect({
+        subgraph: subgraph.inputs.map(({ name }) => name),
+        linkedHost: linkedHost.inputs.map(({ name }) => name),
+        otherHost: otherHost.inputs.map(({ name }) => name),
+        innerOriginSlot: innerLink?.origin_slot,
+        outerTargetSlot: outerLink?.target_slot
+      }).toEqual({
+        subgraph: order,
+        linkedHost: order,
+        otherHost: order,
+        innerOriginSlot: 0,
+        outerTargetSlot: 0
+      })
+    })
+
+    it('keeps an instance whose inputs differ from the subgraph in its order', () => {
       const subgraph = createTestSubgraph({
         inputs: [
           { name: 'first', type: 'STRING' },
@@ -31,24 +71,17 @@ describe('subgraphUtils', () => {
       })
       const host = createTestSubgraphNode(subgraph)
       host.inputs.pop()
-      const consoleError = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
 
-      reorderSubgraphInputs(host, [1, 0])
+      reorderSubgraphInputs(subgraph, [1, 0])
 
-      expect(subgraph.inputs.map(({ name }) => name)).toEqual([
-        'first',
-        'second'
-      ])
-      expect(consoleError).toHaveBeenCalledWith(
-        'reorderSubgraphInputs: host and subgraph inputs differ',
+      expect(host.inputs.map(({ name }) => name)).toEqual(['first'])
+      expect(console.error).toHaveBeenCalledWith(
+        'followSubgraphInputOrder: host inputs differ',
         { hostInputs: 1, subgraphInputs: 2 }
       )
-      consoleError.mockRestore()
     })
 
-    it('preserves both input orders when endpoint updates are rejected', () => {
+    it('keeps an instance and its links in place when endpoint updates are rejected', () => {
       const graph = new LGraph()
       const subgraph = createTestSubgraph({
         inputs: [
@@ -67,20 +100,92 @@ describe('subgraphUtils', () => {
         error: { code: 'occupied-target', message: 'Target is occupied' }
       })
       const invalidatePromotedViews = vi.spyOn(host, 'invalidatePromotedViews')
-      const consoleError = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
 
-      reorderSubgraphInputs(host, [1, 0])
+      reorderSubgraphInputs(subgraph, [1, 0])
 
       expect(host.inputs.map(({ name }) => name)).toEqual(['first', 'second'])
-      expect(subgraph.inputs.map(({ name }) => name)).toEqual([
-        'first',
-        'second'
-      ])
       expect(link.target_slot).toBe(0)
       expect(invalidatePromotedViews).not.toHaveBeenCalled()
-      consoleError.mockRestore()
+    })
+
+    it('refuses an order that is not a permutation of the inputs', () => {
+      const subgraph = createTestSubgraph({
+        inputs: [
+          { name: 'first', type: 'STRING' },
+          { name: 'second', type: 'STRING' }
+        ]
+      })
+      const host = createTestSubgraphNode(subgraph)
+
+      expect(reorderSubgraphInputs(subgraph, [1, 1])).toBe(false)
+      expect({
+        subgraph: subgraph.inputs.map(({ name }) => name),
+        host: host.inputs.map(({ name }) => name)
+      }).toEqual({ subgraph: ['first', 'second'], host: ['first', 'second'] })
+    })
+  })
+
+  describe('reorderSubgraphOutputs', () => {
+    it('moves every instance and both sides of each link into the new order', () => {
+      const subgraph = createTestSubgraph({
+        outputs: [
+          { name: 'image', type: 'IMAGE' },
+          { name: 'mask', type: 'MASK' },
+          { name: 'count', type: 'INT' }
+        ]
+      })
+      const interior = new LGraphNode('Interior')
+      interior.addOutput('image', 'IMAGE')
+      interior.addOutput('mask', 'MASK')
+      interior.addOutput('count', 'INT')
+      subgraph.add(interior)
+      const innerLinks = subgraph.outputs.map((output, slot) =>
+        output.connect(interior.outputs[slot], interior)
+      )
+      const graph = subgraph.rootGraph
+      const linkedHost = createTestSubgraphNode(subgraph)
+      graph.add(linkedHost)
+      const otherHost = createTestSubgraphNode(subgraph)
+      graph.add(otherHost)
+      const consumer = new LGraphNode('Consumer')
+      consumer.addInput('mask', 'MASK')
+      consumer.addInput('count', 'INT')
+      graph.add(consumer)
+      const maskLink = linkedHost.connect(1, consumer, 0)
+      const countLink = linkedHost.connect(2, consumer, 1)
+
+      reorderSubgraphOutputs(subgraph, [2, 0, 1])
+
+      const order = ['count', 'image', 'mask']
+      expect({
+        subgraph: subgraph.outputs.map(({ name }) => name),
+        linkedHost: linkedHost.outputs.map(({ name }) => name),
+        otherHost: otherHost.outputs.map(({ name }) => name),
+        innerTargetSlots: innerLinks.map((link) => link?.target_slot),
+        outerOriginSlots: [maskLink?.origin_slot, countLink?.origin_slot]
+      }).toEqual({
+        subgraph: order,
+        linkedHost: order,
+        otherHost: order,
+        innerTargetSlots: [1, 2, 0],
+        outerOriginSlots: [2, 0]
+      })
+    })
+
+    it('refuses an order that is not a permutation of the outputs', () => {
+      const subgraph = createTestSubgraph({
+        outputs: [
+          { name: 'image', type: 'IMAGE' },
+          { name: 'mask', type: 'MASK' }
+        ]
+      })
+      const host = createTestSubgraphNode(subgraph)
+
+      expect(reorderSubgraphOutputs(subgraph, [0])).toBe(false)
+      expect({
+        subgraph: subgraph.outputs.map(({ name }) => name),
+        host: host.outputs.map(({ name }) => name)
+      }).toEqual({ subgraph: ['image', 'mask'], host: ['image', 'mask'] })
     })
   })
   describe('getDirectSubgraphIds', () => {

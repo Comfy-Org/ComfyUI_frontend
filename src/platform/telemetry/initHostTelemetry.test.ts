@@ -1,30 +1,23 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
-import { setTelemetryRegistry, useTelemetry } from '@/platform/telemetry'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
+import { setTelemetryRegistry, useTelemetry } from '@comfyorg/telemetry'
 import { initHostTelemetry } from '@/platform/telemetry/initHostTelemetry'
-import { TelemetryEvents } from '@/platform/telemetry/types'
-
-const fetchMock = vi.fn()
+import { TelemetryEvents } from '@comfyorg/telemetry/types'
 
 describe('initHostTelemetry', () => {
-  beforeEach(() => {
-    vi.stubGlobal('fetch', fetchMock)
-  })
-
   afterEach(() => {
-    remoteConfig.value = {}
     setTelemetryRegistry(null)
     delete window.__comfyDesktop2
   })
 
   it('leaves the registry untouched when enable_telemetry is on but the host Telemetry bridge is absent', () => {
-    remoteConfig.value = { enable_telemetry: true }
+    useRemoteConfigStore().acceptConfig({ enable_telemetry: true }, false)
 
     initHostTelemetry()
 
     expect(useTelemetry()).toBeNull()
-    expect(fetchMock).not.toHaveBeenCalled()
+    expect(fetch).not.toHaveBeenCalled()
   })
 
   it('leaves the registry untouched when enable_telemetry is off', () => {
@@ -32,7 +25,7 @@ describe('initHostTelemetry', () => {
       isRemote: () => false,
       Telemetry: { capture: vi.fn() }
     }
-    remoteConfig.value = { enable_telemetry: false }
+    useRemoteConfigStore().acceptConfig({ enable_telemetry: false }, false)
 
     initHostTelemetry()
 
@@ -42,7 +35,7 @@ describe('initHostTelemetry', () => {
   it('registers the host telemetry sink when enable_telemetry and the bridge are present', () => {
     const capture = vi.fn()
     window.__comfyDesktop2 = { isRemote: () => false, Telemetry: { capture } }
-    remoteConfig.value = { enable_telemetry: true }
+    useRemoteConfigStore().acceptConfig({ enable_telemetry: true }, false)
 
     initHostTelemetry()
     useTelemetry()?.trackSignupOpened()
@@ -56,7 +49,7 @@ describe('initHostTelemetry', () => {
   it('dispatches canonical billing events through the host registry', () => {
     const capture = vi.fn()
     window.__comfyDesktop2 = { isRemote: () => false, Telemetry: { capture } }
-    remoteConfig.value = { enable_telemetry: true }
+    useRemoteConfigStore().acceptConfig({ enable_telemetry: true }, false)
 
     initHostTelemetry()
     useTelemetry()?.trackBillingEvent({

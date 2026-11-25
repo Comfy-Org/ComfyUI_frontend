@@ -1,3 +1,5 @@
+import { isSsoRequiredRefusal } from '@comfyorg/account-core/sso'
+import type { ErrorResponse } from '@comfyorg/ingest-types'
 import { zWorkspaceWithRole } from '@comfyorg/ingest-types/zod'
 import { delay } from 'es-toolkit'
 import type { Ref, ShallowRef } from 'vue'
@@ -6,9 +8,11 @@ import { z } from 'zod'
 import { fromZodError } from 'zod-validation-error'
 
 import { t } from '@/i18n'
+import { ensureSessionCookie } from '@/platform/auth/session/sessionCookieAccess'
 import { isCloud } from '@/platform/distribution/types'
 import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
-import { workspaceApiUrl } from '@/platform/workspace/api/workspaceApiUrl'
+import { ingestApiUrl } from '@/platform/remote/ingest/ingestApiUrl'
+import { safeSessionStorage } from '@/base/storage/safeStorage'
 import { WorkspaceAuthError } from '@/platform/workspace/stores/workspaceAuthError'
 import {
   MAX_SCHEDULED_REFRESH_RETRIES,
@@ -16,7 +20,7 @@ import {
   WORKSPACE_STORAGE_KEYS
 } from '@/platform/workspace/workspaceConstants'
 import type { WorkspaceIdentity } from '@/platform/workspace/workspaceTypes'
-import type { AuthHeader } from '@/types/authTypes'
+import type { AuthHeader } from '@comfyorg/api-client/authTypes'
 
 // Picked off the generated schema: a hand-written enum that lags the spec would
 // reject a valid persisted identity and silently clear the session.
@@ -30,6 +34,7 @@ const WorkspaceIdentitySchema = zWorkspaceWithRole.pick({
 const WorkspaceTokenResponseSchema = z.object({
   token: z.string(),
   expires_at: z.string(),
+  user_id: z.string().optional(),
   workspace: zWorkspaceWithRole.pick({ id: true, name: true, type: true }),
   role: zWorkspaceWithRole.shape.role,
   permissions: z.array(z.string())
@@ -50,6 +55,7 @@ interface MintedToken {
 
 const PERMANENT_AUTH_ERROR_CODES = new Set([
   'ACCESS_DENIED',
+  'SSO_REQUIRED',
   'WORKSPACE_NOT_FOUND',
   'INVALID_FIREBASE_TOKEN',
   'NOT_AUTHENTICATED'
@@ -84,7 +90,7 @@ function tokenExchangeFailedError(error: string): WorkspaceAuthError {
 
 function tokenExchangeErrorForStatus(
   status: number,
-  message: string
+  body: ErrorResponse
 ): WorkspaceAuthError {
   if (status === 401) {
     return new WorkspaceAuthError(
@@ -95,7 +101,7 @@ function tokenExchangeErrorForStatus(
   if (status === 403) {
     return new WorkspaceAuthError(
       t('workspaceAuth.errors.accessDenied'),
-      'ACCESS_DENIED'
+      isSsoRequiredRefusal(status, body) ? 'SSO_REQUIRED' : 'ACCESS_DENIED'
     )
   }
   if (status === 404) {
@@ -104,7 +110,7 @@ function tokenExchangeErrorForStatus(
       'WORKSPACE_NOT_FOUND'
     )
   }
-  return tokenExchangeFailedError(message)
+  return tokenExchangeFailedError(body.message)
 }
 
 function parseMintedToken(rawData: unknown, ownerUid: string): MintedToken {
@@ -153,10 +159,14 @@ export interface LegacyWorkspaceTokenRailDeps {
   hasSignedInUser: () => boolean
   activeWorkspaceId: () => string | null
   switchWorkspace: (workspaceId: string) => Promise<void>
-  endWorkspaceSession: (revokedWorkspaceId?: string) => boolean
+  endWorkspaceSession: (
+    revokedWorkspaceId?: string,
+    refusalCode?: string
+  ) => boolean
   persistWorkspaceIdentity: (workspace: WorkspaceIdentity) => void
   clearSessionStorage: () => void
   surfacePermanentAuthError: (err: WorkspaceAuthError) => void
+  reportTransientRecoveryFailure: (err: unknown) => void
 }
 
 export function createLegacyWorkspaceTokenRail({
@@ -172,7 +182,8 @@ export function createLegacyWorkspaceTokenRail({
   endWorkspaceSession,
   persistWorkspaceIdentity,
   clearSessionStorage,
-  surfacePermanentAuthError
+  surfacePermanentAuthError,
+  reportTransientRecoveryFailure
 }: LegacyWorkspaceTokenRailDeps) {
   const workspaceToken = ref<string | null>(null)
   const workspaceTokenExpiresAt = ref<number | null>(null)
@@ -183,6 +194,7 @@ export function createLegacyWorkspaceTokenRail({
   let inFlightSwitchCount = 0
   let inFlightSwitchPromise: Promise<void> | null = null
   let recoveryCooldownUntil = 0
+  let recoveryFailureStreakReported = false
   let scheduledRefreshRetryCount = 0
 
   // Request ID to prevent stale refresh operations from overwriting newer workspace contexts
@@ -275,14 +287,16 @@ export function createLegacyWorkspaceTokenRail({
     ownerUid: string
   ): void {
     persistWorkspaceIdentity(workspace)
-    try {
-      sessionStorage.setItem(WORKSPACE_STORAGE_KEYS.TOKEN, token)
-      sessionStorage.setItem(
+    const persisted =
+      safeSessionStorage.setItem(WORKSPACE_STORAGE_KEYS.TOKEN, token) ===
+        'ok' &&
+      safeSessionStorage.setItem(
         WORKSPACE_STORAGE_KEYS.EXPIRES_AT,
         expiresAt.toString()
-      )
-      sessionStorage.setItem(WORKSPACE_STORAGE_KEYS.OWNER_UID, ownerUid)
-    } catch {
+      ) === 'ok' &&
+      safeSessionStorage.setItem(WORKSPACE_STORAGE_KEYS.OWNER_UID, ownerUid) ===
+        'ok'
+    if (!persisted) {
       console.warn('Failed to persist workspace token to sessionStorage')
     }
   }
@@ -292,26 +306,22 @@ export function createLegacyWorkspaceTokenRail({
     workspaceToken.value = null
     workspaceTokenExpiresAt.value = null
     workspaceTokenOwnerUid.value = null
-    try {
-      sessionStorage.removeItem(WORKSPACE_STORAGE_KEYS.TOKEN)
-      sessionStorage.removeItem(WORKSPACE_STORAGE_KEYS.EXPIRES_AT)
-      sessionStorage.removeItem(WORKSPACE_STORAGE_KEYS.OWNER_UID)
-    } catch {
-      console.warn(
-        'Failed to retire legacy workspace token from sessionStorage'
-      )
-    }
+    safeSessionStorage.removeItem(WORKSPACE_STORAGE_KEYS.TOKEN)
+    safeSessionStorage.removeItem(WORKSPACE_STORAGE_KEYS.EXPIRES_AT)
+    safeSessionStorage.removeItem(WORKSPACE_STORAGE_KEYS.OWNER_UID)
   }
 
   function readStoredSession(): StoredSession | null {
-    const workspaceJson = sessionStorage.getItem(
+    const workspaceJson = safeSessionStorage.getItem(
       WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE
     )
-    const token = sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.TOKEN)
-    const expiresAtStr = sessionStorage.getItem(
+    const token = safeSessionStorage.getItem(WORKSPACE_STORAGE_KEYS.TOKEN)
+    const expiresAtStr = safeSessionStorage.getItem(
       WORKSPACE_STORAGE_KEYS.EXPIRES_AT
     )
-    const ownerUid = sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.OWNER_UID)
+    const ownerUid = safeSessionStorage.getItem(
+      WORKSPACE_STORAGE_KEYS.OWNER_UID
+    )
     if (!workspaceJson || !token || !expiresAtStr || !ownerUid) return null
     if (!isCurrentUser(ownerUid)) return null
 
@@ -367,7 +377,7 @@ export function createLegacyWorkspaceTokenRail({
     const firebaseToken = await getIdToken()
     if (!firebaseToken) throw notAuthenticatedError()
 
-    const response = await fetch(workspaceApiUrl('/auth/token'), {
+    const response = await fetch(ingestApiUrl('/auth/token'), {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${firebaseToken}`,
@@ -377,8 +387,10 @@ export function createLegacyWorkspaceTokenRail({
     })
 
     if (!response.ok) {
-      const { message } = await parseErrorResponse(response)
-      throw tokenExchangeErrorForStatus(response.status, message)
+      throw tokenExchangeErrorForStatus(
+        response.status,
+        await parseErrorResponse(response)
+      )
     }
 
     return parseMintedToken(await response.json(), ownerUid)
@@ -393,9 +405,7 @@ export function createLegacyWorkspaceTokenRail({
     error.value = null
 
     try {
-      const { useSessionCookie } =
-        await import('@/platform/auth/session/useSessionCookie')
-      await useSessionCookie().ensureSessionCookie()
+      await ensureSessionCookie()
       if (isStaleWorkspaceRequest(capturedRequestId, capturedOwnerUid)) return
 
       const { token, expiresAt, workspace, ownerUid } =
@@ -417,6 +427,7 @@ export function createLegacyWorkspaceTokenRail({
       workspaceTokenOwnerUid.value = ownerUid
       scheduledRefreshRetryCount = 0
       recoveryCooldownUntil = 0
+      endRecoveryFailureStreak()
 
       persistToSession(workspace, token, expiresAt, ownerUid)
       scheduleTokenRefresh(expiresAt)
@@ -476,12 +487,24 @@ export function createLegacyWorkspaceTokenRail({
   ): err is WorkspaceAuthError {
     return (
       err instanceof WorkspaceAuthError &&
-      (err.code === 'ACCESS_DENIED' || err.code === 'WORKSPACE_NOT_FOUND')
+      (err.code === 'ACCESS_DENIED' ||
+        err.code === 'SSO_REQUIRED' ||
+        err.code === 'WORKSPACE_NOT_FOUND')
     )
   }
 
   function startRecoveryCooldown(): void {
     recoveryCooldownUntil = Date.now() + RECOVERY_COOLDOWN_MS
+  }
+
+  function endRecoveryFailureStreak(): void {
+    recoveryFailureStreakReported = false
+  }
+
+  function reportTransientRecoveryFailureOncePerStreak(err: unknown): void {
+    if (recoveryFailureStreakReported) return
+    recoveryFailureStreakReported = true
+    reportTransientRecoveryFailure(err)
   }
 
   function handleRecoveryFailure(
@@ -494,11 +517,14 @@ export function createLegacyWorkspaceTokenRail({
       invalidSelectionHandled = endWorkspaceSession(
         failedWorkspaceId && isWorkspaceSelectionInvalid(err)
           ? failedWorkspaceId
-          : undefined
+          : undefined,
+        err.code
       )
       if (hadContext) {
         surfacePermanentAuthError(err)
       }
+    } else {
+      reportTransientRecoveryFailureOncePerStreak(err)
     }
     if (!invalidSelectionHandled) startRecoveryCooldown()
     console.warn('Workspace auth recovery failed:', err)
@@ -589,7 +615,8 @@ export function createLegacyWorkspaceTokenRail({
     if (isStaleWorkspaceRequest(capturedRequestId)) return
     console.error('Workspace access revoked or auth invalid:', err)
     endWorkspaceSession(
-      isWorkspaceSelectionInvalid(err) ? workspaceId : undefined
+      isWorkspaceSelectionInvalid(err) ? workspaceId : undefined,
+      err.code
     )
   }
 
@@ -705,7 +732,7 @@ export function createLegacyWorkspaceTokenRail({
     workspaceTokenOwnerUid.value = null
     scheduledRefreshRetryCount = 0
     recoveryCooldownUntil = 0
-    // refreshRequestId bump above aborts any in-flight switch before it commits.
+    endRecoveryFailureStreak()
     inFlightSwitchPromise = null
   }
 

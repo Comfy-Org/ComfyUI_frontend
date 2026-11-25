@@ -4,7 +4,6 @@ import {
   comfyPageFixture,
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
@@ -12,13 +11,6 @@ const test = mergeTests(comfyPageFixture, webSocketFixture)
 
 const SAVE_IMAGE_NODE = '9'
 const KSAMPLER_NODE = '3'
-
-async function startExecution(comfyPage: ComfyPage, exec: ExecutionHelper) {
-  const jobId = await exec.run()
-  await comfyPage.nextFrame()
-  exec.executionStart(jobId)
-  return jobId
-}
 
 function imageOutput(filename: string) {
   return {
@@ -32,7 +24,6 @@ test.describe('App mode save keeps run history', { tag: '@ui' }, () => {
   })
 
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.appMode.enableLinearMode()
     await comfyPage.workflow.loadWorkflow('default')
     await comfyPage.appMode.enterAppModeWithInputs([[KSAMPLER_NODE, 'seed']])
     await expect(comfyPage.appMode.linearWidgets).toBeVisible()
@@ -44,7 +35,7 @@ test.describe('App mode save keeps run history', { tag: '@ui' }, () => {
   }) => {
     const ws = await getWebSocket()
     const exec = new ExecutionHelper(comfyPage, ws)
-    const jobId = await startExecution(comfyPage, exec)
+    const jobId = await exec.run()
 
     await expect(
       comfyPage.appMode.outputHistory.inProgressItems.first()

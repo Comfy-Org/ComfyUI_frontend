@@ -32,9 +32,10 @@ jobs:
     needs: changes
     if: ${{ needs.changes.outputs.should-run == 'true' && github.repository == 'Comfy-Org/ComfyUI_frontend' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # main runs 3 repeats; 141 tests took ~28m before the 30m limit cut them off
+    timeout-minutes: 45
     container:
-      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.27
+      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.28
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}

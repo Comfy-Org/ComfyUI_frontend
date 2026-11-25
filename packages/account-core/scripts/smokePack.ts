@@ -243,11 +243,15 @@ import type { FirebaseAuthErrorLike } from '@comfyorg/account-core/firebaseAuthE
 import { isFirebaseAuthErrorLike } from '@comfyorg/account-core/firebaseAuthError'
 import { signUpWithProvisioning } from '@comfyorg/account-core/provisioning'
 import { safeInternalPath } from '@comfyorg/account-core/redirect'
+import type { SsoDiscovery } from '@comfyorg/account-core/sso'
+import { discoverSso } from '@comfyorg/account-core/sso'
 import type { WorkspaceLinkRead } from '@comfyorg/account-core/workspaceLink'
 import { readWorkspaceLink } from '@comfyorg/account-core/workspaceLink'
 import type { AuthMethod } from '@comfyorg/account-core/telemetry'
 import { SESSION_TELEMETRY_EVENT } from '@comfyorg/account-core/telemetry'
 import { isEmbeddedWebView } from '@comfyorg/account-core/webviewDetection'
+import type { TokenResult } from '@comfyorg/account-core/oauthPkce'
+import { authorizeUrl } from '@comfyorg/account-core/oauthPkce'
 import type { BillingEntry, ReturnTarget } from '@comfyorg/billing-contract'
 import { buildBillingEntryUrl, parseBillingEntry } from '@comfyorg/billing-contract'
 import type { ExchangeTokenResponse } from '@comfyorg/ingest-types'
@@ -291,6 +295,7 @@ export const values = {
   isFirebaseAuthErrorLike,
   signUpWithProvisioning,
   safeInternalPath,
+  discoverSso,
   readWorkspaceLink,
   SESSION_TELEMETRY_EVENT,
   isEmbeddedWebView,
@@ -332,9 +337,12 @@ export interface Types {
   firebaseAuthError: FirebaseAuthErrorLike
   provisioning: Parameters<typeof signUpWithProvisioning>[0]
   redirect: ReturnType<typeof safeInternalPath>
+  sso: SsoDiscovery
   workspaceLink: WorkspaceLinkRead
   telemetry: AuthMethod
   webviewDetection: ReturnType<typeof isEmbeddedWebView>
+  oauthPkce: TokenResult
+  oauthAuthorizeUrl: ReturnType<typeof authorizeUrl>
   billingContract: BillingEntry
   returnTarget: ReturnTarget
   ingestTypes: ExchangeTokenResponse

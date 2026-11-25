@@ -1,0 +1,99 @@
+<script setup lang="ts">
+import { computed, reactive, ref, shallowRef } from 'vue'
+
+import CollapseToggleButton from '@comfyorg/design-system/accordion/CollapseToggleButton'
+
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+
+import { computedSectionDataList } from './widgetSections'
+import type { NodeWidgetsListList } from './widgetSections'
+import { searchWidgetsAndNodes } from './widgetSearch'
+import PanelSearchHeader from './PanelSearchHeader.vue'
+import SectionWidgets from './SectionWidgets.vue'
+
+const canvasStore = useCanvasStore()
+
+const nodes = computed(
+  (): LGraphNode[] => (canvasStore.canvas?.graph?.nodes ?? []) as LGraphNode[]
+)
+
+const searchQuery = ref('')
+
+const { widgetsSectionDataList } = computedSectionDataList(nodes)
+
+const searchedWidgetsSectionDataList = shallowRef<NodeWidgetsListList>(
+  widgetsSectionDataList.value
+)
+const isSearching = ref(false)
+
+const collapseMap = reactive<Record<string, boolean>>({})
+
+function isSectionCollapsed(nodeId: NodeId): boolean {
+  // Defaults to collapsed when not explicitly set by the user
+  return collapseMap[nodeId] ?? true
+}
+
+function setSectionCollapsed(nodeId: NodeId, collapsed: boolean) {
+  collapseMap[nodeId] = collapsed
+}
+
+const isAllCollapsed = computed({
+  get() {
+    return searchedWidgetsSectionDataList.value.every(({ node }) =>
+      isSectionCollapsed(node.id)
+    )
+  },
+  set(collapse: boolean) {
+    for (const { node } of widgetsSectionDataList.value) {
+      setSectionCollapsed(node.id, collapse)
+    }
+  }
+})
+
+async function searcher(query: string) {
+  const list = widgetsSectionDataList.value
+  const target = searchedWidgetsSectionDataList
+  isSearching.value = query.trim() !== ''
+  target.value = searchWidgetsAndNodes(list, query)
+}
+</script>
+
+<template>
+  <PanelSearchHeader
+    v-model="searchQuery"
+    :searcher
+    :update-key="widgetsSectionDataList"
+  >
+    <CollapseToggleButton
+      v-model="isAllCollapsed"
+      :expand-label="$t('g.expandAll')"
+      :collapse-label="$t('g.collapseAll')"
+      :show="!isSearching && widgetsSectionDataList.length > 1"
+    />
+  </PanelSearchHeader>
+  <TransitionGroup tag="div" name="list-scale" class="relative">
+    <div
+      v-if="isSearching && searchedWidgetsSectionDataList.length === 0"
+      class="px-4 pt-5 pb-15 text-center text-sm text-muted-foreground"
+    >
+      {{ $t('rightSidePanel.noneSearchDesc') }}
+    </div>
+    <SectionWidgets
+      v-for="{ node, widgets } in searchedWidgetsSectionDataList"
+      :key="node.id"
+      :node
+      :widgets
+      :collapse="isSectionCollapsed(node.id) && !isSearching"
+      :tooltip="
+        isSearching || widgets.length
+          ? ''
+          : $t('rightSidePanel.inputsNoneTooltip')
+      "
+      show-locate-button
+      class="border-b"
+      @update:collapse="setSectionCollapsed(node.id, $event)"
+    />
+  </TransitionGroup>
+</template>

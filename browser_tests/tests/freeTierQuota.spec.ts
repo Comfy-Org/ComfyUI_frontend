@@ -1,4 +1,5 @@
 import { expect, mergeTests } from '@playwright/test'
+import type { BillingStatusResponse } from '@comfyorg/ingest-types'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
@@ -11,7 +12,6 @@ const wstest = mergeTests(test, webSocketFixture)
 test.describe('Free Tier Quota', { tag: ['@cloud', '@vue-nodes'] }, () => {
   test.beforeEach(async ({ page }) => {
     const features = {
-      free_tier_job_allowance_enabled: true,
       free_tier_balance: { allowance: 5, remaining: 3, used: 0 }
     }
     await page.route('**/api/features', (r) => r.fulfill(jsonRoute(features)))
@@ -20,8 +20,14 @@ test.describe('Free Tier Quota', { tag: ['@cloud', '@vue-nodes'] }, () => {
         jsonRoute({
           is_active: true,
           has_funds: true,
-          subscription_tier: 'FREE'
-        })
+          subscription_tier: 'FREE',
+          ended_at: null,
+          max_seats: 1,
+          occupied_seats: 1,
+          next_charge: null,
+          scheduled_change: null,
+          team_credit_stop: null
+        } satisfies BillingStatusResponse)
       )
     )
   })

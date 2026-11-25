@@ -70,7 +70,7 @@ describe('ApiKeyForm', () => {
     useAuthStore().loading = true
     const { container } = renderComponent()
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const submitButton = container.querySelector('button[type="submit"]')
     expect(submitButton).toBeDisabled()
   })
@@ -83,7 +83,7 @@ describe('ApiKeyForm', () => {
     ).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Get one here' })).toHaveAttribute(
       'href',
-      `${getComfyPlatformBaseUrl()}/login`
+      `${getComfyPlatformBaseUrl()}/profile/api-keys?utm_source=comfyui&utm_medium=app&utm_content=api-key-form`
     )
     expect(
       screen.getByRole('link', { name: 'About non-whitelisted sites' })

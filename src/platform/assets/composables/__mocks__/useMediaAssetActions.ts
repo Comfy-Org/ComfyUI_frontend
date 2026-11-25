@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import type { useMediaAssetActions as realUseMediaAssetActions } from '../useMediaAssetActions'
+import type { useMediaAssetActions as realUseMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
 
 type MediaAssetActions = ReturnType<typeof realUseMediaAssetActions>
 

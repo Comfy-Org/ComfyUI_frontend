@@ -13,30 +13,33 @@ import {
   resolveLiftChain
 } from '@/core/graph/subgraph/liftNodeErrorsToBoundary'
 import type { LGraphNode, LGraph } from '@/lib/litegraph/src/litegraph'
-import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
-import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
-import type { MissingModelCandidate } from '@/platform/missingModel/types'
-import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
+import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
+import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
+import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
+import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { app } from '@/scripts/app'
-import { ChangeTracker } from '@/scripts/changeTracker'
+import { useApp } from '@/scripts/appInstance'
+import { isGraphLoading } from '@/core/graph/graphLoadState'
 import { useDialogService } from '@/services/dialogService'
-import type { ExecutionErrorWsMessage } from '@/platform/remote/comfyui/execution/types'
-import type { NodeError, PromptError } from '@/platform/remote/comfyui/types'
+import type { ExecutionErrorWsMessage } from '@comfyorg/api-client/executionTypes'
+import type { NodeError, PromptError } from '@comfyorg/api-client/types'
 import {
   getAncestorExecutionIds,
   tryNormalizeNodeExecutionId
-} from '@/types/nodeIdentification'
-import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
+} from '@comfyorg/graph-model/nodeIdentification'
+import type {
+  NodeExecutionId,
+  NodeLocatorId
+} from '@comfyorg/graph-model/nodeIdentification'
 import {
   executionIdToNodeLocatorId,
   getExecutionIdByNode,
   getNodeByExecutionId
 } from '@/utils/graphTraversalUtil'
 import type { UUID } from '@/utils/uuid'
-import { zeroUuid } from '@/utils/uuid'
+import { zeroUuid } from '@comfyorg/graph-model/uuid'
 import {
   SIMPLE_ERROR_TYPES,
   errorsForSlot,
@@ -46,7 +49,7 @@ import {
   isValueStillOutOfRange
 } from '@/utils/executionErrorUtil'
 import type { NodeValidationError } from '@/utils/executionErrorUtil'
-import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 
 interface SlotNodeErrorClearTarget {
   executionId: NodeExecutionId
@@ -72,6 +75,7 @@ interface RunErrorState {
     MissingResourceAbsorption
   >
   nodeErrors: Record<string, NodeError> | null
+  nodeErrorsJobId: string | null
   executionError: ExecutionErrorWsMessage | null
   promptError: PromptError | null
 }
@@ -115,6 +119,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     const next: RunErrorState = {
       absorbedValidationErrors: new WeakMap(),
       nodeErrors: null,
+      nodeErrorsJobId: null,
       executionError: null,
       promptError: null,
       ...runErrorsByWorkflow.value.get(key),
@@ -203,7 +208,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
   function captureValidationErrorSurfaces(
     nodeErrors: Record<string, NodeError>
   ): void {
-    const rootGraph = app.rootGraphOrUndefined
+    const rootGraph = useApp().rootGraphOrUndefined
     if (!rootGraph) return
 
     for (const [rawNodeId, nodeError] of Object.entries(nodeErrors)) {
@@ -227,7 +232,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     const cached = validationErrorSurfaces.get(rawError)
     if (cached) return cached
 
-    const rootGraph = app.rootGraphOrUndefined
+    const rootGraph = useApp().rootGraphOrUndefined
     const surfaces = getValidationErrorSurfaces(
       rootGraph,
       executionId,
@@ -282,10 +287,9 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
   whenever(
     () => !missingNodesStore.missingNodesError?.nodeTypes.length,
     () => {
-      if (ChangeTracker.isLoadingGraph) return
+      if (isGraphLoading(useApp().rootGraphOrUndefined)) return
       retireResolvedMissingNodePromptError()
     },
-    // The missing-node scan and prompt recording share a synchronous block; clear before recording the new error.
     { flush: 'sync' }
   )
 
@@ -319,7 +323,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     previous?: MissingResourceCandidates
   ) {
     if (
-      ChangeTracker.isLoadingGraph ||
+      isGraphLoading(useApp().rootGraphOrUndefined) ||
       key === null ||
       key !== activeRunErrorKey.value
     )
@@ -431,12 +435,17 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
    */
   function recordNodeErrors(
     nodeErrors: Record<string, NodeError> | null,
-    key: string | null = activeRunErrorKey.value
+    key: string | null = activeRunErrorKey.value,
+    jobId: string | null = null
   ) {
     const record =
       nodeErrors && Object.keys(nodeErrors).length > 0 ? nodeErrors : null
     updateRunErrors(
-      { nodeErrors: record, absorbedValidationErrors: new WeakMap() },
+      {
+        nodeErrors: record,
+        nodeErrorsJobId: record ? jobId : null,
+        absorbedValidationErrors: new WeakMap()
+      },
       key
     )
     if (record && key !== null && key === activeRunErrorKey.value) {
@@ -448,6 +457,45 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
         },
         key
       )
+    }
+  }
+
+  /**
+   * Records submission `jobId`'s node errors under `key`. An empty response
+   * keeps errors already recorded for `jobId` and clears any other job's.
+   */
+  function recordSubmissionNodeErrors(
+    nodeErrors: Record<string, NodeError> | null | undefined,
+    key: string | null,
+    jobId: string | undefined
+  ) {
+    if (nodeErrors && Object.keys(nodeErrors).length > 0) {
+      recordNodeErrors(nodeErrors, key, jobId ?? null)
+      return
+    }
+    const recordedJobId =
+      key === null ? null : runErrorsByWorkflow.value.get(key)?.nodeErrorsJobId
+    if (jobId === undefined || recordedJobId !== jobId) {
+      recordNodeErrors(null, key)
+    }
+  }
+
+  /**
+   * Records `nodeErrors` of job `jobId` under `key` and opens the error
+   * overlay when that run is on screen.
+   */
+  function surfaceNodeErrors(
+    nodeErrors: Record<string, NodeError>,
+    key: string,
+    jobId: string
+  ) {
+    recordNodeErrors(nodeErrors, key, jobId)
+    if (
+      key === activeRunErrorKey.value &&
+      hasNodeError.value &&
+      useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')
+    ) {
+      showErrorOverlay()
     }
   }
 
@@ -559,7 +607,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     slotName: string
   ): SlotNodeErrorClearTarget[] {
     const surfaced = surfacedNodeErrors.value
-    const rootGraph = app.rootGraphOrUndefined
+    const rootGraph = useApp().rootGraphOrUndefined
     if (!surfaced || !rootGraph) return []
 
     return Object.values(surfaced).flatMap((surface) =>
@@ -778,7 +826,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     const err = lastExecutionError.value
     if (!err) return null
     return executionIdToNodeLocatorId(
-      app.rootGraphOrUndefined,
+      useApp().rootGraphOrUndefined,
       String(err.node_id)
     )
   })
@@ -798,7 +846,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
 
   // Re-lifts only when the record changes; topology is assumed stable while errors are displayed.
   const surfacedNodeErrors = computed(() => {
-    const rootGraph = app.rootGraphOrUndefined
+    const rootGraph = useApp().rootGraphOrUndefined
     return lastNodeErrors.value && rootGraph
       ? liftNodeErrorsToBoundary(rootGraph, lastNodeErrors.value)
       : lastNodeErrors.value
@@ -828,7 +876,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     for (const executionId of executionIds) {
       for (const ancestorId of getAncestorExecutionIds(executionId)) {
         const locator = executionIdToNodeLocatorId(
-          app.rootGraphOrUndefined,
+          useApp().rootGraphOrUndefined,
           ancestorId
         )
         if (locator) locators.add(locator)
@@ -869,7 +917,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
   /** Graph node IDs (as strings) that have errors in the current graph scope. */
   const activeGraphErrorNodeIds = computed<Set<string>>(() => {
     const ids = new Set<string>()
-    const rootGraph = app.rootGraphOrUndefined
+    const rootGraph = useApp().rootGraphOrUndefined
     if (!rootGraph) return ids
 
     // Fall back to rootGraph when currentGraph hasn't been initialized yet
@@ -906,7 +954,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
         surfacedNodeErrors.value
       )) {
         const locatorId = executionIdToNodeLocatorId(
-          app.rootGraphOrUndefined,
+          useApp().rootGraphOrUndefined,
           executionId
         )
         if (locatorId) {
@@ -954,7 +1002,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
 
   /** True if the node has errors inside it at any nesting depth. */
   function isContainerWithInternalError(node: LGraphNode): boolean {
-    const rootGraph = app.rootGraphOrUndefined
+    const rootGraph = useApp().rootGraphOrUndefined
     if (!rootGraph) return false
     const execId = getExecutionIdByNode(rootGraph, node)
     if (!execId) return false
@@ -976,6 +1024,8 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
 
     // Recording
     recordNodeErrors,
+    recordSubmissionNodeErrors,
+    surfaceNodeErrors,
     recordExecutionError,
     recordPromptError,
 

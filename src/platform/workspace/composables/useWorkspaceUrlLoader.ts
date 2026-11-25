@@ -5,16 +5,17 @@ import { useI18n } from 'vue-i18n'
 import type { LocationQueryRaw } from 'vue-router'
 import { useRoute, useRouter } from 'vue-router'
 
+import { useToast } from '@/components/ui/toast/toastStore'
+import { isSafeExtensionBootActive } from '@/platform/customNodes/safeExtensionBoot'
 import {
   clearPreservedQuery,
   hydratePreservedQuery,
   mergePreservedQueryIntoQuery
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 
 import { useWorkspaceSwitch } from './useWorkspaceSwitch'
-import { useTeamWorkspaceStore } from '../stores/teamWorkspaceStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 const NAMESPACE = PRESERVED_QUERY_NAMESPACES.WORKSPACE
 
@@ -58,21 +59,20 @@ export function useWorkspaceUrlLoader() {
   const route = useRoute()
   const router = useRouter()
   const { t } = useI18n()
-  const toastStore = useToastStore()
+  const toast = useToast()
   const { switchWorkspace } = useWorkspaceSwitch()
   const { activeWorkspace, workspaceName } = storeToRefs(
     useTeamWorkspaceStore()
   )
 
   function notifyStayed() {
-    toastStore.add({
-      severity: 'info',
-      summary: t(
+    toast.info(
+      t(
         'workspace.deepLinkStayed',
         { workspaceName: workspaceName.value },
         { escapeParameter: false }
       )
-    })
+    )
   }
 
   /** Strips `workspace`, keeping other params, and clears the stash. Must
@@ -121,13 +121,19 @@ export function useWorkspaceUrlLoader() {
       return false
     }
 
-    await stripParam(query)
-    const switched = await switchWorkspace(link.workspaceId)
-    if (!switched) {
-      notifyStayed()
-      return false
-    }
-    return true
+    return switchFromLink(query, link.workspaceId)
+  }
+
+  async function switchFromLink(
+    query: LocationQueryRaw,
+    workspaceId: string
+  ): Promise<boolean> {
+    const keepSafeBoot = isSafeExtensionBootActive()
+    await stripParam(keepSafeBoot ? { ...query, safe: '' } : query)
+    if (await switchWorkspace(workspaceId)) return true
+    if (keepSafeBoot) await stripParam(query)
+    notifyStayed()
+    return false
   }
 
   return {

@@ -31,7 +31,11 @@ const test = comfyPageFixture.extend({
 test.describe('Numeric combo stepping', { tag: ['@widget', '@canvas'] }, () => {
   test('increments to the next numeric combo option', async ({ comfyPage }) => {
     await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
-    await comfyPage.workflow.loadWorkflow('numeric-combo-stepping')
+    await comfyPage.workflow.loadWorkflow('inputs/checkpoint_loader', {
+      nodes: {
+        4: { widgets_values: [8] }
+      }
+    })
 
     const nodes = await comfyPage.nodeOps.getNodeRefsByType(
       'CheckpointLoaderSimple'

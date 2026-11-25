@@ -1,5 +1,6 @@
+import '@/types'
+
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
-import type { LGraphBadge as LGraphBadgeClass } from '@/lib/litegraph/src/LGraphBadge'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LiteGraphGlobal } from '@/lib/litegraph/src/LiteGraphGlobal'
 import type { ComfyApp } from '@/scripts/app'
@@ -21,13 +22,46 @@ interface AppReadiness {
 }
 
 export interface TabSwitchLens {
-  afterConfigure: string[][]
+  afterLoad: string[][]
   removed: string[]
 }
 
+export interface LegacyGraphInstancePatches {
+  bootOnNodeAdded: string[]
+  overwriteOnNodeRemoved: string[]
+  configure: number
+  serialize: number
+  clear: number
+  beforeChange: number
+  afterChange: number
+  add: string[]
+  remove: string[]
+  stackedAfterChange: string[]
+  safeOnNodeAdded: string[]
+}
+
+interface EcosystemSimulacraLifecycleEntry {
+  hook: string
+  configured: string | null
+  active: string
+}
+
+export interface EcosystemSimulacra {
+  lifecycle: EcosystemSimulacraLifecycleEntry[]
+  registry: { graph: string; nodes: string[] } | null
+  promptExecuted: string[]
+  executed: string[]
+  added: string[]
+  removed: string[]
+  timerErrors: string[]
+  navigation: { groups: unknown[] }
+  timersHeld: () => number
+  releaseTimers: () => void
+}
+
 interface CapturedMessages {
-  clientFeatureFlags: unknown
-  serverFeatureFlags: unknown
+  clientFeatureFlags: { type: string; data: Record<string, unknown> } | null
+  serverFeatureFlags: Record<string, unknown> | null
 }
 
 interface PerfFrameState {
@@ -50,7 +84,6 @@ declare global {
     app?: ComfyApp
     graph?: LGraph
     LiteGraph?: LiteGraphGlobal
-    LGraphBadge?: typeof LGraphBadge
 
     // Test-specific globals used for assertions
     foo?: boolean
@@ -58,9 +91,25 @@ declare global {
     changeCount?: number
     widgetValue?: unknown
     __commandExecutionCounts?: Record<string, number>
-    __autoShownReads?: number
+    __seededServerFlags?: Record<string, unknown>
     __perfFrameState?: PerfFrameState
     __perfLongtaskState?: PerfLongtaskState
+    __legacyGraphInstancePatches?: LegacyGraphInstancePatches
+    __ecosystemSimulacra?: EcosystemSimulacra
+    __captureHostTelemetry?: (captured: {
+      event: string
+      properties: Record<string, unknown>
+    }) => Promise<void>
+    /**
+     * Pushes a host auth state change through the mocked Desktop bridge.
+     * @see browser_tests/fixtures/hostSessionPartnerNodeFixture.ts
+     */
+    __pushHostAuthState?: (next: { status: 'signed_out' }) => unknown
+    __captureHostErrorReport?: (captured: {
+      message: string
+      stack?: string
+      properties: Record<string, unknown>
+    }) => Promise<void>
 
     // Feature flags test globals
     __capturedMessages?: CapturedMessages
@@ -94,7 +143,6 @@ declare global {
   const app: ComfyApp | undefined
   const graph: LGraph | undefined
   const LiteGraph: LiteGraphGlobal | undefined
-  const LGraphBadge: typeof LGraphBadgeClass | undefined
 }
 
 /**

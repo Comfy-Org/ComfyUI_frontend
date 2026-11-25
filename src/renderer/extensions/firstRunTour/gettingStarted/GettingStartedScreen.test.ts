@@ -138,7 +138,6 @@ describe('GettingStartedScreen', () => {
     const rejections: unknown[] = []
     const onRejection = (reason: unknown) => rejections.push(reason)
     process.on('unhandledRejection', onRejection)
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     await renderScreen()
 
     await pickFirstTemplate()
@@ -289,6 +288,16 @@ describe('GettingStartedScreen', () => {
         ).not.toHaveBeenCalled()
         expect(mocks.dismiss).not.toHaveBeenCalled()
         expect(screen.getByText(enMessages.gettingStarted.retry)).toBeTruthy()
+
+        mocks.loadTemplate.mockResolvedValue('loaded')
+        await pickFirstTemplate()
+
+        await waitFor(() =>
+          expect(mocks.dismissIntoTour).toHaveBeenCalledWith(
+            CURATED_TEMPLATE_IDS[0]
+          )
+        )
+        expect(mocks.loadTemplate).toHaveBeenCalledTimes(2)
       }
     )
 
@@ -312,7 +321,7 @@ describe('GettingStartedScreen', () => {
       await userEvent.click(retry)
 
       expect(
-        vi.mocked(useWorkflowTemplatesStore().loadWorkflowTemplates),
+        useWorkflowTemplatesStore().loadWorkflowTemplates,
         'The store swallows fetch errors and resolves with isLoaded false, so a failed catalog must be detected without a rejection'
       ).toHaveBeenCalledTimes(2)
       await waitFor(() =>

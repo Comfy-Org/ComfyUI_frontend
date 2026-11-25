@@ -1,3 +1,7 @@
+import type {
+  Bounds as ClientRect,
+  Point2D as RelativeOffset
+} from '@comfyorg/shared-frontend-utils/geometry'
 import { expect } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
 
@@ -9,13 +13,6 @@ interface CanvasTransform {
   offsetX: number
   offsetY: number
   scale: number
-}
-
-interface ClientRect {
-  x: number
-  y: number
-  width: number
-  height: number
 }
 
 // Reimplements the projection math instead of importing
@@ -128,11 +125,6 @@ export async function expectDomWidgetAlignedAfterTransformChange(
       }
     )
     .toBeLessThanOrEqual(tolerancePx)
-}
-
-interface RelativeOffset {
-  x: number
-  y: number
 }
 
 // Vue Nodes widgets are plain DOM children of their node (not a

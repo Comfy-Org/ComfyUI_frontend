@@ -191,6 +191,19 @@ describe('useCachedRequest', () => {
     expect(mockRequestFn).toHaveBeenCalledTimes(2)
   })
 
+  it('evicts only the entry for the given params', async () => {
+    const cachedRequest = useCachedRequest(mockRequestFn)
+    await cachedRequest.call({ id: 1 })
+    await cachedRequest.call({ id: 2 })
+
+    cachedRequest.evict({ id: 1 })
+    await cachedRequest.call({ id: 1 })
+    await cachedRequest.call({ id: 2 })
+
+    expect(mockRequestFn).toHaveBeenCalledTimes(3)
+    expect(mockRequestFn).toHaveBeenLastCalledWith({ id: 1 }, expect.anything())
+  })
+
   it('should handle null results correctly', async () => {
     const cachedRequest = useCachedRequest(mockRequestFn)
 

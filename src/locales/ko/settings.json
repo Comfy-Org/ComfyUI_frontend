@@ -69,8 +69,8 @@
     "name": "개발자 모드 옵션 활성화 (API 저장 등)"
   },
   "Comfy_DisableFloatRounding": {
-    "name": "기본 부동 소수점 위젯 반올림 비활성화",
-    "tooltip": "(페이지 새로 고침 필요) 백엔드에서 노드에 의해 설정된 반올림이 있을 때 반올림을 비활성화할 수 없습니다."
+    "name": "기본 부동소수점 위젯 반올림 비활성화(더 이상 사용되지 않음).",
+    "tooltip": "(페이지 새로고침 필요) 더 이상 사용되지 않으며 기본적으로 켜져 있습니다. 이를 끄면 편집한 부동소수점 값이 위젯 단계의 소수 자릿수로 반올림됩니다. 노드에서 지정한 반올림은 항상 적용됩니다."
   },
   "Comfy_DisableSliders": {
     "name": "노드 위젯 슬라이더 비활성화"
@@ -317,6 +317,10 @@
   "Comfy_Node_DoubleClickTitleToEdit": {
     "name": "노드 제목을 두 번 클릭하여 편집"
   },
+  "Comfy_Node_DownscaleImagePreviews": {
+    "name": "큰 이미지 미리보기 축소",
+    "tooltip": "노드 2.0에서 노드의 큰 이미지를 가장 긴 변이 최대 1024px인 사본으로 표시하여 많은 대형 미리보기를 원활하게 유지합니다. 항상 원본을 표시하려면 끄세요."
+  },
   "Comfy_Node_MiddleClickRerouteNode": {
     "name": "중간 클릭으로 새 경유점 생성"
   },
@@ -338,10 +342,6 @@
   "Comfy_Notification_ShowVersionUpdates": {
     "name": "버전 업데이트 표시",
     "tooltip": "새 모델과 주요 신규 기능에 대한 업데이트를 표시합니다."
-  },
-  "Comfy_Pointer_ClickBufferTime": {
-    "name": "포인터 클릭 드리프트 지연",
-    "tooltip": "포인터 버튼을 누른 후, 포인터 움직임을 무시할 수 있는 최대 시간(밀리초)입니다.\n\n클릭하는 동안 포인터가 움직여 의도치 않게 객체가 밀리는 것을 방지합니다."
   },
   "Comfy_Pointer_ClickDrift": {
     "name": "포인터 클릭 드리프트 (최대 거리)",
@@ -469,7 +469,7 @@
     "name": "문제 탭에 누락된 미디어 표시",
     "tooltip": "비활성화하면 찾을 수 없는 입력 이미지, 비디오 및 오디오가 문제 탭에 나열되지 않으며 해당 노드가 강조 표시되지 않습니다."
   },
-  "Comfy_Workflow_ShowMissingNodesWarning": {
+  "Comfy_ErrorSystem_ShowMissingNodes": {
     "name": "문제 탭에 누락된 노드 표시",
     "tooltip": "비활성화하면 누락된 노드 팩이 문제 탭에 나열되지 않으며 해당 노드가 강조 표시되지 않습니다. 설치될 때까지 워크플로를 실행할 수 없습니다."
   },

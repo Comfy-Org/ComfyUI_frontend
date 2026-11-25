@@ -1,11 +1,12 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
-import type { Rect } from './interfaces'
+import type { Rect } from '@comfyorg/shared-frontend-utils/geometry'
 import { LGraph, LGraphNode, LiteGraph } from './litegraph'
 import { resizeNodeLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { bindMountedNodeSize } from '@/renderer/core/layout/store/mountedNodeSizes'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 describe('layout geometry projection', () => {
   beforeEach(() => {
@@ -46,13 +47,22 @@ describe('layout geometry projection', () => {
     const node = new LGraphNode('test')
     graph.add(node)
     node.flags.collapsed = true
-    layoutStore.reportContentSize(graph.rootGraph.id, node.id, {
-      width: 123,
-      height: 30
-    })
+    bindMountedNodeSize(graph, node.id, () => {}).report(
+      {
+        width: 123,
+        height: 30
+      },
+      true
+    )
 
-    expect(node.width).toBe(123)
-    expect(node.getConnectionPos(false, 0)[0]).toBe(node.pos[0] + 123)
+    const previousMode = LiteGraph.vueNodesMode
+    LiteGraph.vueNodesMode = true
+    try {
+      expect(node.width).toBe(123)
+      expect(node.getConnectionPos(false, 0)[0]).toBe(node.pos[0] + 123)
+    } finally {
+      LiteGraph.vueNodesMode = previousMode
+    }
   })
 
   test('moves from the latest stored position', () => {
@@ -176,32 +186,30 @@ describe('layout geometry projection', () => {
     })
   })
 
-  test('lets requested size supersede a stale content measurement', () => {
+  test('keeps clamped geometry after a size request that does not resize the DOM', () => {
     const graph = new LGraph()
     const node = new LGraphNode('test')
     node.size = [100, 50]
     graph.add(node)
-    layoutStore.reportContentSize(graph.rootGraph.id, node.id, {
-      width: 225,
-      height: 80
-    })
+    bindMountedNodeSize(graph, node.id, () => {}).report(
+      { width: 225, height: 100 },
+      false
+    )
 
-    expect([...node.size]).toEqual([100, 50])
-    expect(node.serialize().size).toEqual([100, 50])
-    node.setSize([node.size[0] + 90, node.size[1] + 100])
-    expect([...node.renderingSize]).toEqual([190, 150])
-    const bounds: Rect = [0, 0, 0, 0]
-    node.measure(bounds)
-    expect(bounds).toEqual([
-      node.pos[0],
-      node.pos[1] - LiteGraph.NODE_TITLE_HEIGHT,
-      190,
-      150 + LiteGraph.NODE_TITLE_HEIGHT
-    ])
-    expect(node.serialize().size).toEqual([190, 150])
+    const previousMode = LiteGraph.vueNodesMode
+    LiteGraph.vueNodesMode = true
+    try {
+      node.setSize([200, 100])
+      const bounds: Rect = [0, 0, 0, 0]
+      node.measure(bounds)
+      expect(bounds[2]).toBe(225)
+      expect(node.serialize().size).toEqual([200, 100])
+    } finally {
+      LiteGraph.vueNodesMode = previousMode
+    }
   })
 
-  test('uses the attached graph when overriding measured content', () => {
+  test('writes requested dimensions to the attached graph', () => {
     const attachedGraph = new LGraph()
     const currentGraph = new LGraph()
     const node = new LGraphNode('attached')

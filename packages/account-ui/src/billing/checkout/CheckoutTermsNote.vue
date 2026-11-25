@@ -8,7 +8,7 @@
           :href="LINKS[segment.key]"
           target="_blank"
           rel="noopener noreferrer"
-          class="underline hover:text-base-foreground"
+          class="underline hover:text-foreground"
         >
           {{ segment.key === 'terms' ? copy.terms : copy.privacyPolicy }}
         </a>

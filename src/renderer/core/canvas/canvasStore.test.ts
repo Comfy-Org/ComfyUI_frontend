@@ -16,11 +16,11 @@ import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { selectableKeyOf } from '@/renderer/core/canvas/litegraph/selectionAdapter'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSelectionStore } from '@/core/selection/selectionStore'
-import { graphScopeOf } from '@/types/graphScopeId'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import {
   createMockCanvasRenderingContext2D,
   createTestCanvas
-} from '@/utils/__tests__/litegraphTestUtils'
+} from '@/utils/__tests__/canvasTestUtils'
 
 function createMockCanvas(readOnly = false): LGraphCanvas {
   return fromPartial<LGraphCanvas>({
@@ -143,6 +143,7 @@ describe('useCanvasStore', () => {
       await nextTick()
       canvas.select(node)
       expect(store.selectedItems).toContain(node)
+      canvas.onSelectionChange = vi.fn()
 
       let stillSelectedInOnRemoved: boolean | undefined
       node.onRemoved = () => {
@@ -165,6 +166,7 @@ describe('useCanvasStore', () => {
       expect(selectionStore.selectedKeys(scope)).toEqual([])
       expect([...canvas.selectedItems]).toEqual([])
       expect(replacement.selected).toBeFalsy()
+      expect(canvas.onSelectionChange).not.toHaveBeenCalled()
     })
   })
 

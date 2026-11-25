@@ -4,7 +4,7 @@ import type {
   ExportedSubgraph,
   ISerialisedNode,
   SerialisableGraph
-} from '@/lib/litegraph/src/types/serialisation'
+} from '@comfyorg/graph-model/serialisation'
 import {
   MEDIA_KIND_BY_SINK_TYPE,
   TOUR_ROLE_PINS

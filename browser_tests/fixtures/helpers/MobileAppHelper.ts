@@ -1,4 +1,5 @@
 import type { Locator, Page } from '@playwright/test'
+import { expect } from '@playwright/test'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
@@ -22,7 +23,21 @@ export class MobileAppHelper {
 
   async switchWorkflow(workflowName: string) {
     await this.workflows.click()
-    await this.page.getByRole('menu').getByText(workflowName).click()
+    const workflow = this.page.getByRole('menuitemradio', {
+      name: workflowName,
+      exact: true
+    })
+    await workflow.click()
+    await this.workflows.click()
+    await expect(
+      this.page.getByRole('menuitemradio', {
+        name: workflowName,
+        exact: true,
+        checked: true
+      })
+    ).toBeVisible()
+    await this.page.keyboard.press('Escape')
+    await expect(workflow).toBeHidden()
   }
   async navigateTab(name: 'run' | 'outputs' | 'assets') {
     await this.navigation.getByRole('tab', { name }).click()

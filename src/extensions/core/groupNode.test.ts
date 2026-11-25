@@ -1,22 +1,22 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { describe, expect, it, vi } from 'vitest'
+import { assert, describe, expect, it, test, vi } from 'vitest'
 
 import { t } from '@/i18n'
 
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { ComfyNode } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { ComfyNode } from '@comfyorg/graph-model/workflowSchema'
+import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 import { app } from '@/scripts/app'
 import { ComfyWidgets } from '@/scripts/widgets'
 import { useLitegraphService } from '@/services/litegraphService'
+import { useSubgraphService } from '@/services/subgraphService'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 
-import type { MissingNodeType } from '@/types/comfy'
+import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 
 import type { GroupNodeLink, GroupNodeWorkflowData } from './groupNode'
 
@@ -26,12 +26,9 @@ const {
   GroupNodeConfig,
   GroupNodeHandler,
   findUnconsumedWidgetIndex,
-  replaceLegacySeparators
+  replaceLegacySeparators,
+  groupNodeExtension
 } = await import('./groupNode')
-const groupNodeExtension = vi
-  .mocked(app.registerExtension)
-  .mock.calls.find(([extension]) => extension.name === 'Comfy.GroupNode')?.[0]
-if (!groupNodeExtension) throw new Error('Comfy.GroupNode was not registered')
 
 function makeNode(type: string): ComfyNode {
   return {
@@ -121,6 +118,30 @@ describe('GroupNodeConfig.getLinks', () => {
     const config = configFrom([], [[0, 1, 'IMAGE']])
     expect(config.externalFrom).toEqual({ 0: { 1: 'IMAGE' } })
   })
+
+  it('normalizes a missing primitive link type to null', () => {
+    const linkWithoutType = [0, 0, 1, 0, 1] satisfies GroupNodeLink
+    const config = configFrom([linkWithoutType])
+
+    expect(
+      config.getNodeDef({ index: 0, type: 'PrimitiveNode' })?.output
+    ).toEqual([null])
+  })
+
+  test.for([
+    { case: 'an object', invalidType: { unexpected: true } },
+    { case: 'a non-string array', invalidType: ['IMAGE', 42] }
+  ])(
+    'normalizes an invalid primitive link type given as $case to null',
+    ({ invalidType }) => {
+      const link = [0, 0, 1, 0, 1, invalidType] satisfies GroupNodeLink
+      const config = configFrom([link])
+
+      expect(
+        config.getNodeDef({ index: 0, type: 'PrimitiveNode' })?.output
+      ).toEqual([null])
+    }
+  )
 })
 
 describe('findUnconsumedWidgetIndex', () => {
@@ -463,7 +484,10 @@ describe('group node extension beforeConfigureGraph', () => {
     })
 
     try {
-      await ext.beforeConfigureGraph(graphData, [], fromPartial({}))
+      await ext.beforeConfigureGraph(graphData, [], fromPartial({}), {
+        graph: app.rootGraph,
+        workflow: null
+      })
 
       expect(spy).toHaveBeenCalledWith(
         groupNodes,
@@ -506,9 +530,13 @@ describe('group node extension beforeConfigureGraph', () => {
       await ext.beforeConfigureGraph(
         graphData,
         missingNodeTypes,
-        fromPartial({})
+        fromPartial({}),
+        { graph: app.rootGraph, workflow: null }
       )
-      await ext.afterConfigureGraph(missingNodeTypes, fromPartial({}))
+      await ext.afterConfigureGraph(missingNodeTypes, fromPartial({}), {
+        graph: app.rootGraph,
+        workflow: null
+      })
 
       expect(missingNodeTypes).toStrictEqual([
         expect.objectContaining({ nodeId: '7', type: 'workflow>MyGroup' }),
@@ -562,9 +590,13 @@ describe('group node extension beforeConfigureGraph', () => {
       await ext.beforeConfigureGraph(
         graphData,
         missingNodeTypes,
-        fromPartial({})
+        fromPartial({}),
+        { graph: app.rootGraph, workflow: null }
       )
-      await ext.afterConfigureGraph(missingNodeTypes, fromPartial({}))
+      await ext.afterConfigureGraph(missingNodeTypes, fromPartial({}), {
+        graph: app.rootGraph,
+        workflow: null
+      })
 
       expect(missingNodeTypes).toStrictEqual([
         unrelatedReport,
@@ -704,11 +736,58 @@ describe('GroupNodeHandler.convertToNodes', () => {
     vi.mocked(app.registerNodeDef).mockImplementation(async (id, def) => {
       await useLitegraphService().registerNodeDef(id, def)
     })
-    await groupNodeExtension!.addCustomNodeDefs?.(REAL_NODE_DEFS, app)
+    await groupNodeExtension.addCustomNodeDefs?.(REAL_NODE_DEFS, app)
     for (const [name, def] of Object.entries(REAL_NODE_DEFS)) {
       await useLitegraphService().registerNodeDef(name, def)
     }
   }
+
+  it('migrates legacy group nodes in the configured graph and leaves the visible root untouched', async () => {
+    await registerRealNodeDefs()
+    const fixture = JSON.parse(
+      readFileSync(
+        join(
+          process.cwd(),
+          'browser_tests',
+          'assets',
+          'groupnodes',
+          'group_node_v1.3.3.json'
+        ),
+        'utf-8'
+      )
+    )
+    await new GroupNodeConfig(
+      'group_node',
+      fixture.extra.groupNodes.group_node
+    ).registerType()
+    const addGroupNode = (graph: LGraph) => {
+      const node = LiteGraph.createNode(fixture.nodes[0].type)
+      assert(node)
+      node.configure(structuredClone(fixture.nodes[0]))
+      graph.add(node)
+      graph.extra.groupNodes = fixture.extra.groupNodes
+      return node
+    }
+    const visibleGroupNode = addGroupNode(app.rootGraph)
+    const background = new LGraph()
+    background.events.addEventListener('subgraph-created', (e) =>
+      useSubgraphService().registerNewSubgraph(e.detail.subgraph, e.detail.data)
+    )
+    addGroupNode(background)
+
+    await groupNodeExtension.afterConfigureGraph?.([], app, {
+      graph: background,
+      workflow: null
+    })
+
+    expect(app.rootGraph.nodes).toHaveLength(1)
+    expect(app.rootGraph.nodes[0]).toBe(visibleGroupNode)
+    expect(app.rootGraph.extra.groupNodes).toBe(fixture.extra.groupNodes)
+    expect(background.nodes.map((node) => node.isSubgraphNode())).toEqual([
+      true
+    ])
+    expect(background.extra.groupNodes).toBeUndefined()
+  })
 
   // QA found this broken on 2026-09-10 while running the 1.54 test plan (see
   // the e2e regression test in browser_tests/tests/groupNode.spec.ts): a
@@ -736,18 +815,6 @@ describe('GroupNodeHandler.convertToNodes', () => {
 
     const config = new GroupNodeConfig('group_node', groupNodeData)
     await config.registerType()
-
-    // The app mock stubs out selectItems/selectNodes; make it behave like
-    // the real LGraphCanvas so deserialiseAndCreate's selection is visible
-    // to convertToNodes via app.canvas.selected_nodes.
-    Object.assign(app.canvas, {
-      selectNodes(nodes: { id: number | string }[]) {
-        app.canvas.selected_nodes = {}
-        for (const n of nodes) {
-          vi.mocked(app.canvas).selected_nodes[n.id] = fromAny(n)
-        }
-      }
-    })
 
     const outerNodeInfo = fixture.nodes[0]
     const outerNode = LiteGraph.createNode(outerNodeInfo.type)

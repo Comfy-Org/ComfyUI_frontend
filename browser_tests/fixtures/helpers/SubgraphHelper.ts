@@ -1,3 +1,4 @@
+import type { Point2D } from '@comfyorg/shared-frontend-utils/geometry'
 import { expect } from '@playwright/test'
 import type { ConsoleMessage, Locator, Page } from '@playwright/test'
 
@@ -6,8 +7,8 @@ import type {
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { parseNodeId, toNodeId } from '@/types/nodeId'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+import { parseNodeId, toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { SubgraphEditor } from '@e2e/fixtures/components/SubgraphEditor'
@@ -28,13 +29,45 @@ type SubgraphDefinitionInventory = SubgraphDefinitionRow[]
 
 export class SubgraphHelper {
   public readonly editor: SubgraphEditor
+  public readonly inputPanel: Locator
+  public readonly inputPorts: Locator
+  public readonly outputPorts: Locator
+  public readonly addInputSocket: Locator
+  public readonly addOutputSocket: Locator
 
   constructor(private readonly comfyPage: ComfyPage) {
     this.editor = new SubgraphEditor(comfyPage)
+    const { subgraphIo, node } = TestIds
+    this.inputPanel = comfyPage.page.getByTestId(subgraphIo.inputPanel)
+    const outputPanel = comfyPage.page.getByTestId(subgraphIo.outputPanel)
+    this.inputPorts = this.inputPanel.getByTestId(subgraphIo.inputPort)
+    this.outputPorts = outputPanel.getByTestId(subgraphIo.outputPort)
+    this.addInputSocket = this.inputPanel
+      .getByTestId(subgraphIo.addInput)
+      .getByTestId(node.slotConnectionDot)
+    this.addOutputSocket = outputPanel
+      .getByTestId(subgraphIo.addOutput)
+      .getByTestId(node.slotConnectionDot)
   }
 
   private get page(): Page {
     return this.comfyPage.page
+  }
+
+  inputPort(name: string): Locator {
+    return this.inputPorts.and(
+      this.inputPanel.getByLabel(name, { exact: true })
+    )
+  }
+
+  inputSocket(name: string): Locator {
+    return this.inputPort(name).getByTestId(TestIds.node.slotConnectionDot)
+  }
+
+  async fillInput(name: string, value: string): Promise<void> {
+    const input = this.inputPanel.getByRole('textbox', { name, exact: true })
+    await input.fill(value)
+    await input.blur()
   }
 
   /**
@@ -90,7 +123,7 @@ export class SubgraphHelper {
         }
 
         type SlotInteractionResult =
-          | { success: true; slotName: string; x: number; y: number }
+          | (Point2D & { success: true; slotName: string })
           | { success: false }
 
         const createCanvasPointerEvent = (
@@ -255,9 +288,10 @@ export class SubgraphHelper {
     return await this.comfyPage.page.evaluate(() => {
       const graph = app!.canvas.graph as Subgraph
       const inputNode = graph.inputNode
-      const [x, y] = app!.canvas.ds.convertOffsetToCanvas(inputNode.pos)
-      const width = inputNode.size[0] * app!.canvas.ds.scale
-      const height = inputNode.size[1] * app!.canvas.ds.scale
+      const { pos, size } = inputNode.boundingRect
+      const [x, y] = app!.canvas.ds.convertOffsetToCanvas(pos)
+      const width = size[0] * app!.canvas.ds.scale
+      const height = size[1] * app!.canvas.ds.scale
       return { x, y, width, height }
     })
   }
@@ -396,7 +430,9 @@ export class SubgraphHelper {
   }
 
   async promoteWidget(nodeLocator: Locator, widgetName: string): Promise<void> {
-    const widget = nodeLocator.getByLabel(widgetName, { exact: true })
+    const widget = nodeLocator.getByTestId(TestIds.widgets.widget).filter({
+      has: this.page.getByLabel(widgetName, { exact: true })
+    })
     await this.comfyPage.contextMenu
       .openFor(widget)
       .then((m) => m.clickMenuItemExact(`Promote Widget: ${widgetName}`))
@@ -423,8 +459,11 @@ export class SubgraphHelper {
       )
     const existingIds = new Set(await findSubgraphNodeIds())
 
-    await this.page
-      .getByTestId(TestIds.selectionToolbox.convertSubgraph)
+    await this.comfyPage.selectionToolbox
+      .getByRole('button', {
+        name: 'Convert Selection to Subgraph',
+        exact: true
+      })
       .click()
 
     const findAddedIds = async () =>
@@ -551,6 +590,22 @@ export class SubgraphHelper {
       if (!graph || !('inputNode' in graph)) return 0
       return graph[`${slotType}s`].length
     }, type)
+  }
+
+  async getInteriorLinkCounts(): Promise<{
+    ioLinks: number
+    connectedInputs: number
+  }> {
+    return this.page.evaluate(() => {
+      const graph = window.app!.canvas.graph!
+      return {
+        ioLinks: [...graph.links.values()].filter((link) => link.originIsIoNode)
+          .length,
+        connectedInputs: graph.nodes
+          .flatMap((node) => node.inputs)
+          .filter((input) => input.link != null).length
+      }
+    })
   }
 
   async getSlotLabel(

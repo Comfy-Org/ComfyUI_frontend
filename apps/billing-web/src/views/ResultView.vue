@@ -6,10 +6,11 @@
  * pointer — and the projection over it is what the page shows. The trip back
  * to the product carries the coarse outcome and the operation id.
  */
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
+import { isTerminal } from '@comfyorg/account-core/billing'
 import {
   CheckoutSteps,
   useBillingClient,
@@ -22,6 +23,7 @@ import HostedSurface from '@/components/HostedSurface.vue'
 import { useHostedCopy } from '@/composables/useHostedCopy'
 import { awaitBillingWebStripeKey } from '@/config/stripeKey'
 import { createDeferredStripeChallengePort } from '@/session/stripeChallengePort'
+import { reportReturnedSubscriptionCheckout } from '@/telemetry/subscriptionCheckoutTelemetry'
 
 const { t } = useI18n()
 const { coded } = useHostedCopy()
@@ -35,6 +37,14 @@ const checkout = useCheckout({
   // Deferred: reads the key at challenge time, not this setup's snapshot.
   challengePort: createDeferredStripeChallengePort(awaitBillingWebStripeKey)
 })
+
+watch(
+  () => checkout.operation.value,
+  (operation) => {
+    if (operation !== undefined && isTerminal(operation))
+      reportReturnedSubscriptionCheckout(operation, { ui: 'embedded' })
+  }
+)
 
 const recovering = ref(true)
 const recoveryFailure = ref<string | undefined>()
@@ -70,6 +80,13 @@ const outcome = computed<BillingOutcome>(() => {
   }
 })
 
+// No confirm form here: an operation in the preview step awaits the server.
+const awaitingServer = computed(
+  () =>
+    checkout.operation.value !== undefined &&
+    checkout.projection.value.step === 'preview'
+)
+
 const returnResult = computed(() => ({
   result: outcome.value,
   reference: checkout.projection.value.operationId
@@ -78,13 +95,13 @@ const returnResult = computed(() => ({
 
 <template>
   <HostedSurface :return-result="returnResult">
-    <p v-if="recovering" class="m-0 text-sm text-muted-foreground">
+    <p
+      v-if="recovering || awaitingServer"
+      class="m-0 text-sm text-muted-foreground"
+    >
       {{ t('hosted.result.recovering') }}
     </p>
-    <p
-      v-else-if="recoveryFailure"
-      class="m-0 text-sm text-destructive-background"
-    >
+    <p v-else-if="recoveryFailure" class="m-0 text-sm text-destructive">
       {{ coded('failure', recoveryFailure) }}
     </p>
     <p
@@ -96,13 +113,13 @@ const returnResult = computed(() => ({
     <CheckoutSteps
       v-else
       :projection="checkout.projection.value"
-      root-class="flex flex-col gap-3 rounded-xl border border-border-subtle bg-secondary-background p-6"
-      header-class="m-0 text-base font-semibold text-base-foreground"
+      root-class="flex flex-col gap-3 rounded-xl border border-border/50 bg-secondary p-6"
+      header-class="m-0 text-base font-semibold text-foreground"
       body-class="m-0 text-sm text-muted-foreground"
-      reason-class="m-0 text-sm text-destructive-background"
+      reason-class="m-0 text-sm text-destructive"
       safety-class="m-0 text-sm text-muted-foreground"
       actions-class="mt-2 flex gap-2"
-      action-class="inline-flex h-11 cursor-pointer items-center justify-center rounded-lg bg-base-foreground px-5 font-semibold text-base-background"
+      action-class="inline-flex h-11 cursor-pointer items-center justify-center rounded-lg bg-foreground px-5 font-semibold text-background"
       @retry="retryPayment"
       @cancel="checkout.cancel()"
       @continue-verification="checkout.continueVerification()"

@@ -7,7 +7,7 @@ import { computed, ref, watch } from 'vue'
 
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { reduceAllNodes } from '@/utils/graphTraversalUtil'
 
@@ -22,10 +22,10 @@ export interface PartnerNodeInfo {
  * queue decision see the current graph, not a throttled snapshot.
  */
 export function scanPartnerNodesInGraph(): PartnerNodeInfo[] {
-  if (!app.isGraphReady) return []
+  if (!useApp().isGraphReady) return []
   const nodeDefStore = useNodeDefStore()
   const partnerNodesByName = reduceAllNodes<Map<string, PartnerNodeInfo>>(
-    app.rootGraph,
+    useApp().rootGraph,
     (found, node) => {
       const nodeDef = nodeDefStore.fromLGraphNode(node)
       if (nodeDef?.api_node) {

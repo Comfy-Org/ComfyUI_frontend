@@ -45,9 +45,9 @@
 .agent-shimmer-text {
   background: linear-gradient(
     90deg,
-    var(--color-muted-foreground) 35%,
-    var(--color-base-foreground) 50%,
-    var(--color-muted-foreground) 65%
+    var(--muted-foreground) 35%,
+    var(--foreground) 50%,
+    var(--muted-foreground) 65%
   );
   background-size: 200% auto;
   background-clip: text;
@@ -59,7 +59,7 @@
   :where(#agent-panel-root, .agent-scope)
   .agent-shimmer-text {
   animation: none;
-  color: var(--color-muted-foreground);
+  color: var(--muted-foreground);
   -webkit-text-fill-color: currentcolor;
 }
 
@@ -70,7 +70,7 @@
 
   .agent-shimmer-text {
     animation: none;
-    color: var(--color-muted-foreground);
+    color: var(--muted-foreground);
     -webkit-text-fill-color: currentcolor;
   }
 
@@ -96,7 +96,7 @@
   :where(#agent-panel-root, .agent-scope),
   :where(#agent-panel-root, .agent-scope) :where(*) {
     scrollbar-width: thin;
-    scrollbar-color: var(--color-border-default) transparent;
+    scrollbar-color: var(--border) transparent;
   }
 
   :where(#agent-panel-root, .agent-scope)
@@ -111,7 +111,51 @@
     appearance: none;
     border: 0 solid;
     background-color: transparent;
-    font: inherit;
-    color: inherit;
+  }
+}
+
+@keyframes agent-talk-word {
+  from {
+    opacity: 0;
+    transform: translateY(0.25em);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+
+@keyframes agent-talk-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.disable-animations
+  :where(#agent-panel-root, .agent-scope)
+  :is(.agent-talk-word, .agent-talk-fade) {
+  animation: none;
+}
+
+.agent-talk-word {
+  display: inline-block;
+  animation: agent-talk-word 350ms cubic-bezier(0.25, 1, 0.5, 1) backwards;
+  animation-delay: var(--talk-delay, 0ms);
+}
+
+.agent-talk-fade {
+  animation: agent-talk-fade 300ms ease-out backwards;
+  animation-delay: var(--talk-delay, 0ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .agent-talk-word,
+  .agent-talk-fade {
+    animation: none;
   }
 }

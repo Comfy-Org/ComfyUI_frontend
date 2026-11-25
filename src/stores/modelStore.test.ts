@@ -4,8 +4,9 @@ import { reactive, watch } from 'vue'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { assetService } from '@/platform/assets/services/assetService'
 import type * as DistributionTypes from '@/platform/distribution/types'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import { api } from '@/scripts/api'
+import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import {
   ResourceState,
   effectiveModelExtensions,
@@ -20,27 +21,20 @@ const mockDistribution = vi.hoisted(
 
 vi.mock(import('@/platform/distribution/types'), () => mockDistribution)
 
-vi.mock(import('@/platform/remoteConfig/remoteConfig'))
-
-const featureState = vi.hoisted(() => ({
+const featureState = {
   serverFeatures: {} as Record<string, unknown>
-}))
+}
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    getModels: vi.fn(),
-    getModelFolders: vi.fn(),
-    getServerFeature: vi.fn(
-      (path: string, defaultValue?: unknown) =>
-        featureState.serverFeatures[path] ?? defaultValue
-    ),
-    viewMetadata: vi.fn(),
-    apiURL: vi.fn((path: string) => `http://localhost:8188${path}`),
-    addEventListener: vi.fn(),
-    addCustomEventListener: vi.fn(),
-    removeEventListener: vi.fn()
-  }
-}))
+vi.mock(import('@/scripts/api'))
+
+beforeEach(() => {
+  vi.mocked(api.getServerFeature).mockImplementation(
+    (path, defaultValue) => featureState.serverFeatures[path] ?? defaultValue
+  )
+  vi.mocked(api.apiURL).mockImplementation(
+    (path) => `http://localhost:8188${path}`
+  )
+})
 
 // Mock the assetService
 vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
@@ -101,7 +95,59 @@ describe('useModelStore', () => {
   beforeEach(async () => {
     mockDistribution.isCloud = false
     featureState.serverFeatures = reactive({ assets: false })
-    remoteConfig.value = {}
+  })
+
+  it('lists and refreshes Release models without asset filtering on a picked deployment', async () => {
+    enableMocks(true)
+    mockDistribution.isCloud = true
+    useDeploymentPickStore().bootDeployment = {
+      deployment_id: 'dep-release',
+      release_id: 'release-1',
+      status: 'ready',
+      can_start: false,
+      created_at: '2026-10-01T00:00:00Z'
+    }
+    vi.mocked(api.getModels).mockResolvedValue([
+      { name: 'release.gguf', pathIndex: 0 }
+    ])
+    store = useModelStore()
+    await store.loadModels()
+    expect(store.models.map((model) => model.file_name)).toEqual([
+      'release.gguf',
+      'release.gguf'
+    ])
+    vi.mocked(api.getModels).mockResolvedValue([
+      { name: 'updated.gguf', pathIndex: 0 }
+    ])
+    await store.refreshModelFolder('checkpoints')
+    expect(store.models.map((model) => model.file_name)).toEqual([
+      'updated.gguf',
+      'release.gguf'
+    ])
+    expect(assetService.getAssetModels).not.toHaveBeenCalled()
+  })
+
+  it('replaces cached Cloud models when the boot deployment arrives late', async () => {
+    enableMocks(true)
+    mockDistribution.isCloud = true
+    store = useModelStore()
+    await store.loadModels()
+    expect(store.models[0].file_name).toBe('sdxl.safetensors')
+    vi.mocked(api.getModels).mockResolvedValue([
+      { name: 'release.safetensors', pathIndex: 0 }
+    ])
+    useDeploymentPickStore().bootDeployment = {
+      deployment_id: 'dep-release',
+      release_id: 'release-1',
+      status: 'ready',
+      can_start: false,
+      created_at: '2026-10-01T00:00:00Z'
+    }
+    await vi.advanceTimersByTimeAsync(500)
+    expect(store.models.map((model) => model.file_name)).toEqual([
+      'release.safetensors',
+      'release.safetensors'
+    ])
   })
 
   it('should load models', async () => {
@@ -202,6 +248,20 @@ describe('useModelStore', () => {
   })
 
   describe('refresh', () => {
+    it('preserves loaded models when the same source fails to refresh', async () => {
+      enableMocks(true)
+      store = useModelStore()
+      await store.loadModels()
+      const models = store.models
+      vi.mocked(assetService.getAssetModels).mockRejectedValue(
+        new Error('assets unavailable')
+      )
+
+      await expect(store.refresh()).rejects.toThrow('assets unavailable')
+
+      expect(store.models).toEqual(models)
+    })
+
     it('re-loads only folders that were previously loaded', async () => {
       enableMocks()
       store = useModelStore()
@@ -636,7 +696,6 @@ describe('useModelStore', () => {
     })
 
     it('logs instead of rejecting when the post-scan reload fails', async () => {
-      const error = vi.spyOn(console, 'error').mockImplementation(() => {})
       enableMocks(true)
       store = useModelStore()
       await store.loadModels()
@@ -647,15 +706,45 @@ describe('useModelStore', () => {
       await getScanCallback()()
       await flushScanReload()
 
-      expect(error).toHaveBeenCalledWith(
+      expect(console.error).toHaveBeenCalledWith(
         expect.stringContaining('reload'),
         expect.any(Error)
       )
-      error.mockRestore()
     })
   })
 
   describe('assets capability change', () => {
+    it.for([
+      { name: 'empty', models: [] },
+      {
+        name: 'populated',
+        models: [{ name: 'legacy.safetensors', pathIndex: 0 }]
+      }
+    ])(
+      'keeps $name legacy folders retryable when switching to assets fails',
+      async ({ models }) => {
+        enableMocks(false)
+        vi.mocked(api.getModels).mockResolvedValue(models)
+        vi.mocked(assetService.getAssetModels).mockRejectedValue(
+          new Error('assets unavailable')
+        )
+        store = useModelStore()
+        await store.loadModels()
+
+        featureState.serverFeatures.assets = true
+        await vi.advanceTimersByTimeAsync(1000)
+
+        expect(
+          store.visibleModelFolders.map((folder) => folder.directory)
+        ).toEqual(['checkpoints', 'vae'])
+        vi.mocked(assetService.getAssetModels).mockResolvedValue([
+          { name: 'recovered.safetensors', pathIndex: 0 }
+        ])
+        const folder = await store.getLoadedModelFolder('checkpoints')
+        expect(Object.keys(folder!.models)).toEqual(['0/recovered.safetensors'])
+      }
+    )
+
     it('rebuilds the library when a late handshake turns the capability on', async () => {
       enableMocks(false)
       vi.mocked(assetService.getAssetModels).mockResolvedValue([
@@ -724,7 +813,10 @@ describe('useModelStore', () => {
       )
 
       featureState.serverFeatures.assets = true
-      remoteConfig.value = { supports_model_type_tags: true }
+      useRemoteConfigStore().acceptConfig(
+        { supports_model_type_tags: true },
+        false
+      )
       await vi.advanceTimersByTimeAsync(1000)
       await Promise.all(eagerLoads)
 
@@ -747,7 +839,10 @@ describe('useModelStore', () => {
       expect(api.getModelFolders).toHaveBeenCalledTimes(1)
       expect(assetService.getAssetModels).toHaveBeenCalledTimes(1)
 
-      remoteConfig.value = { supports_model_type_tags: true }
+      useRemoteConfigStore().acceptConfig(
+        { supports_model_type_tags: true },
+        false
+      )
 
       await vi.waitFor(() => {
         expect(api.getModelFolders).toHaveBeenCalledTimes(2)
@@ -759,14 +854,20 @@ describe('useModelStore', () => {
 
     it('rebuilds again when the capability rolls back', async () => {
       enableMocks(true)
-      remoteConfig.value = { supports_model_type_tags: true }
+      useRemoteConfigStore().acceptConfig(
+        { supports_model_type_tags: true },
+        false
+      )
       store = useModelStore()
       await store.loadModelFolders()
       await store.getLoadedModelFolder('checkpoints')
       expect(api.getModelFolders).toHaveBeenCalledTimes(1)
       expect(assetService.getAssetModels).toHaveBeenCalledTimes(1)
 
-      remoteConfig.value = { supports_model_type_tags: false }
+      useRemoteConfigStore().acceptConfig(
+        { supports_model_type_tags: false },
+        false
+      )
 
       await vi.waitFor(() => {
         expect(api.getModelFolders).toHaveBeenCalledTimes(2)

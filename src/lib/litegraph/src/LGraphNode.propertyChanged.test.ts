@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
-import type { LGraphEventMap } from './infrastructure/LGraphEventMap'
+import type { LGraphEventMap } from '@comfyorg/graph-model/LGraphEventMap'
 import { LGraph, LGraphNode } from './litegraph'
-import { LGraphEventMode, RenderShape } from './types/globalEnums'
+import { LGraphEventMode, RenderShape } from '@comfyorg/graph-model/globalEnums'
 
 type PropertyChange = LGraphEventMap['node:property:changed']
 

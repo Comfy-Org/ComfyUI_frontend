@@ -82,7 +82,7 @@ Bugs that only manifest on cloud-hosted distributions (Secrets panel, subscripti
 
 Indicators:
 
-- Files under `src/platform/secrets/`, `src/platform/subscription/`, signup flows
+- Files under `src/platform/secrets/`, `src/platform/billing/`, signup flows
 - PR description mentions cloud staging issues
 - Fix gated behind cloud feature flags
 
@@ -116,7 +116,7 @@ Tier 2 (N PRs) — cloud-distribution release rotation should decide
 - ...
 
 Tier 3 (N PRs) — skip recommended
-- #11586 fix: website polish (apps/website/ only)
+- #11586 fix: storybook polish (stories only)
 - ...
 ```
 

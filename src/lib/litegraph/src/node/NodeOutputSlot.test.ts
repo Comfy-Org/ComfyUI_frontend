@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { NodeOutputSlot } from '@/lib/litegraph/src/node/NodeOutputSlot'
-import { toLinkId } from '@/types/linkId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
 
 function createConnectedGraph() {
   const graph = new LGraph()
@@ -22,7 +22,6 @@ describe('NodeOutputSlot deprecated links getter', () => {
   const onWarning = vi.fn()
 
   beforeEach(() => {
-    onWarning.mockClear()
     LiteGraph.onDeprecationWarning = [onWarning]
     LiteGraph.alwaysRepeatWarnings = true
   })

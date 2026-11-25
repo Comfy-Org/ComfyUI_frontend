@@ -16,6 +16,16 @@ on it were deleted. The distribution-boundary decision, the one-way follower
 invariant, the human write path, and the product gate map are unchanged and
 carried forward below.
 
+Amended 2026-10-12: one agent socket and one credential policy on every
+backend replace the distribution-resolved connection module. See
+"Amendment (2026-10-12)"; the passages it supersedes are marked.
+
+Amended 2026-10-22 by
+[FE-3584](https://linear.app/comfyorg/issue/FE-3584/24-decide-the-local-write-before-echo-contract-and-retire-the-pending):
+a local edit is live on the canvas at once and held until its echo or
+rejection; the frontend keeps no optimistic overlay. See
+"Amendment (2026-10-22)"; the passages it supersedes are marked.
+
 ## Context
 
 The In-App Agent runs server-side and needs to read a user's live workflow and
@@ -41,7 +51,8 @@ Only the boundaries around it differ: the transport endpoint (Cloud reaches
 the agent through same-origin ingest; Local and Desktop connect directly to
 the agent binary) and authentication (every surface uses the unified chain in
 `authStore.getAuthHeader()`; Cloud ingest additionally enforces M2M
-server-side). The model provider is never a distribution fork.
+server-side). The model provider is never a distribution fork. (Superseded
+2026-10-12: every surface reaches the agent same-origin; see the amendment.)
 
 ### What went wrong with writing the stores first
 
@@ -100,8 +111,9 @@ one applier, and it is not in the frontend.
 - **No echo, by construction.** The host echoes every applied `doc_ops` batch
   as a `doc_update` stamped with the sender's actor. `useAgentCrdtFollower`
   drops a non-catch-up frame whose `actor` equals its own
-  (`human:<user>:<tab>`) before it reaches the applier, and settles the
-  optimistic overlay for that workflow. The live graph already holds the edit;
+  (`human:<user>:<tab>`) before it reaches the applier, and settles that
+  workflow's local-write holds against the document (amended 2026-10-22:
+  there is no optimistic overlay). The live graph already holds the edit;
   applying the echo would only re-run the change tracker. The no-echo
   acceptance criterion of the original text is met by this entry-point check
   plus the `agent-remote` source on everything the applier does write.
@@ -148,7 +160,7 @@ one applier, and it is not in the frontend.
 ```text
  human canvas edit ──▶ graph API ──▶ GraphIntent(local) ──▶ docOpMinter ──▶ doc_ops ──▶ host applyOps
                                                                                             │
-                                            ┌── own actor? drop, settle overlay ◀── doc_update ◀──┘
+                                            ┌── own actor? drop, settle holds ◀──── doc_update ◀──┘
                                             │
  host doc_update ──▶ followerDoc ──▶ DocChangeCollector ──▶ LiveGraphApplier ──▶ graph API
                                                             (agent-remote source,   │
@@ -174,7 +186,10 @@ one applier, and it is not in the frontend.
 - **Whole-graph replace as the mutation primitive.** Clobbers concurrent agent
   edits mid-turn and kills op-log replay.
 
-**Distribution boundaries.** Keep one branch and one follower implementation,
+**Distribution boundaries.** _Superseded 2026-10-12 except for its first and
+last rules: one follower with no distribution checks in its apply path or
+rendering, and Local and Desktop stay authenticated surfaces (the amendment's
+one `isCloud` credential branch replaces delegating to `authStore.getAuthHeader()`)._ Keep one branch and one follower implementation,
 with surface differences isolated behind a small distribution-resolved boundary
 (rejecting both separate per-surface branches and distribution checks scattered
 through the follower core). Introduce a narrow agent connection/configuration
@@ -188,10 +203,12 @@ reduce auth to `isCloud` (Local and Desktop are authenticated product
 surfaces). Dev-only Vite proxy/credential behavior stays in Vite config and is
 never treated as Local product behavior.
 
-Today the follower uses the centralized ComfyUI `api` transport (`api.socket`
+_Superseded 2026-10-12._ Today the follower uses the centralized ComfyUI `api` transport (`api.socket`
 in `src/scripts/api.ts`), which is already distribution-resolved, so no
 `AGENT_BASE_URL` is wired yet; this ADR records the module as the shape to
 introduce when the follower stops using `api.socket`.
+
+_Superseded 2026-10-12 (the diagram shows the original module):_
 
 ```text
                          compile-time __DISTRIBUTION__
@@ -231,7 +248,13 @@ guard.
 - Remote edits get undo, `isModified`, extension callbacks
   (`onAdded`, `onRemoved`, `onConnectionsChange`, `onConfigure`,
   `onWidgetChanged`), autogrow, and slot realignment without follower code,
-  because they run the same code a human edit runs.
+  because they run the same code a human edit runs. One exception, found in
+  production: a dynamic input slot the host grew (`connect` with a `grow`
+  payload) has no live counterpart, and autogrow is driven by
+  `onConnectionsChange` on a slot that already exists, so there is no connect
+  to trigger it and the link resolved to slot `-1`. The applier grows the
+  group itself before connecting (`growAutogrowInput`), the read-leg mirror of
+  the grow op `docOpMinter.mintConnect` already mints on the write leg.
 - Litegraph and the stores carry no agent-specific hooks; the agent extension
   is deletable without touching them.
 - One shared apply/render path means shared fixes and tests protect all four
@@ -262,7 +285,8 @@ guard.
   Interior (`path`) widget writes are not held. A page reload still replays the
   whole document over an empty graph, so a field outside the op vocabulary
   (node color) reverts there.
-- The largest distribution risk is unchanged: accidental cloud coupling in the
+- _Superseded 2026-10-12 (see the amendment's remaining risk)._ The largest
+  distribution risk is unchanged: accidental cloud coupling in the
   same-origin `/ws` transport. Boundary tests plus at least one
   browser-observable E2E per shipping topology are required.
 
@@ -279,11 +303,32 @@ path:
 2. **`doc_ops` sender** — `opSender` sends stamped ops with `base_version`
    tracking; retries re-send the same op. A paused tab parks batches rather
    than dropping them ([CRDT-WRITE-0035](CRDT-WRITE-0035-hold-pending-human-ops-across-tab-suspension.md)).
-3. **Optimistic overlay** — pending local ops are presentation-only, cleared on
+3. _Superseded 2026-10-22 by the local-write hold; see the amendment._
+   **Optimistic overlay** — pending local ops are presentation-only, cleared on
    _effect_ (the echoed `doc_update`, which the follower recognises by actor),
    never encoded as a Yjs update or merged into the shared doc.
 4. **Echo-attribution guard** — the own-actor drop at the follower entry plus
    `agent-remote` provenance on everything the applier writes.
+
+## Amendment (2026-09-26): re-minting a document the host refuses as stale-schema
+
+One narrow exception applies to "the follower never sends the whole graph." If
+the host cannot read a stored document because it uses an older schema, and the
+subscribe advertised `supports_reseed`, the host refuses with
+`stale_schema_reseed_required`. The follower may answer each refusal once with a
+`doc_reseed` frame containing the bound tab's serialized canvas (the same
+content a prompt posts as its draft).
+
+This is recovery rather than a whole-graph edit: the host rechecks the document,
+compare-and-swaps the exact refused sequence, remains the only Yjs writer, and
+announces a new lineage for ordinary catch-up. The on-screen canvas is required
+because the server projection can lag human edits. `LayoutFollowerBridge.reseed`
+enforces that the refusal matches the current workflow and can be answered only
+once. A retryable reseed result permits another answer only to a fresh refusal
+produced by the bounded subscribe backoff. After a successful or conflicting
+reseed resets the lineage, another refusal cannot be answered until the
+replacement subscription is confirmed, the transport reconnects, or the user
+retargets. All other whole-graph sends remain rejected.
 
 ## Product gate and developer diagnostics (amended 2026-09-12)
 
@@ -331,6 +376,136 @@ dropped as own echoes.
 
 This frontend gate is not a server authorization boundary. No Local or Desktop
 transport is claimed operational solely because its feature gate is enabled.
+
+## Amendment (2026-10-12): one agent socket on every backend
+
+This supersedes the "Today the follower uses `api.socket`" paragraph and the
+`/ws` risk bullet above. The follower no longer uses `api.socket`. Cloud ingest
+and the local agent now serve the same contract, so the connection module
+described above is not needed:
+
+- **One socket.** Agent events and document frames share
+  `/api/agent/events`. Its path comes from `api.apiURL`, as every agent REST
+  path does. The transport has no distribution branch.
+- **Identity from the backend.** Ops carry `human:<user_id>:<tab>` with the id
+  from `GET /api/agent/identity`. The Firebase uid is not the backend user id
+  for identity-mapped accounts.
+- **Credential, one `isCloud` branch.** In the cloud, agent REST requests
+  authenticate through `fetchApi` alone, and the socket takes the auth params
+  `/ws` uses (`api.socketAuthParams`: the session cookie with `workspace_id`,
+  or the cloud token; no socket when no one is signed in). Ingest prefers a
+  header credential over the session cookie, so adding the user's own header
+  there would move a request out of its workspace. Off-cloud, `fetchApi`
+  attaches nothing, so REST requests carry the active workspace's token
+  (`getWorkspaceAuthToken`, the credential `queuePrompt` uses) and the socket
+  carries the same credential as `?token=`; a running turn re-sends it. Model
+  calls and the runs the local agent starts then bill the active workspace, as
+  on cloud. An API-key session sends its key. A signed-in session whose
+  workspace token is missing or fails to mint fails closed
+  (`getWorkspaceAuthTokenOrThrow`): the request errors and the socket retries.
+  The personal session is never sent in its place, because that session is
+  what comfy-api bills through the legacy funds check. A signed-out user sends
+  nothing.
+- **Development exception.** In development mode, a signed-out send skips the
+  sign-in dialog only when the dev proxy injects `DEV_AGENT_COMFY_TOKEN`. Vite
+  tells the browser so with the build-time flag
+  `VITE_DEV_AGENT_PROXY_CREDENTIAL`; the token itself stays in the proxy.
+
+Rejected: the distribution-resolved connection module above, an
+`AGENT_BASE_URL` resolving same-origin ingest in the cloud and the agent
+binary directly on Local and Desktop. Both backends now serve the same paths
+behind the ComfyUI origin, so the module would have nothing to resolve. Also
+rejected: keeping `/ws` in the cloud and adding a second socket for the local
+agent, which keeps two transports in the follower.
+
+Accepted cost: Local and Desktop product wiring is still unshipped (the panel
+mounts only in cloud bundles and the standalone harness), and Global Settings
+still picks its URL and header on `isCloud`.
+
+The remaining risk is the agent socket itself. The Playwright agent suites
+serve chat and document frames on `/api/agent/events` from a fake host
+(`AgentFollowerHostSocket`); none runs against ingest or the local agent in
+CI, and the `@agent-harness` smoke needs the local harness. At least one
+browser-observable E2E per shipping topology is still required.
+
+## Amendment (2026-10-22): a local write is live, held, and never shadowed
+
+This supersedes item 3 of "Human write path" and the overlay wording in the
+no-echo rule. It states what happens to a human edit between the moment the
+user makes it and the moment the host answers for its op.
+
+- **Live at once.** The edit is on the canvas as soon as the user makes it,
+  because the user made it on the live graph. The live graph is the only copy.
+  No shadow, overlay, pending-op ledger, or presentation layer holds a second
+  copy of node or widget state, keyed by op id or otherwise.
+- **Held until its echo or rejection.** While a top-level `set_widget` is in
+  flight, `holdsLocalWrite` (`LocalWidgetWrites`, owned by
+  `AgentCrdtProjection`) keeps any frame's value for that register off the
+  canvas, so the canvas shows one value: the local one. The hold ends when the
+  document holds the local value (the echo), when the op settles by an outcome
+  carrying that value, when `revertRejected` reverts the op, or on a lineage
+  reset. `revertRejected` ends the holds of the ops it reverts before it reads
+  their registers back from the document, so a rejection shows the document's
+  value even when a conflicting frame was held back meanwhile; the rejection
+  does not depend on the caller settling first. A newer local write with a
+  different value keeps its own hold through an older write's echo or
+  rejection. The hold tracks values, not writes: when an older in-flight write
+  carries the same value as the newest one (25, then 30, then 25), the older
+  write's echo or settlement ends the newest write's hold. When an op settles
+  as `unconfirmed`, `unacknowledged` or `undeliverable`, its hold ends without
+  a read-back. A conflicting frame consumed while the hold was active is not
+  re-applied, but later frames are no longer held, so the canvas keeps the
+  local value until a later frame writes that register or a turn's draft
+  reconciles the document
+  ([CRDT-AUTHORITY-0035](CRDT-AUTHORITY-0035-human-canvas-authority-and-draft-reconciliation.md)
+  decision 3). That ADR withholds the draft while the follower marks the
+  canvas stale (decision 6), and the server-side reconciliation depends on
+  the backend change it assumes.
+- **Never shadowed, replayed, or re-stamped.** Pending ops are not applied to a
+  copy of the graph, are not re-applied to the canvas over a later frame or
+  after a lineage reset, and keep the `op_id` and stamp they were minted with.
+  A retry, including a same-page replay under
+  [CRDT-REPLAY-0039](CRDT-REPLAY-0039-retain-exhausted-operations-for-same-page-replay.md),
+  re-sends the same envelope (package INVARIANTS FC-7).
+
+Structural ops are not held: frames apply in `merge` mode and touch only what
+the document changed, and a refused structural op is reverted register by
+register as described in the decision above.
+
+**Package basis** (`@comfyorg/comfy-multi-player`, cited at
+[v0.3.10](https://github.com/Comfy-Org/comfy-multi-player/tree/86aecb931b4ec1662bf29aef24fb90af645a1536)).
+[INVARIANTS](https://github.com/Comfy-Org/comfy-multi-player/blob/86aecb931b4ec1662bf29aef24fb90af645a1536/docs/INVARIANTS.md)
+FC-5 forbids a follower writing the shared document or merging an optimistic
+overlay into it; the package's op-based CRDT v1 decision
+(`0001-op-based-crdt-v1.md` in its
+[ADR directory](https://github.com/Comfy-Org/comfy-multi-player/tree/86aecb931b4ec1662bf29aef24fb90af645a1536/docs/adr))
+carries the same rule (invariant 9, foreclosure 5). The package permits, but
+does not require, a presentation-only overlay for a client that renders from
+its follower document (KA-9; `docs/multiplayer-schema.md` §2.4). This frontend
+does not render from the follower document: the canvas is the live graph, which
+already shows the edit, so an overlay would only add a second model to
+reconcile, the failure the 2026-09-24 revision removed. The one preview the
+package sanctions beyond that is a client that runs `applyOps` over its own
+replica and converges with the host by projection-equality
+(`docs/multiplayer-schema.md` §2.2). That is a package and topology change. If
+a preview beyond the hold is needed, it starts as a package ticket for
+client-side `applyOps` projection, and no frontend overlay work proceeds until
+it lands.
+
+**Rejected:**
+
+- A pending-op shadow surface, a presentation-only replay queue, and shadows
+  cleared on document effect. Each keeps a second copy of graph state per
+  pending op and must be reconciled with the live graph.
+- Predicting document state the host has not produced yet, such as the slot
+  index a pending grow will occupy, and minting against the prediction. It is a
+  hand-written projection of `applyOps`; the sanctioned form is the package's
+  own applier running on the client. Defer the dependent intent until the echo
+  or rejection instead.
+- Re-minting or re-stamping a pending op when its lineage changes.
+
+`agentCrdtProjection.localEdits.test.ts` asserts one canvas value at each step
+of a widget edit, a conflicting host frame, and the edit's rejection.
 
 ## Notes
 

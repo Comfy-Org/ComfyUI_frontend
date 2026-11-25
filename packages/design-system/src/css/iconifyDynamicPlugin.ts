@@ -6,11 +6,10 @@ import plugin from 'tailwindcss/plugin'
 
 import { COMFY_ICON_PREFIX, loadComfyIconSet } from './comfyIconSet.js'
 
-const SCALE = 1.2
+const SIZE = 'calc(var(--spacing) * 4)'
 
 const options = {
-  iconSets: { [COMFY_ICON_PREFIX]: loadComfyIconSet() },
-  scale: SCALE
+  iconSets: { [COMFY_ICON_PREFIX]: loadComfyIconSet() }
 }
 
 function getModeCSSRules(icon: string, mode: 'mask' | 'background') {
@@ -30,15 +29,25 @@ function getModeCSSRules(icon: string, mode: 'mask' | 'background') {
   })
   if (generated.css.length !== 1) return {}
 
-  const size = { width: `${SCALE}em`, height: `${SCALE}em` }
-  return { ...generated.common?.rules, ...size, ...generated.css[0].rules }
+  return {
+    ...generated.common?.rules,
+    ...generated.css[0].rules,
+    width: SIZE,
+    height: SIZE,
+    'flex-shrink': '0'
+  }
 }
 
 export default plugin(({ matchComponents }) => {
   matchComponents({
     icon: (icon) => {
       try {
-        return getDynamicCSSRules(icon, options)
+        return {
+          ...getDynamicCSSRules(icon, options),
+          width: SIZE,
+          height: SIZE,
+          'flex-shrink': '0'
+        }
       } catch {
         return {}
       }

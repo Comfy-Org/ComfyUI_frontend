@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { SavedPaymentMethod } from '@comfyorg/account-core/billing'
@@ -15,9 +15,11 @@ import type {
   RailView
 } from '@/checkout/checkoutPage'
 import type { KeepSubscriptionCopy } from '@/checkout/keepSubscription'
+import type { PlanPurchase } from '@/checkout/summaryLedger'
 import { isLocked, railView, submitPhaseOf } from '@/checkout/checkoutPage'
 import type { PayContext } from '@/components/fullPage/CheckoutPayAction.vue'
 import CheckoutPayAction from '@/components/fullPage/CheckoutPayAction.vue'
+import MethodOnFile from '@/components/fullPage/MethodOnFile.vue'
 import PaymentFormError from '@/components/fullPage/PaymentFormError.vue'
 import PaymentTabsRail from '@/components/fullPage/PaymentTabsRail.vue'
 import type { PayChoice } from '@/composables/useFullPageCheckout'
@@ -34,9 +36,10 @@ const {
   publishableKey,
   canPay,
   reopening,
-  canCancel = false,
   keepSubscription,
-  savedMethods = []
+  savedMethods = [],
+  purchase = 'subscribe',
+  savesCardOffSession = false
 } = defineProps<{
   page: Extract<CheckoutPage, { kind: 'resolving' | 'capture' | 'waiting' }>
   charge?: CheckoutCharge
@@ -44,10 +47,12 @@ const {
   canPay: boolean
   /** The page is re-opening the challenge on its own, so Complete verification waits. */
   reopening: boolean
-  canCancel?: boolean
   /** The notice a plan set to end shows above Pay, worded for this quote. */
   keepSubscription?: KeepSubscriptionCopy
   savedMethods?: readonly SavedPaymentMethod[]
+  purchase?: PlanPurchase | 'credits'
+  /** A new card is saved for off-session charges, as auto top-up with no default card requires. */
+  savesCardOffSession?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -65,7 +70,9 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
-const SECTION_LABEL = 'm-0 text-base font-normal text-base-foreground'
+const SECTION_LABEL = 'm-0 text-base font-normal text-foreground'
+
+const tokenizing = ref(false)
 
 const phase = computed(() => submitPhaseOf(page))
 const locked = computed(() => isLocked(page))
@@ -120,6 +127,14 @@ const elementLive = computed(() => {
   )
 })
 
+const formMounted = computed(() => elementLive.value && charge !== undefined)
+
+watch(formMounted, (mounted) => {
+  if (!mounted) tokenizing.value = false
+})
+
+const tabsLocked = computed(() => locked.value || tokenizing.value)
+
 const copy = computed<StripePaymentCopy>(() => ({
   paymentMethod: t('checkout.paymentMethod'),
   methodChoice: t('checkout.methodChoice'),
@@ -132,15 +147,16 @@ const copy = computed<StripePaymentCopy>(() => ({
 
 <template>
   <section
-    class="flex lg:w-1/2"
+    class="flex justify-center lg:w-1/2 lg:justify-start"
     :data-testid="page.kind === 'waiting' ? 'checkout-waiting' : undefined"
   >
-    <div class="flex w-full flex-col px-6 py-12 lg:max-w-lg lg:px-16">
+    <div class="flex w-full max-w-lg flex-col px-6 py-12 lg:px-16">
+      <slot name="before" />
       <div v-if="!view" class="flex flex-col gap-6">
         <div class="flex flex-col gap-3">
           <h3 :class="SECTION_LABEL">{{ t('checkout.paymentMethod') }}</h3>
           <div
-            class="h-84 rounded-lg bg-secondary-background-hover"
+            class="h-84 rounded-lg bg-accent"
             aria-busy="true"
             data-testid="checkout-skeleton"
           />
@@ -148,18 +164,18 @@ const copy = computed<StripePaymentCopy>(() => ({
         <div class="flex flex-col gap-3">
           <h4 :class="SECTION_LABEL">{{ t('checkout.billingAddress') }}</h4>
           <div
-            class="h-84 rounded-lg bg-secondary-background-hover"
+            class="h-84 rounded-lg bg-accent"
             aria-busy="true"
             data-testid="checkout-skeleton"
           />
         </div>
         <CheckoutPayAction
+          :purchase
           disabled
           :loading="locked"
           :locked
           :reopening
           :phase
-          :can-cancel="canCancel"
           @cancel="emit('cancel')"
           @continue-verification="emit('continueVerification')"
         />
@@ -173,14 +189,15 @@ const copy = computed<StripePaymentCopy>(() => ({
         class="flex flex-col gap-6"
         @submit.prevent="emit('pay', undefined)"
       >
+        <MethodOnFile :methods="savedMethods" />
         <CheckoutPayAction
+          :purchase
           v-bind="payContext"
           :disabled="!canPay"
           :loading="locked"
           :locked
           :reopening
           :phase
-          :can-cancel="canCancel"
           @confirm-reactivation="emit('confirmReactivation', $event)"
           @consent-missing="emit('consentMissing')"
           @cancel="emit('cancel')"
@@ -193,7 +210,7 @@ const copy = computed<StripePaymentCopy>(() => ({
           v-if="tabbed"
           :rail="tabbed"
           :methods="savedMethods"
-          :locked
+          :locked="tabsLocked"
           @select-tab="emit('selectTab', $event)"
           @pay-saved="
             emit('pay', {
@@ -206,13 +223,13 @@ const copy = computed<StripePaymentCopy>(() => ({
         >
           <template #pay>
             <CheckoutPayAction
+              :purchase
               v-bind="payContext"
               :disabled="!canPay"
               :loading="locked"
               :locked
               :reopening
               :phase
-              :can-cancel="canCancel"
               @confirm-reactivation="emit('confirmReactivation', $event)"
               @consent-missing="emit('consentMissing')"
               @cancel="emit('cancel')"
@@ -231,8 +248,11 @@ const copy = computed<StripePaymentCopy>(() => ({
           :is-loading="locked"
           :can-submit="canPay"
           :locked
+          :pay-once="purchase === 'credits'"
+          :saves-card-off-session
           page-layout
           @phase="emit('phase', $event)"
+          @submitting-change="tokenizing = $event"
           @confirm="
             (token, methodType) =>
               emit('pay', { confirmationToken: token, methodType })
@@ -240,13 +260,13 @@ const copy = computed<StripePaymentCopy>(() => ({
         >
           <template #submit="{ disabled, loading }">
             <CheckoutPayAction
+              :purchase
               v-bind="payContext"
               :disabled
               :loading
               :locked
               :reopening
               :phase="formShown ? phase : undefined"
-              :can-cancel="canCancel"
               @confirm-reactivation="emit('confirmReactivation', $event)"
               @consent-missing="emit('consentMissing')"
               @cancel="emit('cancel')"

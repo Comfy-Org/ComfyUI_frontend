@@ -3,15 +3,15 @@ import { describe, expect, it } from 'vitest'
 import type {
   BillingDeclineReason,
   BillingRecoveryAction
-} from './operationState.js'
-import type { DeclineDetailKey } from './paymentCopy.js'
+} from './operationState'
+import type { DeclineDetailKey } from './paymentCopy'
 import {
   DEFAULT_PAYMENT_COPY,
   createPaymentCopy,
   declineDetailKey,
   paymentCopyKeys
-} from './paymentCopy.js'
-import type { PaymentProjection } from './paymentProjection.js'
+} from './paymentCopy'
+import type { PaymentProjection } from './paymentProjection'
 
 function failedWithUnknownRecoveryAction(): PaymentProjection {
   const serverAddedAction: string = 'offer_bank_transfer'

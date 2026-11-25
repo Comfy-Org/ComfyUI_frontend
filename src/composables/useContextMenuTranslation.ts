@@ -7,7 +7,7 @@ import type {
   IWidget
 } from '@/lib/litegraph/src/litegraph'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 
 export function translateContextMenuItems(
   values: readonly (IContextMenuValue | string | null)[] | undefined,
@@ -67,7 +67,7 @@ export const useContextMenuTranslation = () => {
     )
 
     // Add items from new extension API
-    const newApiItems = app.collectCanvasMenuItems(this)
+    const newApiItems = useApp().collectCanvasMenuItems(this)
     for (const item of newApiItems) {
       res.push(item)
     }
@@ -113,7 +113,7 @@ export const useContextMenuTranslation = () => {
 
     // Add items from new extension API
     const node = args[0]
-    const newApiItems = app.collectNodeMenuItems(node)
+    const newApiItems = useApp().collectNodeMenuItems(node)
     for (const item of newApiItems) {
       res.push(item)
     }
@@ -143,7 +143,7 @@ export const useContextMenuTranslation = () => {
   const OriginalContextMenu = LiteGraph.ContextMenu
   function ContextMenu(
     values: (IContextMenuValue | string)[],
-    options: IContextMenuOptions
+    options: IContextMenuOptions = {}
   ) {
     if (options.title) {
       options.title = resolveNodeDefText('display_name', options.title)

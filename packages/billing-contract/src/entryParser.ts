@@ -4,38 +4,49 @@
  * product may add analytics noise without breaking the app; everything the
  * contract names is validated, because this is untrusted input.
  */
-import type { BillingIntent, BillingProduct } from './contract.js'
+import type { BillingIntent, BillingProduct, BillingSource } from './contract'
 import {
   BILLING_CONTRACT_VERSION,
   isBillingIntent,
-  isBillingProduct
-} from './contract.js'
+  isBillingProduct,
+  isBillingSource
+} from './contract'
 import type {
+  EntryAutoTopUp,
   InvalidIdentifierCode,
   OptionalEntryKey,
   OptionalEntryValues
-} from './entryFields.js'
+} from './entryFields'
 import {
+  ENTRY_PARAM_AMOUNT,
   ENTRY_PARAM_PRODUCT,
   ENTRY_PARAM_RETURN_TO,
-  OPTIONAL_ENTRY_FIELDS
-} from './entryFields.js'
-import { isContractIdentifier } from './identifiers.js'
-import type { ReturnTarget } from './returnTargets.js'
-import { isReturnTarget } from './returnTargets.js'
-import { CONTRACT_PARSE_BASE, parseUrl } from './url.js'
+  ENTRY_PARAM_SOURCE,
+  OPTIONAL_ENTRY_FIELDS,
+  readEntryAmountCents,
+  readEntryAutoTopUp
+} from './entryFields'
+import { isContractIdentifier } from './identifiers'
+import type { ReturnTarget } from './returnTargets'
+import { isReturnTarget } from './returnTargets'
+import { CONTRACT_PARSE_BASE, parseUrl } from './url'
 
 export interface BillingEntry extends OptionalEntryValues {
   readonly version: typeof BILLING_CONTRACT_VERSION
   readonly intent: BillingIntent
   readonly product: BillingProduct
   readonly returnTo: ReturnTarget
+  readonly source?: BillingSource
   /**
    * A `promo` value outside the identifier charset, exactly as the link
    * carried it. Checkout shows it refused in the field; it never reaches a
    * URL and never voids the rest of the request.
    */
   readonly unreadablePromotionCode?: string
+  /** The credit amount a top-up asks for, in whole cents. */
+  readonly amountCents?: number
+  /** The auto top-up a top-up asks to turn on with its payment. */
+  readonly autoTopUp?: EntryAutoTopUp
 }
 
 export type BillingEntryErrorCode =
@@ -43,6 +54,8 @@ export type BillingEntryErrorCode =
   | 'UNKNOWN_INTENT'
   | 'UNKNOWN_PRODUCT'
   | 'UNKNOWN_RETURN_TARGET'
+  | 'INVALID_AMOUNT'
+  | 'INVALID_AUTO_TOP_UP'
   | InvalidIdentifierCode
 
 export type BillingEntryResult =
@@ -118,6 +131,18 @@ export function parseBillingEntry(url: string | URL): BillingEntryResult {
   const optional = parseOptionalFields(parsed.searchParams)
   if (optional.status === 'error') return optional
 
+  const rawAmount = parsed.searchParams.get(ENTRY_PARAM_AMOUNT)
+  const amountCents =
+    rawAmount === null ? undefined : readEntryAmountCents(rawAmount)
+  if (rawAmount !== null && amountCents === undefined)
+    return { status: 'error', code: 'INVALID_AMOUNT' }
+
+  const autoTopUp = readEntryAutoTopUp(parsed.searchParams)
+  if (autoTopUp.status === 'invalid')
+    return { status: 'error', code: 'INVALID_AUTO_TOP_UP' }
+
+  const source = parsed.searchParams.get(ENTRY_PARAM_SOURCE)
+
   return {
     status: 'ok',
     entry: {
@@ -125,7 +150,10 @@ export function parseBillingEntry(url: string | URL): BillingEntryResult {
       intent: route.intent,
       product,
       returnTo,
-      ...optional.values
+      ...optional.values,
+      ...(isBillingSource(source) ? { source } : {}),
+      ...(amountCents === undefined ? {} : { amountCents }),
+      ...(autoTopUp.status === 'ok' ? { autoTopUp: autoTopUp.value } : {})
     }
   }
 }

@@ -1,7 +1,7 @@
 import type {
   WorkspacePendingInvite,
   WorkspaceMember
-} from '../../platform/workspace/stores/teamWorkspaceStore'
+} from '@/platform/workspace/stores/teamWorkspaceStore'
 
 /**
  * Storybook mock for `useTeamWorkspaceStore`.

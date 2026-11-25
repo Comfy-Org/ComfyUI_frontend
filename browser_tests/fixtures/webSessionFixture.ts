@@ -12,8 +12,6 @@ import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import {
   WEB_SESSION,
   WEB_SESSION_COOKIE,
-  WEB_SESSION_ANONYMOUS_FEATURES,
-  WEB_SESSION_FEATURES,
   WEB_SESSION_MINT,
   currentWorkspace
 } from '@e2e/fixtures/data/webSession'
@@ -34,6 +32,8 @@ interface TokenMint {
 }
 
 interface WebSessionFixtures {
+  /** Flags merged into both `/api/features` answers, over the backend's. */
+  serverFeatures: RemoteConfig
   tokenMints: TokenMint[]
   workspaceReads: Request[]
   firebaseRequests: string[]
@@ -41,6 +41,7 @@ interface WebSessionFixtures {
 }
 
 export const webSessionTest = comfyPageFixture.extend<WebSessionFixtures>({
+  serverFeatures: [{}, { option: true }],
   tokenMints: async ({ context }, use) => {
     const mints: TokenMint[] = []
     context.on('request', (request) => {
@@ -97,6 +98,7 @@ export const webSessionTest = comfyPageFixture.extend<WebSessionFixtures>({
     {
       page,
       context,
+      serverFeatures,
       tokenMints,
       workspaceReads,
       firebaseRequests,
@@ -112,18 +114,7 @@ export const webSessionTest = comfyPageFixture.extend<WebSessionFixtures>({
     await page.route('**/api/features', async (route) => {
       const response = await route.fetch()
       const backendFeatures: RemoteConfig = await response.json()
-      const headers = await route.request().allHeaders()
-      const credentialed =
-        'x-comfy-client' in headers &&
-        'cookie' in headers &&
-        headers['cookie'].includes(WEB_SESSION_COOKIE.name)
-      await route.fulfill(
-        jsonRoute(
-          credentialed
-            ? { ...backendFeatures, ...WEB_SESSION_FEATURES }
-            : { ...backendFeatures, ...WEB_SESSION_ANONYMOUS_FEATURES }
-        )
-      )
+      await route.fulfill(jsonRoute({ ...backendFeatures, ...serverFeatures }))
     })
 
     await page.route('**/api/auth/session', async (route) => {
@@ -164,8 +155,10 @@ export const webSessionTest = comfyPageFixture.extend<WebSessionFixtures>({
 
     await context.addCookies([{ ...WEB_SESSION_COOKIE, url: APP_URL }])
 
-    await use(page)
-
-    await page.unrouteAll({ behavior: 'ignoreErrors' })
+    try {
+      await use(page)
+    } finally {
+      await page.unrouteAll({ behavior: 'ignoreErrors' })
+    }
   }
 })

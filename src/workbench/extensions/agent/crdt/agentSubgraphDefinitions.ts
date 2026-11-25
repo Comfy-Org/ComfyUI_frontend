@@ -1,7 +1,12 @@
-import { OPAQUE_WIDGETS_KEY } from '@comfyorg/comfy-multi-player'
+import {
+  OPAQUE_WIDGETS_KEY,
+  WIDGET_FORM_KEY,
+  nodesMap
+} from '@comfyorg/comfy-multi-player'
 import * as Y from 'yjs'
 
-import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
+import type { ExportedSubgraph } from '@comfyorg/graph-model/serialisation'
+import { zSparseSubgraphDefinition } from '@comfyorg/graph-model/workflowSchema'
 
 /**
  * Root map the op layer mints `definitions.subgraphs` into, keyed by
@@ -113,7 +118,8 @@ function readInteriorNode(source: unknown): Record<string, unknown> | null {
   }
   const node: Record<string, unknown> = {}
   source.forEach((value, key) => {
-    if (key === NODE_INCARNATION || !isReadableKey(key)) return
+    if (key === NODE_INCARNATION || key === WIDGET_FORM_KEY) return
+    if (!isReadableKey(key)) return
     if (key === 'widgets' && value instanceof Y.Map) {
       node.widgets_values_named = Object.fromEntries(
         [...value.entries()].flatMap(([name, widgetValue]) =>
@@ -191,60 +197,6 @@ function projectSubgraphDefinition(
   return definition as unknown as ExportedSubgraph
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
-function hasSafeInputs(value: unknown): boolean {
-  return (
-    value === undefined ||
-    (Array.isArray(value) &&
-      value.every(
-        (input) =>
-          isRecord(input) &&
-          typeof input.name === 'string' &&
-          (input.linkIds === undefined || Array.isArray(input.linkIds))
-      ))
-  )
-}
-
-function hasSafeNodes(value: unknown): boolean {
-  return (
-    value === undefined ||
-    (Array.isArray(value) &&
-      value.every(
-        (node) =>
-          isRecord(node) &&
-          (node.inputs === undefined ||
-            (Array.isArray(node.inputs) && node.inputs.every(isRecord)))
-      ))
-  )
-}
-
-function hasSafeLinks(value: unknown): boolean {
-  return value === undefined || (Array.isArray(value) && value.every(isRecord))
-}
-
-function hasSafeNestedDefinitions(value: unknown): boolean {
-  if (value === undefined) return true
-  if (!isRecord(value)) return false
-  const nested = value.subgraphs
-  return (
-    nested === undefined ||
-    (Array.isArray(nested) && nested.every(isSafeDefinition))
-  )
-}
-
-function isSafeDefinition(value: unknown): boolean {
-  return (
-    isRecord(value) &&
-    hasSafeInputs(value.inputs) &&
-    hasSafeNodes(value.nodes) &&
-    hasSafeLinks(value.links) &&
-    hasSafeNestedDefinitions(value.definitions)
-  )
-}
-
 function isExcludedDefinition(
   source: Y.Map<unknown>,
   excludedDefinitionIds: ReadonlySet<string>
@@ -274,7 +226,7 @@ function readNestedDefinitions(
         }
         return [
           definition instanceof Y.Map
-            ? readDefinition(definition, excludedDefinitionIds)
+            ? projectSubgraphDefinition(definition, excludedDefinitionIds)
             : null
         ]
       })
@@ -283,14 +235,6 @@ function readNestedDefinitions(
     }
   })
   return definitions
-}
-
-function readDefinition(
-  source: Y.Map<unknown>,
-  excludedDefinitionIds: ReadonlySet<string>
-): ExportedSubgraph | null {
-  const definition = projectSubgraphDefinition(source, excludedDefinitionIds)
-  return isSafeDefinition(definition) ? definition : null
 }
 
 function readField(source: unknown, key: string): unknown {
@@ -339,6 +283,89 @@ function definitionsMap(doc: Y.Doc): Y.Map<unknown> | null {
   return doc.getMap<unknown>(DEFINITIONS_ROOT)
 }
 
+/** The definitions root a deep observer can attach to. */
+export function definitionsObserverRoot(doc: Y.Doc): Y.Map<unknown> {
+  return doc.getMap<unknown>(DEFINITIONS_ROOT)
+}
+
+/** Interior widget values: named map, opaque array, or absent. */
+type InteriorWidgetValues =
+  | Record<string, unknown>
+  | readonly unknown[]
+  | undefined
+
+function readInteriorWidgets(source: Y.Map<unknown>): InteriorWidgetValues {
+  const widgets = source.get('widgets')
+  if (widgets instanceof Y.Map) {
+    return Object.fromEntries(
+      [...widgets.entries()].flatMap(([name, value]) =>
+        isReadableKey(name) ? [[name, plain(value)]] : []
+      )
+    )
+  }
+  const opaque = source.get(OPAQUE_WIDGETS_KEY)
+  if (opaque !== undefined) {
+    const value = plain(opaque)
+    return Array.isArray(value) ? value : undefined
+  }
+  return undefined
+}
+
+function collectInteriors<T>(
+  source: Y.Map<unknown>,
+  read: (node: Y.Map<unknown>) => T,
+  into: Map<string, Map<string, T>>
+): void {
+  const id = plain(source.get('id'))
+  const nodes = source.get('nodes')
+  if (typeof id === 'string' && nodes instanceof Y.Map) {
+    const interiors = new Map<string, T>()
+    for (const nodeId of orderedKeys(source.get(NODE_ORDER), nodes)) {
+      const node = nodes.get(nodeId)
+      if (node instanceof Y.Map) interiors.set(nodeId, read(node))
+    }
+    into.set(id, interiors)
+  }
+  const nested = source.get('definitions')
+  if (nested instanceof Y.Map) {
+    const subgraphs = nested.get('subgraphs')
+    if (subgraphs instanceof Y.Map) {
+      subgraphs.forEach((value) => {
+        if (value instanceof Y.Map) collectInteriors(value, read, into)
+      })
+    }
+  }
+}
+
+function readAllInteriors<T>(
+  doc: Y.Doc,
+  read: (node: Y.Map<unknown>) => T
+): Map<string, Map<string, T>> {
+  const result = new Map<string, Map<string, T>>()
+  const root = definitionsMap(doc)
+  if (!root) return result
+  root.forEach((value) => {
+    if (value instanceof Y.Map) collectInteriors(value, read, result)
+  })
+  return result
+}
+
+/** Every definition's interior widget values, in mint order. */
+export function readSubgraphInteriorWidgets(
+  doc: Y.Doc
+): Map<string, Map<string, InteriorWidgetValues>> {
+  return readAllInteriors(doc, readInteriorWidgets)
+}
+
+export function readSubgraphInteriorTypes(
+  doc: Y.Doc
+): Map<string, Map<string, string | undefined>> {
+  return readAllInteriors(doc, (node) => {
+    const type = plain(node.get('type'))
+    return typeof type === 'string' ? type : undefined
+  })
+}
+
 export function allSubgraphDefinitions(
   definitions: readonly ExportedSubgraph[]
 ): ExportedSubgraph[] {
@@ -360,27 +387,140 @@ export function readSubgraphDefinitionIds(doc: Y.Doc): string[] {
   return ids
 }
 
+interface MalformedSubgraphDefinition {
+  id: unknown
+  issues: string
+}
+
 /**
- * Project the subgraph definitions the op layer minted into the follower doc
- * back to the `ExportedSubgraph` shape `LGraph.createSubgraphs()` consumes,
- * interior nodes and links in mint order.
- *
- * Mirrors the package's own `projectDefinition()` so that what the agent
- * seeded and what the canvas instantiates agree byte-for-byte on structure.
- * Excluded IDs are checked before projection so their bodies are not copied.
+ * The document's top-level subgraph definitions in the `ExportedSubgraph`
+ * shape `LGraph.createSubgraphs()` consumes, interior nodes and links in mint
+ * order. A definition failing `zSparseSubgraphDefinition` is returned as
+ * malformed instead. Excluded IDs are skipped before their bodies are copied.
  */
 export function readSubgraphDefinitions(
   doc: Y.Doc,
   excludedDefinitionIds: ReadonlySet<string> = new Set()
-): ExportedSubgraph[] {
+): {
+  definitions: ExportedSubgraph[]
+  malformed: MalformedSubgraphDefinition[]
+} {
   const definitions: ExportedSubgraph[] = []
-  const root = definitionsMap(doc)
-  if (!root) return definitions
-  root.forEach((value) => {
+  const malformed: MalformedSubgraphDefinition[] = []
+  definitionsMap(doc)?.forEach((value) => {
     if (!(value instanceof Y.Map)) return
     if (isExcludedDefinition(value, excludedDefinitionIds)) return
-    const definition = readDefinition(value, excludedDefinitionIds)
-    if (definition) definitions.push(definition)
+    const definition = projectSubgraphDefinition(value, excludedDefinitionIds)
+    const parsed = zSparseSubgraphDefinition.safeParse(definition)
+    if (parsed.success) {
+      definitions.push(definition)
+      return
+    }
+    malformed.push({
+      id: definition.id,
+      issues: parsed.error.issues
+        .map((issue) => `${issue.path.join('.')} ${issue.message}`)
+        .join('; ')
+    })
   })
-  return definitions
+  return { definitions, malformed }
+}
+
+/**
+ * What the document knows about a node's promoted widget layout.
+ *
+ * `valueCount` sizes the positional array a promoted write indexes.
+ * `promotedNames` reconstructs that array's exact name order from the
+ * definition plus the instance's input mirror: a definition input is promoted
+ * when the mirror either omits it or carries its widget marker. Neither source
+ * is sufficient alone because the mirror can omit promoted values the array
+ * still carries, and a host-owned combo's option widgets are in the mirror
+ * only. An unreadable array or name sequence is represented by null
+ * so the minter can fail closed.
+ *
+ * `promotedNames` separates ABSENT from UNREADABLE, because they license
+ * opposite answers on a first write: `undefined` is a document carrying no
+ * definition for the node, which contradicts no ordering and lets the live
+ * order build the array, while `null` is a definition whose inputs cannot be
+ * read, which must fail closed.
+ */
+export interface DocPromotedWidgets {
+  valueCount: number | null
+  declaredNames: readonly string[]
+  promotedNames: readonly string[] | null | undefined
+}
+
+/** Null when the document holds no such node. */
+export function readDocPromotedWidgets(
+  doc: Y.Doc,
+  nodeId: string
+): DocPromotedWidgets | null {
+  const node = nodesMap(doc).get(nodeId)
+  if (!(node instanceof Y.Map)) return null
+  const stored = node.get(OPAQUE_WIDGETS_KEY)
+  return {
+    valueCount:
+      stored === undefined
+        ? 0
+        : stored instanceof Y.Array || Array.isArray(stored)
+          ? stored.length
+          : null,
+    declaredNames: declaredInputNames(doc, String(node.get('type') ?? '')),
+    promotedNames: promotedInputNames(doc, node, String(node.get('type') ?? ''))
+  }
+}
+
+function namedInputs(source: unknown): Array<[string, unknown]> | null {
+  const inputs =
+    source instanceof Y.Array
+      ? source.toArray()
+      : Array.isArray(source)
+        ? source
+        : null
+  if (inputs === null) return null
+  const named: Array<[string, unknown]> = []
+  for (const input of inputs) {
+    const name = readField(input, 'name')
+    if (typeof name !== 'string') return null
+    named.push([name, input])
+  }
+  return named
+}
+
+function promotedInputNames(
+  doc: Y.Doc,
+  node: Y.Map<unknown>,
+  definitionId: string
+): string[] | null | undefined {
+  const definition = definitionsMap(doc)?.get(definitionId)
+  if (!(definition instanceof Y.Map)) return undefined
+  const declared = namedInputs(definition.get('inputs'))
+  const instance = namedInputs(node.get('inputs'))
+  if (declared === null || instance === null) return null
+  const instanceByName = new Map(instance)
+  const declaredNames = new Set(declared.map(([name]) => name))
+  const nearestDeclaredParent = (child: string): string | undefined =>
+    [...declaredNames]
+      .filter((name) => child.startsWith(`${name}.`))
+      .sort((a, b) => b.length - a.length)[0]
+  const ownedOptionWidgets = (name: string): string[] =>
+    instance.flatMap(([child, input]) =>
+      nearestDeclaredParent(child) === name &&
+      !declaredNames.has(child) &&
+      readField(input, 'widget') !== undefined
+        ? [child]
+        : []
+    )
+  return declared.flatMap(([name]) => {
+    const input = instanceByName.get(name)
+    if (input === undefined) return [name]
+    if (readField(input, 'widget') === undefined) return []
+    return [name, ...ownedOptionWidgets(name)]
+  })
+}
+
+function declaredInputNames(doc: Y.Doc, definitionId: string): string[] {
+  const definition = definitionsMap(doc)?.get(definitionId)
+  if (!(definition instanceof Y.Map)) return []
+  return namedInputs(definition.get('inputs'))?.map(([name]) => name) ?? []
 }

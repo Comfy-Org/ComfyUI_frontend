@@ -1,4 +1,4 @@
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 /**
  * Subgraph constants

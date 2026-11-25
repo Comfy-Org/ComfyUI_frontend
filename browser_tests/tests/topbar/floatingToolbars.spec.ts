@@ -30,7 +30,7 @@ test.describe('Floating toolbars', { tag: ['@ui', '@canvas'] }, () => {
       readPanelStyle(card),
       readPanelStyle(canvasMenu.root)
     ])
-    expect(toggleStyle.borderStyle).toBe('none')
+    expect(toggleStyle.borderWidth).toBe('0px')
     expect(cardStyle).toEqual(toggleStyle)
     expect(canvasMenuStyle).toEqual(toggleStyle)
   })
@@ -62,8 +62,8 @@ test.describe('Floating toolbars', { tag: ['@ui', '@canvas'] }, () => {
   }) => {
     const cancel = comfyPage.actionbar.cancelButton
     const [secondary, destructive] = await Promise.all([
-      resolveColorVariable(comfyPage.page, '--color-secondary-background'),
-      resolveColorVariable(comfyPage.page, '--color-destructive-background')
+      resolveColorVariable(comfyPage.page, '--color-secondary'),
+      resolveColorVariable(comfyPage.page, '--color-destructive')
     ])
     expect(destructive).not.toBe(secondary)
 
@@ -71,8 +71,7 @@ test.describe('Floating toolbars', { tag: ['@ui', '@canvas'] }, () => {
     await expect.poll(() => readBackgroundColor(cancel)).toBe(secondary)
 
     const exec = new ExecutionHelper(comfyPage, await getWebSocket())
-    const jobId = await exec.run()
-    exec.executionStart(jobId)
+    await exec.run()
 
     await expect(cancel).toBeEnabled()
     await expect.poll(() => readBackgroundColor(cancel)).toBe(destructive)

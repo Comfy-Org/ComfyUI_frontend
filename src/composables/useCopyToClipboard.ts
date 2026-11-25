@@ -1,58 +1,31 @@
-import { useToast } from 'primevue/usetoast'
+import { writeClipboardText } from '@/base/common/clipboard'
+import { useToast } from '@/components/ui/toast/toastStore'
 
 import { t } from '@/i18n'
-
-function legacyCopy(text: string): boolean {
-  const textarea = document.createElement('textarea')
-  textarea.setAttribute('readonly', '')
-  textarea.value = text
-  textarea.style.position = 'fixed'
-  textarea.style.left = '-9999px'
-  textarea.style.top = '-9999px'
-  document.body.appendChild(textarea)
-  textarea.select()
-  try {
-    return document.execCommand('copy')
-  } finally {
-    textarea.remove()
-  }
-}
 
 export function useCopyToClipboard() {
   const toast = useToast()
 
-  async function copyToClipboard(text: string) {
-    let success = false
+  async function copyToClipboard(
+    text: string,
+    {
+      toastOnSuccess = true,
+      toastOnError = true
+    }: { toastOnSuccess?: boolean; toastOnError?: boolean } = {}
+  ): Promise<boolean> {
+    const success = await writeClipboardText(text)
 
-    try {
-      await navigator.clipboard.writeText(text)
-      success = true
-    } catch {
-      // Modern clipboard API failed, fall through to legacy
+    if (success && toastOnSuccess) {
+      toast.success(t('g.success'), {
+        description: t('clipboard.successMessage'),
+        duration: 3000
+      })
+    } else if (!success && toastOnError) {
+      toast.error(t('g.error'), {
+        description: t('clipboard.errorMessage')
+      })
     }
-
-    if (!success) {
-      try {
-        success = legacyCopy(text)
-      } catch {
-        // Legacy also failed
-      }
-    }
-
-    toast.add(
-      success
-        ? {
-            severity: 'success',
-            summary: t('g.success'),
-            detail: t('clipboard.successMessage'),
-            life: 3000
-          }
-        : {
-            severity: 'error',
-            summary: t('g.error'),
-            detail: t('clipboard.errorMessage')
-          }
-    )
+    return success
   }
 
   return {

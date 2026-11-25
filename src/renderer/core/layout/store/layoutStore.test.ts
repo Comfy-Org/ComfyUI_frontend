@@ -1,11 +1,11 @@
-import { toGroupId } from '@/types/groupId'
+import { toGroupId } from '@comfyorg/graph-model/groupId'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
-import { toLinkId } from '@/types/linkId'
-import { toNodeId } from '@/types/nodeId'
-import type { NodeId } from '@/types/nodeId'
-import { toRerouteId } from '@/types/rerouteId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
 import { createUuidv4 } from '@/utils/uuid'
 import type { UUID } from '@/utils/uuid'
 
@@ -14,12 +14,12 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type {
   LayoutChange,
-  LayoutOperation,
-  NodeLayout
+  LayoutOperation
 } from '@/renderer/core/layout/types'
+import type { NodeLayout } from '@comfyorg/graph-model/layout'
 
 const mockReportError = vi.hoisted(() => vi.fn())
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 
@@ -907,7 +907,13 @@ describe('root-scoped node layouts', () => {
       layoutStore.updateNodeSlotOffsets(
         graphId,
         nodeId,
-        [{ index: 0, type: 'input', position: { x: 0, y: 10 } }],
+        [
+          {
+            index: 0,
+            type: 'input',
+            bounds: { x: -5, y: 5, width: 10, height: 10 }
+          }
+        ],
         'expanded'
       )
     }
@@ -1063,4 +1069,63 @@ describe('layoutStore content-size performance contract', () => {
       stop()
     }
   )
+})
+
+describe('layoutStore queryLinkSegmentAtPoint DPR threading', () => {
+  beforeEach(() => {
+    layoutStore.resetForTests()
+    layoutStore.updateLinkSegmentLayout(toLinkId(1), null, {
+      path: new Path2D(),
+      bounds: { x: 0, y: 0, width: 100, height: 100 },
+      centerPos: { x: 50, y: 50 }
+    })
+  })
+
+  function strokeHitOnlyAt(x: number, y: number) {
+    return fromPartial<CanvasRenderingContext2D>({
+      lineWidth: 17,
+      isPointInStroke: (_path: Path2D, hitX: number, hitY: number) =>
+        hitX === x && hitY === y
+    })
+  }
+
+  it('scales the CSS-space point by the caller-supplied dpr', () => {
+    expect(
+      layoutStore.queryLinkSegmentAtPoint(
+        { x: 50, y: 50 },
+        strokeHitOnlyAt(25, 25),
+        0.5
+      )
+    ).toEqual({ linkId: toLinkId(1), rerouteId: null })
+  })
+
+  it.for([
+    {
+      name: 'the browser DPR',
+      global: 'devicePixelRatio',
+      value: 2,
+      hitAt: 100
+    },
+    {
+      name: 'a sub-1 browser DPR clamped to 1',
+      global: 'devicePixelRatio',
+      value: 0.5,
+      hitAt: 50
+    },
+    {
+      name: 'DPR 1 without a window',
+      global: 'window',
+      value: undefined,
+      hitAt: 50
+    }
+  ])('falls back to $name when dpr is omitted', ({ global, value, hitAt }) => {
+    vi.stubGlobal(global, value)
+
+    expect(
+      layoutStore.queryLinkSegmentAtPoint(
+        { x: 50, y: 50 },
+        strokeHitOnlyAt(hitAt, hitAt)
+      )
+    ).toEqual({ linkId: toLinkId(1), rerouteId: null })
+  })
 })

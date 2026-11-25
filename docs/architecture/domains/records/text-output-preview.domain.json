@@ -1,0 +1,49 @@
+{
+  "id": "text-output-preview",
+  "capability": "Text output preview",
+  "description": "PreviewAny and SaveText execution-output display, preview widget construction and updates, and plain-text or Markdown presentation. Transient execution-progress widgets and shared Markdown rendering remain outside this capability.",
+  "modules": [
+    {
+      "path": "src/extensions/core/previewAny.ts"
+    },
+    {
+      "path": "src/extensions/core/saveText.ts"
+    },
+    {
+      "path": "src/extensions/core/textPreviewWidgets.ts"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetTextPreview.vue"
+    },
+    {
+      "path": "src/utils/htmlEscape.ts"
+    }
+  ],
+  "publicEntryPoints": [],
+  "characterizationScenarios": [
+    {
+      "name": "Execution output updates preview widgets without serializing their transient values",
+      "checks": [
+        "src/extensions/core/previewAny.test.ts",
+        "src/extensions/core/textPreviewWidgets.test.ts"
+      ]
+    },
+    {
+      "name": "Text output renders in plain-text and Markdown modes",
+      "checks": [
+        "src/renderer/extensions/vueNodes/widgets/components/WidgetTextPreview.test.ts",
+        "browser_tests/tests/previewAsText.spec.ts"
+      ]
+    },
+    {
+      "name": "Text preview escapes HTML before rendering",
+      "checks": ["src/utils/htmlEscape.test.ts"]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "PreviewAny and SaveText extension callbacks and preview widget behavior remain unchanged.",
+    "Inventory adds no dependency permissions or supported public entry points."
+  ],
+  "deepImports": "inventory"
+}

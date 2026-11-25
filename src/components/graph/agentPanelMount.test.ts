@@ -5,7 +5,7 @@ import { createI18n } from 'vue-i18n'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useSettingStore } from '@/platform/settings/settingStore'
 
-import LiteGraphCanvasSplitterOverlay from '../LiteGraphCanvasSplitterOverlay.vue'
+import LiteGraphCanvasSplitterOverlay from '@/components/LiteGraphCanvasSplitterOverlay.vue'
 vi.mock(import('firebase/auth'))
 
 beforeEach(() => {
@@ -48,7 +48,7 @@ describe('the graph-side agent panel mount', () => {
     // The dock sits directly after the column that carries the workspace, so
     // the flex-row parent lays them out side by side. Sibling order is the
     // behavior under test, which Testing Library queries cannot express.
-    // eslint-disable-next-line testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-node-access
     const column = dock.previousElementSibling
     expect(column?.contains(workspace)).toBe(true)
   })

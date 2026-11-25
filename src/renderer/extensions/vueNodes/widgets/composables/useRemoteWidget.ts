@@ -1,11 +1,12 @@
 import axios from 'axios'
 import { shallowReactive } from 'vue'
 
+import { combineAbortSignals } from '@comfyorg/api-client/abortSignal'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { ComboWidgetInventoryStatus } from '@/core/graph/widgets/comboWidgetInventory'
 import type { IWidget, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { isCloud } from '@/platform/distribution/types'
-import type { RemoteWidgetConfig } from '@/schemas/nodeDefSchema'
+import type { RemoteWidgetConfig } from '@comfyorg/object-info-parser'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 
@@ -111,7 +112,7 @@ const fetchOnSession = async (
   try {
     const res = await api.fetchOnWebSession(withQuery(route, query_params), {
       method: 'GET',
-      signal: AbortSignal.any([controller.signal, timeoutController.signal])
+      signal: combineAbortSignals([controller.signal, timeoutController.signal])
     })
     if (!res) return undefined
     if (!res.ok) {
@@ -134,7 +135,7 @@ const fetchData = async (
   const sessionRes = await fetchOnSession(config, controller)
   if (sessionRes) return pickKey(sessionRes.data, response_key)
 
-  const authHeaders = await getAuthHeaders()
+  const authHeaders = isSameOrigin(route) ? await getAuthHeaders() : {}
 
   const res = await axios.get(route, {
     params: query_params,
@@ -160,6 +161,7 @@ export function useRemoteWidget<
   const cacheKey = createCacheKey(remoteConfig)
   let isLoaded = false
   let refreshQueued = false
+  let removed = false
 
   const setSuccess = (entry: CacheEntry<T>, data: T) => {
     entry.retryCount = 0
@@ -300,6 +302,7 @@ export function useRemoteWidget<
   function getValue(onFulfilled?: () => void) {
     void fetchValue()
       .then((data) => {
+        if (removed) return
         if (isFirstLoad()) onFirstLoad(data)
         if (refreshQueued && data !== defaultValue) {
           onRefresh()
@@ -358,10 +361,14 @@ export function useRemoteWidget<
     // Register event listener
     api.addEventListener('execution_success', handleExecutionSuccess)
 
-    // Cleanup on node removal
-    node.onRemoved = useChainCallback(node.onRemoved, function () {
+    const cleanup = () => {
       api.removeEventListener('execution_success', handleExecutionSuccess)
+    }
+    widget.onRemove = useChainCallback(widget.onRemove, () => {
+      removed = true
+      cleanup()
     })
+    node.onRemoved = useChainCallback(node.onRemoved, cleanup)
 
     return autoRefreshWidget
   }

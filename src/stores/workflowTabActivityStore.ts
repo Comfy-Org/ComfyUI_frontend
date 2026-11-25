@@ -1,5 +1,10 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { computed, ref, shallowRef } from 'vue'
+
+export interface AgentTurnTab {
+  path: string
+  awaitingApproval: boolean
+}
 
 /**
  * Cross-feature workflow-tab activity, keyed by tab path. Feature extensions
@@ -9,11 +14,24 @@ import { ref } from 'vue'
 export const useWorkflowTabActivityStore = defineStore(
   'workflowTabActivity',
   () => {
-    const editingTabPath = ref<string | null>(null)
+    const agentTurnTabs = shallowRef<readonly AgentTurnTab[]>([])
     const creatingTab = ref(false)
     const unseenModifiedPaths = ref<Set<string>>(new Set())
-    function setEditing(path: string | null): void {
-      editingTabPath.value = path
+
+    const editingPaths = computed(
+      () => new Set(agentTurnTabs.value.map(({ path }) => path))
+    )
+    const awaitingApprovalPaths = computed(
+      () =>
+        new Set(
+          agentTurnTabs.value.flatMap(({ path, awaitingApproval }) =>
+            awaitingApproval ? [path] : []
+          )
+        )
+    )
+
+    function setAgentTurnTabs(tabs: readonly AgentTurnTab[]): void {
+      agentTurnTabs.value = tabs
     }
 
     function setCreating(creating: boolean): void {
@@ -30,23 +48,22 @@ export const useWorkflowTabActivityStore = defineStore(
 
     function pruneClosed(openPaths: string[]): void {
       const open = new Set(openPaths)
-      if (editingTabPath.value !== null && !open.has(editingTabPath.value))
-        editingTabPath.value = null
       for (const path of unseenModifiedPaths.value)
         if (!open.has(path)) unseenModifiedPaths.value.delete(path)
     }
 
     function clearAgentActivity(): void {
-      editingTabPath.value = null
+      agentTurnTabs.value = []
       creatingTab.value = false
       unseenModifiedPaths.value.clear()
     }
 
     return {
-      editingTabPath,
+      editingPaths,
+      awaitingApprovalPaths,
       creatingTab,
       unseenModifiedPaths,
-      setEditing,
+      setAgentTurnTabs,
       setCreating,
       markModified,
       markSeen,

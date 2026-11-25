@@ -2,6 +2,7 @@
   <!-- Case 1: Subgraph + Error (Dual Tabs) -->
   <div
     v-if="isSubgraph && hasAnyError && showErrorsTabEnabled"
+    data-part="node-footer"
     :class="errorWrapperStyles"
   >
     <Button
@@ -19,7 +20,7 @@
     >
       <div class="flex size-full items-center justify-center gap-2">
         <span class="truncate">{{ errorLabel }}</span>
-        <i class="icon-[lucide--info] size-4 shrink-0" />
+        <i class="icon-[lucide--info]" />
       </div>
     </Button>
 
@@ -29,7 +30,7 @@
       :class="
         cn(
           tabStyles,
-          '-ml-5 box-border w-[calc(50%+20px)] rounded-none bg-node-component-header-surface pt-9 pb-3 pl-5 text-node-component-slot-text',
+          '-ml-5 box-border w-[calc(50%+20px)] rounded-none bg-node-header pt-9 pb-3 pl-5 text-inherit',
           enterRadiusClass
         )
       "
@@ -39,7 +40,7 @@
     >
       <div class="flex size-full items-center justify-center gap-2">
         <span class="truncate">{{ t('g.enter') }}</span>
-        <i class="icon-[comfy--workflow] size-4 shrink-0" />
+        <i class="icon-[comfy--workflow]" />
       </div>
     </Button>
   </div>
@@ -52,6 +53,7 @@
       showErrorsTabEnabled &&
       (showAdvancedInputsButton || showAdvancedState)
     "
+    data-part="node-footer"
     :class="errorWrapperStyles"
   >
     <Button
@@ -69,7 +71,7 @@
     >
       <div class="flex size-full items-center justify-center gap-2">
         <span class="truncate">{{ errorLabel }}</span>
-        <i class="icon-[lucide--info] size-4 shrink-0" />
+        <i class="icon-[lucide--info]" />
       </div>
     </Button>
 
@@ -79,7 +81,7 @@
       :class="
         cn(
           tabStyles,
-          '-ml-5 box-border w-[calc(50%+20px)] rounded-none bg-node-component-header-surface pt-9 pb-3 pl-5 text-node-component-slot-text',
+          '-ml-5 box-border w-[calc(50%+20px)] rounded-none bg-node-header pt-9 pb-3 pl-5 text-inherit',
           enterRadiusClass
         )
       "
@@ -96,8 +98,8 @@
         <i
           :class="
             showAdvancedState
-              ? 'icon-[lucide--chevron-up] size-4 shrink-0'
-              : 'icon-[lucide--settings-2] size-4 shrink-0'
+              ? 'icon-[lucide--chevron-up]'
+              : 'icon-[lucide--settings-2]'
           "
         />
       </div>
@@ -107,6 +109,7 @@
   <!-- Case 2: Error Only (Full Width) -->
   <div
     v-else-if="hasAnyError && showErrorsTabEnabled"
+    data-part="node-footer"
     :class="errorWrapperStyles"
   >
     <Button
@@ -124,7 +127,7 @@
     >
       <div class="flex size-full items-center justify-center gap-2">
         <span class="truncate">{{ errorLabel }}</span>
-        <i class="icon-[lucide--info] size-4 shrink-0" />
+        <i class="icon-[lucide--info]" />
       </div>
     </Button>
   </div>
@@ -132,6 +135,7 @@
   <!-- Case 3: Subgraph only (Full Width) -->
   <div
     v-else-if="isSubgraph"
+    data-part="node-footer"
     :class="
       cn(
         footerWrapperBase,
@@ -145,7 +149,7 @@
       :class="
         cn(
           tabStyles,
-          'box-border w-full rounded-none bg-node-component-header-surface text-node-component-slot-text',
+          'box-border w-full rounded-none bg-node-header text-inherit',
           hasAnyError ? 'pt-9 pb-3' : 'pt-8 pb-3',
           footerRadiusClass
         )
@@ -156,7 +160,7 @@
     >
       <div class="flex size-full items-center justify-center gap-2">
         <span class="truncate">{{ t('g.enterSubgraph') }}</span>
-        <i class="icon-[comfy--workflow] size-4 shrink-0" />
+        <i class="icon-[comfy--workflow]" />
       </div>
     </Button>
   </div>
@@ -164,6 +168,7 @@
   <!-- Case 4: Advanced Footer (Regular Nodes) -->
   <div
     v-else-if="showAdvancedInputsButton || showAdvancedState"
+    data-part="node-footer"
     :class="
       cn(
         footerWrapperBase,
@@ -177,7 +182,7 @@
       :class="
         cn(
           tabStyles,
-          'box-border w-full rounded-none bg-node-component-header-surface text-node-component-slot-text',
+          'box-border w-full rounded-none bg-node-header text-inherit',
           hasAnyError ? 'pt-9 pb-3' : 'pt-8 pb-3',
           footerRadiusClass
         )
@@ -191,13 +196,13 @@
           <span class="truncate">{{
             t('rightSidePanel.hideAdvancedInputsButton')
           }}</span>
-          <i class="icon-[lucide--chevron-up] size-4 shrink-0" />
+          <i class="icon-[lucide--chevron-up]" />
         </template>
         <template v-else>
           <span class="truncate">{{
             t('rightSidePanel.showAdvancedInputsButton')
           }}</span>
-          <i class="icon-[lucide--settings-2] size-4 shrink-0" />
+          <i class="icon-[lucide--settings-2]" />
         </template>
       </div>
     </Button>
@@ -207,7 +212,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { RenderShape } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -246,8 +251,8 @@ const errorLabel = computed(() =>
 )
 const errorColorClass = computed(() =>
   errorSeverity === 'missing'
-    ? 'bg-warning-background text-warning-on-background hover:bg-warning-background-hover'
-    : 'bg-destructive-background text-white hover:bg-destructive-background-hover'
+    ? 'bg-warning text-warning-foreground hover:bg-warning/90'
+    : 'bg-destructive text-white hover:bg-destructive/90'
 )
 
 let suppressNextClick = false
@@ -273,8 +278,8 @@ function getBottomRadius(
 ): string {
   if (nodeShape === RenderShape.BOX) return ''
   return nodeShape === RenderShape.CARD || corners === 'right'
-    ? 'rounded-br-xl'
-    : 'rounded-b-xl'
+    ? 'rounded-br-(--node-radius)'
+    : 'rounded-b-(--node-radius)'
 }
 
 const footerRadiusClass = computed(() => getBottomRadius(shape))
@@ -283,7 +288,7 @@ const errorRadiusClass = computed(() => getBottomRadius(shape))
 
 const enterRadiusClass = computed(() => getBottomRadius(shape, 'right'))
 
-const tabStyles = 'pointer-events-auto h-11 text-xs font-normal'
+const tabStyles = 'pointer-events-auto h-11 font-normal'
 const footerWrapperBase = 'isolate -z-1 -mt-5 box-border flex'
 const errorWrapperStyles = cn(
   footerWrapperBase,

@@ -1,18 +1,57 @@
 import { render, screen, waitFor } from '@testing-library/vue'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import userEvent from '@testing-library/user-event'
+import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
+import type { ComfyDesktop2Bridge } from '@comfyorg/comfyui-desktop-bridge-types'
+import type { ElectronAPI } from '@comfyorg/comfyui-electron-types'
 
-import { useReconnectQueueRefresh } from '@/composables/useReconnectQueueRefresh'
-import { useReconnectingNotification } from '@/composables/useReconnectingNotification'
+import { useServerReconnectLifecycle } from '@/composables/useServerReconnectLifecycle'
 import type * as DistributionTypes from '@/platform/distribution/types'
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
-import { useAssetsStore } from '@/stores/assetsStore'
+import { showMissingNodesNotice } from '@/platform/workflowErrors/nodeReplacement/missingNodesNotice'
+import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
+import { noticeMissingNodes } from '@/platform/workspace/noticeMissingNodes'
+import { mockDeploymentListing } from '@/platform/workspace/__fixtures__/deploymentListing'
+import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
+import { runWhenGlobalIdle } from '@/base/common/async'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { app } from '@/scripts/app'
+import { api as apiMock } from '@/scripts/api'
+import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
-import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
+import { useQueueStore } from '@/stores/queueStore'
+import { useTemplateInputDownloadStore } from '@/platform/workflow/templates/stores/templateInputDownloadStore'
+import { syncCompletedTemplateInputsWithCurrentGraph } from '@/platform/workflow/templates/composables/useTemplateInputDownloadGraphSync'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 beforeEach(() => {
+  distribution.isDesktop = false
+  vi.stubGlobal('electronAPI', {
+    changeTheme: vi.fn<ElectronAPI['changeTheme']>(),
+    Events: {
+      incrementUserProperty:
+        vi.fn<ElectronAPI['Events']['incrementUserProperty']>(),
+      trackEvent: vi.fn<ElectronAPI['Events']['trackEvent']>()
+    }
+  })
+  vi.mocked(apiMock.getHistory).mockResolvedValue([])
+  vi.mocked(apiMock.getSystemStats).mockResolvedValue({
+    system: {
+      os: 'Linux',
+      python_version: '3.11',
+      embedded_python: false,
+      comfyui_version: '1.0.0',
+      pytorch_version: '2.3.0',
+      argv: [],
+      ram_total: 16000000000,
+      ram_free: 8000000000
+    },
+    devices: []
+  })
   vi.mocked(useVersionCompatibilityStore().initialize).mockResolvedValue(
     undefined
   )
@@ -25,22 +64,8 @@ beforeEach(() => {
   vi.mocked(useMenuItemStore().registerCoreMenuCommands).mockImplementation(
     () => {}
   )
-  vi.mocked(
-    useBottomPanelStore().registerCoreBottomPanelTabs
-  ).mockResolvedValue(undefined)
-  vi.mocked(useSidebarTabStore().registerCoreSidebarTabs).mockImplementation(
-    () => {}
-  )
 })
 
-const apiMock = vi.hoisted(() =>
-  Object.assign(new EventTarget(), {
-    getServerFeature: vi.fn((_name: string, fallback?: unknown) => fallback),
-    getSystemStats: vi.fn(async () => ({ system: {}, devices: [] })),
-    getQueue: vi.fn(async () => ({ Running: [], Pending: [] })),
-    getHistory: vi.fn(async () => [])
-  })
-)
 const distribution = vi.hoisted(
   (): {
     isCloud: typeof DistributionTypes.isCloud
@@ -51,23 +76,57 @@ const distribution = vi.hoisted(
   })
 )
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({ api: apiMock }))
+const templateInputMock = vi.hoisted(() => ({
+  completeGraphSync: vi.fn(),
+  refreshBindings: vi.fn(),
+  runMissingMediaPipeline: vi.fn(async () => undefined),
+  scanCandidates: vi.fn(() => [
+    {
+      nodeId: '2',
+      nodeType: 'LoadImage',
+      widgetName: 'image',
+      mediaType: 'image',
+      name: 'subject.png',
+      isMissing: true
+    }
+  ]),
+  stopProgress: vi.fn(),
+  subscribeProgress:
+    vi.fn<
+      NonNullable<ComfyDesktop2Bridge['onTemplateInputDownloadProgress']>
+    >(),
+  updateProgress: vi.fn()
+}))
+
+vi.mock(import('@/scripts/api'))
+vi.mock(import('@/platform/workspace/noticeMissingNodes'), () => ({
+  noticeMissingNodes: vi.fn()
+}))
 vi.mock(import('firebase/auth'))
 
-vi.mock(import('@/scripts/app'))
-
-vi.mock(import('@/composables/useReconnectQueueRefresh'), () => {
-  const refreshOnReconnect = vi.fn(async () => {})
-  return { useReconnectQueueRefresh: () => refreshOnReconnect }
-})
-
-vi.mock(import('@/composables/useReconnectingNotification'), () => {
-  const onReconnected = vi.fn()
-  const onReconnecting = vi.fn()
-  return {
-    useReconnectingNotification: () => ({ onReconnected, onReconnecting })
+vi.mock<unknown>(import('@/scripts/app'), () => ({
+  app: {
+    rootGraph: { getNodeById: vi.fn(), nodes: [] },
+    reloadNodeDefs: vi.fn(async () => undefined),
+    ui: {
+      menuContainer: { style: { setProperty: vi.fn() } },
+      restoreMenuPosition: vi.fn()
+    }
   }
-})
+}))
+
+vi.mock(import('@/composables/sidebarTabs/registerCoreSidebarTabs'), () => ({
+  registerCoreSidebarTabs: vi.fn()
+}))
+
+vi.mock(
+  import('@/composables/bottomPanelTabs/registerCoreBottomPanelTabs'),
+  () => ({ registerCoreBottomPanelTabs: vi.fn(async () => {}) })
+)
+
+vi.mock(import('@/composables/useServerReconnectLifecycle'), () => ({
+  useServerReconnectLifecycle: vi.fn()
+}))
 
 vi.mock(import('@/base/common/async'), () => ({ runWhenGlobalIdle: vi.fn() }))
 vi.mock(import('@/composables/useBrowserTabTitle'), () => ({
@@ -84,8 +143,26 @@ vi.mock(import('@/composables/useProgressFavicon'), () => ({
   useProgressFavicon: vi.fn()
 }))
 vi.mock(import('@/platform/distribution/types'), () => distribution)
+vi.mock<unknown>(
+  import('@/platform/workflowErrors/missingMedia/missingMediaPipeline'),
+  () => ({
+    runMissingMediaPipeline: templateInputMock.runMissingMediaPipeline
+  })
+)
+vi.mock<unknown>(
+  import('@/platform/workflowErrors/missingMedia/missingMediaScan'),
+  () => ({
+    scanAllMediaCandidates: templateInputMock.scanCandidates
+  })
+)
+vi.mock<unknown>(
+  import('@/platform/workflow/templates/utils/refreshDownloadedTemplateInputBindings'),
+  () => ({
+    refreshDownloadedTemplateInputBindings: templateInputMock.refreshBindings
+  })
+)
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 vi.mock(
   import('@/platform/updates/common/useFrontendVersionMismatchWarning'),
   () => ({
@@ -99,14 +176,8 @@ vi.mock(import('@/services/autoQueueService'), () => ({
 vi.mock<unknown>(import('@/platform/keybindings/keybindingService'), () => ({
   useKeybindingService: () => ({
     registerCoreKeybindings: vi.fn(),
+    registerUserKeybindings: vi.fn(),
     keybindHandler: vi.fn()
-  })
-}))
-
-vi.mock<unknown>(import('@/utils/envUtil'), () => ({
-  electronAPI: () => ({
-    changeTheme: vi.fn(),
-    Events: { incrementUserProperty: vi.fn(), trackEvent: vi.fn() }
   })
 }))
 
@@ -118,8 +189,22 @@ vi.mock<unknown>(
     default: { template: '<div data-testid="education-card-stub" />' }
   })
 )
-vi.mock<unknown>(import('@/components/graph/GraphCanvas.vue'), () => stubModule)
+vi.mock<unknown>(import('@/components/graph/GraphCanvas.vue'), () => ({
+  default: {
+    emits: ['ready'],
+    template:
+      '<div data-testid="graph-canvas-stub"><button type="button" @click="$emit(\'ready\')">Graph ready</button></div>'
+  }
+}))
 vi.mock<unknown>(import('@/views/LinearView.vue'), () => stubModule)
+vi.mock<unknown>(
+  import('@/platform/settings/components/SettingDialog.vue'),
+  () => stubModule
+)
+vi.mock<unknown>(
+  import('@/platform/assets/components/AssetBrowserModal.vue'),
+  () => stubModule
+)
 vi.mock<unknown>(
   import('@/components/builder/BuilderToolbar.vue'),
   () => stubModule
@@ -133,13 +218,12 @@ vi.mock<unknown>(
   () => stubModule
 )
 vi.mock<unknown>(
-  import('@/workbench/extensions/manager/components/ManagerProgressToast.vue'),
+  import('@/platform/customNodes/manager/components/ManagerProgressToast.vue'),
 
   () => stubModule
 )
-vi.mock<unknown>(
-  import('@/platform/cloud/notification/components/DesktopCloudNotificationController.vue'),
-  () => stubModule
+vi.mock(
+  import('@/platform/cloud/notification/composables/useDesktopCloudNotification')
 )
 vi.mock<unknown>(
   import('@/platform/assets/components/ModelImportProgressDialog.vue'),
@@ -147,15 +231,6 @@ vi.mock<unknown>(
 )
 vi.mock<unknown>(
   import('@/platform/assets/components/AssetExportProgressDialog.vue'),
-  () => stubModule
-)
-vi.mock<unknown>(
-  import('@/platform/workspace/components/toasts/InviteAcceptedToast.vue'),
-  () => stubModule
-)
-vi.mock<unknown>(import('@/components/toast/GlobalToast.vue'), () => stubModule)
-vi.mock<unknown>(
-  import('@/components/toast/RerouteMigrationToast.vue'),
   () => stubModule
 )
 vi.mock<unknown>(import('@/components/MenuHamburger.vue'), () => stubModule)
@@ -179,17 +254,207 @@ const { default: GraphView } = await import('./GraphView.vue')
 const i18n = createI18n({ legacy: false, locale: 'en', messages: { en: {} } })
 
 describe('GraphView - reconnect wiring', () => {
-  it('wires the reconnected event to the toast and queue refresh', () => {
+  beforeEach(() => {
+    templateInputMock.subscribeProgress.mockReturnValue(
+      templateInputMock.stopProgress
+    )
+    const inputStore = useTemplateInputDownloadStore()
+    vi.mocked(inputStore.completeGraphSync).mockImplementation(
+      templateInputMock.completeGraphSync
+    )
+    vi.mocked(inputStore.updateProgress).mockImplementation(
+      templateInputMock.updateProgress
+    )
+  })
+
+  it('starts the server reconnect lifecycle once', () => {
+    vi.mocked(useServerReconnectLifecycle).mockClear()
+
     render(GraphView, { global: { plugins: [i18n] } })
 
-    apiMock.dispatchEvent(new Event('reconnected'))
-
-    // `handleReconnected` calls both before its first `await`, so dispatching
-    // the event is enough — there is nothing to wait for, and waiting for it
-    // only hid how long the import above was taking.
-    expect(useReconnectingNotification().onReconnected).toHaveBeenCalledTimes(1)
-    expect(useReconnectQueueRefresh()).toHaveBeenCalledTimes(1)
+    expect(useServerReconnectLifecycle).toHaveBeenCalledOnce()
   })
+
+  it.for([
+    { name: 'native localhost Desktop', legacyDesktop: false },
+    { name: 'legacy Desktop', legacyDesktop: true }
+  ])(
+    'reconciles a completed template input without a page refresh on $name',
+    async ({ legacyDesktop }) => {
+      distribution.isDesktop = legacyDesktop
+      vi.stubGlobal('__comfyDesktop2', {
+        isRemote: () => false,
+        onTemplateInputDownloadProgress: templateInputMock.subscribeProgress
+      } satisfies ComfyDesktop2Bridge)
+      render(GraphView, { global: { plugins: [i18n] } })
+
+      const listener = templateInputMock.subscribeProgress.mock.calls[0]?.[0]
+      assert.exists(listener)
+
+      listener({
+        downloadId: 'download-1',
+        filename: 'subject.png',
+        progress: 1,
+        status: 'completed',
+        templateInputs: [{ templateId: 'starter-detail', assetId: 'subject' }]
+      })
+
+      await waitFor(() => {
+        expect(templateInputMock.runMissingMediaPipeline).toHaveBeenCalledOnce()
+      })
+      expect(templateInputMock.updateProgress).toHaveBeenCalledOnce()
+      expect(templateInputMock.refreshBindings).toHaveBeenCalledOnce()
+      expect(templateInputMock.completeGraphSync).toHaveBeenCalledWith([
+        'subject.png'
+      ])
+    }
+  )
+
+  it('releases a completed template input when the graph refresh fails', async () => {
+    vi.stubGlobal('__comfyDesktop2', {
+      isRemote: () => false,
+      onTemplateInputDownloadProgress: templateInputMock.subscribeProgress
+    } satisfies ComfyDesktop2Bridge)
+    vi.mocked(app.reloadNodeDefs).mockRejectedValueOnce(
+      new Error('reload failed')
+    )
+    render(GraphView, { global: { plugins: [i18n] } })
+
+    const listener = templateInputMock.subscribeProgress.mock.calls[0]?.[0]
+    assert.exists(listener)
+    listener({
+      downloadId: 'download-1',
+      filename: 'subject.png',
+      progress: 1,
+      status: 'completed',
+      templateInputs: []
+    })
+
+    await waitFor(() => {
+      expect(templateInputMock.completeGraphSync).toHaveBeenCalledWith([
+        'subject.png'
+      ])
+    })
+    expect(templateInputMock.refreshBindings).not.toHaveBeenCalled()
+  })
+
+  it('stops native input tracking and pending graph refresh when the view unmounts', async () => {
+    vi.stubGlobal('__comfyDesktop2', {
+      isRemote: () => false,
+      onTemplateInputDownloadProgress: templateInputMock.subscribeProgress
+    } satisfies ComfyDesktop2Bridge)
+    const { unmount } = render(GraphView, { global: { plugins: [i18n] } })
+    const inputStore = useTemplateInputDownloadStore()
+    const listener = templateInputMock.subscribeProgress.mock.calls[0]?.[0]
+    assert.exists(listener)
+
+    listener({
+      downloadId: 'download-1',
+      filename: 'subject.png',
+      progress: 1,
+      status: 'completed',
+      templateInputs: []
+    })
+    unmount()
+    await syncCompletedTemplateInputsWithCurrentGraph()
+
+    expect(templateInputMock.stopProgress).toHaveBeenCalledOnce()
+    expect(inputStore.clear).toHaveBeenCalledOnce()
+    expect(app.reloadNodeDefs).not.toHaveBeenCalled()
+    expect(templateInputMock.refreshBindings).not.toHaveBeenCalled()
+  })
+
+  it.for([
+    {
+      name: 'host detection is malformed',
+      bridge: { isRemote: false }
+    },
+    {
+      name: 'host detection throws',
+      bridge: {
+        isRemote: () => {
+          throw new Error('Host detection failed')
+        }
+      }
+    },
+    {
+      name: 'progress registration is malformed',
+      bridge: { isRemote: () => false, onTemplateInputDownloadProgress: true }
+    },
+    {
+      name: 'progress registration throws',
+      bridge: {
+        isRemote: () => false,
+        onTemplateInputDownloadProgress: () => {
+          throw new Error('Progress registration failed')
+        }
+      }
+    }
+  ])('keeps the graph usable when native $name', ({ bridge }) => {
+    vi.stubGlobal('__comfyDesktop2', bridge)
+    const { unmount } = render(GraphView, { global: { plugins: [i18n] } })
+
+    expect(screen.getByTestId('graph-canvas-stub')).toBeInTheDocument()
+    expect(
+      vi
+        .mocked(reportError)
+        .mock.calls.filter(
+          ([, context]) =>
+            context.errorType === 'workflow_template_input_tracking_failed'
+        )
+    ).toEqual([
+      [
+        expect.any(Error),
+        {
+          surface: 'graph',
+          errorType: 'workflow_template_input_tracking_failed',
+          level: 'warning'
+        }
+      ]
+    ])
+    expect(templateInputMock.updateProgress).not.toHaveBeenCalled()
+
+    unmount()
+    expect(useTemplateInputDownloadStore().clear).toHaveBeenCalledOnce()
+    expect(templateInputMock.stopProgress).not.toHaveBeenCalled()
+  })
+
+  it.for([
+    {
+      name: 'ordinary local web',
+      nativeHost: false,
+      remote: undefined,
+      remoteFlag: undefined
+    },
+    {
+      name: 'remote Desktop',
+      nativeHost: true,
+      remote: () => true,
+      remoteFlag: undefined
+    },
+    {
+      name: 'older remote Desktop',
+      nativeHost: true,
+      remote: undefined,
+      remoteFlag: true
+    }
+  ])(
+    'does not track native input downloads on $name',
+    ({ nativeHost, remote, remoteFlag }) => {
+      const bridge: ComfyDesktop2Bridge = {
+        isRemote: remote,
+        onTemplateInputDownloadProgress: templateInputMock.subscribeProgress
+      }
+      vi.stubGlobal('__comfyDesktop2', nativeHost ? bridge : undefined)
+      vi.stubGlobal('__comfyDesktop2Remote', remoteFlag)
+      const { unmount } = render(GraphView, { global: { plugins: [i18n] } })
+
+      expect(templateInputMock.subscribeProgress).not.toHaveBeenCalled()
+      expect(templateInputMock.updateProgress).not.toHaveBeenCalled()
+      unmount()
+      expect(templateInputMock.stopProgress).not.toHaveBeenCalled()
+    }
+  )
 })
 
 describe('GraphView - output assets refresh', () => {
@@ -199,9 +464,31 @@ describe('GraphView - output assets refresh', () => {
     useSidebarTabStore().activeSidebarTabId = null
     const loadNew = vi.spyOn(useAssetsStore().outputAssets, 'loadNew')
 
-    apiMock.dispatchEvent(new Event('execution_success'))
+    const apiEvents: EventTarget = apiMock
+    apiEvents.dispatchEvent(new Event('execution_success'))
 
     await waitFor(() => expect(loadNew).toHaveBeenCalledTimes(1))
+  })
+
+  it('reloads the queue and output assets once on the status sent after a reconnect, not when the socket drops', async () => {
+    render(GraphView, { global: { plugins: [i18n] } })
+    const loadNew = vi
+      .spyOn(useAssetsStore().outputAssets, 'loadNew')
+      .mockResolvedValue(undefined)
+    const updateQueue = vi
+      .spyOn(useQueueStore(), 'update')
+      .mockResolvedValue(undefined)
+
+    apiMock.dispatchCustomEvent('status', null)
+    await vi.advanceTimersByTimeAsync(0)
+    expect(updateQueue).not.toHaveBeenCalled()
+    expect(loadNew).not.toHaveBeenCalled()
+
+    apiMock.dispatchCustomEvent('status', {
+      exec_info: { queue_remaining: 0 }
+    })
+    await waitFor(() => expect(loadNew).toHaveBeenCalledTimes(1))
+    expect(updateQueue).toHaveBeenCalledTimes(1)
   })
 })
 
@@ -223,4 +510,100 @@ describe('GraphView - partner nodes education card', () => {
 
     expect(screen.queryByTestId('education-card-stub')).not.toBeInTheDocument()
   })
+})
+
+describe('GraphView - deployment pick at startup', () => {
+  const pickGone = 'The deployment you picked no longer exists.'
+
+  beforeEach(() => {
+    mockDeploymentListing({
+      items: [],
+      builds_visible: true,
+      gone_picked_deployment_id: 'dep-gone'
+    })
+    vi.spyOn(useDeploymentPickStore(), 'loadOnce')
+  })
+
+  afterEach(() => {
+    distribution.isCloud = false
+  })
+
+  it("warns on Cloud that this browser's picked deployment is gone, without opening the account menu", async () => {
+    distribution.isCloud = true
+
+    render(GraphView, { global: { plugins: [i18n] } })
+
+    expect(await screen.findByText(pickGone)).toBeInTheDocument()
+  })
+
+  it('does not look up the deployment on a local build', () => {
+    render(GraphView, { global: { plugins: [i18n] } })
+
+    expect(useDeploymentPickStore().loadOnce).not.toHaveBeenCalled()
+    expect(screen.queryByText(pickGone)).toBeNull()
+  })
+})
+
+describe('GraphView - missing nodes notice', () => {
+  const nodeTypes: MissingNodeType[] = [
+    { type: 'BiRefNet', cnrId: 'comfyui-birefnet', isReplaceable: false }
+  ]
+
+  afterEach(() => {
+    distribution.isCloud = false
+  })
+
+  it('hands the missing nodes of a workflow just opened to the deployment offer on Cloud', () => {
+    distribution.isCloud = true
+    render(GraphView, { global: { plugins: [i18n] } })
+
+    showMissingNodesNotice(nodeTypes)
+
+    expect(noticeMissingNodes).toHaveBeenCalledWith(
+      nodeTypes,
+      expect.any(Function)
+    )
+  })
+
+  it('shows only the error overlay on a local build', () => {
+    render(GraphView, { global: { plugins: [i18n] } })
+
+    showMissingNodesNotice(nodeTypes)
+
+    expect(noticeMissingNodes).not.toHaveBeenCalled()
+    expect(useExecutionErrorStore().isErrorOverlayOpen).toBe(true)
+  })
+})
+
+describe('GraphView - shell layout telemetry', () => {
+  afterEach(() => {
+    distribution.isCloud = false
+  })
+
+  it.for([{ open: true }, { open: false }])(
+    'reports the properties panel as open=$open once the graph is ready on Cloud',
+    async ({ open }) => {
+      distribution.isCloud = true
+      vi.mocked(runWhenGlobalIdle).mockImplementation((callback) => {
+        callback({ didTimeout: false, timeRemaining: () => 50 })
+        return { dispose: () => {} }
+      })
+      useSettingStore().$patch({
+        settingValues: {
+          'Comfy.UseNewMenu': 'Top',
+          'Comfy.RightSidePanel.IsOpen': open,
+          'Comfy.Server.ServerConfigValues': {}
+        }
+      })
+      render(GraphView, { global: { plugins: [i18n] } })
+
+      await userEvent.click(screen.getByRole('button', { name: 'Graph ready' }))
+
+      await waitFor(() =>
+        expect(useTelemetry()?.trackShellLayout).toHaveBeenCalledWith(
+          expect.objectContaining({ right_side_panel_open: open })
+        )
+      )
+    }
+  )
 })

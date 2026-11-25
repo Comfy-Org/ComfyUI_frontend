@@ -1,5 +1,6 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
+import { inputLink } from '@/lib/litegraph/src/node/slotLinks'
 
 export const GLSL_NODE_TYPE = 'GLSLShader'
 export const DEBOUNCE_MS = 50
@@ -19,19 +20,23 @@ export function clampResolution(w: number, h: number): [number, number] {
   return [Math.round(w * scale), Math.round(h * scale)]
 }
 
-export function getImageThroughSubgraphBoundary(
+export function getInputNodeThroughSubgraphBoundary(
   node: LGraphNode,
   slot: number,
   ownerSubgraphNode: LGraphNode
-): HTMLImageElement | undefined {
+): LGraphNode | null {
   const graph = node.graph
-  if (!graph) return undefined
+  if (!graph) return null
 
   const link = node.getInputLink(slot)
-  if (!link || link.origin_id !== SUBGRAPH_INPUT_ID) return undefined
+  if (!link || link.origin_id !== SUBGRAPH_INPUT_ID) return null
 
-  const outerUpstream = ownerSubgraphNode.getInputNode(link.origin_slot)
-  if (!outerUpstream?.imgs?.length) return undefined
-
-  return outerUpstream.imgs[0]
+  const outerGraph = ownerSubgraphNode.graph
+  if (!outerGraph) return null
+  const outerLink = inputLink(
+    outerGraph,
+    ownerSubgraphNode.id,
+    link.origin_slot
+  )
+  return outerLink ? outerGraph.getNodeById(outerLink.origin_id) : null
 }

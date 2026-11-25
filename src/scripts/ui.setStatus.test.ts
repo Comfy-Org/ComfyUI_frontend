@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import type { StatusWsMessageStatus } from '@/platform/remote/comfyui/execution/types'
+import type { StatusWsMessageStatus } from '@comfyorg/api-client/executionTypes'
 
 import { app } from './app'
 import { ComfyUI } from './ui'
@@ -8,6 +8,7 @@ import { ComfyUI } from './ui'
 vi.mock(import('./app'))
 
 type SetStatusHost = {
+  app: typeof app
   queueSize: { textContent: string }
   lastQueueSize: number
   batchCount: number
@@ -19,6 +20,7 @@ type SetStatusHost = {
 
 function createHost(overrides: Partial<SetStatusHost> = {}): SetStatusHost {
   return {
+    app,
     queueSize: { textContent: '' },
     lastQueueSize: 0,
     batchCount: 1,

@@ -1,18 +1,20 @@
 import { computed, ref } from 'vue'
 
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 
+import { AgentApiError } from '@/workbench/extensions/agent/services/agent/agentRestClient'
 import type {
   AgentRestClient,
+  CloudWorkflowRecord,
   OpenTabsSnapshot
-} from '../../services/agent/agentRestClient'
-import type { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
+} from '@/workbench/extensions/agent/services/agent/agentRestClient'
+import type { useAgentWorkflowTabBindingStore } from '@/workbench/extensions/agent/stores/agent/agentWorkflowTabBindingStore'
 import type {
   WorkflowReferenceMetadata,
   WorkflowReferenceOption
-} from '../../types/workflowReference'
+} from '@/workbench/extensions/agent/types/workflowReference'
 
 type WorkflowResolverDeps = {
   workflows: Pick<
@@ -24,45 +26,93 @@ type WorkflowResolverDeps = {
     'workflowIdFor' | 'tabPathFor' | 'matchesWorkflow' | 'unbind'
   >
   listCloudWorkflows: AgentRestClient['listCloudWorkflows']
+  getCloudWorkflow: AgentRestClient['getCloudWorkflow']
+  getWorkflowDraft: AgentRestClient['getWorkflowDraft']
+  getWorkflowContent: AgentRestClient['getWorkflowContent']
+  getWorkflowSidebarFile: AgentRestClient['getWorkflowSidebarFile']
 }
+
+export type CloudWorkflowLifecycle = 'live' | 'gone' | 'unknown'
+type CloudWorkflowRow = CloudWorkflowRecord | 'gone' | 'unknown'
+export type ServerWorkflowContent =
+  | { outcome: 'found'; content: Record<string, unknown> }
+  | { outcome: 'none' }
+  | { outcome: 'failed'; cause: unknown }
+export type SidebarWorkflowResolution =
+  | { outcome: 'found'; path: string; workflow: ComfyWorkflow | null }
+  | { outcome: 'gone' }
+  | { outcome: 'out_of_sync' }
+  | { outcome: 'failed'; cause: unknown }
+
+/** How a refresh of the cloud workflow list ended: last page reached, stopped early, or no answer. */
+export type CloudWorkflowRefreshOutcome = 'complete' | 'incomplete' | 'failed'
 
 export function useAgentWorkflowResolver({
   workflows,
   bindings,
-  listCloudWorkflows
+  listCloudWorkflows,
+  getCloudWorkflow,
+  getWorkflowDraft,
+  getWorkflowContent,
+  getWorkflowSidebarFile
 }: WorkflowResolverDeps) {
   const cloudIndex = ref<WorkflowReferenceMetadata[]>([])
   const listedCloudIds = ref<ReadonlySet<string>>(new Set())
+  const ambiguousCloudNames = ref<ReadonlySet<string>>(new Set())
+  const listingComplete = ref(false)
   let refreshGeneration = 0
+  let latestRefreshPromise: Promise<CloudWorkflowRefreshOutcome> | null = null
   const cloudIdsByName = computed(() => {
     const counts = new Map<string, number>()
     for (const { name } of cloudIndex.value)
       counts.set(name, (counts.get(name) ?? 0) + 1)
     return new Map(
       cloudIndex.value.flatMap(({ id, name }) =>
-        counts.get(name) === 1 ? [[name, id] as const] : []
+        counts.get(name) === 1 && !ambiguousCloudNames.value.has(name)
+          ? [[name, id] as const]
+          : []
       )
     )
   })
 
-  async function refreshCloudWorkflowIds(): Promise<boolean> {
+  function refreshCloudWorkflowListing(): Promise<CloudWorkflowRefreshOutcome> {
     const generation = ++refreshGeneration
-    try {
-      const entries = await listCloudWorkflows()
-      if (generation !== refreshGeneration) return false
-      listedCloudIds.value = new Set(entries.map(({ id }) => id))
-      cloudIndex.value = entries.flatMap(({ id, name }) =>
-        name === undefined ? [] : [{ id, name }]
-      )
-      return true
-    } catch (error) {
-      if (generation !== refreshGeneration) return false
-      reportError(error, {
-        surface: 'agent',
-        errorType: 'agent_cloud_workflow_ids_refresh_failed'
-      })
-      return false
-    }
+    const run = (async (): Promise<CloudWorkflowRefreshOutcome> => {
+      try {
+        const { entries, complete } = await listCloudWorkflows()
+        if (generation !== refreshGeneration)
+          return await (latestRefreshPromise ?? Promise.resolve('failed'))
+        listedCloudIds.value = new Set(entries.map(({ id }) => id))
+        listingComplete.value = complete
+        const nextIndex = entries.flatMap(({ id, name }) =>
+          name === undefined ? [] : [{ id, name }]
+        )
+        const nameCounts = new Map<string, number>()
+        for (const { name } of nextIndex)
+          nameCounts.set(name, (nameCounts.get(name) ?? 0) + 1)
+        ambiguousCloudNames.value = new Set(
+          Array.from(nameCounts.entries()).flatMap(([name, count]) =>
+            count > 1 ? [name] : []
+          )
+        )
+        cloudIndex.value = nextIndex
+        return complete ? 'complete' : 'incomplete'
+      } catch (error) {
+        if (generation !== refreshGeneration)
+          return await (latestRefreshPromise ?? Promise.resolve('failed'))
+        reportError(error, {
+          surface: 'agent',
+          errorType: 'agent_cloud_workflow_ids_refresh_failed'
+        })
+        return 'failed'
+      }
+    })()
+    latestRefreshPromise = run
+    return run
+  }
+
+  async function refreshCloudWorkflowIds(): Promise<boolean> {
+    return (await refreshCloudWorkflowListing()) !== 'failed'
   }
 
   /**
@@ -91,18 +141,33 @@ export function useAgentWorkflowResolver({
     )
   }
 
-  function cloudIdFor(workflow: ComfyWorkflow): string | undefined {
-    const name = cloudWorkflowName(workflow)
-    const saved =
-      !workflow.isTemporary &&
-      savedMatches(name, workflows.openWorkflows).length === 1
-        ? cloudIdsByName.value.get(name)
-        : undefined
-    if (saved !== undefined) return saved
+  function boundCloudIdFor(workflow: ComfyWorkflow): string | undefined {
     const bound = bindings.workflowIdFor(workflow.path)
     return bound !== undefined && bindings.matchesWorkflow(bound, workflow)
       ? bound
       : undefined
+  }
+
+  function namedCloudIdFor(workflow: ComfyWorkflow): string | undefined {
+    const name = cloudWorkflowName(workflow)
+    return !workflow.isTemporary &&
+      savedMatches(name, workflows.openWorkflows).length === 1
+      ? cloudIdsByName.value.get(name)
+      : undefined
+  }
+
+  function cloudIdFor(workflow: ComfyWorkflow): string | undefined {
+    return namedCloudIdFor(workflow) ?? boundCloudIdFor(workflow)
+  }
+
+  function authoritativeCloudIdFor(
+    workflow: ComfyWorkflow
+  ): string | undefined {
+    if (listingComplete.value) {
+      const saved = namedCloudIdFor(workflow)
+      if (saved !== undefined) return saved
+    }
+    return boundCloudIdFor(workflow)
   }
 
   function indexedNameFor(workflowId: string): string | undefined {
@@ -154,13 +219,96 @@ export function useAgentWorkflowResolver({
       : null
   }
 
-  /** Whether the last successful Cloud listing included `workflowId`. */
-  function isCloudWorkflowListed(workflowId: string): boolean {
-    return listedCloudIds.value.has(workflowId)
+  function cloudListingOmits(workflowId: string): boolean {
+    return listingComplete.value && !listedCloudIds.value.has(workflowId)
+  }
+
+  /**
+   * Only a 404 proves deletion. A 403 can come from auth middleware for reasons
+   * unrelated to the workflow, so it stays `unknown` like every other failure.
+   */
+  async function cloudWorkflowRow(
+    workflowId: string
+  ): Promise<CloudWorkflowRow> {
+    try {
+      return await getCloudWorkflow(workflowId)
+    } catch (error) {
+      if (error instanceof AgentApiError && error.status === 404) return 'gone'
+      reportError(error, {
+        surface: 'agent',
+        errorType: 'failure_reading_agent_cloud_workflow'
+      })
+      return 'unknown'
+    }
+  }
+
+  async function cloudWorkflowLifecycle(
+    workflowId: string
+  ): Promise<CloudWorkflowLifecycle> {
+    const row = await cloudWorkflowRow(workflowId)
+    return typeof row === 'string' ? row : 'live'
+  }
+
+  async function serverWorkflowContent(
+    row: CloudWorkflowRecord
+  ): Promise<ServerWorkflowContent> {
+    let draftFailure: unknown
+    try {
+      return { outcome: 'found', content: await getWorkflowDraft(row.id) }
+    } catch (error) {
+      if (!(error instanceof AgentApiError && error.status === 404)) {
+        draftFailure = error
+        reportError(error, {
+          surface: 'agent',
+          errorType: 'failure_reading_agent_workflow_draft'
+        })
+      }
+    }
+    if (row.latest_version < 1)
+      return draftFailure === undefined
+        ? { outcome: 'none' }
+        : { outcome: 'failed', cause: draftFailure }
+    try {
+      return { outcome: 'found', content: await getWorkflowContent(row.id) }
+    } catch (error) {
+      if (error instanceof AgentApiError && error.status === 404)
+        return draftFailure === undefined
+          ? { outcome: 'none' }
+          : { outcome: 'failed', cause: draftFailure }
+      reportError(error, {
+        surface: 'agent',
+        errorType: 'failure_reading_agent_workflow_content'
+      })
+      return { outcome: 'failed', cause: error }
+    }
   }
 
   function storedWorkflowFor(workflowId: string): ComfyWorkflow | null {
     return resolveWorkflow(workflowId, workflows.workflows)
+  }
+
+  function savedWorkflowAtPath(path: string): ComfyWorkflow | null {
+    const workflow = workflows.getWorkflowByPath(path)
+    return workflow?.isTemporary ? null : workflow
+  }
+
+  async function storedWorkflowByCloudPath(
+    workflowId: string
+  ): Promise<SidebarWorkflowResolution> {
+    try {
+      const { path } = await getWorkflowSidebarFile(workflowId)
+      return {
+        outcome: 'found',
+        path,
+        workflow: savedWorkflowAtPath(path)
+      }
+    } catch (cause) {
+      if (cause instanceof AgentApiError) {
+        if (cause.status === 404) return { outcome: 'gone' }
+        if (cause.status === 409) return { outcome: 'out_of_sync' }
+      }
+      return { outcome: 'failed', cause }
+    }
   }
 
   function openWorkflowFor(workflowId: string): ComfyWorkflow | null {
@@ -226,13 +374,20 @@ export function useAgentWorkflowResolver({
 
   return {
     refreshCloudWorkflowIds,
+    refreshCloudWorkflowListing,
     forgetCloudWorkflowId,
     cloudIdFor,
+    authoritativeCloudIdFor,
     cloudWorkflowName,
     boundOrOpenWorkflowFor,
     cachedOpenWorkflowFor,
     storedWorkflowFor,
-    isCloudWorkflowListed,
+    savedWorkflowAtPath,
+    storedWorkflowByCloudPath,
+    cloudListingOmits,
+    cloudWorkflowLifecycle,
+    cloudWorkflowRow,
+    serverWorkflowContent,
     openWorkflowFor,
     availableWorkflowReferences,
     openTabsSnapshot,

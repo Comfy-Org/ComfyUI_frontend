@@ -4,7 +4,7 @@ import type { Page, Route } from '@playwright/test'
 import type {
   TemplateInfo,
   WorkflowTemplates
-} from '@/platform/workflow/templates/types/template'
+} from '@comfyorg/api-client/templateTypes'
 import {
   makeTemplate,
   mockTemplateIndex
@@ -45,6 +45,15 @@ function addTemplates(
 
 export function withTemplates(templates: TemplateInfo[]): TemplateOperator {
   return (config) => addTemplates(config, templates)
+}
+
+/**
+ * Serves this index instead of the default-module one `mockTemplateIndex`
+ * builds. The module a template is served under decides whether it counts as
+ * first-party, so a test about that distinction has to choose it.
+ */
+export function withIndex(index: WorkflowTemplates[]): TemplateOperator {
+  return (config) => ({ ...config, index })
 }
 
 export class TemplateHelper {
@@ -129,6 +138,20 @@ export class TemplateHelper {
       route.fulfill({
         status: 200,
         path: workflowPath,
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-store'
+        }
+      })
+    )
+  }
+
+  /** Serves in-memory workflow data as the named template's graph. */
+  async mockWorkflowData(name: string, workflow: unknown): Promise<void> {
+    await this.page.route(`**/templates/${name}.json`, (route) =>
+      route.fulfill({
+        status: 200,
+        body: JSON.stringify(workflow),
         headers: {
           'Content-Type': 'application/json',
           'Cache-Control': 'no-store'

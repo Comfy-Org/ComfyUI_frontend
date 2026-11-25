@@ -18,6 +18,7 @@ const probeDirs = {
   app: path.resolve('apps/__restricted_syntax_probes__/src'),
   remote: path.resolve('src/platform/remote/__restricted_syntax_probes__'),
   selection: path.resolve('src/composables/graph/__restricted_syntax_probes__'),
+  transform: path.resolve('src/renderer/core/__restricted_syntax_probes__'),
   schemas: path.resolve('src/schemas/__restricted_syntax_probes__'),
   fixtureData: path.resolve(
     'browser_tests/fixtures/data/__restricted_syntax_probes__'
@@ -45,6 +46,28 @@ const selectionWriteProbes = [
   ['selected-nodes-delete.ts', 'delete canvas.selected_nodes[group.id]'],
   ['selection-store-apply.ts', 'useSelectionStore().apply(scope, command)'],
   ['computed-selected-assignment.ts', "canvas['selected'] = true"]
+] as const
+
+const transformWriteProbes = [
+  ['transform-assignment.ts', "element.style.transform = 'scale(2)'"],
+  ['translate-assignment.ts', "pane.value.style.translate = '4px 8px'"],
+  ['computed-assignment.ts', "element.style['transform'] = 'none'"],
+  ['set-property.ts', "element.style.setProperty('transform', 'scale(2)')"],
+  ['style-object-assign.ts', 'Object.assign(element.style, nextStyle)'],
+  [
+    'style-literal-assign.ts',
+    "Object.assign(element.style, { width: '4px', 'transform': 'none' })"
+  ],
+  [
+    'style-spread-assign.ts',
+    "Object.assign(element.style, { width: '4px', ...nextStyle })"
+  ],
+  [
+    'script-setup.vue',
+    `<script setup lang="ts">
+element.style.scale = '2'
+</script>`
+  ]
 ] as const
 
 const probes = [
@@ -97,6 +120,30 @@ void Example
 `
   },
   {
+    file: path.join(probeDirs.source, 'mockMethodNames.ts'),
+    source: `interface Cache {
+  mockClear(): void
+  mockReset: () => void
+}
+type Store = { mockRestore(): void }
+class Fake {
+  mockClear() {}
+  mockReset = () => {}
+}
+const fake = { mockRestore() {}, 'mockClear': () => {}, mockReset }
+const { mockReset: renamed } = source
+const allowed = { reset() {}, mockFn: vi.fn() }
+void (fake as Cache & Store)
+void Fake
+void renamed
+void allowed
+`
+  },
+  {
+    file: path.join(probeDirs.source, 'vitest.config.ts'),
+    source: 'export default { test: { mockReset: true, restoreMocks: true } }\n'
+  },
+  {
     file: path.join(probeDirs.source, 'computed.vue'),
     source: `<script setup lang="ts">
 computed(() => element.getBoundingClientRect())
@@ -107,6 +154,24 @@ computed(() => element.getBoundingClientRect())
     file: path.join(probeDirs.selection, file),
     source: `${source}\n`
   })),
+  ...transformWriteProbes.map(([file, source]) => ({
+    file: path.join(probeDirs.transform, file),
+    source: `${source}\n`
+  })),
+  {
+    file: path.join(probeDirs.transform, 'allowed-style-writes.ts'),
+    source: `element.style.width = '4px'
+element.style.setProperty('--offset', '4px')
+void element.style.transform
+Object.assign(target, element.style)
+Object.assign(element.style, { opacity: '0', 'width': '4px' })
+setTransform('scale(2)')
+`
+  },
+  {
+    file: path.join(probeDirs.source, 'transform-outside-canvas.ts'),
+    source: "element.style.transform = 'scale(2)'\n"
+  },
   {
     file: path.join(probeDirs.selection, 'allowed-selection-access.ts'),
     source: `void group.selected
@@ -277,10 +342,16 @@ function parseDiagnostics(output: string): Diagnostic[] {
   ) {
     throw new Error('Oxlint returned an invalid JSON report')
   }
-  if (!report.diagnostics.every(isDiagnostic)) {
+  const ruleDiagnostics = report.diagnostics.filter(isRuleDiagnostic)
+  if (!ruleDiagnostics.every(isDiagnostic)) {
     throw new Error('Oxlint returned diagnostics in an unexpected shape')
   }
-  return report.diagnostics
+  return ruleDiagnostics
+}
+
+// The suppressions-file summary ("new violations not covered...") has no rule code.
+function isRuleDiagnostic(value: unknown): boolean {
+  return typeof value === 'object' && value !== null && 'code' in value
 }
 
 describe('restricted syntax rules', () => {
@@ -377,6 +448,28 @@ describe('restricted syntax rules', () => {
     )
   })
 
+  it('rejects members named after Vitest mock cleanup methods outside Vite configs', () => {
+    const mockNameFindings = findingsFor('no-vitest-mock-method-names')
+    expect(
+      mockNameFindings.map(({ filename, labels }) => [
+        path.basename(filename),
+        labels[0].span.line
+      ])
+    ).toEqual([
+      ['mockMethodNames.ts', 2],
+      ['mockMethodNames.ts', 3],
+      ['mockMethodNames.ts', 5],
+      ['mockMethodNames.ts', 7],
+      ['mockMethodNames.ts', 8],
+      ['mockMethodNames.ts', 10],
+      ['mockMethodNames.ts', 10],
+      ['mockMethodNames.ts', 10]
+    ])
+    expect(mockNameFindings.every(({ severity }) => severity === 'error')).toBe(
+      true
+    )
+  })
+
   it('rejects direct canvas selection writes', () => {
     const selectionFindings = findingsFor('no-direct-selection-write')
     expect(
@@ -388,6 +481,24 @@ describe('restricted syntax rules', () => {
     expect(new Set(selectionFindings.map(({ message }) => message))).toEqual(
       new Set([
         'Route canvas selection changes through LGraphCanvas selection APIs.'
+      ])
+    )
+  })
+
+  it('rejects direct transform writes in graph canvas code', () => {
+    const transformFindings = findingsFor('no-direct-transform-write')
+    expect(transformFindings).toHaveLength(transformWriteProbes.length)
+    expect(
+      transformFindings.map(({ filename }) => path.basename(filename))
+    ).toEqual(
+      expect.arrayContaining(transformWriteProbes.map(([file]) => file))
+    )
+    expect(
+      transformFindings.every(({ severity }) => severity === 'error')
+    ).toBe(true)
+    expect(new Set(transformFindings.map(({ message }) => message))).toEqual(
+      new Set([
+        'Do not write a transform straight to element.style on the graph canvas - Chrome recomposites the whole page on every change. Use useCompositedTransform from @/renderer/core/layout/transform/useCompositedTransform.'
       ])
     )
   })

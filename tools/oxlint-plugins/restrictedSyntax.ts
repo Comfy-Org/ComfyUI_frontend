@@ -11,7 +11,8 @@ const DOM_METHOD_MESSAGES = new Map([
   ['querySelector', DOM_INSPECTION_MESSAGE],
   ['querySelectorAll', DOM_INSPECTION_MESSAGE]
 ])
-const PRIMEVUE_MODULE = /^(?:primevue(?:\/|$)|@primevue(?:\/|$))/
+const PRIMEVUE_MODULE =
+  /^(?:primevue(?:\/|$)|@primevue(?:\/|$)|@primeuix(?:\/|$))/
 const ES2023_ARRAY_COPY_METHODS = new Set([
   'toReversed',
   'toSorted',
@@ -20,6 +21,28 @@ const ES2023_ARRAY_COPY_METHODS = new Set([
 ])
 const ES2023_ARRAY_COPY_MESSAGE =
   'ES2023 array method is not polyfilled for build target es2022; use the matching ES2022-safe non-mutating equivalent.'
+const VITEST_MOCK_METHOD_NAMES = new Set([
+  'mockClear',
+  'mockReset',
+  'mockRestore'
+])
+const MEMBER_DECLARATION_TYPES = [
+  'AccessorProperty',
+  'MethodDefinition',
+  'PropertyDefinition',
+  'TSAbstractMethodDefinition',
+  'TSAbstractPropertyDefinition',
+  'TSMethodSignature',
+  'TSPropertySignature'
+]
+const TRANSFORM_STYLE_PROPERTIES = new Set([
+  'transform',
+  'translate',
+  'scale',
+  'rotate'
+])
+const TRANSFORM_WRITE_MESSAGE =
+  'Do not write a transform straight to element.style on the graph canvas - Chrome recomposites the whole page on every change. Use useCompositedTransform from @/renderer/core/layout/transform/useCompositedTransform.'
 const TEST_APIS = new Set(['describe', 'it', 'suite', 'test'])
 const DISABLING_CONDITION = new Map([
   ['skipIf', true],
@@ -73,6 +96,17 @@ interface CallExpression extends Node {
   readonly type: 'CallExpression'
   readonly callee: Node
   readonly arguments: readonly Node[]
+}
+
+interface ObjectExpression extends Node {
+  readonly type: 'ObjectExpression'
+  readonly properties: readonly Node[]
+}
+
+interface Property extends Node {
+  readonly type: 'Property'
+  readonly computed: boolean
+  readonly key: Node
 }
 
 interface AssignmentExpression extends Node {
@@ -233,6 +267,88 @@ export const noUnsafeErrorAssertion = {
   }
 }
 
+function isStyleObject(node: Node): boolean {
+  return (
+    node.type === 'MemberExpression' &&
+    staticPropertyName(node as MemberExpression) === 'style'
+  )
+}
+
+function setsTransformProperty(
+  callee: MemberExpression,
+  args: readonly Node[]
+): boolean {
+  const name = args.at(0)
+  const property = name && staticString(name)
+  return (
+    staticPropertyName(callee) === 'setProperty' &&
+    isStyleObject(callee.object) &&
+    !!property &&
+    TRANSFORM_STYLE_PROPERTIES.has(property)
+  )
+}
+
+function mayHoldTransformProperty(source: Node): boolean {
+  if (source.type !== 'ObjectExpression') return true
+  return (source as ObjectExpression).properties.some((entry) => {
+    if (entry.type !== 'Property') return true
+    const { computed, key } = entry as Property
+    const name = computed ? staticString(key) : propertyKeyName(key)
+    return !name || TRANSFORM_STYLE_PROPERTIES.has(name)
+  })
+}
+
+function propertyKeyName(key: Node): string | undefined {
+  return identifierName(key) ?? staticString(key)
+}
+
+function assignsTransformToStyle(
+  callee: MemberExpression,
+  args: readonly Node[]
+): boolean {
+  const target = args.at(0)
+  return (
+    staticPropertyName(callee) === 'assign' &&
+    identifierName(callee.object) === 'Object' &&
+    !!target &&
+    isStyleObject(target) &&
+    args.slice(1).some(mayHoldTransformProperty)
+  )
+}
+
+export const noDirectTransformWrite = {
+  create(context: RuleContext) {
+    function report(node: Node) {
+      context.report({ node, message: TRANSFORM_WRITE_MESSAGE })
+    }
+
+    return {
+      AssignmentExpression(node: AssignmentExpression) {
+        if (node.left.type !== 'MemberExpression') return
+        const member = node.left as MemberExpression
+        const property = staticPropertyName(member)
+        if (
+          property &&
+          TRANSFORM_STYLE_PROPERTIES.has(property) &&
+          isStyleObject(member.object)
+        ) {
+          report(node)
+        }
+      },
+      CallExpression(node: CallExpression) {
+        if (node.callee.type !== 'MemberExpression') return
+        const member = node.callee as MemberExpression
+        if (
+          setsTransformProperty(member, node.arguments) ||
+          assignsTransformToStyle(member, node.arguments)
+        ) {
+          report(node)
+        }
+      }
+    }
+  }
+}
+
 export const noDomInComputed = {
   create(context: RuleContext) {
     return {
@@ -312,6 +428,48 @@ export const noJsPrivateClassMembers = {
   }
 }
 
+interface MemberDeclaration extends Node {
+  readonly key: Node
+  readonly computed: boolean
+}
+
+interface ObjectExpression extends Node {
+  readonly properties: readonly Node[]
+}
+
+function declaredMemberName({
+  key,
+  computed
+}: MemberDeclaration): string | undefined {
+  if (!computed && key.type === 'Identifier') return (key as Identifier).name
+  if (key.type === 'Literal' && typeof (key as Literal).value === 'string') {
+    return (key as Literal).value as string
+  }
+}
+
+export const noVitestMockMethodNames = {
+  create(context: RuleContext) {
+    function check(member: MemberDeclaration) {
+      const name = declaredMemberName(member)
+      if (!name || !VITEST_MOCK_METHOD_NAMES.has(name)) return
+      context.report({
+        node: member.key,
+        message: `Do not declare a member named ${name}. Vitest mocks own this name, and comfy/no-redundant-vitest-cleanup treats every ${name}() call in a hook as mock cleanup.`
+      })
+    }
+    return {
+      ...Object.fromEntries(
+        MEMBER_DECLARATION_TYPES.map((type) => [type, check])
+      ),
+      ObjectExpression({ properties }: ObjectExpression) {
+        for (const property of properties) {
+          if (property.type === 'Property') check(property as MemberDeclaration)
+        }
+      }
+    }
+  }
+}
+
 export const noNewZodForRemoteApiTypes = restrictImports(
   (source) => source === 'zod',
   'Do not hand-write new Zod schemas for remote API types. Use generated types from packages/ingest-types (@comfyorg/ingest-types) instead. See browser_tests/README.md "Sources of truth for mock types".'
@@ -342,7 +500,7 @@ export const noNewZodServerResponseSchema = restrictModules(
 
 export const noPrimeVueImports = restrictModules(
   (source) => PRIMEVUE_MODULE.test(source),
-  'New PrimeVue usage is banned per the PrimeVue removal effort. Remove this import. scripts/primevue-import-allowlist.json only shrinks; do not add entries.'
+  'PrimeVue usage is banned. Use the project design-system components instead.'
 )
 
 export const noEs2023ArrayCopyMethod = {

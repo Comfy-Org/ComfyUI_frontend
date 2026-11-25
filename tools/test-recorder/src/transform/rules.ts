@@ -127,7 +127,7 @@ export const structuralTransforms: StructuralTransform[] = [
   },
   {
     name: 'wrap-in-describe',
-    description: 'Wrap test in test.describe with tags and afterEach',
+    description: 'Wrap test in test.describe with tags',
     apply: (code: string, testName: string, tags: string[]) => {
       if (code.includes('test.describe')) return code
 
@@ -145,10 +145,6 @@ export const structuralTransforms: StructuralTransform[] = [
       const testBody = testMatch[2]
 
       return `${imports.replace(/\n*$/, '\n\n')}test.describe(${descName}, { tag: [${tagStr}] }, () => {
-  test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.canvasOps.resetView()
-  })
-
   ${testBody.replace(/^(?=.)/gm, '  ').trimStart()}
 })\n`
     }

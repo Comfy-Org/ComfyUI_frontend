@@ -31,9 +31,14 @@ export function teamCheckoutPlan(
     (stops?.stops ?? []).map((candidate) => ({
       id: candidate.id,
       credits: Number(candidate.credits),
+      monthly: {
+        price_cents: Number(candidate.monthly.price_cents),
+        period_charge_cents: Number(candidate.monthly.period_charge_cents)
+      },
       yearly: {
         list_price_cents: Number(candidate.yearly.list_price_cents),
-        price_cents: Number(candidate.yearly.price_cents)
+        price_cents: Number(candidate.yearly.price_cents),
+        period_charge_cents: Number(candidate.yearly.period_charge_cents)
       }
     }))
   ).find((candidate) => candidate.id === stopId)
@@ -42,6 +47,7 @@ export function teamCheckoutPlan(
     name,
     monthlyPriceUsd: { monthly: monthlyUsd, yearly: monthlyUsd },
     monthlyCredits: stop?.credits ?? 0,
+    yearlyChargeUsd: stop?.periodChargeUsd.yearly,
     pricedByQuote: false
   }
 }
@@ -63,8 +69,14 @@ export function tierCheckoutPlan(
 
 export interface PaymentChoice {
   readonly confirmationToken?: string
+  readonly methodType?: string
   readonly savedPaymentMethodId?: string
   readonly confirmReactivation?: boolean
+}
+
+/** A method other than a card authenticates on its own site, so the page leaves while it pays. */
+export function paysOnOwnSite(methodType: string | undefined): boolean {
+  return methodType !== undefined && methodType !== 'card'
 }
 
 export interface SubscribeContext {

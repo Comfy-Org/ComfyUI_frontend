@@ -29,7 +29,10 @@ function getRefId(type: NodeType): string {
 }
 
 async function toggleBypass(comfyPage: ComfyPage, nodeRef: NodeReference) {
-  await nodeRef.click('title')
+  await comfyPage.vueNodes
+    .getNodeLocator(String(nodeRef.id))
+    .getByTestId('node-title')
+    .click()
   await comfyPage.keyboard.bypass()
 }
 
@@ -68,10 +71,6 @@ test.describe(
   () => {
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.workflow.loadWorkflow(WORKFLOW)
-    })
-
-    test.afterEach(async ({ comfyPage }) => {
-      await comfyPage.canvasOps.resetView()
     })
 
     const vueCases: ReadonlyArray<{
@@ -126,10 +125,6 @@ test.describe(
   () => {
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.workflow.loadWorkflow(WORKFLOW)
-    })
-
-    test.afterEach(async ({ comfyPage }) => {
-      await comfyPage.canvasOps.resetView()
     })
 
     test('collapsed node narrows bounding box when bypass is removed', async ({
@@ -189,10 +184,6 @@ test.describe(
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.workflow.loadWorkflow(WORKFLOW)
       await comfyPage.nextFrame()
-    })
-
-    test.afterEach(async ({ comfyPage }) => {
-      await comfyPage.canvasOps.resetView()
     })
 
     const legacyCases: ReadonlyArray<{ state: NodeState; pos: Position }> = [

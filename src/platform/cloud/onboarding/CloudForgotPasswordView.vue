@@ -68,12 +68,12 @@ import { onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
-import Button from '@/components/ui/button/Button.vue'
-import Field from '@/components/ui/field/Field.vue'
-import FieldError from '@/components/ui/field/FieldError.vue'
-import FieldLabel from '@/components/ui/field/FieldLabel.vue'
-import Input from '@/components/ui/input/Input.vue'
-import Message from '@/components/ui/message/Message.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Field from '@comfyorg/design-system/field/Field'
+import FieldError from '@comfyorg/design-system/field/FieldError'
+import FieldLabel from '@comfyorg/design-system/field/FieldLabel'
+import Input from '@comfyorg/design-system/input/Input'
+import Message from '@comfyorg/design-system/message/Message'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import {
   CLOUD_AUTH_FIELD_CLASS,

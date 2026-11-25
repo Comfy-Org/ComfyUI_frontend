@@ -1,7 +1,17 @@
-import { reportError } from '@/platform/telemetry/reportError'
+import { once } from 'es-toolkit'
+
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { safeSessionStorage } from '@/base/storage/safeStorage'
 import { createUuidv4 } from '@/utils/uuid'
 
-import { recordDevEvent } from './devPanelLog'
+import { recordDevEvent } from './crdtLog'
+import {
+  STALE_AFTER_MS,
+  SUBSCRIBE_ACK_TIMEOUT_MS,
+  SUBSCRIBE_CATCHUP_GRACE_MS
+} from './lifecycleTiming'
+import type { PermanentDocSubscribeRefusalCode } from './docFrameCodes'
+import { isPermanentSubscribeRefusalCode } from './docFrameCodes'
 
 // FE-1902: the doc id is otherwise held only in memory (set on turn ack), so a
 // panel remount loses the binding until the NEXT turn ack. Persist it per-tab
@@ -39,73 +49,22 @@ const DOC_ID_REFRESH_INTERVAL_MS = DOC_ID_TTL_MS / 2
 const SUBSCRIBE_RETRY_BASE_MS = 500
 const SUBSCRIBE_RETRY_MAX_ATTEMPTS = 6
 
-// PM-1604 / BE-11437: the doc-host's terminal classifications for a
-// document this build can never read back - unlike every other refusal
-// reason, no amount of backoff retry changes that outcome, so these codes
-// skip the retry ladder entirely and latch the same give-up exit an
-// unanswered ack times out into. `schema_version_mismatch` and
-// `catalog_mismatch` are cloud's `socketDocCode()` sibling arms sharing the
-// same "retrying will not help" contract; `unsupported` (`docSurfaceOffReason`)
-// is permanent for the life of the connection.
-const PERMANENT_SUBSCRIBE_REFUSAL_CODES: ReadonlySet<string> = new Set([
-  'schema_version_mismatch',
-  'catalog_mismatch',
-  'unsupported'
-])
+export type SubscribeGiveUpReason = 'refused' | 'retry_exhausted' | 'timeout'
 
-// `unsupported` means the doc surface is off for this whole deployment, so
-// every user hits it - latching it must not paint an "incompatible document
-// version" toast that has nothing to do with any one person's workflow.
-const SILENT_PERMANENT_REFUSAL_CODES: ReadonlySet<string> = new Set([
-  'unsupported'
-])
+const SILENT_PERMANENT_REFUSAL_CODES: ReadonlySet<PermanentDocSubscribeRefusalCode> =
+  new Set(['unsupported'])
 
-function isNotifyingPermanentRefusalCode(code: string): boolean {
+function isNotifyingPermanentRefusalCode(
+  code: PermanentDocSubscribeRefusalCode
+): boolean {
   return !SILENT_PERMANENT_REFUSAL_CODES.has(code)
 }
 
-/**
- * A `doc_subscribe` that left the transport and was never answered is retried
- * on the same lineage after this long. The ingest relay's own resync budget is
- * 15 s, so a shorter window would stack a duplicate subscribe behind a slow but
- * live catch-up.
- */
-export const SUBSCRIBE_ACK_TIMEOUT_MS = 15_000
 // The third unanswered attempt is terminal: frames at 0 s, 15 s and 30 s,
 // give-up at 45 s. Silent attempts also count into the shared refusal budget.
-const SUBSCRIBE_ACK_MAX_TIMEOUTS = 3
+export const SUBSCRIBE_ACK_MAX_TIMEOUTS = 3
 
-/**
- * Recency heartbeat budget (BE-9740's FE half): a bound, healthy channel that
- * delivers NO doc-scoped frame for this long gets ONE active probe - a
- * resubscribe whose state-vector catch-up is a no-op on a healthy channel and
- * exactly the observed recovery on a stale one. A stale channel and an idle
- * workflow look identical passively, so expiry probes instead of alarming.
- */
-export const STALE_AFTER_MS = 30_000
-
-/**
- * PM-1405 RCA: a confirmed subscribe (`doc_subscribed: {ok: true}`) is not
- * itself the catch-up - the host sends the ack and the catch-up
- * `doc_update` as two separate frames, and the second can be acked-but-never
- * sent (an observed real anomaly, not a hypothetical). Relying on the
- * passive {@link STALE_AFTER_MS} heartbeat alone to notice leaves the canvas
- * with nothing to show for up to 30 real seconds. Probe again this much
- * sooner, once per catch-up-gap episode, right after the first confirmed
- * subscribe: a resubscribe is a no-op on a doc that had nothing to catch up
- * on, and the active repair on one whose catch-up went missing. A backend
- * that keeps acknowledging the resubscribe without ever minting content is a
- * valid state too, so this fast probe fires at most once per gap - see
- * `usedCatchUpGrace`.
- */
-export const SUBSCRIBE_CATCHUP_GRACE_MS = 2_000
-
-// One nonce per page load (module scope = one per top-level navigation, since
-// a full reload re-evaluates the module). A tab duplicated mid-session
-// inherits sessionStorage's persisted record but gets its own module
-// instance and thus its own nonce, so the inherited record's nonce mismatches
-// and is refused.
-const pageSessionNonce = createUuidv4()
+const pageSessionNonce = once(createUuidv4)
 
 interface PersistedDocIdRecord {
   docId: string
@@ -113,30 +72,22 @@ interface PersistedDocIdRecord {
   expiresAt: number
 }
 
-function safeSessionStorage(): Storage | null {
-  try {
-    return window.sessionStorage
-  } catch {
-    return null
-  }
-}
-
 function persistDocId(docId: string): void {
   try {
     const record: PersistedDocIdRecord = {
       docId,
-      nonce: pageSessionNonce,
+      nonce: pageSessionNonce(),
       expiresAt: Date.now() + DOC_ID_TTL_MS
     }
-    safeSessionStorage()?.setItem(DOC_ID_SESSION_KEY, JSON.stringify(record))
+    safeSessionStorage.setItem(DOC_ID_SESSION_KEY, JSON.stringify(record))
   } catch {
-    // Quota / privacy mode: persistence is best-effort.
+    return
   }
 }
 
 function readPersistedDocId(): string | null {
   try {
-    const raw = safeSessionStorage()?.getItem(DOC_ID_SESSION_KEY)
+    const raw = safeSessionStorage.getItem(DOC_ID_SESSION_KEY)
     if (!raw) return null
     const record = JSON.parse(raw) as Partial<PersistedDocIdRecord>
     if (
@@ -145,11 +96,9 @@ function readPersistedDocId(): string | null {
       typeof record.nonce !== 'string' ||
       typeof record.expiresAt !== 'number'
     ) {
-      // Legacy/malformed record (e.g. pre-FEC-5 bare-string value): treat as
-      // absent rather than trusting an unscoped id.
       return null
     }
-    if (record.nonce !== pageSessionNonce) return null
+    if (record.nonce !== pageSessionNonce()) return null
     if (Date.now() >= record.expiresAt) return null
     return record.docId
   } catch {
@@ -158,11 +107,7 @@ function readPersistedDocId(): string | null {
 }
 
 function clearPersistedDocId(): void {
-  try {
-    safeSessionStorage()?.removeItem(DOC_ID_SESSION_KEY)
-  } catch {
-    // Best-effort.
-  }
+  safeSessionStorage.removeItem(DOC_ID_SESSION_KEY)
 }
 
 export class AgentCrdtDocLifecycle {
@@ -187,6 +132,11 @@ export class AgentCrdtDocLifecycle {
   // a status-frame reconcile can turn the bounded retry into an unbounded one.
   // Released only by a lifecycle edge: confirm, reconnect, retarget.
   private gaveUp = false
+  private recoverableGiveUpReason: Extract<
+    SubscribeGiveUpReason,
+    'retry_exhausted' | 'timeout'
+  > | null = null
+  private lastReportedRecoverableWorkflowId: string | null = null
   // The workflow id last notified (reportError + onGaveUp) for a permanent
   // refusal. A reconnect to the SAME workflow answered with the SAME
   // permanent code is one unchanged fact, not a new one - re-arm only when
@@ -213,11 +163,14 @@ export class AgentCrdtDocLifecycle {
   // the first confirmed subscribe of an episode, cleared when real content
   // arrives (the episode is over) or the episode restarts (bind/reconnect).
   private usedCatchUpGrace = false
+  private socketClosed = false
+  private silenceReconnectSpent = false
 
   constructor(
     private readonly workflowId: () => string | null,
-    private readonly resubscribe: () => void,
-    private readonly onGaveUp: () => void
+    private readonly resubscribe: () => boolean | void,
+    private readonly onGaveUp: (reason: SubscribeGiveUpReason) => void,
+    private readonly reconnectTransport?: () => void
   ) {}
 
   readPersistedDocId(): string | null {
@@ -231,10 +184,9 @@ export class AgentCrdtDocLifecycle {
   onSubscribeConfirmed(): void {
     this.clearAckTimer()
     this.gaveUp = false
+    this.silenceReconnectSpent = false
+    this.recoverableGiveUpReason = null
     this.confirmedSinceLastSend = true
-    // A successful confirm ends the outage a prior permanent refusal
-    // notified about: a LATER independent refusal for this same workflow is
-    // a new failure episode, not a duplicate of the one already reported.
     this.resetNotifiedGiveUp()
     this.clearSubscribeRetry()
     if (this.usedCatchUpGrace) {
@@ -249,11 +201,11 @@ export class AgentCrdtDocLifecycle {
 
   /** Returns whether this refusal newly triggered a give-up notification. */
   onSubscribeRefused(code?: string): boolean {
-    if (code !== undefined && PERMANENT_SUBSCRIBE_REFUSAL_CODES.has(code)) {
-      // See `confirmedSinceLastSend`: bail out before touching any timer,
-      // so a stale straggler can't clear the probe/backoff state the
-      // confirm it raced behind already armed.
+    if (code !== undefined && isPermanentSubscribeRefusalCode(code)) {
       if (this.confirmedSinceLastSend) return false
+      const supersedesRecoverableGiveUp = this.recoverableGiveUpReason !== null
+      this.recoverableGiveUpReason = null
+      if (supersedesRecoverableGiveUp) this.gaveUp = false
       this.clearAckTimer()
       this.clearStaleProbe()
       return this.giveUpPermanently(code, isNotifyingPermanentRefusalCode(code))
@@ -262,6 +214,24 @@ export class AgentCrdtDocLifecycle {
     this.clearStaleProbe()
     this.scheduleSubscribeRetry()
     return false
+  }
+
+  refusalIsFinal(): boolean {
+    return !this.confirmedSinceLastSend && this.subscribeRetryTimer === null
+  }
+
+  stopProbing(): void {
+    this.clearAckTimer()
+    this.clearSubscribeRetry()
+    this.clearStaleProbe()
+    this.gaveUp = true
+    this.recoverableGiveUpReason = null
+  }
+
+  /** Drops the pending ack and probe while a socket reconnect answers the refusal. */
+  awaitReconnect(): void {
+    this.clearAckTimer()
+    this.clearStaleProbe()
   }
 
   onSubscribeSent(workflowId: string): void {
@@ -276,7 +246,13 @@ export class AgentCrdtDocLifecycle {
         this.ackTimeouts >= SUBSCRIBE_ACK_MAX_TIMEOUTS ||
         this.subscribeRetryAttempt >= SUBSCRIBE_RETRY_MAX_ATTEMPTS
       ) {
-        this.giveUp(workflowId)
+        if (this.reopenSilentSocket(workflowId)) return
+        this.giveUp(
+          workflowId,
+          this.subscribeRetryAttempt >= SUBSCRIBE_RETRY_MAX_ATTEMPTS
+            ? 'retry_exhausted'
+            : 'timeout'
+        )
         return
       }
       this.subscribeRetryAttempt += 1
@@ -284,7 +260,7 @@ export class AgentCrdtDocLifecycle {
         attempt: this.subscribeRetryAttempt,
         workflowId
       })
-      this.resubscribe()
+      this.resubscribeOrScheduleRetry()
     }, SUBSCRIBE_ACK_TIMEOUT_MS)
   }
 
@@ -297,6 +273,14 @@ export class AgentCrdtDocLifecycle {
    */
   onReconnected(): void {
     this.resetForNewAttempt()
+  }
+
+  /** Parks every timer until `onReconnected`. */
+  onSocketClosed(): void {
+    this.clearAckTimer()
+    this.clearSubscribeRetry()
+    this.clearStaleProbe()
+    this.socketClosed = true
   }
 
   onDocumentUpdate(): void {
@@ -319,13 +303,30 @@ export class AgentCrdtDocLifecycle {
     }
   }
 
-  shouldDeferSubscribe(): boolean {
-    return this.gaveUp || this.subscribeRetryTimer !== null
+  private shouldDeferSubscribe(): boolean {
+    return this.gaveUp || this.socketClosed || this.subscribeRetryTimer !== null
   }
 
   clearForRetarget(): void {
     this.resetForNewAttempt()
     this.resetNotifiedGiveUp()
+    this.silenceReconnectSpent = false
+  }
+
+  /** Re-reads the bound document, deferring to a retry or give-up in progress. */
+  refresh(): void {
+    if (this.shouldDeferSubscribe()) return
+    this.resubscribeOrScheduleRetry()
+  }
+
+  retry(): boolean {
+    const reason = this.recoverableGiveUpReason
+    if (reason === null) return false
+    this.resetForNewAttempt()
+    if (this.resubscribe() === true) return true
+    this.gaveUp = true
+    this.recoverableGiveUpReason = reason
+    return false
   }
 
   /**
@@ -337,6 +338,7 @@ export class AgentCrdtDocLifecycle {
    */
   resetNotifiedGiveUp(): void {
     this.lastNotifiedGiveUpWorkflowId = null
+    this.lastReportedRecoverableWorkflowId = null
   }
 
   destroy(): void {
@@ -362,12 +364,11 @@ export class AgentCrdtDocLifecycle {
       this.staleProbeTimer = null
       if (this.gaveUp) return
       this.armStaleProbe()
-      // A probe that is still awaiting its own answer is the ack timer's job.
       if (this.ackTimer !== null) return
       recordDevEvent(isCatchUpProbe ? 'catchup_probe' : 'stale_probe', {
         workflowId: this.workflowId()
       })
-      this.resubscribe()
+      this.resubscribeOrScheduleRetry()
     }, delayMs)
   }
 
@@ -376,7 +377,20 @@ export class AgentCrdtDocLifecycle {
     this.clearSubscribeRetry()
     this.clearStaleProbe()
     this.gaveUp = false
+    this.recoverableGiveUpReason = null
     this.usedCatchUpGrace = false
+    this.socketClosed = false
+  }
+
+  private reopenSilentSocket(workflowId: string): boolean {
+    if (this.reconnectTransport === undefined || this.silenceReconnectSpent)
+      return false
+    if (this.ackTimeouts < SUBSCRIBE_ACK_MAX_TIMEOUTS) return false
+    this.silenceReconnectSpent = true
+    this.onSocketClosed()
+    recordDevEvent('subscribe_ack_reconnect', { workflowId })
+    this.reconnectTransport()
+    return true
   }
 
   private clearAckTimer(): void {
@@ -416,28 +430,39 @@ export class AgentCrdtDocLifecycle {
       level: 'warning',
       tags: { feature_area: 'agent', operation: 'sync', outcome: 'gave_up' }
     })
-    this.onGaveUp()
+    this.onGaveUp('refused')
     return true
   }
 
-  private giveUp(workflowId: string): void {
+  private giveUp(
+    workflowId: string,
+    reason: Extract<SubscribeGiveUpReason, 'retry_exhausted' | 'timeout'>
+  ): void {
     this.clearStaleProbe()
     this.gaveUp = true
+    this.recoverableGiveUpReason = reason
     recordDevEvent(
-      'subscribe_ack_timeout',
+      reason === 'timeout' ? 'subscribe_ack_timeout' : 'subscribe_retry',
       { attempt: this.subscribeRetryAttempt, workflowId, terminal: true },
       { level: 'warn' }
     )
-    reportError(
-      new Error('agent doc subscribe was sent but never acknowledged'),
-      {
-        surface: 'agent',
-        errorType: 'failure_confirming_agent_doc_subscribe',
-        level: 'warning',
-        tags: { feature_area: 'agent', operation: 'sync', outcome: 'gave_up' }
-      }
-    )
-    this.onGaveUp()
+    if (workflowId !== this.lastReportedRecoverableWorkflowId) {
+      this.lastReportedRecoverableWorkflowId = workflowId
+      reportError(
+        new Error(
+          reason === 'timeout'
+            ? 'agent doc subscribe was sent but never acknowledged'
+            : 'agent doc subscription retries were exhausted'
+        ),
+        {
+          surface: 'agent',
+          errorType: 'failure_confirming_agent_doc_subscribe',
+          level: 'warning',
+          tags: { feature_area: 'agent', operation: 'sync', outcome: 'gave_up' }
+        }
+      )
+    }
+    this.onGaveUp(reason)
   }
 
   private clearSubscribeRetry(): void {
@@ -451,9 +476,12 @@ export class AgentCrdtDocLifecycle {
 
   private scheduleSubscribeRetry(): void {
     if (this.shouldDeferSubscribe()) return
-    if (this.subscribeRetryAttempt >= SUBSCRIBE_RETRY_MAX_ATTEMPTS) return
     const target = this.workflowId()
     if (target === null) return
+    if (this.subscribeRetryAttempt >= SUBSCRIBE_RETRY_MAX_ATTEMPTS) {
+      this.giveUp(target, 'retry_exhausted')
+      return
+    }
     const delay = SUBSCRIBE_RETRY_BASE_MS * 2 ** this.subscribeRetryAttempt
     this.subscribeRetryAttempt += 1
     this.subscribeRetryTimer = setTimeout(() => {
@@ -463,7 +491,13 @@ export class AgentCrdtDocLifecycle {
         attempt: this.subscribeRetryAttempt,
         workflowId: target
       })
-      this.resubscribe()
+      this.resubscribeOrScheduleRetry()
     }, delay)
+  }
+
+  private resubscribeOrScheduleRetry(): void {
+    if (this.resubscribe() !== false) return
+    this.clearStaleProbe()
+    this.scheduleSubscribeRetry()
   }
 }

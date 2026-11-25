@@ -10,7 +10,9 @@ const originURL = z
   }, 'Use an origin without a path, query, credentials, or fragment')
   .transform((value) => new URL(value).origin)
 
-function getLiveCloudCustomerOrigin(cloudOrigin: string): string | undefined {
+export function getLiveCloudCustomerOrigin(
+  cloudOrigin: string
+): string | undefined {
   if (cloudOrigin === 'https://testcloud.comfy.org')
     return 'https://testapi.comfy.org'
   if (cloudOrigin === 'https://stagingcloud.comfy.org')

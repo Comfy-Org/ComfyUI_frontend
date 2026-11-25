@@ -67,12 +67,20 @@ updates:
         versions: ['>=20.10.0']
 
   - package-ecosystem: 'github-actions'
-    directory: '/'
+    # '/' scans only .github/workflows, not the composite actions.
+    directories:
+      - '/'
+      - '/.github/actions/*'
     schedule:
       interval: 'weekly'
     labels:
       - 'dependencies'
     groups:
+      github-actions-major:
+        patterns:
+          - '*'
+        update-types:
+          - 'major'
       github-actions:
         patterns:
           - '*'

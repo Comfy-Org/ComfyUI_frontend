@@ -13,6 +13,7 @@ import type { BrowserContext, Request, Route } from '@playwright/test'
 
 import {
   CLOUD_ORIGIN,
+  PLATFORM_ORIGIN,
   E2E_FIREBASE_CONFIG,
   E2E_ORIGIN,
   E2E_USER,
@@ -153,7 +154,14 @@ const GET_REPLIES = new Map<string, ScenarioReply>([
         request.authorization !== null && scenario.checkoutUi !== undefined
           ? {
               firebase_config: E2E_FIREBASE_CONFIG,
-              billing_web_checkout_ui: scenario.checkoutUi
+              billing_web_checkout_ui: scenario.checkoutUi,
+              ...(scenario.planChangeCardChoice !== undefined && {
+                billing_web_plan_change_card_choice:
+                  scenario.planChangeCardChoice
+              }),
+              ...(scenario.unifiedBillingSettings !== undefined && {
+                unified_billing_settings: scenario.unifiedBillingSettings
+              })
             }
           : { firebase_config: E2E_FIREBASE_CONFIG }
     })
@@ -183,6 +191,7 @@ const POST_REPLIES = new Map<string, ScenarioReply>([
       body: {
         token: 'e2e-workspace-jwt',
         expires_at: inAnHour(),
+        user_id: 'uid-1',
         permissions: ['workspace:read', 'billing:write'],
         role: 'owner',
         workspace: {
@@ -194,6 +203,18 @@ const POST_REPLIES = new Map<string, ScenarioReply>([
     })
   ],
   ['/billing/preview-subscribe', (scenario) => ({ body: scenario.preview })],
+  ['/billing/topup/quote', (scenario) => ({ body: scenario.topupQuote })],
+  [
+    '/billing/topup',
+    (scenario) => ({
+      body: {
+        amount_cents: scenario.topupQuote.amount_cents,
+        billing_op_id: 'op_topup',
+        status: 'pending',
+        topup_id: 'topup_e2e'
+      }
+    })
+  ],
   [
     '/billing/subscribe',
     () => ({ body: { billing_op_id: 'op_subscribe', status: 'subscribed' } })
@@ -259,8 +280,6 @@ export async function installMockCloud(
   const overrides = new Map<string, ReplyHandler>()
   const issued = new Set<string>()
 
-  // Registered first, so every more specific route below outranks it: the
-  // app's own origin is served, everything else is refused.
   await context.route('**/*', (route) => {
     const origin = new URL(route.request().url()).origin
     return origin === E2E_ORIGIN
@@ -299,7 +318,6 @@ export async function installMockCloud(
     return json(route, reply)
   })
 
-  // The host app's front page, where plan selection lives: a return lands here.
   await context.route(
     (url) => url.origin === CLOUD_ORIGIN && url.pathname === '/',
     (route) =>
@@ -310,8 +328,16 @@ export async function installMockCloud(
       })
   )
 
-  // Where a hosted redirect lands: a page of its own, so a spec can assert
-  // the navigation without the browser reaching the provider.
+  await context.route(
+    (url) => url.origin === PLATFORM_ORIGIN,
+    (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'text/html',
+        body: '<!doctype html><title>Platform</title><h1>Host app</h1>'
+      })
+  )
+
   await context.route(`${PORTAL_URL}*`, (route) =>
     route.fulfill({
       status: 200,

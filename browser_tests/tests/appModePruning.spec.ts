@@ -30,10 +30,6 @@ test.describe('App Mode Pruning', { tag: ['@ui'] }, () => {
     initialSettings: { 'Comfy.AppBuilder.VueNodeSwitchDismissed': true }
   })
 
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.appMode.enableLinearMode()
-  })
-
   test('prunes deleted outputs', async ({ comfyPage }) => {
     const { appMode } = comfyPage
 

@@ -4,7 +4,7 @@ Date: 2026-09-04
 
 ## Status
 
-Proposed
+Accepted
 
 ## Context
 
@@ -200,3 +200,43 @@ Planned migration order:
 3. Migrate first-party canvas and Vue readers and writers one path at a time.
 4. Derive highlighting and legacy views from the store, then remove redundant
    mirrors whose compatibility checks are complete.
+
+Amendment on acceptance, refining decision 6 and decision 7:
+
+- Every public operation that changes selection (`select`, `deselect`,
+  `deselectAll`, `selectItems`, `processSelect`, and marquee completion)
+  emits `onSelectionChange` exactly once, after the batch is applied, and
+  not at all when the operation left selection unchanged. `select` and
+  `deselect` previously emitted nothing; `processSelect` and `selectItems`
+  previously emitted twice when they cleared the prior selection first.
+  Graph removal (`LGraph.remove`, `removeReroute`, and the
+  `node:before-removed` listener in `canvasStore`) drops the removed item
+  from selection without emitting, so `deleteSelected` emits once for the
+  whole batch. A selection operation that a selection hook starts while
+  another operation is running does not emit; the outer operation emits
+  once with the final selection.
+- Click and marquee intent is resolved by one pure module,
+  `src/core/selection/selectionIntent.ts`, reached from both the classic
+  canvas and the Vue node adapter through `processSelect`. Shift and
+  ctrl/meta both toggle. A shift+alt marquee adds, matching the classic
+  canvas.
+- Modifier-click on a selected group deselects the group and its cascaded
+  children together. This supersedes the group-only carve-out added in
+  #9149, which kept the children selected so they could be deleted after
+  toggling the group off. Reasons:
+  - With `LiteGraph.Group.SelectChildrenOnClick` on, selecting a group
+    selects its children, so toggling the group off should undo that
+    selection. Under the carve-out, the second modifier-click left the
+    children selected instead of restoring the prior selection.
+  - #9149's own description says deselecting a group cascades `deselect()`
+    to its children; the carve-out contradicted it. FE-2040 records the
+    leftover child selection as a reproduced defect.
+  - The deletion workflow keeps a direct path. A marquee selects every node
+    it overlaps but a group only when it encloses the whole group, so
+    dragging over the children selects them without the group, and
+    modifier-click adds or removes single children.
+  - The setting defaults to off, so only users who opted into cascading
+    selection see the change.
+- `LGraphCanvas.selected_nodes` is deprecated. First-party readers use
+  `selectedCanvasNodes()` from the selection adapter; the accessor warns once
+  per session and remains for extensions.

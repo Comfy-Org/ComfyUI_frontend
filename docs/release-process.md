@@ -4,19 +4,18 @@
 
 All releases use `release-version-bump.yaml`. Effects differ by bump type:
 
-| Bump       | Target     | Creates branches?                     | GitHub release               |
-| ---------- | ---------- | ------------------------------------- | ---------------------------- |
-| Minor      | `main`     | `core/` + `cloud/` for previous minor | Published, "latest"          |
-| Patch      | `main`     | No                                    | Published, "latest"          |
-| Patch      | `core/X.Y` | No                                    | **Draft** (uncheck "latest") |
-| Prerelease | any        | No                                    | Draft + prerelease           |
+| Bump       | Target     | Creates branches?          | GitHub release               |
+| ---------- | ---------- | -------------------------- | ---------------------------- |
+| Minor      | `main`     | `core/` for previous minor | Published, "latest"          |
+| Patch      | `main`     | No                         | Published, "latest"          |
+| Patch      | `core/X.Y` | No                         | **Draft** (uncheck "latest") |
+| Prerelease | any        | No                         | Draft + prerelease           |
 
 ## Generated API types on release branches
 
 Never hand-edit files under `packages/ingest-types/src`, including in a
 backport. The Cloud repository owns the source OpenAPI contract and generates
-the frontend package for `main` and every active `cloud/x.y` line named in its
-`frontend-version.json`. A release branch must accept that generated contract
+the frontend package. A release branch must accept that generated contract
 or a newer one; unrelated generated changes are expected when a release line
 has fallen behind.
 
@@ -24,16 +23,16 @@ If a backport needs a generated type, update the Cloud OpenAPI source and use
 the typegen automation. Do not copy or recreate one declaration in a generated
 file.
 
-**Minor bump** (e.g. 1.41→1.42): freezes the previous minor into `core/1.41`
-and `cloud/1.41`, branched from the commit _before_ the bump. Nightly patch
+**Minor bump** (e.g. 1.41→1.42): creates `core/1.41` for the previous minor,
+branched from the commit _before_ the bump. Nightly patch
 bumps on `main` are convenience snapshots — no branches created.
 
 The minor bump is scheduled automatically: `release-version-bump.yaml` runs a
-**minor** bump on `main` every Monday and Wednesday 20:00 UTC and enables
+**minor** bump on `main` every Monday 20:00 UTC (one release a week) and enables
 auto-merge on the resulting `version-bump-*` PR (marked with the
 `weekly-release-cut` label, which exempts it from the nightly stale-PR closer),
 so once its checks pass the merge
-triggers `release-branch-create.yaml` and the `core/` + `cloud/` cut is
+triggers `release-branch-create.yaml` and the `core/` cut is
 hands-off. The separate nightly `0 0 * * *` cron stays a **patch** bump.
 
 **Patch on `core/X.Y`**: publishes a hotfix draft release. Must not be marked
@@ -55,13 +54,100 @@ later ship as v1.40.2). Same commits, no divergence — the branch just prevents
 
 ## Backporting
 
-1. Add `needs-backport` + version label to the merged PR
-2. `pr-backport.yaml` cherry-picks and creates a backport PR
-3. Conflicts produce a comment with details and an agent prompt
+Cloud uses continuous delivery from `main`; numbered cloud release branches
+are retired. Core backports remain available for the current ComfyUI frontend
+pin, upcoming release lines, and previous lines within the 72-hour rollback
+window. Older lines are frozen. See
+[the core backport policy](adr/RELEASES-0059-core-backports-follow-the-consumer-pin.md).
+
+Add `needs-backport` before or after merging a PR to `main`. The workflow
+tries to cherry-pick the fix to every eligible core branch. Close a generated
+PR if that branch doesn't need the fix. If a cherry-pick conflicts, the
+workflow comments on the original PR. Resolve the conflict by hand only if
+the branch needs the fix.
+
+To retry, run **PR Backport** with the merged PR number. Manual dispatch
+uses the same branch policy and doesn't require a label. Normal runs skip
+generated PRs that are open, merged, or closed. `force_rerun` bypasses these
+checks. To backport to just one branch, cherry-pick there by hand.
+
+### Desktop partner-node token backports (FRONT-3925)
+
+[Frontend PR #23229](https://github.com/Comfy-Org/ComfyUI_frontend/pull/23229)
+adds the optional Desktop `Auth.getPartnerNodeToken(workspaceId)` path. Track
+its backports to `core/1.58`, `core/1.59` and `core/1.60` here. Local Desktop
+views load the frontend pinned by ComfyUI, so a standalone frontend release
+does not establish that Desktop users have the change.
+
+The fallback depends on whether the Desktop session stayed the same:
+
+| Queue-time result                                                      | Credential queued                                                      |
+| ---------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| Desktop returns a partner-node token for the unchanged session         | Desktop's token, without a frontend mint                               |
+| Bridge method is missing, rejects or returns `null`; session unchanged | Frontend mint result, or the original workspace token if minting fails |
+| Account or workspace changes during the bridge lookup or fallback mint | Original workspace token; discard the asynchronous result              |
+
+The session-change guard also applies to older Desktop builds without the
+bridge method. Returning the original token preserves the prompt's original
+credential; it does not obtain a replacement account's credential or guarantee
+that the original token is still valid. Cloud, Firebase sign-in and the flag-off
+paths retain their existing behavior.
+
+The [before/after comparison](https://github.com/Comfy-Org/ComfyUI_frontend/pull/23229#issuecomment-6860320532)
+records a mocked Desktop bridge and simulated expiry. It shows the bridge token
+being queued without a frontend mint and the workflow rendering its text
+preview. It does not establish a live partner-node run, native Desktop bridge
+integration or Windows behavior. The PR also records a local cross-repository
+fixture run with a real 17-minute wait; that is separate from a live service
+check.
+
+Record the backport PR, released frontend version, ComfyUI version and its
+frontend pin, Desktop version/commit, OS, and a link to the live run evidence
+for each line. All live checks below remain pending; fixture results do not
+complete them.
+
+| Target      | Backport / released frontend | ComfyUI pin / Desktop build / OS | Live partner-node evidence |
+| ----------- | ---------------------------- | -------------------------------- | -------------------------- |
+| `core/1.58` | Pending                      | Pending                          | Pending                    |
+| `core/1.59` | Pending                      | Pending                          | Pending                    |
+| `core/1.60` | Pending                      | Pending                          | Pending                    |
+
+For each backport, use a Desktop build containing
+[Comfy-Desktop PR #1983](https://github.com/Comfy-Org/Comfy-Desktop/pull/1983)
+and the ComfyUI installation that actually pins that backport:
+
+1. Sign in through Desktop and run a real partner-node workflow with the partner-node token flag enabled. Record sanitized evidence that the Desktop bridge returned the queued token and that no frontend mint occurred.
+2. Keep the job running or polling past the workspace token's actual expiry. Record a partner-node request that executes after that expiry without the partner-node sign-in error, and record job completion separately. Do not substitute a mocked bridge or simulated expiry.
+3. Verify ComfyUI's partner-token renewal against the live service during a sufficiently long run, and record the outcome separately from job completion.
+4. Record missing platform coverage explicitly, including Windows if only macOS was exercised. Include timestamps and sanitized outcomes without token values.
+
+Track removal of the temporary Cloud mint exception separately; a merged
+backport or a fixture run alone does not prove the frontend and Desktop changes
+have reached users. See the dependency and rollout notes in PR #23229.
 
 ## Release Sheriff Assignment
 
-`pr-assign-release-sheriff.yaml` assigns the on-call release sheriff to any
+The sheriff is a **fixed role**, declared in `.github/release-sheriff.json`:
+
+```json
+{ "sheriff": "thedatalife", "backupReviewer": "christian-byrne" }
+```
+
+It is deliberately not the Datadog on-call person. On-call pages for incidents
+and hands over weekly; the sheriff shepherds releases through QA. Reading the
+release owner off the paging rota is what coupled the two roles. Changing
+sheriff is a PR to that file.
+
+`backupReviewer` must name someone other than the sheriff, and
+`parseSheriffConfig` fails the run if it does not — see below for why. Because
+the unit suite runs on any change under `.github/`, a malformed or
+self-naming edit fails CI on the PR that writes it.
+
+If the file is missing or unreadable the run exits non-zero and assigns
+**nothing**. There is no fallback on purpose: there is no sensible person to
+guess at, and a bad declaration should not reach `main` in the first place.
+
+`pr-assign-release-sheriff.yaml` assigns the release sheriff to any
 open PR that has no assignee and is either:
 
 - a backport (label `backport`, or a `[backport ...]` title);
@@ -72,12 +158,19 @@ open PR that has no assignee and is either:
 It also requests their review, since backport merges are gated on an approval.
 Existing assignees and review requests are never overwritten.
 
-When the sheriff wrote the PR themselves, the review is requested from the
-**next person in the rotation** instead — GitHub rejects a self-review request,
-so previously those PRs were assigned to their own author with nobody asked to
-review, and then waited on an approval that had never been requested. The order
-comes from the Datadog layer's member list, so it needs no separate config. If
-nobody in the rotation can stand in, the run says so rather than staying quiet.
+Both halves are **verified, not assumed**. GitHub drops an assignee who lacks
+push access and still answers `201`, and rejects a review request for a
+non-collaborator with `422`, so the job reads the assignee list back and checks
+the review request succeeded. Either failure marks the run degraded and exits
+non-zero rather than reporting a PR as owned when it is not — an unassigned
+backport with no requested reviewer never reaches the approval
+`backport-auto-merge.yaml` waits for.
+
+When the sheriff wrote the PR themselves, the review is requested from
+`backupReviewer` instead — GitHub rejects a self-review request, so previously
+those PRs were assigned to their own author with nobody asked to review, and
+then waited on an approval that had never been requested. That is also why
+`backupReviewer` may not name the sheriff.
 
 Automation-authored PRs are included because nobody feels addressed by what a
 robot opens: they accumulated unassigned for weeks. Note these are matched by
@@ -89,175 +182,16 @@ branches, and teaching it about bot logins would duplicate the author list in a
 second syntax (the webhook says `dependabot[bot]` where `gh` says
 `app/dependabot`), which would drift.
 
-The rotation itself lives in Datadog On-Call ("Frontend Team – Oncall
-Schedule", layer "Release Sheriff") and is read at execution time, so handovers
-need no commit.
+The job needs no secrets beyond the workflow's own `GITHUB_TOKEN` (and
+`SLACK_BOT_TOKEN` for the failure alert). It previously read the Datadog
+On-Call schedule and bridged Datadog emails to GitHub logins through the
+`RELEASE_SHERIFF_DIRECTORY` secret, sourced from
+`rosters/release-sheriff-directory.json` in `Comfy-Org/github-workflows-ops`.
+All of that is gone: the sheriff is declared in this repo. `DATADOG_API_KEY`,
+`DATADOG_APP_KEY` and `RELEASE_SHERIFF_DIRECTORY` can be deleted from the repo
+secrets, and the roster file and its sync script retired.
 
-### Mapping a Datadog user to a GitHub login
-
-Datadog exposes no GitHub identity, and GitHub only resolves commit emails its
-users chose to publish, so the two have to be bridged explicitly. That bridge is
-the repo **secret** `RELEASE_SHERIFF_DIRECTORY`, a JSON array read straight from
-the environment by `parseGithubLogins`:
-
-```json
-[{ "datadog_email": "ben@comfy.org", "github_login": "benceruleanlu" }]
-```
-
-Entries are keyed by the email's local part, lower-cased; GitHub logins are
-case-insensitive, so the login's own case does not matter. Unknown fields are
-ignored, so the file can carry more than this script needs.
-
-The secret's source of truth is `rosters/release-sheriff-directory.json` in the
-private repo **`Comfy-Org/github-workflows-ops`**. Adding someone to the rotation
-is therefore two steps: add them to the Datadog layer, and open a PR adding their
-entry to that file, then run that repo's sync script to push the file into this
-repo's secret. The file is out of this repo because this repo is public, and it
-is in a repo rather than a Datadog field so a change is reviewed.
-
-It has to be a **secret**, never an Actions variable: Actions prints a step's
-`env:` block before the step runs and this repo's run logs are public, so a
-variable would publish the whole map. Secret values are masked.
-
-It used to live on the Datadog schedule as `github:<user>:<login>` tags, and the
-`PUT` full-replace trap described below is why it no longer does: one
-tags-unaware rotation edit deleted every entry at once. Those tags are now
-vestigial and can be deleted from the schedule.
-
-### Editing the schedule over the API
-
-Rotation membership and order are normally edited in the on-call UI. The
-scripted procedure below is scoped to **tags-only edits** (e.g. deleting the
-vestigial `github:<user>:<login>` tags after the directory moved to a secret):
-its guard aborts unless every field except `tags` matches the original. A
-broader runbook that safely scripts rotation membership changes is tracked as a
-follow-up; until then, use the UI for those. Note that
-**`PUT /api/v2/on-call/schedules/{id}` is a full replace** — `PATCH` answers
-`{"errors":["Not found"]}` even for a schedule that `GET` returns fine — so read
-the schedule first and edit what comes back rather than composing a body by
-hand. Any field the body omits is wiped, the call returns 200, and nothing
-warns.
-
-The workflow's `DATADOG_APP_KEY` repo secret must remain read-only with the
-`on_call_read` permission. A manual `PUT` requires a separate local application
-key with `on_call_write`; export it as `DATADOG_WRITE_APP_KEY`, and never widen
-or reuse the CI secret for this destructive operation.
-
-`PUT` is a full replace, so read the schedule first and edit what comes back
-rather than composing a body by hand:
-
-```bash
-set -euo pipefail
-umask 077
-
-BASE=https://api.us5.datadoghq.com/api/v2/on-call/schedules
-SCHEDULE_ID=f3258942-c040-4c33-8228-63a03e9092d6
-WORK_DIR=$(mktemp -d "${TMPDIR:-/tmp}/release-sheriff.XXXXXX")
-trap 'rm -rf "$WORK_DIR"' EXIT
-READ_CONFIG="$WORK_DIR/read.curl"
-WRITE_CONFIG="$WORK_DIR/write.curl"
-PUT_FILTER="$WORK_DIR/to-put.jq"
-printf 'header = "DD-API-KEY: %s"\nheader = "DD-APPLICATION-KEY: %s"\n' \
-  "$DATADOG_API_KEY" "$DATADOG_APP_KEY" >"$READ_CONFIG"
-printf 'header = "DD-API-KEY: %s"\nheader = "DD-APPLICATION-KEY: %s"\n' \
-  "$DATADOG_API_KEY" "$DATADOG_WRITE_APP_KEY" >"$WRITE_CONFIG"
-
-cat >"$PUT_FILTER" <<'JQ'
-  . as $response
-  | .data as $schedule
-  | {
-      data: {
-        id: $schedule.id,
-        type: $schedule.type,
-        attributes: (
-          $schedule.attributes
-          | .layers = [
-              $schedule.relationships.layers.data[] as $layer_ref
-              | $response.included[]
-              | select(.type == "layers" and .id == $layer_ref.id)
-              | . as $layer
-              | $layer.attributes + {
-                  id: $layer.id,
-                  members: [
-                    $layer.relationships.members.data[] as $member_ref
-                    | $response.included[]
-                    | select(.type == "members" and .id == $member_ref.id)
-                    | {user: {id: .relationships.user.data.id}}
-                  ]
-                }
-            ]
-        ),
-        relationships: {teams: $schedule.relationships.teams}
-      }
-    }
-JQ
-
-curl --fail-with-body -sS --config "$READ_CONFIG" \
-  "$BASE/$SCHEDULE_ID?include=teams,layers,layers.members,layers.members.user" \
-  --output "$WORK_DIR/schedule.response.original.json"
-jq -f "$PUT_FILTER" "$WORK_DIR/schedule.response.original.json" \
-  >"$WORK_DIR/schedule.put.original.json"
-cp "$WORK_DIR/schedule.put.original.json" \
-  "$WORK_DIR/schedule.put.edited.json"
-"${EDITOR:?Set EDITOR before running this procedure}" \
-  "$WORK_DIR/schedule.put.edited.json"
-
-curl --fail-with-body -sS --config "$READ_CONFIG" \
-  "$BASE/$SCHEDULE_ID?include=teams,layers,layers.members,layers.members.user" \
-  --output "$WORK_DIR/schedule.response.latest.json"
-jq -f "$PUT_FILTER" "$WORK_DIR/schedule.response.latest.json" \
-  >"$WORK_DIR/schedule.put.latest.json"
-diff -u "$WORK_DIR/schedule.put.original.json" \
-  "$WORK_DIR/schedule.put.latest.json"
-diff -u \
-  <(jq -S 'del(.data.attributes.tags)' \
-    "$WORK_DIR/schedule.put.original.json") \
-  <(jq -S 'del(.data.attributes.tags)' \
-    "$WORK_DIR/schedule.put.edited.json")
-jq -e '.data.attributes.tags | type == "array"' \
-  "$WORK_DIR/schedule.put.edited.json" >/dev/null
-
-curl --fail-with-body -sS -X PUT --config "$WRITE_CONFIG" \
-  -H 'Content-Type: application/json' \
-  "$BASE/$SCHEDULE_ID" -d @"$WORK_DIR/schedule.put.edited.json"
-```
-
-The GET response is JSON:API: layers and members live in `included`. The `jq`
-step converts them to the PUT shape under `data.attributes.layers` and maps
-each member to `{ "user": { "id": "..." } }`. Edit only `tags` in
-`$WORK_DIR/schedule.put.edited.json`; the untouched response and transformed
-PUT body remain beside it until the shell exits. The conversion preserves the
-schedule's `name`, `time_zone`, `tags`, and team references; every layer's
-complete attributes and `id`; and member order.
-
-Datadog offers no optimistic-concurrency token for this endpoint. After the
-editor closes, the procedure immediately fetches the schedule again and stops
-if anything changed. It also stops unless `tags` is still an array and every
-other field in the edited body exactly matches the original.
-
-Although the GitHub mapping no longer depends on tags, preserving the complete
-schedule payload remains important: a partial `PUT` can still silently remove
-rotation data.
-
-Only `scheduleId`, `datadogSite` and `fallbackGithubLogin` stay in the `CONFIG`
-object of `scripts/release-sheriff/release-sheriff.ts`. Note `datadogSite` is
-`us5.datadoghq.com` — the Comfy org lives on that sub-domain and the default
-`api.datadoghq.com` returns 403.
-
-Requires repo secrets `DATADOG_API_KEY` and `DATADOG_APP_KEY` (scope:
-`on_call_read`) plus `RELEASE_SHERIFF_DIRECTORY`.
-
-If the on-call user cannot be mapped — a missing directory entry, a directory
-secret that is absent or not valid JSON, missing Datadog credentials, an
-unreachable Datadog — the job still assigns `fallbackGithubLogin` so PRs are
-never left unowned, but **exits non-zero** so the degradation is visible. A
-green run means a real sheriff was resolved from Datadog.
-
-Directory coverage is checked for the **whole rotation**, not just whoever is on
-call, and a member without an entry fails the run. Someone added to the layer
-without one otherwise works fine until their own shift begins — the breakage
-surfaces weeks after the cause, on whoever happens to be sheriff. This is a
-configuration check, so it fails even when today's assignment succeeded.
+### Failure alerting
 
 A failed run also posts to **#frontend-releases** with the reason, because a
 failing scheduled workflow otherwise only notifies whoever last pushed to
@@ -288,8 +222,15 @@ breakage is announced within the hour rather than on the spot.
 ## Publishing
 
 Merged PRs with the `Release` label trigger `release-draft-create.yaml`,
-publishing to GitHub Releases (`dist.zip`), PyPI (`comfyui-frontend-package`),
-and npm (`@comfyorg/comfyui-frontend-types`).
+publishing to GitHub Releases (`dist.zip` and `dist-desktop.zip`) and npm
+(`@comfyorg/comfyui-frontend-types`).
+
+Stable PyPI versions of `comfyui-frontend-package` are published only by
+`release-weekly-comfyui.yaml`, for the version each run targets
+(`release-pypi-dev.yaml` publishes `.devN` builds from the ref it is
+dispatched on, normally `main`). A patch
+released through a `Release` PR on any other line is on GitHub Releases but not
+on PyPI until that workflow runs for it.
 
 ## Weekly ComfyUI Integration
 
@@ -297,14 +238,21 @@ and npm (`@comfyorg/comfyui-frontend-types`).
 branch has unreleased commits, it triggers a patch bump and drafts a PR to
 `Comfy-Org/ComfyUI` updating `requirements.txt`.
 
+Every run reuses one branch and PR (`automation/comfyui-frontend-bump`). If
+ComfyUI master, or that PR while it is still open, already pins a newer
+frontend than the run's target, the run leaves it unchanged rather than
+downgrading it, so a patch on an older line never replaces a pending bump to a
+newer minor. If master already pins the target and the open bump PR does not
+pin anything newer, the run closes that PR, since merging it could only
+downgrade or do nothing.
+
 ## Workflows
 
-| Workflow                         | Purpose                                            |
-| -------------------------------- | -------------------------------------------------- |
-| `release-version-bump.yaml`      | Bump version, create Release PR                    |
-| `release-draft-create.yaml`      | Build + publish to GitHub/PyPI/npm                 |
-| `release-branch-create.yaml`     | Create `core/` + `cloud/` branches (minor/major)   |
-| `release-weekly-comfyui.yaml`    | Weekly auto-patch + ComfyUI requirements PR        |
-| `pr-backport.yaml`               | Cherry-pick fixes to stable branches               |
-| `cloud-backport-tag.yaml`        | Tag cloud branch merges                            |
-| `pr-assign-release-sheriff.yaml` | Assign on-call sheriff to backport/release/bot PRs |
+| Workflow                         | Purpose                                        |
+| -------------------------------- | ---------------------------------------------- |
+| `release-version-bump.yaml`      | Bump version, create Release PR                |
+| `release-draft-create.yaml`      | Build + publish to GitHub Releases/npm         |
+| `release-branch-create.yaml`     | Create `core/` branches (minor/major)          |
+| `release-weekly-comfyui.yaml`    | Auto-patch, PyPI publish, ComfyUI pin PR       |
+| `pr-backport.yaml`               | Cherry-pick fixes to stable branches           |
+| `pr-assign-release-sheriff.yaml` | Assign the sheriff to backport/release/bot PRs |

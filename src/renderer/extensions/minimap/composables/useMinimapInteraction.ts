@@ -1,11 +1,12 @@
+import type { MinBounds } from '@comfyorg/shared-frontend-utils/geometry'
 import { ref } from 'vue'
 import type { Ref, ShallowRef } from 'vue'
 
-import type { MinimapCanvas } from '../types'
+import type { MinimapCanvas } from '@/renderer/extensions/minimap/types'
 
 export function useMinimapInteraction(
   containerRef: Readonly<ShallowRef<HTMLDivElement | null>>,
-  bounds: Ref<{ minX: number; minY: number; width: number; height: number }>,
+  bounds: Ref<MinBounds>,
   scale: Ref<number>,
   width: number,
   height: number,

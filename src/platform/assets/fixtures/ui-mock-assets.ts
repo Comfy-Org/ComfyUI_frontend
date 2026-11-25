@@ -1,4 +1,4 @@
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type { AssetItem } from '@comfyorg/assets-core/schema'
 
 const PRODUCTION_FORBIDDEN_MOCK_ASSET_SENTINEL =
   'COMFY_PRODUCTION_FORBIDDEN_MOCK_ASSET_SENTINEL'

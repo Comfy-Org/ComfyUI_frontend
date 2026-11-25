@@ -1,0 +1,191 @@
+import {
+  COMFY_CLIENT,
+  createRequestAuthorizer
+} from '@comfyorg/account-core/requestAuth'
+import { describe, expect, it, vi } from 'vitest'
+
+import { fetchOnWebSession } from './webSessionFetch'
+import type { WebSessionRequestScope } from './webSessionFetch'
+
+describe('web-session request credentials', () => {
+  it.for([
+    {
+      name: 'relative ingest URL',
+      url: '/api/assets/image/content',
+      credentials: 'same-origin'
+    },
+    {
+      name: 'absolute same-origin URL',
+      url: new URL('/api/assets/image/content', location.href).href,
+      credentials: 'same-origin'
+    },
+    {
+      name: 'remote ingest URL',
+      url: 'https://testcloud.comfy.org/api/assets/image/content',
+      credentials: 'include'
+    }
+  ] as const)(
+    'keeps cookie authentication for $name',
+    async ({ url, credentials }) => {
+      const send = vi.mocked(fetch).mockResolvedValue(new Response('asset'))
+      const scope: WebSessionRequestScope = {
+        epoch: 1,
+        workspaceId: 'team-workspace',
+        session: {
+          user: { id: 'user', email: 'user@example.com', emailVerified: true },
+          csrfToken: 'csrf-token',
+          expiresAt: Number.MAX_SAFE_INTEGER,
+          absoluteExpiresAt: Number.MAX_SAFE_INTEGER
+        }
+      }
+
+      await fetchOnWebSession(url, { method: 'POST', body: 'asset' }, scope, {
+        authorize: createRequestAuthorizer({
+          getWorkspaceToken: async () => 'unused'
+        }),
+        refresh: async () => undefined,
+        workspaceDenied: vi.fn(),
+        ssoRequired: vi.fn()
+      })
+
+      expect(send).toHaveBeenCalledWith(url, {
+        method: 'POST',
+        body: 'asset',
+        credentials,
+        headers: new Headers({
+          'X-Comfy-Client': COMFY_CLIENT,
+          'X-Comfy-Workspace-ID': 'team-workspace',
+          'X-CSRF-Token': 'csrf-token'
+        })
+      })
+    }
+  )
+})
+
+describe('a request the server refuses because the session lapsed', () => {
+  const scopeFor = (csrfToken: string): WebSessionRequestScope => ({
+    epoch: 1,
+    workspaceId: 'team-workspace',
+    session: {
+      user: { id: 'user', email: 'user@example.com', emailVerified: true },
+      csrfToken,
+      expiresAt: Number.MAX_SAFE_INTEGER,
+      absoluteExpiresAt: Number.MAX_SAFE_INTEGER
+    }
+  })
+
+  function sendLapsed(
+    retriesLapsedSession: boolean,
+    init: RequestInit = { method: 'POST', body: '{}' },
+    retried: Response = new Response('restored')
+  ) {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(
+        Response.json(
+          { code: 'UNAUTHORIZED', message: 'authentication required' },
+          { status: 401 }
+        )
+      )
+      .mockResolvedValueOnce(retried)
+    const refresh = vi.fn(async () => scopeFor('fresh-csrf'))
+    const ports = {
+      authorize: createRequestAuthorizer({
+        getWorkspaceToken: async () => 'unused'
+      }),
+      refresh,
+      workspaceDenied: vi.fn(),
+      ssoRequired: vi.fn(),
+      retriesLapsedSession
+    }
+    const response = fetchOnWebSession(
+      '/api/billing/capabilities',
+      init,
+      scopeFor('stale-csrf'),
+      ports
+    )
+    return { response, refresh, ports }
+  }
+
+  it('returns the refusal without re-reading the session when recovery is off', async () => {
+    const { response, refresh } = sendLapsed(false)
+
+    expect((await response).status).toBe(401)
+    expect(refresh).not.toHaveBeenCalled()
+  })
+
+  it('re-reads the session and retries once on the restored session', async () => {
+    const { response, refresh } = sendLapsed(true)
+
+    expect(await (await response).text()).toBe('restored')
+    expect(refresh).toHaveBeenCalledOnce()
+    expect(
+      new Headers(vi.mocked(fetch).mock.lastCall?.[1]?.headers).get(
+        'X-CSRF-Token'
+      )
+    ).toBe('fresh-csrf')
+  })
+
+  it('returns the refusal for a streamed body it cannot replay', async () => {
+    const { response, refresh } = sendLapsed(true, {
+      method: 'POST',
+      body: new ReadableStream()
+    })
+
+    expect((await response).status).toBe(401)
+    expect(refresh).not.toHaveBeenCalled()
+  })
+
+  it('leaves a csrf retry unclassified when recovery is off', async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(
+        Response.json(
+          { code: 'csrf_invalid', message: 'stale' },
+          { status: 403 }
+        )
+      )
+      .mockResolvedValueOnce(
+        Response.json(
+          { code: 'workspace_access_denied', message: 'refused' },
+          { status: 403 }
+        )
+      )
+    const workspaceDenied = vi.fn()
+
+    const response = await fetchOnWebSession(
+      '/api/billing/capabilities',
+      { method: 'POST', body: '{}' },
+      scopeFor('stale-csrf'),
+      {
+        authorize: createRequestAuthorizer({
+          getWorkspaceToken: async () => 'unused'
+        }),
+        refresh: async () => scopeFor('fresh-csrf'),
+        workspaceDenied,
+        ssoRequired: vi.fn(),
+        retriesLapsedSession: false
+      }
+    )
+
+    expect(response.status).toBe(403)
+    expect(fetch).toHaveBeenCalledTimes(2)
+    expect(workspaceDenied).not.toHaveBeenCalled()
+  })
+
+  it.for([
+    { code: 'workspace_access_denied', reported: 'workspaceDenied' },
+    { code: 'sso_required', reported: 'ssoRequired' }
+  ] as const)(
+    'reports a $code refusal of the retry without retrying again',
+    async ({ code, reported }) => {
+      const { response, refresh, ports } = sendLapsed(
+        true,
+        undefined,
+        Response.json({ code, message: 'refused' }, { status: 403 })
+      )
+
+      expect((await response).status).toBe(403)
+      expect(ports[reported]).toHaveBeenCalledOnce()
+      expect(refresh).toHaveBeenCalledOnce()
+    }
+  )
+})

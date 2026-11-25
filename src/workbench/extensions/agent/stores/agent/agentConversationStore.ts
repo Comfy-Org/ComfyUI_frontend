@@ -1,31 +1,151 @@
+import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
+import { createEventHook } from '@vueuse/core'
+import { isEqual } from 'es-toolkit'
 import { defineStore } from 'pinia'
-import { computed, ref, shallowRef } from 'vue'
+import { computed, ref, shallowReactive, shallowRef, watch } from 'vue'
 
-import type { AgentMessages, TurnId } from '../../schemas/agentApiSchema'
-import { toTurnId } from '../../schemas/agentApiSchema'
+import type { MediaKind } from '@comfyorg/assets-core/media'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { AgentTurnTab } from '@/stores/workflowTabActivityStore'
+
+import type {
+  AgentMessages,
+  RenderedAskKind,
+  TurnId
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import { toTurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import type {
   AgentChatEvent,
-  AgentEventTransport
-} from '../../services/agent/agentEventTransport'
-import { createAgentEventTransport } from '../../services/agent/agentEventTransport'
-import type { AssistantMessage } from '../../services/agent/agentMessageParts'
-import { createAssistantMessage } from '../../services/agent/agentMessageParts'
+  AgentEventTransport,
+  CanvasConfirmation,
+  CanvasSyncEvidence
+} from '@/workbench/extensions/agent/services/agent/agentEventTransport'
+import { createAgentEventTransport } from '@/workbench/extensions/agent/services/agent/agentEventTransport'
+import type {
+  AskUserResolution,
+  AssistantMessage,
+  ToolPart
+} from '@/workbench/extensions/agent/services/agent/agentMessageParts'
+import {
+  askIdOf,
+  askKindOf,
+  createAssistantMessage,
+  isOpenAskPart,
+  isPendingAskPart,
+  retireAskParts,
+  settleResolution
+} from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 import {
   normalizeAgentTranscript,
   settleLiveMessage
-} from '../../services/agent/agentTranscript'
-import { createUndeliverableAskReporter } from '../../services/agent/undeliverableAskReporter'
+} from '@/workbench/extensions/agent/services/agent/agentTranscript'
+import { createUndeliverableAskReporter } from '@/workbench/extensions/agent/services/agent/undeliverableAskReporter'
 import type {
   NormalizedAgentTranscript,
   UserAttachment
-} from '../../services/agent/agentTranscript'
-import type { WorkflowReference } from '../../types/workflowReference'
+} from '@/workbench/extensions/agent/services/agent/agentTranscript'
+import type { WorkflowReference } from '@/workbench/extensions/agent/types/workflowReference'
+import type { SkillReference } from '@/workbench/extensions/agent/types/skillReference'
+import type {
+  AgentInputMethod,
+  AgentStopMethod
+} from '@comfyorg/telemetry/types'
+import type { AgentStarterPromptSource } from '@/workbench/extensions/agent/utils/starterPrompts'
+import { parseSkillReferenceText } from '@/workbench/extensions/agent/utils/skillReferenceText'
+import type { HydratedUserTurn } from '@/workbench/extensions/agent/utils/workflowReferenceText'
+import { matchesHydratedUserTurn } from '@/workbench/extensions/agent/utils/workflowReferenceText'
 
 export type { UserAttachment }
 
 type ConversationStatus = 'idle' | 'thinking' | 'streaming'
 
-type AskSelection = 'run' | 'cancel'
+export type PendingSendOrigin =
+  | { kind: 'thread'; threadId: string }
+  | { kind: 'blank'; blankChatId: string }
+
+type PendingSendStatus = 'sending' | 'failed'
+
+type PendingSendFailureKind =
+  | 'network'
+  | 'admission'
+  | 'paywall'
+  | 'retry_after'
+  | 'disowned'
+  | 'target_unavailable'
+  | 'turn_in_progress'
+  | 'request'
+
+export interface PendingSendFailure {
+  kind: PendingSendFailureKind
+  message: string
+  retryAfterSeconds?: number
+  retryAtMs?: number
+  retryable?: boolean
+  uncertain?: boolean
+}
+
+export interface PendingSendEntryState {
+  clientMessageId: string
+  status: PendingSendStatus
+  failure?: PendingSendFailure
+  paywallResolved?: boolean
+}
+
+interface PendingSendStop {
+  method?: AgentStopMethod
+}
+
+export interface PendingSentAttachment {
+  ref: string
+  name: string
+  previewUrl?: string
+  mediaUrl?: string
+  mediaKind?: MediaKind
+}
+
+interface PendingSentTag {
+  id: string
+  title: string
+}
+
+interface PendingSend {
+  clientMessageId: string
+  origin: PendingSendOrigin
+  workspaceId?: string | null
+  rawText: string
+  text: string
+  attachments: UserAttachment[]
+  sentAttachments: PendingSentAttachment[]
+  sentTags: PendingSentTag[]
+  tags: string[]
+  workflowReferences: WorkflowReference[]
+  skillReference?: SkillReference
+  assetIds?: readonly string[]
+  targetTabPath?: string | null
+  targetTabInstanceId?: string | null
+  inputMethod?: AgentInputMethod
+  starterPrompt?: AgentStarterPromptSource | null
+  status: PendingSendStatus
+  failure?: PendingSendFailure
+  paywallResolved?: boolean
+  stopRequested?: PendingSendStop
+  canvasOutcomeAtStart?: number
+  canvasEvidence?: CanvasSyncEvidence[]
+  knownTurnIdsAtSend?: ReadonlySet<string>
+  precedesThreadTranscript?: boolean
+  createdOrder: number
+}
+
+interface TranscriptHydratedEvent {
+  threadId: string
+  userTurns: readonly HydratedUserTurn[]
+}
+
+interface BlankChatFailuresBoundEvent {
+  clientMessageIds: readonly string[]
+  threadId: string
+  acceptedTurnId: TurnId
+}
 
 interface UserEntry {
   id: TurnId
@@ -34,6 +154,8 @@ interface UserEntry {
   attachments?: UserAttachment[]
   tags?: string[]
   workflowReferences?: WorkflowReference[]
+  skillReference?: SkillReference
+  pending?: PendingSendEntryState
 }
 
 export type ConversationEntry = UserEntry | AssistantMessage
@@ -44,7 +166,13 @@ interface BackgroundTurn {
   message: AssistantMessage
   transport: AgentEventTransport
   userText: string | undefined
+  attachments?: UserAttachment[]
+  tags?: string[]
+  workflowReferences?: WorkflowReference[]
+  skillReference?: SkillReference
   settled: boolean
+  tab: TurnTab
+  pendingAskIds: readonly string[]
 }
 
 interface ActiveTurnSlot {
@@ -54,6 +182,19 @@ interface ActiveTurnSlot {
   threadId: string | null
   message: AssistantMessage
   transport: AgentEventTransport
+  tab: TurnTab
+}
+
+export type TurnTab =
+  | { status: 'unknown' }
+  | { status: 'none' }
+  | { status: 'guessed'; workflowInstanceId: string }
+  | { status: 'known'; workflowInstanceId: string }
+
+const UNKNOWN_TAB: TurnTab = { status: 'unknown' }
+
+function isProvisional(tab: TurnTab): boolean {
+  return tab.status === 'unknown' || tab.status === 'guessed'
 }
 
 /**
@@ -64,9 +205,36 @@ interface ActiveTurnSlot {
  */
 const ASK_RESOLUTION_GRACE_MS = 15_000
 
+function isLoadSkillPart(part: AssistantMessage['parts'][number]): boolean {
+  return part.type === 'tool' && part.name === 'load_skill'
+}
+
+function pendingAskIdsOf(message: AssistantMessage): string[] {
+  return message.parts.flatMap((part) =>
+    isPendingAskPart(part) ? [part.askId] : []
+  )
+}
+
+function reopenAsk(message: AssistantMessage, askId: string): void {
+  message.parts = message.parts.map((part) =>
+    (part.type === 'askUser' || part.type === 'deleteApproval') &&
+    askIdOf(part) === askId
+      ? { ...part, resolution: undefined }
+      : part
+  )
+}
+
 export interface LiveTurn {
   threadId: string
   messageId: TurnId
+}
+
+interface UnreconciledSnapshotTurn {
+  turn: LiveTurn
+  messageId: string
+  transport: AgentEventTransport
+  announced: boolean
+  missedFrom: 'reload' | 'reconnect'
 }
 
 interface AnchoredLocalPart {
@@ -91,7 +259,7 @@ function anchorLocalParts(
       textOffset = 0
       continue
     }
-    if (part.type === 'runApproval') continue
+    if (isOpenAskPart(part)) continue
     localParts.push({ part, toolCount, textOffset })
   }
   return localParts
@@ -179,21 +347,215 @@ function interleaveLocalParts(
   return mergedParts
 }
 
+function preserveLiveToolStartTimes(
+  persistedParts: AssistantMessage['parts'],
+  liveParts: AssistantMessage['parts']
+): AssistantMessage['parts'] {
+  const startsByCallId = new Map<string, number>()
+  for (const part of liveParts) {
+    if (part.type === 'tool' && part.startedAtMs !== undefined)
+      startsByCallId.set(part.callId, part.startedAtMs)
+  }
+  return persistedParts.map((part) => {
+    if (part.type !== 'tool' || part.startedAtMs !== undefined) return part
+    const startedAtMs = startsByCallId.get(part.callId)
+    return startedAtMs === undefined ? part : { ...part, startedAtMs }
+  })
+}
+
+function toolCallIdsOf(parts: AssistantMessage['parts']): string[] {
+  return parts.flatMap((part) => (part.type === 'tool' ? [part.callId] : []))
+}
+
+function liveToolOffset(
+  liveParts: AssistantMessage['parts'],
+  persistedParts: AssistantMessage['parts']
+): number {
+  const live = toolCallIdsOf(liveParts)
+  const persisted = toolCallIdsOf(persistedParts)
+  if (live.length === 0) return persisted.length
+  for (const [index, callId] of live.entries()) {
+    const at = persisted.indexOf(callId)
+    if (at >= index) return at - index
+  }
+  return Math.max(0, persisted.length - live.length)
+}
+
+function storedCallIdOf(
+  liveParts: AssistantMessage['parts'],
+  persistedParts: AssistantMessage['parts'],
+  offset: number
+): (callId: string) => string {
+  const liveCallIds = toolCallIdsOf(liveParts)
+  const persistedCallIds = toolCallIdsOf(persistedParts)
+  const persisted = new Set(persistedCallIds)
+  const live = new Set(liveCallIds)
+  return (callId) => {
+    if (persisted.has(callId)) return callId
+    const position = liveCallIds.indexOf(callId) + offset
+    const atPosition =
+      position < persistedCallIds.length
+        ? persistedCallIds.at(position)
+        : undefined
+    return atPosition !== undefined && !live.has(atPosition)
+      ? atPosition
+      : callId
+  }
+}
+
+function preserveCanvasVerdicts(
+  liveParts: AssistantMessage['parts'],
+  persistedParts: AssistantMessage['parts'],
+  alignedOffset: number | 'exact-ids' = liveToolOffset(
+    liveParts,
+    persistedParts
+  )
+): AssistantMessage['parts'] {
+  const exactIdsOnly = alignedOffset === 'exact-ids'
+  const offset = exactIdsOnly ? 0 : alignedOffset
+  const storedCallId = storedCallIdOf(liveParts, persistedParts, offset)
+  const liveTools = toolPartsOf(liveParts)
+  const persistedCallIds = new Set(toolCallIdsOf(persistedParts))
+  const liveCounts = toolNameCounts(liveTools)
+  const alignedCounts = toolNameCounts(
+    toolPartsOf(persistedParts).slice(offset, offset + liveTools.length)
+  )
+  const liveByStoredCallId = new Map<string, ToolPart>()
+  for (const part of liveTools) {
+    if (
+      !persistedCallIds.has(part.callId) &&
+      (exactIdsOnly ||
+        liveCounts.get(part.name) !== alignedCounts.get(part.name))
+    )
+      continue
+    liveByStoredCallId.set(storedCallId(part.callId), part)
+  }
+  return persistedParts.map((part) => {
+    if (part.type !== 'tool' || part.ok !== true) return part
+    const live = liveByStoredCallId.get(part.callId)
+    if (live?.name !== part.name) return part
+    const canvasConfirmed = liveCanvasVerdict(live)
+    return canvasConfirmed === undefined ? part : { ...part, canvasConfirmed }
+  })
+}
+
+function toolPartsOf(parts: AssistantMessage['parts']): ToolPart[] {
+  return parts.filter((part): part is ToolPart => part.type === 'tool')
+}
+
+function toolNameCounts(tools: ToolPart[]): Map<string, number> {
+  const counts = new Map<string, number>()
+  for (const tool of tools)
+    counts.set(tool.name, (counts.get(tool.name) ?? 0) + 1)
+  return counts
+}
+
+function liveCanvasVerdict(part: ToolPart): boolean | undefined {
+  if (part.canvasConfirmed !== undefined) return part.canvasConfirmed
+  return part.ok === true && part.state === 'streaming' ? false : undefined
+}
+
+function finishSnapshotTurn(
+  message: AssistantMessage,
+  persistedParts: AssistantMessage['parts']
+): void {
+  const offset = liveToolOffset(message.parts, persistedParts)
+  finishWithPersistedParts(message, persistedParts, {
+    canvasOffset: offset,
+    toolCountOf: behindLiveCallId(message.parts, persistedParts, offset)
+  })
+}
+
+function finishReconnectedTurn(
+  message: AssistantMessage,
+  persistedParts: AssistantMessage['parts']
+): void {
+  finishWithPersistedParts(message, persistedParts, {
+    canvasOffset: 'exact-ids',
+    toolCountOf: behindLiveCallId(message.parts, persistedParts, 0)
+  })
+}
+
+function behindLiveCallId(
+  liveParts: AssistantMessage['parts'],
+  persistedParts: AssistantMessage['parts'],
+  offset: number
+): (liveToolCount: number) => number {
+  const liveCallIds = toolCallIdsOf(liveParts)
+  const persistedCallIds = toolCallIdsOf(persistedParts)
+  return (toolCount) => {
+    if (toolCount === 0) return offset
+    const at = persistedCallIds.indexOf(liveCallIds[toolCount - 1])
+    return at < 0 ? toolCount + offset : at + 1
+  }
+}
+
+interface LocalPartAlignment {
+  canvasOffset?: number | 'exact-ids'
+  toolCountOf: (liveToolCount: number) => number
+}
+
+function finishActiveTurn(
+  slot: Pick<ActiveTurnSlot, 'origin' | 'message'>,
+  persistedParts: AssistantMessage['parts'] | undefined,
+  missedFrames: boolean
+): void {
+  if (persistedParts === undefined)
+    finishWithPersistedParts(slot.message, persistedParts)
+  else if (slot.origin === 'snapshot')
+    finishSnapshotTurn(slot.message, persistedParts)
+  else if (missedFrames) finishReconnectedTurn(slot.message, persistedParts)
+  else finishWithPersistedParts(slot.message, persistedParts)
+}
+
 function finishWithPersistedParts(
   message: AssistantMessage,
-  persistedParts: AssistantMessage['parts'] | undefined
+  persistedParts: AssistantMessage['parts'] | undefined,
+  alignment: LocalPartAlignment = { toolCountOf: (toolCount) => toolCount }
 ): void {
   if (persistedParts === undefined) {
-    message.parts = message.parts.filter((part) => part.type !== 'runApproval')
+    message.parts = message.parts.filter((part) => !isOpenAskPart(part))
+    for (const part of message.parts) {
+      if (!('state' in part) || part.state !== 'streaming') continue
+      if (part.type === 'tool' && part.ok !== undefined) continue
+      part.state = 'done'
+    }
     return
   }
+  const persistedHasThinking = persistedParts.some(
+    (part) => part.type === 'thinking'
+  )
   message.parts = interleaveLocalParts(
-    persistedParts,
+    preserveLiveToolStartTimes(
+      preserveCanvasVerdicts(
+        message.parts,
+        persistedParts,
+        alignment.canvasOffset
+      ),
+      message.parts
+    ),
     anchorLocalParts(message.parts)
+      .filter(({ part }) => !persistedHasThinking || part.type !== 'thinking')
+      .map((anchor) => ({
+        ...anchor,
+        toolCount: alignment.toolCountOf(anchor.toolCount)
+      }))
   )
 }
 
 const MAX_DEPARTED_TURNS = 32
+let blankChatCounter = 0
+
+function nextBlankChatId(): string {
+  return `blank-${++blankChatCounter}`
+}
+
+interface SubmittedAskAnswer {
+  answer: AgentAnswerRequest
+  kind: RenderedAskKind | 'unknown'
+  owner: string
+  awaitingResolution?: 'accepted' | 'conflict'
+}
 
 export const useAgentConversationStore = defineStore(
   'agentConversation',
@@ -204,25 +566,19 @@ export const useAgentConversationStore = defineStore(
     const userAttachments = ref(new Map<TurnId, UserAttachment[]>())
     const userTags = ref(new Map<TurnId, string[]>())
     const userWorkflowReferences = ref(new Map<TurnId, WorkflowReference[]>())
+    const userSkillReferences = ref(new Map<TurnId, SkillReference>())
+    /**
+     * Skill names in the last loaded history; each load replaces it, and live
+     * turns never add to it. Marks when an opened conversation needs the
+     * saved-skill catalog its references are shown against.
+     */
+    const historySkillNames = shallowRef<readonly string[]>([])
     const attachmentNamesByThread = new Map<string, Map<string, string>>()
     const latestWorkflowId = ref<string>()
     const resolvedPaywallIds = ref(new Set<TurnId>())
     const activeSlot = shallowRef<ActiveTurnSlot | null>(null)
-    // PM-1575: whether a newly-created transport should hold a tool-call's
-    // chat "done" state back until canvas catch-up is confirmed (see
-    // agentEventTransport.ts). Defaults to never deferring, so a caller that
-    // never registers a gate (e.g. a headless/non-canvas conversation) keeps
-    // the pre-fix, immediate-done behavior. Read indirectly (via a wrapping
-    // closure, never passed by value) everywhere it is handed to a
-    // transport, so a later setCanvasSyncGate() call reaches transports
-    // that already exist -- passing the variable itself would freeze each
-    // transport onto whichever function this variable held at its own
-    // creation time.
-    let canvasSyncGate: () => boolean = () => false
-    // PM-1575: mirrors canvasSyncGate above, for the monotonic doc-update
-    // outcome counter a transport compares its per-tool-call baseline
-    // against (agentEventTransport.ts's canvasSyncBaseline). Same
-    // read-indirectly rule applies.
+    let canvasSyncGate: (workflowId?: string) => CanvasConfirmation = () =>
+      'none'
     let canvasSyncOutcomeCount: () => number = () => 0
     // PM-1575: settled turns (agent_message_done already applied) whose
     // transport is still holding at least one tool-call part back pending
@@ -236,28 +592,136 @@ export const useAgentConversationStore = defineStore(
     // entry prunes itself out the first time notifyCanvasCaughtUp() finds it
     // has nothing left pending.
     const settledActiveTransports = new Set<AgentEventTransport>()
-    const backgroundTurns = new Map<string, BackgroundTurn>()
+    const backgroundTurns = shallowReactive(new Map<string, BackgroundTurn>())
+    const activeBlankChatId = ref<string>(nextBlankChatId())
+    const pendingSends = shallowReactive(new Map<string, PendingSend>())
+    let nextPendingSendOrder = 0
+    let resolveTurnTab: () => TurnTab = () => UNKNOWN_TAB
+    const turnCompleted = createEventHook<string>()
+    const unreconciledSnapshotTurns = new Map<
+      TurnId,
+      UnreconciledSnapshotTurn
+    >()
+    const snapshotTurnSettled = createEventHook<LiveTurn>()
+    const pendingSendsReconciled = createEventHook<readonly string[]>()
+    const transcriptHydrated = createEventHook<TranscriptHydratedEvent>()
+    const blankChatFailuresBound =
+      createEventHook<BlankChatFailuresBoundEvent>()
+    const missedFrameTurnIds = new Set<TurnId>()
+    const workflowStore = useWorkflowStore()
+    const openTabPaths = computed(
+      () =>
+        new Map(
+          workflowStore.openWorkflows.map((workflow) => [
+            workflow.instanceId,
+            workflow.path
+          ])
+        )
+    )
     let hydratedMessageIds = new Set<string>()
     let hydratedTurnIds = new Map<string, TurnId>()
     let hydratedAssistantTurnIds = new Set<TurnId>()
     const demotedSnapshotByStash = new Map<TurnId, TurnId>()
     const restoredBackgroundMessageIds = new Set<TurnId>()
     const reportedPaywallImpressions = new Set<TurnId>()
-    const approvalShownAtByAsk = new Map<string, number>()
+    const approvalShownAtByAsk = new Map<
+      string,
+      { shownAt: number; turnId: string }
+    >()
     const shownApprovalIds = new Set<string>()
     const undeliverableAskReporter = createUndeliverableAskReporter()
     const departedTurns = new Map<string, 'no-live-turn' | 'settled-turn'>()
     const activeTurnId = computed(() => activeSlot.value?.turnId ?? null)
 
-    function recordApprovalShown(askId: string, shownAt: number): boolean {
+    function setTurnTabResolver(resolve: () => TurnTab): void {
+      resolveTurnTab = resolve
+    }
+
+    function openPathOf(tab: TurnTab): string | null {
+      return 'workflowInstanceId' in tab
+        ? (openTabPaths.value.get(tab.workflowInstanceId) ?? null)
+        : null
+    }
+
+    function announceCompletion(tab: TurnTab): void {
+      const path = openPathOf(tab)
+      if (path !== null) void turnCompleted.trigger(path)
+    }
+
+    function refreshBackgroundAskIds(entry: BackgroundTurn): void {
+      const pendingAskIds = pendingAskIdsOf(entry.message)
+      if (!isEqual(pendingAskIds, entry.pendingAskIds))
+        updateBackgroundTurn(entry.messageId, { pendingAskIds })
+    }
+
+    function updateBackgroundTurn(
+      turnId: TurnId,
+      change: Partial<Pick<BackgroundTurn, 'settled' | 'tab' | 'pendingAskIds'>>
+    ): void {
+      const entry = backgroundTurns.get(turnId)
+      if (entry) backgroundTurns.set(turnId, { ...entry, ...change })
+    }
+
+    function assignTurnTab(
+      matches: (
+        turnId: TurnId,
+        threadId: string | null,
+        tab: TurnTab
+      ) => boolean,
+      workflowInstanceId: string
+    ): void {
+      const tab: TurnTab = { status: 'known', workflowInstanceId }
+      const slot = activeSlot.value
+      if (slot !== null && matches(slot.turnId, slot.threadId, slot.tab))
+        activeSlot.value = { ...slot, tab }
+      for (const entry of backgroundTurns.values())
+        if (
+          !entry.settled &&
+          matches(entry.messageId, entry.threadId, entry.tab)
+        )
+          updateBackgroundTurn(entry.messageId, { tab })
+    }
+
+    function moveTurnToTab(turnId: TurnId, workflowInstanceId: string): void {
+      assignTurnTab((id) => id === turnId, workflowInstanceId)
+    }
+
+    function adoptThreadTab(owner: string, workflowInstanceId: string): void {
+      assignTurnTab(
+        (_id, thread, tab) => thread === owner && isProvisional(tab),
+        workflowInstanceId
+      )
+    }
+
+    function publishMessage(turnId: TurnId, message: AssistantMessage): void {
+      replaceActive(message)
+      const unreconciled = unreconciledSnapshotTurns.get(turnId)
+      if (unreconciled !== undefined)
+        announceReconcilableSnapshotTurn(unreconciled)
+      const entry = backgroundTurns.get(turnId)
+      if (!entry) return
+      const pendingAskIds = pendingAskIdsOf(message)
+      if (!isEqual(pendingAskIds, entry.pendingAskIds))
+        updateBackgroundTurn(turnId, { pendingAskIds })
+    }
+
+    function recordApprovalShown(
+      askId: string,
+      turnId: string,
+      shownAt: number
+    ): boolean {
       if (shownApprovalIds.has(askId)) return false
       shownApprovalIds.add(askId)
-      approvalShownAtByAsk.set(askId, shownAt)
+      approvalShownAtByAsk.set(askId, { shownAt, turnId })
       return true
     }
 
     function approvalShownAt(askId: string): number | undefined {
-      return approvalShownAtByAsk.get(askId)
+      return approvalShownAtByAsk.get(askId)?.shownAt
+    }
+
+    function approvalTurnId(askId: string): string | undefined {
+      return approvalShownAtByAsk.get(askId)?.turnId
     }
 
     function forgetApprovalTiming(askId: string): void {
@@ -305,7 +769,11 @@ export const useAgentConversationStore = defineStore(
       tags?: string[],
       workflowReferences?: WorkflowReference[]
     ): void {
-      userTexts.value.set(turnId, text)
+      const prompt = parseSkillReferenceText(text, workflowReferences)
+      userTexts.value.set(turnId, prompt.text)
+      if (prompt.skillReference)
+        userSkillReferences.value.set(turnId, prompt.skillReference)
+      else userSkillReferences.value.delete(turnId)
       if (attachments !== undefined && attachments.length > 0) {
         userAttachments.value.set(turnId, attachments)
         rememberAttachmentNames(attachments)
@@ -313,7 +781,7 @@ export const useAgentConversationStore = defineStore(
       if (tags !== undefined && tags.length > 0)
         userTags.value.set(turnId, tags)
       if (workflowReferences !== undefined && workflowReferences.length > 0)
-        userWorkflowReferences.value.set(turnId, workflowReferences)
+        userWorkflowReferences.value.set(turnId, prompt.workflowReferences)
     }
 
     function setThreadId(id: string | null): void {
@@ -326,7 +794,7 @@ export const useAgentConversationStore = defineStore(
       text: string,
       parts: AssistantMessage['parts']
     ): void {
-      userTexts.value.set(turnId, text)
+      recordUser(turnId, text)
       const message = createAssistantMessage(turnId)
       message.streaming = false
       message.parts = parts
@@ -359,6 +827,11 @@ export const useAgentConversationStore = defineStore(
           resolved.add(message.id)
         }
       }
+      for (const [id, send] of pendingSends) {
+        if (send.failure?.kind === 'paywall' && !send.paywallResolved) {
+          pendingSends.set(id, { ...send, paywallResolved: true })
+        }
+      }
       resolvedPaywallIds.value = resolved
     }
 
@@ -368,82 +841,158 @@ export const useAgentConversationStore = defineStore(
       return true
     }
 
-    /**
-     * PM-1658: retires a run-approval card that must never be offered again,
-     * the way an `agent_ask_resolved` frame would. `ingest` cannot serve this:
-     * it routes only to the active turn, and the cases this exists for are
-     * exactly the ones where that turn is gone. Every holder of the message
-     * has to be told, or whichever one is asked to republish next puts the
-     * card back.
-     */
-    function retireAsk(askId: string, owner?: string): void {
+    function retireAsk(
+      askId: string,
+      resolution: AskUserResolution,
+      owner?: string,
+      permanent = true
+    ): void {
       const key = threadKey(owner)
-      const withoutAsk = (parts: AssistantMessage['parts']) =>
-        parts.filter(
-          (part) => part.type !== 'runApproval' || part.askId !== askId
-        )
-      // Everything below the stash belongs to whichever thread is on screen,
-      // so it is only the right target when this ask belongs to that thread
-      // too. An answer that settles after the user moved on must reach back to
-      // the thread it was given on, not edit the one now in front of them.
       if (key === threadKey()) {
         messages.value = messages.value.map((message) => {
-          const parts = withoutAsk(message.parts)
-          return parts.length === message.parts.length
-            ? message
-            : { ...message, parts }
+          const parts = retireAskParts(message.parts, askId, resolution)
+          return parts === message.parts ? message : { ...message, parts }
         })
-        activeSlot.value?.transport.dropAskPart(askId)
+        activeSlot.value?.transport.retireAskPart(askId, resolution)
         for (const settledTransport of settledActiveTransports)
-          settledTransport.dropAskPart(askId)
+          settledTransport.retireAskPart(askId, resolution)
       }
-      // The stashed turn IS that reach-back: a thread the user has left keeps
-      // its message here, and resumeBackgroundTurn would put the card back on
-      // screen if this did not strip it.
       for (const entry of backgroundTurns.values())
-        if (entry.threadId === key) entry.transport.dropAskPart(askId)
-      retiredAsksFor(key).add(askId)
+        if (entry.threadId === key)
+          entry.transport.retireAskPart(askId, resolution)
+      if (permanent) {
+        const retired = retiredAsksFor(key)
+        retired.set(askId, settleResolution(retired.get(askId), resolution))
+        provisionalRetiredAsksFor(key).delete(askId)
+      } else provisionalRetiredAsksFor(key).add(askId)
       clearAskResolutionWatchdog(askId)
-      submittedAskSelections.delete(askId)
+      submittedAskAnswers.delete(askId)
       setAskAnswering(askId, false)
     }
 
-    /**
-     * PM-1658: asks this client has retired, per owning thread. `hydrate()`
-     * rebuilds a card from the server's `pending_ask`, which still reads
-     * pending while an answer is in flight and after a resolution broadcast is
-     * lost, so a refetch would otherwise put an answered card back on screen
-     * ENABLED — and the server answers the second, contradictory click by
-     * replaying the FIRST selection. Survives a remount because the store
-     * does; pruned once the thread's own transcript stops naming the ask.
-     *
-     * Keyed by thread so that loading another one cannot prune these, and so
-     * nothing here rests on an ask id being unique across threads.
-     */
-    const resolvedAskIds = new Map<string, Set<string>>()
+    const retiredAsks = new Map<string, Map<string, AskUserResolution>>()
+    const provisionalRetiredAsks = new Map<string, Set<string>>()
 
     const threadKey = (owner?: string) => owner ?? threadId.value ?? ''
 
-    function retiredAsksFor(owner?: string): Set<string> {
+    function retiredAsksFor(owner?: string): Map<string, AskUserResolution> {
       const key = threadKey(owner)
-      const retired = resolvedAskIds.get(key) ?? new Set<string>()
-      resolvedAskIds.set(key, retired)
+      const retired =
+        retiredAsks.get(key) ?? new Map<string, AskUserResolution>()
+      retiredAsks.set(key, retired)
       return retired
     }
-    /**
-     * PM-1658: which way this client answered each ask. The server takes a
-     * second answer from anywhere with 202 while committing only the FIRST, so
-     * without a record of what we sent, a resolution naming someone else's
-     * choice is indistinguishable from confirmation of our own.
-     */
-    const submittedAskSelections = new Map<string, AskSelection>()
 
-    function recordAskSelection(askId: string, selection: AskSelection): void {
-      submittedAskSelections.set(askId, selection)
+    function provisionalRetiredAsksFor(owner?: string): Set<string> {
+      const key = threadKey(owner)
+      const retired = provisionalRetiredAsks.get(key) ?? new Set<string>()
+      provisionalRetiredAsks.set(key, retired)
+      return retired
+    }
+    function isAskRetired(askId: string, owner?: string): boolean {
+      const key = threadKey(owner)
+      return (
+        retiredAsks.get(key)?.has(askId) === true ||
+        provisionalRetiredAsks.get(key)?.has(askId) === true
+      )
     }
 
-    function submittedAskSelection(askId: string): AskSelection | undefined {
-      return submittedAskSelections.get(askId)
+    function isAskPermanentlyRetired(askId: string, owner?: string): boolean {
+      return retiredAsks.get(threadKey(owner))?.has(askId) === true
+    }
+
+    function confirmAskPending(askId: string, owner?: string): void {
+      const key = threadKey(owner)
+      const provisional = provisionalRetiredAsks.get(key)
+      if (provisional?.delete(askId) !== true) return
+      if (provisional.size === 0) provisionalRetiredAsks.delete(key)
+      if (retiredAsks.get(key)?.has(askId) === true) return
+      reopenAskInThread(key, askId)
+    }
+
+    function reopenAskInThread(key: string, askId: string): void {
+      const reopen = (message: AssistantMessage) => reopenAsk(message, askId)
+      if (activeSlot.value?.threadId === key) reopen(activeSlot.value.message)
+      for (const entry of backgroundTurns.values())
+        if (entry.threadId === key) {
+          reopen(entry.message)
+          refreshBackgroundAskIds(entry)
+        }
+      if (key === threadKey()) messages.value.forEach(reopen)
+    }
+
+    const submittedAskAnswers = new Map<string, SubmittedAskAnswer>()
+
+    function recordAskAnswer(
+      askId: string,
+      answer: AgentAnswerRequest,
+      owner?: string
+    ): void {
+      const kind =
+        messages.value
+          .map((message) => askKindOf(message.parts, askId))
+          .find((found) => found !== undefined) ?? 'unknown'
+      submittedAskAnswers.set(askId, {
+        answer,
+        kind,
+        owner: threadKey(owner)
+      })
+    }
+
+    function submittedAskAnswer(askId: string): AgentAnswerRequest | undefined {
+      return submittedAskAnswers.get(askId)?.answer
+    }
+
+    function takeSubmittedAskAnswer(
+      askId: string
+    ): SubmittedAskAnswer | undefined {
+      const answer = submittedAskAnswers.get(askId)
+      submittedAskAnswers.delete(askId)
+      return answer
+    }
+
+    function markAskAwaitingResolution(
+      askId: string,
+      kind: 'accepted' | 'conflict'
+    ): void {
+      const submitted = submittedAskAnswers.get(askId)
+      if (submitted) submitted.awaitingResolution = kind
+    }
+
+    function asksAwaitingResolution(): Array<{
+      askId: string
+      kind: 'accepted' | 'conflict'
+    }> {
+      return [...submittedAskAnswers]
+        .filter(([, submitted]) => submitted.awaitingResolution !== undefined)
+        .map(([askId, submitted]) => ({
+          askId,
+          kind: submitted.awaitingResolution!
+        }))
+    }
+
+    function clearAskAwaitingResolution(askId: string): void {
+      const submitted = submittedAskAnswers.get(askId)
+      if (submitted) submitted.awaitingResolution = undefined
+    }
+
+    function clearSettledAskState(owner: string): void {
+      provisionalRetiredAsks.delete(owner)
+      for (const [askId, submitted] of submittedAskAnswers)
+        if (submitted.owner === owner) submittedAskAnswers.delete(askId)
+    }
+
+    function discardDetachedAskState(): void {
+      const retainedThreads = new Set(
+        [...backgroundTurns.values()].map((turn) => turn.threadId)
+      )
+      for (const owner of retiredAsks.keys())
+        if (!retainedThreads.has(owner)) retiredAsks.delete(owner)
+      for (const owner of provisionalRetiredAsks.keys())
+        if (!retainedThreads.has(owner)) provisionalRetiredAsks.delete(owner)
+      for (const [askId, submitted] of submittedAskAnswers)
+        if (!retainedThreads.has(submitted.owner))
+          submittedAskAnswers.delete(askId)
     }
 
     const askResolutionWatchdogs = new Map<
@@ -467,49 +1016,474 @@ export const useAgentConversationStore = defineStore(
       answeringAskIds.value = next
     }
 
-    /**
-     * Records that the server accepted this answer. A card whose turn is still
-     * attached keeps waiting for the canonical frame; a detached one has none
-     * coming, so it is retired now.
-     *
-     * The wait is bounded either way. A frame can be lost outright, and a turn
-     * re-adopted by `hydrate` between the click and the response looks
-     * attached while owning no socket that will ever deliver one — both leave
-     * the card disabled with nothing to release it.
-     */
-    function commitAsk(askId: string, owner?: string): void {
-      const key = threadKey(owner)
-      if (!activeTurnOwnsAsk(askId) || key !== threadKey()) {
-        retireAsk(askId, key)
+    function commitAsk(
+      askId: string,
+      owner: string,
+      committed: AskUserResolution
+    ): void {
+      if (!activeTurnOwnsAsk(askId) || owner !== threadKey()) {
+        retireAsk(askId, committed, owner)
         return
       }
       clearAskResolutionWatchdog(askId)
       askResolutionWatchdogs.set(
         askId,
-        setTimeout(() => retireAsk(askId, key), ASK_RESOLUTION_GRACE_MS)
+        setTimeout(
+          () => retireAsk(askId, committed, owner),
+          ASK_RESOLUTION_GRACE_MS
+        )
       )
     }
 
-    function startTurn(turnId: TurnId): void {
+    function currentOrigin(): PendingSendOrigin {
+      return threadId.value !== null
+        ? { kind: 'thread', threadId: threadId.value }
+        : { kind: 'blank', blankChatId: activeBlankChatId.value }
+    }
+
+    function originsEqual(a: PendingSendOrigin, b: PendingSendOrigin): boolean {
+      return a.kind === 'thread' && b.kind === 'thread'
+        ? a.threadId === b.threadId
+        : a.kind === 'blank' &&
+            b.kind === 'blank' &&
+            a.blankChatId === b.blankChatId
+    }
+
+    function isOriginOnScreen(origin: PendingSendOrigin): boolean {
+      return originsEqual(origin, currentOrigin())
+    }
+
+    const pendingSendsForCurrentChat = computed(() =>
+      [...pendingSends.values()].filter((send) => isOriginOnScreen(send.origin))
+    )
+
+    const hasSendingPendingSend = computed(() =>
+      pendingSendsForCurrentChat.value.some((send) => send.status === 'sending')
+    )
+
+    function hasSendingForOrigin(
+      origin: PendingSendOrigin,
+      excludeClientMessageId?: string
+    ): boolean {
+      for (const send of pendingSends.values())
+        if (
+          send.status === 'sending' &&
+          send.clientMessageId !== excludeClientMessageId &&
+          originsEqual(send.origin, origin)
+        )
+          return true
+      return false
+    }
+
+    function hasLiveTurnForOrigin(origin: PendingSendOrigin): boolean {
+      if (origin.kind !== 'thread') return false
+      return liveTurns().some((turn) => turn.threadId === origin.threadId)
+    }
+
+    function isOriginBusy(origin: PendingSendOrigin): boolean {
+      return hasSendingForOrigin(origin) || hasLiveTurnForOrigin(origin)
+    }
+
+    function startPendingSend(input: {
+      clientMessageId: string
+      origin?: PendingSendOrigin
+      workspaceId?: string | null
+      rawText?: string
+      text: string
+      attachments: UserAttachment[]
+      sentAttachments?: PendingSentAttachment[]
+      sentTags?: PendingSentTag[]
+      tags: string[]
+      workflowReferences: WorkflowReference[]
+      assetIds?: readonly string[]
+      targetTabPath?: string | null
+      targetTabInstanceId?: string | null
+      inputMethod?: AgentInputMethod
+      starterPrompt?: AgentStarterPromptSource | null
+    }): PendingSend {
+      const parsed = parseSkillReferenceText(
+        input.text,
+        input.workflowReferences
+      )
+      const origin = input.origin ?? currentOrigin()
+      const knownTurnIdsAtSend =
+        origin.kind === 'thread' && isOriginOnScreen(origin)
+          ? new Set(userTexts.value.keys())
+          : undefined
+      const record: PendingSend = {
+        ...input,
+        workspaceId: input.workspaceId ?? null,
+        rawText: input.rawText ?? input.text,
+        sentAttachments: input.sentAttachments ?? [],
+        sentTags: input.sentTags ?? [],
+        origin,
+        text: parsed.text,
+        workflowReferences: parsed.workflowReferences,
+        skillReference: parsed.skillReference,
+        knownTurnIdsAtSend,
+        status: 'sending',
+        createdOrder: ++nextPendingSendOrder
+      }
+      pendingSends.set(record.clientMessageId, record)
+      return record
+    }
+
+    function knownUserTurnIds(): TurnId[] {
+      return [...userTexts.value.keys()]
+    }
+
+    function capturePendingSendCanvasBaseline(clientMessageId: string): void {
+      const existing = pendingSends.get(clientMessageId)
+      if (!existing || existing.status !== 'sending') return
+      pendingSends.set(clientMessageId, {
+        ...existing,
+        canvasOutcomeAtStart: canvasSyncOutcomeCount(),
+        canvasEvidence: []
+      })
+    }
+
+    function failPendingSend(
+      clientMessageId: string,
+      failure: PendingSendFailure
+    ): boolean {
+      const existing = pendingSends.get(clientMessageId)
+      if (!existing) return false
+      const normalizedFailure: PendingSendFailure =
+        failure.retryAfterSeconds !== undefined &&
+        failure.retryAtMs === undefined
+          ? {
+              ...failure,
+              retryAtMs: Date.now() + failure.retryAfterSeconds * 1000
+            }
+          : failure
+      pendingSends.set(clientMessageId, {
+        ...existing,
+        status: 'failed',
+        failure: normalizedFailure,
+        paywallResolved: undefined,
+        canvasOutcomeAtStart: undefined,
+        canvasEvidence: undefined
+      })
+      return true
+    }
+
+    function retryPendingSend(
+      oldClientMessageId: string,
+      newClientMessageId: string
+    ): PendingSend | undefined {
+      const existing = pendingSends.get(oldClientMessageId)
+      if (!existing) return undefined
+      const updated: PendingSend = {
+        ...existing,
+        clientMessageId: newClientMessageId,
+        knownTurnIdsAtSend:
+          existing.origin.kind === 'thread' && isOriginOnScreen(existing.origin)
+            ? new Set([
+                ...(existing.knownTurnIdsAtSend ?? []),
+                ...userTexts.value.keys()
+              ])
+            : existing.knownTurnIdsAtSend,
+        precedesThreadTranscript: undefined,
+        status: 'sending',
+        failure: undefined,
+        paywallResolved: undefined,
+        stopRequested: undefined,
+        canvasOutcomeAtStart: undefined,
+        canvasEvidence: undefined
+      }
+      const entriesInOrder = [...pendingSends.entries()]
+      pendingSends.clear()
+      for (const [key, value] of entriesInOrder) {
+        if (key === oldClientMessageId) {
+          pendingSends.set(newClientMessageId, updated)
+        } else {
+          pendingSends.set(key, value)
+        }
+      }
+      return updated
+    }
+
+    function markPendingSendStopped(
+      origin: PendingSendOrigin,
+      method?: PendingSendStop['method']
+    ): boolean {
+      let marked = false
+      for (const [id, send] of pendingSends) {
+        if (send.status !== 'sending' || !originsEqual(send.origin, origin))
+          continue
+        pendingSends.set(id, { ...send, stopRequested: { method } })
+        marked = true
+      }
+      return marked
+    }
+
+    function takePendingSend(clientMessageId: string): PendingSend | undefined {
+      const existing = pendingSends.get(clientMessageId)
+      if (!existing) return undefined
+      pendingSends.delete(clientMessageId)
+      return existing
+    }
+
+    function isAdoptableBlankFailure(
+      send: PendingSend,
+      blankChatId: string,
+      workspaceId: string | null
+    ): boolean {
+      if (send.origin.kind !== 'blank') return false
+      if (send.origin.blankChatId !== blankChatId) return false
+      if (send.status !== 'failed' || send.failure?.uncertain === true)
+        return false
+      return (send.workspaceId ?? null) === workspaceId
+    }
+
+    function bindCertainBlankChatFailures(
+      blankChatId: string,
+      threadId: string,
+      acceptedTurnId: TurnId,
+      workspaceId: string | null,
+      acceptedOrder?: number
+    ): void {
+      const boundIds: string[] = []
+      for (const [id, send] of pendingSends) {
+        if (!isAdoptableBlankFailure(send, blankChatId, workspaceId)) continue
+        const precedesThreadTranscript =
+          acceptedOrder === undefined || send.createdOrder < acceptedOrder
+            ? true
+            : undefined
+        pendingSends.set(id, {
+          ...send,
+          origin: { kind: 'thread', threadId },
+          knownTurnIdsAtSend: new Set([acceptedTurnId]),
+          precedesThreadTranscript
+        })
+        boundIds.push(id)
+      }
+      if (boundIds.length > 0)
+        void blankChatFailuresBound.trigger({
+          clientMessageIds: boundIds,
+          threadId,
+          acceptedTurnId
+        })
+    }
+
+    function getPendingSend(clientMessageId: string): PendingSend | undefined {
+      return pendingSends.get(clientMessageId)
+    }
+
+    function hasPendingSendForOrigin(
+      origin: PendingSendOrigin,
+      workspaceId?: string | null
+    ): boolean {
+      for (const send of pendingSends.values()) {
+        if (
+          originsEqual(send.origin, origin) &&
+          (workspaceId === undefined ||
+            (send.workspaceId ?? null) === workspaceId)
+        )
+          return true
+      }
+      return false
+    }
+
+    function hasPendingSendForBlankChat(
+      blankChatId: string,
+      workspaceId?: string | null
+    ): boolean {
+      return hasPendingSendForOrigin(
+        { kind: 'blank', blankChatId },
+        workspaceId
+      )
+    }
+
+    function discardPendingSendsOutsideWorkspace(
+      activeWorkspaceId: string | null,
+      excludeClientMessageId?: string
+    ): string[] {
+      const removed: string[] = []
+      for (const [id, send] of pendingSends) {
+        if (
+          send.status !== 'failed' ||
+          id === excludeClientMessageId ||
+          (send.workspaceId ?? null) === activeWorkspaceId
+        )
+          continue
+        pendingSends.delete(id)
+        removed.push(id)
+      }
+      return removed
+    }
+
+    const tabBlankChatIds = new Map<string, string>()
+    const blankChatTabs = new Map<string, string>()
+    let hasAssignedBlankTab = false
+
+    watch(openTabPaths, (nextOpen, prevOpen) => {
+      for (const tabKey of prevOpen.keys()) {
+        if (nextOpen.has(tabKey)) continue
+        tabBlankChatIds.delete(tabKey)
+        for (const [blankChatId, mappedTabKey] of blankChatTabs) {
+          if (mappedTabKey === tabKey) blankChatTabs.delete(blankChatId)
+        }
+      }
+    })
+
+    function setBlankChatIdForTab(tabKey: string, blankChatId: string): void {
+      tabBlankChatIds.set(tabKey, blankChatId)
+      blankChatTabs.set(blankChatId, tabKey)
+    }
+
+    function tabKeyForBlankChat(blankChatId: string): string | null {
+      return blankChatTabs.get(blankChatId) ?? null
+    }
+
+    function adoptInitialBlankTab(tabKey: string | null): void {
+      if (hasAssignedBlankTab || threadId.value !== null) return
+      if (hasPendingSendForOrigin(currentOrigin())) return
+      if (tabKey === null) return
+      const blankChatId = blankChatIdForTab(tabKey)
+      activeBlankChatId.value = blankChatId
+      hasAssignedBlankTab = true
+    }
+
+    function blankChatIdForTab(tabKey: string | null): string {
+      const key = tabKey ?? ''
+      const blankChatId = tabBlankChatIds.get(key) ?? `blank:${key}`
+      if (tabKey !== null) blankChatTabs.set(blankChatId, tabKey)
+      return blankChatId
+    }
+
+    function advanceBlankChatIdForTab(tabKey: string | null): string {
+      const next = nextBlankChatId()
+      const key = tabKey ?? ''
+      tabBlankChatIds.set(key, next)
+      if (tabKey !== null) blankChatTabs.set(next, tabKey)
+      return next
+    }
+
+    function discardFailedPendingSends(
+      origin: PendingSendOrigin,
+      workspaceId?: string | null
+    ): string[] {
+      const discardedIds: string[] = []
+      for (const [id, send] of pendingSends) {
+        if (
+          send.status === 'failed' &&
+          originsEqual(send.origin, origin) &&
+          (workspaceId === undefined ||
+            (send.workspaceId ?? null) === workspaceId)
+        ) {
+          pendingSends.delete(id)
+          discardedIds.push(id)
+        }
+      }
+      return discardedIds
+    }
+    function updatePendingAttachmentPreview(
+      id: string,
+      previewUrl: string
+    ): void {
+      for (const [sendId, send] of pendingSends) {
+        if (!send.assetIds?.includes(id)) continue
+        pendingSends.set(sendId, {
+          ...send,
+          sentAttachments: send.sentAttachments.map((item, index) =>
+            send.assetIds?.[index] === id ? { ...item, previewUrl } : item
+          ),
+          attachments: send.attachments.map((item, index) =>
+            send.assetIds?.[index] === id ? { ...item, previewUrl } : item
+          )
+        })
+      }
+    }
+
+    function rememberThreadAttachmentNames(
+      targetThreadId: string,
+      attachments: UserAttachment[] | undefined
+    ): void {
+      if (!attachments?.length) return
+      const names = attachmentNamesByThread.get(targetThreadId) ?? new Map()
+      for (const attachment of attachments)
+        if (attachment.ref) names.set(attachment.ref, attachment.name)
+      attachmentNamesByThread.set(targetThreadId, names)
+    }
+
+    function startBackgroundTurn(input: {
+      threadId: string
+      turnId: TurnId
+      text: string
+      attachments?: UserAttachment[]
+      tags?: string[]
+      workflowReferences?: WorkflowReference[]
+      tab: TurnTab
+      canvasBaseline?: {
+        outcomeAtStart?: number
+        evidence?: readonly CanvasSyncEvidence[]
+      }
+    }): void {
+      const parsed = parseSkillReferenceText(
+        input.text,
+        input.workflowReferences
+      )
+      rememberThreadAttachmentNames(input.threadId, input.attachments)
+      const message = createAssistantMessage(input.turnId)
+      const transport = createAgentEventTransport(
+        message,
+        (snapshot) => publishMessage(input.turnId, snapshot),
+        (workflowId) => canvasSyncGate(workflowId),
+        () => canvasSyncOutcomeCount(),
+        reportUndeliverableAskData,
+        input.canvasBaseline?.outcomeAtStart
+      )
+      for (const evidence of input.canvasBaseline?.evidence ?? [])
+        transport.notifyCanvasCaughtUp(evidence)
+      backgroundTurns.set(input.turnId, {
+        threadId: input.threadId,
+        messageId: input.turnId,
+        message,
+        transport,
+        userText: parsed.text,
+        attachments: input.attachments,
+        tags: input.tags,
+        workflowReferences: parsed.workflowReferences,
+        skillReference: parsed.skillReference,
+        settled: false,
+        tab: input.tab,
+        pendingAskIds: []
+      })
+    }
+
+    function startTurn(
+      turnId: TurnId,
+      canvasBaseline?: {
+        outcomeAtStart?: number
+        evidence?: readonly CanvasSyncEvidence[]
+      }
+    ): void {
       if (activeSlot.value) abortActiveTurn()
       const message = createAssistantMessage(turnId)
+      const transport = createAgentEventTransport(
+        message,
+        (snapshot) => publishMessage(turnId, snapshot),
+        (workflowId) => canvasSyncGate(workflowId),
+        () => canvasSyncOutcomeCount(),
+        reportUndeliverableAskData,
+        canvasBaseline?.outcomeAtStart
+      )
+      for (const evidence of canvasBaseline?.evidence ?? [])
+        transport.notifyCanvasCaughtUp(evidence)
       activeSlot.value = {
         origin: 'local',
         turnId,
         index: messages.value.push(message) - 1,
         threadId: threadId.value,
         message,
-        transport: createAgentEventTransport(
-          message,
-          replaceActive,
-          () => canvasSyncGate(),
-          () => canvasSyncOutcomeCount(),
-          reportUndeliverableAskData
-        )
+        transport,
+        tab: resolveTurnTab()
       }
     }
 
     function ingest(event: AgentChatEvent): void {
+      if (isRetiredAskReplay(event)) return
       const activeTransport = activeSlot.value?.transport
       if (activeTransport && event.data.message_id === activeTurnId.value) {
         ingestActiveTurnEvent(event, activeTransport)
@@ -529,6 +1503,15 @@ export const useAgentConversationStore = defineStore(
       // every event except `agent_active_tab`, handled above.
       if (eventThreadId === undefined) return
       ingestBackgroundTurnEvent(event, eventThreadId)
+    }
+
+    function isRetiredAskReplay(event: AgentChatEvent): boolean {
+      return (
+        event.type === 'agent_ask' &&
+        retiredAsks
+          .get(threadKey(event.data.thread_id))
+          ?.has(event.data.ask_id) === true
+      )
     }
 
     /**
@@ -571,7 +1554,10 @@ export const useAgentConversationStore = defineStore(
       activeTransport: AgentEventTransport
     ): void {
       if (event.type === 'agent_message_done') {
+        const tab = activeSlot.value?.tab ?? UNKNOWN_TAB
+        activeTransport.ingest(event)
         settleActiveTurn(activeTransport)
+        announceCompletion(tab)
         return
       }
       activeTransport.ingest(event)
@@ -586,9 +1572,69 @@ export const useAgentConversationStore = defineStore(
     function settleActiveTurn(activeTransport: AgentEventTransport): void {
       rememberDepartedActiveTurn('settled-turn')
       activeTransport.settle()
+      const restoredFromSnapshot = recordUnreconciledSnapshotTurn()
       if (activeTransport.hasPendingCanvasSync())
         settledActiveTransports.add(activeTransport)
       clearActive()
+      if (restoredFromSnapshot)
+        announceReconcilableSnapshotTurn(restoredFromSnapshot)
+    }
+
+    function recordUnreconciledSnapshotTurn():
+      | UnreconciledSnapshotTurn
+      | undefined {
+      const slot = activeSlot.value
+      if (slot === null || slot.threadId === null) return undefined
+      const missedFrames = missedFrameTurnIds.delete(slot.turnId)
+      if (slot.origin !== 'snapshot' && !missedFrames) return undefined
+      const unreconciled: UnreconciledSnapshotTurn = {
+        turn: { threadId: slot.threadId, messageId: slot.turnId },
+        messageId: slot.message.id,
+        transport: slot.transport,
+        announced: false,
+        missedFrom: slot.origin === 'snapshot' ? 'reload' : 'reconnect'
+      }
+      unreconciledSnapshotTurns.set(slot.turnId, unreconciled)
+      return unreconciled
+    }
+
+    function announceReconcilableSnapshotTurn(
+      unreconciled: UnreconciledSnapshotTurn
+    ): void {
+      if (
+        unreconciled.announced ||
+        unreconciled.transport.hasPendingCanvasSync()
+      )
+        return
+      settledActiveTransports.delete(unreconciled.transport)
+      unreconciled.announced = true
+      void snapshotTurnSettled.trigger(unreconciled.turn)
+    }
+
+    /** Frames may be missing: reconcile the active turn with its stored row. */
+    function markActiveTurnMissedFrames(): void {
+      const slot = activeSlot.value
+      if (slot !== null) missedFrameTurnIds.add(slot.turnId)
+    }
+
+    function reconcileSettledTurn(
+      turn: LiveTurn,
+      persistedParts: AssistantMessage['parts'] | undefined
+    ): void {
+      const unreconciled = unreconciledSnapshotTurns.get(turn.messageId)
+      if (unreconciled === undefined || !unreconciled.announced) return
+      unreconciledSnapshotTurns.delete(turn.messageId)
+      if (persistedParts === undefined || threadId.value !== turn.threadId)
+        return
+      const index = messages.value.findIndex(
+        (message) => message.id === unreconciled.messageId
+      )
+      if (index < 0) return
+      const reconciled = { ...messages.value[index] }
+      if (unreconciled.missedFrom === 'reconnect')
+        finishReconnectedTurn(reconciled, persistedParts)
+      else finishSnapshotTurn(reconciled, persistedParts)
+      messages.value[index] = reconciled
     }
 
     function ingestActiveTabEvent(
@@ -618,37 +1664,49 @@ export const useAgentConversationStore = defineStore(
         return
       }
       if (event.type === 'agent_message_done') {
+        if (entry.settled) return
+        entry.transport.ingest(event)
         entry.transport.settle()
-        entry.settled = true
+        updateBackgroundTurn(entry.messageId, { settled: true })
+        announceCompletion(entry.tab)
         return
       }
       entry.transport.ingest(event)
     }
 
     function setCanvasSyncGate(
-      gate: () => boolean,
+      gate: (workflowId?: string) => CanvasConfirmation,
       outcomeCount: () => number = () => 0
     ): void {
       canvasSyncGate = gate
       canvasSyncOutcomeCount = outcomeCount
     }
 
-    /**
-     * PM-1575: forwarded to every live transport (the active turn and any
-     * stashed background ones) whenever the bound workflow's CRDT follower
-     * applies a fresh doc update, so tool-call parts held back pending canvas
-     * catch-up can settle to 'done'. A no-op on a transport with nothing
-     * pending.
-     */
-    function notifyCanvasCaughtUp(): void {
-      activeSlot.value?.transport.notifyCanvasCaughtUp()
+    function recordPendingSendCanvasEvidence(
+      evidence: CanvasSyncEvidence
+    ): void {
+      for (const send of pendingSends.values()) {
+        if (
+          send.status !== 'sending' ||
+          send.canvasOutcomeAtStart === undefined
+        )
+          continue
+        send.canvasEvidence ??= []
+        if (send.canvasEvidence.length >= 256) send.canvasEvidence.shift()
+        send.canvasEvidence.push(evidence)
+      }
+    }
+
+    function notifyCanvasCaughtUp(evidence?: CanvasSyncEvidence): void {
+      if (evidence !== undefined) recordPendingSendCanvasEvidence(evidence)
+      activeSlot.value?.transport.notifyCanvasCaughtUp(evidence)
       for (const settledTransport of settledActiveTransports) {
-        settledTransport.notifyCanvasCaughtUp()
+        settledTransport.notifyCanvasCaughtUp(evidence)
         if (!settledTransport.hasPendingCanvasSync())
           settledActiveTransports.delete(settledTransport)
       }
       for (const entry of backgroundTurns.values())
-        entry.transport.notifyCanvasCaughtUp()
+        entry.transport.notifyCanvasCaughtUp(evidence)
     }
 
     function abortActiveTurn(): void {
@@ -677,7 +1735,13 @@ export const useAgentConversationStore = defineStore(
         message: slot.message,
         transport: slot.transport,
         userText: userTexts.value.get(slot.message.id),
-        settled: false
+        attachments: userAttachments.value.get(slot.message.id),
+        tags: userTags.value.get(slot.message.id),
+        workflowReferences: userWorkflowReferences.value.get(slot.message.id),
+        skillReference: userSkillReferences.value.get(slot.message.id),
+        settled: false,
+        tab: slot.tab,
+        pendingAskIds: pendingAskIdsOf(slot.message)
       })
       clearActive()
     }
@@ -727,9 +1791,12 @@ export const useAgentConversationStore = defineStore(
       // identity, not by shared user text, is what stops a repeated prompt from
       // colliding with an unrelated turn.
       const persistedMessageId = hydratedTurnIds.get(entry.messageId)
+      const demotedSnapshotId = demotedSnapshotByStash.get(entry.messageId)
       const kept = messages.value.filter(
         (message) =>
-          message.id !== entry.message.id && message.id !== unmatchedSnapshotId
+          (message.id !== entry.message.id ||
+            message.id === demotedSnapshotId) &&
+          message.id !== unmatchedSnapshotId
       )
       // Called before the branch, not inside it: it pops the duplicate row and
       // its user text whether or not this entry turns out to be settled.
@@ -770,7 +1837,8 @@ export const useAgentConversationStore = defineStore(
         index,
         threadId: resumedThreadId,
         message: entry.message,
-        transport: entry.transport
+        transport: entry.transport,
+        tab: entry.tab
       }
     }
 
@@ -799,13 +1867,13 @@ export const useAgentConversationStore = defineStore(
       return true
     }
 
-    /**
-     * PM-1575: flush what the discarded transport still holds rather than
-     * leaving it reachable only by its own STALE_AFTER_MS fallback.
-     */
     function retireBackgroundTurn(entry: BackgroundTurn): void {
       rememberDepartedTurn(entry.threadId, entry.messageId, 'settled-turn')
       entry.transport.dispose()
+      revokeUnownedBlobPreviews(
+        entry.attachments,
+        collectOwnedBlobPreviews(true)
+      )
     }
 
     function latestBackgroundTurn(
@@ -839,12 +1907,72 @@ export const useAgentConversationStore = defineStore(
       return sole
     }
 
+    function setIfNonEmpty<T>(
+      target: Map<TurnId, T[]>,
+      id: TurnId,
+      items: T[] | undefined
+    ): void {
+      if (items?.length) target.set(id, items)
+    }
+
+    function addBlobPreviews(
+      attachments: readonly UserAttachment[] | undefined,
+      target: Set<string>
+    ): void {
+      for (const { previewUrl } of attachments ?? []) {
+        if (previewUrl?.startsWith('blob:')) target.add(previewUrl)
+      }
+    }
+
+    function collectOwnedBlobPreviews(
+      includeUserAttachments: boolean
+    ): Set<string> {
+      const owned = new Set<string>()
+      if (includeUserAttachments) {
+        for (const attachments of userAttachments.value.values())
+          addBlobPreviews(attachments, owned)
+      }
+      for (const entry of backgroundTurns.values())
+        addBlobPreviews(entry.attachments, owned)
+      return owned
+    }
+
+    function revokeUnownedBlobPreviews(
+      attachments: readonly UserAttachment[] | undefined,
+      owned: ReadonlySet<string>
+    ): void {
+      for (const { previewUrl } of attachments ?? []) {
+        if (previewUrl?.startsWith('blob:') && !owned.has(previewUrl))
+          URL.revokeObjectURL(previewUrl)
+      }
+    }
+
     function restoreBackgroundUserText(entry: BackgroundTurn): void {
-      if (
-        entry.userText !== undefined &&
-        !userTexts.value.has(entry.message.id)
-      )
-        userTexts.value.set(entry.message.id, entry.userText)
+      const id = entry.message.id
+      if (entry.userText === undefined) {
+        revokeUnownedBlobPreviews(
+          entry.attachments,
+          collectOwnedBlobPreviews(true)
+        )
+        return
+      }
+      if (!userTexts.value.has(id)) userTexts.value.set(id, entry.userText)
+      if (!userAttachments.value.has(id))
+        setIfNonEmpty(userAttachments.value, id, entry.attachments)
+      else
+        revokeUnownedBlobPreviews(
+          entry.attachments,
+          collectOwnedBlobPreviews(true)
+        )
+      if (!userTags.value.has(id)) setIfNonEmpty(userTags.value, id, entry.tags)
+      if (!userWorkflowReferences.value.has(id))
+        setIfNonEmpty(
+          userWorkflowReferences.value,
+          id,
+          entry.workflowReferences
+        )
+      if (entry.skillReference && !userSkillReferences.value.has(id))
+        userSkillReferences.value.set(id, entry.skillReference)
     }
 
     function removeHydratedCopy(
@@ -887,18 +2015,20 @@ export const useAgentConversationStore = defineStore(
       if (entry) {
         rememberDepartedTurn(entry.threadId, entry.messageId, 'settled-turn')
         entry.transport.settle()
-        // This turn is being dropped from the map here, unlike the
-        // agent_message_done path in ingestBackgroundTurnEvent -- nothing
-        // will keep it reachable afterwards, so flush its held parts now.
         entry.transport.dispose()
         backgroundTurns.delete(entry.messageId)
+        revokeUnownedBlobPreviews(
+          entry.attachments,
+          collectOwnedBlobPreviews(true)
+        )
         return entry.messageId
       }
       return null
     }
 
     function dropBackgroundTurns(): void {
-      for (const entry of backgroundTurns.values()) {
+      const discarded = Array.from(backgroundTurns.values())
+      for (const entry of discarded) {
         rememberDepartedTurn(
           entry.threadId,
           entry.messageId,
@@ -908,6 +2038,9 @@ export const useAgentConversationStore = defineStore(
         entry.transport.dispose()
       }
       backgroundTurns.clear()
+      const owned = collectOwnedBlobPreviews(true)
+      for (const entry of discarded)
+        revokeUnownedBlobPreviews(entry.attachments, owned)
     }
 
     function liveTurns(): LiveTurn[] {
@@ -925,9 +2058,34 @@ export const useAgentConversationStore = defineStore(
       ]
     }
 
+    function liveTurnSkillState(
+      turn: LiveTurn
+    ): Pick<BackgroundTurn, 'message' | 'skillReference'> | undefined {
+      const slot = activeSlot.value
+      if (slot?.threadId === turn.threadId && slot.turnId === turn.messageId)
+        return {
+          message: slot.message,
+          skillReference: userSkillReferences.value.get(slot.message.id)
+        }
+      const entry = backgroundTurns.get(turn.messageId)
+      return entry?.threadId === turn.threadId && !entry.settled
+        ? entry
+        : undefined
+    }
+
+    function turnUsesSkill(turn: LiveTurn): boolean {
+      const live = liveTurnSkillState(turn)
+      return (
+        live !== undefined &&
+        (live.skillReference !== undefined ||
+          live.message.parts.some(isLoadSkillPart))
+      )
+    }
+
     function settleTurn(
       turn: LiveTurn,
-      persistedParts: AssistantMessage['parts'] | undefined
+      persistedParts: AssistantMessage['parts'] | undefined,
+      ending: 'completed' | 'failed' = 'completed'
     ): void {
       const slot = activeSlot.value
       const isActive =
@@ -935,18 +2093,26 @@ export const useAgentConversationStore = defineStore(
         turn.threadId === slot.threadId &&
         turn.messageId === slot.turnId
       if (isActive) {
-        finishWithPersistedParts(slot.message, persistedParts)
+        clearSettledAskState(turn.threadId)
+        finishActiveTurn(
+          slot,
+          persistedParts,
+          missedFrameTurnIds.has(slot.turnId)
+        )
         rememberDepartedActiveTurn('settled-turn')
         slot.transport.settle()
         slot.transport.dispose()
         clearActive()
+        if (ending === 'completed') announceCompletion(slot.tab)
         return
       }
       const entry = backgroundTurns.get(turn.messageId)
       if (!entry || entry.messageId !== turn.messageId || entry.settled) return
+      clearSettledAskState(turn.threadId)
       finishWithPersistedParts(entry.message, persistedParts)
       entry.transport.settle()
-      entry.settled = true
+      updateBackgroundTurn(entry.messageId, { settled: true })
+      if (ending === 'completed') announceCompletion(entry.tab)
     }
 
     function departedTurnKey(threadId: string, messageId: string): string {
@@ -974,8 +2140,91 @@ export const useAgentConversationStore = defineStore(
       rememberDepartedTurn(slot.threadId, slot.turnId, reason)
     }
 
+    /**
+     * The mutable message a live turn is written into, not the snapshot copy
+     * in `messages`: transports emit snapshots, so only this object carries
+     * parts applied since the last emit.
+     */
+    function liveTurnMessage(turn: LiveTurn): AssistantMessage | null {
+      const slot = activeSlot.value
+      if (
+        slot !== null &&
+        turn.threadId === slot.threadId &&
+        turn.messageId === slot.turnId
+      )
+        return slot.message
+      const entry = backgroundTurns.get(turn.messageId)
+      if (
+        !entry ||
+        entry.threadId !== turn.threadId ||
+        entry.messageId !== turn.messageId ||
+        entry.settled
+      )
+        return null
+      return entry.message
+    }
+
+    function liveTurnMessageId(turn: LiveTurn): string | null {
+      return liveTurnMessage(turn)?.id ?? null
+    }
+
+    function reconcileApprovalParts(
+      turn: LiveTurn,
+      pendingAskId?: string,
+      protectedAskIds: ReadonlySet<string> = new Set()
+    ): string[] {
+      const message = liveTurnMessage(turn)
+      if (message === null) return []
+      const stale = message.parts.flatMap((part) => {
+        if (!isOpenAskPart(part)) return []
+        const askId = askIdOf(part)
+        return askId !== undefined &&
+          (pendingAskId === undefined || askId !== pendingAskId) &&
+          !protectedAskIds.has(askId) &&
+          submittedAskAnswer(askId) === undefined &&
+          !answeringAskIds.value.has(askId)
+          ? [askId]
+          : []
+      })
+      for (const askId of stale)
+        retireAsk(askId, { status: 'retired' }, turn.threadId, false)
+      return stale
+    }
+
+    /**
+     * Whether this turn is already showing `askId`. Turn recovery asks before
+     * re-delivering an ask off a persisted row: the card a hydrate drew is on
+     * screen without the session's ask ledger ever having seen a frame for
+     * it, and only this catches that one. Reads the mutable message, so it
+     * answers for the current moment and takes no reactive dependency.
+     */
+    function isApprovalShown(turn: LiveTurn, askId: string): boolean {
+      const message = liveTurnMessage(turn)
+      return (
+        message?.parts.some(
+          (part) => part.type === 'runApproval' && part.askId === askId
+        ) ?? false
+      )
+    }
+
+    function isAskShown(turn: LiveTurn, askId: string): boolean {
+      return (
+        liveTurnMessage(turn)?.parts.some(
+          (part) => isOpenAskPart(part) && askIdOf(part) === askId
+        ) ?? false
+      )
+    }
+
+    function hasApprovalShown(turn: LiveTurn): boolean {
+      return (
+        liveTurnMessage(turn)?.parts.some((part) => isOpenAskPart(part)) ??
+        false
+      )
+    }
+
     function clearActive(): void {
       activeSlot.value = null
+      missedFrameTurnIds.clear()
     }
 
     // PM-1575: reset() and hydrate() both discard the active transport (if
@@ -992,25 +2241,29 @@ export const useAgentConversationStore = defineStore(
     }
 
     function dropAttachmentPreviews(): void {
-      for (const attachments of userAttachments.value.values()) {
-        for (const { previewUrl } of attachments) {
-          if (previewUrl?.startsWith('blob:')) URL.revokeObjectURL(previewUrl)
-        }
-      }
+      const retainedByBackground = collectOwnedBlobPreviews(false)
+      for (const attachments of userAttachments.value.values())
+        revokeUnownedBlobPreviews(attachments, retainedByBackground)
       userAttachments.value = new Map()
     }
 
-    function reset(): void {
+    function reset(blankChatId?: string): void {
+      unreconciledSnapshotTurns.clear()
       disposeActiveAndSettledTransports()
+      discardDetachedAskState()
       messages.value = []
       userTexts.value = new Map()
       userTags.value = new Map()
       userWorkflowReferences.value = new Map()
+      userSkillReferences.value = new Map()
+      historySkillNames.value = []
       latestWorkflowId.value = undefined
       resolvedPaywallIds.value = new Set()
       dropAttachmentPreviews()
       attachmentNamesByThread.clear()
+      activeBlankChatId.value = blankChatId ?? nextBlankChatId()
       threadId.value = null
+      hasAssignedBlankTab = true
       forgetAllApprovals()
       hydratedMessageIds = new Set()
       hydratedTurnIds = new Map()
@@ -1023,46 +2276,116 @@ export const useAgentConversationStore = defineStore(
       clearActive()
     }
 
-    /**
-     * PM-1658: strips cards this client has already retired from a freshly
-     * fetched transcript, and forgets ids the server no longer names so the
-     * record cannot grow without bound. Touches parts only — the turn that
-     * raised the card is left exactly as the transcript describes it.
-     */
-    function dropResolvedAsks(
+    function reapplyRetiredAsks(
       transcript: ReturnType<typeof normalizeAgentTranscript>
     ): void {
       const retired = retiredAsksFor()
-      if (retired.size === 0) return
-      const named = new Set(
-        transcript.messages.flatMap((message) =>
-          message.parts.flatMap((part) =>
-            part.type === 'runApproval' ? [part.askId] : []
-          )
-        )
-      )
-      for (const askId of retired) if (!named.has(askId)) retired.delete(askId)
+      const provisional = provisionalRetiredAsksFor()
       for (const message of transcript.messages)
-        message.parts = message.parts.filter(
-          (part) => part.type !== 'runApproval' || !retired.has(part.askId)
+        for (const [askId, resolution] of retired)
+          message.parts = retireAskParts(message.parts, askId, resolution)
+      for (const message of transcript.messages)
+        for (const askId of provisional)
+          message.parts = retireAskParts(message.parts, askId, {
+            status: 'retired'
+          })
+    }
+
+    function extractHydratedUserTurns(
+      transcript: NormalizedAgentTranscript
+    ): HydratedUserTurn[] {
+      const userTurns: HydratedUserTurn[] = []
+      for (const [turnId, text] of transcript.userTexts) {
+        userTurns.push({
+          turnId,
+          text,
+          skillName: transcript.userSkillReferences.get(turnId)?.name,
+          attachmentCount: transcript.userAttachments.get(turnId)?.length ?? 0
+        })
+      }
+      return userTurns
+    }
+
+    function findMatchingPersistedTurnId(
+      send: PendingSend,
+      userTurns: readonly HydratedUserTurn[],
+      claimedTurns: ReadonlySet<string>
+    ): string | undefined {
+      const known = send.knownTurnIdsAtSend
+      if (known === undefined) return undefined
+      const expected = {
+        text: send.text,
+        skillName: send.skillReference?.name,
+        workflowReferences: send.workflowReferences,
+        attachmentCount: send.attachments.length
+      }
+      for (const turn of userTurns) {
+        if (claimedTurns.has(turn.turnId) || known.has(turn.turnId)) continue
+        if (matchesHydratedUserTurn(expected, turn)) return turn.turnId
+      }
+      return undefined
+    }
+
+    function isUncertainFailedThreadSend(
+      send: PendingSend,
+      activeThreadId: string
+    ): boolean {
+      return (
+        send.status === 'failed' &&
+        send.failure?.uncertain === true &&
+        send.origin.kind === 'thread' &&
+        send.origin.threadId === activeThreadId
+      )
+    }
+
+    function reconcileFailedPendingSendsWithTranscript(
+      activeThreadId: string,
+      userTurns: readonly HydratedUserTurn[]
+    ): void {
+      const claimedTurns = new Set<string>()
+      const reconciledIds: string[] = []
+      for (const [id, send] of pendingSends) {
+        if (!isUncertainFailedThreadSend(send, activeThreadId)) continue
+        const matchedTurnId = findMatchingPersistedTurnId(
+          send,
+          userTurns,
+          claimedTurns
         )
+        if (matchedTurnId === undefined) continue
+        claimedTurns.add(matchedTurnId)
+        pendingSends.delete(id)
+        reconciledIds.push(id)
+      }
+      if (reconciledIds.length > 0)
+        void pendingSendsReconciled.trigger(reconciledIds)
     }
 
     function hydrate(history: AgentMessages): void {
-      if (activeSlot.value) rememberDepartedActiveTurn('no-live-turn')
+      const replacedSlot = activeSlot.value
+      if (replacedSlot) rememberDepartedActiveTurn('no-live-turn')
+      unreconciledSnapshotTurns.clear()
       disposeActiveAndSettledTransports()
       clearActive()
-      const transcript = normalizeAgentTranscript(history)
-      // Only the card is retired, never the turn: answering it is what lets
-      // the turn RESUME, so it is still live and still needs a transport, or
-      // every frame of the rest of it is dropped and the row stays "Working…"
-      // with nothing able to settle it.
-      dropResolvedAsks(transcript)
+      const transcript = normalizeAgentTranscript(
+        history,
+        (askId) =>
+          isAskRetired(askId) ||
+          submittedAskAnswer(askId) !== undefined ||
+          answeringAskIds.value.has(askId),
+        (askId) => isAskRetired(askId)
+      )
+      reapplyRetiredAsks(transcript)
       messages.value = transcript.messages
       resolvedPaywallIds.value = new Set()
       userTexts.value = transcript.userTexts
       userTags.value = new Map()
       userWorkflowReferences.value = transcript.userWorkflowReferences
+      userSkillReferences.value = transcript.userSkillReferences
+      historySkillNames.value = [
+        ...new Set(
+          [...transcript.userSkillReferences.values()].map(({ name }) => name)
+        )
+      ]
       latestWorkflowId.value = transcript.latestWorkflowId
       hydratedMessageIds = transcript.rowIds
       hydratedTurnIds = new Map(
@@ -1090,6 +2413,14 @@ export const useAgentConversationStore = defineStore(
           })
         ])
       )
+      if (threadId.value !== null) {
+        const userTurns = extractHydratedUserTurns(transcript)
+        reconcileFailedPendingSendsWithTranscript(threadId.value, userTurns)
+        void transcriptHydrated.trigger({
+          threadId: threadId.value,
+          userTurns
+        })
+      }
       const pending = unstashedLiveTurn(transcript)
       if (pending) {
         activeSlot.value = {
@@ -1100,11 +2431,15 @@ export const useAgentConversationStore = defineStore(
           message: pending.message,
           transport: createAgentEventTransport(
             pending.message,
-            replaceActive,
-            () => canvasSyncGate(),
+            (snapshot) => publishMessage(pending.messageId, snapshot),
+            (workflowId) => canvasSyncGate(workflowId),
             () => canvasSyncOutcomeCount(),
             reportUndeliverableAskData
-          )
+          ),
+          tab:
+            replacedSlot?.turnId === pending.messageId
+              ? replacedSlot.tab
+              : resolveTurnTab()
         }
       }
     }
@@ -1145,36 +2480,71 @@ export const useAgentConversationStore = defineStore(
       return undefined
     }
 
-    const entries = computed<ConversationEntry[]>(() =>
-      messages.value.flatMap((recordedMessage) => {
-        const isPaywallResolved = resolvedPaywallIds.value.has(
-          recordedMessage.id
-        )
-        const message = isPaywallResolved
-          ? {
-              ...recordedMessage,
-              parts: recordedMessage.parts.filter(
-                (part) => part.type !== 'paywall'
-              )
-            }
-          : recordedMessage
-        const text = userTexts.value.get(message.id)
-        const assistantEntries =
-          isPaywallResolved && message.parts.length === 0 ? [] : [message]
-        if (text === undefined) return assistantEntries
-        return [
-          {
-            id: message.id,
-            role: 'user',
-            text,
-            attachments: userAttachments.value.get(message.id),
-            tags: userTags.value.get(message.id),
-            workflowReferences: userWorkflowReferences.value.get(message.id)
-          },
-          ...assistantEntries
-        ]
-      })
-    )
+    function pendingSendEntry(send: PendingSend): UserEntry {
+      return {
+        id: toTurnId(send.clientMessageId),
+        role: 'user',
+        text: send.text,
+        attachments: send.attachments,
+        tags: send.tags,
+        workflowReferences: send.workflowReferences,
+        ...(send.skillReference ? { skillReference: send.skillReference } : {}),
+        pending: {
+          clientMessageId: send.clientMessageId,
+          status: send.status,
+          failure: send.failure,
+          ...(send.failure?.kind === 'paywall'
+            ? {
+                paywallResolved: send.paywallResolved === true
+              }
+            : {})
+        }
+      }
+    }
+
+    const entries = computed<ConversationEntry[]>(() => {
+      const pending = pendingSendsForCurrentChat.value
+      const preceding = pending.filter(
+        ({ precedesThreadTranscript }) => precedesThreadTranscript === true
+      )
+      const trailing = pending.filter(
+        ({ precedesThreadTranscript }) => precedesThreadTranscript !== true
+      )
+      return [
+        ...preceding.map(pendingSendEntry),
+        ...messages.value.flatMap((recordedMessage) => {
+          const isPaywallResolved = resolvedPaywallIds.value.has(
+            recordedMessage.id
+          )
+          const message = isPaywallResolved
+            ? {
+                ...recordedMessage,
+                parts: recordedMessage.parts.filter(
+                  (part) => part.type !== 'paywall'
+                )
+              }
+            : recordedMessage
+          const text = userTexts.value.get(message.id)
+          const skillReference = userSkillReferences.value.get(message.id)
+          const assistantEntries =
+            isPaywallResolved && message.parts.length === 0 ? [] : [message]
+          if (text === undefined) return assistantEntries
+          return [
+            {
+              id: message.id,
+              role: 'user' as const,
+              text,
+              attachments: userAttachments.value.get(message.id),
+              tags: userTags.value.get(message.id),
+              workflowReferences: userWorkflowReferences.value.get(message.id),
+              ...(skillReference ? { skillReference } : {})
+            },
+            ...assistantEntries
+          ]
+        }),
+        ...trailing.map(pendingSendEntry)
+      ]
+    })
 
     const activeMessage = computed(() =>
       activeSlot.value === null ? null : messages.value[activeSlot.value.index]
@@ -1188,13 +2558,80 @@ export const useAgentConversationStore = defineStore(
     function activeTurnOwnsAsk(askId: string): boolean {
       return (
         activeMessage.value?.parts.some(
-          (part) => part.type === 'runApproval' && part.askId === askId
+          (part) => isPendingAskPart(part) && part.askId === askId
         ) ?? false
       )
     }
 
+    function askKind(
+      askId: string
+    ): 'runApproval' | 'askUser' | 'deleteApproval' | undefined {
+      for (const message of messages.value) {
+        const part = message.parts.find(
+          (candidate) =>
+            isPendingAskPart(candidate) && candidate.askId === askId
+        )
+        if (
+          part?.type === 'runApproval' ||
+          part?.type === 'askUser' ||
+          part?.type === 'deleteApproval'
+        )
+          return part.type
+      }
+    }
+
     const activeMessageId = computed(() => activeMessage.value?.id ?? null)
     const isStreaming = computed(() => activeMessage.value?.streaming ?? false)
+
+    function awaitsAnswer(pendingAskIds: readonly string[]): boolean {
+      return pendingAskIds.some((askId) => !answeringAskIds.value.has(askId))
+    }
+
+    const activeTurnTabPath = computed(() => {
+      const slot = activeSlot.value
+      return slot !== null && isStreaming.value ? openPathOf(slot.tab) : null
+    })
+    const activeTurnAwaitsAnswer = computed(() =>
+      activeMessage.value
+        ? awaitsAnswer(pendingAskIdsOf(activeMessage.value))
+        : false
+    )
+    const awaitingApproval = computed(
+      () =>
+        (isStreaming.value && activeTurnAwaitsAnswer.value) ||
+        [...backgroundTurns.values()].some(
+          ({ settled, pendingAskIds }) =>
+            !settled && awaitsAnswer(pendingAskIds)
+        )
+    )
+    const pendingAskIds = computed<readonly string[]>(() => [
+      ...(isStreaming.value && activeMessage.value
+        ? pendingAskIdsOf(activeMessage.value)
+        : []),
+      ...[...backgroundTurns.values()].flatMap(({ settled, pendingAskIds }) =>
+        settled ? [] : pendingAskIds
+      )
+    ])
+    const turnTabs = computed<AgentTurnTab[]>(() => {
+      const activePath = activeTurnTabPath.value
+      const background = [...backgroundTurns.values()].flatMap(
+        ({ settled, tab, pendingAskIds }) => {
+          const path = settled ? null : openPathOf(tab)
+          return path === null
+            ? []
+            : [{ path, awaitingApproval: awaitsAnswer(pendingAskIds) }]
+        }
+      )
+      return activePath === null
+        ? background
+        : [
+            {
+              path: activePath,
+              awaitingApproval: activeTurnAwaitsAnswer.value
+            },
+            ...background
+          ]
+    })
     const status = computed<ConversationStatus>(() => {
       const message = activeMessage.value
       if (!message?.streaming) return 'idle'
@@ -1206,12 +2643,51 @@ export const useAgentConversationStore = defineStore(
       entries,
       activeTurnId,
       activeMessageId,
+      activeTurnTabPath,
+      turnTabs,
+      awaitingApproval,
+      pendingAskIds,
+      onTurnCompleted: turnCompleted.on,
+      onSnapshotTurnSettled: snapshotTurnSettled.on,
+      onPendingSendsReconciled: pendingSendsReconciled.on,
+      onTranscriptHydrated: transcriptHydrated.on,
+      onBlankChatFailuresBound: blankChatFailuresBound.on,
+      knownUserTurnIds,
+      setTurnTabResolver,
+      moveTurnToTab,
+      adoptThreadTab,
       threadId,
+      activeBlankChatId: computed(() => activeBlankChatId.value),
+      adoptInitialBlankTab,
+      blankChatIdForTab,
+      advanceBlankChatIdForTab,
+      setBlankChatIdForTab,
+      tabKeyForBlankChat,
+      currentOrigin,
+      isOriginOnScreen,
+      hasSendingPendingSend,
+      hasSendingForOrigin,
+      isOriginBusy,
+      hasPendingSendForOrigin,
+      discardFailedPendingSends,
+      startPendingSend,
+      capturePendingSendCanvasBaseline,
+      failPendingSend,
+      retryPendingSend,
+      markPendingSendStopped,
+      takePendingSend,
+      bindCertainBlankChatFailures,
+      getPendingSend,
+      hasPendingSendForBlankChat,
+      discardPendingSendsOutsideWorkspace,
+      updatePendingAttachmentPreview,
+      startBackgroundTurn,
       isStreaming,
       status,
       latestWorkflowId,
       recordApprovalShown,
       approvalShownAt,
+      approvalTurnId,
       forgetApprovalTiming,
       forgetApproval,
       recordUser,
@@ -1222,10 +2698,19 @@ export const useAgentConversationStore = defineStore(
       claimPaywallImpression,
       answeringAskIds,
       setAskAnswering,
-      recordAskSelection,
-      submittedAskSelection,
+      recordAskAnswer,
+      submittedAskAnswer,
+      takeSubmittedAskAnswer,
+      markAskAwaitingResolution,
+      asksAwaitingResolution,
+      clearAskAwaitingResolution,
+      askKind,
       commitAsk,
       retireAsk,
+      isAskRetired,
+      isAskPermanentlyRetired,
+      confirmAskPending,
+      reconcileApprovalParts,
       startTurn,
       ingest,
       setCanvasSyncGate,
@@ -1236,7 +2721,15 @@ export const useAgentConversationStore = defineStore(
       settleBackgroundTurn,
       dropBackgroundTurns,
       liveTurns,
+      liveTurnMessageId,
+      turnUsesSkill,
+      historySkillNames,
       settleTurn,
+      reconcileSettledTurn,
+      markActiveTurnMissedFrames,
+      isApprovalShown,
+      isAskShown,
+      hasApprovalShown,
       reset,
       hydrate
     }

@@ -30,11 +30,12 @@ test.describe(
         const selectedTemplateName = (await selectedTemplate.innerText()).trim()
         expect(selectedTemplateName.length).toBeGreaterThan(0)
         await selectedTemplate.click()
+        await comfyPage.page
+          .getByRole('button', { name: 'Just open', exact: true })
+          .click()
         await expect(comfyPage.templates.content).toBeHidden()
 
-        await expect
-          .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-          .toBeGreaterThan(1)
+        await comfyPage.expectNodeCountMinimum(2)
         const loadedState = await comfyPage.page.evaluate(() => ({
           ids: window.app!.graph.nodes.map(({ id }) => String(id)),
           types: window.app!.graph.nodes.map(({ type }) => type),

@@ -28,17 +28,17 @@ has the claimed type. Before overriding the compiler:
 5. Run the owning typecheck without the override.
 
 Confirm that the typecheck project includes the changed file. `pnpm typecheck`
-does not cover `browser_tests/`, `scripts/`, `tools/`, or `apps/website/`. Use
+does not cover `browser_tests/`, `scripts/`, `tools/`, or `apps/billing-web/`. Use
 `pnpm typecheck:browser`, `pnpm typecheck:scripts`, `pnpm typecheck:tools`, or
-`pnpm typecheck:website` for those paths.
+`pnpm typecheck:billing-web` for those paths.
 
 Use real platform objects and generated types when they own the contract. For
 example, construct a `Response` instead of casting an object to `Response`.
 Model malformed runtime input as `unknown` and pass it through the boundary
 parser. Do not use a double assertion to make invalid test data compile.
 
-A comment can document an external constraint, but it cannot prove a type or
-waive a failed check. External constraints may justify a specific assertion at
+A comment cannot prove a type or waive a failed check, so do not write one.
+State the external constraint in the PR description. External constraints may justify a specific assertion at
 an integration boundary, never a TypeScript suppression. If an upstream
 declaration is wrong, verify its runtime shape and do not spread assertions
 through consumers.

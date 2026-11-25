@@ -2,8 +2,8 @@ import type {
   CheckoutCopy,
   CheckoutInviteCopy,
   CheckoutSuccessCopy
-} from '../checkoutCopy'
-import type { CheckoutPlan } from '../checkoutQuote'
+} from '#/billing/checkout/checkoutCopy'
+import type { CheckoutPlan } from '#/billing/checkout/checkoutQuote'
 
 export const checkoutCopy: CheckoutCopy = {
   back: 'Back',
@@ -23,6 +23,7 @@ export const checkoutCopy: CheckoutCopy = {
   authenticationFailedDetail: 'We could not complete payment verification.',
   pendingVerificationDetail: 'A payment you started earlier needs you.',
   completeVerification: 'Complete verification',
+  cancelPaymentAndRetry: 'Cancel payment and try again',
   confirmPayment: 'Confirm your payment',
   startingToday: 'Starts today',
   parkedCheckoutDetail: 'Your earlier checkout is waiting for a card.',

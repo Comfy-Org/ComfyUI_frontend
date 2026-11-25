@@ -1,8 +1,12 @@
+import {
+  safeLocalStorage,
+  safeSessionStorage
+} from '@/base/storage/safeStorage'
 import { applyTextReplacements as _applyTextReplacements } from '@/utils/searchAndReplace'
 
 import { api } from './api'
-import type { ComfyApp } from './app'
-import { $el } from './ui'
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import { $el } from './ui/utils'
 
 export function clone<T>(obj: T): T {
   try {
@@ -20,7 +24,10 @@ export function clone<T>(obj: T): T {
  * @deprecated Use `applyTextReplacements` from `@/utils/searchAndReplace` instead
  * There are external callers to this function, so we need to keep it for now
  */
-export function applyTextReplacements(app: ComfyApp, value: string): string {
+export function applyTextReplacements(
+  app: { rootGraph: LGraph },
+  value: string
+): string {
   return _applyTextReplacements(app.rootGraph, value)
 }
 
@@ -93,15 +100,15 @@ export function prop<T>(
 export function getStorageValue(id: string) {
   const clientId = api.clientId ?? api.initialClientId
   return (
-    (clientId && sessionStorage.getItem(`${id}:${clientId}`)) ??
-    localStorage.getItem(id)
+    (clientId && safeSessionStorage.getItem(`${id}:${clientId}`)) ??
+    safeLocalStorage.getItem(id)
   )
 }
 
 export function setStorageValue(id: string, value: string) {
   const clientId = api.clientId ?? api.initialClientId
   if (clientId) {
-    sessionStorage.setItem(`${id}:${clientId}`, value)
+    safeSessionStorage.setItem(`${id}:${clientId}`, value)
   }
-  localStorage.setItem(id, value)
+  safeLocalStorage.setItem(id, value)
 }

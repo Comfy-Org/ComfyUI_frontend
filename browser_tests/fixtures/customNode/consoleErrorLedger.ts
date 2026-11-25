@@ -41,17 +41,6 @@ const CONSOLE_ERROR_ALLOWLIST: Record<string, AllowlistRule[]> = {
   ],
   'ComfyUI-Impact-Pack': [
     {
-      id: 'impact-sam-editor-legacy-clipspace-import',
-      pattern:
-        /\[vite:preloadError\].*\/extensions\/ComfyUI-Impact-Pack\/impact-sam-editor\.js.*Failed to fetch dynamically imported module/,
-      global: true,
-      requiredStartupId: 'impact-sam-editor-legacy-clipspace-import',
-      reason:
-        'impact-sam-editor.js imports the removed extensions/core/clipspace.js module',
-      restore:
-        'replace the legacy ClipspaceDialog import and remove this entry when impact-sam-editor.js imports successfully'
-    },
-    {
       id: 'impact-root-relative-media-preview',
       // Media/text widgets preview their value via root-relative URLs at
       // creation; 404s on a backend whose root does not serve the file.
@@ -143,7 +132,7 @@ const CONSOLE_ERROR_ALLOWLIST: Record<string, AllowlistRule[]> = {
     {
       id: 'ltx-director-guide-syntax',
       pattern:
-        /\[vite:preloadError\].*Unexpected token '\}'\} \[http:\/\/localhost:8188\/assets\//,
+        /^\[Reported error\]: error_loading_extension \/extensions\/WhatDreamsCost-ComfyUI\/(?:.+\/)?ltx_director_guide\.js: .*Unexpected token '\}'/i,
       global: true,
       requiredStartupId: 'ltx-director-guide-syntax',
       reason:
@@ -164,26 +153,13 @@ const CONSOLE_ERROR_ALLOWLIST: Record<string, AllowlistRule[]> = {
     {
       id: 'duplicate-color-overlay',
       pattern:
-        /\[vite:preloadError\].*Extension named 'ColorOverlay' already registered\./,
+        /^\[Reported error\]: error_loading_extension \/extensions\/comfyui_layerstyle(?:_advance)?\/(?:.+\/)?dz_node_palette\.js: .*Extension named 'ColorOverlay' already registered\./i,
       global: true,
       requiredStartupId: 'duplicate-color-overlay',
       reason:
         'this pack and comfyui_layerstyle both register the ColorOverlay extension in their pinned dz_node_palette.js',
       restore:
         'give the extensions distinct names and remove this entry when both packs load without a duplicate-registration error'
-    }
-  ],
-  'comfyui-sam3': [
-    {
-      id: 'sam3-editor-legacy-clipspace-import',
-      pattern:
-        /\[vite:preloadError\].*\/extensions\/comfyui-sam3\/sam3-editor\.js.*Failed to fetch dynamically imported module/,
-      global: true,
-      requiredStartupId: 'sam3-editor-legacy-clipspace-import',
-      reason:
-        'sam3-editor.js imports the removed extensions/core/clipspace.js module',
-      restore:
-        'replace the legacy ClipspaceDialog import and remove this entry when sam3-editor.js imports successfully'
     }
   ]
 }
@@ -290,9 +266,7 @@ export function unallowlistedGlobalExtensionErrorsForPacks(
   return withoutMatches(rules, errors)
 }
 
-export function customExtensionStartupErrors(
-  errors: readonly string[]
-): string[] {
+export function customNodeStartupErrors(errors: readonly string[]): string[] {
   return errors.filter(
     (error) =>
       /\/extensions\/(?!core\/)/i.test(error) ||

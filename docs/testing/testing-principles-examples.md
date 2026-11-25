@@ -6,6 +6,33 @@ That file is auto-loaded into agent context for every `*.test.ts` and
 each contested rule looks like in practice, with examples drawn from this
 repository where one exists.
 
+## Start with an expectation, not a branch
+
+Suppose the requirement is that saving and reopening a workflow preserves its
+connections. Exercise save and load through their supported APIs and compare
+the restored connections with the expected ones. That test remains useful if
+serialization moves between helpers or uses a different algorithm.
+
+Tests that require a serialization helper to run first, inspect its private
+map, or verify each internal forwarding call protect the current design
+instead. Replacing that design should not require replacing the test.
+
+For additional cases, distinguish supported failures from invented states:
+
+- A malformed imported workflow reaches an external input boundary. If the
+  import contract requires rejecting it without altering the open workflow,
+  test that outcome through the importer.
+- An internal typed helper receiving `null` is not a scenario merely because
+  JavaScript could pass it. Establish a supported caller that can supply it
+  before proposing a test. Validate malformed external input at its boundary.
+- A rare interruption during save can justify a test when recovery is part
+  of the contract. Its reachability and consequence matter more than how
+  many branches the test executes.
+
+These examples apply Beck's behavioral and structure-insensitive properties.
+They do not require putting every expectation in a browser test. Use the
+lowest test level that can observe the whole guarantee.
+
 ## Verify state and output; verify a call only when the call is the contract
 
 The rule prefers asserting on what the code returns, renders, or persists.

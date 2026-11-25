@@ -1,8 +1,8 @@
-import { describe, expect, it, vi } from 'vitest'
+import { assert, describe, expect, it, vi } from 'vitest'
 
 import { api } from '@/scripts/api'
 
-import { taskService } from './taskService'
+import { TaskNotFoundError, taskService } from './taskService'
 
 vi.mock(import('@/scripts/api'))
 
@@ -45,6 +45,21 @@ describe('taskService.getTask', () => {
     }
   })
 
+  it('parses a result belonging to another task type', async () => {
+    const exportTask = {
+      ...taskResponse,
+      status: 'completed',
+      task_name: 'task:export_assets',
+      result: { export_name: 'bundle.zip', assets_total: 3 }
+    }
+    vi.mocked(api.fetchApi).mockResolvedValue(Response.json(exportTask))
+
+    await expect(taskService.getTask(exportTask.id)).resolves.toEqual({
+      ok: true,
+      value: exportTask
+    })
+  })
+
   it.for([
     { status: 404, message: 'Task not found: task-123' },
     { status: 503, message: 'Failed to get task task-123: 503' }
@@ -57,6 +72,23 @@ describe('taskService.getTask', () => {
     if (!result.ok) {
       expect(result.error.message).toBe(message)
     }
+  })
+
+  it('distinguishes a missing task from a transient failure', async () => {
+    vi.mocked(api.fetchApi).mockResolvedValue(
+      new Response(null, { status: 404 })
+    )
+    const missing = await taskService.getTask('task-123')
+
+    vi.mocked(api.fetchApi).mockResolvedValue(
+      new Response(null, { status: 503 })
+    )
+    const transient = await taskService.getTask('task-123')
+
+    assert(!missing.ok)
+    assert(!transient.ok)
+    expect(missing.error).toBeInstanceOf(TaskNotFoundError)
+    expect(transient.error).not.toBeInstanceOf(TaskNotFoundError)
   })
 
   it('returns network failures as data', async () => {
@@ -78,7 +110,7 @@ describe('taskService.cancelTask', () => {
 
     await expect(taskService.cancelTask('task-123')).resolves.toEqual({
       ok: true,
-      value: true
+      value: 'cancelling'
     })
 
     expect(api.fetchApi).toHaveBeenCalledWith('/tasks/task-123', {
@@ -86,30 +118,39 @@ describe('taskService.cancelTask', () => {
     })
   })
 
-  it.for([404, 409])(
-    'treats a %s terminal race as idempotent',
-    async (status) => {
+  it.for([
+    { status: 404, outcome: 'missing' },
+    { status: 409, outcome: 'not-cancellable' }
+  ])(
+    'reports a $status terminal race as $outcome rather than a bare failure',
+    async ({ status, outcome }) => {
       vi.mocked(api.fetchApi).mockResolvedValue(new Response(null, { status }))
 
       await expect(taskService.cancelTask('task-123')).resolves.toEqual({
         ok: true,
-        value: false
+        value: outcome
       })
     }
   )
 
-  it('surfaces rejected cancellations with response detail', async () => {
+  it('keeps the response body out of rejected cancellation errors', async () => {
+    // A 5xx body is typically a gateway's HTML error page or a stack trace,
+    // and this message reaches a user-facing toast and telemetry.
     vi.mocked(api.fetchApi).mockResolvedValue(
-      new Response('queue unavailable', { status: 503 })
+      new Response(
+        '<html><body>nginx: upstream 10.1.2.3 failed</body></html>',
+        {
+          status: 503
+        }
+      )
     )
 
     const result = await taskService.cancelTask('task-123')
 
     expect(result.ok).toBe(false)
     if (!result.ok) {
-      expect(result.error.message).toBe(
-        'Failed to cancel task task-123: 503 queue unavailable'
-      )
+      expect(result.error.message).toBe('Failed to cancel task task-123: 503')
+      expect(result.error.message).not.toContain('nginx')
     }
   })
 

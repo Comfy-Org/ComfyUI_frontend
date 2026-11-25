@@ -3,18 +3,18 @@ import { useAppModeStore } from '@/stores/appModeStore'
 import { assert, beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import type {
   OnboardingTourStepStage,
   OnboardingTourStepMetadata
-} from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry/types'
 
 import { clearCoachmarks } from './coachmarkRegistry'
 import { TOUR_SEEN_SETTING, registerTour } from './onboardingTours'
 import type { SpotlightStep } from './onboardingTours'
 import { useOnboardingTourStore } from './onboardingTourStore'
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 const dispatcher = useTelemetry()
 assert.exists(dispatcher)
@@ -51,7 +51,6 @@ beforeEach(() => {
 describe('onboardingTourStore — runtime-resolved tours', () => {
   afterEach(() => {
     clearCoachmarks()
-    trackOnboardingTour.mockClear()
   })
 
   it('reports no start for an entry no one registered', async () => {
@@ -103,7 +102,6 @@ describe('onboardingTourStore — runtime-resolved tours', () => {
   })
 
   it('stays startable after a resolver rejects', async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     registerTour('firstRun', () =>
       Promise.reject(new Error('unreadable graph'))
     )
@@ -119,7 +117,6 @@ describe('onboardingTourStore — runtime-resolved tours', () => {
   })
 
   it('tells a resolver that crashed apart from one with nothing to show', async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     registerTour('firstRun', () =>
       Promise.reject(new Error('unreadable graph'))
     )

@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
-import { createWorkspaceInviteCommands } from './workspaceInvites.js'
+import { createWorkspaceInviteCommands } from './workspaceInvites'
 import {
   fakeTransport,
   httpOk,
   httpStatus
-} from './__fixtures__/billingTestFixtures.js'
+} from './__fixtures__/billingTestFixtures'
 
 const INVITE = {
   id: 'inv_1',

@@ -4,37 +4,36 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { i18n } from '@/i18n'
+import { api } from '@/scripts/api'
 
-import { toTurnId, zAgentWsEvent } from '../schemas/agentApiSchema'
-import { useAgentConversationStore } from '../stores/agent/agentConversationStore'
+import {
+  toTurnId,
+  zAgentWsEvent
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    getSystemStats: () => Promise.reject(new Error('offline')),
-    getLogs: () => Promise.reject(new Error('offline')),
-    getSettings: () => Promise.reject(new Error('offline')),
-    apiURL: (path: string) => `http://backend${path}`,
-    clientId: 'client-test-1',
-    api_host: 'localhost:8188',
-    api_base: ''
-  }
-}))
+vi.mock(import('@/scripts/api'))
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { rootGraph: { serialize: () => ({ nodes: [], links: [] }) } }
 }))
 
 const { reportError } = vi.hoisted(() => ({ reportError: vi.fn() }))
-vi.mock(import('@/platform/telemetry/reportError'), () => ({ reportError }))
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
+  reportError
+}))
 
 import CrdtDevPanel from './CrdtDevPanel.vue'
-import { setCrdtDebugEnabled } from './crdtDebugGate'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import * as crdtDebugReport from './crdtDebugReport'
-import { clearDevEvents, recordDevEvent } from './devPanelLog'
-import type { AgentCrdtStatus } from './useAgentCrdtFollower'
+import { clearDevEvents, recordDevEvent } from './crdtLog'
+import type { AgentCrdtStatus } from './agentCrdtStatus'
 
 const STATUS: AgentCrdtStatus = {
   enabled: true,
   connected: true,
+  canvasMayBeStale: false,
+  canvasStaleCause: null,
+  terminal: null,
   workflowId: 'doc-1',
   updatesApplied: 4,
   lastFrameType: 'doc_update',
@@ -50,9 +49,9 @@ const STATUS: AgentCrdtStatus = {
   }
 }
 
-function renderPanel() {
+function renderPanel(overrides: Partial<AgentCrdtStatus> = {}) {
   return render(CrdtDevPanel, {
-    props: { status: STATUS },
+    props: { status: { ...STATUS, ...overrides } },
     global: { plugins: [i18n] }
   })
 }
@@ -63,10 +62,17 @@ const restore = () => screen.queryByTestId('crdt-dev-panel-restore')
 
 describe('CrdtDevPanel', () => {
   beforeEach(() => {
+    api.clientId = 'client-test-1'
+    api.api_host = 'localhost:8188'
+    vi.mocked(api.getSystemStats).mockRejectedValue(new Error('offline'))
+    vi.mocked(api.getLogs).mockRejectedValue(new Error('offline'))
+    vi.mocked(api.getSettings).mockRejectedValue(new Error('offline'))
+    vi.mocked(api.apiURL).mockImplementation((path) => `http://backend${path}`)
     localStorage.clear()
-    // The gate caches its value, so clearing storage behind it is not enough
-    // to undo a previous test's dismissal.
-    setCrdtDebugEnabled(true)
+    useRemoteConfigStore().acceptConfig(
+      { 'Comfy.Agent.CrdtDebug': true },
+      false
+    )
     clearDevEvents()
     reportError.mockClear()
   })
@@ -76,6 +82,20 @@ describe('CrdtDevPanel', () => {
 
     expect(chip()).toBeTruthy()
     expect(sheet()).toBeNull()
+  })
+
+  it('emits the newly selected verbosity level', async () => {
+    const user = userEvent.setup()
+    const { emitted } = renderPanel()
+    await user.click(screen.getByTestId('crdt-dev-panel-chip'))
+
+    await user.selectOptions(
+      screen.getByTestId('crdt-dev-panel-verbosity'),
+      'trace'
+    )
+
+    expect(emitted('update:level')).toEqual([['trace']])
+    expect(screen.getByTestId('crdt-dev-panel-verbosity')).toHaveValue('trace')
   })
 
   it('smoke-renders follower and document status from a live snapshot', async () => {
@@ -105,6 +125,21 @@ describe('CrdtDevPanel', () => {
     expect(sheet()).toHaveTextContent('node-1')
     expect(sheet()).toHaveTextContent('last seq')
     expect(sheet()).toHaveTextContent('7')
+  })
+
+  it('renders disconnected status fallbacks', async () => {
+    const user = userEvent.setup()
+    renderPanel({
+      connected: false,
+      workflowId: null,
+      lastFrameType: null
+    })
+
+    await user.click(screen.getByTestId('crdt-dev-panel-chip'))
+
+    expect(screen.getByRole('row', { name: 'doc id —' })).toBeVisible()
+    expect(screen.getByRole('row', { name: 'connected no' })).toBeVisible()
+    expect(screen.getByRole('row', { name: 'last frame —' })).toBeVisible()
   })
 
   it('moves focus into the panel and restores it after Escape closes', async () => {
@@ -157,7 +192,7 @@ describe('CrdtDevPanel', () => {
     expect(sheet()).toBeNull()
     expect(restore()).toBeTruthy()
     expect(localStorage.getItem('Comfy.Agent.CrdtDevPanel.hidden')).toBe('true')
-    expect(localStorage.getItem('Comfy.Agent.CrdtDebug.enabled')).toBe('true')
+    expect(useRemoteConfigStore().config['Comfy.Agent.CrdtDebug']).toBe(true)
 
     await user.click(restore()!)
 
@@ -166,7 +201,7 @@ describe('CrdtDevPanel', () => {
     expect(localStorage.getItem('Comfy.Agent.CrdtDevPanel.hidden')).toBe(
       'false'
     )
-    expect(localStorage.getItem('Comfy.Agent.CrdtDebug.enabled')).toBe('true')
+    expect(useRemoteConfigStore().config['Comfy.Agent.CrdtDebug']).toBe(true)
   })
 
   it('keeps the restore affordance across a remount', async () => {

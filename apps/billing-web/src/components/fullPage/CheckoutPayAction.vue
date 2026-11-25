@@ -2,13 +2,17 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import type { PendingBillingOperation } from '@comfyorg/account-core/billing'
 import { CheckoutTermsNote } from '@comfyorg/account-ui/billing/checkout'
 import { buttonVariants } from '@comfyorg/design-system/button.variants'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { InlineOutcome, SubmitPhase } from '@/checkout/checkoutPage'
 import { isChallengeReopenable } from '@/checkout/checkoutPage'
+import { unbrokenDate } from '@/checkout/longDate'
 import { supportLinkFor } from '@/checkout/payVerdict'
+import type { PlanPurchase } from '@/checkout/summaryLedger'
+import CancelPaymentControl from '@/components/fullPage/CancelPaymentControl.vue'
 import InlineOutcomeCard from '@/components/fullPage/InlineOutcomeCard.vue'
 import type { KeepSubscriptionConsent } from '@/components/fullPage/KeepSubscriptionNotice.vue'
 import KeepSubscriptionNotice from '@/components/fullPage/KeepSubscriptionNotice.vue'
@@ -23,19 +27,19 @@ const {
   disabled,
   loading = false,
   phase,
-  canCancel = false,
   locked = false,
   reopening = false,
   outcome,
-  consent
+  consent,
+  purchase = 'subscribe'
 } = defineProps<
   PayContext & {
+    /** A top-up buys credits once, so it authorizes no recurring charge. */
+    purchase?: PlanPurchase | 'credits'
     disabled: boolean
     loading?: boolean
     /** The submit area's phase; only the visible pay action carries one, so the page has one live region. */
     phase?: SubmitPhase
-    /** Cancel payment renders only once the server can cancel a pending payment. */
-    canCancel?: boolean
     /** Money is on its way, so the consent it was sent with stands. */
     locked?: boolean
     /** The page is re-opening the challenge on its own; offering it too would flash. */
@@ -50,7 +54,38 @@ const emit = defineEmits<{
   continueVerification: []
 }>()
 
-const { t, te } = useI18n()
+const { d, t, te } = useI18n()
+
+/** A plan authorizes a charge each period; a top-up authorizes one. */
+const PURCHASE_COPY = {
+  subscribe: {
+    pay: 'checkout.payAndSubscribe',
+    agreement: 'checkout.fullPage.terms.agreement'
+  },
+  upgrade: {
+    pay: 'checkout.fullPage.confirmUpgrade',
+    agreement: 'checkout.fullPage.terms.agreement'
+  },
+  change: {
+    pay: 'checkout.fullPage.confirmChange',
+    agreement: 'checkout.fullPage.terms.agreement'
+  },
+  credits: {
+    pay: 'checkout.fullPage.payForCredits',
+    agreement: 'checkout.fullPage.terms.agreementOnce'
+  }
+} as const
+
+const payLabel = computed(() => t(PURCHASE_COPY[purchase].pay))
+
+const terms = computed(() => ({
+  agreement: t(PURCHASE_COPY[purchase].agreement, {
+    terms: '{terms}',
+    privacy: '{privacy}'
+  }),
+  terms: t('checkout.fullPage.terms.terms'),
+  privacyPolicy: t('checkout.fullPage.terms.privacyPolicy')
+}))
 
 /** Support is for a payment that failed; a notice over a fresh price is not one. */
 const supportLink = computed(() =>
@@ -68,6 +103,16 @@ function guardConsent(event: Event) {
   emit('consentMissing')
 }
 
+function challengeFootnote(operation: PendingBillingOperation): string {
+  const deadline = new Date(operation.authenticationDeadline ?? '')
+  if (Number.isNaN(deadline.getTime()))
+    return t('checkout.fullPage.phase.challenge')
+  return t('checkout.fullPage.phase.challengeVerifyBy', {
+    date: unbrokenDate(d(deadline, { month: 'long', day: 'numeric' })),
+    time: unbrokenDate(d(deadline, { hour: 'numeric', minute: '2-digit' }))
+  })
+}
+
 /** The line above Pay for a phase in flight; empty at rest so the live region stays mounted. */
 const footnote = computed(() => {
   if (
@@ -76,7 +121,7 @@ const footnote = computed(() => {
     phase.kind === 'unknown'
   )
     return ''
-  if (phase.kind === 'challenge') return t('checkout.fullPage.phase.challenge')
+  if (phase.kind === 'challenge') return challengeFootnote(phase.operation)
   if (phase.kind === 'processing')
     return t('checkout.fullPage.phase.processing')
   const named = `checkout.fullPage.phase.methods.${phase.method}`
@@ -89,6 +134,12 @@ const challenge = computed(() =>
   phase?.kind === 'challenge' ? phase.operation : undefined
 )
 
+const cancel = computed(() =>
+  phase?.kind === 'challenge' ? phase.cancel : undefined
+)
+
+const canceling = computed(() => cancel.value === 'canceling')
+
 /** A challenge the page is not showing, and is not about to, turns Pay into the one way back to it. */
 const reopenable = computed(
   () =>
@@ -98,10 +149,7 @@ const reopenable = computed(
 )
 
 const PRIMARY_BUTTON =
-  'flex h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-base-foreground px-4 text-sm font-semibold text-base-background transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-secondary-background focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40'
-
-const SECONDARY_BUTTON =
-  'flex h-10 w-full cursor-pointer items-center justify-center rounded-lg bg-tertiary-background px-4 text-sm font-semibold text-base-foreground hover:bg-tertiary-background-hover focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:outline-none'
+  'flex h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-foreground px-4 text-sm font-semibold text-background transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-secondary focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40'
 </script>
 
 <template>
@@ -135,6 +183,7 @@ const SECONDARY_BUTTON =
       <button
         v-if="reopenable"
         type="button"
+        :disabled="canceling"
         :class="PRIMARY_BUTTON"
         @click="emit('continueVerification')"
       >
@@ -150,21 +199,18 @@ const SECONDARY_BUTTON =
       >
         <i
           v-if="loading"
-          class="icon-[lucide--loader-circle] size-4 motion-safe:animate-spin"
+          class="icon-[lucide--loader-circle] motion-safe:animate-spin"
           aria-hidden="true"
         />
         <span :class="cn(loading && 'sr-only')">
-          {{ t('checkout.payAndSubscribe') }}
+          {{ payLabel }}
         </span>
       </button>
-      <button
-        v-if="challenge && canCancel"
-        type="button"
-        :class="SECONDARY_BUTTON"
-        @click="emit('cancel')"
-      >
-        {{ t('checkout.fullPage.phase.cancel') }}
-      </button>
+      <CancelPaymentControl
+        v-if="cancel"
+        :offer="cancel"
+        @cancel="emit('cancel')"
+      />
       <a
         v-if="supportLink"
         :href="supportLink"
@@ -177,16 +223,7 @@ const SECONDARY_BUTTON =
       >
         {{ t('checkout.fullPage.outcome.contactSupport') }}
       </a>
-      <CheckoutTermsNote
-        :copy="{
-          agreement: t('checkout.fullPage.terms.agreement', {
-            terms: '{terms}',
-            privacy: '{privacy}'
-          }),
-          terms: t('checkout.fullPage.terms.terms'),
-          privacyPolicy: t('checkout.fullPage.terms.privacyPolicy')
-        }"
-      />
+      <CheckoutTermsNote :copy="terms" />
     </div>
   </div>
 </template>

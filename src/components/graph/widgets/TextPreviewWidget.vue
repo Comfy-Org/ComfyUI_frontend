@@ -4,8 +4,16 @@
   >
     <div class="flex items-center gap-2">
       <div class="flex flex-1 items-center gap-2 break-all">
-        <SanitizedHtml as="span" :html="formattedText" />
-        <Skeleton v-if="isParentNodeExecuting" class="h-4! flex-1!" />
+        <SanitizedHtml
+          as="span"
+          class="[&_a]:text-primary [&_a]:underline"
+          :html="formattedText"
+        />
+        <Skeleton
+          v-if="isParentNodeExecuting"
+          data-testid="skeleton"
+          class="h-4 flex-1"
+        />
       </div>
     </div>
   </div>
@@ -13,12 +21,12 @@
 
 <script setup lang="ts">
 import { default as DOMPurify } from 'dompurify'
-import Skeleton from 'primevue/skeleton'
 import { computed } from 'vue'
 
-import SanitizedHtml from '@/components/common/SanitizedHtml.vue'
+import SanitizedHtml from '@comfyorg/design-system/common/SanitizedHtml'
+import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import { useExecutionStore } from '@/stores/executionStore'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { linkifyHtml, nl2br } from '@/utils/formatUtil'
 import { escapeHtml } from '@/utils/htmlEscape'
 

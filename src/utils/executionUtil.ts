@@ -10,9 +10,9 @@ import {
 import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
-} from '@/platform/workflow/validation/schemas/workflowSchema'
+} from '@comfyorg/graph-model/workflowSchema'
 
-import { zNodePackMetadata } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { zNodePackMetadata } from '@comfyorg/graph-model/workflowSchema'
 
 import { compressWidgetInputSlots } from './litegraphUtil'
 

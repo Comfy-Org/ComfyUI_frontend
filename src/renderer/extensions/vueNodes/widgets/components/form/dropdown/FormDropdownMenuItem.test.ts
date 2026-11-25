@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import * as VueUse from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 import type { ComputedRef } from 'vue'
@@ -13,24 +14,36 @@ import type { FormDropdownMenuItemProps } from './types'
 
 const mockFindServerPreviewUrl = vi.hoisted(() => vi.fn())
 const mockIsAssetPreviewSupported = vi.hoisted(() => vi.fn(() => true))
-const intersectionCallbacks = vi.hoisted(
-  () => [] as Array<(entries: Array<{ isIntersecting: boolean }>) => void>
-)
+const intersectionCallbacks: Array<
+  (entries: Array<{ isIntersecting: boolean }>) => void
+> = []
 
 vi.mock(import('@/platform/assets/utils/assetPreviewUtil'), () => ({
   findServerPreviewUrl: (name: string) => mockFindServerPreviewUrl(name),
   isAssetPreviewSupported: () => mockIsAssetPreviewSupported()
 }))
 
-vi.mock<unknown>(import('@vueuse/core'), () => ({
-  useIntersectionObserver: (
-    _ref: unknown,
-    cb: (entries: Array<{ isIntersecting: boolean }>) => void
-  ) => {
-    intersectionCallbacks.push(cb)
-    return { stop: vi.fn() }
-  }
-}))
+vi.mock(import('@vueuse/core'), { spy: true })
+
+beforeEach(() => {
+  vi.mocked(VueUse.useIntersectionObserver).mockImplementation((_ref, cb) => {
+    intersectionCallbacks.push((entries) => {
+      cb(
+        entries.map((entry) =>
+          Object.assign(new IntersectionObserverEntry(), entry)
+        ),
+        new IntersectionObserver(() => {})
+      )
+    })
+    return {
+      stop: vi.fn(),
+      pause: vi.fn(),
+      resume: vi.fn(),
+      isActive: computed(() => true),
+      isSupported: computed(() => true)
+    }
+  })
+})
 
 const selectedLabel = 'Selected'
 
@@ -54,8 +67,7 @@ function renderItem(
   return render(FormDropdownMenuItem, {
     global: {
       plugins: [i18n],
-      provide: { [AssetKindKey as symbol]: kind },
-      directives: { tooltip: () => {} }
+      provide: { [AssetKindKey as symbol]: kind }
     },
     props: {
       index: 0,
