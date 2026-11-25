@@ -93,14 +93,15 @@ it('reports invalid persisted node templates before falling back to empty', asyn
 it.for(['', '  \n'])(
   'treats an empty templates file (%j) as no templates without reporting',
   async (body) => {
-    const { extension, canvas } = createNodeTemplates(
+    const { api, app, reportError, extension } = await importNodeTemplates(
       async () => new Response(body, { status: 200 })
     )
+    const { useDialogService } = await import('@/services/dialogService')
     vi.mocked(useDialogService().prompt).mockResolvedValue('New template')
     await extension.setup?.(app)
 
-    const saveItem = extension.getCanvasMenuItems?.(canvas)[1]
-    await saveItem?.callback?.call(document.createElement('div'))
+    const saveItem = extension.getCanvasMenuItems?.(fromAny({}))[1]
+    await saveItem?.callback?.call(fromAny({}))
 
     expect(reportError).not.toHaveBeenCalled()
     const written: unknown = JSON.parse(
