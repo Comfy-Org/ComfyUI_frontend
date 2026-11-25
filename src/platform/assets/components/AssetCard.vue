@@ -125,10 +125,7 @@
           :aria-disabled="!canUseAsset"
           :aria-label="useButtonLabel"
           :class="
-            cn(
-              'relative shrink-0',
-              !canUseAsset && 'cursor-not-allowed opacity-50'
-            )
+            cn('shrink-0', !canUseAsset && 'cursor-not-allowed opacity-50')
           "
           @click.stop="handleSelect"
         >
