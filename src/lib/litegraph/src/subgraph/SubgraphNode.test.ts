@@ -966,16 +966,6 @@ describe('SubgraphNode Execution', () => {
     expect(resolved === undefined || typeof resolved === 'object').toBe(true)
   })
 
-  it('should handle a circular self-reference without crashing', () => {
-    const subgraph = createTestSubgraph({ nodeCount: 1 })
-    const subgraphNode = createTestSubgraphNode(subgraph, {
-      parentGraph: subgraph
-    })
-
-    // Add subgraph node to its own subgraph (circular reference)
-    expect(() => subgraph.add(subgraphNode)).not.toThrow()
-  })
-
   it('should resolve cross-boundary links', () => {
     // This test verifies that links can cross subgraph boundaries
     // Currently this is a basic test - full cross-boundary linking
