@@ -12,6 +12,14 @@ export default {
       to: { circular: true }
     },
     {
+      name: 'assets-core-is-independent-of-application-runtime',
+      severity: 'error',
+      from: { path: '^packages/assets-core/src/' },
+      to: {
+        path: '^(src/|packages/(api-client|account-core|account-ui|graph-model)/|node_modules/(vue|pinia|@vueuse)/|node_modules/\\.pnpm/[^/]+/node_modules/(vue|pinia|@vueuse)/)'
+      }
+    },
+    {
       name: 'api-client-does-not-import-application',
       severity: 'error',
       from: { path: '^packages/api-client/src/' },

@@ -8,6 +8,7 @@ import {
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 const CONDITIONING_INPUTS = ['positive', 'negative']
 
@@ -292,3 +293,47 @@ test.describe('Socket click link selection', { tag: '@canvas' }, () => {
     }
   )
 })
+
+test.describe(
+  'Socket go-to control',
+  { tag: ['@canvas', '@screenshot', '@vue-nodes'] },
+  () => {
+    test.use({ initialSettings: { 'Comfy.Canvas.SelectionToolbox': true } })
+
+    test.beforeEach(async ({ comfyPage }) => {
+      const title = 'Conditioning text encoder for the main subject prompt'
+      await comfyPage.workflow.loadWorkflow('default', {
+        nodes: { 6: { title }, 7: { title } }
+      })
+    })
+
+    test('shows a go-to button and a picker of same-named long titles', async ({
+      comfyPage
+    }) => {
+      const toolbox = comfyPage.selectionToolbox
+
+      await test.step('An input socket offers one go-to button', async () => {
+        const encoder = await comfyPage.nodeOps.getNodeRefById(6)
+        const { index } = await encoder.getInputByName('clip')
+        await comfyPage.vueNodes.getInputSlotConnectionDot('6', index).click()
+        const goTo = toolbox.getByRole('button', {
+          name: 'Go to Load Checkpoint'
+        })
+        await expect(goTo).toBeVisible()
+
+        await expectElementScreenshot(goTo, 'link-destination-button.png')
+      })
+
+      await test.step('An output socket opens a picker of its linked nodes', async () => {
+        await comfyPage.vueNodes.getOutputSlotConnectionDot('4', 1).click()
+        await toolbox
+          .getByRole('button', { name: 'Go to a linked node' })
+          .click()
+        const picker = comfyPage.page.getByRole('menu')
+        await expect(picker.getByRole('menuitem')).toHaveCount(2)
+
+        await expectElementScreenshot(picker, 'link-destination-picker.png')
+      })
+    })
+  }
+)

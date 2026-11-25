@@ -33,6 +33,10 @@ import {
   withRefusalReason
 } from '@/platform/workflowErrors/errorCatalog/accountPreconditionRouting'
 import { rescanAndSurfaceMissingNodes } from '@/platform/workflowErrors/nodeReplacement/missingNodeScan'
+import {
+  handledReleaseChange,
+  loadedReleaseId
+} from '@/platform/workspace/loadedRelease'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { api } from '@/scripts/api'
 import { useDialogService } from '@/services/dialogService'
@@ -256,6 +260,7 @@ export class QueueSubmission {
           try {
             api.authToken = comfyOrgAuthToken
             api.apiKey = comfyOrgApiKey ?? undefined
+            api.loadedReleaseId = loadedReleaseId()
             executionErrorStore.recordNodeErrors(null, queuedRunErrorKey)
             const res = await api.queuePrompt(number, p, {
               partialExecutionTargets: queueNodeIds,
@@ -264,6 +269,7 @@ export class QueueSubmission {
             const responseReceivedAt = performance.now()
             delete api.authToken
             delete api.apiKey
+            delete api.loadedReleaseId
             if (!res.prompt_id) {
               telemetry?.trackExecutionOutcome({
                 startTime,
@@ -320,6 +326,10 @@ export class QueueSubmission {
             })
             if (error instanceof PromptExecutionError) {
               queueResultOverride = !error.response.node_errors
+            }
+            if (handledReleaseChange(error)) {
+              queueResultOverride = false
+              break
             }
             const hasPromptNodeErrors =
               error instanceof PromptExecutionError &&

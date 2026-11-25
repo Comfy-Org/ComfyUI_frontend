@@ -46,6 +46,7 @@ import type {
   AuthMetadata,
   BeginCheckoutMetadata,
   BootstrapCompleteMetadata,
+  CustomDeploymentTelemetryEvent,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
   ExecutionErrorMetadata,
@@ -74,6 +75,7 @@ import type {
   PageVisibilityMetadata,
   ResubscribeClickMetadata,
   RunButtonProperties,
+  LocalMcpTelemetryEvent,
   RunOnCloudTelemetryEvent,
   ShareFlowMetadata,
   ShareLinkOpenedMetadata,
@@ -437,6 +439,14 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackRunOnCloudEvent(event: RunOnCloudTelemetryEvent): void {
     this.dispatch((provider) => provider.trackRunOnCloudEvent?.(event))
+  }
+
+  trackLocalMcpEvent(event: LocalMcpTelemetryEvent): void {
+    this.dispatch((provider) => provider.trackLocalMcpEvent?.(event))
+  }
+
+  trackCustomDeploymentEvent(event: CustomDeploymentTelemetryEvent): void {
+    this.dispatch((provider) => provider.trackCustomDeploymentEvent?.(event))
   }
 
   trackAgentMessageFeedback(metadata: AgentMessageFeedbackMetadata): void {

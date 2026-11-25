@@ -28,7 +28,7 @@ import {
   toggleNodeLinks
 } from '@/lib/litegraph/src/canvas/linkSelection'
 import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
-import { openModelLibraryBrowser } from '@/platform/assets/composables/openModelLibraryBrowser'
+import { openModelLibraryBrowser } from '@/platform/assets/integration/openModelLibraryBrowser'
 import { isCloud } from '@/platform/distribution/types'
 import { useQueueCommands } from '@/platform/queue/commands/useQueueCommands'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
@@ -52,7 +52,7 @@ import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDi
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { useDialogService } from '@/services/dialogService'
 import { useLitegraphService } from '@/services/litegraphService'
-import { useAssetsStore } from '@/stores/assetsStore'
+import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
 import type { ComfyCommand } from '@comfyorg/keybindings/commandStore'
 import { useModelStore } from '@/stores/modelStore'
 import { useHelpCenterStore } from '@/stores/helpCenterStore'

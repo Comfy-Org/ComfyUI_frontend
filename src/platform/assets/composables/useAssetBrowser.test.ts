@@ -5,10 +5,7 @@ import { createApp, defineComponent, nextTick, ref } from 'vue'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { i18n } from '@/i18n'
 import { useAssetBrowser as createAssetBrowser } from '@/platform/assets/composables/useAssetBrowser'
-import type {
-  AssetItem,
-  ModelBrowserAsset
-} from '@/platform/assets/schemas/assetSchema'
+import type { AssetItem, ModelBrowserAsset } from '@comfyorg/assets-core/schema'
 
 vi.mock(import('@/composables/useFeatureFlags'))
 const apps: App<Element>[] = []

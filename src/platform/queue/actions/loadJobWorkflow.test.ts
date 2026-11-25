@@ -20,7 +20,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock(import('@/platform/assets/composables/media/assetMappers'))
+vi.mock(import('@/platform/assets/adapters/outputAssetMappers'), { spy: true })
 
 provideExtensionService(() => ({ invokeExtensions: vi.fn() }))
 

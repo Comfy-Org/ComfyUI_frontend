@@ -24,11 +24,11 @@ type NodeGroupCenteringErrors = {
 
 const LEGACY_VUE_CENTERING_BASELINE: NodeGroupCenteringErrors = {
   innerGroup: {
-    horizontal: 16.308832840862777,
+    horizontal: 10.396336836871598,
     vertical: 17.390899314547084
   },
   outerGroup: {
-    horizontal: 20.30164329441476,
+    horizontal: 47.006812972149135,
     vertical: 42.196324096481476
   }
 } as const

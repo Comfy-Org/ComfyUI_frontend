@@ -1,6 +1,6 @@
-import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import { getAssetType } from '@/platform/assets/utils/assetTypeUtil'
+import { getOutputAssetMetadata } from '@/platform/assets/types/outputAssetMetadata'
+import type { AssetItem } from '@comfyorg/assets-core/schema'
+import { getAssetType } from '@comfyorg/assets-core/metadata'
 import { getOutputKey } from '@/platform/assets/utils/outputKeyUtil'
 
 type SelectedJobOutputs = {

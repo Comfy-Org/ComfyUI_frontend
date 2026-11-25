@@ -35,6 +35,7 @@ import { isSelectOnly } from '@/utils/litegraphUtil'
 import { isModalOpen } from '@/utils/modalUtil'
 
 import { api } from './api'
+import { emitGraphRestored } from './graphRestore'
 import {
   collectNodeHistoryWidgets,
   nodeHistoryValuesChanged,
@@ -674,10 +675,7 @@ export class ChangeTracker implements WorkflowChangeTracker {
           } else {
             source.push(prevState)
           }
-          if (restored) {
-            this.updateModified(previousState)
-            forgetRemovedNodeHistories(this.workflow.graph)
-          }
+          if (restored) this.finishRestore(previousState)
         }
       }
     }
@@ -686,6 +684,20 @@ export class ChangeTracker implements WorkflowChangeTracker {
       restore
     )
     return this.restoreChain
+  }
+
+  private finishRestore(previousState: ComfyWorkflowJSON) {
+    const { workflow } = this
+    const { graph } = workflow
+    this.updateModified(previousState)
+    forgetRemovedNodeHistories(graph)
+    if (graph)
+      emitGraphRestored({
+        workflow,
+        graph,
+        previous: previousState,
+        next: this.activeState
+      })
   }
 
   async undo() {

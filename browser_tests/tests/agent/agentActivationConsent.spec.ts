@@ -38,6 +38,10 @@ test.describe(
         name: enMessages.agent.consent.title
       })
       await expect(dialog).toBeVisible()
+      await expect(agentPanel.userMessageBubbles).toHaveText([
+        'Build a product photo workflow'
+      ])
+      await expect(agentPanel.sendingSpinner).toBeVisible()
       expect(postedMessages).toHaveLength(0)
 
       let releaseConsentSave = () => {}
@@ -71,10 +75,14 @@ test.describe(
         name: enMessages.agent.consent.title
       })
       await expect(dialog).toBeVisible()
+      await expect(agentPanel.userMessageBubbles).toHaveText([
+        'Build a product photo workflow'
+      ])
       await page.keyboard.press('Escape')
 
       await expect(dialog).toHaveCount(0)
       expect(postedMessages).toHaveLength(0)
+      await expect(agentPanel.userMessageBubbles).toHaveCount(0)
       await expect(agentPanel.composer).toHaveText(
         'Build a product photo workflow'
       )
@@ -231,6 +239,7 @@ test.describe(
         .click()
 
       await expect(coach).toBeVisible()
+      await expect(agentPanel.userMessageBubbles).toHaveText([draft])
       await expect(coach.getByTestId('agent-coach-hold-notice')).toHaveText(
         enMessages.agent.coachHoldNotice
       )
@@ -240,6 +249,7 @@ test.describe(
       await expect(agentPanel.root).toHaveCount(0)
       await agentPanel.openButton.click()
       await expect(agentPanel.root).toBeVisible()
+      await expect(agentPanel.userMessageBubbles).toHaveCount(0)
       await expect(agentPanel.composer).toHaveText(draft)
       expect(postedMessages).toHaveLength(0)
 

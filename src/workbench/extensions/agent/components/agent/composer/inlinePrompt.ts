@@ -1,7 +1,7 @@
 import { Schema } from '@tiptap/pm/model'
 import type { Node } from '@tiptap/pm/model'
 
-import { zMediaKindSchema } from '@/platform/assets/schemas/mediaAssetSchema'
+import { zMediaKindSchema } from '@comfyorg/assets-core/media'
 import { isNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import {
   MAX_DESCRIPTION_CODE_POINTS,
