@@ -126,7 +126,7 @@ export const liveOpenOnCloudAcceptanceFixture = liveOpenOnCloudFixture.extend<{
             response.url() === `${cloudOrigin}/api/cloud/compatibility` &&
             response.request().method() === 'POST'
         ),
-        actionbar.cloudButton.click()
+        actionbar.checkCloudCompatibility()
       ])
       expect(response.status()).toBe(200)
       expect(await response.serverAddr()).not.toBeNull()

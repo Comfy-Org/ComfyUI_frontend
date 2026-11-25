@@ -1,6 +1,7 @@
 <template>
   <div
     v-if="isSubgraph && hasAnyError && showErrorsTabEnabled"
+    data-part="node-footer"
     :class="errorWrapperStyles"
   >
     <Button
@@ -46,6 +47,7 @@
       showErrorsTabEnabled &&
       (showAdvancedInputsButton || showAdvancedState)
     "
+    data-part="node-footer"
     :class="errorWrapperStyles"
   >
     <Button
@@ -96,6 +98,7 @@
 
   <div
     v-else-if="hasAnyError && showErrorsTabEnabled"
+    data-part="node-footer"
     :class="errorWrapperStyles"
   >
     <Button
@@ -120,6 +123,7 @@
     v-else-if="isSubgraph"
     variant="textonly"
     data-testid="subgraph-enter-button"
+    data-part="node-footer"
     :class="
       cn(
         footerWrapperBase,
@@ -142,6 +146,7 @@
     v-else-if="showAdvancedInputsButton || showAdvancedState"
     variant="textonly"
     data-testid="advanced-inputs-button"
+    data-part="node-footer"
     :class="
       cn(
         footerWrapperBase,

@@ -7,6 +7,7 @@
         widget.borderStyle
       )
     "
+    data-part="widget-textarea"
   >
     <div class="flex h-6 shrink-0 items-center gap-2 px-3">
       <label
@@ -22,6 +23,7 @@
       <div
         role="group"
         :aria-label="$t('g.actions')"
+        data-part="widget-textarea-actions"
         class="ml-auto flex shrink-0 items-center gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 pointer-coarse:opacity-100"
       >
         <span

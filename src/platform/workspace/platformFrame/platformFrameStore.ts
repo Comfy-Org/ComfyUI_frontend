@@ -3,13 +3,21 @@ import { computed, getCurrentScope, ref, shallowRef, watch } from 'vue'
 import type { ComputedRef } from 'vue'
 
 import { reportError } from '@comfyorg/telemetry/reportError'
+import type { CustomDeploymentEntry } from '@comfyorg/telemetry/types'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
+import { DEPLOYMENT_LISTING_BACKSTOP_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
 import { skipLeavePromptOnce } from '@/platform/workflow/management/leavePrompt'
+import { switchToDeployment } from '@/platform/workspace/composables/useDeploymentSwitchGuard'
 import { confirmUnsavedWorkBeforeSwitch } from '@/platform/workspace/confirmUnsavedWorkBeforeSwitch'
 import { reloadForDeploymentSwitch } from '@/platform/workspace/deploymentSwitchReload'
+import {
+  trackDeploymentCreateClicked,
+  trackDeploymentDialogOpened
+} from '@/platform/workspace/platformFrame/customDeploymentTelemetry'
 import {
   advanceBuild,
   forgetBuild,
@@ -180,7 +188,10 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
     waitForAnswer()
   }
 
-  function open(request: PlatformFrameRequest): boolean {
+  function open(
+    request: PlatformFrameRequest,
+    entry: CustomDeploymentEntry
+  ): boolean {
     const origin = platformFrameOrigin()
     if (!isAvailable() || origin === null) return false
     const current = build.value
@@ -189,7 +200,9 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
       return true
     }
     close()
-    mount(request, origin, currentOwner())
+    const owner = currentOwner()
+    mount(request, origin, owner)
+    trackDeploymentDialogOpened(entry, request, owner.workspaceId)
     return true
   }
 
@@ -216,15 +229,14 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
     resumeCheck = undefined
   }
 
-  function landedRelease(): boolean {
-    const current = build.value
-    if (!current) return false
-    return useDeploymentPickStore().deployments.some(
+  function landedDeployment(current: FollowedBuild) {
+    return useDeploymentPickStore().deployments.find(
       (deployment) =>
         deployment.release_id === current.releaseId &&
         deployment.status === 'ready' &&
-        (current.kind === 'new' ||
-          deployment.deployment_id === current.deploymentId)
+        (current.deploymentId
+          ? deployment.deployment_id === current.deploymentId
+          : current.kind === 'new')
     )
   }
 
@@ -232,7 +244,12 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
     await useDeploymentPickStore().load()
     const current = build.value
     if (!resumeCheck || !current || buildNotice === undefined) return
-    if (landedRelease()) finishFromListing(current, buildNotice)
+    const landed = landedDeployment(current)
+    if (landed)
+      finishFromListing(
+        { ...current, deploymentId: landed.deployment_id },
+        buildNotice
+      )
   }
 
   function checkWhileQuiet() {
@@ -281,7 +298,9 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
             (deployment) => deployment.deployment_id === message.deploymentId
           )
         : undefined
+    const isNew = build.value?.buildId !== message.buildId
     build.value = startFollowing(message, running, currentOwner())
+    if (isNew) trackDeploymentCreateClicked(build.value)
     keepBuild(build.value)
     const notice = nextBuildNotice()
     isHidden.value = true
@@ -290,11 +309,42 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
   }
 
   async function reloadOntoVersion(deployment: string) {
-    if (!(await confirmUnsavedWorkBeforeSwitch(deployment))) return
+    if (!(await confirmUnsavedWorkBeforeSwitch(deployment, { reload: true })))
+      return
     const pickStore = useDeploymentPickStore()
     if (pickStore.isSwitching) return
     skipLeavePromptOnce()
     reloadForDeploymentSwitch(() => void pickStore.load())
+  }
+
+  async function switchToBuilt(done: FollowedBuild) {
+    const pickStore = useDeploymentPickStore()
+    let backstop: ReturnType<typeof setTimeout> | undefined
+    const loaded = await Promise.race([
+      pickStore.load().then(() => true),
+      new Promise<false>((resolve) => {
+        backstop = setTimeout(
+          () => resolve(false),
+          DEPLOYMENT_LISTING_BACKSTOP_MS
+        )
+      })
+    ]).finally(() => clearTimeout(backstop))
+    if (pickStore.isSwitching) return
+    if (!loaded || pickStore.state.phase !== 'ready') {
+      useToast().error(t('deploymentSwitcher.failedToSwitch'), {
+        description: t('platformFrame.switchListingUnavailable'),
+        duration: 8000
+      })
+      return
+    }
+    const target = pickStore.deployments.find(
+      (deployment) => deployment.deployment_id === done.deploymentId
+    )
+    if (target?.status !== 'ready') {
+      pickStore.requestSwitcherOpen()
+      return
+    }
+    await switchToDeployment(target.deployment_id, done.deploymentName)
   }
 
   function tellReady(done: FollowedBuild, id: ToastId) {
@@ -303,7 +353,7 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
       done.kind === 'update' &&
       pickStore.bootDeployment?.deployment_id === done.deploymentId
     noticeBuildReady(done, id, {
-      openRunOn: pickStore.requestSwitcherOpen,
+      switchTo: () => switchToBuilt(done),
       reload: runsHere
         ? () => void reloadOntoVersion(done.deploymentName)
         : null

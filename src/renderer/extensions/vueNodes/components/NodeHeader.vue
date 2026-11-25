@@ -6,77 +6,90 @@
     v-else
     :class="
       cn(
-        'lg-node-header flex w-full min-w-0 items-center justify-between gap-1 py-1 pr-2 pl-1 text-(length:--node-title-font-size) leading-4 group-data-collapsed/node:pr-7',
+        'lg-node-header flex w-full min-w-0 flex-col justify-center py-1 pr-2 pl-1 text-(length:--node-title-font-size) leading-4 group-data-collapsed/node:pr-7',
         headerShapeClass
       )
     "
     :data-testid="`node-header-${nodeData?.id || ''}`"
     @dblclick="handleDoubleClick"
   >
-    <div class="relative mr-auto flex min-w-0 items-center gap-1">
-      <Button
-        size="icon-sm"
-        variant="textonly"
-        class="mx-0.5 shrink-0 text-inherit hover:bg-transparent"
-        data-testid="node-collapse-button"
-        :aria-label="$t(collapsed ? 'g.expand' : 'g.collapse')"
-        :aria-expanded="!collapsed"
-        @click.stop="handleCollapse"
-        @dblclick.stop
-      >
-        <i
-          :class="
-            cn(
-              'icon-[lucide--chevron-down] transition-transform',
-              collapsed && '-rotate-90'
-            )
-          "
-          data-part="node-collapse-chevron"
-        />
-        <span
-          :class="
-            cn(
-              'hidden size-2.5 rounded-full bg-node-border transition-colors',
-              collapsed && 'bg-node-foreground'
-            )
-          "
-          data-part="node-collapse-dot"
-        />
-      </Button>
+    <div
+      class="flex min-w-0 items-center justify-between gap-1"
+      data-part="node-header-row"
+    >
       <div
-        :data-node-tooltip="nodeDescription || undefined"
-        :data-node-tooltip-title="titleTooltipHeading"
-        class="flex min-w-0 flex-1 items-center gap-2"
-        data-part="node-title"
-        data-testid="node-title"
-        @pointerenter="measureTitleTruncation"
+        class="relative mr-auto flex min-w-0 items-center gap-1"
+        data-part="node-header-lead"
       >
-        <div ref="titleText" class="flex-1 truncate">
-          <EditableText
-            :model-value="displayTitle"
-            :is-editing="isEditing"
-            :input-attrs="{ 'data-testid': 'node-title-input' }"
-            @edit="handleTitleEdit"
-            @cancel="handleTitleCancel"
+        <Button
+          size="icon-sm"
+          variant="textonly"
+          class="mx-0.5 shrink-0 text-inherit hover:bg-transparent"
+          data-testid="node-collapse-button"
+          data-part="node-collapse-button"
+          :aria-label="$t(collapsed ? 'g.expand' : 'g.collapse')"
+          :aria-expanded="!collapsed"
+          @click.stop="handleCollapse"
+          @dblclick.stop
+        >
+          <i
+            :class="
+              cn(
+                'icon-[lucide--chevron-down] transition-transform',
+                collapsed && '-rotate-90'
+              )
+            "
+            data-part="node-collapse-chevron"
           />
+          <span
+            :class="
+              cn(
+                'hidden size-2.5 rounded-full bg-node-border transition-colors',
+                collapsed && 'bg-node-foreground'
+              )
+            "
+            data-part="node-collapse-dot"
+          />
+        </Button>
+        <div
+          :data-node-tooltip="nodeDescription || undefined"
+          :data-node-tooltip-title="titleTooltipHeading"
+          class="flex min-w-0 flex-1 items-center gap-2"
+          data-part="node-title"
+          data-testid="node-title"
+          @pointerenter="measureTitleTruncation"
+        >
+          <div ref="titleText" class="flex-1 truncate">
+            <EditableText
+              :model-value="displayTitle"
+              :is-editing="isEditing"
+              :input-attrs="{ 'data-testid': 'node-title-input' }"
+              @edit="handleTitleEdit"
+              @cancel="handleTitleCancel"
+            />
+          </div>
         </div>
       </div>
-    </div>
 
-    <NodeBadge v-if="statusBadge" v-bind="statusBadge" />
-    <i
-      v-if="isPinned"
-      class="icon-[comfy--pin]"
-      data-testid="node-pin-indicator"
-    />
-    <i
-      v-if="showMissingWarning"
-      role="img"
-      :aria-label="
-        st('rightSidePanel.missingResourcesWarning', 'Missing resources')
-      "
-      class="icon-[lucide--triangle-alert]"
-    />
+      <NodeBadge
+        v-if="statusBadge"
+        v-bind="statusBadge"
+        data-part="node-status-badge"
+      />
+      <i
+        v-if="isPinned"
+        class="icon-[comfy--pin]"
+        data-testid="node-pin-indicator"
+      />
+      <i
+        v-if="showMissingWarning"
+        role="img"
+        :aria-label="
+          st('rightSidePanel.missingResourcesWarning', 'Missing resources')
+        "
+        class="icon-[lucide--triangle-alert]"
+      />
+    </div>
   </div>
 </template>
 

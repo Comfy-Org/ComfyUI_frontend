@@ -1,6 +1,6 @@
 import { delay } from 'es-toolkit'
 
-import { hasServerFirebaseConfig } from '@/config/firebase'
+import { getFirebaseConfigSource } from '@/config/firebase'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { isLoopbackHost } from '@/utils/hostWhitelist'
 
@@ -106,13 +106,15 @@ export async function refreshRemoteConfig(
     }
     console.warn('Failed to load remote config:', response.statusText)
     if (useAuth) authenticatedLoadingGeneration = undefined
-    store.failLoad(useAuth, response.status)
+    store.failLoad(useAuth, { reason: 'http', status: response.status })
   } catch (error) {
     if (generation !== refreshGeneration) return
     if (signal?.aborted) return
     console.error('Failed to fetch remote config:', error)
     if (useAuth) authenticatedLoadingGeneration = undefined
-    store.failLoad(useAuth)
+    store.failLoad(useAuth, {
+      reason: controller.signal.aborted ? 'timeout' : 'network'
+    })
   } finally {
     if (authenticatedLoadingGeneration === generation) {
       store.abandonAuthenticatedLoad(previousAuthenticatedState)
@@ -141,7 +143,7 @@ export async function loadRemoteConfigUntilReady(): Promise<void> {
   for (let attempt = 0; ; attempt++) {
     await refreshRemoteConfig({ useAuth: false })
     if (useRemoteConfigStore().loadState !== 'error') {
-      if (hasServerFirebaseConfig()) return
+      if (getFirebaseConfigSource() === 'server') return
       unnamedProjectReads++
       if (unnamedProjectReads === 1) {
         reportError(

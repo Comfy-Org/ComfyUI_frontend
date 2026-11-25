@@ -235,7 +235,7 @@ test.describe(
           data: { workflow_id: DRAFT_WORKFLOW_ID, name: DRAFT_TAB_NAME }
         })
         await expect(topbar.getWorkflowTab(DRAFT_TAB_NAME)).toBeVisible()
-        await expect(agentPanel.workflowPicker).toHaveText(DRAFT_TAB_NAME)
+        await expect(topbar.getActiveTab()).toContainText(DRAFT_TAB_NAME)
         await expect(unavailable).toBeHidden()
       })
 
@@ -259,7 +259,6 @@ test.describe(
           DRAFT_REQUEST
         ])
         await expect(unavailable).toBeHidden()
-        await expect(agentPanel.workflowPicker).toHaveText(DRAFT_TAB_NAME)
         await expect(topbar.getActiveTab()).toContainText(DRAFT_TAB_NAME)
       })
 

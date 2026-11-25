@@ -2,10 +2,10 @@ import type { AuthHeader } from '@comfyorg/api-client/authTypes'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { getBuildTimeComfyApiBaseUrl } from '@/config/comfyApi'
+import { getBuildTimeComfyCloudBaseUrl } from '@/config/comfyApi'
 import { bindLocalOpenOnCloudGrant } from '@/platform/openOnCloud/localOpenOnCloudRollout'
-import { ModelUploadRolloutDisabled } from '@/platform/workspace/api/modelFileUploadApi'
-import type { UploadRouteRequest } from '@/platform/workspace/api/modelFileUploadApi'
+import { ModelUploadRolloutDisabled } from '@/platform/assets/services/modelFileUploadApi'
+import type { UploadRouteRequest } from '@/platform/assets/services/modelFileUploadApi'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
@@ -94,7 +94,7 @@ describe('cloudUploadRequest', () => {
 
     expect(response.status).toBe(201)
     expect(fetch).toHaveBeenCalledWith(
-      new URL('/api/assets/uploads', getBuildTimeComfyApiBaseUrl()).href,
+      new URL('/api/assets/uploads', getBuildTimeComfyCloudBaseUrl()).href,
       {
         method: 'POST',
         headers: new Headers({ Authorization: 'Bearer workspace-token' }),

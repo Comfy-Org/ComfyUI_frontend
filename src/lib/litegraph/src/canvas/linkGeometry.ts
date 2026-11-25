@@ -6,6 +6,7 @@ import type {
   SubgraphInputNode,
   SubgraphOutputNode
 } from '@comfyorg/graph-model/entityRegistry'
+import { TitleMode } from '@comfyorg/graph-model/globalEnums'
 import type { SlotDirection } from '@comfyorg/graph-model/slotId'
 
 import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
@@ -21,6 +22,14 @@ type LinkEndNode =
 export type LinkEnd = LinkEndNode & {
   readonly slot: number
   readonly position: Point
+}
+
+/** The live graph-space top edge drawn for the node at a link end, title included. */
+export function linkEndTop(end: LinkEnd): number {
+  const [, y] = end.node.pos
+  const titled =
+    end.kind === 'node' && end.node.title_mode !== TitleMode.NO_TITLE
+  return titled ? y - litegraph().NODE_TITLE_HEIGHT : y
 }
 
 function renderedSocketPosition(

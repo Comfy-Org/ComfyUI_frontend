@@ -18,8 +18,7 @@ test.describe(
   () => {
     test('keeps exact server reply text through streaming and history hydration', async ({
       agentPanel,
-      promptHistory,
-      workflowSelection
+      promptHistory
     }) => {
       const replyText = [
         'Run these on your own machine:',
@@ -43,9 +42,6 @@ test.describe(
 
       await test.step('receive a reply with commands for the user machine', async () => {
         await agentPanel.open()
-        await agentPanel.chooseWorkflow()
-        await expect.poll(() => workflowSelection.savedPaths.length).toBe(1)
-        workflowSelection.finishSave(true)
         await agentPanel.sendMessage('Show me the local setup commands.')
         await expect.poll(() => promptHistory.requests.length).toBe(1)
         await agentPanel.expectUserMessages([
