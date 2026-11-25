@@ -52,7 +52,6 @@ async function fetchTemplates(): Promise<TemplatesLoad> {
   try {
     const res = await api.getUserData(file)
     if (res.status === 200) {
-      // An empty user file means no templates yet, not a corrupt one.
       const body = await res.text()
       if (!body.trim()) return { ok: true, templates: [] }
       return { ok: true, templates: JSON.parse(body) ?? [] }
