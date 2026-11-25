@@ -721,7 +721,6 @@ export const useWorkflowService = () => {
       try {
         beforeLoadNewGraph(true)()
         const app = useApp()
-        useNodeApiHost().endDocument(app.rootGraph)
         useNodeApiHost().beginDocument()
         presentRootGraph(app, graph, { clean: true, skipAssetScans: true })
         missingNodesErrorStore.setMissingNodeTypes([])
@@ -737,7 +736,6 @@ export const useWorkflowService = () => {
         })
         return true
       } finally {
-        useNodeApiHost().loadEnded()
         void useSubgraphNavigationStore().updateHash(
           'workflow-load',
           navigationIntentId

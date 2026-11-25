@@ -15,9 +15,9 @@ export interface VersionHost {
   markReady(): void
   /** The packs the backend verified, before any pack loads; `undefined` if the backend gave none. */
   providePacks(served: readonly ServedPack[] | undefined): void
-  /** When the host freezes `graph`'s document to load another or show another open tab; not for an undo or redo. */
+  /** When the host freezes `graph`'s document to load another; not for an undo or redo. */
   endDocument(graph: LGraph): void
-  /** When a load, an import or a tab switch stops, finished, failed or replaced, before packs are told it loaded. */
+  /** When a load or an import stops, finished, failed or replaced, before packs are told it loaded. */
   loadEnded(): void
   /** Just before the host configures a graph from a saved document, or builds one to import, or shows an open tab's live graph; not for an undo or redo. */
   beginDocument(): void
