@@ -1474,6 +1474,14 @@ describe('estimateGraphRunCost', () => {
   const estimate = async (graph: LGraph) =>
     useNodePricing().estimateGraphRunCost(graph)
 
+  const pricedByWidget = () =>
+    apiNodeType(
+      'Choice',
+      priceBadge('{"type":"usd","usd": widgets.model = "cheap" ? 0.01 : 0.5}', [
+        { name: 'model', type: 'STRING' }
+      ])
+    )
+
   beforeEach(() => {
     nextId = 1
   })
@@ -1645,6 +1653,30 @@ describe('estimateGraphRunCost', () => {
     }
   )
 
+  it('reports a top-level api node as unpriced when its pricing widget is fed by a link', async () => {
+    const result = await estimate(
+      graphWith((graph) => {
+        const choice = new (pricedByWidget())('choice')
+        const modelInput = choice.addInput('model', 'STRING')
+        modelInput.widget = { name: 'model' }
+        addTo(graph, choice, [{ name: 'model', value: 'expensive' }])
+
+        const source = addTo(graph, new (ossNodeType('Source'))('source'))
+        source.addOutput('value', 'STRING')
+        source.connect(0, choice, choice.inputs.indexOf(modelInput))
+      })
+    )
+
+    expect(result.pricedCount).toBe(0)
+    expect(result.coverage).toBe('none')
+    expect(result.unpriced).toEqual([
+      expect.objectContaining({
+        nodeType: 'Choice',
+        price: { basis: 'unpriced', reason: 'ambiguous' }
+      })
+    ])
+  })
+
   describe('subgraph instances', () => {
     const instanceOf = (
       graph: LGraph,
@@ -1720,15 +1752,6 @@ describe('estimateGraphRunCost', () => {
         expect(result.coverage).toBe('complete')
       }
     )
-
-    const pricedByWidget = () =>
-      apiNodeType(
-        'Choice',
-        priceBadge(
-          '{"type":"usd","usd": widgets.model = "cheap" ? 0.01 : 0.5}',
-          [{ name: 'model', type: 'STRING' }]
-        )
-      )
 
     it('prices an inner api node from its own widget while nothing is promoted', async () => {
       const result = await estimate(

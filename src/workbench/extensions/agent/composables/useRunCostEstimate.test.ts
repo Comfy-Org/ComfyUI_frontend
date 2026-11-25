@@ -1,19 +1,31 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { render } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
 
+import { reportError } from '@comfyorg/telemetry/reportError'
+
 import type { ApiNodeCostEstimate } from '@comfyorg/shared-frontend-utils/nodePricing'
+
+import { api } from '@/scripts/api'
+import type { useNodePricing } from '@/composables/node/useNodePricing'
+import type { ComfyApp } from '@/scripts/app'
 
 import { useRunCostEstimate } from './useRunCostEstimate'
 
-const estimateGraphRunCost = vi.fn()
+const estimateGraphRunCost =
+  vi.fn<ReturnType<typeof useNodePricing>['estimateGraphRunCost']>()
 
-vi.mock<unknown>(import('@/composables/node/useNodePricing'), () => ({
-  useNodePricing: () => ({ estimateGraphRunCost })
+vi.mock(import('@/composables/node/useNodePricing'), () => ({
+  useNodePricing: () =>
+    fromPartial<ReturnType<typeof useNodePricing>>({ estimateGraphRunCost })
 }))
 vi.mock(import('@/scripts/api'))
-vi.mock<unknown>(import('@/scripts/app'), () => ({ app: { graph: {} } }))
+vi.mock(import('@/scripts/app'), () => ({
+  app: fromPartial<ComfyApp>({ graph: {} })
+}))
+vi.mock(import('@comfyorg/telemetry/reportError'))
 
 const costEstimate = (minUsd: number): ApiNodeCostEstimate => ({
   minUsd,
@@ -89,5 +101,38 @@ describe('useRunCostEstimate', () => {
     await nextTick()
 
     expect(seen.value).toBeNull()
+  })
+
+  it('reports the failure once and clears the estimate when estimation rejects', async () => {
+    const cause = new Error('boom')
+    estimateGraphRunCost.mockRejectedValue(cause)
+
+    const seen = mountEstimate(ref(true))
+    await nextTick()
+    await nextTick()
+
+    expect(seen.value).toBeNull()
+    expect(reportError).toHaveBeenCalledOnce()
+    expect(reportError).toHaveBeenCalledWith(
+      cause,
+      expect.objectContaining({ surface: 'agent' })
+    )
+  })
+
+  it('refreshes the estimate when the graph changes', async () => {
+    estimateGraphRunCost.mockResolvedValue(costEstimate(0.05))
+
+    const seen = mountEstimate(ref(true))
+    await nextTick()
+    await nextTick()
+    expect(seen.value).toEqual(costEstimate(0.05))
+
+    estimateGraphRunCost.mockResolvedValue(costEstimate(0.1))
+    const apiEvents: EventTarget = api
+    apiEvents.dispatchEvent(new Event('graphChanged'))
+    await nextTick()
+    await nextTick()
+
+    expect(seen.value).toEqual(costEstimate(0.1))
   })
 })

@@ -2,6 +2,8 @@ import { useEventListener } from '@vueuse/core'
 import { onMounted, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 
+import { reportError } from '@comfyorg/telemetry/reportError'
+
 import type { ApiNodeCostEstimate } from '@comfyorg/shared-frontend-utils/nodePricing'
 
 import { api } from '@/scripts/api'
@@ -25,7 +27,11 @@ export function useRunCostEstimate(
     try {
       const next = await estimateGraphRunCost(useApp().graph)
       if (mine === generation) estimate.value = next
-    } catch {
+    } catch (cause) {
+      reportError(cause, {
+        surface: 'agent',
+        errorType: 'run_cost_estimate_failed'
+      })
       if (mine === generation) estimate.value = null
     }
   }

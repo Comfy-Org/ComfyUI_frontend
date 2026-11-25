@@ -12,7 +12,7 @@ import {
 
 import RunApprovalCard from './RunApprovalCard.vue'
 
-const estimate = ref<ApiNodeCostEstimate | null>(null)
+let estimate = ref<ApiNodeCostEstimate | null>(null)
 
 vi.mock(
   import('@/workbench/extensions/agent/composables/useRunCostEstimate'),
@@ -42,7 +42,7 @@ function costEstimate(
 }
 
 function renderCard(next: ApiNodeCostEstimate | null) {
-  estimate.value = next
+  estimate = ref(next)
   return render(RunApprovalCard, {
     props: {
       part: {

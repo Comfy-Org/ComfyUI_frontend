@@ -274,6 +274,15 @@ const hasPromotedPricingWidget = (
   })
 }
 
+const hasLinkedPricingWidget = (
+  node: LGraphNode,
+  rule: CompiledJsonataPricingRule
+): boolean =>
+  rule.depends_on.widgets.some((dep) => {
+    const slot = widgetInputSlot(node, dep.name)
+    return slot !== -1 && node.isInputConnected(slot)
+  })
+
 const costEntryFor = async (
   costNode: CostBearingNode
 ): Promise<ApiNodeCostEntry> => {
@@ -281,7 +290,11 @@ const costEntryFor = async (
   const badge = nodeData.price_badge
   const rule = badge ? getCompiledRuleForNodeType(nodeData.name, badge) : null
   const entry = { nodeType: nodeData.name, nodeId: node.id }
-  if (rule && hasPromotedPricingWidget(costNode, rule))
+  if (
+    rule &&
+    (hasPromotedPricingWidget(costNode, rule) ||
+      hasLinkedPricingWidget(node, rule))
+  )
     return { ...entry, price: UNRESOLVED_PRICE }
 
   const context = rule ? buildJsonataContext(node, rule) : EMPTY_EVAL_CONTEXT
