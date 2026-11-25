@@ -4336,6 +4336,10 @@
       "switch": "Switch"
     },
     "runsThisWorkflow": "Runs this workflow",
+    "releaseChangedRun": "{deployment} now runs v{version}. Reload to run on it.",
+    "releaseChangedRunNoVersion": "{deployment} now runs a different version. Reload to run on it.",
+    "releaseChangedRunUnknown": "Runs now go to a different version. Reload to run on it.",
+    "releaseChangedRunUnknownTarget": "the new version",
     "missingNodes": "Missing {count} node | Missing {count} nodes",
     "notChecked": "Not checked",
     "releaseChanged": "This deployment now runs a different Release. Reload to get its nodes.",
