@@ -39,7 +39,9 @@ export function getControlWidget(
   const controlWidget = widget.linkedWidgets?.find((w) => w[IS_CONTROL_WIDGET])
   if (!controlWidget) return
   return {
-    value: normalizeControlOption(controlWidget.value),
+    get value() {
+      return normalizeControlOption(controlWidget.value)
+    },
     update: (value) => (controlWidget.value = normalizeControlOption(value))
   }
 }
