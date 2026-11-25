@@ -106,8 +106,8 @@ export interface NodeQuery {
 }
 
 /**
- * Each change is one undo step, or part of `graph.batch`'s, and is `false` once the node is gone; an unusable
- * argument throws first. A node whose type is not installed saves only its mode and position.
+ * Each change is one undo step, or part of `graph.batch`'s; after an undo or redo, until the user's next input, it joins the restored state.
+ * A change is `false` once the node is gone, and an unusable argument throws first. A node whose type is not installed saves only its mode and position.
  */
 export interface NodeHandle {
   /** The node's id. Another document will use the same ids. */

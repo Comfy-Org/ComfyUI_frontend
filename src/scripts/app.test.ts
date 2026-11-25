@@ -3201,6 +3201,111 @@ describe('ComfyApp', () => {
         return added
       }
 
+      describe('a pack that settles the types of a node’s slots some time after the node is created', () => {
+        const later = {
+          'a microtask': () =>
+            new Promise<void>((done) => queueMicrotask(done)),
+          'a frame': () =>
+            new Promise<void>((done) => requestAnimationFrame(() => done()))
+        }
+
+        function packThatSettlesSlotTypes(when: keyof typeof later) {
+          const { comfy, packId } =
+            nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
+          class AnySwitch extends LGraphNode {
+            constructor(title?: string) {
+              super(title ?? 'AnySwitch')
+              this.addInput('any', '*')
+            }
+          }
+          LiteGraph.registerNodeType('AnySwitch', AnySwitch)
+          const [[nodeTypeHooks]] = vi.mocked(
+            mockExtensionService.registerExtension
+          ).mock.calls
+          nodeTypeHooks.beforeRegisterNodeDef?.(
+            LiteGraph.registered_node_types.AnySwitch,
+            hostNodeDef('AnySwitch'),
+            app
+          )
+          const settled: Promise<void>[] = []
+          onTestFinished(
+            comfy.defs.extend(packId, 'AnySwitch', (builder) =>
+              builder.onCreated((node) => {
+                settled.push(
+                  later[when]().then(() => {
+                    node.inputs.byName('any')?.modify({ type: '*' })
+                    node.inputs.byName('any')?.modify({ type: 'STRING' })
+                  })
+                )
+              })
+            )
+          )
+          const settle = () => Promise.all(settled.splice(0))
+          return { comfy, settle }
+        }
+
+        async function titledAfterSettling(when: keyof typeof later) {
+          const { comfy, settle } = packThatSettlesSlotTypes(when)
+          await app.loadGraphData(workflowWithFixedIdAndOneNode(), false)
+          const { tracker } = historyOfTheOpenWorkflow()
+          const added = comfy.graph.add('AnySwitch')
+          assert(added)
+          await settle()
+          tracker.userActed()
+          added.setTitle('Titled by the user')
+          const titled = structuredClone(
+            app.rootGraph.serialize()
+          ) as ComfyWorkflowJSON
+          return {
+            tracker,
+            settle,
+            titled,
+            undoSteps: tracker.undoQueue.length
+          }
+        }
+
+        const queues = (tracker: ChangeTracker) => [
+          tracker.undoQueue.length,
+          tracker.redoQueue.length
+        ]
+
+        it.for(Object.keys(later) as (keyof typeof later)[])(
+          'takes what the pack settles after %s following an undo into the restored state, and keeps redo',
+          async (when) => {
+            const { tracker, settle, titled, undoSteps } =
+              await titledAfterSettling(when)
+
+            await tracker.undo()
+            await settle()
+
+            expect(queues(tracker)).toEqual([undoSteps - 1, 1])
+            await tracker.redo()
+            expect(
+              ChangeTracker.graphEqual(
+                app.rootGraph.serialize() as ComfyWorkflowJSON,
+                titled
+              )
+            ).toBe(true)
+          }
+        )
+
+        it('records each change the pack makes after the user’s next input as an undo step of its own, which drops redo', async () => {
+          const { tracker, settle, undoSteps } =
+            await titledAfterSettling('a frame')
+
+          await tracker.undo()
+          tracker.userActed()
+          await settle()
+
+          expect(queues(tracker)).toEqual([undoSteps + 1, 0])
+          await tracker.undo()
+          expect(
+            app.rootGraph.nodes.find(({ type }) => type === 'AnySwitch')
+              ?.inputs[0].type
+          ).toBe('*')
+        })
+      })
+
       it('gives back the same handle when undo restores a node that redo removed again', async () => {
         const { comfy } = nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
         await app.loadGraphData(workflowWithFixedIdAndOneNode(), false)
@@ -3313,6 +3418,7 @@ describe('ComfyApp', () => {
           else await tracker.undo()
           const undoAfterLoad = tracker.undoQueue.length
 
+          tracker.userActed()
           comfy.graph.node('1')?.setMode('bypass')
           await tracker.undo()
 
@@ -3415,6 +3521,7 @@ describe('ComfyApp', () => {
         await tracker.undo()
         await tracker.undo()
         expect(kept.isDeleted).toBe(true)
+        tracker.userActed()
         const next = await addedProbe(comfy)
 
         expect(next.id).toBe(kept.id)

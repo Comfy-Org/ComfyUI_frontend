@@ -1943,6 +1943,56 @@ describe('ChangeTracker', () => {
       expect(tracker.redoQueue).toEqual([])
     })
 
+    it.for([
+      { input: 'pointerdown', event: () => new PointerEvent('pointerdown') },
+      {
+        input: 'keydown',
+        event: () => new KeyboardEvent('keydown', { key: 'a' })
+      },
+      { input: 'drop', event: () => new Event('drop') },
+      { input: 'wheel', event: () => new WheelEvent('wheel') }
+    ])(
+      'takes a change after Undo into the restored state until a $input, and records the next one as a step',
+      async ({ event }) => {
+        const initial = createState(1)
+        const changed = structuredClone(initial)
+        changed.nodes[0].widgets_values = [2]
+        const tracker = createTracker(changed)
+        tracker.undoQueue.push(initial)
+        vi.mocked(app.loadGraphData).mockImplementationOnce(async () => {
+          tracker.reset(initial)
+          mockCanvasState(initial)
+          return true
+        })
+        const events = new EventTarget()
+        vi.spyOn(window, 'addEventListener').mockImplementation(
+          (type, listener, options) =>
+            events.addEventListener(type, listener, options)
+        )
+        vi.spyOn(window, 'requestAnimationFrame').mockReturnValue(1)
+        ChangeTracker.init()
+        await tracker.undo()
+        const settled = structuredClone(initial)
+        settled.nodes[0].size = [100, 178]
+        mockCanvasState(settled)
+
+        tracker.captureCanvasState()
+
+        expect(tracker.undoQueue).toEqual([])
+        expect(tracker.redoQueue).toEqual([changed])
+        expect(tracker.activeState).toEqual(settled)
+
+        events.dispatchEvent(event())
+        const edited = structuredClone(settled)
+        edited.nodes[0].widgets_values = [3]
+        mockCanvasState(edited)
+        tracker.captureCanvasState()
+
+        expect(tracker.undoQueue).toEqual([settled])
+        expect(tracker.redoQueue).toEqual([])
+      }
+    )
+
     it('clears Redo for an intentional resize after normalized Undo', async () => {
       const initial = createState(1)
       const changed = structuredClone(initial)
@@ -1957,6 +2007,7 @@ describe('ChangeTracker', () => {
         return true
       })
       await tracker.undo()
+      tracker.userActed()
       const resized = structuredClone(normalized)
       resized.nodes[0].size = [350, 220]
       mockCanvasState(resized)

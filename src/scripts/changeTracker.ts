@@ -395,6 +395,7 @@ export class ChangeTracker implements WorkflowChangeTracker {
    */
   _restoringState: boolean = false
   private restoreChain?: Promise<void>
+  private settlingRestore = false
   private readonly statesAcrossALoad = new WeakSet<ComfyWorkflowJSON>()
   private preview?: { interrupt: () => void; rollback: () => void }
 
@@ -427,7 +428,17 @@ export class ChangeTracker implements WorkflowChangeTracker {
    * A replacement load outside history restore makes the next undo or redo across its boundary a load too. */
   reset(state?: ComfyWorkflowJSON) {
     if (state && !this._restoringState) this.markLoadBoundary(state)
+    if (!this._restoringState) this.settlingRestore = false
     this.adopt(state)
+  }
+
+  /**
+   * The user acted: from now on a change is an undo step again, not part of the state the last undo or redo restored.
+   *
+   * @internal Not part of the public extension API.
+   */
+  userActed() {
+    this.settlingRestore = false
   }
 
   /**
@@ -605,6 +616,10 @@ export class ChangeTracker implements WorkflowChangeTracker {
 
     const currentState = clone(graph.serialize()) as ComfyWorkflowJSON
     if (!ChangeTracker.graphEqual(this.activeState, currentState)) {
+      if (this.settlingRestore) {
+        this.takeIntoRestoredState(currentState)
+        return
+      }
       const previousState = this.activeState
       const nodeHistoryWidgets = collectNodeHistoryWidgets(graph)
       if (
@@ -627,6 +642,13 @@ export class ChangeTracker implements WorkflowChangeTracker {
       void this.squashState()
     }
   }
+  private takeIntoRestoredState(state: ComfyWorkflowJSON) {
+    if (ChangeTracker.graphEqual(this.activeState, this.initialState))
+      this.initialState = clone(state)
+    this.activeState = state
+    this.updateModified()
+  }
+
   squashState = useDebounceFn(() => {
     const graph = this.workflow.graph
     if (
@@ -734,6 +756,7 @@ export class ChangeTracker implements WorkflowChangeTracker {
           if (restored) {
             this.pushRestored(target, previousState, restoresHistory)
             if (restoresSavedState) this.initialState = clone(this.activeState)
+            this.settlingRestore = true
           } else {
             source.push(prevState)
           }
@@ -853,9 +876,15 @@ export class ChangeTracker implements WorkflowChangeTracker {
       })
     }
 
+    const userActed = () => getCurrentChangeTracker()?.userActed()
+    window.addEventListener('pointerdown', userActed, true)
+    window.addEventListener('drop', userActed, true)
+    window.addEventListener('wheel', userActed, true)
+
     window.addEventListener(
       'keydown',
       (e: KeyboardEvent) => {
+        userActed()
         const shortcut = historyShortcut(e)
         if (shortcut) onHistoryShortcut(e, shortcut)
         else onEditKey(e)

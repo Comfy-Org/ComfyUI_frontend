@@ -99,7 +99,10 @@ announces (decision 27).
    (`useWorkflowStore().activeWorkflow?.changeTracker`). Nested transactions
    count, so the tracker captures once, when the outermost closes, and only
    if the serialized workflow changed. With no open workflow the edit
-   applies with no undo step. The capture serializes, clones and compares
+   applies with no undo step. After an undo or redo, until the user's next
+   input, the tracker takes a change into the restored state instead of
+   recording it (ADR-EXTENSIONS-NODE-API-0075 decision 13), so an edit a pack
+   makes in reaction to the restore is no undo step and keeps redo. The capture serializes, clones and compares
    the whole document, so a loop of separate edits is quadratic. Measured in
    the unit environment (`happy-dom`, 20 title edits): 6.5, 12, 27 and 52 ms
    per separate edit at 250, 500, 1,000 and 2,000 nodes, against 4.9, 12, 26
@@ -710,7 +713,8 @@ ADR-EXTENSIONS-NODE-API-0070.
 ## Consequences
 
 - On an open workflow, one edit or batch that changes serialized state adds
-  one local undo step and marks the workflow modified, through the same
+  one local undo step and marks the workflow modified, except between an
+  undo or redo and the user's next input, where it joins the restored state, through the same
   tracker as the editor's own edits. A node whose type is not installed is
   saved as it was loaded, with only its mode and position taken from the
   node, so any other edit to it applies on screen, answers `true` and is not

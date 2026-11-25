@@ -252,6 +252,7 @@ export function createMockChangeTracker(
     prepareForSave: vi.fn(),
     reset: vi.fn(),
     adoptLoadedGraph: vi.fn(),
+    userActed: vi.fn(),
     restore: vi.fn(),
     store: vi.fn(),
     ...overrides
