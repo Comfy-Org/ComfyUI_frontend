@@ -111,7 +111,6 @@ import { useFreeUsePlacement } from './experiments/freeUsePlacement'
 import AgentPanel from './components/agent/AgentPanel.vue'
 import AgentCreditTransitionNotice from './components/agent/AgentCreditTransitionNotice.vue'
 import AgentHostFenceNotice from './components/agent/AgentHostFenceNotice.vue'
-import RunNoticeBanner from './components/agent/RunNoticeBanner.vue'
 import {
   agentBoundWorkflowActiveKey,
   agentBoundWorkflowIdKey
