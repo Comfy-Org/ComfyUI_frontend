@@ -85,6 +85,7 @@
     >
       <div
         data-testid="node-inner-wrapper"
+        data-part="node-frame"
         :class="
           cn(
             'flex flex-1 flex-col bg-node-header',
@@ -157,6 +158,7 @@
             "
             :style="{ rowGap: `${NODE_CONTENT_GAP}px` }"
             :data-testid="`node-body-${nodeData.id}`"
+            data-part="node-body"
           >
             <NodeSlots :node-data />
 

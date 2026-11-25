@@ -194,7 +194,7 @@
 </template>
 
 <script setup lang="ts">
-import { useLocalStorage, useMutationObserver } from '@vueuse/core'
+import { useMutationObserver } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -218,6 +218,7 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import FreeTierQuota from '@/platform/billing/subscription/components/FreeTierQuota.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useSafeLocalStorage } from '@/platform/storage/useSafeStorage'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { openCloudExtensions } from '@/platform/workspace/platformFrame/openCloudExtensions'
 import { useApp } from '@/scripts/appInstance'
@@ -283,7 +284,7 @@ const { shouldShowRedDot: shouldShowConflictRedDot } =
   useConflictAcknowledgment()
 const isTopMenuHovered = ref(false)
 const actionbarCardRef = ref<HTMLElement>()
-const isActionbarDocked = useLocalStorage('Comfy.MenuPosition.Docked', true)
+const isActionbarDocked = useSafeLocalStorage('Comfy.MenuPosition.Docked', true)
 const actionbarPosition = computed(() => settingStore.get('Comfy.UseNewMenu'))
 const isActionbarEnabled = computed(
   () => actionbarPosition.value !== 'Disabled'

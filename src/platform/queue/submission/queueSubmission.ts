@@ -12,8 +12,14 @@ import type {
   WorkflowQueueIntent
 } from '@comfyorg/telemetry/types'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import {
+  getGraphLoadGeneration,
+  isGraphLoading
+} from '@/core/graph/graphLoadState'
 import { applyPromotedWidgetControl } from '@/core/graph/subgraph/promotedWidgetControl'
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { t } from '@/i18n'
 import { isDesktopHostSignedIn } from '@/platform/auth/desktopHost/desktopHostSession'
 import { queueAuthToken } from '@/platform/auth/partnerNode/partnerNodeQueueToken'
@@ -50,6 +56,16 @@ import { normalizePromptError } from '@/utils/executionErrorUtil'
 import { collectAllNodes, forEachNode } from '@/utils/graphTraversalUtil'
 import { executeWidgetsCallback } from '@/utils/litegraphUtil'
 
+function hasQueueingGraphReloadedInPlace(
+  graph: LGraph,
+  queueingGraphGeneration: number
+): boolean {
+  return (
+    isGraphLoading(graph) ||
+    getGraphLoadGeneration(graph) !== queueingGraphGeneration
+  )
+}
+
 function servedRefusal(error: unknown): unknown {
   if (!useFeatureFlags().flags.billingNewUxEnabled) return undefined
   return error instanceof PromptExecutionError
@@ -70,6 +86,9 @@ export class QueueSubmission {
     requestId: number
     queueNodeIds?: NodeExecutionId[]
     workflowQueueIntent?: WorkflowQueueIntent
+    queueingWorkflowKey: string | undefined
+    queueingGraph: LGraph
+    queueingGraphGeneration: number
   }[] = []
   private nextQueueRequestId = 1
   private processingQueue = false
@@ -92,12 +111,21 @@ export class QueueSubmission {
       return false
     }
     const requestId = this.nextQueueRequestId++
+    const queueingWorkflow = useWorkspaceStore().workflow.activeWorkflow as
+      | ComfyWorkflow
+      | undefined
     this.queueItems.push({
       number,
       batchCount,
       queueNodeIds,
       requestId,
-      workflowQueueIntent: intent
+      workflowQueueIntent: intent,
+      queueingWorkflowKey:
+        queueingWorkflow?.instanceId ?? queueingWorkflow?.path,
+      queueingGraph: queueingWorkflow?.graph ?? this.app.rootGraph,
+      queueingGraphGeneration: getGraphLoadGeneration(
+        queueingWorkflow?.graph ?? this.app.rootGraph
+      )
     })
     api.dispatchCustomEvent('promptQueueing', {
       requestId,
@@ -176,9 +204,13 @@ export class QueueSubmission {
           batchCount,
           queueNodeIds,
           requestId,
-          workflowQueueIntent
+          workflowQueueIntent,
+          queueingWorkflowKey,
+          queueingGraph,
+          queueingGraphGeneration
         } = this.queueItems.pop()!
         let queuedCount = 0
+        let acceptedCount = 0
         const workflowExecutionIntent: WorkflowExecutionIntent = {
           trigger_source: normalizeExecutionTriggerSource(
             workflowQueueIntent?.trigger_source
@@ -189,8 +221,25 @@ export class QueueSubmission {
         )
 
         const isPartialExecution = !!queueNodeIds?.length
+        let stoppedOnWorkflowChange = false
         for (let i = 0; i < batchCount; i++) {
+          const currentWorkflow = useWorkspaceStore().workflow
+            .activeWorkflow as ComfyWorkflow | undefined
+          const currentWorkflowKey =
+            currentWorkflow?.instanceId ?? currentWorkflow?.path
+          if (
+            currentWorkflowKey !== queueingWorkflowKey ||
+            this.app.rootGraph !== queueingGraph ||
+            hasQueueingGraphReloadedInPlace(
+              queueingGraph,
+              queueingGraphGeneration
+            )
+          ) {
+            stoppedOnWorkflowChange = true
+            break
+          }
           let executionContext: ExecutionContext | undefined
+          let submissionAccepted = false
           if (telemetry) {
             try {
               executionContext = getExecutionContext()
@@ -202,7 +251,9 @@ export class QueueSubmission {
             }
           }
 
-          forEachNode(this.app.rootGraph, (node) => {
+          const queuedNodes = collectAllNodes(queueingGraph)
+
+          forEachNode(queueingGraph, (node) => {
             for (const widget of node.widgets ?? []) {
               widget.beforeQueued?.({ isPartialExecution })
             }
@@ -215,7 +266,7 @@ export class QueueSubmission {
           const queuedMode = getWorkflowMode(queuedWorkflow)
           const startTime = performance.now()
           const p = await this.app
-            .graphToPrompt(this.app.rootGraph)
+            .graphToPrompt(queueingGraph)
             .catch((error: unknown) => {
               telemetry?.trackExecutionOutcome({
                 startTime,
@@ -232,7 +283,15 @@ export class QueueSubmission {
               })
               throw error
             })
-          const queuedNodes = collectAllNodes(this.app.rootGraph)
+          if (
+            hasQueueingGraphReloadedInPlace(
+              queueingGraph,
+              queueingGraphGeneration
+            )
+          ) {
+            stoppedOnWorkflowChange = true
+            break
+          }
           let workflowContext: WorkflowExecutionContext | undefined
           if (executionContext) {
             workflowContext = toWorkflowExecutionContext(executionContext, {
@@ -270,6 +329,7 @@ export class QueueSubmission {
             delete api.authToken
             delete api.apiKey
             delete api.loadedReleaseId
+            submissionAccepted = Boolean(res.prompt_id)
             if (!res.prompt_id) {
               telemetry?.trackExecutionOutcome({
                 startTime,
@@ -429,6 +489,9 @@ export class QueueSubmission {
           }
 
           queuedCount++
+          if (submissionAccepted) {
+            acceptedCount++
+          }
 
           executeWidgetsCallback(queuedNodes, 'afterQueued', {
             isPartialExecution
@@ -437,6 +500,15 @@ export class QueueSubmission {
             applyPromotedWidgetControl(node, 'afterQueued')
           }
           useFreeTierQuota().trackRun()
+        }
+
+        if (stoppedOnWorkflowChange) {
+          useToast().warning(
+            t('toastMessages.batchStoppedOnWorkflowChange', {
+              queued: acceptedCount,
+              requested: batchCount
+            })
+          )
         }
 
         if (queuedCount > 0) {

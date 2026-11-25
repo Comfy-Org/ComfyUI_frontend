@@ -13,7 +13,8 @@ import { AgentMultiAutogrowRealignHarness } from '@e2e/fixtures/helpers/AgentMul
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import {
   MESSAGE_ID,
-  THREAD_ID
+  THREAD_ID,
+  WORKFLOW_ID
 } from '@e2e/fixtures/data/agent/agentCrdtMultiAutogrowRealignFixture'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
@@ -139,7 +140,10 @@ export async function settleStoryTurn(
 }
 
 /** The agent's `run` tool call frame, `running` or settled. */
-export function runToolCallFrame(status: 'running' | 'success') {
+export function runToolCallFrame(
+  status: 'running' | 'success',
+  jobId?: string
+) {
   return {
     type: 'agent_tool_call' as const,
     data: {
@@ -147,6 +151,8 @@ export function runToolCallFrame(status: 'running' | 'success') {
       tool_name: 'run',
       status,
       ...(status === 'success' && { duration_ms: 1200 }),
+      ...(status === 'success' &&
+        jobId && { job_id: jobId, job_workflow_id: WORKFLOW_ID }),
       message_id: MESSAGE_ID,
       thread_id: THREAD_ID
     }

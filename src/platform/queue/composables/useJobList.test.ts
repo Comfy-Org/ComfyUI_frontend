@@ -6,8 +6,7 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { useJobPreviewStore } from '@/stores/jobPreviewStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { nextTick, ref } from 'vue'
-import type { Ref } from 'vue'
+import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useJobList } from '@/platform/queue/composables/useJobList'
@@ -58,22 +57,6 @@ vi.mock(import('@/i18n'), () => ({
     (field: string, nodeName: string) => `i18n(${nodeName}.${field})`
   )
 }))
-
-let totalPercent: Ref<number> | undefined
-let currentNodePercent: Ref<number> | undefined
-const ensureProgressRefs = () => {
-  if (!totalPercent) totalPercent = ref(0)
-  if (!currentNodePercent) currentNodePercent = ref(0)
-  return { totalPercent, currentNodePercent }
-}
-vi.mock<unknown>(
-  import('@/platform/execution/composables/useQueueProgress'),
-  () => ({
-    useQueueProgress: () => {
-      return ensureProgressRefs()
-    }
-  })
-)
 
 function placeholderJobDisplay(
   task: TaskItemImpl,
@@ -159,10 +142,6 @@ const resetStores = () => {
 
   const workflowStore = useWorkflowStore()
   workflowStore.activeWorkflow = null
-
-  const progress = ensureProgressRefs()
-  progress.totalPercent.value = 0
-  progress.currentNodePercent.value = 0
 
   vi.mocked(isJobInitializingMock).mockReturnValue(false)
 }
@@ -423,10 +402,14 @@ describe('useJobList', () => {
 
     const executionStore = useExecutionStore()
     executionStore.activeJobId = 'active'
-    Object.assign(executionStore, { executingNode: { title: 'Render Node' } })
-    const progress = ensureProgressRefs()
-    progress.totalPercent.value = 80
-    progress.currentNodePercent.value = 40
+    Object.assign(executionStore, {
+      executionProgressForJob: (jobId: string) =>
+        jobId === 'active' ? 0.8 : 0,
+      executingNodeProgressForJob: (jobId: string) =>
+        jobId === 'active' ? 0.4 : null,
+      executingNodeForJob: (jobId: string) =>
+        jobId === 'active' ? { title: 'Render Node' } : null
+    })
 
     const { jobItems } = initComposable()
     await flush()
@@ -492,9 +475,10 @@ describe('useJobList', () => {
       createTask({ jobId: 'downloading', mockState: 'running' })
     ]
     useExecutionStore().activeJobId = 'downloading'
-    const progress = ensureProgressRefs()
-    progress.totalPercent.value = 80
-    progress.currentNodePercent.value = 50
+    Object.assign(useExecutionStore(), {
+      executionProgressForJob: () => 0.8,
+      executingNodeProgressForJob: () => 0.5
+    })
 
     downloadingStyleLora('downloading')
     const { jobItems } = initComposable()
@@ -570,17 +554,18 @@ describe('useJobList', () => {
 
     expect(instance.currentNodeName.value).toBe('--')
 
+    useExecutionStore().activeJobId = 'active'
     Object.assign(useExecutionStore(), {
-      executingNode: { title: '  Visible Node  ' }
+      executingNodeForJob: () => ({ title: '  Visible Node  ' })
     })
     await flush()
     expect(instance.currentNodeName.value).toBe('Visible Node')
 
     Object.assign(useExecutionStore(), {
-      executingNode: {
+      executingNodeForJob: () => ({
         title: '   ',
         type: 'My Node Type'
-      }
+      })
     })
     await flush()
     expect(instance.currentNodeName.value).toBe(

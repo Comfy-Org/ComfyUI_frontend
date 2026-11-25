@@ -1,6 +1,7 @@
 import type { Point2D as Position2D } from '@comfyorg/shared-frontend-utils/geometry'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { safeLocalStorage } from '@/base/storage/safeStorage'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { WORKFLOW_ACCEPT_STRING } from '@/platform/workflow/core/types/formats'
 import type { StatusWsMessageStatus } from '@comfyorg/api-client/executionTypes'
@@ -102,24 +103,20 @@ function dragElement(dragEl: HTMLElement, signal: AbortSignal): () => void {
     dragEl.style.bottom = 'unset'
 
     if (savePos) {
-      try {
-        localStorage.setItem(
-          'Comfy.MenuPosition',
-          JSON.stringify({
-            x: dragEl.offsetLeft,
-            y: dragEl.offsetTop
-          })
-        )
-      } catch {
-        return
-      }
+      safeLocalStorage.setItem(
+        'Comfy.MenuPosition',
+        JSON.stringify({
+          x: dragEl.offsetLeft,
+          y: dragEl.offsetTop
+        })
+      )
     }
   }
 
   function restorePos() {
     let pos: Position2D
     try {
-      const posString = localStorage.getItem('Comfy.MenuPosition')
+      const posString = safeLocalStorage.getItem('Comfy.MenuPosition')
       if (!posString) return
       pos = JSON.parse(posString) as Position2D
     } catch {

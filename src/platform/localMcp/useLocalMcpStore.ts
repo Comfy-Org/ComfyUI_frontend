@@ -1,4 +1,3 @@
-import { useLocalStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
 import type { WatchHandle } from 'vue'
@@ -17,12 +16,13 @@ import {
 } from '@/platform/localMcp/localMcpConnection'
 import { getJobDetail } from '@/platform/queue/services/jobOutputCache'
 import { useQueueStore } from '@/platform/queue/stores/queueStore'
+import { useSafeLocalStorage } from '@/platform/storage/useSafeStorage'
 
 const MAX_DETAIL_ATTEMPTS = 3
 
 /** Connect-surface state and funnel telemetry. */
 export const useLocalMcpStore = defineStore('localMcp', () => {
-  const connected = useLocalStorage('Comfy.LocalMcp.Connected', false)
+  const connected = useSafeLocalStorage('Comfy.LocalMcp.Connected', false)
   const panelOpened = ref(false)
   const exposureTracked = ref(false)
   const inspectedJobIds = new Set<string>()

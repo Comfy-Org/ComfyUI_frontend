@@ -20,7 +20,7 @@ import { ref } from 'vue'
 
 import { combineAbortSignals } from './abortSignal'
 import defaultClientFeatureFlags from './clientFeatureFlags.json' with { type: 'json' }
-import type { ApiAuthProvider } from './apiAuthProvider'
+import type { ApiAuthProvider, AuthTokenRequest } from './apiAuthProvider'
 import { anonymousApiAuthProvider } from './apiAuthProvider'
 import { authCredentialOf, notifyAuthCredential } from './authCredential'
 import { scopeMediaRoute } from './sessionMediaUrl'
@@ -93,6 +93,7 @@ import {
 } from './jobs/fetchJobs'
 
 const SERVER_FEATURE_FLAGS_TIMEOUT_MS = 5_000
+const POLICY_VIOLATION_CLOSE_CODE = 1008
 
 interface QueuePromptRequestBody {
   client_id: string
@@ -195,6 +196,7 @@ interface FrontendApiCalls {
   graphCleared: never
   reconnecting: never
   reconnected: never
+  revokedSocketEnded: never
 }
 
 export type PromptQueueingEventPayload = FrontendApiCalls['promptQueueing']
@@ -252,6 +254,11 @@ interface ApiMessage<T extends keyof ApiCalls> {
 /** A 401: the server ended the session. */
 export class UnauthorizedError extends Error {
   readonly status = 401
+}
+
+/** A 409 on a create-only user data write: the file already exists. */
+export class UserDataExistsError extends Error {
+  readonly status = 409
 }
 
 const CLIENT_ID_STORAGE_KEY = 'clientId'
@@ -488,6 +495,8 @@ export class ComfyApi extends EventTarget {
   private socketGeneration = 0
   private socketRetryDelayMs = 1_000
   private consecutiveFailedConnects = 0
+  private lastServerCloseReason: string | undefined
+  private revokedSocketEnded = false
 
   private authProvider: ApiAuthProvider = anonymousApiAuthProvider
 
@@ -1006,7 +1015,10 @@ export class ComfyApi extends EventTarget {
   }
 
   /** False when the web session is on and no one is signed in to open it. */
-  private async addSocketAuth(params: URLSearchParams): Promise<boolean> {
+  private async addSocketAuth(
+    params: URLSearchParams,
+    request?: AuthTokenRequest
+  ): Promise<boolean> {
     const requests = webSessionRequests()
     const sessionScope = requests && (await requests.scope())
     if (sessionScope?.workspaceId) {
@@ -1014,7 +1026,7 @@ export class ComfyApi extends EventTarget {
     }
     if (sessionScope) return true
 
-    const authToken = await this.authProvider.getAuthToken()
+    const authToken = await this.authProvider.getAuthToken(request)
     if (authToken) {
       params.set('token', authToken)
     }
@@ -1043,11 +1055,31 @@ export class ComfyApi extends EventTarget {
       params.set('clientId', existingSession)
     }
 
-    if (this.ports.isCloud && !(await this.addSocketAuth(params))) return
+    const forceRefresh =
+      this.ports.isCloud && this.lastServerCloseReason === 'auth_revoked'
+    const authenticated =
+      !this.ports.isCloud ||
+      (await this.addSocketAuth(params, { forceRefresh }))
     const sessionRequests =
-      this.ports.isCloud && !params.has('token')
+      this.ports.isCloud && authenticated && !params.has('token')
         ? webSessionRequests()
         : undefined
+    const revokedRetry = forceRefresh && !sessionRequests
+    if (revokedRetry && !params.has('token')) {
+      if (generation === this.socketGeneration) {
+        const delayMs = socketReconnectDelayMs({
+          isCloud: true,
+          opened: false,
+          failedConnects: this.consecutiveFailedConnects++
+        })
+        setTimeout(async () => {
+          if (generation !== this.socketGeneration || this.socket) return
+          await this.createSocket(true)
+        }, delayMs)
+      }
+      return
+    }
+    if (!authenticated) return
 
     const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws'
     const baseUrl = `${protocol}://${this.api_host}${this.api_base}/ws`
@@ -1072,6 +1104,7 @@ export class ComfyApi extends EventTarget {
       opened = true
       this.socketRetryDelayMs = 1_000
       this.consecutiveFailedConnects = 0
+      this.lastServerCloseReason = undefined
 
       socket.send(
         JSON.stringify({
@@ -1080,7 +1113,8 @@ export class ComfyApi extends EventTarget {
         })
       )
 
-      if (isReconnect) {
+      if (isReconnect || this.revokedSocketEnded) {
+        this.revokedSocketEnded = false
         this.dispatchCustomEvent('reconnected')
       }
     })
@@ -1093,10 +1127,20 @@ export class ComfyApi extends EventTarget {
       }
     })
 
-    socket.addEventListener('close', () => {
+    socket.addEventListener('close', (event) => {
       if (this.socket !== socket) return
       this.serverFeatureFlagsSettled.value = true
       clearTimeout(settleTimer)
+      const closeReason =
+        event.code === POLICY_VIOLATION_CLOSE_CODE ? event.reason : undefined
+      if (revokedRetry && opened && closeReason === 'auth_revoked') {
+        this.dispatchCustomEvent('status', null)
+        this.dispatchCustomEvent('reconnecting')
+        this.endRevokedSocket()
+        return
+      }
+      this.lastServerCloseReason =
+        revokedRetry && !opened ? 'auth_revoked' : closeReason
       const recoverSession = sessionRequests && !opened
       const delayMs = recoverSession
         ? this.socketRetryDelayMs
@@ -1315,6 +1359,13 @@ export class ComfyApi extends EventTarget {
     await this.replaceSocket()
   }
 
+  private endRevokedSocket(): void {
+    this.socket = null
+    this.lastServerCloseReason = undefined
+    this.revokedSocketEnded = true
+    this.dispatchCustomEvent('revokedSocketEnded')
+  }
+
   private async replaceSocket(): Promise<void> {
     const previous = this.socket
     // serverFeatureFlags deliberately keeps the previous map (resetSocket drops
@@ -1322,6 +1373,7 @@ export class ComfyApi extends EventTarget {
     // caller until the next delivery.
     this.serverFeatureFlagsSettled.value = false
     this.consecutiveFailedConnects = 0
+    this.lastServerCloseReason = undefined
     // Detach before closing so the previous socket's close handler sees it is
     // no longer the active socket and does not start a competing reconnect.
     this.socket = null
@@ -1852,6 +1904,7 @@ export class ComfyApi extends EventTarget {
       stringify?: boolean
       throwOnError?: boolean
       full_info?: boolean
+      reportConflict?: boolean
     } = {
       overwrite: true,
       stringify: true,
@@ -1869,29 +1922,32 @@ export class ComfyApi extends EventTarget {
     })
     if (resp.status !== 200) {
       const message = `Error storing user data file '${file}': ${resp.status} ${resp.statusText}`
+      const exists = resp.status === 409 && !overwrite
       // The reported message and route are file-independent: the literal file
       // name (and `route`, which embeds it) is unbounded cardinality and
       // would fragment Sentry grouping into one bucket per file instead of
       // one for this failure mode — exactly what buried PM-1906's alerts.
-      reportError(
-        new Error(
-          `Error storing user data file: ${resp.status} ${resp.statusText}`
-        ),
-        {
-          errorType: 'userdata_store_failure',
-          surface: 'platform',
-          tags: {
-            status: resp.status,
-            overwrite,
-            full_info: fullInfo
-          },
-          context: {
-            file,
-            route: `/userdata/{file}?overwrite=${overwrite}&full_info=${fullInfo}`
+      if (!exists || options.reportConflict !== false)
+        reportError(
+          new Error(
+            `Error storing user data file: ${resp.status} ${resp.statusText}`
+          ),
+          {
+            errorType: 'userdata_store_failure',
+            surface: 'platform',
+            tags: {
+              status: resp.status,
+              overwrite,
+              full_info: fullInfo
+            },
+            context: {
+              file,
+              route: `/userdata/{file}?overwrite=${overwrite}&full_info=${fullInfo}`
+            }
           }
-        }
-      )
+        )
       if (options.throwOnError !== false) {
+        if (exists) throw new UserDataExistsError(message)
         throw new Error(message)
       }
     }

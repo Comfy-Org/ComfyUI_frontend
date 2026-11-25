@@ -180,6 +180,8 @@ export type JobListItem = {
   progressTotalPercent?: number
   progressCurrentPercent?: number
   runningNodeName?: string
+  isFocused?: boolean
+  canFocus?: boolean
   executionTimeMs?: number
   computeHours?: number
 }

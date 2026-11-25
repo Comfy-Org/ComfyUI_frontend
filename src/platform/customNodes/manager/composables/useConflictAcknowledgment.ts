@@ -1,7 +1,8 @@
-import { createSharedComposable, useStorage } from '@vueuse/core'
+import { createSharedComposable } from '@vueuse/core'
 import { computed } from 'vue'
 
 import { useConflictDetectionStore } from '@/platform/customNodes/manager/stores/conflictDetectionStore'
+import { useSafeLocalStorage } from '@/platform/storage/useSafeStorage'
 
 /**
  * LocalStorage keys for conflict acknowledgment tracking
@@ -22,9 +23,15 @@ export interface ConflictAcknowledgmentState {
 }
 
 const useAcknowledgmentStorage = createSharedComposable(() => ({
-  modalDismissed: useStorage(STORAGE_KEYS.CONFLICT_MODAL_DISMISSED, false),
-  redDotDismissed: useStorage(STORAGE_KEYS.CONFLICT_RED_DOT_DISMISSED, false),
-  warningBannerDismissed: useStorage(
+  modalDismissed: useSafeLocalStorage(
+    STORAGE_KEYS.CONFLICT_MODAL_DISMISSED,
+    false
+  ),
+  redDotDismissed: useSafeLocalStorage(
+    STORAGE_KEYS.CONFLICT_RED_DOT_DISMISSED,
+    false
+  ),
+  warningBannerDismissed: useSafeLocalStorage(
     STORAGE_KEYS.CONFLICT_WARNING_BANNER_DISMISSED,
     false
   )

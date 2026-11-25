@@ -158,6 +158,7 @@ import {
   refreshMissingModelPipeline,
   runMissingModelPipeline
 } from '@/platform/workflowErrors/missingModel/missingModelPipeline'
+import { isModelFileName } from '@/platform/workflowErrors/missingModel/missingModelScan'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import type {
   MissingModelCandidate,
@@ -756,7 +757,7 @@ export class ComfyApp implements IComfyApp {
 
     api.addEventListener('executed', ({ detail }) => {
       const executionStore = useExecutionStore()
-      const isActive = executionStore.rememberStampAndCheckActiveWorkflow(
+      const isActive = executionStore.rememberStampAndCheckOutputOwner(
         detail.prompt_id,
         detail.workflow_id
       )
@@ -767,13 +768,12 @@ export class ComfyApp implements IComfyApp {
       )
       if (!executionId) return
 
-      if (isActive) {
-        useNodeOutputStore().setNodeOutputsByExecutionId(
-          executionId,
-          detail.output,
-          { merge: detail.merge }
-        )
-      }
+      if (!isActive) return
+      useNodeOutputStore().setNodeOutputsByExecutionId(
+        executionId,
+        detail.output,
+        { merge: detail.merge }
+      )
 
       if (!graph) return
       const node = getNodeByExecutionId(graph, executionId)
@@ -816,10 +816,7 @@ export class ComfyApp implements IComfyApp {
       const blobUrl = createSharedObjectUrl(blob)
       useJobPreviewStore().setPreviewUrl(jobId, blobUrl, displayNodeId)
       if (
-        !useExecutionStore().rememberStampAndCheckActiveWorkflow(
-          jobId,
-          workflowId
-        )
+        !useExecutionStore().rememberStampAndCheckOutputOwner(jobId, workflowId)
       ) {
         releaseSharedObjectUrl(blobUrl)
         return
@@ -1270,13 +1267,15 @@ export class ComfyApp implements IComfyApp {
     workflow: string | null | ComfyWorkflow = null,
     options: LoadGraphDataOptions = {}
   ): Promise<LoadedComfyWorkflow | boolean | undefined> {
-    const { loaded, surfaceWarnings } = await this.enqueueGraphLoad(() =>
-      this.loadGraphDataNow(graphData, clean, restore_view, workflow, options)
-    )
-    if (loaded === false && clean && !(workflow instanceof ComfyWorkflow))
-      await useWorkflowService().restoreRetainedWorkflow()
-    await surfaceWarnings?.()
-    return loaded
+    return useMissingModelStore().whileWorkflowLoads(async () => {
+      const { loaded, surfaceWarnings } = await this.enqueueGraphLoad(() =>
+        this.loadGraphDataNow(graphData, clean, restore_view, workflow, options)
+      )
+      if (loaded === false && clean && !(workflow instanceof ComfyWorkflow))
+        await useWorkflowService().restoreRetainedWorkflow()
+      await surfaceWarnings?.()
+      return loaded
+    })
   }
 
   private async enqueueImport<T>(operation: () => Promise<T>): Promise<T> {
@@ -1658,6 +1657,10 @@ export class ComfyApp implements IComfyApp {
                       (reset_invalid_values &&
                         !values.includes(
                           widget.value as string | number | boolean
+                        ) &&
+                        !(
+                          typeof widget.value === 'string' &&
+                          isModelFileName(widget.value)
                         )))
                   ) {
                     widget.value = values[0]
@@ -1811,7 +1814,6 @@ export class ComfyApp implements IComfyApp {
     options: { silent?: boolean; reloadDefs?: boolean } = {}
   ): Promise<MissingModelPipelineResult> {
     return refreshMissingModelPipeline({
-      graph: this.rootGraph,
       reloadNodeDefs:
         options.reloadDefs === false
           ? undefined

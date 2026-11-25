@@ -67,7 +67,6 @@
 import {
   useDraggable,
   useEventListener,
-  useLocalStorage,
   useResizeObserver,
   watchDebounced
 } from '@vueuse/core'
@@ -81,6 +80,7 @@ import QueueInlineProgress from '@/platform/queue/components/QueueInlineProgress
 import { useQueueFeatureFlags } from '@/platform/queue/composables/useQueueFeatureFlags'
 import FreeTierQuota from '@/platform/billing/subscription/components/FreeTierQuota.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useSafeLocalStorage } from '@/platform/storage/useSafeStorage'
 import DeploymentSwitcher from '@/platform/workspace/components/DeploymentSwitcher.vue'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { FIRST_RUN_COACH_IDS } from '@/platform/onboarding/onboardingTours'
@@ -113,8 +113,8 @@ const { isQueuePanelV2Enabled, isRunProgressBarEnabled } =
 
 const panelRef = ref<HTMLElement | null>(null)
 const dragHandleRef = ref<HTMLElement | null>(null)
-const isDocked = useLocalStorage('Comfy.MenuPosition.Docked', true)
-const storedPosition = useLocalStorage('Comfy.MenuPosition.Floating', {
+const isDocked = useSafeLocalStorage('Comfy.MenuPosition.Docked', true)
+const storedPosition = useSafeLocalStorage('Comfy.MenuPosition.Floating', {
   x: 0,
   y: 0
 })

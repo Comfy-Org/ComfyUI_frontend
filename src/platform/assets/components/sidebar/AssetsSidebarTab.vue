@@ -158,7 +158,7 @@
 </template>
 
 <script setup lang="ts">
-import { unrefElement, useAsyncState, useStorage } from '@vueuse/core'
+import { unrefElement, useAsyncState } from '@vueuse/core'
 import { useToast } from '@/components/ui/toast/toastStore'
 import {
   computed,
@@ -218,6 +218,7 @@ import {
 } from '@/platform/assets/utils/assetUrlUtil'
 import { resolveOutputAssetItems } from '@/platform/assets/adapters/outputAssetResolver'
 import { isCloud } from '@/platform/distribution/types'
+import { useSafeLocalStorage } from '@/platform/storage/useSafeStorage'
 import { supportsWorkflowMetadata } from '@/platform/workflow/utils/workflowExtractionUtil'
 import { openHdrViewer } from '@/services/hdrViewerService'
 import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
@@ -258,7 +259,7 @@ const tabPanelAttrs = computed(() =>
         'aria-labelledby': `tab-${activeTab.value}`
       }
 )
-const viewMode = useStorage<MediaAssetViewMode>(
+const viewMode = useSafeLocalStorage<MediaAssetViewMode>(
   'Comfy.Assets.Sidebar.ViewMode',
   MEDIA_ASSET_VIEW_MODE.grid
 )

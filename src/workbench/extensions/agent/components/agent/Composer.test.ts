@@ -666,6 +666,34 @@ describe('Composer', () => {
     )
   })
 
+  it('disables send while allowing typing when there is no workflow target', async () => {
+    const { emitted } = mount({ hasWorkflowTarget: false })
+    const box = screen.getByRole('textbox')
+    const send = screen.getByRole('button', { name: 'Send' })
+
+    await userEvent.click(box)
+    await userEvent.type(box, 'keep draft{Enter}')
+
+    expect(box).toHaveTextContent('keep draft')
+    expect(send).toBeDisabled()
+    expect(emitted().send).toBeUndefined()
+  })
+
+  it('keeps Stop enabled while running even without a workflow target', async () => {
+    const { emitted } = mount({ hasWorkflowTarget: false, streaming: true })
+    const box = screen.getByRole('textbox')
+    const stop = screen.getByRole('button', { name: 'Stop' })
+
+    expect(stop).toBeEnabled()
+    await userEvent.click(box)
+    await userEvent.type(box, 'draft while running')
+
+    const stopAfterTyping = screen.getByRole('button', { name: 'Stop' })
+    expect(stopAfterTyping).toBeEnabled()
+    await userEvent.click(stopAfterTyping)
+    expect(emitted().stop).toHaveLength(1)
+  })
+
   it('renders without vue-i18n message compilation errors', async () => {
     mount({ canAttach: true, canOpenAssets: true })
 

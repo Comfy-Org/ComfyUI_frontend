@@ -484,8 +484,6 @@
     "src/stores/electronDownloadStore.ts:useElectronDownloadStore.findByUrl",
     "src/stores/electronDownloadStore.ts:useElectronDownloadStore.initialize",
     "src/stores/executionErrorStore.ts:useExecutionErrorStore.hasExecutionError",
-    "src/stores/executionStore.ts:useExecutionStore.totalNodesToExecute",
-    "src/stores/executionStore.ts:useExecutionStore.nodesExecuted",
     "src/stores/executionStore.ts:useExecutionStore.runningJobIds",
     "src/stores/executionStore.ts:useExecutionStore.runningWorkflowCount",
     "src/stores/executionStore.ts:useExecutionStore.uniqueExecutingNodeIdStrings",
