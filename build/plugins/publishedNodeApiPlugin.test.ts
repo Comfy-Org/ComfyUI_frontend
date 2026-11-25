@@ -3,8 +3,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { build, createServer } from 'vite'
-import type { Rolldown } from 'vite'
-import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import type { InlineConfig } from 'vite'
+import { assert, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { publishedNodeApiPlugin } from './publishedNodeApiPlugin'
 
@@ -22,18 +22,36 @@ function emptyProjectRoot() {
   return root
 }
 
-async function builtModule() {
-  const output = (await build({
+async function builtFiles(config: InlineConfig) {
+  const result = await build({
+    ...config,
     configFile: false,
-    root: emptyProjectRoot(),
     logLevel: 'silent',
-    plugins: [publishedNodeApiPlugin()],
     build: { write: false }
-  })) as Rolldown.RolldownOutput
-  const published = output.output.find(
-    (file) => file.fileName === 'comfy/api/v4.js'
+  })
+  assert(
+    !Array.isArray(result) && 'output' in result,
+    'one build with its output in memory'
   )
-  return published?.type === 'asset' ? String(published.source) : undefined
+  return result.output
+}
+
+function assetSource(
+  files: Awaited<ReturnType<typeof builtFiles>>,
+  fileName: string
+) {
+  const file = files.find((one) => one.fileName === fileName)
+  return file?.type === 'asset' ? String(file.source) : undefined
+}
+
+async function builtModule() {
+  return assetSource(
+    await builtFiles({
+      root: emptyProjectRoot(),
+      plugins: [publishedNodeApiPlugin()]
+    }),
+    'comfy/api/v4.js'
+  )
 }
 
 async function servedModule() {
