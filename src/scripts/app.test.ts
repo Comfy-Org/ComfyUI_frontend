@@ -56,6 +56,7 @@ import {
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
+import { getDefaultWorkflow } from '@/platform/workflow/core/services/defaultWorkflowService'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { useWorkflowValidation } from '@/platform/workflow/validation/composables/useWorkflowValidation'
 import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
@@ -202,6 +203,9 @@ vi.mock(import('./pnginfo'), () => ({
   importA1111: mockImportA1111
 }))
 
+vi.mock(import('@/platform/workflow/core/services/defaultWorkflowService'), {
+  spy: true
+})
 vi.mock(import('@/platform/workflow/core/services/workflowService'), {
   spy: true
 })
@@ -1751,6 +1755,90 @@ describe('ComfyApp', () => {
           value: 'euler',
           previous: 'sample_euler'
         })
+      )
+    })
+
+    it("keeps the default workflow's model selection when the server does not list it", async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      class VAELoader extends LGraphNode {
+        constructor(title = 'VAELoader') {
+          super(title)
+          this.addWidget('combo', 'vae_name', 'taesd', () => {}, {
+            values: ['pixel_space', 'taesd']
+          })
+          this.serialize_widgets = true
+        }
+      }
+      LiteGraph.registerNodeType('VAELoader', VAELoader)
+      vi.mocked(getDefaultWorkflow).mockReturnValueOnce({
+        ...createWorkflowGraphData(),
+        last_node_id: 1,
+        nodes: [
+          {
+            id: 1,
+            type: 'VAELoader',
+            pos: [0, 0],
+            size: [200, 100],
+            flags: {},
+            order: 0,
+            mode: 0,
+            properties: {},
+            widgets_values: ['ae.safetensors']
+          }
+        ]
+      })
+
+      try {
+        await app.loadGraphData()
+      } finally {
+        LiteGraph.unregisterNodeType('VAELoader')
+      }
+
+      expect(app.rootGraph.getNodeById(toNodeId(1))?.widgets?.[0]?.value).toBe(
+        'ae.safetensors'
+      )
+    })
+
+    it('replaces a default workflow option the server does not offer when it is not a model file', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      class KSampler extends LGraphNode {
+        constructor(title = 'KSampler') {
+          super(title)
+          this.addWidget('combo', 'sampler_name', 'dpm_2', () => {}, {
+            values: ['euler', 'dpm_2']
+          })
+          this.serialize_widgets = true
+        }
+      }
+      LiteGraph.registerNodeType('KSampler', KSampler)
+      vi.mocked(getDefaultWorkflow).mockReturnValueOnce({
+        ...createWorkflowGraphData(),
+        last_node_id: 1,
+        nodes: [
+          {
+            id: 1,
+            type: 'KSampler',
+            pos: [0, 0],
+            size: [200, 100],
+            flags: {},
+            order: 0,
+            mode: 0,
+            properties: {},
+            widgets_values: ['res_multistep']
+          }
+        ]
+      })
+
+      try {
+        await app.loadGraphData()
+      } finally {
+        LiteGraph.unregisterNodeType('KSampler')
+      }
+
+      expect(app.rootGraph.getNodeById(toNodeId(1))?.widgets?.[0]?.value).toBe(
+        'euler'
       )
     })
 

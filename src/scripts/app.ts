@@ -188,6 +188,7 @@ import {
   refreshMissingModelPipeline,
   runMissingModelPipeline
 } from '@/platform/workflowErrors/missingModel/missingModelPipeline'
+import { isModelFileName } from '@/platform/workflowErrors/missingModel/missingModelScan'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import type {
   MissingModelCandidate,
@@ -1726,6 +1727,10 @@ export class ComfyApp implements IComfyApp {
                       (reset_invalid_values &&
                         !values.includes(
                           widget.value as string | number | boolean
+                        ) &&
+                        !(
+                          typeof widget.value === 'string' &&
+                          isModelFileName(widget.value)
                         )))
                   ) {
                     widget.value = values[0]
