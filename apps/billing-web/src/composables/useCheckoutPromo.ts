@@ -83,8 +83,8 @@ export function useCheckoutPromo({
     )
   }
 
-  async function applyCarried() {
-    if (holdsCarriedCode()) await apply()
+  async function applyCarried(claim: () => boolean) {
+    if (holdsCarriedCode() && live() && claim()) await apply()
   }
 
   async function remove() {
@@ -110,7 +110,7 @@ export function useCheckoutPromo({
     edit: (draft: string) => intend({ type: 'edited', draft }),
     dismiss: () => intend({ type: 'dismissed' }),
     apply,
-    /** Applies the code the entry URL carried, while the field still holds it untouched. */
+    /** Applies the code the entry URL carried, while the field still holds it untouched and `claim` grants the attempt. */
     applyCarried,
     remove,
     expire: () => dispatch({ type: 'expired' }),

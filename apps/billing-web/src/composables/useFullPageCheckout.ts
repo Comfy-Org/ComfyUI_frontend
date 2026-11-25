@@ -55,6 +55,10 @@ import { methodKindOf } from '@/checkout/checkoutJourney'
 import { endingOf } from '@/checkout/endingScreen'
 import { platformPlansUrl } from '@/checkout/platformLinks'
 import { createOperationChannel } from '@/checkout/operationChannel'
+import {
+  createAutoApplyClaim,
+  isAutoApplyPromoCode
+} from '@/checkout/promoAutoApply'
 import { promoEntryLive, promoRejectionOf } from '@/checkout/promoEntry'
 import { checkoutIdentity, createPromoMemory } from '@/checkout/promoMemory'
 import type { PayVerdict } from '@/checkout/payVerdict'
@@ -341,6 +345,9 @@ export function useFullPageCheckout() {
   const promoMemory = createPromoMemory(() =>
     checkoutIdentity(entry.value, billedWorkspace())
   )
+  const claimAutoApply = createAutoApplyClaim(() =>
+    checkoutIdentity(entry.value, billedWorkspace())
+  )
 
   const promo = useCheckoutPromo({
     prefill: entry.value,
@@ -484,7 +491,8 @@ export function useFullPageCheckout() {
     if (preview.value && !acceptsPromoCode(preview.value)) promo.withdraw()
     await reconciliationSettled()
     dispatch(event)
-    if (await promoAutoApply) await promo.applyCarried()
+    if (isAutoApplyPromoCode(arrival.promotionCode) && (await promoAutoApply))
+      await promo.applyCarried(claimAutoApply)
   }
 
   function arrivalOf(

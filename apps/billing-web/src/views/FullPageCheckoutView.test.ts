@@ -3066,22 +3066,41 @@ describe('FullPageCheckoutView promo codes', () => {
   })
 
   describe('with billing_web_promo_auto_apply on', () => {
+    const CAMPAIGN_QUOTE = previewOf({
+      quote_id: 'q_campaign',
+      amount_due_cents: 2240,
+      promotion_code: 'BLACKFRIDAY26',
+      discounts: [
+        { kind: 'promotion', code: 'BLACKFRIDAY26', amount_off_cents: 560 }
+      ]
+    })
+
+    function quotesWithCampaign(fake: FakeBillingClient) {
+      fake.previewSubscribe.mockImplementation(async ({ promotionCode }) => {
+        if (promotionCode === undefined)
+          return { status: 'ok', value: previewOf({ quote_id: 'q_1' }) }
+        if (promotionCode.toUpperCase() === 'BLACKFRIDAY26')
+          return { status: 'ok', value: CAMPAIGN_QUOTE }
+        return promotionCode.toUpperCase() === 'LAUNCH20'
+          ? { status: 'ok', value: LAUNCH20_QUOTE }
+          : refusedWith('PROMOTION_CODE_INVALID')
+      })
+    }
+
+    const CAMPAIGN_PATH = `${CHECKOUT_PATH}&promo=BLACKFRIDAY26`
+
     beforeEach(() => {
       vi.mocked(awaitPromoAutoApply).mockResolvedValue(true)
     })
 
-    it('prices a code from the URL without an Apply click, and Pay binds it', async () => {
-      const fake = await renderCheckout(
-        {},
-        quotesByCode,
-        `${CHECKOUT_PATH}&promo=LAUNCH20`
-      )
+    it('prices the campaign code from the URL without an Apply click, and Pay binds it', async () => {
+      const fake = await renderCheckout({}, quotesWithCampaign, CAMPAIGN_PATH)
       await screen.findByText('Subscribe to Creator Plan · Acme Team')
 
       expect(await screen.findByText('−$5.60')).toBeInTheDocument()
       expect(screen.getAllByText('$22.40')).toHaveLength(2)
       expect(
-        screen.getByRole('button', { name: 'Remove LAUNCH20' })
+        screen.getByRole('button', { name: 'Remove BLACKFRIDAY26' })
       ).toBeEnabled()
 
       reportPhase({ phase: 'payment_element_ready', element: 'payment' })
@@ -3090,34 +3109,69 @@ describe('FullPageCheckoutView promo codes', () => {
       await waitFor(() =>
         expect(fake.subscribe).toHaveBeenCalledWith(
           expect.objectContaining({
-            promotion_code: 'LAUNCH20',
-            quote_id: 'q_promo'
+            promotion_code: 'BLACKFRIDAY26',
+            quote_id: 'q_campaign'
           })
         )
       )
     })
 
-    it('leaves a refused URL code typed under its error at the full total', async () => {
-      await renderCheckout({}, quotesByCode, `${CHECKOUT_PATH}&promo=NOPE`)
+    it('leaves any other code from the URL typed until Apply', async () => {
+      const fake = await renderCheckout(
+        {},
+        quotesWithCampaign,
+        `${CHECKOUT_PATH}&promo=LAUNCH20`
+      )
+      await screen.findByText('Subscribe to Creator Plan · Acme Team')
+      reportPhase({ phase: 'payment_element_ready', element: 'payment' })
+      await waitFor(() => expect(payButton()).toBeEnabled())
+
+      expect(promoField()).toHaveValue('LAUNCH20')
+      expect(screen.getAllByText('$28.00')).toHaveLength(2)
+      expect(fake.previewSubscribe).toHaveBeenCalledOnce()
+    })
+
+    it('does not apply the campaign code again after the customer removed it and reloaded', async () => {
+      await renderCheckout({}, quotesWithCampaign, CAMPAIGN_PATH)
+      await screen.findByText('−$5.60')
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Remove BLACKFRIDAY26' })
+      )
+      await screen.findByRole('button', { name: 'Add promo code' })
+      cleanup()
+
+      const reloaded = await renderCheckout(
+        {},
+        quotesWithCampaign,
+        CAMPAIGN_PATH
+      )
+      await screen.findByText('Subscribe to Creator Plan · Acme Team')
+      reportPhase({ phase: 'payment_element_ready', element: 'payment' })
+      await waitFor(() => expect(payButton()).toBeEnabled())
+
+      expect(promoField()).toHaveValue('BLACKFRIDAY26')
+      expect(screen.queryByText('−$5.60')).not.toBeInTheDocument()
+      expect(reloaded.previewSubscribe).toHaveBeenCalledOnce()
+    })
+
+    it('leaves a refused campaign code typed under its error at the full total', async () => {
+      await renderCheckout(
+        {},
+        (fake) =>
+          fake.previewSubscribe.mockImplementation(async ({ promotionCode }) =>
+            promotionCode === undefined
+              ? { status: 'ok', value: previewOf({ quote_id: 'q_1' }) }
+              : refusedWith('PROMOTION_CODE_INVALID')
+          ),
+        CAMPAIGN_PATH
+      )
       await screen.findByText('Subscribe to Creator Plan · Acme Team')
 
       expect(await screen.findByRole('alert')).toHaveTextContent(
         "This code isn't valid."
       )
-      expect(promoField()).toHaveValue('NOPE')
+      expect(promoField()).toHaveValue('BLACKFRIDAY26')
       expect(screen.getAllByText('$28.00')).toHaveLength(2)
-    })
-
-    it('quotes once and opens no promo field when the URL carries no code', async () => {
-      const fake = await renderCheckout({}, quotesByCode)
-      await screen.findByText('Subscribe to Creator Plan · Acme Team')
-      reportPhase({ phase: 'payment_element_ready', element: 'payment' })
-      await waitFor(() => expect(payButton()).toBeEnabled())
-
-      expect(fake.previewSubscribe).toHaveBeenCalledOnce()
-      expect(
-        screen.getByRole('button', { name: 'Add promo code' })
-      ).toBeInTheDocument()
     })
   })
 
