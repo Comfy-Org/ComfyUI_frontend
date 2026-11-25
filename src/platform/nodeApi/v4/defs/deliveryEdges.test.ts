@@ -149,19 +149,24 @@ describe('delivering hooks at the edges', () => {
   describe('saved state', () => {
     it('copies saved state only when a hook asks for it', () => {
       const saved = addedNode().serialize()
-      const stringify = vi.spyOn(JSON, 'stringify')
-      const copiesWhileConfiguring = () => {
+      let reads = 0
+      const probed = { ...saved, properties: { ...saved.properties } }
+      Object.defineProperty(probed.properties, 'probe', {
+        enumerable: true,
+        get: () => ++reads
+      })
+      const readsWhileConfiguring = () => {
         const node = addedNode()
-        stringify.mockClear()
-        node.configure(saved)
-        return stringify.mock.calls.length
+        reads = 0
+        node.configure(probed)
+        return reads
       }
-      const withoutHooks = copiesWhileConfiguring()
+      const withoutHooks = readsWhileConfiguring()
 
       extend((builder) => builder.onCreated(() => {}))
-      const withCreatedOnly = copiesWhileConfiguring()
+      const withCreatedOnly = readsWhileConfiguring()
       extend((builder) => builder.onConfigured(() => {}))
-      const withConfigured = copiesWhileConfiguring()
+      const withConfigured = readsWhileConfiguring()
 
       expect(withCreatedOnly).toBe(withoutHooks)
       expect(withConfigured).toBeGreaterThan(withoutHooks)
@@ -228,32 +233,48 @@ describe('delivering hooks at the edges', () => {
       builder.onPropertyChanged(() => {})
     })
     const node = addedNode()
-    const stringify = vi.spyOn(JSON, 'stringify')
-    node.onExecuted?.({ text: ['kept'] })
-    node.setProperty('size', 1)
-    const withHooks = stringify.mock.calls.length
-    stringify.mockClear()
+    let reads = 0
+    const probed = () =>
+      Object.defineProperty({}, 'probe', {
+        enumerable: true,
+        get: () => ++reads
+      })
+    node.onExecuted?.({ text: ['kept'], probe: probed() })
+    node.setProperty('size', probed())
+    const withHooks = reads
+    reads = 0
     stop()
 
-    node.onExecuted?.({ text: ['kept'] })
-    node.setProperty('size', 2)
+    node.onExecuted?.({ text: ['kept'], probe: probed() })
+    node.setProperty('size', probed())
 
     expect(withHooks).toBeGreaterThan(0)
-    expect(stringify).not.toHaveBeenCalled()
-    stringify.mockRestore()
+    expect(reads).toBe(0)
   })
 
-  it('copies an output once however many hooks receive it', () => {
-    extend((builder) => builder.onExecuted(() => {}))
-    extend((builder) => builder.onExecuted(() => {}))
+  it('gives every hook one frozen copy of an output, apart from the output the host holds', () => {
+    const raws: unknown[] = []
+    extend((builder) =>
+      builder.onExecuted((_, result) => raws.push(result.raw))
+    )
+    extend((builder) =>
+      builder.onExecuted((_, result) => raws.push(result.raw))
+    )
     const node = addedNode()
-    const stringify = vi.spyOn(JSON, 'stringify')
+    const output = { text: ['kept'], extra: { level: 1 } }
 
-    node.onExecuted?.({ text: ['kept'] })
-    const copies = stringify.mock.calls.length
-    stringify.mockRestore()
+    node.onExecuted?.(output)
+    output.extra.level = 2
 
-    expect(copies).toBe(1)
+    expect(raws).toEqual([
+      { text: ['kept'], extra: { level: 1 } },
+      { text: ['kept'], extra: { level: 1 } }
+    ])
+    const [first] = raws
+    assert(typeof first === 'object' && first !== null && 'extra' in first)
+    expect(new Set(raws)).toEqual(new Set([first]))
+    expect(Object.isFrozen(first)).toBe(true)
+    expect(Object.isFrozen(first.extra)).toBe(true)
   })
 
   it('calls a hook added during a delivery only from the next event, and each hook once', () => {
