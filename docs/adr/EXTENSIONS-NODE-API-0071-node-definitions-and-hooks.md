@@ -505,7 +505,8 @@ flowchart TD
     `LinkConnector` announces `dropped-on-node` before it tries to place a
     link and nothing when placement fails. The proposed change is a
     cancelable `link-unplaced` event carrying the node, the link, the side
-    and the pointer event.
+    and the pointer event, filed as
+    [#24317](https://github.com/Comfy-Org/ComfyUI_frontend/issues/24317).
 41. Nothing here exists for a sandbox: no proxies, no capability checks, and
     no hook made asynchronous for one, so the awaited `onPromptSerialize` of
     the old contract is not built here. `onDrop` is the one hook whose
@@ -623,6 +624,9 @@ above. Each is open work for this API, not part of the contract.
   [Comfy-Org/ComfyUI#17746](https://github.com/Comfy-Org/ComfyUI/pull/17746),
   and Cloud's route is in review. Until a backend serves the records, every
   pack runs on the fallback of decision 44.
+- **Unplaced links (decision 40).** `onUnplacedLink` is not built until
+  `LinkConnector` announces a link dropped on a node that it cannot place
+  ([#24317](https://github.com/Comfy-Org/ComfyUI_frontend/issues/24317)).
 
 ## Alternatives considered
 
