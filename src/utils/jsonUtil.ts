@@ -1,9 +1,6 @@
-/**
- * Parse JSON that may contain bare `NaN`/`Infinity`/`-Infinity` tokens
- * (which Python's `json.dumps` emits) by replacing them with `null` on
- * fallback. Coercion is lossy; a one-time warning is logged when it fires.
- */
-export function parseJsonWithNonFinite<T = unknown>(text: string): T {
+export function parseJsonWithNonFinite<T = unknown>(
+  text: string & { readonly parsedType?: T }
+): T {
   try {
     return JSON.parse(text) as T
   } catch {
@@ -11,27 +8,38 @@ export function parseJsonWithNonFinite<T = unknown>(text: string): T {
   }
 }
 
-// Match a JSON string OR a non-finite token outside string.
-// - `"(?:\\.|[^"\\])*"`  a quoted string - matched first so anything that
-//                        looks like a token inside a string is skipped
-// - `(?<![\w.-])`        skip non bare tokens (e.g. 1NaN)
-// - `(-?Infinity|NaN)`   capture the non-finite token
-// - `(?![\w.])`          skip non bare suffix tokens (e.g. NaN1)
-const NON_FINITE_TOKEN =
-  /"(?:\\.|[^"\\])*"|(?<![\w.-])(-?Infinity|NaN)(?![\w.])/g
+const NON_FINITE_TOKEN = /(?<![\w.-])(?:-?Infinity|NaN)(?![\w.])/y
 
 function replaceNonFiniteTokens(text: string): string {
-  let hasWarned = false
-  return text.replace(NON_FINITE_TOKEN, (match, token) => {
-    if (token) {
-      if (!hasWarned) {
-        console.warn(
-          'JSON contained non-finite numeric tokens (NaN/Infinity); they were replaced with null.'
-        )
-        hasWarned = true
-      }
-      return 'null'
+  const parts: string[] = []
+  let inString = false
+  let segmentStart = 0
+
+  for (let index = 0; index < text.length; index++) {
+    const char = text[index]
+    if (inString && char === '\\') {
+      index++
+      continue
     }
-    return match
-  })
+    if (char === '"') {
+      inString = !inString
+      continue
+    }
+    if (inString) continue
+
+    NON_FINITE_TOKEN.lastIndex = index
+    if (!NON_FINITE_TOKEN.test(text)) continue
+
+    parts.push(text.slice(segmentStart, index), 'null')
+    segmentStart = NON_FINITE_TOKEN.lastIndex
+    index = segmentStart - 1
+  }
+
+  if (!parts.length) return text
+
+  console.warn(
+    'JSON contained non-finite numeric tokens (NaN/Infinity); they were replaced with null.'
+  )
+  parts.push(text.slice(segmentStart))
+  return parts.join('')
 }

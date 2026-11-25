@@ -1,15 +1,17 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { getActivePinia, setActivePinia } from 'pinia'
+import { describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
 import { LGraph, LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
 import { useLinkStore } from '@/stores/linkStore'
-import { graphScopeOf, toOwningGraphId } from '@/types/graphScopeId'
-import { toLinkId } from '@/types/linkId'
-import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
-import { toRerouteId } from '@/types/rerouteId'
-import { NodeSlotType } from './types/globalEnums'
+import {
+  graphScopeOf,
+  toOwningGraphId
+} from '@comfyorg/graph-model/graphScopeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { UNASSIGNED_NODE_ID, toNodeId } from '@comfyorg/graph-model/nodeId'
+import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
+import { NodeSlotType } from '@comfyorg/graph-model/globalEnums'
 
 import {
   registerLinkTopology,
@@ -22,8 +24,6 @@ import {
 } from './subgraph/__fixtures__/subgraphHelpers'
 
 describe('LLink ↔ linkStore integration', () => {
-  beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
-
   it('preserves the id and reactive state of a registered link', () => {
     const graph = new LGraph()
     const link = new LLink(
@@ -34,7 +34,6 @@ describe('LLink ↔ linkStore integration', () => {
       UNASSIGNED_NODE_ID,
       -1
     )
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     graph.addFloatingLink(link)
     const registeredState = link._state
 
@@ -56,20 +55,23 @@ describe('LLink ↔ linkStore integration', () => {
       UNASSIGNED_NODE_ID,
       -1
     )
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     graph.links.set(toLinkId(2), link)
 
-    expect(error).toHaveBeenCalledWith(
+    expect(console.error).toHaveBeenCalledWith(
       'LiteGraph: refusing to register link 1 under mismatched id 2'
     )
     expect(graph.links.size).toBe(0)
   })
 
   it('requires Pinia when constructing a root graph', () => {
+    const pinia = getActivePinia()
     setActivePinia(undefined)
-
-    expect(() => new LGraph()).toThrow()
+    try {
+      expect(() => new LGraph()).toThrow()
+    } finally {
+      setActivePinia(pinia)
+    }
   })
 
   it('does not add a link when topology registration is rejected', () => {
@@ -90,7 +92,6 @@ describe('LLink ↔ linkStore integration', () => {
       toNodeId(2),
       0
     )
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     useLinkStore().registerLink(graphScopeOf(graph), incumbent._state)
 
     graph._addLink(collision)
@@ -109,7 +110,6 @@ describe('LLink ↔ linkStore integration', () => {
     graph.add(inputNode)
     outputNode.onConnectionsChange = vi.fn()
     inputNode.onConnectionsChange = vi.fn()
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     useLinkStore().registerLink(
       {
         ...graphScopeOf(graph),
@@ -310,7 +310,6 @@ describe('LLink ↔ linkStore integration', () => {
     graph.add(b)
 
     const link = a.connect(0, b, 0)!
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     link.target_slot = 1
 
     unregisterLinkTopology(link)
@@ -547,11 +546,10 @@ describe('LLink ↔ linkStore integration', () => {
     const first = firstSource.connect(0, target, 0)!
     secondSource.connect(0, target, 1)
 
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
     expect(() => {
       first.target_slot = 1
     }).not.toThrow()
-    expect(error).toHaveBeenCalledWith(
+    expect(console.error).toHaveBeenCalledWith(
       'Failed to update link endpoints',
       expect.objectContaining({ code: 'occupied-target' })
     )
@@ -576,7 +574,6 @@ describe('LLink ↔ linkStore integration', () => {
     blocker.addOutput('out', 'INT')
     graph.add(blocker)
     blocker.connect(0, secondTarget, 0)
-    vi.spyOn(console, 'error').mockImplementation(() => {})
 
     moving.target_id = secondTarget.id
     expect(moving.target_id).toBe(firstTarget.id)
@@ -618,5 +615,69 @@ describe('LLink ↔ linkStore integration', () => {
     expect(linkCount.value).toBe(0)
     expect(graph.links.has(link.id)).toBe(false)
     expect(graph.floatingLinks.get(link.id)).toBe(link)
+  })
+
+  describe('array-valued link types (COMBO option lists)', () => {
+    const comboType = ['normal', 'karras']
+
+    function loadWorkflowWithArrayTypes() {
+      const source = new LGraph()
+      const a = new LGraphNode('A')
+      const b = new LGraphNode('B')
+      a.addOutput('out', [...comboType])
+      b.addInput('in', [...comboType])
+      source.add(a)
+      source.add(b)
+      a.connect(0, b, 0)
+      const saved = structuredClone(source.serialize())
+      saved.links[0][5] = [...comboType]
+
+      const graph = new LGraph()
+      graph.configure(saved)
+      return graph
+    }
+
+    it('serialises a registered link with an array type as a plain array', () => {
+      const graph = new LGraph()
+      const link = new LLink(
+        toLinkId(1),
+        [...comboType],
+        toNodeId(1),
+        0,
+        toNodeId(2),
+        0
+      )
+      graph._addLink(link)
+
+      expect(link._graphScope).toBeDefined()
+      expect(structuredClone(link.serialize())[5]).toEqual(comboType)
+      expect(structuredClone(link.asSerialisable()).type).toEqual(comboType)
+    })
+
+    it('loads a workflow with array link and slot types into a cloneable graph', () => {
+      const graph = loadWorkflowWithArrayTypes()
+
+      const serialised = structuredClone(graph.serialize())
+      expect(serialised.links[0][5]).toEqual(comboType)
+      expect(serialised.nodes.flatMap((node) => node.inputs ?? [])).toEqual(
+        expect.arrayContaining([expect.objectContaining({ type: comboType })])
+      )
+      expect(serialised.nodes.flatMap((node) => node.outputs ?? [])).toEqual(
+        expect.arrayContaining([expect.objectContaining({ type: comboType })])
+      )
+      expect(() => structuredClone(graph.asSerialisable())).not.toThrow()
+    })
+
+    it('does not share the stored array with the serialised output', () => {
+      const graph = loadWorkflowWithArrayTypes()
+      const [link] = graph.links.values()
+
+      const serialisedType = link.serialize()[5]
+      if (!Array.isArray(serialisedType))
+        expect.unreachable('expected an array link type')
+      serialisedType.push('mutated')
+
+      expect(link.type).toEqual(comboType)
+    })
   })
 })

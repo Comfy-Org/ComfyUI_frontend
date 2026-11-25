@@ -26,32 +26,31 @@ test.describe('Remote COMBO Widget', { tag: '@widget' }, () => {
     nodeName: string
   ): Promise<string[] | undefined> => {
     return await comfyPage.page.evaluate((name) => {
-      const node = window.app!.graph!.nodes.find((node) => node.title === name)
+      const node = window.app!.graph.nodes.find((node) => node.title === name)
       return node!.widgets![0].options.values as string[] | undefined
     }, nodeName)
   }
 
   const getWidgetValue = async (comfyPage: ComfyPage, nodeName: string) => {
     return await comfyPage.page.evaluate((name) => {
-      const node = window.app!.graph!.nodes.find((node) => node.title === name)
+      const node = window.app!.graph.nodes.find((node) => node.title === name)
       return node!.widgets![0].value
     }, nodeName)
   }
 
   const clickRefreshButton = (comfyPage: ComfyPage, nodeName: string) => {
     return comfyPage.page.evaluate((name) => {
-      const node = window.app!.graph!.nodes.find((node) => node.title === name)
+      const node = window.app!.graph.nodes.find((node) => node.title === name)
       const buttonWidget = node!.widgets!.find((w) => w.name === 'refresh')
       return buttonWidget?.callback?.(buttonWidget.value)
     }, nodeName)
   }
 
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.NodeLibrary.NewDesign', false)
-    await comfyPage.settings.setSetting(
-      'Comfy.NodeSearchBoxImpl',
-      'v1 (legacy)'
-    )
+  test.use({
+    initialSettings: {
+      'Comfy.NodeLibrary.NewDesign': false,
+      'Comfy.NodeSearchBoxImpl': 'v1 (legacy)'
+    }
   })
 
   test.describe('Loading options', () => {
@@ -93,7 +92,7 @@ test.describe('Remote COMBO Widget', { tag: '@widget' }, () => {
         .poll(() =>
           comfyPage.page.evaluate((name) => {
             return (
-              window.app!.graph!.nodes.find((node) => node.title === name) !=
+              window.app!.graph.nodes.find((node) => node.title === name) !=
               null
             )
           }, nodeName)
@@ -180,13 +179,13 @@ test.describe('Remote COMBO Widget', { tag: '@widget' }, () => {
       const nodeName = 'Remote Widget Node'
       await addRemoteWidgetNode(comfyPage, nodeName)
 
-      // Select remote widget node
       await comfyPage.page.keyboard.press('Control+A')
 
       await expect(
-        comfyPage.page.locator(
-          '.selection-toolbox button[data-testid="refresh-button"]'
-        )
+        comfyPage.selectionToolbox.getByRole('button', {
+          name: 'Refresh Node',
+          exact: true
+        })
       ).toBeVisible()
     })
 
@@ -245,31 +244,52 @@ test.describe('Remote COMBO Widget', { tag: '@widget' }, () => {
     })
 
     test('retries failed requests with backoff', async ({ comfyPage }) => {
-      const timestamps: number[] = []
+      const start = new Date('2026-01-01T00:00:00Z').getTime()
+      await comfyPage.page.clock.setFixedTime(start)
+      let requestCount = 0
       await comfyPage.page.route(
         '**/api/models/checkpoints**',
         async (route) => {
-          timestamps.push(Date.now())
-          await route.fulfill({ status: 500 })
+          requestCount++
+          await route.fulfill({
+            status: requestCount < 3 ? 500 : 200,
+            json: mockOptions
+          })
         }
       )
 
       const nodeName = 'Remote Widget Node'
+      const firstResponse = comfyPage.page.waitForResponse(
+        '**/api/models/checkpoints**'
+      )
       await addRemoteWidgetNode(comfyPage, nodeName)
+      await (await firstResponse).finished()
+      await comfyPage.nextFrame()
 
-      // Initial canvas click to trigger widget render
-      await comfyPage.page.mouse.click(400, 300)
+      await comfyPage.page.clock.setFixedTime(start + 511)
+      expect(await getWidgetOptions(comfyPage, nodeName)).toBe('Loading...')
+      await comfyPage.nextFrame()
+      expect(requestCount).toBe(1)
 
-      // Drive canvas redraws to let the retry scheduler fire
-      await expect(async () => {
-        await comfyPage.page.mouse.click(400, 300)
-        await comfyPage.nextFrame()
-        expect(timestamps.length).toBeGreaterThanOrEqual(3)
-      }).toPass({ timeout: 15000, intervals: [500, 1000, 1500] })
+      const secondResponse = comfyPage.page.waitForResponse(
+        '**/api/models/checkpoints**'
+      )
+      await comfyPage.page.clock.setFixedTime(start + 512)
+      await getWidgetOptions(comfyPage, nodeName)
+      await (await secondResponse).finished()
+      await comfyPage.nextFrame()
+      expect(requestCount).toBe(2)
 
-      // Verify backoff: last interval should exceed first
-      const intervals = timestamps.slice(1).map((t, i) => t - timestamps[i])
-      expect(intervals[intervals.length - 1]).toBeGreaterThan(intervals[0])
+      await comfyPage.page.clock.setFixedTime(start + 1023)
+      expect(await getWidgetOptions(comfyPage, nodeName)).toBe('Loading...')
+      await comfyPage.nextFrame()
+      expect(requestCount).toBe(2)
+
+      await comfyPage.page.clock.setFixedTime(start + 1024)
+      await expect
+        .poll(() => getWidgetOptions(comfyPage, nodeName))
+        .toEqual(mockOptions)
+      expect(requestCount).toBe(3)
     })
 
     test('clicking refresh button forces a refresh', async ({ comfyPage }) => {

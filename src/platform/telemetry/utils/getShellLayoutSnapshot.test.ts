@@ -1,51 +1,26 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-
-const state = vi.hoisted(() => ({
-  settings: {} as Record<string, unknown>,
-  activeSidebarTabId: null as string | null,
-  rightSidePanelOpen: false,
-  bottomPanelVisible: false,
-  openWorkflows: [] as unknown[]
-}))
-
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: () => ({ get: (key: string) => state.settings[key] })
-}))
-
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => ({ openWorkflows: state.openWorkflows })
-}))
-
-vi.mock('@/stores/workspace/bottomPanelStore', () => ({
-  useBottomPanelStore: () => ({
-    bottomPanelVisible: state.bottomPanelVisible
-  })
-}))
-
-vi.mock('@/stores/workspace/rightSidePanelStore', () => ({
-  useRightSidePanelStore: () => ({ isOpen: state.rightSidePanelOpen })
-}))
-
-vi.mock('@/stores/workspace/sidebarTabStore', () => ({
-  useSidebarTabStore: () => ({
-    activeSidebarTabId: state.activeSidebarTabId
-  })
-}))
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
+import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
+import { beforeEach, describe, expect, it } from 'vitest'
 
 import { getShellLayoutSnapshot } from './getShellLayoutSnapshot'
 
 describe('getShellLayoutSnapshot', () => {
   beforeEach(() => {
-    state.settings = { 'Comfy.UseNewMenu': 'Top' }
-    state.activeSidebarTabId = null
-    state.rightSidePanelOpen = false
-    state.bottomPanelVisible = false
-    state.openWorkflows = []
+    useSettingStore().settingValues = { 'Comfy.UseNewMenu': 'Top' }
+    useSidebarTabStore().activeSidebarTabId = null
+    useBottomPanelStore().bottomPanelVisible = false
+    Object.assign(useWorkflowStore(), { openWorkflows: [] })
   })
 
   it('captures the default layout', () => {
     expect(
-      getShellLayoutSnapshot({ view_mode: 'graph', is_app_mode: false })
+      getShellLayoutSnapshot({
+        view_mode: 'graph',
+        is_app_mode: false,
+        right_side_panel_open: false
+      })
     ).toEqual({
       view_mode: 'graph',
       is_app_mode: false,
@@ -60,13 +35,16 @@ describe('getShellLayoutSnapshot', () => {
 
   it('captures a customized layout', () => {
     localStorage.setItem('Comfy.MenuPosition.Docked', 'false')
-    state.activeSidebarTabId = 'node-library'
-    state.rightSidePanelOpen = true
-    state.bottomPanelVisible = true
-    state.openWorkflows = [{}, {}, {}]
+    useSidebarTabStore().activeSidebarTabId = 'node-library'
+    useBottomPanelStore().bottomPanelVisible = true
+    Object.assign(useWorkflowStore(), { openWorkflows: [{}, {}, {}] })
 
     expect(
-      getShellLayoutSnapshot({ view_mode: 'app', is_app_mode: true })
+      getShellLayoutSnapshot({
+        view_mode: 'app',
+        is_app_mode: true,
+        right_side_panel_open: true
+      })
     ).toEqual({
       view_mode: 'app',
       is_app_mode: true,

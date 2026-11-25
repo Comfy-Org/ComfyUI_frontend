@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -62,7 +60,6 @@ describe('LGraphCanvas.onMenuAdd category sorting', () => {
   const capturedEntries: MenuEntry[][] = []
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     graph = new LGraph()
     canvas = createCanvas(graph)
     LGraphCanvas.active_canvas = canvas

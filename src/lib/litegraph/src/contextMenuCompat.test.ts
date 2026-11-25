@@ -1,9 +1,9 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { legacyMenuCompat } from '@/lib/litegraph/src/contextMenuCompat'
 import type { IContextMenuValue } from '@/lib/litegraph/src/litegraph'
 import { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
-import { createMockCanvas } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockCanvas } from '@/utils/__tests__/canvasTestUtils'
 
 describe('contextMenuCompat', () => {
   let originalGetCanvasMenuOptions: typeof LGraphCanvas.prototype.getCanvasMenuOptions
@@ -18,10 +18,9 @@ describe('contextMenuCompat', () => {
       constructor: {
         prototype: LGraphCanvas.prototype
       } as typeof LGraphCanvas
-    } as Partial<LGraphCanvas>)
+    })
 
     // Clear console warnings
-    vi.spyOn(console, 'warn').mockImplementation(() => {})
   })
 
   afterEach(() => {
@@ -44,7 +43,6 @@ describe('contextMenuCompat', () => {
 
     it('should detect monkey patches and warn', () => {
       const methodName = 'getCanvasMenuOptions'
-      const warnSpy = vi.spyOn(console, 'warn')
 
       // Install compatibility layer
       legacyMenuCompat.install(LGraphCanvas.prototype, methodName)
@@ -62,12 +60,12 @@ describe('contextMenuCompat', () => {
         }
 
       // Should have logged a warning with extension name
-      expect(warnSpy).toHaveBeenCalledWith(
+      expect(console.warn).toHaveBeenCalledWith(
         expect.stringContaining('[DEPRECATED]'),
         expect.any(String),
         expect.any(String)
       )
-      expect(warnSpy).toHaveBeenCalledWith(
+      expect(console.warn).toHaveBeenCalledWith(
         expect.stringContaining('"Test Extension"'),
         expect.any(String),
         expect.any(String)
@@ -79,7 +77,6 @@ describe('contextMenuCompat', () => {
 
     it('should only warn once per unique function', () => {
       const methodName = 'getCanvasMenuOptions'
-      const warnSpy = vi.spyOn(console, 'warn')
 
       legacyMenuCompat.install(LGraphCanvas.prototype, methodName)
       legacyMenuCompat.setCurrentExtension('test.extension')
@@ -97,7 +94,7 @@ describe('contextMenuCompat', () => {
       LGraphCanvas.prototype.getCanvasMenuOptions = patchFunction
 
       // Should only warn once
-      expect(warnSpy).toHaveBeenCalledTimes(1)
+      expect(console.warn).toHaveBeenCalledTimes(1)
     })
   })
 
@@ -150,8 +147,6 @@ describe('contextMenuCompat', () => {
     })
 
     it('should detect replaced items as additions and warn about removed items', () => {
-      const warnSpy = vi.spyOn(console, 'warn')
-
       // Monkey-patch that replaces items with different ones (same count)
       // With set-based diffing, these are detected as new items since they're different references
       LGraphCanvas.prototype.getCanvasMenuOptions = function () {
@@ -172,12 +167,12 @@ describe('contextMenuCompat', () => {
       expect(legacyItems[1]).toMatchObject({ content: 'Replaced 2' })
 
       // Should warn about removed original items
-      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('removed'))
+      expect(console.warn).toHaveBeenCalledWith(
+        expect.stringContaining('removed')
+      )
     })
 
     it('should handle errors gracefully', () => {
-      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-
       // Monkey-patch that throws error
       LGraphCanvas.prototype.getCanvasMenuOptions = function () {
         throw new Error('Test error')
@@ -189,7 +184,7 @@ describe('contextMenuCompat', () => {
       )
 
       expect(legacyItems).toHaveLength(0)
-      expect(errorSpy).toHaveBeenCalledWith(
+      expect(console.error).toHaveBeenCalledWith(
         expect.stringContaining('Failed to extract legacy items'),
         expect.any(Error)
       )

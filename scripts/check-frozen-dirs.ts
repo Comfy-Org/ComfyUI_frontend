@@ -27,7 +27,7 @@ function isFrozenImplementationFile(path: string): boolean {
   return true
 }
 
-const supportsColor = !process.env.NO_COLOR && Boolean(process.stdout.isTTY)
+const supportsColor = !process.env.NO_COLOR && process.stdout.isTTY
 
 function yellow(s: string): string {
   return supportsColor ? `\x1b[33m${s}\x1b[0m` : s

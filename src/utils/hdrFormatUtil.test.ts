@@ -1,6 +1,9 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it } from 'vitest'
 
 import {
+  getHdrPreviewUrl,
+  getImageFileUrl,
   getImageFilenameFromUrl,
   isHdrImageFilename,
   isHdrImageUrl,
@@ -52,6 +55,61 @@ describe('isHdrImageUrl', () => {
     expect(isHdrImageUrl('/api/view?filename=scene.png&type=output')).toBe(
       false
     )
+  })
+})
+
+describe('getHdrPreviewUrl', () => {
+  it.for([
+    {
+      url: '/api/view?filename=scene.exr&preview_id=p1',
+      expected: '/api/assets/p1/content?disposition=inline'
+    },
+    {
+      url: '/api/view?filename=scene.HDR&preview_id=p1',
+      expected: '/api/assets/p1/content?disposition=inline'
+    },
+    { url: '/api/view?filename=scene.exr', expected: undefined },
+    { url: '/api/view?filename=scene.png&preview_id=p1', expected: undefined },
+    { url: undefined, expected: undefined }
+  ])('maps $url to $expected', ({ url, expected }) => {
+    expect(getHdrPreviewUrl(url)).toBe(expected)
+  })
+})
+
+describe('getImageFileUrl', () => {
+  function image(src: string, dataset: DOMStringMap = {}) {
+    return fromPartial<HTMLImageElement>({
+      src,
+      baseURI: window.location.origin,
+      dataset
+    })
+  }
+
+  it.for([
+    {
+      name: 'the shown image',
+      img: () => image('/api/view?filename=a.png&preview=webp'),
+      expected: '/api/view?filename=a.png'
+    },
+    {
+      name: 'the file behind a stored preview',
+      img: () =>
+        image('/api/assets/p1/content?disposition=inline', {
+          fileUrl: '/api/view?filename=a.exr&preview=webp'
+        }),
+      expected: '/api/view?filename=a.exr'
+    },
+    {
+      name: 'the full-resolution file behind a downscaled copy',
+      img: () =>
+        image('blob:display-copy', {
+          fullSrc: '/api/view?filename=a.png&preview=webp'
+        }),
+      expected: '/api/view?filename=a.png'
+    }
+  ])('resolves $name without the preview format', ({ img, expected }) => {
+    const url = getImageFileUrl(img())
+    expect(`${url.pathname}${url.search}`).toBe(expected)
   })
 })
 

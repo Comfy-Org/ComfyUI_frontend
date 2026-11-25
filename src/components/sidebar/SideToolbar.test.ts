@@ -1,77 +1,54 @@
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import PrimeVue from 'primevue/config'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { render, screen, waitFor } from '@testing-library/vue'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import type { ComponentProps } from 'vue-component-type-helpers'
+import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import SideToolbar from './SideToolbar.vue'
+import { useTelemetry } from '@comfyorg/telemetry'
 
-interface TestTab {
-  id: string
-  icon: string
-  tooltip: string
-  label: string
-  title: string
-}
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
+import { useUserStore } from '@/stores/userStore'
+import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
+import type { SidebarTabExtension } from '@/types/extensionTypes'
+
+import SideToolbar from './SideToolbar.vue'
+vi.mock(import('firebase/auth'))
+
+beforeEach(() => {
+  useSettingStore().$patch({
+    settingValues: {
+      'Comfy.Sidebar.Size': 'normal',
+      'Comfy.Sidebar.Location': 'left'
+    }
+  })
+  useCommandStore().registerCommand({
+    id: 'Workspace.ToggleSidebarTab.assets',
+    function: spies.toggleAssets
+  })
+})
 
 const spies = vi.hoisted(() => ({
-  trackUiButtonClicked: vi.fn(),
   toggleAssets: vi.fn()
 }))
 
-const state = vi.hoisted(() => ({
-  isMultiUserServer: false,
-  sidebarTabs: [] as TestTab[],
-  activeSidebarTab: null as { id: string } | null
-}))
+const distribution = vi.hoisted(() => ({ isCloud: false }))
 
-vi.mock('@/platform/distribution/types', () => ({
-  isCloud: false,
+vi.mock(import('@/platform/distribution/types'), () => ({
+  get isCloud() {
+    return distribution.isCloud
+  },
   isDesktop: false,
   isNightly: false
 }))
 
-vi.mock('@/stores/workspaceStore', () => ({
-  useWorkspaceStore: () => ({
-    getSidebarTabs: () => state.sidebarTabs,
-    sidebarTab: { activeSidebarTab: state.activeSidebarTab }
-  })
-}))
-
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: () => ({
-    get: (key: string) => {
-      if (key === 'Comfy.Sidebar.Size') return 'large'
-      if (key === 'Comfy.Sidebar.Location') return 'left'
-      return 'floating'
-    }
-  })
-}))
-
-vi.mock('@/stores/userStore', () => ({
-  useUserStore: () => ({ isMultiUserServer: state.isMultiUserServer })
-}))
-
-vi.mock('@/stores/commandStore', () => ({
-  useCommandStore: () => ({
-    commands: [
-      { id: 'Workspace.ToggleSidebarTab.assets', function: spies.toggleAssets }
-    ]
-  })
-}))
-
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({ canvas: null })
-}))
-
-vi.mock('@/platform/keybindings/keybindingStore', () => ({
-  useKeybindingStore: () => ({ getKeybindingByCommandId: () => undefined })
-}))
-
-vi.mock('@/platform/telemetry', () => ({
-  useTelemetry: () => ({ trackUiButtonClicked: spies.trackUiButtonClicked })
-}))
+vi.mock(import('@comfyorg/telemetry'))
+vi.mock(import('@/composables/auth/useCurrentUser'))
+vi.mock(import('@/composables/useFeatureFlags'))
 
 const i18n = createI18n({
   legacy: false,
@@ -85,14 +62,22 @@ function renderToolbar(props: SideToolbarProps = {}) {
   return render(SideToolbar, {
     props,
     global: {
-      plugins: [PrimeVue, i18n],
-      directives: { tooltip: {} },
+      plugins: [i18n],
       stubs: {
         ComfyMenuButton: { template: '<div />' },
         SidebarTemplatesButton: { template: '<div />' },
         SidebarLogoutIcon: { template: '<div data-testid="logout" />' },
         SidebarHelpCenterIcon: { template: '<div />' },
         SidebarSettingsButton: { template: '<div />' },
+        CurrentUserButton: {
+          props: ['side'],
+          template:
+            '<div data-testid="current-user-button" :data-side="side" />'
+        },
+        LoginButton: {
+          props: ['side'],
+          template: '<div data-testid="login-button" :data-side="side" />'
+        },
         HelpCenterPopups: { template: '<div />' },
         SidebarBottomPanelToggleButton: {
           template: '<div data-testid="bottom-panel-toggle" />'
@@ -105,7 +90,9 @@ function renderToolbar(props: SideToolbarProps = {}) {
   })
 }
 
-const assetsTab: TestTab = {
+const assetsTab: SidebarTabExtension = {
+  type: 'custom',
+  render: () => {},
   id: 'assets',
   icon: 'pi pi-image',
   tooltip: 'Assets',
@@ -113,7 +100,9 @@ const assetsTab: TestTab = {
   title: 'Assets'
 }
 
-const workflowsTab: TestTab = {
+const workflowsTab: SidebarTabExtension = {
+  type: 'custom',
+  render: () => {},
   id: 'workflows',
   icon: 'pi pi-folder',
   tooltip: 'Workflows',
@@ -123,9 +112,10 @@ const workflowsTab: TestTab = {
 
 describe('SideToolbar', () => {
   beforeEach(() => {
-    state.isMultiUserServer = false
-    state.sidebarTabs = [assetsTab, workflowsTab]
-    state.activeSidebarTab = null
+    distribution.isCloud = false
+    Object.assign(useUserStore(), { isMultiUserServer: false })
+    useSidebarTabStore().sidebarTabs = [assetsTab, workflowsTab]
+    useSidebarTabStore().activeSidebarTabId = null
   })
 
   it('renders only the tabs listed in visibleTabIds', () => {
@@ -174,7 +164,7 @@ describe('SideToolbar', () => {
 
     await user.click(screen.getByRole('button', { name: 'Assets' }))
 
-    expect(spies.trackUiButtonClicked).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackUiButtonClicked).toHaveBeenCalledWith({
       button_id: 'sidebar_tab_assets_media_selected',
       element_group: 'sidebar'
     })
@@ -186,8 +176,142 @@ describe('SideToolbar', () => {
     expect(screen.queryByTestId('logout')).not.toBeInTheDocument()
     unmount()
 
-    state.isMultiUserServer = true
+    Object.assign(useUserStore(), { isMultiUserServer: true })
     renderToolbar()
     expect(screen.getByTestId('logout')).toBeInTheDocument()
+  })
+
+  describe('profile button', () => {
+    beforeEach(() => {
+      useCurrentUser().isLoggedIn = computed(() => true)
+    })
+
+    it('stays out of the sidebar while billing_new_ux_enabled is off', () => {
+      vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = false
+      renderToolbar()
+
+      expect(
+        screen.queryByTestId('current-user-button')
+      ).not.toBeInTheDocument()
+    })
+
+    it('mounts at the bottom of the sidebar while billing_new_ux_enabled is on', () => {
+      vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = true
+      renderToolbar()
+
+      expect(screen.getByTestId('current-user-button')).toBeInTheDocument()
+    })
+
+    it('stays out of the sidebar when signed out', () => {
+      vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = true
+      useCurrentUser().isLoggedIn = computed(() => false)
+      renderToolbar()
+
+      expect(
+        screen.queryByTestId('current-user-button')
+      ).not.toBeInTheDocument()
+    })
+
+    it('rechecks overflow when the profile button mounts after sign-in on Cloud', async () => {
+      vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = true
+      distribution.isCloud = true
+      const loggedIn = ref(false)
+      useCurrentUser().isLoggedIn = computed(() => loggedIn.value)
+      const itemHeight = 50
+      const clientHeight = vi
+        .spyOn(HTMLElement.prototype, 'clientHeight', 'get')
+        .mockReturnValue(280)
+      const scrollHeight = vi
+        .spyOn(HTMLElement.prototype, 'scrollHeight', 'get')
+        .mockImplementation(function (this: HTMLElement) {
+          return this.children.length * itemHeight
+        })
+      onTestFinished(() => {
+        clientHeight.mockRestore()
+        scrollHeight.mockRestore()
+      })
+      renderToolbar({ visibleTabIds: [] })
+      const toolbar = screen.getByTestId('side-toolbar')
+      await new Promise((resolve) => setTimeout(resolve, 50))
+      expect(toolbar).not.toHaveClass('overflowing-sidebar')
+
+      loggedIn.value = true
+
+      await waitFor(() => expect(toolbar).toHaveClass('overflowing-sidebar'))
+    })
+
+    it.for([
+      { location: 'left', side: 'right' },
+      { location: 'right', side: 'left' }
+    ] as const)(
+      'opens the menu toward the canvas when the sidebar is on the $location',
+      ({ location, side }) => {
+        vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = true
+        useSettingStore().settingValues['Comfy.Sidebar.Location'] = location
+        renderToolbar()
+
+        expect(screen.getByTestId('current-user-button')).toHaveAttribute(
+          'data-side',
+          side
+        )
+      }
+    )
+  })
+
+  describe('sign-in button', () => {
+    beforeEach(() => {
+      useCurrentUser().isLoggedIn = computed(() => false)
+    })
+
+    it('mounts in the profile slot when signed out with billing_new_ux_enabled on', () => {
+      vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = true
+      renderToolbar()
+
+      expect(screen.getByTestId('login-button')).toBeInTheDocument()
+      expect(
+        screen.queryByTestId('current-user-button')
+      ).not.toBeInTheDocument()
+    })
+
+    it('stays out of the sidebar while billing_new_ux_enabled is off', () => {
+      vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = false
+      renderToolbar()
+
+      expect(screen.queryByTestId('login-button')).not.toBeInTheDocument()
+    })
+
+    it('gives way to the profile button once signed in', () => {
+      vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = true
+      useCurrentUser().isLoggedIn = computed(() => true)
+      renderToolbar()
+
+      expect(screen.queryByTestId('login-button')).not.toBeInTheDocument()
+      expect(screen.getByTestId('current-user-button')).toBeInTheDocument()
+    })
+
+    it('stays out of the sidebar on Cloud', () => {
+      vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = true
+      distribution.isCloud = true
+      renderToolbar()
+
+      expect(screen.queryByTestId('login-button')).not.toBeInTheDocument()
+    })
+
+    it.for([
+      { location: 'left', side: 'right' },
+      { location: 'right', side: 'left' }
+    ] as const)(
+      'shows its tooltip toward the canvas when the sidebar is on the $location',
+      ({ location, side }) => {
+        vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = true
+        useSettingStore().settingValues['Comfy.Sidebar.Location'] = location
+        renderToolbar()
+
+        expect(screen.getByTestId('login-button')).toHaveAttribute(
+          'data-side',
+          side
+        )
+      }
+    )
   })
 })

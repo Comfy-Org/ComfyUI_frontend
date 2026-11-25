@@ -14,7 +14,7 @@ test.describe('Subgraph link topology identity', { tag: ['@subgraph'] }, () => {
       const graph = window.app!.canvas.graph!
       return [...graph.subgraphs.values()]
         .map((subgraph) => {
-          const [link] = subgraph.links.values()
+          const link = subgraph.links.values().next().value
           return {
             definitionId: subgraph.id,
             linkId: link?.id,

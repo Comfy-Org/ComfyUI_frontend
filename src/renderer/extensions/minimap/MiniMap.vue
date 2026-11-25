@@ -1,10 +1,8 @@
 <template>
   <div
-    v-if="visible && initialized"
-    ref="minimapRef"
     :class="
       cn(
-        'minimap-main-container absolute right-0 bottom-[54px] z-1000 flex',
+        'minimap-main-container absolute right-0 bottom-[54px] isolate flex',
         isMobile ? 'flex-col' : 'flex-row'
       )
     "
@@ -23,8 +21,9 @@
 
     <div
       ref="containerRef"
-      class="litegraph-minimap relative border border-interface-stroke bg-comfy-menu-bg shadow-interface"
+      class="litegraph-minimap relative border bg-background shadow-md"
       data-testid="minimap-container"
+      :aria-label="`${$t('minimap.label')}. ${$t('minimap.highlightedNodes', { count: decorationCount })}`"
       :style="containerStyles"
     >
       <Button
@@ -48,7 +47,7 @@
       </Button>
 
       <hr
-        class="absolute top-6 h-px border-0 bg-node-component-border"
+        class="absolute top-8 h-px border-0 bg-border"
         :style="{
           width: containerStyles.width
         }"
@@ -63,12 +62,32 @@
       />
 
       <div
+        v-show="interactive"
+        ref="viewportRef"
         class="minimap-viewport"
         :style="viewportStyles"
         data-testid="minimap-viewport"
-      />
+      >
+        <div
+          ref="topEdgeRef"
+          class="absolute inset-x-0 top-0 h-0.5 origin-top bg-foreground"
+        />
+        <div
+          ref="bottomEdgeRef"
+          class="absolute inset-x-0 bottom-0 h-0.5 origin-bottom bg-foreground"
+        />
+        <div
+          ref="leftEdgeRef"
+          class="absolute inset-y-0 left-0 w-0.5 origin-left bg-foreground"
+        />
+        <div
+          ref="rightEdgeRef"
+          class="absolute inset-y-0 right-0 w-0.5 origin-right bg-foreground"
+        />
+      </div>
 
       <div
+        v-if="interactive"
         class="absolute inset-0 touch-none"
         data-testid="minimap-interaction-overlay"
         @pointerdown="handlePointerDown"
@@ -84,11 +103,12 @@
 
 <script setup lang="ts">
 import { breakpointsTailwind, useBreakpoints } from '@vueuse/core'
-import { onMounted, onUnmounted, ref, useTemplateRef } from 'vue'
+import { ref, useTemplateRef, watch } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import { useCompositedTransform } from '@/renderer/core/layout/transform/useCompositedTransform'
 import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import MiniMapPanel from './MiniMapPanel.vue'
@@ -96,15 +116,15 @@ import MiniMapPanel from './MiniMapPanel.vue'
 const isMobile = useBreakpoints(breakpointsTailwind).smaller('md')
 
 const commandStore = useCommandStore()
-const minimapRef = ref<HTMLDivElement>()
 const containerRef = useTemplateRef<HTMLDivElement>('containerRef')
 const canvasRef = useTemplateRef<HTMLCanvasElement>('canvasRef')
 
 const {
-  initialized,
-  visible,
+  interactive,
+  decorationCount,
   containerStyles,
   viewportStyles,
+  viewportTransforms,
   width,
   height,
   panelStyles,
@@ -114,33 +134,39 @@ const {
   renderBypass,
   renderError,
   updateOption,
-  destroy,
   handlePointerDown,
   handlePointerMove,
   handlePointerUp,
   handlePointerCancel,
-  handleWheel,
-  setMinimapRef
-} = useMinimap({
-  containerRefMaybe: containerRef,
-  canvasRefMaybe: canvasRef
-})
+  handleWheel
+} = useMinimap({ containerRef, canvasRef })
+
+const viewportRef = useTemplateRef<HTMLDivElement>('viewportRef')
+const viewportBox = useCompositedTransform(viewportRef)
+const horizontalEdges = [
+  useCompositedTransform(useTemplateRef<HTMLDivElement>('topEdgeRef')),
+  useCompositedTransform(useTemplateRef<HTMLDivElement>('bottomEdgeRef'))
+]
+const verticalEdges = [
+  useCompositedTransform(useTemplateRef<HTMLDivElement>('leftEdgeRef')),
+  useCompositedTransform(useTemplateRef<HTMLDivElement>('rightEdgeRef'))
+]
+
+watch(
+  [viewportTransforms, viewportRef],
+  ([{ box, horizontalEdge, verticalEdge }]) => {
+    viewportBox.setTransform(box)
+    for (const edge of horizontalEdges) edge.setTransform(horizontalEdge)
+    for (const edge of verticalEdges) edge.setTransform(verticalEdge)
+  },
+  { immediate: true, flush: 'post' }
+)
 
 const showOptionsPanel = ref(false)
 
 const toggleOptionsPanel = () => {
   showOptionsPanel.value = !showOptionsPanel.value
 }
-
-onMounted(() => {
-  if (minimapRef.value) {
-    setMinimapRef(minimapRef.value)
-  }
-})
-
-onUnmounted(() => {
-  destroy()
-})
 </script>
 
 <style scoped>

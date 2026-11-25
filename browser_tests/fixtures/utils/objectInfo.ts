@@ -4,27 +4,34 @@ import {
   getComboSpecComboOptions,
   isComboInputSpec,
   isComboInputSpecV1
-} from '@/schemas/nodeDefSchema'
+} from '@comfyorg/object-info-parser'
 import type {
   ComboInputSpec,
   ComboInputSpecV2,
   InputSpec,
   ObjectInfoResponse
-} from '@/schemas/nodeDefSchema'
+} from '@comfyorg/object-info-parser'
 
 type ComboInput = ComboInputSpec | ComboInputSpecV2
 
 const OBJECT_INFO_ROUTE = '**/object_info'
 
-function getRequiredInputs(
-  objectInfo: ObjectInfoResponse,
+export function getNodeInfo(
+  objectInfo: Partial<ObjectInfoResponse>,
   nodeType: string
-): Record<string, InputSpec> {
+) {
   const nodeInfo = objectInfo[nodeType]
   if (!nodeInfo) {
     throw new Error(`Missing object_info entry for ${nodeType}`)
   }
+  return nodeInfo
+}
 
+function getRequiredInputs(
+  objectInfo: ObjectInfoResponse,
+  nodeType: string
+): Partial<Record<string, InputSpec>> {
+  const nodeInfo = getNodeInfo(objectInfo, nodeType)
   const requiredInputs = nodeInfo.input?.required
   if (!requiredInputs) {
     throw new Error(`Missing required inputs for ${nodeType}`)
@@ -53,9 +60,7 @@ export function setStringInputTooltip(
   tooltip: string
 ): void {
   const requiredInputs = getRequiredInputs(objectInfo, nodeType)
-  if (!requiredInputs[inputName]) {
-    throw new Error(`Missing input ${nodeType}.${inputName}`)
-  }
+  getRequiredInput(objectInfo, nodeType, inputName)
 
   const input: InputSpec = ['STRING', { tooltip }]
   requiredInputs[inputName] = input
@@ -119,10 +124,7 @@ export function addNodeWithDisplayName(
   displayName: string,
   donorNodeType = 'KSampler'
 ): void {
-  const donor = objectInfo[donorNodeType]
-  if (!donor) {
-    throw new Error(`Missing object_info entry for ${donorNodeType}`)
-  }
+  const donor = getNodeInfo(objectInfo, donorNodeType)
 
   objectInfo[nodeType] = {
     ...structuredClone(donor),

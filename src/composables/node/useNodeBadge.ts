@@ -2,8 +2,9 @@ import { computed, onMounted, watch } from 'vue'
 
 import { useNodePricing } from '@/composables/node/useNodePricing'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { app } from '@/scripts/app'
-import { useExtensionStore } from '@/stores/extensionStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useApp } from '@/scripts/appInstance'
+import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { installNodeBadges } from '@/systems/badgeSystem'
 
 /**
@@ -13,6 +14,7 @@ import { installNodeBadges } from '@/systems/badgeSystem'
 export const useNodeBadge = () => {
   const settingStore = useSettingStore()
   const extensionStore = useExtensionStore()
+  const canvasStore = useCanvasStore()
 
   const showApiPricingBadge = computed(() =>
     settingStore.get('Comfy.NodeBadge.ShowApiPricing')
@@ -26,7 +28,7 @@ export const useNodeBadge = () => {
       showApiPricingBadge
     ],
     () => {
-      app.canvas?.setDirty(true, true)
+      canvasStore.canvas?.setDirty(true, true)
     }
   )
 
@@ -39,7 +41,7 @@ export const useNodeBadge = () => {
       () => nodePricing.pricingRevision.value,
       () => {
         if (!showApiPricingBadge.value) return
-        app.canvas?.setDirty(true, true)
+        canvasStore.canvas?.setDirty(true, true)
       }
     )
 
@@ -47,10 +49,10 @@ export const useNodeBadge = () => {
       name: 'Comfy.NodeBadge',
       init() {
         installNodeBadges()
-        app.canvas.canvas.addEventListener<'litegraph:set-graph'>(
+        useApp().canvas.canvas.addEventListener<'litegraph:set-graph'>(
           'litegraph:set-graph',
           () => {
-            app.canvas?.setDirty(true, true)
+            canvasStore.canvas?.setDirty(true, true)
           }
         )
       }

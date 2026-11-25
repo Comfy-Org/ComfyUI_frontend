@@ -1,28 +1,55 @@
+import { render } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { describe, expect, it, vi } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
+import { createI18n } from 'vue-i18n'
 
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { useToast } from '@/components/ui/toast/toastStore'
+import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { useImageMenuOptions } from './useImageMenuOptions'
 
-vi.mock('vue-i18n', async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...(actual as object),
-    useI18n: () => ({
-      t: (key: string) => key.split('.').pop() ?? key
-    })
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: {
+    en: {
+      contextMenu: {
+        'Open Image': 'Open Image',
+        'Open in Mask Editor': 'Open in Mask Editor',
+        'Copy Image': 'Copy Image',
+        'Paste Image': 'Paste Image',
+        'Save Image': 'Save Image',
+        'Download Images': 'Download Images',
+        'Show Full Resolution': 'Show Full Resolution',
+        'Show Downscaled Preview': 'Show Downscaled Preview'
+      }
+    }
   }
 })
 
-vi.mock('@/stores/commandStore', () => ({
-  useCommandStore: () => ({ execute: vi.fn() })
-}))
-
-const { addAlert } = vi.hoisted(() => ({ addAlert: vi.fn() }))
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: () => ({ addAlert })
-}))
+function mountComposable(): ReturnType<typeof useImageMenuOptions> {
+  let composable!: ReturnType<typeof useImageMenuOptions>
+  render(
+    {
+      setup() {
+        composable = useImageMenuOptions()
+        return () => null
+      }
+    },
+    { global: { plugins: [i18n] } }
+  )
+  return composable
+}
 
 function mockClipboard(clipboard: Partial<Clipboard> | undefined) {
   Object.defineProperty(navigator, 'clipboard', {
@@ -53,7 +80,7 @@ describe('useImageMenuOptions', () => {
   describe('getImageMenuOptions', () => {
     it('includes Paste Image option when node supports paste', () => {
       const node = createImageNode()
-      const { getImageMenuOptions } = useImageMenuOptions()
+      const { getImageMenuOptions } = mountComposable()
       const options = getImageMenuOptions(node)
       const labels = options.map((o) => o.label)
 
@@ -62,7 +89,7 @@ describe('useImageMenuOptions', () => {
 
     it('excludes Paste Image option when node does not support paste', () => {
       const node = createImageNode({ pasteFiles: undefined })
-      const { getImageMenuOptions } = useImageMenuOptions()
+      const { getImageMenuOptions } = mountComposable()
       const options = getImageMenuOptions(node)
       const labels = options.map((o) => o.label)
 
@@ -71,9 +98,30 @@ describe('useImageMenuOptions', () => {
 
     it('returns empty array when node has no images and no pasteFiles', () => {
       const node = createMockLGraphNode({ imgs: [] })
-      const { getImageMenuOptions } = useImageMenuOptions()
+      const { getImageMenuOptions } = mountComposable()
 
       expect(getImageMenuOptions(node)).toEqual([])
+    })
+
+    it.for([
+      {
+        name: 'several outputs that never loaded as <img> (e.g. EXR)',
+        images: [{ filename: 'f1.exr' }, { filename: 'f2.exr' }],
+        expected: ['Download Images']
+      },
+      {
+        name: 'a single output',
+        images: [{ filename: 'f1.exr' }],
+        expected: []
+      }
+    ])('offers exporting outputs for $name', ({ images, expected }) => {
+      const node = createMockLGraphNode({ imgs: [] })
+      vi.spyOn(useNodeOutputStore(), 'getNodeOutputs').mockReturnValue({
+        images
+      })
+      const { getImageMenuOptions } = mountComposable()
+
+      expect(getImageMenuOptions(node).map((o) => o.label)).toEqual(expected)
     })
 
     it('returns only Paste Image when node has no images but supports paste', () => {
@@ -82,7 +130,7 @@ describe('useImageMenuOptions', () => {
         pasteFile: vi.fn(),
         pasteFiles: vi.fn()
       })
-      const { getImageMenuOptions } = useImageMenuOptions()
+      const { getImageMenuOptions } = mountComposable()
       const options = getImageMenuOptions(node)
       const labels = options.map((o) => o.label)
 
@@ -91,7 +139,7 @@ describe('useImageMenuOptions', () => {
 
     it('places Paste Image between Copy Image and Save Image', () => {
       const node = createImageNode()
-      const { getImageMenuOptions } = useImageMenuOptions()
+      const { getImageMenuOptions } = mountComposable()
       const options = getImageMenuOptions(node)
       const labels = options.map((o) => o.label)
 
@@ -105,7 +153,7 @@ describe('useImageMenuOptions', () => {
 
     it('gives the Open in Mask Editor option the mask icon', () => {
       const node = createImageNode()
-      const { getImageMenuOptions } = useImageMenuOptions()
+      const { getImageMenuOptions } = mountComposable()
       const options = getImageMenuOptions(node)
       const maskOption = options.find((o) => o.label === 'Open in Mask Editor')
 
@@ -114,7 +162,7 @@ describe('useImageMenuOptions', () => {
 
     it('gives every image action option an icon so labels stay aligned', () => {
       const node = createImageNode()
-      const { getImageMenuOptions } = useImageMenuOptions()
+      const { getImageMenuOptions } = mountComposable()
       const options = getImageMenuOptions(node)
 
       expect(options.every((o) => !!o.icon)).toBe(true)
@@ -122,7 +170,7 @@ describe('useImageMenuOptions', () => {
 
     it('keeps output preview actions when the local image input is unavailable', () => {
       const node = createImageNode()
-      const { getImageMenuOptions } = useImageMenuOptions()
+      const { getImageMenuOptions } = mountComposable()
       const labels = getImageMenuOptions(node, {
         input: false,
         preview: true
@@ -131,6 +179,63 @@ describe('useImageMenuOptions', () => {
       expect(labels).toContain('Open Image')
       expect(labels).toContain('Save Image')
       expect(labels).not.toContain('Paste Image')
+    })
+  })
+
+  describe('Copy Image action', () => {
+    function createCopyImageFixture() {
+      const display = document.createElement('img')
+      display.src =
+        'https://app.example/api/view?filename=output.png&preview=webp'
+      const node = createMockLGraphNode({ imgs: [display], imageIndex: 0 })
+      const { getImageMenuOptions } = mountComposable()
+      const copy = getImageMenuOptions(node).find(
+        (option) => option.label === 'Copy Image'
+      )
+      assert.exists(copy?.action)
+
+      return copy.action
+    }
+
+    it('copies full-resolution PNG bytes without exporting the displayed image', async () => {
+      const copy = createCopyImageFixture()
+      vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation(() => {
+        throw new DOMException(
+          'Tainted canvases may not be exported.',
+          'SecurityError'
+        )
+      })
+      const png = new Blob(['original pixels'], { type: 'image/png' })
+      vi.mocked(fetch).mockResolvedValue(new Response(png))
+      const write = vi
+        .spyOn(navigator.clipboard, 'write')
+        .mockResolvedValue(undefined)
+
+      const copying = copy()
+      expect(write).toHaveBeenCalledOnce()
+      await copying
+
+      expect(fetch).toHaveBeenCalledWith(
+        new URL('https://app.example/api/view?filename=output.png')
+      )
+      const copied = await write.mock.calls[0][0][0].getType('image/png')
+      expect(await copied.text()).toBe('original pixels')
+    })
+
+    it('warns when the original cannot be fetched', async () => {
+      const copy = createCopyImageFixture()
+      vi.mocked(fetch).mockResolvedValue(new Response(null, { status: 403 }))
+      vi.spyOn(navigator.clipboard, 'write').mockImplementation(
+        async ([item]) => {
+          await item.getType('image/png')
+        }
+      )
+
+      await copy()
+
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({ kind: 'warning' })
+      ])
     })
   })
 
@@ -149,7 +254,7 @@ describe('useImageMenuOptions', () => {
         })
       )
 
-      const { getImageMenuOptions } = useImageMenuOptions()
+      const { getImageMenuOptions } = mountComposable()
       const options = getImageMenuOptions(node)
       const pasteOption = options.find((o) => o.label === 'Paste Image')
 
@@ -166,7 +271,7 @@ describe('useImageMenuOptions', () => {
       const node = createImageNode()
       mockClipboard(fromPartial<Clipboard>({ read: undefined }))
 
-      const { getImageMenuOptions } = useImageMenuOptions()
+      const { getImageMenuOptions } = mountComposable()
       const options = getImageMenuOptions(node)
       const pasteOption = options.find((o) => o.label === 'Paste Image')
 
@@ -187,7 +292,7 @@ describe('useImageMenuOptions', () => {
         })
       )
 
-      const { getImageMenuOptions } = useImageMenuOptions()
+      const { getImageMenuOptions } = mountComposable()
       const options = getImageMenuOptions(node)
       const pasteOption = options.find((o) => o.label === 'Paste Image')
 
@@ -197,122 +302,96 @@ describe('useImageMenuOptions', () => {
     })
   })
 
-  describe('copyImage action', () => {
-    /**
-     * Capture-only ClipboardItem stub. jsdom has no ClipboardItem, and we want
-     * to resolve the PNG blob promise the composable hands it so assertions can
-     * read what would be placed on the real clipboard.
-     */
-    function stubClipboardItem() {
-      vi.stubGlobal(
-        'ClipboardItem',
-        class {
-          data: Record<string, Blob | Promise<Blob>>
-          constructor(data: Record<string, Blob | Promise<Blob>>) {
-            this.data = data
-          }
-        }
-      )
+  describe('getPreviewResolutionOption', () => {
+    function useVueNodes(enabled: boolean) {
+      LiteGraph.vueNodesMode = enabled
+      onTestFinished(() => {
+        LiteGraph.vueNodesMode = false
+      })
     }
 
-    function getCopyAction(node: LGraphNode) {
-      const { getImageMenuOptions } = useImageMenuOptions()
-      return getImageMenuOptions(node).find((o) => o.label === 'Copy Image')!
-        .action!
+    function outputImages(count: number) {
+      vi.spyOn(useNodeOutputStore(), 'getNodeOutputs').mockReturnValue({
+        images: Array.from({ length: count }, (_, i) => ({
+          filename: `image${i}.png`,
+          type: 'output' as const
+        }))
+      })
     }
 
-    it('fetches the image and writes a PNG blob to the clipboard', async () => {
-      const node = createImageNode()
-      const pngBlob = new Blob(['png'], { type: 'image/png' })
-      const fetchMock = vi.fn().mockResolvedValue({
-        ok: true,
-        blob: () => Promise.resolve(pngBlob)
-      })
-      vi.stubGlobal('fetch', fetchMock)
-      stubClipboardItem()
+    beforeEach(() => {
+      useSettingStore().settingValues['Comfy.Node.DownscaleImagePreviews'] =
+        true
+    })
 
-      const write = vi.fn().mockResolvedValue(undefined)
-      mockClipboard(fromPartial<Clipboard>({ write }))
-
-      await getCopyAction(node)()
-
-      // Fetches the source URL instead of exporting the (cloud-tainted) canvas.
-      expect(fetchMock).toHaveBeenCalledWith('http://localhost/test.png')
-      const item = write.mock.calls[0][0][0] as {
-        data: Record<string, unknown>
+    it.for([
+      {
+        name: 'offers full resolution for a single image',
+        vueNodes: true,
+        images: 1,
+        flags: {},
+        label: 'Show Full Resolution'
+      },
+      {
+        name: 'offers the downscaled preview once full resolution is on',
+        vueNodes: true,
+        images: 1,
+        flags: { fullResolutionPreview: true },
+        label: 'Show Downscaled Preview'
+      },
+      {
+        name: 'is absent for a grid of images',
+        vueNodes: true,
+        images: 2,
+        flags: {},
+        label: undefined
+      },
+      {
+        name: 'is absent on the classic canvas, which never downscales',
+        vueNodes: false,
+        images: 1,
+        flags: {},
+        label: undefined
+      },
+      {
+        name: 'is absent when downscaling is turned off globally',
+        vueNodes: true,
+        images: 1,
+        flags: {},
+        downscale: false,
+        label: undefined
       }
-      await expect(item.data['image/png']).resolves.toBe(pngBlob)
+    ])('$name', ({ vueNodes, images, flags, downscale = true, label }) => {
+      useVueNodes(vueNodes)
+      useSettingStore().settingValues['Comfy.Node.DownscaleImagePreviews'] =
+        downscale
+      outputImages(images)
+      const { getPreviewResolutionOption } = mountComposable()
+
+      expect(
+        getPreviewResolutionOption(createImageNode({ flags }))?.label
+      ).toBe(label)
     })
 
-    it('strips the preview query param before fetching', async () => {
-      const img = new Image()
-      img.src = 'http://localhost/view?filename=a.png&preview=webp'
-      const node = createImageNode({ imgs: [img] })
+    it('persists the toggle through workflow serialization', () => {
+      useVueNodes(true)
+      outputImages(1)
+      const { getPreviewResolutionOption } = mountComposable()
+      const node = new LGraphNode('PreviewImage')
+      node.previewMediaType = 'image'
 
-      const fetchMock = vi.fn().mockResolvedValue({
-        ok: true,
-        blob: () => Promise.resolve(new Blob(['png'], { type: 'image/png' }))
-      })
-      vi.stubGlobal('fetch', fetchMock)
-      stubClipboardItem()
-      mockClipboard(
-        fromPartial<Clipboard>({ write: vi.fn().mockResolvedValue(undefined) })
+      getPreviewResolutionOption(node)?.action?.()
+      const restored = new LGraphNode('PreviewImage')
+      restored.previewMediaType = 'image'
+      restored.configure(node.serialize())
+
+      expect(getPreviewResolutionOption(restored)?.label).toBe(
+        'Show Downscaled Preview'
       )
-
-      await getCopyAction(node)()
-
-      expect(fetchMock).toHaveBeenCalledWith(
-        'http://localhost/view?filename=a.png'
+      getPreviewResolutionOption(restored)?.action?.()
+      expect(restored.serialize().flags).not.toHaveProperty(
+        'fullResolutionPreview'
       )
-    })
-
-    it('re-encodes a non-PNG source to PNG before writing', async () => {
-      const node = createImageNode()
-      const jpegBlob = new Blob(['jpeg'], { type: 'image/jpeg' })
-      vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue({
-          ok: true,
-          blob: () => Promise.resolve(jpegBlob)
-        })
-      )
-      stubClipboardItem()
-
-      // jsdom implements neither createImageBitmap nor canvas.toBlob, so stub
-      // the decode + re-encode pipeline the non-PNG branch relies on.
-      const bitmap = { width: 2, height: 2, close: vi.fn() }
-      vi.stubGlobal('createImageBitmap', vi.fn().mockResolvedValue(bitmap))
-      const pngBlob = new Blob(['png'], { type: 'image/png' })
-      vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
-        fromPartial<CanvasRenderingContext2D>({ drawImage: vi.fn() }) as never
-      )
-      vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation((cb) =>
-        cb(pngBlob)
-      )
-
-      const write = vi.fn().mockResolvedValue(undefined)
-      mockClipboard(fromPartial<Clipboard>({ write }))
-
-      await getCopyAction(node)()
-
-      // Await the deferred PNG promise first so the re-encode chain runs.
-      const item = write.mock.calls[0][0][0] as {
-        data: Record<string, unknown>
-      }
-      await expect(item.data['image/png']).resolves.toBe(pngBlob)
-      expect(createImageBitmap).toHaveBeenCalledWith(jpegBlob)
-      expect(bitmap.close).toHaveBeenCalled()
-    })
-
-    it('alerts the user when the clipboard API is unavailable', async () => {
-      const node = createImageNode()
-      const fetchMock = vi.fn()
-      vi.stubGlobal('fetch', fetchMock)
-      mockClipboard(fromPartial<Clipboard>({ write: undefined }))
-
-      await expect(getCopyAction(node)()).resolves.toBeUndefined()
-      expect(fetchMock).not.toHaveBeenCalled()
-      expect(addAlert).toHaveBeenCalledWith('errorCopyImage')
     })
   })
 })

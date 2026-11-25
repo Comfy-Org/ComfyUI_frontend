@@ -8,8 +8,8 @@ Detailed evidence and unresolved risks are in the focused audits under
 [References](#references).
 
 The governing decisions remain
-[ADR 0003](../../adr/0003-crdt-based-layout-system.md) and
-[ADR 0008](../../adr/0008-entity-component-system.md). This plan does not amend
+[ADR-CRDT-LAYOUT-0003](../../adr/CRDT-LAYOUT-0003-crdt-layout-intent-and-local-measurement.md) and
+[ADR-ECS-0008](../../adr/ECS-0008-entity-component-system.md). This plan does not amend
 them.
 
 ## Direction
@@ -231,4 +231,4 @@ CRDT compatibility are explicitly not completion criteria for this phase.
 - [Verification audit](ecs-verification-audit.md)
 - [Documentation audit](ecs-documentation-audit.md)
 - [ECS target architecture](../ecs-target-architecture.md)
-- [Link registration migration](../../extensions/link-registration-migration.md)
+- [Link registration migration](https://docs.comfy.org/custom-nodes/js/link-registration-migration)

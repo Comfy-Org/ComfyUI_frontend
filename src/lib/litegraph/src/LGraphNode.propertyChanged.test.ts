@@ -1,10 +1,8 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
-import type { LGraphEventMap } from './infrastructure/LGraphEventMap'
+import type { LGraphEventMap } from '@comfyorg/graph-model/LGraphEventMap'
 import { LGraph, LGraphNode } from './litegraph'
-import { LGraphEventMode, RenderShape } from './types/globalEnums'
+import { LGraphEventMode, RenderShape } from '@comfyorg/graph-model/globalEnums'
 
 type PropertyChange = LGraphEventMap['node:property:changed']
 
@@ -29,10 +27,6 @@ function attachedNode() {
 }
 
 describe('LGraphNode shell-state change events', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('announces every tracked shell field with its before and after value', () => {
     const { graph, node } = attachedNode()
     const changes = observe(graph)
@@ -118,10 +112,6 @@ describe('LGraphNode shell-state change events', () => {
 })
 
 describe('LGraphNode flag serialization', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('serializes a set flag, including false, and omits an unset one', () => {
     const { node } = attachedNode()
 

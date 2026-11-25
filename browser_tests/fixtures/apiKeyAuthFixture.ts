@@ -1,27 +1,31 @@
 import type { Route } from '@playwright/test'
-import { test as base } from '@playwright/test'
+import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
 
 import type {
   BillingBalanceResponse,
+  BillingCapabilitiesResponse,
   BillingEventsResponse,
   BillingPlansResponse,
   BillingStatusResponse,
-  CurrentWorkspaceResponse
+  CurrentWorkspaceResponse,
+  ListMembersResponse
 } from '@comfyorg/ingest-types'
-import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
+import { formatCreditsFromCents } from '@comfyorg/shared-frontend-utils/creditsUtil'
 import type { operations } from '@/types/comfyRegistryTypes'
 import { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { createBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 type CreateCustomerResponse =
   operations['createCustomer']['responses']['201']['content']['application/json']
 
 const E2E_API_KEY = 'comfyui-e2e-api-key'
+const API_KEY_OWNER_ID = 'api-key-user-e2e'
 
 // Workspace-rail mocks authenticate like the real API: a request that does
 // not carry the stored key as X-API-KEY gets a 401 instead of data, so the
 // suite fails if the client stops wiring the credential through.
-const fulfillForApiKey = <T>(route: Route, body: T) =>
+const fulfillForApiKey = (route: Route, body: unknown) =>
   route.request().headers()['x-api-key'] === E2E_API_KEY
     ? route.fulfill(jsonRoute(body))
     : route.fulfill({
@@ -52,48 +56,34 @@ const API_KEY_WORKSPACE_EVENT_ID = 'evt-api-key-workspace'
  * user, a stored `comfy_api_key`, and the cloud API resolving that key to a
  * single bound workspace. Mirrors the QA flow behind the 1.51 API-key billing
  * findings: workspace context, balance, and activity must all come from the
- * key's workspace via `/api/workspaces/current` and `/api/billing/*`, never
- * from the legacy user-scoped `/customers/*` rail.
- *
- * The fixture records any legacy-rail read so specs can assert the session
- * never falls back to it.
+ * key's workspace via `/api/workspaces/current` and `/api/billing/*`.
  */
 export const apiKeyAuthFixture = base.extend<{
   comfyPage: ComfyPage
-  legacyBillingReads: string[]
 }>({
-  legacyBillingReads: async ({ page }, use) => {
-    const reads: string[] = []
-    await page.route('**/customers/balance', (route) => {
-      reads.push(route.request().url())
-      return route.fulfill(jsonRoute({ amount_micros: 0, currency: 'usd' }))
-    })
-    await page.route('**/customers/events**', (route) => {
-      reads.push(route.request().url())
-      return route.fulfill(
-        jsonRoute({ events: [], page: 1, limit: 7, total: 0, totalPages: 0 })
-      )
-    })
-    await use(reads)
-  },
-  comfyPage: async ({ page, request, legacyBillingReads }, use, testInfo) => {
+  comfyPage: async ({ page, request }, use, testInfo) => {
     testInfo.setTimeout(45_000)
-    void legacyBillingReads
 
     const comfyPage = new ComfyPage(page, request)
     const userId = await comfyPage.setupUser(
       `playwright-api-key-${testInfo.parallelIndex}`
     )
-    await comfyPage.setupSettings({
-      'Comfy.TutorialCompleted': true,
-      'Comfy.userId': userId
-    })
+    await comfyPage.setupSettings({ userId })
 
+    await page.route('https://{api,stagingapi}.comfy.org/releases**', (route) =>
+      route.fulfill({ json: [] })
+    )
+    await page.route('**/api/workspace/members{,?*}', (route) =>
+      fulfillForApiKey(route, {
+        members: [],
+        pagination: { offset: 0, limit: 50, total: 0, has_more: false }
+      } satisfies ListMembersResponse)
+    )
     await page.route('**/customers', (route) => {
       if (route.request().method() !== 'POST') return route.fallback()
       return route.fulfill({
         status: 201,
-        json: { id: 'api-key-user-e2e' } satisfies CreateCustomerResponse
+        json: { id: API_KEY_OWNER_ID } satisfies CreateCustomerResponse
       })
     })
     await page.route('**/api/workspaces/current', (route) =>
@@ -109,8 +99,20 @@ export const apiKeyAuthFixture = base.extend<{
         occupied_seats: 1,
         subscription_status: 'active',
         subscription_tier: 'TEAM',
-        team_credit_stop: null
+        ended_at: null,
+        team_credit_stop: null,
+        scheduled_change: null,
+        next_charge: null
       } satisfies BillingStatusResponse)
+    )
+    await page.route('**/api/billing/capabilities', (route) =>
+      fulfillForApiKey(route, {
+        ...createBillingCapabilities(API_KEY_WORKSPACE.id),
+        resolved_for: {
+          user_id: API_KEY_OWNER_ID,
+          workspace_id: API_KEY_WORKSPACE.id
+        }
+      } satisfies BillingCapabilitiesResponse)
     )
     await page.route('**/api/billing/balance', (route) =>
       fulfillForApiKey(route, {

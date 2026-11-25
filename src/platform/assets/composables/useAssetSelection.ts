@@ -1,12 +1,12 @@
 import { useKeyModifier } from '@vueuse/core'
 import { computed, ref } from 'vue'
 
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import { useAssetSelectionStore } from '@/platform/assets/composables/useAssetSelectionStore'
+import type { AssetItem } from '@comfyorg/assets-core/schema'
+import { useAssetSelectionStore } from '@/platform/assets/stores/useAssetSelectionStore'
 import {
   getAssetOutputCount,
   getTotalAssetOutputCount
-} from '@/platform/assets/utils/outputAssetUtil'
+} from '@/platform/assets/utils/outputAssetCountUtil'
 
 export function useAssetSelection() {
   const selectionStore = useAssetSelectionStore()
@@ -49,7 +49,7 @@ export function useAssetSelection() {
     index: number,
     allAssets: AssetItem[]
   ) {
-    if (!asset?.id || index < 0 || index >= allAssets.length) {
+    if (!asset.id || index < 0 || index >= allAssets.length) {
       console.warn('Invalid asset selection parameters')
       return
     }
@@ -70,7 +70,7 @@ export function useAssetSelection() {
     allAssets: AssetItem[]
   ) {
     // Input validation
-    if (!asset?.id || index < 0 || index >= allAssets.length) {
+    if (!asset.id || index < 0 || index >= allAssets.length) {
       console.warn('Invalid asset selection parameters')
       return
     }

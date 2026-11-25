@@ -1,149 +1,184 @@
 <script setup lang="ts">
-import { useClipboard } from '@vueuse/core'
-import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
+import type { AgentPaywallSurface } from '@comfyorg/telemetry/types'
+import { computed, ref, useTemplateRef, watch } from 'vue'
 
-import { cn } from '@comfyorg/tailwind-utils'
-import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
-import { api } from '@/scripts/api'
-import { getMediaTypeFromFilename } from '@/utils/formatUtil'
+import Tag from '@comfyorg/design-system/chip/Tag'
 
-import type { UserAttachment } from '../../../stores/agent/agentConversationStore'
-import type { ReplyAsset } from '../../../utils/replyAssets'
-import AgentTooltip from '../AgentTooltip.vue'
-import ReplyAssetGroup from './ReplyAssetGroup.vue'
+import type {
+  PendingSendEntryState,
+  UserAttachment
+} from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
+import type {
+  PromptSnapshot,
+  WorkflowReference
+} from '@/workbench/extensions/agent/types/workflowReference'
+import { agentMessageText } from '@/workbench/extensions/agent/utils/agentMessageText'
+import { promptReferenceParts } from '@/workbench/extensions/agent/utils/promptReferenceParts'
+import type { SkillReference as SkillReferenceData } from '@/workbench/extensions/agent/types/skillReference'
+import { DEFAULT_AGENT_PAYWALL_PRESENTATION } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
+import type {
+  AgentPaywallAction,
+  AgentPaywallPresentation
+} from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
+import PendingSendStatus from './PendingSendStatus.vue'
+import UserMessageActions from './UserMessageActions.vue'
+import UserMessageAttachments from './UserMessageAttachments.vue'
+import UserMessagePromptParts from './UserMessagePromptParts.vue'
+import { selectedUserMessageClipboard } from './userMessageClipboard'
 
 const {
   text,
   attachments = [],
   tags = [],
+  workflowReferences = [],
+  skillReference,
+  pending,
+  retryDisabled = false,
+  paywallPresentation = DEFAULT_AGENT_PAYWALL_PRESENTATION,
   editable = false
 } = defineProps<{
   text: string
   attachments?: UserAttachment[]
   tags?: string[]
+  workflowReferences?: WorkflowReference[]
+  skillReference?: SkillReferenceData
+  pending?: PendingSendEntryState
+  retryDisabled?: boolean
+  paywallPresentation?: AgentPaywallPresentation
   editable?: boolean
 }>()
 const emit = defineEmits<{
-  edit: [text: string]
+  edit: [prompt: PromptSnapshot]
+  openReferenceWorkflow: [workflowId: string, workflowName: string]
+  retryPending: [clientMessageId: string]
+  deletePending: [clientMessageId: string]
+  newChat: []
+  paywallAction: [action: AgentPaywallAction, surface: AgentPaywallSurface]
 }>()
 
-const { t } = useI18n()
-const { copy, copied } = useClipboard({ copiedDuring: 2000, legacy: true })
+const justFailed = ref(false)
+watch(
+  () => pending?.status,
+  (current, previous) => {
+    if (previous === 'sending' && current === 'failed') justFailed.value = true
+    else if (current !== 'failed') justFailed.value = false
+  }
+)
+const isSending = computed(() => pending?.status === 'sending')
+const failedPending = computed(() =>
+  pending?.status === 'failed' && pending.failure
+    ? { pending, failure: pending.failure }
+    : null
+)
+const hasBubbleContent = computed(() =>
+  Boolean(text || workflowReferences.length || skillReference)
+)
+const showBubbleRow = computed(() => hasBubbleContent.value || isSending.value)
+const canEdit = computed(() => editable && hasBubbleContent.value)
 
-/* The shared map's 'other' glyph is a checkmark, which reads as a status
-   rather than a file on this surface. */
-function attachmentIconClass(name: string): string {
-  const kind = getMediaTypeFromFilename(name)
-  return kind === 'other' ? 'icon-[lucide--file]' : iconForMediaType(kind)
+function forwardPaywallAction(
+  action: AgentPaywallAction,
+  surface: AgentPaywallSurface
+): void {
+  emit('paywallAction', action, surface)
+}
+const promptParts = computed(() =>
+  promptReferenceParts(text, workflowReferences, skillReference)
+)
+const readableText = computed(() =>
+  agentMessageText({
+    text,
+    workflowReferences,
+    skillReference,
+    tags,
+    attachments
+  })
+)
+const bubble = useTemplateRef<HTMLElement>('bubble')
+
+function copySelection(event: ClipboardEvent): void {
+  if (!bubble.value || !event.clipboardData) return
+  const content = selectedUserMessageClipboard(
+    bubble.value,
+    document.getSelection()
+  )
+  if (!content) return
+  event.clipboardData.setData('text/plain', content.text)
+  event.clipboardData.setData('text/html', content.html)
+  event.preventDefault()
+  event.stopPropagation()
 }
 
-/**
- * Sent uploads reuse the reply asset grid (Uy, FE-1323): media attachments
- * render as the DES-530 per-count grid with the same hover-play, inspect, and
- * audio-card behavior as agent replies. A ref resolves to the uploaded input
- * file; an image without one still has its local preview. Text and other
- * kinds have no grid treatment and keep the compact tiles.
- */
-const splitAttachments = computed(() => {
-  const grid: ReplyAsset[] = []
-  const plain: UserAttachment[] = []
-  for (const item of attachments) {
-    const kind = getMediaTypeFromFilename(item.name)
-    const url = item.ref
-      ? api.apiURL(`/view?filename=${encodeURIComponent(item.ref)}&type=input`)
-      : item.previewUrl
-    if (
-      url &&
-      (kind === 'image' ||
-        kind === 'video' ||
-        kind === 'audio' ||
-        kind === '3D')
-    ) {
-      grid.push({ url, filename: item.name, kind })
-    } else {
-      plain.push(item)
-    }
-  }
-  return { grid, plain }
-})
+function forwardOpenReference(workflowId: string, workflowName: string): void {
+  emit('openReferenceWorkflow', workflowId, workflowName)
+}
 </script>
 
 <template>
-  <div class="group flex flex-col items-end gap-2 pl-16">
+  <div class="group flex flex-col items-end gap-2 pl-16" @copy="copySelection">
     <div v-if="tags.length" class="flex flex-wrap justify-end gap-1">
-      <span
+      <Tag
         v-for="(tag, index) in tags"
         :key="`${tag}:${index}`"
-        class="rounded-agent bg-agent-pill text-agent-fg-muted inline-flex items-center gap-1 px-1.5 py-0.5 text-xs"
+        :label="tag"
+        shape="rounded"
+        class="max-w-48"
       >
-        <span class="icon-[lucide--at-sign] size-3 shrink-0" />
-        <span class="max-w-40 truncate">{{ tag }}</span>
-      </span>
+        <template #icon>
+          <i aria-hidden="true" class="icon-[lucide--at-sign] size-3" />
+        </template>
+      </Tag>
     </div>
-    <div v-if="splitAttachments.grid.length" class="w-full">
-      <ReplyAssetGroup :assets="splitAttachments.grid" />
-    </div>
+    <UserMessageAttachments v-if="attachments.length" :attachments />
     <div
-      v-if="splitAttachments.plain.length"
-      class="grid w-56 max-w-full grid-cols-2 gap-1.5"
+      v-if="showBubbleRow"
+      class="flex max-w-full items-center justify-end gap-1.5"
     >
-      <figure
-        v-for="(item, index) in splitAttachments.plain"
-        :key="`${item.name}:${index}`"
-        class="m-0"
+      <div
+        v-if="isSending"
+        aria-hidden="true"
+        data-testid="pending-send-spinner"
+        class="flex shrink-0 items-center text-muted-foreground"
       >
-        <div
-          class="bg-agent-surface-raised flex aspect-square w-full items-center justify-center rounded-lg"
-        >
-          <span
-            :class="
-              cn(attachmentIconClass(item.name), 'text-agent-fg-subtle size-6')
-            "
-          />
-        </div>
-        <figcaption class="text-agent-fg-muted mt-0.5 truncate text-xs">
-          {{ item.name }}
-        </figcaption>
-      </figure>
+        <i
+          aria-hidden="true"
+          class="icon-[lucide--loader-circle] size-3.5 motion-safe:animate-spin"
+        />
+      </div>
+      <div
+        v-if="hasBubbleContent"
+        ref="bubble"
+        data-testid="user-message-bubble"
+        class="w-fit max-w-full rounded-lg bg-secondary px-2.5 py-1.5 text-sm/5 font-normal wrap-break-word whitespace-pre-wrap text-muted-foreground"
+      >
+        <UserMessagePromptParts
+          :parts="promptParts"
+          @open-reference-workflow="forwardOpenReference"
+        />
+      </div>
     </div>
-    <div
-      v-if="text"
-      class="border-agent-border bg-agent-surface-raised text-agent-fg w-fit max-w-full rounded-[10px] border px-2.5 py-1.5 text-sm wrap-break-word whitespace-pre-wrap"
-    >
-      {{ text }}
-    </div>
-    <div
-      v-if="text"
-      class="text-agent-fg-subtle flex opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100 touch:opacity-100"
-    >
-      <AgentTooltip v-if="editable" :label="t('g.edit')">
-        <button
-          type="button"
-          :aria-label="t('g.edit')"
-          class="hover:bg-agent-surface-hover hover:text-agent-fg flex size-6 cursor-pointer items-center justify-center rounded-lg p-1 transition-colors"
-          @click="emit('edit', text)"
-        >
-          <span class="icon-[lucide--pencil] size-3" />
-        </button>
-      </AgentTooltip>
-      <AgentTooltip :label="copied ? t('agent.copied') : t('agent.copy')">
-        <button
-          type="button"
-          :aria-label="copied ? t('agent.copied') : t('agent.copy')"
-          class="hover:bg-agent-surface-hover hover:text-agent-fg flex size-6 cursor-pointer items-center justify-center rounded-lg p-1 transition-colors"
-          @click="copy(text)"
-        >
-          <span
-            :class="
-              cn(
-                'size-3',
-                copied ? 'icon-[lucide--check]' : 'icon-[lucide--copy]'
-              )
-            "
-          />
-        </button>
-      </AgentTooltip>
-    </div>
+    <PendingSendStatus
+      v-if="failedPending"
+      :pending="failedPending.pending"
+      :failure="failedPending.failure"
+      :just-failed="justFailed"
+      :retry-disabled="retryDisabled"
+      :paywall-presentation="paywallPresentation"
+      @retry-pending="emit('retryPending', $event)"
+      @delete-pending="emit('deletePending', $event)"
+      @new-chat="emit('newChat')"
+      @paywall-action="forwardPaywallAction"
+    />
+    <UserMessageActions
+      v-if="readableText"
+      :text
+      :readable-text
+      :attachments
+      :tags
+      :workflow-references
+      :skill-reference
+      :can-edit
+      @edit="emit('edit', $event)"
+    />
   </div>
 </template>

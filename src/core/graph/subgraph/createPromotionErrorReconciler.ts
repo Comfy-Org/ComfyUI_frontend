@@ -105,14 +105,14 @@ export function createPromotionErrorReconciler({
   }
 
   const attachNode = (node: LGraphNode): void => {
-    if (!node.isSubgraphNode?.()) return
+    if (!node.isSubgraphNode()) return
     if (attachedHosts.has(node)) return
     attachedHosts.add(node)
     attach(node.subgraph)
   }
 
   const detachNode = (node: LGraphNode): void => {
-    if (!node.isSubgraphNode?.()) return
+    if (!node.isSubgraphNode()) return
     if (!attachedHosts.delete(node)) return
     detach(node.subgraph)
   }

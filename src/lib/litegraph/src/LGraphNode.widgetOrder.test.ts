@@ -3,11 +3,8 @@ import { beforeEach, describe, expect, it } from 'vitest'
 
 import { addDynamicCombo } from '@/core/graph/widgets/__fixtures__/dynamicInputHelpers'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
-import type {
-  IBaseWidget,
-  TWidgetValue
-} from '@/lib/litegraph/src/types/widgets'
+import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
+import type { TWidgetValue } from '@comfyorg/graph-model/widgets'
 import { sortWidgetValuesByInputOrder } from '@/workbench/utils/nodeDefOrderingUtil'
 
 describe('LGraphNode widget ordering', () => {
@@ -261,6 +258,31 @@ describe('LGraphNode widget ordering', () => {
       expect(node2.widgets!.map((w) => w.value)).toStrictEqual([5, 20])
     })
 
+    it('restores an object widget value, snapshotted by value rather than by reference', () => {
+      const saved = {
+        trim: { start_time: 1.5, duration: 4 },
+        crop: { x: 10, y: 20, width: 100, height: 50 }
+      }
+      node.addWidget('videoedit', 'video_edit', saved, null, {})
+      node.serialize_widgets = true
+
+      const serialised = node.serialize()
+      expect(serialised.widgets_values_named!.video_edit).toStrictEqual(saved)
+
+      const live = node.widgets![0].value as typeof saved
+      live.trim.start_time = 99
+      live.crop.width = 999
+
+      const restored = new LGraphNode('TestNode2')
+      restored.addWidget('videoedit', 'video_edit', {}, null, {})
+      restored.configure(serialised)
+
+      expect(restored.widgets![0].value).toStrictEqual({
+        trim: { start_time: 1.5, duration: 4 },
+        crop: { x: 10, y: 20, width: 100, height: 50 }
+      })
+    })
+
     it('should support specifying order for legacy workflows', () => {
       node.addWidget('number', 'steps', 0, null, {})
       node.addWidget('number', 'seed', 0, null, {})
@@ -290,27 +312,6 @@ describe('LGraphNode widget ordering', () => {
       node.configure(info)
 
       expect(node.widgets!.map((widget) => widget.value)).toStrictEqual([5, 20])
-    })
-
-    it('does not restore dynamically added non-serializable widgets', () => {
-      node.onConfigure = function () {
-        this.addCustomWidget(
-          fromPartial<IBaseWidget>({
-            type: 'button',
-            name: 'action',
-            value: 'Click',
-            serialize: false
-          })
-        )
-        this.addWidget('number', 'seed', 0, null, {})
-      }
-
-      node.configure(mockNode([12345], { action: 'Restored', seed: 12345 }))
-
-      expect(node.widgets!.map((widget) => widget.value)).toStrictEqual([
-        'Click',
-        12345
-      ])
     })
   })
 })

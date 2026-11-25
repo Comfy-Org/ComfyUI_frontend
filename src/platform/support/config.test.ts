@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const distribution = vi.hoisted(() => ({ isCloud: false, isNightly: false }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return distribution.isCloud
   },
@@ -84,6 +84,38 @@ describe('buildFeedbackHiddenFields', () => {
     distribution.isCloud = true
     expect(await build('topbar', { email: 'a,b@example.com' })).toBe(
       'distribution=ccloud,source=topbar,email=a\\,b@example.com'
+    )
+  })
+})
+
+describe('buildSupportUrl', () => {
+  it.for([
+    {
+      form: 'billing',
+      url: 'https://comfysupport.portal.usepylon.com/forms/billing-refund-issue'
+    },
+    {
+      form: 'bug',
+      url: 'https://comfysupport.portal.usepylon.com/forms/report-a-bug'
+    },
+    {
+      form: 'question',
+      url: 'https://comfysupport.portal.usepylon.com/forms/question'
+    }
+  ] as const)(
+    'points the $form form at its Pylon form',
+    async ({ form, url }) => {
+      const { buildSupportUrl } = await import('./config')
+      expect(buildSupportUrl(form)).toBe(url)
+    }
+  )
+
+  it("pre-fills the form with the user's email and id", async () => {
+    const { buildSupportUrl } = await import('./config')
+    expect(
+      buildSupportUrl('billing', { email: 'a@example.com', userId: 'user-1' })
+    ).toBe(
+      'https://comfysupport.portal.usepylon.com/forms/billing-refund-issue?email=a%40example.com&comfy_cloud_user_id=user-1'
     )
   })
 })

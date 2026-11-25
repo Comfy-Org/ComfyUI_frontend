@@ -1,3 +1,5 @@
+import type { ListMembersResponse } from '@comfyorg/ingest-types'
+
 import type { WorkspaceTokenResponse } from '@/platform/workspace/stores/workspaceAuthStore'
 
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
@@ -8,11 +10,9 @@ import {
   ENDED_STANDARD_BILLING_STATUS
 } from '@e2e/fixtures/data/cloudWorkspace'
 import { makeWorkspaceTokenResponse } from '@e2e/fixtures/data/workspaceAuthFixtures'
-import {
-  WORKSPACE_SWITCHER_REMOTE_CONFIG,
-  WORKSPACE_SWITCHER_WORKSPACES
-} from '@e2e/fixtures/data/workspaceSwitcher'
+import { WORKSPACE_SWITCHER_WORKSPACES } from '@e2e/fixtures/data/workspaceSwitcher'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { mockWebSessionServer } from '@e2e/fixtures/utils/webSessionMocks'
 import { mockWorkspaceList } from '@e2e/fixtures/utils/workspaceMocks'
 
 /**
@@ -29,11 +29,18 @@ export const workspaceSwitcherTest = comfyPageFixture.extend<{
   workspaceSwitchTokenGate: WorkspaceSwitchTokenGate
 }>({
   page: async ({ page }, use) => {
-    await page.route('**/api/features', (route) =>
-      route.fulfill(jsonRoute(WORKSPACE_SWITCHER_REMOTE_CONFIG))
-    )
+    await page.route('**/api/features', (route) => route.fulfill(jsonRoute({})))
 
     await mockWorkspaceList(page, WORKSPACE_SWITCHER_WORKSPACES)
+
+    await page.route('**/api/workspace/members**', (route) =>
+      route.fulfill({
+        json: {
+          members: [],
+          pagination: { offset: 0, limit: 50, total: 0, has_more: false }
+        } satisfies ListMembersResponse
+      })
+    )
 
     await page.route('**/api/auth/token', async (route) => {
       const requestBody = route.request().postDataJSON() as {
@@ -51,6 +58,7 @@ export const workspaceSwitcherTest = comfyPageFixture.extend<{
       const response: WorkspaceTokenResponse = {
         token: `mock-workspace-token-${workspace.id}`,
         expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+        user_id: 'uid-1',
         workspace: {
           id: workspace.id,
           name: workspace.name,
@@ -62,9 +70,7 @@ export const workspaceSwitcherTest = comfyPageFixture.extend<{
       await route.fulfill(jsonRoute(response))
     })
 
-    await page.route('**/api/auth/session', (route) =>
-      route.fulfill({ status: 204 })
-    )
+    await mockWebSessionServer(page)
     await page.route('**/api/billing/status', (route) =>
       route.fulfill(jsonRoute(ENDED_STANDARD_BILLING_STATUS))
     )
@@ -76,7 +82,7 @@ export const workspaceSwitcherTest = comfyPageFixture.extend<{
     )
     await page.route('**/api/billing/capabilities', async (route) => {
       if (route.request().method() !== 'GET') return route.fallback()
-      const token = route.request().headers().authorization
+      const token = await route.request().headerValue('authorization')
       const prefix = 'Bearer mock-workspace-token-'
       const workspaceId = token?.startsWith(prefix)
         ? token.slice(prefix.length)

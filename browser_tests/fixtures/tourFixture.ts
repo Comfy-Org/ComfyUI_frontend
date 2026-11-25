@@ -1,4 +1,4 @@
-import { test as base } from '@playwright/test'
+import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
 
 import { OnboardingCoachmarks } from '@e2e/fixtures/components/Tour'
 

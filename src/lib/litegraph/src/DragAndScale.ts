@@ -1,15 +1,13 @@
-import type { Point, ReadOnlyRect, Rect } from './interfaces'
-import { EaseFunction, Rectangle } from './litegraph'
+import type {
+  PanZoom as DragAndScaleState,
+  PointTuple as Point,
+  ReadOnlyRect,
+  Rect
+} from '@comfyorg/shared-frontend-utils/geometry'
+import { readBrowserDpr } from '@/renderer/core/canvas/canvasViewport'
 
-export interface DragAndScaleState {
-  /**
-   * The offset from the top-left of the current canvas viewport to `[0, 0]` in graph space.
-   * Or said another way, the inverse offset of the viewport.
-   */
-  offset: [number, number]
-  /** The scale of the graph. */
-  scale: number
-}
+import { EaseFunction } from '@comfyorg/graph-model/globalEnums'
+import { Rectangle } from './infrastructure/Rectangle'
 
 export type AnimationOptions = {
   /** Duration of the animation in milliseconds. */
@@ -44,6 +42,8 @@ export class DragAndScale {
   visible_area: Rectangle
   dragging?: boolean
   viewport?: Rect
+  private viewportSize?: [number, number]
+  private animationFrame?: number
 
   onredraw?(das: DragAndScale): void
   onChanged?(scale: number, offset: Point): void
@@ -84,14 +84,7 @@ export class DragAndScale {
    * @returns `true` if the current state has changed from the previous state, otherwise `false`.
    */
   private _stateHasChanged(): boolean {
-    const current = this.state
-    const previous = this.lastState
-
-    return (
-      current.scale !== previous.scale ||
-      current.offset[0] !== previous.offset[0] ||
-      current.offset[1] !== previous.offset[1]
-    )
+    return !statesEqual(this.state, this.lastState)
   }
 
   computeVisibleArea(viewport: Rect | undefined): void {
@@ -102,11 +95,7 @@ export class DragAndScale {
       copyState(this.state, this.lastState)
     }
 
-    if (!this.element) {
-      visible_area[0] = visible_area[1] = visible_area[2] = visible_area[3] = 0
-      return
-    }
-    let { width, height } = this.element
+    let [width, height] = this.getViewportSize()
     let startx = -offset[0]
     let starty = -offset[1]
     if (viewport) {
@@ -120,6 +109,33 @@ export class DragAndScale {
     visible_area[0] = startx
     visible_area[1] = starty
     visible_area.resizeBottomRight(endx, endy)
+  }
+
+  setViewportSize(width: number, height: number): void {
+    this.viewportSize =
+      width > 0 &&
+      height > 0 &&
+      Number.isFinite(width) &&
+      Number.isFinite(height)
+        ? [width, height]
+        : undefined
+  }
+
+  invalidateViewportSize(): void {
+    this.viewportSize = undefined
+  }
+
+  getViewportSize(): [number, number] {
+    const cached = this.viewportSize
+    if (cached) return [cached[0], cached[1]]
+
+    const rect = this.element.getBoundingClientRect()
+    if (rect.width > 0 && rect.height > 0) {
+      return [rect.width, rect.height]
+    }
+
+    const dpr = readBrowserDpr()
+    return [this.element.width / dpr, this.element.height / dpr]
   }
 
   toCanvasContext(ctx: CanvasRenderingContext2D): void {
@@ -162,8 +178,6 @@ export class DragAndScale {
     if (value == this.scale) return
 
     const rect = this.element.getBoundingClientRect()
-    if (!rect) return
-
     zooming_center = zooming_center ?? [rect.width * 0.5, rect.height * 0.5]
 
     const normalizedCenter: Point = [
@@ -192,35 +206,31 @@ export class DragAndScale {
    */
   fitToBounds(
     bounds: ReadOnlyRect,
-    { zoom = 0.75 }: { zoom?: number } = {}
+    { zoom = 0.75, viewport }: { zoom?: number; viewport?: ReadOnlyRect } = {}
   ): void {
     //If element hasn't initialized (browser tab is in background)
     //it has a size of 300x150 and a more reasonable default is used instead.
     const [width, height] =
       this.element.width === 300 && this.element.height === 150
         ? [1920, 1080]
-        : [this.element.width, this.element.height]
-    const cw = width / window.devicePixelRatio
-    const ch = height / window.devicePixelRatio
+        : this.getViewportSize()
+    const [vx, vy, vw, vh] = viewport ?? [0, 0, width, height]
+    if (!(vw > 0) || !(vh > 0)) return
     let targetScale = this.scale
 
     if (zoom > 0) {
-      const targetScaleX = (zoom * cw) / Math.max(bounds[2], 300)
-      const targetScaleY = (zoom * ch) / Math.max(bounds[3], 300)
+      const targetScaleX = (zoom * vw) / Math.max(bounds[2], 300)
+      const targetScaleY = (zoom * vh) / Math.max(bounds[3], 300)
 
       // Choose the smaller scale to ensure the node fits into the viewport
       // Ensure we don't go over the max scale
       targetScale = Math.min(targetScaleX, targetScaleY, this.max_scale)
     }
 
-    const scaledWidth = cw / targetScale
-    const scaledHeight = ch / targetScale
+    const targetX = (vx + vw * 0.5) / targetScale - bounds[0] - bounds[2] * 0.5
+    const targetY = (vy + vh * 0.5) / targetScale - bounds[1] - bounds[3] * 0.5
 
-    // Calculate the target position to center the bounds in the viewport
-    const targetX = -bounds[0] - bounds[2] * 0.5 + scaledWidth * 0.5
-    const targetY = -bounds[1] - bounds[3] * 0.5 + scaledHeight * 0.5
-
-    // Apply the changes immediately
+    this.stopAnimation()
     this.offset[0] = targetX
     this.offset[1] = targetY
     this.scale = targetScale
@@ -248,13 +258,12 @@ export class DragAndScale {
       easeOutQuad: (t: number) => t * (2 - t),
       easeInOutQuad: (t: number) => (t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t)
     }
-    const easeFunction = easeFunctions[easing] ?? easeFunctions.linear
+    const easeFunction = easeFunctions[easing]
 
     const startTimestamp = performance.now()
-    const cw = this.element.width / window.devicePixelRatio
-    const ch = this.element.height / window.devicePixelRatio
+    const [cw, ch] = this.getViewportSize()
     const [vx, vy, vw, vh] = viewport ?? [0, 0, cw, ch]
-    if (vw <= 0 || vh <= 0) return
+    if (!(vw > 0) || !(vh > 0)) return
     const startX = this.offset[0]
     const startY = this.offset[1]
     const startX2 = startX - cw / this.scale
@@ -266,8 +275,6 @@ export class DragAndScale {
       const targetScaleX = (zoom * vw) / Math.max(bounds[2], 300)
       const targetScaleY = (zoom * vh) / Math.max(bounds[3], 300)
 
-      // Choose the smaller scale to ensure the node fits into the viewport
-      // Ensure we don't go over the max scale
       targetScale = Math.min(targetScaleX, targetScaleY, this.max_scale)
     }
     const scaledWidth = cw / targetScale
@@ -278,7 +285,14 @@ export class DragAndScale {
     const targetX2 = targetX - scaledWidth
     const targetY2 = targetY - scaledHeight
 
+    this.stopAnimation()
+    const written: DragAndScaleState = { offset: [0, 0], scale: 0 }
+    copyState(this.state, written)
     const animate = (timestamp: number) => {
+      if (!statesEqual(this.state, written)) {
+        this.animationFrame = undefined
+        return
+      }
       const elapsed = timestamp - startTimestamp
       const progress = Math.min(elapsed / duration, 1)
       const easedProgress = easeFunction(progress)
@@ -297,15 +311,19 @@ export class DragAndScale {
         this.scale = Math.min(cw / currentWidth, ch / currentHeight)
       }
 
+      copyState(this.state, written)
+      this.animationFrame =
+        progress < 1 ? requestAnimationFrame(animate) : undefined
       setDirty()
-
-      if (progress < 1) {
-        animationId = requestAnimationFrame(animate)
-      } else {
-        cancelAnimationFrame(animationId)
-      }
     }
-    let animationId = requestAnimationFrame(animate)
+    this.animationFrame = requestAnimationFrame(animate)
+  }
+
+  /** Stops a running {@link animateToBounds}, leaving the camera where it is. */
+  stopAnimation(): void {
+    if (this.animationFrame === undefined) return
+    cancelAnimationFrame(this.animationFrame)
+    this.animationFrame = undefined
   }
 
   reset(): void {
@@ -313,6 +331,14 @@ export class DragAndScale {
     this.offset[0] = 0
     this.offset[1] = 0
   }
+}
+
+function statesEqual(a: DragAndScaleState, b: DragAndScaleState): boolean {
+  return (
+    a.scale === b.scale &&
+    a.offset[0] === b.offset[0] &&
+    a.offset[1] === b.offset[1]
+  )
 }
 
 /**

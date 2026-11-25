@@ -38,18 +38,12 @@ async function importPreset(page: Page, preset: typeof TEST_PRESET) {
   await fileChooser.setFiles(presetPath)
 }
 
-test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-})
+test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
 
 test.afterEach(async ({ comfyPage }) => {
   await comfyPage.request.fetch(
     `${comfyPage.url}/api/userdata/keybindings%2Ftest-preset.json`,
     { method: 'DELETE' }
-  )
-  await comfyPage.settings.setSetting(
-    'Comfy.Keybinding.CurrentPreset',
-    'default'
   )
 })
 
@@ -64,7 +58,7 @@ test.describe('Keybinding Presets', { tag: '@keyboard' }, () => {
     await comfyPage.workflow.loadWorkflow('default')
     await comfyPage.canvas.press('Control+a')
     await comfyPage.canvas.press('Delete')
-    await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+    await comfyPage.expectNodeCount(0)
 
     // Open keybinding settings panel
     await comfyPage.settingDialog.open()
@@ -89,7 +83,7 @@ test.describe('Keybinding Presets', { tag: '@keyboard' }, () => {
       .poll(() => comfyPage.nodeOps.getSelectedGraphNodesCount())
       .toBeGreaterThan(0)
     await comfyPage.canvas.press('Delete')
-    await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+    await comfyPage.expectNodeCount(0)
 
     // Switch back to default preset
     await comfyPage.settingDialog.open()
@@ -146,7 +140,7 @@ test.describe('Keybinding Presets', { tag: '@keyboard' }, () => {
     // Verify the downloaded file is valid JSON with correct structure
     const downloadPath = await download.path()
     expect(downloadPath).toBeTruthy()
-    const content = fs.readFileSync(downloadPath!, 'utf-8')
+    const content = fs.readFileSync(downloadPath, 'utf-8')
     const parsed = JSON.parse(content) as {
       name: string
       newBindings: unknown[]

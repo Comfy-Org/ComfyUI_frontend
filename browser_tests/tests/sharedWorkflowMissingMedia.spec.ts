@@ -8,25 +8,19 @@ import {
   sharedWorkflowImportScenario
 } from '@e2e/fixtures/sharedWorkflowImportFixture'
 import type { SharedWorkflowImportMocks } from '@e2e/fixtures/sharedWorkflowImportFixture'
-import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
+import { PropertiesPanel } from '@e2e/fixtures/components/PropertiesPanel'
 import type { WorkspaceStore } from '@e2e/types/globals'
 
 const IMPORT_ORDER_TIMEOUT_MS = 5_000
 
-async function expectImportPrecedesPublicInclusiveInputAssetScan(
+async function expectImportPrecedesInputAssetScan(
   mocks: SharedWorkflowImportMocks
 ): Promise<void> {
   await expect(async () => {
     const events = mocks.getRequestEvents()
     const importIndex = events.indexOf('import')
-    const afterImportIndex = events.indexOf(
-      'input-assets-including-public-after-import'
-    )
+    const afterImportIndex = events.indexOf('input-assets-after-import')
 
-    expect(
-      events,
-      'public-inclusive input assets must not be scanned before import'
-    ).not.toContain('input-assets-including-public-before-import')
     expect(importIndex, `events: ${events.join(',')}`).toBeGreaterThanOrEqual(0)
     expect(afterImportIndex, `events: ${events.join(',')}`).toBeGreaterThan(
       importIndex
@@ -50,11 +44,11 @@ async function getCachedMissingMediaWarningNames(
   })
 }
 
-async function expectNoMissingMediaAfterPublicInclusiveAssetScan(
+async function expectNoMissingMediaAfterInputAssetScan(
   comfyPage: ComfyPage,
   mocks: SharedWorkflowImportMocks
 ): Promise<void> {
-  await mocks.waitForPublicInclusiveInputAssetResponseAfterImport()
+  await mocks.waitForInputAssetResponseAfterImport()
   await comfyPage.nextFrame()
 
   await expect(
@@ -72,7 +66,7 @@ async function openPanelAndExpectNoMissingMedia(
   const errorOverlay = page.getByTestId(TestIds.dialogs.errorOverlay)
   await expect(errorOverlay).toBeHidden()
 
-  const panel = new PropertiesPanelHelper(page)
+  const panel = new PropertiesPanel(page)
   await panel.open(comfyPage.actionbar.propertiesButton)
   await expect(
     panel.root.getByTestId(TestIds.propertiesPanel.errorsTab)
@@ -88,17 +82,14 @@ test.describe('Shared workflow missing media', { tag: '@cloud' }, () => {
   // Missing media only surfaces the overlay when the Errors tab is enabled
   // (src/stores/executionErrorStore.ts).
   test.use({
+    initialUrl: `/?share=${sharedWorkflowImportScenario.shareId}`,
     initialSettings: {
       'Comfy.RightSidePanel.ShowErrorsTab': true
     }
   })
 
-  test.beforeEach(async ({ comfyPage, sharedWorkflowImportMocks }) => {
+  test.beforeEach(async ({ sharedWorkflowImportMocks }) => {
     sharedWorkflowImportMocks.resetAndStartRecording()
-    await comfyPage.setup({
-      clearStorage: false,
-      url: `/?share=${sharedWorkflowImportScenario.shareId}`
-    })
   })
 
   test('imports shared media before loading workflow so missing media is not surfaced', async ({
@@ -129,10 +120,8 @@ test.describe('Shared workflow missing media', { tag: '@cloud' }, () => {
           value: sharedWorkflowImportScenario.inputFileName
         }
       ])
-    await expectImportPrecedesPublicInclusiveInputAssetScan(
-      sharedWorkflowImportMocks
-    )
-    await expectNoMissingMediaAfterPublicInclusiveAssetScan(
+    await expectImportPrecedesInputAssetScan(sharedWorkflowImportMocks)
+    await expectNoMissingMediaAfterInputAssetScan(
       comfyPage,
       sharedWorkflowImportMocks
     )

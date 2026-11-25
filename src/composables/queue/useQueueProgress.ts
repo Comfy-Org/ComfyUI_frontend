@@ -4,15 +4,17 @@ import { useI18n } from 'vue-i18n'
 import { useExecutionStore } from '@/stores/executionStore'
 import { clampPercentInt, formatPercent0 } from '@/utils/numberUtil'
 
-/**
- * Queue progress composable exposing total/current node progress values and styles.
- */
+const withDefault = <T>(value: T | null | undefined, fallback: T): T =>
+  value ?? fallback
+
 export function useQueueProgress() {
   const { locale } = useI18n()
   const executionStore = useExecutionStore()
 
   const totalPercent = computed(() =>
-    clampPercentInt(Math.round((executionStore.executionProgress ?? 0) * 100))
+    clampPercentInt(
+      Math.round(withDefault(executionStore.executionProgress, 0) * 100)
+    )
   )
 
   const totalPercentFormatted = computed(() =>
@@ -29,22 +31,10 @@ export function useQueueProgress() {
     formatPercent0(locale.value, currentNodePercent.value)
   )
 
-  const totalProgressStyle = computed(() => ({
-    transform: `scaleX(${totalPercent.value / 100})`,
-    background: 'var(--color-interface-panel-job-progress-primary)'
-  }))
-
-  const currentNodeProgressStyle = computed(() => ({
-    transform: `scaleX(${currentNodePercent.value / 100})`,
-    background: 'var(--color-interface-panel-job-progress-secondary)'
-  }))
-
   return {
     totalPercent,
     totalPercentFormatted,
     currentNodePercent,
-    currentNodePercentFormatted,
-    totalProgressStyle,
-    currentNodeProgressStyle
+    currentNodePercentFormatted
   }
 }

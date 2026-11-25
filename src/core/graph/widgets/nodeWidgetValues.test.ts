@@ -2,17 +2,13 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { toNodeId } from '@/types/nodeId'
-import { widgetId } from '@/types/widgetId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
-import {
-  getNodeWidgetValue,
-  nodeWidgetId,
-  setNodeWidgetValue
-} from './nodeWidgetValues'
+import { getNodeWidgetValue, setNodeWidgetValue } from './nodeWidgetValues'
 
 const GRAPH_ID = 'node-widget-values-test'
 const WIDGET_NAME = 'image'
@@ -56,20 +52,6 @@ function makeMockNode({
   return node
 }
 
-describe('nodeWidgetId', () => {
-  it('matches the id a registered widget derives for itself', () => {
-    const node = makeRegisteredNode()
-
-    expect(nodeWidgetId(node, WIDGET_NAME)).toBe(registeredId(node))
-  })
-
-  it('returns null for a node outside any graph', () => {
-    const node = new LGraphNode('Test')
-
-    expect(nodeWidgetId(node, WIDGET_NAME)).toBeNull()
-  })
-})
-
 describe('getNodeWidgetValue', () => {
   it('reads the store value for a registered widget', () => {
     const node = makeRegisteredNode()
@@ -107,6 +89,7 @@ describe('setNodeWidgetValue', () => {
     const node = makeRegisteredNode()
 
     expect(setNodeWidgetValue(node, WIDGET_NAME, 'next.png')).toBe(true)
+
     expect(useWidgetValueStore().getWidget(registeredId(node))?.value).toBe(
       'next.png'
     )
@@ -116,15 +99,20 @@ describe('setNodeWidgetValue', () => {
     const node = makeMockNode({ widgetValue: 'legacy.png' })
 
     expect(setNodeWidgetValue(node, WIDGET_NAME, 'next.png')).toBe(true)
+
     expect(node.widgets?.[0].value).toBe('next.png')
   })
 
-  it('returns false when the widget exists nowhere', () => {
+  it('is a no-op when the widget exists nowhere', () => {
     const node = createMockLGraphNode({
       id: toNodeId(1),
       graph: { rootGraph: { id: GRAPH_ID } }
     })
 
     expect(setNodeWidgetValue(node, WIDGET_NAME, 'next.png')).toBe(false)
+
+    expect(
+      useWidgetValueStore().getWidget(widgetId(GRAPH_ID, node.id, WIDGET_NAME))
+    ).toBeUndefined()
   })
 })

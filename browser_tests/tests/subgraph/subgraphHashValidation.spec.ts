@@ -7,8 +7,8 @@ async function waitForRootCanvasReady(page: Page) {
   await expect
     .poll(async () => {
       const state = await page.evaluate(() => ({
-        rootId: window.app?.rootGraph?.id ?? '',
-        canvasGraphId: window.app?.canvas?.graph?.id ?? ''
+        rootId: window.app?.rootGraph.id ?? '',
+        canvasGraphId: window.app?.canvas.graph?.id ?? ''
       }))
       return state.rootId !== '' && state.canvasGraphId === state.rootId
     })

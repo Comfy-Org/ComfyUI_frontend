@@ -1,4 +1,4 @@
-import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 
@@ -87,10 +87,6 @@ describe('planInteractionProbes', () => {
     }
     LiteGraph.registerNodeType('test/DeferredTarget', DeferredTarget)
     LiteGraph.registerNodeType('test/IntProducer', IntProducer)
-    onTestFinished(() => {
-      LiteGraph.unregisterNodeType('test/DeferredTarget')
-      LiteGraph.unregisterNodeType('test/IntProducer')
-    })
     vi.stubGlobal('window', {
       __cnIdBase: 0,
       app: { graph: new LGraph() },
@@ -150,10 +146,6 @@ describe('planInteractionProbes', () => {
     }
     LiteGraph.registerNodeType('test/PreviewTarget', PreviewTarget)
     LiteGraph.registerNodeType('test/PreviewIntProducer', IntProducer)
-    onTestFinished(() => {
-      LiteGraph.unregisterNodeType('test/PreviewTarget')
-      LiteGraph.unregisterNodeType('test/PreviewIntProducer')
-    })
     vi.stubGlobal('window', {
       __cnIdBase: 0,
       app: { graph: new LGraph() },

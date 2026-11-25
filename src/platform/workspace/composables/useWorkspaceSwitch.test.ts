@@ -1,35 +1,24 @@
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useWorkspaceSwitch } from '@/platform/workspace/composables/useWorkspaceSwitch'
-import type { WorkspaceWithRole } from '@/platform/workspace/api/workspaceApi'
 
-const mockSwitchWorkspace = vi.hoisted(() => vi.fn())
-const mockActiveWorkspace = vi.hoisted(() => ({
-  value: null as WorkspaceWithRole | null
-}))
-
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: () => ({
-    switchWorkspace: mockSwitchWorkspace
-  })
-}))
-
-vi.mock('pinia', () => ({
-  storeToRefs: () => ({
-    activeWorkspace: mockActiveWorkspace
-  })
-}))
+beforeEach(() => {
+  vi.mocked(useTeamWorkspaceStore().switchWorkspace).mockResolvedValue(true)
+})
 
 describe('useWorkspaceSwitch', () => {
   beforeEach(() => {
-    mockActiveWorkspace.value = {
-      id: 'workspace-1',
-      name: 'Test Workspace',
-      type: 'personal',
-      role: 'owner',
-      created_at: '2026-01-01T00:00:00Z',
-      joined_at: '2026-01-01T00:00:00Z'
-    }
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspace: {
+        id: 'workspace-1',
+        name: 'Test Workspace',
+        type: 'personal',
+        role: 'owner',
+        created_at: '2026-01-01T00:00:00Z',
+        joined_at: '2026-01-01T00:00:00Z'
+      }
+    })
   })
 
   describe('switchWorkspace', () => {
@@ -39,21 +28,51 @@ describe('useWorkspaceSwitch', () => {
       const result = await switchWorkspace('workspace-1')
 
       expect(result).toBe(true)
-      expect(mockSwitchWorkspace).not.toHaveBeenCalled()
+      expect(useTeamWorkspaceStore().switchWorkspace).not.toHaveBeenCalled()
+    })
+
+    it('defers to the store for the active workspace while a switch is in progress', async () => {
+      Object.assign(useTeamWorkspaceStore(), { isSwitching: true })
+      vi.mocked(useTeamWorkspaceStore().switchWorkspace).mockResolvedValue(
+        false
+      )
+      const { switchWorkspace } = useWorkspaceSwitch()
+
+      const result = await switchWorkspace('workspace-1')
+
+      expect(result).toBe(false)
+      expect(useTeamWorkspaceStore().switchWorkspace).toHaveBeenCalledWith(
+        'workspace-1'
+      )
     })
 
     it('switches directly to the new workspace', async () => {
-      mockSwitchWorkspace.mockResolvedValue(undefined)
+      vi.mocked(useTeamWorkspaceStore().switchWorkspace).mockResolvedValue(true)
       const { switchWorkspace } = useWorkspaceSwitch()
 
       const result = await switchWorkspace('workspace-2')
 
       expect(result).toBe(true)
-      expect(mockSwitchWorkspace).toHaveBeenCalledWith('workspace-2')
+      expect(useTeamWorkspaceStore().switchWorkspace).toHaveBeenCalledWith(
+        'workspace-2'
+      )
+    })
+
+    it('returns false if the store refuses the switch', async () => {
+      vi.mocked(useTeamWorkspaceStore().switchWorkspace).mockResolvedValue(
+        false
+      )
+      const { switchWorkspace } = useWorkspaceSwitch()
+
+      const result = await switchWorkspace('workspace-2')
+
+      expect(result).toBe(false)
     })
 
     it('returns false if switchWorkspace throws an error', async () => {
-      mockSwitchWorkspace.mockRejectedValue(new Error('Switch failed'))
+      vi.mocked(useTeamWorkspaceStore().switchWorkspace).mockRejectedValue(
+        new Error('Switch failed')
+      )
       const { switchWorkspace } = useWorkspaceSwitch()
 
       const result = await switchWorkspace('workspace-2')

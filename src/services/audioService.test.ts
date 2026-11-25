@@ -1,34 +1,21 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { useToast } from '@/components/ui/toast/toastStore'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { api } from '@/scripts/api'
 import { useAudioService } from '@/services/audioService'
-import type { AudioRecordingError } from '@/services/audioService'
 
 const mockRegister = vi.hoisted(() => vi.fn())
 const mockConnect = vi.hoisted(() => vi.fn())
 
-const mockApi = vi.hoisted(() => ({
-  fetchApi: vi.fn()
-}))
-
-const mockToastStore = vi.hoisted(() => ({
-  addAlert: vi.fn()
-}))
-
-vi.mock('extendable-media-recorder', () => ({
+vi.mock(import('extendable-media-recorder'), () => ({
   register: mockRegister
 }))
 
-vi.mock('extendable-media-recorder-wav-encoder', () => ({
+vi.mock(import('extendable-media-recorder-wav-encoder'), () => ({
   connect: mockConnect
 }))
 
-vi.mock('@/scripts/api', () => ({
-  api: mockApi
-}))
-
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: vi.fn(() => mockToastStore)
-}))
+vi.mock(import('@/scripts/api'))
 
 describe('useAudioService', () => {
   let service: ReturnType<typeof useAudioService>
@@ -39,60 +26,72 @@ describe('useAudioService', () => {
   }
 
   beforeEach(() => {
-    vi.spyOn(console, 'error').mockImplementation(() => {})
-
     mockConnect.mockResolvedValue('mock-encoder')
     mockRegister.mockResolvedValue(undefined)
-    mockApi.fetchApi.mockResolvedValue({
-      status: 200,
-      json: () => Promise.resolve(mockUploadResponse)
-    })
+    vi.mocked(api.fetchApi).mockResolvedValue(
+      new Response(JSON.stringify(mockUploadResponse), { status: 200 })
+    )
 
     service = useAudioService()
   })
 
-  describe('initialization', () => {
-    it('should initialize service with required methods', () => {
-      expect(service).toHaveProperty('registerWavEncoder')
-      expect(service).toHaveProperty('stopAllTracks')
-      expect(service).toHaveProperty('convertBlobToFileAndSubmit')
-      expect(typeof service.registerWavEncoder).toBe('function')
-      expect(typeof service.stopAllTracks).toBe('function')
-      expect(typeof service.convertBlobToFileAndSubmit).toBe('function')
-    })
-  })
-
   describe('registerWavEncoder', () => {
-    it('should register WAV encoder successfully on first call', async () => {
-      await service.registerWavEncoder()
+    let registerWavEncoder: ReturnType<
+      typeof useAudioService
+    >['registerWavEncoder']
+
+    beforeEach(async () => {
+      vi.resetModules()
+      const freshModule = await import('@/services/audioService')
+      registerWavEncoder = freshModule.useAudioService().registerWavEncoder
+    })
+
+    it('registers the WAV encoder on the first call and reuses it afterwards', async () => {
+      await registerWavEncoder()
 
       expect(mockConnect).toHaveBeenCalledTimes(1)
-      expect(mockRegister).toHaveBeenCalledWith('mock-encoder')
+      expect(mockRegister).toHaveBeenCalledExactlyOnceWith('mock-encoder')
+
+      await registerWavEncoder()
+
+      expect(mockConnect).toHaveBeenCalledTimes(1)
+      expect(mockRegister).toHaveBeenCalledTimes(1)
     })
 
-    it('should not register again if already registered', async () => {
-      await service.registerWavEncoder()
-
-      mockConnect.mockClear()
-      mockRegister.mockClear()
-
-      await service.registerWavEncoder()
-
-      expect(mockConnect).not.toHaveBeenCalled()
-      expect(mockRegister).not.toHaveBeenCalled()
-    })
-
-    it('should handle "already an encoder stored" error gracefully', async () => {
-      const error = new Error(
-        'There is already an encoder stored which handles exactly the same mime types.'
+    it('treats an encoder that is already stored as registered', async () => {
+      mockRegister.mockRejectedValueOnce(
+        new Error(
+          'There is already an encoder stored which handles exactly the same mime types.'
+        )
       )
-      mockRegister.mockRejectedValueOnce(error)
 
-      await service.registerWavEncoder()
+      await registerWavEncoder()
 
-      expect(mockConnect).toHaveBeenCalledTimes(0)
-      expect(mockRegister).toHaveBeenCalledTimes(0)
+      expect(mockRegister).toHaveBeenCalledExactlyOnceWith('mock-encoder')
       expect(console.error).not.toHaveBeenCalled()
+
+      await registerWavEncoder()
+
+      expect(mockRegister).toHaveBeenCalledTimes(1)
+    })
+
+    it('reports a registration failure and retries on the next call', async () => {
+      const failure = new Error('Encoder worker failed to start')
+      mockRegister.mockRejectedValueOnce(failure)
+
+      await registerWavEncoder()
+
+      expect(console.error).toHaveBeenCalledExactlyOnceWith(
+        'Audio Service Error (encoder):',
+        'Failed to register WAV encoder',
+        failure
+      )
+
+      await registerWavEncoder()
+      await registerWavEncoder()
+
+      expect(mockConnect).toHaveBeenCalledTimes(2)
+      expect(mockRegister).toHaveBeenCalledTimes(2)
     })
   })
 
@@ -145,7 +144,7 @@ describe('useAudioService', () => {
     it('should convert blob to file and upload successfully', async () => {
       const result = await service.convertBlobToFileAndSubmit(mockBlob)
 
-      expect(mockApi.fetchApi).toHaveBeenCalledWith('/upload/image', {
+      expect(api.fetchApi).toHaveBeenCalledWith('/upload/image', {
         method: 'POST',
         body: expect.any(FormData)
       })
@@ -159,8 +158,10 @@ describe('useAudioService', () => {
 
       await service.convertBlobToFileAndSubmit(mockBlob)
 
-      const formDataCall = mockApi.fetchApi.mock.calls[0][1].body as FormData
-      const uploadedFile = formDataCall.get('image') as File
+      const requestBody = vi.mocked(api.fetchApi).mock.calls[0][1]?.body
+      assert.instanceOf(requestBody, FormData)
+      const uploadedFile = requestBody.get('image')
+      assert.instanceOf(uploadedFile, File)
 
       expect(uploadedFile).toBeInstanceOf(File)
       expect(uploadedFile.name).toBe(`recording-${mockTimestamp}.wav`)
@@ -170,11 +171,12 @@ describe('useAudioService', () => {
     it('should set correct form data fields', async () => {
       await service.convertBlobToFileAndSubmit(mockBlob)
 
-      const formDataCall = mockApi.fetchApi.mock.calls[0][1].body as FormData
+      const requestBody = vi.mocked(api.fetchApi).mock.calls[0][1]?.body
+      assert.instanceOf(requestBody, FormData)
 
-      expect(formDataCall.get('subfolder')).toBe('audio')
-      expect(formDataCall.get('type')).toBe('temp')
-      expect(formDataCall.get('image')).toBeInstanceOf(File)
+      expect(requestBody.get('subfolder')).toBe('audio')
+      expect(requestBody.get('type')).toBe('temp')
+      expect(requestBody.get('image')).toBeInstanceOf(File)
     })
 
     it('should handle blob with different type', async () => {
@@ -182,8 +184,10 @@ describe('useAudioService', () => {
 
       await service.convertBlobToFileAndSubmit(customBlob)
 
-      const formDataCall = mockApi.fetchApi.mock.calls[0][1].body as FormData
-      const uploadedFile = formDataCall.get('image') as File
+      const requestBody = vi.mocked(api.fetchApi).mock.calls[0][1]?.body
+      assert.instanceOf(requestBody, FormData)
+      const uploadedFile = requestBody.get('image')
+      assert.instanceOf(uploadedFile, File)
 
       expect(uploadedFile.type).toBe('audio/ogg')
     })
@@ -193,17 +197,21 @@ describe('useAudioService', () => {
 
       await service.convertBlobToFileAndSubmit(customBlob)
 
-      const formDataCall = mockApi.fetchApi.mock.calls[0][1].body as FormData
-      const uploadedFile = formDataCall.get('image') as File
+      const requestBody = vi.mocked(api.fetchApi).mock.calls[0][1]?.body
+      assert.instanceOf(requestBody, FormData)
+      const uploadedFile = requestBody.get('image')
+      assert.instanceOf(uploadedFile, File)
 
       expect(uploadedFile.type).toBe('audio/wav') // Should default to audio/wav
     })
 
     it('should handle upload failure with error status', async () => {
-      mockApi.fetchApi.mockResolvedValueOnce({
-        status: 500,
-        statusText: 'Internal Server Error'
-      })
+      vi.mocked(api.fetchApi).mockResolvedValueOnce(
+        new Response(null, {
+          status: 500,
+          statusText: 'Internal Server Error'
+        })
+      )
 
       await expect(
         service.convertBlobToFileAndSubmit(mockBlob)
@@ -211,14 +219,17 @@ describe('useAudioService', () => {
         'Error uploading temp file: 500 - Internal Server Error'
       )
 
-      expect(mockToastStore.addAlert).toHaveBeenCalledWith(
-        'Error uploading temp file: 500 - Internal Server Error'
-      )
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({
+          kind: 'warning',
+          title: 'Upload failed: 500 - Internal Server Error'
+        })
+      ])
     })
 
     it('should handle network errors', async () => {
       const networkError = new Error('Network Error')
-      mockApi.fetchApi.mockRejectedValueOnce(networkError)
+      vi.mocked(api.fetchApi).mockRejectedValueOnce(networkError)
 
       await expect(
         service.convertBlobToFileAndSubmit(mockBlob)
@@ -234,7 +245,9 @@ describe('useAudioService', () => {
       ]
 
       for (const testCase of testCases) {
-        mockApi.fetchApi.mockResolvedValueOnce(testCase)
+        vi.mocked(api.fetchApi).mockResolvedValueOnce(
+          new Response(null, testCase)
+        )
 
         await expect(
           service.convertBlobToFileAndSubmit(mockBlob)
@@ -242,19 +255,19 @@ describe('useAudioService', () => {
           `Error uploading temp file: ${testCase.status} - ${testCase.statusText}`
         )
 
-        expect(mockToastStore.addAlert).toHaveBeenCalledWith(
-          `Error uploading temp file: ${testCase.status} - ${testCase.statusText}`
+        expect(useToast().toasts.at(-1)).toEqual(
+          expect.objectContaining({
+            kind: 'warning',
+            title: `Upload failed: ${testCase.status} - ${testCase.statusText}`
+          })
         )
-
-        mockToastStore.addAlert.mockClear()
       }
     })
 
     it('should handle malformed response JSON', async () => {
-      mockApi.fetchApi.mockResolvedValueOnce({
-        status: 200,
-        json: () => Promise.reject(new Error('Invalid JSON'))
-      })
+      const response = new Response()
+      vi.spyOn(response, 'json').mockRejectedValue(new Error('Invalid JSON'))
+      vi.mocked(api.fetchApi).mockResolvedValueOnce(response)
 
       await expect(
         service.convertBlobToFileAndSubmit(mockBlob)
@@ -262,10 +275,9 @@ describe('useAudioService', () => {
     })
 
     it('should handle empty response', async () => {
-      mockApi.fetchApi.mockResolvedValueOnce({
-        status: 200,
-        json: () => Promise.resolve({})
-      })
+      vi.mocked(api.fetchApi).mockResolvedValueOnce(
+        new Response(JSON.stringify({}), { status: 200 })
+      )
 
       const result = await service.convertBlobToFileAndSubmit(mockBlob)
 
@@ -273,48 +285,15 @@ describe('useAudioService', () => {
     })
   })
 
-  describe('error handling', () => {
-    it('should handle AudioRecordingError interface correctly', () => {
-      const error: AudioRecordingError = {
-        type: 'permission',
-        message: 'Microphone access denied',
-        originalError: new Error('Permission denied')
-      }
-
-      expect(error.type).toBe('permission')
-      expect(error.message).toBe('Microphone access denied')
-      expect(error.originalError).toBeInstanceOf(Error)
-    })
-
-    it('should support all error types', () => {
-      const errorTypes = [
-        'permission',
-        'not_supported',
-        'encoder',
-        'recording',
-        'unknown'
-      ] as const
-
-      errorTypes.forEach((type) => {
-        const error: AudioRecordingError = {
-          type,
-          message: `Test error for ${type}`
-        }
-
-        expect(error.type).toBe(type)
-      })
-    })
-  })
-
   describe('edge cases', () => {
     it('should handle very large blobs', async () => {
-      const largeData = new Array(1000000).fill('a').join('')
+      const largeData = 'a'.repeat(1000000)
       const largeBlob = new Blob([largeData], { type: 'audio/wav' })
 
       const result = await service.convertBlobToFileAndSubmit(largeBlob)
 
       expect(result).toBe('audio/test-audio-123.wav [temp]')
-      expect(mockApi.fetchApi).toHaveBeenCalledTimes(1)
+      expect(api.fetchApi).toHaveBeenCalledTimes(1)
     })
 
     it('should handle empty blob', async () => {

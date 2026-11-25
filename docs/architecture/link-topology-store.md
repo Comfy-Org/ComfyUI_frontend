@@ -4,7 +4,7 @@ Date: 2026-07-05 (retroactive design record; implemented in PR #13436)
 Status: Accepted
 
 Design record for extracting link topology into a dedicated store per
-[ADR 0008](../adr/0008-entity-component-system.md). Amends the
+[ADR-ECS-0008](../adr/ECS-0008-entity-component-system.md). Amends the
 `LinkEndpoints` component described there. The
 [Reroute Chain Store](reroute-chain-store.md) builds directly on this
 store; shared vocabulary lives in the
@@ -120,7 +120,7 @@ and returns `undefined` after logging an error when a different link already
 owns a supplied id. It does not remint an unexpected runtime collision.
 Import and deserialization repair persisted id collisions before calling this
 runtime API. See
-[Link registration migration](../extensions/link-registration-migration.md)
+[Link registration migration](https://docs.comfy.org/custom-nodes/js/link-registration-migration)
 for extension-facing return-value guidance.
 
 ## Scope

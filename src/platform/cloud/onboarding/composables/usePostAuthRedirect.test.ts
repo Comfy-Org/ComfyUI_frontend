@@ -1,3 +1,4 @@
+import { useToast } from '@/components/ui/toast/toastStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp, defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -7,7 +8,7 @@ import { usePostAuthRedirect } from '@/platform/cloud/onboarding/composables/use
 const query = vi.hoisted(() => ({ value: {} as Record<string, string> }))
 const replace = vi.hoisted(() => vi.fn())
 const push = vi.hoisted(() => vi.fn())
-vi.mock('vue-router', () => ({
+vi.mock<unknown>(import('vue-router'), () => ({
   useRouter: () => ({ replace, push }),
   useRoute: () => ({ query: query.value })
 }))
@@ -15,13 +16,8 @@ vi.mock('vue-router', () => ({
 const resumeOAuthIfNeeded = vi.hoisted(() =>
   vi.fn().mockResolvedValue({ kind: 'no-oauth' })
 )
-vi.mock('@/platform/cloud/oauth/useOAuthPostLoginRedirect', () => ({
+vi.mock(import('@/platform/cloud/oauth/useOAuthPostLoginRedirect'), () => ({
   useOAuthPostLoginRedirect: () => ({ resumeOAuthIfNeeded })
-}))
-
-const toasts = vi.hoisted(() => ({ add: vi.fn() }))
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: () => toasts
 }))
 
 const DEFAULT_REDIRECT = { name: 'cloud-user-check' }
@@ -70,12 +66,13 @@ describe('usePostAuthRedirect', () => {
 
     await onAuthSuccess()
 
-    expect(toasts.add).toHaveBeenCalledWith(
+    expect(useToast().toasts).toEqual([
       expect.objectContaining({
-        severity: 'success',
-        summary: 'Login Completed'
+        duration: 2000,
+        kind: 'success',
+        title: 'Login Completed'
       })
-    )
+    ])
   })
 
   it('returns a deep-linked user to where they were headed', async () => {
@@ -140,15 +137,12 @@ describe('usePostAuthRedirect', () => {
     await onAuthSuccess()
 
     expect(
-      toasts.add,
+      useToast().error,
       'authError only renders in email-form mode, so a Google/GitHub user would see the failure nowhere at all'
-    ).toHaveBeenCalledWith(
-      expect.objectContaining({
-        severity: 'error',
-        summary: 'oauth.consent.sessionErrorToastSummary',
-        detail: 'Session expired'
-      })
-    )
+    ).toHaveBeenCalledWith('oauth.consent.sessionErrorToastSummary', {
+      description: 'Session expired',
+      duration: 4000
+    })
   })
 
   it('passes the live query to the OAuth resume check', async () => {

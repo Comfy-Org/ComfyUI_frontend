@@ -1,22 +1,29 @@
 <script setup lang="ts">
 import type { CSSProperties } from 'vue'
-import { computed } from 'vue'
+import { computed, toValue } from 'vue'
 
-import VirtualGrid from '@/components/common/VirtualGrid.vue'
+import VirtualGrid from '@comfyorg/design-system/common/VirtualGrid'
 
 import type {
   FilterOption,
   OwnershipFilterOption,
   OwnershipOption
-} from '@/platform/assets/types/filterTypes'
+} from '@comfyorg/assets-core/filtering'
+import { isPaged, pagedItems } from '@/utils/pagedList'
+import type { MaybePaged } from '@/utils/pagedList'
 
 import FormDropdownMenuActions from './FormDropdownMenuActions.vue'
 import FormDropdownMenuFilter from './FormDropdownMenuFilter.vue'
 import FormDropdownMenuItem from './FormDropdownMenuItem.vue'
-import type { FormDropdownItem, LayoutMode, SortOption } from './types'
+import type {
+  FormDropdownItem,
+  LayoutMode,
+  SortOption,
+  ThumbnailSize
+} from './types'
 
 interface Props {
-  items: FormDropdownItem[]
+  items: MaybePaged<FormDropdownItem>
   isSelected: (item: FormDropdownItem, index: number) => boolean
   uploadable: boolean
   filterOptions: FilterOption[]
@@ -27,7 +34,7 @@ interface Props {
   baseModelOptions?: FilterOption[]
   candidateIndex?: number
   candidateLabel?: string
-  loadingMore?: boolean
+  hasThumbnailSizes?: boolean
 }
 
 const {
@@ -41,18 +48,17 @@ const {
   showBaseModelFilter,
   baseModelOptions,
   candidateIndex = -1,
-  candidateLabel,
-  loadingMore = false
+  candidateLabel
 } = defineProps<Props>()
 const emit = defineEmits<{
   (e: 'item-click', item: FormDropdownItem, index: number): void
   (e: 'search-enter'): void
   (e: 'show-picker'): void
-  (e: 'approach-end'): void
 }>()
 
 const filterSelected = defineModel<string>('filterSelected')
 const layoutMode = defineModel<LayoutMode>('layoutMode')
+const thumbnailSize = defineModel<ThumbnailSize>('thumbnailSize')
 const sortSelected = defineModel<string>('sortSelected')
 const searchQuery = defineModel<string>('searchQuery')
 const ownershipSelected = defineModel<OwnershipOption>('ownershipSelected')
@@ -86,9 +92,24 @@ const LAYOUT_CONFIGS: Record<LayoutMode, LayoutConfig> = {
   }
 }
 
-const layoutConfig = computed<LayoutConfig>(
-  () => LAYOUT_CONFIGS[layoutMode.value ?? 'grid']
-)
+const thumbnailLayouts = {
+  compact: { maxColumns: 5, itemHeight: 104, itemWidth: 69 },
+  standard: LAYOUT_CONFIGS.grid,
+  large: { maxColumns: 1, itemHeight: 412, itemWidth: 380 }
+} satisfies Record<
+  ThumbnailSize,
+  Pick<LayoutConfig, 'maxColumns' | 'itemHeight' | 'itemWidth'>
+>
+
+const layoutConfig = computed<LayoutConfig>(() => {
+  const layout = layoutMode.value ?? 'grid'
+  return layout === 'grid'
+    ? {
+        ...LAYOUT_CONFIGS.grid,
+        ...thumbnailLayouts[thumbnailSize.value ?? 'standard']
+      }
+    : LAYOUT_CONFIGS[layout]
+})
 
 const gridStyle = computed<CSSProperties>(() => ({
   display: 'grid',
@@ -97,26 +118,14 @@ const gridStyle = computed<CSSProperties>(() => ({
   width: '100%'
 }))
 
-type VirtualDropdownItem = FormDropdownItem & { key: string }
-const virtualItems = computed<VirtualDropdownItem[]>(() =>
-  items.map((item) => ({
-    ...item,
-    key: String(item.id)
-  }))
-)
+const menuItems = computed(() => pagedItems(items))
+const hasMore = computed(() => isPaged(items) && toValue(items.hasMore))
+const isLoadingMore = computed(() => isPaged(items) && toValue(items.isLoading))
 
-/**
- * The dropdown content is teleported to `document.body` by PrimeVue Popover,
- * detaching it from the LGraphNode subtree where the canvas wheel guard lives.
- * Pinch-zoom (`ctrl/meta + wheel`) would otherwise trigger page-level zoom and
- * push fixed UI off-screen, so it must be suppressed locally. Horizontal
- * swipe-to-navigate is already blocked at the page boundary by
- * `overscroll-behavior: none` on `html, body`, so we deliberately do NOT
- * preventDefault on horizontal-dominant wheels here — doing so cancels the
- * trackpad's native momentum on slow vertical scrolls (where stray horizontal
- * jitter frames satisfy `|deltaX| > |deltaY|`), starving the VirtualGrid's
- * `useScroll` and leaving rows blank until a fast scroll re-pumps samples.
- */
+function loadMore() {
+  return isPaged(items) ? items.loadMore() : undefined
+}
+
 const onWheel = (event: WheelEvent) => {
   if (event.ctrlKey || event.metaKey) event.preventDefault()
 }
@@ -124,7 +133,7 @@ const onWheel = (event: WheelEvent) => {
 
 <template>
   <div
-    class="flex h-[640px] w-103 flex-col rounded-lg bg-component-node-background pt-4 outline -outline-offset-1 outline-node-component-border"
+    class="flex h-[640px] w-103 flex-col rounded-lg bg-node pt-4 outline -outline-offset-1 outline-node-border"
     data-capture-wheel="true"
     data-testid="form-dropdown-menu"
     @wheel="onWheel"
@@ -142,6 +151,8 @@ const onWheel = (event: WheelEvent) => {
       v-model:search-query="searchQuery"
       v-model:ownership-selected="ownershipSelected"
       v-model:base-model-selected="baseModelSelected"
+      v-model:thumbnail-size="thumbnailSize"
+      :has-thumbnail-sizes
       :sort-options
       :show-ownership-filter
       :ownership-options
@@ -151,7 +162,7 @@ const onWheel = (event: WheelEvent) => {
       @search-enter="emit('search-enter')"
     />
     <div
-      v-if="items.length === 0"
+      v-if="menuItems.length === 0 && !hasMore"
       class="flex h-50 items-center justify-center"
     >
       <i
@@ -162,15 +173,16 @@ const onWheel = (event: WheelEvent) => {
     </div>
     <VirtualGrid
       v-else
-      :key="layoutMode"
-      :items="virtualItems"
+      :key="layoutMode === 'grid' ? thumbnailSize : layoutMode"
+      :items="menuItems"
       :grid-style
       :max-columns="layoutConfig.maxColumns"
       :default-item-height="layoutConfig.itemHeight"
       :default-item-width="layoutConfig.itemWidth"
       :buffer-rows="2"
       class="mt-2 min-h-0 flex-1"
-      @approach-end="emit('approach-end')"
+      :on-load-more="loadMore"
+      :can-load-more="hasMore"
     >
       <template #item="{ item, index }">
         <FormDropdownMenuItem
@@ -186,7 +198,7 @@ const onWheel = (event: WheelEvent) => {
       </template>
     </VirtualGrid>
     <div
-      v-if="loadingMore"
+      v-if="isLoadingMore"
       class="flex items-center justify-center py-2"
       data-testid="form-dropdown-loading-more"
     >

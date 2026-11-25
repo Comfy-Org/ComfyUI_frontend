@@ -1,16 +1,193 @@
 # In-App Agent panel (FE-1187)
 
 The In-App Agent panel is a manager-pattern workbench extension. The panel lives
-entirely in this subtree and renders in a flag-gated right dock registered by
+entirely in this subtree and renders in a right dock registered by
 `src/extensions/core/agentPanel.ts`, so it shares the host pinia and vue-i18n
-instances and wires every host dependency itself (REST client, `/ws` event source,
-draft-to-canvas seam).
+instances and wires every host dependency itself (REST client, agent events
+socket, draft-to-canvas seam).
+
+## Backend contract
+
+The panel speaks one contract on the cloud and on the local agent:
+
+- **Events socket, `/api/agent/events`** (`services/agent/agentEventSource.ts`).
+  Agent events and CRDT doc frames share it in both directions; ComfyUI's
+  `/ws` carries neither. Its URL comes from `api.apiURL`. In the cloud it
+  takes the auth params `/ws` uses, and does not open when no one is signed
+  in; elsewhere the signed-in user's credential rides as `?token=`. Both are
+  read again on every connect. Reconnects back off with jitter; the backoff
+  resets once a socket delivers a frame or stays open for the maximum delay.
+- **Identity, `GET /api/agent/identity`** (`services/agent/agentIdentity.ts`).
+  Canvas ops carry `human:<user_id>:<tab>` with the id the backend reports,
+  so the follower stays inactive until it answers. A failed lookup retries
+  with backoff, capped at 30 seconds and never given up, and at once when the
+  socket connects again. A rejected credential is not retried until the
+  account changes.
+- **ComfyUI restart** (`stores/agent/agentNodeDefinitionRefreshStore.ts`). A
+  successful `restart_comfyui` tool call means ComfyUI restarts once the turn
+  ends. Every `/ws` reconnect within 10 minutes of that call, before or after
+  it, refreshes node definitions and then reloads the open workflow, because
+  the call and the reconnect arrive on different sockets in either order. An
+  unrelated reconnect in that window refreshes too and leaves the restart's
+  own reconnect to refresh again. The refresh shows its own "Update requested"
+  and "Node definitions updated" toasts. A failed refresh runs again on the
+  next reconnect in the window. A reconnect outside the window does nothing, so
+  if none comes within it the store does nothing, and **Refresh Node
+  Definitions** recovers definitions. A restart made while the panel is closed
+  is not observed here; outside the agent, `platform/customNodes/useReconnectNodeDefinitionRefresh.ts`
+  (wired in `composables/useServerReconnectLifecycle.ts`, local only) checks `/object_info` on every
+  reconnect and, when it lists node types the page lacks, refreshes
+  definitions and reloads the open workflow if it holds one of them. When
+  ComfyUI reports a `server_boot_id` feature flag, that core path instead
+  refreshes definitions and reloads the open workflow once per real restart
+  (a new boot id), and this store leaves restarts to it; it still refreshes
+  definitions after `refresh_catalog`.
+- **Saved workflows, `GET /api/workflows`**. Saved tabs resolve through the
+  saved-workflow index on every backend.
+- **Credential** (`services/agent/agentAuth.ts`). In the cloud, agent requests
+  authenticate through `api.fetchApi` like every other request. Elsewhere they
+  carry the signed-in user's auth header, or the stored API key when no one is
+  signed in, and a running turn re-sends it. A signed-out send opens the sign-in
+  dialog, unless the dev proxy injects `DEV_AGENT_COMFY_TOKEN`. Signing out or
+  switching account (or API key) reconnects the socket and looks the identity
+  up again.
+
+## Activation and consent
+
+The dock is visible when the server's `agent` feature reports
+`state: "ready"` and the panel has an open intent; sending still requires
+Agent consent for the current user and workspace. Cloud and ComfyUI (`--enable-agent`)
+publish the same feature, and ComfyUI pushes `agent_status` when it changes;
+while it is `starting` or `failed` the entry button shows that, inert. Builds
+with `VITE_AGENT_STANDALONE=true` (the local agent harness) ignore the feature
+and, in development mode, force the panel on; consent is still required. A
+plain `pnpm dev` shows the panel only when the ComfyUI it proxies publishes the
+feature. A restored open intent cannot bypass consent.
+
+Cloud and Desktop share one onboarding rule (ADR-AGENT-CONSENT-0045). On the
+first two launches the panel opens by itself, with the consent card over it
+until the user answers. After that, **Agent** asks for consent before it opens
+a closed panel, and Send asks before the first message. Signed-out users see
+the card before sign-in.
+
+```mermaid
+flowchart TD
+  launch([Launch]) --> agreed{Agreed for this account and workspace?}
+  agreed -- yes --> done[No card; Agent and Send just work]
+  agreed -- no --> window{Launch 1 or 2?}
+  window -- no --> noCard[No automatic card]
+  window -- yes --> answered{Skipped on this device?}
+  answered -- yes --> noCard
+  answered -- no --> card[Panel opens with the consent card]
+  card -- Agree --> saved[Consent saved; panel open]
+  card -- Skip --> noCard
+  card -- Escape or outside click --> again[Card again on the next of launches 1 and 2]
+  noCard --> ask[Agent on a closed panel, or Send: the card first]
+```
+
+On launches 1 and 2 the panel also opens by itself for a user who has agreed;
+after that it keeps whatever open state the user left it in.
+
+Acceptance is stored through the hosted Global Settings API under
+`Comfy.AgentPanel.ConsentAccepted` for the authenticated user and workspace. Skip, Escape and outside clicks dismiss without accepting.
+Skip is remembered on the device for the account and workspace (or for
+signed-out use) and ends the automatic card; Escape and outside clicks do not.
+Failed loads or saves allow retry and do not permit sending. A manual request
+to open a closed panel waits for successful consent; automatic activation can
+open the panel before consent.
+Switching user or workspace invalidates the cached acceptance and loads the
+new scope. Desktop/Local sign-in continuation authenticates before saving.
+
+### Consent offer telemetry
+
+`agent_consent_not_offered` names why an automatic offer was not made.
+
+| `reason`                 | Why                                         | Retried                |
+| ------------------------ | ------------------------------------------- | ---------------------- |
+| `first_run_screen`       | Getting Started or another first-run screen | When it closes         |
+| `tour_active`            | Another onboarding tour                     | When it ends           |
+| `dialog_open`            | Another dialog                              | When it closes         |
+| `boot_undecided`         | The startup decision did not settle         | No, for this page load |
+| `storage_unavailable`    | localStorage cannot be written              | No, for this page load |
+| `first_session_deferred` | A new local user's first launch             | No, for this page load |
+
+On a non-cloud build, the launch that shows a new user the template browser
+(nothing restored, `Comfy.TutorialCompleted` unset) is left to the templates:
+the panel does not auto-open, the launch does not count toward the two
+activation launches, and the card is not offered unprompted, including after a
+dialog closes or the user signs in. A panel restored open from an earlier
+profile stays hidden from the first paint, without forgetting it, so the next
+launch restores it. The Agent button and keybinding work as usual.
+`Comfy.AgentPanel.firstSessionDeferred` in localStorage bounds this to one
+launch; if it cannot be written, the launch is not deferred.
+
+`agent_consent_offer_exited` covers every other ending. Split queries by
+`exit`; a total is not a quantity.
+
+| `exit`                       | Meaning                                          | Kind                |
+| ---------------------------- | ------------------------------------------------ | ------------------- |
+| `consent_already_accepted`   | Consent is already stored for this scope         | Correct, not needed |
+| `card_already_seen`          | The card was already on screen this page load    | Correct, not needed |
+| `activation_window_complete` | Past launch 2, or the launch count is unreadable | Correct, not needed |
+| `consent_unresolved`         | The stored consent read has not settled          | Owed, not made      |
+| `consent_read_failed`        | The stored consent read failed                   | Owed, not made      |
+| `offer_in_flight`            | Another offer attempt has not finished           | Owed, not made      |
+| `startup_probe_failed`       | The first-run startup probe failed               | Owed, not made      |
+| `scope_changed_before_read`  | The account or workspace changed before the read | Owed, not made      |
+| `scope_probe_failed`         | Resolving the account or workspace failed        | Owed, not made      |
+| `scope_changed_after_read`   | The account or workspace changed during the read | Owed, not made      |
+| `card_closed_before_mount`   | The card closed before it rendered               | Owed, not made      |
+
+There is no exit for "the agent flag is off": it would fire on every page load
+outside the rollout, and every event already carries
+`$feature/agent-in-app-experience`.
+
+Outside the request stage, exits are deduplicated per page load by
+(`stage`, `exit`, `retry_armed`). The request stage records each attempt
+without deduplication, including automatic retries after a pre-display hold.
+Compare counts within the same stage, exit and retry state; do not sum across
+stages.
+
+## First-use tour
+
+After consent succeeds, the first Agent open starts a three-card tour of the
+panel, composer and chat history, all inside the Agent panel. **Next** advances
+through the cards; **Done** on the last card, **Skip** on any earlier card and
+Escape once a card is on screen all dismiss the tour and mark it complete. The
+last card has no **Skip**: there is nothing left to skip. Escape on the last
+card counts as **Done** in `agent_onboarding_step` (`action: finish`); on an
+earlier card it counts as **Skip**.
+
+A card placed beside its target carries an arrow pointing at it; cards placed
+anywhere else never do. The arrow is also hidden when it would not actually
+point at the target: when a narrow viewport has shifted the card onto its
+target, or when the target's center lies outside the span the arrow can reach
+along the card's edge. The rest of the
+screen, the highlighted area included, does not respond while a card is up; a
+click there briefly outlines the card and moves focus to it
+so the user finds the controls instead of clicking the highlight.
+
+Completion is scoped to the authenticated user and active workspace; with
+either unresolved there is no scope to record, so no tour is shown at all. It
+is written to `localStorage` and to the hidden user setting
+`Comfy.AgentPanel.OnboardedScopes`, and the tour counts as seen if either says
+so. The setting keeps Desktop from showing the tour again when its local
+origin (port) changes. A different user or workspace gets its own tour. The legacy unscoped
+completion flag is adopted once by the current scope, then removed.
+
+The tour waits rather than marking itself complete when its target is not yet
+available. It is also deferred while App Mode is active or another onboarding
+tour owns the overlay; returning to graph mode or finishing the other tour lets
+the Agent tour appear.
 
 ## CRDT follower
 
 The doc-host follower has no gate of its own: it mounts with the agent panel,
-so the panel's product flag (slice 00's `agent_panel` gate) is the only switch.
-The follower uses the existing same-origin `/ws` connection. To run against a
+so it runs only once the panel's activation and consent requirements above are
+satisfied.
+The follower's doc frames ride the events socket
+(`crdt/agentDocFrameTransport.ts`), and every open of that socket resubscribes.
+The dev server proxies `/api/agent/events` as a WebSocket. To run against a
 cloud ephemeral environment:
 
 ```bash
@@ -19,6 +196,73 @@ DEV_SERVER_COMFYUI_URL=https://<host>/ pnpm dev
 
 Incoming `doc_update` frames are decoded and applied incrementally with
 `Y.applyUpdate`; the follower never requests or fans out a full document for
-each update. Human `doc_ops` transmission is implemented, but converting local
-canvas commands to the shared semantic op vocabulary remains intentionally
-unwired until the `@comfyorg/comfy-multi-player` applier is available.
+each update. Human edits are minted into the shared op vocabulary and sent as
+`doc_ops` frames on the same socket (`crdt/docOpMinter.ts`). The doc-frame wire
+contract and its generated types are described in
+[`packages/ingest-types`](../../../../packages/ingest-types/README.md).
+
+While the follower holds the bound document, a turn sends no draft: the
+document is the source of truth and an unversioned draft would overwrite it.
+Once the follower gives up on that document (refused for good, every subscribe
+unanswered, or unreadable), or the identity lookup is rejected, turns seed the
+draft again. An identity lookup that is still retrying keeps withholding the
+draft. A reconnect retries the document and withholds it until that attempt
+settles.
+
+## Ask cards
+
+An `ask_user` question stays on screen, read-only, after it resolves, until
+the thread is loaded again. The server's transcript keeps only a pending ask
+(`pending_ask`), so a reload, or opening another chat and coming back, drops a
+card whose ask has resolved.
+
+## Cross-repository release order
+
+### Glossary
+
+- **Dark deploy:** compatible code deployed while user exposure is disabled.
+- **Integration receipt:** exact revisions, package version, flags, and browser-visible proof.
+- **Consumer pin:** the exact shared-package version recorded in the manifest and lockfile.
+
+### Release order
+
+Agent protocol and applier changes must move in this order:
+
+```mermaid
+flowchart TD
+  package["comfy-multi-player<br/>Merge and publish an immutable release"]
+  cloud["Cloud — first runtime consumer<br/>Pin, test, dark deploy, and prove runtime"]
+  frontend["Frontend — second runtime consumer<br/>Pin, test, and deploy with exposure off"]
+  acceptance["Enable flags<br/>Prove an authenticated browser canvas edit and reconnect"]
+  stable["Stable promotion<br/>Reuse the exact tested combination"]
+
+  package --> cloud --> frontend --> acceptance --> stable
+```
+
+Cloud is the first runtime consumer, and frontend is the second. Update `package.json` and
+`pnpm-lock.yaml` only after the accepted `@comfyorg/comfy-multi-player` version is installable and
+the compatible cloud consumer has deployed. Run package-pin/parity checks, unit and browser tests,
+and prove both product-flag states before normal frontend review and merge.
+
+### Deploy and receipt
+
+Deploy the frontend with user exposure off. The integration receipt names exact frontend/cloud
+revisions, the shared package version, and flag values. `agent-in-app-experience` is the
+product/cohort flag; `AGENT_CRDT_MODE` plus `workflows.crdt_enabled` selects the V1 storage path.
+They are not interchangeable.
+
+### Acceptance gate
+
+Acceptance requires an authenticated browser flow that causes a visible canvas edit and survives
+reconnect. Package CI, frame tests, healthy services, or a served frontend alone do not satisfy the
+gate.
+
+### Stable promotion
+
+Stable promotion reuses the exact integrated combination, makes the backend compatible first,
+verifies the served frontend revision, and expands product access last.
+
+### Exceptions
+
+Backward-compatible frontend-only changes that do not emit, require, or expose a backend contract
+may merge independently if the PR explains why. Documentation-only changes may proceed in parallel.

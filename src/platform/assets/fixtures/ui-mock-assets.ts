@@ -1,4 +1,7 @@
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type { AssetItem } from '@comfyorg/assets-core/schema'
+
+const PRODUCTION_FORBIDDEN_MOCK_ASSET_SENTINEL =
+  'COMFY_PRODUCTION_FORBIDDEN_MOCK_ASSET_SENTINEL'
 
 // 🎭 OBVIOUSLY FAKE MOCK DATA - DO NOT USE IN PRODUCTION! 🎭
 const fakeFunnyModelNames = [
@@ -119,6 +122,7 @@ export function createMockAssets(count: number = 20): AssetItem[] {
       user_metadata: {
         description: obviouslyFakeDescriptions[index],
         base_model: baseModel,
+        production_forbidden_sentinel: PRODUCTION_FORBIDDEN_MOCK_ASSET_SENTINEL,
         original_name: fakeFunnyModelNames[index],
         warning: '🚨 THIS IS FAKE DEMO DATA - NOT A REAL MODEL! 🚨'
       }

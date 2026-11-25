@@ -1,19 +1,14 @@
-import { createTestingPinia } from '@pinia/testing'
 import { fromAny } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
 import { describe, expect, test } from 'vitest'
 import { effect, stop } from 'vue'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
+import { transformInputSpecV1ToV2 } from '@comfyorg/object-info-parser/migration'
 import { app } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
 
-setActivePinia(createTestingPinia({ stubActions: false }))
-
-const { addNodeInput } = useLitegraphService()
-
 function createMatchTypeNode(graph: LGraph) {
+  const { addNodeInput } = useLitegraphService()
   const node = new LGraphNode('switch')
   ;(node.constructor as { nodeData: unknown }).nodeData = {
     name: 'ComfySwitchAny',

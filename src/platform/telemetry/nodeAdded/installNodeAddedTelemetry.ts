@@ -1,7 +1,7 @@
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import { ChangeTracker } from '@/scripts/changeTracker'
+import { isGraphLoading } from '@/core/graph/graphLoadState'
 
-import { useTelemetry } from '..'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { getCurrentNodeAddSource } from './nodeAddSource'
 
 /**
@@ -10,9 +10,9 @@ import { getCurrentNodeAddSource } from './nodeAddSource'
  */
 export function installNodeAddedTelemetry(graph: LGraph): void {
   graph.events.addEventListener('node:added', ({ detail: { node } }) => {
-    if (ChangeTracker.isLoadingGraph) return
+    if (isGraphLoading(graph)) return
     useTelemetry()?.trackNodeAdded({
-      node_type: node.type ?? 'unknown',
+      node_type: node.type,
       source: getCurrentNodeAddSource()
     })
   })

@@ -1,4 +1,4 @@
-import type { Router } from 'vue-router'
+import type { LocationQuery, Router } from 'vue-router'
 
 import {
   capturePreservedQuery,
@@ -6,7 +6,7 @@ import {
   hydratePreservedQuery
 } from '@/platform/navigation/preservedQueryManager'
 
-interface PreservedQueryDefinition {
+export interface PreservedQueryDefinition {
   namespace: string
   keys: string[]
   requiredKey?: string
@@ -20,18 +20,60 @@ interface PreservedQueryDefinition {
    * replace-on-capture semantics.
    */
   stripAfterCapture?: boolean
+  /**
+   * When set, a key present as a repeated (array) value, or present with no
+   * value at all (`?key`, which the router reads as `null`, in a single
+   * value or inside an array), is captured as an ambiguous marker instead of
+   * silently picking one: repeated values join with `,`; a lone `null`
+   * becomes a bare `,`. Both are strings outside any real id's charset, so
+   * they read back as invalid rather than resolving to one of several
+   * colliding values or to "absent" (`capturePreservedQuery` itself drops a
+   * null/empty value as not worth capturing).
+   */
+  rejectRepeated?: true
+  /** With `rejectRepeated`, an empty value (`?key=`) is captured as `,`. */
+  markEmpty?: true
+}
+
+function withAmbiguityMarked(
+  query: LocationQuery,
+  keys: string[],
+  markEmpty: boolean
+): LocationQuery {
+  const result = { ...query }
+  for (const key of keys) {
+    const value = result[key]
+    const values = Array.isArray(value) ? value : [value]
+    const isRepeated = values.length > 1
+    const hasBareEntry =
+      values.includes(null) || (markEmpty && values.includes(''))
+    if (!isRepeated && !hasBareEntry) continue
+    result[key] = values.map((entry) => entry ?? '').join(',') || ','
+  }
+  return result
+}
+
+function hasValue(value: LocationQuery[string] | undefined): boolean {
+  return (Array.isArray(value) ? value : [value]).some(Boolean)
 }
 
 export const installPreservedQueryTracker = (
   router: Router,
   definitions: PreservedQueryDefinition[]
 ) => {
-  router.beforeEach((to, _from, next) => {
+  router.beforeEach((to) => {
     const queryKeys = new Set(Object.keys(to.query))
     const keysToStrip = new Set<string>()
 
     definitions.forEach(
-      ({ namespace, keys, requiredKey, stripAfterCapture }) => {
+      ({
+        namespace,
+        keys,
+        requiredKey,
+        stripAfterCapture,
+        rejectRepeated,
+        markEmpty
+      }) => {
         hydratePreservedQuery(namespace)
         const presentKeys = keys.filter((key) => queryKeys.has(key))
         if (presentKeys.length === 0) return
@@ -39,7 +81,17 @@ export const installPreservedQueryTracker = (
           clearPreservedQuery(namespace)
           return
         }
-        capturePreservedQuery(namespace, to.query, keys, {
+        const captureQuery = rejectRepeated
+          ? withAmbiguityMarked(to.query, keys, markEmpty === true)
+          : to.query
+        if (
+          rejectRepeated &&
+          !presentKeys.some((key) => hasValue(captureQuery[key]))
+        ) {
+          clearPreservedQuery(namespace)
+          return
+        }
+        capturePreservedQuery(namespace, captureQuery, keys, {
           merge: stripAfterCapture
         })
         if (stripAfterCapture) {
@@ -48,13 +100,10 @@ export const installPreservedQueryTracker = (
       }
     )
 
-    if (keysToStrip.size === 0) {
-      next()
-      return
-    }
+    if (keysToStrip.size === 0) return
 
     const cleanedQuery = { ...to.query }
     keysToStrip.forEach((key) => delete cleanedQuery[key])
-    next({ path: to.path, query: cleanedQuery, hash: to.hash })
+    return { path: to.path, query: cleanedQuery, hash: to.hash }
   })
 }

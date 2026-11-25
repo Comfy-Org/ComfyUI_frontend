@@ -10,8 +10,16 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 // must render translated strings, not literal i18n keys like
 // 'sideToolbar.labels.assets'.
 test.describe('i18n locale fallback', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.page.addInitScript(() => {
+  test.use({
+    initialSettings: {
+      // Default sidebar size on small viewports hides labels; force normal so
+      // .side-bar-button-label is rendered for the assertion.
+      'Comfy.Sidebar.Size': 'normal'
+    }
+  })
+
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => {
       Object.defineProperty(navigator, 'language', {
         value: 'de-DE',
         configurable: true
@@ -21,11 +29,6 @@ test.describe('i18n locale fallback', () => {
         configurable: true
       })
     })
-    // Default sidebar size on small viewports hides labels; force normal so
-    // .side-bar-button-label is rendered for the assertion.
-    await comfyPage.settings.setSetting('Comfy.Sidebar.Size', 'normal')
-    await comfyPage.page.reload()
-    await comfyPage.waitForAppReady()
   })
 
   test('sidebar labels render translated strings, not raw i18n keys', async ({

@@ -35,7 +35,7 @@ export function createGridStyle(options: GridOptions = {}): CSSProperties {
   }
 
   const gridTemplateColumns = columns
-    ? `repeat(${Math.max(1, columns ?? 1)}, 1fr)`
+    ? `repeat(${Math.max(1, columns)}, 1fr)`
     : `repeat(auto-fill, minmax(${minWidth}, ${maxWidth}))`
 
   return {

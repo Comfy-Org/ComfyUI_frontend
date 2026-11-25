@@ -1,7 +1,7 @@
 import {
   configValueOrDefault,
-  remoteConfig
-} from '@/platform/remoteConfig/remoteConfig'
+  useRemoteConfigStore
+} from '@/platform/remoteConfig/remoteConfigStore'
 
 const PROD_API_BASE_URL = 'https://api.comfy.org'
 const STAGING_API_BASE_URL = 'https://stagingapi.comfy.org'
@@ -25,26 +25,44 @@ const BUILD_TIME_PLATFORM_BASE_URL = __USE_PROD_CONFIG__
   : (import.meta.env.VITE_STAGING_PLATFORM_BASE_URL ??
     STAGING_PLATFORM_BASE_URL)
 
-export function getComfyApiBaseUrl(): string {
-  return configValueOrDefault(
-    remoteConfig.value,
-    'comfy_api_base_url',
-    BUILD_TIME_API_BASE_URL
+function resolveBaseUrl(
+  key:
+    | 'comfy_api_base_url'
+    | 'comfy_cloud_base_url'
+    | 'comfy_platform_base_url',
+  defaultValue: string
+): string {
+  const value = configValueOrDefault(
+    useRemoteConfigStore().config,
+    key,
+    defaultValue
   )
+
+  try {
+    const url = new URL(value)
+    if (url.protocol !== 'https:' || !url.hostname) return defaultValue
+    return url.href.replace(/\/$/, '')
+  } catch {
+    return defaultValue
+  }
+}
+
+export function getComfyApiBaseUrl(): string {
+  return resolveBaseUrl('comfy_api_base_url', BUILD_TIME_API_BASE_URL)
+}
+
+export function getBuildTimeComfyApiBaseUrl(): string {
+  return BUILD_TIME_API_BASE_URL
+}
+
+export function getBuildTimeComfyCloudBaseUrl(): string {
+  return BUILD_TIME_CLOUD_BASE_URL
 }
 
 export function getComfyCloudBaseUrl(): string {
-  return configValueOrDefault(
-    remoteConfig.value,
-    'comfy_cloud_base_url',
-    BUILD_TIME_CLOUD_BASE_URL
-  )
+  return resolveBaseUrl('comfy_cloud_base_url', BUILD_TIME_CLOUD_BASE_URL)
 }
 
 export function getComfyPlatformBaseUrl(): string {
-  return configValueOrDefault(
-    remoteConfig.value,
-    'comfy_platform_base_url',
-    BUILD_TIME_PLATFORM_BASE_URL
-  )
+  return resolveBaseUrl('comfy_platform_base_url', BUILD_TIME_PLATFORM_BASE_URL)
 }
