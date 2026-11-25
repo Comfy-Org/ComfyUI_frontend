@@ -542,7 +542,9 @@ describe('FormDropdown', () => {
     const first = mountDropdown(items)
     await openDropdown(first.user)
 
-    screen.getByRole('button', { name: 'widgets.uploadSelect.resize' }).focus()
+    screen
+      .getByRole('button', { name: 'widgets.uploadSelect.resizeLeftCorner' })
+      .focus()
     await first.user.keyboard('{ArrowLeft}')
     first.unmount()
 

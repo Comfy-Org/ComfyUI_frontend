@@ -4581,7 +4581,9 @@
     "backFromFolder": "Back: {name}",
     "uploadSelect": {
       "placeholder": "Select...",
-      "resize": "Resize",
+      "resizeLeftCorner": "Resize from left corner",
+      "resizeRightCorner": "Resize from right corner",
+      "resizeHint": "Drag to resize, double-click to reset",
       "placeholderImage": "Select image...",
       "placeholderAudio": "Select audio...",
       "placeholderVideo": "Select video...",

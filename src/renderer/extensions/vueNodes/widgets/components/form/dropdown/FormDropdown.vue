@@ -28,7 +28,7 @@ import type { MaybePaged } from '@/utils/pagedList'
 import FormDropdownInput from './FormDropdownInput.vue'
 import FormDropdownMenu from './FormDropdownMenu.vue'
 import FormDropdownResizeHandle from './FormDropdownResizeHandle.vue'
-import type { PanelSize } from './resizePanel'
+import type { PanelSize, ResizeHandle } from './resizePanel'
 import {
   DROPDOWN_PANEL_CLASS,
   defaultSearcher,
@@ -134,6 +134,13 @@ const panelSize = useSafeSessionStorage<PanelSize | undefined>(
   undefined,
   { serializer: StorageSerializers.object }
 )
+const RESIZE_HANDLES: ResizeHandle[] = [
+  'left-edge',
+  'free-edge',
+  'left-corner',
+  'right-corner'
+]
+const alignOffset = ref(0)
 const displayedSearchQuery = ref('')
 const isFiltering = ref(false)
 
@@ -396,6 +403,7 @@ const dropdownItems = computed(() =>
       </FormDropdownInput>
       <PopoverContent
         align="end"
+        :align-offset
         update-position-strategy="always"
         :side-offset="12"
         hide-when-detached
@@ -406,7 +414,7 @@ const dropdownItems = computed(() =>
             height: `${panelSize.height}px`
           }
         "
-        class="group/dropdown pointer-events-auto relative flex h-160 w-103 flex-col overflow-hidden rounded-lg border-none bg-transparent p-0 shadow-lg data-[state=closed]:animate-none data-[state=open]:animate-none"
+        class="group/dropdown pointer-events-auto relative flex h-160 w-103 flex-col overflow-visible rounded-lg border-none bg-transparent p-0 shadow-lg data-[state=closed]:animate-none data-[state=open]:animate-none"
         @interact-outside.prevent
         @close-auto-focus.prevent="focusTrigger"
       >
@@ -438,7 +446,13 @@ const dropdownItems = computed(() =>
           @item-click="handleSelection"
           @show-picker="showPicker"
         />
-        <FormDropdownResizeHandle v-model:size="panelSize" />
+        <FormDropdownResizeHandle
+          v-for="handle in RESIZE_HANDLES"
+          :key="handle"
+          v-model:size="panelSize"
+          v-model:align-offset="alignOffset"
+          :handle
+        />
       </PopoverContent>
     </PopoverRoot>
   </div>

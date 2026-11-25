@@ -8,7 +8,8 @@ export class WidgetSelectDropdownFixture {
   public readonly trigger: Locator
   public readonly menu: Locator
   public readonly popover: Locator
-  public readonly resizeHandle: Locator
+  public readonly leftResizeCorner: Locator
+  public readonly rightResizeCorner: Locator
 
   constructor(
     public readonly root: Locator,
@@ -19,7 +20,12 @@ export class WidgetSelectDropdownFixture {
     const page = root.page()
     this.menu = page.getByTestId(TestIds.widgets.formDropdownMenu)
     this.popover = page.getByRole('dialog').filter({ has: this.menu })
-    this.resizeHandle = this.popover.getByRole('button', { name: 'Resize' })
+    this.leftResizeCorner = this.popover.getByRole('button', {
+      name: 'Resize from left corner'
+    })
+    this.rightResizeCorner = this.popover.getByRole('button', {
+      name: 'Resize from right corner'
+    })
   }
 
   static fromTrigger(trigger: Locator): WidgetSelectDropdownFixture {
@@ -37,8 +43,11 @@ export class WidgetSelectDropdownFixture {
     await expect(this.menu).toBeHidden()
   }
 
-  async dragResizeHandle(by: { x: number; y: number }): Promise<void> {
-    const box = await this.resizeHandle.boundingBox()
+  async dragResizeCorner(
+    corner: Locator,
+    by: { x: number; y: number }
+  ): Promise<void> {
+    const box = await corner.boundingBox()
     if (!box) throw new Error('Resize handle is not visible')
     const mouse = this.root.page().mouse
     const start = { x: box.x + box.width / 2, y: box.y + box.height / 2 }
@@ -49,10 +58,14 @@ export class WidgetSelectDropdownFixture {
   }
 
   async popoverScrolls(): Promise<boolean> {
-    return this.popover.evaluate(
-      (el) =>
-        el.scrollHeight > el.clientHeight || el.scrollWidth > el.clientWidth
-    )
+    return this.popover.evaluate((el) => {
+      const { overflowX, overflowY } = getComputedStyle(el)
+      const scrolls = (overflow: string) => /auto|scroll/.test(overflow)
+      return (
+        (scrolls(overflowY) && el.scrollHeight > el.clientHeight) ||
+        (scrolls(overflowX) && el.scrollWidth > el.clientWidth)
+      )
+    })
   }
 
   async searchAndSelectTop(popover: Locator, query: string): Promise<void> {

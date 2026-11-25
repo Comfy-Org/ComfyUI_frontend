@@ -131,7 +131,7 @@ const onWheel = (event: WheelEvent) => {
 
 <template>
   <div
-    class="flex min-h-0 flex-1 flex-col rounded-lg bg-node pt-4 outline -outline-offset-1 outline-node-border"
+    class="flex min-h-0 flex-1 flex-col rounded-lg bg-node py-4 outline -outline-offset-1 outline-node-border"
     data-capture-wheel="true"
     data-testid="form-dropdown-menu"
     @wheel="onWheel"

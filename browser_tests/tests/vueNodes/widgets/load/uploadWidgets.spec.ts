@@ -142,8 +142,11 @@ test.describe('Vue Upload Widgets', { tag: '@vue-nodes' }, () => {
         const box = async () => (await dropdown.popover.boundingBox())!
         const before = await box()
 
-        await test.step('dragging down-left grows the panel', async () => {
-          await dropdown.dragResizeHandle({ x: -120, y: 80 })
+        await test.step('dragging the left corner grows the panel left and down', async () => {
+          await dropdown.dragResizeCorner(dropdown.leftResizeCorner, {
+            x: -120,
+            y: 80
+          })
           await expect
             .poll(async () => (await box()).width)
             .toBeCloseTo(before.width + 120, 0)
@@ -154,13 +157,35 @@ test.describe('Vue Upload Widgets', { tag: '@vue-nodes' }, () => {
           await expect(dropdown.menu).toBeVisible()
         })
 
-        await test.step('arrow keys resize from the grip', async () => {
+        await test.step('dragging the right corner grows the panel right', async () => {
           const dragged = await box()
-          await dropdown.resizeHandle.focus()
+          await dropdown.dragResizeCorner(dropdown.rightResizeCorner, {
+            x: 60,
+            y: 0
+          })
+          await expect
+            .poll(async () => (await box()).width)
+            .toBeCloseTo(dragged.width + 60, 0)
+          expect((await box()).x).toBeCloseTo(dragged.x, 0)
+        })
+
+        await test.step('arrow keys resize from a corner', async () => {
+          const resized = await box()
+          await dropdown.leftResizeCorner.focus()
           await comfyPage.page.keyboard.press('ArrowRight')
           await expect
             .poll(async () => (await box()).width)
-            .toBeCloseTo(dragged.width - 16, 0)
+            .toBeCloseTo(resized.width - 16, 0)
+        })
+
+        await test.step('double-clicking a corner restores the default size', async () => {
+          await dropdown.rightResizeCorner.dblclick()
+          await expect
+            .poll(async () => (await box()).width)
+            .toBeCloseTo(before.width, 0)
+          await expect
+            .poll(async () => (await box()).height)
+            .toBeCloseTo(before.height, 0)
         })
       })
     })
