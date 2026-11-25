@@ -129,7 +129,8 @@ function addMissingModelsOnClick(event: MouseEvent) {
     event,
     deploymentModelsRequest(deployment.deployment_id, {
       handsOverWorkflow: true
-    })
+    }),
+    'errors_panel'
   )
 }
 

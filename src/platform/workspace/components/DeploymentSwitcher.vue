@@ -336,14 +336,14 @@ function focusTrigger() {
 
 function createCustomDeployment() {
   if (frames.isAvailable()) focusTrigger()
-  if (frames.open(NEW_DEPLOYMENT_FROM_NODES)) return
+  if (frames.open(NEW_DEPLOYMENT_FROM_NODES, 'run_on_row')) return
   void openCreateCustomDeploymentDialog()
 }
 
 function updateDeployment(deploymentId: string) {
   focusTrigger()
   isOpen.value = false
-  frames.open({ step: 'update', deploymentId })
+  frames.open({ step: 'update', deploymentId }, 'pencil')
 }
 
 function reload() {

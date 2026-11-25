@@ -227,7 +227,10 @@ describe('usePreinstallOffer', () => {
   })
 
   it('leaves an open Platform screen alone', async () => {
-    usePlatformFrameStore().open({ step: 'models', deploymentId: DEPLOYMENT })
+    usePlatformFrameStore().open(
+      { step: 'models', deploymentId: DEPLOYMENT },
+      'model_library'
+    )
     startOffer()
     useMissingModelStore().setMissingModels([missingCheckpoint])
     await nextTick()

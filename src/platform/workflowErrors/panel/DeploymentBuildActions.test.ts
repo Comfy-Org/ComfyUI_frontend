@@ -141,11 +141,14 @@ describe('DeploymentBuildActions', () => {
         })
       )
 
-      expect(usePlatformFrameStore().open).toHaveBeenCalledExactlyOnceWith({
-        step: 'models',
-        deploymentId: 'dep-1',
-        handsOverWorkflow: true
-      })
+      expect(usePlatformFrameStore().open).toHaveBeenCalledExactlyOnceWith(
+        {
+          step: 'models',
+          deploymentId: 'dep-1',
+          handsOverWorkflow: true
+        },
+        'errors_panel'
+      )
     })
 
     it.for([

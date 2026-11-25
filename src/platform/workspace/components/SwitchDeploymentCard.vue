@@ -200,7 +200,11 @@ const isSwitching = computed(() => isSettling.value || isPicking.value)
 function createOnPlatform(event: MouseEvent) {
   if (
     !isSwitching.value &&
-    !openPlatformFrameOnClick(event, NEW_DEPLOYMENT_FOR_WORKFLOW)
+    !openPlatformFrameOnClick(
+      event,
+      NEW_DEPLOYMENT_FOR_WORKFLOW,
+      'workflow_dialog'
+    )
   )
     handOverWorkflowOnClick(event, 'switch-deployment-card')
   emit('done')
