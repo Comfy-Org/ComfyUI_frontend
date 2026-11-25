@@ -1,5 +1,4 @@
 import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
-import { reportError } from '@comfyorg/telemetry/reportError'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import { t } from '@/i18n'
@@ -72,11 +71,6 @@ export async function copyImageToClipboard(
       navigator.clipboard.write([new ClipboardItem({ 'image/png': png })])
     await Promise.all([png, write()])
   } catch (error) {
-    reportError(error, {
-      errorType: 'error_copying_image_to_clipboard',
-      surface: 'graph',
-      logToConsole: false
-    })
     toast.warning(
       t('toastMessages.errorCopyImage', {
         error: getErrorMessage(error) ?? t('g.unknownError')
