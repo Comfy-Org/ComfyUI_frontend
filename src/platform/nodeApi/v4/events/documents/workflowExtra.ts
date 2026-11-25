@@ -6,8 +6,8 @@ import type { WorkflowChangeTracker } from '@/platform/workflow/management/store
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
+import { savableValue } from '@/platform/nodeApi/shared/savableValue'
 import { savedCopier } from '@/platform/nodeApi/shared/savedCopy'
-import { savableCopy } from '@/platform/nodeApi/v4/edit/checkedArguments'
 import type { EditRunner } from '@/platform/nodeApi/v4/edit/editRunner'
 import type { WorkflowHandle } from '@/platform/nodeApi/v4/types'
 
@@ -50,7 +50,7 @@ export function createWorkflowExtra(
       const saved =
         value === undefined
           ? undefined
-          : savableCopy('workflow.setExtra', 'a value', value)
+          : savableValue('workflow.setExtra', value, 'a value')
       const tracker = changeTrackerOf('workflow.setExtra', document)
       const root = tracker && rootOnScreen(tracker)
       if (!root) return false

@@ -6,7 +6,7 @@ import { containsCentre } from '@/lib/litegraph/src/measure'
 import { inputLink } from '@/lib/litegraph/src/node/slotLinks'
 
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
-import { savedCopy } from '@/platform/nodeApi/shared/savedCopy'
+import { savedCopy, savedRecord } from '@/platform/nodeApi/shared/savedCopy'
 import type { SavedCopier } from '@/platform/nodeApi/shared/savedCopy'
 import { MODE_NAMES, boundsOnCanvas } from '@/platform/nodeApi/v4/nodeHandle'
 import type {
@@ -16,6 +16,8 @@ import type {
   OwnOutput,
   ResolvedNodeView
 } from '@/platform/nodeApi/v4/types'
+
+const NO_PROPERTIES: Readonly<Record<string, unknown>> = Object.freeze({})
 
 /** Views of the nodes of one prompt build: one per node, read when first asked for. */
 export interface NodeViews {
@@ -73,7 +75,9 @@ function nodeView(
   node: LGraphNode,
   copyOfSaved: SavedCopier
 ): ResolvedNodeView {
-  const properties = once(() => savedCopy(node.properties))
+  const properties = once(
+    () => savedRecord(savedCopy(node.properties)) ?? NO_PROPERTIES
+  )
   const groups = once(() => groupsHolding(graph, node))
   const inputs = once(() => ownInputs(graph, node))
   const outputs = once(() => ownOutputs(node))

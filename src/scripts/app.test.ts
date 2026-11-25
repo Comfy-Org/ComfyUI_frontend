@@ -3964,7 +3964,6 @@ describe('ComfyApp', () => {
         }
       )
 
-
       it('retires the handle to a node of a replacement load when undo goes back across that load', async () => {
         const { comfy } = nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
         await app.loadGraphData(workflowWithFixedIdAndOneNode(), false)
@@ -4709,23 +4708,6 @@ describe('ComfyApp', () => {
         ])
       }
     )
-
-    async function importA1111ImageWithProbe() {
-      vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
-        parameters: 'positive\nNegative prompt: negative\nSteps: 20'
-      })
-      mockImportA1111.mockImplementation(
-        async (incomingGraph, _parameters, beforeGraphClear) => {
-          await beforeGraphClear?.()
-          incomingGraph.clear()
-          const probe = LiteGraph.createNode('HandleProbe')
-          assert(probe)
-          incomingGraph.add(probe)
-          return 'imported'
-        }
-      )
-      await app.handleFile(createTestFile('a1111.png', 'image/png'))
-    }
 
     it.for([
       {

@@ -8,6 +8,7 @@ import type { DOMWidgetValue } from '@/types/domWidget'
 
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
 import { checkedFields } from '@/platform/nodeApi/v4/checkedFields'
+import { savedRecord } from '@/platform/nodeApi/shared/savedCopy'
 import type { SavedCopier } from '@/platform/nodeApi/shared/savedCopy'
 import type {
   DefRegistry,
@@ -121,7 +122,7 @@ function widgetConstructor(
       destroy: () => teardown?.()
     }
     const context: WidgetTypeContext = Object.freeze({
-      getOptions: () => copyOfSaved('getOptions', options)
+      getOptions: () => savedRecord(copyOfSaved('getOptions', options))
     })
     const mounted = createMountedWidget(node, spec)
     if (type.height !== undefined) fixHeight(mounted.widget, type.height)

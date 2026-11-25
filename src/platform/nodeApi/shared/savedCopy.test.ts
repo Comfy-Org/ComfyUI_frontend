@@ -1,14 +1,17 @@
 import { describe, expect, expectTypeOf, it } from 'vitest'
 
 import type { SavableValue } from './savableValue'
-import { savedCopier, savedRecord } from './savedCopy'
+import { savedCopier, savedCopy, savedRecord } from './savedCopy'
 
 describe('a saved copy', () => {
   it('is what a workflow saves, typed as saved data and not as the value copied', () => {
     const copy = savedCopier()('m', new Date(0))
+    const thrown = savedCopy(new Date(0))
 
     expect(copy).toBe('1970-01-01T00:00:00.000Z')
+    expect(thrown).toBe('1970-01-01T00:00:00.000Z')
     expectTypeOf(copy).toEqualTypeOf<SavableValue | undefined>()
+    expectTypeOf(thrown).toEqualTypeOf<SavableValue | undefined>()
   })
 
   it.for([

@@ -8,8 +8,9 @@ import type { DocumentHandles } from '@/platform/nodeApi/shared/documentHandles'
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
 import { isStoreKey } from '@/platform/nodeApi/v4/checkedFields'
 import { checkedBoolean } from '@/platform/nodeApi/v4/edit/checkedArguments'
+import { savedRecord } from '@/platform/nodeApi/shared/savedCopy'
 import type { SavedCopier } from '@/platform/nodeApi/shared/savedCopy'
-import type { WidgetHandle, WidgetOptions } from '@/platform/nodeApi/v4/types'
+import type { WidgetHandle } from '@/platform/nodeApi/v4/types'
 import { requiredSize } from './definitionFields'
 import { savableValue } from '@/platform/nodeApi/shared/savableValue'
 import type { WidgetEdits } from './widgetEdits'
@@ -130,7 +131,7 @@ function valueMembers(
     },
     getOptions: () =>
       read(({ options }) =>
-        copyOfSaved<Readonly<WidgetOptions>>('getOptions', { ...options })
+        savedRecord(copyOfSaved('getOptions', { ...options }))
       ),
     setOption(key: unknown, value: unknown) {
       const checkedKey = optionKey(key)
