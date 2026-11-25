@@ -75,6 +75,21 @@ describe('confirmUnsavedWorkBeforeSwitch', () => {
     }
   )
 
+  it('names a reload, not a switch, when it asks before a reload', async () => {
+    await confirmUnsavedWorkBeforeSwitch('lora-stack-demo', { reload: true })
+
+    expect(useDialogService().confirm).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Save your workflows before reloading?',
+        message:
+          "Reloading the tab runs it on lora-stack-demo. These workflows have changes that aren't saved yet.",
+        itemList: ['workflows/portrait.json', 'workflows/upscale.json'],
+        denyLabel: 'Reload without saving',
+        confirmLabel: 'Save and reload'
+      })
+    )
+  })
+
   it.for([
     { choice: 'Cancel', answer: null, goesOn: false, saved: [] },
     {

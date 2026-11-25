@@ -4300,6 +4300,7 @@
     "version": "v{version}",
     "labelWithDetail": "{label} · {detail}",
     "status": {
+      "building": "Building",
       "stopped": "Stopped",
       "stopping": "Stopping",
       "failed": "Failed",
@@ -4373,7 +4374,11 @@
       "message": "Switching to {deployment} reloads the tab. These workflows have changes that aren't saved yet.",
       "tabsReturn": "Your open tabs come back after the reload either way.",
       "switchWithoutSaving": "Switch without saving",
-      "saveAndSwitch": "Save and switch"
+      "saveAndSwitch": "Save and switch",
+      "reloadTitle": "Save your workflows before reloading?",
+      "reloadMessage": "Reloading the tab runs it on {deployment}. These workflows have changes that aren't saved yet.",
+      "reloadWithoutSaving": "Reload without saving",
+      "saveAndReload": "Save and reload"
     },
     "workspaceDefault": "Workspace default",
     "membersStartOn": "Members without their own pick start on",

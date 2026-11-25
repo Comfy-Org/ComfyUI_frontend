@@ -1299,7 +1299,8 @@ describe('DeploymentSwitcher', () => {
         next: listing,
         act: (user: ReturnType<typeof userEvent.setup>) =>
           user.click(screen.getByTestId(`deployment-row-${D2}`)),
-        target: 'Studio Build · production'
+        message:
+          "Switching to Studio Build · production reloads the tab. These workflows have changes that aren't saved yet."
       },
       {
         path: 'picking Comfy Cloud',
@@ -1308,7 +1309,8 @@ describe('DeploymentSwitcher', () => {
         next: { ...listing, picked_deployment_id: D2, pick_source: 'browser' },
         act: (user: ReturnType<typeof userEvent.setup>) =>
           user.click(screen.getByTestId('deployment-row-cloud')),
-        target: 'Comfy Cloud'
+        message:
+          "Switching to Comfy Cloud reloads the tab. These workflows have changes that aren't saved yet."
       },
       {
         path: 'following the workspace default',
@@ -1327,7 +1329,8 @@ describe('DeploymentSwitcher', () => {
         },
         act: (user: ReturnType<typeof userEvent.setup>) =>
           user.click(screen.getByTestId(`deployment-row-${D2}`)),
-        target: 'Studio Build · production'
+        message:
+          "Switching to Studio Build · production reloads the tab. These workflows have changes that aren't saved yet."
       },
       {
         path: 'changing the default this browser follows',
@@ -1338,7 +1341,8 @@ describe('DeploymentSwitcher', () => {
           await openDefaultMenu(user)
           await user.click(screen.getByTestId(`default-row-${D1}`))
         },
-        target: 'Studio Build · staging'
+        message:
+          "Switching to Studio Build · staging reloads the tab. These workflows have changes that aren't saved yet."
       },
       {
         path: 'reloading after its deployment changed',
@@ -1355,7 +1359,8 @@ describe('DeploymentSwitcher', () => {
         },
         act: async (user: ReturnType<typeof userEvent.setup>) =>
           user.click(await screen.findByTestId('deployment-switcher-reload')),
-        target: 'Studio Build · production'
+        message:
+          "Reloading the tab runs it on Studio Build · production. These workflows have changes that aren't saved yet."
       }
     ] satisfies {
       path: string
@@ -1363,10 +1368,10 @@ describe('DeploymentSwitcher', () => {
       boot: WorkspaceDeploymentList
       next: WorkspaceDeploymentList
       act: (user: ReturnType<typeof userEvent.setup>) => Promise<void>
-      target: string
+      message: string
     }[])(
       'asks to save them first when $path, and changes nothing on Cancel',
-      async ({ setup, boot, next, act, target }) => {
+      async ({ setup, boot, next, act, message }) => {
         setup()
         mockWorkspaceApi.listDeployments
           .mockResolvedValueOnce(boot)
@@ -1381,7 +1386,7 @@ describe('DeploymentSwitcher', () => {
         await waitFor(() =>
           expect(useDialogService().confirm).toHaveBeenCalledWith(
             expect.objectContaining({
-              message: `Switching to ${target} reloads the tab. These workflows have changes that aren't saved yet.`,
+              message,
               itemList: ['workflows/portrait.json']
             })
           )
@@ -2602,6 +2607,49 @@ describe('DeploymentSwitcher with Platform in the editor', () => {
       'Update Studio Build'
     )
   })
+
+  it.for([
+    { stage: 'building', deploymentId: '' },
+    { stage: 'deploying', deploymentId: 'dep-c4c4c4c4' }
+  ] as const)(
+    'lists the first deployment while $stage, unpickable, instead of saying there are none',
+    async ({ stage, deploymentId }) => {
+      mockWorkspaceApi.listDeployments.mockResolvedValue({
+        ...listing,
+        items: []
+      })
+      Object.assign(usePlatformFrameStore(), {
+        build: {
+          kind: 'new',
+          buildId: 'b-4',
+          accountId: 'uid-ana',
+          workspaceId: 'ws-1',
+          deploymentId,
+          deploymentName: 'lora-stack-demo',
+          releaseId: 'r-4',
+          version: 1,
+          previousReleaseId: null,
+          previousVersion: null,
+          stage,
+          progress: null,
+          startedAt: 0
+        } satisfies FollowedBuild
+      })
+      const user = renderSwitcher()
+      await openList(user)
+
+      expect(screen.queryByTestId('deployment-switcher-empty')).toBeNull()
+      const row = screen.getByRole('menuitemradio', {
+        name: /lora-stack-demo/
+      })
+      expect(row).toHaveTextContent('Building')
+      expect(row).toHaveAttribute('aria-checked', 'false')
+
+      await user.click(row)
+
+      expect(mockWorkspaceApi.pickDeployment).not.toHaveBeenCalled()
+    }
+  )
 
   it('shows the usual status again once a build fails', async () => {
     mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
