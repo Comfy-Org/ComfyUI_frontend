@@ -1,3 +1,4 @@
+import { getActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { WorkspaceDeploymentList } from '@/platform/workspace/api/workspaceApi'
@@ -25,6 +26,13 @@ const listing: WorkspaceDeploymentList = {
       created_at: '2026-10-01T00:00:00Z'
     }
   ]
+}
+
+function reloadPage() {
+  for (const store of [useDeploymentPickStore(), useToast()]) {
+    store.$dispose()
+    delete getActivePinia()?.state.value[store.$id]
+  }
 }
 
 describe('useDeploymentPickAtBoot', () => {
@@ -56,6 +64,39 @@ describe('useDeploymentPickAtBoot', () => {
         duration: 10000
       })
     ])
+  })
+
+  it('warns about a gone pick on one load only, since it then replaces the pick with Comfy Cloud', async () => {
+    let pickCookieNamesGoneDeployment = true
+    vi.mocked(workspaceApi.listDeployments).mockImplementation(async () =>
+      pickCookieNamesGoneDeployment
+        ? { ...listing, gone_picked_deployment_id: 'dep-gone' }
+        : { ...listing, pick_source: 'browser' }
+    )
+    vi.mocked(workspaceApi.clearDeployment).mockImplementation(async () => {
+      pickCookieNamesGoneDeployment = false
+    })
+
+    Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-1' })
+    await useDeploymentPickAtBoot()
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        kind: 'warning',
+        title: 'The deployment you picked no longer exists.'
+      })
+    ])
+    await vi.waitFor(() =>
+      expect(workspaceApi.clearDeployment).toHaveBeenCalledExactlyOnceWith(
+        'ws-1',
+        { signal: expect.any(AbortSignal) }
+      )
+    )
+
+    reloadPage()
+    await useDeploymentPickAtBoot()
+
+    expect(useDeploymentPickStore().goneDeployment).toBeNull()
+    expect(useToast().toasts).toEqual([])
   })
 
   it('tells the person their pick is gone when a newer listing answers before the boot listing that said so', async () => {

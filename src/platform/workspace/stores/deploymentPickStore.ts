@@ -79,11 +79,6 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
       ? state.value.goneDefaultDeploymentId
       : null
   )
-  /**
-   * Set once a listing says ingest found this browser's own pick gone and
-   * cleared it. Only that one listing says so, so the page keeps it until a
-   * later listing shows a deployment picked again.
-   */
   const sawPickGone = shallowRef(false)
   const goneDeployment = computed<'pick' | 'default' | null>(() => {
     if (sawPickGone.value) return 'pick'
@@ -327,6 +322,33 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
       bootDeployment.value = pickedDeployment.value
     }
   }
+
+  let forgettingGonePick: AbortController | null = null
+
+  async function forgetGonePick(): Promise<void> {
+    const id = workspaceStore.workspaceId
+    if (!id || state.value.phase !== 'ready' || !sawPickGone.value) return
+    const controller = new AbortController()
+    forgettingGonePick = controller
+    try {
+      await workspaceApi.clearDeployment(id, { signal: controller.signal })
+    } catch (err) {
+      if (controller.signal.aborted) return
+      reportError(err, {
+        surface: 'workspace',
+        errorType: 'error_forgetting_gone_deployment_pick',
+        level: 'warning'
+      })
+    }
+  }
+
+  watch(
+    isSwitching,
+    (switching) => {
+      if (switching) forgettingGonePick?.abort()
+    },
+    { flush: 'sync' }
+  )
 
   let firstLoad: Promise<void> | null = null
 
@@ -581,6 +603,7 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     loadOnce,
     followStart,
     bootOnComfyCloud,
+    forgetGonePick,
     pick,
     pickFromLink,
     followWorkspace,

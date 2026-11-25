@@ -26,8 +26,8 @@ interface DeploymentListing {
   defaultDeploymentId: string | null
   /**
    * This browser's own pick, when ingest found it gone (deleted, or no
-   * longer the workspace's) and cleared it. Only the listing that cleared
-   * it says so; the browser is on Comfy Cloud.
+   * longer the workspace's). Said on every listing until the pick changes;
+   * the browser is on Comfy Cloud.
    */
   gonePickedDeploymentId: string | null
   /**

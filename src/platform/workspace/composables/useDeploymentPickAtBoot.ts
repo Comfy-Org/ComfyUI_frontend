@@ -7,7 +7,7 @@ import { takeDeploymentSwitchLanding } from '@/platform/workspace/deploymentSwit
 import { takeReleaseKeptForReload } from '@/platform/workspace/loadedRelease'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 
-/** Starts the boot listing; toasts a gone pick or where a switch landed. */
+/** Starts the boot listing; toasts a gone pick once, or where a switch landed. */
 export async function useDeploymentPickAtBoot(): Promise<void> {
   const landedFromSwitch = takeDeploymentSwitchLanding()
   takeReleaseKeptForReload()
@@ -18,6 +18,7 @@ export async function useDeploymentPickAtBoot(): Promise<void> {
       description: t('deploymentSwitcher.pickGoneDetail'),
       duration: 10000
     })
+    void store.forgetGonePick()
     return
   }
   if (landedFromSwitch) {
