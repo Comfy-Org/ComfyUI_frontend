@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n'
 
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { useNodeOutputsExport } from '@/platform/assets/composables/useNodeOutputsExport'
+import { useNodeOutputsExport } from '@/platform/assets/integration/useNodeOutputsExport'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import {
   shouldHideLinkedCoreMediaInputActions,

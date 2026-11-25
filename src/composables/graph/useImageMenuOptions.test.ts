@@ -15,10 +15,6 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import {
-  createMockCanvasRenderingContext2D,
-  stubCanvasGetContext
-} from '@/utils/__tests__/canvasTestUtils'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { useImageMenuOptions } from './useImageMenuOptions'
 
@@ -197,35 +193,9 @@ describe('useImageMenuOptions', () => {
 
   describe('Copy Image action', () => {
     function createCopyImageFixture() {
-      const original = document.createElement('img')
-      Object.defineProperties(original, {
-        naturalWidth: { value: 4096 },
-        naturalHeight: { value: 2048 }
-      })
-      original.decode = vi
-        .fn<HTMLImageElement['decode']>()
-        .mockResolvedValue(undefined)
-      vi.spyOn(globalThis, 'Image').mockImplementation(function () {
-        return original
-      })
-      const capture: { bounds: number[] } = { bounds: [] }
-      const png = new Blob(['original pixels'], { type: 'image/png' })
-      const context = createMockCanvasRenderingContext2D()
-      stubCanvasGetContext(context)
-      vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation(
-        function (this: HTMLCanvasElement, callback) {
-          capture.bounds = [this.width, this.height]
-          callback(png)
-        }
-      )
-      vi.spyOn(navigator.clipboard, 'write').mockResolvedValue(undefined)
       const display = document.createElement('img')
-      display.src = 'blob:display-copy'
-      display.dataset.fullSrc = 'http://localhost/original.png'
-      Object.defineProperties(display, {
-        naturalWidth: { value: 1024 },
-        naturalHeight: { value: 512 }
-      })
+      display.src =
+        'https://app.example/api/view?filename=output.png&preview=webp'
       const node = createMockLGraphNode({ imgs: [display], imageIndex: 0 })
       const { getImageMenuOptions } = mountComposable()
       const copy = getImageMenuOptions(node).find(
@@ -233,32 +203,48 @@ describe('useImageMenuOptions', () => {
       )
       assert.exists(copy?.action)
 
-      return { original, context, png, capture, copy: copy.action }
+      return copy.action
     }
 
-    it('copies the decoded original with its full asymmetric bounds', async () => {
-      const { original, context, png, capture, copy } = createCopyImageFixture()
+    it('copies full-resolution PNG bytes without exporting the displayed image', async () => {
+      const copy = createCopyImageFixture()
+      vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation(() => {
+        throw new DOMException(
+          'Tainted canvases may not be exported.',
+          'SecurityError'
+        )
+      })
+      const png = new Blob(['original pixels'], { type: 'image/png' })
+      vi.mocked(fetch).mockResolvedValue(new Response(png))
+      const write = vi
+        .spyOn(navigator.clipboard, 'write')
+        .mockResolvedValue(undefined)
 
-      await copy()
+      const copying = copy()
+      expect(write).toHaveBeenCalledOnce()
+      await copying
 
-      expect(original.src).toBe('http://localhost/original.png')
-      expect(capture.bounds).toEqual([4096, 2048])
-      expect(context.drawImage).toHaveBeenCalledWith(original, 0, 0)
-      const writes = vi.mocked(navigator.clipboard.write).mock.calls
-      expect(writes).toHaveLength(1)
-      expect(await writes[0][0][0].getType('image/png')).toBe(png)
+      expect(fetch).toHaveBeenCalledWith(
+        new URL('https://app.example/api/view?filename=output.png')
+      )
+      const copied = await write.mock.calls[0][0][0].getType('image/png')
+      expect(await copied.text()).toBe('original pixels')
     })
 
-    it('warns without changing the clipboard when the original cannot decode', async () => {
-      const { original, copy } = createCopyImageFixture()
-      vi.mocked(original.decode).mockRejectedValue(new Error('decode refused'))
+    it('warns when the original cannot be fetched', async () => {
+      const copy = createCopyImageFixture()
+      vi.mocked(fetch).mockResolvedValue(new Response(null, { status: 403 }))
+      vi.spyOn(navigator.clipboard, 'write').mockImplementation(
+        async ([item]) => {
+          await item.getType('image/png')
+        }
+      )
 
       await copy()
 
       expect(useToast().toasts).toEqual([
         expect.objectContaining({ kind: 'warning' })
       ])
-      expect(navigator.clipboard.write).not.toHaveBeenCalled()
     })
   })
 

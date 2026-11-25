@@ -28,14 +28,17 @@ function reportGateBlocked(
   partnerNodes: PartnerNodeInfo[],
   apiKeyStore: ApiKeyAuthStore
 ) {
+  const hasFirebaseSession = firebaseIdentity.currentUser() !== null
+  const hasStoredApiKey = Boolean(apiKeyStore.getApiKey())
   reportError(new Error(`Partner run gate blocked ${trigger}`), {
     surface: 'billing',
     errorType: 'partner_run_gate_blocked',
     level: 'warning',
+    sentryMode: hasFirebaseSession || hasStoredApiKey ? 'always' : 'never',
     tags: {
       trigger,
-      hasFirebaseSession: firebaseIdentity.currentUser() !== null,
-      hasStoredApiKey: Boolean(apiKeyStore.getApiKey()),
+      hasFirebaseSession,
+      hasStoredApiKey,
       partnerNodeCount: partnerNodes.length
     },
     context: { partnerNodeTypes: partnerNodes.map((n) => n.nodeName) }

@@ -3,6 +3,7 @@ import { expect } from '@playwright/test'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { nodeGraphPosition } from '@e2e/fixtures/utils/nodeGraphPosition'
 
 const NODE_GAP_PX = 1
 const DRAG_DISTANCE_PX = 300
@@ -63,14 +64,6 @@ async function expectNodeUnder(
   expect(covered).toBe(true)
 }
 
-async function nodePos(comfyPage: ComfyPage, nodeId: NodeId) {
-  return comfyPage.page.evaluate((id) => {
-    const node = window.app!.graph.getNodeById(id)
-    if (!node) throw new Error(`Node ${id} not found`)
-    return [node.pos[0], node.pos[1]]
-  }, nodeId)
-}
-
 /** Asserts a sidebar resize grabbed `grabOffset` px off the handle widens it without dragging the node beside it. */
 export async function expectSidebarResizeLeavesNode(
   comfyPage: ComfyPage,
@@ -92,7 +85,7 @@ export async function expectSidebarResizeLeavesNode(
     { x: handleBox.x + handleBox.width + NODE_GAP_PX, y: titleY },
     'titleLeft'
   )
-  const before = await nodePos(comfyPage, nodeId)
+  const before = await nodeGraphPosition(comfyPage, nodeId)
 
   const { mouse } = comfyPage.page
   const startX = handleBox.x + handleBox.width / 2 + grabOffset
@@ -108,7 +101,7 @@ export async function expectSidebarResizeLeavesNode(
   await expect
     .poll(async () => (await sidebar.boundingBox())?.width ?? 0)
     .toBeGreaterThan(initialWidth + DRAG_DISTANCE_PX / 2)
-  expect(await nodePos(comfyPage, nodeId)).toEqual(before)
+  expect(await nodeGraphPosition(comfyPage, nodeId)).toEqual(before)
 }
 
 /** Asserts a bottom panel resize grabbed just off the handle grows it without dragging the node under it. */
@@ -131,7 +124,7 @@ export async function expectBottomPanelResizeLeavesNode(comfyPage: ComfyPage) {
     'center'
   )
   await expectNodeUnder(comfyPage, nodeId, { x: startX, y: startY })
-  const before = await nodePos(comfyPage, nodeId)
+  const before = await nodeGraphPosition(comfyPage, nodeId)
 
   const { mouse } = comfyPage.page
   await mouse.move(startX, startY)
@@ -143,5 +136,5 @@ export async function expectBottomPanelResizeLeavesNode(comfyPage: ComfyPage) {
   await expect
     .poll(async () => (await bottomPanel.root.boundingBox())?.height ?? 0)
     .toBeGreaterThan(initialHeight + BOTTOM_PANEL_DRAG_PX / 2)
-  expect(await nodePos(comfyPage, nodeId)).toEqual(before)
+  expect(await nodeGraphPosition(comfyPage, nodeId)).toEqual(before)
 }

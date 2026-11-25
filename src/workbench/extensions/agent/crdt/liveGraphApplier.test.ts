@@ -28,6 +28,7 @@ import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
 import type { GraphIntentEvent } from '@/lib/litegraph/src/graphIntents'
 import {
   createTestSubgraph,
+  createTestSubgraphData,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type {
@@ -83,6 +84,12 @@ class TestSink extends LGraphNode {
   constructor() {
     super('Test Sink')
     this.addInput('image', 'IMAGE')
+  }
+}
+
+class TestThrowingConfigure extends LGraphNode {
+  override onConfigure(): void {
+    throw new Error('configure exploded')
   }
 }
 
@@ -470,6 +477,7 @@ beforeEach(() => {
   LiteGraph.registerNodeType('TestRepeatedWidgetName', TestRepeatedWidgetName)
   LiteGraph.registerNodeType('TestRangedWidgets', TestRangedWidgets)
   LiteGraph.registerNodeType('TestSink', TestSink)
+  LiteGraph.registerNodeType('TestThrowingConfigure', TestThrowingConfigure)
 
   const dynamicCombo = transformInputSpecV1ToV2(
     ['COMFY_DYNAMICCOMBO_V3', { options: [] }],
@@ -675,6 +683,226 @@ describe('LiveGraphApplier', () => {
     ])
     expect(reportError).not.toHaveBeenCalled()
   })
+
+  it('applies widgets on a node whose definition has no inputs', () => {
+    TestPlainWidgets.nodeData = fromPartial<
+      NonNullable<LGraphNode['constructor']['nodeData']>
+    >({ name: 'TestPlainWidgets' })
+    onTestFinished(() => {
+      TestPlainWidgets.nodeData = undefined
+    })
+    const { graph, doc, applyCollected, applyEdit } = setup({
+      nodes: [
+        {
+          id: 1,
+          type: 'TestPlainWidgets',
+          pos: [0, 0],
+          size: [210, 100],
+          widgets_values: [11, 20]
+        }
+      ],
+      links: []
+    })
+
+    applyCollected()
+    applyEdit(() => {
+      const widgets = nodesMap(doc).get('1')?.get('widgets')
+      assert(widgets instanceof Y.Map)
+      widgets.set('known', 12)
+      widgets.set('not_on_node', 'auto')
+    })
+
+    expect(
+      graph.getNodeById(toNodeId(1))?.widgets?.map((widget) => widget.value)
+    ).toEqual([12, 20])
+    expect(reportError).not.toHaveBeenCalledWith(
+      expect.any(TypeError),
+      expect.anything()
+    )
+    expect(reportError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: "Node 1 (TestPlainWidgets) has no widget 'not_on_node'"
+      }),
+      expect.objectContaining({ errorType: 'agent_graph_widget_missing' })
+    )
+  })
+
+  it('does not report a widget the node definition does not declare (catalog skew)', () => {
+    TestPlainWidgets.nodeData = fromPartial<
+      NonNullable<LGraphNode['constructor']['nodeData']>
+    >({
+      inputs: {
+        known: transformInputSpecV1ToV2(['INT', {}], { name: 'known' }),
+        addedAfterCatalog: transformInputSpecV1ToV2(['INT', {}], {
+          name: 'addedAfterCatalog'
+        })
+      }
+    })
+    onTestFinished(() => {
+      TestPlainWidgets.nodeData = undefined
+    })
+    const { graph, doc, applyCollected, applyEdit } = setup({
+      nodes: [
+        {
+          id: 1,
+          type: 'TestPlainWidgets',
+          pos: [0, 0],
+          size: [210, 100],
+          widgets_values: [11, 20]
+        }
+      ],
+      links: []
+    })
+
+    applyCollected()
+    const result = applyEdit(() => {
+      const widgets = nodesMap(doc).get('1')?.get('widgets')
+      assert(widgets instanceof Y.Map)
+      widgets.set('known', 12)
+      widgets.set('chroma_subsampling', 'auto')
+    })
+
+    expect(
+      graph.getNodeById(toNodeId(1))?.widgets?.map((widget) => widget.value)
+    ).toEqual([12, 20])
+    expect(reportError).not.toHaveBeenCalled()
+    expect(result.failureCount).toBe(1)
+  })
+
+  it('still reports a missing widget the node definition declares', () => {
+    TestPlainWidgets.nodeData = fromPartial<
+      NonNullable<LGraphNode['constructor']['nodeData']>
+    >({
+      inputs: {
+        known: transformInputSpecV1ToV2(['INT', {}], { name: 'known' }),
+        declared_unbuilt: transformInputSpecV1ToV2(['INT', {}], {
+          name: 'declared_unbuilt'
+        })
+      }
+    })
+    onTestFinished(() => {
+      TestPlainWidgets.nodeData = undefined
+    })
+    const { doc, applyCollected, applyEdit } = setup({
+      nodes: [
+        {
+          id: 1,
+          type: 'TestPlainWidgets',
+          pos: [0, 0],
+          size: [210, 100],
+          widgets_values: [11, 20]
+        }
+      ],
+      links: []
+    })
+
+    applyCollected()
+    applyEdit(() => {
+      const widgets = nodesMap(doc).get('1')?.get('widgets')
+      assert(widgets instanceof Y.Map)
+      widgets.set('declared_unbuilt', 5)
+    })
+
+    expect(reportError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: "Node 1 (TestPlainWidgets) has no widget 'declared_unbuilt'"
+      }),
+      expect.objectContaining({ errorType: 'agent_graph_widget_missing' })
+    )
+  })
+
+  it.for([
+    'control_after_generate',
+    'Sampler control_after_generate',
+    'control_filter_list',
+    'Sampler control_filter_list'
+  ])('still reports the missing value control %s', (missing) => {
+    TestPlainWidgets.nodeData = fromPartial<
+      NonNullable<LGraphNode['constructor']['nodeData']>
+    >({
+      inputs: {
+        known: transformInputSpecV1ToV2(['INT', {}], { name: 'known' })
+      }
+    })
+    onTestFinished(() => {
+      TestPlainWidgets.nodeData = undefined
+    })
+    const { doc, applyCollected, applyEdit } = setup({
+      nodes: [
+        {
+          id: 1,
+          type: 'TestPlainWidgets',
+          pos: [0, 0],
+          size: [210, 100],
+          widgets_values: [11, 20]
+        }
+      ],
+      links: []
+    })
+
+    applyCollected()
+    const result = applyEdit(() => {
+      const widgets = nodesMap(doc).get('1')?.get('widgets')
+      assert(widgets instanceof Y.Map)
+      widgets.set(missing, 'increment')
+    })
+
+    expect(result.failureCount).toBe(1)
+    expect(reportError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: `Node 1 (TestPlainWidgets) has no widget '${missing}'`
+      }),
+      expect.objectContaining({ errorType: 'agent_graph_widget_missing' })
+    )
+  })
+
+  it.for([
+    { option: 'control_filter_list', missing: 'selection_pattern' },
+    { option: 'control_after_generate', missing: 'seed_mode' }
+  ])(
+    'still reports a value control named by $option: $missing',
+    ({ option, missing }) => {
+      TestPlainWidgets.nodeData = fromPartial<
+        NonNullable<LGraphNode['constructor']['nodeData']>
+      >({
+        inputs: {
+          known: transformInputSpecV1ToV2(['INT', { [option]: missing }], {
+            name: 'known'
+          })
+        }
+      })
+      onTestFinished(() => {
+        TestPlainWidgets.nodeData = undefined
+      })
+      const { doc, applyCollected, applyEdit } = setup({
+        nodes: [
+          {
+            id: 1,
+            type: 'TestPlainWidgets',
+            pos: [0, 0],
+            size: [210, 100],
+            widgets_values: [11, 20]
+          }
+        ],
+        links: []
+      })
+
+      applyCollected()
+      const result = applyEdit(() => {
+        const widgets = nodesMap(doc).get('1')?.get('widgets')
+        assert(widgets instanceof Y.Map)
+        widgets.set(missing, 'increment')
+      })
+
+      expect(result.failureCount).toBe(1)
+      expect(reportError).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: `Node 1 (TestPlainWidgets) has no widget '${missing}'`
+        }),
+        expect.objectContaining({ errorType: 'agent_graph_widget_missing' })
+      )
+    }
+  )
 
   it("reports the node's actual widget names for a non-positional missing widget", () => {
     const { doc, applyCollected, applyEdit } = setup({
@@ -1375,6 +1603,47 @@ describe('LiveGraphApplier', () => {
       { name: 'overflow', value: 42 }
     ])
     expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('does not count a creation-path name the node definition does not declare as a failure', () => {
+    TestPlainWidgets.nodeData = fromPartial<
+      NonNullable<LGraphNode['constructor']['nodeData']>
+    >({
+      inputs: {
+        known: transformInputSpecV1ToV2(['INT', {}], { name: 'known' }),
+        addedAfterCatalog: transformInputSpecV1ToV2(['INT', {}], {
+          name: 'addedAfterCatalog'
+        })
+      }
+    })
+    onTestFinished(() => {
+      TestPlainWidgets.nodeData = undefined
+    })
+    const { graph, doc, applyCollected } = setup({
+      nodes: [
+        {
+          id: 1,
+          type: 'TestPlainWidgets',
+          pos: [0, 0],
+          size: [210, 100],
+          widgets_values: [11, 20]
+        }
+      ],
+      links: []
+    })
+    doc.transact(() => {
+      const widgets = nodesMap(doc).get('1')?.get('widgets')
+      assert(widgets instanceof Y.Map)
+      widgets.set('chroma_subsampling', 'auto')
+    })
+
+    const result = applyCollected()
+
+    expect(
+      graph.getNodeById(toNodeId(1))?.widgets?.map((widget) => widget.value)
+    ).toEqual([11, 20])
+    expect(reportError).not.toHaveBeenCalled()
+    expect(result.failureCount).toBe(0)
   })
 
   it('does not restore a constructed non-serializable widget by name', () => {
@@ -2363,6 +2632,179 @@ describe('LiveGraphApplier', () => {
     )
   })
 
+  describe('subgraph definition registration', () => {
+    const OUTER = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
+    const INNER = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'
+    const UNRELATED = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc'
+    const interior = (type: string): ISerialisedNode => ({
+      id: 1,
+      type,
+      pos: [0, 0],
+      size: [100, 80],
+      flags: {},
+      order: 0,
+      mode: 0
+    })
+    const outer = () =>
+      createTestSubgraphData({ id: OUTER, nodes: [interior(INNER)] })
+    const inner = (type = 'TestSink') =>
+      createTestSubgraphData({ id: INNER, nodes: [interior(type)] })
+
+    it.for([
+      ['outer first', () => [outer(), inner()]],
+      ['inner first', () => [inner(), outer()]]
+    ] as const)(
+      'registers a definition that nests a sibling delivered %s',
+      ([, definitions]) => {
+        const { graph, applyCollected } = setup({
+          nodes: [],
+          links: [],
+          definitions: { subgraphs: definitions() }
+        })
+
+        const result = applyCollected()
+
+        expect(result.failureCount).toBe(0)
+        expect(graph.subgraphs.has(INNER)).toBe(true)
+        expect(
+          graph.subgraphs.get(OUTER)?.nodes.map(({ type }) => type)
+        ).toEqual([INNER])
+      }
+    )
+
+    it('reports a malformed definition and registers its valid sibling', () => {
+      const { graph, applyCollected } = setup({
+        nodes: [],
+        links: [],
+        definitions: {
+          subgraphs: [inner(), { ...outer(), inputs: 'invalid' }]
+        }
+      })
+
+      const result = applyCollected()
+
+      expect(result.failureCount).toBe(1)
+      expect([...graph.subgraphs.keys()]).toEqual([INNER])
+      expect(reportError).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: expect.stringContaining(`${OUTER} is malformed: inputs`)
+        }),
+        expect.objectContaining({
+          errorType: 'agent_subgraph_definitions_failed',
+          context: expect.objectContaining({ definitionId: OUTER })
+        })
+      )
+    })
+
+    it('does not register a definition that nests a malformed one', () => {
+      const unrelated = createTestSubgraphData({
+        id: UNRELATED,
+        nodes: [interior('TestSink')]
+      })
+      const { graph, applyCollected } = setup({
+        nodes: [],
+        links: [],
+        definitions: {
+          subgraphs: [outer(), { ...inner(), inputs: 'invalid' }, unrelated]
+        }
+      })
+
+      const result = applyCollected()
+
+      expect(result.failureCount).toBe(2)
+      expect([...graph.subgraphs.keys()]).toEqual([UNRELATED])
+      expect(reportError).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          errorType: 'agent_subgraph_definitions_failed',
+          context: expect.objectContaining({ definitionId: OUTER })
+        })
+      )
+    })
+
+    it('registers a valid sibling when another definition fails to configure', () => {
+      const unrelated = createTestSubgraphData({
+        id: UNRELATED,
+        nodes: [interior('TestSink')]
+      })
+      const { graph, applyCollected } = setup({
+        nodes: [],
+        links: [],
+        definitions: {
+          subgraphs: [outer(), inner('TestThrowingConfigure'), unrelated]
+        }
+      })
+
+      const result = applyCollected()
+
+      expect(result.failureCount).toBe(2)
+      expect([...graph.subgraphs.keys()]).toEqual([UNRELATED])
+      expect(reportError).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'configure exploded' }),
+        expect.objectContaining({
+          errorType: 'agent_subgraph_definitions_failed',
+          context: expect.objectContaining({ definitionId: INNER })
+        })
+      )
+      expect(reportError).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          errorType: 'agent_subgraph_definitions_failed',
+          context: expect.objectContaining({ definitionId: OUTER })
+        })
+      )
+    })
+
+    const MALFORMED = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd'
+    const CYCLE_A = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee'
+    const CYCLE_B = 'ffffffff-ffff-4fff-8fff-ffffffffffff'
+
+    it.for([
+      [
+        'nests a malformed definition',
+        () => [
+          inner(MALFORMED),
+          { ...createTestSubgraphData({ id: MALFORMED }), inputs: 'invalid' }
+        ]
+      ],
+      ['fails to configure', () => [inner('TestThrowingConfigure')]]
+    ] as const)(
+      'does not register a parent whose child %s when an unrelated cycle exists',
+      ([, children]) => {
+        const { graph, applyCollected } = setup({
+          nodes: [],
+          links: [],
+          definitions: {
+            subgraphs: [
+              createTestSubgraphData({
+                id: CYCLE_A,
+                nodes: [interior(CYCLE_B)]
+              }),
+              createTestSubgraphData({
+                id: CYCLE_B,
+                nodes: [interior(CYCLE_A)]
+              }),
+              outer(),
+              ...children()
+            ]
+          }
+        })
+
+        applyCollected()
+
+        expect(graph.subgraphs.has(INNER)).toBe(false)
+        expect(graph.subgraphs.has(OUTER)).toBe(false)
+        expect(reportError).toHaveBeenCalledWith(
+          expect.anything(),
+          expect.objectContaining({
+            errorType: 'agent_subgraph_definitions_failed',
+            context: expect.objectContaining({ definitionId: OUTER })
+          })
+        )
+      }
+    )
+  })
+
   it('restores a widget and its mirrored property when a widget callback throws', () => {
     const { graph, doc, applyCollected, applyEdit } = setup({
       nodes: [sourceNode(1)],
@@ -2935,6 +3377,7 @@ describe('LiveGraphApplier widget writes through BaseWidget.setValue', () => {
     const minter = attachDocOpMinter({
       isEnabled: () => true,
       isDocBound: () => true,
+      isBoundWorkflow: () => true,
       getGraph: () => fixture.graph,
       boundRootGraphId: () => toRootGraphId(fixture.graph.id),
       docInputNames: () => [],

@@ -24,6 +24,7 @@ export const NODE_MENU_SECTIONS = {
     'frameNodes',
     'align',
     'distribute',
+    'tidyUp',
     'fitGroup',
     'collapse'
   ],

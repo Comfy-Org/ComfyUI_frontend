@@ -5,7 +5,7 @@ import { createI18n } from 'vue-i18n'
 
 import { fireEvent, render, screen } from '@testing-library/vue'
 
-import { useAssetsStore } from '@/stores/assetsStore'
+import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
 
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 import { assetService } from '@/platform/assets/services/assetService'

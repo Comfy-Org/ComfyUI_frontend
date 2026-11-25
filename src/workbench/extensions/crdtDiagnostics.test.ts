@@ -1,7 +1,7 @@
 import { watch } from 'vue'
 import { mint } from '@comfyorg/comfy-multi-player'
 import { readCrdtSnapshot } from '@/workbench/extensions/agent/crdt/crdtSnapshot'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import {
   clearDevEvents,
   devEvents,
@@ -1290,7 +1290,10 @@ describe('collectCrdtDebugReport', () => {
 })
 describe('devPanelLog', () => {
   beforeEach(() => {
-    remoteConfig.value = { 'Comfy.Agent.CrdtDebug': true }
+    useRemoteConfigStore().acceptConfig(
+      { 'Comfy.Agent.CrdtDebug': true },
+      false
+    )
     clearDevEvents()
     reportError.mockClear()
   })
@@ -1612,7 +1615,10 @@ describe('devPanelLog', () => {
     expect(event.level).toBe('warn')
   })
   it('does not retain events while the debug instrument is disabled', () => {
-    remoteConfig.value = { 'Comfy.Agent.CrdtDebug': false }
+    useRemoteConfigStore().acceptConfig(
+      { 'Comfy.Agent.CrdtDebug': false },
+      false
+    )
     recordDevEvent('doc_update', { seq: 1 })
     expect(devEvents.value).toHaveLength(0)
   })

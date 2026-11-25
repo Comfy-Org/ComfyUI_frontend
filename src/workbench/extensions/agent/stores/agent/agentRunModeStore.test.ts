@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { api } from '@/scripts/api'
-import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 
 vi.mock(import('@/scripts/api'))
 vi.mock(import('@/workbench/extensions/agent/services/agent/agentAuth'))
@@ -35,6 +34,29 @@ describe('agentRunModeStore', () => {
 
     expect(store.mode).toBe('ask_approval')
     expect(store.creditLimit).toBeNull()
+  })
+
+  it('reports a user save but not a load from the server', async () => {
+    vi.mocked(api.fetchApi)
+      .mockResolvedValueOnce(
+        jsonResponse(200, { mode: 'auto', credit_limit: null })
+      )
+      .mockResolvedValueOnce(
+        jsonResponse(200, { mode: 'auto', credit_limit: null })
+      )
+    const store = useAgentRunModeStore()
+    const saved = vi.fn()
+    store.onUserSaved(saved)
+
+    await store.load()
+    expect(store.mode).toBe('auto')
+    expect(saved).not.toHaveBeenCalled()
+
+    await store.save('auto', null)
+    expect(saved).toHaveBeenCalledExactlyOnceWith({
+      mode: 'auto',
+      credit_limit: null
+    })
   })
 
   it('migrates a legacy preference when loading gets 404', async () => {
@@ -318,17 +340,12 @@ describe('agentRunModeStore', () => {
       jsonResponse(200, { mode: 'auto', credit_limit: null })
     )
     const composer = useAgentComposerStore()
-    composer.startSubmission({
-      prompt: composer.prompt,
-      attachments: [],
-      nodes: [],
-      target: createMockLoadedWorkflow({ path: 'workflows/target.json' })
-    })
+    composer.startGateHold('cm-1')
     const sendGate = useAgentSendGateStore()
     const releaseSend = sendGate.begin()
     const store = useAgentRunModeStore()
 
-    composer.invalidateSubmission()
+    composer.cancelGateHold()
     const save = store.save('auto', null)
     await nextTick()
 

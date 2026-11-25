@@ -13,7 +13,7 @@ vi.mock(import('@sentry/vue'), { spy: true })
 
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 
-import { initSentry } from './initSentry'
+import { initSentry, resolveSentryEnvironment } from './initSentry'
 
 beforeEach(() => {
   vi.mocked(sentryInit).mockReturnValue(undefined)
@@ -243,6 +243,44 @@ it('redacts URL secrets from events, breadcrumbs, and spans', () => {
   })
 })
 
+it('redacts URL secrets from error fingerprints', () => {
+  const failure = new Error(
+    'Widget serializer failed for https://alice:password@files.example/image.png?token=privateAlpha#secretFragment'
+  )
+  const beforeSend = initOptions(true).beforeSend
+  assert.exists(beforeSend)
+
+  const event = beforeSend(
+    fromPartial({
+      fingerprint: [
+        'widget_serialization_failed',
+        failure.name,
+        failure.message
+      ],
+      exception: { values: [{ type: failure.name, value: failure.message }] }
+    }),
+    { originalException: failure }
+  )
+
+  expect(event).toMatchObject({
+    fingerprint: [
+      'widget_serialization_failed',
+      'Error',
+      'Widget serializer failed for https://files.example/image.png'
+    ],
+    exception: {
+      values: [
+        {
+          value: 'Widget serializer failed for https://files.example/image.png'
+        }
+      ]
+    }
+  })
+  expect(JSON.stringify(event)).not.toMatch(
+    /alice|password|privateAlpha|secretFragment/
+  )
+})
+
 it.for([
   {
     kind: 'tuple',
@@ -305,4 +343,24 @@ it('redacts URL secrets from sampled transactions', () => {
       headers: { Referer: 'https://example.com/model.glb' }
     }
   })
+})
+
+it.for([
+  ['cloud.comfy.org', 'production'],
+  ['stagingcloud.comfy.org', 'staging'],
+  ['testcloud.comfy.org', 'test'],
+  ['pr-123.testenvs.comfy.org', 'preview'],
+  ['example.com', undefined]
+] as const)('maps cloud host %s to Sentry environment %s', ([host, env]) => {
+  expect(resolveSentryEnvironment(host)).toBe(env)
+})
+
+it('sets the Sentry environment from the hostname on cloud only', () => {
+  vi.stubGlobal('location', { hostname: 'stagingcloud.comfy.org' })
+  try {
+    expect(initOptions(true).environment).toBe('staging')
+    expect(initOptions(false).environment).toBeUndefined()
+  } finally {
+    vi.unstubAllGlobals()
+  }
 })

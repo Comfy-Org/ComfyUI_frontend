@@ -739,6 +739,72 @@ describe('useFirstRunEntry', () => {
     })
   })
 
+  describe('telling the Agent whether this launch is a local first run', () => {
+    beforeEach(() => {
+      mocks.isCloud = false
+    })
+
+    it.for(['fresh', 'url-intent'] as const)(
+      'marks a %s local launch of a user who has not finished the tutorial',
+      async (outcome) => {
+        const entry = useFirstRunEntry()
+        expect(entry.isLocalFirstRun.value).toBe(false)
+
+        await entry.handleStartupOutcome(outcome)
+
+        expect(entry.isLocalFirstRun.value).toBe(true)
+      }
+    )
+
+    it('captures the first run before the tutorial flag is written', async () => {
+      const entry = useFirstRunEntry()
+      let captured: boolean | undefined
+      vi.mocked(useSettingStore().set).mockImplementation(
+        async (key, value) => {
+          captured = entry.isLocalFirstRun.value
+          Object.assign(useSettingStore().settingValues, { [key]: value })
+        }
+      )
+
+      await entry.handleStartupOutcome('fresh')
+
+      expect(
+        useSettingStore().settingValues['Comfy.TutorialCompleted'],
+        'the templates branch spends the flag during this launch'
+      ).toBe(true)
+      expect(
+        captured,
+        'a read after the write would see a completed tutorial'
+      ).toBe(true)
+    })
+
+    it('does not mark a launch that restored work', async () => {
+      const entry = useFirstRunEntry()
+
+      await entry.handleStartupOutcome('restored')
+
+      expect(entry.isLocalFirstRun.value).toBe(false)
+    })
+
+    it('does not mark a user who already finished the tutorial', async () => {
+      useSettingStore().settingValues['Comfy.TutorialCompleted'] = true
+      const entry = useFirstRunEntry()
+
+      await entry.handleStartupOutcome('fresh')
+
+      expect(entry.isLocalFirstRun.value).toBe(false)
+    })
+
+    it('never marks a cloud launch, which has its own first-run screen', async () => {
+      mocks.isCloud = true
+      const entry = useFirstRunEntry()
+
+      await entry.handleStartupOutcome('fresh')
+
+      expect(entry.isLocalFirstRun.value).toBe(false)
+    })
+  })
+
   describe('handing the screen over to the first-run tour', () => {
     it('hides the screen before it asks for the tour', async () => {
       const entry = useFirstRunEntry()

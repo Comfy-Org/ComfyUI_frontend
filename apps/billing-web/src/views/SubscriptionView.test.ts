@@ -556,7 +556,8 @@ describe('SubscriptionView resubscribe telemetry', () => {
     source: 'billing_web_subscription',
     payment_intent_source: 'deep_link',
     billing_client: 'sdk',
-    billing_surface: 'billing_web'
+    billing_surface: 'billing_web',
+    product: 'comfyui'
   }
 
   beforeEach(() => {

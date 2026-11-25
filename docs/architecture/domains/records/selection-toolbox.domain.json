@@ -10,6 +10,9 @@
       "path": "src/components/graph/SelectionToolbox.vue"
     },
     {
+      "path": "src/components/graph/selectionGrid/**"
+    },
+    {
       "path": "src/components/graph/selectionToolbox/**"
     },
     {
@@ -17,12 +20,6 @@
     },
     {
       "path": "src/composables/graph/contextMenuConverter.ts"
-    },
-    {
-      "path": "src/composables/graph/useArrangeNodes.ts"
-    },
-    {
-      "path": "src/composables/graph/useArrangeSession.ts"
     },
     {
       "path": "src/composables/graph/useCanvasRefresh.ts"
@@ -83,7 +80,9 @@
       "checks": [
         "src/components/graph/SelectionToolbox.test.ts",
         "src/components/graph/selectionToolbox/ExecuteButton.test.ts",
-        "src/components/graph/selectionToolbox/ColorPickerButton.test.ts"
+        "src/components/graph/selectionToolbox/ColorPickerButton.test.ts",
+        "src/components/graph/selectionToolbox/TidyUpButton.test.ts",
+        "src/components/graph/selectionGrid/SelectionGapHandles.test.ts"
       ]
     },
     {
@@ -114,8 +113,10 @@
     {
       "name": "Selection operations arrange nodes, guard deletes, and convert or unpack subgraphs",
       "checks": [
-        "src/composables/graph/useArrangeNodes.test.ts",
-        "src/composables/graph/useArrangeSession.test.ts",
+        "src/components/graph/selectionGrid/selectionGridLayout.test.ts",
+        "src/components/graph/selectionGrid/useTidySession.test.ts",
+        "src/components/graph/selectionGrid/useSelectionGrid.test.ts",
+        "src/components/graph/selectionGrid/useGapDragSession.test.ts",
         "src/composables/graph/useSelectionOperations.deleteGuard.test.ts",
         "src/composables/graph/useSubgraphOperations.test.ts"
       ]

@@ -3,6 +3,7 @@ import { defineComponent } from 'vue'
 import { createI18n } from 'vue-i18n'
 import { describe, expect, it, vi } from 'vitest'
 
+import { buildStructuredMenu } from '@/composables/graph/contextMenuConverter'
 import { useSelectionMenuOptions } from '@/composables/graph/useSelectionMenuOptions'
 
 const mocks = vi.hoisted(() => ({
@@ -65,6 +66,17 @@ function setupComposable() {
 }
 
 describe('useSelectionMenuOptions - multiple nodes options', () => {
+  it('keeps Tidy up beside alignment actions outside Extensions', () => {
+    const { getAlignmentOptions } = setupComposable()
+    const menu = buildStructuredMenu(getAlignmentOptions(), 'Extensions')
+
+    expect(menu.map((option) => option.label)).toEqual([
+      'contextMenu.Align Selected To',
+      'contextMenu.Distribute Nodes',
+      'g.tidyUp'
+    ])
+  })
+
   it('returns Frame Nodes option that invokes frameNodes when called', () => {
     const { getMultipleNodesOptions } = setupComposable()
     const options = getMultipleNodesOptions()

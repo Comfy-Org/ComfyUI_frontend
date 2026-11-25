@@ -8,22 +8,34 @@ export interface AgentEventSocket extends AgentEventSource {
   onStatus(listener: (live: boolean) => void): () => void
 }
 
+/** Why a socket could not be established, for the telemetry the caller sends. */
+export type AgentSocketFailure = 'auth_read' | 'socket_construct'
+
+function refusalWithoutCredential(error: unknown): Error {
+  const name = error instanceof Error ? error.name : 'unknown error'
+  return new Error(`The browser refused the agent socket URL: ${name}`)
+}
+
 interface AgentEventSourceOptions {
   endpoint: string
   getAuthParams: () => Promise<URLSearchParams | null>
   reconnectDelayMs?: number
   maxReconnectDelayMs?: number
   random?: () => number
+  reportFailure?: (error: unknown, failure: AgentSocketFailure) => void
 }
 
-type AuthRead = { ok: true; params: URLSearchParams | null } | { ok: false }
+type AuthRead =
+  | { ok: true; params: URLSearchParams | null }
+  | { ok: false; error: unknown }
 
 export function createAgentEventSource({
   endpoint,
   getAuthParams,
   reconnectDelayMs = 1000,
   maxReconnectDelayMs = 30_000,
-  random = Math.random
+  random = Math.random,
+  reportFailure = () => {}
 }: AgentEventSourceOptions): AgentEventSocket {
   const listeners = new Set<(raw: unknown) => void>()
   const statusListeners = new Set<(live: boolean) => void>()
@@ -62,11 +74,30 @@ export function createAgentEventSource({
     reconnectTimer.start()
   }
 
+  const reportedFailures = new Set<AgentSocketFailure>()
+
+  function endFailureRun(): void {
+    reportedFailures.clear()
+  }
+
+  function reportFailureOnce(
+    error: unknown,
+    failure: AgentSocketFailure
+  ): void {
+    if (reportedFailures.has(failure)) return
+    reportedFailures.add(failure)
+    try {
+      reportFailure(error, failure)
+    } catch {
+      return
+    }
+  }
+
   async function readAuth(): Promise<AuthRead> {
     try {
       return { ok: true, params: await getAuthParams() }
-    } catch {
-      return { ok: false }
+    } catch (error) {
+      return { ok: false, error }
     }
   }
 
@@ -88,6 +119,7 @@ export function createAgentEventSource({
     // A credential that cannot be read right now — a rejected refresh, or a
     // token the provider has not minted yet — is retried on the backoff rather
     // than leaving the source dead until something else calls `reconnect()`.
+    if (!auth.ok) reportFailureOnce(auth.error, 'auth_read')
     if (!auth.ok || auth.params === null) {
       notifyStatus(false)
       scheduleReconnect()
@@ -100,7 +132,8 @@ export function createAgentEventSource({
     let current: WebSocket
     try {
       current = new WebSocket(url)
-    } catch {
+    } catch (error) {
+      reportFailureOnce(refusalWithoutCredential(error), 'socket_construct')
       notifyStatus(false)
       scheduleReconnect()
       return
@@ -132,8 +165,10 @@ export function createAgentEventSource({
       // Only a connection that lasted clears the backoff. A server that
       // accepts the upgrade, writes a frame and hangs up must not reset it, or
       // the panel reconnects in a tight loop that never widens.
-      if (openedAt !== null && Date.now() - openedAt >= maxReconnectDelayMs)
+      if (openedAt !== null && Date.now() - openedAt >= maxReconnectDelayMs) {
         failedConnects = 0
+        endFailureRun()
+      }
       socket = null
       notifyStatus(false)
       scheduleReconnect()
@@ -142,6 +177,7 @@ export function createAgentEventSource({
 
   function disconnect(): void {
     connectGeneration++
+    endFailureRun()
     // An auth read that never settles would otherwise latch `connecting` and
     // make every later `connect()` — `reconnect()` included — a no-op.
     connecting = false
