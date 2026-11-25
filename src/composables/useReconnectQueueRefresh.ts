@@ -297,7 +297,7 @@ export function useReconnectQueueRefresh() {
       }
       if (outcome.state === 'unknown') {
         if (giveUpOnUnreadable(jobId)) unreadable.push(jobId)
-        else if (historyByJobId.has(jobId)) activeJobIds.add(jobId)
+        else activeJobIds.add(jobId)
         return
       }
       unreadableRefreshes.delete(jobId)

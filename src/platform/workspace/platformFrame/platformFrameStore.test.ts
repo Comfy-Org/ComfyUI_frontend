@@ -1,3 +1,4 @@
+import { useTelemetry } from '@comfyorg/telemetry'
 import { fromPartial } from '@total-typescript/shoehorn'
 import type { User } from 'firebase/auth'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -5,6 +6,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { reportError } from '@comfyorg/telemetry/reportError'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { DEPLOYMENT_LISTING_BACKSTOP_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
 import { captureOpenWorkflow } from '@/platform/workspace/platformWorkflowHandoff'
 import {
   loadedEvent,
@@ -14,6 +18,7 @@ import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPi
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
+import { useDialogService } from '@/services/dialogService'
 import { useAuthStore } from '@/stores/authStore'
 
 import { useReleaseNoticeStore } from '@/platform/workspace/stores/releaseNoticeStore'
@@ -27,6 +32,7 @@ import {
   usePlatformFrameStore
 } from './platformFrameStore'
 import type { PlatformFrameRequest } from './platformFrameUrl'
+import { NEW_DEPLOYMENT_FROM_NODES } from './platformFrameWaysIn'
 
 const env = vi.hoisted(() => ({
   cloud: true,
@@ -46,6 +52,7 @@ vi.mock(import('@/scripts/api'))
 vi.mock(import('@comfyorg/telemetry'))
 vi.mock(import('@comfyorg/telemetry/reportError'))
 vi.mock(import('firebase/auth'))
+vi.mock(import('@/services/dialogService'))
 vi.mock(import('@/platform/workspace/platformWorkflowHandoff'), () => ({
   captureOpenWorkflow: vi.fn(() => ({
     filename: 'portrait.json',
@@ -113,7 +120,7 @@ describe('usePlatformFrameStore', () => {
     const store = usePlatformFrameStore()
 
     expect(store.isAvailable()).toBe(false)
-    expect(store.open({ step: 'new' })).toBe(false)
+    expect(store.open({ step: 'new' }, 'extensions')).toBe(false)
     expect(store.session).toBeNull()
   })
 
@@ -143,7 +150,7 @@ describe('usePlatformFrameStore', () => {
     ({ request, params }) => {
       const store = usePlatformFrameStore()
 
-      expect(store.open(request)).toBe(true)
+      expect(store.open(request, 'extensions')).toBe(true)
 
       const url = store.session?.url ?? ''
       expect(url.startsWith(`${PLATFORM}/embed/custom-deployment?`)).toBe(true)
@@ -159,10 +166,10 @@ describe('usePlatformFrameStore', () => {
   it('hands over the open workflow only when the way in asks for it', () => {
     const store = usePlatformFrameStore()
 
-    store.open({ step: 'new', startAtNodes: true })
+    store.open({ step: 'new', startAtNodes: true }, 'extensions')
     expect(store.session?.workflow).toBeNull()
 
-    store.open({ step: 'new', handsOverWorkflow: true })
+    store.open({ step: 'new', handsOverWorkflow: true }, 'extensions')
     expect(store.session?.workflow).toEqual({
       filename: 'portrait.json',
       workflow: { nodes: [] }
@@ -170,12 +177,37 @@ describe('usePlatformFrameStore', () => {
     expect(captureOpenWorkflow).toHaveBeenCalledOnce()
   })
 
+  it('hands the open workflow to the page when Extensions opens it on Custom nodes', async () => {
+    const store = usePlatformFrameStore()
+    const { frame, postMessage } = framedWindow()
+
+    store.open(NEW_DEPLOYMENT_FROM_NODES, 'extensions')
+    store.attach(frame)
+    receive({ type: 'ready', signedIn: true, userId: 'uid-ana' }, frame)
+
+    expect(query(store.session?.url ?? '')).toMatchObject({
+      step: 'new',
+      start: 'nodes'
+    })
+    await vi.waitFor(() =>
+      expect(postMessage).toHaveBeenCalledWith(
+        {
+          type: 'workflow',
+          nonce: store.session?.nonce,
+          filename: 'portrait.json',
+          workflow: { nodes: [] }
+        },
+        PLATFORM
+      )
+    )
+  })
+
   it('gives each session a fresh nonce Platform accepts', () => {
     const store = usePlatformFrameStore()
 
-    store.open({ step: 'new' })
+    store.open({ step: 'new' }, 'extensions')
     const first = store.session?.nonce
-    store.open({ step: 'new' })
+    store.open({ step: 'new' }, 'extensions')
     const second = store.session?.nonce
 
     expect(first).toMatch(/^[A-Za-z0-9_-]{16,64}$/)
@@ -186,7 +218,7 @@ describe('usePlatformFrameStore', () => {
   it('offers Platform in its own tab when the page does not answer within 10 s', () => {
     vi.useFakeTimers()
     const store = usePlatformFrameStore()
-    store.open({ step: 'new' })
+    store.open({ step: 'new' }, 'extensions')
 
     vi.advanceTimersByTime(PLATFORM_FRAME_UNANSWERED_MS - 1)
     expect(store.isUnanswered).toBe(false)
@@ -199,7 +231,7 @@ describe('usePlatformFrameStore', () => {
     vi.useFakeTimers()
     const store = usePlatformFrameStore()
     const { frame, postMessage } = framedWindow()
-    store.open({ step: 'new', handsOverWorkflow: true })
+    store.open({ step: 'new', handsOverWorkflow: true }, 'extensions')
     store.attach(frame)
 
     receive({ type: 'ready', signedIn: false }, frame)
@@ -221,7 +253,7 @@ describe('usePlatformFrameStore', () => {
     vi.spyOn(useAuthStore(), 'getIdToken').mockResolvedValue(undefined)
     const store = usePlatformFrameStore()
     const { frame, postMessage } = framedWindow()
-    store.open({ step: 'new', handsOverWorkflow: true })
+    store.open({ step: 'new', handsOverWorkflow: true }, 'extensions')
     store.attach(frame)
 
     receive({ type: 'ready', signedIn: true, userId: 'uid-ben' }, frame)
@@ -238,7 +270,7 @@ describe('usePlatformFrameStore', () => {
       .mockResolvedValue('aaa.bbb.ccc')
     const store = usePlatformFrameStore()
     const { frame, postMessage } = framedWindow()
-    store.open({ step: 'new', handsOverWorkflow: true })
+    store.open({ step: 'new', handsOverWorkflow: true }, 'extensions')
     store.attach(frame)
 
     receive({ type: 'ready', signedIn: true, userId: 'uid-ben' }, frame)
@@ -265,7 +297,7 @@ describe('usePlatformFrameStore', () => {
       vi.useFakeTimers()
       const store = usePlatformFrameStore()
       const { frame } = framedWindow()
-      store.open({ step: 'update', deploymentId: 'dep-1' })
+      store.open({ step: 'update', deploymentId: 'dep-1' }, 'pencil')
       store.attach(frame)
       const first = store.session
 
@@ -283,7 +315,7 @@ describe('usePlatformFrameStore', () => {
       vi.useFakeTimers()
       const store = usePlatformFrameStore()
       const first = framedWindow()
-      store.open({ step: 'new' })
+      store.open({ step: 'new' }, 'extensions')
       store.attach(first.frame)
       receive({ type: 'ready', signedIn: false }, first.frame)
       vi.advanceTimersByTime(PLATFORM_FRAME_SIGN_IN_RETRY_MS)
@@ -301,7 +333,7 @@ describe('usePlatformFrameStore', () => {
       vi.useFakeTimers()
       const store = usePlatformFrameStore()
       const { frame } = framedWindow()
-      store.open({ step: 'new' })
+      store.open({ step: 'new' }, 'extensions')
       store.attach(frame)
       receive({ type: 'ready', signedIn: false }, frame)
       vi.advanceTimersByTime(PLATFORM_FRAME_SIGN_IN_RETRY_MS)
@@ -314,7 +346,7 @@ describe('usePlatformFrameStore', () => {
       vi.useFakeTimers()
       const store = usePlatformFrameStore()
       const { frame } = framedWindow()
-      store.open({ step: 'new' })
+      store.open({ step: 'new' }, 'extensions')
       store.attach(frame)
       receive({ type: 'ready', signedIn: false }, frame)
       store.close()
@@ -327,7 +359,7 @@ describe('usePlatformFrameStore', () => {
       vi.useFakeTimers()
       const store = usePlatformFrameStore()
       const { frame } = framedWindow()
-      store.open({ step: 'new' })
+      store.open({ step: 'new' }, 'extensions')
       store.attach(frame)
       const first = store.session
 
@@ -340,7 +372,7 @@ describe('usePlatformFrameStore', () => {
       vi.useFakeTimers()
       const store = usePlatformFrameStore()
       const { frame } = framedWindow()
-      store.open({ step: 'new' })
+      store.open({ step: 'new' }, 'extensions')
       store.attach(frame)
       const first = store.session
 
@@ -357,7 +389,7 @@ describe('usePlatformFrameStore', () => {
     vi.useFakeTimers()
     const store = usePlatformFrameStore()
     const { frame } = framedWindow()
-    store.open({ step: 'new' })
+    store.open({ step: 'new' }, 'extensions')
     store.attach(frame)
     const first = store.session
 
@@ -369,7 +401,7 @@ describe('usePlatformFrameStore', () => {
   it('stops listening to the old frame once closed', async () => {
     const store = usePlatformFrameStore()
     const { frame, postMessage } = framedWindow()
-    store.open({ step: 'new', handsOverWorkflow: true })
+    store.open({ step: 'new', handsOverWorkflow: true }, 'extensions')
     store.attach(frame)
     store.close()
 
@@ -419,7 +451,7 @@ describe('following a build after the dialog closes', () => {
     const load = vi.spyOn(pickStore, 'load').mockResolvedValue()
     const store = usePlatformFrameStore()
     const { frame } = framedWindow()
-    store.open({ step: 'update', deploymentId: 'dep-1' })
+    store.open({ step: 'update', deploymentId: 'dep-1' }, 'pencil')
     store.attach(frame)
     receive(started, frame)
     return { store, frame, load }
@@ -596,6 +628,36 @@ describe('following a build after the dialog closes', () => {
     ])
   })
 
+  it('asks to save unsaved work before Reload in words that name a reload', async () => {
+    const { frame } = startBuild()
+    Object.assign(useDeploymentPickStore(), { bootDeployment: RUNNING })
+    Object.assign(useWorkflowStore(), {
+      modifiedWorkflows: [
+        fromPartial<ComfyWorkflow>({
+          path: 'workflows/lora-stack.json',
+          isLoaded: true,
+          isModified: true
+        })
+      ]
+    })
+    receive(
+      { type: 'deployment-ready', deploymentId: 'dep-1', releaseId: 'r-2' },
+      frame
+    )
+
+    useToast().toasts[0].actions[0].onClick()
+
+    await vi.waitFor(() =>
+      expect(useDialogService().confirm).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: 'Save your workflows before reloading?',
+          denyLabel: 'Reload without saving',
+          confirmLabel: 'Save and reload'
+        })
+      )
+    )
+  })
+
   it('says nothing more when the version notice already told of the new version', () => {
     const { store, frame } = startBuild()
     expect(useReleaseNoticeStore().claim('r-2')).toBe(true)
@@ -619,6 +681,235 @@ describe('following a build after the dialog closes', () => {
 
     expect(toastTitles()).toEqual(['portrait-upscale now runs v2.'])
     expect(useReleaseNoticeStore().claim('r-2')).toBe(false)
+  })
+
+  const NEW_DEPLOYMENT: Deployment = {
+    ...RUNNING,
+    deployment_id: 'dep-9',
+    release_id: 'r-9',
+    build_id: 'b-9'
+  }
+
+  const startedNew = {
+    ...started,
+    kind: 'new',
+    buildId: 'b-9',
+    releaseId: 'r-9',
+    version: 1,
+    deploymentId: ''
+  }
+
+  function readyNewDeployment() {
+    const pickStore = useDeploymentPickStore()
+    pickStore.state = listing([RUNNING])
+    const load = vi.spyOn(pickStore, 'load').mockImplementation(async () => {
+      pickStore.state = listing([RUNNING, NEW_DEPLOYMENT])
+    })
+    const store = usePlatformFrameStore()
+    const { frame } = framedWindow()
+    store.open({ step: 'new', startAtNodes: true }, 'extensions')
+    store.attach(frame)
+    receive(startedNew, frame)
+    receive(
+      { type: 'deploy-sent', releaseId: 'r-9', deploymentId: 'dep-9' },
+      frame
+    )
+    receive(
+      { type: 'deployment-ready', deploymentId: 'dep-9', releaseId: 'r-9' },
+      frame
+    )
+    const [toast] = useToast().toasts
+    return { pickStore, toast, load }
+  }
+
+  it('switches to the deployment Platform made from Switch, though the build started without its id', async () => {
+    const { pickStore, toast } = readyNewDeployment()
+    const pick = vi.spyOn(pickStore, 'pick').mockResolvedValue(null)
+
+    expect(toast.title).toBe('portrait-upscale is ready')
+    expect(toast.actions.map((action) => action.label)).toEqual(['Switch'])
+    toast.actions[0].onClick()
+
+    await vi.waitFor(() =>
+      expect(pick).toHaveBeenCalledExactlyOnceWith('dep-9')
+    )
+  })
+
+  function listingPicking(items: Deployment[], picked: string) {
+    return reduceDeploymentPick(
+      { phase: 'idle' },
+      loadedEvent({
+        builds_visible: true,
+        items,
+        picked_deployment_id: picked
+      })
+    )
+  }
+
+  it('reloads onto the new deployment from Switch when another tab has already picked it', async () => {
+    const reload = vi.fn()
+    vi.stubGlobal('location', { reload })
+    const { pickStore, toast, load } = readyNewDeployment()
+    Object.assign(pickStore, { bootDeployment: RUNNING })
+    load.mockImplementation(async () => {
+      pickStore.state = listingPicking([RUNNING, NEW_DEPLOYMENT], 'dep-9')
+    })
+
+    toast.actions[0].onClick()
+
+    await vi.waitFor(() => expect(reload).toHaveBeenCalledOnce())
+  })
+
+  it('reloads nothing from Switch when this tab already runs on the new deployment', async () => {
+    const reload = vi.fn()
+    vi.stubGlobal('location', { reload })
+    const { pickStore, toast, load } = readyNewDeployment()
+    Object.assign(pickStore, { bootDeployment: NEW_DEPLOYMENT })
+    load.mockImplementation(async () => {
+      pickStore.state = listingPicking([RUNNING, NEW_DEPLOYMENT], 'dep-9')
+    })
+    const pick = vi.spyOn(pickStore, 'pick')
+
+    await toast.actions[0].onClick()
+
+    expect(pick).toHaveBeenCalledExactlyOnceWith('dep-9')
+    expect(reload).not.toHaveBeenCalled()
+  })
+
+  it('says the deployments did not load, rather than switch nothing, when the listing is unavailable', async () => {
+    const { pickStore, toast, load } = readyNewDeployment()
+    load.mockImplementation(async () => {
+      pickStore.state = { phase: 'hidden' }
+    })
+    useToast().dismissAll()
+
+    toast.actions[0].onClick()
+
+    await vi.waitFor(() =>
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({
+          kind: 'error',
+          title: 'Could not switch',
+          description: "Your deployments didn't load. Try again from Run on."
+        })
+      ])
+    )
+  })
+
+  it('gives up on Switch with Could not switch when the listing never answers', async () => {
+    vi.useFakeTimers()
+    const { pickStore, toast, load } = readyNewDeployment()
+    load.mockReturnValue(new Promise<void>(() => {}))
+    const pick = vi.spyOn(pickStore, 'pick').mockResolvedValue(null)
+    useToast().dismissAll()
+
+    toast.actions[0].onClick()
+    await vi.advanceTimersByTimeAsync(DEPLOYMENT_LISTING_BACKSTOP_MS - 1)
+    expect(useToast().toasts).toEqual([])
+
+    await vi.advanceTimersByTimeAsync(1)
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        kind: 'error',
+        title: 'Could not switch',
+        description: "Your deployments didn't load. Try again from Run on."
+      })
+    ])
+    expect(pick).not.toHaveBeenCalled()
+  })
+
+  it('opens Run on to start the new deployment, rather than pick it, once it has stopped', async () => {
+    const { pickStore, toast, load } = readyNewDeployment()
+    load.mockImplementation(async () => {
+      pickStore.state = listing([
+        RUNNING,
+        { ...NEW_DEPLOYMENT, status: 'stopped', can_start: true }
+      ])
+    })
+    const pick = vi.spyOn(pickStore, 'pick').mockResolvedValue(null)
+
+    toast.actions[0].onClick()
+
+    await vi.waitFor(() => expect(pickStore.switcherOpenAsks).toBe(1))
+    expect(pick).not.toHaveBeenCalled()
+  })
+
+  it('switches to the new deployment the listing shows when a resumed build lands while the page is quiet', async () => {
+    vi.useFakeTimers()
+    const pickStore = useDeploymentPickStore()
+    pickStore.state = listing([RUNNING])
+    const load = vi.spyOn(pickStore, 'load').mockResolvedValue()
+    const store = usePlatformFrameStore()
+    const { frame } = framedWindow()
+    store.open({ step: 'new', startAtNodes: true }, 'extensions')
+    store.attach(frame)
+    receive(startedNew, frame)
+    reloadEditor(store)
+    load.mockImplementation(async () => {
+      pickStore.state = listing([RUNNING, NEW_DEPLOYMENT])
+    })
+    const pick = vi.spyOn(pickStore, 'pick').mockResolvedValue(null)
+
+    store.resume()
+    await vi.advanceTimersByTimeAsync(PLATFORM_FRAME_RESUME_CHECK_MS)
+    const [toast] = useToast().toasts
+    toast.actions[0].onClick()
+
+    await vi.waitFor(() =>
+      expect(pick).toHaveBeenCalledExactlyOnceWith('dep-9')
+    )
+  })
+
+  it('switches to the deployment Platform named, not a newer one on the same release, when a resumed build lands', async () => {
+    vi.useFakeTimers()
+    const OTHER_ON_RELEASE: Deployment = {
+      ...NEW_DEPLOYMENT,
+      deployment_id: 'dep-10'
+    }
+    const pickStore = useDeploymentPickStore()
+    pickStore.state = listing([RUNNING])
+    const load = vi.spyOn(pickStore, 'load').mockResolvedValue()
+    const store = usePlatformFrameStore()
+    const { frame } = framedWindow()
+    store.open({ step: 'new', startAtNodes: true }, 'extensions')
+    store.attach(frame)
+    receive(startedNew, frame)
+    receive(
+      { type: 'deploy-sent', releaseId: 'r-9', deploymentId: 'dep-9' },
+      frame
+    )
+    reloadEditor(store)
+    load.mockImplementation(async () => {
+      pickStore.state = listing([OTHER_ON_RELEASE, NEW_DEPLOYMENT, RUNNING])
+    })
+    const pick = vi.spyOn(pickStore, 'pick').mockResolvedValue(null)
+
+    store.resume()
+    await vi.advanceTimersByTimeAsync(PLATFORM_FRAME_RESUME_CHECK_MS)
+    const [toast] = useToast().toasts
+    toast.actions[0].onClick()
+
+    await vi.waitFor(() =>
+      expect(pick).toHaveBeenCalledExactlyOnceWith('dep-9')
+    )
+  })
+
+  it('says so when the switch to the new deployment is refused', async () => {
+    const { pickStore, toast } = readyNewDeployment()
+    vi.spyOn(pickStore, 'pick').mockResolvedValue('Not allowed')
+    useToast().dismissAll()
+
+    toast.actions[0].onClick()
+
+    await vi.waitFor(() =>
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({
+          kind: 'error',
+          title: 'Could not switch',
+          description: 'Not allowed'
+        })
+      ])
+    )
   })
 
   it('keeps the build for a reload until it is ready', () => {
@@ -647,7 +938,9 @@ describe('following a build after the dialog closes', () => {
     expect(store.isHidden).toBe(true)
     expect(store.session).not.toBeNull()
 
-    expect(store.open({ step: 'new', startAtNodes: true })).toBe(true)
+    expect(store.open({ step: 'new', startAtNodes: true }, 'extensions')).toBe(
+      true
+    )
     expect(store.isHidden).toBe(false)
     expect(query(store.session?.url ?? '')).toMatchObject({ step: 'update' })
   })
@@ -750,7 +1043,9 @@ describe('following a build after the dialog closes', () => {
     const { store } = startBuild()
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-2' })
 
-    expect(store.open({ step: 'new', startAtNodes: true })).toBe(true)
+    expect(store.open({ step: 'new', startAtNodes: true }, 'extensions')).toBe(
+      true
+    )
 
     expect(query(store.session?.url ?? '')).toMatchObject({
       step: 'new',
@@ -801,7 +1096,7 @@ describe('following a build after the dialog closes', () => {
       frame
     )
     const { frame: next } = framedWindow()
-    store.open({ step: 'update', deploymentId: 'dep-1' })
+    store.open({ step: 'update', deploymentId: 'dep-1' }, 'pencil')
     store.attach(next)
     receive({ ...started, buildId: 'b-2', releaseId: 'r-3', version: 3 }, next)
     useToast().info('Workflow saved')
@@ -900,7 +1195,7 @@ describe('following a build after the dialog closes', () => {
     await vi.advanceTimersByTimeAsync(PLATFORM_FRAME_RESUME_CHECK_MS)
     const finishing = store.session
 
-    expect(store.open({ step: 'new' })).toBe(true)
+    expect(store.open({ step: 'new' }, 'extensions')).toBe(true)
     expect(store.session).toBe(finishing)
     expect(store.isHidden).toBe(false)
     expect(query(store.session?.url ?? '')).toMatchObject({ step: 'follow' })
@@ -930,6 +1225,74 @@ describe('following a build after the dialog closes', () => {
     expect(store.session).not.toBeNull()
   })
 
+  function funnelEvents() {
+    return vi
+      .mocked(useTelemetry()!.trackCustomDeploymentEvent)
+      .mock.calls.map(([event]) => event)
+  }
+
+  it('sends Dialog opened with the way in, then Create clicked once per build', () => {
+    const { frame } = startBuild()
+    receive(started, frame)
+
+    expect(funnelEvents()).toEqual([
+      {
+        name: 'platform:editor_deploy_opened',
+        properties: {
+          entry: 'pencil',
+          step: 'update',
+          workspace_id: 'ws-1',
+          deployment_id: 'dep-1'
+        }
+      },
+      {
+        name: 'platform:deployment_create_clicked',
+        properties: {
+          kind: 'update',
+          workspace_id: 'ws-1',
+          deployment_id: 'dep-1',
+          release_id: 'r-2',
+          build_id: 'b-1',
+          version: 2
+        }
+      }
+    ])
+  })
+
+  it('sends no Dialog opened when a way in only shows the running build again', () => {
+    const { store } = startBuild()
+    store.dismiss()
+    vi.mocked(useTelemetry()!.trackCustomDeploymentEvent).mockClear()
+
+    store.open({ step: 'new', startAtNodes: true }, 'extensions')
+
+    expect(funnelEvents()).toEqual([])
+  })
+
+  it('sends nothing when it follows a kept build after a reload', () => {
+    const { store } = startBuild()
+    reloadEditor(store)
+    vi.mocked(useTelemetry()!.trackCustomDeploymentEvent).mockClear()
+
+    expect(store.resume()).toBe(true)
+    const { frame } = framedWindow()
+    store.attach(frame)
+    receive(started, frame)
+
+    expect(funnelEvents()).toEqual([])
+  })
+
+  it('sends nothing with the flag off', () => {
+    Object.assign(useFeatureFlags().flags, {
+      customDeploymentsEditorEnabled: false
+    })
+
+    expect(usePlatformFrameStore().open({ step: 'new' }, 'extensions')).toBe(
+      false
+    )
+    expect(funnelEvents()).toEqual([])
+  })
+
   describe('when the editor is signed in by an API key only', () => {
     beforeEach(() => {
       useAuthStore().currentUser = null
@@ -942,7 +1305,9 @@ describe('following a build after the dialog closes', () => {
     it('shows the build it follows again when Platform is opened', () => {
       const { store } = startBuild()
 
-      expect(store.open({ step: 'new', startAtNodes: true })).toBe(true)
+      expect(
+        store.open({ step: 'new', startAtNodes: true }, 'extensions')
+      ).toBe(true)
 
       expect(store.isHidden).toBe(false)
       expect(query(store.session?.url ?? '')).toMatchObject({

@@ -24,7 +24,6 @@ test.describe(
       skillCatalog
     }) => {
       await agentPanel.open()
-      await agentPanel.selectWorkflow()
       await agentPanel.composer.fill('/')
 
       const menu = page.getByRole('menu', {

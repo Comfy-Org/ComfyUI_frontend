@@ -79,6 +79,7 @@ import { useI18n } from 'vue-i18n'
 import Button from '@comfyorg/design-system/button/Button'
 import Menu from '@comfyorg/design-system/menu/Menu'
 import { useToast } from '@/components/ui/toast/toastStore'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import {
@@ -97,10 +98,12 @@ import {
 } from '@/platform/workspace/composables/useDeploymentLabels'
 import { useDeploymentRows } from '@/platform/workspace/composables/useDeploymentRows'
 import { useDeploymentSwitchGuard } from '@/platform/workspace/composables/useDeploymentSwitchGuard'
+import { useDeploymentVersionWatch } from '@/platform/workspace/composables/useDeploymentVersionWatch'
 import {
   confirmUnsavedWorkBeforeSwitch,
   unsavedWorkflows
 } from '@/platform/workspace/confirmUnsavedWorkBeforeSwitch'
+import type { UnsavedWorkPrompt } from '@/platform/workspace/confirmUnsavedWorkBeforeSwitch'
 import { openCreateCustomDeploymentDialog } from '@/platform/workspace/openCustomDeploymentDialog'
 import type { BuildStage } from '@/platform/workspace/platformFrame/platformFrameBuild'
 import { usePlatformFrameStore } from '@/platform/workspace/platformFrame/platformFrameStore'
@@ -123,6 +126,12 @@ const { currentLabel } = useDeploymentLabels()
 const { targetLabel, withoutLeavePrompt, reloadOntoCurrent } =
   useDeploymentSwitchGuard()
 const { pickedRow, isAnyStarting } = useDeploymentRows()
+const { flags } = useFeatureFlags()
+const isWatchingVersion = useDeploymentVersionWatch({
+  active: () =>
+    isOffered.value && isVisible.value && flags.customDeploymentsEditorEnabled,
+  reload
+})
 const frames = usePlatformFrameStore()
 const { build } = storeToRefs(frames)
 
@@ -160,7 +169,7 @@ onMounted(() => {
 
 useEventListener(window, 'focus', () => {
   if (pendingRetry || !isOffered.value) return
-  if (listingRefused.value) return
+  if (listingRefused.value || isWatchingVersion.value) return
   if (Date.now() - lastFocusRetryAt < DEPLOYMENT_LISTING_FOCUS_RETRY_MS) return
   lastFocusRetryAt = Date.now()
   pendingRetry = store.load().finally(() => {
@@ -268,9 +277,12 @@ function report(summary: string, refusal: string | null) {
   useToast().error(summary, { description: refusal, duration: 8000 })
 }
 
-async function confirmSwitchTo(deployment: string): Promise<boolean> {
+async function confirmSwitchTo(
+  deployment: string,
+  prompt?: UnsavedWorkPrompt
+): Promise<boolean> {
   if (unsavedWorkflows().length > 0) isOpen.value = false
-  return confirmUnsavedWorkBeforeSwitch(deployment)
+  return confirmUnsavedWorkBeforeSwitch(deployment, prompt)
 }
 
 async function choose(deploymentId: string | null) {
@@ -328,14 +340,14 @@ function focusTrigger() {
 
 function createCustomDeployment() {
   if (frames.isAvailable()) focusTrigger()
-  if (frames.open(NEW_DEPLOYMENT_FROM_NODES)) return
+  if (frames.open(NEW_DEPLOYMENT_FROM_NODES, 'run_on_row')) return
   void openCreateCustomDeploymentDialog()
 }
 
 function updateDeployment(deploymentId: string) {
   focusTrigger()
   isOpen.value = false
-  frames.open({ step: 'update', deploymentId })
+  frames.open({ step: 'update', deploymentId }, 'pencil')
 }
 
 function reload() {

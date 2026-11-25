@@ -74,7 +74,7 @@
     </DropdownMenuRadioGroup>
   </template>
   <p
-    v-if="deployments.length === 0"
+    v-if="!listsDeployments"
     class="m-0 w-0 min-w-full px-2 py-1.5 text-xs text-pretty text-muted-foreground"
     data-testid="deployment-switcher-empty"
   >
@@ -109,7 +109,6 @@ import { useI18n } from 'vue-i18n'
 
 import MenuItem from '@comfyorg/design-system/menu/MenuItem'
 import MenuSeparator from '@comfyorg/design-system/menu/MenuSeparator'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import DeploymentSwitcherBuildAction from '@/platform/workspace/components/DeploymentSwitcherBuildAction.vue'
 import DeploymentSwitcherDefaultMenu from '@/platform/workspace/components/DeploymentSwitcherDefaultMenu.vue'
 import DeploymentSwitcherRow from '@/platform/workspace/components/DeploymentSwitcherRow.vue'
@@ -118,8 +117,8 @@ import { useDeploymentLabels } from '@/platform/workspace/composables/useDeploym
 import type { DeploymentRow } from '@/platform/workspace/composables/useDeploymentRows'
 import { useDeploymentRows } from '@/platform/workspace/composables/useDeploymentRows'
 import { useKeepRowFocus } from '@/platform/workspace/composables/useKeepRowFocus'
+import { switchReloadNote } from '@/platform/workspace/confirmUnsavedWorkBeforeSwitch'
 import type { DeploymentRowAction } from '@/platform/workspace/deploymentStartState'
-import { isInFlight } from '@/platform/workspace/platformFrame/platformFrameBuild'
 import { usePlatformFrameStore } from '@/platform/workspace/platformFrame/platformFrameStore'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useDeploymentStartStore } from '@/platform/workspace/stores/deploymentStartStore'
@@ -148,7 +147,6 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const settingStore = useSettingStore()
 const {
   deployments,
   pickedDeploymentId,
@@ -160,14 +158,12 @@ const {
   followsWorkspace
 } = storeToRefs(useDeploymentPickStore())
 const { currentLabel, changeSinceBootMessage } = useDeploymentLabels()
-const { sections, pickedValue, pickedRow } = useDeploymentRows()
+const { sections, pickedValue, pickedRow, buildingValue, listsDeployments } =
+  useDeploymentRows()
 const startStore = useDeploymentStartStore()
 const sectionLabelId = useId()
 const frames = usePlatformFrameStore()
 const updatesInEditor = computed(() => frames.isAvailable())
-const buildingDeploymentId = computed(() =>
-  isInFlight(frames.build) ? frames.build?.deploymentId : undefined
-)
 useKeepRowFocus(sections)
 
 const listedSections = computed(() =>
@@ -184,8 +180,7 @@ const listedSections = computed(() =>
         muted: row.action !== 'pick' && !isSwitching.value,
         switching: isSwitching.value && switchingTo === row.value,
         building:
-          row.deploymentId !== null &&
-          row.deploymentId === buildingDeploymentId.value,
+          row.deploymentId !== null && row.deploymentId === buildingValue.value,
         disabled: isSwitching.value || (unpickable && editLabel === null),
         unpickable,
         editLabel
@@ -195,7 +190,7 @@ const listedSections = computed(() =>
 )
 
 function updateLabel(row: DeploymentRow): string | null {
-  if (!updatesInEditor.value || row.deploymentId === null) return null
+  if (!updatesInEditor.value || !row.updatable) return null
   return t(
     'platformFrame.updateDeployment',
     { deployment: row.title },
@@ -222,11 +217,7 @@ const notice = computed(() => {
     : t('deploymentSwitcher.defaultGone')
 })
 
-const switchingNote = computed(() =>
-  settingStore.get('Comfy.Workflow.Persist')
-    ? t('deploymentSwitcher.switchingNote')
-    : t('deploymentSwitcher.switchingNoteWithoutDrafts')
-)
+const switchingNote = computed(switchReloadNote)
 
 function chooseRow(event: Event, row: DeploymentRow) {
   if (row.action === 'pick') {

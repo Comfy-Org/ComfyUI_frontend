@@ -8,6 +8,7 @@ import type {
   AgentWsEvent
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
+import { Topbar } from '@e2e/fixtures/components/Topbar'
 import {
   agentThreadPage,
   agentThreadSummary,
@@ -61,8 +62,8 @@ test.describe(
         return route.fallback()
       })
 
+      await new Topbar(page).saveWorkflowAs('Unsaved Workflow')
       await agentPanel.open()
-      await agentPanel.selectWorkflow()
       await agentPanel.composer.fill('Optimistic message')
       await agentPanel.sendButton.click()
 
@@ -151,8 +152,8 @@ test.describe(
         return route.fallback()
       })
 
+      await new Topbar(page).saveWorkflowAs('Unsaved Workflow')
       await agentPanel.open()
-      await agentPanel.selectWorkflow()
       await agentPanel.composer.fill(prompt)
       await agentPanel.sendButton.click()
       await postEntered
@@ -219,8 +220,8 @@ test.describe(
         return route.fallback()
       })
 
+      await new Topbar(page).saveWorkflowAs('Unsaved Workflow')
       await agentPanel.open()
-      await agentPanel.selectWorkflow()
 
       await agentPanel.sendMessage('First failed')
       await expect(agentPanel.pendingSendError).toHaveText(
@@ -273,8 +274,8 @@ test.describe(
         return route.fallback()
       })
 
+      await new Topbar(page).saveWorkflowAs('Unsaved Workflow')
       await agentPanel.open()
-      await agentPanel.selectWorkflow()
 
       await agentPanel.sendMessage('Failed before thread creation')
       await expect(agentPanel.pendingSendError).toContainText(
@@ -367,8 +368,8 @@ test.describe(
         return route.fallback()
       })
 
+      await new Topbar(page).saveWorkflowAs('Unsaved Workflow')
       await agentPanel.open()
-      await agentPanel.selectWorkflow()
 
       await agentPanel.sendMessage('Chat one pending')
       await expect.poll(() => resolvers).toHaveLength(1)
@@ -424,13 +425,20 @@ test.describe(
         return route.fallback()
       })
 
+      const topbar = new Topbar(page)
+      await topbar.saveWorkflowAs('Unsaved Workflow')
       await agentPanel.open()
-      await agentPanel.selectWorkflow()
 
       await agentPanel.sendMessage('Offscreen first message')
       await expect.poll(() => rejectPost).toBeDefined()
 
-      await agentPanel.newChatButton.click()
+      await page
+        .getByRole('button', {
+          name: enMessages.sideToolbar.newBlankWorkflow,
+          exact: true
+        })
+        .click()
+      await expect(topbar.getActiveTab()).toHaveText('Unsaved Workflow (2)')
       await expect(agentPanel.userMessageBubbles).toHaveCount(0)
       await agentPanel.composer.fill('Draft in second chat')
 
@@ -452,6 +460,7 @@ test.describe(
         .click()
 
       await expect(toast).toHaveCount(0)
+      await expect(topbar.getActiveTab()).toHaveText('Unsaved Workflow')
       await expect(agentPanel.userMessageBubbles).toHaveText([
         'Offscreen first message'
       ])
@@ -539,8 +548,8 @@ test.describe(
         return route.fallback()
       })
 
+      await new Topbar(page).saveWorkflowAs('Unsaved Workflow')
       await agentPanel.open()
-      await agentPanel.selectWorkflow()
       await agentPanel.openChatFromHistory(earlierPrompt)
       await expect(agentPanel.userMessageBubbles).toHaveText([earlierPrompt])
 
@@ -611,8 +620,8 @@ test.describe(
         return route.fallback()
       })
 
+      await new Topbar(page).saveWorkflowAs('Unsaved Workflow')
       await agentPanel.open()
-      await agentPanel.selectWorkflow()
       await agentPanel.openChatFromHistory(earlierPrompt)
       await expect(agentPanel.userMessageBubbles).toHaveText([earlierPrompt])
 

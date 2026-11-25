@@ -54,8 +54,8 @@ const arms = [
       historicLabel,
       {
         file: header,
-        from: '<Button\n        size="icon-sm"',
-        to: '<Button\n        v-if="false"\n        size="icon-sm"'
+        from: 'data-part="node-collapse-button"',
+        to: 'data-part="node-collapse-button" v-if="false"'
       }
     ]
   },

@@ -151,15 +151,31 @@ describe('LinkDestinationButton', () => {
   })
 
   it.for([
-    { name: 'too big to leave room for the menu', height: 520, scale: 1 },
-    { name: 'too big at the current zoom', height: 300, scale: 1.7 }
+    {
+      name: 'too tall to leave room for the menu',
+      width: 300,
+      height: 520,
+      scale: 1
+    },
+    {
+      name: 'too tall at the current zoom',
+      width: 300,
+      height: 300,
+      scale: 1.7
+    },
+    {
+      name: 'too wide at the current zoom',
+      width: 900,
+      height: 100,
+      scale: 1.2
+    }
   ])(
     'centres the landing socket when the node is $name',
-    async ({ height, scale }) => {
+    async ({ width, height, scale }) => {
       const ds = createTestDragAndScale()
       ds.scale = scale
       const { graph, source, targets, canvas } = createWorkflow(ds)
-      source.size = [300, height]
+      source.size = [width, height]
       source.updateArea()
       clickSocket(graph, targets[0], 'input')
       const { user } = renderButton()

@@ -4,11 +4,13 @@ import { t } from '@/i18n'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useBootDeploymentFullLabel } from '@/platform/workspace/composables/useDeploymentLabels'
 import { takeDeploymentSwitchLanding } from '@/platform/workspace/deploymentSwitchReload'
+import { takeReleaseKeptForReload } from '@/platform/workspace/loadedRelease'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 
-/** Starts the boot listing; toasts a gone pick or where a switch landed. */
+/** Starts the boot listing; toasts a gone pick once, or where a switch landed. */
 export async function useDeploymentPickAtBoot(): Promise<void> {
   const landedFromSwitch = takeDeploymentSwitchLanding()
+  takeReleaseKeptForReload()
   const store = useDeploymentPickStore()
   await store.loadOnce()
   if (store.goneDeployment === 'pick') {
@@ -16,6 +18,7 @@ export async function useDeploymentPickAtBoot(): Promise<void> {
       description: t('deploymentSwitcher.pickGoneDetail'),
       duration: 10000
     })
+    void store.forgetGonePick()
     return
   }
   if (landedFromSwitch) {

@@ -20,6 +20,7 @@ import { updatePendingWarnings } from '@/platform/workflow/core/utils/pendingWar
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { ModelFile } from '@comfyorg/graph-model/workflowSchema'
 import { api } from '@/scripts/api'
+import { useApp } from '@/scripts/appInstance'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
@@ -41,6 +42,8 @@ function endOnAbort(work: Promise<void>, signal: AbortSignal): Promise<void> {
 interface MissingModelPipelineStore {
   missingModelCandidates: MissingModelCandidate[] | null
   createVerificationAbortController: () => AbortController
+  endScan: (controller: AbortController) => void
+  untilScanEnds: () => Promise<void>
   setFolderPaths: (paths: Record<string, string[]>) => void
   setFileSize: (url: string, size: number) => void
   setGatedRepoUrl: (url: string, repoUrl: string) => void
@@ -56,7 +59,7 @@ interface RunMissingModelPipelineOptions {
 }
 
 interface RefreshMissingModelPipelineOptions {
-  graph: LGraph
+  graph?: LGraph
   reloadNodeDefs?: () => Promise<void>
   missingModelStore: MissingModelPipelineStore
   silent?: boolean
@@ -111,16 +114,28 @@ function getCurrentMissingModelMetadata(
   )
 }
 
-export async function runMissingModelPipeline({
-  graph,
-  graphData,
-  missingModelStore,
-  missingNodeTypes,
-  silent = false,
-  onVerified
-}: RunMissingModelPipelineOptions): Promise<MissingModelPipelineResult> {
+export async function runMissingModelPipeline(
+  options: RunMissingModelPipelineOptions
+): Promise<MissingModelPipelineResult> {
+  const { missingModelStore } = options
   const controller = missingModelStore.createVerificationAbortController()
+  const run = scanAndVerify(controller, options)
+  const endScan = () => missingModelStore.endScan(controller)
+  void run.then(({ surfaced }) => surfaced).then(endScan, endScan)
+  return run
+}
 
+async function scanAndVerify(
+  controller: AbortController,
+  {
+    graph,
+    graphData,
+    missingModelStore,
+    missingNodeTypes,
+    silent = false,
+    onVerified
+  }: RunMissingModelPipelineOptions
+): Promise<MissingModelPipelineResult> {
   const getDirectory = (nodeType: string) =>
     useModelToNodeStore().getCategoryForNodeType(nodeType)
   const isAssetBrowserWidget = assetService.shouldUseWidgetAssetPicker
@@ -288,7 +303,9 @@ export async function refreshMissingModelPipeline({
   silent = true
 }: RefreshMissingModelPipelineOptions): Promise<MissingModelPipelineResult> {
   await reloadNodeDefs?.()
-  const graphData: MissingModelWorkflowData = graph.serialize()
+  await missingModelStore.untilScanEnds()
+  const scannedGraph = graph ?? useApp().rootGraph
+  const graphData: MissingModelWorkflowData = scannedGraph.serialize()
   const activeWorkflowState =
     useWorkspaceStore().workflow.activeWorkflow?.activeState
   const currentModelMetadata = getCurrentMissingModelMetadata(missingModelStore)
@@ -297,7 +314,7 @@ export async function refreshMissingModelPipeline({
     : currentModelMetadata
 
   return runMissingModelPipeline({
-    graph,
+    graph: scannedGraph,
     graphData: models.length ? { ...graphData, models } : graphData,
     missingModelStore,
     silent

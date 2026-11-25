@@ -11,13 +11,13 @@ import {
 } from '@comfyorg/ingest-types/zod'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { getBuildTimeComfyApiBaseUrl } from '@/config/comfyApi'
+import { getBuildTimeComfyCloudBaseUrl } from '@/config/comfyApi'
 import { bindLocalOpenOnCloudGrant } from '@/platform/openOnCloud/localOpenOnCloudRollout'
 import {
   ModelUploadRolloutDisabled,
   UPLOADS_ENDPOINT
-} from '@/platform/workspace/api/modelFileUploadApi'
-import type { UploadRouteRequest } from '@/platform/workspace/api/modelFileUploadApi'
+} from '@/platform/assets/services/modelFileUploadApi'
+import type { UploadRouteRequest } from '@/platform/assets/services/modelFileUploadApi'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 
@@ -52,7 +52,7 @@ async function cloudHeaders(
 
 function cloudUploadUrl(route: string): string | undefined {
   try {
-    const base = new URL(getBuildTimeComfyApiBaseUrl())
+    const base = new URL(getBuildTimeComfyCloudBaseUrl())
     if (base.protocol === 'https:')
       return new URL(`/api${route}`, base.origin).href
   } catch {

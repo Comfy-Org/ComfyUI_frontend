@@ -36,12 +36,6 @@ agentTest.describe(
       async ({ page }) => {
         const panel = page.locator('#agent-panel-root')
         await panel
-          .getByRole('button', { name: enMessages.agent.switchWorkflow })
-          .click()
-        await page
-          .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
-          .click()
-        await panel
           .getByRole('textbox', { name: AGENT_COMPOSER_LABEL })
           .fill('Make a red fox in the snow')
         await panel.getByRole('button', { name: enMessages.agent.send }).click()

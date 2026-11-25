@@ -26,7 +26,7 @@ export function useDeploymentModelsFrame() {
   function addModels(): boolean {
     const deploymentId = bootDeploymentId.value
     return deploymentId !== undefined
-      ? frames.open(deploymentModelsRequest(deploymentId))
+      ? frames.open(deploymentModelsRequest(deploymentId), 'model_library')
       : false
   }
 

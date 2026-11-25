@@ -16,7 +16,10 @@ import {
   autoTopUpEnabledFact,
   canManageAutoTopUpFact
 } from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
-import { useAddCreditsAutoTopUpOffer } from '@/platform/billing/composables/useAddCreditsAutoTopUpOffer'
+import {
+  useAddCreditsAutoTopUpOffer,
+  usePrefetchAddCreditsAutoTopUpOffer
+} from '@/platform/billing/composables/useAddCreditsAutoTopUpOffer'
 import { useBillingAutoTopUpCard } from '@/platform/billing/composables/useBillingAutoTopUpCard'
 import { openPlatformBillingHandoff } from '@/platform/billing/localBillingHandoff'
 import {
@@ -225,10 +228,125 @@ describe('useAddCreditsAutoTopUpOffer', () => {
       )
     })
 
+    it('offers the checkbox at once from the saved cards an earlier read left, while the fresh read is in flight', () => {
+      vi.mocked(
+        useBillingSdkStore().savedPaymentMethodsSnapshot
+      ).mockReturnValue([mastercard, visa])
+      vi.mocked(useBillingSdkStore().readPaymentMethods).mockReturnValue(
+        new Promise(() => {})
+      )
+
+      expect(
+        offerFor({ status: 'off', atCheckout: true }).offer.value
+      ).toMatchObject({
+        kind: 'checkbox',
+        defaultCard: { brand: 'visa', last4: '4242' }
+      })
+    })
+
+    it('replaces the earlier default card with the fresh read', async () => {
+      vi.mocked(
+        useBillingSdkStore().savedPaymentMethodsSnapshot
+      ).mockReturnValue([visa])
+      serveSavedMethods([
+        { ...visa, is_default: false },
+        { ...mastercard, is_default: true }
+      ])
+      const { offer } = offerFor({ status: 'off', atCheckout: true })
+
+      await vi.waitFor(() =>
+        expect(offer.value).toMatchObject({
+          kind: 'checkbox',
+          defaultCard: { brand: 'mastercard', last4: '5555' }
+        })
+      )
+    })
+
     it('reads no saved cards when auto top-up at checkout is off', () => {
       offerFor({ status: 'off', atCheckout: false })
 
       expect(useBillingSdkStore().readPaymentMethods).not.toHaveBeenCalled()
     })
   })
+})
+
+describe('usePrefetchAddCreditsAutoTopUpOffer', () => {
+  beforeEach(() => {
+    activateBillingScope('actor-a', 'workspace-a')
+    serveSavedMethods([])
+  })
+
+  function prefetch({
+    rollout,
+    manages,
+    atCheckout
+  }: {
+    rollout: boolean
+    manages: boolean
+    atCheckout: boolean
+  }) {
+    vi.mocked(useFeatureFlags().flags).billingAutoTopUpAtCheckoutEnabled =
+      atCheckout
+    const capabilities = useBillingCapabilities()
+    capabilities.autoTopUpEnabled = autoTopUpEnabledFact(rollout)
+    capabilities.canManageAutoTopUp = canManageAutoTopUpFact(manages)
+    const card = autoTopUpCard()
+    vi.mocked(useBillingAutoTopUpCard).mockReturnValue(card)
+    const scope = effectScope()
+    onTestFinished(() => scope.stop())
+    scope.run(usePrefetchAddCreditsAutoTopUpOffer)
+    return card
+  }
+
+  it.for<{
+    case: string
+    rollout: boolean
+    manages: boolean
+    atCheckout: boolean
+    settings: boolean
+    savedCards: boolean
+  }>([
+    {
+      case: 'auto top-up and the checkout checkbox are served',
+      rollout: true,
+      manages: true,
+      atCheckout: true,
+      settings: true,
+      savedCards: true
+    },
+    {
+      case: 'the checkout checkbox is not served',
+      rollout: true,
+      manages: true,
+      atCheckout: false,
+      settings: true,
+      savedCards: false
+    },
+    {
+      case: 'auto top-up is not served',
+      rollout: false,
+      manages: true,
+      atCheckout: true,
+      settings: false,
+      savedCards: false
+    },
+    {
+      case: 'the actor cannot manage auto top-up',
+      rollout: true,
+      manages: false,
+      atCheckout: true,
+      settings: false,
+      savedCards: false
+    }
+  ])(
+    'starts only the reads the dialog will render from when $case',
+    ({ rollout, manages, atCheckout, settings, savedCards }) => {
+      const card = prefetch({ rollout, manages, atCheckout })
+
+      expect(card.ensureRead).toHaveBeenCalledTimes(settings ? 1 : 0)
+      expect(useBillingSdkStore().readPaymentMethods).toHaveBeenCalledTimes(
+        savedCards ? 1 : 0
+      )
+    }
+  )
 })

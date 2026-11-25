@@ -34,7 +34,8 @@ export function usePreinstallOffer() {
     ([path, deploymentId, lacksOnlyModels, frameOpen, available]) => {
       if (!path || !deploymentId || !lacksOnlyModels) return
       if (frameOpen || !available || offered.has(path)) return
-      if (frames.open(preinstallRequest(deploymentId))) offered.add(path)
+      if (frames.open(preinstallRequest(deploymentId), 'preinstall'))
+        offered.add(path)
     },
     { immediate: true }
   )

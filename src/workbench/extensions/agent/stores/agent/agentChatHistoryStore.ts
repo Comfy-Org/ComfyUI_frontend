@@ -1,7 +1,9 @@
-import { useLocalStorage, useTimestamp } from '@vueuse/core'
+import { useTimestamp } from '@vueuse/core'
+import { orderBy } from 'es-toolkit'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
+import { useSafeLocalStorage } from '@/platform/storage/useSafeStorage'
 import { clearLegacyAgentStorage } from '@/platform/workflow/persistence/base/storageIO'
 import {
   getWorkspaceId,
@@ -65,11 +67,11 @@ export const useAgentChatHistoryStore = defineStore('agentChatHistory', () => {
   // The server owns thread titles but has no rename or delete endpoint yet
   // (BE-3130), so renames live in a local overlay applied over the server
   // titles and deletes in a local tombstone set filtered out of every refresh.
-  const customTitles = useLocalStorage<Partial<Record<string, string>>>(
+  const customTitles = useSafeLocalStorage<Partial<Record<string, string>>>(
     StorageKeys.agentChatTitles(workspaceId),
     {}
   )
-  const deletedIds = useLocalStorage<string[]>(
+  const deletedIds = useSafeLocalStorage<string[]>(
     StorageKeys.agentDeletedThreads(workspaceId),
     []
   )
@@ -93,6 +95,14 @@ export const useAgentChatHistoryStore = defineStore('agentChatHistory', () => {
 
   function titleFor(id: string | null): string | undefined {
     return id === null ? undefined : customTitles.value[id]
+  }
+
+  function sessionsFor(workflowId: string): ChatSession[] {
+    return orderBy(
+      titled.value.filter((session) => session.workflowId === workflowId),
+      [({ lastActivityAt }) => lastActivityAt ?? Number.NEGATIVE_INFINITY],
+      ['desc']
+    )
   }
 
   function rename(id: string, title: string): void {
@@ -148,6 +158,7 @@ export const useAgentChatHistoryStore = defineStore('agentChatHistory', () => {
     activeId,
     grouped,
     titleFor,
+    sessionsFor,
     rename,
     remove,
     replaceAll,
