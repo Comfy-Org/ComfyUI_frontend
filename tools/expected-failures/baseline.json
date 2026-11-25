@@ -76,7 +76,7 @@
     "classification": "live-defect"
   },
   {
-    "id": "vitest:src/stores/assetDownloadStore.test.ts:excludes a failed-then-actually-completed task from activeDownloads (PM-1302):1",
+    "id": "vitest:src/platform/assets/stores/assetDownloadStore.test.ts:excludes a failed-then-actually-completed task from activeDownloads (PM-1302):1",
     "classification": "live-defect"
   },
   {
