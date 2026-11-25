@@ -20,6 +20,7 @@ import { normalizeI18nKey } from '@/utils/formatUtil'
 import {
   beginGraphLoad,
   endGraphLoad,
+  getGraphLoadGeneration,
   isGraphLoading
 } from '@/core/graph/graphLoadState'
 import { registerApp } from '@/scripts/appRegistry'
@@ -385,6 +386,7 @@ export class ComfyApp implements IComfyApp {
     workflowQueueIntent?: WorkflowQueueIntent
     queueingWorkflowKey: string | undefined
     queueingGraph: LGraph
+    queueingGraphGeneration: number
   }[] = []
   private nextQueueRequestId = 1
   /**
@@ -1939,7 +1941,10 @@ export class ComfyApp implements IComfyApp {
       workflowQueueIntent: intent,
       queueingWorkflowKey:
         queueingWorkflow?.instanceId ?? queueingWorkflow?.path,
-      queueingGraph: queueingWorkflow?.graph ?? this.rootGraph
+      queueingGraph: queueingWorkflow?.graph ?? this.rootGraph,
+      queueingGraphGeneration: getGraphLoadGeneration(
+        queueingWorkflow?.graph ?? this.rootGraph
+      )
     })
     api.dispatchCustomEvent('promptQueueing', {
       requestId,
@@ -2020,7 +2025,8 @@ export class ComfyApp implements IComfyApp {
           requestId,
           workflowQueueIntent,
           queueingWorkflowKey,
-          queueingGraph
+          queueingGraph,
+          queueingGraphGeneration
         } = this.queueItems.pop()!
         let queuedCount = 0
         const workflowExecutionIntent: WorkflowExecutionIntent = {
@@ -2042,7 +2048,8 @@ export class ComfyApp implements IComfyApp {
           if (
             currentWorkflowKey !== queueingWorkflowKey ||
             this.rootGraph !== queueingGraph ||
-            isGraphLoading(queueingGraph)
+            isGraphLoading(queueingGraph) ||
+            getGraphLoadGeneration(queueingGraph) !== queueingGraphGeneration
           ) {
             stoppedOnWorkflowChange = true
             break

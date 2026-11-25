@@ -3184,6 +3184,35 @@ describe('ComfyApp', () => {
       await load
     })
 
+    it('stops a batch when its queueing graph is reconfigured in place by a load that finishes before the next iteration runs', async () => {
+      const workflow = prepareEmptyPromptQueue()
+      useWorkflowStore().attachWorkflow(workflow)
+      app.canvasElRef.value = document.createElement('canvas')
+      let calls = 0
+      const queuePrompt = vi
+        .spyOn(api, 'queuePrompt')
+        .mockImplementation(async () => {
+          calls++
+          if (calls === 1) {
+            await app.loadGraphData(
+              createWorkflowGraphData(),
+              false,
+              true,
+              null
+            )
+          }
+          return { prompt_id: `job-${calls}` }
+        })
+
+      await expect(app.queuePrompt(0, 2)).resolves.toBe(true)
+
+      expect(queuePrompt).toHaveBeenCalledOnce()
+      expect(isGraphLoading(app.rootGraph)).toBe(false)
+      expect(useToast().warning).toHaveBeenCalledWith(
+        queueBatchStoppedToast(1, 2)
+      )
+    })
+
     it('waits for workspace authentication before submitting the prompt', async () => {
       prepareEmptyPromptQueue()
       let resolveToken: (token: string) => void = () => {}
