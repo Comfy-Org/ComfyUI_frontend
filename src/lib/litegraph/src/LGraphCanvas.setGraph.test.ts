@@ -98,27 +98,6 @@ describe('LGraphCanvas graph replacement', () => {
     }
   )
 
-  it.for([
-    { name: 'another graph', target: () => new LGraph() },
-    { name: 'the same graph', target: (graph: LGraph) => graph }
-  ])('stops a running camera animation when set to $name', ({ target }) => {
-    let pendingFrame: FrameRequestCallback | undefined
-    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
-      pendingFrame = callback
-      return 1
-    })
-    vi.stubGlobal('cancelAnimationFrame', () => {
-      pendingFrame = undefined
-    })
-    const { canvas, graph } = createCanvasWithSelectedNode()
-    canvas.animateToBounds([3000, 3000, 100, 100], { zoom: 0 })
-
-    canvas.setGraph(target(graph))
-    pendingFrame?.(performance.now() + 1000)
-
-    expect([...canvas.ds.offset]).toEqual([0, 0])
-  })
-
   it('records the opened subgraph on the canvas', () => {
     const { canvas, graph } = createCanvasWithSelectedNode()
     const subgraph = createTestSubgraph({ rootGraph: graph })
@@ -160,4 +139,44 @@ describe('LGraphCanvas graph replacement', () => {
       expect([...canvas.selectedItems]).toEqual([incoming])
     }
   )
+})
+
+describe('LGraphCanvas camera animation', () => {
+  it.for([
+    {
+      name: 'setting another graph',
+      act: (canvas: LGraphCanvas) => canvas.setGraph(new LGraph())
+    },
+    {
+      name: 'setting the same graph',
+      act: (canvas: LGraphCanvas, graph: LGraph) => canvas.setGraph(graph)
+    },
+    {
+      name: 'starting a canvas drag',
+      act: (canvas: LGraphCanvas) => {
+        canvas.dragging_canvas = true
+      }
+    },
+    {
+      name: 'unbinding its events',
+      act: (canvas: LGraphCanvas) => canvas.unbindEvents()
+    }
+  ])('stops a running camera animation on $name', async ({ act }) => {
+    let pendingFrame: FrameRequestCallback | undefined
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+      pendingFrame = callback
+      return 1
+    })
+    vi.stubGlobal('cancelAnimationFrame', () => {
+      pendingFrame = undefined
+    })
+    const { canvas, graph } = createCanvasWithSelectedNode()
+    const result = canvas.animateToBounds([3000, 3000, 100, 100], { zoom: 0 })
+
+    act(canvas, graph)
+    pendingFrame?.(performance.now() + 1000)
+
+    await expect(result).resolves.toBe(false)
+    expect([...canvas.ds.offset]).toEqual([0, 0])
+  })
 })

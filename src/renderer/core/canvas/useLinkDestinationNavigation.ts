@@ -44,7 +44,7 @@ export function useLinkDestinationNavigation() {
       canvas.ds.fitToBounds(target, framing)
       canvas.setDirty(true, true)
     } else {
-      canvas.animateToBounds(target, framing)
+      void canvas.animateToBounds(target, framing)
     }
   }
 

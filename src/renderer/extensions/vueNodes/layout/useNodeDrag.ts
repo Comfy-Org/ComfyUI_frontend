@@ -178,8 +178,10 @@ export const useNodeDrag = createSharedComposable(() => {
       const canvas = canvasStore.getCanvas()
       const delta = [event.clientX - lastPointerX, event.clientY - lastPointerY]
 
-      canvas.ds.offset[0] += delta[0] / canvas.ds.scale
-      canvas.ds.offset[1] += delta[1] / canvas.ds.scale
+      canvas.ds.offset = [
+        canvas.ds.offset[0] + delta[0] / canvas.ds.scale,
+        canvas.ds.offset[1] + delta[1] / canvas.ds.scale
+      ]
       canvas.setDirty(true, true)
       lastPointerX = event.clientX
       lastPointerY = event.clientY

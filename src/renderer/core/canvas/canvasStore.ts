@@ -150,7 +150,7 @@ export const useCanvasStore = defineStore('canvas', () => {
       40
     )
     if (bounds) {
-      currentCanvas.animateToBounds(bounds, {
+      void currentCanvas.animateToBounds(bounds, {
         viewport: belowNodePickingBanner(visibleCanvasViewport(currentCanvas))
       })
     }

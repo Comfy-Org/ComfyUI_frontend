@@ -43,7 +43,7 @@ export class DragAndScale {
   dragging?: boolean
   viewport?: Rect
   private viewportSize?: [number, number]
-  private animationFrame?: number
+  private transition?: { frame: number; settle: (completed: boolean) => void }
 
   onredraw?(das: DragAndScale): void
   onChanged?(scale: number, offset: Point): void
@@ -53,6 +53,7 @@ export class DragAndScale {
   }
 
   set offset(value: Point) {
+    this.stopAnimation()
     this.state.offset[0] = value[0]
     this.state.offset[1] = value[1]
   }
@@ -62,6 +63,7 @@ export class DragAndScale {
   }
 
   set scale(value: number) {
+    this.stopAnimation()
     this.state.scale = value
   }
 
@@ -159,6 +161,7 @@ export class DragAndScale {
 
   /** @deprecated Has not been kept up to date */
   mouseDrag(x: number, y: number): void {
+    this.stopAnimation()
     this.offset[0] += x / this.scale
     this.offset[1] += y / this.scale
 
@@ -170,6 +173,7 @@ export class DragAndScale {
     zooming_center?: Point,
     roundToScaleOne = true
   ): void {
+    this.stopAnimation()
     if (value < this.min_scale) {
       value = this.min_scale
     } else if (value > this.max_scale) {
@@ -208,129 +212,145 @@ export class DragAndScale {
     bounds: ReadOnlyRect,
     { zoom = 0.75, viewport }: { zoom?: number; viewport?: ReadOnlyRect } = {}
   ): void {
-    //If element hasn't initialized (browser tab is in background)
-    //it has a size of 300x150 and a more reasonable default is used instead.
-    const [width, height] =
-      this.element.width === 300 && this.element.height === 150
-        ? [1920, 1080]
-        : this.getViewportSize()
-    const [vx, vy, vw, vh] = viewport ?? [0, 0, width, height]
-    if (!(vw > 0) || !(vh > 0)) return
-    let targetScale = this.scale
-
-    if (zoom > 0) {
-      const targetScaleX = (zoom * vw) / Math.max(bounds[2], 300)
-      const targetScaleY = (zoom * vh) / Math.max(bounds[3], 300)
-
-      // Choose the smaller scale to ensure the node fits into the viewport
-      // Ensure we don't go over the max scale
-      targetScale = Math.min(targetScaleX, targetScaleY, this.max_scale)
-    }
-
-    const targetX = (vx + vw * 0.5) / targetScale - bounds[0] - bounds[2] * 0.5
-    const targetY = (vy + vh * 0.5) / targetScale - bounds[1] - bounds[3] * 0.5
-
     this.stopAnimation()
-    this.offset[0] = targetX
-    this.offset[1] = targetY
-    this.scale = targetScale
+    const frame = this.framingViewport(viewport)
+    if (!frame) return
+    copyState(
+      framingTarget(bounds, frame, {
+        zoom,
+        scale: this.scale,
+        maxScale: this.max_scale
+      }),
+      this.state
+    )
   }
 
   /**
-   * Starts an animation to fit the view around the specified selection of nodes.
+   * Animates the view to fit the specified bounds. Any later camera change cancels it.
    * @param bounds The bounds to animate the view to, defined by a rectangle.
+   * @returns Resolves `true` when the camera lands, `false` when it is cancelled first.
    */
   animateToBounds(
     bounds: ReadOnlyRect,
-    setDirty: () => void,
     {
       duration = 350,
       zoom = 0.75,
       easing = EaseFunction.EASE_IN_OUT_QUAD,
       viewport
     }: AnimationOptions = {}
-  ) {
+  ): Promise<boolean> {
     if (!(duration > 0)) throw new RangeError('Duration must be greater than 0')
 
-    const easeFunctions = {
-      linear: (t: number) => t,
-      easeInQuad: (t: number) => t * t,
-      easeOutQuad: (t: number) => t * (2 - t),
-      easeInOutQuad: (t: number) => (t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t)
+    this.stopAnimation()
+    const frame = this.framingViewport(viewport)
+    if (!frame) return Promise.resolve(false)
+
+    const ease = easeFunctions[easing]
+    const target = framingTarget(bounds, frame, {
+      zoom,
+      scale: this.scale,
+      maxScale: this.max_scale
+    })
+    const anchor: Point = [frame[0] + frame[2] * 0.5, frame[1] + frame[3] * 0.5]
+    const startScale = this.scale
+    const startCentre: Point = [
+      anchor[0] / startScale - this.offset[0],
+      anchor[1] / startScale - this.offset[1]
+    ]
+    const targetCentre: Point = [
+      bounds[0] + bounds[2] * 0.5,
+      bounds[1] + bounds[3] * 0.5
+    ]
+    const cameraAt = (t: number): DragAndScaleState => {
+      const scale = startScale * (target.scale / startScale) ** t
+      return {
+        scale,
+        offset: [
+          anchor[0] / scale -
+            (startCentre[0] + (targetCentre[0] - startCentre[0]) * t),
+          anchor[1] / scale -
+            (startCentre[1] + (targetCentre[1] - startCentre[1]) * t)
+        ]
+      }
     }
-    const easeFunction = easeFunctions[easing]
 
     const startTimestamp = performance.now()
-    const [cw, ch] = this.getViewportSize()
-    const [vx, vy, vw, vh] = viewport ?? [0, 0, cw, ch]
-    if (!(vw > 0) || !(vh > 0)) return
-    const startX = this.offset[0]
-    const startY = this.offset[1]
-    const startX2 = startX - cw / this.scale
-    const startY2 = startY - ch / this.scale
-    const startScale = this.scale
-    let targetScale = startScale
-
-    if (zoom > 0) {
-      const targetScaleX = (zoom * vw) / Math.max(bounds[2], 300)
-      const targetScaleY = (zoom * vh) / Math.max(bounds[3], 300)
-
-      targetScale = Math.min(targetScaleX, targetScaleY, this.max_scale)
-    }
-    const scaledWidth = cw / targetScale
-    const scaledHeight = ch / targetScale
-
-    const targetX = (vx + vw * 0.5) / targetScale - bounds[0] - bounds[2] * 0.5
-    const targetY = (vy + vh * 0.5) / targetScale - bounds[1] - bounds[3] * 0.5
-    const targetX2 = targetX - scaledWidth
-    const targetY2 = targetY - scaledHeight
-
-    this.stopAnimation()
-    const written: DragAndScaleState = { offset: [0, 0], scale: 0 }
-    copyState(this.state, written)
-    const animate = (timestamp: number) => {
-      if (!statesEqual(this.state, written)) {
-        this.animationFrame = undefined
-        return
+    const written = cloneState(this.state)
+    return new Promise((settle) => {
+      const step = (timestamp: number) => {
+        if (!statesEqual(this.state, written)) return this.endTransition(false)
+        const progress = Math.min((timestamp - startTimestamp) / duration, 1)
+        copyState(progress < 1 ? cameraAt(ease(progress)) : target, this.state)
+        copyState(this.state, written)
+        if (progress >= 1) return this.endTransition(true)
+        transition.frame = requestAnimationFrame(step)
       }
-      const elapsed = timestamp - startTimestamp
-      const progress = Math.min(elapsed / duration, 1)
-      const easedProgress = easeFunction(progress)
-
-      const currentX = startX + (targetX - startX) * easedProgress
-      const currentY = startY + (targetY - startY) * easedProgress
-      this.offset[0] = currentX
-      this.offset[1] = currentY
-
-      if (zoom > 0) {
-        const currentX2 = startX2 + (targetX2 - startX2) * easedProgress
-        const currentY2 = startY2 + (targetY2 - startY2) * easedProgress
-        const currentWidth = Math.abs(currentX2 - currentX)
-        const currentHeight = Math.abs(currentY2 - currentY)
-
-        this.scale = Math.min(cw / currentWidth, ch / currentHeight)
-      }
-
-      copyState(this.state, written)
-      this.animationFrame =
-        progress < 1 ? requestAnimationFrame(animate) : undefined
-      setDirty()
-    }
-    this.animationFrame = requestAnimationFrame(animate)
+      const transition = { frame: requestAnimationFrame(step), settle }
+      this.transition = transition
+    })
   }
 
   /** Stops a running {@link animateToBounds}, leaving the camera where it is. */
   stopAnimation(): void {
-    if (this.animationFrame === undefined) return
-    cancelAnimationFrame(this.animationFrame)
-    this.animationFrame = undefined
+    this.endTransition(false)
+  }
+
+  private endTransition(completed: boolean): void {
+    const { transition } = this
+    if (!transition) return
+    this.transition = undefined
+    cancelAnimationFrame(transition.frame)
+    transition.settle(completed)
+  }
+
+  private framingViewport(viewport?: ReadOnlyRect): ReadOnlyRect | undefined {
+    const [width, height] =
+      this.element.width === 300 && this.element.height === 150
+        ? [1920, 1080]
+        : this.getViewportSize()
+    const frame = viewport ?? [0, 0, width, height]
+    return frame[2] > 0 && frame[3] > 0 ? frame : undefined
   }
 
   reset(): void {
-    this.scale = 1
-    this.offset[0] = 0
-    this.offset[1] = 0
+    this.stopAnimation()
+    copyState({ offset: [0, 0], scale: 1 }, this.state)
   }
+}
+
+function framingTarget(
+  bounds: ReadOnlyRect,
+  [vx, vy, vw, vh]: ReadOnlyRect,
+  {
+    zoom,
+    scale: currentScale,
+    maxScale
+  }: { zoom: number; scale: number; maxScale: number }
+): DragAndScaleState {
+  const scale =
+    zoom > 0
+      ? Math.min(
+          (zoom * vw) / Math.max(bounds[2], 300),
+          (zoom * vh) / Math.max(bounds[3], 300),
+          maxScale
+        )
+      : currentScale
+  return {
+    scale,
+    offset: [
+      (vx + vw * 0.5) / scale - bounds[0] - bounds[2] * 0.5,
+      (vy + vh * 0.5) / scale - bounds[1] - bounds[3] * 0.5
+    ]
+  }
+}
+
+const easeFunctions: Record<EaseFunction, (t: number) => number> = {
+  [EaseFunction.EASE_IN_OUT_QUAD]: (t) =>
+    t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t
+}
+
+function cloneState({ offset, scale }: DragAndScaleState): DragAndScaleState {
+  return { offset: [offset[0], offset[1]], scale }
 }
 
 function statesEqual(a: DragAndScaleState, b: DragAndScaleState): boolean {
