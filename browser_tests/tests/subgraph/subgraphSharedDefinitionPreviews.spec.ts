@@ -65,8 +65,9 @@ test.describe(
       )
       const execution = new ExecutionHelper(comfyPage, await getWebSocket())
 
-      execution.latentPreview('live-run', `${HOST_A}:10`)
-      execution.latentPreview('live-run', `${HOST_B}:10`)
+      const jobId = await execution.run()
+      execution.latentPreview(jobId, `${HOST_A}:10`)
+      execution.latentPreview(jobId, `${HOST_B}:10`)
 
       await expect
         .poll(async () => {
