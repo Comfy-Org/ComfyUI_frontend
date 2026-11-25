@@ -31,6 +31,9 @@ import type {
   AgentPanelClosedMetadata,
   AgentPanelOpenedMetadata,
   AgentPanelRenderStalledMetadata,
+  AgentRunApprovalAnswerFailedMetadata,
+  AgentRunApprovalRecoveryAttemptedMetadata,
+  AgentRunApprovalRecoveryOutcomeMetadata,
   AgentRunApprovalResolvedMetadata,
   AgentRunApprovalShownMetadata,
   AgentRunModeChangedMetadata,
@@ -585,6 +588,30 @@ export class TelemetryRegistry implements TelemetryDispatcher {
   ): void {
     this.dispatch((provider) =>
       provider.trackAgentRunApprovalResolved?.(metadata)
+    )
+  }
+
+  trackAgentRunApprovalAnswerFailed(
+    metadata: AgentRunApprovalAnswerFailedMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackAgentRunApprovalAnswerFailed?.(metadata)
+    )
+  }
+
+  trackAgentRunApprovalRecoveryAttempted(
+    metadata: AgentRunApprovalRecoveryAttemptedMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackAgentRunApprovalRecoveryAttempted?.(metadata)
+    )
+  }
+
+  trackAgentRunApprovalRecoveryOutcome(
+    metadata: AgentRunApprovalRecoveryOutcomeMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackAgentRunApprovalRecoveryOutcome?.(metadata)
     )
   }
 

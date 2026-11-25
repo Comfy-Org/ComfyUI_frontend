@@ -1,3 +1,4 @@
+import { safeSessionStorage } from '@/base/storage/safeStorage'
 import type {
   AgentErrorContext,
   AgentErrorProblem
@@ -22,19 +23,16 @@ export function writePendingSignInAccept({
 
 function tryWrite(record: PendingSignInAccept & { savedAt: number }): boolean {
   try {
-    window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(record))
-    return true
+    return (
+      safeSessionStorage.setItem(STORAGE_KEY, JSON.stringify(record)) === 'ok'
+    )
   } catch {
     return false
   }
 }
 
 export function clearPendingSignInAccept(): void {
-  try {
-    window.sessionStorage.removeItem(STORAGE_KEY)
-  } catch {
-    return
-  }
+  safeSessionStorage.removeItem(STORAGE_KEY)
 }
 
 const ERROR_SCOPES: readonly unknown[] = ['single', 'card', 'all']
@@ -90,7 +88,7 @@ function isErrorContext(value: unknown): value is AgentErrorContext {
 function readPendingSignInAccept(): PendingSignInAccept | null {
   try {
     const stored: unknown = JSON.parse(
-      window.sessionStorage.getItem(STORAGE_KEY) ?? 'null'
+      safeSessionStorage.getItem(STORAGE_KEY) ?? 'null'
     )
     const { draft, savedAt, errorContext } = (stored ?? {}) as {
       draft?: unknown

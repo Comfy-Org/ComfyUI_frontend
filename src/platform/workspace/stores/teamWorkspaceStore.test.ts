@@ -399,6 +399,22 @@ describe('useTeamWorkspaceStore', () => {
       expect(store.activeWorkspaceId).toBe(mockTeamWorkspace.id)
     })
 
+    it('ignores a switch target it cannot clear', async () => {
+      mockLocalStorage.getItem.mockReturnValue(mockTeamWorkspace.id)
+      sessionStorage.setItem(
+        WORKSPACE_STORAGE_KEYS.SWITCH_TARGET_ID,
+        mockPersonalWorkspace.id
+      )
+      vi.spyOn(sessionStorage, 'removeItem').mockImplementation(() => {
+        throw new DOMException('denied', 'SecurityError')
+      })
+
+      const store = useTeamWorkspaceStore()
+      await store.initialize()
+
+      expect(store.activeWorkspaceId).toBe(mockTeamWorkspace.id)
+    })
+
     it('keeps the requested switch target when the first switch fails transiently', async () => {
       mockLocalStorage.getItem.mockReturnValue(mockPersonalWorkspace.id)
       sessionStorage.setItem(
