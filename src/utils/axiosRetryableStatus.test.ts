@@ -9,23 +9,31 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useTelemetry } from '@comfyorg/telemetry'
 
 import { attachRetryableStatusRetry } from '@/utils/axiosRetryableStatus'
-import { DEFAULT_RETRY_POLICY } from '@/utils/retryPolicy'
-import { clearStatusRetryBudget } from '@/utils/statusRetryTelemetry'
+import type { RetryPolicy } from '@comfyorg/api-client/retryPolicy'
+import {
+  DEFAULT_RETRY_POLICY,
+  withSignInRefusalRetry
+} from '@comfyorg/api-client/retryPolicy'
+import { clearStatusRetryBudget } from '@comfyorg/api-client/statusRetryTelemetry'
 
 vi.mock(import('@comfyorg/telemetry'))
 
 interface ScriptedAnswer {
   readonly status: number
   readonly headers?: Record<string, string>
+  readonly data?: unknown
 }
 
 function scriptedAdapter(answers: ScriptedAnswer[]) {
   let call = 0
   return vi.fn<AxiosAdapter>(async (config) => {
-    const { status, headers = {} } =
-      answers[Math.min(call++, answers.length - 1)]
+    const {
+      status,
+      headers = {},
+      data = {}
+    } = answers[Math.min(call++, answers.length - 1)]
     const response: AxiosResponse = {
-      data: {},
+      data,
       status,
       statusText: String(status),
       headers,
@@ -42,11 +50,11 @@ function scriptedAdapter(answers: ScriptedAnswer[]) {
   })
 }
 
-function makeClient(answers: ScriptedAnswer[]) {
+function makeClient(answers: ScriptedAnswer[], policy?: RetryPolicy) {
   const adapter = scriptedAdapter(answers)
   const sleep = vi.fn<(ms: number) => Promise<void>>(async () => {})
   const client = axios.create({ adapter })
-  attachRetryableStatusRetry(client, { sleep, random: () => 1 })
+  attachRetryableStatusRetry(client, { sleep, random: () => 1, policy })
   return { client, adapter, sleep }
 }
 
@@ -89,6 +97,242 @@ describe('attachRetryableStatusRetry', () => {
       expect(adapter).toHaveBeenCalledTimes(1)
     }
   )
+
+  describe('a write the sign-in check refused', () => {
+    const AUTH_UNAVAILABLE = 'authentication service unavailable'
+    const policy = withSignInRefusalRetry()
+    const tracked = () => vi.mocked(useTelemetry()!.trackFetchStatusRetry)
+
+    beforeEach(() => clearStatusRetryBudget())
+
+    function refusal(
+      message = AUTH_UNAVAILABLE,
+      headers: Record<string, string> = { 'retry-after': '5' }
+    ): ScriptedAnswer {
+      return { status: 503, headers, data: { code: 'unavailable', message } }
+    }
+
+    it('is sent once under the default policy', async () => {
+      const { client, adapter, sleep } = makeClient([
+        refusal(),
+        { status: 200 }
+      ])
+
+      await expect(client.post('https://api/x', {})).rejects.toMatchObject({
+        response: { status: 503 }
+      })
+      expect(adapter).toHaveBeenCalledTimes(1)
+      expect(sleep).not.toHaveBeenCalled()
+    })
+
+    it('sends a write that succeeds once, with no telemetry', async () => {
+      const { client, adapter } = makeClient([{ status: 200 }], policy)
+
+      const response = await client.post('https://api.comfy.org/x', {})
+
+      expect(response.status).toBe(200)
+      expect(adapter).toHaveBeenCalledOnce()
+      expect(tracked()).not.toHaveBeenCalled()
+    })
+
+    it.for(['post', 'put', 'patch', 'delete'] as const)(
+      'sends a %s once more and returns the success',
+      async (method) => {
+        const { client, adapter, sleep } = makeClient(
+          [refusal(), { status: 200 }],
+          policy
+        )
+
+        const response = await client.request({
+          url: 'https://api/x',
+          method,
+          data: {}
+        })
+
+        expect(response.status).toBe(200)
+        expect(adapter).toHaveBeenCalledTimes(2)
+        expect(sleep).toHaveBeenCalledExactlyOnceWith(5_250, undefined)
+      }
+    )
+
+    it('records the write it sent twice', async () => {
+      const { client } = makeClient([refusal(), { status: 200 }], policy)
+
+      await client.post('https://api.comfy.org/customers/balance', {})
+
+      expect(tracked()).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({
+          transport: 'axios',
+          method: 'POST',
+          attempts: 2,
+          final_status: 200,
+          outcome: 'recovered'
+        })
+      )
+    })
+
+    it('rejects with the second refusal after exactly two sends', async () => {
+      const { client, adapter } = makeClient([refusal(), refusal()], policy)
+
+      await expect(client.post('https://api/x', {})).rejects.toMatchObject({
+        response: { status: 503, data: { message: AUTH_UNAVAILABLE } }
+      })
+      expect(adapter).toHaveBeenCalledTimes(2)
+    })
+
+    it.for<[string, ScriptedAnswer]>([
+      ['has no Retry-After', refusal(AUTH_UNAVAILABLE, {})],
+      ['names another service', refusal('agent service unavailable')],
+      [
+        'has a body that is not JSON',
+        {
+          status: 503,
+          headers: { 'retry-after': '5' },
+          data: 'Service Unavailable'
+        }
+      ],
+      [
+        'asks for a Retry-After past the cap',
+        refusal(AUTH_UNAVAILABLE, { 'retry-after': '3600' })
+      ]
+    ])(
+      'does not send a POST again when the 503 %s',
+      async ([_name, answer]) => {
+        const { client, adapter, sleep } = makeClient(
+          [answer, { status: 200 }],
+          policy
+        )
+
+        await expect(client.post('https://api/x', {})).rejects.toMatchObject({
+          response: { status: 503 }
+        })
+        expect(adapter).toHaveBeenCalledTimes(1)
+        expect(sleep).not.toHaveBeenCalled()
+        expect(tracked()).not.toHaveBeenCalled()
+      }
+    )
+
+    it('does not send a stream body again', async () => {
+      const { client, adapter } = makeClient(
+        [refusal(), { status: 200 }],
+        policy
+      )
+
+      await expect(
+        client.post('https://api/x', new ReadableStream<Uint8Array>())
+      ).rejects.toMatchObject({ response: { status: 503 } })
+      expect(adapter).toHaveBeenCalledTimes(1)
+    })
+
+    it('keeps the full retry budget for a GET', async () => {
+      const { client, adapter } = makeClient([refusal()], policy)
+
+      await expect(client.get('https://api/x')).rejects.toMatchObject({
+        response: { status: 503 }
+      })
+      expect(adapter).toHaveBeenCalledTimes(DEFAULT_RETRY_POLICY.maxAttempts)
+    })
+
+    function makeClientWhoseWaitTakes(waitMs: number) {
+      vi.useFakeTimers()
+      const adapter = scriptedAdapter([refusal(), { status: 200 }])
+      const client = axios.create({ adapter })
+      attachRetryableStatusRetry(client, {
+        random: () => 1,
+        policy,
+        sleep: async () => {
+          vi.setSystemTime(Date.now() + waitMs)
+        }
+      })
+      return { client, adapter }
+    }
+
+    it('rejects with the first 503 and records one send when the wait spends the timeout', async () => {
+      const { client, adapter } = makeClientWhoseWaitTakes(7_000)
+
+      await expect(
+        client.post('https://api/x', {}, { timeout: 6_000 })
+      ).rejects.toMatchObject({
+        response: { status: 503, data: { message: AUTH_UNAVAILABLE } }
+      })
+      expect(adapter).toHaveBeenCalledOnce()
+      expect(tracked()).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({
+          transport: 'axios',
+          method: 'POST',
+          attempts: 1,
+          final_status: 503,
+          outcome: 'timeout_budget'
+        })
+      )
+    })
+
+    it('records one send and the first 503 when its timeout signal fires during the wait', async () => {
+      const controller = new AbortController()
+      const timeout = new DOMException('signal timed out', 'TimeoutError')
+      const adapter = scriptedAdapter([refusal(), { status: 200 }])
+      const client = axios.create({ adapter })
+      attachRetryableStatusRetry(client, {
+        random: () => 1,
+        policy,
+        sleep: async () => {
+          controller.abort(timeout)
+          throw timeout
+        }
+      })
+
+      await expect(
+        client.post(
+          'https://api.comfy.org/customers/balance',
+          {},
+          {
+            signal: controller.signal
+          }
+        )
+      ).rejects.toBeInstanceOf(axios.CanceledError)
+
+      expect(adapter).toHaveBeenCalledOnce()
+      expect(tracked()).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({
+          transport: 'axios',
+          method: 'POST',
+          attempts: 1,
+          final_status: 503,
+          outcome: 'timeout_budget'
+        })
+      )
+    })
+
+    it('sends again with what is left of the timeout when the wait fits', async () => {
+      const { client, adapter } = makeClientWhoseWaitTakes(5_250)
+
+      const response = await client.post(
+        'https://api/x',
+        {},
+        { timeout: 6_000 }
+      )
+
+      expect(response.status).toBe(200)
+      expect(adapter.mock.calls.map(([config]) => config.timeout)).toEqual([
+        6_000, 750
+      ])
+    })
+
+    it('waits the Retry-After before sending again', async () => {
+      vi.useFakeTimers()
+      const adapter = scriptedAdapter([refusal(), { status: 200 }])
+      const client = axios.create({ adapter })
+      attachRetryableStatusRetry(client, { random: () => 1, policy })
+
+      const pending = client.post('https://api/x', {})
+
+      await vi.advanceTimersByTimeAsync(5_249)
+      expect(adapter).toHaveBeenCalledTimes(1)
+      await vi.advanceTimersByTimeAsync(1)
+      expect((await pending).status).toBe(200)
+      expect(adapter).toHaveBeenCalledTimes(2)
+    })
+  })
 
   it('waits the Retry-After the server sent', async () => {
     const { client, sleep } = makeClient([

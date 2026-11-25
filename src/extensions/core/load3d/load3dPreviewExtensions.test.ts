@@ -56,10 +56,6 @@ vi.mock(import('@/extensions/core/load3d/Load3DConfiguration'), () => ({
   )
 }))
 
-vi.mock(import('@/extensions/core/load3d/exportMenuHelper'), () => ({
-  createExportMenuItems: vi.fn(() => [{ content: 'Export' }])
-}))
-
 vi.mock(import('@/scripts/app'))
 
 vi.mock(import('@/utils/graphTraversalUtil'))

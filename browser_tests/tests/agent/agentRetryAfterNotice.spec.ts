@@ -21,7 +21,6 @@ agentTest.describe(
             'open the agent and select the workflow',
             async () => {
               await agentPanel.open()
-              await agentPanel.selectWorkflow()
             }
           )
 
@@ -45,6 +44,9 @@ agentTest.describe(
                   exact: true
                 })
               ).toHaveCount(0)
+              await expect(agentPanel.composer).toHaveText('')
+              await expect(agentPanel.retryPendingButton).toBeDisabled()
+              await expect(agentPanel.deletePendingButton).toBeEnabled()
               await expect(agentPanel.composer).toBeEditable()
             }
           )

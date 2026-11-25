@@ -10,8 +10,7 @@ test.describe(
     test('Valid numeric defaults are not marked invalid', async ({
       comfyPage
     }) => {
-      await comfyPage.menu.topbar.newWorkflowButton.click()
-      await comfyPage.nextFrame()
+      await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
 
       await comfyPage.searchBoxV2.addNode('Node With Numeric Combo')
       const node = await comfyPage.vueNodes.getFixtureByTitle(
@@ -29,8 +28,7 @@ test.describe(
     test('Price badge updates after selecting a numeric option', async ({
       comfyPage
     }) => {
-      await comfyPage.menu.topbar.newWorkflowButton.click()
-      await comfyPage.nextFrame()
+      await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
 
       await comfyPage.searchBoxV2.addNode('Node With Numeric Combo')
       const node = await comfyPage.vueNodes.getFixtureByTitle(

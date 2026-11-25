@@ -168,6 +168,10 @@ export function useBootDeploymentLabel() {
   })
 }
 
+export function fullDeploymentLabel(deployment: WorkspaceDeployment): string {
+  return deploymentNames(translate).fullLabel(deployment)
+}
+
 /** Where this page booted, or Comfy Cloud; undefined until known. */
 export function useBootDeploymentFullLabel() {
   const { bootDeployment, listingRefused } = storeToRefs(
@@ -186,7 +190,7 @@ export function useBootDeploymentFullLabel() {
 
 export function useDeploymentLabels() {
   const { t } = useI18n()
-  const { pickedDeployment, defaultDeployment } = storeToRefs(
+  const { pickedDeployment, defaultDeployment, changeSinceBoot } = storeToRefs(
     useDeploymentPickStore()
   )
   const names = deploymentNames(t)
@@ -195,11 +199,22 @@ export function useDeploymentLabels() {
   const defaultTitle = computed(() =>
     defaultDeployment.value ? names.title(defaultDeployment.value) : null
   )
+  const changeSinceBootMessage = computed(() => {
+    if (changeSinceBoot.value === null) return null
+    return changeSinceBoot.value === 'release'
+      ? t('deploymentSwitcher.releaseChanged')
+      : t(
+          'deploymentSwitcher.deploymentChanged',
+          { deployment: currentLabel.value },
+          { escapeParameter: false }
+        )
+  })
 
   return {
     deploymentRowLabels: names.rowLabels,
     deploymentFullLabel: names.fullLabel,
     currentLabel,
-    defaultTitle
+    defaultTitle,
+    changeSinceBootMessage
   }
 }

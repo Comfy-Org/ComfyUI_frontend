@@ -9,7 +9,7 @@ import {
 } from '@e2e/fixtures/jobsRouteFixture'
 import type { JobsScenario } from '@e2e/fixtures/jobsRouteFixture'
 import { TestIds } from '@e2e/fixtures/selectors'
-import type { RawJobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
+import type { RawJobListItem } from '@comfyorg/api-client/jobTypes'
 
 const historyJobs: RawJobListItem[] = [
   createRouteMockJob({

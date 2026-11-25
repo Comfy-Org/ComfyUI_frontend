@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { isSafeExternalUrl } from './urlSafety'
+import { isSafeExternalUrl, parseUrl } from './urlSafety'
 
 describe('isSafeExternalUrl', () => {
   it.for([
@@ -22,5 +22,17 @@ describe('isSafeExternalUrl', () => {
     ['empty string', '']
   ])('rejects a %s URL', ([, value]) => {
     expect(isSafeExternalUrl(value)).toBe(false)
+  })
+})
+
+describe('parseUrl', () => {
+  it('resolves a relative url against its base', () => {
+    expect(parseUrl('/view?a=1', 'https://comfy.org/app')?.href).toBe(
+      'https://comfy.org/view?a=1'
+    )
+  })
+
+  it('returns null for a url that cannot be parsed', () => {
+    expect(parseUrl('/view')).toBeNull()
   })
 })

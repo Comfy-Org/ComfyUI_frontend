@@ -4,6 +4,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import * as utils from '@/scripts/utils'
+import { markGraphLoadFailurePresented } from '@/services/graphLoadFailure'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowActionsService } from './workflowActionsService'
 
 vi.mock(import('@/services/dialogService'))
@@ -72,5 +74,59 @@ describe('workflowActionsService.exportWorkflowAction', () => {
       error: 'No workflow data available'
     })
     expect(utils.downloadBlob).not.toHaveBeenCalled()
+  })
+})
+
+describe('workflowActionsService.openWorkflowAction', () => {
+  it('returns the no-workflow error when given null', async () => {
+    const { openWorkflowAction } = useWorkflowActionsService()
+
+    const result = await openWorkflowAction(null, 'wf.json')
+
+    expect(result).toEqual({
+      success: false,
+      error: 'No workflow data available'
+    })
+    expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
+  })
+
+  it.for([
+    { name: 'a completed load', opened: true, expected: { success: true } },
+    {
+      name: 'an already-presented incomplete load',
+      opened: false,
+      expected: { success: false, errorPresentation: 'handled' }
+    }
+  ])('returns the outcome of $name', async ({ opened, expected }) => {
+    vi.mocked(useWorkflowService().openWorkflow).mockResolvedValue(opened)
+    const { openWorkflowAction } = useWorkflowActionsService()
+
+    const result = await openWorkflowAction(minimalWorkflow, 'wf.json')
+
+    expect(result).toEqual(expected)
+  })
+
+  it.for([
+    {
+      name: 'an already-presented rejection',
+      error: markGraphLoadFailurePresented(new Error('serializer blew up')),
+      errorPresentation: 'handled'
+    },
+    {
+      name: 'an unpresented rejection',
+      error: new Error('serializer blew up'),
+      errorPresentation: undefined
+    }
+  ])('propagates $name', async ({ error, errorPresentation }) => {
+    vi.mocked(useWorkflowService().openWorkflow).mockRejectedValue(error)
+    const { openWorkflowAction } = useWorkflowActionsService()
+
+    const result = await openWorkflowAction(minimalWorkflow, 'wf.json')
+
+    expect(result).toEqual({
+      success: false,
+      error: 'serializer blew up',
+      errorPresentation
+    })
   })
 })

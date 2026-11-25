@@ -4,10 +4,10 @@ import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import type {
   WebSessionRequests,
   WebSessionRequestScope
-} from '@/platform/auth/session/webSessionFetch'
-import { provideWebSessionRequests } from '@/platform/auth/session/webSessionFetch'
+} from '@comfyorg/api-client/webSessionFetch'
+import { provideWebSessionRequests } from '@comfyorg/api-client/webSessionFetch'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
-import { DEFAULT_RETRY_POLICY } from '@/utils/retryPolicy'
+import { DEFAULT_RETRY_POLICY } from '@comfyorg/api-client/retryPolicy'
 
 import { workspaceApi } from './workspaceApi'
 import { installWorkspaceApiAuth } from './workspaceApiAuth'

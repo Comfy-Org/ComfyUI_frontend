@@ -5,6 +5,7 @@
       :title="$t('releaseToast.newVersionAvailable')"
       :subtitle="latestRelease?.version"
       :position
+      class="max-w-[calc(100%-var(--sidebar-default-connected-width)-var(--workspace-inset-right,0px)-2rem)] data-[position=bottom-left]:left-[calc(var(--sidebar-default-connected-width)+1rem)] data-[position=bottom-right]:right-[calc(var(--sidebar-default-connected-width)+var(--workspace-inset-right,0px)+1rem)]"
     >
       <SanitizedHtml
         class="pl-14 text-sm leading-[1.21] font-normal text-muted-foreground"

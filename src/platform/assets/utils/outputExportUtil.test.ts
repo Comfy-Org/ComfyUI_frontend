@@ -33,15 +33,17 @@ describe('buildOutputsExportRequest', () => {
 describe('outputFileUrl', () => {
   it.for([
     {
+      case: 'with its subfolder and type',
       output: { filename: 'a.png', subfolder: 'shots', type: 'temp' },
       expected: '/api/view?filename=a.png&subfolder=shots&type=temp'
     },
     {
+      case: 'with default subfolder and type',
       output: { filename: 'a.png' },
       expected: '/api/view?filename=a.png&subfolder=&type=output'
     }
-  ] satisfies { output: DownloadableOutput; expected: string }[])(
-    'points $output.filename at the view endpoint',
+  ] satisfies { case: string; output: DownloadableOutput; expected: string }[])(
+    'points $output.filename at the view endpoint $case',
     ({ output, expected }) => {
       expect(outputFileUrl(output)).toBe(expected)
     }

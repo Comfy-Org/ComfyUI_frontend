@@ -34,6 +34,23 @@ describe('deriveSessionTitle', () => {
     expect(deriveSessionTitle([])).toBeUndefined()
   })
 
+  it('skips failed pending user entries when deriving the chat title', () => {
+    const failedEntry: ConversationEntry = {
+      id: toTurnId('cm-failed'),
+      role: 'user',
+      text: 'Failed before thread creation',
+      pending: {
+        clientMessageId: 'cm-failed',
+        status: 'failed',
+        failure: { kind: 'request', message: 'Rejected' }
+      }
+    }
+    expect(deriveSessionTitle([failedEntry])).toBeUndefined()
+    expect(
+      deriveSessionTitle([failedEntry, userEntry('Accepted thread starter')])
+    ).toBe('Accepted thread starter')
+  })
+
   it('defers building the grapheme segmenter until a title is derived', async () => {
     vi.spyOn(Intl, 'Segmenter')
     vi.resetModules()
@@ -43,6 +60,29 @@ describe('deriveSessionTitle', () => {
 
     expect(sessionTitle.deriveSessionTitle([userEntry('hello')])).toBe('hello')
     expect(Intl.Segmenter).toHaveBeenCalledOnce()
+  })
+
+  it('falls back to code points when Intl.Segmenter is unavailable', async () => {
+    const originalIntl = Intl
+    vi.stubGlobal(
+      'Intl',
+      Object.create(originalIntl, {
+        Segmenter: { value: undefined, configurable: true }
+      })
+    )
+
+    try {
+      vi.resetModules()
+      const sessionTitle = await import('./sessionTitle')
+
+      expect(
+        sessionTitle.deriveSessionTitle([
+          userEntry(`${'a'.repeat(59)}🙂trailing`)
+        ])
+      ).toBe(`${'a'.repeat(59)}🙂`)
+    } finally {
+      vi.unstubAllGlobals()
+    }
   })
 })
 

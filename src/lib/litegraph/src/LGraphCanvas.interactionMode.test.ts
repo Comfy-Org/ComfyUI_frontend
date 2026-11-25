@@ -54,17 +54,22 @@ describe('LGraphCanvas interaction mode', () => {
   })
 
   it.for([
-    { reader: undefined, selectOnly: false },
-    { reader: { isSelectOnly: () => false }, selectOnly: false },
-    { reader: { isSelectOnly: () => true }, selectOnly: true }
-  ])(
-    'reads selectOnly=$selectOnly from the injected mode',
-    ({ reader, selectOnly }) => {
-      const { canvas } = createHarness(reader)
-
-      expect(canvas.selectOnly).toBe(selectOnly)
+    { case: 'no injected mode', reader: undefined, selectOnly: false },
+    {
+      case: 'an editable injected mode',
+      reader: { isSelectOnly: () => false },
+      selectOnly: false
+    },
+    {
+      case: 'a select-only injected mode',
+      reader: { isSelectOnly: () => true },
+      selectOnly: true
     }
-  )
+  ])('reads selectOnly=$selectOnly from $case', ({ reader, selectOnly }) => {
+    const { canvas } = createHarness(reader)
+
+    expect(canvas.selectOnly).toBe(selectOnly)
+  })
 
   it('keeps the canvas own selectOnly flag when the mode is editable', () => {
     const { canvas } = createHarness({ isSelectOnly: () => false })

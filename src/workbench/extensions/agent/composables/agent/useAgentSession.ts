@@ -1,8 +1,9 @@
+import { throwIfAborted } from '@comfyorg/api-client/abortSignal'
 import { zAgentAskConflict } from '@comfyorg/ingest-types/zod'
 import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
 import { useIntervalFn } from '@vueuse/core'
 import { delay, xor } from 'es-toolkit'
-import { computed, ref, watch } from 'vue'
+import { computed, ref, shallowReactive, watch } from 'vue'
 import { ZodError } from 'zod'
 
 import { i18n } from '@/i18n'
@@ -12,10 +13,12 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 import type {
   AgentErrorClass,
   AgentErrorMetadata,
+  AgentSessionRefusalReason,
   AgentStopClickedMetadata,
   AgentStopMethod,
   AgentThreadStartSource,
-  AgentWorkflowBindSource
+  AgentWorkflowBindSource,
+  AgentWorkflowSyncErrorCode
 } from '@comfyorg/telemetry/types'
 import { clearLegacyAgentStorage } from '@/platform/workflow/persistence/base/storageIO'
 import {
@@ -23,6 +26,7 @@ import {
   StorageKeys
 } from '@/platform/workflow/persistence/base/storageKeys'
 import { createUuidv4 } from '@/utils/uuid'
+import { agentClientSessionId } from '@/workbench/extensions/agent/agentClientSession'
 import type {
   AgentActiveTabData,
   AgentAnswerReceipt,
@@ -64,7 +68,15 @@ import {
   isAttachmentKind,
   normalizeAgentTranscript
 } from '@/workbench/extensions/agent/services/agent/agentTranscript'
-import type { LiveTurn } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
+import { TURN_RECOVERY_DELAYS_MS } from '@/workbench/extensions/agent/services/agent/turnRecoverySchedule'
+import type { CanvasSyncEvidence } from '@/workbench/extensions/agent/services/agent/agentEventTransport'
+import type {
+  LiveTurn,
+  PendingSendFailure,
+  PendingSendOrigin,
+  TurnTab,
+  UserAttachment
+} from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 import { useAgentSendGateStore } from '@/workbench/extensions/agent/stores/agent/agentSendGateStore'
 import { useAgentWorkflowTabBindingStore } from '@/workbench/extensions/agent/stores/agent/agentWorkflowTabBindingStore'
@@ -95,15 +107,12 @@ interface SentTag {
 export interface WorkflowTurnContext {
   id?: string
   tabPath: string
+  tabInstanceId?: string
+  canMint?: boolean
 }
 
-/**
- * Workflow lookup context: omitted resolves the currently selected target,
- * `null` pins the absence of a target, and `{ tabPath }` pins its identity.
- * A send captures this before preparation so later selections cannot change
- * which workflow owns the turn.
- */
-export type TurnOrigin = { tabPath: string } | null
+/** Workflow lookup context pinned at send start, or `null` when absent. */
+export type TurnOrigin = { tabPath: string; tabInstanceId?: string } | null
 
 type PromptEditState =
   | { phase: 'idle' }
@@ -119,10 +128,25 @@ export type AgentSessionThreadStartSource = Exclude<
   'history_select'
 >
 
+export interface OffscreenBlankSendFailure {
+  clientMessageId: string
+  blankChatId: string
+}
+
 export interface AgentSessionDeps {
   rest: AgentRestClient
   events: AgentEventSource
   onThreadStarted?: (source: AgentSessionThreadStartSource) => void
+  onBlankSendAccepted?: (blankChatId: string, threadId: string) => void
+  onBackgroundTurnAccepted?: (
+    ack: AgentTurnAccepted,
+    text: string,
+    workflowId: string | undefined,
+    sendId: string
+  ) => void
+  onBlankTurnAccepted?: (ack: AgentTurnAccepted, blankChatId: string) => void
+  onOffscreenBlankSendFailed?: (failure: OffscreenBlankSendFailure) => void
+  isDeletedThread?: (threadId: string) => boolean
   onAgentEvent?: (event: AgentWsEvent) => void
   onThreadActivated?: (threadId: string | null) => void
   onAskResolved?: (askId: string) => void
@@ -132,6 +156,7 @@ export interface AgentSessionDeps {
    * authenticates every request.
    */
   refreshCredentialDuringTurns?: boolean
+  workspaceId?: () => string | null
   workflow?: {
     /** Resolve fresh versus restored startup before asynchronous hydration. */
     initialize?(hasThread: boolean): void
@@ -150,16 +175,23 @@ export interface AgentSessionDeps {
       workflowId: string | undefined,
       isCurrent: () => boolean
     ): Promise<boolean> | boolean
-    prepare?(): Promise<void>
+    prepare?(clientMessageId?: string): Promise<void>
     /** The server refused this workflow id; forget every cached trace of it. */
     disowned?(workflowId: string): void
+    /** Whether another saved workflow already owns this id. */
+    ownsWorkflowId?(workflowId: string): boolean
     tabs?(origin?: TurnOrigin): OpenTabsSnapshot | undefined
     activeTab?(data: AgentActiveTabData): void
     draft?(origin?: TurnOrigin): DraftSnapshot | undefined
+    turnTab?(origin?: TurnOrigin, workflowId?: string): TurnTab
+    /** Node ids selected on the target canvas, outside node selection mode. */
+    canvasSelection?(origin?: TurnOrigin): string[]
+    hasTab?(origin?: TurnOrigin): boolean
   }
 }
 
 const PREPARE_TIMEOUT_MS = 3000
+const MAX_CANVAS_SELECTION_IDS = 20
 const RECONCILE_TIMEOUT_MS = 5000
 
 interface HydrationBuffer {
@@ -180,6 +212,7 @@ interface HydrationBuffer {
    * unregisters the buffer and re-applies the cap even on a stopped session.
    */
   pending: boolean
+  loadOwnerGeneration?: number
   retirement?: ReturnType<typeof setTimeout>
   mailboxRetirement?: ReturnType<typeof setTimeout>
 }
@@ -193,12 +226,6 @@ const HYDRATION_MAILBOX_MS = 5 * 60_000
 const MAX_HYDRATION_EVENTS = 256
 const MAX_HYDRATION_MAILBOXES = 32
 
-/**
- * After a reconnect the server may still be finishing the turn, and its
- * terminal event may or may not reach the new socket. Poll the persisted row
- * with backoff; once the schedule is exhausted the socket alone is trusted.
- */
-const TURN_RECOVERY_DELAYS_MS = [0, 1000, 2000, 4000, 8000, 16000]
 /** Upper bound on one recovery job, including any history fetch still in flight. */
 const TURN_RECOVERY_DEADLINE_MS = 60_000
 const THREAD_MISSING_CONFIRMATION_INTERVAL_MS = 1000
@@ -222,7 +249,7 @@ type TurnOutcome =
     }
   | { kind: 'thread-missing' }
   | { kind: 'streaming'; pendingAsk: PendingAsk | undefined }
-  | { kind: 'error'; message: string }
+  | { kind: 'error'; cause: unknown }
 
 function streamingPendingAskId(outcome: TurnOutcome): string | undefined {
   return outcome.kind === 'streaming' ? outcome.pendingAsk?.ask_id : undefined
@@ -294,15 +321,29 @@ function recoveryKey(turn: LiveTurn): string {
 function turnOutcomeFromError(error: unknown): TurnOutcome {
   if (error instanceof AgentApiError && error.status === 404)
     return { kind: 'thread-missing' }
-  return {
-    kind: 'error',
-    message: error instanceof Error ? error.message : String(error)
-  }
+  return { kind: 'error', cause: error }
 }
 
 const NON_RETRYABLE_REQUEST_STATUSES = new Set([
   400, 401, 403, 404, 405, 409, 410, 422
 ])
+
+/**
+ * Proxy/gateway statuses where the upstream POST may have already persisted the
+ * turn. Application HTTP 500 from `post_thread_message` is excluded: both cloud
+ * and local handlers only return 500 at or before transactional `StartTurn`
+ * persistence, after which follow-up work is best-effort and the route responds
+ * 202.
+ */
+const ALWAYS_UNCERTAIN_SEND_STATUSES = new Set([502, 504])
+
+function isUncertainGatewaySendStatus(error: unknown): boolean {
+  return (
+    error instanceof AgentApiError &&
+    (ALWAYS_UNCERTAIN_SEND_STATUSES.has(error.status) ||
+      (error.status === 503 && error.retryAfterSeconds === undefined))
+  )
+}
 
 export function isRetryableRequestFailure(
   error: unknown,
@@ -311,11 +352,13 @@ export function isRetryableRequestFailure(
   if (accepted) return false
   if (
     error instanceof ZodError ||
-    error instanceof AgentResponseUnreadableError
+    error instanceof AgentResponseUnreadableError ||
+    (error instanceof DOMException && error.name === 'TimeoutError')
   )
     return false
-  if (error instanceof AgentApiError)
+  if (error instanceof AgentApiError) {
     return !NON_RETRYABLE_REQUEST_STATUSES.has(error.status)
+  }
   return true
 }
 
@@ -338,10 +381,14 @@ export function trackAgentError(
      * rather than deriving it twice and risking them disagreeing.
      */
     diagnostics?: AgentRequestFailureDiagnostics
+    syncErrorCode?: AgentWorkflowSyncErrorCode
   } = {}
 ): void {
   useTelemetry()?.trackAgentError({
     ...overrides.diagnostics,
+    ...(overrides.syncErrorCode !== undefined && {
+      sync_error_code: overrides.syncErrorCode
+    }),
     error_class: errorClass,
     failure_stage: stage,
     retryable: overrides.retryable ?? stage === 'pre_acceptance',
@@ -431,21 +478,6 @@ let sessionGeneration = 0
 let rememberedWorkflowId: string | null = null
 const turnStartedAt = new Map<TurnId, number>()
 
-/**
- * Module-level like `turnStartedAt`: a POST outlives the panel that sent it,
- * so a stop clicked from a remounted panel before the acknowledgement must
- * reach the continuation that acks. One owner: armed while a send is in
- * flight, consumed exactly once at ack.
- */
-let sendInFlight = false
-let stopPendingAck: { method: AgentStopMethod | undefined } | null = null
-
-function consumeStopPendingAck() {
-  const pending = stopPendingAck
-  stopPendingAck = null
-  return pending
-}
-
 const CREDENTIAL_REFRESH_INTERVAL_MS = 4 * 60 * 1000
 
 function parseAdmissionError(error: unknown) {
@@ -466,7 +498,7 @@ function isAttachmentTypeRejection(error: unknown): boolean {
   )
 }
 
-function reportSendFailure(error: unknown): void {
+function reportSendFailure(error: unknown, reattached?: boolean): void {
   if (isAttachmentTypeRejection(error)) return
   reportError(error, {
     surface: 'agent',
@@ -476,7 +508,8 @@ function reportSendFailure(error: unknown): void {
         ? {
             status: error.status,
             operation: error.operation,
-            retryAfterSeconds: error.retryAfterSeconds
+            retryAfterSeconds: error.retryAfterSeconds,
+            reattached
           }
         : undefined
   })
@@ -502,10 +535,16 @@ export function useAgentSession(deps: AgentSessionDeps) {
     rest,
     events,
     onThreadStarted,
+    onBlankSendAccepted,
+    onBackgroundTurnAccepted,
+    onBlankTurnAccepted,
+    onOffscreenBlankSendFailed,
+    isDeletedThread,
     onAgentEvent,
     onThreadActivated,
     onAskResolved,
     refreshCredentialDuringTurns = false,
+    workspaceId,
     workflow
   } = deps
   const threadStorageKey = StorageKeys.agentThread(getWorkspaceId())
@@ -514,6 +553,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   const conversationStore = useAgentConversationStore()
   const sendGateStore = useAgentSendGateStore()
   const skillPacks = useSkillPacksStore()
+  const deletedThreads = new Set<string>()
   const skillTurnUsage = new Map<string, { scope: string; used: boolean }>()
   watch(
     () => skillPacks.scope,
@@ -564,6 +604,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
    */
   const boundWorkflowId = ref<string | null>(rememberedWorkflowId)
 
+  const unadoptedMintBinding = new Map<string, string | null>()
+
   /**
    * H8 reporting state, kept beside the binding it describes: the workflow
    * last reported for the current thread (suppresses the ack's re-report of a
@@ -575,8 +617,18 @@ export function useAgentSession(deps: AgentSessionDeps) {
   let pendingWorkflowBind: {
     workflowId: string
     previousWorkflowId: string | null
-    source: 'selector_chip' | 'restored'
+    source: 'restored'
   } | null = null
+
+  function resolveLastReportedWorkflow(
+    currentThreadId: string,
+    pending: typeof pendingWorkflowBind,
+    previousWorkflowId: string | null
+  ): string | null {
+    if (reportedWorkflowBind?.threadId === currentThreadId)
+      return reportedWorkflowBind.workflowId
+    return pending?.previousWorkflowId ?? previousWorkflowId
+  }
 
   function reportWorkflowBound(
     workflowId: string,
@@ -585,7 +637,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   ): void {
     const currentThreadId = conversationStore.threadId
     if (currentThreadId === null) {
-      if (source === 'selector_chip' || source === 'restored')
+      if (source === 'restored')
         pendingWorkflowBind = { workflowId, previousWorkflowId, source }
       return
     }
@@ -594,10 +646,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
         ? pendingWorkflowBind
         : null
     pendingWorkflowBind = null
-    const lastReported =
-      reportedWorkflowBind?.threadId === currentThreadId
-        ? reportedWorkflowBind.workflowId
-        : (pending?.previousWorkflowId ?? previousWorkflowId)
+    const lastReported = resolveLastReportedWorkflow(
+      currentThreadId,
+      pending,
+      previousWorkflowId
+    )
     if (workflowId === lastReported) return
     reportedWorkflowBind = { threadId: currentThreadId, workflowId }
     useTelemetry()?.trackAgentWorkflowBound({
@@ -610,12 +663,15 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   const notices = ref<SessionNotice[]>([])
   const readyThreadId = ref<string | null>(null)
-  const promptEditState = ref<PromptEditState>({ phase: 'idle' })
-  const sending = ref(false)
-  const answeringAskIds = computed(() => conversationStore.answeringAskIds)
-  const pendingThreadSource = ref<AgentSessionThreadStartSource | null>(
-    'first_open'
+  const pendingHydrations = shallowReactive(
+    new Map<string, Set<() => boolean>>()
   )
+  const hydrationRevision = ref(0)
+  const promptEditState = ref<PromptEditState>({ phase: 'idle' })
+  const answeringAskIds = computed(() => conversationStore.answeringAskIds)
+  const pendingThreadSources = new Map<string, AgentSessionThreadStartSource>([
+    [conversationStore.activeBlankChatId, 'first_open']
+  ])
 
   useIntervalFn(() => {
     if (!refreshCredentialDuringTurns) return
@@ -629,12 +685,15 @@ export function useAgentSession(deps: AgentSessionDeps) {
     )
   }, CREDENTIAL_REFRESH_INTERVAL_MS)
 
-  function nextLocalErrorId(): TurnId {
-    return toTurnId(`local-error-${createUuidv4()}`)
+  interface InFlightSendState {
+    origin: PendingSendOrigin
+    missedCause: RecoveryCause | null
   }
-
+  const inFlightSends = new Map<string, InFlightSendState>()
+  const pendingSendEvents: AgentWsEvent[] = []
   let unsubscribe: (() => void) | null = null
   let unsubscribeStatus: (() => void) | null = null
+  let unsubscribeSnapshotSettled: (() => void) | null = null
   let ownedGeneration = 0
   let connection: SocketConnection = 'initial'
   let receivedStatusSnapshot = false
@@ -797,6 +856,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
     )
   }
 
+  function forgetBinding(): void {
+    boundWorkflowId.value = null
+    rememberedWorkflowId = null
+    unadoptedMintBinding.clear()
+  }
+
   function initializeWorkflowContext(hasThread: boolean): void {
     workflow?.initialize?.(hasThread)
     // The binding only outlives a remount together with its thread: a page
@@ -825,12 +890,37 @@ export function useAgentSession(deps: AgentSessionDeps) {
     initializeWorkflowContext(initialThreadId !== null)
     unsubscribe = events.subscribe(onRaw)
     if (events.onStatus) unsubscribeStatus = events.onStatus(onStatus)
+    unsubscribeSnapshotSettled = conversationStore.onSnapshotTurnSettled(
+      (turn) => void reconcileSettledSnapshotTurn(turn)
+    ).off
     if (!restore) return
     if (initialThreadId === null) {
       onThreadActivated?.(null)
       return
     }
     void restoreInitialThread(initialThreadId, surviving)
+  }
+
+  async function withHydrating<T>(
+    threadId: string,
+    work: () => Promise<T>,
+    isCurrent: () => boolean = () => true
+  ): Promise<T> {
+    const token = () => isCurrent()
+    let active = pendingHydrations.get(threadId)
+    if (!active) {
+      active = new Set()
+      pendingHydrations.set(threadId, active)
+    }
+    active.add(token)
+    hydrationRevision.value += 1
+    try {
+      return await work()
+    } finally {
+      active.delete(token)
+      if (active.size === 0) pendingHydrations.delete(threadId)
+      hydrationRevision.value += 1
+    }
   }
 
   async function restoreInitialThread(
@@ -840,11 +930,18 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const generation = ++loadGeneration
     const isCurrent = () =>
       generation === loadGeneration && ownedGeneration === sessionGeneration
-    const stashedTurn = beginInitialThread(initialThreadId, surviving)
-    const ready = await hydrateFromServer(initialThreadId, isCurrent, {
-      stashedTurn
-    })
-    if (isCurrent()) settleInitialThread(initialThreadId, surviving, ready)
+    return await withHydrating(
+      initialThreadId,
+      async () => {
+        const stashedTurn = beginInitialThread(initialThreadId, surviving)
+        const ready = await hydrateFromServer(initialThreadId, isCurrent, {
+          stashedTurn,
+          forThreadLoad: true
+        })
+        if (isCurrent()) settleInitialThread(initialThreadId, surviving, ready)
+      },
+      isCurrent
+    )
   }
 
   /** Returns whether a surviving thread's active turn was stashed. */
@@ -868,7 +965,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
   ): void {
     if (ready) onThreadActivated?.(initialThreadId)
     else if (conversationStore.threadId === null) onThreadActivated?.(null)
-    if (surviving !== null && conversationStore.threadId === surviving)
+    if (
+      (surviving !== null && conversationStore.threadId === surviving) ||
+      (ready && conversationStore.threadId === initialThreadId)
+    )
       conversationStore.resumeBackgroundTurn()
   }
 
@@ -909,21 +1009,32 @@ export function useAgentSession(deps: AgentSessionDeps) {
    * `agent_message_done` has already settled -- and both `ingest` and a
    * settled transport drop what they cannot place.
    */
-  function armHydration(threadId: string): HydrationBuffer {
+  function clearHydrationTimers(buffer: HydrationBuffer | undefined): void {
+    if (!buffer) return
+    if (buffer.retirement !== undefined) clearTimeout(buffer.retirement)
+    if (buffer.mailboxRetirement !== undefined)
+      clearTimeout(buffer.mailboxRetirement)
+  }
+
+  function armHydration(
+    threadId: string,
+    forThreadLoad = false
+  ): HydrationBuffer {
     const superseded =
       hydrationBuffers.get(threadId) ?? hydrationMailboxes.get(threadId)
-    if (superseded?.retirement !== undefined)
-      clearTimeout(superseded.retirement)
-    if (superseded?.mailboxRetirement !== undefined)
-      clearTimeout(superseded.mailboxRetirement)
+    clearHydrationTimers(superseded)
     hydrationMailboxes.delete(threadId)
+    const carriedOwner = superseded?.pending
+      ? superseded.loadOwnerGeneration
+      : undefined
     const buffer: HydrationBuffer = {
       threadId,
       // Moved, not copied: a superseded hydrate still drains from its own
       // `finally`, and a frame left behind there is replayed a second time
       // into whatever is active by then.
       events: superseded?.events.splice(0) ?? [],
-      pending: true
+      pending: true,
+      loadOwnerGeneration: forThreadLoad ? ownedGeneration : carriedOwner
     }
     hydrationBuffers.set(threadId, buffer)
     buffer.retirement = setTimeout(
@@ -1054,6 +1165,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     isCurrent: () => boolean
   ): Promise<boolean> {
     if (conversationStore.threadId !== threadId || !isCurrent()) return false
+    deletedThreads.delete(threadId)
     conversationStore.hydrate(history)
     rememberSnapshotTurn(conversationStore.activeTurnId)
     reconcileLiveTurns('hydrate')
@@ -1075,30 +1187,38 @@ export function useAgentSession(deps: AgentSessionDeps) {
     isCurrent: () => boolean = () => true,
     {
       stashedTurn = false,
+      forThreadLoad = false,
       openThread,
       failureNotice = 'error_overlay'
     }: {
       stashedTurn?: boolean
+      forThreadLoad?: boolean
       openThread?: () => void
       failureNotice?: 'error_overlay' | 'inline_notice'
     } = {}
   ): Promise<boolean> {
-    const buffer = armHydration(threadId)
-    try {
-      const history = await rest.getMessages(threadId)
-      if (openThread && isCurrent()) openThread()
-      return await applyHydration(threadId, history, buffer, isCurrent)
-    } catch (error) {
-      return handleHistoryLoadError(
-        error,
-        threadId,
-        isCurrent,
-        stashedTurn,
-        failureNotice
-      )
-    } finally {
-      drainHydration(buffer)
-    }
+    return await withHydrating(
+      threadId,
+      async () => {
+        const buffer = armHydration(threadId, forThreadLoad)
+        try {
+          const history = await rest.getMessages(threadId)
+          if (openThread && isCurrent()) openThread()
+          return await applyHydration(threadId, history, buffer, isCurrent)
+        } catch (error) {
+          return handleHistoryLoadError(
+            error,
+            threadId,
+            isCurrent,
+            stashedTurn,
+            failureNotice
+          )
+        } finally {
+          drainHydration(buffer)
+        }
+      },
+      isCurrent
+    )
   }
 
   function handleHistoryLoadError(
@@ -1110,6 +1230,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   ): false {
     if (!isCurrent()) return false
     if (error instanceof AgentApiError && error.status === 404) {
+      deletedThreads.add(threadId)
       if (conversationStore.threadId === threadId)
         conversationStore.setThreadId(null)
       if (localStorage.getItem(threadStorageKey) === threadId)
@@ -1139,10 +1260,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
   function stop(): void {
     stopped = true
     readyThreadId.value = null
+    inFlightSends.clear()
+    pendingSendEvents.length = 0
     unsubscribe?.()
     unsubscribeStatus?.()
+    unsubscribeSnapshotSettled?.()
     unsubscribe = null
     unsubscribeStatus = null
+    unsubscribeSnapshotSettled = null
     for (const running of recoveringTurns.values()) running.controller.abort()
     recoveringTurns.clear()
     recoveryPendingAskObservations.clear()
@@ -1159,44 +1284,100 @@ export function useAgentSession(deps: AgentSessionDeps) {
     })
   }
 
-  async function prepareWorkflow(): Promise<void> {
+  async function prepareWorkflow(clientMessageId?: string): Promise<void> {
     if (!workflow?.prepare) return
     await Promise.race([
-      workflow.prepare().catch(() => undefined),
+      workflow.prepare(clientMessageId).catch(() => undefined),
       new Promise<void>((resolve) => setTimeout(resolve, PREPARE_TIMEOUT_MS))
     ])
   }
 
-  function recordUnavailableTarget(text: string): void {
-    conversationStore.recordFailedSend(
-      nextLocalErrorId(),
-      text,
-      i18n.global.t('agent.targetNavigationUnavailable')
+  function originThreadId(origin: PendingSendOrigin): string | null {
+    return origin.kind === 'thread' ? origin.threadId : null
+  }
+
+  function trackSendRefused(
+    reason: AgentSessionRefusalReason,
+    clientMessageId: string | undefined,
+    origin: PendingSendOrigin = conversationStore.currentOrigin()
+  ): void {
+    useTelemetry()?.trackAgentSendGated({
+      gate: 'composer',
+      outcome: 'dropped',
+      reason,
+      client_message_id: clientMessageId ?? null,
+      held_ms: null,
+      thread_id: originThreadId(origin),
+      client_session_id: agentClientSessionId()
+    })
+  }
+
+  function recordFailedPendingSend(
+    sendId: string,
+    origin: PendingSendOrigin,
+    failure: PendingSendFailure
+  ): void {
+    const failed = conversationStore.failPendingSend(sendId, failure)
+    if (
+      failed &&
+      origin.kind === 'blank' &&
+      !conversationStore.isOriginOnScreen(origin) &&
+      !(stopped && ownedGeneration === sessionGeneration)
+    ) {
+      onOffscreenBlankSendFailed?.({
+        clientMessageId: sendId,
+        blankChatId: origin.blankChatId
+      })
+    }
+  }
+
+  function failTargetUnavailable(
+    sendId: string,
+    origin: PendingSendOrigin,
+    clientMessageId: string | undefined,
+    noticeKey: string
+  ): void {
+    trackSendRefused('target_unavailable', clientMessageId, origin)
+    recordFailedPendingSend(sendId, origin, {
+      kind: 'target_unavailable',
+      message: i18n.global.t(noticeKey)
+    })
+  }
+
+  function refusesTarget(
+    sendId: string,
+    origin: PendingSendOrigin,
+    originContext: WorkflowTurnContext | undefined,
+    wfContext: WorkflowTurnContext | undefined,
+    draft: DraftSnapshot | undefined,
+    clientMessageId: string | undefined,
+    boundAtSend: string | null,
+    tabStillOpen: boolean
+  ): boolean {
+    if (workflowTargetChanged(originContext, wfContext, tabStillOpen)) {
+      failTargetUnavailable(
+        sendId,
+        origin,
+        clientMessageId,
+        'agent.targetNavigationUnavailable'
+      )
+      return true
+    }
+    if (!lacksCanvasForRemint(wfContext, draft, boundAtSend)) return false
+    failTargetUnavailable(
+      sendId,
+      origin,
+      clientMessageId,
+      'agent.canvasNotReadyForSend'
     )
+    return true
   }
 
   function postTurn(
     threadId: string,
-    text: string,
-    origin: TurnOrigin,
-    wfContext: WorkflowTurnContext | undefined,
-    attachments?: SentAttachment[],
-    tags?: SentTag[],
-    workflowReferences?: WorkflowReference[],
-    selectionWorkflowId?: () => string | undefined,
-    clientMessageId?: string
+    input: PostMessageInput,
+    wfContext: WorkflowTurnContext | undefined
   ): Promise<AgentTurnAccepted> {
-    const input = buildPostInput(
-      threadId,
-      text,
-      origin,
-      wfContext,
-      attachments,
-      tags,
-      workflowReferences,
-      selectionWorkflowId,
-      clientMessageId
-    )
     if (wfContext?.id === undefined) return rest.postMessage(threadId, input)
     return rest.postMessage(threadId, { ...input, workflowId: wfContext.id })
   }
@@ -1206,20 +1387,17 @@ export function useAgentSession(deps: AgentSessionDeps) {
     text: string,
     origin: TurnOrigin,
     wfContext: WorkflowTurnContext | undefined,
+    draft: DraftSnapshot | undefined,
     attachments?: SentAttachment[],
     tags?: SentTag[],
     workflowReferences?: WorkflowReference[],
     selectionWorkflowId?: () => string | undefined,
-    clientMessageId?: string
+    clientMessageId?: string,
+    canvasNodeIds?: string[],
+    boundAtSend: string | null = boundWorkflowId.value
   ): PostMessageInput {
-    const draft = workflow?.draft?.(origin)
     const tabs = workflow?.tabs?.(origin)
-    const unboundTarget = isUnboundTarget(
-      wfContext,
-      boundWorkflowId.value,
-      draft,
-      tabs
-    )
+    const unboundTarget = isUnboundTarget(wfContext, boundAtSend, draft, tabs)
     const selectedWorkflowId = selectionWorkflowId?.()
     return {
       content: serializeWorkflowReferences(text, workflowReferences ?? []),
@@ -1229,6 +1407,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
         wfContext?.id
       ),
       selection: selectedNodes(tags, selectedWorkflowId),
+      canvasSelection: plainCanvasSelection(
+        canvasNodeIds,
+        tags,
+        selectedWorkflowId
+      ),
       attachments: attachments?.map((attachment) => attachment.ref),
       clientMessageId,
       ...buildTargetFields(threadId, wfContext, draft, unboundTarget)
@@ -1260,6 +1443,25 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
   }
 
+  function plainCanvasSelection(
+    canvasNodeIds: string[] | undefined,
+    tags: SentTag[] | undefined,
+    selectedWorkflowId: string | undefined
+  ) {
+    const tagged = new Set((tags ?? []).map((tag) => tag.id))
+    const nodeIds = (canvasNodeIds ?? []).filter((id) => !tagged.has(id))
+    if (nodeIds.length === 0) return undefined
+    return {
+      node_ids: nodeIds.slice(0, MAX_CANVAS_SELECTION_IDS),
+      ...(nodeIds.length > MAX_CANVAS_SELECTION_IDS
+        ? { total_selected: nodeIds.length }
+        : {}),
+      ...(selectedWorkflowId !== undefined
+        ? { workflow_id: selectedWorkflowId }
+        : {})
+    }
+  }
+
   function canSendDraft(
     threadId: string,
     wfContext: WorkflowTurnContext | undefined,
@@ -1276,9 +1478,23 @@ export function useAgentSession(deps: AgentSessionDeps) {
     draft: DraftSnapshot | undefined,
     tabs: OpenTabsSnapshot | undefined
   ): boolean {
-    if (wfContext === undefined || wfContext.id !== undefined) return false
+    if (
+      wfContext === undefined ||
+      wfContext.id !== undefined ||
+      wfContext.canMint === false
+    )
+      return false
+    if (mintAlreadyRequested(wfContext.tabPath, boundWorkflowId)) return false
     if (boundWorkflowId === null) return true
-    return draft !== undefined && isOpenInATab(boundWorkflowId, tabs)
+    if (draft === undefined) return false
+    return hasContent(draft) || isOpenInATab(boundWorkflowId, tabs)
+  }
+
+  function hasContent(draft: DraftSnapshot): boolean {
+    const { nodes, groups } = draft.content
+    return [nodes, groups].some(
+      (items) => Array.isArray(items) && items.length > 0
+    )
   }
 
   function isOpenInATab(
@@ -1286,6 +1502,45 @@ export function useAgentSession(deps: AgentSessionDeps) {
     tabs: OpenTabsSnapshot | undefined
   ): boolean {
     return (tabs?.open_tabs ?? []).some((tab) => tab.workflow_id === workflowId)
+  }
+
+  function mintAlreadyRequested(
+    tabPath: string,
+    boundWorkflowId: string | null
+  ): boolean {
+    return (
+      unadoptedMintBinding.has(tabPath) &&
+      unadoptedMintBinding.get(tabPath) === boundWorkflowId
+    )
+  }
+
+  function rememberMint(
+    input: PostMessageInput,
+    wfContext: WorkflowTurnContext | undefined,
+    workflowId: string | undefined,
+    boundAtSend: string | null
+  ): void {
+    if (!input.currentTabUnbound || wfContext === undefined) return
+    const adoptedOrHeld =
+      workflowId !== undefined &&
+      (bindingStore.tabPathFor(workflowId) !== undefined ||
+        workflow?.ownsWorkflowId?.(workflowId) === true)
+    if (!adoptedOrHeld) unadoptedMintBinding.set(wfContext.tabPath, boundAtSend)
+  }
+
+  function lacksCanvasForRemint(
+    wfContext: WorkflowTurnContext | undefined,
+    draft: DraftSnapshot | undefined,
+    boundAtSend: string | null
+  ): boolean {
+    if (
+      wfContext === undefined ||
+      wfContext.id !== undefined ||
+      wfContext.canMint === false
+    )
+      return false
+    if (boundAtSend === null) return false
+    return workflow?.draft !== undefined && draft === undefined
   }
 
   function buildTargetFields(
@@ -1305,11 +1560,13 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
   }
 
-  function recordTurnStarted(turnId: TurnId, startsThread: boolean): void {
+  function recordTurnStarted(
+    turnId: TurnId,
+    startsThread: boolean,
+    source: AgentSessionThreadStartSource | null = null
+  ): void {
     turnStartedAt.set(turnId, Date.now())
-    if (startsThread && pendingThreadSource.value !== null) {
-      const source = pendingThreadSource.value
-      pendingThreadSource.value = null
+    if (startsThread && source !== null) {
       runAcceptedTurnSideEffect(
         () => onThreadStarted?.(source),
         'agent_thread_started_callback_failed'
@@ -1329,14 +1586,63 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
   }
 
+  function toUserAttachments(attachments?: SentAttachment[]): UserAttachment[] {
+    return (attachments ?? []).map(
+      ({ name, previewUrl, mediaUrl, ref, mediaKind }) => ({
+        name,
+        previewUrl,
+        mediaUrl,
+        ref,
+        ...(isAttachmentKind(mediaKind) ? { kind: mediaKind } : {})
+      })
+    )
+  }
+
+  function toTagStrings(tags?: SentTag[]): string[] {
+    return (tags ?? []).map((tag) => `${tag.title} #${tag.id}`)
+  }
+
+  function shouldAdoptWorkflow(
+    workflowId: string,
+    wfContext: WorkflowTurnContext | undefined,
+    boundBeforeAck: string | null
+  ): boolean {
+    if (wfContext?.canMint === false) return false
+    return (
+      wfContext?.id !== undefined ||
+      (workflowId !== boundBeforeAck &&
+        bindingStore.tabPathFor(workflowId) === undefined)
+    )
+  }
+
+  function reconcileInterruptedAcceptedTurn(
+    threadId: string,
+    turnId: TurnId,
+    missedCause: RecoveryCause | null
+  ): void {
+    if (missedCause === null || connection !== 'live') return
+    const liveTurn = conversationStore
+      .liveTurns()
+      .find((turn) => turn.threadId === threadId && turn.messageId === turnId)
+    if (liveTurn) void reconcileTurn(liveTurn, missedCause)
+  }
+
   function acceptTurn(
     ack: AgentTurnAccepted,
+    origin: PendingSendOrigin,
     text: string,
     wfContext: WorkflowTurnContext | undefined,
-    attachments?: SentAttachment[],
-    tags?: SentTag[],
-    workflowReferences?: WorkflowReference[],
-    skillScope = skillPacks.scope
+    attachments: SentAttachment[] | undefined,
+    tags: SentTag[] | undefined,
+    workflowReferences: WorkflowReference[] | undefined,
+    skillScope: string,
+    threadSourceAtSend: AgentSessionThreadStartSource | null,
+    stopped?: { method?: AgentStopMethod },
+    canvasBaseline?: {
+      outcomeAtStart?: number
+      evidence?: readonly CanvasSyncEvidence[]
+    },
+    missedCause: RecoveryCause | null = null
   ): void {
     const startsThread = conversationStore.threadId === null
     conversationStore.setThreadId(ack.thread_id)
@@ -1345,11 +1651,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (workflowId !== undefined) {
       const boundAtAck = boundWorkflowId.value
       bindWorkflow(workflowId)
-      const shouldAdopt =
-        wfContext?.id !== undefined ||
-        (workflowId !== boundAtAck &&
-          bindingStore.tabPathFor(workflowId) === undefined)
-      if (shouldAdopt)
+      if (shouldAdoptWorkflow(workflowId, wfContext, boundAtAck))
         adoptWorkflow = () =>
           workflow?.adopted(workflowId, wfContext, boundAtAck)
     }
@@ -1357,21 +1659,17 @@ export function useAgentSession(deps: AgentSessionDeps) {
     conversationStore.recordUser(
       turnId,
       text,
-      attachments?.map(({ name, previewUrl, mediaUrl, ref, mediaKind }) => ({
-        name,
-        previewUrl,
-        mediaUrl,
-        ref,
-        ...(isAttachmentKind(mediaKind) ? { kind: mediaKind } : {})
-      })),
-      tags?.map((tag) => `${tag.title} #${tag.id}`),
+      toUserAttachments(attachments),
+      toTagStrings(tags),
       workflowReferences
     )
-    conversationStore.startTurn(turnId)
+    conversationStore.startTurn(turnId, canvasBaseline)
+    if (missedCause !== null) conversationStore.markActiveTurnMissedFrames()
     observeSkillTurn({ threadId: ack.thread_id, messageId: turnId }, skillScope)
     readyThreadId.value = ack.thread_id
-    recordTurnStarted(turnId, startsThread)
-    stopPendingActiveTurn()
+    consumeThreadSource(origin)
+    recordTurnStarted(turnId, startsThread, threadSourceAtSend)
+    if (stopped !== undefined) void stopTurn(stopped.method)
     runAcceptedTurnSideEffect(
       () => onThreadActivated?.(ack.thread_id),
       'agent_thread_activated_callback_failed'
@@ -1385,67 +1683,214 @@ export function useAgentSession(deps: AgentSessionDeps) {
         adoptWorkflow,
         'agent_workflow_adoption_callback_failed'
       )
+    drainPendingSendEvents(ack.thread_id, turnId)
+    reconcileInterruptedAcceptedTurn(ack.thread_id, turnId, missedCause)
   }
 
-  function stopPendingActiveTurn(): void {
-    const pendingStop = consumeStopPendingAck()
-    if (pendingStop !== null) void stopTurn(pendingStop.method)
+  function cancelBackgroundTurn(threadId: string, turnId: TurnId): void {
+    void rest.cancelMessage(threadId, turnId).catch((error: unknown) => {
+      const status = error instanceof AgentApiError ? error.status : undefined
+      if (status === 409) return
+      reportStopFailure(
+        error,
+        status === undefined ? true : isRetryableRequestFailure(error, false)
+      )
+    })
   }
 
-  function recordSendError(
-    error: unknown,
-    text: string,
-    accepted: boolean,
-    reattached: boolean
+  function resolveAcceptedTabWorkflowId(
+    ack: AgentTurnAccepted,
+    wfContext: WorkflowTurnContext | undefined
+  ): string | undefined {
+    if (wfContext?.id !== undefined) return wfContext.id
+    if (
+      ack.workflow_id !== undefined &&
+      wfContext?.tabPath !== undefined &&
+      bindingStore.tabPathFor(ack.workflow_id) === wfContext.tabPath
+    )
+      return ack.workflow_id
+    return undefined
+  }
+
+  function adoptBackgroundWorkflow(
+    workflowId: string | undefined,
+    wfContext: WorkflowTurnContext | undefined,
+    boundAtSend: string | null
   ): void {
-    const admission = parseAdmissionError(error)
-    if (admission?.reason === 'no_funds') {
-      conversationStore.recordPaywall(
-        nextLocalErrorId(),
-        text,
-        admission.message
+    if (
+      workflowId !== undefined &&
+      shouldAdoptWorkflow(workflowId, wfContext, boundAtSend)
+    )
+      runAcceptedTurnSideEffect(
+        () => workflow?.adopted(workflowId, wfContext, boundAtSend),
+        'agent_workflow_adoption_callback_failed'
       )
-      return
+  }
+
+  function notifyBlankSendAccepted(
+    origin: PendingSendOrigin,
+    threadId: string
+  ): void {
+    if (origin.kind === 'blank')
+      runAcceptedTurnSideEffect(
+        () => onBlankSendAccepted?.(origin.blankChatId, threadId),
+        'agent_thread_activated_callback_failed'
+      )
+  }
+
+  function acceptBackgroundTurn({
+    sendId,
+    ack,
+    origin,
+    turnOrigin,
+    text,
+    wfContext,
+    attachments,
+    tags,
+    workflowReferences,
+    skillScope,
+    threadSourceAtSend,
+    boundAtSend,
+    stopped,
+    canvasBaseline,
+    missedCause = null
+  }: {
+    sendId: string
+    ack: AgentTurnAccepted
+    origin: PendingSendOrigin
+    turnOrigin: TurnOrigin
+    text: string
+    wfContext: WorkflowTurnContext | undefined
+    attachments: SentAttachment[] | undefined
+    tags: SentTag[] | undefined
+    workflowReferences: WorkflowReference[] | undefined
+    skillScope: string
+    threadSourceAtSend: AgentSessionThreadStartSource | null
+    boundAtSend: string | null
+    stopped?: { method?: AgentStopMethod }
+    canvasBaseline?: {
+      outcomeAtStart?: number
+      evidence?: readonly CanvasSyncEvidence[]
     }
-    if (admission !== undefined) {
-      conversationStore.recordFailedSend(
-        nextLocalErrorId(),
-        text,
-        admission.message,
-        admission.reason === 'funds_unavailable'
-          ? admission.retryAfterSeconds
-          : undefined
-      )
-      return
+    missedCause?: RecoveryCause | null
+  }): void {
+    const turnId = toTurnId(ack.message_id)
+    const workflowId = ack.workflow_id
+    adoptBackgroundWorkflow(workflowId, wfContext, boundAtSend)
+    const tabWorkflowId = resolveAcceptedTabWorkflowId(ack, wfContext)
+    notifyBlankSendAccepted(origin, ack.thread_id)
+    conversationStore.startBackgroundTurn({
+      threadId: ack.thread_id,
+      turnId,
+      text,
+      attachments: toUserAttachments(attachments),
+      tags: toTagStrings(tags),
+      workflowReferences,
+      tab: workflow?.turnTab?.(turnOrigin, workflowId) ?? { status: 'unknown' },
+      canvasBaseline
+    })
+    observeSkillTurn({ threadId: ack.thread_id, messageId: turnId }, skillScope)
+    consumeThreadSource(origin)
+    recordTurnStarted(turnId, origin.kind === 'blank', threadSourceAtSend)
+    runAcceptedTurnSideEffect(() => {
+      onBackgroundTurnAccepted?.(ack, text, tabWorkflowId, sendId)
+      if (origin.kind === 'blank')
+        onBlankTurnAccepted?.(ack, origin.blankChatId)
+    }, 'agent_thread_activated_callback_failed')
+    if (stopped !== undefined) cancelBackgroundTurn(ack.thread_id, turnId)
+    drainPendingSendEvents(ack.thread_id, turnId)
+    reconcileInterruptedAcceptedTurn(ack.thread_id, turnId, missedCause)
+  }
+
+  function classifyAdmissionFailure(
+    admission: NonNullable<ReturnType<typeof parseAdmissionError>>
+  ): PendingSendFailure {
+    if (admission.reason === 'no_funds')
+      return { kind: 'paywall', message: admission.message }
+    const retryAfterSeconds =
+      admission.reason === 'funds_unavailable'
+        ? admission.retryAfterSeconds
+        : undefined
+    return {
+      kind: retryAfterSeconds !== undefined ? 'retry_after' : 'admission',
+      message: admission.message,
+      retryAfterSeconds
+    }
+  }
+
+  function classifyApiFailure(error: AgentApiError): PendingSendFailure {
+    if (isUncertainGatewaySendStatus(error)) {
+      return {
+        kind: 'request',
+        message: i18n.global.t('agent.sendFailedUncertain'),
+        retryable: false,
+        uncertain: true
+      }
+    }
+    if (error.retryAfterSeconds !== undefined) {
+      return {
+        kind: 'retry_after',
+        message: `${i18n.global.t('agent.sendFailed')}: ${error.message}`,
+        retryAfterSeconds: error.retryAfterSeconds
+      }
+    }
+    return {
+      kind: 'request',
+      message: `${i18n.global.t('agent.sendFailed')}: ${error.message}`
+    }
+  }
+
+  function classifySendFailure(error: unknown): PendingSendFailure {
+    const admission = parseAdmissionError(error)
+    if (admission) return classifyAdmissionFailure(admission)
+    if (disownsWorkflow(error)) {
+      return {
+        kind: 'disowned',
+        message: i18n.global.t('agent.sendFailedDisownedWorkflow')
+      }
     }
     const message = error instanceof Error ? error.message : String(error)
-    conversationStore.recordFailedSend(
-      nextLocalErrorId(),
-      text,
-      reattached
-        ? i18n.global.t('agent.sendTurnInProgress')
-        : `${i18n.global.t('agent.sendFailed')}: ${message}`
-    )
+    if (isUnreadableAckFailure(error)) {
+      return {
+        kind: 'request',
+        message: `${i18n.global.t('agent.sendFailed')}: ${message}`,
+        retryable: false,
+        uncertain: true
+      }
+    }
+    if (error instanceof DOMException && error.name === 'TimeoutError') {
+      return {
+        kind: 'request',
+        message: i18n.global.t('agent.sendFailedUncertain'),
+        retryable: false,
+        uncertain: true
+      }
+    }
+    if (error instanceof AgentApiError) return classifyApiFailure(error)
+    return {
+      kind: 'network',
+      message: i18n.global.t('agent.sendFailedNetwork'),
+      uncertain: true
+    }
+  }
+
+  function reportRejectedSend(
+    error: unknown,
+    accepted: boolean,
+    reattached?: boolean
+  ): void {
     const turnAccepted = accepted || isUnreadableAckFailure(error)
-    reportSendFailure(error)
+    reportSendFailure(error, reattached)
     trackAgentError(
       'request_failed',
       turnAccepted ? 'post_acceptance' : 'pre_acceptance',
       'inline_notice',
-      { retryable: isRetryableRequestFailure(error, turnAccepted) }
+      {
+        retryable:
+          !isUncertainGatewaySendStatus(error) &&
+          isRetryableRequestFailure(error, turnAccepted)
+      }
     )
-  }
-
-  function recordCurrentSendError(
-    error: unknown,
-    text: string,
-    accepted: boolean,
-    reattached: boolean,
-    threadAtSend: string
-  ): void {
-    if (threadAtSend !== 'new' && conversationStore.threadId !== threadAtSend)
-      return
-    recordSendError(error, text, accepted, reattached)
   }
 
   /**
@@ -1493,95 +1938,554 @@ export function useAgentSession(deps: AgentSessionDeps) {
       activeTurnId !== null &&
       (conflict.active_message_id === undefined ||
         activeTurnId === conflict.active_message_id)
-    if (reattachGeneration === refusedTurnReattachGeneration)
+    if (reattachGeneration === refusedTurnReattachGeneration) {
       refusedTurnReattachGeneration++
-    if (adoptedActiveTurn) stopPendingActiveTurn()
+      hydrationRevision.value += 1
+    }
     return adoptedActiveTurn
   }
 
-  async function performSend(
-    text: string,
-    attachments?: SentAttachment[],
-    tags?: SentTag[],
-    workflowReferences?: WorkflowReference[],
-    selectionWorkflowId?: () => string | undefined,
-    clientMessageId?: string,
+  function isServer404DeletedSend(
+    origin: PendingSendOrigin,
+    ackThreadId: string
+  ): boolean {
+    return (
+      (origin.kind === 'thread' && deletedThreads.has(origin.threadId)) ||
+      deletedThreads.has(ackThreadId)
+    )
+  }
+
+  function isHistoryDeletedSend(
+    origin: PendingSendOrigin,
+    ackThreadId: string,
+    backgroundOrStopped: boolean
+  ): boolean {
+    if (origin.kind === 'thread' && isDeletedThread?.(origin.threadId))
+      return true
+    return backgroundOrStopped && Boolean(isDeletedThread?.(ackThreadId))
+  }
+
+  function isDeletedThreadOrigin(origin: PendingSendOrigin): boolean {
+    if (origin.kind !== 'thread') return false
+    return (
+      deletedThreads.has(origin.threadId) ||
+      Boolean(isDeletedThread?.(origin.threadId))
+    )
+  }
+
+  function recordTurnInProgressConflict(
+    sendId: string,
+    origin: PendingSendOrigin,
+    reattached: boolean
+  ): void {
+    const pending = reattached
+      ? conversationStore.getPendingSend(sendId)
+      : undefined
+    recordFailedPendingSend(sendId, origin, {
+      kind: 'turn_in_progress',
+      message: i18n.global.t(
+        reattached
+          ? 'agent.sendTurnInProgress'
+          : 'agent.sendFailedTurnInProgress'
+      )
+    })
+    if (pending?.stopRequested) void stopTurn(pending.stopRequested.method)
+  }
+
+  async function recoverTurnInProgress({
+    sendId,
+    origin,
+    error,
+    threadAtSend,
+    generation
+  }: {
+    sendId: string
+    origin: PendingSendOrigin
+    error: unknown
+    threadAtSend: string
+    generation: number
+  }): Promise<{ reattached: boolean } | null> {
+    if (parseTurnInProgress(error) === undefined || threadAtSend === 'new')
+      return null
+    const onScreen =
+      (!stopped || ownedGeneration !== sessionGeneration) &&
+      conversationStore.isOriginOnScreen(origin)
+    const reattached = onScreen
+      ? await reattachRefusedTurn(error, threadAtSend, generation)
+      : false
+    if (isDeletedThreadOrigin(origin)) {
+      conversationStore.takePendingSend(sendId)
+      return { reattached }
+    }
+    recordTurnInProgressConflict(sendId, origin, reattached)
+    return { reattached }
+  }
+
+  async function recoverFailedSend({
+    sendId,
+    origin,
+    error,
+    sentContext,
+    accepted,
+    threadAtSend,
+    generation
+  }: {
+    sendId: string
+    origin: PendingSendOrigin
+    error: unknown
+    sentContext: WorkflowTurnContext | undefined
+    accepted: boolean
+    threadAtSend: string
+    generation: number
+  }): Promise<false> {
+    releaseDisownedWorkflow(sentContext, error)
+    let conflict: { reattached: boolean } | null = null
+    if (isDeletedThreadOrigin(origin)) {
+      conversationStore.takePendingSend(sendId)
+    } else {
+      conflict = await recoverTurnInProgress({
+        sendId,
+        origin,
+        error,
+        threadAtSend,
+        generation
+      })
+      if (conflict === null)
+        recordFailedPendingSend(sendId, origin, classifySendFailure(error))
+    }
+    reportRejectedSend(error, accepted, conflict?.reattached)
+    return false
+  }
+
+  function resolveOriginContext(
+    sendId: string,
+    origin: PendingSendOrigin,
+    clientMessageId: string | undefined,
+    targetTabPath: string | null | undefined,
+    targetTabInstanceId: string | null | undefined
+  ): {
+    originContext: WorkflowTurnContext | undefined
+    turnOrigin: TurnOrigin
+  } | null {
+    if (targetTabPath === undefined && targetTabInstanceId === undefined) {
+      const originContext = workflow?.current()
+      return {
+        originContext,
+        turnOrigin:
+          originContext === undefined
+            ? null
+            : {
+                tabPath: originContext.tabPath,
+                tabInstanceId: originContext.tabInstanceId
+              }
+      }
+    }
+    const turnOrigin: TurnOrigin =
+      targetTabPath !== null && targetTabPath !== undefined
+        ? {
+            tabPath: targetTabPath,
+            tabInstanceId: targetTabInstanceId ?? undefined
+          }
+        : targetTabInstanceId !== null && targetTabInstanceId !== undefined
+          ? { tabPath: '', tabInstanceId: targetTabInstanceId }
+          : null
+    const originContext = workflow?.current(turnOrigin)
+    if (turnOrigin !== null && originContext === undefined) {
+      failTargetUnavailable(
+        sendId,
+        origin,
+        clientMessageId,
+        'agent.targetNavigationUnavailable'
+      )
+      return null
+    }
+    return { originContext, turnOrigin }
+  }
+
+  function readThreadSource(
+    origin: PendingSendOrigin
+  ): AgentSessionThreadStartSource | null {
+    if (origin.kind !== 'blank') return null
+    return pendingThreadSources.get(origin.blankChatId) ?? null
+  }
+
+  function consumeThreadSource(origin: PendingSendOrigin): void {
+    if (origin.kind === 'blank') pendingThreadSources.delete(origin.blankChatId)
+  }
+
+  function finalizeStoppedSessionAcceptance({
+    sendId,
+    ack,
+    input,
+    text,
+    origin,
+    wfContext,
+    boundAtSend,
+    threadSourceAtSend
+  }: {
+    sendId: string
+    ack: AgentTurnAccepted
+    input: PostMessageInput
+    text: string
+    origin: PendingSendOrigin
+    wfContext: WorkflowTurnContext | undefined
+    boundAtSend: string | null
+    threadSourceAtSend: AgentSessionThreadStartSource | null
+  }): false {
+    const pending = conversationStore.takePendingSend(sendId)
+    if (pending?.stopRequested)
+      void rest
+        .cancelMessage(ack.thread_id, toTurnId(ack.message_id))
+        .catch(() => undefined)
+    if (
+      isServer404DeletedSend(origin, ack.thread_id) ||
+      isHistoryDeletedSend(origin, ack.thread_id, true)
+    )
+      return false
+    if (
+      ack.workflow_id !== undefined &&
+      shouldAdoptWorkflow(ack.workflow_id, wfContext, boundAtSend)
+    ) {
+      const workflowId = ack.workflow_id
+      runAcceptedTurnSideEffect(
+        () => workflow?.adopted(workflowId, wfContext, boundAtSend),
+        'agent_workflow_adoption_callback_failed'
+      )
+    }
+    const tabWorkflowId = resolveAcceptedTabWorkflowId(ack, wfContext)
+    notifyBlankSendAccepted(origin, ack.thread_id)
+    rememberMint(input, wfContext, ack.workflow_id, boundAtSend)
+    consumeThreadSource(origin)
+    recordTurnStarted(
+      toTurnId(ack.message_id),
+      origin.kind === 'blank',
+      threadSourceAtSend
+    )
+    runAcceptedTurnSideEffect(() => {
+      onBackgroundTurnAccepted?.(ack, text, tabWorkflowId, sendId)
+      if (origin.kind === 'blank')
+        onBlankTurnAccepted?.(ack, origin.blankChatId)
+    }, 'agent_thread_activated_callback_failed')
+    return false
+  }
+
+  function isHydratingThreadForLoad(threadId: string): boolean {
+    const activeBuffer = hydrationBuffers.get(threadId)
+    return (
+      activeBuffer?.pending === true &&
+      activeBuffer.loadOwnerGeneration === ownedGeneration
+    )
+  }
+
+  function dropDeletedAcceptedAck(
+    origin: PendingSendOrigin,
+    ack: AgentTurnAccepted,
+    onScreen: boolean,
+    stoppedRequest: NonNullable<
+      ReturnType<typeof conversationStore.takePendingSend>
+    >['stopRequested']
+  ): boolean | null {
+    const server404 = isServer404DeletedSend(origin, ack.thread_id)
+    const historyDeleted = isHistoryDeletedSend(
+      origin,
+      ack.thread_id,
+      !onScreen
+    )
+    if (!server404 && !historyDeleted) return null
+    if (stoppedRequest !== undefined)
+      void rest
+        .cancelMessage(ack.thread_id, toTurnId(ack.message_id))
+        .catch(() => undefined)
+    return !server404
+  }
+
+  function pendingAcceptanceContext(
+    pending: ReturnType<typeof conversationStore.takePendingSend>,
+    fallbackAttachments: SentAttachment[] | undefined
+  ) {
+    return {
+      attachments: pending?.sentAttachments.length
+        ? pending.sentAttachments
+        : fallbackAttachments,
+      canvasBaseline: pending
+        ? {
+            outcomeAtStart: pending.canvasOutcomeAtStart,
+            evidence: pending.canvasEvidence
+          }
+        : undefined
+    }
+  }
+
+  function adoptBlankChatFailures(
+    origin: PendingSendOrigin,
+    ack: AgentTurnAccepted,
+    pending: ReturnType<typeof conversationStore.takePendingSend>
+  ): void {
+    if (origin.kind !== 'blank') return
+    const scope = pending
+      ? (pending.workspaceId ?? null)
+      : (workspaceId?.() ?? null)
+    conversationStore.bindCertainBlankChatFailures(
+      origin.blankChatId,
+      ack.thread_id,
+      toTurnId(ack.message_id),
+      scope,
+      pending?.createdOrder
+    )
+  }
+
+  function routeAcceptedAck(params: {
+    sendId: string
+    ack: AgentTurnAccepted
+    input: PostMessageInput
+    origin: PendingSendOrigin
+    turnOrigin: TurnOrigin
+    text: string
+    wfContext: WorkflowTurnContext | undefined
+    attachments?: SentAttachment[]
+    tags?: SentTag[]
+    workflowReferences?: WorkflowReference[]
+    skillScopeAtSend: string
+    threadSourceAtSend: AgentSessionThreadStartSource | null
+    boundAtSend: string | null
+  }): boolean {
+    const { sendId, ack, input, origin, wfContext, boundAtSend } = params
+    if (stopped && ownedGeneration === sessionGeneration)
+      return finalizeStoppedSessionAcceptance(params)
+    const pending = conversationStore.takePendingSend(sendId)
+    const stoppedRequest = pending?.stopRequested
+    const onScreen = conversationStore.isOriginOnScreen(origin)
+    const deletedResult = dropDeletedAcceptedAck(
+      origin,
+      ack,
+      onScreen,
+      stoppedRequest
+    )
+    if (deletedResult !== null) return deletedResult
+    const { attachments, canvasBaseline } = pendingAcceptanceContext(
+      pending,
+      params.attachments
+    )
+    const missedCause = inFlightSends.get(sendId)?.missedCause ?? null
+    adoptBlankChatFailures(origin, ack, pending)
+    if (onScreen && !isHydratingThreadForLoad(ack.thread_id)) {
+      notifyBlankSendAccepted(origin, ack.thread_id)
+      acceptTurn(
+        ack,
+        origin,
+        params.text,
+        wfContext,
+        attachments,
+        params.tags,
+        params.workflowReferences,
+        params.skillScopeAtSend,
+        params.threadSourceAtSend,
+        stoppedRequest,
+        canvasBaseline,
+        missedCause
+      )
+    } else {
+      acceptBackgroundTurn({
+        sendId,
+        ack,
+        origin,
+        turnOrigin: params.turnOrigin,
+        text: params.text,
+        wfContext,
+        attachments,
+        tags: params.tags,
+        workflowReferences: params.workflowReferences,
+        skillScope: params.skillScopeAtSend,
+        threadSourceAtSend: params.threadSourceAtSend,
+        boundAtSend,
+        stopped: stoppedRequest,
+        canvasBaseline,
+        missedCause
+      })
+    }
+    rememberMint(input, wfContext, ack.workflow_id, boundAtSend)
+    return true
+  }
+
+  function initialSendMissedCause(): RecoveryCause | null {
+    return connection === 'dropped' ? 'reconnect' : null
+  }
+
+  function finishInFlightSend(sendId: string): void {
+    inFlightSends.delete(sendId)
+    if (inFlightSends.size > 0) return
+    for (const event of pendingSendEvents.splice(0)) {
+      try {
+        handleAgentEvent(event)
+      } catch (error) {
+        reportError(error, {
+          surface: 'agent',
+          errorType: 'agent_pending_send_replay_failed'
+        })
+      }
+    }
+  }
+
+  async function performSend({
+    sendId,
+    origin,
+    text,
+    attachments,
+    tags,
+    workflowReferences,
+    selectionWorkflowId,
+    clientMessageId,
+    onAccepted,
+    targetTabPath,
+    targetTabInstanceId
+  }: {
+    sendId: string
+    origin: PendingSendOrigin
+    text: string
+    attachments?: SentAttachment[]
+    tags?: SentTag[]
+    workflowReferences?: WorkflowReference[]
+    selectionWorkflowId?: () => string | undefined
+    clientMessageId?: string
     onAccepted?: () => void
-  ): Promise<boolean> {
+    targetTabPath?: string | null
+    targetTabInstanceId?: string | null
+  }): Promise<boolean> {
+    const resolved = resolveOriginContext(
+      sendId,
+      origin,
+      clientMessageId,
+      targetTabPath,
+      targetTabInstanceId
+    )
+    if (!resolved) return false
     const generation = loadGeneration
     const skillScopeAtSend = skillPacks.scope
-    const threadAtSend = conversationStore.threadId ?? 'new'
-    const originContext = workflow?.current()
-    const origin: TurnOrigin =
-      originContext === undefined ? null : { tabPath: originContext.tabPath }
+    const threadAtSend = origin.kind === 'thread' ? origin.threadId : 'new'
+    const canvasNodeIds = workflow?.canvasSelection?.(resolved.turnOrigin)
+    const boundAtSend = boundWorkflowId.value
+    const threadSourceAtSend = readThreadSource(origin)
     let sentContext: WorkflowTurnContext | undefined
     let accepted = false
+    inFlightSends.set(sendId, {
+      origin,
+      missedCause: initialSendMissedCause()
+    })
     try {
-      await prepareWorkflow()
-      if (generation !== loadGeneration) return false
-      const wfContext = workflow?.current(origin)
-      if (workflowTargetChanged(originContext, wfContext)) {
-        recordUnavailableTarget(text)
+      await prepareWorkflow(clientMessageId)
+      const wfContext = workflow?.current(resolved.turnOrigin)
+      const draft = workflow?.draft?.(resolved.turnOrigin)
+      if (
+        refusesTarget(
+          sendId,
+          origin,
+          resolved.originContext,
+          wfContext,
+          draft,
+          clientMessageId,
+          boundAtSend,
+          workflow?.hasTab?.(resolved.turnOrigin) ?? false
+        )
+      )
         return false
-      }
       sentContext = wfContext
-      const ack = await postTurn(
+      const input = buildPostInput(
         threadAtSend,
         text,
-        origin,
+        resolved.turnOrigin,
         wfContext,
+        draft,
         attachments,
         tags,
         workflowReferences,
         selectionWorkflowId,
-        clientMessageId
+        clientMessageId,
+        canvasNodeIds,
+        boundAtSend
       )
+      conversationStore.capturePendingSendCanvasBaseline(sendId)
+      const ack = await postTurn(threadAtSend, input, wfContext)
       accepted = true
-      if (!observeAcceptedTurn(generation, onAccepted)) return false
-      acceptTurn(
+      runAcceptedTurnSideEffect(
+        () => onAccepted?.(),
+        'agent_turn_accepted_callback_failed'
+      )
+      return routeAcceptedAck({
+        sendId,
         ack,
+        input,
+        origin,
+        turnOrigin: resolved.turnOrigin,
         text,
         wfContext,
         attachments,
         tags,
         workflowReferences,
-        skillScopeAtSend
-      )
-      return true
+        skillScopeAtSend,
+        threadSourceAtSend,
+        boundAtSend
+      })
     } catch (error) {
-      // Before the generation guard: the binding store is page-global and
-      // persisted, so a refusal that lands after newChat()/loadThread() has
-      // moved on still has to release, or the dead id survives the reload.
-      releaseDisownedWorkflow(sentContext, error)
-      if (generation !== loadGeneration) return false
-      const reattached = await reattachRefusedTurn(
+      return recoverFailedSend({
+        sendId,
+        origin,
         error,
+        sentContext,
+        accepted,
         threadAtSend,
         generation
-      )
-      if (generation !== loadGeneration) return false
-      recordCurrentSendError(error, text, accepted, reattached, threadAtSend)
-      return false
+      })
+    } finally {
+      finishInFlightSend(sendId)
     }
-  }
-
-  function observeAcceptedTurn(
-    generation: number,
-    onAccepted?: () => void
-  ): boolean {
-    runAcceptedTurnSideEffect(
-      () => onAccepted?.(),
-      'agent_turn_accepted_callback_failed'
-    )
-    return generation === loadGeneration
   }
 
   function workflowTargetChanged(
     origin: WorkflowTurnContext | undefined,
-    current: WorkflowTurnContext | undefined
+    current: WorkflowTurnContext | undefined,
+    tabStillOpen: boolean
   ): boolean {
+    if (origin !== undefined && current === undefined && !tabStillOpen)
+      return true
     if (origin?.id === undefined) return false
     return current?.id !== origin.id
+  }
+
+  function ensurePendingSendEntry(
+    sendId: string,
+    origin: PendingSendOrigin,
+    text: string,
+    attachments: SentAttachment[] = [],
+    tags: SentTag[] = [],
+    workflowReferences: WorkflowReference[] = [],
+    targetTabPath?: string | null,
+    targetTabInstanceId?: string | null
+  ): void {
+    if (conversationStore.getPendingSend(sendId)) return
+    const fallbackOrigin =
+      targetTabPath === undefined && targetTabInstanceId === undefined
+        ? workflow?.current()
+        : undefined
+    conversationStore.startPendingSend({
+      clientMessageId: sendId,
+      origin,
+      workspaceId: workspaceId?.() ?? null,
+      rawText: text,
+      text,
+      attachments: toUserAttachments(attachments),
+      sentAttachments: attachments,
+      sentTags: tags,
+      tags: toTagStrings(tags),
+      workflowReferences,
+      targetTabPath:
+        fallbackOrigin !== undefined
+          ? fallbackOrigin.tabPath
+          : (targetTabPath ?? null),
+      targetTabInstanceId:
+        fallbackOrigin !== undefined
+          ? (fallbackOrigin.tabInstanceId ?? null)
+          : (targetTabInstanceId ?? null)
+    })
   }
 
   async function sendMessage(
@@ -1591,37 +2495,59 @@ export function useAgentSession(deps: AgentSessionDeps) {
     workflowReferences?: WorkflowReference[],
     selectionWorkflowId?: () => string | undefined,
     clientMessageId?: string,
-    onAccepted?: () => void
+    onAccepted?: () => void,
+    targetTabPath?: string | null,
+    targetTabInstanceId?: string | null
   ): Promise<boolean> {
-    if (sending.value) {
-      conversationStore.recordFailedSend(
-        nextLocalErrorId(),
+    const sendId = clientMessageId ?? createUuidv4()
+    const existingPending = conversationStore.getPendingSend(sendId)
+    const origin = existingPending?.origin ?? conversationStore.currentOrigin()
+    if (conversationStore.hasSendingForOrigin(origin, sendId)) {
+      trackSendRefused('send_busy', clientMessageId, origin)
+      ensurePendingSendEntry(
+        sendId,
+        origin,
         text,
-        i18n.global.t('agent.sendBusy')
+        attachments,
+        tags,
+        workflowReferences,
+        targetTabPath,
+        targetTabInstanceId
       )
+      recordFailedPendingSend(sendId, origin, {
+        kind: 'request',
+        message: i18n.global.t('agent.sendBusy')
+      })
       return false
     }
+    ensurePendingSendEntry(
+      sendId,
+      origin,
+      text,
+      attachments,
+      tags,
+      workflowReferences,
+      targetTabPath,
+      targetTabInstanceId
+    )
     promptEditState.value = { phase: 'idle' }
-    sending.value = true
     const releaseSendGate = sendGateStore.begin()
-    sendInFlight = true
-    stopPendingAck = null
     try {
-      const sent = await performSend(
+      return await performSend({
+        sendId,
+        origin,
         text,
         attachments,
         tags,
         workflowReferences,
         selectionWorkflowId,
         clientMessageId,
-        onAccepted
-      )
-      if (!sent) stopPendingAck = null
-      return sent
+        onAccepted,
+        targetTabPath,
+        targetTabInstanceId
+      })
     } finally {
-      sending.value = false
       releaseSendGate()
-      sendInFlight = false
     }
   }
 
@@ -1744,10 +2670,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const threadId = conversationStore.threadId
     const turnId = conversationStore.activeTurnId
     if (threadId === null || turnId === null) {
-      // The POST has not acked yet; remember the intent and cancel on ack.
-      // sendInFlight, not this instance's sending: the panel that posted may
-      // have been remounted, and the stop arrives through the new instance.
-      if (sendInFlight) stopPendingAck = { method }
+      conversationStore.markPendingSendStopped(
+        conversationStore.currentOrigin(),
+        method
+      )
       return
     }
     if (isStoppingTurn(turnId)) return
@@ -2100,21 +3026,28 @@ export function useAgentSession(deps: AgentSessionDeps) {
   let refusedTurnReattachGeneration = 0
 
   function newChat(
-    source?: Exclude<AgentSessionThreadStartSource, 'first_open'>
+    source?: Exclude<AgentSessionThreadStartSource, 'first_open'>,
+    blankChatId?: string
   ): void {
     readyThreadId.value = null
     loadGeneration++
     promptEditState.value = { phase: 'idle' }
     conversationStore.stashActiveTurn()
-    conversationStore.reset()
+    conversationStore.reset(blankChatId)
     pruneSkillTurns()
     onThreadActivated?.(null)
-    boundWorkflowId.value = null
-    rememberedWorkflowId = null
+    forgetBinding()
     pendingWorkflowBind = null
     malformedStreamReports.clear()
     localStorage.removeItem(threadStorageKey)
-    pendingThreadSource.value = source ?? null
+    if (source !== undefined)
+      pendingThreadSources.set(conversationStore.activeBlankChatId, source)
+  }
+
+  function openBlankChat(blankChatId: string): boolean {
+    if (!conversationStore.hasPendingSendForBlankChat(blankChatId)) return false
+    newChat(undefined, blankChatId)
+    return true
   }
 
   async function loadThread(
@@ -2142,28 +3075,37 @@ export function useAgentSession(deps: AgentSessionDeps) {
       promptEditState.value = { phase: 'idle' }
       load.stashedTurn = conversationStore.activeTurnId !== null
       conversationStore.stashActiveTurn()
-      boundWorkflowId.value = null
-      rememberedWorkflowId = null
+      forgetBinding()
       pendingWorkflowBind = null
       malformedStreamReports.clear()
       conversationStore.setThreadId(threadId)
       load.switched = keepOpenChatUntilLoaded
     }
     if (!keepOpenChatUntilLoaded) openThread()
-    const hydrated = await hydrateFromServer(
+    return await withHydrating(
       threadId,
-      isCurrent,
-      keepOpenChatUntilLoaded
-        ? { openThread, failureNotice: 'inline_notice' }
-        : { stashedTurn: load.stashedTurn }
+      async () => {
+        const hydrated = await hydrateFromServer(
+          threadId,
+          isCurrent,
+          keepOpenChatUntilLoaded
+            ? {
+                openThread,
+                failureNotice: 'inline_notice',
+                forThreadLoad: true
+              }
+            : { stashedTurn: load.stashedTurn, forThreadLoad: true }
+        )
+        const opened = hydrated && isCurrent()
+        if (opened || outlivedItsNavigation()) {
+          localStorage.setItem(threadStorageKey, threadId)
+          onThreadActivated?.(threadId)
+          conversationStore.resumeBackgroundTurn()
+        }
+        return opened
+      },
+      isCurrent
     )
-    const opened = hydrated && isCurrent()
-    if (opened || outlivedItsNavigation()) {
-      localStorage.setItem(threadStorageKey, threadId)
-      onThreadActivated?.(threadId)
-      conversationStore.resumeBackgroundTurn()
-    }
-    return opened
   }
 
   function malformedEventTurnId(raw: object): TurnId | undefined {
@@ -2320,8 +3262,109 @@ export function useAgentSession(deps: AgentSessionDeps) {
     })
   }
 
-  function handleAgentEvent(event: AgentWsEvent): void {
-    if (heldForHydration(event)) return
+  function isLiveUnkeyedActiveTab(event: AgentWsEvent): boolean {
+    if (
+      event.type !== 'agent_active_tab' ||
+      event.data.message_id !== undefined
+    )
+      return false
+    const eventThreadId = event.data.thread_id
+    if (eventThreadId === undefined) return true
+    if (
+      eventThreadId === conversationStore.threadId &&
+      conversationStore.activeTurnId !== null
+    )
+      return true
+    return (
+      conversationStore
+        .liveTurns()
+        .filter((turn) => turn.threadId === eventThreadId).length === 1
+    )
+  }
+
+  function hasInFlightSendForThread(threadId: string): boolean {
+    for (const { origin } of inFlightSends.values()) {
+      if (origin.kind === 'thread' && origin.threadId === threadId) return true
+    }
+    return false
+  }
+
+  function shouldBufferPendingSendEvent(event: AgentWsEvent): boolean {
+    if (inFlightSends.size === 0) return false
+    if (hasRoutableLiveTurn(event.data.thread_id, event.data.message_id))
+      return false
+    if (event.type === 'agent_ask_resolved' || isLiveUnkeyedActiveTab(event))
+      return false
+    if (
+      event.data.thread_id !== undefined &&
+      hydrationBuffers.has(event.data.thread_id) &&
+      !hasInFlightSendForThread(event.data.thread_id)
+    )
+      return false
+    return true
+  }
+
+  function isProtectedPendingSendEvent(event: AgentWsEvent): boolean {
+    return event.type === 'agent_message_done' || event.type === 'agent_ask'
+  }
+
+  function heldForPendingSend(event: AgentWsEvent): boolean {
+    if (!shouldBufferPendingSendEvent(event)) return false
+    if (pendingSendEvents.length >= MAX_HYDRATION_EVENTS) {
+      const replace = pendingSendEvents.findIndex(
+        (held) => !isProtectedPendingSendEvent(held)
+      )
+      if (replace !== -1) {
+        pendingSendEvents.splice(replace, 1)
+      } else if (!isProtectedPendingSendEvent(event)) {
+        return true
+      } else {
+        const askIndex = pendingSendEvents.findIndex(
+          (held) => held.type === 'agent_ask'
+        )
+        pendingSendEvents.splice(Math.max(0, askIndex), 1)
+      }
+    }
+    pendingSendEvents.push(event)
+    return true
+  }
+
+  function matchesAcceptedTurn(
+    event: AgentWsEvent,
+    threadId: string,
+    turnId: TurnId
+  ): boolean {
+    if (event.data.thread_id !== threadId) return false
+    if (event.data.message_id !== undefined)
+      return event.data.message_id === turnId
+    return event.type === 'agent_active_tab'
+  }
+
+  function dispatchPendingSendEvent(event: AgentWsEvent): void {
+    try {
+      dispatchAgentEvent(event)
+    } catch (error) {
+      reportError(error, {
+        surface: 'agent',
+        errorType: 'agent_pending_send_replay_failed'
+      })
+    }
+  }
+
+  function drainPendingSendEvents(threadId: string, turnId: TurnId): void {
+    if (pendingSendEvents.length === 0) return
+    const remaining: AgentWsEvent[] = []
+    const matched: AgentWsEvent[] = []
+    for (const event of pendingSendEvents) {
+      if (matchesAcceptedTurn(event, threadId, turnId)) matched.push(event)
+      else remaining.push(event)
+    }
+    pendingSendEvents.length = 0
+    pendingSendEvents.push(...remaining)
+    for (const event of matched) dispatchPendingSendEvent(event)
+  }
+
+  function dispatchAgentEvent(event: AgentWsEvent): void {
     observeLiveDelivery(event)
     if (event.type === 'agent_ask_resolved') handleResolvedAsk(event)
     observeSkillEvent(event)
@@ -2334,6 +3377,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
     for (const turn of conversationStore.liveTurns()) observeSkillTurn(turn)
     if (event.type === 'agent_active_tab') handleActiveTab(event)
     else if (event.type === 'agent_message_done') handleMessageDone(event)
+  }
+
+  function handleAgentEvent(event: AgentWsEvent): void {
+    if (heldForPendingSend(event) || heldForHydration(event)) return
+    dispatchAgentEvent(event)
   }
 
   function onRaw(raw: unknown): void {
@@ -2349,28 +3397,39 @@ export function useAgentSession(deps: AgentSessionDeps) {
     handleAgentEvent(parsed.data)
   }
 
+  function handleSocketDropped(): void {
+    if (connection === 'initial' && !receivedStatusSnapshot) {
+      receivedStatusSnapshot = true
+      return
+    }
+    receivedStatusSnapshot = true
+    if (connection === 'dropped') return
+    connection = 'dropped'
+    for (const state of inFlightSends.values()) state.missedCause = 'reconnect'
+    resolutionChannelEpoch += 1
+    for (const awaiting of conversationStore.asksAwaitingResolution())
+      if (awaiting.kind === 'accepted')
+        reportAcceptedRecoveredAnswer(awaiting.askId, true)
+      else reportUnconfirmedConflict(awaiting.askId)
+  }
+
   function onStatus(live: boolean): void {
     if (!live) {
-      if (connection === 'initial' && !receivedStatusSnapshot) {
-        receivedStatusSnapshot = true
-        return
-      }
-      receivedStatusSnapshot = true
-      if (connection === 'dropped') return
-      connection = 'dropped'
-      resolutionChannelEpoch += 1
-      for (const awaiting of conversationStore.asksAwaitingResolution())
-        if (awaiting.kind === 'accepted')
-          reportAcceptedRecoveredAnswer(awaiting.askId, true)
-        else reportUnconfirmedConflict(awaiting.askId)
+      handleSocketDropped()
       return
     }
     receivedStatusSnapshot = true
     const reconnected = connection === 'dropped'
     const firstLive = connection === 'initial'
     connection = 'live'
-    if (reconnected) reconcileLiveTurns('reconnect')
-    else if (firstLive) reconcileLiveTurns('hydrate')
+    if (firstLive) {
+      for (const state of inFlightSends.values())
+        state.missedCause ??= 'hydrate'
+    }
+    if (reconnected) {
+      conversationStore.markActiveTurnMissedFrames()
+      reconcileLiveTurns('reconnect')
+    } else if (firstLive) reconcileLiveTurns('hydrate')
   }
 
   function reconcileLiveTurns(cause: RecoveryCause): void {
@@ -2430,6 +3489,107 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
   }
 
+  function isRetryableSettledRead(outcome: TurnOutcome): boolean {
+    if (outcome.kind === 'streaming') return true
+    return (
+      outcome.kind === 'error' &&
+      isRetryableRequestFailure(outcome.cause, false)
+    )
+  }
+
+  async function fetchSettledTurnOutcome(
+    turn: LiveTurn,
+    generation: number,
+    signal: AbortSignal,
+    deadlineReason: Error
+  ): Promise<TurnOutcome> {
+    let outcome: TurnOutcome | undefined
+    try {
+      outcome = await fetchTurnOutcome(turn, signal)
+      for (const ms of TURN_RECOVERY_DELAYS_MS.slice(1)) {
+        if (
+          !isRetryableSettledRead(outcome) ||
+          generation !== sessionGeneration
+        )
+          return outcome
+        await delay(ms, { signal })
+        outcome = await fetchTurnOutcome(turn, signal)
+      }
+      return outcome
+    } catch (error) {
+      if (signal.reason === deadlineReason && outcome?.kind === 'error')
+        return outcome
+      throw error
+    }
+  }
+
+  function reportSettledReadFailure(cause: unknown): void {
+    reportError(cause, {
+      surface: 'agent',
+      errorType: 'failure_recovering_agent_turn'
+    })
+  }
+
+  function applySettledRead(turn: LiveTurn, outcome: TurnOutcome): void {
+    if (outcome.kind === 'error') reportSettledReadFailure(outcome.cause)
+    else if (outcome.kind === 'terminal')
+      conversationStore.reconcileSettledTurn(turn, outcome.parts)
+  }
+
+  function releaseSettledRead(
+    key: string,
+    recovery: AbortController,
+    state: RunningRecovery,
+    turn: LiveTurn,
+    generation: number
+  ): void {
+    const ownsKey = recoveringTurns.get(key) === state
+    if (ownsKey && generation === sessionGeneration)
+      conversationStore.reconcileSettledTurn(turn, undefined)
+    finishRecovery(key, recovery, state, turn)
+    if (!ownsKey) return
+    recoveryPendingAskObservations.delete(key)
+    recoveryThreadMissingCounts.delete(key)
+  }
+
+  async function reconcileSettledSnapshotTurn(turn: LiveTurn): Promise<void> {
+    const generation = ownedGeneration
+    const key = recoveryKey(turn)
+    recoveringTurns.get(key)?.controller.abort()
+    const recovery = new AbortController()
+    const state: RunningRecovery = {
+      controller: recovery,
+      cause: 'hydrate',
+      rerun: false,
+      rerunCause: 'hydrate',
+      automaticRerun: false
+    }
+    recoveringTurns.set(key, state)
+    const deadlineReason = new Error('settled read deadline')
+    const deadline = setTimeout(
+      () => recovery.abort(deadlineReason),
+      TURN_RECOVERY_DEADLINE_MS
+    )
+    try {
+      const outcome = await fetchSettledTurnOutcome(
+        turn,
+        generation,
+        recovery.signal,
+        deadlineReason
+      )
+      if (
+        generation === sessionGeneration &&
+        recoveringTurns.get(key) === state
+      )
+        applySettledRead(turn, outcome)
+    } catch (error) {
+      if (!recovery.signal.aborted) reportSettledReadFailure(error)
+    } finally {
+      clearTimeout(deadline)
+      releaseSettledRead(key, recovery, state, turn, generation)
+    }
+  }
+
   function deferToRunningRecovery(key: string, cause: RecoveryCause): boolean {
     const running = recoveringTurns.get(key)
     if (running === undefined) return false
@@ -2473,7 +3633,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       if (!isTurnLive(turn, generation)) return false
       const deliveredBeforeFetch = new Set(deliveredAsks)
       const outcome = await fetchTurnOutcome(turn, signal)
-      signal.throwIfAborted()
+      throwIfAborted(signal)
       if (!isTurnLive(turn, generation)) return false
       const consecutiveThreadMissing = recordThreadAvailability(key, outcome)
       pruneRecoveryLedgers()
@@ -2576,10 +3736,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
    * the unanswered ask, so re-deliver it through the store, which routes it to
    * the same transport the lost frame would have reached, and mirror the one
    * other thing the socket branch does with an ask.
-   *
-   * Reported at `error` only after a reconnect, where the frame really is
-   * gone. A hydrate's poll can instead be racing a broadcast the server had
-   * not published when its history fetch went out, so that reads as a warning.
    */
   function restoreMissingApproval(
     turn: LiveTurn,
@@ -2625,7 +3781,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   ): void {
     const lostFrame = cause === 'reconnect' || connection === 'dropped'
     if (!lostFrame) {
-      sendRestoredApprovalReport(turn, askId, cause, 'warning')
+      sendRestoredApprovalReport(turn, askId, cause)
       return
     }
     const key = lateAskReportKey(turn.threadId, askId)
@@ -2635,7 +3791,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       messageId: turn.messageId,
       timer: setTimeout(() => {
         lateAskReports.delete(key)
-        sendRestoredApprovalReport(turn, askId, cause, 'error')
+        sendRestoredApprovalReport(turn, askId, cause)
       }, LATE_ASK_FRAME_GRACE_MS)
     })
   }
@@ -2688,15 +3844,15 @@ export function useAgentSession(deps: AgentSessionDeps) {
   function sendRestoredApprovalReport(
     turn: LiveTurn,
     askId: string,
-    cause: RecoveryCause,
-    level: 'error' | 'warning'
+    cause: RecoveryCause
   ): void {
     reportError(
       new Error('Agent approval ask was missing from the panel when polled'),
       {
         surface: 'agent',
         errorType: 'failure_delivering_agent_approval_ask',
-        level,
+        level: 'warning',
+        fingerprint: ['agent-approval-ask-restored'],
         tags: {
           feature_area: 'agent',
           operation: 'recovery',
@@ -2783,7 +3939,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
       const anchor = history.find(
         (entry) => entry.role === 'assistant' && entry.id === turn.messageId
       )
-      if (!anchor) return { kind: 'error', message: 'turn row is not visible' }
+      if (!anchor)
+        return { kind: 'error', cause: new Error('turn row is not visible') }
       const rows = history
         .filter(
           (entry) =>
@@ -2811,6 +3968,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   function forgetDeletedThread(turn: LiveTurn): void {
+    deletedThreads.add(turn.threadId)
     skillTurnUsage.delete(recoveryKey(turn))
     recoveryPendingAskObservations.delete(recoveryKey(turn))
     recoveryThreadMissingCounts.delete(recoveryKey(turn))
@@ -2819,15 +3977,15 @@ export function useAgentSession(deps: AgentSessionDeps) {
       conversationStore.settleTurn(turn, undefined, 'failed')
       return
     }
+    loadGeneration++
     conversationStore.reset()
     pruneSkillTurns()
     onThreadActivated?.(null)
-    boundWorkflowId.value = null
-    rememberedWorkflowId = null
+    forgetBinding()
     localStorage.removeItem(threadStorageKey)
   }
 
-  const isSending = computed(() => sending.value)
+  const isSending = computed(() => conversationStore.hasSendingPendingSend)
   const editableTurnId = computed(() =>
     promptEditState.value.phase === 'ready'
       ? promptEditState.value.turnId
@@ -2844,6 +4002,15 @@ export function useAgentSession(deps: AgentSessionDeps) {
     bindWorkflow,
     reportWorkflowBound,
     isSending,
+    isHydrating: computed(() => {
+      void hydrationRevision.value
+      const id = conversationStore.threadId
+      if (id === null) return false
+      const active = pendingHydrations.get(id)
+      if (!active) return false
+      for (const isCurrent of active) if (isCurrent()) return true
+      return false
+    }),
     isTranscriptReady: computed(
       () =>
         readyThreadId.value !== null &&
@@ -2857,7 +4024,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
     answerAsk,
     answeringAskIds: computed(() => answeringAskIds.value),
     newChat,
+    openBlankChat,
     loadThread,
+    isThreadDeleted: (id: string) => deletedThreads.has(id),
     entries: computed(() => conversationStore.entries),
     status: computed(() => conversationStore.status),
     isStreaming: computed(() => conversationStore.isStreaming),

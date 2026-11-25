@@ -1,3 +1,4 @@
+import { throwIfAborted } from '@comfyorg/api-client/abortSignal'
 import { vi } from 'vitest'
 import type { billingApi as realBillingApi } from '@/platform/billing/api/billingApi'
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
@@ -19,9 +20,10 @@ export const billingApi = vi.mockObject<typeof realBillingApi>(
       currency: 'USD'
     }),
     getBillingCapabilities: async (signal) => {
-      signal?.throwIfAborted()
+      throwIfAborted(signal)
       return {
         auto_top_up_enabled: false,
+        billing_web_checkout_ui: 'full_page',
         capabilities: {
           can_cancel: false,
           can_change_seats: false,
@@ -36,9 +38,13 @@ export const billingApi = vi.mockObject<typeof realBillingApi>(
           can_view_team_usage: false,
           can_edit_workspace: false,
           can_manage_auto_top_up: false,
+          can_view_auto_top_up: false,
+          can_view_auto_top_up_member_notice: false,
           can_manage_subscription: false,
           can_open_plans: false,
           can_run_workflows: false,
+          can_set_budgets: false,
+          can_set_hard_caps: false,
           can_upgrade: false,
           can_reactivate: false,
           can_revert_scheduled_change: false,
@@ -56,6 +62,7 @@ export const billingApi = vi.mockObject<typeof realBillingApi>(
       }
     },
     getBillingAutoReload: async () => ({
+      auto_top_up_conflict: false,
       card_expiry: null,
       configured: false,
       cycle_resets_at: null,
@@ -136,6 +143,17 @@ export const billingApi = vi.mockObject<typeof realBillingApi>(
     }),
     createTopupCheckout: async () => ({
       checkout_url: 'https://checkout.stripe.com/c/pay/cs_mock'
+    }),
+    createTopupPurchase: async (amount_cents) => ({
+      purchase_id: 'tpp_mock',
+      status: 'open',
+      amount_cents,
+      expires_at: '2027-11-02T00:00:00Z'
+    }),
+    quoteTopup: async (amount_cents) => ({
+      amount_cents,
+      credits: Math.round(amount_cents * 2.11),
+      expires_at: '2027-11-02T00:00:00Z'
     }),
     listTopupCheckouts: async () => ({ checkouts: [], next_cursor: null }),
     getTopupCheckout: async (sessionId) => ({

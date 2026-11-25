@@ -1,5 +1,5 @@
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
+import { useAssetDownloadStore } from '@/platform/assets/stores/assetDownloadStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 
@@ -54,10 +54,7 @@ function renderCard(asset: AssetDisplayItem) {
   return render(AssetCard, {
     props: { asset, interactive: true },
     global: {
-      plugins: [i18n],
-      stubs: {
-        AssetBadgeGroup: true
-      }
+      plugins: [i18n]
     }
   })
 }
@@ -74,6 +71,16 @@ beforeEach(() => {
 })
 
 describe('AssetCard', () => {
+  it.for([true, false])(
+    'shows Library origin only for library cards: %s',
+    (isWorkspaceLibrary) => {
+      renderCard(createDisplayAsset({ isWorkspaceLibrary }))
+      expect(screen.queryByText('assetBrowser.library') !== null).toBe(
+        isWorkspaceLibrary
+      )
+    }
+  )
+
   it('closes the asset menu before opening the delete confirmation', async () => {
     renderCard(createDisplayAsset({ is_immutable: false }))
 

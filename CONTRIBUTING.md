@@ -17,7 +17,7 @@ Have another idea? Drop into Discord or open an issue, and let's chat!
 ### Prerequisites & Technology Stack
 
 - **Required Software**:
-  - Node.js (see `.nvmrc` for the required version) and pnpm
+  - Node.js (see `.nvmrc` for the required version), pnpm, and jq (used by `tools/ci/src/cicd/check-json.sh` and its unit test)
   - Git for version control
   - A running ComfyUI backend instance (otherwise, you can use `pnpm dev:cloud`)
   - Docker, if you want to use the containerized test backend
@@ -170,16 +170,10 @@ When you fix a bug that affects a version in feature freeze, we use an automated
 
 #### How to Backport Your Fix
 
-1. Create your PR fixing the bug on `main` branch as usual
-2. Before merging, add these labels to your PR:
-   - `needs-backport` - triggers the automated backport workflow
-   - `core/1.24` - targets the `core/1.24` release candidate branch
-3. Merge your PR normally
-4. The automated workflow will:
-   - Create a new branch from `core/1.24`
-   - Apply your changes to that branch
-   - Open a new PR to `core/1.24`
-   - Comment on your original PR with a link to the backport PR
+Add `needs-backport` to your fix PR on `main`. After merge, the workflow
+tries the fix on every eligible core release branch. Close any generated
+backport PR you don't need. See [Backporting](docs/release-process.md#backporting)
+for conflicts and retries.
 
 #### When to Use Backporting
 

@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { shallowRef } from 'vue'
 
 import { zModelDownloadData } from '@comfyorg/ingest-types/zod'
-import type { JobId } from '@/platform/remote/comfyui/execution/types'
+import type { JobId } from '@comfyorg/api-client/executionTypes'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { api } from '@/scripts/api'
 

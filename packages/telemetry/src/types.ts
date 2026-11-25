@@ -105,17 +105,28 @@ export interface UnifiedAuthRefreshMetadata {
  */
 export interface ImageLoadFailureMetadata {
   /**
-   * Which surface failed. `node_image_preview` is the Vue node renderer;
-   * `canvas_node_image` / `canvas_node_video` are the litegraph canvas previews
-   * that every user gets by default, since `Comfy.VueNodes.Enabled` is off
-   * unless App Builder turns it on. Splitting on this is what keeps a rate
-   * measured on one renderer from being read as the rate for everyone.
+   * Which surface failed. `node_image_preview` / `node_video_preview` are the
+   * Vue node renderer; `canvas_node_image` / `canvas_node_video` are the
+   * litegraph canvas previews. `Comfy.VueNodes.Enabled` defaults off, but on
+   * for Cloud and Desktop users whose `Comfy.InstalledVersion` is 1.41.0 or
+   * later, and App Builder turns it on.
+   * Splitting on this is what keeps a rate measured on one renderer from being
+   * read as the rate for everyone.
+   * Under Vue nodes, an upload widget still loads its preview through the
+   * canvas loader, so one broken upload can report under both a `canvas_*`
+   * and a `node_*` source. Count per source rather than summing them.
    */
-  source: 'node_image_preview' | 'canvas_node_image' | 'canvas_node_video'
+  source:
+    | 'node_image_preview'
+    | 'node_video_preview'
+    | 'canvas_node_image'
+    | 'canvas_node_video'
   /** Load attempts made before giving up, including the first. */
   attempts?: number
   /** True when the load timed out rather than erroring — a stall, not a rejection. */
   timed_out?: boolean
+  /** `MediaError.code` of the failed load. Code 4 alone does not prove a format failure; see `status`. */
+  media_error_code?: number
   /** HTTP status of the follow-up probe. Absent unless `probe_outcome` is `probed`. */
   status?: number
   probe_outcome?:
@@ -135,6 +146,38 @@ export interface ImageLoadFailureMetadata {
   page_age_ms?: number
   online?: boolean
   same_origin?: boolean
+}
+
+/**
+ * One settled cloud file download. Never carries the URL or filename, which
+ * are user-authored; `media_kind` is derived from the extension only.
+ */
+export interface AssetDownloadMetadata {
+  outcome: 'completed' | 'failed'
+  failure_kind?:
+    | 'http'
+    | 'network'
+    | 'timeout'
+    | 'abort'
+    | 'body_read'
+    | 'unknown'
+  /** HTTP status of a non-OK response. Absent when no response arrived. */
+  status?: number
+  phase: 'headers' | 'body'
+  /** `unreported` when the request failed before attaching a credential. */
+  auth_credential:
+    | 'session-cookie'
+    | 'bearer'
+    | 'api-key'
+    | 'none'
+    | 'unreported'
+  route: 'assets_content' | 'view' | 'other'
+  media_kind: 'image' | 'video' | 'audio' | '3d' | 'text' | 'other'
+  surface: string
+  size_bytes?: number
+  duration_ms: number
+  page_age_ms: number
+  online: boolean
 }
 
 /**
@@ -160,6 +203,10 @@ export interface BootstrapCompleteMetadata {
   phase_count: number
   /** Wall-clock ms not covered by any recorded phase. */
   untraced_ms: number
+  /** Wall-clock ms the tab was hidden during startup. */
+  hidden_ms: number
+  /** Wall-clock ms the tab was visible during startup: `total_ms - hidden_ms`. */
+  visible_ms: number
   /**
    * Per-phase durations, keyed `<namespace>/<phase>` (e.g.
    * `bootstrap/object-info`). Nested phases intentionally overlap their
@@ -168,6 +215,16 @@ export interface BootstrapCompleteMetadata {
   phases: Record<string, number>
   /** Phases still running when this row was emitted. Only set for `timed_out`. */
   pending?: string[]
+  /**
+   * Failed startup's rejecting phase when its error matches (or none is supplied),
+   * else the newest open phase or `untraced`.
+   */
+  failure_phase?: string
+  /**
+   * Failed startup's safe error name, or a non-Error rejection's type.
+   * May describe an error outside every phase.
+   */
+  failure_error?: string
 }
 
 /**
@@ -467,6 +524,24 @@ export interface EnterLinearMetadata {
   source?: string
 }
 
+export type WorkflowLinkOutOfSyncReason =
+  | 'no_sidebar_path'
+  | 'name_ambiguous'
+  | 'file_missing'
+  | 'content_mismatch'
+  | 'unknown'
+
+export type WorkflowLinkOpenedMetadata =
+  | {
+      outcome: 'opened' | 'not_found' | 'error'
+      workspace_id: string | null
+    }
+  | {
+      outcome: 'out_of_sync'
+      reason: WorkflowLinkOutOfSyncReason
+      workspace_id: string | null
+    }
+
 export interface WorkflowSavedMetadata {
   is_app: boolean
   is_new: boolean
@@ -641,6 +716,132 @@ export interface UiButtonClickMetadata {
   element_group: string
 }
 
+export type RunOnCloudHandoffAction =
+  | 'use_local_agent'
+  | 'open_in_claude'
+  | 'open_in_codex'
+  | 'copy_prompt'
+
+export type LocalMcpClient = 'claude_code' | 'claude_desktop' | 'cursor'
+
+export type LocalMcpPathAction = 'copy_config' | 'open_docs'
+
+/**
+ * Funnel for the Comfy MCP connect surface on local installs:
+ * exposed -> opened -> path_selected -> connected.
+ */
+export type LocalMcpTelemetryEvent =
+  | {
+      readonly name: typeof TelemetryEvents.LOCAL_MCP_EXPOSED
+      readonly properties: Record<never, never>
+    }
+  | {
+      readonly name: typeof TelemetryEvents.LOCAL_MCP_OPENED
+      readonly properties: Record<never, never>
+    }
+  | {
+      readonly name: typeof TelemetryEvents.LOCAL_MCP_PATH_SELECTED
+      readonly properties: {
+        readonly client?: LocalMcpClient
+        readonly action: LocalMcpPathAction
+      }
+    }
+  | {
+      readonly name: typeof TelemetryEvents.LOCAL_MCP_CONNECTED
+      readonly properties: {
+        /** The `comfy_usage_source` the MCP-submitted job was attributed to. */
+        readonly usage_source: string
+        /** Whether the surface had been opened in this session first. */
+        readonly panel_opened_this_session: boolean
+      }
+    }
+
+export type RunOnCloudTelemetryEvent =
+  | {
+      readonly name: typeof TelemetryEvents.RUN_ON_CLOUD_DIALOG_SHOWN
+      readonly properties: {
+        readonly source: 'cloud_button' | 'errors_panel'
+      } & (
+        | {
+            readonly state: 'ready'
+            readonly asks_to_sign_in: boolean
+            readonly unchecked_input_count: number
+          }
+        | { readonly state: 'deploy_setup' }
+        | {
+            readonly state: 'missing_models'
+            readonly missing_model_count: number
+          }
+      )
+    }
+  | {
+      readonly name: typeof TelemetryEvents.RUN_ON_CLOUD_CHECK_FAILED
+      readonly properties:
+        | {
+            readonly reason: 'no_verdict' | 'empty_workflow'
+          }
+        | {
+            readonly reason: 'unreadable_model_loader'
+            readonly node_type: string
+          }
+    }
+  | {
+      readonly name: typeof TelemetryEvents.RUN_ON_CLOUD_SAVE_FIRST_BLOCKED
+      readonly properties: {
+        readonly action: RunOnCloudHandoffAction
+        readonly reason: 'unsaved' | 'modified'
+      }
+    }
+
+export type CustomDeploymentEntry =
+  | 'extensions'
+  | 'run_on_row'
+  | 'pencil'
+  | 'set_up'
+  | 'workflow_dialog'
+  | 'overview_dialog'
+  | 'model_library'
+  | 'preinstall'
+  | 'errors_panel'
+
+export type CustomDeploymentStep =
+  | 'new'
+  | 'update'
+  | 'nodes'
+  | 'models'
+  | 'preinstall'
+
+export type CustomDeploymentLink = 'build_on_platform' | 'manage_deployments'
+
+export type CustomDeploymentTelemetryEvent =
+  | {
+      readonly name: typeof TelemetryEvents.CUSTOM_DEPLOYMENT_DIALOG_OPENED
+      readonly properties: {
+        readonly entry: CustomDeploymentEntry
+        readonly step: CustomDeploymentStep
+        readonly workspace_id: string | null
+        readonly deployment_id: string | null
+      }
+    }
+  | {
+      readonly name: typeof TelemetryEvents.CUSTOM_DEPLOYMENT_CREATE_CLICKED
+      readonly properties: {
+        readonly kind: 'new' | 'update'
+        readonly workspace_id: string | null
+        readonly deployment_id: string
+        readonly release_id: string
+        readonly build_id: string
+        readonly version: number
+      }
+    }
+  | {
+      readonly name: typeof TelemetryEvents.CUSTOM_DEPLOYMENT_LINK_CLICKED
+      readonly properties: {
+        readonly kind: CustomDeploymentLink
+        readonly workspace_id: string | null
+      }
+    }
+
 /**
  * In-App Agent message rating metadata (PM-98). `vote` is null when the user retracts a
  * prior thumb, which the eval pipeline records as a retraction rather than dropping.
@@ -658,7 +859,13 @@ export type AgentPanelCloseSource =
   | 'topbar_button'
   | 'pagehide'
 export interface AgentPanelOpenedMetadata extends Record<string, unknown> {
-  source: 'restored' | 'topbar_button' | 'automatic_consent' | 'activation'
+  source:
+    | 'restored'
+    | 'topbar_button'
+    | 'automatic_consent'
+    | 'activation'
+    | 'error_context'
+    | 'cloud_button'
 }
 export type AgentConsentNotOfferedReason =
   | 'first_run_screen'
@@ -666,6 +873,8 @@ export type AgentConsentNotOfferedReason =
   | 'dialog_open'
   | 'boot_undecided'
   | 'storage_unavailable'
+  /** A new local user's first session: the Agent waits for the next launch. */
+  | 'first_session_deferred'
 export interface AgentConsentNotOfferedMetadata extends Record<
   string,
   unknown
@@ -762,6 +971,95 @@ export interface AgentConsentOfferExitedMetadata extends Record<
 export type AgentOnboardingNotShownMetadata =
   | { reason: 'app_mode' | 'tour_active' | 'dialog_open' }
   | { reason: 'target_missing'; step: number }
+export type AgentSendGate = 'composer' | 'consent' | 'coach'
+export type AgentComposerDropReason =
+  | 'cannot_submit'
+  | 'submission_pending'
+  | 'no_target'
+  | 'empty'
+  | 'attachment_uploading'
+/**
+ * The session refused a submitted send: `send_busy` while another is in
+ * flight, `target_unavailable` when its workflow target changed or has no canvas.
+ */
+export type AgentSessionRefusalReason = 'send_busy' | 'target_unavailable'
+/** `not_completed`: the consent flow ended without accept, decline or dismiss. */
+export type AgentConsentDropReason =
+  | 'declined'
+  | 'dismissed'
+  | 'not_completed'
+  | 'panel_closed'
+export type AgentCoachReleaseReason =
+  | 'finished'
+  | 'skipped'
+  | 'elsewhere'
+  | 'stalled'
+  | 'deferred_app_mode'
+  | 'deferred_tour_active'
+  | 'deferred_dialog_open'
+export type AgentCoachDropReason =
+  | 'panel_closed'
+  | 'consent_cleared'
+  | 'identity_changed'
+type AgentSendGateOutcome =
+  | {
+      gate: 'composer'
+      outcome: 'dropped'
+      reason: AgentComposerDropReason
+      client_message_id: null
+      held_ms: null
+    }
+  | {
+      gate: 'composer'
+      outcome: 'dropped'
+      reason: AgentSessionRefusalReason
+      client_message_id: string | null
+      held_ms: null
+    }
+  | {
+      gate: 'consent' | 'coach'
+      outcome: 'held'
+      reason: null
+      client_message_id: string
+      held_ms: null
+    }
+  | {
+      gate: 'consent'
+      outcome: 'released'
+      reason: 'accepted'
+      client_message_id: string
+      held_ms: number
+    }
+  | {
+      gate: 'consent'
+      outcome: 'dropped'
+      reason: AgentConsentDropReason
+      client_message_id: string
+      held_ms: number
+    }
+  | {
+      gate: 'coach'
+      outcome: 'released'
+      reason: AgentCoachReleaseReason
+      client_message_id: string
+      held_ms: number
+    }
+  | {
+      gate: 'coach'
+      outcome: 'dropped'
+      reason: AgentCoachDropReason
+      client_message_id: string
+      held_ms: number
+    }
+/**
+ * A first-send gate outcome, joinable to `app:agent_message_sent` by
+ * `client_message_id`.
+ */
+export type AgentSendGatedMetadata = AgentSendGateOutcome & {
+  thread_id: string | null
+  /** Page load id, also sent on the agent feedback form. */
+  client_session_id: string
+}
 export interface AgentPanelClosedMetadata extends Record<string, unknown> {
   source: AgentPanelCloseSource
   open_duration_ms: number | null
@@ -848,13 +1146,17 @@ export interface AgentConsentResolvedMetadata extends Record<string, unknown> {
   save_error_shown: boolean
 }
 export type AgentOnboardingAction = 'next' | 'finish' | 'skip'
+export type AgentOnboardingCard = 'intro' | 'workflow' | 'history'
 /**
  * `step` is 1-based and matches the "Step N of M" indicator on the card.
  * `finish` marks completion, so the gap from `agent_onboarding_shown` is the
- * onboarding time.
+ * onboarding time. `card` is the stable identity to funnel on, since `step`
+ * shifts when cards change. `total` is the tour length at the time of the event.
  */
 export interface AgentOnboardingStepMetadata extends Record<string, unknown> {
   step: number
+  card: AgentOnboardingCard
+  total: number
   action: AgentOnboardingAction
 }
 /**
@@ -864,7 +1166,11 @@ export interface AgentOnboardingStepMetadata extends Record<string, unknown> {
  * the user wrote themselves. Each send falls into exactly one — a chip the user
  * then reworded stays `suggestion`, because the chip is still what it came from.
  */
-export type AgentInputMethod = 'typed' | 'suggestion' | 'edited'
+export type AgentInputMethod =
+  | 'typed'
+  | 'suggestion'
+  | 'edited'
+  | 'error_context'
 /**
  * A starter prompt by the slot it occupies in the empty state, not by the text
  * it shows: the copy is owned elsewhere and changes without the funnel
@@ -897,6 +1203,14 @@ export type AgentFreeUseVariant = 'control' | AgentFreeUsePlacement
 export interface AgentFreeUseExposureMetadata extends Record<string, unknown> {
   placement: AgentFreeUseVariant
   '$feature/agent-free-use-message-placement': AgentFreeUseVariant
+}
+export type AgentCreditUsageVariant = 'control' | 'treatment'
+export interface AgentCreditUsageExposureMetadata extends Record<
+  string,
+  unknown
+> {
+  variant: AgentCreditUsageVariant
+  '$feature/agent-credit-usage-summary': AgentCreditUsageVariant
 }
 /**
  * Interactions with the notice itself. This event adds what the existing
@@ -957,6 +1271,7 @@ export interface AgentStarterPromptClickedMetadata extends Record<
 export interface AgentMessageSentMetadata extends Record<string, unknown> {
   attachment_count: number
   node_tag_count: number
+  skill_count: 0 | 1
   /**
    * The thread the message was posted into, `null` when it starts a new one —
    * the backend mints that id in its acknowledgement, after this event fires.
@@ -992,6 +1307,21 @@ export interface AgentMessageSentMetadata extends Record<string, unknown> {
 }
 export interface AgentNodeTaggedMetadata extends Record<string, unknown> {
   source: 'mention_picker'
+}
+export type AgentSkillSelectionSource = 'slash_picker' | 'add_menu'
+export interface AgentSkillSelectedMetadata extends Record<string, unknown> {
+  source: AgentSkillSelectionSource
+}
+export type AgentSkillSaveMode = 'add' | 'edit'
+export type AgentSkillSaveOutcome =
+  | 'saved'
+  | 'rejected'
+  | 'budget_full'
+  | 'unavailable'
+  | 'other'
+export interface AgentSkillSavedMetadata extends Record<string, unknown> {
+  mode: AgentSkillSaveMode
+  outcome: AgentSkillSaveOutcome
 }
 export interface AgentAttachButtonClickedMetadata extends Record<
   string,
@@ -1059,16 +1389,27 @@ export interface AgentStopClickedMetadata extends Record<string, unknown> {
   turn_id: string
   turn_elapsed_ms: number | null
 }
-export type AgentWorkflowBindSource =
-  | 'active_tab'
-  | 'selector_chip'
-  | 'minted'
-  | 'restored'
+export type AgentWorkflowBindSource = 'active_tab' | 'minted' | 'restored'
 export interface AgentWorkflowBoundMetadata extends Record<string, unknown> {
   thread_id: string
   workflow_id: string
   prev_workflow_id: string | null
   bind_source: AgentWorkflowBindSource
+}
+/** Why the Agent chat showed "The target workflow is no longer available". */
+export type AgentTargetUnavailableCause =
+  | 'workflow_deleted'
+  | 'restore_not_listed'
+  | 'restore_gone'
+  | 'restore_out_of_sync'
+export interface AgentTargetUnavailableMetadata extends Record<
+  string,
+  unknown
+> {
+  cause: AgentTargetUnavailableCause
+  workflow_id: string | null
+  /** Whether startup tab restore had settled when the chat decided; null on delete. */
+  startup_tab_restore_settled: boolean | null
 }
 export interface AgentRunApprovalShownMetadata extends Record<string, unknown> {
   turn_id: string
@@ -1103,6 +1444,16 @@ export type AgentErrorClass =
   | 'ask_answer_failed'
   | 'thread_list_load_failed'
   | 'workflow_open_failed'
+  | 'workflow_sync_failed'
+
+/** Why an agent workflow sync failed; codes outside this set are `other`. */
+export type AgentWorkflowSyncErrorCode =
+  | 'schema_version_mismatch'
+  | 'catalog_mismatch'
+  | 'unsupported'
+  | 'stale_client_schema'
+  | 'stale_host_schema'
+  | 'other'
 
 export type AgentRequestPath =
   | '/agent/threads'
@@ -1146,6 +1497,8 @@ export interface AgentErrorMetadata extends Record<string, unknown> {
   request_path?: AgentRequestPath
   request_status?: number
   request_error?: AgentRequestErrorName
+  /** Only on `workflow_sync_failed`: the closed-set reason sync stopped. */
+  sync_error_code?: AgentWorkflowSyncErrorCode
 }
 
 /**
@@ -1276,6 +1629,8 @@ export interface CheckoutAttributionMetadata {
 export interface SubscriptionMetadata extends Partial<WorkspaceTelemetryContext> {
   current_tier?: string
   reason?: PaymentIntentSource
+  /** Server `error.type` when a refused run opened the paywall. */
+  refusal_type?: string
 }
 
 export interface AddCreditsClickMetadata {
@@ -1450,6 +1805,7 @@ export interface TelemetryProvider {
   trackWebSessionEvent?(event: WebSessionTelemetryEvent): void
   trackSsoEvent?(event: SsoTelemetryEvent): void
   trackImageLoadFailed?(metadata: ImageLoadFailureMetadata): void
+  trackAssetDownload?(metadata: AssetDownloadMetadata): void
   trackUserLoggedIn?(): void
   trackBootstrapComplete?(metadata: BootstrapCompleteMetadata): void
 
@@ -1514,6 +1870,7 @@ export interface TelemetryProvider {
   // Workflow management events
   trackWorkflowImported?(metadata: WorkflowImportMetadata): void
   trackWorkflowOpened?(metadata: WorkflowImportMetadata): void
+  trackWorkflowLinkOpened?(metadata: WorkflowLinkOpenedMetadata): void
   trackWorkflowSaved?(metadata: WorkflowSavedMetadata): void
   trackDefaultViewSet?(metadata: DefaultViewSetMetadata): void
   trackEnterLinear?(metadata: EnterLinearMetadata): void
@@ -1563,6 +1920,12 @@ export interface TelemetryProvider {
   // Generic UI button click events
   trackUiButtonClicked?(metadata: UiButtonClickMetadata): void
 
+  trackRunOnCloudEvent?(event: RunOnCloudTelemetryEvent): void
+
+  trackLocalMcpEvent?(event: LocalMcpTelemetryEvent): void
+
+  trackCustomDeploymentEvent?(event: CustomDeploymentTelemetryEvent): void
+
   // In-App Agent message rating (PM-98)
   trackAgentMessageFeedback?(metadata: AgentMessageFeedbackMetadata): void
   trackAgentPanelOpened?(metadata: AgentPanelOpenedMetadata): void
@@ -1580,7 +1943,12 @@ export interface TelemetryProvider {
   ): void
   trackAgentFreeUseNotice?(metadata: AgentFreeUseNoticeMetadata): void
   trackAgentFreeUseExposure?(metadata: AgentFreeUseExposureMetadata): void
+  trackAgentCreditUsageExposure?(
+    metadata: AgentCreditUsageExposureMetadata
+  ): void
   trackAgentNodeTagged?(metadata: AgentNodeTaggedMetadata): void
+  trackAgentSkillSelected?(metadata: AgentSkillSelectedMetadata): void
+  trackAgentSkillSaved?(metadata: AgentSkillSavedMetadata): void
   trackAgentAttachButtonClicked?(
     metadata: AgentAttachButtonClickedMetadata
   ): void
@@ -1589,6 +1957,7 @@ export interface TelemetryProvider {
   trackAgentError?(metadata: AgentErrorMetadata): void
   trackAgentStopClicked?(metadata: AgentStopClickedMetadata): void
   trackAgentWorkflowBound?(metadata: AgentWorkflowBoundMetadata): void
+  trackAgentTargetUnavailable?(metadata: AgentTargetUnavailableMetadata): void
   trackAgentRunApprovalShown?(metadata: AgentRunApprovalShownMetadata): void
   trackAgentRunApprovalResolved?(
     metadata: AgentRunApprovalResolvedMetadata
@@ -1598,6 +1967,7 @@ export interface TelemetryProvider {
   trackAgentConsentNotOffered?(metadata: AgentConsentNotOfferedMetadata): void
   trackAgentConsentOfferExited?(metadata: AgentConsentOfferExitedMetadata): void
   trackAgentOnboardingNotShown?(metadata: AgentOnboardingNotShownMetadata): void
+  trackAgentSendGated?(metadata: AgentSendGatedMetadata): void
 
   // Right side panel widget favorite events
   trackWidgetFavoriteToggled?(metadata: WidgetFavoriteToggledMetadata): void
@@ -1651,6 +2021,8 @@ export const TelemetryEvents = {
   SSO_SIGN_IN_COMPLETED: SSO_TELEMETRY_EVENT.signInCompleted,
   SSO_WORKSPACE_LANDED: SSO_TELEMETRY_EVENT.workspaceLanded,
   IMAGE_LOAD_FAILED: 'app:image_load_failed',
+  ASSET_DOWNLOAD_COMPLETED: 'app:asset_download_completed',
+  ASSET_DOWNLOAD_FAILED: 'app:asset_download_failed',
   BOOTSTRAP_COMPLETE: 'app:bootstrap_complete',
   THEME_LOADED: 'app:theme_loaded',
 
@@ -1711,6 +2083,7 @@ export const TelemetryEvents = {
   // Workflow Management
   WORKFLOW_IMPORTED: 'app:workflow_imported',
   WORKFLOW_OPENED: 'app:workflow_opened',
+  WORKFLOW_LINK_OPENED: 'app:workflow_link_opened',
   ENTER_LINEAR_MODE: 'app:app_mode_opened',
   SHARE_FLOW: 'app:share_flow',
   SHARE_LINK_OPENED: 'app:share_link_opened',
@@ -1769,14 +2142,18 @@ export const TelemetryEvents = {
   AGENT_STARTER_PROMPT_CLICKED: 'app:agent_starter_prompt_clicked',
   AGENT_FREE_USE_NOTICE: 'app:agent_free_use_notice',
   AGENT_FREE_USE_EXPOSURE: 'app:agent_free_use_exposure',
+  AGENT_CREDIT_USAGE_EXPOSURE: 'app:agent_credit_usage_exposure',
   AGENT_CREDIT_TRANSITION_NOTICE: 'app:agent_credit_transition_notice',
   AGENT_NODE_TAGGED: 'app:agent_node_tagged',
+  AGENT_SKILL_SELECTED: 'app:agent_skill_selected',
+  AGENT_SKILL_SAVED: 'app:agent_skill_saved',
   AGENT_ATTACH_BUTTON_CLICKED: 'app:agent_attach_button_clicked',
   AGENT_WORKFLOW_APPLIED: 'app:agent_workflow_applied',
   AGENT_GRAPH_PROJECTION: 'app:agent_graph_projection',
   AGENT_ERROR: 'app:agent_error',
   AGENT_STOP_CLICKED: 'app:agent_stop_clicked',
   AGENT_WORKFLOW_BOUND: 'app:agent_workflow_bound',
+  AGENT_TARGET_UNAVAILABLE: 'app:agent_target_unavailable',
   AGENT_RUN_APPROVAL_SHOWN: 'app:agent_run_approval_shown',
   AGENT_RUN_APPROVAL_RESOLVED: 'app:agent_run_approval_resolved',
   AGENT_RUN_MODE_CHANGED: 'app:agent_run_mode_changed',
@@ -1784,6 +2161,7 @@ export const TelemetryEvents = {
   AGENT_CONSENT_NOT_OFFERED: 'app:agent_consent_not_offered',
   AGENT_CONSENT_OFFER_EXITED: 'app:agent_consent_offer_exited',
   AGENT_ONBOARDING_NOT_SHOWN: 'app:agent_onboarding_not_shown',
+  AGENT_SEND_GATED: 'app:agent_send_gated',
 
   // Right Side Panel Widget Favorites
   WIDGET_FAVORITE_TOGGLED: 'app:widget_favorite_toggled',
@@ -1801,6 +2179,19 @@ export const TelemetryEvents = {
   // Network
   FETCH_TIMEOUT: 'app:fetch_timeout',
   FETCH_STATUS_RETRY: 'app:fetch_status_retry',
+
+  RUN_ON_CLOUD_DIALOG_SHOWN: 'app:run_on_cloud_dialog_shown',
+  RUN_ON_CLOUD_CHECK_FAILED: 'app:run_on_cloud_check_failed',
+  RUN_ON_CLOUD_SAVE_FIRST_BLOCKED: 'app:run_on_cloud_save_first_blocked',
+
+  LOCAL_MCP_EXPOSED: 'app:local_mcp_exposed',
+  LOCAL_MCP_OPENED: 'app:local_mcp_opened',
+  LOCAL_MCP_PATH_SELECTED: 'app:local_mcp_path_selected',
+  LOCAL_MCP_CONNECTED: 'app:local_mcp_connected',
+
+  CUSTOM_DEPLOYMENT_DIALOG_OPENED: 'platform:editor_deploy_opened',
+  CUSTOM_DEPLOYMENT_CREATE_CLICKED: 'platform:deployment_create_clicked',
+  CUSTOM_DEPLOYMENT_LINK_CLICKED: 'platform:deployment_link_clicked',
 
   WORKSPACE_SCOPE_MISMATCH: 'workspace_scope_mismatch'
 } as const
@@ -1864,6 +2255,7 @@ export type TelemetryEventProperties =
   | WebSessionTelemetryEvent['properties']
   | SsoTelemetryEvent['properties']
   | ImageLoadFailureMetadata
+  | AssetDownloadMetadata
   | BootstrapCompleteMetadata
   | SurveyResponses
   | TemplateMetadata
@@ -1885,6 +2277,9 @@ export type TelemetryEventProperties =
   | TemplateFilterMetadata
   | SettingChangedMetadata
   | UiButtonClickMetadata
+  | RunOnCloudTelemetryEvent['properties']
+  | LocalMcpTelemetryEvent['properties']
+  | CustomDeploymentTelemetryEvent['properties']
   | WidgetFavoriteToggledMetadata
   | NamedValuesShadowDiffMismatchMetadata
   | NamedValuesShadowDiffSummaryMetadata
@@ -1896,6 +2291,7 @@ export type TelemetryEventProperties =
   | EnterLinearMetadata
   | ShareFlowMetadata
   | ShareLinkOpenedMetadata
+  | WorkflowLinkOpenedMetadata
   | WorkflowSavedMetadata
   | DefaultViewSetMetadata
   | SubscriptionMetadata

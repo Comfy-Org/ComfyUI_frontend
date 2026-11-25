@@ -7,7 +7,7 @@ import type {
 } from '@comfyorg/ingest-types'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
+import type { UserDataFullInfo } from '@comfyorg/api-client/types'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 
 import {
@@ -185,9 +185,12 @@ test(
     ])
 
     await expect(topbar.getActiveTab()).toContainText('Portrait')
+    await panel
+      .getByRole('textbox', { includeHidden: true })
+      .fill('Check workflow target')
     await expect(
-      panel.getByText(enMessages.agent.selectWorkflowForAgent)
-    ).toBeVisible()
+      panel.getByRole('button', { name: enMessages.agent.send })
+    ).toBeDisabled()
     await expect
       .poll(() =>
         page.evaluate(

@@ -64,6 +64,14 @@ const literalInterpolationPattern = /\{'[^']*'\}/g
 const linkedMessagePattern = /@[.:]/
 const urlPattern = /\]\((https?:\/\/[^\s)]+)\)|https?:\/\/[\w\-./?=&#%~:@+,;]+/g
 
+export function countPluralForms(value: string): number {
+  return pluralForms(value).length
+}
+
+export function hasBlankPluralForm(value: string): boolean {
+  return pluralForms(value).some((form) => form.trim() === '')
+}
+
 function pluralForms(value: string): string[] {
   const forms: string[] = []
   let start = 0

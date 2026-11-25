@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import type { Settings } from '@/platform/settings/types'
+import type { Settings } from '@comfyorg/settings-core/types'
 import { api } from '@/scripts/api'
 
 import { useAgentExtensionActions } from './useAgentExtensionActions'
@@ -29,7 +29,7 @@ async function loadSettings(values: Partial<Settings> = {}) {
 }
 
 describe('useAgentExtensionActions', () => {
-  it('persists the disable, publishes it locally, then reloads', async () => {
+  it('saves and publishes the disable, then reloads', async () => {
     const settingStore = await loadSettings()
     vi.mocked(api.storeSetting).mockResolvedValue(new Response())
     const reload = vi.spyOn(window.location, 'reload').mockReturnValue()

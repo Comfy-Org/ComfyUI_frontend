@@ -111,7 +111,7 @@ describe('AppToaster', () => {
     )
   })
 
-  it('renders and runs multiple notification actions', async () => {
+  it('announces, renders, and runs multiple notification actions', async () => {
     const user = userEvent.setup()
     const manage = vi.fn()
     const disable = vi.fn()
@@ -124,6 +124,7 @@ describe('AppToaster', () => {
       ]
     })
     await nextTick()
+
     expect(
       screen.getByRole('status', { name: 'Notification' })
     ).toHaveTextContent('Extension added. Manage. Disable')
@@ -136,25 +137,77 @@ describe('AppToaster', () => {
     expect(disable).toHaveBeenCalledOnce()
   })
 
-  it('keeps the legacy action beside multiple actions with repeated labels', async () => {
+  it('keeps the legacy action before plural actions with repeated labels', async () => {
     const user = userEvent.setup()
-    const first = vi.fn()
-    const second = vi.fn()
+    const legacy = vi.fn()
+    const plural = vi.fn()
     renderToaster()
 
     useToast().info('Extension added', {
-      action: { label: 'Open', onClick: first },
-      actions: [{ label: 'Open', onClick: second }]
+      action: { label: 'Open', onClick: legacy },
+      actions: [{ label: 'Open', onClick: plural }]
     })
     await nextTick()
+
     const actions = screen.getAllByRole('button', { name: 'Open' })
     await user.click(actions[0])
-    expect(first).toHaveBeenCalledOnce()
-    expect(second).not.toHaveBeenCalled()
+    expect(legacy).toHaveBeenCalledOnce()
+    expect(plural).not.toHaveBeenCalled()
 
     await user.click(actions[1])
-    expect(first).toHaveBeenCalledOnce()
-    expect(second).toHaveBeenCalledOnce()
+    expect(legacy).toHaveBeenCalledOnce()
+    expect(plural).toHaveBeenCalledOnce()
+  })
+
+  it('keeps notifications usable when an untyped caller supplies malformed actions', async () => {
+    const keep = vi.fn()
+    renderToaster()
+    const toast = useToast()
+
+    const malformedActions: unknown = [
+      null,
+      { label: 'Manage' },
+      { label: 'Keep', onClick: keep }
+    ]
+    Reflect.apply(toast.info, toast, [
+      'Extension added',
+      { actions: malformedActions }
+    ])
+    const malformedActionsObject: unknown = {
+      label: 'Open',
+      onClick: vi.fn()
+    }
+    Reflect.apply(toast.info, toast, [
+      'Workflow saved',
+      { actions: malformedActionsObject }
+    ])
+    await nextTick()
+
+    expect(
+      screen.getByRole('status', { name: 'Notification' })
+    ).toHaveTextContent('Extension added. KeepWorkflow saved')
+    expect(screen.getAllByTestId('toast')).toHaveLength(2)
+    expect(screen.getAllByRole('button', { name: 'Keep' })).toHaveLength(1)
+    expect(screen.queryByRole('button', { name: 'Manage' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Open' })).toBeNull()
+  })
+
+  it('keeps notifications usable when an untyped caller supplies a malformed singular action', async () => {
+    renderToaster()
+    const toast = useToast()
+
+    const malformedAction: unknown = { label: 'Retry' }
+    Reflect.apply(toast.info, toast, [
+      'Extension added',
+      { action: malformedAction }
+    ])
+    await nextTick()
+
+    expect(
+      screen.getByRole('status', { name: 'Notification' })
+    ).toHaveTextContent('Extension added')
+    expect(screen.getAllByTestId('toast')).toHaveLength(1)
+    expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull()
   })
 
   it('uses translated labels for notification regions and close buttons', async () => {
@@ -240,7 +293,7 @@ describe('AppToaster', () => {
   it('automatically dismisses a timed notification', async () => {
     renderToaster()
 
-    useToast().info('Uploaded', { duration: 1000 })
+    const id = useToast().info('Uploaded', { duration: 1000 })
     await nextTick()
     expect(screen.getByTestId('toast')).toHaveTextContent('Uploaded')
 
@@ -248,6 +301,7 @@ describe('AppToaster', () => {
     await nextTick()
 
     expect(screen.queryByTestId('toast')).not.toBeInTheDocument()
+    expect(useToast().takeClosedByUser(id)).toBe(false)
   })
 
   it.for([
@@ -362,11 +416,12 @@ describe('AppToaster', () => {
     const user = userEvent.setup()
     renderToaster()
 
-    useToast().warning('Check settings')
+    const id = useToast().warning('Check settings')
     await nextTick()
     await user.click(screen.getByRole('button', { name: 'Close' }))
 
     expect(screen.queryByText('Check settings')).not.toBeInTheDocument()
+    expect(useToast().takeClosedByUser(id)).toBe(true)
   })
 
   it('cannot swipe away a notification and keeps its text selectable', async () => {

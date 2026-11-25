@@ -1,7 +1,7 @@
 import type { UploadImageResponse } from '@comfyorg/ingest-types'
 import { mergeTests } from '@playwright/test'
 
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { agentTest } from '@e2e/fixtures/agentPanelFixture'
 import { workflowSelectionTest } from '@e2e/fixtures/agentWorkflowSelectionFixture'
@@ -41,8 +41,16 @@ export const referenceWorkflow: ComfyWorkflowJSON = {
 const base = mergeTests(agentTest, workflowSelectionTest, webSocketFixture)
 
 export const inlineReferencesTest = base.extend<{
+  ensureWorkflowSelection: void
   assetUpload: { finish: () => void }
 }>({
+  ensureWorkflowSelection: [
+    async ({ workflowSelection }, use) => {
+      void workflowSelection
+      await use()
+    },
+    { auto: true }
+  ],
   assetUpload: async ({ page }, use) => {
     let finish = () => {}
     const pending = new Promise<void>((resolve) => {

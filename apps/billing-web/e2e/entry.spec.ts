@@ -49,10 +49,18 @@ test('sends a pricing link back to the host, where plans are chosen', async ({
   await expect(page.getByRole('heading', { name: 'Host app' })).toBeVisible()
 })
 
-test('explains a pricing link with nowhere to go back to', async ({ page }) => {
+test('sends a platform pricing link back to the test platform', async ({
+  page
+}) => {
+  await page.route('https://testplatform.comfy.org/', (route) =>
+    route.fulfill({
+      contentType: 'text/html',
+      body: '<!doctype html><title>Platform</title><h1>Platform</h1>'
+    })
+  )
+
   await page.goto('/v1/pricing?product=platform&return_to=platform_account')
 
-  await expect(
-    page.getByText("That link doesn't name a place we can send you back to.")
-  ).toBeVisible()
+  await expect(page).toHaveURL('https://testplatform.comfy.org/')
+  await expect(page.getByRole('heading', { name: 'Platform' })).toBeVisible()
 })
