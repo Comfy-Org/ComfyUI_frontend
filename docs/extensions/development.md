@@ -112,14 +112,14 @@ The alternative would have been breaking all existing extensions or staying with
 ### Option 1: Develop as Core Extension (Recommended)
 
 1. Copy your extension to `src/extensions/core/` (see [Core Extensions Documentation](./core.md) for existing core extensions and architecture)
-2. Update imports to relative paths:
+2. Update imports to relative paths, and call `useApp()` wherever the extension used `app`:
    ```javascript
-   import { app } from '../../scripts/app'
+   import { useApp } from '../../scripts/appInstance'
    import { api } from '../../scripts/api'
    ```
-3. Add to `src/extensions/core/index.ts`
+3. Export the extension object instead of calling `app.registerExtension`, and add it to the ordered list in `src/extensions/core/index.ts`
 4. Test with hot reload working
-5. Move back when complete
+5. When complete, move it back: restore the `app.registerExtension(...)` call, the original imports, and the `app` references you replaced with `useApp()`, and remove its entry from the list in `src/extensions/core/index.ts`
 
 ### Option 2: Use Production Build
 

@@ -1,21 +1,26 @@
 import { expect } from '@playwright/test'
 import type { Page, Request } from '@playwright/test'
 
+import { isContractIdentifier } from '@comfyorg/billing-contract'
+
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import type {
   BillingPlansResponse,
   BillingStatusResponse,
-  Plan,
   PreviewSubscribeResponse
-} from '@/platform/workspace/api/workspaceApi'
+} from '@comfyorg/billing-core'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
+import { createPlan } from '@e2e/fixtures/data/billingPlans'
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { keepPricingTableInApp } from '@e2e/fixtures/utils/platformPlans'
+import { mockWebSessionServer } from '@e2e/fixtures/utils/webSessionMocks'
 import {
+  mockWorkspaceList,
   mockWorkspaceTokenMint,
   workspace
 } from '@e2e/fixtures/utils/workspaceMocks'
@@ -45,8 +50,10 @@ const ACTIVE_BILLING_STATUS: BillingStatusResponse = {
   is_active: true,
   max_seats: 1,
   occupied_seats: 1,
+  ended_at: null,
   team_credit_stop: null,
   scheduled_change: null,
+  next_charge: null,
   subscription_tier: 'PRO',
   subscription_duration: 'MONTHLY',
   plan_slug: 'pro-monthly',
@@ -55,20 +62,13 @@ const ACTIVE_BILLING_STATUS: BillingStatusResponse = {
   has_funds: true
 }
 
-const STANDARD_YEARLY_PLAN: Plan = {
+const STANDARD_YEARLY_PLAN = createPlan({
   slug: 'standard-yearly',
   tier: 'STANDARD',
   duration: 'ANNUAL',
-  price_cents: 16_000,
-  credits_cents: 4_200,
-  max_seats: 1,
-  availability: { available: true },
-  seat_summary: {
-    seat_count: 1,
-    total_cost_cents: 16_000,
-    total_credits_cents: 4_200
-  }
-}
+  priceCents: 16_000,
+  monthlyCredits: 4_200
+})
 
 const NEW_STANDARD_SUBSCRIPTION: PreviewSubscribeResponse = {
   allowed: true,
@@ -77,8 +77,8 @@ const NEW_STANDARD_SUBSCRIPTION: PreviewSubscribeResponse = {
   is_immediate: true,
   cost_today_cents: 16_000,
   cost_next_period_cents: 16_000,
-  credits_today_cents: 4_200,
-  credits_next_period_cents: 4_200,
+  credits_today_cents: STANDARD_YEARLY_PLAN.credits_cents,
+  credits_next_period_cents: STANDARD_YEARLY_PLAN.credits_cents,
   new_plan: STANDARD_YEARLY_PLAN
 }
 
@@ -110,8 +110,6 @@ async function mockCloudBoot(page: Page): Promise<CloudBootRequests> {
       })
     )
   )
-  // TutorialCompleted suppresses the new-user template browser, whose modal
-  // overlay would otherwise intercept the Settings click.
   await page.route('**/api/settings', (r) =>
     r.fulfill(jsonRoute({ 'Comfy.TutorialCompleted': true }))
   )
@@ -120,23 +118,16 @@ async function mockCloudBoot(page: Page): Promise<CloudBootRequests> {
   await page.route('**/api/object_info', (r) => r.fulfill(jsonRoute({})))
   await page.route('**/api/global_subgraphs', (r) => r.fulfill(jsonRoute({})))
   await page.route('**/api/i18n', (r) => r.fulfill(jsonRoute({})))
-  await page.route('**/api/auth/session', (r) =>
-    r.fulfill(jsonRoute({ token: 'mock-workspace-token' }))
-  )
+  await mockWebSessionServer(page)
   await page.route('**/releases**', (r) => r.fulfill(jsonRoute([])))
   await mockWorkspaceTokenMint(page, workspace('personal', 'owner'))
-  await page.route('**/api/workspaces', (r) =>
-    r.fulfill(jsonRoute({ workspaces: [workspace('personal', 'owner')] }))
-  )
+  await mockWorkspaceList(page, [workspace('personal', 'owner')])
 
   await page.route('**/api/billing/status', (r) => {
     statusRequests.push(r.request())
     return r.fulfill(jsonRoute(ACTIVE_BILLING_STATUS))
   })
   await page.route('**/api/billing/balance', (r) =>
-    r.fulfill(jsonRoute({ amount_micros: 6000, currency: 'usd' }))
-  )
-  await page.route('**/customers/balance', (r) =>
     r.fulfill(jsonRoute({ amount_micros: 6000, currency: 'usd' }))
   )
   await page.route('**/api/billing/plans', (r) =>
@@ -224,10 +215,30 @@ function openedUrl(page: Page) {
   return page.locator('html').getAttribute('data-opened-url')
 }
 
-/** The avatar menu's Plans and pricing entry. */
-async function clickPlansAndPricing(page: Page) {
-  await page.getByRole('button', { name: 'Current user' }).click()
-  await page.getByTestId('plans-pricing-menu-item').click()
+/**
+ * The opened billing-web entry, with its `correlation_id` checked against the
+ * contract's identifier rule rather than by value: an entry with no checkout
+ * journey mints a fresh one on every open.
+ */
+async function openedBillingEntry(page: Page) {
+  const url = await openedUrl(page)
+  if (url === null) return null
+  const { origin, pathname, searchParams } = new URL(url)
+  const correlationId = searchParams.get('correlation_id')
+  searchParams.delete('correlation_id')
+  return {
+    route: `${origin}${pathname}`,
+    query: Object.fromEntries(searchParams),
+    carriesReadableJourney:
+      correlationId !== null && isContractIdentifier(correlationId)
+  }
+}
+
+async function openPricingFromPlanAndCredits(page: Page) {
+  const content = await openPlanAndCredits(page)
+  await content
+    .getByRole('button', { name: /Upgrade Plan|Change plan/ })
+    .click()
 }
 
 const pricingHeading = (page: Page) =>
@@ -296,15 +307,22 @@ test.describe('Hosted billing destination (FE-2218)', { tag: '@cloud' }, () => {
     await content.getByRole('button', { name: 'Billing & invoices' }).click()
 
     await expect
-      .poll(() => openedUrl(page))
-      .toBe(
-        `${BILLING_WEB_ORIGIN}/v1/payment-methods?product=comfyui&return_to=comfyui_workspace&workspace=ws-personal`
-      )
+      .poll(() => openedBillingEntry(page))
+      .toEqual({
+        route: `${BILLING_WEB_ORIGIN}/v1/payment-methods`,
+        query: {
+          product: 'comfyui',
+          return_to: 'comfyui_workspace',
+          workspace: 'ws-personal'
+        },
+        carriesReadableJourney: true
+      })
     expect(portalRequests).toHaveLength(0)
   })
 
   test('tells the customer and mints no portal session when the hosted payment-methods tab is blocked', async ({
-    page
+    page,
+    toast
   }) => {
     test.setTimeout(60_000)
     const { portalRequests } = await mockCloudBoot(page)
@@ -317,7 +335,7 @@ test.describe('Hosted billing destination (FE-2218)', { tag: '@cloud' }, () => {
     await content.getByRole('button', { name: 'Billing & invoices' }).click()
 
     await expect(
-      page.getByText(
+      toast.withText(
         "Couldn't open the billing page. Allow pop-ups for this site and try again."
       )
     ).toBeVisible()
@@ -325,7 +343,8 @@ test.describe('Hosted billing destination (FE-2218)', { tag: '@cloud' }, () => {
   })
 
   test('tells the customer and mints no portal session when the provider portal tab is blocked', async ({
-    page
+    page,
+    toast
   }) => {
     test.setTimeout(60_000)
     const { portalRequests } = await mockCloudBoot(page)
@@ -335,7 +354,7 @@ test.describe('Hosted billing destination (FE-2218)', { tag: '@cloud' }, () => {
     await content.getByRole('button', { name: 'Billing & invoices' }).click()
 
     await expect(
-      page.getByText(
+      toast.withText(
         "Couldn't open the billing page. Allow pop-ups for this site and try again."
       )
     ).toBeVisible()
@@ -355,10 +374,16 @@ test.describe('Hosted billing destination (FE-2218)', { tag: '@cloud' }, () => {
     const content = await openPlanAndCredits(page)
     await content.getByRole('button', { name: 'Billing & invoices' }).click()
     await expect
-      .poll(() => openedUrl(page))
-      .toBe(
-        `${BILLING_WEB_ORIGIN}/v1/payment-methods?product=comfyui&return_to=comfyui_workspace&workspace=ws-personal`
-      )
+      .poll(() => openedBillingEntry(page))
+      .toEqual({
+        route: `${BILLING_WEB_ORIGIN}/v1/payment-methods`,
+        query: {
+          product: 'comfyui',
+          return_to: 'comfyui_workspace',
+          workspace: 'ws-personal'
+        },
+        carriesReadableJourney: true
+      })
 
     const requestsBeforeReturn = statusRequests.length
     await page.evaluate(() => window.dispatchEvent(new Event('focus')))
@@ -367,36 +392,11 @@ test.describe('Hosted billing destination (FE-2218)', { tag: '@cloud' }, () => {
       .poll(() => statusRequests.length)
       .toBeGreaterThan(requestsBeforeReturn)
   })
-
-  /**
-   * Plan selection stays in the app regardless of the destination: billing-web's
-   * `/v1/pricing` has no personal/team tabs, cycle toggle, or credit slider
-   * (G7), and a per-credit Team plan 400s there (FE-2642). Only a Subscribe
-   * click inside this table hands off to billing-web — see the "Hosted
-   * billing checkout handoff" describe below.
-   */
-  for (const destination of ['stripe', 'billing_web'] as const) {
-    test(`opens the in-app pricing table from the avatar menu while the destination is ${destination}`, async ({
-      page
-    }) => {
-      test.setTimeout(60_000)
-      await mockCloudBoot(page)
-      await bootApp(page)
-      if (destination === 'billing_web') {
-        await new FeatureFlagHelper(page).setServerFlagsPersistent({
-          hosted_billing_destination: 'billing_web'
-        })
-      }
-
-      await clickPlansAndPricing(page)
-
-      await expect(pricingHeading(page)).toBeVisible()
-      expect(await openedUrl(page)).toBeNull()
-    })
-  }
 })
 
 test.describe('Hosted billing checkout handoff', { tag: '@cloud' }, () => {
+  test.beforeEach(({ page }) => keepPricingTableInApp(page))
+
   test('opens the billing-web checkout entry with the selected plan and workspace while the destination is billing_web', async ({
     page
   }) => {
@@ -408,15 +408,23 @@ test.describe('Hosted billing checkout handoff', { tag: '@cloud' }, () => {
       hosted_billing_destination: 'billing_web'
     })
 
-    await clickPlansAndPricing(page)
+    await openPricingFromPlanAndCredits(page)
     await expect(pricingHeading(page)).toBeVisible()
     await standardTierButton(page).click()
 
     await expect
-      .poll(() => openedUrl(page))
-      .toBe(
-        `${BILLING_WEB_ORIGIN}/v1/checkout?product=comfyui&return_to=comfyui_workspace&plan=standard-yearly&workspace=ws-personal`
-      )
+      .poll(() => openedBillingEntry(page))
+      .toEqual({
+        route: `${BILLING_WEB_ORIGIN}/v1/checkout`,
+        query: {
+          product: 'comfyui',
+          return_to: 'comfyui_workspace',
+          plan: 'standard-yearly',
+          workspace: 'ws-personal',
+          source: 'settings_billing_panel'
+        },
+        carriesReadableJourney: true
+      })
     expect(previewRequests).toHaveLength(0)
     await expect(pricingDialog(page)).toHaveCount(0)
   })
@@ -432,7 +440,7 @@ test.describe('Hosted billing checkout handoff', { tag: '@cloud' }, () => {
       hosted_billing_destination: 'billing_web'
     })
 
-    await clickPlansAndPricing(page)
+    await openPricingFromPlanAndCredits(page)
     await expect(pricingHeading(page)).toBeVisible()
     await standardTierButton(page).click()
 
@@ -447,7 +455,7 @@ test.describe('Hosted billing checkout handoff', { tag: '@cloud' }, () => {
     await mockStandardPlan(page)
     await bootApp(page)
 
-    await clickPlansAndPricing(page)
+    await openPricingFromPlanAndCredits(page)
     await expect(pricingHeading(page)).toBeVisible()
     await standardTierButton(page).click()
 

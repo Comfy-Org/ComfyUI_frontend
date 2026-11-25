@@ -1,16 +1,10 @@
-import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
+import type {
+  LoosePositionedRect as PositionableItem,
+  Extents as PositionExtents,
+  ReadOnlyRect
+} from '@comfyorg/shared-frontend-utils/geometry'
 
-interface PositionableItem {
-  pos?: ArrayLike<number>
-  size?: ArrayLike<number>
-}
-
-export interface PositionExtents {
-  minX: number
-  minY: number
-  maxX: number
-  maxY: number
-}
+export type { Extents as PositionExtents } from '@comfyorg/shared-frontend-utils/geometry'
 
 export function calculatePositionExtents(
   items: Iterable<PositionableItem>

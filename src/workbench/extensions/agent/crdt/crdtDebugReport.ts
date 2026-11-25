@@ -1,151 +1,63 @@
-/**
- * The one-click bug report.
- *
- * The frontend used to ship a `ReportIssuePanel` that gathered system stats,
- * server logs, settings and the workflow behind opt-in checkboxes and posted
- * the bundle to Sentry; it was deleted when support moved to Zendesk (#5259),
- * and with it went the only path from "something is wrong" to "here is
- * everything an engineer needs". The panel's `Copy JSON` replacement carried
- * the CRDT event log and nothing else — no versions, no logs, no custom
- * nodes — so every CRDT report arrived needing a follow-up round trip.
- *
- * This restores the deleted collector and folds the CRDT state into the same
- * artifact: one clipboard paste that answers "what build", "what machine",
- * "what nodes", "what did the document do", and "what did the tester expect
- * instead".
- *
- * Collection is per-source fault-tolerant on purpose. A backend that is down
- * is exactly when a report matters most, and a failed `getLogs()` must
- * degrade to a note in the log section rather than abort the whole bundle.
- */
+import {
+  REDACTED,
+  sanitizeSecrets,
+  sanitizeEventPayloads,
+  sanitizeArgv
+} from '@/platform/telemetry/redact'
 import { DISTRIBUTION } from '@/platform/distribution/types'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { api } from '@/scripts/api'
-import { useExtensionStore } from '@/stores/extensionStore'
-
+import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
+import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import type {
   AssistantMessage,
   ToolPart
-} from '../services/agent/agentMessageParts'
+} from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 
 import type { CrdtDebugSnapshot } from './crdtSnapshot'
-import type { DevEvent } from './devPanelLog'
-import { devEventReplacer } from './devPanelLog'
+import type { DevEvent } from './crdtLog'
+import { devEventReplacer } from './crdtLog'
 import type { MergeTraceEntry } from './mergeTrace'
-
-/** Server logs beyond this are tail-trimmed; a paste has to stay pasteable. */
-const MAX_LOG_CHARS = 40_000
-const MAX_WORKFLOW_CHARS = 200_000
-/** The event log and the stamp ledger both grow without bound with session length. */
-const MAX_SECTION_CHARS = 60_000
-const MAX_REPORT_CHARS = 256_000
+import type { MediaUiDiagnostic } from './mediaUiDiagnostics'
+const MAX_LOG_CHARS = 40000
+const MAX_WORKFLOW_CHARS = 200000
+const MAX_SECTION_CHARS = 60000
+const MAX_REPORT_CHARS = 256000
 const MAX_TOOL_CALLS = 50
-const MAX_REDACTION_DEPTH = 12
-const DEPTH_LIMIT_REDACTED = '[redacted at depth limit]'
+const MAX_THINKING_CHARS = 10_000
 const SOURCE_TIMEOUT_MS = 5_000
-
-/**
- * Setting keys whose VALUE is replaced before the report leaves the browser.
- *
- * `addSetting` is public extension API, so the settings dictionary is an open
- * set: any installed node pack can persist whatever it likes there, including
- * service credentials. An allow-list is impossible for the same reason, so
- * this redacts by key shape and the report says so out loud.
- */
-const SECRET_KEY_PATTERN =
-  /(token|secret|password|passwd|credential|api[-_]?key|apikey|auth|bearer|session|cookie|private)/i
-
-const REDACTED = '[redacted by the debug report]'
-
 const SHARING_WARNING =
   'Review before sharing: this section can contain values you did not choose to publish.'
-
-/**
- * Redaction must RECURSE. A single top-level pass reads as sufficient and is
- * not: `Comfy.Server.LaunchArgs` is a `Record<string, string>` of the flags
- * the server was started with, and its own key matches nothing, so a
- * one-level walk emits `{'--api-token': '…'}` whole. Settings values are
- * arbitrary JSON from a public `addSetting` API, so every key at every depth
- * has to be tested.
- */
-function redactSecrets(value: unknown, depth = 0): unknown {
-  if (depth > MAX_REDACTION_DEPTH) return DEPTH_LIMIT_REDACTED
-  if (typeof value === 'string') return redactPrivateValue(value)
-  if (value === null || typeof value !== 'object') return value
-  if (Array.isArray(value)) {
-    return value.map((item) => redactSecrets(item, depth + 1))
-  }
-  return Object.fromEntries(
-    Object.entries(value as Record<string, unknown>).map(([key, nested]) => [
-      key,
-      SECRET_KEY_PATTERN.test(key) ? REDACTED : redactSecrets(nested, depth + 1)
-    ])
-  )
-}
-
 export interface ReportSources {
   serverLogs: boolean
   settings: boolean
   workflow: boolean
 }
-
 export const DEFAULT_REPORT_SOURCES: ReportSources = {
   serverLogs: true,
   settings: true,
   workflow: true
 }
-
-/**
- * The IDs a backend engineer needs to find this session in Datadog/logs,
- * without reading the rest of the report. None of these are secrets — they
- * are the join keys support and backend already search by — so this block
- * is included unconditionally, unlike the optional {@link ReportSources}.
- *
- * Collected by the caller (the panel component) rather than read directly in
- * this module, because every value here lives behind a Pinia store or a
- * composable and this module deliberately stays framework-store-free — see
- * the file header on why collection is fault-tolerant per source instead.
- */
 export interface ReportIdentifiers {
-  /** Comfy account id, from Firebase or an API-key session. */
   userId: string | null
-  /** Organization id, when the active workspace exposes a separate one. */
   organizationId: string | null
-  /** Active team/workspace id, when the tester is in one. */
   workspaceId: string | null
-  /** Agent conversation/thread id — the backend session correlation key. */
   agentThreadId: string | null
-  /** Current agent request/turn id. */
   activeAgentTurnId: string | null
-  /** Recent agent request/turn ids, most recent first. */
   recentAgentTurnIds: readonly string[]
-  /** Per-tab CRDT actor id — the closest thing to a "session id" today. */
   tabId: string | null
-  /** The prompt/job id currently executing, if any. */
   activeJobId: string | null
-  /** Prompt/job ids from queue history, most recent first. */
   recentJobIds: readonly string[]
-  /** Active workflow's path, which is what the workflow store keys on. */
   workflowPath: string | null
-  /** Persisted workflow id used by the agent/CRDT backend. */
   workflowId: string | null
-  /** Workflow JSON graph id. */
   graphId: string | null
-  /** CRDT document id — the same id as {@link CrdtDebugSnapshot.status.workflowId}. */
   docId: string | null
-  /** Last host sequence observed by the follower. */
   crdtSequence: number | null
-  /** Highest Lamport counter currently present in the document stamp ledger. */
   crdtLamport: number | null
-  /** ComfyUI server-assigned websocket session id (`api.clientId`). */
   clientId: string | null
-  /** `location.hostname`-derived deploy env (`prod-v2`/`stg-v2`/`test-v2`/…). */
   deployEnv: string | null
-  /** The ComfyUI server this client is talking to (`api.api_host` + `api.api_base`). */
   backendUrl: string
 }
-
-/** Every field unknown — the fallback when a caller has none to report. */
 export const EMPTY_REPORT_IDENTIFIERS: ReportIdentifiers = {
   userId: null,
   organizationId: null,
@@ -166,28 +78,18 @@ export const EMPTY_REPORT_IDENTIFIERS: ReportIdentifiers = {
   deployEnv: null,
   backendUrl: 'unknown'
 }
-
 export interface CrdtDebugReportInput {
   crdt: CrdtDebugSnapshot
   events: readonly DevEvent[]
-  /**
-   * IDs for finding this session in Datadog/logs. The real caller
-   * (`CrdtDevPanel.vue`) always supplies this; optional here only so a
-   * synthetic input (a test) is not forced to construct every field.
-   */
   identifiers?: ReportIdentifiers
-  /** Which sensitive sources the tester agreed to include. */
   sources?: ReportSources
-  /** Whatever the tester typed into "what did you expect instead?". */
   testerNote?: string
-  /** Merge-lab results the tester was looking at, if any. */
   mergeTrace?: readonly MergeTraceEntry[]
-  /** Serialized active workflow, when the caller can supply one. */
   workflow?: unknown
   workflowError?: string
   agentMessages?: readonly AssistantMessage[]
+  mediaUiDiagnostics?: readonly MediaUiDiagnostic[]
 }
-
 async function attempt<T>(label: string, load: () => Promise<T>) {
   let timeout: ReturnType<typeof setTimeout> | undefined
   try {
@@ -203,6 +105,7 @@ async function attempt<T>(label: string, load: () => Promise<T>) {
     return { label, ok: true as const, value }
   } catch (error) {
     reportError(error, {
+      surface: 'agent',
       errorType: 'agent_crdt_debug_report_source_failed',
       tags: { source: label },
       level: 'warning'
@@ -212,11 +115,7 @@ async function attempt<T>(label: string, load: () => Promise<T>) {
     clearTimeout(timeout)
   }
 }
-
 function fence(language: string, body: string): string {
-  // Server logs and workflow JSON are untrusted text: a body containing its
-  // own fence would otherwise terminate the block early and let the rest of
-  // the payload render as markdown.
   const longestRun = [...body.matchAll(/`+/g)].reduce(
     (max, match) => Math.max(max, match[0].length),
     0
@@ -224,7 +123,6 @@ function fence(language: string, body: string): string {
   const delimiter = '`'.repeat(Math.max(3, longestRun + 1))
   return [delimiter + language, body, delimiter].join('\n')
 }
-
 function json(value: unknown): string {
   try {
     return JSON.stringify(value, devEventReplacer(), 2)
@@ -232,20 +130,27 @@ function json(value: unknown): string {
     return `<unserializable: ${String(error)}>`
   }
 }
-
-function redactEventPayloads(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(redactEventPayloads)
-  if (!isRecord(value)) return value
-  return Object.fromEntries(
-    Object.entries(value).map(([key, nested]) => [
-      key,
-      key === 'value' || key === 'widgets_values' || key === 'node'
-        ? REDACTED
-        : redactEventPayloads(nested)
-    ])
-  )
+function fitMediaDiagnostics(
+  diagnostics: readonly MediaUiDiagnostic[]
+): readonly MediaUiDiagnostic[] {
+  const retained: MediaUiDiagnostic[] = []
+  let serializedLength = '[\n\n]'.length
+  for (const diagnostic of diagnostics) {
+    const diagnosticJson = json(diagnostic)
+    const indentedLength =
+      diagnosticJson.length + diagnosticJson.split('\n').length * 2
+    const separatorLength = retained.length > 0 ? ',\n'.length : 0
+    if (
+      serializedLength + separatorLength + indentedLength >
+      MAX_SECTION_CHARS
+    ) {
+      break
+    }
+    retained.push(diagnostic)
+    serializedLength += separatorLength + indentedLength
+  }
+  return retained
 }
-
 function truncate(text: string, max: number): string {
   if (text.length <= max) return text
   const start = text.length - max
@@ -255,10 +160,8 @@ function truncate(text: string, max: number): string {
       : start
   return `…(${safeStart} earlier characters trimmed)…\n${text.slice(safeStart)}`
 }
-
 function truncateReport(text: string): string {
   if (text.length <= MAX_REPORT_CHARS) return text
-
   const marker = `\n\n[report truncated to ${MAX_REPORT_CHARS} characters]\n\n`
   const available = MAX_REPORT_CHARS - marker.length
   const headLength = Math.floor(available * 0.75)
@@ -274,73 +177,11 @@ function truncateReport(text: string): string {
       : tailStart
   return `${text.slice(0, safeHeadLength)}${marker}${text.slice(safeTailStart)}`
 }
-
 type SystemStats = Awaited<ReturnType<typeof api.getSystemStats>>
-
-/**
- * A value is anything not starting with `-`; only a leading dash makes a token
- * a flag. Pattern-testing every token instead treated `/home/me/private/x` as
- * a flag — leaking it and blanking the harmless argument after it.
- *
- * Two rules: a credential-shaped FLAG blanks its value, and a value that looks
- * like an absolute path or a URL is blanked whatever names it, because
- * `--output-directory` and `--extra-model-paths-config` carry private paths
- * under a flag no credential pattern matches.
- */
-const PRIVATE_VALUE_PATTERN =
-  /(^|=)(\/|~|[A-Za-z]:[\\/]|\\\\|\.{1,2}[\\/])|:\/\//
-const BEARER_VALUE_PATTERN = /^(\s*bearer\s+)\S+\s*$/i
-const SECRET_VALUE_PATTERN =
-  /((?:["']?)(?:token|secret|password|passwd|credential|api[-_]?key|apikey|authorization|auth|bearer|session|cookie|private)(?:["']?)\s*[:=]\s*)(?:bearer\s+)?(?:(['"])(?:\\[\s\S]|(?!\2)[\s\S])*\2|[^\s,;]+)/gi
-
-function redactPrivateValue(value: string): string {
-  if (PRIVATE_VALUE_PATTERN.test(value)) return REDACTED
-  return value
-    .replace(BEARER_VALUE_PATTERN, `$1${REDACTED}`)
-    .replace(
-      SECRET_VALUE_PATTERN,
-      (_match, prefix: string, quote: string | undefined) =>
-        `${prefix}${quote ?? ''}${REDACTED}${quote ?? ''}`
-    )
-}
-
-function redactArgv(argv: readonly string[]): string {
-  const parts: string[] = []
-  let flagWantsSecretValue = false
-
-  for (const arg of argv) {
-    if (flagWantsSecretValue) {
-      parts.push(REDACTED)
-      flagWantsSecretValue = false
-      continue
-    }
-    flagWantsSecretValue = false
-
-    if (!arg.startsWith('-')) {
-      parts.push(redactPrivateValue(arg))
-      continue
-    }
-    const eq = arg.indexOf('=')
-    const flag = eq === -1 ? arg : arg.slice(0, eq)
-    const inlineValue = eq === -1 ? undefined : arg.slice(eq + 1)
-    if (inlineValue !== undefined) {
-      const secret =
-        SECRET_KEY_PATTERN.test(flag) || PRIVATE_VALUE_PATTERN.test(inlineValue)
-      parts.push(secret ? `${flag}=${REDACTED}` : arg)
-      flagWantsSecretValue = false
-      continue
-    }
-    parts.push(arg)
-    flagWantsSecretValue = SECRET_KEY_PATTERN.test(flag)
-  }
-  return parts.join(' ')
-}
-
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
 }
-
-function systemSection(stats: SystemStats): string {
+function systemSection(stats: SystemStats | null): string {
   const payload: Record<string, unknown> = isRecord(stats) ? stats : {}
   const system = isRecord(payload.system) ? payload.system : {}
   const argv = Array.isArray(system.argv) ? system.argv.map(String) : []
@@ -351,7 +192,7 @@ function systemSection(stats: SystemStats): string {
     `- **Python:** ${system.python_version ?? '?'}`,
     `- **Embedded Python:** ${system.embedded_python ?? '?'}`,
     `- **PyTorch:** ${system.pytorch_version ?? '?'}`,
-    `- **Arguments:** ${redactArgv(argv)}`,
+    `- **Arguments:** ${sanitizeArgv(argv)}`,
     `- **RAM:** ${system.ram_free ?? '?'} free / ${system.ram_total ?? '?'} total`
   ]
   if (system.cloud_version)
@@ -371,13 +212,6 @@ function systemSection(stats: SystemStats): string {
   }
   return lines.join('\n')
 }
-
-/**
- * Every value here is a search key, not a secret — a backend engineer greps
- * Datadog by exactly these fields, so `none`/`unknown` is written out loud
- * rather than omitting the row: a missing bullet reads as "not collected",
- * an explicit `none` reads as "collected, and there isn't one".
- */
 function identifiersSection(identifiers: ReportIdentifiers): string {
   return [
     `- **User id:** ${identifiers.userId ?? 'none (not logged in)'}`,
@@ -407,14 +241,22 @@ function identifiersSection(identifiers: ReportIdentifiers): string {
   ].join('\n')
 }
 
+function crdtStatusLines(status: CrdtDebugSnapshot['status']): string[] {
+  return [
+    `- **Enabled:** ${status.enabled}`,
+    `- **Connected:** ${status.connected}`,
+    `- **Canvas may be stale:** ${status.canvasMayBeStale}`,
+    `- **Stale cause:** ${status.canvasStaleCause ?? 'none'}`,
+    `- **Doc id:** ${status.workflowId ?? 'none'}`,
+    `- **Updates applied:** ${status.updatesApplied}`,
+    `- **Last frame:** ${status.lastFrameType ?? 'none'}`
+  ]
+}
+
 function crdtSection(crdt: CrdtDebugSnapshot): string {
   return [
     `- **Schema version:** ${crdt.meta.schema_version ?? 'unknown'}`,
-    `- **Enabled:** ${crdt.status.enabled}`,
-    `- **Connected:** ${crdt.status.connected}`,
-    `- **Doc id:** ${crdt.status.workflowId ?? 'none'}`,
-    `- **Updates applied:** ${crdt.status.updatesApplied}`,
-    `- **Last frame:** ${crdt.status.lastFrameType ?? 'none'}`,
+    ...crdtStatusLines(crdt.status),
     `- **Tab id:** ${crdt.tabId ?? 'unknown'}`,
     `- **Last seq:** ${crdt.lastSeq ?? 'none'}`,
     `- **Schema error:** ${crdt.schemaError ?? 'none'}`,
@@ -423,7 +265,6 @@ function crdtSection(crdt: CrdtDebugSnapshot): string {
     `- **Applied op ids:** ${crdt.appliedOpIds.length}`
   ].join('\n')
 }
-
 function mergeSection(entries: readonly MergeTraceEntry[]): string {
   return entries
     .map(
@@ -432,10 +273,12 @@ function mergeSection(entries: readonly MergeTraceEntry[]): string {
     )
     .join('\n')
 }
-
-function serializeWorkflow(
-  input: CrdtDebugReportInput
-): { status: string; section?: string } | undefined {
+function serializeWorkflow(input: CrdtDebugReportInput):
+  | {
+      status: string
+      section?: string
+    }
+  | undefined {
   const sources = input.sources ?? DEFAULT_REPORT_SOURCES
   if (!sources.workflow) return { status: 'turned off' }
   if (input.workflowError !== undefined) {
@@ -443,12 +286,14 @@ function serializeWorkflow(
       status: 'failed (see source section)',
       section: fence(
         'text',
-        truncate(String(redactSecrets(input.workflowError)), MAX_SECTION_CHARS)
+        truncate(
+          String(sanitizeSecrets(input.workflowError)),
+          MAX_SECTION_CHARS
+        )
       )
     }
   }
   if (input.workflow === undefined) return { status: 'unavailable' }
-
   let serialized: string
   try {
     serialized = JSON.stringify(input.workflow, devEventReplacer(), 2)
@@ -457,11 +302,10 @@ function serializeWorkflow(
       status: 'failed (see source section)',
       section: fence(
         'text',
-        truncate(String(redactSecrets(String(error))), MAX_SECTION_CHARS)
+        truncate(String(sanitizeSecrets(String(error))), MAX_SECTION_CHARS)
       )
     }
   }
-
   if (serialized.length > MAX_WORKFLOW_CHARS) {
     return {
       status: `omitted (over ${MAX_WORKFLOW_CHARS} characters)`,
@@ -473,56 +317,173 @@ function serializeWorkflow(
   }
   return { status: 'collected', section: fence('json', serialized) }
 }
-
 type RetainedToolCall = Pick<
   ToolPart,
   'callId' | 'name' | 'state' | 'ok' | 'durationMs'
 > & {
   turnId: AssistantMessage['id']
+  startedAtMs: number | null
 }
 
-function fitToolCalls(calls: readonly RetainedToolCall[], context: string) {
-  let start = 0
-  let body = json(redactSecrets(calls))
-  let section = [context, fence('json', body)].join('\n\n')
-  while (section.length > MAX_SECTION_CHARS) {
-    start++
-    body = json(redactSecrets(calls.slice(start)))
-    section = [context, fence('json', body)].join('\n\n')
+interface RetainedTurnThinking {
+  turnId: AssistantMessage['id']
+  thinkingDurationsMs: (number | null)[]
+  thinkingTotalMs: number
+}
+
+function fitToolCalls(
+  calls: readonly RetainedToolCall[],
+  context: string,
+  trailerFor: (retained: readonly RetainedToolCall[]) => string
+) {
+  const redactedCalls = calls.map((call) => sanitizeSecrets(call))
+  function render(start: number) {
+    return [
+      context,
+      fence('json', json(redactedCalls.slice(start))),
+      trailerFor(calls.slice(start))
+    ].join('\n\n')
   }
-  return { section, retained: calls.length - start }
+  let low = 0
+  let high = calls.length
+  while (low < high) {
+    const mid = Math.floor((low + high) / 2)
+    if (render(mid).length > MAX_SECTION_CHARS) low = mid + 1
+    else high = mid
+  }
+  return { section: render(low), retained: calls.length - low }
 }
 
+function toRetainedToolCall(
+  turnId: AssistantMessage['id'],
+  part: ToolPart
+): RetainedToolCall {
+  return {
+    turnId,
+    callId: part.callId,
+    name: part.name,
+    state: part.state,
+    ok: part.ok,
+    durationMs: part.durationMs,
+    startedAtMs: part.startedAtMs ?? null
+  }
+}
+
+function toolPartsOf(message: AssistantMessage) {
+  return message.parts.filter((part): part is ToolPart => part.type === 'tool')
+}
 function collectAgentToolCalls(messages: readonly AssistantMessage[]) {
-  const calls: RetainedToolCall[] = []
-  let total = 0
-  for (const message of [...messages].reverse()) {
-    for (const part of [...message.parts].reverse()) {
-      if (part.type !== 'tool') continue
-      total++
-      if (calls.length === MAX_TOOL_CALLS) continue
-      calls.push({
+  let latestIndex = messages.length - 1
+  while (latestIndex >= 0 && toolPartsOf(messages[latestIndex]).length === 0) {
+    latestIndex--
+  }
+  function callsOf(message: AssistantMessage) {
+    return toolPartsOf(message).map((part) =>
+      toRetainedToolCall(message.id, part)
+    )
+  }
+  const olderCalls = messages
+    .slice(0, Math.max(0, latestIndex))
+    .flatMap(callsOf)
+  const latestCalls = latestIndex === -1 ? [] : callsOf(messages[latestIndex])
+  const calls = [
+    ...olderCalls.slice(Math.max(0, olderCalls.length - MAX_TOOL_CALLS)),
+    ...latestCalls
+  ]
+  return { calls, total: olderCalls.length + latestCalls.length }
+}
+
+function collectTurnThinking(
+  messages: readonly AssistantMessage[],
+  calls: readonly RetainedToolCall[]
+): RetainedTurnThinking[] {
+  const retainedTurnIds = new Set(calls.map(({ turnId }) => turnId))
+  return messages
+    .filter(
+      (message, index) =>
+        index === messages.length - 1 || retainedTurnIds.has(message.id)
+    )
+    .map((message) => {
+      const durations = message.parts.flatMap((part) =>
+        part.type === 'thinking' ? [part.durationMs ?? null] : []
+      )
+      return {
         turnId: message.id,
-        callId: part.callId,
-        name: part.name,
-        state: part.state,
-        ok: part.ok,
-        durationMs: part.durationMs
-      })
+        thinkingDurationsMs: durations,
+        thinkingTotalMs: durations.reduce<number>(
+          (total, duration) => total + (duration ?? 0),
+          0
+        )
+      }
+    })
+}
+
+function fitTurnThinking(turns: readonly RetainedTurnThinking[]) {
+  function fits(candidate: readonly RetainedTurnThinking[]) {
+    return json(sanitizeSecrets(candidate)).length <= MAX_THINKING_CHARS
+  }
+  if (fits(turns)) return { turns, omittedTurns: 0 }
+  const firstFittingTurn = turns.findIndex((_, index) =>
+    fits(turns.slice(index))
+  )
+  if (firstFittingTurn !== -1) {
+    return {
+      turns: turns.slice(firstFittingTurn),
+      omittedTurns: firstFittingTurn
     }
   }
-  return { calls: calls.reverse(), total }
+  const latest = turns[turns.length - 1]
+  if (!fits([{ ...latest, thinkingDurationsMs: [] }])) {
+    return { turns: [], omittedTurns: turns.length }
+  }
+  function withLastDurations(count: number) {
+    return {
+      ...latest,
+      thinkingDurationsMs: latest.thinkingDurationsMs.slice(
+        latest.thinkingDurationsMs.length - count
+      )
+    }
+  }
+  let low = 0
+  let high = latest.thinkingDurationsMs.length
+  while (low < high) {
+    const mid = Math.ceil((low + high) / 2)
+    if (fits([withLastDurations(mid)])) low = mid
+    else high = mid - 1
+  }
+  return {
+    turns: [withLastDurations(low)],
+    omittedTurns: turns.length - 1,
+    omittedDurations: latest.thinkingDurationsMs.length - low
+  }
 }
 
+function thinkingTrailer(
+  messages: readonly AssistantMessage[],
+  calls: readonly RetainedToolCall[]
+) {
+  const fitted = fitTurnThinking(collectTurnThinking(messages, calls))
+  const omissions = [
+    fitted.omittedTurns > 0 &&
+      `Turns omitted to fit the size limit: ${fitted.omittedTurns}.`,
+    fitted.omittedDurations !== undefined &&
+      `The latest turn keeps only its last ${fitted.turns[0].thinkingDurationsMs.length} durations; earlier durations omitted but still counted in thinkingTotalMs: ${fitted.omittedDurations}.`
+  ].filter((line) => line !== false)
+  return [
+    'Model thinking time per retained turn, measured in this tab: one entry per thinking part, null where no timing was observed.',
+    ...omissions,
+    fence('json', json(sanitizeSecrets(fitted.turns)))
+  ].join('\n\n')
+}
 function agentToolSection(messages: readonly AssistantMessage[] | undefined) {
-  const context =
-    'Current conversation metadata retained in this tab only. Restored history may omit tool calls. Durations are backend-reported; missing ok or durationMs means no outcome or timing was observed. State is the retained UI state, not proof a request is still running. No arguments, responses, prompts or reasoning are included.'
+  const context = `Current conversation metadata retained in this tab only. Restored history may omit tool calls. The latest turn with tool calls is exempt from the ${MAX_TOOL_CALLS}-call cap applied to older turns; if the section still exceeds its size limit, the oldest calls are dropped first. Tool durations are backend-reported; missing ok or durationMs means no outcome or timing was observed. startedAtMs is this tab's clock (epoch ms) when the call was first seen running; null for calls restored from history or first seen finished. State is the retained UI state, not proof a request is still running. No arguments, responses, prompts or reasoning are included.`
   if (messages === undefined) {
     return { section: context, status: 'unavailable' }
   }
-
   const { calls, total } = collectAgentToolCalls(messages)
-  const fitted = fitToolCalls(calls, context)
+  const fitted = fitToolCalls(calls, context, (retained) =>
+    thinkingTrailer(messages, retained)
+  )
   return {
     section: fitted.section,
     status:
@@ -531,12 +492,14 @@ function agentToolSection(messages: readonly AssistantMessage[] | undefined) {
         : `${total > fitted.retained ? 'truncated' : 'collected'} (${fitted.retained}/${total} retained calls)`
   }
 }
-
 function formatSource<T>(
   result: Awaited<ReturnType<typeof attempt<T>>> | null,
   warning: string,
   renderValue: (value: T) => string
-): { section: string; status: string } {
+): {
+  section: string
+  status: string
+} {
   if (result === null) {
     return {
       section: '_Not included. Turned off by the tester._',
@@ -556,18 +519,11 @@ function formatSource<T>(
     status: 'collected'
   }
 }
-
-/**
- * Build the full markdown report.
- *
- * Ordered for the reader, not for the collector: the tester's own words come
- * first, then CRDT state, then the environment, then the raw transcripts. An
- * engineer reading it top-down should be able to stop as soon as they have
- * enough.
- */
-export async function collectCrdtDebugReport(
-  input: CrdtDebugReportInput
-): Promise<string> {
+function frontendSection(): string {
+  const system: unknown = useSystemStatsStore().systemStats?.system
+  const deployEnvironment = isRecord(system)
+    ? (system.deploy_environment ?? 'unknown')
+    : 'unknown'
   const extensionNames = (() => {
     try {
       return useExtensionStore().extensions.map((extension) => extension.name)
@@ -575,11 +531,28 @@ export async function collectCrdtDebugReport(
       return [`<unavailable: ${String(error)}>`]
     }
   })()
-
+  return [
+    `- **Frontend version:** ${__COMFYUI_FRONTEND_VERSION__}`,
+    `- **Frontend commit:** ${__COMFYUI_FRONTEND_COMMIT__}`,
+    `- **Distribution:** ${DISTRIBUTION}`,
+    `- **Deploy environment:** ${deployEnvironment}`,
+    `- **User agent:** ${navigator.userAgent}`,
+    `- **Viewport:** ${window.innerWidth}×${window.innerHeight}`,
+    `- **Extensions (${extensionNames.length}):** ${extensionNames.join(', ') || 'none'}`
+  ].join('\n')
+}
+export async function collectCrdtDebugReport(
+  input: CrdtDebugReportInput
+): Promise<string> {
   const sources = input.sources ?? DEFAULT_REPORT_SOURCES
   const agentTools = agentToolSection(input.agentMessages)
   const [stats, logs, settings] = await Promise.all([
-    attempt('System stats', () => api.getSystemStats()),
+    attempt('System stats', async () => {
+      const store = useSystemStatsStore()
+      await store.refetchSystemStats()
+      if (store.error) throw store.error
+      return store.systemStats
+    }),
     sources.serverLogs ? attempt('Server logs', () => api.getLogs()) : null,
     sources.settings ? attempt('Settings', () => api.getSettings()) : null
   ])
@@ -597,9 +570,19 @@ export async function collectCrdtDebugReport(
     settings,
     `${SHARING_WARNING} Values under keys that look like credentials are replaced with \`${REDACTED}\`, at every depth — but a custom node may name a secret anything.`,
     (value) =>
-      fence('json', truncate(json(redactSecrets(value)), MAX_SECTION_CHARS))
+      fence('json', truncate(json(sanitizeSecrets(value)), MAX_SECTION_CHARS))
   )
   const workflow = serializeWorkflow(input)
+  const mediaUiDiagnostics =
+    input.mediaUiDiagnostics === undefined
+      ? undefined
+      : fitMediaDiagnostics(input.mediaUiDiagnostics)
+  const mediaUiStatus =
+    mediaUiDiagnostics === undefined
+      ? 'unavailable'
+      : mediaUiDiagnostics.length === input.mediaUiDiagnostics?.length
+        ? `collected (${mediaUiDiagnostics.length} nodes)`
+        : `collected (${mediaUiDiagnostics.length} of ${input.mediaUiDiagnostics?.length} nodes; section limit)`
   const collectionStatus = (
     [
       ['System stats', systemReport],
@@ -608,21 +591,20 @@ export async function collectCrdtDebugReport(
       ['Agent tool calls', agentTools]
     ] as const
   ).map(([label, result]) => `- ${label}: ${result.status}`)
-
   const sections: string[] = [
     '# ComfyUI Agent — CRDT debug report',
     `Generated ${new Date().toISOString()}`,
-    `Report format version: 1 · Document schema version: ${input.crdt.meta.schema_version ?? 'unknown'} · Redaction marker: ${REDACTED}`,
+    `Report format version: 2 · Document schema version: ${input.crdt.meta.schema_version ?? 'unknown'} · Redaction marker: ${REDACTED}`,
     '## Identifiers',
     'Paste this block into a bug report or search Datadog/logs by any of these fields.',
     identifiersSection(input.identifiers ?? EMPTY_REPORT_IDENTIFIERS),
     '## Collection status',
     [
       ...collectionStatus,
+      `- Media UI diagnostics: ${mediaUiStatus}`,
       `- Workflow: ${workflow?.status ?? 'unavailable'}`
     ].join('\n')
   ]
-
   if (input.testerNote?.trim()) {
     sections.push(
       '## What the tester expected',
@@ -630,45 +612,33 @@ export async function collectCrdtDebugReport(
       '_(This is the tester\u2019s own description of the expected merge behaviour — treat it as a product signal, not a bug repro.)_'
     )
   }
-
   sections.push('## CRDT state', crdtSection(input.crdt))
-
+  if (mediaUiDiagnostics !== undefined) {
+    sections.push(
+      '## Media UI diagnostics',
+      'Counts and booleans only; selected filenames and resolved media URLs are not included.',
+      fence('json', json(mediaUiDiagnostics))
+    )
+  }
   sections.push('## Agent tool calls', agentTools.section)
-
   if (input.mergeTrace?.length) {
     sections.push('## Merge trace', mergeSection(input.mergeTrace))
   }
-
-  sections.push(
-    '## Frontend',
-    [
-      `- **Frontend version:** ${__COMFYUI_FRONTEND_VERSION__}`,
-      `- **Frontend commit:** ${__COMFYUI_FRONTEND_COMMIT__}`,
-      `- **Distribution:** ${DISTRIBUTION}`,
-      `- **API base:** ${api.apiURL('')}`,
-      `- **User agent:** ${navigator.userAgent}`,
-      `- **Viewport:** ${window.innerWidth}×${window.innerHeight}`,
-      `- **Extensions (${extensionNames.length}):** ${extensionNames.join(', ') || 'none'}`
-    ].join('\n')
-  )
-
+  sections.push('## Frontend', frontendSection())
   sections.push('## System', systemReport.section)
-
   sections.push(
     '## CRDT event log',
     `${SHARING_WARNING} Operation payload values appear as \`${REDACTED}\`; op ids and workflow ids appear verbatim.`,
     fence(
       'json',
-      truncate(json(redactEventPayloads(input.events)), MAX_SECTION_CHARS)
+      truncate(json(sanitizeEventPayloads(input.events)), MAX_SECTION_CHARS)
     )
   )
-
   sections.push(
     '## Document stamps (LWW ledger)',
     `${SHARING_WARNING} Stamp keys name every actor that wrote to the document.`,
     fence('json', truncate(json(input.crdt.stamps), MAX_SECTION_CHARS))
   )
-
   if (workflow?.section !== undefined) {
     sections.push(
       '## Workflow',
@@ -676,10 +646,7 @@ export async function collectCrdtDebugReport(
       workflow.section
     )
   }
-
   sections.push('## Settings', settingsReport.section)
-
   sections.push('## Server logs', logsReport.section)
-
   return truncateReport(sections.join('\n\n'))
 }

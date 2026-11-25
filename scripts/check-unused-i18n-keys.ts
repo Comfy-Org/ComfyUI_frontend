@@ -5,8 +5,14 @@ import { globSync } from 'glob'
 import type { LocaleData } from './i18n-types'
 import { isNestedLocaleData } from './i18n-types'
 
+const GIT_SHOW_MAX_BUFFER = 10 * 1024 * 1024
+
 // Configuration
-const SOURCE_PATTERNS = ['src/**/*.{js,ts,vue}', '!src/locales/**/*']
+const SOURCE_PATTERNS = [
+  'src/**/*.{js,ts,vue}',
+  'packages/mask-editor/src/ui/**/*.{ts,vue}',
+  '!src/locales/**/*'
+]
 const IGNORE_PATTERNS = [
   // Keys that might be dynamically constructed
   /^commands\./, // Command definitions are loaded dynamically
@@ -17,6 +23,7 @@ const IGNORE_PATTERNS = [
   /^contextMenu\./, // Context menu items might be dynamic
   /^color\./, // Color names might be used dynamically
   /^onboardingCoachmarks\.[^.]+\.[^.]+\./, // Step keys derived as onboardingCoachmarks.<tour>.<step>.*
+  /^addCreditsDialog\./,
   // Auto-generated categories from collect-i18n-general.ts
   /^menuLabels\./, // Menu labels generated from command labels
   /^settingsCategories\./, // Settings categories generated from setting definitions
@@ -35,9 +42,7 @@ function getStagedLocaleFiles(): string[] {
     })
     return output
       .split('\n')
-      .filter(
-        (file) => file.startsWith('src/locales/') && file.endsWith('.json')
-      )
+      .filter((file) => /^src\/locales\/[^./][^/]*\/[^/]+\.json$/.test(file))
   } catch {
     return []
   }
@@ -67,7 +72,10 @@ function getNewKeysFromStagedFiles(stagedFiles: string[]): Set<string> {
   for (const file of stagedFiles) {
     try {
       // Get the staged content
-      const stagedContent = execSync(`git show :${file}`, { encoding: 'utf-8' })
+      const stagedContent = execSync(`git show :${file}`, {
+        encoding: 'utf-8',
+        maxBuffer: GIT_SHOW_MAX_BUFFER
+      })
       const stagedData: LocaleData = JSON.parse(stagedContent)
       const stagedKeys = new Set(extractKeys(stagedData))
 
@@ -75,7 +83,8 @@ function getNewKeysFromStagedFiles(stagedFiles: string[]): Set<string> {
       let headKeys = new Set<string>()
       try {
         const headContent = execSync(`git show HEAD:${file}`, {
-          encoding: 'utf-8'
+          encoding: 'utf-8',
+          maxBuffer: GIT_SHOW_MAX_BUFFER
         })
         const headData: LocaleData = JSON.parse(headContent)
         headKeys = new Set(extractKeys(headData))

@@ -1,36 +1,74 @@
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import type { CompactRect } from '@comfyorg/shared-frontend-utils/geometry'
 import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
-import { adjustColor } from '@/utils/colorUtil'
+import { useThemeStore } from '@/platform/theme/themeStore'
 
-import { MinimapDataSource } from './data/MinimapDataSource'
-import type { MinimapNodeData, MinimapRenderContext } from './types'
+import type { MinimapDataSource } from './data/MinimapDataSource'
+import type {
+  MinimapNodeData,
+  MinimapNodeExecutionState,
+  MinimapRenderContext
+} from './types'
 
 export const MINIMAP_DECORATION_POP_MS = 260
 
-/**
- * Get theme-aware colors for the minimap
- */
-function getMinimapColors() {
-  const colorPaletteStore = useColorPaletteStore()
-  const palette = colorPaletteStore.completedActivePalette
-  const isLightTheme = palette.light_theme
+const BYPASS_COLOR = '#6a246a'
 
+type MinimapColors = ReturnType<typeof readMinimapColors>
+
+let cachedColors:
+  | {
+      palette: ReturnType<typeof useThemeStore>['activeTheme']
+      colorScheme: ReturnType<typeof useThemeStore>['colorScheme']
+      colors: MinimapColors
+    }
+  | undefined
+
+function resolveThemeColor(token: string): string {
+  const probe = document.createElement('span')
+  probe.style.color = `var(--${token})`
+  document.body.append(probe)
+  const { color } = getComputedStyle(probe)
+  probe.remove()
+  return color
+}
+
+function readMinimapColors(lightensNodes: boolean, activityOutline: string) {
+  const primary = resolveThemeColor('primary')
+  const mutedForeground = resolveThemeColor('muted-foreground')
   return {
-    nodeColor: isLightTheme ? '#3DA8E099' : '#0B8CE999',
-    nodeColorDefault: isLightTheme ? '#D9D9D9' : '#353535',
-    linkColor: isLightTheme ? '#616161' : '#B3B3B3',
-    slotColor: isLightTheme ? '#616161' : '#B3B3B3',
-    groupColor: isLightTheme ? '#A2D3EC' : '#1F547A',
-    groupColorDefault: isLightTheme ? '#283640' : '#B3C1CB',
-    bypassColor: isLightTheme ? '#DBDBDB' : '#4B184B',
+    nodeColor: `color-mix(in srgb, ${primary} 60%, transparent)`,
+    nodeColorDefault: resolveThemeColor('muted'),
+    linkColor: mutedForeground,
+    slotColor: mutedForeground,
+    groupColor: `color-mix(in srgb, ${primary} 40%, transparent)`,
+    groupColorDefault: mutedForeground,
+    bypassColor: BYPASS_COLOR,
     errorColor: '#FF0000',
     runningColor: '#00FF00',
     successColor: '#239B23',
-    activityOutlineColor:
-      palette.colors.litegraph_base.NODE_SELECTED_TITLE_COLOR,
-    isLightTheme
+    activityOutlineColor: activityOutline,
+    lightensNodes
   }
+}
+
+function getMinimapColors(): MinimapColors {
+  const themeStore = useThemeStore()
+  const palette = themeStore.activeTheme
+  const colorScheme = themeStore.colorScheme
+  if (
+    cachedColors?.palette !== palette ||
+    cachedColors.colorScheme !== colorScheme
+  ) {
+    cachedColors = {
+      palette,
+      colorScheme,
+      colors: readMinimapColors(
+        Boolean(palette.canvas.nodeLightness),
+        palette.canvas.nodeSelectedTitleColor
+      )
+    }
+  }
+  return cachedColors.colors
 }
 
 /**
@@ -39,7 +77,7 @@ function getMinimapColors() {
 function getNodeColor(
   node: MinimapNodeData,
   settings: MinimapRenderContext['settings'],
-  colors: ReturnType<typeof getMinimapColors>
+  colors: MinimapColors
 ): string {
   if (settings.renderBypass && node.mode === LGraphEventMode.BYPASS) {
     return colors.bypassColor
@@ -47,9 +85,7 @@ function getNodeColor(
 
   if (settings.nodeColors) {
     if (node.bgcolor) {
-      return colors.isLightTheme
-        ? adjustColor(node.bgcolor, { lightness: 0.5 })
-        : node.bgcolor
+      return useThemeStore().toNodeColor(node.bgcolor)
     }
     return colors.nodeColorDefault
   }
@@ -57,16 +93,13 @@ function getNodeColor(
   return colors.nodeColor
 }
 
-/**
- * Render groups on the minimap
- */
 function renderGroups(
   ctx: CanvasRenderingContext2D,
   dataSource: MinimapDataSource,
   offsetX: number,
   offsetY: number,
   context: MinimapRenderContext,
-  colors: ReturnType<typeof getMinimapColors>
+  colors: MinimapColors
 ) {
   const groups = dataSource.getGroups()
   if (groups.length === 0) return
@@ -82,8 +115,8 @@ function renderGroups(
     if (context.settings.nodeColors) {
       color = group.color ?? colors.groupColorDefault
 
-      if (colors.isLightTheme) {
-        color = adjustColor(color, { opacity: 0.5 })
+      if (colors.lightensNodes) {
+        color = `color-mix(in srgb, ${color} 50%, transparent)`
       }
     }
 
@@ -98,7 +131,7 @@ function renderNodeDecorations(
   offsetX: number,
   offsetY: number,
   context: MinimapRenderContext,
-  colors: ReturnType<typeof getMinimapColors>
+  colors: MinimapColors
 ) {
   const decorations = new Map(
     (context.decorations ?? []).map((decoration) => [
@@ -132,33 +165,27 @@ function renderNodeDecorations(
   }
 }
 
-/**
- * Render nodes on the minimap with performance optimizations
- */
 function renderNodes(
   ctx: CanvasRenderingContext2D,
   dataSource: MinimapDataSource,
   offsetX: number,
   offsetY: number,
   context: MinimapRenderContext,
-  colors: ReturnType<typeof getMinimapColors>
+  colors: MinimapColors
 ) {
   const nodes = dataSource.getNodes()
   if (nodes.length === 0) return
 
   ctx.save()
 
-  // Group nodes by color for batch rendering (performance optimization)
   const nodesByColor = new Map<
     string,
-    Array<{
-      x: number
-      y: number
-      w: number
-      h: number
-      hasErrors?: boolean
-      executionState?: 'pending' | 'running' | 'finished' | 'error' | null
-    }>
+    Array<
+      CompactRect & {
+        hasErrors?: boolean
+        executionState?: MinimapNodeExecutionState | null
+      }
+    >
   >()
 
   for (const node of nodes) {
@@ -183,7 +210,6 @@ function renderNodes(
     })
   }
 
-  // Batch render nodes by color
   for (const [color, nodes] of nodesByColor) {
     ctx.fillStyle = color
     for (const node of nodes) {
@@ -218,16 +244,13 @@ function renderNodes(
   ctx.restore()
 }
 
-/**
- * Render connections on the minimap
- */
 function renderConnections(
   ctx: CanvasRenderingContext2D,
   dataSource: MinimapDataSource,
   offsetX: number,
   offsetY: number,
   context: MinimapRenderContext,
-  colors: ReturnType<typeof getMinimapColors>
+  colors: MinimapColors
 ) {
   const links = dataSource.getLinks()
   if (links.length === 0) return
@@ -258,7 +281,6 @@ function renderConnections(
     const inputX = x2
     const inputY = y2 + link.targetNode.height * context.scale * 0.2
 
-    // Draw connection line
     ctx.beginPath()
     ctx.moveTo(outputX, outputY)
     ctx.lineTo(inputX, inputY)
@@ -267,38 +289,28 @@ function renderConnections(
     connections.push({ x1: outputX, y1: outputY, x2: inputX, y2: inputY })
   }
 
-  // Render connection slots on top
   ctx.fillStyle = colors.slotColor
   for (const conn of connections) {
-    // Output slot
     ctx.beginPath()
     ctx.arc(conn.x1, conn.y1, slotRadius, 0, Math.PI * 2)
     ctx.fill()
 
-    // Input slot
     ctx.beginPath()
     ctx.arc(conn.x2, conn.y2, slotRadius, 0, Math.PI * 2)
     ctx.fill()
   }
 }
 
-/**
- * Render a graph to a minimap canvas
- */
 export function renderMinimapToCanvas(
   canvas: HTMLCanvasElement,
-  graph: LGraph,
+  dataSource: MinimapDataSource,
   context: MinimapRenderContext
 ) {
   const ctx = canvas.getContext('2d')
   if (!ctx) return
 
-  // Clear canvas
   ctx.clearRect(0, 0, context.width, context.height)
 
-  const dataSource = new MinimapDataSource(graph)
-
-  // Fast path for empty graph
   if (!dataSource.hasData()) {
     return
   }
@@ -307,7 +319,6 @@ export function renderMinimapToCanvas(
   const offsetX = (context.width - context.bounds.width * context.scale) / 2
   const offsetY = (context.height - context.bounds.height * context.scale) / 2
 
-  // Render in correct order: groups -> links -> nodes
   if (context.settings.showGroups) {
     renderGroups(ctx, dataSource, offsetX, offsetY, context, colors)
   }

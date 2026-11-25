@@ -1,17 +1,34 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
+import { zComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import { ref } from 'vue'
 
 vi.mock(import('@vueuse/router'), () => ({ useRouteHash: () => ref('') }))
 
 import {
+  createTestRootGraph,
   createTestSubgraph,
-  createTestSubgraphNode
+  createTestSubgraphNode,
+  enableSubgraphNodeCreation
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
-import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
-import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
-import type { GlobalSubgraphData } from '@/scripts/api'
+import { ChangeTracker } from '@/scripts/changeTracker'
+import { ASSERTION_FAILURE_PREFIX } from '@/base/assert'
+import { useToast } from '@/components/ui/toast/toastStore'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { createCanvas } from '@/lib/litegraph/src/__fixtures__/canvasHarness'
+import { TemplateIncludeOnDistributionEnum } from '@comfyorg/api-client/templateTypes'
+import type { GlobalSubgraphData } from '@comfyorg/api-client/ComfyApi'
+import type { UserDataFullInfo } from '@comfyorg/api-client/types'
+import { resetReportedWorkflowStateAnomaliesForTests } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
@@ -27,25 +44,14 @@ const mockDistributionTypes = vi.hoisted(() => ({
 }))
 vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
-// Add mock for api at the top of the file
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    getUserData: vi.fn(),
-    storeUserData: vi.fn(),
-    listUserDataFullInfo: vi.fn(),
-    getGlobalSubgraphs: vi.fn(),
-    apiURL: vi.fn(),
-    addEventListener: vi.fn()
-  }
-}))
+vi.mock(import('@/scripts/api'))
 vi.mock(import('@/services/dialogService'))
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     canvas: {
-      _deserializeItems: vi.fn((i) => i),
       ds: { visible_area: [0, 0, 0, 0] },
       selected_nodes: null
     },
@@ -81,7 +87,15 @@ describe('useSubgraphStore', () => {
     return await store.fetchSubgraphs()
   }
 
+  function userBlueprintNames() {
+    return useNodeDefStore()
+      .nodeDefs.filter((d) => d.category === 'Subgraph Blueprints/User')
+      .map((d) => d.name)
+  }
+
   beforeEach(() => {
+    useWorkflowStore().provideChangeTracker(ChangeTracker)
+    resetReportedWorkflowStateAnomaliesForTests()
     vi.mocked(useDialogService().prompt).mockResolvedValue('testname')
     vi.mocked(useDialogService().confirm).mockResolvedValue(true)
     mockDistributionTypes.isCloud = false
@@ -92,47 +106,150 @@ describe('useSubgraphStore', () => {
     store = useSubgraphStore()
   })
 
-  it('should allow publishing of a subgraph', async () => {
-    //mock canvas to provide a minimal subgraphNode
-    const subgraph = createTestSubgraph()
+  function selectSubgraphNodeToPublish() {
+    const rootGraph = createTestRootGraph()
+    const cleanup = enableSubgraphNodeCreation(rootGraph)
+    onTestFinished(cleanup)
+    const subgraph = rootGraph.createSubgraph(
+      createTestSubgraph().asSerialisable()
+    )
     const subgraphNode = createTestSubgraphNode(subgraph)
     const graph = subgraphNode.graph!
     graph.add(subgraphNode)
-    vi.mocked(comfyApp.canvas).selectedItems = new Set([subgraphNode])
-    vi.mocked(comfyApp.canvas)._serializeItems = vi.fn(() => {
-      const serializedSubgraph = fromPartial<ExportedSubgraph>({
-        ...subgraph.serialize(),
-        links: [],
-        groups: [],
-        version: 1
-      })
-      return {
-        nodes: [subgraphNode.serialize()],
-        subgraphs: [serializedSubgraph]
-      }
+    const previousCanvas = comfyApp.canvas
+    const canvas = createCanvas(graph)
+    onTestFinished(() => {
+      comfyApp.canvas = previousCanvas
+      canvas.unbindEvents()
+      canvas.canvas.remove()
     })
-    //mock saving of file
-    vi.mocked(api.storeUserData).mockResolvedValue({
-      status: 200,
-      json: () =>
-        Promise.resolve({
-          path: 'subgraphs/testname.json',
-          modified: Date.now(),
-          size: 2
+    comfyApp.canvas = canvas
+    canvas.selectItems([subgraphNode])
+    vi.mocked(api.storeUserData).mockResolvedValue(
+      Response.json({
+        path: 'subgraphs/testname.json',
+        modified: Date.now(),
+        size: 2
+      })
+    )
+    return { subgraph, subgraphNode }
+  }
+
+  it.for([
+    { confirmed: true, storeCalls: 1 },
+    { confirmed: false, storeCalls: 0 }
+  ])(
+    'requires confirmation before replacing an unloaded blueprint (confirmed: $confirmed)',
+    async ({ confirmed, storeCalls }) => {
+      selectSubgraphNodeToPublish()
+      vi.mocked(useDialogService().confirm).mockResolvedValue(confirmed)
+      vi.mocked(api.listUserDataFullInfo).mockResolvedValue([
+        { path: 'testname.json', modified: 1, size: 1 }
+      ])
+      vi.mocked(api.getUserData).mockImplementation(async () =>
+        Response.json(mockGraph)
+      )
+      await store.publishSubgraph()
+      expect(useDialogService().confirm).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'overwriteBlueprint',
+          itemList: ['testname']
         })
-    } as Response)
-    await mockFetch({ 'testname.json': mockGraph })
-    //Dialogue service already mocked
+      )
+      expect(api.storeUserData).toHaveBeenCalledTimes(storeCalls)
+    }
+  )
+  it('publishes a new filename without overwrite confirmation', async () => {
+    const { subgraph } = selectSubgraphNodeToPublish()
+    vi.mocked(api.listUserDataFullInfo).mockResolvedValue([
+      { path: 'another-blueprint.json', modified: 1, size: 1 }
+    ])
+    vi.mocked(api.getUserData).mockImplementation(async () =>
+      Response.json(mockGraph)
+    )
+
     await store.publishSubgraph()
-    expect(api.storeUserData).toHaveBeenCalled()
+
+    expect(useDialogService().confirm).not.toHaveBeenCalled()
+    expect(api.storeUserData).toHaveBeenCalledExactlyOnceWith(
+      'subgraphs/testname.json',
+      expect.any(String),
+      expect.anything()
+    )
+    const saved = zComfyWorkflow.parse(
+      JSON.parse(String(vi.mocked(api.storeUserData).mock.calls[0][1]))
+    )
+    expect(saved.nodes).toEqual([
+      expect.objectContaining({ type: subgraph.id, title: 'testname' })
+    ])
+    expect(saved.definitions?.subgraphs).toEqual([
+      expect.objectContaining({ id: subgraph.id })
+    ])
   })
+
+  it('does not publish when existing filenames cannot be checked', async () => {
+    selectSubgraphNodeToPublish()
+    const listingError = new Error('Blueprint listing unavailable')
+    vi.mocked(api.listUserDataFullInfo).mockRejectedValue(listingError)
+
+    await store.publishSubgraph()
+
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(listingError, {
+      errorType: 'error_checking_blueprint_overwrite',
+      surface: 'graph'
+    })
+    expect(api.storeUserData).not.toHaveBeenCalled()
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        kind: 'error',
+        description: 'Blueprint listing unavailable'
+      })
+    ])
+  })
+
   it('should display published nodes in the node library', async () => {
     await mockFetch({ 'test.json': mockGraph })
-    expect(
-      useNodeDefStore().nodeDefs.filter(
-        (d) => d.category === 'Subgraph Blueprints/User'
+    expect(userBlueprintNames()).toEqual(['SubgraphBlueprint.test'])
+  })
+  it.for([false, true])(
+    'loads blueprint boundary inputs when object info is trusted: %s',
+    async (isTrusted) => {
+      mockDistributionTypes.isCloud = isTrusted
+
+      await mockFetch({
+        'dynamic-boundaries.json': {
+          ...mockGraph,
+          nodes: [
+            {
+              type: '123',
+              inputs: [
+                { name: 'autogrow', type: 'COMFY_AUTOGROW_V3', link: null },
+                { name: 'match', type: 'COMFY_MATCHTYPE_V3', link: null },
+                { name: 'group', type: 'COMFY_DYNAMICGROUP_V3', link: null },
+                { name: 'image', type: 'IMAGE', link: null }
+              ],
+              outputs: [
+                { name: 'matched', type: 'COMFY_MATCHTYPE_V3', links: null },
+                { name: 'image', type: 'IMAGE', links: null }
+              ]
+            }
+          ]
+        }
+      })
+
+      const blueprintDef = useNodeDefStore().nodeDefs.find(
+        (def) => def.name === 'SubgraphBlueprint.dynamic-boundaries'
       )
-    ).toHaveLength(1)
+      expect(blueprintDef).toBeDefined()
+      expect(blueprintDef?.inputTypes).toEqual(['IMAGE'])
+      expect(blueprintDef?.outputTypes).toEqual(['IMAGE'])
+    }
+  )
+  it('should remove deleted blueprints from the node library', async () => {
+    await mockFetch({ 'test.json': mockGraph })
+    await store.deleteBlueprint('SubgraphBlueprint.test')
+    expect(api.deleteUserData).toHaveBeenCalledWith('subgraphs/test.json')
+    expect(userBlueprintNames()).toEqual([])
   })
   it('should allow subgraphs to be edited', async () => {
     await mockFetch({ 'test.json': mockGraph })
@@ -141,12 +258,20 @@ describe('useSubgraphStore', () => {
     expect(comfyApp.loadGraphData).toHaveBeenCalled()
   })
   it('should allow subgraphs to be added to graph', async () => {
-    //mock
-    await mockFetch({ 'test.json': mockGraph })
-    const res = useLitegraphService().addNodeOnGraph({
-      name: 'SubgraphBlueprint.test'
-    } as ComfyNodeDefV1)
-    expect(res).toBeTruthy()
+    const { subgraphNode } = selectSubgraphNodeToPublish()
+    const graph = subgraphNode.graph!
+    await mockFetch({ 'test.json': graph.serialize() })
+    graph.remove(subgraphNode)
+    const nodeDef = useNodeDefStore().nodeDefs.find(
+      (definition) => definition.name === 'SubgraphBlueprint.test'
+    )
+    assert.exists(nodeDef)
+
+    const inserted = useLitegraphService().addNodeOnGraph(nodeDef)
+
+    assert.exists(inserted)
+    expect(graph.nodes).toEqual([inserted])
+    expect(inserted.title).toBe('test')
   })
   it('should return a deep copy from getBlueprint so mutations do not corrupt the cache', async () => {
     await mockFetch({ 'test.json': mockGraph })
@@ -258,7 +383,6 @@ describe('useSubgraphStore', () => {
   })
 
   it('should handle global blueprint with empty data gracefully', async () => {
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     await mockFetch(
       {},
       {
@@ -269,16 +393,107 @@ describe('useSubgraphStore', () => {
         }
       }
     )
-    expect(consoleSpy).toHaveBeenCalledWith(
+    expect(console.error).toHaveBeenCalledWith(
       'Failed to load subgraph blueprint',
       expect.any(Error)
     )
-    expect(store.subgraphBlueprints).toHaveLength(0)
-    consoleSpy.mockRestore()
+    expect(useNodeDefStore().blueprintNodeDefsByName.size).toBe(0)
+  })
+
+  it.for([
+    {
+      source: 'user',
+      failedListing: 'listUserDataFullInfo',
+      survivingBlueprint: 'SubgraphBlueprint.installed_test'
+    },
+    {
+      source: 'installed',
+      failedListing: 'getGlobalSubgraphs',
+      survivingBlueprint: 'SubgraphBlueprint.user_test'
+    }
+  ] as const)(
+    'loads the other blueprint source and reports a failed $source listing',
+    async ({ failedListing, survivingBlueprint }) => {
+      vi.mocked(api[failedListing]).mockRejectedValueOnce(
+        new Error('Listing failed')
+      )
+
+      await mockFetch(
+        { 'user_test.json': mockGraph },
+        {
+          installed_test: {
+            name: 'Installed Test',
+            info: { node_pack: 'test_pack' },
+            data: JSON.stringify(mockGraph)
+          }
+        }
+      )
+
+      expect([...useNodeDefStore().blueprintNodeDefsByName.keys()]).toEqual([
+        survivingBlueprint
+      ])
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({
+          description: 'Listing failed',
+          kind: 'error'
+        })
+      ])
+    }
+  )
+
+  it('does not report an empty user blueprint as a load failure', async () => {
+    const userBlueprints = [
+      {
+        path: 'Image Edit.json/move/subgraphs/my subgraph.json',
+        content: ''
+      },
+      { path: 'corrupt.json', content: '{' },
+      { path: 'kept.json', content: JSON.stringify(mockGraph) },
+      {
+        path: 'unsized.json',
+        content: JSON.stringify(mockGraph),
+        listsSize: false
+      }
+    ]
+    vi.mocked(api.listUserDataFullInfo).mockResolvedValue(
+      userBlueprints.map(({ path, content, listsSize }) =>
+        listsSize === false
+          ? fromPartial<UserDataFullInfo>({ path, modified: Date.now() })
+          : { path, modified: Date.now(), size: content.length }
+      )
+    )
+    vi.mocked(api.getUserData).mockImplementation(async (file) => {
+      const blueprint = userBlueprints.find(
+        ({ path }) => `subgraphs/${path}` === file
+      )
+      return new Response(blueprint?.content ?? '', { status: 200 })
+    })
+    vi.mocked(api.getGlobalSubgraphs).mockResolvedValue({})
+
+    await store.fetchSubgraphs()
+
+    expect(userBlueprintNames()).toEqual(
+      expect.arrayContaining([
+        'SubgraphBlueprint.kept',
+        'SubgraphBlueprint.unsized'
+      ])
+    )
+    expect(userBlueprintNames()).toHaveLength(2)
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        kind: 'error',
+        description: 'Workflow content is not valid JSON'
+      })
+    ])
+    expect(console.error).toHaveBeenCalledWith(
+      `${ASSERTION_FAILURE_PREFIX}Workflow content is not valid JSON`
+    )
+    expect(console.error).not.toHaveBeenCalledWith(
+      `${ASSERTION_FAILURE_PREFIX}Workflow content is missing or empty`
+    )
   })
 
   it('should handle global blueprint with rejected data promise gracefully', async () => {
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     await mockFetch(
       {},
       {
@@ -291,16 +506,17 @@ describe('useSubgraphStore', () => {
         }
       }
     )
-    expect(consoleSpy).toHaveBeenCalledWith(
+    expect(console.error).toHaveBeenCalledWith(
       'Failed to load subgraph blueprint',
       expect.any(Error)
     )
-    expect(store.subgraphBlueprints).toHaveLength(0)
-    consoleSpy.mockRestore()
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({ description: 'Network error', kind: 'error' })
+    ])
+    expect(useNodeDefStore().blueprintNodeDefsByName.size).toBe(0)
   })
 
   it('should load valid global blueprints even when others fail', async () => {
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     await mockFetch(
       {},
       {
@@ -316,9 +532,8 @@ describe('useSubgraphStore', () => {
         }
       }
     )
-    expect(consoleSpy).toHaveBeenCalled()
-    expect(store.subgraphBlueprints).toHaveLength(1)
-    consoleSpy.mockRestore()
+    expect(console.error).toHaveBeenCalled()
+    expect(useNodeDefStore().blueprintNodeDefsByName.size).toBe(1)
   })
 
   describe('search_aliases support', () => {
@@ -399,61 +614,25 @@ describe('useSubgraphStore', () => {
     })
 
     it('should not duplicate metadata in both workflow extra and subgraph extra when publishing', async () => {
-      const subgraph = createTestSubgraph()
-      const subgraphNode = createTestSubgraphNode(subgraph)
-      const graph = subgraphNode.graph!
-      graph.add(subgraphNode)
-
-      // Set metadata on the subgraph's extra (as the commands do)
+      const { subgraph } = selectSubgraphNodeToPublish()
       subgraph.extra = {
         BlueprintDescription: 'Test description',
         BlueprintSearchAliases: ['alias1', 'alias2']
       }
 
-      vi.mocked(comfyApp.canvas).selectedItems = new Set([subgraphNode])
-      vi.mocked(comfyApp.canvas)._serializeItems = vi.fn(() => {
-        const serializedSubgraph = fromPartial<ExportedSubgraph>({
-          ...subgraph.serialize(),
-          links: [],
-          groups: [],
-          version: 1
-        })
-        return {
-          nodes: [subgraphNode.serialize()],
-          subgraphs: [serializedSubgraph]
-        }
-      })
-
-      let savedWorkflowData: Record<string, unknown> | null = null
-      vi.mocked(api.storeUserData).mockImplementation(async (_path, data) => {
-        savedWorkflowData = JSON.parse(data as string)
-        return {
-          status: 200,
-          json: () =>
-            Promise.resolve({
-              path: 'subgraphs/testname.json',
-              modified: Date.now(),
-              size: 2
-            })
-        } as Response
-      })
-
       await mockFetch({ 'testname.json': mockGraph })
       await store.publishSubgraph()
 
-      expect(savedWorkflowData).not.toBeNull()
-
-      // Metadata should be in top-level extra
-      expect(savedWorkflowData!.extra).toEqual({
+      expect(api.storeUserData).toHaveBeenCalledOnce()
+      const savedWorkflowData = zComfyWorkflow.parse(
+        JSON.parse(String(vi.mocked(api.storeUserData).mock.calls[0][1]))
+      )
+      expect(savedWorkflowData.extra).toEqual({
         BlueprintDescription: 'Test description',
         BlueprintSearchAliases: ['alias1', 'alias2']
       })
 
-      // Metadata should NOT be in subgraph's extra
-      const definitions = savedWorkflowData!.definitions as {
-        subgraphs: Array<{ extra?: Record<string, unknown> }>
-      }
-      const subgraphExtra = definitions.subgraphs[0]?.extra
+      const subgraphExtra = savedWorkflowData.definitions?.subgraphs[0]?.extra
       expect(subgraphExtra?.BlueprintDescription).toBeUndefined()
       expect(subgraphExtra?.BlueprintSearchAliases).toBeUndefined()
     })

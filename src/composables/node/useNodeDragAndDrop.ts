@@ -1,7 +1,31 @@
 import { useChainCallback } from '@/composables/functional/useChainCallback'
+import { partition } from 'es-toolkit'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { parseAssetInfo } from '@/platform/assets/schemas/mediaAssetSchema'
-import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
+import { parseAssetInfo } from '@/platform/assets/integration/assetDrop'
+import type { ResultItem } from '@comfyorg/api-client/executionTypes'
+import { withHdrImageType } from '@/utils/eventUtils'
+import { getPathDetails } from '@/utils/formatUtil'
+import { parseUrl } from '@/utils/urlSafety'
+
+const UNSAFE_FILENAME_CHARACTERS = /[\\:*?"<>|]/
+
+function getLowercaseSuffix(filename: string): string | undefined {
+  return getPathDetails(filename).suffix?.toLowerCase()
+}
+
+function getFetchedAssetFileName({
+  filename,
+  display_name
+}: ResultItem): string | undefined {
+  if (!filename || !display_name) return filename
+  const label = getPathDetails(display_name).fullFilename
+  const labelSuffix = getLowercaseSuffix(label)
+  return labelSuffix &&
+    labelSuffix === getLowercaseSuffix(filename) &&
+    !UNSAFE_FILENAME_CHARACTERS.test(label)
+    ? label
+    : filename
+}
 
 type DragHandler = (e: DragEvent) => boolean
 type DropHandler<T> = (files: File[]) => Promise<T[]>
@@ -11,6 +35,7 @@ interface DragAndDropOptions<T> {
   onDrop: DropHandler<T>
   onResultItemDrop?: (item: ResultItem) => void
   fileFilter?: (file: File) => boolean
+  onReject?: (files: File[]) => boolean
 }
 
 /**
@@ -29,7 +54,9 @@ export const useNodeDragAndDrop = <T>(
   const filterFiles = (files: FileList | File[]) =>
     Array.from(files).filter(fileFilter)
 
-  const hasValidFiles = (files: FileList) => filterFiles(files).length > 0
+  function handleRejectedFiles(files: File[]) {
+    return files.length > 0 && (options.onReject?.(files) ?? false)
+  }
 
   const isDraggingFiles = (e: DragEvent | undefined) => {
     if (!e?.dataTransfer?.items) return false
@@ -40,25 +67,22 @@ export const useNodeDragAndDrop = <T>(
     )
   }
 
-  const isDraggingValidFiles = (e: DragEvent | undefined) => {
-    if (e?.dataTransfer?.files.length)
-      return hasValidFiles(e.dataTransfer.files)
-
-    return !!e?.dataTransfer?.getData('text/uri-list')
-  }
-
   const installedDragOver = isDraggingFiles
   node.onDragOver = installedDragOver
 
   const installedDragDrop = async function (e: DragEvent) {
-    if (!isDraggingValidFiles(e)) return false
     const { dataTransfer } = e
     if (!dataTransfer) return false
 
-    const files = filterFiles(dataTransfer.files)
+    const droppedFiles = Array.from(dataTransfer.files, withHdrImageType)
+    const [files, rejectedFiles] = partition(droppedFiles, fileFilter)
+    const rejectedFilesClaimed = handleRejectedFiles(rejectedFiles)
     if (files.length) {
       await onDrop(files)
       return true
+    }
+    if (dataTransfer.files.length) {
+      return rejectedFilesClaimed
     }
     const asset = parseAssetInfo(dataTransfer)
     if (asset?.filename && options.onResultItemDrop) {
@@ -67,13 +91,14 @@ export const useNodeDragAndDrop = <T>(
     }
 
     const baseUri = dataTransfer.getData('text/uri-list')
-    const uri = URL.parse(baseUri, location.href)
+    if (!baseUri) return false
+    const uri = parseUrl(baseUri, location.href)
     if (!uri || uri.origin !== location.origin) return false
 
     try {
       const resp = await fetch(uri)
       const fileName =
-        asset?.filename ??
+        (asset && getFetchedAssetFileName(asset)) ??
         uri.searchParams.get('filename') ??
         baseUri.split('/').at(-1)
       if (!fileName || !resp.ok) return false
@@ -81,7 +106,9 @@ export const useNodeDragAndDrop = <T>(
       const blob = await resp.blob()
       const file = new File([blob], fileName, { type: blob.type })
       const uriFiles = filterFiles([file])
-      if (!uriFiles.length) return false
+      if (!uriFiles.length) {
+        return handleRejectedFiles([file])
+      }
 
       await onDrop(uriFiles)
     } catch {

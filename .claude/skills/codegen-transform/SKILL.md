@@ -39,7 +39,6 @@ The programmatic transform engine lives in `tools/test-recorder/src/transform/ru
 | `page.getByPlaceholder('Search Nodes...')`        | `comfyPage.searchBox.input`                                                                 | Use search box page object               |
 | `page` (bare reference)                           | `comfyPage.page`                                                                            | Access raw page through fixture          |
 | Bare `test(...)`                                  | `test.describe('Feature', { tag: ['<scenario tag>'] }, () => { test(...) })`                | All tests need describe + tags           |
-| No cleanup                                        | Add `test.afterEach(async ({ comfyPage }) => { await comfyPage.canvasOps.resetView() })`    | Canvas tests need cleanup                |
 
 ## Canvas Coordinates → Node References
 
@@ -68,7 +67,7 @@ await comfyPage.searchBox.fillAndSelectFirstNode('KSampler')
 | Need `nextFrame()`?        | Yes after canvas mutations. No after `loadWorkflow()`, no after DOM clicks                                                    |
 | Which tag?                 | Always add `@vue-nodes` when the test needs Vue Nodes, alongside scenario tags such as `@canvas`, `@widget`, or `@screenshot` |
 | Starting settings?         | Prefer `test.use({ initialSettings })` at the narrowest file or describe scope instead of `setSetting` in `beforeEach`        |
-| Need cleanup?              | Yes for canvas tests (`resetView`). No settings resets: the fixture replaces settings with a baseline before each test        |
+| Need cleanup?              | No. Each test gets a fresh page, and the fixture replaces settings with a baseline before each test                           |
 | Keep pixel coords?         | Only for empty canvas clicks. Replace with node refs for node interactions                                                    |
 | Use `page` directly?       | Only via `comfyPage.page` for Playwright APIs not wrapped by fixtures                                                         |
 

@@ -7,7 +7,7 @@ import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import { resolveTourRoles } from './resolveTourRoles'
 import { TOUR_ROLE_PINS } from './tourRolePins'

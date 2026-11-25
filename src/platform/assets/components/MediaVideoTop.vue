@@ -24,7 +24,7 @@
       v-else
       role="img"
       :aria-label="$t('g.videoFailedToLoad')"
-      class="flex size-full items-center justify-center bg-modal-card-placeholder-background"
+      class="flex size-full items-center justify-center bg-muted"
     >
       <i class="icon-[lucide--video-off] size-8 text-muted-foreground" />
     </div>
@@ -36,9 +36,9 @@
 import { computed, ref } from 'vue'
 
 import { useRetryableMediaSrc } from '@/composables/media/useRetryableMediaSrc'
-import type { AssetMeta } from '../schemas/mediaAssetSchema'
+import type { AssetMeta } from '@comfyorg/assets-core/media'
 
-import VideoPlayOverlay from './VideoPlayOverlay.vue'
+import VideoPlayOverlay from '@comfyorg/design-system/media/VideoPlayOverlay'
 
 const { asset, showNativeControls = true } = defineProps<{
   asset: AssetMeta
@@ -72,6 +72,7 @@ const handleVideoError = () => {
 }
 
 async function onVideoClick(event: MouseEvent) {
+  if (event.detail > 1) return event.preventDefault()
   if (
     event.shiftKey ||
     event.metaKey ||

@@ -2,7 +2,6 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
-import { MIN_NODE_WIDTH } from '@/renderer/core/layout/transform/graphRenderTransform'
 import {
   RESIZE_HANDLES,
   hasNorthEdge,
@@ -14,10 +13,6 @@ test.describe(
   { tag: ['@vue-nodes', '@canvas', '@node'] },
   () => {
     test.use({ initialSettings: { 'Comfy.Minimap.Visible': false } })
-
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.canvasOps.resetView()
-    })
 
     test('Resizing', async ({ comfyPage }) => {
       const node = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
@@ -137,8 +132,15 @@ test.describe(
 
         await node.resizeFromCorner('SW', box.width + 100, 0)
 
+        const minScreenWidth = await comfyPage.page.evaluate(() => {
+          const node = window.app!.graph.nodes.find(
+            (n) => n.title === 'KSampler'
+          )!
+          return Math.ceil(node.computeSize()[0]) * window.app!.canvas.ds.scale
+        })
+
         await expect.poll(getRight).toBeCloseTo(initialRight, 0)
-        await expect.poll(getWidth).toBeGreaterThanOrEqual(MIN_NODE_WIDTH)
+        await expect.poll(getWidth).toBeCloseTo(minScreenWidth, 0)
       })
 
       test('NE resize clamps height at its lower bound', async ({

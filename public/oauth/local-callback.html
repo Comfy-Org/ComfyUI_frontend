@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="referrer" content="no-referrer" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ComfyUI sign-in</title>
+    <style>
+      body {
+        margin: 0;
+        display: grid;
+        min-height: 100vh;
+        place-items: center;
+        background: #171718;
+        color: #e5e5e5;
+        font:
+          14px/1.5 system-ui,
+          sans-serif;
+      }
+    </style>
+  </head>
+  <body>
+    <p id="status">Finishing sign-in…</p>
+    <script>
+      ;(function () {
+        var LOOPBACK_HOSTS = ['127.0.0.1', 'localhost']
+        var search = window.location.search
+        var state = new URLSearchParams(search).get('state') || ''
+        var separator = state.indexOf('~')
+        var target = null
+        try {
+          var origin = decodeURIComponent(state.slice(separator + 1))
+          var url = new URL(origin)
+          if (
+            separator > 0 &&
+            url.protocol === 'http:' &&
+            LOOPBACK_HOSTS.indexOf(url.hostname) !== -1 &&
+            url.origin === origin
+          ) {
+            target = origin
+          }
+        } catch (error) {
+          target = null
+        }
+        history.replaceState(null, '', window.location.pathname)
+        if (!target || !window.opener) {
+          document.getElementById('status').textContent =
+            'Sign-in could not return to ComfyUI. Close this window and try again.'
+          return
+        }
+        window.opener.postMessage(
+          { type: 'comfy-local-web-sign-in', search: search },
+          target
+        )
+        document.getElementById('status').textContent =
+          'Finishing sign-in in ComfyUI. You can close this window.'
+        setTimeout(function () {
+          window.close()
+        }, 300)
+      })()
+    </script>
+  </body>
+</html>

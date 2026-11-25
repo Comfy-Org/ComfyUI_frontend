@@ -3,7 +3,6 @@ import type { Page, Request } from '@playwright/test'
 import type {
   BillingOpStatusResponse,
   BillingStatusResponse,
-  Plan,
   PreviewSubscribeResponse,
   SavedPaymentMethod
 } from '@comfyorg/ingest-types'
@@ -12,35 +11,21 @@ import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
 import { cloudAppFixture as test } from '@e2e/fixtures/cloudAppFixture'
 import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
+import { createPlan } from '@e2e/fixtures/data/billingPlans'
 import { CLOUD_SELF_EMAIL } from '@e2e/fixtures/helpers/CloudAuthHelper'
-import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
+import type { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
+import { billingClient } from '@e2e/fixtures/utils/billingClient'
 import { APP_URL, setupCloudApp } from '@e2e/fixtures/utils/cloudAppSetup'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { keepPricingTableInApp } from '@e2e/fixtures/utils/platformPlans'
 import { member, workspace } from '@e2e/fixtures/utils/workspaceMocks'
 
 /**
  * A subscription operation this tab reattached to after a reload has no
- * checkout left to report it. Both rails must settle a subscribe the same
- * way: re-read the billing status and toast.
- *
- * The transport tells the rails apart: the SDK runs on `fetch`, the legacy
- * workspace client on axios' XHR adapter.
+ * checkout left to report it. The SDK rail must still settle a subscribe:
+ * re-read the billing status on the SDK transport and toast.
  */
-type Rail = 'sdk' | 'legacy'
-
-const RAIL_FEATURES: Record<Rail, RemoteConfig> = {
-  sdk: {
-    billing_control_enabled: true,
-    unified_cloud_auth: true,
-    billing_sdk_subscription_enabled: true
-  },
-  legacy: {
-    billing_control_enabled: true,
-    unified_cloud_auth: true
-  }
-}
-
-const RAIL_TRANSPORT: Record<Rail, string> = { sdk: 'fetch', legacy: 'xhr' }
+const FEATURES = { billing_control_enabled: true } satisfies RemoteConfig
 
 const OPERATION_ID = 'op-e2e-resumed-subscription'
 const HOSTED_URL = 'https://pay.stripe.example/invoice/op-e2e-resumed'
@@ -71,20 +56,13 @@ const SUCCEEDED = {
   completed_at: '2026-09-20T00:01:00Z'
 } satisfies BillingOpStatusResponse
 
-const CREATOR_ANNUAL_PLAN = {
+const CREATOR_ANNUAL_PLAN = createPlan({
   slug: 'creator-annual',
   tier: 'CREATOR',
   duration: 'ANNUAL',
-  price_cents: 33_600,
-  credits_cents: 7_400,
-  max_seats: 1,
-  availability: { available: true },
-  seat_summary: {
-    seat_count: 1,
-    total_cost_cents: 33_600,
-    total_credits_cents: 7_400
-  }
-} satisfies Plan
+  priceCents: 33_600,
+  monthlyCredits: 7_400
+})
 
 const UPGRADE_TO_CREATOR = {
   allowed: true,
@@ -93,8 +71,8 @@ const UPGRADE_TO_CREATOR = {
   is_immediate: true,
   cost_today_cents: 33_600,
   cost_next_period_cents: 33_600,
-  credits_today_cents: 7_400,
-  credits_next_period_cents: 7_400,
+  credits_today_cents: CREATOR_ANNUAL_PLAN.credits_cents,
+  credits_next_period_cents: CREATOR_ANNUAL_PLAN.credits_cents,
   new_plan: CREATOR_ANNUAL_PLAN
 } satisfies PreviewSubscribeResponse
 
@@ -109,8 +87,10 @@ const ACTIVE_STANDARD = {
   renewal_date: '2099-02-20T00:00:00Z',
   max_seats: 1,
   occupied_seats: 1,
+  ended_at: null,
   team_credit_stop: null,
-  scheduled_change: null
+  scheduled_change: null,
+  next_charge: null
 } satisfies BillingStatusResponse
 
 const SAVED_CARD = {
@@ -129,7 +109,7 @@ interface ResumeRoutes {
   hostedOpens: () => Promise<string[]>
 }
 
-async function setupResume(page: Page, rail: Rail): Promise<ResumeRoutes> {
+async function setupResume(page: Page): Promise<ResumeRoutes> {
   const ws = workspace('personal', 'owner')
   const subscribeRequests: Request[] = []
   const statusRequests: Request[] = []
@@ -155,17 +135,12 @@ async function setupResume(page: Page, rail: Rail): Promise<ResumeRoutes> {
         is_original_owner: true
       })
     ],
-    features: RAIL_FEATURES[rail],
+    features: FEATURES,
     billingCapabilities: createWorkspaceBillingCapabilities(ws)
   })
   await page.route('**/api/settings', (route) =>
     route.fulfill(jsonRoute({ 'Comfy.TutorialCompleted': true }))
   )
-  if (rail === 'sdk') {
-    await new FeatureFlagHelper(page).serveServerFlagsOnHandshake({
-      billing_sdk_subscription_enabled: true
-    })
-  }
 
   await page.route('**/api/billing/payment-methods', (route) =>
     route.fulfill(jsonRoute([SAVED_CARD]))
@@ -230,10 +205,6 @@ async function returnToTab(page: Page) {
   await page.evaluate(() => window.dispatchEvent(new Event('focus')))
 }
 
-function transports(requests: Request[]): string[] {
-  return requests.map((request) => request.resourceType())
-}
-
 async function reloadWhileProcessing(page: Page, routes: ResumeRoutes) {
   const pollsBeforeReload = routes.pollRequests.length
   await page.reload()
@@ -242,8 +213,8 @@ async function reloadWhileProcessing(page: Page, routes: ResumeRoutes) {
     .toBeGreaterThan(pollsBeforeReload)
 }
 
-async function expectResumedSubscribeSettles(page: Page, rail: Rail) {
-  const routes = await setupResume(page, rail)
+async function expectResumedSubscribeSettles(page: Page, toast: ToastHelper) {
+  const routes = await setupResume(page)
   await page.goto(`${APP_URL}/?pricing=creator&cycle=yearly`)
   await expect(
     page.getByRole('heading', { name: 'Confirm your upgrade' })
@@ -259,35 +230,31 @@ async function expectResumedSubscribeSettles(page: Page, rail: Rail) {
   await returnToTab(page)
 
   await expect(
-    page
-      .getByRole('alert')
-      .filter({ hasText: 'Subscription updated successfully' })
+    toast.toastSuccesses.filter({
+      hasText: 'Subscription updated successfully'
+    })
   ).toBeVisible({ timeout: 45_000 })
   const statusReadsAfterSettle = routes.statusRequests.slice(
     statusReadsBeforeSettle
   )
   expect(statusReadsAfterSettle.length).toBeGreaterThan(0)
-  expect(new Set(transports(statusReadsAfterSettle))).toEqual(
-    new Set([RAIL_TRANSPORT[rail]])
+  expect(new Set(statusReadsAfterSettle.map(billingClient))).toEqual(
+    new Set(['sdk'])
   )
-  expect(new Set(transports(routes.pollRequests))).toEqual(
-    new Set([RAIL_TRANSPORT[rail]])
+  expect(new Set(routes.pollRequests.map(billingClient))).toEqual(
+    new Set(['sdk'])
   )
   expect(routes.subscribeRequests).toHaveLength(1)
 }
 
 test.describe('Resumed subscription settle', { tag: '@cloud' }, () => {
-  test('reports a subscribe that settles after a reload on the SDK rail', async ({
-    page
-  }) => {
-    test.setTimeout(120_000)
-    await expectResumedSubscribeSettles(page, 'sdk')
-  })
+  test.beforeEach(({ page }) => keepPricingTableInApp(page))
 
-  test('reports a subscribe that settles after a reload on the legacy rail', async ({
-    page
+  test('reports a subscribe that settles after a reload on the SDK rail', async ({
+    page,
+    toast
   }) => {
     test.setTimeout(120_000)
-    await expectResumedSubscribeSettles(page, 'legacy')
+    await expectResumedSubscribeSettles(page, toast)
   })
 })

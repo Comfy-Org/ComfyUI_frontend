@@ -7,7 +7,7 @@
     :theme="theme"
     :expired-message="t('auth.turnstile.expired')"
     :failed-message="t('auth.turnstile.failed')"
-    error-class="text-red-500"
+    error-class="text-destructive"
     :loader="loadTurnstile"
   />
 </template>
@@ -20,18 +20,16 @@ import SharedTurnstileWidget from '@comfyorg/account-ui/auth/TurnstileWidget'
 import { loadTurnstile } from '@comfyorg/account-core/turnstileScript'
 
 import { getTurnstileSiteKey } from '@/config/turnstile'
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { useThemeStore } from '@/platform/theme/themeStore'
 
 const token = defineModel<string>('token', { default: '' })
 const unavailable = defineModel<boolean>('unavailable', { default: false })
 
 const { t } = useI18n()
-const colorPaletteStore = useColorPaletteStore()
+const themeStore = useThemeStore()
 // The palette setting can settle after this dialog mounts; the shared widget
 // reads `theme` once its loader resolves, so a computed keeps that timing.
-const theme = computed(() =>
-  colorPaletteStore.completedActivePalette.light_theme ? 'light' : 'dark'
-)
+const theme = computed(() => themeStore.colorScheme)
 
 const widget = ref<InstanceType<typeof SharedTurnstileWidget>>()
 

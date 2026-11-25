@@ -3,9 +3,12 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useLinkStore } from '@/stores/linkStore'
-import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
-import { toLinkId } from '@/types/linkId'
-import { toNodeId } from '@/types/nodeId'
+import {
+  toOwningGraphId,
+  toRootGraphId
+} from '@comfyorg/graph-model/graphScopeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { UUID } from '@/utils/uuid'
 
 import { nodeBadges } from './badgeSystem'

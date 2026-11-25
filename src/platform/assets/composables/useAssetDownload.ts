@@ -1,30 +1,15 @@
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile, downloadFileAsBlob } from '@/base/common/downloadUtil'
-import { reportError } from '@/platform/telemetry/reportError'
-import { useToastStore } from '@/platform/updates/common/toastStore'
-
-interface DirectAssetDownload {
-  mode: 'direct'
-  url: string
-  filename: string
-}
-
-export interface FetchedAssetDownload {
-  mode: 'fetch'
-  url: string
-  filename: string
-  fetch?: (url: string) => Promise<Response>
-  preferResponseFilename?: boolean
-}
-
-export type AssetDownload = DirectAssetDownload | FetchedAssetDownload
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { useToast } from '@/components/ui/toast/toastStore'
+import type { AssetFileDownload } from '@/platform/assets/types/assetDownload'
 
 export function useAssetDownload() {
   const { t } = useI18n()
-  const toast = useToastStore()
+  const toast = useToast()
 
-  async function downloadFiles(files: AssetDownload[]): Promise<void> {
+  async function downloadFiles(files: AssetFileDownload[]): Promise<void> {
     const pending = files.map((file) => {
       try {
         if (file.mode === 'direct') {
@@ -34,7 +19,8 @@ export function useAssetDownload() {
         return downloadFileAsBlob(file.url, {
           filename: file.filename,
           fetch: file.fetch,
-          preferResponseFilename: file.preferResponseFilename
+          preferResponseFilename: file.preferResponseFilename,
+          surface: file.surface
         })
       } catch (error) {
         return Promise.reject(error)
@@ -49,25 +35,22 @@ export function useAssetDownload() {
     const successCount = files.length - failures.length
 
     if (successCount > 0) {
-      toast.add({
-        severity: 'success',
-        summary: t('g.success'),
-        detail: t('mediaAsset.selection.downloadsStarted', successCount),
-        life: 2000
+      toast.success(t('g.success'), {
+        description: t('mediaAsset.selection.downloadsStarted', successCount),
+        duration: 2000
       })
     }
 
     if (failures.length > 0) {
       for (const failure of failures) {
         reportError(failure.cause, {
+          surface: 'assets',
           errorType: 'error_downloading_asset',
           context: { filename: failure.filename }
         })
       }
-      toast.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('progressToast.downloadsFailed', failures.length)
+      toast.error(t('g.error'), {
+        description: t('progressToast.downloadsFailed', failures.length)
       })
     }
   }

@@ -1,18 +1,22 @@
-import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
-import type { SerializedNodeId } from '@/types/nodeId'
+import type { ResultItem } from '@comfyorg/api-client/executionTypes'
+import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
+import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 
 export interface AugmentedResultItem extends ResultItem {
   filename: string
   mediaType: string
+  mediaTypeIsResolved?: boolean
   nodeId: SerializedNodeId
   subfolder: string
   assetId?: string
+  hash?: string
   display_name?: string
   content?: string
   format?: string
   frame_rate?: number
   url?: string
+  filenameIsDisplayName?: boolean
   previewUrl?: string
 }
 
@@ -23,11 +27,15 @@ const isImageBySuffix = (item: AugmentedResultItem): boolean =>
 const isAudioBySuffix = (item: AugmentedResultItem): boolean =>
   getMediaTypeFromFilename(item.filename) === 'audio'
 
+const hasResolvedMediaType = (item: AugmentedResultItem): boolean =>
+  item.mediaTypeIsResolved === true
+
 export function isVhsFormat(item: AugmentedResultItem): boolean {
   return !!item.format && !!item.frame_rate
 }
 
 export function isVideoResult(item: AugmentedResultItem): boolean {
+  if (hasResolvedMediaType(item)) return item.mediaType === 'video'
   const isVideoByType =
     item.mediaType === 'video' || !!item.format?.startsWith('video/')
   return (
@@ -35,8 +43,12 @@ export function isVideoResult(item: AugmentedResultItem): boolean {
     (isVideoByType && !isImageBySuffix(item) && !isAudioBySuffix(item))
   )
 }
+export function isHdrResult(item: AugmentedResultItem): boolean {
+  return isHdrImageFilename(item.filename)
+}
 
 export function isImageResult(item: AugmentedResultItem): boolean {
+  if (hasResolvedMediaType(item)) return item.mediaType === 'images'
   return (
     isImageBySuffix(item) ||
     (item.mediaType === 'images' &&
@@ -46,6 +58,7 @@ export function isImageResult(item: AugmentedResultItem): boolean {
 }
 
 export function isAudioResult(item: AugmentedResultItem): boolean {
+  if (hasResolvedMediaType(item)) return item.mediaType === 'audio'
   const isAudioByType =
     item.mediaType === 'audio' || !!item.format?.startsWith('audio/')
   return (

@@ -4,15 +4,17 @@ import { expect } from '@playwright/test'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import { promptHistoryTest as test } from '@e2e/fixtures/agentPromptHistoryFixture'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { assetPath } from '@e2e/fixtures/utils/paths'
+import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 
 test.use({ connectWebSocketToServer: false })
 
 test(
   'keeps an uploaded image decodable in Gallery after sending',
   { tag: ['@cloud', '@agent', '@ui'] },
-  async ({ page, workflowSelection, promptHistory }) => {
+  async ({ page, promptHistory }) => {
     const response: UploadImageResponse = {
       name: 'reference.png',
       subfolder: '',
@@ -21,13 +23,11 @@ test(
     await page.route('**/api/upload/image', (route) =>
       route.fulfill(jsonRoute(response))
     )
-    await page.route('**/view?filename=reference.png&type=input', (route) =>
+    await page.route('**/view?filename=reference.png&type=input*', (route) =>
       route.fulfill({ path: assetPath('image32x32.webp') })
     )
 
-    await page
-      .getByRole('button', { name: enMessages.agent.entryButton })
-      .click()
+    await new AgentPanel(page).open()
     await page
       .getByRole('button', {
         name: enMessages.sideToolbar.newBlankWorkflow,
@@ -36,21 +36,18 @@ test(
       .click()
     const panel = page.locator('#agent-panel-root')
     await expect(panel).toBeVisible()
-    await panel
-      .getByRole('button', { name: enMessages.agent.switchWorkflow })
-      .click()
-    await page
-      .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
-      .click()
-    await expect.poll(() => workflowSelection.savedPaths.length).toBe(1)
-    workflowSelection.finishSave(true)
 
     await panel
       .getByTestId('agent-file-input')
       .setInputFiles(assetPath('image32x32.webp'))
-    await expect(panel.getByTestId('asset-reference-chip')).toHaveCount(1)
+    await expect(
+      panel
+        .getByTestId('composer-asset-section')
+        .getByRole('group', { name: 'image32x32.webp', exact: true })
+    ).toBeVisible()
+    await expect(panel.getByTestId('asset-reference-chip')).toHaveCount(0)
     await panel
-      .getByRole('textbox', { name: /^Describe ideas/ })
+      .getByRole('textbox', { name: AGENT_COMPOSER_LABEL })
       .pressSequentially('use this upload')
     await panel
       .getByRole('button', { name: enMessages.agent.send, exact: true })

@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
-import type { BillingFailure } from './billingContracts.js'
-import { matchesServerCode, unwrapServerCode } from './billingContracts.js'
-import { readBillingErrorCode } from './billingErrorBody.js'
+import type { BillingFailure } from './billingContracts'
+import { matchesServerCode, unwrapServerCode } from './billingContracts'
+import { readBillingErrorCode } from './billingErrorBody'
 
 function failureFrom(body: unknown): BillingFailure {
   return {

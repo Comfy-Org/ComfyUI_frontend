@@ -2,12 +2,12 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type { AssetItem } from '@comfyorg/assets-core/schema'
 import { useOutputStacks } from '@/platform/assets/composables/useOutputStacks'
-import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
+import { resolveOutputAssetItems } from '@/platform/assets/adapters/outputAssetResolver'
 import { getOutputKey } from '@/platform/assets/utils/outputKeyUtil'
 
-vi.mock(import('@/platform/assets/utils/outputAssetUtil'))
+vi.mock(import('@/platform/assets/adapters/outputAssetResolver'))
 
 type Deferred<T> = {
   promise: Promise<T>
@@ -146,7 +146,6 @@ describe('useOutputStacks', () => {
 
   it('does not expand when resolving children throws', async () => {
     const parent = createAsset({ id: 'parent', name: 'parent.png' })
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     vi.mocked(resolveOutputAssetItems).mockRejectedValue(
       new Error('resolve failed')
@@ -160,8 +159,6 @@ describe('useOutputStacks', () => {
 
     expect(isStackExpanded(parent)).toBe(false)
     expect(assetItems.value.map((item) => item.asset.id)).toEqual([parent.id])
-
-    errorSpy.mockRestore()
   })
 
   it('guards against duplicate loads while a stack is resolving', async () => {

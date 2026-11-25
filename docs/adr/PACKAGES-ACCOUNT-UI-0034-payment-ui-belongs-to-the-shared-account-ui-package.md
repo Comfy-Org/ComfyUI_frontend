@@ -49,6 +49,11 @@ the view half of that shared layer lives, and the header quoted above says,
 in the only place it is written down, that the provider-bound part of it
 does not live in the package.
 
+> **Amended (2026-10-26, #21861):** `apps/website`, named above as a consumer,
+> moved to Comfy-Org/comfy-website. That repository keeps locked copies of
+> these packages pinned to a commit of this one, so changes here reach it by
+> sync rather than through this workspace.
+
 ## Decision
 
 1. **Payment presentation is in scope for `@comfyorg/account-ui`**,
@@ -80,6 +85,22 @@ does not live in the package.
    slot and a port, not as imports. The package stays unstyled and
    framework-free above Vue; a promotion that drags the design system in has
    not finished.
+
+   > **Amended 2026-09-27 by
+   > [ADR-BILLING-WEB-0038](BILLING-WEB-0038-checkout-only-hosts-own-plan-selection.md):**
+   > promoted components may use `@comfyorg/design-system` token classes so
+   > the cloud app and `apps/billing-web` render the same checkout
+   > identically. Host couplings (`Button`, telemetry, journey events) still
+   > arrive as inputs.
+
+   > **Amended 2026-11-02 (FRONT-3797):** the Billing tab sections that the
+   > cloud app and Platform billing both render (plan row, credits card,
+   > auto top-up card and member block, billing banners) live in
+   > `./billing` as well. They render the view states derived in
+   > `@comfyorg/account-core/billing`, take host-translated copy, emit their
+   > actions instead of navigating, and keep the cloud app's look as the
+   > default. Platform restyles through a `classes` hook per part, `variant`
+   > props, and named slots for actions, not by forking.
 
 5. **Transport, commands and readers stay in `@comfyorg/account-core`.**
    This decision moves presentation only. It also does not make a surface

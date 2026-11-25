@@ -3,15 +3,17 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import { ChangeTracker } from '@/scripts/changeTracker'
 import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useAppModeStore } from '@/stores/appModeStore'
-import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 
 import AppBuilder from './AppBuilder.vue'
 
 beforeEach(async () => {
+  useWorkflowStore().provideChangeTracker(ChangeTracker)
   const workflow = await useWorkflowStore().createTemporary('test.json').load()
   workflow.activeMode = 'builder:inputs'
   useWorkflowStore().activeWorkflow = workflow

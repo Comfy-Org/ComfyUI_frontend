@@ -1,5 +1,14 @@
-import type { HasBoundingRect, Point, ReadOnlyRect, Rect } from './interfaces'
-import { Alignment, LinkDirection, hasFlag } from './types/globalEnums'
+import type {
+  HasBoundingRect,
+  PointTuple as Point,
+  ReadOnlyRect,
+  Rect
+} from '@comfyorg/shared-frontend-utils/geometry'
+import {
+  Alignment,
+  LinkDirection,
+  hasFlag
+} from '@comfyorg/graph-model/globalEnums'
 
 /**
  * Calculates the distance between two points (2D vector)

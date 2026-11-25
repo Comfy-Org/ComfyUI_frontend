@@ -1,4 +1,10 @@
-import { describe, expect, it } from 'vitest'
+import { createMemoryHistory, createRouter } from 'vue-router'
+import {
+  clearPreservedQuery,
+  getPreservedQueryParam
+} from '@/platform/navigation/preservedQueryManager'
+import { installPreservedQueryTracker } from '@/platform/navigation/preservedQueryTracker'
+import { beforeEach, describe, expect, it } from 'vitest'
 
 import { PRESERVED_QUERY_DEFINITIONS } from '@/platform/navigation/preservedQueryDefinitions'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
@@ -20,9 +26,35 @@ describe('PRESERVED_QUERY_DEFINITIONS', () => {
     [PRESERVED_QUERY_NAMESPACES.TOPUP, 'topup'],
     [PRESERVED_QUERY_NAMESPACES.INVITE, 'invite'],
     [PRESERVED_QUERY_NAMESPACES.CREATE_WORKSPACE, 'create_workspace'],
-    [PRESERVED_QUERY_NAMESPACES.PRICING, 'pricing']
+    [PRESERVED_QUERY_NAMESPACES.PRICING, 'pricing'],
+    [PRESERVED_QUERY_NAMESPACES.WORKSPACE, 'workspace'],
+    [PRESERVED_QUERY_NAMESPACES.DEPLOYMENT, 'deployment'],
+    [PRESERVED_QUERY_NAMESPACES.WORKFLOWS, 'workflows'],
+    [PRESERVED_QUERY_NAMESPACES.LOCAL_HANDOFF, 'from_local'],
+    [PRESERVED_QUERY_NAMESPACES.WORKFLOW_ID, 'workflowId']
   ])('captures %s so a redirect cannot lose it', ([namespace, key]) => {
     expect(registered.get(namespace)).toContain(key)
+  })
+
+  beforeEach(() => clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.WORKFLOW_ID))
+
+  it('preserves a workflow-id link through sign-in and onboarding redirects', async () => {
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: '/:pathMatch(.*)*', component: {} }]
+    })
+    installPreservedQueryTracker(router, PRESERVED_QUERY_DEFINITIONS)
+
+    await router.push('/?workflowId=82b98188-0c8f-41d2-9b91-617b9152b809')
+    await router.push('/login')
+    await router.push('/onboarding')
+
+    expect(
+      getPreservedQueryParam(
+        PRESERVED_QUERY_NAMESPACES.WORKFLOW_ID,
+        'workflowId'
+      )
+    ).toBe('82b98188-0c8f-41d2-9b91-617b9152b809')
   })
 
   it('registers each namespace once', () => {

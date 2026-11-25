@@ -1,4 +1,4 @@
-/* eslint-disable testing-library/prefer-user-event -- pointer capture scrubbing needs low-level pointer events */
+/* oxlint-disable testing-library/prefer-user-event -- pointer capture scrubbing needs low-level pointer events */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, ref } from 'vue'
 import type { Ref } from 'vue'

@@ -1,41 +1,45 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen, within } from '@testing-library/vue'
+import * as VueUse from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
 import { i18n } from '@/i18n'
+
+import type { AgentMessages } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import { toTurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import { normalizeAgentTranscript } from '@/workbench/extensions/agent/services/agent/agentTranscript'
 
 import UserMessage from './UserMessage.vue'
 
 const clipboard = vi.hoisted(() => ({
   text: '',
-  copy: vi.fn((value: string) => {
-    clipboard.text = value
+  copy: vi.fn<VueUse.UseClipboardReturn<true>['copy']>(async (value) => {
+    clipboard.text = typeof value === 'string' ? value : ''
   })
 }))
+
+vi.mock(import('@vueuse/core'), { spy: true })
 
 beforeEach(() => {
   clipboard.text = ''
   clipboard.copy.mockClear()
-})
-
-vi.mock<unknown>(import('@vueuse/core'), () => ({
-  createSharedComposable: (composable: () => unknown) => composable,
-  useClipboard: () => ({
+  vi.mocked(VueUse.useClipboard).mockReturnValue({
     copy: clipboard.copy,
     copied: ref(false),
-    isSupported: ref(true),
+    copyPending: ref(false),
+    isSupported: computed(() => true),
     text: ref('')
-  }),
-  useClipboardItems: () => ({
+  })
+  vi.mocked(VueUse.useClipboardItems).mockReturnValue({
     copy: vi.fn(),
     copied: ref(false),
-    isSupported: ref(false)
-  }),
-  useDocumentVisibility: () => ref('visible'),
-  useStorage: (_key: string, defaultValue: unknown) => ref(defaultValue)
-}))
+    isSupported: computed(() => false),
+    content: ref([]),
+    read: vi.fn()
+  })
+})
 
 const t = i18n.global.t
 
@@ -55,7 +59,12 @@ function renderMessage(props: ComponentProps<typeof UserMessage>) {
   })
 }
 
-function stubbedAssets(): { url: string; filename: string; kind: string }[] {
+function stubbedAssets(): {
+  url: string
+  filename: string
+  kind: string
+  label?: string
+}[] {
   return JSON.parse(
     screen.getByTestId('reply-asset-group').dataset.assets ?? '[]'
   )
@@ -154,21 +163,65 @@ describe('UserMessage', () => {
       text: 'use these',
       attachments: [
         { name: 'a.png', previewUrl: 'blob:a' },
-        { name: 'clip.mp4', ref: 'upload_clip.mp4' }
+        { name: 'song.mp3', ref: 'upload_song.mp3', mediaUrl: 'blob:song' },
+        {
+          name: 'clip.mp4',
+          ref: 'upload_clip.mp4',
+          previewUrl: 'blob:poster',
+          mediaUrl: 'blob:video'
+        }
       ]
     })
 
     expect(stubbedAssets()).toEqual([
       { url: 'blob:a', filename: 'a.png', kind: 'image' },
       {
-        url: expect.stringContaining(
-          '/view?filename=upload_clip.mp4&type=input'
-        ),
-        filename: 'clip.mp4',
-        kind: 'video'
+        url: 'blob:song',
+        filename: 'upload_song.mp3',
+        kind: 'audio',
+        label: 'song.mp3'
+      },
+      {
+        url: 'blob:video',
+        filename: 'upload_clip.mp4',
+        kind: 'video',
+        label: 'clip.mp4'
       }
     ])
     expect(screen.getByText('use these')).toBeInTheDocument()
+  })
+
+  it("keeps a sent EXR's stored preview in the grid", () => {
+    renderMessage({
+      text: '',
+      attachments: [
+        {
+          name: 'plate.exr',
+          ref: 'a1b2c3',
+          kind: 'image',
+          previewUrl: '/api/assets/p-1/content'
+        }
+      ]
+    })
+
+    expect(stubbedAssets()).toEqual([
+      {
+        url: '/api/assets/p-1/content',
+        filename: 'a1b2c3',
+        kind: 'image',
+        label: 'plate.exr'
+      }
+    ])
+  })
+
+  it('never points a sent EXR without a stored preview at its raw file', () => {
+    renderMessage({
+      text: '',
+      attachments: [{ name: 'plate.exr', ref: 'a1b2c3', kind: 'image' }]
+    })
+
+    expect(screen.queryByTestId('reply-asset-group')).not.toBeInTheDocument()
+    expect(screen.getByText('plate.exr')).toBeInTheDocument()
   })
 
   // Dragging a non-first batch output (e.g. "layer 2" of a multi-output job)
@@ -198,6 +251,62 @@ describe('UserMessage', () => {
     ])
   })
 
+  /** PM-1643 / PM-717: persisted kind classifies an extensionless ref. */
+  it.for(['image', 'video', 'audio'])(
+    'previews a rehydrated %s asset whose ref has no extension',
+    (kind) => {
+      const bareDigest = 'a'.repeat(64)
+      const persisted: AgentMessages[number] = {
+        id: 'row-1',
+        thread_id: 'thread-1',
+        seq: 1,
+        role: 'user',
+        status: 'complete',
+        turn_id: 'turn-a',
+        content: {
+          text: 'upscale this',
+          attachments: [bareDigest],
+          attachment_refs: [{ name: bareDigest, id: 'asset-9', kind }]
+        }
+      }
+      const { userAttachments } = normalizeAgentTranscript([persisted])
+
+      renderMessage({
+        text: 'upscale this',
+        attachments: userAttachments.get(toTurnId('turn-a'))
+      })
+
+      const grid = screen.queryByTestId('reply-asset-group')
+      expect(JSON.parse(grid?.dataset.assets ?? '[]')).toEqual([
+        expect.objectContaining({ kind })
+      ])
+    }
+  )
+
+  it('uses the resolved kind for both a renamed grid asset and its lightbox identity', () => {
+    renderMessage({
+      text: '',
+      attachments: [
+        {
+          name: 'renamed-video.mp4',
+          ref: 'stored-image.png',
+          kind: 'video'
+        }
+      ]
+    })
+
+    expect(stubbedAssets()).toEqual([
+      {
+        url: expect.stringContaining(
+          '/view?filename=stored-image.png&type=input'
+        ),
+        filename: 'stored-image.png',
+        kind: 'video',
+        label: 'renamed-video.mp4'
+      }
+    ])
+  })
+
   it('keeps non-media attachments as compact tiles beside the grid', () => {
     renderMessage({
       text: '',
@@ -212,8 +321,9 @@ describe('UserMessage', () => {
         url: expect.stringContaining(
           '/view?filename=upload_song.mp3&type=input'
         ),
-        filename: 'song.mp3',
-        kind: 'audio'
+        filename: 'upload_song.mp3',
+        kind: 'audio',
+        label: 'song.mp3'
       }
     ])
     expect(screen.getByText('notes.md')).toBeInTheDocument()
@@ -226,12 +336,13 @@ describe('UserMessage', () => {
     await user.hover(screen.getByText('make it cinematic'))
     const copyButton = screen.getByRole('button', { name: t('agent.copy') })
     await user.hover(copyButton)
-    expect(
-      await screen.findByRole('tooltip', { hidden: true })
-    ).toHaveTextContent(t('agent.copy'))
+    expect(await screen.findByTestId('tooltip-content')).toHaveTextContent(
+      t('agent.copy')
+    )
     await user.click(copyButton)
 
     expect(clipboard.copy).toHaveBeenCalledWith('make it cinematic')
+    expect(screen.getByRole('tooltip')).toBeInTheDocument()
   })
 
   it('copies a reference-only message with readable workflow names', async () => {
@@ -282,9 +393,9 @@ describe('UserMessage', () => {
 
     const editButton = screen.getByRole('button', { name: t('g.edit') })
     await user.hover(editButton)
-    expect(
-      await screen.findByRole('tooltip', { hidden: true })
-    ).toHaveTextContent(t('g.edit'))
+    expect(await screen.findByTestId('tooltip-content')).toHaveTextContent(
+      t('g.edit')
+    )
     await user.click(editButton)
 
     expect(emitted().edit).toEqual([[{ text: prompt, workflowReferences: [] }]])
@@ -303,5 +414,215 @@ describe('UserMessage', () => {
 
     await userEvent.click(screen.getByRole('button', { name: t('agent.copy') }))
     expect(clipboard.text).toBe('@[File: clip.bin]')
+  })
+
+  it('shows a sending spinner for a pending send and hides error alerts (O0-01)', () => {
+    renderMessage({
+      text: 'sending prompt',
+      pending: { clientMessageId: 'cm-1', status: 'sending' }
+    })
+
+    const spinner = screen.getByTestId('pending-send-spinner')
+    expect(spinner).toBeVisible()
+    expect(spinner).toHaveAttribute('aria-hidden', 'true')
+    expect(screen.queryByRole('status')).toBeNull()
+    expect(screen.queryByTestId('pending-send-error')).toBeNull()
+  })
+
+  it('clears the sending spinner once the message is accepted without adding a per-message status region', async () => {
+    const view = renderMessage({
+      text: 'sending prompt',
+      pending: { clientMessageId: 'cm-live', status: 'sending' }
+    })
+
+    expect(screen.getByTestId('pending-send-spinner')).toHaveAttribute(
+      'aria-hidden',
+      'true'
+    )
+    expect(screen.queryByRole('status')).toBeNull()
+
+    await view.rerender({
+      text: 'sending prompt',
+      pending: undefined
+    })
+
+    expect(screen.queryByTestId('pending-send-spinner')).toBeNull()
+    expect(screen.queryByRole('status')).toBeNull()
+  })
+
+  it('shows a sending spinner even on an attachment-only pending send (O0-01)', () => {
+    renderMessage({
+      text: '',
+      attachments: [{ name: 'clip.bin' }],
+      pending: { clientMessageId: 'cm-1', status: 'sending' }
+    })
+
+    expect(screen.getByTestId('pending-send-spinner')).toBeVisible()
+  })
+
+  it('shows the failure explanation and no spinner when a pending send fails (O0-04)', async () => {
+    const view = renderMessage({
+      text: 'failed prompt',
+      pending: {
+        clientMessageId: 'cm-2',
+        status: 'sending'
+      }
+    })
+
+    await view.rerender({
+      text: 'failed prompt',
+      pending: {
+        clientMessageId: 'cm-2',
+        status: 'failed',
+        failure: {
+          kind: 'network',
+          message:
+            "Message didn't reach the server. Check your connection and try again."
+        }
+      }
+    })
+
+    expect(screen.queryByTestId('pending-send-spinner')).toBeNull()
+    const status = screen.getByTestId('pending-send-error')
+    expect(status).toHaveAttribute('role', 'alert')
+    expect(status).toHaveTextContent(
+      "Message didn't reach the server. Check your connection and try again."
+    )
+    expect(screen.getByRole('button', { name: t('g.retry') })).toBeEnabled()
+    expect(screen.getByRole('button', { name: t('g.delete') })).toBeEnabled()
+  })
+
+  it('uses status role when already failed on mount and emits Retry and Delete', async () => {
+    const { emitted } = renderMessage({
+      text: 'failed prompt',
+      pending: {
+        clientMessageId: 'cm-2',
+        status: 'failed',
+        failure: {
+          kind: 'request',
+          message: 'Message failed to send: server exploded'
+        }
+      }
+    })
+
+    expect(screen.getByTestId('pending-send-error')).toHaveAttribute(
+      'role',
+      'status'
+    )
+    await userEvent.click(screen.getByRole('button', { name: t('g.retry') }))
+    await userEvent.click(screen.getByRole('button', { name: t('g.delete') }))
+    expect(emitted().retryPending).toEqual([['cm-2']])
+    expect(emitted().deletePending).toEqual([['cm-2']])
+  })
+
+  it.for(['admission', 'request', 'turn_in_progress'] as const)(
+    'shows failure copy with Retry and Delete for %s',
+    (kind) => {
+      const message = `Failure for ${kind}`
+      renderMessage({
+        text: 'prompt',
+        pending: {
+          clientMessageId: `cm-${kind}`,
+          status: 'failed',
+          failure: { kind, message }
+        }
+      })
+
+      expect(screen.getByTestId('pending-send-error')).toHaveTextContent(
+        message
+      )
+      expect(screen.getByRole('button', { name: t('g.retry') })).toBeEnabled()
+      expect(screen.getByRole('button', { name: t('g.delete') })).toBeEnabled()
+    }
+  )
+
+  it.for(['disowned', 'target_unavailable'] as const)(
+    'offers New chat and Delete instead of Retry for %s (O0-04)',
+    async (kind) => {
+      const { emitted } = renderMessage({
+        text: 'lost workflow',
+        pending: {
+          clientMessageId: `cm-${kind}`,
+          status: 'failed',
+          failure: { kind, message: 'This workflow is no longer available.' }
+        }
+      })
+
+      expect(screen.queryByRole('button', { name: t('g.retry') })).toBeNull()
+      await userEvent.click(
+        screen.getByRole('button', { name: t('agent.newChat') })
+      )
+      await userEvent.click(screen.getByRole('button', { name: t('g.delete') }))
+      expect(emitted().newChat).toEqual([[]])
+      expect(emitted().deletePending).toEqual([[`cm-${kind}`]])
+    }
+  )
+
+  it('renders AgentPaywallCard for paywall failures and hides it when paywallResolved (O0-04)', async () => {
+    const view = renderMessage({
+      text: 'needs credits',
+      paywallPresentation: { kind: 'local' },
+      pending: {
+        clientMessageId: 'cm-pay',
+        status: 'failed',
+        failure: {
+          kind: 'paywall',
+          message: "You're out of credits."
+        },
+        paywallResolved: false
+      }
+    })
+
+    expect(
+      screen.getByRole('button', { name: t('agent.paywall.addCredits') })
+    ).toBeVisible()
+    await userEvent.click(
+      screen.getByRole('button', { name: t('agent.paywall.addCredits') })
+    )
+    expect(view.emitted().paywallAction).toEqual([
+      ['addCredits', 'refused_send']
+    ])
+    expect(screen.getByRole('button', { name: t('g.retry') })).toBeEnabled()
+    expect(screen.getByRole('button', { name: t('g.delete') })).toBeEnabled()
+
+    await view.rerender({
+      text: 'needs credits',
+      paywallPresentation: { kind: 'local' },
+      pending: {
+        clientMessageId: 'cm-pay',
+        status: 'failed',
+        failure: {
+          kind: 'paywall',
+          message: "You're out of credits."
+        },
+        paywallResolved: true
+      }
+    })
+
+    expect(
+      screen.queryByRole('button', { name: t('agent.paywall.addCredits') })
+    ).toBeNull()
+    expect(screen.getByRole('button', { name: t('g.retry') })).toBeEnabled()
+  })
+
+  it('hides Retry when failure.retryable is false while keeping Delete (O0-04 unreadable ack)', () => {
+    renderMessage({
+      text: 'unreadable response',
+      pending: {
+        clientMessageId: 'cm-unreadable',
+        status: 'failed',
+        failure: {
+          kind: 'request',
+          message: 'Message failed to send: Unreadable agent response body',
+          retryable: false
+        }
+      }
+    })
+
+    expect(screen.getByTestId('pending-send-error')).toHaveTextContent(
+      'Message failed to send: Unreadable agent response body'
+    )
+    expect(screen.queryByRole('button', { name: t('g.retry') })).toBeNull()
+    expect(screen.getByRole('button', { name: t('g.delete') })).toBeEnabled()
   })
 })

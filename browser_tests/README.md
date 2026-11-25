@@ -26,6 +26,10 @@ For real Cloud billing E2E setup and account prerequisites, see [Cloud billing E
 Its dedicated runner requires real authentication and a dedicated sandbox account;
 the live suite is excluded from the ordinary browser test configurations.
 
+The signed-out staging release gate needs neither: see
+[Staging smoke gate](../docs/testing/staging-smoke-gate.md) and run it with
+`pnpm smoke:staging`.
+
 **CRITICAL**: Start the ComfyUI backend with `--multi-user`:
 
 ```bash
@@ -33,6 +37,7 @@ python main.py --multi-user
 ```
 
 Without this flag, parallel tests conflict and fail randomly.
+`pnpm container:start` already passes it.
 
 ## Setup
 
@@ -58,33 +63,55 @@ pnpm container:start
 ```
 
 The command mounts `tools/devtools` and starts ComfyUI at `localhost:8188`.
-Leave it running. Use another terminal for `pnpm dev` and a third for
+Leave it running. Use another terminal for `pnpm dev:test` and a third for
 `pnpm test:browser:local`.
 
 Run browser tests against port 5173 when using this container. Port 8188 serves
 the frontend bundled into the container, not the current frontend checkout.
 
-If the image is not cached, the launcher tries to pull it from GHCR. It uses
-`GH_TOKEN` and gets the matching username from `gh api user`.
+The CI image is private. If it is not cached, the launcher pulls it from GHCR
+with `GH_TOKEN` and gets the matching username from `gh api user`.
 `COMFY_CI_CONTAINER_TOKEN` and `COMFY_CI_CONTAINER_USER` take precedence when
-set. If credentials are missing or the pull fails, the launcher says why and
-builds the matching release from source instead. This fallback may differ from
-the published CI image. The source build can take several minutes and uses about
-10 GB, plus Docker build cache.
+set. The token must be a personal access token (classic) with the
+`read:packages` scope, owned by an account that can read
+`comfy-org/comfyui-ci-container`. GHCR rejects fine-grained tokens.
+`gh auth status` lists the scopes of the current `GH_TOKEN`.
+
+If credentials are missing or the pull fails, the launcher says why and builds
+the matching release from source instead. This fallback may differ from the
+published CI image. The build takes 15 to 20 minutes and uses about 10 GB, plus
+Docker build cache. Its `apt-get` steps can pause for minutes on slow Ubuntu
+mirrors and then continue. Later starts reuse the built image.
+
+The launcher log shows which path it took:
+
+| Log line                                                                 | Meaning                                      |
+| ------------------------------------------------------------------------ | -------------------------------------------- |
+| `Using cached image ghcr.io/...`                                         | CI image; the backend starts within seconds  |
+| `Status: Downloaded newer image for ghcr.io/...`                         | CI image pulled in about a minute            |
+| `GHCR credentials are not configured` or `The private image pull failed` | A source build follows                       |
+| `Using source-built fallback ...`                                        | Fallback image is built; ComfyUI is starting |
+| `To see the GUI go to: http://0.0.0.0:8188`                              | Backend ready                                |
 
 ### Remote agent containers
 
-Remote development containers used by coding agents default to local mode.
-Local mode runs the containerized backend and one local frontend. Cloud mode
-skips Docker and the local backend, and runs one frontend against the Comfy test
-cloud. Set `COMFYUI_FRONTEND_MODE=cloud` in the container environment to switch
-modes.
+Agent containers run the backend and the dev server as background services.
+In Amp orbs, `.agents/setup` installs Docker and `.amp/services.yaml` declares
+`docker-daemon`, `comfyui` (`pnpm container:start`), and `frontend`
+(`pnpm dev:test` on 5173). `amp orb services ensure` starts them and waits for
+their ports; stopping it early leaves them starting. The `frontend` service
+waits about 10 minutes for the backend, then exits and restarts, so a long
+source build needs no intervention. Other platforms can run the same commands
+as services.
 
-If the container's `GH_TOKEN` can read the private package, no other credentials
-are needed. Otherwise, add a GitHub token with `read:packages` access to the
-container's secret settings. You can use `COMFY_CI_CONTAINER_TOKEN` with
-`COMFY_CI_CONTAINER_USER` instead of `GH_TOKEN`; these dedicated values take
-precedence. Recreate the container after changing its environment or secrets.
+Store the GHCR token as a container secret: add `read:packages` to `GH_TOKEN`,
+or set `COMFY_CI_CONTAINER_TOKEN` to keep that scope off `GH_TOKEN`. Restart
+the container processes after changing secrets.
+
+Set `COMFYUI_FRONTEND_MODE=cloud` to skip Docker and the local backend and run
+the frontend against the Comfy test cloud for manual work. E2E needs local
+mode. The regular Playwright projects, `cloud` included, all run against the
+local backend.
 
 ### Node.js & Playwright
 
@@ -98,6 +125,10 @@ pnpm exec playwright install chromium webkit --with-deps
 
 ### Environment
 
+Start the dev server with `pnpm dev:test`. It removes the Vue dev overlay that
+blocks UI elements (`DISABLE_VUE_PLUGINS`) and loads the default workflow CI
+builds with (`VITE_USE_LEGACY_DEFAULT_GRAPH`).
+
 Create `.env` from the template and set the debugging keys:
 
 ```bash
@@ -105,9 +136,6 @@ cp .env_example .env
 ```
 
 ```bash
-# Remove Vue dev overlay that blocks UI elements
-DISABLE_VUE_PLUGINS=true
-
 # Test against dev server (recommended) or backend directly
 PLAYWRIGHT_TEST_URL=http://localhost:5173      # Dev server
 # PLAYWRIGHT_TEST_URL=http://localhost:8188     # Direct backend
@@ -162,7 +190,7 @@ in a Docker container with networking disabled:
 ```bash
 pnpm install --frozen-lockfile
 VITE_USE_LEGACY_DEFAULT_GRAPH=true pnpm build
-docker pull ghcr.io/comfy-org/comfyui-ci-container:0.0.22
+docker pull ghcr.io/comfy-org/comfyui-ci-container:0.0.28
 scripts/test-browser-offline.sh --project=chromium errorDialog.spec.ts
 ```
 
@@ -245,11 +273,48 @@ pnpm comfy-test list        # List available workflow assets
 
 ## Running Tests
 
+Start the backend and the dev server first (see [Setup](#setup)). Both checks
+must pass:
+
+```bash
+curl -sf localhost:8188/system_stats >/dev/null && echo backend ready
+curl -sf localhost:5173/ >/dev/null && echo frontend ready
+```
+
 ```bash
 pnpm test:browser:local                     # Run all E2E tests
 pnpm test:browser:local widget.spec.ts      # Run a specific file
 pnpm test:browser:local --ui                # Interactive UI mode (use for development)
 ```
+
+Run the first spec after the dev server starts with one worker, the
+`test:browser:local` default. Vite compiles the app on the first page load, and
+parallel workers against a cold server time out in `beforeEach` with
+`app never became ready`.
+
+To collect diagnostics for a local failure, rerun the affected spec with
+`--trace on`. Add `RECORD_VIDEO=true` when you also need video:
+
+```bash
+RECORD_VIDEO=true pnpm test:browser:local widget.spec.ts --trace on
+```
+
+For larger local runs, use a bundled test frontend instead of `dev:test`.
+Keep the backend running, stop the dev server, then run:
+
+```bash
+pnpm build:test
+pnpm preview:test
+```
+
+Run `pnpm test:browser:local` in another terminal. Use `--workers=4` to try
+parallel execution on a machine with spare CPU capacity; the default remains
+one worker. Rebuild after changing frontend code because preview has no HMR.
+
+The test bundle preserves development-only feature-flag overrides and the
+legacy default graph. A normal production build does not preserve those
+overrides. Keep `dev:test` for interactive edits and small test selections
+where a build would cost more than it saves. This mode does not change CI.
 
 **Use UI mode while developing.** It provides:
 
@@ -257,6 +322,21 @@ pnpm test:browser:local --ui                # Interactive UI mode (use for devel
 - **Step debugging** — step through a test line by line via the _Source_ tab
 - **Time travel** — click any step in _Actions_ to see browser state at that moment
 - **Console / Network / Attachments** tabs — logs, API calls, and snapshot diffs
+
+### Environment failures
+
+Rule these out before blaming the change under test:
+
+| Symptom                                                    | Cause                                                   |
+| ---------------------------------------------------------- | ------------------------------------------------------- |
+| `connect ECONNREFUSED` on 5173 or 8188                     | Backend or dev server not running yet                   |
+| `app never became ready` on the first run only             | Cold Vite with parallel workers; rerun                  |
+| Default-graph nodes such as `Load Checkpoint` are missing  | Dev server without `VITE_USE_LEGACY_DEFAULT_GRAPH=true` |
+| Backend-provided data differs on the source-built fallback | Fallback differs from the CI image; confirm in CI       |
+
+A failure that also reproduces on the merge base is not caused by the change. The
+dev server serves whatever the checkout holds, so rerun the spec after
+`git switch --detach "$(git merge-base HEAD origin/main)"`, then switch back.
 
 ### Slowing the browser down
 
@@ -347,8 +427,15 @@ guide covers the Playwright and ComfyUI mechanics.
 2. **Read the fixture code.** APIs live in `fixtures/` — read them directly
    instead of guessing.
 3. **Use premade JSON workflow assets** instead of building graphs
-   programmatically. Assets live in `assets/`; create new ones by copying
-   `assets/default.json` and editing the JSON.
+   programmatically. Assets live in `assets/`. Reuse an existing asset first:
+   when a test needs a node field, such as a widget value, `mode`, or
+   `flags`, or a top-level field, such as `id` or `extra`, to differ, pass the
+   change to `loadWorkflow` instead of copying the asset:
+   `loadWorkflow('nodes/webcam_capture', { nodes: { 1: { widgets_values: [...] } } })`
+   or `loadWorkflow('subgraphs/basic-subgraph', { workflow: { id } })`. Set
+   `fileName` when the test switches between tabs opened from the same asset.
+   Create a new asset, by copying `assets/default.json`, only when its graph
+   itself is the scenario.
 
 ### Before changing an existing test
 
@@ -411,8 +498,7 @@ Check for existing helpers before writing new ones — most needs are covered:
 
 - **ComfyPage** — main fixture; delegates to helper objects:
   `comfyPage.workflow.loadWorkflow()`, `comfyPage.settings.setSetting()`,
-  `comfyPage.command.executeCommand()`, `comfyPage.nodeOps.getNodeRefById()`,
-  `comfyPage.canvasOps.resetView()`.
+  `comfyPage.command.executeCommand()`, `comfyPage.nodeOps.getNodeRefById()`.
 - **Component page objects** — `fixtures/components/` (e.g. `Actionbar`,
   `ContextMenu`, `Templates`).
 - **Helper classes** — `fixtures/helpers/` (e.g. `CanvasHelper`,
@@ -472,6 +558,13 @@ properties in methods rather than rebuilding locators.
 - When multiple nodes share a title, disambiguate:
   `vueNodes.getNodeByTitle(name).nth(n)` — strict mode fails on ambiguous
   locators.
+- Never locate a toast by its copy with `getByText` or
+  `getByRole('alert' | 'status').filter({ hasText })`: `Toaster` repeats every
+  toast's text in live regions with those roles. Use
+  `comfyPage.toast.withText(text)` and its kind locators such as
+  `toastErrors`. Tests without `comfyPage` (`cloudAppFixture`, `agentTest`,
+  or a `page`-only test) destructure the `toast` fixture instead. Specs may
+  not construct a `ToastHelper`; lint allows only type imports.
 
 ### Node references over coordinates
 
@@ -584,7 +677,7 @@ the mocked bridge before the app starts.
 
 Organizational tags are used for manual `--grep` filtering (not project
 routing). Common ones in the suite: `@smoke`, `@slow`, `@screenshot`, `@canvas`,
-`@node`, `@widget`, `@subgraph`, `@ui`. Apply them so a test is
+`@node`, `@widget`, `@subgraph`, `@ui`, `@a11y`. Apply them so a test is
 findable by its area; add a project-routing tag whenever the test must run in
 that project.
 
@@ -718,14 +811,6 @@ Use a stateful mock when testing persistence across reloads.
 comfyPage.deleteFileAfterTest({ filename: 'image.png' })
 ```
 
-- Tests that manipulate canvas view should `resetView()` in `afterEach`:
-
-```typescript
-test.afterEach(async ({ comfyPage }) => {
-  await comfyPage.canvasOps.resetView()
-})
-```
-
 ### Debug helpers (remove before committing)
 
 `comfyPage.debugAddMarker(pos)`, `debugAttachScreenshot(testInfo, name)`,
@@ -762,6 +847,12 @@ DISTRIBUTION=cloud pnpm build:cloud
 PLAYWRIGHT_LOCAL=1 PLAYWRIGHT_TEST_URL=http://127.0.0.1:8188 DISTRIBUTION=cloud \
   pnpm exec playwright test browser_tests/tests/agent/ --project=cloud
 ```
+
+`vueDirectiveSentryAttribution.spec.ts` needs the same production build for the
+same kind of reason: the dev server initialises Sentry with `enabled: false`, so
+no envelope is ever sent and the spec waits out its timeout. CI runs it in the
+`mobile-safari` project against the `frontend-dist-cloud` artifact. Locally,
+build and serve as above and run it with `--project=mobile-safari`.
 
 When a fix changes how the agent's turns affect the app (graph edits,
 CRDT frames, panel state), add a conversation replay case alongside the
@@ -819,19 +910,19 @@ await page.route('**/api/object_info', (route) =>
 The three generated-type packages are auto-generated from OpenAPI specs — prefer
 them for any mock targeting their endpoints:
 
-| Endpoint category                                 | Type source                                                                        |
-| ------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| Cloud-only (hub, billing, workflows)              | `@comfyorg/ingest-types` (`packages/ingest-types`)                                 |
-| Registry (releases, nodes, publishers)            | `@comfyorg/registry-types` (`packages/registry-types`)                             |
-| Manager (queue tasks, packages)                   | `generatedManagerTypes.ts` (`src/workbench/extensions/manager/types/`)             |
-| Local webserver responses that differ from ingest | `src/platform/remote/comfyui/types.ts`                                             |
-| WebSocket messages and custom-node outputs        | `src/platform/remote/comfyui/execution/types.ts`                                   |
-| Frontend settings                                 | `src/platform/settings/types.ts`                                                   |
-| Node definitions                                  | `src/schemas/nodeDefSchema.ts`, `src/schemas/nodeDef/nodeDefSchemaV2.ts`           |
-| Templates                                         | `src/platform/workflow/templates/types/template.ts`                                |
-| Jobs API                                          | `src/platform/remote/comfyui/jobs/jobTypes.ts` (`zJobDetail`, `zJobsListResponse`) |
-| Workflow validation                               | `src/platform/workflow/validation/schemas/workflowSchema.ts`                       |
-| Asset metadata                                    | `src/types/metadataTypes.ts`                                                       |
+| Endpoint category                                 | Type source                                                                            |
+| ------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| Cloud-only (hub, billing, workflows)              | `@comfyorg/ingest-types` (`packages/ingest-types`)                                     |
+| Registry (releases, nodes, publishers)            | `@comfyorg/registry-types` (`packages/registry-types`)                                 |
+| Manager (queue tasks, packages)                   | `@comfyorg/api-client/generatedManagerTypes`                                           |
+| Local webserver responses that differ from ingest | `@comfyorg/api-client/types`                                                           |
+| WebSocket messages and custom-node outputs        | `@comfyorg/api-client/executionTypes`                                                  |
+| Frontend settings                                 | `@comfyorg/settings-core/types`                                                        |
+| Node definitions                                  | `@comfyorg/object-info-parser`, `@comfyorg/object-info-parser/schemas/nodeDefSchemaV2` |
+| Templates                                         | `@comfyorg/api-client/templateTypes`                                                   |
+| Jobs API                                          | `@comfyorg/api-client/jobTypes` (`zJobDetail`, `zJobsListResponse`)                    |
+| Workflow validation                               | `src/platform/workflow/validation/schemas/workflowSchema.ts`                           |
+| Asset metadata                                    | `src/types/metadataTypes.ts`                                                           |
 
 ```typescript
 // ✅ Import the type and annotate mock data
@@ -898,7 +989,7 @@ Before merging a flaky-test fix, confirm all of these:
   `toHaveText`, `toHaveCount`, `toHaveClass`).
 - **Single async value** → `expect.poll(() => asyncFn()).toBe(expected)`.
 - **Multiple assertions that must settle together** → `expect(async () => {
-... }).toPass()`.
+  ... }).toPass()`.
 - Never make immediate assertions right after async UI mutations, settings
   writes, clipboard writes, or graph updates.
 - Never use `waitForTimeout()` to hide a race — it is always wrong.
@@ -975,12 +1066,34 @@ Screenshot expectations are **platform-specific** (font rendering). We maintain
 - Prefer functional assertions; use screenshots only when appearance is the
   behavior under test.
 
+- Capture only the area under test with `@e2e/fixtures/utils/screenshotRegion`.
+  Spec files may not call `toHaveScreenshot` directly; lint enforces this.
+
 ```typescript
-await expect(comfyPage.canvas).toHaveScreenshot('state.png')
-// Mask dynamic content (timestamps, versions) to avoid flakes:
-await expect(comfyPage.canvas).toHaveScreenshot('page.png', {
-  mask: [page.locator('.timestamp')]
-})
+import {
+  expectElementScreenshot,
+  expectRegionScreenshot,
+  graphItems,
+  screenshotRegion
+} from '@e2e/fixtures/utils/screenshotRegion'
+
+// One element's box
+await expectElementScreenshot(dialog, 'dialog.png')
+
+// The area enclosing several targets plus padding: locators, node
+// references, graph items, page positions, or rectangles
+await expectRegionScreenshot(
+  comfyPage.page,
+  [ksamplerNode, graphItems(comfyPage.page, 'selection')],
+  'selection.png',
+  { padding: 40, mask: [page.locator('.timestamp')] }
+)
+
+// One area measured once and compared before and after an action
+const region = await screenshotRegion(comfyPage.page, nodes)
+await region.expectScreenshot('before.png')
+await doSomething()
+await region.expectScreenshot('after.png')
 ```
 
 ### Working with screenshots locally
@@ -994,8 +1107,8 @@ export default defineConfig({
 })
 ```
 
-`grep` matches the test title and its tags, not the test body — a call to
-`toHaveScreenshot()` alone won't be detected. Tag every screenshot test
+`grep` matches the test title and its tags, not the test body — a screenshot
+assertion alone won't be detected. Tag every screenshot test
 `@screenshot` (or put "screenshot" in its title) for this filter to exclude it.
 
 Or generate local baselines for comparison (do not commit them). If you added
@@ -1008,9 +1121,27 @@ pnpm test:browser:local --update-snapshots
 
 ### Creating new baselines in CI
 
-1. Write the test with `toHaveScreenshot('filename.png')`.
-2. Open the PR and add the **`New Browser Test Expectations`** label.
-3. CI generates and commits the Linux baselines.
+1. Write the test with one of the screenshot assertions above.
+2. Add the **`New Browser Test Expectations`** label, comment
+   `/update-playwright`, or tick the "Update Playwright expectations"
+   checkbox in the Playwright section of the PR report comment.
+
+The workflow waits for the PR's `CI: Tests E2E` run and commits the actual
+image of every screenshot assertion that failed there (stale or missing
+baseline) without rerunning Playwright. A flaky screenshot that passed on
+retry is never committed, and a run with no failed screenshot assertions
+commits nothing. The workflow fails and says why when there is no run for
+the head commit, the run takes over 45 minutes, a Playwright job did not
+finish, no Playwright job ran, or a Playwright job left no
+`snapshot-updates-*` artifact (for example after a crash or once the
+artifacts expire after 7 days). Push to the branch for a new E2E run and
+trigger the update again, or comment `/update-playwright full` to rerun the
+`@screenshot` suite with `--update-snapshots`.
+
+A failed screenshot assertion ends its test, so only the first stale
+screenshot of each test is committed and the next E2E run fails on the
+following one. Comment `/update-playwright full` when a change affects
+several screenshots in one test.
 
 Fork PRs can't auto-commit screenshots — a maintainer commits them for you.
 
@@ -1021,6 +1152,72 @@ the whole graph shifted), the baseline is not stale: pin the pan/zoom in the
 test before the shot rather than regenerating. Regenerate only when the
 product changed, and open the diff to confirm the change is the one you made
 rather than a viewport shift.
+
+## Accessibility Testing
+
+`tests/accessibility/` scans app surfaces with
+[axe](https://github.com/dequelabs/axe-core) through `@axe-core/playwright`,
+following Playwright's
+[accessibility testing guide](https://playwright.dev/docs/accessibility-testing).
+The specs carry the `@a11y` tag and run in the regular projects, so CI gates on
+them.
+
+Merge `accessibilityFixture` into the test and scan after the surface is ready:
+
+```typescript
+import { mergeTests } from '@playwright/test'
+
+import { accessibilityFixture } from '@e2e/fixtures/accessibilityFixture'
+import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
+
+const test = mergeTests(comfyPageFixture, accessibilityFixture)
+
+test(
+  'settings dialog',
+  { tag: '@a11y' },
+  async ({ comfyPage, accessibility }) => {
+    await comfyPage.settingDialog.open()
+
+    await accessibility.expectOnlyKnownViolations({})
+  }
+)
+```
+
+- **Wait before scanning.** axe reads the DOM as it is when the scan starts.
+  Open the surface through its page object and assert the state it must reach,
+  as for a screenshot. The helper itself waits for running animations and
+  transitions to end, because axe measures the contrast of a surface that is
+  still fading in from its half-transparent colors.
+- **Rules.** The scan runs axe's WCAG 2.0, 2.1, and 2.2 A/AA rules and its
+  best-practice rules against the whole page, so it also reports what a
+  surface does to the page behind it, such as a second `main` landmark.
+- **Known violations.** `expectOnlyKnownViolations({ 'color-contrast': 2 })`
+  allows that axe rule ID to fail on exactly two elements of the surface and
+  fails on any other rule. A rule that fails on more elements fails the scan,
+  so a new element cannot hide behind a known one. A rule that fails on fewer
+  also fails, so a fix must lower its count, or delete the entry at zero, and
+  a later regression cannot hide behind a stale one. Never add a rule ID or
+  raise a count to make a new failure pass; fix the component. The record
+  counts elements instead of naming them, because axe's generated selectors
+  are utility-class chains that change with unrelated styling edits.
+- **Narrower scans.** Pass a builder as the second argument to scan one region
+  or tune rules: `accessibility.makeAxeBuilder().include('[role="dialog"]')`.
+  `exclude()` drops an element and all its descendants from every rule; prefer
+  a known rule ID.
+- **Reading a failure.** The assertion lists each rule that fails on more
+  elements than its known count, with its help URL, the known count, and every
+  failing element; the count cannot say which of them is new. The
+  `axe-violations` attachment on the test holds every violation axe reported,
+  known ones included.
+- **Adding a surface.** Add a test to the spec in `tests/accessibility/` that
+  matches the surface, or integrate a scan into an existing feature test with
+  the same fixture.
+
+An automated scan finds only part of the problems. axe cannot see nodes drawn
+on the LiteGraph canvas, and it does not check keyboard operation, focus order,
+or screen-reader output. Cover those with behavioral tests and manual checks,
+for example with
+[Accessibility Insights for Web](https://accessibilityinsights.io/docs/web/overview/).
 
 ## Debugging in CI
 
@@ -1047,8 +1244,8 @@ the video inline per test — to the same `comfyui-playwright-chromium`
 Cloudflare Pages project, on its own branch. The link is posted alongside
 the other browser report links in the PR comment. It's scoped to added
 files only — the existing suite always runs without video — to keep CI cost
-and time bounded. Recording is opt-in via `RECORD_VIDEO=true` (set only by
-that CI job; see `playwright.config.ts`) and slowed down with `SLOW_MO` so
+and time bounded. The job enables recording via `RECORD_VIDEO=true` and
+slows actions with `SLOW_MO` so
 the result is legible for reviewers. Files containing no tests eligible for
 the `chromium` project, such as `@perf`-only specs, are skipped with an
 explanation in the workflow summary. Newly added `@audit` tests fail this

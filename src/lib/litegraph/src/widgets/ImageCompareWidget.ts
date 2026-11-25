@@ -1,4 +1,4 @@
-import type { IImageCompareWidget } from '../types/widgets'
+import type { IImageCompareWidget } from '@comfyorg/graph-model/widgets'
 import { VueOnlyWidget } from './VueOnlyWidget'
 
 /**

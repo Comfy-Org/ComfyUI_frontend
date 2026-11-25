@@ -1,11 +1,13 @@
+import type {
+  Vector3,
+  Vector3 as Vec3
+} from '@comfyorg/shared-frontend-utils/geometry'
 interface Preview3dCameraStatePayload {
-  position: { x: number; y: number; z: number }
-  target: { x: number; y: number; z: number }
+  position: Vector3
+  target: Vector3
   zoom?: number
   cameraType?: string
 }
-
-type Vec3 = { x: number; y: number; z: number }
 
 function isVec3(v: unknown): v is Vec3 {
   if (v === null || typeof v !== 'object') return false

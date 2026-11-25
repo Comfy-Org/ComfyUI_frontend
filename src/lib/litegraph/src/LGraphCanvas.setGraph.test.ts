@@ -10,8 +10,8 @@ import {
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { selectableKeyOf } from '@/renderer/core/canvas/litegraph/selectionAdapter'
 import { useSelectionStore } from '@/core/selection/selectionStore'
-import { graphScopeOf } from '@/types/graphScopeId'
-import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 
 vi.mock(import('@/renderer/core/layout/store/layoutStore'))
 
@@ -97,6 +97,27 @@ describe('LGraphCanvas graph replacement', () => {
       expect(useSelectionStore().selectedKeys(graphScopeOf(graph))).toEqual([])
     }
   )
+
+  it.for([
+    { name: 'another graph', target: () => new LGraph() },
+    { name: 'the same graph', target: (graph: LGraph) => graph }
+  ])('stops a running camera animation when set to $name', ({ target }) => {
+    let pendingFrame: FrameRequestCallback | undefined
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+      pendingFrame = callback
+      return 1
+    })
+    vi.stubGlobal('cancelAnimationFrame', () => {
+      pendingFrame = undefined
+    })
+    const { canvas, graph } = createCanvasWithSelectedNode()
+    canvas.animateToBounds([3000, 3000, 100, 100], { zoom: 0 })
+
+    canvas.setGraph(target(graph))
+    pendingFrame?.(performance.now() + 1000)
+
+    expect([...canvas.ds.offset]).toEqual([0, 0])
+  })
 
   it('records the opened subgraph on the canvas', () => {
     const { canvas, graph } = createCanvasWithSelectedNode()

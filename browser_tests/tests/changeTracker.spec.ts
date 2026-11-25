@@ -5,7 +5,6 @@ import {
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
-import { TestIds } from '@e2e/fixtures/selectors'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 
 type ChangeTrackerDebugState = {
@@ -22,7 +21,6 @@ async function getChangeTrackerDebugState(comfyPage: ComfyPage) {
   return await comfyPage.page.evaluate(() => {
     type ChangeTrackerClassLike = {
       graphEqual: (left: unknown, right: unknown) => boolean
-      isLoadingGraph: boolean
     }
 
     type ChangeTrackerLike = {
@@ -30,6 +28,7 @@ async function getChangeTrackerDebugState(comfyPage: ComfyPage) {
       activeState: unknown
       changeCount: number
       constructor: ChangeTrackerClassLike
+      isLoadingGraph: boolean
       redoQueue: unknown[]
       undoQueue: unknown[]
     }
@@ -56,7 +55,7 @@ async function getChangeTrackerDebugState(comfyPage: ComfyPage) {
         tracker.activeState,
         currentState
       ),
-      isLoadingGraph: tracker.constructor.isLoadingGraph,
+      isLoadingGraph: tracker.isLoadingGraph,
       isModified: workflow.isModified,
       redoQueueSize: tracker.redoQueue.length,
       restoringState: tracker._restoringState,
@@ -495,13 +494,15 @@ test.describe('Change Tracker', { tag: '@workflow' }, () => {
       await comfyPage.settings.setSetting('Comfy.Canvas.SelectionToolbox', true)
 
       const node = await comfyPage.vueNodes.getFixtureByTitle('Empty Latent')
-      const width = comfyPage.vueNodes.getWidgetByName('Empty Latent', 'width')
-      const { input } = comfyPage.vueNodes.getInputNumberControls(width)
+      const input = comfyPage.vueNodes.getWidgetByName('Empty Latent', 'width')
 
       await input.fill('40')
       await node.title.click()
-      await comfyPage.page
-        .getByTestId(TestIds.selectionToolbox.convertSubgraph)
+      await comfyPage.selectionToolbox
+        .getByRole('button', {
+          name: 'Convert Selection to Subgraph',
+          exact: true
+        })
         .click()
       await expect(input).toBeHidden()
 

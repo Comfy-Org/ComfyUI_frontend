@@ -1,4 +1,6 @@
 import { TestRunner, assert, vi } from 'vitest'
+import type { ShallowRef } from 'vue'
+import { shallowRef } from 'vue'
 
 import { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
 import { DragAndScale } from '@/lib/litegraph/src/DragAndScale'
@@ -12,6 +14,7 @@ import type {
 type Canvas = Pick<
   RealComfyApp['canvas'],
   | 'canvas'
+  | 'dpr'
   | 'ds'
   | 'graph_mouse'
   | 'graph'
@@ -75,10 +78,13 @@ const actions = vi.mockObject<
   Pick<
     RealComfyApp,
     | 'clean'
+    | 'fetchNodeDefs'
+    | 'getNodeDefs'
     | 'getPreviewFormatParam'
     | 'getRandParam'
     | 'graphToPrompt'
     | 'handleFile'
+    | 'hasPendingCamera'
     | 'loadGraphData'
     | 'openClipspace'
     | 'queuePrompt'
@@ -86,6 +92,7 @@ const actions = vi.mockObject<
     | 'refreshMissingModels'
     | 'registerExtension'
     | 'registerNodeDef'
+    | 'reloadNodeDefs'
     | 'setup'
     | 'showErrorOnFileLoad'
   >
@@ -102,16 +109,28 @@ const actions = vi.mockObject<
       assert.fail('Configure app.graphToPrompt for this test')
     },
     registerExtension() {},
+    async getNodeDefs() {
+      return {}
+    },
+    async fetchNodeDefs() {
+      return { ok: true, defs: {} }
+    },
     async registerNodeDef() {},
+    async reloadNodeDefs() {
+      return true
+    },
     async refreshMissingModels() {
       assert.fail('Configure app.refreshMissingModels for this test')
     },
-    async refreshComboInNodes() {},
+    async refreshComboInNodes() {
+      return true
+    },
     clean() {},
     openClipspace() {},
     getPreviewFormatParam: () => '',
     getRandParam: () => '',
     async handleFile() {},
+    hasPendingCamera: () => false,
     showErrorOnFileLoad() {}
   },
   { spy: true }
@@ -145,14 +164,16 @@ const uiActions: Pick<RealComfyApp['ui'], 'restoreMenuPosition'> = {
 }
 
 type AppState = {
-  -readonly [K in
-    | 'configuringGraph'
-    | 'lastExecutionError'
-    | 'nodeOutputs'
-    | 'nodePreviewImages'
-    | 'vueAppReady']: RealComfyApp[K]
+  -readonly [
+    K in
+      | 'configuringGraph'
+      | 'lastExecutionError'
+      | 'nodeOutputs'
+      | 'nodePreviewImages'
+      | 'vueAppReady'
+  ]: RealComfyApp[K]
 } & {
-  rootGraph: RealComfyApp['rootGraphOrUndefined']
+  rootGraph: ShallowRef<RealComfyApp['rootGraphOrUndefined']>
   canvas: Canvas
   api: Pick<RealComfyApp['api'], 'clientId'> & typeof apiActions
   ui: Pick<
@@ -166,7 +187,8 @@ type AppState = {
 }
 
 function createState(): AppState {
-  const rootGraph = new LGraph()
+  const graph = new LGraph()
+  const rootGraph = shallowRef<RealComfyApp['rootGraphOrUndefined']>(graph)
   const element = document.createElement('canvas')
   return {
     rootGraph,
@@ -188,9 +210,10 @@ function createState(): AppState {
     clipspace: { clipspace: null, clipspace_return_node: null },
     canvas: {
       ...canvasActions,
-      graph: rootGraph,
+      graph,
       ds: new DragAndScale(element),
       canvas: element,
+      dpr: 1,
       selected_nodes: {},
       selectedItems: new Set(),
       subgraph: undefined,
@@ -227,29 +250,38 @@ export const app = {
   set canvas(value: Canvas) {
     state().canvas = value
   },
+  get canvasOrUndefined() {
+    return state().canvas
+  },
   get rootGraph() {
-    const graph = state().rootGraph
+    const graph = state().rootGraph.value
     assert.exists(graph, 'The test has not initialized a root graph')
     return graph
   },
   set rootGraph(value: RealComfyApp['rootGraph']) {
-    state().rootGraph = value
+    state().rootGraph.value = value
   },
   get rootGraphOrUndefined() {
-    return state().rootGraph
+    return state().rootGraph.value
   },
   set rootGraphOrUndefined(value: RealComfyApp['rootGraphOrUndefined']) {
-    state().rootGraph = value
+    state().rootGraph.value = value
   },
   get graph(): RealComfyApp['rootGraphOrUndefined'] {
-    return state().rootGraph
+    return state().rootGraph.value
   },
   set graph(value: RealComfyApp['graph']) {
-    state().rootGraph = value
+    state().rootGraph.value = value
   },
   get isGraphReady() {
-    return state().rootGraph !== undefined
+    return state().rootGraph.value !== undefined
   },
+  createRootGraph: vi.fn(() => new LGraph()),
+  enqueueGraphLoad: vi.fn(<T>(operation: () => Promise<T>) => operation()),
+  activateRootGraph: vi.fn((graph: LGraph) => {
+    state().rootGraph.value = graph
+    state().canvas.setGraph(graph)
+  }),
   get nodeOutputs() {
     return state().nodeOutputs
   },

@@ -3,7 +3,7 @@ import { basename, resolve } from 'node:path'
 
 import type { Page } from '@playwright/test'
 
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import type { CuratedOutputHashes } from '@e2e/fixtures/customNode/outputHashes'
 import {
   comfyExpect as expect,
@@ -16,7 +16,7 @@ import {
 } from '@e2e/fixtures/utils/customNodeSuite'
 import { LocalDesktopTarget } from '@e2e/fixtures/customNode/ComfyTarget'
 import {
-  customExtensionStartupErrors,
+  customNodeStartupErrors,
   isForeignExecutionNoise,
   staleRequiredStartupErrorRulesForPacks,
   unallowlistedGlobalExtensionErrorsForPacks,
@@ -99,7 +99,7 @@ const installedManifestPacks = manifestEntries.map((entry) => entry.pack)
 test('Pack startup/load: custom extensions import without unallowlisted errors @custom-nodes', async ({
   comfyPage
 }) => {
-  const startupErrors = customExtensionStartupErrors(
+  const startupErrors = customNodeStartupErrors(
     startupConsoleErrors(comfyPage.page)
   )
   expect(
@@ -158,7 +158,7 @@ for (const entry of manifestEntries) {
             const registered = await comfyPage.page.evaluate(() =>
               window.app!.extensions.map((extension) => extension.name)
             )
-            const servedExtensionPaths =
+            const servedCustomNodePaths =
               webDirectory !== undefined ||
               ownedAutogrowCases.some(
                 ({ extensionName }) =>
@@ -175,7 +175,7 @@ for (const entry of manifestEntries) {
               ).toContain(name)
             if (webDirectory !== undefined) {
               const servesAssets = servesFrontendAssetsForPack(
-                servedExtensionPaths,
+                servedCustomNodePaths,
                 entry.pack
               )
               if (entry.pack in FRONTEND_ASSET_EXCLUSIONS) {
@@ -198,7 +198,7 @@ for (const entry of manifestEntries) {
                 expectedExtensions: expectedExtensionsFor(entry)
               },
               registered,
-              servedExtensionPaths
+              servedCustomNodePaths
             )
             expect(
               staleAutogrowApplicability,
@@ -216,9 +216,7 @@ for (const entry of manifestEntries) {
           }
           await comfyPage.nextFrame()
 
-          await expect
-            .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-            .toBe(entry.expectedNodes.length)
+          await comfyPage.expectNodeCount(entry.expectedNodes.length)
           // Vue Nodes 2.0 mounts each node as a [data-node-id] element; assert
           // the pack's own nodes rendered, not just any node count.
           if (vueNodesEnabled)
@@ -473,13 +471,8 @@ test('attribution self-check: a foreign-prompt terminal event cannot fail this r
     'attribution self-check requires core PrimitiveInt and PreviewAny'
   ).toEqual([])
   await comfyPage.workflow.loadGraphData(
-    readWorkflow(assetPath('customNodes/core_primitive_preview_run.json'))
+    readWorkflow(assetPath('customNodes/core_smoke.json'))
   )
-  // Once the run's event tap starts filling, inject ONE terminal error under
-  // a prompt id this page never queued. The positive prompt-id filter must
-  // discard it; the pre-capture harness let the never-seen id through the
-  // seen-set and misclassified the run as EXECUTION_ERROR. This is the
-  // discriminating guard for the foreign-attribution bug class.
   await comfyPage.page.evaluate(() => {
     const w = window as unknown as {
       __cnEvents?: object[]
@@ -504,11 +497,6 @@ test('attribution self-check: a foreign-prompt terminal event cannot fail this r
     ]),
     timeoutMs: 15000
   })
-  // Prove the stimulus actually landed before trusting the PASS: without
-  // this, a run that finishes before the injector's next tick never injects
-  // the foreign event, and PASS then holds for the wrong reason (it would
-  // hold identically against a harness with the prompt-id filter removed).
-  // Clearing a not-yet-fired timer stops a post-run push from faking it.
   const injectionLanded = await comfyPage.page.evaluate(() => {
     const w = window as unknown as {
       __cnEvents?: { prompt_id?: string }[]

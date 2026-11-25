@@ -1,4 +1,6 @@
+import { writeClipboardText } from '@/base/common/clipboard'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 /**
  * Helpers for the shareable per-invite links (DES-1010).
@@ -27,30 +29,14 @@ export function formatInviteLinksForCopy(
   return rows.map(({ email, url }) => `${email}\t${url}`).join('\n')
 }
 
-/**
- * Copies text to the clipboard without surfacing a toast — invite-link copy
- * affordances give inline feedback (the button label swaps to "Copied")
- * instead. Returns whether the copy succeeded so callers can skip the
- * feedback on failure.
- */
+/** Copies text without user feedback and reports invite-copy failures. */
 export async function copyTextSilently(text: string): Promise<boolean> {
-  try {
-    await navigator.clipboard.writeText(text)
-    return true
-  } catch {
-    const el = document.createElement('textarea')
-    el.value = text
-    el.style.position = 'fixed'
-    el.style.opacity = '0'
-    document.body.appendChild(el)
-    try {
-      el.select()
-      return document.execCommand('copy')
-    } catch (error) {
-      console.error('Failed to copy invite link to clipboard', error)
-      return false
-    } finally {
-      el.remove()
-    }
+  const copied = await writeClipboardText(text)
+  if (!copied) {
+    reportError(new Error('Clipboard copy reported failure'), {
+      errorType: 'error_copying_invite_link',
+      surface: 'workspace'
+    })
   }
+  return copied
 }

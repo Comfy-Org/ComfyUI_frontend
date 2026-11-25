@@ -1,12 +1,7 @@
 name: 'CI: Fallow'
 
 on:
-  pull_request:
-  merge_group:
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  workflow_call:
 
 permissions:
   contents: read
@@ -25,6 +20,7 @@ jobs:
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
+          filter: blob:none
           persist-credentials: false
 
       - name: Resolve audit base
@@ -38,12 +34,15 @@ jobs:
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
 
+      - name: Build design-system consumer prerequisites
+        run: pnpm --filter @comfyorg/design-system build
+
       - name: Audit new findings
         id: audit
-        uses: fallow-rs/fallow@c2da9fcae5388226a87e986b1812f9c872d288c6 # v3.24.1
+        uses: fallow-rs/fallow@b6a3e048dc882bdf11c8269c73167223b9e32774 # v3.43.2
         with:
           command: audit
-          version: '3.24.1'
+          version: '3.43.2'
           format: json
           branded-token: false
           changed-since: ${{ steps.audit-base.outputs.sha }}
@@ -64,7 +63,7 @@ jobs:
           # renderer already makes for an error envelope.
           completed=true
           if [ -s "$RESULTS" ]; then
-            npx tsx scripts/cicd/fallow-findings.ts "$RESULTS" > fallow-findings.md
+            npx tsx tools/ci/src/cicd/fallow-findings.ts "$RESULTS" > fallow-findings.md
             if grep -q '"error"[[:space:]]*:[[:space:]]*true' "$RESULTS"; then
               completed=false
             fi

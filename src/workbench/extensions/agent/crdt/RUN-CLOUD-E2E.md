@@ -37,6 +37,13 @@ flag on; it does not bypass consent.
   If consent cannot load or save, resolve the authentication/API error and
   retry before checking the follower. Skip leaves Agent closed. Consent from
   another user or workspace does not satisfy the current scope.
+- After consent, complete the three-card Agent tour for the panel, composer
+  and chat history. **Next** advances. **Done**, or Escape on the last card,
+  finishes the tour; **Skip**, or Escape on an earlier card, skips it. The last
+  card has no **Skip**. Either way the tour is marked complete for the current
+  user and workspace, in localStorage and in the user settings. The tour
+  waits while App Mode or another onboarding tour is active, then appears once
+  you are back in graph mode with no other onboarding tour running.
 - Open the CRDT debug instrument (`?crdtDebug=1`, rendered above the composer via
   `CrdtDevPanel`); its status row shows connected + the subscribed workflow id.
 - Send a message in the agent chat; as the agent edits, `updatesApplied` increments and

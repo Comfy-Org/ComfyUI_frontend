@@ -51,6 +51,12 @@ export interface DraftPayloadV2 {
   data: string
   /** Last workflow content write timestamp. */
   updatedAt: number
+  lineage?: DraftLineage
+}
+
+export interface DraftLineage {
+  workflowId: string
+  lineageSeq: number
 }
 
 /**
@@ -81,7 +87,7 @@ export interface OpenPathsPointer {
   activeIndex: number
 }
 
-/** Maximum number of drafts to keep per workspace */
+/** Default limit for explicitly bounded cache operations. */
 export const MAX_DRAFTS = 32
 
 export const PERSIST_DEBOUNCE_MS = 512

@@ -27,9 +27,8 @@ describe('useNodePaste', () => {
       allow_batch: true
     })
 
-    const result = node.pasteFiles?.([keep, skip])
+    node.pasteFiles?.([keep, skip])
 
-    expect(result).toBe(true)
     expect(onPaste).toHaveBeenCalledWith([keep])
   })
 
@@ -42,10 +41,24 @@ describe('useNodePaste', () => {
       fileFilter: () => false
     })
 
-    const result = node.pasteFiles?.([createFile('ignored.png')])
+    node.pasteFiles?.([createFile('ignored.png')])
 
-    expect(result).toBe(false)
     expect(onPaste).not.toHaveBeenCalled()
+  })
+
+  it('pasteFiles claims rejected files when a rejection handler is present', () => {
+    const onReject = vi.fn()
+    const file = createFile('extensionless', 'video/mp4')
+    const node = createNode()
+
+    useNodePaste(node, {
+      onPaste: vi.fn().mockResolvedValue('ok'),
+      fileFilter: () => false,
+      onReject
+    })
+
+    node.pasteFiles?.([file])
+    expect(onReject).toHaveBeenCalledWith([file])
   })
 
   it('pasteFiles limits to first file when allow_batch is false', () => {
@@ -56,9 +69,8 @@ describe('useNodePaste', () => {
 
     useNodePaste(node, { onPaste, allow_batch: false })
 
-    const result = node.pasteFiles?.([first, second])
+    node.pasteFiles?.([first, second])
 
-    expect(result).toBe(true)
     expect(onPaste).toHaveBeenCalledWith([first])
   })
 
@@ -70,9 +82,8 @@ describe('useNodePaste', () => {
 
     useNodePaste(node, { onPaste, allow_batch: true })
 
-    const result = node.pasteFiles?.([first, second])
+    node.pasteFiles?.([first, second])
 
-    expect(result).toBe(true)
     expect(onPaste).toHaveBeenCalledWith([first, second])
   })
 

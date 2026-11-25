@@ -34,6 +34,7 @@ const PLACEMENT: Record<
   left: 'left-start',
   right: 'right-start',
   leftCenter: 'left',
+  rightCenter: 'right',
   bottom: 'bottom'
 }
 
@@ -57,7 +58,7 @@ function floatingMiddleware(
   const list: Middleware[] = [offset(step?.cursor ? CURSOR_GAP : CARD_GAP)]
   if (!step?.placement || step.placement === 'auto') list.push(flip())
   // shift only guards the main axis by default; crossAxis keeps vertically-
-  // centred placements (leftCenter) on-screen too.
+  // centred placements (leftCenter, rightCenter) on-screen too.
   list.push(
     shift({
       crossAxis: true,
@@ -127,6 +128,7 @@ export function useCoachmarkTarget(
 
   const { floatingStyles, middlewareData, isPositioned, placement, update } =
     useFloating(reference, cardRef, {
+      open: () => !!cardRef.value,
       strategy: 'fixed',
       transform: false,
       placement: () => floatingPlacement(toValue(step)),
@@ -168,6 +170,7 @@ export function useCoachmarkTarget(
   const hasTarget = computed(() => !!anchor.value)
 
   return {
+    anchor,
     hasTarget,
     targetRect,
     targetMoves,

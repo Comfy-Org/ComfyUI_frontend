@@ -1,10 +1,11 @@
-import type { LGraph } from '../LGraph'
+import type { LGraph } from '@comfyorg/graph-model/entityRegistry'
+
 import {
   clearGraphSelection,
   updateGraphSelection
 } from '@/renderer/core/canvas/litegraph/selectionAdapter'
 
-import type { Positionable } from '../interfaces'
+import type { Positionable } from '@comfyorg/graph-model/interfaces'
 
 /**
  * Snapshot of the selection store exposed through the legacy
@@ -22,18 +23,15 @@ export class SelectedItemsView extends Set<Positionable> {
     for (const item of items) super.add(item)
   }
 
-  // fallow-ignore-next-line unused-class-member
   override add(item: Positionable): this {
     if (this.graph) updateGraphSelection(this.graph, item, true)
     return this
   }
 
-  // fallow-ignore-next-line unused-class-member
   override delete(item: Positionable): boolean {
     return this.graph ? updateGraphSelection(this.graph, item, false) : false
   }
 
-  // fallow-ignore-next-line unused-class-member
   override clear(): void {
     clearGraphSelection(this.graph)
   }

@@ -81,8 +81,32 @@ route change creates a new view during startup, such as a login redirect,
 ### The aggregate action still earns its place
 
 `app:bootstrap_complete` carries `total_ms`, `outcome`, `phase_count`,
-`phases`, and `pending`. Custom timings cannot express `outcome` or `pending`,
-and per-phase events cannot be percentiled without a fifteen-row join. This row
+`untraced_ms`, `hidden_ms`, `visible_ms`, `phases`, `pending`,
+`failure_phase`, and `failure_error`. The two failure fields appear only when
+`outcome` is `failed`. `failure_phase` is the stable phase name (or `untraced`).
+`failure_error` is optional when no rejection reason is supplied. For an Error,
+it is the checked `Error.name` property when that name is `AggregateError`,
+`DOMException`, `Error`, `EvalError`, `RangeError`, `ReferenceError`,
+`SyntaxError`, `TypeError`, `UnauthorizedError`, or `URIError`; otherwise it is
+`Error`, or `uninspectable` when the Error itself cannot be inspected. The
+reported name does not imply the value's constructor class. For a non-Error
+value, it is `bigint`, `boolean`, `function`, `number`, `object`, `string`,
+`symbol`, or `undefined`, or `uninspectable` when the value cannot be classified.
+Error messages never enter the RUM payload because they can contain user data.
+
+`visible_ms` is `total_ms - hidden_ms`. Browsers throttle background tabs on
+purpose, so most slow `total_ms` rows end in a hidden tab (364 of 456 over
+45 s in 2026-11-16..18 stable). Latency alerts should read `visible_ms` rather
+than drop rows with hidden time: a user who waits and then switches tabs
+still counts for the time they watched. Known bias: hidden time from before
+the tracer is constructed is only seen where the browser buffers
+`visibility-state` entries (Chromium). On Firefox and Safari the tracer
+only knows the state at construction, so the error goes both ways: a tab
+hidden during the initial download and shown again before the tracer starts
+counts that time as visible (`visible_ms` reads high), and a tab that was
+visible first but is hidden at construction counts all earlier time as
+hidden (`visible_ms` reads low). Split by browser when that matters. Custom timings cannot express `outcome` or `pending`,
+and per-phase events cannot be percentiled without a multi-row join. This row
 is what makes "how many users hit a slow load" a single query.
 
 **Cardinality is one to two rows per startup attempt, not per Datadog

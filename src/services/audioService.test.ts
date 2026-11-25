@@ -1,9 +1,8 @@
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { api } from '@/scripts/api'
 import { useAudioService } from '@/services/audioService'
-import type { AudioRecordingError } from '@/services/audioService'
 
 const mockRegister = vi.hoisted(() => vi.fn())
 const mockConnect = vi.hoisted(() => vi.fn())
@@ -27,8 +26,6 @@ describe('useAudioService', () => {
   }
 
   beforeEach(() => {
-    vi.spyOn(console, 'error').mockImplementation(() => {})
-
     mockConnect.mockResolvedValue('mock-encoder')
     mockRegister.mockResolvedValue(undefined)
     vi.mocked(api.fetchApi).mockResolvedValue(
@@ -38,48 +35,63 @@ describe('useAudioService', () => {
     service = useAudioService()
   })
 
-  describe('initialization', () => {
-    it('should initialize service with required methods', () => {
-      expect(service).toHaveProperty('registerWavEncoder')
-      expect(service).toHaveProperty('stopAllTracks')
-      expect(service).toHaveProperty('convertBlobToFileAndSubmit')
-      expect(typeof service.registerWavEncoder).toBe('function')
-      expect(typeof service.stopAllTracks).toBe('function')
-      expect(typeof service.convertBlobToFileAndSubmit).toBe('function')
-    })
-  })
-
   describe('registerWavEncoder', () => {
-    it('should register WAV encoder successfully on first call', async () => {
-      await service.registerWavEncoder()
+    let registerWavEncoder: ReturnType<
+      typeof useAudioService
+    >['registerWavEncoder']
+
+    beforeEach(async () => {
+      vi.resetModules()
+      const freshModule = await import('@/services/audioService')
+      registerWavEncoder = freshModule.useAudioService().registerWavEncoder
+    })
+
+    it('registers the WAV encoder on the first call and reuses it afterwards', async () => {
+      await registerWavEncoder()
 
       expect(mockConnect).toHaveBeenCalledTimes(1)
-      expect(mockRegister).toHaveBeenCalledWith('mock-encoder')
+      expect(mockRegister).toHaveBeenCalledExactlyOnceWith('mock-encoder')
+
+      await registerWavEncoder()
+
+      expect(mockConnect).toHaveBeenCalledTimes(1)
+      expect(mockRegister).toHaveBeenCalledTimes(1)
     })
 
-    it('should not register again if already registered', async () => {
-      await service.registerWavEncoder()
-
-      mockConnect.mockClear()
-      mockRegister.mockClear()
-
-      await service.registerWavEncoder()
-
-      expect(mockConnect).not.toHaveBeenCalled()
-      expect(mockRegister).not.toHaveBeenCalled()
-    })
-
-    it('should handle "already an encoder stored" error gracefully', async () => {
-      const error = new Error(
-        'There is already an encoder stored which handles exactly the same mime types.'
+    it('treats an encoder that is already stored as registered', async () => {
+      mockRegister.mockRejectedValueOnce(
+        new Error(
+          'There is already an encoder stored which handles exactly the same mime types.'
+        )
       )
-      mockRegister.mockRejectedValueOnce(error)
 
-      await service.registerWavEncoder()
+      await registerWavEncoder()
 
-      expect(mockConnect).toHaveBeenCalledTimes(0)
-      expect(mockRegister).toHaveBeenCalledTimes(0)
+      expect(mockRegister).toHaveBeenCalledExactlyOnceWith('mock-encoder')
       expect(console.error).not.toHaveBeenCalled()
+
+      await registerWavEncoder()
+
+      expect(mockRegister).toHaveBeenCalledTimes(1)
+    })
+
+    it('reports a registration failure and retries on the next call', async () => {
+      const failure = new Error('Encoder worker failed to start')
+      mockRegister.mockRejectedValueOnce(failure)
+
+      await registerWavEncoder()
+
+      expect(console.error).toHaveBeenCalledExactlyOnceWith(
+        'Audio Service Error (encoder):',
+        'Failed to register WAV encoder',
+        failure
+      )
+
+      await registerWavEncoder()
+      await registerWavEncoder()
+
+      expect(mockConnect).toHaveBeenCalledTimes(2)
+      expect(mockRegister).toHaveBeenCalledTimes(2)
     })
   })
 
@@ -207,9 +219,12 @@ describe('useAudioService', () => {
         'Error uploading temp file: 500 - Internal Server Error'
       )
 
-      expect(useToastStore().addAlert).toHaveBeenCalledWith(
-        'Error uploading temp file: 500 - Internal Server Error'
-      )
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({
+          kind: 'warning',
+          title: 'Upload failed: 500 - Internal Server Error'
+        })
+      ])
     })
 
     it('should handle network errors', async () => {
@@ -240,11 +255,12 @@ describe('useAudioService', () => {
           `Error uploading temp file: ${testCase.status} - ${testCase.statusText}`
         )
 
-        expect(useToastStore().addAlert).toHaveBeenCalledWith(
-          `Error uploading temp file: ${testCase.status} - ${testCase.statusText}`
+        expect(useToast().toasts.at(-1)).toEqual(
+          expect.objectContaining({
+            kind: 'warning',
+            title: `Upload failed: ${testCase.status} - ${testCase.statusText}`
+          })
         )
-
-        vi.mocked(useToastStore().addAlert).mockClear()
       }
     })
 
@@ -266,39 +282,6 @@ describe('useAudioService', () => {
       const result = await service.convertBlobToFileAndSubmit(mockBlob)
 
       expect(result).toBe('audio/undefined [temp]')
-    })
-  })
-
-  describe('error handling', () => {
-    it('should handle AudioRecordingError interface correctly', () => {
-      const error: AudioRecordingError = {
-        type: 'permission',
-        message: 'Microphone access denied',
-        originalError: new Error('Permission denied')
-      }
-
-      expect(error.type).toBe('permission')
-      expect(error.message).toBe('Microphone access denied')
-      expect(error.originalError).toBeInstanceOf(Error)
-    })
-
-    it('should support all error types', () => {
-      const errorTypes = [
-        'permission',
-        'not_supported',
-        'encoder',
-        'recording',
-        'unknown'
-      ] as const
-
-      errorTypes.forEach((type) => {
-        const error: AudioRecordingError = {
-          type,
-          message: `Test error for ${type}`
-        }
-
-        expect(error.type).toBe(type)
-      })
     })
   })
 

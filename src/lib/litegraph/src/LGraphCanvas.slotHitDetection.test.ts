@@ -11,7 +11,7 @@ import { getSlotLayoutAtPoint } from '@/renderer/core/canvas/litegraph/slotCalcu
 
 vi.mock(import('@/renderer/core/layout/store/layoutStore'))
 vi.mock(
-  import('@/renderer/core/canvas/litegraph/slotCalculations'), // eslint-disable-line import-x/no-restricted-paths
+  import('@/renderer/core/canvas/litegraph/slotCalculations'), // oxlint-disable-line comfy/no-restricted-paths
   { spy: true }
 )
 

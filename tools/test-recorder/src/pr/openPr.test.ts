@@ -12,9 +12,9 @@ vi.mock<unknown>(import('node:fs'), () => ({
   default: { readFileSync: vi.fn(() => 'contents') },
   readFileSync: vi.fn(() => 'contents')
 }))
-vi.mock<unknown>(import('@clack/prompts'), () => ({
+vi.mock(import('@clack/prompts'), () => ({
   confirm: vi.fn(),
-  isCancel: vi.fn(() => false)
+  isCancel: (value: unknown): value is symbol => typeof value === 'symbol'
 }))
 
 import { confirm } from '@clack/prompts'
@@ -123,7 +123,6 @@ describe('openPr', () => {
         success: false,
         error: 'not a branch'
       })
-      const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
 
       await openPr({
         testFilePath: 'browser_tests/tests/foo.spec.ts',
@@ -132,7 +131,10 @@ describe('openPr', () => {
         projectRoot: '/repo'
       })
 
-      const output = logSpy.mock.calls.map((c) => String(c[0])).join('\n')
+      const output = vi
+        .mocked(console.log)
+        .mock.calls.map((c) => String(c[0]))
+        .join('\n')
       expect(output).toContain('git checkout feature/wip')
     })
   })

@@ -2,21 +2,25 @@ import { expect, mergeTests } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { CURSOR_GAP } from '@/platform/onboarding/coachmarkLayout'
+import { FIRST_RUN_COACH_IDS } from '@/platform/onboarding/onboardingTours'
 import { TOUR_ROLE_PINS } from '@/renderer/extensions/firstRunTour/roles/tourRolePins'
 import type { SupportedTemplateId } from '@/renderer/extensions/firstRunTour/roles/tourRolePins'
 
 import type { PromptResponse } from '@comfyorg/ingest-types'
 
-import type { AssetResponse } from '@/platform/assets/schemas/assetSchema'
+import type { AssetResponse } from '@comfyorg/assets-core/schema'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
-import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceApi'
+import type { BillingStatusResponse } from '@comfyorg/billing-core'
 
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 import { onboardingFixture } from '@e2e/fixtures/tourFixture'
 import type { Position } from '@e2e/fixtures/types'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
+import { mockCloudBootRoutes } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { keepPricingTableInApp } from '@e2e/fixtures/utils/platformPlans'
 import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
@@ -29,7 +33,10 @@ const RUN_STEP_TITLE = firstRun.run.title
 const GENERATING_TITLE = firstRun.result.generating.title
 const RESULT_IMAGE_TITLE = firstRun.result.image.title
 const RESULT_FAILED_TITLE = firstRun.result.failed.title
+const COMPLETED_NUDGE_TITLE = firstRun.nudge.ran.title
+const UNFINISHED_NUDGE_TITLE = firstRun.nudge.noTour.title
 const CARD_TESTID_PREFIX = 'getting-started-card-'
+const NUDGE_MAX_GAP = CURSOR_GAP + 8
 
 /** The prompt id the tour's run is queued under, so WS events can address it. */
 const TOUR_JOB_ID = 'first-run-tour-prompt'
@@ -43,19 +50,28 @@ const QUEUED_PROMPT: PromptResponse = {
 }
 
 const TOUR_FEATURE_FLAGS: RemoteConfig = {
-  onboarding_tour_enabled: true,
-  subscription_required: true
+  subscription_required: true,
+  firebase_env: 'dev'
+}
+
+const FIRST_RUN_SETTINGS = {
+  'Comfy.UseNewMenu': 'Top',
+  'Comfy.VueNodes.Enabled': true,
+  'Comfy.TutorialCompleted': false,
+  'Comfy.OnboardingCoachmarks.Seen': ['appMode']
 }
 
 const ACTIVE_SUBSCRIPTION: BillingStatusResponse = {
   is_active: true,
   max_seats: 1,
   occupied_seats: 1,
+  ended_at: null,
   team_credit_stop: null,
   scheduled_change: null,
+  next_charge: null,
   subscription_tier: 'PRO',
   subscription_duration: 'MONTHLY',
-  renewal_date: '2099-01-01',
+  renewal_date: '2099-01-01T00:00:00Z',
   has_funds: true
 }
 
@@ -63,8 +79,10 @@ const INACTIVE_SUBSCRIPTION: BillingStatusResponse = {
   is_active: false,
   max_seats: 1,
   occupied_seats: 1,
+  ended_at: null,
   team_credit_stop: null,
   scheduled_change: null,
+  next_charge: null,
   subscription_tier: 'FREE',
   subscription_duration: 'MONTHLY',
   has_funds: false
@@ -200,20 +218,24 @@ async function framing(node: Locator, spotlight: Locator) {
  */
 test.describe(
   'First-run tour',
-  { tag: ['@cloud', '@ui', '@vue-nodes'] },
+  {
+    tag: ['@cloud', '@ui', '@vue-nodes'],
+    annotation: {
+      type: 'source',
+      description: 'https://github.com/Comfy-Org/ComfyUI_frontend/pull/19003'
+    }
+  },
   () => {
     test.use({
-      initialSettings: {
-        'Comfy.TutorialCompleted': false,
-        'Comfy.OnboardingCoachmarks.Seen': ['appMode']
-      },
-      initialFeatureFlags: { onboarding_tour_enabled: true }
+      initialSettings: FIRST_RUN_SETTINGS
     })
 
     test.beforeEach(async ({ page }) => {
-      await page.route('**/api/features', (route) =>
-        route.fulfill(jsonRoute(TOUR_FEATURE_FLAGS))
-      )
+      await mockCloudBootRoutes(page, {
+        features: TOUR_FEATURE_FLAGS,
+        settings: FIRST_RUN_SETTINGS,
+        objectInfo: 'server'
+      })
       await page.route('**/api/billing/status', (route) =>
         route.fulfill(jsonRoute(ACTIVE_SUBSCRIPTION))
       )
@@ -291,7 +313,12 @@ test.describe(
       card: Locator,
       totalSteps: number
     ) {
+      const queued = page.waitForResponse('**/api/prompt')
       await page.getByTestId('queue-button').click()
+      await queued
+      await expect(page.getByTestId('queue-notification-banner')).toContainText(
+        'Job queued'
+      )
 
       await expect(
         card.getByText(GENERATING_TITLE),
@@ -324,6 +351,22 @@ test.describe(
       }
     )
 
+    test('shows completed copy after the user finishes the tour', async ({
+      comfyPage
+    }) => {
+      test.slow()
+      const { page } = comfyPage
+      const { card, totalSteps } = await tourToRunStep(page)
+      await runFromTourStep(page, card, totalSteps)
+      await card.getByRole('button', { name: 'Done' }).click()
+
+      const nudge = page.getByTestId('first-run-nudge')
+      await expect(nudge).toContainText(COMPLETED_NUDGE_TITLE, {
+        timeout: 10_000
+      })
+      await expect(nudge).not.toContainText(UNFINISHED_NUDGE_TITLE)
+    })
+
     wstest(
       'tells a first-run user when the run produced nothing',
       async ({ comfyPage, getWebSocket }) => {
@@ -346,6 +389,7 @@ test.describe(
 
     test.describe('without a subscription', () => {
       test.beforeEach(async ({ page }) => {
+        await keepPricingTableInApp(page)
         await mockBilling(page)
         await page.route('**/api/billing/status', (route) =>
           route.fulfill(jsonRoute(INACTIVE_SUBSCRIPTION))
@@ -353,7 +397,8 @@ test.describe(
       })
 
       test('leaves the nudge until the upgrade dialog closes', async ({
-        comfyPage
+        comfyPage,
+        onboarding
       }) => {
         test.slow()
         const { page } = comfyPage
@@ -377,6 +422,38 @@ test.describe(
           nudge,
           'the tour ended, so the user still needs somewhere to go next'
         ).toBeVisible({ timeout: 10_000 })
+
+        const templatesButton = onboarding.coachAnchor(
+          FIRST_RUN_COACH_IDS.templatesButton
+        )
+        const cursor = page.getByTestId('first-run-nudge-cursor')
+        await expect(page.getByTestId('first-run-nudge-ring')).toBeVisible()
+        await expect
+          .poll(
+            async () => {
+              const [card, button, pointer] = await Promise.all([
+                nudge.boundingBox(),
+                templatesButton.boundingBox(),
+                cursor.boundingBox()
+              ])
+              if (!card || !button || !pointer) return false
+              const buttonRight = button.x + button.width
+              const gap = card.x - buttonRight
+              const sharesRow =
+                card.y < button.y + button.height &&
+                card.y + card.height > button.y
+              const pointerInGap =
+                pointer.x >= buttonRight && pointer.x + pointer.width <= card.x
+              return (
+                gap >= 0 && gap <= NUDGE_MAX_GAP && sharesRow && pointerInGap
+              )
+            },
+            {
+              message:
+                'the nudge sits just right of the Templates button with its pointer in between, not pinned to a screen corner'
+            }
+          )
+          .toBe(true)
       })
     })
 

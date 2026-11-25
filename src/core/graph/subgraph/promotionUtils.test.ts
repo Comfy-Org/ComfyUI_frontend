@@ -1,5 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { describe, expect, it, vi } from 'vitest'
+import { assert, describe, expect, it, vi } from 'vitest'
 
 import { promotedInputWidget } from '@/core/graph/subgraph/promotedInputWidget'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -8,15 +8,16 @@ import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import { useLitegraphService } from '@/services/litegraphService'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useLinkStore } from '@/stores/linkStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
+import { useWidgetHeightStore } from '@/stores/widgetHeightStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { graphScopeOf } from '@/types/graphScopeId'
-import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
-import { widgetId } from '@/types/widgetId'
-import type { WidgetId } from '@/types/widgetId'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import { UNASSIGNED_NODE_ID, toNodeId } from '@comfyorg/graph-model/nodeId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
 function promotedInputNames(host: {
   inputs: Array<{ widgetId?: unknown; name: string }>
@@ -195,12 +196,10 @@ describe('pruneDisconnected', () => {
       hostInput.widgetId = keptWidgetId
     }
 
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
-
     pruneDisconnected(subgraphNode)
 
     expect(subgraph.inputs.map((input) => input.name)).toEqual(['kept'])
-    expect(warnSpy).toHaveBeenCalledOnce()
+    expect(console.warn).toHaveBeenCalledOnce()
   })
 
   it('does not prune preview exposures for PreviewImage nodes', () => {
@@ -352,46 +351,34 @@ describe('promoteRecommendedWidgets', () => {
     expect(subgraphNode.serialize().properties?.proxyWidgets).toBeUndefined()
   })
 
-  it('skips deferred updatePreviews when a preview widget already exists', () => {
+  it('exposes a drawn video preview under the canvas preview name', () => {
     const subgraph = createTestSubgraph()
     const subgraphNode = createTestSubgraphNode(subgraph)
-    const interiorNode = new LGraphNode('TestNode')
-    subgraph.add(interiorNode)
-
-    const previewWidget = interiorNode.addWidget(
+    const videoNode = new LGraphNode('SaveVideo')
+    subgraph.add(videoNode)
+    const videoPreview = videoNode.addWidget(
       'custom',
-      'videopreview',
+      'video-preview',
       'value',
       () => {}
     )
-    previewWidget.type = 'preview'
-    previewWidget.serialize = false
+    videoPreview.type = 'video'
+    videoPreview.serialize = false
 
     promoteRecommendedWidgets(subgraphNode)
 
-    expect(useLitegraphService().updatePreviews).not.toHaveBeenCalled()
-  })
-
-  it('eagerly exposes virtual preview widget for CANVAS_IMAGE_PREVIEW nodes', () => {
-    const subgraph = createTestSubgraph()
-    const subgraphNode = createTestSubgraphNode(subgraph)
-    const glslNode = new LGraphNode('GLSLShader', 'GLSLShader')
-    subgraph.add(glslNode)
-
-    promoteRecommendedWidgets(subgraphNode)
-
-    const hostLocator = String(subgraphNode.id)
     expect(
       usePreviewExposureStore().getExposures(
         subgraphNode.rootGraph.id,
-        hostLocator
+        String(subgraphNode.id)
       )
-    ).toContainEqual({
-      name: CANVAS_IMAGE_PREVIEW_WIDGET,
-      sourceNodeId: String(glslNode.id),
-      sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET
-    })
-    expect(useLitegraphService().updatePreviews).not.toHaveBeenCalled()
+    ).toEqual([
+      {
+        name: CANVAS_IMAGE_PREVIEW_WIDGET,
+        sourceNodeId: String(videoNode.id),
+        sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET
+      }
+    ])
   })
 })
 
@@ -410,6 +397,33 @@ describe('autoExposeKnownPreviewNodes', () => {
         String(subgraphNode.id)
       )
     ).toHaveLength(1)
+  })
+
+  it('auto-exposes the preview of an interior node that has video output but has not drawn a preview widget', () => {
+    const subgraph = createTestSubgraph()
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    const saveVideo = new LGraphNode('SaveVideo', 'SaveVideo')
+    subgraph.add(saveVideo)
+    useNodeOutputStore().setNodeOutputs(saveVideo, 'clip.mp4', {
+      folder: 'output',
+      isAnimated: true
+    })
+
+    autoExposeKnownPreviewNodes(subgraphNode)
+
+    expect(
+      usePreviewExposureStore()
+        .getExposures(subgraphNode.rootGraph.id, String(subgraphNode.id))
+        .map(({ sourceNodeId, sourcePreviewName }) => ({
+          sourceNodeId,
+          sourcePreviewName
+        }))
+    ).toEqual([
+      {
+        sourceNodeId: String(saveVideo.id),
+        sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET
+      }
+    ])
   })
 
   it('does not auto-expose when host has empty persisted previewExposures (user cleared)', () => {
@@ -451,6 +465,41 @@ describe('autoExposeKnownPreviewNodes', () => {
         .getExposures(subgraphNode.rootGraph.id, String(subgraphNode.id))
         .map((e) => e.sourceNodeId)
     ).not.toContain(String(glslNode.id))
+  })
+})
+
+describe('demoting a preview', () => {
+  it('forgets its saved height so the next preview exposed under its name starts unsized', () => {
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph)
+    const first = new LGraphNode('GLSLShader', 'GLSLShader')
+    subgraph.add(first)
+    const second = new LGraphNode('GLSLShader', 'GLSLShader')
+    subgraph.add(second)
+    const preview = (node: LGraphNode) => {
+      const widget = getPromotableWidgets(node).at(-1)
+      assert.exists(widget)
+      return widget
+    }
+    promoteWidget(first, preview(first), [host])
+    const heightId = widgetId(
+      host.rootGraph.id,
+      host.id,
+      CANVAS_IMAGE_PREVIEW_WIDGET
+    )
+    useWidgetHeightStore().set(heightId, { height: 320 })
+
+    demoteWidget(first, preview(first), [host])
+    promoteWidget(second, preview(second), [host])
+
+    expect(
+      usePreviewExposureStore()
+        .getExposures(host.rootGraph.id, String(host.id))
+        .map(({ name, sourceNodeId }) => ({ name, sourceNodeId }))
+    ).toEqual([
+      { name: CANVAS_IMAGE_PREVIEW_WIDGET, sourceNodeId: String(second.id) }
+    ])
+    expect(useWidgetHeightStore().get(heightId)).toBeUndefined()
   })
 })
 
@@ -803,7 +852,7 @@ describe('demoteWidget — axiomatic projection retraction', () => {
     return { host, interiorNode, interiorWidget }
   }
 
-  it('drops projection but keeps slot and external link when host slot is externally connected', () => {
+  it('drops projection but keeps slot and external link when host slot is externally connected', async () => {
     const { host, interiorNode, interiorWidget } = setupPromotedWidget()
     const hostInput = host.inputs[0]
     const source = new LGraphNode('External Source')
@@ -816,6 +865,10 @@ describe('demoteWidget — axiomatic projection retraction', () => {
     expect(promotedInputId).toBeDefined()
 
     demoteWidget(interiorNode, interiorWidget, [host])
+
+    // Demotion is deferred by a microtask so a same-tick reconnect (a
+    // rewire) can cancel it; this genuine demote completes once it runs.
+    await Promise.resolve()
 
     expect(host.subgraph.inputs).toHaveLength(1)
     expect(host.inputs[0]?.link).toBe(externalLink.id)

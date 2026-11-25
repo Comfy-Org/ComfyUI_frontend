@@ -1,4 +1,5 @@
-import type { LinkId, RerouteId } from '@/renderer/core/layout/types'
+import type { LinkId } from '@comfyorg/graph-model/linkId'
+import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
 
 /**
  * Creates a unique key for identifying link segments in spatial indexes

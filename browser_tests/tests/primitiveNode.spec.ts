@@ -3,17 +3,20 @@ import { expect } from '@playwright/test'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
+import { expectRegionScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
 
 test.describe('Primitive Node', { tag: ['@screenshot', '@node'] }, () => {
   test('Can load with correct size', async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('primitive/primitive_node')
-    await expect(comfyPage.canvas).toHaveScreenshot('primitive_node.png')
+    await expectRegionScreenshot(
+      comfyPage.page,
+      await comfyPage.nodeOps.getAllNodeRefs(),
+      'primitive_node.png'
+    )
   })
 
-  // When link is dropped on widget, it should automatically convert the widget
-  // to input.
   test('Can connect to widget without restoring a stale value', async ({
     comfyPage
   }) => {
@@ -24,11 +27,12 @@ test.describe('Primitive Node', { tag: ['@screenshot', '@node'] }, () => {
       await comfyPage.nodeOps.getNodeRefById(1)
     const ksamplerNode: NodeReference =
       await comfyPage.nodeOps.getNodeRefById(2)
-    // Connect the output of the primitive node to the input of first widget of the ksampler node
     await primitiveNode.connectWidget(0, ksamplerNode, 0)
     const primitiveWidget = await primitiveNode.getWidget(0)
     expect(await primitiveWidget.getValue()).toBe(0)
-    await expect(comfyPage.canvas).toHaveScreenshot(
+    await expectRegionScreenshot(
+      comfyPage.page,
+      await comfyPage.nodeOps.getAllNodeRefs(),
       'primitive_node_connected.png'
     )
   })
@@ -43,7 +47,9 @@ test.describe('Primitive Node', { tag: ['@screenshot', '@node'] }, () => {
       await comfyPage.nodeOps.getNodeRefById(2)
     await primitiveNode.connectWidget(0, clipEncoderNode, 0)
     await comfyPage.canvasOps.moveMouseToEmptyArea()
-    await expect(comfyPage.canvas).toHaveScreenshot(
+    await expectRegionScreenshot(
+      comfyPage.page,
+      await comfyPage.nodeOps.getAllNodeRefs(),
       'primitive_node_connected_dom_widget.png'
     )
   })
@@ -57,7 +63,9 @@ test.describe('Primitive Node', { tag: ['@screenshot', '@node'] }, () => {
     const ksamplerNode: NodeReference =
       await comfyPage.nodeOps.getNodeRefById(2)
     await primitiveNode.connectWidget(0, ksamplerNode, 0)
-    await expect(comfyPage.canvas).toHaveScreenshot(
+    await expectRegionScreenshot(
+      comfyPage.page,
+      await comfyPage.nodeOps.getAllNodeRefs(),
       'static_primitive_connected.png'
     )
   })
@@ -122,20 +130,63 @@ test.describe('Primitive Node', { tag: ['@screenshot', '@node'] }, () => {
     expect(after.length).toBeGreaterThan(0)
   })
 
-  test('Report missing nodes when connect to missing node', async ({
-    comfyPage
-  }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-    await comfyPage.settings.setSetting(
-      'Comfy.RightSidePanel.ShowErrorsTab',
-      true
-    )
-    await comfyPage.workflow.loadWorkflow(
-      'primitive/primitive_node_connect_missing_node'
-    )
-    const errorOverlay = comfyPage.page.getByTestId(
-      TestIds.dialogs.errorOverlay
-    )
-    await expect(errorOverlay).toBeVisible()
+  test.describe('with the Top menu', () => {
+    test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Top' } })
+
+    test('Report missing nodes when connect to missing node', async ({
+      comfyPage
+    }) => {
+      await comfyPage.settings.setSetting(
+        'Comfy.RightSidePanel.ShowErrorsTab',
+        true
+      )
+      await comfyPage.workflow.loadWorkflow(
+        'primitive/primitive_node_connect_missing_node'
+      )
+      const errorOverlay = comfyPage.page.getByTestId(
+        TestIds.dialogs.errorOverlay
+      )
+      await expect(errorOverlay).toBeVisible()
+    })
   })
 })
+
+test.describe(
+  'Primitive Node image upload admission',
+  { tag: ['@canvas', '@node', '@widget'] },
+  () => {
+    test('Gives the image upload button no input socket', async ({
+      comfyPage
+    }) => {
+      await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
+      const [loadImageNode] =
+        await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
+
+      await expect(loadImageNode.getInputByName('upload')).rejects.toThrow(
+        'Input "upload" not found'
+      )
+    })
+
+    test('Does not attach to an upload socket saved by an older version', async ({
+      comfyPage
+    }) => {
+      await comfyPage.workflow.loadWorkflow(
+        'widgets/load_image_widget_upload_socket'
+      )
+      const [loadImageNode] =
+        await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
+      const uploadInput = await loadImageNode.getInputByName('upload')
+      const beforeNodeIds = (await comfyPage.nodeOps.getAllNodeRefs()).map(
+        ({ id }) => id
+      )
+
+      const { x, y } = await uploadInput.getPosition()
+      await comfyPage.page.mouse.dblclick(x, y, { delay: 5 })
+      await comfyPage.nextFrame()
+
+      expect(
+        (await comfyPage.nodeOps.getAllNodeRefs()).map(({ id }) => id)
+      ).toEqual(beforeNodeIds)
+    })
+  }
+)

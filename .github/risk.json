@@ -160,15 +160,16 @@
     {
       "class": "extension-contract",
       "tier": "R3",
-      "why": "entity callbacks, node.widgets, serialize and the app/api surface are consumed by 40+ custom-node repos \u2014 consumers break out of band (ADR-LAYOUT/ADR-ECS) src/lib/litegraph/src/types/widgets.ts imports Bounds, CompositorWidgetValue and CurveData from these three modules, so they enter the @comfyorg/comfyui-frontend-types rollup (rollupTypes: true) and are part of the published surface even though they do not live under a schemas/ path.",
+      "why": "entity callbacks, node.widgets, serialize and the app/api surface are consumed by 40+ custom-node repos \u2014 consumers break out of band (ADR-LAYOUT/ADR-ECS) src/lib/litegraph/src/types/widgets.ts imports Bounds, CompositorWidgetValue and CurveData from these three modules, so they enter the @comfyorg/comfyui-frontend-types bundle (bundleTypes: true) and are part of the published surface even though they do not live under a schemas/ path.",
       "paths": [
         "packages/*/src/schemas/**",
         "src/core/schemas/**",
         "src/schemas/**",
         "src/scripts/app.ts",
         "src/scripts/api.ts",
+        "packages/api-client/src/ComfyApi.ts",
         "src/scripts/domWidget.ts",
-        "src/services/extensionService.ts",
+        "src/platform/extensions/services/extensionService.ts",
         "src/stores/workspaceStore.ts",
         "src/types/index.ts",
         "src/types/comfy.ts",
@@ -203,7 +204,7 @@
       "tier": "R2",
       "why": "the flag config and flag plumbing are the rollout lever \u2014 flipping a default changes behavior for every user at once",
       "paths": [
-        "src/config/clientFeatureFlags.json",
+        "packages/api-client/src/clientFeatureFlags.json",
         "**/useFeatureFlags*",
         "**/useVueFeatureFlags*",
         "**/devFeatureFlagOverride*"
@@ -235,12 +236,6 @@
         "src/lib/litegraph/**",
         "packages/**"
       ]
-    },
-    {
-      "class": "website",
-      "tier": "R2",
-      "why": "the marketing site is production and had no rule at all \u2014 but it is copy and layout, so it cannot corrupt a saved workflow or move money",
-      "paths": ["apps/website/**"]
     },
     {
       "class": "docs",

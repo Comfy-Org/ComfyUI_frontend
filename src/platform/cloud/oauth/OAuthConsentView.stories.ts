@@ -7,9 +7,10 @@ const baseChallenge: OAuthConsentChallenge = {
   oauth_request_id: '550e8400-e29b-41d4-a716-446655440000',
   csrf_token: 'preview-csrf-token',
   client_display_name: 'Comfy Desktop',
+  client_provenance: 'first_party',
   resource_display_name: 'Comfy Cloud',
   redirect_uri: 'http://127.0.0.1:50632/cb',
-  scopes: ['mcp:tools:read', 'mcp:tools:call'],
+  scopes: ['comfy-mcp:tools:read', 'comfy-mcp:tools:call'],
   workspaces: [
     {
       id: 'personal-workspace',
@@ -32,7 +33,7 @@ const meta: Meta<typeof OAuthConsentView> = {
   decorators: [
     () => ({
       template:
-        '<div class="dark-theme relative min-h-screen bg-primary-comfy-ink font-sans text-primary-comfy-canvas"><i class="absolute top-6 left-6 icon-[comfy--comfy-logo] aspect-173/48 h-5 w-auto text-brand-yellow md:h-6" aria-hidden="true" /><story /></div>'
+        '<div class="relative min-h-screen bg-primary-comfy-ink font-sans text-primary-comfy-canvas"><i class="absolute top-6 left-6 icon-[comfy--comfy-logo] aspect-173/48 h-5 w-auto text-brand-yellow md:h-6" aria-hidden="true" /><story /></div>'
     })
   ]
 }
@@ -89,7 +90,7 @@ export const UnknownScope: Story = {
   args: {
     initialChallenge: {
       ...baseChallenge,
-      scopes: ['mcp:tools:read', 'mcp:tools:call', 'mcp:billing:read']
+      scopes: [...baseChallenge.scopes, 'comfy-mcp:billing:read']
     }
   }
 }
@@ -111,7 +112,78 @@ export const RemoteWebClient: Story = {
       resource_display_name: 'Comfy Cloud MCP',
       client_application_type: 'web',
       redirect_uri: 'https://claude.ai/api/mcp/auth_callback',
-      scopes: ['comfy-mcp:tools:calls']
+      scopes: ['comfy-mcp:tools:call']
+    }
+  }
+}
+
+export const ComfyRouter: Story = {
+  args: {
+    initialChallenge: {
+      ...baseChallenge,
+      resource_display_name: 'Comfy Router',
+      scopes: ['comfy-router:models:read', 'comfy-router:models:invoke']
+    }
+  }
+}
+
+export const DynamicUnverified: Story = {
+  args: {
+    initialChallenge: {
+      ...baseChallenge,
+      client_display_name: 'ChatGPT Connector',
+      client_provenance: 'dynamic',
+      client_application_type: 'web',
+      redirect_uri: 'https://chatgpt.com/connector/oauth/abc123'
+    }
+  }
+}
+
+export const VerifiedChatGpt: Story = {
+  args: {
+    initialChallenge: {
+      ...baseChallenge,
+      client_display_name: 'Comfy Cloud',
+      client_provenance: 'dynamic',
+      client_application_type: 'web',
+      redirect_uri: 'https://chatgpt.com/connector/oauth/abc123',
+      verified_client: { platform: 'chatgpt', display_name: 'ChatGPT' }
+    }
+  }
+}
+
+export const VerifiedClaude: Story = {
+  args: {
+    initialChallenge: {
+      ...baseChallenge,
+      client_display_name: 'Comfy Cloud',
+      client_provenance: 'dynamic',
+      client_application_type: 'web',
+      redirect_uri: 'https://claude.ai/api/mcp/auth_callback',
+      verified_client: { platform: 'claude', display_name: 'Claude' }
+    }
+  }
+}
+
+export const VerifiedCursor: Story = {
+  args: {
+    initialChallenge: {
+      ...baseChallenge,
+      client_display_name: 'Comfy Cloud',
+      client_provenance: 'dynamic',
+      client_application_type: 'web',
+      redirect_uri: 'https://www.cursor.com/agents/mcp/oauth/callback',
+      verified_client: { platform: 'cursor', display_name: 'Cursor' }
+    }
+  }
+}
+
+export const SessionAccount: Story = {
+  args: {
+    initialChallenge: {
+      ...baseChallenge,
+      user_email: 'grace@example.com',
+      user_display_name: 'Grace Hopper'
     }
   }
 }

@@ -1,32 +1,68 @@
 import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
 
-import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { RemoteConfig } from '@/platform/remoteConfig/types'
+import type { UserDataFullInfo } from '@comfyorg/api-client/types'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 import type { CloudWorkflowEntry } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import type { WorkflowSidebarFileResponse } from '@comfyorg/ingest-types'
 
 import { bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
+import { emptyAgentThreadList } from '@e2e/fixtures/data/agent/agentThreadList'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import type { WorkspaceStore } from '@e2e/types/globals'
 
 type WorkflowSelection = {
   savedPaths: string[]
   postedMessages: string[]
   finishSave: (success: boolean) => void
+  pauseMessagePosts: () => void
+  resumeMessagePosts: () => void
   pauseWorkflowLookups: () => void
   resumeWorkflowLookups: () => void
   workflowLookups: () => number
+  openTemporaryTab: (filename: string) => Promise<void>
+  suppressActivationNudge: () => Promise<void>
+}
+
+function moveSavedWorkflow(
+  source: string,
+  destination: string,
+  savedContent: Map<string, string>,
+  savedFiles: UserDataFullInfo[],
+  workflows: CloudWorkflowEntry[]
+): UserDataFullInfo | undefined {
+  const content = savedContent.get(source)
+  const file = savedFiles.find((item) => item.path === source)
+  const workflow = workflows.find(
+    (item) => item.name === source.slice('workflows/'.length, -'.json'.length)
+  )
+  if (content === undefined || !file || !workflow) return
+
+  savedContent.delete(source)
+  savedContent.set(destination, content)
+  file.path = destination
+  file.modified = Date.now()
+  workflow.name = destination.slice('workflows/'.length, -'.json'.length)
+  return file
 }
 
 export const workflowSelectionTest = base.extend<{
   nodeDefinitions: Record<string, ComfyNodeDef> | undefined
+  workflowSelectionFeatures: Partial<RemoteConfig> | undefined
   workflowSelection: WorkflowSelection
 }>({
   nodeDefinitions: [undefined, { option: true }],
-  workflowSelection: async ({ page, nodeDefinitions }, use) => {
+  workflowSelectionFeatures: [undefined, { option: true }],
+  workflowSelection: async (
+    { page, nodeDefinitions, workflowSelectionFeatures },
+    use
+  ) => {
     if (nodeDefinitions)
       await page.route('**/api/object_info', (route) =>
         route.fulfill(jsonRoute(nodeDefinitions))
       )
     await bootAgentApp(page, true, {
+      features: workflowSelectionFeatures,
       objectInfo: nodeDefinitions ? 'server' : undefined
     })
     const workflows: CloudWorkflowEntry[] = []
@@ -37,7 +73,19 @@ export const workflowSelectionTest = base.extend<{
     let finishSave = (_success: boolean) => {}
     let pendingLookup: Promise<void> | undefined
     let resumeWorkflowLookups = () => {}
+    let pendingPost: Promise<void> | undefined
+    let resumeMessagePosts = () => {}
     let lookupCount = 0
+    function forgetSavedWorkflow(path: string): void {
+      const name = path.slice('workflows/'.length, -'.json'.length)
+      savedContent.delete(path)
+      const fileIndex = savedFiles.findIndex((file) => file.path === path)
+      if (fileIndex !== -1) savedFiles.splice(fileIndex, 1)
+      const workflowIndex = workflows.findIndex(
+        (workflow) => workflow.name === name
+      )
+      if (workflowIndex !== -1) workflows.splice(workflowIndex, 1)
+    }
     await page.route('**/api/workflows?*', async (route) => {
       lookupCount++
       await pendingLookup
@@ -53,15 +101,30 @@ export const workflowSelectionTest = base.extend<{
         })
       )
     })
-    await page.route('**/api/agent/threads**', (route) => {
-      if (route.request().method() === 'POST')
-        postedMessages.push(route.request().postData() ?? '')
-      return route.fulfill(
-        jsonRoute({
-          threads: [],
-          pagination: { offset: 0, limit: 100, total: 0, has_more: false }
-        })
+    await page.route('**/api/workflows/*/sidebar-file', (route) => {
+      const workflowId = decodeURIComponent(
+        new URL(route.request().url()).pathname
+          .split('/workflows/')[1]
+          .split('/')[0]
       )
+      const workflow = workflows.find(({ id }) => id === workflowId)
+      if (!workflow) return route.fulfill({ status: 404 })
+      const path = `workflows/${workflow.name}.json`
+      const file = savedFiles.find((candidate) => candidate.path === path)
+      if (!file) return route.fulfill({ status: 409 })
+      const sidebarFile: WorkflowSidebarFileResponse = {
+        path,
+        modified: file.modified,
+        size: file.size
+      }
+      return route.fulfill(jsonRoute(sidebarFile))
+    })
+    await page.route('**/api/agent/threads**', async (route) => {
+      if (route.request().method() === 'POST') {
+        postedMessages.push(route.request().postData() ?? '')
+        await pendingPost
+      }
+      return route.fulfill(jsonRoute(emptyAgentThreadList()))
     })
     await page.route('**/api/userdata?*', (route) => {
       const dir = new URL(route.request().url()).searchParams.get('dir')
@@ -106,19 +169,69 @@ export const workflowSelectionTest = base.extend<{
       savedContent.set(path, route.request().postData() ?? '{}')
       return route.fulfill(jsonRoute(file))
     })
+    await page.route('**/api/userdata/*/move/*', (route) => {
+      if (route.request().method() !== 'POST') return route.fallback()
+      const path = decodeURIComponent(
+        new URL(route.request().url()).pathname.split('/userdata/')[1]
+      )
+      const moveSeparator = '/move/'
+      const moveIndex = path.indexOf(moveSeparator)
+      const movedFile = moveSavedWorkflow(
+        path.slice(0, moveIndex),
+        path.slice(moveIndex + moveSeparator.length),
+        savedContent,
+        savedFiles,
+        workflows
+      )
+      return movedFile
+        ? route.fulfill(jsonRoute(movedFile))
+        : route.fulfill({ status: 404 })
+    })
+    await page.route('**/api/userdata/*', (route) => {
+      const path = decodeURIComponent(
+        new URL(route.request().url()).pathname.split('/userdata/')[1]
+      )
+      if (
+        route.request().method() !== 'DELETE' ||
+        !path.startsWith('workflows/')
+      )
+        return route.fallback()
+      forgetSavedWorkflow(path)
+      return route.fulfill({ status: 204 })
+    })
     await use({
       savedPaths,
       postedMessages,
       finishSave: (success) => finishSave(success),
+      pauseMessagePosts: () => {
+        pendingPost = new Promise<void>((resolve) => {
+          resumeMessagePosts = resolve
+        })
+      },
+      resumeMessagePosts: () => resumeMessagePosts(),
       pauseWorkflowLookups: () => {
         pendingLookup = new Promise<void>((resolve) => {
           resumeWorkflowLookups = resolve
         })
       },
       resumeWorkflowLookups: () => resumeWorkflowLookups(),
-      workflowLookups: () => lookupCount
+      workflowLookups: () => lookupCount,
+      openTemporaryTab: async (filename: string) => {
+        await page.evaluate(async (name) => {
+          const store = (window.app!.extensionManager as WorkspaceStore)
+            .workflow
+          const blank = store.createTemporary(name)
+          await store.openWorkflow(blank)
+        }, filename)
+      },
+      suppressActivationNudge: async () => {
+        await page.evaluate(() =>
+          localStorage.setItem('Comfy.AgentPanel.activationVisits', '2')
+        )
+      }
     })
     finishSave(false)
     resumeWorkflowLookups()
+    resumeMessagePosts()
   }
 })

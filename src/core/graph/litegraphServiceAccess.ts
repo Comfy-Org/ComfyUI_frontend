@@ -1,0 +1,17 @@
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { InputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
+
+interface LitegraphServiceAccess {
+  addNodeInput(node: LGraphNode, inputSpec: InputSpec): void
+  fitView(): void
+}
+
+/** `useLitegraphService` for the modules it imports, which cannot import it back. */
+export let useLitegraphServiceAccess: () => LitegraphServiceAccess
+
+/** Called by `litegraphService` when it loads. */
+export function provideLitegraphService(
+  useService: () => LitegraphServiceAccess
+): void {
+  useLitegraphServiceAccess = useService
+}

@@ -1,17 +1,24 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { DragAndScale } from '@/lib/litegraph/src/DragAndScale'
+import { createTestCanvasElement } from '@/utils/__tests__/canvasTestUtils'
 
 type Bounds = [number, number, number, number]
 
-let pendingFrame: FrameRequestCallback | undefined
+let pendingFrames: Map<number, FrameRequestCallback>
 
 function createDragAndScale() {
-  return new DragAndScale({ width: 1600, height: 900 } as HTMLCanvasElement)
+  return new DragAndScale(createTestCanvasElement({ width: 1600, height: 900 }))
+}
+
+function runFrame(timestamp: number) {
+  const callbacks = [...pendingFrames.values()]
+  pendingFrames.clear()
+  for (const callback of callbacks) callback(timestamp)
 }
 
 function settle() {
-  pendingFrame?.(performance.now() + 10_000)
+  runFrame(performance.now() + 10_000)
 }
 
 function screenCenterX(ds: DragAndScale, bounds: Bounds) {
@@ -24,13 +31,16 @@ function screenCenterY(ds: DragAndScale, bounds: Bounds) {
 
 describe('DragAndScale.animateToBounds', () => {
   beforeEach(() => {
-    pendingFrame = undefined
+    pendingFrames = new Map()
+    let nextFrame = 0
     vi.stubGlobal('devicePixelRatio', 1)
     vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
-      pendingFrame = callback
-      return 1
+      pendingFrames.set(++nextFrame, callback)
+      return nextFrame
     })
-    vi.stubGlobal('cancelAnimationFrame', vi.fn())
+    vi.stubGlobal('cancelAnimationFrame', (frame: number) =>
+      pendingFrames.delete(frame)
+    )
   })
 
   it('centers bounds on the full canvas by default', () => {
@@ -98,9 +108,76 @@ describe('DragAndScale.animateToBounds', () => {
       viewport
     })
 
-    expect(pendingFrame).toBeUndefined()
+    expect(pendingFrames.size).toBe(0)
     expect(setDirty).not.toHaveBeenCalled()
     expect([...ds.offset]).toEqual(offsetBefore)
     expect(ds.scale).toBe(scaleBefore)
+  })
+
+  it.for([
+    {
+      name: 'a pan',
+      move: (ds: DragAndScale) => {
+        ds.offset[0] += 40
+      }
+    },
+    {
+      name: 'a zoom',
+      move: (ds: DragAndScale) => ds.changeScale(2, [200, 100])
+    },
+    {
+      name: 'an immediate fit',
+      move: (ds: DragAndScale) =>
+        ds.fitToBounds([5000, 6000, 100, 100], { zoom: 0 })
+    }
+  ])('leaves the camera to $name made while it runs', ({ move }) => {
+    const ds = createDragAndScale()
+    ds.animateToBounds([3000, 3000, 100, 100], vi.fn(), { zoom: 0 })
+    runFrame(performance.now() + 100)
+
+    move(ds)
+    const moved = { offset: [...ds.offset], scale: ds.scale }
+    settle()
+
+    expect({ offset: [...ds.offset], scale: ds.scale }).toEqual(moved)
+  })
+
+  it('stops for an immediate fit that leaves the camera where it is', () => {
+    const ds = createDragAndScale()
+    ds.animateToBounds([3000, 3000, 100, 100], vi.fn(), { zoom: 0 })
+
+    ds.fitToBounds([750, 400, 100, 100], { zoom: 0 })
+    settle()
+
+    expect({ offset: [...ds.offset], scale: ds.scale }).toEqual({
+      offset: [0, 0],
+      scale: 1
+    })
+  })
+
+  it('stops when a redraw asks it to', () => {
+    const ds = createDragAndScale()
+    ds.animateToBounds([3000, 3000, 100, 100], () => ds.stopAnimation(), {
+      zoom: 0
+    })
+    runFrame(performance.now() + 100)
+    const stopped = { offset: [...ds.offset], scale: ds.scale }
+
+    settle()
+
+    expect({ offset: [...ds.offset], scale: ds.scale }).toEqual(stopped)
+  })
+
+  it('hands the camera to a later animation', () => {
+    const ds = createDragAndScale()
+    const later: Bounds = [-2000, 500, 100, 100]
+    ds.animateToBounds([3000, 3000, 100, 100], vi.fn(), { zoom: 0 })
+    runFrame(performance.now() + 100)
+
+    ds.animateToBounds(later, vi.fn(), { zoom: 0 })
+    settle()
+
+    expect(screenCenterX(ds, later)).toBeCloseTo(800)
+    expect(screenCenterY(ds, later)).toBeCloseTo(450)
   })
 })

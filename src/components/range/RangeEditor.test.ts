@@ -1,3 +1,4 @@
+import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { createI18n } from 'vue-i18n'
@@ -112,6 +113,27 @@ describe('RangeEditor', () => {
     const inputs = screen.getAllByRole('textbox')
     expect(inputs).toHaveLength(3)
   })
+
+  it.for([
+    { field: 'min', index: 0, typed: '0.3', showMidpoint: false },
+    { field: 'max', index: 1, typed: '0.6', showMidpoint: false },
+    { field: 'midpoint', index: 1, typed: '0.4', showMidpoint: true }
+  ])(
+    'reports the $field field as the edit when its input changes',
+    async ({ field, index, typed, showMidpoint }) => {
+      const { emitted } = renderEditor({
+        modelValue: { min: 0.2, max: 0.8, midpoint: 0.5 },
+        showMidpoint
+      })
+      const user = userEvent.setup()
+      const input = screen.getAllByRole('textbox')[index]
+
+      await user.clear(input)
+      await user.type(input, `${typed}{Enter}`)
+
+      expect(emitted('editEnd')).toContainEqual([field])
+    }
+  )
 
   it('normalizes handle positions with custom value range', () => {
     renderEditor({

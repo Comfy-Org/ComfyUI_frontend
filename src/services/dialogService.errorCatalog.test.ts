@@ -12,34 +12,37 @@ import {
 
 import { i18n, loadLocale } from '@/i18n'
 import { LGraph } from '@/lib/litegraph/src/litegraph'
-import type { PromptFailureResponse } from '@/platform/remote/comfyui/types'
-import { zComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { api, PromptExecutionError } from '@/scripts/api'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
+import type { PromptFailureResponse } from '@comfyorg/api-client/types'
+import { zComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
+import { PromptExecutionError } from '@comfyorg/api-client/ComfyApi'
 import { app } from '@/scripts/app'
 import { useDialogStore } from '@/stores/dialogStore'
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 
 import { useDialogService } from './dialogService'
 
-vi.mock(import('@/platform/telemetry'))
-// oxlint-disable-next-line comfy/no-primevue-imports
-vi.mock(import('primevue/usetoast'), () => ({
-  useToast: () => ({
-    add: vi.fn(),
-    remove: vi.fn(),
-    removeGroup: vi.fn(),
-    removeAllGroups: vi.fn()
-  })
+const distribution = vi.hoisted(() => ({ isCloud: false }))
+vi.mock(import('@/platform/distribution/types'), () => ({
+  DISTRIBUTION: 'localhost' as const,
+  isDesktop: false,
+  isNightly: false,
+  get isCloud() {
+    return distribution.isCloud
+  }
 }))
+
+vi.mock(import('@comfyorg/telemetry'))
+
 vi.mock(import('@/composables/useCopyToClipboard'), () => ({
-  useCopyToClipboard: () => ({ copyToClipboard: vi.fn(async () => {}) })
+  useCopyToClipboard: () => ({ copyToClipboard: vi.fn(async () => true) })
 }))
-vi.mock(import('@/composables/billing/useBillingContext'))
-vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
+vi.mock(import('@/platform/billing/composables/useBillingContext'))
+vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 
 beforeEach(() => {
-  vi.spyOn(api, 'getLogs').mockResolvedValue('server logs')
-  vi.spyOn(api, 'getSystemStats').mockResolvedValue({
+  vi.spyOn(app.api, 'getLogs').mockResolvedValue('server logs')
+  vi.spyOn(app.api, 'getSystemStats').mockResolvedValue({
     system: {
       os: 'linux',
       comfyui_version: '1.0.0',
@@ -91,10 +94,10 @@ function sam3ValidationResponse(): PromptFailureResponse {
 }
 
 async function openHttpPromptError(payload: unknown) {
-  vi.spyOn(api, 'fetchApi').mockResolvedValue(
+  vi.spyOn(app.api, 'fetchApi').mockResolvedValue(
     new Response(JSON.stringify(payload), { status: 400 })
   )
-  const error: unknown = await api
+  const error: unknown = await app.api
     .queuePrompt(0, {
       output: {},
       workflow: zComfyWorkflow.parse(new LGraph().serialize())
@@ -209,6 +212,7 @@ describe('legacy error dialog catalog', () => {
         useDialogService().showExecutionErrorDialog({
           exception_type: 'PromptValidationError',
           node_type: 'CloudProxy',
+          node_id: '7',
           exception_message: `Failed to send prompt request: 400: ${JSON.stringify(response)}`
         })
     }
@@ -247,6 +251,26 @@ describe('legacy error dialog catalog', () => {
     await user.click(screen.getByRole('button', { name: 'Show Report' }))
     expect(await screen.findByText(/# ComfyUI Error Report/)).toHaveTextContent(
       /return_type_mismatch message: return_type_mismatch details/
+    )
+  })
+
+  it('omits blank prompt messages before readable node errors', async () => {
+    await openHttpPromptError({
+      error: '',
+      node_errors: {
+        '3': nodeError(
+          [validationError('required_input_missing', 'model')],
+          'KSampler'
+        )
+      }
+    })
+    renderOpenedDialog()
+
+    expect(
+      screen.getByText(/KSampler \(#3\) is missing a required input: model/)
+        .textContent
+    ).toBe(
+      'KSampler (#3) - model\nRequired input slots have no connection feeding them.\nKSampler (#3) is missing a required input: model'
     )
   })
 
@@ -307,6 +331,30 @@ describe('legacy error dialog catalog', () => {
       error.exception_message
     )
   })
+
+  it.for(['7', 0, '12:3'])(
+    'identifies the failed runtime node %s before opening its report',
+    async (nodeId) => {
+      const user = userEvent.setup()
+      useDialogService().showExecutionErrorDialog({
+        exception_type: 'RuntimeError',
+        exception_message: 'Sampler failed',
+        node_type: 'KSampler',
+        node_id: nodeId
+      })
+      renderOpenedDialog()
+
+      expect(
+        screen.getByRole('heading', {
+          name: `KSampler (#${nodeId})`
+        })
+      ).toBeVisible()
+      await user.click(screen.getByRole('button', { name: 'Show Report' }))
+      const report = await screen.findByText(/# ComfyUI Error Report/)
+      expect(report).toHaveTextContent(`**Node ID:** ${nodeId}`)
+      expect(report).toHaveTextContent('**Node Type:** KSampler')
+    }
+  )
 
   it('updates catalog copy when the locale changes', async () => {
     const originalLocale = i18n.global.locale.value
@@ -416,4 +464,81 @@ describe('legacy error dialog catalog', () => {
       )
     }
   )
+})
+
+describe('legacy error dialog for a run Cloud refused with a served reason', () => {
+  const CLOUD_MESSAGE = 'Subscription or credits required to queue workflows'
+  const REFUSALS = [
+    {
+      reason: 'manual_block',
+      body: 'This workspace has been blocked. Contact support.'
+    },
+    {
+      reason: 'workspace_cap_exceeded',
+      body: 'This workspace has reached its spending limit.'
+    },
+    {
+      reason: 'project_cap_exceeded',
+      body: 'This project has reached its spending limit.'
+    },
+    {
+      reason: 'user_cap_exceeded',
+      body: "You've reached your spending limit in this workspace."
+    }
+  ]
+
+  function openRefusal(
+    reason: string,
+    { billingNewUxEnabled, isCloud }: Record<string, boolean>
+  ) {
+    useRemoteConfigStore().acceptConfig(
+      { billing_new_ux_enabled: billingNewUxEnabled },
+      false
+    )
+    distribution.isCloud = isCloud
+    onTestFinished(() => {
+      distribution.isCloud = false
+    })
+    useDialogService().showErrorDialog(
+      new PromptExecutionError({
+        error: { type: 'PAYMENT_REQUIRED', message: CLOUD_MESSAGE, reason },
+        node_errors: {}
+      }),
+      { title: 'Prompt Execution Error' }
+    )
+    renderOpenedDialog()
+  }
+
+  it.for(REFUSALS)(
+    'explains $reason with the new billing UX on',
+    ({ reason, body }) => {
+      openRefusal(reason, { billingNewUxEnabled: true, isCloud: true })
+
+      expect(
+        screen.getByRole('heading', { name: "Your workflow didn't run" })
+      ).toBeVisible()
+      expect(screen.getByText(body)).toBeVisible()
+    }
+  )
+
+  it.for(REFUSALS)(
+    'keeps the message Cloud sent for $reason with the new billing UX off',
+    ({ reason }) => {
+      openRefusal(reason, { billingNewUxEnabled: false, isCloud: true })
+
+      expect(
+        screen.getByRole('heading', { name: 'Prompt Execution Error' })
+      ).toBeVisible()
+      expect(screen.getByText(CLOUD_MESSAGE)).toBeVisible()
+    }
+  )
+
+  it('keeps the message the backend sent off Cloud', () => {
+    openRefusal('manual_block', { billingNewUxEnabled: true, isCloud: false })
+
+    expect(
+      screen.getByRole('heading', { name: 'Prompt Execution Error' })
+    ).toBeVisible()
+    expect(screen.getByText(CLOUD_MESSAGE)).toBeVisible()
+  })
 })

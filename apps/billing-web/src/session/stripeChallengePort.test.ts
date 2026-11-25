@@ -9,10 +9,6 @@ vi.mock<unknown>(import('@stripe/stripe-js/pure'), () => ({
 import { createDeferredStripeChallengePort } from '@/session/stripeChallengePort'
 
 describe('createDeferredStripeChallengePort', () => {
-  beforeEach(() => {
-    h.loadStripe.mockReset()
-  })
-
   it('reports the challenge unavailable when no key is present at call time', async () => {
     const port = createDeferredStripeChallengePort(() => undefined)
 
@@ -102,5 +98,133 @@ describe('createDeferredStripeChallengePort', () => {
 
     expect(result).toEqual({ paymentIntent: { status: 'succeeded' } })
     expect(h.loadStripe).toHaveBeenCalledWith('pk_server')
+  })
+})
+
+describe('leavesPage', () => {
+  it.for<{ name: string; retrieved: unknown; leaves: boolean }>([
+    {
+      name: 'a challenge Stripe runs in the page',
+      retrieved: { paymentIntent: { next_action: { type: 'use_stripe_sdk' } } },
+      leaves: false
+    },
+    {
+      name: 'an Alipay redirect',
+      retrieved: {
+        paymentIntent: { next_action: { type: 'alipay_handle_redirect' } }
+      },
+      leaves: true
+    },
+    {
+      name: "a bank's own page",
+      retrieved: {
+        paymentIntent: { next_action: { type: 'redirect_to_url' } }
+      },
+      leaves: true
+    },
+    {
+      name: 'an intent Stripe would not return',
+      retrieved: { error: { code: 'resource_missing' } },
+      leaves: true
+    }
+  ])(
+    'reads $name as leaving the page: $leaves',
+    async ({ retrieved, leaves }) => {
+      const retrievePaymentIntent = vi.fn(async () => retrieved)
+      h.loadStripe.mockResolvedValue({ retrievePaymentIntent })
+      const port = createDeferredStripeChallengePort(() => 'pk_server')
+
+      await expect(port.leavesPage('cs_reload')).resolves.toBe(leaves)
+      expect(retrievePaymentIntent).toHaveBeenCalledWith('cs_reload')
+    }
+  )
+
+  it('reads a provider that never loaded as leaving the page', async () => {
+    const port = createDeferredStripeChallengePort(() => undefined)
+
+    await expect(port.leavesPage('cs_reload')).resolves.toBe(true)
+  })
+
+  it.for([
+    ['succeeded', { paymentIntent: { status: 'succeeded' } }],
+    [
+      'requires_payment_method',
+      { paymentIntent: { status: 'requires_payment_method' } }
+    ]
+  ] as const)(
+    'reports the intent as Stripe has it when the challenge is no longer open (%s)',
+    async ([status, expected]) => {
+      h.loadStripe.mockResolvedValue({
+        handleNextAction: vi.fn(async () => {
+          throw new Error(
+            'handleNextAction: The PaymentIntent supplied is not in the requires_action state.'
+          )
+        }),
+        retrievePaymentIntent: vi.fn(async () => ({
+          paymentIntent: { status }
+        }))
+      })
+      const port = createDeferredStripeChallengePort(() => 'pk_test')
+
+      await expect(port.handleNextAction('secret')).resolves.toEqual(expected)
+    }
+  )
+
+  it('rethrows when the intent cannot be read after the challenge throws', async () => {
+    const thrown = new Error('network down')
+    h.loadStripe.mockResolvedValue({
+      handleNextAction: vi.fn(async () => {
+        throw thrown
+      }),
+      retrievePaymentIntent: vi.fn(async () => ({ error: { message: 'x' } }))
+    })
+    const port = createDeferredStripeChallengePort(() => 'pk_test')
+
+    await expect(port.handleNextAction('secret')).rejects.toBe(thrown)
+  })
+})
+
+describe('a plan change authenticating a new card on a SetupIntent', () => {
+  it.for(['succeeded', 'requires_payment_method'])(
+    'reports the SetupIntent status %s as the intent the core judges',
+    async (status) => {
+      h.loadStripe.mockResolvedValue({
+        handleNextAction: vi.fn(async () => ({ setupIntent: { status } }))
+      })
+      const port = createDeferredStripeChallengePort(() => 'pk_test')
+
+      await expect(
+        port.handleNextAction('seti_123_secret_abc')
+      ).resolves.toEqual({ paymentIntent: { status } })
+    }
+  )
+
+  it('reads a SetupIntent whose challenge already closed from the SetupIntent', async () => {
+    const retrieveSetupIntent = vi.fn(async () => ({
+      setupIntent: { status: 'succeeded' }
+    }))
+    h.loadStripe.mockResolvedValue({
+      handleNextAction: vi.fn(async () => {
+        throw new Error('not in the requires_action state')
+      }),
+      retrieveSetupIntent
+    })
+    const port = createDeferredStripeChallengePort(() => 'pk_test')
+
+    await expect(port.handleNextAction('seti_123_secret_abc')).resolves.toEqual(
+      { paymentIntent: { status: 'succeeded' } }
+    )
+    expect(retrieveSetupIntent).toHaveBeenCalledWith('seti_123_secret_abc')
+  })
+
+  it('reads a SetupIntent challenge Stripe runs in the page as staying', async () => {
+    h.loadStripe.mockResolvedValue({
+      retrieveSetupIntent: vi.fn(async () => ({
+        setupIntent: { next_action: { type: 'use_stripe_sdk' } }
+      }))
+    })
+    const port = createDeferredStripeChallengePort(() => 'pk_test')
+
+    await expect(port.leavesPage('seti_123_secret_abc')).resolves.toBe(false)
   })
 })

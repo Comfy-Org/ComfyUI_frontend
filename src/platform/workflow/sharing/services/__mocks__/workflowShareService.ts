@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import type { useWorkflowShareService as realUseWorkflowShareService } from '../workflowShareService'
+import type { useWorkflowShareService as realUseWorkflowShareService } from '@/platform/workflow/sharing/services/workflowShareService'
 
 type WorkflowShareService = ReturnType<typeof realUseWorkflowShareService>
 

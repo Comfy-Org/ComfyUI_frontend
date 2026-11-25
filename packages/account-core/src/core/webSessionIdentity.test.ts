@@ -1,19 +1,19 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import type { FakeWebSessionState } from '../testing.js'
-import { createFakeWebSessionEndpoint, fakeWebSessionUser } from '../testing.js'
-import type { WebSessionFailure } from './sessionContracts.js'
+import type { FakeWebSessionState } from '#/testing'
+import { createFakeWebSessionEndpoint, fakeWebSessionUser } from '#/testing'
+import type { WebSessionFailure } from './sessionContracts'
 import type {
   RememberedLogin,
   ScheduleRetry,
   WebSessionBootstrapEvent,
   WebSessionIdentity,
   WebSessionIdentityState
-} from './webSessionIdentity.js'
+} from './webSessionIdentity'
 import {
   createWebSessionIdentity,
   transitionWebSessionIdentity
-} from './webSessionIdentity.js'
+} from './webSessionIdentity'
 
 const API = 'https://cloud.example/api'
 const ORIGIN = 'https://www.comfy.example'
@@ -234,6 +234,20 @@ describe('network errors', () => {
 
     expect(summarize(await nextRest(identity))).toBe('signed_in:user-1')
     expect(requestLog(endpoint)).toEqual(['GET', 'GET', 'POST', 'GET'])
+    expect(login.signOutLocally).not.toHaveBeenCalled()
+  })
+
+  it('adopts a live session even when the remembered-login lookup throws', async () => {
+    const login = fakeRememberedLogin('user-2')
+    login.currentUserId.mockRejectedValueOnce(new Error('provider offline'))
+    const { endpoint, scheduler, identity } = bootIdentity({
+      state: { kind: 'live', user: SESSION_USER },
+      login
+    })
+
+    expect(summarize(await nextRest(identity))).toBe('signed_in:user-1')
+    expect(scheduler.delays()).toEqual([])
+    expect(requestLog(endpoint)).toEqual(['GET'])
     expect(login.signOutLocally).not.toHaveBeenCalled()
   })
 

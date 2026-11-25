@@ -1,4 +1,4 @@
-import type { IGalleriaWidget } from '../types/widgets'
+import type { IGalleriaWidget } from '@comfyorg/graph-model/widgets'
 import { VueOnlyWidget } from './VueOnlyWidget'
 
 /**

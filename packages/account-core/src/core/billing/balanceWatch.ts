@@ -10,7 +10,7 @@
  * `credits.getSnapshot()` after a malformed response is the baseline to arm
  * this with.
  */
-import type { CreditsReader } from './credits.js'
+import type { CreditsReader } from './credits'
 
 /** Gaps between reads in one run: the webhook usually lands a beat after the return. */
 export const BALANCE_WATCH_RETRY_GAPS_MS = [

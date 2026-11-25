@@ -3,10 +3,10 @@ import { markRaw } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { registerCoreKeybindingCommands } from '@/platform/keybindings/__fixtures__/registerCoreKeybindingCommands'
-import { KeybindingImpl } from '@/platform/keybindings/keybinding'
+import { KeybindingImpl } from '@comfyorg/keybindings/keybinding'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
-import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
-import { useCommandStore } from '@/stores/commandStore'
+import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import type { DialogInstance } from '@/stores/dialogStore'
 import { useDialogStore } from '@/stores/dialogStore'
 

@@ -84,12 +84,7 @@ const indicatorTag = computed(() =>
     ref="dropZoneRef"
     v-bind="$attrs"
     data-slot="drop-zone"
-    :class="
-      cn(
-        'rounded-lg transition-colors',
-        isHovered && 'bg-component-node-widget-background-hovered'
-      )
-    "
+    :class="cn('rounded-lg transition-colors', isHovered && 'bg-muted')"
   >
     <slot />
     <div v-if="dropIndicator" class="group/dropzone relative">
@@ -103,7 +98,7 @@ const indicatorTag = computed(() =>
         data-testid="drop-zone-indicator"
         :class="
           cn(
-            'm-3 block h-25 resize-y appearance-none overflow-hidden rounded-lg border border-node-component-border bg-transparent p-1 text-left text-component-node-foreground-secondary transition-colors',
+            'm-3 block h-25 resize-y appearance-none overflow-hidden rounded-lg border border-border bg-transparent p-1 text-left text-muted-foreground transition-colors',
             indicatorTag === 'button' && 'cursor-pointer'
           )
         "

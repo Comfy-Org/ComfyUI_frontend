@@ -3,10 +3,10 @@ import { computed, toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { SelectOption } from '@/components/ui/select/types'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import type { OwnershipFilterOption } from '@/platform/assets/types/filterTypes'
-import { getAssetBaseModels } from '@/platform/assets/utils/assetMetadataUtils'
+import type { SelectOption } from '@comfyorg/design-system/lib/select/types'
+import type { AssetItem } from '@comfyorg/assets-core/schema'
+import type { OwnershipFilterOption } from '@comfyorg/assets-core/filtering'
+import { getAssetBaseModels } from '@comfyorg/assets-core/metadata'
 
 /**
  * Composable that extracts available filter options from asset data
