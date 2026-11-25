@@ -277,6 +277,17 @@ describe('node handles', () => {
       expect(handle.getProperties()).toEqual({ nan: null, count: 3 })
     })
 
+    it('reads a property whose toJSON reads its key as the workflow saves it, under its own name', () => {
+      const { node, handle } = add()
+      node.properties.label = { toJSON: (key: string) => key }
+
+      expect(handle.getProperty('label')).toBe('label')
+      expect(handle.getProperties()).toEqual({ label: 'label' })
+      expect(JSON.parse(JSON.stringify(node.serialize())).properties).toEqual({
+        label: 'label'
+      })
+    })
+
     it('reports where the node is and how big, as values that cannot change it', () => {
       const { node, handle } = add()
       node.pos = [100, 200]

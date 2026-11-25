@@ -4,22 +4,22 @@ import type { SavableValue } from './savableValue'
 
 export type SavedRecord = { readonly [key: string]: SavableValue }
 
-/** A frozen copy of `value` as a workflow would save it, or `undefined` if it cannot be saved. */
+/** A frozen copy of `value` as a workflow saves it under `key`, or `undefined` if it cannot be saved. */
 export type SavedCopier = (
   member: string,
-  value: unknown
+  value: unknown,
+  key?: string
 ) => SavableValue | undefined
 
 type SavedValue =
   | { ok: true; value: SavableValue | undefined }
   | { ok: false; error: unknown }
 
-function savedValue(value: unknown): SavedValue {
+function savedValue(value: unknown, key = 'value'): SavedValue {
   try {
-    const saved: { value?: SavableValue } = JSON.parse(
-      JSON.stringify({ value })
-    )
-    return { ok: true, value: deepFreeze(saved.value) }
+    const saved: { readonly [key: string]: SavableValue | undefined } =
+      JSON.parse(JSON.stringify({ [key]: value }))
+    return { ok: true, value: deepFreeze(saved[key]) }
   } catch (error) {
     return { ok: false, error }
   }
@@ -28,8 +28,8 @@ function savedValue(value: unknown): SavedValue {
 /** Each copier reports the first value of each member that cannot be saved, and no more. */
 export function savedCopier(): SavedCopier {
   const reported = new Set<string>()
-  return (member, value) => {
-    const saved = savedValue(value)
+  return (member, value, key) => {
+    const saved = savedValue(value, key)
     if (!saved.ok) {
       const { error } = saved
       if (!reported.has(member)) {
