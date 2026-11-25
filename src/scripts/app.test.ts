@@ -3160,6 +3160,29 @@ describe('ComfyApp', () => {
       expect(graphA.getNodeById(toNodeId(1))?.title).toBe('Edited on screen')
     })
 
+    it('tells onWorkflowLoaded listeners about the tab a switch shows from its live graph, after its afterLoadGraph hooks', async () => {
+      const { comfy, workflowService, tabA } = await twoLiveTabs()
+      const heard: string[] = []
+      mockExtensionService.invokeExtensionsAsync.mockImplementation(
+        async (hook) => {
+          heard.push(hook)
+        }
+      )
+      onTestFinished(
+        comfy.onWorkflowLoaded((document) =>
+          heard.push(`loaded ${document?.name}`)
+        )
+      )
+
+      await workflowService.openWorkflow(tabA)
+
+      expect(heard).toEqual([
+        'beforeLoadGraph',
+        'afterLoadGraph',
+        'loaded tab-a'
+      ])
+    })
+
     it('records what a legacy afterLoadGraph hook changes on a switch to a live tab as an undo step, and keeps that tab’s saved baseline', async () => {
       const { workflowService, tabA, graphA } = await twoLiveTabs()
       const tracker = tabA.changeTracker
