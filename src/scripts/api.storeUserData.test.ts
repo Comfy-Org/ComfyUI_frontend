@@ -134,15 +134,14 @@ describe('api.storeUserData', () => {
       new Response(null, { status: 409, statusText: 'Conflict' })
     )
 
-    const error = await api
-      .storeUserData(
-        'workflows/My Workflow.json',
-        { nodes: [] },
-        { overwrite: true, throwOnError: true, reportConflict: false }
-      )
-      .catch((e: unknown) => e)
+    const write = api.storeUserData(
+      'workflows/My Workflow.json',
+      { nodes: [] },
+      { overwrite: true, throwOnError: true, reportConflict: false }
+    )
 
-    expect(error).not.toBeInstanceOf(UserDataExistsError)
+    await expect(write).rejects.toThrow('409 Conflict')
+    await expect(write).rejects.not.toBeInstanceOf(UserDataExistsError)
     expect(reportError).toHaveBeenCalledOnce()
   })
 })
