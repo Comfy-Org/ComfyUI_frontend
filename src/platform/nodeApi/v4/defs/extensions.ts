@@ -115,7 +115,9 @@ export function createExtensions(installer: HookInstaller): Extensions {
     nodeType: NodeType,
     candidate: SelectorCandidate
   ): void {
-    if (!extensions.has(extension) || !extension.selects(candidate)) return
+    const isLive = () =>
+      extensions.has(extension) && nodeTypes.get(nodeType.type) === nodeType
+    if (!isLive() || !extension.selects(candidate)) return
     const applied = callListener('extend', () => {
       const opened = createNodeDefBuilder(candidate.def(), extension.pack)
       try {
@@ -126,7 +128,7 @@ export function createExtensions(installer: HookInstaller): Extensions {
       return opened.callbacks
     })
     const hooks = HOOK_NAMES.filter((hook) => applied?.[hook].length)
-    if (!applied || hooks.length === 0 || !extensions.has(extension)) return
+    if (!applied || hooks.length === 0 || !isLive()) return
     applications.set(
       nodeType.type,
       [

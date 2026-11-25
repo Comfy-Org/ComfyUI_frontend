@@ -1,4 +1,5 @@
 import { reportError } from '@comfyorg/telemetry/reportError'
+import { once } from 'es-toolkit'
 import {
   assert,
   beforeEach,
@@ -388,6 +389,24 @@ describe('registering node types and extensions at the edges', () => {
       expect(LiteGraph.registered_node_types['Sparse']).toBeUndefined()
     }
   )
+
+  it('keeps no hook of an apply on a registration that apply replaced', () => {
+    const created = vi.fn()
+    const stopOriginal = defs.define(packId, { type: 'Replaced' })
+    const replace = once(() => {
+      stopOriginal()
+      defs.define(packId, { type: 'Replaced', title: 'Replacement' })
+    })
+    defs.extend(packId, 'Replaced', (builder) => {
+      builder.onCreated(created)
+      replace()
+    })
+
+    addedNode('Replaced')
+
+    expect(defs.get('Replaced')?.title).toBe('Replacement')
+    expect(created).toHaveBeenCalledOnce()
+  })
 
   describe('a definition and a host type of the same name', () => {
     it('runs the definition’s hooks only for the type it defined', () => {
