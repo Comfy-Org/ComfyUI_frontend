@@ -313,7 +313,10 @@ const ports: AddCreditsPorts = {
     const quoted = await quoteTopup(amountCents, signal)
     if (quoted === null) return { status: 'error' }
     quotedPayment = { amountCents, configured: quoted.paymentConfigured }
-    return { status: 'ok', credits: quoted.credits }
+    const { credits, balanceAfter } = quoted
+    return balanceAfter === undefined
+      ? { status: 'ok', credits }
+      : { status: 'ok', credits, balanceAfter }
   },
   get activatesAutoTopUp() {
     return autoTopUpChoice.activatesAtCheckout()

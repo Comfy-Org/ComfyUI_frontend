@@ -729,18 +729,66 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     expect(screen.getByRole('button', { name: 'Pay $50.00' })).toBeEnabled()
   })
 
-  it('explains that the top-up covers a negative balance first', () => {
-    renderWithBalance({
-      amountMicros: -10_000,
-      effectiveBalanceMicros: -10_000,
-      suggestedTopupAmountCents: 11_400
-    })
+  const NEGATIVE_BALANCE: Partial<BalanceInfo> = {
+    amountMicros: -10_000,
+    effectiveBalanceMicros: -10_000,
+    suggestedTopupAmountCents: 11_400
+  }
 
-    expect(
-      screen.getByText(
-        'Your balance is −21,100 credits. This top-up covers that first.'
-      )
-    ).toBeInTheDocument()
+  it.for<{
+    name: string
+    quoted: { balance_after_credits: number; runs_paused_after: boolean }
+    afterLine: string
+    warns: boolean
+  }>([
+    {
+      name: 'a top-up that clears the balance',
+      quoted: { balance_after_credits: 2_954, runs_paused_after: false },
+      afterLine: 'After this top-up: 2,954 credits.',
+      warns: false
+    },
+    {
+      name: 'a top-up that leaves runs paused',
+      quoted: { balance_after_credits: -840, runs_paused_after: true },
+      afterLine: 'Still negative after this top-up: −840 credits.',
+      warns: true
+    }
+  ])(
+    'shows the served balance after $name',
+    async ({ quoted, afterLine, warns }) => {
+      const quote = vi.spyOn(billingApi, 'quoteTopup').mockResolvedValue({
+        amount_cents: 11_400,
+        credits: 24_054,
+        expires_at: '2027-11-02T00:00:00Z',
+        ...quoted
+      })
+      renderWithBalance(NEGATIVE_BALANCE)
+
+      expect(await screen.findByText(afterLine)).toBeInTheDocument()
+      expect(quote).toHaveBeenCalledWith(11_400, expect.any(AbortSignal))
+      expect(
+        screen.getByText('Your balance is −21,100 credits.')
+      ).toBeInTheDocument()
+      expect(
+        screen
+          .getByTestId('topup-negative-balance')
+          .classList.contains('text-warning')
+      ).toBe(warns)
+    }
+  )
+
+  it('shows only the current balance when the quote has no balance after', async () => {
+    const quote = vi.spyOn(billingApi, 'quoteTopup').mockResolvedValue({
+      amount_cents: 11_400,
+      credits: 24_054,
+      expires_at: '2027-11-02T00:00:00Z'
+    })
+    renderWithBalance(NEGATIVE_BALANCE)
+
+    await vi.waitFor(() => expect(quote).toHaveBeenCalled())
+    expect(screen.getByTestId('topup-negative-balance')).toHaveTextContent(
+      /^Your balance is −21,100 credits\.$/
+    )
   })
 
   it.for<{ name: string; balance: Partial<BalanceInfo> }>([
@@ -756,9 +804,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
   ])('says nothing about the balance for $name', ({ balance }) => {
     renderWithBalance(balance)
 
-    expect(
-      screen.queryByText(/This top-up covers that first/)
-    ).not.toBeInTheDocument()
+    expect(screen.queryByText(/Your balance is/)).not.toBeInTheDocument()
   })
 
   const SERVED_MINIMUM: Partial<BalanceInfo> = {

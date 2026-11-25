@@ -7,7 +7,8 @@ import type {
   AddCreditsAutoTopUpOffer,
   AddCreditsRefusal,
   AutoTopUpActivation,
-  AutoTopUpActivationOutcome
+  AutoTopUpActivationOutcome,
+  TopupBalanceAfter
 } from '@comfyorg/account-core/billing'
 
 import AddCreditsDialog from './AddCreditsDialog.vue'
@@ -61,16 +62,19 @@ class FakePorts implements AddCreditsPorts {
 
   quoteRejects = false
   checkoutRejects = false
+  balanceAfter: TopupBalanceAfter | undefined
 
   quote = (amountCents: number): Promise<AddCreditsQuoteResult> => {
     this.quotes.push(amountCents)
     if (this.quoteHeld) return new Promise(() => {})
     if (this.quoteRejects)
       return Promise.reject(new TypeError('Failed to fetch'))
+    if (this.quoteFails) return Promise.resolve({ status: 'error' })
+    const credits = Math.round(amountCents * CREDITS_PER_CENT)
     return Promise.resolve(
-      this.quoteFails
-        ? { status: 'error' }
-        : { status: 'ok', credits: Math.round(amountCents * CREDITS_PER_CENT) }
+      this.balanceAfter === undefined
+        ? { status: 'ok', credits }
+        : { status: 'ok', credits, balanceAfter: this.balanceAfter }
     )
   }
 
@@ -112,8 +116,12 @@ class FakePorts implements AddCreditsPorts {
 
 type Props = InstanceType<typeof AddCreditsDialog>['$props']
 
-function renderDialog(props: Partial<Props> = {}) {
+function renderDialog(
+  props: Partial<Props> = {},
+  balanceAfter?: TopupBalanceAfter
+) {
   const ports = new FakePorts()
+  ports.balanceAfter = balanceAfter
   const user = userEvent.setup()
   const rendered = render(AddCreditsDialog, {
     props: {
@@ -238,15 +246,49 @@ describe('AddCreditsDialog amount step', () => {
 
     expect(
       screen.getByTestId('add-credits-negative-balance')
-    ).toHaveTextContent(
-      'Your balance is −23,000 credits. This top-up covers that first.'
-    )
+    ).toHaveTextContent(/^Your balance is −23,000 credits\.$/)
     expect(field()).toHaveValue('114')
     expect(presets().some((radio) => radio.ariaChecked === 'true')).toBe(false)
     expect(
       await within(summary()).findByText('$114.00, paid at checkout')
     ).toBeVisible()
   })
+
+  it.for<{
+    name: string
+    balanceAfter: TopupBalanceAfter
+    afterLine: string
+    warns: boolean
+  }>([
+    {
+      name: 'a top-up that clears the balance',
+      balanceAfter: { credits: 2_325, runsPaused: false },
+      afterLine: 'After this top-up: 2,325 credits.',
+      warns: false
+    },
+    {
+      name: 'a top-up that leaves runs paused',
+      balanceAfter: { credits: -840, runsPaused: true },
+      afterLine: 'Still negative after this top-up: −840 credits.',
+      warns: true
+    }
+  ])(
+    'shows the served balance after $name',
+    async ({ balanceAfter, afterLine, warns }) => {
+      const { ports } = renderDialog(
+        { negativeBalanceCredits: 1_895, suggestedTopupCents: 11400 },
+        balanceAfter
+      )
+
+      expect(await screen.findByText(afterLine)).toBeVisible()
+      expect(ports.quotes).toContain(11400)
+      expect(
+        screen
+          .getByTestId('add-credits-negative-balance')
+          .classList.contains('text-warning')
+      ).toBe(warns)
+    }
+  )
 
   it('renders the plan line it is given', () => {
     renderDialog({ planLine: 'ended' })

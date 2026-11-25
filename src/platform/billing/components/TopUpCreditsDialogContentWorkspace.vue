@@ -151,20 +151,37 @@
       @credits="creditsModel = $event"
     />
 
-    <!-- Warnings -->
-
-    <p
+    <div
       v-if="negativeBalanceCredits !== null && step === 'amount'"
-      class="m-0 px-8 pt-4 text-sm text-muted-foreground"
-    >
-      {{
-        $t(
-          'credits.topUp.negativeBalanceNotice',
-          { credits: formatNumber(negativeBalanceCredits) },
-          negativeBalanceCredits
+      :class="
+        cn(
+          'flex flex-col px-8 pt-4 text-sm text-muted-foreground',
+          balanceAfter?.runsPaused && 'text-warning'
         )
-      }}
-    </p>
+      "
+      data-testid="topup-negative-balance"
+    >
+      <p class="m-0">
+        {{
+          $t(
+            'credits.topUp.negativeBalanceNotice',
+            { credits: formatNumber(negativeBalanceCredits) },
+            negativeBalanceCredits
+          )
+        }}
+      </p>
+      <p v-if="balanceAfter" class="m-0">
+        {{
+          $t(
+            balanceAfter.runsPaused
+              ? 'credits.topUp.stillNegativeAfterTopup'
+              : 'credits.topUp.balanceAfterTopup',
+            { credits: formatNumber(Math.abs(balanceAfter.credits)) },
+            Math.abs(balanceAfter.credits)
+          )
+        }}
+      </p>
+    </div>
     <p
       v-if="isBelowMin && step === 'amount'"
       class="m-0 flex items-center justify-center gap-1 px-8 pt-4 text-center text-sm text-destructive"
@@ -368,13 +385,17 @@
 <script setup lang="ts">
 import Card from '@comfyorg/design-system/card/Card'
 import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
-import type { BillingOperationTerminal } from '@comfyorg/account-core/billing'
+import type {
+  BillingOperationTerminal,
+  TopupBalanceAfter
+} from '@comfyorg/account-core/billing'
 import {
   getTopupAmountPreset,
   PURCHASE_REFUSAL_SERVER_CODES
 } from '@comfyorg/account-core/billing'
 import { useToast } from '@/components/ui/toast/toastStore'
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { watchDebounced } from '@vueuse/core'
+import { computed, onMounted, onUnmounted, ref, shallowRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import {
@@ -384,6 +405,7 @@ import {
   usdToCredits
 } from '@/base/credits/comfyCredits'
 import Button from '@comfyorg/design-system/button/Button'
+import { cn } from '@comfyorg/tailwind-utils'
 import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
 import TopUpAmountFields from '@/platform/billing/components/TopUpAmountFields.vue'
 import TopUpAutoTopUpCard from '@/platform/billing/components/TopUpAutoTopUpCard.vue'
@@ -492,7 +514,8 @@ const {
   topup,
   createHostedCheckout,
   dismissOperation,
-  adoptPendingOperation
+  adoptPendingOperation,
+  quoteTopup
 } = useTopupOperation()
 // Start over invalidates the attempt in flight: on the SDK rail the purchase
 // call resolves only at settlement, so a superseded attempt must not unlock
@@ -635,6 +658,35 @@ const negativeBalanceCredits = computed(() => {
   if (info?.effectiveBalanceAuthoritative === false) return null
   return centsToCredits(-cents)
 })
+
+const balanceQuoteCents = computed(() =>
+  negativeBalanceCredits.value !== null && isValidAmount.value
+    ? payAmount.value * 100
+    : null
+)
+const balanceQuote = shallowRef<{
+  amountCents: number
+  balanceAfter: TopupBalanceAfter
+} | null>(null)
+let balanceQuoteScope: AbortController | undefined
+watchDebounced(
+  balanceQuoteCents,
+  async (amountCents) => {
+    balanceQuoteScope?.abort()
+    if (amountCents === null) return
+    const scope = new AbortController()
+    balanceQuoteScope = scope
+    const quoted = await quoteTopup(amountCents, scope.signal)
+    if (scope.signal.aborted || quoted?.balanceAfter === undefined) return
+    balanceQuote.value = { amountCents, balanceAfter: quoted.balanceAfter }
+  },
+  { debounce: 300, immediate: true }
+)
+const balanceAfter = computed(() =>
+  balanceQuote.value?.amountCents === balanceQuoteCents.value
+    ? balanceQuote.value.balanceAfter
+    : undefined
+)
 
 const isBelowMin = computed(() => payAmount.value < minTopup.value.usd)
 const showCeilingWarning = computed(() => payAmount.value >= maxTopup.value.usd)
@@ -889,6 +941,7 @@ watch(
 onUnmounted(() => {
   unmounted = true
   checkoutScope?.abort()
+  balanceQuoteScope?.abort()
   stopPayOfferOnCardReturn()
 })
 

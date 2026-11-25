@@ -9,6 +9,7 @@ import type {
   AddCreditsState,
   AutoTopUpActivation,
   AutoTopUpActivationOutcome,
+  TopupBalanceAfter,
   TopupCommand
 } from '@comfyorg/account-core/billing'
 import {
@@ -21,7 +22,11 @@ import {
 import type { AddCreditsAutoTopUpRequest } from './useAddCreditsAutoTopUp'
 
 export type AddCreditsQuoteResult =
-  | { readonly status: 'ok'; readonly credits: number }
+  | {
+      readonly status: 'ok'
+      readonly credits: number
+      readonly balanceAfter?: TopupBalanceAfter
+    }
   | { readonly status: 'error' }
 
 export type AddCreditsCheckoutResult =
@@ -65,7 +70,7 @@ export interface AddCreditsPorts {
 
 export type AddCreditsQuote =
   | { readonly status: 'loading' }
-  | { readonly status: 'ok'; readonly credits: number }
+  | Extract<AddCreditsQuoteResult, { status: 'ok' }>
   | { readonly status: 'unavailable' }
 
 export interface AddCreditsDialogOptions {
@@ -89,9 +94,11 @@ export function addCreditsClientPorts(
   return {
     async quote(amountCents, signal) {
       const quoted = await client.topup.quoteTopup({ amountCents, signal })
-      return quoted.status === 'ok'
-        ? { status: 'ok', credits: quoted.value.credits }
-        : { status: 'error' }
+      if (quoted.status !== 'ok') return { status: 'error' }
+      const { credits, balanceAfter } = quoted.value
+      return balanceAfter === undefined
+        ? { status: 'ok', credits }
+        : { status: 'ok', credits, balanceAfter }
     },
     async createCheckout(amountCents, signal) {
       const session = await client.topup.createHostedTopupCheckout({
@@ -187,10 +194,7 @@ export function useAddCreditsDialog(options: AddCreditsDialogOptions) {
       if (scope.signal.aborted) return
       quoteRead.value = {
         cents,
-        quote:
-          result.status === 'ok'
-            ? { status: 'ok', credits: result.credits }
-            : { status: 'unavailable' }
+        quote: result.status === 'ok' ? result : { status: 'unavailable' }
       }
     },
     { immediate: true }
