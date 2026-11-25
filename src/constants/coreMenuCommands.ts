@@ -37,7 +37,7 @@ export const CORE_MENU_COMMANDS = [
           ])
     ]
   ],
-  [['View'], []],
+  [['View'], ['Comfy.Canvas.GoToNode']],
   [
     ['Help'],
     [
