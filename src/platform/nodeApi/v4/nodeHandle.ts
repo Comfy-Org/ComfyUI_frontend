@@ -148,7 +148,7 @@ function property(
 ): unknown {
   const { properties } = node
   return Object.hasOwn(properties, name)
-    ? copyOfSaved('getProperty', properties[name], name)
+    ? copyOfSaved('getProperty', properties, name)
     : undefined
 }
 

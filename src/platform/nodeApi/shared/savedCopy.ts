@@ -4,46 +4,52 @@ import type { SavableValue } from './savableValue'
 
 export type SavedRecord = { readonly [key: string]: SavableValue }
 
-/** A frozen copy of `value` as a workflow saves it under `key`, or `undefined` if it cannot be saved. */
-export type SavedCopier = (
-  member: string,
-  value: unknown,
-  key?: string
-) => SavableValue | undefined
+/** A frozen copy of `value` as a workflow would save it, or of `record[field]` read and saved under `field`; `undefined` if it cannot be read or saved. */
+export interface SavedCopier {
+  (member: string, value: unknown): SavableValue | undefined
+  (member: string, record: object, field: string): SavableValue | undefined
+}
 
 type SavedValue =
   | { ok: true; value: SavableValue | undefined }
   | { ok: false; error: unknown }
 
-function savedValue(value: unknown, key = 'value'): SavedValue {
+function savedValue(holder: object, key: string): SavedValue {
   try {
     const saved: { readonly [key: string]: SavableValue | undefined } =
-      JSON.parse(JSON.stringify({ [key]: value }))
+      JSON.parse(JSON.stringify(holder))
     return { ok: true, value: deepFreeze(saved[key]) }
   } catch (error) {
     return { ok: false, error }
   }
 }
 
+function fieldHolder(record: object, field: string): object {
+  return Object.defineProperty({}, field, {
+    enumerable: true,
+    get: () => Reflect.get(record, field)
+  })
+}
+
 /** Each copier reports the first value of each member that cannot be saved, and no more. */
 export function savedCopier(): SavedCopier {
   const reported = new Set<string>()
-  return (member, value, key) => {
-    const saved = savedValue(value, key)
-    if (!saved.ok) {
-      const { error } = saved
-      if (!reported.has(member)) {
-        reported.add(member)
-        reportError(error, {
-          errorType: 'node_api_property_not_savable',
-          surface: 'platform',
-          level: 'warning',
-          tags: { member }
-        })
-      }
-      return undefined
+  return (member: string, value: unknown, field?: string) => {
+    const saved =
+      field !== undefined && typeof value === 'object' && value !== null
+        ? savedValue(fieldHolder(value, field), field)
+        : savedValue({ value }, 'value')
+    if (saved.ok) return saved.value
+    if (!reported.has(member)) {
+      reported.add(member)
+      reportError(saved.error, {
+        errorType: 'node_api_property_not_savable',
+        surface: 'platform',
+        level: 'warning',
+        tags: { member }
+      })
     }
-    return saved.value
+    return undefined
   }
 }
 

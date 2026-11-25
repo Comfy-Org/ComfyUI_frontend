@@ -138,7 +138,7 @@ export interface NodeHandle {
   getColor(): string | undefined
   /** The body color, or `undefined` for the default. */
   getBgColor(): string | undefined
-  /** A copy of one saved property. `undefined` if there is none, or it cannot be saved. */
+  /** A copy of one saved property. `undefined` if there is none, or it cannot be read or saved. */
   getProperty(name: string): unknown
   /** A copy of the node's saved properties. `undefined` if they cannot be saved. */
   getProperties(): Readonly<Record<string, unknown>> | undefined

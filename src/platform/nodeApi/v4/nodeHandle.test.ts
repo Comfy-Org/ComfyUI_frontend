@@ -242,16 +242,30 @@ describe('node handles', () => {
 
     it('reports an unsavable value once however its error message varies', () => {
       const { node, handle } = add()
-      let failures = 0
-      node.properties.changing = {
+      const failing = (message: string) => ({
         toJSON() {
-          throw new Error(`failure ${++failures}`)
+          throw new Error(message)
         }
-      }
+      })
 
-      for (let read = 0; read < 10; read++) handle.getProperty('changing')
+      node.properties.changing = failing('first failure')
+      expect(handle.getProperty('changing')).toBeUndefined()
+      node.properties.changing = failing('second failure')
+      expect(handle.getProperty('changing')).toBeUndefined()
 
-      expect(failures).toBe(10)
+      expect(reportError).toHaveBeenCalledOnce()
+    })
+
+    it('reads a property whose getter throws as undefined, and reports it', () => {
+      const { node, handle } = add()
+      Object.defineProperty(node.properties, 'broken', {
+        enumerable: true,
+        get() {
+          throw new Error('getter failed')
+        }
+      })
+
+      expect(handle.getProperty('broken')).toBeUndefined()
       expect(reportError).toHaveBeenCalledOnce()
     })
 
