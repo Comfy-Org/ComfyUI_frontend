@@ -13,6 +13,7 @@ interface ComboOption {
   label: string
   rawValue: NonNullable<WidgetValue>
   value: string
+  searchKeys: string[]
 }
 
 interface ComboFolder {
@@ -121,10 +122,10 @@ export function useComboOptions(
       .filter(Boolean)
     if (!hasFolders.value || terms.length)
       return terms.length
-        ? scoped.value.filter(
-            (option) =>
-              containsAll(option.value, terms) ||
-              containsAll(option.label, terms)
+        ? scoped.value.filter((option) =>
+            option.searchKeys.some((key) =>
+              terms.every((term) => key.includes(term))
+            )
           )
         : scoped.value
     return getComboFolderRows(scoped.value, directory.value)
@@ -173,12 +174,16 @@ export function resolveComboValues(
 function resolveOptions(options: IWidgetOptions | undefined): ComboOption[] {
   return resolveComboValues(options?.values).map((rawValue) => {
     const value = String(rawValue)
+    const label = getOptionLabel(value, options?.getOptionLabel)
     return {
       kind: 'value',
       key: `value:${value}`,
       value,
       rawValue,
-      label: getOptionLabel(value, options?.getOptionLabel)
+      label,
+      searchKeys: [
+        ...new Set([value.toLocaleLowerCase(), label.toLocaleLowerCase()])
+      ]
     }
   })
 }
@@ -202,11 +207,6 @@ function getOptionLabel(
     console.error('[WidgetSelectDefault] Failed to map option label', error)
     return value
   }
-}
-
-function containsAll(text: string, terms: string[]) {
-  const haystack = text.toLocaleLowerCase()
-  return terms.every((term) => haystack.includes(term))
 }
 
 function fileParts(value: string) {
