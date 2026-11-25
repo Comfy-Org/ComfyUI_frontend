@@ -117,18 +117,18 @@ describe('ComfyApi realtime socket after a revoked credential', () => {
     expect(getAuthToken).toHaveBeenLastCalledWith({ forceRefresh: true })
   })
 
-  it('stops reconnecting once three refreshed attempts in a row close before open', async () => {
+  it('keeps force-refreshing while refreshed attempts close before open', async () => {
     await revokeOpenSocket()
 
-    for (let attempt = 0; attempt < 3; attempt++) {
+    for (let attempt = 0; attempt < 5; attempt++) {
       latestSocket().serverClose(1006, '')
       await vi.advanceTimersByTimeAsync(RECONNECT_WINDOW_MS)
     }
 
-    expect(FakeWebSocket.instances).toHaveLength(4)
-    expect(forcedRefreshCount()).toBe(3)
-    expect(api.socket).toBeNull()
-    expect(onAuthRevoked).toHaveBeenCalledOnce()
+    expect(FakeWebSocket.instances).toHaveLength(7)
+    expect(forcedRefreshCount()).toBe(6)
+    expect(api.socket).toBe(latestSocket())
+    expect(onAuthRevoked).not.toHaveBeenCalled()
   })
 
   it('recovers when a refreshed attempt opens after a transient close', async () => {
@@ -184,16 +184,21 @@ describe('ComfyApi realtime socket after a revoked credential', () => {
     }
   )
 
-  it('opens no tokenless socket and stops once the refreshed credential cannot be minted three times', async () => {
+  it('opens no tokenless socket and keeps retrying while the refreshed credential cannot be minted', async () => {
     latestSocket().simulateOpen()
     mintableToken = undefined
     latestSocket().serverClose(1008, 'auth_revoked')
-    await vi.advanceTimersByTimeAsync(3 * RECONNECT_WINDOW_MS)
+    await vi.advanceTimersByTimeAsync(5 * RECONNECT_WINDOW_MS)
 
     expect(FakeWebSocket.instances).toHaveLength(1)
-    expect(forcedRefreshCount()).toBe(3)
-    expect(api.socket).toBeNull()
-    expect(onAuthRevoked).toHaveBeenCalledOnce()
+    expect(forcedRefreshCount()).toBeGreaterThanOrEqual(5)
+    expect(onAuthRevoked).not.toHaveBeenCalled()
+
+    mintableToken = 'token'
+    await vi.advanceTimersByTimeAsync(RECONNECT_WINDOW_MS)
+
+    expect(FakeWebSocket.instances).toHaveLength(2)
+    expect(latestSocket().url).toContain('token=token')
   })
 
   it('reconnects when a refreshed credential is minted after a failed mint', async () => {

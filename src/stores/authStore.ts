@@ -468,7 +468,6 @@ export const useAuthStore = defineStore('auth', () => {
     return useWorkspaceAuthStore().getUnifiedToken()
   }
 
-  /** A unified Cloud JWT minted now, replacing the cached one; undefined when the re-mint is refused. */
   const getRemintedUnifiedAuthToken = async (): Promise<string | undefined> => {
     const cached = await getUnifiedAuthToken()
     if (!cached) return undefined

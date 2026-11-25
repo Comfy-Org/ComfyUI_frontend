@@ -7,7 +7,7 @@ export interface RetrySignalLifecycle {
 }
 
 export interface AuthTokenRequest {
-  /** Mint a new credential instead of returning a cached one. */
+  /** Prefer a newly minted credential; a provider that cannot mint returns its cached one. */
   forceRefresh?: boolean
 }
 
