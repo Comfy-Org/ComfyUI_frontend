@@ -15,6 +15,7 @@ import type { MaybePaged } from '@/utils/pagedList'
 import FormDropdownMenuActions from './FormDropdownMenuActions.vue'
 import FormDropdownMenuFilter from './FormDropdownMenuFilter.vue'
 import FormDropdownMenuItem from './FormDropdownMenuItem.vue'
+import FormDropdownSelectionOrder from './FormDropdownSelectionOrder.vue'
 import type { FormDropdownItem, LayoutMode, SortOption } from './types'
 
 interface Props {
@@ -29,6 +30,8 @@ interface Props {
   baseModelOptions?: FilterOption[]
   candidateIndex?: number
   candidateLabel?: string
+  selectedItems?: readonly FormDropdownItem[]
+  maxSelectable?: number
 }
 
 const {
@@ -42,12 +45,15 @@ const {
   showBaseModelFilter,
   baseModelOptions,
   candidateIndex = -1,
-  candidateLabel
+  candidateLabel,
+  selectedItems = [],
+  maxSelectable = 1
 } = defineProps<Props>()
 const emit = defineEmits<{
   (e: 'item-click', item: FormDropdownItem, index: number): void
   (e: 'search-enter'): void
   (e: 'show-picker'): void
+  (e: 'reorder', ids: string[]): void
 }>()
 
 const filterSelected = defineModel<string>('filterSelected')
@@ -136,6 +142,11 @@ const onWheel = (event: WheelEvent) => {
       :base-model-options
       :candidate-label
       @search-enter="emit('search-enter')"
+    />
+    <FormDropdownSelectionOrder
+      v-if="maxSelectable > 1 && selectedItems.length > 1"
+      :items="selectedItems"
+      @reorder="emit('reorder', $event)"
     />
     <div
       v-if="menuItems.length === 0 && !hasMore"

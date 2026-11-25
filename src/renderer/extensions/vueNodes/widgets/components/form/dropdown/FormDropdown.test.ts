@@ -39,7 +39,8 @@ const MockFormDropdownMenu = {
     'showBaseModelFilter',
     'baseModelOptions',
     'candidateIndex',
-    'candidateLabel'
+    'candidateLabel',
+    'selectedItems'
   ],
   template: `<div class="mock-menu" data-testid="dropdown-menu" :data-candidate-index="candidateIndex" :data-candidate-label="candidateLabel ?? ''" :data-items="JSON.stringify(pagedItems(items))">
       <button
@@ -51,6 +52,7 @@ const MockFormDropdownMenu = {
         {{ item.label ?? item.name }}
       </button>
       <button type="button" @click="$emit('search-enter')">Search enter</button>
+      <button type="button" @click="$emit('reorder', selectedItems.map((item) => item.id).reverse())">Reverse selection</button>
     </div>`
 }
 
@@ -340,6 +342,27 @@ describe('FormDropdown', () => {
       )
     }
   )
+
+  it('saves the order the selection is rearranged into', async () => {
+    const onUpdateSelected = vi.fn()
+    const { user } = mountDropdown(
+      [
+        createItem('first', 'first.png'),
+        createItem('second', 'second.png'),
+        createItem('third', 'third.png')
+      ],
+      {
+        multiple: 3,
+        selected: new Set(['third', 'first']),
+        onUpdateSelected
+      }
+    )
+    await openDropdown(user)
+
+    await user.click(screen.getByRole('button', { name: 'Reverse selection' }))
+
+    expect([...onUpdateSelected.mock.lastCall![0]]).toEqual(['first', 'third'])
+  })
 
   it('does not select when Enter is pressed with an empty search query', async () => {
     const onUpdateSelected = vi.fn()

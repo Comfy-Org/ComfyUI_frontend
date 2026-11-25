@@ -193,6 +193,13 @@ const candidateLabel = computed(() => {
   return candidate?.label ?? candidate?.name
 })
 
+const selectedItems = computed(() => {
+  const all = pagedItems(items)
+  return [...selected.value].flatMap(
+    (id) => all.find((item) => item.id === id) ?? []
+  )
+})
+
 function internalIsSelected(item: FormDropdownItem, index: number): boolean {
   return isSelected(selected.value, item, index)
 }
@@ -335,7 +342,7 @@ const dropdownItems = computed(() =>
         :files
         :is-open
         :placeholder="placeholderText"
-        :selected-items="pagedItems(items).filter(internalIsSelected)"
+        :selected-items
         :max-selectable
         :uploadable
         :disabled
@@ -374,11 +381,13 @@ const dropdownItems = computed(() =>
           :candidate-index
           :candidate-label
           :is-selected="internalIsSelected"
+          :selected-items
           :max-selectable
           @close="closeDropdown"
           @search-enter="handleSearchEnter"
           @item-click="handleSelection"
           @show-picker="showPicker"
+          @reorder="selected = new Set($event)"
         />
       </PopoverContent>
     </PopoverRoot>
