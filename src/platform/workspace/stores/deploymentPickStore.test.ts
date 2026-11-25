@@ -126,7 +126,7 @@ describe('useDeploymentPickStore', () => {
     })
   })
 
-  it('reports a lookup the server refuses for the session as a denied warning', async () => {
+  it('keeps a lookup the server refuses for the session out of Sentry, as a denied warning', async () => {
     const error = new WorkspaceApiError('invalid session cookie', 401)
     mockWorkspaceApi.listDeployments.mockRejectedValue(error)
     const store = useDeploymentPickStore()
@@ -138,6 +138,7 @@ describe('useDeploymentPickStore', () => {
     expect(reportError).toHaveBeenCalledExactlyOnceWith(error, {
       surface: 'workspace',
       errorType: 'error_loading_deployment_listing',
+      sentryMode: 'never',
       level: 'warning',
       tags: { status: 401, outcome: 'denied' }
     })
