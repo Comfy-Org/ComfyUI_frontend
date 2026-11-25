@@ -232,13 +232,27 @@ export class DragAndScale {
    */
   animateToBounds(
     bounds: ReadOnlyRect,
-    {
+    options?: AnimationOptions
+  ): Promise<boolean>
+  /** @deprecated The canvas redraws on camera changes; pass the options as the second argument. */
+  animateToBounds(
+    bounds: ReadOnlyRect,
+    setDirty: () => void,
+    options?: AnimationOptions
+  ): Promise<boolean>
+  animateToBounds(
+    bounds: ReadOnlyRect,
+    optionsOrSetDirty?: AnimationOptions | (() => void),
+    legacyOptions?: AnimationOptions
+  ): Promise<boolean> {
+    const {
       duration = 350,
       zoom = 0.75,
       easing = EaseFunction.EASE_IN_OUT_QUAD,
       viewport
-    }: AnimationOptions = {}
-  ): Promise<boolean> {
+    } = (typeof optionsOrSetDirty === 'function'
+      ? legacyOptions
+      : optionsOrSetDirty) ?? {}
     if (!(duration > 0)) throw new RangeError('Duration must be greater than 0')
 
     this.stopAnimation()

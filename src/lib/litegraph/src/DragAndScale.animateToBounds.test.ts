@@ -116,6 +116,20 @@ describe('DragAndScale.animateToBounds', () => {
     }
   )
 
+  it('applies the options of the deprecated setDirty form', () => {
+    const ds = createDragAndScale()
+    const bounds: Bounds = [0, 0, 100, 100]
+
+    void ds.animateToBounds(bounds, () => {}, {
+      zoom: 0.75,
+      viewport: [400, 0, 600, 900]
+    })
+    settle(ds)
+
+    expect(screenCenterX(ds, bounds)).toBeCloseTo(700)
+    expect(ds.scale).toBeCloseTo(1.5)
+  })
+
   it('zooms geometrically around the viewport centre while it travels', () => {
     const ds = createDragAndScale()
     void ds.animateToBounds([1000, 2000, 300, 300], {
