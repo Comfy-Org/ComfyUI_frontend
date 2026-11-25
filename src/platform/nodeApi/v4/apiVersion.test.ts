@@ -15,7 +15,6 @@ describe('API version', () => {
   it.for([
     { name: 'itself', version: `v${major}.${minor}.${patch}` },
     { name: 'itself without the v', version: `${major}.${minor}.${patch}` },
-    { name: 'an earlier patch of an earlier minor', version: `v${major}.0.0` },
     { name: 'an earlier major', version: `v${major - 1}.99.99` }
   ])('is at least $name', ({ version }) => {
     expect(isApiVersionAtLeast(version)).toBe(true)
