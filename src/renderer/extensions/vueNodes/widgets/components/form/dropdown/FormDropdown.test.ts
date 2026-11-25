@@ -7,6 +7,7 @@ import { reactive, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
+import { safeSessionStorage } from '@/base/storage/safeStorage'
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 import { mockPagedList } from '@/utils/__tests__/pagedListUtils'
 import { pagedItems } from '@/utils/pagedList'
@@ -534,7 +535,9 @@ describe('FormDropdown', () => {
   })
 
   it('opens the next dropdown at the size the last one was resized to', async () => {
-    onTestFinished(() => sessionStorage.clear())
+    onTestFinished(() =>
+      safeSessionStorage.removeItem('Comfy.FormDropdown.PanelSize')
+    )
     const items = [createItem('input-0', 'video1.mp4')]
     const first = mountDropdown(items)
     await openDropdown(first.user)

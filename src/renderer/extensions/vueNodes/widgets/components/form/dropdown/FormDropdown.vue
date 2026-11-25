@@ -4,8 +4,7 @@ import {
   computedAsync,
   refDebounced,
   unrefElement,
-  useEventListener,
-  useSessionStorage
+  useEventListener
 } from '@vueuse/core'
 import { PopoverAnchor, PopoverRoot } from 'reka-ui'
 import type { ComponentPublicInstance } from 'vue'
@@ -15,6 +14,7 @@ import { useI18n } from 'vue-i18n'
 import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import { usePopoverViewportDismiss } from '@comfyorg/design-system/lib/popover/usePopoverViewportDismiss'
 import { useToast } from '@/components/ui/toast/toastStore'
+import { useSafeSessionStorage } from '@/platform/storage/useSafeStorage'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 import type {
@@ -129,7 +129,7 @@ const triggerAnchorRef = useTemplateRef<HTMLElement>('triggerAnchorRef')
 const menuRef = useTemplateRef<ComponentPublicInstance>('menuRef')
 const triggerRef =
   useTemplateRef<InstanceType<typeof FormDropdownInput>>('triggerRef')
-const panelSize = useSessionStorage<PanelSize | undefined>(
+const panelSize = useSafeSessionStorage<PanelSize | undefined>(
   'Comfy.FormDropdown.PanelSize',
   undefined,
   { serializer: StorageSerializers.object }
