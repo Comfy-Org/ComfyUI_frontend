@@ -9,7 +9,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { isReissuable } from '@/platform/nodeApi/shared/documentHandles'
 import type { DocumentHandles } from '@/platform/nodeApi/shared/documentHandles'
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
-import { savedCopier } from '@/platform/nodeApi/shared/savedCopy'
+import { savedCopier, savedRecord } from '@/platform/nodeApi/shared/savedCopy'
 import type { SavedCopier } from '@/platform/nodeApi/shared/savedCopy'
 import type { Bounds, NodeHandle, NodeMode } from './types'
 
@@ -121,7 +121,9 @@ function nodeReads(
       return readLive((node) => property(node, name, copyOfSaved))
     },
     getProperties: () =>
-      readLive(({ properties }) => copyOfSaved('getProperties', properties)),
+      readLive(({ properties }) =>
+        savedRecord(copyOfSaved('getProperties', properties))
+      ),
     getPosition: () => readLive(({ pos: [x, y] }) => Object.freeze({ x, y })),
     getSize: () =>
       readLive(({ size: [width, height] }) => Object.freeze({ width, height })),

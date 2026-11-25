@@ -4,12 +4,10 @@ import {
   isComboInputSpec
 } from '@comfyorg/object-info-parser'
 import { isPlainObject } from 'es-toolkit'
-import type {
-  ComfyNodeDef as ComfyNodeDefV1,
-  InputSpec
-} from '@comfyorg/object-info-parser'
+import type { InputSpec } from '@comfyorg/object-info-parser'
 
 import { resolveNodeDefSlotText, resolveNodeDefText } from '@/i18n'
+import { savedRecord } from '@/platform/nodeApi/shared/savedCopy'
 import type { SavedCopier } from '@/platform/nodeApi/shared/savedCopy'
 import type {
   NodeDef,
@@ -21,10 +19,10 @@ const NO_OPTIONS: Readonly<Record<string, unknown>> = Object.freeze({})
 
 /** The pack's view of a definition the host registers. A part the server sent malformed reads as empty. */
 export function nodeDefFromHost(
-  hostDef: ComfyNodeDefV1,
+  hostDef: Readonly<Record<string, unknown>>,
   copyOfSaved: SavedCopier
 ): NodeDef {
-  const type = hostDef.name
+  const type = textOf(hostDef.name) ?? ''
   const input = recordOf(hostDef.input)
   const declaredInputs = Object.entries({
     ...recordOf(input.required),
@@ -52,13 +50,17 @@ export function nodeDefFromHost(
         hostOutput(output, outputNames[index])
       )
     ),
-    hidden: copyOfSaved('def.hidden', recordOf(input.hidden)) ?? NO_OPTIONS,
+    hidden:
+      savedRecord(copyOfSaved('def.hidden', recordOf(input.hidden))) ??
+      NO_OPTIONS,
     isOutputNode: isTrue(hostDef.output_node)
   })
 }
 
 /** The category a definition the host registers declares, or none if it is malformed. */
-export function categoryOfHostDef(hostDef: ComfyNodeDefV1): string {
+export function categoryOfHostDef(
+  hostDef: Readonly<Record<string, unknown>>
+): string {
   return textOf(hostDef.category) ?? ''
 }
 
@@ -87,7 +89,8 @@ function hostInput(
       name
     ),
     ...values,
-    options: copyOfSaved('def.inputs.options', options) ?? NO_OPTIONS
+    options:
+      savedRecord(copyOfSaved('def.inputs.options', options)) ?? NO_OPTIONS
   })
 }
 

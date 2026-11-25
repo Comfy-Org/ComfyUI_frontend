@@ -1,15 +1,24 @@
 import { reportError } from '@comfyorg/telemetry/reportError'
 
-/** A frozen copy of `value` as a workflow would save it, or `undefined` if it cannot be saved. */
-export type SavedCopier = <T>(member: string, value: T) => T | undefined
+import type { SavableValue } from './savableValue'
 
-type SavedValue<T> =
-  | { ok: true; value: T | undefined }
+export type SavedRecord = { readonly [key: string]: SavableValue }
+
+/** A frozen copy of `value` as a workflow would save it, or `undefined` if it cannot be saved. */
+export type SavedCopier = (
+  member: string,
+  value: unknown
+) => SavableValue | undefined
+
+type SavedValue =
+  | { ok: true; value: SavableValue | undefined }
   | { ok: false; error: unknown }
 
-function savedValue<T>(value: T): SavedValue<T> {
+function savedValue(value: unknown): SavedValue {
   try {
-    const saved: { value?: T } = JSON.parse(JSON.stringify({ value }))
+    const saved: { value?: SavableValue } = JSON.parse(
+      JSON.stringify({ value })
+    )
     return { ok: true, value: deepFreeze(saved.value) }
   } catch (error) {
     return { ok: false, error }
@@ -36,6 +45,19 @@ export function savedCopier(): SavedCopier {
     }
     return saved.value
   }
+}
+
+/** `copy` if it is an object of fields, `undefined` for any other saved value. */
+export function savedRecord(
+  copy: SavableValue | undefined
+): SavedRecord | undefined {
+  return typeof copy === 'object' && copy !== null && !isSavedList(copy)
+    ? copy
+    : undefined
+}
+
+function isSavedList(value: SavableValue): value is readonly SavableValue[] {
+  return Array.isArray(value)
 }
 
 function deepFreeze<T>(value: T): T {

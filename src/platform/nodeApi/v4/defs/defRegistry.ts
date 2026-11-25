@@ -9,7 +9,7 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
 import { createListeners } from '@/platform/nodeApi/shared/listeners'
-import { savedCopier } from '@/platform/nodeApi/shared/savedCopy'
+import { savedCopier, savedRecord } from '@/platform/nodeApi/shared/savedCopy'
 import { useApp } from '@/scripts/appInstance'
 import type { ComfyExtension } from '@/types/comfy'
 import type { DefRegistry, Unsubscribe } from '@/platform/nodeApi/v4/types'
@@ -70,7 +70,7 @@ export function createDefRegistry(
     nodeClass: typeof LGraphNode,
     hostDef: ComfyNodeDefV1
   ): void {
-    const declared = copyOfSaved('defs', hostDef) ?? hostDef
+    const declared = savedRecord(copyOfSaved('defs', hostDef)) ?? hostDef
     extensions.typeRegistered({
       type: hostDef.name,
       category: categoryOfHostDef(declared),

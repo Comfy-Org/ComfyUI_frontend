@@ -8,6 +8,7 @@ import {
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
+import { savedRecord } from '@/platform/nodeApi/shared/savedCopy'
 import type {
   ExecutionResult,
   NodeCreatedEvent
@@ -48,10 +49,8 @@ export function createLifecycleDispatch({
     { data, legacy }: Configured
   ): SavedViewOf {
     folderEntriesRead.delete(node)
-    const frozenCopy = (fields: Record<string, unknown>) => {
-      const copy = copyOfSaved<unknown>('onConfigured', fields)
-      return isPlainObject(copy) ? copy : NO_FIELDS
-    }
+    const frozenCopy = (fields: Record<string, unknown>) =>
+      savedRecord(copyOfSaved('onConfigured', fields)) ?? NO_FIELDS
     const canonical = once(() =>
       frozenCopy(
         Object.fromEntries(
@@ -194,7 +193,7 @@ export function createLifecycleDispatch({
         'extensions'
       )
     }
-    return copyOfSaved('onSerialize', fields)
+    return savedRecord(copyOfSaved('onSerialize', fields))
   }
 
   return { installers, nodeAdded }
