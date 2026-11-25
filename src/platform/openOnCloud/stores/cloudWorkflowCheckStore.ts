@@ -26,7 +26,9 @@ export const useCloudWorkflowCheckStore = defineStore(
     const state = shallowRef<CloudWorkflowCheckState>({ phase: 'idle' })
     const workflowRevision = shallowRef(0)
     let lastRun = 0
-    let refreshingGrantFor: CloudWorkflowCheckState | undefined
+    let activeCheck:
+      | { controller: AbortController; refreshingGrant: boolean }
+      | undefined
     let confirmedUploads: ConfirmedWorkspaceModels | undefined
 
     function dispatch(event: CloudWorkflowCheckEvent) {
@@ -35,33 +37,54 @@ export const useCloudWorkflowCheckStore = defineStore(
 
     async function check({
       refreshUploadGrant = false,
-      canRequest
+      canRequest,
+      signal
     }: {
       refreshUploadGrant?: boolean
       canRequest?: () => boolean
+      signal?: AbortSignal
     } = {}): Promise<void> {
-      const run = ++lastRun
-      dispatch({ type: 'started', run })
-      if (refreshUploadGrant) {
-        const started = state.value
-        refreshingGrantFor = started
-        await bindLocalOpenOnCloudGrant().revalidate()
-        if (refreshingGrantFor === started) refreshingGrantFor = undefined
-        if (state.value !== started) return
-        if (canRequest && !canRequest()) {
-          invalidate()
-          return
-        }
+      if (signal?.aborted) return
+      activeCheck?.controller.abort()
+      const controller = new AbortController()
+      const pending = { controller, refreshingGrant: refreshUploadGrant }
+      activeCheck = pending
+      const cancelPendingCheck = () => {
+        if (activeCheck === pending) invalidate()
       }
-      const result = await checkCloudCompatibility(confirmedUploads)
-      if (result?.kind === 'canOpen' || result?.kind === 'missing') {
-        dispatch({ type: 'answered', run, verdict: result })
-      } else {
-        dispatch({ type: 'failed', run, blocker: result })
+      signal?.addEventListener('abort', cancelPendingCheck, { once: true })
+
+      try {
+        const run = ++lastRun
+        dispatch({ type: 'started', run })
+        if (refreshUploadGrant) {
+          await bindLocalOpenOnCloudGrant().revalidate()
+          pending.refreshingGrant = false
+          if (controller.signal.aborted) return
+          if (canRequest && !canRequest()) {
+            invalidate()
+            return
+          }
+        }
+        const result = await checkCloudCompatibility(
+          confirmedUploads,
+          controller.signal
+        )
+        if (controller.signal.aborted) return
+        if (result?.kind === 'canOpen' || result?.kind === 'missing') {
+          dispatch({ type: 'answered', run, verdict: result })
+        } else {
+          dispatch({ type: 'failed', run, blocker: result })
+        }
+      } finally {
+        signal?.removeEventListener('abort', cancelPendingCheck)
+        if (activeCheck === pending) activeCheck = undefined
       }
     }
 
     function invalidate() {
+      activeCheck?.controller.abort()
+      activeCheck = undefined
       dispatch({ type: 'invalidated' })
     }
 
@@ -130,7 +153,7 @@ export const useCloudWorkflowCheckStore = defineStore(
     watch(
       () => flags.openOnCloudModelUploadEnabled,
       () => {
-        if (state.value !== refreshingGrantFor) invalidate()
+        if (!activeCheck?.refreshingGrant) invalidate()
       },
       { flush: 'sync' }
     )

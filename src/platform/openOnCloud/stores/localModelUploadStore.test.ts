@@ -805,14 +805,16 @@ describe('useLocalModelUploadStore', () => {
       openOnCloudModelUploadEnabled: false
     })
     await checkStore.check()
-    expect(checkCloudCompatibility).toHaveBeenLastCalledWith({
+    expect(vi.mocked(checkCloudCompatibility).mock.lastCall?.[0]).toEqual({
       workspaceId: 'ws-1',
       models
     })
 
     setWorkspace('ws-2')
     await checkStore.check()
-    expect(checkCloudCompatibility).toHaveBeenLastCalledWith(undefined)
+    expect(
+      vi.mocked(checkCloudCompatibility).mock.lastCall?.[0]
+    ).toBeUndefined()
   })
 
   it('keeps the uploaded model and waits to check again when the workflow changes during upload', async () => {
@@ -837,7 +839,8 @@ describe('useLocalModelUploadStore', () => {
 
     check.mockRestore()
     await useCloudWorkflowCheckStore().check()
-    expect(checkCloudCompatibility).toHaveBeenCalledExactlyOnceWith({
+    expect(checkCloudCompatibility).toHaveBeenCalledOnce()
+    expect(vi.mocked(checkCloudCompatibility).mock.lastCall?.[0]).toEqual({
       workspaceId: 'ws-1',
       models
     })

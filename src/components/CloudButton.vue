@@ -192,8 +192,8 @@ function requestCheck(signal: AbortSignal): boolean {
   void checkStore.check({
     refreshUploadGrant:
       !flags.openOnCloudModelUploadEnabled && retryBatches.value.length > 0,
-    canRequest: () =>
-      !signal.aborted && isMounted && showCloudAction && !isUploading.value
+    canRequest: () => isMounted && showCloudAction && !isUploading.value,
+    signal
   })
   return true
 }
@@ -211,8 +211,8 @@ function openUploadBatch(models: MissingModel[] | undefined) {
   )
 }
 
-watch(check, (current) => {
-  if (isUploading.value) return
+watch([check, isUploading], ([current, uploading]) => {
+  if (uploading) return
   if (current.phase === 'idle') {
     closeRunOnCloudDialog({ keepUploadBatch: true })
     return

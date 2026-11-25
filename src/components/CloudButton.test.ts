@@ -620,6 +620,40 @@ describe('Cloud button compatibility checks', () => {
     expect(openWorkflowOnCloud).not.toHaveBeenCalled()
   })
 
+  it('allows a fresh check after an edited workflow finishes uploading', async () => {
+    const models = [{ folder: 'loras', name: 'upload.safetensors' }]
+    vi.mocked(checkCloudCompatibility).mockResolvedValue({
+      kind: 'missing',
+      gaps: { models, nodePacks: [] }
+    })
+    renderCloudButton()
+    const user = userEvent.setup()
+    await requestCloudCheck(user)
+    await screen.findByText(models[0].name)
+    const dialog = screen.getByRole('dialog')
+    const uploads = useLocalModelUploadStore()
+    uploads.upload = {
+      phase: 'uploading',
+      sent: 0,
+      total: 1,
+      models,
+      canCancel: true
+    }
+    await nextTick()
+
+    api.dispatchCustomEvent('graphChanged', fromPartial({ nodes: [] }))
+    await nextTick()
+    expect(dialog).toBeVisible()
+    uploads.upload = { phase: 'done' }
+
+    await waitFor(() => expect(dialog).not.toBeInTheDocument())
+    await user.click(screen.getByTestId('cloud-button'))
+    expect(
+      await screen.findByRole('button', { name: checkLabel })
+    ).toBeEnabled()
+    expect(checkCloudCompatibility).toHaveBeenCalledOnce()
+  })
+
   it('requires a new confirmation after the workflow is edited', async () => {
     vi.mocked(checkCloudCompatibility).mockResolvedValue({
       kind: 'missing',
