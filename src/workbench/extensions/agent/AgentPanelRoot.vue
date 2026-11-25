@@ -2118,46 +2118,47 @@ const hostFenced = computed(() => hostFenceMessage.value !== undefined)
 let startedRefreshes = 0
 let fencedAtRefresh = 0
 
-const { refreshHistory: runHistoryRefresh } = useAgentChatHistoryRefresh({
-  listThreads: rest.listThreads,
-  history,
-  untitledChat: () => t('agent.untitledChat'),
-  onFailure: (failure, uiTreatment) => {
-    if (failure.status === 'incomplete') {
-      warnIncompleteHistory(failure.reason, uiTreatment === 'error_overlay')
-      return
-    }
-    const error = failure.cause
-    const diagnostics = describeAgentRequestFailure(error)
-    reportError(error, {
-      surface: 'agent',
-      errorType: 'agent_thread_list_load_failed',
-      tags: diagnostics,
-      fingerprint: agentRequestFailureFingerprint(
-        'agent_thread_list_load_failed',
-        diagnostics
-      )
-    })
-    const loopbackOnly = isLoopbackOnlyRefusal(error)
-    if (loopbackOnly) {
-      hostFenceMessage.value = error.message
-      fencedAtRefresh = startedRefreshes
-    } else if (uiTreatment === 'error_overlay')
-      surfaceAgentError(
-        'agent_api_failed',
-        error instanceof Error ? error.message : String(error)
-      )
-    trackAgentError(
-      'thread_list_load_failed',
-      'pre_acceptance',
-      loopbackOnly ? 'inline_notice' : uiTreatment,
-      {
-        retryable: isRetryableRequestFailure(error, false),
-        diagnostics
+const { refreshHistory: runHistoryRefresh, hasCompleteCoverage } =
+  useAgentChatHistoryRefresh({
+    listThreads: rest.listThreads,
+    history,
+    untitledChat: () => t('agent.untitledChat'),
+    onFailure: (failure, uiTreatment) => {
+      if (failure.status === 'incomplete') {
+        warnIncompleteHistory(failure.reason, uiTreatment === 'error_overlay')
+        return
       }
-    )
-  }
-})
+      const error = failure.cause
+      const diagnostics = describeAgentRequestFailure(error)
+      reportError(error, {
+        surface: 'agent',
+        errorType: 'agent_thread_list_load_failed',
+        tags: diagnostics,
+        fingerprint: agentRequestFailureFingerprint(
+          'agent_thread_list_load_failed',
+          diagnostics
+        )
+      })
+      const loopbackOnly = isLoopbackOnlyRefusal(error)
+      if (loopbackOnly) {
+        hostFenceMessage.value = error.message
+        fencedAtRefresh = startedRefreshes
+      } else if (uiTreatment === 'error_overlay')
+        surfaceAgentError(
+          'agent_api_failed',
+          error instanceof Error ? error.message : String(error)
+        )
+      trackAgentError(
+        'thread_list_load_failed',
+        'pre_acceptance',
+        loopbackOnly ? 'inline_notice' : uiTreatment,
+        {
+          retryable: isRetryableRequestFailure(error, false),
+          diagnostics
+        }
+      )
+    }
+  })
 
 async function refreshHistory(
   ...args: Parameters<typeof runHistoryRefresh>
@@ -2229,6 +2230,7 @@ const workflowChatFollow = useAgentWorkflowChatFollow({
   cloudIdFor: authoritativeCloudIdFor,
   refreshCloudWorkflowListing,
   refreshHistory,
+  isHistoryComplete: (workflowId) => hasCompleteCoverage(workflowId),
   loadThread,
   isThreadMissing: (id) => isThreadDeleted(id) || history.isDeleted(id),
   showBlankChat: showBlankChatForVisibleWorkflow,
@@ -2565,8 +2567,7 @@ function recordSendTelemetry(
       starter_prompt_id: meta.starterPrompt?.id ?? null,
       starter_prompt_click_id: meta.starterPrompt?.clickId ?? null
     },
-    origin:
-      originContext === undefined ? null : { tabPath: originContext.tabPath }
+    origin: originContext === undefined ? null : turnOrigin
   })
 }
 
@@ -3056,6 +3057,7 @@ async function activateAndShowFailedBlankTab(
   }
   if (activated) {
     retireFollow()
+    conversationStore.setBlankChatIdForTab(originTab.instanceId, blankChatId)
     if (
       threadId.value !== null ||
       conversationStore.activeBlankChatId !== blankChatId
@@ -3087,8 +3089,8 @@ function showOffscreenBlankSend(
     reopenOffscreenBlankFallback(blankChatId, toastId)
     return
   }
-  conversationStore.setBlankChatIdForTab(originTab.instanceId, blankChatId)
   if (workflowStore.activeWorkflow?.path === originTab.path) {
+    conversationStore.setBlankChatIdForTab(originTab.instanceId, blankChatId)
     reopenOffscreenBlankFallback(blankChatId, toastId)
     return
   }
@@ -3143,7 +3145,8 @@ function discardBlankComposerBeforeNewChat(): void {
   )
     return
   for (const discardedId of conversationStore.discardFailedPendingSends(
-    targetBlankOrigin
+    targetBlankOrigin,
+    workspaceStore.activeWorkspaceId ?? null
   )) {
     composerStore.clearPendingSendDraft(discardedId)
     composerStore.releaseRetainedAssets(pendingAssetOwnerKey(discardedId))

@@ -815,4 +815,17 @@ describe('Agent draft submission', () => {
     composer.activateDraft('thread:th-a')
     expect(composer.draft).toBe('submitted message')
   })
+
+  it('settles a staged pending send into a non-sending state when pre-admission send throws', async () => {
+    const { composer, conversation, send, submit } = setup()
+    conversation.setThreadId('th-a')
+    composer.activateDraft('thread:th-a')
+    composer.setText('pre-admission throw')
+    send.mockRejectedValueOnce(new Error('consent helper crashed'))
+
+    await expect(submit()).rejects.toThrow('consent helper crashed')
+
+    expect(conversation.hasSendingPendingSend).toBe(false)
+    expect(composer.draft).toBe('pre-admission throw')
+  })
 })

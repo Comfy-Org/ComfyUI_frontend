@@ -1432,4 +1432,28 @@ describe('composer prompt origin (PM-1474 F11)', () => {
       { id: 'wf-live', name: 'Live', textOffset: 0 }
     ])
   })
+
+  it('does not delete edited text when a captured trigger range no longer matches before background reference insertion', () => {
+    const store = useAgentComposerStore()
+    store.activateDraft('thread:a')
+    store.setText('use @')
+    const captured = store.captureReferenceInsertion(4, 5, {
+      textOffset: 4,
+      referenceIndex: 0
+    })
+
+    store.activateDraft('thread:b')
+    store.activateDraft('thread:a')
+    store.setText('use safe words')
+
+    store.insertWorkflowReferenceInDraft(captured, {
+      id: 'wf-hero',
+      name: 'Hero'
+    })
+
+    expect(store.draft).toBe('use  safe words')
+    expect(store.workflowReferences).toEqual([
+      { id: 'wf-hero', name: 'Hero', textOffset: 4 }
+    ])
+  })
 })

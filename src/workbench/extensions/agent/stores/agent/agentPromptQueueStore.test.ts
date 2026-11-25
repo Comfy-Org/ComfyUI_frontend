@@ -211,4 +211,31 @@ describe('useAgentPromptQueueStore', () => {
     queue.activateQueue('chat:0')
     expect(queue.items.map((item) => item.text)).toEqual(['prompt-0'])
   })
+
+  it('releases unused blob attachment previews when discarding an inactive kept queue', () => {
+    const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    const composer = useAgentComposerStore()
+    const queue = useAgentPromptQueueStore()
+    const file = {
+      id: 'queued-blob-1',
+      name: 'cat.png',
+      ref: 'cat.png',
+      previewUrl: 'blob:queued-cat'
+    }
+
+    queue.activateQueue('thread:a')
+    composer.activateDraft('thread:a')
+    composer.setText('with attachment')
+    composer.addAttachment(file)
+    queue.enqueueFromComposer('with attachment', [file], [])
+    composer.clearDraft()
+
+    queue.activateQueue('thread:b')
+    composer.activateDraft('thread:b')
+    expect(revoke).not.toHaveBeenCalled()
+
+    queue.discardQueue('thread:a')
+    expect(revoke).toHaveBeenCalledWith('blob:queued-cat')
+    revoke.mockRestore()
+  })
 })

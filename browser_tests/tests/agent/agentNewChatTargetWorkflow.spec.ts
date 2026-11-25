@@ -12,22 +12,27 @@ import { workflowSelectionTest } from '@e2e/fixtures/agentWorkflowSelectionFixtu
 import { agentUserTranscript } from '@e2e/fixtures/data/agent/agentThreadList'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
+type PostedAgentMessage = {
+  url: string
+  body: AgentPostMessageRequest
+}
+
 const test = mergeTests(agentTest, workflowSelectionTest).extend<{
-  postedMessages: AgentPostMessageRequest[]
+  postedMessages: PostedAgentMessage[]
 }>({
   postedMessages: async (
     { page, workflowSelection: _workflowSelection },
     use
   ) => {
-    const posted: AgentPostMessageRequest[] = []
+    const posted: PostedAgentMessage[] = []
     await page.route('**/api/agent/threads/*/messages', (route) => {
       if (route.request().method() === 'GET') {
         return route.fulfill(
           jsonRoute(
             agentUserTranscript(
               'th-a',
-              posted[0]?.workflow_id ?? '',
-              posted[0]?.content ?? ''
+              posted[0]?.body.workflow_id ?? '',
+              posted[0]?.body.content ?? ''
             )
           )
         )
@@ -36,7 +41,7 @@ const test = mergeTests(agentTest, workflowSelectionTest).extend<{
       const body = zAgentPostMessageRequest.parse(
         route.request().postDataJSON()
       )
-      posted.push(body)
+      posted.push({ url: route.request().url(), body })
       const accepted: AgentTurnAccepted = {
         thread_id: 'th-a',
         message_id: 'msg-a',
@@ -123,9 +128,14 @@ test.describe(
       await composer.fill('Edit workflow B')
       await composer.press('Enter')
       await expect.poll(() => posted.length).toBe(2)
-      expect(posted[1]).toMatchObject({
+      expect(new URL(posted[1].url).pathname).toBe(
+        '/api/agent/threads/new/messages'
+      )
+      expect(posted[1].body).toMatchObject({
         current_tab_unbound: true
       })
+      expect(posted[1].body.workflow_id).toBeUndefined()
+      expect(posted[1].body.current_tab).toBeUndefined()
 
       await testInfo.attach('before-new-chat', {
         body: panelBeforeNewChat,
@@ -191,9 +201,14 @@ test.describe(
       await composer.fill('Ask on new tab')
       await composer.press('Enter')
       await expect.poll(() => posted.length).toBe(2)
-      expect(posted[1]).toMatchObject({
+      expect(new URL(posted[1].url).pathname).toBe(
+        '/api/agent/threads/new/messages'
+      )
+      expect(posted[1].body).toMatchObject({
         current_tab_unbound: true
       })
+      expect(posted[1].body.workflow_id).toBeUndefined()
+      expect(posted[1].body.current_tab).toBeUndefined()
     })
   }
 )

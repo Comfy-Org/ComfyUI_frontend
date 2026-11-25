@@ -276,6 +276,7 @@ export function useAgentDraftSubmission(
     if (target === null) return false
     const staged = stageSubmission(text, attachments, references, target)
     let outcome: DraftSendOutcome = 'failed'
+    let threw = false
     try {
       outcome = await options.send(
         text,
@@ -291,8 +292,17 @@ export function useAgentDraftSubmission(
         () => composer.releaseGateHold(staged.gateId),
         staged.target
       )
+    } catch (error) {
+      threw = true
+      throw error
     } finally {
-      settleSubmissionOutcome(outcome, staged)
+      const effectiveOutcome =
+        threw &&
+        conversation.getPendingSend(staged.clientMessageId)?.status ===
+          'sending'
+          ? 'withdrawn'
+          : outcome
+      settleSubmissionOutcome(effectiveOutcome, staged)
     }
     return outcome === 'sent'
   }

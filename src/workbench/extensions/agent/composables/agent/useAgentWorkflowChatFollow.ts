@@ -65,6 +65,7 @@ type FollowDeps = {
     uiTreatment?: 'error_overlay' | 'none',
     workflowId?: string
   ) => Promise<ThreadListing['status'] | 'superseded'>
+  isHistoryComplete?: (workflowId: string) => boolean
   loadThread: (
     threadId: string,
     isCurrent: () => boolean,
@@ -310,6 +311,17 @@ export function useAgentWorkflowChatFollow(deps: FollowDeps) {
     else showList(operation, 'failed')
   }
 
+  function isRefreshComplete(
+    outcome: ThreadListing['status'] | 'superseded',
+    workflowId: string
+  ): boolean {
+    return (
+      outcome === 'complete' ||
+      (outcome === 'superseded' &&
+        Boolean(deps.isHistoryComplete?.(workflowId)))
+    )
+  }
+
   async function recoverMissingCachedChat(
     operation: FollowOperation,
     workflowId: string,
@@ -326,7 +338,7 @@ export function useAgentWorkflowChatFollow(deps: FollowDeps) {
       operation,
       workflowId,
       excluded,
-      refreshOutcome === 'complete',
+      isRefreshComplete(refreshOutcome, workflowId),
       ignoreDraftGate
     )
   }
@@ -393,7 +405,7 @@ export function useAgentWorkflowChatFollow(deps: FollowDeps) {
       operation,
       workflowId,
       excluded,
-      outcome === 'complete',
+      isRefreshComplete(outcome, workflowId),
       ignoreDraftGate
     )
   }

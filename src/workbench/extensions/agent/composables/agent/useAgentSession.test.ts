@@ -12422,4 +12422,34 @@ describe('useAgentSession optimistic and chat-owned sends (PR 0)', () => {
       'msg-blank-cb'
     )
   })
+
+  it('clears isHydrating once a newer load makes the thread ready even while an older load is still pending', async () => {
+    const events = fakeEvents()
+    let resolveStale!: (rows: []) => void
+    const getMessages = vi
+      .fn()
+      .mockImplementationOnce(
+        () =>
+          new Promise<[]>((resolve) => {
+            resolveStale = resolve
+          })
+      )
+      .mockResolvedValueOnce([])
+    const session = useAgentSession({
+      rest: fakeRest({ getMessages }),
+      events: events.source
+    })
+    session.start({ restore: false })
+
+    const staleLoad = session.loadThread('th-race')
+    expect(session.isHydrating.value).toBe(true)
+
+    expect(await session.loadThread('th-race')).toBe(true)
+    expect(session.isTranscriptReady.value).toBe(true)
+    expect(session.isHydrating.value).toBe(false)
+
+    resolveStale([])
+    await staleLoad
+    expect(session.isHydrating.value).toBe(false)
+  })
 })

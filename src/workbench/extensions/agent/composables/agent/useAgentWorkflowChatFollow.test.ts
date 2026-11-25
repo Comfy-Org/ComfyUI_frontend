@@ -645,4 +645,27 @@ describe('useAgentWorkflowChatFollow', () => {
     expect(h.getThreadId()).toBeNull()
     expect(h.follow.landing.value).toBeNull()
   })
+
+  it('settles on blank when a superseded refresh has complete history coverage and shows Retry when coverage is incomplete', async () => {
+    const covered = createHarness({
+      isHistoryComplete: () => true
+    })
+    covered.refreshHistory.mockResolvedValueOnce('superseded')
+    covered.setActive(covered.workflowB)
+
+    await covered.follow.followTab(covered.workflowB)
+
+    expect(covered.getThreadId()).toBeNull()
+    expect(covered.follow.landing.value).toBeNull()
+
+    const uncovered = createHarness({
+      isHistoryComplete: () => false
+    })
+    uncovered.refreshHistory.mockResolvedValueOnce('superseded')
+    uncovered.setActive(uncovered.workflowB)
+
+    await uncovered.follow.followTab(uncovered.workflowB)
+
+    expect(uncovered.follow.landing.value?.status).toBe('failed')
+  })
 })

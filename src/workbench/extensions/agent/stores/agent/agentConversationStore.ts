@@ -1345,10 +1345,18 @@ export const useAgentConversationStore = defineStore(
       return next
     }
 
-    function discardFailedPendingSends(origin: PendingSendOrigin): string[] {
+    function discardFailedPendingSends(
+      origin: PendingSendOrigin,
+      workspaceId?: string | null
+    ): string[] {
       const discardedIds: string[] = []
       for (const [id, send] of pendingSends) {
-        if (send.status === 'failed' && originsEqual(send.origin, origin)) {
+        if (
+          send.status === 'failed' &&
+          originsEqual(send.origin, origin) &&
+          (workspaceId === undefined ||
+            (send.workspaceId ?? null) === workspaceId)
+        ) {
           pendingSends.delete(id)
           discardedIds.push(id)
         }
@@ -1892,12 +1900,55 @@ export const useAgentConversationStore = defineStore(
       if (items?.length) target.set(id, items)
     }
 
+    function addBlobPreviews(
+      attachments: readonly UserAttachment[] | undefined,
+      target: Set<string>
+    ): void {
+      for (const { previewUrl } of attachments ?? []) {
+        if (previewUrl?.startsWith('blob:')) target.add(previewUrl)
+      }
+    }
+
+    function collectOwnedBlobPreviews(
+      includeUserAttachments: boolean
+    ): Set<string> {
+      const owned = new Set<string>()
+      if (includeUserAttachments) {
+        for (const attachments of userAttachments.value.values())
+          addBlobPreviews(attachments, owned)
+      }
+      for (const entry of backgroundTurns.values())
+        addBlobPreviews(entry.attachments, owned)
+      return owned
+    }
+
+    function revokeUnownedBlobPreviews(
+      attachments: readonly UserAttachment[] | undefined,
+      owned: ReadonlySet<string>
+    ): void {
+      for (const { previewUrl } of attachments ?? []) {
+        if (previewUrl?.startsWith('blob:') && !owned.has(previewUrl))
+          URL.revokeObjectURL(previewUrl)
+      }
+    }
+
     function restoreBackgroundUserText(entry: BackgroundTurn): void {
       const id = entry.message.id
-      if (entry.userText === undefined) return
+      if (entry.userText === undefined) {
+        revokeUnownedBlobPreviews(
+          entry.attachments,
+          collectOwnedBlobPreviews(true)
+        )
+        return
+      }
       if (!userTexts.value.has(id)) userTexts.value.set(id, entry.userText)
       if (!userAttachments.value.has(id))
         setIfNonEmpty(userAttachments.value, id, entry.attachments)
+      else
+        revokeUnownedBlobPreviews(
+          entry.attachments,
+          collectOwnedBlobPreviews(true)
+        )
       if (!userTags.value.has(id)) setIfNonEmpty(userTags.value, id, entry.tags)
       if (!userWorkflowReferences.value.has(id))
         setIfNonEmpty(
@@ -1949,18 +2000,20 @@ export const useAgentConversationStore = defineStore(
       if (entry) {
         rememberDepartedTurn(entry.threadId, entry.messageId, 'settled-turn')
         entry.transport.settle()
-        // This turn is being dropped from the map here, unlike the
-        // agent_message_done path in ingestBackgroundTurnEvent -- nothing
-        // will keep it reachable afterwards, so flush its held parts now.
         entry.transport.dispose()
         backgroundTurns.delete(entry.messageId)
+        revokeUnownedBlobPreviews(
+          entry.attachments,
+          collectOwnedBlobPreviews(true)
+        )
         return entry.messageId
       }
       return null
     }
 
     function dropBackgroundTurns(): void {
-      for (const entry of backgroundTurns.values()) {
+      const discarded = Array.from(backgroundTurns.values())
+      for (const entry of discarded) {
         rememberDepartedTurn(
           entry.threadId,
           entry.messageId,
@@ -1970,6 +2023,9 @@ export const useAgentConversationStore = defineStore(
         entry.transport.dispose()
       }
       backgroundTurns.clear()
+      const owned = collectOwnedBlobPreviews(true)
+      for (const entry of discarded)
+        revokeUnownedBlobPreviews(entry.attachments, owned)
     }
 
     function liveTurns(): LiveTurn[] {
@@ -2166,11 +2222,9 @@ export const useAgentConversationStore = defineStore(
     }
 
     function dropAttachmentPreviews(): void {
-      for (const attachments of userAttachments.value.values()) {
-        for (const { previewUrl } of attachments) {
-          if (previewUrl?.startsWith('blob:')) URL.revokeObjectURL(previewUrl)
-        }
-      }
+      const retainedByBackground = collectOwnedBlobPreviews(false)
+      for (const attachments of userAttachments.value.values())
+        revokeUnownedBlobPreviews(attachments, retainedByBackground)
       userAttachments.value = new Map()
     }
 

@@ -226,7 +226,10 @@ export const useAgentPromptQueueStore = defineStore('agentPromptQueue', () => {
 
   function discardQueue(key: string): void {
     if (key === activeChatKey) clear()
-    else if (keptQueues.delete(key)) composer.holdAssets(heldAssetIds())
+    else if (keptQueues.delete(key)) {
+      composer.holdAssets(heldAssetIds())
+      composer.releaseUnusedAssets()
+    }
   }
 
   function clearComposerDraft(): void {

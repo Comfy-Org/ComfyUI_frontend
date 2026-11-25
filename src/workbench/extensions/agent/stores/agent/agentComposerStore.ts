@@ -137,36 +137,45 @@ interface CapturedReferenceInsertion {
   activationCount: number
   from?: number
   to?: number
+  expectedTrigger?: string
   insertionPoint: ComposerInsertionPoint
 }
 
 function applyWorkflowReferenceToPrompt(
   current: ComposerPrompt,
   reference: WorkflowReferenceMetadata,
-  captured: Pick<CapturedReferenceInsertion, 'from' | 'to' | 'insertionPoint'>
+  captured: Pick<
+    CapturedReferenceInsertion,
+    'from' | 'to' | 'expectedTrigger' | 'insertionPoint'
+  >
 ): ComposerPrompt {
   if (captured.from !== undefined && captured.to !== undefined) {
     const start = Math.min(current.text.length, Math.max(0, captured.from))
     const end = Math.min(current.text.length, Math.max(start, captured.to))
-    const removed = end - start
-    const text = current.text.slice(0, start) + current.text.slice(end)
-    const references = current.references.map((item) => ({
-      ...item,
-      textOffset:
-        item.textOffset >= end
-          ? item.textOffset - removed
-          : item.textOffset > start
-            ? start
-            : item.textOffset
-    }))
-    const referenceIndex = references.filter(
-      (item) => item.textOffset <= start
-    ).length
-    return insertComposerReference(
-      { text, references },
-      { kind: 'workflow', ...reference, textOffset: start },
-      { textOffset: start, referenceIndex }
-    ).prompt
+    const matchesTrigger =
+      captured.expectedTrigger === undefined ||
+      current.text.slice(start, end) === captured.expectedTrigger
+    if (matchesTrigger) {
+      const removed = end - start
+      const text = current.text.slice(0, start) + current.text.slice(end)
+      const references = current.references.map((item) => ({
+        ...item,
+        textOffset:
+          item.textOffset >= end
+            ? item.textOffset - removed
+            : item.textOffset > start
+              ? start
+              : item.textOffset
+      }))
+      const referenceIndex = references.filter(
+        (item) => item.textOffset <= start
+      ).length
+      return insertComposerReference(
+        { text, references },
+        { kind: 'workflow', ...reference, textOffset: start },
+        { textOffset: start, referenceIndex }
+      ).prompt
+    }
   }
   return insertComposerReference(
     current,
@@ -987,11 +996,19 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     to?: number,
     point?: ComposerInsertionPoint
   ): CapturedReferenceInsertion {
+    const expectedTrigger =
+      from !== undefined && to !== undefined
+        ? prompt.value.text.slice(
+            Math.max(0, from),
+            Math.max(Math.max(0, from), to)
+          )
+        : undefined
     const captured: CapturedReferenceInsertion = {
       draftKey: activeDraftKey,
       activationCount: draftActivationCount,
       from,
       to,
+      expectedTrigger,
       insertionPoint: point ?? { ...insertionPoint.value }
     }
     activeCaptures.add(captured)

@@ -8759,6 +8759,59 @@ describe('AgentPanelRoot history', () => {
         expect(userPrompts()).toEqual([])
       })
 
+      it('preserves tab A newer blank chat mapping and draft when a pending Show is cancelled by New chat', async () => {
+        const first = addTab('workflows/first.json', { instanceId: 'tab-a' })
+        const second = addTab('workflows/second.json', { instanceId: 'tab-b' })
+        workflowStore.activeWorkflow = first
+        let failFirstPost!: () => void
+        stubWorkflowBoundHistory(
+          [],
+          {},
+          {
+            post: () =>
+              new Promise<Response>((_, reject) => {
+                failFirstPost = () => reject(new TypeError('Failed to fetch'))
+              })
+          }
+        )
+        render(AgentPanelRoot, { global: { plugins: [i18n] } })
+        await sendFromComposer('first blank send')
+
+        await userEvent.click(
+          screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+        )
+        await typeInComposer('Draft in A2')
+
+        await activateTabAsUser(second)
+        await settleFollow()
+
+        failFirstPost()
+        await vi.waitFor(() => expect(useToast().toasts).toHaveLength(1))
+
+        let resolveOpen!: (opened: boolean) => void
+        vi.mocked(useWorkflowService().openWorkflow).mockImplementationOnce(
+          () =>
+            new Promise<boolean>((resolve) => {
+              resolveOpen = resolve
+            })
+        )
+
+        useToast().toasts[0].actions[0].onClick()
+        await vi.waitFor(() => expect(resolveOpen).toBeTypeOf('function'))
+
+        await userEvent.click(
+          screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+        )
+        resolveOpen(false)
+        await settleFollow()
+
+        await activateTabAsUser(first)
+        await settleFollow()
+
+        expect(useAgentComposerStore().draft).toBe('Draft in A2')
+        expect(userPrompts()).toEqual([])
+      })
+
       it('preserves tab B kept blank draft and prompt queue when deleting chat A while tab B is visible', async () => {
         const tabA = addTab('workflows/a.json', { instanceId: 'tab-a' })
         const tabB = addTab('workflows/b.json', { instanceId: 'tab-b' })
@@ -9248,8 +9301,9 @@ describe('AgentPanelRoot history', () => {
           vi.mocked(fetch).mockImplementation((input, init) => {
             const url = String(input)
             if (url.endsWith('/api/upload/image')) {
-              const form = init?.body as FormData
-              const file = form.get('image') as File
+              assert(init?.body instanceof FormData)
+              const file = init.body.get('image')
+              assert(file instanceof File)
               startedUploads.push(file.name)
               return new Promise<Response>((resolve) => {
                 pendingUploads.set(file.name, () =>
@@ -20219,11 +20273,18 @@ describe('AgentPanelRoot optimistic and chat-owned sends (PR 0)', () => {
     })
     workflowStore.activeWorkflow = tabA
     let postEntered = false
+    let settleFirstPost!: () => void
     vi.mocked(fetch).mockImplementation(async (input, init) => {
       const url = String(input)
       if (url.includes('/messages') && init?.method === 'POST') {
         postEntered = true
-        return await new Promise<Response>(() => {})
+        return await new Promise<Response>((_resolve, reject) => {
+          const abort = () =>
+            reject(new DOMException('Request aborted', 'AbortError'))
+          settleFirstPost = abort
+          if (init.signal?.aborted) abort()
+          else init.signal?.addEventListener('abort', abort, { once: true })
+        })
       }
       if (url.includes('/agent/threads')) return json(200, agentThreadList())
       return json(200, { data: [], pagination: { has_more: false } })
@@ -20235,7 +20296,16 @@ describe('AgentPanelRoot optimistic and chat-owned sends (PR 0)', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
     await waitFor(() => expect(postEntered).toBe(true))
 
+    const backupKey = StorageKeys.agentPendingSendDraft('personal')
+    const savedBeforeTeardown = localStorage.getItem(backupKey)
+    expect(savedBeforeTeardown).toContain('Recovered draft for A')
+
     firstPanel.unmount()
+    settleFirstPost()
+    await waitFor(() =>
+      expect(useAgentConversationStore().hasSendingPendingSend).toBe(false)
+    )
+    localStorage.setItem(backupKey, savedBeforeTeardown!)
     const pinia = getActivePinia()
     for (const store of [
       useAgentComposerStore(),
