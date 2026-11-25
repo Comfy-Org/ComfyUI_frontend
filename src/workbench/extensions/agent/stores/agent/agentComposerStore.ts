@@ -363,6 +363,8 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     const reinsertsAtExistingChipSlot =
       existing !== undefined &&
       insertionPoint.value.textOffset === existing.textOffset + 1 &&
+      insertionPoint.value.referenceIndex ===
+        prompt.value.references.indexOf(existing) + 1 &&
       text[existing.textOffset] === ' '
     const insertion = reinsertsAtExistingChipSlot
       ? {

@@ -88,6 +88,32 @@ describe('agentComposerStore error context', () => {
     expect(store.prompt.references[0]).toMatchObject({ id: 'wf-a' })
   })
 
+  it('reinserts at the requested slot when the caret moves past a later reference before repeat attachment', () => {
+    const store = useAgentComposerStore()
+    store.applyEditorPrompt({
+      text: 'a  b',
+      references: [
+        {
+          kind: 'error',
+          id: 'err-1',
+          context: errorContext({ label: 'First' }),
+          textOffset: 1
+        },
+        { kind: 'workflow', id: 'wf-ref', name: 'wf', textOffset: 2 }
+      ]
+    })
+    store.setInsertionPoint({ textOffset: 2, referenceIndex: 2 })
+
+    store.setErrorContext(errorContext({ label: 'Second' }))
+
+    expect(store.prompt.text).toBe('a  b')
+    expect(store.prompt.references.map((item) => item.kind)).toEqual([
+      'workflow',
+      'error'
+    ])
+    expect(store.errorContext?.label).toBe('Second')
+  })
+
   it('attaches the context as an inline reference and marks the origin', () => {
     const store = useAgentComposerStore()
 
