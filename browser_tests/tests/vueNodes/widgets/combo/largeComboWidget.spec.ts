@@ -79,7 +79,7 @@ test.describe(
       await test.step('clicking a match selects it', async () => {
         await combo.options.getByText(target, { exact: true }).click()
         await expect(combo.menu).toBeHidden()
-        await expect(combo.trigger).toHaveText('hatsune_miku_v3.safetensors')
+        await expect(combo.trigger).toHaveText('hatsune_miku_v3')
         await expect.poll(() => widget.getValue()).toBe(target)
       })
 

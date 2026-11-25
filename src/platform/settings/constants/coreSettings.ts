@@ -416,6 +416,15 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: true
   },
   {
+    id: 'Comfy.VueNodes.HideSafeModelExtensions',
+    category: ['LiteGraph', 'Node Widget', 'HideSafeModelExtensions'],
+    name: 'Hide .safetensors and .sft extensions',
+    type: 'boolean',
+    defaultValue: true,
+    tooltip:
+      'Nodes 2.0 only. Hide these extensions in closed model widgets. Other extensions remain visible; dropdown options and saved values keep full filenames.'
+  },
+  {
     id: 'Comfy.Node.DownscaleImagePreviews',
     category: ['LiteGraph', 'Node Widget', 'DownscaleImagePreviews'],
     name: 'Downscale large image previews',
@@ -1307,15 +1316,6 @@ export const CORE_SETTINGS: SettingParams[] = [
     sortOrder: 100,
     experimental: true,
     versionAdded: '1.27.1'
-  },
-  {
-    id: 'Comfy.VueNodes.HideSafeModelExtensions',
-    category: ['Comfy', 'Nodes 2.0', 'HideSafeModelExtensions'],
-    name: 'Hide .safetensors and .sft extensions',
-    type: 'boolean',
-    defaultValue: false,
-    tooltip:
-      'Hide these extensions in closed model widgets. Other extensions remain visible; dropdown options and saved values keep full filenames.'
   },
   {
     id: 'Comfy.AppBuilder.VueNodeSwitchDismissed',
