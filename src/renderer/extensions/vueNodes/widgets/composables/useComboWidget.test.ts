@@ -246,6 +246,8 @@ describe('useComboWidget', () => {
 
   it.for([
     { saved: '(none)', queued: [] },
+    { saved: 'none', queued: [] },
+    { saved: 'None', queued: [] },
     { saved: 'photo.png', queued: ['photo.png'] },
     { saved: ['b.png', 'a.png'], queued: ['b.png', 'a.png'] }
   ])(
