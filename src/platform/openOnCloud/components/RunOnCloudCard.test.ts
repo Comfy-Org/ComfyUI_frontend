@@ -16,13 +16,14 @@ describe('RunOnCloudCard', () => {
   it('reports Open on Cloud and opens the workflow', async () => {
     const onDone = vi.fn()
     render(RunOnCloudCard, {
-      props: { asksToSignIn: false, onDone },
+      props: { onDone },
       global: { plugins: [testI18n] }
     })
 
     await userEvent.click(screen.getByTestId('run-on-cloud-primary'))
 
     expect(openWorkflowOnCloud).toHaveBeenCalledOnce()
+    expect(openWorkflowOnCloud).toHaveBeenCalledWith()
     expect(onDone).toHaveBeenCalledOnce()
     expect(
       useTelemetry()?.trackUiButtonClicked
@@ -32,10 +33,51 @@ describe('RunOnCloudCard', () => {
     })
   })
 
+  it('asks to check before anything opens, and says what the check sends', async () => {
+    const onCheck = vi.fn()
+    render(RunOnCloudCard, {
+      props: { needsConsent: true, onCheck },
+      global: { plugins: [testI18n] }
+    })
+
+    expect(
+      screen.getByText(
+        'Checking will send this workflow’s node and model names to Comfy Cloud.'
+      )
+    ).toBeVisible()
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Check compatibility' })
+    )
+
+    expect(onCheck).toHaveBeenCalledOnce()
+    expect(openWorkflowOnCloud).not.toHaveBeenCalled()
+  })
+
+  it('explains that the compatible workflow requires signing in to Cloud', () => {
+    render(RunOnCloudCard, {
+      props: { asksToSignIn: true },
+      global: { plugins: [testI18n] }
+    })
+
+    expect(
+      screen.getByText('Comfy Cloud will ask you to sign in.')
+    ).toBeVisible()
+  })
+
+  it('waits on a disabled button while Comfy Cloud checks', () => {
+    render(RunOnCloudCard, {
+      props: { needsConsent: true, checking: true },
+      global: { plugins: [testI18n] }
+    })
+
+    expect(
+      screen.getByRole('button', { name: 'Checking Comfy Cloud…' })
+    ).toBeDisabled()
+  })
+
   it('names each linked model input Comfy Cloud could not check', () => {
     render(RunOnCloudCard, {
       props: {
-        asksToSignIn: false,
         uncheckedInputs: [
           { nodeType: 'CheckpointLoaderSimple', input: 'ckpt_name' },
           { nodeType: 'LoraLoader', input: 'lora_name' }

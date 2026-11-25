@@ -6,15 +6,21 @@
   />
   <DeploySetupCard
     v-else-if="state.kind === 'deploySetup'"
+    :body="$t('openOnCloud.deploySetupDialog.missingDependenciesBody')"
     :video-sources="DEPLOY_VIDEO_SOURCES"
     :poster-src="DEPLOY_VIDEO_POSTER_SRC"
     @done="emit('done')"
     @dismiss="emit('dismiss')"
   />
   <RunOnCloudCard
-    v-else-if="state.kind === 'ready'"
-    :asks-to-sign-in="state.asksToSignIn"
-    :unchecked-inputs="state.uncheckedInputs"
+    v-else
+    :asks-to-sign-in="state.kind === 'ready' && state.asksToSignIn"
+    :unchecked-inputs="
+      state.kind === 'ready' ? state.uncheckedInputs : undefined
+    "
+    :needs-consent="state.kind !== 'ready'"
+    :checking="state.kind === 'checking' && (!requestCheck || checkRequested)"
+    @check="startCheck"
     @done="emit('done')"
     @dismiss="emit('dismiss')"
   />
@@ -22,7 +28,7 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, ref } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 
@@ -36,16 +42,32 @@ import {
   DEPLOY_VIDEO_SOURCES
 } from '@/platform/workflow/deploy/constants'
 
+const { requestCheck } = defineProps<{
+  requestCheck?: (signal: AbortSignal) => boolean
+}>()
+
 const emit = defineEmits<{
   done: []
   dismiss: []
 }>()
 
+const checkRequested = ref(false)
+const checkConsent = new AbortController()
+onBeforeUnmount(() => checkConsent.abort())
+
+function startCheck() {
+  if (checkRequested.value || !requestCheck?.(checkConsent.signal)) return
+  checkRequested.value = true
+}
+
 const { state: check } = storeToRefs(useCloudWorkflowCheckStore())
 const { isLoggedIn } = useCurrentUser()
 const state = computed(() =>
-  runOnCloudModalState(check.value, {
-    signedIn: isLoggedIn.value
-  })
+  runOnCloudModalState(
+    requestCheck && !checkRequested.value ? { phase: 'idle' } : check.value,
+    {
+      signedIn: isLoggedIn.value
+    }
+  )
 )
 </script>

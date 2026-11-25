@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
+import { mockDeployMedia } from '@e2e/fixtures/deployToComfyApiFixture'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { mockWorkspace, workspace } from '@e2e/fixtures/utils/workspaceMocks'
 
@@ -11,6 +12,7 @@ const test = comfyPageFixture.extend({
   page: async ({ page }, use) => {
     await mockWorkspace(page, workspace('personal', 'owner'), [])
     await mockBilling(page)
+    await mockDeployMedia(page)
     await page.route(`${CLOUD}/api/features`, (route) =>
       route.fulfill({ headers: CORS, json: { open_on_cloud_enabled: true } })
     )
@@ -49,7 +51,7 @@ test.describe('Open on Cloud: linked inputs', { tag: '@auth' }, () => {
         request.url().endsWith('/api/cloud/compatibility')
     )
 
-    await page.getByTestId('cloud-button').click()
+    await comfyPage.actionbar.checkCloudCompatibility()
 
     await expect(
       page
