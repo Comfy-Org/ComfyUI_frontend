@@ -737,6 +737,7 @@ export const useWorkflowService = () => {
         })
         return true
       } finally {
+        useNodeApiHost().loadEnded()
         void useSubgraphNavigationStore().updateHash(
           'workflow-load',
           navigationIntentId

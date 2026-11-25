@@ -19,10 +19,9 @@ const graphProbe = (resolveGraph: GraphResolver): GraphProbe => ({
 
 function handlesWithProbes(
   exists: (graph: LGraph, key: string) => boolean = () => true,
-  reissuable?: (graph: LGraph, key: string) => boolean,
-  isLoading?: () => boolean
+  reissuable?: (graph: LGraph, key: string) => boolean
 ) {
-  const handles = createDocumentHandles(isLoading)
+  const handles = createDocumentHandles()
   const cache = handles.createCache<GraphProbe, LGraph>({
     reissuable,
     nodeOf: (key) => key
@@ -141,12 +140,7 @@ describe('document handles', () => {
   })
 
   it('retires every handle when a load ends the document, and each one made in its graph until the load finishes, but not one made in the graph the load configures', () => {
-    let loading = true
-    const { handles, probes } = handlesWithProbes(
-      () => true,
-      undefined,
-      () => loading
-    )
+    const { handles, probes } = handlesWithProbes()
     const root = new LGraph()
     const before = probes.handleFor(root, 'k', graphProbe)
 
@@ -155,7 +149,7 @@ describe('document handles', () => {
     const outgoing = probes.handleFor(root, 'k', graphProbe)
     root.configure(root.serialize())
     const incoming = probes.handleFor(root, 'k', graphProbe)
-    loading = false
+    handles.endLoad()
 
     expect(before.resolveGraph()).toBeUndefined()
     expect(outgoing).not.toBe(before)
@@ -165,11 +159,7 @@ describe('document handles', () => {
   })
 
   it('retires each handle made between the end of a document and the begin of the next, in the graph a load cleared to stage the next one too', () => {
-    const { handles, probes } = handlesWithProbes(
-      () => true,
-      undefined,
-      () => true
-    )
+    const { handles, probes } = handlesWithProbes()
     const root = new LGraph()
 
     handles.endDocument(root)
@@ -187,16 +177,28 @@ describe('document handles', () => {
   })
 
   it('gives working handles in the graph a load ended once the load gives up without configuring it', () => {
-    let loading = true
-    const { handles, probes } = handlesWithProbes(
-      () => true,
-      undefined,
-      () => loading
-    )
+    const { handles, probes } = handlesWithProbes()
     const root = new LGraph()
 
     handles.endDocument(root)
-    loading = false
+    handles.endLoad()
+
+    expect(probes.handleFor(root, 'k', graphProbe).resolveGraph()).toBe(root)
+  })
+
+  it('keeps the outgoing graph ended through every lookup until the host ends the load', () => {
+    const { handles, probes } = handlesWithProbes()
+    const root = new LGraph()
+
+    handles.endDocument(root)
+    handles.beginDocument()
+    const first = probes.handleFor(root, 'k', graphProbe)
+    const second = probes.handleFor(root, 'k', graphProbe)
+
+    expect(first.resolveGraph()).toBeUndefined()
+    expect(second.resolveGraph()).toBeUndefined()
+
+    handles.endLoad()
 
     expect(probes.handleFor(root, 'k', graphProbe).resolveGraph()).toBe(root)
   })

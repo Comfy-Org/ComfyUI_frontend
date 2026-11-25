@@ -60,8 +60,10 @@ interface Retirable {
 }
 
 export interface DocumentHandles {
-  /** Retires current handles; new handles stay retired through staging, then only for the outgoing graph until load ends. */
+  /** Retires current handles; new handles stay retired through staging, then only for the outgoing graph until {@link endLoad}. */
   endDocument(graph: LGraph): void
+  /** The load that ended a document stopped: it finished, failed or was replaced. */
+  endLoad(): void
   /** Retires every handle made so far. */
   beginDocument(): void
   /** Until settlement, handles to nodes omitted by this restore read only their outgoing entities. */
@@ -77,10 +79,7 @@ export interface DocumentHandles {
   rebuilds(): number
 }
 
-/** `isLoading` says whether a load is running; the document a load ends stays ended until it finishes. */
-export function createDocumentHandles(
-  isLoading: () => boolean = () => false
-): DocumentHandles {
+export function createDocumentHandles(): DocumentHandles {
   let documentNumber = 0
   let rebuildCount = 0
   let ending: Ending | undefined
@@ -89,7 +88,6 @@ export function createDocumentHandles(
   const caches = new Set<Retirable>()
 
   function isEndedIn(graph: LGraph): boolean {
-    if (!isLoading()) ending = undefined
     if (!ending) return false
     return ending.phase === 'staging' || ending.outgoingState === graph.state
   }
@@ -133,6 +131,9 @@ export function createDocumentHandles(
     endDocument(graph) {
       retireAllHandles()
       ending = { phase: 'staging', graph }
+    },
+    endLoad() {
+      ending = undefined
     },
     beginDocument() {
       retireAllHandles()

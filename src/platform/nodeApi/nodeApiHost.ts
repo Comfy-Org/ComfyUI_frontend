@@ -21,6 +21,7 @@ export function createNodeApiHost(versions: readonly VersionHost[]) {
     markReady: toEach('markReady'),
     providePacks: toEach('providePacks'),
     endDocument: toEach('endDocument'),
+    loadEnded: toEach('loadEnded'),
     beginDocument: toEach('beginDocument'),
     beforeHistoryRestore: toEach('beforeHistoryRestore'),
     afterHistoryRestore: toEach('afterHistoryRestore'),

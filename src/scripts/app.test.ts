@@ -3820,6 +3820,26 @@ describe('ComfyApp', () => {
       )
     })
 
+    it('gives working handles in the open document once a load that froze it fails before it configures the graph', async () => {
+      const { comfy } = nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
+      await app.loadGraphData(workflowWithFixedIdAndOneNode(), false)
+      mockExtensionService.invokeExtensionsAsync.mockImplementation(
+        async (hook) => {
+          if (hook === 'beforeConfigureGraph') throw new Error('Refused')
+          return []
+        }
+      )
+
+      await expect(
+        app.loadGraphData(workflowWithFixedIdAndOneNode(), false)
+      ).resolves.toBe(false)
+
+      expect(comfy.graph.node('1')?.setTitle('Still on screen')).toBe(true)
+      expect(app.rootGraph.getNodeById(toNodeId(1))?.title).toBe(
+        'Still on screen'
+      )
+    })
+
     it('refuses an edit through a handle to the outgoing document once the load freezes it, through a handle taken before or after the freeze', async () => {
       const { comfy } = nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
       await app.loadGraphData(workflowWithFixedIdAndOneNode(), false)

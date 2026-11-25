@@ -184,7 +184,9 @@ look in a particular graph, use `comfy.graph.root()` or
       tab whose graph is still live does the same, since it configures
       nothing. A load
       replaced or failing after the freeze leaves the graph on screen with
-      its handles retired; once the load finishes, a fresh handle works.
+      its handles retired. The host ends that phase: when a load or an
+      import stops, finished, failed or replaced, it calls `loadEnded()`,
+      and from then a fresh handle works. A lookup never ends it.
     - A restore sets the id counters (`state.lastNodeId`, `state.lastGroupId`)
       from the state it loads, so an undo to before a node was added rewinds
       the counter and the next node added takes that id. When the restore

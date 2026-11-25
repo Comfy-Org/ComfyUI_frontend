@@ -17,6 +17,8 @@ export interface VersionHost {
   providePacks(served: readonly ServedPack[] | undefined): void
   /** When the host freezes `graph`'s document to load another or show another open tab; not for an undo or redo. */
   endDocument(graph: LGraph): void
+  /** When a load, an import or a tab switch stops, finished, failed or replaced, before packs are told it loaded. */
+  loadEnded(): void
   /** Just before the host configures a graph from a saved document, or builds one to import, or shows an open tab's live graph; not for an undo or redo. */
   beginDocument(): void
   /** Just before an undo or redo configures `state` into `graph`. */

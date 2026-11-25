@@ -45,7 +45,7 @@ export interface ComfyApi {
 
 export function createComfyApi(services: ComfyApiServices): ComfyApi {
   const lifecycle = createAppLifecycle()
-  const handles = createDocumentHandles(() => services.isLoading?.() ?? false)
+  const handles = createDocumentHandles()
   const nodes = createNodeHandles(handles, (handle) =>
     nodeHandleMembers(handle, edit, nodes, slots)
   )
@@ -97,6 +97,7 @@ export function createComfyApi(services: ComfyApiServices): ComfyApi {
       markReady: lifecycle.markReady,
       providePacks: packs.provide,
       endDocument: handles.endDocument,
+      loadEnded: handles.endLoad,
       beginDocument: handles.beginDocument,
       beforeHistoryRestore: handles.beforeHistoryRestore,
       afterHistoryRestore: handles.afterHistoryRestore

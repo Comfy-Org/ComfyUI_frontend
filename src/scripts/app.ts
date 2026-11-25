@@ -1380,6 +1380,11 @@ export class ComfyApp implements IComfyApp {
     }
   }
 
+  private stopLoadingGraph(graph: LGraph) {
+    endGraphLoad(graph)
+    useNodeApiHost().loadEnded()
+  }
+
   private async loadGraphDataNow(
     graphData: ComfyWorkflowJSON | undefined,
     clean: boolean,
@@ -1462,7 +1467,7 @@ export class ComfyApp implements IComfyApp {
         if (resolveGraphData) {
           const resolved = resolveGraphData()
           if (!resolved) {
-            endGraphLoad(graph)
+            this.stopLoadingGraph(graph)
             return await skipUnreadyLoad()
           }
           graphData = resolved
@@ -1604,7 +1609,7 @@ export class ComfyApp implements IComfyApp {
           if (clean) graphsAwaitingNodeTypes.add(graph)
           await this.reportGraphLoadFailure(error)
         } finally {
-          endGraphLoad(graph)
+          this.stopLoadingGraph(graph)
         }
         void useSubgraphNavigationStore().updateHash(
           'workflow-load',
@@ -1620,7 +1625,7 @@ export class ComfyApp implements IComfyApp {
         )
       if (isCurrent?.() === false) {
         restoreContentsBeforeReload()
-        endGraphLoad(graph)
+        this.stopLoadingGraph(graph)
         await cancelReplacedLoad()
         void useSubgraphNavigationStore().updateHash(
           'workflow-load',
@@ -1826,7 +1831,7 @@ export class ComfyApp implements IComfyApp {
         }
         await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
         useWorkflowStore().activeWorkflow?.changeTracker.adoptLoadedGraph()
-        endGraphLoad(graph)
+        this.stopLoadingGraph(graph)
         activatedWorkflow = useWorkflowStore().activeWorkflow ?? undefined
 
         const activeMissingNodeTypes = missingNodeTypes.filter(
@@ -1894,7 +1899,7 @@ export class ComfyApp implements IComfyApp {
           'workflow-load',
           workflowNavigationId
         )
-        endGraphLoad(graph)
+        this.stopLoadingGraph(graph)
         useExecutionErrorStore().retireResolvedMissingNodePromptError()
       }
     } finally {
@@ -2609,12 +2614,14 @@ export class ComfyApp implements IComfyApp {
           this.scheduleImportFit(graph)
           await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
           useWorkflowStore().activeWorkflow?.changeTracker.adoptLoadedGraph()
+          useNodeApiHost().loadEnded()
           return
         } catch (error) {
           if (!lifecycle.started) throw error
           throw await this.reportGraphLoadFailure(error)
         } finally {
           releaseCaptureSuppression?.()
+          useNodeApiHost().loadEnded()
         }
       })
     }
@@ -2982,6 +2989,7 @@ export class ComfyApp implements IComfyApp {
       this.scheduleImportFit(graph)
       await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
       useWorkflowStore().activeWorkflow?.changeTracker.adoptLoadedGraph()
+      useNodeApiHost().loadEnded()
       lifecycleCompleted = true
       if (missingNodeTypes.length) {
         this.showMissingNodesError(missingNodeTypes, options)
@@ -2995,6 +3003,7 @@ export class ComfyApp implements IComfyApp {
       throw error
     } finally {
       releaseCaptureSuppression?.()
+      useNodeApiHost().loadEnded()
     }
   }
 
