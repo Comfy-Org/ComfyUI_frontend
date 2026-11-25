@@ -83,6 +83,12 @@ describe('graph edits', () => {
       expect(handle?.getPosition()).toEqual({ x: 120, y: -40 })
     })
 
+    it('keeps a title given as empty text, which the type would otherwise replace', () => {
+      const handle = comfy.graph.add(TYPE, { title: '' })
+
+      expect(handle?.getTitle()).toBe('')
+    })
+
     it('adds nothing for a type that is not registered', () => {
       shown().add(new LGraphNode('Already there'))
 

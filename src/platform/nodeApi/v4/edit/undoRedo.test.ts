@@ -153,6 +153,26 @@ describe('edits through the real change tracker', () => {
     expect(app.rootGraph.nodes).toHaveLength(before + 1)
   })
 
+  it('makes adding a node one undo step with an edit its creation callback makes to another node', async () => {
+    const sourceHandle = handleOf(source)
+    LiteGraph.registerNodeType(
+      'EditTest/Announcing',
+      class extends LGraphNode {
+        override onNodeCreated() {
+          sourceHandle.setTitle('Announced')
+        }
+      }
+    )
+    const before = app.rootGraph.nodes.length
+
+    comfy.graph.add('EditTest/Announcing')
+
+    expect(tracker.undoQueue).toHaveLength(1)
+    await tracker.undo()
+    expect(app.rootGraph.nodes).toHaveLength(before)
+    expect(titleNow(source)).toBe('Source')
+  })
+
   function trackedGroup() {
     const group = new LGraphGroup('Tracked')
     group.pos = [0, 0]

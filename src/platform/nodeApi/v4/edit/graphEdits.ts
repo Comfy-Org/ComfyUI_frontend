@@ -33,17 +33,20 @@ export function createGraphEdits(
     addNode(graph, type, init, member = 'addNode') {
       const locate = scopes.locator(graph)
       if (!locate) throw invalidArgument(member, 'a graph handle', graph)
-      const create = checkedNodeCreation(member, type, init)
+      const creation = checkedNodeCreation(member, type, init)
       const target = locate()
-      const node = target && create()
-      if (!target || !node) return undefined
-      runner.apply(target, () => target.add(node))
-      return nodes.find(target, String(node.id))
+      if (!target || !creation.isRegistered()) return undefined
+      const node = runner.apply(target, () => {
+        const made = creation.create()
+        if (made) target.add(made)
+        return made
+      })
+      return node ? nodes.find(target, String(node.id)) : undefined
     }
   }
 }
 
-/** Checks what a node is to be made from, and gives what makes it. */
+/** Checks what a node is to be made from, and gives whether its type is registered and what makes it. */
 export function checkedNodeCreation(
   member: string,
   type: unknown,
@@ -64,5 +67,13 @@ export function checkedNodeCreation(
     position === undefined
       ? undefined
       : checkedPoint(member, 'position', position)
-  return () => LiteGraph.createNode(nodeType, title, pos && { pos })
+  return {
+    isRegistered: () =>
+      Object.hasOwn(LiteGraph.registered_node_types, nodeType),
+    create: () =>
+      LiteGraph.createNode(nodeType, title, {
+        ...(title !== undefined && { title }),
+        ...(pos && { pos })
+      })
+  }
 }
