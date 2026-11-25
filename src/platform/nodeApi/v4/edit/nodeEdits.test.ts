@@ -750,6 +750,18 @@ describe('node handle edit methods', () => {
       expect(node.size[1]).toBe(999)
     })
 
+    it('leaves the size a resize callback sets while the fitted size is applied', () => {
+      const { node, handle } = add()
+      node.size = [180, 100]
+      node.onResize = () => {
+        node.size[0] = 160
+      }
+
+      expect(handle.setSizeConstraints({ maxWidth: 100 })).toBe(true)
+
+      expect(Array.from(node.size)).toEqual([160, 100])
+    })
+
     it('does not resize a node already inside the limits', () => {
       const { node, handle } = add()
       node.size = [200, 100]

@@ -56,7 +56,7 @@ function assertOrdered(
   }
 }
 
-/** Sizes the node to the constraints once. A later resize is not held to them. */
+/** Requests one size that fits the constraints; the node's resize callbacks and later resizes are not held to them. */
 export function fitToConstraints(
   node: LGraphNode,
   { minWidth, minHeight, maxWidth, maxHeight, autoHeight }: SizeConstraints

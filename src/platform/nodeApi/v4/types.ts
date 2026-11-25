@@ -169,7 +169,7 @@ export interface NodeHandle {
   setPosition(position: Point): boolean
   /** The size of the node's body, title bar excluded. */
   setSize(size: Size): boolean
-  /** Resizes the node to fit them, once. A later resize is not held to them. */
+  /** Requests one size that fits them; a resize callback the request runs, and every later resize, may leave them. */
   setSizeConstraints(constraints: SizeConstraints): boolean
   /** Not saved. A pinned node cannot be resized, and unpinning makes it resizable whatever was chosen. */
   setResizable(resizable: boolean): boolean
