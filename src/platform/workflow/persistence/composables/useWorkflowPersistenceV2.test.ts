@@ -15,6 +15,7 @@ import { computed, createApp, defineComponent, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useNewUserService } from '@/services/useNewUserService'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { api } from '@/scripts/api'
 import { blankGraph } from '@/scripts/defaultGraph'
@@ -475,6 +476,34 @@ describe('useWorkflowPersistenceV2', () => {
       await pending
 
       expect(loadWorkflowsSpy).toHaveBeenCalledOnce()
+    })
+
+    it('drops unreachable unscoped drafts after the new-user check', async () => {
+      distributionMocks.isCloud = true
+      const newUserService = useNewUserService()
+      newUserService.reset()
+      localStorage.setItem('Comfy.Workflow.Draft.v2:personal:abc', '{}')
+      localStorage.setItem('Comfy.Workflow.Draft.v2:user-a:personal:abc', '{}')
+
+      mountWorkflowPersistence()
+      const onUserResolved = vi.mocked(useCurrentUser().onUserResolved).mock
+        .calls[0][0]
+      onUserResolved({ id: 'user-a' })
+      await nextTick()
+
+      expect(localStorage.getItem('Comfy.Workflow.Draft.v2:personal:abc')).toBe(
+        '{}'
+      )
+
+      await newUserService.initializeIfNewUser()
+      await nextTick()
+
+      expect(localStorage.getItem('Comfy.Workflow.Draft.v2:personal:abc')).toBe(
+        null
+      )
+      expect(
+        localStorage.getItem('Comfy.Workflow.Draft.v2:user-a:personal:abc')
+      ).toBe('{}')
     })
 
     it('waits for workflow metadata before restoring tab pointers', async () => {

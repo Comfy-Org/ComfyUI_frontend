@@ -28,7 +28,7 @@ import {
   outputLinks
 } from '@/lib/litegraph/src/node/slotLinks'
 import { LinkRenderType } from '@comfyorg/graph-model/globalEnums'
-import { getLinkEnd } from './linkGeometry'
+import { getLinkEnd, linkEndTop } from './linkGeometry'
 import type { LinkEnd } from './linkGeometry'
 import { deleteLinks, hideLinks, showLinks } from './linkVisibility'
 import type { LinkMutationHost } from './linkVisibility'
@@ -240,10 +240,7 @@ export function getSelectedLinkDestinations(graph: LGraph): LinkEnd[] {
   if (!arrival) return []
   return sortBy(
     [...destinationsByNode(graph, arrival).values()],
-    [
-      (destination) => destination.node.pos[1],
-      (destination) => destination.node.pos[0]
-    ]
+    [linkEndTop, (destination) => destination.node.pos[0]]
   )
 }
 

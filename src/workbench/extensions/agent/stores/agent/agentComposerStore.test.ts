@@ -396,6 +396,428 @@ describe('composer draft presence', () => {
   })
 })
 
+describe('composer drafts per chat', () => {
+  const catImage = {
+    id: 'a-1',
+    name: 'cat.png',
+    ref: 'cat.png',
+    previewUrl: 'blob:cat'
+  }
+
+  it('PD-01 PD-02: keeps the draft of the chat it leaves and gives it back when that chat is active again', () => {
+    const store = useAgentComposerStore()
+    store.activateDraft('thread:a')
+    store.setText('make it blue')
+
+    store.activateDraft('blank:tab-b')
+    expect(store.hasDraft).toBe(false)
+    expect(store.draft).toBe('')
+
+    store.activateDraft('thread:a')
+    expect(store.draft).toBe('make it blue')
+  })
+
+  it('gives text typed before any chat was active to the first chat', () => {
+    const store = useAgentComposerStore()
+    store.setText('typed first')
+
+    store.activateDraft('thread:a')
+
+    expect(store.draft).toBe('typed first')
+  })
+
+  it('PD-08: does not keep a whitespace-only draft', () => {
+    const store = useAgentComposerStore()
+    store.activateDraft('thread:a')
+    store.setText('  \n ')
+
+    store.activateDraft('thread:b')
+    store.activateDraft('thread:a')
+
+    expect(store.draft).toBe('')
+    expect(store.hasDraft).toBe(false)
+  })
+
+  it('PD-02: keeps workflow references with their place in the text', () => {
+    const store = useAgentComposerStore()
+    store.activateDraft('thread:a')
+    store.setText('Use  as the style')
+    store.setWorkflowReferences([
+      { id: 'wf-portrait', name: 'portrait', textOffset: 4 }
+    ])
+
+    store.activateDraft('thread:b')
+    store.activateDraft('thread:a')
+
+    expect(store.prompt).toEqual({
+      text: 'Use  as the style',
+      references: [
+        { kind: 'workflow', id: 'wf-portrait', name: 'portrait', textOffset: 4 }
+      ]
+    })
+  })
+
+  it('PD-02: keeps an error chip with its chat', () => {
+    const store = useAgentComposerStore()
+    store.activateDraft('thread:a')
+    store.setErrorContext({
+      scope: 'card',
+      count: 1,
+      label: 'Execution failed',
+      severity: 'error',
+      problems: [{ category: 'execution_failure', message: 'boom' }]
+    })
+
+    store.activateDraft('thread:b')
+    expect(store.errorContext).toBeNull()
+    store.activateDraft('thread:a')
+
+    expect(store.errorContext?.label).toBe('Execution failed')
+    expect(store.promptOrigin).toBe('error_context')
+  })
+
+  it('drops node references, which belong to the canvas selection', () => {
+    const store = useAgentComposerStore()
+    store.activateDraft('thread:a')
+    store.setNodeScope('workflow-A')
+    store.setNodes([{ id: '1', title: 'KSampler' }])
+    store.setText(`${store.draft}make it blue`)
+    expect(store.nodes).toHaveLength(1)
+
+    store.activateDraft('thread:b')
+    store.activateDraft('thread:a')
+
+    expect(store.nodes).toEqual([])
+    expect(store.draft).toContain('make it blue')
+  })
+
+  it('does not keep a draft that only held node references', () => {
+    const store = useAgentComposerStore()
+    store.activateDraft('thread:a')
+    store.setNodeScope('workflow-A')
+    store.setNodes([{ id: '1', title: 'KSampler' }])
+
+    store.activateDraft('thread:b')
+    store.activateDraft('thread:a')
+
+    expect(store.hasDraft).toBe(false)
+    expect(store.draft).toBe('')
+  })
+
+  it('PD-12: keeps the attachments of the chat it leaves and their previews until the draft is gone', () => {
+    const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    const store = useAgentComposerStore()
+    store.activateDraft('thread:a')
+    store.addAttachment(catImage)
+
+    store.activateDraft('thread:b')
+    store.releaseUnusedAssets()
+    expect(store.attachments).toEqual([])
+    expect(revoke).not.toHaveBeenCalled()
+
+    store.activateDraft('thread:a')
+    expect(store.attachments).toEqual([catImage])
+    expect(store.hasDraft).toBe(true)
+  })
+
+  it('PD-12 UQ-04: lets a kept draft finish uploading while another chat is open', () => {
+    const store = useAgentComposerStore()
+    store.activateDraft('thread:a')
+    store.addAttachment({
+      id: 'a-1',
+      name: 'cat.png',
+      ref: '',
+      uploading: true
+    })
+
+    store.activateDraft('thread:b')
+    store.updateAttachment('a-1', { ref: 'uploaded.png', uploading: false })
+    expect(store.attachments).toEqual([])
+    store.activateDraft('thread:a')
+
+    expect(store.attachments).toEqual([
+      { id: 'a-1', name: 'cat.png', ref: 'uploaded.png', uploading: false }
+    ])
+  })
+
+  it('PD-12: drops a file of a kept draft whose upload failed, and keeps the rest of the draft', () => {
+    const store = useAgentComposerStore()
+    store.activateDraft('thread:a')
+    store.setText('make it blue')
+    store.addAttachment({
+      id: 'a-1',
+      name: 'cat.png',
+      ref: '',
+      uploading: true
+    })
+
+    store.activateDraft('thread:b')
+    store.removeAttachment('a-1')
+    store.activateDraft('thread:a')
+
+    expect(store.attachments).toEqual([])
+    expect(store.draft).toBe('make it blue')
+  })
+
+  it('PD-10: keeps the draft with its chat when a blank chat becomes a thread', () => {
+    const store = useAgentComposerStore()
+    store.activateDraft('blank:tab-a')
+    store.setText('typed while the first message was accepted')
+
+    store.rekeyDraft('blank:tab-a', 'thread:new')
+    store.activateDraft('thread:new')
+    expect(store.draft).toBe('typed while the first message was accepted')
+
+    store.activateDraft('blank:tab-a')
+    expect(store.draft).toBe('')
+    store.activateDraft('thread:new')
+    expect(store.draft).toBe('typed while the first message was accepted')
+  })
+
+  it('PD-13: discards the draft of a chat that is deleted, and releases its previews', () => {
+    const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    const store = useAgentComposerStore()
+    store.activateDraft('thread:a')
+    store.setText('make it blue')
+    store.addAttachment(catImage)
+    store.activateDraft('thread:b')
+
+    store.discardDraft('thread:a')
+
+    expect(revoke).toHaveBeenCalledExactlyOnceWith('blob:cat')
+    store.activateDraft('thread:a')
+    expect(store.hasDraft).toBe(false)
+  })
+
+  it('PD-13: clears the draft of the chat that is open when that chat is discarded', () => {
+    const store = useAgentComposerStore()
+    store.activateDraft('thread:a')
+    store.setText('make it blue')
+
+    store.discardDraft('thread:a')
+
+    expect(store.hasDraft).toBe(false)
+  })
+
+  function seedDrafts(
+    store: ReturnType<typeof useAgentComposerStore>,
+    keys: readonly string[]
+  ): void {
+    for (const key of keys) {
+      store.activateDraft(key)
+      store.setText(`draft ${key}`)
+    }
+  }
+
+  it('PD-15: keeps the drafts of the twenty most recently left chats', () => {
+    const store = useAgentComposerStore()
+    seedDrafts(
+      store,
+      Array.from({ length: 21 }, (_, chat) => `thread:${chat}`)
+    )
+    store.activateDraft('thread:other')
+
+    store.activateDraft('thread:0')
+    expect(store.hasDraft).toBe(false)
+    store.activateDraft('thread:1')
+    expect(store.draft).toBe('draft thread:1')
+    store.activateDraft('thread:20')
+    expect(store.draft).toBe('draft thread:20')
+  })
+
+  it('preserves the oldest kept draft and its attachment when returning to it from a nonempty active draft at the twenty-draft limit', () => {
+    const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    const store = useAgentComposerStore()
+    store.activateDraft('thread:0')
+    store.setText('oldest draft')
+    store.addAttachment({
+      id: 'att-oldest',
+      name: 'oldest.png',
+      ref: 'oldest.png',
+      previewUrl: 'blob:oldest'
+    })
+    seedDrafts(
+      store,
+      Array.from({ length: 20 }, (_, offset) => `thread:${offset + 1}`)
+    )
+
+    store.activateDraft('thread:0')
+
+    expect(store.draft).toBe('oldest draft')
+    expect(store.attachments.map(({ id }) => id)).toEqual(['att-oldest'])
+    expect(revoke).not.toHaveBeenCalledWith('blob:oldest')
+
+    store.activateDraft('thread:20')
+    expect(store.draft).toBe('draft thread:20')
+    revoke.mockRestore()
+  })
+
+  it('does not overwrite a newer kept draft when restoring a withdrawn snapshot off screen', () => {
+    const store = useAgentComposerStore()
+    store.activateDraft('thread:a')
+    store.setText('newer text typed on a')
+    store.activateDraft('thread:b')
+
+    store.restoreKeptDraftSnapshot('thread:a', {
+      prompt: { text: 'older withdrawn text', references: [] },
+      attachments: [],
+      nodes: [],
+      targetInstanceId: null,
+      promptOrigin: 'typed',
+      starterPrompt: null
+    })
+
+    store.activateDraft('thread:a')
+    expect(store.draft).toBe('newer text typed on a')
+  })
+
+  it('PD-09: does not bring a sent message back when its chat is active again', () => {
+    const store = useAgentComposerStore()
+    store.activateDraft('thread:a')
+    store.setText('make it blue')
+    const id = store.startGateHold('cm-1', {
+      prompt: store.prompt,
+      attachments: [],
+      nodes: [],
+      targetInstanceId: 'inst-target',
+      promptOrigin: 'typed',
+      starterPrompt: null
+    })
+    store.releaseGateHold(id)
+
+    store.activateDraft('thread:b')
+    store.activateDraft('thread:a')
+
+    expect(store.hasDraft).toBe(false)
+  })
+
+  it('T1-13: rekeys a kept draft and inserts a saved workflow reference into the origin draft after switching away', () => {
+    const store = useAgentComposerStore()
+    store.activateDraft('blank:tab-a')
+    store.setText('Use @ after')
+    const captured = store.captureReferenceInsertion(4, 5)
+    expect(store.isCapturedInsertionLive(captured)).toBe(true)
+
+    store.activateDraft('thread:b')
+    store.setText('on b')
+    expect(store.isCapturedInsertionLive(captured)).toBe(false)
+
+    store.insertWorkflowReferenceInDraft(captured, {
+      id: 'wf-ref',
+      name: 'Ref workflow'
+    })
+    expect(store.draft).toBe('on b')
+    expect(store.workflowReferences).toEqual([])
+
+    store.rekeyDraft('blank:tab-a', 'thread:a')
+    store.activateDraft('thread:a')
+    expect(store.draft).toBe('Use  after')
+    expect(store.workflowReferences).toEqual([
+      { id: 'wf-ref', name: 'Ref workflow', textOffset: 4 }
+    ])
+  })
+
+  it('inserts a workflow reference into the active draft after a tab round-trip back to it', () => {
+    const store = useAgentComposerStore()
+    store.activateDraft('thread:a')
+    store.setText('Use @ after')
+    const captured = store.captureReferenceInsertion(4, 5)
+
+    store.activateDraft('thread:b')
+    store.activateDraft('thread:a')
+    expect(store.isCapturedInsertionLive(captured)).toBe(false)
+
+    store.insertWorkflowReferenceInDraft(captured, {
+      id: 'wf-roundtrip',
+      name: 'Roundtrip'
+    })
+    expect(store.workflowReferences).toEqual([
+      { id: 'wf-roundtrip', name: 'Roundtrip', textOffset: 4 }
+    ])
+  })
+
+  it('resolves a captured reference target across a blank-to-thread rekey', () => {
+    const store = useAgentComposerStore()
+    store.activateDraft('blank:tab-a')
+    store.setText('Use @ after')
+    const captured = store.captureReferenceInsertion(4, 5)
+
+    store.rekeyDraft('blank:tab-a', 'thread:a')
+    expect(store.isCapturedInsertionLive(captured)).toBe(true)
+
+    store.activateDraft('thread:b')
+    store.insertWorkflowReferenceInDraft(captured, {
+      id: 'wf-rekeyed',
+      name: 'Rekeyed'
+    })
+    expect(store.workflowReferences).toEqual([])
+
+    store.activateDraft('thread:a')
+    expect(store.workflowReferences).toEqual([
+      { id: 'wf-rekeyed', name: 'Rekeyed', textOffset: 4 }
+    ])
+  })
+
+  it('keeps workflow reference insertions on a reused blank draft key instead of redirecting to the old thread', () => {
+    const store = useAgentComposerStore()
+    store.activateDraft('blank:tab-a')
+    store.setText('old thread draft')
+
+    store.rekeyDraft('blank:tab-a', 'thread:a')
+    store.activateDraft('blank:tab-a')
+    store.setText('Use @ after')
+    const captured = store.captureReferenceInsertion(4, 5)
+
+    expect(store.isCapturedInsertionLive(captured)).toBe(true)
+
+    store.insertWorkflowReferenceInDraft(captured, {
+      id: 'wf-fresh',
+      name: 'Fresh workflow'
+    })
+    expect(store.workflowReferences).toEqual([
+      { id: 'wf-fresh', name: 'Fresh workflow', textOffset: 4 }
+    ])
+
+    store.activateDraft('thread:a')
+    expect(store.draft).toBe('old thread draft')
+    expect(store.workflowReferences).toEqual([])
+  })
+
+  it('releases unused attachment assets when evicting the oldest kept draft', () => {
+    const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    const store = useAgentComposerStore()
+    store.activateDraft('thread:0')
+    store.addAttachment({
+      id: 'att-evicted',
+      name: 'evicted.png',
+      ref: 'evicted.png',
+      previewUrl: 'blob:evicted'
+    })
+
+    seedDrafts(
+      store,
+      Array.from({ length: 21 }, (_, offset) => `thread:${offset + 1}`)
+    )
+    store.activateDraft('thread:22')
+
+    expect(revoke).toHaveBeenCalledWith('blob:evicted')
+    revoke.mockRestore()
+  })
+
+  it('keeps how a draft started, so a chip stays a chip', () => {
+    const store = useAgentComposerStore()
+    store.activateDraft('thread:a')
+    store.setText('Make it blue')
+    store.markSuggestedPrompt()
+
+    store.activateDraft('thread:b')
+    expect(store.promptOrigin).toBe('typed')
+    store.activateDraft('thread:a')
+
+    expect(store.promptOrigin).toBe('suggestion')
+  })
+})
+
 describe('composer draft persistence (PM-2002)', () => {
   async function reloadPage() {
     await nextTick()
@@ -404,6 +826,21 @@ describe('composer draft persistence (PM-2002)', () => {
     delete getActivePinia()?.state.value[store.$id]
     return useAgentComposerStore()
   }
+
+  it('PD-16: saves only the draft of the chat that is open', async () => {
+    const store = useAgentComposerStore()
+    store.activateDraft('thread:a')
+    store.trackDraftThread('a')
+    store.setText('only for a')
+    store.activateDraft('thread:b')
+    store.trackDraftThread('b')
+    store.setText('only for b')
+
+    const reloaded = await reloadPage()
+    reloaded.trackDraftThread('a')
+
+    expect(reloaded.hasDraft).toBe(false)
+  })
 
   it('does not restore a draft into a different chat', async () => {
     const store = useAgentComposerStore()
@@ -540,6 +977,32 @@ describe('composer draft persistence (PM-2002)', () => {
     sender.clearDraft()
     await nextTick()
 
+    const reloadedUnmatched = await reloadPage()
+    reloadedUnmatched.trackDraftThread('thread-a')
+    reloadedUnmatched.reconcilePendingSendDraft('thread-a', [
+      { turnId: 'turn-1', text: 'Earlier' }
+    ])
+    expect(reloadedUnmatched.draft).toBe(' make it blue')
+    expect(reloadedUnmatched.workflowReferences).toEqual([
+      { id: 'wf-1', name: 'Hero', textOffset: 0 }
+    ])
+
+    const senderMatched = await reloadPage()
+    senderMatched.trackDraftThread('thread-a')
+    senderMatched.setText(' make it blue')
+    senderMatched.setWorkflowReferences([
+      { id: 'wf-1', name: 'Hero', textOffset: 0 }
+    ])
+    const matchedGateId = senderMatched.startGateHold('cm-chip', undefined, {
+      expectedText: ' make it blue',
+      knownTurnIds: ['turn-1']
+    })
+    senderMatched.releaseGateHold(matchedGateId)
+    senderMatched.setText('Follow-up draft')
+    await nextTick()
+    senderMatched.clearDraft()
+    await nextTick()
+
     const reloaded = await reloadPage()
     reloaded.trackDraftThread('thread-a')
     reloaded.reconcilePendingSendDraft('thread-a', [
@@ -549,10 +1012,56 @@ describe('composer draft persistence (PM-2002)', () => {
     expect(reloaded.hasDraft).toBe(false)
   })
 
-  it('rebinds adopted blank-chat pending send backups to the created thread so reload restores them', async () => {
+  it('preserves a background thread pending-send backup when reloading onto a different thread or blank tab', async () => {
+    const sender = useAgentComposerStore()
+    sender.trackDraftThread('thread-a', 'workflows/a.json')
+    sender.setText('Dropped on thread A')
+    sender.startGateHold('cm-bg-a', undefined, {
+      tabPath: 'workflows/a.json',
+      expectedText: 'Dropped on thread A',
+      knownTurnIds: ['turn-1']
+    })
+
+    const reloadedOnB = await reloadPage()
+    reloadedOnB.trackDraftThread('thread-b', 'workflows/b.json')
+    expect(reloadedOnB.hasDraft).toBe(false)
+
+    reloadedOnB.activateDraft('thread:thread-a')
+    reloadedOnB.trackDraftThread('thread-a', 'workflows/a.json')
+    reloadedOnB.reconcilePendingSendDraft('thread-a', [
+      { turnId: 'turn-1', text: 'Earlier' }
+    ])
+    expect(reloadedOnB.draft).toBe('Dropped on thread A')
+  })
+
+  it('defers a reloaded blank-tab pending-send backup across unknown/other tabs and restores it only onto its matching workflow tab', async () => {
+    const sender = useAgentComposerStore()
+    sender.trackDraftThread(null, 'workflows/a.json')
+    sender.setText('Unsent on blank A')
+    sender.startGateHold('cm-blank-a', undefined, {
+      tabPath: 'workflows/a.json',
+      expectedText: 'Unsent on blank A',
+      knownTurnIds: []
+    })
+
+    const reloadedBeforeTabs = await reloadPage()
+    reloadedBeforeTabs.trackDraftThread(null, null)
+    expect(reloadedBeforeTabs.hasDraft).toBe(false)
+
+    reloadedBeforeTabs.activateDraft('blank:tab-b')
+    reloadedBeforeTabs.trackDraftThread(null, 'workflows/b.json')
+    expect(reloadedBeforeTabs.hasDraft).toBe(false)
+
+    reloadedBeforeTabs.activateDraft('blank:tab-a')
+    reloadedBeforeTabs.trackDraftThread(null, 'workflows/a.json')
+    expect(reloadedBeforeTabs.draft).toBe('Unsent on blank A')
+  })
+
+  it('rebinds adopted blank-chat pending send backups to the created thread without leaking to later blank tabs', async () => {
     const first = useAgentComposerStore()
-    first.trackDraftThread(null)
+    first.trackDraftThread(null, 'workflows/a.json')
     first.holdPendingSendDraft('cm-failed', {
+      tabPath: 'workflows/a.json',
       text: 'Failed before thread creation',
       expectedText: 'Failed before thread creation',
       workflowReferences: []
@@ -561,7 +1070,11 @@ describe('composer draft persistence (PM-2002)', () => {
     first.rebindPendingSendDrafts(['cm-failed'], 'th-adopted', 'turn-accepted')
 
     const reloaded = await reloadPage()
-    reloaded.trackDraftThread('th-adopted')
+    reloaded.trackDraftThread(null, 'workflows/a.json')
+    expect(reloaded.hasDraft).toBe(false)
+
+    reloaded.activateDraft('thread:th-adopted')
+    reloaded.trackDraftThread('th-adopted', 'workflows/a.json')
     reloaded.reconcilePendingSendDraft('th-adopted', [
       { turnId: 'turn-accepted', text: 'Accepted thread starter' }
     ])
@@ -741,6 +1254,38 @@ describe('composer draft persistence (PM-2002)', () => {
 
     expect(reloaded.draft).toBe('Retried message')
   })
+
+  it('restores a saved blank draft only onto its own workflow tab and ignores legacy blank drafts without a tab path', async () => {
+    const sender = useAgentComposerStore()
+    sender.trackDraftThread(null, 'workflows/a.json')
+    sender.setText('Draft on workflow A')
+    await nextTick()
+
+    const reloadedOnB = await reloadPage()
+    reloadedOnB.trackDraftThread(null, null)
+    expect(reloadedOnB.hasDraft).toBe(false)
+
+    reloadedOnB.activateDraft('blank:tab-b')
+    reloadedOnB.trackDraftThread(null, 'workflows/b.json')
+    expect(reloadedOnB.hasDraft).toBe(false)
+
+    reloadedOnB.activateDraft('blank:tab-a')
+    reloadedOnB.trackDraftThread(null, 'workflows/a.json')
+    expect(reloadedOnB.draft).toBe('Draft on workflow A')
+
+    const key = StorageKeys.agentComposerDraft(getWorkspaceId())
+    localStorage.setItem(
+      key,
+      JSON.stringify({
+        threadId: null,
+        text: 'Legacy draft without tab',
+        workflowReferences: []
+      })
+    )
+    const reloadedLegacy = await reloadPage()
+    reloadedLegacy.trackDraftThread(null, 'workflows/b.json')
+    expect(reloadedLegacy.hasDraft).toBe(false)
+  })
 })
 
 describe('composer prompt origin (PM-1474 F11)', () => {
@@ -856,5 +1401,59 @@ describe('composer prompt origin (PM-1474 F11)', () => {
     store.setText('never mind, do this instead')
 
     expect(store.promptOrigin).toBe('typed')
+  })
+
+  it('drops background workflow reference completions for a discarded chat while still inserting into a live empty chat', () => {
+    const store = useAgentComposerStore()
+    store.activateDraft('thread:a')
+    const discardedCapture = store.captureReferenceInsertion()
+
+    store.activateDraft('thread:live')
+    const liveCapture = store.captureReferenceInsertion()
+
+    store.activateDraft('thread:b')
+    store.discardDraft('thread:a')
+
+    store.insertWorkflowReferenceInDraft(discardedCapture, {
+      id: 'wf-dead',
+      name: 'Dead'
+    })
+    store.insertWorkflowReferenceInDraft(liveCapture, {
+      id: 'wf-live',
+      name: 'Live'
+    })
+
+    store.activateDraft('thread:a')
+    expect(store.hasDraft).toBe(false)
+    expect(store.workflowReferences).toEqual([])
+
+    store.activateDraft('thread:live')
+    expect(store.workflowReferences).toEqual([
+      { id: 'wf-live', name: 'Live', textOffset: 0 }
+    ])
+  })
+
+  it('does not delete edited text when a captured trigger range no longer matches before background reference insertion', () => {
+    const store = useAgentComposerStore()
+    store.activateDraft('thread:a')
+    store.setText('use @')
+    const captured = store.captureReferenceInsertion(4, 5, {
+      textOffset: 4,
+      referenceIndex: 0
+    })
+
+    store.activateDraft('thread:b')
+    store.activateDraft('thread:a')
+    store.setText('use safe words')
+
+    store.insertWorkflowReferenceInDraft(captured, {
+      id: 'wf-hero',
+      name: 'Hero'
+    })
+
+    expect(store.draft).toBe('use  safe words')
+    expect(store.workflowReferences).toEqual([
+      { id: 'wf-hero', name: 'Hero', textOffset: 4 }
+    ])
   })
 })

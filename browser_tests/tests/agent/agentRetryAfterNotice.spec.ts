@@ -21,7 +21,6 @@ agentTest.describe(
             'open the agent and select the workflow',
             async () => {
               await agentPanel.open()
-              await agentPanel.selectWorkflow()
             }
           )
 

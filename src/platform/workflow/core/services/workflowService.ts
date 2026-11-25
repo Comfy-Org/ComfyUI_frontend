@@ -599,8 +599,19 @@ export const useWorkflowService = () => {
   /**
    * Load a blank workflow
    */
-  const loadBlankWorkflow = () =>
-    queueWorkflowLoad(() => useApp().loadGraphData(blankGraph))
+  const loadBlankWorkflow = async (options: { initiator?: 'user' } = {}) => {
+    const loaded = await queueWorkflowLoad(() =>
+      useApp().loadGraphData(blankGraph)
+    )
+    const activatedWorkflow = typeof loaded === 'object' ? loaded : undefined
+    if (
+      options.initiator === 'user' &&
+      activatedWorkflow !== undefined &&
+      workflowStore.isActive(activatedWorkflow)
+    )
+      workflowStore.reportUserActivation(activatedWorkflow)
+    return loaded
+  }
 
   const reloadCurrentWorkflow = async () => {
     await workflowLoadTail
@@ -816,6 +827,8 @@ export const useWorkflowService = () => {
       isCanvasOwner(workflow.changeTracker) &&
       !options.force
     ) {
+      if (options.initiator === 'user')
+        workflowStore.reportUserActivation(workflow)
       return Promise.resolve(true)
     }
 

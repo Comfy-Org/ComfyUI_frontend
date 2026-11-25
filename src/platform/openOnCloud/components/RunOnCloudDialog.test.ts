@@ -11,6 +11,7 @@ import RunOnCloudDialog from '@/platform/openOnCloud/components/RunOnCloudDialog
 import { useCloudWorkflowCheckStore } from '@/platform/openOnCloud/stores/cloudWorkflowCheckStore'
 import { useLocalModelUploadStore } from '@/platform/openOnCloud/stores/localModelUploadStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { testI18n } from '@/utils/__tests__/testI18n'
 
 vi.mock(import('@comfyorg/telemetry'))
 vi.mock(import('@/composables/auth/useCurrentUser'))
@@ -123,6 +124,7 @@ describe('Run on Cloud dialog', () => {
 
       render(RunOnCloudDialog, {
         global: {
+          plugins: [testI18n],
           stubs: {
             DeploySetupCard: true,
             MissingModelsCard: true,

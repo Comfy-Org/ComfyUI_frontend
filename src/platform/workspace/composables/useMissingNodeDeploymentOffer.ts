@@ -2,12 +2,13 @@ import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useToast } from '@/components/ui/toast/toastStore'
 import { useDeploymentCompatibility } from '@/platform/workspace/composables/useDeploymentCompatibility'
 import { useDeploymentLabels } from '@/platform/workspace/composables/useDeploymentLabels'
-import { useDeploymentSwitchGuard } from '@/platform/workspace/composables/useDeploymentSwitchGuard'
+import {
+  switchToDeployment,
+  useDeploymentSwitchGuard
+} from '@/platform/workspace/composables/useDeploymentSwitchGuard'
 import { useDeploymentSwitcherOffered } from '@/platform/workspace/composables/useDeploymentSwitcherOffered'
-import { confirmUnsavedWorkBeforeSwitch } from '@/platform/workspace/confirmUnsavedWorkBeforeSwitch'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 
 interface DeploymentChoice {
@@ -28,7 +29,7 @@ export function useMissingNodeDeploymentOffer() {
   const { deploymentsThatRunIt, markFor } = useDeploymentCompatibility()
   const { deploymentFullLabel } = useDeploymentLabels()
   const switcherOffered = useDeploymentSwitcherOffered()
-  const { targetLabel, withoutLeavePrompt } = useDeploymentSwitchGuard()
+  const { targetLabel } = useDeploymentSwitchGuard()
 
   function eachCheckedAndLacking() {
     return [null, ...deployments.value.map((d) => d.deployment_id)].every(
@@ -58,15 +59,8 @@ export function useMissingNodeDeploymentOffer() {
     return choices.length > 0 ? { kind: 'choices', choices } : null
   })
 
-  async function choose(deploymentId: string | null) {
-    if (!(await confirmUnsavedWorkBeforeSwitch(targetLabel(deploymentId))))
-      return
-    const refusal = await withoutLeavePrompt(() => pickStore.pick(deploymentId))
-    if (refusal === null) return
-    useToast().error(t('deploymentSwitcher.failedToSwitch'), {
-      description: refusal,
-      duration: 8000
-    })
+  function choose(deploymentId: string | null) {
+    return switchToDeployment(deploymentId, targetLabel(deploymentId))
   }
 
   return {

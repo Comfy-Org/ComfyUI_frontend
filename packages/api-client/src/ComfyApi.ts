@@ -487,6 +487,7 @@ export class ComfyApi extends EventTarget {
    */
   private socketGeneration = 0
   private socketRetryDelayMs = 1_000
+  private consecutiveFailedConnects = 0
 
   private authProvider: ApiAuthProvider = anonymousApiAuthProvider
 
@@ -533,6 +534,7 @@ export class ComfyApi extends EventTarget {
    * The API key for the comfy org account if the user logged in via API key.
    */
   apiKey?: string
+  loadedReleaseId?: string
 
   constructor(private readonly ports: ComfyApiPorts) {
     super()
@@ -1069,6 +1071,7 @@ export class ComfyApi extends EventTarget {
       if (this.socket !== socket) return
       opened = true
       this.socketRetryDelayMs = 1_000
+      this.consecutiveFailedConnects = 0
 
       socket.send(
         JSON.stringify({
@@ -1097,7 +1100,12 @@ export class ComfyApi extends EventTarget {
       const recoverSession = sessionRequests && !opened
       const delayMs = recoverSession
         ? this.socketRetryDelayMs
-        : socketReconnectDelayMs({ isCloud: this.ports.isCloud, opened })
+        : socketReconnectDelayMs({
+            isCloud: this.ports.isCloud,
+            opened,
+            failedConnects: this.consecutiveFailedConnects
+          })
+      if (!opened) this.consecutiveFailedConnects++
       if (recoverSession) {
         this.socketRetryDelayMs = Math.min(delayMs * 2, 60_000)
       }
@@ -1313,6 +1321,7 @@ export class ComfyApi extends EventTarget {
     // only `agent`): clearing it would downgrade every serverSupportsFeature()
     // caller until the next delivery.
     this.serverFeatureFlagsSettled.value = false
+    this.consecutiveFailedConnects = 0
     // Detach before closing so the previous socket's close handler sees it is
     // no longer the active socket and does not start a competing reconnect.
     this.socket = null
@@ -1458,7 +1467,10 @@ export class ComfyApi extends EventTarget {
     const res = await this.fetchApi('/prompt', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        ...(this.loadedReleaseId && {
+          'Comfy-Loaded-Release': this.loadedReleaseId
+        })
       },
       body: JSON.stringify(body)
     })

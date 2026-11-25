@@ -1,6 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { RunOnCloudTelemetryEvent } from '@comfyorg/telemetry/types'
+import type {
+  LocalMcpTelemetryEvent,
+  RunOnCloudTelemetryEvent
+} from '@comfyorg/telemetry/types'
 import { TelemetryEvents } from '@comfyorg/telemetry/types'
 
 import { HostTelemetrySink } from './HostTelemetrySink'
@@ -678,6 +681,29 @@ describe('HostTelemetrySink', () => {
     }
   ])('forwards the Run on Cloud event $name to the host bridge', (event) => {
     new HostTelemetrySink().trackRunOnCloudEvent(event)
+
+    expect(state.capture).toHaveBeenCalledExactlyOnceWith(
+      event.name,
+      event.properties
+    )
+  })
+
+  it.for<LocalMcpTelemetryEvent>([
+    { name: 'app:local_mcp_exposed', properties: {} },
+    { name: 'app:local_mcp_opened', properties: {} },
+    {
+      name: 'app:local_mcp_path_selected',
+      properties: { client: 'cursor', action: 'copy_config' }
+    },
+    {
+      name: 'app:local_mcp_connected',
+      properties: {
+        usage_source: 'comfy-cli/comfy-mcp',
+        panel_opened_this_session: true
+      }
+    }
+  ])('forwards the Comfy MCP event $name to the host bridge', (event) => {
+    new HostTelemetrySink().trackLocalMcpEvent(event)
 
     expect(state.capture).toHaveBeenCalledExactlyOnceWith(
       event.name,

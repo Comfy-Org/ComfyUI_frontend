@@ -28,11 +28,7 @@ import {
 import type { GraphOperation } from '@/workbench/extensions/agent/crdt/graphOperations'
 import type { useAgentWorkflowTabBindingStore } from '@/workbench/extensions/agent/stores/agent/agentWorkflowTabBindingStore'
 
-import {
-  agentTest,
-  bootAgentApp,
-  mockWorkflowPersistence
-} from '@e2e/fixtures/agentPanelFixture'
+import { agentTest, bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
 import { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
@@ -216,8 +212,6 @@ interface DroppedWorkflowScope {
   graphId: string
 }
 
-type WorkflowTarget = 'saved-via-picker' | 'unsaved-draft'
-
 interface ReplayResponseOptions {
   beforeFirstGraphOps?: () => Promise<void>
   beforeGraphOps?: (ops: readonly RecordedGraphOperation[]) => Promise<void>
@@ -253,8 +247,7 @@ export class AgentConversationHarness {
     readonly replayTiming: ReplayTiming,
     caseId: string,
     private readonly extraNodeDefs: Record<string, ComfyNodeDef> = {},
-    humanOpsHost: HumanOpsHost = 'hold',
-    private readonly workflowTarget: WorkflowTarget = 'saved-via-picker'
+    humanOpsHost: HumanOpsHost = 'hold'
   ) {
     const { workflow } = conversation
     this.host = new HostDoc(workflow.id, workflow.seed, workflow.catalog)
@@ -356,18 +349,6 @@ export class AgentConversationHarness {
 
     await loadSeedIntoActiveTab(this.page, this.conversation.workflow.seed)
     await new AgentPanel(this.page).open(PANEL_MOUNT_TIMEOUT)
-    if (this.workflowTarget === 'saved-via-picker')
-      await this.selectWorkflowTarget()
-  }
-
-  private async selectWorkflowTarget(name = 'Unsaved Workflow'): Promise<void> {
-    await mockWorkflowPersistence(this.page, this.conversation.workflow.id)
-    const picker = this.panel.getByRole('button', {
-      name: enMessages.agent.switchWorkflow
-    })
-    await picker.click()
-    await this.page.getByRole('menuitemradio', { name, exact: true }).click()
-    await expect(picker).toHaveText(name)
   }
 
   async persistSavedWorkflow(): Promise<void> {
@@ -1331,7 +1312,9 @@ export class AgentConversationHarness {
     await settings.setSetting('Comfy.Workflow.Persist', persist)
     await settings.setSetting('Comfy.Window.UnloadConfirmation', confirm)
     await expect(this.panel).toBeVisible({ timeout: PANEL_MOUNT_TIMEOUT })
-    await this.selectWorkflowTarget()
+    await this.panel
+      .getByRole('button', { name: enMessages.agent.newChat })
+      .click()
   }
 
   // A reload that carries the canvas over the way the app's own persistence
@@ -1346,11 +1329,9 @@ export class AgentConversationHarness {
     await this.comfyPage.workflow.newBlankWorkflow()
     await this.comfyPage.workflow.loadGraphData(graph)
     await expect(this.panel).toBeVisible({ timeout: PANEL_MOUNT_TIMEOUT })
-    const name = await this.topbar
-      .getActiveTab()
-      .locator('.workflow-label')
-      .innerText()
-    await this.selectWorkflowTarget(name)
+    await this.panel
+      .getByRole('button', { name: enMessages.agent.newChat })
+      .click()
   }
 
   // Sends one more doc_update that resyncs `widget` on `nodeId` to its
@@ -1561,7 +1542,6 @@ interface ConversationFixtures {
   // Node definitions this case needs beyond the recorded core subset.
   extraNodeDefs: Record<string, ComfyNodeDef>
   humanOpsHost: HumanOpsHost
-  workflowTarget: WorkflowTarget
   // Assets the boot mock serves for every /api/assets query, so combo widgets
   // loaded with the seed already see them.
   bootAssets: ListAssetsResponse
@@ -1581,7 +1561,6 @@ export const agentConversationTest = agentTest.extend<ConversationFixtures>({
   replayTiming: [defaultReplayTiming(), { option: true }],
   extraNodeDefs: [{}, { option: true }],
   humanOpsHost: ['hold', { option: true }],
-  workflowTarget: ['saved-via-picker', { option: true }],
   bootAssets: [{ assets: [], total: 0, has_more: false }, { option: true }],
   telemetryEnabled: [false, { option: true }],
   seedPassthrough: [{}, { option: true }],
@@ -1602,7 +1581,6 @@ export const agentConversationTest = agentTest.extend<ConversationFixtures>({
       replayTiming,
       extraNodeDefs,
       humanOpsHost,
-      workflowTarget,
       bootAssets,
       telemetryEnabled,
       crdtDebugEnabled,
@@ -1630,8 +1608,7 @@ export const agentConversationTest = agentTest.extend<ConversationFixtures>({
       replayTiming,
       conversationCase,
       extraNodeDefs,
-      humanOpsHost,
-      workflowTarget
+      humanOpsHost
     )
     await harness.boot(
       agentFlagEnabled,
