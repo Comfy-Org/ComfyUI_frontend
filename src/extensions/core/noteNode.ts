@@ -17,6 +17,7 @@ export const noteNodeExtension: ComfyExtension = {
       static override category: string
       static collapsable: boolean
       static title_mode: number
+      static widgetsHoldUserContent = true
 
       groupcolor = LGraphCanvas.node_colors.yellow.groupcolor
       override isVirtualNode: boolean
@@ -55,6 +56,7 @@ export const noteNodeExtension: ComfyExtension = {
     /** Markdown variant of NoteNode */
     class MarkdownNoteNode extends LGraphNode {
       static override title = 'Markdown Note'
+      static widgetsHoldUserContent = true
 
       groupcolor = LGraphCanvas.node_colors.yellow.groupcolor
 

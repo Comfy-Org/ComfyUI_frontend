@@ -53,6 +53,7 @@ export class PrimitiveNode extends LGraphNode {
   controlValues?: WidgetValue[]
   lastType?: string
   static override category: string
+  static widgetsHoldUserContent = true
   constructor(title: string) {
     super(title)
     this.addOutput('connect to widget input', '*')

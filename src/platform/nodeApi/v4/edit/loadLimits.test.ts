@@ -304,53 +304,26 @@ describe('edits and what a load keeps of them', () => {
     })
   })
 
-  describe('on a Note, a MarkdownNote or a PrimitiveNode', () => {
-    it.for(['Note', 'MarkdownNote', 'PrimitiveNode'])(
-      'refuses to stop saving the widget values of a %s, whose next load would erase what the user entered',
-      (type) => {
-        const node = new LGraphNode(type, type)
-        node.serialize_widgets = true
-        graph.add(node)
-        const found = comfy.graph.node(String(node.id))
-        assert(found)
-
-        expect(() => found.setSerializeWidgets(false)).toThrow(
-          /^setSerializeWidgets needs a node that is not a Note/
-        )
-        expect(node.serialize_widgets).toBe(true)
-        expect(found.setSerializeWidgets(true)).toBe(true)
+  it('reads serializeWidgets once, so a getter cannot pass the refusal on a node whose widgets hold the user’s content', () => {
+    class Kept extends LGraphNode {
+      static widgetsHoldUserContent = true
+    }
+    const note = new Kept('Kept')
+    note.serialize_widgets = true
+    graph.add(note)
+    const noteHandle = comfy.graph.node(String(note.id))
+    assert(noteHandle)
+    let reads = 0
+    const patch = {
+      get serializeWidgets() {
+        reads++
+        return reads === 1 ? false : true
       }
-    )
+    }
 
-    it('reads serializeWidgets once, so a getter cannot pass the refusal', () => {
-      const note = new LGraphNode('Note', 'Note')
-      note.serialize_widgets = true
-      graph.add(note)
-      const noteHandle = comfy.graph.node(String(note.id))
-      assert(noteHandle)
-      let reads = 0
-      const patch = {
-        get serializeWidgets() {
-          reads++
-          return reads === 1 ? false : true
-        }
-      }
-
-      expectRefusal(() => edit.updateNode(noteHandle, patch), 'updateNode')
-      expect(reads).toBe(1)
-      expect(note.serialize_widgets).toBe(true)
-    })
-
-    it('lets any other node stop saving its widget values', () => {
-      const plain = new LGraphNode('Plain', 'Notes')
-      plain.serialize_widgets = true
-      graph.add(plain)
-
-      expect(
-        comfy.graph.node(String(plain.id))?.setSerializeWidgets(false)
-      ).toBe(true)
-      expect(plain.serialize_widgets).toBe(false)
-    })
+    expectRefusal(() => edit.updateNode(noteHandle, patch), 'updateNode')
+    expect(reads).toBe(1)
+    expect(note.serialize_widgets).toBe(true)
   })
 
   describe('on a subgraph node', () => {

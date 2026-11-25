@@ -14,18 +14,12 @@ export function assertNotSubgraphNode(member: string, node: LGraphNode): void {
   }
 }
 
-const TYPES_WHOSE_WIDGETS_HOLD_USER_CONTENT = new Set([
-  'Note',
-  'MarkdownNote',
-  'PrimitiveNode'
-])
-
-/** Refuses turning widget saving off on a Note, a MarkdownNote or a PrimitiveNode. */
+/** Refuses turning widget saving off on a node whose type says its widget values are the user's content. */
 export function assertWidgetSavingKept(member: string, node: LGraphNode): void {
-  if (TYPES_WHOSE_WIDGETS_HOLD_USER_CONTENT.has(node.type)) {
+  if (node.constructor.widgetsHoldUserContent === true) {
     throw invalidArgument(
       member,
-      'a node that is not a Note, MarkdownNote or PrimitiveNode, to stop saving its widget values',
+      'a node whose widget values are not the user’s content, to stop saving them',
       node.type
     )
   }

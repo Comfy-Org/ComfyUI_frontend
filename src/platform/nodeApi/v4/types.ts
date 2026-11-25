@@ -162,7 +162,7 @@ export interface NodeHandle {
    * unchanged, or the name `cnr_id`, `aux_id` or `ver`, throws a `TypeError`. `false` if a pack's hook kept the old value.
    */
   setProperty(name: string, value: unknown): boolean
-  /** Not saved: a load gives the type's own. `false` throws on a Note, MarkdownNote or PrimitiveNode. */
+  /** Not saved: a load gives the type's own. `serialize` must be a boolean; `false` throws a `TypeError` on a node whose type says its widget values are the user's content. */
   setSerializeWidgets(serialize: boolean): boolean
   isSerializingWidgets(): boolean | undefined
   /** The top-left corner of the node's body, in graph space. Pass `{ x, y }`: a `Bounds` is refused for its extra fields. */

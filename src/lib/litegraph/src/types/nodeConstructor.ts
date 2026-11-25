@@ -17,6 +17,8 @@ export interface LGraphNodeConstructor<T extends LGraphNode = LGraphNode> {
   slot_start_y?: number
   widgets_info?: Record<string, unknown>
   collapsable?: boolean
+  /** The node's widget values are content the user wrote, which a load restores only while they are saved. */
+  widgetsHoldUserContent?: boolean
   color?: string
   bgcolor?: string
   shape?: RenderShape
