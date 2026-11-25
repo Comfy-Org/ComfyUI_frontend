@@ -3280,6 +3280,38 @@ describe('ComfyApp', () => {
         }
       )
 
+      it.for(['a load', 'an undo'])(
+        'keeps an edit an afterLoadGraph hook makes through a handle during %s in the state it loads, which the next user undo does not take back',
+        async (kind) => {
+          const { comfy } = nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
+          await app.loadGraphData(workflowWithFixedIdAndOneNode(), false)
+          const { tracker } = historyOfTheOpenWorkflow()
+          comfy.graph.node('1')?.setColor('#000000')
+          const edits: (boolean | undefined)[] = []
+          let hookRunsLeft = 1
+          mockExtensionService.invokeExtensionsAsync.mockImplementation(
+            async (hook) => {
+              if (hook !== 'afterLoadGraph' || !hookRunsLeft--) return []
+              edits.push(comfy.graph.node('1')?.setTitle('Set by a hook'))
+              return []
+            }
+          )
+          if (kind === 'a load')
+            await app.loadGraphData(workflowWithFixedIdAndOneNode(), false)
+          else await tracker.undo()
+          const undoAfterLoad = tracker.undoQueue.length
+
+          comfy.graph.node('1')?.setMode('bypass')
+          await tracker.undo()
+
+          expect(edits).toEqual([true])
+          expect(tracker.undoQueue).toHaveLength(undoAfterLoad)
+          expect(app.rootGraph.getNodeById(toNodeId(1))?.title).toBe(
+            'Set by a hook'
+          )
+        }
+      )
+
       it('takes what an afterLoadGraph hook changes in a reload of the open workflow without making the undo before it a load', async () => {
         const { comfy } = nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
         await app.loadGraphData(workflowWithFixedIdAndOneNode(), false)
