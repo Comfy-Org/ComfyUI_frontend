@@ -1,19 +1,23 @@
+import { reconnectDelayMs } from './reconnectBackoff'
+
 const FIXED_RECONNECT_DELAY_MS = 300
 const CLOUD_RECONNECT_WINDOW_MS = 1_500
 
 interface ClosedSocket {
   readonly isCloud: boolean
   readonly opened: boolean
+  readonly failedConnects: number
 }
 
 /**
- * Delay before reopening a closed socket: random within 1.5 seconds for an
- * opened Cloud socket, otherwise 300 ms.
+ * Delay before reopening a closed socket; backs off exponentially while the
+ * socket keeps failing to open.
  */
 export function socketReconnectDelayMs(
-  { isCloud, opened }: ClosedSocket,
+  { isCloud, opened, failedConnects }: ClosedSocket,
   random: () => number = Math.random
 ): number {
-  if (!isCloud || !opened) return FIXED_RECONNECT_DELAY_MS
+  if (!opened) return reconnectDelayMs(failedConnects)
+  if (!isCloud) return FIXED_RECONNECT_DELAY_MS
   return random() * CLOUD_RECONNECT_WINDOW_MS
 }

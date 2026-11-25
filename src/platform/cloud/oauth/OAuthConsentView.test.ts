@@ -222,6 +222,13 @@ describe('OAuthConsentView', () => {
       redirectUri: 'https://claude.ai/api/mcp/auth_callback',
       host: 'claude.ai',
       icon: 'icon-[comfy--anthropic]'
+    },
+    {
+      platform: 'cursor',
+      displayName: 'Cursor',
+      redirectUri: 'https://www.cursor.com/agents/mcp/oauth/callback',
+      host: 'www.cursor.com',
+      icon: 'icon-[comfy--cursor]'
     }
   ] as const)(
     'renders a verified $platform destination without hiding the registrant name',
@@ -249,23 +256,6 @@ describe('OAuthConsentView', () => {
       ).not.toBeInTheDocument()
     }
   )
-
-  it('hides the verified icon for a platform without a brand icon', () => {
-    renderConsent({
-      client_display_name: 'Cursor',
-      client_provenance: 'dynamic',
-      redirect_uri: 'https://cursor.com/oauth/callback',
-      verified_client: { platform: 'cursor', display_name: 'Cursor' }
-    })
-
-    const icon = screen.getByTestId('client-verified-icon')
-    expect(icon).toHaveClass('hidden')
-    expect(icon.className).not.toContain('icon-[')
-    expect(screen.getByTestId('client-verified')).toHaveTextContent(
-      "Verified destination: Cursor · you'll return to cursor.com"
-    )
-    expect(screen.queryByTestId('client-unverified')).not.toBeInTheDocument()
-  })
 
   const chatgptCallback = 'https://chatgpt.com/connector/oauth/abc123'
   const chatgpt = { platform: 'chatgpt', display_name: 'ChatGPT' }
@@ -300,14 +290,29 @@ describe('OAuthConsentView', () => {
       case: 'a custom-scheme redirect',
       verifiedClient: chatgpt,
       redirectUri: 'comfy://oauth/callback'
+    },
+    {
+      case: "Cursor's custom-scheme callback",
+      verifiedClient: { platform: 'cursor', display_name: 'Cursor' },
+      redirectUri: 'cursor://anysphere.cursor-mcp/oauth/callback'
+    },
+    {
+      case: 'the name Cursor and no verified_client',
+      clientName: 'Cursor',
+      verifiedClient: undefined,
+      redirectUri: 'https://www.cursor.com/agents/mcp/oauth/callback'
     }
   ])(
     'renders a dynamic client with $case as unverified',
-    async ({ verifiedClient, redirectUri }) => {
+    async ({
+      clientName = 'ChatGPT Connector',
+      verifiedClient,
+      redirectUri
+    }) => {
       vi.mocked(fetch).mockResolvedValueOnce(
         Response.json({
           ...challenge,
-          client_display_name: 'ChatGPT Connector',
+          client_display_name: clientName,
           client_provenance: 'dynamic',
           redirect_uri: redirectUri,
           verified_client: verifiedClient
@@ -323,12 +328,14 @@ describe('OAuthConsentView', () => {
       render(OAuthConsentView, { global: { plugins: [i18n, router] } })
 
       expect(
-        await screen.findByText('ChatGPT Connector wants access')
+        await screen.findByText(`${clientName} wants access`)
       ).toBeVisible()
       expect(screen.getByTestId('client-icon')).toHaveClass(
         'icon-[lucide--app-window]'
       )
-      expect(screen.getByTestId('client-unverified')).toBeVisible()
+      expect(screen.getByTestId('client-unverified')).toHaveTextContent(
+        'Name not verified'
+      )
       expect(screen.getByTestId('client-unverified-notice')).toBeVisible()
       expect(screen.queryByTestId('client-verified')).not.toBeInTheDocument()
     }

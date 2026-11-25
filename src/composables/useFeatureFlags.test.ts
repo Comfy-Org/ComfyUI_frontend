@@ -458,6 +458,20 @@ describe('useFeatureFlags', () => {
     })
   })
 
+  describe('localMcpConnectEnabled', () => {
+    it.for([
+      { case: 'missing', cloud: false, value: undefined, expected: false },
+      { case: 'malformed', cloud: false, value: 'true', expected: false },
+      { case: 'true locally', cloud: false, value: true, expected: true },
+      { case: 'true on cloud', cloud: true, value: true, expected: false }
+    ])('is $expected when $case', ({ cloud, value, expected }) => {
+      vi.mocked(distributionTypes).isCloud = cloud
+      vi.mocked(api.getServerFeature).mockReturnValue(value)
+
+      expect(useFeatureFlags().flags.localMcpConnectEnabled).toBe(expected)
+    })
+  })
+
   describe('nodeLibraryEssentialsEnabled', () => {
     beforeEach(() => {
       vi.mocked(distributionTypes).isNightly = true
@@ -702,6 +716,54 @@ describe('useFeatureFlags', () => {
       const { flags } = useFeatureFlags()
 
       expect(flags.runtimeLibraryModelsEnabled).toBe(false)
+    })
+  })
+
+  describe('customDeploymentsEditorEnabled', () => {
+    it('turns on from remote config', () => {
+      useRemoteConfigStore().acceptConfig(
+        { custom_deployments_editor_enabled: true },
+        false
+      )
+
+      expect(useFeatureFlags().flags.customDeploymentsEditorEnabled).toBe(true)
+    })
+
+    it.for([
+      { served: undefined, label: 'unset' },
+      { served: 'true', label: 'a string' },
+      { served: 1, label: 'a number' }
+    ])('stays off when the served value is $label', ({ served }) => {
+      vi.mocked(api.getServerFeature).mockImplementation((path, defaultValue) =>
+        path === 'custom_deployments_editor_enabled'
+          ? (served ?? defaultValue)
+          : defaultValue
+      )
+
+      expect(useFeatureFlags().flags.customDeploymentsEditorEnabled).toBe(false)
+    })
+
+    it('stays off when the lookup throws', () => {
+      vi.mocked(api.getServerFeature).mockImplementation(() => {
+        throw new Error('features not loaded')
+      })
+
+      expect(useFeatureFlags().flags.customDeploymentsEditorEnabled).toBe(false)
+    })
+
+    it.for([
+      { served: 'true', label: 'a string' },
+      { served: 1, label: 'a number' }
+    ])('stays off when remote config serves $label', ({ served }) => {
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (_path, defaultValue) => defaultValue
+      )
+      useRemoteConfigStore().acceptConfig(
+        { custom_deployments_editor_enabled: served },
+        false
+      )
+
+      expect(useFeatureFlags().flags.customDeploymentsEditorEnabled).toBe(false)
     })
   })
 
@@ -1114,7 +1176,7 @@ describe('useFeatureFlags', () => {
     it('drops the grant when the session itself is gone', () => {
       const store = useRemoteConfigStore()
       store.acceptConfig({ 'agent-in-app-experience': true }, true)
-      store.failLoad(true, 401)
+      store.failLoad(true, { reason: 'http', status: 401 })
 
       const { flags } = useFeatureFlags()
       expect(flags.agentInAppExperienceEnabled).toBe(false)

@@ -16,7 +16,7 @@ import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { LGraphNode, LGraphGroup } from '@/lib/litegraph/src/litegraph'
 
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type { AssetItem } from '@comfyorg/assets-core/schema'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { WorkspaceDeployment } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
@@ -134,9 +134,12 @@ vi.mock<unknown>(
 )
 
 const mockStartModelNodeDrag = vi.hoisted(() => vi.fn())
-vi.mock(import('@/composables/node/startModelNodeDragFromAsset'), () => ({
-  startModelNodeDragFromAsset: mockStartModelNodeDrag
-}))
+vi.mock(
+  import('@/platform/assets/integration/startModelNodeDragFromAsset'),
+  () => ({
+    startModelNodeDragFromAsset: mockStartModelNodeDrag
+  })
+)
 
 const mockChangeTracker = vi.hoisted(() => ({
   captureCanvasState: vi.fn(),
@@ -1341,6 +1344,18 @@ describe('useCoreCommands', () => {
 
     it('shows an error toast when the asset cannot start a drag', async () => {
       mockStartModelNodeDrag.mockReturnValue({
+        code: 'INVALID_ASSET',
+        message: 'Asset has no tags defined',
+        assetId: 'asset-1'
+      })
+
+      await selectAssetFromBrowser()
+
+      expect(useToast().error).toHaveBeenCalled()
+    })
+
+    it('shows a warning toast when the model category has no loader node', async () => {
+      mockStartModelNodeDrag.mockReturnValue({
         code: 'NO_PROVIDER',
         message: 'No node provider registered',
         assetId: 'asset-1'
@@ -1348,7 +1363,8 @@ describe('useCoreCommands', () => {
 
       await selectAssetFromBrowser()
 
-      expect(useToast().error).toHaveBeenCalled()
+      expect(useToast().warning).toHaveBeenCalled()
+      expect(useToast().error).not.toHaveBeenCalled()
     })
   })
 })

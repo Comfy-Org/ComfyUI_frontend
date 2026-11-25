@@ -45,6 +45,7 @@ import {
   resetWorkflowLoadQueueForTests,
   useWorkflowService
 } from '@/platform/workflow/core/services/workflowService'
+import type { OpenWorkflowFailure } from '@/platform/workflow/core/services/workflowService'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
@@ -1060,26 +1061,31 @@ describe('useWorkflowService', () => {
         const workflow = activeWorkflow()
         const queue = queueBehindAnotherLoad()
         let idle = true
+        const failure: { reason?: OpenWorkflowFailure } = {}
 
         const reloading = useWorkflowService().openWorkflow(workflow, {
           force: true,
           isCurrent: () => idle,
-          keepSavedBaseline: true
+          keepSavedBaseline: true,
+          failure
         })
         await vi.waitFor(() => expect(app.loadGraphData).toHaveBeenCalled())
         idle = false
         queue.release()
 
         await expect(reloading).resolves.toBe(false)
+        expect(failure.reason).toBe('superseded')
         expect(queue.loaded).toEqual(['skipped'])
       })
 
       it('skips the reload when another workflow took the canvas while it waited', async () => {
         const workflow = activeWorkflow()
         const queue = queueBehindAnotherLoad()
+        const failure: { reason?: OpenWorkflowFailure } = {}
 
         const reloading = useWorkflowService().openWorkflow(workflow, {
-          force: true
+          force: true,
+          failure
         })
         await vi.waitFor(() => expect(app.loadGraphData).toHaveBeenCalled())
         useWorkflowStore().activeWorkflow = createModeTestWorkflow({
@@ -1088,6 +1094,7 @@ describe('useWorkflowService', () => {
         queue.release()
 
         await expect(reloading).resolves.toBe(false)
+        expect(failure.reason).toBe('load_skipped')
         expect(queue.loaded).toEqual(['skipped'])
         expect(app.loadGraphData).toHaveBeenCalledOnce()
       })
@@ -1418,8 +1425,10 @@ describe('useWorkflowService', () => {
         return true
       })
       let currentRequest = true
+      const failure: { reason?: OpenWorkflowFailure } = {}
       const opening = useWorkflowService().openWorkflow(loading, {
-        isCurrent: () => currentRequest
+        isCurrent: () => currentRequest,
+        failure
       })
       await vi.waitFor(() => expect(load).toHaveBeenCalled())
 
@@ -1427,6 +1436,7 @@ describe('useWorkflowService', () => {
       finishLoad()
 
       expect(await opening).toBe(false)
+      expect(failure.reason).toBe('superseded')
       expect(workflows.activeWorkflow.path).toBe(current.path)
       expect(loading.isLoaded).toBe(false)
     })
@@ -1455,11 +1465,14 @@ describe('useWorkflowService', () => {
         }
       )
 
+      const failure: { reason?: OpenWorkflowFailure } = {}
       const opened = await useWorkflowService().openWorkflow(loading, {
-        isCurrent: () => currentRequest
+        isCurrent: () => currentRequest,
+        failure
       })
 
       expect(opened).toBe(false)
+      expect(failure.reason).toBe('superseded')
       expect(workflows.activeWorkflow.path).toBe(current.path)
       expect(loading.isLoaded).toBe(false)
     })
@@ -2696,11 +2709,13 @@ describe('useWorkflowService', () => {
       const service = useWorkflowService()
       const close = service.closeWorkflow(closing, { warnIfUnsaved: false })
       await vi.waitFor(() => expect(app.loadGraphData).toHaveBeenCalledOnce())
-      const staleOpen = service.openWorkflow(closing)
+      const failure: { reason?: OpenWorkflowFailure } = {}
+      const staleOpen = service.openWorkflow(closing, { failure })
       resolveDefault?.()
 
       await Promise.all([close, staleOpen])
 
+      expect(failure.reason).toBe('closing')
       expect(app.loadGraphData).toHaveBeenCalledOnce()
       expect(workflowStore.openWorkflows).not.toContain(closing)
       expect(workflowStore.activeWorkflow.path).toBe(replacement.path)
@@ -3092,10 +3107,15 @@ describe('useWorkflowService', () => {
       const activated = vi.fn()
       workflowStore.onUserActivation(activated)
 
+      const failure: { reason?: OpenWorkflowFailure } = {}
       await expect(
-        useWorkflowService().openWorkflow(clicked, { initiator: 'user' })
+        useWorkflowService().openWorkflow(clicked, {
+          initiator: 'user',
+          failure
+        })
       ).resolves.toBe(false)
 
+      expect(failure.reason).toBe('load_failed')
       expect(activated).not.toHaveBeenCalled()
     })
 
@@ -3467,11 +3487,14 @@ describe('useWorkflowService', () => {
     it('tells the user instead of rejecting, and leaves the canvas alone', async () => {
       const workflow = unreadableWorkflow()
 
+      const failure: { reason?: OpenWorkflowFailure } = {}
       const opened = await useWorkflowService().openWorkflow(workflow, {
-        initiator: 'user'
+        initiator: 'user',
+        failure
       })
 
       expect(opened).toBe(false)
+      expect(failure.reason).toBe('unreadable')
       expect(app.loadGraphData).not.toHaveBeenCalled()
       expect(
         useSubgraphNavigationStore().endWorkflowNavigation

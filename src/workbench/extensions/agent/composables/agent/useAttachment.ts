@@ -8,7 +8,7 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 import { hasAudioType, hasImageType, hasVideoType } from '@/utils/eventUtils'
 import { formatSize, getMediaTypeFromFilename } from '@/utils/formatUtil'
 import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
-import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
+import type { MediaKind } from '@comfyorg/assets-core/media'
 import {
   AgentApiError,
   AgentResponseUnreadableError
@@ -206,7 +206,13 @@ export function useAttachment(options: UseAttachmentOptions) {
     return file.size > MAX_IMPORTED_WORKFLOW_BYTES
   }
 
-  function isTooLarge(file: File): boolean {
+  function hasUnacceptableSize(file: File): boolean {
+    if (file.size === 0) {
+      options.onError?.(
+        i18n.global.t('agent.attachmentEmpty', { name: file.name })
+      )
+      return true
+    }
     const maxBytes = options.maxBytes?.(file) ?? MAX_ATTACHMENT_BYTES
     if (file.size <= maxBytes) return false
 
@@ -462,7 +468,7 @@ export function useAttachment(options: UseAttachmentOptions) {
         })
         return 'unsupported'
       }
-      if (isTooLarge(file)) {
+      if (hasUnacceptableSize(file)) {
         options.remove(id)
         return 'failed'
       }
@@ -521,7 +527,8 @@ export function useAttachment(options: UseAttachmentOptions) {
 
   function stageFile(file: File): FileStaging {
     const supported = isAgentAttachable(file)
-    if (supported && isTooLarge(file)) return { file, outcome: 'skipped' }
+    if (supported && hasUnacceptableSize(file))
+      return { file, outcome: 'skipped' }
     const sourceKey = fileSourceKey(file)
     const admission = admit(sourceKey)
     if (admission !== 'admitted') return { file, outcome: admission }

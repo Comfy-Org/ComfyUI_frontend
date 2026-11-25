@@ -62,7 +62,8 @@ import type {
   WorkflowOpenSource,
   WorkflowQueueIntent
 } from '@comfyorg/telemetry/types'
-import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
+import { MIME_ASSET_INFO } from '@/platform/assets/constants/assetDrag'
+import { extractFilesFromDragEvent } from '@/platform/assets/integration/assetDrop'
 import { restoreDynamicGroupInputs } from '@/platform/workflow/core/utils/restoreDynamicGroupInputs'
 import { updatePendingWarnings } from '@/platform/workflow/core/utils/pendingWarnings'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
@@ -118,6 +119,10 @@ import {
   resolveAccountPrecondition
 } from '@/platform/workflowErrors/errorCatalog/accountPreconditionRouting'
 import { useJobModelDownloadStore } from '@/stores/jobModelDownloadStore'
+import {
+  handledReleaseChange,
+  loadedReleaseId
+} from '@/platform/workspace/loadedRelease'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogService } from '@/services/dialogService'
 import {
@@ -232,7 +237,6 @@ import type { ComfyAppMenu } from './ui/menu/index'
 import { clone } from './utils'
 import { ensureCorrectLayoutScale } from '@/renderer/extensions/vueNodes/layout/ensureCorrectLayoutScale'
 import {
-  extractFilesFromDragEvent,
   hasAudioType,
   hasImageType,
   hasVideoType,
@@ -2085,6 +2089,7 @@ export class ComfyApp implements IComfyApp {
           try {
             api.authToken = comfyOrgAuthToken
             api.apiKey = comfyOrgApiKey ?? undefined
+            api.loadedReleaseId = loadedReleaseId()
             executionErrorStore.recordNodeErrors(null, queuedRunErrorKey)
             const res = await api.queuePrompt(number, p, {
               partialExecutionTargets: queueNodeIds,
@@ -2093,6 +2098,7 @@ export class ComfyApp implements IComfyApp {
             const responseReceivedAt = performance.now()
             delete api.authToken
             delete api.apiKey
+            delete api.loadedReleaseId
             if (!res.prompt_id) {
               telemetry?.trackExecutionOutcome({
                 startTime,
@@ -2149,6 +2155,10 @@ export class ComfyApp implements IComfyApp {
             })
             if (error instanceof PromptExecutionError) {
               queueResultOverride = !error.response.node_errors
+            }
+            if (handledReleaseChange(error)) {
+              queueResultOverride = false
+              break
             }
             const hasPromptNodeErrors =
               error instanceof PromptExecutionError &&

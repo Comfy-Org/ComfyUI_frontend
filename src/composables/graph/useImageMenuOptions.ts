@@ -5,7 +5,7 @@ import { downloadFile, openFileInNewTab } from '@/base/common/downloadUtil'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { useNodeOutputsExport } from '@/platform/assets/composables/useNodeOutputsExport'
+import { useNodeOutputsExport } from '@/platform/assets/integration/useNodeOutputsExport'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -147,7 +147,7 @@ export function useImageMenuOptions() {
 
     try {
       const url = getImageFileUrl(img)
-      downloadFile(url.toString())
+      downloadFile(url.toString(), undefined, 'canvas_menu')
     } catch (error) {
       console.error('Failed to save image:', error)
     }

@@ -4,9 +4,11 @@ import dark from './presets/dark.json' with { type: 'json' }
 import fennec from './presets/fennec.json' with { type: 'json' }
 import github from './presets/github.json' with { type: 'json' }
 import light from './presets/light.json' with { type: 'json' }
+import morningClass from './presets/morning-class.json' with { type: 'json' }
 import nord from './presets/nord.json' with { type: 'json' }
 import solarized from './presets/solarized.json' with { type: 'json' }
 import type { CompletedThemePreset, ThemePresets } from './themePresetSchema'
+import { themePresetSchema } from './themePresetSchema'
 
 export const BUILT_IN_THEME_PRESETS: ThemePresets = {
   dark,
@@ -16,7 +18,8 @@ export const BUILT_IN_THEME_PRESETS: ThemePresets = {
   arc,
   nord,
   github,
-  fennec
+  fennec,
+  [morningClass.id]: themePresetSchema.parse(morningClass)
 }
 
 export const DEFAULT_THEME_PRESET: CompletedThemePreset = dark
