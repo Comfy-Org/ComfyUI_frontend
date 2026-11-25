@@ -55,7 +55,7 @@ vi.mock(import('@/scripts/api'))
 import { app } from '@/scripts/app'
 import { beginGraphLoad, endGraphLoad } from '@/core/graph/graphLoadState'
 import { api } from '@/scripts/api'
-import { ChangeTracker } from '@/scripts/changeTracker'
+import { ChangeTracker, RESTORE_SETTLING_MS } from '@/scripts/changeTracker'
 import { onGraphRestored } from '@/scripts/graphRestore'
 import type { GraphRestore } from '@/scripts/graphRestore'
 import {
@@ -1992,6 +1992,153 @@ describe('ChangeTracker', () => {
         expect(tracker.redoQueue).toEqual([])
       }
     )
+
+    describe('what packs change after an undo or redo, against the clock', () => {
+      function withValue(state: ComfyWorkflowJSON, value: number) {
+        const next = structuredClone(state)
+        next.nodes[0].widgets_values = [value]
+        return next
+      }
+
+      function packChanges(state: ComfyWorkflowJSON, tracker: ChangeTracker) {
+        const changed = structuredClone(state)
+        changed.nodes[0].size = [100, 178]
+        mockCanvasState(changed)
+        tracker.captureCanvasState()
+        return changed
+      }
+
+      function historyOfThreeSteps() {
+        const first = createState(1)
+        const second = withValue(first, 2)
+        const third = withValue(first, 3)
+        const tracker = createTracker(third)
+        tracker.undoQueue.push(first, second)
+        return { first, second, third, tracker }
+      }
+
+      function listenForUserInput() {
+        const events = new EventTarget()
+        vi.spyOn(window, 'addEventListener').mockImplementation(
+          (type, listener, options) =>
+            events.addEventListener(type, listener, options)
+        )
+        vi.spyOn(window, 'requestAnimationFrame').mockReturnValue(1)
+        ChangeTracker.init()
+        return events
+      }
+
+      beforeEach(() => {
+        vi.useFakeTimers()
+        onTestFinished(() => {
+          vi.useRealTimers()
+        })
+      })
+
+      it.for([
+        { when: 'at once', after: 0 },
+        { when: 'a frame later', after: 16 },
+        { when: '900 ms later', after: 900 }
+      ])(
+        'takes a change made $when into the restored state, and keeps redo',
+        async ({ after }) => {
+          const { second, third, tracker } = historyOfThreeSteps()
+
+          await tracker.undo()
+          vi.advanceTimersByTime(after)
+          const settled = packChanges(second, tracker)
+
+          expect([tracker.undoQueue.length, tracker.redoQueue.length]).toEqual([
+            1, 1
+          ])
+          expect(tracker.activeState).toEqual(settled)
+          await tracker.redo()
+          expect(tracker.activeState).toEqual(third)
+          expect(tracker.undoQueue.at(-1)).toEqual(settled)
+        }
+      )
+
+      it('records a change made 1100 ms after the undo, with no input from the user, as an undo step that drops redo', async () => {
+        const { second, tracker } = historyOfThreeSteps()
+
+        await tracker.undo()
+        vi.advanceTimersByTime(1100)
+        const changed = packChanges(second, tracker)
+
+        expect([tracker.undoQueue.length, tracker.redoQueue.length]).toEqual([
+          2, 0
+        ])
+        await tracker.undo()
+        expect(tracker.activeState).toEqual(second)
+        expect(tracker.redoQueue).toEqual([changed])
+      })
+
+      it('ends the window at once when the user acts before the second is up', async () => {
+        const events = listenForUserInput()
+        const { second, tracker } = historyOfThreeSteps()
+
+        await tracker.undo()
+        vi.advanceTimersByTime(RESTORE_SETTLING_MS / 2)
+        events.dispatchEvent(new PointerEvent('pointerdown'))
+        packChanges(second, tracker)
+
+        expect([tracker.undoQueue.length, tracker.redoQueue.length]).toEqual([
+          2, 0
+        ])
+      })
+
+      it('ends the window of an undo before the next undo restores, which opens its own, as two undos without the change would', async () => {
+        const { first, second, third, tracker } = historyOfThreeSteps()
+        const timersAtSecondUndo: number[] = []
+        vi.mocked(app.loadGraphData).mockImplementation(async (state) => {
+          timersAtSecondUndo.push(vi.getTimerCount())
+          const restored = await requireValidWorkflow(state)
+          tracker.reset(restored)
+          mockCanvasState(restored)
+          return true
+        })
+
+        await tracker.undo()
+        const settled = packChanges(second, tracker)
+        vi.advanceTimersByTime(600)
+        await tracker.undo()
+
+        expect(timersAtSecondUndo).toEqual([0, 0])
+        expect([tracker.undoQueue.length, tracker.redoQueue.length]).toEqual([
+          0, 2
+        ])
+        expect(tracker.activeState).toEqual(first)
+        vi.advanceTimersByTime(900)
+        const settledAgain = packChanges(first, tracker)
+        expect(tracker.redoQueue.length).toBe(2)
+        await tracker.redo()
+        expect(tracker.activeState).toEqual(settled)
+        expect(tracker.undoQueue).toEqual([settledAgain])
+        await tracker.redo()
+        expect(tracker.activeState).toEqual(third)
+        expect([tracker.undoQueue.length, tracker.redoQueue.length]).toEqual([
+          2, 0
+        ])
+      })
+
+      it('ends the window of an undo when a redo follows inside it, and gives back the state the undo left', async () => {
+        const { second, third, tracker } = historyOfThreeSteps()
+
+        await tracker.undo()
+        const settled = packChanges(second, tracker)
+        vi.advanceTimersByTime(300)
+        await tracker.redo()
+
+        expect(tracker.activeState).toEqual(third)
+        expect([tracker.undoQueue.length, tracker.redoQueue.length]).toEqual([
+          2, 0
+        ])
+        expect(tracker.undoQueue.at(-1)).toEqual(settled)
+        await tracker.undo()
+        expect(tracker.activeState).toEqual(settled)
+        expect(tracker.redoQueue).toEqual([third])
+      })
+    })
 
     it('clears Redo for an intentional resize after normalized Undo', async () => {
       const initial = createState(1)

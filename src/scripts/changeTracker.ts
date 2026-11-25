@@ -354,6 +354,9 @@ function getExecutionGraphState(value: unknown): unknown {
   return executionGraph
 }
 
+/** How long after an undo or redo, at most, what packs change joins the restored state instead of being an undo step. */
+export const RESTORE_SETTLING_MS = 1000
+
 const reportedInactiveCalls = new Set<string>()
 
 function reportInactiveTrackerCall(method: string, workflowPath: string) {
@@ -396,6 +399,7 @@ export class ChangeTracker implements WorkflowChangeTracker {
   _restoringState: boolean = false
   private restoreChain?: Promise<void>
   private settlingRestore = false
+  private settlingTimer?: ReturnType<typeof setTimeout>
   private readonly statesAcrossALoad = new WeakSet<ComfyWorkflowJSON>()
   private preview?: { interrupt: () => void; rollback: () => void }
 
@@ -428,7 +432,7 @@ export class ChangeTracker implements WorkflowChangeTracker {
    * A replacement load outside history restore makes the next undo or redo across its boundary a load too. */
   reset(state?: ComfyWorkflowJSON) {
     if (state && !this._restoringState) this.markLoadBoundary(state)
-    if (!this._restoringState) this.settlingRestore = false
+    if (!this._restoringState) this.endSettling()
     this.adopt(state)
   }
 
@@ -438,6 +442,21 @@ export class ChangeTracker implements WorkflowChangeTracker {
    * @internal Not part of the public extension API.
    */
   userActed() {
+    this.endSettling()
+  }
+
+  private beginSettling() {
+    this.endSettling()
+    this.settlingRestore = true
+    this.settlingTimer = setTimeout(
+      () => this.endSettling(),
+      RESTORE_SETTLING_MS
+    )
+  }
+
+  private endSettling() {
+    clearTimeout(this.settlingTimer)
+    this.settlingTimer = undefined
     this.settlingRestore = false
   }
 
@@ -720,6 +739,7 @@ export class ChangeTracker implements WorkflowChangeTracker {
       source === this.undoQueue || source === this.redoQueue
     const restore = async () => {
       if (this._restoringState) return
+      this.endSettling()
       this.preview?.rollback()
       const prevState = source.pop()
       if (prevState) {
@@ -756,7 +776,7 @@ export class ChangeTracker implements WorkflowChangeTracker {
           if (restored) {
             this.pushRestored(target, previousState, restoresHistory)
             if (restoresSavedState) this.initialState = clone(this.activeState)
-            this.settlingRestore = true
+            this.beginSettling()
           } else {
             source.push(prevState)
           }

@@ -106,7 +106,7 @@ export interface NodeQuery {
 }
 
 /**
- * Each change is one undo step, or part of `graph.batch`'s; after an undo or redo, until the user's next input, it joins the restored state.
+ * Each change is one undo step, or part of `graph.batch`'s; after an undo or redo, until the user's next action, the next undo or redo, or one second after the restore, whichever comes first, it joins the restored state.
  * A change is `false` once the node is gone, and an unusable argument throws first. A node whose type is not installed saves only its mode and position.
  */
 export interface NodeHandle {
