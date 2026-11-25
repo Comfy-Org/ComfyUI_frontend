@@ -326,6 +326,7 @@ import { useBillingIdentity } from './composables/useBillingIdentity'
 import type { AgentChatEvent } from './services/agent/agentEventTransport'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { useAgentConversationStore } from './stores/agent/agentConversationStore'
+import { useAgentPromptQueueStore } from './stores/agent/agentPromptQueueStore'
 import { getMinimapDecorations } from '@/platform/canvas/minimapDecorationRegistry'
 import { useAgentGraphActivityStore } from './stores/agent/agentGraphActivityStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
@@ -8691,6 +8692,195 @@ describe('AgentPanelRoot run approval telemetry', () => {
     )
     expect(fetchRequests({ method: 'POST', url: /\/asks\// })).toHaveLength(1)
     now.mockRestore()
+  })
+})
+
+describe('AgentPanelRoot sending while a run card waits', () => {
+  function showRunCard(): void {
+    workflowStore.activeWorkflow = addTab('workflows/Portrait workflow.json')
+    renderWithSelectedTarget()
+    const store = useAgentConversationStore()
+    store.setThreadId('th-1')
+    const turnId = 'turn-approval' as TurnId
+    store.recordUser(turnId, 'run it')
+    store.startTurn(turnId)
+    store.ingest(
+      zAgentWsEventForTest({
+        type: 'agent_ask',
+        data: {
+          thread_id: 'th-1',
+          message_id: turnId,
+          ask_id: 'turn-approval:call-1',
+          kind: 'run_approval',
+          context: { workflow_id: 'workflow-1' },
+          prompt: 'Run it?',
+          options: [
+            { id: 'run', label: 'Run' },
+            { id: 'cancel', label: 'Cancel' }
+          ],
+          min_selections: 1,
+          max_selections: 1,
+          allow_other: false
+        }
+      })
+    )
+  }
+
+  async function typeInComposer(text: string): Promise<void> {
+    expect(await screen.findByRole('button', { name: 'Run' })).toBeVisible()
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste(text)
+  }
+
+  it('sends over the card and greys it out', async () => {
+    respondToFetch({}, () => json(200, {}))
+    respondToFetch({ method: 'POST', url: /\/messages/ }, () =>
+      json(202, { thread_id: 'th-1', message_id: 'turn-2' })
+    )
+    showRunCard()
+    await typeInComposer('make it red instead')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    expect(
+      await screen.findByText('Dismissed: you sent a new message instead.')
+    ).toBeVisible()
+    expect(
+      screen.queryByRole('button', { name: 'Run' })
+    ).not.toBeInTheDocument()
+    await vi.waitFor(() =>
+      expect(fetchRequests({ method: 'POST', url: /\/messages/ })).toHaveLength(
+        1
+      )
+    )
+  })
+
+  it('queues behind a message already waiting instead of dismissing the card', async () => {
+    respondToFetch({}, () => json(200, {}))
+    showRunCard()
+    useAgentPromptQueueStore().enqueueFromComposer('earlier follow-up', [], [])
+    await typeInComposer('make it red instead')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    await vi.waitFor(() =>
+      expect(useAgentPromptQueueStore().items.map((item) => item.text)).toEqual(
+        ['earlier follow-up', 'make it red instead']
+      )
+    )
+    expect(screen.getByRole('button', { name: 'Run' })).toBeVisible()
+    expect(
+      screen.queryByText('Dismissed: you sent a new message instead.')
+    ).not.toBeInTheDocument()
+    expect(fetchRequests({ method: 'POST', url: /\/messages/ })).toHaveLength(0)
+  })
+
+  it('saves an edited queued message instead of dismissing the card', async () => {
+    respondToFetch({}, () => json(200, {}))
+    showRunCard()
+    const queue = useAgentPromptQueueStore()
+    const item = queue.enqueueFromComposer('earlier follow-up', [], [])
+    expect(queue.startEdit(item.id)).toBe(true)
+    await typeInComposer('make it red instead')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    await vi.waitFor(() => expect(queue.editingId).toBeNull())
+    expect(queue.items.map((queued) => queued.text)).toEqual([
+      'make it red instead'
+    ])
+    expect(screen.getByRole('button', { name: 'Run' })).toBeVisible()
+    expect(fetchRequests({ method: 'POST', url: /\/messages/ })).toHaveLength(0)
+  })
+
+  it('queues a message typed over a running turn with no card', async () => {
+    respondToFetch({}, () => json(200, {}))
+    workflowStore.activeWorkflow = addTab('workflows/Portrait workflow.json')
+    renderWithSelectedTarget()
+    const store = useAgentConversationStore()
+    store.setThreadId('th-1')
+    store.recordUser('turn-running' as TurnId, 'make it')
+    store.startTurn('turn-running' as TurnId)
+
+    await userEvent.click(await screen.findByRole('textbox'))
+    await userEvent.paste('make it red instead')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    await vi.waitFor(() =>
+      expect(useAgentPromptQueueStore().items.map((item) => item.text)).toEqual(
+        ['make it red instead']
+      )
+    )
+    expect(fetchRequests({ method: 'POST', url: /\/messages/ })).toHaveLength(0)
+  })
+
+  it('reopens the card with a hint when the agent refuses the send, then queues', async () => {
+    respondToFetch({}, () => json(200, {}))
+    respondToFetch({ method: 'POST', url: /\/messages/ }, () =>
+      json(409, {
+        error: 'a turn is already in progress for this thread',
+        type: 'TURN_IN_PROGRESS',
+        active_message_id: 'turn-approval'
+      })
+    )
+    respondToFetch({ method: 'GET', url: /\/messages/ }, () =>
+      json(200, [
+        {
+          id: 'row-1',
+          thread_id: 'th-1',
+          seq: 1,
+          role: 'user',
+          status: 'complete',
+          turn_id: 'turn-approval',
+          content: { text: 'run it' }
+        },
+        {
+          id: 'turn-approval',
+          thread_id: 'th-1',
+          seq: 2,
+          role: 'assistant',
+          status: 'streaming',
+          turn_id: 'turn-approval',
+          content: {},
+          pending_ask: {
+            message_id: 'turn-approval',
+            ask_id: 'turn-approval:call-1',
+            kind: 'run_approval',
+            context: { workflow_id: 'workflow-1' },
+            prompt: 'Run it?',
+            options: [
+              { id: 'run', label: 'Run' },
+              { id: 'cancel', label: 'Cancel' }
+            ],
+            min_selections: 1,
+            max_selections: 1,
+            allow_other: false
+          }
+        }
+      ])
+    )
+    showRunCard()
+    await typeInComposer('make it red instead')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    expect(
+      await screen.findByText('Answer the card or press Stop first.')
+    ).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Run' })).toBeVisible()
+    expect(
+      screen.queryByText('Dismissed: you sent a new message instead.')
+    ).not.toBeInTheDocument()
+    expect(screen.getByText('make it red instead')).toBeVisible()
+
+    await typeInComposer('make it blue instead')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await vi.waitFor(() =>
+      expect(useAgentPromptQueueStore().items.map((item) => item.text)).toEqual(
+        ['make it blue instead']
+      )
+    )
+    expect(fetchRequests({ method: 'POST', url: /\/messages/ })).toHaveLength(1)
   })
 })
 

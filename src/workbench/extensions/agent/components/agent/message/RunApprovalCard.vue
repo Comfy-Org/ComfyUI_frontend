@@ -3,6 +3,7 @@ import Card from '@comfyorg/design-system/card/Card'
 import { computed, inject, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { cn } from '@comfyorg/tailwind-utils'
 import Button from '@comfyorg/design-system/button/Button'
 
 import type { RunApprovalPart } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
@@ -22,7 +23,9 @@ const emit = defineEmits<{
   shown: [askId: string, workflowId: string | null]
 }>()
 
-onMounted(() => emit('shown', part.askId, part.workflowId ?? null))
+onMounted(() => {
+  if (!part.dismissed) emit('shown', part.askId, part.workflowId ?? null)
+})
 
 const { t } = useI18n()
 const workflowLabel = computed(
@@ -36,7 +39,12 @@ const workflowLabel = computed(
 <template>
   <Card
     surface="secondary"
-    class="flex w-full flex-col gap-2 overflow-hidden p-4 shadow-md"
+    :class="
+      cn(
+        'flex w-full flex-col gap-2 overflow-hidden p-4 shadow-md',
+        part.dismissed && 'opacity-50 shadow-none'
+      )
+    "
   >
     <div class="flex min-w-0 flex-col gap-0.5 text-sm/5">
       <p class="m-0">
@@ -54,7 +62,7 @@ const workflowLabel = computed(
       >
         <li>
           <Button
-            v-if="part.workflowId"
+            v-if="part.workflowId && !part.dismissed"
             type="button"
             variant="link"
             size="unset"
@@ -75,12 +83,19 @@ const workflowLabel = computed(
           </span>
         </li>
       </ul>
-      <p class="m-0 text-muted-foreground">
+      <p v-if="!part.dismissed" class="m-0 text-muted-foreground">
         {{ t('agent.runApproval.question') }}
       </p>
     </div>
 
-    <div class="flex h-6 w-full justify-end gap-2">
+    <p
+      v-if="part.dismissed"
+      role="status"
+      class="m-0 text-sm/5 text-muted-foreground"
+    >
+      {{ t('agent.askDismissed') }}
+    </p>
+    <div v-else class="flex h-6 w-full justify-end gap-2">
       <Button
         variant="secondary"
         size="sm"

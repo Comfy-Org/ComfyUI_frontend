@@ -1217,6 +1217,7 @@ const {
   entries,
   editableTurnId,
   isStreaming,
+  sendDismissesAsk,
   status,
   notices,
   threadId,
@@ -2482,7 +2483,8 @@ async function sendTurn(
   meta: SubmissionMeta,
   releaseGate?: () => void,
   isCurrent: () => boolean = () => true,
-  stagedTarget?: ComfyWorkflow
+  stagedTarget?: ComfyWorkflow,
+  dismissAsk = false
 ): Promise<DraftSendOutcome> {
   const submissionId = composerStore.gateHold?.id
   if (!(await ensureSendAllowed(submissionId, meta.clientMessageId, isCurrent)))
@@ -2506,7 +2508,9 @@ async function sendTurn(
           composerStore.clearPendingSendDraft(meta.clientMessageId)
           proactive.accepted(sentUsageScope)
           onAccepted()
-        }
+        },
+        undefined,
+        dismissAsk
       )
     )
     return sent ? 'sent' : 'failed'
@@ -2550,7 +2554,8 @@ const { submit: submitDraft, withdrawSubmission } = useAgentDraftSubmission({
       meta,
       releaseGate,
       undefined,
-      stagedTarget
+      stagedTarget,
+      sendDismissesAsk.value
     )
 })
 
@@ -2604,6 +2609,26 @@ const { handleComposerSend, settleActiveAndPump } = useAgentPromptQueue({
     consumeSelection()
   }
 })
+function onComposerSend(
+  text: string,
+  attachments: ComposerAttachment[],
+  references: WorkflowReference[] = []
+): void {
+  if (
+    sendDismissesAsk.value &&
+    promptQueueStore.editingId === null &&
+    !promptQueueStore.hasWaiting
+  ) {
+    void submitDraft(text, attachments, references).catch((error) =>
+      reportError(error, {
+        surface: 'agent',
+        errorType: 'agent_send_message_failed'
+      })
+    )
+    return
+  }
+  handleComposerSend(text, attachments, references)
+}
 watch(
   () => isStreaming.value || isSending.value,
   (busy, wasBusy) => {
@@ -3274,7 +3299,7 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
       :retry-blocked="workflowSelecting"
       :free-use-placement="freeUsePlacement"
       @free-use-notice="onFreeUseNotice"
-      @send="handleComposerSend"
+      @send="onComposerSend"
       @stop="onStop"
       @attach="onAttach"
       @attach-files="onAttachFiles"

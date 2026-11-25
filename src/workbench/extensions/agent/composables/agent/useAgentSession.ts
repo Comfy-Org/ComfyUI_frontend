@@ -518,6 +518,28 @@ function disownsWorkflow(error: unknown): boolean {
   )
 }
 
+function refusedBeforeAcceptance(error: unknown): boolean {
+  if (!(error instanceof AgentApiError)) return false
+  if (parseAdmissionError(error) !== undefined) return true
+  return (
+    error.status >= 400 &&
+    error.status < 500 &&
+    parseTurnInProgress(error) === undefined
+  )
+}
+
+function serverRefusedSendOverCard(
+  error: unknown,
+  dismissedAskIds: string[]
+): boolean {
+  return (
+    dismissedAskIds.length > 0 &&
+    error instanceof AgentApiError &&
+    error.status >= 500 &&
+    !refusedBeforeAcceptance(error)
+  )
+}
+
 function parseTurnInProgress(error: unknown) {
   if (!(error instanceof AgentApiError) || error.status !== 409)
     return undefined
@@ -658,6 +680,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   const notices = ref<SessionNotice[]>([])
   const readyThreadId = ref<string | null>(null)
   const promptEditState = ref<PromptEditState>({ phase: 'idle' })
+  const askSendRefused = ref(false)
   const answeringAskIds = computed(() => conversationStore.answeringAskIds)
   const pendingThreadSources = new Map<string, AgentSessionThreadStartSource>([
     [conversationStore.activeBlankChatId, 'first_open']
@@ -1613,7 +1636,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     readyThreadId.value = ack.thread_id
     consumeThreadSource(origin)
     recordTurnStarted(turnId, startsThread, threadSourceAtSend)
-    if (stopped !== undefined) void stopTurn(stopped.method)
+    if (stopped !== undefined) void stopActiveTurn(stopped.method)
     runAcceptedTurnSideEffect(
       () => onThreadActivated?.(ack.thread_id),
       'agent_thread_activated_callback_failed'
@@ -1882,7 +1905,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
   function recordTurnInProgressConflict(
     sendId: string,
     origin: PendingSendOrigin,
-    reattached: boolean
+    reattached: boolean,
+    refusedOverCard: boolean
   ): void {
     const pending = reattached
       ? conversationStore.getPendingSend(sendId)
@@ -1890,12 +1914,15 @@ export function useAgentSession(deps: AgentSessionDeps) {
     recordFailedPendingSend(sendId, origin, {
       kind: 'turn_in_progress',
       message: i18n.global.t(
-        reattached
-          ? 'agent.sendTurnInProgress'
-          : 'agent.sendFailedTurnInProgress'
+        refusedOverCard
+          ? 'agent.askSendRefused'
+          : reattached
+            ? 'agent.sendTurnInProgress'
+            : 'agent.sendFailedTurnInProgress'
       )
     })
-    if (pending?.stopRequested) void stopTurn(pending.stopRequested.method)
+    if (pending?.stopRequested)
+      void stopActiveTurn(pending.stopRequested.method)
   }
 
   async function recoverTurnInProgress({
@@ -1903,13 +1930,15 @@ export function useAgentSession(deps: AgentSessionDeps) {
     origin,
     error,
     threadAtSend,
-    generation
+    generation,
+    dismissedAskIds
   }: {
     sendId: string
     origin: PendingSendOrigin
     error: unknown
     threadAtSend: string
     generation: number
+    dismissedAskIds: string[]
   }): Promise<{ reattached: boolean } | null> {
     if (parseTurnInProgress(error) === undefined || threadAtSend === 'new')
       return null
@@ -1923,8 +1952,53 @@ export function useAgentSession(deps: AgentSessionDeps) {
       conversationStore.takePendingSend(sendId)
       return { reattached }
     }
-    recordTurnInProgressConflict(sendId, origin, reattached)
+    const refusedOverCard =
+      conversationStore.isOriginOnScreen(origin) &&
+      dismissedAskIds.some(conversationStore.activeTurnOwnsAsk)
+    if (refusedOverCard) askSendRefused.value = true
+    recordTurnInProgressConflict(sendId, origin, reattached, refusedOverCard)
     return { reattached }
+  }
+
+  // After a 5xx the server may still hold the card open, so show what it holds; a network error gives no answer.
+  async function reloadAfterRefusedSend(
+    threadAtSend: string,
+    generation: number
+  ): Promise<void> {
+    if (threadAtSend === 'new') return
+    const isCurrent = () =>
+      generation === loadGeneration &&
+      ownedGeneration === sessionGeneration &&
+      conversationStore.threadId === threadAtSend
+    await Promise.race([
+      hydrateFromServer(threadAtSend, isCurrent),
+      new Promise<void>((resolve) => setTimeout(resolve, RECONCILE_TIMEOUT_MS))
+    ])
+  }
+
+  async function restoreAsksAfterRefusedSend({
+    origin,
+    error,
+    accepted,
+    threadAtSend,
+    generation,
+    dismissedAskIds
+  }: {
+    origin: PendingSendOrigin
+    error: unknown
+    accepted: boolean
+    threadAtSend: string
+    generation: number
+    dismissedAskIds: string[]
+  }): Promise<void> {
+    if (serverRefusedSendOverCard(error, dismissedAskIds))
+      await reloadAfterRefusedSend(threadAtSend, generation)
+    if (
+      !accepted &&
+      refusedBeforeAcceptance(error) &&
+      conversationStore.isOriginOnScreen(origin)
+    )
+      conversationStore.restoreActiveAsks(dismissedAskIds)
   }
 
   async function recoverFailedSend({
@@ -1934,7 +2008,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     sentContext,
     accepted,
     threadAtSend,
-    generation
+    generation,
+    dismissedAskIds
   }: {
     sendId: string
     origin: PendingSendOrigin
@@ -1943,6 +2018,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     accepted: boolean
     threadAtSend: string
     generation: number
+    dismissedAskIds: string[]
   }): Promise<false> {
     releaseDisownedWorkflow(sentContext, error)
     let conflict: { reattached: boolean } | null = null
@@ -1954,10 +2030,20 @@ export function useAgentSession(deps: AgentSessionDeps) {
         origin,
         error,
         threadAtSend,
-        generation
+        generation,
+        dismissedAskIds
       })
-      if (conflict === null)
+      if (conflict === null) {
+        await restoreAsksAfterRefusedSend({
+          origin,
+          error,
+          accepted,
+          threadAtSend,
+          generation,
+          dismissedAskIds
+        })
         recordFailedPendingSend(sendId, origin, classifySendFailure(error))
+      }
     }
     reportRejectedSend(error, accepted, conflict?.reattached)
     return false
@@ -2227,7 +2313,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     selectionWorkflowId,
     clientMessageId,
     onAccepted,
-    targetTabPath
+    targetTabPath,
+    dismissAsk
   }: {
     sendId: string
     origin: PendingSendOrigin
@@ -2239,6 +2326,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     clientMessageId?: string
     onAccepted?: () => void
     targetTabPath?: string | null
+    dismissAsk: boolean
   }): Promise<boolean> {
     const resolved = resolveOriginContext(
       sendId,
@@ -2254,6 +2342,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const boundAtSend = boundWorkflowId.value
     const threadSourceAtSend = readThreadSource(origin)
     let sentContext: WorkflowTurnContext | undefined
+    let dismissedAskIds: string[] = []
     let accepted = false
     inFlightSends.set(sendId, {
       origin,
@@ -2277,6 +2366,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       )
         return false
       sentContext = wfContext
+      dismissedAskIds = dismissIfSentOverCard(dismissAsk, origin)
       const input = buildPostInput(
         threadAtSend,
         text,
@@ -2321,11 +2411,21 @@ export function useAgentSession(deps: AgentSessionDeps) {
         sentContext,
         accepted,
         threadAtSend,
-        generation
+        generation,
+        dismissedAskIds
       })
     } finally {
       finishInFlightSend(sendId)
     }
+  }
+
+  function dismissIfSentOverCard(
+    dismissAsk: boolean,
+    origin: PendingSendOrigin
+  ): string[] {
+    return dismissAsk && conversationStore.isOriginOnScreen(origin)
+      ? conversationStore.dismissActiveAsks()
+      : []
   }
 
   function workflowTargetChanged(
@@ -2372,7 +2472,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     selectionWorkflowId?: () => string | undefined,
     clientMessageId?: string,
     onAccepted?: () => void,
-    targetTabPath?: string | null
+    targetTabPath?: string | null,
+    dismissAsk = false
   ): Promise<boolean> {
     const sendId = clientMessageId ?? createUuidv4()
     const existingPending = conversationStore.getPendingSend(sendId)
@@ -2416,7 +2517,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
         selectionWorkflowId,
         clientMessageId,
         onAccepted,
-        targetTabPath
+        targetTabPath,
+        dismissAsk
       })
     } finally {
       releaseSendGate()
@@ -2539,15 +2641,18 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   async function stopTurn(method?: AgentStopMethod): Promise<void> {
+    const stopsPendingSend = conversationStore.markPendingSendStopped(
+      conversationStore.currentOrigin(),
+      method
+    )
+    // Stop the old turn now too in case the replacement is refused; the click counts once, on the pending stop.
+    await stopActiveTurn(stopsPendingSend ? undefined : method)
+  }
+
+  async function stopActiveTurn(method?: AgentStopMethod): Promise<void> {
     const threadId = conversationStore.threadId
     const turnId = conversationStore.activeTurnId
-    if (threadId === null || turnId === null) {
-      conversationStore.markPendingSendStopped(
-        conversationStore.currentOrigin(),
-        method
-      )
-      return
-    }
+    if (threadId === null || turnId === null) return
     if (isStoppingTurn(turnId)) return
     promptEditState.value = { phase: 'stopping', turnId }
     const stopMetadata = captureStopMetadata(
@@ -3886,6 +3991,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
     entries: computed(() => conversationStore.entries),
     status: computed(() => conversationStore.status),
     isStreaming: computed(() => conversationStore.isStreaming),
+    sendDismissesAsk: computed(
+      () => conversationStore.activeAskOpen && !askSendRefused.value
+    ),
     notices: computed(() => notices.value),
     threadId: computed(() => conversationStore.threadId)
   }
