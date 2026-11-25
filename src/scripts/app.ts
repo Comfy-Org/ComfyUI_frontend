@@ -1431,7 +1431,6 @@ export class ComfyApp implements IComfyApp {
     }
     try {
       beginGraphLoad(graph)
-      let reset_invalid_values = false
       const missingNodeTypes: MissingNodeType[] = []
       try {
         if (resolveGraphData) {
@@ -1456,7 +1455,6 @@ export class ComfyApp implements IComfyApp {
           Array.isArray(graphData)
         ) {
           graphData = getDefaultWorkflow()
-          reset_invalid_values = true
         }
 
         graphData = clone(graphData)
@@ -1719,15 +1717,7 @@ export class ComfyApp implements IComfyApp {
                   const values = widget.options.values as
                     | (string | number | boolean)[]
                     | undefined
-                  if (
-                    values &&
-                    values.length > 0 &&
-                    (widget.value == null ||
-                      (reset_invalid_values &&
-                        !values.includes(
-                          widget.value as string | number | boolean
-                        )))
-                  ) {
+                  if (values && values.length > 0 && widget.value == null) {
                     widget.value = values[0]
                   }
                 }
