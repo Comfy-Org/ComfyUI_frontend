@@ -10,6 +10,7 @@ const config: KnipConfig = {
         'vitest.matrix.config.mts',
         'vitest.census.config.mts',
         'src/assets/css/style.css',
+        'src/platform/nodeApi/v4/publishedModule.ts',
         'src/scripts/ui/menu/index.ts',
         'src/types/index.ts',
         'src/storybook/mocks/**/*.ts',

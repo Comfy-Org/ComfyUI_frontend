@@ -1,0 +1,332 @@
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
+
+import {
+  LGraph,
+  LGraphCanvas,
+  LGraphNode,
+  LiteGraph
+} from '@/lib/litegraph/src/litegraph'
+import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { stubCanvasGetContext } from '@/utils/__tests__/canvasTestUtils'
+import { graphToPrompt } from '@/utils/executionUtil'
+
+import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
+import type {
+  ConnectionChangeEvent,
+  DefRegistry,
+  NodeCreatedEvent,
+  NodeDefBuilder,
+  PackId
+} from '@/platform/nodeApi/v4/types'
+import { hostNodeDef, registerHostType } from './__fixtures__/hostNodeTypes'
+import { registerTestPack } from '@/platform/nodeApi/v4/__tests__/testPack'
+
+vi.mock(import('@/services/litegraphService'))
+
+const TYPE = 'Pack/HostPath'
+
+function canvasShowing(graph: LGraph): LGraphCanvas {
+  stubCanvasGetContext()
+  const element = document.createElement('canvas')
+  element.width = 800
+  element.height = 600
+  element.getBoundingClientRect = vi
+    .fn()
+    .mockReturnValue({ left: 0, top: 0, width: 800, height: 600 })
+  return new LGraphCanvas(element, graph, {
+    skip_render: true,
+    skip_events: true
+  })
+}
+
+function pointerAt(
+  clientX: number,
+  clientY: number,
+  type = 'pointermove',
+  timeStamp = 0
+): PointerEvent {
+  const event = new PointerEvent(type, {
+    clientX,
+    clientY,
+    isPrimary: true,
+    button: 0,
+    buttons: type === 'pointerdown' ? 1 : 0
+  })
+  Object.defineProperty(event, 'timeStamp', { value: timeStamp })
+  return event
+}
+
+describe('node hooks on the host paths', () => {
+  let graph: LGraph
+  let defs: DefRegistry
+
+  let packId: PackId
+
+  beforeEach(() => {
+    graph = new LGraph()
+    const api = createComfyApi({ getGraph: () => graph })
+    packId = registerTestPack(api)
+    defs = api.comfy.defs
+    registerHostType(api.host.nodeTypeHooks, hostNodeDef(TYPE))
+  })
+
+  function extend(apply: (builder: NodeDefBuilder) => void) {
+    const stop = defs.extend(packId, TYPE, apply)
+    onTestFinished(stop)
+    return stop
+  }
+
+  function created(): LGraphNode {
+    const node = LiteGraph.createNode(TYPE)
+    assert(node)
+    return node
+  }
+
+  function lifecycle() {
+    const order: unknown[] = []
+    extend((builder) => {
+      builder.onCreated((_, event: NodeCreatedEvent) => order.push(event))
+      builder.onConfigured((_, data) => order.push(`configured ${data.title}`))
+    })
+    return order
+  }
+
+  it('hears a pasted node join, not restored, and then its saved state', () => {
+    const order = lifecycle()
+    const copied = created()
+    copied.title = 'Copied'
+
+    canvasShowing(graph)._deserializeItems({ nodes: [copied.serialize()] }, {})
+
+    expect(order).toEqual([
+      { restored: false, loading: false },
+      'configured Copied'
+    ])
+  })
+
+  it('hears a duplicated node join, not restored, and then its saved state', () => {
+    const original = created()
+    original.title = 'Original'
+    graph.add(original)
+    const previousCanvas = LGraphCanvas.active_canvas
+    onTestFinished(() => {
+      LGraphCanvas.active_canvas = previousCanvas
+    })
+    LGraphCanvas.active_canvas = canvasShowing(graph)
+    const order = lifecycle()
+
+    LGraphCanvas.cloneNodes([original])
+
+    expect(order).toEqual([
+      { restored: false, loading: false },
+      'configured Original'
+    ])
+  })
+
+  describe('links restored with saved state', () => {
+    function savedWithOneLinkedAndOneUnlinkedInput() {
+      const saved = new LGraph()
+      const source = new LGraphNode('Source')
+      source.addOutput('out', '*')
+      saved.add(source)
+      const target = created()
+      target.addInput('linked', '*')
+      target.addInput('unlinked', '*')
+      saved.add(target)
+      source.connect(0, target, 0)
+      return saved.serialize()
+    }
+
+    it('reports the linked input of a loading node, and not the unlinked one', () => {
+      const events: ConnectionChangeEvent[] = []
+      extend((builder) =>
+        builder.onConnectionsChanged((_, event) => events.push(event))
+      )
+
+      graph.configure(savedWithOneLinkedAndOneUnlinkedInput())
+
+      expect(
+        new Set(events.map(({ name, connected }) => `${name} ${connected}`))
+      ).toEqual(new Set(['linked true']))
+    })
+  })
+
+  describe('the canvas pointer', () => {
+    it('hears the pointer enter a node and leave it', () => {
+      const hovering: boolean[] = []
+      extend((builder) => builder.onHover((_, isOver) => hovering.push(isOver)))
+      const node = created()
+      node.pos = [100, 100]
+      node.size = [200, 100]
+      graph.add(node)
+      node.updateArea()
+      const canvas = canvasShowing(graph)
+      canvas.visible_nodes = [node]
+
+      canvas.processMouseMove(pointerAt(150, 150))
+      canvas.processMouseMove(pointerAt(900, 500))
+
+      expect(hovering).toEqual([true, false])
+    })
+
+    it('hears a double click on a node', () => {
+      const onDoubleClick = vi.fn()
+      extend((builder) => builder.onDoubleClick(onDoubleClick))
+      const node = created()
+      node.pos = [100, 100]
+      node.size = [200, 100]
+      graph.add(node)
+      node.updateArea()
+      const canvas = canvasShowing(graph)
+      canvas.visible_nodes = [node]
+
+      canvas.processMouseDown(pointerAt(150, 150, 'pointerdown', 10))
+      canvas.processMouseUp(pointerAt(150, 150, 'pointerup', 20))
+      canvas.processMouseDown(pointerAt(150, 150, 'pointerdown', 100))
+      canvas.processMouseUp(pointerAt(150, 150, 'pointerup', 110))
+
+      expect(onDoubleClick).toHaveBeenCalledOnce()
+    })
+  })
+
+  describe('a node inside a subgraph', () => {
+    it('names its own input when the link from the subgraph input changes', () => {
+      const events: ConnectionChangeEvent[] = []
+      extend((builder) =>
+        builder.onConnectionsChanged((_, event) => events.push(event))
+      )
+      const subgraph = createTestSubgraph({
+        rootGraph: graph,
+        inputs: [{ name: 'subgraph_side', type: '*' }]
+      })
+      graph.subgraphs.set(subgraph.id, subgraph)
+      const node = created()
+      node.addInput('node_side', '*')
+      subgraph.add(node)
+
+      subgraph.inputs[0].connect(node.inputs[0], node)
+      node.disconnectInput(0)
+
+      expect(events.map(({ name, connected }) => [name, connected])).toEqual([
+        ['node_side', true],
+        ['node_side', false]
+      ])
+    })
+
+    it('gives no peer for a link to the subgraph input or output, which is no node', () => {
+      const events: ConnectionChangeEvent[] = []
+      extend((builder) =>
+        builder.onConnectionsChanged((_, event) => events.push(event))
+      )
+      const subgraph = createTestSubgraph({
+        rootGraph: graph,
+        inputs: [{ name: 'in', type: '*' }],
+        outputs: [{ name: 'out', type: '*' }]
+      })
+      graph.subgraphs.set(subgraph.id, subgraph)
+      const node = created()
+      node.addInput('node_in', '*')
+      node.addOutput('node_out', '*')
+      subgraph.add(node)
+
+      subgraph.inputs[0].connect(node.inputs[0], node)
+      subgraph.outputs[0].connect(node.outputs[0], node)
+
+      expect(
+        events.map(({ side, peerNodeId, peerIndex }) => [
+          side,
+          peerNodeId,
+          peerIndex
+        ])
+      ).toEqual([
+        ['input', undefined, undefined],
+        ['output', undefined, undefined]
+      ])
+    })
+  })
+
+  describe('a node inside a subgraph, at the edges', () => {
+    function subgraphWith(slots: {
+      inputs?: { name: string; type: string }[]
+      outputs?: { name: string; type: string }[]
+    }) {
+      const subgraph = createTestSubgraph({ rootGraph: graph, ...slots })
+      graph.subgraphs.set(subgraph.id, subgraph)
+      return subgraph
+    }
+
+    function heard() {
+      const events: ConnectionChangeEvent[] = []
+      extend((builder) =>
+        builder.onConnectionsChanged((_, event) => events.push(event))
+      )
+      return events
+    }
+
+    it('names its own output when the link to the subgraph output is removed', () => {
+      const events = heard()
+      const subgraph = subgraphWith({
+        outputs: [{ name: 'subgraph_side', type: '*' }]
+      })
+      const node = created()
+      node.addOutput('node_side', '*')
+      subgraph.add(node)
+      subgraph.outputs[0].connect(node.outputs[0], node)
+
+      subgraph.outputs[0].disconnect()
+
+      expect(
+        events.map(({ side, name, connected }) => [side, name, connected])
+      ).toEqual([
+        ['output', 'node_side', true],
+        ['output', 'node_side', false]
+      ])
+    })
+
+    it('names the subgraph input when the only input it fed is removed', () => {
+      const events = heard()
+      const subgraph = subgraphWith({
+        inputs: [{ name: 'subgraph_side', type: '*' }]
+      })
+      const node = created()
+      node.addInput('node_side', '*')
+      subgraph.add(node)
+      subgraph.inputs[0].connect(node.inputs[0], node)
+
+      node.removeInput(0)
+
+      expect(events.at(-1)).toMatchObject({
+        name: 'subgraph_side',
+        connected: false
+      })
+    })
+  })
+
+  describe('a defined type in the prompt', () => {
+    it('sends a backend node to the server as its type, and leaves a frontend one out', async () => {
+      onTestFinished(
+        defs.define(packId, { type: 'Pack/Backend', execution: 'backend' })
+      )
+      onTestFinished(defs.define(packId, { type: 'Pack/Frontend' }))
+      for (const type of ['Pack/Backend', 'Pack/Frontend']) {
+        const node = LiteGraph.createNode(type)
+        assert(node)
+        graph.add(node)
+      }
+
+      const { output } = await graphToPrompt(graph)
+
+      expect(Object.values(output).map((entry) => entry.class_type)).toEqual([
+        'Pack/Backend'
+      ])
+    })
+  })
+})

@@ -26,6 +26,7 @@ import {
 } from './build/devAgentConfig.ts'
 import { comfyAPIPlugin } from './build/plugins/comfyAPIPlugin.ts'
 import { vueDevtoolsKitStub } from './build/plugins/vueDevtoolsKitStub.ts'
+import { publishedNodeApiPlugin } from './build/plugins/publishedNodeApiPlugin.ts'
 import {
   hasCompleteSentryUploadConfig,
   resolveSentryUploadConfig
@@ -555,6 +556,7 @@ export default defineConfig({
     tailwindcss(),
     typegpuPlugin({}),
     comfyAPIPlugin(IS_DEV),
+    publishedNodeApiPlugin(),
     {
       name: 'emit-build-manifest',
       generateBundle() {

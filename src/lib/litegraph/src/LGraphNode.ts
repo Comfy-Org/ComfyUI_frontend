@@ -91,6 +91,7 @@ import type { LGraphButtonOptions } from './LGraphButton'
 
 import { canvasClass } from './canvas/canvasClassAccess'
 import { realignGroupWidgetChildLinks } from './linkDeduplication'
+import { slotFloatingLinks } from './LLink'
 import type { LLink } from './LLink'
 import {
   inputHasLink,
@@ -121,6 +122,7 @@ import {
 import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
 import { getNodeInputOnPos, getNodeOutputOnPos } from './canvas/measureSlots'
 import type { IDrawBoundingOptions } from './draw'
+import { savedStateApplied } from './awaitingSavedState'
 import { emitNodeFieldWrite } from './graphIntents'
 import { NullGraphError } from './infrastructure/NullGraphError'
 import type { ReadOnlyRectangle } from './infrastructure/Rectangle'
@@ -1409,6 +1411,7 @@ export class LGraphNode
         )
       }
 
+      savedStateApplied(this)
       this.onConfigure?.(extensionConfigureView(this, info))
       if (this.widgets && namedValues) {
         const legacyShadow = computeLegacyWidgetShadow(
@@ -2178,6 +2181,7 @@ export class LGraphNode
       const previous = captureInputLayout(this)
       const nextInputs = [...previous.inputs]
       nextInputs.splice(slot, 1)
+      const removedFloating = slotFloatingLinks(graph, 'input', this.id, slot)
       const result = replaceNodeInputs(
         this,
         previous,
@@ -2186,6 +2190,10 @@ export class LGraphNode
         true
       )
       if (!result.ok) return
+      for (const floatingLink of removedFloating) {
+        if (graph.floatingLinks.get(floatingLink.id) === floatingLink)
+          graph.removeFloatingLink(floatingLink)
+      }
       for (const floatingLink of graph.floatingLinks.values()) {
         if (
           floatingLink.target_id === this.id &&

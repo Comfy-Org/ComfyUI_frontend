@@ -38,6 +38,8 @@ import {
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { api } from '@/scripts/api'
 import { loadExtensions } from '@/platform/extensions/services/extensionLoader'
+import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
+import { NODE_TYPE_HOOKS_NAME } from '@/platform/nodeApi/v4/defs/nodeTypeHooksName'
 import { app } from '@/scripts/app'
 import { useBootstrapStore } from '@/stores/bootstrapStore'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -45,6 +47,7 @@ import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 
 import GraphCanvas from './GraphCanvas.vue'
+import { withoutPublishedApi } from '@/platform/nodeApi/v4/__tests__/publishedApi'
 const distribution = vi.hoisted(() => ({ isCloud: false }))
 vi.mock(import('@/platform/distribution/types'), () => ({
   DISTRIBUTION: 'localhost' as const,
@@ -298,6 +301,85 @@ it('does not expose a disposed canvas after custom themes finish loading', async
   await vi.advanceTimersByTimeAsync(0)
 
   expect(useCanvasStore().canvas).toBeNull()
+})
+
+describe('GraphCanvas node API', () => {
+  beforeEach(withoutPublishedApi)
+
+  it('publishes the node API before extension modules load', async () => {
+    const seenWhileLoading = vi.fn()
+    vi.mocked(loadExtensions).mockImplementationOnce(async () => {
+      seenWhileLoading(window.comfy_v4?.getApiVersion())
+    })
+
+    await mountGraphCanvas()
+
+    expect(seenWhileLoading).toHaveBeenCalledExactlyOnceWith([4, 0, 0])
+  })
+
+  it('hears the node types the host registers before extension modules load', async () => {
+    const installedWhileLoading = vi.fn()
+    vi.mocked(loadExtensions).mockImplementationOnce(async () => {
+      installedWhileLoading(
+        useExtensionStore().isExtensionInstalled(NODE_TYPE_HOOKS_NAME)
+      )
+    })
+
+    await mountGraphCanvas()
+
+    expect(installedWhileLoading).toHaveBeenCalledExactlyOnceWith(true)
+  })
+
+  it('tells a pack the app is ready only once setup has run', async () => {
+    const setupCallsWhenReady: number[] = []
+    const setupCallsWhileLoading: number[] = []
+    vi.mocked(loadExtensions).mockImplementationOnce(async () => {
+      setupCallsWhileLoading.push(vi.mocked(app.setup).mock.calls.length)
+      window.comfy_v4?.onReady(() =>
+        setupCallsWhenReady.push(vi.mocked(app.setup).mock.calls.length)
+      )
+    })
+
+    await mountGraphCanvas()
+
+    expect(setupCallsWhileLoading).toEqual([0])
+    expect(setupCallsWhenReady).toEqual([1])
+  })
+
+  it('tells a pack the app is ready before the first workflow loads', async () => {
+    const order: string[] = []
+    mocks.initializeWorkflow.mockImplementationOnce(async () => {
+      order.push('first workflow loads')
+    })
+    vi.mocked(loadExtensions).mockImplementationOnce(async () => {
+      window.comfy_v4?.onReady(() => order.push('ready'))
+    })
+
+    await mountGraphCanvas()
+
+    expect(order).toEqual(['ready', 'first workflow loads'])
+  })
+
+  it('does not tell packs the app is ready when the canvas unmounts during setup', async () => {
+    const ready = vi.fn()
+    let finishLoading = () => {}
+    mocks.loadCustomThemePresets.mockReturnValue(
+      new Promise<void>((resolve) => {
+        finishLoading = resolve
+      })
+    )
+    vi.mocked(loadExtensions).mockImplementationOnce(async () => {
+      window.comfy_v4?.onReady(ready)
+    })
+    await mountGraphCanvas()
+
+    cleanup()
+    finishLoading()
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(app.setup).toHaveBeenCalledOnce()
+    expect(ready).not.toHaveBeenCalled()
+  })
 })
 
 describe('GraphCanvas first-run tour wiring', () => {

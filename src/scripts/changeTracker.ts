@@ -22,6 +22,7 @@ import type { ExecutedWsMessage } from '@comfyorg/api-client/executionTypes'
 import {
   canCaptureCanvas,
   isCanvasCaptureBlocked,
+  isCanvasOwner,
   resetCanvasTrackerForTest
 } from '@/platform/workflow/core/canvasTrackerOwnership'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -68,6 +69,13 @@ function withNormalizedNodeSizes(state: ComfyWorkflowJSON): ComfyWorkflowJSON {
     if ('size' in node) node.size = [0, 0]
   }
   return comparable
+}
+
+function isReloadOf(loaded: ComfyWorkflowJSON, held: ComfyWorkflowJSON) {
+  return ChangeTracker.graphEqual(
+    withNormalizedNodeSizes(loaded),
+    withNormalizedNodeSizes(held)
+  )
 }
 
 function matchesRestoredTarget(
@@ -346,6 +354,9 @@ function getExecutionGraphState(value: unknown): unknown {
   return executionGraph
 }
 
+/** How long after an undo or redo, at most, what packs change joins the restored state instead of being an undo step. */
+export const RESTORE_SETTLING_MS = 1000
+
 const reportedInactiveCalls = new Set<string>()
 
 function reportInactiveTrackerCall(method: string, workflowPath: string) {
@@ -387,6 +398,12 @@ export class ChangeTracker implements WorkflowChangeTracker {
    */
   _restoringState: boolean = false
   private restoreChain?: Promise<void>
+  private settlingRestore = false
+  private settlingTimer?: ReturnType<typeof setTimeout>
+  private loadHooks?: { userActed: boolean }
+  private userActedInRestore = false
+  private configuredInRestore?: ComfyWorkflowJSON
+  private readonly statesAcrossALoad = new WeakSet<ComfyWorkflowJSON>()
   private preview?: { interrupt: () => void; rollback: () => void }
 
   /** Whether a workflow load is configuring this tracker's graph. */
@@ -414,14 +431,97 @@ export class ChangeTracker implements WorkflowChangeTracker {
     this.activeState = initialState
   }
 
-  /**
-   * Save the current state as the initial state.
-   */
+  /** Saves the current state, or the state a load gave, as the initial state.
+   * A replacement load outside history restore makes the next undo or redo across its boundary a load too. */
   reset(state?: ComfyWorkflowJSON) {
+    if (state && !this._restoringState) this.markLoadBoundary(state)
+    if (!this._restoringState) this.endSettling()
+    this.adopt(state)
+    if (this._restoringState && state)
+      this.configuredInRestore = this.activeState
+  }
+
+  /**
+   * The user acted: from now on a change is an undo step again, not part of the state the last undo or redo restored.
+   *
+   * @internal Not part of the public extension API.
+   */
+  userActed() {
+    if (this.loadHooks && !this.loadHooks.userActed) {
+      this.loadHooks.userActed = true
+      this.takeLoadedGraph()
+    }
+    if (this._restoringState) this.userActedInRestore = true
+    this.endSettling()
+  }
+
+  private beginSettling() {
+    this.endSettling()
+    this.settlingRestore = true
+    this.settlingTimer = setTimeout(
+      () => this.endSettling(),
+      RESTORE_SETTLING_MS
+    )
+  }
+
+  private endSettling() {
+    clearTimeout(this.settlingTimer)
+    this.settlingTimer = undefined
+    this.settlingRestore = false
+  }
+
+  /**
+   * A load's `afterLoadGraph` hooks start; until {@link endLoadHooks}, the user's first input takes the graph as the loaded state.
+   *
+   * @internal Not part of the public extension API.
+   */
+  beginLoadHooks() {
+    this.loadHooks = { userActed: false }
+  }
+
+  /** @internal Not part of the public extension API. */
+  endLoadHooks() {
+    this.loadHooks = undefined
+  }
+
+  /**
+   * Takes the graph as the end of a load leaves it, with what its `afterLoadGraph` hooks changed, as the loaded state:
+   * no undo step, and the saved state too unless the load kept another (a restored draft keeps the saved file).
+   * After a user input while the hooks ran, what changed since that input is an undo step instead.
+   *
+   * @internal Not part of the public extension API.
+   */
+  adoptLoadedGraph() {
+    if (!this.loadHooks?.userActed) this.takeLoadedGraph()
+    else this.captureCanvasState()
+  }
+
+  private takeLoadedGraph() {
+    const { graph } = this.workflow
+    if (!graph || !isActiveTracker(this) || !isCanvasOwner(this)) return
+    const loadedWasSaved = ChangeTracker.graphEqual(
+      this.activeState,
+      this.initialState
+    )
+    this.activeState = clone(graph.serialize() as ComfyWorkflowJSON)
+    if (this._restoringState) return
+    if (loadedWasSaved) this.initialState = clone(this.activeState)
+    else this.updateModified()
+  }
+
+  private adopt(state?: ComfyWorkflowJSON) {
     if (state) this.activeState = clone(state)
     if (this._restoringState) return
 
     this.initialState = clone(this.activeState)
+  }
+
+  private markLoadBoundary(loaded: ComfyWorkflowJSON) {
+    const adjacent = [this.undoQueue.at(-1), this.redoQueue.at(-1)].filter(
+      (state) => state !== undefined
+    )
+    if (!adjacent.length || isReloadOf(loaded, this.activeState)) return
+    for (const state of adjacent) this.statesAcrossALoad.add(state)
   }
 
   store() {
@@ -572,6 +672,10 @@ export class ChangeTracker implements WorkflowChangeTracker {
 
     const currentState = clone(graph.serialize()) as ComfyWorkflowJSON
     if (!ChangeTracker.graphEqual(this.activeState, currentState)) {
+      if (this.settlingRestore) {
+        this.takeIntoRestoredState(currentState)
+        return
+      }
       const previousState = this.activeState
       const nodeHistoryWidgets = collectNodeHistoryWidgets(graph)
       if (
@@ -594,6 +698,13 @@ export class ChangeTracker implements WorkflowChangeTracker {
       void this.squashState()
     }
   }
+  private takeIntoRestoredState(state: ComfyWorkflowJSON) {
+    if (ChangeTracker.graphEqual(this.activeState, this.initialState))
+      this.initialState = clone(state)
+    this.activeState = state
+    this.updateModified()
+  }
+
   squashState = useDebounceFn(() => {
     const graph = this.workflow.graph
     if (
@@ -661,11 +772,15 @@ export class ChangeTracker implements WorkflowChangeTracker {
   }
 
   async updateState(source: ComfyWorkflowJSON[], target: ComfyWorkflowJSON[]) {
+    const fromOwnHistory =
+      source === this.undoQueue || source === this.redoQueue
     const restore = async () => {
       if (this._restoringState) return
+      this.endSettling()
       this.preview?.rollback()
       const prevState = source.pop()
       if (prevState) {
+        const restoresHistory = this.restoresHistory(fromOwnHistory, prevState)
         const previousState = this.activeState
         const targetState = keepingLiveNodeHistoryValues(
           prevState,
@@ -686,22 +801,21 @@ export class ChangeTracker implements WorkflowChangeTracker {
             {
               checkForRerouteMigration: false,
               silentAssetErrors: true,
-              restoreHistory: true
+              restoreHistory: restoresHistory
             }
           )
           restored = result !== false && result !== undefined
         } finally {
           this._restoringState = false
-          restored ||=
-            !ChangeTracker.graphEqual(this.activeState, previousState) &&
-            matchesRestoredTarget(this.activeState, targetState, previousState)
-          if (restored) {
-            target.push(previousState)
-            if (restoresSavedState) this.initialState = clone(this.activeState)
-          } else {
-            source.push(prevState)
-          }
-          if (restored) this.finishRestore(previousState)
+          this.settleRestore(restored, {
+            source,
+            target,
+            prevState,
+            previousState,
+            targetState,
+            restoresHistory,
+            restoresSavedState
+          })
         }
       }
     }
@@ -712,7 +826,46 @@ export class ChangeTracker implements WorkflowChangeTracker {
     return this.restoreChain
   }
 
-  private finishRestore(previousState: ComfyWorkflowJSON) {
+  private settleRestore(
+    loaded: boolean,
+    step: {
+      source: ComfyWorkflowJSON[]
+      target: ComfyWorkflowJSON[]
+      prevState: ComfyWorkflowJSON
+      previousState: ComfyWorkflowJSON
+      targetState: ComfyWorkflowJSON
+      restoresHistory: boolean
+      restoresSavedState: boolean
+    }
+  ) {
+    const userActed = this.userActedInRestore
+    this.userActedInRestore = false
+    const configured = this.configuredInRestore
+    this.configuredInRestore = undefined
+    const { previousState } = step
+    const restored =
+      loaded ||
+      (!ChangeTracker.graphEqual(this.activeState, previousState) &&
+        matchesRestoredTarget(
+          this.activeState,
+          step.targetState,
+          previousState
+        ))
+    if (!restored) {
+      step.source.push(step.prevState)
+      return
+    }
+    this.pushRestored(step.target, previousState, step.restoresHistory)
+    if (step.restoresSavedState) this.initialState = clone(this.activeState)
+    if (!userActed) this.beginSettling()
+    this.finishRestore(previousState, configured ?? this.activeState)
+    if (userActed) this.captureCanvasState()
+  }
+
+  private finishRestore(
+    previousState: ComfyWorkflowJSON,
+    restoredState: ComfyWorkflowJSON
+  ) {
     const { workflow } = this
     const { graph } = workflow
     this.updateModified(previousState)
@@ -722,8 +875,21 @@ export class ChangeTracker implements WorkflowChangeTracker {
         workflow,
         graph,
         previous: previousState,
-        next: this.activeState
+        next: restoredState
       })
+  }
+
+  private restoresHistory(fromOwnHistory: boolean, state: ComfyWorkflowJSON) {
+    return fromOwnHistory && !this.statesAcrossALoad.has(state)
+  }
+
+  private pushRestored(
+    target: ComfyWorkflowJSON[],
+    state: ComfyWorkflowJSON,
+    restoredHistory: boolean
+  ) {
+    target.push(state)
+    if (!restoredHistory) this.statesAcrossALoad.add(state)
   }
 
   async undo() {
@@ -804,9 +970,15 @@ export class ChangeTracker implements WorkflowChangeTracker {
       })
     }
 
+    const userActed = () => getCurrentChangeTracker()?.userActed()
+    window.addEventListener('pointerdown', userActed, true)
+    window.addEventListener('drop', userActed, true)
+    window.addEventListener('wheel', userActed, true)
+
     window.addEventListener(
       'keydown',
       (e: KeyboardEvent) => {
+        userActed()
         const shortcut = historyShortcut(e)
         if (shortcut) onHistoryShortcut(e, shortcut)
         else onEditKey(e)

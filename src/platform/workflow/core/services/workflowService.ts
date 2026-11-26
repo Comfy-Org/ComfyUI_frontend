@@ -58,6 +58,7 @@ import { useAppMode } from '@/composables/useAppMode'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { presentRootGraph } from '@/platform/workflow/core/services/presentRootGraph'
+import { useNodeApiHost } from '@/platform/nodeApi/nodeApiHost'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import {
   provideWorkflowService,
@@ -723,6 +724,7 @@ export const useWorkflowService = () => {
       try {
         beforeLoadNewGraph(true)()
         const app = useApp()
+        useNodeApiHost().beginDocument()
         presentRootGraph(app, graph, { clean: true, skipAssetScans: true })
         missingNodesErrorStore.setMissingNodeTypes([])
         const loaded = await workflowStore.openWorkflow(workflow)

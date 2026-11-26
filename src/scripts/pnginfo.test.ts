@@ -1,8 +1,12 @@
 import fs from 'fs'
 import path from 'path'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+
+import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
+import { hostNodeDef } from '@/platform/nodeApi/v4/defs/__fixtures__/hostNodeTypes'
+import type { NodeCreatedEvent } from '@/platform/nodeApi/v4/types'
 
 import { api } from './api'
 import { getFromAvifFile } from './metadata/avif'
@@ -15,6 +19,7 @@ import {
   getWebpMetadata,
   importA1111
 } from './pnginfo'
+import { registerTestPack } from '@/platform/nodeApi/v4/__tests__/testPack'
 
 vi.mock(import('./api'))
 
@@ -214,10 +219,14 @@ describe('importA1111', () => {
   const parametersWithoutNegativePrompt =
     'positive\nSteps: 20, Sampler: Euler, CFG scale: 7, Seed: 1, Size: 512x512, Model: model.safetensors'
 
-  function mockAvailableCoreNodes(graph: LGraph) {
+  function mockAvailableCoreNodes(
+    graph: LGraph,
+    nodeClasses: ReadonlyMap<string, typeof LGraphNode> = new Map()
+  ) {
     vi.spyOn(graph, 'arrange').mockImplementation(() => {})
     vi.spyOn(LiteGraph, 'createNode').mockImplementation((type) => {
-      const node = new LGraphNode(type, type)
+      const NodeClass = nodeClasses.get(type) ?? LGraphNode
+      const node = new NodeClass(type, type)
       if (type === 'CLIPTextEncode') {
         node.addWidget('text', 'text', '', () => {})
       }
@@ -417,4 +426,40 @@ describe('importA1111', () => {
       ]).toEqual(expectedSize)
     }
   )
+
+  it('tells a node API hook that every node it adds is loading', async () => {
+    const graph = new LGraph()
+    vi.mocked(api.getEmbeddings).mockResolvedValue([])
+    const { comfy, host } = createComfyApi({ getGraph: () => graph })
+    const packId = registerTestPack({ comfy, host })
+    const events: [string | undefined, NodeCreatedEvent][] = []
+    const hookedHostType = (type: string): [string, typeof LGraphNode] => {
+      const HostClass = class extends LGraphNode {}
+      host.nodeTypeHooks.beforeRegisterNodeDef(HostClass, hostNodeDef(type))
+      onTestFinished(
+        comfy.defs.extend(packId, type, (builder) =>
+          builder.onCreated((node, event) => events.push([node.type, event]))
+        )
+      )
+      return [type, HostClass]
+    }
+    mockAvailableCoreNodes(
+      graph,
+      new Map([hookedHostType('KSampler'), hookedHostType('LoraLoader')])
+    )
+
+    await importA1111(
+      graph,
+      `positive <lora:detail:0.5>\n${parameters.split('\n').slice(1).join('\n')}`,
+      vi.fn()
+    )
+
+    expect(events).toHaveLength(2)
+    expect(events).toEqual(
+      expect.arrayContaining([
+        ['KSampler', { restored: true, loading: true }],
+        ['LoraLoader', { restored: true, loading: true }]
+      ])
+    )
+  })
 })

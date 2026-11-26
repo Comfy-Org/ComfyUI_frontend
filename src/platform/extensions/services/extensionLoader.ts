@@ -7,7 +7,9 @@ import {
 import { isSafeExtensionBootActive } from '@/platform/customNodes/safeExtensionBoot'
 import { askCpuServer } from '@/platform/customNodes/lateLoading/cpuServerStep'
 import { lateLoadingApplies } from '@/platform/customNodes/lateLoading/lateLoading'
+import { fetchExtensionPacks } from '@/platform/extensions/services/extensionPacks'
 import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
+import { useNodeApiHost } from '@/platform/nodeApi/nodeApiHost'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import { api } from '@/scripts/api'
@@ -15,7 +17,7 @@ import { installErrorNodeWidgets } from '@/scripts/errorNodeWidgets'
 
 /**
  * Registers the core extensions, then loads the custom node scripts the backend serves.
- * Late custom nodes stop turning on when `signal` aborts.
+ * A startup `signal` aborted before the extension list and pack records arrive does neither; late custom nodes stop turning on when it aborts.
  */
 export async function loadExtensions(
   signal: AbortSignal = new AbortController().signal
@@ -33,7 +35,12 @@ export async function loadExtensions(
   const firstCpuServerReading = lateLoadingApplies()
     ? askCpuServer()
     : undefined
-  const extensions = await api.getExtensions()
+  const [extensions, servedPacks] = await Promise.all([
+    api.getExtensions(),
+    fetchExtensionPacks(signal)
+  ])
+  if (signal.aborted) return
+  useNodeApiHost().providePacks(servedPacks)
   extensionStore.loadExtensionPaths(
     extensions
       .filter((extension) =>

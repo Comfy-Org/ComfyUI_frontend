@@ -1,0 +1,235 @@
+import { once } from 'es-toolkit'
+
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+
+import {
+  callListener,
+  reportIfRejected
+} from '@/platform/nodeApi/shared/listeners'
+import type { IssuedPack } from '@/platform/nodeApi/v4/packs'
+import type {
+  NodeDef,
+  NodeDefBuilder,
+  Unsubscribe
+} from '@/platform/nodeApi/v4/types'
+import type { SelectorCandidate, TypeSelection } from './defSelector'
+import { HOOK_NAMES, createNodeDefBuilder } from './nodeHooks'
+import type { HookCallbackLists, HookEntry, HookName } from './nodeHooks'
+
+/** A node type that extensions apply to: one the host registered, or one a pack defined. */
+export interface NodeType {
+  readonly type: string
+  readonly category: string
+  readonly nodeClass: typeof LGraphNode
+  /** A new copy of the type's definition. */
+  def(): NodeDef
+}
+
+export interface HookInstaller {
+  /** Makes sure the nodes made from the type's class call back for each of `hooks`. */
+  install(nodeType: NodeType, hooks: readonly HookName[]): void
+  /** The number of applied extensions with a callback for some hook changed. */
+  demandChanged(): void
+}
+
+interface Extension {
+  readonly pack: IssuedPack
+  readonly selects: TypeSelection
+  readonly apply: (builder: NodeDefBuilder) => void
+  readonly appliedTo: Set<string>
+  readonly sequence: number
+  readonly ownClass: typeof LGraphNode | undefined
+}
+
+interface Application {
+  readonly extension: Extension
+  readonly callbacks: HookCallbackLists
+}
+
+export interface Extensions {
+  extend(
+    pack: IssuedPack,
+    selects: TypeSelection,
+    apply: (builder: NodeDefBuilder) => void
+  ): Unsubscribe
+  /** Adds the hooks a defined type declares, before any extension's, to that registration of it only. */
+  extendOwnType(
+    nodeType: NodeType,
+    pack: IssuedPack,
+    apply: (builder: NodeDefBuilder) => void
+  ): Unsubscribe
+  /** Records a type, replacing an earlier registration of it, and applies every extension that selects it. */
+  typeRegistered(nodeType: NodeType): void
+  /** Forgets a type and its hooks, if it is still registered as `nodeType`. */
+  typeUnregistered(nodeType: NodeType): void
+  nodeType(type: string): NodeType | undefined
+  /** Every type, in the order it first registered. */
+  nodeTypes(): readonly NodeType[]
+  /** The callbacks for `hook` on the node's type of the extensions made before it joined that reach its class, in the order they were added. */
+  callbacksFor<K extends HookName>(
+    node: LGraphNode,
+    hook: K,
+    joined: number
+  ): readonly HookEntry<K>[]
+  /** How many applied extensions have a callback for `hook`. */
+  demand(hook: HookName): number
+  /** The number of extensions made so far. */
+  clock(): number
+  /** Changes each time an extension's hooks are removed from a type. */
+  revision(): number
+}
+
+export function createExtensions(installer: HookInstaller): Extensions {
+  const extensions = new Set<Extension>()
+  const nodeTypes = new Map<string, NodeType>()
+  const applications = new Map<string, Application[]>()
+  const demand = new Map<HookName, number>()
+  let revision = 0
+
+  function countDemand(callbacks: HookCallbackLists, change: 1 | -1): void {
+    for (const hook of HOOK_NAMES) {
+      if (callbacks[hook].length)
+        demand.set(hook, (demand.get(hook) ?? 0) + change)
+    }
+  }
+
+  function removeApplications(
+    type: string,
+    remove: (application: Application) => boolean
+  ): void {
+    const list = applications.get(type) ?? []
+    for (const application of list.filter(remove)) {
+      application.extension.appliedTo.delete(type)
+      countDemand(application.callbacks, -1)
+    }
+    const kept = list.filter((application) => !remove(application))
+    if (kept.length !== list.length) revision++
+    if (kept.length) applications.set(type, kept)
+    else applications.delete(type)
+  }
+
+  function applyIfSelected(
+    extension: Extension,
+    nodeType: NodeType,
+    candidate: SelectorCandidate
+  ): void {
+    const isLive = () =>
+      extensions.has(extension) && nodeTypes.get(nodeType.type) === nodeType
+    if (!isLive() || !extension.selects(candidate)) return
+    const applied = callListener('extend', () => {
+      const opened = createNodeDefBuilder(candidate.def(), extension.pack)
+      try {
+        reportIfRejected('extend', extension.apply(opened.builder))
+      } finally {
+        opened.close()
+      }
+      return opened.callbacks
+    })
+    const hooks = HOOK_NAMES.filter((hook) => applied?.[hook].length)
+    if (!applied || hooks.length === 0 || !isLive()) return
+    applications.set(
+      nodeType.type,
+      [
+        ...(applications.get(nodeType.type) ?? []),
+        { extension, callbacks: applied }
+      ].sort(
+        (first, second) =>
+          Number(isOwn(second.extension)) - Number(isOwn(first.extension)) ||
+          first.extension.sequence - second.extension.sequence
+      )
+    )
+    extension.appliedTo.add(nodeType.type)
+    countDemand(applied, 1)
+    installer.install(nodeType, hooks)
+  }
+
+  function addExtension(extension: Extension): Unsubscribe {
+    extensions.add(extension)
+    for (const nodeType of Array.from(nodeTypes.values())) {
+      applyIfSelected(extension, nodeType, candidateFor(nodeType))
+    }
+    installer.demandChanged()
+    return once(() => {
+      extensions.delete(extension)
+      for (const type of Array.from(extension.appliedTo)) {
+        removeApplications(
+          type,
+          (application) => application.extension === extension
+        )
+      }
+      installer.demandChanged()
+    })
+  }
+
+  let sequence = 0
+
+  return {
+    extend: (pack, selects, apply) =>
+      addExtension({
+        pack,
+        selects,
+        apply,
+        appliedTo: new Set(),
+        sequence: ++sequence,
+        ownClass: undefined
+      }),
+
+    extendOwnType: (nodeType, pack, apply) =>
+      addExtension({
+        pack,
+        selects: (candidate) => nodeTypes.get(candidate.type) === nodeType,
+        apply,
+        appliedTo: new Set(),
+        sequence: ++sequence,
+        ownClass: nodeType.nodeClass
+      }),
+
+    typeRegistered(nodeType) {
+      removeApplications(nodeType.type, () => true)
+      nodeTypes.set(nodeType.type, nodeType)
+      const candidate = candidateFor(nodeType)
+      for (const extension of Array.from(extensions)) {
+        applyIfSelected(extension, nodeType, candidate)
+      }
+      installer.demandChanged()
+    },
+
+    typeUnregistered(nodeType) {
+      if (nodeTypes.get(nodeType.type) !== nodeType) return
+      nodeTypes.delete(nodeType.type)
+      removeApplications(nodeType.type, () => true)
+      installer.demandChanged()
+    },
+
+    nodeType: (type) => nodeTypes.get(type),
+    nodeTypes: () => Array.from(nodeTypes.values()),
+    callbacksFor(node, hook, joined) {
+      return (applications.get(node.type) ?? [])
+        .filter(
+          ({ extension: { sequence, ownClass } }) =>
+            sequence <= joined && (!ownClass || node instanceof ownClass)
+        )
+        .flatMap((application) =>
+          application.callbacks[hook].map((callback) => ({
+            application,
+            callback
+          }))
+        )
+    },
+    clock: () => sequence,
+    demand: (hook) => demand.get(hook) ?? 0,
+    revision: () => revision
+  }
+}
+
+function isOwn(extension: Extension): boolean {
+  return extension.ownClass !== undefined
+}
+
+function candidateFor(nodeType: NodeType): SelectorCandidate {
+  return {
+    type: nodeType.type,
+    category: nodeType.category,
+    def: once(() => nodeType.def())
+  }
+}

@@ -47,6 +47,7 @@ import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
 import { useFreeTierQuota } from '@/platform/billing/subscription/composables/useFreeTierQuota'
 import { isCloud } from '@/platform/distribution/types'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
+import { useNodeApiHost } from '@/platform/nodeApi/nodeApiHost'
 import {
   graphsAwaitingNodeTypes,
   markOpenGraphsAwaitingNodeTypes
@@ -284,6 +285,14 @@ function withCloudRefusalReason(promptError: PromptError, error: unknown) {
   return isCloud
     ? withRefusalReason(promptError, servedRefusal(error))
     : promptError
+}
+
+function growToContent(node: LGraphNode, snapTo: number): void {
+  const size = node.computeSize()
+  size[0] = Math.max(node.size[0], size[0])
+  size[1] = Math.max(node.size[1], size[1])
+  snapPoint(size, snapTo, 'ceil')
+  node.setSize(size)
 }
 
 function isMeshModelFile(file: File): boolean {
@@ -1434,6 +1443,27 @@ export class ComfyApp implements IComfyApp {
     }
   }
 
+  private async completeGraphLoad(
+    stopLoading: () => void
+  ): Promise<LoadedComfyWorkflow | undefined> {
+    const tracker = useWorkflowStore().activeWorkflow?.changeTracker
+    tracker?.beginLoadHooks()
+    try {
+      await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
+      const workflow = useWorkflowStore().activeWorkflow ?? undefined
+      stopLoading()
+      workflow?.changeTracker.adoptLoadedGraph()
+      return workflow
+    } finally {
+      tracker?.endLoadHooks()
+    }
+  }
+
+  private stopLoadingGraph(graph: LGraph) {
+    endGraphLoad(graph)
+    useNodeApiHost().loadEnded()
+  }
+
   private async loadGraphDataNow(
     graphData: ComfyWorkflowJSON | undefined,
     clean: boolean,
@@ -1460,7 +1490,8 @@ export class ComfyApp implements IComfyApp {
       workflowNavigationId,
       isCurrent,
       isReady,
-      resolveGraphData
+      resolveGraphData,
+      restoreHistory = false
     } = options
     const backgroundRestore =
       !clean &&
@@ -1515,7 +1546,7 @@ export class ComfyApp implements IComfyApp {
         if (resolveGraphData) {
           const resolved = resolveGraphData()
           if (!resolved) {
-            endGraphLoad(graph)
+            this.stopLoadingGraph(graph)
             return await skipUnreadyLoad()
           }
           graphData = resolved
@@ -1523,6 +1554,7 @@ export class ComfyApp implements IComfyApp {
         if (!backgroundRestore) {
           const replaceCanvas = useWorkflowService().beforeLoadNewGraph(clean)
           replaceCanvas()
+          if (!restoreHistory) useNodeApiHost().endDocument(this.rootGraph)
         }
         if (clean || graph === this.rootGraph)
           presentRootGraph(this, graph, { clean, skipAssetScans })
@@ -1656,7 +1688,7 @@ export class ComfyApp implements IComfyApp {
           if (clean) graphsAwaitingNodeTypes.add(graph)
           await this.reportGraphLoadFailure(error)
         } finally {
-          endGraphLoad(graph)
+          this.stopLoadingGraph(graph)
         }
         void useSubgraphNavigationStore().updateHash(
           'workflow-load',
@@ -1672,7 +1704,7 @@ export class ComfyApp implements IComfyApp {
         )
       if (isCurrent?.() === false) {
         restoreContentsBeforeReload()
-        endGraphLoad(graph)
+        this.stopLoadingGraph(graph)
         await cancelReplacedLoad()
         void useSubgraphNavigationStore().updateHash(
           'workflow-load',
@@ -1721,9 +1753,17 @@ export class ComfyApp implements IComfyApp {
           return { loaded: false }
         }
         try {
-          graph.configure(graphData as ISerialisedGraph, undefined, {
-            preserveMountedNodeSizes: options.restoreHistory
-          })
+          const restoresShown = restoreHistory && !backgroundRestore
+          if (restoresShown)
+            useNodeApiHost().beforeHistoryRestore(graph, graphData)
+          else if (!backgroundRestore) useNodeApiHost().beginDocument()
+          try {
+            graph.configure(graphData as ISerialisedGraph, undefined, {
+              preserveMountedNodeSizes: restoreHistory
+            })
+          } finally {
+            if (restoresShown) useNodeApiHost().afterHistoryRestore()
+          }
 
           const originalMainGraphRenderer = graph.extra.workflowRendererVersion
 
@@ -1760,11 +1800,7 @@ export class ComfyApp implements IComfyApp {
           : 0
         withGraphIntentSource('load', () =>
           forEachNode(graph, (node) => {
-            const size = node.computeSize()
-            size[0] = Math.max(node.size[0], size[0])
-            size[1] = Math.max(node.size[1], size[1])
-            snapPoint(size, snapTo, 'ceil')
-            node.setSize(size)
+            if (!restoreHistory) growToContent(node, snapTo)
             if (node.widgets) {
               for (const widget of node.widgets) {
                 if (
@@ -1873,9 +1909,9 @@ export class ComfyApp implements IComfyApp {
           )
           return { loaded: undefined }
         }
-        await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
-        endGraphLoad(graph)
-        activatedWorkflow = useWorkflowStore().activeWorkflow ?? undefined
+        activatedWorkflow = await this.completeGraphLoad(() =>
+          this.stopLoadingGraph(graph)
+        )
 
         const activeMissingNodeTypes = missingNodeTypes.filter(
           (n) =>
@@ -1942,7 +1978,7 @@ export class ComfyApp implements IComfyApp {
           'workflow-load',
           workflowNavigationId
         )
-        endGraphLoad(graph)
+        this.stopLoadingGraph(graph)
         useExecutionErrorStore().retireResolvedMissingNodePromptError()
       }
     } finally {
@@ -2610,6 +2646,7 @@ export class ComfyApp implements IComfyApp {
               useMissingNodesErrorStore().setMissingNodeTypes([])
             }
             releaseCaptureSuppression = beginChangeCaptureSuppression()
+            this.beginImportedDocument()
             graph = this.rootGraphForLoad(null, true)
             this.activateRootGraph(graph)
             return graph
@@ -2650,7 +2687,10 @@ export class ComfyApp implements IComfyApp {
           )
           const activatedWorkflow = useWorkflowStore().activeWorkflow
           this.scheduleImportFit(graph)
-          await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
+          await this.completeGraphLoad(() => {
+            releaseCaptureSuppression?.()
+            useNodeApiHost().loadEnded()
+          })
           reportUserGraphActivation(activatedWorkflow, options)
           return
         } catch (error) {
@@ -2658,6 +2698,7 @@ export class ComfyApp implements IComfyApp {
           throw await this.reportGraphLoadFailure(error)
         } finally {
           releaseCaptureSuppression?.()
+          useNodeApiHost().loadEnded()
         }
       })
     }
@@ -2787,6 +2828,11 @@ export class ComfyApp implements IComfyApp {
     })
   }
 
+  private beginImportedDocument() {
+    useNodeApiHost().endDocument(this.rootGraph)
+    useNodeApiHost().beginDocument()
+  }
+
   async loadApiJson(
     apiData: ComfyApiWorkflow,
     fileName?: string,
@@ -2811,6 +2857,7 @@ export class ComfyApp implements IComfyApp {
       const replaceCanvas = useWorkflowService().beforeLoadNewGraph(false)
       replaceCanvas()
       releaseCaptureSuppression = beginChangeCaptureSuppression()
+      this.beginImportedDocument()
       const graph = this.rootGraphForLoad(null, true)
       this.activateRootGraph(graph)
       withGraphIntentSource('load', () => this.clean())
@@ -3018,7 +3065,10 @@ export class ComfyApp implements IComfyApp {
       )
       const activatedWorkflow = useWorkflowStore().activeWorkflow
       this.scheduleImportFit(graph)
-      await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
+      await this.completeGraphLoad(() => {
+        releaseCaptureSuppression?.()
+        useNodeApiHost().loadEnded()
+      })
       reportUserGraphActivation(activatedWorkflow, options)
       lifecycleCompleted = true
       if (missingNodeTypes.length) {
@@ -3033,6 +3083,7 @@ export class ComfyApp implements IComfyApp {
       throw error
     } finally {
       releaseCaptureSuppression?.()
+      useNodeApiHost().loadEnded()
     }
   }
 
@@ -3134,7 +3185,9 @@ export class ComfyApp implements IComfyApp {
     const fetched = await this.fetchNodeDefs()
     if (fetched.ok) return fetched.defs
     reportError(new Error(`GET /object_info answered ${fetched.status}`), {
-      errorType: 'late_extension_failed',
+      errorType: useExtensionStore().areNodeDefHooksOwed()
+        ? 'late_extension_failed'
+        : 'node_defs_reload_failed',
       surface: 'platform',
       level: 'warning',
       tags: { step: 'reloadNodeDefs' }

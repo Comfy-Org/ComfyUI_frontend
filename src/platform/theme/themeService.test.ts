@@ -6,13 +6,17 @@ import { basename, join } from 'node:path'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { BUILT_IN_THEME_PRESETS } from '@comfyorg/theme-core/builtInThemePresets'
 import { themeSchema } from '@comfyorg/theme-core/themePresetSchema'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { hostNodeDef } from '@/platform/nodeApi/v4/defs/__fixtures__/hostNodeTypes'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { app } from '@/scripts/app'
 import type { ComfyApp } from '@/scripts/app'
 import {
   useLegacyColorPaletteService,
   useThemeService
 } from '@/platform/theme/themeService'
 import { useThemeStore } from '@/platform/theme/themeStore'
+import { publishedApi } from '@/platform/nodeApi/v4/__tests__/publishedApi'
 
 vi.mock(import('@/scripts/app'), async () => {
   const { fromPartial } = await import('@total-typescript/shoehorn')
@@ -22,6 +26,16 @@ vi.mock(import('@/scripts/app'), async () => {
     })
   }
 })
+
+function restoreEntriesAfterTest<T>(record: Record<string, T>) {
+  const before = { ...record }
+  onTestFinished(() => {
+    for (const key of Object.keys(record)) {
+      if (!Object.hasOwn(before, key)) delete record[key]
+    }
+    Object.assign(record, before)
+  })
+}
 
 const SHADOW_PROPERTY = '--interface-floating-panel-shadow'
 
@@ -489,5 +503,24 @@ describe('useThemeService', () => {
       ['10px', 10],
       ['4px', 4]
     ])
+  })
+})
+
+describe('pack colors across palettes', () => {
+  it('puts back the color a pack gave its own type after a palette clears it', async () => {
+    clearRootThemeAfterTest()
+    restoreEntriesAfterTest(LGraphCanvas.link_type_colors)
+    restoreEntriesAfterTest(app.canvas.default_connection_color_byType)
+    useNodeDefStore().updateNodeDefs([
+      hostNodeDef('PipeMaker', { output: ['PACK_PIPE'], output_name: ['pipe'] })
+    ])
+    const published = publishedApi()
+    published.defs.setTypeColor('PACK_PIPE', '#a1b2c3')
+
+    await useThemeService().setActiveTheme('dark')
+
+    expect(app.canvas.default_connection_color_byType.PACK_PIPE).toBe('')
+    expect(LGraphCanvas.link_type_colors.PACK_PIPE).toBe('#a1b2c3')
+    expect(published.defs.typeColor('PACK_PIPE')).toBe('#a1b2c3')
   })
 })

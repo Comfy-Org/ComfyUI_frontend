@@ -9,8 +9,10 @@ import { createI18n } from 'vue-i18n'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { useAppMode } from '@/composables/useAppMode'
 import type { AssetItem } from '@comfyorg/assets-core/schema'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { extractWorkflowFromAsset } from '@/platform/workflow/utils/workflowExtractionUtil'
 import { app } from '@/scripts/app'
+import { ChangeTracker } from '@/scripts/changeTracker'
 
 import LinearPreview from './LinearPreview.vue'
 import type { OutputSelection } from './linearModeTypes'
@@ -193,6 +195,61 @@ describe('LinearPreview', () => {
     ).toBeInTheDocument()
     expect(screen.getByText('Rerun')).toBeInTheDocument()
     expect(screen.getByText('Reuse Parameters')).toBeInTheDocument()
+  })
+
+  it('restores the parameters of a run as a load, not from undo history', async () => {
+    const withSeed = (seed: number): ComfyWorkflowJSON => ({
+      id: app.rootGraph.id,
+      revision: 0,
+      last_node_id: 1,
+      last_link_id: 0,
+      nodes: [
+        {
+          id: 1,
+          type: 'KSampler',
+          pos: [0, 0],
+          size: [200, 100],
+          flags: {},
+          order: 0,
+          mode: 0,
+          properties: {},
+          widgets_values: [seed]
+        }
+      ],
+      links: [],
+      groups: [],
+      config: {},
+      extra: {},
+      version: 0.4
+    })
+    vi.mocked(extractWorkflowFromAsset).mockResolvedValue({
+      workflow: withSeed(7),
+      filename: 'run.json'
+    })
+    vi.mocked(app.loadGraphData).mockResolvedValue(true)
+    const tracker = new ChangeTracker(
+      fromPartial({ path: '/linear.json' }),
+      withSeed(3)
+    )
+    useWorkflowStore().activeWorkflow = fromPartial({ changeTracker: tracker })
+    const asset = fromPartial<AssetItem>({
+      id: 'a1',
+      name: 'out.png',
+      tags: []
+    })
+    const { user } = renderPreview({}, { asset, canShowPreview: true })
+
+    await user.click(
+      await screen.findByRole('button', { name: 'Reuse Parameters' })
+    )
+
+    await vi.waitFor(() => expect(app.loadGraphData).toHaveBeenCalledOnce())
+    const [loaded, , , , options] = vi.mocked(app.loadGraphData).mock.calls[0]
+    expect(loaded?.nodes.map((node) => node.widgets_values)).toEqual([[7]])
+    expect(
+      tracker.undoQueue.map(({ nodes }) => nodes[0]?.widgets_values)
+    ).toEqual([[3]])
+    expect(options?.restoreHistory).not.toBe(true)
   })
 
   it.for([

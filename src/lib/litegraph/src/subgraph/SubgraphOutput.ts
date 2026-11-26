@@ -5,6 +5,7 @@ import type {
 } from '@comfyorg/graph-model/entityRegistry'
 
 import { LLink, replaceLinkTopology } from '@/lib/litegraph/src/LLink'
+import { slotStays } from '@/lib/litegraph/src/node/slotLinks'
 import {
   linkIdReservations,
   mintLinkId
@@ -54,11 +55,13 @@ export class SubgraphOutput extends SubgraphSlot {
     if (outputIndex === -1)
       throw new Error('Slot is not an output of the given node')
 
+    const outputStays = slotStays(subgraph, node, 'outputs', outputIndex)
     if (
       node.onConnectOutput?.(outputIndex, this.type, this, this.parent, -1) ===
       false
     )
       return
+    if (!outputStays()) return
 
     // Link should not be present, but just in case, disconnect it
     const existingLink = this.getLinks().at(0)

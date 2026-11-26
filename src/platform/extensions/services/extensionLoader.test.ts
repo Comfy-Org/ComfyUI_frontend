@@ -6,7 +6,12 @@ import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { CORE_SETTINGS } from '@/platform/settings/constants/coreSettings'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { reportError } from '@comfyorg/telemetry/reportError'
+import { publishedApi } from '@/platform/nodeApi/v4/__tests__/publishedApi'
+import { expectRefusal } from '@/platform/nodeApi/v4/__tests__/refusal'
+import { moduleUrl } from '@/platform/nodeApi/v4/__tests__/testPack'
+import { useNodeApiHost } from '@/platform/nodeApi/nodeApiHost'
 import { api } from '@/scripts/api'
+import { FETCH_RESPONSE_HEADERS_TIMEOUT_MS } from '@comfyorg/api-client/apiTimeouts'
 
 import { loadExtensions } from './extensionLoader'
 
@@ -168,5 +173,159 @@ describe('extension loading', () => {
         'bootstrap/extensions-load-custom:end'
       ])
     })
+  })
+
+  describe('the V4 packs the backend verified', () => {
+    let loads = 0
+
+    function backendAnswers(
+      packs: (signal: AbortSignal | undefined) => Promise<Response>
+    ) {
+      const fileURL = api.fileURL.bind(api)
+      const customExtensionLoaded = vi.fn()
+      vi.stubGlobal('customExtensionLoaded', customExtensionLoaded)
+      vi.spyOn(api, 'getExtensions').mockResolvedValue([
+        '/extensions/My_Pack/main.js'
+      ])
+      vi.spyOn(api, 'fileURL').mockImplementation((route) =>
+        route.endsWith('.js')
+          ? `data:text/javascript,globalThis.customExtensionLoaded();void ${++loads}`
+          : fileURL(route)
+      )
+      vi.mocked(fetch).mockImplementation((input, init) =>
+        String(input).endsWith('/extension_packs')
+          ? packs(init?.signal ?? undefined)
+          : Promise.reject(new Error(`unexpected ${String(input)}`))
+      )
+      return customExtensionLoaded
+    }
+
+    it('gives the records to the V4 API before the custom scripts load', async () => {
+      const comfy = publishedApi()
+      const customExtensionLoaded = backendAnswers(async () =>
+        Response.json([{ segment: 'My_Pack', id: 'my-pack', version: '1.0.0' }])
+      )
+      customExtensionLoaded.mockImplementation(() =>
+        comfy.registerPack({ url: moduleUrl('My_Pack') })
+      )
+
+      await loadExtensions()
+
+      expect(customExtensionLoaded).toHaveReturnedWith({
+        id: 'my-pack',
+        version: '1.0.0'
+      })
+      expectRefusal(
+        () => comfy.registerPack({ url: moduleUrl('Other') }),
+        'registerPack'
+      )
+      expect(console.warn).not.toHaveBeenCalled()
+    })
+
+    it('loads the packs unverified when the answer stops before its end, after the request bound', async () => {
+      const comfy = publishedApi()
+      const customExtensionLoaded = backendAnswers(async (signal) => {
+        const body = new ReadableStream({
+          start(controller) {
+            signal?.addEventListener('abort', () =>
+              controller.error(signal.reason)
+            )
+          }
+        })
+        return new Response(body, { status: 200 })
+      })
+
+      const loaded = loadExtensions()
+      await vi.advanceTimersByTimeAsync(FETCH_RESPONSE_HEADERS_TIMEOUT_MS)
+
+      await expect(loaded).resolves.toBeUndefined()
+      expect(customExtensionLoaded).toHaveBeenCalledOnce()
+      expect(comfy.registerPack({ url: moduleUrl('My_Pack') })).toEqual({
+        id: 'folder:My_Pack',
+        version: undefined
+      })
+      expect(console.warn).toHaveBeenCalledOnce()
+    })
+
+    it.for([
+      {
+        name: 'records',
+        late: () =>
+          Response.json([
+            { segment: 'My_Pack', id: 'my-pack', version: '1.0.0' }
+          ])
+      },
+      {
+        name: 'a refusal',
+        late: () => new Response('Not Found', { status: 404 })
+      }
+    ])(
+      'keeps the records of the startup that replaced a disposed one when the disposed one’s lookup answers $name late',
+      async ({ late }) => {
+        const comfy = publishedApi()
+        let answerLate: (response: Response) => void = () => {}
+        let request: AbortSignal | undefined
+        const customExtensionLoaded = backendAnswers((signal) => {
+          request = signal
+          return new Promise((resolve) => (answerLate = resolve))
+        })
+        const disposed = new AbortController()
+
+        const loading = loadExtensions(disposed.signal)
+        disposed.abort()
+        useNodeApiHost().providePacks([
+          { segment: 'My_Pack', id: 'my-pack', version: '2.0.0' }
+        ])
+        answerLate(late())
+        await loading
+
+        expect(comfy.registerPack({ url: moduleUrl('My_Pack') })).toEqual({
+          id: 'my-pack',
+          version: '2.0.0'
+        })
+        expect(customExtensionLoaded).not.toHaveBeenCalled()
+        expect(request?.aborted).toBe(true)
+      }
+    )
+
+    it.for([
+      {
+        name: 'a backend without the route',
+        packs: async () => new Response('Not Found', { status: 404 })
+      },
+      {
+        name: 'a network error',
+        packs: () => Promise.reject(new TypeError('Failed to fetch'))
+      },
+      {
+        name: 'an answer that is not JSON',
+        packs: async () => new Response('<html>', { status: 200 })
+      },
+      {
+        name: 'an answer of the wrong shape',
+        packs: async () => Response.json({ packs: [] })
+      },
+      {
+        name: 'a record of the wrong shape',
+        packs: async () => Response.json([{ segment: 'My_Pack', id: 5 }])
+      }
+    ])(
+      'loads the packs unverified after $name, and says so once',
+      async ({ packs }) => {
+        const comfy = publishedApi()
+        const customExtensionLoaded = backendAnswers(packs)
+
+        await expect(loadExtensions()).resolves.toBeUndefined()
+
+        expect(useExtensionStore().isCoreExtension('core.test')).toBe(true)
+        expect(customExtensionLoaded).toHaveBeenCalledOnce()
+        expect(comfy.registerPack({ url: moduleUrl('My_Pack') })).toEqual({
+          id: 'folder:My_Pack',
+          version: undefined
+        })
+        expect(console.warn).toHaveBeenCalledOnce()
+        expect(reportError).not.toHaveBeenCalled()
+      }
+    )
   })
 })

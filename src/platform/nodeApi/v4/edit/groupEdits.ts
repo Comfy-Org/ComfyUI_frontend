@@ -1,0 +1,61 @@
+import type { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
+
+import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
+import { checkedFields } from '@/platform/nodeApi/v4/checkedFields'
+import type { Bounds } from '@/platform/nodeApi/v4/types'
+import { checkedNonNegative, checkedFinite } from './checkedArguments'
+import type { EditRunner } from './editRunner'
+import type { GroupHandles } from './groupHandles'
+
+export interface GroupEdits {
+  /** `member` names the call a refusal blames, for a handle method that calls this. */
+  updateGroup(group: unknown, patch: unknown, member?: string): boolean
+}
+
+type GroupWrite = (group: LGraphGroup) => void
+
+interface GroupPatch {
+  readonly bounds?: Bounds
+}
+
+const FIELDS = {
+  bounds: true
+} satisfies Record<keyof GroupPatch, true>
+
+export function createGroupEdits(
+  groups: Pick<GroupHandles, 'locator'>,
+  runner: EditRunner
+): GroupEdits {
+  return {
+    updateGroup(group, patch, member = 'updateGroup') {
+      const locate = groups.locator(group)
+      if (!locate) throw invalidArgument(member, 'a group handle', group)
+      const write = checkedGroupPatch(member, patch)
+      const live = locate()
+      if (!live) return false
+      runner.apply(live.graph, () => write(live.group))
+      return true
+    }
+  }
+}
+
+function checkedGroupPatch(member: string, patch: unknown): GroupWrite {
+  const given = checkedFields(member, 'a group patch', patch, FIELDS)
+  return Object.hasOwn(given, 'bounds')
+    ? checkedBounds(member, given.bounds)
+    : () => {}
+}
+
+const BOUNDS_FIELDS = { x: true, y: true, width: true, height: true } as const
+
+function checkedBounds(member: string, value: unknown): GroupWrite {
+  const bounds = checkedFields(member, 'bounds', value, BOUNDS_FIELDS)
+  const x = checkedFinite(member, 'bounds.x', bounds.x)
+  const y = checkedFinite(member, 'bounds.y', bounds.y)
+  const width = checkedNonNegative(member, 'bounds.width', bounds.width)
+  const height = checkedNonNegative(member, 'bounds.height', bounds.height)
+  return (group) => {
+    group.pos = [x, y]
+    group.size = [width, height]
+  }
+}
