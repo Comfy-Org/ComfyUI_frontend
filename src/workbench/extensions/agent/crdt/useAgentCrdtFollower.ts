@@ -105,14 +105,25 @@ function reportAgentProjection(
   outcome: FrameOutcome
 ): void {
   const opIds = frame.opIds?.filter((id) => id.length > 0) ?? []
+  const addedCount = outcome.nodes.added.length
+  const removedCount = outcome.nodes.removed.length
+  const applyFailureCount = outcome.applied ? outcome.failureCount : 0
+  if (
+    stage === 'applied' &&
+    addedCount === 0 &&
+    removedCount === 0 &&
+    applyFailureCount === 0
+  ) {
+    return
+  }
   useTelemetry()?.trackAgentGraphProjection({
     op_id: opIds[0] ?? null,
     op_count: opIds.length,
     sequence: frame.seq,
     stage,
-    added_count: outcome.nodes.added.length,
-    removed_count: outcome.nodes.removed.length,
-    apply_failure_count: outcome.applied ? outcome.failureCount : 0
+    added_count: addedCount,
+    removed_count: removedCount,
+    apply_failure_count: applyFailureCount
   })
 }
 

@@ -2197,12 +2197,29 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
-    it('reports an actorless remote frame without exposing actor identity', () => {
+    it('does not report an applied frame that changed nothing and did not fail', () => {
       const { unmount } = mountFollower('wf-1', true, () => fakeGraph)
 
       dispatchFrame('doc_update', {
         workflowId: 'wf-1',
         seq: 9,
+        opIds: ['op-join']
+      })
+
+      expect(useTelemetry()?.trackAgentGraphProjection).not.toHaveBeenCalled()
+      unmount()
+    })
+
+    it('reports an apply failure even when no nodes changed', () => {
+      projectionState.applyFrame.mockReturnValueOnce(
+        projectionState.applied([], { added: [], removed: [] }, 1)
+      )
+      const { unmount } = mountFollower('wf-1', true, () => fakeGraph)
+
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 9,
+        actor: 'agent:private-thread:private-turn',
         opIds: ['op-join']
       })
 
@@ -2215,7 +2232,7 @@ describe('useAgentCrdtFollower', () => {
         stage: 'applied',
         added_count: 0,
         removed_count: 0,
-        apply_failure_count: 0
+        apply_failure_count: 1
       })
       unmount()
     })
