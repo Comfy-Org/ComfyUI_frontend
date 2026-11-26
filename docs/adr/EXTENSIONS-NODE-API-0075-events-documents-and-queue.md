@@ -262,7 +262,14 @@ review finding requires it. The counts below are packs, then call sites.
       reports the load did not happen. The old contract resolved
       nothing; the packs that call it await it and ignore the value. A
       failure is a value, not a throw, as `docs/guidance/error-handling.md`
-      asks.
+      asks. As a file open does, it leaves the document on screen open in
+      its tab with its nodes (no `onRemoved`), and the opened graph keeps
+      `data.id` unless another open document holds it, when the host gives
+      it a new one (`LGraph.id` refuses an id another live root graph
+      occupies). Opening a copy of the document on screen therefore gives
+      a new graph id. This is the host's behavior for V1 too; the API does
+      not reload in place, which would need a host operation that replaces
+      a tab's graph.
     - `applyTextReplacements(value)` (1 pack) runs the host's
       `applyTextReplacements` over the root graph, so `%Node.widget%`
       reaches nodes in subgraphs too. Before there is a graph it returns

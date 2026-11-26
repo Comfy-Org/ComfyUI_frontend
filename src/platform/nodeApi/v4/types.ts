@@ -1102,8 +1102,8 @@ export interface WorkflowHandle {
   /** A frozen copy of the open document's workflow, as it would be saved. */
   snapshot(): WorkflowData | undefined
   /**
-   * Opens `data` as a new document on screen. Resolves `false` if it is not a
-   * workflow or the host did not load it. Data that is not an object throws a `TypeError`.
+   * Opens `data` as a new document on screen, leaving the one before open in its tab; the graph gets a new id if another open document holds `data.id`.
+   * Resolves `false` if it is not a workflow or the host did not load it. Data that is not an object throws a `TypeError`.
    */
   open(data: WorkflowData): Promise<boolean>
   /** `value` with `%date:…%` and `%Node.widget%` expanded in the open document. */
