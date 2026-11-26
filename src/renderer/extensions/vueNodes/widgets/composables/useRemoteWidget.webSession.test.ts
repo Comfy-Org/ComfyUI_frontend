@@ -1,6 +1,6 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import type { User } from 'firebase/auth'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { FirebaseIdentity } from '@comfyorg/account-core/firebase'
 import { COMFY_CLIENT } from '@comfyorg/account-core/requestAuth'
@@ -8,7 +8,6 @@ import { COMFY_CLIENT } from '@comfyorg/account-core/requestAuth'
 import type { IWidget } from '@/lib/litegraph/src/litegraph'
 import { useSessionCookie } from '@/platform/auth/session/useSessionCookie'
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { useRemoteWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useRemoteWidget'
 import { api } from '@/scripts/api'
@@ -141,10 +140,6 @@ describe('remote widgets on the shared web session', () => {
   beforeEach(() => {
     identity.reset()
     vi.spyOn(api, 'resetSocket').mockResolvedValue()
-  })
-
-  afterEach(() => {
-    remoteConfig.value = {}
   })
 
   it.for([

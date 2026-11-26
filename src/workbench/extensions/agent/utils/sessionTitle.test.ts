@@ -34,6 +34,23 @@ describe('deriveSessionTitle', () => {
     expect(deriveSessionTitle([])).toBeUndefined()
   })
 
+  it('skips failed pending user entries when deriving the chat title', () => {
+    const failedEntry: ConversationEntry = {
+      id: toTurnId('cm-failed'),
+      role: 'user',
+      text: 'Failed before thread creation',
+      pending: {
+        clientMessageId: 'cm-failed',
+        status: 'failed',
+        failure: { kind: 'request', message: 'Rejected' }
+      }
+    }
+    expect(deriveSessionTitle([failedEntry])).toBeUndefined()
+    expect(
+      deriveSessionTitle([failedEntry, userEntry('Accepted thread starter')])
+    ).toBe('Accepted thread starter')
+  })
+
   it('defers building the grapheme segmenter until a title is derived', async () => {
     vi.spyOn(Intl, 'Segmenter')
     vi.resetModules()

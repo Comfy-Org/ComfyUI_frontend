@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/vue'
+import * as VueUse from '@vueuse/core'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
@@ -56,12 +57,15 @@ vi.mock<unknown>(
   }
 )
 
-vi.mock<unknown>(import('@vueuse/core'), () => ({
-  createSharedComposable: (composable: () => unknown) => composable,
-  useDocumentVisibility: () => ref('visible'),
-  useElementSize: () => ({ width: ref(600), height: ref(400) }),
-  useStorage: (_key: string, defaultValue: unknown) => ref(defaultValue)
-}))
+vi.mock(import('@vueuse/core'), { spy: true })
+
+beforeEach(() => {
+  vi.mocked(VueUse.useElementSize).mockReturnValue({
+    width: ref(600),
+    height: ref(400),
+    stop: vi.fn()
+  })
+})
 
 const liveGraphNodes = vi.hoisted(() => ({
   reloads: new Set<() => void>()

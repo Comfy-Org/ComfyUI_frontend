@@ -598,7 +598,6 @@ export default defineConfig([
       '**/*.test.ts',
       '**/*.stories.ts',
       '**/CrdtDevPanel.vue',
-      '**/restoreOpMinter.ts',
       '**/crdtLog.ts'
     ],
     rules: {

@@ -654,6 +654,70 @@ describe('missingModelPipeline', () => {
       })
     })
 
+    it('settles surfaced only after the verified candidates reach the store', async () => {
+      const confirmedCandidate = {
+        nodeType: 'CheckpointLoaderSimple',
+        widgetName: 'ckpt_name',
+        name: 'missing.safetensors',
+        isMissing: true,
+        isAssetSupported: false
+      } satisfies MissingModelCandidate
+      mockHandles.state.enrichedCandidates = [confirmedCandidate]
+      let resolveFolderPaths: (paths: Record<string, string[]>) => void = () =>
+        undefined
+      vi.mocked(api.getFolderPaths).mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveFolderPaths = resolve
+        })
+      )
+
+      const { surfaced } = await runMissingModelPipeline({
+        graph: createGraph(),
+        graphData: createWorkflowGraphData(),
+        missingModelStore: useMissingModelStore()
+      })
+      const surfacedBeforeFolderPaths = vi.mocked(
+        useExecutionErrorStore().surfaceMissingModels
+      ).mock.calls.length
+      resolveFolderPaths({})
+      await surfaced
+
+      expect(surfacedBeforeFolderPaths).toBe(0)
+      expect(
+        useExecutionErrorStore().surfaceMissingModels
+      ).toHaveBeenLastCalledWith([confirmedCandidate], { silent: false })
+    })
+
+    it('settles surfaced when the verification is aborted before the folder paths arrive', async () => {
+      mockHandles.state.enrichedCandidates = [
+        {
+          nodeType: 'CheckpointLoaderSimple',
+          widgetName: 'ckpt_name',
+          name: 'missing.safetensors',
+          isMissing: true,
+          isAssetSupported: false
+        }
+      ]
+      vi.mocked(api.getFolderPaths).mockReturnValueOnce(new Promise(() => {}))
+      const controller = new AbortController()
+      const missingModelStore = useMissingModelStore()
+      vi.mocked(
+        missingModelStore.createVerificationAbortController
+      ).mockReturnValue(controller)
+
+      const { surfaced } = await runMissingModelPipeline({
+        graph: createGraph(),
+        graphData: createWorkflowGraphData(),
+        missingModelStore
+      })
+      controller.abort()
+
+      await expect(surfaced).resolves.toBeUndefined()
+      expect(
+        useExecutionErrorStore().surfaceMissingModels
+      ).not.toHaveBeenCalled()
+    })
+
     it('drops a candidate whose selection changed while folder paths were loading', async () => {
       const confirmedCandidate = {
         nodeId: '7',
@@ -860,7 +924,8 @@ describe('missingModelPipeline', () => {
             hash_type: undefined
           }
         ],
-        confirmedCandidates: [confirmedCandidate]
+        confirmedCandidates: [confirmedCandidate],
+        surfaced: expect.any(Promise)
       })
       expect(activeWorkflow.pendingWarnings).toEqual({
         missingNodeTypes: ['MissingCustomNode'],
@@ -888,7 +953,8 @@ describe('missingModelPipeline', () => {
 
       expect(result).toEqual({
         missingModels: [],
-        confirmedCandidates: [confirmedCandidate]
+        confirmedCandidates: [confirmedCandidate],
+        surfaced: expect.any(Promise)
       })
     })
 
@@ -1137,6 +1203,42 @@ describe('missingModelPipeline', () => {
       expect(
         useExecutionErrorStore().surfaceMissingModels
       ).not.toHaveBeenCalled()
+    })
+
+    it('cancels the folder path request when the verification is aborted', async () => {
+      const controller = new AbortController()
+      mockHandles.state.enrichedCandidates = [
+        {
+          nodeId: '1',
+          nodeType: 'CheckpointLoaderSimple',
+          widgetName: 'ckpt_name',
+          name: 'missing.safetensors',
+          directory: 'checkpoints',
+          isMissing: true,
+          isAssetSupported: false
+        }
+      ]
+      vi.mocked(
+        useMissingModelStore().createVerificationAbortController
+      ).mockReturnValueOnce(controller)
+      const requestSignal = new Promise<AbortSignal | undefined>((resolve) => {
+        vi.mocked(api.getFolderPaths).mockImplementationOnce(
+          ({ signal } = {}) => {
+            resolve(signal)
+            return new Promise(() => {})
+          }
+        )
+      })
+
+      await runMissingModelPipeline({
+        graph: createGraph(),
+        graphData: createWorkflowGraphData(),
+        missingModelStore: useMissingModelStore()
+      })
+      const signal = await requestSignal
+      controller.abort()
+
+      expect(signal?.aborted).toBe(true)
     })
   })
 })

@@ -12,19 +12,23 @@
  */
 import type {
   InteractiveTopupRequest,
-  TopupAutoTopUpSettings
+  TopupAutoTopUpSettings,
+  TopupPurchase
 } from '@comfyorg/ingest-types'
 import {
   zCreateTopupCheckoutRequest,
   zCreateTopupCheckoutResponse,
+  zCreateTopupPurchaseRequest,
   zCreateTopupRequest,
   zCreateTopupResponse,
   zInteractiveTopupRequest,
+  zTopupPurchase,
   zTopupQuoteResponse
 } from '@comfyorg/ingest-types/zod'
 
 import type {
   BillingFailure,
+  BillingRequest,
   BillingResult,
   BillingTransport
 } from './billingContracts'
@@ -55,6 +59,9 @@ export const TOPUP_CHECKOUT_ROUTE = '/billing/topup/checkout'
 export const TOPUP_QUOTE_ROUTE = '/billing/topup/quote'
 /** Pay once with a new card or an explicitly chosen saved card; an older backend answers 404. */
 export const INTERACTIVE_TOPUP_ROUTE = '/billing/topup/interactive'
+
+/** The server-owned purchase a Cloud Continue opens and every in-page Pay goes through. */
+export const TOPUP_PURCHASES_ROUTE = '/billing/topup/purchases'
 
 /** The server's own server code for an amount it will not sell. */
 const INVALID_AMOUNT_SERVER_CODE = 'INVALID_AMOUNT'
@@ -219,8 +226,27 @@ export interface CreateInteractiveTopupInput {
   readonly autoTopUp?: TopupAutoTopUpSettings
   /** The caller's key for this purchase, resent unchanged while its outcome is unresolved. */
   readonly idempotencyKey: string
+  /** The server-owned purchase this Pay attempts; the server admits one successful charge per purchase. */
+  readonly purchaseId?: string
   readonly signal?: AbortSignal
 }
+
+export interface CreateTopupPurchaseInput {
+  readonly amountCents: number
+  readonly autoTopUp?: TopupAutoTopUpSettings
+  readonly signal?: AbortSignal
+}
+
+/** A server-owned purchase as Cloud reports it; `billingOpId` is its latest payment attempt. */
+export interface TopupPurchaseState {
+  readonly purchaseId: string
+  readonly status: TopupPurchase['status']
+  readonly billingOpId?: string
+}
+
+export type TopupPurchaseResult =
+  | BillingResult<TopupPurchaseState>
+  | TopupInvalidAmount
 
 export interface TopupCommandOptions {
   readonly transport: BillingTransport
@@ -251,6 +277,14 @@ export interface TopupCommand {
   createHostedTopupCheckout: (
     input: CreateHostedTopupCheckoutInput
   ) => Promise<HostedTopupCheckoutResult>
+  /** Opens a purchase that supersedes the caller's earlier unpaid ones in this workspace. */
+  createTopupPurchase: (
+    input: CreateTopupPurchaseInput
+  ) => Promise<TopupPurchaseResult>
+  readTopupPurchase: (
+    purchaseId: string,
+    signal?: AbortSignal
+  ) => Promise<TopupPurchaseResult>
 }
 
 const INVALID_AMOUNT = {
@@ -297,6 +331,8 @@ const SUPERSEDED = {
   code: 'SUPERSEDED'
 } as const satisfies BillingFailure
 
+const PURCHASE_NOT_FOUND_SERVER_CODE = 'PURCHASE_NOT_FOUND'
+
 function commandFailure(failure: BillingFailure): TopupFailure {
   if (matchesServerCode(failure, NO_PAYMENT_METHOD_SERVER_CODE)) {
     return {
@@ -305,9 +341,27 @@ function commandFailure(failure: BillingFailure): TopupFailure {
       recoveryAction: 'replace_payment_method'
     }
   }
-  if (failure.httpStatus === 404) return NOT_AVAILABLE
+  if (
+    failure.httpStatus === 404 &&
+    !matchesServerCode(failure, PURCHASE_NOT_FOUND_SERVER_CODE)
+  )
+    return NOT_AVAILABLE
   return failure
 }
+
+function purchaseStateOf(
+  purchase: Pick<TopupPurchase, 'purchase_id' | 'status' | 'billing_op_id'>
+): TopupPurchaseState {
+  return {
+    purchaseId: purchase.purchase_id,
+    status: purchase.status,
+    ...(purchase.billing_op_id === undefined
+      ? {}
+      : { billingOpId: purchase.billing_op_id })
+  }
+}
+
+const TopupPurchaseSchema = zTopupPurchase.extend({ amount_cents: wireCents })
 
 export function createTopupCommand(options: TopupCommandOptions): TopupCommand {
   const {
@@ -439,10 +493,55 @@ export function createTopupCommand(options: TopupCommandOptions): TopupCommand {
             return_url: payment.returnUrl
           }
         : { saved_payment_method_id: payment.savedPaymentMethodId }),
-      ...(input.autoTopUp === undefined ? {} : { auto_top_up: input.autoTopUp })
+      ...(input.autoTopUp === undefined
+        ? {}
+        : { auto_top_up: input.autoTopUp }),
+      ...(input.purchaseId === undefined
+        ? {}
+        : { purchase_id: input.purchaseId })
     }
     if (!zInteractiveTopupRequest.safeParse(body).success) return INVALID_AMOUNT
     return purchase(INTERACTIVE_TOPUP_ROUTE, body, signal)
+  }
+
+  async function readPurchase(
+    request: BillingRequest
+  ): Promise<TopupPurchaseResult> {
+    const response = await readValidatedBillingResponse(
+      transport,
+      request,
+      (raw) => TopupPurchaseSchema.safeParse(raw)
+    )
+    if (response.status === 'error') return response
+    return { status: 'ok', value: purchaseStateOf(response.value.data) }
+  }
+
+  async function createTopupPurchase(
+    input: CreateTopupPurchaseInput
+  ): Promise<TopupPurchaseResult> {
+    const body = {
+      amount_cents: input.amountCents,
+      ...(input.autoTopUp === undefined ? {} : { auto_top_up: input.autoTopUp })
+    }
+    if (!zCreateTopupPurchaseRequest.safeParse(body).success)
+      return INVALID_AMOUNT
+    return readPurchase({
+      method: 'POST',
+      route: TOPUP_PURCHASES_ROUTE,
+      body,
+      ...(input.signal === undefined ? {} : { signal: input.signal })
+    })
+  }
+
+  function readTopupPurchase(
+    purchaseId: string,
+    signal?: AbortSignal
+  ): Promise<TopupPurchaseResult> {
+    return readPurchase({
+      method: 'GET',
+      route: `${TOPUP_PURCHASES_ROUTE}/${encodeURIComponent(purchaseId)}`,
+      ...(signal === undefined ? {} : { signal })
+    })
   }
 
   async function issueHostedCheckout(
@@ -544,6 +643,8 @@ export function createTopupCommand(options: TopupCommandOptions): TopupCommand {
     quoteTopup,
     createTopupCheckout,
     createInteractiveTopup,
-    createHostedTopupCheckout
+    createHostedTopupCheckout,
+    createTopupPurchase,
+    readTopupPurchase
   }
 }

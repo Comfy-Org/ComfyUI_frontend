@@ -6,7 +6,7 @@ import { addWidget, DOMWidgetImpl } from '@/scripts/domWidget'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 
 vi.mock(import('@/utils/formatUtil'), () => ({
-  generateUUID: () => 'test-uuid'
+  generateUUID: vi.fn(() => 'test-uuid')
 }))
 
 describe('BaseDOMWidgetImpl.isVisible', () => {

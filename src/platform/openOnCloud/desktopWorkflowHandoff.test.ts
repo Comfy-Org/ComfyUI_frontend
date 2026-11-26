@@ -48,6 +48,51 @@ describe('Desktop workflow transfer through the external browser', () => {
     expect(takeDesktopWorkflowHandoff(nonce)).toBeUndefined()
   })
 
+  it('withholds a handoff whose removal cannot be confirmed', async () => {
+    const nonce = crypto.randomUUID()
+    const destination = await desktopWorkflowUrl(nonce, {
+      filename: 'my-workflow',
+      workflow: defaultGraph,
+      expiresAt: Date.now() + DESKTOP_HANDOFF_LIFETIME_MS
+    })
+    assert.isDefined(destination)
+    vi.spyOn(window.history, 'replaceState').mockImplementation(() => {})
+    expect(await captureDesktopWorkflowHandoff(new URL(destination))).toBe(true)
+    const realGetItem = sessionStorage.getItem.bind(sessionStorage)
+    let reads = 0
+    vi.spyOn(sessionStorage, 'removeItem').mockImplementation(() => {
+      throw new DOMException('busy', 'InvalidStateError')
+    })
+    vi.spyOn(sessionStorage, 'getItem').mockImplementation((key) => {
+      reads++
+      if (reads > 1) throw new DOMException('busy', 'InvalidStateError')
+      return realGetItem(key)
+    })
+
+    expect(takeDesktopWorkflowHandoff(nonce)).toBeUndefined()
+  })
+
+  it('withholds a handoff whose removal cannot be verified', async () => {
+    const nonce = crypto.randomUUID()
+    const destination = await desktopWorkflowUrl(nonce, {
+      filename: 'my-workflow',
+      workflow: defaultGraph,
+      expiresAt: Date.now() + DESKTOP_HANDOFF_LIFETIME_MS
+    })
+    assert.isDefined(destination)
+    vi.spyOn(window.history, 'replaceState').mockImplementation(() => {})
+    expect(await captureDesktopWorkflowHandoff(new URL(destination))).toBe(true)
+    const realGetItem = sessionStorage.getItem.bind(sessionStorage)
+    let reads = 0
+    vi.spyOn(sessionStorage, 'getItem').mockImplementation((key) => {
+      reads++
+      if (reads > 1) throw new DOMException('busy', 'InvalidStateError')
+      return realGetItem(key)
+    })
+
+    expect(takeDesktopWorkflowHandoff(nonce)).toBeUndefined()
+  })
+
   it('does not import a workflow after the ten-minute transfer expires', async () => {
     const nonce = crypto.randomUUID()
     const destination = await desktopWorkflowUrl(nonce, {

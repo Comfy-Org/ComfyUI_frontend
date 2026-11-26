@@ -7,7 +7,7 @@ import {
   createAssetWithoutBaseModel,
   createAssetWithoutExtension
 } from '@/platform/assets/fixtures/ui-mock-assets'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type { AssetItem } from '@comfyorg/assets-core/schema'
 
 import AssetFilterBar from './AssetFilterBar.vue'
 

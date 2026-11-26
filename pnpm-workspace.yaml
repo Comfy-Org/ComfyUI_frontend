@@ -139,13 +139,14 @@ catalog:
   yjs: ^13.6.32
   zod: ^4.6.7
   zod-validation-error: ^5.0.0
-  '@comfyorg/comfy-multi-player': 0.3.13
+  '@comfyorg/comfy-multi-player': 0.3.14
   typescript-native-bridge: 6.0.3-bridge.19.tsgo.7.0.2
   dependency-cruiser: ^18.7.0
   '@microsoft/api-extractor': 7.60.0
   fs-extra: ^11.4.1
   zip-dir: ^2.0.0
   '@hey-api/openapi-ts': 0.99.0
+  ffmpeg-static: ^5.3.0
 
 cleanupUnusedCatalogs: true
 
@@ -155,6 +156,7 @@ allowBuilds:
   '@tailwindcss/oxide': true
   core-js: false
   esbuild: true
+  ffmpeg-static: true
   oxc-resolver: true
   protobufjs: false
   unrs-resolver: false
@@ -171,7 +173,7 @@ overrides:
   minimatch@^9.0.0: ^9.0.7
   minimatch@^10.0.0: ^10.2.3
   ajv@^8.0.0: ^8.18.0
-  undici@^7.0.0: ^7.29.0
+  undici@^7.0.0: ^7.30.1
   dompurify@^3.0.0: ^3.4.17
   js-yaml@^4.0.0: ^4.3.1
   js-yaml@^3.0.0: ^3.15.1
@@ -182,11 +184,16 @@ overrides:
   brace-expansion@^4.0.0: ^5.0.9
   brace-expansion@^5.0.0: ^5.0.9
   '@grpc/grpc-js@^1.9.0': ^1.14.6
+  follow-redirects@^1.0.0: ^1.16.3
   tinypool@^2.0.0: 2.1.2
+  svgo@^4.0.0: ^4.1.0
+  markdown-it@^14.0.0: ^14.3.3
+  prosemirror-view@^1.0.0: 1.42.4
 
 # Transitional - drop each entry once that version is older than the release-age gate.
 minimumReleaseAgeExclude:
   - '@comfyorg/comfyui-desktop-bridge-types@0.5.0'
+  - '@comfyorg/comfy-multi-player@0.3.14'
 
 patchedDependencies:
   '@total-typescript/shoehorn@0.1.2': patches/@total-typescript__shoehorn@0.1.2.patch

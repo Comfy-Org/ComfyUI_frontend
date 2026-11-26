@@ -32,13 +32,13 @@ const modelOptions: SelectOption[] = [
 ]
 
 const sortOptions: SelectOption[] = [
-  { name: 'Default', value: 'default' },
+  { name: 'Popular', value: 'popular' },
   { name: 'Newest', value: 'newest' }
 ]
 
 function renderControls() {
   const selectedModels = ref<SelectOption[]>([])
-  const sortSelection = ref<TemplateSortMode>('default')
+  const sortSelection = ref<TemplateSortMode>('popular')
 
   const Parent = {
     components: { TemplateFilterControls },

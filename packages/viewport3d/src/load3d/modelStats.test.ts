@@ -13,6 +13,27 @@ function makeQuadGeometry() {
   return geometry
 }
 
+function makeEdgeDisjointTriangleGeometry(vertexCount: number) {
+  const positions = Float32Array.from({ length: vertexCount * 3 }, (_, i) =>
+    i % 3 === 0 ? i / 3 : 0
+  )
+  const corners = new Uint32Array(((vertexCount - 1) * (vertexCount - 2)) / 2)
+  let written = 0
+  for (let a = 0; a < vertexCount; a++) {
+    for (let b = a + 1; b < vertexCount; b++) {
+      const c = (2 * vertexCount - a - b) % vertexCount
+      if (c <= b) continue
+      corners[written++] = a
+      corners[written++] = b
+      corners[written++] = c
+    }
+  }
+  const geometry = new THREE.BufferGeometry()
+  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
+  geometry.setIndex(new THREE.BufferAttribute(corners, 1))
+  return geometry
+}
+
 describe('computeModelStats', () => {
   it('counts shared edges once for indexed geometry', async () => {
     const mesh = new THREE.Mesh(makeQuadGeometry())
@@ -80,6 +101,16 @@ describe('computeModelStats', () => {
       triangles: 8
     })
   })
+
+  it('counts a mesh with more unique edges than a Set can hold', async () => {
+    const mesh = new THREE.Mesh(makeEdgeDisjointTriangleGeometry(5800))
+
+    await expect(computeModelStats(mesh)).resolves.toEqual({
+      vertices: 5800,
+      edges: 16_811_301,
+      triangles: 5_603_767
+    })
+  }, 60_000)
 
   it('counts point clouds as vertices only', async () => {
     const points = new THREE.Points(makeQuadGeometry())

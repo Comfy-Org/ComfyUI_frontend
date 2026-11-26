@@ -4,7 +4,7 @@ import path from 'node:path'
 
 import { z } from 'zod'
 
-import { isMainModule } from '../isMainModule'
+import { isMainModule } from '@comfyorg/ci/isMainModule'
 import { changedRanges, isGatedPath } from '../server-fact-gate-core'
 import { lintSnapshot } from '../server-fact-oxlint'
 import type { HookDecision, HookEvent, SnapshotLint } from './server-fact-hook'

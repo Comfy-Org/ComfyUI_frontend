@@ -186,6 +186,11 @@
     "fullPage": {
       "logo": "Comfy",
       "payForCredits": "Pay",
+      "hostedMethods": {
+        "or": "or",
+        "pay": "Pay with WeChat Pay or Alipay",
+        "note": "You'll finish paying on Stripe's checkout page."
+      },
       "confirmUpgrade": "Confirm upgrade",
       "confirmChange": "Confirm change",
       "planName": "{tier} Plan",
@@ -367,6 +372,7 @@
             "unfinished": "A previous payment didn’t finish. Finish or cancel it in your billing settings.",
             "change_scheduled": "Your plan is set to change to {plan} on {date}. Cancel that change in your billing settings to make a different one.",
             "change_unnamed": "Your plan already has a change scheduled. Cancel it in your billing settings to make a different one.",
+            "purchase_ended": "This purchase can’t be paid here: a newer one replaced it, it expired, it belongs to another account, or this page can’t take its payment. Start Add credits again in Comfy.",
             "unknown": "Checkout isn’t available for this workspace right now. Contact support with the code below."
           },
           "codeLabel": "If this is an error, contact support with this code:"
@@ -534,7 +540,8 @@
       "INVALID_WORKSPACE_ID": "That link names a workspace we can't read.",
       "INVALID_TEAM_CREDIT_STOP_ID": "That link names a credit amount we can't read.",
       "INVALID_PROMOTION_CODE": "That link carries a promo code we can't read.",
-      "INVALID_OPERATION_ID": "That link names a payment we can't read."
+      "INVALID_OPERATION_ID": "That link names a payment we can't read.",
+      "INVALID_PURCHASE_ID": "That link names a purchase we can't read."
     },
     "failure": {
       "unknown": "Something went wrong. Please try again.",
@@ -554,7 +561,11 @@
       "MISSING_PAYMENT_METHOD_URL": "The billing service asked for a payment step but didn't say where.",
       "QUOTE_STALE": "Your quote changed. Review the updated amount and try again.",
       "QUOTE_REFRESH_FAILED": "Your quote expired and couldn't be refreshed. Choose your plan again.",
-      "CARD_REQUIRED": "Credits can only be paid for with a card. Enter a card or choose a saved one."
+      "CARD_REQUIRED": "Credits can only be paid for with a card. Enter a card or choose a saved one.",
+      "PURCHASE_SUPERSEDED": "A newer purchase replaced this one, so nothing was charged here. Use the page you opened last, or start Add credits again in Comfy.",
+      "PURCHASE_EXPIRED": "This purchase expired, so nothing was charged here. Start Add credits again in Comfy.",
+      "PURCHASE_NOT_FOUND": "This purchase belongs to another account, so nothing was charged here. Start Add credits again in Comfy.",
+      "PURCHASE_NOT_PAYABLE_HERE": "This page can’t take this purchase’s payment, so nothing was charged here. Start Add credits again in Comfy."
     },
     "tier": {
       "unknown": "Plan",

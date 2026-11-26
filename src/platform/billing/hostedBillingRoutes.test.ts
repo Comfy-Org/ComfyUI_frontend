@@ -3,7 +3,7 @@ import type {
   BillingIntent
 } from '@comfyorg/billing-contract'
 
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 
 import { hostedBillingRoute } from './hostedBillingRoutes'
 
@@ -29,7 +29,6 @@ function entryUrl(
 describe('hostedBillingRoute', () => {
   beforeEach(() => {
     cloudBaseUrl.value = 'https://testcloud.comfy.org'
-    remoteConfig.value = {}
   })
 
   it.for([
@@ -158,7 +157,10 @@ describe('hostedBillingRoute', () => {
   })
 
   it('mints an entry against a server-provided billing-web origin', () => {
-    remoteConfig.value = { billing_web_url: 'https://stagingbilling.comfy.org' }
+    useRemoteConfigStore().acceptConfig(
+      { billing_web_url: 'https://stagingbilling.comfy.org' },
+      false
+    )
 
     expect(hostedBillingRoute('billing_web', 'pricing')).toEqual({
       kind: 'billing_web',

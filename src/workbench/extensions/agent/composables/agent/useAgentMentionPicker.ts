@@ -46,6 +46,7 @@ interface MentionPickerOptions {
     from: number,
     to: number
   ) => Promise<boolean>
+  selectSkill: (skill: SkillReferenceMetadata, from: number, to: number) => void
   pickNode: (node: SelectedNode) => void
   pickAsset: (asset: ComposerAttachment) => void
   requestWorkflows: () => void
@@ -354,13 +355,11 @@ export function useAgentMentionPicker(options: MentionPickerOptions) {
       return
     }
     if (match.kind === 'skill') {
-      options
-        .editor()
-        ?.selectSkill(
-          match.skill,
-          state.start,
-          state.start + 1 + state.query.length
-        )
+      options.selectSkill(
+        match.skill,
+        state.start,
+        state.start + 1 + state.query.length
+      )
       dispatchMention({ type: 'closed' })
       return
     }
