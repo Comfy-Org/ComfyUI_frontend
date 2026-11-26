@@ -22,7 +22,20 @@ interface LatestChoice {
 
 let pendingSave: Promise<void> = Promise.resolve()
 let unsettledLateWrites = 0
-let choiceInThisTab: LatestChoice | undefined
+const choicesInThisTab = new Map<string, LatestChoice>()
+
+function currentProfile() {
+  return api.user
+}
+
+function keyForCurrentProfile(key: string) {
+  const profile = currentProfile()
+  return profile ? `${key}.${profile}` : key
+}
+
+function choiceInThisTab() {
+  return choicesInThisTab.get(currentProfile())
+}
 
 function parseLatestChoice(raw: string | null): LatestChoice | undefined {
   if (!raw) return undefined
@@ -47,11 +60,13 @@ function parseLatestChoice(raw: string | null): LatestChoice | undefined {
 }
 
 function readLatestChoice(): LatestChoice | undefined {
-  const shared = parseLatestChoice(safeLocalStorage.getItem(LATEST_CHOICE_KEY))
-  if (!shared) return choiceInThisTab
-  if (!choiceInThisTab || shared.revision >= choiceInThisTab.revision)
-    return shared
-  return choiceInThisTab
+  const shared = parseLatestChoice(
+    safeLocalStorage.getItem(keyForCurrentProfile(LATEST_CHOICE_KEY))
+  )
+  const inThisTab = choiceInThisTab()
+  if (!shared) return inThisTab
+  if (!inThisTab || shared.revision >= inThisTab.revision) return shared
+  return inThisTab
 }
 
 function recordNewChoice(askBeforeCheck: boolean): LatestChoice {
@@ -60,18 +75,28 @@ function recordNewChoice(askBeforeCheck: boolean): LatestChoice {
     askBeforeCheck,
     revision: Math.max(Date.now(), previousRevision + 1)
   }
-  choiceInThisTab = choice
-  safeLocalStorage.setItem(LATEST_CHOICE_KEY, JSON.stringify(choice))
+  choicesInThisTab.set(currentProfile(), choice)
+  safeLocalStorage.setItem(
+    keyForCurrentProfile(LATEST_CHOICE_KEY),
+    JSON.stringify(choice)
+  )
   return choice
 }
 
 function hasPendingAskAgain() {
-  return safeLocalStorage.getItem(PENDING_ASK_AGAIN_KEY) === 'true'
+  return (
+    safeLocalStorage.getItem(keyForCurrentProfile(PENDING_ASK_AGAIN_KEY)) ===
+    'true'
+  )
 }
 
 function setPendingAskAgain(pending: boolean) {
-  if (pending) safeLocalStorage.setItem(PENDING_ASK_AGAIN_KEY, 'true')
-  else safeLocalStorage.removeItem(PENDING_ASK_AGAIN_KEY)
+  if (pending)
+    safeLocalStorage.setItem(
+      keyForCurrentProfile(PENDING_ASK_AGAIN_KEY),
+      'true'
+    )
+  else safeLocalStorage.removeItem(keyForCurrentProfile(PENDING_ASK_AGAIN_KEY))
 }
 
 export function skipsCloudCheckQuestion() {
@@ -177,7 +202,7 @@ function reportSaveFailure(cause: unknown, askBeforeCheck: boolean) {
 
 function settleSavedChoice(askBeforeCheck: boolean, revision: number) {
   if (!isLatestChoice(askBeforeCheck, revision)) {
-    if (readLatestChoice()?.revision !== choiceInThisTab?.revision)
+    if (readLatestChoice()?.revision !== choiceInThisTab()?.revision)
       resendLatestChoice()
     return
   }
