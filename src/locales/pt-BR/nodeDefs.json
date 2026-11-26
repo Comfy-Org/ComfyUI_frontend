@@ -20027,6 +20027,39 @@
       }
     }
   },
+  "OpenAIChatNodeV2": {
+    "description": "Gere respostas de texto com os modelos GPT da OpenAI. Forneça um prompt de texto e, opcionalmente, imagens ou arquivos como contexto.",
+    "display_name": "OpenAI ChatGPT",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "O modelo usado para gerar a resposta."
+      },
+      "model_max_output_tokens": {
+        "name": "max_output_tokens"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_system_prompt": {
+        "name": "system_prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "OpenAIGPTImage1": {
     "description": "Gera imagens de forma síncrona via endpoint GPT Image 2 da OpenAI.",
     "display_name": "OpenAI GPT Image 2",
@@ -23093,7 +23126,7 @@
       },
       "model": {
         "name": "modelo",
-        "tooltip": "O modelo a ser usado para a geração. Os modelos recraftv4_styles foram criados para geração com estilo consistente e sempre exigem um style_id ou style_references; recraftv4_1_flash é o modelo mais rápido e mais barato e não oferece suporte a estilos."
+        "tooltip": "O modelo a ser usado para geração. Os modelos recraftv4_styles são desenvolvidos para geração com consistência de estilo e sempre exigem um style_id ou style_references; recraftv4_1_flash executa o Recraft V4.1 Flash V2, o modelo mais rápido e mais barato, e não oferece suporte a estilos."
       },
       "model_size": {
         "name": "tamanho"
@@ -23204,6 +23237,14 @@
     "inputs": {
       "image": {
         "name": "image"
+      },
+      "shape_stacking": {
+        "name": "shape_stacking",
+        "tooltip": "hierarchical posiciona as formas em camadas umas sobre as outras; cut_out cria formas que nunca se sobrepõem, para plotters, cortadores de vinil e serigrafia."
+      },
+      "version": {
+        "name": "version",
+        "tooltip": "v1_pro (Vectorizer Pro) produz SVGs mais limpos, com curvas suaves, linhas retas e cantos nítidos, ideal para lettering e formas complexas."
       }
     },
     "outputs": {

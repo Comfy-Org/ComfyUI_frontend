@@ -47,7 +47,7 @@ function onDismiss(): void {
   >
     <div class="flex items-start gap-3">
       <p class="my-0 min-w-0 flex-1">
-        {{ $t('agent.freeUseNotice') }}
+        {{ $t('agent.firstChatFreeNotice') }}
         <Button
           variant="link"
           size="link"

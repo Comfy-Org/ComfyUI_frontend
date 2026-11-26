@@ -1,31 +1,21 @@
-import type {
-  ReleaseUnsupportedPack,
-  WorkspaceDeploymentList
-} from '@comfyorg/ingest-types'
+import type { WorkspaceDeploymentList } from '@comfyorg/ingest-types'
 import { render, screen, waitFor } from '@testing-library/vue'
-import type { UserEvent } from '@testing-library/user-event'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
 import type { MissingPackGroup } from '@/platform/workflowErrors/panel/useErrorGroups'
-import { groupMissingModelCandidates } from '@/platform/workflowErrors/missingModel/missingModelGrouping'
 import type { MissingModelGroup } from '@/platform/workflowErrors/missingModel/types'
 import type { WorkspaceDeployment } from '@/platform/workspace/api/workspaceApi'
 import { DEPLOYMENT_LISTING_FOCUS_RETRY_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
 import { reloadForDeploymentSwitch } from '@/platform/workspace/deploymentSwitchReload'
+import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { usePlatformFrameStore } from '@/platform/workspace/platformFrame/platformFrameStore'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { testI18n } from '@/utils/__tests__/testI18n'
 
 import DeploymentBuildActions from './DeploymentBuildActions.vue'
-
-const copyToClipboard = vi.hoisted(() => vi.fn())
-vi.mock(import('@/composables/useCopyToClipboard'), () => ({
-  useCopyToClipboard: () => ({ copied: ref(false), copyToClipboard })
-}))
 
 const mockWorkspaceApi = vi.hoisted(() => ({
   listDeployments: vi.fn(),
@@ -86,22 +76,6 @@ function renderActions(
   return userEvent.setup()
 }
 
-async function copiedBrief(user: UserEvent): Promise<string> {
-  copyToClipboard.mockResolvedValue(true)
-  await user.click(
-    screen.getByRole('button', { name: /Build with your agent/ })
-  )
-  const [brief] = copyToClipboard.mock.lastCall ?? []
-  return String(brief)
-}
-
-const nvidiaVfx: ReleaseUnsupportedPack = {
-  folder: 'ComfyUI-NVIDIA-VFX',
-  registry_id: 'comfyui-nvidia-vfx',
-  repository: 'https://github.com/NVIDIA/ComfyUI-NVIDIA-VFX',
-  cause: 'needs a GPU'
-}
-
 describe('DeploymentBuildActions', () => {
   it.for([
     {
@@ -127,13 +101,21 @@ describe('DeploymentBuildActions', () => {
     }
   )
 
+  it('offers no agent button', () => {
+    renderActions()
+
+    expect(
+      screen.queryByRole('button', { name: /Build with your agent/ })
+    ).not.toBeInTheDocument()
+  })
+
   describe('with the Platform frame on', () => {
     beforeEach(() => {
       vi.spyOn(usePlatformFrameStore(), 'isAvailable').mockReturnValue(true)
       vi.spyOn(usePlatformFrameStore(), 'open').mockReturnValue(true)
     })
 
-    it('opens Models alone with the workflow when only models are missing', async () => {
+    it('opens the pre-install screen with the workflow when only models are missing', async () => {
       const user = renderActions({ missingPackGroups: [] })
 
       await user.click(
@@ -144,12 +126,22 @@ describe('DeploymentBuildActions', () => {
 
       expect(usePlatformFrameStore().open).toHaveBeenCalledExactlyOnceWith(
         {
-          step: 'models',
+          step: 'preinstall',
           deploymentId: 'dep-1',
           handsOverWorkflow: true
         },
         'errors_panel'
       )
+    })
+
+    it('keeps the link to the Build when the workflow lacks nodes the panel hides', () => {
+      useMissingNodesErrorStore().setMissingNodeTypes(['QwenImage21Cache'])
+      renderActions({ missingPackGroups: [] })
+
+      expect(
+        screen.getByRole('link', { name: 'Edit build on Platform' })
+      ).toBeInTheDocument()
+      expect(usePlatformFrameStore().open).not.toHaveBeenCalled()
     })
 
     it.for([
@@ -166,71 +158,6 @@ describe('DeploymentBuildActions', () => {
       ).toBeInTheDocument()
       expect(usePlatformFrameStore().open).not.toHaveBeenCalled()
     })
-  })
-
-  it('copies a brief listing the missing node types and models, then says so', async () => {
-    copyToClipboard.mockResolvedValue(true)
-    const user = renderActions()
-
-    await user.click(
-      screen.getByRole('button', { name: /Build with your agent/ })
-    )
-
-    const [brief] = copyToClipboard.mock.lastCall ?? []
-    expect(brief).toContain(
-      '- Pack unknown: `QwenImage21Cache`, `TextEncodeQwenImage21`'
-    )
-    expect(brief).toContain(
-      '- `qwen_image_2.1_vae.safetensors` in `models/vae`, from https://huggingface.co/comfy/qwen/resolve/main/vae.safetensors'
-    )
-    expect(
-      await screen.findByRole('button', { name: /Copied/ })
-    ).toBeInTheDocument()
-  })
-
-  it('gives a custom-node model its folder though Comfy Cloud groups it without one', async () => {
-    const user = renderActions({
-      missingPackGroups: [],
-      missingModelGroups: groupMissingModelCandidates(
-        [
-          {
-            nodeId: '5',
-            nodeType: 'NVVFXLoader',
-            widgetName: 'lora_name',
-            name: 'custom-node-model.safetensors',
-            directory: 'loras',
-            isAssetSupported: false,
-            isMissing: true
-          }
-        ],
-        true
-      )
-    })
-
-    expect((await copiedBrief(user)).split('\n')).toContain(
-      '- `custom-node-model.safetensors` in `models/loras`'
-    )
-  })
-
-  it('briefs a pack the Build has but cannot load with why it fails', async () => {
-    vi.spyOn(useDeploymentPickStore(), 'unsupportedPackFor').mockImplementation(
-      (cnrId) => (cnrId === nvidiaVfx.registry_id ? nvidiaVfx : undefined)
-    )
-    const user = renderActions({
-      missingPackGroups: [
-        {
-          packId: 'comfyui-nvidia-vfx',
-          nodeTypes: [
-            { type: 'NVVFXSuperRes', nodeId: '7', cnrId: 'comfyui-nvidia-vfx' }
-          ],
-          isResolving: false
-        }
-      ]
-    })
-
-    expect((await copiedBrief(user)).split('\n')).toContain(
-      '- Pack `comfyui-nvidia-vfx`: `NVVFXSuperRes` (fails with: needs a GPU)'
-    )
   })
 
   describe('once the deployment changed after the page loaded', () => {
@@ -289,9 +216,6 @@ describe('DeploymentBuildActions', () => {
         expect(await screen.findByText(message)).toBeInTheDocument()
         expect(
           screen.queryByRole('link', { name: /on Platform/ })
-        ).not.toBeInTheDocument()
-        expect(
-          screen.queryByRole('button', { name: /Build with your agent/ })
         ).not.toBeInTheDocument()
         await user.click(screen.getByRole('button', { name: 'Reload' }))
         await waitFor(() =>

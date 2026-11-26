@@ -103,6 +103,14 @@ test.describe(
     }) => {
       const panel = new AgentPanel(page)
       const topbar = agentConversation.topbar
+      const aRequest = agentConversation.conversation.turns[0].request.content
+
+      await test.step('reopening the panel so B’s chat has to be read from the server again', async () => {
+        await panel.close()
+        await panel.open()
+        await expect(panel.userMessageBubbles).toHaveText([aRequest])
+      })
+
       const subscribesBefore = agentConversation.subscribeCount(BACKGROUND.id)
       const transcript = await agentConversation.holdTranscript(
         BACKGROUND.threadId

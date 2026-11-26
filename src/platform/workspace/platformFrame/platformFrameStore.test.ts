@@ -227,6 +227,31 @@ describe('usePlatformFrameStore', () => {
     expect(store.isUnanswered).toBe(true)
   })
 
+  it('keeps the height the page asks for until the frame closes', () => {
+    const store = usePlatformFrameStore()
+    const { frame } = framedWindow()
+    store.open({ step: 'preinstall', deploymentId: 'dep-1' }, 'errors_panel')
+    store.attach(frame)
+
+    receive({ type: 'content-height', height: 304 }, frame)
+    expect(store.contentHeight).toBe(304)
+
+    store.dismiss()
+    expect(store.contentHeight).toBeNull()
+  })
+
+  it('forgets the asked height when the frame loads a new page', () => {
+    const store = usePlatformFrameStore()
+    const { frame } = framedWindow()
+    store.open({ step: 'preinstall', deploymentId: 'dep-1' }, 'errors_panel')
+    store.attach(frame)
+    receive({ type: 'content-height', height: 304 }, frame)
+
+    receive({ type: 'ready', signedIn: true, userId: 'uid-ben' }, frame)
+
+    expect(store.contentHeight).toBeNull()
+  })
+
   it('keeps the frame without the fallback once the page says it is ready', async () => {
     vi.useFakeTimers()
     const store = usePlatformFrameStore()
@@ -327,6 +352,20 @@ describe('usePlatformFrameStore', () => {
       vi.advanceTimersByTime(PLATFORM_FRAME_SIGN_IN_RETRY_MS * 5)
 
       expect(store.session?.id).toBe(second?.id)
+    })
+
+    it('forgets the height the first page asked for', () => {
+      vi.useFakeTimers()
+      const store = usePlatformFrameStore()
+      const { frame } = framedWindow()
+      store.open({ step: 'preinstall', deploymentId: 'dep-1' }, 'errors_panel')
+      store.attach(frame)
+      receive({ type: 'content-height', height: 304 }, frame)
+
+      receive({ type: 'ready', signedIn: false }, frame)
+      vi.advanceTimersByTime(PLATFORM_FRAME_SIGN_IN_RETRY_MS)
+
+      expect(store.contentHeight).toBeNull()
     })
 
     it('waits for the reloaded page to answer', () => {
@@ -456,6 +495,21 @@ describe('following a build after the dialog closes', () => {
     receive(started, frame)
     return { store, frame, load }
   }
+
+  it('forgets the asked height once the build page shows', () => {
+    const pickStore = useDeploymentPickStore()
+    pickStore.state = listing([RUNNING])
+    vi.spyOn(pickStore, 'load').mockResolvedValue()
+    const store = usePlatformFrameStore()
+    const { frame } = framedWindow()
+    store.open({ step: 'preinstall', deploymentId: 'dep-1' }, 'errors_panel')
+    store.attach(frame)
+    receive({ type: 'content-height', height: 304 }, frame)
+
+    receive(started, frame)
+
+    expect(store.contentHeight).toBeNull()
+  })
 
   function toastTitles(): string[] {
     return useToast().toasts.map((toast) => toast.title)

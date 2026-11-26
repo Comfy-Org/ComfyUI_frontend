@@ -103,6 +103,10 @@ describe('workflowActionsService.openWorkflowAction', () => {
 
     const result = await openWorkflowAction(minimalWorkflow, 'wf.json')
 
+    expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(
+      expect.anything(),
+      { initiator: 'user' }
+    )
     expect(result).toEqual(expected)
   })
 

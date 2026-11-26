@@ -35,9 +35,11 @@ import {
   clearAllWorkspaceStorage,
   clearUnscopedDraftStorage,
   clearWorkflowRestoreState,
-  completeWorkflowLogoutTransition,
+  fenceWorkflowStorageForAuthState,
+  isWorkflowStorageTransitioning,
   prepareWorkflowLogoutTransition,
-  registerWorkflowPersistenceFlush
+  releaseWorkflowStorageAuthFence,
+  registerWorkflowPersistence
 } from '@/platform/workflow/persistence/base/storageIO'
 import { showDraftSaveFailedToast } from '@/platform/workflow/persistence/draftSaveFailureToast'
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
@@ -138,6 +140,7 @@ export function useWorkflowPersistenceV2() {
 
   const persistCurrentWorkflow = () => {
     if (!workflowPersistenceEnabled.value) return
+    if (isWorkflowStorageTransitioning()) return
     const activeWorkflow = workflowStore.activeWorkflow
     if (!activeWorkflow) return
 
@@ -180,9 +183,11 @@ export function useWorkflowPersistenceV2() {
     debouncedPersist.flush()
   }
 
-  const unregisterPersistenceFlush = registerWorkflowPersistenceFlush(
-    flushPendingPersistence
-  )
+  const unregisterPersistence = registerWorkflowPersistence({
+    flush: flushPendingPersistence,
+    cancel: debouncedPersist.cancel,
+    resumeAfterAbort: persistCurrentWorkflow
+  })
   window.addEventListener('pagehide', flushPendingPersistence)
 
   const isWorkspaceInitConcluded = () =>
@@ -191,8 +196,9 @@ export function useWorkflowPersistenceV2() {
     teamWorkspaceStore.initState === 'error'
 
   function resumePersistenceWhenWorkspaceIsReady(): void {
+    stopPendingWorkspaceReadinessWatcher()
     if (isWorkspaceInitConcluded()) {
-      completeWorkflowLogoutTransition()
+      releaseWorkflowStorageAuthFence()
       return
     }
 
@@ -200,7 +206,7 @@ export function useWorkflowPersistenceV2() {
       isWorkspaceInitConcluded,
       () => {
         stopWorkspaceReadinessWatcher = undefined
-        completeWorkflowLogoutTransition()
+        releaseWorkflowStorageAuthFence()
       },
       { once: true }
     )
@@ -225,8 +231,7 @@ export function useWorkflowPersistenceV2() {
     resolvedAuthSubject = null
     draftStore.setAuthSubject(null)
     stopPendingWorkspaceReadinessWatcher()
-    debouncedPersist.cancel()
-    prepareWorkflowLogoutTransition()
+    fenceWorkflowStorageForAuthState()
     clearAllWorkspaceStorage()
   })
   onUserResolved((user) => {
@@ -244,27 +249,31 @@ export function useWorkflowPersistenceV2() {
 
     const transitionVersion = ++authTransitionVersion
 
-    debouncedPersist.cancel()
-    prepareWorkflowLogoutTransition()
+    const accountSwitchFence = prepareWorkflowLogoutTransition()
     clearWorkflowRestoreState()
     authTransition = authTransition
       .then(async () => {
-        if (transitionVersion !== authTransitionVersion) return
-        workflowStore.activeWorkflow = null
         try {
+          if (transitionVersion !== authTransitionVersion) return
+          workflowStore.activeWorkflow = null
           await useWorkflowService().loadBlankWorkflow()
           if (transitionVersion !== authTransitionVersion) return
           draftStore.setAuthSubject(user.id)
           await waitForWorkspaceInitialization()
           if (transitionVersion !== authTransitionVersion) return
+          accountSwitchFence.release()
+          releaseWorkflowStorageAuthFence()
           await draftStore.loadPersistedWorkflow({
             fallbackToLatestDraft: true
           })
-        } finally {
+        } catch (error) {
           if (transitionVersion === authTransitionVersion) {
             draftStore.setAuthSubject(user.id)
-            completeWorkflowLogoutTransition()
+            resumePersistenceWhenWorkspaceIsReady()
           }
+          throw error
+        } finally {
+          accountSwitchFence.release()
         }
       })
       .catch((error: unknown) => {
@@ -426,7 +435,7 @@ export function useWorkflowPersistenceV2() {
   tryOnScopeDispose(() => {
     api.removeEventListener('graphChanged', debouncedPersist)
     window.removeEventListener('pagehide', flushPendingPersistence)
-    unregisterPersistenceFlush()
+    unregisterPersistence()
     debouncedPersist.cancel()
     stopPendingWorkspaceReadinessWatcher()
   })

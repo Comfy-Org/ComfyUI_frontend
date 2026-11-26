@@ -157,10 +157,13 @@ describe('useJobMenu', () => {
       'Job 55.json',
       workflow
     )
-    expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith({
-      filename: 'Job 55.json',
-      content: JSON.stringify(workflow)
-    })
+    expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(
+      {
+        filename: 'Job 55.json',
+        content: JSON.stringify(workflow)
+      },
+      { initiator: 'user' }
+    )
   })
 
   it('does nothing when workflow is missing', async () => {
