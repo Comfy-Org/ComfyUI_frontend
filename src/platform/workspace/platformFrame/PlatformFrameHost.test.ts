@@ -13,6 +13,7 @@ import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
 import enMessages from '@/locales/en/main.json'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { handOverWorkflowOnClick } from '@/platform/workspace/platformWorkflowHandoff'
 import { useAuthStore } from '@/stores/authStore'
 
 import PlatformFrameHost from './PlatformFrameHost.vue'
@@ -33,6 +34,7 @@ vi.mock(import('@/scripts/api'))
 vi.mock(import('@/scripts/app'))
 vi.mock(import('@comfyorg/telemetry/reportError'))
 vi.mock(import('firebase/auth'))
+vi.mock(import('@/platform/workspace/platformWorkflowHandoff'), { spy: true })
 
 const i18n = createI18n({
   legacy: false,
@@ -138,6 +140,42 @@ describe('PlatformFrameHost', () => {
         .getByRole('link', { name: 'Open on Platform' })
         .getAttribute('href')
       expect(new URL(href ?? '').pathname).toBe(path)
+    }
+  )
+
+  it.for([
+    {
+      label: 'a new Custom Build',
+      request: { step: 'new' as const, handsOverWorkflow: true },
+      handsOver: true
+    },
+    {
+      label: 'an existing Custom Build',
+      request: {
+        step: 'update' as const,
+        deploymentId: 'dep-1',
+        handsOverWorkflow: true
+      },
+      handsOver: false
+    }
+  ])(
+    'hands the workflow to a new build from Open on Platform only for $label',
+    async ({ request, handsOver }) => {
+      vi.mocked(handOverWorkflowOnClick).mockClear()
+      const user = renderHost()
+      usePlatformFrameStore().open(request, 'errors_panel')
+      await nextTick()
+      await vi.advanceTimersByTimeAsync(PLATFORM_FRAME_UNANSWERED_MS)
+      await nextTick()
+
+      const stayOnPage = (event: Event) => event.preventDefault()
+      window.addEventListener('click', stayOnPage)
+      await user.click(screen.getByRole('link', { name: 'Open on Platform' }))
+      window.removeEventListener('click', stayOnPage)
+
+      expect(vi.mocked(handOverWorkflowOnClick).mock.calls.length).toBe(
+        handsOver ? 1 : 0
+      )
     }
   )
 
