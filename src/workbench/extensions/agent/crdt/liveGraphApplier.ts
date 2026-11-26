@@ -374,6 +374,17 @@ function actorKind(actor: unknown): ActorKind {
   return kind === 'agent' || kind === 'human' ? kind : 'unknown'
 }
 
+const NON_IDENTIFYING_ACTORS: ReadonlySet<string> = new Set([
+  'agent-remote',
+  'agent-collected',
+  'system:client-seed',
+  'system:mint'
+])
+
+function diagnosticActor(actor: string): string {
+  return NON_IDENTIFYING_ACTORS.has(actor) ? actor : actorKind(actor)
+}
+
 function nodeProducer(doc: Y.Doc, id: string): NodeProducer {
   let stamps: Readonly<Record<string, unknown>>
   try {
@@ -1026,7 +1037,10 @@ export class LiveGraphApplier {
         surface: 'agent',
         errorType: 'agent_graph_apply_failed',
         tags: { ...AGENT_APPLY_TAGS, outcome: 'degraded' },
-        context: { actor: context.actor, opIds: [...context.opIds] }
+        context: {
+          actor: diagnosticActor(context.actor),
+          opIds: [...context.opIds]
+        }
       })
     }
   }
