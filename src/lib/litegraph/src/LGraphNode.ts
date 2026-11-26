@@ -1408,8 +1408,7 @@ export class LGraphNode
         )
         reportNamedValuesShadowDiff(
           this,
-          diffNamedValuesShadow(namedValues, legacyShadow),
-          Boolean(info.widgets_values_named)
+          diffNamedValuesShadow(namedValues, legacyShadow)
         )
       }
     } finally {
