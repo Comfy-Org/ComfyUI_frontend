@@ -17,9 +17,7 @@ function isCurrentChoice(askBeforeCheck: boolean) {
 const TIMED_OUT = Symbol('timed out')
 
 function resendLatestChoice() {
-  void saveAskBeforeCloudCheck(
-    useSettingStore().get(ASK_BEFORE_CLOUD_CHECK) !== false
-  )
+  void saveAskBeforeCloudCheck(useSettingStore().get(ASK_BEFORE_CLOUD_CHECK))
 }
 
 async function storeAskBeforeCloudCheck(askBeforeCheck: boolean) {
