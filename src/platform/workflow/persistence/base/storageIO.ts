@@ -37,6 +37,10 @@ export interface WorkflowStorageFence {
   /** Releases the fence and resumes pending persistence when it was last. */
   abort(): boolean
 }
+const workflowStorageAuthFenceToken = Symbol('workflow-storage-auth-fence')
+export interface WorkflowStorageAuthFence {
+  readonly [workflowStorageAuthFenceToken]: true
+}
 type WorkflowStorageState =
   | { status: 'ready'; availability: StorageAvailability }
   | {
@@ -58,7 +62,12 @@ interface PendingWorkflowPersistence {
   resumeAfterAbort: () => void
 }
 
-let authStateTransition: WorkflowStorageFence | undefined
+let authStateTransition:
+  | {
+      fence: WorkflowStorageFence
+      owner: WorkflowStorageAuthFence
+    }
+  | undefined
 
 const pendingWorkflowPersistence = new Set<PendingWorkflowPersistence>()
 
@@ -643,17 +652,33 @@ export function prepareWorkflowLogoutTransition(): WorkflowStorageFence {
   return transition
 }
 
-export function fenceWorkflowStorageForAuthState(): void {
-  if (authStateTransition) return
-  authStateTransition = acquireWorkflowStorageFence('auth-state')
+export function fenceWorkflowStorageForAuthState(): WorkflowStorageAuthFence {
+  if (authStateTransition) return authStateTransition.owner
+  authStateTransition = {
+    fence: acquireWorkflowStorageFence('auth-state'),
+    owner: { [workflowStorageAuthFenceToken]: true }
+  }
   runPendingWorkflowPersistence('cancel')
+  return authStateTransition.owner
 }
 
-export function releaseWorkflowStorageAuthFence(): boolean {
+export function releaseWorkflowStorageAuthFence(
+  owner?: WorkflowStorageAuthFence
+): boolean {
   if (!authStateTransition) return false
+  if (owner && owner !== authStateTransition.owner) return false
   const transition = authStateTransition
   authStateTransition = undefined
-  return transition.release()
+  return transition.fence.release()
+}
+
+export function abortWorkflowStorageAuthFence(
+  owner: WorkflowStorageAuthFence
+): boolean {
+  if (!authStateTransition || owner !== authStateTransition.owner) return false
+  const transition = authStateTransition
+  authStateTransition = undefined
+  return transition.fence.abort()
 }
 
 function acquireWorkflowStorageFence(

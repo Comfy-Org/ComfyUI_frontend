@@ -985,12 +985,12 @@ describe('a heartbeat answer while signed in', () => {
       expected: {
         state: { phase: 'signed_out', outcome: 'revoked' },
         effects: [
-          { type: 'sign_out_locally' },
-          { type: 'report_signed_out_remotely' },
           {
             type: 'account_changed',
             change: { reason: 'signed_out', outcome: 'revoked' }
-          }
+          },
+          { type: 'sign_out_locally' },
+          { type: 'report_signed_out_remotely' }
         ]
       }
     },

@@ -29,6 +29,7 @@ import { api } from '@/scripts/api'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 import {
   isStorageAvailable,
+  registerWorkflowPersistence,
   releaseWorkflowStorageAuthFence,
   resetStorageAvailable
 } from '@/platform/workflow/persistence/base/storageIO'
@@ -579,14 +580,23 @@ describe('useAuthStore', () => {
       expect(isStorageAvailable()).toBe(true)
     })
 
-    it('should handle logout errors', async () => {
+    it('should handle logout errors', async ({ onTestFinished }) => {
       const mockError = new Error('Network error')
       vi.mocked(firebaseAuth.signOut).mockRejectedValue(mockError)
+      const resumeAfterAbort = vi.fn()
+      onTestFinished(
+        registerWorkflowPersistence({
+          flush: () => {},
+          cancel: () => {},
+          resumeAfterAbort
+        })
+      )
 
       await expect(store.logout()).rejects.toThrow('Network error')
 
       expect(firebaseAuth.signOut).toHaveBeenCalledWith(mockAuth)
       expect(isStorageAvailable()).toBe(true)
+      expect(resumeAfterAbort).toHaveBeenCalledOnce()
       expect(mockReportError).toHaveBeenCalledWith(mockError, {
         surface: 'auth',
         errorType: 'failure_logging_out_user',

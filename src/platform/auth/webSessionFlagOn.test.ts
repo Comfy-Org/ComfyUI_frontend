@@ -528,7 +528,7 @@ describe('cloud app on the shared web session', () => {
     expect(isStorageAvailable()).toBe(false)
   })
 
-  it('keeps workflow storage fenced when local sign-out after revocation fails', async () => {
+  it('reports and reopens workflow storage when local sign-out after revocation fails', async () => {
     const server = installServer({ userId: 'user-a' })
     await refreshRemoteConfig({ useAuth: false })
     identity.signIn(USER_A)
@@ -539,7 +539,13 @@ describe('cloud app on the shared web session', () => {
     await vi.advanceTimersByTimeAsync(TEN_MINUTES_MS)
 
     expect(firebaseSignOut).toHaveBeenCalledOnce()
-    expect(isStorageAvailable()).toBe(false)
+    await vi.waitFor(() => expect(isStorageAvailable()).toBe(true))
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      surface: 'auth',
+      errorType: 'failure_signing_out_revoked_web_session_locally',
+      level: 'error',
+      tags: { outcome: 'degraded' }
+    })
   })
 
   it('leaves workflow storage open when a signed-in restore is refused', async () => {

@@ -886,11 +886,24 @@ describe('storageIO', () => {
     it('holds a repeated auth-state fence as one owner', async () => {
       const isolatedStorageIO = await import('./storageIO')
 
-      isolatedStorageIO.fenceWorkflowStorageForAuthState()
-      isolatedStorageIO.fenceWorkflowStorageForAuthState()
+      const firstOwner = isolatedStorageIO.fenceWorkflowStorageForAuthState()
+      const repeatedOwner = isolatedStorageIO.fenceWorkflowStorageForAuthState()
 
+      expect(repeatedOwner).toBe(firstOwner)
       expect(isolatedStorageIO.releaseWorkflowStorageAuthFence()).toBe(true)
       expect(isolatedStorageIO.isStorageAvailable()).toBe(true)
+    })
+
+    it('does not let a stale auth owner abort a newer fence', async () => {
+      const isolatedStorageIO = await import('./storageIO')
+      const staleOwner = isolatedStorageIO.fenceWorkflowStorageForAuthState()
+      isolatedStorageIO.releaseWorkflowStorageAuthFence(staleOwner)
+      isolatedStorageIO.fenceWorkflowStorageForAuthState()
+
+      expect(isolatedStorageIO.abortWorkflowStorageAuthFence(staleOwner)).toBe(
+        false
+      )
+      expect(isolatedStorageIO.isStorageAvailable()).toBe(false)
     })
 
     it('fences again after an auth-state fence is released', async () => {
