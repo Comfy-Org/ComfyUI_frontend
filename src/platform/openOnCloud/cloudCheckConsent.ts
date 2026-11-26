@@ -98,20 +98,22 @@ function recordNewChoice(askBeforeCheck: boolean): LatestChoice {
 
 function hasPendingAskAgain() {
   try {
-    return (
-      localStorage.getItem(keyForCurrentProfile(PENDING_ASK_AGAIN_KEY)) ===
-      'true'
+    const forProfile = localStorage.getItem(
+      keyForCurrentProfile(PENDING_ASK_AGAIN_KEY)
     )
+    if (forProfile !== null) return forProfile === 'true'
+    return localStorage.getItem(PENDING_ASK_AGAIN_KEY) === 'true'
   } catch {
     return false
   }
 }
 
 function setPendingAskAgain(pending: boolean) {
+  const key = keyForCurrentProfile(PENDING_ASK_AGAIN_KEY)
   try {
-    if (pending)
-      localStorage.setItem(keyForCurrentProfile(PENDING_ASK_AGAIN_KEY), 'true')
-    else localStorage.removeItem(keyForCurrentProfile(PENDING_ASK_AGAIN_KEY))
+    if (pending) localStorage.setItem(key, 'true')
+    else if (currentProfile()) localStorage.setItem(key, 'false')
+    else localStorage.removeItem(key)
   } catch {
     return
   }

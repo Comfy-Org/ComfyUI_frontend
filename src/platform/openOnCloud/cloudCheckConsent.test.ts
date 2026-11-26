@@ -490,6 +490,38 @@ describe('saveAskBeforeCloudCheck', () => {
     }
   })
 
+  it('keeps ask-again pending for a named profile that upgraded with an unconfirmed ask-again', async () => {
+    try {
+      await saveAskBeforeCloudCheck(false)
+      localStorage.setItem(PENDING_ASK_AGAIN_KEY, 'true')
+      api.user = 'profile-a'
+
+      expect(skipsCloudCheckQuestion()).toBe(false)
+
+      await vi.waitFor(() =>
+        expect(api.storeSetting).toHaveBeenLastCalledWith(
+          ASK_BEFORE_CLOUD_CHECK,
+          true
+        )
+      )
+    } finally {
+      api.user = ''
+    }
+  })
+
+  it("lets a named profile's Don't ask again replace an ask-again pending from before the upgrade", async () => {
+    try {
+      localStorage.setItem(PENDING_ASK_AGAIN_KEY, 'true')
+      api.user = 'profile-a'
+
+      await saveAskBeforeCloudCheck(false)
+
+      expect(skipsCloudCheckQuestion()).toBe(true)
+    } finally {
+      api.user = ''
+    }
+  })
+
   it('stops resending once every late save for an older choice has landed', async () => {
     vi.useFakeTimers()
     try {
