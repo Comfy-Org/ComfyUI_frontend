@@ -98,7 +98,9 @@ describe('agentWorkflowTabBindingStore', () => {
     expect(bindings.matchesWorkflow('wf-abandoned', fresh)).toBe(false)
     expect(bindings.tabPathFor('wf-abandoned')).toBeUndefined()
     expect(bindings.workflowIdFor(DEFAULT_PATH)).toBeUndefined()
-    expect(bindings.workflowIdForGraph(DRAFT_GRAPH_ID)).toBeUndefined()
+    expect(
+      bindings.workflowIdForVisibleGraph(DRAFT_GRAPH_ID, fresh)
+    ).toBeUndefined()
 
     await workflows.closeWorkflow(fresh)
     const restored = workflows.createTemporary('Unsaved Workflow.json', {
@@ -111,8 +113,67 @@ describe('agentWorkflowTabBindingStore', () => {
     expect(restored.path).toBe(DEFAULT_PATH)
     expect(bindings.tabPathFor('wf-abandoned')).toBe(DEFAULT_PATH)
     expect(bindings.workflowIdFor(DEFAULT_PATH)).toBe('wf-abandoned')
-    expect(bindings.workflowIdForGraph(DRAFT_GRAPH_ID)).toBe('wf-abandoned')
+    expect(bindings.workflowIdForVisibleGraph(DRAFT_GRAPH_ID, restored)).toBe(
+      'wf-abandoned'
+    )
     expect(bindings.matchesWorkflow('wf-abandoned', restored)).toBe(true)
+  })
+
+  it('resolves only the visible tab across null, duplicate, and legacy graph records', async () => {
+    const nullPath = 'workflows/null-id.json'
+    const visiblePath = 'workflows/visible.json'
+    const legacyGraphId = 'legacy-visible-graph'
+    seedBindings({
+      'wf-null': {
+        tabPath: nullPath,
+        graphId: null,
+        confirmedAt: Date.now()
+      },
+      'wf-stale-duplicate': {
+        tabPath: 'workflows/closed.json',
+        graphId: DRAFT_GRAPH_ID,
+        confirmedAt: Date.now()
+      },
+      'wf-visible': {
+        tabPath: visiblePath,
+        graphId: legacyGraphId,
+        confirmedAt: Date.now()
+      }
+    })
+    const workflows = useWorkflowStore()
+    const nullIdRecord = new ComfyWorkflow({
+      path: nullPath,
+      modified: 1,
+      size: 1
+    })
+    nullIdRecord.originalContent = JSON.stringify({
+      ...blankGraph,
+      id: OTHER_GRAPH_ID
+    })
+    const visible = new ComfyWorkflow({
+      path: visiblePath,
+      modified: 1,
+      size: 1
+    })
+    visible.originalContent = JSON.stringify({
+      ...blankGraph,
+      id: DRAFT_GRAPH_ID
+    })
+    visible.legacyId = legacyGraphId
+    workflows.attachWorkflow(nullIdRecord, 0)
+    workflows.attachWorkflow(visible, 1)
+    const bindings = useAgentWorkflowTabBindingStore()
+    await nextTick()
+
+    expect(
+      bindings.workflowIdForVisibleGraph(OTHER_GRAPH_ID, nullIdRecord)
+    ).toBe('wf-null')
+    expect(bindings.workflowIdForVisibleGraph(DRAFT_GRAPH_ID, visible)).toBe(
+      'wf-visible'
+    )
+    expect(
+      bindings.workflowIdForVisibleGraph(OTHER_GRAPH_ID, visible)
+    ).toBeUndefined()
   })
 
   it('does not let an empty document id claim a restored draft binding', async () => {

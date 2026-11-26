@@ -1485,7 +1485,10 @@ function followerCanDeliver(): boolean {
   return isFollowerActive.value && subscriptionSent()
 }
 function noteUnboundVisibleIntent(rootGraphId: string): void {
-  const workflowId = bindingStore.workflowIdForGraph(rootGraphId)
+  const visible = workflowStore.activeWorkflow
+  const workflowId = visible
+    ? bindingStore.workflowIdForVisibleGraph(rootGraphId, visible)
+    : undefined
   if (workflowId !== undefined) noteUnboundLocalIntent(workflowId)
 }
 const docOpMinter = attachDocOpMinter({

@@ -360,13 +360,17 @@ export const useAgentWorkflowTabBindingStore = defineStore(
         : undefined
     }
 
-    function workflowIdForGraph(rootGraphId: string): string | undefined {
-      for (const [workflowId, record] of Object.entries(tabByWorkflow.value)) {
-        if (record.graphId === null) continue
-        if (!areWorkflowIdsEquivalent(rootGraphId, record.graphId)) continue
-        if (!blockedByOccupant(workflowId, record)) return workflowId
-      }
-      return undefined
+    function workflowIdForVisibleGraph(
+      rootGraphId: string,
+      visible: ComfyWorkflow
+    ): string | undefined {
+      const visibleGraphId = graphIdOf(visible)
+      if (
+        visibleGraphId === undefined ||
+        !areWorkflowIdsEquivalent(rootGraphId, visibleGraphId, visible.legacyId)
+      )
+        return undefined
+      return workflowIdFor(visible.path)
     }
 
     return {
@@ -376,7 +380,7 @@ export const useAgentWorkflowTabBindingStore = defineStore(
       matchesWorkflow,
       tabPathFor,
       workflowIdFor,
-      workflowIdForGraph
+      workflowIdForVisibleGraph
     }
   }
 )
