@@ -25,19 +25,25 @@ import type { ProvidedTheme } from './themeStore'
 
 let latestThemeSwitch = 0
 let activeStylesheet: HTMLStyleElement | undefined
+let cancelPendingStylesheet: (() => void) | undefined
 
 function loadThemeStylesheet(url: string) {
   const element = document.createElement('style')
   element.dataset.themeStylesheet = url
   element.textContent = `@import url(${JSON.stringify(url)}) layer(presets);`
   return new Promise<HTMLStyleElement | undefined>((resolve) => {
-    element.addEventListener('load', () => resolve(element), { once: true })
+    const settle = (loaded: HTMLStyleElement | undefined) => {
+      cancelPendingStylesheet = undefined
+      if (!loaded) element.remove()
+      resolve(loaded)
+    }
+    cancelPendingStylesheet = () => settle(undefined)
+    element.addEventListener('load', () => settle(element), { once: true })
     element.addEventListener(
       'error',
       () => {
-        element.remove()
         console.warn(`Theme stylesheet ${url} failed to load`)
-        resolve(undefined)
+        settle(undefined)
       },
       { once: true }
     )
@@ -152,6 +158,7 @@ export const useThemeService = () => {
     const theme = resolveTheme(preset)
     const root = document.documentElement
     const themeSwitch = ++latestThemeSwitch
+    cancelPendingStylesheet?.()
     const stylesheetUrl = themeStore.stylesheetUrlFor(id)
     const stylesheet = stylesheetUrl
       ? await loadThemeStylesheet(stylesheetUrl)
@@ -161,6 +168,7 @@ export const useThemeService = () => {
       return
     }
     root.dataset.paletteSwitching = ''
+    let committed = false
     try {
       applyTheme(theme, {
         style: root.style,
@@ -171,8 +179,10 @@ export const useThemeService = () => {
       if (theme.stylesheet) root.dataset.theme = theme.stylesheet
       else delete root.dataset.theme
       replaceActiveStylesheet(stylesheet)
+      committed = true
       themeStore.activePresetId = id
     } finally {
+      if (!committed) stylesheet?.remove()
       requestAnimationFrame(() =>
         requestAnimationFrame(() => {
           if (themeSwitch !== latestThemeSwitch) return
@@ -187,14 +197,14 @@ export const useThemeService = () => {
     source: string,
     themes: readonly ProvidedTheme[]
   ) {
-    for (const theme of themes) {
+    const accepted = themes.flatMap((theme) => {
       const parsed = themePresetSchema.safeParse(theme.preset)
       if (!parsed.success) {
         console.warn(
           `${source} provided an invalid theme`,
           fromZodError(parsed.error).message
         )
-        continue
+        return []
       }
       const result = themeStore.addProvidedTheme(source, {
         preset: parsed.data,
@@ -204,12 +214,12 @@ export const useThemeService = () => {
         console.warn(
           `${source} provided theme ${parsed.data.id}, which ${result.owner} already provides`
         )
-        continue
+        return []
       }
-      const storedId = settingStore.get('Comfy.ColorPalette')
-      if (storedId === parsed.data.id && themeStore.activePresetId !== storedId)
-        await setActiveTheme(storedId)
-    }
+      return [parsed.data.id]
+    })
+    const storedId = settingStore.get('Comfy.ColorPalette')
+    if (accepted.includes(storedId)) await setActiveTheme(storedId)
   }
 
   function exportThemePreset(id: string) {

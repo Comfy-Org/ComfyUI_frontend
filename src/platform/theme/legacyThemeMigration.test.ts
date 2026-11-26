@@ -165,4 +165,64 @@ describe('saved legacy theme migration', () => {
     })
     expect(settings.get('Comfy.ColorPalette')).toBe('dark-custom')
   })
+
+  it('applies a provided theme that replaces the active saved palette with the same id', async () => {
+    const saved = {
+      ...DEFAULT_THEME_PRESET,
+      id: 'chalk',
+      colors: {
+        ...DEFAULT_THEME_PRESET.colors,
+        theme: { background: '#111111' }
+      }
+    }
+    vi.mocked(api.getSettings).mockResolvedValue(
+      fromPartial<Settings>({
+        'Comfy.CustomColorPalettes': { chalk: saved },
+        'Comfy.ColorPalette': 'chalk'
+      })
+    )
+    const settings = useSettingStore()
+    await settings.load()
+    CORE_SETTINGS.forEach(settings.addSetting)
+    const service = useThemeService()
+    await service.loadCustomThemePresets()
+    await service.setActiveTheme('chalk')
+
+    await service.registerProvidedThemes('Chalk.Extension', [
+      {
+        preset: {
+          ...saved,
+          colors: { ...saved.colors, theme: { background: '#222222' } }
+        }
+      }
+    ])
+
+    expect(
+      document.documentElement.style.getPropertyValue('--background')
+    ).toBe('#222222')
+  })
+
+  it('claims every provided id before waiting for the selected theme stylesheet', async () => {
+    vi.mocked(api.getSettings).mockResolvedValue(
+      fromPartial<Settings>({ 'Comfy.ColorPalette': 'first-a' })
+    )
+    const settings = useSettingStore()
+    await settings.load()
+    CORE_SETTINGS.forEach(settings.addSetting)
+    const service = useThemeService()
+    const preset = (id: string, name: string) => ({
+      preset: { ...DEFAULT_THEME_PRESET, id, name },
+      stylesheetUrl: '/never-loads.css'
+    })
+
+    void service.registerProvidedThemes('First.Extension', [
+      preset('first-a', 'First A'),
+      preset('shared', 'First shared')
+    ])
+    await service.registerProvidedThemes('Second.Extension', [
+      preset('shared', 'Second shared')
+    ])
+
+    expect(useThemeStore().presetsLookup.shared?.name).toBe('First shared')
+  })
 })

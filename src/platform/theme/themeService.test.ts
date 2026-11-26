@@ -469,6 +469,26 @@ describe('useThemeService', () => {
     ])
   })
 
+  it('drops a pending theme stylesheet as soon as a newer theme switch starts', async () => {
+    clearRootThemeAfterTest()
+    const service = useThemeService()
+    await service.registerProvidedThemes('Chalk.Extension', [
+      {
+        preset: { id: 'chalk', name: 'Chalk', colors: EMPTY_COLORS },
+        stylesheetUrl: '/never-loads.css'
+      }
+    ])
+
+    const superseded = service.setActiveTheme('chalk')
+    await service.setActiveTheme('dark')
+    await superseded
+
+    expect({
+      active: useThemeStore().activePresetId,
+      sheets: document.querySelectorAll('style[data-theme-stylesheet]').length
+    }).toEqual({ active: 'dark', sheets: 0 })
+  })
+
   it('removes a custom palette legacy shadow once the next palette omits it', async () => {
     clearRootThemeAfterTest()
     onTestFinished(() => {
