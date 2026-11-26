@@ -717,9 +717,16 @@ export const useAgentConversationStore = defineStore(
       )
     }
 
-    function publishMessage(turnId: TurnId, message: AssistantMessage): void {
+    function rememberReportedCharge(
+      turnId: TurnId,
+      message: AssistantMessage
+    ): void {
       if (message.creditsUsed !== undefined)
         reportedTurnCredits.set(turnId, message.creditsUsed)
+    }
+
+    function publishMessage(turnId: TurnId, message: AssistantMessage): void {
+      rememberReportedCharge(turnId, message)
       replaceActive(message)
       const entry = backgroundTurns.get(turnId)
       if (activeSlot.value?.turnId !== turnId && (!entry || entry.settled))
