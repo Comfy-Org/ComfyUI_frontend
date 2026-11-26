@@ -51,8 +51,20 @@ function isCurrentChoice(askBeforeCheck: boolean) {
 
 const TIMED_OUT = Symbol('timed out')
 
+function queueSave(
+  askBeforeCheck: boolean,
+  revision: number,
+  appliedLocally: Promise<unknown>
+) {
+  pendingSave = pendingSave.then(() =>
+    persistAskBeforeCloudCheck(askBeforeCheck, revision, appliedLocally)
+  )
+  return pendingSave
+}
+
 function resendLatestChoice() {
-  void saveAskBeforeCloudCheck(useSettingStore().get(ASK_BEFORE_CLOUD_CHECK))
+  const latestChoice: boolean = useSettingStore().get(ASK_BEFORE_CLOUD_CHECK)
+  void queueSave(latestChoice, latestRevision, Promise.resolve())
 }
 
 async function storeAskBeforeCloudCheck(
@@ -140,9 +152,5 @@ export function saveAskBeforeCloudCheck(askBeforeCheck: boolean) {
     askBeforeCheck
   )
   latestRevision += 1
-  const revision = latestRevision
-  pendingSave = pendingSave.then(() =>
-    persistAskBeforeCloudCheck(askBeforeCheck, revision, appliedLocally)
-  )
-  return pendingSave
+  return queueSave(askBeforeCheck, latestRevision, appliedLocally)
 }

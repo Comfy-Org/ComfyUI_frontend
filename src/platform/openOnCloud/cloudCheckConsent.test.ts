@@ -328,6 +328,34 @@ describe('saveAskBeforeCloudCheck', () => {
     }
   })
 
+  it('stops resending once every late save for an older choice has landed', async () => {
+    vi.useFakeTimers()
+    try {
+      const slowSaveMs = CLOUD_CHECK_CONSENT_SAVE_TIMEOUT_MS * 1.5
+      vi.mocked(api.storeSetting).mockImplementation(
+        () =>
+          new Promise<Response>((resolve) =>
+            setTimeout(() => resolve(new Response()), slowSaveMs)
+          )
+      )
+      void saveAskBeforeCloudCheck(true)
+      await vi.waitFor(() => expect(api.storeSetting).toHaveBeenCalledOnce())
+      void saveAskBeforeCloudCheck(false)
+      await vi.advanceTimersByTimeAsync(slowSaveMs * 20)
+      const settledWrites = vi.mocked(api.storeSetting).mock.calls.length
+
+      await vi.advanceTimersByTimeAsync(slowSaveMs * 20)
+
+      expect(api.storeSetting).toHaveBeenCalledTimes(settledWrites)
+      expect(api.storeSetting).toHaveBeenLastCalledWith(
+        ASK_BEFORE_CLOUD_CHECK,
+        false
+      )
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('remembers an ask-again choice in this browser until the server confirms it', async () => {
     const slowSave = deferredResponse()
     vi.mocked(api.storeSetting).mockReturnValueOnce(slowSave.promise)
