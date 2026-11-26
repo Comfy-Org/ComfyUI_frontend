@@ -1572,7 +1572,10 @@ export class LiveGraphApplier {
       : [info.pos[0], info.pos[1]]
     info.pos = resolvedPos
     node.pos = resolvedPos
-    if (layout) info.size = [layout.size[0], layout.size[1]]
+    if (layout) {
+      info.size = [layout.size[0], layout.size[1]]
+      node.size = info.size
+    }
     graph.add(node)
     if (node.id !== toNodeId(docNode.id)) {
       this.reportRemintedNode(graph, docNode, node, mode, context)
