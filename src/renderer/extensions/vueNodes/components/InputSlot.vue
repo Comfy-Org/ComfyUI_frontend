@@ -15,7 +15,7 @@
         effectiveDotOnly ? 'lg-slot--dot-only' : 'h-5 pr-2',
         {
           'lg-slot--connected': props.connected,
-          'lg-slot--compatible': props.compatible,
+          'lg-slot--compatible': props.compatible || dragCompatible,
           'opacity-40': shouldDim
         },
         props.socketless && 'pointer-events-none invisible'
@@ -130,11 +130,11 @@ const { state: dragState } = useSlotLinkDragUIState()
 const slotKey = computed(() =>
   props.nodeId ? getSlotKey(props.nodeId, props.index, true) : undefined
 )
-const shouldDim = computed(() => {
-  if (!dragState.active) return false
-  if (!slotKey.value) return false
-  return !dragState.compatible.get(slotKey.value)
+const dragCompatible = computed(() => {
+  if (!dragState.active || !slotKey.value) return undefined
+  return !!dragState.compatible.get(slotKey.value)
 })
+const shouldDim = computed(() => dragCompatible.value === false)
 
 const { onClick, onDoubleClick, onPointerDown } = useSlotLinkInteraction({
   nodeId: props.nodeId,
