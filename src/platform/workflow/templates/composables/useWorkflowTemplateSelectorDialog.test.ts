@@ -134,6 +134,65 @@ describe('useWorkflowTemplateSelectorDialog', () => {
       )
     })
 
+    it('reports a first-open write the server answers with a 500', async () => {
+      vi.mocked(api.storeSetting).mockResolvedValueOnce(
+        new Response(null, { status: 500 })
+      )
+      mockNewUserService.isNewUser.mockReturnValue(true)
+
+      useWorkflowTemplateSelectorDialog().show()
+
+      expect(lastInitialCategory()).toBe('popular')
+      await vi.waitFor(() =>
+        expect(reportError).toHaveBeenCalledWith(
+          expect.objectContaining({ message: expect.stringContaining('500') }),
+          {
+            surface: 'platform',
+            errorType: 'failure_writing_templates_opened_library_setting',
+            level: 'warning'
+          }
+        )
+      )
+    })
+
+    it('reports a refused first-open write and retries it on the next open', async () => {
+      vi.mocked(api.storeSetting).mockResolvedValueOnce(
+        new Response(null, { status: 422 })
+      )
+      mockNewUserService.isNewUser.mockReturnValue(true)
+      const dialog = useWorkflowTemplateSelectorDialog()
+
+      dialog.show()
+      expect(lastInitialCategory()).toBe('popular')
+      await vi.waitFor(() =>
+        expect(reportError).toHaveBeenCalledWith(
+          expect.objectContaining({ message: expect.stringContaining('422') }),
+          {
+            surface: 'platform',
+            errorType: 'failure_writing_templates_opened_library_setting',
+            level: 'warning'
+          }
+        )
+      )
+      await vi.waitFor(() =>
+        expect(
+          useSettingStore().get('Comfy.Templates.HasOpenedLibrary')
+        ).toBeFalsy()
+      )
+
+      const writesBeforeRetry = vi.mocked(api.storeSetting).mock.calls.length
+      dialog.show()
+      expect(lastInitialCategory()).toBe('popular')
+      await vi.waitFor(() =>
+        expect(vi.mocked(api.storeSetting).mock.calls.length).toBe(
+          writesBeforeRetry + 1
+        )
+      )
+
+      dialog.show()
+      expect(lastInitialCategory()).toBe('all')
+    })
+
     it('defaults to "all" when new user status is undetermined', () => {
       mockNewUserService.isNewUser.mockReturnValue(null)
 
