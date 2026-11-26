@@ -52,7 +52,7 @@ function renderCard(
     props: {
       pitch: {
         title: 'Deploy Custom Nodes on Comfy Cloud',
-        body: 'Create a custom deployment that runs your custom nodes.',
+        body: 'Create a Custom Build that runs your custom nodes.',
         points: ['Deploy your node packs', 'Work on the GPU you choose'],
         platformLabel: 'Deploy on Platform',
         brief: '# The brief for an agent',
@@ -114,7 +114,7 @@ describe('CustomDeploymentCard', () => {
     ).toBeInTheDocument()
     expect(
       screen.getByText(
-        'Create a custom deployment that runs your custom nodes.'
+        'Create a Custom Build that runs your custom nodes.'
       )
     ).toBeVisible()
     expect(

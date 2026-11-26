@@ -185,7 +185,7 @@ describe('PlatformFrameHost', () => {
     await nextTick()
 
     expect(
-      screen.getByRole('dialog', { name: 'Custom deployment' })
+      screen.getByRole('dialog', { name: 'Custom Build' })
     ).toHaveClass('max-w-240')
   })
 
