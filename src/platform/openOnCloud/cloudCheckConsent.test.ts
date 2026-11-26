@@ -6,6 +6,7 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import {
   ASK_BEFORE_CLOUD_CHECK,
   CLOUD_CHECK_CONSENT_SAVE_TIMEOUT_MS,
+  LATEST_CHOICE_KEY,
   PENDING_ASK_AGAIN_KEY,
   saveAskBeforeCloudCheck,
   skipsCloudCheckQuestion
@@ -24,6 +25,21 @@ function deferredResponse() {
     resolve = settle
   })
   return { promise, resolve }
+}
+
+function choiceSavedInAnotherTab(
+  askBeforeCheck: boolean,
+  { confirmed }: { confirmed: boolean }
+) {
+  const stored = localStorage.getItem(LATEST_CHOICE_KEY)
+  const previousRevision = stored ? Number(JSON.parse(stored).revision) : 0
+  localStorage.setItem(
+    LATEST_CHOICE_KEY,
+    JSON.stringify({ askBeforeCheck, revision: previousRevision + 1 })
+  )
+  if (askBeforeCheck && !confirmed)
+    localStorage.setItem(PENDING_ASK_AGAIN_KEY, 'true')
+  else localStorage.removeItem(PENDING_ASK_AGAIN_KEY)
 }
 
 describe('saveAskBeforeCloudCheck', () => {
@@ -356,6 +372,56 @@ describe('saveAskBeforeCloudCheck', () => {
     }
   })
 
+  it("repairs with another tab's newer ask-again, not this tab's older choice, when a late save lands", async () => {
+    vi.useFakeTimers()
+    try {
+      const lateAskAgain = deferredResponse()
+      vi.mocked(api.storeSetting)
+        .mockReturnValueOnce(lateAskAgain.promise)
+        .mockResolvedValue(new Response())
+      const askAgain = saveAskBeforeCloudCheck(true)
+      await vi.advanceTimersByTimeAsync(CLOUD_CHECK_CONSENT_SAVE_TIMEOUT_MS)
+      await askAgain
+      await saveAskBeforeCloudCheck(false)
+      choiceSavedInAnotherTab(true, { confirmed: true })
+
+      lateAskAgain.resolve(new Response())
+      await vi.waitFor(() => expect(api.storeSetting).toHaveBeenCalledTimes(3))
+
+      expect(api.storeSetting).toHaveBeenLastCalledWith(
+        ASK_BEFORE_CLOUD_CHECK,
+        true
+      )
+      expect(useSettingStore().get(ASK_BEFORE_CLOUD_CHECK)).toBe(true)
+      expect(skipsCloudCheckQuestion()).toBe(false)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('keeps ask-again pending when a late save from this tab lands after another tab failed to confirm it', async () => {
+    vi.useFakeTimers()
+    try {
+      const lateAskAgain = deferredResponse()
+      vi.mocked(api.storeSetting)
+        .mockReturnValueOnce(lateAskAgain.promise)
+        .mockResolvedValueOnce(new Response(null, { status: 500 }))
+      const askAgain = saveAskBeforeCloudCheck(true)
+      await vi.advanceTimersByTimeAsync(CLOUD_CHECK_CONSENT_SAVE_TIMEOUT_MS)
+      await askAgain
+      choiceSavedInAnotherTab(false, { confirmed: true })
+      choiceSavedInAnotherTab(true, { confirmed: false })
+
+      lateAskAgain.resolve(new Response())
+      await vi.waitFor(() => expect(api.storeSetting).toHaveBeenCalledTimes(2))
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(localStorage.getItem(PENDING_ASK_AGAIN_KEY)).toBe('true')
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('stops resending once every late save for an older choice has landed', async () => {
     vi.useFakeTimers()
     try {
@@ -417,6 +483,14 @@ describe('saveAskBeforeCloudCheck', () => {
     await saveAskBeforeCloudCheck(false)
 
     expect(skipsCloudCheckQuestion()).toBe(true)
+  })
+  it("asks when another tab turned asking back on after this tab loaded Don't ask again", async () => {
+    await saveAskBeforeCloudCheck(false)
+    expect(skipsCloudCheckQuestion()).toBe(true)
+
+    choiceSavedInAnotherTab(true, { confirmed: true })
+
+    expect(skipsCloudCheckQuestion()).toBe(false)
   })
 })
 
