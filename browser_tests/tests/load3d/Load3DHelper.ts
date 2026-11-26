@@ -66,12 +66,28 @@ export class Load3DHelper {
     return this.node.getByRole('button', { name: 'Export', exact: true })
   }
 
+  get playAnimationButton(): Locator {
+    return this.node.getByRole('button', { name: 'Play', exact: true })
+  }
+
+  get pauseAnimationButton(): Locator {
+    return this.node.getByRole('button', { name: 'Pause', exact: true })
+  }
+
+  get animationClipButton(): Locator {
+    return this.node.getByRole('button', { name: 'Animation clip' })
+  }
+
   get openViewerButton(): Locator {
     return this.node.getByRole('button', { name: /open in 3d viewer/i })
   }
 
   getUploadButton(label: string): Locator {
     return this.node.getByText(label)
+  }
+
+  getAnimationClipMenuItem(name: string): Locator {
+    return this.menuPanel.getByRole('button', { name, exact: true })
   }
 
   getMenuCategory(name: string): Locator {

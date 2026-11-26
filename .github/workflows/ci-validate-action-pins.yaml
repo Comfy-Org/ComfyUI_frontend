@@ -2,8 +2,8 @@ name: Validate Action SHA Pins
 
 on:
   # pull_request builds against the base at event time, so a stale base can merge
-  # green; merge_group rebuilds against main's tip and push catches queue bypasses.
-  merge_group:
+  # green; push re-validates the merged tip. Not a required check, so a
+  # merge_group run could never block a candidate and only cost a runner.
   push:
     branches:
       - main

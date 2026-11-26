@@ -4,20 +4,32 @@
  */
 
 export const TestIds = {
+  app: {
+    loadingOverlay: 'app-loading-overlay'
+  },
+  agent: {
+    conversationScroll: 'agent-conversation-scroll',
+    activityTrace: 'agent-activity-trace',
+    thinkingShortened: 'agent-thinking-shortened'
+  },
   sidebar: {
     toolbar: 'side-toolbar',
+    topGroup: 'sidebar-top-group',
     nodeLibrary: 'node-library-tree',
+    nodeLibraryBookmarks: 'node-library-bookmark-tree',
     nodeLibrarySearch: 'node-library-search',
     nodePreviewCard: 'node-preview-card',
+    nodePreviewInputs: 'node-preview-inputs',
+    nodePreviewBody: 'node-preview-body',
     workflows: 'workflows-sidebar',
     workflowsRefreshButton: 'workflows-refresh-button',
+    closeButton: 'sidebar-close-button',
     modeToggle: 'mode-toggle',
     tabButton: (tabId: string) => `${tabId}-tab-button`
   },
   tree: {
-    folder: 'tree-folder',
-    leaf: 'tree-leaf',
-    node: 'tree-node'
+    itemPreview: 'tree-item-preview',
+    leafCount: 'tree-leaf-count'
   },
   canvas: {
     main: 'graph-canvas',
@@ -36,6 +48,7 @@ export const TestIds = {
     zoomPercentageInput: 'zoom-percentage-input'
   },
   dialogs: {
+    creditsLockedNotice: 'credits-locked-notice',
     settings: 'settings-dialog',
     settingsContainer: 'settings-container',
     settingsTabAbout: 'settings-tab-about',
@@ -43,6 +56,7 @@ export const TestIds = {
     errorOverlaySeeErrors: 'error-overlay-see-errors',
     errorOverlayDismiss: 'error-overlay-dismiss',
     errorOverlayMessages: 'error-overlay-messages',
+    errorOverlayDownloadAll: 'error-overlay-download-all-models',
     runtimeErrorPanel: 'runtime-error-panel',
     missingNodeCard: 'missing-node-card',
     missingNodePackExpand: 'missing-node-pack-expand',
@@ -74,6 +88,7 @@ export const TestIds = {
     missingModelRefresh: 'missing-model-header-refresh',
     missingMediaGroup: 'error-group-missing-media',
     swapNodesGroup: 'error-group-swap-nodes',
+    deprecatedNodesGroup: 'deprecated-nodes-group',
     swapNodeGroupCount: 'swap-node-group-count',
     missingMediaRow: 'missing-media-row',
     missingMediaLocateButton: 'missing-media-locate-button',
@@ -83,7 +98,6 @@ export const TestIds = {
     cloudNotification: 'cloud-notification-dialog',
     openSharedWorkflow: 'open-shared-workflow-dialog',
     openSharedWorkflowTitle: 'open-shared-workflow-title',
-    openSharedWorkflowClose: 'open-shared-workflow-close',
     openSharedWorkflowErrorClose: 'open-shared-workflow-error-close',
     openSharedWorkflowCancel: 'open-shared-workflow-cancel',
     openSharedWorkflowOpenWithoutImporting:
@@ -107,9 +121,15 @@ export const TestIds = {
     loginButtonPopover: 'login-button-popover',
     loginButtonPopoverLearnMore: 'login-button-popover-learn-more',
     workflowTabs: 'topbar-workflow-tabs',
+    workflowTabStrip: 'workflow-tab-strip',
+    workflowTab: 'workflow-tab',
+    closeWorkflowButton: 'close-workflow-button',
+    workflowDirtyIndicator: 'workflow-dirty-indicator',
     integratedTabBarActions: 'integrated-tab-bar-actions',
     actionBarButtons: 'action-bar-buttons',
     actionBarCard: 'action-bar-card',
+    topMenuActions: 'top-menu-actionbars',
+    cloudButton: 'cloud-button',
     freeTierQuota: 'free-tier-quota',
     queueInlineProgress: 'queue-inline-progress',
     queueInlineProgressNodeFill: 'queue-inline-progress-node-fill'
@@ -126,11 +146,19 @@ export const TestIds = {
   propertiesPanel: {
     root: 'properties-panel',
     errorsTab: 'panel-tab-errors',
-    selectionContextStrip: 'selection-context-strip'
+    tabIcon: 'panel-tab-icon',
+    selectionContextStrip: 'selection-context-strip',
+    errorsSummaryHero: 'errors-summary-hero',
+    errorsSummaryFilters: 'errors-summary-filters',
+    blockedLastRunIndicator: 'blocked-last-run-indicator'
   },
   assets: {
     browserModal: 'asset-browser-modal',
-    card: 'asset-card'
+    card: 'asset-card',
+    videoPreview: 'media-asset-video'
+  },
+  toast: {
+    panel: 'toast-panel'
   },
   subgraphEditor: {
     hiddenSection: 'subgraph-editor-hidden-section',
@@ -144,25 +172,28 @@ export const TestIds = {
     widgetLabel: 'subgraph-widget-label',
     widgetToggle: 'subgraph-widget-toggle'
   },
+  subgraphIo: {
+    inputPanel: 'subgraph-input-values',
+    outputPanel: 'subgraph-output-ports',
+    inputPort: 'subgraph-input-port',
+    outputPort: 'subgraph-output-port',
+    addInput: 'subgraph-add-input',
+    addOutput: 'subgraph-add-output'
+  },
   node: {
     titleInput: 'node-title-input',
     pinIndicator: 'node-pin-indicator',
     innerWrapper: 'node-inner-wrapper',
     mainImage: 'main-image',
     slotConnectionDot: 'slot-connection-dot',
-    imageGrid: 'image-grid'
+    imageGrid: 'image-grid',
+    progressFill: 'node-progress-fill'
   },
   selectionToolbox: {
     root: 'selection-toolbox',
-    colorPickerButton: 'color-picker-button',
     colorPickerCurrentColor: 'color-picker-current-color',
     colorBlue: 'blue',
-    colorRed: 'red',
-    convertSubgraph: 'convert-to-subgraph-button',
-    bypass: 'bypass-button'
-  },
-  menu: {
-    moreMenuContent: 'more-menu-content'
+    colorRed: 'red'
   },
   helpCenter: {
     button: 'help-center-button',
@@ -174,12 +205,15 @@ export const TestIds = {
   widgets: {
     container: 'node-widgets',
     widget: 'node-widget',
+    legacyCanvas: 'legacy-widget-canvas',
+    numberRow: 'widget-number-row',
     layoutFieldLabel: 'widget-layout-field-label',
+    rowHitArea: 'widget-row-hit-area',
+    switchTrack: 'switch-track',
     formDropdownMenu: 'form-dropdown-menu',
     decrement: 'decrement',
     increment: 'increment',
     valueControl: 'value-control',
-    domWidgetTextarea: 'dom-widget-textarea',
     subgraphEnterButton: 'subgraph-enter-button',
     selectDefaultSearchInput: 'widget-select-default-search-input',
     selectDefaultViewport: 'widget-select-default-viewport'
@@ -262,6 +296,7 @@ export const TestIds = {
   },
   templates: {
     content: 'template-workflows-content',
+    detail: 'template-workflow-detail',
     workflowCard: (id: string) => `template-workflow-${id}`
   },
   user: {
@@ -274,9 +309,7 @@ export const TestIds = {
     progressOverlay: 'queue-progress-overlay',
     progressNodeFill: 'queue-progress-node-fill',
     overlayToggle: 'queue-overlay-toggle',
-    dockedJobHistoryAction: 'docked-job-history-action',
     jobDetailsPopover: 'queue-job-details-popover',
-    clearHistoryAction: 'clear-history-action',
     jobAssetsList: 'job-assets-list',
     notificationBanner: 'queue-notification-banner'
   },
@@ -327,6 +360,7 @@ export const TestIds = {
   searchBoxV2: {
     resultItem: 'result-item',
     filterOption: 'filter-option',
+    typeFilterPopover: 'type-filter-popover',
     filterChip: 'filter-chip',
     chipDelete: 'chip-delete',
     noResults: 'no-results',

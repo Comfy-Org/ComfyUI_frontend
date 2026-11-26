@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { registerNodeState } from '@/core/graph/nodeShell/nodeShellState'
@@ -14,12 +12,12 @@ import type {
   ISerialisedGraph,
   ISerialisedNode,
   SerialisableGraph
-} from '@/lib/litegraph/src/types/serialisation'
-import { toLinkId } from '@/types/linkId'
-import { toNodeId } from '@/types/nodeId'
+} from '@comfyorg/graph-model/serialisation'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 /**
- * Pins the remint→remap contract for serialized link endpoints (ADR-0008,
+ * Pins the remint→remap contract for serialized link endpoints (ADR-ECS-0008,
  * "Collision recovery lives at the remint site").
  *
  * When `LGraph.configure` adds a payload node whose id collides with a live
@@ -131,7 +129,6 @@ function mergePayload(): SerialisableGraph {
 }
 
 beforeEach(() => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
   LiteGraph.registerNodeType('dummy', DummyNode)
 })
 

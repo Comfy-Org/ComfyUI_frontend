@@ -2,7 +2,6 @@ import { defineStore } from 'pinia'
 import { ref, computed, watch } from 'vue'
 import { useEventListener } from '@vueuse/core'
 
-import { useEmptyWorkflowDialog } from '@/components/builder/useEmptyWorkflowDialog'
 import { useAppMode } from '@/composables/useAppMode'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type {
@@ -14,21 +13,22 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
-import { app } from '@/scripts/app'
-import { ChangeTracker } from '@/scripts/changeTracker'
+import { useApp } from '@/scripts/appInstance'
+import type { ComfyApp } from '@/types/comfy'
+import { isGraphLoading } from '@/core/graph/graphLoadState'
 import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import {
   getWidgetIdForNode,
   resolveNode,
   resolveNodeWidget
 } from '@/utils/litegraphUtil'
-import { parseNodeId } from '@/types/nodeId'
-import type { NodeId } from '@/types/nodeId'
-import type { WidgetId } from '@/types/widgetId'
-import { isWidgetId, parseWidgetId } from '@/types/widgetId'
-import type { ViewMode } from '@/utils/appMode'
+import { parseNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import { isWidgetId, parseWidgetId } from '@comfyorg/graph-model/widgetId'
+import type { ViewMode } from '@comfyorg/graph-model/appMode'
 
 function findWidgetByEntityId(
   rootGraph: LGraph,
@@ -52,7 +52,6 @@ export const useAppModeStore = defineStore('appMode', () => {
   const settingStore = useSettingStore()
   const workflowStore = useWorkflowStore()
   const { mode, setMode, isAppMode, isBuilderMode, isSelectMode } = useAppMode()
-  const emptyWorkflowDialog = useEmptyWorkflowDialog()
 
   const showVueNodeSwitchPopup = ref(false)
 
@@ -84,7 +83,8 @@ export const useAppModeStore = defineStore('appMode', () => {
     // Nodes are not reactive, so trigger recomputation when workflow changes
     void workflowStore.activeWorkflow
     void mode.value
-    return !!app.rootGraph?.nodes?.length
+    const app = useApp()
+    return app.isGraphReady && app.rootGraph.nodes.length > 0
   })
 
   function pruneLinearData(data: Partial<LinearData> | undefined): {
@@ -93,7 +93,8 @@ export const useAppModeStore = defineStore('appMode', () => {
   } {
     const rawInputs = data?.inputs ?? []
     const rawOutputs = data?.outputs ?? []
-    const rootGraph = app.rootGraph
+    const app = useApp()
+    const rootGraph = app.isGraphReady ? app.rootGraph : undefined
     if (!rootGraph) {
       return {
         inputs: rawInputs,
@@ -110,7 +111,7 @@ export const useAppModeStore = defineStore('appMode', () => {
       outputs: rawOutputs.flatMap((nodeId) => {
         const parsedNodeId = parseNodeId(nodeId)
         if (!parsedNodeId) return []
-        return ChangeTracker.isLoadingGraph || resolveNode(parsedNodeId)
+        return isGraphLoading(rootGraph) || resolveNode(parsedNodeId)
           ? [parsedNodeId]
           : []
       })
@@ -127,7 +128,7 @@ export const useAppModeStore = defineStore('appMode', () => {
 
   function upgradeAndValidateInput(
     input: LinearInput,
-    rootGraph: NonNullable<typeof app.rootGraph>
+    rootGraph: ComfyApp['rootGraph']
   ): LinearInput | null {
     const [storedId, widgetName, config] = input
 
@@ -135,7 +136,7 @@ export const useAppModeStore = defineStore('appMode', () => {
       const widget = findWidgetByEntityId(rootGraph, storedId)
       if (widget) return buildEntry(storedId, widgetName, config)
       const { nodeId } = parseWidgetId(storedId)
-      if (rootGraph.getNodeById?.(nodeId)) {
+      if (rootGraph.getNodeById(nodeId)) {
         return buildEntry(storedId, widgetName, config)
       }
       return null
@@ -148,9 +149,7 @@ export const useAppModeStore = defineStore('appMode', () => {
     }
 
     const directNodeId = parseNodeId(storedId)
-    const directNode = directNodeId
-      ? rootGraph.getNodeById?.(directNodeId)
-      : null
+    const directNode = directNodeId ? rootGraph.getNodeById(directNodeId) : null
     const directWidget = directNode?.widgets?.find((w) => w.name === widgetName)
     if (directNode && directWidget) {
       const derivedId = getWidgetIdForNode(directNode, directWidget)
@@ -192,16 +191,23 @@ export const useAppModeStore = defineStore('appMode', () => {
     resolvedInputs: LinearInput[],
     resolvedOutputs: NodeId[]
   ) {
-    if (ChangeTracker.isLoadingGraph) return
-
-    if (!app.rootGraph?.nodes?.length) return
+    const app = useApp()
+    if (
+      !app.isGraphReady ||
+      isGraphLoading(app.rootGraph) ||
+      !app.rootGraph.nodes.length
+    )
+      return
 
     const hadConfig = !!(data?.inputs?.length || data?.outputs?.length)
     if (!hadConfig || resolvedInputs.length || resolvedOutputs.length) return
 
     console.warn(
       '[appModeStore] app config could not be interpreted; no inputs or outputs resolved from linearData',
-      { inputs: data?.inputs, outputs: data?.outputs }
+      {
+        inputs: data.inputs,
+        outputs: data.outputs
+      }
     )
   }
 
@@ -217,33 +223,40 @@ export const useAppModeStore = defineStore('appMode', () => {
     if (!activeWorkflow) return
 
     const source =
-      activeWorkflow.changeTracker?.activeState?.extra?.linearData ??
-      activeWorkflow.initialState?.extra?.linearData
+      activeWorkflow.changeTracker.activeState.extra?.linearData ??
+      activeWorkflow.initialState.extra?.linearData
     loadSelections(source)
   }
 
   useEventListener(
-    () => app.rootGraph?.events,
+    () => {
+      const app = useApp()
+      return app.isGraphReady ? app.rootGraph.events : undefined
+    },
     'configured',
     resetSelectedToWorkflow
   )
+
+  function writeLinearData(inputs: LinearInput[], outputs: NodeId[]) {
+    const app = useApp()
+    if (!app.isGraphReady || isGraphLoading(app.rootGraph)) return
+    app.rootGraph.extra.linearData = {
+      inputs: inputs.map(([id, name, config]): LinearInput =>
+        config
+          ? [id, name, JSON.parse(JSON.stringify(config)) as InputWidgetConfig]
+          : [id, name]
+      ),
+      outputs: [...outputs]
+    }
+    workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
+  }
 
   watch(
     () =>
       isBuilderMode.value
         ? { inputs: selectedInputs.value, outputs: selectedOutputs.value }
         : null,
-    (data) => {
-      if (!data || ChangeTracker.isLoadingGraph) return
-      const graph = app.rootGraph
-      if (!graph) return
-      const extra = (graph.extra ??= {})
-      extra.linearData = {
-        inputs: [...data.inputs],
-        outputs: [...data.outputs]
-      }
-      workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
-    },
+    (data) => data && writeLinearData(data.inputs, data.outputs),
     { deep: true }
   )
 
@@ -276,14 +289,6 @@ export const useAppModeStore = defineStore('appMode', () => {
   })
 
   function enterBuilder() {
-    if (!hasNodes.value) {
-      emptyWorkflowDialog.show({
-        onEnterBuilder: () => enterBuilder(),
-        onDismiss: () => setMode('graph')
-      })
-      return
-    }
-
     resetSelectedToWorkflow()
 
     useSidebarTabStore().activeSidebarTabId = null
@@ -318,6 +323,8 @@ export const useAppModeStore = defineStore('appMode', () => {
     if (index === -1) return
     const [id, type, options] = selectedInputs.value[index]
     selectedInputs.value.splice(index, 1, [id, type, { ...options, ...config }])
+    if (!isBuilderMode.value)
+      writeLinearData(selectedInputs.value, selectedOutputs.value)
   }
 
   return {

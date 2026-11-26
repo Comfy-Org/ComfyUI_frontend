@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
+import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import {
   getOrderedInputSpecs,
   sortWidgetValuesByInputOrder

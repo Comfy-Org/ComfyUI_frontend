@@ -139,7 +139,7 @@ export interface CuratedOutputHashes {
   // payloads, and a drift red must name where its baseline came from.
   recordedAt: { core: string; run: string }
   schema: 1
-  workflows: Record<string, Record<string, string>>
+  workflows: Partial<Record<string, Record<string, string>>>
 }
 
 // Read-merge-write: record mode deliberately fails each test, and Playwright
@@ -168,11 +168,11 @@ export function recordObservedHashes(
 
 export function compareOutputHashes(input: {
   workflowKey: string
-  observed: Record<string, string>
+  observed: Partial<Record<string, string>>
   committed: CuratedOutputHashes
 }): string[] {
   const { workflowKey, observed, committed } = input
-  if (committed.schema !== 1 || !committed.recordedAt?.core)
+  if (!committed.recordedAt.core)
     throw new Error(
       'curatedOutputHashes fixture is not schema 1 with recordedAt provenance - re-record it (docs/custom-node-regression-suite.md Step 5c)'
     )

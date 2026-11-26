@@ -1,4 +1,4 @@
-import { parseTags } from '../cli/flags'
+import { isFlagOn, parseTags } from '../cli/flags'
 import {
   customDistribution,
   normalizeBackendUrl,
@@ -22,6 +22,7 @@ export interface RecordPrefill {
   name?: string
   warnings: string[]
   pr?: string
+  force?: boolean
 }
 
 export function resolveRecordPrefill(
@@ -83,6 +84,7 @@ export function resolveRecordPrefill(
     description: toSlug(description ?? '') ? description : undefined,
     name: toSlug(name ?? '') ? toSlug(name ?? '') : undefined,
     warnings,
-    pr: pr && /^\d+$/.test(pr) ? pr : undefined
+    pr: pr && /^\d+$/.test(pr) ? pr : undefined,
+    force: isFlagOn(flags.force, 'force')
   }
 }

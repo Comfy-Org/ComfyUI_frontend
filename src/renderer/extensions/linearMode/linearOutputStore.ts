@@ -5,8 +5,11 @@ import { useAppMode } from '@/composables/useAppMode'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { flattenNodeOutput } from '@/renderer/extensions/linearMode/flattenNodeOutput'
 import type { InProgressItem } from '@/renderer/extensions/linearMode/linearModeTypes'
-import type { ResultItemImpl } from '@/stores/queueStore'
-import type { ExecutedWsMessage, JobId } from '@/schemas/apiSchema'
+import type { AugmentedResultItem } from '@/utils/resultItem'
+import type {
+  ExecutedWsMessage,
+  JobId
+} from '@comfyorg/api-client/executionTypes'
 import { api } from '@/scripts/api'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -20,12 +23,18 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
   const workflowStore = useWorkflowStore()
 
   const inProgressItems = ref<InProgressItem[]>([])
-  const resolvedOutputsCache = new Map<string, ResultItemImpl[]>()
+  const resolvedOutputsCache = new Map<string, AugmentedResultItem[]>()
   const selectedId = ref<string | null>(null)
   const isFollowing = ref(true)
   const trackedJobId = ref<JobId | null>(null)
   const pendingResolve = ref(new Set<JobId>())
-  const executedNodeIds = new Set<string>()
+  const executedNodeIdsByJob = new Map<JobId, Set<string>>()
+
+  function executedNodeIds(jobId: JobId): Set<string> {
+    let ids = executedNodeIdsByJob.get(jobId)
+    if (!ids) executedNodeIdsByJob.set(jobId, (ids = new Set()))
+    return ids
+  }
 
   const activeWorkflowInProgressItems = computed(() => {
     const path = workflowStore.activeWorkflow?.path
@@ -56,7 +65,16 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
   const currentSkeletonId = shallowRef<string | null>(null)
 
   function onJobStart(jobId: JobId) {
-    executedNodeIds.clear()
+    trackedJobId.value = jobId
+    const pending = inProgressItems.value.find(
+      (i) => i.jobId === jobId && i.state !== 'image'
+    )
+    if (pending) {
+      currentSkeletonId.value = pending.id
+      autoSelect(`slot:${pending.id}`, jobId)
+      return
+    }
+    executedNodeIdsByJob.delete(jobId)
 
     const item: InProgressItem = {
       id: makeItemId(jobId),
@@ -65,14 +83,12 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
     }
     currentSkeletonId.value = item.id
     inProgressItems.value = [item, ...inProgressItems.value]
-
-    trackedJobId.value = jobId
     autoSelect(`slot:${item.id}`, jobId)
   }
 
   let raf: number | null = null
   function onLatentPreview(jobId: JobId, url: string, nodeId?: string) {
-    if (nodeId && executedNodeIds.has(nodeId)) return
+    if (nodeId && executedNodeIds(jobId).has(nodeId)) return
 
     // Issue in Firefox where it doesnt seem to always re-render, wrapping in RAF fixes it
     if (raf) cancelAnimationFrame(raf)
@@ -109,7 +125,7 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
 
   function onNodeExecuted(jobId: JobId, detail: ExecutedWsMessage) {
     const nodeId = String(detail.display_node || detail.node)
-    executedNodeIds.add(nodeId)
+    executedNodeIds(jobId).add(nodeId)
     if (raf) {
       cancelAnimationFrame(raf)
       raf = null
@@ -121,7 +137,7 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
     const outputNodeIds = appModeStore.selectedOutputs
     if (
       outputNodeIds.length > 0 &&
-      !outputNodeIds.some((id) => String(id) === String(nodeId))
+      !outputNodeIds.some((id) => String(id) === nodeId)
     )
       return
 
@@ -175,12 +191,13 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
       pendingResolve.value = new Set()
     }
 
-    if (raf) {
-      cancelAnimationFrame(raf)
-      raf = null
-    }
-    currentSkeletonId.value = null
+    executedNodeIdsByJob.delete(jobId)
     if (trackedJobId.value === jobId) {
+      if (raf) {
+        cancelAnimationFrame(raf)
+        raf = null
+      }
+      currentSkeletonId.value = null
       trackedJobId.value = null
     }
 
@@ -258,7 +275,8 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
 
   function handleExecuted({ detail }: CustomEvent<ExecutedWsMessage>) {
     const jobId = detail.prompt_id
-    if (jobId !== executionStore.activeJobId) return
+    if (jobId !== executionStore.activeJobId || jobId !== trackedJobId.value)
+      return
     onNodeExecuted(jobId, detail)
   }
 
@@ -271,11 +289,8 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
       () => executionStore.activeJobId,
       () => executionStore.jobIdToSessionWorkflowPath
     ],
-    ([jobId], [oldJobId]) => {
+    ([jobId]) => {
       if (!isAppMode.value) return
-      if (oldJobId && oldJobId !== jobId) {
-        onJobComplete(oldJobId)
-      }
       // Guard with trackedJobId to avoid double-starting when the
       // path mapping arrives after activeJobId was already set.
       if (
@@ -288,28 +303,38 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
     }
   )
 
+  function completeEndedJobs() {
+    const live = new Set(Object.keys(executionStore.queuedJobs))
+    const retained = new Set(inProgressItems.value.map((i) => i.jobId))
+    if (trackedJobId.value) retained.add(trackedJobId.value)
+    for (const jobId of retained)
+      if (!live.has(jobId) && !pendingResolve.value.has(jobId))
+        onJobComplete(jobId)
+  }
+
+  watch(
+    () => Object.keys(executionStore.queuedJobs),
+    () => {
+      if (isAppMode.value) completeEndedJobs()
+    }
+  )
+
   watch(
     () => jobPreviewStore.nodePreviewsByPromptId,
     (previews) => {
       if (!isAppMode.value) return
       const jobId = executionStore.activeJobId
-      if (!jobId) return
-      const preview = previews[jobId]
+      if (!jobId || jobId !== trackedJobId.value) return
+      const preview = Object.hasOwn(previews, jobId)
+        ? previews[jobId]
+        : undefined
       if (preview) onLatentPreview(jobId, preview.url, preview.nodeId)
     },
     { deep: true }
   )
 
   function reconcileOnEnter() {
-    // Complete any tracked job that finished while we were away.
-    // The activeJobId watcher couldn't fire onJobComplete because
-    // isAppMode was false at the time.
-    if (
-      trackedJobId.value &&
-      trackedJobId.value !== executionStore.activeJobId
-    ) {
-      onJobComplete(trackedJobId.value)
-    }
+    completeEndedJobs()
     // Start tracking the current job only if it belongs to this
     // workflow — otherwise we'd adopt another tab's job.
     if (
@@ -334,21 +359,16 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
     // away, but only for a job belonging to the active workflow.
     const jobId = trackedJobId.value
     if (jobId && isJobForActiveWorkflow(jobId)) {
-      const preview = jobPreviewStore.nodePreviewsByPromptId[jobId]
+      const previews = jobPreviewStore.nodePreviewsByPromptId
+      const preview = Object.hasOwn(previews, jobId)
+        ? previews[jobId]
+        : undefined
       if (preview) onLatentPreview(jobId, preview.url, preview.nodeId)
     }
   }
 
   function cleanupOnLeave() {
-    // If the tracked job already finished (no longer the active job),
-    // complete it now to clean up skeletons/latents. If it's still
-    // running, preserve all items for tab switching.
-    if (
-      trackedJobId.value &&
-      trackedJobId.value !== executionStore.activeJobId
-    ) {
-      onJobComplete(trackedJobId.value)
-    }
+    completeEndedJobs()
   }
 
   watch(

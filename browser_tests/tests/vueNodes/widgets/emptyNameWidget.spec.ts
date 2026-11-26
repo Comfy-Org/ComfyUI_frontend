@@ -26,9 +26,9 @@ test.describe(
         x: 400,
         y: 200
       })
-      await comfyPage.page.evaluate(() =>
+      await comfyPage.page.evaluate(() => {
         graph!.nodes[0].addWidget('text', '', '', () => {})
-      )
+      })
     })
 
     test('renders schema widgets despite an un-keyable sibling', async ({

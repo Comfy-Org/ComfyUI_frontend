@@ -1,61 +1,51 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
-import type { ActionBarButton } from '@/types/comfy'
+import { i18n } from '@/i18n'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { openFeedbackDialog } from '@/platform/support/feedbackDialog'
 
-const tabBarLayout = vi.hoisted(() => ({ value: 'Default' }))
-const registerExtension = vi.hoisted(() => vi.fn())
-const openFeedbackDialog = vi.hoisted(() => vi.fn())
+import { feedbackButtonExtension } from './cloudFeedbackTopbarButton'
 
-vi.mock('@/i18n', () => ({
-  t: (key: string) => key
-}))
-
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: () => ({
-    get: (key: string) =>
-      key === 'Comfy.UI.TabBarLayout' ? tabBarLayout.value : undefined
-  })
-}))
-
-vi.mock('@/services/extensionService', () => ({
-  useExtensionService: () => ({
-    registerExtension
-  })
-}))
-
-vi.mock('@/platform/support/feedbackDialog', () => ({
-  openFeedbackDialog
+vi.mock(import('@/platform/support/feedbackDialog'), () => ({
+  openFeedbackDialog: vi.fn()
 }))
 
 describe('cloudFeedbackTopbarButton', () => {
-  beforeEach(() => {
-    vi.resetModules()
-  })
+  it('opens the feedback survey tagged with the action-bar source', () => {
+    vi.mocked(useSettingStore().get).mockReturnValue('Legacy')
 
-  function getRegisteredButtons(): ActionBarButton[] {
-    expect(registerExtension).toHaveBeenCalledTimes(1)
-    const extension = registerExtension.mock.calls[0]?.[0] as {
-      actionBarButtons: ActionBarButton[]
-    }
-    return extension.actionBarButtons
-  }
-
-  it('opens the feedback survey tagged with the action-bar source', async () => {
-    tabBarLayout.value = 'Legacy'
-    await import('./cloudFeedbackTopbarButton')
-
-    const buttons = getRegisteredButtons()
+    const buttons = feedbackButtonExtension.actionBarButtons ?? []
     expect(buttons).toHaveLength(1)
-    expect(buttons[0].icon).toBe('icon-[hugeicons--megaphone-03]')
-    buttons[0].onClick?.()
+    expect(buttons[0].icon).toBe('icon-[lucide--megaphone] size-4')
+    buttons[0].onClick()
 
     expect(openFeedbackDialog).toHaveBeenCalledWith('action-bar')
   })
 
-  it('only registers the action bar button when the tab bar is Legacy', async () => {
-    tabBarLayout.value = 'Default'
-    await import('./cloudFeedbackTopbarButton')
+  it('labels the button in the locale active when the action bar reads it', () => {
+    vi.mocked(useSettingStore().get).mockReturnValue('Legacy')
+    const initialLocale = i18n.global.locale.value
+    onTestFinished(() => {
+      i18n.global.locale.value = initialLocale
+    })
+    i18n.global.mergeLocaleMessage('fr', {
+      actionbar: { feedback: 'Avis', feedbackTooltip: 'Donner votre avis' }
+    })
 
-    expect(getRegisteredButtons()).toEqual([])
+    expect(feedbackButtonExtension.actionBarButtons?.[0]).toMatchObject({
+      label: 'Feedback',
+      tooltip: 'Feedback'
+    })
+    i18n.global.locale.value = 'fr'
+    expect(feedbackButtonExtension.actionBarButtons?.[0]).toMatchObject({
+      label: 'Avis',
+      tooltip: 'Donner votre avis'
+    })
+  })
+
+  it('only shows the action bar button when the tab bar is Legacy', () => {
+    vi.mocked(useSettingStore().get).mockReturnValue('Default')
+
+    expect(feedbackButtonExtension.actionBarButtons).toEqual([])
   })
 })

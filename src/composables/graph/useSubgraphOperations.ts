@@ -1,4 +1,6 @@
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
+import { useToast } from '@/components/ui/toast/toastStore'
+import { t } from '@/i18n'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -14,6 +16,7 @@ export function useSubgraphOperations() {
   const workflowStore = useWorkflowStore()
   const nodeOutputStore = useNodeOutputStore()
   const subgraphStore = useSubgraphStore()
+  const toast = useToast()
 
   const convertToSubgraph = () => {
     const canvas = canvasStore.getCanvas()
@@ -23,15 +26,10 @@ export function useSubgraphOperations() {
     }
 
     const res = graph.convertToSubgraph(canvas.selectedItems)
-    if (!res) {
-      return
-    }
-
     const { node } = res
     canvas.select(node)
-    canvasStore.updateSelectedItems()
     // Trigger change tracking
-    workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
+    workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
   }
 
   const doUnpack = (
@@ -42,11 +40,24 @@ export function useSubgraphOperations() {
     const graph = canvas.subgraph ?? canvas.graph
     if (!graph) return
 
+    let changed = false
+    let refused = false
     for (const subgraphNode of subgraphNodes) {
-      nodeOutputStore.revokeSubgraphPreviews(subgraphNode)
-      graph.unpackSubgraph(subgraphNode, { skipMissingNodes })
+      if (!graph.unpackSubgraph(subgraphNode, { skipMissingNodes })) {
+        refused = true
+        continue
+      }
+      nodeOutputStore.revokeSubgraphPreviews(subgraphNode, graph)
+      changed = true
     }
-    workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
+    if (refused) {
+      toast.error(t('g.error'), {
+        description: t('g.subgraphUnpackFailed')
+      })
+    }
+    if (changed) {
+      workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
+    }
   }
 
   const unpackSubgraph = () => {

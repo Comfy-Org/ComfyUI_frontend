@@ -1,484 +1,203 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, shallowRef } from 'vue'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { effectScope, nextTick, shallowRef } from 'vue'
 
-import type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
+import type { NodeProgressState } from '@comfyorg/api-client/executionTypes'
+import type { LGraphEventMap } from '@comfyorg/graph-model/LGraphEventMap'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
-import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { MinimapDataSource } from '@/renderer/extensions/minimap/data/MinimapDataSource'
-import type { NodeProgressState } from '@/schemas/apiSchema'
-import { createMockCanvas2DContext } from '@/utils/__tests__/litegraphTestUtils'
+import { api } from '@/scripts/api'
+import { useExecutionStore } from '@/stores/executionStore'
+import { useLinkStore } from '@/stores/linkStore'
+import {
+  createMockCanvasRenderingContext2D,
+  createTestCanvasElement
+} from '@/utils/__tests__/canvasTestUtils'
 
-interface HarnessCounters {
-  digestNodeReads: number
-  linkDigestReads: number
-  linkDigestEntries: number
-  dataNodeReads: number
-  topologyReads: number
-  topologyEntries: number
-  boundsReads: number
-  executionColorUpdates: number
-  canvasRedraws: number
-  dirtyRequests: number
-  pollRegistrations: number
-  pollCallbacks: number
-  throttleRequests: number
-  throttleCallbacks: number
-  listenersAdded: number
-  listenersRemoved: number
-  pollPauses: number
-  pollResumes: number
-}
+import { useMinimap } from './useMinimap'
 
-const {
-  counters,
-  defaultSettingStore,
-  mockCanvasStore,
-  progressStates,
-  linkTopologies,
-  apiListeners,
-  pollControl
-} = vi.hoisted(() => {
-  const counters: HarnessCounters = {
-    digestNodeReads: 0,
-    linkDigestReads: 0,
-    linkDigestEntries: 0,
-    dataNodeReads: 0,
-    topologyReads: 0,
-    topologyEntries: 0,
-    boundsReads: 0,
-    executionColorUpdates: 0,
-    canvasRedraws: 0,
-    dirtyRequests: 0,
-    pollRegistrations: 0,
-    pollCallbacks: 0,
-    throttleRequests: 0,
-    throttleCallbacks: 0,
-    listenersAdded: 0,
-    listenersRemoved: 0,
-    pollPauses: 0,
-    pollResumes: 0
-  }
-  const progressStates: Record<string, NodeProgressState> = {}
-  const canvasStore = (canvas: unknown) => ({ canvas })
-  return {
-    counters,
-    defaultSettingStore: {
-      visible: true,
-      get: vi.fn(() => true),
-      set: vi.fn().mockResolvedValue(undefined)
-    },
-    mockCanvasStore: canvasStore(null),
-    progressStates,
-    linkTopologies: [] as Array<{
-      originNodeId: string
-      targetNodeId: string
-      originSlot: number
-      targetSlot: number
-    }>,
-    apiListeners: new Map<string, EventListener>(),
-    pollControl: { current: undefined as (() => void) | undefined }
-  }
-})
+vi.mock(import('@/scripts/api'))
+vi.mock(import('@/scripts/app'))
 
-vi.mock('@vueuse/core', () => ({
-  useDocumentVisibility: () => ({ value: 'visible' }),
-  useIntervalFn: (callback: () => void) => {
-    counters.pollRegistrations++
-    // The callback is driven explicitly so WS fanout and 100 ms poll cadence
-    // remain separate deterministic axes in this baseline.
-    pollControl.current = () => {
-      counters.pollCallbacks++
-      callback()
-    }
-    return {
-      pause: () => counters.pollPauses++,
-      resume: () => counters.pollResumes++
-    }
-  },
-  useRafFn: () => ({
-    pause: vi.fn(),
-    resume: vi.fn()
-  }),
-  useThrottleFn: (callback: () => void) => () => {
-    counters.throttleRequests++
-    counters.throttleCallbacks++
-    callback()
-  }
-}))
-
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: () => ({
-    get: () => defaultSettingStore.visible,
-    set: defaultSettingStore.set
-  })
-}))
-
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => ({ activeSubgraph: null })
-}))
-
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => mockCanvasStore
-}))
-
-vi.mock('@/stores/executionStore', () => ({
-  useExecutionStore: () => ({
-    nodeProgressStates: progressStates,
-    nodeLocationProgressStates: progressStates
-  })
-}))
-
-vi.mock('@/stores/linkStore', () => ({
-  useLinkStore: () => ({
-    graphTopologies: () => {
-      counters.topologyReads++
-      return (function* () {
-        for (const topology of linkTopologies) {
-          counters.topologyEntries++
-          yield topology
-        }
-      })()
-    }
-  })
-}))
-
-vi.mock('@/stores/workspace/colorPaletteStore', () => ({
-  useColorPaletteStore: () => ({
-    completedActivePalette: { light_theme: false }
-  })
-}))
-
-vi.mock('@/scripts/api', () => ({
-  api: {
-    addEventListener: (name: string, listener: EventListener) => {
-      counters.listenersAdded++
-      apiListeners.set(name, listener)
-    },
-    removeEventListener: (name: string) => {
-      counters.listenersRemoved++
-      apiListeners.delete(name)
-    },
-    apiURL: (path: string) => path
-  }
-}))
-
-vi.mock('@/scripts/app', () => ({
-  app: { canvas: null }
-}))
-
-import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
-
-type Operation = 'equal-progress' | 'changed-progress' | 'geometry' | 'topology'
-
-interface MatrixResult extends HarnessCounters {
-  visible: boolean
-  graphSize: number
-  edgeCount: number
-  operation: Operation
-  initializationCanvasRedraws: number
-  initializationDataNodeReads: number
-  initializationTopologyReads: number
-  initializationBoundsReads: number
-}
-
-function resetCounters() {
-  for (const key of Object.keys(counters) as Array<keyof HarnessCounters>) {
-    counters[key] = 0
-  }
-}
-
-function instrumentedNode(index: number): LGraphNode {
-  const position: [number, number] = [index * 20, index * 10]
-  const size: [number, number] = [100, 50]
-  return {
-    id: String(index),
-    get pos() {
-      counters.digestNodeReads++
-      return position
-    },
-    set pos(value: [number, number]) {
-      position[0] = value[0]
-      position[1] = value[1]
-    },
-    get renderingSize() {
-      return size
-    },
-    size,
-    mode: 0,
-    outputs: []
-  } as unknown as LGraphNode
-}
-
-function createGraph(graphSize: number, edgeCount: number) {
+async function createWorkload(graphSize = 245, edgeCount = 100) {
   const nodes = Array.from({ length: graphSize }, (_, index) =>
-    instrumentedNode(index + 1)
+    createMockLGraphNode({
+      id: toNodeId(String(index + 1)),
+      pos: [index * 20, index * 10],
+      renderingSize: [100, 50],
+      mode: 0
+    })
   )
-  const links = new Map(
-    Array.from({ length: edgeCount }, (_, index) => [
-      String(index),
-      {
-        get origin_id() {
-          counters.linkDigestEntries++
-          return '1'
-        },
-        target_id: String((index % graphSize) + 1),
-        origin_slot: index,
-        target_slot: index
-      }
-    ])
-  )
-  const originalValues = links.values.bind(links)
-  links.values = () => {
-    counters.linkDigestReads++
-    return originalValues()
-  }
-  linkTopologies.splice(
-    0,
-    linkTopologies.length,
-    ...Array.from({ length: edgeCount }, (_, index) => ({
-      originNodeId: '1',
-      targetNodeId: String((index % graphSize) + 1),
+  const graph = fromPartial<LGraph>({
+    id: 'progress-root',
+    rootGraph: { id: 'progress-root' },
+    isRootGraph: true,
+    _nodes: nodes,
+    _groups: [],
+    events: new CustomEventTarget<LGraphEventMap>(),
+    getNodeById: (id) => nodes.find((node) => node.id === id) ?? null
+  })
+  const graphScope = graphScopeOf(graph)
+  Array.from({ length: edgeCount }, (_, index) =>
+    useLinkStore().registerLink(graphScope, {
+      id: toLinkId(index),
+      graphId: graphScope.owningGraphId,
+      originNodeId: toNodeId('1'),
+      targetNodeId: toNodeId(String((index % graphSize) + 1)),
       originSlot: index,
-      targetSlot: index
-    }))
+      targetSlot: index,
+      type: '*'
+    })
   )
-
-  return {
-    graph: {
-      id: 'root',
-      rootGraph: { id: 'root' },
-      _nodes: nodes,
-      _groups: [],
-      links,
-      isRootGraph: true,
-      events: new CustomEventTarget<LGraphEventMap>(),
-      onConnectionChange: null,
-      getNodeById: (id: string) => nodes.find((node) => node.id === id),
-      setDirtyCanvas: () => counters.dirtyRequests++
-    } as unknown as LGraph,
-    nodes
-  }
-}
-
-async function runCell(
-  visible: boolean,
-  graphSize: number,
-  edgeCount: number,
-  operation: Operation
-): Promise<MatrixResult> {
-  resetCounters()
-  apiListeners.clear()
-  for (const key of Object.keys(progressStates)) delete progressStates[key]
-  progressStates['1'] = {
+  const host = fromPartial<LGraphCanvas>({
+    graph,
+    canvas: createTestCanvasElement({ width: 1000, height: 800 }),
+    ds: { scale: 1, offset: [0, 0] },
+    dpr: 1,
+    setDirty: vi.fn()
+  })
+  useCanvasStore().canvas = host
+  await nextTick()
+  useCanvasStore().currentGraph = graph
+  const execution = useExecutionStore()
+  execution.nodeProgressStates['1'] = {
     state: 'running',
     value: 1,
-    max: 2,
+    max: 10,
     node_id: '1',
-    prompt_id: 'prompt-1'
+    display_node_id: '1',
+    prompt_id: 'prompt'
   }
-
-  const { graph, nodes } = createGraph(graphSize, edgeCount)
-  const context = createMockCanvas2DContext()
-  vi.mocked(context.clearRect).mockImplementation(() => {
-    counters.canvasRedraws++
-  })
-  vi.mocked(context.strokeRect).mockImplementation(() => {
-    counters.executionColorUpdates++
-  })
-  const canvasElement = {
+  const context = createMockCanvasRenderingContext2D()
+  const element = createTestCanvasElement({
     width: 250,
     height: 200,
-    getContext: (kind: string) => (kind === '2d' ? context : null)
-  } as unknown as HTMLCanvasElement
-  mockCanvasStore.canvas = {
-    graph,
-    canvas: {
-      width: 1000,
-      height: 800,
-      clientWidth: 1000,
-      clientHeight: 800
-    },
-    ds: { scale: 1, offset: [0, 0] },
-    setDirty: () => counters.dirtyRequests++
-  }
-  defaultSettingStore.visible = visible
-
-  const getNodes = vi.spyOn(MinimapDataSource.prototype, 'getNodes')
-  const getLinks = vi.spyOn(MinimapDataSource.prototype, 'getLinks')
-  const getBounds = vi.spyOn(MinimapDataSource.prototype, 'getBounds')
-  const minimap = useMinimap({
-    canvasRefMaybe: shallowRef(canvasElement),
-    containerRefMaybe: shallowRef({
-      getBoundingClientRect: () => new DOMRect(0, 0, 250, 200)
-    } as HTMLDivElement)
+    ctx: context
   })
-  await minimap.init()
-  await nextTick()
-  await nextTick()
-  await nextTick()
-
-  // Establish the digest and clear initialization work from the measured arm.
-  pollControl.current?.()
-  const lifecycleAtInit = {
-    pollRegistrations: counters.pollRegistrations,
-    listenersAdded: counters.listenersAdded,
-    pollPauses: counters.pollPauses,
-    pollResumes: counters.pollResumes,
-    canvasRedraws: counters.canvasRedraws,
-    dataNodeReads: getNodes.mock.calls.length,
-    topologyReads: getLinks.mock.calls.length,
-    boundsReads: getBounds.mock.calls.length
-  }
-  resetCounters()
-  getNodes.mockClear()
-  getLinks.mockClear()
-  getBounds.mockClear()
-
-  if (operation === 'equal-progress') {
-    progressStates['1'] = { ...progressStates['1'] }
-  } else if (operation === 'changed-progress') {
-    progressStates['1'] = {
-      ...progressStates['1'],
-      state: 'finished'
-    }
-  } else if (operation === 'geometry') {
-    nodes[0].pos = [10_001, 10_001]
-  } else {
-    const mutableLinks = graph.links as unknown as Map<string, unknown>
-    mutableLinks.set('new-link', {
-      get origin_id() {
-        counters.linkDigestEntries++
-        return '1'
-      },
-      target_id: String(Math.min(2, graphSize)),
-      origin_slot: 0,
-      target_slot: 0
+  const scope = effectScope()
+  onTestFinished(() => scope.stop())
+  scope.run(() =>
+    useMinimap({
+      canvasRef: shallowRef(element),
+      containerRef: shallowRef(document.createElement('div'))
     })
-    linkTopologies.push({
-      originNodeId: '1',
-      targetNodeId: String(Math.min(2, graphSize)),
-      originSlot: 0,
-      targetSlot: 0
-    })
-  }
-
-  pollControl.current?.()
-  counters.dataNodeReads = getNodes.mock.calls.length
-  counters.topologyReads = getLinks.mock.calls.length
-  counters.boundsReads = getBounds.mock.calls.length
-
-  const result = {
-    visible,
-    graphSize,
-    edgeCount,
-    operation,
-    initializationCanvasRedraws: lifecycleAtInit.canvasRedraws,
-    initializationDataNodeReads: lifecycleAtInit.dataNodeReads,
-    initializationTopologyReads: lifecycleAtInit.topologyReads,
-    initializationBoundsReads: lifecycleAtInit.boundsReads,
-    ...counters
-  }
-  minimap.destroy()
-  result.pollRegistrations = lifecycleAtInit.pollRegistrations
-  result.listenersAdded = lifecycleAtInit.listenersAdded
-  result.listenersRemoved = counters.listenersRemoved
-  result.pollPauses = lifecycleAtInit.pollPauses + counters.pollPauses
-  result.pollResumes = lifecycleAtInit.pollResumes
-  getNodes.mockRestore()
-  getLinks.mockRestore()
-  getBounds.mockRestore()
-  return result
+  )
+  await nextTick()
+  await vi.advanceTimersByTimeAsync(100)
+  vi.mocked(context.clearRect).mockClear()
+  vi.mocked(context.strokeRect).mockClear()
+  return { context, nodes, execution, host, scope }
 }
 
-describe('minimap progress performance baseline', () => {
-  beforeEach(() => {
-    pollControl.current = undefined
-  })
+beforeEach(() => {
+  vi.useFakeTimers({ shouldAdvanceTime: false })
+  vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible')
+  useSettingStore().settingValues['Comfy.Minimap.ShowLinks'] = true
+  useSettingStore().settingValues['Comfy.Minimap.RenderErrorState'] = true
+})
 
-  it('records the hidden/visible, graph-size and mutation matrix', async () => {
-    const results: MatrixResult[] = []
-    for (const visible of [false, true]) {
-      for (const graphSize of [1, 245, 1000]) {
-        for (const edgeCount of [0, 10, 100]) {
-          for (const operation of [
-            'equal-progress',
-            'changed-progress',
-            'geometry',
-            'topology'
-          ] as const) {
-            results.push(
-              await runCell(visible, graphSize, edgeCount, operation)
-            )
-          }
-        }
-      }
-    }
-
-    for (const cell of results.filter((cell) => !cell.visible)) {
-      expect(cell.initializationCanvasRedraws).toBe(1)
-      expect(cell.initializationDataNodeReads).toBeGreaterThan(0)
-      expect(cell.initializationTopologyReads).toBe(0)
-      expect(cell.initializationBoundsReads).toBe(1)
-      expect(cell.digestNodeReads).toBe(0)
-      expect(cell.linkDigestReads).toBe(0)
-      expect(cell.linkDigestEntries).toBe(0)
-      expect(cell.canvasRedraws).toBe(0)
-      expect(cell.boundsReads).toBe(0)
-      expect(cell.topologyReads).toBe(0)
-    }
-
-    for (const cell of results.filter((cell) => cell.visible)) {
-      const expectedNodeGeometryReads =
-        cell.operation === 'equal-progress'
-          ? cell.graphSize
-          : cell.operation === 'geometry'
-            ? cell.graphSize * 5
-            : cell.graphSize * 3
-      expect(cell.digestNodeReads).toBe(expectedNodeGeometryReads)
-      expect(cell.linkDigestReads).toBe(1)
-      expect(cell.linkDigestEntries).toBe(
-        cell.edgeCount + (cell.operation === 'topology' ? 1 : 0)
+describe('minimap execution cadence', () => {
+  it.for([
+    { graphSize: 1, edgeCount: 0 },
+    { graphSize: 245, edgeCount: 100 },
+    { graphSize: 1000, edgeCount: 10 }
+  ])(
+    'does not repaint equal progress or percentage updates for $graphSize nodes/$edgeCount links',
+    async ({ graphSize, edgeCount }) => {
+      const { context, execution, host } = await createWorkload(
+        graphSize,
+        edgeCount
       )
-      expect(cell.dirtyRequests).toBe(0)
-
-      if (cell.operation === 'equal-progress') {
-        expect(cell.canvasRedraws).toBe(0)
-        expect(cell.dataNodeReads).toBe(0)
-        expect(cell.boundsReads).toBe(0)
-        expect(cell.topologyReads).toBe(0)
-      } else {
-        expect(cell.canvasRedraws).toBe(1)
-        expect(cell.dataNodeReads).toBeGreaterThan(0)
+      const bounds = vi.spyOn(MinimapDataSource.prototype, 'getBounds')
+      execution.nodeProgressStates['1'] = {
+        ...execution.nodeProgressStates['1']
       }
+      await vi.advanceTimersByTimeAsync(100)
+      execution.nodeProgressStates['1'].value = 8
+      await vi.advanceTimersByTimeAsync(500)
 
-      if (cell.operation === 'changed-progress') {
-        expect(cell.boundsReads).toBe(0)
-        expect(cell.topologyReads).toBe(1)
-        expect(cell.topologyEntries).toBe(cell.edgeCount)
-        expect(cell.executionColorUpdates).toBe(1)
-      } else if (cell.operation === 'geometry') {
-        expect(cell.boundsReads).toBe(1)
-      } else if (cell.operation === 'topology') {
-        expect(cell.boundsReads).toBe(0)
-        expect(cell.topologyReads).toBe(1)
-        expect(cell.topologyEntries).toBe(cell.edgeCount + 1)
-      }
+      expect(context.clearRect).not.toHaveBeenCalled()
+      expect(bounds).not.toHaveBeenCalled()
+      expect(host.setDirty).not.toHaveBeenCalled()
     }
+  )
+
+  it.for<NodeProgressState['state']>(['finished', 'error'])(
+    'paints a discrete running-to-%s transition at the bounded poll without bounds work',
+    async (state) => {
+      const { context, execution } = await createWorkload()
+      const bounds = vi.spyOn(MinimapDataSource.prototype, 'getBounds')
+      execution.nodeProgressStates['1'] = {
+        ...execution.nodeProgressStates['1'],
+        state
+      }
+
+      await vi.advanceTimersByTimeAsync(99)
+      expect(context.clearRect).not.toHaveBeenCalled()
+      await vi.advanceTimersByTimeAsync(1)
+      expect(context.clearRect).toHaveBeenCalledTimes(1)
+      expect(context.strokeRect).toHaveBeenCalled()
+      expect(bounds).not.toHaveBeenCalled()
+      vi.mocked(context.clearRect).mockClear()
+      await vi.advanceTimersByTimeAsync(500)
+      expect(context.clearRect).not.toHaveBeenCalled()
+    }
+  )
+
+  it('refreshes bounds for geometry rather than execution progress', async () => {
+    const { nodes, context } = await createWorkload()
+    const bounds = vi.spyOn(MinimapDataSource.prototype, 'getBounds')
+    nodes[0].pos[0] = 10001
+
+    await vi.advanceTimersByTimeAsync(100)
+
+    expect(context.clearRect).toHaveBeenCalledTimes(1)
+    expect(bounds).toHaveBeenCalledTimes(1)
   })
 
-  it('does not register direct progress API listeners', async () => {
-    await runCell(true, 245, 100, 'equal-progress')
+  it('does no initial or subsequent paint or bounds work in a hidden document', async () => {
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden')
+    const bounds = vi.spyOn(MinimapDataSource.prototype, 'getBounds')
+    const { context, execution, nodes } = await createWorkload()
+    expect(bounds).not.toHaveBeenCalled()
+    execution.nodeProgressStates['1'] = {
+      ...execution.nodeProgressStates['1'],
+      state: 'finished'
+    }
+    nodes[0].pos[0] = 10001
+    await vi.advanceTimersByTimeAsync(500)
 
-    expect(apiListeners.has('progress')).toBe(false)
-    expect(apiListeners.has('progress_state')).toBe(false)
+    expect(context.clearRect).not.toHaveBeenCalled()
+    expect(bounds).not.toHaveBeenCalled()
   })
 
-  it('registers one poll and releases its listener and cadence on cleanup', async () => {
-    const cell = await runCell(true, 245, 100, 'equal-progress')
-    expect(cell.pollRegistrations).toBe(1)
-    expect(cell.listenersAdded).toBe(1)
-    expect(cell.listenersRemoved).toBe(1)
-    expect(cell.pollResumes).toBe(1)
-    expect(cell.pollPauses).toBeGreaterThanOrEqual(1)
+  it('does not subscribe to raw progress events or continue work after disposal', async () => {
+    const { context, execution, scope } = await createWorkload()
+    expect(api.addEventListener).not.toHaveBeenCalledWith(
+      'progress',
+      expect.any(Function)
+    )
+    expect(api.addEventListener).not.toHaveBeenCalledWith(
+      'progress_state',
+      expect.any(Function)
+    )
+    scope.stop()
+    const bounds = vi.spyOn(MinimapDataSource.prototype, 'getBounds')
+    execution.nodeProgressStates['1'] = {
+      ...execution.nodeProgressStates['1'],
+      state: 'finished'
+    }
+
+    await vi.advanceTimersByTimeAsync(500)
+
+    expect(context.clearRect).not.toHaveBeenCalled()
+    expect(bounds).not.toHaveBeenCalled()
   })
 })

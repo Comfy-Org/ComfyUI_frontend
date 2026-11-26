@@ -1,37 +1,46 @@
+import type {
+  BaseLGraph,
+  LGraph,
+  SubgraphId,
+  LGraphCanvas,
+  ResolvedConnection,
+  GraphOrSubgraph,
+  Subgraph,
+  SubgraphInput
+} from '@comfyorg/graph-model/entityRegistry'
+import { once, uniqBy } from 'es-toolkit'
 import cloneDeep from 'es-toolkit/compat/cloneDeep'
-import type { BaseLGraph, LGraph, SubgraphId } from '@/lib/litegraph/src/LGraph'
+
 import type { LGraphButton } from '@/lib/litegraph/src/LGraphButton'
-import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
+
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { DrawTitleBoxOptions } from '@/lib/litegraph/src/LGraphNode'
 import { LLink } from '@/lib/litegraph/src/LLink'
-import type { ResolvedConnection } from '@/lib/litegraph/src/LLink'
+
 import { NullGraphError } from '@/lib/litegraph/src/infrastructure/NullGraphError'
 import { RecursionError } from '@/lib/litegraph/src/infrastructure/RecursionError'
+import type { ISlotType } from '@comfyorg/graph-model/interfaces'
 import type {
   ISubgraphInput,
-  IWidgetLocator
-} from '@/lib/litegraph/src/interfaces'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { INodeInputSlot, ISlotType } from '@/lib/litegraph/src/litegraph'
+  INodeInputSlot
+} from '@comfyorg/graph-model/slots'
+import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
 import { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'
 import { NodeOutputSlot } from '@/lib/litegraph/src/node/NodeOutputSlot'
-import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
-import type { SerializedNodeId } from '@/types/nodeId'
-import type {
-  GraphOrSubgraph,
-  Subgraph
-} from '@/lib/litegraph/src/subgraph/Subgraph'
+import { UNASSIGNED_NODE_ID, toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId, SerializedNodeId } from '@comfyorg/graph-model/nodeId'
+
 import type {
   ExportedSubgraphInstance,
   ISerialisedNode
-} from '@/lib/litegraph/src/types/serialisation'
-import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
+} from '@comfyorg/graph-model/serialisation'
+import { NodeSlotType } from '@comfyorg/graph-model/globalEnums'
 import type {
   IBaseWidget,
+  IWidgetLocator,
   TWidgetValue
-} from '@/lib/litegraph/src/types/widgets'
-import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
+} from '@comfyorg/graph-model/widgets'
+import { isWidgetValue } from '@comfyorg/graph-model/widgets'
 import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
 import { deriveWidgetRenderState } from '@/lib/litegraph/src/utils/widget'
 import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
@@ -39,6 +48,7 @@ import type { WidgetTypeMap } from '@/lib/litegraph/src/widgets/widgetMap'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
 import { parsePreviewExposures } from '@/core/schemas/previewExposureSchema'
+import { previewSourceName } from '@/core/graph/subgraph/preview/mediaPreviewName'
 import { parseProxyWidgetErrorQuarantine } from '@/core/schemas/proxyWidgetQuarantineSchema'
 import {
   getPreviewExposureHostLocator,
@@ -46,22 +56,30 @@ import {
   usePreviewExposureStore
 } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
-import type { NodeState } from '@/types/nodeState'
-import type { WidgetId } from '@/types/widgetId'
-import { widgetId } from '@/types/widgetId'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import type { NodeState } from '@comfyorg/graph-model/nodeState'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
+import { deriveWidgetVisibility } from '@/types/widgetVisibility'
 
 import { ExecutableNodeDTO } from './ExecutableNodeDTO'
+import { hostInputOf } from './hostInput'
+import {
+  followSubgraphInputOrder,
+  followSubgraphOutputOrder
+} from './hostSlotOrder'
 import type { ExecutableLGraphNode, ExecutionId } from './ExecutableNodeDTO'
 import { createPromotedWidgetStoreProjection } from './promotedWidgetStoreProjection'
-import type { SubgraphInput } from './SubgraphInput'
+
 import { createBitmapCache } from './svgBitmapCache'
 
-const workflowSvg = new Image()
-workflowSvg.src =
-  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16'%3E%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 16 16'%3E%3Cpath stroke='white' stroke-linecap='round' stroke-width='1.3' d='M9.18613 3.09999H6.81377M9.18613 12.9H7.55288c-3.08678 0-5.35171-2.99581-4.60305-6.08843l.3054-1.26158M14.7486 2.1721l-.5931 2.45c-.132.54533-.6065.92789-1.1508.92789h-2.2993c-.77173 0-1.33797-.74895-1.1508-1.5221l.5931-2.45c.132-.54533.6065-.9279 1.1508-.9279h2.2993c.7717 0 1.3379.74896 1.1508 1.52211Zm-8.3033 0-.59309 2.45c-.13201.54533-.60646.92789-1.15076.92789H2.4021c-.7717 0-1.33793-.74895-1.15077-1.5221l.59309-2.45c.13201-.54533.60647-.9279 1.15077-.9279h2.29935c.77169 0 1.33792.74896 1.15076 1.52211Zm8.3033 9.8-.5931 2.45c-.132.5453-.6065.9279-1.1508.9279h-2.2993c-.77173 0-1.33797-.749-1.1508-1.5221l.5931-2.45c.132-.5453.6065-.9279 1.1508-.9279h2.2993c.7717 0 1.3379.7489 1.1508 1.5221Z'/%3E%3C/svg%3E %3C/svg%3E"
-
-const workflowBitmapCache = createBitmapCache(workflowSvg, 32)
+const getWorkflowBitmapCache = once((requestRedraw: () => void) => {
+  const workflowSvg = new Image()
+  workflowSvg.src =
+    "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16'%3E%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 16 16'%3E%3Cpath stroke='white' stroke-linecap='round' stroke-width='1.3' d='M9.18613 3.09999H6.81377M9.18613 12.9H7.55288c-3.08678 0-5.35171-2.99581-4.60305-6.08843l.3054-1.26158M14.7486 2.1721l-.5931 2.45c-.132.54533-.6065.92789-1.1508.92789h-2.2993c-.77173 0-1.33797-.74895-1.1508-1.5221l.5931-2.45c.132-.54533.6065-.9279 1.1508-.9279h2.2993c.7717 0 1.3379.74896 1.1508 1.52211Zm-8.3033 0-.59309 2.45c-.13201.54533-.60646.92789-1.15076.92789H2.4021c-.7717 0-1.33793-.74895-1.15077-1.5221l.59309-2.45c.13201-.54533.60647-.9279 1.15077-.9279h2.29935c.77169 0 1.33792.74896 1.15076 1.52211Zm8.3033 9.8-.5931 2.45c-.132.5453-.6065.9279-1.1508.9279h-2.2993c-.77173 0-1.33797-.749-1.1508-1.5221l.5931-2.45c.132-.5453.6065-.9279 1.1508-.9279h2.2993c.7717 0 1.3379.7489 1.1508 1.5221Z'/%3E%3C/svg%3E %3C/svg%3E"
+  workflowSvg.addEventListener('load', requestRedraw, { once: true })
+  return createBitmapCache(workflowSvg, 32)
+})
 
 export class SubgraphNode extends LGraphNode implements BaseLGraph {
   override get inputs(): (INodeInputSlot & Partial<ISubgraphInput>)[] {
@@ -124,13 +142,18 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     this.graph = graph
 
     Object.defineProperty(this, 'widgets', {
-      get: () => [
-        ...this.inputs.flatMap((input) => {
-          const widget = this._projectPromotedWidget(input)
+      get: () => {
+        const widgets = this.inputs.flatMap((input) => {
+          const widget =
+            this._projectPromotedWidget(input) ??
+            this._extraWidgets.find((w) => w.name === input.widget?.name)
           return widget ? [widget] : []
-        }),
-        ...this._extraWidgets
-      ],
+        })
+        return [
+          ...widgets,
+          ...this._extraWidgets.filter((widget) => !widgets.includes(widget))
+        ]
+      },
       set: () => {
         if (import.meta.env.DEV)
           console.warn(
@@ -157,13 +180,13 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         if (existingInput) {
           this._addSubgraphInputListeners(subgraphInput, existingInput)
           const linkId = subgraphInput.linkIds[0]
-          if (linkId === undefined) return
 
           const link = this.subgraph.getLink(linkId)
           if (!link) return
 
           const { inputNode, input } = link.resolve(subgraph)
           if (!inputNode || !input) return
+          if (this.bindDynamicInput(existingInput, inputNode, input)) return
 
           const widget = inputNode.getWidgetFromSlot(input)
           if (widget)
@@ -186,7 +209,9 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         const widget = e.detail.input._widget
         if (widget) this.ensureWidgetRemoved(widget)
 
-        this.removeInput(e.detail.index)
+        const input = hostInputOf(this, e.detail.input)
+        if (input) this.unbindDynamicInput(input)
+        this.removeInput(input ? this.inputs.indexOf(input) : e.detail.index)
         this.invalidatePromotedViews()
         this.setDirtyCanvas(true, true)
       },
@@ -212,24 +237,53 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     )
 
     subgraphEvents.addEventListener(
+      'inputs-reordered',
+      () => {
+        if (!followSubgraphInputOrder(this)) return
+        this.invalidatePromotedViews()
+        useWidgetValueStore().setNodeWidgetOrder(
+          this.rootGraph.id,
+          this.id,
+          this.inputs.flatMap((input) => {
+            const id = input.widgetId ?? this.getWidgetFromSlot(input)?.widgetId
+            return id ? [id] : []
+          })
+        )
+        this.setDirtyCanvas(true, true)
+      },
+      { signal }
+    )
+
+    subgraphEvents.addEventListener(
+      'outputs-reordered',
+      (e) => {
+        followSubgraphOutputOrder(this, e.detail.oldOrder, e.detail.newOrder)
+        this.setDirtyCanvas(true, true)
+      },
+      { signal }
+    )
+
+    subgraphEvents.addEventListener(
       'renaming-input',
       (e) => {
-        const { index, newName } = e.detail
-        const input = this.inputs.at(index)
+        const { oldName, newName } = e.detail
+        const input = hostInputOf(this, e.detail.input)
         if (!input) {
           console.error('Subgraph input not found')
           return
         }
 
-        input.label = newName
+        const previousLabel = input.label ?? input.name
+        if (previousLabel === oldName) input.label = newName
         // Do NOT change input.widget.name — it is the stable internal
         // identifier used by onGraphConfigured (widgetInputs.ts) to match
         // inputs to widgets. Changing it to the display label would cause
         // collisions when two promoted inputs share the same label.
-        if (input._widget) input._widget.label = newName
         if (input.widgetId) {
-          const state = useWidgetValueStore().getWidget(input.widgetId)
-          if (state) state.label = newName
+          const store = useWidgetValueStore()
+          const widgetLabel =
+            store.getWidget(input.widgetId)?.label ?? previousLabel
+          if (widgetLabel === oldName) store.setLabel(input.widgetId, newName)
         }
         this.invalidatePromotedViews()
         this.graph?.trigger('node:slot-label:changed', {
@@ -312,7 +366,12 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       'input-connected',
       (e) => {
         input.shape = this.getSlotShape(subgraphInput, e.detail.input)
-        if (!e.detail.widget || !e.detail.node) return
+        const rewired = input._pendingDemotionToken !== undefined
+        input._pendingDemotionToken = undefined
+        if (!e.detail.node) return
+        if (this.bindDynamicInput(input, e.detail.node, e.detail.input)) return
+        if (rewired) this.unbindDynamicInput(input)
+        if (!e.detail.widget) return
 
         this._setWidget(
           subgraphInput,
@@ -336,24 +395,41 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
           this.invalidatePromotedViews()
           return
         }
-
-        if (input._widget) this.ensureWidgetRemoved(input._widget)
-        if (input.widgetId) {
-          const id = input.widgetId
-          queueMicrotask(() => {
-            if (this.inputs.some((input) => input.widgetId === id)) return
-            useWidgetValueStore().deleteWidget(id)
-          })
+        const widget = input._widget
+        const id = input.widgetId
+        if (this._bindsRemainingLink(subgraphInput, input)) {
+          if (widget) this._demoteInputWidget(input, widget, id)
+          return
         }
 
-        input.pos = undefined
-        input.widget = undefined
-        input.widgetId = undefined
-        input._widget = undefined
-        this.invalidatePromotedViews()
+        const token = Symbol()
+        input._pendingDemotionToken = token
+        queueMicrotask(() => {
+          if (input._pendingDemotionToken !== token) return
+          input._pendingDemotionToken = undefined
+          this.unbindDynamicInput(input)
+          this._demoteInputWidget(input, widget, id)
+        })
       },
       { signal }
     )
+  }
+
+  private _demoteInputWidget(
+    input: INodeInputSlot,
+    widget: IBaseWidget | undefined,
+    id: WidgetId | undefined
+  ): void {
+    if (widget) this.ensureWidgetRemoved(widget)
+    if (id && !this.inputs.some((i) => i.widgetId === id)) {
+      useWidgetValueStore().deleteWidget(id)
+    }
+
+    input.pos = undefined
+    input.widget = undefined
+    input.widgetId = undefined
+    input._widget = undefined
+    this.invalidatePromotedViews()
   }
 
   private _rebindInputSubgraphSlots(): void {
@@ -364,7 +440,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     const slotsByName = new Map<string, SubgraphInput[]>()
 
     for (const slot of subgraphSlots) {
-      const signature = `${slot.name}:${String(slot.type)}`
+      const signature = `${slot.name}:${slot.type}`
       const signatureSlots = slotsBySignature.get(signature)
       if (signatureSlots) {
         signatureSlots.push(slot)
@@ -385,7 +461,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       slots: SubgraphInput[] | undefined
     ): SubgraphInput | undefined => {
       if (!slots) return undefined
-      return slots.find((slot) => !assignedSlotIds.has(String(slot.id)))
+      return slots.find((slot) => !assignedSlotIds.has(slot.id))
     }
 
     for (const input of this.inputs) {
@@ -394,7 +470,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         existingSlot &&
         this.subgraph.inputNode.slots.some((slot) => slot === existingSlot)
       ) {
-        assignedSlotIds.add(String(existingSlot.id))
+        assignedSlotIds.add(existingSlot.id)
         continue
       }
 
@@ -405,7 +481,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
       if (matchedSlot) {
         input._subgraphSlot = matchedSlot
-        assignedSlotIds.add(String(matchedSlot.id))
+        assignedSlotIds.add(matchedSlot.id)
       } else {
         delete input._subgraphSlot
       }
@@ -473,25 +549,49 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   ): void {
     const quarantineValuesByInputName = this._readQuarantineHostValuesByName()
 
-    let valueIndex = 0
-    for (const input of this.inputs) {
+    for (const [
+      valueIndex,
+      { input }
+    ] of this._serializedInputWidgets().entries()) {
       if (!input.widgetId) continue
       const value = quarantineValuesByInputName.has(input.name)
         ? quarantineValuesByInputName.get(input.name)
         : widgetValues?.[valueIndex]
       if (value !== undefined) {
-        useWidgetValueStore().setValue(input.widgetId, value)
+        useWidgetValueStore().restoreValue(input.widgetId, value)
       }
-      valueIndex += 1
     }
+  }
+
+  private _serializedInputWidgets(): {
+    input: INodeInputSlot
+    value: unknown
+  }[] {
+    return this.inputs.flatMap((input) => {
+      if (input.widgetId)
+        return [
+          {
+            input,
+            value: useWidgetValueStore().getWidget(input.widgetId)?.value
+          }
+        ]
+      const owned = this._extraWidgets.find(
+        (widget) => widget.name === input.widget?.name
+      )
+      return owned && owned.serialize !== false
+        ? [{ input, value: owned.value }]
+        : []
+    })
   }
 
   private _readQuarantineHostValuesByName(): Map<string, TWidgetValue> {
     return new Map(
-      parseProxyWidgetErrorQuarantine(
-        this.properties.proxyWidgetErrorQuarantine
-      )
-        .toReversed()
+      [
+        ...parseProxyWidgetErrorQuarantine(
+          this.properties.proxyWidgetErrorQuarantine
+        )
+      ]
+        .reverse()
         .flatMap(({ originalEntry: [sourceNodeId, name], hostValue }) =>
           sourceNodeId === '-1' && hostValue !== undefined
             ? [[name, hostValue] as const]
@@ -503,19 +603,21 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   override _internalConfigureAfterSlots() {
     this._rebindInputSubgraphSlots()
 
-    this.inputs = this.inputs.filter((input) => input._subgraphSlot)
+    const groupNames = this.inputs.flatMap((input) =>
+      input._subgraphSlot ? [`${input.name}.`] : []
+    )
+    this.inputs = this.inputs.filter(
+      (input) =>
+        input._subgraphSlot ||
+        groupNames.some((groupName) => input.name.startsWith(groupName))
+    )
     this.invalidatePromotedViews()
 
     this._hydratePreviewExposures()
 
     for (const input of this.inputs) {
       const subgraphInput = input._subgraphSlot
-      if (!subgraphInput) {
-        console.warn(
-          `[SubgraphNode.configure] No subgraph input found for input ${input.name}, skipping`
-        )
-        continue
-      }
+      if (!subgraphInput) continue
 
       this._addSubgraphInputListeners(subgraphInput, input)
       this._resolveInputWidget(subgraphInput, input)
@@ -527,7 +629,17 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     const rootGraphId = this.rootGraph.id
     const rawProperty = this.properties.previewExposures
     const hasExplicitProperty = Array.isArray(rawProperty)
-    const fromProperty = parsePreviewExposures(rawProperty)
+    const fromProperty = uniqBy(
+      parsePreviewExposures(rawProperty).map((exposure) => ({
+        ...exposure,
+        sourcePreviewName: previewSourceName(
+          this.subgraph.getNodeById(exposure.sourceNodeId) ?? undefined,
+          exposure.sourcePreviewName
+        )
+      })),
+      ({ sourceNodeId, sourcePreviewName }) =>
+        `${sourceNodeId}:${sourcePreviewName}`
+    )
     if (fromProperty.length || hasExplicitProperty) {
       const hostLocator = tryGetPreviewExposureHostLocator(this)
       if (hostLocator)
@@ -577,6 +689,21 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     this.invalidatePromotedViews()
   }
 
+  private _bindsRemainingLink(
+    subgraphInput: SubgraphInput,
+    input: INodeInputSlot
+  ): boolean {
+    return subgraphInput.linkIds.some((linkId) => {
+      const { inputNode, input: target } =
+        this.subgraph.getLink(linkId)?.resolve(this.subgraph) ?? {}
+      return (
+        !!inputNode &&
+        !!target &&
+        this.bindDynamicInput(input, inputNode, target)
+      )
+    })
+  }
+
   private _resolveInputWidget(
     subgraphInput: SubgraphInput,
     input: INodeInputSlot
@@ -601,6 +728,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         console.warn('Failed to find corresponding input', link, inputNode)
         continue
       }
+      if (this.bindDynamicInput(input, inputNode, targetInput)) break
 
       const widget = inputNode.getWidgetFromSlot(targetInput)
       if (widget) {
@@ -662,17 +790,22 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
     const id = widgetId(this.rootGraph.id, this.id, subgraphInput.name)
     const store = useWidgetValueStore()
+    const visibility = cloneDeep(
+      interiorWidget.visibility ?? deriveWidgetVisibility(interiorWidget)
+    )
+    visibility.suppression.byConnection = false
     const registered = store.registerWidget(
       id,
       {
         type: interiorWidget.type,
         value: interiorWidget.value,
-        options: cloneDeep(interiorWidget.options ?? {}),
+        options: cloneDeep(interiorWidget.options),
         label: input.label ?? subgraphInput.name,
         serialize: interiorWidget.serialize,
         disabled: interiorWidget.disabled
       },
-      deriveWidgetRenderState(interiorWidget)
+      deriveWidgetRenderState(interiorWidget),
+      visibility
     )
     if (!registered) {
       input.pos = undefined
@@ -706,6 +839,20 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     return undefined
   }
 
+  /** Binds an input linked to an interior dynamic input group, if it is one. */
+  protected bindDynamicInput(
+    _input: INodeInputSlot,
+    _interiorNode: LGraphNode,
+    _interiorInput: INodeInputSlot
+  ): boolean {
+    return false
+  }
+
+  /** Releases an input bound by {@link bindDynamicInput}, if it was. */
+  protected unbindDynamicInput(_input: INodeInputSlot): boolean {
+    return false
+  }
+
   /**
    * Runs the host widget's `onRemove` (unregistering DOM widgets) and clears it.
    * Unlike {@link ensureWidgetRemoved}, dispatches no demotion event, so it is
@@ -734,10 +881,15 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       const state = store.getWidget(previousId)
       if (!state) continue
       const renderState = store.getWidgetRenderState(previousId)
+      const visibility = store.getWidgetVisibility(previousId)
+      if (!visibility) continue
+      const migratedVisibility = cloneDeep(visibility)
+      migratedVisibility.suppression.byConnection = false
       const migrated = store.registerWidget(
         nextId,
         { ...state },
-        { ...renderState }
+        { ...renderState },
+        migratedVisibility
       )
       if (!migrated) continue
       store.setValue(nextId, state.value)
@@ -780,6 +932,12 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   override getWidgetFromSlot(slot: INodeInputSlot): IBaseWidget | undefined {
     if (slot._widget) return slot._widget
     return super.getWidgetFromSlot(slot)
+  }
+
+  resolvePromotedTarget(
+    inputName: string
+  ): { nodeId: NodeId; widgetName: string } | undefined {
+    return resolveSubgraphInputTarget(this, inputName)
   }
 
   override getInputLink(slot: number): LLink | null {
@@ -908,6 +1066,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     if (index !== -1) {
       this._extraWidgets.splice(index, 1)
       this._widgetSlotsDirty = true
+      if (widget.widgetId) useWidgetValueStore().deleteWidget(widget.widgetId)
       return
     }
 
@@ -953,7 +1112,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       ctx.translate(25, 23)
       ctx.scale(-1.5, 1.5)
       ctx.drawImage(
-        workflowBitmapCache.get(),
+        getWorkflowBitmapCache(() => this.setDirtyCanvas(true, false)).get(),
         0,
         -title_height,
         box_size,
@@ -969,7 +1128,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
   override serializeFromStoreState(state: NodeState): ISerialisedNode {
     const serialized = super.serializeFromStoreState(state)
-    const serializedProperties = { ...(serialized.properties ?? {}) }
+    const serializedProperties = { ...serialized.properties }
     const rootGraphId = this.rootGraph.id
     const hostLocator = tryGetPreviewExposureHostLocator(this)
 
@@ -993,11 +1152,9 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
     serialized.properties = serializedProperties
 
-    const widgetValues = this.inputs.flatMap((input) => {
-      if (!input.widgetId) return []
-      const value = useWidgetValueStore().getWidget(input.widgetId)?.value
-      return [isWidgetValue(value) ? value : undefined]
-    })
+    const widgetValues = this._serializedInputWidgets().map(({ value }) =>
+      isWidgetValue(value) ? value : undefined
+    )
 
     if (widgetValues.some((value) => value !== undefined)) {
       serialized.widgets_values = widgetValues
@@ -1017,9 +1174,15 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   }
   getSlotShape(slot: SubgraphInput, extraInput?: INodeInputSlot) {
     const shapes = slot.linkIds.map(
-      (id) => this.subgraph.links[id]?.resolve(this.subgraph)?.input?.shape
+      (id) => this.subgraph.getLink(id)?.resolve(this.subgraph).input?.shape
     )
     if (extraInput) shapes.push(extraInput.shape)
     return shapes.every((shape) => shape === shapes[0]) ? shapes[0] : undefined
   }
+}
+
+type RegisteredSubgraphNode = SubgraphNode
+
+declare module '@comfyorg/graph-model/entityRegistry' {
+  interface SubgraphNode extends RegisteredSubgraphNode {}
 }

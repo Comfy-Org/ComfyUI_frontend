@@ -1,8 +1,41 @@
 <template>
-  <WidgetLayoutField :widget>
+  <WidgetLayoutField
+    :widget
+    :input-id
+    :value-text="selectedSummary"
+    :root-class="
+      cn(
+        !disabled && 'cursor-pointer',
+        isInvalid && 'ring-1 ring-destructive focus-within:ring-destructive'
+      )
+    "
+  >
+    <template #leading>
+      <Button
+        type="button"
+        tabindex="-1"
+        :aria-label="`${widgetLabel}: ${$t('g.previous')}`"
+        :disabled="isStepDisabled(-1)"
+        class="h-full w-6 shrink-0 rounded-(--node-widget-radius)"
+        data-part="widget-stepper"
+        data-direction="decrement"
+        variant="muted-textonly"
+        size="icon-sm"
+        @click="stepOption(-1)"
+      >
+        <i
+          class="icon-[lucide--chevron-left]"
+          data-part="widget-stepper-icon"
+          aria-hidden="true"
+        />
+      </Button>
+    </template>
+    <template #between><slot name="between" /></template>
     <ComboboxRoot
+      ref="combobox"
       :open="isOpen"
-      :model-value="comboboxValue"
+      :model-value="selectedOption ?? null"
+      by="key"
       :disabled
       ignore-filter
       selection-behavior="replace"
@@ -16,81 +49,91 @@
           :class="
             cn(
               WidgetInputBaseClass,
-              'flex w-full min-w-0 items-center overflow-hidden',
+              'flex w-full min-w-0 items-center overflow-hidden not-disabled:bg-transparent',
               useWidgetHeight(),
-              !disabled && 'hover:bg-component-node-widget-background-hovered',
-              disabled && 'opacity-50',
-              isInvalid && 'ring-1 ring-destructive-background'
+              disabled && 'opacity-50'
             )
           "
         >
           <ComboboxTrigger as-child>
-            <button
+            <Button
+              :id="inputId"
               type="button"
               role="combobox"
               aria-haspopup="listbox"
-              :aria-label="widget.label || widget.name"
+              :aria-controls="listboxId"
+              :aria-label="widgetLabel"
               :aria-invalid="isInvalid || undefined"
               :aria-expanded="isOpen"
               :disabled
               tabindex="0"
               data-testid="widget-select-default-trigger"
-              class="flex min-w-0 flex-1 cursor-pointer items-center overflow-hidden border-none bg-transparent p-0 outline-none disabled:cursor-default"
+              variant="textonly"
+              size="sm"
+              class="h-full min-w-0 flex-1 overflow-hidden rounded-none p-0 font-normal"
+              data-part="widget-select-trigger"
             >
               <span
-                class="min-w-[4ch] flex-1 truncate pr-1 pl-2 text-left text-xs"
+                class="min-w-[4ch] flex-1 truncate px-2 text-right"
+                data-part="widget-value"
               >
-                {{ selectedLabel || placeholder || '\u00a0' }}
+                {{ selectedSummary || placeholder || '\u00a0' }}
               </span>
-            </button>
+            </Button>
           </ComboboxTrigger>
           <slot />
-          <button
+          <Button
             type="button"
             tabindex="-1"
-            aria-hidden="true"
-            :disabled
-            class="flex h-full w-6 shrink-0 cursor-pointer items-center justify-center border-none bg-transparent outline-none disabled:cursor-default"
-            @click="handleOpenChange(true)"
+            :aria-label="`${widgetLabel}: ${$t('g.next')}`"
+            :disabled="isStepDisabled(1)"
+            class="h-full w-6 shrink-0 rounded-(--node-widget-radius)"
+            data-part="widget-stepper"
+            data-direction="increment"
+            variant="muted-textonly"
+            size="icon-sm"
+            @click="stepOption(1)"
           >
             <i
-              :class="
-                cn(
-                  'icon-[lucide--chevron-down] size-4',
-                  disabled
-                    ? 'bg-component-node-foreground-secondary'
-                    : 'bg-muted-foreground'
-                )
-              "
+              class="icon-[lucide--chevron-right]"
+              data-part="widget-stepper-icon"
               aria-hidden="true"
             />
-          </button>
+          </Button>
         </div>
       </ComboboxAnchor>
 
-      <ComboboxPortal>
+      <ComboboxPortal :key="Number(isOpen)">
         <ComboboxContent
+          ref="popup"
           data-capture-wheel="true"
           data-testid="widget-select-default-overlay"
+          role="presentation"
+          :aria-orientation="undefined"
+          :aria-multiselectable="undefined"
           position="popper"
           :side-offset="1"
-          align="start"
+          align="end"
+          prioritize-position
+          sticky="always"
+          :collision-padding="8"
           :class="
             cn(
-              'z-3000 overflow-hidden rounded-lg border border-solid border-border-default bg-base-background p-0 text-base-foreground shadow-md',
-              'min-w-(--reka-combobox-trigger-width)'
+              'z-overlay overflow-hidden rounded-lg border border-solid border-border bg-background p-0 shadow-md',
+              'max-w-(--reka-combobox-content-available-width) min-w-[min(var(--reka-combobox-trigger-width),var(--reka-combobox-content-available-width))]'
             )
           "
+          @keydown.capture="replayComboboxNavigation"
           @keydown.escape.stop="handleOpenChange(false)"
           @focus-outside="handleFocusOutside"
         >
           <div
             v-if="isFilterable"
             ref="searchInputContainerRef"
-            class="m-1 flex items-center gap-2 rounded-md border border-solid border-border-default px-2 py-1.5 transition-colors focus-within:border-primary-background"
+            class="m-1 flex items-center gap-2 rounded-md border px-2 py-1.5 transition-colors focus-within:border-ring"
           >
             <i
-              class="icon-[lucide--search] shrink-0 text-sm text-muted-foreground"
+              class="icon-[lucide--search] text-sm text-muted-foreground"
               aria-hidden="true"
             />
             <ComboboxInput
@@ -98,52 +141,94 @@
               :placeholder="filterPlaceholder"
               auto-focus
               :aria-label="$t('g.search')"
+              :aria-controls="listboxId"
+              :aria-activedescendant="activeDescendant"
               data-testid="widget-select-default-search-input"
               class="w-full border-none bg-transparent text-xs outline-none"
             />
           </div>
 
           <div
+            :id="listboxId"
             data-testid="widget-select-default-viewport"
-            role="presentation"
-            class="flex max-h-56 min-w-full scrollbar-thin scrollbar-thumb-alpha-smoke-500-50 scrollbar-track-transparent scrollbar-gutter-stable flex-col gap-1 overflow-y-auto p-1 text-xs"
-            :style="viewportStyle"
+            role="listbox"
+            :aria-label="widgetLabel"
+            class="max-h-[min(30.5rem,max(2rem,calc(var(--reka-combobox-content-available-height,100dvh)-3rem)))] min-w-full scrollbar-thin scrollbar-thumb-smoke-500/50 scrollbar-track-transparent scrollbar-gutter-stable overflow-y-auto p-1 text-xs"
             @pointerdown.capture.self="handleViewportPointerDown"
           >
-            <ComboboxItem
-              v-for="option in filteredOptions"
-              :key="option.key"
-              :value="option.comboboxValue"
-              :text-value="option.label"
-              :class="
-                cn(
-                  'relative flex min-h-7 cursor-pointer items-center justify-between gap-3 rounded-sm p-2 outline-none select-none',
-                  'hover:bg-secondary-background data-highlighted:bg-secondary-background',
-                  'data-[state=checked]:bg-primary-background/20 data-[state=checked]:hover:bg-primary-background/20 data-[state=checked]:data-highlighted:bg-primary-background/30'
-                )
-              "
+            <div
+              aria-hidden="true"
+              class="invisible flex h-0 gap-3 overflow-hidden px-2"
             >
-              <span class="truncate">
-                {{ option.label }}
-              </span>
-              <ComboboxItemIndicator
-                class="flex shrink-0 items-center justify-center"
+              <span class="whitespace-nowrap">{{ longestLabel }}</span>
+              <span class="size-3.5 shrink-0" />
+            </div>
+            <ComboboxVirtualizer
+              :key="`${directory.join('/')}:${searchQuery}`"
+              v-slot="{ option }"
+              :options="browseOptions"
+              :estimate-size="32"
+              :text-content="(option) => option.label"
+            >
+              <ComboboxItem
+                :value="option"
+                :text-value="option.label"
+                :aria-label="
+                  option.kind === 'value'
+                    ? option.label
+                    : $t(
+                        option.kind === 'folder'
+                          ? 'widgets.selectFolder'
+                          : 'widgets.backFromFolder',
+                        { name: option.label },
+                        { escapeParameter: false }
+                      )
+                "
+                :class="
+                  cn(
+                    'flex h-8 w-full cursor-pointer items-center justify-between gap-3 rounded-sm p-2 outline-none select-none',
+                    'hover:bg-secondary data-highlighted:bg-secondary',
+                    'data-[state=checked]:bg-foreground/10 data-[state=checked]:hover:bg-foreground/10 data-[state=checked]:data-highlighted:bg-foreground/20'
+                  )
+                "
+                @select="handleOptionSelect($event, option)"
               >
                 <i
-                  class="icon-[lucide--check] size-3.5 text-base-foreground"
+                  v-if="option.kind !== 'value'"
+                  :class="
+                    cn(
+                      'text-muted-foreground',
+                      option.kind === 'back'
+                        ? 'icon-[lucide--arrow-left]'
+                        : 'icon-[lucide--folder]'
+                    )
+                  "
                   aria-hidden="true"
                 />
-              </ComboboxItemIndicator>
-            </ComboboxItem>
-
-            <div
-              v-if="filteredOptions.length === 0"
-              role="status"
-              aria-live="polite"
-              class="p-2 text-xs text-muted-foreground"
-            >
-              {{ $t('g.noResultsFound') }}
-            </div>
+                <span class="min-w-0 flex-1 truncate">{{ option.label }}</span>
+                <i
+                  v-if="option.kind === 'folder'"
+                  class="icon-[lucide--chevron-right] text-muted-foreground"
+                  aria-hidden="true"
+                />
+                <ComboboxItemIndicator
+                  class="flex shrink-0 items-center justify-center"
+                >
+                  <i
+                    class="icon-[lucide--check] size-3.5 text-foreground"
+                    aria-hidden="true"
+                  />
+                </ComboboxItemIndicator>
+              </ComboboxItem>
+            </ComboboxVirtualizer>
+          </div>
+          <div
+            v-if="browseOptions.length === 0"
+            role="status"
+            aria-live="polite"
+            class="p-2 text-xs text-muted-foreground"
+          >
+            {{ $t('g.noResultsFound') }}
           </div>
         </ComboboxContent>
       </ComboboxPortal>
@@ -152,20 +237,25 @@
 </template>
 
 <script setup lang="ts">
+import { countBy } from 'es-toolkit'
 import {
+  ComboboxPortal,
   ComboboxAnchor,
   ComboboxContent,
   ComboboxInput,
   ComboboxItem,
   ComboboxItemIndicator,
-  ComboboxPortal,
   ComboboxRoot,
-  ComboboxTrigger
+  ComboboxTrigger,
+  ComboboxVirtualizer
 } from 'reka-ui'
-import { computed, ref } from 'vue'
-import type { CSSProperties } from 'vue'
+import { computed, nextTick, ref, useId, useTemplateRef } from 'vue'
 
+import Button from '@comfyorg/design-system/button/Button'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useComboStepping } from '@/renderer/extensions/vueNodes/widgets/composables/useComboStepping'
 import { useRestoreFocusOnViewportPointer } from '@/renderer/extensions/vueNodes/widgets/composables/useRestoreFocusOnViewportPointer'
+import { replayComboboxNavigation } from '@/renderer/extensions/vueNodes/widgets/utils/replayComboboxNavigation'
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
 import { useWidgetHeight } from '@/types/widgetTypes'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -175,38 +265,32 @@ import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
 interface Props {
   widget: SimplifiedWidget<string | undefined>
+  filenameSummary?: boolean
 }
 
 interface SelectOption {
-  comboboxValue: string
+  kind: 'value'
   key: string
   label: string
   rawValue: NonNullable<WidgetValue>
   value: string
 }
 
+interface SelectFolder {
+  kind: 'folder' | 'back'
+  key: string
+  label: string
+  directory: string[]
+}
+
 type SelectWidgetOptions = NonNullable<Props['widget']['options']> & {
   filterPlaceholder?: string
 }
 
-const { widget } = defineProps<Props>()
-
-// Reka reserves an empty string value for clearing the combobox. Encode values
-// internally so custom-node combo options can still use '' like PrimeVue/legacy.
-const COMBOBOX_VALUE_PREFIX = 'widget-select-value:'
-const MAX_VISIBLE_OPTIONS = 7
-
-function toComboboxValue(value: string) {
-  return `${COMBOBOX_VALUE_PREFIX}${value}`
-}
-
-function fromComboboxValue(value: string | undefined) {
-  if (value === undefined || !value.startsWith(COMBOBOX_VALUE_PREFIX)) {
-    return undefined
-  }
-
-  return value.slice(COMBOBOX_VALUE_PREFIX.length)
-}
+const { widget, filenameSummary = false } = defineProps<Props>()
+const inputId = useId()
+const widgetLabel = computed(() => widget.label || widget.name)
+const listboxId = useId()
 
 function resolveRawValues(values: unknown): unknown[] {
   try {
@@ -258,6 +342,9 @@ const modelValue = defineModel<WidgetValue>({
 })
 
 const searchQuery = ref('')
+const directory = ref<string[]>([])
+const combobox = useTemplateRef('combobox')
+const popup = useTemplateRef('popup')
 const optionsRefreshKey = ref(0)
 const isOpen = ref(false)
 const searchInputContainerRef = ref<HTMLElement>()
@@ -268,6 +355,9 @@ const widgetOptions = computed(
   () => widget.options as SelectWidgetOptions | undefined
 )
 
+const dynamicOptions = computed(
+  () => typeof widgetOptions.value?.values === 'function'
+)
 const disabled = computed(() => Boolean(widgetOptions.value?.disabled))
 const placeholder = computed(() => widgetOptions.value?.placeholder ?? '')
 const filterPlaceholder = computed(
@@ -294,9 +384,9 @@ const normalizedOptions = computed<SelectOption[]>(() => {
   void optionsRefreshKey.value
 
   return resolveValues(widgetOptions.value?.values).map(
-    ({ rawValue, value }, index) => ({
-      comboboxValue: toComboboxValue(value),
-      key: `${value}-${index}`,
+    ({ rawValue, value }) => ({
+      kind: 'value',
+      key: `value:${value}`,
       label: getOptionLabel(value),
       rawValue,
       value
@@ -304,7 +394,19 @@ const normalizedOptions = computed<SelectOption[]>(() => {
   )
 })
 
-const isFilterable = computed(() => normalizedOptions.value.length > 4)
+const hasFolders = computed(
+  () =>
+    !widgetOptions.value?.getOptionLabel &&
+    normalizedOptions.value.some((option) => isFilePath(option.value))
+)
+
+function isFilePath(value: string) {
+  return /[/\\][^/\\]+\.[a-z][a-z0-9]{0,15}$/i.test(value)
+}
+
+const isFilterable = computed(
+  () => hasFolders.value || normalizedOptions.value.length > 4
+)
 
 const filteredOptions = computed(() => {
   if (!isFilterable.value) return normalizedOptions.value
@@ -319,11 +421,57 @@ const filteredOptions = computed(() => {
   )
 })
 
-const viewportStyle = computed<CSSProperties>(() => ({
-  overflowY:
-    filteredOptions.value.length > MAX_VISIBLE_OPTIONS ? 'scroll' : 'auto',
-  scrollbarGutter: 'stable'
-}))
+const browseOptions = computed<Array<SelectOption | SelectFolder>>(() => {
+  if (!hasFolders.value || searchQuery.value.trim())
+    return filteredOptions.value
+
+  const folders = new Map<string, SelectFolder>()
+  const files: SelectOption[] = []
+  for (const option of normalizedOptions.value) {
+    const parts = isFilePath(option.value)
+      ? option.value.split(/[/\\]/).filter(Boolean)
+      : [option.value]
+    if (!directory.value.every((part, index) => parts[index] === part)) continue
+    const label = parts[directory.value.length]
+    if (label === undefined) continue
+    if (parts.length === directory.value.length + 1) {
+      files.push({ ...option, label })
+    } else if (!folders.has(label)) {
+      const path = [...directory.value, label]
+      folders.set(label, {
+        kind: 'folder',
+        key: `folder:${path.join('/')}`,
+        label,
+        directory: path
+      })
+    }
+  }
+  const labelCounts = countBy(files, (option) => option.label)
+  return [
+    ...(directory.value.length
+      ? [
+          {
+            kind: 'back' as const,
+            key: 'back',
+            label: directory.value.join(' / '),
+            directory: directory.value.slice(0, -1)
+          }
+        ]
+      : []),
+    ...folders.values(),
+    ...files.map((option) =>
+      labelCounts[option.label] > 1
+        ? { ...option, label: option.value }
+        : option
+    )
+  ]
+})
+
+const activeDescendant = computed((): string | undefined =>
+  browseOptions.value.length
+    ? combobox.value?.highlightedElement?.id
+    : undefined
+)
 
 const normalizedModelValue = computed(() =>
   modelValue.value == null ? undefined : String(modelValue.value)
@@ -335,11 +483,19 @@ const selectedOption = computed(() =>
   )
 )
 
-const comboboxValue = computed(() => selectedOption.value?.comboboxValue ?? '')
+const longestLabel = computed(() =>
+  normalizedOptions.value.reduce(
+    (longest, { label }) => (label.length > longest.length ? label : longest),
+    ''
+  )
+)
 
 const isInvalid = computed(
   () =>
-    modelValue.value != null && modelValue.value !== '' && !selectedOption.value
+    widgetOptions.value?.values !== undefined &&
+    modelValue.value != null &&
+    modelValue.value !== '' &&
+    !selectedOption.value
 )
 
 const selectedLabel = computed(() => {
@@ -348,17 +504,40 @@ const selectedLabel = computed(() => {
   return ''
 })
 
-function selectOption(rekaValue: string | undefined) {
-  const value = fromComboboxValue(rekaValue)
-  const option = normalizedOptions.value.find(
-    (option) => option.value === value
-  )
-  if (!option) return
+const selectedSummary = computed(() =>
+  filenameSummary && !widgetOptions.value?.getOptionLabel
+    ? selectedLabel.value.split(/[/\\]/).at(-1)
+    : selectedLabel.value
+)
+
+async function handleOptionSelect(
+  event: Event,
+  option: SelectOption | SelectFolder
+) {
+  if (option.kind === 'value') return
+  event.preventDefault()
+  directory.value = option.directory
+  await nextTick()
+  focusSearchInput()
+  combobox.value?.highlightFirstItem?.()
+}
+
+function selectOption(option: SelectOption | SelectFolder | null) {
+  if (!option || option.kind !== 'value') return
 
   modelValue.value = option.rawValue
-  searchQuery.value = ''
-  isOpen.value = false
+  useWorkflowStore().activeWorkflow?.changeTracker.captureCanvasState()
+  void handleOpenChange(false)
 }
+
+const { isStepDisabled, stepOption } = useComboStepping({
+  options: normalizedOptions,
+  selectedOption,
+  disabled,
+  dynamicOptions,
+  refreshOptions,
+  onSelect: selectOption
+})
 
 function focusSearchInput() {
   const input =
@@ -369,13 +548,29 @@ function focusSearchInput() {
   return true
 }
 
-function handleOpenChange(open: boolean) {
+async function handleOpenChange(open: boolean) {
+  if (isOpen.value === open) return
   isOpen.value = open
 
   if (open) {
     refreshOptions()
+    const value = selectedOption.value?.value ?? ''
+    directory.value =
+      hasFolders.value && isFilePath(value)
+        ? value.split(/[/\\]/).filter(Boolean).slice(0, -1)
+        : []
   } else {
     searchQuery.value = ''
+    const element: unknown = popup.value?.$el
+    if (
+      !(element instanceof Element && element.contains(document.activeElement))
+    )
+      return
+
+    await nextTick()
+    if (!isOpen.value && document.activeElement === document.body) {
+      document.getElementById(inputId)?.focus({ preventScroll: true })
+    }
   }
 }
 </script>

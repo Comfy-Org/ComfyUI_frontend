@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   captureCheckoutAttributionFromSearch,
   getCheckoutAttribution
-} from '../checkoutAttribution'
+} from '@/platform/telemetry/utils/checkoutAttribution'
 
 describe('getCheckoutAttribution', () => {
   beforeEach(() => {

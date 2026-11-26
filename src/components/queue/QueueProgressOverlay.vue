@@ -1,11 +1,8 @@
 <template>
-  <div
-    v-show="isVisible"
-    :class="['flex', 'justify-end', 'w-full', 'pointer-events-none']"
-  >
+  <div v-show="isVisible" class="pointer-events-none flex w-full justify-end">
     <div
       data-testid="queue-progress-overlay"
-      class="pointer-events-auto flex max-h-[60vh] w-[350px] min-w-[310px] flex-col overflow-hidden rounded-lg border font-inter transition-colors duration-200 ease-in-out"
+      class="pointer-events-auto flex max-h-[60vh] w-[350px] min-w-[310px] flex-col overflow-hidden rounded-lg border transition-colors duration-200 ease-in-out"
       :class="containerClass"
       @mouseenter="isHovered = true"
       @mouseleave="isHovered = false"
@@ -31,11 +28,11 @@
 
       <QueueOverlayActive
         v-else-if="hasActiveJob"
-        :total-progress-style="totalProgressStyle"
-        :current-node-progress-style="currentNodeProgressStyle"
-        :total-percent-formatted="totalPercentFormatted"
-        :current-node-percent-formatted="currentNodePercentFormatted"
-        :current-node-name="currentNodeName"
+        :total-percent
+        :current-node-percent
+        :total-percent-formatted
+        :current-node-percent-formatted
+        :current-node-name
         :running-count="runningCount"
         :queued-count="queuedCount"
         :bottom-row-class="bottomRowClass"
@@ -65,12 +62,13 @@ import { useQueueClearHistoryDialog } from '@/composables/queue/useQueueClearHis
 import { useQueueProgress } from '@/composables/queue/useQueueProgress'
 import { useResultGallery } from '@/composables/queue/useResultGallery'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { useAssetSelectionStore } from '@/platform/assets/composables/useAssetSelectionStore'
+import { useAssetSelectionStore } from '@/platform/assets/stores/useAssetSelectionStore'
 import { useSurveyFeatureTracking } from '@/platform/surveys/useSurveyFeatureTracking'
 import { api } from '@/scripts/api'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
+import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 type OverlayState = 'hidden' | 'active' | 'expanded'
@@ -88,6 +86,7 @@ const { t, n } = useI18n()
 const queueStore = useQueueStore()
 const commandStore = useCommandStore()
 const executionStore = useExecutionStore()
+const assetsStore = useAssetsStore()
 const sidebarTabStore = useSidebarTabStore()
 const assetSelectionStore = useAssetSelectionStore()
 const { showQueueClearHistoryDialog } = useQueueClearHistoryDialog()
@@ -95,10 +94,10 @@ const { wrapWithErrorHandlingAsync } = useErrorHandling()
 const { trackFeatureUsed } = useSurveyFeatureTracking('queue-progress-overlay')
 
 const {
+  totalPercent,
   totalPercentFormatted,
-  currentNodePercentFormatted,
-  totalProgressStyle,
-  currentNodeProgressStyle
+  currentNodePercent,
+  currentNodePercentFormatted
 } = useQueueProgress()
 const isHovered = ref(false)
 const isOverlayHovered = computed(() => isHovered.value || menuHovered)
@@ -134,7 +133,7 @@ const isVisible = computed(() => overlayState.value !== 'hidden')
 
 const containerClass = computed(() =>
   showBackground.value
-    ? 'border-interface-stroke bg-interface-panel-surface shadow-interface'
+    ? 'border-border bg-background shadow-md'
     : 'border-transparent bg-transparent shadow-none'
 )
 
@@ -234,24 +233,30 @@ const openAssetsSidebar = () => {
   sidebarTabStore.activeSidebarTabId = 'assets'
 }
 
-const focusAssetInSidebar = async (item: JobListItem) => {
+let assetFocusRequest = 0
+
+const focusAssetInSidebar = async (item: JobListItem, request: number) => {
   const task = item.taskRef
   const jobId = task?.jobId
   const preview = task?.previewOutput
-  if (!jobId || !preview) return
+  if (!jobId || !preview || request !== assetFocusRequest) return
 
   const assetId = String(jobId)
   openAssetsSidebar()
   await nextTick()
+  const found = await assetsStore.loadOutputAsset(assetId)
+  if (!found || request !== assetFocusRequest) return
+
   assetSelectionStore.setSelection([assetId])
   assetSelectionStore.setLastSelectedAssetId(assetId)
 }
 
 const inspectJobAsset = wrapWithErrorHandlingAsync(
   async (item: JobListItem) => {
+    const request = ++assetFocusRequest
     trackFeatureUsed()
     await openResultGallery(item)
-    await focusAssetInSidebar(item)
+    await focusAssetInSidebar(item, request)
   }
 )
 

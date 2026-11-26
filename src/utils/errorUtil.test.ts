@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
-import { getErrorMessage, toError } from './errorUtil'
+import {
+  getErrorMessage,
+  toError
+} from '@comfyorg/shared-frontend-utils/errorUtil'
 
 describe('toError', () => {
   it('returns the same Error instance when given an Error', () => {

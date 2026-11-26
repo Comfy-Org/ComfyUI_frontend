@@ -26,10 +26,6 @@ async function getSelectionCounts(comfyPage: ComfyPage) {
 }
 
 test.describe('Group Select Children', { tag: ['@canvas', '@node'] }, () => {
-  test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.canvasOps.resetView()
-  })
-
   test('Setting enabled: clicking outer group selects nested group and inner node', async ({
     comfyPage
   }) => {

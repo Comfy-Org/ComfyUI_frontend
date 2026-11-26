@@ -5,7 +5,7 @@ import {
   parseNodeId,
   serializeNodeId,
   toNodeId
-} from '@/types/nodeId'
+} from '@comfyorg/graph-model/nodeId'
 
 describe('nodeId', () => {
   it('normalizes serialized node ids to strings', () => {

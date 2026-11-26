@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
@@ -8,7 +6,7 @@ import {
   LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
-import { RenderShape } from '@/lib/litegraph/src/types/globalEnums'
+import { RenderShape } from '@comfyorg/graph-model/globalEnums'
 
 describe('LGraphCanvas Title Button Rendering', () => {
   let canvas: LGraphCanvas
@@ -16,7 +14,6 @@ describe('LGraphCanvas Title Button Rendering', () => {
   let node: LGraphNode
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     // Create a mock canvas element
     const canvasElement = document.createElement('canvas')
     ctx = {

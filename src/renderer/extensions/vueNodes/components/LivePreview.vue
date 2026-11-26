@@ -2,10 +2,10 @@
   <template v-if="imageUrl">
     <div
       v-if="imageError"
-      class="text-pure-white flex size-full flex-col items-center justify-center text-center"
+      class="flex size-full flex-col items-center justify-center text-center text-white"
     >
       <i-lucide:image-off class="mb-1 size-8 text-smoke-500" />
-      <p class="text-xs text-smoke-400">{{ $t('g.imageFailedToLoad') }}</p>
+      <p class="text-muted-foreground">{{ $t('g.imageFailedToLoad') }}</p>
     </div>
     <img
       v-else
@@ -15,7 +15,7 @@
       @load="handleImageLoad"
       @error="handleImageError"
     />
-    <div class="text-node-component-header-text mt-1 text-center text-xs">
+    <div class="mt-1 text-center text-foreground">
       {{
         imageError
           ? $t('g.errorLoadingImage')

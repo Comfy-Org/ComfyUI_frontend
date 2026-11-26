@@ -1,6 +1,5 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { nextTick } from 'vue'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -9,7 +8,7 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import { graphCreditsBadges, nodeBadges } from './badgeSystem'
 
@@ -22,7 +21,7 @@ function defaultDisplayPrice(
 const getNodeDisplayPrice = vi.fn(defaultDisplayPrice)
 const pricingMocks = vi.hoisted(() => ({ hasDynamicPricing: vi.fn() }))
 
-vi.mock('@/composables/node/useNodePricing', () => ({
+vi.mock<unknown>(import('@/composables/node/useNodePricing'), () => ({
   useNodePricing: () => ({
     getNodeDisplayPrice,
     getNodeRevisionRef: () => ({ value: 0 }),
@@ -33,20 +32,13 @@ vi.mock('@/composables/node/useNodePricing', () => ({
   })
 }))
 
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: () => ({
-    get: (key: string) =>
-      key === 'Comfy.NodeBadge.ShowApiPricing' ? true : undefined
-  })
-}))
-
 class ApiNode extends LGraphNode {
   static override nodeData = { name: 'ApiNode', api_node: true }
 }
 
 describe('badge derivation subgraph credits aggregation', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
+    useSettingStore().settingValues['Comfy.NodeBadge.ShowApiPricing'] = true
     getNodeDisplayPrice.mockReset()
     getNodeDisplayPrice.mockImplementation(defaultDisplayPrice)
     pricingMocks.hasDynamicPricing.mockReset()

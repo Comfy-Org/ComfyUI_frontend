@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useModelUpload } from '@/platform/assets/composables/useModelUpload'
-import type { FilterOption } from '@/platform/assets/types/filterTypes'
+import type { FilterOption } from '@comfyorg/assets-core/filtering'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { filterOptions } = defineProps<{
@@ -20,15 +20,12 @@ const { isUploadButtonEnabled, showUploadDialog } = useModelUpload()
 
 const singleFilterOption = computed(() => filterOptions.length === 1)
 
-const uploadButtonStyle = cn(
-  'ml-auto h-8 rounded-lg bg-base-foreground text-base-background',
-  'flex items-center justify-center gap-2 p-2',
-  'transition-all duration-150 hover:bg-base-foreground/90 active:scale-95'
-)
+const uploadButtonStyle =
+  'ml-auto flex transition-all duration-150 hover:bg-foreground/90 active:scale-95'
 </script>
 
 <template>
-  <div class="text-secondary mb-4 flex justify-start gap-1 px-4">
+  <div class="mb-4 flex gap-1 px-4 text-muted-foreground">
     <button
       v-for="option in filterOptions"
       :key="option.value"
@@ -36,12 +33,12 @@ const uploadButtonStyle = cn(
       :disabled="singleFilterOption"
       :class="
         cn(
-          'inline-flex appearance-none items-center justify-center rounded-md border-0 px-4 py-2 text-base-foreground select-none',
+          'inline-flex appearance-none items-center justify-center rounded-md border-0 px-4 py-2 text-foreground select-none',
           !singleFilterOption &&
-            'cursor-pointer transition-all duration-150 hover:bg-interface-menu-component-surface-hovered hover:text-base-foreground active:scale-95',
+            'cursor-pointer transition-all duration-150 hover:text-foreground active:scale-95',
           !singleFilterOption && filterSelected === option.value
-            ? 'bg-interface-menu-component-surface-selected! text-base-foreground'
-            : 'bg-transparent'
+            ? 'bg-muted'
+            : 'bg-transparent hover:bg-accent'
         )
       "
       @click="filterSelected = option.value"
@@ -50,7 +47,7 @@ const uploadButtonStyle = cn(
     </button>
     <Button
       v-if="isUploadButtonEnabled && singleFilterOption"
-      variant="textonly"
+      variant="inverted"
       size="md"
       :class="uploadButtonStyle"
       @click="showUploadDialog"
@@ -61,12 +58,12 @@ const uploadButtonStyle = cn(
     <Button
       v-else-if="uploadable"
       :title="$t('g.upload')"
-      variant="textonly"
+      variant="inverted"
       size="md"
       :class="uploadButtonStyle"
       @click="emit('show-picker')"
     >
-      <i class="icon-[lucide--folder-search] size-4" />
+      <i class="icon-[lucide--folder-search]" />
       <span>{{ $t('g.upload') }}</span>
     </Button>
   </div>

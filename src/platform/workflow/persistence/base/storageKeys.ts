@@ -1,5 +1,6 @@
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { isCloud } from '@/platform/distribution/types'
+import { safeSessionStorage } from '@/base/storage/safeStorage'
 
 import { hashPath } from './hashUtil'
 
@@ -15,7 +16,7 @@ export function getWorkspaceId(): string {
   if (!isCloud) return 'personal'
 
   try {
-    const json = sessionStorage.getItem(
+    const json = safeSessionStorage.getItem(
       WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE
     )
     if (!json) return 'personal'
@@ -75,6 +76,34 @@ export const StorageKeys = {
     return `Comfy.Workflow.OpenPaths:${clientId}`
   },
 
+  agentThread(workspaceId: string): string {
+    return `Comfy.Agent.ThreadId:${workspaceId}`
+  },
+
+  agentWorkflowTabBindings(workspaceId: string): string {
+    return `Comfy.Agent.WorkflowTabBindings:${workspaceId}`
+  },
+
+  agentChatTitles(workspaceId: string): string {
+    return `Comfy.Agent.ChatTitles:${workspaceId}`
+  },
+
+  agentDeletedThreads(workspaceId: string): string {
+    return `Comfy.Agent.DeletedThreads:${workspaceId}`
+  },
+
+  agentComposerDraft(workspaceId: string): string {
+    return `Comfy.Agent.ComposerDraft:${workspaceId}`
+  },
+
+  agentPendingSendDraft(workspaceId: string): string {
+    return `Comfy.Agent.PendingSendDraft:${workspaceId}`
+  },
+
+  agentSkillDrafts(scope: string): string {
+    return `Comfy.Agent.SkillDrafts:${scope}`
+  },
+
   /**
    * localStorage copies of tab pointers for cross-session restore.
    * sessionStorage is per-tab (correct for in-session use) but lost
@@ -97,6 +126,13 @@ export const StorageKeys = {
     activePath: 'Comfy.Workflow.ActivePath:',
     openPaths: 'Comfy.Workflow.OpenPaths:',
     lastActivePath: 'Comfy.Workflow.LastActivePath:',
-    lastOpenPaths: 'Comfy.Workflow.LastOpenPaths:'
+    lastOpenPaths: 'Comfy.Workflow.LastOpenPaths:',
+    agentThread: 'Comfy.Agent.ThreadId:',
+    agentWorkflowTabBindings: 'Comfy.Agent.WorkflowTabBindings:',
+    agentChatTitles: 'Comfy.Agent.ChatTitles:',
+    agentDeletedThreads: 'Comfy.Agent.DeletedThreads:',
+    agentComposerDraft: 'Comfy.Agent.ComposerDraft:',
+    agentPendingSendDraft: 'Comfy.Agent.PendingSendDraft:',
+    agentSkillDrafts: 'Comfy.Agent.SkillDrafts:'
   }
 } as const

@@ -6,9 +6,6 @@
  * in their test files. Each fixture provides a clean, pre-configured subgraph
  * setup for different testing scenarios.
  */
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-
 import type {
   LGraph,
   Subgraph,
@@ -16,12 +13,11 @@ import type {
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
 
-import { test as baseTest } from '../../__fixtures__/testExtensions'
+import { test as baseTest } from '@/lib/litegraph/src/__fixtures__/testExtensions'
 
 const test = baseTest.extend({
-  pinia: [
+  subgraphState: [
     async ({}, use) => {
-      setActivePinia(createTestingPinia({ stubActions: false }))
       resetSubgraphFixtureState()
       await use(undefined)
     },

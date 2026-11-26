@@ -1,7 +1,15 @@
-import { existsSync, writeFileSync, mkdirSync, unlinkSync } from 'node:fs'
+import { createHash } from 'node:crypto'
+import {
+  existsSync,
+  writeFileSync,
+  mkdirSync,
+  unlinkSync,
+  rmSync
+} from 'node:fs'
 import { homedir } from 'node:os'
 import { join, dirname } from 'node:path'
 import { formatInitialFeatureFlags } from '../featureFlags'
+import type { Distribution } from '../devserver/distributions'
 
 export type RecordingTarget = 'local' | 'cloud'
 
@@ -14,8 +22,60 @@ interface TemplateOptions {
   storageStateFile?: string
 }
 
+/**
+ * Every custom backend previously shared one cache key ('custom'), so a
+ * session saved against one host got replayed against a completely
+ * different one — a stale/foreign cookie an unrelated origin will reject,
+ * which can surface as an auth redirect loop. Custom backends key by a hash
+ * of their full normalized origin+path instead (path included, since
+ * path-routed backends like /tenant-a/ vs /tenant-b/ are distinct sessions);
+ * the three fixed cloud distributions keep their id. Hashing also bounds the
+ * resulting filename length and routes every unparseable/malformed URL to
+ * one shared fallback bucket.
+ */
+export function storageStateKey(distribution?: Distribution): string {
+  if (!distribution) return 'cloud'
+  if (distribution.id !== 'custom') {
+    return distribution.id
+  }
+  if (!distribution.backendUrl) return 'custom-unparsed'
+  try {
+    const { protocol, hostname, port, pathname } = new URL(
+      distribution.backendUrl
+    )
+    if ((protocol !== 'http:' && protocol !== 'https:') || !hostname) {
+      // A scheme-less input like 'localhost:8100' parses as a non-special
+      // `localhost:` URL with an empty hostname and the real host/port
+      // sitting in the opaque path — treat that the same as unparseable
+      // rather than silently sharing a bucket with other typos.
+      return 'custom-unparsed'
+    }
+    const origin = `${protocol}//${hostname}${port ? `:${port}` : ''}${pathname}`
+    const digest = createHash('sha256').update(origin).digest('hex')
+    return `custom-${digest.slice(0, 16)}`
+  } catch {
+    return 'custom-unparsed'
+  }
+}
+
 export function storageStatePath(distributionId: string): string {
   return join(homedir(), '.comfy-test', `storage-state.${distributionId}.json`)
+}
+
+export function removeLegacyCustomStorageState(storageStateFile: string): void {
+  const legacyStorageStateFile = join(
+    dirname(storageStateFile),
+    'storage-state.custom.json'
+  )
+  if (storageStateFile !== legacyStorageStateFile) {
+    try {
+      rmSync(legacyStorageStateFile, { force: true })
+    } catch {
+      // Best-effort cleanup of an obsolete file — EACCES/EPERM/a lock on it
+      // shouldn't abort the recording session, same as cleanupRecordingTemplate
+      // and cleanupRecordedCode below.
+    }
+  }
 }
 
 export function ensureStorageStateDir(storageStateFile: string): void {
@@ -55,15 +115,7 @@ const FILE_HEADER = `/**
  */`
 
 function recorderBlock(pageExpr: string, safeOutputPath: string): string {
-  return `  // _enableRecorder is a private playwright-core API — same underlying
-  // machinery as \`playwright codegen -o <file>\`, just reached through the
-  // fixture-booted context instead of the standalone codegen CLI. It writes
-  // the generated code to disk continuously (debounced ~250ms) as you
-  // record, so closing the browser before copying no longer loses anything.
-  // If a future Playwright version removes/renames it, the catch below
-  // falls back to an ordinary pause — recording still works, just without
-  // the autosave.
-  interface RecorderEnabledContext {
+  return `  interface RecorderEnabledContext {
     _enableRecorder(params: {
       language: string
       mode: string
@@ -72,32 +124,18 @@ function recorderBlock(pageExpr: string, safeOutputPath: string): string {
     }): Promise<void>
   }
   try {
-    // eslint-disable-next-line no-underscore-dangle
     await (
       ${pageExpr}.context() as unknown as RecorderEnabledContext
     )._enableRecorder({
       language: 'playwright-test',
-      // Standby: NOTHING is captured until the Record button is pressed.
-      // Signing in, exploring, and getting set up all stay off the record —
-      // no accidental actions and no typed passwords end up in the code.
-      mode: 'standby',
+      mode: 'inspecting',
       pauseOnNextStatement: false,
       outputFile: ${safeOutputPath}
     })
-  } catch {
+  } catch (error) {
+    console.warn('Could not start the recorder toolbar:', error)
     await ${pageExpr}.pause()
   }
-  // 1. Get set up first — sign in, look around. Nothing is being
-  //    captured yet.
-  // 2. Press the Record button in the floating toolbar (top middle of
-  //    the app window) when you are ready. From then on your clicks and
-  //    typing are captured.
-  // 3. Add a proof step — required. It checks something visible really
-  //    happened (text appeared, a value changed). Use the toolbar's
-  //    assert buttons next to Record, then click the thing that shows
-  //    your action worked.
-  // 4. When done, close the browser window — the code is already
-  //    saved, no copy/paste needed.
   await ${pageExpr}.pause()
 `
 }

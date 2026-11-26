@@ -1,19 +1,31 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { LoginButton } from '@e2e/fixtures/components/LoginButton'
 import { SignInDialog } from '@e2e/fixtures/components/SignInDialog'
+import { Tooltip } from '@e2e/fixtures/components/Tooltip'
 import { TestIds } from '@e2e/fixtures/selectors'
 
 test.describe('Login Button', { tag: ['@ui'] }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.setup()
-  })
+  test.use({ billingNewUx: false })
 
   test.describe('Visibility', () => {
     test('button is visible', async ({ comfyPage }) => {
       await expect(
         comfyPage.page.getByTestId(TestIds.topbar.loginButton)
       ).toBeVisible()
+    })
+
+    test('button sits in the top bar, not the sidebar', async ({
+      comfyPage
+    }) => {
+      const { menu, page } = comfyPage
+      await expect(
+        menu.topbar.integratedTabBarActions.getByTestId(
+          TestIds.topbar.loginButton
+        )
+      ).toBeVisible()
+      await expect(page.getByTestId(TestIds.topbar.loginButton)).toHaveCount(1)
     })
   })
 
@@ -65,5 +77,65 @@ test.describe('Login Button', { tag: ['@ui'] }, () => {
         comfyPage.page.getByTestId(TestIds.topbar.loginButtonPopover)
       ).toBeHidden()
     })
+
+    test('closing a hover popover preserves text input focus', async ({
+      comfyPage
+    }) => {
+      const login = new LoginButton(comfyPage.page)
+      const sidebar = comfyPage.menu.nodeLibraryTabV2
+
+      await test.step('Focus the sidebar search', async () => {
+        await sidebar.open()
+        await sidebar.searchInput.focus()
+        await expect(sidebar.searchInput).toBeFocused()
+      })
+
+      await test.step('Hover login and then move back to the search', async () => {
+        await login.hover()
+        await expect(sidebar.searchInput).toBeFocused()
+        await sidebar.searchInput.hover()
+        await expect(login.popover).toBeHidden()
+        await expect(sidebar.searchInput).toBeFocused()
+      })
+    })
+  })
+})
+
+test.describe('Login Button (new billing UX)', { tag: ['@ui'] }, () => {
+  test.use({ billingNewUx: true })
+
+  test('sits in the sidebar profile slot, not the top bar', async ({
+    comfyPage
+  }) => {
+    const { menu, page } = comfyPage
+    await expect(
+      menu.sideToolbar.getByRole('button', {
+        name: 'Sign in to use Partner Nodes'
+      })
+    ).toBeVisible()
+    await expect(page.getByTestId(TestIds.topbar.loginButton)).toHaveCount(1)
+    await expect(
+      menu.topbar.integratedTabBarActions.getByTestId(
+        TestIds.topbar.loginButton
+      )
+    ).toHaveCount(0)
+  })
+
+  test('shows the Partner Nodes tooltip and opens sign-in on click', async ({
+    comfyPage
+  }) => {
+    const button = comfyPage.page.getByRole('button', {
+      name: 'Sign in to use Partner Nodes'
+    })
+    await button.hover()
+    await expect(
+      new Tooltip(comfyPage.page).named('Sign in to use Partner Nodes')
+    ).toBeVisible()
+    await expect(
+      comfyPage.page.getByTestId(TestIds.topbar.loginButtonPopover)
+    ).toHaveCount(0)
+
+    await button.click()
+    await expect(new SignInDialog(comfyPage.page).root).toBeVisible()
   })
 })

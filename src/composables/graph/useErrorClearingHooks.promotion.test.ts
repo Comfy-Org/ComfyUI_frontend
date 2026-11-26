@@ -1,8 +1,8 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
-import { ChangeTracker } from '@/scripts/changeTracker'
+import { beginGraphLoad } from '@/core/graph/graphLoadState'
 import {
   demoteWidget,
   promoteValueWidgetViaSubgraphInput
@@ -12,15 +12,15 @@ import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import {
   createMissingMediaCandidate,
   seedMediaNodeDefs
-} from '@/platform/missingMedia/__fixtures__/promotedMedia'
-import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
+} from '@/platform/workflowErrors/missingMedia/__fixtures__/promotedMedia'
+import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 import { app } from '@/scripts/app'
-import { createNodeExecutionId } from '@/types/nodeIdentification'
-import { toNodeId } from '@/types/nodeId'
+import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 describe('link ownership error surface', () => {
   beforeEach(() => {
@@ -45,7 +45,7 @@ describe('link ownership error surface', () => {
     )
     input.widget = { name: widget.name }
     graph.add(node)
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    vi.spyOn(app, 'rootGraphOrUndefined', 'get').mockReturnValue(graph)
 
     installErrorClearingHooks(graph)
 
@@ -76,10 +76,6 @@ describe('link ownership while a workflow loads', () => {
     vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(false)
   })
 
-  afterEach(() => {
-    ChangeTracker.isLoadingGraph = false
-  })
-
   it('keeps cached candidates while a workflow load clears the old graph', () => {
     const graph = new LGraph()
     const node = new LGraphNode('LoadImage', 'LoadImage')
@@ -93,16 +89,14 @@ describe('link ownership while a workflow loads', () => {
     )
     input.widget = { name: widget.name }
     graph.add(node)
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    vi.spyOn(app, 'rootGraphOrUndefined', 'get').mockReturnValue(graph)
 
     installErrorClearingHooks(graph)
 
     const mediaStore = useMissingMediaStore()
     mediaStore.setMissingMedia([createMissingMediaCandidate([toNodeId(999)])])
 
-    // clear() fires the removal lifecycle per node, which reaches the same
-    // prune the connection path uses.
-    ChangeTracker.isLoadingGraph = true
+    beginGraphLoad(graph)
     graph.clear()
 
     expect(mediaStore.missingMediaCandidates).toHaveLength(1)
@@ -125,15 +119,13 @@ describe('link ownership while a workflow loads', () => {
     )
     input.widget = { name: widget.name }
     graph.add(node)
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    vi.spyOn(app, 'rootGraphOrUndefined', 'get').mockReturnValue(graph)
 
     installErrorClearingHooks(graph)
 
-    // A workflow load restores cached candidates, then configure() replays a
-    // connection change for every input slot.
     const mediaStore = useMissingMediaStore()
     mediaStore.setMissingMedia([createMissingMediaCandidate([toNodeId(999)])])
-    ChangeTracker.isLoadingGraph = true
+    beginGraphLoad(graph)
 
     const link = upstream.connect(0, node, 0)
     if (!link) throw new Error('Expected media input link')
@@ -170,7 +162,7 @@ describe('promotion listener lifecycle', () => {
       rootGraph.add(host)
       return host
     })
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
+    vi.spyOn(app, 'rootGraphOrUndefined', 'get').mockReturnValue(rootGraph)
     return { subgraph, rootGraph, hosts }
   }
 
@@ -265,7 +257,7 @@ describe('promoted widget promotion error surface moves with ownership', () => {
     leafInput.widget = { name: leafWidget.name }
     subgraph.add(leafNode)
 
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
+    vi.spyOn(app, 'rootGraphOrUndefined', 'get').mockReturnValue(rootGraph)
     return { subgraph, rootGraph, host, leafNode, leafWidget }
   }
 
@@ -350,7 +342,7 @@ describe('promoted widget demotion error clearing', () => {
       promoteValueWidgetViaSubgraphInput(host, leafNode, leafWidget).ok
     ).toBe(true)
     expect(host.widgets).toHaveLength(1)
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
+    vi.spyOn(app, 'rootGraphOrUndefined', 'get').mockReturnValue(rootGraph)
     installErrorClearingHooks(subgraph)
 
     const mediaStore = useMissingMediaStore()

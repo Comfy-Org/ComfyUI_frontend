@@ -1,0 +1,347 @@
+import { expect } from '@playwright/test'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+
+import {
+  agentTest as test,
+  bootAgentApp
+} from '@e2e/fixtures/agentPanelFixture'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { Topbar } from '@e2e/fixtures/components/Topbar'
+
+const OPEN_AGENT_LABEL = enMessages.agent.entryButton
+const OPEN_STORAGE_KEY = 'Comfy.AgentPanel.open'
+
+test.describe(
+  'In-App Agent panel lifecycle and accessibility',
+  { tag: ['@cloud', '@agent', '@ui'] },
+  () => {
+    test('preserves the stored preference while the flag is off', async ({
+      page
+    }) => {
+      await page.addInitScript((key) => {
+        localStorage.setItem(key, 'true')
+      }, OPEN_STORAGE_KEY)
+      await bootAgentApp(page, false)
+
+      const actions = page.getByTestId('integrated-tab-bar-actions')
+      await expect(actions).toHaveAttribute('data-agent-gate-settled', 'true', {
+        timeout: 8_000
+      })
+      await expect(
+        page.getByRole('button', { name: OPEN_AGENT_LABEL, exact: true })
+      ).toHaveCount(0)
+      await expect(page.getByTestId('docked-agent-panel')).toHaveCount(0)
+      await expect
+        .poll(() =>
+          page.evaluate((key) => localStorage.getItem(key), OPEN_STORAGE_KEY)
+        )
+        .toBe('true')
+    })
+
+    test('persists open and closed state and keeps the entry button pressed while open', async ({
+      page
+    }) => {
+      await bootAgentApp(page, true)
+
+      const openButton = page.getByRole('button', {
+        name: OPEN_AGENT_LABEL,
+        exact: true
+      })
+      const panel = page.getByTestId('docked-agent-panel')
+
+      await expect(openButton).toBeVisible()
+      await new AgentPanel(page).open()
+      await expect(panel).toBeVisible()
+      await expect(
+        page.getByRole('button', { name: OPEN_AGENT_LABEL, exact: true })
+      ).toHaveAttribute('aria-pressed', 'true')
+      await expect
+        .poll(() =>
+          page.evaluate((key) => localStorage.getItem(key), OPEN_STORAGE_KEY)
+        )
+        .toBe('true')
+
+      await panel.getByRole('button', { name: enMessages.g.close }).click()
+      await expect(panel).toHaveCount(0)
+      await expect(
+        page.getByRole('button', { name: OPEN_AGENT_LABEL, exact: true })
+      ).toBeVisible()
+      await expect
+        .poll(() =>
+          page.evaluate((key) => localStorage.getItem(key), OPEN_STORAGE_KEY)
+        )
+        .toBe('false')
+    })
+
+    test('supports keyboard activation and returns one complementary landmark', async ({
+      page
+    }) => {
+      await bootAgentApp(page, true)
+
+      const openButton = page.getByRole('button', {
+        name: OPEN_AGENT_LABEL,
+        exact: true
+      })
+      const panel = page.getByTestId('docked-agent-panel')
+      await new AgentPanel(page).open()
+      await panel.getByRole('button', { name: enMessages.g.close }).click()
+      await openButton.focus()
+      await openButton.press('Enter')
+
+      await expect(panel).toBeVisible()
+      await expect(panel).toHaveAttribute('role', 'complementary')
+      await expect(panel).toHaveAttribute(
+        'aria-labelledby',
+        'agent-panel-title'
+      )
+      await expect(page.locator('#agent-panel-title')).toHaveCount(1)
+      await expect(page.getByRole('complementary')).toHaveCount(1)
+
+      await panel
+        .getByRole('button', { name: enMessages.g.close })
+        .press('Enter')
+      await expect(panel).toHaveCount(0)
+      await expect(openButton).toBeVisible()
+    })
+
+    test.describe('opening from a user-closed panel', () => {
+      test.beforeEach(async ({ page }) => {
+        await bootAgentApp(page, true)
+        const agentPanel = new AgentPanel(page)
+        await expect(agentPanel.root).toBeVisible({ timeout: 8_000 })
+        await agentPanel.root
+          .getByRole('button', { name: enMessages.g.close })
+          .click()
+        await expect(agentPanel.root).toHaveCount(0)
+      })
+
+      test('waits for a delayed open without clicking again', async ({
+        page
+      }) => {
+        const agentPanel = new AgentPanel(page)
+        await agentPanel.openButton.evaluate((button: HTMLElement) => {
+          button.dataset.testClickCount = '0'
+          button.addEventListener(
+            'click',
+            () => {
+              button.dataset.testClickCount = String(
+                Number(button.dataset.testClickCount) + 1
+              )
+            },
+            true
+          )
+
+          let delayed = false
+          const delayOpen = (event: Event) => {
+            event.stopImmediatePropagation()
+            if (delayed) return
+            delayed = true
+            window.setTimeout(() => {
+              button.removeEventListener('click', delayOpen, true)
+              button.click()
+            }, 1_500)
+          }
+          button.addEventListener('click', delayOpen, true)
+        })
+
+        await agentPanel.open(3_000)
+
+        await expect(agentPanel.openButton).toHaveAttribute(
+          'data-test-click-count',
+          '2'
+        )
+      })
+
+      test('rejects with the caller timeout while an open stays pending', async ({
+        page
+      }) => {
+        const agentPanel = new AgentPanel(page)
+        await agentPanel.openButton.evaluate((button) => {
+          button.addEventListener(
+            'click',
+            (event) => event.stopImmediatePropagation(),
+            true
+          )
+        })
+
+        await expect(agentPanel.open(250)).rejects.toThrow('250ms')
+      })
+
+      test('drops its click when activation opens the panel just before it lands', async ({
+        page
+      }) => {
+        const agentPanel = new AgentPanel(page)
+        await agentPanel.openButton.evaluate((button: HTMLElement) => {
+          button.dataset.testClickCount = '0'
+          button.dataset.testActivationClickCount = '0'
+          button.addEventListener('click', (event) => {
+            button.dataset.testClickCount = String(
+              Number(button.dataset.testClickCount) + 1
+            )
+            if (!event.isTrusted) {
+              button.dataset.testActivationClickCount = String(
+                Number(button.dataset.testActivationClickCount) + 1
+              )
+            }
+          })
+          button.addEventListener('pointerdown', () => button.click(), {
+            capture: true,
+            once: true
+          })
+        })
+
+        await agentPanel.open()
+
+        await expect(agentPanel.openButton).toHaveAttribute(
+          'data-test-click-count',
+          '1'
+        )
+        await expect(agentPanel.openButton).toHaveAttribute(
+          'data-test-activation-click-count',
+          '1'
+        )
+      })
+    })
+
+    test('keeps the dock within the viewport and its documented width cap', async ({
+      page
+    }) => {
+      await bootAgentApp(page, true)
+
+      await new AgentPanel(page).open()
+      const panel = page.getByTestId('docked-agent-panel')
+      await expect(panel).toBeVisible()
+
+      await expect
+        .poll(async () => (await panel.boundingBox())?.width ?? 0)
+        .toBeGreaterThan(0)
+
+      const box = await panel.boundingBox()
+      const viewport = page.viewportSize()
+      expect(box).not.toBeNull()
+      expect(viewport).not.toBeNull()
+      expect(box!.width).toBeGreaterThan(0)
+      expect(box!.width).toBeLessThanOrEqual(420)
+      expect(box!.x).toBeGreaterThanOrEqual(-1)
+      expect(box!.x + box!.width).toBeLessThanOrEqual(viewport!.width + 1)
+      await expect(page.getByTestId('integrated-tab-bar-actions')).toBeVisible()
+    })
+
+    test('shrinks a maximized panel to stay inside a narrowed window', async ({
+      page
+    }) => {
+      await page.setViewportSize({ width: 1600, height: 900 })
+      await bootAgentApp(page, true)
+
+      const agentPanel = new AgentPanel(page)
+      await agentPanel.open()
+      const panel = agentPanel.dockedPanel
+      await expect(panel).toBeVisible()
+
+      await panel
+        .getByRole('button', { name: enMessages.agent.maximize })
+        .click()
+      await expect
+        .poll(async () => (await panel.boundingBox())?.width ?? 0)
+        .toBe(960)
+
+      await page.setViewportSize({ width: 900, height: 900 })
+
+      await agentPanel.expectPanelSize({ x: 0, width: 900 })
+
+      // Still maximized, so the header offers to minimize rather than maximize.
+      await expect(
+        panel.getByRole('button', { name: enMessages.agent.minimize })
+      ).toBeVisible()
+    })
+
+    test('keeps the canvas toolbar clear of the sidebar as the panel squeezes it', async ({
+      page
+    }) => {
+      // 1300 puts the canvas at roughly 284px: narrower than the toolbar, so
+      // the overhang this fix prevents is actually in play, but not the
+      // degenerate case. At 900 a maximized panel leaves the canvas at zero
+      // and the toolbar collapses to 8px, which tests the unreserved-canvas
+      // gap rather than this fix. `agentPanelViewportDrag.spec.ts` owns that.
+      await page.setViewportSize({ width: 1300, height: 900 })
+      await bootAgentApp(page, true)
+
+      await new AgentPanel(page).open()
+      const panel = page.getByTestId('docked-agent-panel')
+      await expect(panel).toBeVisible()
+      await panel
+        .getByRole('button', { name: enMessages.agent.maximize })
+        .click()
+
+      const toolbar = page.getByRole('toolbar', {
+        name: enMessages.graphCanvasMenu.canvasToolbar
+      })
+      const sideToolbar = page.getByTestId('side-toolbar')
+      await expect(toolbar).toBeVisible()
+
+      const toolbarBox = await toolbar.boundingBox()
+      const sideToolbarBox = await sideToolbar.boundingBox()
+      expect(toolbarBox).not.toBeNull()
+      expect(sideToolbarBox).not.toBeNull()
+
+      // Both edges matter. Checking only the left edge passes a toolbar that
+      // overhangs the other way, out from under the canvas and beneath the
+      // expanded panel, which is the case this fix is actually about.
+      expect(toolbarBox!.x).toBeGreaterThanOrEqual(
+        sideToolbarBox!.x + sideToolbarBox!.width - 1
+      )
+      // Position alone is satisfied by a toolbar squeezed to nothing, so prove
+      // the controls at both ends survived and are still operable.
+      expect(toolbarBox!.width).toBeGreaterThan(64)
+      await expect(
+        toolbar.getByRole('button', { name: enMessages.zoomControls.label })
+      ).toBeVisible()
+      await toolbar
+        .getByRole('button', { name: enMessages.graphCanvasMenu.fitView })
+        .click()
+    })
+
+    test('restores an open panel after a browser reload', async ({ page }) => {
+      await bootAgentApp(page, true)
+
+      await new AgentPanel(page).open()
+      await expect(page.getByTestId('docked-agent-panel')).toBeVisible()
+      await expect
+        .poll(() =>
+          page.evaluate((key) => localStorage.getItem(key), OPEN_STORAGE_KEY)
+        )
+        .toBe('true')
+
+      await page.reload()
+      await expect(
+        page.getByTestId('integrated-tab-bar-actions')
+      ).toHaveAttribute('data-agent-gate-settled', 'true', { timeout: 8_000 })
+      await expect(page.getByTestId('docked-agent-panel')).toBeVisible()
+      await expect(
+        page.getByRole('button', { name: OPEN_AGENT_LABEL, exact: true })
+      ).toHaveAttribute('aria-pressed', 'true')
+    })
+
+    test('keeps one Agent panel mounted while switching workflow tabs', async ({
+      page,
+      agentFlagEnabled
+    }) => {
+      await bootAgentApp(page, agentFlagEnabled)
+
+      await new AgentPanel(page).open()
+
+      const panel = page.getByTestId('docked-agent-panel')
+      const tabs = new Topbar(page).tabs
+      await expect(panel).toBeVisible()
+      await expect(tabs).toHaveCount(1)
+
+      await page.locator('.new-blank-workflow-button').click()
+      await expect(tabs).toHaveCount(2)
+      await tabs.first().click()
+
+      await expect(panel).toHaveCount(1)
+      await expect(panel).toBeVisible()
+    })
+  }
+)

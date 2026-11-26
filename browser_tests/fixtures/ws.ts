@@ -1,47 +1,99 @@
-import { test as base } from '@playwright/test'
-import type { WebSocketRoute } from '@playwright/test'
+import type { BrowserContext, WebSocketRoute } from '@playwright/test'
 
-function createWebSocketRouteHandler(
-  connectWebSocketToServer: boolean,
-  onRouted: (ws: WebSocketRoute) => void
-) {
-  return (ws: WebSocketRoute) => {
-    if (connectWebSocketToServer) {
+import { AGENT_SOCKET_URL } from '@e2e/fixtures/agentSocket'
+import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
+
+/**
+ * The connections the page opens on one routed socket URL, in order. A
+ * reconnect routes a second time, so a test that drops the socket needs the
+ * route the client opened *after* the drop, not the dead one it already holds.
+ */
+interface WebSocketTracker {
+  current: () => WebSocketRoute | undefined
+  waitForNext: () => Promise<WebSocketRoute>
+}
+
+async function trackWebSocket(
+  context: BrowserContext,
+  url: RegExp,
+  { connectToServer }: { connectToServer: boolean }
+): Promise<WebSocketTracker> {
+  let current: WebSocketRoute | undefined
+  const waiters = new Set<(ws: WebSocketRoute) => void>()
+
+  await context.routeWebSocket(url, (ws) => {
+    if (connectToServer) {
       const server = ws.connectToServer()
       server.onMessage((message) => {
         ws.send(message)
       })
+    } else {
+      ws.onClose(() => {
+        if (current === ws) current = undefined
+      })
     }
+    current = ws
+    const pending = [...waiters]
+    waiters.clear()
+    for (const resolve of pending) resolve(ws)
+  })
 
-    onRouted(ws)
+  return {
+    current: () => current,
+    waitForNext: () =>
+      new Promise<WebSocketRoute>((resolve) => waiters.add(resolve))
   }
+}
+
+function currentOrNext(tracker: WebSocketTracker): Promise<WebSocketRoute> {
+  const open = tracker.current()
+  return open ? Promise.resolve(open) : tracker.waitForNext()
 }
 
 export const webSocketFixture = base.extend<{
   connectWebSocketToServer: boolean
   getWebSocket: () => Promise<WebSocketRoute>
+  nextWebSocket: () => Promise<WebSocketRoute>
+  webSocketTracker: WebSocketTracker
+  getAgentSocket: () => Promise<WebSocketRoute>
+  nextAgentSocket: () => Promise<WebSocketRoute>
+  agentSocketTracker: WebSocketTracker
 }>({
   connectWebSocketToServer: [true, { option: true }],
-  getWebSocket: [
+  webSocketTracker: [
     async ({ context, connectWebSocketToServer }, use) => {
-      let latest: WebSocketRoute | undefined
-      let resolve: ((ws: WebSocketRoute) => void) | undefined
-
-      await context.routeWebSocket(
-        /\/ws/,
-        createWebSocketRouteHandler(connectWebSocketToServer, (ws) => {
-          latest = ws
-          resolve?.(ws)
+      await use(
+        await trackWebSocket(context, /\/ws/, {
+          connectToServer: connectWebSocketToServer
         })
       )
-
-      await use(() => {
-        if (latest) return Promise.resolve(latest)
-        return new Promise<WebSocketRoute>((r) => {
-          resolve = r
-        })
-      })
     },
     { auto: true }
-  ]
+  ],
+  agentSocketTracker: [
+    async ({ context }, use) => {
+      await use(
+        await trackWebSocket(context, AGENT_SOCKET_URL, {
+          connectToServer: false
+        })
+      )
+    },
+    { auto: true }
+  ],
+  getWebSocket: async ({ webSocketTracker }, use) => {
+    await use(() => currentOrNext(webSocketTracker))
+  },
+  /**
+   * Resolves with the NEXT socket the page opens. Call it before closing the
+   * current one so the waiter is armed before the client reconnects.
+   */
+  nextWebSocket: async ({ webSocketTracker }, use) => {
+    await use(() => webSocketTracker.waitForNext())
+  },
+  getAgentSocket: async ({ agentSocketTracker }, use) => {
+    await use(() => currentOrNext(agentSocketTracker))
+  },
+  nextAgentSocket: async ({ agentSocketTracker }, use) => {
+    await use(() => agentSocketTracker.waitForNext())
+  }
 })

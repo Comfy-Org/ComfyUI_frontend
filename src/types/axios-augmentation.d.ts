@@ -8,5 +8,7 @@ declare module 'axios' {
     // Exempts a deliberately Firebase-authed request (acceptInvite) from the
     // unified re-mint.
     __skipUnifiedRemint?: boolean
+    /** Sends once, skipping the shared 429/502/503/504 retry. */
+    __skipStatusRetry?: boolean
   }
 }

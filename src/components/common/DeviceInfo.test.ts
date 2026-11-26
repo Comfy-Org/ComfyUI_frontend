@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
-import type { DeviceStats } from '@/schemas/apiSchema'
+import type { DeviceStats } from '@comfyorg/api-client/types'
 
 import DeviceInfo from './DeviceInfo.vue'
 

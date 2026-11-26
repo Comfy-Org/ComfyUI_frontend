@@ -69,8 +69,8 @@
     "name": "Ativar opções de modo desenvolvedor (salvar API, etc.)"
   },
   "Comfy_DisableFloatRounding": {
-    "name": "Desativar arredondamento padrão de widget float.",
-    "tooltip": "(requer recarregar a página) Não é possível desativar o arredondamento quando ele é definido pelo nó no backend."
+    "name": "Desativar o arredondamento padrão do widget de ponto flutuante (obsoleto).",
+    "tooltip": "(requer recarregamento da página) Obsoleto e ativado por padrão. Desativá-lo arredonda os valores de ponto flutuante editados para as casas decimais do passo do widget. O arredondamento declarado pelo nó sempre se aplica."
   },
   "Comfy_DisableSliders": {
     "name": "Desativar sliders dos widgets dos nós"
@@ -83,6 +83,10 @@
   },
   "Comfy_EnableWorkflowViewRestore": {
     "name": "Salvar e restaurar posição e nível de zoom do canvas nos fluxos de trabalho"
+  },
+  "Comfy_ErrorSystem_ShowMissingModels": {
+    "name": "Mostrar modelos ausentes na aba de problemas",
+    "tooltip": "Quando desativado, os arquivos de modelo não encontrados não são listados na aba de problemas e seus nós não são destacados."
   },
   "Comfy_Execution_PreviewMethod": {
     "name": "Método de visualização ao vivo",
@@ -313,6 +317,10 @@
   "Comfy_Node_DoubleClickTitleToEdit": {
     "name": "Clique duplo no título do nó para editar"
   },
+  "Comfy_Node_DownscaleImagePreviews": {
+    "name": "Reduzir a resolução das pré-visualizações de imagens grandes",
+    "tooltip": "No Nodes 2.0, exiba imagens grandes nos nós como uma cópia com no máximo 1024 px no lado mais longo, para que muitas pré-visualizações grandes continuem responsivas. Desative para sempre exibir a imagem original."
+  },
   "Comfy_Node_MiddleClickRerouteNode": {
     "name": "Clique do meio cria um novo nó de redirecionamento"
   },
@@ -334,10 +342,6 @@
   "Comfy_Notification_ShowVersionUpdates": {
     "name": "Mostrar atualizações de versão",
     "tooltip": "Mostrar atualizações para novos modelos e grandes novos recursos."
-  },
-  "Comfy_Pointer_ClickBufferTime": {
-    "name": "Atraso de tolerância de clique do ponteiro",
-    "tooltip": "Após pressionar um botão do ponteiro, este é o tempo máximo (em milissegundos) em que o movimento do ponteiro pode ser ignorado.\n\nAjuda a evitar que objetos sejam movidos acidentalmente se o ponteiro for movido ao clicar."
   },
   "Comfy_Pointer_ClickDrift": {
     "name": "Tolerância de movimento do clique do ponteiro (distância máxima)",
@@ -461,8 +465,13 @@
   "Comfy_Workflow_Persist": {
     "name": "Persistir estado do fluxo de trabalho e restaurar ao recarregar a página"
   },
-  "Comfy_Workflow_ShowMissingModelsWarning": {
-    "name": "Mostrar aviso de modelos ausentes"
+  "Comfy_Workflow_ShowMissingMediaWarning": {
+    "name": "Mostrar mídias ausentes na aba de problemas",
+    "tooltip": "Quando desativado, as imagens, os vídeos e os áudios de entrada não encontrados não são listados na aba de problemas e seus nós não são destacados."
+  },
+  "Comfy_ErrorSystem_ShowMissingNodes": {
+    "name": "Mostrar nós ausentes na aba de problemas",
+    "tooltip": "Quando desativado, os pacotes de nós ausentes não são listados na aba de problemas e seus nós não são destacados. O fluxo de trabalho ainda não poderá ser executado até que sejam instalados."
   },
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "Ordenar IDs dos nós ao salvar fluxo de trabalho"

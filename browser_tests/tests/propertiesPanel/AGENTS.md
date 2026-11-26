@@ -1,6 +1,6 @@
 # Properties Panel E2E Tests
 
-Tests for the right-side properties panel (`RightSidePanel.vue`).
+Tests for the properties panel (`src/renderer/extensions/propertiesPanel/PropertiesPanel.vue`).
 
 ## Structure
 
@@ -16,19 +16,19 @@ Tests for the right-side properties panel (`RightSidePanel.vue`).
 | `errorsTab.spec.ts`               | Errors tab visibility                                       |
 | `propertiesPanelPosition.spec.ts` | Panel position relative to sidebar                          |
 
-## Shared Helper
+## Page Object
 
-`PropertiesPanelHelper.ts` — Encapsulates panel locators and actions. Instantiated in `beforeEach`:
+`browser_tests/fixtures/components/PropertiesPanel.ts` encapsulates panel locators and actions. It is also exposed as `comfyPage.menu.propertiesPanel`. Instantiate it in `beforeEach`:
 
 ```typescript
-let panel: PropertiesPanelHelper
+let panel: PropertiesPanel
 test.beforeEach(async ({ comfyPage }) => {
-  panel = new PropertiesPanelHelper(comfyPage.page)
+  panel = new PropertiesPanel(comfyPage.page)
 })
 ```
 
 ## Conventions
 
-- Tests requiring VueNodes rendering enable it in `beforeEach` via `comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)` and call `comfyPage.vueNodes.waitForNodes()`.
+- Tests requiring VueNodes rendering must use the `@vue-nodes` tag. Never manually set `Comfy.VueNodes.Enabled` or call `comfyPage.vueNodes.waitForNodes()`; the fixture handles both.
 - Verify node state changes via user-facing indicators (text labels like "Bypassed"/"Muted", pin indicator test IDs) rather than internal properties.
 - Color changes are verified via `page.evaluate` accessing node properties, per the guidance in `docs/guidance/playwright.md`.

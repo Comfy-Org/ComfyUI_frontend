@@ -1,5 +1,4 @@
-import { reactive } from 'vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
@@ -11,40 +10,11 @@ import {
   getPreviewExposureHostLocator,
   usePreviewExposureStore
 } from '@/stores/previewExposureStore'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
-import { toNodeId } from '@/types/nodeId'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
-import { CANVAS_IMAGE_PREVIEW_WIDGET } from './canvasImagePreviewTypes'
+import { CANVAS_IMAGE_PREVIEW_WIDGET } from '@/core/graph/subgraph/preview/mediaPreviewName'
 import { usePromotedPreviews } from './usePromotedPreviews'
-
-type MockNodeOutputStore = Pick<
-  ReturnType<typeof useNodeOutputStore>,
-  | 'nodeOutputs'
-  | 'nodePreviewImages'
-  | 'getNodeImageUrls'
-  | 'getNodeImageUrlsByExecutionId'
-  | 'getNodeOutputByExecutionId'
-  | 'getNodePreviewImagesByExecutionId'
->
-
-vi.mock('@/stores/nodeOutputStore', () => {
-  const store: MockNodeOutputStore = {
-    nodeOutputs: reactive<MockNodeOutputStore['nodeOutputs']>({}),
-    nodePreviewImages: reactive<MockNodeOutputStore['nodePreviewImages']>({}),
-    getNodeImageUrls: vi.fn(),
-    getNodeImageUrlsByExecutionId: vi.fn(),
-    getNodeOutputByExecutionId: vi.fn(),
-    getNodePreviewImagesByExecutionId: vi.fn()
-  }
-  return { useNodeOutputStore: () => store }
-})
-
-function clearMockNodeOutputStore() {
-  const { nodeOutputs, nodePreviewImages } = useNodeOutputStore()
-  for (const key of Object.keys(nodeOutputs)) delete nodeOutputs[key]
-  for (const key of Object.keys(nodePreviewImages))
-    delete nodePreviewImages[key]
-}
 
 function createSetup() {
   const subgraph = createTestSubgraph()
@@ -68,14 +38,22 @@ function addInteriorNode(
   return node
 }
 
-function seedOutputs(subgraphId: string, nodeIds: Array<number | string>) {
+function seedOutputs(
+  subgraphId: string,
+  nodeIds: Array<number | string>,
+  filename = 'output.png'
+) {
   const store = useNodeOutputStore()
   for (const nodeId of nodeIds) {
     const locatorId = createNodeLocatorId(subgraphId, toNodeId(nodeId))
     store.nodeOutputs[locatorId] = {
-      images: [{ filename: 'output.png' }]
+      images: [{ filename }]
     }
   }
+}
+
+function outputItems(...filenames: string[]) {
+  return filenames.map((filename) => expect.objectContaining({ filename }))
 }
 
 function seedPreviewImages(
@@ -107,28 +85,19 @@ function exposePreview(
 interface ArrangeOptions {
   id?: number
   previewMediaType?: 'image' | 'video' | 'audio' | 'model'
-  urls?: string[]
+  filename?: string
 }
 
 function arrangePromotedPreview(options: ArrangeOptions = {}) {
-  const {
-    id = 10,
-    previewMediaType,
-    urls = ['/view?filename=output.png']
-  } = options
+  const { id = 10, previewMediaType, filename = 'output.png' } = options
   const setup = createSetup()
   addInteriorNode(setup, { id, previewMediaType })
   exposePreview(setup, String(id))
-  seedOutputs(setup.subgraph.id, [id])
-  vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue(urls)
-  return { setup, urls }
+  seedOutputs(setup.subgraph.id, [id], filename)
+  return { setup, items: outputItems(filename) }
 }
 
 describe(usePromotedPreviews, () => {
-  beforeEach(() => {
-    clearMockNodeOutputStore()
-  })
-
   it('returns empty array for non-SubgraphNode', () => {
     const node = new LGraphNode('test')
     const { promotedPreviews } = usePromotedPreviews(() => node)
@@ -161,72 +130,90 @@ describe(usePromotedPreviews, () => {
   })
 
   it('returns image preview for promoted $$ widget with outputs', () => {
-    const { setup, urls } = arrangePromotedPreview({
+    const { setup, items } = arrangePromotedPreview({
       previewMediaType: 'image'
     })
 
     const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
     expect(promotedPreviews.value).toEqual([
       {
+        name: CANVAS_IMAGE_PREVIEW_WIDGET,
         sourceNodeId: '10',
         sourceWidgetName: CANVAS_IMAGE_PREVIEW_WIDGET,
         type: 'image',
-        urls
+        items
       }
     ])
   })
 
+  it('returns video type when interior node has video previewMediaType', () => {
+    const { setup } = arrangePromotedPreview({
+      previewMediaType: 'video',
+      filename: 'output.webm'
+    })
+
+    const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
+    expect(promotedPreviews.value[0].type).toBe('video')
+  })
+
   it.for([
-    ['video', '/view?filename=output.webm'],
-    ['audio', '/view?filename=output.mp3']
-  ] as const)(
-    'returns %s type when interior node has %s previewMediaType',
-    ([mediaType, url]) => {
-      const { setup } = arrangePromotedPreview({
-        previewMediaType: mediaType,
-        urls: [url]
-      })
+    { bucket: 'video', filename: 'output.webm', expected: 'video' },
+    { bucket: 'audio', filename: 'output.flac', expected: 'audio' }
+  ])(
+    'infers promoted $expected output without a node media hint',
+    ({ bucket, filename, expected }) => {
+      const setup = createSetup()
+      addInteriorNode(setup)
+      exposePreview(setup, '10')
+      useNodeOutputStore().nodeOutputs[
+        createNodeLocatorId(setup.subgraph.id, toNodeId(10))
+      ] = {
+        [bucket]: [{ filename }]
+      }
 
       const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
-      expect(promotedPreviews.value[0].type).toBe(mediaType)
+
+      expect(promotedPreviews.value).toEqual([
+        expect.objectContaining({
+          type: expected,
+          items: outputItems(filename)
+        })
+      ])
     }
   )
 
   it('defaults preview type to image when previewMediaType is unset', () => {
-    const { setup, urls } = arrangePromotedPreview()
+    const { setup, items } = arrangePromotedPreview()
 
     const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
     expect(promotedPreviews.value).toEqual([
-      expect.objectContaining({ type: 'image', urls })
+      expect.objectContaining({ type: 'image', items })
     ])
   })
 
-  it('returns separate entries for multiple promoted $$ widgets', () => {
+  it('names each promoted preview by its exposure, not its shared leaf name', () => {
     const setup = createSetup()
-    const node10 = addInteriorNode(setup, {
-      id: 10,
-      previewMediaType: 'image'
-    })
-    const node20 = addInteriorNode(setup, {
-      id: 20,
-      previewMediaType: 'image'
-    })
+    addInteriorNode(setup, { id: 10, previewMediaType: 'image' })
+    addInteriorNode(setup, { id: 20, previewMediaType: 'image' })
     exposePreview(setup, '10')
     exposePreview(setup, '20')
 
-    seedOutputs(setup.subgraph.id, [10, 20])
-    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockImplementation(
-      (node: LGraphNode) => {
-        if (node === node10) return ['/view?a=1']
-        if (node === node20) return ['/view?b=2']
-        return undefined
-      }
-    )
+    seedOutputs(setup.subgraph.id, [10], 'a.png')
+    seedOutputs(setup.subgraph.id, [20], 'b.png')
 
     const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
-    expect(promotedPreviews.value).toHaveLength(2)
-    expect(promotedPreviews.value[0].urls).toEqual(['/view?a=1'])
-    expect(promotedPreviews.value[1].urls).toEqual(['/view?b=2'])
+    expect(promotedPreviews.value).toEqual([
+      expect.objectContaining({
+        name: CANVAS_IMAGE_PREVIEW_WIDGET,
+        sourceWidgetName: CANVAS_IMAGE_PREVIEW_WIDGET,
+        items: outputItems('a.png')
+      }),
+      expect.objectContaining({
+        name: `${CANVAS_IMAGE_PREVIEW_WIDGET}_1`,
+        sourceWidgetName: CANVAS_IMAGE_PREVIEW_WIDGET,
+        items: outputItems('b.png')
+      })
+    ])
   })
 
   it('returns preview when only nodePreviewImages exist (e.g. GLSL live preview)', () => {
@@ -238,16 +225,29 @@ describe(usePromotedPreviews, () => {
     seedPreviewImages(setup.subgraph.id, [
       { nodeId: toNodeId(10), urls: [blobUrl] }
     ])
-    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue([blobUrl])
 
     const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
     expect(promotedPreviews.value).toEqual([
       {
+        name: CANVAS_IMAGE_PREVIEW_WIDGET,
         sourceNodeId: '10',
         sourceWidgetName: CANVAS_IMAGE_PREVIEW_WIDGET,
-        type: 'image',
-        urls: [blobUrl]
+        type: 'preview',
+        url: blobUrl
       }
+    ])
+  })
+
+  it('prefers the live preview over saved outputs of the same node', () => {
+    const { setup } = arrangePromotedPreview({ previewMediaType: 'image' })
+    const blobUrl = 'blob:http://localhost/live'
+    seedPreviewImages(setup.subgraph.id, [
+      { nodeId: toNodeId(10), urls: ['blob:http://localhost/stale', blobUrl] }
+    ])
+
+    const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
+    expect(promotedPreviews.value).toEqual([
+      expect.objectContaining({ type: 'preview', url: blobUrl })
     ])
   })
 
@@ -263,14 +263,14 @@ describe(usePromotedPreviews, () => {
     seedPreviewImages(setup.subgraph.id, [
       { nodeId: toNodeId(10), urls: [blobUrl] }
     ])
-    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue([blobUrl])
 
     expect(promotedPreviews.value).toEqual([
       {
+        name: CANVAS_IMAGE_PREVIEW_WIDGET,
         sourceNodeId: '10',
         sourceWidgetName: CANVAS_IMAGE_PREVIEW_WIDGET,
-        type: 'image',
-        urls: [blobUrl]
+        type: 'preview',
+        url: blobUrl
       }
     ])
   })
@@ -320,21 +320,18 @@ describe(usePromotedPreviews, () => {
       sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET
     })
 
-    const mockUrls = ['/view?filename=leaf.png']
-    seedOutputs(innerSetup.subgraph.id, [leafNode.id])
-    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockImplementation(
-      (node: LGraphNode) => (node === leafNode ? mockUrls : [])
-    )
+    seedOutputs(innerSetup.subgraph.id, [leafNode.id], 'leaf.png')
 
     const { promotedPreviews } = usePromotedPreviews(
       () => outerSetup.subgraphNode
     )
     expect(promotedPreviews.value).toEqual([
       {
+        name: CANVAS_IMAGE_PREVIEW_WIDGET,
         sourceNodeId: '10',
         sourceWidgetName: CANVAS_IMAGE_PREVIEW_WIDGET,
         type: 'image',
-        urls: mockUrls
+        items: outputItems('leaf.png')
       }
     ])
   })
@@ -381,21 +378,15 @@ describe(usePromotedPreviews, () => {
         return undefined
       }
     )
-    vi.mocked(outputStore.getNodeImageUrlsByExecutionId).mockImplementation(
-      (executionId) => {
-        if (executionId === firstLeafExecutionId) return ['blob:first']
-        if (executionId === secondLeafExecutionId) return ['blob:second']
-        return undefined
-      }
-    )
 
     expect(usePromotedPreviews(() => firstHost).promotedPreviews.value).toEqual(
       [
         {
+          name: CANVAS_IMAGE_PREVIEW_WIDGET,
           sourceNodeId: '10',
           sourceWidgetName: CANVAS_IMAGE_PREVIEW_WIDGET,
-          type: 'image',
-          urls: ['blob:first']
+          type: 'preview',
+          url: 'blob:first'
         }
       ]
     )
@@ -403,10 +394,11 @@ describe(usePromotedPreviews, () => {
       usePromotedPreviews(() => secondHost).promotedPreviews.value
     ).toEqual([
       {
+        name: CANVAS_IMAGE_PREVIEW_WIDGET,
         sourceNodeId: '10',
         sourceWidgetName: CANVAS_IMAGE_PREVIEW_WIDGET,
-        type: 'image',
-        urls: ['blob:second']
+        type: 'preview',
+        url: 'blob:second'
       }
     ])
   })

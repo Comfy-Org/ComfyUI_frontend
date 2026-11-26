@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
 
 import { useDialogStore } from '@/stores/dialogStore'
@@ -152,6 +152,23 @@ describe('dialogStore', () => {
       expect(store.isDialogOpen('test-dialog')).toBe(false)
     })
 
+    it('fires both onClose and onRemoved when a dialog is closed', () => {
+      const store = useDialogStore()
+      const onClose = vi.fn()
+      const onRemoved = vi.fn()
+
+      store.showDialog({
+        key: 'test-dialog',
+        component: MockComponent,
+        dialogComponentProps: { onClose, onRemoved }
+      })
+
+      store.closeDialog({ key: 'test-dialog' })
+
+      expect(onClose).toHaveBeenCalledTimes(1)
+      expect(onRemoved).toHaveBeenCalledTimes(1)
+    })
+
     it('should reuse existing dialog when showing with same key', () => {
       const store = useDialogStore()
 
@@ -178,6 +195,144 @@ describe('dialogStore', () => {
       expect(store.dialogStack[0].title).toBe('Original Title')
     })
 
+    it('fires the evicted dialog onRemoved, not onClose, when the stack exceeds the cap', () => {
+      const store = useDialogStore()
+      const onClose = vi.fn()
+      const onRemoved = vi.fn()
+
+      // priority: 10 pins this dialog at dialogStack[0], the slot the cap
+      // evicts from
+      store.showDialog({
+        key: 'evicted-dialog',
+        component: MockComponent,
+        priority: 10,
+        dialogComponentProps: { onClose, onRemoved }
+      })
+
+      for (let i = 0; i < 9; i++) {
+        store.showDialog({
+          key: `filler-${i}`,
+          component: MockComponent
+        })
+      }
+
+      expect(store.dialogStack[0].key).toBe('evicted-dialog')
+
+      store.showDialog({
+        key: 'overflow-dialog',
+        component: MockComponent
+      })
+
+      expect(onRemoved).toHaveBeenCalledTimes(1)
+      // Eviction is not a user close — onClose must not fire (it carries
+      // user-intent side effects like telemetry and "don't show again").
+      expect(onClose).not.toHaveBeenCalled()
+      expect(store.isDialogOpen('evicted-dialog')).toBe(false)
+      expect(store.dialogStack).toHaveLength(10)
+    })
+
+    it('keeps the stack capped when evicted onRemoved opens another dialog', () => {
+      const store = useDialogStore()
+      const onRemoved = vi.fn(() => {
+        store.showDialog({
+          key: 'reentrant-dialog',
+          component: MockComponent
+        })
+      })
+
+      store.showDialog({
+        key: 'evicted-dialog',
+        component: MockComponent,
+        priority: 10,
+        dialogComponentProps: { onRemoved }
+      })
+
+      for (let i = 0; i < 9; i++) {
+        store.showDialog({
+          key: `filler-${i}`,
+          component: MockComponent
+        })
+      }
+
+      store.showDialog({
+        key: 'overflow-dialog',
+        component: MockComponent
+      })
+
+      expect(onRemoved).toHaveBeenCalledTimes(1)
+      expect(store.isDialogOpen('evicted-dialog')).toBe(false)
+      expect(store.isDialogOpen('reentrant-dialog')).toBe(true)
+      expect(store.dialogStack).toHaveLength(10)
+    })
+
+    it('leaves a same-key replacement open when onClose evicted the original', () => {
+      const store = useDialogStore()
+      const replacementRemoved = vi.fn()
+      const originalRemoved = vi.fn(() => {
+        store.showDialog({
+          key: 'target',
+          component: MockComponent,
+          dialogComponentProps: { onRemoved: replacementRemoved }
+        })
+      })
+
+      store.showDialog({
+        key: 'target',
+        component: MockComponent,
+        priority: 10,
+        dialogComponentProps: {
+          onRemoved: originalRemoved,
+          // Overflow the cap so closing `target` evicts `target` itself, and
+          // its onRemoved reopens the key before closeDialog looks it up.
+          onClose: () => {
+            for (let i = 0; i < 10; i++) {
+              store.showDialog({ key: `filler-${i}`, component: MockComponent })
+            }
+          }
+        }
+      })
+
+      store.closeDialog({ key: 'target' })
+
+      expect(originalRemoved).toHaveBeenCalledTimes(1)
+      expect(replacementRemoved).not.toHaveBeenCalled()
+      expect(store.isDialogOpen('target')).toBe(true)
+      expect(
+        store.activeKey,
+        'Escape must reach the reopened dialog, not the filler behind it'
+      ).toBe('target')
+    })
+
+    it('evicts the most recently shown dialog when priorities are equal', () => {
+      const store = useDialogStore()
+      const onRemoved = vi.fn()
+
+      for (let i = 0; i < 9; i++) {
+        store.showDialog({
+          key: `filler-${i}`,
+          component: MockComponent
+        })
+      }
+
+      store.showDialog({
+        key: 'front-most-dialog',
+        component: MockComponent,
+        dialogComponentProps: { onRemoved }
+      })
+
+      expect(store.dialogStack[0].key).toBe('front-most-dialog')
+
+      store.showDialog({
+        key: 'overflow-dialog',
+        component: MockComponent
+      })
+
+      expect(onRemoved).toHaveBeenCalledTimes(1)
+      expect(store.isDialogOpen('front-most-dialog')).toBe(false)
+      expect(store.isDialogOpen('overflow-dialog')).toBe(true)
+      expect(store.dialogStack).toHaveLength(10)
+    })
+
     it('should update existing dialog props by key', () => {
       const store = useDialogStore()
 
@@ -185,76 +340,22 @@ describe('dialogStore', () => {
         key: 'updatable-dialog',
         component: MockContentPropsComponent,
         props: { openingAction: null },
-        dialogComponentProps: { dismissableMask: true }
+        dialogComponentProps: { dismissOnPointerDownOutside: true }
       })
 
       const updated = store.updateDialog({
         key: 'updatable-dialog',
         contentProps: { openingAction: 'copy-and-open' },
-        dialogComponentProps: { dismissableMask: false }
+        dialogComponentProps: { dismissOnPointerDownOutside: false }
       })
 
       expect(updated).toBe(true)
       expect(store.dialogStack[0].contentProps).toMatchObject({
         openingAction: 'copy-and-open'
       })
-      expect(store.dialogStack[0].dialogComponentProps.dismissableMask).toBe(
-        false
-      )
-    })
-  })
-
-  describe('ESC key behavior with multiple dialogs', () => {
-    it('should only allow the active dialog to close with ESC key', () => {
-      const store = useDialogStore()
-
-      // Create dialogs with different priorities
-      store.showDialog({
-        key: 'dialog-1',
-        component: MockComponent,
-        priority: 1
-      })
-
-      store.showDialog({
-        key: 'dialog-2',
-        component: MockComponent,
-        priority: 2
-      })
-
-      store.showDialog({
-        key: 'dialog-3',
-        component: MockComponent,
-        priority: 3
-      })
-
-      // Only the active dialog should be closable with ESC
-      const activeDialog = store.dialogStack.find(
-        (d) => d.key === store.activeKey
-      )
-      const inactiveDialogs = store.dialogStack.filter(
-        (d) => d.key !== store.activeKey
-      )
-
-      expect(activeDialog?.dialogComponentProps.closeOnEscape).toBe(true)
-      inactiveDialogs.forEach((dialog) => {
-        expect(dialog.dialogComponentProps.closeOnEscape).toBe(false)
-      })
-
-      // Close the active dialog
-      store.closeDialog({ key: store.activeKey! })
-
-      // The new active dialog should now be closable with ESC
-      const newActiveDialog = store.dialogStack.find(
-        (d) => d.key === store.activeKey
-      )
-      const newInactiveDialogs = store.dialogStack.filter(
-        (d) => d.key !== store.activeKey
-      )
-
-      expect(newActiveDialog?.dialogComponentProps.closeOnEscape).toBe(true)
-      newInactiveDialogs.forEach((dialog) => {
-        expect(dialog.dialogComponentProps.closeOnEscape).toBe(false)
-      })
+      expect(
+        store.dialogStack[0].dialogComponentProps.dismissOnPointerDownOutside
+      ).toBe(false)
     })
   })
 })

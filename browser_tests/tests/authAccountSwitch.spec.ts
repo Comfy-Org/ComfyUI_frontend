@@ -3,15 +3,25 @@ import { expect } from '@playwright/test'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import type { WorkspaceTokenResponse } from '@/platform/workspace/stores/workspaceAuthStore'
 
+import type { Page, Request } from '@playwright/test'
+import type {
+  CreateSessionResponse,
+  DeleteSessionResponse,
+  WebSessionResponse
+} from '@comfyorg/ingest-types'
+
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { CurrentUserPopover } from '@e2e/fixtures/components/CurrentUserPopover'
 import { AssetsSidebarTab } from '@e2e/fixtures/components/SidebarTab'
 import {
   CLOUD_REMOTE_CONFIG,
   DEFAULT_TEAM_MEMBERS,
   TEAM_WORKSPACE
 } from '@e2e/fixtures/data/cloudWorkspace'
+import { NO_WEB_SESSION, WEB_SESSION } from '@e2e/fixtures/data/webSession'
 import { AssetsHelper } from '@e2e/fixtures/helpers/AssetsHelper'
 import { CloudWorkspaceMockHelper } from '@e2e/fixtures/helpers/CloudWorkspaceMockHelper'
+import { TestIds } from '@e2e/fixtures/selectors'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import { member } from '@e2e/fixtures/utils/workspaceMocks'
 
@@ -93,6 +103,30 @@ function accountForToken(token: string | null): MockAccount {
   throw new Error(`Unexpected account token: ${token ?? 'missing'}`)
 }
 
+const SESSION_COOKIE = 'mock-cloud-session'
+
+async function cookieAccount(
+  request: Request
+): Promise<MockAccount | undefined> {
+  const cookie = await request.headerValue('cookie')
+  if (cookie?.includes(`${SESSION_COOKIE}=${ACCOUNT_B.id}`)) return ACCOUNT_B
+  if (cookie?.includes(`${SESSION_COOKIE}=${ACCOUNT_A.id}`)) return ACCOUNT_A
+  return undefined
+}
+
+async function requestAccount(request: Request): Promise<MockAccount> {
+  const authorization = await request.headerValue('authorization')
+  if (authorization) return accountForToken(authorization)
+  return (await cookieAccount(request)) ?? accountForToken(null)
+}
+
+function webSessionFor(account: MockAccount): WebSessionResponse {
+  return {
+    ...WEB_SESSION,
+    user: { ...WEB_SESSION.user, id: account.uid, email: account.email }
+  }
+}
+
 function firebaseLookupResponse(account: MockAccount): FirebaseLookupResponse {
   return {
     kind: 'identitytoolkit#GetAccountInfoResponse',
@@ -119,7 +153,7 @@ function firebaseLookupResponse(account: MockAccount): FirebaseLookupResponse {
 }
 
 test.describe('Cloud account switch', { tag: '@cloud' }, () => {
-  test('keeps workspace bearer and session cookie on the switched account', async ({
+  test('keeps the workspace token and session cookie on the switched account', async ({
     page
   }) => {
     test.setTimeout(60_000)
@@ -142,8 +176,7 @@ test.describe('Cloud account switch', { tag: '@cloud' }, () => {
 
     const features = {
       ...CLOUD_REMOTE_CONFIG,
-      onboarding_survey_enabled: false,
-      unified_cloud_auth: false
+      onboarding_survey_enabled: false
     } satisfies RemoteConfig
 
     await page.route('**/api/features', (route) =>
@@ -197,13 +230,13 @@ test.describe('Cloud account switch', { tag: '@cloud' }, () => {
     const credentialEvents: string[] = []
     const workspaceMintOwners: string[] = []
     await page.route('**/api/auth/token', async (route) => {
-      const authorization = await route.request().headerValue('authorization')
-      const account = accountForToken(authorization)
+      const account = await requestAccount(route.request())
       workspaceMintOwners.push(account.id)
       credentialEvents.push(`workspace:${account.id}`)
       const response = {
         token: `workspace-jwt-${account.id}`,
         expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+        user_id: 'uid-1',
         workspace: {
           id: TEAM_WORKSPACE.id,
           name: TEAM_WORKSPACE.name,
@@ -217,17 +250,34 @@ test.describe('Cloud account switch', { tag: '@cloud' }, () => {
 
     const sessionOwners: string[] = []
     await page.route('**/api/auth/session', async (route) => {
-      const authorization = await route.request().headerValue('authorization')
-      const account = accountForToken(authorization)
-      await route.fulfill({
-        status: 200,
-        headers: {
-          'set-cookie': `mock-cloud-session=${account.id}; Path=/; HttpOnly; SameSite=Lax`
-        },
-        json: {}
-      })
-      sessionOwners.push(account.id)
-      credentialEvents.push(`session:${account.id}`)
+      const request = route.request()
+      if (request.method() === 'POST') {
+        const account = accountForToken(
+          await request.headerValue('authorization')
+        )
+        sessionOwners.push(account.id)
+        credentialEvents.push(`session:${account.id}`)
+        await route.fulfill({
+          headers: {
+            'set-cookie': `${SESSION_COOKIE}=${account.id}; Path=/; HttpOnly; SameSite=Lax`
+          },
+          json: { success: true } satisfies CreateSessionResponse
+        })
+        return
+      }
+      if (request.method() === 'DELETE') {
+        await route.fulfill({
+          headers: { 'set-cookie': `${SESSION_COOKIE}=; Path=/; Max-Age=0` },
+          json: { success: true } satisfies DeleteSessionResponse
+        })
+        return
+      }
+      const account = await cookieAccount(request)
+      await route.fulfill(
+        account
+          ? { json: webSessionFor(account) }
+          : { status: 401, json: NO_WEB_SESSION }
+      )
     })
 
     await page.route('**/customers', (route) =>
@@ -251,9 +301,9 @@ test.describe('Cloud account switch', { tag: '@cloud' }, () => {
       has_more: false
     })
 
-    let assetsAuthorization: string | null = null
+    let assetsOwner: string | null = null
     await page.route(/\/api\/assets(?:\?.*)?$/, async (route) => {
-      assetsAuthorization = await route.request().headerValue('authorization')
+      assetsOwner = (await requestAccount(route.request())).id
       await route.fallback()
     })
 
@@ -261,19 +311,13 @@ test.describe('Cloud account switch', { tag: '@cloud' }, () => {
     let viewStatus: number | null = null
     await page.route('**/api/view?*', async (route) => {
       viewCookie = await route.request().headerValue('cookie')
-      const bearerOwner =
-        assetsAuthorization === null
-          ? null
-          : assetsAuthorization.endsWith(`-${ACCOUNT_B.id}`)
-            ? ACCOUNT_B.id
-            : ACCOUNT_A.id
       const cookieOwner = viewCookie?.includes(
-        `mock-cloud-session=${ACCOUNT_B.id}`
+        `${SESSION_COOKIE}=${ACCOUNT_B.id}`
       )
         ? ACCOUNT_B.id
         : ACCOUNT_A.id
 
-      if (bearerOwner !== cookieOwner) {
+      if (assetsOwner !== cookieOwner) {
         viewStatus = 404
         await route.fulfill({
           status: 404,
@@ -327,26 +371,33 @@ test.describe('Cloud account switch', { tag: '@cloud' }, () => {
       await expect(page).toHaveURL(/\/cloud\/login\?switchAccount=true$/)
       await page.getByRole('button', { name: 'Use email instead' }).click()
       await page.getByLabel('Email').fill(ACCOUNT_B.email)
-      await page.getByLabel('Password').fill('password')
+      await page
+        .getByRole('textbox', { name: 'Password', exact: true })
+        .fill('password')
       await page.getByRole('button', { name: 'Sign in' }).click()
 
+      const popover = new CurrentUserPopover(page)
+      await expect(popover.trigger).toBeVisible()
+      await popover.open()
       await expect(
-        page.getByRole('button', { name: 'Current user' })
+        popover.root.getByText(ACCOUNT_B.email, { exact: true })
       ).toBeVisible()
-      await page.getByRole('button', { name: 'Current user' }).click()
-      await expect(
-        page.getByText(ACCOUNT_B.email, { exact: true })
-      ).toBeVisible()
-      await page.keyboard.press('Escape')
+      await popover.close()
       await expect
         .poll(() => workspaceMintOwners, { timeout: 15_000 })
         .toContain(ACCOUNT_B.id)
       await expect
         .poll(() => sessionOwners, { timeout: 15_000 })
         .toContain(ACCOUNT_B.id)
-      expect(credentialEvents.indexOf(`session:${ACCOUNT_B.id}`)).toBeLessThan(
-        credentialEvents.indexOf(`workspace:${ACCOUNT_B.id}`)
+      const firstAccountBCredential = credentialEvents.findIndex((event) =>
+        event.endsWith(`:${ACCOUNT_B.id}`)
       )
+      expect(
+        credentialEvents
+          .slice(firstAccountBCredential)
+          .filter((event) => !event.endsWith(`:${ACCOUNT_B.id}`)),
+        'no account A credential is issued once account B signs in'
+      ).toEqual([])
     })
 
     await test.step('Load an asset with account B credentials', async () => {
@@ -361,9 +412,74 @@ test.describe('Cloud account switch', { tag: '@cloud' }, () => {
           image.evaluate((element: HTMLImageElement) => element.naturalWidth)
         )
         .toBeGreaterThan(0)
-      expect(assetsAuthorization).toBe(`Bearer workspace-jwt-${ACCOUNT_B.id}`)
-      expect(viewCookie).toContain(`mock-cloud-session=${ACCOUNT_B.id}`)
+      expect(assetsOwner).toBe(ACCOUNT_B.id)
+      expect(viewCookie).toContain(`${SESSION_COOKIE}=${ACCOUNT_B.id}`)
       expect(viewStatus).toBe(200)
     })
+  })
+})
+
+async function bootSignedIn(page: Page): Promise<void> {
+  await new CloudWorkspaceMockHelper(page).setup()
+  await page.goto(APP_URL)
+  await page.waitForFunction(() => !!window.app?.extensionManager, null, {
+    timeout: 45_000
+  })
+  await expect(page.getByTestId(TestIds.user.currentUserButton)).toBeVisible({
+    timeout: 15_000
+  })
+}
+
+// Sign-out navigates to the cloud SPA's /cloud/login, which 404s on this
+// static test backend, so the navigation is fulfilled with an empty page.
+async function clickLogout(page: Page): Promise<void> {
+  await page.route('**/cloud/login', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'text/html',
+      body: '<!doctype html><html><body></body></html>'
+    })
+  )
+  await page.getByTestId(TestIds.user.currentUserButton).click()
+  await page.getByTestId('logout-menu-item').click()
+}
+
+async function expectSignedOut(page: Page, message: string): Promise<void> {
+  await expect(async () => {
+    expect(page.isClosed(), 'a torn-down page must fail this check').toBe(false)
+    const url = page.url()
+    expect(url.startsWith(APP_URL), `page is at "${url}": ${message}`).toBe(
+      true
+    )
+    const atLogin = url.includes('/cloud/login')
+    const loginButtonVisible = await page
+      .getByTestId(TestIds.topbar.loginButton)
+      .isVisible()
+    const userButtonGone = !(await page
+      .getByTestId(TestIds.user.currentUserButton)
+      .isVisible())
+    expect(atLogin || loginButtonVisible || userButtonGone, message).toBe(true)
+  }).toPass({ timeout: 60_000 })
+}
+
+// Two pages in one context share Firebase's persistence, so a sign-out in
+// one tab must reach the other through the SDK and the app's reaction to it.
+test.describe('Cloud cross-tab sign-out', { tag: '@cloud' }, () => {
+  test('signing out in one tab signs out its sibling', async ({ browser }) => {
+    test.setTimeout(150_000)
+    const context = await browser.newContext()
+    const pageA = await context.newPage()
+    const pageB = await context.newPage()
+    await bootSignedIn(pageA)
+    await bootSignedIn(pageB)
+
+    await clickLogout(pageA)
+
+    await expectSignedOut(pageA, 'the signing-out tab must land signed out')
+    await expectSignedOut(
+      pageB,
+      'the sibling tab must not keep a working session after a sign-out elsewhere'
+    )
+    await context.close()
   })
 })

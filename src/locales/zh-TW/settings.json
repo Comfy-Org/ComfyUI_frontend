@@ -69,8 +69,8 @@
     "name": "啟用開發者模式選項（API 儲存等）"
   },
   "Comfy_DisableFloatRounding": {
-    "name": "停用預設浮點數元件四捨五入。",
-    "tooltip": "（需重新載入頁面）當後端節點已設定四捨五入時，無法停用四捨五入。"
+    "name": "停用預設浮點數元件四捨五入（已淘汰）。",
+    "tooltip": "（需要重新載入頁面）此功能已淘汰且預設為啟用。將其關閉後，編輯過的浮點數值會四捨五入至元件步進值的小數位數。節點宣告的四捨五入規則一律會套用。"
   },
   "Comfy_DisableSliders": {
     "name": "停用節點元件滑桿"
@@ -83,6 +83,10 @@
   },
   "Comfy_EnableWorkflowViewRestore": {
     "name": "在工作流程中儲存並還原畫布位置與縮放等級"
+  },
+  "Comfy_ErrorSystem_ShowMissingModels": {
+    "name": "在問題分頁中顯示缺少的模型",
+    "tooltip": "停用時，找不到的模型檔案不會列在問題分頁中，其節點也不會醒目顯示。"
   },
   "Comfy_Execution_PreviewMethod": {
     "name": "即時預覽方式",
@@ -313,6 +317,10 @@
   "Comfy_Node_DoubleClickTitleToEdit": {
     "name": "雙擊節點標題以編輯"
   },
+  "Comfy_Node_DownscaleImagePreviews": {
+    "name": "縮小大型圖片預覽",
+    "tooltip": "在節點 2.0 中，將節點上的大型圖片顯示為最長邊最多 1024px 的複本，讓多個大型預覽仍能保持順暢。關閉此選項即可一律顯示原始圖片。"
+  },
   "Comfy_Node_MiddleClickRerouteNode": {
     "name": "中鍵點擊建立新的重導節點"
   },
@@ -334,10 +342,6 @@
   "Comfy_Notification_ShowVersionUpdates": {
     "name": "顯示版本更新",
     "tooltip": "顯示新模型和主要新功能的更新。"
-  },
-  "Comfy_Pointer_ClickBufferTime": {
-    "name": "指標點擊漂移延遲",
-    "tooltip": "按下指標按鈕後，這是可忽略指標移動的最長時間（以毫秒為單位）。\n\n可防止在點擊時移動指標導致物件被意外推動。"
   },
   "Comfy_Pointer_ClickDrift": {
     "name": "指標點擊漂移（最大距離）",
@@ -461,8 +465,13 @@
   "Comfy_Workflow_Persist": {
     "name": "保留工作流程狀態並於頁面重新載入時還原"
   },
-  "Comfy_Workflow_ShowMissingModelsWarning": {
-    "name": "顯示缺少模型警告"
+  "Comfy_Workflow_ShowMissingMediaWarning": {
+    "name": "在問題分頁中顯示缺少的媒體",
+    "tooltip": "停用時，找不到的輸入影像、影片和音訊不會列在問題分頁中，其節點也不會醒目顯示。"
+  },
+  "Comfy_ErrorSystem_ShowMissingNodes": {
+    "name": "在問題分頁中顯示缺少的節點",
+    "tooltip": "停用時，缺少的節點套件不會列在問題分頁中，其節點也不會醒目顯示。在安裝前，工作流程仍無法執行。"
   },
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "儲存工作流程時排序節點 ID"

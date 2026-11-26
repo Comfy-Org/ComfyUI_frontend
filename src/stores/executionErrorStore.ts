@@ -1,5 +1,10 @@
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
+import { computed, ref, toRaw, watch } from 'vue'
+import { whenever } from '@vueuse/core'
+
+import { classifyPanelErrors } from '@/utils/errorSeverityClassification'
+import { classifyValidationErrorAbsorption } from '@/utils/missingResourceAbsorption'
+import type { MissingResourceAbsorption } from '@/utils/missingResourceAbsorption'
 
 import { useNodeErrorFlagSync } from '@/composables/graph/useNodeErrorFlagSync'
 import {
@@ -8,39 +13,43 @@ import {
   resolveLiftChain
 } from '@/core/graph/subgraph/liftNodeErrorsToBoundary'
 import type { LGraphNode, LGraph } from '@/lib/litegraph/src/litegraph'
-import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
-import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
-import type { MissingModelCandidate } from '@/platform/missingModel/types'
-import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
+import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
+import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
+import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
+import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { app } from '@/scripts/app'
-import type {
-  ExecutionErrorWsMessage,
-  NodeError,
-  PromptError
-} from '@/schemas/apiSchema'
+import { useApp } from '@/scripts/appInstance'
+import { isGraphLoading } from '@/core/graph/graphLoadState'
+import { useDialogService } from '@/services/dialogService'
+import type { ExecutionErrorWsMessage } from '@comfyorg/api-client/executionTypes'
+import type { NodeError, PromptError } from '@comfyorg/api-client/types'
 import {
   getAncestorExecutionIds,
   tryNormalizeNodeExecutionId
-} from '@/types/nodeIdentification'
-import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
+} from '@comfyorg/graph-model/nodeIdentification'
+import type {
+  NodeExecutionId,
+  NodeLocatorId
+} from '@comfyorg/graph-model/nodeIdentification'
 import {
   executionIdToNodeLocatorId,
   getExecutionIdByNode,
   getNodeByExecutionId
 } from '@/utils/graphTraversalUtil'
 import type { UUID } from '@/utils/uuid'
-import { zeroUuid } from '@/utils/uuid'
+import { zeroUuid } from '@comfyorg/graph-model/uuid'
 import {
   SIMPLE_ERROR_TYPES,
   errorsForSlot,
   getInputConfigBounds,
   hasErrorForSlot,
+  isMissingNodePromptError,
   isValueStillOutOfRange
 } from '@/utils/executionErrorUtil'
-import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import type { NodeValidationError } from '@/utils/executionErrorUtil'
+import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 
 interface SlotNodeErrorClearTarget {
   executionId: NodeExecutionId
@@ -49,8 +58,24 @@ interface SlotNodeErrorClearTarget {
   useRecordedBounds?: boolean
 }
 
+interface ValidationErrorSurface {
+  executionId: NodeExecutionId
+  error: NodeValidationError
+}
+
+// undefined means no verdict yet; null or [] means a verified empty result.
+interface MissingResourceCandidates {
+  models?: MissingModelCandidate[] | null
+  media?: MissingMediaCandidate[] | null
+}
+
 interface RunErrorState {
+  absorbedValidationErrors: WeakMap<
+    NodeValidationError,
+    MissingResourceAbsorption
+  >
   nodeErrors: Record<string, NodeError> | null
+  nodeErrorsJobId: string | null
   executionError: ExecutionErrorWsMessage | null
   promptError: PromptError | null
 }
@@ -92,14 +117,16 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     if (key === null) return
 
     const next: RunErrorState = {
+      absorbedValidationErrors: new WeakMap(),
       nodeErrors: null,
+      nodeErrorsJobId: null,
       executionError: null,
       promptError: null,
       ...runErrorsByWorkflow.value.get(key),
       ...patch
     }
 
-    if (Object.values(next).every((value) => value === null)) {
+    if (!next.nodeErrors && !next.executionError && !next.promptError) {
       runErrorsByWorkflow.value.delete(key)
     } else {
       runErrorsByWorkflow.value.set(key, next)
@@ -108,6 +135,25 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
 
   function runErrorKey(graphId: UUID, workflowPath?: string) {
     return `${workflowPath ?? workflowStore.activeWorkflow?.path ?? ''}:${graphId}`
+  }
+
+  function moveRunErrors(
+    graphId: UUID,
+    oldWorkflowPath: string,
+    newWorkflowPath: string
+  ) {
+    const oldKey = runErrorKey(graphId, oldWorkflowPath)
+    const newKey = runErrorKey(graphId, newWorkflowPath)
+    if (oldKey === newKey) return
+
+    const runErrors = runErrorsByWorkflow.value.get(oldKey)
+    if (runErrors) runErrorsByWorkflow.value.set(newKey, runErrors)
+    else runErrorsByWorkflow.value.delete(newKey)
+    runErrorsByWorkflow.value.delete(oldKey)
+
+    if (activeRunErrorKey.value === oldKey) {
+      activeRunErrorKey.value = newKey
+    }
   }
 
   function captureRunErrorKey() {
@@ -131,6 +177,71 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     Map<NodeExecutionId, number>
   >()
   const pendingAddedNodeScanRevision = ref(0)
+  // Preserve the lifted host identity so retirement still matches after node deletion.
+  const validationErrorSurfaces = new WeakMap<
+    NodeValidationError,
+    ValidationErrorSurface[]
+  >()
+
+  function getValidationErrorSurfaces(
+    rootGraph: LGraph | undefined,
+    rawNodeId: NodeExecutionId,
+    nodeError: NodeError,
+    error: NodeValidationError
+  ): ValidationErrorSurface[] {
+    const rawErrorRecord = {
+      [rawNodeId]: { ...nodeError, errors: [error] }
+    }
+    const surfacedErrorRecord = rootGraph
+      ? liftNodeErrorsToBoundary(rootGraph, rawErrorRecord)
+      : rawErrorRecord
+
+    return Object.entries(surfacedErrorRecord).flatMap(
+      ([surfaceNodeId, surfaceNodeError]) => {
+        const executionId = tryNormalizeNodeExecutionId(surfaceNodeId)
+        if (!executionId) return []
+        return surfaceNodeError.errors.map((error) => ({ executionId, error }))
+      }
+    )
+  }
+
+  function captureValidationErrorSurfaces(
+    nodeErrors: Record<string, NodeError>
+  ): void {
+    const rootGraph = useApp().rootGraphOrUndefined
+    if (!rootGraph) return
+
+    for (const [rawNodeId, nodeError] of Object.entries(nodeErrors)) {
+      const executionId = tryNormalizeNodeExecutionId(rawNodeId)
+      if (!executionId) continue
+      for (const error of nodeError.errors) {
+        validationErrorSurfaces.set(
+          toRaw(error),
+          getValidationErrorSurfaces(rootGraph, executionId, nodeError, error)
+        )
+      }
+    }
+  }
+
+  function resolveValidationErrorSurfaces(
+    executionId: NodeExecutionId,
+    nodeError: NodeError,
+    error: NodeValidationError
+  ): ValidationErrorSurface[] {
+    const rawError = toRaw(error)
+    const cached = validationErrorSurfaces.get(rawError)
+    if (cached) return cached
+
+    const rootGraph = useApp().rootGraphOrUndefined
+    const surfaces = getValidationErrorSurfaces(
+      rootGraph,
+      executionId,
+      nodeError,
+      error
+    )
+    if (rootGraph) validationErrorSurfaces.set(rawError, surfaces)
+    return surfaces
+  }
 
   function beginAddedNodeErrorScan(
     rootGraph: LGraph,
@@ -163,6 +274,158 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
   }
 
   /**
+   * Also called after a graph load settles: the sync watcher below skips
+   * transitions that happen while a load is in flight, and no later
+   * transition reruns it.
+   */
+  function retireResolvedMissingNodePromptError() {
+    if (missingNodesStore.missingNodesError?.nodeTypes.length) return
+    if (!isMissingNodePromptError(lastPromptError.value)) return
+    updateRunErrors({ promptError: null }, activeRunErrorKey.value)
+  }
+
+  whenever(
+    () => !missingNodesStore.missingNodesError?.nodeTypes.length,
+    () => {
+      if (isGraphLoading(useApp().rootGraphOrUndefined)) return
+      retireResolvedMissingNodePromptError()
+    },
+    { flush: 'sync' }
+  )
+
+  function classifyMissingResource(
+    surfaces: ValidationErrorSurface[],
+    { models, media }: MissingResourceCandidates
+  ): MissingResourceAbsorption | null {
+    for (const { executionId, error } of surfaces) {
+      const kind = classifyValidationErrorAbsorption(
+        models ?? null,
+        media ?? null,
+        error,
+        executionId
+      )
+      if (kind) return kind
+    }
+    return null
+  }
+
+  /**
+   * The model/media analog of the missing-node retirement above: when a
+   * candidate leaves the store (installed + refreshed, node deleted or
+   * bypassed), the validation errors it was absorbing must retire with it —
+   * otherwise resolving the resource resurfaces them as blocking errors.
+   * Matching is by content, so a rescan that rebuilds equivalent candidates
+   * retires nothing.
+   */
+  function reconcileAbsorbedErrors(
+    { models, media }: MissingResourceCandidates,
+    key: string | null,
+    previous?: MissingResourceCandidates
+  ) {
+    if (
+      isGraphLoading(useApp().rootGraphOrUndefined) ||
+      key === null ||
+      key !== activeRunErrorKey.value
+    )
+      return
+    const state = activeRunErrors.value
+    if (!state?.nodeErrors) return
+    const record = state.nodeErrors
+
+    const possiblyMissingModels =
+      models?.map((candidate) =>
+        candidate.isMissing === undefined
+          ? { ...candidate, isMissing: true }
+          : candidate
+      ) ?? null
+    const possiblyMissingMedia =
+      media?.map((candidate) =>
+        candidate.isMissing === undefined
+          ? { ...candidate, isMissing: true }
+          : candidate
+      ) ?? null
+
+    const current = { models, media }
+    const possiblyMissing = {
+      models: possiblyMissingModels,
+      media: possiblyMissingMedia
+    }
+    const updated = filterNodeErrors(record, (surfaces, error) => {
+      const rawError = toRaw(error)
+      const kind = classifyMissingResource(surfaces, current)
+      if (kind) {
+        state.absorbedValidationErrors.set(rawError, kind)
+        return true
+      }
+      const wasAbsorbed =
+        state.absorbedValidationErrors.get(rawError) ??
+        (previous ? classifyMissingResource(surfaces, previous) : null)
+      if (!wasAbsorbed) return true
+      const wasVerified =
+        wasAbsorbed === 'missing_model'
+          ? models !== undefined
+          : media !== undefined
+      return (
+        !wasVerified ||
+        classifyMissingResource(surfaces, possiblyMissing) !== null
+      )
+    })
+    if (updated !== record) updateRunErrors({ nodeErrors: updated }, key)
+  }
+
+  function filterNodeErrors(
+    record: Record<string, NodeError>,
+    keepAndRecord: (
+      surfaces: ValidationErrorSurface[],
+      error: NodeValidationError
+    ) => boolean
+  ): Record<string, NodeError> | null {
+    let changed = false
+    const updated: Record<string, NodeError> = {}
+    for (const [rawNodeId, nodeError] of Object.entries(record)) {
+      const executionId = tryNormalizeNodeExecutionId(rawNodeId)
+      if (!executionId) {
+        updated[rawNodeId] = nodeError
+        continue
+      }
+      const remaining = nodeError.errors.filter((error) =>
+        keepAndRecord(
+          resolveValidationErrorSurfaces(executionId, nodeError, error),
+          error
+        )
+      )
+      if (remaining.length === nodeError.errors.length) {
+        updated[rawNodeId] = nodeError
+      } else {
+        changed = true
+        if (remaining.length > 0)
+          updated[rawNodeId] = { ...nodeError, errors: remaining }
+      }
+    }
+    if (!changed) return record
+    return Object.keys(updated).length ? updated : null
+  }
+
+  function retireResolvedMissingResourceErrors(
+    candidates: MissingResourceCandidates,
+    key: string | null = activeRunErrorKey.value
+  ) {
+    reconcileAbsorbedErrors(candidates, key)
+  }
+
+  watch(
+    () => ({
+      key: activeRunErrorKey.value,
+      models: missingModelStore.missingModelCandidates,
+      media: missingMediaStore.missingMediaCandidates
+    }),
+    (next, previous) => {
+      if (next.key !== previous.key) return
+      reconcileAbsorbedErrors(next, next.key, previous)
+    }
+  )
+
+  /**
    * Replaces the full record; empty or null means the run produced no errors.
    *
    * `key` files the errors against the workflow that produced them, which is
@@ -172,15 +435,68 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
    */
   function recordNodeErrors(
     nodeErrors: Record<string, NodeError> | null,
-    key: string | null = activeRunErrorKey.value
+    key: string | null = activeRunErrorKey.value,
+    jobId: string | null = null
   ) {
+    const record =
+      nodeErrors && Object.keys(nodeErrors).length > 0 ? nodeErrors : null
     updateRunErrors(
       {
-        nodeErrors:
-          nodeErrors && Object.keys(nodeErrors).length > 0 ? nodeErrors : null
+        nodeErrors: record,
+        nodeErrorsJobId: record ? jobId : null,
+        absorbedValidationErrors: new WeakMap()
       },
       key
     )
+    if (record && key !== null && key === activeRunErrorKey.value) {
+      captureValidationErrorSurfaces(record)
+      reconcileAbsorbedErrors(
+        {
+          models: missingModelStore.missingModelCandidates,
+          media: missingMediaStore.missingMediaCandidates
+        },
+        key
+      )
+    }
+  }
+
+  /**
+   * Records submission `jobId`'s node errors under `key`. An empty response
+   * keeps errors already recorded for `jobId` and clears any other job's.
+   */
+  function recordSubmissionNodeErrors(
+    nodeErrors: Record<string, NodeError> | null | undefined,
+    key: string | null,
+    jobId: string | undefined
+  ) {
+    if (nodeErrors && Object.keys(nodeErrors).length > 0) {
+      recordNodeErrors(nodeErrors, key, jobId ?? null)
+      return
+    }
+    const recordedJobId =
+      key === null ? null : runErrorsByWorkflow.value.get(key)?.nodeErrorsJobId
+    if (jobId === undefined || recordedJobId !== jobId) {
+      recordNodeErrors(null, key)
+    }
+  }
+
+  /**
+   * Records `nodeErrors` of job `jobId` under `key` and opens the error
+   * overlay when that run is on screen.
+   */
+  function surfaceNodeErrors(
+    nodeErrors: Record<string, NodeError>,
+    key: string,
+    jobId: string
+  ) {
+    recordNodeErrors(nodeErrors, key, jobId)
+    if (
+      key === activeRunErrorKey.value &&
+      hasNodeError.value &&
+      useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')
+    ) {
+      showErrorOverlay()
+    }
   }
 
   function recordExecutionError(
@@ -188,6 +504,19 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     key: string | null = activeRunErrorKey.value
   ) {
     updateRunErrors({ executionError: detail }, key)
+  }
+
+  function showExecutionError(
+    detail: ExecutionErrorWsMessage,
+    key: string | null = activeRunErrorKey.value
+  ) {
+    if (key === null || key !== activeRunErrorKey.value) return
+
+    if (useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) {
+      showErrorOverlay()
+    } else {
+      useDialogService().showExecutionErrorDialog(detail)
+    }
   }
 
   function recordPromptError(
@@ -234,8 +563,8 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     executionId: NodeExecutionId,
     slotName?: string
   ): Record<string, NodeError> | null {
+    if (!(executionId in nodeErrors)) return null
     const nodeError = nodeErrors[executionId]
-    if (!nodeError) return null
 
     const isSlotScoped = slotName !== undefined
     const relevantErrors = isSlotScoped
@@ -278,7 +607,8 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     slotName: string
   ): SlotNodeErrorClearTarget[] {
     const surfaced = surfacedNodeErrors.value
-    if (!surfaced || !app.isGraphReady) return []
+    const rootGraph = useApp().rootGraphOrUndefined
+    if (!surfaced || !rootGraph) return []
 
     return Object.values(surfaced).flatMap((surface) =>
       surface.errors.flatMap((error): SlotNodeErrorClearTarget[] => {
@@ -291,7 +621,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
         if (!sourceExecutionId) return []
 
         const clearsThisError = resolveLiftChain(
-          app.rootGraph,
+          rootGraph,
           sourceExecutionId,
           source.source_input_name
         ).some(
@@ -349,8 +679,8 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     value: number,
     callerOptions: { min?: number; max?: number }
   ): boolean {
+    if (!(target.executionId in nodeErrors)) return false
     const nodeError = nodeErrors[target.executionId]
-    if (!nodeError) return false
 
     const errors = errorsForSlot(nodeError.errors, target.slotName)
     const options = target.useRecordedBounds
@@ -470,7 +800,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     missingModelStore.setMissingModels(models)
     if (
       !options?.silent &&
-      models.length &&
+      missingModelStore.hasMissingModels &&
       useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')
     ) {
       showErrorOverlay()
@@ -485,7 +815,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     missingMediaStore.setMissingMedia(media)
     if (
       !options?.silent &&
-      media.length &&
+      missingMediaStore.hasMissingMedia &&
       useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')
     ) {
       showErrorOverlay()
@@ -495,7 +825,10 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
   const lastExecutionErrorNodeLocatorId = computed(() => {
     const err = lastExecutionError.value
     if (!err) return null
-    return executionIdToNodeLocatorId(app.rootGraph, String(err.node_id))
+    return executionIdToNodeLocatorId(
+      useApp().rootGraphOrUndefined,
+      String(err.node_id)
+    )
   })
 
   const lastExecutionErrorNodeId = computed(() => {
@@ -512,11 +845,45 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
   const hasNodeError = computed(() => lastNodeErrors.value !== null)
 
   // Re-lifts only when the record changes; topology is assumed stable while errors are displayed.
-  const surfacedNodeErrors = computed(() =>
-    lastNodeErrors.value && app.isGraphReady
-      ? liftNodeErrorsToBoundary(app.rootGraph, lastNodeErrors.value)
+  const surfacedNodeErrors = computed(() => {
+    const rootGraph = useApp().rootGraphOrUndefined
+    return lastNodeErrors.value && rootGraph
+      ? liftNodeErrorsToBoundary(rootGraph, lastNodeErrors.value)
       : lastNodeErrors.value
+  })
+
+  const errorClassification = computed(() =>
+    classifyPanelErrors({
+      promptError: lastPromptError.value,
+      executionError: lastExecutionError.value,
+      nodeErrors: surfacedNodeErrors.value,
+      missingModels: missingModelStore.visibleMissingModelCandidates,
+      missingMedia: missingMediaStore.visibleMissingMediaCandidates,
+      hasMissingNodes: missingNodesStore.hasMissingNodes
+    })
   )
+
+  const blockingErrorNodeLocatorIds = computed(() => {
+    const classification = errorClassification.value
+    const executionIds = classification.nodeErrors
+      .filter(({ errors }) => errors.some(({ absorption }) => !absorption))
+      .map(({ rawNodeId }) => rawNodeId)
+    if (classification.executionError?.rawNodeId != null) {
+      executionIds.push(classification.executionError.rawNodeId)
+    }
+
+    const locators = new Set<NodeLocatorId>()
+    for (const executionId of executionIds) {
+      for (const ancestorId of getAncestorExecutionIds(executionId)) {
+        const locator = executionIdToNodeLocatorId(
+          useApp().rootGraphOrUndefined,
+          ancestorId
+        )
+        if (locator) locators.add(locator)
+      }
+    }
+    return locators
+  })
 
   const hasMissingError = computed(
     () =>
@@ -540,47 +907,25 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     }
     if (lastExecutionError.value) {
       const nodeId = lastExecutionError.value.node_id
-      if (nodeId !== null && nodeId !== undefined) {
+      if (nodeId != null) {
         ids.push(String(nodeId))
       }
     }
     return ids
   })
 
-  const promptErrorCount = computed(() => (lastPromptError.value ? 1 : 0))
-
-  const nodeErrorCount = computed(() => {
-    if (!lastNodeErrors.value) return 0
-    let count = 0
-    for (const nodeError of Object.values(lastNodeErrors.value)) {
-      count += nodeError.errors.length
-    }
-    return count
-  })
-
-  const executionErrorCount = computed(() => (lastExecutionError.value ? 1 : 0))
-
-  const totalErrorCount = computed(
-    () =>
-      promptErrorCount.value +
-      nodeErrorCount.value +
-      executionErrorCount.value +
-      missingNodesStore.missingNodeCount +
-      missingModelStore.missingModelCount +
-      missingMediaStore.missingMediaCount
-  )
-
   /** Graph node IDs (as strings) that have errors in the current graph scope. */
   const activeGraphErrorNodeIds = computed<Set<string>>(() => {
     const ids = new Set<string>()
-    if (!app.isGraphReady) return ids
+    const rootGraph = useApp().rootGraphOrUndefined
+    if (!rootGraph) return ids
 
     // Fall back to rootGraph when currentGraph hasn't been initialized yet
-    const activeGraph = canvasStore.currentGraph ?? app.rootGraph
+    const activeGraph = canvasStore.currentGraph ?? rootGraph
 
     if (surfacedNodeErrors.value) {
       for (const executionId of Object.keys(surfacedNodeErrors.value)) {
-        const graphNode = getNodeByExecutionId(app.rootGraph, executionId)
+        const graphNode = getNodeByExecutionId(rootGraph, executionId)
         if (graphNode?.graph === activeGraph) {
           ids.add(String(graphNode.id))
         }
@@ -589,7 +934,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
 
     if (lastExecutionError.value) {
       const execNodeId = String(lastExecutionError.value.node_id)
-      const graphNode = getNodeByExecutionId(app.rootGraph, execNodeId)
+      const graphNode = getNodeByExecutionId(rootGraph, execNodeId)
       if (graphNode?.graph === activeGraph) {
         ids.add(String(graphNode.id))
       }
@@ -608,7 +953,10 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
       for (const [executionId, nodeError] of Object.entries(
         surfacedNodeErrors.value
       )) {
-        const locatorId = executionIdToNodeLocatorId(app.rootGraph, executionId)
+        const locatorId = executionIdToNodeLocatorId(
+          useApp().rootGraphOrUndefined,
+          executionId
+        )
         if (locatorId) {
           map[locatorId] = nodeError
         }
@@ -654,13 +1002,19 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
 
   /** True if the node has errors inside it at any nesting depth. */
   function isContainerWithInternalError(node: LGraphNode): boolean {
-    if (!app.isGraphReady) return false
-    const execId = getExecutionIdByNode(app.rootGraph, node)
+    const rootGraph = useApp().rootGraphOrUndefined
+    if (!rootGraph) return false
+    const execId = getExecutionIdByNode(rootGraph, node)
     if (!execId) return false
     return errorAncestorExecutionIds.value.has(execId)
   }
 
-  useNodeErrorFlagSync(surfacedNodeErrors, missingModelStore, missingMediaStore)
+  useNodeErrorFlagSync(
+    surfacedNodeErrors,
+    missingModelStore,
+    missingMediaStore,
+    missingNodesStore
+  )
 
   return {
     // Read-only state
@@ -670,21 +1024,27 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
 
     // Recording
     recordNodeErrors,
+    recordSubmissionNodeErrors,
+    surfaceNodeErrors,
     recordExecutionError,
     recordPromptError,
 
     // Workflow scoping
     captureRunErrorKey,
     runErrorKey,
+    moveRunErrors,
     setActiveGraph,
 
     // Clearing
     clearRunErrors,
     clearExecutionStartErrors,
     clearPromptError,
+    retireResolvedMissingNodePromptError,
+    retireResolvedMissingResourceErrors,
 
     // Overlay UI
     isErrorOverlayOpen,
+    showExecutionError,
     showErrorOverlay,
     dismissErrorOverlay,
 
@@ -693,11 +1053,13 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     hasExecutionError,
     hasPromptError,
     hasNodeError,
+    errorClassification,
+    blockingErrorNodeLocatorIds,
     hasMissingError,
     hasAnyError,
     allErrorExecutionIds,
-    totalErrorCount,
     lastExecutionErrorNodeId,
+    lastExecutionErrorNodeLocatorId,
     activeGraphErrorNodeIds,
 
     // Added-node scan coordination

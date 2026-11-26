@@ -1,14 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import { api } from '@/scripts/api'
+
 import { listSecretProviders } from './secretsApi'
 
-const mockFetchApi = vi.fn()
-
-vi.mock('@/scripts/api', () => ({
-  api: {
-    fetchApi: (...args: unknown[]) => mockFetchApi(...args)
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
 function jsonResponse(body: unknown, init: Partial<Response> = {}): Response {
   return {
@@ -23,18 +19,18 @@ function jsonResponse(body: unknown, init: Partial<Response> = {}): Response {
 
 describe('listSecretProviders', () => {
   it('requests the providers endpoint and returns the provider list', async () => {
-    mockFetchApi.mockResolvedValue(
+    vi.mocked(api.fetchApi).mockResolvedValue(
       jsonResponse({ data: [{ id: 'huggingface' }, { id: 'civitai' }] })
     )
 
     const providers = await listSecretProviders()
 
-    expect(mockFetchApi).toHaveBeenCalledWith('/secrets/providers')
+    expect(api.fetchApi).toHaveBeenCalledWith('/secrets/providers')
     expect(providers).toEqual([{ id: 'huggingface' }, { id: 'civitai' }])
   })
 
   it('passes through per-provider credential options and label metadata', async () => {
-    mockFetchApi.mockResolvedValue(
+    vi.mocked(api.fetchApi).mockResolvedValue(
       jsonResponse({
         data: [
           {
@@ -70,7 +66,7 @@ describe('listSecretProviders', () => {
   })
 
   it('returns an empty list when data is missing', async () => {
-    mockFetchApi.mockResolvedValue(jsonResponse({}))
+    vi.mocked(api.fetchApi).mockResolvedValue(jsonResponse({}))
 
     const providers = await listSecretProviders()
 
@@ -78,7 +74,7 @@ describe('listSecretProviders', () => {
   })
 
   it('throws SecretsApiError on a failed response', async () => {
-    mockFetchApi.mockResolvedValue(
+    vi.mocked(api.fetchApi).mockResolvedValue(
       jsonResponse(
         { message: 'unavailable' },
         { ok: false, status: 503, statusText: 'Service Unavailable' }
@@ -93,7 +89,7 @@ describe('listSecretProviders', () => {
   })
 
   it('preserves a recognized error code on SecretsApiError', async () => {
-    mockFetchApi.mockResolvedValue(
+    vi.mocked(api.fetchApi).mockResolvedValue(
       jsonResponse(
         { code: 'DUPLICATE_NAME', message: 'exists' },
         { ok: false, status: 409, statusText: 'Conflict' }

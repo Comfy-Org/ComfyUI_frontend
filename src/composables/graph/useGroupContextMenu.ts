@@ -1,7 +1,26 @@
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { getCanvasContextMenuTarget } from '@/lib/litegraph/src/canvas/getCanvasContextMenuTarget'
-import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import {
+  LGraphCanvas,
+  LGraphNode,
+  LiteGraph
+} from '@/lib/litegraph/src/litegraph'
+
+function shouldUseLegacyContextMenu(
+  canvas: LGraphCanvas,
+  node: LGraphNode | undefined
+) {
+  return Boolean(node) || !LiteGraph.vueNodesMode || !canvas.graph
+}
+
+function groupUnderBareCursor(canvas: LGraphCanvas, x: number, y: number) {
+  const { reroute, link, stack, group } = getCanvasContextMenuTarget(
+    canvas,
+    x,
+    y
+  )
+  return reroute || link || stack ? undefined : group
+}
 
 /**
  * Routes Nodes 2.0 group right-clicks to Vue while nodes, reroutes,
@@ -16,17 +35,13 @@ export function useGroupContextMenu() {
   ): void {
     const [node, event] = args
 
-    if (node || !LiteGraph.vueNodesMode || !this.graph) {
+    if (shouldUseLegacyContextMenu(this, node)) {
       original.apply(this, args)
       return
     }
 
-    const { reroute, group } = getCanvasContextMenuTarget(
-      this,
-      event.canvasX,
-      event.canvasY
-    )
-    if (reroute || !group) {
+    const group = groupUnderBareCursor(this, event.canvasX, event.canvasY)
+    if (!group) {
       original.apply(this, args)
       return
     }
@@ -34,14 +49,18 @@ export function useGroupContextMenu() {
     const groupIsOnlySelection =
       this.selectedItems.size === 1 && this.selectedItems.has(group)
 
-    if (!groupIsOnlySelection) {
-      this.deselectAll()
-      group.selected = true
-      group.recomputeInsideNodes()
-      this.selectedItems.add(group)
-      this.state.selectionChanged = true
+    if (!groupIsOnlySelection && !this.selectOnly) {
+      this.deselectAll({ notify: false })
+      this.select(group, { notify: false, selectGroupChildren: false })
+      this.onSelectionChange?.(
+        Object.fromEntries(
+          [...this.selectedItems]
+            .filter((item) => item instanceof LGraphNode)
+            .map((node) => [node.id, node])
+        )
+      )
+      this.setDirty(true)
     }
-    useCanvasStore().updateSelectedItems()
     showNodeOptions(event)
   }
 

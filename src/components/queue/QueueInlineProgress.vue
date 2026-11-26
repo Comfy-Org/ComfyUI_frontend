@@ -7,14 +7,14 @@
       cn('pointer-events-none absolute inset-0 overflow-hidden', radiusClass)
     "
   >
-    <div
-      class="pointer-events-none absolute bottom-0 left-0 h-[3px] bg-interface-panel-job-progress-primary transition-[width]"
-      :style="{ width: `${totalPercent}%` }"
+    <ProgressFill
+      :progress="totalPercent / 100"
+      class="pointer-events-none absolute bottom-0 left-0 h-[3px] w-full bg-primary"
     />
-    <div
+    <ProgressFill
+      :progress="currentNodePercent / 100"
       data-testid="queue-inline-progress-node-fill"
-      class="pointer-events-none absolute bottom-0 left-0 h-[3px] bg-interface-panel-job-progress-secondary transition-[width]"
-      :style="{ width: `${currentNodePercent}%` }"
+      class="pointer-events-none absolute bottom-0 left-0 h-[3px] w-full bg-primary/30"
     />
   </div>
 </template>
@@ -22,6 +22,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
+import ProgressFill from '@/components/common/ProgressFill.vue'
 import { useQueueProgress } from '@/composables/queue/useQueueProgress'
 import { cn } from '@comfyorg/tailwind-utils'
 

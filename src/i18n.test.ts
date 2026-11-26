@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
 import type * as I18nModule from './i18n'
 
@@ -11,6 +12,7 @@ let mergeCustomNodesI18n: typeof I18nModule.mergeCustomNodesI18n
 let resolveSupportedLocale: typeof I18nModule.resolveSupportedLocale
 let setActiveLocale: typeof I18nModule.setActiveLocale
 let te: typeof I18nModule.te
+let syncDocumentLanguage: typeof I18nModule.syncDocumentLanguage
 
 async function importI18nModule() {
   const i18nModule = await import('./i18n')
@@ -23,10 +25,11 @@ async function importI18nModule() {
   resolveSupportedLocale = i18nModule.resolveSupportedLocale
   setActiveLocale = i18nModule.setActiveLocale
   te = i18nModule.te
+  syncDocumentLanguage = i18nModule.syncDocumentLanguage
 }
 
 // Mock the JSON imports before importing i18n module
-vi.mock('./locales/en/main.json', () => ({
+vi.mock<unknown>(import('./locales/en/main.json'), () => ({
   default: { welcome: 'Welcome', enOnly: 'English only' }
 }))
 // vue-i18n merges mutate the message tree built from this object, and mocked
@@ -54,19 +57,21 @@ function restoreEnNodeDefsMock() {
   })
 }
 
-vi.mock('./locales/en/nodeDefs.json', () => ({
+vi.mock<unknown>(import('./locales/en/nodeDefs.json'), () => ({
   default: enNodeDefsMock
 }))
-vi.mock('./locales/en/commands.json', () => ({
+vi.mock<unknown>(import('./locales/en/commands.json'), () => ({
   default: { save: 'Save' }
 }))
-vi.mock('./locales/en/settings.json', () => ({
+vi.mock<unknown>(import('./locales/en/settings.json'), () => ({
   default: { theme: 'Theme' }
 }))
 
 // Mock lazy-loaded locales
-vi.mock('./locales/zh/main.json', () => ({ default: { welcome: '欢迎' } }))
-vi.mock('./locales/zh/nodeDefs.json', () => ({
+vi.mock<unknown>(import('./locales/zh/main.json'), () => ({
+  default: { welcome: '欢迎' }
+}))
+vi.mock<unknown>(import('./locales/zh/nodeDefs.json'), () => ({
   default: {
     testNode: '测试节点',
     KSampler: {
@@ -74,8 +79,12 @@ vi.mock('./locales/zh/nodeDefs.json', () => ({
     }
   }
 }))
-vi.mock('./locales/zh/commands.json', () => ({ default: { save: '保存' } }))
-vi.mock('./locales/zh/settings.json', () => ({ default: { theme: '主题' } }))
+vi.mock<unknown>(import('./locales/zh/commands.json'), () => ({
+  default: { save: '保存' }
+}))
+vi.mock<unknown>(import('./locales/zh/settings.json'), () => ({
+  default: { theme: '主题' }
+}))
 
 describe('i18n', () => {
   beforeEach(async () => {
@@ -510,11 +519,6 @@ describe('i18n', () => {
   })
 
   describe('loadLocale', () => {
-    it('should not reload already loaded locale', async () => {
-      await loadLocale('zh')
-      await loadLocale('zh')
-    })
-
     it('should load shipped BCP-47 variants', async () => {
       await loadLocale('zh-TW')
       expect(i18n.global.getLocaleMessage('zh-TW')).toEqual(
@@ -549,6 +553,29 @@ describe('i18n', () => {
       // First preference unsupported, second shipped — should land on French.
       expect(await setActiveLocale(['de-DE', 'fr-CA', 'en'])).toBe('fr')
     })
+
+    it('keeps the document language on the active locale', async () => {
+      const root = document.createElement('html')
+      root.lang = 'en'
+      await setActiveLocale('zh')
+      const stop = syncDocumentLanguage(root)
+
+      try {
+        expect(root.lang).toBe('zh')
+
+        await setActiveLocale('pt-BR')
+        await nextTick()
+        expect(root.lang).toBe('pt-BR')
+      } finally {
+        stop()
+      }
+    })
+  })
+
+  it('reads the browser locale on first use rather than at import', () => {
+    vi.spyOn(navigator, 'languages', 'get').mockReturnValue(['zh-CN'])
+
+    expect(i18n.global.locale.value).toBe('zh')
   })
 
   describe('te', () => {

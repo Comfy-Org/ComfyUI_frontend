@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 /** Hash values from the URL bar are untrusted; validate before lookup. */
-export const zSubgraphId = z.string().uuid()
+export const zSubgraphId = z.guid()
 
 type SubgraphId = z.infer<typeof zSubgraphId>
 

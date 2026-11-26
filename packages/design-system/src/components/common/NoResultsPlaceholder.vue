@@ -1,0 +1,41 @@
+<template>
+  <div :class="cn('h-full p-8', props.class)">
+    <div class="flex flex-col items-center bg-(--surface-ground) text-center">
+      <i v-if="icon" :class="cn(icon, 'mb-4 size-12 text-5xl')" />
+      <slot name="title">
+        <h3 v-if="title" class="mb-2 text-foreground">{{ title }}</h3>
+      </slot>
+      <p :class="cn('mb-4 text-center whitespace-pre-line', textClass)">
+        {{ message }}
+      </p>
+      <Button
+        v-if="buttonLabel"
+        :variant="buttonVariant ?? 'textonly'"
+        @click="$emit('action')"
+      >
+        <i v-if="buttonIcon" :class="buttonIcon" />
+        {{ buttonLabel }}
+      </Button>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
+
+import Button from '@comfyorg/design-system/button/Button'
+import type { ButtonVariants } from '@comfyorg/design-system/button.variants'
+
+const props = defineProps<{
+  class?: string
+  icon?: string
+  title?: string
+  message: string
+  textClass?: string
+  buttonIcon?: string
+  buttonLabel?: string
+  buttonVariant?: ButtonVariants['variant']
+}>()
+
+defineEmits(['action'])
+</script>

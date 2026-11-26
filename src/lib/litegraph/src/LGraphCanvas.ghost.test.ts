@@ -1,14 +1,10 @@
 import userEvent from '@testing-library/user-event'
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 
-vi.mock('@/renderer/core/layout/store/layoutStore')
-
-beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
+vi.mock(import('@/renderer/core/layout/store/layoutStore'))
 
 function createGhostTestHarness() {
   const canvasElement = document.createElement('canvas')
@@ -50,13 +46,15 @@ describe('LGraphCanvas ghost placement auto-pan', () => {
 
   beforeEach(() => {
     ;({ canvas, canvasElement, node } = createGhostTestHarness())
-    // Near left edge so autopan fires by default
+    vi.spyOn(canvas, 'draw').mockImplementation(() => {})
+    canvas.startRendering()
     canvas.mouse[0] = 5
     canvas.mouse[1] = 300
   })
 
   afterEach(() => {
     if (canvas.state.ghostNodeId != null) canvas.finalizeGhostPlacement(false)
+    canvas.stopRendering()
     canvasElement.remove()
   })
 

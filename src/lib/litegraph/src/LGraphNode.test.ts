@@ -1,18 +1,21 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
+import { omit } from 'es-toolkit'
 import { afterEach, beforeEach, describe, expect, vi } from 'vitest'
 
 import type {
   INodeInputSlot,
-  Point,
   ISerialisedNode
 } from '@/lib/litegraph/src/litegraph'
-import type { Rect } from '@/lib/litegraph/src/interfaces'
+import type {
+  PointTuple as Point,
+  Rect
+} from '@comfyorg/shared-frontend-utils/geometry'
+import { bindMountedNodeSize } from '@/renderer/core/layout/store/mountedNodeSizes'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
+import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
 import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import {
   LGraphCanvas,
+  LGraphEventMode,
   LGraphNode,
   LiteGraph,
   LGraph,
@@ -22,12 +25,10 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 
 import { test } from './__fixtures__/testExtensions'
-import {
-  createMockCanvasRenderingContext2D,
-  createMockLGraphNodeWithArrayBoundingRect
-} from '@/utils/__tests__/litegraphTestUtils'
-import { toLinkId } from '@/types/linkId'
-import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
+import { createMockLGraphNodeWithArrayBoundingRect } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { UNASSIGNED_NODE_ID, toNodeId } from '@comfyorg/graph-model/nodeId'
 
 interface NodeConstructorWithSlotOffset {
   slot_start_y?: number
@@ -52,12 +53,10 @@ function getMockISerialisedNode(
 
 describe('LGraphNode', () => {
   let node: LGraphNode
-  let origLiteGraph: typeof LiteGraph
+  let origLiteGraph: Omit<typeof LiteGraph, 'Classes'>
 
   beforeEach(() => {
-    origLiteGraph = Object.assign({}, LiteGraph)
-    // @ts-expect-error Intended: Force remove an otherwise readonly non-optional property
-    delete origLiteGraph.Classes
+    origLiteGraph = omit(LiteGraph, ['Classes'])
 
     Object.assign(LiteGraph, {
       NODE_TITLE_HEIGHT: 20,
@@ -76,6 +75,16 @@ describe('LGraphNode', () => {
 
   afterEach(() => {
     Object.assign(LiteGraph, origLiteGraph)
+  })
+
+  test.for([
+    LGraphEventMode.ALWAYS,
+    LGraphEventMode.ON_EVENT,
+    LGraphEventMode.NEVER,
+    LGraphEventMode.BYPASS
+  ])('accepts mode %s through changeMode', (mode) => {
+    expect(node.changeMode(mode)).toBe(true)
+    expect(node.mode).toBe(mode)
   })
 
   test('preserves null property values', () => {
@@ -122,12 +131,12 @@ describe('LGraphNode', () => {
       flags: {},
       order: node.order,
       mode: node.mode,
-      inputs: node.inputs?.map((i) => ({
+      inputs: node.inputs.map((i) => ({
         name: i.name,
         type: i.type,
         link: i.link
       })),
-      outputs: node.outputs?.map((o) => ({
+      outputs: node.outputs.map((o) => ({
         name: o.name,
         type: o.type,
         links: o.links ? [...o.links] : o.links,
@@ -185,6 +194,20 @@ describe('LGraphNode', () => {
     graph.add(node)
     node.configure(getMockISerialisedNode({ id: -1 }))
     expect(node.id).not.toBe(-1)
+  })
+
+  test('draws the ❌ type fallback title for an unknown-type replacement node', () => {
+    const node = new LGraphNode('', 'UNKNOWN NODE')
+    node.configure(getMockISerialisedNode({ type: 'UNKNOWN NODE' }))
+    const ctx = createMockCanvasRenderingContext2D()
+
+    node.drawTitleText(ctx, { scale: 1, default_title_color: '#fff' })
+
+    expect(ctx.fillText).toHaveBeenCalledWith(
+      '❌ UNKNOWN NODE',
+      expect.any(Number),
+      expect.any(Number)
+    )
   })
 
   describe('Disconnect I/O Slots', () => {
@@ -725,6 +748,43 @@ describe('LGraphNode', () => {
       expect(node.widgets![0].value).toBe(1)
       expect(node.widgets![1].value).toBe(100)
     })
+
+    test('should serialize a widget that only options.serialize excludes', () => {
+      const node = new LGraphNode('TestNode')
+      node.serialize_widgets = true
+
+      node.addWidget('number', 'seed', 42, null)
+      node.addWidget('combo', 'control_after_generate', 'fixed', null, {
+        values: ['fixed', 'increment'],
+        serialize: false
+      })
+      node.addWidget('number', 'steps', 20, null)
+      expect(node.widgets![1].serialize).toBeUndefined()
+
+      const serialized = node.serialize()
+
+      expect(serialized.widgets_values).toEqual([42, 'fixed', 20])
+      expect(serialized.widgets_values_named).toEqual({
+        seed: 42,
+        control_after_generate: 'fixed',
+        steps: 20
+      })
+    })
+
+    test('should compact a non-trailing widget.serialize === false', () => {
+      const node = new LGraphNode('TestNode')
+      node.serialize_widgets = true
+
+      node.addWidget('number', 'steps', 20, null)
+      node.addWidget('button', 'action', 'Click', null)
+      node.widgets![1].serialize = false
+      node.addWidget('number', 'seed', 12345, null)
+
+      const serialized = node.serialize()
+
+      expect(serialized.widgets_values_named).not.toHaveProperty('action')
+      expect(serialized.widgets_values).toStrictEqual([20, 12345])
+    })
   })
 
   describe('getInputSlotPos', () => {
@@ -854,10 +914,13 @@ describe('LGraphNode', () => {
     test('Vue mode measures collapsed content without replacing requested size', () => {
       const graph = new LGraph()
       graph.add(node)
-      layoutStore.reportContentSize(graph.rootGraph.id, node.id, {
-        width: 90,
-        height: 12
-      })
+      bindMountedNodeSize(graph, node.id, () => {}).report(
+        {
+          width: 90,
+          height: 12
+        },
+        true
+      )
       LiteGraph.vueNodesMode = true
       node.measure(out)
 
@@ -877,13 +940,32 @@ describe('LGraphNode', () => {
       expect(out[3]).toBe(120 + LiteGraph.NODE_TITLE_HEIGHT)
     })
   })
+
+  describe('arrange() growth', () => {
+    afterEach(() => {
+      LiteGraph.vueNodesMode = false
+    })
+
+    test('grows a canvas node to fit its widgets but leaves a Vue node at the height its DOM reports', () => {
+      const arrangedHeight = (vueNodesMode: boolean) => {
+        const graph = new LGraph()
+        const node = new LGraphNode('Prompt')
+        graph.add(node)
+        for (const name of ['a', 'b', 'c'])
+          node.addWidget('number', name, 0, () => {})
+        node.size = [200, 10]
+        LiteGraph.vueNodesMode = vueNodesMode
+        node.arrange()
+        return node.size[1]
+      }
+
+      expect(arrangedHeight(true)).toBe(10)
+      expect(arrangedHeight(false)).toBeGreaterThan(10)
+    })
+  })
 })
 
 describe('snapToGrid', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   function addedNode(graph: LGraph) {
     const node = new LGraphNode('test')
     node.pos = [103, 97]
@@ -954,4 +1036,18 @@ describe('snapToGrid', () => {
     expect(node.snapToGrid(20)).toBe(false)
     expect(applyOperation).not.toHaveBeenCalled()
   })
+})
+
+describe('LGraphNode renderingColor', () => {
+  test.for([{ color: 0xff0000 }, { color: { r: 255 } }])(
+    'uses the default color when the node color is $color',
+    ({ color }) => {
+      const node = new LGraphNode('Colored')
+      const defaultNode = new LGraphNode('Default')
+      Reflect.set(node, 'color', color)
+
+      expect(node.renderingColor).toBe(defaultNode.renderingColor)
+      expect(typeof node.renderingColor).toBe('string')
+    }
+  )
 })

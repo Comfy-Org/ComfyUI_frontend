@@ -1,13 +1,14 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
-import Popover from '@/components/ui/Popover.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 import { useAppMode } from '@/composables/useAppMode'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type { AssetItem } from '@comfyorg/assets-core/schema'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { extractWorkflowFromAsset } from '@/platform/workflow/utils/workflowExtractionUtil'
 import ImagePreview from '@/renderer/extensions/linearMode/ImagePreview.vue'
@@ -18,14 +19,15 @@ import MediaOutputPreview from '@/renderer/extensions/linearMode/MediaOutputPrev
 import OutputHistory from '@/renderer/extensions/linearMode/OutputHistory.vue'
 import { useOutputHistory } from '@/renderer/extensions/linearMode/useOutputHistory'
 import type { OutputSelection } from '@/renderer/extensions/linearMode/linearModeTypes'
-import { app } from '@/scripts/app'
-import type { ResultItemImpl } from '@/stores/queueStore'
+import { useApp } from '@/scripts/appInstance'
+import type { AugmentedResultItem } from '@/utils/resultItem'
+import { resultItemUrl } from '@/utils/resultItemUrl'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { t } = useI18n()
 const mediaActions = useMediaAssetActions()
 const { isBuilderMode, isArrangeMode } = useAppMode()
-const { allOutputs, isWorkflowActive, cancelActiveWorkflowJobs } =
+const { outputs, allOutputs, isWorkflowActive, cancelActiveWorkflowJobs } =
   useOutputHistory()
 const { runButtonClick, mobile } = defineProps<{
   runButtonClick?: (e: Event) => void
@@ -33,10 +35,38 @@ const { runButtonClick, mobile } = defineProps<{
 }>()
 
 const selectedItem = ref<AssetItem>()
-const selectedOutput = ref<ResultItemImpl>()
+const selectedOutput = ref<AugmentedResultItem>()
 const canShowPreview = ref(true)
 const latentPreview = ref<string>()
 const showSkeleton = ref(false)
+const menuSeparator: MenuItem = { separator: true }
+
+const selectedItemMenuEntries = computed<MenuItem[]>(() => {
+  const item = selectedItem.value
+  if (!item) return []
+
+  return [
+    ...(allOutputs(item).length > 1
+      ? [
+          {
+            icon: 'icon-[lucide--download]',
+            label: t('linearMode.downloadAll', {
+              count: allOutputs(item).length
+            }),
+            command: () => downloadAsset(item)
+          },
+          menuSeparator
+        ]
+      : []),
+    {
+      icon: 'icon-[lucide--trash-2]',
+      label: t('g.delete'),
+      command: async () => {
+        if (await mediaActions.deleteAssets(item)) await outputs.invalidate()
+      }
+    }
+  ]
+})
 
 function handleSelection(sel: OutputSelection) {
   selectedItem.value = sel.asset
@@ -48,7 +78,13 @@ function handleSelection(sel: OutputSelection) {
 
 function downloadAsset(item?: AssetItem) {
   for (const output of allOutputs(item))
-    downloadFile(output.url, output.filename)
+    downloadFile(resultItemUrl(output), output.filename, 'linear')
+}
+
+function downloadOutput(output?: AugmentedResultItem) {
+  if (!output) return
+  const url = resultItemUrl(output)
+  if (url) downloadFile(url, undefined, 'linear')
 }
 
 async function loadWorkflow(item: AssetItem | undefined) {
@@ -56,10 +92,11 @@ async function loadWorkflow(item: AssetItem | undefined) {
   const { workflow } = await extractWorkflowFromAsset(item)
   if (!workflow) return
 
-  if (workflow.id !== app.rootGraph.id) return app.loadGraphData(workflow)
+  if (workflow.id !== useApp().rootGraph.id)
+    return useApp().loadGraphData(workflow)
   //update graph to new version, set old to top of undo queue
   const changeTracker = useWorkflowStore().activeWorkflow?.changeTracker
-  if (!changeTracker) return app.loadGraphData(workflow)
+  if (!changeTracker) return useApp().loadGraphData(workflow)
   changeTracker.redoQueue = []
   await changeTracker.updateState([workflow], changeTracker.undoQueue)
 }
@@ -85,18 +122,14 @@ async function rerun(e: Event) {
         {{ t('linearMode.reuseParameters') }}
         <i class="icon-[lucide--list-restart]" />
       </Button>
-      <div class="mx-1 border-r border-border-subtle" />
+      <div class="mx-1 border-r border-border/50" />
     </template>
     <Button
       v-if="selectedOutput"
-      v-tooltip.top="t('g.download')"
+      :tooltip="t('g.download')"
       size="icon"
       :aria-label="t('g.download')"
-      @click="
-        () => {
-          if (selectedOutput?.url) downloadFile(selectedOutput.url)
-        }
-      "
+      @click="() => downloadOutput(selectedOutput)"
     >
       <i class="icon-[lucide--download]" />
     </Button>
@@ -109,28 +142,15 @@ async function rerun(e: Event) {
       <i class="icon-[lucide--x]" />
       {{ t('linearMode.cancelThisRun') }}
     </Button>
-    <Popover
-      v-if="selectedItem"
-      :entries="[
-        ...(allOutputs(selectedItem).length > 1
-          ? [
-              {
-                icon: 'icon-[lucide--download]',
-                label: t('linearMode.downloadAll', {
-                  count: allOutputs(selectedItem).length
-                }),
-                command: () => downloadAsset(selectedItem)
-              },
-              { separator: true }
-            ]
-          : []),
-        {
-          icon: 'icon-[lucide--trash-2]',
-          label: t('linearMode.deleteAllAssets'),
-          command: () => mediaActions.deleteAssets(selectedItem!)
-        }
-      ]"
-    />
+    <Menu v-if="selectedItem" :items="selectedItemMenuEntries">
+      <template #trigger>
+        <Button
+          size="icon"
+          :aria-label="t('g.moreOptions')"
+          icon="icon-[lucide--ellipsis]"
+        />
+      </template>
+    </Menu>
   </section>
   <ImagePreview
     v-if="canShowPreview && latentPreview"

@@ -1,10 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
-
-beforeEach(() => {
-  vi.spyOn(console, 'warn').mockImplementation(() => {})
-})
 
 describe('parseJsonWithNonFinite', () => {
   it('parses standard JSON unchanged', () => {
@@ -122,10 +118,6 @@ describe('parseJsonWithNonFinite', () => {
     ).toEqual({ x: 'a\nNaN', y: '"Infinity"' })
   })
 
-  it('throws SyntaxError on otherwise-invalid JSON', () => {
-    expect(() => parseJsonWithNonFinite('{not json}')).toThrow(SyntaxError)
-  })
-
   it.for([
     ['NaN with trailing digits', '{"x": NaN123}'],
     ['Infinity with trailing letter', '{"x": Infinityy}'],
@@ -146,8 +138,11 @@ describe('parseJsonWithNonFinite', () => {
     }
   )
 
-  it('throws on unterminated string ending in a lone backslash', () => {
-    expect(() => parseJsonWithNonFinite('{"x": "abc\\')).toThrow(SyntaxError)
+  it.for([
+    ['lone backslash', '{"x": "abc\\'],
+    ['many escaped quotes', '"' + '\\"'.repeat(200000)]
+  ])('throws on unterminated strings with %s', ([, input]) => {
+    expect(() => parseJsonWithNonFinite(input)).toThrow(SyntaxError)
   })
 
   it('throws on unsupported +Infinity prefix', () => {

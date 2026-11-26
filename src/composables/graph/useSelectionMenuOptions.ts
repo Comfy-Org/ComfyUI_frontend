@@ -1,16 +1,15 @@
-import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useSelectionGrid } from '@/components/graph/selectionGrid/useSelectionGrid'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+
 import { useFrameNodes } from './useFrameNodes'
-import { BadgeVariant } from './useMoreOptionsMenu'
-import type { MenuOption } from './useMoreOptionsMenu'
+import { BadgeVariant } from './menuOption'
+import type { MenuOption } from './menuOption'
 import { useNodeArrangement } from './useNodeArrangement'
 import { useSelectionOperations } from './useSelectionOperations'
 import { useSubgraphOperations } from './useSubgraphOperations'
 
-/**
- * Composable for selection-related menu operations
- */
 export function useSelectionMenuOptions() {
   const { t } = useI18n()
   const {
@@ -28,33 +27,22 @@ export function useSelectionMenuOptions() {
 
   const { frameNodes } = useFrameNodes()
 
-  const alignSubmenu = computed(() =>
-    alignOptions.map((align) => ({
-      label: align.localizedName,
-      icon: align.icon,
-      action: () => applyAlign(align)
-    }))
-  )
-
-  const distributeSubmenu = computed(() =>
-    distributeOptions.map((distribute) => ({
-      label: distribute.localizedName,
-      icon: distribute.icon,
-      action: () => applyDistribute(distribute)
-    }))
-  )
+  const { canTidy, tidyUp } = useSelectionGrid()
 
   const getBasicSelectionOptions = (): MenuOption[] => [
     {
+      id: 'rename',
       label: t('contextMenu.Rename'),
       action: renameSelection
     },
     {
+      id: 'copy',
       label: t('contextMenu.Copy'),
       shortcut: 'Ctrl+C',
       action: copySelection
     },
     {
+      id: 'duplicate',
       label: t('contextMenu.Duplicate'),
       shortcut: 'Ctrl+D',
       action: duplicateSelection
@@ -69,6 +57,7 @@ export function useSelectionMenuOptions() {
     hasMultipleSelection: boolean
   }): MenuOption[] => {
     const convertOption: MenuOption = {
+      id: 'convertSubgraph',
       label: t('contextMenu.Convert to Subgraph'),
       icon: 'icon-[lucide--shrink]',
       action: convertToSubgraph,
@@ -85,12 +74,14 @@ export function useSelectionMenuOptions() {
     if (hasSubgraphs) {
       if (!hasMultipleSelection) {
         options.push({
+          id: 'addSubgraphToLibrary',
           label: t('contextMenu.Add Subgraph to Library'),
           icon: 'icon-[lucide--folder-plus]',
           action: addSubgraphToLibrary
         })
       }
       options.push({
+        id: 'unpackSubgraph',
         label: t('contextMenu.Unpack Subgraph'),
         icon: 'icon-[lucide--expand]',
         action: unpackSubgraph
@@ -102,33 +93,53 @@ export function useSelectionMenuOptions() {
 
   const getMultipleNodesOptions = (): MenuOption[] => [
     {
+      id: 'frameNodes',
       label: t('g.frameNodes'),
       icon: 'icon-[lucide--frame]',
       action: frameNodes
     }
   ]
 
-  const getAlignmentOptions = (): MenuOption[] => [
+  const getAlignmentOptions = (alignTo?: LGraphNode): MenuOption[] => [
     {
+      id: 'align',
       label: t('contextMenu.Align Selected To'),
       icon: 'icon-[lucide--align-start-horizontal]',
       hasSubmenu: true,
-      submenu: alignSubmenu.value,
+      submenu: alignOptions.map((align) => ({
+        label: align.localizedName,
+        icon: align.icon,
+        action: () => applyAlign(align, alignTo)
+      })),
       action: () => {}
     },
     {
+      id: 'distribute',
       label: t('contextMenu.Distribute Nodes'),
       icon: 'icon-[lucide--align-center-horizontal]',
       hasSubmenu: true,
-      submenu: distributeSubmenu.value,
+      submenu: distributeOptions.map((distribute) => ({
+        label: distribute.localizedName,
+        icon: distribute.icon,
+        action: () => applyDistribute(distribute)
+      })),
       action: () => {}
+    },
+    {
+      id: 'tidyUp',
+      label: t('g.tidyUp'),
+      icon: 'icon-[lucide--layout-dashboard]',
+      disabled: !canTidy.value,
+      action: () => tidyUp()
     }
   ]
 
-  const getDeleteOption = (): MenuOption => ({
+  const getDeleteOption = (disabled: boolean): MenuOption => ({
+    id: 'delete',
     label: t('contextMenu.Delete'),
     icon: 'icon-[lucide--trash-2]',
     shortcut: 'Delete',
+    disabled,
     action: deleteSelection
   })
 
@@ -137,8 +148,6 @@ export function useSelectionMenuOptions() {
     getSubgraphOptions,
     getMultipleNodesOptions,
     getDeleteOption,
-    getAlignmentOptions,
-    alignSubmenu,
-    distributeSubmenu
+    getAlignmentOptions
   }
 }

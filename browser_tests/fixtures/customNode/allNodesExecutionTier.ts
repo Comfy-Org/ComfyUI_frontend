@@ -148,7 +148,6 @@ export async function assertExecutionTier({
   registeredKeys: string[]
 }): Promise<void> {
   const keys = registeredKeys
-  await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
 
   const queueBusy = await waitForQueueQuiet(comfyPage.page, 150_000)
   expect(
@@ -316,7 +315,7 @@ async function runBatch(
       const ids: string[] = []
       const allIds: string[] = []
       const nodeIdByKey: Record<string, string> = {}
-      const sinkIdByKey: Record<string, string> = {}
+      const sinkIdByKey: Partial<Record<string, string>> = {}
       for (const [index, spec] of nodes.entries()) {
         const node = window.LiteGraph!.createNode(spec.key, undefined, {
           pos: [0, index * spacingY]
@@ -378,10 +377,9 @@ async function runBatch(
     expectedNodeIds: ids,
     graphNodeIds: allIds,
     proofOutputNodeByExpectedNode: Object.fromEntries(
-      Object.entries(sinkIdByKey).map(([key, sinkId]) => [
-        nodeIdByKey[key],
-        sinkId
-      ])
+      Object.entries(sinkIdByKey).flatMap(([key, sinkId]) =>
+        sinkId === undefined ? [] : [[nodeIdByKey[key], sinkId]]
+      )
     ),
     timeoutMs
   })

@@ -1,0 +1,166 @@
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
+import { describe, expect, it, vi } from 'vitest'
+
+import { i18n } from '@/i18n'
+
+import AgentPaywallCard from './AgentPaywallCard.vue'
+
+describe('AgentPaywallCard visual contract', () => {
+  // Visual hierarchy is the Storybook surface's contract; this asserts the copy,
+  // the offered actions, and what each emits.
+  it('offers Upgrade plan and Add credits to a subscribed owner and emits each action', async () => {
+    const user = userEvent.setup()
+    const onPaywallAction = vi.fn()
+    render(AgentPaywallCard, {
+      props: { presentation: { kind: 'subscribed', showUpgrade: true } },
+      attrs: {
+        'aria-label': 'Out of credits card',
+        onPaywallAction
+      },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.getByLabelText('Out of credits card')).toBeInTheDocument()
+    expect(screen.getByText('Out of credits')).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        'This workspace has spent its monthly credits and its top-up balance. Add credits to keep the agent running.'
+      )
+    ).toBeInTheDocument()
+
+    const upgrade = screen.getByRole('button', { name: 'Upgrade plan' })
+    const addCredits = screen.getByRole('button', { name: 'Add credits' })
+
+    await user.click(upgrade)
+    await user.click(addCredits)
+    expect(onPaywallAction.mock.calls).toEqual([['upgrade'], ['addCredits']])
+  })
+
+  it.for([
+    {
+      planCreditLine: 'planRequiredFreeRuns' as const,
+      note: "Buying credits doesn't start a Cloud plan. Subscribe to keep running workflows once your free runs are used."
+    },
+    {
+      planCreditLine: 'planRequiredSubscribe' as const,
+      note: "Buying credits doesn't start a Cloud plan. Subscribe to run workflows on Cloud."
+    }
+  ])(
+    'says Add credits does not start a plan for an owner with no plan ($planCreditLine)',
+    ({ planCreditLine, note }) => {
+      render(AgentPaywallCard, {
+        props: {
+          presentation: {
+            kind: 'subscribed',
+            showUpgrade: false,
+            planCreditLine
+          }
+        },
+        global: { plugins: [i18n] }
+      })
+
+      expect(screen.getByTestId('agent-paywall-plan-note')).toHaveTextContent(
+        note
+      )
+      expect(
+        screen.getByText(
+          'Your account has no credits available for the agent. Add credits to use it.'
+        )
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByText(/spent its monthly credits/)
+      ).not.toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: 'Add credits' })
+      ).toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: 'Subscribe' })
+      ).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Upgrade plan' })).toBeNull()
+    }
+  )
+
+  it('keeps the plan note out for a subscribed owner', () => {
+    render(AgentPaywallCard, {
+      props: { presentation: { kind: 'subscribed', showUpgrade: true } },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.queryByTestId('agent-paywall-plan-note')).toBeNull()
+  })
+
+  it('announces the server denial without purchase actions when capabilities are unknown', () => {
+    render(AgentPaywallCard, {
+      props: { message: 'Your workspace spend limit was reached.' },
+      global: { plugins: [i18n] }
+    })
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Your workspace spend limit was reached.'
+    )
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
+  })
+
+  it.for([
+    {
+      presentation: { kind: 'member' as const },
+      body: 'This workspace has used all its credits. Ask your workspace owner to add more.'
+    },
+    {
+      presentation: { kind: 'salesManaged' as const },
+      body: 'This workspace is billed through your Comfy account team. Contact them to add credits.'
+    }
+  ])(
+    'renders $presentation.kind remediation without a dead-end action',
+    ({ presentation, body }) => {
+      render(AgentPaywallCard, {
+        props: { presentation },
+        global: { plugins: [i18n] }
+      })
+
+      expect(screen.getByText(body)).toBeInTheDocument()
+      expect(screen.queryByRole('button')).not.toBeInTheDocument()
+    }
+  )
+
+  it.for([
+    {
+      presentation: { kind: 'subscriptionRequired' as const },
+      body: "You've run out of available credits.",
+      action: 'Subscribe',
+      emitted: 'subscribe'
+    },
+    {
+      presentation: { kind: 'local' as const },
+      body: 'Your account has no credits available for the agent. Add credits to use it.',
+      action: 'Add credits',
+      emitted: 'addCredits'
+    },
+    {
+      presentation: { kind: 'subscribed' as const, showUpgrade: false },
+      body: 'This workspace has spent its monthly credits and its top-up balance. Add credits to keep the agent running.',
+      action: 'Add credits',
+      emitted: 'addCredits'
+    }
+  ])(
+    'renders $presentation.kind with a single $action action',
+    async ({ presentation, body, action, emitted }) => {
+      const user = userEvent.setup()
+      const onPaywallAction = vi.fn()
+      render(AgentPaywallCard, {
+        props: { presentation },
+        attrs: { onPaywallAction },
+        global: { plugins: [i18n] }
+      })
+
+      expect(screen.getByText(body)).toBeInTheDocument()
+      const buttons = screen.getAllByRole('button')
+      expect(buttons).toHaveLength(1)
+      expect(buttons[0]).toHaveAccessibleName(action)
+      expect(screen.queryByRole('button', { name: 'Upgrade plan' })).toBeNull()
+
+      await user.click(buttons[0])
+      expect(onPaywallAction.mock.calls).toEqual([[emitted]])
+    }
+  )
+})

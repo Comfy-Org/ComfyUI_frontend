@@ -23,10 +23,10 @@ import {
   selectVueAssetPromotedModel
 } from '@e2e/fixtures/utils/promotedMissingModel'
 import { TestIds } from '@e2e/fixtures/selectors'
-import { toNodeId } from '@/types/nodeId'
-import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { PropertiesPanel } from '@e2e/fixtures/components/PropertiesPanel'
 
-import type { AssetMetadata } from '@/platform/assets/schemas/assetSchema'
+import type { AssetMetadata } from '@comfyorg/assets-core/schema'
 
 const WORKFLOW = 'missing/nested_subgraph_installed_model'
 const IMPORT_SECTIONS_WORKFLOW = 'missing/cloud_missing_model_import_sections'
@@ -138,12 +138,12 @@ test.describe(
   'Errors tab - Cloud missing models',
   { tag: ['@cloud', '@vue-nodes'] },
   () => {
+    test.use({
+      initialSettings: { 'Comfy.RightSidePanel.ShowErrorsTab': true }
+    })
+
     test.beforeEach(async ({ comfyPage }) => {
       await enableMissingModelImportFeatures(comfyPage.page)
-      await comfyPage.settings.setSetting(
-        'Comfy.RightSidePanel.ShowErrorsTab',
-        true
-      )
     })
 
     test('keeps installed models resolved after returning from a nested subgraph', async ({
@@ -152,7 +152,7 @@ test.describe(
     }) => {
       await comfyPage.workflow.loadWorkflow(WORKFLOW)
 
-      const panel = new PropertiesPanelHelper(comfyPage.page)
+      const panel = new PropertiesPanel(comfyPage.page)
       const errorOverlay = comfyPage.page.getByTestId(
         TestIds.dialogs.errorOverlay
       )
@@ -193,7 +193,7 @@ test.describe(
       comfyPage
     }) => {
       await loadWorkflowAndOpenErrorsTab(comfyPage, 'missing/missing_models')
-      const panel = new PropertiesPanelHelper(comfyPage.page)
+      const panel = new PropertiesPanel(comfyPage.page)
       const missingModelsGroup = comfyPage.page.getByTestId(
         TestIds.dialogs.missingModelsGroup
       )
@@ -464,13 +464,12 @@ promotedModelTest.describe(
   'Errors tab - Cloud promoted subgraph missing models',
   { tag: '@cloud' },
   () => {
+    promotedModelTest.use({
+      initialSettings: { 'Comfy.RightSidePanel.ShowErrorsTab': true }
+    })
+
     promotedModelTest.beforeEach(async ({ comfyPage }) => {
       await cleanupFakeModel(comfyPage)
-      await comfyPage.settings.setSetting('Comfy.Assets.UseAssetAPI', true)
-      await comfyPage.settings.setSetting(
-        'Comfy.RightSidePanel.ShowErrorsTab',
-        true
-      )
     })
 
     promotedModelTest.afterEach(async ({ comfyPage }) => {

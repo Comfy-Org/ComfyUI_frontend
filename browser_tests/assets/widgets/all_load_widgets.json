@@ -70,7 +70,7 @@
       "properties": {
         "Node name for S&R": "DevToolsLoadAnimatedImageTest"
       },
-      "widgets_values": [null, "image"]
+      "widgets_values": ["this-image-does-not-exist-deadbeef.png", "image"]
     },
     {
       "id": 5,
@@ -96,7 +96,7 @@
       "properties": {
         "Node name for S&R": "LoadImage"
       },
-      "widgets_values": [null, "image"]
+      "widgets_values": ["this-image-does-not-exist-deadbeef.png", "image"]
     },
     {
       "id": 6,
@@ -117,7 +117,11 @@
       "properties": {
         "Node name for S&R": "LoadImageMask"
       },
-      "widgets_values": [null, "alpha", "image"]
+      "widgets_values": [
+        "this-image-does-not-exist-deadbeef.png",
+        "alpha",
+        "image"
+      ]
     },
     {
       "id": 7,

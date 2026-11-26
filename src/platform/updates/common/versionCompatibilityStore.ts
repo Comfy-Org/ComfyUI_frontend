@@ -1,10 +1,11 @@
-import { until, useStorage } from '@vueuse/core'
+import { until } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { coerce, gt } from 'semver'
 import { computed } from 'vue'
 
 import config from '@/config'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useSafeLocalStorage } from '@/platform/storage/useSafeStorage'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 
 interface OutdatedComfyPackage {
@@ -38,11 +39,10 @@ export const useVersionCompatibilityStore = defineStore(
 
     const frontendVersion = computed(() => config.app_version)
     const backendVersion = computed(
-      () => systemStatsStore.systemStats?.system?.comfyui_version ?? ''
+      () => systemStatsStore.systemStats?.system.comfyui_version ?? ''
     )
     const requiredFrontendVersion = computed(
-      () =>
-        systemStatsStore.systemStats?.system?.required_frontend_version ?? ''
+      () => systemStatsStore.systemStats?.system.required_frontend_version ?? ''
     )
 
     const isFrontendOutdated = computed(() => {
@@ -58,7 +58,7 @@ export const useVersionCompatibilityStore = defineStore(
 
     const outdatedComfyPackages = computed<OutdatedComfyPackage[]>(() => {
       const packages =
-        systemStatsStore.systemStats?.system?.comfy_package_versions ?? []
+        systemStatsStore.systemStats?.system.comfy_package_versions ?? []
       const out: OutdatedComfyPackage[] = []
       for (const pkg of packages) {
         if (pkg.name === FRONTEND_PACKAGE_NAME) continue
@@ -102,10 +102,9 @@ export const useVersionCompatibilityStore = defineStore(
 
     // Use reactive storage for dismissals - creates a reactive ref that syncs with localStorage
     // All version mismatch dismissals are stored in a single object for clean localStorage organization
-    const dismissalStorage = useStorage(
+    const dismissalStorage = useSafeLocalStorage(
       'comfy.versionMismatch.dismissals',
       {} as Record<string, number>,
-      localStorage,
       {
         serializer: {
           read: (value: string) => {
