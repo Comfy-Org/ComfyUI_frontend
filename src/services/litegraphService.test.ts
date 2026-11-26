@@ -198,9 +198,10 @@ describe('useLitegraphService().registerSubgraphNodeDef ownership', () => {
       targetGraph: backgroundGraph
     })
 
+    assert.instanceOf(node, SubgraphNode)
     expect(node).toBeInstanceOf(DerivedSubgraphNode)
-    expect(node).toBeInstanceOf(SubgraphNode)
-    expect((node as SubgraphNode).subgraph).toBe(backgroundSubgraph)
+    expect(node.graph).toBe(backgroundGraph)
+    expect(node.subgraph).toBe(backgroundSubgraph)
   })
 
   it('reports and refuses a subgraph type missing from the target graph', () => {
