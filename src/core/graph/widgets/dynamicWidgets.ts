@@ -65,7 +65,10 @@ type AutogrowNode = LGraphNode &
 
 type DynamicComboNode = LGraphNode & {
   comfyDynamic: {
-    dynamicCombo: Record<string, { inputSpec: InputSpec; sync(): void }>
+    dynamicCombo: Record<
+      string,
+      { inputSpec: InputSpec; sync(): void; hasLinkedChildren(): boolean }
+    >
   }
 }
 
@@ -147,6 +150,14 @@ function dynamicComboWidget(
   function isInGroup(e: { name: string }): boolean {
     return e.name.startsWith(inputName + '.')
   }
+  function hasLinkedChildren(): boolean {
+    return node.inputs.some(
+      (input, slot) => isInGroup(input) && node.isInputConnected(slot)
+    )
+  }
+  function ownsChildren(): boolean {
+    return !widget.connectionSuppressed || hasLinkedChildren()
+  }
   function restoreRemovedValues(
     value: string | undefined,
     widgetNames: string[]
@@ -206,8 +217,7 @@ function dynamicComboWidget(
   }
   const updateWidgets = (value?: string) => {
     if (!node.widgets) throw new Error('Not Reachable')
-    const newSpec =
-      value && !widget.connectionSuppressed ? options[value] : undefined
+    const newSpec = value && ownsChildren() ? options[value] : undefined
     const optionValues = removedWidgetValues.get(activeOption) ?? new Map()
     removedWidgetValues.set(activeOption, optionValues)
     activeOption = value
@@ -277,10 +287,11 @@ function dynamicComboWidget(
     sync() {
       const hasChildren =
         node.inputs.some(isInGroup) || !!node.widgets?.some(isInGroup)
-      if (!!widget.connectionSuppressed !== hasChildren) return
+      if (ownsChildren() === hasChildren) return
       updateWidgets(activeOption)
       refitHeight(node)
-    }
+    },
+    hasLinkedChildren
   }
   return { widget, minWidth, minHeight }
 }
@@ -305,9 +316,16 @@ function withComfyDynamicCombo(
   const originalOnConnectInput = node.onConnectInput
   node.onConnectInput = function (slot: number, ...args) {
     const name = this.inputs.at(slot)?.widget?.name
-    if (name && Object.hasOwn(combos, name) && !isSubgraphInput(args[1]))
+    const isCombo = !!name && Object.hasOwn(combos, name)
+    if (isCombo && !isSubgraphInput(args[1])) return false
+    if (originalOnConnectInput?.apply(this, [slot, ...args]) === false)
       return false
-    return originalOnConnectInput?.apply(this, [slot, ...args]) ?? true
+    if (isCombo) {
+      for (const [i, input] of this.inputs.entries())
+        if (input.name.startsWith(name + '.') && this.isInputConnected(i))
+          this.disconnectInput(i)
+    }
+    return true
   }
 
   node.onAfterGraphConfigured = useChainCallback(
@@ -956,7 +974,9 @@ function bindPromotedDynamicCombo(
     !Object.hasOwn(interiorNode.comfyDynamic.dynamicCombo, interiorName)
   )
     return false
-  const { inputSpec } = interiorNode.comfyDynamic.dynamicCombo[interiorName]
+  const { inputSpec, hasLinkedChildren } =
+    interiorNode.comfyDynamic.dynamicCombo[interiorName]
+  if (hasLinkedChildren()) return false
   if (
     hasDynamicCombos(node) &&
     Object.hasOwn(node.comfyDynamic.dynamicCombo, input.name) &&

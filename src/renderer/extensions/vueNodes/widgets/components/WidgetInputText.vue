@@ -29,6 +29,8 @@
           )
         "
         :size="1"
+        data-part="widget-text-input"
+        :data-size="size"
         :aria-label="widget.name"
         :aria-invalid="invalid || undefined"
         :readonly="isReadOnly"

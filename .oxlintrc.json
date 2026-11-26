@@ -296,6 +296,18 @@
       }
     },
     {
+      "files": ["src/**/*.{ts,vue}"],
+      "excludeFiles": [
+        "src/**/*.{test,spec,stories}.ts",
+        "src/**/__mocks__/**",
+        "src/base/storage/safeStorage.ts",
+        "src/platform/storage/useSafeStorage.ts"
+      ],
+      "rules": {
+        "comfy/no-direct-web-storage": "error"
+      }
+    },
+    {
       "files": [
         "apps/**/*.{js,mjs,cjs,ts,mts,cts,vue}",
         "src/**/*.{js,mjs,cjs,ts,mts,cts,vue}",
@@ -538,7 +550,11 @@
       }
     },
     {
-      "files": ["scripts/**", "tools/test-recorder/**/*.ts"],
+      "files": [
+        "scripts/**",
+        "tools/ci/**/*.ts",
+        "tools/test-recorder/**/*.ts"
+      ],
       "rules": {
         "no-console": "allow"
       }

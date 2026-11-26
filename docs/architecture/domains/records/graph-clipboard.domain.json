@@ -1,0 +1,61 @@
+{
+  "id": "graph-clipboard",
+  "capability": "Graph clipboard",
+  "description": "Graph serialization and insertion, clipboard cache transport, workflow and legacy conversion, and browser copy/paste routing. Feature callers retain history, feedback, and persistence.",
+  "modules": [
+    { "path": "src/core/graph/clipboard/**" },
+    { "path": "src/renderer/core/clipboard/**" }
+  ],
+  "publicEntryPoints": [
+    "src/core/graph/clipboard/graphTransfer.ts",
+    "src/core/graph/clipboard/canvasClipboard.ts",
+    "src/core/graph/clipboard/clipboardStorage.ts",
+    "src/core/graph/clipboard/vintageClipboard.ts",
+    "src/core/graph/clipboard/workflowToClipboardItems.ts",
+    "src/renderer/core/clipboard/useGraphClipboard.ts",
+    "src/renderer/core/clipboard/clipboardTarget.ts",
+    "src/renderer/core/clipboard/mediaClipboard.ts"
+  ],
+  "characterizationScenarios": [
+    {
+      "name": "Graph transfer preserves identities, links, subgraphs, selection, lifecycle, and rollback through extension-compatible canvas methods",
+      "checks": ["src/lib/litegraph/src/LGraphCanvas.clipboard.test.ts"]
+    },
+    {
+      "name": "Cache refusal preserves system copy while in-memory duplication leaves the clipboard unchanged",
+      "checks": [
+        "src/core/graph/clipboard/clipboardStorage.test.ts",
+        "src/composables/graph/useSelectionOperations.clipboard.test.ts"
+      ]
+    },
+    {
+      "name": "Browser copy and paste arbitrate editable targets and keep clipboard data alive across asynchronous work",
+      "checks": [
+        "src/renderer/core/clipboard/useCopy.test.ts",
+        "src/renderer/core/clipboard/usePaste.test.ts",
+        "src/renderer/core/clipboard/clipboardTarget.test.ts",
+        "src/components/graph/GraphCanvas.test.ts",
+        "browser_tests/tests/copyPaste.spec.ts"
+      ]
+    },
+    {
+      "name": "Workflow and legacy imports preserve links, widget values, and selection order",
+      "checks": [
+        "src/core/graph/clipboard/workflowToClipboardItems.test.ts",
+        "src/core/graph/clipboard/workflowToClipboardItems.integration.test.ts",
+        "src/platform/workflow/core/services/workflowService.test.ts",
+        "src/extensions/core/groupNode.test.ts",
+        "src/extensions/core/nodeTemplates.test.ts"
+      ]
+    }
+  ],
+  "adrs": [
+    "docs/adr/GRAPH-CLIPBOARD-0059-storage-independent-graph-transfer.md"
+  ],
+  "compatibilityPromises": [
+    "Extension-facing canvas clipboard methods retain their return values, lifecycle hooks, layout commands, and insertion behavior.",
+    "Clipboard keys and modern and legacy payload formats remain compatible with earlier frontend versions.",
+    "In-memory graph transfer does not read, overwrite, or restore the browser clipboard cache."
+  ],
+  "deepImports": "enforced"
+}

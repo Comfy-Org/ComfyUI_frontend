@@ -20,6 +20,14 @@
     "classification": "infrastructure-assertion"
   },
   {
+    "id": "playwright:browser_tests/tests/infrastructure/liveCloudBillingRouting.spec.ts:blocks POST /api/billing/subscribe and fails even when the app catches it:1",
+    "classification": "infrastructure-assertion"
+  },
+  {
+    "id": "playwright:browser_tests/tests/infrastructure/liveCloudBillingRouting.spec.ts:fails when a proxied request fails during the test:1",
+    "classification": "infrastructure-assertion"
+  },
+  {
     "id": "playwright:browser_tests/tests/infrastructure/liveCloudBillingRouting.spec.ts:retains the external WebSocket guard:1",
     "classification": "infrastructure-assertion"
   },
@@ -57,6 +65,10 @@
   },
   {
     "id": "vitest:src/stores/assetDownloadStore.test.ts:excludes a failed-then-actually-completed task from activeDownloads (PM-1302):1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/workbench/extensions/agent/crdt/docOpMinter.test.ts:applies a human edit of a dotted dynamic child the pinned catalog does not list:1",
     "classification": "live-defect"
   },
   {

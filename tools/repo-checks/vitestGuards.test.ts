@@ -13,6 +13,7 @@ const PROJECTS_WITHOUT_TIMER_GUARD = [
   'packages/test-utils/vitest.config.ts (test-utils)',
   'vite.config.mts (isolated-stores)',
   'vite.config.mts (tooling)',
+  'vitest.census.config.mts',
   'vitest.matrix.config.mts'
 ]
 

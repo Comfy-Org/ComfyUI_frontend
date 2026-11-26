@@ -7,7 +7,7 @@ import {
   resolveActivePromotedWidgetConsumers
 } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
-import { resolveWidgetValueAsset } from '@/platform/assets/utils/resolveWidgetValueAsset'
+import { resolveWidgetValueAsset } from '@/platform/assets/integration/resolveWidgetValueAsset'
 import { isComboInputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import type { InputSpec as InputSpecV2 } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import { useNodeDefStore } from '@/stores/nodeDefStore'

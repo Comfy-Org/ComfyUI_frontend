@@ -337,6 +337,19 @@ function parseToolCalls(
   return parsedByCallId.size > 0 ? [...parsedByCallId.values()] : undefined
 }
 
+function restoredThinkingPart(entry: unknown): ThinkingPart | undefined {
+  const parsed = zPersistedThinkingEntry.safeParse(entry)
+  if (!parsed.success || !parsed.data.text.trim()) return undefined
+  const part: ThinkingPart = {
+    type: 'thinking',
+    text: parsed.data.text,
+    state: 'done'
+  }
+  if (parsed.data.truncated) part.truncated = true
+  if (parsed.data.tool_call_id) part.toolCallId = parsed.data.tool_call_id
+  return part
+}
+
 function insertThinking(
   parts: AssistantMessage['parts'],
   content: Record<string, unknown> | undefined
@@ -346,16 +359,10 @@ function insertThinking(
   const next = [...parts]
   let unplaced: ThinkingPart[] = []
   for (const entry of raw as unknown[]) {
-    const parsed = zPersistedThinkingEntry.safeParse(entry)
-    if (!parsed.success || !parsed.data.text.trim()) continue
-    const part: ThinkingPart = {
-      type: 'thinking',
-      text: parsed.data.text,
-      state: 'done'
-    }
-    if (parsed.data.truncated) part.truncated = true
+    const part = restoredThinkingPart(entry)
+    if (!part) continue
     unplaced.push(part)
-    const anchor = parsed.data.tool_call_id
+    const anchor = part.toolCallId
     const index = anchor
       ? next.findIndex(
           (existing) => existing.type === 'tool' && existing.callId === anchor
@@ -609,51 +616,80 @@ function liveTranscriptTurn(
   return liveTurn === undefined ? undefined : pendingByTurn.get(liveTurn)
 }
 
+function recordTranscriptRow(
+  row: AgentMessages[number],
+  state: {
+    turnOrder: TurnId[]
+    seenTurns: Set<TurnId>
+    rowIds: Set<string>
+    userTexts: Map<TurnId, string>
+    userAttachments: Map<TurnId, UserAttachment[]>
+    userWorkflowReferences: Map<TurnId, WorkflowReference[]>
+    userSkillReferences: Map<TurnId, SkillReference>
+    assistants: Map<TurnId, AssistantMessage>
+    pendingByTurn: Map<TurnId, NormalizedAgentTranscript['pending']>
+    isAskUnavailable: (askId: string) => boolean
+    isAskRetired: (askId: string) => boolean
+  }
+): string | undefined {
+  const turnId = row.turn_id as TurnId
+  state.rowIds.add(row.id)
+  recordTurnOrder(turnId, state.seenTurns, state.turnOrder)
+  const text = typeof row.content?.text === 'string' ? row.content.text : ''
+  if (row.role === 'user')
+    return recordUserRow(
+      row,
+      turnId,
+      text,
+      state.userTexts,
+      state.userAttachments,
+      state.userWorkflowReferences,
+      state.userSkillReferences
+    )
+  if (row.role !== 'assistant') return undefined
+  const pending = recordAssistantRow(row, turnId, text, state.assistants)
+  const message = state.assistants.get(turnId)
+  if (message)
+    keepAuthoritativeAsk(
+      message,
+      row,
+      state.isAskUnavailable,
+      state.isAskRetired
+    )
+  state.pendingByTurn.set(turnId, pending)
+  return row.workflow_id ?? undefined
+}
+
 export function normalizeAgentTranscript(
   history: AgentMessages,
   isAskUnavailable: (askId: string) => boolean = () => false,
   isAskRetired: (askId: string) => boolean = () => false
 ): NormalizedAgentTranscript {
-  const userTexts = new Map<TurnId, string>()
-  const userAttachments = new Map<TurnId, UserAttachment[]>()
-  const userWorkflowReferences = new Map<TurnId, WorkflowReference[]>()
-  const userSkillReferences = new Map<TurnId, SkillReference>()
-  const assistants = new Map<TurnId, AssistantMessage>()
-  const turnOrder: TurnId[] = []
-  const seenTurns = new Set<TurnId>()
-  const rowIds = new Set<string>()
-  const pendingByTurn = new Map<TurnId, NormalizedAgentTranscript['pending']>()
   let latestWorkflowId: string | undefined
 
-  for (const row of [...history].sort((a, b) => a.seq - b.seq)) {
-    const turnId = row.turn_id as TurnId
-    rowIds.add(row.id)
-    recordTurnOrder(turnId, seenTurns, turnOrder)
-    const text = typeof row.content?.text === 'string' ? row.content.text : ''
-    if (row.role === 'user') {
-      const workflowId = recordUserRow(
-        row,
-        turnId,
-        text,
-        userTexts,
-        userAttachments,
-        userWorkflowReferences,
-        userSkillReferences
-      )
-      if (workflowId) latestWorkflowId = workflowId
-    }
-    if (row.role === 'assistant') {
-      const pending = recordAssistantRow(row, turnId, text, assistants)
-      const message = assistants.get(turnId)
-      if (message)
-        keepAuthoritativeAsk(message, row, isAskUnavailable, isAskRetired)
-      pendingByTurn.set(turnId, pending)
-    }
+  const state = {
+    turnOrder: [] as TurnId[],
+    seenTurns: new Set<TurnId>(),
+    rowIds: new Set<string>(),
+    userTexts: new Map<TurnId, string>(),
+    userAttachments: new Map<TurnId, UserAttachment[]>(),
+    userWorkflowReferences: new Map<TurnId, WorkflowReference[]>(),
+    userSkillReferences: new Map<TurnId, SkillReference>(),
+    assistants: new Map<TurnId, AssistantMessage>(),
+    pendingByTurn: new Map<TurnId, NormalizedAgentTranscript['pending']>(),
+    isAskUnavailable,
+    isAskRetired
   }
 
-  const live = liveTranscriptTurn(pendingByTurn, assistants)
-  const messages = turnOrder.map((turnId) => {
-    const message = assistants.get(turnId) ?? createAssistantMessage(turnId)
+  for (const row of [...history].sort((a, b) => a.seq - b.seq)) {
+    const workflowId = recordTranscriptRow(row, state)
+    if (workflowId) latestWorkflowId = workflowId
+  }
+
+  const live = liveTranscriptTurn(state.pendingByTurn, state.assistants)
+  const messages = state.turnOrder.map((turnId) => {
+    const message =
+      state.assistants.get(turnId) ?? createAssistantMessage(turnId)
     if (message === live?.message) message.streaming = true
     else settleLiveMessage(message)
     return message
@@ -661,13 +697,13 @@ export function normalizeAgentTranscript(
 
   return {
     messages,
-    userTexts,
-    userAttachments,
-    userWorkflowReferences,
-    userSkillReferences,
+    userTexts: state.userTexts,
+    userAttachments: state.userAttachments,
+    userWorkflowReferences: state.userWorkflowReferences,
+    userSkillReferences: state.userSkillReferences,
     latestWorkflowId,
-    rowIds,
-    assistantTurnIds: new Set(assistants.keys()),
+    rowIds: state.rowIds,
+    assistantTurnIds: new Set(state.assistants.keys()),
     pending: live
   }
 }

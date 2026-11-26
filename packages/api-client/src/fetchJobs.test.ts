@@ -13,6 +13,7 @@ import type { RawJobListItem, zJobsListResponse } from './jobTypes'
 import type { z } from 'zod'
 
 type JobsListResponse = z.infer<typeof zJobsListResponse>
+type JobsFetchApi = Parameters<typeof fetchHistory>[0]
 
 function createMockJob(
   id: string,
@@ -219,6 +220,74 @@ describe('fetchJobs', () => {
     })
   })
 
+  describe('capped totals', () => {
+    it.for([
+      {
+        list: 'history',
+        fetchList: (fetchApi: JobsFetchApi) =>
+          fetchHistory(fetchApi, 200, 0, { cappedTotal: true }),
+        url: '/jobs?status=completed,failed,cancelled&limit=200&offset=0&capped_total=true'
+      },
+      {
+        list: 'queue',
+        fetchList: (fetchApi: JobsFetchApi) =>
+          fetchQueue(fetchApi, { cappedTotal: true }),
+        url: '/jobs?status=in_progress,pending&limit=200&offset=0&capped_total=true'
+      }
+    ])(
+      'asks for a capped total on the $list list',
+      async ({ fetchList, url }) => {
+        const mockFetch = vi.fn().mockResolvedValue({
+          ok: true,
+          json: () => Promise.resolve(createMockResponse([]))
+        })
+
+        await fetchList(mockFetch)
+
+        expect(mockFetch).toHaveBeenCalledWith(url)
+      }
+    )
+
+    it('keeps history pages in order when the total is capped', async () => {
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve(
+              createMockResponse(
+                [createMockJob('newest'), createMockJob('second')],
+                10_000,
+                { offset: 0, limit: 2, has_more: true }
+              )
+            )
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve(
+              createMockResponse(
+                [createMockJob('third'), createMockJob('fourth')],
+                10_000,
+                { offset: 2, limit: 2, has_more: true }
+              )
+            )
+        })
+
+      const firstPage = await fetchHistoryPage(mockFetch, 2, 0, {
+        cappedTotal: true
+      })
+      const secondPage = await fetchHistoryPage(mockFetch, 2, 2, {
+        cappedTotal: true
+      })
+
+      expect(
+        [...firstPage.jobs, ...secondPage.jobs].map((job) => job.priority)
+      ).toEqual([10_000, 9_999, 9_998, 9_997])
+      expect(secondPage.hasMore).toBe(true)
+    })
+  })
+
   describe('fetchQueue', () => {
     it('fetches running and pending jobs', async () => {
       const mockFetch = vi.fn().mockResolvedValue({
@@ -320,6 +389,30 @@ describe('fetchJobs', () => {
 
       expect(mockFetch).toHaveBeenCalledWith('/jobs/job1', {
         signal: controller.signal
+      })
+    })
+
+    it('reads a failed job whose execution error has a null traceback', async () => {
+      const jobDetail = {
+        ...createMockJob('job1', 'failed'),
+        execution_error: {
+          node_id: '5',
+          node_type: 'KSampler',
+          exception_message: 'boom',
+          exception_type: 'RuntimeError',
+          traceback: null
+        }
+      }
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(jobDetail)
+      })
+
+      const result = await fetchJobDetail(mockFetch, 'job1')
+
+      expect(result?.execution_error).toMatchObject({
+        exception_message: 'boom',
+        traceback: null
       })
     })
 

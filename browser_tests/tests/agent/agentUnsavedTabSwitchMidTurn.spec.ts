@@ -8,8 +8,7 @@ test.describe(
   { tag: ['@cloud', '@agent', '@vue-nodes'] },
   () => {
     test.use({
-      conversationCase: 'agent-rec-three-sequential-adds',
-      workflowTarget: 'unsaved-draft'
+      conversationCase: 'agent-rec-three-sequential-adds'
     })
 
     test('shows every edit after switching away mid-turn and back', async ({

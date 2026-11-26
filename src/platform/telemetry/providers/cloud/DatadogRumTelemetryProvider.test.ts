@@ -50,6 +50,17 @@ beforeEach(() => {
   useCurrentUser().userEmail = computed(() => 'restored@example.com')
 })
 
+const assetDownload = {
+  phase: 'body',
+  auth_credential: 'bearer',
+  route: 'assets_content',
+  media_kind: 'image',
+  surface: 'gallery',
+  duration_ms: 120,
+  page_age_ms: 5000,
+  online: true
+} as const
+
 const workflowExecutionIntent = {
   trigger_source: 'keybinding'
 } as const
@@ -219,6 +230,21 @@ describe('DatadogRumTelemetryProvider', () => {
     })
   })
 
+  it('records why the agent chat called its workflow unavailable as a RUM action', () => {
+    const metadata = {
+      cause: 'restore_not_listed',
+      workflow_id: 'wf-1',
+      startup_tab_restore_settled: false
+    } as const
+
+    new DatadogRumTelemetryProvider().trackAgentTargetUnavailable(metadata)
+
+    expect(addAction).toHaveBeenCalledExactlyOnceWith(
+      TelemetryEvents.AGENT_TARGET_UNAVAILABLE,
+      metadata
+    )
+  })
+
   it('records gated agent sends as RUM actions so drop-offs can be monitored', () => {
     const metadata = {
       gate: 'coach',
@@ -360,6 +386,20 @@ describe('DatadogRumTelemetryProvider', () => {
       { source: 'node_image_preview' }
     )
   })
+
+  it.for([
+    ['completed', TelemetryEvents.ASSET_DOWNLOAD_COMPLETED],
+    ['failed', TelemetryEvents.ASSET_DOWNLOAD_FAILED]
+  ] as const)(
+    'adds a %s asset download as its own RUM action',
+    ([outcome, actionName]) => {
+      const metadata = { ...assetDownload, outcome }
+
+      new DatadogRumTelemetryProvider().trackAssetDownload(metadata)
+
+      expect(addAction).toHaveBeenCalledExactlyOnceWith(actionName, metadata)
+    }
+  )
 
   it.for([
     ['extension.manager:supports-v4', 'extension_manager_supports_v4'],

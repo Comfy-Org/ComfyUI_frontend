@@ -89,7 +89,7 @@ describe('comfyAPIPlugin transform', () => {
       ]
     }
   ])(
-    'keeps compatibility exports in scripts/$module.js',
+    'keeps compatibility exports in the scripts/ shim for $module',
     ({ module, names }) => {
       const id = path.join(root, `src/scripts/${module}.ts`)
       const { emitFile } = runTransform(false, id, readFileSync(id, 'utf8'))

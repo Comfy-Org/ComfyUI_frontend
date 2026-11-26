@@ -19,7 +19,7 @@ import type {
   SearchAttribute
 } from '../src/types/algoliaTypes'
 import { buildPackSearchFallbacks } from '../src/utils/searchQueryUtil'
-import { isMainModule } from './isMainModule'
+import { isMainModule } from '@comfyorg/ci/isMainModule'
 
 export const FIXTURE_PATH = fileURLToPath(
   new URL(

@@ -1,0 +1,186 @@
+import type { AssetContext } from '@comfyorg/assets-core/media'
+import type { AssetItem } from '@comfyorg/assets-core/schema'
+import {
+  getOutputSubfolder,
+  getAssetType as getAssetSourceType
+} from '@comfyorg/assets-core/metadata'
+import type { OutputAssetMetadata } from '@/platform/assets/types/outputAssetMetadata'
+import { getOutputAssetMetadata } from '@/platform/assets/types/outputAssetMetadata'
+import { getStoredOutputIdentity } from '@/platform/assets/adapters/outputAssetResolver'
+import { getAssetViewUrl } from '@/platform/assets/utils/assetUrlUtil'
+import type { TaskItemImpl } from '@/stores/queueStore'
+import type { AugmentedResultItem } from '@/utils/resultItem'
+import { resultItemPreviewUrl, resultItemUrl } from '@/utils/resultItemUrl'
+import {
+  getMediaTypeFromFilename,
+  isPreviewableMediaType,
+  parseFilePath
+} from '@/utils/formatUtil'
+import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'
+import { findLast } from '@/utils/arrayUtil'
+
+/**
+ * Extract asset type from tags array
+ * @param tags The tags array from AssetItem
+ * @returns The asset type ('input' or 'output')
+ */
+export function getAssetType(tags?: string[]): AssetContext['type'] {
+  const tag = tags?.[0]
+  if (tag === 'output') return 'output'
+  return 'input'
+}
+
+export function mapTaskOutputToAssetItem(
+  taskItem: Pick<
+    TaskItemImpl,
+    | 'jobId'
+    | 'executionTimeInSeconds'
+    | 'createTime'
+    | 'executionStartTimestamp'
+  >,
+  output: AugmentedResultItem
+): AssetItem {
+  const metadata: OutputAssetMetadata = {
+    jobId: taskItem.jobId,
+    nodeId: output.nodeId,
+    subfolder: output.subfolder,
+    executionTimeInSeconds: taskItem.executionTimeInSeconds,
+    format: output.format,
+    create_time: taskItem.createTime
+  }
+
+  const executionTime = taskItem.executionStartTimestamp
+    ? new Date(taskItem.executionStartTimestamp).toISOString()
+    : new Date().toISOString()
+
+  return {
+    id: taskItem.jobId,
+    name: output.filename,
+    display_name: output.display_name,
+    size: 0,
+    created_at: executionTime,
+    updated_at: executionTime,
+    tags: ['output'],
+    thumbnail_url: resultItemPreviewUrl(output),
+    preview_url: resultItemUrl(output),
+    user_metadata: metadata
+  }
+}
+
+const byCreatedAtAsc = (a: AssetItem, b: AssetItem): number =>
+  new Date(a.created_at).getTime() - new Date(b.created_at).getTime() ||
+  a.name.localeCompare(b.name)
+
+const byCreatedAtDesc = (a: AssetItem, b: AssetItem): number =>
+  new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+function isTempOutput(asset: AssetItem): boolean {
+  return asset.tags.includes('temp') || getAssetSourceType(asset) === 'temp'
+}
+
+const NON_OUTPUT_TAGS = new Set(['input', 'models'])
+
+/** Whether an asset added to a workflow lives in the temp root: its stored output identity, else temp evidence on a generated output. */
+export function isGeneratedTempOutput(asset: AssetItem): boolean {
+  const storedType = getStoredOutputIdentity(asset)?.type
+  if (storedType) return storedType === 'temp'
+  if (getAssetSourceType(asset) === 'input') return false
+  return (
+    !asset.tags.some((tag) => NON_OUTPUT_TAGS.has(tag)) && isTempOutput(asset)
+  )
+}
+
+const byIsTemp = (a: AssetItem, b: AssetItem): number =>
+  Number(isTempOutput(b)) - Number(isTempOutput(a))
+
+function flatAssetToResultItem(asset: AssetItem): AugmentedResultItem {
+  const metadata = getOutputAssetMetadata(asset.user_metadata)
+  const url = asset.preview_url ?? ''
+  return {
+    assetId: asset.id,
+    hash: asset.hash,
+    display_name: asset.display_name ?? undefined,
+    filename: asset.name,
+    format: metadata?.format,
+    mediaType: getMediaTypeFromFilename(asset.name),
+    nodeId: metadata?.nodeId ?? '',
+    subfolder: getOutputSubfolder(asset) ?? '',
+    type: isTempOutput(asset) ? 'temp' : 'output',
+    url,
+    previewUrl: asset.thumbnail_url ?? url
+  }
+}
+
+/**
+ * Group flat per-file output assets into one asset per job, mirroring the
+ * grouped shape produced from the history API: the group id is the job id and
+ * user_metadata carries outputCount/allOutputs. Assets without output job
+ * metadata pass through ungrouped.
+ */
+export function unflattenOutputAssets(
+  flatAssets: readonly AssetItem[]
+): AssetItem[] {
+  const assetsByJob = new Map<string, AssetItem[]>()
+  const ungrouped: AssetItem[] = []
+
+  for (const asset of flatAssets) {
+    const { job_id } = asset
+    if (!job_id) {
+      ungrouped.push(asset)
+      continue
+    }
+    const group = assetsByJob.get(job_id)
+    if (group) group.push(asset)
+    else assetsByJob.set(job_id, [asset])
+  }
+
+  const grouped = [...assetsByJob.entries()].map(([job_id, assets]) => {
+    const ordered = [...assets].sort(byCreatedAtAsc)
+    const representative =
+      findLast([...ordered].sort(byIsTemp), (asset) =>
+        isPreviewableMediaType(getMediaTypeFromFilename(asset.name))
+      ) ?? ordered.at(-1)!
+    return {
+      ...representative,
+      id: job_id,
+      created_at: ordered.at(-1)!.created_at,
+      user_metadata: {
+        jobId: job_id,
+        ...representative.user_metadata,
+        subfolder: getOutputSubfolder(representative) ?? '',
+        assetId: representative.id,
+        outputCount: ordered.length,
+        allOutputs: ordered.map(flatAssetToResultItem)
+      }
+    }
+  })
+
+  return [...grouped, ...ungrouped].sort(byCreatedAtDesc)
+}
+
+/**
+ * Maps input directory file to AssetItem format
+ * @param filename The filename
+ * @param index File index for unique ID
+ * @param directory The directory type
+ * @returns AssetItem formatted object
+ */
+export function mapInputFileToAssetItem(
+  filename: string,
+  index: number,
+  directory: 'input' | 'output' = 'input'
+): AssetItem {
+  const { filepath } = parseAnnotatedPath(filename)
+  const { filename: name, subfolder } = parseFilePath(filepath)
+  const created_at = new Date().toISOString()
+  const asset = {
+    id: `${directory}-${index}-${filepath}`,
+    name,
+    loader_path: subfolder ? `${subfolder}/${name}` : name,
+    size: 0,
+    created_at,
+    updated_at: created_at,
+    tags: [directory]
+  }
+  const preview_url = getAssetViewUrl(asset)
+  return { ...asset, preview_url, thumbnail_url: preview_url }
+}

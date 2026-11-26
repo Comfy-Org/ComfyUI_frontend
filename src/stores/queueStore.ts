@@ -366,6 +366,7 @@ export const useQueueStore = defineStore('queue', () => {
           ...queue.Running.map((j) => j.id),
           ...queue.Pending.map((j) => j.id)
         ])
+        executionStore.recordJobIdsAtLoad(activeJobIds)
         executionStore.reconcileInitializingJobs(activeJobIds)
         useJobModelDownloadStore().reconcileActiveJobs(activeJobIds)
       } else {

@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { zGetFeaturesResponse } from '@comfyorg/ingest-types/zod'
 
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
@@ -10,10 +11,10 @@ import {
   desktopWorkflowUrl
 } from '@/platform/openOnCloud/desktopWorkflowHandoff'
 import {
-  cloudOrigin,
-  isLocalOrigin
+  isLocalOrigin,
+  trustedCloudHandoffOrigin
 } from '@/platform/openOnCloud/localHandoffProtocol'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import { api } from '@/scripts/api'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 
@@ -21,7 +22,8 @@ const zRelayRecord = z.object({
   destination: z.url().refine((value) => {
     const url = new URL(value)
     return (
-      url.origin === cloudOrigin() && url.hash.startsWith(DESKTOP_HANDOFF_HASH)
+      url.origin === trustedCloudHandoffOrigin() &&
+      url.hash.startsWith(DESKTOP_HANDOFF_HASH)
     )
   }),
   expiresAt: z.number()
@@ -39,19 +41,33 @@ function transferFile(nonce: string) {
 
 export async function stageDesktopWorkflowHandoff(
   filename: string,
-  workflow: ComfyWorkflowJSON
+  workflow: ComfyWorkflowJSON,
+  authorize?: () => Promise<boolean>,
+  workspaceId?: string
 ): Promise<string | undefined> {
   const { useFeatureFlags } = await import('@/composables/useFeatureFlags')
-  if (!useFeatureFlags().flags.openOnCloudEnabled) return undefined
+  const { flags } = useFeatureFlags()
+  const isEnabled = () =>
+    flags.openOnCloudEnabled &&
+    useRemoteConfigStore().config.open_on_cloud_enabled !== false
+  const origin = trustedCloudHandoffOrigin()
+  if (!origin || !isEnabled()) return undefined
 
   const nonce = crypto.randomUUID()
   const expiresAt = Date.now() + DESKTOP_HANDOFF_LIFETIME_MS
-  const destination = await desktopWorkflowUrl(nonce, {
-    filename,
-    workflow,
-    expiresAt
-  })
-  if (!destination) return undefined
+  const destination = await desktopWorkflowUrl(
+    nonce,
+    { filename, workflow, expiresAt },
+    workspaceId
+  )
+  if (
+    !destination ||
+    new URL(destination).origin !== origin ||
+    (authorize && !(await authorize())) ||
+    trustedCloudHandoffOrigin() !== origin ||
+    !isEnabled()
+  )
+    return undefined
   const file = transferFile(nonce)
   const stored = await api.storeUserData(
     file,
@@ -102,17 +118,35 @@ async function relayWorkflow(url: URL): Promise<boolean> {
   return true
 }
 
+function showRelayFailure(message: string): true {
+  const splash = document.getElementById('splash-loader')
+  if (splash) {
+    splash.textContent = message
+    splash.setAttribute('aria-label', message)
+  }
+  return true
+}
+
 async function redirectDesktopWorkflowRelay(): Promise<boolean> {
   const url = new URL(window.location.href)
   if (!url.searchParams.has(DESKTOP_RELAY_PARAM)) return false
   const { refreshRemoteConfig } =
     await import('@/platform/remoteConfig/refreshRemoteConfig')
   await refreshRemoteConfig({ useAuth: false }).catch(() => undefined)
-  if (remoteConfig.value.open_on_cloud_enabled === false) return false
+  const remoteConfigStore = useRemoteConfigStore()
+  const rollout = zGetFeaturesResponse
+    .pick({ open_on_cloud_enabled: true })
+    .safeParse(remoteConfigStore.config)
+  const isRelay = !!relayNonce(url)
+  if (remoteConfigStore.loadState !== 'anonymous' || !rollout.success)
+    return isRelay && showRelayFailure(t('openOnCloud.desktopTransferRetry'))
+  if (
+    rollout.data.open_on_cloud_enabled === false ||
+    !trustedCloudHandoffOrigin()
+  )
+    return (
+      isRelay && showRelayFailure(t('openOnCloud.desktopTransferUnavailable'))
+    )
   const relayed = await relayWorkflow(url).catch(() => false)
-  if (!relayed) {
-    const splash = document.getElementById('splash-loader')
-    if (splash) splash.textContent = t('openOnCloud.desktopTransferFailed')
-  }
-  return true
+  return relayed || showRelayFailure(t('openOnCloud.desktopTransferFailed'))
 }
