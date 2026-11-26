@@ -45,8 +45,24 @@ function parseLatestChoice(raw: string | null): LatestChoice | undefined {
   return undefined
 }
 
+function readStoredLatestChoice() {
+  try {
+    return localStorage.getItem(LATEST_CHOICE_KEY)
+  } catch {
+    return null
+  }
+}
+
+function storeLatestChoice(choice: LatestChoice) {
+  try {
+    localStorage.setItem(LATEST_CHOICE_KEY, JSON.stringify(choice))
+  } catch {
+    return
+  }
+}
+
 function readLatestChoice(): LatestChoice | undefined {
-  const shared = parseLatestChoice(safeLocalStorage.getItem(LATEST_CHOICE_KEY))
+  const shared = parseLatestChoice(readStoredLatestChoice())
   if (!shared) return choiceInThisTab
   if (!choiceInThisTab || shared.revision >= choiceInThisTab.revision)
     return shared
@@ -60,7 +76,7 @@ function recordNewChoice(askBeforeCheck: boolean): LatestChoice {
     revision: Math.max(Date.now(), previousRevision + 1)
   }
   choiceInThisTab = choice
-  safeLocalStorage.setItem(LATEST_CHOICE_KEY, JSON.stringify(choice))
+  storeLatestChoice(choice)
   return choice
 }
 
