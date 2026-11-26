@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { assert, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import type { Component } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -289,6 +289,31 @@ describe('SubgraphEditor', () => {
     const remaining = host.inputs.filter((input) => input.widgetId)
     expect(remaining.map((input) => input.name)).toEqual(['first'])
     expect(host.isInputHidden('first')).toBe(true)
+  })
+
+  it('restores a hidden promotion with Show all without discarding its edit', async () => {
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph)
+    subgraph.rootGraph.add(host)
+    const source = new LGraphNode('Source')
+    subgraph.add(source)
+    const input = source.addInput('first', 'STRING')
+    const widget = source.addWidget('text', 'first', 'default', () => {})
+    input.widget = { name: widget.name }
+    promoteValueWidgetViaSubgraphInput(host, source, widget)
+    const promoted = promotedInputWidget(host.inputs[0])
+    assert.exists(promoted)
+    promoted.value = 'edited'
+    host.hideInput('first')
+    setCanvasSelection([host])
+    renderEditor()
+
+    const hidden = screen.getByTestId('subgraph-editor-hidden-section')
+    await userEvent.click(within(hidden).getByText('Show all'))
+
+    const shown = screen.getByTestId('subgraph-editor-shown-section')
+    expect(within(shown).getByText('first')).toBeInTheDocument()
+    expect(promotedInputWidget(host.inputs[0])?.value).toBe('edited')
   })
 
   it('hides a promoted input by visibility only and shows it again from the hidden section', async () => {

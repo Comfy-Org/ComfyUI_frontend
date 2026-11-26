@@ -24,7 +24,7 @@ const { StubWidgetComponent } = vi.hoisted(() => ({
   StubWidgetComponent: {
     name: 'StubWidget',
     props: ['widget', 'modelValue', 'nodeId', 'nodeType'],
-    template: '<button type="button" />'
+    template: '<button type="button" :aria-label="widget.name" />'
   }
 }))
 
@@ -187,6 +187,29 @@ describe('TabSubgraphInputs', () => {
     expect(captured.rows.map(({ widget }) => widget.name)).not.toContain(
       'panel-hidden'
     )
+  })
+
+  it('does not expose a panel-suppressed promotion as a control in Advanced Inputs', async () => {
+    const { host, sourceNode } = buildHostWithPromotedSeed()
+    sourceNode.addWidget('number', 'steps', 20, () => {})
+    const id = widgetId(host.rootGraph.id, host.id, 'seed')
+    useWidgetValueStore().updateOptions(id, { hideInPanel: true })
+    host.hideInput('seed')
+
+    render(TabSubgraphInputs, {
+      props: { node: host },
+      global: {
+        plugins: [i18n],
+        stubs: { CollapseToggleButton: true }
+      }
+    })
+
+    await userEvent.click(screen.getByText('Advanced Inputs'))
+
+    expect(screen.getByRole('button', { name: 'steps' })).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'seed' })
+    ).not.toBeInTheDocument()
   })
 
   it('reflects value changes through the same descriptor without rebuilding it', () => {

@@ -315,6 +315,9 @@ describe('Hide input', () => {
     expect(a.host.showAdvanced).toBe(true)
     expect(a.host.isWidgetVisible(hostWidget)).toBe(true)
 
+    a.host.toggleAdvanced()
+    expect(a.host.isWidgetVisible(hostWidget)).toBe(false)
+
     a.host.showInput('value')
     expect(a.host.isWidgetVisible(hostWidget)).toBe(true)
   })
@@ -374,6 +377,39 @@ describe('Hide input', () => {
     assert.exists(reloadedWidget)
     expect(reloaded.isWidgetVisible(reloadedWidget)).toBe(false)
     expect(reloaded.serialize().properties?.hiddenInputs).toEqual(['value'])
+
+    reloaded.showInput('value')
+
+    expect(reloaded.isWidgetVisible(reloadedWidget)).toBe(true)
+    expect(reloadedWidget.value).toBe('edited-73')
+  })
+
+  it('updates the live promoted control when the persisted property changes', () => {
+    const { subgraph } = createTextSubgraph()
+    const { host, hostInput } = addHost(subgraph, 'edited-73')
+    const widget = hostInput._widget
+    assert.exists(widget)
+
+    host.setProperty('hiddenInputs', ['value'])
+
+    expect(host.isWidgetVisible(widget)).toBe(false)
+    host.setProperty('hiddenInputs', [])
+    expect(host.isWidgetVisible(widget)).toBe(true)
+  })
+
+  it('does not hide a new socket that reuses a name missing at load', () => {
+    const { subgraph } = createTextSubgraph()
+    const { host } = addHost(subgraph, 'edited-73')
+    const saved = host.serialize()
+    host.configure({
+      ...saved,
+      type: subgraph.id,
+      properties: { ...saved.properties, hiddenInputs: ['later'] }
+    })
+
+    subgraph.addInput('later', 'STRING')
+
+    expect(host.isInputHidden('later')).toBe(false)
   })
 
   it('returns a reloaded hidden input to its own advanced tier on Show', () => {

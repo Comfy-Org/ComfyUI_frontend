@@ -791,6 +791,40 @@ describe('reorderSubgraphInputsByName', () => {
 })
 
 describe('reorderSubgraphInputsByWidgetOrder', () => {
+  it('keeps a hidden input in place on both instances when reversing the visible rows', () => {
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph)
+    subgraph.rootGraph.add(host)
+    const source = new LGraphNode('Source')
+    subgraph.add(source)
+
+    function promote(name: string) {
+      const input = source.addInput(name, 'STRING')
+      const widget = source.addWidget('text', name, '', () => {})
+      input.widget = { name }
+      promoteValueWidgetViaSubgraphInput(host, source, widget)
+    }
+
+    promote('first')
+    promote('second')
+    promote('third')
+    const sibling = createTestSubgraphNode(subgraph)
+    subgraph.rootGraph.add(sibling)
+    host.hideInput('first')
+
+    reorderSubgraphInputsByWidgetOrder(host, [
+      promotedWidgetRef(host, 'third'),
+      promotedWidgetRef(host, 'second')
+    ])
+
+    expect(
+      [host, sibling].map((node) => node.inputs.map(({ name }) => name))
+    ).toEqual([
+      ['first', 'third', 'second'],
+      ['first', 'third', 'second']
+    ])
+  })
+
   it('reorders duplicate-named promoted inputs by widget identity', () => {
     const subgraph = createTestSubgraph()
     const host = createTestSubgraphNode(subgraph)
