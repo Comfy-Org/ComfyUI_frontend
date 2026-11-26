@@ -180,6 +180,55 @@ function messageTexts(
 }
 
 describe('useAgentConversationStore', () => {
+  // PM-1440: a turn's charge arrives on `agent_message_done` and is absent
+  // from the persisted history row, so a hydrate rebuilds the turn without it
+  // and the credits line disappears for the whole conversation.
+  describe('reported turn credits', () => {
+    const doneWithCharge = (id: string, chargeMicroUsd: number) =>
+      chat({
+        type: 'agent_message_done',
+        data: {
+          message_id: id,
+          thread_id: 'th',
+          usage: { charge_micro_usd: chargeMicroUsd }
+        }
+      })
+    const settledTurn = (turnId: string) => [
+      historyRow(1, 'user', turnId, 'Add a KSampler node.', 'u1'),
+      historyRow(2, 'assistant', turnId, 'Done.', 'a1')
+    ]
+
+    it('keeps the served charge when the same thread rehydrates', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.ingest(doneWithCharge(T1, 6038))
+      const live = store.messages.find((message) => message.id === T1)
+      expect(live?.creditsUsed).toBeCloseTo(1.274)
+
+      store.hydrate(settledTurn(T1))
+
+      const restored = store.messages.find((message) => message.id === T1)
+      expect(restored?.creditsUsed).toBeCloseTo(1.274)
+    })
+
+    it('leaves a turn that never reported a charge without one', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.ingest(done(T1))
+
+      store.hydrate(settledTurn(T1))
+
+      expect(
+        store.messages.find((message) => message.id === T1)?.creditsUsed
+      ).toBeUndefined()
+      expect(
+        store.messages.find((message) => message.id === T2)?.creditsUsed
+      ).toBeUndefined()
+    })
+  })
+
   it('publishes a turn identity before its live status', () => {
     const store = useAgentConversationStore()
     const observations: [typeof store.status, TurnId | null][] = []

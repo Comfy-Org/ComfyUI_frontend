@@ -647,6 +647,12 @@ export const useAgentConversationStore = defineStore(
       { shownAt: number; turnId: string }
     >()
     const shownApprovalIds = new Set<string>()
+    // The charge for a turn rides on its `agent_message_done` frame and is not
+    // persisted on the history row, so a rehydrate would otherwise drop it and
+    // blank the credits line for the whole conversation. Turn ids are unique,
+    // so remembering the server's own number for the life of the page is safe
+    // across threads; nothing here derives or estimates a charge.
+    const reportedTurnCredits = new Map<TurnId, number>()
     const undeliverableAskReporter = createUndeliverableAskReporter()
     const departedTurns = new Map<string, 'no-live-turn' | 'settled-turn'>()
     const activeTurnId = computed(() => activeSlot.value?.turnId ?? null)
@@ -712,6 +718,8 @@ export const useAgentConversationStore = defineStore(
     }
 
     function publishMessage(turnId: TurnId, message: AssistantMessage): void {
+      if (message.creditsUsed !== undefined)
+        reportedTurnCredits.set(turnId, message.creditsUsed)
       replaceActive(message)
       const entry = backgroundTurns.get(turnId)
       if (activeSlot.value?.turnId !== turnId && (!entry || entry.settled))
@@ -2442,6 +2450,16 @@ export const useAgentConversationStore = defineStore(
         void pendingSendsReconciled.trigger(reconciledIds)
     }
 
+    function restoreReportedCredits(
+      restored: readonly AssistantMessage[]
+    ): void {
+      for (const message of restored) {
+        if (message.creditsUsed !== undefined) continue
+        const credits = reportedTurnCredits.get(message.id)
+        if (credits !== undefined) message.creditsUsed = credits
+      }
+    }
+
     function hydrate(
       history: AgentMessages,
       options?: { skipSnapshotTurns?: ReadonlySet<TurnId> }
@@ -2461,6 +2479,7 @@ export const useAgentConversationStore = defineStore(
         (askId) => isAskRetired(askId)
       )
       reapplyRetiredAsks(transcript)
+      restoreReportedCredits(transcript.messages)
       messages.value = transcript.messages
       resolvedPaywallIds.value = new Set()
       userTexts.value = transcript.userTexts
