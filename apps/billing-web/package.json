@@ -13,7 +13,7 @@
     "test:coverage": "vitest run --coverage",
     "test:unit": "vitest run",
     "typecheck": "tsx ../../scripts/vue-tsc-native.ts --noEmit -p tsconfig.json",
-    "deps:audit": "depcruise src e2e '*.ts'",
+    "deps:audit": "depcruise src e2e \"*.ts\"",
     "test:e2e": "playwright test",
     "test:e2e:local": "cross-env PLAYWRIGHT_LOCAL=1 playwright test"
   },
