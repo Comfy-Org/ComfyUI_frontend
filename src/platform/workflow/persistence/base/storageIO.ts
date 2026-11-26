@@ -28,7 +28,7 @@ import { StorageKeys } from './storageKeys'
 type StorageAvailability = 'available' | 'unavailable'
 type WorkflowStorageFencePolicy = 'identity' | 'workspace'
 export interface WorkflowStorageFence {
-  release(): boolean
+  release(): void
   releaseAndResumePersistence(): boolean
 }
 const workflowStorageAuthFenceToken = Symbol('workflow-storage-auth-fence')
@@ -655,12 +655,12 @@ export function fenceWorkflowStorageForAuthState(): WorkflowStorageAuthFence {
 
 export function releaseWorkflowStorageAuthFence(
   owner?: WorkflowStorageAuthFence
-): boolean {
-  if (!authStateFence) return false
-  if (owner && owner !== authStateFence.owner) return false
+): void {
+  if (!authStateFence) return
+  if (owner && owner !== authStateFence.owner) return
   const fence = authStateFence
   authStateFence = undefined
-  return fence.fence.release()
+  fence.fence.release()
 }
 
 export function abortWorkflowStorageAuthFence(
@@ -698,7 +698,9 @@ function acquireWorkflowStorageFence(
     return resumed
   }
   return {
-    release: () => settle(false),
+    release: () => {
+      settle(false)
+    },
     releaseAndResumePersistence: () => settle(true)
   }
 }

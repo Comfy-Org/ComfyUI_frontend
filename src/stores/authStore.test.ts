@@ -616,7 +616,7 @@ describe('useAuthStore', () => {
 
       expect(store.currentUser).toBeNull()
       expect(isStorageAvailable()).toBe(false)
-      expect(releaseWorkflowStorageAuthFence()).toBe(true)
+      releaseWorkflowStorageAuthFence()
       expect(isStorageAvailable()).toBe(true)
       expect(mockReportError).toHaveBeenCalledWith(mockError, {
         surface: 'auth',

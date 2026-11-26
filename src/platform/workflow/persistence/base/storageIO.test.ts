@@ -722,7 +722,7 @@ describe('storageIO', () => {
       expect(isolatedStorageIO.isStorageAvailable()).toBe(false)
 
       const transition = isolatedStorageIO.prepareWorkflowLogoutTransition()
-      expect(transition.release()).toBe(false)
+      transition.release()
 
       expect(isolatedStorageIO.isStorageAvailable()).toBe(false)
       cancelWorkspaceTransition.release()
@@ -735,7 +735,7 @@ describe('storageIO', () => {
 
       isolatedStorageIO.markStorageUnavailable()
       const transition = isolatedStorageIO.prepareWorkflowLogoutTransition()
-      expect(transition.release()).toBe(true)
+      transition.release()
 
       expect(isolatedStorageIO.isStorageAvailable()).toBe(false)
     })
@@ -801,7 +801,7 @@ describe('storageIO', () => {
 
       const accountSwitch = isolatedStorageIO.prepareWorkflowLogoutTransition()
       const failedLogout = isolatedStorageIO.prepareWorkflowLogoutTransition()
-      expect(accountSwitch.release()).toBe(false)
+      accountSwitch.release()
       expect(failedLogout.releaseAndResumePersistence()).toBe(true)
       expect(isolatedStorageIO.isStorageAvailable()).toBe(true)
       expect(resumeAfterAbort).toHaveBeenCalledOnce()
@@ -876,10 +876,10 @@ describe('storageIO', () => {
         isolatedStorageIO.prepareWorkflowLogoutTransition()
       isolatedStorageIO.fenceWorkflowStorageForAuthState()
 
-      expect(isolatedStorageIO.releaseWorkflowStorageAuthFence()).toBe(false)
+      isolatedStorageIO.releaseWorkflowStorageAuthFence()
       expect(isolatedStorageIO.isStorageAvailable()).toBe(false)
 
-      expect(logoutTransition.release()).toBe(true)
+      logoutTransition.release()
       expect(isolatedStorageIO.isStorageAvailable()).toBe(true)
     })
 
@@ -890,7 +890,7 @@ describe('storageIO', () => {
       const repeatedOwner = isolatedStorageIO.fenceWorkflowStorageForAuthState()
 
       expect(repeatedOwner).toBe(firstOwner)
-      expect(isolatedStorageIO.releaseWorkflowStorageAuthFence()).toBe(true)
+      isolatedStorageIO.releaseWorkflowStorageAuthFence()
       expect(isolatedStorageIO.isStorageAvailable()).toBe(true)
     })
 
