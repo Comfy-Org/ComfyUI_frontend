@@ -2555,6 +2555,8 @@ describe('LiveGraphApplier', () => {
     ['private-user@example.com', 'unknown'],
     ['system:private-user', 'unknown'],
     ['agent-remote', 'agent-remote'],
+    ['agent-collected', 'agent-collected'],
+    ['system:client-seed', 'system:client-seed'],
     ['system:mint', 'system:mint']
   ] as const)(
     'reports only the actor kind of %s when an operation throws',
@@ -2565,7 +2567,7 @@ describe('LiveGraphApplier', () => {
       })
       applyCollected()
       const doomed = graph.getNodeById(toNodeId(1))
-      if (!doomed) throw new Error('node 1 was not created')
+      assert.exists(doomed)
       doomed.onRemoved = () => {
         throw new Error('extension hook exploded')
       }
