@@ -79,7 +79,8 @@ function row(key: string, names: readonly string[]): MissingItemsRow[] {
       ...(rest.length > 0 && {
         more: t('deploymentSwitcher.workflowNeedsDeployment.more', {
           count: rest.length
-        })
+        }),
+        others: rest.join(', ')
       })
     }
   ]

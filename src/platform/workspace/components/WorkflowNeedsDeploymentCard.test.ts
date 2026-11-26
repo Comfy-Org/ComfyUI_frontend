@@ -220,6 +220,10 @@ describe('WorkflowNeedsDeploymentCard', () => {
     expect(screen.getByTestId('custom-deployment-missing')).toHaveTextContent(
       "4 missing modelsSDXL/Tom's=a&b.safetensors+3 more"
     )
+    expect(screen.getByText('+3 more')).toHaveAttribute(
+      'title',
+      'SDXL/base.safetensors, SDXL/a&b.safetensors, SDXL/turbo.safetensors'
+    )
   })
 
   it('offers to switch to a deployment that runs the workflow, saying what the others lack', async () => {

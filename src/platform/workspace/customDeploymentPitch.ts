@@ -3,11 +3,12 @@ import { CUSTOM_DEPLOYMENT_BRIEF } from '@/platform/workspace/customDeploymentBr
 import { platformSurfaceLink } from '@/platform/workspace/utils/platformLink'
 import type { PlatformLinkSurface } from '@/platform/workspace/utils/platformLink'
 
-/** One line of what a workflow lacks: how many of a kind, the first by name, then how many more. */
+/** One line of what a workflow lacks: how many of a kind, the first by name, then how many more and which. */
 export interface MissingItemsRow {
   label: string
   name: string
   more?: string
+  others?: string
 }
 
 /** The workflow a brief names, serialized when the brief is handed over; null once it is unloaded. */

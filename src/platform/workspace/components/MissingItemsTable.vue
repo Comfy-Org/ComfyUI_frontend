@@ -5,7 +5,7 @@
     <div
       v-for="row in rows"
       :key="row.label"
-      class="flex items-baseline gap-3 px-3.5 py-2 text-sm/5"
+      class="flex flex-col gap-x-3 px-3.5 py-2 text-sm/5 @xl:flex-row @xl:items-baseline"
     >
       <dt class="shrink-0 text-muted-foreground @xl:w-38">
         {{ row.label }}
@@ -14,7 +14,11 @@
         <span class="min-w-0 flex-1 truncate" :title="row.name">
           {{ row.name }}
         </span>
-        <span v-if="row.more" class="shrink-0 text-muted-foreground">
+        <span
+          v-if="row.more"
+          class="shrink-0 text-muted-foreground"
+          :title="row.others"
+        >
           {{ row.more }}
         </span>
       </dd>
