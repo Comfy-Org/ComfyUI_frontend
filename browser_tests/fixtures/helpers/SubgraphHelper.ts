@@ -396,23 +396,10 @@ export class SubgraphHelper {
     interiorNode: NodeReference,
     inputName: string
   ) {
-    const slotIndex = await this.page.evaluate(
-      ([nodeId, name]) => {
-        const node = window.app!.canvas.graph!.getNodeById(nodeId)
-        if (!node) throw new Error(`Node ${nodeId} not found`)
-        const index = node.inputs.findIndex((input) => input.name === name)
-        if (index === -1) {
-          throw new Error(`Input '${name}' not found on node ${nodeId}`)
-        }
-        return index
-      },
-      [interiorNode.id, inputName] as const
-    )
-
-    const slot = await interiorNode.getInput(slotIndex)
+    const slot = await interiorNode.getInputByName(inputName)
     await slot.removeLinks()
     await this.comfyPage.nextFrame()
-    await slot.expectLinkCount(0, 'Interior link should be detached')
+    await slot.expectLinkCount(0, 'Interior link should be disconnected')
 
     return slot
   }

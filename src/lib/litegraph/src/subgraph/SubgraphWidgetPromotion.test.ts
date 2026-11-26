@@ -487,9 +487,6 @@ describe('SubgraphWidgetPromotion', () => {
       interior.disconnectInput(0, true)
       await Promise.resolve()
 
-      // The deferred demotion must have run before the reconnect, or a
-      // reconnect that lands while `_pendingDemotionToken` is still set is
-      // treated as a rewire and this case passes vacuously.
       expect(hostNode.widgets).toHaveLength(0)
       subgraph.inputNode.slots[0].connect(interior.inputs[0], interior)
 

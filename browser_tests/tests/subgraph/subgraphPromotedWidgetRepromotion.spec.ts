@@ -6,7 +6,7 @@ test.describe(
   'Promoted widget host value across a re-promotion (#14495)',
   { tag: ['@subgraph', '@widget', '@vue-nodes'] },
   () => {
-    test('keeps the host edit when the interior link is detached and promoted again later', async ({
+    test('keeps the host edit when the interior link is disconnected and promoted again later', async ({
       comfyPage
     }) => {
       await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
@@ -24,7 +24,7 @@ test.describe(
         await comfyPage.vueNodes.setInputNumberValue(hostWidget, '13')
       })
 
-      await test.step('Detach the interior link and leave the subgraph', async () => {
+      await test.step('Disconnect the interior link and leave the subgraph', async () => {
         await comfyPage.vueNodes.enterSubgraph('2')
         const ksampler = await comfyPage.nodeOps.getNodeRefById('1')
         await comfyPage.subgraph.disconnectPromotedInput(ksampler, 'steps')
