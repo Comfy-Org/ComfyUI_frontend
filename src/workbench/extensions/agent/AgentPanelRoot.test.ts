@@ -16332,6 +16332,77 @@ describe('AgentPanelRoot workflow binding', () => {
     }
   })
 
+  it('marks the active tab when duplicate tabs share the visible root graph id', () => {
+    const first = addTab('workflows/first-copy.json', {
+      activeState: fromPartial<ComfyWorkflowJSON>({ id: 'graph-duplicate' })
+    })
+    const active = addTab('workflows/active-copy.json', {
+      activeState: fromPartial<ComfyWorkflowJSON>({ id: 'graph-duplicate' })
+    })
+    workflowStore.activeWorkflow = active
+    useAgentWorkflowTabBindingStore().bind('wf-first', first.path)
+    useAgentWorkflowTabBindingStore().bind('wf-active', active.path)
+    mockMessagesEndpoint('wf-active')
+    const panel = renderWithSelectedTarget()
+
+    try {
+      docOpMinterDeps.current?.onUnboundVisibleIntent?.('graph-duplicate')
+
+      expect(hasUnsyncedHumanOps('wf-active')).toBe(true)
+      expect(hasUnsyncedHumanOps('wf-first')).toBe(false)
+    } finally {
+      panel.unmount()
+      forgetUnsyncedAtLoad('wf-active')
+    }
+  })
+
+  it.for([
+    { rootGraphId: 'graph-duplicate', expectedMatches: 2 },
+    { rootGraphId: 'graph-missing', expectedMatches: 0 }
+  ])(
+    'reports an unattributed visible edit with $expectedMatches matching tabs',
+    ({ rootGraphId, expectedMatches }) => {
+      const first = addTab('workflows/first-copy.json', {
+        activeState: fromPartial<ComfyWorkflowJSON>({ id: 'graph-duplicate' })
+      })
+      const second = addTab('workflows/second-copy.json', {
+        activeState: fromPartial<ComfyWorkflowJSON>({ id: 'graph-duplicate' })
+      })
+      useAgentWorkflowTabBindingStore().bind('wf-first', first.path)
+      useAgentWorkflowTabBindingStore().bind('wf-second', second.path)
+      mockMessagesEndpoint('wf-42')
+      const panel = renderWithSelectedTarget()
+      vi.mocked(reportError).mockClear()
+
+      try {
+        docOpMinterDeps.current?.onUnboundVisibleIntent?.(rootGraphId)
+
+        expect(hasUnsyncedHumanOps('wf-first')).toBe(false)
+        expect(hasUnsyncedHumanOps('wf-second')).toBe(false)
+        expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+          surface: 'agent',
+          errorType: 'agent_visible_intent_workflow_unresolved',
+          level: 'warning',
+          fingerprint: [
+            'agent_visible_intent_workflow_unresolved',
+            expectedMatches === 0 ? 'missing' : 'ambiguous'
+          ],
+          tags: {
+            failure_kind: 'bad_state',
+            feature_area: 'agent',
+            operation: 'record_unsynced_human_ops',
+            outcome: 'withheld'
+          },
+          context: { matchingWorkflowCount: expectedMatches }
+        })
+      } finally {
+        panel.unmount()
+        forgetUnsyncedAtLoad('wf-first')
+        forgetUnsyncedAtLoad('wf-second')
+      }
+    }
+  )
+
   it("reports the bound workflow's own stored root graph id once bound", async () => {
     makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
