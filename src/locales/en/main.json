@@ -428,6 +428,18 @@
     "gapHandle": "Gap between nodes",
     "gapValue": "{value} canvas unit | {value} canvas units",
     "mixedGaps": "Mixed",
+    "align": "Align",
+    "alignLeft": "Align left edges",
+    "alignHorizontalCenters": "Align horizontal centers",
+    "alignRight": "Align right edges",
+    "alignTop": "Align top edges",
+    "alignVerticalCenters": "Align vertical centers",
+    "alignBottom": "Align bottom edges",
+    "distributeHorizontally": "Distribute horizontally",
+    "distributeVertically": "Distribute vertically",
+    "distributeGap": "Gap between distributed nodes",
+    "matchWidth": "Match width",
+    "matchHeight": "Match height",
     "listening": "Listening...",
     "ready": "Ready",
     "play": "Play",
@@ -1819,7 +1831,8 @@
     "Other": "Other",
     "Secrets": "Secrets",
     "Node Library": "Node Library",
-    "PointCloud": "Point Cloud"
+    "PointCloud": "Point Cloud",
+    "Smart Guides": "Smart Guides"
   },
   "serverConfigItems": {
     "listen": {
