@@ -58,7 +58,7 @@ export const useThemeStore = defineStore('theme', () => {
   }
 
   function deleteCustomPreset(id: string) {
-    if (!(id in customPresets.value)) return false
+    if (!isCustomPreset(id)) return false
     delete customPresets.value[id]
     activePresetId.value = BUILT_IN_THEME_PRESETS.dark.id
     return true

@@ -1,5 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { DEFAULT_THEME_PRESET } from '@comfyorg/theme-core/builtInThemePresets'
 import type { Settings } from '@comfyorg/settings-core/types'
@@ -215,10 +215,14 @@ describe('saved legacy theme migration', () => {
       stylesheetUrl: '/never-loads.css'
     })
 
-    void service.registerProvidedThemes('First.Extension', [
+    const first = service.registerProvidedThemes('First.Extension', [
       preset('first-a', 'First A'),
       preset('shared', 'First shared')
     ])
+    onTestFinished(async () => {
+      await service.setActiveTheme('dark')
+      await first
+    })
     await service.registerProvidedThemes('Second.Extension', [
       preset('shared', 'Second shared')
     ])

@@ -425,24 +425,24 @@ describe('useThemeService', () => {
     )
   })
 
-  it('lists a provided theme without saving it and hides a saved palette with the same id', async () => {
+  it('lists a provided theme without saving it and keeps the hidden saved palette from deletion', async () => {
     const themeStore = useThemeStore()
     themeStore.customPresets = {
       chalk: { id: 'chalk', name: 'Saved chalk', colors: EMPTY_COLORS }
     }
 
-    await useThemeService().registerProvidedThemes('Chalk.Extension', [
+    const service = useThemeService()
+    await service.registerProvidedThemes('Chalk.Extension', [
       { preset: { id: 'chalk', name: 'Provided chalk', colors: EMPTY_COLORS } }
     ])
+    await service.deleteCustomThemePreset('chalk')
 
     expect({
       listed: themeStore.presetsLookup.chalk?.name,
-      saved: themeStore.customPresets.chalk.name,
-      deletable: themeStore.isCustomPreset('chalk')
+      saved: themeStore.customPresets.chalk.name
     }).toEqual({
       listed: 'Provided chalk',
-      saved: 'Saved chalk',
-      deletable: false
+      saved: 'Saved chalk'
     })
   })
 

@@ -32,7 +32,10 @@ function loadThemeStylesheet(url: string) {
   element.dataset.themeStylesheet = url
   element.textContent = `@import url(${JSON.stringify(url)}) layer(presets);`
   return new Promise<HTMLStyleElement | undefined>((resolve) => {
+    let settled = false
     const settle = (loaded: HTMLStyleElement | undefined) => {
+      if (settled) return
+      settled = true
       cancelPendingStylesheet = undefined
       if (!loaded) element.remove()
       resolve(loaded)
