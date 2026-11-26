@@ -20027,6 +20027,39 @@
       }
     }
   },
+  "OpenAIChatNodeV2": {
+    "description": "Générez des réponses textuelles avec les modèles GPT d’OpenAI. Fournissez une invite textuelle et, éventuellement, des images ou des fichiers comme contexte.",
+    "display_name": "OpenAI ChatGPT",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après la génération"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Le modèle utilisé pour générer la réponse."
+      },
+      "model_max_output_tokens": {
+        "name": "max_output_tokens"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_system_prompt": {
+        "name": "system_prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "OpenAIGPTImage1": {
     "description": "Génère des images de manière synchrone via l'endpoint GPT Image 2 d'OpenAI.",
     "display_name": "OpenAI GPT Image 2",
@@ -23093,7 +23126,7 @@
       },
       "model": {
         "name": "modèle",
-        "tooltip": "Le modèle à utiliser pour la génération. Les modèles recraftv4_styles sont conçus pour une génération cohérente en termes de style et nécessitent toujours un style_id ou des style_references ; recraftv4_1_flash est le modèle le plus rapide et le moins cher et ne prend en charge aucun style."
+        "tooltip": "Le modèle à utiliser pour la génération. Les modèles recraftv4_styles sont conçus pour une génération cohérente en matière de style et nécessitent toujours un style_id ou des style_references ; recraftv4_1_flash exécute Recraft V4.1 Flash V2, le modèle le plus rapide et le moins cher, et ne prend pas du tout en charge les styles."
       },
       "model_size": {
         "name": "taille"
@@ -23204,6 +23237,14 @@
     "inputs": {
       "image": {
         "name": "image"
+      },
+      "shape_stacking": {
+        "name": "shape_stacking",
+        "tooltip": "superpose les formes en couches hiérarchiques ; cut_out crée des formes qui ne se chevauchent jamais, pour les traceurs, les découpeuses de vinyle et la sérigraphie."
+      },
+      "version": {
+        "name": "version",
+        "tooltip": "v1_pro (Vectorizer Pro) produit des SVG plus nets avec des courbes lisses, des lignes droites et des angles vifs, idéal pour le lettrage et les formes complexes."
       }
     },
     "outputs": {

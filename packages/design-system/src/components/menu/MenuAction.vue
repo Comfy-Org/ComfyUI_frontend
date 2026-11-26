@@ -89,7 +89,7 @@ function select(event: Event) {
       :is="
         item.checked === undefined ? DropdownMenuItem : DropdownMenuCheckboxItem
       "
-      :aria-label="toValue(item.label)"
+      :aria-label="toValue(item.ariaLabel) ?? toValue(item.label)"
       :aria-description="toValue(item.description)"
       :disabled="unfocusable"
       :as-child="focusableDisabled"

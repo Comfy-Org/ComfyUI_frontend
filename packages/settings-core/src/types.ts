@@ -81,6 +81,12 @@ export type Settings = {
   'Comfy.Sidebar.UnifiedWidth': boolean
   'Comfy.Sidebar.Style': 'floating' | 'connected'
   'Comfy.SnapToGrid.GridSize': number
+  'Comfy.Canvas.SmartGuides.Enabled': boolean
+  'Comfy.Canvas.SmartGuides.SnapToEdges': boolean
+  'Comfy.Canvas.SmartGuides.SnapToWires': boolean
+  'Comfy.Canvas.SmartGuides.SnapToSpacing': boolean
+  'Comfy.Canvas.SmartGuides.SnapDistance': number
+  'Comfy.Canvas.SmartGuides.Gap': number
   'Comfy.TextareaWidget.FontSize': number
   'Comfy.TextareaWidget.Spellcheck': boolean
   'Comfy.UseNewMenu': 'Disabled' | 'Top'

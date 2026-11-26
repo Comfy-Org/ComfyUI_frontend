@@ -84,6 +84,7 @@
       "ring": "#8a8a8a",
       "node-foreground": "#606060",
       "warning": "#c77700",
+      "success": "#00854a",
       "shadow-color": "rgb(0 0 0 / 0.15)"
     }
   }
