@@ -276,6 +276,25 @@ function queueWorkflowLoad<T>(
 
 const unreadableWorkflowToastIds = new Map<string, ToastId>()
 const unreadableWorkflows = new WeakSet<ComfyWorkflow>()
+const workflowOpenings = new WeakMap<ComfyWorkflow, WorkflowOpening>()
+
+function rememberOpening(
+  workflow: ComfyWorkflow,
+  {
+    silent,
+    opening,
+    defaultOpening = 'brought_in'
+  }: {
+    silent?: boolean
+    opening?: WorkflowOpening
+    defaultOpening?: WorkflowOpening
+  } = {}
+): WorkflowOpening {
+  const raw = toRaw(workflow)
+  const resolved = opening ?? workflowOpenings.get(raw) ?? defaultOpening
+  if (!silent) workflowOpenings.set(raw, resolved)
+  return resolved
+}
 
 /** Whether opening this workflow failed because its stored file is unreadable. */
 export function isUnreadableWorkflow(workflow: ComfyWorkflow): boolean {
@@ -806,9 +825,13 @@ export const useWorkflowService = () => {
     workflow: ComfyWorkflow,
     initiator: 'user' | undefined,
     silent: boolean,
-    opening: WorkflowOpening = 'reopened'
+    opening: WorkflowOpening | undefined
   ) => {
-    showPendingWarnings(undefined, { silent, opening })
+    showPendingWarnings(undefined, {
+      silent,
+      opening,
+      defaultOpening: 'reopened'
+    })
     if (initiator === 'user') workflowStore.reportUserActivation(workflow)
   }
 
@@ -1495,10 +1518,15 @@ export const useWorkflowService = () => {
    */
   function showPendingWarnings(
     workflow?: ComfyWorkflow | null,
-    options?: { silent?: boolean; opening?: WorkflowOpening }
+    options?: {
+      silent?: boolean
+      opening?: WorkflowOpening
+      defaultOpening?: WorkflowOpening
+    }
   ) {
     const wf = workflow ?? workflowStore.activeWorkflow
     if (!wf) return
+    const opening = rememberOpening(wf, options)
 
     const { missingNodeTypes, missingModelCandidates, missingMediaCandidates } =
       wf.pendingWarnings ?? {}
@@ -1511,7 +1539,7 @@ export const useWorkflowService = () => {
       missingNodesErrorStore.surfaceMissingNodes(missingNodeTypes ?? []) &&
       !options?.silent
     ) {
-      showMissingNodesNotice(missingNodeTypes ?? [], options?.opening)
+      showMissingNodesNotice(missingNodeTypes ?? [], opening)
     }
     if (missingModelCandidates?.length) {
       useMissingModelStore().setMissingModels(missingModelCandidates)

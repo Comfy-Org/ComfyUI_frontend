@@ -3559,6 +3559,47 @@ describe('useWorkflowService', () => {
       )
     })
 
+    it('keeps a brought in workflow brought in when it is opened again without saying how', async () => {
+      const workflow = createWorkflow(
+        { missingNodeTypes: ['CustomNode1'] },
+        { loadable: true }
+      )
+      vi.mocked(
+        useMissingNodesErrorStore().surfaceMissingNodes
+      ).mockReturnValue(true)
+      const service = useWorkflowService()
+
+      await service.openWorkflow(workflow, {
+        force: true,
+        opening: 'brought_in'
+      })
+      await service.openWorkflow(workflow, { force: true })
+
+      expect(showMissingNodesNotice).toHaveBeenLastCalledWith(
+        ['CustomNode1'],
+        'brought_in'
+      )
+    })
+
+    it('keeps a reopened workflow reopened when its warnings surface again', async () => {
+      const workflow = createWorkflow(
+        { missingNodeTypes: ['CustomNode1'] },
+        { loadable: true }
+      )
+      vi.mocked(
+        useMissingNodesErrorStore().surfaceMissingNodes
+      ).mockReturnValue(true)
+      const service = useWorkflowService()
+
+      await service.openWorkflow(workflow, { force: true })
+      service.showPendingWarnings(workflow)
+
+      expect(showMissingNodesNotice).toHaveBeenLastCalledWith(
+        ['CustomNode1'],
+        'reopened'
+      )
+    })
+
     it('should show each workflow warnings only when that tab is focused', async () => {
       const workflow1 = createWorkflow(
         { missingNodeTypes: ['MissingNodeA'] },
