@@ -7,10 +7,14 @@
     :data-node-tooltip="tooltipText || undefined"
     data-node-tooltip-side="right"
     :class="slotWrapperClass"
+    :data-slot-type="slotData.type"
     @pointerenter="revealLinks"
     @pointerleave="unrevealLinks"
   >
-    <div class="relative flex h-full min-w-0 items-center">
+    <div
+      class="relative flex h-full min-w-0 items-center"
+      data-part="slot-label"
+    >
       <span v-if="!props.dotOnly && !hasNoLabel" class="truncate">
         {{
           slotData.label ||
@@ -23,7 +27,6 @@
       :slot-key
       class="w-3 translate-x-1/2"
       :slot-data
-      :connected
       @pointerdown="onPointerDown"
     />
   </div>
@@ -98,7 +101,7 @@ const shouldDim = computed(() => {
 const slotWrapperClass = computed(() =>
   cn(
     'lg-slot lg-slot--output group flex h-5 items-center justify-end rounded-l-lg',
-    'cursor-crosshair triangle-icons:pr-2.5 triangle-icons:group-data-collapsed/node:pr-0',
+    'cursor-crosshair',
     effectiveDotOnly.value ? 'lg-slot--dot-only justify-center' : 'pl-2',
     {
       'lg-slot--connected': props.connected,

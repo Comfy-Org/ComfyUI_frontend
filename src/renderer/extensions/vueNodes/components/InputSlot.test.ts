@@ -112,7 +112,10 @@ describe('InputSlot', () => {
       true
     )
 
-    expect(screen.getByLabelText('Localized Seed')).toBeInTheDocument()
+    expect(screen.getByLabelText('Localized Seed')).toHaveAttribute(
+      'data-slot-type',
+      'INT'
+    )
   })
 
   it('leaves the dot unlabeled when a widget control renders alongside it', () => {

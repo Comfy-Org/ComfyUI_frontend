@@ -123,6 +123,7 @@ export const TestIds = {
     workflowTabs: 'topbar-workflow-tabs',
     workflowTabStrip: 'workflow-tab-strip',
     workflowTab: 'workflow-tab',
+    workflowTabStatus: 'workflow-tab-status',
     closeWorkflowButton: 'close-workflow-button',
     workflowDirtyIndicator: 'workflow-dirty-indicator',
     integratedTabBarActions: 'integrated-tab-bar-actions',
@@ -186,7 +187,8 @@ export const TestIds = {
     innerWrapper: 'node-inner-wrapper',
     mainImage: 'main-image',
     slotConnectionDot: 'slot-connection-dot',
-    imageGrid: 'image-grid'
+    imageGrid: 'image-grid',
+    progressFill: 'node-progress-fill'
   },
   selectionToolbox: {
     root: 'selection-toolbox',

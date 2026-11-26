@@ -10,7 +10,7 @@ export interface MissingItemsRow {
 }
 
 /** The workflow a brief names, serialized when the brief is handed over; null once it is unloaded. */
-export interface BriefWorkflow {
+interface BriefWorkflow {
   fileName: string
   serialize: () => string | null
 }

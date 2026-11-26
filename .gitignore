@@ -132,3 +132,4 @@ browser_tests/fixtures/data/agent/conversations/recordings/
 
 # Nodes 2.0 acceptance suite report and data
 /nodes2-acceptance-report/
+__pycache__/

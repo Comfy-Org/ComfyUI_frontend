@@ -200,4 +200,46 @@ describe('useAgentPromptQueue', () => {
 
     expect(sent).toEqual(['one', 'two', 'three'])
   })
+
+  it('keeps a queued prompt in its originating chat across an A->B->A tab round trip during pending admission', async () => {
+    let busy = true
+    let resolveAdmission = (_result: boolean | 'deferred') => {}
+    const sendItem = vi.fn(
+      () =>
+        new Promise<boolean | 'deferred'>((resolve) => {
+          resolveAdmission = resolve
+        })
+    )
+    const { handleComposerSend, settleActiveAndPump } = useAgentPromptQueue({
+      isBusy: () => busy,
+      submitDraft: vi.fn(),
+      sendItem,
+      deferCapture: vi.fn()
+    })
+    const composer = useAgentComposerStore()
+    const queue = useAgentPromptQueueStore()
+
+    queue.activateQueue('thread:a')
+    composer.setText('queued on A')
+    handleComposerSend('queued on A', [])
+    expect(queue.items.map((item) => item.text)).toEqual(['queued on A'])
+
+    busy = false
+    const pumping = settleActiveAndPump()
+    expect(sendItem).toHaveBeenCalledOnce()
+
+    queue.activateQueue('thread:b')
+    await settleActiveAndPump()
+    queue.activateQueue('thread:a')
+    await settleActiveAndPump()
+
+    expect(queue.items.map((item) => item.text)).toEqual(['queued on A'])
+
+    resolveAdmission('deferred')
+    await pumping
+
+    expect(sendItem).toHaveBeenCalledOnce()
+    expect(queue.runningId).toBeNull()
+    expect(queue.items.map((item) => item.text)).toEqual(['queued on A'])
+  })
 })

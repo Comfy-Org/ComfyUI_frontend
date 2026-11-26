@@ -72,6 +72,7 @@ export class LitegraphLinkAdapter {
 
     pathContext.style.borderWidth =
       !skipBorder && context.renderBorder ? 4 : undefined
+    pathContext.style.chalk = litegraph().linkStyle === 'chalk'
     pathContext.animation = { time: litegraph().getTime() * 0.001 }
     return pathContext
   }

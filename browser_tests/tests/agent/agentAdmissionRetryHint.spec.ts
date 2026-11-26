@@ -25,7 +25,6 @@ test.describe('In-App Agent admission denials', { tag: '@cloud' }, () => {
 
     await test.step('open the agent panel on a workflow', async () => {
       await agentPanel.open()
-      await agentPanel.selectWorkflow()
     })
 
     await test.step('send a prompt the server will reject', async () => {

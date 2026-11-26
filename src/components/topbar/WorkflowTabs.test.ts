@@ -122,6 +122,10 @@ vi.mock(import('./WorkflowTab.vue'), () => ({
           workflow: { path: string; filename?: string }
         }>,
         required: true
+      },
+      triggerId: {
+        type: String,
+        default: undefined
       }
     },
     emits: ['closeOthers'],
@@ -129,8 +133,13 @@ vi.mock(import('./WorkflowTab.vue'), () => ({
       return [
         h(
           TabsTrigger,
-          { value: this.workflowOption.workflow.path },
-          () => this.workflowOption.workflow.filename
+          { value: this.workflowOption.workflow.path, asChild: true },
+          () =>
+            h(
+              'button',
+              { id: this.triggerId, type: 'button' },
+              this.workflowOption.workflow.filename
+            )
         ),
         h(
           'button',
@@ -544,6 +553,21 @@ describe('WorkflowTabs agent entry button', () => {
     expect(useAgentPanelStore().isVisible).toBe(true)
   })
 
+  it('keeps a restored-open preference when consent is dismissed', async () => {
+    const store = useAgentPanelStore()
+    store.isOpen = true
+    store.holdRestoredOpen()
+    withConsent.mockResolvedValueOnce()
+    const { user } = renderComponent()
+
+    await user.click(
+      screen.getByRole('button', { name: enMessages.agent.entryButton })
+    )
+
+    expect(store.isOpen).toBe(true)
+    expect(store.isVisible).toBe(false)
+  })
+
   it('hides the restored panel entry while consent is checked, then shows it pressed', async () => {
     useAgentPanelStore().isOpen = true
     consentChecking.value = true
@@ -819,11 +843,52 @@ describe('WorkflowTabs selection and overflow', () => {
     expect(
       screen.queryByTestId('workflow-overflow-menu')
     ).not.toBeInTheDocument()
+    const tabList = screen.getByTestId('workflow-tabs-list')
+    expect(tabList).not.toHaveClass('after:w-px')
 
     overflowObservers[0].isOverflowing.value = true
     await nextTick()
 
     expect(screen.getByTestId('workflow-overflow-menu')).toBeInTheDocument()
+    expect(tabList).toHaveClass('after:w-px', 'after:h-px')
+  })
+
+  it('keeps close buttons outside tablist ownership via aria-owns', async () => {
+    renderComponent()
+    await nextTick()
+
+    const tabListContainer = screen.getByTestId('workflow-tabs-list')
+    expect(tabListContainer).toHaveClass('workflow-tabs')
+    expect(tabListContainer).not.toHaveAttribute('role')
+    expect(tabListContainer).not.toHaveAttribute('aria-orientation')
+
+    const tabs = screen.getAllByRole('tab')
+    const tablist = screen.getByRole('tablist', {
+      name: enMessages.g.openWorkflows
+    })
+    expect(screen.getAllByRole('tablist')).toEqual([tablist])
+    const tabStrip = screen.getByTestId('workflow-tab-strip')
+    const newWorkflowButton = screen.getByRole('button', {
+      name: enMessages.sideToolbar.newBlankWorkflow
+    })
+    expect(
+      tabStrip.compareDocumentPosition(tablist) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).not.toBe(0)
+    expect(
+      tablist.compareDocumentPosition(newWorkflowButton) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).not.toBe(0)
+    const ownedIds = (tablist.getAttribute('aria-owns') ?? '')
+      .split(/\s+/)
+      .filter(Boolean)
+    expect(ownedIds).toEqual(tabs.map((tab) => tab.id))
+    expect(new Set(ownedIds).size).toBe(tabs.length)
+    for (const [index, id] of ownedIds.entries()) {
+      expect(id).toMatch(/^workflow-tab-trigger-\S+$/)
+      expect(tabs[index]).toHaveAttribute('id', id)
+      expect(tabs[index]).toHaveAttribute('role', 'tab')
+    }
   })
 
   it('scrolls a newly active workflow into view', async () => {
@@ -847,6 +912,46 @@ describe('WorkflowTabs selection and overflow', () => {
       })
     })
   })
+
+  it.for([
+    {
+      edge: 'right',
+      initialScrollLeft: 661,
+      tabRect: new DOMRect(503.375, 0, 201.015625, 37),
+      expectedScrollLeft: 662
+    },
+    {
+      edge: 'left',
+      initialScrollLeft: 100,
+      tabRect: new DOMRect(3.625, 0, 201.015625, 37),
+      expectedScrollLeft: 99
+    }
+  ])(
+    'nudges scrollLeft past a subpixel $edge overhang after scrollIntoView',
+    async ({ initialScrollLeft, tabRect, expectedScrollLeft }) => {
+      const scrollIntoView = vi.spyOn(HTMLElement.prototype, 'scrollIntoView')
+      renderComponent()
+      await waitFor(() => expect(overflowObservers).toHaveLength(1))
+      await waitFor(() =>
+        expect(overflowObservers[0].checkOverflow).toHaveBeenCalled()
+      )
+      await nextTick()
+
+      const tabStrip = screen.getByTestId('workflow-tab-strip')
+      tabStrip.scrollLeft = initialScrollLeft
+      vi.spyOn(tabStrip, 'getBoundingClientRect').mockReturnValue(
+        new DOMRect(4, 0, 700, 37)
+      )
+      const secondTab = screen.getByRole('tab', { name: 'Second workflow' })
+      vi.spyOn(secondTab, 'getBoundingClientRect').mockReturnValue(tabRect)
+
+      scrollIntoView.mockClear()
+      useWorkflowStore().activeWorkflow = secondWorkflow
+
+      await waitFor(() => expect(scrollIntoView).toHaveBeenCalled())
+      expect(tabStrip.scrollLeft).toBe(expectedScrollLeft)
+    }
+  )
 
   it.for([
     { propertyName: 'flex-shrink', resizesTabs: true },

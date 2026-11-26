@@ -15,6 +15,7 @@ import type {
 import { downloadBlob } from '@/base/common/downloadUtil'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { safeLocalStorage } from '@/base/storage/safeStorage'
 import { useApp } from '@/scripts/appInstance'
 import { uploadFile } from '@/scripts/utils'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -39,8 +40,11 @@ function availableCustomPresetId(id: string, presets: ThemePresets) {
 function persistSplashColors() {
   try {
     const body = getComputedStyle(document.body)
-    localStorage.setItem('comfy-splash-bg', body.backgroundColor)
-    localStorage.setItem('comfy-splash-fg', body.color)
+    if (
+      safeLocalStorage.setItem('comfy-splash-bg', body.backgroundColor) !== 'ok'
+    )
+      return
+    safeLocalStorage.setItem('comfy-splash-fg', body.color)
   } catch {
     return
   }
@@ -137,6 +141,8 @@ export const useThemeService = () => {
         dataTypes: nodeDefStore.nodeDataTypes,
         backgroundImage: settingStore.get('Comfy.Canvas.BackgroundImage')
       })
+      if (theme.stylesheet) root.dataset.theme = theme.stylesheet
+      else delete root.dataset.theme
       themeStore.activePresetId = id
     } finally {
       requestAnimationFrame(() =>

@@ -15393,6 +15393,91 @@
       }
     }
   },
+  "MeshyImageToReliefNode": {
+    "display_name": "Meshy: Image to Relief",
+    "description": "Turn a photo into a bas-relief model and a 16-bit depth map for 3D printing, laser engraving and CNC carving. Only the connected outputs are generated and downloaded; with no model output connected the task returns just the depth map.",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "Dark artwork on a light background is raised. Transparency is dropped before upload, so flatten a transparent logo onto a white background first."
+      },
+      "relief_type": {
+        "name": "relief_type",
+        "tooltip": "low: shallow carving for laser engraving, CNC and plaques. high: deeper carving for 3D-printed pieces."
+      },
+      "size_mm": {
+        "name": "size_mm",
+        "tooltip": "Length of the photo's longer side on the model, measured flat before any bend."
+      },
+      "carving_mode": {
+        "name": "carving_mode",
+        "tooltip": "emboss raises the nearer parts of the photo, engrave cuts them in."
+      },
+      "base": {
+        "name": "base",
+        "tooltip": "none cuts the background away and builds no plate."
+      },
+      "bend": {
+        "name": "bend",
+        "tooltip": "convex bulges the front outward, concave curves it inward."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed. Change it to request an output that was connected after the last run."
+      },
+      "mesh_resolution": {
+        "name": "mesh_resolution",
+        "tooltip": "Mesh points along the photo's longer side. At 1024 the GLB is about 50 MB and the STL about 105 MB, at 2048 about 200 MB and 420 MB; a bend doubles them."
+      },
+      "color_mapping": {
+        "name": "color_mapping",
+        "tooltip": "Color the GLB, OBJ, FBX and USDZ files with the photo. STL and 3MF stay white."
+      },
+      "base_base_thickness_mm": {
+        "name": "base_thickness_mm"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "relief_type_carving_depth_mm": {
+        "name": "carving_depth_mm"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "1": {
+        "name": "STL",
+        "tooltip": null
+      },
+      "2": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": null
+      },
+      "4": {
+        "name": "USDZ",
+        "tooltip": null
+      },
+      "5": {
+        "name": "3MF",
+        "tooltip": null
+      },
+      "6": {
+        "name": "depth_map",
+        "tooltip": "Depth map with the full 16-bit range; Save Image (Advanced) writes it as a 16-bit PNG."
+      },
+      "7": {
+        "name": "preview",
+        "tooltip": null
+      }
+    }
+  },
   "MeshyMultiImageToModelNode": {
     "display_name": "Meshy: Multi-Image to Model",
     "inputs": {
@@ -15688,6 +15773,44 @@
         "tooltip": null
       },
       "3": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyTextureN1Node": {
+    "display_name": "Meshy: Texture Model (N1)",
+    "description": "Texture a previously created model with Meshy N1 from 1 to 4 reference views of the same object.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "meshy_task_id": {
+        "name": "meshy_task_id"
+      },
+      "front_view": {
+        "name": "front_view",
+        "tooltip": "The view Meshy treats as the front. One image textures the front and leaves the back plain; add back and side views in extra_views for a faithful back."
+      },
+      "enable_original_uv": {
+        "name": "enable_original_uv",
+        "tooltip": "Use the original UV of the model instead of generating new UVs. When enabled, Meshy preserves existing textures from the uploaded model. If the model has no original UV, the quality of the output might not be as good."
+      },
+      "extra_views": {
+        "name": "extra_views",
+        "tooltip": "Further views of the same object, in any order. Together with front_view at most 4 images."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "2": {
         "name": "FBX",
         "tooltip": null
       }
@@ -19904,6 +20027,39 @@
       }
     }
   },
+  "OpenAIChatNodeV2": {
+    "display_name": "OpenAI ChatGPT",
+    "description": "Generate text responses with OpenAI's GPT models. Provide a text prompt and, optionally, images or files as context.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "The model used to generate the response."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_max_output_tokens": {
+        "name": "max_output_tokens"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_system_prompt": {
+        "name": "system_prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "OpenAIGPTImage1": {
     "display_name": "OpenAI GPT Image 2",
     "description": "Generates images synchronously via OpenAI's GPT Image endpoint.",
@@ -22947,7 +23103,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "The model to use for generation. The recraftv4_styles models are built for style-consistent generation and always require a style_id or style_references; recraftv4_1_flash is the fastest and cheapest model and supports no styles at all."
+        "tooltip": "The model to use for generation. The recraftv4_styles models are built for style-consistent generation and always require a style_id or style_references; recraftv4_1_flash runs Recraft V4.1 Flash V2, the fastest and cheapest model, and supports no styles at all."
       },
       "n": {
         "name": "n",
@@ -23053,6 +23209,14 @@
     "inputs": {
       "image": {
         "name": "image"
+      },
+      "version": {
+        "name": "version",
+        "tooltip": "v1_pro (Vectorizer Pro) gives cleaner SVGs with smooth curves, straight lines and sharp corners, best for lettering and intricate shapes."
+      },
+      "shape_stacking": {
+        "name": "shape_stacking",
+        "tooltip": "hierarchical layers shapes on top of each other; cut_out makes shapes that never overlap, for plotters, vinyl cutters and screen printing."
       }
     },
     "outputs": {

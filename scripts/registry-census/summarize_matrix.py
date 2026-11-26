@@ -20,7 +20,7 @@ into one directory by the verdict job) and applies, in order:
                  entry files load clean              >= 91% (base 94.0%)
                  registerNodeDef OK                  >= 99% (base 100%)
                  registerCustomNodes OK              >= 99% (base 100%)
-                 packs free of contained hook errors >= 98% (base 99.3%)
+                 packs free of gated hook errors     >= 98% (base 98.9%)
                  every operation clean, err OR desync>= 99% (base 99.8%)
                  rows complete (no hang or crash)    >= 98% (base 100%)
 
@@ -28,6 +28,12 @@ into one directory by the verdict job) and applies, in order:
                  the previous run's value ($MATRIX_PREV, written each run to
                  $MATRIX_METRICS_OUT and carried between runs by the actions
                  cache). Catches gradual erosion the absolute floors ignore.
+                 Packs free of errors or hangs in TELEMETRY_HOOKS, including
+                 the load hooks driven per workflow, must not drop more than
+                 0.5 points below the previous run either: those hooks fail
+                 for ~11% of packs in happy-dom, too many for a floor, but
+                 the failing set is identical across arms and renderers, so
+                 a setup regression moves it.
 
 Floors sit under the measured baselines (run 31624366070, 1,879 packs) so a
 handful of broken pack HEADs cannot flip the verdict, while a frontend
@@ -46,7 +52,18 @@ from collections import Counter
 from dataclasses import dataclass, field
 
 STATUS_STAGES = ('registerNodeDef', 'registerCustomNodes')
+TELEMETRY_HOOKS = frozenset({
+    'init',
+    'addCustomNodeDefs',
+    'setup',
+    'beforeLoadGraph',
+    'beforeConfigureGraph',
+    'loadedGraphNode',
+    'afterConfigureGraph',
+    'afterLoadGraph',
+})
 DELTA_TOLERANCE = 1.5
+NEW_HOOK_DELTA_TOLERANCE = 0.5
 
 FLOORS = {
     'any_loaded': 95.0,
@@ -63,11 +80,12 @@ CRITERION_LABELS = {
     'entry_clean': 'entry files load clean',
     'register_node_def': 'registerNodeDef OK',
     'register_custom_nodes': 'registerCustomNodes OK',
-    'hook_free': 'packs free of contained hook errors',
+    'hook_free': 'packs free of gated hook errors',
     'op_clean': 'every operation clean',
     'rows_complete': 'rows complete (no hang or crash)',
 }
 DELTA_CRITERION_LABEL = 'entry-clean delta vs previous run'
+NEW_HOOK_DELTA_CRITERION_LABEL = 'new-hook-free delta vs previous run'
 
 EXPECTED_ROW_KEYS = (
     'selfCheck',
@@ -76,6 +94,7 @@ EXPECTED_ROW_KEYS = (
     'loadedOk',
     'ops',
     'hookErrors',
+    'hookErrorMethods',
     'registerNodeDef',
     'registerCustomNodes',
     'storeReadErrors',
@@ -86,7 +105,8 @@ EXPECTED_ROW_KEYS = (
 )
 
 TELEMETRY = (
-    'newTypes, driveTypes, per-op sig/depr, extension counts, no-JS skips'
+    'newTypes, driveTypes, per-op sig/depr, extension counts, no-JS skips,'
+    ' per-hook TELEMETRY_HOOKS error counts'
 )
 
 
@@ -111,6 +131,58 @@ def _named(packs: list[str], limit: int = 10) -> str:
     shown = ', '.join(packs[:limit])
     return shown + (f' (+{len(packs) - limit} more)'
                     if len(packs) > limit else '')
+
+
+def _fails_new_hook(row: dict) -> bool:
+    ops = row['ops'] if isinstance(row['ops'], dict) else {}
+    return bool(
+        set(row['hookErrorMethods']) & TELEMETRY_HOOKS
+        or any(v != 'OK' for v in (row.get('lifecycle') or {}).values())
+        or any(
+            name.partition(':')[2] in TELEMETRY_HOOKS
+            and isinstance(info, dict)
+            and info.get('err')
+            for name, info in ops.items()
+        )
+    )
+
+
+def _delta(
+    label: str,
+    key: str,
+    measured_pct: float,
+    tolerance: float,
+    subject: str,
+    prev: object,
+    run_id: str,
+    added_since_baseline: bool,
+) -> tuple[str, str]:
+    if prev is None:
+        return f'  {label:42s}   n/a  (no previous metrics)', ''
+    if not isinstance(prev, dict):
+        return f'  {label:42s}   n/a  (previous metrics malformed)', ''
+    if run_id and prev.get('runId') == run_id:
+        return (
+            f'  {label:42s}   n/a  (previous metrics are from this run)',
+            '',
+        )
+    if added_since_baseline and key not in prev:
+        return f'  {label:42s}   n/a  (previous run predates it)', ''
+    prev_pct = prev.get(key)
+    if not isinstance(prev_pct, (int, float)):
+        return f'  {label:42s}   n/a  (previous metrics malformed)', ''
+    delta = round(round(measured_pct, 3) - prev_pct, 3)
+    held = delta >= -tolerance
+    line = (
+        f'  {label:42s} {delta:+5.1f}pp'
+        f'  (floor -{tolerance}pp)  {"OK" if held else "BREACH"}'
+    )
+    if held:
+        return line, ''
+    return line, (
+        f'{subject} dropped {-delta:.1f}pp'
+        f' (from {prev_pct:.1f}% to {measured_pct:.1f}%)'
+    )
 
 
 def evaluate(
@@ -246,9 +318,27 @@ def evaluate(
         measured = sum(1 for r in done if stage in r)
         stage_pct[stage] = ok / measured * 100 if measured else 0.0
         lines.append(f'{stage:28s} {ok:5d} of {measured} OK')
-    hook_packs = sum(1 for r in done if r.get('hookErrors'))
+    hook_packs = sum(
+        1 for r in done if set(r['hookErrorMethods']) - TELEMETRY_HOOKS
+    )
     hook_free_pct = (len(done) - hook_packs) / len(done) * 100
-    lines.append(f'{"contained hook errors":28s} {hook_packs:5d} pack(s)')
+    lines.append(f'{"gated hook errors":28s} {hook_packs:5d} pack(s)')
+    telemetry_hook_packs = Counter(
+        method
+        for r in done
+        for method in r['hookErrorMethods']
+        if method in TELEMETRY_HOOKS
+    )
+    if telemetry_hook_packs:
+        lines.append('hook errors reported, not gated:')
+    for method, packs in sorted(telemetry_hook_packs.items()):
+        lines.append(f'  {method:26s} {packs:5d} pack(s)')
+    new_hook_packs = sum(1 for r in done if _fails_new_hook(r))
+    new_hook_free_pct = (len(done) - new_hook_packs) / len(done) * 100
+    lines.append(
+        f'{"new-hook error or hang":28s} {new_hook_packs:5d} pack(s)'
+        f'  ({new_hook_free_pct:.2f}% free, delta-gated)'
+    )
     lines.append(
         f'{"harness self-check OK":28s} {self_ok:5d} of {len(done)}'
     )
@@ -409,37 +499,18 @@ def evaluate(
         if not held:
             breaches.append(f'{label} {measured_pct:.1f}% < {floor:.0f}%')
 
-    prev_entry = prev.get('entryPct') if isinstance(prev, dict) else None
-    if prev is None:
-        lines.append(
-            f'  {DELTA_CRITERION_LABEL:42s}   n/a'
-            '  (no previous metrics)'
+    for label, key, measured_pct, tolerance, subject, added in (
+        (DELTA_CRITERION_LABEL, 'entryPct', entry_pct, DELTA_TOLERANCE,
+         'entry files clean', False),
+        (NEW_HOOK_DELTA_CRITERION_LABEL, 'newHookFreePct', new_hook_free_pct,
+         NEW_HOOK_DELTA_TOLERANCE, 'packs free of new-hook errors', True),
+    ):
+        line, breach = _delta(
+            label, key, measured_pct, tolerance, subject, prev, run_id, added
         )
-    elif isinstance(prev, dict) and run_id and prev.get('runId') == run_id:
-        # A re-run restored this same run's earlier write; comparing a
-        # run against itself would blind the gate exactly when someone
-        # is re-running a red verdict.
-        lines.append(
-            f'  {DELTA_CRITERION_LABEL:42s}   n/a'
-            '  (previous metrics are from this run)'
-        )
-    elif isinstance(prev_entry, (int, float)):
-        delta = entry_pct - prev_entry
-        held = delta >= -DELTA_TOLERANCE
-        lines.append(
-            f'  {DELTA_CRITERION_LABEL:42s} {delta:+5.1f}pp'
-            f'  (floor -{DELTA_TOLERANCE}pp)  {"OK" if held else "BREACH"}'
-        )
-        if not held:
-            breaches.append(
-                f'entry files clean dropped {-delta:.1f}pp'
-                f' (from {prev_entry:.1f}% to {entry_pct:.1f}%)'
-            )
-    else:
-        lines.append(
-            f'  {DELTA_CRITERION_LABEL:42s}   n/a'
-            '  (previous metrics malformed)'
-        )
+        lines.append(line)
+        if breach:
+            breaches.append(breach)
 
     # Each op records a full graph signature and the criteria above read one
     # bit of it: did the call throw. A regression that changes what an
@@ -479,6 +550,7 @@ def evaluate(
             'regPct': round(stage_pct['registerNodeDef'], 3),
             'customPct': round(stage_pct['registerCustomNodes'], 3),
             'hookFreePct': round(hook_free_pct, 3),
+            'newHookFreePct': round(new_hook_free_pct, 3),
             'completePct': round(complete_pct, 3),
             'worstOp': worst_op,
             'worstOpPct': round(worst_pct, 3),

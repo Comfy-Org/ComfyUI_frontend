@@ -15470,6 +15470,91 @@
       }
     }
   },
+  "MeshyImageToReliefNode": {
+    "description": "사진을 3D 프린팅, 레이저 각인 및 CNC 조각용 부조 모델과 16비트 깊이 맵으로 변환합니다. 연결된 출력만 생성 및 다운로드되며, 모델 출력이 연결되지 않은 경우 작업은 깊이 맵만 반환합니다.",
+    "display_name": "Meshy: 이미지를 릴리프로",
+    "inputs": {
+      "base": {
+        "name": "base",
+        "tooltip": "none은 배경을 제거하고 판을 만들지 않습니다."
+      },
+      "base_base_thickness_mm": {
+        "name": "base_thickness_mm"
+      },
+      "bend": {
+        "name": "bend",
+        "tooltip": "convex는 앞면을 바깥쪽으로 볼록하게 하고, concave는 안쪽으로 오목하게 굽힙니다."
+      },
+      "carving_mode": {
+        "name": "carving_mode",
+        "tooltip": "emboss는 사진에서 가까운 부분을 융기시키고, engrave는 그 부분을 음각으로 만듭니다."
+      },
+      "color_mapping": {
+        "name": "color_mapping",
+        "tooltip": "사진으로 GLB, OBJ, FBX 및 USDZ 파일에 색상을 입힙니다. STL과 3MF는 흰색으로 유지됩니다."
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "image": {
+        "name": "이미지",
+        "tooltip": "밝은 배경 위의 어두운 아트워크가 융기됩니다. 업로드 전에 투명도가 제거되므로, 투명한 로고는 먼저 흰색 배경 위에 병합하세요."
+      },
+      "mesh_resolution": {
+        "name": "mesh_resolution",
+        "tooltip": "사진의 긴 변을 따라 배치되는 메시 점 수입니다. 1024에서는 GLB가 약 50 MB, STL이 약 105 MB이고, 2048에서는 약 200 MB와 420 MB입니다. 굽힘을 적용하면 크기가 두 배가 됩니다."
+      },
+      "relief_type": {
+        "name": "relief_type",
+        "tooltip": "low: 레이저 각인, CNC 및 명판용 얕은 조각입니다. high: 3D 프린팅 작품용 더 깊은 조각입니다."
+      },
+      "relief_type_carving_depth_mm": {
+        "name": "carving_depth_mm"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "시드는 노드를 다시 실행할지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다. 마지막 실행 후 연결된 출력을 요청하려면 시드를 변경하세요."
+      },
+      "size_mm": {
+        "name": "size_mm",
+        "tooltip": "굽힘을 적용하기 전 평평한 상태에서 측정한 모델 위 사진의 긴 변 길이입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "1": {
+        "name": "STL",
+        "tooltip": null
+      },
+      "2": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": null
+      },
+      "4": {
+        "name": "USDZ",
+        "tooltip": null
+      },
+      "5": {
+        "name": "3MF",
+        "tooltip": null
+      },
+      "6": {
+        "name": "depth_map",
+        "tooltip": "전체 16비트 범위를 사용하는 깊이 맵입니다. Save Image (Advanced)는 이를 16비트 PNG로 저장합니다."
+      },
+      "7": {
+        "name": "미리보기",
+        "tooltip": null
+      }
+    }
+  },
   "MeshyMultiImageToModelNode": {
     "display_name": "Meshy: 다중 이미지 → 모델",
     "inputs": {
@@ -15765,6 +15850,44 @@
         "tooltip": null
       },
       "3": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyTextureN1Node": {
+    "description": "동일한 객체의 참조 뷰 1~4개를 사용하여 Meshy N1로 이전에 생성한 모델에 텍스처를 적용합니다.",
+    "display_name": "Meshy: 모델 텍스처링 (N1)",
+    "inputs": {
+      "enable_original_uv": {
+        "name": "enable_original_uv",
+        "tooltip": "새 UV를 생성하는 대신 모델의 원본 UV를 사용합니다. 활성화하면 Meshy는 업로드된 모델의 기존 텍스처를 보존합니다. 모델에 원본 UV가 없으면 출력 품질이 좋지 않을 수 있습니다."
+      },
+      "extra_views": {
+        "name": "추가 뷰",
+        "tooltip": "동일한 객체의 추가 뷰이며, 순서는 상관없습니다. front_view와 함께 최대 4장의 이미지까지 사용할 수 있습니다."
+      },
+      "front_view": {
+        "name": "front_view",
+        "tooltip": "Meshy가 앞면으로 처리하는 뷰입니다. 이미지 하나만 사용하면 앞면에 텍스처가 적용되고 뒷면은 그대로 남습니다. 충실한 뒷면을 위해 extra_views에 후면 및 측면 뷰를 추가하세요."
+      },
+      "meshy_task_id": {
+        "name": "meshy_task_id"
+      },
+      "model": {
+        "name": "모델"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "2": {
         "name": "FBX",
         "tooltip": null
       }
@@ -19904,6 +20027,39 @@
       }
     }
   },
+  "OpenAIChatNodeV2": {
+    "description": "OpenAI의 GPT 모델로 텍스트 응답을 생성합니다. 텍스트 프롬프트를 제공하고, 선택적으로 이미지나 파일을 컨텍스트로 제공할 수 있습니다.",
+    "display_name": "OpenAI ChatGPT",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "응답을 생성하는 데 사용할 모델입니다."
+      },
+      "model_max_output_tokens": {
+        "name": "max_output_tokens"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "model_seed": {
+        "name": "시드"
+      },
+      "model_system_prompt": {
+        "name": "system_prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "OpenAIGPTImage1": {
     "description": "OpenAI의 GPT Image 2 엔드포인트를 통해 동기적으로 이미지를 생성합니다.",
     "display_name": "OpenAI GPT Image 2",
@@ -22970,7 +23126,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "생성에 사용할 모델입니다. recraftv4_styles 모델은 일관된 스타일의 생성을 위해 설계되었으며 항상 style_id 또는 style_references가 필요합니다. recraftv4_1_flash는 가장 빠르고 저렴한 모델이며 스타일을 전혀 지원하지 않습니다."
+        "tooltip": "생성에 사용할 모델입니다. recraftv4_styles 모델은 스타일 일관성이 있는 생성용으로 제작되었으며 항상 style_id 또는 style_references가 필요합니다. recraftv4_1_flash는 가장 빠르고 저렴한 모델인 Recraft V4.1 Flash V2를 실행하며 스타일을 전혀 지원하지 않습니다."
       },
       "model_size": {
         "name": "size"
@@ -23081,6 +23237,14 @@
     "inputs": {
       "image": {
         "name": "이미지"
+      },
+      "shape_stacking": {
+        "name": "shape_stacking",
+        "tooltip": "hierarchical은 도형을 서로 겹치도록 레이어링합니다. cut_out은 플로터, 비닐 커터 및 스크린 인쇄용으로, 절대 겹치지 않는 도형을 만듭니다."
+      },
+      "version": {
+        "name": "버전",
+        "tooltip": "v1_pro (Vectorizer Pro)는 부드러운 곡선, 직선 및 선명한 모서리를 갖춘 더 깔끔한 SVG를 제공하며, 글자 및 복잡한 형태에 가장 적합합니다."
       }
     },
     "outputs": {

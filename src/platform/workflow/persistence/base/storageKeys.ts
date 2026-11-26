@@ -1,5 +1,6 @@
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { isCloud } from '@/platform/distribution/types'
+import { safeSessionStorage } from '@/base/storage/safeStorage'
 
 import { hashPath } from './hashUtil'
 
@@ -15,7 +16,7 @@ export function getWorkspaceId(): string {
   if (!isCloud) return 'personal'
 
   try {
-    const json = sessionStorage.getItem(
+    const json = safeSessionStorage.getItem(
       WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE
     )
     if (!json) return 'personal'
@@ -95,6 +96,10 @@ export const StorageKeys = {
     return `Comfy.Agent.ComposerDraft:${workspaceId}`
   },
 
+  agentPendingSendDraft(workspaceId: string): string {
+    return `Comfy.Agent.PendingSendDraft:${workspaceId}`
+  },
+
   agentSkillDrafts(scope: string): string {
     return `Comfy.Agent.SkillDrafts:${scope}`
   },
@@ -127,6 +132,7 @@ export const StorageKeys = {
     agentChatTitles: 'Comfy.Agent.ChatTitles:',
     agentDeletedThreads: 'Comfy.Agent.DeletedThreads:',
     agentComposerDraft: 'Comfy.Agent.ComposerDraft:',
+    agentPendingSendDraft: 'Comfy.Agent.PendingSendDraft:',
     agentSkillDrafts: 'Comfy.Agent.SkillDrafts:'
   }
 } as const

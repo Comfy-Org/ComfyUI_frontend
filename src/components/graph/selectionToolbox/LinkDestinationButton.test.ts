@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import log from 'loglevel'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import LinkDestinationButton from '@/components/graph/selectionToolbox/LinkDestinationButton.vue'
@@ -23,7 +23,6 @@ import {
   createMockCanvas,
   createTestDragAndScale
 } from '@/utils/__tests__/canvasTestUtils'
-import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 const i18n = createI18n({
   legacy: false,
@@ -151,15 +150,31 @@ describe('LinkDestinationButton', () => {
   })
 
   it.for([
-    { name: 'too big to leave room for the menu', height: 520, scale: 1 },
-    { name: 'too big at the current zoom', height: 300, scale: 1.7 }
+    {
+      name: 'too tall to leave room for the menu',
+      width: 300,
+      height: 520,
+      scale: 1
+    },
+    {
+      name: 'too tall at the current zoom',
+      width: 300,
+      height: 300,
+      scale: 1.7
+    },
+    {
+      name: 'too wide at the current zoom',
+      width: 900,
+      height: 100,
+      scale: 1.2
+    }
   ])(
     'centres the landing socket when the node is $name',
-    async ({ height, scale }) => {
+    async ({ width, height, scale }) => {
       const ds = createTestDragAndScale()
       ds.scale = scale
       const { graph, source, targets, canvas } = createWorkflow(ds)
-      source.size = [300, height]
+      source.size = [width, height]
       source.updateArea()
       clickSocket(graph, targets[0], 'input')
       const { user } = renderButton()
@@ -177,11 +192,11 @@ describe('LinkDestinationButton', () => {
   )
 
   it('centres the source in the uncovered canvas at the current zoom in one step when animations are turned off', async () => {
-    const panel = useAgentPanelStore()
-    panel.enabled = true
-    panel.consentAccepted = true
-    panel.isOpen = true
-    panel.setWidth(500)
+    const sidePanel = document.createElement('div')
+    sidePanel.id = 'last-side-panel'
+    sidePanel.getBoundingClientRect = () => new DOMRect(500, 0, 500, 600)
+    document.body.append(sidePanel)
+    onTestFinished(() => sidePanel.remove())
     const ds = createTestDragAndScale(1000, 600)
     ds.scale = 1.7
     ds.offset = [13, 29]

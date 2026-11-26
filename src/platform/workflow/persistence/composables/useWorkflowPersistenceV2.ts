@@ -8,10 +8,8 @@
  */
 
 import { debounce } from 'es-toolkit'
-import { useToast } from '@/components/ui/toast/toastStore'
 import { tryOnScopeDispose, until, whenever } from '@vueuse/core'
 import { computed, nextTick, ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
@@ -35,22 +33,30 @@ import { PERSIST_DEBOUNCE_MS } from '@/platform/workflow/persistence/base/draftT
 import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftTypes'
 import {
   clearAllWorkspaceStorage,
+  clearUnscopedDraftStorage,
   clearWorkflowRestoreState,
   completeWorkflowLogoutTransition,
   prepareWorkflowLogoutTransition,
   registerWorkflowPersistenceFlush
 } from '@/platform/workflow/persistence/base/storageIO'
+import { showDraftSaveFailedToast } from '@/platform/workflow/persistence/draftSaveFailureToast'
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
 import { useWorkflowTabState } from './useWorkflowTabState'
 import { useSharedWorkflowUrlLoader } from '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'
 import { useTemplateUrlLoader } from '@/platform/workflow/templates/composables/useTemplateUrlLoader'
 import { api } from '@/scripts/api'
+import { useNewUserService } from '@/services/useNewUserService'
 import { useApp } from '@/scripts/appInstance'
 
 const PERSIST_RETRY_BACKOFF_MS = 5_000
 
+async function clearUnscopedDraftsAfterNewUserCheck(): Promise<void> {
+  const newUserService = useNewUserService()
+  await until(() => newUserService.isNewUser() !== null).toBe(true)
+  clearUnscopedDraftStorage()
+}
+
 export function useWorkflowPersistenceV2() {
-  const { t } = useI18n()
   const workflowStore = useWorkflowStore()
   const settingStore = useSettingStore()
   const route = useRoute()
@@ -66,7 +72,6 @@ export function useWorkflowPersistenceV2() {
   const draftStore = useWorkflowDraftStoreV2()
   draftStore.setAuthSubject(isCloud ? null : undefined)
   const tabState = useWorkflowTabState()
-  const toast = useToast()
   const { isAuthInitialized, onUserLogout, onUserResolved } = useCurrentUser()
   const teamWorkspaceStore = useTeamWorkspaceStore()
   let stopWorkspaceReadinessWatcher: (() => void) | undefined
@@ -123,9 +128,7 @@ export function useWorkflowPersistenceV2() {
     if (reportedPersistenceFailurePaths.has(workflowPath)) return
 
     reportedPersistenceFailurePaths.add(workflowPath)
-    toast.error(t('g.error'), {
-      description: t('toastMessages.failedToSaveDraft')
-    })
+    showDraftSaveFailedToast()
   }
 
   function clearPersistenceFailure(workflowPath: string): void {
@@ -141,8 +144,10 @@ export function useWorkflowPersistenceV2() {
     const workflowPath = activeWorkflow.path
     if (shouldBackOffPersistence(workflowPath)) return
 
-    const graphData = useApp().rootGraph.serialize()
-    const workflowJson = JSON.stringify(graphData)
+    const graph = activeWorkflow.changeTracker.hasPreview
+      ? activeWorkflow.activeState
+      : useApp().rootGraph.serialize()
+    const workflowJson = JSON.stringify(graph)
 
     if (workflowJson === lastSavedJsonByPath.value[workflowPath]) return
 
@@ -226,6 +231,7 @@ export function useWorkflowPersistenceV2() {
   })
   onUserResolved((user) => {
     if (!isCloud) return
+    void clearUnscopedDraftsAfterNewUserCheck()
     stopPendingWorkspaceReadinessWatcher()
     const previousSubject = resolvedAuthSubject
     resolvedAuthSubject = user.id

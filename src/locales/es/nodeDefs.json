@@ -15470,6 +15470,91 @@
       }
     }
   },
+  "MeshyImageToReliefNode": {
+    "description": "Convierte una foto en un modelo de bajorrelieve y un mapa de profundidad de 16 bits para impresión 3D, grabado láser y tallado CNC. Solo se generan y descargan las salidas conectadas; si no hay ninguna salida de modelo conectada, la tarea devuelve únicamente el mapa de profundidad.",
+    "display_name": "Meshy: Imagen a relieve",
+    "inputs": {
+      "base": {
+        "name": "base",
+        "tooltip": "none elimina el fondo y no crea ninguna placa."
+      },
+      "base_base_thickness_mm": {
+        "name": "base_thickness_mm"
+      },
+      "bend": {
+        "name": "bend",
+        "tooltip": "convex abomba la parte frontal hacia fuera; concave la curva hacia dentro."
+      },
+      "carving_mode": {
+        "name": "carving_mode",
+        "tooltip": "emboss eleva las partes más cercanas de la foto; engrave las talla hacia dentro."
+      },
+      "color_mapping": {
+        "name": "color_mapping",
+        "tooltip": "Colorea los archivos GLB, OBJ, FBX y USDZ con la foto. STL y 3MF permanecen blancos."
+      },
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Las ilustraciones oscuras sobre un fondo claro quedan elevadas. La transparencia se elimina antes de la carga, así que primero aplana un logotipo transparente sobre un fondo blanco."
+      },
+      "mesh_resolution": {
+        "name": "mesh_resolution",
+        "tooltip": "Puntos de malla a lo largo del lado más largo de la foto. Con 1024, el GLB ocupa unos 50 MB y el STL unos 105 MB; con 2048, unos 200 MB y 420 MB; una curvatura duplica esos tamaños."
+      },
+      "relief_type": {
+        "name": "relief_type",
+        "tooltip": "low: tallado poco profundo para grabado láser, CNC y placas. high: tallado más profundo para piezas impresas en 3D."
+      },
+      "relief_type_carving_depth_mm": {
+        "name": "carving_depth_mm"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "La semilla controla si el nodo debe volver a ejecutarse; los resultados no son deterministas independientemente de la semilla. Cámbiala para solicitar una salida que se conectó después de la última ejecución."
+      },
+      "size_mm": {
+        "name": "size_mm",
+        "tooltip": "Longitud del lado más largo de la foto en el modelo, medida en plano antes de cualquier curvatura."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "1": {
+        "name": "STL",
+        "tooltip": null
+      },
+      "2": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": null
+      },
+      "4": {
+        "name": "USDZ",
+        "tooltip": null
+      },
+      "5": {
+        "name": "3MF",
+        "tooltip": null
+      },
+      "6": {
+        "name": "depth_map",
+        "tooltip": "Mapa de profundidad con el rango completo de 16 bits; Guardar imagen (avanzado) lo escribe como un PNG de 16 bits."
+      },
+      "7": {
+        "name": "preview",
+        "tooltip": null
+      }
+    }
+  },
   "MeshyMultiImageToModelNode": {
     "display_name": "Meshy: Multi-Imagen a modelo",
     "inputs": {
@@ -15765,6 +15850,44 @@
         "tooltip": null
       },
       "3": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyTextureN1Node": {
+    "description": "Texturiza un modelo creado previamente con Meshy N1 usando de 1 a 4 vistas de referencia del mismo objeto.",
+    "display_name": "Meshy: Texturizar modelo (N1)",
+    "inputs": {
+      "enable_original_uv": {
+        "name": "enable_original_uv",
+        "tooltip": "Usa el UV original del modelo en lugar de generar nuevos UV. Cuando está activado, Meshy conserva las texturas existentes del modelo cargado. Si el modelo no tiene un UV original, la calidad de la salida podría no ser tan buena."
+      },
+      "extra_views": {
+        "name": "vistas_adicionales",
+        "tooltip": "Vistas adicionales del mismo objeto, en cualquier orden. Junto con front_view, como máximo 4 imágenes."
+      },
+      "front_view": {
+        "name": "front_view",
+        "tooltip": "La vista que Meshy considera frontal. Una imagen texturiza el frente y deja la parte trasera sin textura; añade vistas traseras y laterales en extra_views para obtener una parte trasera fiel."
+      },
+      "meshy_task_id": {
+        "name": "meshy_task_id"
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "2": {
         "name": "FBX",
         "tooltip": null
       }
@@ -19904,6 +20027,39 @@
       }
     }
   },
+  "OpenAIChatNodeV2": {
+    "description": "Genera respuestas de texto con los modelos GPT de OpenAI. Proporciona una indicación de texto y, opcionalmente, imágenes o archivos como contexto.",
+    "display_name": "OpenAI ChatGPT",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "El modelo utilizado para generar la respuesta."
+      },
+      "model_max_output_tokens": {
+        "name": "max_output_tokens"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_system_prompt": {
+        "name": "system_prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "OpenAIGPTImage1": {
     "description": "Genera imágenes de forma síncrona a través del endpoint GPT Image 2 de OpenAI.",
     "display_name": "OpenAI GPT Image 2",
@@ -22970,7 +23126,7 @@
       },
       "model": {
         "name": "modelo",
-        "tooltip": "El modelo que se utilizará para la generación. Los modelos recraftv4_styles están diseñados para generar resultados coherentes en estilo y siempre requieren un style_id o style_references; recraftv4_1_flash es el modelo más rápido y económico, y no admite estilos en absoluto."
+        "tooltip": "El modelo que se utilizará para la generación. Los modelos recraftv4_styles están diseñados para una generación con un estilo coherente y siempre requieren un style_id o style_references; recraftv4_1_flash ejecuta Recraft V4.1 Flash V2, el modelo más rápido y económico, y no admite estilos de ningún tipo."
       },
       "model_size": {
         "name": "tamaño"
@@ -23081,6 +23237,14 @@
     "inputs": {
       "image": {
         "name": "imagen"
+      },
+      "shape_stacking": {
+        "name": "shape_stacking",
+        "tooltip": "hierarchical superpone formas en capas; cut_out crea formas que nunca se superponen, para plotters, cortadoras de vinilo y serigrafía."
+      },
+      "version": {
+        "name": "version",
+        "tooltip": "v1_pro (Vectorizer Pro) ofrece SVG más limpios, con curvas suaves, líneas rectas y esquinas nítidas; es ideal para letras y formas intrincadas."
       }
     },
     "outputs": {

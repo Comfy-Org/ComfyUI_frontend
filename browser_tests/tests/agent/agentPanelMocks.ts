@@ -30,6 +30,7 @@ import { mockAgentIdentity } from '@e2e/fixtures/agentSocket'
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { emptyAgentThreadList } from '@e2e/fixtures/data/agent/agentThreadList'
+import { mockAgentSavedWorkflowSidebarFile } from '@e2e/fixtures/helpers/agentSavedWorkflowSidebarFile'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { mockCloudBootRoutes } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
@@ -551,6 +552,11 @@ async function mockAgentBoot(
       }
     }
     return route.fulfill(jsonRoute(workflows))
+  })
+  await mockAgentSavedWorkflowSidebarFile(page, WORKFLOW_ID, {
+    savedName: () =>
+      savedWorkflow?.path.slice('workflows/'.length, -'.json'.length),
+    savedContent: () => savedContent
   })
   const threads = emptyAgentThreadList()
   await page.route('**/api/agent/threads?*', (route) =>

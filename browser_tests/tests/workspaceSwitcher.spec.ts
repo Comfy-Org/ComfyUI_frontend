@@ -268,6 +268,24 @@ test.describe('Workspace switcher', { tag: '@cloud' }, () => {
       }
     })
 
+    test('closes the Credits flyout when the workspace switcher opens', async ({
+      comfyPage
+    }) => {
+      const page = comfyPage.page
+      await comfyPage.toast.closeToasts()
+      await page.getByRole('button', { name: 'Current user' }).click()
+      const credits = page.getByTestId('credits-menu-item')
+      const flyout = page.getByTestId('credits-flyout')
+      await credits.click()
+      await expect(flyout).toBeVisible()
+
+      await page.getByTestId('workspace-switcher-trigger').click()
+
+      await expect(page.getByTestId('workspace-switcher-panel')).toBeVisible()
+      await expect(flyout).toBeHidden()
+      await expect(credits).toHaveAttribute('aria-expanded', 'false')
+    })
+
     test('keeps a clicked flyout open after the pointer leaves until Escape, without opening Settings', async ({
       comfyPage
     }) => {

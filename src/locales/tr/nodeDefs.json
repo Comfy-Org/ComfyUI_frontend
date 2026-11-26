@@ -15470,6 +15470,91 @@
       }
     }
   },
+  "MeshyImageToReliefNode": {
+    "description": "Bir fotoğrafı, 3B baskı, lazer kazıma ve CNC oyma için bir alçak kabartma modele ve 16 bit derinlik haritasına dönüştürün. Yalnızca bağlı çıkışlar oluşturulur ve indirilir; bağlı model çıkışı olmadığında görev yalnızca derinlik haritasını döndürür.",
+    "display_name": "Meshy: Görüntüden Kabartma",
+    "inputs": {
+      "base": {
+        "name": "base",
+        "tooltip": "none, arka planı kesip çıkarır ve plaka oluşturmaz."
+      },
+      "base_base_thickness_mm": {
+        "name": "base_thickness_mm"
+      },
+      "bend": {
+        "name": "bend",
+        "tooltip": "convex ön yüzü dışa doğru bombelendirir, concave ise içe doğru kıvırır."
+      },
+      "carving_mode": {
+        "name": "carving_mode",
+        "tooltip": "emboss fotoğrafın daha yakın kısımlarını yükseltir, engrave ise bunları içeri doğru oyar."
+      },
+      "color_mapping": {
+        "name": "color_mapping",
+        "tooltip": "GLB, OBJ, FBX ve USDZ dosyalarını fotoğrafla renklendirin. STL ve 3MF beyaz kalır."
+      },
+      "control_after_generate": {
+        "name": "oluşturma sonrası kontrol"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Açık arka plan üzerindeki koyu çizimler kabartılır. Saydamlık yüklemeden önce kaldırılır; bu nedenle saydam bir logoyu önce beyaz bir arka planla birleştirin."
+      },
+      "mesh_resolution": {
+        "name": "mesh_resolution",
+        "tooltip": "Fotoğrafın uzun kenarı boyunca ağ noktaları. 1024'te GLB yaklaşık 50 MB, STL ise yaklaşık 105 MB'tır; 2048'de sırasıyla yaklaşık 200 MB ve 420 MB'tır. Bir bükme bunları iki katına çıkarır."
+      },
+      "relief_type": {
+        "name": "relief_type",
+        "tooltip": "low: lazer kazıma, CNC ve plakalar için sığ oyma. high: 3B yazdırılmış parçalar için daha derin oyma."
+      },
+      "relief_type_carving_depth_mm": {
+        "name": "carving_depth_mm"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, düğümün yeniden çalıştırılıp çalıştırılmayacağını kontrol eder; sonuçlar seed'den bağımsız olarak deterministik değildir. Son çalıştırmadan sonra bağlanan bir çıktı istemek için bunu değiştirin."
+      },
+      "size_mm": {
+        "name": "size_mm",
+        "tooltip": "Fotoğrafın uzun kenarının, herhangi bir bükme uygulanmadan önce düz olarak ölçülen, model üzerindeki uzunluğu."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "1": {
+        "name": "STL",
+        "tooltip": null
+      },
+      "2": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": null
+      },
+      "4": {
+        "name": "USDZ",
+        "tooltip": null
+      },
+      "5": {
+        "name": "3MF",
+        "tooltip": null
+      },
+      "6": {
+        "name": "depth_map",
+        "tooltip": "Tam 16 bit aralığına sahip derinlik haritası; Görüntüyü Kaydet (Gelişmiş) bunu 16 bit PNG olarak yazar."
+      },
+      "7": {
+        "name": "önizleme",
+        "tooltip": null
+      }
+    }
+  },
   "MeshyMultiImageToModelNode": {
     "display_name": "Meshy: Çoklu Görüntüden Modele",
     "inputs": {
@@ -15765,6 +15850,44 @@
         "tooltip": null
       },
       "3": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyTextureN1Node": {
+    "description": "Daha önce oluşturulmuş bir modeli, aynı nesnenin 1 ila 4 referans görünümünü kullanarak Meshy N1 ile dokulandırın.",
+    "display_name": "Meshy: Modeli Dokulandır (N1)",
+    "inputs": {
+      "enable_original_uv": {
+        "name": "enable_original_uv",
+        "tooltip": "Yeni UV'ler üretmek yerine modelin özgün UV'sini kullanın. Etkinleştirildiğinde Meshy, yüklenen modeldeki mevcut dokuları korur. Modelin özgün UV'si yoksa çıktı kalitesi o kadar iyi olmayabilir."
+      },
+      "extra_views": {
+        "name": "extra_views",
+        "tooltip": "Aynı nesnenin herhangi bir sıradaki ek görünümleri. front_view ile birlikte en fazla 4 görüntü."
+      },
+      "front_view": {
+        "name": "front_view",
+        "tooltip": "Meshy'nin ön olarak kabul ettiği görünüm. Tek görüntü ön yüzü dokulandırır ve arka yüzü düz bırakır; aslına uygun bir arka yüz için extra_views içine arka ve yan görünümler ekleyin."
+      },
+      "meshy_task_id": {
+        "name": "meshy_task_id"
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "2": {
         "name": "FBX",
         "tooltip": null
       }
@@ -19904,6 +20027,39 @@
       }
     }
   },
+  "OpenAIChatNodeV2": {
+    "description": "OpenAI'nin GPT modelleriyle metin yanıtları oluşturun. Bir metin istemi ve isteğe bağlı olarak bağlam için görseller veya dosyalar sağlayın.",
+    "display_name": "OpenAI ChatGPT",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturmadan sonra denetle"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Yanıtı oluşturmak için kullanılan model."
+      },
+      "model_max_output_tokens": {
+        "name": "max_output_tokens"
+      },
+      "model_prompt": {
+        "name": "istem"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_system_prompt": {
+        "name": "system_prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "OpenAIGPTImage1": {
     "description": "OpenAI'nin GPT Görüntü 2 uç noktası aracılığıyla eşzamanlı olarak görüntüler oluşturur.",
     "display_name": "OpenAI GPT Görüntü 2",
@@ -22970,7 +23126,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "Oluşturma için kullanılacak model. recraftv4_styles modelleri, stille tutarlı oluşturma için geliştirilmiştir ve her zaman bir style_id veya style_references gerektirir; recraftv4_1_flash en hızlı ve en ucuz modeldir ve hiçbir stili desteklemez."
+        "tooltip": "Oluşturma için kullanılacak model. recraftv4_styles modelleri, stil açısından tutarlı oluşturma için tasarlanmıştır ve her zaman bir style_id veya style_references gerektirir; recraftv4_1_flash, en hızlı ve en ucuz model olan Recraft V4.1 Flash V2'yi çalıştırır ve hiçbir stili desteklemez."
       },
       "model_size": {
         "name": "boyut"
@@ -23081,6 +23237,14 @@
     "inputs": {
       "image": {
         "name": "görüntü"
+      },
+      "shape_stacking": {
+        "name": "shape_stacking",
+        "tooltip": "hierarchical, şekilleri birbirinin üzerine katmanlar; cut_out ise çakışmayan şekiller oluşturur; çiziciler, vinil kesiciler ve serigrafi baskı için uygundur."
+      },
+      "version": {
+        "name": "sürüm",
+        "tooltip": "v1_pro (Vectorizer Pro), pürüzsüz eğriler, düz çizgiler ve keskin köşeler içeren daha temiz SVG'ler sunar; yazılar ve karmaşık şekiller için en uygunudur."
       }
     },
     "outputs": {

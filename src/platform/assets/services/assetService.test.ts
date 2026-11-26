@@ -1,19 +1,15 @@
 import type { AssetUpdated } from '@comfyorg/ingest-types'
 import { fromPartial } from '@total-typescript/shoehorn'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { useAssetsStore } from '@/stores/assetsStore'
+import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import type {
-  AssetItem,
-  AssetResponse
-} from '@/platform/assets/schemas/assetSchema'
-import {
-  MISSING_TAG,
-  assetService
-} from '@/platform/assets/services/assetService'
+import type { AssetItem, AssetResponse } from '@comfyorg/assets-core/schema'
+import { MISSING_TAG } from '@comfyorg/assets-core/metadata'
+import { assetService } from '@/platform/assets/services/assetService'
 import { api } from '@/scripts/api'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 
@@ -950,7 +946,7 @@ describe(assetService.getWorkspaceLibraryModels, () => {
         )
       )
 
-    const names = await assetService.getWorkspaceLibraryModels('loras')
+    const { names } = await assetService.getWorkspaceLibraryModels('loras')
 
     expect(names).toEqual([
       'my_style_v2.safetensors',
@@ -979,7 +975,7 @@ describe(assetService.getWorkspaceLibraryModels, () => {
 
     await expect(
       assetService.getWorkspaceLibraryModels('loras')
-    ).resolves.toEqual(['kept.safetensors'])
+    ).resolves.toEqual({ names: ['kept.safetensors'], blocked: [] })
   })
 
   it('names a model by its loader path when its file name differs', async () => {
@@ -997,7 +993,7 @@ describe(assetService.getWorkspaceLibraryModels, () => {
 
     await expect(
       assetService.getWorkspaceLibraryModels('loras')
-    ).resolves.toEqual(['my_style_final.safetensors'])
+    ).resolves.toEqual({ names: ['my_style_final.safetensors'], blocked: [] })
   })
 
   it('lists a loader name once when two members added a model under it', async () => {
@@ -1020,10 +1016,56 @@ describe(assetService.getWorkspaceLibraryModels, () => {
 
     await expect(
       assetService.getWorkspaceLibraryModels('loras')
-    ).resolves.toEqual([
-      'my_style_v2.safetensors',
-      'teammate_style.safetensors'
-    ])
+    ).resolves.toEqual({
+      names: ['my_style_v2.safetensors', 'teammate_style.safetensors'],
+      blocked: []
+    })
+  })
+
+  it("lists apart the models the Build's model rules block, each once, and treats a row without the mark as runnable", async () => {
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(
+      buildAssetListResponse([
+        {
+          ...libraryRow(
+            '3f0b6c1e-0000-4000-8000-000000000010',
+            'banned_style.safetensors'
+          ),
+          blocked_by_model_policy: true
+        },
+        {
+          ...libraryRow(
+            '3f0b6c1e-0000-4000-8000-000000000011',
+            'banned_style.safetensors'
+          ),
+          blocked_by_model_policy: true
+        },
+        {
+          ...libraryRow(
+            '3f0b6c1e-0000-4000-8000-000000000012',
+            '../banned_escape.safetensors'
+          ),
+          blocked_by_model_policy: true
+        },
+        {
+          ...libraryRow(
+            '3f0b6c1e-0000-4000-8000-000000000013',
+            'allowed_style.safetensors'
+          ),
+          blocked_by_model_policy: false
+        },
+        libraryRow(
+          '3f0b6c1e-0000-4000-8000-000000000014',
+          'unmarked_style.safetensors'
+        )
+      ])
+    )
+
+    await expect(
+      assetService.getWorkspaceLibraryModels('loras')
+    ).resolves.toEqual({
+      names: ['allowed_style.safetensors', 'unmarked_style.safetensors'],
+      blocked: ['banned_style.safetensors']
+    })
   })
 
   it('fails when the listing fails, so the dropdown can report it', async () => {
@@ -1555,6 +1597,23 @@ describe(assetService.getAssetsForNodeType, () => {
 })
 
 vi.mock(import('@/scripts/app'))
+
+describe(assetService.importPublishedAssets, () => {
+  it('returns a failure and reports a rejected transport request once', async () => {
+    const error = new TypeError('Failed to fetch')
+    vi.mocked(api.fetchApi).mockRejectedValueOnce(error)
+
+    await expect(
+      assetService.importPublishedAssets({
+        published_asset_ids: ['published-1']
+      })
+    ).resolves.toEqual({ ok: false, status: null })
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(error, {
+      errorType: 'failure_importing_published_assets',
+      surface: 'assets'
+    })
+  })
+})
 
 describe(assetService.getWorkspaceLibraryAssetsPage, () => {
   it('requests workspace models with its own cursor and preserves loader paths and permissions', async () => {

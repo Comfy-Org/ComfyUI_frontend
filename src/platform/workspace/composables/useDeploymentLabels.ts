@@ -168,6 +168,10 @@ export function useBootDeploymentLabel() {
   })
 }
 
+export function fullDeploymentLabel(deployment: WorkspaceDeployment): string {
+  return deploymentNames(translate).fullLabel(deployment)
+}
+
 /** Where this page booted, or Comfy Cloud; undefined until known. */
 export function useBootDeploymentFullLabel() {
   const { bootDeployment, listingRefused } = storeToRefs(

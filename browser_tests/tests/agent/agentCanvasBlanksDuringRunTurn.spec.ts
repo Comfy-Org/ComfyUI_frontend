@@ -227,15 +227,6 @@ async function driveThroughDocReset(
     return route.fulfill(jsonRoute(workflows))
   })
 
-  const picker = panel.getByRole('button', {
-    name: enMessages.agent.switchWorkflow
-  })
-  await picker.click()
-  await page
-    .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
-    .click()
-  await expect(picker).toHaveText('Unsaved Workflow')
-
   await expect.poll(() => hostSocket.connectionCount()).toBeGreaterThan(0)
 
   const composer = panel.getByRole('textbox', { name: AGENT_COMPOSER_LABEL })

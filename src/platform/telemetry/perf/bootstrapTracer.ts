@@ -61,6 +61,7 @@ import { useTelemetry } from '@comfyorg/telemetry'
 import { getDatadogRum } from '@comfyorg/telemetry/rumContext'
 import { TelemetryEvents } from '@comfyorg/telemetry/types'
 import type { BootstrapCompleteMetadata } from '@comfyorg/telemetry/types'
+import { safeLocalStorage } from '@/base/storage/safeStorage'
 
 import { perfMark, perfMeasureSinceOrigin, perfPoint } from './perfMark'
 import type { PerfSpan } from './perfMark'
@@ -86,14 +87,14 @@ const SAFE_ERROR_NAMES = new Set([
 ])
 
 function safeErrorName(error: unknown): string {
-  if (!(error instanceof Error)) return typeof error
   try {
+    if (!(error instanceof Error)) return typeof error
     const { name } = error
     return typeof name === 'string' && SAFE_ERROR_NAMES.has(name)
       ? name
       : 'Error'
   } catch {
-    return 'Error'
+    return 'uninspectable'
   }
 }
 
@@ -411,7 +412,10 @@ export class BootstrapTracer {
    * Only emits in dev or when DEBUG_PERF is set.
    */
   private _logSummary(rows: BootstrapPhaseTiming[], totalMs: number): void {
-    if (!import.meta.env.DEV && localStorage.getItem('DEBUG_PERF') !== 'true')
+    if (
+      !import.meta.env.DEV &&
+      safeLocalStorage.getItem('DEBUG_PERF') !== 'true'
+    )
       return
     if (rows.length === 0) return
     console.warn(

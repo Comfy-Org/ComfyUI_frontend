@@ -31,9 +31,14 @@ import type {
   AgentPanelClosedMetadata,
   AgentPanelOpenedMetadata,
   AgentPanelRenderStalledMetadata,
+  AgentRunApprovalAnswerFailedMetadata,
+  AgentRunApprovalRecoveryAttemptedMetadata,
+  AgentRunApprovalRecoveryOutcomeMetadata,
   AgentRunApprovalResolvedMetadata,
   AgentRunApprovalShownMetadata,
   AgentRunModeChangedMetadata,
+  AgentSkillSavedMetadata,
+  AgentSkillSelectedMetadata,
   AgentStarterPromptClickedMetadata,
   AgentStopClickedMetadata,
   AgentTargetUnavailableMetadata,
@@ -41,9 +46,11 @@ import type {
   AgentWorkflowBoundMetadata,
   AgentWorkflowAppliedMetadata,
   AuthErrorMetadata,
+  AssetDownloadMetadata,
   AuthMetadata,
   BeginCheckoutMetadata,
   BootstrapCompleteMetadata,
+  CustomDeploymentTelemetryEvent,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
   ExecutionErrorMetadata,
@@ -72,6 +79,7 @@ import type {
   PageVisibilityMetadata,
   ResubscribeClickMetadata,
   RunButtonProperties,
+  LocalMcpTelemetryEvent,
   RunOnCloudTelemetryEvent,
   ShareFlowMetadata,
   ShareLinkOpenedMetadata,
@@ -160,6 +168,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackImageLoadFailed(metadata: ImageLoadFailureMetadata): void {
     this.dispatch((provider) => provider.trackImageLoadFailed?.(metadata))
+  }
+
+  trackAssetDownload(metadata: AssetDownloadMetadata): void {
+    this.dispatch((provider) => provider.trackAssetDownload?.(metadata))
   }
 
   trackBootstrapComplete(metadata: BootstrapCompleteMetadata): void {
@@ -437,6 +449,14 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) => provider.trackRunOnCloudEvent?.(event))
   }
 
+  trackLocalMcpEvent(event: LocalMcpTelemetryEvent): void {
+    this.dispatch((provider) => provider.trackLocalMcpEvent?.(event))
+  }
+
+  trackCustomDeploymentEvent(event: CustomDeploymentTelemetryEvent): void {
+    this.dispatch((provider) => provider.trackCustomDeploymentEvent?.(event))
+  }
+
   trackAgentMessageFeedback(metadata: AgentMessageFeedbackMetadata): void {
     this.dispatch((provider) => provider.trackAgentMessageFeedback?.(metadata))
   }
@@ -517,6 +537,14 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) => provider.trackAgentNodeTagged?.(metadata))
   }
 
+  trackAgentSkillSelected(metadata: AgentSkillSelectedMetadata): void {
+    this.dispatch((provider) => provider.trackAgentSkillSelected?.(metadata))
+  }
+
+  trackAgentSkillSaved(metadata: AgentSkillSavedMetadata): void {
+    this.dispatch((provider) => provider.trackAgentSkillSaved?.(metadata))
+  }
+
   trackAgentAttachButtonClicked(
     metadata: AgentAttachButtonClickedMetadata
   ): void {
@@ -560,6 +588,30 @@ export class TelemetryRegistry implements TelemetryDispatcher {
   ): void {
     this.dispatch((provider) =>
       provider.trackAgentRunApprovalResolved?.(metadata)
+    )
+  }
+
+  trackAgentRunApprovalAnswerFailed(
+    metadata: AgentRunApprovalAnswerFailedMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackAgentRunApprovalAnswerFailed?.(metadata)
+    )
+  }
+
+  trackAgentRunApprovalRecoveryAttempted(
+    metadata: AgentRunApprovalRecoveryAttemptedMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackAgentRunApprovalRecoveryAttempted?.(metadata)
+    )
+  }
+
+  trackAgentRunApprovalRecoveryOutcome(
+    metadata: AgentRunApprovalRecoveryOutcomeMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackAgentRunApprovalRecoveryOutcome?.(metadata)
     )
   }
 

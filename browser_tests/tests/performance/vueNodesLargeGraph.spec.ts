@@ -1,4 +1,5 @@
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import type { Renderer } from '@e2e/fixtures/helpers/PanZoomPerfHelper'
 import {
   centerOnGraph,
   measureIdle,
@@ -15,7 +16,7 @@ import { createChainWorkflow } from '@e2e/fixtures/utils/chainWorkflow'
 const NODE_COUNT = 500
 const TEST_TIMEOUT_MS = 600_000
 
-function defineLargeGraphTest(renderer: 'vue' | 'litegraph') {
+function defineLargeGraphTest(renderer: Renderer) {
   test(`${renderer} ${NODE_COUNT} nodes`, async ({ comfyPage }) => {
     const prefix = `${renderer}-${NODE_COUNT}`
     reportPerf(
@@ -35,7 +36,7 @@ function defineLargeGraphTest(renderer: 'vue' | 'litegraph') {
     reportPerf(`${prefix} zoom`, await measureZoom(comfyPage, `${prefix}-zoom`))
     reportPerf(
       `${prefix} progress`,
-      await measureProgress(comfyPage, `${prefix}-progress`)
+      await measureProgress(comfyPage, `${prefix}-progress`, renderer)
     )
     reportPerf(
       `${prefix} node drag`,

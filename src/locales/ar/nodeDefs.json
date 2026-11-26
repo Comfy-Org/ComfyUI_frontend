@@ -15470,6 +15470,91 @@
       }
     }
   },
+  "MeshyImageToReliefNode": {
+    "description": "حوّل صورة إلى نموذج نقش بارز منخفض وخريطة عمق بعمق لوني 16-بت للطباعة ثلاثية الأبعاد والنقش بالليزر والنحت باستخدام CNC. لا يتم إنشاء وتنزيل سوى المخرجات المتصلة؛ وإذا لم يكن أي مخرج للنموذج متصلاً، فستُرجع المهمة خريطة العمق فقط.",
+    "display_name": "Meshy: من الصورة إلى نقش بارز",
+    "inputs": {
+      "base": {
+        "name": "base",
+        "tooltip": "none يزيل الخلفية ولا ينشئ أي قاعدة."
+      },
+      "base_base_thickness_mm": {
+        "name": "base_thickness_mm"
+      },
+      "bend": {
+        "name": "bend",
+        "tooltip": "convex يحدّب الواجهة إلى الخارج، وconcave يقوّسها إلى الداخل."
+      },
+      "carving_mode": {
+        "name": "carving_mode",
+        "tooltip": "emboss يرفع الأجزاء الأقرب من الصورة، وengrave ينحتها إلى الداخل."
+      },
+      "color_mapping": {
+        "name": "color_mapping",
+        "tooltip": "لوّن ملفات GLB وOBJ وFBX وUSDZ باستخدام الصورة. يبقى STL و3MF باللون الأبيض."
+      },
+      "control_after_generate": {
+        "name": "التحكم بعد الإنشاء"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "يبرز العمل الفني الداكن على خلفية فاتحة. تُزال الشفافية قبل الرفع، لذا سطّح الشعار الشفاف على خلفية بيضاء أولاً."
+      },
+      "mesh_resolution": {
+        "name": "mesh_resolution",
+        "tooltip": "نقاط الشبكة على امتداد الضلع الأطول للصورة. عند 1024، يبلغ حجم GLB نحو 50 MB وSTL نحو 105 MB، وعند 2048 نحو 200 MB و420 MB؛ ويضاعف الانحناء هذه الأحجام."
+      },
+      "relief_type": {
+        "name": "relief_type",
+        "tooltip": "low: نحت ضحل للنقش بالليزر وCNC واللوحات. high: نحت أعمق للقطع المطبوعة ثلاثية الأبعاد."
+      },
+      "relief_type_carving_depth_mm": {
+        "name": "carving_depth_mm"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "يتحكم البذرة في ما إذا كان ينبغي للعقدة إعادة التشغيل؛ فالنتائج غير حتمية بغض النظر عن البذرة. غيّرها لطلب مخرج تم توصيله بعد آخر تشغيل."
+      },
+      "size_mm": {
+        "name": "size_mm",
+        "tooltip": "طول الضلع الأطول للصورة على النموذج، ويُقاس وهو مسطح قبل أي انحناء."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "1": {
+        "name": "STL",
+        "tooltip": null
+      },
+      "2": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": null
+      },
+      "4": {
+        "name": "USDZ",
+        "tooltip": null
+      },
+      "5": {
+        "name": "3MF",
+        "tooltip": null
+      },
+      "6": {
+        "name": "depth_map",
+        "tooltip": "خريطة عمق بالنطاق الكامل ذي 16-بت؛ يحفظها Save Image (Advanced) كملف PNG بعمق 16-بت."
+      },
+      "7": {
+        "name": "معاينة",
+        "tooltip": null
+      }
+    }
+  },
   "MeshyMultiImageToModelNode": {
     "display_name": "Meshy: من صور متعددة إلى نموذج",
     "inputs": {
@@ -15765,6 +15850,44 @@
         "tooltip": null
       },
       "3": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyTextureN1Node": {
+    "description": "أكسِ نموذجًا تم إنشاؤه مسبقًا باستخدام Meshy N1 عبر 1 إلى 4 مناظر مرجعية للكائن نفسه.",
+    "display_name": "Meshy: إكساء النموذج (N1)",
+    "inputs": {
+      "enable_original_uv": {
+        "name": "enable_original_uv",
+        "tooltip": "استخدم UV الأصلي للنموذج بدلًا من إنشاء UVs جديدة. عند التمكين، يحافظ Meshy على الإكساءات الموجودة في النموذج المرفوع. إذا لم يكن للنموذج UV أصلي، فقد لا تكون جودة المخرج جيدة بالقدر نفسه."
+      },
+      "extra_views": {
+        "name": "مناظر إضافية",
+        "tooltip": "مناظر إضافية للكائن نفسه، بأي ترتيب. مع front_view، بحد أقصى 4 صور."
+      },
+      "front_view": {
+        "name": "front_view",
+        "tooltip": "المنظر الذي يتعامل معه Meshy باعتباره الواجهة الأمامية. تقوم صورة واحدة بإكساء الواجهة الأمامية وتترك الخلفية دون إكساء؛ أضف المناظر الخلفية والجانبية في extra_views للحصول على خلفية مطابقة."
+      },
+      "meshy_task_id": {
+        "name": "meshy_task_id"
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "2": {
         "name": "FBX",
         "tooltip": null
       }
@@ -19904,6 +20027,39 @@
       }
     }
   },
+  "OpenAIChatNodeV2": {
+    "description": "أنشئ استجابات نصية باستخدام نماذج GPT من OpenAI. وفّر موجّهًا نصيًا، ويمكنك اختياريًا توفير صور أو ملفات كسياق.",
+    "display_name": "OpenAI ChatGPT",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control_after_generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "النموذج المستخدم لإنشاء الاستجابة."
+      },
+      "model_max_output_tokens": {
+        "name": "max_output_tokens"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_system_prompt": {
+        "name": "system_prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "OpenAIGPTImage1": {
     "description": "ينشئ صورًا بشكل متزامن عبر نقطة نهاية GPT Image 2 من OpenAI.",
     "display_name": "OpenAI GPT صورة 2",
@@ -22970,7 +23126,7 @@
       },
       "model": {
         "name": "النموذج",
-        "tooltip": "النموذج المراد استخدامه للتوليد. صُممت نماذج recraftv4_styles لتوليد متسق في الأسلوب، وتتطلب دائمًا style_id أو style_references؛ أما recraftv4_1_flash فهو النموذج الأسرع والأقل تكلفة ولا يدعم أي أنماط على الإطلاق."
+        "tooltip": "النموذج المستخدم للتوليد. صُممت نماذج recraftv4_styles للتوليد المتسق في الأسلوب وتتطلب دائمًا style_id أو style_references؛ يشغّل recraftv4_1_flash نموذج Recraft V4.1 Flash V2، وهو النموذج الأسرع والأقل تكلفة، ولا يدعم أي أنماط على الإطلاق."
       },
       "model_size": {
         "name": "الحجم"
@@ -23081,6 +23237,14 @@
     "inputs": {
       "image": {
         "name": "صورة"
+      },
+      "shape_stacking": {
+        "name": "shape_stacking",
+        "tooltip": "تضع hierarchical الطبقات والأشكال فوق بعضها بعضًا؛ وينشئ cut_out أشكالًا لا تتداخل أبدًا، لمخططات الرسم وقواطع الفينيل والطباعة بالشاشة الحريرية."
+      },
+      "version": {
+        "name": "version",
+        "tooltip": "يوفر v1_pro ‏(Vectorizer Pro) ملفات SVG أنظف بمنحنيات ناعمة وخطوط مستقيمة وزوايا حادة، وهو الأفضل للنصوص والأشكال المعقدة."
       }
     },
     "outputs": {
