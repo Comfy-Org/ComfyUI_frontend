@@ -3,10 +3,12 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useLinkStore } from '@/stores/linkStore'
 import {
   stripGraphPrefix,
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import type { WidgetState } from '@comfyorg/graph-model/widgetState'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { getExecutionIdByNode } from '@/utils/graphTraversalUtil'
@@ -31,6 +33,16 @@ export function isWidgetAttached(node: LGraphNode, widget: IBaseWidget) {
   return node.widgets?.includes(widget) ?? false
 }
 
+/** Whether an upstream link feeds the widget's input, so execution ignores its own value. */
+function isWidgetLinked(node: LGraphNode, widget: IBaseWidget) {
+  const graph = node.graph
+  const slot = node.inputs.findIndex(
+    (input) => input.widget?.name === widget.name
+  )
+  if (!graph || slot < 0) return false
+  return useLinkStore().isInputSlotConnected(graphScopeOf(graph), node.id, slot)
+}
+
 /** Whether a widget shown in the properties panel can only be read. */
 export function isWidgetReadOnly(
   node: LGraphNode,
@@ -38,13 +50,14 @@ export function isWidgetReadOnly(
 ): boolean {
   const state = getWidgetState(node, widget)
   const options = state?.options ?? widget.options
-  return Boolean(
+  const isMarkedReadOnly = Boolean(
     options.read_only ||
     options.disabled ||
     state?.disabled ||
     widget.disabled ||
     widget.computedDisabled
   )
+  return isMarkedReadOnly || isWidgetLinked(node, widget)
 }
 
 /** Writes a widget value and clears the execution errors it resolves. */

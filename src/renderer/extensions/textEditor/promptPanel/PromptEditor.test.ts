@@ -184,6 +184,31 @@ describe('PromptEditor', () => {
     }
   )
 
+  it('keeps the native limits the widget sets on its textarea', () => {
+    renderEditor({ maxlength: 12 })
+
+    expect(screen.getByRole('textbox', { name: 'text' })).toHaveAttribute(
+      'maxlength',
+      '12'
+    )
+  })
+
+  it('stops edits once an upstream link feeds the widget', async () => {
+    const { node, widget } = renderEditor()
+    const input = node.addInput('text', 'STRING')
+    input.widget = { name: 'text' }
+    const source = new LGraphNode('Primitive String')
+    source.addOutput('STRING', 'STRING')
+    node.graph?.add(source)
+
+    source.connect(0, node, node.inputs.indexOf(input))
+
+    const editor = screen.getByRole('textbox', { name: 'text' })
+    await waitFor(() => expect(editor).toHaveAttribute('readonly'))
+    await userEvent.type(editor, 'more')
+    expect(widget.value).toBe('a portrait')
+  })
+
   it('marks the workflow modified while typing without recording undo history', async () => {
     const user = userEvent.setup()
     renderEditor()
