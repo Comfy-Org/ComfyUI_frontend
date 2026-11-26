@@ -59,6 +59,25 @@
     "name": "Mostrar caja de herramientas de selección",
     "tooltip": "Muestra una barra de herramientas flotante cuando se seleccionan nodos, proporcionando acceso rápido a acciones comunes."
   },
+  "Comfy_Canvas_SmartGuides_Enabled": {
+    "name": "Ajustar a nodos, grupos y conexiones cercanos al arrastrar y redimensionar",
+    "tooltip": "Muestra líneas guía y ajusta a bordes alineados, espaciado uniforme y conexiones rectas. Mantén pulsada Mayús para ajustar a la cuadrícula en su lugar."
+  },
+  "Comfy_Canvas_SmartGuides_Gap": {
+    "name": "Separación al ajustar junto a otro nodo"
+  },
+  "Comfy_Canvas_SmartGuides_SnapDistance": {
+    "name": "Distancia de ajuste (píxeles de pantalla)"
+  },
+  "Comfy_Canvas_SmartGuides_SnapToEdges": {
+    "name": "Ajustar a los bordes de otros nodos y grupos"
+  },
+  "Comfy_Canvas_SmartGuides_SnapToSpacing": {
+    "name": "Ajustar a un espaciado uniforme entre nodos"
+  },
+  "Comfy_Canvas_SmartGuides_SnapToWires": {
+    "name": "Ajustar para que las conexiones queden rectas"
+  },
   "Comfy_ConfirmClear": {
     "name": "Requerir confirmación al borrar el flujo de trabajo"
   },

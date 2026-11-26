@@ -59,6 +59,25 @@
     "name": "عرض صندوق أدوات التحديد",
     "tooltip": "عرض شريط أدوات عائم عند تحديد العقد، لتوفير وصول سريع إلى الإجراءات الشائعة."
   },
+  "Comfy_Canvas_SmartGuides_Enabled": {
+    "name": "الالتقاط إلى العُقد والمجموعات والأسلاك القريبة أثناء السحب وتغيير الحجم",
+    "tooltip": "يعرض خطوط الإرشاد ويلتقط إلى الحواف المحاذية والتباعد المتساوي والأسلاك المستقيمة. اضغط باستمرار على Shift للالتقاط إلى الشبكة بدلًا من ذلك."
+  },
+  "Comfy_Canvas_SmartGuides_Gap": {
+    "name": "الفجوة عند الالتقاط بجوار عقدة أخرى"
+  },
+  "Comfy_Canvas_SmartGuides_SnapDistance": {
+    "name": "مسافة الالتقاط (بالبكسل على الشاشة)"
+  },
+  "Comfy_Canvas_SmartGuides_SnapToEdges": {
+    "name": "الالتقاط إلى حواف العُقد والمجموعات الأخرى"
+  },
+  "Comfy_Canvas_SmartGuides_SnapToSpacing": {
+    "name": "الالتقاط إلى التباعد المتساوي بين العُقد"
+  },
+  "Comfy_Canvas_SmartGuides_SnapToWires": {
+    "name": "الالتقاط بحيث تصبح الأسلاك مستقيمة"
+  },
   "Comfy_ConfirmClear": {
     "name": "طلب التأكيد عند مسح سير العمل"
   },

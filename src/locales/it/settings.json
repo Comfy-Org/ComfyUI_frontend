@@ -59,6 +59,25 @@
     "name": "Mostra toolbox di selezione",
     "tooltip": "Visualizza una barra degli strumenti flottante quando i nodi sono selezionati, fornendo accesso rapido alle azioni comuni."
   },
+  "Comfy_Canvas_SmartGuides_Enabled": {
+    "name": "Aggancia a nodi, gruppi e collegamenti vicini durante il trascinamento e il ridimensionamento",
+    "tooltip": "Mostra linee guida e aggancia a bordi allineati, spaziature uniformi e collegamenti diritti. Tieni premuto Maiusc per agganciare invece alla griglia."
+  },
+  "Comfy_Canvas_SmartGuides_Gap": {
+    "name": "Spazio durante l'aggancio accanto a un altro nodo"
+  },
+  "Comfy_Canvas_SmartGuides_SnapDistance": {
+    "name": "Distanza di aggancio (pixel dello schermo)"
+  },
+  "Comfy_Canvas_SmartGuides_SnapToEdges": {
+    "name": "Aggancia ai bordi di altri nodi e gruppi"
+  },
+  "Comfy_Canvas_SmartGuides_SnapToSpacing": {
+    "name": "Aggancia a spaziature uniformi tra i nodi"
+  },
+  "Comfy_Canvas_SmartGuides_SnapToWires": {
+    "name": "Aggancia in modo che i collegamenti diventino diritti"
+  },
   "Comfy_ConfirmClear": {
     "name": "Richiedi conferma quando si cancella il workflow"
   },

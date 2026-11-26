@@ -59,6 +59,25 @@
     "name": "הצגת ארגז כלי הבחירה",
     "tooltip": "מציג סרגל כלים צף כאשר צמתים נבחרים, המספק גישה מהירה לפעולות נפוצות."
   },
+  "Comfy_Canvas_SmartGuides_Enabled": {
+    "name": "היצמדות לצמתים, לקבוצות ולחיבורים סמוכים בעת גרירה ושינוי גודל",
+    "tooltip": "מציג קווי עזר ומצמיד לקצוות מיושרים, למרווחים אחידים ולחיבורים ישרים. החזקת Shift תצמיד לרשת במקום זאת."
+  },
+  "Comfy_Canvas_SmartGuides_Gap": {
+    "name": "מרווח בעת הצמדה לצד צומת אחר"
+  },
+  "Comfy_Canvas_SmartGuides_SnapDistance": {
+    "name": "מרחק הצמדה (פיקסלים במסך)"
+  },
+  "Comfy_Canvas_SmartGuides_SnapToEdges": {
+    "name": "הצמדה לקצוות של צמתים וקבוצות אחרים"
+  },
+  "Comfy_Canvas_SmartGuides_SnapToSpacing": {
+    "name": "הצמדה למרווחים אחידים בין צמתים"
+  },
+  "Comfy_Canvas_SmartGuides_SnapToWires": {
+    "name": "הצמדה כך שהחיבורים יהיו ישרים"
+  },
   "Comfy_ConfirmClear": {
     "name": "דרישת אישור בעת ניקוי תהליך העבודה"
   },

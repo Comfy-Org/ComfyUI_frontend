@@ -59,6 +59,25 @@
     "name": "Seçim araç kutusunu göster",
     "tooltip": "Düğümler seçildiğinde, yaygın işlemlere hızlı erişim sağlayan bir araç çubuğu gösterir."
   },
+  "Comfy_Canvas_SmartGuides_Enabled": {
+    "name": "Sürüklerken ve yeniden boyutlandırırken yakındaki düğümlere, gruplara ve bağlantı çizgilerine hizala",
+    "tooltip": "Kılavuz çizgilerini gösterir ve hizalı kenarlara, eşit aralıklara ve düz bağlantı çizgilerine hizalar. Bunun yerine ızgaraya hizalamak için Shift tuşunu basılı tutun."
+  },
+  "Comfy_Canvas_SmartGuides_Gap": {
+    "name": "Başka bir düğümün yanına hizalanırken boşluk"
+  },
+  "Comfy_Canvas_SmartGuides_SnapDistance": {
+    "name": "Hizalama mesafesi (ekran pikselleri)"
+  },
+  "Comfy_Canvas_SmartGuides_SnapToEdges": {
+    "name": "Diğer düğümlerin ve grupların kenarlarına hizala"
+  },
+  "Comfy_Canvas_SmartGuides_SnapToSpacing": {
+    "name": "Düğümler arasındaki eşit aralığa hizala"
+  },
+  "Comfy_Canvas_SmartGuides_SnapToWires": {
+    "name": "Bağlantı çizgilerinin düz olması için hizala"
+  },
   "Comfy_ConfirmClear": {
     "name": "İş akışını temizlerken onay iste"
   },

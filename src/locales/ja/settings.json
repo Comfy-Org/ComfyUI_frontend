@@ -59,6 +59,25 @@
     "name": "選択ツールボックスを表示",
     "tooltip": "ノードが選択されているときにフローティングツールバーを表示し、よく使う操作に素早くアクセスできます。"
   },
+  "Comfy_Canvas_SmartGuides_Enabled": {
+    "name": "ドラッグおよびサイズ変更時に、近くのノード、グループ、ワイヤーにスナップ",
+    "tooltip": "ガイド線を表示し、整列した辺、均等な間隔、直線のワイヤーにスナップします。代わりにグリッドにスナップするには Shift を押し続けます。"
+  },
+  "Comfy_Canvas_SmartGuides_Gap": {
+    "name": "別のノードの隣にスナップする際の間隔"
+  },
+  "Comfy_Canvas_SmartGuides_SnapDistance": {
+    "name": "スナップ距離（画面ピクセル）"
+  },
+  "Comfy_Canvas_SmartGuides_SnapToEdges": {
+    "name": "他のノードやグループの辺にスナップ"
+  },
+  "Comfy_Canvas_SmartGuides_SnapToSpacing": {
+    "name": "ノード間の均等な間隔にスナップ"
+  },
+  "Comfy_Canvas_SmartGuides_SnapToWires": {
+    "name": "ワイヤーが直線になるようにスナップ"
+  },
   "Comfy_ConfirmClear": {
     "name": "ワークフローをクリアする際に確認を要求する"
   },

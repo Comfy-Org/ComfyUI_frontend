@@ -59,6 +59,25 @@
     "name": "선택 도구 상자 표시",
     "tooltip": "노드가 선택되었을 때 공통 작업에 빠르게 접근할 수 있는 플로팅 툴바를 표시합니다."
   },
+  "Comfy_Canvas_SmartGuides_Enabled": {
+    "name": "드래그 및 크기 조절 시 주변 노드, 그룹 및 와이어에 맞춰 정렬",
+    "tooltip": "가이드선을 표시하고 정렬된 가장자리, 균등한 간격 및 직선 와이어에 맞춰 정렬합니다. 대신 그리드에 맞춰 정렬하려면 Shift를 누르세요."
+  },
+  "Comfy_Canvas_SmartGuides_Gap": {
+    "name": "다른 노드 옆에 맞춰 정렬할 때의 간격"
+  },
+  "Comfy_Canvas_SmartGuides_SnapDistance": {
+    "name": "정렬 거리(화면 픽셀)"
+  },
+  "Comfy_Canvas_SmartGuides_SnapToEdges": {
+    "name": "다른 노드 및 그룹의 가장자리에 맞춰 정렬"
+  },
+  "Comfy_Canvas_SmartGuides_SnapToSpacing": {
+    "name": "노드 사이의 균등한 간격에 맞춰 정렬"
+  },
+  "Comfy_Canvas_SmartGuides_SnapToWires": {
+    "name": "와이어가 직선이 되도록 정렬"
+  },
   "Comfy_ConfirmClear": {
     "name": "워크플로 비우기 시 확인 요구"
   },

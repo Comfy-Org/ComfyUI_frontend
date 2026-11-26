@@ -59,6 +59,25 @@
     "name": "Afficher la boîte à outils de sélection",
     "tooltip": "Affiche une barre d’outils flottante lorsque des nœuds sont sélectionnés, offrant un accès rapide aux actions courantes."
   },
+  "Comfy_Canvas_SmartGuides_Enabled": {
+    "name": "Aligner sur les nœuds, groupes et connexions proches lors du déplacement et du redimensionnement",
+    "tooltip": "Affiche des lignes de repère et aligne sur les bords alignés, les espacements réguliers et les connexions droites. Maintenez Maj pour aligner sur la grille à la place."
+  },
+  "Comfy_Canvas_SmartGuides_Gap": {
+    "name": "Écart lors de l’alignement à côté d’un autre nœud"
+  },
+  "Comfy_Canvas_SmartGuides_SnapDistance": {
+    "name": "Distance d’alignement (pixels à l’écran)"
+  },
+  "Comfy_Canvas_SmartGuides_SnapToEdges": {
+    "name": "Aligner sur les bords des autres nœuds et groupes"
+  },
+  "Comfy_Canvas_SmartGuides_SnapToSpacing": {
+    "name": "Aligner sur un espacement régulier entre les nœuds"
+  },
+  "Comfy_Canvas_SmartGuides_SnapToWires": {
+    "name": "Aligner de sorte que les connexions deviennent droites"
+  },
   "Comfy_ConfirmClear": {
     "name": "Demander une confirmation lors de l'effacement du flux de travail"
   },

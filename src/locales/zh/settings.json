@@ -59,6 +59,25 @@
     "name": "显示选择工具箱",
     "tooltip": "当选择节点时显示浮动工具栏，便于快速访问常用操作。"
   },
+  "Comfy_Canvas_SmartGuides_Enabled": {
+    "name": "拖动和调整大小时吸附到附近的节点、组和连线",
+    "tooltip": "显示参考线，并吸附到对齐的边缘、均匀间距和直线连线。按住 Shift 可改为吸附到网格。"
+  },
+  "Comfy_Canvas_SmartGuides_Gap": {
+    "name": "吸附到另一个节点旁边时的间距"
+  },
+  "Comfy_Canvas_SmartGuides_SnapDistance": {
+    "name": "吸附距离（屏幕像素）"
+  },
+  "Comfy_Canvas_SmartGuides_SnapToEdges": {
+    "name": "吸附到其他节点和组的边缘"
+  },
+  "Comfy_Canvas_SmartGuides_SnapToSpacing": {
+    "name": "吸附以使节点之间的间距均匀"
+  },
+  "Comfy_Canvas_SmartGuides_SnapToWires": {
+    "name": "吸附以使连线变为直线"
+  },
   "Comfy_ConfirmClear": {
     "name": "清除工作流时需要确认"
   },
