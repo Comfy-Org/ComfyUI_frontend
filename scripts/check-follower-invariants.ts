@@ -423,6 +423,156 @@ function pageSessionOwnsTransport(file: string, source: string): Violation[] {
 
 export { pageSessionOwnsTransport as checkPageSessionOwnsTransport }
 
+/** The one module allowed to attach a human-write-leg op producer. */
+export const OP_PRODUCER_OWNER =
+  'src/workbench/extensions/agent/agentPageOpMinter.ts'
+
+/** Factories that attach an op producer: one of these owns a `detach`. */
+const OP_PRODUCER_FACTORIES = new Set(['attachDocOpMinter'])
+
+/**
+ * Receivers whose `detach()` stops an op producer or the sender it feeds.
+ * Extend this when a producer is added, which is the whole maintenance cost of
+ * the rule below.
+ */
+const OP_PRODUCER_RECEIVERS = new Set(['docOpMinter', 'opSender', 'coalescer'])
+
+/**
+ * Disposal routes a panel close reaches. `onBeforeUnmount` alone is too narrow
+ * to state the rule with: a producer `detach()` is a thunk in a keyed step list
+ * (`runPanelTeardown`) or in an array passed to `runFollowerTeardown` inside an
+ * `onScopeDispose`, and unmount stops the scope. A guard that looked only for
+ * the Vue hook names would find no caller and report the invariant held.
+ */
+const PANEL_CLOSE_DISPOSAL_ROUTES = new Set([
+  'onBeforeUnmount',
+  'onUnmounted',
+  'onScopeDispose',
+  'runPanelTeardown',
+  'runFollowerTeardown',
+  'stop'
+])
+
+function producerFactory(node: ts.Node): string | undefined {
+  if (!ts.isCallExpression(node)) return
+  const { expression } = node
+  const name = ts.isIdentifier(expression)
+    ? expression.text
+    : ts.isPropertyAccessExpression(expression)
+      ? expression.name.text
+      : undefined
+  return name !== undefined && OP_PRODUCER_FACTORIES.has(name)
+    ? name
+    : undefined
+}
+
+/** `<receiver>.detach()` where the receiver is a known op producer. */
+function producerDetach(node: ts.Node): string | undefined {
+  if (!ts.isCallExpression(node)) return
+  const callee = node.expression
+  if (!ts.isPropertyAccessExpression(callee)) return
+  if (callee.name.text !== 'detach') return
+  const receiver = callee.expression
+  const name = ts.isIdentifier(receiver)
+    ? receiver.text
+    : ts.isPropertyAccessExpression(receiver)
+      ? receiver.name.text
+      : undefined
+  return name !== undefined && OP_PRODUCER_RECEIVERS.has(name)
+    ? name
+    : undefined
+}
+
+/** Whether `node` sits inside a call a panel close reaches. */
+function insideAPanelCloseRoute(node: ts.Node): boolean {
+  // `ts.Node.parent` is typed non-nullable but is absent on a SourceFile, so
+  // the walk stops on the kind rather than on a falsy check.
+  // The cast is load-bearing: `ts.Node.parent` is typed non-nullable but is
+  // absent on a SourceFile, so without it the loop guard reads as always
+  // truthy and the walk has no terminator the type checker believes in.
+  let parent = node.parent as ts.Node | undefined
+  while (parent !== undefined) {
+    if (ts.isCallExpression(parent)) {
+      const callee = parent.expression
+      const name = ts.isIdentifier(callee)
+        ? callee.text
+        : ts.isPropertyAccessExpression(callee)
+          ? callee.name.text
+          : undefined
+      if (name !== undefined && PANEL_CLOSE_DISPOSAL_ROUTES.has(name))
+        return true
+    }
+    parent = parent.parent
+  }
+  return false
+}
+
+/**
+ * The two modules whose disposal is session or page teardown rather than a
+ * panel close, so a producer `detach()` on a disposal route inside them is
+ * correct rather than a violation.
+ *
+ * This is a real narrowing of the rule and the premise it rests on is
+ * load-bearing: the session seam's `onScopeDispose` runs
+ * `runFollowerTeardown`, which detaches the sender and the coalescer, and that
+ * scope is owned by the follower session registry. A panel close releases only
+ * the panel's consumer claim while the page keeps its own, so the holder count
+ * never reaches zero and the scope is not stopped — which is exactly what
+ * `followerSessionLifetime.test.ts` pins in both directions. Were the page
+ * claim removed, the session owner would legitimately become panel-reachable
+ * again and this exemption would be wrong; that is why the pin, not this list,
+ * is the control.
+ */
+const SESSION_DISPOSAL_OWNERS = new Set([
+  'src/workbench/extensions/agent/crdt/useAgentCrdtFollower.ts',
+  'src/workbench/extensions/agent/agentPageOpMinter.ts'
+])
+
+/**
+ * Every op producer outlives the panel. Two halves, because one without the
+ * other passes while the defect stands: nothing outside the producer owner may
+ * attach a producer (so nothing else holds a `detach` to call), and no producer
+ * `detach()` may sit on a route a panel close reaches.
+ */
+function opProducersOutliveThePanel(file: string, source: string): Violation[] {
+  if (!isAgentSurfaceFile(file)) return []
+  const mentionsAFactory = [...OP_PRODUCER_FACTORIES].some((name) =>
+    source.includes(name)
+  )
+  if (!mentionsAFactory && !source.includes('.detach(')) return []
+  const parsed = parse(
+    file.endsWith('.vue') ? `${file}.ts` : file,
+    scriptOf(file, source)
+  )
+  if (parsed.violations.length) return atPath(file, parsed.violations)
+  const violations: Violation[] = []
+  visit(parsed.sourceFile, (node) => {
+    const factory = producerFactory(node)
+    if (factory !== undefined && file !== OP_PRODUCER_OWNER)
+      violations.push({
+        file,
+        line: lineOf(parsed.sourceFile, node),
+        rule: 'op-producers-outlive-the-panel',
+        message: `calls ${factory}() outside ${OP_PRODUCER_OWNER} — the op producer mints at the command site and its lifetime is the page, so a component that attaches one also detaches it on unmount and a hand edit made with the panel closed then mints nothing at all: no operation, no retained batch, nothing for the next resubscribe to replay; see docs/adr/CRDT-FOLLOWER-0052-the-workflow-document-owns-the-follower-session.md Stage 2`
+      })
+    const receiver = producerDetach(node)
+    if (
+      receiver !== undefined &&
+      !SESSION_DISPOSAL_OWNERS.has(file) &&
+      insideAPanelCloseRoute(node)
+    )
+      violations.push({
+        file,
+        line: lineOf(parsed.sourceFile, node),
+        rule: 'op-producers-outlive-the-panel',
+        message: `detaches the ${receiver} op producer from a disposal route a panel close reaches — closing the Agent panel is an ordinary one-click unmount, and an edit made while it is closed must still mint, be held, and replay with its original op_id after the next acknowledged resubscribe; see docs/adr/CRDT-FOLLOWER-0052-the-workflow-document-owns-the-follower-session.md Stage 2`
+      })
+  })
+  return violations
+}
+
+export { opProducersOutliveThePanel as checkOpProducersOutliveThePanel }
+
 /** The one module allowed to own a follower session's lifetime. */
 export const FOLLOWER_SESSION_OWNER =
   'src/workbench/extensions/agent/crdt/useAgentCrdtFollower.ts'
@@ -565,6 +715,7 @@ export function checkAgentSurfaceFiles(
     }
     violations.push(...pageSessionOwnsTransport(file, source))
     violations.push(...sessionOwnsFollowerLifetime(file, source))
+    violations.push(...opProducersOutliveThePanel(file, source))
   }
   return violations
 }

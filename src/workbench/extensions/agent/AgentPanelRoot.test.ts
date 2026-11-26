@@ -11509,13 +11509,12 @@ describe('AgentPanelRoot lifecycle', () => {
 
   it('resets the canvas sync gate when an earlier teardown step throws', () => {
     const errorHandler = vi.fn()
-    vi.mocked(attachDocOpMinter).mockImplementationOnce((deps) => {
-      docOpMinterDeps.current = deps
-      return fromPartial<DocOpMinter>({
-        detach: vi.fn(() => {
-          throw new Error('detach failed')
-        })
-      })
+    // Any step ahead of `resetCanvasSyncGate` in the keyed list will do; this
+    // one is chosen because it is cheap to make throw. The step that used to
+    // be used here, `detachDocOpMinter`, is gone: the op producer's lifetime
+    // is the page, not the panel (ADR CRDT-FOLLOWER-0052 Stage 2).
+    vi.spyOn(canvasStore, 'stopNodePicking').mockImplementationOnce(() => {
+      throw new Error('detach failed')
     })
     const panel = render(AgentPanelRoot, {
       global: { plugins: [i18n], config: { errorHandler } }
@@ -11530,8 +11529,8 @@ describe('AgentPanelRoot lifecycle', () => {
 
     panel.unmount()
 
-    // PM-1575: the gate is reset to the always-safe default even though a
-    // step three places ahead of it threw.
+    // PM-1575: the gate is reset to the always-safe default even though an
+    // earlier step threw.
     expect(setCanvasSyncGate).toHaveBeenCalledOnce()
     const [gate] = setCanvasSyncGate.mock.lastCall ?? []
     expect(gate?.()).toBe('none')
@@ -11539,7 +11538,7 @@ describe('AgentPanelRoot lifecycle', () => {
       expect.objectContaining({ message: 'detach failed' }),
       expect.objectContaining({
         errorType: 'failure_tearing_down_agent_panel',
-        tags: { step: 'detachDocOpMinter' }
+        tags: { step: 'exitNodeSelectionMode' }
       })
     )
     expect(errorHandler).not.toHaveBeenCalled()
@@ -11547,13 +11546,8 @@ describe('AgentPanelRoot lifecycle', () => {
 
   it('resets the canvas sync gate when reporting a failed teardown step throws', () => {
     const errorHandler = vi.fn()
-    vi.mocked(attachDocOpMinter).mockImplementationOnce((deps) => {
-      docOpMinterDeps.current = deps
-      return fromPartial<DocOpMinter>({
-        detach: vi.fn(() => {
-          throw new Error('detach failed')
-        })
-      })
+    vi.spyOn(canvasStore, 'stopNodePicking').mockImplementationOnce(() => {
+      throw new Error('detach failed')
     })
     const panel = render(AgentPanelRoot, {
       global: { plugins: [i18n], config: { errorHandler } }

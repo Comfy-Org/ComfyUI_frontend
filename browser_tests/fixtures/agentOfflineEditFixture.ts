@@ -150,10 +150,43 @@ class AgentOfflineEditScenario {
 
   async beginOutageAndRetype(): Promise<void> {
     await this.hostSocket.beginAgentOutage()
+    await this.retypeBothPrompts()
+  }
+
+  /** Retypes both prompt widgets on the canvas, panel open or closed. */
+  async retypeBothPrompts(): Promise<void> {
     for (const [index, value] of HUMAN_PROMPTS.entries()) {
       await this.promptField(index).fill(value)
       await this.promptField(index).press('Tab')
     }
+  }
+
+  async closePanel(): Promise<void> {
+    await this.panel.close()
+  }
+
+  async openPanel(): Promise<void> {
+    await this.panel.open()
+  }
+
+  /**
+   * `op:node_id` for every op the page has put on the wire, oldest first — so
+   * "the edit minted nothing at all" is distinguishable from "it minted and
+   * was not applied".
+   */
+  sentOps(): string[] {
+    return this.hostSocket
+      .clientDocFrames()
+      .filter((frame) => frame.type === 'doc_ops')
+      .flatMap((frame) => frame.ops)
+  }
+
+  /** Every op id the page has put on the wire, oldest first. */
+  sentOpIds(): string[] {
+    return this.hostSocket
+      .clientDocFrames()
+      .filter((frame) => frame.type === 'doc_ops')
+      .flatMap((frame) => frame.opIds)
   }
 
   agentRewritesFirstPrompt(): void {

@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, test } from 'vitest'
 import {
   FOLLOWER_REPLICA_OWNER,
   FOLLOWER_SESSION_OWNER,
+  OP_PRODUCER_OWNER,
   PAGE_SESSION_OWNER,
   checkAgentSurfaceFiles,
   checkCatalogPinnedBySha,
@@ -13,6 +14,7 @@ import {
   checkFollowerFiles,
   checkNoHardcodedEndpoint,
   checkNoOutboundUpdateB64,
+  checkOpProducersOutliveThePanel,
   checkPageSessionOwnsTransport,
   checkSessionOwnsFollowerLifetime,
   findAgentSurfaceFiles
@@ -371,6 +373,149 @@ const { events, docTransport } = useAgentPageSession()
     expect(
       checkPageSessionOwnsTransport('src/scripts/app.ts', fixture)
     ).toEqual([])
+  })
+})
+
+describe('checkOpProducersOutliveThePanel', () => {
+  test('fails the regression it exists to catch: the panel owning the op producer', () => {
+    // Verbatim shape of AgentPanelRoot.vue before ADR CRDT-FOLLOWER-0052
+    // Stage 2: the producer is attached in the component's setup and detached
+    // from its keyed teardown list, so an edit made with the panel closed
+    // mints nothing at all.
+    const fixture = `<script setup lang="ts">
+const docOpMinter = attachDocOpMinter({ isEnabled, isDocBound, enqueue })
+onBeforeUnmount(() =>
+  runPanelTeardown({
+    detachDocOpMinter: () => {
+      docOpMinter.detach()
+    }
+  })
+)
+</script>`
+    expect(
+      checkOpProducersOutliveThePanel(PANEL_FILE, fixture).map(
+        ({ rule, line }) => ({ rule, line })
+      )
+    ).toEqual([
+      { rule: 'op-producers-outlive-the-panel', line: 2 },
+      { rule: 'op-producers-outlive-the-panel', line: 6 }
+    ])
+  })
+
+  test('follows the thunk indirection a Vue-hook grep would miss', () => {
+    // The detach is a thunk in an array passed to runFollowerTeardown inside
+    // onScopeDispose, not a statement in an unmount hook. A guard that looked
+    // for onBeforeUnmount/onUnmounted alone would report the invariant held.
+    const fixture = `
+      onScopeDispose(() => {
+        runFollowerTeardown([() => opSender.detach(), () => client.destroy()])
+      })
+    `
+    expect(
+      checkOpProducersOutliveThePanel(FOLLOWER_FILE, fixture).map(
+        ({ rule, line }) => ({ rule, line })
+      )
+    ).toEqual([{ rule: 'op-producers-outlive-the-panel', line: 3 }])
+  })
+
+  test('catches a producer detached through a scope.stop() route', () => {
+    const fixture = `
+      function teardown() {
+        scope.stop(() => coalescer.detach())
+      }
+    `
+    expect(
+      checkOpProducersOutliveThePanel(FOLLOWER_FILE, fixture).map(
+        ({ rule }) => rule
+      )
+    ).toEqual(['op-producers-outlive-the-panel'])
+  })
+
+  test('names the invariant and links the ADR in both halves', () => {
+    const fixture = `<script setup lang="ts">
+const docOpMinter = attachDocOpMinter({})
+onBeforeUnmount(() => docOpMinter.detach())
+</script>`
+    const violations = checkOpProducersOutliveThePanel(PANEL_FILE, fixture)
+    expect(violations).toHaveLength(2)
+    for (const violation of violations)
+      expect(violation.message).toContain(
+        'CRDT-FOLLOWER-0052-the-workflow-document-owns-the-follower-session.md Stage 2'
+      )
+  })
+})
+
+describe('checkOpProducersOutliveThePanel allowed shapes', () => {
+  test('passes the producer owner attaching and detaching its own producer', () => {
+    const fixture = `
+      const attached = attachDocOpMinter({ isEnabled, isDocBound, enqueue })
+      export function destroyAgentPageOpMinters(): void {
+        attached.detach()
+      }
+    `
+    expect(checkOpProducersOutliveThePanel(OP_PRODUCER_OWNER, fixture)).toEqual(
+      []
+    )
+  })
+
+  test('passes the session owner, whose scope a panel close does not stop', () => {
+    const fixture = `
+      onScopeDispose(() => {
+        runFollowerTeardown([() => opSender.detach(), () => coalescer.detach()])
+      })
+    `
+    expect(
+      checkOpProducersOutliveThePanel(FOLLOWER_SESSION_OWNER, fixture)
+    ).toEqual([])
+  })
+
+  test('passes a component that installs its answers on the page producer', () => {
+    const fixture = `<script setup lang="ts">
+const docOpMinter = retainDocOpMinterForPage(docTransport, { isEnabled })
+watch(connected, () => docOpMinter.deliverHeldRestores())
+</script>`
+    expect(checkOpProducersOutliveThePanel(PANEL_FILE, fixture)).toEqual([])
+  })
+
+  test('passes a producer detach outside any panel-close route', () => {
+    const fixture = `
+      export function destroyEverything(): void {
+        docOpMinter.detach()
+      }
+    `
+    expect(checkOpProducersOutliveThePanel(PANEL_FILE, fixture)).toEqual([])
+  })
+
+  test('passes a non-producer detach on a panel-close route', () => {
+    const fixture = `<script setup lang="ts">
+onBeforeUnmount(() =>
+  runPanelTeardown({
+    detachAgentWriteOverwriteWatch: () => agentWriteOverwriteWatch.detach()
+  })
+)
+</script>`
+    expect(checkOpProducersOutliveThePanel(PANEL_FILE, fixture)).toEqual([])
+  })
+
+  test('ignores a factory name that only appears in a string', () => {
+    const fixture = "const label = 'attachDocOpMinter'"
+    expect(checkOpProducersOutliveThePanel(PANEL_FILE, fixture)).toEqual([])
+  })
+
+  test('ignores files outside the agent surface', () => {
+    const fixture = 'const m = attachDocOpMinter({})'
+    expect(
+      checkOpProducersOutliveThePanel('src/scripts/app.ts', fixture)
+    ).toEqual([])
+  })
+
+  test('fails closed when a .vue script block does not parse', () => {
+    const fixture = `<script setup lang="ts">\nconst m = attachDocOpMinter({\n</script>`
+    expect(
+      checkOpProducersOutliveThePanel(PANEL_FILE, fixture).map(
+        ({ rule }) => rule
+      )
+    ).toContain('syntax-error')
   })
 })
 

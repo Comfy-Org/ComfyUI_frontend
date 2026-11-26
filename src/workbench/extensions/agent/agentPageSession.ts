@@ -4,6 +4,7 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 import { api } from '@/scripts/api'
 import { assert } from '@/base/assert'
 
+import { destroyAgentPageOpMinters } from './agentPageOpMinter'
 import type { AgentDocFrameTransport } from './crdt/agentDocFrameTransport'
 import { createAgentDocFrameTransport } from './crdt/agentDocFrameTransport'
 import { destroyAgentFollowerSessions } from './crdt/useAgentCrdtFollower'
@@ -133,6 +134,10 @@ export function useAgentPageSession(
  * Never call this on panel close.
  */
 export function destroyAgentPageSession(): void {
+  // Producers first: an op producer outlives the panel but not the session it
+  // mints into, and a producer still tapping the graph intent bus after its
+  // session is gone would mint into nothing.
+  destroyAgentPageOpMinters()
   destroyAgentFollowerSessions()
   session?.stop()
   session = null

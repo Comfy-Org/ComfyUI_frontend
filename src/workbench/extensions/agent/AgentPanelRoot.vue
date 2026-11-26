@@ -231,7 +231,7 @@ import { useAgentGraphActivityStore } from './stores/agent/agentGraphActivitySto
 import { startCrdtLog } from './crdt/crdtLog'
 import type { CrdtLogLevel } from './crdt/crdtLogLevel'
 import { attachAgentWriteOverwriteWatch } from './crdt/agentWriteOverwrites'
-import { attachDocOpMinter } from './crdt/docOpMinter'
+import { retainDocOpMinterForPage } from './agentPageOpMinter'
 import {
   retainAgentFollowerSessionsForPage,
   useAgentCrdtFollower
@@ -1431,17 +1431,8 @@ const isFollowerActive = computed(
 const {
   status: crdtStatus,
   debugSnapshot: crdtDebugSnapshot,
-  enqueueHumanOperations,
   noteUnboundLocalIntent,
   retrySubscription,
-  docInputNames,
-  docWidgetValue,
-  docPromotedWidgets,
-  mayWritePromotedHost,
-  isPreMintBinding,
-  docHasSubgraphDefinition,
-  notifyWidgetWriteRefused,
-  subscriptionSent,
   canResumeHeldWorkflow
 } = useAgentCrdtFollower(boundWorkflowId, {
   transport: docTransport,
@@ -1510,17 +1501,20 @@ function boundRootGraphId(): RootGraphId | null {
   const id = boundOrOpenWorkflowFor(bound)?.activeState?.id
   return id === undefined ? null : toRootGraphId(id)
 }
-function followerCanDeliver(): boolean {
-  return isFollowerActive.value && subscriptionSent()
-}
 function noteUnboundVisibleIntent(rootGraph: LGraph): void {
   const workflowId = bindingStore.workflowIdForGraph(rootGraph)
   if (workflowId !== undefined) noteUnboundLocalIntent(workflowId)
 }
-const docOpMinter = attachDocOpMinter({
+// The op producer's lifetime is the page, not this component: a panel close is
+// an unmount (`DockedAgentPanel.vue`'s `v-if`), and a producer that stops there
+// means a hand edit made with the panel closed mints nothing at all — not an
+// operation, not a retained batch, nothing for the next resubscribe to replay.
+// This installs the panel's answers on the page's producer; it does not own it,
+// and `runPanelTeardown` deliberately has no step that detaches it. See ADR
+// CRDT-FOLLOWER-0052 Stage 2 and `agentPageOpMinter.ts`.
+const docOpMinter = retainDocOpMinterForPage(docTransport, {
   isEnabled: () => agentPanelStore.enabled,
-  isDocBound: followerCanDeliver,
-  onUnboundLocalIntent: noteUnboundLocalIntent,
+  isTargetActive: () => isFollowerActive.value,
   onUnboundVisibleIntent: noteUnboundVisibleIntent,
   isBoundWorkflow: (workflow) => {
     const bound = boundWorkflowId.value
@@ -1528,16 +1522,8 @@ const docOpMinter = attachDocOpMinter({
       bound !== null && boundOrOpenWorkflowFor(bound)?.path === workflow.path
     )
   },
-  enqueue: enqueueHumanOperations,
   getGraph: () => (useApp().isGraphReady ? useApp().rootGraph : null),
-  boundRootGraphId,
-  docInputNames,
-  docWidgetValue,
-  docPromotedWidgets,
-  mayWritePromotedHost,
-  isPreMintBinding,
-  docHasSubgraphDefinition,
-  onWidgetWriteRefused: notifyWidgetWriteRefused
+  boundRootGraphId
 })
 watch([() => crdtStatus.value.connected, boundWorkflowId], () =>
   docOpMinter.deliverHeldRestores()
@@ -2091,9 +2077,6 @@ onBeforeUnmount(() => {
             cancelled.revision
           )
       }
-    },
-    detachDocOpMinter: () => {
-      docOpMinter.detach()
     },
     detachAgentWriteOverwriteWatch: () => {
       agentWriteOverwriteWatch.detach()
