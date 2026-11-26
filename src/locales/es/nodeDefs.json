@@ -20027,6 +20027,39 @@
       }
     }
   },
+  "OpenAIChatNodeV2": {
+    "description": "Genera respuestas de texto con los modelos GPT de OpenAI. Proporciona una indicación de texto y, opcionalmente, imágenes o archivos como contexto.",
+    "display_name": "OpenAI ChatGPT",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "El modelo utilizado para generar la respuesta."
+      },
+      "model_max_output_tokens": {
+        "name": "max_output_tokens"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_system_prompt": {
+        "name": "system_prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "OpenAIGPTImage1": {
     "description": "Genera imágenes de forma síncrona a través del endpoint GPT Image 2 de OpenAI.",
     "display_name": "OpenAI GPT Image 2",
@@ -23093,7 +23126,7 @@
       },
       "model": {
         "name": "modelo",
-        "tooltip": "El modelo que se utilizará para la generación. Los modelos recraftv4_styles están diseñados para generar resultados coherentes en estilo y siempre requieren un style_id o style_references; recraftv4_1_flash es el modelo más rápido y económico, y no admite estilos en absoluto."
+        "tooltip": "El modelo que se utilizará para la generación. Los modelos recraftv4_styles están diseñados para una generación con un estilo coherente y siempre requieren un style_id o style_references; recraftv4_1_flash ejecuta Recraft V4.1 Flash V2, el modelo más rápido y económico, y no admite estilos de ningún tipo."
       },
       "model_size": {
         "name": "tamaño"
@@ -23204,6 +23237,14 @@
     "inputs": {
       "image": {
         "name": "imagen"
+      },
+      "shape_stacking": {
+        "name": "shape_stacking",
+        "tooltip": "hierarchical superpone formas en capas; cut_out crea formas que nunca se superponen, para plotters, cortadoras de vinilo y serigrafía."
+      },
+      "version": {
+        "name": "version",
+        "tooltip": "v1_pro (Vectorizer Pro) ofrece SVG más limpios, con curvas suaves, líneas rectas y esquinas nítidas; es ideal para letras y formas intrincadas."
       }
     },
     "outputs": {

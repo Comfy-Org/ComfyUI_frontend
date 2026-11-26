@@ -214,7 +214,7 @@ describe('ModelLibrarySidebarTab', () => {
     beforeEach(() => {
       library.clear()
       vi.spyOn(assetService, 'getWorkspaceLibraryModels').mockImplementation(
-        async (folder) => library.get(folder) ?? []
+        async (folder) => ({ names: library.get(folder) ?? [], blocked: [] })
       )
       modelsFrame.deploymentId = 'dep-1'
       vi.mocked(useFeatureFlags().flags).runtimeLibraryModelsEnabled = true

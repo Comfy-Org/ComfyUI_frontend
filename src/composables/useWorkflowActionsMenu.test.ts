@@ -240,7 +240,8 @@ describe('useWorkflowActionsMenu', () => {
     await findItem(menuItems.value, 'breadcrumbsMenu.duplicate').command?.()
 
     expect(useWorkflowService().duplicateWorkflow).toHaveBeenCalledWith(
-      mockWorkflowStore.activeWorkflow
+      mockWorkflowStore.activeWorkflow,
+      { initiator: 'user' }
     )
   })
 

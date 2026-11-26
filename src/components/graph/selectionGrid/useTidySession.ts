@@ -14,6 +14,7 @@ import { useGapDragSession } from '@/components/graph/selectionGrid/useGapDragSe
 import { useSelectionGrid } from '@/components/graph/selectionGrid/useSelectionGrid'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { distributeSession } from '@/renderer/core/canvas/smartGuides/smartGuidesState'
 
 export function useTidySession() {
   const { gridNodes, measure, tidyUp, recordUndoStep, capturePositions } =
@@ -44,6 +45,7 @@ export function useTidySession() {
 
   function start() {
     finish()
+    distributeSession.value = null
     hasMixedGaps.value = false
     nodes = [...gridNodes.value]
     gap.value = tidyUp(nodes)

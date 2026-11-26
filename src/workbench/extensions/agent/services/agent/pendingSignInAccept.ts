@@ -43,6 +43,10 @@ const ERROR_CATEGORIES: readonly unknown[] = [
   'validation',
   'execution_failure'
 ]
+const MISSING_PACK_REASONS: readonly unknown[] = [
+  'manager_unavailable',
+  'not_in_registry'
+]
 
 type FieldChecks<T> = { [K in keyof Required<T>]: (value: unknown) => boolean }
 
@@ -78,7 +82,9 @@ const CONTEXT_FIELDS: FieldChecks<AgentErrorContext> = {
   label: isString,
   severity: (value) => value === 'error' || value === 'warning',
   workflowName: isOptionalString,
-  workflowPath: isOptionalString
+  workflowPath: isOptionalString,
+  packId: (value) => value === null || isOptionalString(value),
+  reason: (value) => value === undefined || MISSING_PACK_REASONS.includes(value)
 }
 
 function isErrorContext(value: unknown): value is AgentErrorContext {

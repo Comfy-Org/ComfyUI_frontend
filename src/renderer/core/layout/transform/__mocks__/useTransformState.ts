@@ -16,7 +16,8 @@ function reactiveDefaults() {
 const transformState: ReturnType<typeof realUseTransformState> = {
   ...reactiveDefaults(),
   syncWithCanvas: vi.fn(),
-  screenToCanvas: vi.fn(({ x, y }) => ({ x, y }))
+  screenToCanvas: vi.fn(({ x, y }) => ({ x, y })),
+  canvasToScreen: vi.fn(({ x, y }) => ({ x, y }))
 }
 
 export const useTransformState = vi.fn(() => {
