@@ -98,6 +98,7 @@ export function useAgentDockMount(): AgentDockMount {
     const identity = expectedIdentity
     const scopedHasFunds = subscription.value?.agentScopedHasFunds
     if (scopedHasFunds === undefined) return
+    if (subscription.value?.agentScopedHasFundsAuthoritative !== true) return
     const refresh = agentPanelStore.creditTransitionRefresh
     if (refresh?.identity !== identity) {
       agentPanelStore.observeAgentScopedFunds(identity, scopedHasFunds)
@@ -114,6 +115,7 @@ export function useAgentDockMount(): AgentDockMount {
     [
       billingIdentity,
       () => subscription.value?.agentScopedHasFunds,
+      () => subscription.value?.agentScopedHasFundsAuthoritative,
       () => agentPanelStore.creditTransitionRefresh
     ],
     () => observeFreshScopedFunds(),
