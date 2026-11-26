@@ -291,6 +291,43 @@ describe('saveAskBeforeCloudCheck', () => {
     }
   })
 
+  it('resends ask-again when its late save lands after a conflicting choice, even if the newest save fails', async () => {
+    vi.useFakeTimers()
+    try {
+      const lateAskAgain = deferredResponse()
+      const slowDontAskAgain = deferredResponse()
+      vi.mocked(api.storeSetting)
+        .mockReturnValueOnce(lateAskAgain.promise)
+        .mockReturnValueOnce(slowDontAskAgain.promise)
+        .mockResolvedValueOnce(new Response(null, { status: 500 }))
+      const firstAskAgain = saveAskBeforeCloudCheck(true)
+      await vi.advanceTimersByTimeAsync(CLOUD_CHECK_CONSENT_SAVE_TIMEOUT_MS)
+      await firstAskAgain
+      const dontAskAgain = saveAskBeforeCloudCheck(false)
+      await vi.waitFor(() => expect(api.storeSetting).toHaveBeenCalledTimes(2))
+      const secondAskAgain = saveAskBeforeCloudCheck(true)
+
+      lateAskAgain.resolve(new Response())
+      await vi.advanceTimersByTimeAsync(0)
+      expect(localStorage.getItem(PENDING_ASK_AGAIN_KEY)).toBe('true')
+
+      slowDontAskAgain.resolve(new Response())
+      await Promise.all([dontAskAgain, secondAskAgain])
+
+      expect(localStorage.getItem(PENDING_ASK_AGAIN_KEY)).toBe('true')
+      await vi.waitFor(() => expect(api.storeSetting).toHaveBeenCalledTimes(4))
+      expect(api.storeSetting).toHaveBeenLastCalledWith(
+        ASK_BEFORE_CLOUD_CHECK,
+        true
+      )
+      await vi.waitFor(() =>
+        expect(localStorage.getItem(PENDING_ASK_AGAIN_KEY)).toBeNull()
+      )
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('remembers an ask-again choice in this browser until the server confirms it', async () => {
     const slowSave = deferredResponse()
     vi.mocked(api.storeSetting).mockReturnValueOnce(slowSave.promise)
