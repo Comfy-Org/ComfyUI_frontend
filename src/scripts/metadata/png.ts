@@ -34,7 +34,12 @@ export async function getFromPngBuffer(
       break
     }
 
-    if (type === 'tEXt' || type === 'comf' || type === 'iTXt') {
+    if (
+      type === 'tEXt' ||
+      type === 'comf' ||
+      type === 'zTXt' ||
+      type === 'iTXt'
+    ) {
       const keywordLength = pngData.subarray(offset + 8, chunkEnd).indexOf(0)
       if (keywordLength === -1) {
         console.error(`PNG chunk "${type}" has an unterminated keyword`)
@@ -50,7 +55,10 @@ export async function getFromPngBuffer(
       let isCompressed = false
       let compressionMethod = 0
 
-      if (type === 'iTXt') {
+      if (type === 'zTXt') {
+        isCompressed = true
+        compressionMethod = pngData[textStart++]
+      } else if (type === 'iTXt') {
         isCompressed = pngData[textStart] === 1
         compressionMethod = pngData[textStart + 1]
         textStart += 2
@@ -73,13 +81,13 @@ export async function getFromPngBuffer(
           try {
             contentArraySegment = await decompressZlib(contentArraySegment)
           } catch (e) {
-            console.error(`Failed to decompress iTXt chunk "${keyword}":`, e)
+            console.error(`Failed to decompress ${type} chunk "${keyword}":`, e)
             offset += 12 + length
             continue
           }
         } else {
           console.warn(
-            `Unsupported compression method ${compressionMethod} for iTXt chunk "${keyword}"`
+            `Unsupported compression method ${compressionMethod} for ${type} chunk "${keyword}"`
           )
           offset += 12 + length
           continue

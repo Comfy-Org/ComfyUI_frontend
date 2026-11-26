@@ -25,6 +25,8 @@ import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQuery
 import { useLocalHandoffUrlLoader } from '@/platform/openOnCloud/composables/useLocalHandoffUrlLoader'
 import { LOCAL_HANDOFF_PARAM } from '@/platform/openOnCloud/localHandoffProtocol'
 import { useSettingsUrlLoader } from '@/platform/settings/composables/useSettingsUrlLoader'
+import { useAssetWorkflowUrlLoader } from '@/platform/workflow/management/composables/useAssetWorkflowUrlLoader'
+import { useAppJobUrlLoader } from '@/platform/workflow/management/composables/useAppJobUrlLoader'
 import { useWorkflowLinkUrlLoader } from '@/platform/workflow/management/composables/useWorkflowLinkUrlLoader'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useCreateWorkspaceUrlLoader } from '@/platform/account/composables/useCreateWorkspaceUrlLoader'
@@ -359,6 +361,9 @@ export function useUrlActionLoaders() {
       )
     : []
 
+  const loadAppJob = useAppJobUrlLoader()
+  const loadAssetWorkflow = useAssetWorkflowUrlLoader()
+
   async function runUrlActionLoaders() {
     const reloading = await runUrlActionSteps(steps)
     // A switch reload is already in flight: activeWorkspaceId and its auth
@@ -366,6 +371,8 @@ export function useUrlActionLoaders() {
     // poll the old workspace's pending checkout. The next boot, once the
     // reload lands, gets a clean pass at it.
     if (reloading) return
+    await loadAppJob()
+    await loadAssetWorkflow()
     schedulePendingCheckoutRecovery(subscriptionDialog)
   }
 

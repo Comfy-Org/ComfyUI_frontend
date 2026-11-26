@@ -85,6 +85,7 @@ const actions = vi.mockObject<
     | 'graphToPrompt'
     | 'handleFile'
     | 'hasPendingCamera'
+    | 'loadApiJson'
     | 'loadGraphData'
     | 'openClipspace'
     | 'queuePrompt'
@@ -99,6 +100,9 @@ const actions = vi.mockObject<
 >(
   {
     async setup() {},
+    async loadApiJson() {
+      return false
+    },
     async loadGraphData() {
       return false
     },

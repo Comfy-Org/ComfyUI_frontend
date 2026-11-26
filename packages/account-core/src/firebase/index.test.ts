@@ -226,6 +226,25 @@ describe('createFirebaseIdentity over package-initialized Firebase', () => {
     expect(sdk.getAuth).not.toHaveBeenCalled()
   })
 
+  it('initializes a top-level provider host without the Firebase popup resolver', async () => {
+    const existingApp = { name: '[DEFAULT]', options: { apiKey: 'test' } }
+    app.existing.push(existingApp)
+    const { createFirebaseIdentity } = await import('./index')
+    const identity = createFirebaseIdentity({
+      options: existingApp.options,
+      appName: existingApp.name,
+      persistence: [localStore, indexedDbStore],
+      disablePopupResolver: true
+    })
+
+    identity.initialize()
+
+    expect(sdk.initializeAuth).toHaveBeenCalledWith(existingApp, {
+      persistence: [localStore, indexedDbStore]
+    })
+    expect(sdk.getAuth).not.toHaveBeenCalled()
+  })
+
   it('runs the host config thunk before reusing an existing app, so a resolve before remote config loads still fails closed', async () => {
     app.existing.push({ name: '[DEFAULT]', options: { apiKey: 'test' } })
     const options = vi.fn(() => {

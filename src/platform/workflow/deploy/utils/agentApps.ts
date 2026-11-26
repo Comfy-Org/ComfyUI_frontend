@@ -28,5 +28,10 @@ function hiddenLauncherFrame(): HTMLIFrameElement {
 
 /** Starts a new session in the desktop app with the prompt in its composer, unsent. */
 export function openAgentApp(app: AgentApp, prompt: string): void {
-  hiddenLauncherFrame().src = agentAppUrl(app, prompt)
+  const url = agentAppUrl(app, prompt)
+  if (import.meta.env.VITE_WORKSPACE_PROVIDER_NAVIGATION === 'top-level') {
+    window.location.assign(url)
+    return
+  }
+  hiddenLauncherFrame().src = url
 }

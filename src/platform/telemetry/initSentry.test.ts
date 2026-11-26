@@ -83,6 +83,16 @@ it('keeps Sentry default integrations enabled on cloud', () => {
   expect(initOptions(true).defaultIntegrations).not.toBe(false)
 })
 
+it('supplies fetch explicitly so the top-level Cloud build skips the iframe probe', () => {
+  vi.stubEnv('VITE_WORKSPACE_PROVIDER_NAVIGATION', 'top-level')
+  const transport = initOptions(true).transport
+  assert(transport)
+  const options = fromPartial<Parameters<typeof transport>[0]>({})
+  transport(options)
+  expect(makeFetchTransport).toHaveBeenCalledWith(options, expect.any(Function))
+  expect(initOptions(false).transport).toBeUndefined()
+})
+
 it('disables default integrations on non-cloud builds', () => {
   expect(initOptions(false).defaultIntegrations).toBe(false)
 })

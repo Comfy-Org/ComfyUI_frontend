@@ -1,0 +1,74 @@
+diff --git a/esm/tools/utils/urlPolyfill.js b/esm/tools/utils/urlPolyfill.js
+--- a/esm/tools/utils/urlPolyfill.js
++++ b/esm/tools/utils/urlPolyfill.js
+@@ -23,31 +23,7 @@
+         throw new Error(`Failed to construct URL: ${String(error)}`);
+     }
+ }
+-/**
+- * Get native URL constructor from a clean iframe
+- * This avoids polyfill issues by getting the native implementation from a fresh iframe context
+- * Falls back to the original URL constructor if iframe approach fails
+- */
+-let getPristineGlobalObjectCache;
+ export function getPristineWindow() {
+-    var _a;
+-    if (!getPristineGlobalObjectCache) {
+-        let iframe;
+-        let pristineWindow;
+-        try {
+-            iframe = document.createElement('iframe');
+-            iframe.style.display = 'none';
+-            document.body.appendChild(iframe);
+-            pristineWindow = ((_a = iframe.contentWindow) !== null && _a !== void 0 ? _a : globalObject);
+-        }
+-        catch (_b) {
+-            pristineWindow = globalObject;
+-        }
+-        getPristineGlobalObjectCache = {
+-            URL: pristineWindow.URL,
+-        };
+-        iframe === null || iframe === void 0 ? void 0 : iframe.remove();
+-    }
+-    return getPristineGlobalObjectCache;
++    return { URL: globalObject.URL };
+ }
+ //# sourceMappingURL=urlPolyfill.js.map
+\ No newline at end of file
+diff --git a/cjs/tools/utils/urlPolyfill.js b/cjs/tools/utils/urlPolyfill.js
+--- a/cjs/tools/utils/urlPolyfill.js
++++ b/cjs/tools/utils/urlPolyfill.js
+@@ -30,31 +30,7 @@
+         throw new Error(`Failed to construct URL: ${String(error)}`);
+     }
+ }
+-/**
+- * Get native URL constructor from a clean iframe
+- * This avoids polyfill issues by getting the native implementation from a fresh iframe context
+- * Falls back to the original URL constructor if iframe approach fails
+- */
+-let getPristineGlobalObjectCache;
+ function getPristineWindow() {
+-    var _a;
+-    if (!getPristineGlobalObjectCache) {
+-        let iframe;
+-        let pristineWindow;
+-        try {
+-            iframe = document.createElement('iframe');
+-            iframe.style.display = 'none';
+-            document.body.appendChild(iframe);
+-            pristineWindow = ((_a = iframe.contentWindow) !== null && _a !== void 0 ? _a : globalObject_1.globalObject);
+-        }
+-        catch (_b) {
+-            pristineWindow = globalObject_1.globalObject;
+-        }
+-        getPristineGlobalObjectCache = {
+-            URL: pristineWindow.URL,
+-        };
+-        iframe === null || iframe === void 0 ? void 0 : iframe.remove();
+-    }
+-    return getPristineGlobalObjectCache;
++    return { URL: globalObject_1.globalObject.URL };
+ }
+ //# sourceMappingURL=urlPolyfill.js.map
+\ No newline at end of file

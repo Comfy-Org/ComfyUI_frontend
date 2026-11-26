@@ -13,8 +13,18 @@
         {{ $t('manager.survey.intro') }}
       </p>
       <div class="relative">
+        <a
+          v-if="topLevel && surveyUrl"
+          :href="surveyUrl"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-flex items-center gap-1.5 text-primary underline"
+        >
+          {{ $t('manager.survey.title') }}
+          <i class="icon-[lucide--external-link]" aria-hidden="true" />
+        </a>
         <iframe
-          v-if="surveyUrl && status !== 'error'"
+          v-else-if="surveyUrl && status !== 'error'"
           :src="surveyUrl"
           :title="$t('manager.survey.title')"
           :style="{ height: `${iframeHeight}px` }"
@@ -55,6 +65,8 @@ import AppDialogPanel from '@/components/dialog/AppDialogPanel.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 
+const topLevel =
+  import.meta.env.VITE_WORKSPACE_PROVIDER_NAVIGATION === 'top-level'
 const DEFAULT_IFRAME_HEIGHT = 460
 const MAX_IFRAME_HEIGHT = 10000
 const SURVEY_LOAD_TIMEOUT_MS = 8000
@@ -71,6 +83,7 @@ const surveyUrl = computed(() => {
   if (!base) return undefined
   try {
     const url = new URL(base)
+    if (topLevel && url.protocol !== 'https:') return undefined
     // Link responses to the logged-in user; omit for anonymous responses.
     const distinctId = resolvedUserInfo.value?.id
     if (distinctId) url.searchParams.set('distinct_id', distinctId)
@@ -110,6 +123,10 @@ watch(
     if (!url) {
       stopLoadTimeout()
       status.value = 'error'
+      return
+    }
+    if (topLevel) {
+      status.value = 'ready'
       return
     }
     status.value = 'loading'

@@ -100,6 +100,22 @@ describe('ImpactTelemetryProvider', () => {
     })
   })
 
+  it('keeps checkout attribution without starting the frame-creating tracker', async () => {
+    vi.stubEnv('VITE_WORKSPACE_PROVIDER_NAVIGATION', 'top-level')
+    const provider = new ImpactTelemetryProvider()
+    provider.trackPageView('pricing', { path: '/pricing?im_ref=impact-123' })
+
+    await flushAsyncWork()
+    expect(mockCaptureCheckoutAttributionFromSearch).toHaveBeenCalledWith(
+      '?im_ref=impact-123'
+    )
+    expect(window.ire_o).toBeUndefined()
+    expect(window.ire?.a).toBeUndefined()
+    expect(document.querySelector).not.toHaveBeenCalledWith(
+      `script[src="${IMPACT_SCRIPT_URL}"]`
+    )
+  })
+
   it('falls back to current URL search and empty identify values when Pinia is unavailable', async () => {
     window.history.pushState({}, '', '/?im_ref=fallback-123')
 

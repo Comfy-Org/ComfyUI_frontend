@@ -54,6 +54,68 @@ const readUint32 = (data: Uint8Array, pos: number): number => {
   )
 }
 
+/** Reads top-level box headers so a large media payload can be skipped. End offsets are exclusive. */
+export async function getMovieMetadataFromRanges(
+  size: number,
+  read: (start: number, end: number) => Promise<ArrayBuffer | undefined>
+): Promise<ComfyMetadata | undefined> {
+  if (!Number.isSafeInteger(size) || size < 8) return {}
+  let offset = 0
+  let windowAt = 0
+  let window = new Uint8Array()
+  let bytesRead = 0
+  while (offset + 8 <= size && bytesRead < MAX_READ_BYTES) {
+    if (
+      offset < windowAt ||
+      offset + Math.min(16, size - offset) > windowAt + window.byteLength
+    ) {
+      windowAt = offset
+      const buffer = await read(offset, Math.min(size, offset + 64 * 1024))
+      if (!buffer) return
+      window = new Uint8Array(buffer)
+      bytesRead += window.byteLength
+    }
+    const at = offset - windowAt
+    if (at + 8 > window.byteLength) return {}
+    const view = new DataView(window.buffer, window.byteOffset + at)
+    const length32 = view.getUint32(0)
+    const header = length32 === 1 ? 16 : 8
+    if (view.byteLength < header) return {}
+    const length =
+      length32 === 1 ? Number(view.getBigUint64(8)) : length32 || size - offset
+    if (
+      !Number.isSafeInteger(length) ||
+      length < header ||
+      length > size - offset
+    )
+      return {}
+    const metadataBox =
+      bufferMatchesBoxType(window, at + 4, BOX_TYPES.MOVIE) ||
+      bufferMatchesBoxType(window, at + 4, BOX_TYPES.USER_DATA)
+    if (
+      metadataBox &&
+      (at + length <= window.byteLength || length <= MAX_READ_BYTES - bytesRead)
+    ) {
+      let payload = window.subarray(at + header, at + length)
+      if (at + length > window.byteLength) {
+        const buffer = await read(offset + header, offset + length)
+        if (!buffer) return
+        payload = new Uint8Array(buffer)
+        bytesRead += payload.byteLength
+      }
+      if (payload.length !== length - header) return {}
+      const box = new Uint8Array(8 + payload.length)
+      new DataView(box.buffer).setUint32(0, box.length)
+      box.set(window.subarray(at + 4, at + 8), 4)
+      box.set(payload, 8)
+      const metadata = parseIsobmffMetadata(box)
+      if (metadata.prompt || metadata.workflow) return metadata
+    }
+    offset += length
+  }
+  return {}
+}
+
 const findIsobmffBoxByType = (
   data: Uint8Array,
   startPos: number,

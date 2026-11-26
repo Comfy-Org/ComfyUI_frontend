@@ -15,6 +15,23 @@ function recordFrameNavigations() {
 }
 
 describe('openAgentApp', () => {
+  it('opens each native app from the top-level workspace without attaching a child frame', () => {
+    vi.stubEnv('VITE_WORKSPACE_PROVIDER_NAVIGATION', 'top-level')
+    const assign = vi
+      .spyOn(window.location, 'assign')
+      .mockImplementation(() => {})
+    try {
+      openAgentApp('codex', 'a b')
+      openAgentApp('claude', 'one & two')
+      expect(assign.mock.calls).toEqual([
+        ['codex://new?prompt=a%20b'],
+        ['claude://code/new?q=one%20%26%20two']
+      ])
+      expect(document.querySelector('iframe')).toBeNull()
+    } finally {
+      vi.unstubAllEnvs()
+    }
+  })
   it.for([
     { app: 'claude', url: 'claude://code/new?q=a%20b%0Ac%26d%3D1%23e' },
     { app: 'codex', url: 'codex://new?prompt=a%20b%0Ac%26d%3D1%23e' }

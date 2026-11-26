@@ -254,7 +254,7 @@ describe('useUrlActionLoaders', () => {
     expect(router.currentRoute.value.query).toEqual({ workflow: 'keep-me' })
   })
 
-  it('does not instantiate or run any loader off cloud', async () => {
+  it('does not instantiate or run Cloud loaders on a local build', async () => {
     mockIsCloud.value = false
 
     const { runUrlActionLoaders } = useUrlActionLoaders()

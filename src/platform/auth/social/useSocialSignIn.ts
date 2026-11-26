@@ -1,8 +1,16 @@
 import type { UserCredential } from 'firebase/auth'
-import { onScopeDispose } from 'vue'
+import { onMounted, onScopeDispose } from 'vue'
 
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { reportError } from '@comfyorg/telemetry/reportError'
+import { isCloud } from '@/platform/distribution/types'
+import {
+  beginProviderNavigation,
+  exchangeProviderReturn,
+  takeProviderReturn,
+  topLevelProviders
+} from './editorProviderNavigation'
+import type { EditorProvider } from './editorProviderNavigation'
 import type { SocialSignInOptions } from '@/stores/authStore'
 
 type SocialSignIn = (
@@ -29,13 +37,15 @@ export function useSocialSignIn(options: {
   /** `undefined` from the provider means useAuthActions already toasted the failure. */
   async function signInWith(
     provider: SocialSignIn,
-    resumed?: Promise<UserCredential>
+    resumed?:
+      | Promise<UserCredential>
+      | ((wanted: () => boolean) => Promise<UserCredential>)
   ): Promise<void> {
     const attempt = ++latest
     const wanted = () => alive && attempt === latest
     const signedIn = await provider({
       isNewUser: options.isNewUser(),
-      resumed,
+      resumed: typeof resumed === 'function' ? resumed(wanted) : resumed,
       popup: {
         onResumed: (credential) => {
           signInWith(provider, credential).catch((error: unknown) =>
@@ -51,8 +61,46 @@ export function useSocialSignIn(options: {
     if (signedIn && wanted()) await options.onSignedIn()
   }
 
+  const topLevel = isCloud && topLevelProviders
+  const action = (provider: EditorProvider) =>
+    provider === 'google'
+      ? authActions.signInWithGoogle
+      : authActions.signInWithGithub
+  async function start(provider: EditorProvider) {
+    if (!topLevel) return signInWith(action(provider))
+    const attempt = ++latest
+    try {
+      const error = await beginProviderNavigation(
+        provider,
+        () => alive && attempt === latest
+      )
+      if (error && alive && attempt === latest) authActions.reportError(error)
+    } catch (error) {
+      if (alive && attempt === latest) authActions.reportError(error)
+    }
+  }
+
+  if (topLevel)
+    onMounted(async () => {
+      try {
+        const result = takeProviderReturn()
+        if (result instanceof Error) {
+          if (alive) authActions.reportError(result)
+        } else if (result) {
+          await signInWith(action(result.attempt.provider), async (wanted) => {
+            const credential = await exchangeProviderReturn(result, wanted)
+            return credential instanceof Error
+              ? Promise.reject(credential)
+              : credential
+          })
+        }
+      } catch (error) {
+        if (alive) authActions.reportError(error)
+      }
+    })
+
   return {
-    signInWithGoogle: () => signInWith(authActions.signInWithGoogle),
-    signInWithGithub: () => signInWith(authActions.signInWithGithub)
+    signInWithGoogle: () => start('google'),
+    signInWithGithub: () => start('github')
   }
 }

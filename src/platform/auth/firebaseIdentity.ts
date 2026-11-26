@@ -4,6 +4,8 @@ import {
   indexedDBLocalPersistence
 } from 'firebase/auth'
 
+import { isCloud } from '@/platform/distribution/types'
+
 import { createFirebaseIdentity } from '@comfyorg/account-core/firebase'
 
 import { getFirebaseConfig } from '@/config/firebase'
@@ -25,6 +27,9 @@ function loadedFirebaseConfig() {
   return getFirebaseConfig()
 }
 
+const topLevelProviders =
+  isCloud && import.meta.env.VITE_WORKSPACE_PROVIDER_NAVIGATION === 'top-level'
+
 /**
  * `[DEFAULT]` keeps the session key persisted sign-ins and the e2e seed are
  * stored under. Firebase reads an existing user from every listed persistence
@@ -41,5 +46,6 @@ export const firebaseIdentity = createFirebaseIdentity({
     indexedDBLocalPersistence,
     browserSessionPersistence
   ],
-  watchPopupSignIn: true
+  watchPopupSignIn: !topLevelProviders,
+  disablePopupResolver: topLevelProviders
 })

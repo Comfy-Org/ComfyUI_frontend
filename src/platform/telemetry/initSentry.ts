@@ -2,7 +2,8 @@ import type { App } from 'vue'
 import {
   browserApiErrorsIntegration,
   eventFiltersIntegration,
-  init as sentryInit
+  init as sentryInit,
+  makeFetchTransport
 } from '@sentry/vue'
 import type {
   Breadcrumb,
@@ -196,6 +197,9 @@ export function initSentry({
   isCloud: boolean
 }) {
   expandResourceTimingBuffer()
+  const frameFree =
+    isCloud &&
+    import.meta.env.VITE_WORKSPACE_PROVIDER_NAVIGATION === 'top-level'
   sentryInit({
     app,
     dsn,
@@ -212,6 +216,11 @@ export function initSentry({
     beforeSendTransaction: redactSentryTransaction,
     beforeBreadcrumb: redactSentryBreadcrumb,
     beforeSendSpan: redactSentrySpan,
+    // Sentry's default transport probes a hidden iframe for an untouched fetch.
+    ...(frameFree && {
+      transport: (options) =>
+        makeFetchTransport(options, globalThis.fetch.bind(globalThis))
+    }),
     denyUrls: [/^(?:chrome|moz|safari(?:-web)?|ms-browser)-extension:\/\//],
     ...(isCloud
       ? {
