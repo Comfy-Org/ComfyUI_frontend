@@ -16,10 +16,16 @@ const SCRIPT = join(import.meta.dirname, 'select-pr-playwright-specs.sh')
 const git = (cwd: string, ...args: string[]) =>
   execFileSync('git', args, { cwd, encoding: 'utf8' }).trim()
 
-const select = (cwd: string, baseSha: string, headSha: string) =>
+const select = (
+  cwd: string,
+  baseSha: string,
+  headSha: string,
+  defaultBranchRef?: string
+) =>
   execFileSync('bash', [SCRIPT, baseSha, headSha], {
     cwd,
-    encoding: 'utf8'
+    encoding: 'utf8',
+    env: { ...process.env, DEFAULT_BRANCH_REF: defaultBranchRef ?? '' }
   }).trim()
 
 const writeSpec = (root: string, path: string, title: string) => {
@@ -131,6 +137,99 @@ describe('select-pr-playwright-specs.sh', () => {
       )
       expect(select(root, base, head)).toBe('')
     })
+  })
+
+  it('skips a spec the stale base is merely missing from the default branch', () => {
+    withRepo((root, firstMain) => {
+      // A pull request that targets a teammate's branch rather than the default
+      // branch, and resolves it by merging the default branch in.
+      git(root, 'checkout', '-q', '-b', 'teammate', firstMain)
+      writeSpec(root, 'browser_tests/tests/pr/carried.spec.ts', 'carried')
+      const base = commitAll(root, 'teammate spec')
+
+      git(root, 'checkout', '-q', 'main')
+      writeSpec(root, 'browser_tests/tests/main/elsewhere.spec.ts', 'elsewhere')
+      commitAll(root, 'unrelated main spec')
+
+      git(root, 'checkout', '-q', '-b', 'reconcile', base)
+      git(root, 'merge', '--no-ff', '-qm', 'merge main', 'main')
+      writeSpec(root, 'browser_tests/tests/pr/mine.spec.ts', 'mine')
+      const head = commitAll(root, 'spec this PR authored')
+
+      // Without the default-branch filter the stale base selects main's spec too.
+      const unfiltered = select(root, base, head).split('\n')
+      expect(unfiltered).toEqual(
+        expect.arrayContaining([
+          'browser_tests/tests/main/elsewhere.spec.ts',
+          'browser_tests/tests/pr/mine.spec.ts'
+        ])
+      )
+      expect(unfiltered).toHaveLength(2)
+      expect(select(root, base, head, 'main')).toBe(
+        'browser_tests/tests/pr/mine.spec.ts'
+      )
+    })
+  })
+
+  it('keeps a spec the pull request changed away from the default branch', () => {
+    withRepo((root) => {
+      writeSpec(root, 'browser_tests/tests/pr/existing.spec.ts', 'before')
+      const base = commitAll(root, 'existing spec')
+
+      git(root, 'checkout', '-q', '-b', 'pr')
+      writeSpec(root, 'browser_tests/tests/pr/existing.spec.ts', 'after')
+      const head = commitAll(root, 'strengthen the assertion')
+
+      expect(select(root, base, head, 'main')).toBe(
+        'browser_tests/tests/pr/existing.spec.ts'
+      )
+    })
+  })
+
+  it('still skips a carried spec the default branch changed after the merge', () => {
+    withRepo((root, firstMain) => {
+      git(root, 'checkout', '-q', '-b', 'teammate', firstMain)
+      writeFileSync(join(root, 'teammate.txt'), 'work\n')
+      const base = commitAll(root, 'teammate commit')
+
+      git(root, 'checkout', '-q', 'main')
+      writeSpec(root, 'browser_tests/tests/main/elsewhere.spec.ts', 'elsewhere')
+      commitAll(root, 'unrelated main spec')
+
+      git(root, 'checkout', '-q', '-b', 'reconcile', base)
+      git(root, 'merge', '--no-ff', '-qm', 'merge main', 'main')
+      const head = git(root, 'rev-parse', 'HEAD')
+
+      git(root, 'checkout', '-q', 'main')
+      writeSpec(root, 'browser_tests/tests/main/elsewhere.spec.ts', 'revised')
+      commitAll(root, 'main revises its own spec after the merge')
+
+      // Comparing against the branch tip would resurrect it; comparing against
+      // the default-branch commit this head contains does not.
+      expect(select(root, base, head, 'main')).toBe('')
+    })
+  })
+
+  it('ignores a default branch ref that does not resolve', () => {
+    withRepo((root, base) => {
+      writeSpec(root, 'browser_tests/tests/pr/actual.spec.ts', 'actual')
+      const head = commitAll(root, 'PR spec')
+
+      expect(select(root, base, head, 'origin/nonexistent')).toBe(
+        'browser_tests/tests/pr/actual.spec.ts'
+      )
+    })
+  })
+
+  it('passes the default branch ref from the video workflow', () => {
+    const workflow = readFileSync(
+      '.github/workflows/ci-playwright-videos.yaml',
+      'utf8'
+    )
+
+    expect(workflow).toContain(
+      'DEFAULT_BRANCH_REF: origin/${{ github.event.pull_request.base.repo.default_branch }}'
+    )
   })
 
   it('fails loudly when a required commit is missing from the checkout', () => {
