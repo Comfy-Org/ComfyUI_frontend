@@ -136,7 +136,7 @@
           />
           <div
             v-if="store.view === 'models'"
-            class="mt-2 flex min-h-7 items-center gap-2.5 text-[13px] text-foreground/80"
+            class="mt-3 flex min-h-7 items-center gap-2.5 text-[13px] text-foreground/80"
           >
             <Transition
               mode="out-in"
@@ -164,72 +164,89 @@
             </Button>
           </div>
           <div
-            :class="
-              cn(
-                'relative min-h-0 flex-1 scrollbar-thin overflow-y-auto rounded-[10px] bg-charcoal-700 pt-1',
-                store.view === 'models' ? 'mt-3' : 'mt-5'
-              )
-            "
+            class="relative mt-5 flex min-h-0 flex-1 flex-col overflow-hidden rounded-[10px] bg-charcoal-700"
           >
             <div
-              v-for="item in listItems"
-              :key="item.name"
-              class="flex h-10 items-center gap-2.5 pr-2 pl-3.5"
+              ref="list"
+              class="min-h-0 flex-1 scrollbar-thin overflow-y-auto pt-1"
+              data-testid="local-build-list"
             >
-              <span
-                :class="
-                  cn(
-                    'min-w-0 truncate transition-colors duration-200',
-                    store.isRemoved(item) && 'text-charcoal-100 line-through'
-                  )
-                "
-              >
-                {{ item.name }}
-              </span>
-              <Transition
-                enter-from-class="scale-90 opacity-0"
-                leave-to-class="scale-90 opacity-0"
-                enter-active-class="transition duration-150 ease-out"
-                leave-active-class="transition duration-100 ease-in"
+              <div
+                v-for="item in listItems"
+                :key="item.name"
+                class="flex h-11 items-center gap-2.5 pr-2 pl-3.5"
               >
                 <span
-                  v-if="item.unused && !store.isRemoved(item)"
-                  class="shrink-0 rounded-md bg-charcoal-500 px-2 text-xs/5 text-foreground/80"
+                  :class="
+                    cn(
+                      'min-w-0 truncate transition-colors duration-200',
+                      store.isRemoved(item) && 'text-charcoal-100 line-through'
+                    )
+                  "
                 >
-                  {{ $t('localBuildPrototype.list.unused') }}
+                  {{ item.name }}
                 </span>
-              </Transition>
-              <span
-                :class="
-                  cn(
-                    'ml-auto whitespace-nowrap text-muted-foreground tabular-nums transition-colors duration-200',
-                    store.isRemoved(item) && 'text-charcoal-100 line-through'
-                  )
-                "
-              >
-                {{ formatSize(item.gb) }}
-              </span>
-              <Button
-                variant="muted-textonly"
-                :size="store.isRemoved(item) ? 'sm' : 'icon-sm'"
-                class="h-7 min-w-7 shrink-0 rounded-md px-1"
-                :aria-label="
-                  store.isRemoved(item)
-                    ? $t('localBuildPrototype.list.undoRemove', {
-                        name: item.name
-                      })
-                    : $t('localBuildPrototype.list.remove', { name: item.name })
-                "
-                @click="store.toggleItem(item)"
-              >
-                <template v-if="store.isRemoved(item)">
-                  {{ $t('localBuildPrototype.list.undo') }}
-                </template>
-                <i v-else class="icon-[lucide--x]" aria-hidden="true" />
-              </Button>
+                <Transition
+                  enter-from-class="scale-90 opacity-0"
+                  leave-to-class="scale-90 opacity-0"
+                  enter-active-class="transition duration-150 ease-out"
+                  leave-active-class="transition duration-100 ease-in"
+                >
+                  <span
+                    v-if="item.unused && !store.isRemoved(item)"
+                    class="shrink-0 rounded-md bg-charcoal-500 px-2 text-xs/5 text-foreground/80"
+                  >
+                    {{ $t('localBuildPrototype.list.unused') }}
+                  </span>
+                </Transition>
+                <span
+                  :class="
+                    cn(
+                      'ml-auto whitespace-nowrap text-muted-foreground tabular-nums transition-colors duration-200',
+                      store.isRemoved(item) && 'text-charcoal-100 line-through'
+                    )
+                  "
+                >
+                  {{ formatSize(item.gb) }}
+                </span>
+                <Button
+                  variant="muted-textonly"
+                  :size="store.isRemoved(item) ? 'sm' : 'icon-sm'"
+                  class="h-7 min-w-7 shrink-0 rounded-md px-1"
+                  :aria-label="
+                    store.isRemoved(item)
+                      ? $t('localBuildPrototype.list.undoRemove', {
+                          name: item.name
+                        })
+                      : $t('localBuildPrototype.list.remove', {
+                          name: item.name
+                        })
+                  "
+                  @click="store.toggleItem(item)"
+                >
+                  <template v-if="store.isRemoved(item)">
+                    {{ $t('localBuildPrototype.list.undo') }}
+                  </template>
+                  <i v-else class="icon-[lucide--x]" aria-hidden="true" />
+                </Button>
+              </div>
             </div>
             <div
-              class="pointer-events-none sticky bottom-0 h-3.5 bg-linear-to-b from-transparent to-charcoal-700/85"
+              :class="
+                cn(
+                  'pointer-events-none absolute inset-x-0 top-0 h-8 bg-linear-to-t from-transparent to-charcoal-700 transition-opacity duration-200',
+                  listArrived.top && 'opacity-0'
+                )
+              "
+              aria-hidden="true"
+            />
+            <div
+              :class="
+                cn(
+                  'pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-linear-to-b from-transparent via-charcoal-700/70 to-charcoal-700 transition-opacity duration-200',
+                  listArrived.bottom && 'opacity-0'
+                )
+              "
               aria-hidden="true"
             />
           </div>
@@ -524,9 +541,9 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { TransitionPresets, useTransition } from '@vueuse/core'
+import { TransitionPresets, useScroll, useTransition } from '@vueuse/core'
 import { RadioGroupRoot } from 'reka-ui'
-import { computed, ref, watch } from 'vue'
+import { computed, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
@@ -584,6 +601,11 @@ const numberMotion = {
 }
 const shownBuildGb = useTransition(() => store.buildGb, numberMotion)
 const shownPrice = useTransition(() => store.gpu.pricePerHour, numberMotion)
+
+const { arrivedState: listArrived } = useScroll(
+  useTemplateRef<HTMLElement>('list'),
+  { offset: { top: 2, bottom: 2 } }
+)
 
 const sortedNodes = sortForReview(CUSTOM_NODES)
 const sortedModels = sortForReview(MODELS)
