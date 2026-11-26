@@ -84,6 +84,8 @@ import type {
   TemplateLibraryMetadata,
   TemplateMetadata,
   UiButtonClickMetadata,
+  VersionUpdateSurfaceResolvedMetadata,
+  VersionUpdateSurfaceShownMetadata,
   WorkflowCreatedMetadata,
   WorkflowImportMetadata,
   WorkflowSavedMetadata
@@ -528,6 +530,18 @@ export class HostTelemetrySink implements TelemetryProvider {
 
   trackLinkDedupDrop(metadata: LinkDedupDropMetadata): void {
     this.capture(TelemetryEvents.LINK_DEDUP_DROP, metadata)
+  }
+
+  trackVersionUpdateSurfaceShown(
+    metadata: VersionUpdateSurfaceShownMetadata
+  ): void {
+    this.capture(TelemetryEvents.VERSION_UPDATE_SURFACE_SHOWN, metadata)
+  }
+
+  trackVersionUpdateSurfaceResolved(
+    metadata: VersionUpdateSurfaceResolvedMetadata
+  ): void {
+    this.capture(TelemetryEvents.VERSION_UPDATE_SURFACE_RESOLVED, metadata)
   }
 
   trackNamedValuesShadowDiffMismatch(

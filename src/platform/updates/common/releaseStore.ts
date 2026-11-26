@@ -257,6 +257,7 @@ export const useReleaseStore = defineStore('release', () => {
   watchSurface(shouldShowToast, 'release_toast')
 
   function handleUpdateClicked(version: string): void {
+    if (version !== recentRelease.value?.version) return
     reportResolved(version, 'update_clicked')
   }
 
@@ -340,7 +341,10 @@ export const useReleaseStore = defineStore('release', () => {
         }
       )
 
-      if (fetchedReleases !== null) {
+      // Truthiness, not `!== null`: an absent payload must never be written
+      // into `releases`, because the surface watchers re-read `recentRelease`
+      // on every dependency change and would throw on a nullish array.
+      if (fetchedReleases) {
         releases.value = fetchedReleases
       } else if (releaseService.error.value) {
         error.value = releaseService.error.value

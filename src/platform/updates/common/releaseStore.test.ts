@@ -58,6 +58,11 @@ beforeEach(() => {
   vi.mocked(useSettingStore().get).mockImplementation(get)
   vi.mocked(useSettingStore().set).mockResolvedValue(undefined)
   vi.mocked(useSettingStore().setMany).mockResolvedValue(undefined)
+  // `mockReset: true` clears the service mock's implementation before every
+  // test, and a bare `vi.fn()` resolves `undefined` — a value `getReleases`
+  // never returns. Default it to the real "no data" result so a test that
+  // reaches the fetch does not write a nullish array into `releases`.
+  vi.mocked(useReleaseService().getReleases).mockResolvedValue(null)
   const getFormFactor = vi.fn(() => 'git-windows')
   useSystemStatsStore().systemStats = fromPartial({
     system: { comfyui_version: '1.0.0', argv: [] }
@@ -398,6 +403,20 @@ describe('useReleaseStore', () => {
       expect(store.error).toBe('API Error')
     })
 
+    it('keeps releases an array when the response carries no payload', async () => {
+      const store = useReleaseStore()
+      const releaseService = useReleaseService()
+      vi.mocked(releaseService.getReleases).mockResolvedValue(
+        undefined as unknown as ReleaseNote[]
+      )
+
+      await store.initialize()
+      await nextTick()
+
+      expect(store.releases).toEqual([])
+      expect(store.recentRelease).toBeNull()
+    })
+
     it('should handle non-Error objects', async () => {
       const store = useReleaseStore()
       const releaseService = useReleaseService()
@@ -442,16 +461,22 @@ describe('useReleaseStore', () => {
     })
 
     it('should not set loading state when notifications disabled', async () => {
-      const store = useReleaseStore()
       const settingStore = useSettingStore()
+      // Mocked before the store exists: the surface watchers read
+      // `Comfy.Notification.ShowVersionUpdates` while the store is being set
+      // up, and a mocked getter is not reactive, so a later override would
+      // never reach the computed.
       vi.mocked(settingStore.get).mockImplementation((key: string) => {
         if (key === 'Comfy.Notification.ShowVersionUpdates') return false
         return null
       })
+      const store = useReleaseStore()
+      const releaseService = useReleaseService()
 
       await store.initialize()
 
       expect(store.isLoading).toBe(false)
+      expect(releaseService.getReleases).not.toHaveBeenCalled()
     })
   })
 
@@ -630,7 +655,6 @@ describe('useReleaseStore', () => {
 
   describe('edge cases', () => {
     it('should handle missing system stats gracefully', async () => {
-      const store = useReleaseStore()
       const systemStatsStore = useSystemStatsStore()
       const settingStore = useSettingStore()
       systemStatsStore.systemStats = null
@@ -638,6 +662,7 @@ describe('useReleaseStore', () => {
         if (key === 'Comfy.Notification.ShowVersionUpdates') return false
         return null
       })
+      const store = useReleaseStore()
 
       await store.initialize()
 
@@ -873,6 +898,45 @@ describe('useReleaseStore', () => {
       ).toHaveBeenCalledTimes(1)
     })
 
+    it("reports the What's New popup under its own surface label", async () => {
+      const store = useReleaseStore()
+      const systemStatsStore = useSystemStatsStore()
+      systemStatsStore.systemStats!.system.comfyui_version = mockRelease.version
+      vi.mocked(compare).mockReturnValue(0)
+
+      store.releases = [mockRelease]
+      await nextTick()
+
+      expect(store.shouldShowPopup).toBe(true)
+      expect(
+        telemetryOf().trackVersionUpdateSurfaceShown
+      ).toHaveBeenCalledExactlyOnceWith({
+        surface: 'whats_new_popup',
+        release_version: mockRelease.version,
+        current_version: mockRelease.version,
+        attention: 'high'
+      })
+    })
+
+    it('reports the release toast under its own surface label', async () => {
+      mockData.isDesktop = true
+      const store = useReleaseStore()
+      vi.mocked(compare).mockReturnValue(1)
+
+      store.releases = [mockRelease]
+      await nextTick()
+
+      expect(store.shouldShowToast).toBe(true)
+      expect(telemetryOf().trackVersionUpdateSurfaceShown).toHaveBeenCalledWith(
+        {
+          surface: 'release_toast',
+          release_version: mockRelease.version,
+          current_version: '1.0.0',
+          attention: 'high'
+        }
+      )
+    })
+
     it('reports a second release separately', async () => {
       const store = useReleaseStore()
       vi.mocked(compare).mockReturnValue(1)
@@ -916,6 +980,20 @@ describe('useReleaseStore', () => {
       })
     })
 
+    it("reports seeing what's new", async () => {
+      const store = useReleaseStore()
+      store.releases = [mockRelease]
+
+      await store.handleWhatsNewSeen(mockRelease.version)
+
+      expect(
+        telemetryOf().trackVersionUpdateSurfaceResolved
+      ).toHaveBeenCalledWith({
+        release_version: mockRelease.version,
+        action: 'whats_new_seen'
+      })
+    })
+
     it('reports clicking update', () => {
       const store = useReleaseStore()
       store.releases = [mockRelease]
@@ -928,6 +1006,17 @@ describe('useReleaseStore', () => {
         release_version: mockRelease.version,
         action: 'update_clicked'
       })
+    })
+
+    it('withholds an update click for a release that is not the current one', () => {
+      const store = useReleaseStore()
+      store.releases = [mockRelease]
+
+      store.handleUpdateClicked('0.0.1')
+
+      expect(
+        telemetryOf().trackVersionUpdateSurfaceResolved
+      ).not.toHaveBeenCalled()
     })
   })
 

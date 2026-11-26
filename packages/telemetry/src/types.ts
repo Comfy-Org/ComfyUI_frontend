@@ -2246,6 +2246,10 @@ export const TelemetryEvents = {
   // Link deduplication diagnostics
   LINK_DEDUP_DROP: 'app:link_dedup_drop',
 
+  // Version update surfaces (red dot, What's New popup, release toast)
+  VERSION_UPDATE_SURFACE_SHOWN: 'app:version_update_surface_shown',
+  VERSION_UPDATE_SURFACE_RESOLVED: 'app:version_update_surface_resolved',
+
   // Page View
   PAGE_VIEW: 'app:page_view',
 
