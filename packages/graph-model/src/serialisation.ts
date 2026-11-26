@@ -24,8 +24,6 @@ import type { TWidgetValue } from './widgets'
 
 export type RendererType = 'LG' | 'Vue' | 'Vue-corrected'
 
-export type { SerialisedLLinkArray }
-
 /**
  * An object that implements custom pre-serialization logic via {@link Serialisable.asSerialisable}.
  */
