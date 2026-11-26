@@ -21,7 +21,20 @@ interface LatestChoice {
 
 let pendingSave: Promise<void> = Promise.resolve()
 let unsettledLateWrites = 0
-let choiceInThisTab: LatestChoice | undefined
+const choicesInThisTab = new Map<string, LatestChoice>()
+
+function currentProfile() {
+  return api.user
+}
+
+function keyForCurrentProfile(key: string) {
+  const profile = currentProfile()
+  return profile ? `${key}.${profile}` : key
+}
+
+function choiceInThisTab() {
+  return choicesInThisTab.get(currentProfile())
+}
 
 function parseLatestChoice(raw: string | null): LatestChoice | undefined {
   if (!raw) return undefined
@@ -47,7 +60,7 @@ function parseLatestChoice(raw: string | null): LatestChoice | undefined {
 
 function readStoredLatestChoice() {
   try {
-    return localStorage.getItem(LATEST_CHOICE_KEY)
+    return localStorage.getItem(keyForCurrentProfile(LATEST_CHOICE_KEY))
   } catch {
     return null
   }
@@ -55,7 +68,10 @@ function readStoredLatestChoice() {
 
 function storeLatestChoice(choice: LatestChoice) {
   try {
-    localStorage.setItem(LATEST_CHOICE_KEY, JSON.stringify(choice))
+    localStorage.setItem(
+      keyForCurrentProfile(LATEST_CHOICE_KEY),
+      JSON.stringify(choice)
+    )
   } catch {
     return
   }
@@ -63,10 +79,10 @@ function storeLatestChoice(choice: LatestChoice) {
 
 function readLatestChoice(): LatestChoice | undefined {
   const shared = parseLatestChoice(readStoredLatestChoice())
-  if (!shared) return choiceInThisTab
-  if (!choiceInThisTab || shared.revision >= choiceInThisTab.revision)
-    return shared
-  return choiceInThisTab
+  const inThisTab = choiceInThisTab()
+  if (!shared) return inThisTab
+  if (!inThisTab || shared.revision >= inThisTab.revision) return shared
+  return inThisTab
 }
 
 function recordNewChoice(askBeforeCheck: boolean): LatestChoice {
@@ -75,14 +91,17 @@ function recordNewChoice(askBeforeCheck: boolean): LatestChoice {
     askBeforeCheck,
     revision: Math.max(Date.now(), previousRevision + 1)
   }
-  choiceInThisTab = choice
+  choicesInThisTab.set(currentProfile(), choice)
   storeLatestChoice(choice)
   return choice
 }
 
 function hasPendingAskAgain() {
   try {
-    return localStorage.getItem(PENDING_ASK_AGAIN_KEY) === 'true'
+    return (
+      localStorage.getItem(keyForCurrentProfile(PENDING_ASK_AGAIN_KEY)) ===
+      'true'
+    )
   } catch {
     return false
   }
@@ -90,8 +109,9 @@ function hasPendingAskAgain() {
 
 function setPendingAskAgain(pending: boolean) {
   try {
-    if (pending) localStorage.setItem(PENDING_ASK_AGAIN_KEY, 'true')
-    else localStorage.removeItem(PENDING_ASK_AGAIN_KEY)
+    if (pending)
+      localStorage.setItem(keyForCurrentProfile(PENDING_ASK_AGAIN_KEY), 'true')
+    else localStorage.removeItem(keyForCurrentProfile(PENDING_ASK_AGAIN_KEY))
   } catch {
     return
   }
@@ -200,7 +220,7 @@ function reportSaveFailure(cause: unknown, askBeforeCheck: boolean) {
 
 function settleSavedChoice(askBeforeCheck: boolean, revision: number) {
   if (!isLatestChoice(askBeforeCheck, revision)) {
-    if (readLatestChoice()?.revision !== choiceInThisTab?.revision)
+    if (readLatestChoice()?.revision !== choiceInThisTab()?.revision)
       resendLatestChoice()
     return
   }
