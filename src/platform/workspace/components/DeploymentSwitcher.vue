@@ -48,12 +48,12 @@
             aria-hidden="true"
           />
           <template v-if="buildStatus" #tooltip>
-            {{ buildStatus.stage }}
-            <span
+            {{ buildStatus.stage
+            }}<span
               v-if="buildStatus.step"
-              class="ml-1 opacity-50"
+              class="opacity-50"
               data-testid="deployment-switcher-build-step"
-              >{{ buildStatus.step }}</span
+              >{{ ` ${buildStatus.step}` }}</span
             >
           </template>
         </Button>
