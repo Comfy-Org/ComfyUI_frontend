@@ -783,7 +783,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   function showOrQueueAskNotice(owner: string, notice: string): void {
-    if (!stopped && owner === conversationStore.threadId) {
+    if (
+      !stopped &&
+      ownedGeneration === sessionGeneration &&
+      owner === conversationStore.threadId
+    ) {
       pushError(notice)
       return
     }
@@ -2788,15 +2792,17 @@ export function useAgentSession(deps: AgentSessionDeps) {
       })
     } catch (error) {
       if (
+        !(error instanceof AgentApiError && error.status === 409) &&
+        conversationStore.isAskRetired(askId, currentThreadId)
+      ) {
+        conversationStore.completeAskResolutionReport(askId)
+        return false
+      }
+      if (
         answeringAskIds.value.has(askId) &&
         !(error instanceof AgentApiError && error.status === 409)
       )
         onRequestFailed?.()
-      if (
-        !(error instanceof AgentApiError && error.status === 409) &&
-        conversationStore.isAskRetired(askId, currentThreadId)
-      )
-        return false
       if (answeringAskIds.value.has(askId))
         return handleAnswerFailure(
           error,
@@ -3620,19 +3626,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
   }
 
-  function handleSocketOffline(): void {
-    if (connection === 'initial' && !receivedStatusSnapshot) {
-      receivedStatusSnapshot = true
-      initialStatusWasOffline = true
-      return
-    }
-    receivedStatusSnapshot = true
-    if (connection === 'dropped') return
-    connection = 'dropped'
-    for (const state of inFlightSends.values()) state.missedCause = 'reconnect'
-    resolutionChannelEpoch += 1
+  function settleAnswersAfterChannelLoss(onlyDeferred = false): void {
     for (const awaiting of conversationStore.asksAwaitingResolution()) {
       if (awaiting.cleanupDeferred === 'unconfirmed') continue
+      if (onlyDeferred && awaiting.cleanupDeferred === undefined) continue
       if (awaiting.kind === 'accepted') {
         reportAcceptedRecoveredAnswer(awaiting.askId, true, false)
         showOrQueueAskNotice(
@@ -3653,6 +3650,21 @@ export function useAgentSession(deps: AgentSessionDeps) {
       )
       conversationStore.completeAskResolutionReport(awaiting.askId)
     }
+  }
+
+  function handleSocketOffline(): void {
+    if (connection === 'initial' && !receivedStatusSnapshot) {
+      receivedStatusSnapshot = true
+      initialStatusWasOffline = true
+      settleAnswersAfterChannelLoss(true)
+      return
+    }
+    receivedStatusSnapshot = true
+    if (connection === 'dropped') return
+    connection = 'dropped'
+    for (const state of inFlightSends.values()) state.missedCause = 'reconnect'
+    resolutionChannelEpoch += 1
+    settleAnswersAfterChannelLoss()
   }
 
   function reconcileLiveTurns(
@@ -3769,7 +3781,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
           consecutiveThreadMissing
         )
       }
-      return outcome
+      return outcome.kind === 'thread-missing' && consecutiveThreadMissing < 2
+        ? { kind: 'turn-missing' }
+        : outcome
     } catch (error) {
       const retained = retainedSettledOutcomeAtDeadline(
         signal,

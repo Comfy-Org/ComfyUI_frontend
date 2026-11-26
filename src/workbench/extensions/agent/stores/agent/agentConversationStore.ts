@@ -884,7 +884,10 @@ export const useAgentConversationStore = defineStore(
     }
 
     const retiredAsks = new Map<string, Map<string, AskUserResolution>>()
-    const provisionalRetiredAsks = new Map<string, Map<string, string>>()
+    const provisionalRetiredAsks = new Map<
+      string,
+      Map<string, { turnId: string; resolution: AskUserResolution }>
+    >()
 
     function rememberRetiredAsk(
       owner: string,
@@ -896,7 +899,10 @@ export const useAgentConversationStore = defineStore(
       if (!permanent) {
         const provisional = provisionalRetiredAsksFor(owner)
         provisional.delete(askId)
-        provisional.set(askId, askTurnId ?? '')
+        provisional.set(askId, {
+          turnId: askTurnId ?? '',
+          resolution
+        })
         while (provisional.size > MAX_RETIRED_ASKS_PER_THREAD)
           provisional.delete(provisional.keys().next().value!)
         return
@@ -920,10 +926,13 @@ export const useAgentConversationStore = defineStore(
       return retired
     }
 
-    function provisionalRetiredAsksFor(owner?: string): Map<string, string> {
+    function provisionalRetiredAsksFor(
+      owner?: string
+    ): Map<string, { turnId: string; resolution: AskUserResolution }> {
       const key = threadKey(owner)
       const retired =
-        provisionalRetiredAsks.get(key) ?? new Map<string, string>()
+        provisionalRetiredAsks.get(key) ??
+        new Map<string, { turnId: string; resolution: AskUserResolution }>()
       provisionalRetiredAsks.set(key, retired)
       return retired
     }
@@ -1140,8 +1149,8 @@ export const useAgentConversationStore = defineStore(
     function clearSettledProvisionalAsks(turn: LiveTurn): void {
       const provisional = provisionalRetiredAsks.get(turn.threadId)
       if (provisional === undefined) return
-      for (const [askId, turnId] of provisional)
-        if (turnId === turn.messageId) provisional.delete(askId)
+      for (const [askId, retired] of provisional)
+        if (retired.turnId === turn.messageId) provisional.delete(askId)
       if (provisional.size === 0) provisionalRetiredAsks.delete(turn.threadId)
     }
 
@@ -2500,10 +2509,7 @@ export const useAgentConversationStore = defineStore(
       const retired = retiredAsksFor()
       const provisional = provisionalRetiredAsksFor()
       const provisionalResolutions = new Map(
-        [...provisional.keys()].map((askId) => [
-          askId,
-          { status: 'retired' } as const
-        ])
+        [...provisional].map(([askId, retired]) => [askId, retired.resolution])
       )
       for (const message of transcript.messages) {
         message.parts = retireKnownAskParts(message.parts, retired)

@@ -1644,13 +1644,24 @@ describe('useAgentConversationStore', () => {
 
   it('does not reopen a provisionally retired ask from one stale hydrate', () => {
     const store = useAgentConversationStore()
+    const transcript = parkedApprovalTranscript('th')
+    const pending = transcript[1]?.pending_ask
+    assert(pending)
+    pending.kind = 'ask_user'
     store.setThreadId('th')
-    store.hydrate(parkedApprovalTranscript('th'))
+    store.hydrate(transcript)
     store.retireAsk('turn-1:call-1', { status: 'unconfirmed' }, 'th', false)
 
-    store.hydrate(parkedApprovalTranscript('th'))
+    store.hydrate(transcript)
 
     expect(store.isAskRetired('turn-1:call-1', 'th')).toBe(true)
+    expect(
+      store.messages.flatMap((message) =>
+        message.parts.filter((part) => part.type === 'askUser')
+      )
+    ).toEqual([
+      expect.objectContaining({ resolution: { status: 'unconfirmed' } })
+    ])
   })
 
   it('reset preserves ask recovery state owned by a background turn', () => {
