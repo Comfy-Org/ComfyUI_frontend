@@ -98,10 +98,6 @@ export function useAgentDockMount(): AgentDockMount {
     const identity = expectedIdentity
     const scopedHasFunds = subscription.value?.agentScopedHasFunds
     if (scopedHasFunds === undefined) return
-    // A non-authoritative read (billing_rail not yet established) defaults
-    // agentScopedHasFunds to true. Recording that as the baseline would read
-    // a subsequent authoritative false as a funds-exhausted transition
-    // instead of the initial no-grant case once billing comes online.
     if (subscription.value?.agentScopedHasFundsAuthoritative !== true) return
     const refresh = agentPanelStore.creditTransitionRefresh
     if (refresh?.identity !== identity) {

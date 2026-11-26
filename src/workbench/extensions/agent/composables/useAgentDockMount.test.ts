@@ -173,8 +173,6 @@ describe('useAgentDockMount', () => {
     useAgentDockMount()
     await nextTick()
 
-    // Billing comes online: the first authoritative read is a workspace that
-    // never held an Agent grant, not one that just exhausted a real balance.
     subscription.value = {
       hasFunds: true,
       agentHasFunds: true,
@@ -187,7 +185,6 @@ describe('useAgentDockMount', () => {
       false
     )
 
-    // A real transition after that baseline still arms the notice.
     subscription.value = {
       hasFunds: true,
       agentHasFunds: true,
