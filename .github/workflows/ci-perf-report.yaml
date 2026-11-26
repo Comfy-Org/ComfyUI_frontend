@@ -144,12 +144,13 @@ jobs:
             const fs = require("node:fs");
             const path = require("node:path");
             const root = process.argv[1];
-            const reports = fs.existsSync(root)
-              ? fs.readdirSync(root).sort()
-                  .map((dir) => path.join(root, dir, "perf-metrics.json"))
-                  .filter((file) => fs.existsSync(file))
-                  .map((file) => JSON.parse(fs.readFileSync(file, "utf8")))
+            const files = fs.existsSync(root)
+              ? [path.join(root, "perf-metrics.json"), ...fs.readdirSync(root).sort()
+                  .map((dir) => path.join(root, dir, "perf-metrics.json"))]
               : [];
+            const reports = files
+              .filter((file) => fs.existsSync(file) && fs.statSync(file).isFile())
+              .map((file) => JSON.parse(fs.readFileSync(file, "utf8")));
             if (reports.length === 0) process.exit(0);
             fs.writeFileSync("test-results/perf-metrics.json", JSON.stringify({
               ...reports[0],
