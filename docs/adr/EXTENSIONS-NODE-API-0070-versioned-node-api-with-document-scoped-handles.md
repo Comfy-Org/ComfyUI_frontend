@@ -506,7 +506,10 @@ Host changes outside the folder:
   `afterLoadGraph` hooks left it as the loaded state
   (`adoptLoadedGraph()`), so an edit such a hook makes, through a handle or
   not, is part of what the load gives, and the user's next undo does not take
-  it back. The user's first pointer press, key press, wheel turn or drop
+  it back. It moves the saved state with it only when the saved state was the
+  loaded one: a saved workflow opened from a restored draft keeps the saved
+  file as its saved state (#23795), so undoing back to the draft leaves it
+  unsaved. The user's first pointer press, key press, wheel turn or drop
   while the hooks run ends that: the graph as it is then is the loaded
   state, and what changes after it, a user edit made while a slow `async`
   hook awaits included, is an undo step that marks the workflow modified

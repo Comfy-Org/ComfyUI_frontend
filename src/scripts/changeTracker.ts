@@ -486,7 +486,8 @@ export class ChangeTracker implements WorkflowChangeTracker {
 
   /**
    * Takes the graph as the end of a load leaves it, with what its `afterLoadGraph` hooks changed, as the loaded state:
-   * no undo step. After a user input while the hooks ran, what changed since that input is an undo step instead.
+   * no undo step, and the saved state too unless the load kept another (a restored draft keeps the saved file).
+   * After a user input while the hooks ran, what changed since that input is an undo step instead.
    *
    * @internal Not part of the public extension API.
    */
@@ -498,7 +499,14 @@ export class ChangeTracker implements WorkflowChangeTracker {
   private takeLoadedGraph() {
     const { graph } = this.workflow
     if (!graph || !isActiveTracker(this) || !isCanvasOwner(this)) return
-    this.adopt(graph.serialize() as ComfyWorkflowJSON)
+    const loadedWasSaved = ChangeTracker.graphEqual(
+      this.activeState,
+      this.initialState
+    )
+    this.activeState = clone(graph.serialize() as ComfyWorkflowJSON)
+    if (this._restoringState) return
+    if (loadedWasSaved) this.initialState = clone(this.activeState)
+    else this.updateModified()
   }
 
   private adopt(state?: ComfyWorkflowJSON) {

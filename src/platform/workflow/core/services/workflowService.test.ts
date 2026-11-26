@@ -21,6 +21,7 @@ import {
 } from 'vitest'
 
 import { fromAny } from '@total-typescript/shoehorn'
+import { markRaw } from 'vue'
 
 import { useTelemetry } from '@comfyorg/telemetry'
 
@@ -4479,6 +4480,39 @@ describe('useWorkflowService', () => {
         )
 
         expect(existingWorkflow.changeTracker.initialState).toBe(saved)
+        expect(existingWorkflow.isModified).toBe(true)
+      })
+
+      it('keeps the saved file as the baseline once the load takes what its afterLoadGraph hooks left, so undoing an edit leaves the draft unsaved', async () => {
+        const { saved, draft } = restoreDraft()
+        const tracker = markRaw(existingWorkflow.changeTracker)
+        existingWorkflow.changeTracker = tracker
+        workflowStore.activeWorkflow = existingWorkflow
+        const serialize = vi
+          .spyOn(app.rootGraph, 'serialize')
+          .mockReturnValue(fromAny(draft))
+        vi.mocked(app.loadGraphData).mockImplementation(async (state) => {
+          tracker.reset(state)
+          serialize.mockReturnValue(fromAny(state))
+          return true
+        })
+
+        await useWorkflowService().afterLoadNewGraph(
+          existingWorkflow,
+          draft,
+          app.rootGraph
+        )
+        tracker.adoptLoadedGraph()
+
+        expect(tracker.initialState).toBe(saved)
+        expect(existingWorkflow.isModified).toBe(true)
+        serialize.mockReturnValue(
+          fromAny(makeWorkflowData({ saved: true, draftEdit: true, edit: 2 }))
+        )
+        tracker.captureCanvasState()
+        expect(tracker.undoQueue).toHaveLength(1)
+        await tracker.undo()
+        expect(tracker.activeState).toEqual(draft)
         expect(existingWorkflow.isModified).toBe(true)
       })
 
