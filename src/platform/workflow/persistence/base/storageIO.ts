@@ -26,16 +26,10 @@ import { KEPT_BUILD_KEY } from '@/platform/workspace/platformFrame/platformFrame
 import { StorageKeys } from './storageKeys'
 
 type StorageAvailability = 'available' | 'unavailable'
-type WorkflowStorageTransitionReason = 'auth-state' | 'logout' | 'workspace'
-const workflowStorageTransitionToken = Symbol('workflow-storage-transition')
-type WorkflowStorageTransitionToken = {
-  readonly [workflowStorageTransitionToken]: true
-}
+type WorkflowStorageFencePolicy = 'identity' | 'workspace'
 export interface WorkflowStorageFence {
-  /** Releases the fence after the protected transition settles. */
   release(): boolean
-  /** Releases the fence and resumes pending persistence when it was last. */
-  abort(): boolean
+  releaseAndResumePersistence(): boolean
 }
 const workflowStorageAuthFenceToken = Symbol('workflow-storage-auth-fence')
 export interface WorkflowStorageAuthFence {
@@ -46,10 +40,7 @@ type WorkflowStorageState =
   | {
       status: 'transitioning'
       resumeAvailability: StorageAvailability
-      transitions: ReadonlyMap<
-        WorkflowStorageTransitionToken,
-        WorkflowStorageTransitionReason
-      >
+      transitions: ReadonlyMap<symbol, WorkflowStorageFencePolicy>
     }
 
 let workflowStorageState: WorkflowStorageState = {
@@ -62,7 +53,7 @@ interface PendingWorkflowPersistence {
   resumeAfterAbort: () => void
 }
 
-let authStateTransition:
+let authStateFence:
   | {
       fence: WorkflowStorageFence
       owner: WorkflowStorageAuthFence
@@ -125,7 +116,7 @@ function isStorageReadable(): boolean {
   }
   return (
     [...workflowStorageState.transitions.values()].every(
-      (reason) => reason === 'workspace'
+      (policy) => policy === 'workspace'
     ) && workflowStorageState.resumeAvailability === 'available'
   )
 }
@@ -133,7 +124,7 @@ function isStorageReadable(): boolean {
 /** @internal Test-only: do not call from production code paths. */
 export function resetStorageAvailable(): void {
   workflowStorageState = { status: 'ready', availability: 'available' }
-  authStateTransition = undefined
+  authStateFence = undefined
 }
 
 function isDraftWritten(outcome: StorageWriteOutcome): boolean {
@@ -640,74 +631,66 @@ export function clearWorkflowRestoreState(): void {
 
 export function prepareWorkflowWorkspaceTransition(): WorkflowStorageFence {
   runPendingWorkflowPersistence('flush')
-  const transition = acquireWorkflowStorageFence('workspace')
+  const fence = acquireWorkflowStorageFence('workspace')
   clearWorkflowRestoreState()
 
-  return transition
+  return fence
 }
 
 export function prepareWorkflowLogoutTransition(): WorkflowStorageFence {
-  const transition = acquireWorkflowStorageFence('logout')
+  const fence = acquireWorkflowStorageFence('identity')
   runPendingWorkflowPersistence('cancel')
-  return transition
+  return fence
 }
 
 export function fenceWorkflowStorageForAuthState(): WorkflowStorageAuthFence {
-  if (authStateTransition) return authStateTransition.owner
-  authStateTransition = {
-    fence: acquireWorkflowStorageFence('auth-state'),
+  if (authStateFence) return authStateFence.owner
+  authStateFence = {
+    fence: acquireWorkflowStorageFence('identity'),
     owner: { [workflowStorageAuthFenceToken]: true }
   }
   runPendingWorkflowPersistence('cancel')
-  return authStateTransition.owner
+  return authStateFence.owner
 }
 
 export function releaseWorkflowStorageAuthFence(
   owner?: WorkflowStorageAuthFence
 ): boolean {
-  if (!authStateTransition) return false
-  if (owner && owner !== authStateTransition.owner) return false
-  const transition = authStateTransition
-  authStateTransition = undefined
-  return transition.fence.release()
+  if (!authStateFence) return false
+  if (owner && owner !== authStateFence.owner) return false
+  const fence = authStateFence
+  authStateFence = undefined
+  return fence.fence.release()
 }
 
 export function abortWorkflowStorageAuthFence(
   owner: WorkflowStorageAuthFence
 ): boolean {
-  if (!authStateTransition || owner !== authStateTransition.owner) return false
-  const transition = authStateTransition
-  authStateTransition = undefined
-  return transition.fence.abort()
+  if (!authStateFence || owner !== authStateFence.owner) return false
+  const fence = authStateFence
+  authStateFence = undefined
+  return fence.fence.releaseAndResumePersistence()
 }
 
 function acquireWorkflowStorageFence(
-  reason: WorkflowStorageTransitionReason
+  policy: WorkflowStorageFencePolicy
 ): WorkflowStorageFence {
-  const transition: WorkflowStorageTransitionToken = {
-    [workflowStorageTransitionToken]: true
-  }
+  const transition = Symbol(policy)
   const resumeAvailability =
     workflowStorageState.status === 'ready'
       ? workflowStorageState.availability
       : workflowStorageState.resumeAvailability
   const transitions =
     workflowStorageState.status === 'ready'
-      ? new Map<
-          WorkflowStorageTransitionToken,
-          WorkflowStorageTransitionReason
-        >()
+      ? new Map<symbol, WorkflowStorageFencePolicy>()
       : new Map(workflowStorageState.transitions)
-  transitions.set(transition, reason)
+  transitions.set(transition, policy)
   workflowStorageState = {
     status: 'transitioning',
     resumeAvailability,
     transitions
   }
-  let settled = false
   const settle = (resumeAfterAbort: boolean): boolean => {
-    if (settled) return false
-    settled = true
     const resumed = removeWorkflowStorageTransition(transition)
     if (resumed && resumeAfterAbort) {
       runPendingWorkflowPersistence('resumeAfterAbort')
@@ -716,13 +699,11 @@ function acquireWorkflowStorageFence(
   }
   return {
     release: () => settle(false),
-    abort: () => settle(true)
+    releaseAndResumePersistence: () => settle(true)
   }
 }
 
-function removeWorkflowStorageTransition(
-  transition: WorkflowStorageTransitionToken
-): boolean {
+function removeWorkflowStorageTransition(transition: symbol): boolean {
   if (
     workflowStorageState.status !== 'transitioning' ||
     !workflowStorageState.transitions.has(transition)
@@ -743,10 +724,10 @@ function removeWorkflowStorageTransition(
   return true
 }
 
-export function isLogoutTransition(): boolean {
+export function isIdentityTransition(): boolean {
   return (
     workflowStorageState.status === 'transitioning' &&
-    [...workflowStorageState.transitions.values()].includes('logout')
+    [...workflowStorageState.transitions.values()].includes('identity')
   )
 }
 

@@ -1245,7 +1245,7 @@ describe('useWorkflowPersistenceV2', () => {
     await vi.runAllTimersAsync()
     expect(localStorage.getItem(payloadKey)).toBeNull()
 
-    transition.abort()
+    transition.releaseAndResumePersistence()
 
     const stored =
       localStorage.getItem(payloadKey) ??
@@ -1781,7 +1781,7 @@ describe('useWorkflowPersistenceV2', () => {
     onUserResolved({ id: 'user-b' })
     await vi.waitFor(() => expect(loadBlankWorkflowMock).toHaveBeenCalled())
 
-    storageIO.prepareWorkflowLogoutTransition().abort()
+    storageIO.prepareWorkflowLogoutTransition().releaseAndResumePersistence()
 
     expect(
       storageIO.writePayload('personal', 'mid-switch', {

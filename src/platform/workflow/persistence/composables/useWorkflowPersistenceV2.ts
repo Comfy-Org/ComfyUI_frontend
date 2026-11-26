@@ -249,7 +249,7 @@ export function useWorkflowPersistenceV2() {
 
     const transitionVersion = ++authTransitionVersion
 
-    const transition = prepareWorkflowLogoutTransition()
+    const accountSwitchFence = prepareWorkflowLogoutTransition()
     clearWorkflowRestoreState()
     authTransition = authTransition
       .then(async () => {
@@ -261,7 +261,7 @@ export function useWorkflowPersistenceV2() {
           draftStore.setAuthSubject(user.id)
           await waitForWorkspaceInitialization()
           if (transitionVersion !== authTransitionVersion) return
-          transition.release()
+          accountSwitchFence.release()
           releaseWorkflowStorageAuthFence()
           await draftStore.loadPersistedWorkflow({
             fallbackToLatestDraft: true
@@ -273,7 +273,7 @@ export function useWorkflowPersistenceV2() {
           }
           throw error
         } finally {
-          transition.release()
+          accountSwitchFence.release()
         }
       })
       .catch((error: unknown) => {

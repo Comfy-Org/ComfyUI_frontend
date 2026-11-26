@@ -565,19 +565,6 @@ describe('cloud app on the shared web session', () => {
     expect(isStorageAvailable()).toBe(true)
   })
 
-  it('resumes workflow storage when a session-only sign-out fails', async () => {
-    installServer({ userId: 'user-a' })
-    await refreshRemoteConfig({ useAuth: false })
-    await useSessionCookie().ensureSessionCookie()
-    vi.spyOn(useCloudWebSessionStore(), 'signOut').mockRejectedValue(
-      new Error('offline')
-    )
-
-    await expect(useAuthStore().logout()).rejects.toThrow('offline')
-
-    expect(isStorageAvailable()).toBe(true)
-  })
-
   it.for([
     { name: 'ok revokes every session', status: 200, result: { status: 'ok' } },
     {

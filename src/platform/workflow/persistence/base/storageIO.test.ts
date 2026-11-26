@@ -802,7 +802,7 @@ describe('storageIO', () => {
       const accountSwitch = isolatedStorageIO.prepareWorkflowLogoutTransition()
       const failedLogout = isolatedStorageIO.prepareWorkflowLogoutTransition()
       expect(accountSwitch.release()).toBe(false)
-      expect(failedLogout.abort()).toBe(true)
+      expect(failedLogout.releaseAndResumePersistence()).toBe(true)
       expect(isolatedStorageIO.isStorageAvailable()).toBe(true)
       expect(resumeAfterAbort).toHaveBeenCalledOnce()
     })
@@ -819,11 +819,11 @@ describe('storageIO', () => {
       const firstLogout = isolatedStorageIO.prepareWorkflowLogoutTransition()
       const secondLogout = isolatedStorageIO.prepareWorkflowLogoutTransition()
 
-      expect(firstLogout.abort()).toBe(false)
+      expect(firstLogout.releaseAndResumePersistence()).toBe(false)
       expect(isolatedStorageIO.isStorageAvailable()).toBe(false)
       expect(resumeAfterAbort).not.toHaveBeenCalled()
 
-      expect(secondLogout.abort()).toBe(true)
+      expect(secondLogout.releaseAndResumePersistence()).toBe(true)
       expect(isolatedStorageIO.isStorageAvailable()).toBe(true)
       expect(resumeAfterAbort).toHaveBeenCalledOnce()
     })
@@ -835,7 +835,7 @@ describe('storageIO', () => {
       const logoutTransition =
         isolatedStorageIO.prepareWorkflowLogoutTransition()
 
-      expect(logoutTransition.abort()).toBe(false)
+      expect(logoutTransition.releaseAndResumePersistence()).toBe(false)
       expect(isolatedStorageIO.isStorageAvailable()).toBe(false)
 
       cancelWorkspaceTransition.release()
@@ -860,7 +860,7 @@ describe('storageIO', () => {
       })
       const transition = isolatedStorageIO.prepareWorkflowLogoutTransition()
 
-      expect(transition.abort()).toBe(true)
+      expect(transition.releaseAndResumePersistence()).toBe(true)
 
       expect(reportError).toHaveBeenCalledExactlyOnceWith(error, {
         surface: 'workspace',

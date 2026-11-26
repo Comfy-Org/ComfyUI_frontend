@@ -835,7 +835,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function logout(): Promise<void> {
-    const persistenceTransition = isCloud
+    const persistenceFence = isCloud
       ? prepareWorkflowLogoutTransition()
       : undefined
     try {
@@ -853,18 +853,12 @@ export const useAuthStore = defineStore('auth', () => {
         await useCloudWebSessionStore().signOut()
         if (currentUser.value) await firebaseIdentity.signOut()
       })
-      if (persistenceTransition) {
-        persistenceTransition.release()
-      }
+      persistenceFence?.release()
     } catch (error) {
-      if (persistenceTransition) {
-        let persistenceResumed = false
-        if (userId.value) {
-          persistenceResumed = persistenceTransition.abort()
-        } else {
-          fenceWorkflowStorageForAuthState()
-          persistenceTransition.release()
-        }
+      if (persistenceFence) {
+        if (!userId.value) fenceWorkflowStorageForAuthState()
+        const persistenceResumed =
+          persistenceFence.releaseAndResumePersistence()
         reportError(error, {
           surface: 'auth',
           errorType: 'failure_logging_out_user',

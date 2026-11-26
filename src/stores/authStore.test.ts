@@ -1553,10 +1553,12 @@ describe('useAuthStore in local/desktop distribution', () => {
     expect(store.loading).toBe(false)
   })
 
-  it('leaves workflow storage open after logout', async () => {
+  it('leaves workflow storage open during and after logout', async () => {
     vi.mocked(firebaseAuth.signOut).mockResolvedValue(undefined)
 
-    await store.logout()
+    const logout = store.logout()
+    expect(isStorageAvailable()).toBe(true)
+    await logout
 
     expect(isStorageAvailable()).toBe(true)
   })
