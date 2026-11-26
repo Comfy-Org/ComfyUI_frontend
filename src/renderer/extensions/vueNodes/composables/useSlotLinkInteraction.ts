@@ -887,7 +887,10 @@ export function useSlotLinkInteraction({
     for (const candidateNode of graph.nodes) markCompatibleSlots(candidateNode)
     const onNodeAdded = ({
       detail: { node: addedNode }
-    }: CustomEvent<{ node: LGraphNode }>) => markCompatibleSlots(addedNode)
+    }: CustomEvent<{ node: LGraphNode }>) =>
+      queueMicrotask(() => {
+        if (pointerSession.isActive()) markCompatibleSlots(addedNode)
+      })
     const graphEvents: LGraph['events'] = graph.events
     graphEvents.addEventListener('node:added', onNodeAdded)
     pointerSession.register(() =>
