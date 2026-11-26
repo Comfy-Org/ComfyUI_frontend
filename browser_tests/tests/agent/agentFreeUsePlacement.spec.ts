@@ -25,6 +25,7 @@ function billingStatus({
   return {
     ...DEFAULT_BILLING_STATUS,
     billing_rail: 'stripe',
+    has_funds: agentHasFunds,
     scoped_effective_has_funds: { agent: agentHasFunds },
     scoped_has_funds: { agent: grantHeld }
   }
