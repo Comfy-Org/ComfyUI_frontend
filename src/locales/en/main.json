@@ -1095,6 +1095,7 @@
       "empty": "No models in your workspace library.",
       "loadFailed": "Couldn't load your workspace library.",
       "fromWorkspace": "From your workspace",
+      "blockedByModelRules": "Blocked by this Build's model rules",
       "modelCount": "{count} model | {count} models"
     },
     "searchResultsCapped": "Showing the first {limit} matches. Refine your search to see more specific results.",
