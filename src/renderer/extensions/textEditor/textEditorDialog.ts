@@ -28,6 +28,7 @@ interface TextEditorOptions {
   readOnly: () => boolean
   trigger?: PromptEditorOpenedMetadata['trigger']
   maximized?: boolean
+  isInExperiment?: boolean
   onEdit: (text: string) => void
   textareaAttributes?: () => TextareaHTMLAttributes
 }
@@ -39,6 +40,7 @@ export function showTextEditor({
   readOnly,
   trigger = 'expand_button',
   maximized = false,
+  isInExperiment = true,
   onEdit,
   textareaAttributes
 }: TextEditorOptions): () => void {
@@ -52,9 +54,10 @@ export function showTextEditor({
   const openedMetadata: PromptEditorOpenedMetadata = {
     surface: 'dialog',
     trigger,
-    ...usePromptEditorExperimentStore().experimentPropertiesFor(
-      experimentArmOf(trigger)
-    )
+    ...(isInExperiment &&
+      usePromptEditorExperimentStore().experimentPropertiesFor(
+        experimentArmOf(trigger)
+      ))
   }
   useTelemetry()?.trackPromptEditorOpened(openedMetadata)
 
