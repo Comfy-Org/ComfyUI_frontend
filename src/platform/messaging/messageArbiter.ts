@@ -372,9 +372,8 @@ function collectSupersededIds(
 }
 
 /**
- * Decides every candidate for one moment of the messaging playbook rules
- * (#22003). Pure: callers pass `now`, the screen and exposure. Candidate
- * IDs are unique; a repeated ID after the first is ignored.
+ * Decides every candidate for one moment. A repeated ID after the first is
+ * ignored.
  */
 export function decideMessages(input: ArbiterInput): ArbiterDecision {
   const outcomes = new Map<string, ArbiterOutcome>()
