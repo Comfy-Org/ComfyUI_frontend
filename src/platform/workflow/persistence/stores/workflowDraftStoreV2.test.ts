@@ -137,6 +137,28 @@ describe('workflowDraftStoreV2', () => {
       expect(payloadKeys).toHaveLength(1)
     })
 
+    it('refuses to save when no native storage can be read', () => {
+      const denied = () => {
+        throw new DOMException('Access is denied', 'SecurityError')
+      }
+      const local = vi
+        .spyOn(window, 'localStorage', 'get')
+        .mockImplementation(denied)
+      const session = vi
+        .spyOn(window, 'sessionStorage', 'get')
+        .mockImplementation(denied)
+      const store = useWorkflowDraftStoreV2()
+
+      const saved = store.saveDraft('workflows/volatile.json', '{"nodes":[]}', {
+        name: 'volatile',
+        isTemporary: true
+      })
+      local.mockRestore()
+      session.mockRestore()
+
+      expect(saved).toBe(false)
+    })
+
     it('updates existing draft', () => {
       const store = useWorkflowDraftStoreV2()
 
@@ -637,6 +659,35 @@ describe('workflowDraftStoreV2', () => {
         expect.objectContaining({
           context: expect.objectContaining({ writeTarget: 'index' })
         })
+      )
+    })
+
+    it('keeps existing drafts when a payload write fails for a non-quota reason', () => {
+      const store = useWorkflowDraftStoreV2()
+      store.saveDraft('workflows/existing.json', '{"id":1}', {
+        name: 'existing',
+        isTemporary: true
+      })
+      const realSetItem = localStorage.setItem.bind(localStorage)
+      activeSpy = vi
+        .spyOn(localStorage, 'setItem')
+        .mockImplementation((key, value) => {
+          if (key.startsWith(PAYLOAD_PREFIX))
+            throw new DOMException('Access is denied', 'SecurityError')
+          return realSetItem(key, value)
+        })
+
+      expect(() =>
+        store.saveDraft('workflows/incoming.json', '{"id":"new"}', {
+          name: 'incoming',
+          isTemporary: true
+        })
+      ).toThrow(DOMException)
+      expect(
+        localStorage.getItem(payloadKey('workflows/existing.json'))
+      ).not.toBeNull()
+      expect(localStorage.getItem(INDEX_KEY)).toContain(
+        hashPath('workflows/existing.json')
       )
     })
 

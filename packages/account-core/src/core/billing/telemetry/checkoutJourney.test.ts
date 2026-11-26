@@ -117,6 +117,23 @@ const CASES: readonly PayloadCase[] = [
     }
   },
   {
+    name: 'a promo checkout applied itself says so',
+    event: {
+      ...CONTEXT,
+      phase: 'promo',
+      result: 'applied',
+      prefilled: true,
+      auto_applied: true
+    },
+    payload: {
+      ...PAYLOAD_OF_CONTEXT,
+      phase: 'promo',
+      result: 'applied',
+      prefilled: true,
+      auto_applied: true
+    }
+  },
+  {
     name: 'a promo the customer typed reports prefilled as false, not absent',
     event: { ...CONTEXT, phase: 'promo', result: 'rejected', prefilled: false },
     payload: {

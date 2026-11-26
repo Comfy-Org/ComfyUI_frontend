@@ -219,6 +219,40 @@ describe('VirtualGrid', () => {
     expect(renderedItems.length % 4).toBe(0)
   })
 
+  it.for([
+    { width: 400, expectedCols: 4 },
+    { width: 399, expectedCols: 3 },
+    { width: 1000, expectedCols: 4 },
+    { width: 50, expectedCols: 1 }
+  ])(
+    'fits $expectedCols columns of minItemWidth 100 in a $width px grid capped at 4',
+    async ({ width, expectedCols }) => {
+      mockedWidth.value = width
+      mockedHeight.value = 200
+
+      render(VirtualGrid, {
+        props: {
+          items: createItems(40),
+          gridStyle: defaultGridStyle,
+          defaultItemHeight: 100,
+          maxColumns: 4,
+          minItemWidth: 100,
+          bufferRows: 0
+        },
+        slots: {
+          item: `<template #item="{ item }">
+            <div>{{ item.name }}</div>
+          </template>`
+        },
+        container: document.body.appendChild(document.createElement('div'))
+      })
+
+      await nextTick()
+
+      expect(screen.getAllByText(/^Item \d+$/)).toHaveLength(2 * expectedCols)
+    }
+  )
+
   it('remeasures items when the grid style changes', async () => {
     const items = createItems(20)
     let itemWidth = 200

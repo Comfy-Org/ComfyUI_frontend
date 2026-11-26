@@ -3,6 +3,7 @@ import { toRaw } from 'vue'
 
 import { downloadBlob } from '@/base/common/downloadUtil'
 import { t } from '@/i18n'
+import { showDraftSaveFailedToast } from '@/platform/workflow/persistence/draftSaveFailureToast'
 import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -297,12 +298,6 @@ export const useWorkflowService = () => {
   const missingNodesErrorStore = useMissingNodesErrorStore()
   const workflowDraftStore = useWorkflowDraftStoreV2()
 
-  const showFailedToSaveDraftToast = () => {
-    toast.error(t('g.error'), {
-      description: t('toastMessages.failedToSaveDraft')
-    })
-  }
-
   const persistActiveWorkflowDraft = (activeWorkflow: ComfyWorkflow) => {
     if (!settingStore.get('Comfy.Workflow.Persist') || !activeWorkflow.path) {
       return
@@ -334,11 +329,11 @@ export const useWorkflowService = () => {
       )
 
       if (!saved) {
-        showFailedToSaveDraftToast()
+        showDraftSaveFailedToast()
       }
     } catch (err) {
       console.error('Failed to persist active workflow draft', err)
-      showFailedToSaveDraftToast()
+      showDraftSaveFailedToast()
     }
   }
 
@@ -610,8 +605,11 @@ export const useWorkflowService = () => {
   /**
    * Load the default workflow
    */
-  const loadDefaultWorkflow = () =>
-    queueWorkflowLoad(() => useApp().loadGraphData(getDefaultWorkflow()))
+  const loadDefaultWorkflow = async (options: { initiator?: 'user' } = {}) => {
+    return queueWorkflowLoad(() =>
+      useApp().loadGraphData(getDefaultWorkflow(), true, true, null, options)
+    )
+  }
 
   /**
    * Load a blank workflow
@@ -1462,7 +1460,10 @@ export const useWorkflowService = () => {
   /**
    * Takes an existing workflow and duplicates it with a new name
    */
-  const duplicateWorkflow = async (workflow: ComfyWorkflow) => {
+  const duplicateWorkflow = async (
+    workflow: ComfyWorkflow,
+    options: { initiator?: 'user' } = {}
+  ) => {
     if (!workflow.isLoaded) await workflow.load()
     const state = JSON.parse(JSON.stringify(workflow.activeState))
     // Ensure duplicates are always treated as distinct workflows.
@@ -1476,7 +1477,7 @@ export const useWorkflowService = () => {
     )
 
     await queueWorkflowLoad(() =>
-      useApp().loadGraphData(state, true, true, duplicate)
+      useApp().loadGraphData(state, true, true, duplicate, options)
     )
   }
 
