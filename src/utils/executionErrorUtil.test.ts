@@ -275,17 +275,17 @@ describe('executionErrorUtil', () => {
 
     it.for([
       {
-        name: 'the summary rejection when every relayed error is outside the contract',
+        name: 'raw ComfyUI errors to the summary rejection',
         nodeErrors: rawComfyNodeErrors,
         expected: rejection(summaryOnlyMessage)
       },
       {
-        name: 'the summary rejection when every relayed node is outside the contract',
+        name: 'malformed node metadata to the summary rejection',
         nodeErrors: { '72': { class_type: 'CheckpointLoaderSimple' } },
         expected: rejection(summaryOnlyMessage)
       },
       {
-        name: 'the contract nodes beside a node outside the contract',
+        name: 'contract nodes beside a raw node to those nodes',
         nodeErrors: { ...relayedNodeErrors, '80': rawComfyNodeErrors['72'] },
         expected: { kind: 'nodeErrors', nodeErrors: relayedNodeErrors }
       }
