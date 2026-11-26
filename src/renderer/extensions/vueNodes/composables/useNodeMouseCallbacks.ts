@@ -12,11 +12,11 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { cancelNodePress } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
 
 interface DeliveredEvents {
-  onMouseEnter: PointerEvent
-  onMouseMove: PointerEvent
-  onMouseLeave: PointerEvent
-  onMouseDown: PointerEvent
   onDblClick: MouseEvent
+  onMouseDown: PointerEvent
+  onMouseEnter: PointerEvent
+  onMouseLeave: PointerEvent
+  onMouseMove: PointerEvent
 }
 
 type MouseCallback = keyof DeliveredEvents
