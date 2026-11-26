@@ -7,6 +7,10 @@ import {
   comfyPageFixture
 } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import {
+  cloudRelayedNodeErrors,
+  cloudValidationSummary
+} from '@e2e/fixtures/data/cloudValidationRejection'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 import { jobsRouteFixture } from '@e2e/fixtures/jobsRouteFixture'
 import { TestIds } from '@e2e/fixtures/selectors'
@@ -18,20 +22,6 @@ const test = mergeTests(comfyPageFixture, webSocketFixture, jobsRouteFixture)
 const VALIDATION_ERROR_NODE_ID = '1'
 const VALIDATION_ERROR_MESSAGE = 'Required input is missing: source'
 const PARTIAL_EXECUTION_ROOT_NODE_IDS = ['1', '4']
-const CLOUD_VALIDATION_SUMMARY = `Prompt outputs failed validation. node ${VALIDATION_ERROR_NODE_ID} (PreviewAny): source — required_input_missing: ${VALIDATION_ERROR_MESSAGE}.`
-const CLOUD_RELAYED_NODE_ERRORS = {
-  [VALIDATION_ERROR_NODE_ID]: {
-    class_type: 'PreviewAny',
-    dependent_outputs: [VALIDATION_ERROR_NODE_ID],
-    errors: [
-      {
-        type: 'required_input_missing',
-        message: VALIDATION_ERROR_MESSAGE,
-        extra_info: { input_name: 'source' }
-      }
-    ]
-  }
-} satisfies Record<string, PromptOutputsSkippedNodeError>
 
 type PromptRequestNode = {
   class_type?: string
@@ -230,8 +220,8 @@ test.describe('Execution validation errors', { tag: '@workflow' }, () => {
       exec.promptRejectedAtValidation(
         jobId,
         VALIDATION_ERROR_NODE_ID,
-        CLOUD_VALIDATION_SUMMARY,
-        CLOUD_RELAYED_NODE_ERRORS
+        cloudValidationSummary,
+        cloudRelayedNodeErrors
       )
 
       const errorOverlay = comfyPage.page.getByTestId(
@@ -247,14 +237,14 @@ test.describe('Execution validation errors', { tag: '@workflow' }, () => {
   for (const { name, nodeErrors, shown } of [
     {
       name: 'its relayed node errors',
-      nodeErrors: CLOUD_RELAYED_NODE_ERRORS,
+      nodeErrors: cloudRelayedNodeErrors,
       shown: 'Preview as Text is missing a required input: source'
     },
     {
       name: 'the summary when its relayed errors break the contract',
       nodeErrors: {
         [VALIDATION_ERROR_NODE_ID]: {
-          ...CLOUD_RELAYED_NODE_ERRORS[VALIDATION_ERROR_NODE_ID],
+          ...cloudRelayedNodeErrors[VALIDATION_ERROR_NODE_ID],
           errors: [
             {
               type: 'required_input_missing',
@@ -290,7 +280,7 @@ test.describe('Execution validation errors', { tag: '@workflow' }, () => {
             node_id: VALIDATION_ERROR_NODE_ID,
             node_type: 'PreviewAny',
             exception_type: 'ValidationError',
-            exception_message: CLOUD_VALIDATION_SUMMARY,
+            exception_message: cloudValidationSummary,
             traceback: [],
             node_errors: nodeErrors
           }
@@ -361,8 +351,8 @@ test.describe(
       exec.promptRejectedAtValidation(
         jobId,
         VALIDATION_ERROR_NODE_ID,
-        CLOUD_VALIDATION_SUMMARY,
-        CLOUD_RELAYED_NODE_ERRORS
+        cloudValidationSummary,
+        cloudRelayedNodeErrors
       )
 
       const errorDialog = comfyPage.page.getByTestId(

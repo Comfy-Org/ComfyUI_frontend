@@ -236,12 +236,19 @@ describe('fetchJobs', () => {
         name: 'keeps a malformed node with its parts outside the contract emptied',
         nodeErrors: {
           ...contractNodeErrors,
-          '7': { class_type: 'LoadImage' },
+          '7': {
+            class_type: 'LoadImage',
+            errors: contractNodeErrors['4'].errors
+          },
           '8': null
         },
         expected: {
           ...contractNodeErrors,
-          '7': { class_type: 'LoadImage', dependent_outputs: [], errors: [] },
+          '7': {
+            class_type: 'LoadImage',
+            dependent_outputs: [],
+            errors: contractNodeErrors['4'].errors
+          },
           '8': { class_type: '', dependent_outputs: [], errors: [] }
         }
       },
