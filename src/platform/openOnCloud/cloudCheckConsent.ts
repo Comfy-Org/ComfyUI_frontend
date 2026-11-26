@@ -1,5 +1,6 @@
 import { reportError } from '@comfyorg/telemetry/reportError'
 
+import { safeLocalStorage } from '@/base/storage/safeStorage'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { t } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -8,7 +9,28 @@ import { api } from '@/scripts/api'
 export const ASK_BEFORE_CLOUD_CHECK = 'Comfy.Cloud.AskBeforeCompatibilityCheck'
 export const CLOUD_CHECK_CONSENT_SAVE_TIMEOUT_MS = 10_000
 
+export const PENDING_ASK_AGAIN_KEY =
+  'Comfy.Cloud.AskBeforeCompatibilityCheck.PendingRestore'
+
 let pendingSave: Promise<void> = Promise.resolve()
+let unsettledLateWrites = 0
+
+function hasPendingAskAgain() {
+  return safeLocalStorage.getItem(PENDING_ASK_AGAIN_KEY) === 'true'
+}
+
+function setPendingAskAgain(pending: boolean) {
+  if (pending) safeLocalStorage.setItem(PENDING_ASK_AGAIN_KEY, 'true')
+  else safeLocalStorage.removeItem(PENDING_ASK_AGAIN_KEY)
+}
+
+export function skipsCloudCheckQuestion() {
+  if (hasPendingAskAgain()) {
+    void saveAskBeforeCloudCheck(true)
+    return false
+  }
+  return useSettingStore().get(ASK_BEFORE_CLOUD_CHECK) === false
+}
 
 function isCurrentChoice(askBeforeCheck: boolean) {
   return useSettingStore().get(ASK_BEFORE_CLOUD_CHECK) === askBeforeCheck
@@ -33,7 +55,12 @@ async function storeAskBeforeCloudCheck(askBeforeCheck: boolean) {
     })
   ]).finally(() => clearTimeout(timer))
   if (result === TIMED_OUT) {
-    request.then(resendLatestChoice, resendLatestChoice)
+    unsettledLateWrites += 1
+    const settleLateWrite = () => {
+      unsettledLateWrites -= 1
+      resendLatestChoice()
+    }
+    request.then(settleLateWrite, settleLateWrite)
     return new Error(
       `Timed out storing ${ASK_BEFORE_CLOUD_CHECK} after ${CLOUD_CHECK_CONSENT_SAVE_TIMEOUT_MS} ms`
     )
@@ -66,13 +93,19 @@ async function persistAskBeforeCloudCheck(
     await appliedLocally
     if (!isCurrentChoice(askBeforeCheck)) return
     const failure = await storeAskBeforeCloudCheck(askBeforeCheck)
-    if (failure) reportSaveFailure(failure, askBeforeCheck)
+    if (failure) {
+      reportSaveFailure(failure, askBeforeCheck)
+      return
+    }
+    if (askBeforeCheck && unsettledLateWrites === 0 && isCurrentChoice(true))
+      setPendingAskAgain(false)
   } catch (cause) {
     reportSaveFailure(cause, askBeforeCheck)
   }
 }
 
 export function saveAskBeforeCloudCheck(askBeforeCheck: boolean) {
+  setPendingAskAgain(askBeforeCheck)
   const appliedLocally = useSettingStore().applySettingLocally(
     ASK_BEFORE_CLOUD_CHECK,
     askBeforeCheck

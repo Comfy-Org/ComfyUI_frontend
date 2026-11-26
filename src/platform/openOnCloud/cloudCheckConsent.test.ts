@@ -6,7 +6,9 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import {
   ASK_BEFORE_CLOUD_CHECK,
   CLOUD_CHECK_CONSENT_SAVE_TIMEOUT_MS,
-  saveAskBeforeCloudCheck
+  PENDING_ASK_AGAIN_KEY,
+  saveAskBeforeCloudCheck,
+  skipsCloudCheckQuestion
 } from '@/platform/openOnCloud/cloudCheckConsent'
 import { CORE_SETTINGS } from '@/platform/settings/constants/coreSettings'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -31,6 +33,7 @@ describe('saveAskBeforeCloudCheck', () => {
     )
     if (setting) useSettingStore().addSetting(setting)
     vi.mocked(api.storeSetting).mockResolvedValue(new Response())
+    localStorage.clear()
   })
 
   it('saves the choice without a toast when the server accepts it', async () => {
@@ -160,7 +163,8 @@ describe('saveAskBeforeCloudCheck', () => {
   it('reports a stalled save and moves on to the next choice', async () => {
     vi.useFakeTimers()
     try {
-      vi.mocked(api.storeSetting).mockReturnValueOnce(new Promise(() => {}))
+      const stalledSave = deferredResponse()
+      vi.mocked(api.storeSetting).mockReturnValueOnce(stalledSave.promise)
       const dontAskAgain = saveAskBeforeCloudCheck(false)
       await vi.waitFor(() => expect(api.storeSetting).toHaveBeenCalledOnce())
       const askAgain = saveAskBeforeCloudCheck(true)
@@ -179,6 +183,12 @@ describe('saveAskBeforeCloudCheck', () => {
       expect(api.storeSetting).toHaveBeenLastCalledWith(
         ASK_BEFORE_CLOUD_CHECK,
         true
+      )
+      expect(localStorage.getItem(PENDING_ASK_AGAIN_KEY)).toBe('true')
+
+      stalledSave.resolve(new Response())
+      await vi.waitFor(() =>
+        expect(localStorage.getItem(PENDING_ASK_AGAIN_KEY)).toBeNull()
       )
     } finally {
       vi.useRealTimers()
@@ -225,8 +235,12 @@ describe('saveAskBeforeCloudCheck', () => {
       await Promise.all([dontAskAgain, askAgain])
       expect(api.storeSetting).toHaveBeenCalledTimes(2)
 
+      expect(localStorage.getItem(PENDING_ASK_AGAIN_KEY)).toBe('true')
       lateSave.resolve(new Response())
       await vi.waitFor(() => expect(api.storeSetting).toHaveBeenCalledTimes(3))
+      await vi.waitFor(() =>
+        expect(localStorage.getItem(PENDING_ASK_AGAIN_KEY)).toBeNull()
+      )
 
       expect(api.storeSetting).toHaveBeenLastCalledWith(
         ASK_BEFORE_CLOUD_CHECK,
@@ -235,5 +249,40 @@ describe('saveAskBeforeCloudCheck', () => {
     } finally {
       vi.useRealTimers()
     }
+  })
+
+  it('remembers an ask-again choice in this browser until the server confirms it', async () => {
+    const slowSave = deferredResponse()
+    vi.mocked(api.storeSetting).mockReturnValueOnce(slowSave.promise)
+
+    const askAgain = saveAskBeforeCloudCheck(true)
+
+    expect(localStorage.getItem(PENDING_ASK_AGAIN_KEY)).toBe('true')
+    slowSave.resolve(new Response())
+    await askAgain
+    expect(localStorage.getItem(PENDING_ASK_AGAIN_KEY)).toBeNull()
+  })
+
+  it('asks and resends ask-again when a reload lost the unsaved choice', async () => {
+    await saveAskBeforeCloudCheck(false)
+    localStorage.setItem(PENDING_ASK_AGAIN_KEY, 'true')
+
+    expect(skipsCloudCheckQuestion()).toBe(false)
+
+    expect(useSettingStore().get(ASK_BEFORE_CLOUD_CHECK)).toBe(true)
+    await vi.waitFor(() =>
+      expect(api.storeSetting).toHaveBeenLastCalledWith(
+        ASK_BEFORE_CLOUD_CHECK,
+        true
+      )
+    )
+  })
+
+  it("skips the question only when the saved choice is Don't ask again", async () => {
+    expect(skipsCloudCheckQuestion()).toBe(false)
+
+    await saveAskBeforeCloudCheck(false)
+
+    expect(skipsCloudCheckQuestion()).toBe(true)
   })
 })

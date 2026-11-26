@@ -40,8 +40,8 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 
 import {
-  ASK_BEFORE_CLOUD_CHECK,
-  saveAskBeforeCloudCheck
+  saveAskBeforeCloudCheck,
+  skipsCloudCheckQuestion
 } from '@/platform/openOnCloud/cloudCheckConsent'
 import DeploySetupCard from '@/platform/openOnCloud/components/DeploySetupCard.vue'
 import RunOnCloudCard from '@/platform/openOnCloud/components/RunOnCloudCard.vue'
@@ -50,7 +50,6 @@ import type { RunOnCloudModalState } from '@/platform/openOnCloud/runOnCloudModa
 import { runOnCloudModalState } from '@/platform/openOnCloud/runOnCloudModalState'
 import { useCloudWorkflowCheckStore } from '@/platform/openOnCloud/stores/cloudWorkflowCheckStore'
 import { useLocalModelUploadStore } from '@/platform/openOnCloud/stores/localModelUploadStore'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import type { MissingModel } from '@/platform/openOnCloud/stores/localModelUploadStore'
 import {
   DEPLOY_VIDEO_POSTER_SRC,
@@ -72,8 +71,6 @@ const checkRequested = ref(false)
 const checkConsent = new AbortController()
 onBeforeUnmount(() => checkConsent.abort())
 
-const settingStore = useSettingStore()
-
 function startCheck(dontAskAgain = false) {
   if (checkRequested.value || !requestCheck?.(checkConsent.signal)) return
   checkRequested.value = true
@@ -81,7 +78,7 @@ function startCheck(dontAskAgain = false) {
 }
 
 onMounted(() => {
-  if (settingStore.get(ASK_BEFORE_CLOUD_CHECK) === false) startCheck()
+  if (skipsCloudCheckQuestion()) startCheck()
 })
 
 const { state: check } = storeToRefs(useCloudWorkflowCheckStore())
