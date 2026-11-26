@@ -83,6 +83,7 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
   const session = shallowRef<PlatformFrameSession | null>(null)
   const isUnanswered = ref(false)
   const build = shallowRef<FollowedBuild | null>(null)
+  const contentHeight = ref<number | null>(null)
   const isHidden = ref(false)
   let buildNotice: ToastId | undefined
   const ownedNotices = new Set<ToastId>()
@@ -157,6 +158,7 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
     stopResumeCheck()
     isUnanswered.value = false
     session.value = null
+    contentHeight.value = null
     build.value = null
     isHidden.value = false
   }
@@ -184,6 +186,7 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
       workflow: request.handsOverWorkflow ? captureOpenWorkflow() : null,
       owner
     }
+    contentHeight.value = null
     retriedSignIn = false
     waitForAnswer()
   }
@@ -476,7 +479,8 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
       if (message.signedIn) cancelRetry()
       else reloadForSignIn()
     }
-    if (message.type === 'build-started') startBuild(message)
+    if (message.type === 'content-height') contentHeight.value = message.height
+    else if (message.type === 'build-started') startBuild(message)
     else follow(message)
   }
 
@@ -508,6 +512,7 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
 
   return {
     session,
+    contentHeight,
     isUnanswered,
     build,
     isHidden,

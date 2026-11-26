@@ -227,6 +227,19 @@ describe('usePlatformFrameStore', () => {
     expect(store.isUnanswered).toBe(true)
   })
 
+  it('keeps the height the page asks for until the frame closes', () => {
+    const store = usePlatformFrameStore()
+    const { frame } = framedWindow()
+    store.open({ step: 'preinstall', deploymentId: 'dep-1' }, 'errors_panel')
+    store.attach(frame)
+
+    receive({ type: 'content-height', height: 304 }, frame)
+    expect(store.contentHeight).toBe(304)
+
+    store.dismiss()
+    expect(store.contentHeight).toBeNull()
+  })
+
   it('keeps the frame without the fallback once the page says it is ready', async () => {
     vi.useFakeTimers()
     const store = usePlatformFrameStore()
