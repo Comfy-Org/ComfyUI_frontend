@@ -10,7 +10,7 @@ import { openWorkflowForCheck } from '@/platform/workspace/openWorkflowForCheck'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { workflowDeploymentOffer } from '@/platform/workspace/workflowDeploymentOffer'
 
-type IssuesToastBuildOffer =
+export type IssuesToastBuildOffer =
   | { kind: 'switch'; buildName: string }
   | { kind: 'create' }
 

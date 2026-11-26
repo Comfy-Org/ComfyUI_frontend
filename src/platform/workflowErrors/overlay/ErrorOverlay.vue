@@ -73,26 +73,11 @@
           >
             {{ t('errorOverlay.askAgent') }}
           </Button>
-          <Button
+          <ErrorOverlayBuildOffer
             v-if="buildOffer"
-            variant="secondary"
-            size="sm"
-            data-testid="error-overlay-custom-build"
-            :title="
-              buildOffer.kind === 'switch'
-                ? t('errorOverlay.switchBuildTo', {
-                    build: buildOffer.buildName
-                  })
-                : undefined
-            "
-            @click="issuesToastBuildOffer?.open()"
-          >
-            {{
-              buildOffer.kind === 'switch'
-                ? t('errorOverlay.switchBuild')
-                : t('errorOverlay.createCustomBuild')
-            }}
-          </Button>
+            :offer="buildOffer"
+            @open="issuesToastBuildOffer?.open()"
+          />
         </div>
 
         <Button
@@ -121,6 +106,7 @@ import { useErrorOverlayState } from '@/platform/workflowErrors/overlay/useError
 import { useAskAgentPort } from '@/platform/workflowErrors/askAgentPort'
 import { isCloud } from '@/platform/distribution/types'
 import { useIssuesToastBuildOffer } from '@/platform/workspace/composables/useIssuesToastBuildOffer'
+import ErrorOverlayBuildOffer from '@/platform/workflowErrors/overlay/ErrorOverlayBuildOffer.vue'
 import ErrorOverlayDownloadAllModels from '@/platform/workflowErrors/overlay/ErrorOverlayDownloadAllModels.vue'
 
 const { appMode = false } = defineProps<{ appMode?: boolean }>()
