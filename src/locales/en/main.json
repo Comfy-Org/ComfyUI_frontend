@@ -4326,12 +4326,12 @@
     "defaultGoneOwner": "The workspace default was deleted, so members start on Comfy Cloud. Choose a new one under Workspace default.",
     "newDeploymentName": "New deployment",
     "noDeployments": "This workspace has no deployments yet.",
-    "createCustomDeployment": "Create a custom deployment",
+    "createCustomDeployment": "Create a Custom Build",
     "manageDeployments": "Manage deployments",
     "manageDeploymentsTooltip": "Manage your Builds and their deployments on the Developer Platform.",
     "customDeployment": {
-      "title": "Create a custom deployment",
-      "body": "A custom deployment adds the custom nodes and models Comfy Cloud doesn't have. You set it up on Platform, and it appears under Run on for your workspace.",
+      "title": "Create a Custom Build",
+      "body": "A Custom Build adds the custom nodes and models Comfy Cloud doesn't have. You set it up on Platform, and it appears under Run on for your workspace.",
       "pointNodes": "Use custom nodes and models that aren't on Comfy Cloud",
       "pointGpu": "Work in ComfyUI on the GPU you choose",
       "pointApi": "Call it from your product as an autoscaling API",
@@ -4339,11 +4339,11 @@
     },
     "deployCustomNodes": {
       "title": "Deploy Custom Nodes on Comfy Cloud",
-      "body": "Create a custom deployment that runs your custom nodes and models on Comfy Cloud, and appears under Run on for your workspace.",
+      "body": "Create a Custom Build that runs your custom nodes and models on Comfy Cloud, and appears under Run on for your workspace.",
       "pointNodes": "Deploy the custom or private node packs your workflows need"
     },
     "workflowNeedsDeployment": {
-      "title": "Run this workflow on a custom deployment",
+      "title": "Run this workflow on a Custom Build",
       "installTitle": "Install your missing custom nodes",
       "installBody": "Create a Custom Build to add the custom nodes and models Comfy Cloud doesn't have. You set it up on Platform, and it appears under Run on for your workspace.",
       "buildOnPlatform": "Build on Platform",
@@ -4429,7 +4429,7 @@
     }
   },
   "platformFrame": {
-    "title": "Custom deployment",
+    "title": "Custom Build",
     "preinstallTitle": "Pre-install models to run this workflow",
     "getStarted": "Get started",
     "unanswered": "Platform didn't open here.",
@@ -5615,11 +5615,6 @@
     "multipleIssuesMessage": "Resolve these issues before running the workflow.",
     "viewDetails": "View details",
     "askAgent": "Ask agent",
-    "runsOn": "Runs on {deployment}",
-    "switchDeployment": "Switch",
-    "moreDeployments": "{count} more",
-    "runOnCustomDeployment": "Run it on a custom deployment",
-    "setUpCustomDeployment": "Set up",
     "missingNodes": "Some nodes are missing and need to be installed",
     "missingModels": "{count} required model is missing | {count} required models are missing",
     "missingMedia": "Some nodes are missing required inputs"
@@ -6437,6 +6432,8 @@
       "lead": "Comfy Agent wants to run the workflow:",
       "leadBound": "Comfy Agent wants to run this workflow.",
       "question": "Do you approve?",
+      "estimateAtLeast": "Estimated cost: at least {credits} credits",
+      "estimateUnavailable": "Estimated cost: not available for this workflow",
       "thisWorkflow": "this workflow",
       "cancel": "Cancel",
       "run": "Run",

@@ -11,7 +11,7 @@
       v-if="hasLabels"
       type="single"
       :model-value="modelValue ? 'on' : 'off'"
-      :disabled="Boolean(options.read_only)"
+      :disabled="Boolean(options.read_only || options.disabled)"
       :class="cn(WidgetInputBaseClass, 'w-full min-w-0 p-1')"
       data-part="widget-toggle-group"
       @update:model-value="(v) => handleOptionChange(v as string)"

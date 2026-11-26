@@ -34,6 +34,7 @@ const canvasActions = vi.mockObject<
   Pick<
     RealComfyApp['canvas'],
     | '_deserializeItems'
+    | 'adjustMouseEvent'
     | 'copyToClipboard'
     | 'deleteSelected'
     | 'emitAfterChange'
@@ -58,6 +59,7 @@ const canvasActions = vi.mockObject<
     _deserializeItems() {
       assert.fail('Configure app.canvas._deserializeItems for this test')
     },
+    adjustMouseEvent() {},
     copyToClipboard: () => '',
     pasteFromClipboard() {},
     selectItems() {},

@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import WidgetButton from '@/renderer/extensions/vueNodes/widgets/components/WidgetButton.vue'
@@ -15,6 +15,7 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import { stubCanvasGetContext } from '@/utils/__tests__/canvasTestUtils'
 
 import WidgetItem from './WidgetItem.vue'
 
@@ -159,20 +160,35 @@ describe('WidgetItem', () => {
       return { node, widget }
     }
 
-    it('invokes the button callback with the original widget and node context', async () => {
+    it('invokes the button callback with the original widget, node and click context', async () => {
       const user = userEvent.setup()
       const callback = vi.fn(function (this: IBaseWidget) {
         this.label = 'Restored'
       })
       const { node, widget } = graphNodeWithButton(callback)
+      stubCanvasGetContext()
+      const canvas = new LGraphCanvas(
+        document.createElement('canvas'),
+        new LGraph(),
+        { skip_render: true, skip_events: true }
+      )
+      canvas.ds.scale = 2
+      canvas.ds.offset = [10, 20]
+      vi.mocked(app).canvas = canvas
       renderWidgetItem(widget, node)
 
-      await user.click(screen.getByRole('button', { name: widget.name }))
+      await user.pointer({
+        keys: '[MouseLeft]',
+        target: screen.getByRole('button', { name: widget.name }),
+        coords: { clientX: 50, clientY: 30 }
+      })
 
       expect(callback).toHaveBeenCalledExactlyOnceWith(
         undefined,
-        vi.mocked(app).canvas,
-        node
+        canvas,
+        node,
+        [15, -5],
+        expect.objectContaining({ type: 'click', canvasX: 15, canvasY: -5 })
       )
       expect(widget.label).toBe('Restored')
     })

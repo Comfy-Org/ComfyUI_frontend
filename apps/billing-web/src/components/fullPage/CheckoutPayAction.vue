@@ -11,6 +11,7 @@ import type { InlineOutcome, SubmitPhase } from '@/checkout/checkoutPage'
 import { isChallengeReopenable } from '@/checkout/checkoutPage'
 import { unbrokenDate } from '@/checkout/longDate'
 import { supportLinkFor } from '@/checkout/payVerdict'
+import { termsCopy } from '@/checkout/termsCopy'
 import type { PlanPurchase } from '@/checkout/summaryLedger'
 import CancelPaymentControl from '@/components/fullPage/CancelPaymentControl.vue'
 import InlineOutcomeCard from '@/components/fullPage/InlineOutcomeCard.vue'
@@ -21,6 +22,8 @@ import KeepSubscriptionNotice from '@/components/fullPage/KeepSubscriptionNotice
 export interface PayContext {
   readonly outcome?: Exclude<InlineOutcome, { kind: 'reconciling' }>
   readonly consent?: KeepSubscriptionConsent
+  /** Another way to pay follows Pay and carries the terms note under it. */
+  readonly termsBelow?: boolean
 }
 
 const {
@@ -31,6 +34,7 @@ const {
   reopening = false,
   outcome,
   consent,
+  termsBelow = false,
   purchase = 'subscribe'
 } = defineProps<
   PayContext & {
@@ -78,14 +82,7 @@ const PURCHASE_COPY = {
 
 const payLabel = computed(() => t(PURCHASE_COPY[purchase].pay))
 
-const terms = computed(() => ({
-  agreement: t(PURCHASE_COPY[purchase].agreement, {
-    terms: '{terms}',
-    privacy: '{privacy}'
-  }),
-  terms: t('checkout.fullPage.terms.terms'),
-  privacyPolicy: t('checkout.fullPage.terms.privacyPolicy')
-}))
+const terms = computed(() => termsCopy(t, PURCHASE_COPY[purchase].agreement))
 
 /** Support is for a payment that failed; a notice over a fresh price is not one. */
 const supportLink = computed(() =>
@@ -223,7 +220,7 @@ const PRIMARY_BUTTON =
       >
         {{ t('checkout.fullPage.outcome.contactSupport') }}
       </a>
-      <CheckoutTermsNote :copy="terms" />
+      <CheckoutTermsNote v-if="!termsBelow" :copy="terms" />
     </div>
   </div>
 </template>

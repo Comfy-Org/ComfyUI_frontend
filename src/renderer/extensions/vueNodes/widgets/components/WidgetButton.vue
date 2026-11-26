@@ -24,6 +24,7 @@ import {
   widgetName,
   widgetOptions
 } from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
+import { invokeButtonWidgetCallback } from '@/renderer/extensions/vueNodes/widgets/utils/invokeButtonWidgetCallback'
 import { useApp } from '@/scripts/appInstance'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import {
@@ -43,8 +44,10 @@ const filteredProps = computed(() =>
   filterWidgetProps(options.value, BUTTON_EXCLUDED_PROPS)
 )
 
-const handleClick = () => {
+const handleClick = (click: MouseEvent) => {
   const live = widgetLive(widgetId)
-  live?.widget.callback?.(live.widget.value, useApp().canvas, live.node)
+  if (!live) return
+  invokeButtonWidgetCallback(live.widget, live.node, useApp().canvas, click)
+  live.node.widgets?.forEach((w) => w.triggerDraw?.())
 }
 </script>

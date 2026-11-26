@@ -500,6 +500,23 @@ describe('SubgraphWidgetPromotion', () => {
       ).toEqual([widgetId(host.rootGraph.id, host.id, 'number')])
     })
 
+    it('keeps the host value when the same source is reconnected after a disconnect', async () => {
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: 'value', type: 'number' }]
+      })
+      const { node: interior } = createNodeWithWidget('InteriorNode')
+      const hostNode = setupPromotedWidget(subgraph, interior)
+      writePromotedWidgetValue(hostNode, 0, 99)
+
+      interior.disconnectInput(0, true)
+      await Promise.resolve()
+
+      expect(hostNode.widgets).toHaveLength(0)
+      subgraph.inputNode.slots[0].connect(interior.inputs[0], interior)
+
+      expect(promotedWidgetStateByName(hostNode, 'value').value).toBe(99)
+    })
+
     it('keeps the host widget promoted while another interior widget is still connected', async () => {
       const subgraph = createTestSubgraph({
         inputs: [{ name: 'value', type: 'number' }]
