@@ -42,7 +42,7 @@ export const useLocalBuildPrototypeStore = defineStore(
     const phase = ref<LocalBuildPhase>('idle')
     const uploadPercent = ref(0)
     const name = ref('')
-    const removed = ref<Record<string, boolean>>({})
+    const removed = ref<Partial<Record<string, boolean>>>({})
     const gpuIndex = ref(DEFAULT_GPU_INDEX)
     const toast = useToast()
     const dialogStore = useDialogStore()
@@ -50,7 +50,8 @@ export const useLocalBuildPrototypeStore = defineStore(
     let shownToast: ToastId | undefined
 
     const buildName = computed(() => name.value.trim() || DEFAULT_BUILD_NAME)
-    const isRemoved = (item: LocalBuildItem) => !!removed.value[item.name]
+    const isRemoved = (item: LocalBuildItem) =>
+      removed.value[item.name] === true
     const keptNodes = computed(() =>
       CUSTOM_NODES.filter((item) => !isRemoved(item))
     )
