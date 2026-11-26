@@ -315,7 +315,11 @@ import { resolveAgentIdentity } from './services/agent/agentIdentity'
 import type { AgentIdentityState } from './services/agent/agentIdentity'
 import { attachDocOpMinter } from './crdt/docOpMinter'
 import { attachRestoreOpMinter } from './crdt/restoreOpMinter'
-import { recordUnsyncedHumanOps } from './crdt/unsyncedHumanOps'
+import {
+  forgetUnsyncedAtLoad,
+  hasUnsyncedHumanOps,
+  recordUnsyncedHumanOps
+} from './crdt/unsyncedHumanOps'
 import type { DocOpMinter, DocOpMinterDeps } from './crdt/docOpMinter'
 
 const docOpMinterDeps = vi.hoisted(() => ({
@@ -16306,6 +16310,26 @@ describe('AgentPanelRoot workflow binding', () => {
     appMock.isGraphReady = false
 
     expect(docOpMinterDeps.current?.getGraph()).toBeNull()
+  })
+
+  it('marks the workflow named by the visible root graph while the active tab is stale', () => {
+    makeTab('wf-bound')
+    const visible = addTab('workflows/visible.json', {
+      activeState: fromPartial<ComfyWorkflowJSON>({ id: 'graph-visible' })
+    })
+    useAgentWorkflowTabBindingStore().bind('wf-visible', visible.path)
+    mockMessagesEndpoint('wf-bound')
+    const panel = renderWithSelectedTarget()
+
+    try {
+      docOpMinterDeps.current?.onUnboundVisibleIntent?.('graph-visible')
+
+      expect(hasUnsyncedHumanOps('wf-visible')).toBe(true)
+      expect(hasUnsyncedHumanOps('wf-bound')).toBe(false)
+    } finally {
+      panel.unmount()
+      forgetUnsyncedAtLoad('wf-visible')
+    }
   })
 
   it("reports the bound workflow's own stored root graph id once bound", async () => {

@@ -304,7 +304,7 @@ describe('attachDocOpMinter', () => {
   let seededPromotedDocs: Set<ReturnType<typeof mint>>
   let dynamicComboDocs: Set<ReturnType<typeof mint>>
   let unboundLocalIntents: number
-  let unboundVisibleIntents: number
+  let unboundVisibleIntents: string[]
 
   function registeredDynamicComboScenario() {
     const scenario = dynamicComboScenario(graph)
@@ -329,12 +329,13 @@ describe('attachDocOpMinter', () => {
     seededPromotedDocs = new Set()
     dynamicComboDocs = new Set()
     unboundLocalIntents = 0
-    unboundVisibleIntents = 0
+    unboundVisibleIntents = []
     minter = attachDocOpMinter({
       isEnabled: () => enabled,
       isDocBound: () => bound,
       onUnboundLocalIntent: () => unboundLocalIntents++,
-      onUnboundVisibleIntent: () => unboundVisibleIntents++,
+      onUnboundVisibleIntent: (rootGraphId) =>
+        unboundVisibleIntents.push(rootGraphId),
       enqueue: (operations) => minted.push(...operations),
       getGraph: () => (graphAvailable ? graph : null),
       boundRootGraphId: () => (unbound ? null : rootGraphId),
@@ -603,7 +604,7 @@ describe('attachDocOpMinter', () => {
     await afterFlush()
 
     expect(unboundLocalIntents).toBe(0)
-    expect(unboundVisibleIntents).toBe(2)
+    expect(unboundVisibleIntents).toEqual([graph.id, graph.id])
     expect(minted).toEqual([])
   })
 
@@ -617,10 +618,29 @@ describe('attachDocOpMinter', () => {
 
     expect(minted).toEqual([])
     expect(unboundLocalIntents).toBe(0)
-    expect(unboundVisibleIntents).toBe(2)
+    expect(unboundVisibleIntents).toEqual([graph.id, graph.id])
     expect(
       vi.mocked(reportError).mock.calls.map(([, meta]) => meta.errorType)
     ).toEqual(['agent_crdt_op_for_unbound_graph'])
+  })
+
+  it('marks a stored visible widget write when its node owner is temporarily unavailable', async () => {
+    rootGraphId = toRootGraphId('other-root-graph')
+    const widgetStore = useWidgetValueStore()
+    const missingOwnerWidget = widgetId(graph.id, toNodeId(999), 'steps')
+    const stored = widgetStore.registerWidget(missingOwnerWidget, {
+      type: 'number',
+      value: 20,
+      options: {}
+    })
+    assert.exists(stored)
+
+    expect(widgetStore.setValue(missingOwnerWidget, 21)).toBe(true)
+    await afterFlush()
+
+    expect(minted).toEqual([])
+    expect(unboundVisibleIntents).toEqual([graph.id])
+    expect(reportError).not.toHaveBeenCalled()
   })
 
   it('snapshots a pasted node after its same-tick configure, folding the widget and field writes into add_node', async () => {
