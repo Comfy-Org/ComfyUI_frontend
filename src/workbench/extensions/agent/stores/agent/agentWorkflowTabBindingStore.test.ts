@@ -212,6 +212,78 @@ describe('agentWorkflowTabBindingStore', () => {
     )
   })
 
+  it('does not replace an exact unbound owner with a duplicate-id binding', async () => {
+    const boundPath = 'workflows/bound-duplicate.json'
+    const unboundPath = 'workflows/unbound-owner.json'
+    seedBindings({
+      'wf-bound': {
+        tabPath: boundPath,
+        graphId: DRAFT_GRAPH_ID,
+        confirmedAt: Date.now()
+      }
+    })
+    const workflows = useWorkflowStore()
+    const bound = new ComfyWorkflow({
+      path: boundPath,
+      modified: 1,
+      size: 1
+    })
+    bound.originalContent = JSON.stringify({
+      ...blankGraph,
+      id: DRAFT_GRAPH_ID
+    })
+    const unbound = new ComfyWorkflow({
+      path: unboundPath,
+      modified: 1,
+      size: 1
+    })
+    unbound.originalContent = JSON.stringify({
+      ...blankGraph,
+      id: DRAFT_GRAPH_ID
+    })
+    const exactGraph = graphWithId(DRAFT_GRAPH_ID)
+    unbound.adoptGraph(exactGraph)
+    workflows.attachWorkflow(bound, 0)
+    workflows.attachWorkflow(unbound, 1)
+    const bindings = useAgentWorkflowTabBindingStore()
+    await nextTick()
+
+    expect(bindings.workflowIdForGraph(exactGraph)).toBeUndefined()
+    unbound.releaseGraph()
+    expect(
+      bindings.workflowIdForGraph(graphWithId(DRAFT_GRAPH_ID))
+    ).toBeUndefined()
+  })
+
+  it('does not treat an unrelated root as a legacy graph alias', async () => {
+    const path = 'workflows/legacy.json'
+    const legacyGraphId = 'legacy-graph-id'
+    seedBindings({
+      'wf-legacy': {
+        tabPath: path,
+        graphId: legacyGraphId,
+        confirmedAt: Date.now()
+      }
+    })
+    const workflows = useWorkflowStore()
+    const legacy = new ComfyWorkflow({ path, modified: 1, size: 1 })
+    legacy.originalContent = JSON.stringify({
+      ...blankGraph,
+      id: legacyGraphId
+    })
+    legacy.legacyId = legacyGraphId
+    workflows.attachWorkflow(legacy, 0)
+    const bindings = useAgentWorkflowTabBindingStore()
+    await nextTick()
+
+    expect(
+      bindings.workflowIdForGraph(graphWithId('unrelated-root'))
+    ).toBeUndefined()
+    expect(bindings.workflowIdForGraph(graphWithId(legacyGraphId))).toBe(
+      'wf-legacy'
+    )
+  })
+
   it('does not let an empty document id claim a restored draft binding', async () => {
     seedBindings({
       'wf-abandoned': {

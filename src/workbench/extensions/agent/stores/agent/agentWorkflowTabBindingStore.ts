@@ -361,29 +361,24 @@ export const useAgentWorkflowTabBindingStore = defineStore(
         : undefined
     }
 
-    function singleWorkflowId(tabs: ComfyWorkflow[]): string | undefined {
-      const workflowIds = new Set(
-        tabs.flatMap((tab) => workflowIdFor(tab.path) ?? [])
-      )
-      return workflowIds.size === 1
-        ? workflowIds.values().next().value
-        : undefined
-    }
-
     function workflowIdForGraph(rootGraph: LGraph): string | undefined {
-      const exactOwner = singleWorkflowId(
-        workflows.openWorkflows.filter((tab) => tab.graph === rootGraph)
+      const exactOwners = workflows.openWorkflows.filter(
+        (tab) => tab.graph === rootGraph
       )
-      if (exactOwner !== undefined) return exactOwner
-      return singleWorkflowId(
-        workflows.openWorkflows.filter((tab) => {
-          const graphId = graphIdOf(tab)
-          return (
-            graphId !== undefined &&
-            areWorkflowIdsEquivalent(rootGraph.id, graphId, tab.legacyId)
-          )
-        })
-      )
+      if (exactOwners.length !== 0)
+        return exactOwners.length === 1
+          ? workflowIdFor(exactOwners[0].path)
+          : undefined
+      const identityOwners = workflows.openWorkflows.filter((tab) => {
+        const graphId = graphIdOf(tab)
+        return (
+          graphId !== undefined &&
+          areWorkflowIdsEquivalent(graphId, rootGraph.id, tab.legacyId)
+        )
+      })
+      return identityOwners.length === 1
+        ? workflowIdFor(identityOwners[0].path)
+        : undefined
     }
 
     return {
