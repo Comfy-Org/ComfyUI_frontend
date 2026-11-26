@@ -461,7 +461,6 @@ function actorKind(actor: unknown): ActorKind {
   return kind === 'agent' || kind === 'human' ? kind : 'unknown'
 }
 
-/** Fixed client/server actors that carry no user identity: reported as-is. */
 const NON_IDENTIFYING_ACTORS: ReadonlySet<string> = new Set([
   'agent-remote',
   'agent-collected',
