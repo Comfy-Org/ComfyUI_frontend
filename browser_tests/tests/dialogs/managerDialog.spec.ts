@@ -70,9 +70,6 @@ const MOCK_PACK_C: RegistryNodePack = {
   repository: 'https://github.com/test/pack-c'
 }
 
-// A pack description is third-party registry content rendered as markdown, so
-// a publisher controls this string. Both links are needed: the first is the
-// attack, the second proves the guard did not just drop every link.
 const UNSAFE_DESCRIPTION =
   'Install from [click me](javascript:alert(1)) or read the [docs](https://docs.comfy.org/).'
 
@@ -618,7 +615,7 @@ test.describe('ManagerDialog', { tag: '@ui' }, () => {
         page: 1,
         limit: 64,
         totalPages: 1
-      }
+      } satisfies RegistryOperations['listAllNodes']['responses'][200]['content']['application/json']
       await comfyPage.page.route(
         (url) =>
           url.hostname === 'api.comfy.org' &&
@@ -652,26 +649,33 @@ test.describe('ManagerDialog', { tag: '@ui' }, () => {
       await manager.getByText(UNSAFE_PACK_NAME, { exact: true }).first().click()
 
       const info = manager.getByRole('complementary')
-      // The safe link proves the description reached the panel and that the
-      // guard rejects by scheme rather than suppressing every link, so the
-      // negative assertions below cannot pass on an empty panel.
-      const safeLink = info.getByRole('link', { name: 'docs' })
-      await safeLink.scrollIntoViewIfNeeded()
-      await expect(safeLink).toHaveAttribute('href', 'https://docs.comfy.org/')
 
-      await expect(info.getByRole('link', { name: 'click me' })).toHaveCount(0)
-      await expect(info.getByText('click me')).toBeVisible()
-
-      // `.href` is the effective URL the browser would navigate to, which is
-      // what an attribute-only check would miss.
-      const unsafeHrefs = await info
-        .locator('a[href]')
-        .evaluateAll((anchors) =>
-          anchors
-            .map((anchor) => (anchor as HTMLAnchorElement).href)
-            .filter((href) => !/^https?:/i.test(href))
+      await test.step('the description reached the panel, and its https link is still clickable', async () => {
+        const safeLink = info.getByRole('link', { name: 'docs' })
+        await safeLink.scrollIntoViewIfNeeded()
+        await expect(safeLink).toHaveAttribute(
+          'href',
+          'https://docs.comfy.org/'
         )
-      expect(unsafeHrefs).toEqual([])
+      })
+
+      await test.step('the javascript: link is not a link, but its text still renders', async () => {
+        await expect(info.getByRole('link', { name: 'click me' })).toHaveCount(
+          0
+        )
+        await expect(info.getByText('click me')).toBeVisible()
+      })
+
+      await test.step('no anchor in the panel resolves to a non-http(s) effective href', async () => {
+        const unsafeHrefs = await info
+          .locator('a[href]')
+          .evaluateAll((anchors) =>
+            anchors
+              .map((anchor) => (anchor as HTMLAnchorElement).href)
+              .filter((href) => !/^https?:/i.test(href))
+          )
+        expect(unsafeHrefs).toEqual([])
+      })
     })
   })
 
