@@ -5544,7 +5544,7 @@
     "setupRequired": "Setup required",
     "finishSetupBeforeRun": "Finish setup before running the workflow",
     "cloudLacksCustomNodes": "Comfy Cloud doesn't have these custom nodes",
-    "setUpCustomDeployment": "Set up a custom deployment",
+    "setUpCustomDeployment": "Set up a Custom Build",
     "addToDeploymentBuild": "Add these to {deployment}'s build on Platform, then deploy a new release.",
     "editBuildOnPlatform": "Edit build on Platform",
     "openBuildsOnPlatform": "Open Builds on Platform",

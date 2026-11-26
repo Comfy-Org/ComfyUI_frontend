@@ -549,7 +549,7 @@ describe('ErrorGroupList selection emphasis', () => {
       within(hero).getByText("Comfy Cloud doesn't have these custom nodes")
     ).toBeInTheDocument()
     expect(
-      within(hero).getByRole('button', { name: 'Set up a custom deployment' })
+      within(hero).getByRole('button', { name: 'Set up a Custom Build' })
     ).toBeInTheDocument()
   })
 
@@ -573,7 +573,7 @@ describe('ErrorGroupList selection emphasis', () => {
       within(hero).getByText('Finish setup before running the workflow')
     ).toBeInTheDocument()
     expect(
-      within(hero).getByRole('button', { name: 'Set up a custom deployment' })
+      within(hero).getByRole('button', { name: 'Set up a Custom Build' })
     ).toBeInTheDocument()
   })
 
@@ -583,7 +583,7 @@ describe('ErrorGroupList selection emphasis', () => {
     renderList(getActivePinia()!)
 
     expect(
-      screen.queryByRole('button', { name: 'Set up a custom deployment' })
+      screen.queryByRole('button', { name: 'Set up a Custom Build' })
     ).not.toBeInTheDocument()
   })
 
