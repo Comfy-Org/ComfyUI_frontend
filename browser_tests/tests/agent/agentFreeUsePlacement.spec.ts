@@ -16,14 +16,16 @@ import { webSocketFixture } from '@e2e/fixtures/ws'
 const FLAG = 'agent-free-use-message-placement'
 
 function billingStatus({
-  grantHeld
+  grantHeld,
+  agentHasFunds = true
 }: {
   grantHeld: boolean
+  agentHasFunds?: boolean
 }): BillingStatusResponse {
   return {
     ...DEFAULT_BILLING_STATUS,
     billing_rail: 'stripe',
-    scoped_effective_has_funds: { agent: true },
+    scoped_effective_has_funds: { agent: agentHasFunds },
     scoped_has_funds: { agent: grantHeld }
   }
 }
@@ -95,7 +97,10 @@ test.describe(
     }) => {
       await bootAgentApp(page, true, {
         features: { enable_telemetry: true },
-        billingStatus: billingStatus({ grantHeld: false })
+        billingStatus: billingStatus({
+          grantHeld: false,
+          agentHasFunds: false
+        })
       })
       const agentPanel = new AgentPanel(page)
 

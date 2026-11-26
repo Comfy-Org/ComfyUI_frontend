@@ -557,8 +557,9 @@ const showAgentCostNotice = computed(
     capabilityReadSettled.value &&
     subscription.value?.agentScopedHasFundsAuthoritative === true &&
     agentScopedHasFunds.value === false &&
-    agentHasFunds.value === true &&
-    !unresolvedPaywallPending.value
+    agentHasFunds.value !== undefined &&
+    !unresolvedPaywallPending.value &&
+    !showStandingPaywall.value
 )
 
 function onDismissCreditTransitionNotice(): void {
