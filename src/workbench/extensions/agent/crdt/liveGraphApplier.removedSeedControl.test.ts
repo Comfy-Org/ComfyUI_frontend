@@ -94,6 +94,13 @@ const PACKS: Record<string, PackDef> = {
     dropControl: true,
     order: ['noise_seed', 'control_after_generate']
   },
+  EmptyWidgetTypeSeed: {
+    type: 'EmptyWidgetTypeSeed',
+    built: { seed: ['INT', { ...IMPLICIT_SEED[1], widgetType: '' }] },
+    declared: { seed: ['INT', { ...IMPLICIT_SEED[1], widgetType: '' }] },
+    dropControl: true,
+    order: ['seed', 'control_after_generate']
+  },
   // Never had a control to remove: a named write to it is real drift.
   ForceInputSeed: {
     type: 'ForceInputSeed',
@@ -237,6 +244,7 @@ describe('a seed control the node removed on purpose', () => {
     ['PackSeed', ['seed']],
     ['ImplicitSeed', ['seed']],
     ['ImplicitNoiseSeed', ['noise_seed']],
+    ['EmptyWidgetTypeSeed', ['seed']],
     // A blank override/prefix still names the bare default control.
     ['BlankOverrideSeed', ['seed']]
   ] as const)(
