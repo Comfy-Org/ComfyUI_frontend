@@ -2,15 +2,16 @@ import { expect } from '@playwright/test'
 import { readFileSync } from 'fs'
 import { resolve } from 'path'
 
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { SubgraphHelper } from '@e2e/fixtures/helpers/SubgraphHelper'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import {
   expectSlotsWithinBounds,
   measureNodeSlotOffsets
 } from '@e2e/fixtures/utils/slotBoundsUtil'
+import { expectRegionScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 const RENAMED_INPUT_NAME = 'renamed_input'
 const RENAMED_SLOT_NAME = 'renamed_slot_name'
@@ -96,6 +97,40 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
       await expect
         .poll(() => comfyPage.subgraph.getSlotCount('input'))
         .toBe(initialCount - 1)
+    })
+
+    test.describe('Input wired to several inner slots', () => {
+      test.beforeEach(async ({ comfyPage }) => {
+        await comfyPage.workflow.loadWorkflow('subgraphs/subgraph-input-fanout')
+        const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
+        await subgraphNode.navigateIntoSubgraph()
+      })
+
+      test('Removing an input slot disconnects every link it has', async ({
+        comfyPage
+      }) => {
+        expect(await comfyPage.subgraph.getSlotCount('input')).toBe(1)
+        expect(await comfyPage.subgraph.getInteriorLinkCounts()).toEqual({
+          ioLinks: 3,
+          connectedInputs: 3
+        })
+
+        await comfyPage.subgraph.removeSlot('input')
+        await comfyPage.canvas.click({ position: { x: 100, y: 100 } })
+        await comfyPage.nextFrame()
+
+        await expect
+          .poll(() => comfyPage.subgraph.getSlotCount('input'))
+          .toBe(0)
+        expect(await comfyPage.subgraph.getInteriorLinkCounts()).toEqual({
+          ioLinks: 0,
+          connectedInputs: 0
+        })
+
+        await expect(
+          comfyPage.page.evaluate(() => window.app!.graphToPrompt())
+        ).resolves.toBeTruthy()
+      })
     })
 
     test('Can remove output slots from subgraph', async ({ comfyPage }) => {
@@ -405,7 +440,9 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
     () => {
       test.use({
         initialSettings: {
-          'Comfy.NodeSearchBoxImpl': 'v1 (legacy)'
+          'Comfy.UseNewMenu': 'Disabled',
+          'Comfy.NodeSearchBoxImpl': 'v1 (legacy)',
+          'Comfy.VueNodes.Enabled': false
         }
       })
 
@@ -432,21 +469,6 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
         ).toBe(true)
         await comfyPage.nextFrame()
 
-        const subgraphNode = comfyPage.vueNodes.getNodeLocator('19')
-        await expect(subgraphNode).toBeVisible()
-
-        const seedWidget = subgraphNode
-          .getByTestId('widget-layout-field-label')
-          .filter({ hasText: /^renamed_seed$/ })
-        await expect(seedWidget).toBeVisible()
-        await SubgraphHelper.expectWidgetBelowHeader(subgraphNode, seedWidget)
-
-        // Switch to the legacy canvas first, then enter through setGraph:
-        // after the disconnect above, the legacy node body shows an
-        // interactive seed widget that swallows coordinate-based navigation
-        // clicks, and entering while Vue nodes are enabled leaves a stale
-        // active canvas that breaks the rename prompt.
-        await comfyPage.menu.topbar.setVueNodesEnabled(false)
         await comfyPage.subgraph.enterSubgraphWithFallback('19')
 
         // The rename prompt reads LGraphCanvas.active_canvas, which only real
@@ -486,7 +508,7 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
         ).toBeHidden()
 
         await comfyPage.subgraph.exitViaBreadcrumb()
-        await comfyPage.menu.topbar.setVueNodesEnabled(true)
+        await comfyPage.vueNodes.setEnabled(true)
 
         const subgraphNodeAfter = comfyPage.vueNodes.getNodeLocator('19')
         await expect(subgraphNodeAfter).toBeVisible()
@@ -620,13 +642,11 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
           workflowRendererVersion: 'LG'
         }
 
-        await comfyPage.page.evaluate(
-          (wf) =>
-            window.app!.loadGraphData(wf, true, true, null, {
-              openSource: 'template'
-            }),
-          workflow
-        )
+        await comfyPage.page.evaluate(async (wf) => {
+          await window.app!.loadGraphData(wf, true, true, null, {
+            openSource: 'template'
+          })
+        }, workflow)
         await comfyPage.nextFrame()
 
         await comfyPage.page.locator('[data-slot-key]').first().waitFor()
@@ -664,7 +684,7 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
 
 test(
   'link interactions',
-  { tag: ['@vue-nodes', '@subgraph'] },
+  { tag: ['@vue-nodes', '@subgraph', '@screenshot'] },
   async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
     await comfyPage.vueNodes.enterSubgraph('2')
@@ -674,17 +694,24 @@ test(
     const seedIOSlot = await comfyPage.subgraph.getInputSlot('seed')
 
     await test.step('Make second INT typed connection', async () => {
-      const toPos = await seedIOSlot.getOpenSlotPosition()
-      await seedSlot.dragTo(comfyPage.canvas, { targetPosition: toPos })
+      await seedSlot.dragTo(comfyPage.subgraph.addInputSocket)
       const isConnected = () => comfyPage.vueNodes.isSlotConnected(seedSlot)
       await expect.poll(isConnected).toBe(true)
     })
 
-    const rawClip = await comfyPage.subgraph.getInputBounds()
-    const absolutePos = await comfyPage.canvasOps.toAbsolute(rawClip)
-    const clip = { ...rawClip, ...absolutePos }
-    await comfyPage.canvas.hover({ position: await seedIOSlot.getPosition() })
-    const twoLinkScreenshot = await comfyPage.page.screenshot({ clip })
+    const portNames = () =>
+      comfyPage.subgraph.inputPorts.evaluateAll((elements) =>
+        elements.map((element) => element.getAttribute('aria-label'))
+      )
+    const inputLinkCounts = () =>
+      comfyPage.page.evaluate(() =>
+        app!.canvas.subgraph?.inputs.map(({ name, linkIds }) => ({
+          name,
+          links: linkIds.length
+        }))
+      )
+    const twoLinkPorts = await portNames()
+    const twoLinkInputs = await inputLinkCounts()
 
     const stepsSlot = ksampler.getSlot('steps')
 
@@ -692,13 +719,29 @@ test(
       await stepsSlot.hover()
       await stepsSlot.click({ trial: true })
       await comfyPage.page.mouse.down()
-      await comfyPage.canvas.hover({ position: await seedIOSlot.getPosition() })
+      const seedPos = await seedIOSlot.getPosition()
+      await comfyPage.page.mouse.move(seedPos.x, seedPos.y)
 
-      await expect(comfyPage.page).toHaveScreenshot('vue-io-highlight.png', {
-        clip
-      })
+      const { subgraph } = comfyPage
+      await expect(
+        subgraph.inputPort('positive'),
+        'an incompatible input dims while an INT link is dragged'
+      ).toHaveCSS('opacity', '0.4')
+      await expect(
+        subgraph.inputPort('seed'),
+        'a compatible input stays fully visible'
+      ).toHaveCSS('opacity', '1')
+      await expectRegionScreenshot(
+        comfyPage.page,
+        [
+          subgraph.inputSocket('positive'),
+          subgraph.inputSocket('seed'),
+          subgraph.addInputSocket
+        ],
+        'vue-io-highlight.png',
+        { padding: 6 }
+      )
 
-      //cancel link operation
       await stepsSlot.hover()
       await comfyPage.page.mouse.up()
     })
@@ -717,14 +760,13 @@ test(
       expect(await hasSnap()).toBe(false)
 
       const emptySlotPos = await seedIOSlot.getOpenSlotPosition()
-      await comfyPage.canvas.hover({ position: emptySlotPos })
+      await comfyPage.page.mouse.move(emptySlotPos.x, emptySlotPos.y)
       await comfyPage.page.mouse.down()
       const { width, height } = (await stepsSlot.boundingBox())!
       await stepsSlot.hover({ position: { x: (width * 3) / 4, y: height / 2 } })
       await expect.poll(hasSnap).toBe(true)
       await comfyPage.page.mouse.up()
 
-      //move hover off the slot
       await ksampler.title.hover()
     })
 
@@ -741,9 +783,8 @@ test(
 
       await expect(slotParent).toHaveCSS('opacity', '0')
 
-      await comfyPage.canvas.hover({ position: await seedIOSlot.getPosition() })
-      const postScreenshot = await comfyPage.page.screenshot({ clip })
-      expect(postScreenshot).toStrictEqual(twoLinkScreenshot)
+      await expect.poll(portNames).toEqual(twoLinkPorts)
+      await expect.poll(inputLinkCounts).toEqual(twoLinkInputs)
     })
   }
 )

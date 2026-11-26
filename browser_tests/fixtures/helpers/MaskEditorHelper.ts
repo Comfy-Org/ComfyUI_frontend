@@ -10,9 +10,13 @@ const RGB_CANVAS_INDEX = 1
 type BrushSliderLabel = 'thickness'
 
 class MaskEditorHelper {
+  public readonly dialog: Locator
   public readonly previewImage: Locator
 
   constructor(private comfyPage: ComfyPage) {
+    this.dialog = comfyPage.page.locator(
+      '[data-dialog-key="global-mask-editor"]'
+    )
     this.previewImage = comfyPage.page.locator('.image-preview img').first()
   }
 
@@ -20,12 +24,9 @@ class MaskEditorHelper {
     return this.comfyPage.page
   }
 
-  async loadImageOnNode() {
-    await this.comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
-
-    const loadImageNode = (
-      await this.comfyPage.nodeOps.getNodeRefsByType('LoadImage')
-    )[0]
+  async loadImageOnNode(nodeType = 'LoadImage') {
+    const loadImageNode =
+      await this.comfyPage.nodeOps.getNodeRefByType(nodeType)
     const { x, y } = await loadImageNode.getPosition()
 
     await this.comfyPage.dragDrop.dragAndDropFile('image64x64.webp', {
@@ -43,13 +44,13 @@ class MaskEditorHelper {
     }
   }
 
-  async openDialog(): Promise<Locator> {
-    const { imagePreview } = await this.loadImageOnNode()
+  async openDialog(nodeType?: string): Promise<Locator> {
+    const { imagePreview } = await this.loadImageOnNode(nodeType)
 
     await imagePreview.getByRole('region').hover()
     await this.page.getByLabel('Edit or mask image').click()
 
-    const dialog = this.page.locator('.mask-editor-dialog')
+    const dialog = this.dialog
     await expect(dialog).toBeVisible()
     await expect(
       dialog.getByRole('heading', { name: 'Mask Editor' })
@@ -58,6 +59,7 @@ class MaskEditorHelper {
     const canvasContainer = dialog.locator('#maskEditorCanvasContainer')
     await expect(canvasContainer).toBeVisible()
     await expect(canvasContainer.locator('canvas')).toHaveCount(4)
+    await expect(dialog.getByTestId('pointer-zone')).toBeVisible()
 
     return dialog
   }
@@ -67,8 +69,9 @@ class MaskEditorHelper {
     await imagePreview.getByRole('region').hover()
     await this.page.getByLabel('Edit or mask image').click()
 
-    const dialog = this.page.locator('.mask-editor-dialog')
+    const dialog = this.dialog
     await expect(dialog).toBeVisible()
+    await expect(dialog.getByTestId('pointer-zone')).toBeVisible()
 
     return dialog
   }

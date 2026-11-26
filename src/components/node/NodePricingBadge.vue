@@ -8,8 +8,8 @@
 import { evaluateNodeDefPricing } from '@comfyorg/shared-frontend-utils/nodePricing'
 import { ref, watch } from 'vue'
 
-import CreditBadge from '@/components/node/CreditBadge.vue'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import CreditBadge from '@comfyorg/design-system/badge/CreditBadge'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 
 const { nodeDef } = defineProps<{
   nodeDef: ComfyNodeDefImpl

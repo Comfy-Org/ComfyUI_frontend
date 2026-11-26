@@ -1,26 +1,35 @@
-/**
- * One call site, two sinks: the console (for whoever has devtools open) and
- * the panel's ring buffer (for whoever is copying a report).
- *
- * Before this module the two were wired independently — a handful of
- * `recordDevEvent` calls that never printed, and a handful of bare
- * `console.warn`s the panel never saw — so the console and the copied report
- * disagreed about what happened. New structured wire events use
- * {@link crdtLog}; existing document events remain in the shared ring buffer.
- */
-import type { CrdtLogLevel } from './crdtDebugGate'
-import {
-  isCrdtDebugEnabled,
-  isCrdtDebugOptedOut,
-  isLevelEnabled
-} from './crdtDebugGate'
-import type { CrdtLogScope, DevEventKind } from './devPanelLog'
-import { recordDevEvent } from './devPanelLog'
+import { shallowRef, triggerRef } from 'vue'
+import { safeLocalStorage } from '@/base/storage/safeStorage'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useSettingStore } from '@/platform/settings/settingStore'
 
-/**
- * Console tint per scope, so a busy log reads as layers rather than as one
- * undifferentiated stream.
- */
+import { sanitizeDevEventDetail } from '@/platform/telemetry/redact'
+import type { CrdtLogLevel } from './crdtLogLevel'
+import { CRDT_LOG_LEVELS } from './crdtLogLevel'
+
+const { flags } = useFeatureFlags()
+
+export function startCrdtLog(): () => void {
+  const settingStore = useSettingStore()
+  const refreshLevel = () => {
+    try {
+      const level = safeLocalStorage.getItem('Comfy.Agent.CrdtDebug.level')
+      const selected = CRDT_LOG_LEVELS.find((candidate) => candidate === level)
+      if (selected)
+        settingStore.settingValues['Comfy.Agent.CrdtDebug.Level'] = selected
+    } catch {
+      return
+    }
+  }
+  refreshLevel()
+  const onStorage = (event: StorageEvent) => {
+    if (event.key === null || event.key === 'Comfy.Agent.CrdtDebug.level')
+      refreshLevel()
+  }
+  window.addEventListener('storage', onStorage)
+  return () => window.removeEventListener('storage', onStorage)
+}
+
 const SCOPE_STYLE: Record<CrdtLogScope, string> = {
   wire: 'color:#7dd3fc',
   doc: 'color:#a5b4fc'
@@ -37,39 +46,23 @@ interface CrdtLogEntry {
   scope: CrdtLogScope
   level: CrdtLogLevel
   kind: DevEventKind
-  /** Short human sentence; the `detail` carries the structure. */
   message: string
   detail?: unknown
 }
 
-/**
- * Emit one CRDT-internal event.
- *
- * The ring buffer records while the debug instrument is enabled even when the
- * selected console level is quiet. Ordinary production sessions retain no
- * frame or actor details; a tester must opt in before reproducing an issue.
- */
 function crdtLog(entry: CrdtLogEntry): void {
+  if (!flags.agentCrdtDebugEnabled) return
   const { scope, level, kind, message, detail } = entry
-  const optedOut = isCrdtDebugOptedOut()
-  if (!optedOut) recordDevEvent(kind, detail ?? null, { scope, level })
-
-  if (optedOut && level !== 'warn') return
-  if (!isLevelEnabled(level)) return
+  recordDevEvent(kind, detail ?? null, { scope, level })
+  const threshold = useSettingStore().get('Comfy.Agent.CrdtDebug.Level')
+  if (CRDT_LOG_LEVELS.indexOf(level) > CRDT_LOG_LEVELS.indexOf(threshold))
+    return
   const line = `%c[crdt:${scope}]%c ${kind} — ${message}`
   const args: unknown[] = [line, SCOPE_STYLE[scope], '']
-  // `warn` reaches the console even when the instrument is off, so that a
-  // fail-closed follower is never silent. The MESSAGE is what earns that
-  // exemption — dumping document state into an opted-out user's console does
-  // not. The detail is still in the ring buffer for whoever opted in.
-  if (detail !== undefined && isCrdtDebugEnabled()) args.push(detail)
+  if (detail !== undefined) args.push(sanitizeDevEventDetail(detail))
   console[CONSOLE_METHOD[level]](...args)
 }
 
-/**
- * Bind a scope once so call sites read as `wire.trace('…')` rather than
- * repeating the scope on every event.
- */
 function scopedCrdtLog(scope: CrdtLogScope) {
   const at =
     (level: CrdtLogLevel) =>
@@ -85,3 +78,101 @@ function scopedCrdtLog(scope: CrdtLogScope) {
 }
 
 export const wireLog = scopedCrdtLog('wire')
+
+export type CrdtLogScope = 'wire' | 'doc'
+export const DEV_EVENT_KINDS = [
+  'ws_out',
+  'doc_subscribed',
+  'doc_update',
+  'doc_ops_result',
+  'doc_ops_result_dropped',
+  'human_ops_settled',
+  'mint_divergence',
+  'host_rejected',
+  'doc_reset',
+  'doc_nodes_changed',
+  'schema_error',
+  'reconnected',
+  'subscribe_retry',
+  'subscribe_ack_timeout',
+  'subscribe_ack_reconnect',
+  'subscribe_refused_permanent',
+  'subscribe_credential_reconnect',
+  'doc_reseed_sent',
+  'doc_reseed_result',
+  'stale_probe',
+  'catchup_probe',
+  'rebind',
+  'doc_gap',
+  'doc_stale',
+  'frame_send_failed',
+  'agent_node_adapters_materialized',
+  'local_widget_write_held',
+  'agent_write_overwritten'
+] as const
+export type DevEventKind = (typeof DEV_EVENT_KINDS)[number]
+export interface DevEvent {
+  seq: number
+  at: number
+  kind: DevEventKind
+  scope: CrdtLogScope
+  level: CrdtLogLevel
+  detail: unknown
+}
+export interface DevEventOptions {
+  scope?: CrdtLogScope
+  level?: CrdtLogLevel
+}
+const CAPACITY = 500
+let nextSeq = 1
+let buffer: DevEvent[] | undefined
+export const devEvents = shallowRef<readonly DevEvent[]>([])
+export function recordDevEvent(
+  kind: DevEventKind,
+  detail: unknown,
+  options: DevEventOptions = {}
+): void {
+  if (!flags.agentCrdtDebugEnabled) return
+  const events = buffer ?? (buffer = [])
+  events.push({
+    seq: nextSeq++,
+    at: Date.now(),
+    kind,
+    scope: options.scope ?? 'doc',
+    level: options.level ?? 'info',
+    detail: sanitizeDevEventDetail(detail)
+  })
+  if (events.length > CAPACITY) events.splice(0, events.length - CAPACITY)
+  if (devEvents.value !== events) devEvents.value = events
+  else triggerRef(devEvents)
+}
+export function clearDevEvents(): void {
+  if (!buffer) return
+  buffer.length = 0
+  triggerRef(devEvents)
+}
+export function stringifyDevEvents(events: readonly DevEvent[]): string {
+  return JSON.stringify(events, devEventReplacer(), 2)
+}
+export function devEventReplacer(): (
+  this: unknown,
+  key: string,
+  value: unknown
+) => unknown {
+  const ancestors: unknown[] = []
+  return function (this: unknown, _key, value) {
+    while (ancestors.length > 0 && ancestors.at(-1) !== this) ancestors.pop()
+    if (ArrayBuffer.isView(value)) {
+      return `${value.constructor.name}(${value.byteLength})`
+    }
+    if (Object.prototype.toString.call(value) === '[object ArrayBuffer]') {
+      return `ArrayBuffer(${(value as ArrayBuffer).byteLength})`
+    }
+    if (typeof value === 'bigint') return value.toString()
+    if (typeof value === 'object' && value !== null) {
+      if (ancestors.includes(value)) return '[Circular]'
+      ancestors.push(value)
+    }
+    return value
+  }
+}

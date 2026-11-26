@@ -2,38 +2,28 @@ import { fromPartial } from '@total-typescript/shoehorn'
 
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { defineComponent } from 'vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed, defineComponent } from 'vue'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+import { useAppMode } from '@/composables/useAppMode'
+import type { AssetItem } from '@comfyorg/assets-core/schema'
+import { extractWorkflowFromAsset } from '@/platform/workflow/utils/workflowExtractionUtil'
+import { app } from '@/scripts/app'
 
 import LinearPreview from './LinearPreview.vue'
 import type { OutputSelection } from './linearModeTypes'
-
-const appModeState = vi.hoisted(() => ({
-  isBuilderMode: false,
-  isArrangeMode: false
-}))
 
 const outputHistoryState = vi.hoisted(() => ({
   isWorkflowActive: false
 }))
 
 const spies = vi.hoisted(() => ({
-  cancelActiveWorkflowJobs: vi.fn(),
-  deleteAssets: vi.fn()
+  cancelActiveWorkflowJobs: vi.fn()
 }))
 
-vi.mock<unknown>(import('@/composables/useAppMode'), async () => {
-  const { computed } = await import('vue')
-  return {
-    useAppMode: () => ({
-      isBuilderMode: computed(() => appModeState.isBuilderMode),
-      isArrangeMode: computed(() => appModeState.isArrangeMode)
-    })
-  }
-})
+vi.mock(import('@/composables/useAppMode'))
 
 vi.mock<unknown>(
   import('@/renderer/extensions/linearMode/useOutputHistory'),
@@ -49,28 +39,40 @@ vi.mock<unknown>(
   }
 )
 
-vi.mock<unknown>(
-  import('@/platform/assets/composables/useMediaAssetActions'),
-  () => ({
-    useMediaAssetActions: () => ({ deleteAssets: spies.deleteAssets })
-  })
-)
-
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: { rootGraph: { id: 'root' }, loadGraphData: vi.fn() }
+vi.mock(import('@/platform/assets/composables/useMediaAssetActions'), () => ({
+  useMediaAssetActions: vi.fn(() => ({
+    downloadAssets: vi.fn(),
+    deleteAssets: vi.fn(async () => false),
+    copyJobId: vi.fn(async () => {}),
+    addWorkflow: vi.fn(async () => {}),
+    addMultipleToWorkflow: vi.fn(async () => {}),
+    openWorkflow: vi.fn(async () => {}),
+    openMultipleWorkflows: vi.fn(async () => {}),
+    exportWorkflow: vi.fn(async () => {}),
+    exportMultipleWorkflows: vi.fn(async () => {})
+  }))
 }))
+
+vi.mock(import('@/platform/workflow/utils/workflowExtractionUtil'), () => ({
+  extractWorkflowFromAsset: vi.fn()
+}))
+
+vi.mock(import('@/scripts/app'))
 
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
   messages: {
     en: {
-      g: { download: 'Download' },
+      g: {
+        delete: 'Delete',
+        download: 'Download',
+        moreOptions: 'More Options'
+      },
       linearMode: {
         rerun: 'Rerun',
         reuseParameters: 'Reuse Parameters',
         cancelThisRun: 'Cancel this run',
-        deleteAllAssets: 'Delete all',
         downloadAll: 'Download all'
       }
     }
@@ -81,6 +83,20 @@ function renderPreview(
   props: { mobile?: boolean } = {},
   emitSelection?: OutputSelection
 ) {
+  // happy-dom focuses Reka's non-focusable wrapper: https://github.com/unovue/reka-ui/issues/2803
+  const preventAutofocus = (event: Event) => event.preventDefault()
+  document.addEventListener(
+    'focusScope.autoFocusOnMount',
+    preventAutofocus,
+    true
+  )
+  onTestFinished(() =>
+    document.removeEventListener(
+      'focusScope.autoFocusOnMount',
+      preventAutofocus,
+      true
+    )
+  )
   const user = userEvent.setup()
   const outputHistoryStub = emitSelection
     ? defineComponent({
@@ -97,14 +113,12 @@ function renderPreview(
     props,
     global: {
       plugins: [i18n],
-      directives: { tooltip: {} },
       stubs: {
         ImagePreview: { template: '<div data-testid="image-preview" />' },
         LatentPreview: { template: '<div data-testid="latent-preview" />' },
         LinearWelcome: { template: '<div data-testid="linear-welcome" />' },
         LinearArrange: { template: '<div data-testid="linear-arrange" />' },
         MediaOutputPreview: true,
-        Popover: { template: '<div data-testid="output-popover" />' },
         OutputHistory: outputHistoryStub
       }
     }
@@ -114,8 +128,8 @@ function renderPreview(
 
 describe('LinearPreview', () => {
   beforeEach(() => {
-    appModeState.isBuilderMode = false
-    appModeState.isArrangeMode = false
+    useAppMode().isBuilderMode = computed(() => false)
+    useAppMode().isArrangeMode = computed(() => false)
     outputHistoryState.isWorkflowActive = false
   })
 
@@ -127,7 +141,7 @@ describe('LinearPreview', () => {
   })
 
   it('hides the output history in builder mode', () => {
-    appModeState.isBuilderMode = true
+    useAppMode().isBuilderMode = computed(() => true)
 
     renderPreview()
 
@@ -135,7 +149,7 @@ describe('LinearPreview', () => {
   })
 
   it('shows the arrange view in arrange mode', () => {
-    appModeState.isArrangeMode = true
+    useAppMode().isArrangeMode = computed(() => true)
 
     renderPreview()
 
@@ -171,8 +185,49 @@ describe('LinearPreview', () => {
 
     expect(await screen.findByTestId('linear-output-info')).toBeInTheDocument()
     expect(screen.getByTestId('image-preview')).toBeInTheDocument()
-    expect(screen.getByTestId('output-popover')).toBeInTheDocument()
+    await userEvent
+      .setup()
+      .click(screen.getByRole('button', { name: 'More Options' }))
+    expect(
+      await screen.findByRole('menuitem', { name: 'Delete' })
+    ).toBeInTheDocument()
     expect(screen.getByText('Rerun')).toBeInTheDocument()
     expect(screen.getByText('Reuse Parameters')).toBeInTheDocument()
+  })
+
+  it.for([
+    {
+      name: 'loads a different workflow as a user activation on Reuse Parameters',
+      workflowId: 'other-workflow-id'
+    },
+    {
+      name: 'loads the matching workflow as a user activation when no change tracker exists',
+      workflowId: 'current-workflow-id'
+    }
+  ])('$name', async ({ workflowId }) => {
+    app.rootGraph.id = 'current-workflow-id'
+    const workflow = fromPartial<ComfyWorkflowJSON>({ id: workflowId })
+    vi.mocked(extractWorkflowFromAsset).mockResolvedValue({
+      workflow,
+      filename: 'out.json'
+    })
+    const asset = fromPartial<AssetItem>({
+      id: 'a1',
+      name: 'out.png',
+      tags: []
+    })
+    const selection: OutputSelection = {
+      asset,
+      canShowPreview: true
+    }
+
+    const { user } = renderPreview({}, selection)
+    await user.click(
+      await screen.findByRole('button', { name: 'Reuse Parameters' })
+    )
+
+    expect(app.loadGraphData).toHaveBeenCalledWith(workflow, true, true, null, {
+      initiator: 'user'
+    })
   })
 })

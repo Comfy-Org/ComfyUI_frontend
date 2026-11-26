@@ -1,7 +1,8 @@
 import { defineStore } from 'pinia'
 import { computed, ref, watchEffect } from 'vue'
 
-import type { User as UserConfig } from '@/schemas/apiSchema'
+import type { UserConfigResponse } from '@comfyorg/api-client/types'
+import { safeLocalStorage } from '@/base/storage/safeStorage'
 import { api } from '@/scripts/api'
 
 export interface User {
@@ -13,7 +14,7 @@ export const useUserStore = defineStore('user', () => {
   /**
    * The user config. null if not loaded.
    */
-  const userConfig = ref<UserConfig | null>(null)
+  const userConfig = ref<UserConfigResponse | null>(null)
   /**
    * The current user id. null if not logged in or in single user mode.
    */
@@ -45,7 +46,7 @@ export const useUserStore = defineStore('user', () => {
     initializePromise ??= (async () => {
       try {
         userConfig.value = await api.getUserConfig()
-        currentUserId.value = localStorage['Comfy.userId']
+        currentUserId.value = safeLocalStorage.getItem('Comfy.userId')
       } catch (err) {
         initializePromise = null
         throw err
@@ -88,8 +89,8 @@ export const useUserStore = defineStore('user', () => {
     username: string
   }) {
     currentUserId.value = userId
-    localStorage['Comfy.userId'] = userId
-    localStorage['Comfy.userName'] = username
+    safeLocalStorage.setItem('Comfy.userId', userId)
+    safeLocalStorage.setItem('Comfy.userName', username)
   }
 
   watchEffect(() => {
@@ -102,8 +103,8 @@ export const useUserStore = defineStore('user', () => {
    * Logout the current user.
    */
   async function logout() {
-    delete localStorage['Comfy.userId']
-    delete localStorage['Comfy.userName']
+    safeLocalStorage.removeItem('Comfy.userId')
+    safeLocalStorage.removeItem('Comfy.userName')
   }
 
   return {

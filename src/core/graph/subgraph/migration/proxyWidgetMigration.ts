@@ -1,5 +1,10 @@
 import { isEqual } from 'es-toolkit/compat'
 
+import {
+  isMediaPreviewWidgetName,
+  previewSourceName
+} from '@/core/graph/subgraph/preview/mediaPreviewName'
+import { PRIMITIVE_NODE_TYPE } from '@/constants/primitiveNodeConstants'
 import { promotedInputWidget } from '@/core/graph/subgraph/promotedInputWidget'
 import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import {
@@ -16,27 +21,24 @@ import type {
   ProxyWidgetQuarantineReason
 } from '@/core/schemas/proxyWidgetQuarantineSchema'
 import { parseProxyWidgetErrorQuarantine } from '@/core/schemas/proxyWidgetQuarantineSchema'
-import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
+import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { nextUniqueName } from '@/lib/litegraph/src/strings'
 import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
-import type {
-  IBaseWidget,
-  TWidgetValue
-} from '@/lib/litegraph/src/types/widgets'
-import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget, TWidgetValue } from '@comfyorg/graph-model/widgets'
+import { isWidgetValue } from '@comfyorg/graph-model/widgets'
 import { useLinkStore } from '@/stores/linkStore'
-import { graphScopeOf } from '@/types/graphScopeId'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import {
   getPreviewExposureHostLocator,
   usePreviewExposureStore
 } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import type { LinkTopology } from '@/types/linkTopology'
-import { toNodeId } from '@/types/nodeId'
-import type { NodeId, SerializedNodeId } from '@/types/nodeId'
+import type { LinkTopology } from '@comfyorg/graph-model/linkTopology'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId, SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 
 interface LegacyProxyEntrySource extends PromotedWidgetSource {
   disambiguatingSourceNodeId?: NodeId
@@ -165,7 +167,6 @@ interface PendingEntry {
   plan: Plan
 }
 
-const PRIMITIVE_NODE_TYPE = 'PrimitiveNode'
 const QUARANTINE_PROPERTY = 'proxyWidgetErrorQuarantine'
 const QUARANTINE_VERSION = 1
 const PROXY_BYPASS_MARKER_PROPERTY = 'proxyBypassedToSubgraphInput'
@@ -366,6 +367,13 @@ function classify(
     return { kind: 'quarantine', reason: 'unlinkedSourceWidget' }
   }
 
+  if (isMediaPreviewWidgetName(normalized.sourceWidgetName)) {
+    return {
+      kind: 'previewExposure',
+      sourcePreviewName: normalized.sourceWidgetName
+    }
+  }
+
   const sourceWidget = resolveSourceWidget(
     sourceNode,
     normalized.sourceWidgetName,
@@ -396,7 +404,7 @@ function applyHostValueToInput(
   entry: PendingEntry
 ): boolean {
   if (!input.widgetId || entry.isHole) return Boolean(input.widgetId)
-  return useWidgetValueStore().setValue(input.widgetId, entry.hostValue)
+  return useWidgetValueStore().restoreValue(input.widgetId, entry.hostValue)
 }
 
 function applyHostLabelToInput(
@@ -719,8 +727,11 @@ function migratePreview(
     return { ok: false, reason: 'missingSourceNode' }
   }
 
-  const isCanonicalPseudo = plan.sourcePreviewName.startsWith('$$')
-  if (!isCanonicalPseudo) {
+  const sourcePreviewName = previewSourceName(
+    sourceNode,
+    plan.sourcePreviewName
+  )
+  if (!sourcePreviewName.startsWith('$$')) {
     const widget = sourceNode.widgets?.find(
       (w) => w.name === plan.sourcePreviewName
     )
@@ -736,13 +747,13 @@ function migratePreview(
     .find(
       (exposure) =>
         exposure.sourceNodeId === entry.normalized.sourceNodeId &&
-        exposure.sourcePreviewName === plan.sourcePreviewName
+        exposure.sourcePreviewName === sourcePreviewName
     )
   if (existing) return { ok: true, previewName: existing.name }
 
   const added = store.addExposure(hostNode.rootGraph.id, hostNodeLocator, {
     sourceNodeId: entry.normalized.sourceNodeId,
-    sourcePreviewName: plan.sourcePreviewName
+    sourcePreviewName
   })
 
   return { ok: true, previewName: added.name }
@@ -773,7 +784,7 @@ export function appendQuarantine(
 
     const input = hostNode.inputs.find((input) => input.name === inputName)
     if (input?.widgetId)
-      useWidgetValueStore().setValue(input.widgetId, hostValue)
+      useWidgetValueStore().restoreValue(input.widgetId, hostValue)
   }
 
   const existing = parseProxyWidgetErrorQuarantine(

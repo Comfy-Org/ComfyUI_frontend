@@ -1,6 +1,7 @@
-import { useCurrentUser } from 'vuefire'
-
+import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
+import { webSessionUser } from '@/platform/auth/session/webSessionUser'
 import { isCloud } from '@/platform/distribution/types'
+import { safeSessionStorage } from '@/base/storage/safeStorage'
 
 const STORAGE_KEY = 'Comfy.FeatureFlagOverride'
 const QUERY_PARAM = 'ff'
@@ -14,17 +15,24 @@ type OverrideMap = Record<string, unknown>
  * the only thing standing between a `?ff=` link and the app's behaviour, so it
  * fails closed.
  *
- * Reads VueFire rather than `authStore`, which imports `useFeatureFlags` and
- * would drag the whole app module graph into every feature flag read.
+ * Reads the identity modules rather than `authStore`, which imports
+ * `useFeatureFlags` and would drag the whole app module graph into every
+ * feature flag read. A web session sign-in has no Firebase user, so its
+ * server-verified user counts too.
  */
 function isComfyEmployee(): boolean {
-  try {
-    const user = useCurrentUser().value
-    if (!user?.emailVerified) return false
+  return [firebaseUser(), webSessionUser.value].some(
+    (user) =>
+      user?.emailVerified === true &&
+      (user.email?.toLowerCase().endsWith(EMPLOYEE_EMAIL_DOMAIN) ?? false)
+  )
+}
 
-    return user.email?.toLowerCase().endsWith(EMPLOYEE_EMAIL_DOMAIN) ?? false
+function firebaseUser() {
+  try {
+    return firebaseIdentity.currentUser()
   } catch {
-    return false
+    return null
   }
 }
 
@@ -64,12 +72,7 @@ function coerceStoredOverrides(value: unknown): OverrideMap {
 }
 
 function readStoredState(): StoredState {
-  let raw: string | null
-  try {
-    raw = sessionStorage.getItem(STORAGE_KEY)
-  } catch {
-    return emptyState()
-  }
+  const raw = safeSessionStorage.getItem(STORAGE_KEY)
   if (!raw) return emptyState()
 
   let parsed: unknown
@@ -89,9 +92,7 @@ function readStoredState(): StoredState {
 }
 
 function writeStoredState(state: StoredState): void {
-  try {
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state))
-  } catch {
+  if (safeSessionStorage.setItem(STORAGE_KEY, JSON.stringify(state)) !== 'ok') {
     console.warn('[ff] Failed to persist session feature flag overrides')
   }
 }
@@ -148,8 +149,10 @@ function loadSessionOverrides(): OverrideMap {
  *
  * The request is captured into `sessionStorage` on the first read, so it
  * survives reloads and in-app navigation but dies when the tab closes. Capture
- * happens before authentication resolves; the employee check is applied here on
- * every read instead, so a flag flips as soon as the user is known.
+ * happens before authentication resolves; the employee check is re-evaluated
+ * on every read instead, against the SDK's current user. That read carries no
+ * reactive dependency of its own, so a flag flips on the next read after the
+ * user is known, not the moment it is.
  *
  * Returns undefined (not null) as the "no override" sentinel, matching
  * `getDevOverride`.

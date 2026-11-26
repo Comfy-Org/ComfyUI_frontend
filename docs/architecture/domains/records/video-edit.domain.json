@@ -1,0 +1,55 @@
+{
+  "id": "video-edit",
+  "capability": "Video edit widget",
+  "description": "Video trim and crop widget presentation and model, crop handles, aspect-ratio locking, playback and scrubbing, filmstrip extraction, frame timing, metadata, and format options.",
+  "modules": [
+    {
+      "path": "src/components/videoEdit/**"
+    },
+    {
+      "path": "src/composables/video/**"
+    },
+    {
+      "path": "src/utils/videoFrameUtil.ts"
+    },
+    {
+      "path": "src/utils/videoMetadataUtil.ts"
+    }
+  ],
+  "publicEntryPoints": [],
+  "characterizationScenarios": [
+    {
+      "name": "Video edit widget trims and crops video and writes the widget value",
+      "checks": [
+        "src/components/videoEdit/WidgetVideoEdit.test.ts",
+        "src/components/videoEdit/VideoEditPanel.test.ts",
+        "src/components/videoEdit/VideoFilmstripTrim.test.ts",
+        "src/components/videoEdit/VideoCropOverlay.test.ts"
+      ]
+    },
+    {
+      "name": "Trim and crop edits update the video edit model with locked ratios and valid formats",
+      "checks": [
+        "src/composables/video/useVideoEditModel.test.ts",
+        "src/composables/video/useCropBoxEditor.test.ts",
+        "src/composables/video/useCropRatioLock.test.ts",
+        "src/composables/video/useVideoEditFormats.test.ts"
+      ]
+    },
+    {
+      "name": "Trim playback, filmstrip frames, and frame timing follow the source video",
+      "checks": [
+        "src/composables/video/useTrimPlayback.test.ts",
+        "src/composables/video/useVideoFilmstrip.test.ts",
+        "src/utils/videoFrameUtil.test.ts",
+        "src/utils/videoMetadataUtil.test.ts",
+        "src/composables/video/useVideoSourceUrl.test.ts"
+      ]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "Inventory preserves existing exports and runtime behavior without granting public entry points or cross-module dependency permissions."
+  ],
+  "deepImports": "inventory"
+}

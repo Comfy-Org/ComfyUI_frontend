@@ -1,14 +1,16 @@
-// eslint-disable-next-line no-restricted-imports -- the telemetry layer owns the sinks that reportError() fans out to
+// oxlint-disable-next-line no-restricted-imports -- the telemetry layer owns the sinks that reportError() fans out to
 import { datadogRum } from '@datadog/browser-rum'
+
+import { safeLocalStorage } from '@/base/storage/safeStorage'
 
 const REFRESH_COUNT_KEY = 'Comfy.ManualRefreshCount'
 
 function nextRefreshCount(sessionId: string): number {
   const [storedSessionId, storedCount] = (
-    localStorage.getItem(REFRESH_COUNT_KEY) ?? ''
+    safeLocalStorage.getItem(REFRESH_COUNT_KEY) ?? ''
   ).split(':')
   const count = storedSessionId === sessionId ? Number(storedCount) + 1 : 1
-  localStorage.setItem(REFRESH_COUNT_KEY, `${sessionId}:${count}`)
+  safeLocalStorage.setItem(REFRESH_COUNT_KEY, `${sessionId}:${count}`)
   return count
 }
 

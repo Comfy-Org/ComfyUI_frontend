@@ -1,8 +1,11 @@
-import { app } from '../../scripts/app'
-import { ComfyApp } from '../../scripts/app'
-import { $el, ComfyDialog } from '../../scripts/ui'
+import { ComfyApp } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
+import { ComfyDialog } from '@/scripts/ui'
+import { $el } from '@/scripts/ui/utils'
+import type { ComfyExtension } from '@/types/comfy'
 
-class ClipspaceDialog extends ComfyDialog {
+/** @knipIgnoreUnusedButUsedByCustomNodes */
+export class ClipspaceDialog extends ComfyDialog {
   static items: Array<
     HTMLButtonElement & {
       contextPredicate?: () => boolean
@@ -31,10 +34,8 @@ class ClipspaceDialog extends ComfyDialog {
       ComfyApp.clipspace.imgs &&
       ComfyApp.clipspace.imgs.length > 0
     ) {
-      const img_preview = document.getElementById(
-        'clipspace_preview'
-      ) as HTMLImageElement
-      if (img_preview) {
+      const img_preview = document.getElementById('clipspace_preview')
+      if (img_preview instanceof HTMLImageElement) {
         img_preview.src =
           ComfyApp.clipspace.imgs[ComfyApp.clipspace['selectedIndex']].src
         img_preview.style.maxHeight = '100%'
@@ -53,18 +54,7 @@ class ClipspaceDialog extends ComfyDialog {
         ...self.createButtons()
       ])
 
-      if (self.element) {
-        // update
-        if (self.element.firstChild) {
-          self.element.removeChild(self.element.firstChild)
-        }
-        self.element.appendChild(children)
-      } else {
-        // new
-        self.element = $el('div.comfy-modal', { parent: document.body }, [
-          children
-        ])
-      }
+      self.element.replaceChildren(children)
 
       if (self.element.children[0].children.length <= 1) {
         self.element.children[0].appendChild(
@@ -85,10 +75,8 @@ class ClipspaceDialog extends ComfyDialog {
   override createButtons() {
     const buttons = []
 
-    for (let idx in ClipspaceDialog.items) {
-      const item = ClipspaceDialog.items[idx]
-      if (!item.contextPredicate || item.contextPredicate())
-        buttons.push(ClipspaceDialog.items[idx])
+    for (const item of ClipspaceDialog.items) {
+      if (!item.contextPredicate || item.contextPredicate()) buttons.push(item)
     }
 
     buttons.push(
@@ -150,7 +138,7 @@ class ClipspaceDialog extends ComfyDialog {
           $el('option', { value: 'selected' }, 'selected'),
           $el('option', { value: 'all' }, 'all')
         ]
-      ) as HTMLSelectElement
+      )
       combo2.value = ComfyApp.clipspace['img_paste_mode']
 
       const row2 = $el('tr', {}, [
@@ -185,10 +173,10 @@ class ClipspaceDialog extends ComfyDialog {
   }
 }
 
-app.registerExtension({
+export const clipspaceExtension: ComfyExtension = {
   name: 'Comfy.Clipspace',
   init() {
-    app.openClipspace = function () {
+    useApp().openClipspace = function () {
       if (!ClipspaceDialog.instance) {
         ClipspaceDialog.instance = new ClipspaceDialog()
         ComfyApp.clipspace_invalidate_handler = ClipspaceDialog.invalidate
@@ -196,7 +184,7 @@ app.registerExtension({
 
       if (ComfyApp.clipspace) {
         ClipspaceDialog.instance.show()
-      } else app.ui.dialog.show('Clipspace is Empty!')
+      } else useApp().ui.dialog.show('Clipspace is Empty!')
     }
   }
-})
+}

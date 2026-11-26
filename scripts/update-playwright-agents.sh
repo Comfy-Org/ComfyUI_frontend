@@ -15,7 +15,7 @@ pnpm exec playwright init-agents --loop=claude
 
 echo ""
 echo "Step 2: Applying ComfyUI patches..."
-node "$SCRIPT_DIR/patch-playwright-agents.js"
+pnpm exec tsx "$SCRIPT_DIR/patch-playwright-agents.ts"
 
 echo ""
 echo "✅ Agent files updated and patched."

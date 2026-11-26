@@ -2,10 +2,10 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { toNodeId } from '@/types/nodeId'
-import { widgetId } from '@/types/widgetId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 
 import { LegacyWidget } from './LegacyWidget'
 import { ButtonWidget } from './ButtonWidget'
@@ -14,7 +14,7 @@ import { toConcreteWidget } from './widgetMap'
 
 class AccessorHeightWidget implements IBaseWidget {
   [symbol: symbol]: boolean
-  #height = 24
+  private heightValue = 24
   name = 'custom'
   type = 'legacy_test'
   value = 0
@@ -23,29 +23,29 @@ class AccessorHeightWidget implements IBaseWidget {
   heightWrites = 0
 
   get height() {
-    return this.#height
+    return this.heightValue
   }
 
   set height(value: number) {
     this.heightWrites++
-    this.#height = value
+    this.heightValue = value
   }
 }
 
 class NormalisingValueWidget implements IBaseWidget {
   [symbol: symbol]: boolean
-  #value: { entries: number[] } = { entries: [] }
+  private normalisedValue: { entries: number[] } = { entries: [] }
   name = 'custom'
   type = 'legacy_test'
   options = {}
   y = 0
 
   get value(): { entries: number[] } {
-    return this.#value
+    return this.normalisedValue
   }
 
   set value(value: { entries: number[] } | number[]) {
-    this.#value.entries = Array.isArray(value) ? value : value.entries
+    this.normalisedValue.entries = Array.isArray(value) ? value : value.entries
   }
 }
 

@@ -39,7 +39,77 @@ export async function trackElementFlash(
   )
 
   return {
-    hasFlashed: async () =>
-      (await page.locator('html').getAttribute(flagAttribute)) === 'true'
+    hasFlashed: () => hasElementFlashed(page, testId)
+  }
+}
+
+export async function hasElementFlashed(
+  page: Page,
+  testId: string
+): Promise<boolean> {
+  return (
+    (await page.locator('html').getAttribute(flagAttributeFor(testId))) ===
+    'true'
+  )
+}
+
+/** Like {@link trackElementFlash}, for a `role="dialog"` matched by its accessible name. */
+export async function trackDialogFlash(
+  page: Page,
+  name: string
+): Promise<{ hasFlashed: () => Promise<boolean> }> {
+  const flagAttribute = flagAttributeFor(`dialog:${name}`)
+  const reportBinding = flagAttribute.replaceAll('-', '_')
+  let flashedInEarlierDocument = false
+  await page.exposeFunction(reportBinding, () => {
+    flashedInEarlierDocument = true
+  })
+
+  await page.addInitScript(
+    ({
+      dialogName,
+      attribute,
+      binding
+    }: {
+      dialogName: string
+      attribute: string
+      binding: string
+    }) => {
+      const accessibleName = (el: Element) =>
+        el.getAttribute('aria-label')?.trim() ||
+        (el.getAttribute('aria-labelledby') ?? '')
+          .split(/\s+/)
+          .map((id) => document.getElementById(id)?.textContent ?? '')
+          .join(' ')
+          .trim()
+      const report = Reflect.get(window, binding)
+      const sample = () => {
+        for (const el of document.querySelectorAll('[role="dialog"]')) {
+          if (
+            accessibleName(el) === dialogName &&
+            el.checkVisibility({
+              checkOpacity: true,
+              checkVisibilityCSS: true
+            }) &&
+            !document.documentElement.hasAttribute(attribute)
+          ) {
+            document.documentElement.setAttribute(attribute, 'true')
+            if (typeof report === 'function') void report()
+          }
+        }
+        requestAnimationFrame(sample)
+      }
+      requestAnimationFrame(sample)
+    },
+    { dialogName: name, attribute: flagAttribute, binding: reportBinding }
+  )
+
+  return {
+    hasFlashed: async () => {
+      if (flashedInEarlierDocument) return true
+      const flaggedInCurrentDocument =
+        (await page.locator('html').getAttribute(flagAttribute)) === 'true'
+      return flaggedInCurrentDocument || flashedInEarlierDocument
+    }
   }
 }

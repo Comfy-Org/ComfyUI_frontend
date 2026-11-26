@@ -181,7 +181,7 @@ mutation as a whole remains legacy-orchestrated and snapshot-undone.
   clear, connect/remove helpers, and reroute rewiring
 - `src/lib/litegraph/src/LGraphNode.ts`, `LLink.ts`, `Reroute.ts`, and
   `widgets/BaseWidget.ts`: proxy-backed setters and compatibility shells
-- `src/platform/nodeReplacement/useNodeReplacement.ts`: in-place replacement
+- `src/platform/workflowErrors/nodeReplacement/useNodeReplacement.ts`: in-place replacement
 - Tests: `layoutStore.test.ts`, `linkStore.test.ts`, `LLink.store.test.ts`,
   `Reroute.store.test.ts`, `LGraph.test.ts`, `LGraphNode.nodeState.test.ts`,
   and `widgetValueStore.test.ts`

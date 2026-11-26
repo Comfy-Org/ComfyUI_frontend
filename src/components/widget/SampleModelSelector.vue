@@ -1,18 +1,29 @@
 <template>
-  <BaseModalLayout :content-title="$t('assetBrowser.checkpoints')">
+  <BaseModalLayout
+    :labels="modalLayoutLabels"
+    :content-title="$t('assetBrowser.checkpoints')"
+    @close="onClose"
+  >
     <template #leftPanel>
       <LeftSidePanel v-model="selectedNavItem" :nav-items="tempNavigation">
         <template #header-icon>
-          <i class="text-neutral icon-[lucide--puzzle]" />
+          <i class="icon-[lucide--puzzle] text-foreground" />
         </template>
         <template #header-title>
-          <span class="text-neutral text-base">{{ $t('g.title') }}</span>
+          <span class="text-base text-foreground">{{ $t('g.title') }}</span>
         </template>
       </LeftSidePanel>
     </template>
 
     <template #header>
-      <SearchInput v-model="searchQuery" size="lg" class="max-w-96 flex-1" />
+      <SearchInput
+        v-model="searchQuery"
+        :clear-label="$t('g.clear')"
+        :placeholder="$t('g.searchPlaceholder', { subject: '' })"
+        :accessible-label="$t('g.search')"
+        size="lg"
+        class="max-w-96 flex-1"
+      />
     </template>
 
     <template #header-right-area>
@@ -21,38 +32,22 @@
           <i class="icon-[lucide--upload]" />
           <span>{{ $t('g.upload') }}</span>
         </Button>
-        <MoreButton>
-          <template #default="{ close }">
+        <Menu :items="moreMenuItems" align="end">
+          <template #trigger>
             <Button
+              size="icon"
               variant="secondary"
-              @click="
-                () => {
-                  close()
-                }
-              "
-            >
-              <i class="icon-[lucide--download]" />
-              <span>{{ $t('g.settings') }}</span>
-            </Button>
-            <Button
-              variant="primary"
-              @click="
-                () => {
-                  close()
-                }
-              "
-            >
-              <i class="icon-[lucide--scroll]" />
-              <span>{{ $t('g.profile') }}</span>
-            </Button>
+              icon="icon-[lucide--ellipsis]"
+              :aria-label="$t('g.more')"
+            />
           </template>
-        </MoreButton>
+        </Menu>
       </div>
     </template>
 
     <template #contentFilter>
       <div class="relative flex gap-2 px-6 pb-4">
-        <MultiSelect
+        <AppMultiSelect
           v-model="selectedFrameworks"
           v-model:search-query="searchText"
           class="w-[250px]"
@@ -62,12 +57,12 @@
           :show-selected-count="true"
           :show-clear-button="true"
         />
-        <MultiSelect
+        <AppMultiSelect
           v-model="selectedProjects"
           :label="$t('assetBrowser.selectProjects')"
           :options="projectOptions"
         />
-        <SingleSelect
+        <AppSingleSelect
           v-model="selectedSort"
           :label="$t('assetBrowser.sortingType')"
           :options="sortOptions"
@@ -76,7 +71,7 @@
           <template #icon>
             <i class="icon-[lucide--filter]" />
           </template>
-        </SingleSelect>
+        </AppSingleSelect>
       </div>
     </template>
 
@@ -117,27 +112,32 @@
     </template>
 
     <template #rightPanel>
-      <div class="size-full bg-modal-panel-background pr-6 pb-8 pl-4"></div>
+      <div class="size-full bg-card pr-6 pb-8 pl-4"></div>
     </template>
   </BaseModalLayout>
 </template>
 
 <script setup lang="ts">
-import { computed, provide, ref } from 'vue'
+import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
-import MoreButton from '@/components/button/MoreButton.vue'
-import CardBottom from '@/components/card/CardBottom.vue'
-import CardContainer from '@/components/card/CardContainer.vue'
-import CardTop from '@/components/card/CardTop.vue'
-import Tag from '@/components/chip/Tag.vue'
-import SearchInput from '@/components/ui/search-input/SearchInput.vue'
-import MultiSelect from '@/components/ui/multi-select/MultiSelect.vue'
-import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
-import Button from '@/components/ui/button/Button.vue'
-import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
-import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
-import type { NavGroupData, NavItemData } from '@/types/navTypes'
-import { OnCloseKey } from '@/types/widgetTypes'
+import CardBottom from '@comfyorg/design-system/content-card/CardBottom'
+import CardContainer from '@comfyorg/design-system/content-card/CardContainer'
+import CardTop from '@comfyorg/design-system/content-card/CardTop'
+import Tag from '@comfyorg/design-system/chip/Tag'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
+import SearchInput from '@comfyorg/design-system/search-input/SearchInput'
+import AppMultiSelect from '@/components/common/AppMultiSelect.vue'
+import AppSingleSelect from '@/components/common/AppSingleSelect.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import BaseModalLayout from '@comfyorg/design-system/layout/BaseModalLayout'
+import LeftSidePanel from '@comfyorg/design-system/navigation/LeftSidePanel'
+import type {
+  NavGroupData,
+  NavItemData
+} from '@comfyorg/design-system/lib/navigation/types'
+import { useModalLayoutLabels } from '@/components/dialog/useModalLayoutLabels'
 import { createGridStyle } from '@/utils/gridUtil'
 
 const frameworkOptions = ref([
@@ -181,8 +181,22 @@ const tempNavigation = ref<(NavItemData | NavGroupData)[]>([
 const { onClose } = defineProps<{
   onClose: () => void
 }>()
+const { t } = useI18n()
 
-provide(OnCloseKey, onClose)
+const moreMenuItems: MenuItem[] = [
+  {
+    label: () => t('g.settings'),
+    icon: 'icon-[lucide--download]',
+    command: () => {}
+  },
+  {
+    label: () => t('g.profile'),
+    icon: 'icon-[lucide--scroll]',
+    command: () => {}
+  }
+]
+
+const modalLayoutLabels = useModalLayoutLabels()
 
 const searchQuery = ref<string>('')
 const searchText = ref<string>('')

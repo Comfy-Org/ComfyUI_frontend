@@ -8,11 +8,6 @@ import {
 import { isCanvasGestureWheel } from '@/base/wheelGestures'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { app } from '@/scripts/app'
-
-function currentCanvasElement(): HTMLCanvasElement | null {
-  return app.canvas.canvas
-}
 
 /**
  * Composable for handling canvas interactions from Vue components.
@@ -21,7 +16,6 @@ function currentCanvasElement(): HTMLCanvasElement | null {
 export function useCanvasInteractions() {
   const settingStore = useSettingStore()
   const canvasStore = useCanvasStore()
-  const { getCanvas } = canvasStore
 
   const isStandardNavMode = computed(
     () => settingStore.get('Comfy.Canvas.NavigationMode') === 'standard'
@@ -95,8 +89,7 @@ export function useCanvasInteractions() {
   }
 
   const handleLeftButtonReadOnlyPointer = (event: PointerEvent) => {
-    const canvas = getCanvas()
-    if (canvas.read_only && event.buttons === 1) {
+    if (canvasStore.canvas?.read_only && event.buttons === 1) {
       event.preventDefault()
       event.stopPropagation()
       forwardEventToCanvas(event)
@@ -127,7 +120,7 @@ export function useCanvasInteractions() {
     // Honor wheel capture only when the element is focused
     if (event instanceof WheelEvent && !shouldForwardWheelEvent(event)) return
 
-    const canvasEl = currentCanvasElement()
+    const canvasEl = canvasStore.canvas?.canvas
     if (!canvasEl) return
     event.preventDefault()
     event.stopPropagation()

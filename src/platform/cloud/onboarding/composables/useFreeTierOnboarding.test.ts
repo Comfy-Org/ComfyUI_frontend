@@ -1,14 +1,11 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 
 import { useFreeTierOnboarding } from '@/platform/cloud/onboarding/composables/useFreeTierOnboarding'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 
-const mockRemoteConfig = vi.hoisted(() => ({
-  value: { free_tier_credits: 50 } as Record<string, unknown>
-}))
-
-vi.mock<unknown>(import('@/platform/remoteConfig/remoteConfig'), () => ({
-  remoteConfig: mockRemoteConfig
-}))
+beforeEach(() => {
+  useRemoteConfigStore().acceptConfig({ free_tier_credits: 50 }, false)
+})
 
 describe('useFreeTierOnboarding', () => {
   describe('showEmailForm', () => {
@@ -41,19 +38,25 @@ describe('useFreeTierOnboarding', () => {
 
   describe('isFreeTierEnabled', () => {
     it('returns true when remote config says enabled', () => {
-      mockRemoteConfig.value.new_free_tier_subscriptions = true
+      useRemoteConfigStore().acceptConfig(
+        { free_tier_credits: 50, new_free_tier_subscriptions: true },
+        false
+      )
       const { isFreeTierEnabled } = useFreeTierOnboarding()
       expect(isFreeTierEnabled.value).toBe(true)
     })
 
     it('returns false when remote config says disabled', () => {
-      mockRemoteConfig.value.new_free_tier_subscriptions = false
+      useRemoteConfigStore().acceptConfig(
+        { free_tier_credits: 50, new_free_tier_subscriptions: false },
+        false
+      )
       const { isFreeTierEnabled } = useFreeTierOnboarding()
       expect(isFreeTierEnabled.value).toBe(false)
     })
 
     it('defaults to false when not set in remote config', () => {
-      mockRemoteConfig.value = { free_tier_credits: 50 }
+      useRemoteConfigStore().acceptConfig({ free_tier_credits: 50 }, false)
       const { isFreeTierEnabled } = useFreeTierOnboarding()
       expect(isFreeTierEnabled.value).toBe(false)
     })

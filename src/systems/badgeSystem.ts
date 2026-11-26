@@ -11,16 +11,15 @@ import type {
 import { registerBadgeRowsProvider } from '@/lib/litegraph/src/nodeBadgeDraw'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useLinkStore } from '@/stores/linkStore'
-import { graphScopeOf } from '@/types/graphScopeId'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { useThemeStore } from '@/platform/theme/themeStore'
 import { CORE_PART_ORDER } from '@/types/badgeData'
 import type { BadgeData, CoreBadgePart } from '@/types/badgeData'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { NodeBadgeMode } from '@/types/nodeSource'
-import { widgetId } from '@/types/widgetId'
-import { adjustColor } from '@/utils/colorUtil'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { mapUniqueNodes } from '@/utils/graphTraversalUtil'
 import type { UUID } from '@/utils/uuid'
 
@@ -209,7 +208,8 @@ function gatherPricing(node: LGraphNode): PricingBadgeSources {
 
 function gatherSources(node: LGraphNode): BadgeSources {
   const settingStore = useSettingStore()
-  const palette = useColorPaletteStore().completedActivePalette
+  const themeStore = useThemeStore()
+  const palette = themeStore.activeTheme
   const def = useNodeDefStore().fromLGraphNode(node)
   const showApiPricing = settingStore.get('Comfy.NodeBadge.ShowApiPricing')
 
@@ -223,20 +223,14 @@ function gatherSources(node: LGraphNode): BadgeSources {
         }
       : null,
     badgeModes: {
-      id: settingStore.get('Comfy.NodeBadge.NodeIdBadgeMode') as NodeBadgeMode,
-      lifecycle: settingStore.get(
-        'Comfy.NodeBadge.NodeLifeCycleBadgeMode'
-      ) as NodeBadgeMode,
-      source: settingStore.get(
-        'Comfy.NodeBadge.NodeSourceBadgeMode'
-      ) as NodeBadgeMode
+      id: settingStore.get('Comfy.NodeBadge.NodeIdBadgeMode'),
+      lifecycle: settingStore.get('Comfy.NodeBadge.NodeLifeCycleBadgeMode'),
+      source: settingStore.get('Comfy.NodeBadge.NodeSourceBadgeMode')
     },
     colors: {
-      fgColor: palette.colors.litegraph_base.BADGE_FG_COLOR,
-      bgColor: palette.colors.litegraph_base.BADGE_BG_COLOR,
-      creditsBgColor: palette.light_theme
-        ? adjustColor(CREDITS_BASE_BG_COLOR, { lightness: 0.5 })
-        : CREDITS_BASE_BG_COLOR
+      fgColor: palette.canvas.badgeForegroundColor,
+      bgColor: palette.canvas.badgeBackgroundColor,
+      creditsBgColor: themeStore.toNodeColor(CREDITS_BASE_BG_COLOR)
     },
     pricing: showApiPricing ? gatherPricing(node) : { kind: 'none' }
   }
@@ -256,7 +250,7 @@ export function nodeBadges(node: LGraphNode): readonly BadgeData[] {
     // instantiation mutates pinia.state and would invalidate it.
     useSettingStore()
     useNodeDefStore()
-    useColorPaletteStore()
+    useThemeStore()
     useWidgetValueStore()
     useLinkStore()
     rows = computed(() => {

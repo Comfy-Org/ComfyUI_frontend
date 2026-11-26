@@ -1,7 +1,6 @@
-import type { GraphScope } from '@/types/graphScopeId'
-import type { LinkId } from '@/types/linkId'
-
-import type { LLink } from './LLink'
+import type { LLink } from '@comfyorg/graph-model/entityRegistry'
+import type { GraphScope } from '@comfyorg/graph-model/graphScopeId'
+import type { LinkId } from '@comfyorg/graph-model/linkId'
 
 export class LinkMap extends Map<LinkId, LLink> {
   private cachedRevision = -1
@@ -22,7 +21,7 @@ export class LinkMap extends Map<LinkId, LLink> {
   }
 
   override clear(): void {
-    for (const id of [...this.keys()]) this.remove(id)
+    for (const id of Array.from(this.keys())) this.remove(id)
   }
 
   override delete(id: LinkId): boolean {

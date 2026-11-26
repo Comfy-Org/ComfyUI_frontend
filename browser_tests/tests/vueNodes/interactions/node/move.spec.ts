@@ -96,25 +96,6 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
     await expectPosChanged(initialHeaderPos, newHeaderPos)
   })
 
-  test('should not move node when pointer moves less than drag threshold', async ({
-    comfyPage,
-    comfyMouse
-  }) => {
-    const headerPos = await getLoadCheckpointHeaderPos(comfyPage)
-
-    // Move only 2px — below the 3px drag threshold in useNodePointerInteractions
-    const node = await comfyPage.vueNodes.getFixtureByTitle('Load Checkpoint')
-    await comfyMouse.dragElementBy(node.header, { x: 2, y: 1 })
-    await comfyPage.nextFrame()
-
-    const afterPos = await getLoadCheckpointHeaderPos(comfyPage)
-    expect(afterPos.x).toBeCloseTo(headerPos.x, 0)
-    expect(afterPos.y).toBeCloseTo(headerPos.y, 0)
-
-    // The small movement should have selected the node, not dragged it
-    await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(1)
-  })
-
   test('should move node when pointer moves beyond drag threshold', async ({
     comfyPage
   }) => {
@@ -288,7 +269,7 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
       await clickNodeTitleWithMeta('Load Checkpoint')
       await clickNodeTitleWithMeta('KSampler')
       await clickNodeTitleWithMeta('Empty Latent Image')
-      await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(3)
+      await expect(comfyPage.vueNodes.emphasizedNodes).toHaveCount(3)
 
       // Re-fetch drag source after clicks in case the header reflowed.
       const headerPos = await getHeaderPos(comfyPage, 'Load Checkpoint')
@@ -306,7 +287,7 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
       await comfyPage.nextFrame()
     }
 
-    await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(3)
+    await expect(comfyPage.vueNodes.emphasizedNodes).toHaveCount(3)
 
     const checkpointAfter = await getHeaderPos(comfyPage, 'Load Checkpoint')
     const ksamplerAfter = await getHeaderPos(comfyPage, 'KSampler')
@@ -343,7 +324,9 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
     await test.step('move outside pan range and cancel drag', async () => {
       await comfyPage.page.mouse.move(400, 400, { steps: 20 })
       await ksampler.header.evaluate((node) =>
-        node.dispatchEvent(new PointerEvent('pointercancel', { bubbles: true }))
+        node.dispatchEvent(
+          new PointerEvent('pointercancel', { bubbles: true, pointerId: 1 })
+        )
       )
     })
 

@@ -1,19 +1,35 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import Card from '@comfyorg/design-system/card/Card'
+import { computed, inject, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 
-import type { RunApprovalPart } from '../../../services/agent/agentMessageParts'
+import { formatCreditsRangeValue } from '@comfyorg/shared-frontend-utils/nodePricing'
+
+import type { RunApprovalPart } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
+import {
+  agentBoundWorkflowActiveKey,
+  agentBoundWorkflowIdKey
+} from '@/workbench/extensions/agent/components/agent/agentBoundWorkflowId'
+import { useRunCostEstimate } from '@/workbench/extensions/agent/composables/useRunCostEstimate'
 
 const { part, answering = false } = defineProps<{
   part: RunApprovalPart
   answering?: boolean
 }>()
+const boundWorkflowId = inject(agentBoundWorkflowIdKey, ref(undefined))
+const boundWorkflowActive = inject(agentBoundWorkflowActiveKey, ref(false))
+const hideWorkflowName = computed(
+  () => !!boundWorkflowId.value && part.workflowId === boundWorkflowId.value
+)
 const emit = defineEmits<{
   answer: [askId: string, selection: 'run' | 'cancel']
-  openWorkflow: [workflowId: string, workflowName?: string]
+  openWorkflow: [askId: string, workflowId: string, workflowName?: string]
+  shown: [askId: string, workflowId: string | null]
 }>()
+
+onMounted(() => emit('shown', part.askId, part.workflowId ?? null))
 
 const { t } = useI18n()
 const workflowLabel = computed(
@@ -22,32 +38,75 @@ const workflowLabel = computed(
     part.workflowId?.trim() ||
     t('agent.runApproval.thisWorkflow')
 )
+
+const isEstimable = computed(
+  () => hideWorkflowName.value && boundWorkflowActive.value
+)
+const estimateState = useRunCostEstimate(isEstimable)
+
+const costLine = computed(() => {
+  const state = estimateState.value
+  if (state.status !== 'available' || state.estimate.pricedCount === 0)
+    return null
+  const { minUsd, maxUsd } = state.estimate
+  return t('agent.runApproval.estimateAtLeast', {
+    credits: formatCreditsRangeValue(minUsd, maxUsd)
+  })
+})
 </script>
 
 <template>
-  <div
-    class="border-agent-border bg-agent-surface-raised flex w-full flex-col gap-2 overflow-hidden rounded-lg border p-4 shadow-[0_4px_12px_-1px_rgb(0_0_0/10%)]"
+  <Card
+    surface="secondary"
+    data-testid="run-approval-card"
+    :data-cost-estimate="estimateState.status"
+    class="flex w-full flex-col gap-2 overflow-hidden p-4 shadow-md"
   >
     <div class="flex min-w-0 flex-col gap-0.5 text-sm/5">
-      <p class="text-agent-fg m-0 font-medium">
-        {{ t('agent.runApproval.lead') }}
+      <p class="m-0">
+        {{
+          t(
+            hideWorkflowName
+              ? 'agent.runApproval.leadBound'
+              : 'agent.runApproval.lead'
+          )
+        }}
       </p>
-      <ul class="text-agent-fg-muted m-0 min-w-0 list-disc pl-5">
+      <ul
+        v-if="!hideWorkflowName"
+        class="m-0 min-w-0 list-disc pl-5 text-muted-foreground"
+      >
         <li>
-          <button
+          <Button
             v-if="part.workflowId"
             type="button"
-            class="hover:text-agent-fg focus-visible:ring-agent-accent max-w-full cursor-pointer border-0 bg-transparent p-0 text-left font-normal wrap-break-word text-inherit underline underline-offset-2 transition-colors focus-visible:ring-2 focus-visible:outline-none"
-            @click="emit('openWorkflow', part.workflowId, part.workflowName)"
+            variant="link"
+            size="unset"
+            class="max-w-full justify-start text-left font-normal wrap-break-word whitespace-normal text-inherit underline underline-offset-2"
+            @click="
+              emit(
+                'openWorkflow',
+                part.askId,
+                part.workflowId,
+                part.workflowName
+              )
+            "
           >
             {{ workflowLabel }}
-          </button>
+          </Button>
           <span v-else class="wrap-break-word underline underline-offset-2">
             {{ workflowLabel }}
           </span>
         </li>
       </ul>
-      <p class="text-agent-fg-muted m-0">
+      <p
+        v-if="costLine"
+        class="m-0 text-muted-foreground"
+        data-testid="run-approval-cost"
+      >
+        {{ costLine }}
+      </p>
+      <p class="m-0 text-muted-foreground">
         {{ t('agent.runApproval.question') }}
       </p>
     </div>
@@ -72,5 +131,5 @@ const workflowLabel = computed(
         {{ t('agent.runApproval.run') }}
       </Button>
     </div>
-  </div>
+  </Card>
 </template>

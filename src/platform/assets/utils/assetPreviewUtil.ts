@@ -1,7 +1,10 @@
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { assetService } from '@/platform/assets/services/assetService'
 import { api } from '@/scripts/api'
-import { useAssetsStore } from '@/stores/assetsStore'
+import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
+
+import { getAssetContentId } from './assetUrlUtil'
+import { cappedTotalParams } from './cappedTotalParams'
 
 interface AssetRecord {
   id: string
@@ -9,6 +12,7 @@ interface AssetRecord {
   hash?: string | null
   preview_url?: string
   preview_id?: string | null
+  user_metadata?: Record<string, unknown>
 }
 
 /**
@@ -18,10 +22,14 @@ export function isAssetPreviewSupported(): boolean {
   return useFeatureFlags().flags.assetsEnabled
 }
 
-async function fetchAssets(
+async function fetchOwnAssets(
   params: Record<string, string>
 ): Promise<AssetRecord[]> {
-  const query = new URLSearchParams(params)
+  const query = new URLSearchParams({
+    ...params,
+    include_public: 'false',
+    ...cappedTotalParams()
+  })
   const res = await api.fetchApi(`/assets?${query}`)
   if (!res.ok) return []
   const data = await res.json()
@@ -31,7 +39,7 @@ async function fetchAssets(
 export function resolvePreviewUrl(asset: AssetRecord): string {
   if (asset.preview_url) return api.apiURL(asset.preview_url)
 
-  const contentId = asset.preview_id ?? asset.id
+  const contentId = asset.preview_id ?? getAssetContentId(asset)
   return api.apiURL(`/assets/${contentId}/content`)
 }
 
@@ -43,11 +51,11 @@ export function resolvePreviewUrl(asset: AssetRecord): string {
 export async function findOutputAsset(
   name: string
 ): Promise<AssetRecord | undefined> {
-  const byHash = await fetchAssets({ hash: name })
+  const byHash = await fetchOwnAssets({ hash: name })
   const hashMatch = byHash.find((a) => a.hash === name)
   if (hashMatch) return hashMatch
 
-  const byName = await fetchAssets({ name_contains: name })
+  const byName = await fetchOwnAssets({ name_contains: name })
   return byName.find((a) => a.name === name)
 }
 

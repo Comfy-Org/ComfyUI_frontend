@@ -1,35 +1,16 @@
 import { fireEvent, render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
-import { computed, nextTick } from 'vue'
+import { nextTick } from 'vue'
 
-import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
-import { createMockCanvas } from '@/utils/__tests__/litegraphTestUtils'
+import { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import {
+  createMockCanvas,
+  createMockCanvasRenderingContext2D,
+  createTestCanvasElement,
+  stubCanvasGetContext
+} from '@/utils/__tests__/canvasTestUtils'
 
-import TransformPane from '../transform/TransformPane.vue'
-
-const mockData = vi.hoisted(() => ({
-  mockTransformStyle: {
-    transform: 'scale(1) translate(0px, 0px)',
-    transformOrigin: '0 0'
-  },
-  mockCamera: { x: 0, y: 0, z: 1 }
-}))
-
-vi.mock<unknown>(
-  import('@/renderer/core/layout/transform/useTransformState'),
-  () => {
-    const syncWithCanvas = vi.fn()
-    return {
-      useTransformState: () => ({
-        camera: computed(() => mockData.mockCamera),
-        transformStyle: computed(() => mockData.mockTransformStyle),
-        screenToCanvas: vi.fn(),
-        isNodeInViewport: vi.fn(),
-        syncWithCanvas
-      })
-    }
-  }
-)
+import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
 
 function createMockLGraphCanvas() {
   return createMockCanvas({
@@ -46,24 +27,10 @@ function createMockLGraphCanvas() {
 
 describe('TransformPane', () => {
   describe('component mounting', () => {
-    it('should mount successfully with minimal props', () => {
-      const mockCanvas = createMockLGraphCanvas()
-      render(TransformPane, {
-        props: {
-          canvas: mockCanvas
-        }
-      })
-
-      expect(screen.getByTestId('transform-pane')).toBeInTheDocument()
-    })
-
     it('should apply transform style from composable', async () => {
-      mockData.mockTransformStyle = {
-        transform: 'scale(2) translate(100px, 50px)',
-        transformOrigin: '0 0'
-      }
-
       const mockCanvas = createMockLGraphCanvas()
+      mockCanvas.ds.scale = 2
+      mockCanvas.ds.offset = [100, 50]
       render(TransformPane, {
         props: {
           canvas: mockCanvas
@@ -73,7 +40,7 @@ describe('TransformPane', () => {
 
       const transformPane = screen.getByTestId('transform-pane')
       expect(transformPane.getAttribute('style')).toContain(
-        'transform: scale(2) translate(100px, 50px)'
+        'transform: scale3d(2, 2, 2) translate3d(100px, 50px, 0)'
       )
     })
 
@@ -92,21 +59,48 @@ describe('TransformPane', () => {
     })
   })
 
-  describe('RAF synchronization', () => {
-    it('should call syncWithCanvas during RAF updates', async () => {
-      const mockCanvas = createMockLGraphCanvas()
+  describe('canvas presentation', () => {
+    it('presents camera changes only after drawing, including after canvas element replacement', async () => {
+      stubCanvasGetContext()
+      const ctx = createMockCanvasRenderingContext2D({ drawImage: vi.fn() })
+      const canvas = new LGraphCanvas(
+        createTestCanvasElement({ ctx }),
+        new LGraph(),
+        { skip_render: true, skip_events: true }
+      )
       render(TransformPane, {
         props: {
-          canvas: mockCanvas
+          canvas
         }
       })
-
       await nextTick()
+      const transformPane = screen.getByTestId('transform-pane')
 
-      vi.advanceTimersToNextFrame()
+      canvas.ds.offset = [37, -19]
+      canvas.ds.scale = 2
+      await nextTick()
+      expect(transformPane).toHaveStyle({
+        transform: 'scale3d(1, 1, 1) translate3d(0px, 0px, 0)'
+      })
 
-      const transformState = useTransformState()
-      expect(transformState.syncWithCanvas).toHaveBeenCalledWith(mockCanvas)
+      canvas.draw()
+      await nextTick()
+      expect(transformPane).toHaveStyle({
+        transform: 'scale3d(2, 2, 2) translate3d(37px, -19px, 0)'
+      })
+
+      canvas.setCanvas(createTestCanvasElement({ ctx }), true)
+      canvas.ds.offset = [-23, 41]
+      await nextTick()
+      expect(transformPane).toHaveStyle({
+        transform: 'scale3d(2, 2, 2) translate3d(37px, -19px, 0)'
+      })
+
+      canvas.draw()
+      await nextTick()
+      expect(transformPane).toHaveStyle({
+        transform: 'scale3d(2, 2, 2) translate3d(-23px, 41px, 0)'
+      })
     })
   })
 
@@ -158,26 +152,11 @@ describe('TransformPane', () => {
 
       const transformPane = screen.getByTestId('transform-pane')
 
-      /* eslint-disable testing-library/prefer-user-event -- pointerDown for delegation, not a click */
+      /* oxlint-disable testing-library/prefer-user-event -- pointerDown for delegation, not a click */
       await fireEvent.pointerDown(transformPane)
-      /* eslint-enable testing-library/prefer-user-event */
+      /* oxlint-enable testing-library/prefer-user-event */
 
       expect(transformPane).toBeInTheDocument()
-    })
-  })
-
-  describe('transform state integration', () => {
-    it('should provide transform utilities to child components', () => {
-      const mockCanvas = createMockLGraphCanvas()
-      render(TransformPane, {
-        props: {
-          canvas: mockCanvas
-        }
-      })
-
-      const transformState = useTransformState()
-      expect(transformState.syncWithCanvas).toBeDefined()
-      expect(transformState.screenToCanvas).toBeDefined()
     })
   })
 

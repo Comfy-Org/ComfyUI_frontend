@@ -1,44 +1,33 @@
 vi.mock(import('firebase/auth'))
-vi.mock<unknown>(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 import type { GlobalSetting } from '@comfyorg/ingest-types'
-import { useAuthStore } from '@/stores/authStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { computed, ref } from 'vue'
 
+import { fromPartial } from '@total-typescript/shoehorn'
+import { provideWebSessionRequests } from '@comfyorg/api-client/webSessionFetch'
+import type {
+  WebSessionRequestScope,
+  WebSessionRequests
+} from '@comfyorg/api-client/webSessionFetch'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useAgentConsentStore } from './agentConsentStore'
 
 const accountApi = vi.hoisted(() => ({
   get: vi.fn(),
-  set: vi.fn()
+  set: vi.fn(),
+  header: vi.fn()
 }))
-vi.mock<unknown>(import('@/platform/settings/globalSettingsApi'), () => ({
+vi.mock(import('@/platform/settings/globalSettingsApi'), () => ({
   getGlobalSetting: accountApi.get,
   setGlobalSetting: accountApi.set
 }))
+vi.mock(
+  import('@/workbench/extensions/agent/services/agent/agentAuth'),
+  () => ({ agentSettingsAuthHeader: accountApi.header })
+)
 
-const authState = await vi.hoisted(async () => {
-  const { reactive } = await import('vue')
-  return reactive<{
-    identity: string | null
-    workspaceId: string | null
-    isSwitching: boolean
-    generation: number
-  }>({
-    identity: 'account-a',
-    workspaceId: 'workspace-a',
-    isSwitching: false,
-    generation: 0
-  })
-})
-vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
-  useCurrentUser: () => ({
-    resolvedUserInfo: {
-      get value() {
-        return authState.identity ? { id: authState.identity } : null
-      }
-    }
-  })
-}))
+vi.mock(import('@/composables/auth/useCurrentUser'))
 const stored: GlobalSetting = {
   key: 'Comfy.AgentPanel.ConsentAccepted',
   value: true,
@@ -57,13 +46,12 @@ function deferred<T>() {
 
 describe('agentConsentStore', () => {
   beforeEach(() => {
-    authState.identity = 'account-a'
+    useCurrentUser().resolvedUserInfo = computed(() => ({ id: 'account-a' }))
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-a' })
     useTeamWorkspaceStore().isSwitching = false
     Object.assign(useTeamWorkspaceStore(), { workspaceTransitionGeneration: 0 })
     vi.mocked(useTeamWorkspaceStore().initialize).mockResolvedValue(undefined)
-    vi.mocked(useAuthStore().getWorkspaceAuthHeader).mockReset()
-    vi.mocked(useAuthStore().getWorkspaceAuthHeader).mockResolvedValue({
+    accountApi.header.mockResolvedValue({
       Authorization: 'Bearer account-a-token'
     })
     accountApi.get.mockReset()
@@ -87,10 +75,66 @@ describe('agentConsentStore', () => {
   })
 
   it('settles a failed check so the entry can offer a retry', async () => {
-    vi.mocked(useAuthStore().getWorkspaceAuthHeader).mockResolvedValueOnce(null)
+    accountApi.header.mockResolvedValueOnce(null)
     const store = useAgentConsentStore()
     await expect(store.load()).rejects.toThrow('authentication is required')
+    expect(store.checkFailed).toBe(true)
     expect(store).toMatchObject({ isChecking: false })
+  })
+
+  it('settles a failed scope probe, so a direct caller is not reported as still checking', async () => {
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: null })
+    vi.mocked(useTeamWorkspaceStore().initialize).mockRejectedValueOnce(
+      new Error('offline')
+    )
+    const store = useAgentConsentStore()
+
+    await expect(store.ensureScope()).rejects.toThrow('offline')
+
+    expect(store.checkFailed).toBe(true)
+    expect(store).toMatchObject({ isChecking: false })
+  })
+
+  it('does not record a scope failure against the next workspace', async () => {
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: null })
+    const initialize = deferred<undefined>()
+    vi.mocked(useTeamWorkspaceStore().initialize).mockReturnValueOnce(
+      initialize.promise
+    )
+    const store = useAgentConsentStore()
+
+    const probe = store.ensureScope()
+    await vi.waitFor(() =>
+      expect(useTeamWorkspaceStore().initialize).toHaveBeenCalledOnce()
+    )
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-b' })
+    initialize.reject(new Error('offline'))
+
+    await expect(probe).rejects.toThrow('offline')
+    expect(store.checkFailed).toBe(false)
+    expect(store).toMatchObject({ isChecking: true })
+  })
+
+  it('does not record a scope failure against the next account', async () => {
+    const identity = ref('account-a')
+    useCurrentUser().resolvedUserInfo = computed(() => ({ id: identity.value }))
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: null })
+    const initialize = deferred<undefined>()
+    vi.mocked(useTeamWorkspaceStore().initialize).mockReturnValueOnce(
+      initialize.promise
+    )
+    const store = useAgentConsentStore()
+
+    const probe = store.ensureScope()
+    await vi.waitFor(() =>
+      expect(useTeamWorkspaceStore().initialize).toHaveBeenCalledOnce()
+    )
+    identity.value = 'account-b'
+    initialize.reject(new Error('offline'))
+
+    await expect(probe).rejects.toThrow('offline')
+    expect(store.checkFailed).toBe(false)
+    expect(store).toMatchObject({ isChecking: true })
   })
 
   it('does not let a stale response settle the next workspace initial check', async () => {
@@ -132,26 +176,20 @@ describe('agentConsentStore', () => {
     )
   })
 
-  it('discards a load that resolves after the account changes', async () => {
-    let finishLoad = (_value: GlobalSetting | undefined): void => {}
-    accountApi.get.mockImplementationOnce(
-      () =>
-        new Promise<GlobalSetting | undefined>((resolve) => {
-          finishLoad = resolve
-        })
-    )
+  it('counts confirmed acceptances but not loads of stored consent', async () => {
+    accountApi.get.mockResolvedValueOnce(stored)
     const store = useAgentConsentStore()
 
-    const request = store.load()
-    await vi.waitFor(() => expect(accountApi.get).toHaveBeenCalledOnce())
-    authState.identity = 'account-b'
-    finishLoad(stored)
+    await store.load()
+    expect(store.confirmedAcceptances).toBe(0)
 
-    await expect(request).resolves.toBe(false)
-    expect(store.accepted).toBe(false)
+    await store.accept()
+    expect(store.confirmedAcceptances).toBe(1)
   })
 
-  it('discards a confirmed write result after the account changes', async () => {
+  it('does not count a write that resolves after the account changes', async () => {
+    const identity = ref('account-a')
+    useCurrentUser().resolvedUserInfo = computed(() => ({ id: identity.value }))
     let finishSave = (_value: GlobalSetting): void => {}
     accountApi.set.mockImplementationOnce(
       () =>
@@ -163,7 +201,76 @@ describe('agentConsentStore', () => {
 
     const request = store.accept()
     await vi.waitFor(() => expect(accountApi.set).toHaveBeenCalledOnce())
-    authState.identity = 'account-b'
+    identity.value = 'account-b'
+    finishSave(stored)
+    await request
+
+    expect(store.confirmedAcceptances).toBe(0)
+  })
+
+  it('sends on the web session in place of a workspace auth header', async () => {
+    const send = vi.fn<WebSessionRequests['send']>()
+    onTestFinished(
+      provideWebSessionRequests(
+        fromPartial<WebSessionRequests>({
+          scope: async () => fromPartial<WebSessionRequestScope>({}),
+          workspaceId: () => undefined,
+          send
+        })
+      )
+    )
+    const store = useAgentConsentStore()
+
+    await store.load()
+    await store.accept()
+
+    expect(accountApi.header).not.toHaveBeenCalled()
+    expect(accountApi.get).toHaveBeenCalledWith(
+      'Comfy.AgentPanel.ConsentAccepted',
+      expect.any(Function)
+    )
+    expect(accountApi.set).toHaveBeenCalledWith(
+      { key: 'Comfy.AgentPanel.ConsentAccepted', value: true },
+      expect.any(Function)
+    )
+  })
+
+  it('discards a load that resolves after the account changes', async () => {
+    const identity = ref('account-a')
+    useCurrentUser().resolvedUserInfo = computed(() => ({ id: identity.value }))
+    let finishLoad = (_value: GlobalSetting | undefined): void => {}
+    accountApi.get.mockImplementationOnce(
+      () =>
+        new Promise<GlobalSetting | undefined>((resolve) => {
+          finishLoad = resolve
+        })
+    )
+    const store = useAgentConsentStore()
+
+    const request = store.load()
+    await vi.waitFor(() => expect(accountApi.get).toHaveBeenCalledOnce())
+    identity.value = 'account-b'
+    finishLoad(stored)
+
+    await expect(request).resolves.toBe(false)
+    expect(store.accepted).toBe(false)
+  })
+
+  it('discards a confirmed write result after the account changes', async () => {
+    const identity = ref('account-a')
+    useCurrentUser().resolvedUserInfo = computed(() => ({ id: identity.value }))
+    let finishSave = (_value: GlobalSetting): void => {}
+    accountApi.set.mockImplementationOnce(
+      () =>
+        new Promise<GlobalSetting>((resolve) => {
+          finishSave = resolve
+        })
+    )
+    const store = useAgentConsentStore()
+
+    const request = store.accept()
+    await vi.waitFor(() => expect(accountApi.set).toHaveBeenCalledOnce())
+    identity.value = 'account-b'
     finishSave(stored)
 
     await expect(request).resolves.toBe(false)
@@ -221,7 +328,7 @@ describe('agentConsentStore', () => {
   })
 
   it('fails closed without an authenticated account', async () => {
-    authState.identity = null
+    useCurrentUser().resolvedUserInfo = computed(() => null)
     const store = useAgentConsentStore()
 
     await expect(store.load()).rejects.toThrow(
@@ -275,16 +382,10 @@ describe('agentConsentStore', () => {
 
   it('does not write when workspace scope changes while acquiring a token', async () => {
     const token = deferred<{ Authorization: `Bearer ${string}` }>()
-    vi.mocked(useAuthStore().getWorkspaceAuthHeader).mockReturnValueOnce(
-      token.promise
-    )
+    accountApi.header.mockReturnValueOnce(token.promise)
     const store = useAgentConsentStore()
     const request = store.accept()
-    await vi.waitFor(() =>
-      expect(
-        vi.mocked(useAuthStore().getWorkspaceAuthHeader)
-      ).toHaveBeenCalledOnce()
-    )
+    await vi.waitFor(() => expect(accountApi.header).toHaveBeenCalledOnce())
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-b' })
     token.resolve({ Authorization: 'Bearer workspace-b-token' })
     await expect(request).resolves.toBe(false)
@@ -320,7 +421,7 @@ describe('agentConsentStore', () => {
     )
     const store = useAgentConsentStore()
     await expect(store.accept()).resolves.toBe(true)
-    expect(vi.mocked(useTeamWorkspaceStore().initialize)).toHaveBeenCalledOnce()
+    expect(useTeamWorkspaceStore().initialize).toHaveBeenCalledOnce()
     expect(accountApi.set).toHaveBeenCalledOnce()
   })
 

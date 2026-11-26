@@ -4,7 +4,7 @@ import { notifyLayoutChanges } from '@/renderer/core/canvas/litegraph/notifyLayo
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import { toGroupId } from '@/types/groupId'
+import { toGroupId } from '@comfyorg/graph-model/groupId'
 import { createUuidv4 } from '@/utils/uuid'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 
@@ -190,7 +190,11 @@ describe('notifyLayoutChanges', () => {
     using context = setup()
     const { graph, node, setDirty } = context
     const offsets = [
-      { index: 0, type: 'input' as const, position: { x: 0, y: 10 } }
+      {
+        index: 0,
+        type: 'input' as const,
+        bounds: { x: 0, y: 10, width: 0, height: 0 }
+      }
     ]
 
     layoutStore.updateNodeSlotOffsets(
@@ -223,7 +227,7 @@ describe('notifyLayoutChanges', () => {
     layoutStore.updateNodeSlotOffsets(
       graph.rootGraph.id,
       node.id,
-      [{ ...offsets[0], position: { x: 0, y: 20 } }],
+      [{ ...offsets[0], bounds: { x: 0, y: 20, width: 0, height: 0 } }],
       'expanded'
     )
     await vi.waitFor(() => expect(setDirty).toHaveBeenCalledWith(true, true))

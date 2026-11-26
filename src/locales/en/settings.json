@@ -59,6 +59,28 @@
     "name": "Show selection toolbox",
     "tooltip": "Display a floating toolbar when nodes are selected, providing quick access to common actions."
   },
+  "Comfy_Canvas_SmartGuides_Enabled": {
+    "name": "Snap to nearby nodes, groups, and wires while dragging and resizing",
+    "tooltip": "Shows guide lines and snaps to aligned edges, even spacing, and straight wires. Hold Shift to snap to the grid instead."
+  },
+  "Comfy_Canvas_SmartGuides_Gap": {
+    "name": "Gap when snapping next to another node"
+  },
+  "Comfy_Canvas_SmartGuides_SnapDistance": {
+    "name": "Snap distance (screen pixels)"
+  },
+  "Comfy_Canvas_SmartGuides_SnapToEdges": {
+    "name": "Snap to the edges of other nodes and groups"
+  },
+  "Comfy_Canvas_SmartGuides_SnapToSpacing": {
+    "name": "Snap to even spacing between nodes"
+  },
+  "Comfy_Canvas_SmartGuides_SnapToWires": {
+    "name": "Snap so that wires become straight"
+  },
+  "Comfy_Cloud_AskBeforeCompatibilityCheck": {
+    "name": "Ask before sending node and model names to check Comfy Cloud compatibility"
+  },
   "Comfy_ConfirmClear": {
     "name": "Require confirmation when clearing workflow"
   },
@@ -66,8 +88,8 @@
     "name": "Enable dev mode options (API save, etc.)"
   },
   "Comfy_DisableFloatRounding": {
-    "name": "Disable default float widget rounding.",
-    "tooltip": "(requires page reload) Cannot disable round when round is set by the node in the backend."
+    "name": "Disable default float widget rounding (deprecated).",
+    "tooltip": "(requires page reload) Deprecated and on by default. Turning it off rounds edited float values to the decimal places of the widget step. Rounding declared by the node always applies."
   },
   "Comfy_DisableSliders": {
     "name": "Disable node widget sliders"
@@ -83,6 +105,14 @@
   },
   "Comfy_EnableWorkflowViewRestore": {
     "name": "Save and restore canvas position and zoom level in workflows"
+  },
+  "Comfy_ErrorSystem_ShowMissingModels": {
+    "name": "Show missing models in the issues tab",
+    "tooltip": "When disabled, model files that are not found are not listed in the issues tab and their nodes are not highlighted."
+  },
+  "Comfy_ErrorSystem_ShowMissingNodes": {
+    "name": "Show missing nodes in the issues tab",
+    "tooltip": "When disabled, missing node packs are not listed in the issues tab and their nodes are not highlighted. The workflow still cannot run until they are installed."
   },
   "Comfy_Execution_PreviewMethod": {
     "name": "Live preview method",
@@ -248,6 +278,10 @@
   "Comfy_Node_DoubleClickTitleToEdit": {
     "name": "Double click node title to edit"
   },
+  "Comfy_Node_DownscaleImagePreviews": {
+    "name": "Downscale large image previews",
+    "tooltip": "In Nodes 2.0, show large images on nodes as a copy at most 1024px on the longest side so many large previews stay responsive. Turn off to always show the original."
+  },
   "Comfy_Node_MiddleClickRerouteNode": {
     "name": "Middle-click creates a new Reroute node"
   },
@@ -334,10 +368,6 @@
   "Comfy_Notification_ShowVersionUpdates": {
     "name": "Show version updates",
     "tooltip": "Show updates for new models, and major new features."
-  },
-  "Comfy_Pointer_ClickBufferTime": {
-    "name": "Pointer click drift delay",
-    "tooltip": "After pressing a pointer button down, this is the maximum time (in milliseconds) that pointer movement can be ignored for.\n\nHelps prevent objects from being unintentionally nudged if the pointer is moved whilst clicking.\n\nThe distance threshold (Pointer click drift) already disambiguates clicks from drags; this time threshold only matters when the pointer is held still then released. A long delay here forces every pointerdown to wait before drag begins, which feels laggy when click+dragging an unselected node. ~2 frames at 60fps is plenty."
   },
   "Comfy_Pointer_ClickDrift": {
     "name": "Pointer click drift (maximum distance)",
@@ -461,8 +491,9 @@
   "Comfy_Workflow_Persist": {
     "name": "Persist workflow state and restore on page (re)load"
   },
-  "Comfy_Workflow_ShowMissingModelsWarning": {
-    "name": "Show missing models warning"
+  "Comfy_Workflow_ShowMissingMediaWarning": {
+    "name": "Show missing media in the issues tab",
+    "tooltip": "When disabled, input images, videos and audio that are not found are not listed in the issues tab and their nodes are not highlighted."
   },
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "Sort node IDs when saving workflow"

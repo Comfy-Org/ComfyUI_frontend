@@ -59,6 +59,25 @@
     "name": "Mostra toolbox di selezione",
     "tooltip": "Visualizza una barra degli strumenti flottante quando i nodi sono selezionati, fornendo accesso rapido alle azioni comuni."
   },
+  "Comfy_Canvas_SmartGuides_Enabled": {
+    "name": "Aggancia a nodi, gruppi e collegamenti vicini durante il trascinamento e il ridimensionamento",
+    "tooltip": "Mostra linee guida e aggancia a bordi allineati, spaziature uniformi e collegamenti diritti. Tieni premuto Maiusc per agganciare invece alla griglia."
+  },
+  "Comfy_Canvas_SmartGuides_Gap": {
+    "name": "Spazio durante l'aggancio accanto a un altro nodo"
+  },
+  "Comfy_Canvas_SmartGuides_SnapDistance": {
+    "name": "Distanza di aggancio (pixel dello schermo)"
+  },
+  "Comfy_Canvas_SmartGuides_SnapToEdges": {
+    "name": "Aggancia ai bordi di altri nodi e gruppi"
+  },
+  "Comfy_Canvas_SmartGuides_SnapToSpacing": {
+    "name": "Aggancia a spaziature uniformi tra i nodi"
+  },
+  "Comfy_Canvas_SmartGuides_SnapToWires": {
+    "name": "Aggancia in modo che i collegamenti diventino diritti"
+  },
   "Comfy_ConfirmClear": {
     "name": "Richiedi conferma quando si cancella il workflow"
   },
@@ -69,8 +88,8 @@
     "name": "Abilita opzioni modalità sviluppatore (salvataggio API, ecc.)"
   },
   "Comfy_DisableFloatRounding": {
-    "name": "Disattiva arrotondamento predefinito dei widget float.",
-    "tooltip": "(richiede il ricaricamento della pagina) Non è possibile disattivare l'arrotondamento quando è impostato dal nodo nel backend."
+    "name": "Disabilita l'arrotondamento predefinito del widget float (deprecato).",
+    "tooltip": "(richiede il ricaricamento della pagina) Deprecato e attivo per impostazione predefinita. Disattivandolo, i valori float modificati vengono arrotondati al numero di cifre decimali del passo del widget. L'arrotondamento dichiarato dal nodo si applica sempre."
   },
   "Comfy_DisableSliders": {
     "name": "Disattiva gli slider dei widget dei nodi"
@@ -83,6 +102,14 @@
   },
   "Comfy_EnableWorkflowViewRestore": {
     "name": "Salva e ripristina posizione e livello di zoom del canvas nei workflow"
+  },
+  "Comfy_ErrorSystem_ShowMissingModels": {
+    "name": "Mostra i modelli mancanti nella scheda Problemi",
+    "tooltip": "Se disabilitato, i file dei modelli non trovati non vengono elencati nella scheda Problemi e i relativi nodi non vengono evidenziati."
+  },
+  "Comfy_ErrorSystem_ShowMissingNodes": {
+    "name": "Mostra i nodi mancanti nella scheda Problemi",
+    "tooltip": "Se disabilitata, i pacchetti di nodi mancanti non vengono elencati nella scheda Problemi e i relativi nodi non vengono evidenziati. Il workflow non può comunque essere eseguito finché non vengono installati."
   },
   "Comfy_Execution_PreviewMethod": {
     "name": "Metodo di anteprima live",
@@ -313,6 +340,10 @@
   "Comfy_Node_DoubleClickTitleToEdit": {
     "name": "Doppio clic sul titolo del nodo per modificare"
   },
+  "Comfy_Node_DownscaleImagePreviews": {
+    "name": "Riduci le anteprime delle immagini grandi",
+    "tooltip": "In Nodes 2.0, mostra le immagini grandi sui nodi come una copia con lato più lungo di massimo 1024 px, così molte anteprime grandi restano reattive. Disattiva questa opzione per mostrare sempre l'originale."
+  },
   "Comfy_Node_MiddleClickRerouteNode": {
     "name": "Clic centrale crea un nuovo nodo Reroute"
   },
@@ -334,10 +365,6 @@
   "Comfy_Notification_ShowVersionUpdates": {
     "name": "Mostra aggiornamenti di versione",
     "tooltip": "Mostra aggiornamenti per nuovi modelli e nuove funzionalità principali."
-  },
-  "Comfy_Pointer_ClickBufferTime": {
-    "name": "Ritardo tolleranza clic puntatore",
-    "tooltip": "Dopo aver premuto un pulsante del puntatore, questo è il tempo massimo (in millisecondi) in cui il movimento del puntatore può essere ignorato.\n\nAiuta a prevenire spostamenti involontari degli oggetti se il puntatore viene mosso durante il clic.\n\nLa soglia di distanza (tolleranza clic puntatore) già distingue tra clic e trascinamento; questa soglia temporale conta solo quando il puntatore resta fermo e poi viene rilasciato. Un ritardo lungo qui obbliga ogni pressione a dover attendere prima che inizi il trascinamento, il che può risultare lento durante il click+drag di un nodo non selezionato. ~2 frame a 60fps sono sufficienti."
   },
   "Comfy_Pointer_ClickDrift": {
     "name": "Tolleranza clic puntatore (distanza massima)",
@@ -461,8 +488,9 @@
   "Comfy_Workflow_Persist": {
     "name": "Mantieni stato del workflow e ripristina al (ri)caricamento della pagina"
   },
-  "Comfy_Workflow_ShowMissingModelsWarning": {
-    "name": "Mostra avviso modelli mancanti"
+  "Comfy_Workflow_ShowMissingMediaWarning": {
+    "name": "Mostra i contenuti multimediali mancanti nella scheda Problemi",
+    "tooltip": "Se disabilitato, le immagini, i video e gli audio di input non trovati non vengono elencati nella scheda Problemi e i relativi nodi non vengono evidenziati."
   },
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "Ordina ID dei nodi al salvataggio del workflow"

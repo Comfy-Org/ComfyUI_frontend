@@ -92,7 +92,7 @@ test.describe('Errors tab - Missing nodes', { tag: ['@ui', '@canvas'] }, () => {
     const missingNodeCard = comfyPage.page.getByTestId(
       TestIds.dialogs.missingNodeCard
     )
-    await comfyPage.canvasOps.pan({ x: -800, y: -800 })
+    await comfyPage.canvasOps.pan({ x: -800, y: -800 }, { x: 200, y: 500 })
     const offsetBeforeLocate = await comfyPage.canvasOps.getOffset()
 
     await missingNodeCard
@@ -150,3 +150,32 @@ test.describe('Errors tab - Missing nodes', { tag: ['@ui', '@canvas'] }, () => {
     await expect(secondNode).toBeVisible()
   })
 })
+
+test.describe(
+  'Errors tab - Missing nodes after a legacy dialog opt-out',
+  { tag: ['@ui', '@canvas'] },
+  () => {
+    test.use({
+      initialSettings: {
+        'Comfy.RightSidePanel.ShowErrorsTab': true,
+        'Comfy.Workflow.ShowMissingNodesWarning': false
+      }
+    })
+
+    test('Should still show the missing node pack card', async ({
+      comfyPage
+    }) => {
+      test.info().annotations.push({
+        type: 'regression',
+        description:
+          'A "do not show again" saved by the removed missing nodes dialog hid the new missing node warnings'
+      })
+
+      await loadWorkflowAndOpenErrorsTab(comfyPage, 'missing/missing_nodes')
+
+      await expect(
+        comfyPage.page.getByTestId(TestIds.dialogs.missingNodeCard)
+      ).toBeVisible()
+    })
+  }
+)

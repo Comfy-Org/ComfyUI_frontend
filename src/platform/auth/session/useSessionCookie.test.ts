@@ -1,292 +1,129 @@
-import type { ComfyApp } from '@/scripts/app'
-import { fromPartial } from '@total-typescript/shoehorn'
-import { useAuthStore } from '@/stores/authStore'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed } from 'vue'
 
-const mockGetIdToken = vi.fn<ReturnType<typeof useAuthStore>['getIdToken']>(
-  async () => undefined
-)
-const mockGetAuthHeader = vi.fn<
-  ReturnType<typeof useAuthStore>['getAuthHeader']
->(async () => null)
-const originalFetch = globalThis.fetch
+import type { WebSessionErrorCode } from '@comfyorg/account-core/webSession'
 
-vi.mock<unknown>(import('@/platform/distribution/types'), () => ({
-  isCloud: true
-}))
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
+import { useSessionCookie } from '@/platform/auth/session/useSessionCookie'
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    apiURL: (path: string) => `/api${path}`
-  }
-}))
+const distribution = vi.hoisted(() => ({ isCloud: true }))
 
-const mockReportError = vi.hoisted(() => vi.fn())
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: mockReportError
-}))
-
-beforeEach(() => {
-  vi.mocked(useAuthStore().getIdToken).mockImplementation(mockGetIdToken)
-  vi.mocked(useAuthStore().getAuthHeader).mockImplementation(mockGetAuthHeader)
-})
+vi.mock(import('@/platform/distribution/types'), () => distribution)
+vi.mock(import('@/composables/auth/useCurrentUser'))
+vi.mock(import('@/scripts/api'))
+vi.mock(import('@/scripts/app'))
+vi.mock(import('firebase/auth'))
 
 describe('useSessionCookie', () => {
   beforeEach(() => {
-    vi.resetModules()
-    useAuthStore().currentUser = fromPartial({ uid: 'user-a' })
-    globalThis.fetch = vi.fn()
+    distribution.isCloud = true
   })
 
-  afterEach(() => {
-    // Restore the global fetch so a leaked mock doesn't bleed into later
-    // tests that depend on real fetch semantics.
-    globalThis.fetch = originalFetch
-  })
+  it.for(['ensureSessionCookie', 'createSessionOrThrow'] as const)(
+    '%s starts the web session and resolves once it is ready',
+    async (name) => {
+      const webSession = useCloudWebSessionStore()
+      vi.mocked(webSession.start).mockReturnValue(true)
+      let markReady = () => {}
+      vi.mocked(webSession.whenReady).mockReturnValue(
+        new Promise<void>((resolve) => {
+          markReady = resolve
+        })
+      )
+      let settled = false
 
-  it('createSessionOrThrow posts the Firebase token and awaits success', async () => {
-    mockGetIdToken.mockResolvedValue('firebase-id-token')
-    vi.mocked(globalThis.fetch).mockResolvedValue(
-      new Response(null, { status: 204 })
-    )
-    const { useSessionCookie } =
-      await import('@/platform/auth/session/useSessionCookie')
+      const sessionCookie = useSessionCookie()
 
-    await useSessionCookie().createSessionOrThrow()
-
-    expect(globalThis.fetch).toHaveBeenCalledWith('/api/auth/session', {
-      method: 'POST',
-      credentials: 'include',
-      headers: {
-        Authorization: 'Bearer firebase-id-token' as const,
-        'Content-Type': 'application/json'
-      }
-    })
-  })
-
-  it('createSessionOrThrow fails fast without a Firebase token', async () => {
-    mockGetIdToken.mockResolvedValue(undefined)
-    const { useSessionCookie } =
-      await import('@/platform/auth/session/useSessionCookie')
-
-    await expect(useSessionCookie().createSessionOrThrow()).rejects.toThrow(
-      'No Firebase token available for session creation'
-    )
-    expect(globalThis.fetch).not.toHaveBeenCalled()
-  })
-
-  it('createSession coalesces concurrent callers into one POST', async () => {
-    mockGetIdToken.mockResolvedValue('firebase-id-token')
-    let resolveFetch: (value: Response) => void = () => {}
-    vi.mocked(globalThis.fetch).mockReturnValue(
-      new Promise<Response>((resolve) => {
-        resolveFetch = resolve
+      const call = sessionCookie[name]().then(() => {
+        settled = true
       })
+      await vi.runAllTimersAsync()
+
+      expect(webSession.start).toHaveBeenCalledOnce()
+      expect(settled).toBe(false)
+
+      markReady()
+      await call
+
+      expect(settled).toBe(true)
+    }
+  )
+
+  it('createSession starts the web session without waiting for it', async () => {
+    const webSession = useCloudWebSessionStore()
+    vi.mocked(webSession.start).mockReturnValue(true)
+    vi.mocked(webSession.whenReady).mockReturnValue(new Promise<void>(() => {}))
+    vi.mocked(webSession.whenSessionCreated).mockReturnValue(
+      new Promise<WebSessionErrorCode | undefined>(() => {})
     )
-    const { useSessionCookie } =
-      await import('@/platform/auth/session/useSessionCookie')
-
-    const { createSession } = useSessionCookie()
-    const first = createSession()
-    const second = createSession()
-    resolveFetch(new Response(null, { status: 204 }))
-    await Promise.all([first, second])
-
-    expect(globalThis.fetch).toHaveBeenCalledTimes(1)
-  })
-
-  it('confirms the current session once for workspace token admission', async () => {
-    mockGetIdToken.mockResolvedValue('firebase-id-token')
-    vi.mocked(globalThis.fetch).mockResolvedValue(
-      new Response(null, { status: 204 })
-    )
-    const { useSessionCookie } =
-      await import('@/platform/auth/session/useSessionCookie')
-
-    const { ensureSessionCookie } = useSessionCookie()
-    await ensureSessionCookie()
-    await ensureSessionCookie()
-
-    expect(globalThis.fetch).toHaveBeenCalledTimes(1)
-  })
-
-  it('rejects workspace token admission when session creation fails', async () => {
-    mockGetIdToken.mockResolvedValue('firebase-id-token')
-    vi.mocked(globalThis.fetch).mockResolvedValue(
-      new Response(JSON.stringify({ message: 'session denied' }), {
-        status: 401,
-        headers: { 'Content-Type': 'application/json' }
-      })
-    )
-    const { useSessionCookie } =
-      await import('@/platform/auth/session/useSessionCookie')
-
-    await expect(useSessionCookie().ensureSessionCookie()).rejects.toThrow(
-      'session denied'
-    )
-  })
-
-  it('reports a swallowed createSession failure as session_cookie_creation_failure', async () => {
-    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    mockGetIdToken.mockResolvedValue('firebase-id-token')
-    vi.mocked(globalThis.fetch).mockResolvedValue(
-      new Response(JSON.stringify({ message: 'session denied' }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' }
-      })
-    )
-    const { useSessionCookie } =
-      await import('@/platform/auth/session/useSessionCookie')
 
     await useSessionCookie().createSession()
 
-    expect(mockReportError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
-      errorType: 'session_cookie_creation_failure',
-      level: 'warning'
-    })
-    expect(consoleWarn).not.toHaveBeenCalled()
+    expect(webSession.start).toHaveBeenCalledOnce()
   })
 
-  it('serializes strict session creation after the previous user response', async () => {
-    mockGetIdToken.mockImplementation(() =>
-      Promise.resolve(`firebase-${useAuthStore().currentUser?.uid}`)
-    )
-    let resolveFirstFetch: (value: Response) => void = () => {}
-    vi.mocked(globalThis.fetch)
-      .mockReturnValueOnce(
-        new Promise<Response>((resolve) => {
-          resolveFirstFetch = resolve
-        })
-      )
-      .mockResolvedValueOnce(new Response(null, { status: 204 }))
-    const { useSessionCookie } =
-      await import('@/platform/auth/session/useSessionCookie')
+  it.for([
+    { name: 'SSO_REQUIRED', refusal: 'SSO_REQUIRED', requiresSso: true },
+    {
+      name: 'another refusal',
+      refusal: 'SESSION_REQUEST_REFUSED',
+      requiresSso: false
+    },
+    { name: 'no refusal', refusal: undefined, requiresSso: false }
+  ] satisfies {
+    name: string
+    refusal: WebSessionErrorCode | undefined
+    requiresSso: boolean
+  }[])(
+    'sessionRequiresSso starts the web session and answers $requiresSso when its creation ends with $name',
+    async ({ refusal, requiresSso }) => {
+      const webSession = useCloudWebSessionStore()
+      vi.mocked(webSession.start).mockReturnValue(true)
+      vi.mocked(webSession.whenSessionCreated).mockResolvedValue(refusal)
 
-    const first = useSessionCookie().createSession()
-    await vi.waitFor(() => expect(globalThis.fetch).toHaveBeenCalledTimes(1))
+      expect(await useSessionCookie().sessionRequiresSso()).toBe(requiresSso)
+      expect(webSession.start).toHaveBeenCalledOnce()
+    }
+  )
 
-    useAuthStore().currentUser = fromPartial({ uid: 'user-b' })
-    const second = useSessionCookie().createSessionOrThrow()
-    await Promise.resolve()
-    await Promise.resolve()
-    expect(globalThis.fetch).toHaveBeenCalledTimes(1)
-    expect(mockGetIdToken).toHaveBeenCalledTimes(1)
+  it.for([
+    { name: 'ensureSessionCookie', expected: undefined },
+    { name: 'createSession', expected: undefined },
+    { name: 'createSessionOrThrow', expected: undefined },
+    { name: 'sessionRequiresSso', expected: false }
+  ] as const)(
+    '$name leaves the web session alone off Cloud',
+    async ({ name, expected }) => {
+      distribution.isCloud = false
 
-    resolveFirstFetch(new Response(null, { status: 204 }))
-    await Promise.all([first, second])
+      await expect(useSessionCookie()[name]()).resolves.toBe(expected)
+      expect(useCloudWebSessionStore().start).not.toHaveBeenCalled()
+    }
+  )
 
-    expect(globalThis.fetch).toHaveBeenCalledTimes(2)
-    const firstHeaders = new Headers(
-      vi.mocked(globalThis.fetch).mock.calls[0][1]?.headers
-    )
-    const secondHeaders = new Headers(
-      vi.mocked(globalThis.fetch).mock.calls[1][1]?.headers
-    )
-    expect(firstHeaders.get('Authorization')).toBe('Bearer firebase-user-a')
-    expect(secondHeaders.get('Authorization')).toBe('Bearer firebase-user-b')
-  })
+  it.for([
+    { name: 'ensureSessionCookie', expected: undefined },
+    { name: 'createSession', expected: undefined },
+    { name: 'sessionRequiresSso', expected: false }
+  ] as const)(
+    '$name leaves the web session alone for an API-key login',
+    async ({ name, expected }) => {
+      useCurrentUser().isApiKeyLogin = computed(() => true)
 
-  it('reconfirms a cached owner after another owner mutates the cookie', async () => {
-    mockGetIdToken.mockImplementation(() =>
-      Promise.resolve(`firebase-${useAuthStore().currentUser?.uid}`)
-    )
-    let resolveUserB: (value: Response) => void = () => {}
-    vi.mocked(globalThis.fetch)
-      .mockResolvedValueOnce(new Response(null, { status: 204 }))
-      .mockReturnValueOnce(
-        new Promise<Response>((resolve) => {
-          resolveUserB = resolve
-        })
-      )
-      .mockResolvedValueOnce(new Response(null, { status: 204 }))
-    const { useSessionCookie } =
-      await import('@/platform/auth/session/useSessionCookie')
+      await expect(useSessionCookie()[name]()).resolves.toBe(expected)
+      expect(useCloudWebSessionStore().start).not.toHaveBeenCalled()
+    }
+  )
 
-    await useSessionCookie().ensureSessionCookie()
-    useAuthStore().currentUser = fromPartial({ uid: 'user-b' })
-    const userBSession = useSessionCookie().createSession()
-    await vi.waitFor(() => expect(globalThis.fetch).toHaveBeenCalledTimes(2))
+  it('createSessionOrThrow still starts the web session for an API-key login', async () => {
+    useCurrentUser().isApiKeyLogin = computed(() => true)
+    const webSession = useCloudWebSessionStore()
+    vi.mocked(webSession.start).mockReturnValue(true)
+    vi.mocked(webSession.whenReady).mockResolvedValue()
 
-    useAuthStore().currentUser = fromPartial({ uid: 'user-a' })
-    const userASession = useSessionCookie().ensureSessionCookie()
-    await Promise.resolve()
-    expect(globalThis.fetch).toHaveBeenCalledTimes(2)
+    await useSessionCookie().createSessionOrThrow()
 
-    resolveUserB(new Response(null, { status: 204 }))
-    await Promise.all([userBSession, userASession])
-
-    expect(globalThis.fetch).toHaveBeenCalledTimes(3)
-    const finalHeaders = new Headers(
-      vi.mocked(globalThis.fetch).mock.calls[2][1]?.headers
-    )
-    expect(finalHeaders.get('Authorization')).toBe('Bearer firebase-user-a')
-  })
-
-  it('lets strict creation join an in-flight Firebase request on Cloud', async () => {
-    mockGetAuthHeader.mockResolvedValue(null)
-    mockGetIdToken.mockResolvedValue('firebase-id-token')
-    vi.mocked(globalThis.fetch).mockResolvedValue(
-      new Response(null, { status: 204 })
-    )
-    const { useSessionCookie } =
-      await import('@/platform/auth/session/useSessionCookie')
-
-    const bestEffort = useSessionCookie().createSession()
-    const strict = useSessionCookie().createSessionOrThrow()
-    await Promise.all([bestEffort, strict])
-
-    expect(globalThis.fetch).toHaveBeenCalledOnce()
-    const headers = new Headers(
-      vi.mocked(globalThis.fetch).mock.calls[0][1]?.headers
-    )
-    expect(headers.get('Authorization')).toBe('Bearer firebase-id-token')
-    expect(mockGetAuthHeader).not.toHaveBeenCalled()
-  })
-
-  it('serializes session deletion after an in-flight creation', async () => {
-    mockGetIdToken.mockResolvedValue('firebase-id-token')
-    let resolveCreate: (value: Response) => void = () => {}
-    vi.mocked(globalThis.fetch)
-      .mockReturnValueOnce(
-        new Promise<Response>((resolve) => {
-          resolveCreate = resolve
-        })
-      )
-      .mockResolvedValueOnce(new Response(null, { status: 204 }))
-    const { useSessionCookie } =
-      await import('@/platform/auth/session/useSessionCookie')
-
-    const create = useSessionCookie().createSession()
-    await vi.waitFor(() => expect(globalThis.fetch).toHaveBeenCalledTimes(1))
-    const remove = useSessionCookie().deleteSession()
-
-    expect(globalThis.fetch).toHaveBeenCalledTimes(1)
-    resolveCreate(new Response(null, { status: 204 }))
-    await Promise.all([create, remove])
-
-    expect(globalThis.fetch).toHaveBeenCalledTimes(2)
-    expect(vi.mocked(globalThis.fetch).mock.calls[1][1]?.method).toBe('DELETE')
-  })
-
-  it('createSessionOrThrow fails fast on non-success responses', async () => {
-    mockGetIdToken.mockResolvedValue('firebase-id-token')
-    vi.mocked(globalThis.fetch).mockResolvedValue(
-      new Response(JSON.stringify({ message: 'session denied' }), {
-        status: 401,
-        headers: { 'Content-Type': 'application/json' }
-      })
-    )
-    const { useSessionCookie } =
-      await import('@/platform/auth/session/useSessionCookie')
-
-    await expect(useSessionCookie().createSessionOrThrow()).rejects.toThrow(
-      'session denied'
-    )
+    expect(webSession.start).toHaveBeenCalledOnce()
   })
 })
-
-vi.mock(import('@/scripts/app'), async () => {
-  const { fromPartial } = await import('@total-typescript/shoehorn')
-  return { app: fromPartial<ComfyApp>({}) }
-})
-vi.mock(import('firebase/auth'))

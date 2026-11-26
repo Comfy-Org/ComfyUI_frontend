@@ -1,4 +1,3 @@
-// eslint-disable-next-line import-x/no-unresolved -- import is correct at time of test execution
 import { app } from '../../scripts/app.js'
 
 const NODE_TYPE = 'DevToolsNodeWithComparerWidget'
@@ -31,7 +30,7 @@ class ComparerWidget {
         return d
       })
     } else {
-      cleanedVal = v.images || []
+      cleanedVal = Array.isArray(v.images) ? v.images : []
     }
     this._value.images = cleanedVal
     this.selected = cleanedVal.filter((d) => d.selected)
@@ -41,7 +40,7 @@ class ComparerWidget {
     return this._value
   }
 
-  draw(ctx, node, width, y, height) {
+  draw(ctx, _node, width, y, height) {
     ctx.save()
     ctx.fillStyle = '#333'
     ctx.fillRect(15, y, width - 15 * 2, height)

@@ -65,10 +65,9 @@ test.describe('Nested Subgraphs', { tag: ['@subgraph'] }, () => {
 
         const innerTextboxes = innerNode.getByRole('textbox')
         await comfyExpect(innerTextboxes).toHaveCount(2)
-        const innerValues = await innerTextboxes.evaluateAll<
-          string[],
-          HTMLInputElement
-        >((boxes) => boxes.map((b) => b.value))
+        const innerValues = await innerTextboxes.evaluateAll(
+          (boxes: HTMLInputElement[]) => boxes.map((b) => b.value)
+        )
         comfyExpect(innerValues).toContain('11111111111')
         comfyExpect(innerValues).toContain('22222222222')
       })
@@ -90,14 +89,14 @@ test.describe('Nested Subgraphs', { tag: ['@subgraph'] }, () => {
         const nodeLocator = comfyPage.vueNodes.getNodeLocator(HOST_NODE_ID)
         await comfyExpect(nodeLocator).toBeVisible()
 
-        const widthWidget = nodeLocator
-          .getByLabel('width', { exact: true })
+        const widthWidget = comfyPage.vueNodes
+          .getWidgetRowByLabel(nodeLocator, 'width')
           .first()
-        const heightWidget = nodeLocator
-          .getByLabel('height', { exact: true })
+        const heightWidget = comfyPage.vueNodes
+          .getWidgetRowByLabel(nodeLocator, 'height')
           .first()
-        const stepsWidget = nodeLocator
-          .getByLabel('steps', { exact: true })
+        const stepsWidget = comfyPage.vueNodes
+          .getWidgetRowByLabel(nodeLocator, 'steps')
           .first()
         const textWidget = nodeLocator.getByRole('textbox', { name: 'prompt' })
 
@@ -121,14 +120,14 @@ test.describe('Nested Subgraphs', { tag: ['@subgraph'] }, () => {
         const nodeAfter = comfyPage.vueNodes.getNodeLocator(HOST_NODE_ID)
         await comfyExpect(nodeAfter).toBeVisible()
 
-        const widthAfter = nodeAfter
-          .getByLabel('width', { exact: true })
+        const widthAfter = comfyPage.vueNodes
+          .getWidgetRowByLabel(nodeAfter, 'width')
           .first()
-        const heightAfter = nodeAfter
-          .getByLabel('height', { exact: true })
+        const heightAfter = comfyPage.vueNodes
+          .getWidgetRowByLabel(nodeAfter, 'height')
           .first()
-        const stepsAfter = nodeAfter
-          .getByLabel('steps', { exact: true })
+        const stepsAfter = comfyPage.vueNodes
+          .getWidgetRowByLabel(nodeAfter, 'steps')
           .first()
         const textAfter = nodeAfter.getByRole('textbox', { name: 'prompt' })
 

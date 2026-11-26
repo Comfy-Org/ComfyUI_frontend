@@ -1,13 +1,12 @@
 <template>
-  <Teleport to="body">
+  <Teleport v-if="galleryVisible" to="body">
     <div
-      v-if="galleryVisible"
       ref="dialogRef"
       role="dialog"
       aria-modal="true"
       :aria-label="$t('g.gallery')"
       tabindex="-1"
-      class="fixed inset-0 z-9999 flex items-center justify-center bg-black/90 outline-none"
+      class="fixed inset-0 z-overlay flex items-center justify-center bg-black/90 outline-none"
       data-mask
       @mousedown="onMaskMouseDown"
       @mouseup="onMaskMouseUp"
@@ -52,6 +51,7 @@
               v-else-if="isVideoResult(activeItem)"
               :key="resultItemUrl(activeItem)"
               :result="activeItem"
+              :autoplay="autoplayVideo"
             />
             <ResultAudio
               v-else-if="isAudioResult(activeItem)"
@@ -84,7 +84,7 @@
 import { computed, nextTick, ref, watch } from 'vue'
 
 import ComfyImage from '@/components/common/ComfyImage.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 import { resultItemUrl } from '@/utils/resultItemUrl'
 import {
@@ -105,6 +105,7 @@ const emit = defineEmits<{
 const props = defineProps<{
   allGalleryItems: AugmentedResultItem[]
   activeIndex: number
+  autoplayVideo?: boolean
 }>()
 
 /* Keeps the active video plus its neighbors buffered across gallery moves. */
@@ -123,6 +124,30 @@ watch(
     if (index !== -1) {
       previouslyFocusedElement = document.activeElement as HTMLElement | null
       void nextTick(() => dialogRef.value?.focus())
+    }
+  },
+  { immediate: true }
+)
+
+const neighborImageUrls = computed(() => {
+  if (!galleryVisible.value || !hasMultiple.value) return []
+  const count = props.allGalleryItems.length
+  return [-1, 1]
+    .map(
+      (step) =>
+        props.allGalleryItems[(props.activeIndex + step + count) % count]
+    )
+    .filter(isImageResult)
+    .map(resultItemUrl)
+})
+
+watch(
+  neighborImageUrls,
+  (urls) => {
+    for (const url of urls) {
+      const image = new Image()
+      image.decoding = 'async'
+      image.src = url
     }
   },
   { immediate: true }

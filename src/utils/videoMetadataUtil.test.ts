@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { api } from '@/scripts/api'
 import {
   clearVideoMetadataCache,
   extractVideoMetadata,
@@ -10,11 +11,13 @@ import {
   snapToStandardFrameRate
 } from '@/utils/videoMetadataUtil'
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    apiURL: (path: string) => `http://localhost:8188/api${path}`
-  }
-}))
+vi.mock(import('@/scripts/api'))
+
+beforeEach(() => {
+  vi.mocked(api.apiURL).mockImplementation(
+    (path) => `http://localhost:8188/api${path}`
+  )
+})
 
 function bufferSource(bytes: Uint8Array) {
   return new BufferSource(bytes)
@@ -105,9 +108,8 @@ describe('fetchVideoMetadata url gating', () => {
 
   it('extracts metadata from a trusted view url', async () => {
     const bytes = readFixture('tiny.mp4')
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => new Response(new Uint8Array(bytes).buffer))
+    vi.mocked(fetch).mockImplementation(
+      async () => new Response(new Uint8Array(bytes).buffer)
     )
 
     const result = await fetchVideoMetadata(
@@ -121,10 +123,9 @@ describe('fetchVideoMetadata url gating', () => {
   })
 
   it('caches metadata per view resource ignoring cache-busting params', async () => {
-    const fetchMock = vi.fn(
+    vi.mocked(fetch).mockImplementation(
       async () => new Response(new Uint8Array(readFixture('tiny.mp4')).buffer)
     )
-    vi.stubGlobal('fetch', fetchMock)
 
     const first = await fetchVideoMetadata(
       'http://localhost:8188/api/view?filename=cached.mp4&type=input&rand=0.1'
@@ -135,14 +136,13 @@ describe('fetchVideoMetadata url gating', () => {
 
     expect(first).toBeDefined()
     expect(second).toEqual(first)
-    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(fetch).toHaveBeenCalledTimes(1)
   })
 
   it('does not share cache across different origins or paths', async () => {
-    const fetchMock = vi.fn(
+    vi.mocked(fetch).mockImplementation(
       async () => new Response(new Uint8Array(readFixture('tiny.mp4')).buffer)
     )
-    vi.stubGlobal('fetch', fetchMock)
 
     const fromApiBase = await fetchVideoMetadata(
       'http://localhost:8188/api/view?filename=origins.mp4&type=input'
@@ -153,14 +153,13 @@ describe('fetchVideoMetadata url gating', () => {
 
     expect(fromApiBase).toBeDefined()
     expect(fromWindowOrigin).toBeDefined()
-    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(fetch).toHaveBeenCalledTimes(2)
   })
 
   it('deduplicates concurrent probes for the same resource', async () => {
-    const fetchMock = vi.fn(
+    vi.mocked(fetch).mockImplementation(
       async () => new Response(new Uint8Array(readFixture('tiny.mp4')).buffer)
     )
-    vi.stubGlobal('fetch', fetchMock)
 
     const url =
       'http://localhost:8188/api/view?filename=concurrent.mp4&type=input'
@@ -171,7 +170,7 @@ describe('fetchVideoMetadata url gating', () => {
 
     expect(first).toBeDefined()
     expect(second).toEqual(first)
-    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(fetch).toHaveBeenCalledTimes(1)
   })
 
   it('unblocks an aborted caller while the shared probe continues', async () => {
@@ -179,11 +178,10 @@ describe('fetchVideoMetadata url gating', () => {
     const gate = new Promise<void>((resolve) => {
       releaseFetch = resolve
     })
-    const fetchMock = vi.fn(async () => {
+    vi.mocked(fetch).mockImplementation(async () => {
       await gate
       return new Response(new Uint8Array(readFixture('tiny.mp4')).buffer)
     })
-    vi.stubGlobal('fetch', fetchMock)
 
     const url = 'http://localhost:8188/api/view?filename=aborted.mp4&type=input'
     const controller = new AbortController()
@@ -195,26 +193,22 @@ describe('fetchVideoMetadata url gating', () => {
     releaseFetch()
     const result = await fetchVideoMetadata(url)
     expect(result).toBeDefined()
-    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(fetch).toHaveBeenCalledTimes(1)
   })
 
   it('does not cache failed probes', async () => {
-    const failing = vi.fn(async () => {
-      throw new Error('network down')
-    })
-    vi.stubGlobal('fetch', failing)
+    vi.mocked(fetch).mockRejectedValueOnce(new Error('network down'))
 
     const url = 'http://localhost:8188/api/view?filename=flaky.mp4&type=input'
     expect(await fetchVideoMetadata(url)).toBeUndefined()
 
-    const working = vi.fn(
+    vi.mocked(fetch).mockImplementation(
       async () => new Response(new Uint8Array(readFixture('tiny.mp4')).buffer)
     )
-    vi.stubGlobal('fetch', working)
 
     const result = await fetchVideoMetadata(url)
     expect(result).toBeDefined()
-    expect(working).toHaveBeenCalled()
+    expect(fetch).toHaveBeenCalledTimes(2)
   })
 
   it('returns undefined for non-view urls', async () => {

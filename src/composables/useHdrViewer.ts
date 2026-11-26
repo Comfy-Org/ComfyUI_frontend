@@ -1,3 +1,4 @@
+import type { Point2D } from '@comfyorg/shared-frontend-utils/geometry'
 import * as THREE from 'three'
 import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader'
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader'
@@ -17,11 +18,12 @@ import {
   computeChannelHistograms,
   computeImageStats
 } from '@/renderer/hdr/hdrStats'
-import { WebGLViewport } from '@/renderer/three/WebGLViewport'
+import { WebGLViewport } from '@comfyorg/viewport3d/three/WebGLViewport'
 import { getImageFilenameFromUrl } from '@/utils/hdrFormatUtil'
 
 const MIN_ZOOM = 0.05
 const MAX_ZOOM = 64
+const CHECKER_CSS_PX = 8
 
 export type ChannelMode = 'rgb' | 'r' | 'g' | 'b' | 'a' | 'luminance'
 
@@ -43,9 +45,7 @@ const CHANNEL_INDEX: Record<ChannelMode, number> = {
   luminance: 5
 }
 
-interface PixelReadout {
-  x: number
-  y: number
+interface PixelReadout extends Point2D {
   r: number
   g: number
   b: number
@@ -97,6 +97,7 @@ export function useHdrViewer() {
   const exposureStops = ref(0)
   const dither = ref(true)
   const clipWarnings = ref(false)
+  const checkerboard = ref(true)
   const gamut = ref<GamutName>('sRGB')
   const channel = ref<ChannelMode>('rgb')
   const loading = ref(true)
@@ -187,6 +188,7 @@ export function useHdrViewer() {
     material.uniforms.uGain.value = Math.pow(2, exposureStops.value)
     material.uniforms.uDither.value = dither.value
     material.uniforms.uClipWarnings.value = clipWarnings.value
+    material.uniforms.uCheckerboard.value = checkerboard.value
     material.uniforms.uChannel.value = CHANNEL_INDEX[channel.value]
     const m = gamutToSrgbMatrix(gamut.value)
     ;(material.uniforms.uGamutToSRGB.value as THREE.Matrix3).set(
@@ -225,7 +227,9 @@ export function useHdrViewer() {
         uChannel: { value: 0 },
         uDither: { value: true },
         uClipWarnings: { value: false },
-        uClipRange: { value: new THREE.Vector2(0, 1) }
+        uClipRange: { value: new THREE.Vector2(0, 1) },
+        uCheckerboard: { value: true },
+        uCheckerSize: { value: CHECKER_CSS_PX * renderer.getPixelRatio() }
       }
     })
 
@@ -326,8 +330,7 @@ export function useHdrViewer() {
     requestRender()
   }
 
-  let dragStart: { x: number; y: number; camX: number; camY: number } | null =
-    null
+  let dragStart: (Point2D & { camX: number; camY: number }) | null = null
 
   function onPointerDown(event: PointerEvent) {
     if (!camera) return
@@ -419,7 +422,10 @@ export function useHdrViewer() {
     readSample = null
   }
 
-  watch([exposureStops, dither, clipWarnings, gamut, channel], applyUniforms)
+  watch(
+    [exposureStops, dither, clipWarnings, checkerboard, gamut, channel],
+    applyUniforms
+  )
 
   onUnmounted(dispose)
 
@@ -427,6 +433,7 @@ export function useHdrViewer() {
     exposureStops,
     dither,
     clipWarnings,
+    checkerboard,
     gamut,
     channel,
     loading,

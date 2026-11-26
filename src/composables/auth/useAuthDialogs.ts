@@ -1,0 +1,98 @@
+import { useDialogStore } from '@/stores/dialogStore'
+
+const lazyApiNodesSignInContent = () =>
+  import('@/components/dialog/content/ApiNodesSignInContent.vue')
+const lazySignInContent = () =>
+  import('@/components/dialog/content/SignInContent.vue')
+const lazyUpdatePasswordContent = () =>
+  import('@/components/dialog/content/UpdatePasswordContent.vue')
+const lazyComfyOrgHeader = () =>
+  import('@/components/dialog/header/ComfyOrgHeader.vue')
+
+export function useAuthDialogs() {
+  const dialogStore = useDialogStore()
+
+  /**
+   * Shows a dialog requiring sign in for API nodes
+   * @returns Promise that resolves to true if user clicks login, false if cancelled
+   */
+  async function showApiNodesSignInDialog(
+    apiNodeNames: string[]
+  ): Promise<boolean> {
+    const { default: ApiNodesSignInContent } = await lazyApiNodesSignInContent()
+
+    const key = 'api-nodes-signin'
+
+    return new Promise<boolean>((resolve) => {
+      dialogStore.showDialog({
+        key,
+        component: ApiNodesSignInContent,
+        props: {
+          apiNodeNames,
+          onLogin: () => showSignInDialog().then((result) => resolve(result)),
+          onCancel: () => resolve(false)
+        },
+        dialogComponentProps: {
+          headless: true,
+          closable: true,
+          onRemoved: () => resolve(false)
+        }
+      })
+    }).then((result) => {
+      dialogStore.closeDialog({ key })
+      return result
+    })
+  }
+
+  async function showSignInDialog(): Promise<boolean> {
+    const [{ default: SignInContent }, { default: ComfyOrgHeader }] =
+      await Promise.all([lazySignInContent(), lazyComfyOrgHeader()])
+
+    return new Promise<boolean>((resolve) => {
+      dialogStore.showDialog({
+        key: 'global-signin',
+        component: SignInContent,
+        headerComponent: ComfyOrgHeader,
+        props: {
+          onSuccess: () => resolve(true)
+        },
+        dialogComponentProps: {
+          size: 'fit',
+          closable: true,
+          onRemoved: () => resolve(false)
+        }
+      })
+    }).then((result) => {
+      dialogStore.closeDialog({ key: 'global-signin' })
+      return result
+    })
+  }
+
+  /**
+   * Shows a dialog for updating the current user's password.
+   */
+  async function showUpdatePasswordDialog() {
+    const [{ default: UpdatePasswordContent }, { default: ComfyOrgHeader }] =
+      await Promise.all([lazyUpdatePasswordContent(), lazyComfyOrgHeader()])
+
+    return dialogStore.showDialog({
+      key: 'global-update-password',
+      component: UpdatePasswordContent,
+      headerComponent: ComfyOrgHeader,
+      props: {
+        requestSignIn: showSignInDialog,
+        onSuccess: () =>
+          dialogStore.closeDialog({ key: 'global-update-password' })
+      },
+      dialogComponentProps: {
+        size: 'fit'
+      }
+    })
+  }
+
+  return {
+    showApiNodesSignInDialog,
+    showSignInDialog,
+    showUpdatePasswordDialog
+  }
+}

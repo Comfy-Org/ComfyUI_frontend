@@ -2,21 +2,137 @@ import { DOMParser } from '@tiptap/pm/model'
 import { EditorState } from '@tiptap/pm/state'
 import { describe, expect, it } from 'vitest'
 
-import { toNodeId } from '@/types/nodeId'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 
-import type { ComposerPrompt } from '../../../types/composerPrompt'
-import { parseWorkflowReferences } from '../../../utils/workflowReferenceText'
+import type { ComposerPrompt } from '@/workbench/extensions/agent/types/composerPrompt'
+import { parseWorkflowReferences } from '@/workbench/extensions/agent/utils/workflowReferenceText'
 
 import {
   inlinePromptSchema,
+  pastedSkillCommand,
   promptDocument,
   promptDocumentPosition,
   promptDraft,
+  promptInsertionPoint,
+  promptInsertionPosition,
   promptTextOffset
 } from './inlinePrompt'
 
+function pastedSkillChip(dataset: Record<string, string>, label: string) {
+  const content = document.createElement('div')
+  const chip = document.createElement('span')
+  Object.assign(chip.dataset, { comfySkill: '1', ...dataset })
+  chip.textContent = label
+  content.append(chip)
+  return promptDraft(DOMParser.fromSchema(inlinePromptSchema).parse(content))
+}
+
 describe('inline prompt', () => {
+  it.for([
+    ['', 0, { name: 'portrait', suffix: ' next' }],
+    ['src', 3, undefined],
+    ['src ', 4, { name: 'portrait', suffix: ' next' }],
+    ['line\n', 5, { name: 'portrait', suffix: ' next' }],
+    ['src', 0, { name: 'portrait', suffix: ' next' }]
+  ] as const)(
+    'accepts a pasted skill command only at the text start or after whitespace: %j at %i',
+    ([text, offset, expected]) => {
+      const doc = promptDocument({
+        text,
+        references: [
+          { kind: 'workflow', id: 'ref', name: 'Reference', textOffset: 0 }
+        ]
+      })
+      const position = promptDocumentPosition(doc, offset)
+      expect(pastedSkillCommand(doc, position, '/portrait next')).toEqual(
+        expected
+      )
+    }
+  )
+
+  it.for([
+    { textOffset: 0, referenceIndex: 0, position: 0 },
+    { textOffset: 0, referenceIndex: 1, position: 1 },
+    { textOffset: 1, referenceIndex: 1, position: 2 },
+    { textOffset: 1, referenceIndex: 2, position: 3 }
+  ])(
+    'maps the caret $textOffset/$referenceIndex beside adjacent chips to position $position',
+    ({ textOffset, referenceIndex, position }) => {
+      const doc = promptDocument({
+        text: ' ',
+        references: [
+          { kind: 'workflow', id: 'a', name: 'A', textOffset: 0 },
+          { kind: 'workflow', id: 'b', name: 'B', textOffset: 1 }
+        ]
+      })
+
+      expect(promptInsertionPosition(doc, { textOffset, referenceIndex })).toBe(
+        position
+      )
+      expect(promptInsertionPoint(doc, position)).toEqual({
+        textOffset,
+        referenceIndex
+      })
+    }
+  )
+
+  it('round-trips a scoped skill and its pending paste resolution beside a workflow', () => {
+    const draft: ComposerPrompt = {
+      text: '😀 before  after',
+      references: [
+        { kind: 'workflow', id: 'ref', name: 'Reference', textOffset: 10 },
+        {
+          kind: 'skill',
+          name: 'portrait',
+          description: 'Private\nDescription',
+          scope: 'user-a/workspace-a',
+          resolvePastedName: true,
+          textOffset: 10
+        }
+      ]
+    }
+    expect(promptDraft(promptDocument(draft))).toEqual(draft)
+  })
+
+  it('round-trips mixed workflow, node and skill references without changing their metadata or order', () => {
+    const draft: ComposerPrompt = {
+      text: '😀 before\n after',
+      references: [
+        {
+          kind: 'workflow',
+          id: 'workflow-reference',
+          name: 'Reference workflow',
+          unavailable: true,
+          textOffset: 0
+        },
+        {
+          kind: 'node',
+          scope: 'workflow-A',
+          node: {
+            id: '12',
+            title: 'KSampler',
+            locatorId: createNodeLocatorId(
+              'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+              toNodeId('12')
+            )
+          },
+          textOffset: 10
+        },
+        {
+          kind: 'skill',
+          name: 'portrait',
+          description: 'Private\nDescription',
+          scope: 'user-a/workspace-a',
+          resolvePastedName: true,
+          textOffset: 10
+        }
+      ]
+    }
+
+    expect(promptDraft(promptDocument(draft))).toEqual(draft)
+  })
+
   it('normalizes clipboard workflow IDs while preserving labels and availability', () => {
     const content = document.createElement('div')
     const chip = document.createElement('span')
@@ -34,6 +150,47 @@ describe('inline prompt', () => {
       unavailable: true
     })
   })
+
+  it.for(['portrait.v2', 'a'.repeat(64)])(
+    'accepts valid rich skill display metadata for %s',
+    (name) => {
+      const prompt = pastedSkillChip(
+        { skillName: name, skillDescription: 'Original\nDescription' },
+        `/${name}`
+      )
+      expect(prompt.references).toEqual([
+        {
+          kind: 'skill',
+          name,
+          description: 'Original\nDescription',
+          scope: '',
+          textOffset: 0
+        }
+      ])
+    }
+  )
+
+  it.for([
+    [
+      { skillName: 'a'.repeat(65), skillDescription: 'x' },
+      `/${'a'.repeat(65)}`
+    ],
+    [
+      { skillName: 'portrait', skillDescription: 'a'.repeat(1025) },
+      '/portrait'
+    ],
+    [{ skillName: '..', skillDescription: 'x' }, '/..'],
+    [{ skillName: 'portrait' }, '/portrait'],
+    [{ skillName: 'portrait', skillDescription: 'x' }, '/different']
+  ] as const)(
+    'keeps malformed rich skill metadata as readable text: %j',
+    ([dataset, label]) => {
+      expect(pastedSkillChip(dataset, label)).toEqual({
+        text: label,
+        references: []
+      })
+    }
+  )
 
   it.for([true, false])(
     'round-trips adjacent scoped nodes and assets with uploading=%s',
@@ -68,6 +225,31 @@ describe('inline prompt', () => {
         ]
       }
 
+      expect(promptDraft(promptDocument(draft))).toEqual(draft)
+    }
+  )
+
+  it.for(['video', 'audio'] as const)(
+    'retains %s preview metadata when round-tripping inline assets',
+    (mediaKind) => {
+      const draft: ComposerPrompt = {
+        text: 'Inspect ',
+        references: [
+          {
+            kind: 'asset',
+            textOffset: 8,
+            attachment: {
+              id: 'media',
+              name: 'Renamed media',
+              ref: 'stored-file',
+              mediaKind,
+              mediaUrl: 'blob:media',
+              previewUrl: '/poster.png',
+              uploading: true
+            }
+          }
+        ]
+      }
       expect(promptDraft(promptDocument(draft))).toEqual(draft)
     }
   )

@@ -3,16 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { api } from '@/scripts/api'
 import { UserFile, useUserFileStore } from '@/stores/userFileStore'
 
-// Mock the api
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    listUserDataFullInfo: vi.fn(),
-    getUserData: vi.fn(),
-    storeUserData: vi.fn(),
-    deleteUserData: vi.fn(),
-    moveUserData: vi.fn()
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
 describe('useUserFileStore', () => {
   let store: ReturnType<typeof useUserFileStore>
@@ -109,7 +100,7 @@ describe('useUserFileStore', () => {
         } as Response)
 
         await expect(file.load()).rejects.toThrow(
-          "Failed to load file 'file1.txt': 404 Not Found"
+          'Failed to load file: 404 Not Found'
         )
       })
     })
@@ -129,10 +120,31 @@ describe('useUserFileStore', () => {
         expect(api.storeUserData).toHaveBeenCalledWith(
           'file1.txt',
           'modified content',
-          { throwOnError: true, full_info: true, overwrite: true }
+          {
+            throwOnError: true,
+            full_info: true,
+            overwrite: true,
+            reportConflict: false
+          }
         )
         expect(file.lastModified).toBe(456)
         expect(file.size).toBe(200)
+      })
+
+      it('overwrites from a temporary file when asked to', async () => {
+        const file = UserFile.createTemporary('file1.txt')
+        file.content = 'content'
+        vi.mocked(api.storeUserData).mockResolvedValue(
+          Response.json({ modified: 456, size: 200 })
+        )
+
+        await file.save({ overwrite: true })
+
+        expect(api.storeUserData).toHaveBeenCalledWith(
+          'file1.txt',
+          'content',
+          expect.objectContaining({ overwrite: true })
+        )
       })
 
       it('should not save unmodified file', async () => {
@@ -195,7 +207,12 @@ describe('useUserFileStore', () => {
           'file content',
           // SaveAs should create a new temporary file, which will mean
           // overwrite is false
-          { throwOnError: true, full_info: true, overwrite: false }
+          {
+            throwOnError: true,
+            full_info: true,
+            overwrite: false,
+            reportConflict: false
+          }
         )
         expect(newFile).toBeInstanceOf(UserFile)
         expect(newFile.path).toBe('newfile.txt')

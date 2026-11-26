@@ -2,7 +2,7 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
-import type { NodeError, PromptResponse } from '@/schemas/apiSchema'
+import type { NodeError, PromptResponse } from '@comfyorg/api-client/types'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
 
@@ -32,7 +32,11 @@ test.describe(
     })
 
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.workflow.loadWorkflow('linear-validation-warning')
+      await comfyPage.workflow.loadWorkflow('nodes/single_save_image_node', {
+        workflow: {
+          extra: { linearData: { inputs: [], outputs: [SAVE_IMAGE_NODE_ID] } }
+        }
+      })
       await comfyPage.appMode.toggleAppMode()
       await expect(comfyPage.appMode.linearWidgets).toBeVisible()
     })
@@ -85,8 +89,7 @@ test.describe(
       let promptQueued = false
       const mockResponse: PromptResponse = {
         prompt_id: 'test-id',
-        node_errors: {},
-        error: ''
+        node_errors: {}
       }
       await comfyPage.page.route(
         '**/api/prompt',

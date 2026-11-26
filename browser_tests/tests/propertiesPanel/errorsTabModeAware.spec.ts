@@ -122,7 +122,11 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
     test('Loading a workflow with all nodes bypassed shows no errors', async ({
       comfyPage
     }) => {
-      await comfyPage.workflow.loadWorkflow('missing/missing_models_bypassed')
+      await comfyPage.workflow.loadWorkflow('missing/missing_models', {
+        nodes: {
+          1: { mode: 4 }
+        }
+      })
 
       const errorOverlay = comfyPage.page.getByTestId(
         TestIds.dialogs.errorOverlay
@@ -326,7 +330,11 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
     test('Loading a workflow with all nodes bypassed shows no errors', async ({
       comfyPage
     }) => {
-      await comfyPage.workflow.loadWorkflow('missing/missing_media_bypassed')
+      await comfyPage.workflow.loadWorkflow('missing/missing_media_single', {
+        nodes: {
+          10: { mode: 4 }
+        }
+      })
 
       const errorOverlay = comfyPage.page.getByTestId(
         TestIds.dialogs.errorOverlay
@@ -836,13 +844,13 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
     test('Loading a workflow with bypassed subgraph suppresses interior missing model error', async ({
       comfyPage
     }) => {
-      // Regression: the initial scan pipeline only checked each node's
-      // own mode, so interior nodes of a bypassed subgraph container
-      // surfaced errors even though the container was excluded from
-      // execution. The pipeline now post-filters candidates whose
-      // ancestor path is not fully active.
       await comfyPage.workflow.loadWorkflow(
-        'missing/missing_models_in_bypassed_subgraph'
+        'missing/missing_models_in_subgraph',
+        {
+          nodes: {
+            2: { mode: 4 }
+          }
+        }
       )
 
       const errorOverlay = comfyPage.page.getByTestId(
@@ -859,12 +867,13 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
     test('Entering a bypassed subgraph does not resurface interior missing model error', async ({
       comfyPage
     }) => {
-      // Regression: entering a bypassed subgraph re-scans its interior
-      // nodes; without an ancestor-aware guard in scanSingleNodeErrors,
-      // that re-scan reintroduced the error the initial pipeline had
-      // correctly suppressed.
       await comfyPage.workflow.loadWorkflow(
-        'missing/missing_models_in_bypassed_subgraph'
+        'missing/missing_models_in_subgraph',
+        {
+          nodes: {
+            2: { mode: 4 }
+          }
+        }
       )
 
       const errorsTab = comfyPage.page.getByTestId(
@@ -874,6 +883,7 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
       await expect(errorsTab).toBeHidden()
 
       const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
+      await subgraphNode.centerOnNode()
       await subgraphNode.navigateIntoSubgraph()
 
       await expect(errorsTab).toBeHidden()

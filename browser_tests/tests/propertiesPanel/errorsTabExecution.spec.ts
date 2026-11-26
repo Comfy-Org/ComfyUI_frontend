@@ -10,18 +10,13 @@ import {
 } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
-import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
+import { PropertiesPanel } from '@e2e/fixtures/components/PropertiesPanel'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
 const webSocketTest = mergeTests(test, webSocketFixture)
 
 test.describe('Errors tab - Execution errors', { tag: '@ui' }, () => {
   test.use({ initialSettings: { 'Comfy.RightSidePanel.ShowErrorsTab': true } })
-
-  test.beforeEach(async ({ comfyPage }) => {
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
-    await comfyPage.setup()
-  })
 
   test('Should show Find on GitHub and Copy buttons in error card', async ({
     comfyPage
@@ -79,7 +74,7 @@ test.describe('Errors tab - Execution error lifecycle', { tag: '@ui' }, () => {
     await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
     await expect(runtimePanel).toBeHidden()
 
-    const panel = new PropertiesPanelHelper(comfyPage.page)
+    const panel = new PropertiesPanel(comfyPage.page)
     await panel.open(comfyPage.actionbar.propertiesButton)
     await expect(panel.root).toBeVisible()
     await expect(panel.errorsTab).toBeHidden()
@@ -147,6 +142,7 @@ webSocketTest.describe(
         )
 
         await execution.run({
+          start: false,
           beforePromptResponse: async (jobId) => {
             execution.executionError(jobId, '17', 'Early execution failure')
             await errorReceived

@@ -1,4 +1,4 @@
-import type { IRangeWidget } from '../types/widgets'
+import type { IRangeWidget } from '@comfyorg/graph-model/widgets'
 import { BaseWidget } from './BaseWidget'
 import type { DrawWidgetOptions, WidgetEventOptions } from './BaseWidget'
 

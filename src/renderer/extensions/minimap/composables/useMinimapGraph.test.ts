@@ -1,398 +1,192 @@
-import { useExecutionStore } from '@/stores/executionStore'
-import { useThrottleFn } from '@vueuse/core'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
-import type { Ref } from 'vue'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
+import { effectScope, nextTick, shallowRef } from 'vue'
 
-import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
-import type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { MinimapDataSource } from '@/renderer/extensions/minimap/data/MinimapDataSource'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { useMinimapGraph } from '@/renderer/extensions/minimap/composables/useMinimapGraph'
-import { api } from '@/scripts/api'
-import { toLinkId } from '@/types/linkId'
-import { toNodeId } from '@/types/nodeId'
+import { useExecutionStore } from '@/stores/executionStore'
+import { useLinkStore } from '@/stores/linkStore'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import {
   createMockLGraph,
-  createMockLGraphNode,
-  createMockLLink,
-  createMockLinks
+  createMockLGraphGroup,
+  createMockLGraphNode
 } from '@/utils/__tests__/litegraphTestUtils'
 
-vi.mock(import('@vueuse/core'), { spy: true })
+function createReader(initialGraph: LGraph | null) {
+  const graph = shallowRef(initialGraph)
+  const scope = effectScope()
+  onTestFinished(() => scope.stop())
+  const reader = scope.run(() => useMinimapGraph(graph))
+  assert.exists(reader)
+  return { ...reader, graph, scope }
+}
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn()
-  }
-}))
+function createGraph(isRootGraph = true) {
+  return createMockLGraph({
+    id: '00000000-0000-0000-0000-000000000001',
+    isRootGraph,
+    _nodes: [
+      createMockLGraphNode({
+        id: toNodeId('1'),
+        pos: [100, 100],
+        size: [150, 80]
+      }),
+      createMockLGraphNode({
+        id: toNodeId('2'),
+        pos: [300, 200],
+        size: [120, 60]
+      })
+    ]
+  })
+}
+
+function registerLink(
+  graph: LGraph,
+  source: string,
+  target: string,
+  sourceSlot = 0,
+  targetSlot = 0
+) {
+  const scope = graphScopeOf(graph)
+  const previous = useLinkStore().getTopology(scope.rootGraphId, toLinkId(1))
+  if (previous) useLinkStore().deleteLink(scope, previous)
+  useLinkStore().registerLink(scope, {
+    id: toLinkId(1),
+    graphId: scope.owningGraphId,
+    originNodeId: toNodeId(source),
+    targetNodeId: toNodeId(target),
+    originSlot: sourceSlot,
+    targetSlot,
+    type: 'INT'
+  })
+}
 
 describe('useMinimapGraph', () => {
-  let mockGraph: LGraph
-  let onGraphChangedMock: () => void
-
   beforeEach(() => {
     layoutStore.resetForTests()
-    mockGraph = createMockLGraph({
-      id: 'test-graph-123',
-      _nodes: [
-        createMockLGraphNode({ id: '1', pos: [100, 100], size: [150, 80] }),
-        createMockLGraphNode({ id: '2', pos: [300, 200], size: [120, 60] })
-      ],
-      links: createMockLinks([createMockLLink({ id: toLinkId(1) })]),
-      events: new CustomEventTarget<LGraphEventMap>(),
-      onNodeAdded: vi.fn(),
-      onNodeRemoved: vi.fn(),
-      onConnectionChange: vi.fn()
-    })
-
-    onGraphChangedMock = vi.fn()
-    for (const key of Object.keys(useExecutionStore().nodeProgressStates)) {
-      delete useExecutionStore().nodeProgressStates[key]
-    }
   })
 
-  it('should initialize with empty state', () => {
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
-    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
-
-    expect(graphManager.updateFlags.value).toEqual({
-      bounds: false,
-      nodes: false,
-      connections: false,
-      viewport: false
-    })
-  })
-
-  it('should setup event listeners on init', () => {
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
-    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
-
-    graphManager.init()
-
-    expect(api.addEventListener).toHaveBeenCalledWith(
-      'graphChanged',
-      expect.any(Function)
+  it('classifies the first reading and then quiet polls', () => {
+    const reader = createReader(createGraph())
+    expect(reader.checkForChanges()).toBe('geometry')
+    expect(Array.from({ length: 10 }, () => reader.checkForChanges())).toEqual(
+      Array(10).fill('none')
     )
   })
 
-  it('notifies on node add without displacing the graph callback', () => {
-    const originalOnNodeAdded = vi.fn()
-    mockGraph.onNodeAdded = originalOnNodeAdded
-
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
-    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
-
-    graphManager.setupEventListeners()
-
-    // The callback slot is left alone; the minimap subscribes to the event.
-    expect(mockGraph.onNodeAdded).toBe(originalOnNodeAdded)
-
-    mockGraph.events.dispatch('node:added', { node: { id: '3' } as LGraphNode })
-
-    expect(onGraphChangedMock).toHaveBeenCalled()
-  })
-
-  it('notifies on connection change after running the original callback', () => {
-    const originalOnConnectionChange = vi.fn()
-    mockGraph.onConnectionChange = originalOnConnectionChange
-
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
-    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
-
-    graphManager.setupEventListeners()
-    mockGraph.onConnectionChange(mockGraph._nodes[0])
-
-    expect(originalOnConnectionChange).toHaveBeenCalledWith(mockGraph._nodes[0])
-    expect(onGraphChangedMock).toHaveBeenCalledTimes(1)
-    expect(originalOnConnectionChange.mock.invocationCallOrder[0]).toBeLessThan(
-      vi.mocked(onGraphChangedMock).mock.invocationCallOrder[0]
-    )
-  })
-
-  it('should prevent duplicate event listener setup', () => {
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
-    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
-
-    graphManager.setupEventListeners()
-    graphManager.setupEventListeners()
-
-    mockGraph.events.dispatch('node:added', { node: { id: '3' } as LGraphNode })
-
-    expect(onGraphChangedMock).toHaveBeenCalledTimes(1)
-  })
-
-  it('should cleanup event listeners properly', () => {
-    const originalOnConnectionChange = vi.fn()
-    mockGraph.onConnectionChange = originalOnConnectionChange
-
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
-    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
-
-    graphManager.setupEventListeners()
-    graphManager.cleanupEventListeners()
-
-    expect(mockGraph.onConnectionChange).toBe(originalOnConnectionChange)
-
-    mockGraph.events.dispatch('node:added', { node: { id: '3' } as LGraphNode })
-
-    expect(onGraphChangedMock).not.toHaveBeenCalled()
-  })
-
-  it('should handle cleanup for never-setup graph', () => {
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
-    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
-
-    expect(() => graphManager.cleanupEventListeners()).not.toThrow()
-  })
-
-  it('cleanup leaves a later wrapper alone when one is layered on top', () => {
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
-    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
-
-    graphManager.setupEventListeners()
-    const minimapWrapper = mockGraph.onConnectionChange
-
-    // Simulate another system adding its own wrapper on top
-    const downstream = vi.fn()
-    const layeredWrapper = vi.fn(function (this: unknown, node: LGraphNode) {
-      minimapWrapper?.call(this, node)
-      downstream(node)
-    })
-    mockGraph.onConnectionChange = layeredWrapper
-
-    graphManager.cleanupEventListeners()
-
-    // The newer wrapper must survive cleanup
-    expect(mockGraph.onConnectionChange).toBe(layeredWrapper)
-  })
-
-  it('a buried wrapper becomes inert after cleanup', () => {
-    const originalOnConnectionChange = vi.fn()
-    mockGraph.onConnectionChange = originalOnConnectionChange
-
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
-    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
-
-    graphManager.setupEventListeners()
-    const buriedWrapper = mockGraph.onConnectionChange
-
-    // Layer something on top so cleanup can't restore.
-    mockGraph.onConnectionChange = vi.fn()
-    graphManager.cleanupEventListeners()
-    vi.mocked(onGraphChangedMock).mockClear()
-
-    // Call the method directly and ensure it is a no-op
-    const testNode = { id: '9' } as LGraphNode
-    buriedWrapper(testNode)
-
-    expect(originalOnConnectionChange).toHaveBeenCalledWith(testNode)
-    expect(onGraphChangedMock).not.toHaveBeenCalled()
-  })
-
-  it('invalidates cache and fires update on visual property changes', () => {
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
-    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
-    graphManager.setupEventListeners()
-
-    mockGraph.events.dispatch('node:property:changed', {
-      nodeId: '1',
-      property: 'color',
-      oldValue: '',
-      newValue: '#fff'
-    })
-
-    expect(onGraphChangedMock).toHaveBeenCalled()
-  })
-
-  it('ignores unrelated property changes', () => {
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
-    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
-    graphManager.setupEventListeners()
-
-    mockGraph.events.dispatch('node:property:changed', {
-      nodeId: '1',
-      property: 'title',
-      oldValue: 'a',
-      newValue: 'b'
-    })
-
-    expect(onGraphChangedMock).not.toHaveBeenCalled()
-  })
-
-  it('detaches the property listener on cleanup', () => {
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
-    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
-    graphManager.setupEventListeners()
-    graphManager.cleanupEventListeners()
-
-    mockGraph.events.dispatch('node:property:changed', {
-      nodeId: '1',
-      property: 'mode',
-      oldValue: 0,
-      newValue: 1
-    })
-
-    expect(onGraphChangedMock).not.toHaveBeenCalled()
-  })
-
-  it('should detect node position changes', () => {
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
-    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
-
-    // First check - cache initial state
-    let hasChanges = graphManager.checkForChanges()
-    expect(hasChanges).toBe(true) // Initial cache population
-
-    // No changes
-    hasChanges = graphManager.checkForChanges()
-    expect(hasChanges).toBe(false)
-
-    // Change node position
-    mockGraph._nodes[0].pos = [200, 150]
-    hasChanges = graphManager.checkForChanges()
-    expect(hasChanges).toBe(true)
-    expect(graphManager.updateFlags.value.bounds).toBe(true)
-    expect(graphManager.updateFlags.value.nodes).toBe(true)
-  })
-
-  it('detects a rendered size change without a requested size change', () => {
-    const node = mockGraph._nodes[0]
-    let renderedSize = node.size
-    Object.defineProperty(node, 'renderingSize', {
-      get: () => renderedSize
-    })
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
-    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
-
-    graphManager.checkForChanges()
-    expect(graphManager.checkForChanges()).toBe(false)
-
-    renderedSize = [240, 180]
-
-    expect(graphManager.checkForChanges()).toBe(true)
-    expect(graphManager.updateFlags.value.bounds).toBe(true)
-    expect(graphManager.updateFlags.value.nodes).toBe(true)
-  })
-
-  it('recomputes bounds after a reload that leaves node geometry identical', () => {
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
-    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
-    graphManager.setupEventListeners()
-
-    graphManager.checkForChanges()
-    expect(graphManager.checkForChanges()).toBe(false)
-
-    // Reloading the same workflow leaves the node count and every geometry
-    // string unchanged, so only `configured` can say the bounds are stale.
-    mockGraph.events.dispatch('configured')
-
-    expect(graphManager.checkForChanges()).toBe(true)
-    expect(graphManager.updateFlags.value.bounds).toBe(true)
-  })
-
-  it('should detect node count changes', () => {
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
-    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
-
-    // Cache initial state
-    graphManager.checkForChanges()
-
-    // Add a node
-    mockGraph._nodes.push(
-      createMockLGraphNode({ id: '3', pos: [400, 300], size: [100, 50] })
-    )
-
-    const hasChanges = graphManager.checkForChanges()
-    expect(hasChanges).toBe(true)
-    expect(graphManager.updateFlags.value.bounds).toBe(true)
-    expect(graphManager.updateFlags.value.nodes).toBe(true)
-  })
-
-  it('should detect connection changes', () => {
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
-    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
-
-    // Cache initial state
-    graphManager.checkForChanges()
-
-    // Change connections
-    mockGraph.links = createMockLinks([
-      createMockLLink({ id: toLinkId(1) }),
-      createMockLLink({ id: toLinkId(2) })
-    ])
-
-    const hasChanges = graphManager.checkForChanges()
-    expect(hasChanges).toBe(true)
-    expect(graphManager.updateFlags.value.connections).toBe(true)
-  })
-
-  it('should detect a rewire that leaves the link count unchanged', () => {
-    mockGraph.links = createMockLinks([
-      createMockLLink({
-        id: toLinkId(1),
-        origin_id: toNodeId(1),
-        target_id: toNodeId(2)
+  it.for([true, false])(
+    'reads and projects nodes with unencodable locator IDs (root=%s)',
+    (isRootGraph) => {
+      const graph = createGraph(isRootGraph)
+      graph._nodes[0].id = toNodeId('node:\uD800')
+      const reader = createReader(graph)
+      expect(reader.checkForChanges()).toBe('geometry')
+      expect(reader.checkForChanges()).toBe('none')
+      expect(new MinimapDataSource(graph).getNodes()[0]).toMatchObject({
+        id: 'node:\uD800',
+        x: 100,
+        y: 100,
+        width: 150,
+        height: 80,
+        executionState: null
       })
-    ])
-
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
-    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
-
-    graphManager.checkForChanges()
-    expect(graphManager.checkForChanges()).toBe(false)
-
-    // Same number of links, different endpoints.
-    mockGraph.links = createMockLinks([
-      createMockLLink({
-        id: toLinkId(1),
-        origin_id: toNodeId(1),
-        target_id: toNodeId(3)
-      })
-    ])
-
-    expect(graphManager.checkForChanges()).toBe(true)
-    expect(graphManager.updateFlags.value.connections).toBe(true)
-  })
-
-  it('keeps reporting no change while the graph is untouched', () => {
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
-    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
-
-    graphManager.checkForChanges()
-
-    for (let poll = 0; poll < 10; poll++) {
-      expect(graphManager.checkForChanges()).toBe(false)
     }
+  )
+
+  it('establishes a baseline even for an empty graph', () => {
+    const graph = createMockLGraph({ id: 'empty', isRootGraph: true })
+    const reader = createReader(graph)
+    expect(reader.checkForChanges()).toBe('geometry')
+    expect(reader.checkForChanges()).toBe('none')
+    graph.events.dispatch('configured')
+    expect(reader.checkForChanges()).toBe('geometry')
   })
 
-  it('is not blinded by a non-finite value elsewhere in the graph', () => {
-    // A NaN coordinate must contribute zero on its own term rather than
-    // resetting the accumulator, which would hide every other node's movement.
-    mockGraph._nodes.push(
-      createMockLGraphNode({ id: '3', pos: [Number.NaN, 0], size: [10, 10] })
-    )
-
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
-    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
-
-    graphManager.checkForChanges()
-    expect(graphManager.checkForChanges()).toBe(false)
-
-    mockGraph._nodes[0].pos = [100, 0]
-
-    expect(graphManager.checkForChanges()).toBe(true)
+  it.for<[string, (node: LGraphNode) => unknown]>([
+    ['position', (node: LGraphNode) => (node.pos = [200, 150])],
+    ['fractional position', (node: LGraphNode) => (node.pos = [100.5, 100])],
+    [
+      'rendered size',
+      (node: LGraphNode) =>
+        Object.defineProperty(node, 'renderingSize', { value: [240, 180] })
+    ],
+    ['identity', (node: LGraphNode) => (node.id = toNodeId('replacement'))]
+  ])('classifies changed node %s as geometry', ([, mutate]) => {
+    const graph = createGraph()
+    const reader = createReader(graph)
+    reader.checkForChanges()
+    mutate(graph._nodes[0])
+    expect(reader.checkForChanges()).toBe('geometry')
+    expect(reader.checkForChanges()).toBe('none')
   })
 
-  it('detects a store-side geometry change with the litegraph nodes untouched', () => {
+  it.for<[string, (node: LGraphNode) => unknown]>([
+    ['background', (node: LGraphNode) => (node.bgcolor = '#ff0000')],
+    ['errors', (node: LGraphNode) => (node.has_errors = true)],
+    ['mode', (node: LGraphNode) => (node.mode = 4)]
+  ])('classifies changed node %s as picture only', ([, mutate]) => {
+    const graph = createGraph()
+    const reader = createReader(graph)
+    reader.checkForChanges()
+    mutate(graph._nodes[0])
+    expect(reader.checkForChanges()).toBe('picture')
+    expect(reader.checkForChanges()).toBe('none')
+  })
+
+  it('ignores unpainted properties and sub-quantum movement', () => {
+    const graph = createGraph()
+    const reader = createReader(graph)
+    reader.checkForChanges()
+    graph._nodes[0].title = 'Renamed'
+    graph._nodes[0].pos = [100.01, 100]
+    expect(reader.checkForChanges()).toBe('none')
+  })
+
+  it('classifies node addition and removal as geometry', () => {
+    const graph = createGraph()
+    const reader = createReader(graph)
+    reader.checkForChanges()
+    graph._nodes.push(createMockLGraphNode({ id: toNodeId('3') }))
+    expect(reader.checkForChanges()).toBe('geometry')
+    graph._nodes = []
+    expect(reader.checkForChanges()).toBe('geometry')
+    expect(reader.checkForChanges()).toBe('none')
+  })
+
+  it.for([Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY])(
+    'does not let a nonfinite coordinate %s mask another node moving',
+    (coordinate) => {
+      const graph = createGraph()
+      graph._nodes[1].pos = [coordinate, 0]
+      const reader = createReader(graph)
+      reader.checkForChanges()
+      expect(reader.checkForChanges()).toBe('none')
+      graph._nodes[0].pos = [120, 150]
+      expect(reader.checkForChanges()).toBe('geometry')
+    }
+  )
+
+  it('keeps global store-only geometry invalidation but ignores z-index', () => {
+    const graph = createGraph()
     const nodeId = toNodeId('1')
-    const graphId = mockGraph.rootGraph.id
     layoutStore.applyOperation({
       type: 'createNode',
-      graphId,
+      graphId: graph.id,
       nodeId,
       layout: {
         id: nodeId,
@@ -405,262 +199,285 @@ describe('useMinimapGraph', () => {
       timestamp: Date.now(),
       source: LayoutSource.Vue
     })
+    const reader = createReader(graph)
+    reader.checkForChanges()
+    const mutations = useLayoutMutations(LayoutSource.Vue)
+    mutations.setNodeZIndex(graph.id, nodeId, 42)
+    expect(reader.checkForChanges()).toBe('none')
+    mutations.moveNode(graph.id, nodeId, { x: 500, y: 500 })
+    expect(graph._nodes[0].pos).toEqual([100, 100])
+    expect(reader.checkForChanges()).toBe('geometry')
 
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
-    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
-
-    graphManager.checkForChanges()
-    expect(graphManager.checkForChanges()).toBe(false)
-
-    // The renderer draws from layoutStore, so a move that reached the store but
-    // whose write-back to the litegraph node has not landed must still count.
-    useLayoutMutations(LayoutSource.Vue).moveNode(graphId, nodeId, {
-      x: 500,
-      y: 500
-    })
-
-    expect(graphManager.checkForChanges()).toBe(true)
+    graph._nodes[0].pos[0] -= 923521 / 8
+    mutations.moveNode(graph.id, nodeId, { x: 600, y: 500 })
+    expect(reader.checkForChanges()).toBe('geometry')
   })
 
-  it('ignores a z-index change, which the minimap never draws', () => {
-    const nodeId = toNodeId('2')
-    const graphId = mockGraph.rootGraph.id
-    layoutStore.applyOperation({
-      type: 'createNode',
-      graphId,
-      nodeId,
-      layout: {
-        id: nodeId,
-        position: { x: 300, y: 200 },
-        size: { width: 120, height: 60 },
-        bounds: { x: 300, y: 200, width: 120, height: 60 },
-        zIndex: 0,
-        visible: true
-      },
-      timestamp: Date.now(),
-      source: LayoutSource.Vue
-    })
-
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
-    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
-
-    graphManager.checkForChanges()
-    expect(graphManager.checkForChanges()).toBe(false)
-
-    // Fires on every widget pointerdown; redrawing for it would rebuild the
-    // whole layout map for a picture that cannot have changed.
-    useLayoutMutations(LayoutSource.Vue).setNodeZIndex(graphId, nodeId, 42)
-
-    expect(graphManager.checkForChanges()).toBe(false)
+  it.for<[string, (graph: LGraph) => unknown]>([
+    ['node color', (graph) => (graph._nodes[0].bgcolor = '#2B0000')],
+    ['group color', (graph) => (graph._groups[0].color = '#2B0000')],
+    ['group position', (graph) => (graph._groups[0].pos = [201, 169])]
+  ])('detects colliding %s changes without rebuilding bounds', ([, mutate]) => {
+    const graph = createGraph()
+    graph._nodes[0].bgcolor = '#1a0000'
+    graph._groups = [
+      createMockLGraphGroup({
+        pos: [200, 200],
+        size: [400, 300],
+        color: '#1a0000'
+      })
+    ]
+    const reader = createReader(graph)
+    reader.checkForChanges()
+    mutate(graph)
+    expect(reader.checkForChanges()).toBe('picture')
+    expect(reader.checkForChanges()).toBe('none')
   })
 
-  it('should detect a background colour change', () => {
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
-    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
-
-    graphManager.checkForChanges()
-    expect(graphManager.checkForChanges()).toBe(false)
-
-    mockGraph._nodes[0].bgcolor = '#ff0000'
-
-    expect(graphManager.checkForChanges()).toBe(true)
+  it('classifies group geometry, color and removal as picture only', () => {
+    const graph = createGraph()
+    graph._groups = [
+      createMockLGraphGroup({ pos: [0, 0], size: [400, 300], color: '#111' })
+    ]
+    const reader = createReader(graph)
+    reader.checkForChanges()
+    graph._groups[0].pos[0] = 250
+    expect(reader.checkForChanges()).toBe('picture')
+    graph._groups[0].size[1] = 500
+    expect(reader.checkForChanges()).toBe('picture')
+    graph._groups[0].color = '#fff'
+    expect(reader.checkForChanges()).toBe('picture')
+    graph._groups = []
+    expect(reader.checkForChanges()).toBe('picture')
   })
 
-  it('should detect a group move', () => {
-    mockGraph._groups = [
-      { pos: [0, 0], size: [400, 300], color: '#111111' }
-    ] as LGraph['_groups']
-
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
-    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
-
-    graphManager.checkForChanges()
-    expect(graphManager.checkForChanges()).toBe(false)
-
-    mockGraph._groups[0].pos[0] = 250
-
-    expect(graphManager.checkForChanges()).toBe(true)
-  })
-
-  it('should detect an execution-state transition', () => {
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
-    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
-
-    graphManager.checkForChanges()
-    expect(graphManager.checkForChanges()).toBe(false)
-
-    useExecutionStore().nodeProgressStates['1'] = {
-      state: 'running',
-      value: 1,
-      max: 2,
-      node_id: '1',
-      prompt_id: 'job-1'
+  it.for([true, false])(
+    'reads discrete execution state only for painted nodes (root=%s)',
+    (isRootGraph) => {
+      const graph = createGraph(isRootGraph)
+      const states: ReturnType<
+        typeof useExecutionStore
+      >['nodeLocationProgressStates'] = {}
+      vi.spyOn(
+        useExecutionStore(),
+        'nodeLocationProgressStates',
+        'get'
+      ).mockReturnValue(states)
+      const locatorId = createNodeLocatorId(
+        isRootGraph ? null : graph.id,
+        toNodeId('1')
+      )
+      const unrelatedId = createNodeLocatorId(
+        isRootGraph ? graph.id : null,
+        toNodeId('1')
+      )
+      const reader = createReader(graph)
+      reader.checkForChanges()
+      states[unrelatedId] = {
+        state: 'running',
+        value: 1,
+        max: 10,
+        node_id: '1',
+        prompt_id: 'job-1'
+      }
+      expect(reader.checkForChanges()).toBe('none')
+      states[locatorId] = {
+        state: 'running',
+        value: 1,
+        max: 10,
+        node_id: '1',
+        prompt_id: 'job-1'
+      }
+      expect(reader.checkForChanges()).toBe('picture')
+      states[locatorId].value = 5
+      expect(reader.checkForChanges()).toBe('none')
+      states[locatorId].state = 'finished'
+      expect(reader.checkForChanges()).toBe('picture')
+      delete states[locatorId]
+      expect(reader.checkForChanges()).toBe('picture')
     }
-    expect(graphManager.checkForChanges()).toBe(true)
-    expect(graphManager.checkForChanges()).toBe(false)
+  )
 
-    useExecutionStore().nodeProgressStates['1'] = {
-      state: 'finished',
-      value: 2,
-      max: 2,
-      node_id: '1',
-      prompt_id: 'job-1'
+  it.for<[string, string, string, string, string, number, number]>([
+    ['alphabetic endpoint', 'alpha', 'beta', 'alpha', 'gamma', 0, 0],
+    ['colliding endpoint digest', '1P', 'beta', '21', 'beta', 0, 0],
+    ['leading zero', 'alpha', '01', 'alpha', '1', 0, 0],
+    ['delimiters', 'a:b', 'c', 'a', 'b:c', 0, 0],
+    ['direction', 'alpha', 'beta', 'beta', 'alpha', 0, 0],
+    ['source slot', 'alpha', 'beta', 'alpha', 'beta', 1, 0],
+    ['target slot', 'alpha', 'beta', 'alpha', 'beta', 0, 1]
+  ])(
+    'detects same-count scoped rewiring: %s',
+    ([, source, target, nextSource, nextTarget, sourceSlot, targetSlot]) => {
+      const graph = createMockLGraph({
+        id: createGraph().id,
+        isRootGraph: true,
+        _nodes: [
+          'alpha',
+          'beta',
+          'gamma',
+          '1P',
+          '21',
+          '01',
+          '1',
+          'a:b',
+          'c',
+          'a',
+          'b:c'
+        ].map((id) => createMockLGraphNode({ id: toNodeId(id) }))
+      })
+      registerLink(graph, source, target)
+      const reader = createReader(graph)
+      reader.checkForChanges()
+      registerLink(graph, nextSource, nextTarget, sourceSlot, targetSlot)
+      expect(reader.checkForChanges()).toBe('picture')
+      expect(reader.checkForChanges()).toBe('none')
     }
-    expect(graphManager.checkForChanges()).toBe(true)
+  )
+
+  it('ignores foreign topology and missing endpoints, then detects drawable links', () => {
+    const graph = createGraph()
+    const reader = createReader(graph)
+    reader.checkForChanges()
+    registerLink(createMockLGraph({ id: 'other-root' }), '1', '2')
+    expect(reader.checkForChanges()).toBe('none')
+    registerLink(graph, '1', 'missing')
+    expect(reader.checkForChanges()).toBe('none')
+    registerLink(graph, '1', '2')
+    expect(reader.checkForChanges()).toBe('picture')
+    useLinkStore().clearGraph(graphScopeOf(graph).rootGraphId)
+    expect(reader.checkForChanges()).toBe('picture')
   })
 
-  it('a visual-only change repaints without recomputing bounds', () => {
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
-    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
-
-    graphManager.checkForChanges()
-    graphManager.updateFlags.value.bounds = false
-    graphManager.updateFlags.value.nodes = false
-
-    mockGraph._nodes[0].bgcolor = '#00ff00'
-    graphManager.checkForChanges()
-
-    expect(graphManager.updateFlags.value.nodes).toBe(true)
-    expect(graphManager.updateFlags.value.bounds).toBe(false)
-  })
-
-  it('should detect an error-state change', () => {
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
-    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
-
-    graphManager.checkForChanges()
-    expect(graphManager.checkForChanges()).toBe(false)
-
-    mockGraph._nodes[0].has_errors = true
-
-    expect(graphManager.checkForChanges()).toBe(true)
-  })
-
-  it('should detect a mode change', () => {
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
-    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
-
-    graphManager.checkForChanges()
-    expect(graphManager.checkForChanges()).toBe(false)
-
-    mockGraph._nodes[0].mode = 4
-
-    expect(graphManager.checkForChanges()).toBe(true)
-  })
-
-  it('should detect a fractional-only position change', () => {
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
-    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
-
-    graphManager.checkForChanges()
-    expect(graphManager.checkForChanges()).toBe(false)
-
-    mockGraph._nodes[0].pos = [100.5, 100]
-
-    expect(graphManager.checkForChanges()).toBe(true)
-  })
-
-  it('should detect a rewire that only changes the slot', () => {
-    mockGraph.links = createMockLinks([
-      createMockLLink({ id: toLinkId(1), origin_slot: 0, target_slot: 0 })
-    ])
-
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
-    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
-
-    graphManager.checkForChanges()
-    expect(graphManager.checkForChanges()).toBe(false)
-
-    // Same nodes on both ends, different slot.
-    mockGraph.links = createMockLinks([
-      createMockLLink({ id: toLinkId(1), origin_slot: 0, target_slot: 1 })
-    ])
-
-    expect(graphManager.checkForChanges()).toBe(true)
-    expect(graphManager.updateFlags.value.connections).toBe(true)
-  })
-
-  it('should handle node removal', () => {
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
-    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
-
-    graphManager.setupEventListeners()
-
-    mockGraph.events.dispatch('node:removed', {
-      node: { id: '2' } as LGraphNode
+  it('isolates sibling subgraph topology under the same root', () => {
+    const graph = createGraph(false)
+    const sibling = createMockLGraph({
+      id: 'sibling',
+      rootGraph: graph.rootGraph,
+      _nodes: graph._nodes
     })
-
-    expect(onGraphChangedMock).toHaveBeenCalled()
+    const reader = createReader(graph)
+    reader.checkForChanges()
+    registerLink(sibling, '1', '2')
+    expect(reader.checkForChanges()).toBe('none')
   })
 
-  it('should destroy properly', () => {
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
-    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
+  it('invalidates subgraph geometry when only the root identity changes', () => {
+    const graph = createMockLGraph({
+      id: 'subgraph',
+      isRootGraph: false,
+      rootGraph: createGraph(),
+      _nodes: createGraph()._nodes
+    })
+    const reader = createReader(graph)
+    reader.checkForChanges()
+    graph.rootGraph.id = 'new-root'
+    expect(reader.checkForChanges()).toBe('geometry')
+  })
 
-    graphManager.init()
-    graphManager.setupEventListeners()
-    graphManager.destroy()
+  it('invalidates identical content on configuration completion', () => {
+    const graph = createGraph()
+    const reader = createReader(graph)
+    reader.checkForChanges()
+    graph.events.dispatch('configured')
+    expect(reader.checkForChanges()).toBe('geometry')
+    expect(reader.checkForChanges()).toBe('none')
+  })
 
-    expect(api.removeEventListener).toHaveBeenCalledWith(
-      'graphChanged',
+  it('does not modify graph callbacks or subscribe to ordinary hints', () => {
+    const graph = createGraph()
+    const callback = vi.fn()
+    graph.onConnectionChange = callback
+    const add = vi.spyOn(graph.events, 'addEventListener')
+    const reader = createReader(graph)
+    expect(add).toHaveBeenCalledExactlyOnceWith(
+      'configured',
       expect.any(Function)
     )
+    expect(graph.onConnectionChange).toBe(callback)
+    reader.scope.stop()
+    expect(graph.onConnectionChange).toBe(callback)
   })
 
-  it('should clear cache', () => {
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
-    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
-
-    // Populate cache
-    graphManager.checkForChanges()
-
-    // Clear cache
-    graphManager.clearCache()
-
-    // Should detect changes again after clear
-    const hasChanges = graphManager.checkForChanges()
-    expect(hasChanges).toBe(true)
+  it('detaches null graphs and starts restored graphs with fresh geometry', async () => {
+    const graph = createGraph()
+    const remove = vi.spyOn(graph.events, 'removeEventListener')
+    const reader = createReader(graph)
+    reader.checkForChanges()
+    reader.graph.value = null
+    expect(reader.checkForChanges()).toBe('none')
+    await nextTick()
+    expect(remove).toHaveBeenCalledExactlyOnceWith(
+      'configured',
+      expect.any(Function)
+    )
+    graph.events.dispatch('configured')
+    expect(reader.checkForChanges()).toBe('none')
+    reader.graph.value = graph
+    await nextTick()
+    expect(reader.checkForChanges()).toBe('geometry')
   })
 
-  it('should handle null graph gracefully', () => {
-    const graphRef = ref(null) as Ref<LGraph | null>
-    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
-
-    expect(() => graphManager.setupEventListeners()).not.toThrow()
-    expect(() => graphManager.cleanupEventListeners()).not.toThrow()
-    expect(graphManager.checkForChanges()).toBe(false)
+  it('isolates equally shaped replacements from old configuration events', async () => {
+    const first = createGraph()
+    const second = createGraph()
+    const reader = createReader(first)
+    reader.checkForChanges()
+    reader.graph.value = second
+    expect(reader.checkForChanges()).toBe('none')
+    await nextTick()
+    expect(reader.checkForChanges()).toBe('geometry')
+    first.events.dispatch('configured')
+    expect(reader.checkForChanges()).toBe('none')
+    second.events.dispatch('configured')
+    expect(reader.checkForChanges()).toBe('geometry')
   })
 
-  it('should clean up removed nodes from cache', () => {
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
-    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
-
-    // Cache initial state
-    graphManager.checkForChanges()
-
-    // Remove a node
-    mockGraph._nodes = mockGraph._nodes.filter((n) => n.id !== '2')
-
-    const hasChanges = graphManager.checkForChanges()
-    expect(hasChanges).toBe(true)
-    expect(graphManager.updateFlags.value.bounds).toBe(true)
+  it('resets scope identity after in-place ID changes and detaches that same graph', () => {
+    const graph = createGraph()
+    const add = vi.spyOn(graph.events, 'addEventListener')
+    const remove = vi.spyOn(graph.events, 'removeEventListener')
+    const reader = createReader(graph)
+    reader.checkForChanges()
+    graph.id = 'new-id'
+    expect(reader.checkForChanges()).toBe('geometry')
+    expect(add).toHaveBeenCalledTimes(1)
+    reader.scope.stop()
+    expect(remove).toHaveBeenCalledExactlyOnceWith(
+      'configured',
+      add.mock.calls[0][1]
+    )
+    graph.events.dispatch('configured')
+    expect(reader.checkForChanges()).toBe('none')
   })
 
-  it('should throttle graph changed callback', () => {
-    const throttledFn = vi.fn()
-    vi.mocked(useThrottleFn).mockReturnValue(throttledFn)
-
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
-    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
-
-    graphManager.setupEventListeners()
-
-    // Trigger multiple changes rapidly
-    for (const id of ['3', '4', '5']) {
-      mockGraph.events.dispatch('node:added', { node: { id } as LGraphNode })
+  it.for(['null', 'replacement'])(
+    'detaches the captured graph when scope stops before queued %s watch',
+    async (transition) => {
+      const graph = createGraph()
+      const replacement = createGraph()
+      const add = vi.spyOn(graph.events, 'addEventListener')
+      const remove = vi.spyOn(graph.events, 'removeEventListener')
+      const replacementAdd = vi.spyOn(replacement.events, 'addEventListener')
+      const reader = createReader(graph)
+      reader.checkForChanges()
+      reader.graph.value = transition === 'null' ? null : replacement
+      reader.scope.stop()
+      expect(remove).toHaveBeenCalledExactlyOnceWith(
+        'configured',
+        add.mock.calls[0][1]
+      )
+      graph.events.dispatch('configured')
+      await nextTick()
+      expect(replacementAdd).not.toHaveBeenCalled()
+      expect(reader.checkForChanges()).toBe('none')
     }
+  )
 
-    // Should be throttled
-    expect(throttledFn).toHaveBeenCalledTimes(3)
+  it('handles an initially null graph without subscriptions', () => {
+    const reader = createReader(null)
+    expect(reader.checkForChanges()).toBe('none')
+    reader.scope.stop()
+    expect(reader.checkForChanges()).toBe('none')
   })
 })

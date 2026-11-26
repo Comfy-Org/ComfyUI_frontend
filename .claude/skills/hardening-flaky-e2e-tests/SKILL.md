@@ -5,7 +5,7 @@ description: 'Diagnoses and fixes flaky Playwright e2e tests by replacing race-p
 
 # Hardening Flaky E2E Tests
 
-Fix flaky Playwright specs by identifying race-prone patterns and replacing them with retry-safe alternatives. This skill covers diagnosis, pattern matching, and mechanical transforms — not writing new tests (see `writing-playwright-tests` for that).
+Fix flaky Playwright specs by identifying race-prone patterns and replacing them with retry-safe alternatives. This skill covers diagnosis, pattern matching, and mechanical transforms — not writing new tests (see `writing-playwright-tests` for that). The general rules behind every transform here (wait on the real readiness boundary, never sleep, never weaken an assertion, check history before removing a guard) are in `docs/guidance/testing-principles.md`.
 
 ## Workflow
 

@@ -1,38 +1,25 @@
 import { describe, expect, it, vi } from 'vitest'
 
-vi.mock(import('@/platform/assets/composables/media/assetMappers'))
+vi.mock(import('@/platform/assets/adapters/outputAssetMappers'), { spy: true })
 
-import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
+import { extractWorkflow } from '@comfyorg/api-client/fetchJobs'
 import { api } from '@/scripts/api'
-import type {
-  JobDetail,
-  JobListItem
-} from '@/platform/remote/comfyui/jobs/jobTypes'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { JobDetail, JobListItem } from '@comfyorg/api-client/jobTypes'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import {
   findActiveIndex,
   getJobAssets,
   getJobDetail,
+  getJobApiPrompt,
   getJobWorkflow,
   getOutputsForTask
 } from '@/services/jobOutputCache'
 import { TaskItemImpl } from '@/stores/queueStore'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 
-vi.mock(import('@/platform/remote/comfyui/jobs/fetchJobs'), () => ({
-  fetchJobDetail: vi.fn(),
-  extractWorkflow: vi.fn()
-}))
+vi.mock(import('@comfyorg/api-client/fetchJobs'), { spy: true })
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    getJobDetail: vi.fn(),
-    getJobAssets: vi.fn(),
-    apiURL: vi.fn((path: string) => `/api${path}`),
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn()
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
 function createResultItem(
   url: string,
@@ -288,7 +275,7 @@ describe('jobOutputCache', () => {
       expect(result[0].display_name).toBe('ComfyUI_00001_.png')
     })
 
-    it('filters non-previewable outputs and non-object items', async () => {
+    it('returns previewable image and text outputs', async () => {
       const { getPreviewableOutputsFromJobDetail } =
         await import('@/services/jobOutputCache')
       const jobDetail: JobDetail = {
@@ -307,7 +294,16 @@ describe('jobOutputCache', () => {
 
       const result = getPreviewableOutputsFromJobDetail(jobDetail)
 
-      expect(result.map((item) => item.filename)).toEqual(['valid.png'])
+      expect(result).toEqual([
+        expect.objectContaining({
+          filename: 'valid.png',
+          mediaType: 'images'
+        }),
+        expect.objectContaining({
+          content: 'not-object',
+          mediaType: 'text'
+        })
+      ])
     })
   })
 
@@ -360,6 +356,26 @@ describe('jobOutputCache', () => {
       const result = await getJobDetail(jobId)
 
       expect(result).toBeUndefined()
+    })
+
+    it('shares pending detail requests and retries after a failure', async () => {
+      const jobId = uniqueId('pending-detail')
+      const detail: JobDetail = {
+        id: jobId,
+        status: 'completed',
+        create_time: 123,
+        priority: 0,
+        outputs: {}
+      }
+      vi.mocked(api.getJobDetail)
+        .mockRejectedValueOnce(new Error('Offline'))
+        .mockResolvedValueOnce(detail)
+
+      expect(
+        await Promise.all([getJobDetail(jobId), getJobDetail(jobId)])
+      ).toEqual([undefined, undefined])
+      expect(await getJobDetail(jobId)).toEqual(detail)
+      expect(api.getJobDetail).toHaveBeenCalledTimes(2)
     })
   })
 
@@ -465,6 +481,58 @@ describe('jobOutputCache', () => {
       const result = await getJobWorkflow(jobId)
 
       expect(result).toBeUndefined()
+    })
+  })
+
+  describe('getJobApiPrompt', () => {
+    const apiPrompt = { '1': { class_type: 'KSampler', inputs: {} } }
+
+    function jobWithWorkflow(jobId: string, workflow: unknown): JobDetail {
+      return {
+        id: jobId,
+        status: 'completed',
+        create_time: Date.now(),
+        priority: 0,
+        outputs: {},
+        workflow
+      }
+    }
+
+    it('returns the stored API prompt for an API-submitted job', async () => {
+      const jobId = uniqueId('job-api')
+      vi.mocked(api.getJobDetail).mockResolvedValue(
+        jobWithWorkflow(jobId, { prompt: apiPrompt })
+      )
+
+      await expect(getJobApiPrompt(jobId)).resolves.toEqual(apiPrompt)
+    })
+
+    it('returns the stored API prompt when extra_data is null', async () => {
+      const jobId = uniqueId('job-api-null')
+      vi.mocked(api.getJobDetail).mockResolvedValue(
+        jobWithWorkflow(jobId, { prompt: apiPrompt, extra_data: null })
+      )
+
+      await expect(getJobApiPrompt(jobId)).resolves.toEqual(apiPrompt)
+    })
+
+    it('returns undefined when the job embeds an editor workflow', async () => {
+      const jobId = uniqueId('job-embedded')
+      vi.mocked(api.getJobDetail).mockResolvedValue(
+        jobWithWorkflow(jobId, {
+          prompt: apiPrompt,
+          extra_data: { extra_pnginfo: { workflow: { nodes: [] } } }
+        })
+      )
+
+      await expect(getJobApiPrompt(jobId)).resolves.toBeUndefined()
+    })
+
+    it('returns undefined when job detail not found', async () => {
+      const jobId = uniqueId('job-api-missing')
+      vi.mocked(api.getJobDetail).mockResolvedValue(undefined)
+
+      await expect(getJobApiPrompt(jobId)).resolves.toBeUndefined()
     })
   })
 })

@@ -31,14 +31,14 @@ test.describe('Group node migration', { tag: '@node' }, () => {
   })
 
   // QA found this broken on 2026-09-10 while running the 1.54 test plan:
-  // converting a v1.3.3 group node misaligns widget values by two positions, so
-  // denoise receives 'euler' and filename_prefix receives 'normal'. Saving then
-  // writes the wrong values back, silently corrupting the workflow. Pinned with
-  // test.fail() so the fix flips this to passing.
+  // converting a v1.3.3 group node misaligned widget values by two positions, so
+  // denoise received 'euler' and filename_prefix received 'normal'. Saving then
+  // wrote the wrong values back, silently corrupting the workflow. Fixed by
+  // pairing each widget to its originating inner node instead of matching by
+  // name alone (see findUnconsumedWidgetIndex in groupNode.ts).
   test('Preserves group node widget values through subgraph conversion', async ({
     comfyPage
   }) => {
-    test.fail()
     await comfyPage.workflow.loadWorkflow('groupnodes/group_node_v1.3.3')
 
     const interiorNodes = await comfyPage.page.evaluate(() =>
@@ -57,6 +57,15 @@ test.describe('Group node migration', { tag: '@node' }, () => {
       ksampler,
       'converted subgraph should contain a KSampler'
     ).toBeDefined()
+    const saveImage = interiorNodes.find((node) => node.type === 'SaveImage')
+    expect(
+      saveImage,
+      'converted subgraph should contain a SaveImage'
+    ).toBeDefined()
+
+    // This fixture has two CLIPTextEncode nodes both exposing `text`, which
+    // used to make groupNode.ts's name-only widget lookup land two slots
+    // back (see PR #17464 for the pinned defect this now proves is fixed).
     expect(ksampler!.widgets).toMatchObject({
       seed: 156680208700286,
       steps: 20,
@@ -65,12 +74,6 @@ test.describe('Group node migration', { tag: '@node' }, () => {
       scheduler: 'normal',
       denoise: 1
     })
-
-    const saveImage = interiorNodes.find((node) => node.type === 'SaveImage')
-    expect(
-      saveImage,
-      'converted subgraph should contain a SaveImage'
-    ).toBeDefined()
     expect(saveImage!.widgets).toMatchObject({ filename_prefix: 'ComfyUI' })
   })
 

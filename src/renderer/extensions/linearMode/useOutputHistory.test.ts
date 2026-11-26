@@ -2,19 +2,36 @@ import { useLinearOutputStore } from '@/renderer/extensions/linearMode/linearOut
 import { useExecutionStore } from '@/stores/executionStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useQueueStore } from '@/stores/queueStore'
-import { useAssetsStore } from '@/stores/assetsStore'
+import { useJobOutputHistory } from '@/platform/assets/composables/useJobOutputHistory'
 import { fromPartial } from '@total-typescript/shoehorn'
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, toValue } from 'vue'
 
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type { AssetItem } from '@comfyorg/assets-core/schema'
 import { useOutputHistory } from '@/renderer/extensions/linearMode/useOutputHistory'
 import { useAppModeStore } from '@/stores/appModeStore'
 import type { AugmentedResultItem } from '@/utils/resultItem'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
-vi.mock(import('@/platform/assets/composables/media/assetMappers'), () => ({
+vi.mock(
+  import('@/platform/assets/composables/useJobOutputHistory'),
+  async () => {
+    const { mockPagedList } = await import('@/utils/__tests__/pagedListUtils')
+    const { onTestFinished } = await import('vitest')
+    const history = mockPagedList<AssetItem>({})
+    return {
+      useJobOutputHistory: vi.fn(() => {
+        onTestFinished(() => {
+          history.items = []
+        })
+        return history
+      })
+    }
+  }
+)
+
+vi.mock(import('@/platform/assets/adapters/outputAssetMappers'), () => ({
   getAssetType: (tags?: string[]) =>
     tags?.[0] === 'output' ? 'output' : 'input',
   mapInputFileToAssetItem: vi.fn(),
@@ -67,10 +84,6 @@ function makeResult(
 }
 
 beforeEach(() => {
-  useAssetsStore().outputAssets.hasMore = false
-  vi.spyOn(useAssetsStore().outputAssets, 'loadMore').mockResolvedValue(
-    undefined
-  )
   vi.mocked(useLinearOutputStore().selectAsLatest).mockImplementation(
     () => undefined
   )
@@ -81,7 +94,6 @@ beforeEach(() => {
 
 describe(useOutputHistory, () => {
   beforeEach(() => {
-    useAssetsStore().outputAssets.items = []
     useLinearOutputStore().pendingResolve = new Set()
     useLinearOutputStore().inProgressItems = []
     Object.assign(useLinearOutputStore(), { activeWorkflowInProgressItems: [] })
@@ -103,7 +115,7 @@ describe(useOutputHistory, () => {
         ['job-1', 'workflows/test.json'],
         ['job-2', 'workflows/other.json']
       ])
-      useAssetsStore().outputAssets.items = [
+      useJobOutputHistory().items = [
         makeAsset('a1', 'job-1'),
         makeAsset('a2', 'job-2')
       ]
@@ -119,7 +131,7 @@ describe(useOutputHistory, () => {
       useExecutionStore().jobIdToSessionWorkflowPath = new Map([
         ['job-1', 'workflows/test.json']
       ])
-      useAssetsStore().outputAssets.items = [makeAsset('a1', 'job-1')]
+      useJobOutputHistory().items = [makeAsset('a1', 'job-1')]
 
       const { outputs } = useOutputHistory()
 
@@ -131,7 +143,7 @@ describe(useOutputHistory, () => {
         ['job-1', 'workflows/a.json'],
         ['job-2', 'workflows/b.json']
       ])
-      useAssetsStore().outputAssets.items = [
+      useJobOutputHistory().items = [
         makeAsset('a1', 'job-1'),
         makeAsset('a2', 'job-2')
       ]
@@ -173,10 +185,37 @@ describe(useOutputHistory, () => {
       const { allOutputs } = useOutputHistory()
       const outputs = allOutputs(asset)
 
-      expect(outputs).toHaveLength(2)
-      // Should be reversed
-      expect(outputs[0].filename).toBe('b.png')
-      expect(outputs[1].filename).toBe('a.png')
+      expect(outputs.map(({ filename }) => filename)).toEqual([
+        'b.png',
+        'a.png'
+      ])
+      expect(results.map(({ filename }) => filename)).toEqual([
+        'a.png',
+        'b.png'
+      ])
+    })
+
+    it('returns inline text from metadata without a preview URL', () => {
+      useAppModeStore().selectedOutputs.push(toNodeId('1'))
+      const text: AugmentedResultItem = {
+        filename: '',
+        subfolder: '',
+        type: 'output',
+        nodeId: '1',
+        mediaType: 'text',
+        content: 'hello'
+      }
+      const asset = {
+        ...makeAsset('a1', 'job-1', {
+          allOutputs: [text],
+          outputCount: 1
+        }),
+        preview_url: undefined
+      }
+
+      const { allOutputs } = useOutputHistory()
+
+      expect(allOutputs(asset)).toStrictEqual([text])
     })
 
     it('filters outputs to selected output nodes only', () => {
@@ -299,18 +338,19 @@ describe(useOutputHistory, () => {
         ['job-1', 'workflows/test.json']
       ])
       useLinearOutputStore().pendingResolve = new Set(['job-1'])
-      useAssetsStore().outputAssets.items = [asset]
+      useJobOutputHistory().items = [asset]
       useLinearOutputStore().selectedId = null
 
       useOutputHistory()
       await nextTick()
 
-      expect(
-        vi.mocked(useLinearOutputStore().resolveIfReady)
-      ).toHaveBeenCalledWith('job-1', true)
-      expect(
-        vi.mocked(useLinearOutputStore().selectAsLatest)
-      ).toHaveBeenCalledWith('history:a1:0')
+      expect(useLinearOutputStore().resolveIfReady).toHaveBeenCalledWith(
+        'job-1',
+        true
+      )
+      expect(useLinearOutputStore().selectAsLatest).toHaveBeenCalledWith(
+        'history:a1:0'
+      )
     })
 
     it('does not select first history when a selection exists', async () => {
@@ -324,30 +364,26 @@ describe(useOutputHistory, () => {
         ['job-1', 'workflows/test.json']
       ])
       useLinearOutputStore().pendingResolve = new Set(['job-1'])
-      useAssetsStore().outputAssets.items = [asset]
+      useJobOutputHistory().items = [asset]
       useLinearOutputStore().selectedId = 'history:existing:0'
 
       useOutputHistory()
       await nextTick()
 
-      expect(
-        vi.mocked(useLinearOutputStore().resolveIfReady)
-      ).toHaveBeenCalledWith('job-1', true)
-      expect(
-        vi.mocked(useLinearOutputStore().selectAsLatest)
-      ).not.toHaveBeenCalled()
+      expect(useLinearOutputStore().resolveIfReady).toHaveBeenCalledWith(
+        'job-1',
+        true
+      )
+      expect(useLinearOutputStore().selectAsLatest).not.toHaveBeenCalled()
     })
 
     it('skips jobs with no matching asset in media', async () => {
       useLinearOutputStore().pendingResolve = new Set(['job-missing'])
-      useAssetsStore().outputAssets.items = []
 
       useOutputHistory()
       await nextTick()
 
-      expect(
-        vi.mocked(useLinearOutputStore().resolveIfReady)
-      ).not.toHaveBeenCalled()
+      expect(useLinearOutputStore().resolveIfReady).not.toHaveBeenCalled()
     })
   })
 
@@ -356,23 +392,21 @@ describe(useOutputHistory, () => {
       useExecutionStore().jobIdToSessionWorkflowPath = new Map([
         ['job-1', 'workflows/test.json']
       ])
-      useAssetsStore().outputAssets.items = [makeAsset('a1', 'job-1')]
+      useJobOutputHistory().items = [makeAsset('a1', 'job-1')]
 
       const { selectFirstHistory } = useOutputHistory()
       selectFirstHistory()
 
-      expect(
-        vi.mocked(useLinearOutputStore().selectAsLatest)
-      ).toHaveBeenCalledWith('history:a1:0')
+      expect(useLinearOutputStore().selectAsLatest).toHaveBeenCalledWith(
+        'history:a1:0'
+      )
     })
 
     it('selects null when no media', () => {
       const { selectFirstHistory } = useOutputHistory()
       selectFirstHistory()
 
-      expect(
-        vi.mocked(useLinearOutputStore().selectAsLatest)
-      ).toHaveBeenCalledWith(null)
+      expect(useLinearOutputStore().selectAsLatest).toHaveBeenCalledWith(null)
     })
   })
 

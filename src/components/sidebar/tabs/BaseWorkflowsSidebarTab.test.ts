@@ -1,22 +1,23 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, ref, watchEffect } from 'vue'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick, watchEffect } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import BaseWorkflowsSidebarTab from '@/components/sidebar/tabs/BaseWorkflowsSidebarTab.vue'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import {
-  useWorkflowStore,
-  useWorkflowBookmarkStore
-} from '@/platform/workflow/management/stores/workflowStore'
+import { useWorkflowBookmarkStore } from '@/platform/workflow/management/stores/workflowBookmarkStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
-import type { TreeExplorerNode } from '@/types/treeExplorerTypes'
+import type {
+  RenderedTreeExplorerNode,
+  TreeExplorerNode
+} from '@/types/treeExplorerTypes'
 import { flattenTree } from '@/utils/treeUtil'
 vi.mock(import('firebase/auth'))
-vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 
 beforeEach(() => {
   useSettingStore().settingValues['Comfy.Workflow.WorkflowTabsPosition'] =
@@ -28,27 +29,15 @@ beforeEach(() => {
 })
 
 const {
-  setSearchQuery,
-  emitSearch,
   captureSearchRoot,
   getSearchRoot,
   resetCapturedSearchRoot,
   mockExpandNode,
-  mockToggleNodeOnEvent,
-  mockWorkflowService,
-  registerSearchHandlers
+  mockToggleNodeOnEvent
 } = vi.hoisted(() => {
-  let updateQuery = (_query: string) => {}
-  let triggerSearch = (_query: string) => {}
   let capturedSearchRoot: TreeExplorerNode<ComfyWorkflow> | null = null
 
   return {
-    setSearchQuery: (query: string) => {
-      updateQuery(query)
-    },
-    emitSearch: (query: string) => {
-      triggerSearch(query)
-    },
     captureSearchRoot: (root: TreeExplorerNode<ComfyWorkflow>) => {
       capturedSearchRoot = root
     },
@@ -57,71 +46,16 @@ const {
       capturedSearchRoot = null
     },
     mockExpandNode: vi.fn(),
-    mockToggleNodeOnEvent: vi.fn(),
-    mockWorkflowService: {
-      openWorkflow: vi.fn().mockResolvedValue(undefined),
-      closeWorkflow: vi.fn().mockResolvedValue(undefined),
-      renameWorkflow: vi.fn().mockResolvedValue(undefined),
-      deleteWorkflow: vi.fn().mockResolvedValue(undefined),
-      insertWorkflow: vi.fn().mockResolvedValue(undefined),
-      duplicateWorkflow: vi.fn().mockResolvedValue(undefined)
-    },
-    registerSearchHandlers: (
-      updateHandler: (query: string) => void,
-      searchHandler: (query: string) => void
-    ) => {
-      updateQuery = updateHandler
-      triggerSearch = searchHandler
-    }
+    mockToggleNodeOnEvent: vi.fn()
   }
 })
 
 vi.mock<unknown>(
-  import('@/components/common/NoResultsPlaceholder.vue'),
-  () => ({
-    default: { name: 'NoResultsPlaceholder', template: '<div />' }
-  })
-)
-
-vi.mock<unknown>(
-  import('@/components/ui/search-input/SearchInput.vue'),
-  () => ({
-    default: {
-      name: 'SearchInput',
-      template: '<div data-testid="search-input" />',
-      props: ['modelValue', 'placeholder'],
-      setup(
-        _props: { modelValue: string; placeholder?: string },
-        {
-          emit,
-          expose
-        }: {
-          emit: (event: 'update:modelValue' | 'search', value: string) => void
-          expose: (value: { focus: () => void }) => void
-        }
-      ) {
-        const focus = vi.fn()
-        expose({ focus })
-        registerSearchHandlers(
-          (query: string) => emit('update:modelValue', query),
-          (query: string) => emit('search', query)
-        )
-        return {}
-      }
-    }
-  })
-)
-
-vi.mock<unknown>(
-  import('@/components/sidebar/tabs/SidebarTopArea.vue'),
+  import('@comfyorg/design-system/navigation/SidebarTopArea'),
   () => ({
     default: { name: 'SidebarTopArea', template: '<div><slot /></div>' }
   })
 )
-
-vi.mock<unknown>(import('@/components/common/TextDivider.vue'), () => ({
-  default: { name: 'TextDivider', template: '<div />' }
-}))
 
 vi.mock<unknown>(import('@/components/common/TreeExplorer.vue'), () => ({
   default: {
@@ -171,10 +105,6 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(import('@/components/ui/button/Button.vue'), () => ({
-  default: { name: 'Button', template: '<button><slot /></button>' }
-}))
-
 vi.mock<unknown>(import('@/composables/useTreeExpansion'), () => ({
   useTreeExpansion: () => ({
     expandNode: mockExpandNode,
@@ -182,16 +112,7 @@ vi.mock<unknown>(import('@/composables/useTreeExpansion'), () => ({
   })
 }))
 
-vi.mock<unknown>(import('@/composables/useAppMode'), () => ({
-  useAppMode: () => ({ isAppMode: ref(false) })
-}))
-
-vi.mock<unknown>(
-  import('@/platform/workflow/core/services/workflowService'),
-  () => ({
-    useWorkflowService: () => mockWorkflowService
-  })
-)
+vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
 const i18n = createI18n({
   legacy: false,
@@ -253,14 +174,10 @@ describe('BaseWorkflowsSidebarTab', () => {
     })
 
     renderComponent()
-    emitSearch('alpha')
     await nextTick()
 
-    expect(mockExpandNode).toHaveBeenCalledTimes(1)
-    const expandedRoot = mockExpandNode.mock.calls[0]?.[0] as
-      | TreeExplorerNode<ComfyWorkflow>
-      | undefined
-    expect(getLeafPaths(expandedRoot ?? null)).toHaveLength(0)
+    expect(mockExpandNode).not.toHaveBeenCalled()
+    expect(getLeafPaths(getSearchRoot())).toHaveLength(0)
   })
 
   it('filters workflows by case-insensitive path match', async () => {
@@ -274,7 +191,7 @@ describe('BaseWorkflowsSidebarTab', () => {
 
     renderComponent()
 
-    setSearchQuery('ALPHA')
+    await userEvent.type(screen.getByRole('combobox'), 'ALPHA')
     await nextTick()
 
     expect(getLeafPaths(getSearchRoot())).toEqual(['workflows/test-alpha.json'])
@@ -321,7 +238,7 @@ describe('BaseWorkflowsSidebarTab', () => {
 
     renderComponent()
 
-    setSearchQuery('alpha')
+    await userEvent.type(screen.getByRole('combobox'), 'alpha')
     await nextTick()
     expect(getLeafPaths(getSearchRoot())).toEqual([
       'workflows/TEST-alpha-2.json',
@@ -336,5 +253,35 @@ describe('BaseWorkflowsSidebarTab', () => {
     await nextTick()
 
     expect(getLeafPaths(getSearchRoot())).toEqual(['workflows/test-alpha.json'])
+  })
+
+  it('duplicates a workflow from its sidebar context menu as a user activation', async () => {
+    const workflow = createMockWorkflow('workflows/source.json')
+    Object.assign(useWorkflowStore(), {
+      workflows: [workflow]
+    })
+
+    renderComponent()
+    await userEvent.type(screen.getByRole('combobox'), 'source')
+    await nextTick()
+
+    const root = getSearchRoot()
+    const leafNode = root?.children?.find((child) => child.data === workflow)
+    assert.exists(leafNode)
+    const contextMenuItems = leafNode.contextMenuItems
+    assert(typeof contextMenuItems === 'function')
+    const duplicateItem = contextMenuItems(
+      fromPartial<RenderedTreeExplorerNode<ComfyWorkflow>>(leafNode)
+    ).find((item) => item.label === 'g.duplicate')
+    assert.exists(duplicateItem)
+    await duplicateItem.command?.({
+      originalEvent: new Event('click'),
+      item: duplicateItem
+    })
+
+    expect(useWorkflowService().duplicateWorkflow).toHaveBeenCalledWith(
+      workflow,
+      { initiator: 'user' }
+    )
   })
 })

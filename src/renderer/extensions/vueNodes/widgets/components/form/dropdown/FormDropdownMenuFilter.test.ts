@@ -6,7 +6,7 @@ import { defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useModelUpload } from '@/platform/assets/composables/useModelUpload'
-import type { FilterOption } from '@/platform/assets/types/filterTypes'
+import type { FilterOption } from '@comfyorg/assets-core/filtering'
 
 vi.mock<unknown>(
   import('@/platform/assets/composables/useModelUpload'),
@@ -40,11 +40,6 @@ const i18n = createI18n({
   messages: { en: { g: { import: 'Import', upload: 'Upload' } } }
 })
 
-const ButtonStub = {
-  inheritAttrs: false,
-  template: '<button v-bind="$attrs"><slot /></button>'
-}
-
 const options: FilterOption[] = [
   { value: 'all', name: 'All' },
   { value: 'mine', name: 'Mine' },
@@ -68,8 +63,7 @@ function renderMenu(
   })
   const utils = render(Harness, {
     global: {
-      plugins: [i18n],
-      stubs: { Button: ButtonStub }
+      plugins: [i18n]
     }
   })
   return { ...utils, value, onShowPicker }

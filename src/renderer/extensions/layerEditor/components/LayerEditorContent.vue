@@ -8,7 +8,7 @@
         :disabled="!session.canUndo.value"
         @click="onRestore"
       >
-        <i class="icon-[lucide--rotate-ccw] size-4" />
+        <i class="icon-[lucide--rotate-ccw]" />
         {{ t('g.restore') }}
       </Button>
     </Teleport>
@@ -16,7 +16,11 @@
       <LayerPanel :session="session" />
       <div class="relative flex min-h-0 min-w-0 flex-1">
         <LayerEditorCanvas :session="session" />
-        <LayerEditorToolbar :session="session" />
+        <LayerEditorToolbar
+          :session="session"
+          :exporting="exporting"
+          @export-psd="exportPsd"
+        />
       </div>
       <LayerPropertiesPanel :session="session" />
     </div>
@@ -28,23 +32,24 @@ import { useEventListener } from '@vueuse/core'
 import { onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import LayerEditorCanvas from '@/renderer/extensions/layerEditor/components/LayerEditorCanvas.vue'
-import LayerEditorToolbar from '@/renderer/extensions/layerEditor/components/LayerEditorToolbar.vue'
-import LayerPanel from '@/renderer/extensions/layerEditor/components/LayerPanel.vue'
-import LayerPropertiesPanel from '@/renderer/extensions/layerEditor/components/LayerPropertiesPanel.vue'
-import Button from '@/components/ui/button/Button.vue'
+import LayerEditorCanvas from '@comfyorg/layer-editor-ui/LayerEditorCanvas'
+import LayerEditorToolbar from '@comfyorg/layer-editor-ui/LayerEditorToolbar'
+import LayerPanel from '@comfyorg/layer-editor-ui/LayerPanel'
+import LayerPropertiesPanel from '@comfyorg/layer-editor-ui/LayerPropertiesPanel'
+import Button from '@comfyorg/design-system/button/Button'
+import { useLayerEditorExport } from '@/renderer/extensions/layerEditor/composables/useLayerEditorExport'
 import {
   saveCompositorLayerState,
   saveCompositorPreview
-} from '@/renderer/extensions/compositor/composables/compositorSave'
-import { loadCompositorSession } from '@/renderer/extensions/compositor/composables/compositorSession'
-import { useCompositorAutoSave } from '@/renderer/extensions/compositor/composables/useCompositorAutoSave'
+} from '@/renderer/extensions/layerEditor/compositor/compositorSave'
+import { loadCompositorSession } from '@/renderer/extensions/layerEditor/compositor/compositorSession'
+import { useCompositorAutoSave } from '@/renderer/extensions/layerEditor/compositor/useCompositorAutoSave'
 import {
   isTextEditingTarget,
   useLayerEditorSession
-} from '@/renderer/extensions/layerEditor/composables/useLayerEditorSession'
+} from '@comfyorg/layer-editor/vue'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 
@@ -55,6 +60,7 @@ const { node, mode = 'images' } = defineProps<{
 
 const { t } = useI18n()
 const session = useLayerEditorSession()
+const { exporting, exportPsd } = useLayerEditorExport(session)
 const changeTracker =
   mode === 'compositor'
     ? useWorkflowStore().activeWorkflow?.changeTracker
@@ -116,17 +122,13 @@ function finalizeCompositorSession(): void {
         void saveCompositorPreview(session, node)
         node.graph?.setDirtyCanvas(true)
       } else {
-        useToastStore().add({
-          severity: 'error',
-          summary: t('g.error'),
-          detail: t('compositor.saveFailed')
+        useToast().error(t('g.error'), {
+          description: t('compositor.saveFailed')
         })
       }
     } else if (sessionHasEdits()) {
-      useToastStore().add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('compositor.saveFailed')
+      useToast().error(t('g.error'), {
+        description: t('compositor.saveFailed')
       })
     }
   } finally {
@@ -141,10 +143,8 @@ onMounted(() => {
       .then((failed) => {
         if (closed) return
         if (failed > 0) {
-          useToastStore().add({
-            severity: 'warn',
-            summary: t('layerEditor.title'),
-            detail: t('layerEditor.layersFailedToLoad', { count: failed })
+          useToast().warning(t('layerEditor.title'), {
+            description: t('layerEditor.layersFailedToLoad', { count: failed })
           })
           return
         }
@@ -153,10 +153,8 @@ onMounted(() => {
       .catch((err) => {
         console.error('[Compositor] Loading layers failed:', err)
         if (closed) return
-        useToastStore().add({
-          severity: 'error',
-          summary: t('g.error'),
-          detail: t('layerEditor.loadFailed')
+        useToast().error(t('g.error'), {
+          description: t('layerEditor.loadFailed')
         })
       })
     return
@@ -167,10 +165,8 @@ onMounted(() => {
     .loadImages(urls, names)
     .then((failed) => {
       if (closed || failed === 0) return
-      useToastStore().add({
-        severity: 'warn',
-        summary: t('layerEditor.title'),
-        detail: t('layerEditor.layersFailedToLoad', { count: failed })
+      useToast().warning(t('layerEditor.title'), {
+        description: t('layerEditor.layersFailedToLoad', { count: failed })
       })
     })
     .catch((err) => console.error('[LayerEditor] Loading images failed:', err))

@@ -3,7 +3,7 @@ import { defineComponent, h, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 import { describe, expect, it, vi } from 'vitest'
 
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { useThemeStore } from '@/platform/theme/themeStore'
 
 import TurnstileWidget from './TurnstileWidget.vue'
 
@@ -17,31 +17,34 @@ const { sharedProps, sharedReset, sharedEmit } = vi.hoisted(() => ({
   }
 }))
 
-vi.mock<unknown>(import('@comfyorg/account/vue'), async () => {
-  const { defineComponent, h } = await import('vue')
-  return {
-    TurnstileWidget: defineComponent({
-      props: {
-        siteKey: String,
-        theme: String,
-        expiredMessage: String,
-        failedMessage: String,
-        loader: Function,
-        token: String,
-        unavailable: Boolean
-      },
-      emits: ['update:token', 'update:unavailable'],
-      setup(props, { expose, emit }) {
-        sharedProps.value = props
-        sharedEmit.value = emit
-        expose({ reset: sharedReset })
-        return () => h('div', { 'data-testid': 'shared-turnstile' })
-      }
-    })
+vi.mock<unknown>(
+  import('@comfyorg/account-ui/auth/TurnstileWidget'),
+  async () => {
+    const { defineComponent, h } = await import('vue')
+    return {
+      default: defineComponent({
+        props: {
+          siteKey: String,
+          theme: String,
+          expiredMessage: String,
+          failedMessage: String,
+          loader: Function,
+          token: String,
+          unavailable: Boolean
+        },
+        emits: ['update:token', 'update:unavailable'],
+        setup(props, { expose, emit }) {
+          sharedProps.value = props
+          sharedEmit.value = emit
+          expose({ reset: sharedReset })
+          return () => h('div', { 'data-testid': 'shared-turnstile' })
+        }
+      })
+    }
   }
-})
+)
 
-vi.mock(import('@comfyorg/account/turnstileScript'), () => ({
+vi.mock(import('@comfyorg/account-core/turnstileScript'), () => ({
   loadTurnstile: vi.fn()
 }))
 
@@ -65,7 +68,7 @@ const i18n = createI18n({
 })
 
 function renderWidget(isLightTheme: boolean) {
-  useColorPaletteStore().activePaletteId = isLightTheme ? 'light' : 'dark'
+  useThemeStore().activePresetId = isLightTheme ? 'light' : 'dark'
   return render(TurnstileWidget, {
     global: { plugins: [i18n] }
   })
@@ -111,7 +114,7 @@ describe('TurnstileWidget app adapter', () => {
     const Host = defineComponent(
       () => () => h(TurnstileWidget, { ref: adapter })
     )
-    useColorPaletteStore().activePaletteId = 'light'
+    useThemeStore().activePresetId = 'light'
     render(Host, { global: { plugins: [i18n] } })
 
     adapter.value?.reset()

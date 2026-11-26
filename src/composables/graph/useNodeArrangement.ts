@@ -1,7 +1,9 @@
 import { useI18n } from 'vue-i18n'
 
-import type { Direction } from '@/lib/litegraph/src/interfaces'
+import type { RectSide as Direction } from '@comfyorg/shared-frontend-utils/geometry'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { alignNodes, distributeNodes } from '@/lib/litegraph/src/utils/arrange'
+import type { Axis } from '@comfyorg/graph-model/arrange/arrange'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 
@@ -17,7 +19,7 @@ interface AlignOption {
 interface DistributeOption {
   name: string
   localizedName: string
-  value: boolean // true for horizontal, false for vertical
+  value: Axis
   icon: string
 }
 
@@ -33,25 +35,25 @@ export function useNodeArrangement() {
       name: 'top',
       localizedName: t('contextMenu.Top'),
       value: 'top',
-      icon: 'icon-[lucide--align-start-vertical]'
+      icon: 'icon-[lucide--align-start-horizontal]'
     },
     {
       name: 'bottom',
       localizedName: t('contextMenu.Bottom'),
       value: 'bottom',
-      icon: 'icon-[lucide--align-end-vertical]'
+      icon: 'icon-[lucide--align-end-horizontal]'
     },
     {
       name: 'left',
       localizedName: t('contextMenu.Left'),
       value: 'left',
-      icon: 'icon-[lucide--align-start-horizontal]'
+      icon: 'icon-[lucide--align-start-vertical]'
     },
     {
       name: 'right',
       localizedName: t('contextMenu.Right'),
       value: 'right',
-      icon: 'icon-[lucide--align-end-horizontal]'
+      icon: 'icon-[lucide--align-end-vertical]'
     }
   ]
 
@@ -59,18 +61,18 @@ export function useNodeArrangement() {
     {
       name: 'horizontal',
       localizedName: t('contextMenu.Horizontal'),
-      value: true,
+      value: 'x',
       icon: 'icon-[lucide--align-center-horizontal]'
     },
     {
       name: 'vertical',
       localizedName: t('contextMenu.Vertical'),
-      value: false,
+      value: 'y',
       icon: 'icon-[lucide--align-center-vertical]'
     }
   ]
 
-  const applyAlign = (alignOption: AlignOption) => {
+  const applyAlign = (alignOption: AlignOption, alignTo?: LGraphNode) => {
     const selectedNodes = Array.from(canvasStore.selectedItems).filter((item) =>
       isLGraphNode(item)
     )
@@ -79,7 +81,7 @@ export function useNodeArrangement() {
       return
     }
 
-    const newPositions = alignNodes(selectedNodes, alignOption.value)
+    const newPositions = alignNodes(selectedNodes, alignOption.value, alignTo)
     canvasStore.canvas?.applyNodePositions(newPositions)
 
     canvasRefresh.refreshCanvas()

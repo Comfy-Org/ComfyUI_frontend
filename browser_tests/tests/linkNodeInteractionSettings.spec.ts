@@ -32,6 +32,46 @@ test.describe('Link & node interaction settings', { tag: '@canvas' }, () => {
       await expect(comfyPage.contextMenu.litegraphContextMenu).toBeVisible()
     })
 
+    test('connection menu adds a suggested node for the released slot type', async ({
+      comfyPage
+    }) => {
+      await comfyPage.settings.setSetting(
+        'Comfy.LinkRelease.Action',
+        'context menu'
+      )
+      await comfyPage.canvasOps.disconnectEdge()
+      await comfyPage.contextMenu.menuItem('CLIPTextEncode').click()
+
+      await expect
+        .poll(
+          async () =>
+            (await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode')).length
+        )
+        .toBe(3)
+      const checkpointClip = await (
+        await comfyPage.nodeOps.getNodeRefByType('CheckpointLoaderSimple')
+      ).getOutput(1)
+      await checkpointClip.expectLinkCount(2)
+    })
+
+    test('Comfy.NodeSuggestions.number limits connection menu suggestions', async ({
+      comfyPage
+    }) => {
+      await comfyPage.settings.setSetting(
+        'Comfy.LinkRelease.Action',
+        'context menu'
+      )
+      await comfyPage.settings.setSetting('Comfy.NodeSuggestions.number', 2)
+      await comfyPage.canvasOps.disconnectEdge()
+
+      await expect(
+        comfyPage.contextMenu.menuItem('CLIPTextEncode')
+      ).toBeVisible()
+      await expect(
+        comfyPage.contextMenu.menuItem('CLIPSetLastLayer')
+      ).toBeHidden()
+    })
+
     test('"no action" suppresses both search box and context menu', async ({
       comfyPage
     }) => {

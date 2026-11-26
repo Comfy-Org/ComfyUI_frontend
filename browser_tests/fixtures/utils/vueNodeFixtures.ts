@@ -1,5 +1,6 @@
+import { expect } from '@playwright/test'
 import type { Locator } from '@playwright/test'
-import type { CompassCorners } from '@/lib/litegraph/src/interfaces'
+import type { CompassCorners } from '@comfyorg/shared-frontend-utils/geometry'
 
 import { TitleEditor } from '@e2e/fixtures/components/TitleEditor'
 import { TestIds } from '@e2e/fixtures/selectors'
@@ -18,12 +19,9 @@ export class VueNodeFixture {
   public readonly imagePreview: Locator
   public readonly imageGrid: Locator
   public readonly content: Locator
-  public readonly priceBadge: {
-    required: Locator
-    requiredText: Locator
-    rest: Locator
-    restText: Locator
-  }
+  public readonly priceBadge: Locator
+  public readonly stateOutline: Locator
+  public readonly executionOutline: Locator
   public readonly resize: { bottomRight: Locator }
 
   constructor(private readonly locator: Locator) {
@@ -39,14 +37,11 @@ export class VueNodeFixture {
     this.imagePreview = locator.locator('.image-preview')
     this.imageGrid = locator.getByTestId(TestIds.node.imageGrid)
     this.content = locator.locator('.lg-node-content')
-    const required = locator.getByTestId('credit-badge-required')
-    const rest = locator.getByTestId('credit-badge-rest')
-    this.priceBadge = {
-      required,
-      requiredText: required.locator('span'),
-      rest,
-      restText: rest.locator('span')
-    }
+    this.priceBadge = locator.getByTestId('node-badge-group-credits')
+    this.stateOutline = locator.getByTestId('node-state-outline-overlay')
+    this.executionOutline = this.stateOutline.and(
+      locator.page().locator('.border-primary')
+    )
     const bottomRight = locator.getByRole('button', { name: 'bottom-right' })
     this.resize = { bottomRight }
   }
@@ -63,6 +58,31 @@ export class VueNodeFixture {
 
   async select() {
     await this.header.click()
+  }
+
+  async expectNoRootOutline(): Promise<void> {
+    await expect(this.root).toHaveCSS('outline-style', 'none')
+  }
+
+  async expectFocusOutline(visible: boolean): Promise<void> {
+    await expect(this.stateOutline).toHaveCSS(
+      'outline-style',
+      visible ? 'auto' : 'none'
+    )
+  }
+
+  async waitForImageLoaded(filename: string): Promise<void> {
+    const image = this.imagePreview.getByTestId('main-image')
+    await expect
+      .poll(() =>
+        image.evaluate((img: HTMLImageElement) => ({
+          filename: new URL(img.src, document.baseURI).searchParams.get(
+            'filename'
+          ),
+          loaded: img.complete && img.naturalWidth > 0
+        }))
+      )
+      .toEqual({ filename, loaded: true })
   }
 
   async toggleCollapse(): Promise<void> {
@@ -94,7 +114,9 @@ export class VueNodeFixture {
     const filteredLocator =
       typeof nameOrLocator === 'string'
         ? slotLocators
-            .filter({ hasText: nameOrLocator })
+            .filter({
+              has: this.root.page().getByText(nameOrLocator, { exact: true })
+            })
             .or(
               this.root
                 .locator('.lg-slot')
@@ -109,6 +131,35 @@ export class VueNodeFixture {
     return this.root.locator(`[data-corner="${corner}"]`)
   }
 
+  /** Locator for the widget row whose control is labelled `name`. */
+  widgetRow(name: string): Locator {
+    return this.root.getByTestId('node-widget').filter({
+      has: this.locator.page().getByLabel(name, { exact: true })
+    })
+  }
+
+  /** Pixels between the height of widget `name`'s textarea and exactly `lines` lines of its text. */
+  textareaLineFitError(name: string, lines: number): Promise<number> {
+    return this.widgetRow(name)
+      .getByRole('textbox')
+      .evaluate((textarea, lines) => {
+        const style = getComputedStyle(textarea)
+        const padding =
+          Number.parseFloat(style.paddingTop) +
+          Number.parseFloat(style.paddingBottom)
+        return Math.abs(
+          textarea.clientHeight -
+            padding -
+            lines * Number.parseFloat(style.lineHeight)
+        )
+      }, lines)
+  }
+
+  /** Locator for the bottom-edge resize handle inside `region`, or this node's only one. */
+  growableRegionHandle(region: Locator = this.root): Locator {
+    return region.getByTestId('growable-region-handle')
+  }
+
   /**
    * Drag the resize handle at `corner` by (deltaX, deltaY) viewport pixels.
    * Uses `hover()` to land the pointer on the handle with Playwright's
@@ -120,13 +171,19 @@ export class VueNodeFixture {
     deltaX: number,
     deltaY: number
   ): Promise<void> {
-    const handle = this.getResizeHandle(corner)
+    await this.dragHandle(this.getResizeHandle(corner), deltaX, deltaY)
+  }
+
+  /** Drag `handle` by (deltaX, deltaY) viewport pixels. */
+  async dragHandle(
+    handle: Locator,
+    deltaX: number,
+    deltaY: number
+  ): Promise<void> {
     await handle.hover()
     const box = await handle.boundingBox()
     if (!box) {
-      throw new Error(
-        `Resize handle for corner "${corner}" has no bounding box`
-      )
+      throw new Error('Resize handle has no bounding box')
     }
 
     const page = this.locator.page()

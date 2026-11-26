@@ -3,6 +3,12 @@ extends: default
 ignore: |
   node_modules/
   dist/
+  # Vendored from Comfy-Org/ComfyUI at a pinned commit, and must stay
+  # byte-identical to it: the sha256 recorded in the package README is only
+  # verifiable against core's own copy. Core's indentation is its own style,
+  # so restyling it here would invalidate the pin without changing the
+  # generated types. See packages/comfyui-api-types/README.md.
+  packages/comfyui-api-types/openapi.yaml
 
 rules:
   line-length: disable

@@ -27,7 +27,7 @@ function renderBar(
 ) {
   return render(MediaAssetSelectionBar, {
     props,
-    global: { plugins: [i18n], directives: { tooltip: {} } }
+    global: { plugins: [i18n] }
   })
 }
 

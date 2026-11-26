@@ -1,16 +1,17 @@
-import {
-  type ComfyApiWorkflow,
-  type ComfyWorkflowJSON
-} from '@/platform/workflow/validation/schemas/workflowSchema'
-import {
-  type ComfyMetadata,
-  ComfyMetadataTags,
-  type EbmlElementRange,
-  type EbmlTagPosition,
-  type TextRange,
-  type VInt
+import type {
+  ComfyApiWorkflow,
+  ComfyWorkflowJSON
+} from '@comfyorg/graph-model/workflowSchema'
+import { ComfyMetadataTags } from '@/types/metadataTypes'
+import type {
+  ComfyMetadata,
+  EbmlElementRange,
+  EbmlTagPosition,
+  TextRange,
+  VInt
 } from '@/types/metadataTypes'
 import { readFileAsArrayBuffer } from '@/utils/fileUtil'
+import { withLegacyCommentFallback } from '@/scripts/metadata/legacyComment'
 import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
 
 const WEBM_SIGNATURE = [0x1a, 0x45, 0xdf, 0xa3]
@@ -323,7 +324,7 @@ const parseMetadata = (data: Uint8Array): ComfyMetadata => {
     pos = tagEnd
   }
 
-  return meta
+  return withLegacyCommentFallback(meta, meta.comment)
 }
 
 const parseWebmBuffer = (buffer: ArrayBuffer): ComfyMetadata => {

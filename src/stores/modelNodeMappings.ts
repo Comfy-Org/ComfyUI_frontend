@@ -1,0 +1,168 @@
+const loraStackFilename = /^loras\.(?:0|[1-9]\d*)\.lora_name$/
+
+/**
+ * Default mappings from model directories to loader nodes.
+ *
+ * Each entry maps a model folder (as it appears in the model browser)
+ * to the node class that loads models from that folder and the
+ * input name or pattern used to select the model widget.
+ *
+ * An empty key ('') means the node auto-loads models without a widget
+ * selector, so no widget value is assigned when the node is added.
+ *
+ * Hierarchical fallback is handled by the store: "a/b/c" tries
+ * "a/b/c" → "a/b" → "a", so registering a parent directory covers
+ * all its children unless a more specific entry exists.
+ *
+ * Patterns enable the picker on every matching widget. Model drops populate
+ * the first matching widget.
+ *
+ * Format: [modelDirectory, nodeClass, inputNameOrPattern]
+ */
+export const MODEL_NODE_MAPPINGS: ReadonlyArray<
+  readonly [string, string, string | RegExp]
+> = [
+  // Intentionally unmapped (widget values are model ids / HF repo ids, not
+  // asset filenames): rmbg, florence2, LLM/Qwen-VL/*, qwen-tts, diffusers
+  // (Kolors), BiRefNet, EVF-SAM, smol. onnx/human-parts has no assets.
+  // Also unmapped: segformer_b2_clothes, segformer_b3_clothes,
+  // segformer_b3_fashion, lama, layer_model, LLM/llava-llama-3-8b-*,
+  // LLM/Llama-3.2-3B-Instruct, LLM/Florence-2-large-PromptGen-v2.0
+  // (id widgets); sam3, sharp, BEN, BiRefNet/pth (node/widget names don't
+  // exist); depthanything, CogVideo/GGUF, checkpoints/dynamicrafter/*,
+  // transparent-background (asset names not accepted by the node's enum);
+  // interpolation, clip, onnx (empty or unreachable dirs).
+
+  // ---- ComfyUI core loaders ----
+  ['checkpoints', 'CheckpointLoaderSimple', 'ckpt_name'],
+  ['checkpoints', 'ImageOnlyCheckpointLoader', 'ckpt_name'],
+  ['loras', 'LoraLoader', 'lora_name'],
+  ['loras', 'LoraLoaderModelOnly', 'lora_name'],
+  ['loras', 'LoadLoraModel', loraStackFilename],
+  ['loras', 'LoadLoraTextEncoder', loraStackFilename],
+  ['vae', 'VAELoader', 'vae_name'],
+  ['controlnet', 'ControlNetLoader', 'control_net_name'],
+  ['diffusion_models', 'UNETLoader', 'unet_name'],
+  ['upscale_models', 'UpscaleModelLoader', 'model_name'],
+  ['style_models', 'StyleModelLoader', 'style_model_name'],
+  ['gligen', 'GLIGENLoader', 'gligen_name'],
+  ['clip_vision', 'CLIPVisionLoader', 'clip_name'],
+  ['text_encoders', 'CLIPLoader', 'clip_name'],
+  ['audio_encoders', 'AudioEncoderLoader', 'audio_encoder_name'],
+  ['model_patches', 'ModelPatchLoader', 'name'],
+  ['latent_upscale_models', 'LatentUpscaleModelLoader', 'model_name'],
+
+  // ---- AnimateDiff (comfyui-animatediff-evolved) ----
+  ['animatediff_models', 'ADE_LoadAnimateDiffModel', 'model_name'],
+  ['animatediff_motion_lora', 'ADE_AnimateDiffLoRALoader', 'name'],
+
+  // ---- Chatterbox TTS (ComfyUI-Fill-Nodes) ----
+  ['chatterbox/chatterbox', 'FL_ChatterboxTTS', ''],
+  ['chatterbox/chatterbox_turbo', 'FL_ChatterboxTurboTTS', ''],
+  ['chatterbox/chatterbox_multilingual', 'FL_ChatterboxMultilingualTTS', ''],
+  ['chatterbox/chatterbox_vc', 'FL_ChatterboxVC', ''],
+
+  // ---- SAM / SAM2 (comfyui-segment-anything-2, comfyui-impact-pack) ----
+  ['sam2', 'DownloadAndLoadSAM2Model', 'model'],
+  ['sams', 'SAMLoader', 'model_name'],
+
+  // ---- DepthAnything (comfyui-depthanythingv3) ----
+  ['depthanything3', 'DownloadAndLoadDepthAnythingV3Model', 'model'],
+
+  // ---- IP-Adapter (comfyui_ipadapter_plus) ----
+  ['ipadapter', 'IPAdapterModelLoader', 'ipadapter_file'],
+
+  // ---- NLF pose estimation (ComfyUI-WanVideoWrapper) ----
+  ['nlf', 'LoadNLFModel', 'nlf_model'],
+
+  // ---- FlashVSR video super-resolution (ComfyUI-FlashVSR_Ultra_Fast) ----
+  ['FlashVSR', 'FlashVSRNode', ''],
+  ['FlashVSR-v1.1', 'FlashVSRNode', ''],
+
+  // ---- SEEDVR2 video upscaling (comfyui-seedvr2) ----
+  ['SEEDVR2', 'SeedVR2LoadDiTModel', 'model'],
+
+  // ---- ChatGLM3 text encoder ----
+  ['LLM/checkpoints', 'LoadChatGLM3', 'chatglm3_checkpoint'],
+
+  // ---- LivePortrait (comfyui-liveportrait) ----
+  ['liveportrait', 'DownloadAndLoadLivePortraitModels', ''],
+
+  // ---- MimicMotion (ComfyUI-MimicMotionWrapper) ----
+  ['mimicmotion', 'DownloadAndLoadMimicMotionModel', 'model'],
+  ['dwpose', 'MimicMotionGetPoses', ''],
+
+  // ---- Face parsing (comfyui_face_parsing) ----
+  ['face_parsing', 'FaceParsingModelLoader(FaceParsing)', ''],
+
+  // ---- RIFE video frame interpolation (ComfyUI-RIFE) ----
+  ['rife', 'RIFE VFI', 'ckpt_name'],
+
+  // ---- UltraShape 3D model generation ----
+  ['UltraShape', 'UltraShapeLoadModel', 'checkpoint'],
+
+  // ---- Detection models (vitpose, yolo) ----
+  ['detection', 'OnnxDetectionModelLoader', 'yolo_model'],
+
+  // ---- CogVideoX (comfyui-cogvideoxwrapper) ----
+  ['CogVideo', 'DownloadAndLoadCogVideoModel', ''],
+  ['CogVideo/ControlNet', 'DownloadAndLoadCogVideoControlNet', ''],
+
+  // ---- DynamiCrafter (ComfyUI-DynamiCrafterWrapper) ----
+  ['checkpoints', 'DynamiCrafterModelLoader', 'ckpt_name'],
+  ['controlnet', 'DynamiCrafterCNLoader', 'ckpt_name'],
+
+  // ---- Inpaint (comfyui-inpaint-nodes) ----
+  ['inpaint', 'INPAINT_LoadInpaintModel', 'model_name'],
+  ['inpaint', 'INPAINT_LoadFooocusInpaint', 'head'],
+  ['inpaint', 'INPAINT_LoadFooocusInpaint', 'patch'],
+
+  // ---- YOLO object detection (comfyui_layerstyle) ----
+  ['yolo', 'LayerMask: ObjectDetectorYOLO8', 'yolo_model'],
+
+  // ---- MediaPipe face detection (comfyui-liveportrait) ----
+  ['mediapipe', 'LivePortraitLoadMediaPipeCropper', ''],
+
+  // ---- Superprompt text enhancement ----
+  ['superprompt-v1', 'Superprompt', ''],
+
+  // ---- ComfyUI core background removal (v0.21+) ----
+  ['background_removal', 'LoadBackgroundRemovalModel', 'bg_removal_name'],
+
+  // ---- ComfyUI core frame interpolation (v0.21+) ----
+  ['frame_interpolation', 'FrameInterpolationModelLoader', 'model_name'],
+
+  // ---- FILM frame interpolation (ComfyUI-Frame-Interpolation) ----
+  ['film', 'FILM VFI', 'ckpt_name'],
+  ['atm', 'ATM VFI', 'ckpt_name'],
+  ['momo', 'MOMO VFI', 'ckpt_name'],
+
+  // ---- Ultralytics YOLO detectors (ComfyUI-Impact-Pack) ----
+  // Intentionally NOT mapped to the asset-picker. The cloud asset-ingestion
+  // metadata for nested model folders (`ultralytics/bbox`, `ultralytics/segm`)
+  // still has the two known half-bugs described in #12075:
+  //   1. Tag lookup mismatch (cloud stores combined tags, picker queries split).
+  //   2. Submitted value mismatch (picker returns basenames, ingest expects
+  //      subdirectory-prefixed `bbox/<file>` / `segm/<file>`).
+  // PR #12151 re-added the bbox/segm entries before either half was fixed,
+  // reintroducing the FaceDetailer breakage. Until BE-689 lands the cloud-side
+  // fixes, leave these disabled so the node falls back to the static combo
+  // populated from `/api/object_info`.
+  // ['ultralytics/bbox', 'UltralyticsDetectorProvider', 'model_name'],
+  // ['ultralytics/segm', 'UltralyticsDetectorProvider', 'model_name'],
+
+  // ---- Mel-Band RoFormer audio separation (ComfyUI-MelBandRoFormer) ----
+  ['diffusion_models', 'MelBandRoFormerModelLoader', 'model_name'],
+
+  // ---- ComfyUI core geometry estimation (MoGe) ----
+  ['geometry_estimation', 'LoadMoGeModel', 'model_name'],
+
+  // ---- ComfyUI core optical flow (RAFT) ----
+  ['optical_flow', 'OpticalFlowLoader', 'model_name'],
+
+  // ---- WanVideo (ComfyUI-WanVideoWrapper) ----
+  ['loras', 'WanVideoLoraSelect', 'lora'],
+
+  // ---- LTX-Video IC-LoRA (ComfyUI-LTXVideo) ----
+  ['loras', 'LTXICLoRALoaderModelOnly', 'lora_name']
+] as const satisfies ReadonlyArray<readonly [string, string, string | RegExp]>

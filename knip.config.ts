@@ -8,15 +8,18 @@ const config: KnipConfig = {
       entry: [
         '{build,scripts}/**/*.{js,ts}',
         'vitest.matrix.config.mts',
+        'vitest.census.config.mts',
         'src/assets/css/style.css',
         'src/scripts/ui/menu/index.ts',
         'src/types/index.ts',
         'src/storybook/mocks/**/*.ts',
         'tools/oxlint-plugins/comfyIngestTypes.ts',
+        'tools/oxlint-plugins/serverFacts.ts',
         'tools/oxlint-plugins/vitestCleanup.ts'
       ],
       project: [
-        '**/*.{js,ts,vue}',
+        '**/*.{js,ts}',
+        'src/**/*.vue!',
         '*.{js,ts,mts}',
         '!.claude/**',
         '!worktrees/**',
@@ -24,14 +27,40 @@ const config: KnipConfig = {
       ],
       ignore: ['scripts/registry-census/detection-proof/**']
     },
-    'packages/account': {
+    'packages/account-core': {
+      project: ['src/**/*.{js,ts}']
+    },
+    'packages/account-ui': {
       project: ['src/**/*.{js,ts,vue}']
     },
+    'packages/billing-contract': {
+      project: ['src/**/*.ts']
+    },
+    'packages/api-client': {
+      project: ['src/**/*.ts']
+    },
+    'packages/graph-model': {
+      project: ['src/**/*.ts']
+    },
+    'packages/keybindings': {
+      project: ['src/**/*.ts']
+    },
+    'packages/settings-core': {
+      project: ['src/**/*.ts']
+    },
+    'packages/theme-core': {
+      project: ['src/**/*.ts']
+    },
     'packages/design-system': {
-      project: ['src/**/*.{css,js,ts}']
+      entry: ['tests/consumer/vite.config.ts'],
+      project: ['src/**/*.{css,js,ts,vue}'],
+      ignoreDependencies: ['tailwind-merge']
     },
     'packages/tailwind-utils': {
       project: ['src/**/*.{js,ts}']
+    },
+    'packages/test-utils': {
+      project: ['src/**/*.ts']
     },
     'packages/shared-frontend-utils': {
       project: ['src/**/*.{js,ts}']
@@ -42,13 +71,26 @@ const config: KnipConfig = {
     'packages/ingest-types': {
       project: ['src/**/*.{js,ts}']
     },
-    'apps/website': {
-      // Models pages are registered by the release-gate integration.
-      entry: ['src/scripts/**/*.ts', 'src/routes/models/*.{astro,ts}'],
-      // Executed by models-snippets.test.ts inside the generated Node examples.
-      ignoreDependencies: ['mime-types']
+    'packages/comfyui-api-types': {
+      project: ['src/**/*.ts']
+    },
+    'tools/architecture': {
+      project: ['src/**/*.ts']
+    },
+    'tools/ci': {
+      entry: ['src/**/*.ts'],
+      project: ['src/**/*.ts']
+    },
+    'tools/design-system-audits': {
+      project: ['src/**/*.ts']
+    },
+    'tools/expected-failures': {
+      project: ['src/**/*.ts']
     },
     'tools/test-recorder': {
+      project: ['src/**/*.ts']
+    },
+    'tools/types-consumer-check': {
       project: ['src/**/*.ts']
     }
   },
@@ -56,27 +98,13 @@ const config: KnipConfig = {
     // Optional host tool the recorder probes for and degrades without
     'xcode-select'
   ],
-  ignoreDependencies: [
-    // Weird importmap things
-    '@iconify/json'
-  ],
   ignore: [
     // Auto generated API types
-    'src/workbench/extensions/manager/types/generatedManagerTypes.ts',
     'packages/ingest-types/src/zod.gen.ts',
-    // Pending integration in stacked PR
-    'src/components/sidebar/tabs/nodeLibrary/CustomNodesPanel.vue',
-    // Marketing media tooling — adopted by pages in a follow-up PR
-    'apps/website/src/components/common/SiteVideo.vue',
-    'apps/website/src/utils/marketingImage.ts',
-    // Animated pill button — retained for reuse after the learning directory
-    // switched to ButtonPill; no current consumer
-    'apps/website/src/components/ui/button-mask/**',
-    // Pending integration: consumed by the useWorkspaceInvoices seam once
-    // #13591 (Plan & Credits tabs) lands — FE-1245
-    'src/composables/billing/useNextInvoice.ts',
-    // Agent review check config, not part of the build
-    '.agents/checks/eslint.strict.config.js',
+    // Auto generated from core's pinned OpenAPI spec. The operation filter
+    // admits one endpoint, and openapi-ts still emits the request/response
+    // wrappers and a barrel for it; src/index.ts re-exports what is consumed.
+    'packages/comfyui-api-types/src/generated/**',
     // Devtools extensions, included dynamically
     'tools/devtools/web/**'
   ],
@@ -94,11 +122,7 @@ const config: KnipConfig = {
     config: ['playwright?(.*).config.ts'],
     entry: ['browser_tests/**/*.@(spec|test).?(c|m)[jt]s?(x)']
   },
-  tags: [
-    '-knipIgnoreUnusedButUsedByCustomNodes',
-    '-knipIgnoreUnusedButUsedByVueNodesBranch',
-    '-knipIgnoreUsedByStackedPR'
-  ]
+  tags: ['-knipIgnoreUnusedButUsedByCustomNodes']
 }
 
 export default config

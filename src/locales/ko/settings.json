@@ -59,6 +59,25 @@
     "name": "선택 도구 상자 표시",
     "tooltip": "노드가 선택되었을 때 공통 작업에 빠르게 접근할 수 있는 플로팅 툴바를 표시합니다."
   },
+  "Comfy_Canvas_SmartGuides_Enabled": {
+    "name": "드래그 및 크기 조절 시 주변 노드, 그룹 및 와이어에 맞춰 정렬",
+    "tooltip": "가이드선을 표시하고 정렬된 가장자리, 균등한 간격 및 직선 와이어에 맞춰 정렬합니다. 대신 그리드에 맞춰 정렬하려면 Shift를 누르세요."
+  },
+  "Comfy_Canvas_SmartGuides_Gap": {
+    "name": "다른 노드 옆에 맞춰 정렬할 때의 간격"
+  },
+  "Comfy_Canvas_SmartGuides_SnapDistance": {
+    "name": "정렬 거리(화면 픽셀)"
+  },
+  "Comfy_Canvas_SmartGuides_SnapToEdges": {
+    "name": "다른 노드 및 그룹의 가장자리에 맞춰 정렬"
+  },
+  "Comfy_Canvas_SmartGuides_SnapToSpacing": {
+    "name": "노드 사이의 균등한 간격에 맞춰 정렬"
+  },
+  "Comfy_Canvas_SmartGuides_SnapToWires": {
+    "name": "와이어가 직선이 되도록 정렬"
+  },
   "Comfy_ConfirmClear": {
     "name": "워크플로 비우기 시 확인 요구"
   },
@@ -69,8 +88,8 @@
     "name": "개발자 모드 옵션 활성화 (API 저장 등)"
   },
   "Comfy_DisableFloatRounding": {
-    "name": "기본 부동 소수점 위젯 반올림 비활성화",
-    "tooltip": "(페이지 새로 고침 필요) 백엔드에서 노드에 의해 설정된 반올림이 있을 때 반올림을 비활성화할 수 없습니다."
+    "name": "기본 부동소수점 위젯 반올림 비활성화(더 이상 사용되지 않음).",
+    "tooltip": "(페이지 새로고침 필요) 더 이상 사용되지 않으며 기본적으로 켜져 있습니다. 이를 끄면 편집한 부동소수점 값이 위젯 단계의 소수 자릿수로 반올림됩니다. 노드에서 지정한 반올림은 항상 적용됩니다."
   },
   "Comfy_DisableSliders": {
     "name": "노드 위젯 슬라이더 비활성화"
@@ -83,6 +102,14 @@
   },
   "Comfy_EnableWorkflowViewRestore": {
     "name": "워크플로에서 캔버스 위치 및 확대/축소 수준 저장 및 복원"
+  },
+  "Comfy_ErrorSystem_ShowMissingModels": {
+    "name": "문제 탭에 누락된 모델 표시",
+    "tooltip": "비활성화하면 찾을 수 없는 모델 파일이 문제 탭에 나열되지 않으며 해당 노드가 강조 표시되지 않습니다."
+  },
+  "Comfy_ErrorSystem_ShowMissingNodes": {
+    "name": "문제 탭에 누락된 노드 표시",
+    "tooltip": "비활성화하면 누락된 노드 팩이 문제 탭에 나열되지 않으며 해당 노드도 강조 표시되지 않습니다. 설치되기 전까지는 워크플로를 계속 실행할 수 없습니다."
   },
   "Comfy_Execution_PreviewMethod": {
     "name": "라이브 미리보기 방식",
@@ -313,6 +340,10 @@
   "Comfy_Node_DoubleClickTitleToEdit": {
     "name": "노드 제목을 두 번 클릭하여 편집"
   },
+  "Comfy_Node_DownscaleImagePreviews": {
+    "name": "큰 이미지 미리보기 축소",
+    "tooltip": "노드 2.0에서 노드의 큰 이미지를 가장 긴 변이 최대 1024px인 사본으로 표시하여 많은 대형 미리보기를 원활하게 유지합니다. 항상 원본을 표시하려면 끄세요."
+  },
   "Comfy_Node_MiddleClickRerouteNode": {
     "name": "중간 클릭으로 새 경유점 생성"
   },
@@ -334,10 +365,6 @@
   "Comfy_Notification_ShowVersionUpdates": {
     "name": "버전 업데이트 표시",
     "tooltip": "새 모델과 주요 신규 기능에 대한 업데이트를 표시합니다."
-  },
-  "Comfy_Pointer_ClickBufferTime": {
-    "name": "포인터 클릭 드리프트 지연",
-    "tooltip": "포인터 버튼을 누른 후, 포인터 움직임을 무시할 수 있는 최대 시간(밀리초)입니다.\n\n클릭하는 동안 포인터가 움직여 의도치 않게 객체가 밀리는 것을 방지합니다."
   },
   "Comfy_Pointer_ClickDrift": {
     "name": "포인터 클릭 드리프트 (최대 거리)",
@@ -461,8 +488,9 @@
   "Comfy_Workflow_Persist": {
     "name": "페이지 (재)로드시 워크플로우 상태를 유지하고 복원"
   },
-  "Comfy_Workflow_ShowMissingModelsWarning": {
-    "name": "누락된 모델 경고 표시"
+  "Comfy_Workflow_ShowMissingMediaWarning": {
+    "name": "문제 탭에 누락된 미디어 표시",
+    "tooltip": "비활성화하면 찾을 수 없는 입력 이미지, 비디오 및 오디오가 문제 탭에 나열되지 않으며 해당 노드가 강조 표시되지 않습니다."
   },
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "워크플로 저장 시 노드 ID 정렬"

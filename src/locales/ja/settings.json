@@ -59,6 +59,25 @@
     "name": "選択ツールボックスを表示",
     "tooltip": "ノードが選択されているときにフローティングツールバーを表示し、よく使う操作に素早くアクセスできます。"
   },
+  "Comfy_Canvas_SmartGuides_Enabled": {
+    "name": "ドラッグおよびサイズ変更時に、近くのノード、グループ、ワイヤーにスナップ",
+    "tooltip": "ガイド線を表示し、整列した辺、均等な間隔、直線のワイヤーにスナップします。代わりにグリッドにスナップするには Shift を押し続けます。"
+  },
+  "Comfy_Canvas_SmartGuides_Gap": {
+    "name": "別のノードの隣にスナップする際の間隔"
+  },
+  "Comfy_Canvas_SmartGuides_SnapDistance": {
+    "name": "スナップ距離（画面ピクセル）"
+  },
+  "Comfy_Canvas_SmartGuides_SnapToEdges": {
+    "name": "他のノードやグループの辺にスナップ"
+  },
+  "Comfy_Canvas_SmartGuides_SnapToSpacing": {
+    "name": "ノード間の均等な間隔にスナップ"
+  },
+  "Comfy_Canvas_SmartGuides_SnapToWires": {
+    "name": "ワイヤーが直線になるようにスナップ"
+  },
   "Comfy_ConfirmClear": {
     "name": "ワークフローをクリアする際に確認を要求する"
   },
@@ -69,8 +88,8 @@
     "name": "開発モードオプションを有効にする（API保存など）"
   },
   "Comfy_DisableFloatRounding": {
-    "name": "デフォルトの浮動小数点ウィジェットの丸めを無効にする。",
-    "tooltip": "(ページの再読み込みが必要) バックエンドのノードで丸めが設定されている場合、丸めを無効にすることはできません。"
+    "name": "デフォルトの浮動小数点ウィジェットの丸めを無効化（非推奨）。",
+    "tooltip": "（ページの再読み込みが必要です）非推奨で、デフォルトでオンになっています。これをオフにすると、編集した浮動小数点値はウィジェットのステップの小数点以下桁数に丸められます。ノードで宣言された丸めは常に適用されます。"
   },
   "Comfy_DisableSliders": {
     "name": "ノードウィジェットスライダーを無効にする"
@@ -83,6 +102,14 @@
   },
   "Comfy_EnableWorkflowViewRestore": {
     "name": "ワークフロー内のキャンバスの位置とズームレベルを保存および復元する"
+  },
+  "Comfy_ErrorSystem_ShowMissingModels": {
+    "name": "問題タブに不足しているモデルを表示",
+    "tooltip": "無効にすると、見つからないモデルファイルは問題タブに表示されず、該当ノードも強調表示されません。"
+  },
+  "Comfy_ErrorSystem_ShowMissingNodes": {
+    "name": "問題タブに不足しているノードを表示",
+    "tooltip": "無効にすると、不足しているノードパックは問題タブに一覧表示されず、それらのノードも強調表示されません。インストールされるまで、ワークフローは実行できません。"
   },
   "Comfy_Execution_PreviewMethod": {
     "name": "ライブプレビューメソッド",
@@ -313,6 +340,10 @@
   "Comfy_Node_DoubleClickTitleToEdit": {
     "name": "ノードタイトルをダブルクリックして編集"
   },
+  "Comfy_Node_DownscaleImagePreviews": {
+    "name": "大きな画像プレビューを縮小",
+    "tooltip": "Nodes 2.0では、多数の大きなプレビューを表示しても応答性を維持できるよう、ノード上の大きな画像を最長辺が最大1024pxのコピーとして表示します。無効にすると、常に元の画像を表示します。"
+  },
   "Comfy_Node_MiddleClickRerouteNode": {
     "name": "ミドルクリックで新しいリルートノードを作成"
   },
@@ -334,10 +365,6 @@
   "Comfy_Notification_ShowVersionUpdates": {
     "name": "バージョン更新を表示",
     "tooltip": "新しいモデルや主要な新機能のアップデートを表示します。"
-  },
-  "Comfy_Pointer_ClickBufferTime": {
-    "name": "ポインタークリックドリフト遅延",
-    "tooltip": "ポインターボタンを押した後、ポインタの動きが無視される最大時間（ミリ秒単位）です。\n\nクリック中にポインタが移動した場合、オブジェクトが意図せず動かされるのを防ぎます。"
   },
   "Comfy_Pointer_ClickDrift": {
     "name": "ポインタークリックドリフト（最大距離）",
@@ -461,8 +488,9 @@
   "Comfy_Workflow_Persist": {
     "name": "ページ（再）ロード時にワークフローの状態を保持し、復元します"
   },
-  "Comfy_Workflow_ShowMissingModelsWarning": {
-    "name": "欠落しているモデルの警告を表示"
+  "Comfy_Workflow_ShowMissingMediaWarning": {
+    "name": "問題タブに不足しているメディアを表示",
+    "tooltip": "無効にすると、見つからない入力画像、動画、音声は問題タブに表示されず、該当ノードも強調表示されません。"
   },
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "ワークフローを保存する際にノードIDをソート"

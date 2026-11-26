@@ -19,7 +19,6 @@ test.describe(
     })
 
     test.afterEach(async ({ comfyPage }) => {
-      await comfyPage.canvasOps.resetView()
       await comfyPage.workflow.setupWorkflowsDirectory({})
     })
 
@@ -44,6 +43,7 @@ test.describe(
         'KSampler fixture should expose its seed widget input metadata'
       ).toBeDefined()
 
+      await ksamplerNode.centerOnNode()
       await primitiveNode.connectWidget(0, ksamplerNode, 0)
 
       await expect

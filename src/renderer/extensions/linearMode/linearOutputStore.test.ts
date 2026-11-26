@@ -2,39 +2,38 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useJobPreviewStore } from '@/stores/jobPreviewStore'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
+import type { Ref } from 'vue'
 
+import { useAppMode } from '@/composables/useAppMode'
 import { useLinearOutputStore } from '@/renderer/extensions/linearMode/linearOutputStore'
-import type { ExecutedWsMessage } from '@/schemas/apiSchema'
+import type { ExecutedWsMessage } from '@comfyorg/api-client/executionTypes'
 
-const isAppModeRef = ref(true)
+import { api as apiTarget } from '@/scripts/api'
 
-const { apiTarget } = vi.hoisted(() => ({
-  apiTarget: new EventTarget()
-}))
+vi.mock(import('@/platform/assets/adapters/outputAssetMappers'), { spy: true })
 
-vi.mock(import('@/platform/assets/composables/media/assetMappers'))
+vi.mock(import('@/composables/useAppMode'))
 
-vi.mock<unknown>(import('@/composables/useAppMode'), () => ({
-  useAppMode: () => ({
-    isAppMode: isAppModeRef,
-    isBuilderMode: ref(false)
-  })
-}))
+vi.mock(import('@/scripts/api'))
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: Object.assign(apiTarget, {
-    apiURL: (path: string) => path
-  })
-}))
+beforeEach(() => {
+  vi.mocked(apiTarget.apiURL).mockImplementation((path) => path)
+})
 
 function setJobWorkflowPath(jobId: string, path: string) {
   const next = new Map(useExecutionStore().jobIdToSessionWorkflowPath)
   next.set(jobId, path)
   useExecutionStore().jobIdToSessionWorkflowPath = next
+}
+
+function setLiveJobs(...jobIds: string[]) {
+  useExecutionStore().queuedJobs = Object.fromEntries(
+    jobIds.map((jobId) => [jobId, { nodes: {} }])
+  )
 }
 
 function makeExecutedDetail(
@@ -53,10 +52,14 @@ function makeExecutedDetail(
 }
 
 describe('linearOutputStore', () => {
+  let isAppModeRef: Ref<boolean>
+
   beforeEach(() => {
+    isAppModeRef = ref(true)
+    useAppMode().isAppMode = computed(() => isAppModeRef.value)
     useExecutionStore().activeJobId = null
+    setLiveJobs()
     useJobPreviewStore().clearAllPreviews()
-    isAppModeRef.value = true
     useWorkflowStore().activeWorkflow = fromPartial({
       path: 'workflows/test-workflow.json'
     })
@@ -102,6 +105,18 @@ describe('linearOutputStore', () => {
     store.onLatentPreview('job-other', 'blob:preview')
 
     expect(store.inProgressItems[0].state).toBe('skeleton')
+  })
+
+  it('resumes a refocused job in its existing slot', () => {
+    const store = useLinearOutputStore()
+    store.onJobStart('job-1')
+    store.onJobStart('job-2')
+    store.onJobStart('job-1')
+
+    expect(store.inProgressItems.map((i) => i.jobId)).toEqual([
+      'job-2',
+      'job-1'
+    ])
   })
 
   it('transitions to image on executed event', () => {
@@ -332,19 +347,18 @@ describe('linearOutputStore', () => {
     const store = useLinearOutputStore()
 
     setJobWorkflowPath('job-1', 'workflows/test-workflow.json')
+    setLiveJobs('job-1')
     useExecutionStore().activeJobId = 'job-1'
     await nextTick()
 
     store.onNodeExecuted('job-1', makeExecutedDetail('job-1'))
 
-    // Direct transition: job-1 → job-2 (no null in between)
     setJobWorkflowPath('job-2', 'workflows/test-workflow.json')
+    setLiveJobs('job-2')
     useExecutionStore().activeJobId = 'job-2'
     await nextTick()
 
-    // job-1 should have been completed
     expect(store.pendingResolve.has('job-1')).toBe(true)
-    // job-2 should have started
     expect(store.inProgressItems.some((i) => i.jobId === 'job-2')).toBe(true)
   })
 
@@ -809,6 +823,7 @@ describe('linearOutputStore', () => {
         path: 'workflows/app-a.json'
       })
       setJobWorkflowPath('job-a', 'workflows/app-a.json')
+      setLiveJobs('job-a')
       useExecutionStore().activeJobId = 'job-a'
       await nextTick()
 
@@ -1102,25 +1117,22 @@ describe('linearOutputStore', () => {
         path: 'workflows/app-a.json'
       })
       setJobWorkflowPath('job-a', 'workflows/app-a.json')
+      setLiveJobs('job-a')
       useExecutionStore().activeJobId = 'job-a'
       await nextTick()
 
       store.onNodeExecuted('job-a', makeExecutedDetail('job-a', undefined, '1'))
 
-      // Job ends, new job starts — all while in app mode
       setJobWorkflowPath('job-b', 'workflows/app-a.json')
+      setLiveJobs('job-b')
       useExecutionStore().activeJobId = 'job-b'
       await nextTick()
 
-      // job-a completed via activeJobId watcher, now pending resolve
       expect(store.pendingResolve.has('job-a')).toBe(true)
 
-      // Switch away — tracked job is now job-b which is still active, so
-      // the else-branch does NOT complete it (it's still running)
       isAppModeRef.value = false
       await nextTick()
 
-      // job-b items preserved (still running)
       expect(store.inProgressItems.some((i) => i.jobId === 'job-b')).toBe(true)
     })
 
@@ -1150,6 +1162,7 @@ describe('linearOutputStore', () => {
         path: 'workflows/app-a.json'
       })
       setJobWorkflowPath('job-cat', 'workflows/app-a.json')
+      setLiveJobs('job-cat', 'job-dog')
       useExecutionStore().activeJobId = 'job-cat'
       await nextTick()
 
@@ -1196,7 +1209,7 @@ describe('linearOutputStore', () => {
           '1'
         )
       })
-      apiTarget.dispatchEvent(event)
+      apiTarget.dispatchCustomEvent('executed', event.detail)
 
       // Dog's latent preview also arrives
       useJobPreviewStore().setPreviewUrl('job-dog', 'blob:dog-latent', '2')
@@ -1225,6 +1238,7 @@ describe('linearOutputStore', () => {
         path: 'workflows/dog.json'
       })
       setJobWorkflowPath('job-dog', 'workflows/dog.json')
+      setLiveJobs('job-dog')
       useExecutionStore().activeJobId = 'job-dog'
       await nextTick()
 
@@ -1237,6 +1251,7 @@ describe('linearOutputStore', () => {
       isAppModeRef.value = true
       await nextTick()
       setJobWorkflowPath('job-cat', 'workflows/cat.json')
+      setLiveJobs('job-dog', 'job-cat')
 
       // Swap back to dog tab
       useWorkflowStore().activeWorkflow = fromPartial({
@@ -1248,6 +1263,7 @@ describe('linearOutputStore', () => {
       await nextTick()
 
       // Dog finishes, cat starts (activeJobId transitions on dog tab)
+      setLiveJobs('job-cat')
       useExecutionStore().activeJobId = 'job-cat'
       await nextTick()
 
@@ -1287,7 +1303,7 @@ describe('linearOutputStore', () => {
           '3'
         )
       })
-      apiTarget.dispatchEvent(event)
+      apiTarget.dispatchCustomEvent('executed', event.detail)
 
       expect(
         store.inProgressItems.filter((i) => i.state === 'image')

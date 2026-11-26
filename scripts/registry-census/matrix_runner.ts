@@ -1,24 +1,28 @@
-/**
- * Matrix runner — executed once per pack in an isolated vitest file.
- * Loads the pack's real JS, then runs the user-operation battery and drives
- * the pack's own frontend-registered node types. Writes one JSON row to
- * $MATRIX_OUT/<pack>.json for cross-branch diffing.
- */
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
+import crypto from 'node:crypto'
 import fs from 'node:fs'
+import path from 'node:path'
 import { vi } from 'vitest'
 
 import defaultWorkflow from '../../browser_tests/assets/default.json'
 import type {
+  ISerialisedNode,
   LGraph,
   LGraphCanvas,
-  LGraphNode,
-  Point
+  LGraphNode
 } from '@/lib/litegraph/src/litegraph'
-import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
+import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import type { WidgetFormProof } from '@/lib/litegraph/src/widgets/widgetFormProof'
+import {
+  needsFormButHasNone,
+  proveWidgetForm
+} from '@/lib/litegraph/src/widgets/widgetFormProof'
+import type { ComfyNodeDef, InputSpec } from '@comfyorg/object-info-parser'
 import type { useWidgetValueStore } from '@/stores/widgetValueStore'
+import type * as WidgetValuesForm from '@/workbench/extensions/agent/crdt/widgetValuesForm'
 
 const S = (v: unknown) => JSON.stringify(v)
 const errMsg = (e: unknown) =>
@@ -43,19 +47,19 @@ let DEPR: string[] = []
 let NOTE = ''
 let DISPATCHED = true
 
-/** Store rows could not be read at all, as distinct from "read, and clean". */
 const UNMEASURED = 'unmeasured'
+
+const MAX_DRIVEN_TYPES_PER_PACK = 64
 
 type WidgetValueStore = ReturnType<typeof useWidgetValueStore>
 
-/** The pre-Vue "convert widget to input" convention, still shipped by packs. */
 type ConvertibleWidget = IBaseWidget & {
   origType?: string
   origComputeSize?: IBaseWidget['computeSize']
 }
 
 interface SigNode {
-  id: unknown
+  id: LGraphNode['id']
   type: unknown
   widgets: unknown
   r: unknown
@@ -72,8 +76,236 @@ interface OpRecord {
   note: string
 }
 
-const COMBO = (o: string[]) => [o, {}]
-const DEFS: Record<string, unknown> = {
+type WidgetFormRefusal = NonNullable<WidgetFormProof['refusal']>
+
+type FormVerdict =
+  | 'provable'
+  | WidgetFormRefusal
+  | (typeof HARNESS_VERDICT)[keyof typeof HARNESS_VERDICT]
+
+interface FormProof {
+  graph: Record<string, FormVerdict>
+  driven: Record<string, FormVerdict>
+  needsForm: string[]
+  err?: string
+}
+
+const NOT_CAPTURED = Symbol('widgets_values not captured')
+
+const HARNESS_VERDICT = {
+  threw: '!serialize_threw',
+  uncreatable: '!createNode_null',
+  removed: '!removed_by_hook'
+} as const
+
+function coreIsLastWriter(
+  node: LGraphNode,
+  pristine: PristineSerialization
+): boolean {
+  return (
+    node.serializeFromStoreState === pristine.serializeFromStoreState &&
+    node.serialize === pristine.serialize
+  )
+}
+
+interface Capture {
+  serialised: ISerialisedNode
+  produced: unknown
+  captured: boolean
+}
+
+function captureSerialization(node: LGraphNode): Capture | null {
+  const descriptor = Object.getOwnPropertyDescriptor(node, 'onSerialize')
+  const inherited = node.onSerialize
+  let produced: unknown = NOT_CAPTURED
+  let before: unknown[] | null = null
+  let named: Record<string, unknown> = {}
+  let orderBefore: string[] = []
+  function capture(this: LGraphNode, serialised: ISerialisedNode) {
+    produced = serialised.widgets_values
+    before = Array.isArray(produced) ? [...produced] : null
+    named = { ...serialised.widgets_values_named }
+    orderBefore = serializingNames(node.widgets ?? [])
+    inherited?.call(this, serialised)
+  }
+  try {
+    const captureDescriptor =
+      descriptor &&
+      'value' in descriptor &&
+      descriptor.configurable === false &&
+      descriptor.writable
+        ? { ...descriptor, value: capture }
+        : { value: capture, writable: true, configurable: true }
+    Object.defineProperty(node, 'onSerialize', captureDescriptor)
+    const serialised = node.serialize()
+    const reordered =
+      produced !== NOT_CAPTURED &&
+      !emittedValuesMatch(named, before, node.widgets ?? [], orderBefore)
+    return {
+      serialised,
+      produced:
+        reordered || rewrittenInPlace(produced, before)
+          ? before
+          : produced === NOT_CAPTURED
+            ? undefined
+            : produced,
+      captured: produced !== NOT_CAPTURED
+    }
+  } catch {
+    return null
+  } finally {
+    if (descriptor) Object.defineProperty(node, 'onSerialize', descriptor)
+    else Reflect.deleteProperty(node, 'onSerialize')
+  }
+}
+
+/**
+ * True when each serializing widget, in its final order, still owns the positional value core
+ * wrote at its index. `orderBefore` also catches swaps of widgets holding equal values.
+ */
+export function emittedValuesMatch(
+  named: Record<string, unknown>,
+  positional: readonly unknown[] | null,
+  widgets: readonly { name: string; serialize?: boolean }[],
+  orderBefore?: readonly string[]
+): boolean {
+  const serializing = serializingNames(widgets)
+  if (serializing.length !== Object.keys(named).length) return false
+  if (orderBefore && serializing.some((name, i) => name !== orderBefore[i]))
+    return false
+  return serializing.every(
+    (name, index) =>
+      Object.hasOwn(named, name) &&
+      (positional === null || sameEmittedValue(named[name], positional[index]))
+  )
+}
+
+function serializingNames(
+  widgets: readonly { name: string; serialize?: boolean }[]
+): string[] {
+  return widgets
+    .filter((widget) => widget.serialize !== false)
+    .map((widget) => widget.name)
+}
+
+function sameEmittedValue(a: unknown, b: unknown): boolean {
+  if (Object.is(a, b)) return true
+  if (typeof a !== 'object' || a === null) return false
+  try {
+    return JSON.stringify(a) === JSON.stringify(b)
+  } catch {
+    return false
+  }
+}
+
+function rewrittenInPlace(
+  produced: unknown,
+  before: unknown[] | null
+): boolean {
+  if (!before || !Array.isArray(produced)) return false
+  return (
+    produced.length !== before.length ||
+    before.some((value, index) => !Object.is(produced[index], value))
+  )
+}
+
+function verdictOf(
+  widgets: readonly IBaseWidget[] | undefined,
+  serialised: { widgets_values?: unknown },
+  producedValues: unknown,
+  options: {
+    serializeWidgets?: boolean
+    replayed: boolean
+    lastWriter: boolean
+  }
+): { verdict: FormVerdict; order: string[] | null } {
+  const proof = proveWidgetForm(widgets, serialised, producedValues, {
+    serializeWidgets: options.serializeWidgets,
+    replayed: options.replayed,
+    coreIsLastWriter: options.lastWriter
+  })
+  return {
+    verdict: proof.provable ? 'provable' : proof.refusal,
+    order: proof.order
+  }
+}
+
+function proveNodeForm(
+  node: LGraphNode,
+  pristine: PristineSerialization
+): { verdict: FormVerdict; needsForm: boolean } {
+  const capture = captureSerialization(node)
+  if (!capture) return { verdict: HARNESS_VERDICT.threw, needsForm: false }
+  const { verdict } = verdictOf(
+    node.widgets,
+    capture.serialised,
+    capture.captured ? capture.produced : undefined,
+    {
+      serializeWidgets: node.serialize_widgets,
+      replayed: !capture.captured && !!node.last_serialization,
+      lastWriter: coreIsLastWriter(node, pristine)
+    }
+  )
+  return { verdict, needsForm: needsFormButHasNone(capture.serialised) }
+}
+
+function proveFreshNode(
+  graph: LGraph,
+  type: string,
+  createNode: (type: string) => LGraphNode | null,
+  pristine: PristineSerialization
+): { verdict: FormVerdict; needsForm: boolean } {
+  try {
+    const node = createNode(type)
+    if (!node) return { verdict: HARNESS_VERDICT.uncreatable, needsForm: false }
+    node.pos = [1400, 100]
+    try {
+      graph.add(node)
+      return proveNodeForm(node, pristine)
+    } finally {
+      if (graph._nodes.includes(node)) graph.remove(node, { force: true })
+    }
+  } catch {
+    return { verdict: HARNESS_VERDICT.threw, needsForm: false }
+  }
+}
+
+export function measureFormProof(
+  graph: LGraph,
+  packTypes: string[],
+  createNode: (type: string) => LGraphNode | null,
+  pristine: PristineSerialization
+): FormProof {
+  const agreement: FormProof = { graph: {}, driven: {}, needsForm: [] }
+  try {
+    for (const node of graph._nodes.slice()) {
+      const key = `${node.type}#${String(node.id)}`
+      if (!graph._nodes.includes(node)) {
+        agreement.graph[key] = HARNESS_VERDICT.removed
+        continue
+      }
+      const { verdict, needsForm } = proveNodeForm(node, pristine)
+      agreement.graph[key] = verdict
+      if (needsForm) agreement.needsForm.push(key)
+    }
+    for (const type of packTypes) {
+      const { verdict, needsForm } = proveFreshNode(
+        graph,
+        type,
+        createNode,
+        pristine
+      )
+      agreement.driven[type] = verdict
+      if (needsForm) agreement.needsForm.push(type)
+    }
+  } catch (e) {
+    agreement.err = errMsg(e)
+  }
+  return agreement
+}
+
+const COMBO = (o: string[]): InputSpec => [o, {}]
+const DEFS: Record<string, Partial<ComfyNodeDef>> = {
   CheckpointLoaderSimple: {
     input: { required: { ckpt_name: COMBO(['v1-5-pruned.ckpt']) } },
     output: ['MODEL', 'CLIP', 'VAE'],
@@ -132,6 +364,284 @@ const DEFS: Record<string, unknown> = {
   }
 }
 
+type ShapeDef = Partial<ComfyNodeDef> & { python_module?: string }
+
+const SHAPE_RELATIVE = 'scripts/registry-census/object_info.shape.json'
+
+export function shapeDefsPath(): string {
+  const override = process.env.MATRIX_OBJECT_INFO
+  return override ? path.resolve(override) : path.resolve(SHAPE_RELATIVE)
+}
+
+export function loadShapeDefs(): Record<string, ShapeDef> {
+  const file = shapeDefsPath()
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(fs.readFileSync(file, 'utf8'))
+  } catch (e) {
+    throw new Error(
+      `object_info shape projection unreadable at ${file}: ${errMsg(e)}`,
+      { cause: e }
+    )
+  }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error(`${file} is not an /object_info object`)
+  }
+  const defs = parsed as Record<string, ShapeDef>
+  if (!Object.keys(defs).length) throw new Error(`${file} carries no classes`)
+  return defs
+}
+
+interface PristineSerialization {
+  serialize: unknown
+  serializeFromStoreState: unknown
+}
+
+export function captureSerializationEntryPoints(
+  base: typeof LGraphNode
+): PristineSerialization {
+  return {
+    serialize: base.prototype.serialize,
+    serializeFromStoreState: base.prototype.serializeFromStoreState
+  }
+}
+
+interface SubgraphFormProbe {
+  scenario: string
+  verdict?: FormVerdict
+  needsForm?: boolean
+  coreIsLastWriter?: boolean
+  widgets?: number
+  ifAssumedFinal?: FormVerdict
+  ifAssumedFinalAtHookSite?: FormVerdict
+  wrongOrder?: string[] | null
+  finalValues?: unknown
+  err?: string
+}
+
+export interface RegistryFormCensus {
+  source: string
+  classes: number
+  registered: number
+  registerErrors: string[]
+  histogram: Record<string, number>
+  refusals: Record<string, FormVerdict>
+  needsForm: string[]
+  byModule: Record<string, [number, number]>
+  digest: string
+  subgraph: SubgraphFormProbe[]
+  prototypePatched: { serialize: boolean; serializeFromStoreState: boolean }
+  hookErrors: string[]
+  err?: string
+}
+
+async function registerShapeDefs(
+  defs: Record<string, ShapeDef>
+): Promise<{ registered: number; errors: string[] }> {
+  const { useLitegraphService } = await import('@/services/litegraphService')
+  const svc = useLitegraphService()
+  const errors: string[] = []
+  let registered = 0
+  for (const [name, def] of Object.entries(defs)) {
+    try {
+      await svc.registerNodeDef(name, {
+        name,
+        display_name: name,
+        category: def.category ?? 'census',
+        python_module: def.python_module ?? 'nodes',
+        description: '',
+        output_is_list: def.output_is_list ?? [],
+        output_node: def.output_node ?? false,
+        ...def
+      })
+      registered++
+    } catch (e) {
+      if (errors.length < 40) errors.push(`${name}:${errMsg(e)}`)
+    }
+  }
+  return { registered, errors }
+}
+
+async function buildSubgraphHost(
+  lg: { LGraph: typeof LGraph },
+  createNode: (type: string) => LGraphNode | null
+): Promise<LGraphNode> {
+  const graph = new lg.LGraph()
+  const { useSubgraphService } = await import('@/services/subgraphService')
+  graph.events.addEventListener('subgraph-created', (e) => {
+    const { subgraph, data } = e.detail
+    useSubgraphService().registerNewSubgraph(subgraph, data)
+  })
+
+  const inner = createNode('CLIPTextEncode')
+  const source = createNode('PrimitiveString')
+  if (!inner || !source) throw new Error('could not create the probe nodes')
+  graph.add(inner)
+  graph.add(source)
+  const textSlot = inner.inputs.findIndex((input) => input.name === 'text')
+  if (textSlot < 0) throw new Error('CLIPTextEncode has no text input slot')
+  if (!source.connect(0, inner, textSlot))
+    throw new Error('could not connect the promotable widget input')
+  return graph.convertToSubgraph(new Set([inner])).node
+}
+
+async function probeSubgraphForm(
+  lg: { LGraph: typeof LGraph; LGraphNode: typeof LGraphNode },
+  createNode: (type: string) => LGraphNode | null,
+  pristine: PristineSerialization,
+  scenario: string,
+  dress: (host: LGraphNode) => void
+): Promise<SubgraphFormProbe> {
+  try {
+    const host = await buildSubgraphHost(lg, createNode)
+    dress(host)
+    const capture = captureSerialization(host)
+    if (!capture) return { scenario, err: 'host serialize threw' }
+    const shared = {
+      serializeWidgets: host.serialize_widgets,
+      replayed: !capture.captured && !!host.last_serialization
+    }
+    const produced = capture.captured ? capture.produced : undefined
+    const actual = verdictOf(host.widgets, capture.serialised, produced, {
+      ...shared,
+      lastWriter: coreIsLastWriter(host, pristine)
+    })
+    const atReturn = verdictOf(host.widgets, capture.serialised, produced, {
+      ...shared,
+      lastWriter: true
+    })
+    const atHook = verdictOf(
+      host.widgets,
+      { widgets_values: produced },
+      produced,
+      { ...shared, lastWriter: true }
+    )
+    return {
+      scenario,
+      verdict: actual.verdict,
+      needsForm: needsFormButHasNone(capture.serialised),
+      coreIsLastWriter: coreIsLastWriter(host, pristine),
+      widgets: host.widgets?.length ?? 0,
+      ifAssumedFinal: atReturn.verdict,
+      ifAssumedFinalAtHookSite: atHook.verdict,
+      wrongOrder: atHook.order,
+      finalValues: capture.serialised.widgets_values
+    }
+  } catch (e) {
+    return { scenario, err: errMsg(e) }
+  }
+}
+
+const SUBGRAPH_SCENARIOS: {
+  scenario: string
+  dress: (host: LGraphNode) => void
+}[] = [
+  { scenario: 'promoted-only', dress: () => {} },
+  {
+    scenario: 'plus-custom-widget',
+    dress: (host) => {
+      host.addCustomWidget({
+        name: 'EXTRA',
+        type: 'X.EXTRA',
+        value: 1,
+        options: {},
+        y: 0,
+        computeSize: () => [100, 20]
+      })
+    }
+  }
+]
+
+function emptyCensus(source: string, classes: number): RegistryFormCensus {
+  return {
+    source,
+    classes,
+    registered: 0,
+    registerErrors: [],
+    histogram: {},
+    refusals: {},
+    needsForm: [],
+    byModule: {},
+    digest: '',
+    subgraph: [],
+    prototypePatched: { serialize: false, serializeFromStoreState: false },
+    hookErrors: []
+  }
+}
+
+function recordVerdict(
+  census: RegistryFormCensus,
+  name: string,
+  module: string,
+  verdict: FormVerdict,
+  needsForm: boolean
+): void {
+  census.histogram[verdict] = (census.histogram[verdict] ?? 0) + 1
+  if (verdict !== 'provable') census.refusals[name] = verdict
+  if (needsForm) census.needsForm.push(name)
+  const rollup = (census.byModule[module] ??= [0, 0])
+  rollup[1]++
+  if (verdict === 'provable') rollup[0]++
+}
+
+export async function censusRegistryForms(options: {
+  lg: { LGraph: typeof LGraph; LGraphNode: typeof LGraphNode }
+  createNode: (type: string) => LGraphNode | null
+  seedRootGraph: (graph: LGraph) => void
+  pristine: PristineSerialization
+  drainHookErrors: () => string[]
+}): Promise<RegistryFormCensus> {
+  const { lg, createNode, seedRootGraph, pristine, drainHookErrors } = options
+  let census = emptyCensus(shapeDefsPath(), 0)
+  try {
+    const defs = loadShapeDefs()
+    census = emptyCensus(shapeDefsPath(), Object.keys(defs).length)
+    drainHookErrors()
+    const { registered, errors } = await registerShapeDefs(defs)
+    census.registered = registered
+    census.registerErrors = errors
+
+    const graph = new lg.LGraph()
+    seedRootGraph(graph)
+    const verdicts: string[] = []
+    for (const name of Object.keys(defs).sort()) {
+      const { verdict, needsForm } = proveFreshNode(
+        graph,
+        name,
+        createNode,
+        pristine
+      )
+      recordVerdict(
+        census,
+        name,
+        defs[name].python_module ?? 'unknown',
+        verdict,
+        needsForm
+      )
+      verdicts.push(`${name}=${verdict}`)
+    }
+    census.digest = crypto
+      .createHash('sha256')
+      .update(verdicts.join('\n'))
+      .digest('hex')
+    for (const { scenario, dress } of SUBGRAPH_SCENARIOS) {
+      census.subgraph.push(
+        await probeSubgraphForm(lg, createNode, pristine, scenario, dress)
+      )
+    }
+    census.prototypePatched = {
+      serialize: lg.LGraphNode.prototype.serialize !== pristine.serialize,
+      serializeFromStoreState:
+        lg.LGraphNode.prototype.serializeFromStoreState !==
+        pristine.serializeFromStoreState
+    }
+    census.hookErrors = [...new Set(drainHookErrors())].slice(0, 20)
+  } catch (e) {
+    census.err = errMsg(e)
+  }
+  return census
+}
+
 async function installGlobals() {
   const lg = await import('@/lib/litegraph/src/litegraph')
   const appMod = await import('@/scripts/app')
@@ -173,14 +683,299 @@ async function installGlobals() {
   return { lg, app: appMod.app }
 }
 
+type MatrixApp = Awaited<ReturnType<typeof installGlobals>>['app']
+type Op = (
+  name: string,
+  fn: () => unknown,
+  dispatching?: boolean,
+  measured?: LGraph
+) => Promise<void>
+
+const LIFECYCLE_HOOK_TIMEOUT_MS = 10_000
+
+function settleWithin<T>(work: Promise<T>, method: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const expiry = new Promise<never>((_, reject) => {
+    timer = setTimeout(
+      () =>
+        reject(
+          new Error(
+            `${method} did not settle within ${LIFECYCLE_HOOK_TIMEOUT_MS} ms`
+          )
+        ),
+      LIFECYCLE_HOOK_TIMEOUT_MS
+    )
+  })
+  return Promise.race([work, expiry]).finally(() => clearTimeout(timer))
+}
+
+async function createLifecycle(app: MatrixApp, GraphClass: new () => LGraph) {
+  const { useExtensionService } =
+    await import('@/platform/extensions/services/extensionService')
+  const service = useExtensionService()
+  const invokeAsync = service.invokeExtensionsAsync as (
+    method: string,
+    ...args: unknown[]
+  ) => Promise<unknown>
+  const invoke = (method: string, ...args: unknown[]) =>
+    settleWithin(invokeAsync(method, ...args), method)
+  const createRootGraph: unknown = Reflect.get(app, 'createRootGraph')
+  const perWorkflowRoots = typeof createRootGraph === 'function'
+  const record: Record<string, string> = {}
+  return {
+    service,
+    invoke,
+    perWorkflowRoots,
+    record,
+    newRootGraph: (): LGraph =>
+      typeof createRootGraph === 'function'
+        ? Reflect.apply(createRootGraph, app, [])
+        : new GraphClass(),
+    configureArgs: (target: LGraph): unknown[] =>
+      perWorkflowRoots ? [{ graph: target, workflow: null }] : [],
+    async run(method: string, ...args: unknown[]) {
+      try {
+        await invoke(method, ...args)
+        record[method] = 'OK'
+      } catch (e) {
+        record[method] = errMsg(e)
+      }
+    }
+  }
+}
+
+type Lifecycle = Awaited<ReturnType<typeof createLifecycle>>
+
+function defaultGraphData() {
+  return structuredClone(defaultWorkflow) as unknown as Parameters<
+    LGraph['configure']
+  >[0]
+}
+
+async function loadWithHooks(
+  lifecycle: Lifecycle,
+  op: Op,
+  target: LGraph,
+  phase: string
+) {
+  const { invoke, configureArgs, service } = lifecycle
+  await op(`${phase}:beforeLoadGraph`, () => invoke('beforeLoadGraph'))
+  const data = defaultGraphData()
+  await op(`${phase}:beforeConfigureGraph`, () =>
+    invoke('beforeConfigureGraph', data, [], ...configureArgs(target))
+  )
+  await op(phase, () => target.configure(data))
+  await op(`${phase}:loadedGraphNode`, () => {
+    for (const node of target._nodes)
+      service.invokeExtensions('loadedGraphNode', node)
+  })
+  await op(`${phase}:afterConfigureGraph`, () =>
+    invoke('afterConfigureGraph', [], ...configureArgs(target))
+  )
+  await op(`${phase}:afterLoadGraph`, () => invoke('afterLoadGraph'))
+}
+
+type SnapshotRead = { ok: true; text: string } | { ok: false; text: string }
+
+async function snapshotLoad(app: MatrixApp, target: LGraph) {
+  const capture = async (read: () => unknown): Promise<SnapshotRead> => {
+    try {
+      return { ok: true, text: S(await read()) }
+    } catch (e) {
+      return { ok: false, text: 'THREW ' + errMsg(e) }
+    }
+  }
+  return {
+    serialised: await capture(() => ({ ...target.serialize(), id: undefined })),
+    prompt: await capture(async () => (await app.graphToPrompt(target)).output)
+  }
+}
+
+type LoadSnapshot = Awaited<ReturnType<typeof snapshotLoad>>
+
+function readsMatch(first: SnapshotRead, second: SnapshotRead) {
+  return first.ok && second.ok && first.text === second.text
+}
+
+function compareLoads(first: LoadSnapshot, second: LoadSnapshot) {
+  const serialisationMatches = readsMatch(first.serialised, second.serialised)
+  const promptMatches = readsMatch(first.prompt, second.prompt)
+  return {
+    serialisationMatches,
+    promptMatches,
+    ...(serialisationMatches
+      ? {}
+      : {
+          firstSerialised: first.serialised.text,
+          secondSerialised: second.serialised.text
+        }),
+    ...(promptMatches
+      ? {}
+      : { firstPrompt: first.prompt.text, secondPrompt: second.prompt.text })
+  }
+}
+
+async function loadSecondWorkflow(
+  lifecycle: Lifecycle,
+  op: Op,
+  app: MatrixApp,
+  firstRoot: LGraph,
+  firstLoad: LoadSnapshot,
+  createNode: (type: string) => LGraphNode | null
+) {
+  const secondRoot = lifecycle.perWorkflowRoots
+    ? lifecycle.newRootGraph()
+    : firstRoot
+  const opOnSecondRoot: Op = (name, fn) => op(name, fn, true, secondRoot)
+  Reflect.set(app, 'rootGraphInternal', secondRoot)
+  await loadWithHooks(lifecycle, opOnSecondRoot, secondRoot, 'secondRoot')
+  const secondLoad = await snapshotLoad(app, secondRoot)
+  await opOnSecondRoot('secondRoot:addRemove', () => {
+    const node = createNode('EmptyLatentImage')
+    if (!node) return
+    secondRoot.add(node)
+    secondRoot.remove(node)
+  })
+  if (lifecycle.perWorkflowRoots) {
+    await op('switchBack:beforeLoadGraph', () =>
+      lifecycle.invoke('beforeLoadGraph')
+    )
+    Reflect.set(app, 'rootGraphInternal', firstRoot)
+    await op('switchBack:afterLoadGraph', () =>
+      lifecycle.invoke('afterLoadGraph')
+    )
+  }
+  return compareLoads(firstLoad, secondLoad)
+}
+
+interface FormRow {
+  t: string
+  v: string
+  o: number
+  k: number
+  w: number
+  a: number | string
+  src: string
+}
+
+type FormProducer = typeof WidgetValuesForm
+
+function positionalShape(positional: unknown): number | string {
+  if (Array.isArray(positional)) return positional.length
+  return positional == null ? 'absent' : 'dict'
+}
+
+function sameOrder(a: readonly string[], b: readonly string[]): boolean {
+  return a.length === b.length && a.every((name, i) => name === b[i])
+}
+
+function agreementVerdict(a: number | string, serialisable: number): string {
+  if (a === 'dict') return 'emitAgree:dictValues'
+  if (a === 'absent') return 'emitAgree:noPositional'
+  return a === serialisable ? 'emitAgree' : 'emitAgree:positionalSkew'
+}
+
+function declineVerdict(reason: string): string {
+  return `decline:${reason}`
+}
+
+function emittedFormVerdict(
+  order: readonly string[],
+  keyOrder: string[],
+  a: number | string,
+  serialisable: number
+): string {
+  const canonicalOrder = Object.keys(
+    Object.fromEntries(order.map((n) => [n, true]))
+  )
+  if (!sameOrder(keyOrder, canonicalOrder)) return 'emitDisagree:keyOrder'
+  return agreementVerdict(a, serialisable)
+}
+
+function classifyFormNode(
+  node: LGraphNode,
+  sn: ISerialisedNode | undefined,
+  producer: FormProducer,
+  src: string
+): FormRow {
+  const live = node.widgets ?? []
+  const positional: unknown = sn?.widgets_values
+  const a = positionalShape(positional)
+  const at = (v: string, o = 0, k = 0): FormRow => ({
+    t: node.type,
+    v,
+    o,
+    k,
+    w: live.length,
+    a,
+    src
+  })
+
+  if (!sn) return at('noSerialisedNode')
+  const named = sn.widgets_values_named
+  if (named == null || typeof named !== 'object')
+    return at(positional == null ? 'absent' : 'noNamed')
+  if (node.isVirtualNode) return at('decline:virtual_node')
+
+  const values = producer.valueWidgetsOnly(node, named)
+  const keyOrder = Object.keys(values)
+  const verdict = producer.classifyWidgetValuesForm(node, values, sn)
+  if (!verdict.declared)
+    return at(declineVerdict(verdict.reason), 0, keyOrder.length)
+
+  const { order } = verdict.form
+  const serialisable = live.filter((w) => w.serialize !== false).length
+  return at(
+    emittedFormVerdict(order, keyOrder, a, serialisable),
+    order.length,
+    keyOrder.length
+  )
+}
+
+function measureFormAgreement(
+  nodes: LGraphNode[],
+  byId: Map<string, ISerialisedNode>,
+  producer: FormProducer,
+  src: string
+): FormRow[] {
+  return nodes.map((node) =>
+    classifyFormNode(node, byId.get(String(node.id)), producer, src)
+  )
+}
+
+function recordFormAgreement(
+  row: Record<string, unknown>,
+  nodes: LGraphNode[],
+  serialised: { nodes: ISerialisedNode[] },
+  producer: FormProducer,
+  driven: FormRow[],
+  measurementErrors: string[]
+): void {
+  try {
+    const byId = new Map<string, ISerialisedNode>()
+    for (const sn of serialised.nodes) byId.set(String(sn.id), sn)
+    const formNodes = [
+      ...measureFormAgreement(nodes, byId, producer, 'battery'),
+      ...driven
+    ]
+    row.formNodes = formNodes
+    const counts: Record<string, number> = {}
+    for (const r of formNodes) counts[r.v] = (counts[r.v] ?? 0) + 1
+    row.formAgreement = measurementErrors.length
+      ? { ...counts, harnessError: measurementErrors.join(' | ') }
+      : counts
+  } catch (e) {
+    row.formAgreement = {
+      harnessError: [...measurementErrors, errMsg(e)].join(' | ')
+    }
+    row.formNodes = driven
+  }
+}
+
 function signature(graph: LGraph, store: WidgetValueStore | undefined) {
   const nodes = [...graph._nodes]
     .sort((a, b) => Number(a.id) - Number(b.id))
     .map((n) => {
-      // Vue-renderer observable: the widget rows the store would draw, beside
-      // the live widget array litegraph draws. r counts store rows that are
-      // still live; st names every store row, so a row the pack dropped from
-      // node.widgets but left in the store still shows up.
       let r: number | string = UNMEASURED
       let st = UNMEASURED
       if (store) {
@@ -198,19 +993,19 @@ function signature(graph: LGraph, store: WidgetValueStore | undefined) {
         id: n.id,
         type: n.type,
         mode: n.mode,
-        collapsed: !!n.flags?.collapsed,
+        collapsed: !!n.flags.collapsed,
         widgets: n.widgets?.length ?? 0,
         wn: (n.widgets ?? []).map((w) => `${w.name}=${w.type}`).join(','),
         r,
         st,
-        in: (n.inputs ?? []).map((_, i: number) => {
+        in: n.inputs.map((_, i: number) => {
           try {
             return n.isInputConnected(i) ? 1 : 0
           } catch {
             return 'e'
           }
         }),
-        out: (n.outputs ?? []).map((_, i: number) => {
+        out: n.outputs.map((_, i: number) => {
           try {
             return n.isOutputConnected(i) ? 1 : 0
           } catch {
@@ -224,40 +1019,34 @@ function signature(graph: LGraph, store: WidgetValueStore | undefined) {
 
 export async function runPack(
   pack: string,
-  loaders: Record<string, () => Promise<unknown>>,
+  loaders: Partial<Record<string, () => Promise<unknown>>>,
   entries: string[],
   safe: string
 ) {
-  // Write-ahead stub: a pack that hangs past the test timeout or kills the
-  // worker leaves this row behind, so the shard's rows==specs check reads
-  // it as pack noise (counted, reported) instead of a harness failure.
   const dir = process.env.MATRIX_OUT ?? '/tmp/matrix'
   fs.mkdirSync(dir, { recursive: true })
   const rowPath = `${dir}/${safe}.json`
   fs.writeFileSync(rowPath, JSON.stringify({ pack, safe, incomplete: true }))
-  // The app CONTAINS throwing extension hooks (extensionService catches and
-  // console.errors them), so a pack whose hook throws would otherwise read
-  // clean. Capture the containment signature as row data.
   const hookErrors: string[] = []
+  const hookErrorMethods = new Set<string>()
   vi.spyOn(console, 'error').mockImplementation((...args: unknown[]) => {
     const text = args.map(argText).join(' ').replace(/\s+/g, ' ')
-    if (text.includes('Error calling extension'))
-      hookErrors.push(text.slice(0, 200))
+    if (!text.includes('Error calling extension')) return
+    hookErrors.push(text.slice(0, 200))
+    hookErrorMethods.add(/ method '([^']+)'/.exec(text)?.[1] ?? 'unattributed')
   })
   vi.spyOn(console, 'warn').mockImplementation(() => {})
   vi.spyOn(console, 'log').mockImplementation(() => {})
   vi.spyOn(console, 'info').mockImplementation(() => {})
   setActivePinia(createTestingPinia({ stubActions: false }))
 
-  // safe is the filename this row is written under; carrying it in the row
-  // lets the verdict job cross-check filename against row identity.
   const row: Record<string, unknown> = { pack, safe }
   const ops: Record<string, OpRecord> = {}
   let storeReadErrors = 0
   const { lg, app } = await installGlobals()
   const { LGraph, LiteGraph } = lg
+  const pristine = captureSerializationEntryPoints(lg.LGraphNode)
 
-  // ---- LOAD the pack's real entry files ---------------------------------
   const typesBefore = new Set(Object.keys(LiteGraph.registered_node_types))
   const load: Record<string, string> = {}
   for (const key of entries) {
@@ -276,35 +1065,43 @@ export async function runPack(
   row.load = load
   row.loadedOk = Object.values(load).filter((v) => v === 'OK').length
 
-  // ---- register battery defs (invokes pack beforeRegisterNodeDef) -------
+  const lifecycle = await createLifecycle(app, LGraph)
+  const graph = lifecycle.newRootGraph()
+  Reflect.set(app, 'rootGraphInternal', graph)
+  row.perWorkflowRoots = lifecycle.perWorkflowRoots
+
+  await lifecycle.run('init')
+
   const { useLitegraphService } = await import('@/services/litegraphService')
   const svc = useLitegraphService()
   const regErrs: string[] = []
-  for (const [name, d] of Object.entries(DEFS)) {
+  const batteryDefs = Object.entries(DEFS).map(([name, d]) => ({
+    name,
+    display_name: name,
+    category: 't',
+    python_module: 'nodes',
+    description: '',
+    output_is_list: [],
+    output_node: name === 'SaveImage',
+    ...d
+  }))
+  const defsByName: Record<string, (typeof batteryDefs)[number]> =
+    Object.fromEntries(batteryDefs.map((d) => [d.name, d]))
+  await lifecycle.run('addCustomNodeDefs', defsByName)
+  const effectiveBatteryDefs = batteryDefs.map((d) => defsByName[d.name] ?? d)
+  for (const nodeDef of effectiveBatteryDefs) {
     try {
-      // Bound to the service's real signature: a node-def contract change
-      // breaks this cast in the same PR instead of silently measuring a
-      // shape the app no longer accepts.
-      await svc.registerNodeDef(name, {
-        name,
-        display_name: name,
-        category: 't',
-        python_module: 'nodes',
-        description: '',
-        output_is_list: [],
-        output_node: name === 'SaveImage',
-        ...(d as object)
-      } as Parameters<typeof svc.registerNodeDef>[1])
+      await svc.registerNodeDef(nodeDef.name, nodeDef)
     } catch (e) {
-      regErrs.push(`${name}:${errMsg(e)}`)
+      regErrs.push(`${nodeDef.name}:${errMsg(e)}`)
     }
   }
+  const { useNodeDefStore } = await import('@/stores/nodeDefStore')
+  useNodeDefStore().updateNodeDefs(effectiveBatteryDefs)
   row.registerNodeDef = regErrs.join('|') || 'OK'
 
-  // ---- registerCustomNodes (frontend-only pack node types) --------------
   try {
-    const { useExtensionService } = await import('@/services/extensionService')
-    await useExtensionService().invokeExtensionsAsync('registerCustomNodes')
+    await lifecycle.service.invokeExtensionsAsync('registerCustomNodes')
     row.registerCustomNodes = 'OK'
   } catch (e) {
     row.registerCustomNodes = errMsg(e)
@@ -314,7 +1111,8 @@ export async function runPack(
     .sort()
   row.newTypes = newTypes
   try {
-    const { useExtensionStore } = await import('@/stores/extensionStore')
+    const { useExtensionStore } =
+      await import('@/platform/extensions/stores/extensionStore')
     const st = useExtensionStore()
     row.extTotal = st.extensions.length
     row.extEnabled = st.enabledExtensions.length
@@ -323,12 +1121,8 @@ export async function runPack(
     row.extTotal = errMsg(e)
   }
 
-  // ---- graph + boot-order fidelity --------------------------------------
-  const graph = new LGraph()
-  // ComfyApp.setup() non-null-asserts five DOM elements and needs a 2D
-  // context, so it cannot boot here. DOM widgets read app.rootGraph while
-  // graph.configure runs, so the private field has to be seeded directly.
-  Reflect.set(app, 'rootGraphInternal', graph)
+  await lifecycle.run('setup')
+
   const byType = (t: string) => graph._nodes.find((n) => n.type === t)
 
   let wvStore: WidgetValueStore | undefined
@@ -340,10 +1134,9 @@ export async function runPack(
   }
   row.storeMeasured = !!wvStore
 
-  // LGraphCanvas cannot be constructed under happy-dom ("This browser doesn't
-  // support Canvas"), but BaseWidget.setValue only reads graph_mouse off it
-  // and hands it to widget.callback. A prototype-backed stand-in keeps the
-  // real method surface for pack callbacks that reach for one.
+  const formProducer =
+    await import('@/workbench/extensions/agent/crdt/widgetValuesForm')
+
   const canvas: LGraphCanvas = Object.assign(
     Object.create(lg.LGraphCanvas.prototype) as LGraphCanvas,
     { graph_mouse: [0, 0] as Point, graph }
@@ -360,8 +1153,6 @@ export async function runPack(
     }
   )
 
-  // The real edit path: setValue fires widget.callback, node.onWidgetChanged
-  // and graph.incrementVersion(). A bare `w.value =` fires none of them.
   const editWidgetValue = (
     node: LGraphNode | undefined,
     name: string,
@@ -382,16 +1173,19 @@ export async function runPack(
     DISPATCHED = false
   }
 
-  /** `nodeId:widgetName` of every row the battery desynced deliberately. */
-  const mangled = new Set<string>()
+  const mangled = new WeakMap<LGraphNode, Set<string>>()
+  function markMangled(node: LGraphNode, widgetName: string) {
+    mangled.set(node, (mangled.get(node) ?? new Set()).add(widgetName))
+  }
+  function isMangled(node: LGraphNode | null | undefined, widgetName: string) {
+    return !!node && !!mangled.get(node)?.has(widgetName)
+  }
 
-  // dispatching=false marks an op that is a bare property or array write with
-  // no call into the app: its err channel cannot fail, so the summarizer must
-  // exclude it from the gated cleanliness percentage.
   async function op(
     name: string,
-    fn: () => unknown | Promise<unknown>,
-    dispatching = true
+    fn: () => unknown,
+    dispatching = true,
+    measured: LGraph = graph
   ) {
     DEPR = []
     NOTE = ''
@@ -404,14 +1198,10 @@ export async function runPack(
     }
     let sig: string
     try {
-      sig = signature(graph, wvStore)
+      sig = signature(measured, wvStore)
     } catch (e) {
       sig = 'SIGFAIL ' + errMsg(e)
     }
-    // Vue-renderer desync: a live widget row the store does not back, or backs
-    // with a different type. Rows the battery mangled itself are skipped -
-    // they diverge by construction and are permanent once made, so leaving
-    // them in would mask a real divergence on every op that follows.
     let desync = ''
     try {
       const d = JSON.parse(sig) as { nodes?: SigNode[] }
@@ -422,7 +1212,10 @@ export async function runPack(
         const rows = (csv: unknown) =>
           String(csv ?? '')
             .split(',')
-            .filter((e) => e && !mangled.has(`${n.id}:${e.split('=')[0]}`))
+            .filter(
+              (e) =>
+                e && !isMangled(measured.getNodeById(n.id), e.split('=')[0])
+            )
         const live = rows(n.wn).sort()
         const stored = rows(n.st).sort()
         const liveNames = new Set(live.map((e) => e.split('=')[0]))
@@ -436,7 +1229,7 @@ export async function runPack(
           .map((n) => `${n.type}#${n.id}(w${n.widgets}/r${n.r})`)
           .join(';')
     } catch {
-      /* sig unparseable */
+      desync = ''
     }
     ops[name] = {
       err,
@@ -448,20 +1241,8 @@ export async function runPack(
     }
   }
 
-  // ---- the user-operation battery ---------------------------------------
-  await op('load', () =>
-    graph.configure(
-      structuredClone(defaultWorkflow) as unknown as Parameters<
-        typeof graph.configure
-      >[0]
-    )
-  )
-  // Harness self-check: if the default workflow did not materialize, the
-  // if-guarded ops below would all no-op and report a vacuously clean pack.
-  // The summarizer withholds the verdict when this fails broadly. Floors of
-  // one below today's workflow (7 nodes / 7 KSampler widgets): tolerate a
-  // legitimate upstream edit removing one item, but a graph missing more
-  // than that would run the battery vacuously and must read as degraded.
+  await loadWithHooks(lifecycle, op, graph, 'load')
+  const firstRootLoad = await snapshotLoad(app, graph)
   const kAfterLoad = byType('KSampler')
   row.selfCheck =
     graph._nodes.length >= 6 && (kAfterLoad?.widgets?.length ?? 0) >= 6
@@ -514,7 +1295,7 @@ export async function runPack(
     () => {
       const k = byType('KSampler')
       const removed = k?.widgets?.splice(0, 1)[0]
-      if (k && removed) mangled.add(`${k.id}:${removed.name}`)
+      if (k && removed) markMangled(k, removed.name)
     },
     false
   )
@@ -530,15 +1311,15 @@ export async function runPack(
     'wConvert',
     () => {
       const k = byType('KSampler')
-      const w = k?.widgets?.find((x) => x.name === 'steps') as
-        | ConvertibleWidget
-        | undefined
+      const w: ConvertibleWidget | undefined = k?.widgets?.find(
+        (x) => x.name === 'steps'
+      )
       if (k && w) {
         w.origType = w.type
         w.origComputeSize = w.computeSize
         w.computeSize = () => [0, -4]
         w.type = 'converted-widget'
-        mangled.add(`${k.id}:${w.name}`)
+        markMangled(k, w.name)
       }
     },
     false
@@ -555,7 +1336,7 @@ export async function runPack(
         y: 0,
         computeSize: () => [100, 20]
       })
-      if (k) mangled.add(`${k.id}:XPOJO`)
+      if (k) markMangled(k, 'XPOJO')
     },
     false
   )
@@ -587,7 +1368,7 @@ export async function runPack(
     const expectedWidget = new ForeignWidget()
     const widgetMethods = ['draw', 'mouse', 'computeSize'] as const
     k.addCustomWidget(foreignWidget)
-    mangled.add(`${k.id}:XFOREIGN`)
+    markMangled(k, 'XFOREIGN')
 
     const widget = k.widgets?.find((item) => item.name === 'XFOREIGN')
     const prototypeMethods = widgetMethods.filter(
@@ -612,29 +1393,40 @@ export async function runPack(
     if (extra) graph.remove(extra)
   })
   await op('addReroute', () => {
-    const link = [...graph.links.values()][0]
+    const link = [...graph.links.values()].at(0)
     if (link) graph.createReroute([500, 500], link)
   })
 
-  // ---- drive the pack's OWN frontend-registered node types --------------
   const driven: Record<string, string> = {}
-  for (const t of newTypes.slice(0, 8)) {
+  const formDriven: FormRow[] = []
+  const formMeasurementErrors: string[] = []
+  const selectedTypes = newTypes.slice(0, MAX_DRIVEN_TYPES_PER_PACK)
+  row.driveTypesOmitted = newTypes.length - selectedTypes.length
+  for (const t of selectedTypes) {
     DEPR = []
     try {
       const n = LiteGraph.createNode(t)
       if (!n) {
         driven[t] = 'createNode null'
+        formDriven.push({
+          t,
+          v: 'noSerialisedNode',
+          o: 0,
+          k: 0,
+          w: 0,
+          a: 'absent',
+          src: 'driven'
+        })
         continue
       }
       n.pos = [1200, 100]
       graph.add(n)
       const parts = [
-        `in=${n.inputs?.length ?? 0}`,
-        `out=${n.outputs?.length ?? 0}`,
+        `in=${n.inputs.length}`,
+        `out=${n.outputs.length}`,
         `w=${n.widgets?.length ?? 0}`
       ]
-      // try a wildcard-friendly connection into its first input
-      if (n.inputs?.length) {
+      if (n.inputs.length) {
         const ck = byType('CheckpointLoaderSimple')
         try {
           const r = ck?.connect(0, n, 0)
@@ -645,7 +1437,21 @@ export async function runPack(
           parts.push(`conn=THREW ${errMsg(e).slice(0, 40)}`)
         }
       }
-      n.serialize()
+      const sn = n.serialize()
+      try {
+        formDriven.push(
+          ...measureFormAgreement(
+            [n],
+            new Map([[String(n.id), sn]]),
+            formProducer,
+            'driven'
+          )
+        )
+      } catch (e) {
+        const message = errMsg(e)
+        parts.push(`form=THREW ${message.slice(0, 40)}`)
+        formMeasurementErrors.push(`${t}: ${message}`)
+      }
       graph.remove(n)
       if (DEPR.length)
         parts.push(`depr=${[...new Set(DEPR)].join(';').slice(0, 60)}`)
@@ -657,8 +1463,20 @@ export async function runPack(
   row.driveTypes = driven
 
   await op('serialize', () => {
-    row.serialized = S(graph.serialize())
+    const serialised = graph.serialize()
+    row.serialized = S(serialised)
+    recordFormAgreement(
+      row,
+      graph._nodes,
+      serialised,
+      formProducer,
+      formDriven,
+      formMeasurementErrors
+    )
   })
+  row.formAgreement ??= {
+    harnessError: 'serialize threw before the form could be measured'
+  }
   await op('reload', () => {
     const g2 = new LGraph()
     g2.configure(
@@ -670,13 +1488,75 @@ export async function runPack(
   })
   await op('graphToPrompt', async () => {
     const p = await app.graphToPrompt(graph)
-    row.prompt = S(p.output ?? {})
+    row.prompt = S(p.output)
   })
+
+  row.secondRoot = await loadSecondWorkflow(
+    lifecycle,
+    op,
+    app,
+    graph,
+    firstRootLoad,
+    (type) => LiteGraph.createNode(type)
+  )
+  row.lifecycle = lifecycle.record
 
   row.ops = ops
   row.storeReadErrors = storeReadErrors
   row.hookErrors = [...new Set(hookErrors)].slice(0, 20)
+  row.hookErrorMethods = [...hookErrorMethods].sort()
   row.vueNodesMode = LiteGraph.vueNodesMode
+
+  row.formProof = measureFormProof(
+    graph,
+    selectedTypes,
+    (t) => LiteGraph.createNode(t),
+    pristine
+  )
+  fs.writeFileSync(rowPath, JSON.stringify(row))
+  if (process.env.MATRIX_REGISTRY_FORMS === '1') {
+    row.registryForms = await censusRegistryForms({
+      lg,
+      createNode: (t) => LiteGraph.createNode(t),
+      seedRootGraph: (g) => Reflect.set(app, 'rootGraphInternal', g),
+      pristine,
+      drainHookErrors: () => hookErrors.splice(0, hookErrors.length)
+    })
+  }
 
   fs.writeFileSync(rowPath, JSON.stringify(row))
 }
+
+export async function runRegistryCensus(outPath: string): Promise<void> {
+  const hookErrors: string[] = []
+  vi.spyOn(console, 'error').mockImplementation((...args: unknown[]) => {
+    const text = args.map(argText).join(' ').replace(/\s+/g, ' ')
+    if (text.includes('Error calling extension'))
+      hookErrors.push(text.slice(0, 200))
+  })
+  vi.spyOn(console, 'warn').mockImplementation(() => {})
+  vi.spyOn(console, 'log').mockImplementation(() => {})
+  vi.spyOn(console, 'info').mockImplementation(() => {})
+  setActivePinia(createTestingPinia({ stubActions: false }))
+
+  const { lg, app } = await installGlobals()
+  const pristine = captureSerializationEntryPoints(lg.LGraphNode)
+  const census = await censusRegistryForms({
+    lg,
+    createNode: (t) => lg.LiteGraph.createNode(t),
+    seedRootGraph: (g) => Reflect.set(app, 'rootGraphInternal', g),
+    pristine,
+    drainHookErrors: () => hookErrors.splice(0, hookErrors.length)
+  })
+  fs.mkdirSync(path.dirname(outPath), { recursive: true })
+  fs.writeFileSync(
+    outPath,
+    JSON.stringify(
+      { pack: BASELINE_PACK, safe: BASELINE_PACK, registryForms: census },
+      null,
+      1
+    )
+  )
+}
+
+export const BASELINE_PACK = '_registry-baseline'

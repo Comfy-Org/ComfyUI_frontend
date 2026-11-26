@@ -1,4 +1,5 @@
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
+import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'
 
 const GRID_THUMBNAIL_PREVIEW_FORMAT = 'webp;75'
 
@@ -31,28 +32,31 @@ export function getGridThumbnailUrl(url: string): string {
     : `${parsed.pathname}${parsed.search}`
 }
 
-/**
- * Parses an image widget value like "subfolder/filename [type]" into its parts.
- */
+export function extractWidgetStringValue(value: unknown): string | undefined {
+  if (typeof value === 'string') return value
+  if (
+    value &&
+    typeof value === 'object' &&
+    'filename' in value &&
+    typeof value.filename === 'string'
+  )
+    return value.filename
+  return undefined
+}
+
 export function parseImageWidgetValue(raw: string): {
   filename: string
   subfolder: string
   type: string
 } {
-  let value = raw
-  let type = 'input'
-  const typeMatch = value.match(/ \[([^\]]+)\]$/)
-  if (typeMatch) {
-    type = typeMatch[1]
-    value = value.slice(0, -typeMatch[0].length)
+  const { filepath, rootFolder: type } = parseAnnotatedPath(raw)
+  const path = filepath.replaceAll('\\', '/')
+  const slashIndex = path.lastIndexOf('/')
+  return {
+    filename: path.slice(slashIndex + 1),
+    subfolder: path.slice(0, Math.max(slashIndex, 0)),
+    type
   }
-  let subfolder = ''
-  const slashIndex = value.lastIndexOf('/')
-  if (slashIndex !== -1) {
-    subfolder = value.slice(0, slashIndex)
-    value = value.slice(slashIndex + 1)
-  }
-  return { filename: value, subfolder, type }
 }
 
 export const is_all_same_aspect_ratio = (imgs: HTMLImageElement[]): boolean => {

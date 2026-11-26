@@ -1,21 +1,17 @@
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { useImageUploadWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useImageUploadWidget'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
-import type { ResultItem, ResultItemType } from '@/schemas/apiSchema'
-import type { InputSpec } from '@/schemas/nodeDefSchema'
+import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { IComboWidget } from '@comfyorg/graph-model/widgets'
+import type { ResultItem } from '@comfyorg/api-client/executionTypes'
+import { useToast } from '@/components/ui/toast/toastStore'
+import type { InputSpec } from '@comfyorg/object-info-parser'
+import type { useNodeImageUpload } from '@/composables/node/useNodeImageUpload'
 
-type CapturedImageUploadOptions = {
-  onUploadComplete: (paths: (string | ResultItem)[]) => void
-  allow_batch?: boolean
-  folder?: ResultItemType
-  onUploadStart?: (files: File[]) => void
-  onUploadError?: () => void
-}
+type CapturedImageUploadOptions = Parameters<typeof useNodeImageUpload>[1]
 
 const mocks = vi.hoisted(() => ({
   capturedUploadOptions: undefined as CapturedImageUploadOptions | undefined,
@@ -39,18 +35,9 @@ vi.mock<unknown>(import('@/composables/node/useNodeImageUpload'), () => ({
   }
 }))
 
-vi.mock(import('@/i18n'), () => ({
-  t: (key: string) => key
-}))
+vi.mock(import('@/i18n'))
 
-vi.mock(import('@/utils/litegraphUtil'), () => ({
-  addToComboValues: (widget: IComboWidget, value: string) => {
-    const values = widget.options.values
-    if (Array.isArray(values) && !values.includes(value)) {
-      values.push(value)
-    }
-  }
-}))
+vi.mock(import('@/utils/litegraphUtil'))
 
 function createUploadNode(initialValue: string = 'missing.png') {
   const onWidgetChanged = vi.fn()
@@ -74,6 +61,18 @@ function construct(node: LGraphNode) {
     [
       'IMAGEUPLOAD',
       { imageInputName: 'image', image_upload: true }
+    ] as InputSpec,
+    fromPartial({})
+  )
+}
+
+function constructVideo(node: LGraphNode) {
+  useImageUploadWidget()(
+    node,
+    'upload',
+    [
+      'IMAGEUPLOAD',
+      { imageInputName: 'image', video_upload: true }
     ] as InputSpec,
     fromPartial({})
   )
@@ -116,6 +115,15 @@ describe('useImageUploadWidget', () => {
     vi.stubGlobal('requestAnimationFrame', vi.fn())
   })
 
+  it('creates the upload button without an input socket', () => {
+    const { node } = createUploadNode()
+
+    construct(node)
+
+    const uploadWidget = node.widgets?.find((w) => w.name === 'upload')
+    expect(uploadWidget?.options.socketless).toBe(true)
+  })
+
   it('emits onWidgetChanged after upload changes the combo widget value', () => {
     const { fileComboWidget, node, onWidgetChanged } = createUploadNode()
 
@@ -139,6 +147,58 @@ describe('useImageUploadWidget', () => {
     )
   })
 
+  it('gives video upload widgets a filter for uploadable videos', () => {
+    const { node } = createUploadNode()
+    constructVideo(node)
+
+    expect(
+      mocks.capturedUploadOptions?.fileFilter?.(
+        new File([], 'extensionless', { type: 'video/mp4' })
+      )
+    ).toBe(false)
+    expect(
+      mocks.capturedUploadOptions?.fileFilter?.(
+        new File([], 'clip.mp4', { type: 'video/mp4' })
+      )
+    ).toBe(true)
+  })
+
+  it('claims and alerts only when a video lacks an extension', () => {
+    const { node } = createUploadNode()
+    constructVideo(node)
+
+    expect(
+      mocks.capturedUploadOptions?.onReject?.([
+        new File([], 'extensionless', { type: 'video/mp4' })
+      ])
+    ).toBe(true)
+
+    expect(useToast().warning).toHaveBeenCalledWith(
+      'g.videoFilenameExtensionRequired'
+    )
+
+    vi.mocked(useToast().warning).mockClear()
+
+    expect(
+      mocks.capturedUploadOptions?.onReject?.([
+        new File([], 'image.png', { type: 'image/png' })
+      ])
+    ).toBe(false)
+    expect(useToast().warning).not.toHaveBeenCalled()
+  })
+
+  it('claims an extensionless video the browser gave no MIME type', () => {
+    const { node } = createUploadNode()
+    constructVideo(node)
+
+    expect(
+      mocks.capturedUploadOptions?.onReject?.([new File([], 'extensionless')])
+    ).toBe(true)
+    expect(useToast().warning).toHaveBeenCalledWith(
+      'g.videoFilenameExtensionRequired'
+    )
+  })
+
   it('previews the combo value once the initial frame runs', () => {
     const { node } = createUploadNode('beach.jpg')
     const frame = vi.fn()
@@ -155,6 +215,43 @@ describe('useImageUploadWidget', () => {
       }
     )
   })
+
+  it.for([
+    {
+      name: 'classic image',
+      vue: false,
+      build: construct,
+      previewCalls: [[{ block: false }]]
+    },
+    { name: 'Vue image', vue: true, build: construct, previewCalls: [] },
+    {
+      name: 'Vue video',
+      vue: true,
+      build: constructVideo,
+      previewCalls: [[{ block: false }]]
+    }
+  ])(
+    'updates outputs and schedules the required legacy preview for $name when the combo changes',
+    ({ vue, build, previewCalls }) => {
+      const previousMode = LiteGraph.vueNodesMode
+      onTestFinished(() => {
+        LiteGraph.vueNodesMode = previousMode
+      })
+      LiteGraph.vueNodesMode = vue
+      const { fileComboWidget, node } = createUploadNode()
+      build(node)
+      fileComboWidget.value = 'beach.jpg'
+
+      fileComboWidget.callback?.('beach.jpg')
+
+      expect(useNodeOutputStore().setNodeOutputs).toHaveBeenCalledWith(
+        node,
+        'beach.jpg',
+        { isAnimated: false }
+      )
+      expect(mocks.showPreview.mock.calls).toEqual(previewCalls)
+    }
+  )
 
   it('does not preview a combo whose value is still unset', () => {
     const { fileComboWidget, node } = createUploadNode()

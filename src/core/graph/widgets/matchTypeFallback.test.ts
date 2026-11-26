@@ -1,8 +1,8 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
-import type { InputSpec } from '@/schemas/nodeDefSchema'
+import { transformInputSpecV1ToV2 } from '@comfyorg/object-info-parser/migration'
+import type { InputSpec } from '@comfyorg/object-info-parser'
 import { useLitegraphService } from '@/services/litegraphService'
 
 function testNode() {
@@ -17,7 +17,6 @@ describe('malformed COMFY_MATCHTYPE_V3 spec', () => {
     const graph = new LGraph()
     const node = testNode()
     graph.add(node)
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
     const malformed: InputSpec = [
       'COMFY_MATCHTYPE_V3',
@@ -30,7 +29,7 @@ describe('malformed COMFY_MATCHTYPE_V3 spec', () => {
 
     expect(node.inputs.map((i) => i.name)).toEqual(['value'])
     expect(node.inputs[0].type).toBe('*')
-    expect(warn).toHaveBeenCalledWith(
+    expect(console.warn).toHaveBeenCalledWith(
       expect.stringContaining('COMFY_MATCHTYPE_V3 spec for input "value"'),
       expect.anything()
     )
@@ -41,6 +40,5 @@ describe('malformed COMFY_MATCHTYPE_V3 spec', () => {
     source.connect(0, node, 0)
 
     expect(node.inputs[0].link).not.toBeNull()
-    warn.mockRestore()
   })
 })

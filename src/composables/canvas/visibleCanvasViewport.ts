@@ -1,11 +1,29 @@
-import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
-import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
-import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
+import type { ReadOnlyRect } from '@comfyorg/shared-frontend-utils/geometry'
 
-export function visibleCanvasViewport(canvas: LGraphCanvas): ReadOnlyRect {
-  const panel = useAgentPanelStore()
-  const width = canvas.canvas.width / window.devicePixelRatio
-  const height = canvas.canvas.height / window.devicePixelRatio
-  const coveredWidth = panel.isVisible ? panel.width : 0
-  return [0, 0, Math.max(width - coveredWidth, 0), height]
+import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+
+function renderedRect(selector: string): DOMRect | undefined {
+  const rect = document.querySelector(selector)?.getBoundingClientRect()
+  return rect && rect.width > 0 ? rect : undefined
+}
+
+/** The CSS-pixel part of the canvas that no side panel, properties panel or agent panel covers. */
+export function visibleCanvasViewport(
+  canvas: Pick<LGraphCanvas, 'ds'>
+): ReadOnlyRect {
+  const [width, height] = canvas.ds.getViewportSize()
+  const leftCover = renderedRect('#first-side-panel')
+  const rightCovers = [
+    renderedRect('#last-side-panel'),
+    renderedRect('[data-testid="docked-agent-panel"]')
+  ].filter((rect) => rect !== undefined)
+  if (!leftCover && rightCovers.length === 0) return [0, 0, width, height]
+
+  const canvasLeft = canvas.ds.element.getBoundingClientRect().left
+  const left = Math.max(0, leftCover ? leftCover.right - canvasLeft : 0)
+  const right = Math.min(
+    width,
+    ...rightCovers.map((rect) => rect.left - canvasLeft)
+  )
+  return right > left ? [left, 0, right - left, height] : [0, 0, width, height]
 }

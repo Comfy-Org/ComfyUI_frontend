@@ -30,7 +30,7 @@ export function buildFfQuery(flags: Record<string, unknown>): string {
   const params = new URLSearchParams()
   for (const [key, value] of Object.entries(flags)) {
     const encodedValue =
-      value === true ? key : `${key}:${JSON.stringify(value) ?? String(value)}`
+      value === true ? key : `${key}:${JSON.stringify(value)}`
     params.append('ff', encodedValue)
   }
   const query = params.toString()
@@ -49,7 +49,13 @@ export function extractEnumValues(source: string): string[] {
 export function discoverFlagKeys(projectRoot: string): string[] {
   try {
     const source = readFileSync(
-      join(projectRoot, 'src', 'composables', 'useFeatureFlags.ts'),
+      join(
+        projectRoot,
+        'src',
+        'platform',
+        'remoteConfig',
+        'serverFeatureFlag.ts'
+      ),
       'utf-8'
     )
     return extractEnumValues(source)
@@ -68,7 +74,8 @@ function formatString(value: string): string {
 
 function formatValue(value: unknown): string {
   if (typeof value === 'string') return formatString(value)
-  return JSON.stringify(value) ?? 'undefined'
+  if (value === undefined) return 'undefined'
+  return JSON.stringify(value)
 }
 
 export function formatInitialFeatureFlags(

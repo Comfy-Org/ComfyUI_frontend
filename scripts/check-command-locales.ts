@@ -1,0 +1,374 @@
+import { globSync, readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import ts from 'typescript'
+
+import { normalizeI18nKey } from '@comfyorg/shared-frontend-utils/formatUtil'
+
+export const COMMAND_SOURCE_GLOB = 'src/**/*.ts'
+
+export const COMMANDS_CATALOG_FILE = 'src/locales/en/commands.json'
+
+export interface DeclaredCommand {
+  id: string
+  file: string
+  line: number
+}
+
+export interface UnresolvedCommand {
+  file: string
+  line: number
+}
+
+export interface CommandLocaleGap extends DeclaredCommand {
+  key: string
+  reason: 'missing-entry' | 'missing-label'
+}
+
+export interface CommandCatalog {
+  [key: string]: unknown
+}
+
+const isGeneratedOrTestFile = (file: string): boolean =>
+  /\.(test|spec)\.ts$/.test(file) ||
+  file.endsWith('.d.ts') ||
+  file.startsWith('src/locales/') ||
+  file.includes('__tests__/') ||
+  file.includes('__mocks__/') ||
+  file.includes('__fixtures__/')
+
+export function findCommandSourceFiles(repositoryRoot: string): string[] {
+  return globSync(COMMAND_SOURCE_GLOB, { cwd: repositoryRoot })
+    .map((file) => file.replaceAll('\\', '/'))
+    .filter((file) => !isGeneratedOrTestFile(file))
+    .sort()
+}
+
+function arrayLiteral(
+  expression: ts.Expression | undefined
+): ts.ArrayLiteralExpression | undefined {
+  if (!expression) return
+  if (ts.isArrayLiteralExpression(expression)) return expression
+  if (ts.isAsExpression(expression) || ts.isSatisfiesExpression(expression))
+    return arrayLiteral(expression.expression)
+  if (ts.isParenthesizedExpression(expression))
+    return arrayLiteral(expression.expression)
+}
+
+function propertyName(name: ts.PropertyName): string | undefined {
+  if (ts.isIdentifier(name) || ts.isStringLiteral(name)) return name.text
+}
+
+function isInsideMenuCommands(node: ts.Node): boolean {
+  for (
+    let current = node.parent;
+    !ts.isSourceFile(current);
+    current = current.parent
+  ) {
+    if (
+      (ts.isPropertyAssignment(current) &&
+        propertyName(current.name) === 'menuCommands') ||
+      (ts.isVariableDeclaration(current) &&
+        ts.isIdentifier(current.name) &&
+        current.name.text === 'menuCommands')
+    )
+      return true
+  }
+  return false
+}
+
+function isComfyExtensionType(type: ts.TypeNode | undefined): boolean {
+  return (
+    type !== undefined &&
+    ts.isTypeReferenceNode(type) &&
+    ts.isIdentifier(type.typeName) &&
+    type.typeName.text === 'ComfyExtension'
+  )
+}
+
+function isRegisterExtensionCall(node: ts.Node): boolean {
+  if (!ts.isCallExpression(node)) return false
+  const expression = node.expression
+  return (
+    (ts.isIdentifier(expression) && expression.text === 'registerExtension') ||
+    (ts.isPropertyAccessExpression(expression) &&
+      expression.name.text === 'registerExtension')
+  )
+}
+
+function functionReturnType(node: ts.Node): ts.TypeNode | undefined {
+  for (
+    let current = node.parent;
+    !ts.isSourceFile(current);
+    current = current.parent
+  ) {
+    if (
+      ts.isFunctionDeclaration(current) ||
+      ts.isFunctionExpression(current) ||
+      ts.isArrowFunction(current) ||
+      ts.isMethodDeclaration(current)
+    )
+      return current.type
+  }
+}
+
+type ExpressionWrapper =
+  | ts.AsExpression
+  | ts.SatisfiesExpression
+  | ts.ParenthesizedExpression
+
+function expressionWrapper(node: ts.Node): ExpressionWrapper | undefined {
+  if (ts.isAsExpression(node)) return node
+  if (ts.isSatisfiesExpression(node)) return node
+  if (ts.isParenthesizedExpression(node)) return node
+}
+
+function wrapperType(node: ExpressionWrapper): ts.TypeNode | undefined {
+  if (ts.isAsExpression(node) || ts.isSatisfiesExpression(node))
+    return node.type
+}
+
+function isComfyExtensionReturn(
+  expression: ts.Expression,
+  parent: ts.Node
+): boolean {
+  if (ts.isArrowFunction(parent))
+    return parent.body === expression && isComfyExtensionType(parent.type)
+  if (ts.isReturnStatement(parent))
+    return isComfyExtensionType(functionReturnType(expression))
+  return false
+}
+
+function isComfyExtensionObject(node: ts.ObjectLiteralExpression): boolean {
+  let expression: ts.Expression = node
+  for (let wrapper = expressionWrapper(expression.parent); wrapper;) {
+    if (isComfyExtensionType(wrapperType(wrapper))) return true
+    expression = wrapper
+    wrapper = expressionWrapper(expression.parent)
+  }
+  const parent = expression.parent
+  if (ts.isVariableDeclaration(parent)) return isComfyExtensionType(parent.type)
+  if (isComfyExtensionReturn(expression, parent)) return true
+  return isRegisterExtensionCall(parent)
+}
+
+function unresolvedExtensionCommands(
+  node: ts.Node
+): ts.PropertyAssignment | ts.ShorthandPropertyAssignment | undefined {
+  if (
+    (!ts.isPropertyAssignment(node) &&
+      !ts.isShorthandPropertyAssignment(node)) ||
+    propertyName(node.name) !== 'commands' ||
+    isInsideMenuCommands(node) ||
+    !ts.isObjectLiteralExpression(node.parent) ||
+    !isComfyExtensionObject(node.parent)
+  )
+    return
+  if (ts.isPropertyAssignment(node) && arrayLiteral(node.initializer)) return
+  return node
+}
+
+function commandArray(node: ts.Node): ts.ArrayLiteralExpression | undefined {
+  if (
+    ts.isPropertyAssignment(node) &&
+    propertyName(node.name) === 'commands' &&
+    !isInsideMenuCommands(node)
+  )
+    return arrayLiteral(node.initializer)
+  if (
+    ts.isVariableDeclaration(node) &&
+    ts.isIdentifier(node.name) &&
+    node.name.text === 'commands'
+  )
+    return arrayLiteral(node.initializer)
+}
+
+function lineOf(sourceFile: ts.SourceFile, node: ts.Node): number {
+  return (
+    sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1
+  )
+}
+
+function commandIdProperty(
+  element: ts.Expression
+): ts.PropertyAssignment | ts.ShorthandPropertyAssignment | undefined {
+  if (!ts.isObjectLiteralExpression(element)) return
+  return element.properties.find(
+    (
+      property
+    ): property is ts.PropertyAssignment | ts.ShorthandPropertyAssignment =>
+      (ts.isPropertyAssignment(property) ||
+        ts.isShorthandPropertyAssignment(property)) &&
+      propertyName(property.name) === 'id'
+  )
+}
+
+function collectCommandArrayElement(
+  file: string,
+  sourceFile: ts.SourceFile,
+  element: ts.Expression
+): { declared: DeclaredCommand[]; unresolved: UnresolvedCommand[] } {
+  if (ts.isStringLiteralLike(element)) return { declared: [], unresolved: [] }
+  if (ts.isSpreadElement(element))
+    return {
+      declared: [],
+      unresolved: [{ file, line: lineOf(sourceFile, element) }]
+    }
+  const property = commandIdProperty(element)
+  const line = lineOf(sourceFile, property ?? element)
+  if (
+    property &&
+    ts.isPropertyAssignment(property) &&
+    ts.isStringLiteralLike(property.initializer)
+  )
+    return {
+      declared: [{ id: property.initializer.text, file, line }],
+      unresolved: []
+    }
+  return { declared: [], unresolved: [{ file, line }] }
+}
+
+export function collectDeclaredCommands(
+  file: string,
+  source: string
+): { declared: DeclaredCommand[]; unresolved: UnresolvedCommand[] } {
+  const sourceFile = ts.createSourceFile(
+    file,
+    source,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS
+  )
+  const declared: DeclaredCommand[] = []
+  const unresolved: UnresolvedCommand[] = []
+  const walk = (node: ts.Node): void => {
+    const array = commandArray(node)
+    const unresolvedCommands = unresolvedExtensionCommands(node)
+    if (unresolvedCommands)
+      unresolved.push({
+        file,
+        line: lineOf(
+          sourceFile,
+          ts.isPropertyAssignment(unresolvedCommands)
+            ? unresolvedCommands.initializer
+            : unresolvedCommands.name
+        )
+      })
+    for (const element of array?.elements ?? []) {
+      const found = collectCommandArrayElement(file, sourceFile, element)
+      declared.push(...found.declared)
+      unresolved.push(...found.unresolved)
+    }
+    ts.forEachChild(node, walk)
+  }
+  walk(sourceFile)
+  return { declared, unresolved }
+}
+
+export function findCommandLocaleGaps(
+  declared: readonly DeclaredCommand[],
+  catalog: CommandCatalog
+): CommandLocaleGap[] {
+  const gaps = new Map<string, CommandLocaleGap>()
+  for (const command of declared) {
+    const key = normalizeI18nKey(command.id)
+    if (gaps.has(key)) continue
+    const entry: unknown = Object.hasOwn(catalog, key)
+      ? catalog[key]
+      : undefined
+    if (entry === undefined || entry === null) {
+      gaps.set(key, { ...command, key, reason: 'missing-entry' })
+      continue
+    }
+    const label: unknown =
+      typeof entry === 'object' && Object.hasOwn(entry, 'label')
+        ? Reflect.get(entry, 'label')
+        : undefined
+    if (typeof label !== 'string' || label.trim().length === 0)
+      gaps.set(key, { ...command, key, reason: 'missing-label' })
+  }
+  return [...gaps.values()].sort((a, b) => a.id.localeCompare(b.id))
+}
+
+export function readCommandCatalog(repositoryRoot: string): CommandCatalog {
+  const file = resolve(repositoryRoot, COMMANDS_CATALOG_FILE)
+  const parsed: unknown = JSON.parse(readFileSync(file, 'utf8'))
+  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed))
+    throw new Error(`${COMMANDS_CATALOG_FILE} is not a JSON object`)
+  return parsed as CommandCatalog
+}
+
+export function checkCommandLocales(repositoryRoot: string): {
+  files: string[]
+  declared: DeclaredCommand[]
+  unresolved: UnresolvedCommand[]
+  gaps: CommandLocaleGap[]
+} {
+  const files = findCommandSourceFiles(repositoryRoot)
+  const declared: DeclaredCommand[] = []
+  const unresolved: UnresolvedCommand[] = []
+  for (const file of files) {
+    const found = collectDeclaredCommands(
+      file,
+      readFileSync(resolve(repositoryRoot, file), 'utf8')
+    )
+    declared.push(...found.declared)
+    unresolved.push(...found.unresolved)
+  }
+  return {
+    files,
+    declared,
+    unresolved,
+    gaps: findCommandLocaleGaps(declared, readCommandCatalog(repositoryRoot))
+  }
+}
+
+export function formatGap(gap: CommandLocaleGap): string {
+  const detail =
+    gap.reason === 'missing-entry'
+      ? `has no commands.${gap.key} entry`
+      : `has no commands.${gap.key}.label string`
+  return `${gap.file}:${gap.line} command '${gap.id}' ${detail}`
+}
+
+export function formatUnresolved(command: UnresolvedCommand): string {
+  return `${command.file}:${command.line} command id cannot be resolved statically`
+}
+
+function main(): void {
+  const { files, declared, unresolved, gaps } = checkCommandLocales(
+    process.cwd()
+  )
+  if (gaps.length === 0 && unresolved.length === 0) {
+    process.stdout.write(
+      `Command locale guard passed (${declared.length} declared commands across ${files.length} files)\n`
+    )
+    return
+  }
+  const reports = []
+  if (gaps.length)
+    reports.push(
+      `Command locale guard found ${gaps.length} declared command(s) missing from ${COMMANDS_CATALOG_FILE}:\n\n` +
+        gaps.map(formatGap).join('\n')
+    )
+  if (unresolved.length)
+    reports.push(
+      `Command locale guard found ${unresolved.length} command declaration(s) that cannot be resolved:\n\n` +
+        unresolved.map(formatUnresolved).join('\n')
+    )
+  reports.push(
+    `Locale regeneration prunes a command whose extension had not registered when ` +
+      `scripts/collect-i18n-general.ts ran, and ESLint's cache can hide the result until an ` +
+      `unrelated pull request fails. Restore missing entries, replace computed or spread command ` +
+      `declarations with statically declared ids, and fix collection for lazy extensions.`
+  )
+  process.stderr.write(reports.join('\n\n') + '\n')
+  process.exitCode = 1
+}
+
+if (
+  process.argv[1] &&
+  fileURLToPath(import.meta.url) === resolve(process.argv[1])
+) {
+  main()
+}

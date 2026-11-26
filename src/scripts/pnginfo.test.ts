@@ -11,25 +11,20 @@ import { getFromPngFile } from './metadata/png'
 import {
   getAvifMetadata,
   getFlacMetadata,
-  getLatentMetadata,
   getPngMetadata,
   getWebpMetadata,
   importA1111
 } from './pnginfo'
 
-vi.mock('./api', () => ({
-  api: {
-    getEmbeddings: vi.fn()
-  }
-}))
+vi.mock(import('./api'))
 
-vi.mock('./metadata/png', () => ({
+vi.mock(import('./metadata/png'), () => ({
   getFromPngFile: vi.fn()
 }))
-vi.mock('./metadata/flac', () => ({
+vi.mock(import('./metadata/flac'), () => ({
   getFromFlacFile: vi.fn()
 }))
-vi.mock('./metadata/avif', () => ({
+vi.mock(import('./metadata/avif'), () => ({
   getFromAvifFile: vi.fn()
 }))
 
@@ -107,8 +102,22 @@ function exifChunk(
 }
 
 describe('getWebpMetadata', () => {
+  it.for([
+    { part: 'RIFF header', length: 3 },
+    { part: 'chunk header', length: 16 },
+    { part: 'EXIF directory', length: 29 }
+  ])('returns empty for a truncated $part', async ({ length }) => {
+    const complete = wrapInWebp([
+      exifChunk([{ tag: 0, value: 'workflow:{"a":1}' }])
+    ])
+    const file = new File([complete.slice(0, length)], 'truncated.webp', {
+      type: 'image/webp'
+    })
+
+    expect(await getWebpMetadata(file)).toEqual({})
+  })
+
   it('returns empty when the file is not a valid WEBP', async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     const file = new File([new Uint8Array(12)], 'fake.webp')
 
     const metadata = await getWebpMetadata(file)
@@ -167,50 +176,6 @@ describe('getWebpMetadata', () => {
   })
 })
 
-describe('getLatentMetadata', () => {
-  function buildSafetensors(headerObj: object): File {
-    const headerBytes = new TextEncoder().encode(JSON.stringify(headerObj))
-    const buf = new Uint8Array(8 + headerBytes.length)
-    const dv = new DataView(buf.buffer)
-    dv.setUint32(0, headerBytes.length, true)
-    dv.setUint32(4, 0, true)
-    buf.set(headerBytes, 8)
-    return new File([buf], 'test.safetensors')
-  }
-
-  it('extracts __metadata__ from a safetensors header', async () => {
-    const workflow =
-      '{"nodes":[{"id":1,"type":"KSampler","pos":[100,100],"size":[200,200]}]}'
-    const prompt = '{"1":{"class_type":"KSampler","inputs":{}}}'
-    const file = buildSafetensors({
-      __metadata__: { workflow, prompt },
-      'tensor.weight': { dtype: 'F32', shape: [1], data_offsets: [0, 4] }
-    })
-
-    const metadata = await getLatentMetadata(file)
-
-    expect(metadata).toEqual({ workflow, prompt })
-  })
-
-  it('returns undefined when the safetensors header has no __metadata__', async () => {
-    const file = buildSafetensors({
-      'tensor.weight': { dtype: 'F32', shape: [1], data_offsets: [0, 4] }
-    })
-
-    const metadata = await getLatentMetadata(file)
-
-    expect(metadata).toBeUndefined()
-  })
-
-  it('returns undefined for a truncated or malformed file', async () => {
-    const file = new File([new Uint8Array(4)], 'bad.safetensors')
-
-    const metadata = await getLatentMetadata(file)
-
-    expect(metadata).toBeUndefined()
-  })
-})
-
 describe('format-specific metadata wrappers', () => {
   it('getPngMetadata delegates to getFromPngFile', async () => {
     const file = new File([], 'a.png', { type: 'image/png' })
@@ -250,22 +215,28 @@ describe('importA1111', () => {
     'positive\nSteps: 20, Sampler: Euler, CFG scale: 7, Seed: 1, Size: 512x512, Model: model.safetensors'
 
   function mockAvailableCoreNodes(graph: LGraph) {
-    vi.spyOn(console, 'warn').mockImplementation(() => {})
     vi.spyOn(graph, 'arrange').mockImplementation(() => {})
     vi.spyOn(LiteGraph, 'createNode').mockImplementation((type) => {
       const node = new LGraphNode(type, type)
       if (type === 'CLIPTextEncode') {
         node.addWidget('text', 'text', '', () => {})
       }
+      if (type === 'KSampler') {
+        node.addWidget('number', 'steps', 0, () => {})
+      }
+      if (type === 'ImageScale' || type === 'LatentUpscale') {
+        node.addWidget('number', 'width', 0, () => {})
+        node.addWidget('number', 'height', 0, () => {})
+      }
       vi.spyOn(node, 'connect').mockReturnValue(null)
       return node
     })
   }
 
-  it.each([
+  it.for([
     ['has no steps', 'positive'],
     ['has no options', 'positive\nNegative prompt: negative\nSteps:']
-  ])('does not load embeddings when parameters %s', async (_case, input) => {
+  ])('does not load embeddings when parameters %s', async ([, input]) => {
     const graph = new LGraph()
     const beforeGraphClear = vi.fn()
     vi.mocked(api.getEmbeddings).mockRejectedValue(
@@ -300,7 +271,6 @@ describe('importA1111', () => {
     const graph = new LGraph()
     const clear = vi.spyOn(graph, 'clear')
     const beforeGraphClear = vi.fn()
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     vi.mocked(api.getEmbeddings).mockRejectedValue(
       new TypeError('Failed to fetch')
     )
@@ -311,7 +281,7 @@ describe('importA1111', () => {
     expect(imported).toBe('imported-without-embeddings')
     expect(beforeGraphClear).toHaveBeenCalledOnce()
     expect(clear).toHaveBeenCalledOnce()
-    expect(consoleError).toHaveBeenCalledWith(
+    expect(console.error).toHaveBeenCalledWith(
       'Failed to load embeddings for A1111 import:',
       expect.any(TypeError)
     )
@@ -339,10 +309,10 @@ describe('importA1111', () => {
     expect(clear).toHaveBeenCalledOnce()
   })
 
-  it.each([
+  it.for([
     ['with a negative prompt', parameters, 'negative'],
     ['without a negative prompt', parametersWithoutNegativePrompt, '']
-  ])('imports parameters %s', async (_case, input, expectedNegativePrompt) => {
+  ])('imports parameters %s', async ([, input, expectedNegativePrompt]) => {
     const graph = new LGraph()
     const clear = vi.spyOn(graph, 'clear')
     const beforeGraphClear = vi.fn()
@@ -384,4 +354,67 @@ describe('importA1111', () => {
         .map((node) => node?.widgets?.[0].value)
     ).toEqual(['masterpiece', 'embedding:EasyNegative, blurry'])
   })
+
+  it.for([
+    ['its own step count', 'Hires steps: 12, ', [20, 12]],
+    ['the base step count', '', [20, 20]]
+  ] as const)(
+    'adds a hires sampler that uses %s',
+    async ([, hiresSteps, expectedSteps]) => {
+      const graph = new LGraph()
+      vi.mocked(api.getEmbeddings).mockResolvedValue([])
+      mockAvailableCoreNodes(graph)
+
+      const imported = await importA1111(
+        graph,
+        `${parameters}, Hires upscale: 2, ${hiresSteps}Hires upscaler: Latent`
+      )
+
+      expect(imported).toBe('imported')
+      expect(
+        vi
+          .mocked(LiteGraph.createNode)
+          .mock.results.map(({ value }) => value)
+          .filter((node) => node?.type === 'KSampler')
+          .map((node) => node?.widgets?.[0].value)
+      ).toEqual(expectedSteps)
+    }
+  )
+
+  it.for([
+    [
+      'a latent upscale scaled by the hires factor',
+      'Hires upscale: 1.5, Hires upscaler: Latent (nearest-exact)',
+      'LatentUpscale',
+      [768, 768]
+    ],
+    [
+      'a model upscale chain at the hires resize size',
+      'Hires resize: 1000x600, Hires upscaler: 4x-UltraSharp',
+      'ImageScale',
+      [1024, 640]
+    ]
+  ] as const)(
+    'sizes %s',
+    async ([, hiresOptions, upscaleType, expectedSize]) => {
+      const graph = new LGraph()
+      vi.mocked(api.getEmbeddings).mockResolvedValue([])
+      mockAvailableCoreNodes(graph)
+
+      const imported = await importA1111(
+        graph,
+        `${parameters}, ${hiresOptions}`
+      )
+
+      expect(imported).toBe('imported')
+      const upscaleNode = vi
+        .mocked(LiteGraph.createNode)
+        .mock.results.map(({ value }) => value)
+        .find((node) => node?.type === upscaleType)
+      expect([
+        upscaleNode?.widgets?.[0].value,
+        upscaleNode?.widgets?.[1].value
+      ]).toEqual(expectedSize)
+    }
+  )
 })

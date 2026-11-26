@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, readonly, ref, watch } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
-import type { JobId } from '@/schemas/apiSchema'
+import type { JobId } from '@comfyorg/api-client/executionTypes'
 import {
   releaseSharedObjectUrl,
   retainSharedObjectUrl
