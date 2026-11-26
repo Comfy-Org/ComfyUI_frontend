@@ -9,13 +9,27 @@
     data-testid="local-build-button"
     @click="store.openDialog()"
   >
-    <Spinner v-if="isBusy" class="size-4 text-foreground" />
-    <i
-      v-else-if="store.phase === 'failed'"
-      class="icon-[lucide--circle-alert] text-destructive"
-      aria-hidden="true"
-    />
-    <i v-else class="icon-[lucide--cloud]" aria-hidden="true" />
+    <Transition
+      mode="out-in"
+      enter-from-class="scale-50 opacity-0"
+      leave-to-class="scale-50 opacity-0"
+      enter-active-class="transition duration-200 ease-[cubic-bezier(0.34,1.56,0.64,1)] motion-reduce:transition-none"
+      leave-active-class="transition duration-100 ease-in motion-reduce:transition-none"
+    >
+      <i
+        v-if="isBusy"
+        key="busy"
+        class="icon-[lucide--loader-circle] animate-spin"
+        aria-hidden="true"
+      />
+      <i
+        v-else-if="store.phase === 'failed'"
+        key="failed"
+        class="icon-[lucide--circle-alert] text-destructive"
+        aria-hidden="true"
+      />
+      <i v-else key="idle" class="icon-[lucide--cloud]" aria-hidden="true" />
+    </Transition>
   </Button>
 </template>
 
@@ -23,7 +37,6 @@
 import { computed } from 'vue'
 
 import Button from '@comfyorg/design-system/button/Button'
-import Spinner from '@comfyorg/design-system/spinner/Spinner'
 import { useLocalBuildPrototypeStore } from '@/platform/openOnCloud/localBuildPrototype/localBuildPrototypeStore'
 
 const store = useLocalBuildPrototypeStore()
