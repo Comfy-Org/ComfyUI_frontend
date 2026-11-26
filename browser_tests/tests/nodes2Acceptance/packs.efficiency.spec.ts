@@ -1,9 +1,7 @@
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import {
   GREEN,
   PACK_RENDERERS,
@@ -14,59 +12,19 @@ import {
   keepMixlabOffNodeDrawHooks,
   legacyWidgetPoint,
   nodeScreenRect,
-  nodeValue,
+  nodeGeometry,
+  padRect,
   showEmptyGraphAtZoomOne,
   uploadSolidImage
 } from '@e2e/fixtures/helpers/nodes2AcceptancePacks'
-
-const KSAMPLER = 'KSampler (Efficient)'
-const SEED_BUTTON = '🎲 Randomize / ♻️ Last Queued Seed'
-
-async function visibleLoraNameRows(comfyPage: ComfyPage, nodeId: NodeId) {
-  if (comfyPage.isVueNodes)
-    return comfyPage.vueNodes
-      .getNodeLocator(nodeId)
-      .locator('[data-widget-name^="lora_name_"]:visible')
-      .count()
-  return comfyPage.page.evaluate(
-    (id) =>
-      window
-        .app!.graph.getNodeById(id)!
-        .widgets!.filter(
-          (w) =>
-            w.name.startsWith('lora_name_') &&
-            !w.type.startsWith('tschide') &&
-            !w.hidden
-        ).length,
-    nodeId
-  )
-}
-
-async function setLoraCount(
-  comfyPage: ComfyPage,
-  nodeId: NodeId,
-  count: number
-) {
-  await comfyPage.page.evaluate(
-    ({ id, count }) => {
-      const node = window.app!.graph.getNodeById(id)!
-      node.widgets!.find((w) => w.name === 'lora_count')!.value = count
-      window.app!.canvas.setDirty(true, true)
-    },
-    { id: nodeId, count }
-  )
-}
-
-async function previewImageBox(comfyPage: ComfyPage, filename: string) {
-  const image = comfyPage.page.locator(`body > img[src*="${filename}"]`)
-  await expect(image).toBeVisible()
-  await expect
-    .poll(() => image.evaluate((element: HTMLImageElement) => element.complete))
-    .toBe(true)
-  const box = await image.boundingBox()
-  if (!box) throw new Error('preview image has no box')
-  return box
-}
+import { contains } from '@e2e/fixtures/helpers/nodes2AcceptancePacks.a2'
+import {
+  KSAMPLER,
+  SEED_BUTTON,
+  visibleLoraNameRows,
+  setLoraCount,
+  previewImageBox
+} from '@e2e/fixtures/helpers/nodes2AcceptancePacks.efficiency'
 
 for (const renderer of PACK_RENDERERS) {
   test.describe(
@@ -109,10 +67,9 @@ for (const renderer of PACK_RENDERERS) {
             .getByRole('button', { name: SEED_BUTTON })
             .click()
         } else {
-          const width = (await nodeValue(comfyPage, id, [
-            'size',
-            '0'
-          ])) as number
+          const {
+            size: [width]
+          } = await nodeGeometry(comfyPage, id)
           const button = await legacyWidgetPoint(
             comfyPage,
             id,
@@ -137,10 +94,12 @@ for (const renderer of PACK_RENDERERS) {
       })
 
       test('KSampler (Efficient) preview from an `executed` gifs output sits inside the node and follows a pan', async ({
-        comfyPage
+        comfyPage,
+        comfyFiles
       }) => {
         const filename = await uploadSolidImage(
           comfyPage,
+          comfyFiles,
           'n2a_eff_preview.png',
           GREEN,
           [128, 128]
@@ -156,10 +115,8 @@ for (const renderer of PACK_RENDERERS) {
 
         const node = await nodeScreenRect(comfyPage, id)
         const preview = await previewImageBox(comfyPage, filename)
-        expect(preview.x, 'preview left').toBeGreaterThanOrEqual(node.x - 2)
-        expect(preview.y, 'preview top').toBeGreaterThanOrEqual(node.y - 2)
-        expect(preview.x + preview.width, 'preview right').toBeLessThanOrEqual(
-          node.x + node.width + 2
+        expect(contains(padRect(node, 2), preview), 'preview inside node').toBe(
+          true
         )
 
         await comfyPage.page.evaluate(() => {
@@ -171,6 +128,10 @@ for (const renderer of PACK_RENDERERS) {
 
         await expect(async () => {
           const moved = await previewImageBox(comfyPage, filename)
+          expect(
+            contains(padRect(await nodeScreenRect(comfyPage, id), 2), moved),
+            'panned preview inside node'
+          ).toBe(true)
           expect(
             moved.x - preview.x,
             'preview follows the pan in x'

@@ -11,6 +11,7 @@ import {
   countColour,
   dispatchExecuted,
   expectPackLoaded,
+  expectSplitColours,
   keepMixlabOffNodeDrawHooks,
   inputImage,
   nodeScreenRect,
@@ -36,10 +37,21 @@ for (const renderer of PACK_RENDERERS) {
       })
 
       test('Images Compare (run output delivered by an `executed` message) splits the two images where it is clicked', async ({
-        comfyPage
+        comfyPage,
+        comfyFiles
       }) => {
-        await uploadSolidImage(comfyPage, 'n2a_bjornulf_a.png', RED)
-        await uploadSolidImage(comfyPage, 'n2a_bjornulf_b.png', BLUE)
+        const imageA = await uploadSolidImage(
+          comfyPage,
+          comfyFiles,
+          'n2a_bjornulf_a.png',
+          RED
+        )
+        const imageB = await uploadSolidImage(
+          comfyPage,
+          comfyFiles,
+          'n2a_bjornulf_b.png',
+          BLUE
+        )
         const id = await addPackNode(
           comfyPage,
           IMAGES_COMPARE,
@@ -47,8 +59,8 @@ for (const renderer of PACK_RENDERERS) {
           [400, 490]
         )
         await dispatchExecuted(comfyPage, id, {
-          images_1: [inputImage('n2a_bjornulf_a.png')],
-          images_2: [inputImage('n2a_bjornulf_b.png')]
+          images_1: [inputImage(imageA)],
+          images_2: [inputImage(imageB)]
         })
         await expect
           .poll(async () => {
@@ -66,7 +78,7 @@ for (const renderer of PACK_RENDERERS) {
           IMAGE_TOP + 110
         ])
         await comfyPage.page.mouse.click(target.x, target.y)
-        await comfyPage.page.mouse.move(5, 5)
+        await comfyPage.canvasOps.moveMouseToEmptyArea()
 
         await expect
           .poll(() => nodeValue(comfyPage, id, ['data', 'sliderX']))
@@ -80,6 +92,7 @@ for (const renderer of PACK_RENDERERS) {
           expect(red / (red + blue), 'share of image 1').toBeGreaterThan(0.7)
           expect(red / (red + blue), 'share of image 1').toBeLessThan(0.9)
         }).toPass({ timeout: 10_000 })
+        await expectSplitColours(comfyPage, target, RED, BLUE)
       })
     }
   )

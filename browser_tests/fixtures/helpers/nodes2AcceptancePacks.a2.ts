@@ -5,14 +5,15 @@ import {
   matchingPixels,
   nearColour
 } from '@e2e/fixtures/helpers/decodedImage'
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { randomUUID } from 'node:crypto'
+
+import type { ComfyFiles, ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyExpect as expect } from '@e2e/fixtures/ComfyPage'
 import type {
   ClientRect,
   Rgb
 } from '@e2e/fixtures/helpers/nodes2AcceptancePacks'
 
-/** Counts pixels within `tolerance` of `rgb` in an encoded image. */
 export async function countColourInImage(
   comfyPage: ComfyPage,
   image: Buffer,
@@ -49,8 +50,13 @@ function sineWav(seconds: number, sampleRate = 8000): Buffer {
   return Buffer.concat([header, data])
 }
 
-/** Uploads a short mono WAV tone to the input folder and returns its name. */
-export async function uploadToneWav(comfyPage: ComfyPage, name: string) {
+export async function uploadToneWav(
+  comfyPage: ComfyPage,
+  comfyFiles: ComfyFiles,
+  originalName: string
+) {
+  const name = `${randomUUID()}-${originalName}`
+  comfyFiles.deleteAfterTest({ filename: name, type: 'input' })
   const response = await comfyPage.request.post(
     `${comfyPage.url}/api/upload/image`,
     {
@@ -65,7 +71,6 @@ export async function uploadToneWav(comfyPage: ComfyPage, name: string) {
   return name
 }
 
-/** Fails unless the element at `point` is the graph canvas or part of the node. */
 export async function expectPointOnCanvasOrNode(
   comfyPage: ComfyPage,
   point: { x: number; y: number },

@@ -1,10 +1,8 @@
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { expectPointOnCanvasOrNode } from '@e2e/fixtures/helpers/nodes2AcceptancePacks.a2'
 import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import {
   BLUE,
   PACK_RENDERERS,
@@ -12,56 +10,29 @@ import {
   RED,
   addPackNode,
   countColour,
-  dispatchExecuted,
   expectPackLoaded,
+  expectSplitColours,
   keepMixlabOffNodeDrawHooks,
-  inputImage,
   legacyWidgetPoint,
   nodeBodyPoint,
   nodeScreenRect,
   nodeValue,
+  nodeGeometry,
   padRect,
   redrawCanvas,
   showEmptyGraphAtZoomOne,
-  uploadSolidImage,
   widgetState
 } from '@e2e/fixtures/helpers/nodes2AcceptancePacks'
-
-const IMAGE_COMPARER = 'Image Comparer (rgthree)'
-const REROUTE = 'Reroute (rgthree)'
-const RELAY = 'Mute / Bypass Relay (rgthree)'
-const LABEL = 'Label (rgthree)'
-const POWER_LORA = 'Power Lora Loader (rgthree)'
-const FAST_GROUPS_BYPASSER = 'Fast Groups Bypasser (rgthree)'
-const REROUTE_LABEL_GREY = [0x88, 0x88, 0x88] as const
-
-async function addImageComparerWithRunOutput(comfyPage: ComfyPage) {
-  await uploadSolidImage(comfyPage, 'n2a_rgthree_a.png', RED)
-  await uploadSolidImage(comfyPage, 'n2a_rgthree_b.png', BLUE)
-  const id = await addPackNode(
-    comfyPage,
-    IMAGE_COMPARER,
-    [100, 100],
-    [420, 460]
-  )
-  return id
-}
-
-async function deliverComparerImages(comfyPage: ComfyPage, id: NodeId) {
-  await dispatchExecuted(comfyPage, id, {
-    a_images: [inputImage('n2a_rgthree_a.png')],
-    b_images: [inputImage('n2a_rgthree_b.png')]
-  })
-}
-
-async function greyLabelPixels(comfyPage: ComfyPage, id: NodeId) {
-  return countColour(
-    comfyPage,
-    padRect(await nodeScreenRect(comfyPage, id), 4),
-    REROUTE_LABEL_GREY,
-    10
-  )
-}
+import {
+  REROUTE,
+  RELAY,
+  LABEL,
+  POWER_LORA,
+  FAST_GROUPS_BYPASSER,
+  addImageComparerWithRunOutput,
+  deliverComparerImages,
+  greyLabelPixels
+} from '@e2e/fixtures/helpers/nodes2AcceptancePacks.rgthree'
 
 for (const renderer of PACK_RENDERERS) {
   test.describe(
@@ -75,12 +46,13 @@ for (const renderer of PACK_RENDERERS) {
       })
 
       test('Image Comparer (run output delivered by an `executed` message) shows image B left of the hovered point', async ({
-        comfyPage
+        comfyPage,
+        comfyFiles
       }) => {
         const id = await addImageComparerWithRunOutput(comfyPage)
-        await deliverComparerImages(comfyPage, id)
+        await deliverComparerImages(comfyPage, comfyFiles, id)
         const area = await nodeScreenRect(comfyPage, id)
-        await comfyPage.page.mouse.move(5, 5)
+        await comfyPage.canvasOps.moveMouseToEmptyArea()
         await expect
           .poll(() => countColour(comfyPage, area, RED), {
             message: 'image A drawn'
@@ -98,17 +70,19 @@ for (const renderer of PACK_RENDERERS) {
           expect(blue / (red + blue), 'share of image B').toBeGreaterThan(0.15)
           expect(blue / (red + blue), 'share of image B').toBeLessThan(0.45)
         }).toPass({ timeout: 10_000 })
+        await expectSplitColours(comfyPage, hover, BLUE, RED)
       })
 
       test('Image Comparer in Click mode (comparer_mode property) shows image B while the button is held', async ({
-        comfyPage
+        comfyPage,
+        comfyFiles
       }) => {
         const id = await addImageComparerWithRunOutput(comfyPage)
         await comfyPage.page.evaluate((nodeId) => {
           window.app!.graph.getNodeById(nodeId)!.properties.comparer_mode =
             'Click'
         }, id)
-        await deliverComparerImages(comfyPage, id)
+        await deliverComparerImages(comfyPage, comfyFiles, id)
         const area = await nodeScreenRect(comfyPage, id)
         await expect
           .poll(() => countColour(comfyPage, area, RED), {
@@ -150,7 +124,7 @@ for (const renderer of PACK_RENDERERS) {
             )
           )
           .toBe(true)
-        const before = (await nodeValue(comfyPage, id, ['pos'])) as number[]
+        const { pos: before } = await nodeGeometry(comfyPage, id)
 
         const { keyboard, mouse } = comfyPage.page
         await mouse.move(start.x + 5, start.y + 5)
@@ -161,7 +135,7 @@ for (const renderer of PACK_RENDERERS) {
         await keyboard.up('Shift')
 
         await expect(async () => {
-          const pos = (await nodeValue(comfyPage, id, ['pos'])) as number[]
+          const { pos } = await nodeGeometry(comfyPage, id)
           expect(
             pos[0] - before[0],
             'x moved with the pointer'

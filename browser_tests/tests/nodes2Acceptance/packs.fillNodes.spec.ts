@@ -1,11 +1,8 @@
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
-
 import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
-import type { Rgb } from '@e2e/fixtures/helpers/nodes2AcceptancePacks'
+
 import {
   BLUE,
   GREEN,
@@ -18,49 +15,23 @@ import {
   expectPackLoaded,
   keepMixlabOffNodeDrawHooks,
   nodeScreenRect,
-  showEmptyGraphAtZoomOne
+  showEmptyGraphAtZoomOne,
+  tetrisPiecePixels,
+  widgetState
 } from '@e2e/fixtures/helpers/nodes2AcceptancePacks'
 import {
   clickButtonWidget,
   nodeLocalPoint,
   nodeLocalRect
 } from '@e2e/fixtures/helpers/nodes2AcceptancePacks.a1'
-
-const BLACK: Rgb = [0, 0, 0]
-const FOLDER_PANEL_GREY: Rgb = [0x2a, 0x2a, 0x2a]
-const GRADIENT_BAR_LEFT = 10
-const GRADIENT_BAR_TOP = 222
-
-async function widgetValue(comfyPage: ComfyPage, id: NodeId, name: string) {
-  return comfyPage.page.evaluate(
-    ({ id, name }) =>
-      window
-        .app!.graph.getNodeById(id)!
-        .widgets!.find((widget) => widget.name === name)?.value,
-    { id, name }
-  )
-}
-
-async function gradientStops(comfyPage: ComfyPage, id: NodeId) {
-  const value = await widgetValue(comfyPage, id, 'gradient_colors')
-  const stops: { pos: number }[] = JSON.parse(String(value))
-  return stops.map((stop) => Math.round(stop.pos * 100) / 100)
-}
-
-async function gradientBarPoint(
-  comfyPage: ComfyPage,
-  id: NodeId,
-  fraction: number
-) {
-  const width = await comfyPage.page.evaluate(
-    (nodeId) => window.app!.graph.getNodeById(nodeId)!.size[0] - 20,
-    id
-  )
-  return nodeLocalPoint(comfyPage, id, [
-    GRADIENT_BAR_LEFT + width * fraction,
-    GRADIENT_BAR_TOP + 20
-  ])
-}
+import {
+  BLACK,
+  FOLDER_PANEL_GREY,
+  GRADIENT_BAR_LEFT,
+  GRADIENT_BAR_TOP,
+  gradientStops,
+  gradientBarPoint
+} from '@e2e/fixtures/helpers/nodes2AcceptancePacks.fillNodes'
 
 for (const renderer of PACK_RENDERERS) {
   test.describe(
@@ -129,7 +100,7 @@ for (const renderer of PACK_RENDERERS) {
           [150, 200],
           [600, 400]
         )
-        await comfyPage.page.mouse.move(5, 5)
+        await comfyPage.canvasOps.moveMouseToEmptyArea()
         const field = await nodeLocalRect(comfyPage, id, [23, 53, 554, 324])
 
         await expect
@@ -159,6 +130,12 @@ for (const renderer of PACK_RENDERERS) {
           [290, 450]
         )
         const board = await nodeLocalRect(comfyPage, id, [10, 40, 204, 404])
+        const interior = await nodeLocalRect(comfyPage, id, [14, 44, 196, 396])
+        await expect
+          .poll(() => tetrisPiecePixels(comfyPage, interior), {
+            message: 'coloured falling piece inside the playfield'
+          })
+          .toBeGreaterThan(100)
 
         await expect
           .poll(() => countColour(comfyPage, board, BLACK, 8), {
@@ -217,7 +194,7 @@ for (const renderer of PACK_RENDERERS) {
           ])
         }, id)
         await clickButtonWidget(comfyPage, id, 'Refresh Folder Structure')
-        await comfyPage.page.mouse.move(5, 5)
+        await comfyPage.canvasOps.moveMouseToEmptyArea()
         const panel = await nodeLocalRect(comfyPage, id, [0, 250, 350, 100])
 
         await expect
@@ -231,7 +208,7 @@ for (const renderer of PACK_RENDERERS) {
         await clickButtonWidget(comfyPage, id, 'Remove Selected Folder')
 
         await expect
-          .poll(() => widgetValue(comfyPage, id, 'folder_structure'))
+          .poll(() => widgetState(comfyPage, id, 'folder_structure', ['value']))
           .toBe(JSON.stringify([{ name: 'aaa', children: [] }]))
       })
     }

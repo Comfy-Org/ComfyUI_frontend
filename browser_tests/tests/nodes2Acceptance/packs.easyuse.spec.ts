@@ -1,9 +1,7 @@
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import {
   BLUE,
   PACK_RENDERERS,
@@ -14,62 +12,15 @@ import {
   keepMixlabOffNodeDrawHooks,
   colourCentre,
   countColour,
-  dispatchPackEvent,
-  legacyWidgetPoint,
   nodeScreenRect,
-  nodeValue,
-  showEmptyGraphAtZoomOne,
-  uploadSolidImage
+  showEmptyGraphAtZoomOne
 } from '@e2e/fixtures/helpers/nodes2AcceptancePacks'
-
-const CHOOSER = 'easy imageChooser'
-const CONFIRM_LABEL = 'Progress selected image'
-
-async function pauseWithTwoImages(comfyPage: ComfyPage, nodeId: NodeId) {
-  await uploadSolidImage(comfyPage, 'n2a_easyuse_a.png', RED)
-  await uploadSolidImage(comfyPage, 'n2a_easyuse_b.png', BLUE)
-  await dispatchPackEvent(comfyPage, 'easyuse-image-choose', {
-    id: Number(nodeId),
-    urls: ['n2a_easyuse_a.png', 'n2a_easyuse_b.png'].map((filename) => ({
-      filename,
-      subfolder: '',
-      type: 'input'
-    }))
-  })
-  await expect
-    .poll(() => nodeValue(comfyPage, nodeId, ['isWaitingSelection']))
-    .toBe(true)
-}
-
-async function selectedImages(comfyPage: ComfyPage, nodeId: NodeId) {
-  return comfyPage.page.evaluate((id) => {
-    const selected: unknown = Reflect.get(
-      window.app!.graph.getNodeById(id)!,
-      'selected_images'
-    )
-    return selected instanceof Set ? [...selected] : null
-  }, nodeId)
-}
-
-async function clickConfirm(comfyPage: ComfyPage, nodeId: NodeId) {
-  if (comfyPage.isVueNodes) {
-    const button = comfyPage.vueNodes
-      .getNodeLocator(nodeId)
-      .getByRole('button', { name: CONFIRM_LABEL })
-    await expect(button).toBeEnabled()
-    await button.click()
-    return
-  }
-  const width = (await nodeValue(comfyPage, nodeId, ['size', '0'])) as number
-  const button = await legacyWidgetPoint(
-    comfyPage,
-    nodeId,
-    CONFIRM_LABEL,
-    width / 2,
-    10
-  )
-  await comfyPage.page.mouse.click(button.x, button.y)
-}
+import {
+  CHOOSER,
+  pauseWithTwoImages,
+  selectedImages,
+  clickConfirm
+} from '@e2e/fixtures/helpers/nodes2AcceptancePacks.easyuse'
 
 for (const renderer of PACK_RENDERERS) {
   test.describe(
@@ -83,10 +34,11 @@ for (const renderer of PACK_RENDERERS) {
       })
 
       test('Image Chooser paused in Always Pause (`easyuse-image-choose` event) lets the user pick an image and confirm it', async ({
-        comfyPage
+        comfyPage,
+        comfyFiles
       }) => {
         const id = await addPackNode(comfyPage, CHOOSER, [100, 60], [400, 500])
-        await pauseWithTwoImages(comfyPage, id)
+        await pauseWithTwoImages(comfyPage, comfyFiles, id)
         const area = await nodeScreenRect(comfyPage, id)
         await expect(async () => {
           expect(

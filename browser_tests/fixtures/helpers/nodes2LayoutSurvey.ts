@@ -3,12 +3,15 @@ import path from 'node:path'
 
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { zComfyNodeDef } from '@comfyorg/object-info-parser/schemas/nodeDefSchema'
+import { z } from 'zod'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { decodePngBuffer } from '@e2e/fixtures/helpers/decodedImage'
 import { drawingFound, hookDrawing } from '@e2e/fixtures/helpers/hookDrawing'
 import type {
   ClientBox,
+  LayoutData,
   NodeMeasure,
   ProbeOutcome,
   ProbeTarget,
@@ -19,6 +22,7 @@ import {
   NODE_BODY
 } from '@e2e/reporters/nodes2Acceptance/layout'
 import { REPORT_DIR } from '@e2e/reporters/nodes2Acceptance/reportDir'
+import { writeReportFile } from '@e2e/reporters/nodes2Acceptance/reportFiles'
 
 export type SurveyRenderer = 'classic' | 'nodes2'
 
@@ -48,16 +52,11 @@ const POPUP_SELECTOR = [
 
 type NodeState = Record<string, string>
 
-/** Answers links and downloads that clicking pack nodes opens outside the test server, so a click stays local. */
-export async function answerOutsideRequestsLocally(comfyPage: ComfyPage) {
-  const local = new URL(comfyPage.url).origin
-  await comfyPage.page.context().route(
-    (url) => url.origin !== local,
-    (route) => route.fulfill({ status: 204, body: '' })
+const surveyUsesVueNodes = (comfyPage: ComfyPage) =>
+  comfyPage.page.evaluate(() =>
+    Boolean(window.app!.extensionManager.setting.get('Comfy.VueNodes.Enabled'))
   )
-}
 
-/** Node types the pack's Python module registers, plus its frontend-only types, that LiteGraph can create. */
 export async function packNodeTypes(
   comfyPage: ComfyPage,
   directory: string,
@@ -66,14 +65,15 @@ export async function packNodeTypes(
   const response = await comfyPage.request.get(
     `${comfyPage.url}/api/object_info`
   )
-  const objectInfo: Record<string, { python_module?: string }> =
-    await response.json()
+  const objectInfo = z
+    .record(z.string(), zComfyNodeDef.pick({ python_module: true }))
+    .parse(await response.json())
   const module = `custom_nodes.${directory}`
   const serverTypes = Object.entries(objectInfo)
     .filter(
       ([, info]) =>
         info.python_module === module ||
-        info.python_module?.startsWith(`${module}.`)
+        info.python_module.startsWith(`${module}.`)
     )
     .map(([type]) => type)
   const candidates = [...new Set([...serverTypes, ...frontendNodeTypes])]
@@ -95,7 +95,6 @@ async function isNodeElementVisible(comfyPage: ComfyPage, id: NodeId) {
   }
 }
 
-/** Counts full-screen fixed layers, such as a pack's modal, covering the middle of the page; removes them when asked. */
 const fullScreenLayers = (comfyPage: ComfyPage, remove: boolean) =>
   comfyPage.page.evaluate((remove) => {
     const covering = new Set<HTMLElement>()
@@ -123,7 +122,6 @@ const fullScreenLayers = (comfyPage: ComfyPage, remove: boolean) =>
     return covering.size
   }, remove)
 
-/** Clears the graph and adds one node of `type` at a fixed spot at zoom 1; null when LiteGraph cannot create it. */
 export async function placeSurveyNode(
   comfyPage: ComfyPage,
   type: string
@@ -158,7 +156,10 @@ export async function placeSurveyNode(
   )
   if (id === null) return null
   const nodeId = toNodeId(id)
-  if (comfyPage.isVueNodes && !(await isNodeElementVisible(comfyPage, nodeId)))
+  if (
+    (await surveyUsesVueNodes(comfyPage)) &&
+    !(await isNodeElementVisible(comfyPage, nodeId))
+  )
     return null
   await comfyPage.nextFrame()
   await comfyPage.nextFrame()
@@ -317,15 +318,11 @@ async function measureInPage(
         bodyInteractive: typeof node.onMouseDown === 'function'
       }
     },
-    { id, vue: comfyPage.isVueNodes }
+    { id, vue: await surveyUsesVueNodes(comfyPage) }
   )
 }
 
-/** Pixels each canvas-drawn widget paints outside the strip Nodes 2.0 shows, found by redrawing it on an oversized canvas. */
-async function clippedPixelsByWidget(
-  comfyPage: ComfyPage,
-  id: NodeId
-): Promise<Record<string, number>> {
+async function clippedPixelsByWidget(comfyPage: ComfyPage, id: NodeId) {
   return comfyPage.page.evaluate((id) => {
     const node = window.app!.graph.getNodeById(id)
     const nodeElement = document.querySelector(
@@ -333,6 +330,7 @@ async function clippedPixelsByWidget(
     )
     const padding = 400
     const result: Record<string, number> = {}
+    const errors: string[] = []
     for (const widget of node?.widgets ?? []) {
       const draw = widget.draw
       const strip = nodeElement?.querySelector<HTMLCanvasElement>(
@@ -346,6 +344,11 @@ async function clippedPixelsByWidget(
       }
       try {
         widget.triggerDraw()
+      } catch (error) {
+        errors.push(
+          `Widget ${widget.name} redraw unavailable: ${String(error)}`
+        )
+        continue
       } finally {
         widget.draw = draw
       }
@@ -359,7 +362,10 @@ async function clippedPixelsByWidget(
       context.translate(padding, padding + 1 - y)
       try {
         draw.call(widget, context, owner, width, y, height)
-      } catch {
+      } catch (error) {
+        errors.push(
+          `Widget ${widget.name} clipping unavailable: ${String(error)}`
+        )
         continue
       }
       const pixels = context.getImageData(0, 0, probe.width, probe.height).data
@@ -378,11 +384,10 @@ async function clippedPixelsByWidget(
       }
       result[widget.name] = outside
     }
-    return result
+    return { pixels: result, errors }
   }, id)
 }
 
-/** Turns the node's draw hooks off, or back on, on this instance. */
 async function setDrawHooksEnabled(
   comfyPage: ComfyPage,
   id: NodeId,
@@ -442,7 +447,6 @@ async function classicHookDrawing(
   )
 }
 
-/** How often the node's own draw hooks run during two full redraws; null when it has none. */
 async function hookCallsDuringRedraw(comfyPage: ComfyPage, id: NodeId) {
   const wrapped = await comfyPage.page.evaluate(
     ({ id, hooks }) => {
@@ -497,7 +501,7 @@ function saveImage(image: Buffer, relativePath: string) {
   return relativePath
 }
 
-export const NOT_RENDERED: NodeMeasure = {
+const NOT_RENDERED: NodeMeasure = {
   rendered: false,
   rect: null,
   widgets: [],
@@ -510,7 +514,6 @@ export const NOT_RENDERED: NodeMeasure = {
   image: null
 }
 
-/** Measures the placed node, saves its screenshot, and returns what Nodes 2.0 or classic shows of it; on Nodes 2.0, `classic` says what the pack's draw hooks added there. */
 export async function measureSurveyNode(
   comfyPage: ComfyPage,
   id: NodeId,
@@ -522,11 +525,13 @@ export async function measureSurveyNode(
   const clip = measure.rect && viewportClip(comfyPage, measure.rect)
   if (!measure.rendered || !measure.rect || !clip)
     return { ...NOT_RENDERED, ...measure, errors }
-  const vue = comfyPage.isVueNodes
-  const clipped = vue ? await clippedPixelsByWidget(comfyPage, id) : {}
+  const vue = await surveyUsesVueNodes(comfyPage)
+  const clipped = vue
+    ? await clippedPixelsByWidget(comfyPage, id)
+    : { pixels: {}, errors: [] }
   const widgets: WidgetMeasure[] = measure.widgets.map((widget) => ({
     ...widget,
-    clippedPixels: clipped[widget.name] ?? 0
+    clippedPixels: clipped.pixels[widget.name] ?? 0
   }))
   const screenshot = await comfyPage.page.screenshot({ clip })
   const drawing = vue
@@ -545,12 +550,11 @@ export async function measureSurveyNode(
           )
         : null,
     drawCalls: vue ? await hookCallsDuringRedraw(comfyPage, id) : null,
-    errors,
+    errors: [...errors, ...clipped.errors],
     image: saveImage(screenshot, imagePath)
   }
 }
 
-/** Where to click a node on both renderers: across each canvas-drawn widget's row, and over the body of nodes that draw or handle the mouse themselves. */
 export function probeTargets(measure: NodeMeasure, maxWidgets: number) {
   const drawsOwnBody =
     (measure.drawing?.pixels ?? 0) >= MIN_DRAWN_PIXELS ||
@@ -578,10 +582,7 @@ async function nodeState(comfyPage: ComfyPage, id: NodeId): Promise<NodeState> {
           value !== undefined &&
           typeof value !== 'function' &&
           typeof value !== 'symbol'
-        return (serialisable ? JSON.stringify(value) : String(value)).slice(
-          0,
-          200
-        )
+        return serialisable ? JSON.stringify(value) : String(value)
       } catch {
         return String(value)
       }
@@ -648,7 +649,7 @@ async function bodyRect(
       )
       return header ? header.getBoundingClientRect().height : 0
     },
-    { id, vue: comfyPage.isVueNodes }
+    { id, vue: await surveyUsesVueNodes(comfyPage) }
   )
   return {
     x: rect.x,
@@ -668,11 +669,15 @@ async function targetRect(
     return measure.rect && bodyRect(comfyPage, id, measure.rect)
   const match = measure.widgets.find((candidate) => candidate.name === widget)
   if (!match?.visible || !match.rect) return null
-  if (!comfyPage.isVueNodes) return match.rect
+  if (!(await surveyUsesVueNodes(comfyPage))) return match.rect
+  const escapedName = await comfyPage.page.evaluate(
+    (name) => CSS.escape(name),
+    widget
+  )
   const strip = comfyPage.vueNodes
     .getNodeLocator(id)
     .locator(
-      `[data-widget-name="${widget}"] canvas[data-testid="legacy-widget-canvas"]`
+      `[data-widget-name="${escapedName}"] canvas[data-testid="legacy-widget-canvas"]`
     )
   return (await strip.count()) ? await strip.boundingBox() : match.rect
 }
@@ -700,24 +705,43 @@ const selectNode = (comfyPage: ComfyPage, id: NodeId) =>
     if (node) app.canvas.selectNode(node)
   }, id)
 
-/** Clicks a fresh, already selected node at `probe` and records what changed. */
 export async function probeNode(
   comfyPage: ComfyPage,
   type: string,
   probe: ProbeTarget
-): Promise<ProbeOutcome | null> {
+): Promise<ProbeOutcome> {
+  const unavailable = (reason: string): ProbeOutcome => ({
+    ...probe,
+    changed: [],
+    popup: false,
+    pixels: 0,
+    unavailable: reason
+  })
   const id = await placeSurveyNode(comfyPage, type)
-  if (id === null) return null
+  if (id === null) return unavailable('Node could not be placed')
   await selectNode(comfyPage, id)
   await comfyPage.nextFrame()
   const target = await targetRect(comfyPage, id, probe.target)
   const placed = await measureInPage(comfyPage, id)
   const clip = placed.rect && viewportClip(comfyPage, placed.rect)
-  if (!target || !clip) return null
+  if (!target || !clip) return unavailable('Target has no visible rectangle')
   const x = target.x + target.width * probe.x
   const y = target.y + target.height * probe.y
+  const viewport = comfyPage.page.viewportSize()
+  if (
+    !viewport ||
+    !Number.isFinite(x) ||
+    !Number.isFinite(y) ||
+    x < 0 ||
+    y < 0 ||
+    x >= viewport.width ||
+    y >= viewport.height
+  )
+    return unavailable('Probe point is outside the viewport')
   if (probe.target === NODE_BODY && onWidgetRow(placed.widgets, x, y))
-    return null
+    return unavailable(
+      'Body point is occupied by a widget; click intentionally skipped'
+    )
   await comfyPage.page.mouse.move(x, y)
   await comfyPage.nextFrame()
   const [stateBefore, popupsBefore, imageBefore] = [
@@ -737,7 +761,84 @@ export async function probeNode(
   return {
     ...probe,
     changed: changedKeys(stateBefore, stateAfter),
+    transitions: Object.fromEntries(
+      changedKeys(stateBefore, stateAfter).map((key) => [
+        key,
+        { before: stateBefore[key] ?? null, after: stateAfter[key] ?? null }
+      ])
+    ),
     popup: popupsAfter > popupsBefore,
     pixels: differingPixels(imageBefore, imageAfter)
   }
+}
+
+async function collectSurveyType(
+  comfyPage: ComfyPage,
+  type: string,
+  imagePath: string,
+  targetsFor: (measure: NodeMeasure) => ProbeTarget[],
+  classic?: NodeMeasure
+) {
+  const errors: string[] = []
+  const collect = (error: Error) =>
+    errors.push(error.message.split('\n')[0].slice(0, 200))
+  comfyPage.page.on('pageerror', collect)
+  let measure: NodeMeasure = { ...NOT_RENDERED }
+  const probes: ProbeOutcome[] = []
+  try {
+    const id = await placeSurveyNode(comfyPage, type)
+    if (id !== null)
+      measure = await measureSurveyNode(comfyPage, id, imagePath, [], classic)
+    for (const target of targetsFor(measure)) {
+      try {
+        probes.push(await probeNode(comfyPage, type, target))
+      } catch (error) {
+        const reason = String(error)
+        errors.push(reason)
+        probes.push({
+          ...target,
+          changed: [],
+          popup: false,
+          pixels: 0,
+          unavailable: reason
+        })
+      }
+    }
+  } catch (error) {
+    errors.push(String(error))
+  } finally {
+    comfyPage.page.off('pageerror', collect)
+  }
+  return {
+    measure: { ...measure, errors: [...measure.errors, ...errors] },
+    probes
+  }
+}
+
+export async function surveyRenderer(
+  comfyPage: ComfyPage,
+  pack: string,
+  types: string[],
+  renderer: SurveyRenderer,
+  targetsFor: (index: number, measure: NodeMeasure) => ProbeTarget[],
+  classicFor: (index: number) => NodeMeasure | undefined = () => undefined
+) {
+  await comfyPage.vueNodes.setEnabled(renderer === 'nodes2')
+  const passes: { measure: NodeMeasure; probes: ProbeOutcome[] }[] = []
+  for (const [index, type] of types.entries())
+    passes.push(
+      await collectSurveyType(
+        comfyPage,
+        type,
+        `layout/img/${pack}/${index}.${renderer}.png`,
+        (measure) => targetsFor(index, measure),
+        classicFor(index)
+      )
+    )
+  return passes
+}
+
+export function writeLayoutData(data: LayoutData) {
+  const file = path.join(REPORT_DIR, 'layout', 'data', `${data.pack}.json`)
+  writeReportFile(file, JSON.stringify(data, null, 2))
 }

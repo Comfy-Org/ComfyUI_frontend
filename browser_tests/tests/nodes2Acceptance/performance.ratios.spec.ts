@@ -2,10 +2,7 @@ import { nodes2PerfFixture as test } from '@e2e/fixtures/nodes2PerfFixture'
 import { comfyExpect as expect } from '@e2e/fixtures/ComfyPage'
 import {
   PERF_VIEWPORT,
-  WORKING_ZOOM,
-  annotatePerf,
-  compareRenderers,
-  median
+  annotatePerf
 } from '@e2e/fixtures/helpers/Nodes2PerfHelper'
 
 const GRAPH_SIZES = [
@@ -35,11 +32,10 @@ test.describe(
         test(`loading reaches interactive within ${LOAD_RATIO}x classic time and heap`, async ({
           nodes2Perf
         }) => {
-          const samples = await nodes2Perf.interleave(REPETITIONS, (renderer) =>
-            nodes2Perf.loadGraph(renderer, size.nodes)
+          const { time, heap } = await nodes2Perf.compareLoad(
+            size.nodes,
+            REPETITIONS
           )
-          const time = compareRenderers(samples, (s) => s.timeToInteractiveMs)
-          const heap = compareRenderers(samples, (s) => s.heapMB)
           annotatePerf({ scenario: 'load', time, heap })
           expect
             .soft(time.ratio, 'time to interactive, Nodes 2.0 / classic')
@@ -53,15 +49,11 @@ test.describe(
           test(`idle main-thread busy time is within ${IDLE_RATIO}x classic`, async ({
             nodes2Perf
           }) => {
-            const samples = await nodes2Perf.interleave(
-              IDLE_REPETITIONS,
-              async (renderer) => {
-                await nodes2Perf.loadGraph(renderer, size.nodes)
-                await nodes2Perf.showAt(WORKING_ZOOM)
-                return nodes2Perf.idleBusyPercent(IDLE_FRAMES)
-              }
-            )
-            const busy = compareRenderers(samples, (s) => s)
+            const busy = await nodes2Perf.compareIdle({
+              nodeCount: size.nodes,
+              repetitions: IDLE_REPETITIONS,
+              frames: IDLE_FRAMES
+            })
             annotatePerf({ scenario: 'idle', busy })
             expect(
               busy.ratio,
@@ -72,14 +64,11 @@ test.describe(
         test(`typing in a prompt paints each key within ${TYPING_RATIO}x classic latency`, async ({
           nodes2Perf
         }) => {
-          const samples = await nodes2Perf.interleave(
-            REPETITIONS,
-            async (renderer) => {
-              await nodes2Perf.loadGraph(renderer, size.nodes)
-              return median(await nodes2Perf.measureTyping(TYPED_KEYS))
-            }
-          )
-          const latency = compareRenderers(samples, (s) => s)
+          const latency = await nodes2Perf.compareTyping({
+            nodeCount: size.nodes,
+            repetitions: REPETITIONS,
+            keys: TYPED_KEYS
+          })
           annotatePerf({ scenario: 'typing', latency })
           expect(
             latency.ratio,
@@ -91,18 +80,13 @@ test.describe(
           test(`heap after visiting the whole graph and returning is within ${MEMORY_RATIO}x classic`, async ({
             nodes2Perf
           }) => {
-            const samples = await nodes2Perf.interleave(
-              REPETITIONS,
-              async (renderer) => {
-                await nodes2Perf.loadGraph(renderer, size.nodes)
-                const viewports = await nodes2Perf.visitWholeGraph()
-                return { viewports, heapMB: await nodes2Perf.heapAfterGcMB() }
-              }
+            const { viewports, heap } = await nodes2Perf.compareVisitedHeap(
+              size.nodes,
+              REPETITIONS
             )
-            const heap = compareRenderers(samples, (s) => s.heapMB)
             annotatePerf({
               scenario: 'visit-whole-graph',
-              viewports: samples.classic[0].viewports,
+              viewports,
               heap
             })
             expect(

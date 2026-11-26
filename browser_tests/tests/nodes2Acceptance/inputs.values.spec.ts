@@ -1,4 +1,3 @@
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import {
   comfyExpect as expect,
   comfyPageFixture as test
@@ -6,84 +5,18 @@ import {
 import {
   RENDERERS,
   addKSamplerWidget,
-  center,
+  clickEmptyCanvasAboveKSampler,
   ksamplerBodyRect,
+  openKSamplerComboList,
+  samplerOptions,
   saturatedPixels,
   setKSamplerWidgetValue,
   showKSamplerAtZoomOne,
+  stepCombo,
   typeIntoNumber,
-  widgetRow,
   widgetValue
 } from '@e2e/fixtures/helpers/nodes2AcceptanceInputs'
-
-async function samplerOptions(comfyPage: ComfyPage): Promise<string[]> {
-  return comfyPage.page.evaluate(() => {
-    const node = window.app!.graph.nodes.find((n) => n.type === 'KSampler')!
-    const values = node.widgets!.find((w) => w.name === 'sampler_name')!.options
-      .values
-    return Array.isArray(values) ? values.map(String) : []
-  })
-}
-
-async function stepCombo(
-  comfyPage: ComfyPage,
-  name: string,
-  direction: 'previous' | 'next'
-) {
-  if (comfyPage.isVueNodes) {
-    const arrow = await comfyPage.vueNodes
-      .getWidgetRowByLabel('KSampler', name)
-      .first()
-      .getByRole('button', { name: new RegExp(direction, 'i') })
-      .boundingBox()
-    if (!arrow) throw new Error(`No ${direction} arrow on ${name}`)
-    await comfyPage.page.mouse.click(center(arrow).x, center(arrow).y)
-    return
-  }
-  const row = await widgetRow(comfyPage, name)
-  const x = direction === 'previous' ? row.x + 5 : row.x + row.width - 5
-  await comfyPage.page.mouse.click(x, row.y + row.height / 2)
-}
-
-async function openComboList(
-  comfyPage: ComfyPage,
-  name: string,
-  { hasSearch }: { hasSearch: boolean }
-) {
-  const { page } = comfyPage
-  if (comfyPage.isVueNodes) {
-    await comfyPage.vueNodes
-      .getWidgetRowByLabel('KSampler', name)
-      .first()
-      .getByTestId('widget-select-default-trigger')
-      .click()
-    await expect(
-      page.getByTestId('widget-select-default-overlay')
-    ).toBeVisible()
-    if (hasSearch)
-      await expect(
-        page.getByTestId('widget-select-default-search-input')
-      ).toBeFocused()
-    return
-  }
-  const row = await widgetRow(comfyPage, name)
-  await page.mouse.click(center(row).x, center(row).y)
-  await expect(page.locator('.litecontextmenu')).toBeVisible()
-  if (hasSearch)
-    await expect(page.locator('.comfy-context-menu-filter')).toBeFocused()
-}
-
-async function clickEmptyCanvasAboveKSampler(comfyPage: ComfyPage) {
-  const point = await comfyPage.page.evaluate(() => {
-    const node = window.app!.graph.nodes.find((n) => n.type === 'KSampler')!
-    return window.app!.canvasPosToClientPos([
-      node.pos[0] + node.size[0] / 2,
-      node.pos[1] - window.LiteGraph!.NODE_TITLE_HEIGHT - 60
-    ])
-  })
-  await comfyPage.page.mouse.click(point[0], point[1])
-  await comfyPage.nextFrame()
-}
+import { TestIds } from '@e2e/fixtures/selectors'
 
 for (const renderer of RENDERERS) {
   test.describe(
@@ -155,7 +88,7 @@ for (const renderer of RENDERERS) {
                 : undefined
             })
 
-        expect(shown).toBe((1.005).toFixed(2))
+        expect(shown).toBe('1.00')
       })
 
       test('a knob widget is drawn', async ({ comfyPage }) => {
@@ -179,8 +112,8 @@ for (const renderer of RENDERERS) {
         const knobArea = comfyPage.isVueNodes
           ? await comfyPage.vueNodes
               .getNodeByTitle('KSampler')
-              .getByTestId('legacy-widget-canvas')
-              .last()
+              .locator('[data-widget-name="acceptance_knob"]')
+              .getByTestId(TestIds.widgets.legacyCanvas)
               .boundingBox()
           : {
               x: body.x + 15,
@@ -205,7 +138,6 @@ for (const renderer of RENDERERS) {
         await setKSamplerWidgetValue(comfyPage, 'sampler_name', last)
 
         await stepCombo(comfyPage, 'sampler_name', 'next')
-        await comfyPage.nextFrame()
 
         expect(await widgetValue(comfyPage, 'sampler_name')).toBe(last)
       })
@@ -217,7 +149,9 @@ for (const renderer of RENDERERS) {
         const options = await samplerOptions(comfyPage)
         await setKSamplerWidgetValue(comfyPage, 'sampler_name', options[0])
 
-        await openComboList(comfyPage, 'sampler_name', { hasSearch: true })
+        await openKSamplerComboList(comfyPage, 'sampler_name', {
+          hasSearch: true
+        })
         await comfyPage.page.keyboard.press('ArrowUp')
         await comfyPage.page.keyboard.press('Enter')
 
@@ -239,7 +173,7 @@ for (const renderer of RENDERERS) {
           }
         })
 
-        await openComboList(comfyPage, 'acceptance_object_combo', {
+        await openKSamplerComboList(comfyPage, 'acceptance_object_combo', {
           hasSearch: false
         })
 

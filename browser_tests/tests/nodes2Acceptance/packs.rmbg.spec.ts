@@ -12,11 +12,13 @@ import {
   countColour,
   dispatchExecuted,
   expectPackLoaded,
+  expectSplitColours,
   keepMixlabOffNodeDrawHooks,
   legacyWidgetPoint,
   nodeBodyPoint,
   nodeScreenRect,
   nodeValue,
+  nodeGeometry,
   showEmptyGraphAtZoomOne,
   uploadSolidImage
 } from '@e2e/fixtures/helpers/nodes2AcceptancePacks'
@@ -35,23 +37,36 @@ for (const renderer of PACK_RENDERERS) {
       })
 
       test('Image Compare View shows both run images (`executed` message) and moves the split to the pointer', async ({
-        comfyPage
+        comfyPage,
+        comfyFiles
       }) => {
-        await uploadSolidImage(comfyPage, 'n2a_rmbg_a.png', RED, [512, 128])
-        await uploadSolidImage(comfyPage, 'n2a_rmbg_b.png', BLUE, [512, 128])
+        const imageA = await uploadSolidImage(
+          comfyPage,
+          comfyFiles,
+          'n2a_rmbg_a.png',
+          RED,
+          [512, 128]
+        )
+        const imageB = await uploadSolidImage(
+          comfyPage,
+          comfyFiles,
+          'n2a_rmbg_b.png',
+          BLUE,
+          [512, 128]
+        )
         const id = await addPackNode(comfyPage, COMPARE_VIEW, [100, 80])
 
         await test.step('deliver two images through an `executed` message', () =>
           dispatchExecuted(comfyPage, id, {
             images: [
               {
-                filename: 'n2a_rmbg_a.png',
+                filename: imageA,
                 subfolder: '',
                 type: 'input',
                 slot: 1
               },
               {
-                filename: 'n2a_rmbg_b.png',
+                filename: imageB,
                 subfolder: '',
                 type: 'input',
                 slot: 2
@@ -60,7 +75,7 @@ for (const renderer of PACK_RENDERERS) {
           }))
 
         const area = await nodeScreenRect(comfyPage, id)
-        await comfyPage.page.mouse.move(5, 5)
+        await comfyPage.canvasOps.moveMouseToEmptyArea()
         await expect(async () => {
           expect(
             await countColour(comfyPage, area, RED),
@@ -87,6 +102,7 @@ for (const renderer of PACK_RENDERERS) {
             500
           )
         }).toPass({ timeout: 10_000 })
+        await expectSplitColours(comfyPage, hover, RED, BLUE)
       })
 
       test('COLORCODE swatch shows its colour and opens the colour picker on click', async ({
@@ -110,7 +126,9 @@ for (const renderer of PACK_RENDERERS) {
           })
           .toBeGreaterThan(1_500)
 
-        const width = (await nodeValue(comfyPage, id, ['size', '0'])) as number
+        const {
+          size: [width]
+        } = await nodeGeometry(comfyPage, id)
         const swatch = await legacyWidgetPoint(
           comfyPage,
           id,

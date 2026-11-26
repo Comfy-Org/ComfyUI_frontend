@@ -1,0 +1,22 @@
+{
+  "last_node_id": 1,
+  "last_link_id": 0,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "mxSeed",
+      "pos": [200, 200],
+      "size": [210, 58],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "properties": { "seed": 0 },
+      "widgets_values": [0]
+    }
+  ],
+  "links": [],
+  "groups": [],
+  "config": {},
+  "extra": { "ds": { "scale": 1, "offset": [0, 0] } },
+  "version": 0.4
+}

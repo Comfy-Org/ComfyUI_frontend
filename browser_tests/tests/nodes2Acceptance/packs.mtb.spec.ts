@@ -1,10 +1,7 @@
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
-
 import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import {
   PACK_RENDERERS,
   PACK_TAGS,
@@ -19,21 +16,14 @@ import {
   nodeLocalPoint,
   nodeLocalRect
 } from '@e2e/fixtures/helpers/nodes2AcceptancePacks.a1'
+import { contains } from '@e2e/fixtures/helpers/nodes2AcceptancePacks.a2'
 
-const NOTE_PLUS = 'Note Plus (mtb)'
-const STACK_IMAGES = 'Stack Images (mtb)'
-const EDIT_ICON_STROKE_ON_NOTE_TITLE = [143, 133, 122] as const
-
-async function editIconRect(comfyPage: ComfyPage, id: NodeId) {
-  return comfyPage.page.evaluate((nodeId) => {
-    const node = window.app!.graph.getNodeById(nodeId)!
-    const rect: Record<'x' | 'y' | 'width' | 'height', number> = Reflect.get(
-      node,
-      'iconRect'
-    )
-    return [rect.x, rect.y, rect.width, rect.height] as const
-  }, id)
-}
+import {
+  NOTE_PLUS,
+  STACK_IMAGES,
+  EDIT_ICON_STROKE_ON_NOTE_TITLE,
+  editIconRect
+} from '@e2e/fixtures/helpers/nodes2AcceptancePacks.mtb'
 
 for (const renderer of PACK_RENDERERS) {
   test.describe(
@@ -57,9 +47,7 @@ for (const renderer of PACK_RENDERERS) {
         const node = await nodeScreenRect(comfyPage, id)
         const box = await heading.boundingBox()
         expect(box, 'heading box').not.toBeNull()
-        expect(box!.x).toBeGreaterThanOrEqual(node.x)
-        expect(box!.y).toBeGreaterThanOrEqual(node.y)
-        expect(box!.y + box!.height).toBeLessThanOrEqual(node.y + node.height)
+        expect(contains(node, box!), 'heading inside node').toBe(true)
       })
 
       test('Note+ edit icon opens the editor and the note shows the edited markdown', async ({
@@ -68,27 +56,33 @@ for (const renderer of PACK_RENDERERS) {
         const id = await addPackNode(comfyPage, NOTE_PLUS, [200, 200])
         const heading = comfyPage.page.locator('.note-plus-preview h1')
         await expect(heading).toHaveText('📝 Note+')
-        const [x, y, width, height] = await editIconRect(comfyPage, id)
 
-        const icon = await nodeLocalPoint(comfyPage, id, [
-          x + width / 2,
-          y + height / 2
-        ])
-        await comfyPage.page.mouse.click(icon.x, icon.y)
-        const editor = comfyPage.page.locator('#noteplus-html-editor')
-        await expect(editor, 'Note+ editor dialog').toBeVisible()
-        await editor.click()
-        await comfyPage.page.keyboard.press('ControlOrMeta+a')
-        await comfyPage.page.keyboard.type('# Edited by acceptance')
+        await test.step('open the note editor from its title icon', async () => {
+          const [x, y, width, height] = await editIconRect(comfyPage, id)
+          const icon = await nodeLocalPoint(comfyPage, id, [
+            x + width / 2,
+            y + height / 2
+          ])
+          await comfyPage.page.mouse.click(icon.x, icon.y)
+          await expect(
+            comfyPage.page.locator('#noteplus-html-editor')
+          ).toBeVisible()
+        })
 
-        await expect(heading).toHaveText('Edited by acceptance')
+        await test.step('edit markdown and see the rendered heading', async () => {
+          const editor = comfyPage.page.locator('#noteplus-html-editor')
+          await editor.click()
+          await comfyPage.page.keyboard.press('ControlOrMeta+a')
+          await comfyPage.page.keyboard.type('# Edited by acceptance')
+          await expect(heading).toHaveText('Edited by acceptance')
+        })
       })
 
       test('Note+ draws its edit icon in the title bar', async ({
         comfyPage
       }) => {
         const id = await addPackNode(comfyPage, NOTE_PLUS, [200, 200])
-        await comfyPage.page.mouse.move(5, 5)
+        await comfyPage.canvasOps.moveMouseToEmptyArea()
         const area = await nodeLocalRect(
           comfyPage,
           id,

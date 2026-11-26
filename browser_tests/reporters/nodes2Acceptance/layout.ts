@@ -21,6 +21,7 @@ export interface HookDrawing {
   pixels: number
   distinctPixels: number
   colours: number[]
+  samples?: { x: number; y: number; colour: number }[]
   box: ClientBox
   nodeSize: { width: number; height: number }
 }
@@ -48,6 +49,8 @@ export interface ProbeTarget {
 
 export interface ProbeOutcome extends ProbeTarget {
   changed: string[]
+  transitions?: Record<string, { before: string | null; after: string | null }>
+  unavailable?: string
   popup: boolean
   pixels: number
 }
@@ -68,6 +71,8 @@ export interface LayoutData {
 
 export type LayoutFinding =
   | { kind: 'notRendered' }
+  | { kind: 'classicUnavailable'; detail: string }
+  | { kind: 'comparisonUnavailable'; widget: string; detail: string }
   | { kind: 'tooBig' | 'tooSmall'; detail: string }
   | { kind: 'hidden'; widget: string }
   | { kind: 'covered'; widget: string; by: string | null }
@@ -143,7 +148,12 @@ function responded(outcome: ProbeOutcome) {
 
 function describeResponse(outcome: ProbeOutcome) {
   const parts = [
-    ...outcome.changed,
+    ...outcome.changed.map((key) => {
+      const transition = outcome.transitions?.[key]
+      return transition
+        ? `${key}: ${transition.before} → ${transition.after}`
+        : key
+    }),
     ...(outcome.popup ? ['opened a popup'] : []),
     ...(outcome.pixels >= MIN_VISUAL_RESPONSE_PIXELS
       ? [`${outcome.pixels} px repainted`]
@@ -162,6 +172,14 @@ function clickPosition(target: ProbeTarget) {
 
 function probeFindings(probes: SurveyedNode['probes']): LayoutFinding[] {
   return probes.classic.flatMap((classic): LayoutFinding[] => {
+    if (classic.unavailable)
+      return [
+        {
+          kind: 'comparisonUnavailable',
+          widget: classic.target,
+          detail: `classic: ${classic.unavailable}`
+        }
+      ]
     if (!responded(classic)) return []
     const nodes2 = probes.nodes2.find(
       (other) =>
@@ -170,7 +188,14 @@ function probeFindings(probes: SurveyedNode['probes']): LayoutFinding[] {
         other.y === classic.y
     )
     const where = clickPosition(classic)
-    if (!nodes2) return []
+    if (!nodes2 || nodes2.unavailable)
+      return [
+        {
+          kind: 'comparisonUnavailable',
+          widget: classic.target,
+          detail: `${where}: Nodes 2.0 ${nodes2?.unavailable ?? 'has no recorded probe'}`
+        }
+      ]
     if (!responded(nodes2))
       return [
         {
@@ -180,8 +205,16 @@ function probeFindings(probes: SurveyedNode['probes']): LayoutFinding[] {
         }
       ]
     const sameChanges =
-      classic.changed.join() === nodes2.changed.join() &&
-      classic.popup === nodes2.popup
+      JSON.stringify(
+        classic.changed
+          .toSorted()
+          .map((key) => [key, classic.transitions?.[key]])
+      ) ===
+        JSON.stringify(
+          nodes2.changed
+            .toSorted()
+            .map((key) => [key, nodes2.transitions?.[key]])
+        ) && classic.popup === nodes2.popup
     return sameChanges
       ? []
       : [
@@ -200,16 +233,31 @@ function drawingFindings(
 ): LayoutFinding[] {
   if (!drawing || drawing.distinctPixels < MIN_DRAWN_PIXELS) return []
   if (nodes2.drawCalls !== 0) return []
-  const found = nodes2.drawingFound ?? 0
+  if (nodes2.drawingFound === null)
+    return [
+      {
+        kind: 'comparisonUnavailable',
+        widget: '(node drawing)',
+        detail: 'Spatial drawing evidence unavailable; rerun collection'
+      }
+    ]
+  const found = nodes2.drawingFound
   return found < drawing.distinctPixels * MIN_FOUND_SHARE
     ? [{ kind: 'drawingMissing', pixels: drawing.distinctPixels, found }]
     : []
 }
 
-/** Differences on Nodes 2.0 that can hide, clip, mis-size or break a node, judged against classic. */
 export function layoutFindings(node: SurveyedNode): LayoutFinding[] {
   const { classic, nodes2 } = node
-  if (!classic.rendered || !classic.rect) return []
+  if (!classic.rendered || !classic.rect)
+    return [
+      {
+        kind: 'classicUnavailable',
+        detail:
+          classic.errors.join('; ') ||
+          'Classic did not render; no comparison was possible'
+      }
+    ]
   if (!nodes2.rendered || !nodes2.rect) return [{ kind: 'notRendered' }]
   const newErrors = nodes2.errors.filter(
     (message) => !classic.errors.includes(message)
@@ -228,6 +276,8 @@ export function layoutFindings(node: SurveyedNode): LayoutFinding[] {
 
 const FINDING_LABELS: Record<LayoutFinding['kind'], string> = {
   notRendered: 'Not rendered',
+  classicUnavailable: 'Classic control unavailable',
+  comparisonUnavailable: 'Comparison unavailable',
   tooBig: 'Too big',
   tooSmall: 'Too small',
   hidden: 'Control hidden',
@@ -247,6 +297,7 @@ function findingText(finding: LayoutFinding) {
       return label
     case 'tooBig':
     case 'tooSmall':
+    case 'classicUnavailable':
       return `${label}: ${finding.detail}`
     case 'hidden':
       return `${label}: ${finding.widget}`
@@ -257,11 +308,12 @@ function findingText(finding: LayoutFinding) {
     case 'overflow':
       return `${label}: ${finding.pixels} px`
     case 'drawingMissing':
-      return `${label}: on classic the pack's node draw hook adds ${finding.pixels} px in colours the node does not otherwise use; Nodes 2.0 does not call the hook and shows ${finding.found} px of those colours there`
+      return `${label}: on classic the pack's node draw hook adds ${finding.pixels} distinct-colour px; Nodes 2.0 does not call the hook and spatially matches ${finding.found} of those px`
     case 'error':
       return `${label}: ${finding.message}`
     case 'noResponse':
     case 'differentResponse':
+    case 'comparisonUnavailable':
       return `${label}: ${finding.widget}, ${finding.detail}`
   }
 }
@@ -286,25 +338,43 @@ function nodeRow(node: SurveyedNode, findings: LayoutFinding[]) {
   return `<tr><td><b>${escapeHtml(node.type)}</b><ul>${list}</ul></td>${imageCell(node.classic.image)}${imageCell(node.nodes2.image)}</tr>`
 }
 
-function packSection(data: LayoutData) {
-  const flagged = data.nodes
-    .map((node) => ({ node, findings: layoutFindings(node) }))
-    .filter(({ findings }) => findings.length > 0)
+function packSection({
+  data,
+  flagged
+}: {
+  data: LayoutData
+  flagged: { node: SurveyedNode; findings: LayoutFinding[] }[]
+}) {
   const rows = flagged.map(({ node, findings }) => nodeRow(node, findings))
   const table = rows.length
     ? `<table><tr><th>Node and differences</th><th>Litegraph</th><th>Nodes 2.0</th></tr>${rows.join('')}</table>`
     : ''
-  return `<h2>${escapeHtml(data.pack)}</h2><p>${flagged.length} of ${data.nodes.length} node types flagged · commit ${escapeHtml(data.commit)}</p>${table}`
+  const unavailable = data.nodes.filter(
+    (node) => !node.classic.rendered || !node.classic.rect
+  ).length
+  const measured = data.nodes.filter(
+    (node) =>
+      node.classic.rendered &&
+      node.classic.rect &&
+      node.nodes2.rendered &&
+      node.nodes2.rect
+  ).length
+  return `<h2>${escapeHtml(data.pack)}</h2><p>${flagged.length} of ${data.nodes.length} node types flagged · Measured pairs: ${measured} · Classic controls unavailable: ${unavailable} · commit ${escapeHtml(data.commit)}</p>${table}`
 }
 
-/** Renders the A/B layout gallery: every flagged node with its differences and both screenshots. */
 export function renderLayoutGallery(packs: LayoutData[]) {
-  const sorted = packs.toSorted((a, b) => a.pack.localeCompare(b.pack))
+  const sorted = packs
+    .toSorted((a, b) => a.pack.localeCompare(b.pack))
+    .map((data) => ({
+      data,
+      flagged: data.nodes
+        .map((node) => ({ node, findings: layoutFindings(node) }))
+        .filter(({ findings }) => findings.length > 0)
+    }))
   const flaggedTotal = sorted.reduce(
-    (sum, data) =>
-      sum + data.nodes.filter((node) => layoutFindings(node).length).length,
+    (sum, { flagged }) => sum + flagged.length,
     0
   )
-  const nodeTotal = sorted.reduce((sum, data) => sum + data.nodes.length, 0)
-  return `<!doctype html><html><head><meta charset="utf-8"><title>Nodes 2.0 layout survey</title><style>body{font:12pt sans-serif;margin:24px}table{border-collapse:collapse}td,th{border:1px solid #ccc;padding:6px;vertical-align:top;text-align:left}img{max-width:520px}</style></head><body><h1>Nodes 2.0 layout survey</h1><p>Every node type in each pinned pack, added on Litegraph and on Nodes 2.0 at zoom 1. ${flaggedTotal} of ${nodeTotal} node types are flagged. Each flag is a measurement; the screenshots are there to confirm it.</p>${sorted.map(packSection).join('')}</body></html>`
+  const nodeTotal = sorted.reduce((sum, { data }) => sum + data.nodes.length, 0)
+  return `<!doctype html><html><head><meta charset="utf-8"><title>Nodes 2.0 layout survey</title><style>body{font:12pt sans-serif;margin:24px}table{border-collapse:collapse}td,th{border:1px solid #ccc;padding:6px;vertical-align:top;text-align:left}img{max-width:520px}</style></head><body><h1>Nodes 2.0 layout survey</h1><p>Node types available and registered in the reduced test backend, added on Litegraph and on Nodes 2.0 at zoom 1. ${flaggedTotal} of ${nodeTotal} node types are flagged, including unavailable comparisons. Each flag is a measurement or collection limitation; the screenshots are there to confirm it.</p>${sorted.map(packSection).join('')}</body></html>`
 }

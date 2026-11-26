@@ -1,121 +1,142 @@
-import path from 'node:path'
-
-import {
-  comfyExpect as expect,
-  comfyPageFixture as test
-} from '@e2e/fixtures/ComfyPage'
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { comfyExpect as expect } from '@e2e/fixtures/ComfyPage'
 import packData from '@e2e/fixtures/data/nodes2AcceptancePacks.json' with { type: 'json' }
-import { keepMixlabOffNodeDrawHooks } from '@e2e/fixtures/helpers/nodes2AcceptancePacks'
-import type { SurveyRenderer } from '@e2e/fixtures/helpers/nodes2LayoutSurvey'
 import {
-  NOT_RENDERED,
-  answerOutsideRequestsLocally,
   measureSurveyNode,
   packNodeTypes,
   placeSurveyNode,
   probeNode,
-  probeTargets
+  probeTargets,
+  surveyRenderer,
+  writeLayoutData
 } from '@e2e/fixtures/helpers/nodes2LayoutSurvey'
-import type {
-  LayoutData,
-  NodeMeasure,
-  ProbeOutcome,
-  ProbeTarget
-} from '@e2e/reporters/nodes2Acceptance/layout'
-import { REPORT_DIR } from '@e2e/reporters/nodes2Acceptance/reportDir'
-import { writeReportFile } from '@e2e/reporters/nodes2Acceptance/reportFiles'
+import {
+  SURVEY_WIDGET,
+  failSurveyWidgetRedraw,
+  installSurveyProbeWidget
+} from '@e2e/fixtures/helpers/nodes2SurveyProbeFixture'
+import { layoutSurveyTest as test } from '@e2e/fixtures/nodes2LayoutSurveyFixture'
 
 const MAX_PROBED_WIDGETS = 6
-
-async function withPageErrors<T>(
-  comfyPage: ComfyPage,
-  action: () => Promise<T>
-): Promise<{ value: T; errors: string[] }> {
-  const errors: string[] = []
-  const collect = (error: Error) =>
-    errors.push(error.message.split('\n')[0].slice(0, 200))
-  comfyPage.page.on('pageerror', collect)
-  try {
-    return { value: await action(), errors }
-  } finally {
-    comfyPage.page.off('pageerror', collect)
-  }
-}
-
-async function measureType(
-  comfyPage: ComfyPage,
-  type: string,
-  imagePath: string,
-  classic?: NodeMeasure
-): Promise<NodeMeasure> {
-  const placed = await withPageErrors(comfyPage, () =>
-    placeSurveyNode(comfyPage, type)
-  )
-  if (placed.value === null) return { ...NOT_RENDERED, errors: placed.errors }
-  return measureSurveyNode(
-    comfyPage,
-    placed.value,
-    imagePath,
-    placed.errors,
-    classic
-  )
-}
-
-async function probeType(
-  comfyPage: ComfyPage,
-  type: string,
-  targets: ProbeTarget[]
-): Promise<ProbeOutcome[]> {
-  const outcomes: ProbeOutcome[] = []
-  for (const target of targets) {
-    const outcome = await probeNode(comfyPage, type, target)
-    if (outcome) outcomes.push(outcome)
-  }
-  return outcomes
-}
-
-async function surveyRenderer(
-  comfyPage: ComfyPage,
-  pack: string,
-  types: string[],
-  renderer: SurveyRenderer,
-  targetsFor: (index: number, measure: NodeMeasure) => ProbeTarget[],
-  classicFor: (index: number) => NodeMeasure | undefined = () => undefined
-) {
-  const passes: { measure: NodeMeasure; probes: ProbeOutcome[] }[] = []
-  for (const [index, type] of types.entries()) {
-    const measure = await measureType(
-      comfyPage,
-      type,
-      `layout/img/${pack}/${index}.${renderer}.png`,
-      classicFor(index)
-    )
-    const probes = await probeType(comfyPage, type, targetsFor(index, measure))
-    passes.push({ measure, probes })
-  }
-  return passes
-}
-
-function writeLayoutData(data: LayoutData) {
-  const file = path.join(REPORT_DIR, 'layout', 'data', `${data.pack}.json`)
-  writeReportFile(file, JSON.stringify(data, null, 2))
-}
-
 const surveyedPacks = packData.packs.filter(
   (pack) => pack.directory !== 'ComfyUI_devtools'
 )
 
 test.describe(
+  'Survey instrumentation',
+  { tag: ['@acceptance-layout', '@vue-nodes'] },
+  () => {
+    test('retains a widget redraw failure and continues collecting nodes', async ({
+      comfyPage
+    }) => {
+      await installSurveyProbeWidget(comfyPage)
+      const id = await placeSurveyNode(comfyPage, 'Note')
+      if (id === null) throw new Error('Note was not placed')
+      await failSurveyWidgetRedraw(comfyPage, id)
+
+      const measure = await measureSurveyNode(
+        comfyPage,
+        id,
+        'layout/img/probe/redraw.png',
+        []
+      )
+      const following = await surveyRenderer(
+        comfyPage,
+        'probe',
+        ['Note'],
+        'nodes2',
+        () => []
+      )
+
+      expect(measure).toMatchObject({
+        rendered: true,
+        errors: [expect.stringContaining('Survey redraw failure')]
+      })
+      expect(following.map((pass) => pass.measure.rendered)).toEqual([true])
+    })
+
+    test('probes quoted widget names and records page errors from the click', async ({
+      comfyPage
+    }) => {
+      await installSurveyProbeWidget(comfyPage, { throwOnClick: true })
+
+      const passes = await surveyRenderer(
+        comfyPage,
+        'probe',
+        ['Note'],
+        'nodes2',
+        () => [{ target: SURVEY_WIDGET, x: 0.5, y: 0.5 }]
+      )
+
+      expect(passes[0].probes[0]).toMatchObject({
+        transitions: {
+          [`widget ${SURVEY_WIDGET}`]: { before: '0', after: '1' }
+        }
+      })
+      expect(passes[0].measure.errors).toContain('Survey probe click error')
+    })
+
+    test('records offscreen probe points as unavailable instead of clicking', async ({
+      comfyPage
+    }) => {
+      await installSurveyProbeWidget(comfyPage, {
+        name: 'tall widget',
+        height: 3000
+      })
+
+      const outcome = await probeNode(comfyPage, 'Note', {
+        target: 'tall widget',
+        x: 0.5,
+        y: 0.9
+      })
+
+      expect(outcome).toMatchObject({
+        unavailable: 'Probe point is outside the viewport',
+        changed: [],
+        pixels: 0
+      })
+    })
+
+    test('collects registered candidates on classic before switching back to Nodes 2.0', async ({
+      comfyPage
+    }) => {
+      const types = await packNodeTypes(comfyPage, '__survey_probe__', [
+        'Note',
+        'Unavailable survey node'
+      ])
+      expect(types).toEqual(['Note'])
+      const classic = await surveyRenderer(
+        comfyPage,
+        'probe',
+        types,
+        'classic',
+        () => []
+      )
+      await expect(comfyPage.vueNodes.nodes).toHaveCount(0)
+
+      const nodes2 = await surveyRenderer(
+        comfyPage,
+        'probe',
+        types,
+        'nodes2',
+        () => []
+      )
+
+      await expect(comfyPage.vueNodes.nodes).toHaveCount(1)
+      expect([classic[0].measure.rendered, nodes2[0].measure.rendered]).toEqual(
+        [true, true]
+      )
+    })
+  }
+)
+
+test.describe(
   'Node pack layout survey: classic against Nodes 2.0',
-  { tag: ['@nodes2-acceptance', '@acceptance-layout'] },
+  { tag: ['@nodes2-acceptance', '@acceptance-layout', '@vue-nodes'] },
   () => {
     for (const pack of surveyedPacks) {
-      test(`${pack.directory} node types render and respond the same`, async ({
+      test(`${pack.directory} collects layout and response comparisons`, async ({
         comfyPage
       }) => {
-        await keepMixlabOffNodeDrawHooks(comfyPage)
-        await answerOutsideRequestsLocally(comfyPage)
         const types = await packNodeTypes(
           comfyPage,
           pack.directory,
@@ -132,8 +153,6 @@ test.describe(
           'classic',
           (_, measure) => probeTargets(measure, MAX_PROBED_WIDGETS)
         )
-        await comfyPage.vueNodes.setEnabled(true)
-        comfyPage.isVueNodes = true
         const nodes2 = await surveyRenderer(
           comfyPage,
           pack.directory,

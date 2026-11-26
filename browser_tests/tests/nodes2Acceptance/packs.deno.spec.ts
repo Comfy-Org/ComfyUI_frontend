@@ -1,10 +1,7 @@
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
-
 import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import type { Rgb } from '@e2e/fixtures/helpers/nodes2AcceptancePacks'
 import {
   BLUE,
@@ -13,79 +10,38 @@ import {
   RED,
   addPackNode,
   countColour,
-  dispatchExecuted,
   expectPackLoaded,
+  expectSplitColours,
   keepMixlabOffNodeDrawHooks,
-  inputImage,
   legacyWidgetPoint,
   nodeScreenRect,
-  redrawCanvas,
   showEmptyGraphAtZoomOne,
-  uploadSolidImage,
-  widgetState
+  uploadSolidImage
 } from '@e2e/fixtures/helpers/nodes2AcceptancePacks'
 import {
   nodeLocalPoint,
   panCanvasY,
   widgetClientTop
 } from '@e2e/fixtures/helpers/nodes2AcceptancePacks.a1'
+import {
+  widgetValue,
+  addImageCompareWithRunOutput,
+  comparePanelWidth,
+  toggleBounds,
+  previewPoint
+} from '@e2e/fixtures/helpers/nodes2AcceptancePacks.deno'
 
 const IMAGE_COMPARE = 'DenoImageCompare'
 const RESIZE_BOX = 'DenoResolutionSetup'
 const MULTI_LORA = 'DenoMultiLoraLoader'
 const COMPARE_WIDGET = 'deno_image_compare_canvas'
 const FIRST_LORA_ROW = 'deno_multi_lora_row_1'
-const COMPARE_PREVIEW_TOP = 146
 const COMPARE_MODE_BUTTONS_TOP = 72
 const DIFFERENCE_OF_RED_AND_BLUE_UNDER_GREEN_TINT: Rgb = [222, 46, 222]
 const LORA_TOGGLE_ON: Rgb = [0x88, 0x99, 0xbb]
 const CLASSIC_FIRST_LORA_ROW_OFFSET = 109
 const CLASSIC_COMPARE_PANEL_OFFSET = 76
 const CLASSIC_RESIZE_BOX_WIDGET_SPAN = 120
-
-async function widgetValue(comfyPage: ComfyPage, id: NodeId, name: string) {
-  return widgetState(comfyPage, id, name, ['value'])
-}
-
-async function addImageCompareWithRunOutput(comfyPage: ComfyPage) {
-  await uploadSolidImage(comfyPage, 'n2a_deno_a.png', RED, [512, 256])
-  await uploadSolidImage(comfyPage, 'n2a_deno_b.png', BLUE, [512, 256])
-  const id = await addPackNode(comfyPage, IMAGE_COMPARE, [150, 110])
-  await dispatchExecuted(comfyPage, id, {
-    a_images: [inputImage('n2a_deno_a.png')],
-    b_images: [inputImage('n2a_deno_b.png')]
-  })
-  await expect
-    .poll(() =>
-      comfyPage.page.evaluate((nodeId) => {
-        const node = window.app!.graph.getNodeById(nodeId)!
-        const images: Record<'a' | 'b', { loaded: boolean } | null> =
-          Reflect.get(node, '__denoImageCompareImages') ?? {}
-        return Boolean(images.a?.loaded && images.b?.loaded)
-      }, id)
-    )
-    .toBe(true)
-  return id
-}
-
-async function comparePanelWidth(comfyPage: ComfyPage, id: NodeId) {
-  const nodeWidth = await comfyPage.page.evaluate(
-    (nodeId) => window.app!.graph.getNodeById(nodeId)!.size[0],
-    id
-  )
-  return Math.max(nodeWidth - 28, 532)
-}
-
-async function previewPoint(comfyPage: ComfyPage, id: NodeId, fx: number) {
-  const panelWidth = await comparePanelWidth(comfyPage, id)
-  return legacyWidgetPoint(
-    comfyPage,
-    id,
-    COMPARE_WIDGET,
-    26 + (panelWidth - 24) * fx,
-    COMPARE_PREVIEW_TOP + 100
-  )
-}
 
 for (const renderer of PACK_RENDERERS) {
   test.describe(
@@ -99,9 +55,10 @@ for (const renderer of PACK_RENDERERS) {
       })
 
       test('Image Compare (run output delivered by an `executed` message) moves the split to the hovered point', async ({
-        comfyPage
+        comfyPage,
+        comfyFiles
       }) => {
-        const id = await addImageCompareWithRunOutput(comfyPage)
+        const id = await addImageCompareWithRunOutput(comfyPage, comfyFiles)
         expect(await widgetValue(comfyPage, id, 'split_position')).toBe(0.5)
 
         const left = await previewPoint(comfyPage, id, 0.2)
@@ -122,12 +79,14 @@ for (const renderer of PACK_RENDERERS) {
           expect(red / (red + blue), 'share of image A').toBeGreaterThan(0.7)
           expect(red / (red + blue), 'share of image A').toBeLessThan(0.9)
         }).toPass({ timeout: 10_000 })
+        await expectSplitColours(comfyPage, right, RED, BLUE)
       })
 
       test('Image Compare (run output delivered by an `executed` message) redraws as a difference when Difference is clicked', async ({
-        comfyPage
+        comfyPage,
+        comfyFiles
       }) => {
-        const id = await addImageCompareWithRunOutput(comfyPage)
+        const id = await addImageCompareWithRunOutput(comfyPage, comfyFiles)
         const panelWidth = await comparePanelWidth(comfyPage, id)
         const buttonWidth = (panelWidth - 28 - 24) / 4
         const difference = await legacyWidgetPoint(
@@ -139,7 +98,7 @@ for (const renderer of PACK_RENDERERS) {
         )
 
         await comfyPage.page.mouse.click(difference.x, difference.y)
-        await comfyPage.page.mouse.move(5, 5)
+        await comfyPage.canvasOps.moveMouseToEmptyArea()
 
         await expect
           .poll(() => widgetValue(comfyPage, id, 'mode'))
@@ -159,18 +118,24 @@ for (const renderer of PACK_RENDERERS) {
       })
 
       test('Resize Box crop position moves when the crop box is dragged', async ({
-        comfyPage
+        comfyPage,
+        comfyFiles
       }) => {
-        await uploadSolidImage(comfyPage, 'n2a_deno_source.png', RED)
+        const filename = await uploadSolidImage(
+          comfyPage,
+          comfyFiles,
+          'n2a_deno_source.png',
+          RED
+        )
         const loaderId = await addPackNode(comfyPage, 'LoadImage', [60, 130])
         const id = await addPackNode(comfyPage, RESIZE_BOX, [480, 130])
         await comfyPage.page.evaluate(
-          ({ loaderId, id }) => {
+          ({ loaderId, id, filename }) => {
             const graph = window.app!.graph
             const loader = graph.getNodeById(loaderId)!
             const box = graph.getNodeById(id)!
             const image = loader.widgets!.find((w) => w.name === 'image')!
-            image.value = 'n2a_deno_source.png'
+            image.value = filename
             image.callback?.(image.value)
             loader.connect(0, box, 'image')
             const method = box.widgets!.find((w) => w.name === 'resize_method')!
@@ -178,7 +143,7 @@ for (const renderer of PACK_RENDERERS) {
             method.callback?.(method.value)
             window.app!.canvas.setDirty(true, true)
           },
-          { loaderId, id }
+          { loaderId, id, filename }
         )
         expect(await widgetValue(comfyPage, id, 'crop_y')).toBe(0.5)
 
@@ -218,27 +183,7 @@ for (const renderer of PACK_RENDERERS) {
       }) => {
         const id = await addPackNode(comfyPage, MULTI_LORA, [150, 150])
         expect(await widgetValue(comfyPage, id, 'enabled_1')).toBe(true)
-        const toggleBounds = async () => {
-          await expect
-            .poll(async () => {
-              await redrawCanvas(comfyPage)
-              return widgetState(comfyPage, id, FIRST_LORA_ROW, [
-                'hitAreas',
-                'toggle',
-                'bounds',
-                '1'
-              ])
-            })
-            .toBeGreaterThan(0)
-          const bounds = await widgetState(comfyPage, id, FIRST_LORA_ROW, [
-            'hitAreas',
-            'toggle',
-            'bounds'
-          ])
-          if (!Array.isArray(bounds)) throw new Error('toggle bounds missing')
-          return bounds.map(Number)
-        }
-        const [x, width] = await toggleBounds()
+        const [x, width] = await toggleBounds(comfyPage, id, FIRST_LORA_ROW)
         await panCanvasY(
           comfyPage,
           await widgetClientTop(comfyPage, id, FIRST_LORA_ROW),
@@ -252,7 +197,7 @@ for (const renderer of PACK_RENDERERS) {
           0
         )
         const row = { x: rowStart.x, y: rowStart.y - 2, width: 120, height: 26 }
-        await comfyPage.page.mouse.move(5, 5)
+        await comfyPage.canvasOps.moveMouseToEmptyArea()
         await expect
           .poll(() => countColour(comfyPage, row, LORA_TOGGLE_ON, 10), {
             message: 'enabled toggle knob'
@@ -267,7 +212,7 @@ for (const renderer of PACK_RENDERERS) {
           10
         )
         await comfyPage.page.mouse.click(toggle.x, toggle.y)
-        await comfyPage.page.mouse.move(5, 5)
+        await comfyPage.canvasOps.moveMouseToEmptyArea()
 
         await expect
           .poll(() => widgetValue(comfyPage, id, 'enabled_1'))

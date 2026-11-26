@@ -1,23 +1,20 @@
-import { crc32, deflateSync } from 'node:zlib'
-
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { Bounds, Point2D } from '@comfyorg/shared-frontend-utils/geometry'
+import { createSolidPng } from '@e2e/fixtures/helpers/nodes2AcceptanceInputs'
 
 import {
   decodePng,
   matchingPixels,
   nearColour
 } from '@e2e/fixtures/helpers/decodedImage'
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { randomUUID } from 'node:crypto'
+
+import type { ComfyFiles, ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyExpect as expect } from '@e2e/fixtures/ComfyPage'
 import packData from '@e2e/fixtures/data/nodes2AcceptancePacks.json' with { type: 'json' }
 
-export interface ClientRect {
-  x: number
-  y: number
-  width: number
-  height: number
-}
+export type ClientRect = Bounds
 
 export type Rgb = readonly [number, number, number]
 
@@ -41,7 +38,6 @@ function packEntry(directory: PackDirectory) {
   return entry
 }
 
-/** Fails naming the pack unless its node types and frontend extensions loaded. */
 export async function expectPackLoaded(
   comfyPage: ComfyPage,
   directory: PackDirectory
@@ -81,10 +77,6 @@ export async function expectPackLoaded(
   ).toEqual([])
 }
 
-/**
- * Answers ComfyUI-Manager's badge_mode route so comfyui-mixlab-nodes does not
- * replace every new node's own onDrawForeground with the prototype's.
- */
 export async function keepMixlabOffNodeDrawHooks(comfyPage: ComfyPage) {
   await comfyPage.page.route('**/manager/badge_mode', (route) =>
     route.fulfill({ status: 200, contentType: 'text/plain', body: 'none' })
@@ -141,7 +133,6 @@ export async function graphToClient(
   return { x, y }
 }
 
-/** A point inside the node body, as fractions of node.size from node.pos. */
 export async function nodeBodyPoint(
   comfyPage: ComfyPage,
   nodeId: NodeId,
@@ -161,7 +152,6 @@ export async function nodeBodyPoint(
   return graphToClient(comfyPage, point)
 }
 
-/** The node's on-screen box including its title bar. */
 export async function nodeScreenRect(
   comfyPage: ComfyPage,
   nodeId: NodeId
@@ -201,7 +191,6 @@ export async function redrawCanvas(comfyPage: ComfyPage) {
   await comfyPage.nextFrame()
 }
 
-/** Counts pixels within `tolerance` of `rgb` after a full canvas redraw. */
 export async function countColour(
   comfyPage: ComfyPage,
   rect: ClientRect,
@@ -229,7 +218,6 @@ export async function countColour(
   ).length
 }
 
-/** Client-space centre of the pixels within `tolerance` of `rgb`, or null. */
 export async function colourCentre(
   comfyPage: ComfyPage,
   rect: ClientRect,
@@ -259,40 +247,15 @@ export async function colourCentre(
   return { x: x + sum.x / matches.length, y: y + sum.y / matches.length }
 }
 
-function solidPng(width: number, height: number, rgb: Rgb): Buffer {
-  const chunk = (type: string, data: Buffer) => {
-    const typed = Buffer.concat([Buffer.from(type, 'ascii'), data])
-    const length = Buffer.alloc(4)
-    length.writeUInt32BE(data.length)
-    const checksum = Buffer.alloc(4)
-    checksum.writeUInt32BE(crc32(typed))
-    return Buffer.concat([length, typed, checksum])
-  }
-  const header = Buffer.alloc(13)
-  header.writeUInt32BE(width, 0)
-  header.writeUInt32BE(height, 4)
-  header.writeUInt8(8, 8)
-  header.writeUInt8(2, 9)
-  const row = Buffer.concat([
-    Buffer.from([0]),
-    Buffer.from(Array.from({ length: width }, () => [...rgb]).flat())
-  ])
-  const pixels = Buffer.concat(Array.from({ length: height }, () => row))
-  return Buffer.concat([
-    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
-    chunk('IHDR', header),
-    chunk('IDAT', deflateSync(pixels)),
-    chunk('IEND', Buffer.alloc(0))
-  ])
-}
-
-/** Uploads a solid-colour PNG to the input folder and returns its file name. */
 export async function uploadSolidImage(
   comfyPage: ComfyPage,
-  name: string,
+  comfyFiles: ComfyFiles,
+  originalName: string,
   rgb: Rgb,
   size: readonly [number, number] = [256, 256]
 ) {
+  const name = `${randomUUID()}-${originalName}`
+  comfyFiles.deleteAfterTest({ filename: name, type: 'input' })
   const response = await comfyPage.request.post(
     `${comfyPage.url}/api/upload/image`,
     {
@@ -300,7 +263,7 @@ export async function uploadSolidImage(
         image: {
           name,
           mimeType: 'image/png',
-          buffer: solidPng(size[0], size[1], rgb)
+          buffer: createSolidPng(size[0], size[1], [...rgb])
         },
         overwrite: 'true',
         type: 'input'
@@ -317,7 +280,6 @@ export const inputImage = (filename: string) => ({
   type: 'input'
 })
 
-/** Delivers a node output the way the server's `executed` message does. */
 export async function dispatchExecuted(
   comfyPage: ComfyPage,
   nodeId: NodeId,
@@ -337,7 +299,6 @@ export async function dispatchExecuted(
   await comfyPage.nextFrame()
 }
 
-/** Dispatches a pack's own API event (a server broadcast the pack listens for). */
 export async function dispatchPackEvent(
   comfyPage: ComfyPage,
   type: string,
@@ -355,7 +316,6 @@ export async function dispatchPackEvent(
   await comfyPage.nextFrame()
 }
 
-/** Client point at (x, y) inside a canvas-drawn widget, from its top-left. */
 export async function legacyWidgetPoint(
   comfyPage: ComfyPage,
   nodeId: NodeId,
@@ -433,4 +393,37 @@ export async function nodeValue(
       ),
     { nodeId, path }
   )
+}
+
+export async function nodeGeometry(comfyPage: ComfyPage, nodeId: NodeId) {
+  return comfyPage.page.evaluate((id) => {
+    const node = window.app!.graph.getNodeById(id)!
+    return { pos: [...node.pos], size: [...node.size] }
+  }, nodeId)
+}
+
+export async function expectSplitColours(
+  comfyPage: ComfyPage,
+  split: Point2D,
+  left: Rgb,
+  right: Rgb
+) {
+  const leftSample = { x: split.x - 24, y: split.y - 5, width: 10, height: 10 }
+  const rightSample = { x: split.x + 14, y: split.y - 5, width: 10, height: 10 }
+  await expect(async () => {
+    expect(await countColour(comfyPage, leftSample, left)).toBeGreaterThan(80)
+    expect(await countColour(comfyPage, rightSample, right)).toBeGreaterThan(80)
+    expect(await countColour(comfyPage, leftSample, right)).toBe(0)
+    expect(await countColour(comfyPage, rightSample, left)).toBe(0)
+  }).toPass({ timeout: 10_000 })
+}
+
+const isTetrisPieceColour = (r: number, g: number, b: number) =>
+  Math.max(r, g, b) > 100 && Math.max(r, g, b) - Math.min(r, g, b) > 80
+
+export async function tetrisPiecePixels(comfyPage: ComfyPage, field: Bounds) {
+  await redrawCanvas(comfyPage)
+  const png = await comfyPage.page.screenshot({ clip: field })
+  return matchingPixels(await decodePng(comfyPage, png), isTetrisPieceColour)
+    .length
 }

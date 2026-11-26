@@ -57,7 +57,7 @@ const INPUTS: Requirement[] = [
   },
   {
     group: 'Size and layout',
-    text: 'Socket dot is 8 px across (10 px when highlighted)',
+    text: 'Unhighlighted socket dot is 8 px across',
     tests: [t('a socket dot is 8 px across')]
   },
   {
@@ -109,7 +109,7 @@ const INPUTS: Requirement[] = [
   },
   {
     group: 'Size and layout',
-    text: 'Saving in one renderer and opening in the other keeps node sizes and links',
+    text: 'Switching renderers keeps the size of a Load Image node with a preview',
     tests: [
       t(
         'switching renderers keeps the size of a Load Image node showing an image'
@@ -160,7 +160,7 @@ const INPUTS: Requirement[] = [
   },
   {
     group: 'Value behaviour',
-    text: 'Numbers are clamped to min/max',
+    text: 'Numbers above the maximum are clamped to the maximum',
     tests: [t('typing a number above its maximum stores the maximum')]
   },
   {
@@ -175,22 +175,22 @@ const INPUTS: Requirement[] = [
   },
   {
     group: 'Value behaviour',
-    text: 'Read-only slider ignores clicks and drags',
+    text: 'Read-only slider ignores drags',
     tests: [t('a read-only slider ignores drags')]
   },
   {
     group: 'Value behaviour',
-    text: 'Knob is drawn and can be dragged',
+    text: 'Knob is drawn',
     tests: [t('a knob widget is drawn')]
   },
   {
     group: 'Value behaviour',
-    text: 'Combo arrows stop at the ends',
+    text: 'Next combo arrow stops at the last option',
     tests: [t('the next arrow on the last combo option keeps the last option')]
   },
   {
     group: 'Value behaviour',
-    text: 'From an invalid value, both combo arrows go to the first option',
+    text: 'From an invalid value, previous combo arrow goes to the first option',
     tests: [
       t('stepping back from an invalid combo value selects the first option')
     ]
@@ -202,7 +202,7 @@ const INPUTS: Requirement[] = [
   },
   {
     group: 'Value behaviour',
-    text: 'Combo list keys: ↑/↓ wrap, ← first, → last',
+    text: 'Combo list keys: ↑ wraps, → selects last',
     tests: [
       t(
         'arrow up from the first option of an open combo list wraps to the last'
@@ -268,7 +268,7 @@ const INPUTS: Requirement[] = [
   },
   {
     group: 'Events, states and menus',
-    text: 'A linked widget keeps its 24 px row with its name dimmed',
+    text: 'A linked widget keeps its 24 px row',
     tests: [t('a linked widget keeps a 24 px row pitch')]
   },
   {
@@ -287,7 +287,39 @@ const INPUTS: Requirement[] = [
     group: 'Events, states and menus',
     text: 'Tooltip shows the widget description only',
     notTested: DECIDE
-  }
+  },
+  ...[
+    {
+      group: 'Size and layout',
+      text: 'Highlighted socket dot is 10 px across'
+    },
+    {
+      group: 'Size and layout',
+      text: 'Save and reopen in the other renderer preserves links'
+    },
+    {
+      group: 'Value behaviour',
+      text: 'Numbers below the minimum are clamped to the minimum'
+    },
+    { group: 'Value behaviour', text: 'Read-only slider ignores clicks' },
+    { group: 'Value behaviour', text: 'Knob can be dragged' },
+    {
+      group: 'Value behaviour',
+      text: 'Previous combo arrow stops at the first option'
+    },
+    {
+      group: 'Value behaviour',
+      text: 'From an invalid value, next combo arrow selects the first option'
+    },
+    {
+      group: 'Value behaviour',
+      text: 'Combo list keys: ↓ wraps, ← selects first'
+    },
+    { group: 'Events, states and menus', text: 'Linked widget name is dimmed' }
+  ].map((requirement) => ({
+    ...requirement,
+    notTested: 'No scenario exercises this complementary behavior yet.'
+  }))
 ]
 
 const NOT_INSTALLED =

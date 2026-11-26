@@ -4,10 +4,9 @@ import {
   PERF_RENDERERS,
   PERF_VIEWPORT,
   WORKING_ZOOM,
-  annotatePerf,
-  gestureFrameStats,
-  refreshes
+  annotatePerf
 } from '@e2e/fixtures/helpers/Nodes2PerfHelper'
+import { gestureFrameStats } from '@e2e/fixtures/utils/nodes2PerfStats'
 
 const GRAPH_SIZES = [
   { nodes: 200, panOnly: false },
@@ -15,9 +14,7 @@ const GRAPH_SIZES = [
 ]
 
 const FRAME_P95_MS = 33
-const FRAME_P95_REFRESHES = 2
 const ZOOM_WORST_FRAME_MS = 50
-const ZOOM_WORST_REFRESHES = 3
 
 test.use({ viewport: PERF_VIEWPORT })
 
@@ -50,10 +47,9 @@ for (const renderer of PERF_RENDERERS) {
               await nodes2Perf.measurePan(0.8, 90)
             )
             annotatePerf({ scenario: 'pan-working', ...stats })
-            expect(
-              refreshes(stats.p95),
-              'pan p95 frame time in display refreshes'
-            ).toBeLessThanOrEqual(FRAME_P95_REFRESHES)
+            expect(stats.p95, 'pan p95 frame time in ms').toBeLessThanOrEqual(
+              FRAME_P95_MS
+            )
           })
 
           if (size.panOnly) return
@@ -67,10 +63,9 @@ for (const renderer of PERF_RENDERERS) {
               await nodes2Perf.measureDrag(node.id, [node.id])
             )
             annotatePerf({ scenario: 'drag-one-working', ...stats })
-            expect(
-              refreshes(stats.p95),
-              'drag p95 frame time in display refreshes'
-            ).toBeLessThanOrEqual(FRAME_P95_REFRESHES)
+            expect(stats.p95, 'drag p95 frame time in ms').toBeLessThanOrEqual(
+              FRAME_P95_MS
+            )
           })
 
           test(`dragging 50 selected nodes at working zoom keeps p95 frame time within ${FRAME_P95_MS} ms`, async ({
@@ -83,10 +78,9 @@ for (const renderer of PERF_RENDERERS) {
               await nodes2Perf.measureDrag(node.id, selected)
             )
             annotatePerf({ scenario: 'drag-50-working', ...stats })
-            expect(
-              refreshes(stats.p95),
-              'drag p95 frame time in display refreshes'
-            ).toBeLessThanOrEqual(FRAME_P95_REFRESHES)
+            expect(stats.p95, 'drag p95 frame time in ms').toBeLessThanOrEqual(
+              FRAME_P95_MS
+            )
           })
 
           test(`panning with the whole graph in view keeps p95 frame time within ${FRAME_P95_MS} ms`, async ({
@@ -97,10 +91,9 @@ for (const renderer of PERF_RENDERERS) {
               await nodes2Perf.measurePan(0.2, 40)
             )
             annotatePerf({ scenario: 'pan-fit', ...stats })
-            expect(
-              refreshes(stats.p95),
-              'pan p95 frame time in display refreshes'
-            ).toBeLessThanOrEqual(FRAME_P95_REFRESHES)
+            expect(stats.p95, 'pan p95 frame time in ms').toBeLessThanOrEqual(
+              FRAME_P95_MS
+            )
           })
 
           test(`a zoom sweep across the low-quality threshold has no frame over ${ZOOM_WORST_FRAME_MS} ms`, async ({
@@ -113,10 +106,9 @@ for (const renderer of PERF_RENDERERS) {
               worst,
               ...gestureFrameStats(sample)
             })
-            expect(
-              refreshes(worst),
-              'worst zoom frame time in display refreshes'
-            ).toBeLessThanOrEqual(ZOOM_WORST_REFRESHES)
+            expect(worst, 'worst zoom frame time in ms').toBeLessThanOrEqual(
+              ZOOM_WORST_FRAME_MS
+            )
           })
 
           test(`dragging one node with the whole graph in view keeps p95 frame time within ${FRAME_P95_MS} ms`, async ({
@@ -128,10 +120,9 @@ for (const renderer of PERF_RENDERERS) {
               await nodes2Perf.measureDrag(node.id, [node.id])
             )
             annotatePerf({ scenario: 'drag-one-fit', ...stats })
-            expect(
-              refreshes(stats.p95),
-              'drag p95 frame time in display refreshes'
-            ).toBeLessThanOrEqual(FRAME_P95_REFRESHES)
+            expect(stats.p95, 'drag p95 frame time in ms').toBeLessThanOrEqual(
+              FRAME_P95_MS
+            )
           })
 
           test(`dragging 50 selected nodes with the whole graph in view keeps p95 frame time within ${FRAME_P95_MS} ms`, async ({
@@ -144,10 +135,9 @@ for (const renderer of PERF_RENDERERS) {
               await nodes2Perf.measureDrag(node.id, selected)
             )
             annotatePerf({ scenario: 'drag-50-fit', ...stats })
-            expect(
-              refreshes(stats.p95),
-              'drag p95 frame time in display refreshes'
-            ).toBeLessThanOrEqual(FRAME_P95_REFRESHES)
+            expect(stats.p95, 'drag p95 frame time in ms').toBeLessThanOrEqual(
+              FRAME_P95_MS
+            )
           })
         })
       }

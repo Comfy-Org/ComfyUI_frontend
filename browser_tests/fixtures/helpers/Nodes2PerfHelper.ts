@@ -7,6 +7,7 @@ import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { createLargePng } from '@e2e/fixtures/data/largePng'
 import { NODES2_ACCEPTANCE_SETTINGS } from '@e2e/fixtures/data/nodes2AcceptanceSettings'
 import { realisticPipelineGraph } from '@e2e/fixtures/data/realisticPipelineGraph'
+import { median, round } from '@e2e/fixtures/utils/nodes2PerfStats'
 
 interface FrameProbe {
   costs: number[]
@@ -14,6 +15,7 @@ interface FrameProbe {
   keyLatencies: number[]
   recording: boolean
   flushKeys: () => void
+  resetFrames: () => void
 }
 
 interface ViewBox {
@@ -50,86 +52,14 @@ export const PERF_VIEWPORT = { width: 1920, height: 1080 }
 export const WORKING_ZOOM = 0.75
 const LOW_QUALITY_ZOOM = 8 / 14
 
-const PREVIEW_IMAGE = 'nodes2-acceptance-perf.png'
 const QUIET_FRAMES = 30
 const SLOW_FRAME_MS = 50
 const SETTLE_CAP_MS = 180_000
-const MIN_ACTIVE_FRAME_MS = 2
 
 export interface LoadSample {
   timeToInteractiveMs: number
   heapMB: number
   vueNodeElements: number
-}
-
-export interface GestureSample {
-  steps: number
-  frames: number[]
-  intervals: number[]
-}
-
-export interface FrameStats {
-  frames: number
-  median: number
-  p95: number
-  max: number
-  medianFps: number
-  mainThreadMedian: number
-  mainThreadP95: number
-}
-
-const REFRESH_MS = 1000 / 60
-
-function nearestRank(sorted: readonly number[], percentile: number) {
-  const index = Math.ceil((percentile / 100) * sorted.length) - 1
-  return sorted[Math.min(sorted.length - 1, Math.max(0, index))]
-}
-
-export function median(values: readonly number[]) {
-  const sorted = [...values].sort((a, b) => a - b)
-  const middle = Math.floor(sorted.length / 2)
-  return sorted.length % 2
-    ? sorted[middle]
-    : (sorted[middle - 1] + sorted[middle]) / 2
-}
-
-function heaviest(values: readonly number[], count: number) {
-  return [...values]
-    .sort((a, b) => b - a)
-    .slice(0, count)
-    .sort((a, b) => a - b)
-}
-
-/**
- * Frame times (intervals between rendered frames) over the slowest frame per
- * input step, plus main-thread cost per frame for diagnosis.
- */
-export function gestureFrameStats(sample: GestureSample): FrameStats {
-  const frameTimes = heaviest(sample.intervals, sample.steps)
-  const costs = heaviest(
-    sample.frames.filter((cost) => cost >= MIN_ACTIVE_FRAME_MS),
-    sample.steps
-  )
-  if (frameTimes.length === 0 || costs.length === 0)
-    throw new Error('the gesture produced no measurable frames')
-  return {
-    frames: frameTimes.length,
-    median: round(median(frameTimes)),
-    p95: round(nearestRank(frameTimes, 95)),
-    max: round(frameTimes[frameTimes.length - 1]),
-    medianFps: round(1000 / median(frameTimes)),
-    mainThreadMedian: round(median(costs)),
-    mainThreadP95: round(nearestRank(costs, 95))
-  }
-}
-
-/** Whole display refreshes a frame time spans, absorbing timer jitter. */
-export function refreshes(frameTimeMs: number) {
-  return Math.round(frameTimeMs / REFRESH_MS)
-}
-
-function round(value: number, digits = 1) {
-  return Number(value.toFixed(digits))
 }
 
 function spread(values: readonly number[]) {
@@ -141,8 +71,7 @@ function spread(values: readonly number[]) {
   }
 }
 
-/** Median of Nodes 2.0 over median of classic, with both spreads. */
-export function compareRenderers<T>(
+function compareRenderers<T>(
   samples: Record<RendererName, T[]>,
   value: (sample: T) => number
 ) {
@@ -155,7 +84,6 @@ export function compareRenderers<T>(
   }
 }
 
-/** Reports measured values as a test annotation so runs can be compared. */
 export function annotatePerf(data: object) {
   test.info().annotations.push({
     type: 'perf',
@@ -166,7 +94,10 @@ export function annotatePerf(data: object) {
 export class Nodes2PerfHelper {
   private cdp: CDPSession | null = null
 
-  constructor(private readonly comfyPage: ComfyPage) {}
+  constructor(
+    private readonly comfyPage: ComfyPage,
+    private readonly previewImage: string
+  ) {}
 
   private get page() {
     return this.comfyPage.page
@@ -186,11 +117,10 @@ export class Nodes2PerfHelper {
       {
         multipart: {
           image: {
-            name: PREVIEW_IMAGE,
+            name: this.previewImage,
             mimeType: 'image/png',
             buffer: createLargePng(1024, 1024, 7)
           },
-          overwrite: 'true',
           type: 'input'
         }
       }
@@ -198,10 +128,6 @@ export class Nodes2PerfHelper {
     expect(response.ok(), 'preview image upload').toBe(true)
   }
 
-  /**
-   * Runs `measure` on a fresh page per renderer, alternating which renderer
-   * goes first each repetition so drift affects both equally.
-   */
   async interleave<T>(
     repetitions: number,
     measure: (renderer: PerfRenderer) => Promise<T>
@@ -221,6 +147,61 @@ export class Nodes2PerfHelper {
     return samples
   }
 
+  async compareLoad(nodeCount: number, repetitions: number) {
+    const samples = await this.interleave(repetitions, (renderer) =>
+      this.loadGraph(renderer, nodeCount)
+    )
+    return {
+      time: compareRenderers(samples, (sample) => sample.timeToInteractiveMs),
+      heap: compareRenderers(samples, (sample) => sample.heapMB)
+    }
+  }
+
+  async compareIdle({
+    nodeCount,
+    repetitions,
+    frames
+  }: {
+    nodeCount: number
+    repetitions: number
+    frames: number
+  }) {
+    const samples = await this.interleave(repetitions, async (renderer) => {
+      await this.loadGraph(renderer, nodeCount)
+      await this.showAt(WORKING_ZOOM)
+      return this.idleBusyPercent(frames)
+    })
+    return compareRenderers(samples, (sample) => sample)
+  }
+
+  async compareTyping({
+    nodeCount,
+    repetitions,
+    keys
+  }: {
+    nodeCount: number
+    repetitions: number
+    keys: number
+  }) {
+    const samples = await this.interleave(repetitions, async (renderer) => {
+      await this.loadGraph(renderer, nodeCount)
+      return median(await this.measureTyping(keys))
+    })
+    return compareRenderers(samples, (sample) => sample)
+  }
+
+  async compareVisitedHeap(nodeCount: number, repetitions: number) {
+    const samples = await this.interleave(repetitions, async (renderer) => {
+      await this.loadGraph(renderer, nodeCount)
+      const viewports = await this.visitWholeGraph()
+      return { viewports, heapMB: await this.heapAfterGcMB() }
+    })
+    return {
+      viewports: samples.classic[0].viewports,
+      heap: compareRenderers(samples, (sample) => sample.heapMB)
+    }
+  }
+
   async openRenderer(renderer: PerfRenderer) {
     await this.page.goto('about:blank')
     await this.heapAfterGcMB()
@@ -235,7 +216,6 @@ export class Nodes2PerfHelper {
     await this.prepare(renderer)
   }
 
-  /** Verifies the open page runs `renderer` and installs the frame probe. */
   async prepare(renderer: PerfRenderer) {
     expect(
       await this.comfyPage.settings.getSetting('Comfy.VueNodes.Enabled'),
@@ -252,7 +232,12 @@ export class Nodes2PerfHelper {
         intervals: [],
         keyLatencies: [],
         recording: false,
-        flushKeys: () => {}
+        flushKeys: () => {},
+        resetFrames: () => {
+          frameTimestamp = -1
+          frameStart = 0
+          inputStart = 0
+        }
       }
       window.__nodes2Perf = probe
       const nativeRequestFrame = window.requestAnimationFrame.bind(window)
@@ -312,7 +297,6 @@ export class Nodes2PerfHelper {
     }
   }
 
-  /** JS heap after forced garbage collection, in MB. */
   async heapAfterGcMB() {
     const cdp = await this.session()
     await cdp.send('HeapProfiler.collectGarbage')
@@ -320,7 +304,6 @@ export class Nodes2PerfHelper {
     return round((await this.metrics()).heapBytes / 1048576, 1)
   }
 
-  /** Resolves once frames are steady and mounted nodes stop changing; returns ms until the last disturbance. */
   async settle() {
     return this.page.evaluate(
       ({ quietFrames, slowFrameMs, capMs }) =>
@@ -360,7 +343,7 @@ export class Nodes2PerfHelper {
     renderer: PerfRenderer,
     nodeCount: number
   ): Promise<LoadSample> {
-    const workflow = realisticPipelineGraph(nodeCount, PREVIEW_IMAGE)
+    const workflow = realisticPipelineGraph(nodeCount, this.previewImage)
     const callMs = await this.page.evaluate(async (graph) => {
       const start = performance.now()
       await window.app!.loadGraphData(graph)
@@ -397,14 +380,13 @@ export class Nodes2PerfHelper {
       for (const node of window.app!.graph.nodes) {
         bounds.minX = Math.min(bounds.minX, node.pos[0])
         bounds.minY = Math.min(bounds.minY, node.pos[1])
-        bounds.maxX = Math.max(bounds.maxX, node.pos[0] + node.size[0])
-        bounds.maxY = Math.max(bounds.maxY, node.pos[1] + node.size[1])
+        bounds.maxX = Math.max(bounds.maxX, node.pos[0] + node.renderingSize[0])
+        bounds.maxY = Math.max(bounds.maxY, node.pos[1] + node.renderingSize[1])
       }
       return bounds
     })
   }
 
-  /** Centres the view on a graph point (graph centre by default). */
   async showAt(scale: number, center?: ScreenPoint) {
     const bounds = await this.graphBounds()
     await this.page.evaluate(
@@ -428,7 +410,6 @@ export class Nodes2PerfHelper {
     await this.settle()
   }
 
-  /** Zooms out until the whole graph fits the canvas; returns the scale. */
   async showWholeGraph() {
     const bounds = await this.graphBounds()
     const scale = await this.page.evaluate((bounds) => {
@@ -455,7 +436,6 @@ export class Nodes2PerfHelper {
     return box
   }
 
-  /** The node of the given type nearest the graph centre. */
   async centralNode(type: string) {
     const bounds = await this.graphBounds()
     return this.page.evaluate(
@@ -481,7 +461,6 @@ export class Nodes2PerfHelper {
     )
   }
 
-  /** Screen point on a node's title bar, from the rendered element when Nodes 2.0 is on. */
   async titlePoint(nodeId: string): Promise<ScreenPoint> {
     return this.page.evaluate((nodeId) => {
       const header = document.querySelector(
@@ -516,6 +495,7 @@ export class Nodes2PerfHelper {
       probe.costs = []
       probe.intervals = []
       probe.keyLatencies = []
+      probe.resetFrames()
       probe.recording = true
       const everyFrame = () => {
         if (probe.recording) window.requestAnimationFrame(everyFrame)
@@ -524,28 +504,29 @@ export class Nodes2PerfHelper {
     })
   }
 
-  /** Keeps recording for `tailFrames` more frames, then returns the frame costs. */
   async stopFrames(tailFrames: number) {
     return this.page.evaluate(
       (tailFrames) =>
-        new Promise<Omit<FrameProbe, 'recording' | 'flushKeys'>>((resolve) => {
-          let remaining = tailFrames
-          const tick = () => {
-            if (remaining-- > 0) {
-              requestAnimationFrame(tick)
-              return
+        new Promise<Pick<FrameProbe, 'costs' | 'intervals' | 'keyLatencies'>>(
+          (resolve) => {
+            let remaining = tailFrames
+            const tick = () => {
+              if (remaining-- > 0) {
+                requestAnimationFrame(tick)
+                return
+              }
+              const probe = window.__nodes2Perf!
+              probe.flushKeys()
+              probe.recording = false
+              resolve({
+                costs: probe.costs.slice(),
+                intervals: probe.intervals.slice(),
+                keyLatencies: probe.keyLatencies.slice()
+              })
             }
-            const probe = window.__nodes2Perf!
-            probe.flushKeys()
-            probe.recording = false
-            resolve({
-              costs: probe.costs.slice(),
-              intervals: probe.intervals.slice(),
-              keyLatencies: probe.keyLatencies.slice()
-            })
+            requestAnimationFrame(tick)
           }
-          requestAnimationFrame(tick)
-        }),
+        ),
       tailFrames
     )
   }
@@ -568,7 +549,6 @@ export class Nodes2PerfHelper {
     await mouse.up({ button })
   }
 
-  /** Middle-button pans across `fraction` of the canvas width and back. */
   async measurePan(fraction: number, stepsPerStroke: number) {
     const box = await this.canvasBox()
     const y = box.y + box.height / 2
@@ -587,7 +567,6 @@ export class Nodes2PerfHelper {
     return { steps: stepsPerStroke * 2, frames: costs, intervals }
   }
 
-  /** Wheel-zooms out from 1.0 across the low-quality threshold and back. */
   async measureZoomSweep() {
     await this.showAt(1)
     const box = await this.canvasBox()
@@ -646,7 +625,6 @@ export class Nodes2PerfHelper {
     return ids
   }
 
-  /** Drags a node by its title along a fixed loop; asserts every listed node moved. */
   async measureDrag(nodeId: string, movedIds: readonly string[]) {
     const start = await this.titlePoint(nodeId)
     const before = await this.nodePositions(movedIds)
@@ -673,7 +651,6 @@ export class Nodes2PerfHelper {
     return { steps, frames: costs, intervals }
   }
 
-  /** Main-thread busy share over `frames` idle frames at the current view. */
   async idleBusyPercent(frames: number) {
     const before = await this.metrics()
     await this.page.evaluate(
@@ -696,7 +673,6 @@ export class Nodes2PerfHelper {
     )
   }
 
-  /** Types into the central prompt and returns each key's key-to-paint time in ms (Event Timing, 16 ms floor). */
   async measureTyping(keys: number) {
     expect(
       await this.page.evaluate(() =>
@@ -740,7 +716,6 @@ export class Nodes2PerfHelper {
     ]
   }
 
-  /** Visits every viewport of the graph at working zoom, then returns to the start view. */
   async visitWholeGraph() {
     const bounds = await this.graphBounds()
     const box = await this.canvasBox()

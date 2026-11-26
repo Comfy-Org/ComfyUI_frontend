@@ -198,10 +198,52 @@ describe('buildSection', () => {
     ([, runs, litegraph, nodes2]) => {
       const row = rowNamed(
         rows([...runs]),
-        'Combo list keys: ↑/↓ wrap, ← first, → last'
+        'Combo list keys: ↑ wraps, → selects last'
       )
 
       expect(row).toMatchObject({ litegraph, nodes2 })
+    }
+  )
+
+  it.for([
+    { status: 'passed', measurements: [], expected: 'testFailed' },
+    { status: 'failed', measurements: [], expected: 'testFailed' },
+    {
+      status: 'failed',
+      measurements: [
+        '{"scenario":"load","heap":{"classic":{"median":10},"nodes2":{"median":20},"ratio":2}}'
+      ],
+      expected: 'fail'
+    },
+    {
+      status: 'passed',
+      measurements: [
+        '{"scenario":"load","heap":{"classic":{"median":10},"nodes2":{"median":12},"ratio":1.2}}'
+      ],
+      expected: 'pass'
+    }
+  ])(
+    'requires completed ratio measurements: $status / $expected',
+    ({ status, measurements, expected }) => {
+      const row = rowNamed(
+        rows(
+          [
+            recorded({
+              file: 'performance.ratios.spec.ts',
+              title:
+                'loading reaches interactive within 1.5x classic time and heap',
+              describe: '1000 nodes',
+              renderer: 'both',
+              status,
+              measurements,
+              error: 'classic must not mount Vue nodes'
+            })
+          ],
+          'nodes2-acceptance-perf'
+        ),
+        'Load at 1,000 nodes: time to interactive and heap within 1.5× classic'
+      )
+      expect(row.nodes2).toBe(expected)
     }
   )
 
@@ -271,6 +313,43 @@ describe('buildSection', () => {
 })
 
 describe('orderedSections', () => {
+  it('retains build and time while excluding incompatible historical evidence from totals', () => {
+    const sections = orderedSections(
+      [
+        {
+          project: 'nodes2-acceptance',
+          commit: 'current',
+          finishedAt: '2026-11-26T12:00:00Z',
+          tests: pair({}, {})
+        },
+        {
+          project: 'nodes2-acceptance-packs',
+          commit: 'old',
+          finishedAt: '2026-11-20T12:00:00Z',
+          tests: [
+            recorded({ title: 'historical pack result', renderer: 'both' })
+          ]
+        }
+      ],
+      'current'
+    )
+    const html = renderReport(sections, ['current', 'old'], 'now')
+    expect(sections[1].rows.every((row) => row.nodes2 === 'notTested')).toBe(
+      true
+    )
+    expect(sections[2]).toMatchObject({
+      commit: 'old',
+      finishedAt: '2026-11-20T12:00:00Z',
+      historical: true
+    })
+    expect(html).toContain(
+      'Historical evidence — excluded from current totals. Frontend old · finished 2026-11-20T12:00:00Z'
+    )
+    expect(html).toContain('Nodes 2.0: <span class="pass">✅ 1 passed</span>')
+    expect(html).not.toContain(
+      'Nodes 2.0: <span class="pass">✅ 2 passed</span>'
+    )
+  })
   it('includes every section, even one with no data', () => {
     const sections = orderedSections([])
 

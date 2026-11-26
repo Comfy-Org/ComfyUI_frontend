@@ -39,6 +39,9 @@ export interface Row {
 export interface Section {
   title: string
   note: string
+  commit: string
+  finishedAt: string
+  historical: boolean
   rows: Row[]
 }
 
@@ -60,7 +63,6 @@ const SECTIONS: Record<string, { title: string; note: string }> = {
   }
 }
 
-/** Whether a Playwright project belongs to the Nodes 2.0 acceptance suite. */
 export const isAcceptanceProject = (project: string) => project in SECTIONS
 
 /** The assertion label and expected/received lines of a Playwright error. */
@@ -182,6 +184,15 @@ function invalidResult(tested: RefRuns[]): string | undefined {
     .find((run) => run.status !== 'passed')
   if (classicFailure)
     return `Litegraph control failed, so the Nodes 2.0 result is not valid: ${classicFailure.error}`
+  const incompleteComparison = tested
+    .flatMap((entry) => entry.subject)
+    .find(
+      (run) =>
+        run.file === 'performance.ratios.spec.ts' &&
+        run.measurements.length === 0
+    )
+  if (incompleteComparison)
+    return `Comparison did not complete: ${incompleteComparison.error || incompleteComparison.status}`
   const unfinished = tested
     .flatMap((entry) => entry.subject)
     .find((run) => run.status !== 'passed' && run.status !== 'failed')
@@ -272,7 +283,14 @@ export function buildSection(data: ProjectData): Section {
     ),
     ...unmappedRows(data.project, data.tests)
   ]
-  return { title: config.title, note: config.note, rows }
+  return {
+    title: config.title,
+    note: config.note,
+    commit: data.commit,
+    finishedAt: data.finishedAt,
+    historical: false,
+    rows
+  }
 }
 
 export function totals(rows: Row[]) {
@@ -333,6 +351,7 @@ function sectionHtml(section: Section) {
     .join('\n')
   return `<h2>${escapeHtml(section.title)}</h2>
 <p>${escapeHtml(section.note)}</p>
+<p>${section.historical ? 'Historical evidence — excluded from current totals. ' : ''}${section.commit ? `Frontend ${escapeHtml(section.commit)} · finished ${escapeHtml(section.finishedAt)}` : 'No evidence collected.'}</p>
 <table>
 <tr><th>Requirement</th><th>Result</th><th>Litegraph</th><th>Nodes 2.0</th></tr>
 ${body}
@@ -344,13 +363,13 @@ function summaryRow(title: string, t: ReturnType<typeof totals>) {
   return `<tr><td>${escapeHtml(title)}</td><td>${t.total}</td><td class="pass">✅ ${t.passes}</td><td class="fail">❌ ${t.failures}</td><td class="warn">${t.testFailures ? `⚠️ ${t.testFailures}` : '0'}</td><td class="none">${t.notTested ? `⏭️ ${t.notTested}` : '0'}</td><td>✅ ${t.litegraphPasses} / ❌ ${t.litegraphFailures}</td></tr>`
 }
 
-/** The acceptance report as a standalone HTML page. */
 export function renderReport(
   sections: Section[],
   commits: string[],
   generatedAt: string
 ) {
-  const overall = totals(sections.flatMap((section) => section.rows))
+  const current = sections.filter((section) => !section.historical)
+  const overall = totals(current.flatMap((section) => section.rows))
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -378,7 +397,7 @@ ${sections.map(sectionHtml).join('\n')}
 <h2>Totals</h2>
 <table>
 <tr><th>Section</th><th>Requirements</th><th>Nodes 2.0 passed</th><th>Nodes 2.0 failed</th><th>Test failed</th><th>Not tested</th><th>Litegraph</th></tr>
-${sections.map((section) => summaryRow(section.title, totals(section.rows))).join('\n')}
+${current.map((section) => summaryRow(section.title, totals(section.rows))).join('\n')}
 ${summaryRow('Entire test', overall)}
 </table>
 </body>
@@ -387,15 +406,15 @@ ${summaryRow('Entire test', overall)}
 }
 
 /** Every section in suite order; a project with no data shows all its requirements as not tested. */
-export function orderedSections(data: ProjectData[]): Section[] {
-  return Object.keys(SECTIONS).map((project) =>
-    buildSection(
-      data.find((entry) => entry.project === project) ?? {
-        project,
-        commit: '',
-        finishedAt: '',
-        tests: []
-      }
-    )
-  )
+export function orderedSections(
+  data: ProjectData[],
+  currentCommit?: string
+): Section[] {
+  return Object.keys(SECTIONS).flatMap((project) => {
+    const entry = data.find((entry) => entry.project === project)
+    const empty = { project, commit: '', finishedAt: '', tests: [] }
+    if (entry && currentCommit && entry.commit !== currentCommit)
+      return [buildSection(empty), { ...buildSection(entry), historical: true }]
+    return [buildSection(entry ?? empty)]
+  })
 }

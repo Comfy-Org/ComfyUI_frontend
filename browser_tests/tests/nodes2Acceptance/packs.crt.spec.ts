@@ -83,9 +83,14 @@ for (const renderer of PACK_RENDERERS) {
       })
 
       test('YuE Music Generator loads its run output (delivered by an `executed` message)', async ({
-        comfyPage
+        comfyPage,
+        comfyFiles
       }) => {
-        const audio = await uploadToneWav(comfyPage, 'n2a_crt_tone.wav')
+        const audio = await uploadToneWav(
+          comfyPage,
+          comfyFiles,
+          'n2a_crt_tone.wav'
+        )
         const id = await addPackNode(comfyPage, YUE, [100, 50], [900, 900])
         const peak = comfyPage.page.locator('.yue-metric-val[data-id="peak"]')
         await expect(peak).toHaveText('--')

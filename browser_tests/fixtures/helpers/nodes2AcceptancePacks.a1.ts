@@ -14,7 +14,6 @@ declare global {
   }
 }
 
-/** Client point of a node-local graph point (origin at node.pos, title above). */
 export async function nodeLocalPoint(
   comfyPage: ComfyPage,
   nodeId: NodeId,
@@ -30,7 +29,6 @@ export async function nodeLocalPoint(
   return graphToClient(comfyPage, point)
 }
 
-/** Client rect of a node-local graph rect [x, y, width, height]. */
 export async function nodeLocalRect(
   comfyPage: ComfyPage,
   nodeId: NodeId,
@@ -49,7 +47,6 @@ export async function nodeLocalRect(
   }
 }
 
-/** Replaces app.queuePrompt and api.interrupt with call counters. */
 export async function countQueueCalls(comfyPage: ComfyPage) {
   await comfyPage.page.evaluate(() => {
     const calls = { queuePrompt: 0, interrupt: 0 }
@@ -71,7 +68,6 @@ export async function queueCalls(comfyPage: ComfyPage) {
   )
 }
 
-/** Clicks a core button widget the way each renderer draws it. */
 export async function clickButtonWidget(
   comfyPage: ComfyPage,
   nodeId: NodeId,
@@ -100,7 +96,6 @@ export async function clickButtonWidget(
   await comfyPage.page.mouse.click(point.x, point.y)
 }
 
-/** Client y of a widget row's top edge as each renderer lays it out. */
 export async function widgetClientTop(
   comfyPage: ComfyPage,
   nodeId: NodeId,
@@ -136,7 +131,6 @@ export async function widgetClientTop(
   return (await nodeLocalPoint(comfyPage, nodeId, [0, lastY])).y
 }
 
-/** Pans the canvas vertically (zoom unchanged) so `clientY` lands at `targetY`. */
 export async function panCanvasY(
   comfyPage: ComfyPage,
   clientY: number,

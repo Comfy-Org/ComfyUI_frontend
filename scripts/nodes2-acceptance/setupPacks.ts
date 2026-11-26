@@ -27,10 +27,9 @@ export function applyInitStub(original: string, stub: InitStub): string {
   )
 }
 
-/** Python modules the pinned packs need that ComfyUI does not install, their dependencies included. */
-export const extraPythonModules = (packs: readonly PinnedPack[]) => [
-  ...new Set(packs.flatMap((pack) => pack.extraPythonModules))
-]
+export const extraPythonModules = (
+  packs: readonly { extraPythonModules: readonly string[] }[]
+) => [...new Set(packs.flatMap((pack) => pack.extraPythonModules))]
 
 const git = (directory: string, ...args: string[]) =>
   execFileSync('git', ['-C', directory, ...args], { encoding: 'utf8' }).trim()

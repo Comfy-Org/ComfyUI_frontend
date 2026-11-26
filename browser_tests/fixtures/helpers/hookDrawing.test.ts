@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest'
 
 import type { DecodedImage } from '@e2e/fixtures/helpers/decodedImage'
 import { drawingFound, hookDrawing } from '@e2e/fixtures/helpers/hookDrawing'
-import type { ClientBox } from '@e2e/reporters/nodes2Acceptance/layout'
+import type {
+  ClientBox,
+  HookDrawing
+} from '@e2e/reporters/nodes2Acceptance/layout'
 
 type Rgb = readonly [number, number, number]
 
@@ -42,19 +45,33 @@ const nodeImage = (
   extra: { box: ClientBox; rgb: Rgb }[] = []
 ) => image(300, 160, [{ box: node, rgb: NODE_GREY }, ...extra])
 
-const classicDrawing = hookDrawing(
-  nodeImage(classicNode, [
-    { box: iconAtTopRight(classicNode), rgb: ICON_GREEN }
-  ]),
-  nodeImage(classicNode),
-  classicNode
-)!
+const classicDrawing: HookDrawing = {
+  pixels: 256,
+  distinctPixels: 256,
+  colours: [0x4f8],
+  box: { x: 174, y: 4, width: 16, height: 16 },
+  nodeSize: { width: 200, height: 100 },
+  samples: Array.from({ length: 256 }, (_, index) => ({
+    x: index % 16,
+    y: Math.floor(index / 16),
+    colour: 0x4f8
+  }))
+}
 
 describe('hookDrawing', () => {
   it('measures only what the hooks visibly add, relative to the node', () => {
-    expect(classicDrawing).toMatchObject({
+    expect(
+      hookDrawing(
+        nodeImage(classicNode, [
+          { box: iconAtTopRight(classicNode), rgb: ICON_GREEN }
+        ]),
+        nodeImage(classicNode),
+        classicNode
+      )
+    ).toMatchObject({
       pixels: 256,
       distinctPixels: 256,
+      samples: classicDrawing.samples,
       box: { x: 174, y: 4, width: 16, height: 16 }
     })
   })
@@ -75,6 +92,15 @@ describe('hookDrawing', () => {
 describe('drawingFound', () => {
   const widerNode: ClientBox = { x: 10, y: 10, width: 260, height: 120 }
 
+  it('keeps old colour-only evidence inconclusive', () => {
+    expect(
+      drawingFound(nodeImage(widerNode), widerNode, {
+        ...classicDrawing,
+        samples: undefined
+      })
+    ).toBeNull()
+  })
+
   it.for([
     [
       'finds the drawing at the same corner of a wider node',
@@ -86,5 +112,17 @@ describe('drawingFound', () => {
     expect(
       drawingFound(nodeImage(widerNode, [...extra]), widerNode, classicDrawing)
     ).toBe(expected)
+  })
+
+  it('does not mistake a nearby patch of the same colour for the drawing', () => {
+    const unrelated = { x: 232, y: 30, width: 10, height: 10 }
+
+    expect(
+      drawingFound(
+        nodeImage(widerNode, [{ box: unrelated, rgb: ICON_GREEN }]),
+        widerNode,
+        classicDrawing
+      )
+    ).toBe(0)
   })
 })

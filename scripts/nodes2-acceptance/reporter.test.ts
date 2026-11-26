@@ -73,10 +73,7 @@ it.for(['failed', 'timedOut'] as const)(
         env: {
           ...process.env,
           NODES2_ACCEPTANCE_RUN: 'retry',
-          NODES2_ACCEPTANCE_REPORT_DIR: path.join(
-            directory,
-            'nodes2-acceptance-report/retry'
-          )
+          NODES2_ACCEPTANCE_REPORT_DIR: path.join(directory, 'external-output')
         }
       }
     )
@@ -88,10 +85,7 @@ it.for(['failed', 'timedOut'] as const)(
       .parse(
         JSON.parse(
           fs.readFileSync(
-            path.join(
-              directory,
-              'nodes2-acceptance-report/retry/data/nodes2-acceptance.json'
-            ),
+            path.join(directory, 'external-output/data/nodes2-acceptance.json'),
             'utf8'
           )
         )
@@ -103,9 +97,15 @@ it.for(['failed', 'timedOut'] as const)(
     ])
     expect(
       fs.readFileSync(
-        path.join(directory, 'nodes2-acceptance-report/retry/report.html'),
+        path.join(directory, 'external-output/report.html'),
         'utf8'
       )
     ).toContain(`inconsistent across repeated runs (${status}, passed)`)
+    expect(
+      fs.readFileSync(
+        path.join(directory, 'external-output/index.html'),
+        'utf8'
+      )
+    ).toContain('href="./report.html"')
   }
 )

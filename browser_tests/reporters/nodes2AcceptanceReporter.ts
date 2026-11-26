@@ -145,6 +145,16 @@ function runEntry(run: string): RunEntry {
 }
 
 function writeRunIndex() {
+  const relative = path.relative(REPORT_ROOT, OUTPUT_DIR)
+  if (relative.startsWith('..') || path.isAbsolute(relative)) {
+    writeReportFile(
+      path.join(OUTPUT_DIR, 'index.html'),
+      renderRunIndex([
+        { run: '.', about: '', pages: [runPage(OUTPUT_DIR, '.')] }
+      ])
+    )
+    return
+  }
   writeReportFile(
     path.join(REPORT_ROOT, 'index.html'),
     renderRunIndex(subfolders(REPORT_ROOT).map(runEntry))
@@ -171,7 +181,7 @@ function writeReport(finishedAt: string) {
   writeReportFile(
     path.join(OUTPUT_DIR, 'report.html'),
     renderReport(
-      orderedSections(all),
+      orderedSections(all, currentCommit()),
       all.map((data) => data.commit).filter(Boolean),
       `${finishedAt.slice(0, 16).replace('T', ' ')} UTC`
     )

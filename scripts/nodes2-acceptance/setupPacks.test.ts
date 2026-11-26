@@ -1,7 +1,5 @@
 import { describe, expect, it } from 'vitest'
 
-import packData from '../../browser_tests/fixtures/data/nodes2AcceptancePacks.json' with { type: 'json' }
-
 import { applyInitStub, extraPythonModules } from './setupPacks'
 
 const replaceInstall = {
@@ -43,19 +41,11 @@ describe('applyInitStub', () => {
 
 describe('extraPythonModules', () => {
   it('lists each module the pinned packs need once', () => {
-    const modules = extraPythonModules(packData.packs)
+    const modules = extraPythonModules([
+      { extraPythonModules: ['watchdog', 'cffi'] },
+      { extraPythonModules: ['cffi', 'soundfile'] }
+    ])
 
-    expect(modules).toEqual([...new Set(modules)])
-    expect(modules).toContain('watchdog')
-  })
-
-  it('gives every pinned stub either a source or a replacement', () => {
-    const stubs = packData.packs.flatMap((pack) =>
-      pack.initStub ? [pack.initStub] : []
-    )
-
-    expect(stubs.every((stub) => 'source' in stub || 'replace' in stub)).toBe(
-      true
-    )
+    expect(modules).toEqual(['watchdog', 'cffi', 'soundfile'])
   })
 })

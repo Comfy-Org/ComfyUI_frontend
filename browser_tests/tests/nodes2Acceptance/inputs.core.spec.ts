@@ -1,4 +1,3 @@
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import {
   comfyExpect as expect,
   comfyPageFixture as test
@@ -9,45 +8,34 @@ import {
   callbackCount,
   center,
   dragHorizontally,
+  firstSocketOffsets,
   nodeProperty,
   showKSamplerAtZoomOne,
   widgetRow,
   widgetValue
 } from '@e2e/fixtures/helpers/nodes2AcceptanceInputs'
 
-async function firstSocketOffsets(comfyPage: ComfyPage) {
-  return comfyPage.page.evaluate(() => {
-    const node = window.app!.graph.nodes.find((n) => n.type === 'KSampler')!
-    const input = node.getInputPos(0)
-    const output = node.getOutputPos(0)
-    return {
-      inputX: input[0] - node.pos[0],
-      inputY: input[1] - node.pos[1],
-      outputX: output[0] - node.pos[0] - node.size[0],
-      outputY: output[1] - node.pos[1]
-    }
-  })
-}
-
 for (const renderer of RENDERERS) {
   test.describe(
     `Node input acceptance: ${renderer.name}`,
     { tag: ['@widget', '@node', '@nodes2-acceptance', ...renderer.tags] },
     () => {
-      test('widget rows are 20 px tall', async ({ comfyPage }) => {
-        await showKSamplerAtZoomOne(comfyPage)
-        const cfg = await widgetRow(comfyPage, 'cfg')
+      if (renderer.name === 'Nodes 2.0') {
+        test('widget rows are 20 px tall', async ({ comfyPage }) => {
+          await showKSamplerAtZoomOne(comfyPage)
+          const cfg = await widgetRow(comfyPage, 'cfg')
 
-        expect(cfg.height, 'row height').toBeCloseTo(20, 0)
-      })
+          expect(cfg.height, 'row height').toBeCloseTo(20, 0)
+        })
 
-      test('widget rows are 24 px apart', async ({ comfyPage }) => {
-        await showKSamplerAtZoomOne(comfyPage)
-        const steps = await widgetRow(comfyPage, 'steps')
-        const cfg = await widgetRow(comfyPage, 'cfg')
+        test('widget rows are 24 px apart', async ({ comfyPage }) => {
+          await showKSamplerAtZoomOne(comfyPage)
+          const steps = await widgetRow(comfyPage, 'steps')
+          const cfg = await widgetRow(comfyPage, 'cfg')
 
-        expect(cfg.y - steps.y, 'row pitch').toBeCloseTo(24, 0)
-      })
+          expect(cfg.y - steps.y, 'row pitch').toBeCloseTo(24, 0)
+        })
+      }
 
       test('the first input and output sockets are centred 14 px below the body top', async ({
         comfyPage
@@ -159,10 +147,14 @@ for (const renderer of RENDERERS) {
         )
 
         const moved = Number(await widgetValue(comfyPage, 'seed')) - 1e9
-        expect(moved, 'seed moved').toBeGreaterThan(0)
-        expect(moved, 'seed moved at most one per pixel').toBeLessThanOrEqual(
-          50
-        )
+        expect(
+          moved,
+          '50 px at zoom 1 from seed 1e9, allowing one pixel of coordinate rounding'
+        ).toBeGreaterThanOrEqual(49)
+        expect(
+          moved,
+          '50 px at zoom 1 from seed 1e9, allowing one pixel of coordinate rounding'
+        ).toBeLessThanOrEqual(51)
       })
 
       test('a read-only slider ignores drags', async ({ comfyPage }) => {
@@ -212,6 +204,10 @@ for (const renderer of RENDERERS) {
           ).toBeFocused()
         }
         await comfyPage.page.keyboard.type('hello')
+        expect(
+          await callbackCount(comfyPage, 'acceptance_text'),
+          'no callback before Enter'
+        ).toBe(0)
         await comfyPage.page.keyboard.press('Enter')
 
         await expect

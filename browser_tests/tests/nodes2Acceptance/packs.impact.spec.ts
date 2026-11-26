@@ -1,10 +1,7 @@
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
-
 import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import {
   PACK_RENDERERS,
   PACK_TAGS,
@@ -13,28 +10,14 @@ import {
   dispatchPackEvent,
   expectPackLoaded,
   keepMixlabOffNodeDrawHooks,
-  nodeScreenRect,
-  padRect,
   showEmptyGraphAtZoomOne
 } from '@e2e/fixtures/helpers/nodes2AcceptancePacks'
-
-const ZONE_RED = [162, 58, 58] as const
-const PROGRESS_GREEN = [0, 128, 0] as const
-const STATUS_TEXT = 'n2a upscaling'
-
-async function zonePixels(comfyPage: ComfyPage, nodeId: NodeId) {
-  return countColour(
-    comfyPage,
-    padRect(await nodeScreenRect(comfyPage, nodeId), 4),
-    ZONE_RED,
-    6
-  )
-}
-
-async function areaAboveNode(comfyPage: ComfyPage, nodeId: NodeId) {
-  const rect = await nodeScreenRect(comfyPage, nodeId)
-  return { x: rect.x - 4, y: rect.y - 40, width: rect.width + 8, height: 44 }
-}
+import {
+  PROGRESS_GREEN,
+  STATUS_TEXT,
+  zonePixels,
+  areaAboveNode
+} from '@e2e/fixtures/helpers/nodes2AcceptancePacks.impact'
 
 for (const renderer of PACK_RENDERERS) {
   test.describe(
@@ -95,24 +78,24 @@ for (const renderer of PACK_RENDERERS) {
           text: STATUS_TEXT
         })
 
-        await expect
-          .poll(
-            async () => {
-              const textShown = comfyPage.isVueNodes
-                ? (await comfyPage.page.getByText(STATUS_TEXT).count()) > 0
-                : false
-              const green =
+        if (comfyPage.isVueNodes) {
+          await expect(
+            comfyPage.vueNodes.getNodeLocator(id).getByText(STATUS_TEXT)
+          ).toBeVisible()
+        } else {
+          await expect
+            .poll(
+              async () =>
                 (await countColour(
                   comfyPage,
                   await areaAboveNode(comfyPage, id),
                   PROGRESS_GREEN,
                   20
-                )) - greenBefore
-              return textShown || green > 210
-            },
-            { message: 'progress badge shown on the node' }
-          )
-          .toBe(true)
+                )) - greenBefore,
+              { message: 'progress badge shown on the node' }
+            )
+            .toBeGreaterThan(210)
+        }
       })
     }
   )

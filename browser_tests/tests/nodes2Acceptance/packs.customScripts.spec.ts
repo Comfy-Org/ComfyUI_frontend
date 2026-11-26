@@ -1,12 +1,7 @@
-import { readFile } from 'node:fs/promises'
-
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
-
 import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import {
   MAGENTA,
   PACK_RENDERERS,
@@ -21,47 +16,16 @@ import {
   padRect,
   showEmptyGraphAtZoomOne
 } from '@e2e/fixtures/helpers/nodes2AcceptancePacks'
+import { countColourInImage } from '@e2e/fixtures/helpers/nodes2AcceptancePacks.a2'
 import {
-  countColourInImage,
-  expectPointOnCanvasOrNode
-} from '@e2e/fixtures/helpers/nodes2AcceptancePacks.a2'
+  exportWorkflowPng,
+  textAreaOf
+} from '@e2e/fixtures/helpers/nodes2AcceptancePacks.customScripts'
 
 const MATH_EXPRESSION = 'MathExpression|pysssss'
 const PRESET_TEXT = 'PresetText|pysssss'
 const DODGER_BLUE = [30, 144, 255] as const
 const MATH_RESULT = 987654321
-
-async function exportWorkflowPng(comfyPage: ComfyPage) {
-  const { page } = comfyPage
-  const entry = (label: string) =>
-    page
-      .locator('.litecontextmenu .litemenu-entry')
-      .filter({ hasText: new RegExp(`^${label}$`) })
-  const emptyCanvas = { x: 750, y: 160 }
-  await expectPointOnCanvasOrNode(comfyPage, emptyCanvas)
-  await page.mouse.click(emptyCanvas.x, emptyCanvas.y, { button: 'right' })
-  await entry('Workflow Image').click()
-  await entry('Export').click()
-  const download = page.waitForEvent('download')
-  await entry('png').click()
-  const file = await (await download).path()
-  return readFile(file)
-}
-
-async function textAreaOf(comfyPage: ComfyPage, nodeId: NodeId) {
-  if (comfyPage.isVueNodes)
-    return comfyPage.vueNodes.getNodeLocator(nodeId).locator('textarea')
-  const index = await comfyPage.page.evaluate((id) => {
-    const node = window.app!.graph.getNodeById(id)!
-    const widget = node.widgets!.find((w) => w.name === 'text')!
-    const element: unknown = Reflect.get(widget, 'inputEl')
-    return element instanceof HTMLTextAreaElement
-      ? [...document.querySelectorAll('textarea')].indexOf(element)
-      : -1
-  }, nodeId)
-  expect(index, 'CLIPTextEncode text widget has a textarea').toBeGreaterThan(-1)
-  return comfyPage.page.locator('textarea').nth(index)
-}
 
 for (const renderer of PACK_RENDERERS) {
   test.describe(
@@ -115,22 +79,19 @@ for (const renderer of PACK_RENDERERS) {
 
         await dispatchExecuted(comfyPage, id, { value: [MATH_RESULT] })
 
-        await expect
-          .poll(
-            async () => {
-              const shownInDom = comfyPage.isVueNodes
-                ? (await comfyPage.vueNodes
-                    .getNodeLocator(id)
-                    .getByText(String(MATH_RESULT))
-                    .count()) > 0
-                : false
-              const blue =
-                (await countColour(comfyPage, area, DODGER_BLUE)) - blueBefore
-              return shownInDom || blue > 60
-            },
-            { message: 'result readout visible on the node' }
-          )
-          .toBe(true)
+        if (comfyPage.isVueNodes) {
+          await expect(
+            comfyPage.vueNodes.getNodeLocator(id).getByText(String(MATH_RESULT))
+          ).toBeVisible()
+        } else {
+          await expect
+            .poll(
+              async () =>
+                (await countColour(comfyPage, area, DODGER_BLUE)) - blueBefore,
+              { message: 'result readout visible on the node' }
+            )
+            .toBeGreaterThan(60)
+        }
       })
 
       test('Autocomplete offers words while typing in a prompt box', async ({

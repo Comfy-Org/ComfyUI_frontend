@@ -76,13 +76,16 @@ const pad = (box: ClientBox, amount: number): ClientBox => ({
   height: box.height + amount * 2
 })
 
-/** What a node's draw hooks visibly add on classic: screenshots of the node with the hooks on and off, and the node's box in those images. */
 export function hookDrawing(
   withHooks: DecodedImage,
   withoutHooks: DecodedImage,
   node: ClientBox
 ): HookDrawing | null {
-  if (withHooks.rgba.length !== withoutHooks.rgba.length) return null
+  if (
+    withHooks.width !== withoutHooks.width ||
+    withHooks.height !== withoutHooks.height
+  )
+    return null
   const changed = changedBox(withHooks, withoutHooks)
   if (!changed) return null
   const drawn = countColours(withHooks, changed.box, (offset) =>
@@ -96,10 +99,23 @@ export function hookDrawing(
         (baseline.get(key) ?? 0) <= count * BASELINE_SHARE
     )
     .map(([key]) => key)
+  const wanted = new Set(colours)
+  const samples: NonNullable<HookDrawing['samples']> = []
+  for (let y = changed.box.y; y < changed.box.y + changed.box.height; y++)
+    for (let x = changed.box.x; x < changed.box.x + changed.box.width; x++) {
+      const offset = (y * withHooks.width + x) * 4
+      const colour = colourKey(withHooks.rgba, offset)
+      if (
+        wanted.has(colour) &&
+        differs(withHooks.rgba, withoutHooks.rgba, offset)
+      )
+        samples.push({ x: x - changed.box.x, y: y - changed.box.y, colour })
+    }
   return {
     pixels: changed.pixels,
     distinctPixels: colours.reduce((sum, key) => sum + drawn.get(key)!, 0),
     colours,
+    samples,
     box: {
       x: changed.box.x - node.x,
       y: changed.box.y - node.y,
@@ -122,25 +138,39 @@ function anchoredStart(
     : start + size - (classicSize - offset)
 }
 
-/** Pixels in the drawing's own colours found where the drawing sits on another rendering of the node, keeping its distance to the nearest edges. */
 export function drawingFound(
   image: DecodedImage,
   node: ClientBox,
   drawing: HookDrawing
 ) {
+  if (!drawing.samples?.length) return null
   const { box, nodeSize } = drawing
-  const region = pad(
-    {
-      x: anchoredStart(box.x, box.width, nodeSize.width, node.x, node.width),
-      y: anchoredStart(box.y, box.height, nodeSize.height, node.y, node.height),
-      width: box.width,
-      height: box.height
-    },
-    8 + Math.max(box.width, box.height) * 0.1
+  const left = anchoredStart(
+    box.x,
+    box.width,
+    nodeSize.width,
+    node.x,
+    node.width
   )
-  const wanted = new Set(drawing.colours)
-  let found = 0
-  for (const [key, count] of countColours(image, region))
-    if (wanted.has(key)) found += count
-  return found
+  const top = anchoredStart(
+    box.y,
+    box.height,
+    nodeSize.height,
+    node.y,
+    node.height
+  )
+  let best = 0
+  for (let dy = -2; dy <= 2; dy++)
+    for (let dx = -2; dx <= 2; dx++) {
+      let found = 0
+      for (const sample of drawing.samples) {
+        const x = Math.round(left + sample.x + dx)
+        const y = Math.round(top + sample.y + dy)
+        if (x < 0 || y < 0 || x >= image.width || y >= image.height) continue
+        if (colourKey(image.rgba, (y * image.width + x) * 4) === sample.colour)
+          found++
+      }
+      best = Math.max(best, found)
+    }
+  return best
 }

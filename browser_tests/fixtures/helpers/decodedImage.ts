@@ -10,7 +10,6 @@ export interface DecodedImage {
 
 type RgbTest = (r: number, g: number, b: number) => boolean
 
-/** Decodes a PNG to RGBA bytes using the page's image decoder. */
 export async function decodePng(
   comfyPage: ComfyPage,
   png: Buffer
@@ -120,7 +119,6 @@ export function decodePngBuffer(png: Buffer): DecodedImage {
   return { width, height, rgba }
 }
 
-/** Pixel positions whose colour passes `test`. */
 export function matchingPixels(
   image: DecodedImage,
   test: RgbTest

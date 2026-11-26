@@ -9,7 +9,6 @@ export function runFolderName(start: Date): string {
   return `${day}_${time}`
 }
 
-/** Folder holding every acceptance run and their index. */
 export const REPORT_ROOT = 'nodes2-acceptance-report'
 
 process.env.NODES2_ACCEPTANCE_RUN ??= `${runFolderName(new Date())}-${randomUUID()}`

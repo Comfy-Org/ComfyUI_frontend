@@ -3,6 +3,7 @@ import { crc32, deflateSync } from 'node:zlib'
 import { decodePng, matchingPixels } from '@e2e/fixtures/helpers/decodedImage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyExpect as expect } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 interface ClientRect {
   x: number
@@ -261,7 +262,6 @@ export function createSolidPng(
   ])
 }
 
-/** Uploads a PNG to the backend input folder through the upload API. */
 export async function uploadInputImage(
   comfyPage: ComfyPage,
   filename: string,
@@ -286,7 +286,6 @@ interface ScreenPixels {
   rgb: (x: number, y: number) => [number, number, number]
 }
 
-/** Reads the on-screen RGB pixels of a client rect. */
 export async function readScreenPixels(
   comfyPage: ComfyPage,
   rect: ClientRect
@@ -308,7 +307,6 @@ export const colourDistance = (
   [r2, g2, b2]: [number, number, number]
 ) => Math.abs(r1 - r2) + Math.abs(g1 - g2) + Math.abs(b1 - b2)
 
-/** Opens a KSampler combo's option list with a real click and waits for it. */
 export async function openKSamplerComboList(
   comfyPage: ComfyPage,
   name: string,
@@ -326,7 +324,7 @@ export async function openKSamplerComboList(
     ).toBeVisible()
     if (hasSearch)
       await expect(
-        page.getByTestId('widget-select-default-search-input')
+        page.getByTestId(TestIds.widgets.selectDefaultSearchInput)
       ).toBeFocused()
     return
   }
@@ -335,4 +333,60 @@ export async function openKSamplerComboList(
   await expect(page.locator('.litecontextmenu')).toBeVisible()
   if (hasSearch)
     await expect(page.locator('.comfy-context-menu-filter')).toBeFocused()
+}
+
+export async function firstSocketOffsets(comfyPage: ComfyPage) {
+  return comfyPage.page.evaluate(() => {
+    const node = window.app!.graph.nodes.find((n) => n.type === 'KSampler')!
+    const input = node.getInputPos(0)
+    const output = node.getOutputPos(0)
+    return {
+      inputX: input[0] - node.pos[0],
+      inputY: input[1] - node.pos[1],
+      outputX: output[0] - node.pos[0] - node.size[0],
+      outputY: output[1] - node.pos[1]
+    }
+  })
+}
+
+export async function samplerOptions(comfyPage: ComfyPage): Promise<string[]> {
+  return comfyPage.page.evaluate(() => {
+    const node = window.app!.graph.nodes.find((n) => n.type === 'KSampler')!
+    const values = node.widgets!.find((w) => w.name === 'sampler_name')!.options
+      .values
+    return Array.isArray(values) ? values.map(String) : []
+  })
+}
+
+export async function stepCombo(
+  comfyPage: ComfyPage,
+  name: string,
+  direction: 'previous' | 'next'
+) {
+  if (comfyPage.isVueNodes) {
+    const arrow = await comfyPage.vueNodes
+      .getWidgetRowByLabel('KSampler', name)
+      .first()
+      .getByRole('button', { name: new RegExp(direction, 'i') })
+      .boundingBox()
+    if (!arrow) throw new Error(`No ${direction} arrow on ${name}`)
+    await comfyPage.page.mouse.click(center(arrow).x, center(arrow).y)
+  } else {
+    const row = await widgetRow(comfyPage, name)
+    const x = direction === 'previous' ? row.x + 5 : row.x + row.width - 5
+    await comfyPage.page.mouse.click(x, row.y + row.height / 2)
+  }
+  await comfyPage.nextFrame()
+}
+
+export async function clickEmptyCanvasAboveKSampler(comfyPage: ComfyPage) {
+  const point = await comfyPage.page.evaluate(() => {
+    const node = window.app!.graph.nodes.find((n) => n.type === 'KSampler')!
+    return window.app!.canvasPosToClientPos([
+      node.pos[0] + node.size[0] / 2,
+      node.pos[1] - window.LiteGraph!.NODE_TITLE_HEIGHT - 60
+    ])
+  })
+  await comfyPage.page.mouse.click(point[0], point[1])
+  await comfyPage.nextFrame()
 }

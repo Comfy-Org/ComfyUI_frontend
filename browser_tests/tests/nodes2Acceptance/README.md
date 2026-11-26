@@ -1,13 +1,13 @@
 # Nodes 2.0 acceptance tests
 
-These tests check Nodes 2.0 against the [Acceptance Tests for Nodes 2.0](https://app.notion.com/p/41d6d73d365081dd807ff7e3623109a8) criteria. Every test runs twice with the same steps: on Litegraph (classic), as the control, and on Nodes 2.0. The required value is Litegraph's. If the Litegraph run fails, the result is TEST FAILED, not a Nodes 2.0 pass or fail.
+These tests check Nodes 2.0 against the [Acceptance Tests for Nodes 2.0](https://app.notion.com/p/41d6d73d365081dd807ff7e3623109a8) criteria. Input and pack checks compare Litegraph (classic), as the control, with Nodes 2.0. Renderer-specific interactions exercise the same required outcome. The required value is Litegraph's. A missing or failed control yields TEST FAILED, not a Nodes 2.0 pass or fail. Classic layout checks without an independent canvas-rendering oracle are omitted; their subject-only DOM measurements cannot establish parity.
 
-| Project                    | What it tests                                                                                                                     | Backend                  | Time    |
-| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | ------------------------ | ------- |
-| `nodes2-acceptance`        | Core node inputs: layout, values, events, states, menus                                                                           | Core nodes, test build   | ~3 min  |
-| `nodes2-acceptance-packs`  | Features of 17 popular custom node packs                                                                                          | Pinned packs, prod build | ~9 min  |
-| `nodes2-acceptance-layout` | Every node type in the pinned packs: size, hidden or covered controls, clipped or missing drawing, clicks that behave differently | Pinned packs, prod build | ~25 min |
-| `nodes2-acceptance-perf`   | Load, heap, typing and idle as ratios to Litegraph, and frame times while panning, dragging and zooming                           | Core nodes, prod build   | ~9 min  |
+| Project                    | What it tests                                                                                                  | Backend                  | Time    |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------- | ------------------------ | ------- |
+| `nodes2-acceptance`        | Core node inputs: layout, values, events, states, menus                                                        | Core nodes, test build   | ~3 min  |
+| `nodes2-acceptance-packs`  | Features of 17 popular custom node packs                                                                       | Pinned packs, prod build | ~9 min  |
+| `nodes2-acceptance-layout` | Node types available and registered in the reduced test backend: size, controls, drawing and click differences | Pinned packs, prod build | ~25 min |
+| `nodes2-acceptance-perf`   | Load, heap, typing and idle as ratios to Litegraph, and frame times while panning, dragging and zooming        | Core nodes, prod build   | ~9 min  |
 
 All four run on the Classic theme, the closest match to Litegraph's metrics. None of them runs in the gating `chromium` project or in CI.
 
@@ -83,6 +83,7 @@ Start a backend, then run Playwright against it:
 ```bash
 export COMFYUI_DIR=~/ComfyUI
 pnpm exec tsx scripts/nodes2-acceptance/setupPacks.ts --backend temp/nodes2-acceptance/packs --python $COMFYUI_DIR/.venv/bin/python
+NODE_ENV=production pnpm exec vite build --config vite.config.mts --outDir temp/nodes2-acceptance/dist-prod
 scripts/nodes2-acceptance/serve.sh 18462 temp/nodes2-acceptance/packs temp/nodes2-acceptance/dist-prod $(cat temp/nodes2-acceptance/packs/packs.txt)
 PLAYWRIGHT_TEST_URL=http://127.0.0.1:18462 PLAYWRIGHT_SETUP_API_URL=http://127.0.0.1:18462 TEST_COMFYUI_DIR=temp/nodes2-acceptance/packs \
   pnpm exec playwright test --project=nodes2-acceptance-packs --workers=1 --retries=0 \
@@ -128,3 +129,5 @@ In `layout.html`, each flag is a measurement against Litegraph. Use the screensh
 - Requirements and their tests are matched in `browser_tests/reporters/nodes2Acceptance/requirements.ts`; a requirement with no test is listed as NOT TESTED.
 - To pin a pack at a new commit, change it in `nodes2AcceptancePacks.json` and run `setupPacks.ts` again.
 - Performance numbers depend on the machine. The ratio checks compare Nodes 2.0 with Litegraph in the same session, so they hold up across machines better than the frame-time limits do.
+- The manual perf project fails on either ratio or absolute-frame assertions. A future ratio-only CI gate must invoke `playwright test performance.ratios.spec.ts --project=nodes2-acceptance-perf`; collect `performance.frames.spec.ts` separately as report-only evidence rather than using the whole project's exit status.
+- An external `NODES2_ACCEPTANCE_REPORT_DIR` gets its own `index.html` beside its reports; the default run index only lists reports inside its own root. Grouped sections retain their build and completion time. Results from another build remain visible as historical evidence but are excluded from current totals.

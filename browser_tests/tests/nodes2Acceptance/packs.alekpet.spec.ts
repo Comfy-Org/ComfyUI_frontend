@@ -1,15 +1,11 @@
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
-
 import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import {
   PACK_RENDERERS,
   PACK_TAGS,
   addPackNode,
-  countColour,
   expectPackLoaded,
   keepMixlabOffNodeDrawHooks,
   graphToClient,
@@ -23,37 +19,11 @@ import {
   expectPointOnCanvasOrNode
 } from '@e2e/fixtures/helpers/nodes2AcceptancePacks.a2'
 
-const IMAGE_TYPE_BLUE = [100, 181, 246] as const
-const SPEECH_SETTING =
-  'Comfy.Settings.alekpet.ExtrasNode.SpeechAndRecognationSpeech'
-
-async function addIdeNode(comfyPage: ComfyPage) {
-  const id = await addPackNode(comfyPage, 'IDENode', [150, 150], [500, 500])
-  await expect
-    .poll(
-      () =>
-        comfyPage.page.evaluate(
-          (nodeId) =>
-            !!window
-              .app!.graph.getNodeById(nodeId)
-              ?.widgets?.some((widget) => widget.name === 'update_node'),
-          id
-        ),
-      { message: 'IDE node finished onNodeCreated' }
-    )
-    .toBe(true)
-  return id
-}
-
-async function imageTypeLabelPixels(comfyPage: ComfyPage, nodeId: NodeId) {
-  const rect = await nodeScreenRect(comfyPage, nodeId)
-  return countColour(
-    comfyPage,
-    { x: rect.x + 30, y: rect.y, width: rect.width - 30, height: 160 },
-    IMAGE_TYPE_BLUE,
-    30
-  )
-}
+import {
+  SPEECH_SETTING,
+  addIdeNode,
+  imageTypeLabelPixels
+} from '@e2e/fixtures/helpers/nodes2AcceptancePacks.alekpet'
 
 for (const renderer of PACK_RENDERERS) {
   test.describe(

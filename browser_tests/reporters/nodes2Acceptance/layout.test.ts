@@ -171,7 +171,7 @@ describe('layoutFindings', () => {
     ).toEqual([])
   })
 
-  it('does not compare a click Nodes 2.0 had no matching target for', () => {
+  it('reports when a successful classic click has no Nodes 2.0 target', () => {
     expect(
       kinds(
         surveyed(
@@ -180,7 +180,59 @@ describe('layoutFindings', () => {
           { classic: [probe({ changed: ['widget slider'] })], nodes2: [] }
         )
       )
-    ).toEqual([])
+    ).toEqual(['comparisonUnavailable'])
+  })
+
+  it('compares changed values, not just changed keys', () => {
+    expect(
+      kinds(
+        surveyed(
+          {},
+          {},
+          {
+            classic: [
+              probe({
+                changed: ['widget slider'],
+                transitions: { 'widget slider': { before: '0', after: '1' } }
+              })
+            ],
+            nodes2: [
+              probe({
+                changed: ['widget slider'],
+                transitions: { 'widget slider': { before: '0', after: '2' } }
+              })
+            ]
+          }
+        )
+      )
+    ).toEqual(['differentResponse'])
+  })
+
+  it('reports an unsuccessful classic control as unavailable', () => {
+    expect(kinds(surveyed({ rendered: false }))).toEqual(['classicUnavailable'])
+  })
+
+  it('shows intentionally unperformed clicks as unavailable, not a broken control', () => {
+    const classic = probe({ changed: ['widget slider'] })
+    const nodes2 = probe({
+      unavailable:
+        'Body point is occupied by a widget; click intentionally skipped'
+    })
+
+    expect(
+      kinds(surveyed({}, {}, { classic: [classic], nodes2: [nodes2] }))
+    ).toEqual(['comparisonUnavailable'])
+  })
+
+  it('does not turn missing spatial evidence into a drawing failure', () => {
+    expect(
+      kinds(
+        surveyed(
+          { drawing: hookDrawingOf(900) },
+          { drawCalls: 0, drawingFound: null }
+        )
+      )
+    ).toEqual(['comparisonUnavailable'])
   })
 
   it.for([
@@ -233,18 +285,52 @@ describe('layoutFindings', () => {
 })
 
 describe('renderLayoutGallery', () => {
+  it('lists unavailable classic controls separately from measured pairs', () => {
+    const html = renderLayoutGallery([
+      {
+        pack: 'some-pack',
+        commit: 'main abc',
+        finishedAt: '',
+        nodes: [
+          surveyed(),
+          {
+            ...surveyed({ rendered: false, errors: ['Construction failed'] }),
+            type: 'Unavailable Classic'
+          }
+        ]
+      }
+    ])
+
+    expect(html).toContain(
+      'Measured pairs: 1 · Classic controls unavailable: 1'
+    )
+    expect(html).toMatch(
+      /Unavailable Classic<\/b>[\s\S]*?Classic control unavailable: Construction failed/
+    )
+  })
+
   it('lists flagged nodes with both screenshots and the flagged count', () => {
     const html = renderLayoutGallery([
       {
         pack: 'some-pack',
         commit: 'main abc',
         finishedAt: '2026-11-23T00:00:00Z',
-        nodes: [surveyed(), surveyed({}, { rendered: false })]
+        nodes: [
+          {
+            ...surveyed(),
+            type: 'Unflagged',
+            classic: measure({ image: 'unflagged.png' })
+          },
+          { ...surveyed({}, { overflow: 12 }), type: 'Flagged Pair' }
+        ]
       }
     ])
 
     expect(html).toContain('1 of 2 node types flagged')
-    expect(html).toContain('src="layout/img/pack/0.classic.png"')
-    expect(html).toContain('Not rendered')
+    const row = html.match(/<tr><td><b>Flagged Pair<\/b>[\s\S]*?<\/tr>/)?.[0]
+    expect(row).toContain('src="layout/img/pack/0.classic.png"')
+    expect(row).toContain('src="layout/img/pack/0.nodes2.png"')
+    expect(row).toContain('Content cut off')
+    expect(row).not.toContain('unflagged.png')
   })
 })

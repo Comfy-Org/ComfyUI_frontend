@@ -137,6 +137,7 @@ export default defineConfig<{ initialSettings: Record<string, unknown> }>({
 
           {
             name: 'nodes2-acceptance-perf',
+            workers: 1,
             use: {
               ...devices['Desktop Chrome'],
               trace: 'off',

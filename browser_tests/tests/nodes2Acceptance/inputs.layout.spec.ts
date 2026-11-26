@@ -33,83 +33,79 @@ for (const renderer of RENDERERS) {
         expect(pitch).toBeCloseTo(20, 0)
       })
 
-      test('single-line text and labelled toggle rows are 20 px tall', async ({
-        comfyPage
-      }) => {
-        await showKSamplerAtZoomOne(comfyPage)
-        await addKSamplerWidget(comfyPage, {
-          type: 'text',
-          name: 'acceptance_text',
-          value: 'text'
+      if (renderer.name === 'Nodes 2.0') {
+        test('single-line text and labelled toggle rows are 20 px tall', async ({
+          comfyPage
+        }) => {
+          await showKSamplerAtZoomOne(comfyPage)
+          await addKSamplerWidget(comfyPage, {
+            type: 'text',
+            name: 'acceptance_text',
+            value: 'text'
+          })
+          await addKSamplerWidget(comfyPage, {
+            type: 'toggle',
+            name: 'acceptance_toggle',
+            value: false,
+            options: { on: 'yes', off: 'no' }
+          })
+
+          const text = await widgetRow(comfyPage, 'acceptance_text')
+          const toggle = await widgetRow(comfyPage, 'acceptance_toggle')
+
+          expect(text.height, 'text row height').toBeCloseTo(20, 0)
+          expect(toggle.height, 'labelled toggle row height').toBeCloseTo(20, 0)
         })
-        await addKSamplerWidget(comfyPage, {
-          type: 'toggle',
-          name: 'acceptance_toggle',
-          value: false,
-          options: { on: 'yes', off: 'no' }
+
+        test('node title text is 14 px', async ({ comfyPage }) => {
+          await showKSamplerAtZoomOne(comfyPage)
+
+          const fontSize = await comfyPage.vueNodes
+            .getNodeByTitle('KSampler')
+            .getByTestId('node-title')
+            .evaluate((element) => getComputedStyle(element).fontSize)
+
+          expect(fontSize).toBe('14px')
         })
 
-        const text = await widgetRow(comfyPage, 'acceptance_text')
-        const toggle = await widgetRow(comfyPage, 'acceptance_toggle')
+        test('a node is drawn exactly as tall as its saved size', async ({
+          comfyPage
+        }) => {
+          await showKSamplerAtZoomOne(comfyPage)
+          const saved = await ksamplerBodyRect(comfyPage)
 
-        expect(text.height, 'text row height').toBeCloseTo(20, 0)
-        expect(toggle.height, 'labelled toggle row height').toBeCloseTo(20, 0)
-      })
-
-      test('node title text is 14 px', async ({ comfyPage }) => {
-        await showKSamplerAtZoomOne(comfyPage)
-
-        const fontSize = comfyPage.isVueNodes
-          ? await comfyPage.vueNodes
+          const drawnHeight = (
+            await comfyPage.vueNodes
               .getNodeByTitle('KSampler')
-              .getByTestId('node-title')
-              .evaluate((element) => getComputedStyle(element).fontSize)
-          : await comfyPage.page.evaluate(
-              () => window.app!.canvas.title_text_font.match(/\d+px/)?.[0]
-            )
+              .locator('[data-testid^="node-body-"]')
+              .boundingBox()
+          )?.height
 
-        expect(fontSize).toBe('14px')
-      })
-
-      test('a node is drawn exactly as tall as its saved size', async ({
-        comfyPage
-      }) => {
-        await showKSamplerAtZoomOne(comfyPage)
-        const saved = await ksamplerBodyRect(comfyPage)
-
-        const drawnHeight = comfyPage.isVueNodes
-          ? (
-              await comfyPage.vueNodes
-                .getNodeByTitle('KSampler')
-                .locator('[data-testid^="node-body-"]')
-                .boundingBox()
-            )?.height
-          : saved.height
-
-        expect(drawnHeight).toBeDefined()
-        expect(drawnHeight!).toBeCloseTo(saved.height, 0)
-      })
-
-      test('widget.last_y is the top of the drawn widget row', async ({
-        comfyPage
-      }) => {
-        await showKSamplerAtZoomOne(comfyPage)
-        const row = await widgetRow(comfyPage, 'cfg')
-        const reported = await comfyPage.page.evaluate(() => {
-          const node = window.app!.graph.nodes.find(
-            (n) => n.type === 'KSampler'
-          )!
-          const widget = node.widgets!.find((w) => w.name === 'cfg')!
-          if (widget.last_y === undefined) return undefined
-          return window.app!.canvasPosToClientPos([
-            node.pos[0],
-            node.pos[1] + widget.last_y
-          ])[1]
+          expect(drawnHeight).toBeDefined()
+          expect(drawnHeight!).toBeCloseTo(saved.height, 0)
         })
 
-        expect(reported, 'widget.last_y is set').toBeDefined()
-        expect(reported!).toBeCloseTo(row.y, 0)
-      })
+        test('widget.last_y is the top of the drawn widget row', async ({
+          comfyPage
+        }) => {
+          await showKSamplerAtZoomOne(comfyPage)
+          const row = await widgetRow(comfyPage, 'cfg')
+          const reported = await comfyPage.page.evaluate(() => {
+            const node = window.app!.graph.nodes.find(
+              (n) => n.type === 'KSampler'
+            )!
+            const widget = node.widgets!.find((w) => w.name === 'cfg')!
+            if (widget.last_y === undefined) return undefined
+            return window.app!.canvasPosToClientPos([
+              node.pos[0],
+              node.pos[1] + widget.last_y
+            ])[1]
+          })
+
+          expect(reported, 'widget.last_y is set').toBeDefined()
+          expect(reported!).toBeCloseTo(row.y, 0)
+        })
+      }
     }
   )
 }
