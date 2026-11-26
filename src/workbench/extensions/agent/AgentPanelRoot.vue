@@ -1276,8 +1276,11 @@ function boundRootGraphId(): RootGraphId | null {
 function followerCanDeliver(): boolean {
   return isFollowerActive.value && subscriptionSent()
 }
-function noteUnboundVisibleIntent(): void {
-  const visible = workflowStore.activeWorkflow
+function noteUnboundVisibleIntent(rootGraphId: string): void {
+  const visible = workflowStore.openWorkflows.find(
+    (workflow) =>
+      (workflow.activeState?.id ?? workflow.initialState?.id) === rootGraphId
+  )
   const workflowId = visible
     ? bindingStore.workflowIdFor(visible.path)
     : undefined
