@@ -9,13 +9,23 @@
     @dismiss="emit('dismiss')"
   >
     <template #actions>
+      <label
+        v-if="needsConsent && !checking"
+        class="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground @xl:mr-4"
+      >
+        <Checkbox
+          v-model="dontAskAgain"
+          data-testid="run-on-cloud-dont-ask-again"
+        />
+        {{ t('openOnCloud.runDialog.dontAskAgain') }}
+      </label>
       <Button
         variant="inverted"
         size="lg"
         class="w-full @xl:w-auto"
         data-testid="run-on-cloud-primary"
         :disabled="checking"
-        @click="needsConsent ? emit('check') : openOnCloud()"
+        @click="needsConsent ? emit('check', dontAskAgain) : openOnCloud()"
       >
         {{ primaryLabel }}
         <i
@@ -30,8 +40,9 @@
 
 <script setup lang="ts">
 import Button from '@/components/ui/button/Button.vue'
+import Checkbox from '@/components/ui/checkbox/Checkbox.vue'
 import { useTelemetry } from '@/platform/telemetry'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { UncheckedModelInput } from '@/platform/openOnCloud/cloudWorkflowCheck'
@@ -57,6 +68,7 @@ const {
 }>()
 
 const { t } = useI18n()
+const dontAskAgain = ref(false)
 
 const points = [
   t('openOnCloud.deploySetupDialog.pointNodes'),
@@ -90,7 +102,7 @@ const primaryLabel = computed(() => {
 })
 
 const emit = defineEmits<{
-  check: []
+  check: [dontAskAgain: boolean]
   done: []
   dismiss: []
 }>()
