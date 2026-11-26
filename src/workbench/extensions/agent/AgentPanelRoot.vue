@@ -945,6 +945,19 @@ const {
 })
 
 let suppressPickTelemetry = false
+let pendingPickCount = 0
+function reportPlusMenuPicks(count: number): void {
+  if (pendingPickCount === 0)
+    queueMicrotask(() => {
+      const nodeCount = pendingPickCount
+      pendingPickCount = 0
+      useTelemetry()?.trackAgentNodeTagged({
+        source: 'plus_menu',
+        node_count: nodeCount
+      })
+    })
+  pendingPickCount += count
+}
 function withoutPickTelemetry(stage: () => void): void {
   suppressPickTelemetry = true
   try {
@@ -974,10 +987,7 @@ watch(
         }
       }
       if (pickedCount && !suppressPickTelemetry)
-        useTelemetry()?.trackAgentNodeTagged({
-          source: 'plus_menu',
-          node_count: pickedCount
-        })
+        reportPlusMenuPicks(pickedCount)
     }
     composerStore.setSelectionModeNodeKeys(nextKeys)
   },

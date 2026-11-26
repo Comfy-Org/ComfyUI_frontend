@@ -18588,6 +18588,27 @@ describe('AgentPanelRoot workflow binding', () => {
     })
   })
 
+  it('reports a box select applied one node at a time as one + menu reference action', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+    const state = setupNodeSelectionCanvas()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    useAgentPanelStore().isOpen = true
+    await enterNodeSelectionMode()
+
+    state.selectedItems.add(state.nodes[0])
+    syncFakeSelection()
+    state.selectedItems.add(state.nodes[1])
+    syncFakeSelection()
+    await nextTick()
+
+    expect(useTelemetry()!.trackAgentNodeTagged).toHaveBeenCalledTimes(1)
+    expect(useTelemetry()!.trackAgentNodeTagged).toHaveBeenCalledWith({
+      source: 'plus_menu',
+      node_count: 2
+    })
+  })
+
   it('retains the target when a canvas node is actually added before Send', async () => {
     const target = makeTab('wf-42')
     const bodies = mockMessagesEndpoint('wf-42')
