@@ -611,6 +611,30 @@ describe('ErrorOverlay', () => {
       ).not.toHaveAttribute('title')
     })
 
+    it('offers no Custom Build on a toast that shows no missing nodes', async () => {
+      buildOffer.value = { kind: 'create' }
+      mockAllErrorGroups.value = [
+        {
+          type: 'missing_model',
+          severity: 'missing',
+          groupKey: 'missing_model',
+          displayTitle: 'Missing models',
+          displayMessage: 'A required model is missing.',
+          count: 1,
+          priority: 1,
+          blockedLastRun: false
+        }
+      ]
+      renderOverlay()
+      useExecutionErrorStore().showErrorOverlay()
+      await nextTick()
+
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'A required model is missing.'
+      )
+      expect(screen.queryByTestId('error-overlay-custom-build')).toBeNull()
+    })
+
     it('offers no Custom Build in app mode', async () => {
       buildOffer.value = { kind: 'create' }
       await showMissingNodesToast({ appMode: true })
