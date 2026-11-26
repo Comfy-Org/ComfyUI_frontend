@@ -269,12 +269,6 @@ function servedRefusal(error: unknown): unknown {
     : undefined
 }
 
-/**
- * A refused run whose body carries neither `error` nor node errors, such as a
- * cloud middleware failure answering `{"message": "..."}`, would otherwise
- * record nothing while the errors tab suppresses the dialog: the user sees
- * "Job queuing" and then silence.
- */
 function unshapedPromptFailure(
   error: PromptExecutionError
 ): PromptError | null {
