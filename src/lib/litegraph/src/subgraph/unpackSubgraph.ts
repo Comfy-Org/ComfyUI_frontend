@@ -89,48 +89,59 @@ function inputSlotMarkers(
   return markers
 }
 
+function markInputSlots(
+  inputs: ISerialisedNode['inputs'],
+  markerProperty: string
+): void {
+  for (const [index, input] of (inputs ?? []).entries()) {
+    Object.defineProperty(input, markerProperty, {
+      value: index,
+      enumerable: true
+    })
+  }
+}
+
+function cloneNodeForUnpack(
+  node: LGraphNode,
+  markerProperty: string
+): ISerialisedNode {
+  const nodeInfo = structuredClone(node.serialize())
+  markInputSlots(nodeInfo.inputs, markerProperty)
+
+  const clonedNode = LiteGraph.createNode(node.type, undefined, {
+    targetGraph: node.graph ?? undefined
+  })
+  if (!clonedNode) {
+    console.warn('Failed to create node', node.type)
+    return nodeInfo
+  }
+
+  clonedNode.configure(nodeInfo)
+  const serializedNode = clonedNode.serialize()
+  const markers = inputSlotMarkers(
+    clonedNode.inputs,
+    nodeInfo.inputs ?? [],
+    markerProperty
+  )
+  for (const [index, marker] of markers) {
+    const input = serializedNode.inputs?.[index]
+    if (!input) continue
+    Object.defineProperty(input, markerProperty, {
+      value: marker,
+      enumerable: true
+    })
+  }
+  return serializedNode
+}
+
 function cloneNodesForUnpack(
   nodes: Iterable<LGraphNode>,
   markerProperty: string
 ): ISerialisedNode[] {
   const clonedNodes: ISerialisedNode[] = []
-
   for (const node of nodes) {
-    const nodeInfo = structuredClone(node.serialize())
-    for (const [index, input] of (nodeInfo.inputs ?? []).entries()) {
-      Object.defineProperty(input, markerProperty, {
-        value: index,
-        enumerable: true
-      })
-    }
-
-    const clonedNode = LiteGraph.createNode(node.type, undefined, {
-      targetGraph: node.graph ?? undefined
-    })
-    if (!clonedNode) {
-      console.warn('Failed to create node', node.type)
-      clonedNodes.push(nodeInfo)
-      continue
-    }
-
-    clonedNode.configure(nodeInfo)
-    const serializedNode = clonedNode.serialize()
-    const markers = inputSlotMarkers(
-      clonedNode.inputs,
-      nodeInfo.inputs ?? [],
-      markerProperty
-    )
-    for (const [index, marker] of markers) {
-      const input = serializedNode.inputs?.[index]
-      if (!input) continue
-      Object.defineProperty(input, markerProperty, {
-        value: marker,
-        enumerable: true
-      })
-    }
-    clonedNodes.push(serializedNode)
+    clonedNodes.push(cloneNodeForUnpack(node, markerProperty))
   }
-
   return clonedNodes
 }
 
