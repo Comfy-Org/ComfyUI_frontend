@@ -50,6 +50,7 @@ describe('saveAskBeforeCloudCheck', () => {
     if (setting) useSettingStore().addSetting(setting)
     vi.mocked(api.storeSetting).mockResolvedValue(new Response())
     localStorage.clear()
+    api.user = ''
   })
 
   it('saves the choice without a toast when the server accepts it', async () => {
@@ -456,6 +457,35 @@ describe('saveAskBeforeCloudCheck', () => {
 
       expect(localStorage.getItem(PENDING_ASK_AGAIN_KEY)).toBe('true')
     } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it("keeps one profile's ask-again when another profile saves Don't ask again before its late save lands", async () => {
+    vi.useFakeTimers()
+    try {
+      const lateAskAgain = deferredResponse()
+      vi.mocked(api.storeSetting)
+        .mockReturnValueOnce(lateAskAgain.promise)
+        .mockResolvedValue(new Response())
+      api.user = 'profile-a'
+      const askAgain = saveAskBeforeCloudCheck(true)
+      await vi.advanceTimersByTimeAsync(CLOUD_CHECK_CONSENT_SAVE_TIMEOUT_MS)
+      await askAgain
+      api.user = 'profile-b'
+      await saveAskBeforeCloudCheck(false)
+      api.user = 'profile-a'
+
+      lateAskAgain.resolve(new Response())
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(vi.mocked(api.storeSetting).mock.calls).toEqual([
+        [ASK_BEFORE_CLOUD_CHECK, true],
+        [ASK_BEFORE_CLOUD_CHECK, false]
+      ])
+      expect(skipsCloudCheckQuestion()).toBe(false)
+    } finally {
+      api.user = ''
       vi.useRealTimers()
     }
   })
