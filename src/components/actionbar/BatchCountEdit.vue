@@ -45,20 +45,20 @@
 </template>
 
 <script lang="ts" setup>
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
-import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
+import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
+import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
+import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 
 import { storeToRefs } from 'pinia'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import TinyChevronIcon from './TinyChevronIcon.vue'
+import TinyChevronIcon from '@comfyorg/design-system/icon/TinyChevronIcon'
 
 const { t } = useI18n()
 
@@ -82,7 +82,7 @@ const isDecrementDisabled = computed(() => batchCount.value <= minQueueCount)
 const inputClass =
   'h-full min-w-0 flex-1 border-none bg-secondary pl-1 pr-0 text-center text-sm font-normal tabular-nums text-foreground outline-none'
 const stepButtonClass =
-  'h-1/2 w-full rounded-none border-none p-0 text-muted-foreground hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50'
+  'h-1/2 w-full rounded-none p-0 text-muted-foreground disabled:cursor-not-allowed'
 const incrementButtonClass = 'rounded-tr-none border-b border-border/50'
 const decrementButtonClass = 'rounded-br-none'
 

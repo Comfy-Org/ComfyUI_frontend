@@ -28,6 +28,17 @@ export const HighestPlan: Story = {
   render: renderAtMinimumWidth
 }
 
+export const NoPlan: Story = {
+  args: {
+    presentation: {
+      kind: 'subscribed',
+      showUpgrade: false,
+      planCreditLine: 'planRequiredFreeRuns'
+    }
+  },
+  render: renderAtMinimumWidth
+}
+
 export const SubscriptionRequired: Story = {
   args: { presentation: { kind: 'subscriptionRequired' } },
   render: renderAtMinimumWidth

@@ -9,7 +9,7 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import { getNodeInputOnPos } from '@/lib/litegraph/src/canvas/measureSlots'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { toGroupId } from '@/types/groupId'
+import { toGroupId } from '@comfyorg/graph-model/groupId'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 
 vi.mock(import('@/services/litegraphService'))

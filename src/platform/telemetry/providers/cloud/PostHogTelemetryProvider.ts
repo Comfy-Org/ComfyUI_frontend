@@ -24,8 +24,8 @@ import {
 } from '@comfyorg/shared-frontend-utils/telemetry'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import { whenStoresReady } from '@/platform/telemetry/storeReadiness'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import { getAgentPanelOpen } from '@/platform/telemetry/utils/getAgentPanelOpen'
@@ -39,6 +39,7 @@ import type {
   AgentConsentResolvedMetadata,
   AgentConsentShownMetadata,
   AgentCreditTransitionNoticeMetadata,
+  AgentCreditUsageExposureMetadata,
   AgentEntryButtonClickedMetadata,
   AgentErrorMetadata,
   AgentFreeUseExposureMetadata,
@@ -50,26 +51,34 @@ import type {
   AgentMessageFeedbackMetadata,
   AgentNodeTaggedMetadata,
   AgentOnboardingNotShownMetadata,
+  AgentSendGatedMetadata,
+  AgentTargetUnavailableMetadata,
   AgentOnboardingStepMetadata,
   AgentPanelClosedMetadata,
   AgentPanelOpenedMetadata,
   AgentPanelRenderStalledMetadata,
+  AgentRunApprovalAnswerFailedMetadata,
+  AgentRunApprovalRecoveryAttemptedMetadata,
+  AgentRunApprovalRecoveryOutcomeMetadata,
   AgentRunApprovalResolvedMetadata,
   AgentRunApprovalShownMetadata,
   AgentRunModeChangedMetadata,
+  AgentSkillSavedMetadata,
+  AgentSkillSelectedMetadata,
   AgentStarterPromptClickedMetadata,
-  AgentStarterPromptExposureMetadata,
   AgentStopClickedMetadata,
   AgentThreadStartedMetadata,
   AgentWorkflowBoundMetadata,
   AgentWorkflowAppliedMetadata,
   AuthErrorMetadata,
+  AssetDownloadMetadata,
   AuthMetadata,
   ImageLoadFailureMetadata,
   UnifiedAuthRefreshMetadata,
   UnifiedAuthRetryMetadata,
   BeginCheckoutMetadata,
   BootstrapCompleteMetadata,
+  CustomDeploymentTelemetryEvent,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
   ExecutionErrorMetadata,
@@ -95,6 +104,7 @@ import type {
   PageVisibilityMetadata,
   ResubscribeClickMetadata,
   RunButtonProperties,
+  RunOnCloudTelemetryEvent,
   SettingChangedMetadata,
   SharedWorkflowRunMetadata,
   ShellLayoutMetadata,
@@ -114,18 +124,20 @@ import type {
   WidgetFavoriteToggledMetadata,
   WorkflowCreatedMetadata,
   WorkflowImportMetadata,
+  WorkflowLinkOpenedMetadata,
   WorkflowSavedMetadata,
   WorkspaceInviteFailedMetadata,
   WorkspaceInviteMetadata
-} from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry/types'
 import {
   CANCELLATION_STAGE_EVENTS,
   OnboardingTourEvents,
   TelemetryEvents
-} from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry/types'
 import { normalizeSurveyResponses } from '@/platform/telemetry/utils/surveyNormalization'
 
 const EXECUTION_EVENT_SOURCE = 'web-sdk'
+const MAX_PRE_INIT_QUEUED_EVENTS = 100
 
 const IN_APP_SURVEY_EVENTS: Record<InAppSurveyStage, TelemetryEventName> = {
   shown: TelemetryEvents.IN_APP_SURVEY_SHOWN,
@@ -172,6 +184,14 @@ function stampPlatformAxes(event: CaptureResult | null): CaptureResult | null {
   return event
 }
 
+function stripRetiredStarterPromptFlag(
+  event: CaptureResult | null
+): CaptureResult | null {
+  if (!event) return null
+  delete event.properties['$feature/agent-starter-prompt-set']
+  return event
+}
+
 function readDesktopEntryAttribution(
   posthog: PostHog
 ): DesktopEntryAttribution | null {
@@ -203,6 +223,7 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
   private isEnabled = true
   private posthog: PostHog | null = null
   private eventQueue: QueuedEvent[] = []
+  private didWarnEventQueueFull = false
   private pendingFirstAuthAt = new Map<string, string>()
   private isInitialized = false
   private lastTriggerSource: ExecutionTriggerSource | undefined
@@ -212,8 +233,9 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   constructor() {
     const windowConfig = window.__CONFIG__
+    const remoteConfigStore = useRemoteConfigStore()
     watch(
-      remoteConfig,
+      () => remoteConfigStore.config,
       (config) => {
         this.configureDisabledEvents(config)
       },
@@ -228,7 +250,7 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
         void import('posthog-js')
           .then(async (posthogModule) => {
             this.posthog = posthogModule.default
-            const serverConfig = remoteConfig.value.posthog_config ?? {}
+            const serverConfig = remoteConfigStore.config.posthog_config ?? {}
             this.posthog.init(apiKey, {
               api_host:
                 windowConfig?.posthog_api_host || DEFAULT_POSTHOG_API_HOST,
@@ -239,7 +261,11 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
               // automatically when persistence includes 'cookie' (the default).
               // Explicit override interacts badly with posthog-js#3578 where reset() fails
               // to clear localStorage on other subdomains, causing identity bleed on logout.
-              before_send: [stampPlatformAxes, createPostHogBeforeSend()]
+              before_send: [
+                stampPlatformAxes,
+                stripRetiredStarterPromptFlag,
+                createPostHogBeforeSend()
+              ]
             })
             this.isInitialized = true
             this.desktopEntryAttribution = readDesktopEntryAttribution(
@@ -300,6 +326,20 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     }
   }
 
+  private enqueueEvent(event: QueuedEvent): void {
+    if (this.eventQueue.length >= MAX_PRE_INIT_QUEUED_EVENTS) {
+      if (!this.didWarnEventQueueFull) {
+        console.warn(
+          'PostHog pre-initialization event queue is full; dropping events'
+        )
+        this.didWarnEventQueueFull = true
+      }
+      return
+    }
+
+    this.eventQueue.push(event)
+  }
+
   private flushPendingFirstAuthAt(): void {
     for (const [userId, firstAuthAt] of this.pendingFirstAuthAt) {
       this.setFirstAuthAt(userId, firstAuthAt)
@@ -343,7 +383,7 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
         console.error('Failed to track PostHog event:', error)
       }
     } else {
-      this.eventQueue.push(event)
+      this.enqueueEvent(event)
     }
   }
 
@@ -361,7 +401,7 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
         console.error('Failed to track PostHog event:', error)
       }
     } else {
-      this.eventQueue.push({
+      this.enqueueEvent({
         eventName,
         properties
       })
@@ -479,6 +519,15 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackImageLoadFailed(metadata: ImageLoadFailureMetadata): void {
     this.trackEvent(TelemetryEvents.IMAGE_LOAD_FAILED, metadata)
+  }
+
+  trackAssetDownload(metadata: AssetDownloadMetadata): void {
+    this.trackEvent(
+      metadata.outcome === 'completed'
+        ? TelemetryEvents.ASSET_DOWNLOAD_COMPLETED
+        : TelemetryEvents.ASSET_DOWNLOAD_FAILED,
+      metadata
+    )
   }
 
   trackBootstrapComplete(metadata: BootstrapCompleteMetadata): void {
@@ -676,6 +725,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.WORKFLOW_OPENED, metadata)
   }
 
+  trackWorkflowLinkOpened(metadata: WorkflowLinkOpenedMetadata): void {
+    this.trackEvent(TelemetryEvents.WORKFLOW_LINK_OPENED, metadata)
+  }
+
   trackWorkflowSaved(metadata: WorkflowSavedMetadata): void {
     this.trackEvent(TelemetryEvents.WORKFLOW_SAVED, metadata)
   }
@@ -785,6 +838,14 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.UI_BUTTON_CLICKED, metadata)
   }
 
+  trackRunOnCloudEvent(event: RunOnCloudTelemetryEvent): void {
+    this.trackEvent(event.name, event.properties)
+  }
+
+  trackCustomDeploymentEvent(event: CustomDeploymentTelemetryEvent): void {
+    this.trackEvent(event.name, event.properties)
+  }
+
   trackAgentMessageFeedback(metadata: AgentMessageFeedbackMetadata): void {
     this.trackEvent(TelemetryEvents.AGENT_MESSAGE_FEEDBACK, metadata)
   }
@@ -868,12 +929,6 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.AGENT_STARTER_PROMPT_CLICKED, metadata)
   }
 
-  trackAgentStarterPromptExposure(
-    metadata: AgentStarterPromptExposureMetadata
-  ): void {
-    this.trackEvent(TelemetryEvents.AGENT_STARTER_PROMPT_EXPOSURE, metadata)
-  }
-
   trackAgentFreeUseNotice(metadata: AgentFreeUseNoticeMetadata): void {
     this.trackEvent(TelemetryEvents.AGENT_FREE_USE_NOTICE, metadata)
   }
@@ -882,8 +937,22 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.AGENT_FREE_USE_EXPOSURE, metadata)
   }
 
+  trackAgentCreditUsageExposure(
+    metadata: AgentCreditUsageExposureMetadata
+  ): void {
+    this.trackEvent(TelemetryEvents.AGENT_CREDIT_USAGE_EXPOSURE, metadata)
+  }
+
   trackAgentNodeTagged(metadata: AgentNodeTaggedMetadata): void {
     this.trackEvent(TelemetryEvents.AGENT_NODE_TAGGED, metadata)
+  }
+
+  trackAgentSkillSelected(metadata: AgentSkillSelectedMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_SKILL_SELECTED, metadata)
+  }
+
+  trackAgentSkillSaved(metadata: AgentSkillSavedMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_SKILL_SAVED, metadata)
   }
 
   trackAgentAttachButtonClicked(
@@ -914,6 +983,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.AGENT_WORKFLOW_BOUND, metadata)
   }
 
+  trackAgentTargetUnavailable(metadata: AgentTargetUnavailableMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_TARGET_UNAVAILABLE, metadata)
+  }
+
   trackAgentRunApprovalShown(metadata: AgentRunApprovalShownMetadata): void {
     this.trackEvent(TelemetryEvents.AGENT_RUN_APPROVAL_SHOWN, metadata)
   }
@@ -922,6 +995,30 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     metadata: AgentRunApprovalResolvedMetadata
   ): void {
     this.trackEvent(TelemetryEvents.AGENT_RUN_APPROVAL_RESOLVED, metadata)
+  }
+
+  trackAgentRunApprovalAnswerFailed(
+    metadata: AgentRunApprovalAnswerFailedMetadata
+  ): void {
+    this.trackEvent(TelemetryEvents.AGENT_RUN_APPROVAL_ANSWER_FAILED, metadata)
+  }
+
+  trackAgentRunApprovalRecoveryAttempted(
+    metadata: AgentRunApprovalRecoveryAttemptedMetadata
+  ): void {
+    this.trackEvent(
+      TelemetryEvents.AGENT_RUN_APPROVAL_RECOVERY_ATTEMPTED,
+      metadata
+    )
+  }
+
+  trackAgentRunApprovalRecoveryOutcome(
+    metadata: AgentRunApprovalRecoveryOutcomeMetadata
+  ): void {
+    this.trackEvent(
+      TelemetryEvents.AGENT_RUN_APPROVAL_RECOVERY_OUTCOME,
+      metadata
+    )
   }
 
   trackAgentRunModeChanged(metadata: AgentRunModeChangedMetadata): void {
@@ -946,6 +1043,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     metadata: AgentOnboardingNotShownMetadata
   ): void {
     this.trackEvent(TelemetryEvents.AGENT_ONBOARDING_NOT_SHOWN, metadata)
+  }
+
+  trackAgentSendGated(metadata: AgentSendGatedMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_SEND_GATED, metadata)
   }
 
   trackWidgetFavoriteToggled(metadata: WidgetFavoriteToggledMetadata): void {

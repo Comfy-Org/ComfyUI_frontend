@@ -34,7 +34,7 @@
 import { computed, onUnmounted, ref, watch } from 'vue'
 import type { StyleValue } from 'vue'
 
-import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
+import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import { useIntersectionObserver } from '@/composables/useIntersectionObserver'
 import { useMediaCache } from '@/services/mediaCacheService'
 

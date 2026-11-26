@@ -17,9 +17,9 @@ import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
-import type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
-import type { SerializedNodeId } from '@/types/nodeId'
-import { toNodeId } from '@/types/nodeId'
+import type { LGraphEventMap } from '@comfyorg/graph-model/LGraphEventMap'
+import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import {
   LGraph,
   LGraphNode,

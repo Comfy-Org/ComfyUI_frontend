@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { safeLocalStorage } from '@/base/storage/safeStorage'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 const RESPONDED_PREFIX = 'Comfy.AgentConsent.IntroductionResponded'
@@ -21,26 +22,36 @@ export const useAgentConsentIntroductionStore = defineStore(
     })
 
     function hasResponded(responseScope: string): boolean {
-      try {
-        return (
-          localStorage.getItem(`${RESPONDED_PREFIX}.${responseScope}`) ===
-          'true'
-        )
-      } catch {
-        return false
-      }
+      return (
+        safeLocalStorage.getItem(`${RESPONDED_PREFIX}.${responseScope}`) ===
+        'true'
+      )
     }
 
     function markResponded(): boolean {
       if (!scope.value) return false
-      try {
-        localStorage.setItem(`${RESPONDED_PREFIX}.${scope.value}`, 'true')
-        return true
-      } catch {
-        return false
-      }
+      return (
+        safeLocalStorage.setItem(
+          `${RESPONDED_PREFIX}.${scope.value}`,
+          'true'
+        ) === 'ok'
+      )
     }
 
-    return { scope, hasResponded, markResponded, isContinuingSignIn }
+    function canRecordResponse(): boolean {
+      if (!scope.value) return false
+      const probeKey = `${RESPONDED_PREFIX}.${scope.value}.probe`
+      if (safeLocalStorage.setItem(probeKey, 'true') !== 'ok') return false
+      safeLocalStorage.removeItem(probeKey)
+      return true
+    }
+
+    return {
+      scope,
+      hasResponded,
+      markResponded,
+      canRecordResponse,
+      isContinuingSignIn
+    }
   }
 )

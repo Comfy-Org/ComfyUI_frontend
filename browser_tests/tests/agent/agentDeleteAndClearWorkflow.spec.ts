@@ -51,6 +51,58 @@ test.describe(
         expect(await agentConversation.isRecoveryGraphUnchanged()).toBe(true)
       })
 
+      test.describe('with groups on the canvas', () => {
+        test.use({
+          seedPassthrough: {
+            groups: [
+              {
+                id: 7,
+                title: 'Prompt group',
+                bounding: [0, 0, 420, 260],
+                color: '#3f789e',
+                font_size: 24,
+                flags: {}
+              },
+              {
+                id: 9,
+                title: 'Output group',
+                bounding: [520, 0, 320, 220],
+                color: '#b58b2a',
+                font_size: 24,
+                flags: {}
+              }
+            ]
+          }
+        })
+
+        test('removes the groups along with the nodes', async ({
+          agentConversation,
+          page
+        }) => {
+          test.setTimeout(90_000)
+          const groupTitles = () =>
+            page.evaluate(() =>
+              window.app!.graph.groups.map((group) => group.title).sort()
+            )
+
+          await expect
+            .poll(groupTitles)
+            .toEqual(['Output group', 'Prompt group'])
+          await agentConversation.runTurns({
+            beforeGraphOps: async (ops) => {
+              if (isClear(ops))
+                expect(await groupTitles()).toEqual([
+                  'Output group',
+                  'Prompt group'
+                ])
+            }
+          })
+
+          await expect(agentConversation.vueNodes.nodes).toHaveCount(0)
+          await expect.poll(groupTitles).toEqual([])
+        })
+      })
+
       // PM-1500 / PM-1504: a clear that landed while the bound tab's graph id
       // was unresolvable used to be rejected and left stale nodes on screen.
       test('clears the canvas on the clear frame even when the workflow scope is dropped', async ({

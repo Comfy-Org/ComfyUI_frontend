@@ -9,7 +9,7 @@ beforeEach(() => {
   Object.assign(useReleaseStore(), { releases: [] })
   vi.mocked(useReleaseStore().fetchReleases).mockResolvedValue(undefined)
 })
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -45,10 +45,6 @@ const i18n = createI18n({
   locale: 'en',
   messages: { en: enMessages }
 })
-
-vi.mock(import('@/utils/formatUtil'), () => ({
-  formatVersionAnchor: vi.fn((version: string) => version.replace(/\./g, ''))
-}))
 
 vi.mock(import('@/utils/markdownRendererUtil'), () => ({
   renderMarkdownToHtml: vi.fn((content: string) => `<div>${content}</div>`)

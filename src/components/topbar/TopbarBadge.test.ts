@@ -178,7 +178,7 @@ describe('TopbarBadge', () => {
         'full'
       )
       expect(screen.getByTestId('badge-icon')).toHaveClass(
-        'pi-exclamation-circle'
+        'icon-[lucide--circle-alert]'
       )
     })
 
@@ -201,7 +201,7 @@ describe('TopbarBadge', () => {
       ['WARN', 'Warning Message'],
       ['PREVIEW', 'Preview Environment'],
       ['PREVIEW', '(PREVIEW) Environment']
-    ])('drops %s beside its own text', ([label, text]) => {
+    ])('drops %s beside its own text "%s"', ([label, text]) => {
       renderTopbarBadge({ text, label }, 'full')
 
       expect(screen.queryByText(label)).not.toBeInTheDocument()

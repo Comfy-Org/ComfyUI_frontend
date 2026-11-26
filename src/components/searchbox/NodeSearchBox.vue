@@ -4,12 +4,13 @@
   >
     <div
       v-if="enableNodePreview && hoveredSuggestion"
-      class="comfy-vue-node-preview-container absolute top-[50px] left-[-375px] z-50 cursor-pointer"
+      class="comfy-vue-node-preview-container absolute top-1/2 left-[-375px] z-50 hidden max-h-[85vh] -translate-y-1/2 cursor-pointer overflow-y-auto 2xl:block"
       @mousedown.stop="onAddNode(hoveredSuggestion!, $event)"
     >
       <NodePreview
         :key="hoveredSuggestion?.name || ''"
         :node-def="hoveredSuggestion"
+        position="relative"
       />
     </div>
 
@@ -19,7 +20,7 @@
       class="filter-button z-10"
       @click="filterVisible = true"
     >
-      <i class="pi pi-filter" />
+      <i class="icon-[lucide--funnel]" />
     </Button>
     <Dialog :open="filterVisible" @update:open="onFilterDialogOpenChange">
       <DialogPortal>
@@ -48,7 +49,7 @@
       ref="searchAutocomplete"
       v-model="currentQuery"
       :clear-label="$t('g.clear')"
-      :accessible-label="$t('g.search')"
+      :accessible-label="searchLabel"
       class="comfy-vue-node-search-box z-10 grow"
       anchor-class="h-auto min-h-8 flex-wrap"
       :content-style="{ maxHeight: '40vh' }"
@@ -88,6 +89,7 @@
 </template>
 
 <script setup lang="ts">
+import { refDebounced } from '@vueuse/core'
 import { debounce } from 'es-toolkit/compat'
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -96,17 +98,17 @@ import { onRekaPointerDownOutside } from '@/components/dialog/dialogDismissGuard
 import NodePreview from '@/components/node/NodePreview.vue'
 import NodeSearchFilter from '@/components/searchbox/NodeSearchFilter.vue'
 import NodeSearchItem from '@/components/searchbox/NodeSearchItem.vue'
-import Button from '@/components/ui/button/Button.vue'
-import Dialog from '@/components/ui/dialog/Dialog.vue'
-import DialogClose from '@/components/ui/dialog/DialogClose.vue'
-import DialogContent from '@/components/ui/dialog/DialogContent.vue'
-import DialogHeader from '@/components/ui/dialog/DialogHeader.vue'
-import DialogOverlay from '@/components/ui/dialog/DialogOverlay.vue'
-import DialogPortal from '@/components/ui/dialog/DialogPortal.vue'
-import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
-import SearchAutocomplete from '@/components/ui/search-input/SearchAutocomplete.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Dialog from '@comfyorg/design-system/dialog/Dialog'
+import DialogClose from '@comfyorg/design-system/dialog/DialogClose'
+import DialogContent from '@comfyorg/design-system/dialog/DialogContent'
+import DialogHeader from '@comfyorg/design-system/dialog/DialogHeader'
+import DialogOverlay from '@comfyorg/design-system/dialog/DialogOverlay'
+import DialogPortal from '@comfyorg/design-system/dialog/DialogPortal'
+import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
+import SearchAutocomplete from '@comfyorg/design-system/search-input/SearchAutocomplete'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { useSearchQueryTracking } from '@/platform/telemetry/searchQuery/useSearchQueryTracking'
 import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -134,46 +136,40 @@ const searchAutocomplete = ref<{
 } | null>(null)
 const filterVisible = defineModel<boolean>('filterVisible', { required: true })
 const inputId = `comfy-vue-node-search-box-input-${Math.random()}`
-const suggestions = ref<ComfyNodeDefImpl[]>([])
 const hoveredSuggestion = ref<ComfyNodeDefImpl | null>(null)
 const currentQuery = ref('')
-const placeholder = computed(() => {
-  return filters.length === 0
-    ? t('g.searchPlaceholder', { subject: t('g.nodes') })
-    : ''
-})
+const searchLabel = computed(() =>
+  t('g.searchPlaceholder', { subject: t('g.nodes') })
+)
+const placeholder = computed(() =>
+  filters.length === 0 ? searchLabel.value : ''
+)
 
 const nodeDefStore = useNodeDefStore()
 const nodeFrequencyStore = useNodeFrequencyStore()
 
+const searchedQuery = refDebounced(currentQuery, 100)
+const suggestions = computed(() =>
+  searchedQuery.value === '' && filters.length === 0
+    ? nodeDefStore.topNodeDefs
+    : [
+        ...nodeDefStore.nodeSearchService.searchNode(
+          searchedQuery.value,
+          filters,
+          { limit: searchLimit }
+        )
+      ]
+)
+
 useSearchQueryTracking('node_modal', currentQuery, suggestions)
 
-// Debounced search tracking (500ms as per implementation plan)
 const debouncedTrackSearch = debounce((query: string) => {
   if (query.trim()) {
     telemetry?.trackNodeSearch({ query })
   }
 }, 500)
-
-const search = (query: string) => {
-  const queryIsEmpty = query === '' && filters.length === 0
-  currentQuery.value = query
-  suggestions.value = queryIsEmpty
-    ? nodeDefStore.topNodeDefs
-    : [
-        ...nodeDefStore.nodeSearchService.searchNode(query, filters, {
-          limit: searchLimit
-        })
-      ]
-
-  // Track search queries with debounce
-  debouncedTrackSearch(query)
-}
-
-const debouncedSearch = debounce(search, 100)
-watch(currentQuery, debouncedSearch)
+watch(searchedQuery, debouncedTrackSearch)
 onUnmounted(() => {
-  debouncedSearch.cancel()
   debouncedTrackSearch.cancel()
 })
 
@@ -193,7 +189,6 @@ function onAddNode(nodeDef: ComfyNodeDefImpl, event?: MouseEvent) {
 }
 
 const reFocusInput = async () => {
-  search(currentQuery.value)
   await nextTick()
   searchAutocomplete.value?.focus()
   searchAutocomplete.value?.open()
@@ -209,7 +204,6 @@ function onFilterDialogCloseAutoFocus(event: Event) {
 }
 
 onMounted(() => {
-  search('')
   void nextTick(() => {
     searchAutocomplete.value?.focus()
     searchAutocomplete.value?.open()

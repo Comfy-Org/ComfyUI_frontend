@@ -1,18 +1,12 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import { useForwardProps } from 'reka-ui'
 
-import ColorPicker from '@/components/ui/color-picker/ColorPicker.vue'
-import type { ColorPickerProps } from '@/components/ui/color-picker/types'
+import ColorPicker from '@comfyorg/design-system/color-picker/ColorPicker'
+import type { ColorPickerOptions } from '@comfyorg/design-system/lib/color-picker/types'
 
-const {
-  class: className,
-  alpha = true,
-  disabled = false,
-  accessibleLabel
-} = defineProps<
-  Pick<ColorPickerProps, 'class' | 'alpha' | 'disabled'> &
-    Partial<Pick<ColorPickerProps, 'accessibleLabel'>>
->()
+const { class: className, ...restProps } = defineProps<ColorPickerOptions>()
+const forwarded = useForwardProps(restProps)
 
 const color = defineModel<string>({ default: '#000000' })
 const { t } = useI18n()
@@ -21,10 +15,8 @@ const { t } = useI18n()
 <template>
   <ColorPicker
     v-model="color"
+    v-bind="forwarded"
     :class="className"
-    :alpha
-    :disabled
-    :accessible-label="accessibleLabel ?? `${t('g.color')} ${color}`"
     :hex-label="t('color.hex')"
     :rgba-label="t('color.rgba')"
     :hue-label="t('color.hue')"

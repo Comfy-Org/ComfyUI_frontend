@@ -1,13 +1,25 @@
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { getCanvasContextMenuTarget } from '@/lib/litegraph/src/canvas/getCanvasContextMenuTarget'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraphCanvas,
+  LGraphNode,
+  LiteGraph
+} from '@/lib/litegraph/src/litegraph'
 
 function shouldUseLegacyContextMenu(
   canvas: LGraphCanvas,
   node: LGraphNode | undefined
 ) {
   return Boolean(node) || !LiteGraph.vueNodesMode || !canvas.graph
+}
+
+function groupUnderBareCursor(canvas: LGraphCanvas, x: number, y: number) {
+  const { reroute, link, stack, group } = getCanvasContextMenuTarget(
+    canvas,
+    x,
+    y
+  )
+  return reroute || link || stack ? undefined : group
 }
 
 /**
@@ -28,12 +40,8 @@ export function useGroupContextMenu() {
       return
     }
 
-    const { reroute, link, group } = getCanvasContextMenuTarget(
-      this,
-      event.canvasX,
-      event.canvasY
-    )
-    if (reroute || link || !group) {
+    const group = groupUnderBareCursor(this, event.canvasX, event.canvasY)
+    if (!group) {
       original.apply(this, args)
       return
     }
@@ -42,8 +50,15 @@ export function useGroupContextMenu() {
       this.selectedItems.size === 1 && this.selectedItems.has(group)
 
     if (!groupIsOnlySelection && !this.selectOnly) {
-      this.deselectAll()
-      this.select(group, { selectGroupChildren: false })
+      this.deselectAll({ notify: false })
+      this.select(group, { notify: false, selectGroupChildren: false })
+      this.onSelectionChange?.(
+        Object.fromEntries(
+          [...this.selectedItems]
+            .filter((item) => item instanceof LGraphNode)
+            .map((node) => [node.id, node])
+        )
+      )
       this.setDirty(true)
     }
     showNodeOptions(event)

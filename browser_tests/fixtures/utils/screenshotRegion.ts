@@ -7,8 +7,9 @@ import { expect } from '@playwright/test'
 import { isEqual } from 'es-toolkit'
 
 import type { Position, Size } from '@e2e/fixtures/types'
+import { finishFiniteAnimations } from '@e2e/fixtures/utils/finiteAnimations'
 import { SELECTION_BOUNDS_PADDING } from '@/base/common/selectionBounds'
-import type { Rect } from '@/lib/litegraph/src/interfaces'
+import type { Rect } from '@comfyorg/shared-frontend-utils/geometry'
 
 type PageRect = Position & Size
 
@@ -21,16 +22,7 @@ type RegionTarget = Locator | ClientBounded | PageRect | Position
 async function clientRectOf(target: RegionTarget): Promise<PageRect> {
   if ('getClientBounding' in target) return target.getClientBounding()
   if ('boundingBox' in target) {
-    await target.evaluate((element) =>
-      Promise.allSettled(
-        element
-          .getAnimations()
-          .filter(
-            ({ effect }) => effect?.getComputedTiming().endTime !== Infinity
-          )
-          .map(({ finished }) => finished)
-      )
-    )
+    await target.evaluate(finishFiniteAnimations)
     const box = await target.boundingBox()
     if (!box) throw new Error(`Cannot frame a hidden locator: ${target}`)
     return box
@@ -68,16 +60,15 @@ export interface ScreenshotRegion {
   expectScreenshot(name: string, options?: ScreenshotOptions): Promise<void>
 }
 
-/**
- * Measures the area enclosing every target plus `padding` once the targets
- * stop moving, for comparing one area across several screenshots.
- */
 export async function screenshotRegion(
   page: Page,
   targets: RegionTarget[],
   { padding = 24 }: RegionOptions = {}
 ): Promise<ScreenshotRegion> {
   if (targets.length === 0) throw new Error('No targets to frame')
+  await page.evaluate(async () => {
+    await document.fonts.ready
+  })
   let clip = await enclosingRect(targets, padding)
   await expect
     .poll(
@@ -92,26 +83,24 @@ export async function screenshotRegion(
     .toBe(true)
   return {
     expectScreenshot: (name, options) =>
-      expect(page).toHaveScreenshot(name, { ...options, clip })
+      expect.soft(page).toHaveScreenshot(name, { ...options, clip })
   }
 }
 
-/** Screenshot assertion of the whole viewport, for tests whose subject is the full app layout. */
 export async function expectPageScreenshot(
   page: Page,
   name: string,
   options?: ScreenshotOptions
 ): Promise<void> {
-  await expect(page).toHaveScreenshot(name, options)
+  await expect.soft(page).toHaveScreenshot(name, options)
 }
 
-/** Screenshot assertion limited to one element's box. */
 export async function expectElementScreenshot(
   element: Locator,
   name: string,
   options?: ScreenshotOptions
 ): Promise<void> {
-  await expect(element).toHaveScreenshot(name, options)
+  await expect.soft(element).toHaveScreenshot(name, options)
 }
 
 /** Screenshot assertion limited to the area enclosing every target. */

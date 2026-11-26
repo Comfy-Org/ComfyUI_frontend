@@ -1,11 +1,13 @@
 <template>
   <div
     class="flex h-svh w-screen flex-col font-sans"
-    :class="[
-      dark
-        ? 'bg-neutral-900 text-neutral-300'
-        : 'bg-neutral-300 text-neutral-900'
-    ]"
+    :class="
+      cn(
+        dark
+          ? 'bg-neutral-900 text-neutral-300'
+          : 'bg-neutral-300 text-neutral-900'
+      )
+    "
   >
     <!-- Virtual top menu for native window (drag handle) -->
     <div
@@ -20,6 +22,7 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { nextTick, onMounted, ref } from 'vue'
 
 import { electronAPI, isNativeWindow } from '@/utils/envUtil'

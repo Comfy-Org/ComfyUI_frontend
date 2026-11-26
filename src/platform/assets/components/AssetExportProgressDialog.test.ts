@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import { useAssetExportStore } from '@/stores/assetExportStore'
+import { useAssetExportStore } from '@/platform/assets/stores/assetExportStore'
 
 import AssetExportProgressDialog from './AssetExportProgressDialog.vue'
 

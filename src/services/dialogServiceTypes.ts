@@ -6,8 +6,8 @@ import type {
   DowngradeToPersonalResult,
   SubscriptionDialogOptions,
   TopUpCreditsDialogOptions
-} from '@/composables/billing/types'
-import type { PaymentIntentSource } from '@/platform/telemetry/types'
+} from '@/platform/billing/composables/types'
+import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
 import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
 import type {
   DialogComponentProps,
@@ -39,11 +39,14 @@ export type ConfirmOptions = BaseConfirmOptions &
         type: 'dirtyClose'
         /** Override the deny button label. Defaults to `g.no`. */
         denyLabel?: string
+        /** Override the save button label. Defaults to `g.save`. */
+        confirmLabel?: string
       }
     | {
         /** Pre-configured dialog type */
         type?: Exclude<ConfirmationDialogType, 'dirtyClose'>
         denyLabel?: never
+        confirmLabel?: never
       }
   )
 
@@ -89,11 +92,6 @@ export interface CoreDialogService {
   ): DialogInstance
 }
 
-/**
- * Dialog surface exposed to extensions via `app.extensionManager.dialog`.
- * Feature dialogs live in their own composables; `createExtensionDialogService`
- * assembles them so this module never imports the features it fronts.
- */
 export interface ExtensionDialogService extends CoreDialogService {
   showApiNodesSignInDialog(apiNodeNames: string[]): Promise<boolean>
   showSignInDialog(): Promise<boolean>

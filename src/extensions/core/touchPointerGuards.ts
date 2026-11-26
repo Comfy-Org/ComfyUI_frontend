@@ -1,6 +1,6 @@
 import { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 
-import { app } from '@/scripts/app'
+import { canvasOrReport } from './touchCanvasAccess'
 
 /** Touch gesture state shared by the canvas pointer guards and the touch listeners. */
 export const touchGesture = { count: 0, zooming: false }
@@ -26,7 +26,8 @@ export function installTouchPointerGuards() {
     if (touchGesture.zooming || touchGesture.count) {
       return
     }
-    app.canvas.pointer.isDown = false
+    canvasOrReport('processMouseDown', e)
+    this.pointer.isDown = false
     return processMouseDown.apply(this, [e])
   }
 

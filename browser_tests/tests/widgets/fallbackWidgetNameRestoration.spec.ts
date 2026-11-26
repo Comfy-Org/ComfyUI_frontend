@@ -31,22 +31,34 @@ test.describe(
 
       try {
         await comfyPage.workflow.reloadAndWaitForApp()
-        await comfyPage.workflow.loadWorkflow(
-          'widgets/fallback-widget-name-restoration'
-        )
+        await comfyPage.workflow.loadWorkflow('nodes/single_ksampler', {
+          nodes: {
+            3: {
+              widgets_values_named: {
+                seed: 987654321,
+                control_after_generate: 'fixed',
+                steps: 37,
+                cfg: 6,
+                sampler_name: 'heun',
+                scheduler: 'karras',
+                denoise: 0.75
+              }
+            }
+          }
+        })
 
-        const node = comfyPage.vueNodes.getNodeLocator('1')
+        const node = comfyPage.vueNodes.getNodeLocator('3')
         await expect(
-          node.getByLabel('seed', { exact: true }).getByRole('spinbutton')
+          node.getByRole('spinbutton', { name: 'seed', exact: true })
         ).toHaveValue('987654321')
         await expect(
-          node.getByLabel('steps', { exact: true }).getByRole('spinbutton')
+          node.getByRole('spinbutton', { name: 'steps', exact: true })
         ).toHaveValue('37')
         await expect(
-          node.getByLabel('cfg', { exact: true }).getByRole('spinbutton')
+          node.getByRole('spinbutton', { name: 'cfg', exact: true })
         ).toHaveValue('6.0')
         await expect(
-          node.getByLabel('denoise', { exact: true }).getByRole('spinbutton')
+          node.getByRole('spinbutton', { name: 'denoise', exact: true })
         ).toHaveValue('0.75')
         await expect(
           node.getByRole('button', { name: 'Fixed Value', exact: true })

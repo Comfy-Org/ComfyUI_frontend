@@ -6,8 +6,8 @@ import { nextTick, reactive } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { toNodeId } from '@/types/nodeId'
-import type { SerializedNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import {
   LGraphNode as LGraphNodeClass,
   SubgraphNode
@@ -17,8 +17,8 @@ import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import { widgetId } from '@/types/widgetId'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 import type {
   InputWidgetConfig,
   LinearInput,
@@ -27,13 +27,14 @@ import type {
 import { ComfyWorkflow as ComfyWorkflowClass } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
-import { ChangeTracker } from '@/scripts/changeTracker'
+import { beginGraphLoad, endGraphLoad } from '@/core/graph/graphLoadState'
+import type { ChangeTracker } from '@/scripts/changeTracker'
 import {
   createMockChangeTracker,
   createNodeState
 } from '@/utils/__tests__/litegraphTestUtils'
 import { resolveNode } from '@/utils/litegraphUtil'
-import type { WidgetId } from '@/types/widgetId'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
@@ -122,7 +123,7 @@ describe('appModeStore', () => {
 
   beforeEach(() => {
     vi.mocked(app.rootGraph).extra = {}
-    ChangeTracker.isLoadingGraph = false
+    endGraphLoad(app.rootGraph)
     mockResolveNode.mockReturnValue(undefined)
     vi.spyOn(api, 'storeSetting').mockResolvedValue(new Response())
     vi.mocked(useCanvasStore().getCanvas).mockReturnValue(
@@ -527,7 +528,7 @@ describe('appModeStore', () => {
     })
 
     it('does not warn while a graph is still loading', () => {
-      ChangeTracker.isLoadingGraph = true
+      beginGraphLoad(app.rootGraph)
       vi.mocked(app.rootGraph).id = rootGraphId
       vi.mocked(app.rootGraph).nodes = [nodeWithWidgets(1, ['seed'])]
       vi.mocked(app.rootGraph).getNodeById = vi.fn(() => null)
@@ -557,14 +558,14 @@ describe('appModeStore', () => {
   })
 
   describe('pruneLinearData during graph loading', () => {
-    it('still upgrades legacy inputs but defers output pruning when ChangeTracker.isLoadingGraph is true', () => {
+    it('still upgrades legacy inputs but defers output pruning while the graph is loading', () => {
       const node1 = nodeWithWidgets(1, ['seed'])
       vi.mocked(app.rootGraph).id = rootGraphId
       vi.mocked(app.rootGraph).nodes = [node1]
       vi.mocked(app.rootGraph).getNodeById = vi.fn((id) =>
         id === toNodeId(1) ? node1 : null
       )
-      ChangeTracker.isLoadingGraph = true
+      beginGraphLoad(app.rootGraph)
 
       store.loadSelections({
         inputs: [

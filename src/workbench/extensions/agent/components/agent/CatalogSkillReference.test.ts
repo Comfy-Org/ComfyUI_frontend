@@ -9,7 +9,6 @@ import type { SkillPack } from '@/platform/skills/types'
 import CatalogSkillReference from './CatalogSkillReference.vue'
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
-vi.mock(import('@/platform/telemetry/reportError'))
 
 function pack(id: string, name: string): SkillPack {
   return {

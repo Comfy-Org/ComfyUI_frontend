@@ -73,9 +73,16 @@ email-verified `@comfy.org` account. The server rule (BE-17135) still requires
 
 ## Run locally
 
+Start the website from a checkout of
+[Comfy-Org/comfy-website](https://github.com/Comfy-Org/comfy-website):
+
 ```sh
 PUBLIC_WORKSHOP_CLOUD_ENV=test pnpm --filter @comfyorg/website dev --port 4321
+```
 
+Then run the session tests from this frontend repository:
+
+```sh
 pnpm exec playwright test --config playwright.session.config.ts --list
 pnpm exec playwright test --config playwright.session.config.ts --project=session-flag-off
 pnpm exec playwright test --config playwright.session.config.ts --project=session-flag-on

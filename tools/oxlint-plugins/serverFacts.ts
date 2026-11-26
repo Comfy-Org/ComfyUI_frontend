@@ -10,12 +10,15 @@ type VisitedNode<K extends keyof Visitor> = Parameters<
 type Expression = VisitedNode<'LogicalExpression'>['left']
 type AstNode = Expression['parent']
 type Ternary = VisitedNode<'ConditionalExpression'>
+type Member = Extract<AstNode, { type: 'MemberExpression' }>
 
 const CAPABILITY_SOURCES: ReadonlySet<string> = new Set([
   'useBillingCapabilities'
 ])
 const CAPABILITY_BINDING = /^can[A-Z]\w*$/
 const CAPABILITY_FIELD = /^can_[a-z_]+$/
+const CAPABILITY_DETAIL = /(?:Refusal|Denial|Reason)$/
+const SERVER_FACT_OWNER = /^(?:\w*Facts|facts|\w*Capabilities|capabilities)$/
 const PENDING_FACT_WRAPPER = 'pendingServerFact'
 const LOCAL_UI_STATE: ReadonlySet<string> = new Set([
   'isLoading',
@@ -90,7 +93,8 @@ const ROLE_FALLBACK_OPERATORS: ReadonlySet<string> = new Set(['??', '||'])
 const SERVER_MESSAGE_NAME = /message$/i
 // Text matching is reported where the receiver is a server execution or API
 // error; elsewhere `message` is usually a browser or library error.
-const SERVER_MESSAGE_FILE = /(?:^|\/)src\/platform\/errorCatalog\//
+const SERVER_MESSAGE_FILE =
+  /(?:^|\/)src\/platform\/workflowErrors\/errorCatalog\//
 
 export const GUIDANCE =
   "Render the server fact as received. If the UI needs a fact the API does not emit, open a backend ticket and wrap the interim expression in pendingServerFact('BE-xxxx', ...). See docs/adr/API-SERVER-FACTS-0042-server-facts-are-rendered-not-derived.md"
@@ -431,6 +435,7 @@ function oneSideIsLocal(
 function memberPath(node: AstNode): string | undefined {
   const expression = unwrap(node)
   if (expression.type === 'Identifier') return expression.name
+  if (expression.type === 'ThisExpression') return 'this'
   if (expression.type !== 'MemberExpression' || expression.computed) {
     return undefined
   }
@@ -438,6 +443,52 @@ function memberPath(node: AstNode): string | undefined {
   return object === undefined
     ? undefined
     : `${object}.${expression.property.name}`
+}
+
+function isCapabilityMemberName(property: string): boolean {
+  return CAPABILITY_BINDING.test(property) && !CAPABILITY_DETAIL.test(property)
+}
+
+function isFactObjectCapability(node: AstNode): boolean {
+  if (node.type !== 'MemberExpression' || node.computed) return false
+  return (
+    isCapabilityMemberName(node.property.name) &&
+    SERVER_FACT_OWNER.test(factName(node.object) ?? '')
+  )
+}
+
+function isCapabilityDetail(node: AstNode): boolean {
+  return (
+    node.type === 'MemberExpression' &&
+    !node.computed &&
+    CAPABILITY_BINDING.test(node.property.name) &&
+    CAPABILITY_DETAIL.test(node.property.name)
+  )
+}
+
+function memberKey(member: Member): string | undefined {
+  if (member.computed) return undefined
+  const holder = memberPath(member.object)
+  return holder && `${holder}.${member.property.name}`
+}
+
+function isFactObjectField(node: AstNode): boolean {
+  return (
+    node.type === 'MemberExpression' &&
+    !node.computed &&
+    CAPABILITY_BINDING.test(node.property.name) &&
+    SERVER_FACT_OWNER.test(factName(node.object) ?? '')
+  )
+}
+
+function combinesFactObjectCapabilities(operands: AstNode[]): boolean {
+  const fields = operands.flatMap(
+    (operand) =>
+      capabilityMember(negated(operand) ?? operand, isFactObjectField) ?? []
+  )
+  return (
+    fields.length >= 2 && fields.some((field) => !isCapabilityDetail(field))
+  )
 }
 
 interface LiteralDefault {
@@ -470,18 +521,26 @@ function isNarrowedTernary(node: Ternary, isCapability: IsCapability): boolean {
     : impliesCapability(fallback.other, isCapability)
 }
 
-function capabilityOwner(
+function capabilityMember(
   node: AstNode,
   isCapability: IsCapability
-): string | undefined {
+): Member | undefined {
   const expression = unwrap(node)
   if (expression.type !== 'MemberExpression' || expression.computed) {
     return undefined
   }
   if (expression.property.name === 'value') {
-    return capabilityOwner(expression.object, isCapability)
+    return capabilityMember(expression.object, isCapability)
   }
-  return isCapability(expression) ? memberPath(expression.object) : undefined
+  return isCapability(expression) ? expression : undefined
+}
+
+function capabilityOwner(
+  node: AstNode,
+  isCapability: IsCapability
+): string | undefined {
+  const member = capabilityMember(node, isCapability)
+  return member && memberPath(member.object)
 }
 
 // `caps ? caps.can_top_up : false` is `caps?.can_top_up ?? false`.
@@ -520,9 +579,33 @@ export const noCapabilityRecombination: Rule = {
       const property = node.property.name
       return (
         CAPABILITY_FIELD.test(property) ||
-        (CAPABILITY_BINDING.test(property) &&
+        (isCapabilityMemberName(property) &&
           capabilityObjects.has(factName(node.object) ?? ''))
       )
+    }
+
+    const isPairableCapability = (node: AstNode): boolean =>
+      isCapabilityReference(node) || isFactObjectCapability(node)
+
+    const capabilityKeys = (operands: AstNode[]): Set<string> =>
+      new Set(
+        operands.flatMap((operand) => {
+          const member = capabilityMember(
+            negated(operand) ?? operand,
+            isPairableCapability
+          )
+          const key = member && memberKey(member)
+          return key ?? []
+        })
+      )
+
+    const isDetailOfPairedCapability = (
+      operand: AstNode,
+      paired: Set<string>
+    ): boolean => {
+      const detail = capabilityMember(operand, isCapabilityDetail)
+      const key = detail && memberKey(detail)?.replace(CAPABILITY_DETAIL, '')
+      return key !== undefined && paired.has(key)
     }
 
     const isCapabilitySource = (init: AstNode | null): boolean =>
@@ -609,10 +692,17 @@ export const noCapabilityRecombination: Rule = {
       LogicalExpression(node) {
         if (unwrap(node.parent).type === 'LogicalExpression') return
         const operands = logicalOperands(node)
-        const factOperands = operands.filter((operand) => !isLiteral(operand))
+        const paired = capabilityKeys(operands)
+        const factOperands = operands.filter(
+          (operand) =>
+            !isLiteral(operand) && !isDetailOfPairedCapability(operand, paired)
+        )
         if (
           factOperands.length < 2 ||
-          !operands.some(containsCapability) ||
+          !(
+            operands.some(containsCapability) ||
+            combinesFactObjectCapabilities(factOperands)
+          ) ||
           onlyNarrowedByLocalState(node) ||
           isInsidePendingFact(node)
         ) {
@@ -838,7 +928,7 @@ export const noServerFactLiterals: Rule = {
 const FACT_CONSTRUCTOR = 'receiveServerFact'
 const FACT_PROVIDERS = [
   /(?:^|\/)src\/platform\/serverFacts\/serverFact\.ts$/,
-  /(?:^|\/)src\/platform\/workspace\/composables\/useBillingCapabilities\.ts$/,
+  /(?:^|\/)src\/platform\/billing\/composables\/useBillingCapabilities\.ts$/,
   /\.(?:test|spec|stories)\.ts$/,
   /(?:^|\/)__mocks__\//,
   /(?:^|\/)src\/storybook\//

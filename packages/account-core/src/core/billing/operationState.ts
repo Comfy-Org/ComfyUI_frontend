@@ -12,10 +12,12 @@
  * state.
  */
 import {
+  zAcceptedAutoTopUpSettings,
   zBillingOpChargeBreakdown,
   zBillingOpChargeReason,
   zBillingOpReceiptPlan,
-  zBillingOpStatusResponse
+  zBillingOpStatusResponse,
+  zTopUpPurchaseAmount
 } from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
 
@@ -40,9 +42,19 @@ const ReceiptPlanSchema = zBillingOpReceiptPlan.extend({
 
 export const BillingOpStatusSchema = zBillingOpStatusResponse.extend({
   amount_charged_cents: wireCents.optional(),
+  auto_top_up: zAcceptedAutoTopUpSettings
+    .extend({
+      monthly_budget_cents: wireCents,
+      target_credits: wireCents,
+      threshold_credits: wireCents
+    })
+    .optional(),
   credits_added: wireCents.optional(),
   charge_breakdown: ChargeBreakdownSchema.optional(),
-  plan: ReceiptPlanSchema.optional()
+  plan: ReceiptPlanSchema.optional(),
+  topup_purchase_amount: zTopUpPurchaseAmount
+    .extend({ amount_cents: wireCents })
+    .optional()
 })
 
 export type BillingOpStatus = z.infer<typeof BillingOpStatusSchema>
@@ -139,6 +151,8 @@ export type PendingBillingOperation = BillingOperationIdentity & {
   readonly actionUrl?: string
   readonly challenge?: EmbeddedChallenge
   readonly authenticationState?: BillingAuthenticationState
+  /** The server's deadline for the customer's authentication, as served; absent is no claim. */
+  readonly authenticationDeadline?: string
   readonly serverPhase?: BillingOperationServerPhase
   /** Set while the customer's last attempt was declined and they may try again. */
   readonly declineReason?: BillingDeclineReason
@@ -165,6 +179,10 @@ export type FailedBillingOperation = BillingOperationIdentity & {
  */
 export interface BillingOperationReceipt {
   readonly amountChargedCents?: number
+  /** Whether the auto top-up this purchase asked for came on; absent when it asked for none. */
+  readonly autoTopUpActivation?: NonNullable<
+    BillingOpStatus['auto_top_up_activation']
+  >
   readonly chargeBreakdown?: BillingChargeBreakdown
   readonly creditsAdded?: number
   readonly plan?: BillingOperationPlan
@@ -286,10 +304,10 @@ function nextChallenge(
   state: PendingBillingOperation,
   status: BillingOpStatus
 ): EmbeddedChallenge | undefined {
-  if (state.presentation !== 'embedded') return state.challenge
   const secret = status.payment_intent_client_secret
   if (secret === undefined) return state.challenge
   if (state.challenge?.clientSecret === secret) return state.challenge
+  if (state.presentation !== 'embedded') return undefined
   if (status.authentication_state !== 'requires_action') return state.challenge
   return { clientSecret: secret, status: 'required' }
 }
@@ -326,6 +344,9 @@ function receiptOf(
     ...(status.amount_charged_cents === undefined
       ? {}
       : { amountChargedCents: status.amount_charged_cents }),
+    ...(status.auto_top_up_activation === undefined
+      ? {}
+      : { autoTopUpActivation: status.auto_top_up_activation }),
     ...(status.charge_breakdown === undefined
       ? {}
       : { chargeBreakdown: status.charge_breakdown }),
@@ -357,6 +378,14 @@ export function isGrantLanding(state: BillingOperationState): boolean {
     state.phase === 'succeeded' &&
     state.receipt?.amountChargedCents !== undefined &&
     state.receipt.creditsAdded === undefined
+  )
+}
+
+/** The charge went through and the server is still turning on the auto top-up it asked for. */
+export function isAutoTopUpActivating(state: BillingOperationState): boolean {
+  return (
+    state.phase === 'succeeded' &&
+    state.receipt?.autoTopUpActivation === 'pending'
   )
 }
 
@@ -399,6 +428,19 @@ function nextDeclineReason(
   return 'generic'
 }
 
+function nextAuthenticationDeadline(
+  state: PendingBillingOperation,
+  status: BillingOpStatus
+): string | undefined {
+  if (
+    state.challenge?.status === 'completed' &&
+    echoesSettledChallenge(state, status)
+  ) {
+    return state.authenticationDeadline
+  }
+  return status.authentication_deadline
+}
+
 function reducePending(
   state: PendingBillingOperation,
   status: BillingOpStatus
@@ -407,9 +449,11 @@ function reducePending(
   const terminal = terminalFromStatus(state, status)
   if (terminal !== undefined) return terminal
 
-  const authenticationState = echoesSettledChallenge(state, status)
+  const echoed = echoesSettledChallenge(state, status)
+  const authenticationState = echoed
     ? state.authenticationState
     : status.authentication_state
+  const authenticationDeadline = nextAuthenticationDeadline(state, status)
   const actionUrl = nextActionUrl(state, status, authenticationState)
   const declineReason = nextDeclineReason(state, status, authenticationState)
   const { plan: _previousPlan, ...rest } = state
@@ -419,6 +463,7 @@ function reducePending(
     ...(status.plan === undefined ? {} : { plan: status.plan }),
     challenge: nextChallenge(state, status),
     authenticationState,
+    authenticationDeadline,
     actionUrl,
     serverPhase: status.phase,
     declineReason,
@@ -450,6 +495,7 @@ function settleChallenge(
     ...state,
     challenge,
     authenticationState: 'processing',
+    authenticationDeadline: undefined,
     actionUrl: undefined,
     declineReason: undefined
   }

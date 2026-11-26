@@ -59,6 +59,25 @@
     "name": "Auswahlwerkzeugleiste anzeigen",
     "tooltip": "Zeigt eine schwebende Werkzeugleiste an, wenn Nodes ausgewählt sind, und ermöglicht schnellen Zugriff auf häufige Aktionen."
   },
+  "Comfy_Canvas_SmartGuides_Enabled": {
+    "name": "Beim Ziehen und Ändern der Größe an nahegelegenen Nodes, Gruppen und Verbindungen ausrichten",
+    "tooltip": "Zeigt Hilfslinien an und richtet an ausgerichteten Kanten, gleichmäßigen Abständen und geraden Verbindungen aus. Halten Sie stattdessen Umschalt gedrückt, um am Raster auszurichten."
+  },
+  "Comfy_Canvas_SmartGuides_Gap": {
+    "name": "Abstand beim Ausrichten neben einem anderen Node"
+  },
+  "Comfy_Canvas_SmartGuides_SnapDistance": {
+    "name": "Ausrichtungsabstand (Bildschirmpixel)"
+  },
+  "Comfy_Canvas_SmartGuides_SnapToEdges": {
+    "name": "An den Kanten anderer Nodes und Gruppen ausrichten"
+  },
+  "Comfy_Canvas_SmartGuides_SnapToSpacing": {
+    "name": "An gleichmäßigen Abständen zwischen Nodes ausrichten"
+  },
+  "Comfy_Canvas_SmartGuides_SnapToWires": {
+    "name": "So ausrichten, dass Verbindungen gerade werden"
+  },
   "Comfy_ConfirmClear": {
     "name": "Bestätigung beim Leeren des Workflows anfordern"
   },
@@ -69,8 +88,8 @@
     "name": "Optionen für den Entwicklermodus aktivieren (API-Speichern usw.)"
   },
   "Comfy_DisableFloatRounding": {
-    "name": "Standardrundung von Float-Widgets deaktivieren.",
-    "tooltip": "(Neuladen der Seite erforderlich) Die Rundung kann nicht deaktiviert werden, wenn sie vom Node im Backend festgelegt wird."
+    "name": "Standardmäßige Rundung des Float-Widgets deaktivieren (veraltet).",
+    "tooltip": "(erfordert ein Neuladen der Seite) Veraltet und standardmäßig aktiviert. Wenn Sie dies deaktivieren, werden bearbeitete Float-Werte auf die Dezimalstellen der Widget-Schrittweite gerundet. Die vom Node deklarierte Rundung wird immer angewendet."
   },
   "Comfy_DisableSliders": {
     "name": "Slider für Node-Widgets deaktivieren"
@@ -87,6 +106,10 @@
   "Comfy_ErrorSystem_ShowMissingModels": {
     "name": "Fehlende Modelle im Probleme-Tab anzeigen",
     "tooltip": "Wenn deaktiviert, werden nicht gefundene Modelldateien nicht im Probleme-Tab aufgeführt und ihre Nodes nicht hervorgehoben."
+  },
+  "Comfy_ErrorSystem_ShowMissingNodes": {
+    "name": "Fehlende Nodes im Probleme-Tab anzeigen",
+    "tooltip": "Wenn diese Option deaktiviert ist, werden fehlende Node-Pakete nicht im Probleme-Tab aufgeführt und ihre Nodes nicht hervorgehoben. Der Workflow kann dennoch erst ausgeführt werden, wenn sie installiert sind."
   },
   "Comfy_Execution_PreviewMethod": {
     "name": "Methode für Live-Vorschau",
@@ -317,6 +340,10 @@
   "Comfy_Node_DoubleClickTitleToEdit": {
     "name": "Node-Titel per Doppelklick bearbeiten"
   },
+  "Comfy_Node_DownscaleImagePreviews": {
+    "name": "Große Bildvorschauen verkleinern",
+    "tooltip": "In Nodes 2.0 werden große Bilder auf Nodes als Kopie mit maximal 1024 px an der längsten Seite angezeigt, damit viele große Vorschauen reaktionsschnell bleiben. Deaktivieren Sie dies, um immer das Original anzuzeigen."
+  },
   "Comfy_Node_MiddleClickRerouteNode": {
     "name": "Mittelklick erstellt einen neuen Reroute-Node"
   },
@@ -464,10 +491,6 @@
   "Comfy_Workflow_ShowMissingMediaWarning": {
     "name": "Fehlende Medien im Probleme-Tab anzeigen",
     "tooltip": "Wenn deaktiviert, werden nicht gefundene Eingabebilder, Videos und Audiodateien nicht im Probleme-Tab aufgeführt und ihre Nodes nicht hervorgehoben."
-  },
-  "Comfy_Workflow_ShowMissingNodesWarning": {
-    "name": "Fehlende Nodes im Probleme-Tab anzeigen",
-    "tooltip": "Wenn deaktiviert, werden fehlende Node-Pakete nicht im Probleme-Tab aufgeführt und ihre Nodes nicht hervorgehoben. Der Workflow kann weiterhin nicht ausgeführt werden, bis sie installiert sind."
   },
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "Node-IDs beim Speichern des Workflows sortieren"

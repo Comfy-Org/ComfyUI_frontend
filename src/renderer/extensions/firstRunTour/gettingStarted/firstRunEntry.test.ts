@@ -1,19 +1,18 @@
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useAuthStore } from '@/stores/authStore'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { fromAny } from '@total-typescript/shoehorn'
 import * as VueUse from '@vueuse/core'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
-import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
+import { useSubscription } from '@/platform/billing/subscription/composables/useSubscription'
 import {
   isFirstRunReplayRequested,
   requestOnboardingReplay
 } from '@/platform/onboarding/onboardingReplay'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftTypes'
 import type { SharedWorkflowUrlLoadStatus } from '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'
 
@@ -61,15 +60,13 @@ vi.mocked(VueUse.createSharedComposable).mockImplementation(
   sharedComposable.create
 )
 
-vi.mock(import('@/platform/cloud/subscription/composables/useSubscription'))
+vi.mock(import('@/platform/billing/subscription/composables/useSubscription'))
 
 vi.mock<unknown>(import('@/services/useNewUserService'), () => ({
   useNewUserService: () => ({ isNewUser: () => mocks.isNewUser })
 }))
 
-vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/platform/auth/firebaseIdentity'), { spy: true })
-vi.mock(import('@/platform/telemetry/reportError'))
 vi.mock<unknown>(
   import('@/renderer/extensions/firstRunTour/tour/useFirstRunTourController'),
   () => ({
@@ -105,7 +102,6 @@ describe('useFirstRunEntry', () => {
     vi.mocked(firebaseIdentity.onUserChanged).mockReturnValue(() => undefined)
     vi.mocked(firebaseIdentity.onTokenChanged).mockReturnValue(() => undefined)
     Object.assign(useAuthStore(), { userId: OWNER_ID })
-    vi.mocked(useFeatureFlags().flags).onboardingTourEnabled = true
     useSettingStore().settingValues = {}
     vi.mocked(useSettingStore().set).mockImplementation(async (key, value) => {
       Object.assign(useSettingStore().settingValues, { [key]: value })
@@ -122,13 +118,7 @@ describe('useFirstRunEntry', () => {
   const transientDisqualifiers = [
     ['below the md breakpoint', () => void (mocks.isDesktopWidth = false)],
     ['subscription disabled', () => void (mocks.subscriptionEnabled = false)],
-    ['new-user state undetermined', () => void (mocks.isNewUser = null)],
-    [
-      'the tour flag off',
-      () => {
-        vi.mocked(useFeatureFlags().flags).onboardingTourEnabled = false
-      }
-    ]
+    ['new-user state undetermined', () => void (mocks.isNewUser = null)]
   ] as const
 
   describe('what the boot reports to surfaces that must yield to it', () => {
@@ -229,7 +219,7 @@ describe('useFirstRunEntry', () => {
     })
 
     it('gives up with false only once the grace period has fully passed', async () => {
-      vi.useFakeTimers()
+      vi.useFakeTimers({ shouldAdvanceTime: false })
       try {
         const entry = useFirstRunEntry()
         let decided: boolean | undefined
@@ -486,13 +476,7 @@ describe('useFirstRunEntry', () => {
     const cannotServe = [
       ['not on cloud', () => void (mocks.isCloud = false)],
       ['subscription disabled', () => void (mocks.subscriptionEnabled = false)],
-      ['below the md breakpoint', () => void (mocks.isDesktopWidth = false)],
-      [
-        'the tour flag off',
-        () => {
-          vi.mocked(useFeatureFlags().flags).onboardingTourEnabled = false
-        }
-      ]
+      ['below the md breakpoint', () => void (mocks.isDesktopWidth = false)]
     ] as const
 
     it.for(cannotServe)(
@@ -752,6 +736,72 @@ describe('useFirstRunEntry', () => {
       surface: 'platform',
       errorType: 'failure_writing_tutorial_completed_setting',
       level: 'warning'
+    })
+  })
+
+  describe('telling the Agent whether this launch is a local first run', () => {
+    beforeEach(() => {
+      mocks.isCloud = false
+    })
+
+    it.for(['fresh', 'url-intent'] as const)(
+      'marks a %s local launch of a user who has not finished the tutorial',
+      async (outcome) => {
+        const entry = useFirstRunEntry()
+        expect(entry.isLocalFirstRun.value).toBe(false)
+
+        await entry.handleStartupOutcome(outcome)
+
+        expect(entry.isLocalFirstRun.value).toBe(true)
+      }
+    )
+
+    it('captures the first run before the tutorial flag is written', async () => {
+      const entry = useFirstRunEntry()
+      let captured: boolean | undefined
+      vi.mocked(useSettingStore().set).mockImplementation(
+        async (key, value) => {
+          captured = entry.isLocalFirstRun.value
+          Object.assign(useSettingStore().settingValues, { [key]: value })
+        }
+      )
+
+      await entry.handleStartupOutcome('fresh')
+
+      expect(
+        useSettingStore().settingValues['Comfy.TutorialCompleted'],
+        'the templates branch spends the flag during this launch'
+      ).toBe(true)
+      expect(
+        captured,
+        'a read after the write would see a completed tutorial'
+      ).toBe(true)
+    })
+
+    it('does not mark a launch that restored work', async () => {
+      const entry = useFirstRunEntry()
+
+      await entry.handleStartupOutcome('restored')
+
+      expect(entry.isLocalFirstRun.value).toBe(false)
+    })
+
+    it('does not mark a user who already finished the tutorial', async () => {
+      useSettingStore().settingValues['Comfy.TutorialCompleted'] = true
+      const entry = useFirstRunEntry()
+
+      await entry.handleStartupOutcome('fresh')
+
+      expect(entry.isLocalFirstRun.value).toBe(false)
+    })
+
+    it('never marks a cloud launch, which has its own first-run screen', async () => {
+      mocks.isCloud = true
+      const entry = useFirstRunEntry()
+
+      await entry.handleStartupOutcome('fresh')
+
+      expect(entry.isLocalFirstRun.value).toBe(false)
     })
   })
 

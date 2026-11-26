@@ -46,6 +46,7 @@ interface MentionPickerOptions {
     from: number,
     to: number
   ) => Promise<boolean>
+  selectSkill: (skill: SkillReferenceMetadata, from: number, to: number) => void
   pickNode: (node: SelectedNode) => void
   pickAsset: (asset: ComposerAttachment) => void
   requestWorkflows: () => void
@@ -119,14 +120,12 @@ export function useAgentMentionPicker(options: MentionPickerOptions) {
         ...options
           .assets()
           .filter((asset) => asset.name.toLowerCase().includes(search))
-          .map(
-            (asset): MentionMatch => ({
-              kind: 'asset',
-              id: asset.id,
-              label: asset.name,
-              asset
-            })
-          ),
+          .map((asset): MentionMatch => ({
+            kind: 'asset',
+            id: asset.id,
+            label: asset.name,
+            asset
+          })),
         ...sections.filter(({ label }) => label.toLowerCase().includes(search))
       ]
     }
@@ -142,14 +141,12 @@ export function useAgentMentionPicker(options: MentionPickerOptions) {
               (node.title.toLowerCase().includes(search) ||
                 node.id.includes(search))
           )
-          .map(
-            (node): MentionMatch => ({
-              kind: 'node',
-              id: selectedNodeKey(node),
-              label: node.title,
-              node
-            })
-          )
+          .map((node): MentionMatch => ({
+            kind: 'node',
+            id: selectedNodeKey(node),
+            label: node.title,
+            node
+          }))
       ]
     }
 
@@ -158,14 +155,12 @@ export function useAgentMentionPicker(options: MentionPickerOptions) {
       ...options
         .workflows()
         .filter(({ name }) => name.toLowerCase().includes(search))
-        .map(
-          (workflow): MentionMatch => ({
-            kind: 'workflow',
-            id: workflow.id ?? workflow.tabPath,
-            label: workflow.name,
-            workflow
-          })
-        )
+        .map((workflow): MentionMatch => ({
+          kind: 'workflow',
+          id: workflow.id ?? workflow.tabPath,
+          label: workflow.name,
+          workflow
+        }))
     ]
   }
 
@@ -183,6 +178,11 @@ export function useAgentMentionPicker(options: MentionPickerOptions) {
           (match) => match.kind !== 'back' && !isNodeReferenceDisabled(match)
         ))
   )
+  const mentionActiveNode = computed(() => {
+    if (!mentionVisible.value) return undefined
+    const match = mentionMatches.value.at(mentionActive.value)
+    return match?.kind === 'node' ? match.node : undefined
+  })
   const skillQueryEmpty = computed(
     () => mentionSection.value === 'skills' && mentionQuery.value === ''
   )
@@ -355,13 +355,11 @@ export function useAgentMentionPicker(options: MentionPickerOptions) {
       return
     }
     if (match.kind === 'skill') {
-      options
-        .editor()
-        ?.selectSkill(
-          match.skill,
-          state.start,
-          state.start + 1 + state.query.length
-        )
+      options.selectSkill(
+        match.skill,
+        state.start,
+        state.start + 1 + state.query.length
+      )
       dispatchMention({ type: 'closed' })
       return
     }
@@ -438,6 +436,7 @@ export function useAgentMentionPicker(options: MentionPickerOptions) {
     mentionActive,
     mentionMatches,
     mentionVisible,
+    mentionActiveNode,
     mentionHasResults,
     skillQueryEmpty,
     graphDupes,

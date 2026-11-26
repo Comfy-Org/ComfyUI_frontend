@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest'
 
-const { createAppRouter } = await import('@/router')
+import { createAppRouter } from '@/router'
 
 it('takes its base path from the URL at construction rather than at import', async () => {
   window.history.replaceState(null, '', '/ComfyUI/')

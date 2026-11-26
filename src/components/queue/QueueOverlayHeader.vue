@@ -15,7 +15,7 @@
         :disabled="queuedCount === 0"
         @click="$emit('clearQueued')"
       >
-        <i class="icon-[lucide--list-x] size-4" />
+        <i class="icon-[lucide--list-x]" />
       </Button>
     </div>
     <JobHistoryActionsMenu @clear-history="$emit('clearHistory')" />
@@ -26,7 +26,7 @@
 import { useI18n } from 'vue-i18n'
 
 import JobHistoryActionsMenu from '@/components/queue/JobHistoryActionsMenu.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 
 defineProps<{
   headerTitle: string

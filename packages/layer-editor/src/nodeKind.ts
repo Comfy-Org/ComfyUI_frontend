@@ -1,4 +1,8 @@
-import type { NodeBase, Rect, Transform, Vec2 } from './node'
+import type { NodeBase, Transform } from './node'
+import type {
+  CompactRect as Rect,
+  Point2D as Vec2
+} from '@comfyorg/shared-frontend-utils/geometry'
 import type { Compositor, NodeTexture } from './compositor'
 import type { ContentStore } from './content'
 import type { Command } from './history'

@@ -1,23 +1,64 @@
 import { readFileSync } from 'fs'
 
 import { expect } from '@playwright/test'
+import { z } from 'zod'
 import { networkIsolationFixture as test } from '@e2e/fixtures/networkIsolationFixture'
 
-import type { AppMode } from '@/utils/appMode'
+import type { AppMode } from '@comfyorg/graph-model/appMode'
 import type {
   ComfyApiWorkflow,
+  ComfyNode,
   ComfyWorkflowJSON
-} from '@/platform/workflow/validation/schemas/workflowSchema'
+} from '@comfyorg/graph-model/workflowSchema'
 import {
   zComfyWorkflow,
-  zComfyWorkflow1
-} from '@/platform/workflow/validation/schemas/workflowSchema'
+  zComfyWorkflow1,
+  zNodeId
+} from '@comfyorg/graph-model/workflowSchema'
 import type { WorkspaceStore } from '@e2e/types/globals'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 
 type FolderStructure = {
   [key: string]: FolderStructure | string
+}
+
+type WorkflowOverrides = {
+  nodes?: Record<string, Partial<ComfyNode>>
+  workflow?: Record<string, unknown>
+  fileName?: string
+}
+
+const zWorkflowNodes = z
+  .object({ nodes: z.array(z.object({ id: zNodeId }).passthrough()) })
+  .passthrough()
+
+function workflowWithOverrides(
+  workflowName: string,
+  { nodes = {}, workflow = {}, fileName }: WorkflowOverrides
+) {
+  const asset = zWorkflowNodes.parse(
+    JSON.parse(readFileSync(assetPath(`${workflowName}.json`), 'utf-8'))
+  )
+  const unknownIds = Object.keys(nodes).filter(
+    (id) => !asset.nodes.some((node) => String(node.id) === id)
+  )
+  if (unknownIds.length > 0)
+    throw new Error(`${workflowName} has no node ${unknownIds.join(', ')}`)
+  return {
+    name: `${fileName ?? workflowName.split('/').at(-1)}.json`,
+    mimeType: 'application/json',
+    buffer: Buffer.from(
+      JSON.stringify({
+        ...asset,
+        ...workflow,
+        nodes: asset.nodes.map((node) => ({
+          ...node,
+          ...nodes[String(node.id)]
+        }))
+      })
+    )
+  }
 }
 
 export class WorkflowHelper {
@@ -142,19 +183,31 @@ export class WorkflowHelper {
   }
 
   async loadGraphData(workflow: ComfyWorkflowJSON): Promise<void> {
-    await this.comfyPage.page.evaluate(
-      (wf) => window.app!.loadGraphData(wf),
-      workflow
-    )
+    await this.comfyPage.page.evaluate(async (wf) => {
+      await window.app!.loadGraphData(wf)
+    }, workflow)
     await this.comfyPage.nextFrame()
     if (test.info().tags.includes('@vue-nodes')) {
       await this.comfyPage.vueNodes.waitForNodes()
     }
   }
 
-  async loadWorkflow(workflowName: string) {
+  async loadWorkflowData(workflowName: string) {
+    const workflow = zComfyWorkflow.parse(
+      JSON.parse(readFileSync(assetPath(`${workflowName}.json`), 'utf-8'))
+    )
+    await this.loadGraphData(workflow)
+  }
+
+  /**
+   * Opens an asset as an uploaded workflow file. `overrides` replaces fields
+   * of the nodes with those IDs, top-level workflow fields, and the file name.
+   */
+  async loadWorkflow(workflowName: string, overrides: WorkflowOverrides = {}) {
     await this.comfyPage.workflowUploadInput.setInputFiles(
-      assetPath(`${workflowName}.json`)
+      Object.keys(overrides).length > 0
+        ? workflowWithOverrides(workflowName, overrides)
+        : assetPath(`${workflowName}.json`)
     )
     await expect(this.comfyPage.workflowUploadInput).toHaveValue('')
     await this.comfyPage.nextFrame()
@@ -286,6 +339,16 @@ export class WorkflowHelper {
   async switchToTab(tabName: string): Promise<void> {
     await this.comfyPage.menu.topbar.getWorkflowTab(tabName).click()
     await this.waitForWorkflowIdle()
+  }
+
+  /** A saved workflow's tab, opened and confirmed unmodified with no `*` title. */
+  async expectTabOpensAsSaved(tabName: string): Promise<void> {
+    await this.switchToTab(tabName)
+    await expect
+      .poll(() => this.comfyPage.menu.topbar.getActiveTabName())
+      .toBe(tabName)
+    await expect.poll(() => this.isCurrentWorkflowModified()).toBe(false)
+    await expect.poll(() => this.comfyPage.page.title()).not.toMatch(/^\*/)
   }
 
   /** Node ids on the live graph, read from LiteGraph rather than the DOM. */

@@ -3,8 +3,8 @@ import { computed } from 'vue'
 
 import { getSlotColor, MAX_MULTITYPE_SLICES } from '@/constants/slotColors'
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
-import { RenderShape } from '@/lib/litegraph/src/types/globalEnums'
-import type { SlotId } from '@/types/slotId'
+import { RenderShape } from '@comfyorg/graph-model/globalEnums'
+import type { SlotId } from '@comfyorg/graph-model/slotId'
 import { cn } from '@comfyorg/tailwind-utils'
 import type { ClassValue } from '@comfyorg/tailwind-utils'
 
@@ -29,12 +29,12 @@ const clipPath = computed(() => {
 
 const types = computed(() => {
   if (props.hasError) return ['var(--destructive)']
-  //TODO Support connected/disconnected colors?
-  if (!props.slotData) return [getSlotColor()]
+  const fallback = 'var(--slot-fallback-color)'
+  if (!props.slotData) return [getSlotColor(undefined, fallback)]
   if (props.slotData.type === '*') return ['']
   return `${props.slotData.type}`
     .split(',')
-    .map(getSlotColor)
+    .map((type) => getSlotColor(type, fallback))
     .slice(0, MAX_MULTITYPE_SLICES)
 })
 
@@ -56,9 +56,10 @@ const slotClass = computed(() =>
 <template>
   <div
     data-testid="slot-connection-dot"
+    data-part="slot-dot"
     :class="
       cn(
-        'group/slot relative flex size-6 items-center justify-center after:absolute after:inset-y-0 after:w-5/2',
+        'group/slot relative flex size-6 items-center justify-center [--slot-fallback-color:#AAA] after:absolute after:inset-y-0 after:w-5/2',
         props.class
       )
     "

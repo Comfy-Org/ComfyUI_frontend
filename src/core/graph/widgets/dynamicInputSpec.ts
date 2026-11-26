@@ -1,8 +1,8 @@
 import {
   zDynamicComboInputSpec,
   zDynamicGroupInputSpec
-} from '@/schemas/nodeDefSchema'
-import type { ComfyInputsSpec, InputSpec } from '@/schemas/nodeDefSchema'
+} from '@comfyorg/object-info-parser'
+import type { ComfyInputsSpec, InputSpec } from '@comfyorg/object-info-parser'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 
 export function resolveDynamicInputSpec(

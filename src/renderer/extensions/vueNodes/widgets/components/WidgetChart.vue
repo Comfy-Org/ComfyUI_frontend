@@ -11,7 +11,7 @@
 import type { ChartData } from 'chart.js'
 import { computed } from 'vue'
 
-import Chart from '@/components/ui/chart/Chart.vue'
+import Chart from '@comfyorg/design-system/chart/Chart'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import type { ChartWidgetOptions } from './WidgetChart.types'

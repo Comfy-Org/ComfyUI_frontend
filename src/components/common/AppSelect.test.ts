@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { SelectOption } from '@/components/ui/select/types'
+import type { SelectOption } from '@comfyorg/design-system/lib/select/types'
 import en from '@/locales/en/main.json'
 
 import AppMultiSelect from './AppMultiSelect.vue'
@@ -38,31 +38,35 @@ function createTranslations() {
 describe('App select labels', () => {
   it.for([
     {
+      case: 'without a label',
       label: undefined,
       accessibleLabel: undefined,
       single: 'Single-select dropdown',
       multi: 'Multi-select dropdown'
     },
     {
+      case: 'with an empty label',
       label: '',
       accessibleLabel: undefined,
       single: 'Single-select dropdown',
       multi: 'Multi-select dropdown'
     },
     {
+      case: 'with a label',
       label: 'Choose',
       accessibleLabel: undefined,
       single: 'Choose',
       multi: 'Choose'
     },
     {
+      case: 'with an accessible label overriding the label',
       label: 'Choose',
       accessibleLabel: 'Custom label',
       single: 'Custom label',
       multi: 'Custom label'
     }
   ])(
-    'uses the accessible name $single / $multi',
+    'uses the accessible name $single / $multi $case',
     ({ label, accessibleLabel, single, multi }) => {
       const i18n = createTranslations()
       render(AppSingleSelect, {

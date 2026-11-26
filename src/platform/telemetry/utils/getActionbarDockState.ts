@@ -1,11 +1,8 @@
-import type { ActionbarDockState } from '@/platform/telemetry/types'
+import type { ActionbarDockState } from '@comfyorg/telemetry/types'
+import { safeLocalStorage } from '@/base/storage/safeStorage'
 
 export function getActionbarDockState(): ActionbarDockState {
-  try {
-    return localStorage.getItem('Comfy.MenuPosition.Docked') === 'false'
-      ? 'floating'
-      : 'docked'
-  } catch {
-    return 'docked'
-  }
+  return safeLocalStorage.getItem('Comfy.MenuPosition.Docked') === 'false'
+    ? 'floating'
+    : 'docked'
 }

@@ -31,7 +31,8 @@ function makeDeps(): LegacyWorkspaceTokenRailDeps {
     endWorkspaceSession: vi.fn(() => false),
     persistWorkspaceIdentity: vi.fn(),
     clearSessionStorage: vi.fn(),
-    surfacePermanentAuthError: vi.fn()
+    surfacePermanentAuthError: vi.fn(),
+    reportTransientRecoveryFailure: vi.fn()
   }
 }
 
@@ -42,6 +43,7 @@ describe('createLegacyWorkspaceTokenRail', () => {
       Response.json({
         token: 'workspace-token-abc',
         expires_at: new Date(Date.now() + expiresInMs).toISOString(),
+        user_id: 'uid-1',
         workspace: { id: workspace.id, name: workspace.name, type: 'team' },
         role: 'owner',
         permissions: ['owner:*']

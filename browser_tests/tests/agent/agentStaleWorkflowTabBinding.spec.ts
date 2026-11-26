@@ -6,7 +6,7 @@ import type {
 } from '@comfyorg/ingest-types'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
+import type { UserDataFullInfo } from '@comfyorg/api-client/types'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import type {
   AgentTurnAccepted,
@@ -114,11 +114,15 @@ test.describe(
       await page.route('**/api/agent/threads/*/messages', (route) => {
         if (route.request().method() === 'GET')
           return route.fulfill(jsonRoute(history))
-        posted.push(route.request().postDataJSON())
+        const body = route.request().postDataJSON() as Record<string, unknown>
+        posted.push(body)
         const accepted: AgentTurnAccepted = {
           thread_id: THREAD_ID,
           message_id: TURN_ID,
-          workflow_id: staleWorkflowId
+          workflow_id:
+            body.current_tab_unbound === true
+              ? 'a81718a4-02ae-41e6-ae85-000000000001'
+              : staleWorkflowId
         }
         return route.fulfill({ ...jsonRoute(accepted), status: 202 })
       })
@@ -198,22 +202,23 @@ test.describe(
       )
       await expect(unavailable).toBeVisible()
 
-      const workflowPicker = panel.getByRole('button', {
-        name: enMessages.agent.switchWorkflow
-      })
-      await workflowPicker.click()
-      await page
-        .getByRole('menuitemradio', { name: DEFAULT_TAB_NAME, exact: true })
+      await agentPanel.composer.fill('draft while unavailable')
+      await expect(agentPanel.composer).toHaveText('draft while unavailable')
+      await expect(agentPanel.sendButton).toBeDisabled()
+
+      await panel
+        .getByRole('button', { name: enMessages.agent.startNewChat })
         .click()
-      await expect(workflowPicker).toHaveText(DEFAULT_TAB_NAME)
       await expect(unavailable).toBeHidden()
       await panel.getByRole('textbox').fill('continue here')
-      await panel
-        .getByRole('button', { name: enMessages.agent.send, exact: true })
-        .click()
+      await expect(agentPanel.sendButton).toBeEnabled()
+      await agentPanel.sendButton.click()
       await expect.poll(() => posted.length).toBe(1)
+      expect(posted[0]).not.toMatchObject({
+        workflow_id: staleWorkflowId
+      })
       expect(posted[0]).toMatchObject({
-        workflow_id: 'a81718a4-02ae-41e6-ae85-000000000001'
+        current_tab_unbound: true
       })
 
       await testInfo.attach('stale-workflow-canvas', {

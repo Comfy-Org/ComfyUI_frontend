@@ -2,8 +2,8 @@
 import { useElementHover, useFocusWithin } from '@vueuse/core'
 import { onBeforeUnmount, useTemplateRef, watch } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
-import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
+import Button from '@comfyorg/design-system/button/Button'
+import type { MediaKind } from '@comfyorg/assets-core/media'
 
 import AssetThumbnail from './AssetThumbnail.vue'
 
@@ -56,7 +56,7 @@ onBeforeUnmount(() => emit('highlight', false))
         @click.stop="emit('remove')"
       >
         <span :class="inlineReferenceRemoveBadgeClass">
-          <span aria-hidden="true" class="icon-[lucide--x] size-2" />
+          <i aria-hidden="true" class="icon-[lucide--x] size-2" />
         </span>
       </Button>
     </span>

@@ -1,6 +1,7 @@
 import { mergeTests } from '@playwright/test'
 
-import type { NodeError } from '@/platform/remote/comfyui/types'
+import type { NodeError } from '@comfyorg/api-client/types'
+import type { PromptOutputsSkippedNodeError } from '@comfyorg/ingest-types'
 import {
   comfyExpect as expect,
   comfyPageFixture
@@ -25,7 +26,8 @@ type PromptRequestBody = {
   prompt?: Record<string, PromptRequestNode>
 }
 
-function buildPreviewAnyValidationError(): NodeError {
+function buildPreviewAnyValidationError(): NodeError &
+  PromptOutputsSkippedNodeError {
   return {
     class_type: 'PreviewAny',
     dependent_outputs: [VALIDATION_ERROR_NODE_ID],
@@ -151,6 +153,7 @@ test.describe('Execution validation errors', { tag: '@workflow' }, () => {
     let promptRequestBody: unknown
 
     const jobId = await exec.run({
+      start: false,
       nodeErrors,
       onPromptRequest: (requestBody) => {
         promptRequestBody = requestBody
@@ -174,6 +177,31 @@ test.describe('Execution validation errors', { tag: '@workflow' }, () => {
     await expect(errorOverlay).toBeVisible()
   })
 
+  test('marks the outputs a run skipped as node errors', async ({
+    comfyPage,
+    getWebSocket
+  }) => {
+    await comfyPage.workflow.loadWorkflow('execution/partial_execution')
+
+    const ws = await getWebSocket()
+    const exec = new ExecutionHelper(comfyPage, ws)
+    const jobId = await exec.run()
+    exec.outputsSkipped(jobId, {
+      [VALIDATION_ERROR_NODE_ID]: buildPreviewAnyValidationError()
+    })
+
+    await expect
+      .poll(() => getValidationErrorMessage(comfyPage))
+      .toBe(VALIDATION_ERROR_MESSAGE)
+    const errorOverlay = comfyPage.page.getByTestId(
+      TestIds.dialogs.errorOverlay
+    )
+    await expect(errorOverlay).toBeVisible()
+    await expect(errorOverlay).toContainText(
+      'Preview as Text is missing a required input: source'
+    )
+  })
+
   test(
     'renders cloud node errors when optional details are omitted',
     { tag: '@cloud' },
@@ -183,7 +211,6 @@ test.describe('Execution validation errors', { tag: '@workflow' }, () => {
       const ws = await getWebSocket()
       const exec = new ExecutionHelper(comfyPage, ws)
       const jobId = await exec.run()
-      exec.executionStart(jobId)
       exec.validationError(jobId, VALIDATION_ERROR_NODE_ID, {
         [VALIDATION_ERROR_NODE_ID]: {
           class_type: 'PreviewAny',

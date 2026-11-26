@@ -234,7 +234,7 @@ test('a saved-method Pay keeps the tabs and the list inert through Phase A', asy
   await expect(backArrow(page)).toBeHidden()
 })
 
-test('314-10555: a challenge the bank refuses lands on capture with Payment not completed, the form still mounted and Pay live', async ({
+test('314-10555: a challenge the bank refuses lands on capture with Payment not verified, the form still mounted and Pay live', async ({
   page,
   cloud,
   signIn
@@ -250,8 +250,9 @@ test('314-10555: a challenge the bank refuses lands on capture with Payment not 
   await releaseChallenge(page, 'requires_action')
 
   const card = page.getByRole('alert')
-  await expect(card).toContainText('Payment not completed')
-  await expect(card).toContainText("you haven't been charged")
+  await expect(card).toContainText('Payment not verified')
+  await expect(card).toContainText("The payment wasn't verified")
+  await expect(card).not.toContainText("you haven't been charged")
   await expect(footnote(page)).toHaveText('')
   await expect(payButton(page)).toBeEnabled()
   await expect(backArrow(page)).toBeVisible()
@@ -680,7 +681,7 @@ test("closing Stripe's challenge window cancels the payment on the server before
 
   await releaseChallenge(page, 'requires_payment_method')
 
-  await expect(page.getByRole('alert')).toContainText('Payment not completed')
+  await expect(page.getByRole('alert')).toContainText('Payment not verified')
   await expect.poll(() => cancelRequests(cloud).length).toBe(1)
 
   await payButton(page).click()

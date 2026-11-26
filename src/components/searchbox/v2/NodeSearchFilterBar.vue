@@ -9,7 +9,7 @@
       :class="chipClass(isSidebarOpen)"
       @click="isSidebarOpen = !isSidebarOpen"
     >
-      <i class="icon-[lucide--panel-left] size-4" />
+      <i class="icon-[lucide--panel-left]" />
     </button>
 
     <div class="h-5 w-px shrink-0 bg-border/50" />

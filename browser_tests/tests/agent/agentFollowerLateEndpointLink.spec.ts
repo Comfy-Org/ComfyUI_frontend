@@ -1,7 +1,7 @@
 import { expect, mergeTests } from '@playwright/test'
 
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 
 import {
   BLANK_WORKFLOW,
@@ -130,7 +130,6 @@ test.describe(
           await agentPanel.open()
           const opened = await getAgentSocket()
           opened.onMessage((message) => outboundFrames.push(String(message)))
-          await agentPanel.selectWorkflow()
           await agentPanel.sendMessage('wire the source into the sink')
           await expect
             .poll(() => outboundFrames, { timeout: 15_000 })

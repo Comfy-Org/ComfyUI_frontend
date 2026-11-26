@@ -74,6 +74,20 @@ export function perfPoint(name: string): void {
   }
 }
 
+/**
+ * Measure from the navigation time origin to now and return the elapsed ms.
+ */
+export function perfMeasureSinceOrigin(name: string): number {
+  const durationMs = performance.now()
+  try {
+    performance.measure(name, { start: 0, end: durationMs })
+  } catch {
+    return durationMs
+  }
+  _emitToSentry(name, durationMs)
+  return durationMs
+}
+
 function _measure(
   name: string,
   startName: string,

@@ -1,46 +1,35 @@
-import '@testing-library/jest-dom/vitest'
+import './packages/design-system/vitest.setup'
 import { createTestingPinia } from '@pinia/testing'
 import { disposePinia, setActivePinia } from 'pinia'
-import { createRequire } from 'node:module'
 import { afterEach, beforeAll, beforeEach, vi } from 'vitest'
-import { TooltipProvider } from 'reka-ui'
-import { shallowReactive } from 'vue'
-import type { Plugin } from 'vue'
 
+import './vitest.mocks.setup'
 import './vitest.network.setup'
 
-import { appTooltipProviderDefaults } from '@/components/ui/tooltip/tooltipConfig'
+import {
+  safeLocalStorage,
+  safeSessionStorage
+} from '@/base/storage/safeStorage'
 import { clearRegisteredLiteGraphTypes } from '@/lib/litegraph/src/litegraphInstance'
-import { remoteConfigState } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import { StubPath2D } from '@/utils/__tests__/stubPath2D'
 
-const requireFromTestingLibrary = createRequire(
-  createRequire(import.meta.url).resolve('@testing-library/vue')
-)
-const { config }: { config: { global: { plugins: Plugin[] } } } =
-  requireFromTestingLibrary('@vue/test-utils')
-
-const testTooltipProviderProps = shallowReactive({
-  ...appTooltipProviderDefaults,
-  delayDuration: 0,
-  skipDelayDuration: 300,
-  disableClosingTrigger: undefined,
-  disabled: undefined,
-  content: undefined
-})
-
-const appShellTooltipProvider: Plugin = {
-  install(app) {
-    const root = app._component
-    if (typeof root === 'function' || !root.setup) return
-    const setupRoot = root.setup
-    root.setup = (props, ctx) => {
-      TooltipProvider.setup?.(testTooltipProviderProps, ctx)
-      return setupRoot(props, ctx)
+function testRuntimeConfig(): Window['__CONFIG__'] {
+  return {
+    subscription_required: true,
+    mixpanel_token: 'test-token',
+    comfy_api_base_url: 'https://stagingapi.comfy.org',
+    comfy_platform_base_url: 'https://stagingplatform.comfy.org',
+    firebase_config: {
+      apiKey: 'test',
+      authDomain: 'test.firebaseapp.com',
+      projectId: 'test',
+      storageBucket: 'test.appspot.com',
+      messagingSenderId: '123',
+      appId: '123'
     }
   }
 }
-config.global.plugins.push(appShellTooltipProvider)
 
 beforeEach(({ task }) => {
   for (
@@ -61,7 +50,8 @@ beforeEach(({ task }) => {
   vi.stubGlobal('Path2D', StubPath2D)
   const pinia = createTestingPinia({ stubActions: false })
   setActivePinia(pinia)
-  remoteConfigState.value = 'anonymous'
+  if (globalThis.window)
+    useRemoteConfigStore(pinia).acceptConfig(testRuntimeConfig(), false)
 
   return () => disposePinia(pinia)
 })
@@ -93,6 +83,11 @@ vi.mock('@/scripts/appInstance', () => {
 // Settle before vitest.timer.setup.ts resets the document so the app's DOM
 // side effects are cleared like any other import-time DOM.
 beforeAll(() => appBridge.loading)
+beforeEach(() => {
+  safeLocalStorage.reset()
+  safeSessionStorage.reset()
+})
+
 beforeEach(() => appBridge.loading)
 
 // Augment Window interface for tests
@@ -133,24 +128,6 @@ globalThis.__ALGOLIA_API_KEY__ = ''
 globalThis.__USE_PROD_CONFIG__ = false
 globalThis.__DISTRIBUTION__ = 'localhost'
 globalThis.__IS_NIGHTLY__ = false
-
-// Define runtime config for tests (absent in @vitest-environment node files)
-if (globalThis.window) {
-  window.__CONFIG__ = {
-    subscription_required: true,
-    mixpanel_token: 'test-token',
-    comfy_api_base_url: 'https://stagingapi.comfy.org',
-    comfy_platform_base_url: 'https://stagingplatform.comfy.org',
-    firebase_config: {
-      apiKey: 'test',
-      authDomain: 'test.firebaseapp.com',
-      projectId: 'test',
-      storageBucket: 'test.appspot.com',
-      messagingSenderId: '123',
-      appId: '123'
-    }
-  }
-}
 
 // Mock Worker for extendable-media-recorder
 globalThis.Worker = vi.fn(function () {

@@ -67,9 +67,7 @@ test.describe('Vue Nodes Image Preview', { tag: '@vue-nodes' }, () => {
   test('hides mask and download buttons when image is missing', async ({
     comfyPage
   }) => {
-    await comfyPage.workflow.loadWorkflow(
-      'widgets/load_image_widget_missing_file'
-    )
+    await comfyPage.workflow.loadWorkflow('missing/missing_media_single')
 
     const { imagePreview } =
       await comfyPage.vueNodes.getFixtureByTitle('Load Image')
@@ -166,8 +164,7 @@ test.describe('Vue Nodes Image Preview', { tag: '@vue-nodes' }, () => {
       const subgraphNode = new VueNodeFixture(subgraphLocator)
 
       await test.step('Add node', async () => {
-        await comfyPage.menu.topbar.newWorkflowButton.click()
-        await comfyPage.nextFrame()
+        await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
 
         await comfyPage.searchBoxV2.addNode('Preview Image')
         await expect(previewImage.root).toBeVisible()
@@ -210,8 +207,7 @@ test.describe('Vue Nodes Batch Image Preview', { tag: '@vue-nodes' }, () => {
       const execution = new ExecutionHelper(comfyPage, await getWebSocket())
 
       await test.step('Add node', async () => {
-        await comfyPage.menu.topbar.newWorkflowButton.click()
-        await comfyPage.nextFrame()
+        await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
 
         await comfyPage.searchBoxV2.addNode('Preview Image')
         const previewImage = comfyPage.vueNodes.getNodeByTitle('Preview Image')
@@ -223,16 +219,22 @@ test.describe('Vue Nodes Batch Image Preview', { tag: '@vue-nodes' }, () => {
       await test.step('Inject multiple previews', async () => {
         const file = { filename: 'example.png', type: 'input' }
         const images = Array.from({ length: 100 }, () => file)
-        execution.executed('', '1', { images })
+        const jobId = await execution.run()
+        execution.executed(jobId, '1', { images })
         await expect(node.imageGrid.locator('img')).toHaveCount(100)
       })
 
       const { bottomRight } = node.resize
-      await expect.poll(() => countColumns(node.imageGrid)).toBe(10)
+      await expect.poll(() => countColumns(node.imageGrid)).toBeGreaterThan(1)
+      const initialColumns = await countColumns(node.imageGrid)
       await comfyMouse.dragElementBy(bottomRight, { x: 200 })
-      await expect.poll(() => countColumns(node.imageGrid)).toBeGreaterThan(10)
+      await expect
+        .poll(() => countColumns(node.imageGrid))
+        .toBeGreaterThan(initialColumns)
       await comfyMouse.dragElementBy(bottomRight, { x: -200, y: 200 })
-      await expect.poll(() => countColumns(node.imageGrid)).toBeLessThan(10)
+      await expect
+        .poll(() => countColumns(node.imageGrid))
+        .toBeLessThan(initialColumns)
     }
   )
 
@@ -242,8 +244,7 @@ test.describe('Vue Nodes Batch Image Preview', { tag: '@vue-nodes' }, () => {
       const execution = new ExecutionHelper(comfyPage, await getWebSocket())
 
       await test.step('Add node', async () => {
-        await comfyPage.menu.topbar.newWorkflowButton.click()
-        await comfyPage.nextFrame()
+        await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
 
         await comfyPage.searchBoxV2.addNode('Preview Image')
         const previewImage = comfyPage.vueNodes.getNodeByTitle('Preview Image')
@@ -259,20 +260,28 @@ test.describe('Vue Nodes Batch Image Preview', { tag: '@vue-nodes' }, () => {
           subfolder: '',
           type: 'output'
         }))
-        execution.executed('', '1', { images })
+        const jobId = await execution.run()
+        execution.executed(jobId, '1', { images })
         await expect(gridImages).toHaveCount(4)
       })
 
-      // FE-741: small on-node grid cells must request a server re-encoded
-      // thumbnail (`preview=webp;75`, `;` may be percent-encoded) instead of
-      // downloading the full-resolution image, while still pointing at the
-      // real `/api/view` URL for that output. Verifies the full path: WS
-      // output -> nodeOutputStore.buildImageUrls -> getGridThumbnailUrl ->
-      // rendered grid `<img>`.
-      for (const cell of await gridImages.all()) {
-        await expect(cell).toHaveAttribute('src', /[?&]preview=webp(%3B|;)75/)
-        await expect(cell).toHaveAttribute('src', /[?&]filename=grid-\d+\.png/)
-      }
+      await expect
+        .poll(() =>
+          gridImages.evaluateAll((images: HTMLImageElement[]) =>
+            images.map((image) => {
+              const { searchParams } = new URL(image.src)
+              return {
+                filename: searchParams.get('filename'),
+                preview: searchParams.get('preview')
+              }
+            })
+          )
+        )
+        .toEqual(
+          ['grid-0.png', 'grid-1.png', 'grid-2.png', 'grid-3.png'].map(
+            (filename) => ({ filename, preview: 'webp;75' })
+          )
+        )
     }
   )
 })

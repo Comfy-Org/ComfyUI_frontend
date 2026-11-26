@@ -1,43 +1,51 @@
 import { getPreservedQueryParam } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
+import { safeLocalStorage } from '@/base/storage/safeStorage'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 
-/** The hint's value for Comfy Cloud; any other value is a deployment id. */
 const COMFY_CLOUD = 'cloud'
+
+/** Where this browser's next boot in a workspace runs, per its hint. */
+export type DeploymentHint = 'deployment' | 'cloud' | 'unconfirmed' | 'unknown'
 
 function hintKey(workspaceId: string): string {
   return `${WORKSPACE_STORAGE_KEYS.DEPLOYMENT_HINT_PREFIX}${workspaceId}`
 }
 
-/**
- * What this browser's next boot in the workspace runs on, as its last
- * listing or its own switch recorded it: `deployment`, `cloud`, or
- * `unknown` when nothing is recorded (a new profile, cleared storage, a
- * browser that has not booted since this shipped) or localStorage cannot
- * be read. The server decides from a cookie the page cannot read, so
- * `unknown` may be either.
- */
-export function readDeploymentHint(
-  workspaceId: string | null
-): 'deployment' | 'cloud' | 'unknown' {
-  if (workspaceId === null) return 'unknown'
-  try {
-    const hint = localStorage.getItem(hintKey(workspaceId))
-    if (hint === null) return 'unknown'
-    return hint === COMFY_CLOUD ? 'cloud' : 'deployment'
-  } catch {
-    return 'unknown'
-  }
+function unconfirmedCloudKey(workspaceId: string): string {
+  return `${WORKSPACE_STORAGE_KEYS.UNCONFIRMED_CLOUD_HINT_PREFIX}${workspaceId}`
 }
 
-/** Records the deployment this browser's next boot in the workspace runs on, or null for Comfy Cloud. */
+/** Reads this browser's deployment hint for the workspace; `unknown` when none is recorded or storage is unreadable. */
+export function readDeploymentHint(workspaceId: string | null): DeploymentHint {
+  if (workspaceId === null) return 'unknown'
+  const hint = safeLocalStorage.getItem(hintKey(workspaceId))
+  if (hint !== null) return hint === COMFY_CLOUD ? 'cloud' : 'deployment'
+  return safeLocalStorage.getItem(unconfirmedCloudKey(workspaceId)) === null
+    ? 'unknown'
+    : 'unconfirmed'
+}
+
+/** Records the workspace's next boot target (null for Comfy Cloud), clearing any unconfirmed hint. */
 export function setDeploymentHint(
   workspaceId: string,
   deploymentId: string | null
 ): void {
-  try {
-    localStorage.setItem(hintKey(workspaceId), deploymentId ?? COMFY_CLOUD)
-  } catch {
+  const result = safeLocalStorage.setItem(
+    hintKey(workspaceId),
+    deploymentId ?? COMFY_CLOUD
+  )
+  if (result !== 'ok') {
+    console.warn('Failed to persist the deployment hint')
+    return
+  }
+  safeLocalStorage.removeItem(unconfirmedCloudKey(workspaceId))
+}
+
+/** Records Comfy Cloud as the workspace's next boot target until a listing says otherwise. */
+export function setUnconfirmedCloudHint(workspaceId: string): void {
+  const result = safeLocalStorage.setItem(unconfirmedCloudKey(workspaceId), '1')
+  if (result !== 'ok') {
     console.warn('Failed to persist the deployment hint')
   }
 }

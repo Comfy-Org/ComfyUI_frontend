@@ -29,9 +29,10 @@ test.describe(
         })
       await loadCheckpointNode.getByText('Load Checkpoint').click()
 
-      const colorPickerButton = comfyPage.page.getByTestId(
-        TestIds.selectionToolbox.colorPickerButton
-      )
+      const colorPickerButton = comfyPage.selectionToolbox.getByRole('button', {
+        name: 'Color',
+        exact: true
+      })
       await colorPickerButton.click()
 
       const colorPickerGroup = comfyPage.page.getByRole('group').filter({

@@ -4,7 +4,7 @@ import { defineComponent, ref } from 'vue'
 import type { Ref } from 'vue'
 
 import { useRangeEditor } from '@/composables/useRangeEditor'
-import type { RangeValue } from '@/lib/litegraph/src/types/widgets'
+import type { RangeValue } from '@comfyorg/graph-model/widgets'
 
 const TRACK_RECT: DOMRect = {
   left: 0,

@@ -72,12 +72,12 @@ import { computed, onBeforeUnmount, onMounted, onUpdated, ref } from 'vue'
 import SubgraphBreadcrumbItem from '@/components/breadcrumb/SubgraphBreadcrumbItem.vue'
 import type { BreadcrumbItem } from '@/components/breadcrumb/SubgraphBreadcrumbItem.vue'
 import WorkflowActionsDropdown from '@/components/common/WorkflowActionsDropdown.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useOverflowObserver } from '@/composables/element/useOverflowObserver'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { forEachSubgraphNode } from '@/utils/graphTraversalUtil'
@@ -101,7 +101,7 @@ const isInSubgraph = computed(() => navigationStore.navigationStack.length > 0)
 
 const home = computed(() => ({
   label: workflowName.value,
-  icon: 'pi pi-home',
+  icon: 'icon-[lucide--house]',
   key: 'root',
   isBlueprint: isBlueprint.value,
   command: () => {

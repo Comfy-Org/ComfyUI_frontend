@@ -2,15 +2,15 @@ import { cloneDeep, groupBy, isEqual, omit } from 'es-toolkit'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import {
   collectSubgraphDefinitions,
   parseFlattenableSubgraphDefinitions
 } from '@/platform/workflow/core/utils/workflowFlattening'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { ownsNodeHistory } from '@/stores/widgetHistoryStore'
-import { parseWidgetId, widgetId } from '@/types/widgetId'
-import type { WidgetId } from '@/types/widgetId'
+import { parseWidgetId, widgetId } from '@comfyorg/graph-model/widgetId'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
 interface SerializedWidgetValues {
   id?: unknown

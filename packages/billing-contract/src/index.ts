@@ -25,6 +25,8 @@ export type {
   BillingEntryUrlErrorCode,
   BillingEntryUrlResult
 } from './entryUrl'
+export type { EntryAutoTopUp } from './entryFields'
+export { ENTRY_PARAM_OPERATION } from './entryFields'
 export { buildBillingEntryUrl } from './entryUrl'
 export { isContractIdentifier } from './identifiers'
 export type { ReturnTarget } from './returnTargets'

@@ -18,14 +18,17 @@
  * open one.
  */
 import type {
+  AutoTopUpReader,
   BillingOperationPointerStorage,
   BillingScopeSource,
   BillingSession,
   BillingTransport,
   CredentialedWebSession,
+  OperationOutcomeRead,
   WorkspaceInviteCommands
 } from '@comfyorg/account-core/billing'
 import {
+  createAutoTopUpReader,
   createBillingCommands,
   createCredentialedBillingTransport,
   createBillingEventsReader,
@@ -38,14 +41,20 @@ import {
   createSessionBillingTransport,
   createTopupCommand,
   createWorkspaceInviteCommands,
+  readOperationOutcome,
   sessionBillingScopeSource,
   toBillingTelemetryEvent
 } from '@comfyorg/account-core/billing'
 import type { BillingClient } from '@comfyorg/account-ui/billing'
+import { disposeBillingClient } from '@comfyorg/account-ui/billing'
 
 import { CLOUD_BASE_URL } from '@/config/env'
 import { billingWebStripeKey } from '@/config/stripeKey'
 import { boundWorkspaceId } from '@/entry/workspaceBinding'
+import { notePayment, sessionTabStorage } from '@/handoff/handoffTab'
+import type { CheckingPayment } from '@/handoff/paymentOutcome'
+import type { PaymentEvent } from '@/handoff/paymentTrace'
+import { TRACED_WRITES, paymentEventOf } from '@/handoff/paymentTrace'
 import { billingWebTelemetry } from '@/telemetry/billingWebTelemetry'
 
 /** Tab-local, like the credential cache: a pointer must not outlive the tab. */
@@ -75,6 +84,13 @@ const resolveUrl = (route: string) => `${CLOUD_BASE_URL}/api${route}`
  */
 export type BillingWebClient = BillingClient & {
   readonly invites: WorkspaceInviteCommands
+  readonly autoTopUp: AutoTopUpReader
+}
+
+/** Ends the client's lifetime, the readers billing-web adds included. */
+export function disposeBillingWebClient(client: BillingWebClient): void {
+  disposeBillingClient(client)
+  client.autoTopUp.dispose()
 }
 
 export function createBillingWebClient(
@@ -86,6 +102,98 @@ export function createBillingWebClient(
     workspaceId: () => targetWorkspaceId(session)
   })
   return composeBillingWebClient(transport, sessionBillingScopeSource(session))
+}
+
+const SESSION_ENDING_REFUSALS = new Map<number, ReadonlySet<unknown>>([
+  [401, new Set(['INVALID_CREDENTIAL'])],
+  [
+    403,
+    new Set([
+      'HANDOFF_DISABLED',
+      'sso_required',
+      'account_outside_organization',
+      'personal_workspace_disabled',
+      'workspace_access_denied'
+    ])
+  ]
+])
+
+async function isScopedSessionRefusal(response: Response): Promise<boolean> {
+  const endingCodes = SESSION_ENDING_REFUSALS.get(response.status)
+  if (endingCodes === undefined) return false
+  const body: unknown = await response
+    .clone()
+    .json()
+    .catch(() => undefined)
+  return (
+    typeof body === 'object' &&
+    body !== null &&
+    'code' in body &&
+    endingCodes.has(body.code)
+  )
+}
+
+const TRACED_WRITE_URLS = new Map(
+  Array.from(TRACED_WRITES, ([route, write]) => [resolveUrl(route), write])
+)
+
+function noteHandoffPayment(event: PaymentEvent | undefined): void {
+  if (event) notePayment(sessionTabStorage, event)
+}
+
+function handoffFetch(onSessionRefused: () => void): typeof fetch {
+  return async (input, init) => {
+    const write = TRACED_WRITE_URLS.get(String(input))
+    noteHandoffPayment(write?.sent)
+    const exchange = globalThis.fetch(input, init)
+    const response = await exchange.catch(() => undefined)
+    if (response === undefined) {
+      noteHandoffPayment(write?.unanswered)
+      return exchange
+    }
+    if (write) {
+      const body: unknown = await response
+        .clone()
+        .json()
+        .catch(() => undefined)
+      noteHandoffPayment(write.answered(response, body))
+    }
+    if (await isScopedSessionRefusal(response)) onSessionRefused()
+    return response
+  }
+}
+
+export function createHandoffBillingClient(
+  session: BillingSession,
+  onSessionRefused: () => void
+): BillingWebClient {
+  const transport = createSessionBillingTransport({
+    session,
+    resolveUrl,
+    workspaceId: () => pinnedWorkspaceId(session),
+    fetchImpl: handoffFetch(onSessionRefused)
+  })
+  const client = composeBillingWebClient(
+    transport,
+    sessionBillingScopeSource(session)
+  )
+  client.lifecycle.subscribe((operation) =>
+    noteHandoffPayment(paymentEventOf(operation))
+  )
+  return client
+}
+
+/** Reads how the payment an ended handoff tab is still checking ended, with the bearer that tab kept. */
+export function readPaymentOutcome(
+  { reference, token }: CheckingPayment,
+  signal: AbortSignal
+): Promise<OperationOutcomeRead> {
+  return readOperationOutcome({
+    operationId: reference,
+    token,
+    resolveUrl,
+    signal
+  })
 }
 
 /**
@@ -139,6 +247,7 @@ function composeBillingWebClient(
     events,
     topup: createTopupCommand({ transport, lifecycle, capabilities, credits }),
     invites: createWorkspaceInviteCommands({ transport }),
+    autoTopUp: createAutoTopUpReader(readerOptions),
     commands: createBillingCommands({
       transport,
       lifecycle,

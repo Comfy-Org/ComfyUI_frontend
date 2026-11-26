@@ -1,28 +1,29 @@
 <script setup lang="ts">
-import { computed, onMounted, useTemplateRef } from 'vue'
+import { computed, useTemplateRef } from 'vue'
+import type { AgentGreeting } from '@/workbench/extensions/agent/types/proactiveGreeting'
+import GreetingHeading from './GreetingHeading.vue'
+import ProactiveGreeting from './ProactiveGreeting.vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { FALLBACK_LOCALE } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
-import type { AgentStarterPromptAssignment } from '@/platform/telemetry/types'
-
 import type { AgentStarterPromptAttribution } from '@/workbench/extensions/agent/utils/starterPrompts'
 import { starterPromptAttribution } from '@/workbench/extensions/agent/utils/starterPrompts'
 
 const {
   userName,
-  assignment = 'control',
-  attributeExperiment = false
+  hasSelection = false,
+  greeting
 } = defineProps<{
   userName?: string
-  assignment?: AgentStarterPromptAssignment
-  attributeExperiment?: boolean
+  hasSelection?: boolean
+  greeting?: AgentGreeting
 }>()
 const emit = defineEmits<{
   insert: [text: string, prompt: AgentStarterPromptAttribution]
-  rendered: [assignment: AgentStarterPromptAssignment]
+  prefilled: [delayMs: number]
 }>()
 
 const { t, te, tm, locale } = useI18n()
@@ -34,72 +35,11 @@ const treatmentPromptKey = 'agent.suggestedPrompts.treatment.cloud'
 const hasTreatmentCopy = computed(
   () => isCloud && te(`${treatmentPromptKey}.0`, locale.value)
 )
-const renderedAssignment: AgentStarterPromptAssignment =
-  assignment === 'test' && hasTreatmentCopy.value ? 'test' : 'control'
 const selectedPromptKey = computed(() =>
-  renderedAssignment === 'test' && hasTreatmentCopy.value
-    ? treatmentPromptKey
-    : promptKey
+  hasTreatmentCopy.value ? treatmentPromptKey : promptKey
 )
-const prompts = computed(() => {
-  return tm(selectedPromptKey.value) as string[]
-})
-const effectiveAssignment = computed<AgentStarterPromptAssignment>(() =>
-  selectedPromptKey.value === treatmentPromptKey ? 'test' : 'control'
-)
-const promptLocale = computed(() => {
-  return te(`${selectedPromptKey.value}.0`, locale.value)
-    ? locale.value
-    : FALLBACK_LOCALE
-})
-
-const eligibleAtMount = attributeExperiment && hasTreatmentCopy.value
-const shouldAttributeExperiment = computed(
-  () => eligibleAtMount && hasTreatmentCopy.value
-)
-
-onMounted(() => {
-  if (shouldAttributeExperiment.value)
-    emit('rendered', effectiveAssignment.value)
-})
-
-const promptList = useTemplateRef<HTMLElement>('promptList')
-
-/**
- * Suggestions the viewer could actually see. A narrow panel hides the overflow
- * with a container query, so the set's length overstates what was on screen.
- * Reported alongside the set size, never instead of it: the set experiment
- * reads the set size, and one field cannot carry both facts.
- */
-function visiblePromptCount(): number {
-  const buttons = promptList.value?.querySelectorAll('button')
-  if (!buttons) return prompts.value.length
-  return Array.from(buttons).filter(
-    (button) => getComputedStyle(button).display !== 'none'
-  ).length
-}
-
-/**
- * One emit per click, carrying the slot's stable id rather than its text. Fires
- * on click only — not on render or focus — so the count is a count of choices.
- */
-function onPromptClick(prompt: string, index: number): void {
-  emit(
-    'insert',
-    prompt,
-    starterPromptAttribution(
-      prompt,
-      index,
-      prompts.value.length,
-      promptLocale.value,
-      shouldAttributeExperiment.value ? effectiveAssignment.value : undefined,
-      visiblePromptCount()
-    )
-  )
-}
-
+const SELECTED_NODE_PROMPT_INDEX = 2
 const COMPACT_PROMPT_COUNT = 3
-
 const promptIcons = [
   'icon-[lucide--image]',
   'icon-[lucide--video]',
@@ -107,50 +47,111 @@ const promptIcons = [
   isCloud ? 'icon-[lucide--scan-search]' : 'icon-[lucide--puzzle]',
   'icon-[lucide--message-circle-warning]'
 ]
+const prompts = computed(() => tm(selectedPromptKey.value) as string[])
+const suggestions = computed(() =>
+  greeting?.variant === 'A'
+    ? (
+        tm('agent.proactiveGreeting.controlPrompts') as {
+          label: string
+          prompt: string
+        }[]
+      ).map((item, index) => ({
+        text: item.label,
+        prompt: item.prompt,
+        index,
+        icon: promptIcons[index] ?? 'icon-[lucide--sparkles]',
+        requiresSelection: false
+      }))
+    : prompts.value
+        .map((text, index) => ({
+          text,
+          prompt: text,
+          index,
+          icon: promptIcons[index] ?? 'icon-[lucide--sparkles]',
+          requiresSelection:
+            selectedPromptKey.value !== treatmentPromptKey &&
+            index === SELECTED_NODE_PROMPT_INDEX
+        }))
+        .filter(({ requiresSelection }) => !requiresSelection || hasSelection)
+)
+const promptLocale = computed(() => {
+  if (greeting?.variant === 'A')
+    return te('agent.proactiveGreeting.controlPrompts.0.label', locale.value)
+      ? locale.value
+      : FALLBACK_LOCALE
+  return te(`${selectedPromptKey.value}.0`, locale.value)
+    ? locale.value
+    : FALLBACK_LOCALE
+})
+
+const promptList = useTemplateRef<HTMLElement>('promptList')
+
+function visiblePromptCount(): number {
+  const buttons = promptList.value?.querySelectorAll('button')
+  if (!buttons) return suggestions.value.length
+  return Array.from(buttons).filter(
+    (button) => getComputedStyle(button).display !== 'none'
+  ).length
+}
+
+function onPromptClick(prompt: string, label: string, index: number): void {
+  emit(
+    'insert',
+    prompt,
+    starterPromptAttribution(
+      label,
+      index,
+      suggestions.value.length,
+      promptLocale.value,
+      visiblePromptCount()
+    )
+  )
+}
 </script>
 
 <template>
-  <div class="flex h-full flex-col overflow-x-hidden overflow-y-auto px-4 py-8">
+  <ProactiveGreeting
+    v-if="greeting && greeting.variant !== 'A'"
+    :greeting
+    :user-name
+    @prefilled="emit('prefilled', $event)"
+  />
+  <div
+    v-else
+    class="flex h-full flex-col overflow-x-hidden overflow-y-auto px-4 py-8"
+  >
     <div class="my-auto flex shrink-0 flex-col items-center gap-8 text-center">
-      <div
-        class="flex max-w-sm flex-col items-center pt-12 text-base/snug font-semibold tracking-tight @min-[570px]:text-2xl/snug"
-      >
-        <p class="my-0">
-          {{ t('agent.greeting', { name: userName ?? t('agent.friend') }) }}
-        </p>
-        <p class="my-0">
-          {{ t('agent.greetingQuestion') }}
-        </p>
-      </div>
+      <GreetingHeading
+        class="pt-12"
+        :user-name
+        :title="t('agent.greetingQuestion')"
+      />
       <div
         ref="promptList"
         data-testid="suggested-prompts"
         class="mx-auto flex w-full max-w-[608px] shrink-0 flex-wrap gap-2 @min-[460px]:justify-center"
       >
         <Button
-          v-for="(prompt, index) in prompts"
-          :key="index"
+          v-for="(suggestion, displayIndex) in suggestions"
+          :key="suggestion.index"
           type="button"
           variant="secondary"
           size="md"
           :class="
             cn(
               'w-full max-w-full min-w-0 justify-start rounded-full px-3 text-sm @min-[460px]:w-auto',
-              index >= COMPACT_PROMPT_COUNT && '@max-[460px]:hidden'
+              displayIndex >= COMPACT_PROMPT_COUNT && '@max-[460px]:hidden'
             )
           "
-          @click="onPromptClick(prompt, index)"
+          @click="
+            onPromptClick(suggestion.prompt, suggestion.text, suggestion.index)
+          "
         >
-          <span
-            :class="
-              cn(
-                'size-3 shrink-0 text-muted-foreground',
-                promptIcons[index] ?? 'icon-[lucide--sparkles]'
-              )
-            "
+          <i
+            :class="cn('size-3 text-muted-foreground', suggestion.icon)"
             aria-hidden="true"
           />
-          <span class="truncate">{{ prompt }}</span>
+          <span class="truncate">{{ suggestion.text }}</span>
         </Button>
       </div>
     </div>

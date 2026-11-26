@@ -4,21 +4,23 @@
       <div
         class="relative h-2 w-full overflow-hidden rounded-full border bg-background"
       >
-        <div
-          class="absolute inset-0 h-full origin-left rounded-full will-change-transform motion-safe:transition-transform"
-          :style="totalProgressStyle"
+        <ProgressFill
+          :progress="totalPercent / 100"
+          class="absolute inset-0 h-full rounded-full bg-primary"
         />
-        <div
+        <ProgressFill
+          :progress="currentNodePercent / 100"
           data-testid="queue-progress-node-fill"
-          class="absolute inset-0 h-full origin-left rounded-full will-change-transform motion-safe:transition-transform"
-          :style="currentNodeProgressStyle"
+          class="absolute inset-0 h-full rounded-full bg-primary/30"
         />
       </div>
       <div class="flex items-start justify-end gap-4 text-[12px] leading-none">
         <div class="flex items-center gap-1 opacity-90">
           <i18n-t keypath="sideToolbar.queueProgressOverlay.total">
             <template #percent>
-              <span class="font-bold">{{ totalPercentFormatted }}</span>
+              <span class="font-bold tabular-nums">{{
+                totalPercentFormatted
+              }}</span>
             </template>
           </i18n-t>
         </div>
@@ -27,7 +29,7 @@
           <span class="inline-block max-w-40 truncate">{{
             currentNodeName
           }}</span>
-          <span class="flex items-center gap-1">
+          <span class="flex items-center gap-1 tabular-nums">
             <span>{{ currentNodePercentFormatted }}</span>
           </span>
         </div>
@@ -51,9 +53,7 @@
             :aria-label="t('sideToolbar.queueProgressOverlay.interruptAll')"
             @click="$emit('interruptAll')"
           >
-            <i
-              class="icon-[lucide--x] block size-4 leading-none text-foreground"
-            />
+            <i class="icon-[lucide--x] block leading-none text-foreground" />
           </Button>
         </div>
 
@@ -73,7 +73,7 @@
             @click="$emit('clearQueued')"
           >
             <i
-              class="icon-[lucide--list-x] block size-4 leading-none text-foreground"
+              class="icon-[lucide--list-x] block leading-none text-foreground"
             />
           </Button>
         </div>
@@ -94,11 +94,13 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 
-defineProps<{
-  totalProgressStyle: Record<string, string>
-  currentNodeProgressStyle: Record<string, string>
+import ProgressFill from '@/components/common/ProgressFill.vue'
+
+const { totalPercent, currentNodePercent } = defineProps<{
+  totalPercent: number
+  currentNodePercent: number
   totalPercentFormatted: string
   currentNodePercentFormatted: string
   currentNodeName: string

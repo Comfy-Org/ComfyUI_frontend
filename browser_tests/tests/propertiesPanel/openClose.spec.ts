@@ -1,13 +1,13 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
-import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
+import { PropertiesPanel } from '@e2e/fixtures/components/PropertiesPanel'
 
 test.describe('Properties panel - Open and close', () => {
-  let panel: PropertiesPanelHelper
+  let panel: PropertiesPanel
 
   test.beforeEach(async ({ comfyPage }) => {
-    panel = new PropertiesPanelHelper(comfyPage.page)
+    panel = new PropertiesPanel(comfyPage.page)
   })
 
   test('should open via actionbar toggle button', async ({ comfyPage }) => {

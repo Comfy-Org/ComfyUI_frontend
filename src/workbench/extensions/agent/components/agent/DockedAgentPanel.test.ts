@@ -4,24 +4,23 @@ import { fireEvent, render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { computed, defineComponent, nextTick, ref } from 'vue'
 
-import type { SubscriptionInfo } from '@/composables/billing/types'
+import type { SubscriptionInfo } from '@/platform/billing/composables/types'
 import { i18n } from '@/i18n'
 import { WORKSPACE_INSET_RIGHT } from '@/composables/useWorkspaceInset'
 import { api } from '@/scripts/api'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type { TurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { useAgentRunModeStore } from '@/workbench/extensions/agent/stores/agent/agentRunModeStore'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 
 import DockedAgentPanel from './DockedAgentPanel.vue'
 
-vi.mock(import('@/platform/telemetry'))
-vi.mock(import('@/composables/billing/useBillingContext'))
+vi.mock(import('@comfyorg/telemetry'))
+vi.mock(import('@/platform/billing/composables/useBillingContext'))
 const billingContext = useBillingContext()
 vi.mock(import('@/workbench/extensions/agent/services/agent/agentAuth'))
-vi.mock(import('@/platform/telemetry/reportError'))
 
 const fetchApi = vi.hoisted(() =>
   vi.fn<(route: string, init?: RequestInit) => Promise<Response>>()

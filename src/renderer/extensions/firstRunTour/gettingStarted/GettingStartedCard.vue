@@ -37,7 +37,7 @@
       aria-hidden="true"
       class="pointer-events-none absolute top-3 right-3 flex size-7 items-center justify-center rounded-full bg-black/50 backdrop-blur-sm"
     >
-      <i :class="cn(badgeIcon, 'size-4')" />
+      <i :class="badgeIcon" />
     </div>
     <h3
       class="absolute inset-x-0 bottom-0 m-0 truncate p-4 text-sm font-semibold drop-shadow-md"
@@ -70,11 +70,9 @@ import { useElementHover } from '@vueuse/core'
 import { useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { cn } from '@comfyorg/tailwind-utils'
-
 import Loader from '@/components/loader/Loader.vue'
-import DefaultThumbnail from '@/components/templates/thumbnails/DefaultThumbnail.vue'
-import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
+import DefaultThumbnail from '@/platform/workflow/templates/components/thumbnails/DefaultThumbnail.vue'
+import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 
 const {
   imageSrc = '',

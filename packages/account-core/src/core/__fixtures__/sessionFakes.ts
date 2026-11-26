@@ -60,6 +60,7 @@ export function mintBody(overrides: Record<string, unknown> = {}) {
     token: 'workspace-jwt',
     permissions: ['workspace:read'],
     expires_at: new Date(Date.now() + NINETY_MINUTES_MS).toISOString(),
+    user_id: 'uid-1',
     workspace: { id: 'ws-1', name: 'Personal', type: 'personal' },
     role: 'owner',
     ...overrides

@@ -105,6 +105,7 @@ const STATUS_DATA: BillingStatusData = {
   is_active: true,
   max_seats: 1,
   occupied_seats: 1,
+  ended_at: null,
   scheduled_change: null,
   team_credit_stop: null
 }
@@ -121,12 +122,18 @@ export const CAPABILITIES = {
   can_manage_partner_node_access: false,
   can_view_pending_invites: false,
   can_view_team_usage: false,
+  can_view_workspace_usage: false,
   can_reactivate: false,
   can_revert_scheduled_change: false,
   can_edit_workspace: false,
   can_manage_auto_top_up: false,
+  can_view_auto_top_up: false,
+  can_view_auto_top_up_member_notice: false,
   can_manage_subscription: false,
+  can_open_plans: false,
   can_run_workflows: false,
+  can_set_budgets: false,
+  can_set_hard_caps: false,
   can_upgrade: false,
   can_subscribe_self_serve: true,
   can_top_up: true

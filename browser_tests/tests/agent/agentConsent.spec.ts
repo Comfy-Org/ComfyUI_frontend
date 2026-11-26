@@ -1,4 +1,3 @@
-import type { DesktopLoginCodeRedeemResponse } from '@comfyorg/ingest-types'
 import { expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
 
@@ -6,7 +5,13 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import frMessages from '@/locales/fr/main.json' with { type: 'json' }
 
 import { agentConsentTest as test } from '@e2e/fixtures/agentConsentFixture'
+import { agentConsentTelemetryTest as telemetryTest } from '@e2e/fixtures/agentConsentTelemetryFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import {
+  DESKTOP_LOGIN_HANDOFF_URL,
+  fulfillDesktopLoginRedeem
+} from '@e2e/fixtures/utils/desktopLoginHandoff'
+import { trackDialogFlash } from '@e2e/fixtures/utils/flashDetector'
 import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 async function requestConsentFromOpenPanel(page: Page): Promise<void> {
@@ -26,12 +31,15 @@ test.describe('Manual agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
   test.use({
     agentConsentAccepted: false,
     initialLocalStorage: {
-      'Comfy.AgentConsent.AutoShown.test-user-e2e.ws-personal': 'true'
+      'Comfy.AgentConsent.IntroductionResponded.test-user-e2e.ws-personal':
+        'true'
     }
   })
 
   test('dismisses without consent and persists acceptance before reopening', async ({
     comfyPage,
+    agentBilling,
+    agentPanel,
     agentConsentSave,
     agentConsentWrites
   }) => {
@@ -79,6 +87,14 @@ test.describe('Manual agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
     })
 
     await test.step('Accept saves consent before opening Agent', async () => {
+      await agentBilling.waitForInitialStatusResponse()
+      const billingRequestsBeforeAccept = agentBilling.statusRequestCount
+      agentBilling.setFundingState('exhausted')
+      const billingRefresh = page.waitForResponse(
+        (response) =>
+          response.request().method() === 'GET' &&
+          new URL(response.url()).pathname === '/api/billing/status'
+      )
       let releaseSave = () => {}
       agentConsentSave.pending = new Promise<void>((resolve) => {
         releaseSave = resolve
@@ -93,11 +109,24 @@ test.describe('Manual agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
         await expect(dialog).toBeVisible()
         await expect(accept).toBeDisabled()
         await expect(panel).toHaveCount(0)
+        expect(agentBilling.statusRequestCount).toBe(
+          billingRequestsBeforeAccept
+        )
       } finally {
         releaseSave()
       }
+      await billingRefresh
+      expect(agentBilling.statusRequestCount).toBe(
+        billingRequestsBeforeAccept + 1
+      )
       await expect(dialog).toHaveCount(0)
       await expect(panel).toBeVisible()
+
+      await agentPanel.sendMessage('Build a workflow after accepting consent')
+      await expect(agentPanel.userMessageBubbles).toHaveText([
+        'Build a workflow after accepting consent'
+      ])
+      await expect(agentPanel.creditsExhaustedPaywall).toBeVisible()
     })
 
     await test.step('Agent button closes and reopens the panel without another consent prompt', async () => {
@@ -171,16 +200,22 @@ test.describe('Manual agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
         await accept.click()
 
         await expect.poll(() => agentConsentWrites).toEqual([true])
-        await expect(dialog.getByRole('alert')).toHaveText(
-          enMessages.agent.consent.saveError
+        await expect(dialog.getByRole('alert')).toContainText(
+          enMessages.agent.consent.errorTitle
         )
-        await expect(accept).toBeEnabled()
+        await expect(
+          dialog.getByRole('button', {
+            name: enMessages.agent.consent.tryAgain
+          })
+        ).toBeEnabled()
         await expect(panel).toHaveCount(0)
       })
 
       await test.step('Retry sends another save and opens the panel after recovery', async () => {
         agentConsentSave.status = 200
-        await accept.click()
+        await dialog
+          .getByRole('button', { name: enMessages.agent.consent.tryAgain })
+          .click()
         await expect.poll(() => agentConsentWrites).toEqual([true, true])
         await expect(dialog).toHaveCount(0)
         await expect(panel).toBeVisible()
@@ -239,7 +274,7 @@ test.describe('Manual agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
         name: enMessages.agent.consent.reject
       })
 
-      await test.step('Narrow layout keeps media widescreen and actions in visual order', async () => {
+      await test.step('Narrow layout keeps media widescreen and stacks Start above Skip', async () => {
         await requestConsentFromOpenPanel(page)
         await expect
           .poll(async () => {
@@ -254,20 +289,19 @@ test.describe('Manual agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
               reject.boundingBox()
             ])
             return acceptBox && rejectBox
-              ? rejectBox.x + rejectBox.width <= acceptBox.x &&
-                  rejectBox.y === acceptBox.y
+              ? acceptBox.y + acceptBox.height <= rejectBox.y
               : false
           })
           .toBe(true)
       })
 
-      await test.step('Keyboard order follows docs, Skip, then Start', async () => {
+      await test.step('Keyboard order follows docs, Start, then Skip', async () => {
         await docs.focus()
         await expect(docs).toBeFocused()
         await page.keyboard.press('Tab')
-        await expect(reject).toBeFocused()
-        await page.keyboard.press('Tab')
         await expect(accept).toBeFocused()
+        await page.keyboard.press('Tab')
+        await expect(reject).toBeFocused()
       })
     })
   })
@@ -624,7 +658,8 @@ test.describe(
       agentConsentAccepted: false,
       agentConsentWebSession: true,
       initialLocalStorage: {
-        'Comfy.AgentConsent.AutoShown.test-user-e2e.ws-personal': 'true'
+        'Comfy.AgentConsent.IntroductionResponded.test-user-e2e.ws-personal':
+          'true'
       }
     })
 
@@ -658,11 +693,9 @@ test.describe(
   { tag: ['@cloud', '@ui'] },
   () => {
     test.use({
-      agentAutoShownReadProbe: true,
       agentConsentAccepted: false,
       initialSettings: { 'Comfy.TutorialCompleted': false },
       initialFeatureFlags: {
-        onboarding_tour_enabled: true,
         subscription_required: true
       }
     })
@@ -674,8 +707,6 @@ test.describe(
       agentConsentWrites
     }) => {
       const page = comfyPage.page
-      const autoShownKey =
-        'Comfy.AgentConsent.AutoShown.test-user-e2e.ws-personal'
       const gettingStarted = page.getByRole('dialog', {
         name: enMessages.gettingStarted.title
       })
@@ -687,97 +718,125 @@ test.describe(
         await expect(gettingStarted).toBeVisible()
       })
 
-      await test.step('The automatic offer waits without spending its one-time attempt', async () => {
-        await expect
-          .poll(() => page.evaluate(() => window.__autoShownReads ?? 0), {
-            message:
-              'the held-offer decision reads the unspent one-shot marker',
-            timeout: 15_000
-          })
-          .toBeGreaterThan(0)
-        await expect(consent).toHaveCount(0)
-        await expect(agentPanel.root).toBeVisible()
-        expect(
-          await page.evaluate((key) => localStorage.getItem(key), autoShownKey)
-        ).toBeNull()
-      })
-
-      await test.step('Taking the blank canvas leaves the activated panel available for a message', async () => {
+      await test.step('Taking the blank canvas shows the card over the activated panel', async () => {
         await page.getByTestId('getting-started-blank').click()
         await expect(gettingStarted).toHaveCount(0)
-        await expect(consent).toHaveCount(0)
+        await expect(consent).toBeVisible()
         await expect(agentPanel.root).toBeVisible()
         expect(agentConsentWrites).toHaveLength(0)
-        expect(
-          await page.evaluate((key) => localStorage.getItem(key), autoShownKey)
-        ).toBeNull()
       })
     })
   }
 )
 
-test.describe(
+telemetryTest.describe(
   'Agent activation behind a desktop sign-in approval',
   { tag: ['@cloud', '@ui'] },
   () => {
-    test.use({
-      agentConsentAccepted: false,
-      initialUrl:
-        '/?desktop_login_code=dlc_e2eApprovalCodeFE2808abcdefghijklmnopqrstu'
+    telemetryTest.use({ agentConsentAccepted: false })
+
+    telemetryTest.beforeEach(async ({ page }) => {
+      await fulfillDesktopLoginRedeem(page)
     })
 
-    test.beforeEach(async ({ page }) => {
-      await page.route('**/api/auth/desktop-login-codes/redeem', (route) =>
-        route.fulfill({
-          status: 200,
-          json: {
-            status: 'redeemed'
-          } satisfies DesktopLoginCodeRedeemResponse
+    telemetryTest(
+      'approves on the dedicated page without ever offering consent',
+      async ({ comfyPage, agentPanel }) => {
+        const page = comfyPage.page
+        const approval = page.getByRole('dialog', {
+          name: enMessages.desktopLogin.confirmSummary
         })
-      )
-    })
+        const consent = page.getByRole('dialog', {
+          name: enMessages.agent.consent.title
+        })
+        const success = page.getByRole('heading', {
+          name: enMessages.desktopLogin.successSummary,
+          exact: true
+        })
+        const approve = approval.getByRole('button', {
+          name: enMessages.g.confirm
+        })
+        const visitedPaths: string[] = []
+        const consentFlash = await trackDialogFlash(
+          page,
+          enMessages.agent.consent.title
+        )
 
-    test('waits for the approval before leaving Agent available', async ({
-      comfyPage,
-      agentPanel,
-      agentConsentReads
-    }) => {
-      const page = comfyPage.page
-      const approval = page.getByRole('dialog', {
-        name: enMessages.desktopLogin.confirmSummary
-      })
-      const consent = page.getByRole('dialog', {
-        name: enMessages.agent.consent.title
-      })
-      const approve = approval.getByRole('button', {
-        name: enMessages.g.confirm
+        await telemetryTest.step(
+          'The handoff lands on the dedicated approval page, not the workspace',
+          async () => {
+            await comfyPage.goto({ url: DESKTOP_LOGIN_HANDOFF_URL })
+            await expect
+              .poll(() => new URL(page.url()).pathname, { timeout: 15_000 })
+              .toBe('/cloud/desktop-login')
+            await expect(approval).toBeVisible()
+            await expect(consent).toHaveCount(0)
+            await expect(agentPanel.root).toHaveCount(0)
+          }
+        )
+
+        await telemetryTest.step(
+          'Approving confirms the sign-in and the page never enters the workspace',
+          async () => {
+            page.on('framenavigated', (frame) => {
+              if (frame === page.mainFrame())
+                visitedPaths.push(new URL(frame.url()).pathname)
+            })
+            await approve.click()
+            await expect(approval).toHaveCount(0)
+            await expect(success).toBeVisible()
+            await expect(consent).toHaveCount(0)
+            await expect(agentPanel.root).toHaveCount(0)
+            expect(new URL(page.url()).pathname).toBe('/cloud/desktop-login')
+            expect(visitedPaths).not.toContain('/')
+            expect(await consentFlash.hasFlashed()).toBe(false)
+          }
+        )
+      }
+    )
+
+    test.describe('with first Agent onboarding', () => {
+      test.use({
+        agentConsentAccepted: true,
+        agentOnboardingCompleted: false
       })
 
-      await test.step('The approval owns the screen and the offer waits behind it', async () => {
-        await expect(approval).toBeVisible()
+      test('never shows the coach on the approval page', async ({
+        comfyPage,
+        agentPanel
+      }) => {
+        const page = comfyPage.page
+        const approval = page.getByRole('dialog', {
+          name: enMessages.desktopLogin.confirmSummary
+        })
+        const success = page.getByRole('heading', {
+          name: enMessages.desktopLogin.successSummary,
+          exact: true
+        })
+        const coach = page.getByRole('dialog', {
+          name: enMessages.agent.coachTitle
+        })
+        const coachFlash = await trackDialogFlash(
+          page,
+          enMessages.agent.coachTitle
+        )
+
+        await comfyPage.goto({ url: DESKTOP_LOGIN_HANDOFF_URL })
         await expect
-          .poll(() => agentConsentReads.length, {
-            message: 'the automatic offer runs once the consent read is in',
-            timeout: 15_000
-          })
-          .toBeGreaterThan(0)
-        await approve.click({ trial: true })
-        await expect(consent).toHaveCount(0)
-        await expect(agentPanel.root).toBeVisible()
-        expect(
-          await page.evaluate(() =>
-            localStorage.getItem(
-              'Comfy.AgentConsent.AutoShown.test-user-e2e.ws-personal'
-            )
-          )
-        ).toBeNull()
-      })
+          .poll(() => new URL(page.url()).pathname, { timeout: 15_000 })
+          .toBe('/cloud/desktop-login')
+        await expect(approval).toBeVisible()
+        await expect(agentPanel.root).toHaveCount(0)
+        await expect(coach).toHaveCount(0)
 
-      await test.step('Approving clears the screen without covering the activated panel', async () => {
-        await approve.click()
+        await approval
+          .getByRole('button', { name: enMessages.g.confirm })
+          .click()
+
         await expect(approval).toHaveCount(0)
-        await expect(consent).toHaveCount(0)
-        await expect(agentPanel.root).toBeVisible()
+        await expect(success).toBeVisible()
+        await expect(coach).toHaveCount(0)
+        expect(await coachFlash.hasFlashed()).toBe(false)
       })
     })
   }

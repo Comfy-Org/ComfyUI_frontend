@@ -96,7 +96,7 @@
             variant="secondary"
             @click="signInWithGithub"
           >
-            <i class="pi pi-github mr-2"></i>
+            <i class="mr-2 icon-[lucide--github]"></i>
             {{
               isSignIn
                 ? t('auth.login.loginWithGithub')
@@ -130,8 +130,9 @@
           <small class="text-center text-muted-foreground">
             {{ t('auth.apiKey.helpText') }}
             <a
-              :href="`${comfyPlatformBaseUrl}/login`"
+              :href="apiKeysUrl"
               target="_blank"
+              :rel="platformLinkRel()"
               class="cursor-pointer text-blue-500"
             >
               {{ t('auth.apiKey.generateKey') }}
@@ -145,7 +146,7 @@
           closable
         >
           <template #icon>
-            <i class="pi pi-info-circle" />
+            <i class="icon-[lucide--info]" />
           </template>
           {{ t('toastMessages.useApiKeyTip') }}
         </Message>
@@ -185,23 +186,23 @@ import { useI18n } from 'vue-i18n'
 import { useRegionGate } from '@comfyorg/account-ui/auth/regionGate'
 import { isEmbeddedWebView } from '@comfyorg/account-core/webviewDetection'
 
-import Button from '@/components/ui/button/Button.vue'
-import Message from '@/components/ui/message/Message.vue'
-import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Message from '@comfyorg/design-system/message/Message'
+import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useSocialSignIn } from '@/platform/auth/social/useSocialSignIn'
-import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
-import {
-  configValueOrDefault,
-  remoteConfig
-} from '@/platform/remoteConfig/remoteConfig'
 import type { SignInData, SignUpData } from '@/schemas/signInSchema'
 import {
+  desktopHostReportsSignInFailures,
   isDesktopHostSessionActive,
   requestDesktopHostSignIn
 } from '@/platform/auth/desktopHost/desktopHostSession'
 import { isCloud } from '@/platform/distribution/types'
+import {
+  platformLinkRel,
+  platformSurfaceLink
+} from '@/platform/workspace/utils/platformLink'
 import { isHostWhitelisted, normalizeHost } from '@/utils/hostWhitelist'
 
 import ApiKeyForm from './signin/ApiKeyForm.vue'
@@ -222,20 +223,25 @@ const showGoogleSsoInAppBrowserNotice = isEmbeddedWebView()
 const desktopHostSso = isDesktopHostSessionActive()
 
 const signInWithDesktopHost = async () => {
+  if (desktopHostReportsSignInFailures()) {
+    if (await requestDesktopHostSignIn()) onSuccess()
+    return
+  }
   const toast = useToast()
-  toast.info(t('auth.desktopHost.continueInBrowser'), { duration: 6000 })
-  if (await requestDesktopHostSignIn()) {
+  const continueInBrowser = toast.info(
+    t('auth.desktopHost.continueInBrowser'),
+    { duration: 6000 }
+  )
+  const signedIn = await requestDesktopHostSignIn()
+  toast.dismiss(continueInBrowser)
+  if (signedIn) {
     onSuccess()
     return
   }
   toast.error(t('auth.desktopHost.signInFailed'), { duration: 6000 })
 }
-const comfyPlatformBaseUrl = computed(() =>
-  configValueOrDefault(
-    remoteConfig.value,
-    'comfy_platform_base_url',
-    getComfyPlatformBaseUrl()
-  )
+const apiKeysUrl = computed(() =>
+  platformSurfaceLink('/profile/api-keys', 'sign-in-dialog')
 )
 
 const toggleState = () => {

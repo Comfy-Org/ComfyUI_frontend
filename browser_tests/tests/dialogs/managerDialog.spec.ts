@@ -2,7 +2,7 @@ import type { Locator } from '@playwright/test'
 import { mergeTests } from '@playwright/test'
 
 import type { AlgoliaNodePack } from '@/types/algoliaTypes'
-import type { components as ManagerComponents } from '@/workbench/extensions/manager/types/generatedManagerTypes'
+import type { components as ManagerComponents } from '@comfyorg/api-client/generatedManagerTypes'
 import type {
   components as RegistryComponents,
   operations as RegistryOperations
@@ -68,6 +68,40 @@ const MOCK_PACK_C: RegistryNodePack = {
   publisher: { id: 'test-publisher', name: 'Test Publisher' },
   latest_version: { version: '0.5.0', status: 'NodeVersionStatusActive' },
   repository: 'https://github.com/test/pack-c'
+}
+
+const UNSAFE_DESCRIPTION =
+  'Install from [click me](javascript:alert(1)) or read the [docs](https://docs.comfy.org/).'
+
+const UNSAFE_PACK_ID = 'test-pack-unsafe-link'
+const UNSAFE_PACK_NAME = 'Test Pack Unsafe Link'
+
+const MOCK_PACK_UNSAFE_LINK: RegistryNodePack = {
+  id: UNSAFE_PACK_ID,
+  name: UNSAFE_PACK_NAME,
+  description: UNSAFE_DESCRIPTION,
+  downloads: 7,
+  status: 'NodeStatusActive',
+  publisher: { id: 'test-publisher', name: 'Test Publisher' },
+  latest_version: { version: '1.0.0', status: 'NodeVersionStatusActive' },
+  repository: 'https://github.com/test/pack-unsafe-link'
+}
+
+const MOCK_HIT_UNSAFE_LINK: Partial<AlgoliaNodePack> = {
+  objectID: UNSAFE_PACK_ID,
+  id: UNSAFE_PACK_ID,
+  name: UNSAFE_PACK_NAME,
+  description: UNSAFE_DESCRIPTION,
+  total_install: MOCK_PACK_UNSAFE_LINK.downloads,
+  status: 'NodeStatusActive',
+  publisher_id: 'test-publisher',
+  latest_version: '1.0.0',
+  latest_version_status: 'NodeVersionStatusActive',
+  repository_url: MOCK_PACK_UNSAFE_LINK.repository,
+  comfy_nodes: ['TestNodeUnsafe1'],
+  create_time: '2024-01-01T00:00:00Z',
+  update_time: '2024-06-01T00:00:00Z',
+  license: 'MIT'
 }
 
 const MOCK_INSTALLED_PACKS: InstalledPacksResponse = {
@@ -555,6 +589,94 @@ test.describe('ManagerDialog', { tag: '@ui' }, () => {
     await dialog.getByText('Test Pack A').first().click()
 
     await expect(dialog.getByText('Test Publisher').first()).toBeVisible()
+  })
+
+  test.describe('Unsafe link in a pack description', () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      const algoliaResponse: AlgoliaSearchResponse = {
+        results: [
+          {
+            hits: [MOCK_HIT_UNSAFE_LINK],
+            nbHits: 1,
+            page: 0,
+            nbPages: 1,
+            hitsPerPage: 20
+          }
+        ]
+      }
+      for (const pattern of ['**/*.algolia.net/**', '**/*.algolianet.com/**']) {
+        await comfyPage.page.route(pattern, (route) =>
+          route.fulfill({ json: algoliaResponse })
+        )
+      }
+      const registryResponse = {
+        total: 1,
+        nodes: [MOCK_PACK_UNSAFE_LINK],
+        page: 1,
+        limit: 64,
+        totalPages: 1
+      } satisfies RegistryOperations['listAllNodes']['responses'][200]['content']['application/json']
+      await comfyPage.page.route(
+        (url) =>
+          url.hostname === 'api.comfy.org' &&
+          (url.pathname === '/nodes' || url.pathname === '/nodes/search'),
+        (route) => route.fulfill({ json: registryResponse })
+      )
+      await comfyPage.page.route(
+        `**/api.comfy.org/nodes/${UNSAFE_PACK_ID}`,
+        (route) => route.fulfill({ json: MOCK_PACK_UNSAFE_LINK })
+      )
+      await comfyPage.page.route(
+        `**/api.comfy.org/nodes/${UNSAFE_PACK_ID}/versions/1.0.0/comfy-nodes**`,
+        (route) =>
+          route.fulfill({
+            json: {
+              comfy_nodes: [],
+              totalNumberOfPages: 0
+            } satisfies RegistryOperations['ListComfyNodes']['responses'][200]['content']['application/json']
+          })
+      )
+    })
+
+    test('renders a javascript: markdown link as plain text, not a clickable anchor', async ({
+      comfyPage
+    }) => {
+      await openManagerDialog(comfyPage)
+
+      const manager = comfyPage.page.getByRole('dialog').filter({
+        has: comfyPage.page.getByRole('heading', { name: 'Nodes Manager' })
+      })
+      await manager.getByText(UNSAFE_PACK_NAME, { exact: true }).first().click()
+
+      const info = manager.getByRole('complementary')
+
+      await test.step('the description reached the panel, and its https link is still clickable', async () => {
+        const safeLink = info.getByRole('link', { name: 'docs' })
+        await safeLink.scrollIntoViewIfNeeded()
+        await expect(safeLink).toHaveAttribute(
+          'href',
+          'https://docs.comfy.org/'
+        )
+      })
+
+      await test.step('the javascript: link is not a link, but its text still renders', async () => {
+        await expect(info.getByRole('link', { name: 'click me' })).toHaveCount(
+          0
+        )
+        await expect(info.getByText('click me')).toBeVisible()
+      })
+
+      await test.step('no anchor in the panel resolves to a non-http(s) effective href', async () => {
+        const unsafeHrefs = await info
+          .locator('a[href]')
+          .evaluateAll((anchors) =>
+            anchors
+              .map((anchor) => (anchor as HTMLAnchorElement).href)
+              .filter((href) => !/^https?:/i.test(href))
+          )
+        expect(unsafeHrefs).toEqual([])
+      })
+    })
   })
 
   test('Left side panel navigation tabs exist', async ({ comfyPage }) => {

@@ -1,8 +1,9 @@
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type { Component, ComputedRef } from 'vue'
 import { computed, defineAsyncComponent, watch } from 'vue'
 
-import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { reportError } from '@/platform/telemetry/reportError'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import { useAgentPanelRenderStore } from '@/workbench/extensions/agent/stores/agent/agentPanelRenderStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
@@ -16,7 +17,8 @@ interface AgentDockMount {
 export function useAgentDockMount(): AgentDockMount {
   const agentPanelStore = useAgentPanelStore()
   useAgentPanelRenderStore()
-  const { subscription, fetchStatusFresh, type } = useBillingContext()
+  const { subscription, fetchStatus, fetchStatusFresh, type } =
+    useBillingContext()
 
   // This composable is owned by the persistent graph/linear hosts, unlike the
   // dock component, which is unmounted whenever the panel closes. Keep the
@@ -28,6 +30,22 @@ export function useAgentDockMount(): AgentDockMount {
       if (hasFunds === true) agentPanelStore.reportedExhaustionIdentity = null
     },
     { immediate: true }
+  )
+
+  const consentStore = useAgentConsentStore()
+  watch(
+    () => consentStore.confirmedAcceptances,
+    (count) => {
+      if (!count || count <= agentPanelStore.billingRefreshedAcceptances) return
+      agentPanelStore.billingRefreshedAcceptances = count
+      void fetchStatus({ fresh: true }).catch((error: unknown) => {
+        reportError(error, {
+          surface: 'agent',
+          errorType: 'error_refreshing_agent_billing_status'
+        })
+      })
+    },
+    { immediate: true, flush: 'sync' }
   )
 
   const billingIdentity = useBillingIdentity()

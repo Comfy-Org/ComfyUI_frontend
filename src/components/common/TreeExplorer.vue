@@ -1,81 +1,87 @@
 <template>
-  <UiTree
-    v-bind="$attrs"
-    v-model:expanded="expandedNodeKeys"
-    v-model:selected="selectedNode"
-    :class="cn('tree-explorer px-2', className)"
-    :items="renderedRoot.children ?? []"
-    :get-key="(node) => node.key"
-    :get-children="(node) => (node.leaf ? undefined : (node.children ?? []))"
-  >
-    <template #default="{ flattenItems }">
-      <UiTreeItem
-        v-for="item in flattenItems"
-        v-slot="{ isHovered }"
-        :key="item._id"
-        class="tree-explorer-item"
-        :value="item.value"
-        :level="item.level"
-        :aria-label="item.value.label"
-        :data-parent-label="item.parentItem?.label"
-        :data-tree-node-type="item.value.type"
-        @select="preventUnboundSelection"
-        @click="onNodeContentClick($event, item.value)"
-        @contextmenu="handleContextMenu($event, item.value)"
-      >
-        <span class="relative size-4 shrink-0">
-          <i
-            :class="
-              cn(
-                item.value.icon,
-                'tree-explorer-node-icon size-4 text-muted-foreground'
-              )
-            "
-            :style="{ color: item.value.iconColor }"
-          />
-          <span
-            v-if="item.value.iconImage"
-            data-testid="tree-node-icon-image"
-            class="absolute inset-0 rounded-xs bg-cover bg-center"
-            :style="{ backgroundImage: `url(${item.value.iconImage})` }"
-          />
-        </span>
-        <div class="flex min-w-0 flex-1 items-center">
-          <slot
-            v-if="item.value.type === 'folder'"
-            name="folder"
-            :node="item.value"
-          >
-            <TreeExplorerTreeNode :node="item.value" />
-          </slot>
-          <slot v-else name="node" :node="item.value">
-            <TreeExplorerTreeNode :node="item.value" />
-          </slot>
-        </div>
-        <div
-          v-if="isHovered && item.value.leaf && $slots.preview"
-          ref="preview"
-          data-testid="tree-item-preview"
-          class="pointer-events-none fixed z-1001"
-          :style="previewStyle"
+  <ContextMenu :model="menuItems" @close-auto-focus.prevent>
+    <UiTree
+      v-bind="$attrs"
+      v-model:expanded="expandedNodeKeys"
+      v-model:selected="selectedNode"
+      :class="cn('tree-explorer px-2', className)"
+      :items="renderedRoot.children ?? []"
+      :get-key="(node) => node.key"
+      :get-children="(node) => (node.leaf ? undefined : (node.children ?? []))"
+      @pointerdown.capture="menuTargetNode = null"
+      @contextmenu.capture="menuTargetNode = null"
+    >
+      <template #default="{ flattenItems }">
+        <UiTreeItem
+          v-for="item in flattenItems"
+          v-slot="{ isHovered }"
+          :key="item._id"
+          class="tree-explorer-item"
+          :value="item.value"
+          :level="item.level"
+          :aria-label="item.value.label"
+          :data-parent-label="item.parentItem?.label"
+          :data-tree-node-type="item.value.type"
+          @select="preventUnboundSelection"
+          @click="onNodeContentClick($event, item.value)"
+          @contextmenu="handleContextMenu($event, item.value)"
         >
-          <slot name="preview" :node="item.value" />
-        </div>
-      </UiTreeItem>
-    </template>
-  </UiTree>
-  <ContextMenu ref="menu" :model="menuItems" />
+          <span class="relative size-4 shrink-0">
+            <i
+              :class="
+                cn(
+                  item.value.icon,
+                  'tree-explorer-node-icon text-muted-foreground'
+                )
+              "
+              :style="{ color: item.value.iconColor }"
+            />
+            <span
+              v-if="item.value.iconImage"
+              data-testid="tree-node-icon-image"
+              class="absolute inset-0 rounded-xs bg-cover bg-center"
+              :style="{ backgroundImage: `url(${item.value.iconImage})` }"
+            />
+          </span>
+          <div class="flex min-w-0 flex-1 items-center">
+            <slot
+              v-if="item.value.type === 'folder'"
+              name="folder"
+              :node="item.value"
+            >
+              <TreeExplorerTreeNode :node="item.value" />
+            </slot>
+            <slot v-else name="node" :node="item.value">
+              <TreeExplorerTreeNode :node="item.value" />
+            </slot>
+          </div>
+          <div
+            v-if="isHovered && item.value.leaf && $slots.preview"
+            ref="preview"
+            data-testid="tree-item-preview"
+            class="pointer-events-none fixed z-1"
+            :style="previewStyle"
+          >
+            <slot name="preview" :node="item.value" />
+          </div>
+        </UiTreeItem>
+      </template>
+    </UiTree>
+  </ContextMenu>
 </template>
 <script setup lang="ts" generic="T">
 import { useElementBounding, useElementSize, useWindowSize } from '@vueuse/core'
-import { computed, provide, ref, shallowRef, useTemplateRef } from 'vue'
+import { computed, provide, shallowRef, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
-import ContextMenu from '@/components/ui/menu/ContextMenu.vue'
-import type { MenuItem, MenuItemCommandEvent } from '@/components/ui/menu/types'
-import UiTree from '@/components/ui/tree/Tree.vue'
-import UiTreeItem from '@/components/ui/tree/TreeItem.vue'
+import ContextMenu from '@comfyorg/design-system/menu/ContextMenu'
+import type {
+  MenuItem,
+  MenuItemCommandEvent
+} from '@comfyorg/design-system/lib/menu/types'
+import UiTree from '@comfyorg/design-system/tree/Tree'
+import UiTreeItem from '@comfyorg/design-system/tree/TreeItem'
 import { useTreeFolderOperations } from '@/composables/tree/useTreeFolderOperations'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -164,12 +170,12 @@ const getTreeNodeIcon = (node: TreeExplorerNode<T>) => {
   } else if (node.icon) {
     return node.icon
   }
-  // node.icon is undefined
+
   if (node.leaf) {
-    return 'pi pi-file'
+    return 'icon-[lucide--file]'
   }
   const isExpanded = expandedKeys.value?.[node.key] ?? false
-  return isExpanded ? 'pi pi-folder-open' : 'pi pi-folder'
+  return isExpanded ? 'icon-[lucide--folder-open]' : 'icon-[lucide--folder]'
 }
 const fillNodeInfo = (
   node: TreeExplorerNode<T>
@@ -197,7 +203,6 @@ const onNodeContentClick = async (
   await node.handleClick?.(e)
   emit('nodeClick', node, e)
 }
-const menu = ref<InstanceType<typeof ContextMenu> | null>(null)
 const menuTargetNode = shallowRef<RenderedTreeExplorerNode<T> | null>(null)
 const extraMenuItems = computed(() => {
   const node = menuTargetNode.value
@@ -245,7 +250,7 @@ const menuItems = computed<MenuItem[]>(() => {
     getAddFolderMenuItem(node),
     {
       label: t('g.rename'),
-      icon: 'pi pi-file-edit',
+      icon: 'icon-[lucide--file-pen-line]',
       command: () => {
         if (node) {
           renameCommand(node)
@@ -255,7 +260,7 @@ const menuItems = computed<MenuItem[]>(() => {
     },
     {
       label: t('g.delete'),
-      icon: 'pi pi-trash',
+      icon: 'icon-[lucide--trash-2]',
       command: async () => {
         if (node) {
           await deleteCommand(node)
@@ -280,9 +285,6 @@ const handleContextMenu = (
 ) => {
   menuTargetNode.value = node
   emit('contextMenu', node, e)
-  if (menuItems.value.filter((item) => item.visible).length > 0) {
-    menu.value?.show(e)
-  }
 }
 
 const wrapCommandWithErrorHandler = (

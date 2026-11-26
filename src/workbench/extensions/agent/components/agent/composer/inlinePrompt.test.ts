@@ -2,8 +2,8 @@ import { DOMParser } from '@tiptap/pm/model'
 import { EditorState } from '@tiptap/pm/state'
 import { describe, expect, it } from 'vitest'
 
-import { toNodeId } from '@/types/nodeId'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 
 import type { ComposerPrompt } from '@/workbench/extensions/agent/types/composerPrompt'
 import { parseWorkflowReferences } from '@/workbench/extensions/agent/utils/workflowReferenceText'
@@ -14,6 +14,8 @@ import {
   promptDocument,
   promptDocumentPosition,
   promptDraft,
+  promptInsertionPoint,
+  promptInsertionPosition,
   promptTextOffset
 } from './inlinePrompt'
 
@@ -49,6 +51,32 @@ describe('inline prompt', () => {
     }
   )
 
+  it.for([
+    { textOffset: 0, referenceIndex: 0, position: 0 },
+    { textOffset: 0, referenceIndex: 1, position: 1 },
+    { textOffset: 1, referenceIndex: 1, position: 2 },
+    { textOffset: 1, referenceIndex: 2, position: 3 }
+  ])(
+    'maps the caret $textOffset/$referenceIndex beside adjacent chips to position $position',
+    ({ textOffset, referenceIndex, position }) => {
+      const doc = promptDocument({
+        text: ' ',
+        references: [
+          { kind: 'workflow', id: 'a', name: 'A', textOffset: 0 },
+          { kind: 'workflow', id: 'b', name: 'B', textOffset: 1 }
+        ]
+      })
+
+      expect(promptInsertionPosition(doc, { textOffset, referenceIndex })).toBe(
+        position
+      )
+      expect(promptInsertionPoint(doc, position)).toEqual({
+        textOffset,
+        referenceIndex
+      })
+    }
+  )
+
   it('round-trips a scoped skill and its pending paste resolution beside a workflow', () => {
     const draft: ComposerPrompt = {
       text: '😀 before  after',
@@ -64,6 +92,44 @@ describe('inline prompt', () => {
         }
       ]
     }
+    expect(promptDraft(promptDocument(draft))).toEqual(draft)
+  })
+
+  it('round-trips mixed workflow, node and skill references without changing their metadata or order', () => {
+    const draft: ComposerPrompt = {
+      text: '😀 before\n after',
+      references: [
+        {
+          kind: 'workflow',
+          id: 'workflow-reference',
+          name: 'Reference workflow',
+          unavailable: true,
+          textOffset: 0
+        },
+        {
+          kind: 'node',
+          scope: 'workflow-A',
+          node: {
+            id: '12',
+            title: 'KSampler',
+            locatorId: createNodeLocatorId(
+              'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+              toNodeId('12')
+            )
+          },
+          textOffset: 10
+        },
+        {
+          kind: 'skill',
+          name: 'portrait',
+          description: 'Private\nDescription',
+          scope: 'user-a/workspace-a',
+          resolvePastedName: true,
+          textOffset: 10
+        }
+      ]
+    }
+
     expect(promptDraft(promptDocument(draft))).toEqual(draft)
   })
 
@@ -164,7 +230,7 @@ describe('inline prompt', () => {
   )
 
   it.for(['video', 'audio'] as const)(
-    'retains $mediaKind preview metadata when round-tripping inline assets',
+    'retains %s preview metadata when round-tripping inline assets',
     (mediaKind) => {
       const draft: ComposerPrompt = {
         text: 'Inspect ',

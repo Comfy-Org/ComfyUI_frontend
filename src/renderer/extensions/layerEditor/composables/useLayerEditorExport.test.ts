@@ -13,7 +13,7 @@ import type { BlendFn } from '@comfyorg/layer-editor/mode'
 import type { GroupData, RasterData } from '@comfyorg/layer-editor/node'
 
 import { useLayerEditorExport } from './useLayerEditorExport'
-import type { LayerEditorSession } from './useLayerEditorSession'
+import type { LayerEditorSession } from '@comfyorg/layer-editor/vue'
 
 const { writePsd, downloadBlob } = vi.hoisted(() => ({
   writePsd: vi.fn((_psd: unknown) => new ArrayBuffer(4)),

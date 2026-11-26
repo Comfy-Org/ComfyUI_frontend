@@ -32,19 +32,17 @@ import {
   createTestSubgraphNode,
   enableSubgraphNodeCreation
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { graphScopeOf } from '@/types/graphScopeId'
-import { toLinkId } from '@/types/linkId'
-import { toNodeId } from '@/types/nodeId'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 
 import { AgentCrdtProjection } from './agentCrdtProjection'
 import { readSubgraphDefinitions } from './agentSubgraphDefinitions'
 import { FollowerDoc } from './followerDoc'
 import type { GraphOperation } from './graphOperations'
-
-vi.mock(import('@/platform/telemetry/reportError'))
 
 class PromotedWidgetNode extends LGraphNode {
   constructor() {
@@ -1170,7 +1168,7 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
     // reconciled as if the type had not changed.
     const state = startFollower({ secondDefinition: true })
     const secondId = readSubgraphDefinitions(state.follower.doc)
-      .map((d) => d.id)
+      .definitions.map((d) => d.id)
       .find((id) => id !== state.instance.type)
     expect(secondId).toBeDefined()
 

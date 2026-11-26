@@ -6,8 +6,8 @@ import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
-import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
+import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -43,11 +43,11 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
     expect(nodeA.has_errors).toBe(true)
     expect(nodeB.has_errors).toBeFalsy()
 
-    settingStore.settingValues['Comfy.Workflow.ShowMissingNodesWarning'] = false
+    settingStore.settingValues['Comfy.ErrorSystem.ShowMissingNodes'] = false
     await nextTick()
     expect(nodeA.has_errors).toBe(false)
 
-    settingStore.settingValues['Comfy.Workflow.ShowMissingNodesWarning'] = true
+    settingStore.settingValues['Comfy.ErrorSystem.ShowMissingNodes'] = true
     await nextTick()
     expect(nodeA.has_errors).toBe(true)
 

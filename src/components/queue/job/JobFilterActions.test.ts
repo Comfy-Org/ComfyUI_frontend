@@ -44,6 +44,21 @@ const i18n = createI18n({
 })
 
 describe('JobFilterActions', () => {
+  it('names its search box after jobs', () => {
+    render(JobFilterActions, {
+      global: { plugins: [i18n] },
+      props: {
+        selectedWorkflowFilter: 'all',
+        selectedSortMode: 'mostRecent',
+        showSearch: true
+      }
+    })
+
+    expect(
+      screen.getByRole('combobox', { name: 'Search jobs' })
+    ).toBeInTheDocument()
+  })
+
   it('tracks reselecting the unchanged workflow filter', async () => {
     const user = userEvent.setup()
     render(JobFilterActions, {

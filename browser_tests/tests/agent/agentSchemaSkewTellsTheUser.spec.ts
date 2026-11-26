@@ -2,13 +2,14 @@ import { expect } from '@playwright/test'
 
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import type { WorkflowListResponse } from '@comfyorg/ingest-types'
-import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
+import type { UserDataFullInfo } from '@comfyorg/api-client/types'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import {
   agentTest as test,
-  bootAgentApp
+  bootAgentApp,
+  sendUnsavedWorkflowPromptAndWaitForSubscribe
 } from '@e2e/fixtures/agentPanelFixture'
 import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
@@ -149,23 +150,14 @@ test.describe(
         return route.fulfill(jsonRoute(workflows))
       })
 
-      const picker = panel.getByRole('button', {
-        name: enMessages.agent.switchWorkflow
+      await sendUnsavedWorkflowPromptAndWaitForSubscribe(
+        panel,
+        hostSocket,
+        'Rebuild the workflow.'
+      )
+      await expect(toast.withText(SYNC_FAILED_TITLE)).toBeVisible({
+        timeout: 15_000
       })
-      await picker.click()
-      await page
-        .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
-        .click()
-      await expect(picker).toHaveText('Unsaved Workflow')
-
-      await expect.poll(() => hostSocket.connectionCount()).toBeGreaterThan(0)
-
-      const composer = agentPanel.composer
-      await composer.fill('Rebuild the workflow.')
-      await panel.getByRole('button', { name: SEND_LABEL }).click()
-      await expect(
-        panel.getByText('Rebuild the workflow.').first()
-      ).toBeVisible()
 
       hostSocket.send({
         type: 'agent_active_tab',
@@ -207,7 +199,12 @@ test.describe(
       await expect(panel.getByRole('button', { name: STOP_LABEL })).toHaveCount(
         0
       )
-      await expect(panel.getByRole('button', { name: /^Worked/ })).toBeVisible()
+      await expect(
+        panel.getByRole('button', {
+          name: enMessages.agent.workedNotConfirmedOnCanvas,
+          exact: true
+        })
+      ).toBeVisible()
 
       await expect
         .poll(() => committedNodeIds, { timeout: 20_000 })

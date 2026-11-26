@@ -8,7 +8,7 @@
         :disabled="!session.canUndo.value"
         @click="onRestore"
       >
-        <i class="icon-[lucide--rotate-ccw] size-4" />
+        <i class="icon-[lucide--rotate-ccw]" />
         {{ t('g.restore') }}
       </Button>
     </Teleport>
@@ -16,7 +16,11 @@
       <LayerPanel :session="session" />
       <div class="relative flex min-h-0 min-w-0 flex-1">
         <LayerEditorCanvas :session="session" />
-        <LayerEditorToolbar :session="session" />
+        <LayerEditorToolbar
+          :session="session"
+          :exporting="exporting"
+          @export-psd="exportPsd"
+        />
       </div>
       <LayerPropertiesPanel :session="session" />
     </div>
@@ -28,21 +32,22 @@ import { useEventListener } from '@vueuse/core'
 import { onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import LayerEditorCanvas from '@/renderer/extensions/layerEditor/components/LayerEditorCanvas.vue'
-import LayerEditorToolbar from '@/renderer/extensions/layerEditor/components/LayerEditorToolbar.vue'
-import LayerPanel from '@/renderer/extensions/layerEditor/components/LayerPanel.vue'
-import LayerPropertiesPanel from '@/renderer/extensions/layerEditor/components/LayerPropertiesPanel.vue'
-import Button from '@/components/ui/button/Button.vue'
+import LayerEditorCanvas from '@comfyorg/layer-editor-ui/LayerEditorCanvas'
+import LayerEditorToolbar from '@comfyorg/layer-editor-ui/LayerEditorToolbar'
+import LayerPanel from '@comfyorg/layer-editor-ui/LayerPanel'
+import LayerPropertiesPanel from '@comfyorg/layer-editor-ui/LayerPropertiesPanel'
+import Button from '@comfyorg/design-system/button/Button'
+import { useLayerEditorExport } from '@/renderer/extensions/layerEditor/composables/useLayerEditorExport'
 import {
   saveCompositorLayerState,
   saveCompositorPreview
-} from '@/renderer/extensions/compositor/composables/compositorSave'
-import { loadCompositorSession } from '@/renderer/extensions/compositor/composables/compositorSession'
-import { useCompositorAutoSave } from '@/renderer/extensions/compositor/composables/useCompositorAutoSave'
+} from '@/renderer/extensions/layerEditor/compositor/compositorSave'
+import { loadCompositorSession } from '@/renderer/extensions/layerEditor/compositor/compositorSession'
+import { useCompositorAutoSave } from '@/renderer/extensions/layerEditor/compositor/useCompositorAutoSave'
 import {
   isTextEditingTarget,
   useLayerEditorSession
-} from '@/renderer/extensions/layerEditor/composables/useLayerEditorSession'
+} from '@comfyorg/layer-editor/vue'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -55,6 +60,7 @@ const { node, mode = 'images' } = defineProps<{
 
 const { t } = useI18n()
 const session = useLayerEditorSession()
+const { exporting, exportPsd } = useLayerEditorExport(session)
 const changeTracker =
   mode === 'compositor'
     ? useWorkflowStore().activeWorkflow?.changeTracker

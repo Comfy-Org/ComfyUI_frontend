@@ -4,14 +4,17 @@ import type { EffectScope } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { CORE_SETTINGS } from '@/platform/settings/constants/coreSettings'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore' // oxlint-disable-line comfy/no-restricted-paths
 import type { LLink } from '@/lib/litegraph/src/LLink'
-import { LinkRenderType } from '@/lib/litegraph/src/types/globalEnums'
+import { LinkRenderType } from '@comfyorg/graph-model/globalEnums'
 import { useLinkSelectionStore } from '@/stores/linkSelectionStore'
 
 import { useLitegraphSettings } from './useLitegraphSettings'
+
+vi.mock(import('@/scripts/api'))
 
 function createCanvas(draw: () => void): LGraphCanvas {
   return fromPartial<LGraphCanvas>({ draw, setDirty: vi.fn() })
@@ -26,6 +29,92 @@ describe('useLitegraphSettings', () => {
   })
 
   afterEach(() => scope.stop())
+
+  describe('live navigation settings', () => {
+    beforeEach(() => {
+      const store = useSettingStore()
+      CORE_SETTINGS.filter(({ id }) =>
+        [
+          'Comfy.Canvas.NavigationMode',
+          'Comfy.Canvas.LeftMouseClickBehavior',
+          'Comfy.Canvas.MouseWheelScroll'
+        ].includes(id)
+      ).forEach((setting) => store.addSetting(setting))
+    })
+
+    it.for([
+      {
+        from: 'legacy',
+        fromLeft: 'panning',
+        fromWheel: 'zoom',
+        to: 'standard',
+        left: 'select',
+        wheel: 'panning',
+        overriddenWheel: 'zoom',
+        trackpad: true
+      },
+      {
+        from: 'standard',
+        fromLeft: 'select',
+        fromWheel: 'panning',
+        to: 'legacy',
+        left: 'panning',
+        wheel: 'zoom',
+        overriddenWheel: 'panning',
+        trackpad: false
+      }
+    ] as const)(
+      'applies the $to preset to the live canvas',
+      async ({
+        from,
+        fromLeft,
+        fromWheel,
+        to,
+        left,
+        wheel,
+        overriddenWheel,
+        trackpad
+      }) => {
+        const store = useSettingStore()
+        store.settingValues['Comfy.Canvas.NavigationMode'] = from
+        store.settingValues['Comfy.Canvas.LeftMouseClickBehavior'] = fromLeft
+        store.settingValues['Comfy.Canvas.MouseWheelScroll'] = fromWheel
+        useCanvasStore().canvas = createCanvas(vi.fn())
+        scope.run(useLitegraphSettings)
+
+        await store.set('Comfy.Canvas.NavigationMode', to)
+        await nextTick()
+
+        expect(LiteGraph.canvasNavigationMode).toBe(to)
+        expect(LiteGraph.leftMouseClickBehavior).toBe(left)
+        expect(LiteGraph.mouseWheelScroll).toBe(wheel)
+        expect(LiteGraph.macTrackpadGestures).toBe(trackpad)
+        await store.set('Comfy.Canvas.MouseWheelScroll', overriddenWheel)
+        await nextTick()
+        expect(LiteGraph.canvasNavigationMode).toBe('custom')
+        expect(LiteGraph.leftMouseClickBehavior).toBe(left)
+        expect(LiteGraph.mouseWheelScroll).toBe(overriddenWheel)
+      }
+    )
+  })
+
+  it.for([1.05, 1.5])(
+    'synchronizes live zoom speed %s and canvas replacement',
+    async (speed) => {
+      const store = useSettingStore()
+      const canvasStore = useCanvasStore()
+      store.settingValues['Comfy.Graph.ZoomSpeed'] = 1.1
+      canvasStore.canvas = createCanvas(vi.fn())
+      scope.run(useLitegraphSettings)
+
+      store.settingValues['Comfy.Graph.ZoomSpeed'] = speed
+      await nextTick()
+      expect(canvasStore.canvas.zoom_speed).toBe(speed)
+      canvasStore.canvas = createCanvas(vi.fn())
+      await nextTick()
+      expect(canvasStore.canvas.zoom_speed).toBe(speed)
+    }
+  )
 
   it('does not make slot reads during drawing reactive dependencies', async () => {
     const node = new LGraphNode('test')

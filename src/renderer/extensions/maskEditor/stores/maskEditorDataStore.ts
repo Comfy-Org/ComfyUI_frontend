@@ -1,0 +1,80 @@
+import { defineStore } from 'pinia'
+import { computed, ref, shallowRef } from 'vue'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import type {
+  CanvasBlobLayer,
+  ImageOutput
+} from '@comfyorg/mask-editor/imageOutput'
+
+export interface ImageRef {
+  filename: string
+  subfolder?: string
+  type?: string
+}
+
+export interface LoadedImageLayer {
+  image: HTMLImageElement
+  url: string
+}
+
+interface EditorInputData {
+  baseLayer: LoadedImageLayer
+  maskLayer: LoadedImageLayer
+  paintLayer?: LoadedImageLayer
+  sourceRef: ImageRef
+  nodeId: NodeId
+}
+
+export interface EditorOutputLayer extends CanvasBlobLayer {
+  ref: ImageRef
+}
+
+export type EditorOutputData = {
+  [K in keyof ImageOutput]: ImageOutput[K] & { ref: ImageRef }
+}
+
+export const useMaskEditorDataStore = defineStore('maskEditorData', () => {
+  const inputData = ref<EditorInputData | null>(null)
+  const outputData = ref<EditorOutputData | null>(null)
+  const sourceNode = shallowRef<LGraphNode | null>(null)
+
+  const isLoading = ref(false)
+  const loadError = ref<string | null>(null)
+
+  const hasValidInput = computed(() => inputData.value !== null)
+
+  const hasValidOutput = computed(() => outputData.value !== null)
+
+  const isReady = computed(() => hasValidInput.value && !isLoading.value)
+
+  const reset = () => {
+    inputData.value = null
+    outputData.value = null
+    sourceNode.value = null
+    isLoading.value = false
+    loadError.value = null
+  }
+
+  const setLoading = (loading: boolean, error?: string) => {
+    isLoading.value = loading
+    if (error) {
+      loadError.value = error
+    }
+  }
+
+  return {
+    inputData,
+    outputData,
+    sourceNode,
+    isLoading,
+    loadError,
+
+    hasValidInput,
+    hasValidOutput,
+    isReady,
+
+    reset,
+    setLoading
+  }
+})

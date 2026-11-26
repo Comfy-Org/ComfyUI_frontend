@@ -2,9 +2,9 @@ import { describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
 import { useNodeDataStore } from '@/stores/nodeDataStore'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
-import type { NodeState } from '@/types/nodeState'
+import type { NodeState } from '@comfyorg/graph-model/nodeState'
 
 import { LGraphNode } from './litegraph'
 import type { Subgraph } from './litegraph'

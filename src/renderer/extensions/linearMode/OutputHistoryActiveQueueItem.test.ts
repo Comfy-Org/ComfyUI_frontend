@@ -1,4 +1,4 @@
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -8,7 +8,7 @@ import OutputHistoryActiveQueueItem from './OutputHistoryActiveQueueItem.vue'
 
 const i18n = createI18n({ legacy: false, locale: 'en' })
 
-vi.mock(import('@/platform/assets/composables/media/assetMappers'))
+vi.mock(import('@/platform/assets/adapters/outputAssetMappers'), { spy: true })
 
 function renderComponent(queueCount: number) {
   return render(OutputHistoryActiveQueueItem, {

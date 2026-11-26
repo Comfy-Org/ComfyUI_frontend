@@ -1,7 +1,7 @@
 import { computed } from 'vue'
 
 import { downloadFile } from '@/base/common/downloadUtil'
-import type { MenuItem } from '@/components/ui/menu/types'
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 import type { JobListItem } from '@/composables/queue/useJobList'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useErrorHandling } from '@/composables/useErrorHandling'
@@ -10,7 +10,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
+import type { ResultItem } from '@comfyorg/api-client/executionTypes'
 import { api } from '@/scripts/api'
 import { downloadBlob } from '@/scripts/utils'
 import { useDialogService } from '@/services/dialogService'
@@ -57,7 +57,7 @@ export function useJobMenu(
     const filename = `Job ${target.id}.json`
     const temp = workflowStore.createTemporary(filename, data)
     try {
-      await workflowService.openWorkflow(temp)
+      await workflowService.openWorkflow(temp, { initiator: 'user' })
     } catch (error) {
       useDialogService().showErrorDialog(error, {
         title: t('errorDialog.queueOpenWorkflowFailedTitle'),
@@ -171,7 +171,7 @@ export function useJobMenu(
     if (!item) return
     const result: AugmentedResultItem | undefined = item.taskRef?.previewOutput
     if (!result) return
-    downloadFile(resultItemUrl(result))
+    downloadFile(resultItemUrl(result), undefined, 'job_menu')
   }
 
   /**

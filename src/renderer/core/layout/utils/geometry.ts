@@ -1,4 +1,7 @@
-import type { Bounds, Point, Size } from '@/renderer/core/layout/types'
+import type {
+  Bounds,
+  Point2D as Point
+} from '@comfyorg/shared-frontend-utils/geometry'
 
 export function toPoint(x: number, y: number): Point {
   return { x, y }
@@ -23,8 +26,4 @@ export function isBoundsObject(value: unknown): value is Bounds {
     typeof v.width === 'number' &&
     typeof v.height === 'number'
   )
-}
-
-export function isSizeEqual(a: Size, b: Size): boolean {
-  return a.width === b.width && a.height === b.height
 }

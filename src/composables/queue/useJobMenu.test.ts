@@ -10,7 +10,7 @@ import { nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
 
 import type { JobListItem } from '@/composables/queue/useJobList'
-import type { MenuItem } from '@/components/ui/menu/types'
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 
 vi.mock(import('@/platform/distribution/types'), () => ({
@@ -156,10 +156,13 @@ describe('useJobMenu', () => {
       'Job 55.json',
       workflow
     )
-    expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith({
-      filename: 'Job 55.json',
-      content: JSON.stringify(workflow)
-    })
+    expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(
+      {
+        filename: 'Job 55.json',
+        content: JSON.stringify(workflow)
+      },
+      { initiator: 'user' }
+    )
   })
 
   it('does nothing when workflow is missing', async () => {

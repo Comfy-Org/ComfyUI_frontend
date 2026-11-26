@@ -112,12 +112,8 @@ class WebcamCaptureFixture {
       exact: true
     })
     this.errorMessage = this.node.getByText('Unable to load webcam')
-    this.widthInput = vueNodes.getInputNumberControls(
-      vueNodes.getWidgetByName(NODE_TITLE, 'width')
-    ).input
-    this.heightInput = vueNodes.getInputNumberControls(
-      vueNodes.getWidgetByName(NODE_TITLE, 'height')
-    ).input
+    this.widthInput = vueNodes.getWidgetByName(NODE_TITLE, 'width')
+    this.heightInput = vueNodes.getWidgetByName(NODE_TITLE, 'height')
     this.captureOnQueueToggle = this.node.getByRole('switch', {
       name: 'capture_on_queue'
     })
@@ -297,7 +293,11 @@ test.describe(
     test('preserves user-set width and height across stream ready', async ({
       comfyPage
     }) => {
-      await comfyPage.workflow.loadWorkflow('nodes/webcam_capture_preset')
+      await comfyPage.workflow.loadWorkflow('nodes/webcam_capture', {
+        nodes: {
+          1: { widgets_values: [null, 123, 456, true] }
+        }
+      })
       const webcam = new WebcamCaptureFixture(comfyPage)
       await webcam.waitForStreamReady()
 

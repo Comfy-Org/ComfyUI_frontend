@@ -4,9 +4,9 @@ import {
   BADGE_GAP,
   BADGE_ROW_PITCH
 } from '@/lib/litegraph/src/canvas/linkBadges'
-import type { NodeId } from '@/types/nodeId'
-import type { RerouteId } from '@/types/rerouteId'
-import type { Point } from '@/lib/litegraph/src/interfaces'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
 
@@ -97,13 +97,14 @@ export class LinkVisibilityHelper {
     }
   }
 
-  async clickOutputBadgeRow(
+  async expandOutputBadgeStack(
     nodeId: NodeId,
     slot: number,
     row: number
   ): Promise<void> {
     const [x, y] = await this.outputBadgeRowClientPoint(nodeId, slot, row)
     await this.comfyPage.page.mouse.click(x, y)
+    await this.comfyPage.page.clock.runFor(300)
     await this.comfyPage.nextFrame()
   }
 

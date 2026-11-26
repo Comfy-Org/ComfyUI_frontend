@@ -150,17 +150,12 @@ test.describe(
       expect(agentConsentWrites).toEqual([true])
     })
 
-    test('names a failed consent read at the request, not just at the load', async ({
+    test('shows the consent card when a button-click read fails after the automatic load exit', async ({
       comfyPage,
       agentPanel,
       consentTelemetry
     }) => {
       const page = comfyPage.page
-      // Every read fails. The automatic chain exits at the `load` stage without
-      // asking, which `gc-16`'s instrument already names; the user then clicks
-      // the entry button, and that attempt fails inside the request. This is the
-      // shape behind the 23 `agent_consent_setting_load_failure` events in
-      // Sentry that product analytics saw nothing of.
       await page.route(
         `**/api/global-settings/${AGENT_CONSENT_SETTING_ID}`,
         (route) => route.fulfill({ status: 500, body: '{"code":"INTERNAL"}' })
@@ -175,40 +170,26 @@ test.describe(
         )
         .toContainEqual(['load', 'consent_read_failed'])
 
-      // Activation opens the panel before consent. Close that activated panel,
-      // then reopen it to exercise the user-initiated consent request.
       await expect(agentPanel.root).toBeVisible()
       await expect(agentPanel.openButton).toBeEnabled()
       await agentPanel.openButton.click()
       await expect(agentPanel.root).toHaveCount(0)
       await agentPanel.openButton.click()
 
-      await expect
-        .poll(() =>
-          consentTelemetry
-            .filter((e) => e.event === 'app:agent_consent_offer_exited')
-            .map((e) => [e.properties.stage, e.properties.exit])
-        )
-        .toContainEqual(['request', 'consent_read_failed'])
-
-      // The same condition at two links, told apart by the pair rather than by
-      // the reason value - which is what `exit` plus `stage` is for.
-      const requestExits = consentTelemetry.filter(
-        (e) =>
-          e.event === 'app:agent_consent_offer_exited' &&
-          e.properties.stage === 'request'
+      const dialog = page.getByRole('dialog', {
+        name: enMessages.agent.consent.title
+      })
+      await expect(dialog).toBeVisible()
+      await expect(dialog.getByRole('alert')).toContainText(
+        enMessages.agent.consent.loadErrorTitle
       )
-      expect(requestExits.map((e) => e.properties)).toEqual([
-        {
-          exit: 'consent_read_failed',
-          stage: 'request',
-          retry_armed: false,
-          trigger: 'button_click'
-        }
-      ])
-      await expect(
-        page.getByRole('dialog', { name: enMessages.agent.consent.title })
-      ).toHaveCount(0)
+      expect(
+        consentTelemetry.filter(
+          (e) =>
+            e.event === 'app:agent_consent_offer_exited' &&
+            e.properties.stage === 'request'
+        )
+      ).toEqual([])
       await expect(agentPanel.root).toHaveCount(0)
     })
   }

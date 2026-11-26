@@ -33,7 +33,10 @@ const EXPECTED_DEFAULT_TYPES = [
   'ipadapter',
   'nlf',
   'FlashVSR',
-  'FlashVSR-v1.1'
+  'FlashVSR-v1.1',
+  'background_removal',
+  'frame_interpolation',
+  'film'
 ] as const
 
 function createMockNodeDef(name: string): ComfyNodeDefImpl {
@@ -69,7 +72,10 @@ const MOCK_NODE_NAMES = [
   'IPAdapterModelLoader',
   'LoadNLFModel',
   'FlashVSRNode',
-  'LTXICLoRALoaderModelOnly'
+  'LTXICLoRALoaderModelOnly',
+  'LoadBackgroundRemovalModel',
+  'FrameInterpolationModelLoader',
+  'FILM VFI'
 ] as const
 
 const mockNodeDefsByName = Object.fromEntries(
@@ -220,7 +226,10 @@ describe('useModelToNodeStore', () => {
       ['sams', 'SAMLoader', 'model_name'],
       ['ipadapter', 'IPAdapterModelLoader', 'ipadapter_file'],
       ['FlashVSR', 'FlashVSRNode', ''],
-      ['FlashVSR-v1.1', 'FlashVSRNode', '']
+      ['FlashVSR-v1.1', 'FlashVSRNode', ''],
+      ['background_removal', 'LoadBackgroundRemovalModel', 'bg_removal_name'],
+      ['frame_interpolation', 'FrameInterpolationModelLoader', 'model_name'],
+      ['film', 'FILM VFI', 'ckpt_name']
     ])(
       'should return correct provider for %s',
       ([modelType, expectedNodeName, expectedKey]) => {
@@ -232,6 +241,31 @@ describe('useModelToNodeStore', () => {
         expect(provider?.key).toBe(expectedKey)
       }
     )
+
+    it.for([
+      ['unet', 'UNETLoader', 'unet_name'],
+      ['unet/flux', 'UNETLoader', 'unet_name'],
+      ['clip', 'CLIPLoader', 'clip_name'],
+      ['t2i_adapter', 'ControlNetLoader', 'control_net_name']
+    ])(
+      'resolves the legacy %s folder to the loader of the folder ComfyUI maps it to',
+      ([modelType, expectedNodeName, expectedKey]) => {
+        const modelToNodeStore = useModelToNodeStore()
+
+        const provider = modelToNodeStore.getNodeProvider(modelType)
+        expect(provider?.nodeDef.name).toBe(expectedNodeName)
+        expect(provider?.key).toBe(expectedKey)
+      }
+    )
+
+    it('prefers a provider registered under a legacy folder name over its mapped folder', () => {
+      const modelToNodeStore = useModelToNodeStore()
+      modelToNodeStore.quickRegister('clip', 'CLIPVisionLoader', 'clip_name')
+
+      expect(modelToNodeStore.getNodeProvider('clip')?.nodeDef.name).toBe(
+        'CLIPVisionLoader'
+      )
+    })
 
     it.for(['ultralytics', 'ultralytics/bbox', 'ultralytics/segm'])(
       'should not register %s as a default provider, so the node falls back to its static combo (regression for #8468)',

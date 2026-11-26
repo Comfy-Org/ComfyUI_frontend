@@ -72,7 +72,8 @@ Paste the recorder command it prints, one `--prompt` per turn.
 
 ## Setup
 
-1. Use Node 25 and install this repository with `pnpm install`.
+1. Use Node 26 (`package.json` requires `>=26.8.2 <27`; see `.nvmrc`) and install
+   this repository with `pnpm install`.
 2. Check out `Comfy-Org/cloud` next to this repository, or pass its location with
    `--cloud-repo`.
 3. Install the agent's file watcher:
@@ -81,10 +82,19 @@ Paste the recorder command it prints, one `--prompt` per turn.
    go install github.com/air-verse/air@v1.67.4
    ```
 
-4. Start a local ComfyUI backend at `http://127.0.0.1:8188`.
-5. Export `ANTHROPIC_API_KEY`. `ANTHROPIC_BASE_URL` may be used instead for a local
+4. Build the agent's doc host once, in the cloud checkout. The standalone agent
+   launches it on loopback and refuses to start without it, because the shared
+   document write path is the only one it supports. It is a separate Node package
+   with its own lockfile; `services/agent/dochost/start.sh` in the cloud repo shows
+   the install and build it expects, and the agent looks for the built
+   `services/agent/dochost/dist/server.js`.
+
+5. Put `comfy-cli` on `PATH` (`pip install comfy-cli`). The agent reads its widget
+   catalog through it and refuses to start if it is missing.
+6. Start a local ComfyUI backend at `http://127.0.0.1:8188`.
+7. Export `ANTHROPIC_API_KEY`. `ANTHROPIC_BASE_URL` may be used instead for a local
    compatible model endpoint.
-6. To complete a turn through the Comfy model proxy without a browser login, start the
+8. To complete a turn through the Comfy model proxy without a browser login, start the
    harness with a Comfy API key:
 
    ```bash
@@ -94,6 +104,12 @@ Paste the recorder command it prints, one `--prompt` per turn.
    Vite forwards it to the standalone agent: a token that starts with `comfyui-` as
    `X-API-KEY`, anything else as a bearer token. The panel then sends without asking a
    signed-out user to sign in. Without it, a signed-out send opens the sign-in dialog.
+
+   The browser learns this from `VITE_DEV_AGENT_PROXY_CREDENTIAL`, which
+   `vite.config.mts` defines as `'true'` whenever the agent proxy is configured and
+   `DEV_AGENT_COMFY_TOKEN` is set. Do not set it yourself: it is derived, it is read
+   only in development mode, and the token itself never reaches the browser. It is the
+   name to grep for when a signed-out panel sends anyway.
 
 The root dependency on `@comfyorg/comfy-multi-player` may use the published npm
 package or `workspace:`. The launcher warns that package source edits will not
@@ -156,8 +172,9 @@ HTTP and the socket are stubs because a replay must be deterministic and
 model-free, so the agent's side is data; the in-process doc host runs the same
 library the real host runs. The smoke is the only path that proves the real
 HTTP, socket and agent together; it runs on the standalone harness, which
-unsets `DOC_HOST_ENDPOINT` and turns CRDT mode off, so the external doc host
-is not on that path. Every frame carries its offset from
+unsets `DOC_HOST_ENDPOINT` so the agent launches its own doc host on loopback
+rather than using an external one. The harness does not select a CRDT mode: it
+runs the same shared-document write path production runs. Every frame carries its offset from
 the turn's first frame; replay sends back to back by default and
 `AGENT_REPLAY_TIMING=recorded` waits out the recorded gaps.
 
@@ -170,6 +187,10 @@ the turn's first frame; replay sends back to back by default and
   an in-process event bus rather than Postgres, Redis, ingest, or Temporal.
 - **Vite proxy:** the development-only same-origin bridge that forwards agent requests
   and injects the standalone session credential outside browser code.
+- **`VITE_DEV_AGENT_PROXY_CREDENTIAL`:** the build-time flag Vite derives from
+  `DEV_AGENT_COMFY_TOKEN` to tell the browser that the proxy supplies a user
+  credential, so a signed-out send skips the sign-in dialog. Derived, never set by
+  hand, and never the token.
 - **`agent.json`:** the discovery file the standalone agent writes into its data
   directory on every start — `{ port, token, pid }`, mode 0600. It is how a local client
   finds the running agent and its current token without scanning ports.

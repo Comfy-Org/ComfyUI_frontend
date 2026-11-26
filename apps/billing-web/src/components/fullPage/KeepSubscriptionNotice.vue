@@ -44,10 +44,7 @@ watch(
     <p
       class="m-0 flex items-center gap-2 text-sm/5 font-medium text-foreground"
     >
-      <i
-        class="icon-[lucide--circle-alert] size-4 shrink-0 text-warning"
-        aria-hidden="true"
-      />
+      <i class="icon-[lucide--circle-alert] text-warning" aria-hidden="true" />
       {{ consent.copy.title }}
     </p>
     <p class="m-0 text-sm/5 text-muted-foreground">{{ consent.copy.body }}</p>

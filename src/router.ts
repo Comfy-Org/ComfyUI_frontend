@@ -1,6 +1,7 @@
 import { until } from '@vueuse/core'
 import { delay } from 'es-toolkit'
 import { storeToRefs } from 'pinia'
+import { computed, watch } from 'vue'
 import {
   createRouter,
   createWebHashHistory,
@@ -8,7 +9,7 @@ import {
 } from 'vue-router'
 import type {
   LocationQueryRaw,
-  NavigationGuardNext,
+  NavigationGuardReturn,
   RouteLocationNormalized,
   Router
 } from 'vue-router'
@@ -25,9 +26,13 @@ import {
   readSsoHint
 } from '@/platform/auth/session/ssoReentryStorage'
 import { trackSsoRequiredShown } from '@/platform/auth/sso/ssoTelemetry'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
+import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useUserStore } from '@/stores/userStore'
@@ -85,15 +90,15 @@ export async function createAppRouter(): Promise<Router> {
           {
             path: '',
             name: 'GraphView',
-            component: () => import('@/views/GraphView.vue'),
-            beforeEnter: async (_to, _from, next) => {
+            component: () =>
+              bootstrapTracer.settle(
+                'bootstrap/graph-view-chunk',
+                () => import('@/views/GraphView.vue')
+              ),
+            beforeEnter: async () => {
               const userStore = useUserStore()
               await userStore.initialize()
-              if (userStore.needsLogin) {
-                next('/user-select')
-              } else {
-                next()
-              }
+              if (userStore.needsLogin) return '/user-select'
             }
           },
           {
@@ -117,9 +122,8 @@ export async function createAppRouter(): Promise<Router> {
 
   installPreservedQueryTracker(router, PRESERVED_QUERY_DEFINITIONS)
 
-  router.beforeEach((to, _from, next) => {
+  router.beforeEach((to) => {
     captureOAuthRequestId(to.query)
-    next()
   })
 
   router.afterEach(() => {
@@ -132,9 +136,14 @@ export async function createAppRouter(): Promise<Router> {
 }
 
 const PUBLIC_ROUTE_SIGN_IN_TIMEOUT_MS = 3_000
+const AUTHORITATIVE_CONFIG_STATES = new Set(['anonymous', 'authenticated'])
+const RECOVERING_SESSION_PHASES = new Set([
+  'reading',
+  'retry_wait',
+  'restoring'
+])
 
 function installCloudAuthGuards(router: Router): void {
-  const { flags } = useFeatureFlags()
   const PUBLIC_ROUTE_NAMES = new Set([
     'cloud-login',
     'cloud-signup',
@@ -162,6 +171,22 @@ function installCloudAuthGuards(router: Router): void {
       delay(PUBLIC_ROUTE_SIGN_IN_TIMEOUT_MS).then(() => 'signed_out' as const)
     ])
   }
+  async function signInOrCurrentUser(
+    check: () => Promise<CloudSignIn>
+  ): Promise<CloudSignIn> {
+    try {
+      return await check()
+    } catch (error) {
+      reportError(error, {
+        surface: 'auth',
+        errorType: 'cloud_sign_in_check_failed',
+        level: 'warning'
+      })
+      const { useCurrentUser } =
+        await import('@/composables/auth/useCurrentUser')
+      return useCurrentUser().isLoggedIn.value ? 'signed_in' : 'signed_out'
+    }
+  }
   const watchedSessions = new WeakSet<object>()
   /** Closes the signed-in tab's dialogs and re-runs this guard on the current route, which then sends the tab to sign-in. */
   function rerouteWhenSignedOutElsewhere(): void {
@@ -177,12 +202,57 @@ function installCloudAuthGuards(router: Router): void {
       void router.replace({ path, query, hash, force: true })
     })
   }
+  const watchedAccounts = new WeakSet<object>()
+  function rerouteWhenAccountLeaves(): void {
+    const authStore = useAuthStore()
+    if (watchedAccounts.has(authStore)) return
+    watchedAccounts.add(authStore)
+    const apiKeyAuthStore = useApiKeyAuthStore()
+    const webSession = useCloudWebSessionStore()
+    const remoteConfigStore = useRemoteConfigStore()
+    const { flags: accountFlags } = useFeatureFlags()
+    const account = computed(() => {
+      if (authStore.isAuthenticated || apiKeyAuthStore.isAuthenticated)
+        return 'signed_in'
+      return RECOVERING_SESSION_PHASES.has(webSession.state.phase)
+        ? 'recovering'
+        : 'signed_out'
+    })
+    let hadAccount = false
+    let rerouteEnabled = false
+    let lastUid: string | undefined
+    watch(
+      [
+        account,
+        () => accountFlags.signedOutRerouteEnabled,
+        () => remoteConfigStore.loadState,
+        () => authStore.currentUser?.uid
+      ],
+      ([state, enabled, configState, uid]) => {
+        if (uid && lastUid && uid !== lastUid) rerouteEnabled = false
+        if (uid) lastUid = uid
+        if (state === 'signed_in') {
+          hadAccount = true
+          if (enabled || AUTHORITATIVE_CONFIG_STATES.has(configState))
+            rerouteEnabled = enabled
+        }
+        if (state !== 'signed_out' || !hadAccount) return
+        hadAccount = false
+        const reroute = rerouteEnabled
+        rerouteEnabled = false
+        const { path, query, hash, meta } = router.currentRoute.value
+        if (!reroute || !meta.requiresAuth) return
+        void router.replace({ path, query, hash, force: true })
+      },
+      { immediate: true }
+    )
+  }
   /** A lapsed SSO session goes back through its identity provider, once per tab per window. */
   function sendToSignIn(
     to: RouteLocationNormalized,
-    query: LocationQueryRaw,
-    next: NavigationGuardNext
-  ): void {
+    query: LocationQueryRaw
+  ): NavigationGuardReturn {
+    const { flags } = useFeatureFlags()
     const ssoError = flags.ssoEnabled
       ? readSsoError(to.query.sso_error)
       : undefined
@@ -201,20 +271,21 @@ function installCloudAuthGuards(router: Router): void {
           origin: window.location.origin
         })
       )
-      return next(false)
+      return false
     }
-    next({
+    return {
       name: 'cloud-login',
       query: {
         ...query,
         ...(reentry.kind !== 'login' && SSO_ENTRY_OPEN_QUERY),
         ...(ssoError && { sso_error: ssoError })
       }
-    })
+    }
   }
 
-  router.beforeEach(async (to, _from, next) => {
+  router.beforeEach(async (to, from) => {
     rerouteWhenSignedOutElsewhere()
+    rerouteWhenAccountLeaves()
     const authStore = useAuthStore()
 
     if (!authStore.isInitialized) {
@@ -223,16 +294,18 @@ function installCloudAuthGuards(router: Router): void {
         await until(isInitialized).toBe(true, { timeout: 16_000 })
       } catch (error) {
         console.error('Auth initialization failed:', error)
-        return next({ name: 'cloud-auth-timeout' })
+        return { name: 'cloud-auth-timeout' }
       }
     }
 
-    let signIn = isPublicRoute(to)
-      ? await publicRouteSignIn()
-      : await cloudSignIn()
+    let signIn = await signInOrCurrentUser(() =>
+      isPublicRoute(to) ? publicRouteSignIn() : cloudSignIn()
+    )
     if (signIn === 'pending' && !isPublicRoute(to)) {
-      await useCloudWebSessionStore().whenDecided()
-      signIn = await cloudSignIn()
+      signIn = await signInOrCurrentUser(async () => {
+        await useCloudWebSessionStore().whenDecided()
+        return cloudSignIn()
+      })
     }
     const needsFirebaseForDesktopCode =
       signIn === 'signed_in' &&
@@ -243,18 +316,23 @@ function installCloudAuthGuards(router: Router): void {
     preserveLoggedOutShareAuthAttribution(to.query, isLoggedIn)
 
     if (isPublicRoute(to)) {
-      return next()
+      return
     }
 
     if (to.name === 'cloud-user-check') {
       if (to.meta.requiresAuth && !isLoggedIn) {
-        return next({ name: 'cloud-login' })
+        return {
+          name: 'cloud-login',
+          query: needsFirebaseForDesktopCode
+            ? { switchAccount: 'true' }
+            : undefined
+        }
       }
-      return next()
+      return
     }
 
-    if (_from.name === 'cloud-user-check' && to.path === '/') {
-      return next()
+    if (from.name === 'cloud-user-check' && to.path === '/') {
+      return
     }
 
     const query = {
@@ -265,39 +343,42 @@ function installCloudAuthGuards(router: Router): void {
     }
 
     if (to.meta.requiresAuth && !isLoggedIn) {
-      return sendToSignIn(to, query, next)
+      return sendToSignIn(to, query)
     }
 
     if (!isLoggedIn) {
       if (isDesktop) {
         const loginSuccess = await useAuthDialogs().showSignInDialog()
-        return loginSuccess ? next() : next(false)
+        return loginSuccess
       }
 
-      return sendToSignIn(to, query, next)
+      return sendToSignIn(to, query)
     }
 
     if (!isDesktop && to.path === '/') {
-      if (!flags.onboardingSurveyEnabled) {
-        return next()
-      }
-      const { getSurveyCompletedStatus } =
-        await import('@/platform/cloud/onboarding/auth')
-      try {
-        const surveyCompleted = await getSurveyCompletedStatus(
-          useAuthStore().userId
-        )
+      if (useFeatureFlags().flags.onboardingSurveyEnabled) {
+        const { getSurveyCompletedStatus } =
+          await import('@/platform/cloud/onboarding/auth')
+        try {
+          const surveyCompleted = await getSurveyCompletedStatus(
+            useAuthStore().userId
+          )
 
-        if (!surveyCompleted) {
-          return next({ name: 'cloud-survey' })
+          if (!surveyCompleted) {
+            return { name: 'cloud-survey' }
+          }
+        } catch (error) {
+          console.error('Failed to check user status:', error)
+          return { name: 'cloud-user-check' }
         }
-      } catch (error) {
-        console.error('Failed to check user status:', error)
-        return next({ name: 'cloud-user-check' })
+      }
+
+      if (authStore.currentUser !== null && hasPendingDesktopLoginCode()) {
+        return { name: 'cloud-desktop-login', query: to.query, hash: to.hash }
       }
     }
 
-    return next()
+    return
   })
 
   installDesktopLoginRedemption(router)

@@ -4,7 +4,7 @@ import { expect, mergeTests } from '@playwright/test'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 import { maskEditorTest as test } from '@e2e/fixtures/helpers/MaskEditorHelper'
 import { webSocketFixture } from '@e2e/fixtures/ws'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 const wstest = mergeTests(test, webSocketFixture)
@@ -145,10 +145,11 @@ test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
     { tag: ['@smoke', '@screenshot'] },
     async ({ comfyPage, maskEditor }) => {
       const { nodeId } = await maskEditor.loadImageOnNode()
-      // Center the node so its header clears the view-mode toggle floating
-      // at the top-left of the canvas.
       const nodeRef = await comfyPage.nodeOps.getNodeRefById(nodeId)
       await nodeRef.centerOnNode()
+      await expect
+        .poll(() => nodeRef.getDecodedPreviewImageSrc())
+        .not.toBeNull()
 
       const nodeHeader = comfyPage.vueNodes
         .getNodeLocator(nodeId)
@@ -495,14 +496,17 @@ wstest(
       )
     }
 
-    executionHelper.executed('', '1', { images: [{ filename: 'test1.png' }] })
+    const jobId = await executionHelper.run()
+    executionHelper.executed(jobId, '1', {
+      images: [{ filename: 'test1.png' }]
+    })
     await comfyPage.page.evaluate(() => app!.canvas.setDirty(true))
     await expect.poll(getNodeOutput).toBe('test1.png')
 
     await comfyPage.menu.topbar.setVueNodesEnabled(true)
 
     const resolvableFile = { filename: 'example.png', type: 'input' }
-    executionHelper.executed('', '1', { images: [resolvableFile] })
+    executionHelper.executed(jobId, '1', { images: [resolvableFile] })
     await expect.poll(getNodeOutput).toBe('example.png')
 
     const node = await comfyPage.vueNodes.getFixtureByTitle('Preview Image')

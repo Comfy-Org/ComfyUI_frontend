@@ -131,6 +131,22 @@ describe('CheckoutPayAction', () => {
     expect(buttonNames()).toEqual(buttons)
   })
 
+  it('says when to verify by while the challenge serves its authentication deadline', () => {
+    renderPayAction({
+      phase: {
+        kind: 'challenge',
+        operation: {
+          ...challenge('required'),
+          authenticationDeadline: '2026-10-30T15:40:00Z'
+        }
+      }
+    })
+
+    expect(footnote().textContent.trim()).toBe(
+      'Nothing has been charged yet. Verify by October 30, 3:40 PM.'
+    )
+  })
+
   it('holds both buttons while the server settles a cancel', () => {
     renderPayAction({
       phase: {

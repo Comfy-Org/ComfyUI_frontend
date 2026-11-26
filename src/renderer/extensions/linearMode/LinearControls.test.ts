@@ -1,23 +1,30 @@
 import { getActivePinia } from 'pinia'
 import { render, screen, within } from '@testing-library/vue'
-import { computed, nextTick } from 'vue'
+import userEvent from '@testing-library/user-event'
+import { computed, h, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import TooltipProvider from '@comfyorg/design-system/tooltip/TooltipProvider'
+import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import * as distributionModule from '@/platform/distribution/types'
-import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
-import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
-import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
-import type { MissingModelCandidate } from '@/platform/missingModel/types'
-import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
-import type { NodeError } from '@/platform/remote/comfyui/types'
+import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
+import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/types'
+import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
+import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
+import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
+import type { NodeError } from '@comfyorg/api-client/types'
 import LinearControls from '@/renderer/extensions/linearMode/LinearControls.vue'
 import { LINEAR_RUN_ERROR_WARNING_DESCRIPTION_ID } from '@/renderer/extensions/linearMode/linearRunErrorWarningIds'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useTemplateInputDownloadStore } from '@/stores/templateInputDownloadStore'
-import { toNodeId } from '@/types/nodeId'
+import { useTemplateInputDownloadStore } from '@/platform/workflow/templates/stores/templateInputDownloadStore'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
+import { app } from '@/scripts/app'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 const overlayMock = vi.hoisted(() => ({
   overlayMessage: 'KSampler is missing a required input: model',
@@ -26,16 +33,21 @@ const overlayMock = vi.hoisted(() => ({
 
 const distributionMock = vi.hoisted(() => ({ isCloud: true }))
 
-vi.mock(import('@/composables/billing/useBillingContext'))
+vi.mock(import('@/scripts/app'))
+
+vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
 vi.mock(import('@/platform/distribution/types'), { spy: true })
 
-vi.mock<unknown>(import('@/components/error/useErrorOverlayState'), () => ({
-  useErrorOverlayState: () => ({
-    overlayMessage: overlayMock.overlayMessage,
-    overlayTitle: overlayMock.overlayTitle
+vi.mock<unknown>(
+  import('@/platform/workflowErrors/overlay/useErrorOverlayState'),
+  () => ({
+    useErrorOverlayState: () => ({
+      overlayMessage: overlayMock.overlayMessage,
+      overlayTitle: overlayMock.overlayTitle
+    })
   })
-}))
+)
 
 const i18n = createI18n({
   legacy: false,
@@ -109,13 +121,15 @@ function renderControls({
   missingResource,
   canRunWorkflows = true,
   showsSubscribeToRunPrompt = false,
-  mobile = false
+  mobile = false,
+  realWidgets = false
 }: {
   hasError?: boolean
   missingResource?: MissingResource
   canRunWorkflows?: boolean
   showsSubscribeToRunPrompt?: boolean
   mobile?: boolean
+  realWidgets?: boolean
 } = {}) {
   const billing = useBillingContext()
   billing.canRunWorkflows = computed(() => canRunWorkflows)
@@ -138,22 +152,27 @@ function renderControls({
 
   const toastTarget = document.createElement('div')
 
-  return render(LinearControls, {
-    props: { mobile, toastTo: toastTarget },
-    global: {
-      plugins: [pinia, i18n],
-      stubs: {
-        AppModeWidgetList: true,
-        Loader: true,
-        PartnerNodesList: true,
-        ScrubableNumberInput: true,
-        FreeTierQuota: true,
-        SubscribeToRunButton: {
-          template: '<button data-testid="subscribe-to-run-button" />'
+  return render(
+    () =>
+      h(TooltipProvider, { delayDuration: 0 }, () =>
+        h(LinearControls, { mobile, toastTo: toastTarget })
+      ),
+    {
+      global: {
+        plugins: [pinia, i18n],
+        stubs: {
+          AppModeWidgetList: !realWidgets,
+          Loader: true,
+          PartnerNodesList: true,
+          ScrubableNumberInput: true,
+          FreeTierQuota: true,
+          SubscribeToRunButton: {
+            template: '<button data-testid="subscribe-to-run-button" />'
+          }
         }
       }
     }
-  })
+  )
 }
 
 function getRunButtonIcon() {
@@ -179,6 +198,25 @@ describe('LinearControls', () => {
     useTemplateInputDownloadStore().clear()
     overlayMock.overlayMessage = 'KSampler is missing a required input: model'
     overlayMock.overlayTitle = 'Required input missing'
+  })
+
+  it('shows a selected widget value on hover inside the App controls', async () => {
+    useSettingStore().settingValues['Comfy.EnableTooltips'] = true
+    const node = new LGraphNode('Prompt', 'TestNode')
+    app.rootGraph.add(node)
+    const value = 'A detailed prompt shown by the App widget tooltip'
+    node.addWidget('text', 'prompt', value, 'prompt')
+    useCanvasStore().canvas = app.canvas
+    useCanvasStore().linearMode = true
+    useAppModeStore().selectedInputs = [
+      [widgetId(app.rootGraph.id, node.id, 'prompt'), 'prompt']
+    ]
+    const user = userEvent.setup()
+
+    renderControls({ realWidgets: true })
+    await user.hover(await screen.findByRole('textbox', { name: 'prompt' }))
+
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(value)
   })
 
   it('shows an indeterminate bar when a download reports no progress', () => {

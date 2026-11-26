@@ -77,11 +77,11 @@ describe('getHdrPreviewUrl', () => {
 })
 
 describe('getImageFileUrl', () => {
-  function image(src: string, fileUrl?: string) {
+  function image(src: string, dataset: DOMStringMap = {}) {
     return fromPartial<HTMLImageElement>({
       src,
       baseURI: window.location.origin,
-      dataset: fileUrl ? { fileUrl } : {}
+      dataset
     })
   }
 
@@ -94,11 +94,18 @@ describe('getImageFileUrl', () => {
     {
       name: 'the file behind a stored preview',
       img: () =>
-        image(
-          '/api/assets/p1/content?disposition=inline',
-          '/api/view?filename=a.exr&preview=webp'
-        ),
+        image('/api/assets/p1/content?disposition=inline', {
+          fileUrl: '/api/view?filename=a.exr&preview=webp'
+        }),
       expected: '/api/view?filename=a.exr'
+    },
+    {
+      name: 'the full-resolution file behind a downscaled copy',
+      img: () =>
+        image('blob:display-copy', {
+          fullSrc: '/api/view?filename=a.png&preview=webp'
+        }),
+      expected: '/api/view?filename=a.png'
     }
   ])('resolves $name without the preview format', ({ img, expected }) => {
     const url = getImageFileUrl(img())

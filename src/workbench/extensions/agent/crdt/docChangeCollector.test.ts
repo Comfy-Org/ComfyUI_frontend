@@ -105,7 +105,7 @@ describe('DocChangeCollector', () => {
     })
 
     const changes = collector.take()
-    expect(changes.resyncNodes).toEqual(new Set(['2']))
+    expect(changes.resyncNodes).toEqual(new Map([['2', new Set(['title'])]]))
     expect(changes.nodes.size).toBe(0)
   })
 
@@ -125,7 +125,9 @@ describe('DocChangeCollector', () => {
     })
 
     const changes = collector.take()
-    expect(changes.resyncNodes).toEqual(new Set(['1']))
+    expect(changes.resyncNodes).toEqual(
+      new Map([['1', new Set(['flags.collapsed'])]])
+    )
     expect(changes.widgets.size).toBe(0)
   })
 
@@ -160,6 +162,27 @@ describe('DocChangeCollector', () => {
       new Set(['value'])
     )
     expect(changes.nodes.size).toBe(0)
+  })
+
+  it('records the group ids meta.groups gains or loses, ignoring other meta keys', () => {
+    const { doc, collector } = setup()
+    const group = (id: number) => ({
+      id,
+      title: `Group ${id}`,
+      bounding: [0, 0, 200, 100]
+    })
+    const meta = doc.getMap<unknown>('meta')
+    doc.transact(() => meta.set('groups', [group(7), group(9)]))
+    expect(collector.take().groups).toEqual(new Set(['7', '9']))
+
+    doc.transact(() => meta.set('last_node_id', 12))
+    expect(collector.take().groups).toEqual(new Set())
+
+    doc.transact(() => meta.set('groups', [group(9), group(11)]))
+    expect(collector.take().groups).toEqual(new Set(['7', '11']))
+
+    doc.transact(() => meta.set('groups', []))
+    expect(collector.take().groups).toEqual(new Set(['9', '11']))
   })
 
   it('records link keys, clears on take, and stops observing after destroy', () => {

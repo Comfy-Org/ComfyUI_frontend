@@ -25,19 +25,21 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useBillingContext } from '@/composables/billing/useBillingContext'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import { getErrorMessage } from '@/utils/errorUtil'
+import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 
 const { inviteId } = defineProps<{
   inviteId: string
 }>()
 
+const emit = defineEmits<{
+  revoked: []
+}>()
+
 const dialogStore = useDialogStore()
 const workspaceStore = useTeamWorkspaceStore()
-const { fetchStatus } = useBillingContext()
 const toast = useToast()
 const { t } = useI18n()
 const loading = ref(false)
@@ -50,7 +52,7 @@ async function onRevoke() {
   loading.value = true
   try {
     await workspaceStore.revokeInvite(inviteId)
-    void fetchStatus().catch(console.error)
+    emit('revoked')
     dialogStore.closeDialog({ key: 'revoke-invite' })
   } catch (error) {
     toast.error(t('g.error'), {

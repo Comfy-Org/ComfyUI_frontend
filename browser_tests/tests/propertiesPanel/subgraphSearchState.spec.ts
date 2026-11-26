@@ -3,7 +3,7 @@ import { expect } from '@playwright/test'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
-import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
+import { PropertiesPanel } from '@e2e/fixtures/components/PropertiesPanel'
 
 // Static workflow with two sibling subgraph instances (ids 2 and 4) plus a
 // normal node (EmptyLatentImage, id 3). Using a premade fixture keeps these
@@ -35,10 +35,10 @@ test.describe(
   'Properties panel - Search state scoping',
   { tag: ['@subgraph'] },
   () => {
-    let panel: PropertiesPanelHelper
+    let panel: PropertiesPanel
 
     test.beforeEach(async ({ comfyPage }) => {
-      panel = new PropertiesPanelHelper(comfyPage.page)
+      panel = new PropertiesPanel(comfyPage.page)
       await comfyPage.actionbar.propertiesButton.click()
       await expect(panel.root).toBeVisible()
     })

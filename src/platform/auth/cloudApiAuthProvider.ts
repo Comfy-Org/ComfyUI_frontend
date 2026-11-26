@@ -1,14 +1,14 @@
 import { promiseTimeout, until } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 
-import type { ApiAuthProvider } from '@/platform/auth/apiAuthProvider'
+import type { ApiAuthProvider } from '@comfyorg/api-client/apiAuthProvider'
 import {
   fetchWithUnifiedRemint,
   shouldRemintCloudRequest
 } from '@/platform/auth/unified/remintRetry'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { api } from '@/scripts/api'
-import { AUTH_INIT_TIMEOUT_MS } from '@/scripts/apiTimeouts'
+import { AUTH_INIT_TIMEOUT_MS } from '@comfyorg/api-client/apiTimeouts'
 import { useAuthStore } from '@/stores/authStore'
 
 async function trackWsTokenUnavailable(): Promise<void> {
@@ -51,9 +51,9 @@ const cloudApiAuthProvider: ApiAuthProvider = {
     }
   },
 
-  async getAuthToken() {
+  async getAuthToken(request) {
     try {
-      return await useAuthStore().getAuthToken()
+      return await useAuthStore().getAuthToken(request)
     } catch (error) {
       void trackWsTokenUnavailable()
       console.warn('Could not get auth token for WebSocket connection:', error)

@@ -10,9 +10,8 @@ Proposed
 
 `layoutStore` is a module singleton. Importing
 `src/renderer/core/layout/store/layoutStore.ts` constructs it, and the
-constructor creates the layout `Y.Doc`, takes its `nodes`, `groups`, and
-`reroutes` maps, and registers the store's own deep observers and
-`afterTransaction` handler on them. The module-load side-effects survey
+constructor creates the layout `Y.Doc` and wires the store to it. The
+module-load side-effects survey
 (FE-3560) flagged this as work that happens at import with no named owner for
 the document's lifecycle.
 
@@ -34,8 +33,8 @@ Three facts on main shape the answer:
   `makeScopedLayoutKey(rootGraphId, id)`; a root graph leaves through
   `clearGraph` and a subgraph through `detachGraphLayouts`. Nothing about a
   workflow switch requires a different document, and per-workflow live graphs
-  (the direction of ADR-GRAPH-DOCUMENT-0045, proposed in an open PR) need
-  several root graphs resident at once.
+  (proposed in PR #21571, not yet on main) need several root graphs resident
+  at once.
 
 ## Decision
 
@@ -47,8 +46,10 @@ Three facts on main shape the answer:
 2. **Reset is per graph, never per document.** Closing or reloading a
    workflow drops its entries with `clearGraph(rootGraphId)`; removing a
    subgraph drops its entries through `detachGraphLayouts`; leaving a view
-   drops view-local measurement with `clearViewGeometry`. A workflow switch
-   with the graph kept alive touches the document not at all.
+   drops view-local measurement with `clearViewGeometry`. On main a workflow
+   switch reconfigures the shared root graph, so it reaches the document only
+   through `clear()` and the same per-graph calls. Once workflows keep their
+   graphs alive, a switch will touch the document not at all.
    `resetForTests` is the only whole-document reset and stays test-only.
 
 3. **Sync layers attach through commands, not through the document.** A
@@ -57,8 +58,11 @@ Three facts on main shape the answer:
    `onChange` / `onGeometryChange` / `onNodeChange`. If document transmission
    is reinstated, it returns as store methods that apply or encode updates
    against the private document with an explicit remote origin, so the
-   store's observers still see every change. A second consumer holding the
-   `Y.Doc` itself is not an attachment mode this store supports.
+   store's observers still see every change. This refines the 2026-07-30
+   amendment to 0003, which keeps transmission a capability of the document:
+   the document stays the thing that transmits, and the store stays the only
+   code that holds it. A second consumer holding the `Y.Doc` itself is not an
+   attachment mode this store supports.
 
 4. **Importing `layoutStore` is inert.** Evaluating the module may allocate
    in-memory state and wire observers on objects the store itself creates.
@@ -70,18 +74,23 @@ Three facts on main shape the answer:
    component. Work that needs the environment belongs in the caller that
    needs it, after setup, not in the constructor.
 
-A cold-import unit test pins clause 4: it re-evaluates the module
-with no active Pinia and fake timers and asserts that the store is empty, that no timer,
-listener, or fetch is left behind, and that no Pinia was activated; a store
-lookup throws without an active Pinia, so the import would fail.
+A cold-import unit test pins the parts of clause 4 it can observe. It
+re-evaluates the module with no active Pinia and fake timers, then asserts that
+the store holds no nodes and its `layoutVersion` is 0, that no timer is
+pending, that the import made no
+`window.addEventListener`, `document.addEventListener`, or `fetch` call, and
+that no Pinia was activated. A Pinia store lookup throws
+without an active Pinia, so the import would fail. Other application state is
+not covered: the unit-test setup mocks `@/scripts/appInstance`, so a
+constructor calling `useApp()` would still pass, and review has to catch it.
 
 ## Alternatives considered
 
 - **Construct the store lazily, behind a getter or proxy.** Rejected. The
   allocation is a few empty maps, so laziness saves nothing measurable, while
   a proxy adds indirection to per-frame reads such as `readNodeRect` and
-  changes the identity that every importer and test suite holds. It also only moves the side effects to first use instead of forbidding
-  them.
+  changes the identity that every importer and test suite holds. It also only
+  moves the side effects to first use instead of forbidding them.
 - **A Pinia or app-scoped owner with explicit `dispose`.** Rejected.
   `LGraph` and the layout operations call the store with no component or
   injection context, so every one of them would need the owner passed in,

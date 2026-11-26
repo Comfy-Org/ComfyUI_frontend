@@ -6,28 +6,26 @@ import { useNodePaste } from '@/composables/node/useNodePaste'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { resolveNodeRootGraphId } from '@/lib/litegraph/src/litegraph'
-import type {
-  IBaseWidget,
-  IStringWidget
-} from '@/lib/litegraph/src/types/widgets'
-import { reportError } from '@/platform/telemetry/reportError'
+import type { IBaseWidget, IStringWidget } from '@comfyorg/graph-model/widgets'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useToast } from '@/components/ui/toast/toastStore'
 import {
   getResourceURL,
   splitFilePath
 } from '@/renderer/extensions/vueNodes/widgets/utils/audioUtils'
-import type { NodeExecutionOutput } from '@/platform/remote/comfyui/execution/types'
-import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
+import type { NodeExecutionOutput } from '@comfyorg/api-client/executionTypes'
+import type { ComfyNodeDef, InputSpec } from '@comfyorg/object-info-parser'
 import type { DOMWidget } from '@/types/domWidget'
 import { useAudioService } from '@/services/audioService'
 import type { NodeLocatorId } from '@/types'
-import { widgetId } from '@/types/widgetId'
-import { getErrorMessage } from '@/utils/errorUtil'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
+import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import type { ComfyExtension } from '@/types/comfy'
 
 function updateUIWidget(
   audioUIWidget: DOMWidget<HTMLAudioElement, string>,
@@ -101,7 +99,7 @@ async function uploadFile(
 
 // AudioWidget MUST be registered first, as AUDIOUPLOAD depends on AUDIO_UI to be
 // present.
-app.registerExtension({
+export const audioWidgetExtension: ComfyExtension = {
   name: 'Comfy.AudioWidget',
   async beforeRegisterNodeDef(
     nodeType: typeof LGraphNode,
@@ -133,7 +131,9 @@ app.registerExtension({
         audio.setAttribute('name', 'media')
 
         const audioUIWidget: DOMWidget<HTMLAudioElement, string> =
-          node.addDOMWidget(inputName, /* name=*/ 'audioUI', audio)
+          node.addDOMWidget(inputName, 'audioUI', audio, {
+            vueNodeRenderer: 'native'
+          })
         audioUIWidget.serialize = false
         audioUIWidget.options.serialize = false
         const { nodeData } = node.constructor
@@ -141,9 +141,7 @@ app.registerExtension({
 
         const isOutputNode = nodeData.output_node
         if (isOutputNode) {
-          // Hide the audio widget when there is no audio initially.
           audioUIWidget.element.classList.add('empty-audio-widget')
-          // Populate the audio widget UI on node execution.
           const onExecuted = node.onExecuted
           node.onExecuted = function (output: NodeExecutionOutput) {
             onExecuted?.call(this, output)
@@ -162,7 +160,7 @@ app.registerExtension({
         audioUIWidget.options.getValue = () => {
           const value = useWidgetValueStore().getWidget(
             widgetId(
-              resolveNodeRootGraphId(node, app.rootGraph.id),
+              resolveNodeRootGraphId(node, useApp().rootGraph.id),
               node.id,
               inputName
             )
@@ -170,7 +168,7 @@ app.registerExtension({
           return typeof value === 'string' ? value : ''
         }
         audioUIWidget.options.setValue = (v) => {
-          const graphId = resolveNodeRootGraphId(node, app.rootGraph.id)
+          const graphId = resolveNodeRootGraphId(node, useApp().rootGraph.id)
           const widgetState = useWidgetValueStore().getWidget(
             widgetId(graphId, node.id, inputName)
           )
@@ -187,7 +185,7 @@ app.registerExtension({
     for (const [nodeLocatorId, output] of Object.entries(nodeOutputs)) {
       if (!output.audio?.length) continue
 
-      const node = getNodeByLocatorId(app.rootGraph, nodeLocatorId)
+      const node = getNodeByLocatorId(useApp().rootGraph, nodeLocatorId)
       if (!node) continue
 
       const audioUIWidget = node.widgets?.find(
@@ -202,9 +200,9 @@ app.registerExtension({
       updateUIWidget(audioUIWidget, api.apiURL(resourceUrl))
     }
   }
-})
+}
 
-app.registerExtension({
+export const uploadAudioExtension: ComfyExtension = {
   name: 'Comfy.UploadAudio',
   async beforeRegisterNodeDef(
     _nodeType: typeof LGraphNode,
@@ -295,6 +293,7 @@ app.registerExtension({
           openFileSelection,
           {
             serialize: false,
+            socketless: true,
             surfaces: { canvas: 'shown', vueNode: 'never', panel: 'never' }
           }
         )
@@ -316,9 +315,9 @@ app.registerExtension({
       }
     }
   }
-})
+}
 
-app.registerExtension({
+export const recordAudioExtension: ComfyExtension = {
   name: 'Comfy.RecordAudio',
 
   getCustomWidgets() {
@@ -329,7 +328,9 @@ app.registerExtension({
         audio.classList.add('comfy-audio')
         audio.setAttribute('name', 'media')
         const audioUIWidget: DOMWidget<HTMLAudioElement, string> =
-          node.addDOMWidget(inputName, /* name=*/ 'audioUI', audio)
+          node.addDOMWidget(inputName, 'audioUI', audio, {
+            vueNodeRenderer: 'native'
+          })
 
         let mediaRecorder: MediaRecorder | null = null
         let isRecording = false
@@ -489,7 +490,6 @@ app.registerExtension({
         )
 
         recordWidget.label = t('g.startRecording')
-        // Override the type for Vue rendering while keeping 'button' for LiteGraph
         recordWidget.type = 'audiorecord'
 
         const originalOnRemoved = node.onRemoved
@@ -514,4 +514,4 @@ app.registerExtension({
 
     await useAudioService().registerWavEncoder()
   }
-})
+}

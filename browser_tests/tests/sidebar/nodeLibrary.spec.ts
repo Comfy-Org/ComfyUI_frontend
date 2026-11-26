@@ -89,9 +89,7 @@ test.describe('Node library sidebar', () => {
     await comfyPage.nextFrame()
 
     // Verify the node is added to the canvas
-    await expect
-      .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-      .toBe(count + 1)
+    await comfyPage.expectNodeCount(count + 1)
   })
 
   test('Bookmark node', async ({ comfyPage }) => {

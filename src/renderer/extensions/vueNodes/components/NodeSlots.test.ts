@@ -4,12 +4,12 @@ import { render } from '@testing-library/vue'
 import type { RenderOptions } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { defineComponent, nextTick } from 'vue'
 import type { PropType } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { NodeState } from '@/types/nodeState'
+import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -23,7 +23,8 @@ import type { NodeId as VueNodeId } from '@/renderer/core/layout/types'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
-import { createNodeExecutionId } from '@/types/nodeIdentification'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import { seedRequiredInputMissingNodeError } from '@/utils/__tests__/executionErrorTestUtils'
 import {
   createMockNodeInputSlot,
@@ -234,8 +235,12 @@ describe('NodeSlots.vue', () => {
     const canvasStore = useCanvasStore()
     canvasStore.canvas = fromPartial<LGraphCanvas>({ graph })
     canvasStore.currentGraph = graph
-    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue(
-      new DOMRect(100, 200, 200, 100)
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(
+      function (this: HTMLElement) {
+        return this.dataset.slotKey
+          ? new DOMRect(96, 246, 8, 8)
+          : new DOMRect(100, 200, 200, 100)
+      }
     )
     vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockReturnValue(200)
     const nodeData = makeNodeData({
@@ -262,8 +267,12 @@ describe('NodeSlots.vue', () => {
     const canvasStore = useCanvasStore()
     canvasStore.canvas = fromPartial<LGraphCanvas>({ graph })
     canvasStore.currentGraph = graph
-    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue(
-      new DOMRect(100, 200, 200, 100)
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(
+      function (this: HTMLElement) {
+        return this.dataset.slotKey
+          ? new DOMRect(96, 246, 8, 8)
+          : new DOMRect(100, 200, 200, 100)
+      }
     )
     vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockReturnValue(200)
     const nodeData = makeNodeData({
@@ -292,8 +301,12 @@ describe('NodeSlots.vue', () => {
     const canvasStore = useCanvasStore()
     canvasStore.canvas = fromPartial<LGraphCanvas>({ graph })
     canvasStore.currentGraph = graph
-    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue(
-      new DOMRect(100, 200, 200, 100)
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(
+      function (this: HTMLElement) {
+        return this.dataset.slotKey
+          ? new DOMRect(96, 246, 8, 8)
+          : new DOMRect(100, 200, 200, 100)
+      }
     )
     vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockReturnValue(200)
     const nodeData = makeNodeData({
@@ -469,6 +482,49 @@ describe('NodeSlots.vue', () => {
       'data-connected',
       'true'
     )
+  })
+
+  it('lists a hidden advanced socket only while it is connected', async () => {
+    const { pinia, graph, upstream } = createConnectedGraph()
+    useNodeDefStore().addNodeDef({
+      name: 'AdvancedSockets',
+      display_name: 'Advanced Sockets',
+      category: 'testing',
+      python_module: 'nodes',
+      description: '',
+      input: {
+        required: {
+          linked: ['FAKE', { advanced: true }],
+          unlinked: ['FAKE', { advanced: true }]
+        }
+      },
+      output: [],
+      output_node: false
+    })
+    const node = new LGraphNode('Advanced Sockets', 'AdvancedSockets')
+    node.addInput('linked', 'FAKE')
+    node.addInput('unlinked', 'FAKE')
+    graph.add(node)
+    upstream.connect(0, node, 0)
+    vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(true)
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+
+    const { container } = renderSlots(
+      makeNodeData({
+        id: toVueNodeId(node.id),
+        graphId: graph.id,
+        inputs: node.inputs
+      }),
+      defaultSlotStubs,
+      pinia
+    )
+    await nextTick()
+
+    expect(
+      querySlotElements(container, INPUT_SLOT_SELECTOR).map(
+        (el) => el.dataset.name
+      )
+    ).toEqual(['linked'])
   })
 
   it('passes validation error state to matching input slots', async () => {

@@ -1,10 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import { UserDataExistsError } from '@comfyorg/api-client/ComfyApi'
 import { api } from '@/scripts/api'
 
-vi.mock(import('@/platform/telemetry/reportError'))
-
-const { reportError } = await import('@/platform/telemetry/reportError')
+const { reportError } = await import('@comfyorg/telemetry/reportError')
 
 describe('api.storeUserData', () => {
   it('resolves without reporting on a 200', async () => {
@@ -112,5 +111,37 @@ describe('api.storeUserData', () => {
       expect.any(Error),
       expect.objectContaining({ errorType: 'userdata_store_failure' })
     )
+  })
+
+  it('throws UserDataExistsError without reporting when the caller handles a create-only conflict', async () => {
+    vi.spyOn(api, 'fetchApi').mockResolvedValue(
+      new Response(null, { status: 409, statusText: 'Conflict' })
+    )
+
+    await expect(
+      api.storeUserData(
+        'workflows/My Workflow.json',
+        { nodes: [] },
+        { overwrite: false, throwOnError: true, reportConflict: false }
+      )
+    ).rejects.toBeInstanceOf(UserDataExistsError)
+
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('still reports a 409 on an overwrite write', async () => {
+    vi.spyOn(api, 'fetchApi').mockResolvedValue(
+      new Response(null, { status: 409, statusText: 'Conflict' })
+    )
+
+    const write = api.storeUserData(
+      'workflows/My Workflow.json',
+      { nodes: [] },
+      { overwrite: true, throwOnError: true, reportConflict: false }
+    )
+
+    await expect(write).rejects.toThrow('409 Conflict')
+    await expect(write).rejects.not.toBeInstanceOf(UserDataExistsError)
+    expect(reportError).toHaveBeenCalledOnce()
   })
 })

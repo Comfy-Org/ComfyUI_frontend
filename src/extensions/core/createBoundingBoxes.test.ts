@@ -1,25 +1,7 @@
-import { fromPartial } from '@total-typescript/shoehorn'
+import { fromAny } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
-import type { ComfyExtension } from '@/types/comfy'
-import type { useExtensionService } from '@/services/extensionService'
-
-const { state } = vi.hoisted(() => ({
-  state: {
-    extension: null as { nodeCreated: (node: unknown) => void } | null
-  }
-}))
-
-vi.mock(import('@/services/extensionService'), () => ({
-  useExtensionService: () =>
-    fromPartial<ReturnType<typeof useExtensionService>>({
-      registerExtension: (ext: ComfyExtension) => {
-        state.extension = fromPartial({ nodeCreated: ext.nodeCreated })
-      }
-    })
-}))
-
-await import('./createBoundingBoxes')
+import { createBoundingBoxesExtension } from './createBoundingBoxes'
 
 interface MockWidget {
   name: string
@@ -47,14 +29,14 @@ const hiddenOf = (node: ReturnType<typeof makeNode>, name: string) =>
 describe('Comfy.CreateBoundingBoxes extension', () => {
   it('ignores nodes of other classes', () => {
     const node = makeNode('SomethingElse')
-    state.extension!.nodeCreated(node)
+    createBoundingBoxesExtension.nodeCreated?.(fromAny(node), fromAny({}))
     expect(node.setSize).not.toHaveBeenCalled()
     expect(hiddenOf(node, 'last_incoming')).toBe(false)
   })
 
   it('enlarges the node and hides only the internal last_incoming widget', () => {
     const node = makeNode()
-    state.extension!.nodeCreated(node)
+    createBoundingBoxesExtension.nodeCreated?.(fromAny(node), fromAny({}))
     expect(node.setSize).toHaveBeenCalledWith([420, 560])
     expect(hiddenOf(node, 'width')).toBe(false)
     expect(hiddenOf(node, 'last_incoming')).toBe(true)

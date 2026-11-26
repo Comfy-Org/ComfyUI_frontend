@@ -4,8 +4,10 @@ import { describe, expect, it } from 'vitest'
 import {
   validateComfyWorkflow,
   zClipboardItems
-} from '@/platform/workflow/validation/schemas/workflowSchema'
+} from '@comfyorg/graph-model/workflowSchema'
 import { defaultGraph } from '@/scripts/defaultGraph'
+import { createTestSubgraphData } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
 
 const WORKFLOW_DIR = 'src/platform/workflow/validation/schemas/__fixtures__'
 
@@ -396,6 +398,38 @@ describe('parseComfyWorkflow', () => {
 })
 
 describe('zClipboardItems', () => {
+  it('accepts custom serializers that omit properties at every graph depth', () => {
+    const node = {
+      id: 1,
+      type: 'Extension/Custom',
+      pos: [30, 50],
+      size: [140, 80],
+      flags: {},
+      order: 0,
+      mode: 0
+    } satisfies ISerialisedNode
+    const nested = createTestSubgraphData({ nodes: [node] })
+    const subgraph = createTestSubgraphData({
+      nodes: [node, { ...node, id: 99, properties: { retained: 7 } }],
+      definitions: { subgraphs: [nested] }
+    })
+
+    const items = zClipboardItems.parse({
+      nodes: [node],
+      subgraphs: [subgraph]
+    })
+
+    expect(items.nodes?.[0].properties).toEqual({})
+    expect(items.subgraphs?.[0].nodes?.map((node) => node.properties)).toEqual([
+      {},
+      { retained: 7 }
+    ])
+    expect(
+      items.subgraphs?.[0].definitions?.subgraphs?.[0].nodes?.[0].properties
+    ).toEqual({})
+    expect(node).not.toHaveProperty('properties')
+  })
+
   it('normalizes array-like widget values and preserves array slot types', () => {
     const node = {
       ...structuredClone(defaultGraph.nodes[0]),
@@ -445,7 +479,7 @@ describe('zClipboardItems', () => {
     }
   )
 
-  it('preserves named-record widget values as named values', () => {
+  it('keeps named-record widget values for custom nodes that read them back', () => {
     const node = {
       ...structuredClone(defaultGraph.nodes[0]),
       widgets_values: { seed: 42, steps: 20 }
@@ -455,7 +489,10 @@ describe('zClipboardItems', () => {
 
     expect(result.success).toBe(true)
     if (!result.success) throw result.error
-    expect(result.data.nodes?.[0].widgets_values).toBeUndefined()
+    expect(result.data.nodes?.[0].widgets_values).toEqual({
+      seed: 42,
+      steps: 20
+    })
     expect(result.data.nodes?.[0].widgets_values_named).toEqual({
       seed: 42,
       steps: 20

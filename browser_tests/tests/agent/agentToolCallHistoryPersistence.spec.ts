@@ -39,12 +39,18 @@ test(
   'keeps a completed turn work summary, thinking included, after reload and chat switching',
   {
     tag: ['@cloud', '@ui'],
-    annotation: {
-      type: 'source',
-      description: 'https://linear.app/comfyorg/issue/PM-717'
-    }
+    annotation: [
+      {
+        type: 'source',
+        description: 'https://linear.app/comfyorg/issue/PM-717'
+      },
+      {
+        type: 'source',
+        description: 'https://linear.app/comfyorg/issue/FRONT-3803'
+      }
+    ]
   },
-  async ({ page, promptHistory, workflowSelection }) => {
+  async ({ page, promptHistory }) => {
     await new AgentPanel(page).open()
     await page
       .getByRole('button', {
@@ -54,17 +60,6 @@ test(
       .click()
     const panel = page.locator('#agent-panel-root')
     await expect(panel).toBeVisible()
-    // The composer gates Send behind an explicit workflow target
-    // (agent.selectWorkflowForAgent); without this the click below never
-    // reaches promptHistory.
-    await panel
-      .getByRole('button', { name: enMessages.agent.switchWorkflow })
-      .click()
-    await page
-      .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
-      .click()
-    await expect.poll(() => workflowSelection.savedPaths.length).toBe(1)
-    workflowSelection.finishSave(true)
 
     const composer = panel.getByRole('textbox', { name: AGENT_COMPOSER_LABEL })
     await composer.pressSequentially('find a node for me')
@@ -152,6 +147,12 @@ test(
       exact: true
     })
     await expect(summary).toBeVisible({ timeout: 10_000 })
+    await expect(
+      reopenedPanel.getByText(enMessages.agent.workedNotConfirmedOnCanvas)
+    ).toHaveCount(0)
+    await expect(
+      reopenedPanel.getByTestId('agent-canvas-unconfirmed')
+    ).toHaveCount(0)
     await expect(summary).toHaveAttribute('aria-expanded', 'false')
     await expect(reopenedPanel.getByText('Search nodes')).toBeHidden()
 
