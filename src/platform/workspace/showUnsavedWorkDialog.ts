@@ -1,4 +1,5 @@
 import UnsavedWorkDialogContent from '@/platform/workspace/components/dialogs/UnsavedWorkDialogContent.vue'
+import { enqueuePrompt } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 
 export interface UnsavedWorkDialogOptions {
@@ -15,19 +16,22 @@ const DIALOG_KEY = 'unsaved-work-before-switch'
 export function showUnsavedWorkDialog(
   options: UnsavedWorkDialogOptions
 ): Promise<boolean | null> {
-  const dialogStore = useDialogStore()
-  return new Promise<boolean | null>((resolve) => {
+  return enqueuePrompt<boolean | null>(DIALOG_KEY, (resolve) => {
+    const dialogStore = useDialogStore()
     dialogStore.showDialog({
       key: DIALOG_KEY,
       component: UnsavedWorkDialogContent,
-      props: { ...options, onResult: resolve },
+      props: {
+        ...options,
+        onResult: (result: boolean | null) => {
+          resolve(result)
+          dialogStore.closeDialog({ key: DIALOG_KEY })
+        }
+      },
       dialogComponentProps: {
         headless: true,
         onRemoved: () => resolve(null)
       }
     })
-  }).then((result) => {
-    dialogStore.closeDialog({ key: DIALOG_KEY })
-    return result
   })
 }

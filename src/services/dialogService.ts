@@ -124,7 +124,7 @@ function formatDialogError(error: Error): string {
 // would never settle. Serialize FIFO per key; distinct keys stay concurrent.
 const promptTails = new Map<string, Promise<unknown>>()
 
-function enqueuePrompt<T>(
+export function enqueuePrompt<T>(
   key: string,
   show: (resolve: (value: T) => void) => void
 ): Promise<T> {
