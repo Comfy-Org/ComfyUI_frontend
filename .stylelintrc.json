@@ -42,6 +42,7 @@
     "selector-max-universal": 1,
     "selector-max-type": 2,
     "declaration-block-no-duplicate-properties": true,
+    "declaration-no-important": true,
     "block-no-empty": true,
     "no-descending-specificity": null,
     "no-duplicate-at-import-rules": true,
