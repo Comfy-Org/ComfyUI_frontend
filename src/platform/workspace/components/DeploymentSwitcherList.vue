@@ -200,7 +200,9 @@ function updateLabel(row: DeploymentRow): string | null {
 }
 const defaultGone = computed(() => goneDefaultDeploymentId.value !== null)
 const workspaceDefaultOffered = computed(
-  () => canSetDefault.value && onTeamPlan
+  () =>
+    canSetDefault.value &&
+    (onTeamPlan || defaultDeploymentId.value !== null || defaultGone.value)
 )
 
 const notice = computed(() => {

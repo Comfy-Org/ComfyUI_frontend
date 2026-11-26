@@ -8,7 +8,7 @@ vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
 function onPlan(
   isTeamPlan: boolean,
-  tier: 'STANDARD' | 'PRO' | 'ENTERPRISE' | null
+  tier: 'STANDARD' | 'PRO' | 'TEAM' | 'ENTERPRISE' | null
 ) {
   const unplanned = useBillingContext()
   vi.mocked(useBillingContext).mockReturnValue({

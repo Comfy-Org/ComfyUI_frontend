@@ -12,7 +12,7 @@ export function useTeamOrEnterprisePlan() {
   return computed(() =>
     pendingServerFact(
       'BE-20674',
-      isTeamPlan.value || tier.value === 'ENTERPRISE'
+      isTeamPlan.value || tier.value === 'TEAM' || tier.value === 'ENTERPRISE'
     )
   )
 }

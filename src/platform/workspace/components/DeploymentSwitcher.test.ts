@@ -166,10 +166,10 @@ function workflowWith(...types: string[]): LGraph {
   return graph
 }
 
-function renderSwitcher(plugin = i18n) {
+function renderSwitcher(plugin = i18n, { onTeamPlan = true } = {}) {
   const user = userEvent.setup({ pointerEventsCheck: 0 })
   render(DeploymentSwitcher, {
-    props: { onTeamPlan: plan.onTeamPlan },
+    props: { onTeamPlan },
     global: { plugins: [plugin] }
   })
   return user
@@ -194,12 +194,6 @@ async function focusWindowEvery(ms: number, times: number) {
   }
 }
 
-const plan = { onTeamPlan: true }
-
-function onPlan(onTeamPlan: boolean) {
-  plan.onTeamPlan = onTeamPlan
-}
-
 function asOwner() {
   Object.assign(useTeamWorkspaceStore(), {
     workspaceId: 'ws-1',
@@ -212,7 +206,6 @@ describe('DeploymentSwitcher', () => {
 
   beforeEach(() => {
     hoisted.rootGraph = undefined
-    onPlan(true)
     sessionStorage.clear()
     useSettingStore().$patch({
       settingValues: { 'Comfy.DeploymentSwitcher.Seen': true }
@@ -1297,9 +1290,8 @@ describe('DeploymentSwitcher', () => {
 
   it('hides the workspace default from an owner on an individual plan', async () => {
     asOwner()
-    onPlan(false)
     mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
-    const user = renderSwitcher()
+    const user = renderSwitcher(i18n, { onTeamPlan: false })
     await openList(user)
 
     expect(screen.queryByTestId('deployment-switcher-default')).toBeNull()
@@ -1308,21 +1300,31 @@ describe('DeploymentSwitcher', () => {
     ).toBeInTheDocument()
   })
 
-  it('tells an owner on an individual plan that a deleted default starts members on Comfy Cloud, without pointing at a hidden row', async () => {
-    asOwner()
-    onPlan(false)
-    mockWorkspaceApi.listDeployments.mockResolvedValue({
-      ...listing,
-      gone_default_deployment_id: GONE
-    })
-    const user = renderSwitcher()
-    await openList(user)
+  it.for([
+    { recorded: 'a default', reply: { default_deployment_id: D1 } },
+    {
+      recorded: 'a deleted default',
+      reply: { gone_default_deployment_id: GONE }
+    }
+  ] satisfies {
+    recorded: string
+    reply: Partial<WorkspaceDeploymentList>
+  }[])(
+    'keeps the workspace default for an owner on an individual plan while $recorded is recorded, so it can be cleared',
+    async ({ reply }) => {
+      asOwner()
+      mockWorkspaceApi.listDeployments.mockResolvedValue({
+        ...listing,
+        ...reply
+      })
+      const user = renderSwitcher(i18n, { onTeamPlan: false })
+      await openList(user)
 
-    expect(screen.getByTestId('deployment-switcher-notice')).toHaveTextContent(
-      /^The workspace default was deleted, so members start on Comfy Cloud\.$/
-    )
-    expect(screen.queryByTestId('deployment-switcher-default')).toBeNull()
-  })
+      expect(
+        screen.getByTestId('deployment-switcher-default')
+      ).toBeInTheDocument()
+    }
+  )
 
   it('lets an owner clear the workspace default, a deleted one included, by choosing Comfy Cloud', async () => {
     asOwner()
