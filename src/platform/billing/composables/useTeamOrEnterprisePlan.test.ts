@@ -22,6 +22,12 @@ describe(useTeamOrEnterprisePlan, () => {
   it.for([
     { plan: 'a Team plan', isTeamPlan: true, tier: null, expected: true },
     {
+      plan: 'a Team tier without a team slug',
+      isTeamPlan: false,
+      tier: 'TEAM',
+      expected: true
+    },
+    {
       plan: 'an Enterprise plan',
       isTeamPlan: false,
       tier: 'ENTERPRISE',

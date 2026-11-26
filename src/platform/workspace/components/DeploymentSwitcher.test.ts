@@ -1310,7 +1310,7 @@ describe('DeploymentSwitcher', () => {
     recorded: string
     reply: Partial<WorkspaceDeploymentList>
   }[])(
-    'keeps the workspace default for an owner on an individual plan while $recorded is recorded, so it can be cleared',
+    'offers an owner on an individual plan only clearing the workspace default while $recorded is recorded',
     async ({ reply }) => {
       asOwner()
       mockWorkspaceApi.listDeployments.mockResolvedValue({
@@ -1319,10 +1319,11 @@ describe('DeploymentSwitcher', () => {
       })
       const user = renderSwitcher(i18n, { onTeamPlan: false })
       await openList(user)
+      await openDefaultMenu(user)
 
-      expect(
-        screen.getByTestId('deployment-switcher-default')
-      ).toBeInTheDocument()
+      expect(screen.getByTestId('default-row-cloud')).toBeInTheDocument()
+      expect(screen.queryByTestId(`default-row-${D1}`)).not.toBeInTheDocument()
+      expect(screen.queryByTestId(`default-row-${D2}`)).not.toBeInTheDocument()
     }
   )
 

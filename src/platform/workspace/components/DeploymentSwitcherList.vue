@@ -84,6 +84,7 @@
   <DeploymentSwitcherDefaultMenu
     v-if="workspaceDefaultOffered && (deployments.length > 0 || defaultGone)"
     :disabled="isSwitching"
+    :clear-only="!onTeamPlan"
     @set-default="emit('setDefault', $event)"
   />
   <DeploymentSwitcherBuildAction
