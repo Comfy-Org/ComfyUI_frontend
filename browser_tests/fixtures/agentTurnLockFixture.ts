@@ -564,6 +564,7 @@ export class AgentTurnLockHarness {
   public readonly workingRow: Locator
   public readonly liveProgressRow: Locator
   public readonly userBubbles: Locator
+  public readonly promptQueue: Locator
   public readonly turnInProgressNotice: Locator
   public readonly agentPanel: AgentPanel
   private readonly entryButton: Locator
@@ -623,6 +624,7 @@ export class AgentTurnLockHarness {
       .filter({ visible: true })
       .first()
     this.userBubbles = this.panel.getByTestId('user-message-bubble')
+    this.promptQueue = this.panel.getByTestId('agent-prompt-queue')
     this.turnInProgressNotice = this.panel.getByText(
       enMessages.agent.sendTurnInProgress,
       { exact: true }

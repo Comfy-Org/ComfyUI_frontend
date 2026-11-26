@@ -21122,6 +21122,43 @@ describe('AgentPanelRoot optimistic and chat-owned sends (PR 0)', () => {
       expect(screen.getByRole('textbox')).toHaveTextContent('Draft on B')
     )
   })
+
+  it('queues a follow-up prompt on Enter while streaming and sends it once the active turn finishes', async () => {
+    bindTab('wf-42')
+    const postedBodies = mockMessagesEndpoint('wf-42')
+    renderWithSelectedTarget()
+
+    const textbox = await screen.findByRole('textbox')
+    await userEvent.click(textbox)
+    await userEvent.paste('First turn')
+    await userEvent.keyboard('{Enter}')
+    await screen.findByRole('button', { name: 'Stop' })
+    expect(postedBodies).toHaveLength(1)
+
+    await userEvent.click(textbox)
+    await userEvent.paste('Queued with Enter')
+    await userEvent.keyboard('{Enter}')
+
+    expect(await screen.findByTestId('agent-prompt-queue')).toHaveTextContent(
+      'Queued with Enter'
+    )
+    expect(textbox).toHaveTextContent('')
+    expect(postedBodies).toHaveLength(1)
+
+    const activeTurnId = useAgentConversationStore().activeTurnId
+    const activeThreadId = useAgentConversationStore().threadId
+    expect(activeTurnId).toBeTruthy()
+    expect(activeThreadId).toBeTruthy()
+    dispatchApiEvent('agent_message_done', {
+      thread_id: activeThreadId!,
+      message_id: activeTurnId!
+    })
+
+    await waitFor(() => expect(postedBodies).toHaveLength(2))
+    expect(postedBodies[1]).toMatchObject({
+      content: 'Queued with Enter'
+    })
+  })
 })
 
 describe('AgentPanelRoot proactive qualification', () => {

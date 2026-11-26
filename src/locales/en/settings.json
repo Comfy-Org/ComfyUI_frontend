@@ -78,6 +78,9 @@
   "Comfy_Canvas_SmartGuides_SnapToWires": {
     "name": "Snap so that wires become straight"
   },
+  "Comfy_Cloud_AskBeforeCompatibilityCheck": {
+    "name": "Ask before sending node and model names to check Comfy Cloud compatibility"
+  },
   "Comfy_ConfirmClear": {
     "name": "Require confirmation when clearing workflow"
   },
