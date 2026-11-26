@@ -200,6 +200,7 @@ describe('promoted writes on a host that owns a dynamic combo', () => {
     graph = target
     minter = attachDocOpMinter({
       isEnabled: () => true,
+      isBoundWorkflow: () => true,
       isDocBound: () => true,
       enqueue: (operations) => minted.push(...operations),
       getGraph: () => graph,

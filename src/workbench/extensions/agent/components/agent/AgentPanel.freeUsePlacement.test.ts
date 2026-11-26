@@ -25,8 +25,7 @@ function mount(
       onFreeUseNotice
     },
     global: {
-      plugins: [i18n],
-      stubs: { WorkflowSelectorChip: true }
+      plugins: [i18n]
     }
   })
 }

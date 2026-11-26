@@ -3,6 +3,8 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useCloudWorkflowCheckStore } from '@/platform/openOnCloud/stores/cloudWorkflowCheckStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import {
   checkCloudCompatibility,
@@ -140,6 +142,38 @@ describe(checkCloudCompatibility, () => {
       expect(fetch).not.toHaveBeenCalled()
     }
   )
+
+  it('sends no workflow data if the workspace changes while authorization is pending', async () => {
+    workflowHas(node('KSampler'))
+    cloudAnswers(Response.json({ cloud: { missing_node_types: [] } }))
+    const authStore = useAuthStore()
+    const workspaces = useTeamWorkspaceStore()
+    Object.assign(workspaces, { activeWorkspaceId: 'ws-original' })
+    type AuthContext = Awaited<
+      ReturnType<typeof authStore.getWorkspaceAuthContext>
+    >
+    let finishAuth!: (value: AuthContext) => void
+    const auth = new Promise<AuthContext>((resolve) => {
+      finishAuth = resolve
+    })
+    vi.mocked(authStore.getWorkspaceAuthContext).mockReturnValueOnce(auth)
+    const checks = useCloudWorkflowCheckStore()
+    const pending = checks.check()
+    await vi.waitFor(() =>
+      expect(authStore.getWorkspaceAuthContext).toHaveBeenCalledOnce()
+    )
+
+    Object.assign(workspaces, { activeWorkspaceId: 'ws-next' })
+    finishAuth({
+      headers: { Authorization: 'Bearer next-workspace' },
+      workspaceId: 'ws-next'
+    })
+    await pending
+
+    expect(fetch).not.toHaveBeenCalled()
+    expect(reportError).not.toHaveBeenCalled()
+    expect(checks.state.phase).toBe('idle')
+  })
 
   it('uses account authorization for an ordinary model workflow while uploads are off', async () => {
     Object.assign(useFeatureFlags().flags, {

@@ -102,13 +102,24 @@ new scope. Desktop/Local sign-in continuation authenticates before saving.
 
 `agent_consent_not_offered` names why an automatic offer was not made.
 
-| `reason`              | Why                                         | Retried                |
-| --------------------- | ------------------------------------------- | ---------------------- |
-| `first_run_screen`    | Getting Started or another first-run screen | When it closes         |
-| `tour_active`         | Another onboarding tour                     | When it ends           |
-| `dialog_open`         | Another dialog                              | When it closes         |
-| `boot_undecided`      | The startup decision did not settle         | No, for this page load |
-| `storage_unavailable` | localStorage cannot be written              | No, for this page load |
+| `reason`                 | Why                                         | Retried                |
+| ------------------------ | ------------------------------------------- | ---------------------- |
+| `first_run_screen`       | Getting Started or another first-run screen | When it closes         |
+| `tour_active`            | Another onboarding tour                     | When it ends           |
+| `dialog_open`            | Another dialog                              | When it closes         |
+| `boot_undecided`         | The startup decision did not settle         | No, for this page load |
+| `storage_unavailable`    | localStorage cannot be written              | No, for this page load |
+| `first_session_deferred` | A new local user's first launch             | No, for this page load |
+
+On a non-cloud build, the launch that shows a new user the template browser
+(nothing restored, `Comfy.TutorialCompleted` unset) is left to the templates:
+the panel does not auto-open, the launch does not count toward the two
+activation launches, and the card is not offered unprompted, including after a
+dialog closes or the user signs in. A panel restored open from an earlier
+profile stays hidden from the first paint, without forgetting it, so the next
+launch restores it. The Agent button and keybinding work as usual.
+`Comfy.AgentPanel.firstSessionDeferred` in localStorage bounds this to one
+launch; if it cannot be written, the launch is not deferred.
 
 `agent_consent_offer_exited` covers every other ending. Split queries by
 `exit`; a total is not a quantity.

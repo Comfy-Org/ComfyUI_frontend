@@ -104,6 +104,7 @@
       <img
         v-if="
           !imageError &&
+          mainImageSrc &&
           displayUrls[currentIndex] &&
           !failedHdrPreviews[currentIndex]
         "
@@ -286,7 +287,7 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import Button from '@comfyorg/design-system/button/Button'
 import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import { useMaskEditor } from '@/renderer/extensions/maskEditor/composables/useMaskEditor'
-import { useNodeOutputsExport } from '@/platform/assets/composables/useNodeOutputsExport'
+import { useNodeOutputsExport } from '@/platform/assets/integration/useNodeOutputsExport'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { describeImageLoadFailure } from '@/platform/telemetry/imageFailureDiagnostics'
@@ -537,7 +538,11 @@ async function handleOpenLayerEditor() {
 
 function handleDownload() {
   try {
-    downloadFile(resultItemUrl(items[currentIndex.value]))
+    downloadFile(
+      resultItemUrl(items[currentIndex.value]),
+      undefined,
+      'node_preview'
+    )
   } catch {
     toast.error(t('g.error'), {
       description: t('g.failedToDownloadImage')

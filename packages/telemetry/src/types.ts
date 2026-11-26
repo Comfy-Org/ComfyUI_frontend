@@ -149,6 +149,38 @@ export interface ImageLoadFailureMetadata {
 }
 
 /**
+ * One settled cloud file download. Never carries the URL or filename, which
+ * are user-authored; `media_kind` is derived from the extension only.
+ */
+export interface AssetDownloadMetadata {
+  outcome: 'completed' | 'failed'
+  failure_kind?:
+    | 'http'
+    | 'network'
+    | 'timeout'
+    | 'abort'
+    | 'body_read'
+    | 'unknown'
+  /** HTTP status of a non-OK response. Absent when no response arrived. */
+  status?: number
+  phase: 'headers' | 'body'
+  /** `unreported` when the request failed before attaching a credential. */
+  auth_credential:
+    | 'session-cookie'
+    | 'bearer'
+    | 'api-key'
+    | 'none'
+    | 'unreported'
+  route: 'assets_content' | 'view' | 'other'
+  media_kind: 'image' | 'video' | 'audio' | '3d' | 'text' | 'other'
+  surface: string
+  size_bytes?: number
+  duration_ms: number
+  page_age_ms: number
+  online: boolean
+}
+
+/**
  * One row per session describing how long startup took and where the time
  * went. `total_ms` is measured from navigation start, so it is directly
  * comparable to what a user experiences and can be percentiled across sessions
@@ -761,6 +793,55 @@ export type RunOnCloudTelemetryEvent =
       }
     }
 
+export type CustomDeploymentEntry =
+  | 'extensions'
+  | 'run_on_row'
+  | 'pencil'
+  | 'set_up'
+  | 'workflow_dialog'
+  | 'overview_dialog'
+  | 'model_library'
+  | 'preinstall'
+  | 'errors_panel'
+
+export type CustomDeploymentStep =
+  | 'new'
+  | 'update'
+  | 'nodes'
+  | 'models'
+  | 'preinstall'
+
+export type CustomDeploymentLink = 'build_on_platform' | 'manage_deployments'
+
+export type CustomDeploymentTelemetryEvent =
+  | {
+      readonly name: typeof TelemetryEvents.CUSTOM_DEPLOYMENT_DIALOG_OPENED
+      readonly properties: {
+        readonly entry: CustomDeploymentEntry
+        readonly step: CustomDeploymentStep
+        readonly workspace_id: string | null
+        readonly deployment_id: string | null
+      }
+    }
+  | {
+      readonly name: typeof TelemetryEvents.CUSTOM_DEPLOYMENT_CREATE_CLICKED
+      readonly properties: {
+        readonly kind: 'new' | 'update'
+        readonly workspace_id: string | null
+        readonly deployment_id: string
+        readonly release_id: string
+        readonly build_id: string
+        readonly version: number
+      }
+    }
+  | {
+      readonly name: typeof TelemetryEvents.CUSTOM_DEPLOYMENT_LINK_CLICKED
+      readonly properties: {
+        readonly kind: CustomDeploymentLink
+        readonly workspace_id: string | null
+      }
+    }
+
 /**
  * In-App Agent message rating metadata (PM-98). `vote` is null when the user retracts a
  * prior thumb, which the eval pipeline records as a retraction rather than dropping.
@@ -792,6 +873,8 @@ export type AgentConsentNotOfferedReason =
   | 'dialog_open'
   | 'boot_undecided'
   | 'storage_unavailable'
+  /** A new local user's first session: the Agent waits for the next launch. */
+  | 'first_session_deferred'
 export interface AgentConsentNotOfferedMetadata extends Record<
   string,
   unknown
@@ -1306,11 +1389,7 @@ export interface AgentStopClickedMetadata extends Record<string, unknown> {
   turn_id: string
   turn_elapsed_ms: number | null
 }
-export type AgentWorkflowBindSource =
-  | 'active_tab'
-  | 'selector_chip'
-  | 'minted'
-  | 'restored'
+export type AgentWorkflowBindSource = 'active_tab' | 'minted' | 'restored'
 export interface AgentWorkflowBoundMetadata extends Record<string, unknown> {
   thread_id: string
   workflow_id: string
@@ -1333,6 +1412,7 @@ export interface AgentTargetUnavailableMetadata extends Record<
   startup_tab_restore_settled: boolean | null
 }
 export interface AgentRunApprovalShownMetadata extends Record<string, unknown> {
+  ask_id: string
   turn_id: string
   workflow_id: string | null
 }
@@ -1341,8 +1421,41 @@ export interface AgentRunApprovalResolvedMetadata extends Record<
   string,
   unknown
 > {
+  ask_id: string
+  turn_id: string
   decision: AgentRunApprovalDecision
   time_to_decide_ms: number
+}
+export interface AgentRunApprovalAnswerFailedMetadata extends Record<
+  string,
+  unknown
+> {
+  ask_id: string
+  turn_id: string | null
+}
+/** Why an approval ask needed recovery: a dropped socket frame, or a fresh hydrate racing the row write. */
+export type AgentRunApprovalRecoveryCause = 'reconnect' | 'hydrate'
+export interface AgentRunApprovalRecoveryAttemptedMetadata extends Record<
+  string,
+  unknown
+> {
+  ask_id: string
+  turn_id: string
+  cause: AgentRunApprovalRecoveryCause
+}
+export type AgentRunApprovalRecoveryOutcome =
+  | 'restored'
+  | 'superseded'
+  | 'not_found'
+  | 'retired'
+export interface AgentRunApprovalRecoveryOutcomeMetadata extends Record<
+  string,
+  unknown
+> {
+  ask_id: string
+  turn_id: string
+  cause: AgentRunApprovalRecoveryCause
+  outcome: AgentRunApprovalRecoveryOutcome
 }
 export interface AgentRunModeChangedMetadata extends Record<string, unknown> {
   from: AgentRunMode['mode']
@@ -1726,6 +1839,7 @@ export interface TelemetryProvider {
   trackWebSessionEvent?(event: WebSessionTelemetryEvent): void
   trackSsoEvent?(event: SsoTelemetryEvent): void
   trackImageLoadFailed?(metadata: ImageLoadFailureMetadata): void
+  trackAssetDownload?(metadata: AssetDownloadMetadata): void
   trackUserLoggedIn?(): void
   trackBootstrapComplete?(metadata: BootstrapCompleteMetadata): void
 
@@ -1844,6 +1958,8 @@ export interface TelemetryProvider {
 
   trackLocalMcpEvent?(event: LocalMcpTelemetryEvent): void
 
+  trackCustomDeploymentEvent?(event: CustomDeploymentTelemetryEvent): void
+
   // In-App Agent message rating (PM-98)
   trackAgentMessageFeedback?(metadata: AgentMessageFeedbackMetadata): void
   trackAgentPanelOpened?(metadata: AgentPanelOpenedMetadata): void
@@ -1879,6 +1995,15 @@ export interface TelemetryProvider {
   trackAgentRunApprovalShown?(metadata: AgentRunApprovalShownMetadata): void
   trackAgentRunApprovalResolved?(
     metadata: AgentRunApprovalResolvedMetadata
+  ): void
+  trackAgentRunApprovalAnswerFailed?(
+    metadata: AgentRunApprovalAnswerFailedMetadata
+  ): void
+  trackAgentRunApprovalRecoveryAttempted?(
+    metadata: AgentRunApprovalRecoveryAttemptedMetadata
+  ): void
+  trackAgentRunApprovalRecoveryOutcome?(
+    metadata: AgentRunApprovalRecoveryOutcomeMetadata
   ): void
   trackAgentRunModeChanged?(metadata: AgentRunModeChangedMetadata): void
   trackAgentThreadStarted?(metadata: AgentThreadStartedMetadata): void
@@ -1939,6 +2064,8 @@ export const TelemetryEvents = {
   SSO_SIGN_IN_COMPLETED: SSO_TELEMETRY_EVENT.signInCompleted,
   SSO_WORKSPACE_LANDED: SSO_TELEMETRY_EVENT.workspaceLanded,
   IMAGE_LOAD_FAILED: 'app:image_load_failed',
+  ASSET_DOWNLOAD_COMPLETED: 'app:asset_download_completed',
+  ASSET_DOWNLOAD_FAILED: 'app:asset_download_failed',
   BOOTSTRAP_COMPLETE: 'app:bootstrap_complete',
   THEME_LOADED: 'app:theme_loaded',
 
@@ -2072,6 +2199,11 @@ export const TelemetryEvents = {
   AGENT_TARGET_UNAVAILABLE: 'app:agent_target_unavailable',
   AGENT_RUN_APPROVAL_SHOWN: 'app:agent_run_approval_shown',
   AGENT_RUN_APPROVAL_RESOLVED: 'app:agent_run_approval_resolved',
+  AGENT_RUN_APPROVAL_ANSWER_FAILED: 'app:agent_run_approval_answer_failed',
+  AGENT_RUN_APPROVAL_RECOVERY_ATTEMPTED:
+    'app:agent_run_approval_recovery_attempted',
+  AGENT_RUN_APPROVAL_RECOVERY_OUTCOME:
+    'app:agent_run_approval_recovery_outcome',
   AGENT_RUN_MODE_CHANGED: 'app:agent_run_mode_changed',
   AGENT_THREAD_STARTED: 'app:agent_thread_started',
   AGENT_CONSENT_NOT_OFFERED: 'app:agent_consent_not_offered',
@@ -2104,6 +2236,10 @@ export const TelemetryEvents = {
   LOCAL_MCP_OPENED: 'app:local_mcp_opened',
   LOCAL_MCP_PATH_SELECTED: 'app:local_mcp_path_selected',
   LOCAL_MCP_CONNECTED: 'app:local_mcp_connected',
+
+  CUSTOM_DEPLOYMENT_DIALOG_OPENED: 'platform:editor_deploy_opened',
+  CUSTOM_DEPLOYMENT_CREATE_CLICKED: 'platform:deployment_create_clicked',
+  CUSTOM_DEPLOYMENT_LINK_CLICKED: 'platform:deployment_link_clicked',
 
   WORKSPACE_SCOPE_MISMATCH: 'workspace_scope_mismatch'
 } as const
@@ -2167,6 +2303,7 @@ export type TelemetryEventProperties =
   | WebSessionTelemetryEvent['properties']
   | SsoTelemetryEvent['properties']
   | ImageLoadFailureMetadata
+  | AssetDownloadMetadata
   | BootstrapCompleteMetadata
   | SurveyResponses
   | TemplateMetadata
@@ -2190,6 +2327,7 @@ export type TelemetryEventProperties =
   | UiButtonClickMetadata
   | RunOnCloudTelemetryEvent['properties']
   | LocalMcpTelemetryEvent['properties']
+  | CustomDeploymentTelemetryEvent['properties']
   | WidgetFavoriteToggledMetadata
   | NamedValuesShadowDiffMismatchMetadata
   | NamedValuesShadowDiffSummaryMetadata

@@ -17,6 +17,7 @@ vi.mock(import('@/config/comfyApi'), () => ({
 vi.mock(import('@/scripts/api'))
 vi.mock(import('@/scripts/app'))
 vi.mock(import('@comfyorg/telemetry/reportError'))
+vi.mock(import('firebase/auth'))
 
 function framedAt(): Record<string, string> | null {
   const url = usePlatformFrameStore().session?.url
@@ -47,9 +48,9 @@ describe('openPlatformFrameOnClick', () => {
   it('opens the frame in place of the link', () => {
     const click = new MouseEvent('click', { cancelable: true })
 
-    expect(openPlatformFrameOnClick(click, NEW_DEPLOYMENT_FOR_WORKFLOW)).toBe(
-      true
-    )
+    expect(
+      openPlatformFrameOnClick(click, NEW_DEPLOYMENT_FOR_WORKFLOW, 'set_up')
+    ).toBe(true)
 
     expect(click.defaultPrevented).toBe(true)
     expect(framedAt()).toEqual({ step: 'new' })
@@ -62,9 +63,9 @@ describe('openPlatformFrameOnClick', () => {
     if (!('metaKey' in key)) flagOn(false)
     const click = new MouseEvent('click', { cancelable: true, ...key })
 
-    expect(openPlatformFrameOnClick(click, NEW_DEPLOYMENT_FOR_WORKFLOW)).toBe(
-      false
-    )
+    expect(
+      openPlatformFrameOnClick(click, NEW_DEPLOYMENT_FOR_WORKFLOW, 'set_up')
+    ).toBe(false)
 
     expect(click.defaultPrevented).toBe(false)
     expect(framedAt()).toBeNull()

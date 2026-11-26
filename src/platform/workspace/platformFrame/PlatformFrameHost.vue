@@ -1,23 +1,34 @@
 <template>
-  <Dialog :open="session !== null" @update:open="closeWhenDismissed">
+  <Dialog
+    v-if="session"
+    :open="!isHidden"
+    :unmount-on-hide="false"
+    @update:open="dismissWhenClosed"
+  >
     <DialogPortal>
-      <DialogOverlay />
+      <DialogOverlay v-if="!isHidden" />
       <DialogContent
-        v-if="session"
         :key="session.id"
         :aria-describedby="undefined"
         size="full"
-        class="max-h-190 max-w-240 overflow-hidden"
+        :class="
+          cn(
+            'overflow-hidden',
+            isPreinstall
+              ? 'max-h-130 max-w-180'
+              : 'inset-6 m-auto size-auto max-h-256 max-w-280 translate-none'
+          )
+        "
         data-testid="platform-frame-host"
         @pointer-down-outside="keepOpenOnOutsidePointer"
       >
         <DialogTitle class="sr-only">
-          {{ $t('platformFrame.title') }}
+          {{ title }}
         </DialogTitle>
         <iframe
           ref="frame"
           :src="session.url"
-          :title="$t('platformFrame.title')"
+          :title="title"
           :sandbox="PLATFORM_FRAME_SANDBOX"
           autofocus
           class="size-full border-0"
@@ -65,8 +76,10 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { storeToRefs } from 'pinia'
 import { computed, useTemplateRef, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
 import Dialog from '@comfyorg/design-system/dialog/Dialog'
@@ -87,8 +100,17 @@ import {
 } from '@/platform/workspace/utils/platformLink'
 
 const store = usePlatformFrameStore()
-const { session, isUnanswered } = storeToRefs(store)
+const { session, isUnanswered, isHidden } = storeToRefs(store)
 const frame = useTemplateRef<HTMLIFrameElement>('frame')
+const { t } = useI18n()
+const isPreinstall = computed(
+  () => session.value?.request.step === 'preinstall'
+)
+const title = computed(() =>
+  isPreinstall.value
+    ? t('platformFrame.preinstallTitle')
+    : t('platformFrame.title')
+)
 const platformUrl = computed(() => {
   const deploymentId = session.value?.request.deploymentId
   if (!deploymentId) return customDeploymentCreateUrl('custom-deployment-card')
@@ -107,8 +129,16 @@ watch(
   { flush: 'post' }
 )
 
-function closeWhenDismissed(open: boolean) {
-  if (!open) store.close()
+watch(
+  () => store.isResumable(),
+  (resumable) => {
+    if (resumable) store.resume()
+  },
+  { immediate: true }
+)
+
+function dismissWhenClosed(open: boolean) {
+  if (!open) store.dismiss()
 }
 
 function keepOpenOnOutsidePointer(event: Event) {
@@ -118,6 +148,6 @@ function keepOpenOnOutsidePointer(event: Event) {
 function openOnPlatform(event: MouseEvent) {
   if (session.value?.request.handsOverWorkflow)
     handOverWorkflowOnClick(event, 'custom-deployment-card')
-  store.close()
+  store.dismiss()
 }
 </script>

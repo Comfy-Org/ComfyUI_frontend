@@ -672,6 +672,53 @@ describe('getWorkflowSidebarFile', () => {
   )
 })
 
+describe('getWorkflowDraft', () => {
+  it('GETs the agent draft by encoded workflow id and returns its content', async () => {
+    const content = { nodes: [], links: [], version: 0.4 }
+    respond(jsonResponse(200, { content, version: 7 }))
+
+    await expect(makeClient().getWorkflowDraft('wf/1')).resolves.toEqual(
+      content
+    )
+
+    const { route, init } = lastCall()
+    expect(route).toBe('/agent/draft?workflow_id=wf%2F1')
+    expect(init.method).toBe('GET')
+  })
+
+  it('rejects a missing draft with status 404', async () => {
+    respond(jsonResponse(404, { error: 'no draft' }))
+
+    await expect(makeClient().getWorkflowDraft('wf-1')).rejects.toMatchObject({
+      name: 'AgentApiError',
+      status: 404
+    })
+  })
+})
+
+describe('getWorkflowContent', () => {
+  it('GETs the encoded content path and returns the workflow JSON', async () => {
+    const workflowJson = { nodes: [{ id: 1 }], links: [], version: 0.4 }
+    respond(
+      jsonResponse(200, {
+        id: 'v-1',
+        version: 2,
+        created_by: 'user-1',
+        created_at: '2026-09-11T10:00:00Z',
+        workflow_json: workflowJson
+      })
+    )
+
+    await expect(makeClient().getWorkflowContent('wf/1')).resolves.toEqual(
+      workflowJson
+    )
+
+    const { route, init } = lastCall()
+    expect(route).toBe('/workflows/wf%2F1/content')
+    expect(init.method).toBe('GET')
+  })
+})
+
 describe('postMessage wire body', () => {
   const buildVersion = `${__COMFYUI_FRONTEND_VERSION__}+${__COMFYUI_FRONTEND_COMMIT__}`
 

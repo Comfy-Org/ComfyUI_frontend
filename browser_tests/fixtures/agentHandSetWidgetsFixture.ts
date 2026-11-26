@@ -195,7 +195,6 @@ class AgentHandSetWidgetsScenario {
 
   async agentBuildsNodes(): Promise<void> {
     await this.panel.open()
-    await this.panel.selectWorkflow()
     await this.panel.sendMessage('Add a KSampler and a Load Image node.')
     await this.hostSocket.waitForSubscribe()
     this.hostSocket.send(

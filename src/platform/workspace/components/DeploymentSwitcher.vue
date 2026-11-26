@@ -17,14 +17,21 @@
           variant="secondary"
           size="unset"
           :disabled="isSwitching"
-          :tooltip="hoverTooltip"
+          :tooltip="buildStatus ?? hoverTooltip"
           tooltip-side="bottom"
           :aria-label="triggerLabel"
           class="group h-8 gap-1 rounded-lg pr-1.5 pl-2 data-[state=open]:bg-accent"
           data-testid="deployment-switcher-trigger"
         >
           <span class="relative flex">
+            <i
+              v-if="buildStatus"
+              class="icon-[lucide--loader-circle] animate-spin"
+              aria-hidden="true"
+              data-testid="deployment-switcher-building"
+            />
             <DeploymentStatusIcon
+              v-else
               :tone="currentTone"
               icon-class="size-4"
               ring-class="ring-2 ring-secondary group-hover:ring-accent group-data-[state=open]:ring-accent"
@@ -72,6 +79,7 @@ import { useI18n } from 'vue-i18n'
 import Button from '@comfyorg/design-system/button/Button'
 import Menu from '@comfyorg/design-system/menu/Menu'
 import { useToast } from '@/components/ui/toast/toastStore'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import {
@@ -90,11 +98,14 @@ import {
 } from '@/platform/workspace/composables/useDeploymentLabels'
 import { useDeploymentRows } from '@/platform/workspace/composables/useDeploymentRows'
 import { useDeploymentSwitchGuard } from '@/platform/workspace/composables/useDeploymentSwitchGuard'
+import { useDeploymentVersionWatch } from '@/platform/workspace/composables/useDeploymentVersionWatch'
 import {
   confirmUnsavedWorkBeforeSwitch,
   unsavedWorkflows
 } from '@/platform/workspace/confirmUnsavedWorkBeforeSwitch'
+import type { UnsavedWorkPrompt } from '@/platform/workspace/confirmUnsavedWorkBeforeSwitch'
 import { openCreateCustomDeploymentDialog } from '@/platform/workspace/openCustomDeploymentDialog'
+import type { BuildStage } from '@/platform/workspace/platformFrame/platformFrameBuild'
 import { usePlatformFrameStore } from '@/platform/workspace/platformFrame/platformFrameStore'
 import { NEW_DEPLOYMENT_FROM_NODES } from '@/platform/workspace/platformFrame/platformFrameWaysIn'
 import { useDeploymentSwitcherOffered } from '@/platform/workspace/composables/useDeploymentSwitcherOffered'
@@ -115,6 +126,14 @@ const { currentLabel } = useDeploymentLabels()
 const { targetLabel, withoutLeavePrompt, reloadOntoCurrent } =
   useDeploymentSwitchGuard()
 const { pickedRow, isAnyStarting } = useDeploymentRows()
+const { flags } = useFeatureFlags()
+const isWatchingVersion = useDeploymentVersionWatch({
+  active: () =>
+    isOffered.value && isVisible.value && flags.customDeploymentsEditorEnabled,
+  reload
+})
+const frames = usePlatformFrameStore()
+const { build } = storeToRefs(frames)
 
 const isOpen = ref(false)
 const switchingTo = ref<string | null>(null)
@@ -150,7 +169,7 @@ onMounted(() => {
 
 useEventListener(window, 'focus', () => {
   if (pendingRetry || !isOffered.value) return
-  if (listingRefused.value) return
+  if (listingRefused.value || isWatchingVersion.value) return
   if (Date.now() - lastFocusRetryAt < DEPLOYMENT_LISTING_FOCUS_RETRY_MS) return
   lastFocusRetryAt = Date.now()
   pendingRetry = store.load().finally(() => {
@@ -258,9 +277,12 @@ function report(summary: string, refusal: string | null) {
   useToast().error(summary, { description: refusal, duration: 8000 })
 }
 
-async function confirmSwitchTo(deployment: string): Promise<boolean> {
+async function confirmSwitchTo(
+  deployment: string,
+  prompt?: UnsavedWorkPrompt
+): Promise<boolean> {
   if (unsavedWorkflows().length > 0) isOpen.value = false
-  return confirmUnsavedWorkBeforeSwitch(deployment)
+  return confirmUnsavedWorkBeforeSwitch(deployment, prompt)
 }
 
 async function choose(deploymentId: string | null) {
@@ -292,7 +314,24 @@ async function changeDefault(deploymentId: string | null) {
   )
 }
 
-const frames = usePlatformFrameStore()
+const SHOWN_STAGES: ReadonlySet<BuildStage> = new Set(['building', 'deploying'])
+
+const buildStatus = computed(() => {
+  const current = build.value
+  if (!current || !SHOWN_STAGES.has(current.stage)) return null
+  const stage = t(
+    current.stage === 'building'
+      ? 'platformFrame.building'
+      : 'platformFrame.deploying',
+    { deployment: current.deploymentName },
+    { escapeParameter: false }
+  )
+  const progress = current.stage === 'building' ? current.progress : null
+  return progress
+    ? `${stage} · ${t('platformFrame.buildStep', progress)}`
+    : stage
+})
+
 const switcher = useTemplateRef<HTMLElement>('switcher')
 
 function focusTrigger() {
@@ -301,14 +340,14 @@ function focusTrigger() {
 
 function createCustomDeployment() {
   if (frames.isAvailable()) focusTrigger()
-  if (frames.open(NEW_DEPLOYMENT_FROM_NODES)) return
+  if (frames.open(NEW_DEPLOYMENT_FROM_NODES, 'run_on_row')) return
   void openCreateCustomDeploymentDialog()
 }
 
 function updateDeployment(deploymentId: string) {
   focusTrigger()
   isOpen.value = false
-  frames.open({ step: 'update', deploymentId })
+  frames.open({ step: 'update', deploymentId }, 'pencil')
 }
 
 function reload() {

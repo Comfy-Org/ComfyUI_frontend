@@ -140,63 +140,6 @@ class TemplatePlacementHarness {
     await new AgentPanel(this.page).open()
     const panel = this.page.locator('#agent-panel-root')
     await expect(panel).toBeVisible({ timeout: 30_000 })
-    await this.selectWorkflowTarget()
-  }
-
-  // Mirrors AgentConversationHarness.selectWorkflowTarget: the picker
-  // re-polls /api/workflows after saving, so the mock has to echo back a
-  // matching entry once the save lands or the app decides the target
-  // vanished.
-  private async selectWorkflowTarget(): Promise<void> {
-    let savedName: string | undefined
-    await this.page.route('**/api/userdata/*', (route) => {
-      const request = route.request()
-      const path = decodeURIComponent(
-        new URL(request.url()).pathname.split('/userdata/')[1]
-      )
-      if (request.method() !== 'POST' || !path.startsWith('workflows/'))
-        return route.fallback()
-      savedName = path.slice('workflows/'.length, -'.json'.length)
-      return route.fulfill(
-        jsonRoute({
-          path,
-          modified: Date.now(),
-          size: request.postDataBuffer()?.length ?? 0
-        })
-      )
-    })
-    await this.page.route('**/api/workflows?*', (route) =>
-      route.fulfill(
-        jsonRoute({
-          data:
-            savedName === undefined
-              ? []
-              : [
-                  {
-                    id: SEED_WORKFLOW.id,
-                    name: savedName,
-                    created_at: '2026-09-01T00:00:00Z',
-                    updated_at: '2026-09-01T00:00:00Z',
-                    created_by: 'test-user-e2e',
-                    latest_version: 1
-                  }
-                ],
-          pagination: {
-            has_more: false,
-            limit: 100,
-            offset: 0,
-            total: savedName === undefined ? 0 : 1
-          }
-        })
-      )
-    )
-    const panel = this.page.locator('#agent-panel-root')
-    const picker = panel.getByRole('button', { name: 'Switch workflow' })
-    await picker.click()
-    await this.page
-      .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
-      .click()
-    await expect(picker).toHaveText('Unsaved Workflow')
   }
 
   async sendPrompt(content: string): Promise<void> {

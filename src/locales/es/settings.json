@@ -469,7 +469,7 @@
     "name": "Mostrar los medios que faltan en la pestaña de incidencias",
     "tooltip": "Cuando se desactiva, las imágenes, los vídeos y el audio de entrada que no se encuentran no se muestran en la pestaña de incidencias y sus nodos no se resaltan."
   },
-  "Comfy_Workflow_ShowMissingNodesWarning": {
+  "Comfy_ErrorSystem_ShowMissingNodes": {
     "name": "Mostrar los nodos que faltan en la pestaña de incidencias",
     "tooltip": "Cuando se desactiva, los paquetes de nodos que faltan no se muestran en la pestaña de incidencias y sus nodos no se resaltan. El flujo de trabajo seguirá sin poder ejecutarse hasta que se instalen."
   },

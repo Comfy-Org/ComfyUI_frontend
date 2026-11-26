@@ -55,7 +55,6 @@ test.describe(
       const node = await addNodeBesideAgentPanel(comfyPage, 'KSampler')
 
       await agentPanel.open()
-      await agentPanel.selectWorkflow()
       await node.click('title')
       await expect
         .poll(() => comfyPage.nodeOps.getSelectedNodeIds())

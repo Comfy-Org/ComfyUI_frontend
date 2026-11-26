@@ -5,9 +5,10 @@ import {
   readonly,
   ref,
   shallowRef,
-  watch
+  watch,
+  watchEffect
 } from 'vue'
-import type { Ref } from 'vue'
+import type { EffectScope, Ref } from 'vue'
 
 import {
   observedDocCounter,
@@ -16,6 +17,7 @@ import {
 } from '@comfyorg/comfy-multi-player'
 import type { Op } from '@comfyorg/comfy-multi-player'
 
+import { assert } from '@/base/assert'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { useTelemetry } from '@comfyorg/telemetry'
@@ -42,6 +44,11 @@ import { recordDevEvent } from './crdtLog'
 import type { CrdtDebugSnapshot } from './crdtSnapshot'
 import { readCrdtSnapshot } from './crdtSnapshot'
 import { DocFrameClient } from './docFrameClient'
+import { createFollowerSessionRegistry } from './followerSessionRegistry'
+import type {
+  FollowerSessionLease,
+  FollowerSessionRegistry
+} from './followerSessionRegistry'
 import {
   RESEED_CONFLICT,
   SOCKET_CREDENTIAL_REFUSED,
@@ -64,6 +71,7 @@ import { createRejectedOpNotifier } from './rejectedOpNotice'
 import type { LostEdits } from './rejectedOpNotice'
 import {
   forgetUnsyncedAtLoad,
+  hasBlockingUnsyncedHumanOps,
   recordUnsyncedHumanOps,
   releaseUnsyncedHumanOpsRecorder
 } from './unsyncedHumanOps'
@@ -307,6 +315,203 @@ export interface AgentCrdtFollowerOptions {
   knownLineageFor?: (workflowId: string) => number | null
 }
 
+type AgentFollowerSession = ReturnType<typeof startAgentCrdtFollower>
+
+type AgentFollowerConsumer = Required<
+  Omit<AgentCrdtFollowerOptions, 'isTargetActive'>
+> & {
+  isTargetActive: Ref<boolean>
+  workflowId: Ref<string | null>
+}
+
+interface AgentFollowerSessionOwner {
+  readonly transport: AgentDocFrameTransport
+  readonly consumer: ReturnType<typeof shallowRef<AgentFollowerConsumer | null>>
+  readonly documentId: Ref<string | null>
+  readonly registry: FollowerSessionRegistry<AgentFollowerSession>
+  readonly binding: { boundBy: AgentFollowerConsumer | null }
+  pageScope: EffectScope | null
+  pageLease: FollowerSessionLease<AgentFollowerSession> | null
+  pageLeaseDocumentId: string | null
+}
+
+const NOT_A_DOCUMENT_HOLDER = null
+
+const owners = new WeakMap<AgentDocFrameTransport, AgentFollowerSessionOwner>()
+const liveOwners = new Set<AgentFollowerSessionOwner>()
+
+function createOwner(
+  transport: AgentDocFrameTransport
+): AgentFollowerSessionOwner {
+  const consumer = shallowRef<AgentFollowerConsumer | null>(null)
+  const documentId = ref<string | null>(null)
+  const binding: { boundBy: AgentFollowerConsumer | null } = { boundBy: null }
+  const registry = createFollowerSessionRegistry<AgentFollowerSession>(() => {
+    const creator = consumer.value
+    assert(
+      creator !== null,
+      'minted a follower session with no consumer installed — a session is created on a consumer claim and reads its inputs through the live consumer, see docs/adr/CRDT-FOLLOWER-0052-the-workflow-document-owns-the-follower-session.md Decision 2'
+    )
+    binding.boundBy = creator
+    documentId.value = creator.workflowId.value
+    const scope = effectScope(true)
+    const session = scope.run(() => {
+      watchEffect(() => {
+        const active = consumer.value
+        const next = active?.workflowId.value ?? null
+        if (next !== null) {
+          binding.boundBy = active
+          documentId.value = next
+          return
+        }
+        if (active === binding.boundBy) documentId.value = null
+      })
+      const inputsCapturedFromTheFirstConsumer = {
+        transport,
+        applierDeps: creator.applierDeps
+      }
+      const inputsReadFromTheLiveConsumer: Omit<
+        Required<AgentCrdtFollowerOptions>,
+        'transport' | 'applierDeps'
+      > = {
+        isTargetActive: computed(
+          () => consumer.value?.isTargetActive.value ?? false
+        ),
+        userId: () => consumer.value?.userId() ?? null,
+        getGraph: () => consumer.value?.getGraph() ?? null,
+        diagnosticsEnabled: () => consumer.value?.diagnosticsEnabled() ?? false,
+        canvasFor: (id) => consumer.value?.canvasFor(id) ?? null,
+        knownLineageFor: (id) => consumer.value?.knownLineageFor(id) ?? null,
+        events: {
+          onAppliedUpdate: (event) =>
+            consumer.value?.events.onAppliedUpdate?.(event),
+          onMaterialized: (event) =>
+            consumer.value?.events.onMaterialized?.(event),
+          onReset: (id) => consumer.value?.events.onReset?.(id),
+          onLineageConfirmed: (event) =>
+            consumer.value?.events.onLineageConfirmed?.(event),
+          onSyncError: (message, code) =>
+            consumer.value?.events.onSyncError?.(message, code)
+        }
+      }
+      return startAgentCrdtFollower(documentId, {
+        ...inputsCapturedFromTheFirstConsumer,
+        ...inputsReadFromTheLiveConsumer
+      })
+    })
+    assert(
+      session !== undefined,
+      'the follower session scope was stopped before it built the seam — see docs/adr/CRDT-FOLLOWER-0052-the-workflow-document-owns-the-follower-session.md Stage 1b'
+    )
+    return { session, dispose: () => scope.stop() }
+  })
+  return {
+    transport,
+    consumer,
+    documentId,
+    registry,
+    binding,
+    pageScope: null,
+    pageLease: null,
+    pageLeaseDocumentId: null
+  }
+}
+
+function ownerFor(
+  transport: AgentDocFrameTransport
+): AgentFollowerSessionOwner {
+  const existing = owners.get(transport)
+  if (existing !== undefined) return existing
+  const owner = createOwner(transport)
+  owners.set(transport, owner)
+  liveOwners.add(owner)
+  return owner
+}
+
+function claimCurrentDocumentForPage(owner: AgentFollowerSessionOwner): void {
+  const documentId = owner.documentId.value
+  if (documentId === null || documentId === owner.pageLeaseDocumentId) return
+  const claim = owner.registry.acquire(documentId)
+  if (claim === null) return
+  const leaseForThePreviousDocument = owner.pageLease
+  owner.pageLease = claim
+  owner.pageLeaseDocumentId = documentId
+  leaseForThePreviousDocument?.release()
+}
+
+function releasePageClaim(owner: AgentFollowerSessionOwner): void {
+  owner.pageLease?.release()
+  owner.pageLease = null
+  owner.pageLeaseDocumentId = null
+}
+
+function trackGateEdgeSynchronously(
+  owner: AgentFollowerSessionOwner,
+  productGate: { readonly enabled: boolean }
+): void {
+  watch(
+    () => productGate.enabled,
+    (enabled) => {
+      if (!enabled) {
+        releasePageClaim(owner)
+        return
+      }
+      claimCurrentDocumentForPage(owner)
+    },
+    { immediate: true, flush: 'sync' }
+  )
+}
+
+function trackDocumentEdgeAfterSessionCreationReturns(
+  owner: AgentFollowerSessionOwner,
+  productGate: { readonly enabled: boolean }
+): void {
+  watch(owner.documentId, () => {
+    if (!productGate.enabled) return
+    claimCurrentDocumentForPage(owner)
+  })
+}
+
+/**
+ * Hold the follower session for the page. Never release it on panel teardown.
+ */
+export function retainAgentFollowerSessionsForPage(
+  transport: AgentDocFrameTransport
+): void {
+  const owner = ownerFor(transport)
+  if (owner.pageScope !== null) return
+  const productGate = useAgentPanelStore()
+  const scope = effectScope(true)
+  owner.pageScope = scope
+  scope.run(() => {
+    trackGateEdgeSynchronously(owner, productGate)
+    trackDocumentEdgeAfterSessionCreationReturns(owner, productGate)
+  })
+}
+
+/** Drop every page claim and dispose the sessions. Page teardown and tests. */
+export function destroyAgentFollowerSessions(): void {
+  for (const owner of liveOwners) {
+    owner.pageLease = null
+    owner.pageLeaseDocumentId = null
+    owner.pageScope?.stop()
+    owner.pageScope = null
+    owner.registry.destroy()
+    owner.consumer.value = null
+    owner.binding.boundBy = null
+    owner.documentId.value = null
+    owners.delete(owner.transport)
+  }
+  liveOwners.clear()
+}
+
+/** Document ids a follower session is currently held for, across owners. */
+export function heldAgentFollowerDocumentIds(): readonly string[] {
+  return [...liveOwners].flatMap((owner) => [
+    ...owner.registry.heldDocumentIds()
+  ])
+}
+
 export function useAgentCrdtFollower(
   workflowId: Ref<string | null>,
   {
@@ -323,7 +528,7 @@ export function useAgentCrdtFollower(
 ) {
   const productGate = useAgentPanelStore()
   const { flags } = useFeatureFlags()
-  const follower = shallowRef<ReturnType<typeof startAgentCrdtFollower>>()
+  const follower = shallowRef<AgentFollowerSession>()
   const disabledStatus: AgentCrdtStatus = {
     enabled: false,
     connected: false,
@@ -350,25 +555,27 @@ export function useAgentCrdtFollower(
     () => productGate.enabled,
     (enabled, _previous, onCleanup) => {
       if (!enabled) return
-      const scope = effectScope()
+      const owner = ownerFor(transport)
+      owner.consumer.value = {
+        workflowId,
+        transport,
+        userId,
+        isTargetActive,
+        getGraph,
+        events,
+        applierDeps,
+        canvasFor,
+        knownLineageFor,
+        diagnosticsEnabled:
+          diagnosticsEnabled ?? (() => flags.agentCrdtDebugEnabled)
+      }
+      const lease = owner.registry.acquire(NOT_A_DOCUMENT_HOLDER)
+      if (lease === null) return
       onCleanup(() => {
         follower.value = undefined
-        scope.stop()
+        lease.release()
       })
-      follower.value = scope.run(() =>
-        startAgentCrdtFollower(workflowId, {
-          transport,
-          userId,
-          isTargetActive,
-          getGraph,
-          events,
-          applierDeps,
-          canvasFor,
-          diagnosticsEnabled:
-            diagnosticsEnabled ?? (() => flags.agentCrdtDebugEnabled),
-          knownLineageFor
-        })
-      )
+      follower.value = lease.session
     },
     { immediate: true, flush: 'sync' }
   )
@@ -401,7 +608,11 @@ export function useAgentCrdtFollower(
       follower.value?.docHasSubgraphDefinition(definitionId) ?? false,
     notifyWidgetWriteRefused: (nodeId: string | number, widgetName: string) =>
       follower.value?.notifyWidgetWriteRefused(nodeId, widgetName),
-    subscriptionSent: () => follower.value?.subscriptionSent() ?? false
+    subscriptionSent: () => follower.value?.subscriptionSent() ?? false,
+    holdsWorkflow: (workflowId: string) =>
+      follower.value?.holdsWorkflow(workflowId) ?? false,
+    canResumeHeldWorkflow: (workflowId: string) =>
+      follower.value?.canResumeHeldWorkflow(workflowId) ?? false
   }
 }
 
@@ -612,9 +823,11 @@ function startAgentCrdtFollower(
 
   const workflowsWithUnsyncedOps = new Set<string>()
   const recordUnsynced = (): void => {
-    const unsynced = new Set(workflowsWithUnsyncedOps)
-    for (const { workflowId } of sender.pendingOps()) unsynced.add(workflowId)
-    recordUnsyncedHumanOps(tabId, unsynced)
+    recordUnsyncedHumanOps(
+      tabId,
+      workflowsWithUnsyncedOps,
+      sender.pendingOps().map(({ workflowId }) => workflowId)
+    )
   }
   const noteSettledHumanOps = (
     outcome: BatchOutcome,
@@ -1188,10 +1401,10 @@ function startAgentCrdtFollower(
     subscribedWorkflowId.value = next
   }
   // The bound workflow whose tab went inactive while the sender still held
-  // batches for it. A tab switch pauses the subscription without rebinding
-  // the session, so those batches are held rather than aborted (see
-  // ADR-CRDT-WRITE-0035); anything else that moves the binding releases
-  // them into the normal abort path.
+  // batches for it. Leaving its tab—or detaching while unconfirmed edits
+  // remain—suspends the sender instead of aborting those batches (see
+  // ADR-CRDT-WRITE-0035); retargeting to another workflow releases them into
+  // the normal abort path.
   let heldForWorkflowId: string | null = null
   const releaseHeldOps = (): void => {
     heldForWorkflowId = null
@@ -1234,6 +1447,18 @@ function startAgentCrdtFollower(
     releaseHeldOps()
   }
 
+  const workflowToHold = (
+    next: string | null,
+    previousWorkflowId: string | null
+  ): string | null => {
+    if (previousWorkflowId === null) return null
+    if (next === previousWorkflowId) return previousWorkflowId
+    const hasUnsettledOps = sender
+      .pendingOps()
+      .some(({ workflowId }) => workflowId === previousWorkflowId)
+    return next === null && hasUnsettledOps ? previousWorkflowId : null
+  }
+
   // A tab switch keeps the projection bound: whatever the doc collects while
   // the tab is away is applied on return, instead of the live graph being
   // rebuilt from the whole doc over the human's edits.
@@ -1242,11 +1467,12 @@ function startAgentCrdtFollower(
     previousWorkflowId: string | null
   ): void => {
     if (next !== null) initialBind = false
-    if (next !== null && next === previousWorkflowId) {
+    const held = workflowToHold(next, previousWorkflowId)
+    if (held !== null) {
       if (connected.value || canvasMayBeStale.value)
         markCanvasStale('tab_inactive')
       connected.value = false
-      holdOpsForInactiveTab(next)
+      holdOpsForInactiveTab(held)
       return
     }
     connected.value = false
@@ -1402,7 +1628,11 @@ function startAgentCrdtFollower(
       rejectedOpNotifier.notifyWidgetWriteRefused(nodeId, widgetName),
     subscriptionSent: () =>
       bridge.subscribedWorkflowId !== null &&
-      bridge.subscribedWorkflowId === subscribedWorkflowId.value
+      bridge.subscribedWorkflowId === subscribedWorkflowId.value,
+    holdsWorkflow: (workflowId: string) => heldForWorkflowId === workflowId,
+    canResumeHeldWorkflow: (workflowId: string) =>
+      heldForWorkflowId === workflowId &&
+      !hasBlockingUnsyncedHumanOps(workflowId, tabId)
   }
 }
 

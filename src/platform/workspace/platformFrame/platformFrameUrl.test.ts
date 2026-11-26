@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { platformFrameOrigin, platformFrameUrl } from './platformFrameUrl'
+import {
+  platformFrameOrigin,
+  platformFrameUrl,
+  platformVersionPageUrl
+} from './platformFrameUrl'
 import type { PlatformFrameRequest } from './platformFrameUrl'
 
 const base = vi.hoisted(() => ({ url: 'https://platform.comfy.org' }))
@@ -43,6 +47,11 @@ describe('platformFrameUrl', () => {
       label: 'the models of a deployment',
       request: { step: 'models', deploymentId: 'dep-1' },
       params: { step: 'models', deployment: 'dep-1' }
+    },
+    {
+      label: 'a started version to follow again',
+      request: { step: 'follow', releaseId: 'r-2', version: 2 },
+      params: { step: 'follow', release: 'r-2', version: '2' }
     }
   ])('asks Platform for $label', ({ request, params }) => {
     expect(paramsOf(platformFrameUrl(request, 'ws-1'))).toEqual({
@@ -66,6 +75,17 @@ describe('platformFrameUrl', () => {
     })
   })
 
+  it('sends a release to follow only on the follow step', () => {
+    expect(
+      paramsOf(
+        platformFrameUrl(
+          { step: 'update', deploymentId: 'dep-1', releaseId: 'r-2' },
+          'ws-1'
+        )
+      )
+    ).not.toHaveProperty('release')
+  })
+
   it('starts at nodes only for a new deployment', () => {
     expect(
       paramsOf(
@@ -87,5 +107,34 @@ describe('platformFrameOrigin', () => {
   ])('reads $url as $origin', ({ url, origin }) => {
     base.url = url
     expect(platformFrameOrigin()).toBe(origin)
+  })
+})
+
+describe('platformVersionPageUrl', () => {
+  const version = { buildId: 'b-1', releaseId: 'r-2', workspaceId: 'ws-1' }
+
+  it('opens the version on Platform in its workspace', () => {
+    expect(platformVersionPageUrl(version)).toBe(
+      'https://platform.comfy.org/profile/builds/b-1/releases/r-2?workspace=ws-1'
+    )
+  })
+
+  it('opens its deployments for a failed deploy', () => {
+    expect(platformVersionPageUrl(version, 'deployments')).toBe(
+      'https://platform.comfy.org/profile/builds/b-1/releases/r-2?workspace=ws-1#deployments'
+    )
+  })
+
+  it('keeps the ids inside their path parts and leaves out a missing workspace', () => {
+    base.url = 'https://stagingplatform.comfy.org/'
+    expect(
+      platformVersionPageUrl({
+        buildId: 'b/1',
+        releaseId: 'r?2',
+        workspaceId: null
+      })
+    ).toBe(
+      'https://stagingplatform.comfy.org/profile/builds/b%2F1/releases/r%3F2'
+    )
   })
 })

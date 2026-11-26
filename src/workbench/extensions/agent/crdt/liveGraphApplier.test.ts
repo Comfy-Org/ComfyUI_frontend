@@ -693,6 +693,49 @@ describe('LiveGraphApplier', () => {
     expect(reportError).not.toHaveBeenCalled()
   })
 
+  it('applies widgets on a node whose definition has no inputs', () => {
+    TestPlainWidgets.nodeData = fromPartial<
+      NonNullable<LGraphNode['constructor']['nodeData']>
+    >({ name: 'TestPlainWidgets' })
+    onTestFinished(() => {
+      TestPlainWidgets.nodeData = undefined
+    })
+    const { graph, doc, applyCollected, applyEdit } = setup({
+      nodes: [
+        {
+          id: 1,
+          type: 'TestPlainWidgets',
+          pos: [0, 0],
+          size: [210, 100],
+          widgets_values: [11, 20]
+        }
+      ],
+      links: []
+    })
+
+    applyCollected()
+    applyEdit(() => {
+      const widgets = nodesMap(doc).get('1')?.get('widgets')
+      assert(widgets instanceof Y.Map)
+      widgets.set('known', 12)
+      widgets.set('not_on_node', 'auto')
+    })
+
+    expect(
+      graph.getNodeById(toNodeId(1))?.widgets?.map((widget) => widget.value)
+    ).toEqual([12, 20])
+    expect(reportError).not.toHaveBeenCalledWith(
+      expect.any(TypeError),
+      expect.anything()
+    )
+    expect(reportError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: "Node 1 (TestPlainWidgets) has no widget 'not_on_node'"
+      }),
+      expect.objectContaining({ errorType: 'agent_graph_widget_missing' })
+    )
+  })
+
   it('does not report a widget the node definition does not declare (catalog skew)', () => {
     TestPlainWidgets.nodeData = fromPartial<
       NonNullable<LGraphNode['constructor']['nodeData']>
@@ -3447,6 +3490,7 @@ describe('LiveGraphApplier widget writes through BaseWidget.setValue', () => {
     const minter = attachDocOpMinter({
       isEnabled: () => true,
       isDocBound: () => true,
+      isBoundWorkflow: () => true,
       getGraph: () => fixture.graph,
       boundRootGraphId: () => toRootGraphId(fixture.graph.id),
       docInputNames: () => [],

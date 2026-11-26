@@ -7,7 +7,9 @@ import type {
   WorkflowResponse
 } from '@comfyorg/ingest-types'
 import {
+  zAgentGetDraftResponse,
   zAgentUsageStatusResponse,
+  zGetWorkflowContentResponse,
   zUploadImageResponse,
   zWorkflowSidebarFileResponse,
   zWorkflowResponse
@@ -96,6 +98,8 @@ type AgentApiOperation =
   | 'get_agent_identity'
   | 'get_usage_status'
   | 'get_cloud_workflow'
+  | 'get_workflow_content'
+  | 'get_workflow_draft'
   | 'get_workflow_sidebar_file'
   | 'get_run_mode'
   | 'get_thread_messages'
@@ -266,6 +270,9 @@ export type ThreadListing =
     }
   | { status: 'failed'; cause: unknown }
   | { status: 'aborted' }
+
+/** One cloud workflow row, as `GET /api/workflows/{id}` returns it. */
+export type CloudWorkflowRecord = WorkflowResponse
 
 /** A workflow index and whether pagination reached its last page. */
 export interface CloudWorkflowListing {
@@ -1031,6 +1038,30 @@ export function createAgentRestClient() {
     )
   }
 
+  async function getWorkflowDraft(
+    workflowId: string
+  ): Promise<Record<string, unknown>> {
+    const { content } = await request(
+      'get_workflow_draft',
+      `/agent/draft?workflow_id=${encodeURIComponent(workflowId)}`,
+      { method: 'GET' },
+      zAgentGetDraftResponse
+    )
+    return content
+  }
+
+  async function getWorkflowContent(
+    workflowId: string
+  ): Promise<Record<string, unknown>> {
+    const { workflow_json } = await request(
+      'get_workflow_content',
+      `/workflows/${encodeURIComponent(workflowId)}/content`,
+      { method: 'GET' },
+      zGetWorkflowContentResponse
+    )
+    return workflow_json
+  }
+
   async function getWorkflowSidebarFile(
     workflowId: string
   ): Promise<{ path: string }> {
@@ -1107,6 +1138,8 @@ export function createAgentRestClient() {
     putRunMode,
     listCloudWorkflows,
     getCloudWorkflow,
+    getWorkflowDraft,
+    getWorkflowContent,
     getWorkflowSidebarFile,
     cancelMessage,
     answerAsk,

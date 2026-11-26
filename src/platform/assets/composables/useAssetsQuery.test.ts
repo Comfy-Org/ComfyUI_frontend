@@ -2,10 +2,7 @@ import { effectScope, toValue, watch } from 'vue'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { useAssetsQuery } from '@/platform/assets/composables/useAssetsQuery'
-import type {
-  AssetItem,
-  AssetResponse
-} from '@/platform/assets/schemas/assetSchema'
+import type { AssetItem, AssetResponse } from '@comfyorg/assets-core/schema'
 import { api } from '@/scripts/api'
 
 // Ported from the deleted useAssetsQuery.test.ts (fe #16254, 606c2ac30b). Only the

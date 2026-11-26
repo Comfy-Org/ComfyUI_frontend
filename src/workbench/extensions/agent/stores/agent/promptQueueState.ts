@@ -30,6 +30,7 @@ export type PromptQueueState = {
 export type PromptQueueEvent =
   | { type: 'enqueued'; item: PromptQueueItem }
   | { type: 'started'; id: string }
+  | { type: 'released'; id: string }
   | { type: 'finished'; id: string }
   | { type: 'editStarted'; id: string; draft: PromptQueueDraft }
   | { type: 'editSubmitted'; item: PromptQueueItem }
@@ -86,6 +87,11 @@ function reduceStarted(state: PromptQueueState, id: string): PromptQueueState {
   return { ...state, runningId: id }
 }
 
+function reduceReleased(state: PromptQueueState, id: string): PromptQueueState {
+  if (state.runningId !== id) return state
+  return { ...state, runningId: null }
+}
+
 function reduceFinished(state: PromptQueueState, id: string): PromptQueueState {
   if (state.runningId !== id) return state
   return {
@@ -138,6 +144,8 @@ export function reducePromptQueue(
       return { ...state, items: [...state.items, event.item] }
     case 'started':
       return reduceStarted(state, event.id)
+    case 'released':
+      return reduceReleased(state, event.id)
     case 'finished':
       return reduceFinished(state, event.id)
     case 'editStarted':
