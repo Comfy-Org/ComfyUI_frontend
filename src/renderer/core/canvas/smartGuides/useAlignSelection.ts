@@ -75,12 +75,13 @@ export function useAlignSelection() {
     workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
 
     const axis = DISTRIBUTE_AXIS[action]
+    const lanes = axis ? lanesAlong(boxesOf(after), axis) : []
     distributeSession.value =
-      axis && canvas.graph
+      axis && canvas.graph && lanes.length >= 3
         ? {
             graph: canvas.graph,
             axis,
-            lanes: lanesAlong(boxesOf(after), axis),
+            lanes,
             selectionSize: canvas.selectedItems.size
           }
         : null

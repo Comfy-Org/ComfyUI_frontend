@@ -23,6 +23,7 @@
       @pointerdown="startDrag($event, handle.index)"
       @wheel="forwardEventToCanvas"
       @keydown="nudge($event, handle.index)"
+      @keyup="commitNudges($event)"
     >
       <div
         :class="
@@ -103,7 +104,12 @@ function sessionLanes(canvas: LGraphCanvas): LGraphNode[][] | undefined {
     lane.map((id) => graph.getNodeById(id))
   )
   const nodes = lanes.flat()
-  if (nodes.some((node) => !node || !canvas.selectedItems.has(node))) return
+  if (
+    nodes.some(
+      (node) => !node || node.pinned || !canvas.selectedItems.has(node)
+    )
+  )
+    return
   return lanes.map((lane) => lane.filter((node): node is LGraphNode => !!node))
 }
 
@@ -286,6 +292,8 @@ const NUDGE_KEYS: Record<string, number> = {
   ArrowDown: -1
 }
 
+let nudgePending = false
+
 function nudge(event: KeyboardEvent, index: number) {
   const direction = NUDGE_KEYS[event.key]
   if (!direction || event.ctrlKey || event.altKey || event.metaKey) return
@@ -305,6 +313,12 @@ function nudge(event: KeyboardEvent, index: number) {
     along,
     setGap(boxes, along, index, gap)
   )
+  nudgePending = true
+}
+
+function commitNudges(event: KeyboardEvent) {
+  if (!nudgePending || !NUDGE_KEYS[event.key]) return
+  nudgePending = false
   workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
 }
 </script>
