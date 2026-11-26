@@ -99,7 +99,7 @@ audio.comfy-audio.empty-audio-widget {
   display: none;
 }
 
-#vue-app {
+.vue-app {
   position: absolute;
   top: 0;
   left: 0;

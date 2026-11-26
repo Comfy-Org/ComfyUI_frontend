@@ -41,6 +41,7 @@
     "media-feature-name-no-vendor-prefix": true,
     "selector-max-universal": 1,
     "selector-max-type": 2,
+    "selector-max-id": 0,
     "declaration-block-no-duplicate-properties": true,
     "declaration-no-important": true,
     "block-no-empty": true,
