@@ -8,6 +8,7 @@ import type {
   IsobmffBoxContentRange
 } from '@/types/metadataTypes'
 import { readFileAsArrayBuffer } from '@/utils/fileUtil'
+import { withLegacyCommentFallback } from '@/scripts/metadata/legacyComment'
 import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
 
 const MAX_READ_BYTES = 64 * 1024 * 1024
@@ -19,7 +20,9 @@ const BOX_TYPES = {
   ITEM_LIST: [0x69, 0x6c, 0x73, 0x74],
   KEYS: [0x6b, 0x65, 0x79, 0x73],
   DATA: [0x64, 0x61, 0x74, 0x61],
-  MOVIE: [0x6d, 0x6f, 0x6f, 0x76]
+  MOVIE: [0x6d, 0x6f, 0x6f, 0x76],
+  // QuickTime/iTunes '©cmt' item, keyed by atom type rather than a keys index
+  COMMENT: [0xa9, 0x63, 0x6d, 0x74]
 }
 const SIZES = {
   HEADER: 8,
@@ -155,7 +158,11 @@ const parseIlstItem = (
 
   const itemIndex = readUint32(data, itemStart + 4)
   const keyName = keysMap.get(itemIndex)
-  if (!keyName) return
+  if (!keyName) {
+    if (bufferMatchesBoxType(data, itemStart + 4, BOX_TYPES.COMMENT))
+      readCommentItem(data, itemStart, itemEnd, metadata)
+    return
+  }
 
   const dataBox = findIsobmffBoxByType(
     data,
@@ -174,6 +181,24 @@ const parseIlstItem = (
       metadata[keyName.toLowerCase() as keyof ComfyMetadata] = value
     }
   }
+}
+
+const readCommentItem = (
+  data: Uint8Array,
+  itemStart: number,
+  itemEnd: number,
+  metadata: ComfyMetadata
+) => {
+  const dataBox = findIsobmffBoxByType(
+    data,
+    itemStart + SIZES.HEADER,
+    itemEnd,
+    BOX_TYPES.DATA
+  )
+  if (!dataBox) return
+  const valueStart = dataBox.start + SIZES.VERSION + SIZES.LOCALE
+  if (valueStart >= dataBox.end) return
+  metadata.comment = readUtf8String(data, valueStart, dataBox.end)
 }
 
 const parseIlstBox = (
@@ -232,10 +257,11 @@ const parseIsobmffMetadata = (data: Uint8Array): ComfyMetadata => {
     metaBox.end,
     BOX_TYPES.KEYS
   )
-  if (!keysBox) return metadata
-
-  const keysMap = parseKeysBox(data, keysBox.start, keysBox.end)
-  if (keysMap.size === 0) return metadata // keys box is empty or failed to parse
+  // Files without a keys box (e.g. no `use_metadata_tags`) can still carry
+  // classic ilst items such as '©cmt'.
+  const keysMap = keysBox
+    ? parseKeysBox(data, keysBox.start, keysBox.end)
+    : new Map<number, string>()
 
   const ilstBox = findIsobmffBoxByType(
     data,
@@ -247,7 +273,7 @@ const parseIsobmffMetadata = (data: Uint8Array): ComfyMetadata => {
 
   parseIlstBox(data, ilstBox.start, ilstBox.end, keysMap, metadata)
 
-  return metadata
+  return withLegacyCommentFallback(metadata, metadata.comment)
 }
 
 const readFileRange = async (
@@ -304,7 +330,8 @@ const readMetadataRegion = async (file: File): Promise<Uint8Array | null> => {
 
 /**
  * Extracts ComfyUI Workflow metadata from an ISO Base Media File Format (ISOBMFF) file
- * (e.g., MP4, MOV) by parsing the `udta.meta.keys` and `udta.meta.ilst` boxes.
+ * (e.g., MP4, MOV) by parsing the `udta.meta.keys` and `udta.meta.ilst` boxes,
+ * falling back to a JSON '©cmt' comment (legacy VideoHelperSuite outputs).
  * @param file - The file to extract metadata from.
  */
 export async function getFromIsobmffFile(file: File): Promise<ComfyMetadata> {
