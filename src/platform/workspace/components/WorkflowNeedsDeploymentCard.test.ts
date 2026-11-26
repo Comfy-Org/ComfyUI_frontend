@@ -143,7 +143,7 @@ describe('WorkflowNeedsDeploymentCard', () => {
       })
     ).toBeInTheDocument()
     expect(
-      screen.getAllByRole('listitem').map((point) => point.textContent?.trim())
+      screen.getAllByRole('listitem').map((point) => point.textContent.trim())
     ).toEqual([
       "Use custom nodes and models that aren't on Comfy Cloud",
       'Work in ComfyUI on the GPU you choose',
