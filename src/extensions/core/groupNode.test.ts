@@ -13,6 +13,7 @@ import {
 import type { ComfyNode } from '@comfyorg/graph-model/workflowSchema'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { app } from '@/scripts/app'
 import { ComfyWidgets } from '@/scripts/widgets'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -25,6 +26,7 @@ import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/
 import type { GroupNodeLink, GroupNodeWorkflowData } from './groupNode'
 
 vi.mock(import('@/scripts/app'))
+vi.mock(import('@comfyorg/telemetry/reportError'))
 
 const {
   GroupNodeConfig,
@@ -904,6 +906,16 @@ describe('GroupNodeHandler.convertToNodes', () => {
 
     expect(() => handler.convertToNodes()).toThrow(GroupNodeUnpackRefusedError)
     expect(receivingGraph.nodes).toEqual([outerNode])
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'failure_creating_subgraph_node_target_missing',
+        context: {
+          subgraphId: definition.id,
+          rootGraphId: receivingGraph.rootGraph.id
+        }
+      })
+    )
   })
 
   it('does not refuse a member registered under an alias of a type the receiving graph owns', () => {
@@ -925,16 +937,81 @@ describe('GroupNodeHandler.convertToNodes', () => {
     receivingGraph.add(outerNode)
 
     const groupData = new GroupNodeConfig('aliasedMember', {
-      nodes: [{ type: aliasType }],
+      nodes: [fromAny({ type: aliasType, pos: [0, 0] })],
       links: []
     })
     const handler = new GroupNodeHandler(outerNode, groupData)
 
-    try {
-      handler.convertToNodes()
-    } catch (error) {
-      expect(error).not.toBeInstanceOf(GroupNodeUnpackRefusedError)
+    const created = handler.convertToNodes()
+    expect(created).toHaveLength(1)
+    const [alias] = created
+    assert(alias.isSubgraphNode())
+    expect(alias.subgraph).toBe(ownedSubgraph)
+    expect(alias.graph).toBe(receivingGraph)
+    expect(receivingGraph.nodes).toEqual(created)
+  })
+
+  it('keeps definitions for refused groups while migrating a sibling group, using the real handler', async () => {
+    await registerRealNodeDefs()
+    const fixture = JSON.parse(
+      readFileSync(
+        join(
+          process.cwd(),
+          'browser_tests',
+          'assets',
+          'groupnodes',
+          'group_node_v1.3.3.json'
+        ),
+        'utf-8'
+      )
+    )
+    const convertibleData: GroupNodeWorkflowData =
+      fixture.extra.groupNodes.group_node
+    const refusedData: GroupNodeWorkflowData = structuredClone(convertibleData)
+
+    const definitionGraph = new LGraph()
+    const foreign = createTestSubgraph({
+      id: crypto.randomUUID()
+    }).asSerialisable()
+    const foreignSubgraph = definitionGraph.createSubgraph(foreign)
+    useSubgraphService().registerNewSubgraph(foreignSubgraph, foreign)
+    refusedData.nodes.push({ type: foreign.id })
+
+    await new GroupNodeConfig(
+      'convertible_group',
+      convertibleData
+    ).registerType()
+    await new GroupNodeConfig('refused_group', refusedData).registerType()
+
+    const graph = new LGraph()
+    graph.events.addEventListener('subgraph-created', (e) =>
+      useSubgraphService().registerNewSubgraph(e.detail.subgraph, e.detail.data)
+    )
+    for (const name of ['convertible_group', 'refused_group']) {
+      const node = LiteGraph.createNode(`workflow>${name}`)
+      assert(node)
+      node.configure({
+        ...structuredClone(fixture.nodes[0]),
+        type: `workflow>${name}`
+      })
+      graph.add(node)
     }
+    graph.extra.groupNodes = {
+      convertible_group: convertibleData,
+      refused_group: refusedData
+    }
+
+    await groupNodeExtension.afterConfigureGraph?.([], fromAny({}), {
+      graph,
+      workflow: null
+    })
+
+    expect(graph.nodes.filter((n) => n.isSubgraphNode())).toHaveLength(1)
+    const remaining = graph.nodes.filter((n) => !n.isSubgraphNode())
+    expect(remaining.map((n) => n.type)).toEqual(['workflow>refused_group'])
+    expect(graph.serialize().extra?.groupNodes).toEqual({
+      refused_group: refusedData
+    })
   })
 })
 

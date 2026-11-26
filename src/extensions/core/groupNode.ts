@@ -880,7 +880,6 @@ export class GroupNodeUnpackRefusedError extends Error {
   }
 }
 
-/** The subgraph id missing from `graph`, if `type` is a graph-aware type this graph cannot create; `undefined` if creatable or unregistered. */
 function missingSubgraphTarget(
   type: string,
   graph: LGraph
@@ -1096,14 +1095,18 @@ export const replaceLegacySeparators = (nodes: ComfyNode[]): void => {
   }
 }
 
-function convertLoadedGroupNodes(graph: LGraph): number {
+function convertLoadedGroupNodes(graph: LGraph): {
+  converted: number
+  retained: LGraphNode[]
+} {
   let converted = 0
   const failed = new Set<LGraphNode>()
+  const retained = new Set<LGraphNode>()
   for (;;) {
     const node = graph.nodes.find(
       (n) => GroupNodeHandler.isGroupNode(n) && !failed.has(n)
     )
-    if (!node) return converted
+    if (!node) return { converted, retained: [...retained] }
     try {
       const handler = GroupNodeHandler.getHandler(node)
       if (!handler) {
@@ -1119,6 +1122,7 @@ function convertLoadedGroupNodes(graph: LGraph): number {
     } catch (error) {
       failed.add(node)
       if (error instanceof GroupNodeUnpackRefusedError) {
+        retained.add(node)
         console.warn(
           'Leaving group node unconverted: a member type could not be created in this graph',
           error
@@ -1204,8 +1208,22 @@ export const groupNodeExtension: ComfyExtension = {
         missingNodeTypes.splice(index, 1)
       }
     }
-    if (convertLoadedGroupNodes(graph) > 0) {
-      delete graph.extra.groupNodes
+    const { converted, retained } = convertLoadedGroupNodes(graph)
+    if (converted > 0) {
+      const definitions = graph.extra.groupNodes as
+        | Record<string, GroupNodeWorkflowData>
+        | undefined
+      const groupTypePrefix = `${PREFIX}${SEPARATOR}`
+      const neededGroups = new Set(
+        retained.map((node) => node.type.slice(groupTypePrefix.length))
+      )
+      const kept = Object.fromEntries(
+        Object.entries(definitions ?? {}).filter(([name]) =>
+          neededGroups.has(name)
+        )
+      )
+      if (Object.keys(kept).length > 0) graph.extra.groupNodes = kept
+      else delete graph.extra.groupNodes
     }
   },
   nodeCreated(node: LGraphNode) {
