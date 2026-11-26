@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { render, screen } from '@testing-library/vue'
 
-import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
+import type { INodeSlot } from '@comfyorg/litegraph/litegraph'
 import { RenderShape } from '@comfyorg/graph-model/globalEnums'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { slotId } from '@comfyorg/graph-model/slotId'

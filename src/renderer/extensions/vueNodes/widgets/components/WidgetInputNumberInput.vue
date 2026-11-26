@@ -3,7 +3,7 @@ import { computed, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ScrubableNumberInput from '@/components/common/ScrubableNumberInput.vue'
-import { evaluateInput } from '@/lib/litegraph/src/utils/widget'
+import { evaluateInput } from '@comfyorg/litegraph/utils/widget'
 import { useNumberStepCalculation } from '@/renderer/extensions/vueNodes/widgets/composables/useNumberStepCalculation'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { cn } from '@comfyorg/tailwind-utils'

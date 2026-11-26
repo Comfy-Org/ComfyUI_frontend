@@ -10,13 +10,13 @@ import * as Y from 'yjs'
 import {
   onGraphIntent,
   withGraphIntentSource
-} from '@/lib/litegraph/src/graphIntents'
+} from '@comfyorg/graph-state/graphIntents'
 import type {
   GraphIntentEvent,
   GraphIntentSource
-} from '@/lib/litegraph/src/graphIntents'
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { createTestSubgraphData } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+} from '@comfyorg/graph-state/graphIntents'
+import { LGraph, LGraphNode, LiteGraph } from '@comfyorg/litegraph/litegraph'
+import { createTestSubgraphData } from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphHelpers'
 import type { ISerialisedGraph } from '@comfyorg/graph-model/serialisation'
 import { transformInputSpecV1ToV2 } from '@comfyorg/object-info-parser/migration'
 import type { InputSpec } from '@comfyorg/object-info-parser'

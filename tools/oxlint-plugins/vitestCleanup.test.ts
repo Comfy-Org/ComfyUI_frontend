@@ -194,7 +194,7 @@ const liteGraphFixture = `import {
   onTestFinished,
   suite
 } from 'vitest'
-import { LiteGraph as Graph } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph as Graph } from '@comfyorg/litegraph/litegraph'
 import { LiteGraph as RelativeGraph } from './litegraph'
 
 Graph.registerNodeType('module', class {})

@@ -13,9 +13,9 @@ import { effectScope, nextTick, shallowRef } from 'vue'
 import type { LGraphEventMap } from '@comfyorg/graph-model/LGraphEventMap'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
-import type { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
-import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
+import { CustomEventTarget } from '@comfyorg/litegraph/infrastructure/CustomEventTarget'
+import type { LGraph, LGraphCanvas } from '@comfyorg/litegraph/litegraph'
+import { createMockLGraphNode } from '@comfyorg/litegraph/__fixtures__/litegraphTestUtils'
 import { registerMinimapDecorationLayer } from '@/platform/canvas/minimapDecorationRegistry'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useThemeStore } from '@/platform/theme/themeStore'
@@ -26,7 +26,7 @@ import { api } from '@/scripts/api'
 import {
   createMockCanvasRenderingContext2D,
   createTestCanvasElement
-} from '@/utils/__tests__/canvasTestUtils'
+} from '@comfyorg/litegraph/__fixtures__/canvasTestUtils'
 
 import { useMinimap } from './useMinimap'
 

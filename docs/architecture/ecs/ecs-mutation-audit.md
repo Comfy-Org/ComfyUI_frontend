@@ -177,9 +177,9 @@ mutation as a whole remains legacy-orchestrated and snapshot-undone.
   `updateEndpoints`, ownership and index maintenance
 - `src/stores/nodeDataStore.ts`, `rerouteStore.ts`, `widgetValueStore.ts`:
   registration, proxy adoption, clear, and direct mutable state
-- `src/lib/litegraph/src/LGraph.ts`: graph orchestration, configure ordering,
+- `packages/litegraph/src/LGraph.ts`: graph orchestration, configure ordering,
   clear, connect/remove helpers, and reroute rewiring
-- `src/lib/litegraph/src/LGraphNode.ts`, `LLink.ts`, `Reroute.ts`, and
+- `packages/litegraph/src/LGraphNode.ts`, `LLink.ts`, `Reroute.ts`, and
   `widgets/BaseWidget.ts`: proxy-backed setters and compatibility shells
 - `src/platform/workflowErrors/nodeReplacement/useNodeReplacement.ts`: in-place replacement
 - Tests: `layoutStore.test.ts`, `linkStore.test.ts`, `LLink.store.test.ts`,

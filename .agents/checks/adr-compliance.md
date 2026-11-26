@@ -71,22 +71,24 @@ Skip ADRs whose status is `Rejected`, `Deprecated`, or `Superseded` unless the d
 
 ## How to Check
 
-1. Identify changed files in the entity/litegraph layer: `src/lib/litegraph/`, `src/platform/`, `src/renderer/core/layout/`, `src/systems/`, entity-related stores
+1. Identify changed files in the entity/litegraph layer: `packages/litegraph/`, `packages/graph-state/`, `src/platform/`, `src/renderer/core/layout/`, `src/systems/`, entity-related stores
 2. For Priority 1 patterns, use targeted searches:
 
    ```
    # Direct position mutation
+   Grep: pattern="\.pos\s*=" path="packages"
+   Grep: pattern="\.size\s*=" path="packages"
    Grep: pattern="\.pos\s*=" path="src"
    Grep: pattern="\.size\s*=" path="src"
 
    # God object growth (new methods)
-   Grep: pattern="(class LGraphNode|class LGraphCanvas|class LGraph\b)" path="src/lib/litegraph"
+   Grep: pattern="(class LGraphNode|class LGraphCanvas|class LGraph\b)" path="packages/litegraph"
 
    # Version mutation
-   Grep: pattern="_version\+\+" path="src/lib/litegraph"
+   Grep: pattern="_version\+\+" path="packages/litegraph"
 
    # Extension callback changes
-   Grep: pattern="on(ConnectionsChange|Removed|Added|Configure|ConnectInput|ConnectOutput|WidgetChanged)" path="src/lib/litegraph"
+   Grep: pattern="on(ConnectionsChange|Removed|Added|Configure|ConnectInput|ConnectOutput|WidgetChanged)" path="packages/litegraph"
    ```
 
 3. For Priority 2, read `docs/adr/` files and check for contradictions

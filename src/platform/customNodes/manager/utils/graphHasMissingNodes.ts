@@ -5,9 +5,9 @@ import type {
   LGraph,
   LGraphNode,
   Subgraph
-} from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/litegraph'
 import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
-import { collectAllNodes } from '@/utils/graphTraversalUtil'
+import { collectAllNodes } from '@comfyorg/litegraph/utils/graphTraversalUtil'
 
 export type NodeDefLookup = Record<string, ComfyNodeDefImpl | undefined>
 

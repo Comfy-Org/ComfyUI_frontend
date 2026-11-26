@@ -142,11 +142,11 @@
       "tier": "R3",
       "why": "saved user workflows are persistent state \u2014 a bad schema or serialize change corrupts files on save and does not cleanly revert comfyWorkflow.ts JSON.stringify()s the active graph state and writes it via save({force:true}), so it is a writer of the on-disk format despite sitting outside the persistence tree.",
       "paths": [
-        "src/lib/litegraph/src/serialization*",
-        "src/lib/litegraph/src/LGraph.ts",
-        "src/lib/litegraph/src/LGraphNode.ts",
-        "src/lib/litegraph/src/LLink.ts",
-        "src/lib/litegraph/src/subgraph/**",
+        "packages/litegraph/src/serialization*",
+        "packages/litegraph/src/LGraph.ts",
+        "packages/litegraph/src/LGraphNode.ts",
+        "packages/litegraph/src/LLink.ts",
+        "packages/litegraph/src/subgraph/**",
         "src/core/graph/subgraph/migration/**",
         "src/core/schemas/**",
         "src/extensions/core/load3d/load3dSerialize*",
@@ -160,7 +160,7 @@
     {
       "class": "extension-contract",
       "tier": "R3",
-      "why": "entity callbacks, node.widgets, serialize and the app/api surface are consumed by 40+ custom-node repos \u2014 consumers break out of band (ADR-LAYOUT/ADR-ECS) src/lib/litegraph/src/types/widgets.ts imports Bounds, CompositorWidgetValue and CurveData from these three modules, so they enter the @comfyorg/comfyui-frontend-types bundle (bundleTypes: true) and are part of the published surface even though they do not live under a schemas/ path.",
+      "why": "entity callbacks, node.widgets, serialize and the app/api surface are consumed by 40+ custom-node repos \u2014 consumers break out of band (ADR-LAYOUT/ADR-ECS) packages/litegraph/src/types/widgets.ts imports Bounds, CompositorWidgetValue and CurveData from these three modules, so they enter the @comfyorg/comfyui-frontend-types bundle (bundleTypes: true) and are part of the published surface even though they do not live under a schemas/ path.",
       "paths": [
         "packages/*/src/schemas/**",
         "src/core/schemas/**",
@@ -179,11 +179,11 @@
         "src/types/nodeIdentification.ts",
         "src/types/rerouteId.ts",
         "src/types/slotId.ts",
-        "src/lib/litegraph/src/interfaces.ts",
-        "src/lib/litegraph/src/LGraph.ts",
-        "src/lib/litegraph/src/LGraphNode.ts",
-        "src/lib/litegraph/src/LGraphCanvas.ts",
-        "src/lib/litegraph/src/subgraph/**",
+        "packages/litegraph/src/interfaces.ts",
+        "packages/litegraph/src/LGraph.ts",
+        "packages/litegraph/src/LGraphNode.ts",
+        "packages/litegraph/src/LGraphCanvas.ts",
+        "packages/litegraph/src/subgraph/**",
         "src/renderer/core/layout/types.ts",
         "src/renderer/extensions/compositor/components/types.ts",
         "src/components/curve/types.ts"
@@ -233,7 +233,7 @@
         "src/bootstrap.ts",
         "src/base/**",
         "src/core/**",
-        "src/lib/litegraph/**",
+        "packages/litegraph/**",
         "packages/**"
       ]
     },

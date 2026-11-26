@@ -6,11 +6,11 @@ import {
   LGraphCanvas,
   LGraphNode,
   LiteGraph
-} from '@/lib/litegraph/src/litegraph'
-import { markNodeMenuCallback } from '@/lib/litegraph/src/types/nodeMenu'
+} from '@comfyorg/litegraph/litegraph'
+import { markNodeMenuCallback } from '@comfyorg/litegraph/types/nodeMenu'
 import en from '@/locales/en/main.json'
 import fr from '@/locales/fr/main.json'
-import { createTestCanvasElement } from '@/utils/__tests__/canvasTestUtils'
+import { createTestCanvasElement } from '@comfyorg/litegraph/__fixtures__/canvasTestUtils'
 
 import type { MenuOption } from './menuOption'
 import {

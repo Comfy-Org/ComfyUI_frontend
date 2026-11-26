@@ -10,7 +10,7 @@ import { createStorageTokenStore } from '@/platform/auth/localWeb/localWebTokenS
 import {
   safeLocalStorage,
   safeSessionStorage
-} from '@/base/storage/safeStorage'
+} from '@comfyorg/shared-frontend-utils/safeStorage'
 import { reportError } from '@comfyorg/telemetry/reportError'
 
 /**

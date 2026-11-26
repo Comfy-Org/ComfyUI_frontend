@@ -9,7 +9,7 @@ import type {
   TierKey
 } from '@/platform/billing/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/billing/subscription/utils/subscriptionTierRank'
-import { safeLocalStorage } from '@/base/storage/safeStorage'
+import { safeLocalStorage } from '@comfyorg/shared-frontend-utils/safeStorage'
 import type {
   PaymentIntentSource,
   ResubscribeClickMetadata,

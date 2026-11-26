@@ -4,7 +4,7 @@
   "description": "The reportError pipeline, RUM context, and URL redaction of @comfyorg/telemetry, their application adapters, vendor initialization and filtering, assertions, asset-load reporting, and manual-refresh diagnostics. Product analytics and startup tracing are separate records.",
   "modules": [
     {
-      "path": "src/base/assert.ts"
+      "path": "packages/shared-frontend-utils/src/assert.ts"
     },
     {
       "path": "src/platform/telemetry/assertFailureReporter.ts"
@@ -93,7 +93,7 @@
     {
       "name": "Assertions throw in DEV and delegate to the registered reporter otherwise; preload failures are parsed for reporting",
       "checks": [
-        "src/base/assert.test.ts",
+        "packages/shared-frontend-utils/src/assert.test.ts",
         "src/utils/preloadErrorUtil.test.ts"
       ]
     }

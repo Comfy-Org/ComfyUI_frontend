@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
-import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { Rectangle } from '@comfyorg/litegraph/infrastructure/Rectangle'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import {
   createMockLGraphGroup,
   createMockLGraphNode
-} from '@/utils/__tests__/litegraphTestUtils'
+} from '@comfyorg/litegraph/__fixtures__/litegraphTestUtils'
 
 import { findParentGroup } from './parentGroup'
 

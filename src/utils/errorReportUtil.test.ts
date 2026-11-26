@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { ISerialisedGraph } from '@/lib/litegraph/src/litegraph'
+import type { ISerialisedGraph } from '@comfyorg/litegraph/litegraph'
 import type { SystemStats } from '@comfyorg/api-client/types'
 
 import type { ErrorReportData } from './errorReportUtil'

@@ -3,13 +3,13 @@ import { useResizeObserver, whenever } from '@vueuse/core'
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
-import { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
+import { CanvasPointer } from '@comfyorg/litegraph/CanvasPointer'
 import {
   getWidgetSizing,
   minRowHeight
-} from '@/lib/litegraph/src/utils/widgetLayout'
-import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+} from '@comfyorg/litegraph/utils/widgetLayout'
+import type { LGraphCanvas } from '@comfyorg/litegraph/LGraphCanvas'
+import type { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
 import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'

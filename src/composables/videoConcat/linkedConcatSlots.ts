@@ -1,6 +1,6 @@
 import type { ConcatClipSlot } from '@/composables/videoConcat/videoConcatOrder'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { useLinkStore } from '@/stores/linkStore'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
+import { useLinkStore } from '@comfyorg/graph-state/linkStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 
 interface LinkedSlot extends ConcatClipSlot {

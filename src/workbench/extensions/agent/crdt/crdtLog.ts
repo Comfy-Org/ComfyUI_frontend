@@ -1,5 +1,5 @@
 import { shallowRef, triggerRef } from 'vue'
-import { safeLocalStorage } from '@/base/storage/safeStorage'
+import { safeLocalStorage } from '@comfyorg/shared-frontend-utils/safeStorage'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSettingStore } from '@/platform/settings/settingStore'
 

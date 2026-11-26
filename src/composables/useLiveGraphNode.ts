@@ -2,7 +2,7 @@ import { useEventListener } from '@vueuse/core'
 import type { ComputedRef } from 'vue'
 import { computed, shallowRef, watchSyncEffect } from 'vue'
 
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
 import { useApp } from '@/scripts/appInstance'
 
 /** The node `resolve` returns, resolved again each time the root graph is configured. */

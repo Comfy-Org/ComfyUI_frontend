@@ -28,7 +28,7 @@ import { useI18n } from 'vue-i18n'
 
 import { useLiveGraphNode } from '@/composables/useLiveGraphNode'
 import type { IWidgetResolutionPreviewOptions } from '@comfyorg/graph-model/widgets'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { widgetId } from '@comfyorg/graph-model/widgetId'

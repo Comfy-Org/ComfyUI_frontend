@@ -1,0 +1,708 @@
+import { reactive } from 'vue'
+import { afterEach, describe, expect, vi } from 'vitest'
+
+import type { LGraphCanvas } from './litegraph'
+import { LGraph, LGraphGroup, LGraphNode, LiteGraph } from './litegraph'
+import { containsRect } from './measure'
+import { layoutStore } from '@comfyorg/graph-state/layout/layoutStore'
+import { LayoutSource } from '@comfyorg/graph-state/layout/types'
+import type { GroupId } from '@comfyorg/graph-model/groupId'
+import { toGroupId } from '@comfyorg/graph-model/groupId'
+import * as colorUtil from '@comfyorg/shared-frontend-utils/colorUtil'
+import { createUuidv4 } from '@comfyorg/graph-model/uuid'
+
+import { test } from './__fixtures__/testExtensions'
+
+vi.mock(import('@comfyorg/shared-frontend-utils/colorUtil'), {
+  spy: true
+})
+
+function createMockContext() {
+  return {
+    beginPath: vi.fn(),
+    rect: vi.fn(),
+    fill: vi.fn(),
+    stroke: vi.fn(),
+    moveTo: vi.fn(),
+    lineTo: vi.fn(),
+    fillText: vi.fn(),
+    font: '',
+    fillStyle: '',
+    strokeStyle: '',
+    globalAlpha: 1,
+    textAlign: 'left' as CanvasTextAlign,
+    textBaseline: 'alphabetic' as CanvasTextBaseline
+  } as unknown as CanvasRenderingContext2D
+}
+
+const graphCanvas = { editor_alpha: 1 } as Partial<LGraphCanvas> as LGraphCanvas
+
+describe('LGraphGroup', () => {
+  test('serializes to the existing format', () => {
+    const link = new LGraphGroup('title', toGroupId(929))
+    expect(link.serialize()).toMatchSnapshot('Basic')
+  })
+
+  test('clears a color option', () => {
+    const graph = new LGraph()
+    const group = new LGraphGroup('group', toGroupId(932))
+    graph.add(group)
+    group.color = '#123456'
+
+    group.setColorOption(null)
+
+    expect(group.color).toBeUndefined()
+    expect(group.serialize().color).toBeUndefined()
+  })
+
+  describe('recomputeInsideNodes', () => {
+    test('uses visited set to avoid redundant computation', () => {
+      const graph = new LGraph()
+
+      // Create 4 nested groups: outer -> mid1 -> mid2 -> inner
+      const outer = new LGraphGroup('outer')
+      outer.pos = [0, 0]
+      outer.size = [400, 400]
+      graph.add(outer)
+
+      const mid1 = new LGraphGroup('mid1')
+      mid1.pos = [10, 10]
+      mid1.size = [300, 300]
+      graph.add(mid1)
+
+      const mid2 = new LGraphGroup('mid2')
+      mid2.pos = [20, 20]
+      mid2.size = [200, 200]
+      graph.add(mid2)
+
+      const inner = new LGraphGroup('inner')
+      inner.pos = [30, 30]
+      inner.size = [100, 100]
+      graph.add(inner)
+
+      // Track the visited set to verify each group is only fully processed once
+      const visited = new Set<GroupId>()
+      outer.recomputeInsideNodes(100, visited)
+
+      // All nested groups should be in the visited set
+      expect(visited.has(outer.id)).toBe(true)
+      expect(visited.has(mid1.id)).toBe(true)
+      expect(visited.has(mid2.id)).toBe(true)
+      expect(visited.has(inner.id)).toBe(true)
+      expect(visited.size).toBe(4)
+
+      // Verify children relationships are correct
+      expect(outer.children.has(mid1)).toBe(true)
+      expect(outer.children.has(mid2)).toBe(true)
+      expect(outer.children.has(inner)).toBe(true)
+      expect(mid1.children.has(mid2)).toBe(true)
+      expect(mid1.children.has(inner)).toBe(true)
+      expect(mid2.children.has(inner)).toBe(true)
+    })
+
+    test('respects maxDepth limit', () => {
+      const graph = new LGraph()
+
+      const outer = new LGraphGroup('outer')
+      outer.pos = [0, 0]
+      outer.size = [300, 300]
+      graph.add(outer)
+
+      const inner = new LGraphGroup('inner')
+      inner.pos = [10, 10]
+      inner.size = [100, 100]
+      graph.add(inner)
+
+      // With maxDepth=1, inner group is added as child but not processed
+      outer.recomputeInsideNodes(1)
+
+      // outer should have inner as a child
+      expect(outer.children.has(inner)).toBe(true)
+      // inner should not have computed its own children (it was never processed)
+      expect(inner.children.size).toBe(0)
+    })
+  })
+
+  describe('resizeTo', () => {
+    const alwaysSnapToGrid = LiteGraph.alwaysSnapToGrid
+    const gridSize = LiteGraph.CANVAS_GRID_SIZE
+
+    afterEach(() => {
+      LiteGraph.alwaysSnapToGrid = alwaysSnapToGrid
+      LiteGraph.CANVAS_GRID_SIZE = gridSize
+    })
+
+    function createGroupFittedToContent() {
+      const graph = new LGraph()
+      const group = new LGraphGroup('group')
+      graph.add(group)
+
+      const content = new LGraphGroup('content')
+      content.pos = [103, 207]
+      content.size = [140, 80]
+
+      group.resizeTo([content], 10)
+      return { group, content }
+    }
+
+    test('fits the group around its contents with padding', () => {
+      LiteGraph.alwaysSnapToGrid = false
+      const { group } = createGroupFittedToContent()
+
+      expect([...group.pos]).toEqual([93, 197 - group.titleHeight])
+      expect([...group.size]).toEqual([160, 100 + group.titleHeight])
+    })
+
+    test('expands every border to the grid when always snapping', () => {
+      LiteGraph.alwaysSnapToGrid = true
+      LiteGraph.CANVAS_GRID_SIZE = 10
+      const { group, content } = createGroupFittedToContent()
+
+      const [x, y, width, height] = group.boundingRect
+      expect([x, y, x + width, y + height].map((edge) => edge % 10)).toEqual([
+        0, 0, 0, 0
+      ])
+      expect(containsRect(group.boundingRect, content.boundingRect)).toBe(true)
+    })
+  })
+
+  describe('draw', () => {
+    test('lightens the title text for a very dark background', () => {
+      const group = new LGraphGroup('Group')
+      group.color = '#000000'
+      const ctx = createMockContext()
+
+      group.draw(graphCanvas, ctx)
+
+      expect(ctx.fillStyle).toBe(colorUtil.readableTextColor('#000000'))
+      expect(ctx.fillStyle).not.toBe('#fff')
+      expect(ctx.fillStyle).not.toBe('#000000')
+    })
+
+    test('leaves the title text unchanged for a light background', () => {
+      const group = new LGraphGroup('Group')
+      group.color = '#ffffff'
+      const ctx = createMockContext()
+
+      group.draw(graphCanvas, ctx)
+
+      expect(ctx.fillStyle).toBe('#ffffff')
+    })
+
+    test('leaves the title text unchanged for a moderately dark, non-black background', () => {
+      const group = new LGraphGroup('Group')
+      // "purple" preset groupcolor - dark but well above the black-ish threshold
+      group.color = '#a1309b'
+      const ctx = createMockContext()
+
+      group.draw(graphCanvas, ctx)
+
+      expect(ctx.fillStyle).toBe('#a1309b')
+    })
+
+    test('does not recompute the title text color when the background is unchanged', () => {
+      const group = new LGraphGroup('Group')
+      group.color = '#000000'
+      const ctx = createMockContext()
+      vi.mocked(colorUtil.readableTextColor).mockClear()
+
+      group.draw(graphCanvas, ctx)
+      group.draw(graphCanvas, ctx)
+
+      expect(colorUtil.readableTextColor).toHaveBeenCalledTimes(1)
+    })
+
+    test('recomputes the title text color when the background changes', () => {
+      const group = new LGraphGroup('Group')
+      group.color = '#000000'
+      const ctx = createMockContext()
+      vi.mocked(colorUtil.readableTextColor).mockClear()
+
+      group.draw(graphCanvas, ctx)
+      group.color = '#111111'
+      group.draw(graphCanvas, ctx)
+
+      expect(colorUtil.readableTextColor).toHaveBeenCalledTimes(2)
+    })
+  })
+})
+
+describe('group layout in layoutStore', () => {
+  function addedGroup(graph: LGraph, id: GroupId) {
+    const group = new LGraphGroup('group', id)
+    group.pos = [100, 100]
+    group.size = [300, 200]
+    graph.add(group)
+    return group
+  }
+
+  test('registers geometry on add and drops it on remove', () => {
+    const graph = new LGraph()
+    const group = addedGroup(graph, toGroupId(801))
+
+    expect(
+      layoutStore.getGroupLayout(graph.rootGraph.id, toGroupId(801))
+    ).toEqual({
+      id: toGroupId(801),
+      position: { x: 100, y: 100 },
+      size: { width: 300, height: 200 }
+    })
+
+    graph.remove(group)
+    expect(
+      layoutStore.getGroupLayout(graph.rootGraph.id, toGroupId(801))
+    ).toBeNull()
+  })
+
+  test('drops entries when the graph is cleared', () => {
+    const graph = new LGraph()
+    const rootGraphId = graph.rootGraph.id
+    addedGroup(graph, toGroupId(802))
+
+    graph.clear()
+
+    expect(layoutStore.getGroupLayout(rootGraphId, toGroupId(802))).toBeNull()
+  })
+
+  test('isolates colliding group IDs across live root graphs', () => {
+    const firstGraph = new LGraph()
+    const SHARED_GROUP = toGroupId(803)
+    const secondGraph = new LGraph()
+    firstGraph.id = createUuidv4()
+    secondGraph.id = createUuidv4()
+    const firstGroup = addedGroup(firstGraph, SHARED_GROUP)
+    const secondGroup = addedGroup(secondGraph, SHARED_GROUP)
+
+    firstGroup.pos = [20, 30]
+    secondGroup.pos = [200, 300]
+
+    expect(
+      layoutStore.getGroupLayout(firstGraph.id, SHARED_GROUP)?.position
+    ).toEqual({
+      x: 20,
+      y: 30
+    })
+    expect(
+      layoutStore.getGroupLayout(secondGraph.id, SHARED_GROUP)?.position
+    ).toEqual({
+      x: 200,
+      y: 300
+    })
+
+    firstGraph.remove(firstGroup)
+    expect(layoutStore.getGroupLayout(firstGraph.id, SHARED_GROUP)).toBeNull()
+    expect(
+      layoutStore.getGroupLayout(secondGraph.id, SHARED_GROUP)
+    ).not.toBeNull()
+
+    firstGraph.clear()
+    expect(
+      layoutStore.getGroupLayout(secondGraph.id, secondGroup.id)
+    ).not.toBeNull()
+  })
+
+  describe('every geometry mutation keeps the store in step', () => {
+    const mutations: Array<[name: string, mutate: (g: LGraphGroup) => void]> = [
+      ['pos setter', (g) => void (g.pos = [7, 9])],
+      ['size setter', (g) => void (g.size = [400, 300])],
+      ['move', (g) => g.move(10, 20)],
+      ['resize', (g) => void g.resize(500, 400)],
+      ['snapToGrid', (g) => void g.snapToGrid(64)],
+      [
+        'configure',
+        (g) =>
+          g.configure({
+            id: g.id,
+            title: 'reconfigured',
+            bounding: [1, 2, 300, 200],
+            flags: {}
+          })
+      ]
+    ]
+
+    test.for(mutations)('%s', ([, mutate], { expect }) => {
+      const graph = new LGraph()
+      const group = addedGroup(graph, toGroupId(803))
+
+      mutate(group)
+
+      expect(layoutStore.getGroupLayout(graph.rootGraph.id, group.id)).toEqual({
+        id: group.id,
+        position: { x: group.pos[0], y: group.pos[1] },
+        size: { width: group.size[0], height: group.size[1] }
+      })
+    })
+  })
+
+  test('keeps geometry locally when the store entry is gone', () => {
+    const graph = new LGraph()
+    const group = addedGroup(graph, toGroupId(809))
+    layoutStore.applyOperation({
+      type: 'deleteGroup',
+      graphId: graph.rootGraph.id,
+      groupId: group.id,
+      timestamp: Date.now(),
+      source: LayoutSource.Canvas
+    })
+
+    group.pos = [11, 22]
+
+    expect([...group.pos]).toEqual([11, 22])
+  })
+
+  test('snapToGrid reports whether the group moved', () => {
+    const graph = new LGraph()
+    const group = addedGroup(graph, toGroupId(810))
+
+    group.pos = [70, 128]
+    expect(group.snapToGrid(64)).toBe(true)
+    expect(group.snapToGrid(64)).toBe(false)
+  })
+
+  test('resizeTo fits contents and commits, still unclamped', () => {
+    const graph = new LGraph()
+    const group = addedGroup(graph, toGroupId(804))
+    const node = new LGraphNode('tiny')
+    node.pos = [500, 500]
+    node.size = [10, 10]
+    graph.add(node)
+
+    group.resizeTo([node])
+
+    // Narrower than minWidth: fit-to-contents deliberately does not clamp.
+    expect(group.size[0]).toBeLessThan(LGraphGroup.minWidth)
+    expect(layoutStore.getGroupLayout(graph.rootGraph.id, group.id)).toEqual({
+      id: group.id,
+      position: { x: group.pos[0], y: group.pos[1] },
+      size: { width: group.size[0], height: group.size[1] }
+    })
+  })
+
+  test('setters write through the shared Rectangle buffer', () => {
+    const graph = new LGraph()
+    const group = addedGroup(graph, toGroupId(805))
+    const pos = group.pos
+    const size = group.size
+
+    group.pos = [1, 2]
+    group.size = [400, 300]
+
+    expect(group.pos).toBe(pos)
+    expect(group.size).toBe(size)
+    expect([...pos]).toEqual([1, 2])
+  })
+
+  test('legacy geometry buffers write through to the store', () => {
+    const graph = new LGraph()
+    const group = addedGroup(graph, toGroupId(806))
+
+    group.pos[0] = 25
+    expect(layoutStore.getGroupLayout(graph.rootGraph.id, group.id)).toEqual({
+      id: group.id,
+      position: { x: 25, y: 100 },
+      size: { width: 300, height: 200 }
+    })
+
+    group.size[1] = 450
+    expect(layoutStore.getGroupLayout(graph.rootGraph.id, group.id)).toEqual({
+      id: group.id,
+      position: { x: 25, y: 100 },
+      size: { width: 300, height: 450 }
+    })
+
+    group._bounding.set([30, 40, 500, 600])
+    expect(layoutStore.getGroupLayout(graph.rootGraph.id, group.id)).toEqual({
+      id: group.id,
+      position: { x: 30, y: 40 },
+      size: { width: 500, height: 600 }
+    })
+
+    group._bounding.pos[0] = 35
+    group._bounding.size[1] = 650
+    expect(layoutStore.getGroupLayout(graph.rootGraph.id, group.id)).toEqual({
+      id: group.id,
+      position: { x: 35, y: 40 },
+      size: { width: 500, height: 650 }
+    })
+  })
+
+  test('reads geometry from the store', () => {
+    const graph = new LGraph()
+    const group = addedGroup(graph, toGroupId(807))
+    const pos = group.pos
+    const size = group.size
+
+    layoutStore.applyOperation({
+      type: 'setGroupBounds',
+      actor: 'test',
+      timestamp: 1,
+      source: LayoutSource.Canvas,
+      graphId: graph.rootGraph.id,
+      groupId: group.id,
+      position: { x: 11, y: 12 },
+      size: { width: 410, height: 310 }
+    })
+
+    expect(group.pos).toBe(pos)
+    expect(group.size).toBe(size)
+    expect([...group.boundingRect]).toEqual([11, 12, 410, 310])
+    expect([...pos]).toEqual([11, 12])
+    expect([...size]).toEqual([410, 310])
+    expect(group.serialize().bounding).toEqual([11, 12, 410, 310])
+  })
+
+  test('group collections react to nested bounds updates', () => {
+    const graph = new LGraph()
+    const group = addedGroup(graph, toGroupId(808))
+    const groups = layoutStore.getAllGroups(graph.rootGraph.id)
+
+    expect(groups.value.get(group.id)?.position.x).toBe(100)
+
+    group.pos = [75, 80]
+
+    expect(groups.value.get(group.id)?.position).toEqual({ x: 75, y: 80 })
+  })
+})
+
+describe('geometry an extension cannot clobber', () => {
+  function attachedGroup(graph: LGraph, id: number) {
+    const group = new LGraphGroup('group', toGroupId(id))
+    graph.add(group)
+    return group
+  }
+
+  test('a JSON round-trip written back onto a graphless copy keeps geometry working', () => {
+    const graph = new LGraph()
+    const group = new LGraphGroup('group', toGroupId(810))
+    group.pos = [100, 100]
+    group.size = [300, 200]
+
+    Object.assign(group, JSON.parse(JSON.stringify(group)))
+    graph.add(group)
+    group.pos = [110, 120]
+
+    expect([...group.boundingRect]).toEqual([110, 120, 300, 200])
+    expect(layoutStore.getGroupLayout(graph.rootGraph.id, group.id)).toEqual({
+      id: group.id,
+      position: { x: 110, y: 120 },
+      size: { width: 300, height: 200 }
+    })
+  })
+
+  test('a JSON copy excluding graph keeps tracking and moving its existing children', () => {
+    const graph = new LGraph()
+    const group = new LGraphGroup('group', toGroupId(819))
+    group.pos = [100, 100]
+    group.size = [300, 200]
+    graph.add(group)
+    const node = new LGraphNode('inside')
+    node.pos = [150, 150]
+    node.size = [20, 20]
+    graph.add(node)
+    node.updateArea()
+    group.recomputeInsideNodes()
+
+    const copy: Record<string, unknown> = JSON.parse(JSON.stringify(group))
+    delete copy.graph
+    Object.assign(group, copy)
+
+    expect(group.nodes).toEqual([node])
+    expect(() => group.addNodes([node])).not.toThrow()
+
+    group.move(10, 20)
+
+    expect(group.children.has(node)).toBe(true)
+    expect([...node.pos]).toEqual([160, 170])
+  })
+
+  test.for([
+    ['a plain array', '_nodes', [{ id: 1, title: 'plain' }]],
+    ['an empty object', '_children', {}],
+    ['an array', '_children', []],
+    ['a plain object', '_nodes', {}],
+    ['a Set of unmovable items', '_children', new Set([{ id: 1 }])],
+    [
+      'a Set whose member throws on inspection',
+      '_children',
+      new Set([
+        {
+          get move(): never {
+            throw new Error('hostile member')
+          }
+        }
+      ])
+    ]
+  ] as const)(
+    'assigning %s to %s keeps the live collection',
+    ([, property, assigned], { expect }) => {
+      const graph = new LGraph()
+      const group = attachedGroup(graph, 820)
+      const children = group.children
+      const nodes = group.nodes
+
+      expect(() => Object.assign(group, { [property]: assigned })).not.toThrow()
+
+      expect(group.children).toBe(children)
+      expect(group.nodes).toBe(nodes)
+      expect(console.warn).toHaveBeenCalledOnce()
+    }
+  )
+
+  test('a real array of nodes still replaces _nodes', () => {
+    const graph = new LGraph()
+    const group = attachedGroup(graph, 821)
+    const node = new LGraphNode('inside')
+    graph.add(node)
+
+    Object.assign(group, { _nodes: [node] })
+
+    expect(group.nodes).toEqual([node])
+    expect(console.warn).not.toHaveBeenCalled()
+  })
+
+  test.for([
+    ['bounds', [1, 2, 300, 400], [1, 2, 300, 400]],
+    ['_bounding', [1, 2, 300, 400], [1, 2, 300, 400]],
+    ['_pos', [1, 2], [1, 2, 140, 80]],
+    ['_size', [300, 400], [10, 10, 300, 400]]
+  ] as const)(
+    'assigning a plain array to %s updates the buffer instead of replacing it',
+    ([property, assigned, expected], { expect }) => {
+      const graph = new LGraph()
+      const group = attachedGroup(graph, 811)
+      const before: unknown = group[property]
+
+      Object.assign(group, { [property]: assigned })
+
+      expect(layoutStore.getGroupLayout(graph.rootGraph.id, group.id)).toEqual({
+        id: group.id,
+        position: { x: expected[0], y: expected[1] },
+        size: { width: expected[2], height: expected[3] }
+      })
+      expect(group[property]).toBe(before)
+      expect([...group.boundingRect]).toEqual(expected)
+      expect(group.serialize().bounding).toEqual(expected)
+      expect(console.warn).not.toHaveBeenCalled()
+    }
+  )
+
+  test("assigning another group's mutation view is copied, not refused", () => {
+    const graph = new LGraph()
+    const source = attachedGroup(graph, 822)
+    source.pos = [31, 32]
+    source.size = [330, 340]
+    const target = attachedGroup(graph, 823)
+    const targetView = target._bounding
+
+    Object.assign(target, { _bounding: source._bounding })
+
+    expect([...target.boundingRect]).toEqual([31, 32, 330, 340])
+    expect(target._bounding).toBe(targetView)
+    expect(console.warn).not.toHaveBeenCalled()
+  })
+
+  test('assigning a typed array is copied, not refused', () => {
+    const graph = new LGraph()
+    const group = attachedGroup(graph, 824)
+
+    Object.assign(group, { bounds: Float64Array.from([7, 8, 90, 100]) })
+
+    expect([...group.boundingRect]).toEqual([7, 8, 90, 100])
+    expect(console.warn).not.toHaveBeenCalled()
+  })
+
+  test.for([
+    ['null', 'bounds', null],
+    ['a string', '_bounding', 'nonsense'],
+    ['an empty object', '_pos', {}],
+    ['a null coordinate', '_bounding', [1, null, 300, 400]],
+    ['a symbol coordinate', '_bounding', [1, 2, Symbol('w'), 400]],
+    ['numeric strings', '_bounding', ['1', '2', '300', '400']],
+    ['a boolean coordinate', '_bounding', [true, 2, 300, 400]],
+    ['a NaN coordinate', '_size', [NaN, 400]],
+    ['an infinite coordinate', 'bounds', [1, 2, Infinity, 400]],
+    ['too few coordinates', '_bounding', [1, 2]],
+    [
+      'a throwing coordinate getter',
+      '_bounding',
+      {
+        0: 1,
+        get 1() {
+          throw new Error('Unreadable coordinate')
+        },
+        2: 300,
+        3: 400
+      }
+    ]
+  ] as const)(
+    'assigning %s to %s leaves the geometry untouched',
+    ([, property, assigned], { expect }) => {
+      const graph = new LGraph()
+      const group = attachedGroup(graph, 812)
+      const view = group[property]
+
+      expect(() => Object.assign(group, { [property]: assigned })).not.toThrow()
+
+      expect(group[property]).toBe(view)
+      expect([...group.pos]).toEqual([10, 10])
+      expect([...group.size]).toEqual([140, 80])
+      expect([...group.boundingRect]).toEqual([10, 10, 140, 80])
+      expect(console.warn).toHaveBeenCalledOnce()
+    }
+  )
+
+  test.for([
+    'bounds',
+    '_pos',
+    '_size',
+    '_bounding',
+    '_nodes',
+    '_children'
+  ] as const)(
+    '%s keeps the descriptor shape the ecosystem already sees',
+    (property, { expect }) => {
+      const group = new LGraphGroup('group', toGroupId(813))
+
+      expect(Object.getOwnPropertyDescriptor(group, property)).toMatchObject({
+        enumerable: true,
+        configurable: true
+      })
+      expect(Object.keys(group)).toContain(property)
+    }
+  )
+
+  test('a refused write is reported once per group, not once per process', () => {
+    const graph = new LGraph()
+    const first = attachedGroup(graph, 816)
+    const second = attachedGroup(graph, 817)
+
+    Object.assign(first, { bounds: 'nonsense' })
+    Object.assign(first, { _bounding: 'nonsense again' })
+    Object.assign(second, { _pos: 'nonsense' })
+
+    expect(console.warn).toHaveBeenCalledTimes(2)
+    expect(vi.mocked(console.warn).mock.calls[0][0]).toContain('bounds')
+  })
+
+  test('geometry reads and writes through a reactive proxy', () => {
+    const graph = new LGraph()
+    const group = attachedGroup(graph, 814)
+    const reactiveGroup = reactive(group)
+    const view = group._bounding
+
+    group.pos = [60, 70]
+
+    expect([...reactiveGroup.boundingRect]).toEqual([60, 70, 140, 80])
+    expect([...reactiveGroup.pos]).toEqual([60, 70])
+    expect([...reactiveGroup._bounding]).toEqual([60, 70, 140, 80])
+
+    Object.assign(reactiveGroup, { _bounding: [1, 2, 300, 400] })
+
+    expect(group._bounding).toBe(view)
+    expect(layoutStore.getGroupLayout(graph.rootGraph.id, group.id)).toEqual({
+      id: group.id,
+      position: { x: 1, y: 2 },
+      size: { width: 300, height: 400 }
+    })
+  })
+})

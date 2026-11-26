@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { LGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraph } from '@comfyorg/litegraph/litegraph'
 import {
   createTestRootGraph,
   createTestSubgraphData,
   createTestSubgraphNode
-} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+} from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphHelpers'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { validateComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import { useSubgraphService } from '@/services/subgraphService'

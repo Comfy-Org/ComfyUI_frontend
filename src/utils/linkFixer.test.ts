@@ -1,10 +1,10 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
-import { LGraph, LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
-import { NodeOutputSlot } from '@/lib/litegraph/src/node/NodeOutputSlot'
-import { useLinkStore } from '@/stores/linkStore'
-import type { SerialisedLLinkArray } from '@/lib/litegraph/src/LLink'
+import { LGraph, LGraphNode, LLink } from '@comfyorg/litegraph/litegraph'
+import { NodeOutputSlot } from '@comfyorg/litegraph/node/NodeOutputSlot'
+import { useLinkStore } from '@comfyorg/graph-state/linkStore'
+import type { SerialisedLLinkArray } from '@comfyorg/litegraph/LLink'
 import type {
   ISerialisedGraph,
   ISerialisedNode

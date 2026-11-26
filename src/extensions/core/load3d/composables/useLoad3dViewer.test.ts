@@ -6,14 +6,14 @@ import Load3d from '@comfyorg/viewport3d/load3d/Load3d'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { createLoad3d } from '@comfyorg/viewport3d/load3d/createLoad3d'
 import { load3dHost } from '@/extensions/core/load3d/load3dHost'
-import type { LGraph } from '@/lib/litegraph/src/LGraph'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraph } from '@comfyorg/litegraph/LGraph'
+import type { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
 import { useToast } from '@/components/ui/toast/toastStore'
 import {
   copyLoad3dState,
   handleViewportRefresh
 } from '@/extensions/core/load3d/load3dInstances'
-import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockLGraphNode } from '@comfyorg/litegraph/__fixtures__/litegraphTestUtils'
 import { api } from '@/scripts/api'
 
 vi.mock(import('@/extensions/core/load3d/load3dInstances'))

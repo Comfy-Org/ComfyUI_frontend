@@ -5,6 +5,9 @@
   "modules": [
     {
       "path": "src/platform/workflowErrors/nodeReplacement/**"
+    },
+    {
+      "path": "packages/litegraph/src/utils/cnrIdUtil.ts"
     }
   ],
   "publicEntryPoints": [],
@@ -15,7 +18,7 @@
         "src/platform/workflowErrors/nodeReplacement/missingNodeScan.test.ts",
         "src/platform/workflowErrors/nodeReplacement/missingNodesErrorStore.test.ts",
         "src/platform/workflowErrors/nodeReplacement/nodeReplacementStore.test.ts",
-        "src/platform/workflowErrors/nodeReplacement/cnrIdUtil.test.ts"
+        "packages/litegraph/src/utils/cnrIdUtil.test.ts"
       ]
     },
     {

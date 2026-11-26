@@ -25,14 +25,14 @@ import {
   createTestSubgraphData,
   createTestSubgraphNode,
   resetSubgraphFixtureState
-} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { Subgraph } from '@/lib/litegraph/src/LGraph'
+} from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphHelpers'
+import { LGraph, LGraphNode, LiteGraph } from '@comfyorg/litegraph/litegraph'
+import type { Subgraph } from '@comfyorg/litegraph/LGraph'
 import type { ExportedSubgraph } from '@comfyorg/graph-model/serialisation'
 import { resetReportedWorkflowStateAnomaliesForTests } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { validateComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
-import { isBoundsObject } from '@/renderer/core/layout/utils/geometry'
+import { isBoundsObject } from '@comfyorg/graph-state/layout/geometry'
 import { TEXT_EDITOR_DIALOG_KEY } from '@/renderer/extensions/textEditor/textEditorDialogKey'
 import { useBoundingBoxWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useBoundingBoxWidget'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -44,7 +44,7 @@ import { widgetId } from '@comfyorg/graph-model/widgetId'
 
 const mockAssert = vi.hoisted(() => vi.fn())
 
-vi.mock(import('@/base/assert'), () => ({
+vi.mock(import('@comfyorg/shared-frontend-utils/assert'), () => ({
   assert: mockAssert
 }))
 

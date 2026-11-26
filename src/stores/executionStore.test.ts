@@ -22,7 +22,7 @@ import {
   createNodeExecutionId,
   createNodeLocatorId
 } from '@comfyorg/graph-model/nodeIdentification'
-import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
+import { executionIdToNodeLocatorId } from '@comfyorg/litegraph/utils/graphTraversalUtil'
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 import type { NodeProgressState } from '@comfyorg/api-client/executionTypes'
 
@@ -34,7 +34,7 @@ const defaultWorkflowExecutionIntent = {
 
 vi.mock(import('@/composables/useAppMode'))
 
-import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockLGraphNode } from '@comfyorg/litegraph/__fixtures__/litegraphTestUtils'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 vi.mock(import('@/platform/distribution/types'), () => ({

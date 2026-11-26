@@ -12,7 +12,7 @@ import type { OpenWorkflowFailure } from '@/platform/workflow/core/services/work
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { blankGraph } from '@/scripts/defaultGraph'
-import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockLoadedWorkflow } from '@/utils/__tests__/workflowTestUtils'
 
 import type { CloudWorkflowEntry } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { AgentApiError } from '@/workbench/extensions/agent/services/agent/agentRestClient'

@@ -1,11 +1,11 @@
 import { computed } from 'vue'
 
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
-import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
+import { resolvePromotedWidgetSource } from '@comfyorg/litegraph/subgraph/promotion/resolvePromotedWidgetSource'
 import { autogrowInputRole } from '@/core/graph/widgets/dynamicWidgets'
-import { prefersDOMElement } from '@/lib/litegraph/src/utils/widget'
+import { prefersDOMElement } from '@comfyorg/litegraph/utils/widget'
 import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
-import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraph, LGraphNode } from '@comfyorg/litegraph/litegraph'
 import type { IBaseWidget, IWidgetOptions } from '@comfyorg/graph-model/widgets'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
@@ -17,15 +17,15 @@ import WidgetDOM from '@/renderer/extensions/vueNodes/widgets/components/WidgetD
 import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
 import { getComponent } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import { useApp } from '@/scripts/appInstance'
-import { useLinkStore } from '@/stores/linkStore'
+import { useLinkStore } from '@comfyorg/graph-state/linkStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import {
   stripGraphPrefix,
   useWidgetValueStore
-} from '@/stores/widgetValueStore'
-import type { WidgetRenderState } from '@/stores/widgetValueStore'
+} from '@comfyorg/graph-state/widgetValueStore'
+import type { WidgetRenderState } from '@comfyorg/graph-state/widgetValueStore'
 import {
   createNodeExecutionId,
   createNodeLocatorId
@@ -40,8 +40,8 @@ import type { WidgetState } from '@comfyorg/graph-model/widgetState'
 import type { LinkTopology } from '@comfyorg/graph-model/linkTopology'
 import { invokeButtonWidgetCallback } from '@/renderer/extensions/vueNodes/widgets/utils/invokeButtonWidgetCallback'
 import { getControlWidget } from '@/types/simplifiedWidget'
-import { isWidgetVisibleOnSurface } from '@/types/widgetVisibility'
-import type { WidgetVisibilityComponent } from '@/types/widgetVisibility'
+import { isWidgetVisibleOnSurface } from '@comfyorg/graph-model/widgetVisibility'
+import type { WidgetVisibilityComponent } from '@comfyorg/graph-model/widgetVisibility'
 import type {
   LinkedUpstreamInfo,
   SafeControlWidget,
@@ -54,9 +54,9 @@ import {
   executionIdToNodeLocatorId,
   getNodeByState,
   subgraphIdFromState
-} from '@/utils/graphTraversalUtil'
+} from '@comfyorg/litegraph/utils/graphTraversalUtil'
 import { mapLiveWidgetsById } from '@/utils/litegraphUtil'
-import { getWidgetSizing } from '@/lib/litegraph/src/utils/widgetLayout'
+import { getWidgetSizing } from '@comfyorg/litegraph/utils/widgetLayout'
 
 type TooltipValueType = 'asset' | 'combo' | 'number' | 'text'
 function isTooltipValueType(val: unknown): val is TooltipValueType {

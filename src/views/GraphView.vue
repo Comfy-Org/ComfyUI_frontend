@@ -125,7 +125,7 @@ import { useMissingModelDownloadStore } from '@/platform/workflowErrors/missingM
 import { useThemeStore } from '@/platform/theme/themeStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { electronAPI, isLocalDesktopHost } from '@/utils/envUtil'
-import { createUuidv4 } from '@/utils/uuid'
+import { createUuidv4 } from '@comfyorg/graph-model/uuid'
 import BuilderFooterToolbar from '@/components/builder/BuilderFooterToolbar.vue'
 import BuilderMenu from '@/components/builder/BuilderMenu.vue'
 import BuilderToolbar from '@/components/builder/BuilderToolbar.vue'

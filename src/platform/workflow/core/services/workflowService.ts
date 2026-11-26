@@ -1,11 +1,11 @@
-import { insertItems } from '@/core/graph/clipboard/graphTransfer'
+import { insertItems } from '@comfyorg/litegraph/clipboard/graphTransfer'
 import { toRaw } from 'vue'
 
 import { downloadBlob } from '@/base/common/downloadUtil'
 import { t } from '@/i18n'
 import { showDraftSaveFailedToast } from '@/platform/workflow/persistence/draftSaveFailureToast'
 import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraph } from '@comfyorg/litegraph/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { createToastId } from '@/types/toastId'
@@ -77,9 +77,8 @@ import {
   generateUUID
 } from '@/utils/formatUtil'
 import type { AppMode } from '@comfyorg/graph-model/appMode'
-import type { UUID } from '@/utils/uuid'
-import { zeroUuid } from '@comfyorg/graph-model/uuid'
-import { ensureNonZeroUuid } from '@/utils/uuid'
+import type { UUID } from '@comfyorg/graph-model/uuid'
+import { ensureNonZeroUuid, zeroUuid } from '@comfyorg/graph-model/uuid'
 import { insertPngTextChunk } from '@comfyorg/mask-editor/pngEncodeUtil'
 
 export type WorkflowImageRender =

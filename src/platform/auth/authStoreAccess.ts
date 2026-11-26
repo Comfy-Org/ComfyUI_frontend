@@ -1,6 +1,6 @@
 import type { User } from 'firebase/auth'
 
-import { assert } from '@/base/assert'
+import { assert } from '@comfyorg/shared-frontend-utils/assert'
 import type { operations } from '@/types/comfyRegistryTypes'
 
 type CreateCustomerResponse =

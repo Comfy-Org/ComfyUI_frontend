@@ -58,7 +58,7 @@
       "path": "src/renderer/core/canvas/canvasStore.ts"
     },
     {
-      "path": "src/renderer/core/canvas/canvasViewport.ts"
+      "path": "packages/graph-state/src/layout/canvasViewport.ts"
     },
     {
       "path": "src/renderer/core/canvas/interaction/**"
@@ -70,10 +70,10 @@
       "path": "src/renderer/core/canvas/litegraph/**"
     },
     {
-      "path": "src/renderer/core/canvas/pathRenderer.ts"
+      "path": "packages/litegraph/src/canvas/pathRenderer.ts"
     },
     {
-      "path": "src/renderer/core/canvas/useAutoPan.ts"
+      "path": "packages/litegraph/src/canvas/useAutoPan.ts"
     },
     {
       "path": "src/renderer/core/canvas/useCanvasInteractions.ts"
@@ -100,7 +100,7 @@
         "src/renderer/core/canvas/__tests__/canvasViewport.test.ts",
         "src/renderer/core/canvas/__tests__/cameraState.test.ts",
         "src/renderer/core/canvas/useCanvasInteractions.test.ts",
-        "src/renderer/core/canvas/useAutoPan.test.ts",
+        "packages/litegraph/src/canvas/useAutoPan.test.ts",
         "browser_tests/tests/canvas/logicalCanvasSizing.spec.ts",
         "browser_tests/tests/vueNodes/interactions/canvas/zoom.spec.ts",
         "browser_tests/tests/vueNodes/interactions/canvas/pan.spec.ts"
@@ -110,10 +110,10 @@
       "name": "LiteGraph adapters preserve link drops, slot geometry, and legacy layout",
       "checks": [
         "src/renderer/core/canvas/links/linkDropOrchestrator.test.ts",
-        "src/renderer/core/canvas/litegraph/slotCalculations.test.ts",
+        "packages/litegraph/src/canvas/slotCalculations.test.ts",
         "src/renderer/core/canvas/litegraph/notifyLayoutChanges.test.ts",
-        "src/renderer/core/canvas/litegraph/arrangeForLegacyRender.test.ts",
-        "src/renderer/core/canvas/pathRenderer.test.ts",
+        "packages/litegraph/src/canvas/arrangeForLegacyRender.test.ts",
+        "packages/litegraph/src/canvas/pathRenderer.test.ts",
         "browser_tests/tests/vueNodes/interactions/links/linkInteraction.spec.ts"
       ]
     },

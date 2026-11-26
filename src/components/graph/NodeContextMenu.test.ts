@@ -9,11 +9,11 @@ import {
   showNodeOptions,
   toggleNodeOptions
 } from '@/composables/graph/useMoreOptionsMenu'
-import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphCanvas, LGraphNode } from '@comfyorg/litegraph/litegraph'
 import en from '@/locales/en/main.json'
 import fr from '@/locales/fr/main.json'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { createTestCanvasElement } from '@/utils/__tests__/canvasTestUtils'
+import { createTestCanvasElement } from '@comfyorg/litegraph/__fixtures__/canvasTestUtils'
 
 import NodeContextMenu from './NodeContextMenu.vue'
 

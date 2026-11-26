@@ -1,13 +1,13 @@
 import type {
   IContextMenuOptions,
   IContextMenuValue
-} from '@/lib/litegraph/src/types/contextMenu'
-import type { ContextMenu } from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/types/contextMenu'
+import type { ContextMenu } from '@comfyorg/litegraph/litegraph'
 import {
   LGraphCanvas,
   LiteGraph,
   isComboWidget
-} from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/litegraph'
 import type { ComfyExtension } from '@/types/comfy'
 
 // Adds filtering to combo context menus

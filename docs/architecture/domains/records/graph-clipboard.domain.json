@@ -4,12 +4,13 @@
   "description": "Graph serialization and insertion, clipboard cache transport, workflow and legacy conversion, and browser copy/paste routing. Feature callers retain history, feedback, and persistence.",
   "modules": [
     { "path": "src/core/graph/clipboard/**" },
+    { "path": "packages/litegraph/src/clipboard/**" },
     { "path": "src/renderer/core/clipboard/**" }
   ],
   "publicEntryPoints": [
-    "src/core/graph/clipboard/graphTransfer.ts",
-    "src/core/graph/clipboard/canvasClipboard.ts",
-    "src/core/graph/clipboard/clipboardStorage.ts",
+    "packages/litegraph/src/clipboard/graphTransfer.ts",
+    "packages/litegraph/src/clipboard/canvasClipboard.ts",
+    "packages/litegraph/src/clipboard/clipboardStorage.ts",
     "src/core/graph/clipboard/vintageClipboard.ts",
     "src/core/graph/clipboard/workflowToClipboardItems.ts",
     "src/renderer/core/clipboard/useGraphClipboard.ts",
@@ -19,12 +20,12 @@
   "characterizationScenarios": [
     {
       "name": "Graph transfer preserves identities, links, subgraphs, selection, lifecycle, and rollback through extension-compatible canvas methods",
-      "checks": ["src/lib/litegraph/src/LGraphCanvas.clipboard.test.ts"]
+      "checks": ["src/core/graph/subgraph/LGraphCanvas.clipboard.test.ts"]
     },
     {
       "name": "Cache refusal preserves system copy while in-memory duplication leaves the clipboard unchanged",
       "checks": [
-        "src/core/graph/clipboard/clipboardStorage.test.ts",
+        "packages/litegraph/src/clipboard/clipboardStorage.test.ts",
         "src/composables/graph/useSelectionOperations.clipboard.test.ts"
       ]
     },

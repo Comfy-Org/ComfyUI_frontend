@@ -1,4 +1,4 @@
-import { safeLocalStorage } from '@/base/storage/safeStorage'
+import { safeLocalStorage } from '@comfyorg/shared-frontend-utils/safeStorage'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { t } from '@/i18n'
 

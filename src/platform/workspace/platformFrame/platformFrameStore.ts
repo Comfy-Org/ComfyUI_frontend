@@ -56,7 +56,7 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import { useAuthStore } from '@/stores/authStore'
 import { createToastId } from '@/types/toastId'
 import type { ToastId } from '@/types/toastId'
-import { createUuidv4 } from '@/utils/uuid'
+import { createUuidv4 } from '@comfyorg/graph-model/uuid'
 
 export const PLATFORM_FRAME_UNANSWERED_MS = 10_000
 

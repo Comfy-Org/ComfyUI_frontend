@@ -7,14 +7,14 @@ import {
   onTestFinished
 } from 'vitest'
 
-import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode, LiteGraph } from '@comfyorg/litegraph/litegraph'
+import type { LGraph, Subgraph } from '@comfyorg/litegraph/litegraph'
 import {
   createTestRootGraph,
   createTestSubgraphData,
   createTestSubgraphNode,
   resetSubgraphFixtureState
-} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+} from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphHelpers'
 import { parseFlattenableSubgraphDefinitions } from '@/platform/workflow/core/utils/workflowFlattening'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { validateComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'

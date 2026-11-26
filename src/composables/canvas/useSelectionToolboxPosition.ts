@@ -10,19 +10,19 @@ import type { Ref } from 'vue'
 
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
-import { onCanvasFrame } from '@/lib/litegraph/src/canvas/canvasFrame'
+import { onCanvasFrame } from '@comfyorg/litegraph/canvas/canvasFrame'
 import type { Positionable } from '@comfyorg/graph-model/interfaces'
 import type {
   ReadOnlyRect,
   Rect,
   Point2D as Point
 } from '@comfyorg/shared-frontend-utils/geometry'
-import { getSelectedLinksAnchor } from '@/lib/litegraph/src/canvas/linkSelection'
-import { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { getSelectedLinksAnchor } from '@comfyorg/litegraph/canvas/linkSelection'
+import { LGraphGroup, LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { layoutStore } from '@comfyorg/graph-state/layout/layoutStore'
 import { useCompositedTransform } from '@/renderer/core/layout/transform/useCompositedTransform'
-import { useLinkSelectionStore } from '@/stores/linkSelectionStore'
+import { useLinkSelectionStore } from '@comfyorg/graph-state/linkSelectionStore'
 import { isLGraphGroup, isLGraphNode } from '@/utils/litegraphUtil'
 import { computeUnionBounds } from '@/utils/mathUtil'
 

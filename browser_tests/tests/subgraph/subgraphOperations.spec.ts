@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test'
 
-import { SUBGRAPH_OUTPUT_ID } from '@/lib/litegraph/src/constants'
+import { SUBGRAPH_OUTPUT_ID } from '@comfyorg/litegraph/constants'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'

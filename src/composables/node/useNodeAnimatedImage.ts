@@ -1,8 +1,8 @@
 import { useChainCallback } from '@/composables/functional/useChainCallback'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { isDOMWidget } from '@/scripts/domWidget'
-import { ANIM_PREVIEW_WIDGET } from '@/core/graph/subgraph/preview/mediaPreviewName'
+import { ANIM_PREVIEW_WIDGET } from '@comfyorg/graph-state/mediaPreviewName'
 
 /**
  * Composable for handling animated image previews in nodes

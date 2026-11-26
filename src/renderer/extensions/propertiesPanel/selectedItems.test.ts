@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphGroup, LGraphNode } from '@comfyorg/litegraph/litegraph'
 import type { Positionable } from '@comfyorg/graph-model/interfaces'
 import { toGroupId } from '@comfyorg/graph-model/groupId'
 

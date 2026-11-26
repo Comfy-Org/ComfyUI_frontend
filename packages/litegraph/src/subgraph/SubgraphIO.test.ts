@@ -1,0 +1,704 @@
+import { describe, expect, it } from 'vitest'
+
+import { CanvasPointer } from '#/CanvasPointer'
+import { pointerEvent } from '#/__fixtures__/canvasHarness'
+import { LinkConnector } from '#/canvas/LinkConnector'
+import { LGraphNode } from '#/litegraph'
+import { ToInputFromIoNodeLink } from '#/canvas/ToInputFromIoNodeLink'
+import { LinkDirection } from '@comfyorg/graph-model/globalEnums'
+import { layoutStore } from '@comfyorg/graph-state/layout/layoutStore'
+import { LayoutSource } from '@comfyorg/graph-state/layout/types'
+
+import { subgraphTest } from './__fixtures__/subgraphFixtures'
+import {
+  createTestRootGraph,
+  createTestSubgraph,
+  createTestSubgraphData,
+  createTestSubgraphNode
+} from './__fixtures__/subgraphHelpers'
+
+describe('SubgraphIO - Input Slot Dual-Nature Behavior', () => {
+  subgraphTest(
+    'input accepts external connections from parent graph',
+    ({ subgraphWithNode }) => {
+      const { subgraph, subgraphNode, parentGraph } = subgraphWithNode
+
+      subgraph.addInput('test_input', 'number')
+
+      const externalNode = new LGraphNode('External Source')
+      externalNode.addOutput('out', 'number')
+      parentGraph.add(externalNode)
+
+      expect(() => {
+        externalNode.connect(0, subgraphNode, 0)
+      }).not.toThrow()
+
+      expect(
+        externalNode.outputs[0].links?.includes(subgraphNode.inputs[0].link!)
+      ).toBe(true)
+      expect(subgraphNode.inputs[0].link).not.toBe(null)
+    }
+  )
+
+  subgraphTest(
+    'empty input slot creation enables dynamic IO',
+    ({ simpleSubgraph }) => {
+      const initialInputCount = simpleSubgraph.inputs.length
+
+      // Create empty input slot
+      simpleSubgraph.addInput('', '*')
+
+      // Should create new input
+      expect(simpleSubgraph.inputs.length).toBe(initialInputCount + 1)
+
+      // The empty slot should be configurable
+      const emptyInput = simpleSubgraph.inputs.at(-1)!
+      expect(emptyInput.name).toBe('')
+      expect(emptyInput.type).toBe('*')
+    }
+  )
+
+  subgraphTest(
+    'handles slot removal with active connections',
+    ({ subgraphWithNode }) => {
+      const { subgraph, subgraphNode, parentGraph } = subgraphWithNode
+
+      const externalNode = new LGraphNode('External Source')
+      externalNode.addOutput('out', '*')
+      parentGraph.add(externalNode)
+
+      externalNode.connect(0, subgraphNode, 0)
+
+      // Verify connection exists
+      expect(subgraphNode.inputs[0].link).not.toBe(null)
+
+      // Remove the existing input (fixture creates one input)
+      const inputToRemove = subgraph.inputs[0]
+      subgraph.removeInput(inputToRemove)
+
+      // Connection should be cleaned up
+      expect(subgraphNode.inputs.length).toBe(0)
+      expect(externalNode.outputs[0].links).toBeNull()
+    }
+  )
+
+  subgraphTest(
+    'removing an input disconnects every internal link it has',
+    ({ subgraphWithNode }) => {
+      const { subgraph } = subgraphWithNode
+      const input = subgraph.inputs[0]
+
+      const internalNodes = Array.from({ length: 4 }, (_, i) => {
+        const node = new LGraphNode(`Internal ${i}`)
+        node.addInput('in', '*')
+        subgraph.add(node)
+        input.connect(node.inputs[0], node)
+        return node
+      })
+      expect(input.linkIds.length).toBe(4)
+
+      subgraph.removeInput(input)
+
+      expect(internalNodes.map((node) => node.inputs[0].link)).toEqual([
+        null,
+        null,
+        null,
+        null
+      ])
+      const ioLinks = [...subgraph.links.values()].filter(
+        (link) => link.originIsIoNode
+      )
+      expect(ioLinks).toHaveLength(0)
+    }
+  )
+
+  subgraphTest(
+    'removing an input keeps the links of the inputs after it on the right slot',
+    ({ subgraphWithNode }) => {
+      const { subgraph } = subgraphWithNode
+      const first = subgraph.inputs[0]
+      const second = subgraph.addInput('second', '*')
+
+      const firstTargets = Array.from({ length: 2 }, (_, i) => {
+        const node = new LGraphNode(`First target ${i}`)
+        node.addInput('in', '*')
+        subgraph.add(node)
+        first.connect(node.inputs[0], node)
+        return node
+      })
+      const secondTarget = new LGraphNode('Second target')
+      secondTarget.addInput('in', '*')
+      subgraph.add(secondTarget)
+      second.connect(secondTarget.inputs[0], secondTarget)
+
+      subgraph.removeInput(first)
+
+      expect(subgraph.inputs).toEqual([second])
+      expect(firstTargets.map((node) => node.inputs[0].link)).toEqual([
+        null,
+        null
+      ])
+      const link = subgraph.getLink(secondTarget.inputs[0].link)
+      expect(link?.origin_slot).toBe(0)
+      expect(second.linkIds).toEqual([link?.id])
+    }
+  )
+
+  subgraphTest('handles link disconnection', ({ subgraphWithNode }) => {
+    const { subgraph } = subgraphWithNode
+    const internalNode = new LGraphNode('External Source')
+    internalNode.addInput('in', '*')
+    internalNode.onConnectionsChange = vi.fn()
+    subgraph.add(internalNode)
+
+    const link = subgraph.inputNode.slots[0].connect(
+      internalNode.inputs[0],
+      internalNode
+    )
+    new ToInputFromIoNodeLink(
+      subgraph,
+      subgraph.inputNode,
+      subgraph.inputNode.slots[0],
+      undefined,
+      LinkDirection.CENTER,
+      link
+    ).disconnect()
+
+    expect(internalNode.inputs[0].link).toBeNull()
+    expect(subgraph.inputNode.slots[0].linkIds.length).toBe(0)
+    expect(internalNode.onConnectionsChange).toHaveBeenCalled()
+  })
+
+  subgraphTest(
+    'handles slot renaming with active connections',
+    ({ subgraphWithNode }) => {
+      const { subgraph, subgraphNode, parentGraph } = subgraphWithNode
+
+      const externalNode = new LGraphNode('External Source')
+      externalNode.addOutput('out', '*')
+      parentGraph.add(externalNode)
+
+      externalNode.connect(0, subgraphNode, 0)
+
+      // Verify connection exists
+      expect(subgraphNode.inputs[0].link).not.toBe(null)
+
+      // Rename the existing input (fixture creates input named "input")
+      const inputToRename = subgraph.inputs[0]
+      subgraph.renameInput(inputToRename, 'new_name')
+
+      // Connection should persist and subgraph definition should be updated
+      expect(subgraphNode.inputs[0].link).not.toBe(null)
+      expect(subgraph.inputs[0].label).toBe('new_name')
+      expect(subgraph.inputs[0].displayName).toBe('new_name')
+    }
+  )
+})
+
+describe('SubgraphIO - Output Slot Dual-Nature Behavior', () => {
+  subgraphTest(
+    'output provides connections to parent graph',
+    ({ subgraphWithNode }) => {
+      const { subgraph, subgraphNode, parentGraph } = subgraphWithNode
+
+      // Add an output to the subgraph
+      subgraph.addOutput('test_output', 'number')
+
+      const externalNode = new LGraphNode('External Target')
+      externalNode.addInput('in', 'number')
+      parentGraph.add(externalNode)
+
+      // External connection from subgraph output should work
+      expect(() => {
+        subgraphNode.connect(0, externalNode, 0)
+      }).not.toThrow()
+
+      expect(
+        subgraphNode.outputs[0].links?.includes(externalNode.inputs[0].link!)
+      ).toBe(true)
+      expect(externalNode.inputs[0].link).not.toBe(null)
+    }
+  )
+
+  subgraphTest(
+    'empty output slot creation enables dynamic IO',
+    ({ simpleSubgraph }) => {
+      const initialOutputCount = simpleSubgraph.outputs.length
+
+      // Create empty output slot
+      simpleSubgraph.addOutput('', '*')
+
+      // Should create new output
+      expect(simpleSubgraph.outputs.length).toBe(initialOutputCount + 1)
+
+      // The empty slot should be configurable
+      const emptyOutput = simpleSubgraph.outputs.at(-1)!
+      expect(emptyOutput.name).toBe('')
+      expect(emptyOutput.type).toBe('*')
+    }
+  )
+
+  subgraphTest(
+    'handles slot removal with active connections',
+    ({ subgraphWithNode }) => {
+      const { subgraph, subgraphNode, parentGraph } = subgraphWithNode
+
+      const externalNode = new LGraphNode('External Target')
+      externalNode.addInput('in', '*')
+      parentGraph.add(externalNode)
+
+      subgraphNode.connect(0, externalNode, 0)
+
+      // Verify connection exists
+      expect(externalNode.inputs[0].link).not.toBe(null)
+
+      // Remove the existing output (fixture creates one output)
+      const outputToRemove = subgraph.outputs[0]
+      subgraph.removeOutput(outputToRemove)
+
+      // Connection should be cleaned up
+      expect(subgraphNode.outputs.length).toBe(0)
+      expect(externalNode.inputs[0].link).toBe(null)
+    }
+  )
+
+  subgraphTest(
+    'handles slot renaming updates all references',
+    ({ subgraphWithNode }) => {
+      const { subgraph, subgraphNode, parentGraph } = subgraphWithNode
+
+      const externalNode = new LGraphNode('External Target')
+      externalNode.addInput('in', '*')
+      parentGraph.add(externalNode)
+
+      subgraphNode.connect(0, externalNode, 0)
+
+      // Verify connection exists
+      expect(externalNode.inputs[0].link).not.toBe(null)
+
+      // Rename the existing output (fixture creates output named "output")
+      const outputToRename = subgraph.outputs[0]
+      subgraph.renameOutput(outputToRename, 'new_name')
+
+      // Connection should persist and subgraph definition should be updated
+      expect(externalNode.inputs[0].link).not.toBe(null)
+      expect(subgraph.outputs[0].label).toBe('new_name')
+      expect(subgraph.outputs[0].displayName).toBe('new_name')
+    }
+  )
+})
+
+describe('SubgraphIO - Boundary Connection Management', () => {
+  subgraphTest(
+    'verifies cross-boundary link resolution',
+    ({ complexSubgraph }) => {
+      const subgraphNode = createTestSubgraphNode(complexSubgraph)
+      const parentGraph = subgraphNode.graph!
+
+      const externalSource = new LGraphNode('External Source')
+      externalSource.addOutput('out', 'number')
+      parentGraph.add(externalSource)
+
+      const externalTarget = new LGraphNode('External Target')
+      externalTarget.addInput('in', 'number')
+      parentGraph.add(externalTarget)
+
+      externalSource.connect(0, subgraphNode, 0)
+      subgraphNode.connect(0, externalTarget, 0)
+
+      expect(subgraphNode.inputs[0].link).not.toBe(null)
+      expect(externalTarget.inputs[0].link).not.toBe(null)
+    }
+  )
+
+  subgraphTest(
+    'handles bypass nodes that pass through data',
+    ({ simpleSubgraph }) => {
+      const subgraphNode = createTestSubgraphNode(simpleSubgraph)
+      const parentGraph = subgraphNode.graph!
+
+      const externalSource = new LGraphNode('External Source')
+      externalSource.addOutput('out', 'number')
+      parentGraph.add(externalSource)
+
+      const externalTarget = new LGraphNode('External Target')
+      externalTarget.addInput('in', 'number')
+      parentGraph.add(externalTarget)
+
+      externalSource.connect(0, subgraphNode, 0)
+      subgraphNode.connect(0, externalTarget, 0)
+
+      expect(subgraphNode.inputs[0].link).not.toBe(null)
+      expect(externalTarget.inputs[0].link).not.toBe(null)
+    }
+  )
+
+  subgraphTest(
+    'tests link integrity across subgraph boundaries',
+    ({ subgraphWithNode }) => {
+      const { subgraphNode, parentGraph } = subgraphWithNode
+
+      const externalSource = new LGraphNode('External Source')
+      externalSource.addOutput('out', '*')
+      parentGraph.add(externalSource)
+
+      const externalTarget = new LGraphNode('External Target')
+      externalTarget.addInput('in', '*')
+      parentGraph.add(externalTarget)
+
+      externalSource.connect(0, subgraphNode, 0)
+      subgraphNode.connect(0, externalTarget, 0)
+
+      const inputBoundaryLink = subgraphNode.inputs[0].link
+      const outputBoundaryLink = externalTarget.inputs[0].link
+
+      expect(inputBoundaryLink).toBeTruthy()
+      expect(outputBoundaryLink).toBeTruthy()
+
+      // Links should exist in parent graph
+      expect(inputBoundaryLink).toBeTruthy()
+      expect(outputBoundaryLink).toBeTruthy()
+    }
+  )
+
+  subgraphTest(
+    'verifies proper link cleanup on slot removal',
+    ({ complexSubgraph }) => {
+      const subgraphNode = createTestSubgraphNode(complexSubgraph)
+      const parentGraph = subgraphNode.graph!
+
+      const externalSource = new LGraphNode('External Source')
+      externalSource.addOutput('out', 'number')
+      parentGraph.add(externalSource)
+
+      const externalTarget = new LGraphNode('External Target')
+      externalTarget.addInput('in', 'number')
+      parentGraph.add(externalTarget)
+
+      externalSource.connect(0, subgraphNode, 0)
+      subgraphNode.connect(0, externalTarget, 0)
+
+      expect(subgraphNode.inputs[0].link).not.toBe(null)
+      expect(externalTarget.inputs[0].link).not.toBe(null)
+
+      const inputToRemove = complexSubgraph.inputs[0]
+      complexSubgraph.removeInput(inputToRemove)
+
+      expect(subgraphNode.inputs.findIndex((i) => i.name === 'data')).toBe(-1)
+      expect(externalSource.outputs[0].links).toBeNull()
+
+      const outputToRemove = complexSubgraph.outputs[0]
+      complexSubgraph.removeOutput(outputToRemove)
+
+      expect(subgraphNode.outputs.findIndex((o) => o.name === 'result')).toBe(
+        -1
+      )
+      expect(externalTarget.inputs[0].link).toBe(null)
+    }
+  )
+})
+
+describe('SubgraphIO - Advanced Scenarios', () => {
+  it('handles multiple inputs and outputs with complex connections', () => {
+    const subgraph = createTestSubgraph({
+      name: 'Complex IO Test',
+      inputs: [
+        { name: 'input1', type: 'number' },
+        { name: 'input2', type: 'string' },
+        { name: 'input3', type: 'boolean' }
+      ],
+      outputs: [
+        { name: 'output1', type: 'number' },
+        { name: 'output2', type: 'string' }
+      ]
+    })
+
+    const subgraphNode = createTestSubgraphNode(subgraph)
+
+    // Should have correct number of slots
+    expect(subgraphNode.inputs.length).toBe(3)
+    expect(subgraphNode.outputs.length).toBe(2)
+
+    // Each slot should have correct type
+    expect(subgraphNode.inputs[0].type).toBe('number')
+    expect(subgraphNode.inputs[1].type).toBe('string')
+    expect(subgraphNode.inputs[2].type).toBe('boolean')
+    expect(subgraphNode.outputs[0].type).toBe('number')
+    expect(subgraphNode.outputs[1].type).toBe('string')
+  })
+
+  it('handles dynamic slot creation and removal', () => {
+    const subgraph = createTestSubgraph({
+      name: 'Dynamic IO Test'
+    })
+
+    const subgraphNode = createTestSubgraphNode(subgraph)
+
+    // Start with no slots
+    expect(subgraphNode.inputs.length).toBe(0)
+    expect(subgraphNode.outputs.length).toBe(0)
+
+    // Add slots dynamically
+    subgraph.addInput('dynamic_input', 'number')
+    subgraph.addOutput('dynamic_output', 'string')
+
+    // SubgraphNode should automatically update
+    expect(subgraphNode.inputs.length).toBe(1)
+    expect(subgraphNode.outputs.length).toBe(1)
+    expect(subgraphNode.inputs[0].name).toBe('dynamic_input')
+    expect(subgraphNode.outputs[0].name).toBe('dynamic_output')
+
+    // Remove slots
+    subgraph.removeInput(subgraph.inputs[0])
+    subgraph.removeOutput(subgraph.outputs[0])
+
+    // SubgraphNode should automatically update
+    expect(subgraphNode.inputs.length).toBe(0)
+    expect(subgraphNode.outputs.length).toBe(0)
+  })
+
+  it.for(['inputNode', 'outputNode'] as const)(
+    'disconnects a port on the %s with Ctrl+Alt click',
+    (ioNodeKey) => {
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: 'in', type: 'INT' }],
+        outputs: [{ name: 'out', type: 'INT' }]
+      })
+      const inner = new LGraphNode('Inner')
+      inner.addInput('value', 'INT')
+      inner.addOutput('value', 'INT')
+      subgraph.add(inner)
+      subgraph.inputs[0].connect(inner.inputs[0], inner)
+      subgraph.outputs[0].connect(inner.outputs[0], inner)
+      const ioNode = subgraph[ioNodeKey]
+      ioNode.arrange()
+      const [x, y, width, height] = ioNode.slots[0].boundingRect
+      const center = [x + width / 2, y + height / 2] as const
+      const modifiers = { ctrlKey: true, altKey: true }
+      const pointer = new CanvasPointer(document.createElement('canvas'))
+      const down = pointerEvent('pointerdown', ...center, modifiers)
+
+      pointer.down(down)
+      ioNode.onPointerDown(down, pointer, new LinkConnector(() => {}))
+      pointer.up(pointerEvent('pointerup', ...center, modifiers))
+
+      expect(subgraph.links.size).toBe(1)
+      expect(ioNode.slots[0].linkIds).toEqual([])
+    }
+  )
+
+  it('shrinks the output node when outputs are removed', () => {
+    const subgraph = createTestSubgraph()
+    subgraph.addOutput('a', 'STRING')
+    const removed = subgraph.addOutput('b', 'STRING')
+    subgraph.outputNode.arrange()
+    const tall = subgraph.outputNode.boundingRect[3]
+
+    subgraph.removeOutput(removed)
+    subgraph.outputNode.arrange()
+
+    expect(subgraph.outputNode.boundingRect[3]).toBeLessThan(tall)
+  })
+
+  it('keeps a requested input node size larger than its slots', () => {
+    const subgraph = createTestSubgraph()
+    subgraph.addInput('a', 'STRING')
+    subgraph.inputNode.size = [344, 400]
+
+    subgraph.inputNode.arrange()
+
+    const [, , width, height] = subgraph.inputNode.boundingRect
+    expect([width, height]).toEqual([344, 400])
+  })
+
+  it('disconnects every fanout link without leaving orphaned target connections', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'number', type: 'INT' }]
+    })
+    const a = new LGraphNode('A')
+    const b = new LGraphNode('B')
+    const aInput = a.addInput('value', 'INT')
+    const bInput = b.addInput('value', 'INT')
+    subgraph.add(a)
+    subgraph.add(b)
+    const slot = subgraph.inputs[0]
+    slot.connect(aInput, a)
+    slot.connect(bInput, b)
+    expect(subgraph.links.size).toBe(2)
+
+    slot.disconnect()
+
+    expect(subgraph.links.size).toBe(0)
+    expect([aInput.link, bInput.link]).toEqual([null, null])
+    expect(slot.linkIds).toEqual([])
+  })
+
+  it('maintains slot synchronization across multiple instances', () => {
+    const subgraph = createTestSubgraph({
+      name: 'Multi-Instance Test',
+      inputs: [{ name: 'shared_input', type: 'number' }],
+      outputs: [{ name: 'shared_output', type: 'number' }]
+    })
+
+    // Create multiple instances
+    const instance1 = createTestSubgraphNode(subgraph)
+    const instance2 = createTestSubgraphNode(subgraph)
+    const instance3 = createTestSubgraphNode(subgraph)
+
+    // All instances should have same slots
+    expect(instance1.inputs.length).toBe(1)
+    expect(instance2.inputs.length).toBe(1)
+    expect(instance3.inputs.length).toBe(1)
+
+    // Modify the subgraph definition
+    subgraph.addInput('new_input', 'string')
+    subgraph.addOutput('new_output', 'boolean')
+
+    // All instances should automatically update
+    expect(instance1.inputs.length).toBe(2)
+    expect(instance2.inputs.length).toBe(2)
+    expect(instance3.inputs.length).toBe(2)
+    expect(instance1.outputs.length).toBe(2)
+    expect(instance2.outputs.length).toBe(2)
+    expect(instance3.outputs.length).toBe(2)
+  })
+})
+
+describe('SubgraphIO - Empty Slot Connection', () => {
+  subgraphTest(
+    'creates new input and connects when dragging from empty slot inside subgraph',
+    ({ subgraphWithNode }) => {
+      const { subgraph, subgraphNode } = subgraphWithNode
+
+      // Create a node inside the subgraph that will receive the connection
+      const internalNode = new LGraphNode('Internal Node')
+      internalNode.addInput('in', 'string')
+      subgraph.add(internalNode)
+
+      // Simulate the connection process from the empty slot to an internal node
+      // The -1 indicates a connection from the "empty" slot
+      subgraph.inputNode.connectByType(-1, internalNode, 'string')
+
+      // 1. A new input should have been created on the subgraph
+      expect(subgraph.inputs.length).toBe(2) // Fixture adds one input already
+      const newInput = subgraph.inputs[1]
+      expect(newInput.name).toBe('in')
+      expect(newInput.type).toBe('string')
+
+      // 2. The subgraph node should now have a corresponding real input slot
+      expect(subgraphNode.inputs.length).toBe(2)
+      const subgraphInputSlot = subgraphNode.inputs[1]
+      expect(subgraphInputSlot.name).toBe('in')
+
+      // 3. A link should be established inside the subgraph
+      expect(internalNode.inputs[0].link).not.toBe(null)
+      const link = subgraph.links.get(internalNode.inputs[0].link!)!
+      expect(link).toBeDefined()
+      expect(link.target_id).toBe(internalNode.id)
+      expect(link.target_slot).toBe(0)
+      expect(link.origin_id).toBe(subgraph.inputNode.id)
+      expect(link.origin_slot).toBe(1) // Should be the second slot
+    }
+  )
+
+  subgraphTest(
+    'creates distinct named inputs when promoting same widget name from multiple node instances',
+    ({ subgraphWithNode }) => {
+      const { subgraph, subgraphNode } = subgraphWithNode
+
+      const firstNode = new LGraphNode('First Seed Node')
+      const firstInput = firstNode.addInput('seed', 'number')
+      firstNode.addWidget('number', 'seed', 1, () => undefined)
+      firstInput.widget = { name: 'seed' }
+      subgraph.add(firstNode)
+
+      const secondNode = new LGraphNode('Second Seed Node')
+      const secondInput = secondNode.addInput('seed', 'number')
+      secondNode.addWidget('number', 'seed', 2, () => undefined)
+      secondInput.widget = { name: 'seed' }
+      subgraph.add(secondNode)
+
+      subgraph.inputNode.connectByType(-1, firstNode, 'number')
+      subgraph.inputNode.connectByType(-1, secondNode, 'number')
+
+      expect(subgraph.inputs.map((input) => input.name)).toStrictEqual([
+        'input',
+        'seed',
+        'seed_1'
+      ])
+      expect(subgraphNode.inputs.map((input) => input.name)).toStrictEqual([
+        'input',
+        'seed',
+        'seed_1'
+      ])
+    }
+  )
+})
+
+describe('SubgraphIO - Definition-keyed layout', () => {
+  it('applies a layout move to only the definition it names', () => {
+    const a = createTestSubgraph()
+    const b = createTestSubgraph({ rootGraph: a.rootGraph })
+    b.inputNode.pos = [300, 400]
+
+    layoutStore.applyOperation({
+      type: 'moveNode',
+      graphId: a.id,
+      nodeId: a.inputNode.id,
+      position: { x: 15, y: 25 },
+      source: LayoutSource.Vue,
+      timestamp: 0
+    })
+
+    expect([...a.inputNode.pos]).toEqual([15, 25])
+    expect(a.inputNode.asSerialisable().bounding.slice(0, 2)).toEqual([15, 25])
+    expect([...b.inputNode.pos]).toEqual([300, 400])
+  })
+
+  it('moves pseudo-node layout to the new key when an empty definition is renamed', () => {
+    const root = createTestRootGraph()
+    const subgraph = root.createSubgraph(createTestSubgraphData())
+    const previousId = subgraph.id
+    subgraph.inputNode.pos = [30, 40]
+
+    subgraph.id = '00000000-0000-4000-8000-0000000000aa'
+    subgraph.inputNode.pos = [50, 60]
+
+    expect(
+      layoutStore.getNodeLayout(subgraph.id, subgraph.inputNode.id)?.position
+    ).toEqual({ x: 50, y: 60 })
+    expect(
+      layoutStore.getNodeLayout(previousId, subgraph.inputNode.id)
+    ).toBeNull()
+  })
+
+  it('saves the fitted size without writing it as layout intent', async () => {
+    const subgraph = createTestSubgraph()
+    for (const name of ['a', 'b', 'c', 'd']) subgraph.addOutput(name, 'STRING')
+    const { outputNode } = subgraph
+    const changes: unknown[] = []
+    const stop = layoutStore.onChange((change) => changes.push(change))
+
+    outputNode.arrange()
+    await Promise.resolve()
+    stop()
+
+    expect(changes).toEqual([])
+    expect(outputNode.asSerialisable().bounding).toEqual(
+      outputNode.boundingRect.export()
+    )
+    expect(outputNode.asSerialisable().bounding[3]).not.toBe(outputNode.size[1])
+  })
+
+  it('drops pseudo-node layout and measurements when the root graph is cleared', () => {
+    const root = createTestRootGraph()
+    const subgraph = root.createSubgraph(createTestSubgraphData())
+    const { id, inputNode } = subgraph
+    layoutStore.reportContentSize(id, inputNode.id, { width: 240, height: 90 })
+
+    root.clear()
+
+    expect(layoutStore.getNodeLayout(id, inputNode.id)).toBeNull()
+    expect(layoutStore.contentSizeOf(id, inputNode.id)).toBeUndefined()
+  })
+})

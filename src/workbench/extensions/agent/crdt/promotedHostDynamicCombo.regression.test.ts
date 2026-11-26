@@ -14,14 +14,14 @@ import {
   bindPromotedDynamicInput,
   unbindPromotedDynamicInput
 } from '@/core/graph/widgets/dynamicWidgets'
-import { withGraphIntentSource } from '@/lib/litegraph/src/graphIntents'
-import { LiteGraph, SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import { withGraphIntentSource } from '@comfyorg/graph-state/graphIntents'
+import { LiteGraph, SubgraphNode } from '@comfyorg/litegraph/litegraph'
 import type {
   LGraph,
   LGraphNode,
   Positionable
-} from '@/lib/litegraph/src/litegraph'
-import { createTestRootGraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+} from '@comfyorg/litegraph/litegraph'
+import { createTestRootGraph } from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphHelpers'
 import { useLitegraphService } from '@/services/litegraphService'
 import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
 import { toRootGraphId } from '@comfyorg/graph-model/graphScopeId'

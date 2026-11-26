@@ -1,5 +1,5 @@
-import { assert } from '@/base/assert'
-import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import { assert } from '@comfyorg/shared-frontend-utils/assert'
+import type { LGraph } from '@comfyorg/litegraph/LGraph'
 import type { ComfyApp } from '@/types/comfy'
 
 interface InternalComfyApp extends ComfyApp {

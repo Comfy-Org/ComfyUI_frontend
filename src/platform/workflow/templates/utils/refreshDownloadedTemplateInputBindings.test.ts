@@ -1,7 +1,7 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/types'
 import { refreshDownloadedTemplateInputBindings } from './refreshDownloadedTemplateInputBindings'

@@ -11,7 +11,7 @@ import type {
 } from '@/components/graph/selectionGrid/selectionGridLayout'
 import { useGapDragSession } from '@/components/graph/selectionGrid/useGapDragSession'
 import { useSelectionGrid } from '@/components/graph/selectionGrid/useSelectionGrid'
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 

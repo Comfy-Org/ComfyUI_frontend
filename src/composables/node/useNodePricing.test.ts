@@ -14,16 +14,16 @@ import {
   LGraphEventMode,
   LGraphNode,
   LiteGraph
-} from '@/lib/litegraph/src/litegraph'
-import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
-import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+} from '@comfyorg/litegraph/litegraph'
+import type { Subgraph } from '@comfyorg/litegraph/subgraph/Subgraph'
+import type { SubgraphNode } from '@comfyorg/litegraph/subgraph/SubgraphNode'
 import {
   createTestSubgraph,
   createTestSubgraphNode
-} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+} from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphHelpers'
 import type { ComfyNodeDef, PriceBadge } from '@comfyorg/object-info-parser'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockLGraphNode } from '@comfyorg/litegraph/__fixtures__/litegraphTestUtils'
 
 // -----------------------------------------------------------------------------
 // Test Types

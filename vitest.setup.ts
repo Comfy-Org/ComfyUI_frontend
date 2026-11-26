@@ -9,8 +9,8 @@ import './vitest.network.setup'
 import {
   safeLocalStorage,
   safeSessionStorage
-} from '@/base/storage/safeStorage'
-import { clearRegisteredLiteGraphTypes } from '@/lib/litegraph/src/litegraphInstance'
+} from '@comfyorg/shared-frontend-utils/safeStorage'
+import { clearRegisteredLiteGraphTypes } from '@comfyorg/litegraph/litegraphInstance'
 import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import { StubPath2D } from '@/utils/__tests__/stubPath2D'
 

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { SafeStorage } from '@/base/storage/safeStorage'
+import { SafeStorage } from '@comfyorg/shared-frontend-utils/safeStorage'
 
 import { loadSplitterSizes, saveSplitterSizes } from './splitterPersistence'
 

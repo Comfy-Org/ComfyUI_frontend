@@ -1,6 +1,6 @@
 import type { TierKey } from '@/platform/billing/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/billing/subscription/utils/subscriptionTierRank'
-import { safeSessionStorage } from '@/base/storage/safeStorage'
+import { safeSessionStorage } from '@comfyorg/shared-frontend-utils/safeStorage'
 import type { BillingOpStatusResponse } from '@comfyorg/billing-core'
 
 const STORAGE_KEY = 'comfy:pending-subscription-checkout'

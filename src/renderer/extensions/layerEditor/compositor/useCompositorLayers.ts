@@ -3,7 +3,7 @@ import { reactive } from 'vue'
 
 import type { CompositorBBox } from '@comfyorg/layer-editor/persistence/compositorLayerState'
 import type { ImageFileRef } from '@/renderer/extensions/layerEditor/compositor/compositorPaths'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
 import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import { isSubgraph } from '@/utils/typeGuardUtil'

@@ -4,7 +4,7 @@
   "description": "Shared technical module that owns every read and write of localStorage and sessionStorage. Providers fail over localStorage -> sessionStorage -> in-memory and never throw, so a browser that denies storage (SecurityError) degrades instead of crashing. Direct use of the storage globals elsewhere is blocked by the comfy/no-direct-web-storage lint rule.",
   "modules": [
     {
-      "path": "src/base/storage/safeStorage.ts"
+      "path": "packages/shared-frontend-utils/src/safeStorage.ts"
     },
     {
       "path": "src/platform/storage/useSafeStorage.ts"
@@ -14,7 +14,7 @@
   "characterizationScenarios": [
     {
       "name": "Web Storage providers fail over and never throw",
-      "checks": ["src/base/storage/safeStorage.test.ts"]
+      "checks": ["packages/shared-frontend-utils/src/safeStorage.test.ts"]
     }
   ],
   "adrs": [],

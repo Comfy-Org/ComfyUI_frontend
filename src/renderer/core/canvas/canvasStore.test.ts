@@ -10,17 +10,17 @@ import {
   vi
 } from 'vitest'
 
-import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
-import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { selectableKeyOf } from '@/renderer/core/canvas/litegraph/selectionAdapter'
+import { LGraphGroup } from '@comfyorg/litegraph/LGraphGroup'
+import type { LGraphCanvas } from '@comfyorg/litegraph/litegraph'
+import { LGraph, LGraphNode } from '@comfyorg/litegraph/litegraph'
+import { selectableKeyOf } from '@comfyorg/litegraph/canvas/selectionAdapter'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useSelectionStore } from '@/core/selection/selectionStore'
+import { useSelectionStore } from '@comfyorg/graph-state/selection/selectionStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import {
   createMockCanvasRenderingContext2D,
   createTestCanvas
-} from '@/utils/__tests__/canvasTestUtils'
+} from '@comfyorg/litegraph/__fixtures__/canvasTestUtils'
 
 function createMockCanvas(readOnly = false): LGraphCanvas {
   return fromPartial<LGraphCanvas>({

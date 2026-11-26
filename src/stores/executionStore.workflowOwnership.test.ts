@@ -6,7 +6,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
 import { zeroUuid } from '@comfyorg/graph-model/uuid'
-import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockLoadedWorkflow } from '@/utils/__tests__/workflowTestUtils'
 
 vi.mock(import('@/composables/useAppMode'))
 vi.mock(import('@comfyorg/telemetry'))

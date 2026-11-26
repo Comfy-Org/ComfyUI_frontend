@@ -5,12 +5,12 @@ import type {
   RectTuple
 } from '@comfyorg/shared-frontend-utils/geometry'
 
-import type { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { createBounds } from '@/lib/litegraph/src/measure'
+import type { LGraph, LGraphCanvas } from '@comfyorg/litegraph/litegraph'
+import { LiteGraph } from '@comfyorg/litegraph/litegraph'
+import { createBounds } from '@comfyorg/litegraph/measure'
 import type { WorkflowImageRender } from '@/platform/workflow/core/services/workflowService'
-import { nodesInRenderOrder } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
-import { drawGraphBackground } from '@/lib/litegraph/src/canvas/drawGraphBackground'
+import { nodesInRenderOrder } from '@comfyorg/litegraph/canvas/arrangeForLegacyRender'
+import { drawGraphBackground } from '@comfyorg/litegraph/canvas/drawGraphBackground'
 import { createElementRasterizer } from '@/renderer/core/canvas/workflowImage/rasterizeElement'
 import type { PositionedElement } from '@/renderer/core/canvas/workflowImage/rasterizeElement'
 import { isDOMWidget } from '@/scripts/domWidget'

@@ -1,7 +1,7 @@
 import { defineComponent } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { ComponentWidgetImpl, DOMWidgetImpl } from '@/scripts/domWidget'
 
 describe('DOM widget layout-read matrix', () => {

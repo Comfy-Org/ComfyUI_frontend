@@ -432,7 +432,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import type { Positionable } from '@comfyorg/graph-model/interfaces'
 
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { useErrorsTabRequestStore } from './errorsTabRequestStore'
 import { useWorkflowErrorManager } from '@/platform/workflowErrors/workflowErrorManager'

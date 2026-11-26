@@ -2,7 +2,7 @@ import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { t } from '@/i18n'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { api } from '@/scripts/api'
 import type { useAudioService } from '@/services/audioService'
 import type { ComfyExtension } from '@/types/comfy'
@@ -71,7 +71,7 @@ vi.mock(import('@/scripts/api'))
 
 vi.mock(import('@/scripts/app'))
 
-vi.mock(import('@/utils/graphTraversalUtil'))
+vi.mock(import('@comfyorg/litegraph/utils/graphTraversalUtil'))
 
 vi.mock(import('@/services/audioService'), () => ({
   useAudioService: () =>

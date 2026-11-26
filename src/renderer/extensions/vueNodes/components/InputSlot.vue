@@ -65,7 +65,7 @@ import { computed, onErrorCaptured, ref } from 'vue'
 
 import EditableText from '@comfyorg/design-system/common/EditableText'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
+import type { INodeSlot } from '@comfyorg/litegraph/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'

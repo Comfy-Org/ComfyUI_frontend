@@ -3,7 +3,7 @@ import { whenever } from '@vueuse/core'
 import { onMounted, onUpdated, ref, watch } from 'vue'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import type { DOMWidget } from '@/types/domWidget'
+import type { DOMWidget } from '@comfyorg/litegraph/types/domWidget'
 import { isDOMWidget } from '@/scripts/domWidget'
 import { resolveWidgetFromHostNode } from '@/renderer/extensions/vueNodes/widgets/utils/resolvePromotedWidget'
 import { useWidgetHostNode } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetHostNode'

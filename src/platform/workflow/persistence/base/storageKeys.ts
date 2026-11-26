@@ -1,6 +1,6 @@
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { isCloud } from '@/platform/distribution/types'
-import { safeSessionStorage } from '@/base/storage/safeStorage'
+import { safeSessionStorage } from '@comfyorg/shared-frontend-utils/safeStorage'
 
 import { hashPath } from './hashUtil'
 

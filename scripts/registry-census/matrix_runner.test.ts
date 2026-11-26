@@ -5,8 +5,8 @@ import os from 'node:os'
 import path from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import type { ISerialisedNode } from '@/lib/litegraph/src/litegraph'
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { ISerialisedNode } from '@comfyorg/litegraph/litegraph'
+import { LGraph, LGraphNode, LiteGraph } from '@comfyorg/litegraph/litegraph'
 
 import {
   captureSerializationEntryPoints,

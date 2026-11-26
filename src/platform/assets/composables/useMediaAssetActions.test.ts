@@ -13,7 +13,7 @@ import type { App } from 'vue'
 import { createApp, defineComponent, h, provide, ref } from 'vue'
 
 import { i18n } from '@/i18n'
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { unflattenOutputAssets } from '@/platform/assets/adapters/outputAssetMappers'
 import { getOutputAssetMetadata } from '@/platform/assets/types/outputAssetMetadata'
 import { assetService } from '@/platform/assets/services/assetService'

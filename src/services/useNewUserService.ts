@@ -1,7 +1,7 @@
 import { ref, shallowRef } from 'vue'
 import { createSharedComposable } from '@vueuse/core'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { safeLocalStorage } from '@/base/storage/safeStorage'
+import { safeLocalStorage } from '@comfyorg/shared-frontend-utils/safeStorage'
 import { reportError } from '@comfyorg/telemetry/reportError'
 
 function hasV2DraftHistory(raw: string | null): boolean {

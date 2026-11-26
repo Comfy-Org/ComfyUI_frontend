@@ -47,11 +47,11 @@ import ToolboxButton from '@/components/graph/selectionToolbox/ToolboxButton.vue
 import Button from '@comfyorg/design-system/button/Button'
 import Menu from '@comfyorg/design-system/menu/Menu'
 import MenuItem from '@comfyorg/design-system/menu/MenuItem'
-import type { LinkEnd } from '@/lib/litegraph/src/canvas/linkGeometry'
-import { getSelectedLinkDestinations } from '@/lib/litegraph/src/canvas/linkSelection'
+import type { LinkEnd } from '@comfyorg/litegraph/canvas/linkGeometry'
+import { getSelectedLinkDestinations } from '@comfyorg/litegraph/canvas/linkSelection'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLinkDestinationNavigation } from '@/renderer/core/canvas/useLinkDestinationNavigation'
-import { useLinkSelectionStore } from '@/stores/linkSelectionStore'
+import { useLinkSelectionStore } from '@comfyorg/graph-state/linkSelectionStore'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 const { t } = useI18n()

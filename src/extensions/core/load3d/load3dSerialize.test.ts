@@ -4,7 +4,7 @@ import { nextTick, reactive, toRaw, watch } from 'vue'
 import type Load3d from '@comfyorg/viewport3d/load3d/Load3d'
 import { snapshotLoad3dState } from '@/extensions/core/load3d/load3dSerialize'
 import type { CameraState } from '@comfyorg/viewport3d/load3d/interfaces'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
 
 function makeNode(props: Record<string, unknown> = {}): LGraphNode {
   return { properties: { ...props } } as unknown as LGraphNode

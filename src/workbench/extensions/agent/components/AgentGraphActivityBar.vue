@@ -4,10 +4,10 @@ import { useI18n } from 'vue-i18n'
 
 import CanvasBanner from '@comfyorg/design-system/common/CanvasBanner'
 import Button from '@comfyorg/design-system/button/Button'
-import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import type { LGraphCanvas } from '@comfyorg/litegraph/litegraph'
 import { useApp } from '@/scripts/appInstance'
 import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
-import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
+import { getNodeByLocatorId } from '@comfyorg/litegraph/utils/graphTraversalUtil'
 import { createPositionBounds } from '@/utils/positionBounds'
 
 import { useAgentGraphActivityStore } from '@/workbench/extensions/agent/stores/agent/agentGraphActivityStore'

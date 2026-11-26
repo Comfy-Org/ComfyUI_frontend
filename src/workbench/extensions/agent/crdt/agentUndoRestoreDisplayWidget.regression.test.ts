@@ -12,7 +12,7 @@ import {
 
 import { fromPartial } from '@total-typescript/shoehorn'
 
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode, LiteGraph } from '@comfyorg/litegraph/litegraph'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { ISerialisedGraph } from '@comfyorg/graph-model/serialisation'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'

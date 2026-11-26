@@ -2,12 +2,12 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { assert, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { useSelectionGrid } from '@/components/graph/selectionGrid/useSelectionGrid'
-import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraphCanvas } from '@comfyorg/litegraph/litegraph'
+import { LGraph, LGraphNode, LiteGraph } from '@comfyorg/litegraph/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { bindMountedNodeSize } from '@/renderer/core/layout/store/mountedNodeSizes'
+import { bindMountedNodeSize } from '@comfyorg/graph-state/layout/mountedNodeSizes'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
-import { createTestLink } from '@/utils/__tests__/litegraphTestUtils'
+import { createTestLink } from '@comfyorg/litegraph/__fixtures__/litegraphTestUtils'
 
 const nodeIn = (graph: LGraph, title: string) => {
   const node = new LGraphNode(title)

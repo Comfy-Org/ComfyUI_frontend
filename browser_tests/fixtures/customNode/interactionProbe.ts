@@ -1,4 +1,4 @@
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 
 import type { SYNTH_PRODUCERS } from '@e2e/fixtures/customNode/autoRun'
 import type {

@@ -1,17 +1,17 @@
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
-import { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import type { LGraph, Subgraph } from '@comfyorg/litegraph/litegraph'
+import { LGraphCanvas } from '@comfyorg/litegraph/litegraph'
 import {
   createTestSubgraph,
   createTestSubgraphNode
-} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+} from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphHelpers'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
-import { stubCanvasGetContext } from '@/utils/__tests__/canvasTestUtils'
+import { stubCanvasGetContext } from '@comfyorg/litegraph/__fixtures__/canvasTestUtils'
 
 vi.mock(import('@/scripts/app'))
 vi.mock<unknown>(import('vue-router'), () => ({

@@ -4,9 +4,9 @@ import { defineComponent, h, nextTick, useTemplateRef } from 'vue'
 
 import { reportError } from '@comfyorg/telemetry/reportError'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphCanvas, LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
+import { createMockCanvasRenderingContext2D } from '@comfyorg/litegraph/__fixtures__/canvasTestUtils'
 
 import { useNodeMouseCallbacks } from './useNodeMouseCallbacks'
 

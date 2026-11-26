@@ -9,7 +9,7 @@ import { useTelemetry } from '@comfyorg/telemetry'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useDOMWidgetTestNodes } from '@/renderer/extensions/vueNodes/widgets/composables/domWidgetTestUtils'
-import { LGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraph } from '@comfyorg/litegraph/litegraph'
 
 const createDOMWidgetNode = useDOMWidgetTestNodes()
 

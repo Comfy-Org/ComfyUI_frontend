@@ -1,9 +1,9 @@
 import { markRaw, toRaw } from 'vue'
 import type { Raw } from 'vue'
 
-import { assert } from '@/base/assert'
-import type { LGraph } from '@/lib/litegraph/src/LGraph'
-import { withGraphIntentSourceForRootGraph } from '@/lib/litegraph/src/graphIntents'
+import { assert } from '@comfyorg/shared-frontend-utils/assert'
+import type { LGraph } from '@comfyorg/litegraph/LGraph'
+import { withGraphIntentSourceForRootGraph } from '@comfyorg/graph-state/graphIntents'
 import type { ExecutedWsMessage } from '@comfyorg/api-client/executionTypes'
 import { UserFile } from '@/stores/userFileStore'
 import type { UserFileSaveOptions } from '@/stores/userFileStore'

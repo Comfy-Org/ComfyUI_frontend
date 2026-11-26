@@ -1,9 +1,9 @@
-import { serializeItems } from '@/core/graph/clipboard/graphTransfer'
+import { serializeItems } from '@comfyorg/litegraph/clipboard/graphTransfer'
 import { defineStore } from 'pinia'
 
 import { t } from '@/i18n'
 import { reportError } from '@comfyorg/telemetry/reportError'
-import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import { SubgraphNode } from '@comfyorg/litegraph/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'

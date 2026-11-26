@@ -31,7 +31,7 @@ usable for deciding what to test next, for three reasons.
    `platform/workspace` is at 34% while `vueNodes` is at 81%.
 
 Two further facts shape the decision. The Vitest config excludes
-`src/lib/litegraph/src/canvas/**` and `widgets/**` from unit coverage, so E2E
+`packages/litegraph/src/canvas/**` and `widgets/**` from unit coverage, so E2E
 is the only measuring layer for those 11.9k lines and holds them at about
 49%. And the suite has no inventory of the user journeys it protects: the
 `@smoke` tag is applied to 46 tests and no CI job runs it.

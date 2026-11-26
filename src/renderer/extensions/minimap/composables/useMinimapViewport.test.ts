@@ -2,15 +2,15 @@ import { useRafFn } from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraph } from '@comfyorg/litegraph/litegraph'
 import { MinimapDataSource } from '@/renderer/extensions/minimap/data/MinimapDataSource'
 import { useMinimapViewport } from '@/renderer/extensions/minimap/composables/useMinimapViewport'
 import type { MinimapCanvas } from '@/renderer/extensions/minimap/types'
-import { createTestCanvasElement } from '@/utils/__tests__/canvasTestUtils'
+import { createTestCanvasElement } from '@comfyorg/litegraph/__fixtures__/canvasTestUtils'
 import {
   createMockLGraph,
   createMockLGraphNode
-} from '@/utils/__tests__/litegraphTestUtils'
+} from '@comfyorg/litegraph/__fixtures__/litegraphTestUtils'
 
 vi.mock(import('@vueuse/core'), { spy: true })
 

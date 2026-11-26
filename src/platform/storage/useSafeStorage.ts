@@ -5,7 +5,7 @@ import type { MaybeRefOrGetter } from 'vue'
 import {
   safeLocalStorage,
   safeSessionStorage
-} from '@/base/storage/safeStorage'
+} from '@comfyorg/shared-frontend-utils/safeStorage'
 
 /** VueUse `useStorage` bound to `safeLocalStorage`; never throws when storage is blocked. */
 export function useSafeLocalStorage<T>(

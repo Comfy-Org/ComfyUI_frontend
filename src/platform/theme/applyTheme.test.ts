@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { DEFAULT_DARK_THEME_PRESET } from '@comfyorg/theme-core/builtInThemePresets'
 import { resolveTheme } from '@comfyorg/theme-core/resolveTheme'
-import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraphCanvas, LiteGraph } from '@comfyorg/litegraph/litegraph'
 
 import { applyTheme } from './applyTheme'
 

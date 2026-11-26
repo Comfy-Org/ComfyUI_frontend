@@ -1,6 +1,6 @@
 import type { LocationQuery, LocationQueryRaw } from 'vue-router'
 
-import { safeSessionStorage } from '@/base/storage/safeStorage'
+import { safeSessionStorage } from '@comfyorg/shared-frontend-utils/safeStorage'
 
 const STORAGE_PREFIX = 'Comfy.PreservedQuery.'
 const preservedQueries = new Map<string, Record<string, string>>()

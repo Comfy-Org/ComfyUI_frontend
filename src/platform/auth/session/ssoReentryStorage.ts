@@ -5,7 +5,7 @@ import type { WebSession } from '@comfyorg/account-core/webSession'
 import {
   safeLocalStorage,
   safeSessionStorage
-} from '@/base/storage/safeStorage'
+} from '@comfyorg/shared-frontend-utils/safeStorage'
 
 const HINT_KEY = 'Comfy.WebSession.SsoHint'
 const ATTEMPT_KEY = 'Comfy.WebSession.SsoReentryAt'

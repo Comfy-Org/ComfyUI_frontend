@@ -1,4 +1,4 @@
-import { createUuidv4 } from '@/utils/uuid'
+import { createUuidv4 } from '@comfyorg/graph-model/uuid'
 
 let clientSessionId: string | undefined
 

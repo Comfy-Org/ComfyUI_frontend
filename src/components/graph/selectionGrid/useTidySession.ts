@@ -12,7 +12,7 @@ import type {
 } from '@/components/graph/selectionGrid/selectionGridLayout'
 import { useGapDragSession } from '@/components/graph/selectionGrid/useGapDragSession'
 import { useSelectionGrid } from '@/components/graph/selectionGrid/useSelectionGrid'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 
 export function useTidySession() {

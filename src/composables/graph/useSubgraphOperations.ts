@@ -1,7 +1,7 @@
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { t } from '@/i18n'
-import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import { SubgraphNode } from '@comfyorg/litegraph/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'

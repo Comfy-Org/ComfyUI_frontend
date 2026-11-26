@@ -1,0 +1,273 @@
+import { fromPartial } from '@total-typescript/shoehorn'
+import { afterEach, describe, expect, it } from 'vitest'
+
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import type { LinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+
+import type { LGraph } from './LGraph'
+import type { LLink } from './LLink'
+import {
+  emitGraphIntent,
+  onGraphIntent,
+  withGraphIntentSource,
+  withGraphIntentSourceForRootGraph
+} from '@comfyorg/graph-state/graphIntents'
+import {
+  collectingSeveredLinks,
+  emitLinkDisconnect
+} from './graphIntentEmitters'
+import type {
+  GraphIntent,
+  GraphIntentEvent
+} from '@comfyorg/graph-state/graphIntents'
+
+const CLEAR: GraphIntent = { type: 'clear', graphId: 'g', nodeIds: [] }
+
+function listen(): { events: GraphIntentEvent[]; detach: () => void } {
+  const events: GraphIntentEvent[] = []
+  const detach = onGraphIntent((event) => events.push(event))
+  return { events, detach }
+}
+
+const detachers: (() => void)[] = []
+function track(detach: () => void): void {
+  detachers.push(detach)
+}
+
+afterEach(() => {
+  for (const detach of detachers.splice(0)) detach()
+})
+
+describe('withGraphIntentSource', () => {
+  it('tags intents with the innermost scope and restores the outer one after', () => {
+    const { events, detach } = listen()
+    track(detach)
+
+    withGraphIntentSource('load', () => {
+      emitGraphIntent(CLEAR)
+      withGraphIntentSource('agent-remote', () => emitGraphIntent(CLEAR))
+      emitGraphIntent(CLEAR)
+    })
+    emitGraphIntent(CLEAR)
+
+    expect(events.map((event) => event.source)).toEqual([
+      'load',
+      'agent-remote',
+      'load',
+      'local'
+    ])
+  })
+
+  it('restores the outer scope when the scoped function throws', () => {
+    const { events, detach } = listen()
+    track(detach)
+    const failure = new Error('configure failed')
+
+    expect(() =>
+      withGraphIntentSource('load', () => {
+        throw failure
+      })
+    ).toThrow(failure)
+    emitGraphIntent(CLEAR)
+
+    expect(events.map((event) => event.source)).toEqual(['local'])
+  })
+})
+
+describe('withGraphIntentSourceForRootGraph', () => {
+  function rootGraph(id: string): LGraph {
+    const graph = fromPartial<LGraph>({ id })
+    Object.defineProperty(graph, 'rootGraph', { get: () => graph })
+    return graph
+  }
+  function subgraphOf(root: LGraph, id: string): LGraph {
+    return fromPartial<LGraph>({ id, rootGraph: root })
+  }
+  function titleWrite(graph: LGraph): GraphIntent {
+    return {
+      type: 'set_node_field',
+      graph,
+      nodeId: toNodeId(1),
+      field: 'title',
+      value: 'Renamed'
+    }
+  }
+
+  const disposed = rootGraph('disposed')
+  const live = rootGraph('live')
+  const inScope: GraphIntent = {
+    type: 'clear',
+    graphId: 'disposed',
+    nodeIds: []
+  }
+  const outOfScope = titleWrite(live)
+
+  it('tags the scoped document, including its subgraphs, and leaves another document alone', () => {
+    const { events, detach } = listen()
+    track(detach)
+
+    withGraphIntentSourceForRootGraph('load', disposed, () => {
+      emitGraphIntent(inScope)
+      emitGraphIntent(titleWrite(disposed))
+      emitGraphIntent(titleWrite(subgraphOf(disposed, 'disposed-subgraph')))
+      emitGraphIntent(outOfScope)
+    })
+
+    expect(events.map((event) => event.source)).toEqual([
+      'load',
+      'load',
+      'load',
+      'local'
+    ])
+  })
+
+  it('leaves another root alone when a disposed subgraph shares its id', () => {
+    const { events, detach } = listen()
+    track(detach)
+    const collidingRoot = rootGraph('shared-id')
+    const collidingSubgraph = subgraphOf(disposed, 'shared-id')
+
+    withGraphIntentSourceForRootGraph('load', disposed, () => {
+      emitGraphIntent(titleWrite(collidingSubgraph))
+      emitGraphIntent(titleWrite(collidingRoot))
+      emitGraphIntent({ type: 'clear', graphId: 'shared-id', nodeIds: [] })
+    })
+
+    expect(events.map((event) => event.source)).toEqual([
+      'load',
+      'local',
+      'local'
+    ])
+  })
+
+  it('keeps an enclosing unscoped source for a document outside the scope', () => {
+    const { events, detach } = listen()
+    track(detach)
+
+    withGraphIntentSource('agent-remote', () => {
+      withGraphIntentSourceForRootGraph('load', disposed, () => {
+        emitGraphIntent(inScope)
+        emitGraphIntent(outOfScope)
+      })
+    })
+
+    expect(events.map((event) => event.source)).toEqual([
+      'load',
+      'agent-remote'
+    ])
+  })
+
+  it('lets an inner unscoped source win for every document', () => {
+    const { events, detach } = listen()
+    track(detach)
+
+    withGraphIntentSourceForRootGraph('load', disposed, () => {
+      withGraphIntentSource('agent-remote', () => {
+        emitGraphIntent(inScope)
+        emitGraphIntent(outOfScope)
+      })
+      emitGraphIntent(inScope)
+    })
+
+    expect(events.map((event) => event.source)).toEqual([
+      'agent-remote',
+      'agent-remote',
+      'load'
+    ])
+  })
+
+  it('keeps an enclosing scope when a nested disposal scopes another document', () => {
+    const { events, detach } = listen()
+    track(detach)
+    const nested = rootGraph('nested-disposal')
+
+    withGraphIntentSourceForRootGraph('load', disposed, () => {
+      withGraphIntentSourceForRootGraph('agent-remote', nested, () => {
+        emitGraphIntent(titleWrite(nested))
+        emitGraphIntent(inScope)
+        emitGraphIntent(titleWrite(disposed))
+        emitGraphIntent(outOfScope)
+      })
+      emitGraphIntent(inScope)
+    })
+
+    expect(events.map((event) => event.source)).toEqual([
+      'agent-remote',
+      'load',
+      'load',
+      'local',
+      'load'
+    ])
+  })
+
+  it('restores the outer scope when the scoped function throws', () => {
+    const { events, detach } = listen()
+    track(detach)
+    const failure = new Error('disposal failed')
+
+    expect(() =>
+      withGraphIntentSourceForRootGraph('load', disposed, () => {
+        throw failure
+      })
+    ).toThrow(failure)
+    emitGraphIntent(inScope)
+
+    expect(events.map((event) => event.source)).toEqual(['local'])
+  })
+})
+
+describe('emitGraphIntent', () => {
+  it('delivers to every listener when an earlier one throws, and reports the failure', () => {
+    const failure = new Error('extension listener broke')
+    track(
+      onGraphIntent(() => {
+        throw failure
+      })
+    )
+    const { events, detach } = listen()
+    track(detach)
+
+    expect(() => emitGraphIntent(CLEAR)).not.toThrow()
+
+    expect(events).toEqual([{ ...CLEAR, source: 'local' }])
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(failure, {
+      surface: 'graph',
+      errorType: 'graph_intent_listener_failed',
+      context: { intent: 'clear', source: 'local' }
+    })
+  })
+
+  it('folds link disconnects raised inside collectingSeveredLinks into the sink instead of announcing them', () => {
+    const { events, detach } = listen()
+    track(detach)
+    const graph = fromPartial<LGraph>({})
+    const link = (id: number) => fromPartial<LLink>({ id: toLinkId(id) })
+    const severed: LinkId[] = []
+
+    collectingSeveredLinks(severed, () => {
+      emitLinkDisconnect(graph, link(1))
+      emitGraphIntent({ type: 'connect', graph, link: link(2) })
+    })
+    emitLinkDisconnect(graph, link(3))
+
+    expect(severed).toEqual([toLinkId(1)])
+    expect(
+      events.map((event) => [event.type, 'link' in event && event.link.id])
+    ).toEqual([
+      ['connect', toLinkId(2)],
+      ['disconnect', toLinkId(3)]
+    ])
+  })
+
+  it('stops delivering to a detached listener', () => {
+    const { events, detach } = listen()
+
+    emitGraphIntent(CLEAR)
+    detach()
+    emitGraphIntent(CLEAR)
+
+    expect(events).toHaveLength(1)
+  })
+})

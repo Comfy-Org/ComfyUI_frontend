@@ -1,6 +1,6 @@
 import { afterEach, assert, describe, expect, it, vi } from 'vitest'
 
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 
 import { clipspace, copyToClipspace, pasteFromClipspace } from './clipspace'

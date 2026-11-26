@@ -6,7 +6,7 @@ import { basename, join } from 'node:path'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { BUILT_IN_THEME_PRESETS } from '@comfyorg/theme-core/builtInThemePresets'
 import { themeSchema } from '@comfyorg/theme-core/themePresetSchema'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph } from '@comfyorg/litegraph/litegraph'
 import type { ComfyApp } from '@/scripts/app'
 import {
   useLegacyColorPaletteService,

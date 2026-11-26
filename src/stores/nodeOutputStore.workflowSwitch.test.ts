@@ -6,7 +6,7 @@ import type {
   LGraph,
   LGraphNode,
   Subgraph
-} from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/litegraph'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
@@ -23,9 +23,12 @@ vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
   resolveNode: vi.fn()
 }))
 
-vi.mock<unknown>(import('@/utils/graphTraversalUtil'), () => ({
-  executionIdToNodeLocatorId: vi.fn((_rootGraph: unknown, id: string) => id)
-}))
+vi.mock<unknown>(
+  import('@comfyorg/litegraph/utils/graphTraversalUtil'),
+  () => ({
+    executionIdToNodeLocatorId: vi.fn((_rootGraph: unknown, id: string) => id)
+  })
+)
 
 vi.mock(import('@/scripts/app'))
 

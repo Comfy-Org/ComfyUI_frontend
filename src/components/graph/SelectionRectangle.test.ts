@@ -3,8 +3,8 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, describe, expect, it } from 'vitest'
 import { nextTick } from 'vue'
 
-import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
-import { runCanvasFramePhase } from '@/lib/litegraph/src/canvas/canvasFrame'
+import type { LGraphCanvas } from '@comfyorg/litegraph/LGraphCanvas'
+import { runCanvasFramePhase } from '@comfyorg/litegraph/canvas/canvasFrame'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 import SelectionRectangle from './SelectionRectangle.vue'

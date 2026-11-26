@@ -6,16 +6,16 @@ import { getActivePinia } from 'pinia'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
 import TooltipProvider from '@comfyorg/design-system/tooltip/TooltipProvider'
-import type { SubgraphNode } from '@/lib/litegraph/src/litegraph'
-import { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import type { SubgraphNode } from '@comfyorg/litegraph/litegraph'
+import { LGraphCanvas } from '@comfyorg/litegraph/litegraph'
 import {
   createTestSubgraph,
   createTestSubgraphNode
-} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { reorderSubgraphInputs } from '@/lib/litegraph/src/subgraph/subgraphUtils'
+} from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphHelpers'
+import { reorderSubgraphInputs } from '@comfyorg/litegraph/subgraph/subgraphUtils'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
-import { stubCanvasGetContext } from '@/utils/__tests__/canvasTestUtils'
+import { stubCanvasGetContext } from '@comfyorg/litegraph/__fixtures__/canvasTestUtils'
 import { testI18n } from '@/utils/__tests__/testI18n'
 import { isSubgraph } from '@/utils/typeGuardUtil'
 

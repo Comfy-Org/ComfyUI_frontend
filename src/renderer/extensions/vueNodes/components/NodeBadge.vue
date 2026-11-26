@@ -13,7 +13,7 @@
   </div>
 </template>
 <script setup lang="ts">
-import type { LGraphBadge } from '@/lib/litegraph/src/LGraphBadge'
+import type { LGraphBadge } from '@comfyorg/litegraph/LGraphBadge'
 import { cn } from '@comfyorg/tailwind-utils'
 
 export interface NodeBadgeProps {

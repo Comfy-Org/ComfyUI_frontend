@@ -5,7 +5,7 @@ import type { EffectScope } from 'vue'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { linkedConcatSlots } from '@/composables/videoConcat/linkedConcatSlots'
 import { translateOrder } from '@/composables/videoConcat/videoConcatOrder'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import type { IVideoConcatWidget } from '@comfyorg/graph-model/widgets'
 
 export function syncConcatOrderWithLinks(

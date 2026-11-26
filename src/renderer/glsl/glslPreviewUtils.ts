@@ -1,6 +1,6 @@
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
-import { inputLink } from '@/lib/litegraph/src/node/slotLinks'
+import type { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
+import { SUBGRAPH_INPUT_ID } from '@comfyorg/litegraph/constants'
+import { inputLink } from '@comfyorg/litegraph/node/slotLinks'
 
 export const GLSL_NODE_TYPE = 'GLSLShader'
 export const DEBOUNCE_MS = 50

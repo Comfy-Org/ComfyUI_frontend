@@ -2,7 +2,7 @@ import { assert, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { effectScope, nextTick } from 'vue'
 
 import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useTextPreviewSystem } from '@/systems/textPreviewSystem'

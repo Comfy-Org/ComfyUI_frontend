@@ -4,8 +4,8 @@ import { createI18n } from 'vue-i18n'
 import { describe, expect, it, vi } from 'vitest'
 
 import { useNodeMenuOptions } from '@/composables/graph/useNodeMenuOptions'
-import type { Positionable } from '@/lib/litegraph/src/litegraph'
-import { LGraphEventMode, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { Positionable } from '@comfyorg/litegraph/litegraph'
+import { LGraphEventMode, LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 

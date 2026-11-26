@@ -5,7 +5,7 @@ import {
   themeSchema
 } from '@comfyorg/theme-core/themePresetSchema'
 
-import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraphCanvas, LiteGraph } from '@comfyorg/litegraph/litegraph'
 
 const THEME_ALIASED_LEGACY_KEYS: ReadonlySet<string> = new Set([
   'fg-color',

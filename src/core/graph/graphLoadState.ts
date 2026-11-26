@@ -1,4 +1,4 @@
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraph } from '@comfyorg/litegraph/litegraph'
 
 const loadingGraphs = new WeakSet<LGraph>()
 const graphLoadGenerations = new WeakMap<LGraph, number>()

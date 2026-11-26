@@ -2,7 +2,7 @@ import { isPlainObject } from 'es-toolkit'
 import { withTimeout } from 'es-toolkit/promise'
 
 import type { CheckoutAttributionMetadata } from '@comfyorg/telemetry/types'
-import { safeLocalStorage } from '@/base/storage/safeStorage'
+import { safeLocalStorage } from '@comfyorg/shared-frontend-utils/safeStorage'
 
 type GaIdentity = {
   client_id?: string

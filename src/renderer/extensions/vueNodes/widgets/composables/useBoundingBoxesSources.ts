@@ -7,7 +7,7 @@ import {
   resolveWidgetInputSource
 } from '@/composables/widgetInputSource'
 import type { BoundingBoxInput } from '@/composables/boundingBoxes/boundingBoxesUtil'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { savedImageUrls } from '@/renderer/extensions/vueNodes/widgets/utils/savedImageUrls'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'

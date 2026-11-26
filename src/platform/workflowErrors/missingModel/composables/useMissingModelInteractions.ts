@@ -6,7 +6,7 @@ import { useAssetDownloadStore } from '@/platform/assets/stores/assetDownloadSto
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useApp } from '@/scripts/appInstance'
-import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
+import { getNodeByExecutionId } from '@comfyorg/litegraph/utils/graphTraversalUtil'
 import type { MissingModelViewModel } from '@/platform/workflowErrors/missingModel/types'
 
 export function getModelStateKey(

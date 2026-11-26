@@ -1,0 +1,107 @@
+import { assert, describe, expect, it } from 'vitest'
+import { nextTick, watch } from 'vue'
+
+import { createTestWidgetNode } from './__fixtures__/nodeHelpers'
+import { LGraph, LiteGraph } from './litegraph'
+
+function createWidgetInputNode() {
+  const node = createTestWidgetNode(new LGraph())
+  node.pos = [0, 0]
+  node.size = [200, 120]
+  node.inputs[0].widget = { name: 'text_widget' }
+  node._setConcreteSlots()
+  return node
+}
+
+describe('LGraphNode widget input slot arrangement', () => {
+  it('recomputes fixed row height from the node width before growable sizing', () => {
+    const node = createWidgetInputNode()
+    const widget = node.widgets?.[0]
+    assert.exists(widget)
+    widget.computeSize = (width = 0) => [width, width / 5]
+    widget.computeLayoutSize = () => ({ minWidth: 0, minHeight: 91 })
+
+    node.arrange()
+    expect(widget.computedHeight).toBe(40 + LiteGraph.NODE_WIDGET_GAP)
+
+    node.size = [275, 120]
+    node.arrange()
+    expect(widget.computedHeight).toBe(55 + LiteGraph.NODE_WIDGET_GAP)
+  })
+
+  it('keeps arranging rows when an extension sizing callback fails', () => {
+    const node = createWidgetInputNode()
+    const widget = node.widgets?.[0]
+    assert.exists(widget)
+    widget.computeSize = () => {
+      throw new Error('Extension sizing failed')
+    }
+
+    node.arrange()
+
+    expect(widget.computedHeight).toBe(
+      LiteGraph.NODE_WIDGET_HEIGHT + LiteGraph.NODE_WIDGET_GAP
+    )
+  })
+
+  it('arranges a node that is drawn after it left its graph', () => {
+    const graph = new LGraph()
+    const node = createTestWidgetNode(graph)
+    node.pos = [0, 0]
+    node.size = [200, 1]
+    graph.remove(node)
+    expect(node.graph).toBeFalsy()
+
+    expect(() => node.arrange()).not.toThrow()
+    expect(node.widgets?.[0].computedHeight).toBeGreaterThan(0)
+  })
+
+  it('keeps the same pos array when the widget row has not moved', () => {
+    const node = createWidgetInputNode()
+    node.arrange()
+    const firstPos = node.inputs[0].pos
+
+    node.arrange()
+
+    expect(node.inputs[0].pos).toBe(firstPos)
+  })
+
+  it('does not notify slot position subscribers on an unchanged re-arrange', async () => {
+    const node = createWidgetInputNode()
+    node.arrange()
+    await nextTick()
+
+    let notifications = 0
+    const stop = watch(
+      () => node.inputs[0].pos,
+      () => {
+        notifications++
+      }
+    )
+
+    node.arrange()
+    await nextTick()
+    stop()
+
+    expect(notifications).toBe(0)
+  })
+
+  it('writes a new pos when the widget row actually moves', async () => {
+    const node = createWidgetInputNode()
+    node.arrange()
+    const firstPos = node.inputs[0].pos
+    assert.exists(firstPos)
+
+    node.widgets_start_y = (node.widgets_start_y ?? 0) + 40
+    node.arrange()
+    await nextTick()
+
+    const pos = node.inputs[0].pos
+    const widget = node.widgets?.[0]
+    assert.exists(pos)
+    assert.exists(widget)
+    expect(pos).not.toBe(firstPos)
+    expect(pos[1]).not.toBe(firstPos[1])
+    expect(pos[1]).toBe(widget.y + LiteGraph.NODE_SLOT_HEIGHT * 0.5)
+  })
+})

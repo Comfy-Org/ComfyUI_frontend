@@ -1,4 +1,4 @@
-import { safeLocalStorage } from '@/base/storage/safeStorage'
+import { safeLocalStorage } from '@comfyorg/shared-frontend-utils/safeStorage'
 
 const FF_PREFIX = 'ff:'
 

@@ -43,9 +43,6 @@
       "path": "src/platform/workspace/composables/useWorkspaceUrlLoader.ts"
     },
     {
-      "path": "src/platform/workspace/fixtures/**"
-    },
-    {
       "path": "src/platform/workspace/stores/partnerNodeGovernanceStore.ts"
     },
     {

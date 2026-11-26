@@ -5,24 +5,24 @@ import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import LinkDestinationButton from '@/components/graph/selectionToolbox/LinkDestinationButton.vue'
-import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
-import type { DragAndScale } from '@/lib/litegraph/src/DragAndScale'
+import { createTestNode } from '@comfyorg/litegraph/__fixtures__/nodeHelpers'
+import type { DragAndScale } from '@comfyorg/litegraph/DragAndScale'
 import {
   getSelectedLinkIds,
   selectLinksInMarquee,
   selectSlotLinks
-} from '@/lib/litegraph/src/canvas/linkSelection'
-import { LGraph } from '@/lib/litegraph/src/LGraph'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+} from '@comfyorg/litegraph/canvas/linkSelection'
+import { LGraph } from '@comfyorg/litegraph/LGraph'
+import type { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
 import { LinkRenderType } from '@comfyorg/graph-model/globalEnums'
 import enMain from '@/locales/en/main.json' with { type: 'json' }
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { setLinkPolyline } from '@/renderer/core/canvas/linkPolylines'
+import { setLinkPolyline } from '@comfyorg/litegraph/canvas/linkPolylines'
 import {
   createMockCanvas,
   createTestDragAndScale
-} from '@/utils/__tests__/canvasTestUtils'
+} from '@comfyorg/litegraph/__fixtures__/canvasTestUtils'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 const i18n = createI18n({

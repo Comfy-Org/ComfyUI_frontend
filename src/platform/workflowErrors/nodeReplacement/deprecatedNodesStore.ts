@@ -1,8 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
-import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraph, LGraphNode } from '@comfyorg/litegraph/litegraph'
+import { LiteGraph } from '@comfyorg/litegraph/litegraph'
 import {
   dedupeMissingNodeTypes,
   removePendingMissingNodeTypesByExecutionIdPrefix,
@@ -15,7 +15,7 @@ import {
   getExecutionIdByNode,
   isExecutionPathActive,
   mapUniqueNodes
-} from '@/utils/graphTraversalUtil'
+} from '@comfyorg/litegraph/utils/graphTraversalUtil'
 
 /** Installed nodes whose definition is deprecated and whose registered replacement can be created. */
 export const useDeprecatedNodesStore = defineStore('deprecatedNodes', () => {

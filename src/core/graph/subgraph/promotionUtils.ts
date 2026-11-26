@@ -1,22 +1,22 @@
 import cloneDeep from 'es-toolkit/compat/cloneDeep'
 import { addBreadcrumb } from '@sentry/vue'
-import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
+import type { PromotedWidgetSource } from '@comfyorg/graph-model/promotedWidgetTypes'
 import { t } from '@/i18n'
-import type { IContextMenuValue } from '@/lib/litegraph/src/litegraph'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { markNodeMenuCallback } from '@/lib/litegraph/src/types/nodeMenu'
-import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+import type { IContextMenuValue } from '@comfyorg/litegraph/litegraph'
+import { LGraphNode } from '@comfyorg/litegraph/litegraph'
+import { markNodeMenuCallback } from '@comfyorg/litegraph/types/nodeMenu'
+import type { SubgraphNode } from '@comfyorg/litegraph/subgraph/SubgraphNode'
 import type { LinkId } from '@comfyorg/graph-model/linkId'
-import { hostInputOf } from '@/lib/litegraph/src/subgraph/hostInput'
-import { reorderSubgraphInputs } from '@/lib/litegraph/src/subgraph/subgraphUtils'
+import { hostInputOf } from '@comfyorg/litegraph/subgraph/hostInput'
+import { reorderSubgraphInputs } from '@comfyorg/litegraph/subgraph/subgraphUtils'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
-import { nextUniqueName } from '@/lib/litegraph/src/strings'
+import { nextUniqueName } from '@comfyorg/graph-state/strings'
 import { useToast } from '@/components/ui/toast/toastStore'
 import {
   CANVAS_IMAGE_PREVIEW_WIDGET,
   isMediaPreviewWidgetName,
   previewSourceName
-} from '@/core/graph/subgraph/preview/mediaPreviewName'
+} from '@comfyorg/graph-state/mediaPreviewName'
 import { supportsVirtualCanvasImagePreview } from '@/composables/node/canvasImagePreviewTypes'
 import {
   providePromoteRecommendedWidgets,
@@ -25,14 +25,14 @@ import {
 import {
   getPreviewExposureHostLocator,
   usePreviewExposureStore
-} from '@/stores/previewExposureStore'
+} from '@comfyorg/graph-state/previewExposureStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { UNASSIGNED_NODE_ID, toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 
 type PartialNode = Pick<LGraphNode, 'title' | 'id' | 'type'>
 type RuntimeWidget = Omit<IBaseWidget, 'options'> &

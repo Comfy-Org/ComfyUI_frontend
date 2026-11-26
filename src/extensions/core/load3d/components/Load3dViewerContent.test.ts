@@ -5,9 +5,9 @@ import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import Load3dViewerContent from '@/extensions/core/load3d/components/Load3dViewerContent.vue'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
 import { useDialogStore } from '@/stores/dialogStore'
-import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockLGraphNode } from '@comfyorg/litegraph/__fixtures__/litegraphTestUtils'
 
 beforeEach(() => {
   vi.mocked(useDialogStore().closeDialog).mockImplementation(() => {})

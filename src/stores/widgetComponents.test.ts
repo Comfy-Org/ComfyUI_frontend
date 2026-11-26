@@ -2,15 +2,15 @@ import { assert, describe, expect, it } from 'vitest'
 import { computed } from 'vue'
 
 import { addDynamicCombo } from '@/core/graph/widgets/__fixtures__/dynamicInputHelpers'
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
 import type { NodeProperty } from '@comfyorg/graph-model/nodeProperty'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import { detachNodeFromStores } from '@/core/graph/nodeShell/nodeShellLifecycle'
-import { useWidgetValueStore } from './widgetValueStore'
+import { detachNodeFromStores } from '@comfyorg/litegraph/node/nodeShell/nodeShellLifecycle'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 
-import { widgetComponentStores } from './widgetComponents'
+import { widgetComponentStores } from '@comfyorg/graph-state/widgetComponents'
 
 const samples = {
   widgetFolderLock: {

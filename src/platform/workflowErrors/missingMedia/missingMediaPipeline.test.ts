@@ -2,7 +2,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useToast } from '@/components/ui/toast/toastStore'
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraph } from '@comfyorg/litegraph/litegraph'
 import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
 import {
   createPromotedMediaRuntime,

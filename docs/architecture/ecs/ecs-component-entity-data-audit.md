@@ -64,23 +64,23 @@ current authority boundaries.
 
 Representative implementation:
 
-- `src/lib/litegraph/src/LGraph.ts`: graph fields, `add`, `removeNode`,
+- `packages/litegraph/src/LGraph.ts`: graph fields, `add`, `removeNode`,
   `computeExecutionOrder`, `configure`, `asSerialisable`, and `Subgraph`.
-- `src/lib/litegraph/src/idAllocation.ts`: root-shared mint and observe helpers.
-- `src/lib/litegraph/src/subgraph/subgraphDeduplication.ts`: recursive import
+- `packages/litegraph/src/idAllocation.ts`: root-shared mint and observe helpers.
+- `packages/litegraph/src/subgraph/subgraphDeduplication.ts`: recursive import
   normalization.
-- `src/lib/litegraph/src/LGraphNode.ts`: `order`, `last_serialization`, and
+- `packages/litegraph/src/LGraphNode.ts`: `order`, `last_serialization`, and
   `serialize`.
 - `src/platform/workflowErrors/nodeReplacement/useNodeReplacement.ts`: unknown-node discovery
   and replacement.
 
 Representative evidence:
 
-- `src/lib/litegraph/src/LGraph.test.ts`: shared counters, definition retention,
+- `packages/litegraph/src/LGraph.test.ts`: shared counters, definition retention,
   and cross-definition identity.
-- `src/lib/litegraph/src/subgraph/SubgraphSerialization.test.ts`: interface,
+- `packages/litegraph/src/subgraph/SubgraphSerialization.test.ts`: interface,
   membership, topology, and collision round trips.
-- `src/lib/litegraph/src/idAllocation.test.ts`: mint and observe behavior.
+- `packages/litegraph/src/idAllocation.test.ts`: mint and observe behavior.
 - `src/platform/workflowErrors/nodeReplacement/useNodeReplacement.test.ts`: unknown-node
   replacement and compatibility values.
 
@@ -106,29 +106,29 @@ Representative evidence:
 
 Representative implementation:
 
-- `src/types/nodeState.ts`; `src/lib/litegraph/src/LGraphNode.ts`.
+- `src/types/nodeState.ts`; `packages/litegraph/src/LGraphNode.ts`.
 - `src/renderer/core/layout/operations/graphLayoutAttachment.ts` and
   `layoutMutations.ts`.
-- `src/lib/litegraph/src/LGraphCanvas.ts`: `bringToFront` and `sendToBack`.
+- `packages/litegraph/src/LGraphCanvas.ts`: `bringToFront` and `sendToBack`.
 - `src/renderer/core/canvas/litegraph/arrangeForLegacyRender.ts`.
-- `src/lib/litegraph/src/node/SlotBase.ts`, `NodeSlot.ts`, `NodeInputSlot.ts`, and
+- `packages/litegraph/src/node/SlotBase.ts`, `NodeSlot.ts`, `NodeInputSlot.ts`, and
   `NodeOutputSlot.ts`.
-- `src/lib/litegraph/src/LLink.ts` and
+- `packages/litegraph/src/LLink.ts` and
   `src/renderer/core/canvas/litegraph/litegraphLinkAdapter.ts`.
-- `src/lib/litegraph/src/LGraphGroup.ts`.
+- `packages/litegraph/src/LGraphGroup.ts`.
 
 Representative evidence:
 
 - `src/stores/nodeDataStore.test.ts`: shell transfer and slot-array identity.
-- `src/lib/litegraph/src/LGraphNode.test.ts`: stable geometry views and
+- `packages/litegraph/src/LGraphNode.test.ts`: stable geometry views and
   store-backed indexed writes.
 - `src/renderer/core/layout/operations/layoutMutations.test.ts` and
   `src/renderer/core/canvas/litegraph/arrangeForLegacyRender.test.ts`: z-order
   mutation and legacy projection.
-- `src/lib/litegraph/src/node/NodeInputSlot.test.ts`,
+- `packages/litegraph/src/node/NodeInputSlot.test.ts`,
   `NodeOutputSlot.test.ts`, and `slotEcosystemPatterns.test.ts`: derived
   connectivity and extension compatibility.
-- `src/lib/litegraph/src/canvas/LinkConnector.core.test.ts`: transient link
+- `packages/litegraph/src/canvas/LinkConnector.core.test.ts`: transient link
   interaction state.
 
 ### Outputs, properties, widgets, and preview exposures
@@ -150,21 +150,21 @@ Representative evidence:
 Representative implementation:
 
 - `src/stores/nodeOutputStore.ts`; `src/scripts/app.ts`.
-- `src/lib/litegraph/src/LGraphNode.ts`: `properties`, `configure`,
+- `packages/litegraph/src/LGraphNode.ts`: `properties`, `configure`,
   `setProperty`, and `serialize`.
-- `src/stores/widgetValueStore.ts`; `src/lib/litegraph/src/widgets/BaseWidget.ts`;
+- `src/stores/widgetValueStore.ts`; `packages/litegraph/src/widgets/BaseWidget.ts`;
   `src/extensions/core/widgetInputs.ts`.
 - `src/stores/previewExposureStore.ts` and
-  `src/lib/litegraph/src/subgraph/SubgraphNode.ts`.
+  `packages/litegraph/src/subgraph/SubgraphNode.ts`.
 
 Representative evidence:
 
 - `src/stores/nodeOutputStore.test.ts` and
   `nodeOutputStore.workflowSwitch.test.ts`: mirrored maps, legacy image
   projection, cleanup, and workflow switching.
-- `src/lib/litegraph/src/LGraphNode.widgetOrder.test.ts`: named/positional
+- `packages/litegraph/src/LGraphNode.widgetOrder.test.ts`: named/positional
   restoration and reorder behavior.
-- `src/lib/litegraph/src/subgraph/SubgraphWidgetPromotion.test.ts`: store-backed
+- `packages/litegraph/src/subgraph/SubgraphWidgetPromotion.test.ts`: store-backed
   promoted values and preview-exposure round trips.
 - `src/stores/previewExposureStore.test.ts`: graph isolation and root cleanup.
 
@@ -182,8 +182,8 @@ Representative evidence:
 
 Representative implementation:
 
-- `src/lib/litegraph/src/LGraph.ts`: `asSerialisable` and graph `onSerialize`.
-- `src/lib/litegraph/src/LGraphNode.ts`: node `serialize` and `onSerialize`.
+- `packages/litegraph/src/LGraph.ts`: `asSerialisable` and graph `onSerialize`.
+- `packages/litegraph/src/LGraphNode.ts`: node `serialize` and `onSerialize`.
 - `src/utils/executionUtil.ts`: workflow and prompt construction.
 - `src/extensions/core/dynamicPrompts.ts`: queue-time workflow projection write.
 

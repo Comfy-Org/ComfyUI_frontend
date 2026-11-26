@@ -23,18 +23,18 @@ import {
   documentInputIndex,
   documentInputSlot
 } from '@/core/graph/widgets/documentSlots'
-import { registerDocBoundRootGraphProbe } from '@/lib/litegraph/src/docBoundGraphs'
-import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
+import { registerDocBoundRootGraphProbe } from '@comfyorg/litegraph/docBoundGraphs'
+import { onGraphIntent } from '@comfyorg/graph-state/graphIntents'
 import type {
   GraphIntentEvent,
   NodeFieldWrite
-} from '@/lib/litegraph/src/graphIntents'
+} from '@comfyorg/graph-state/graphIntents'
 import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
-import type { LGraph } from '@/lib/litegraph/src/LGraph'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { LLink } from '@/lib/litegraph/src/LLink'
-import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
-import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+import type { LGraph } from '@comfyorg/litegraph/LGraph'
+import type { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
+import type { LLink } from '@comfyorg/litegraph/LLink'
+import type { Subgraph } from '@comfyorg/litegraph/subgraph/Subgraph'
+import type { SubgraphNode } from '@comfyorg/litegraph/subgraph/SubgraphNode'
 import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
 import { isWidgetValue } from '@comfyorg/graph-model/widgets'
 import { reportError } from '@comfyorg/telemetry/reportError'
@@ -43,7 +43,7 @@ import { onGraphRestored } from '@/scripts/graphRestore'
 import type { GraphRestore } from '@/scripts/graphRestore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { DynamicComboSelection } from '@/stores/nodeDefStore'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 import type { RootGraphId } from '@comfyorg/graph-model/graphScopeId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
@@ -52,7 +52,7 @@ import {
   findSubgraphByUuid,
   findSubgraphNodePathById,
   traverseSubgraphPath
-} from '@/utils/graphTraversalUtil'
+} from '@comfyorg/litegraph/utils/graphTraversalUtil'
 
 import { SUBSCRIBE_ACK_MAX_TIMEOUTS } from './agentCrdtDocLifecycle'
 import type { GraphOperation } from './graphOperations'

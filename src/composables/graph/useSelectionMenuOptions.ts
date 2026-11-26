@@ -1,7 +1,7 @@
 import { useI18n } from 'vue-i18n'
 
 import { useSelectionGrid } from '@/components/graph/selectionGrid/useSelectionGrid'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 
 import { useFrameNodes } from './useFrameNodes'
 import { BadgeVariant } from './menuOption'

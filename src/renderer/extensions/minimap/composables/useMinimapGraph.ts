@@ -1,12 +1,12 @@
 import { watch } from 'vue'
 import type { Ref } from 'vue'
 
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import type { LGraph } from '@comfyorg/litegraph/litegraph'
+import { layoutStore } from '@comfyorg/graph-state/layout/layoutStore'
 import { getMinimapExecutionStates } from '@/renderer/extensions/minimap/data/minimapExecutionState'
 import type { MinimapChange } from '@/renderer/extensions/minimap/types'
 import { useExecutionStore } from '@/stores/executionStore'
-import { useLinkStore } from '@/stores/linkStore'
+import { useLinkStore } from '@comfyorg/graph-state/linkStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 
 function quantise(value: number): number {

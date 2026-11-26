@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 
 import NodeHelpContent from '@/components/node/NodeHelpContent.vue'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 const { nodes } = defineProps<{

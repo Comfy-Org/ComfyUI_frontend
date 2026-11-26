@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { deriveWidgetVisibility } from '@/types/widgetVisibility'
+import { deriveWidgetVisibility } from '@comfyorg/graph-model/widgetVisibility'
 import type { IBaseWidget, IWidgetOptions } from '@comfyorg/graph-model/widgets'
 
 import { computedSectionDataList } from './widgetSections'

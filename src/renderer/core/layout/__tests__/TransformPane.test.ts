@@ -2,13 +2,13 @@ import { fireEvent, render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphCanvas } from '@comfyorg/litegraph/litegraph'
 import {
   createMockCanvas,
   createMockCanvasRenderingContext2D,
   createTestCanvasElement,
   stubCanvasGetContext
-} from '@/utils/__tests__/canvasTestUtils'
+} from '@comfyorg/litegraph/__fixtures__/canvasTestUtils'
 
 import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
 

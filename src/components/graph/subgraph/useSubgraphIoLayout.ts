@@ -8,11 +8,11 @@ import type {
   Size2D as Size
 } from '@comfyorg/shared-frontend-utils/geometry'
 
-import { onCanvasFrame } from '@/lib/litegraph/src/canvas/canvasFrame'
-import type { SubgraphInputNode } from '@/lib/litegraph/src/subgraph/SubgraphInputNode'
-import type { SubgraphOutputNode } from '@/lib/litegraph/src/subgraph/SubgraphOutputNode'
+import { onCanvasFrame } from '@comfyorg/litegraph/canvas/canvasFrame'
+import type { SubgraphInputNode } from '@comfyorg/litegraph/subgraph/SubgraphInputNode'
+import type { SubgraphOutputNode } from '@comfyorg/litegraph/subgraph/SubgraphOutputNode'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { layoutStore } from '@comfyorg/graph-state/layout/layoutStore'
 import { MIN_NODE_WIDTH } from '@/renderer/core/layout/transform/graphRenderTransform'
 import { useCompositedTransform } from '@/renderer/core/layout/transform/useCompositedTransform'
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'

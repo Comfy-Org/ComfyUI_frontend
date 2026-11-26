@@ -10,7 +10,7 @@
       "path": "src/extensions/core/painter.ts"
     },
     {
-      "path": "src/lib/litegraph/src/widgets/PainterWidget.ts"
+      "path": "packages/litegraph/src/widgets/PainterWidget.ts"
     },
     {
       "path": "src/renderer/extensions/vueNodes/widgets/composables/usePainterWidget.ts"
@@ -18,7 +18,7 @@
   ],
   "publicEntryPoints": [
     "src/extensions/core/painter.ts",
-    "src/lib/litegraph/src/widgets/PainterWidget.ts",
+    "packages/litegraph/src/widgets/PainterWidget.ts",
     "src/renderer/extensions/painter/components/WidgetPainter.vue",
     "src/renderer/extensions/vueNodes/widgets/composables/usePainterWidget.ts"
   ],

@@ -1,4 +1,4 @@
-import { insertItems } from '@/core/graph/clipboard/graphTransfer'
+import { insertItems } from '@comfyorg/litegraph/clipboard/graphTransfer'
 import { workflowToClipboardItems } from '@/core/graph/clipboard/workflowToClipboardItems'
 import type {
   ExportedSubgraphInstance,
@@ -34,19 +34,19 @@ import {
   SubgraphNode,
   createBounds,
   outputAsSerialisable
-} from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/litegraph'
 import type {
   CreateNodeOptions,
   GraphAddOptions,
   IContextMenuValue,
   INodeInputSlot,
   Subgraph
-} from '@/lib/litegraph/src/litegraph'
-import { markNodeMenuCallback } from '@/lib/litegraph/src/types/nodeMenu'
+} from '@comfyorg/litegraph/litegraph'
+import { markNodeMenuCallback } from '@comfyorg/litegraph/types/nodeMenu'
 import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import { GET_CONFIG } from '@comfyorg/graph-model/widgets'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
-import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
+import { toConcreteWidget } from '@comfyorg/litegraph/widgets/widgetMap'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { createPromotedMultilineWidget } from '@/renderer/extensions/vueNodes/widgets/utils/multilineTextarea'
@@ -81,7 +81,7 @@ import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import {
   getPreviewExposureHostLocator,
   usePreviewExposureStore
-} from '@/stores/previewExposureStore'
+} from '@comfyorg/graph-state/previewExposureStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useFavoritedWidgetsStore } from '@/renderer/extensions/propertiesPanel/favoritedWidgetsStore'
 import { usePropertiesPanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'

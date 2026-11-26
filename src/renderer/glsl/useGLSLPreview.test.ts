@@ -8,11 +8,11 @@ import type { MaybeRefOrGetter } from 'vue'
 import {
   createTestSubgraph,
   createTestSubgraphNode
-} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+} from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphHelpers'
+import { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
 import type { GLSLRendererConfig } from '@/renderer/glsl/useGLSLRenderer'
 import { useGLSLPreview } from '@/renderer/glsl/useGLSLPreview'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 

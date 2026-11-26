@@ -6,14 +6,14 @@
  * works in legacy canvas mode as well.
  */
 import { useChainCallback } from '@/composables/functional/useChainCallback'
-import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
+import { resolvePromotedWidgetSource } from '@comfyorg/litegraph/subgraph/promotion/resolvePromotedWidgetSource'
 import { createPromotionErrorReconciler } from '@/core/graph/subgraph/createPromotionErrorReconciler'
 import type {
   NodeBeforeRemovedEvent,
   NodeLifecycleEvent
 } from '@comfyorg/graph-model/LGraphEventMap'
-import { LiteGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
-import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph, Subgraph } from '@comfyorg/litegraph/litegraph'
+import type { LGraph, LGraphNode } from '@comfyorg/litegraph/litegraph'
 import {
   LGraphEventMode,
   NodeSlotType
@@ -39,7 +39,7 @@ import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/mis
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { useDeprecatedNodesStore } from '@/platform/workflowErrors/nodeReplacement/deprecatedNodesStore'
 import { useNodeReplacementStore } from '@/platform/workflowErrors/nodeReplacement/nodeReplacementStore'
-import { getCnrIdFromNode } from '@/platform/workflowErrors/nodeReplacement/cnrIdUtil'
+import { getCnrIdFromNode } from '@comfyorg/litegraph/utils/cnrIdUtil'
 import { useApp } from '@/scripts/appInstance'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
@@ -52,7 +52,7 @@ import {
   getNodeByExecutionId,
   isExecutionPathActive,
   isMissingCandidateActive
-} from '@/utils/graphTraversalUtil'
+} from '@comfyorg/litegraph/utils/graphTraversalUtil'
 import { getParentExecutionIds } from '@comfyorg/graph-model/nodeIdentification'
 
 const hookedNodes = new WeakSet<LGraphNode>()

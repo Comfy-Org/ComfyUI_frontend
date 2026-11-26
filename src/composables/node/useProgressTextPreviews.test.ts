@@ -3,7 +3,7 @@ import { assert, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { effectScope } from 'vue'
 
 import { useProgressTextPreviews } from '@/composables/node/useProgressTextPreviews'
-import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
+import type { LGraphCanvas } from '@comfyorg/litegraph/LGraphCanvas'
 import type { ProgressTextWsMessage } from '@comfyorg/api-client/executionTypes'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -12,7 +12,7 @@ import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockLGraphNode } from '@comfyorg/litegraph/__fixtures__/litegraphTestUtils'
 
 const { showTextPreview, removeTextPreview } = vi.hoisted(() => ({
   showTextPreview: vi.fn(),

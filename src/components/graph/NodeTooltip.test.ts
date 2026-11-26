@@ -9,8 +9,8 @@ import {
   LGraphNode,
   isOverNodeInput,
   isOverNodeOutput
-} from '@/lib/litegraph/src/litegraph'
-import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/litegraph'
+import type { LGraphCanvas } from '@comfyorg/litegraph/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { Settings } from '@comfyorg/settings-core/types'
 import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
@@ -63,7 +63,7 @@ const mockCanvas = vi.hoisted((): MockCanvas => ({
   getWidgetAtCursor: vi.fn<() => MockWidget | null>()
 }))
 
-vi.mock(import('@/lib/litegraph/src/litegraph'), { spy: true })
+vi.mock(import('@comfyorg/litegraph/litegraph'), { spy: true })
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {

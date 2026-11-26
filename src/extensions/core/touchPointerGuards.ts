@@ -1,4 +1,4 @@
-import { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { LGraphCanvas } from '@comfyorg/litegraph/litegraph'
 
 import { canvasOrReport } from './touchCanvasAccess'
 

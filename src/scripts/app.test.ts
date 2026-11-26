@@ -37,14 +37,14 @@ import type { CurveData } from '@comfyorg/graph-model/curve'
 import type { useExtensionService } from '@/platform/extensions/services/extensionService'
 import { isGraphLoadHookOrigin } from '@/platform/extensions/services/extensionService'
 import { t } from '@/i18n'
-import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
-import type { GraphIntentEvent } from '@/lib/litegraph/src/graphIntents'
+import { onGraphIntent } from '@comfyorg/graph-state/graphIntents'
+import type { GraphIntentEvent } from '@comfyorg/graph-state/graphIntents'
 import {
   LGraph,
   LGraphCanvas,
   LGraphNode,
   LiteGraph
-} from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/litegraph'
 import * as keybindingServiceModule from '@/platform/keybindings/keybindingService'
 import type { SerialisableGraph } from '@comfyorg/graph-model/serialisation'
 import type {
@@ -59,7 +59,7 @@ import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/
 import { getDefaultWorkflow } from '@/platform/workflow/core/services/defaultWorkflowService'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { useWorkflowValidation } from '@/platform/workflow/validation/composables/useWorkflowValidation'
-import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockChangeTracker } from '@/utils/__tests__/workflowTestUtils'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { isCanvasOwner } from '@/platform/workflow/core/canvasTrackerOwnership'
 import { isGraphLoading } from '@/core/graph/graphLoadState'
@@ -69,12 +69,12 @@ import {
   createTestCanvasElement,
   createTestDragAndScale,
   setCanvasVisible
-} from '@/utils/__tests__/canvasTestUtils'
+} from '@comfyorg/litegraph/__fixtures__/canvasTestUtils'
 import { useDeprecatedNodesStore } from '@/platform/workflowErrors/nodeReplacement/deprecatedNodesStore'
 import { useNodeReplacementStore } from '@/platform/workflowErrors/nodeReplacement/nodeReplacementStore'
 import { useNodeReplacement } from '@/platform/workflowErrors/nodeReplacement/useNodeReplacement'
 import type { NodeReplacement } from '@/platform/workflowErrors/nodeReplacement/types'
-import type { NodeExecutionOutput } from '@comfyorg/api-client/executionTypes'
+import type { NodeExecutionOutput } from '@comfyorg/graph-model/nodeOutput'
 import type { NodeError } from '@comfyorg/api-client/types'
 import * as litegraphUtil from '@/utils/litegraphUtil'
 import { createNode } from '@/utils/createNode'
@@ -122,13 +122,13 @@ import { useDialogStore } from '@/stores/dialogStore'
 import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
+import { createTestNode } from '@comfyorg/litegraph/__fixtures__/nodeHelpers'
 import {
   createTestRootGraph,
   createTestSubgraph,
   createTestSubgraphNode
-} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+} from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphHelpers'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 import { MIME_ASSET_INFO } from '@/platform/assets/constants/assetDrag'
 import { extractFilesFromDragEvent } from '@/platform/assets/integration/assetDrop'
 import { reportError } from '@comfyorg/telemetry/reportError'

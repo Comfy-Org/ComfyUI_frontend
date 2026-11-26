@@ -15,21 +15,21 @@ import {
   discardCanvasCopy,
   forgetCanvasCopy,
   isCurrentCanvasCopy
-} from '@/core/graph/clipboard/canvasClipboard'
-import { serializeItems } from '@/core/graph/clipboard/graphTransfer'
+} from '@comfyorg/litegraph/clipboard/canvasClipboard'
+import { serializeItems } from '@comfyorg/litegraph/clipboard/graphTransfer'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import {
   CANVAS_CLIPBOARD_ID_KEY,
   CANVAS_CLIPBOARD_KEY,
   readClipboardStorage
-} from '@/core/graph/clipboard/clipboardStorage'
-import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
-import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
-import { createTestRootGraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+} from '@comfyorg/litegraph/clipboard/clipboardStorage'
+import type { LGraphCanvas } from '@comfyorg/litegraph/litegraph'
+import { createTestNode } from '@comfyorg/litegraph/__fixtures__/nodeHelpers'
+import { createTestRootGraph } from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphHelpers'
 import {
   createMockCanvasRenderingContext2D,
   createTestCanvas
-} from '@/utils/__tests__/canvasTestUtils'
+} from '@comfyorg/litegraph/__fixtures__/canvasTestUtils'
 import { fromPartial } from '@total-typescript/shoehorn'
 
 const copyMocks = {
@@ -38,7 +38,7 @@ const copyMocks = {
   }
 }
 
-vi.mock(import('@/core/graph/clipboard/graphTransfer'), { spy: true })
+vi.mock(import('@comfyorg/litegraph/clipboard/graphTransfer'), { spy: true })
 
 const multiChunkPayloadLength = 0x8000 * 6 + 123
 

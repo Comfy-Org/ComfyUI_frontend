@@ -81,7 +81,7 @@ Flag:
   `RemoteMutationContext`-style parameter on a store action, a `preserveCanonicalState` /
   successor option on `LGraph.remove`, an adapter-materialize helper on `LLink`, a
   "locally dirty" register in a store, or any method on `LGraph` / `LGraphNode` / `LLink`
-  whose only caller is the follower. `src/lib/litegraph` and `src/stores` must not mention
+  whose only caller is the follower. `packages/litegraph` and `src/stores` must not mention
   the agent, the follower, or remote apply (except `idAllocation.ts`'s `crdt-disjoint`
   policy and the generic `graphIntents.ts` funnel).
 - **A store-level reconciliation pass** — any code that diffs a snapshot of the stores

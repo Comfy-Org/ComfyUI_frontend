@@ -34,13 +34,13 @@
       "path": "src/extensions/core/uploadImage.ts"
     },
     {
-      "path": "src/lib/litegraph/src/widgets/BoundingBoxWidget.ts"
+      "path": "packages/litegraph/src/widgets/BoundingBoxWidget.ts"
     },
     {
-      "path": "src/lib/litegraph/src/widgets/CurveWidget.ts"
+      "path": "packages/litegraph/src/widgets/CurveWidget.ts"
     },
     {
-      "path": "src/lib/litegraph/src/widgets/VideoEditWidget.ts"
+      "path": "packages/litegraph/src/widgets/VideoEditWidget.ts"
     },
     {
       "path": "src/renderer/extensions/vueNodes/widgets/components/**"
@@ -140,9 +140,6 @@
     },
     {
       "path": "src/stores/widgetStore.ts"
-    },
-    {
-      "path": "src/types/positionConfig.ts"
     },
     {
       "path": "src/types/simplifiedWidget.ts"

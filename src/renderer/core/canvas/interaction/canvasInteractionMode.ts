@@ -1,4 +1,4 @@
-import type { CanvasInteractionModeReader } from '@/lib/litegraph/src/litegraph'
+import type { CanvasInteractionModeReader } from '@comfyorg/litegraph/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 export function createCanvasInteractionMode(): CanvasInteractionModeReader {

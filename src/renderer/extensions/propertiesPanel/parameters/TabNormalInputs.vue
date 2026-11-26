@@ -2,10 +2,10 @@
 import { computed, reactive, ref, shallowRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import CollapseToggleButton from '@comfyorg/design-system/accordion/CollapseToggleButton'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import { deriveWidgetVisibility } from '@/types/widgetVisibility'
+import { deriveWidgetVisibility } from '@comfyorg/graph-model/widgetVisibility'
 
 import { computedSectionDataList } from './widgetSections'
 import type { NodeWidgetsListList } from './widgetSections'

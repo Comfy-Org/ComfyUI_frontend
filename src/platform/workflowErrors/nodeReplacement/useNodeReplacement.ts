@@ -1,20 +1,20 @@
 import {
   canTransferReplacementOwnership,
   transferReplacementOwnership
-} from '@/core/graph/nodeShell/nodeShellState'
+} from '@comfyorg/litegraph/node/nodeShell/nodeShellState'
 import { growAutogrowInput } from '@/core/graph/widgets/dynamicWidgets'
-import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraph, LGraphNode } from '@comfyorg/litegraph/litegraph'
+import { LiteGraph } from '@comfyorg/litegraph/litegraph'
 import {
   inputLink,
   inputLinkId,
   outputLinks
-} from '@/lib/litegraph/src/node/slotLinks'
-import type { LLink } from '@/lib/litegraph/src/LLink'
+} from '@comfyorg/litegraph/node/slotLinks'
+import type { LLink } from '@comfyorg/litegraph/LLink'
 import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
 import { NodeSlotType } from '@comfyorg/graph-model/globalEnums'
 import type { TWidgetValue } from '@comfyorg/graph-model/widgets'
-import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
+import { isNodeBindable } from '@comfyorg/litegraph/utils/type'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { t } from '@/i18n'
 import { useDeprecatedNodesStore } from '@/platform/workflowErrors/nodeReplacement/deprecatedNodesStore'
@@ -27,14 +27,17 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { sanitizeNodeName } from '@/scripts/app'
 import { useApp } from '@/scripts/appInstance'
-import { clearNodeOwnedStoreState } from '@/stores/clearNodeOwnedStoreState'
-import { useWidgetComponents } from '@/stores/widgetComponents'
-import type { EndpointPatch, EndpointUpdate } from '@/stores/linkStore'
-import { useLinkStore } from '@/stores/linkStore'
+import { clearNodeOwnedStoreState } from '@comfyorg/graph-state/clearNodeOwnedStoreState'
+import { useWidgetComponents } from '@comfyorg/graph-state/widgetComponents'
+import type { EndpointUpdate } from '@comfyorg/graph-state/linkStore'
+import type {
+  EndpointPatch,
+  LinkTopology
+} from '@comfyorg/graph-model/linkTopology'
+import { useLinkStore } from '@comfyorg/graph-state/linkStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import type { LinkId } from '@comfyorg/graph-model/linkId'
-import type { LinkTopology } from '@comfyorg/graph-model/linkTopology'
-import { collectAllNodes } from '@/utils/graphTraversalUtil'
+import { collectAllNodes } from '@comfyorg/litegraph/utils/graphTraversalUtil'
 
 interface WidgetAssignment {
   name: string

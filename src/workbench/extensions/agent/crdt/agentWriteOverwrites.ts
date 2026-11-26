@@ -1,10 +1,10 @@
 import { isEqual } from 'es-toolkit'
 
-import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
+import { onGraphIntent } from '@comfyorg/graph-state/graphIntents'
 import type {
   GraphIntentEvent,
   GraphIntentSource
-} from '@/lib/litegraph/src/graphIntents'
+} from '@comfyorg/graph-state/graphIntents'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 

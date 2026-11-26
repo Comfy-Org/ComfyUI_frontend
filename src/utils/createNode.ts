@@ -1,7 +1,7 @@
 import { useToast } from '@/components/ui/toast/toastStore'
 import { t } from '@/i18n'
-import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraphCanvas, LGraphNode } from '@comfyorg/litegraph/litegraph'
+import { LiteGraph } from '@comfyorg/litegraph/litegraph'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import { isSelectOnly } from '@/utils/litegraphUtil'
 

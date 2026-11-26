@@ -9,13 +9,13 @@ import SelectionGapHandles from '@/components/graph/selectionGrid/SelectionGapHa
 import type { LayoutBox } from '@/components/graph/selectionGrid/selectionGridLayout'
 import { useSelectionGrid } from '@/components/graph/selectionGrid/useSelectionGrid'
 import { useTidySession } from '@/components/graph/selectionGrid/useTidySession'
-import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphCanvas, LGraphNode } from '@comfyorg/litegraph/litegraph'
 import en from '@/locales/en/main.json'
 import { consultEscapeOverride } from '@/platform/keybindings/escapeOverride'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import { createTestCanvasElement } from '@/utils/__tests__/canvasTestUtils'
+import { createTestCanvasElement } from '@comfyorg/litegraph/__fixtures__/canvasTestUtils'
 
 vi.mock(import('@/components/graph/selectionGrid/useSelectionGrid'), {
   spy: true

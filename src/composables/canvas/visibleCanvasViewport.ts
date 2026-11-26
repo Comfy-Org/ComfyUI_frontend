@@ -1,5 +1,5 @@
 import type { ReadOnlyRect } from '@comfyorg/shared-frontend-utils/geometry'
-import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import type { LGraphCanvas } from '@comfyorg/litegraph/litegraph'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 export function visibleCanvasViewport(

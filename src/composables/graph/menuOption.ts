@@ -1,4 +1,4 @@
-import type { NodeMenuItemId } from '@/lib/litegraph/src/types/nodeMenu'
+import type { NodeMenuItemId } from '@comfyorg/litegraph/types/nodeMenu'
 
 export interface MenuOption {
   id?: NodeMenuItemId

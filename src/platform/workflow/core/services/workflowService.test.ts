@@ -1,7 +1,7 @@
 import { encodeRgbaAsPng } from '@comfyorg/mask-editor/pngEncodeUtil'
 
 import { downloadBlob } from '@/base/common/downloadUtil'
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { getFromPngBuffer } from '@/scripts/metadata/png'
 import { useDialogService } from '@/services/dialogService'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
@@ -70,14 +70,14 @@ import {
 import { useAppMode } from '@/composables/useAppMode'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { zComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
-import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
-import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
+import type { LGraphCanvas } from '@comfyorg/litegraph/litegraph'
+import { createTestNode } from '@comfyorg/litegraph/__fixtures__/nodeHelpers'
 import {
   createMockCanvasRenderingContext2D,
   createTestCanvas
-} from '@/utils/__tests__/canvasTestUtils'
-import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
+} from '@comfyorg/litegraph/__fixtures__/canvasTestUtils'
+import { createTestSubgraph } from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphHelpers'
+import { createMockChangeTracker } from '@/utils/__tests__/workflowTestUtils'
 import type { AppMode } from '@comfyorg/graph-model/appMode'
 import { isValidUuid } from '@/utils/formatUtil'
 import { zeroUuid } from '@comfyorg/graph-model/uuid'
@@ -150,7 +150,7 @@ vi.mock(import('@/scripts/app'))
 
 const mockAssert = vi.hoisted(() => vi.fn())
 
-vi.mock(import('@/base/assert'), () => ({
+vi.mock(import('@comfyorg/shared-frontend-utils/assert'), () => ({
   assert: mockAssert
 }))
 

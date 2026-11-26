@@ -18,12 +18,12 @@ import type {
   ExecutableLGraphNode,
   ExecutionId,
   LGraph
-} from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/litegraph'
 import {
   ExecutableNodeDTO,
   isComboWidget,
   LGraphEventMode
-} from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/litegraph'
 import { useApp } from '@/scripts/appInstance'
 import { useAuthStore } from '@/stores/authStore'
 import { useModelStore } from '@/stores/modelStore'

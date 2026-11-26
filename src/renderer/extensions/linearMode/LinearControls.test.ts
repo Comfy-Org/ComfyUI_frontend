@@ -6,7 +6,7 @@ import { createI18n } from 'vue-i18n'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import TooltipProvider from '@comfyorg/design-system/tooltip/TooltipProvider'
-import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import * as distributionModule from '@/platform/distribution/types'

@@ -139,16 +139,16 @@ do not run, but structural teardown completes before the error escapes.
 
 ## Implementation and test references
 
-- `src/lib/litegraph/src/LGraph.ts`: `add`, `remove`, `removeNode`, `clear`,
+- `packages/litegraph/src/LGraph.ts`: `add`, `remove`, `removeNode`, `clear`,
   `teardownOwnedGraphs`, `configure`, `asSerialisable`, `_addLink`,
   `_removeLink`, `_addReroute`, `_removeReroute`, `setReroute`, `removeReroute`
-- `src/lib/litegraph/src/LGraphNode.ts`: `configure`, `serialize`,
+- `packages/litegraph/src/LGraphNode.ts`: `configure`, `serialize`,
   `registerNodeState`, `unregisterNodeState`, `transferReplacementOwnership`
-- `src/lib/litegraph/src/LLink.ts`: `applyEndpointPatch`,
+- `packages/litegraph/src/LLink.ts`: `applyEndpointPatch`,
   `registerLinkTopology`, `unregisterAllLinkTopologies`
-- `src/lib/litegraph/src/Reroute.ts`: chain and position accessors,
+- `packages/litegraph/src/Reroute.ts`: chain and position accessors,
   `unregisterAllRerouteChains`
-- `src/lib/litegraph/src/widgets/BaseWidget.ts`: `setNodeId`, `value`
+- `packages/litegraph/src/widgets/BaseWidget.ts`: `setNodeId`, `value`
 - `src/renderer/core/layout/operations/graphLayoutAttachment.ts`: all entity
   attach, transfer, detach, and bulk-detach operations
 - `src/platform/workflowErrors/nodeReplacement/useNodeReplacement.ts`: `replaceWithMapping`

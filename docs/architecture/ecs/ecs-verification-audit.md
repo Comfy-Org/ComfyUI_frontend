@@ -46,7 +46,7 @@ Representative evidence:
 - `src/stores/nodeDataStore.test.ts`: duplicate node identity and graph
   isolation.
 - `src/stores/rerouteStore.test.ts`: duplicate reroutes and owner isolation.
-- `src/lib/litegraph/src/LGraph.test.ts`: persisted node, link, reroute, and
+- `packages/litegraph/src/LGraph.test.ts`: persisted node, link, reroute, and
   floating-link collision normalization.
 - `browser_tests/tests/vueNodes/nodeStates/registration.spec.ts`: duplicate node
   IDs remain visible in separate graph scopes.
@@ -58,13 +58,13 @@ including reentrant and failing callbacks, without clearing sibling scopes.
 
 Representative evidence:
 
-- `src/lib/litegraph/src/LGraph.test.ts`: callback ordering, recursive removal,
+- `packages/litegraph/src/LGraph.test.ts`: callback ordering, recursive removal,
   entities added during clear, callback failure, idempotent root clear, and
   owner-local subgraph clear.
-- `src/lib/litegraph/src/LLink.store.test.ts`: root, subgraph, unconfigured, and
+- `packages/litegraph/src/LLink.store.test.ts`: root, subgraph, unconfigured, and
   floating-link teardown; shared subgraph definitions remain registered.
-- `src/lib/litegraph/src/Reroute.store.test.ts` and
-  `src/lib/litegraph/src/LGraphGroup.test.ts`: registration and clear behavior.
+- `packages/litegraph/src/Reroute.store.test.ts` and
+  `packages/litegraph/src/LGraphGroup.test.ts`: registration and clear behavior.
 - `src/renderer/extensions/vueNodes/layout/useNodeLayout.test.ts`: layout
   values follow root graph ID changes when the workflow changes.
 
@@ -76,12 +76,12 @@ last instance is gone.
 
 Representative evidence:
 
-- `src/lib/litegraph/src/idAllocation.test.ts` and
-  `src/lib/litegraph/src/LGraph.test.ts`: shared counters and cross-definition
+- `packages/litegraph/src/idAllocation.test.ts` and
+  `packages/litegraph/src/LGraph.test.ts`: shared counters and cross-definition
   deduplication.
-- `src/lib/litegraph/src/subgraph/subgraphDeduplication.test.ts`: remaps every
+- `packages/litegraph/src/subgraph/subgraphDeduplication.test.ts`: remaps every
   regular/floating link reference and handles cyclic definition order.
-- `src/lib/litegraph/src/subgraph/SubgraphSerialization.test.ts`: duplicate node
+- `packages/litegraph/src/subgraph/SubgraphSerialization.test.ts`: duplicate node
   IDs and owner topology through reload.
 - `browser_tests/tests/subgraph/subgraphLinkIdentity.spec.ts`: link identity and
   reroute chains survive a real workflow load.
@@ -94,13 +94,13 @@ normalizing aliases.
 
 Representative evidence:
 
-- `src/lib/litegraph/src/LGraph.test.ts`: byte-identical plain, rerouted,
+- `packages/litegraph/src/LGraph.test.ts`: byte-identical plain, rerouted,
   floating-link, and reroute records; input immutability.
-- `src/lib/litegraph/src/LGraph.serialise.test.ts`: links register after a JSON
+- `packages/litegraph/src/LGraph.serialise.test.ts`: links register after a JSON
   round trip.
-- `src/lib/litegraph/src/subgraph/SubgraphSerialization.test.ts`: interior
+- `packages/litegraph/src/subgraph/SubgraphSerialization.test.ts`: interior
   topology ordering, ownership, and rejected aliases.
-- `src/lib/litegraph/src/node/slotUtils.test.ts`: output links serialize in
+- `packages/litegraph/src/node/slotUtils.test.ts`: output links serialize in
   deterministic order and as `null` when empty.
 - `browser_tests/tests/workflowPersistence.spec.ts` and
   `browser_tests/tests/subgraph/subgraphSerialization.spec.ts`: browser-level
@@ -122,9 +122,9 @@ Representative evidence:
   an owned subgraph.
 - `browser_tests/tests/vueNodes/rerouteGeometry.spec.ts`: reroute geometry across
   navigation.
-- `src/lib/litegraph/src/LGraphNode.test.ts`,
-  `src/lib/litegraph/src/LGraphGroup.test.ts`, and
-  `src/lib/litegraph/src/Reroute.store.test.ts`: legacy geometry views write
+- `packages/litegraph/src/LGraphNode.test.ts`,
+  `packages/litegraph/src/LGraphGroup.test.ts`, and
+  `packages/litegraph/src/Reroute.store.test.ts`: legacy geometry views write
   through and refresh from the store.
 
 ### Widgets and promotions: Good
@@ -138,7 +138,7 @@ Representative evidence:
 - `src/stores/widgetValueStore.test.ts:301`: graph isolation.
 - `src/stores/widgetValueStore.graphReactivity.test.ts`: nested promotions,
   duplicate names, and input-link reactivity.
-- `src/lib/litegraph/src/subgraph/SubgraphWidgetPromotion.test.ts`: `null`
+- `packages/litegraph/src/subgraph/SubgraphWidgetPromotion.test.ts`: `null`
   through promotion, reorder, serialization, and reload.
 - `src/core/graph/subgraph/migration/proxyWidgetMigration.test.ts` and
   `src/core/graph/subgraph/promotionUtils.test.ts`: migration and reorder
@@ -158,9 +158,9 @@ Representative evidence:
 
 - `src/stores/nodeDataStore.test.ts`: same-ID state and geometry transfer;
   mismatched identity does not transfer.
-- `src/lib/litegraph/src/LLink.store.test.ts`: replacement commits before
+- `packages/litegraph/src/LLink.store.test.ts`: replacement commits before
   callbacks and tolerates callback displacement.
-- `src/lib/litegraph/src/node/slotLinks.test.ts`: atomic connected-input layout
+- `packages/litegraph/src/node/slotLinks.test.ts`: atomic connected-input layout
   replacement and stale-snapshot rejection.
 - `browser_tests/tests/nodeReplacement.spec.ts`: replacement behavior through
   the UI.
@@ -172,11 +172,11 @@ topology, and cannot hijack registrations owned by live entities.
 
 Representative evidence:
 
-- `src/lib/litegraph/src/LGraphCanvas.clipboard.test.ts`: stale reroute pruning,
+- `packages/litegraph/src/LGraphCanvas.clipboard.test.ts`: stale reroute pruning,
   live subgraph ownership, and reroute collision remapping.
 - `src/core/graph/widgets/dynamicWidgets.test.ts`: group growth/shrink preserves
   unrelated links and disconnects removed links.
-- `src/lib/litegraph/src/LGraph.inputSlotRealign.test.ts`: rejected aliases and
+- `packages/litegraph/src/LGraph.inputSlotRealign.test.ts`: rejected aliases and
   slot movement realign registered topology.
 - `src/platform/workflow/core/utils/workflowToClipboardItems.test.ts` and
   `workflowToClipboardItems.integration.test.ts`: recursive conversion,
@@ -202,7 +202,7 @@ Representative evidence:
 - `src/systems/badgeSystem.subgraph.test.ts`: wrapper aggregation and promoted
   overrides.
 - `src/renderer/extensions/vueNodes/composables/usePartitionedBadges.test.ts`
-  and `src/lib/litegraph/src/nodeBadgeDraw.test.ts`: Vue and legacy projections.
+  and `packages/litegraph/src/nodeBadgeDraw.test.ts`: Vue and legacy projections.
 
 ### Error projections: Good
 
@@ -230,7 +230,7 @@ hot-path regressions or reactive invalidation churn.
 Representative evidence:
 
 - `browser_tests/tests/performance.spec.ts`: large-graph legacy node drag.
-- `src/lib/litegraph/src/LGraphNode.test.ts`: per-frame slot access does not
+- `packages/litegraph/src/LGraphNode.test.ts`: per-frame slot access does not
   invalidate subscribers.
 - `src/renderer/extensions/vueNodes/layout/useNodeDrag.test.ts`: one mutation
   batch per animation frame.
@@ -244,22 +244,22 @@ deprecated slot mirrors warn, remain derived, and cannot mutate authority.
 
 Representative evidence:
 
-- `src/lib/litegraph/src/node/NodeInputSlot.test.ts` and
+- `packages/litegraph/src/node/NodeInputSlot.test.ts` and
   `NodeOutputSlot.test.ts`: deprecation reads/writes and store-derived values.
-- `src/lib/litegraph/src/node/slotEcosystemPatterns.test.ts`: duck-typed slots,
+- `packages/litegraph/src/node/slotEcosystemPatterns.test.ts`: duck-typed slots,
   legacy `extra_info`, and collapsed rendering.
-- `src/lib/litegraph/src/node/NodeInputSlot.test.ts:135` and
+- `packages/litegraph/src/node/NodeInputSlot.test.ts:135` and
   `NodeOutputSlot.test.ts:128`: serialized slots carrying unknown keys.
-- `src/lib/litegraph/src/LGraphNode.test.ts` and
-  `src/lib/litegraph/src/node/slotLinks.test.ts`: callback-time committed state.
-- `src/lib/litegraph/src/LGraphCanvas.drawConnections.test.ts`: normal internal
+- `packages/litegraph/src/LGraphNode.test.ts` and
+  `packages/litegraph/src/node/slotLinks.test.ts`: callback-time committed state.
+- `packages/litegraph/src/LGraphCanvas.drawConnections.test.ts`: normal internal
   drawing and serialization do not emit deprecation warnings.
 - `src/extensions/core/widgetInputs.test.ts`: stale extension-facing link state
   recovers through the graph/store boundary.
-- `src/lib/litegraph/src/LGraphNode.nodeState.test.ts:48-67,121-138` and
-  `src/lib/litegraph/src/LGraphNode.ownCollectionFields.test.ts:14-19`:
+- `packages/litegraph/src/LGraphNode.nodeState.test.ts:48-67,121-138` and
+  `packages/litegraph/src/LGraphNode.ownCollectionFields.test.ts:14-19`:
   collection enumeration and deprecated `type` mutation behavior.
-- `src/lib/litegraph/src/nodeBadgeDraw.test.ts`: badge text, colours, icon, and
+- `packages/litegraph/src/nodeBadgeDraw.test.ts`: badge text, colours, icon, and
   draw-object identity; retained extension badge rows.
 
 ## Prioritized missing behavioral scenarios

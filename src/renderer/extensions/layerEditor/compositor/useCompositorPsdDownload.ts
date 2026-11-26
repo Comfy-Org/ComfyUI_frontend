@@ -7,7 +7,7 @@ import { buildSessionPsdBlob } from '@comfyorg/layer-editor/export/psdExport'
 import { psdExportFilename } from '@/renderer/extensions/layerEditor/composables/useLayerEditorExport'
 import type { LayerEditorSession } from '@comfyorg/layer-editor/vue'
 import { useLayerEditorSession } from '@comfyorg/layer-editor/vue'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
 import { useToast } from '@/components/ui/toast/toastStore'
 
 export function useCompositorPsdDownload(

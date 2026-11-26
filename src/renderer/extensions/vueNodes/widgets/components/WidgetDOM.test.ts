@@ -1,6 +1,6 @@
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { LGraphNode } from '@comfyorg/litegraph/litegraph'
+import { createTestSubgraph } from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphHelpers'
 import { app } from '@/scripts/app'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'

@@ -12,7 +12,7 @@ import { ensureSessionCookie } from '@/platform/auth/session/sessionCookieAccess
 import { isCloud } from '@/platform/distribution/types'
 import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
 import { ingestApiUrl } from '@/platform/remote/ingest/ingestApiUrl'
-import { safeSessionStorage } from '@/base/storage/safeStorage'
+import { safeSessionStorage } from '@comfyorg/shared-frontend-utils/safeStorage'
 import { WorkspaceAuthError } from '@/platform/workspace/stores/workspaceAuthError'
 import {
   MAX_SCHEDULED_REFRESH_RETRIES,

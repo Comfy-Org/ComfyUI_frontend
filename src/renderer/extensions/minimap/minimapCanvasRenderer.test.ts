@@ -4,29 +4,29 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { BUILT_IN_THEME_PRESETS } from '@comfyorg/theme-core/builtInThemePresets'
 import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 
-import type { LGraph, LGraphGroup } from '@/lib/litegraph/src/litegraph'
-import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
+import type { LGraph, LGraphGroup } from '@comfyorg/litegraph/litegraph'
+import { LGraphEventMode } from '@comfyorg/litegraph/litegraph'
 import { MinimapDataSource } from './data/MinimapDataSource'
-import { createTestCanvasElement } from '@/utils/__tests__/canvasTestUtils'
+import { createTestCanvasElement } from '@comfyorg/litegraph/__fixtures__/canvasTestUtils'
 import {
   MINIMAP_DECORATION_POP_MS,
   renderMinimapToCanvas
 } from '@/renderer/extensions/minimap/minimapCanvasRenderer'
 import type { MinimapRenderContext } from '@/renderer/extensions/minimap/types'
-import { useLinkStore } from '@/stores/linkStore'
+import { useLinkStore } from '@comfyorg/graph-state/linkStore'
 import { adjustColor } from '@comfyorg/shared-frontend-utils/colorUtil'
 import {
   createMockLGraph,
   createMockLGraphNode,
   createMockNodeOutputSlot
-} from '@/utils/__tests__/litegraphTestUtils'
+} from '@comfyorg/litegraph/__fixtures__/litegraphTestUtils'
 import {
   toOwningGraphId,
   toRootGraphId
 } from '@comfyorg/graph-model/graphScopeId'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import type { UUID } from '@/utils/uuid'
+import type { UUID } from '@comfyorg/graph-model/uuid'
 
 vi.mock(import('@comfyorg/shared-frontend-utils/colorUtil'), () => ({
   adjustColor: vi.fn((color: string) => color + '_adjusted')

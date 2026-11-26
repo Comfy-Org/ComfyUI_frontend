@@ -15,7 +15,7 @@ import { isCloud } from '@/platform/distribution/types'
 import {
   safeLocalStorage,
   safeSessionStorage
-} from '@/base/storage/safeStorage'
+} from '@comfyorg/shared-frontend-utils/safeStorage'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { clearPreservedQuery } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'

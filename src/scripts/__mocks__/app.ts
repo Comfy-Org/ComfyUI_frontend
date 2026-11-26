@@ -2,9 +2,9 @@ import { TestRunner, assert, vi } from 'vitest'
 import type { ShallowRef } from 'vue'
 import { shallowRef } from 'vue'
 
-import { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
-import { DragAndScale } from '@/lib/litegraph/src/DragAndScale'
-import { LGraph } from '@/lib/litegraph/src/litegraph'
+import { LinkConnector } from '@comfyorg/litegraph/canvas/LinkConnector'
+import { DragAndScale } from '@comfyorg/litegraph/DragAndScale'
+import { LGraph } from '@comfyorg/litegraph/litegraph'
 import type {
   ANIM_PREVIEW_WIDGET as realAnimationWidget,
   ComfyApp as RealComfyApp,

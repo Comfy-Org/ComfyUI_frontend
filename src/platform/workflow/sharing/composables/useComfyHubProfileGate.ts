@@ -2,7 +2,7 @@ import { ref } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { safeSessionStorage } from '@/base/storage/safeStorage'
+import { safeSessionStorage } from '@comfyorg/shared-frontend-utils/safeStorage'
 import { useComfyHubService } from '@/platform/workflow/sharing/services/comfyHubService'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import type { ComfyHubProfile } from '@/platform/workflow/sharing/schemas/shareSchemas'

@@ -6,22 +6,22 @@ import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import ColorPickerButton from '@/components/graph/selectionToolbox/ColorPickerButton.vue'
-import type { Positionable } from '@/lib/litegraph/src/litegraph'
+import type { Positionable } from '@comfyorg/litegraph/litegraph'
 import {
   LGraph,
   LGraphCanvas,
   LGraphGroup
-} from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/litegraph'
 import type { CanvasEventDetail } from '@comfyorg/graph-model/events'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useSelectionStore } from '@/core/selection/selectionStore'
+import { useSelectionStore } from '@comfyorg/graph-state/selection/selectionStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { toGroupId } from '@comfyorg/graph-model/groupId'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 import {
   createMockCanvasRenderingContext2D,
   createTestCanvas
-} from '@/utils/__tests__/canvasTestUtils'
+} from '@comfyorg/litegraph/__fixtures__/canvasTestUtils'
 
 function createMockPositionable(): Positionable {
   return fromPartial<Positionable>({ id: toGroupId(1), pos: [0, 0] })

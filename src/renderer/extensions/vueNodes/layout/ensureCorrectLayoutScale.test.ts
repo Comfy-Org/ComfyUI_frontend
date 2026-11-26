@@ -2,14 +2,14 @@ import { toGroupId } from '@comfyorg/graph-model/groupId'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
-import type { LGraph, LGraphExtra } from '@/lib/litegraph/src/LGraph'
-import { LGraphGroup } from '@/lib/litegraph/src/litegraph'
+import type { LGraph, LGraphExtra } from '@comfyorg/litegraph/LGraph'
+import { LGraphGroup } from '@comfyorg/litegraph/litegraph'
 import type {
   PointTuple as Point,
   Rect
 } from '@comfyorg/shared-frontend-utils/geometry'
-import { attachGroupLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { attachGroupLayout } from '@comfyorg/litegraph/layout/graphLayoutAttachment'
+import { layoutStore } from '@comfyorg/graph-state/layout/layoutStore'
 import { RENDER_SCALE_FACTOR } from '@/renderer/core/layout/transform/graphRenderTransform'
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({
@@ -18,7 +18,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
 
 import { ensureCorrectLayoutScale } from './ensureCorrectLayoutScale'
 import { toRerouteId } from '@/types'
-import type { Reroute } from '@/lib/litegraph/src/Reroute'
+import type { Reroute } from '@comfyorg/litegraph/Reroute'
 
 function createNode(id: string, x: number, y: number, w: number, h: number) {
   return {

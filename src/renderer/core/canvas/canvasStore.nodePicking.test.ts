@@ -2,7 +2,7 @@ import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { nextTick, watch } from 'vue'
 
 import { useToast } from '@/components/ui/toast/toastStore'
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import {
   NODE_PICKING_BANNER_CLEARANCE,
@@ -12,7 +12,7 @@ import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import {
   createMockCanvasRenderingContext2D,
   createTestCanvas
-} from '@/utils/__tests__/canvasTestUtils'
+} from '@comfyorg/litegraph/__fixtures__/canvasTestUtils'
 
 function setup() {
   const graph = new LGraph()

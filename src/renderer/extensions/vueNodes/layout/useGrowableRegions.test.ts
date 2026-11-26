@@ -1,11 +1,11 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
-import { CANVAS_IMAGE_PREVIEW_WIDGET } from '@/core/graph/subgraph/preview/mediaPreviewName'
-import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { CANVAS_IMAGE_PREVIEW_WIDGET } from '@comfyorg/graph-state/mediaPreviewName'
+import type { LGraphCanvas } from '@comfyorg/litegraph/litegraph'
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 import { useGrowableRegions } from '@/renderer/extensions/vueNodes/layout/useGrowableRegions'
-import { useWidgetHeightStore } from '@/stores/widgetHeightStore'
+import { useWidgetHeightStore } from '@comfyorg/graph-state/widgetHeightStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 

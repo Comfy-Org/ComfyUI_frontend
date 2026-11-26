@@ -1,0 +1,13 @@
+{
+  "extends": ["./tsconfig.json", "../../tsconfig.declarations.json"],
+  "references": [
+    { "path": "../graph-model/tsconfig.declarations.json" },
+    { "path": "../shared-frontend-utils/tsconfig.declarations.json" },
+    { "path": "../telemetry/tsconfig.declarations.json" }
+  ],
+  "exclude": [
+    "src/**/__mocks__/**",
+    "src/**/*.test.ts",
+    "src/**/__fixtures__/**"
+  ]
+}

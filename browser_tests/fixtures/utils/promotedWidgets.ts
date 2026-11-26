@@ -1,9 +1,9 @@
-import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
+import type { NodeProperty } from '@comfyorg/litegraph/LGraphNode'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
-import { parsePreviewExposures } from '@/core/schemas/previewExposureSchema'
-import type { PreviewExposure } from '@/core/schemas/previewExposureSchema'
+import { parsePreviewExposures } from '@comfyorg/graph-state/previewExposureSchema'
+import type { PreviewExposure } from '@comfyorg/graph-state/previewExposureSchema'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 

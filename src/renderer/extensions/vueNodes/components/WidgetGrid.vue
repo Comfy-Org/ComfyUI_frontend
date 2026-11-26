@@ -120,13 +120,13 @@ import {
 
 import { useResizeObserver } from '@vueuse/core'
 
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { minRowHeight } from '@/lib/litegraph/src/utils/widgetLayout'
+import { LiteGraph } from '@comfyorg/litegraph/litegraph'
+import { minRowHeight } from '@comfyorg/litegraph/utils/widgetLayout'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import {
   autogrowIoInputDragType,
   hoveredAutogrowGroup
-} from '@/renderer/core/canvas/links/autogrowGroupDropState'
+} from '@comfyorg/litegraph/canvas/autogrowGroupDropState'
 import { syncSlotOffsets } from '@/renderer/core/layout/slots/syncSlotOffsets'
 import AppInput from '@/renderer/extensions/linearMode/AppInput.vue'
 import { useWidgetGridResizeTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'

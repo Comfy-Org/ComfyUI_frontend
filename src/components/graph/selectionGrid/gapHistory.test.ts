@@ -14,13 +14,13 @@ import { computeGapBars, detectSelectionGrid } from './selectionGridLayout'
 import { useGapDragSession } from './useGapDragSession'
 import { useSelectionGrid } from './useSelectionGrid'
 import { useTidySession } from './useTidySession'
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraph } from '@comfyorg/litegraph/litegraph'
 import {
   LGraphCanvas,
   LGraphNode,
   LiteGraph
-} from '@/lib/litegraph/src/litegraph'
-import { createTestSubgraphData } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+} from '@comfyorg/litegraph/litegraph'
+import { createTestSubgraphData } from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphHelpers'
 import {
   bindCanvasTracker,
   resetCanvasTrackerForTest

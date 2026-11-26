@@ -6,10 +6,10 @@ import type {
   LGraph,
   LGraphNodeConstructor,
   LGraphNode
-} from '@/lib/litegraph/src/litegraph'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { outputLinks } from '@/lib/litegraph/src/node/slotLinks'
-import { slotTypeKey } from '@/lib/litegraph/src/utils/type'
+} from '@comfyorg/litegraph/litegraph'
+import { LiteGraph } from '@comfyorg/litegraph/litegraph'
+import { outputLinks } from '@comfyorg/litegraph/node/slotLinks'
+import { slotTypeKey } from '@comfyorg/litegraph/utils/type'
 import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import type {
   ComfyNode,

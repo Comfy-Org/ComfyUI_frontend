@@ -15,7 +15,7 @@ new RuleTester({
     {
       name: 'provider usage, shadowed names, and unrelated VueUse imports',
       code: `
-import { safeLocalStorage } from '@/base/storage/safeStorage'
+import { safeLocalStorage } from '@comfyorg/shared-frontend-utils/safeStorage'
 import { useSafeLocalStorage } from '@/platform/storage/useSafeStorage'
 import { useDebounceFn } from '@vueuse/core'
 import type { useStorage } from '@vueuse/core'

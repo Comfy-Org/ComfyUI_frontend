@@ -4,7 +4,7 @@ import {
   cloudEditorUrl,
   LOCAL_HANDOFF_PARAM
 } from '@/platform/openOnCloud/localHandoffProtocol'
-import { safeSessionStorage } from '@/base/storage/safeStorage'
+import { safeSessionStorage } from '@comfyorg/shared-frontend-utils/safeStorage'
 
 export const DESKTOP_RELAY_PARAM = 'desktop_workflow'
 export const DESKTOP_HANDOFF_HASH = '#desktop_workflow='

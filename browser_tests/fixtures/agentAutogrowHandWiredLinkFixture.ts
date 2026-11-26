@@ -28,7 +28,7 @@ import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
  * An autogrow group's spare slot is grown client-side
  * (`src/core/graph/widgets/dynamicWidgets.ts`) and the doc never hears about
  * it until something wires a link into it. A slot's link is tracked by array
- * INDEX in `linkStore` (`src/lib/litegraph/src/node/slotLinks.ts`), so any
+ * INDEX in `linkStore` (`packages/litegraph/src/node/slotLinks.ts`), so any
  * remote apply that rewrites the node's `inputs` array from the doc's view
  * alone renames whichever slot the hand-wired link's index lands on. The
  * follower must therefore apply an agent `connect` through the node's own

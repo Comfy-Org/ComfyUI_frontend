@@ -1,13 +1,13 @@
-import type { IContextMenuValue, LGraph } from '@/lib/litegraph/src/litegraph'
+import type { IContextMenuValue, LGraph } from '@comfyorg/litegraph/litegraph'
 import {
   LGraphCanvas,
   LGraphNode,
   LiteGraph
-} from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/litegraph'
 import type { ISlotType } from '@comfyorg/graph-model/interfaces'
-import { outputLinks } from '@/lib/litegraph/src/node/slotLinks'
-import { slotTypeKey } from '@/lib/litegraph/src/utils/type'
-import { safeLocalStorage } from '@/base/storage/safeStorage'
+import { outputLinks } from '@comfyorg/litegraph/node/slotLinks'
+import { slotTypeKey } from '@comfyorg/litegraph/utils/type'
+import { safeLocalStorage } from '@comfyorg/shared-frontend-utils/safeStorage'
 
 import { useApp } from '@/scripts/appInstance'
 import { getWidgetConfig, mergeIfValid, setWidgetConfig } from './widgetInputs'

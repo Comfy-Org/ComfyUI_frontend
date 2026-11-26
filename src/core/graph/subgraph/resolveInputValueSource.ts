@@ -6,9 +6,9 @@ import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import { PRIMITIVE_NODE_TYPE } from '@/constants/primitiveNodeConstants'
-import { useLinkStore } from '@/stores/linkStore'
-import { useNodeDataStore } from '@/stores/nodeDataStore'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useLinkStore } from '@comfyorg/graph-state/linkStore'
+import { useNodeDataStore } from '@comfyorg/graph-state/nodeDataStore'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 
 export type InputValueSource =
   | {

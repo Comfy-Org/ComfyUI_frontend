@@ -1,0 +1,25 @@
+{
+  "extends": ["./tsconfig.json", "../../tsconfig.declarations.json"],
+  "compilerOptions": {
+    "types": ["vite/client"]
+  },
+  "references": [
+    {
+      "path": "../graph-model/tsconfig.declarations.json"
+    },
+    {
+      "path": "../graph-state/tsconfig.declarations.json"
+    },
+    {
+      "path": "../object-info-parser/tsconfig.build.json"
+    },
+    {
+      "path": "../shared-frontend-utils/tsconfig.declarations.json"
+    },
+    {
+      "path": "../telemetry/tsconfig.declarations.json"
+    }
+  ],
+  "include": ["src/**/*.ts", "src/__fixtures__/assets/*.json"],
+  "exclude": ["src/**/__mocks__/**", "src/**/*.test.ts"]
+}

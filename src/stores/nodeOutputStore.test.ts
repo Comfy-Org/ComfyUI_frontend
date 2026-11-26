@@ -1,7 +1,7 @@
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode, LiteGraph } from '@comfyorg/litegraph/litegraph'
 import type { ExecutedWsMessage } from '@comfyorg/api-client/executionTypes'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
@@ -12,7 +12,7 @@ import {
   createNodeLocatorId
 } from '@comfyorg/graph-model/nodeIdentification'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import * as graphTraversalUtil from '@/utils/graphTraversalUtil'
+import * as graphTraversalUtil from '@comfyorg/litegraph/utils/graphTraversalUtil'
 import * as litegraphUtil from '@/utils/litegraphUtil'
 import { resultItemPreviewUrl } from '@/utils/resultItemUrl'
 
@@ -39,10 +39,13 @@ const createMockOutputs = (
   images?: ExecutedWsMessage['output']['images']
 ): ExecutedWsMessage['output'] => ({ images })
 
-vi.mock<unknown>(import('@/utils/graphTraversalUtil'), () => ({
-  executionIdToNodeLocatorId: vi.fn((_rootGraph: unknown, id: string) => id),
-  getNodeByLocatorId: vi.fn(() => ({}))
-}))
+vi.mock<unknown>(
+  import('@comfyorg/litegraph/utils/graphTraversalUtil'),
+  () => ({
+    executionIdToNodeLocatorId: vi.fn((_rootGraph: unknown, id: string) => id),
+    getNodeByLocatorId: vi.fn(() => ({}))
+  })
+)
 
 describe('nodeOutputStore setNodeOutputsByExecutionId with merge', () => {
   beforeEach(() => {

@@ -11,17 +11,17 @@ import type {
   LGraph,
   LGraphCanvas,
   LGraphNode
-} from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/litegraph'
 import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
-import type { WidgetFormProof } from '@/lib/litegraph/src/widgets/widgetFormProof'
+import type { WidgetFormProof } from '@comfyorg/litegraph/widgets/widgetFormProof'
 import {
   needsFormButHasNone,
   proveWidgetForm
-} from '@/lib/litegraph/src/widgets/widgetFormProof'
+} from '@comfyorg/litegraph/widgets/widgetFormProof'
 import type { ComfyNodeDef, InputSpec } from '@comfyorg/object-info-parser'
-import type { useWidgetValueStore } from '@/stores/widgetValueStore'
+import type { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 import type * as WidgetValuesForm from '@/workbench/extensions/agent/crdt/widgetValuesForm'
 
 const S = (v: unknown) => JSON.stringify(v)
@@ -643,7 +643,7 @@ export async function censusRegistryForms(options: {
 }
 
 async function installGlobals() {
-  const lg = await import('@/lib/litegraph/src/litegraph')
+  const lg = await import('@comfyorg/litegraph/litegraph')
   const appMod = await import('@/scripts/app')
   const uiMod = await import('@/scripts/ui')
   const apiMod = await import('@/scripts/api')
@@ -951,7 +951,8 @@ export async function runPack(
 
   let wvStore: WidgetValueStore | undefined
   try {
-    const { useWidgetValueStore } = await import('@/stores/widgetValueStore')
+    const { useWidgetValueStore } =
+      await import('@comfyorg/graph-state/widgetValueStore')
     wvStore = useWidgetValueStore()
   } catch {
     wvStore = undefined

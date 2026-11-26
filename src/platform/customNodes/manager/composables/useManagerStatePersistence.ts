@@ -5,7 +5,7 @@ import {
 } from '@/platform/customNodes/manager/types/comfyManagerTypes'
 import { reportError } from '@comfyorg/telemetry/reportError'
 
-import { safeLocalStorage } from '@/base/storage/safeStorage'
+import { safeLocalStorage } from '@comfyorg/shared-frontend-utils/safeStorage'
 
 const STORAGE_KEY = 'Comfy.Manager.UI.State'
 

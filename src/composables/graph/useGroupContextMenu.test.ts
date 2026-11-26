@@ -3,8 +3,8 @@ import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { useGroupContextMenu } from '@/composables/graph/useGroupContextMenu'
-import type { getCanvasContextMenuTarget } from '@/lib/litegraph/src/canvas/getCanvasContextMenuTarget'
-import type { CanvasPointerEvent, Reroute } from '@/lib/litegraph/src/litegraph'
+import type { getCanvasContextMenuTarget } from '@comfyorg/litegraph/canvas/getCanvasContextMenuTarget'
+import type { CanvasPointerEvent, Reroute } from '@comfyorg/litegraph/litegraph'
 import {
   LGraph,
   LGraphCanvas,
@@ -12,14 +12,14 @@ import {
   LGraphGroup,
   LGraphNode,
   LiteGraph
-} from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { createTestSubgraph } from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphHelpers'
 import {
   createMockCanvasRenderingContext2D,
   createTestCanvas
-} from '@/utils/__tests__/canvasTestUtils'
-import { createMockLLink } from '@/utils/__tests__/litegraphTestUtils'
+} from '@comfyorg/litegraph/__fixtures__/canvasTestUtils'
+import { createMockLLink } from '@comfyorg/litegraph/__fixtures__/litegraphTestUtils'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
 import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
 
@@ -37,7 +37,7 @@ vi.mock(import('@/composables/graph/useMoreOptionsMenu'), () => ({
 }))
 
 vi.mock(
-  import('@/lib/litegraph/src/canvas/getCanvasContextMenuTarget'),
+  import('@comfyorg/litegraph/canvas/getCanvasContextMenuTarget'),
   () => ({
     getCanvasContextMenuTarget: mockGetCanvasContextMenuTarget
   })

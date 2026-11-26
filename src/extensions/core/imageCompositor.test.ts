@@ -8,7 +8,7 @@ import {
   getCompositorInputsFingerprint,
   getCompositorLayers
 } from '@/renderer/extensions/layerEditor/compositor/useCompositorLayers'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import type { ComfyApp } from '@/scripts/app'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'

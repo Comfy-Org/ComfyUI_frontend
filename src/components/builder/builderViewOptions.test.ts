@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useTelemetry } from '@comfyorg/telemetry'
 
 import { app } from '@/scripts/app'
-import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockLoadedWorkflow } from '@/utils/__tests__/workflowTestUtils'
 
 import { setWorkflowDefaultView } from './builderViewOptions'
 

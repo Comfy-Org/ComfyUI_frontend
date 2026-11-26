@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref, watchEffect } from 'vue'
 
 import type { UserConfigResponse } from '@comfyorg/api-client/types'
-import { safeLocalStorage } from '@/base/storage/safeStorage'
+import { safeLocalStorage } from '@comfyorg/shared-frontend-utils/safeStorage'
 import { api } from '@/scripts/api'
 
 export interface User {

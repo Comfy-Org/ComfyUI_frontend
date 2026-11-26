@@ -1,4 +1,4 @@
-import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import type { LGraph } from '@comfyorg/litegraph/LGraph'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import type { ComfyApp, ComfyExtension } from '@/types/comfy'
 

@@ -1,7 +1,7 @@
 import _ from 'es-toolkit/compat'
 import { once } from 'es-toolkit'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { markNodeMenuCallback } from '@/lib/litegraph/src/types/nodeMenu'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
+import { markNodeMenuCallback } from '@comfyorg/litegraph/types/nodeMenu'
 
 import { ComfyApp } from '@/scripts/app'
 import { useApp } from '@/scripts/appInstance'
@@ -11,7 +11,7 @@ import { useMaskEditor } from '@/renderer/extensions/maskEditor/composables/useM
 import { useCanvasTransform } from '@comfyorg/mask-editor/useCanvasTransform'
 import { markCoreMediaMenuCallback } from '@/utils/coreMediaMenuActionUtils'
 import { isImageNode } from '@/utils/litegraphUtil'
-import { selectedCanvasNodes } from '@/renderer/core/canvas/litegraph/selectionAdapter'
+import { selectedCanvasNodes } from '@comfyorg/litegraph/canvas/selectionAdapter'
 import type { ComfyExtension } from '@/types/comfy'
 
 function openMaskEditor(node: LGraphNode): void {

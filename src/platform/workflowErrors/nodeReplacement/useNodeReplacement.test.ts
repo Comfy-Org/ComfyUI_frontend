@@ -5,20 +5,20 @@ import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { st, t } from '@/i18n'
-import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
+import { CustomEventTarget } from '@comfyorg/litegraph/infrastructure/CustomEventTarget'
 import type { LGraphEventMap } from '@comfyorg/graph-model/LGraphEventMap'
 import {
   canTransferReplacementOwnership,
   transferReplacementOwnership
-} from '@/core/graph/nodeShell/nodeShellState'
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { inputLink, outputLinks } from '@/lib/litegraph/src/node/slotLinks'
+} from '@comfyorg/litegraph/node/nodeShell/nodeShellState'
+import { LGraph, LGraphNode, LiteGraph } from '@comfyorg/litegraph/litegraph'
+import { inputLink, outputLinks } from '@comfyorg/litegraph/node/slotLinks'
 import { NodeSlotType } from '@comfyorg/graph-model/globalEnums'
-import { useLinkStore } from '@/stores/linkStore'
-import { usePreviewExposureStore } from '@/stores/previewExposureStore'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { useWidgetFolderLockStore } from '@/stores/widgetFolderLockStore'
-import { useWidgetHeightStore } from '@/stores/widgetHeightStore'
+import { useLinkStore } from '@comfyorg/graph-state/linkStore'
+import { usePreviewExposureStore } from '@comfyorg/graph-state/previewExposureStore'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
+import { useWidgetFolderLockStore } from '@comfyorg/graph-state/widgetFolderLockStore'
+import { useWidgetHeightStore } from '@comfyorg/graph-state/widgetHeightStore'
 import {
   graphScopeOf,
   toOwningGraphId,
@@ -27,22 +27,24 @@ import {
 import { toLinkId } from '@comfyorg/graph-model/linkId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
-import { createTestLink } from '@/utils/__tests__/litegraphTestUtils'
-import type { UUID } from '@/utils/uuid'
+import { createTestLink } from '@comfyorg/litegraph/__fixtures__/litegraphTestUtils'
+import type { UUID } from '@comfyorg/graph-model/uuid'
 import type { MissingNodeType, NodeReplacement } from './types'
 
-vi.mock(import('@/lib/litegraph/src/litegraph'), { spy: true })
+vi.mock(import('@comfyorg/litegraph/litegraph'), { spy: true })
 LiteGraph.createNode = vi.fn()
 LiteGraph.registered_node_types = {}
 
-vi.mock(import('@/core/graph/nodeShell/nodeShellState'), { spy: true })
+vi.mock(import('@comfyorg/litegraph/node/nodeShell/nodeShellState'), {
+  spy: true
+})
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { rootGraph: null },
   sanitizeNodeName: (name: string) => name.replace(/[&<>"'`=]/g, '')
 }))
 
-vi.mock(import('@/utils/graphTraversalUtil'), () => ({
+vi.mock(import('@comfyorg/litegraph/utils/graphTraversalUtil'), () => ({
   collectAllNodes: vi.fn()
 }))
 
@@ -50,7 +52,7 @@ vi.mock(import('@/i18n'))
 
 import { app } from '@/scripts/app'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
-import { collectAllNodes } from '@/utils/graphTraversalUtil'
+import { collectAllNodes } from '@comfyorg/litegraph/utils/graphTraversalUtil'
 import { useNodeReplacement } from './useNodeReplacement'
 
 beforeEach(() => {

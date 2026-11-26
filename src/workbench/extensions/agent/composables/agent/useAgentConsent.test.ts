@@ -23,7 +23,7 @@ import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/a
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { AgentErrorContext } from '@/platform/workflowErrors/agentErrorContext'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockLoadedWorkflow } from '@/utils/__tests__/workflowTestUtils'
 import { SessionRevokedError } from '@/platform/auth/session/sessionRevokedError'
 
 import { useAgentConsent } from './useAgentConsent'

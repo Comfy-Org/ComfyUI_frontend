@@ -1,8 +1,8 @@
-import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraph, LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { ComponentWidgetImpl, DOMWidgetImpl } from '@/scripts/domWidget'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
-import type { BaseDOMWidget } from '@/types/domWidget'
-import { forEachNode } from '@/utils/graphTraversalUtil'
+import type { BaseDOMWidget } from '@comfyorg/litegraph/types/domWidget'
+import { forEachNode } from '@comfyorg/litegraph/utils/graphTraversalUtil'
 
 function domWidgetsOf(node: LGraphNode): BaseDOMWidget[] {
   return (node.widgets ?? []).filter(

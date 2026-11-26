@@ -12,7 +12,7 @@ import type { CompactRect } from '@comfyorg/shared-frontend-utils/geometry'
 
 import { computed, ref, watch } from 'vue'
 
-import { onCanvasFrame } from '@/lib/litegraph/src/canvas/canvasFrame'
+import { onCanvasFrame } from '@comfyorg/litegraph/canvas/canvasFrame'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 const canvasStore = useCanvasStore()

@@ -6,8 +6,8 @@
  */
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
-import { LayoutSource } from '@/renderer/core/layout/types'
+import { useLayoutMutations } from '@comfyorg/graph-state/layout/layoutMutations'
+import { LayoutSource } from '@comfyorg/graph-state/layout/types'
 
 export function useNodeZIndex() {
   const layoutMutations = useLayoutMutations(LayoutSource.Vue)

@@ -1,6 +1,6 @@
 import { assert, describe, expect, it, onTestFinished, vi } from 'vitest'
 
-import { setAssertReporter } from '@/base/assert'
+import { setAssertReporter } from '@comfyorg/shared-frontend-utils/assert'
 
 import type { FollowerSessionLease } from './followerSessionRegistry'
 import { createFollowerSessionRegistry } from './followerSessionRegistry'

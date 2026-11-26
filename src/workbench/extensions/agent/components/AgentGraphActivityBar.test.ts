@@ -5,13 +5,13 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen } from '@testing-library/vue'
 
 import { i18n } from '@/i18n'
-import type { LGraph } from '@/lib/litegraph/src/LGraph'
-import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraph } from '@comfyorg/litegraph/LGraph'
+import type { LGraphCanvas } from '@comfyorg/litegraph/LGraphCanvas'
+import type { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
 import type { ComfyApp } from '@/scripts/app'
 import { toRootGraphId } from '@comfyorg/graph-model/graphScopeId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
+import { getNodeByLocatorId } from '@comfyorg/litegraph/utils/graphTraversalUtil'
 
 import AgentGraphActivityBar from './AgentGraphActivityBar.vue'
 import { useAgentGraphActivityStore } from '@/workbench/extensions/agent/stores/agent/agentGraphActivityStore'
@@ -38,7 +38,7 @@ vi.mock(import('@/scripts/app'), () => ({
     })
   })
 }))
-vi.mock(import('@/utils/graphTraversalUtil'))
+vi.mock(import('@comfyorg/litegraph/utils/graphTraversalUtil'))
 function mount() {
   return render(AgentGraphActivityBar, {
     props: { canvas },

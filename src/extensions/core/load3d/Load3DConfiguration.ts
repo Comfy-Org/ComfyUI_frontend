@@ -16,7 +16,7 @@ import type {
   StoredModelConfig
 } from '@comfyorg/viewport3d/load3d/interfaces'
 import type { Dictionary } from '@comfyorg/graph-model/interfaces'
-import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
+import type { NodeProperty } from '@comfyorg/litegraph/LGraphNode'
 import type { IBaseWidget, INumericWidget } from '@comfyorg/graph-model/widgets'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'

@@ -13,7 +13,7 @@ import { computed } from 'vue'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { provideCurrentUser } from '@/platform/auth/currentUserAccess'
-import { LGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraph } from '@comfyorg/litegraph/litegraph'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import * as workflowService from '@/platform/workflow/core/services/workflowService'
@@ -34,7 +34,7 @@ import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { ComfyExtension } from '@/types/comfy'
-import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockChangeTracker } from '@/utils/__tests__/workflowTestUtils'
 
 import {
   importNoticingFetchFailure,

@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { LGraph, LGraphNode } from '@comfyorg/litegraph/litegraph'
+import { layoutStore } from '@comfyorg/graph-state/layout/layoutStore'
 import type {
   LayoutOperation,
   ResizeNodeOperation
-} from '@/renderer/core/layout/types'
+} from '@comfyorg/graph-state/layout/types'
 
 function setup() {
   const graph = new LGraph()

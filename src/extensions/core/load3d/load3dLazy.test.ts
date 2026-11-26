@@ -2,7 +2,7 @@ import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
 import { load3dLazyExtension } from '@/extensions/core/load3d/load3dLazy'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
 import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { app } from '@/scripts/app'
 import { reportError } from '@comfyorg/telemetry/reportError'

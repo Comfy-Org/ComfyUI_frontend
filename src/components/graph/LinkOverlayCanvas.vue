@@ -6,11 +6,11 @@
 </template>
 
 <script setup lang="ts">
-import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
+import type { LGraphCanvas } from '@comfyorg/litegraph/LGraphCanvas'
 
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
-import { onCanvasFrame } from '@/lib/litegraph/src/canvas/canvasFrame'
+import { onCanvasFrame } from '@comfyorg/litegraph/canvas/canvasFrame'
 
 const { canvas } = defineProps<{
   canvas: LGraphCanvas

@@ -10,7 +10,7 @@ import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/types'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
@@ -51,7 +51,7 @@ vi.mock(import('@/composables/auth/useCurrentUser'))
 
 vi.mock(import('@/scripts/app'))
 
-vi.mock(import('@/utils/graphTraversalUtil'), () => ({
+vi.mock(import('@comfyorg/litegraph/utils/graphTraversalUtil'), () => ({
   collectAllNodes: vi.fn(() => []),
   getNodeByExecutionId: vi.fn(),
   getActiveGraphNodeIds: vi.fn(() => new Set<string>()),
@@ -253,7 +253,8 @@ describe('TabErrors.vue', () => {
   })
 
   it('renders node validation errors grouped by catalog copy', async () => {
-    const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
+    const { getNodeByExecutionId } =
+      await import('@comfyorg/litegraph/utils/graphTraversalUtil')
     vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) => {
       const titles: Record<string, string> = {
         '1': 'KSampler',
@@ -372,7 +373,8 @@ describe('TabErrors.vue', () => {
   })
 
   it('inserts a card chip and an all-issues chip from the panel buttons', async () => {
-    const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
+    const { getNodeByExecutionId } =
+      await import('@comfyorg/litegraph/utils/graphTraversalUtil')
     vi.mocked(getNodeByExecutionId).mockReturnValue(
       Object.assign(new LGraphNode('KSampler'), { id: toNodeId(10) })
     )
@@ -413,7 +415,8 @@ describe('TabErrors.vue', () => {
   })
 
   it('keeps the footer on every issue while search narrows the list', async () => {
-    const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
+    const { getNodeByExecutionId } =
+      await import('@comfyorg/litegraph/utils/graphTraversalUtil')
     vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) =>
       Object.assign(
         new LGraphNode(nodeId === '1' ? 'KSampler' : 'CLIPTextEncode'),
@@ -473,7 +476,8 @@ describe('TabErrors.vue', () => {
   })
 
   it('renders runtime execution errors from WebSocket', async () => {
-    const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
+    const { getNodeByExecutionId } =
+      await import('@comfyorg/litegraph/utils/graphTraversalUtil')
     vi.mocked(getNodeByExecutionId).mockReturnValue(new LGraphNode('KSampler'))
 
     const { user } = renderComponent((pinia) => {
@@ -503,7 +507,8 @@ describe('TabErrors.vue', () => {
   })
 
   it('filters errors based on search query', async () => {
-    const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
+    const { getNodeByExecutionId } =
+      await import('@comfyorg/litegraph/utils/graphTraversalUtil')
     vi.mocked(getNodeByExecutionId).mockReturnValue(null)
 
     const { user } = renderComponent((pinia) => {
@@ -562,7 +567,8 @@ describe('TabErrors.vue', () => {
   })
 
   it('renders a single runtime error in the normal execution group', async () => {
-    const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
+    const { getNodeByExecutionId } =
+      await import('@comfyorg/litegraph/utils/graphTraversalUtil')
     vi.mocked(getNodeByExecutionId).mockReturnValue(
       fromAny<NonNullable<ReturnType<typeof getNodeByExecutionId>>, unknown>({
         title: 'KSampler'
@@ -840,7 +846,8 @@ describe('TabErrors.vue', () => {
   })
 
   it('renders one missing media item per referencing node and locates the selected node', async () => {
-    const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
+    const { getNodeByExecutionId } =
+      await import('@comfyorg/litegraph/utils/graphTraversalUtil')
     vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) => {
       const titles: Record<string, string> = {
         '3': 'First Loader',
@@ -891,7 +898,8 @@ describe('TabErrors.vue', () => {
   })
 
   it('totals mixed severities in the hero and splits them into filter chips', async () => {
-    const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
+    const { getNodeByExecutionId } =
+      await import('@comfyorg/litegraph/utils/graphTraversalUtil')
     vi.mocked(getNodeByExecutionId).mockReturnValue(
       fromAny<NonNullable<ReturnType<typeof getNodeByExecutionId>>, unknown>({
         title: 'Node'
@@ -971,7 +979,8 @@ describe('TabErrors.vue', () => {
   })
 
   it('releases the filter when a hidden issue is replaced by another', async () => {
-    const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
+    const { getNodeByExecutionId } =
+      await import('@comfyorg/litegraph/utils/graphTraversalUtil')
     vi.mocked(getNodeByExecutionId).mockReturnValue(
       fromAny<NonNullable<ReturnType<typeof getNodeByExecutionId>>, unknown>({
         title: 'Node'
@@ -1041,7 +1050,8 @@ describe('TabErrors.vue', () => {
   })
 
   it('releases the filter when a hidden file gains another referencing node', async () => {
-    const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
+    const { getNodeByExecutionId } =
+      await import('@comfyorg/litegraph/utils/graphTraversalUtil')
     vi.mocked(getNodeByExecutionId).mockReturnValue(
       fromAny<NonNullable<ReturnType<typeof getNodeByExecutionId>>, unknown>({
         title: 'Node'
@@ -1111,7 +1121,8 @@ describe('TabErrors.vue', () => {
   })
 
   it('shows only the chosen severity while its filter chip is pressed', async () => {
-    const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
+    const { getNodeByExecutionId } =
+      await import('@comfyorg/litegraph/utils/graphTraversalUtil')
     vi.mocked(getNodeByExecutionId).mockReturnValue(
       fromAny<NonNullable<ReturnType<typeof getNodeByExecutionId>>, unknown>({
         title: 'Node'
@@ -1169,7 +1180,8 @@ describe('TabErrors.vue', () => {
   })
 
   it('releases the filter when the hidden severity gains a new entry', async () => {
-    const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
+    const { getNodeByExecutionId } =
+      await import('@comfyorg/litegraph/utils/graphTraversalUtil')
     vi.mocked(getNodeByExecutionId).mockReturnValue(
       fromAny<NonNullable<ReturnType<typeof getNodeByExecutionId>>, unknown>({
         title: 'Node'
@@ -1237,7 +1249,8 @@ describe('TabErrors.vue', () => {
   })
 
   it('releases the filter when the selection carries the hidden severity', async () => {
-    const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
+    const { getNodeByExecutionId } =
+      await import('@comfyorg/litegraph/utils/graphTraversalUtil')
     vi.mocked(getNodeByExecutionId).mockImplementation((_, executionId) =>
       fromAny<NonNullable<ReturnType<typeof getNodeByExecutionId>>, unknown>({
         id: executionId,
@@ -1299,7 +1312,8 @@ describe('TabErrors.vue', () => {
   })
 
   it('holds an engaged filter until the selection membership changes', async () => {
-    const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
+    const { getNodeByExecutionId } =
+      await import('@comfyorg/litegraph/utils/graphTraversalUtil')
     vi.mocked(getNodeByExecutionId).mockImplementation((_, executionId) =>
       fromAny<NonNullable<ReturnType<typeof getNodeByExecutionId>>, unknown>({
         id: executionId,
@@ -1383,7 +1397,8 @@ describe('TabErrors.vue', () => {
   })
 
   it('releases the filter when its own severity empties', async () => {
-    const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
+    const { getNodeByExecutionId } =
+      await import('@comfyorg/litegraph/utils/graphTraversalUtil')
     vi.mocked(getNodeByExecutionId).mockReturnValue(
       fromAny<NonNullable<ReturnType<typeof getNodeByExecutionId>>, unknown>({
         title: 'Node'
@@ -1452,7 +1467,8 @@ describe('TabErrors.vue', () => {
   })
 
   it('keeps the engaged filter through a search that empties it', async () => {
-    const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
+    const { getNodeByExecutionId } =
+      await import('@comfyorg/litegraph/utils/graphTraversalUtil')
     vi.mocked(getNodeByExecutionId).mockReturnValue(
       fromAny<NonNullable<ReturnType<typeof getNodeByExecutionId>>, unknown>({
         title: 'Node'
@@ -1566,7 +1582,8 @@ describe('TabErrors.vue', () => {
   })
 
   it('opens a closed runtime error log when view details is requested', async () => {
-    const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
+    const { getNodeByExecutionId } =
+      await import('@comfyorg/litegraph/utils/graphTraversalUtil')
     vi.mocked(getNodeByExecutionId).mockReturnValue(new LGraphNode('KSampler'))
 
     const { user } = renderComponent((pinia) => {
@@ -1601,7 +1618,8 @@ describe('TabErrors.vue', () => {
   })
 
   it('opens closed issue details when view details is requested', async () => {
-    const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
+    const { getNodeByExecutionId } =
+      await import('@comfyorg/litegraph/utils/graphTraversalUtil')
     vi.mocked(getNodeByExecutionId).mockImplementation(
       (_, nodeId) =>
         new LGraphNode(nodeId === '1' ? 'KSampler' : 'CLIP Text Encode')
@@ -1644,7 +1662,8 @@ describe('TabErrors.vue', () => {
     ).toBeInTheDocument()
   })
   it('clears an active search so the requested group is shown', async () => {
-    const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
+    const { getNodeByExecutionId } =
+      await import('@comfyorg/litegraph/utils/graphTraversalUtil')
     vi.mocked(getNodeByExecutionId).mockReturnValue(new LGraphNode('KSampler'))
     const { user } = renderComponent((pinia) => {
       useExecutionErrorStore(pinia).recordNodeErrors({

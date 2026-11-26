@@ -13,14 +13,14 @@
       "path": "src/extensions/core/imageCrop.ts"
     },
     {
-      "path": "src/lib/litegraph/src/widgets/ImageCropWidget.ts"
+      "path": "packages/litegraph/src/widgets/ImageCropWidget.ts"
     }
   ],
   "publicEntryPoints": [
     "src/components/imagecrop/WidgetImageCrop.vue",
     "src/composables/useImageCrop.ts",
     "src/extensions/core/imageCrop.ts",
-    "src/lib/litegraph/src/widgets/ImageCropWidget.ts"
+    "packages/litegraph/src/widgets/ImageCropWidget.ts"
   ],
   "characterizationScenarios": [
     {

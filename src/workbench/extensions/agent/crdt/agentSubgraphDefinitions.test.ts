@@ -3,7 +3,7 @@ import type { WidgetCatalog } from '@comfyorg/comfy-multi-player'
 import { assert, describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
-import { createTestSubgraphData } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { createTestSubgraphData } from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphHelpers'
 import type {
   ExportedSubgraph,
   ISerialisedNode,

@@ -1,7 +1,7 @@
 import { assert, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { reportError as reportErrorMock } from '@comfyorg/telemetry/reportError'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import type { InputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import { app } from '@/scripts/app'
 import { isDOMWidget } from '@/scripts/domWidget'

@@ -1,14 +1,14 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import type { LGraphCanvas } from '@comfyorg/litegraph/litegraph'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { createCanvasScheduler } from '@/renderer/core/canvas/useCanvasScheduler'
 import {
   createTestCanvasElement,
   setCanvasVisible
-} from '@/utils/__tests__/canvasTestUtils'
+} from '@comfyorg/litegraph/__fixtures__/canvasTestUtils'
 
 describe('createCanvasScheduler', () => {
   let storeCanvas: HTMLCanvasElement

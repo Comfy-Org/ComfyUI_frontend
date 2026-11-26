@@ -1,4 +1,4 @@
-import { assert } from '@/base/assert'
+import { assert } from '@comfyorg/shared-frontend-utils/assert'
 
 const ADR =
   'docs/adr/CRDT-FOLLOWER-0052-the-workflow-document-owns-the-follower-session.md'

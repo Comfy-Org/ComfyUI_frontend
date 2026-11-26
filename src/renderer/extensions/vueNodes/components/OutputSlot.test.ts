@@ -5,7 +5,7 @@ import { createI18n } from 'vue-i18n'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 
-import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
+import type { INodeSlot } from '@comfyorg/litegraph/litegraph'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import TooltipProvider from '@comfyorg/design-system/tooltip/TooltipProvider'

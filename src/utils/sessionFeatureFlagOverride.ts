@@ -1,7 +1,7 @@
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import { webSessionUser } from '@/platform/auth/session/webSessionUser'
 import { isCloud } from '@/platform/distribution/types'
-import { safeSessionStorage } from '@/base/storage/safeStorage'
+import { safeSessionStorage } from '@comfyorg/shared-frontend-utils/safeStorage'
 
 const STORAGE_KEY = 'Comfy.FeatureFlagOverride'
 const QUERY_PARAM = 'ff'

@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
 import type { CurveData } from '@comfyorg/graph-model/curve'
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode } from '@comfyorg/litegraph/litegraph'
+import { subgraphTest } from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphFixtures'
 
 import { graphToPrompt } from './executionUtil'
 
@@ -192,6 +193,46 @@ describe('graphToPrompt _meta pack identity', () => {
       expect(output[String(node.id)]._meta).toEqual({
         title: 'FallbackIdentityNode',
         aux_id: 'aux/pack'
+      })
+    }
+  )
+})
+
+describe('graphToPrompt after removing a subgraph input', () => {
+  subgraphTest(
+    'removing an input keeps the next input on its upstream output in the prompt',
+    async ({ subgraphWithNode }) => {
+      const { subgraph, subgraphNode, parentGraph } = subgraphWithNode
+      const first = subgraph.inputs[0]
+      const second = subgraph.addInput('second', '*')
+
+      const upstream = new LGraphNode('Upstream')
+      upstream.addOutput('a', '*')
+      upstream.addOutput('b', '*')
+      parentGraph.add(upstream)
+      upstream.connect(0, subgraphNode, 0)
+      upstream.connect(1, subgraphNode, 1)
+
+      const firstTargets = Array.from({ length: 2 }, (_, i) => {
+        const node = new LGraphNode(`First target ${i}`)
+        node.addInput('in', '*')
+        subgraph.add(node)
+        first.connect(node.inputs[0], node)
+        return node
+      })
+      const secondTarget = new LGraphNode('Second target')
+      secondTarget.addInput('in', '*')
+      subgraph.add(secondTarget)
+      second.connect(secondTarget.inputs[0], secondTarget)
+
+      subgraph.removeInput(first)
+
+      const { output } = await graphToPrompt(parentGraph)
+      const promptInputs = (node: LGraphNode) =>
+        output[`${subgraphNode.id}:${node.id}`].inputs
+      expect(firstTargets.map(promptInputs)).toEqual([{}, {}])
+      expect(promptInputs(secondTarget)).toEqual({
+        in: [String(upstream.id), 1]
       })
     }
   )

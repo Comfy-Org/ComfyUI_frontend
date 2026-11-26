@@ -48,7 +48,7 @@ import {
   classifyCloudValidationError,
   normalizeRelayedNodeErrors
 } from '@/utils/executionErrorUtil'
-import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
+import { executionIdToNodeLocatorId } from '@comfyorg/litegraph/utils/graphTraversalUtil'
 import { mergeNodeOutput } from '@/utils/nodeOutputUtil'
 import { createRafCoalescer } from '@/utils/rafBatch'
 import { zComfyApiWorkflow } from '@comfyorg/graph-model/workflowSchema'

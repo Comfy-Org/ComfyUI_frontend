@@ -10,7 +10,7 @@
       "path": "src/extensions/core/layerEditor.ts"
     },
     {
-      "path": "src/lib/litegraph/src/widgets/CompositorWidget.ts"
+      "path": "packages/litegraph/src/widgets/CompositorWidget.ts"
     },
     {
       "path": "src/renderer/extensions/layerEditor/**"
@@ -28,7 +28,7 @@
   "publicEntryPoints": [
     "src/extensions/core/imageCompositor.ts",
     "src/extensions/core/layerEditor.ts",
-    "src/lib/litegraph/src/widgets/CompositorWidget.ts",
+    "packages/litegraph/src/widgets/CompositorWidget.ts",
     "src/renderer/extensions/layerEditor/compositor/WidgetCompositor.vue",
     "src/renderer/extensions/layerEditor/composables/useLayerEditor.ts",
     "src/renderer/extensions/layerEditor/layerEditorDialogKey.ts",

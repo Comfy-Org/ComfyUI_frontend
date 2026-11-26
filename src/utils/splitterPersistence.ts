@@ -1,5 +1,5 @@
-import { safeLocalStorage } from '@/base/storage/safeStorage'
-import type { SafeStorage } from '@/base/storage/safeStorage'
+import { safeLocalStorage } from '@comfyorg/shared-frontend-utils/safeStorage'
+import type { SafeStorage } from '@comfyorg/shared-frontend-utils/safeStorage'
 
 export function loadSplitterSizes(
   key: string,

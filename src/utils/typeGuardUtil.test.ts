@@ -1,44 +1,38 @@
 import { describe, expect, it } from 'vitest'
 
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { isSubgraphIoNode } from '@/utils/typeGuardUtil'
+import { isAbortError, isResultItemType } from './typeGuardUtil'
 
-type NodeConstructor = { comfyClass?: string }
+describe('isAbortError', () => {
+  it.for([
+    {
+      name: 'DOMException AbortError',
+      error: new DOMException('', 'AbortError'),
+      expected: true
+    },
+    {
+      name: 'DOMException of another name',
+      error: new DOMException('', 'TimeoutError'),
+      expected: false
+    },
+    {
+      name: 'plain Error named AbortError',
+      error: Object.assign(new Error(), { name: 'AbortError' }),
+      expected: false
+    }
+  ])('$name -> $expected', ({ error, expected }) => {
+    expect(isAbortError(error)).toBe(expected)
+  })
+})
 
-function createMockNode(nodeConstructor?: NodeConstructor): LGraphNode {
-  return { constructor: nodeConstructor } as Partial<LGraphNode> as LGraphNode
-}
-
-describe('typeGuardUtil', () => {
-  describe('isSubgraphIoNode', () => {
-    it('should identify SubgraphInputNode as IO node', () => {
-      const node = createMockNode({ comfyClass: 'SubgraphInputNode' })
-
-      expect(isSubgraphIoNode(node)).toBe(true)
-    })
-
-    it('should identify SubgraphOutputNode as IO node', () => {
-      const node = createMockNode({ comfyClass: 'SubgraphOutputNode' })
-
-      expect(isSubgraphIoNode(node)).toBe(true)
-    })
-
-    it('should not identify regular nodes as IO nodes', () => {
-      const node = createMockNode({ comfyClass: 'CLIPTextEncode' })
-
-      expect(isSubgraphIoNode(node)).toBe(false)
-    })
-
-    it('should handle nodes without constructor', () => {
-      const node = createMockNode(undefined)
-
-      expect(isSubgraphIoNode(node)).toBe(false)
-    })
-
-    it('should handle nodes without comfyClass', () => {
-      const node = createMockNode({})
-
-      expect(isSubgraphIoNode(node)).toBe(false)
-    })
+describe('isResultItemType', () => {
+  it.for([
+    { value: 'input', expected: true },
+    { value: 'output', expected: true },
+    { value: 'temp', expected: true },
+    { value: 'Output', expected: false },
+    { value: '', expected: false },
+    { value: undefined, expected: false }
+  ])('$value -> $expected', ({ value, expected }) => {
+    expect(isResultItemType(value)).toBe(expected)
   })
 })

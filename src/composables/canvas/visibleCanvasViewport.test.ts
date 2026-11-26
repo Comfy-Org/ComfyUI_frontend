@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { createTestDragAndScale } from '@/utils/__tests__/canvasTestUtils'
+import { createTestDragAndScale } from '@comfyorg/litegraph/__fixtures__/canvasTestUtils'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { visibleCanvasViewport } from './visibleCanvasViewport'
 

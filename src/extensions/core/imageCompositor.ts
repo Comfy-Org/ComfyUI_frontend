@@ -7,16 +7,16 @@ import {
   clearCompositorPreviewOverride,
   setCompositorLayers
 } from '@/renderer/extensions/layerEditor/compositor/useCompositorLayers'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
 import type {
   NodeExecutionOutput,
   NodeOutputWith
-} from '@comfyorg/api-client/executionTypes'
+} from '@comfyorg/graph-model/nodeOutput'
 import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useApp } from '@/scripts/appInstance'
 import type { ComfyExtension } from '@/types/comfy'
-import { collectAllNodes } from '@/utils/graphTraversalUtil'
+import { collectAllNodes } from '@comfyorg/litegraph/utils/graphTraversalUtil'
 
 type ImageCompositorOutput = NodeOutputWith<{
   compositor_layers?: Partial<ImageFileRef>[]

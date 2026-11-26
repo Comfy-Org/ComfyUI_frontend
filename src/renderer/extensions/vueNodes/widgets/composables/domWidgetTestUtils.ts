@@ -1,6 +1,6 @@
 import { beforeEach } from 'vitest'
 
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { DOMWidgetImpl } from '@/scripts/domWidget'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 

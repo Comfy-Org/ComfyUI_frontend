@@ -2,14 +2,14 @@ import { describe, expect, it } from 'vitest'
 import { computed, effectScope, nextTick, shallowRef } from 'vue'
 
 import { useSubgraphIoLayout } from '@/components/graph/subgraph/useSubgraphIoLayout'
-import { resolvePointerTarget } from '@/lib/litegraph/src/canvas/resolvePointerTarget'
-import { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import type { SubgraphInputNode } from '@/lib/litegraph/src/subgraph/SubgraphInputNode'
-import type { SubgraphOutputNode } from '@/lib/litegraph/src/subgraph/SubgraphOutputNode'
+import { resolvePointerTarget } from '@comfyorg/litegraph/canvas/resolvePointerTarget'
+import { LGraphCanvas, LGraphNode } from '@comfyorg/litegraph/litegraph'
+import { createTestSubgraph } from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphHelpers'
+import type { SubgraphInputNode } from '@comfyorg/litegraph/subgraph/SubgraphInputNode'
+import type { SubgraphOutputNode } from '@comfyorg/litegraph/subgraph/SubgraphOutputNode'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { stubCanvasGetContext } from '@/utils/__tests__/canvasTestUtils'
+import { layoutStore } from '@comfyorg/graph-state/layout/layoutStore'
+import { stubCanvasGetContext } from '@comfyorg/litegraph/__fixtures__/canvasTestUtils'
 
 function reportPanel(
   node: SubgraphInputNode | SubgraphOutputNode,

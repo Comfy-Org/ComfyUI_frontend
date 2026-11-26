@@ -29,7 +29,7 @@ import {
 } from '@/extensions/core/load3d/cameraAngle/widgetBridge'
 import type { NodeWithWidgets } from '@/extensions/core/load3d/cameraAngle/widgetBridge'
 import { t } from '@/i18n'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 

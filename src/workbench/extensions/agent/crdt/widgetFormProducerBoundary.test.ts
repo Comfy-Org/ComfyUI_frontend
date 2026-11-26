@@ -4,16 +4,17 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
 const CRDT_DIR = dirname(fileURLToPath(import.meta.url))
-const SRC_DIR = resolve(CRDT_DIR, '../../../..')
+const REPO_DIR = resolve(CRDT_DIR, '../../../../..')
+const SOURCE_ROOTS = ['src', 'packages/litegraph/src']
 
 const WIRE_ADR =
   'docs/adr/WIDGET-SERIALIZATION-0047-agent-wire-widget-form-is-proven-not-derived.md'
 const CENSUS_ADR =
   'docs/adr/ECS-WIDGETS-0023-widget-entities-with-a-legacy-layer.md (2026-10-26 amendment)'
 
-const WIRE_PRODUCER = 'workbench/extensions/agent/crdt/widgetValuesForm.ts'
-const WIRE_CALL_SITE = 'workbench/extensions/agent/crdt/docOpMinter.ts'
-const CENSUS_PREDICATE = 'lib/litegraph/src/widgets/widgetFormProof.ts'
+const WIRE_PRODUCER = 'src/workbench/extensions/agent/crdt/widgetValuesForm.ts'
+const WIRE_CALL_SITE = 'src/workbench/extensions/agent/crdt/docOpMinter.ts'
+const CENSUS_PREDICATE = 'packages/litegraph/src/widgets/widgetFormProof.ts'
 
 const SPECIFIER =
   /(?:from|require|import(?:\.meta\.glob)?)\s*\(?\s*(['"`])([^'"`]+)\1/g
@@ -29,19 +30,19 @@ function producerCalls(text: string): number {
   return [...text.matchAll(PRODUCER_CALL)].length
 }
 
-function sourcesUnder(dir: string): { name: string; text: string }[] {
-  return readdirSync(dir, { recursive: true })
-    .map((entry) => String(entry).replaceAll('\\', '/'))
+function sourcesUnder(root: string): { name: string; text: string }[] {
+  return readdirSync(join(REPO_DIR, root), { recursive: true })
+    .map((entry) => `${root}/${String(entry).replaceAll('\\', '/')}`)
     .filter(
       (name) =>
         (name.endsWith('.ts') || name.endsWith('.vue')) &&
         !name.includes('node_modules')
     )
-    .map((name) => ({ name, text: readFileSync(join(dir, name), 'utf8') }))
+    .map((name) => ({ name, text: readFileSync(join(REPO_DIR, name), 'utf8') }))
 }
 
 describe('one widget-form producer', () => {
-  const sources = sourcesUnder(SRC_DIR)
+  const sources = SOURCE_ROOTS.flatMap(sourcesUnder)
   const production = sources.filter(({ name }) => !NOT_PRODUCTION.test(name))
 
   it('scans the two modules and the wire call site', () => {
@@ -66,7 +67,8 @@ describe('one widget-form producer', () => {
     ]
 
     for (const specifier of [
-      '@/lib/litegraph/src/widgets/widgetFormProof',
+      '@comfyorg/litegraph/widgets/widgetFormProof',
+      '#/widgets/widgetFormProof',
       './widgetFormProof',
       '../widgets/widgetFormProof'
     ])
@@ -94,8 +96,8 @@ describe('one widget-form producer', () => {
   })
 
   it('keeps the two proofs from importing each other', () => {
-    const wire = readFileSync(join(SRC_DIR, WIRE_PRODUCER), 'utf8')
-    const census = readFileSync(join(SRC_DIR, CENSUS_PREDICATE), 'utf8')
+    const wire = readFileSync(join(REPO_DIR, WIRE_PRODUCER), 'utf8')
+    const census = readFileSync(join(REPO_DIR, CENSUS_PREDICATE), 'utf8')
 
     expect(
       importSpecifiers(wire).filter((specifier) =>
@@ -127,7 +129,7 @@ describe('one widget-form producer', () => {
 
   it('mints the form at exactly one production call site', () => {
     expect(
-      readFileSync(join(SRC_DIR, WIRE_PRODUCER), 'utf8'),
+      readFileSync(join(REPO_DIR, WIRE_PRODUCER), 'utf8'),
       `${WIRE_PRODUCER} no longer declares the producer this guard counts calls to`
     ).toContain('export function provenWidgetValuesForm(')
 

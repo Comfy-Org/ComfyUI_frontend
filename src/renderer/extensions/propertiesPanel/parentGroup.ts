@@ -1,7 +1,7 @@
 import type { InjectionKey } from 'vue'
 
-import type { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { containsCentre, containsRect } from '@/lib/litegraph/src/measure'
+import type { LGraphGroup, LGraphNode } from '@comfyorg/litegraph/litegraph'
+import { containsCentre, containsRect } from '@comfyorg/litegraph/measure'
 
 /** Provides the group a node is listed under in the panel, or null. */
 export const GetNodeParentGroupKey: InjectionKey<

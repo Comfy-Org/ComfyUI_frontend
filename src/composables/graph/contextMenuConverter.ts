@@ -1,20 +1,20 @@
 import { default as DOMPurify } from 'dompurify'
 
-import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraphCanvas, LiteGraph } from '@comfyorg/litegraph/litegraph'
 import type {
   IContextMenuValue,
   LGraphNode,
   IContextMenuOptions,
   ContextMenu
-} from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/litegraph'
 import {
   getNodeMenuCallbackId,
   NODE_MENU_SECTIONS
-} from '@/lib/litegraph/src/types/nodeMenu'
-import type { NodeMenuItemId } from '@/lib/litegraph/src/types/nodeMenu'
+} from '@comfyorg/litegraph/types/nodeMenu'
+import type { NodeMenuItemId } from '@comfyorg/litegraph/types/nodeMenu'
 
 import type { MenuOption, SubMenuOption } from './menuOption'
-import type { ContextMenuDivElement } from '@/lib/litegraph/src/types/contextMenu'
+import type { ContextMenuDivElement } from '@comfyorg/litegraph/types/contextMenu'
 
 const SUPPRESSED_LITEGRAPH_CALLBACKS = new Set<unknown>([
   LGraphCanvas.onShowMenuNodeProperties,

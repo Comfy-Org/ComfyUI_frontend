@@ -4,15 +4,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, useTemplateRef } from 'vue'
 
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import { LGraph, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { createTestSubgraphData } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { LGraph, LiteGraph } from '@comfyorg/litegraph/litegraph'
+import { createTestSubgraphData } from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphHelpers'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { syncSlotOffsets } from '@/renderer/core/layout/slots/syncSlotOffsets'
 import {
   readMountedNodeSize,
   retireMountedGraphSizes,
   retireMountedNodeSize
-} from '@/renderer/core/layout/store/mountedNodeSizes'
+} from '@comfyorg/graph-state/layout/mountedNodeSizes'
 
 import {
   useMountedNodeSize,

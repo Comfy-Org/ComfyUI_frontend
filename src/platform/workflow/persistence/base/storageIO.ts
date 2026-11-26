@@ -7,11 +7,11 @@
 import type {
   SafeStorage,
   StorageWriteOutcome
-} from '@/base/storage/safeStorage'
+} from '@comfyorg/shared-frontend-utils/safeStorage'
 import {
   safeLocalStorage,
   safeSessionStorage
-} from '@/base/storage/safeStorage'
+} from '@comfyorg/shared-frontend-utils/safeStorage'
 
 import type {
   ActivePathPointer,

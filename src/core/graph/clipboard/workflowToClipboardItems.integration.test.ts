@@ -6,16 +6,16 @@ import {
   LGraphCanvas,
   LGraphNode,
   LiteGraph
-} from '@/lib/litegraph/src/litegraph'
-import type { LLink } from '@/lib/litegraph/src/LLink'
+} from '@comfyorg/litegraph/litegraph'
+import type { LLink } from '@comfyorg/litegraph/LLink'
 import type {
   ClipboardItems,
   ISerialisedNode,
   SerialisableGraph
 } from '@comfyorg/graph-model/serialisation'
 import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
-import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
-import { createUuidv4 } from '@/utils/uuid'
+import { createMockCanvasRenderingContext2D } from '@comfyorg/litegraph/__fixtures__/canvasTestUtils'
+import { createUuidv4 } from '@comfyorg/graph-model/uuid'
 
 import { workflowToClipboardItems } from './workflowToClipboardItems'
 

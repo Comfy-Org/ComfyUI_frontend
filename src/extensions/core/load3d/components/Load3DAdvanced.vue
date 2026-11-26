@@ -10,7 +10,7 @@
 
 <script setup lang="ts">
 import Load3D from '@/extensions/core/load3d/components/Load3D.vue'
-import type { ComponentWidget } from '@/types/domWidget'
+import type { ComponentWidget } from '@comfyorg/litegraph/types/domWidget'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 

@@ -15,7 +15,7 @@ import { onBeforeUnmount, onMounted, ref } from 'vue'
 
 import LoadingOverlay from '@comfyorg/design-system/common/LoadingOverlay'
 import EditorCanvas from '@comfyorg/mask-editor/ui/EditorCanvas'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useBrushPersistence } from '@/renderer/extensions/maskEditor/composables/useBrushPersistence'
 import { useMaskEditorLoader } from '@/renderer/extensions/maskEditor/composables/useMaskEditorLoader'

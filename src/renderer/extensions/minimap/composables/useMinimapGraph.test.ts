@@ -9,14 +9,14 @@ import {
 } from 'vitest'
 import { effectScope, nextTick, shallowRef } from 'vue'
 
-import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import type { LGraph, LGraphNode } from '@comfyorg/litegraph/litegraph'
+import { useLayoutMutations } from '@comfyorg/graph-state/layout/layoutMutations'
+import { layoutStore } from '@comfyorg/graph-state/layout/layoutStore'
 import { MinimapDataSource } from '@/renderer/extensions/minimap/data/MinimapDataSource'
-import { LayoutSource } from '@/renderer/core/layout/types'
+import { LayoutSource } from '@comfyorg/graph-state/layout/types'
 import { useMinimapGraph } from '@/renderer/extensions/minimap/composables/useMinimapGraph'
 import { useExecutionStore } from '@/stores/executionStore'
-import { useLinkStore } from '@/stores/linkStore'
+import { useLinkStore } from '@comfyorg/graph-state/linkStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
 import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
@@ -25,7 +25,7 @@ import {
   createMockLGraph,
   createMockLGraphGroup,
   createMockLGraphNode
-} from '@/utils/__tests__/litegraphTestUtils'
+} from '@comfyorg/litegraph/__fixtures__/litegraphTestUtils'
 
 function createReader(initialGraph: LGraph | null) {
   const graph = shallowRef(initialGraph)

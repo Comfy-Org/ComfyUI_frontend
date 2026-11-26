@@ -1,11 +1,11 @@
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
-import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { createTestNode } from '@comfyorg/litegraph/__fixtures__/nodeHelpers'
+import { LGraph, LGraphNode } from '@comfyorg/litegraph/litegraph'
 import {
   createTestRootGraph,
   enableSubgraphNodeCreation
-} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+} from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphHelpers'
 import { reportError } from '@comfyorg/telemetry/reportError'
 
 import {

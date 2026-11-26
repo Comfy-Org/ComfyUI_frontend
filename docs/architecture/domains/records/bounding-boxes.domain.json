@@ -13,7 +13,7 @@
       "path": "src/extensions/core/createBoundingBoxes.ts"
     },
     {
-      "path": "src/lib/litegraph/src/widgets/BoundingBoxesWidget.ts"
+      "path": "packages/litegraph/src/widgets/BoundingBoxesWidget.ts"
     },
     {
       "path": "src/renderer/extensions/vueNodes/widgets/composables/useBoundingBoxesSources.ts"
@@ -38,7 +38,7 @@
         "src/renderer/extensions/vueNodes/widgets/composables/useBoundingBoxesSources.test.ts",
         "src/renderer/extensions/vueNodes/widgets/composables/useBoundingBoxesWidget.test.ts",
         "src/extensions/core/createBoundingBoxes.test.ts",
-        "src/lib/litegraph/src/widgets/BoundingBoxesWidget.test.ts"
+        "packages/litegraph/src/widgets/BoundingBoxesWidget.test.ts"
       ]
     }
   ],

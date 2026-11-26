@@ -17,9 +17,9 @@
 import { computed, useTemplateRef, watch } from 'vue'
 
 import TooltipProvider from '@comfyorg/design-system/tooltip/TooltipProvider'
-import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import type { LGraphCanvas } from '@comfyorg/litegraph/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { onCanvasFrame } from '@/lib/litegraph/src/canvas/canvasFrame'
+import { onCanvasFrame } from '@comfyorg/litegraph/canvas/canvasFrame'
 import { useCompositedTransform } from '@/renderer/core/layout/transform/useCompositedTransform'
 import { useTransformSettling } from '@/renderer/core/layout/transform/useTransformSettling'
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'

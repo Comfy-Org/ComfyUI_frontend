@@ -19,10 +19,10 @@ import type {
 } from '@comfyorg/viewport3d/load3d/interfaces'
 import type { IBaseWidget, INumericWidget } from '@comfyorg/graph-model/widgets'
 import type { Dictionary } from '@comfyorg/graph-model/interfaces'
-import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { NodeProperty } from '@comfyorg/litegraph/LGraphNode'
+import { LGraph, LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 import type { Settings } from '@comfyorg/settings-core/types'
 
 vi.mock(import('@/scripts/api'), () => ({

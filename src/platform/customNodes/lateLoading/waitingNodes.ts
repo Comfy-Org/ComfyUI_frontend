@@ -1,8 +1,8 @@
 import { t } from '@/i18n'
-import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { LGraphBadge, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraph, LGraphNode } from '@comfyorg/litegraph/litegraph'
+import { LGraphBadge, LiteGraph } from '@comfyorg/litegraph/litegraph'
 import { useThemeStore } from '@/platform/theme/themeStore'
-import { forEachNode } from '@/utils/graphTraversalUtil'
+import { forEachNode } from '@comfyorg/litegraph/utils/graphTraversalUtil'
 
 function waitingBadge(): LGraphBadge {
   const colors = useThemeStore().activeTheme.canvas

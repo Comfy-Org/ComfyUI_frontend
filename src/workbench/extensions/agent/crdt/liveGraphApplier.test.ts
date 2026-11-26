@@ -23,18 +23,18 @@ import {
 import * as Y from 'yjs'
 
 import { markDynamicGroupController } from '@/core/graph/widgets/dynamicGroupDiagnostics'
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
-import type { GraphIntentEvent } from '@/lib/litegraph/src/graphIntents'
+import { LGraph, LGraphNode, LiteGraph } from '@comfyorg/litegraph/litegraph'
+import { onGraphIntent } from '@comfyorg/graph-state/graphIntents'
+import type { GraphIntentEvent } from '@comfyorg/graph-state/graphIntents'
 import {
   createTestSubgraph,
   createTestSubgraphData,
   createTestSubgraphNode
-} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+} from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphHelpers'
 import type {
   ISerialisedNode,
   LGraphCanvas
-} from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/litegraph'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { transformInputSpecV1ToV2 } from '@comfyorg/object-info-parser/migration'
 import { toLinkId } from '@comfyorg/graph-model/linkId'

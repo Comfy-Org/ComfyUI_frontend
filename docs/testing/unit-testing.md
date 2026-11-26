@@ -60,7 +60,7 @@ Testing LiteGraph-related functionality:
 
 ```typescript
 // Example from a colocated LiteGraph unit test
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph'
+import { LGraph, LGraphNode, LiteGraph } from '@comfyorg/litegraph'
 import { describe, expect, it } from 'vitest'
 
 // Create dummy node for testing

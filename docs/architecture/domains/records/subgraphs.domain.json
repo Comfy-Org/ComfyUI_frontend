@@ -13,28 +13,19 @@
       "path": "src/core/graph/subgraph/liftNodeErrorsToBoundary.ts"
     },
     {
-      "path": "src/core/graph/subgraph/resolveSubgraphInputLink.ts"
-    },
-    {
-      "path": "src/core/graph/subgraph/resolveSubgraphInputTarget.ts"
-    },
-    {
       "path": "src/extensions/core/groupNode.ts"
     },
     {
-      "path": "src/lib/litegraph/src/constants.ts"
+      "path": "packages/litegraph/src/constants.ts"
     },
     {
-      "path": "src/lib/litegraph/src/infrastructure/SubgraphEventMap.ts"
+      "path": "packages/litegraph/src/infrastructure/SubgraphInputEventMap.ts"
     },
     {
-      "path": "src/lib/litegraph/src/infrastructure/SubgraphInputEventMap.ts"
+      "path": "packages/litegraph/src/subgraph/**"
     },
     {
-      "path": "src/lib/litegraph/src/subgraph/**"
-    },
-    {
-      "path": "src/schemas/subgraphIdSchema.ts"
+      "path": "packages/graph-state/src/subgraphIdSchema.ts"
     },
     {
       "path": "src/stores/subgraphNavigationStore.ts"
@@ -48,26 +39,26 @@
     {
       "name": "Converting, unpacking, and serialising subgraphs preserves links and definitions",
       "checks": [
-        "src/lib/litegraph/src/subgraph/SubgraphConversion.test.ts",
-        "src/lib/litegraph/src/subgraph/SubgraphConversion.nestedDefinitions.test.ts",
-        "src/lib/litegraph/src/subgraph/SubgraphSerialization.test.ts",
-        "src/lib/litegraph/src/subgraph/subgraphDeduplication.test.ts",
+        "packages/litegraph/src/subgraph/SubgraphConversion.test.ts",
+        "packages/litegraph/src/subgraph/SubgraphConversion.nestedDefinitions.test.ts",
+        "packages/litegraph/src/subgraph/SubgraphSerialization.test.ts",
+        "packages/litegraph/src/subgraph/subgraphDeduplication.test.ts",
         "browser_tests/tests/subgraph/subgraphSerialization.spec.ts"
       ]
     },
     {
       "name": "Subgraph IO slots connect, rename, and emit events consistently",
       "checks": [
-        "src/lib/litegraph/src/subgraph/SubgraphIO.test.ts",
-        "src/lib/litegraph/src/subgraph/SubgraphSlotConnections.test.ts",
-        "src/lib/litegraph/src/subgraph/SubgraphEvents.test.ts",
-        "src/core/graph/subgraph/resolveSubgraphInputTarget.test.ts"
+        "packages/litegraph/src/subgraph/SubgraphIO.test.ts",
+        "packages/litegraph/src/subgraph/SubgraphSlotConnections.test.ts",
+        "packages/litegraph/src/subgraph/SubgraphEvents.test.ts",
+        "packages/litegraph/src/subgraph/promotion/resolveSubgraphInputTarget.test.ts"
       ]
     },
     {
       "name": "Execution flattening and error lifting resolve nodes inside subgraphs",
       "checks": [
-        "src/lib/litegraph/src/subgraph/ExecutableNodeDTO.test.ts",
+        "packages/litegraph/src/subgraph/ExecutableNodeDTO.test.ts",
         "src/core/graph/subgraph/liftNodeErrorsToBoundary.test.ts"
       ]
     },
@@ -88,7 +79,7 @@
     {
       "name": "Subgraph ids validate and legacy group nodes migrate with separators and links intact",
       "checks": [
-        "src/schemas/subgraphIdSchema.test.ts",
+        "packages/graph-state/src/subgraphIdSchema.test.ts",
         "src/extensions/core/groupNode.test.ts"
       ]
     }

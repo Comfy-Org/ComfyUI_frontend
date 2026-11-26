@@ -3,8 +3,8 @@ import type {
   ExportedSubgraphInstance,
   LGraph,
   Subgraph
-} from '@/lib/litegraph/src/litegraph'
-import { normalizeSubgraphDefinitionIds } from '@/lib/litegraph/src/subgraph/subgraphDeduplication'
+} from '@comfyorg/litegraph/litegraph'
+import { normalizeSubgraphDefinitionIds } from '@comfyorg/litegraph/subgraph/subgraphDeduplication'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@comfyorg/object-info-parser'
 import { useNodeDefStore } from '@/stores/nodeDefStore'

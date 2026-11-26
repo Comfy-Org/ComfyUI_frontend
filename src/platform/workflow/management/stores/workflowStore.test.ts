@@ -12,8 +12,8 @@ import { UnauthorizedError } from '@comfyorg/api-client/ComfyApi'
 import { nextTick, reactive, toRaw } from 'vue'
 
 import { useToast } from '@/components/ui/toast/toastStore'
-import type { Subgraph } from '@/lib/litegraph/src/litegraph'
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { Subgraph } from '@comfyorg/litegraph/litegraph'
+import { LGraph, LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import {
   bindCanvasTracker,
@@ -52,11 +52,9 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 import { isValidUuid } from '@/utils/formatUtil'
 import { syncEntities } from '@/utils/syncUtil'
 import { isSubgraph } from '@/utils/typeGuardUtil'
-import {
-  createMockChangeTracker,
-  createMockLGraphNode
-} from '@/utils/__tests__/litegraphTestUtils'
-import { createMockCanvas } from '@/utils/__tests__/canvasTestUtils'
+import { createMockLGraphNode } from '@comfyorg/litegraph/__fixtures__/litegraphTestUtils'
+import { createMockChangeTracker } from '@/utils/__tests__/workflowTestUtils'
+import { createMockCanvas } from '@comfyorg/litegraph/__fixtures__/canvasTestUtils'
 
 vi.mock(import('@/scripts/api'))
 vi.mock(import('@comfyorg/telemetry/reportError'), { spy: true })
@@ -71,7 +69,6 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
   }
 }))
 
-// Mock isSubgraph
 vi.mock<unknown>(import('@/utils/typeGuardUtil'), () => ({
   isSubgraph: vi.fn(() => false)
 }))
@@ -80,7 +77,7 @@ vi.mock(import('@/utils/syncUtil'), { spy: true })
 
 const mockAssert = vi.hoisted(() => vi.fn())
 
-vi.mock(import('@/base/assert'), () => ({
+vi.mock(import('@comfyorg/shared-frontend-utils/assert'), () => ({
   assert: mockAssert
 }))
 

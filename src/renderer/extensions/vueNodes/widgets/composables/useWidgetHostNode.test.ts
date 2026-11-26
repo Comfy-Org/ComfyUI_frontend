@@ -1,8 +1,8 @@
 import { assert, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { effectScope, ref } from 'vue'
 
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { LGraphNode } from '@comfyorg/litegraph/litegraph'
+import { createTestSubgraph } from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphHelpers'
 import { app } from '@/scripts/app'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'

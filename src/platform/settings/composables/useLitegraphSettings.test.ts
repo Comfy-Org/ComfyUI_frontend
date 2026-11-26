@@ -3,14 +3,14 @@ import { effectScope, nextTick } from 'vue'
 import type { EffectScope } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
-import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraphCanvas } from '@comfyorg/litegraph/litegraph'
+import { LGraphNode, LiteGraph } from '@comfyorg/litegraph/litegraph'
 import { CORE_SETTINGS } from '@/platform/settings/constants/coreSettings'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore' // oxlint-disable-line comfy/no-restricted-paths
-import type { LLink } from '@/lib/litegraph/src/LLink'
+import type { LLink } from '@comfyorg/litegraph/LLink'
 import { LinkRenderType } from '@comfyorg/graph-model/globalEnums'
-import { useLinkSelectionStore } from '@/stores/linkSelectionStore'
+import { useLinkSelectionStore } from '@comfyorg/graph-state/linkSelectionStore'
 
 import { useLitegraphSettings } from './useLitegraphSettings'
 

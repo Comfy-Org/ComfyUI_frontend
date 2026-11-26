@@ -1,0 +1,44 @@
+{
+  "name": "@comfyorg/litegraph",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "imports": {
+    "#/*": {
+      "@comfyorg/litegraph": "./src/*.ts",
+      "types": "./dist-types/*.d.ts",
+      "default": "./src/*.ts"
+    }
+  },
+  "exports": {
+    "./litegraph.css": "./public/css/litegraph.css",
+    "./*": {
+      "@comfyorg/litegraph": "./src/*.ts",
+      "types": "./dist-types/*.d.ts",
+      "default": "./src/*.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b tsconfig.declarations.json",
+    "typecheck": "tsc --noEmit",
+    "format": "oxfmt --write",
+    "format:check": "oxfmt --check"
+  },
+  "dependencies": {
+    "@comfyorg/graph-model": "workspace:*",
+    "@comfyorg/graph-state": "workspace:*",
+    "@comfyorg/object-info-parser": "workspace:*",
+    "@comfyorg/shared-frontend-utils": "workspace:*",
+    "@comfyorg/telemetry": "workspace:*",
+    "@vueuse/core": "catalog:",
+    "dompurify": "catalog:",
+    "es-toolkit": "catalog:",
+    "loglevel": "^1.9.2",
+    "pinia": "catalog:",
+    "vue": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "typescript": "catalog:"
+  }
+}

@@ -2,11 +2,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import type NodeSearchBoxPopover from '@/components/searchbox/NodeSearchBoxPopover.vue'
-import { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphCanvas } from '@comfyorg/litegraph/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
-import { createMockMinimapCanvas } from '@/utils/__tests__/canvasTestUtils'
+import { createMockMinimapCanvas } from '@comfyorg/litegraph/__fixtures__/canvasTestUtils'
 
 function createMockPopover(): Pick<
   InstanceType<typeof NodeSearchBoxPopover>,

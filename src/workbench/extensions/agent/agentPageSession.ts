@@ -2,7 +2,7 @@ import { computed, effectScope, watch } from 'vue'
 import { reportError } from '@comfyorg/telemetry/reportError'
 
 import { api } from '@/scripts/api'
-import { assert } from '@/base/assert'
+import { assert } from '@comfyorg/shared-frontend-utils/assert'
 
 import type { AgentDocFrameTransport } from './crdt/agentDocFrameTransport'
 import { createAgentDocFrameTransport } from './crdt/agentDocFrameTransport'

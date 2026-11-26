@@ -3,7 +3,7 @@ import { computed, effectScope, shallowRef } from 'vue'
 
 import { useSelectionGrid } from '@/components/graph/selectionGrid/useSelectionGrid'
 import { useTidySession } from '@/components/graph/selectionGrid/useTidySession'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode } from '@comfyorg/litegraph/litegraph'
 
 vi.mock(import('@/components/graph/selectionGrid/useSelectionGrid'), {
   spy: true

@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { zResultItem } from '@comfyorg/api-client/executionTypes'
+import { zResultItem } from '@comfyorg/graph-model/nodeOutput'
 import type { MediaKind } from '@comfyorg/assets-core/media'
 import { zMediaKindSchema } from '@comfyorg/assets-core/media'
 import { MIME_ASSET_INFO } from '@/platform/assets/constants/assetDrag'

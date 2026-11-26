@@ -10,13 +10,13 @@ import {
   checkCloudCompatibility,
   readCloudMissingModels
 } from '@/platform/openOnCloud/cloudCompatibilityApi'
-import { LGraphEventMode, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraphEventMode, LGraphNode } from '@comfyorg/litegraph/litegraph'
+import type { LGraph } from '@comfyorg/litegraph/litegraph'
 import {
   createTestRootGraph,
   createTestSubgraph,
   createTestSubgraphNode
-} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+} from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphHelpers'
 import { app } from '@/scripts/app'
 import { useAuthStore } from '@/stores/authStore'
 import type { ModelFolder } from '@/stores/modelStore'

@@ -6,7 +6,7 @@ import { handoffFileName } from '@/platform/workflow/deploy/utils/agentHandoff'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { platformSurfaceLink } from '@/platform/workspace/utils/platformLink'
 import type { PlatformLinkSurface } from '@/platform/workspace/utils/platformLink'
-import { createUuidv4 } from '@/utils/uuid'
+import { createUuidv4 } from '@comfyorg/graph-model/uuid'
 
 const HANDOFF_READY = 'comfy-build-handoff:ready'
 const HANDOFF_WORKFLOW = 'comfy-build-handoff:workflow'

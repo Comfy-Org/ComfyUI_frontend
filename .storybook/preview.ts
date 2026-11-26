@@ -12,7 +12,7 @@ import {
 import { i18n } from '@/i18n'
 import { resolveTheme } from '@comfyorg/theme-core/resolveTheme'
 import { applyTheme } from '@/platform/theme/applyTheme'
-import '@/lib/litegraph/public/css/litegraph.css'
+import '@comfyorg/litegraph/litegraph.css'
 import '@/assets/css/style.css'
 
 // Setup Vue app for Storybook

@@ -1,5 +1,5 @@
 import type { CompactRect } from '@comfyorg/shared-frontend-utils/geometry'
-import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
+import { LGraphEventMode } from '@comfyorg/litegraph/litegraph'
 import { useThemeStore } from '@/platform/theme/themeStore'
 
 import type { MinimapDataSource } from './data/MinimapDataSource'

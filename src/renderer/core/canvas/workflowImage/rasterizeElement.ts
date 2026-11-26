@@ -3,7 +3,7 @@ import type {
   RectTuple
 } from '@comfyorg/shared-frontend-utils/geometry'
 
-import { createBounds } from '@/lib/litegraph/src/measure'
+import { createBounds } from '@comfyorg/litegraph/measure'
 import { parseUrl } from '@comfyorg/shared-frontend-utils/urlSafety'
 
 const XHTML_NS = 'http://www.w3.org/1999/xhtml'

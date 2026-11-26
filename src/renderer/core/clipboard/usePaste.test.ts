@@ -18,20 +18,20 @@ import type {
   LGraphCanvas,
   LGraphNode,
   Positionable
-} from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/litegraph'
 import { useCopy } from './useCopy'
-import { CANVAS_CLIPBOARD_KEY } from '@/core/graph/clipboard/clipboardStorage'
+import { CANVAS_CLIPBOARD_KEY } from '@comfyorg/litegraph/clipboard/clipboardStorage'
 import {
   serializeItems,
   insertItems
-} from '@/core/graph/clipboard/graphTransfer'
+} from '@comfyorg/litegraph/clipboard/graphTransfer'
 import {
   forgetCanvasCopy,
   pasteFromCanvasClipboard
-} from '@/core/graph/clipboard/canvasClipboard'
+} from '@comfyorg/litegraph/clipboard/canvasClipboard'
 import { app } from '@/scripts/app'
 import { useToast } from '@/components/ui/toast/toastStore'
-import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockLGraphNode } from '@comfyorg/litegraph/__fixtures__/litegraphTestUtils'
 import { createNode } from '@/utils/createNode'
 import { shouldIgnoreCopyPaste } from './clipboardTarget'
 import { cloneDataTransfer, usePaste as usePasteImpl } from './usePaste'
@@ -151,8 +151,8 @@ vi.mock(import('@/scripts/app'))
 vi.mock(import('@/utils/createNode'), { spy: true })
 
 vi.mock(import('./clipboardTarget'), { spy: true })
-vi.mock(import('@/core/graph/clipboard/graphTransfer'), { spy: true })
-vi.mock(import('@/core/graph/clipboard/canvasClipboard'), { spy: true })
+vi.mock(import('@comfyorg/litegraph/clipboard/graphTransfer'), { spy: true })
+vi.mock(import('@comfyorg/litegraph/clipboard/canvasClipboard'), { spy: true })
 
 describe('pasteImageNode', () => {
   beforeEach(() => {

@@ -1,8 +1,8 @@
 import { once } from 'es-toolkit'
 
 import { reportError } from '@comfyorg/telemetry/reportError'
-import { safeSessionStorage } from '@/base/storage/safeStorage'
-import { createUuidv4 } from '@/utils/uuid'
+import { safeSessionStorage } from '@comfyorg/shared-frontend-utils/safeStorage'
+import { createUuidv4 } from '@comfyorg/graph-model/uuid'
 
 import { recordDevEvent } from './crdtLog'
 import {

@@ -15,14 +15,14 @@ import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
 import type { Model3DOutput } from '@/extensions/core/load3d/model3dOutput'
 import { readModel3DOutput } from '@/extensions/core/load3d/model3dOutput'
 import { t } from '@/i18n'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
+import type { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
+import type { IContextMenuValue } from '@comfyorg/litegraph/types/contextMenu'
 import { useToast } from '@/components/ui/toast/toastStore'
-import type { NodeExecutionOutput } from '@comfyorg/api-client/executionTypes'
+import type { NodeExecutionOutput } from '@comfyorg/graph-model/nodeOutput'
 import { useApp } from '@/scripts/appInstance'
 import type { ComfyExtension } from '@/types/comfy'
 import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
-import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
+import { getNodeByLocatorId } from '@comfyorg/litegraph/utils/graphTraversalUtil'
 
 function applyResultToLoad3d(
   node: LGraphNode,

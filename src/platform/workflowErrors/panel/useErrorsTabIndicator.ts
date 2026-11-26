@@ -2,8 +2,8 @@ import { storeToRefs } from 'pinia'
 import { computed, toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
-import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraph, LGraphNode } from '@comfyorg/litegraph/litegraph'
+import { SubgraphNode } from '@comfyorg/litegraph/litegraph'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
@@ -12,7 +12,7 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import {
   getActiveGraphNodeIds,
   getExecutionIdByNode
-} from '@/utils/graphTraversalUtil'
+} from '@comfyorg/litegraph/utils/graphTraversalUtil'
 
 import { useHasBlockingError } from './useHasBlockingError'
 

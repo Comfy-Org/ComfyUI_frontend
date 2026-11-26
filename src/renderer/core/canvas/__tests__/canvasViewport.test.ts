@@ -5,12 +5,12 @@ import {
   applyViewport,
   measureViewport,
   measureViewportFromElement
-} from '@/renderer/core/canvas/canvasViewport'
+} from '@comfyorg/graph-state/layout/canvasViewport'
 import {
   createMockCanvasRenderingContext2D,
   createTestCanvasElement,
   setIntrinsicCanvasLayout
-} from '@/utils/__tests__/canvasTestUtils'
+} from '@comfyorg/litegraph/__fixtures__/canvasTestUtils'
 
 function createTransformTrackingCanvas(cssSize?: {
   width: number

@@ -3,7 +3,7 @@ import type { Locator } from '@playwright/test'
 import {
   BADGE_GAP,
   BADGE_ROW_PITCH
-} from '@/lib/litegraph/src/canvas/linkBadges'
+} from '@comfyorg/litegraph/canvas/linkBadges'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
 import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'

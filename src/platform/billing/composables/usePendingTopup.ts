@@ -1,5 +1,5 @@
 import type { AuditLog } from '@/platform/billing/api/customerEventsService'
-import { safeLocalStorage } from '@/base/storage/safeStorage'
+import { safeLocalStorage } from '@comfyorg/shared-frontend-utils/safeStorage'
 
 const STORAGE_KEY = 'pending_topup_timestamp'
 const MAX_AGE_MS = 24 * 60 * 60 * 1000 // 24 hours

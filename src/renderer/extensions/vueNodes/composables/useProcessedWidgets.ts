@@ -1,7 +1,7 @@
 import { computed } from 'vue'
 
 import { useAppMode } from '@/composables/useAppMode'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -21,7 +21,7 @@ import { useApp } from '@/scripts/appInstance'
 import { nodeTypeValidForApp } from '@/stores/appModeStore'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
-import { getNodeByState } from '@/utils/graphTraversalUtil'
+import { getNodeByState } from '@comfyorg/litegraph/utils/graphTraversalUtil'
 
 export { computeProcessedWidgets }
 export type { ProcessedWidget }

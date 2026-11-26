@@ -3,14 +3,14 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { testI18n } from '@/utils/__tests__/testI18n'
 import type { MissingMediaGroup } from '@/platform/workflowErrors/missingMedia/types'
-import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
-import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
+import { getNodeByExecutionId } from '@comfyorg/litegraph/utils/graphTraversalUtil'
+import { createMockLGraphNode } from '@comfyorg/litegraph/__fixtures__/litegraphTestUtils'
 
 import MissingMediaCard from './MissingMediaCard.vue'
 
 vi.mock(import('@/scripts/app'))
 
-vi.mock(import('@/utils/graphTraversalUtil'), () => ({
+vi.mock(import('@comfyorg/litegraph/utils/graphTraversalUtil'), () => ({
   getNodeByExecutionId: vi.fn()
 }))
 

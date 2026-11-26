@@ -2,7 +2,7 @@ import { computed, toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
 import { resolveNodeDefSlotText, resolveNodeDefText, t } from '@/i18n'
-import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
+import type { INodeSlot } from '@comfyorg/litegraph/litegraph'
 import { RenderShape } from '@comfyorg/graph-model/globalEnums'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'

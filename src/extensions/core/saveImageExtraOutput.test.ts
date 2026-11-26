@@ -1,7 +1,7 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode } from '@comfyorg/litegraph/litegraph'
 import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 import { useApp } from '@/scripts/appInstance'
 import type { ComfyApp } from '@/scripts/app'

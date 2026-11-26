@@ -2,7 +2,7 @@ import {
   getNodeWidgetValue,
   setNodeWidgetValue
 } from '@/core/graph/widgets/nodeWidgetValues'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
 import {
   emptyCompositorWidgetValue,
   isCompositorWidgetValue

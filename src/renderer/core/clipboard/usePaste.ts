@@ -5,10 +5,10 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import {
   isCurrentCanvasCopy,
   pasteFromCanvasClipboard
-} from '@/core/graph/clipboard/canvasClipboard'
-import { insertItems } from '@/core/graph/clipboard/graphTransfer'
+} from '@comfyorg/litegraph/clipboard/canvasClipboard'
+import { insertItems } from '@comfyorg/litegraph/clipboard/graphTransfer'
 import { t } from '@/i18n'
-import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphCanvas, LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { zClipboardItems } from '@comfyorg/graph-model/workflowSchema'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useApp } from '@/scripts/appInstance'

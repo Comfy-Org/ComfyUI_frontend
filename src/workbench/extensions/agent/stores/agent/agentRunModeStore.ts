@@ -2,7 +2,7 @@ import { createEventHook, until } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed } from 'vue'
 
-import { safeLocalStorage } from '@/base/storage/safeStorage'
+import { safeLocalStorage } from '@comfyorg/shared-frontend-utils/safeStorage'
 import { useSafeLocalStorage } from '@/platform/storage/useSafeStorage'
 import { zAgentRunMode } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import type {

@@ -8,18 +8,18 @@ import {
 import {
   clearRootLinkReveals,
   isLinkRevealed
-} from '@/lib/litegraph/src/canvas/linkRevealState'
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/canvas/linkRevealState'
+import { LGraph, LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import { app } from '@/scripts/app'
-import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
+import { useLinkPresentationStore } from '@comfyorg/graph-state/linkPresentationStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import {
   createMockCanvasRenderingContext2D,
   createTestCanvas
-} from '@/utils/__tests__/canvasTestUtils'
-import { createTestLink } from '@/utils/__tests__/litegraphTestUtils'
+} from '@comfyorg/litegraph/__fixtures__/canvasTestUtils'
+import { createTestLink } from '@comfyorg/litegraph/__fixtures__/litegraphTestUtils'
 
 import {
   isRerouteVisibleForLinkDrag,

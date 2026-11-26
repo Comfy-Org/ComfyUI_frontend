@@ -10,7 +10,7 @@ import type {
 
 import { AGENT_ONBOARDED_SCOPES_SETTING_ID } from '@/platform/settings/constants/agent'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { safeLocalStorage } from '@/base/storage/safeStorage'
+import { safeLocalStorage } from '@comfyorg/shared-frontend-utils/safeStorage'
 import { useSafeLocalStorage } from '@/platform/storage/useSafeStorage'
 
 export interface CoachStep {

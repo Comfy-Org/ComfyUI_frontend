@@ -1,7 +1,7 @@
 import {
   copyToCanvasClipboard,
   pasteFromCanvasClipboard
-} from '@/core/graph/clipboard/canvasClipboard'
+} from '@comfyorg/litegraph/clipboard/canvasClipboard'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
@@ -21,13 +21,13 @@ import {
   LGraphGroup,
   LGraphNode,
   LiteGraph
-} from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/litegraph'
 import {
   deleteSelectedLinks,
   hideSelectedLinks,
   showSelectedLinks,
   toggleNodeLinks
-} from '@/lib/litegraph/src/canvas/linkSelection'
+} from '@comfyorg/litegraph/canvas/linkSelection'
 import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useSubscriptionPaywall } from '@/platform/billing/composables/useSubscriptionPaywall'
@@ -76,7 +76,7 @@ import { ensureWorkflowSuffix, getWorkflowSuffix } from '@/utils/formatUtil'
 import {
   getAllNonIoNodesInSubgraph,
   getExecutionIdsForSelectedNodes
-} from '@/utils/graphTraversalUtil'
+} from '@comfyorg/litegraph/utils/graphTraversalUtil'
 import { filterOutputNodes } from '@/utils/nodeFilterUtil'
 import {
   ManagerUIState,

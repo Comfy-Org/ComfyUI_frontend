@@ -35,7 +35,7 @@ import { t } from '@/i18n'
 import { webSessionRequests } from '@comfyorg/api-client/webSessionFetch'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
-import { safeSessionStorage } from '@/base/storage/safeStorage'
+import { safeSessionStorage } from '@comfyorg/shared-frontend-utils/safeStorage'
 import { useTelemetry } from '@comfyorg/telemetry'
 import type {
   BillingBalanceResponse,

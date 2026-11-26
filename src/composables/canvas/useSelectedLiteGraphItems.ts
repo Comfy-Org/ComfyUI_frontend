@@ -1,9 +1,9 @@
 import { uniq } from 'es-toolkit'
 
-import type { LGraphNode, Positionable } from '@/lib/litegraph/src/litegraph'
-import { LGraphEventMode, Reroute } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode, Positionable } from '@comfyorg/litegraph/litegraph'
+import { LGraphEventMode, Reroute } from '@comfyorg/litegraph/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { collectFromNodes } from '@/utils/graphTraversalUtil'
+import { collectFromNodes } from '@comfyorg/litegraph/utils/graphTraversalUtil'
 import { isLGraphGroup, isLGraphNode } from '@/utils/litegraphUtil'
 
 /**

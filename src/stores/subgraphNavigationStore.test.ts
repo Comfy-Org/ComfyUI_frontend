@@ -4,7 +4,7 @@ import { nextTick } from 'vue'
 
 import type * as VueRouter from 'vue-router'
 
-import type { Subgraph } from '@/lib/litegraph/src/LGraph'
+import type { Subgraph } from '@comfyorg/litegraph/LGraph'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -82,7 +82,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => {
   }
 })
 
-vi.mock(import('@/utils/graphTraversalUtil'), () => ({
+vi.mock(import('@comfyorg/litegraph/utils/graphTraversalUtil'), () => ({
   findSubgraphPathById: vi.fn()
 }))
 vi.mock(import('@vueuse/router'), () => ({ useRouteHash: () => routeHash }))
@@ -154,7 +154,8 @@ describe('useSubgraphNavigationStore', () => {
   it('should preserve navigation stack per workflow', async () => {
     const navigationStore = useSubgraphNavigationStore()
     const workflowStore = useWorkflowStore()
-    const { findSubgraphPathById } = await import('@/utils/graphTraversalUtil')
+    const { findSubgraphPathById } =
+      await import('@comfyorg/litegraph/utils/graphTraversalUtil')
 
     const workflow1 = fromPartial<ComfyWorkflow>({
       path: 'workflow1.json',
@@ -206,7 +207,8 @@ describe('useSubgraphNavigationStore', () => {
   it('should reset navigation on workflow switch and restore on switch back', async () => {
     const navigationStore = useSubgraphNavigationStore()
     const workflowStore = useWorkflowStore()
-    const { findSubgraphPathById } = await import('@/utils/graphTraversalUtil')
+    const { findSubgraphPathById } =
+      await import('@comfyorg/litegraph/utils/graphTraversalUtil')
 
     const workflow1 = fromPartial<ComfyWorkflow>({
       path: 'workflow1.json',
@@ -262,7 +264,8 @@ describe('useSubgraphNavigationStore', () => {
   it('should fall back to the active subgraph id when path lookup fails during navigation updates', async () => {
     const navigationStore = useSubgraphNavigationStore()
     const workflowStore = useWorkflowStore()
-    const { findSubgraphPathById } = await import('@/utils/graphTraversalUtil')
+    const { findSubgraphPathById } =
+      await import('@comfyorg/litegraph/utils/graphTraversalUtil')
 
     const unreachableSubgraph = createMockSubgraph('orphan-subgraph', app.graph)
 
@@ -288,7 +291,8 @@ describe('useSubgraphNavigationStore', () => {
   it('should clear navigation when activeSubgraph becomes undefined', async () => {
     const navigationStore = useSubgraphNavigationStore()
     const workflowStore = useWorkflowStore()
-    const { findSubgraphPathById } = await import('@/utils/graphTraversalUtil')
+    const { findSubgraphPathById } =
+      await import('@comfyorg/litegraph/utils/graphTraversalUtil')
 
     // Create mock subgraph and graph structure
     const mockSubgraph = createMockSubgraph('subgraph-1', app.graph)

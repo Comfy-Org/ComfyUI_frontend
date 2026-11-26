@@ -1,11 +1,11 @@
 import { useDebounceFn } from '@vueuse/core'
 import _ from 'es-toolkit/compat'
 
-import { assert } from '@/base/assert'
+import { assert } from '@comfyorg/shared-frontend-utils/assert'
 import { LAYER_EDITOR_DIALOG_KEY } from '@/renderer/extensions/layerEditor/layerEditorDialogKey'
 import { TEXT_EDITOR_DIALOG_KEY } from '@/renderer/extensions/textEditor/textEditorDialogKey'
-import type { CanvasPointerEvent, LGraph } from '@/lib/litegraph/src/litegraph'
-import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { CanvasPointerEvent, LGraph } from '@comfyorg/litegraph/litegraph'
+import { LGraphCanvas, LiteGraph } from '@comfyorg/litegraph/litegraph'
 import type {
   ComfyWorkflow,
   WorkflowChangeTracker

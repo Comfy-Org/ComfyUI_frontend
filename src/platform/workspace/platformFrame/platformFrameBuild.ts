@@ -1,7 +1,7 @@
 import type { zWorkspaceDeployment } from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
 
-import { safeSessionStorage } from '@/base/storage/safeStorage'
+import { safeSessionStorage } from '@comfyorg/shared-frontend-utils/safeStorage'
 import type { FrameMessage } from '@/platform/workspace/platformFrame/platformFrameMessages'
 
 type BuildStarted = Extract<FrameMessage, { type: 'build-started' }>

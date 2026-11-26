@@ -18,17 +18,17 @@ import {
   LGraphCanvas,
   LGraphNode,
   LiteGraph
-} from '@/lib/litegraph/src/litegraph'
-import { realignGroupWidgetChildLinks } from '@/lib/litegraph/src/linkDeduplication'
-import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+} from '@comfyorg/litegraph/litegraph'
+import { realignGroupWidgetChildLinks } from '@comfyorg/litegraph/linkDeduplication'
+import { createTestSubgraph } from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphHelpers'
 import type { SerialisableGraph } from '@comfyorg/graph-model/serialisation'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@comfyorg/object-info-parser'
 import { app } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
-import { useLinkStore } from '@/stores/linkStore'
+import { useLinkStore } from '@comfyorg/graph-state/linkStore'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
 import { serializeNodeId, toNodeId } from '@comfyorg/graph-model/nodeId'
-import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
+import { createMockCanvasRenderingContext2D } from '@comfyorg/litegraph/__fixtures__/canvasTestUtils'
 
 const originalNamedValuesRestore = LiteGraph.namedValuesRestore
 afterEach(() => {

@@ -7,12 +7,12 @@ import { nextTick } from 'vue'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { getComboWidgetInventory } from '@/core/graph/widgets/comboWidgetInventory'
 import { syncPromotedComboHostOptions } from '@/core/graph/widgets/syncPromotedComboHostOptions'
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { Subgraph } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode } from '@comfyorg/litegraph/litegraph'
+import type { Subgraph } from '@comfyorg/litegraph/litegraph'
 import {
   createTestSubgraph,
   createTestSubgraphNode
-} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+} from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphHelpers'
 import { assetService } from '@/platform/assets/services/assetService'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useDeploymentLibraryModelsStore } from '@/platform/workspace/stores/deploymentLibraryModelsStore'

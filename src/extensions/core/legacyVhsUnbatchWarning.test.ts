@@ -2,7 +2,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { expect, it, vi } from 'vitest'
 
 import { useToast } from '@/components/ui/toast/toastStore'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import type { ComfyApp } from '@/scripts/app'
 import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 import { reportError } from '@comfyorg/telemetry/reportError'

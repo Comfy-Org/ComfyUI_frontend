@@ -6,20 +6,20 @@ import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useSelectionToolboxPosition } from '@/composables/canvas/useSelectionToolboxPosition'
 import type { Rect } from '@comfyorg/shared-frontend-utils/geometry'
-import { runCanvasFramePhase } from '@/lib/litegraph/src/canvas/canvasFrame'
+import { runCanvasFramePhase } from '@comfyorg/litegraph/canvas/canvasFrame'
 import {
   LGraph,
   LGraphGroup,
   LGraphNode,
   LiteGraph
-} from '@/lib/litegraph/src/litegraph'
-import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/litegraph'
+import type { LGraphCanvas } from '@comfyorg/litegraph/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useLinkSelectionStore } from '@/stores/linkSelectionStore'
+import { useLinkSelectionStore } from '@comfyorg/graph-state/linkSelectionStore'
 import {
   createMockCanvasRenderingContext2D,
   createTestCanvas
-} from '@/utils/__tests__/canvasTestUtils'
+} from '@comfyorg/litegraph/__fixtures__/canvasTestUtils'
 
 vi.mock(import('@/scripts/app'))
 

@@ -6,7 +6,7 @@ import { computed, markRaw, ref } from 'vue'
 import type { Raw } from 'vue'
 
 import type { PositionConfig } from '@comfyorg/shared-frontend-utils/geometry'
-import type { BaseDOMWidget } from '@/types/domWidget'
+import type { BaseDOMWidget } from '@comfyorg/litegraph/types/domWidget'
 
 export interface DomWidgetState extends PositionConfig {
   // Raw widget instance

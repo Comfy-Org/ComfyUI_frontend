@@ -33,8 +33,10 @@ export { a } from './a'
 export type { T } from '@/types/t'
 export * from '../all'
 export * as ns from './ns'
+export { Subgraph } from '#/LGraph'
 `,
       errors: [
+        { messageId: 'reexport' },
         { messageId: 'reexport' },
         { messageId: 'reexport' },
         { messageId: 'reexport' },

@@ -3,10 +3,13 @@ import type { MaybeRefOrGetter } from 'vue'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLiveGraphNode } from '@/composables/useLiveGraphNode'
-import { useNodeDataStore } from '@/stores/nodeDataStore'
+import { useNodeDataStore } from '@comfyorg/graph-state/nodeDataStore'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
-import { getNodeByLocatorId, getNodeByState } from '@/utils/graphTraversalUtil'
+import {
+  getNodeByLocatorId,
+  getNodeByState
+} from '@comfyorg/litegraph/utils/graphTraversalUtil'
 
 export function useWidgetHostNode(
   nodeId: MaybeRefOrGetter<NodeId>,

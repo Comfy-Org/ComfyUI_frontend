@@ -79,7 +79,7 @@ import { useSelectionGrid } from '@/components/graph/selectionGrid/useSelectionG
 import { registerEscapeOverride } from '@/platform/keybindings/escapeOverride'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { layoutStore } from '@comfyorg/graph-state/layout/layoutStore'
 import { historyShortcut } from '@/scripts/changeTracker'
 
 interface Viewport {

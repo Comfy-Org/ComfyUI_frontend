@@ -4,13 +4,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 import type { Positionable } from '@comfyorg/graph-model/interfaces'
 
-import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
-import { LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraph, Subgraph } from '@comfyorg/litegraph/litegraph'
+import { LGraphNode, SubgraphNode } from '@comfyorg/litegraph/litegraph'
 import {
   createBoundaryLinkedSubgraph,
   createTestSubgraph,
   createTestSubgraphNode
-} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+} from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphHelpers'
 import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/types'
 import { useDeprecatedNodesStore } from '@/platform/workflowErrors/nodeReplacement/deprecatedNodesStore'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
@@ -31,7 +31,7 @@ import {
 import {
   getExecutionIdByNode,
   getNodeByExecutionId
-} from '@/utils/graphTraversalUtil'
+} from '@comfyorg/litegraph/utils/graphTraversalUtil'
 
 import { useErrorGroups } from './useErrorGroups'
 import { createUnnormalisableModelErrorFixture } from './__tests__/absorptionFixtures'
@@ -48,7 +48,7 @@ vi.mock(import('@/services/comfyRegistryService'), () => ({
 
 vi.mock(import('@/scripts/app'))
 
-vi.mock(import('@/utils/graphTraversalUtil'), { spy: true })
+vi.mock(import('@comfyorg/litegraph/utils/graphTraversalUtil'), { spy: true })
 
 const mockIsCloud = vi.hoisted(() => ({ value: false }))
 const unknownValidationMessage = vi.hoisted(

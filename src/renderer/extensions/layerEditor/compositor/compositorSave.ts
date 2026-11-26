@@ -6,7 +6,7 @@ import {
   setCompositorPreviewOverride
 } from '@/renderer/extensions/layerEditor/compositor/useCompositorLayers'
 import type { SceneNode } from '@comfyorg/layer-editor/node'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
 
 export interface CompositorLayerStateSession {
   canvasSize: { value: CompactSize }

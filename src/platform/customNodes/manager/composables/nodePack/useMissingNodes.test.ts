@@ -1,17 +1,17 @@
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { effectScope, nextTick, ref } from 'vue'
 
-import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
+import { CustomEventTarget } from '@comfyorg/litegraph/infrastructure/CustomEventTarget'
 import type { LGraphEventMap } from '@comfyorg/graph-model/LGraphEventMap'
-import type { LGraphNode, LGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode, LGraph } from '@comfyorg/litegraph/litegraph'
 import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { collectAllNodes } from '@/utils/graphTraversalUtil'
+import { collectAllNodes } from '@comfyorg/litegraph/utils/graphTraversalUtil'
 import { useMissingNodes as useSharedMissingNodes } from '@/platform/customNodes/manager/composables/nodePack/useMissingNodes'
 import { useWorkflowPacks } from '@/platform/customNodes/manager/composables/nodePack/useWorkflowPacks'
 import type { WorkflowPack } from '@/platform/customNodes/manager/composables/nodePack/useWorkflowPacks'
 import { useComfyManagerStore } from '@/platform/customNodes/manager/stores/comfyManagerStore'
-import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockLGraphNode } from '@comfyorg/litegraph/__fixtures__/litegraphTestUtils'
 
 function useMissingNodes() {
   const scope = effectScope()
@@ -56,7 +56,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
   }
 }))
 
-vi.mock(import('@/utils/graphTraversalUtil'), () => ({
+vi.mock(import('@comfyorg/litegraph/utils/graphTraversalUtil'), () => ({
   collectAllNodes: vi.fn()
 }))
 

@@ -1,4 +1,4 @@
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
 import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 import { applyTextReplacements } from '@/utils/searchAndReplace'
 

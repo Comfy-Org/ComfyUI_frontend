@@ -5,22 +5,22 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { z } from 'zod'
 
-import { isRootGraphDocBound } from '@/lib/litegraph/src/docBoundGraphs'
+import { isRootGraphDocBound } from '@comfyorg/litegraph/docBoundGraphs'
 import {
   emitGraphIntent,
   withGraphIntentSource
-} from '@/lib/litegraph/src/graphIntents'
+} from '@comfyorg/graph-state/graphIntents'
 import {
   LGraph,
   LGraphEventMode,
   LGraphNode,
   LiteGraph
-} from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/litegraph'
 import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
 import {
   createTestSubgraph,
   createTestSubgraphNode
-} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+} from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphHelpers'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { validateComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
@@ -31,12 +31,12 @@ import type { ComfyNodeDef as ComfyNodeDefV1 } from '@comfyorg/object-info-parse
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useLitegraphService } from '@/services/litegraphService'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 import { toRootGraphId } from '@comfyorg/graph-model/graphScopeId'
 import type { RootGraphId } from '@comfyorg/graph-model/graphScopeId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
-import { createUuidv4 } from '@/utils/uuid'
+import { createUuidv4 } from '@comfyorg/graph-model/uuid'
 
 import {
   PROMOTED_WRITE_CATCH_UP_DEADLINE_MS,

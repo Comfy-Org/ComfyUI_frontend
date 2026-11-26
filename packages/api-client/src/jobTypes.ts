@@ -9,7 +9,7 @@
 import { zJobEntry, zJobExecutionMetaEntry } from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
 
-import { resultItemType } from './resultItemTypeSchema'
+import { resultItemType } from '@comfyorg/graph-model/resultItemTypeSchema'
 import { zTaskOutput } from './executionTypes'
 
 export { zJobExecutionMetaEntry }

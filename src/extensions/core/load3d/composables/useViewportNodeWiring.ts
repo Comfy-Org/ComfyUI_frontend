@@ -1,6 +1,6 @@
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { Viewport3d } from '@comfyorg/viewport3d/load3d/Viewport3d'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
 
 type WidgetCallback = (value: unknown, ...rest: unknown[]) => void
 

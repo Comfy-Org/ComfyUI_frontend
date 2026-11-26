@@ -3,13 +3,13 @@ import { assert, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, effectScope, watchSyncEffect } from 'vue'
 import { reportError } from '@comfyorg/telemetry/reportError'
 
-import { LGraph, LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode, SubgraphNode } from '@comfyorg/litegraph/litegraph'
 import {
   cleanupComplexPromotionFixtureNodeType,
   createTestSubgraph,
   resetSubgraphFixtureState,
   setupComplexPromotionFixture
-} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+} from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphHelpers'
 import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
@@ -21,9 +21,9 @@ import { getComponent } from '@/renderer/extensions/vueNodes/widgets/registry/wi
 import { createPromotedMultilineWidget } from '@/renderer/extensions/vueNodes/widgets/utils/multilineTextarea'
 import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useLinkStore } from '@/stores/linkStore'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import type { WidgetRenderState } from '@/stores/widgetValueStore'
+import { useLinkStore } from '@comfyorg/graph-state/linkStore'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
+import type { WidgetRenderState } from '@comfyorg/graph-state/widgetValueStore'
 import {
   createNodeExecutionId,
   createNodeLocatorId

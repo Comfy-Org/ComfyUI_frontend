@@ -10,7 +10,7 @@ import {
 } from '@/workbench/extensions/agent/crdt/crdtLog'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'

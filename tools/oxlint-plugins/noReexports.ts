@@ -1,6 +1,6 @@
 import type { Rule } from './astTypes'
 
-const SOURCE_MODULE = /^(?:\.{1,2}\/|@\/)/
+const SOURCE_MODULE = /^(?:\.{1,2}\/|@\/|#\/)/
 
 function isSourceModule(source: { readonly value: unknown } | null): boolean {
   return typeof source?.value === 'string' && SOURCE_MODULE.test(source.value)

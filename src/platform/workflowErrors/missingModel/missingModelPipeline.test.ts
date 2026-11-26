@@ -9,8 +9,8 @@ import { api } from '@/scripts/api'
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import { LGraphNode, LGraphEventMode } from '@/lib/litegraph/src/litegraph'
+import type { LGraph } from '@comfyorg/litegraph/litegraph'
+import { LGraphNode, LGraphEventMode } from '@comfyorg/litegraph/litegraph'
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
 import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
 import type { ReleaseModelOptions } from '@/platform/workflowErrors/missingModel/missingModelScan'
@@ -30,11 +30,11 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 import {
   createTestSubgraph,
   createTestSubgraphNode
-} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+} from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphHelpers'
 
-import * as graphTraversal from '@/utils/graphTraversalUtil'
+import * as graphTraversal from '@comfyorg/litegraph/utils/graphTraversalUtil'
 
-vi.mock(import('@/utils/graphTraversalUtil'), { spy: true })
+vi.mock(import('@comfyorg/litegraph/utils/graphTraversalUtil'), { spy: true })
 
 const { mockHandles } = vi.hoisted(() => {
   const state = {

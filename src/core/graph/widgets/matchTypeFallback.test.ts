@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { transformInputSpecV1ToV2 } from '@comfyorg/object-info-parser/migration'
 import type { InputSpec } from '@comfyorg/object-info-parser'
 import { useLitegraphService } from '@/services/litegraphService'

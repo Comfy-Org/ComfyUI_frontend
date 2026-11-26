@@ -1,5 +1,5 @@
 import { setNodeWidgetValue } from '@/core/graph/widgets/nodeWidgetValues'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 
 export const IMAGE_WIDGET = 'image'
 

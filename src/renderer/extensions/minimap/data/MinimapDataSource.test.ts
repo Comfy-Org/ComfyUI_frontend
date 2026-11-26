@@ -6,9 +6,9 @@ import type {
   LGraph,
   LGraphGroup,
   LGraphNode
-} from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/litegraph'
 import { MinimapDataSource } from '@/renderer/extensions/minimap/data/MinimapDataSource'
-import { useLinkStore } from '@/stores/linkStore'
+import { useLinkStore } from '@comfyorg/graph-state/linkStore'
 import {
   toOwningGraphId,
   toRootGraphId
@@ -19,7 +19,7 @@ import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import {
   createMockLGraph,
   createMockLGraphNode
-} from '@/utils/__tests__/litegraphTestUtils'
+} from '@comfyorg/litegraph/__fixtures__/litegraphTestUtils'
 
 const ROOT_GRAPH_ID = '00000000-0000-0000-0000-000000000001'
 const SUBGRAPH_ID = '00000000-0000-0000-0000-000000000002'

@@ -1,6 +1,6 @@
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 
 interface PromotedHostInput {
   input: INodeInputSlot

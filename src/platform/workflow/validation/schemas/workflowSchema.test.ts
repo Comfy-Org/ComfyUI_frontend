@@ -6,7 +6,7 @@ import {
   zClipboardItems
 } from '@comfyorg/graph-model/workflowSchema'
 import { defaultGraph } from '@/scripts/defaultGraph'
-import { createTestSubgraphData } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { createTestSubgraphData } from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphHelpers'
 import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
 
 const WORKFLOW_DIR = 'src/platform/workflow/validation/schemas/__fixtures__'

@@ -7,7 +7,7 @@
       "path": "src/extensions/core/imageCompare.ts"
     },
     {
-      "path": "src/lib/litegraph/src/widgets/ImageCompareWidget.ts"
+      "path": "packages/litegraph/src/widgets/ImageCompareWidget.ts"
     },
     {
       "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetImageCompare.vue"
@@ -21,7 +21,7 @@
   ],
   "publicEntryPoints": [
     "src/extensions/core/imageCompare.ts",
-    "src/lib/litegraph/src/widgets/ImageCompareWidget.ts",
+    "packages/litegraph/src/widgets/ImageCompareWidget.ts",
     "src/renderer/extensions/vueNodes/widgets/components/WidgetImageCompare.vue",
     "src/renderer/extensions/vueNodes/widgets/composables/useImageCompareWidget.ts"
   ],

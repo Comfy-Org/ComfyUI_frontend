@@ -6,11 +6,11 @@ import {
   LGraphGroup,
   LGraphNode,
   LiteGraph
-} from '@/lib/litegraph/src/litegraph'
-import { getNodeInputOnPos } from '@/lib/litegraph/src/canvas/measureSlots'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+} from '@comfyorg/litegraph/litegraph'
+import { getNodeInputOnPos } from '@comfyorg/litegraph/canvas/measureSlots'
+import { layoutStore } from '@comfyorg/graph-state/layout/layoutStore'
 import { toGroupId } from '@comfyorg/graph-model/groupId'
-import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
+import { createMockCanvasRenderingContext2D } from '@comfyorg/litegraph/__fixtures__/canvasTestUtils'
 
 vi.mock(import('@/services/litegraphService'))
 

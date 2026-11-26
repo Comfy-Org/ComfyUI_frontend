@@ -12,7 +12,7 @@ import {
 } from '@comfyorg/billing-contract'
 
 import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
-import { safeSessionStorage } from '@/base/storage/safeStorage'
+import { safeSessionStorage } from '@comfyorg/shared-frontend-utils/safeStorage'
 import { paymentIntentSourceForJourneyEntry } from '@/platform/telemetry/utils/paymentIntentSource'
 
 /**

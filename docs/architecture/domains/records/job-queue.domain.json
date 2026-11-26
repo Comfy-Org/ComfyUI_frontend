@@ -22,9 +22,6 @@
       "path": "src/composables/useReconnectQueueRefresh.ts"
     },
     {
-      "path": "src/platform/remote/comfyui/jobs/**"
-    },
-    {
       "path": "src/platform/remote/comfyui/useQueuePolling.ts"
     },
     {

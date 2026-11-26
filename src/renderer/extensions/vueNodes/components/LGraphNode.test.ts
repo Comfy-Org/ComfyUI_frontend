@@ -11,7 +11,7 @@ import {
   createNodeLocatorId
 } from '@comfyorg/graph-model/nodeIdentification'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { computed, nextTick, ref, shallowRef } from 'vue'
@@ -23,24 +23,24 @@ import { LGraphEventMode, TitleMode } from '@comfyorg/graph-model/globalEnums'
 import type {
   INodeOutputSlot,
   LGraphNode as LiteGraphNode
-} from '@/lib/litegraph/src/litegraph'
-import type { ResultItem } from '@comfyorg/api-client/executionTypes'
+} from '@comfyorg/litegraph/litegraph'
+import type { ResultItem } from '@comfyorg/graph-model/nodeOutput'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
-import { resizeNodeLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
+import { resizeNodeLayout } from '@comfyorg/litegraph/layout/graphLayoutAttachment'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 import type NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
 import type { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayout'
 import type { ResizeCallbackPayload } from '@/renderer/extensions/vueNodes/interactions/resize/useNodeResize'
-import { toSelectableKey } from '@/core/selection/selectionState'
-import { setSelectedIn } from '@/core/selection/selectionStore'
+import { toSelectableKey } from '@comfyorg/graph-state/selection/selectionState'
+import { setSelectedIn } from '@comfyorg/graph-state/selection/selectionStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { layoutStore } from '@comfyorg/graph-state/layout/layoutStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
+import { getNodeByLocatorId } from '@comfyorg/litegraph/utils/graphTraversalUtil'
 
 type ResizeCallback = (
   result: ResizeCallbackPayload,
@@ -66,7 +66,7 @@ const mockNodeEventHandlers = vi.hoisted(
   })
 )
 
-vi.mock(import('@/utils/graphTraversalUtil'))
+vi.mock(import('@comfyorg/litegraph/utils/graphTraversalUtil'))
 vi.mocked(getNodeByLocatorId).mockImplementation(() =>
   fromAny<LiteGraphNode, unknown>(mockData.mockLgraphNode ?? baseLgraphNodeMock)
 )
@@ -150,7 +150,7 @@ vi.mock(
   })
 )
 
-vi.mock(import('@/renderer/core/layout/operations/graphLayoutAttachment'), {
+vi.mock(import('@comfyorg/litegraph/layout/graphLayoutAttachment'), {
   spy: true
 })
 

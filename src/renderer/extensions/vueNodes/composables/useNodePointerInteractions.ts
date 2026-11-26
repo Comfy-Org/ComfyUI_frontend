@@ -5,22 +5,22 @@ import {
   isMiddleButtonEvent,
   isMiddleButtonHeld,
   isMiddlePointerInput
-} from '@/base/pointerUtils'
-import { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
-import { captureGesture } from '@/lib/litegraph/src/canvas/captureGesture'
+} from '@comfyorg/shared-frontend-utils/pointerUtils'
+import { CanvasPointer } from '@comfyorg/litegraph/CanvasPointer'
+import { captureGesture } from '@comfyorg/litegraph/canvas/captureGesture'
 import type {
   GestureEffect,
   GestureEvent,
   GestureState
-} from '@/lib/litegraph/src/canvas/reduceGesture'
+} from '@comfyorg/litegraph/canvas/reduceGesture'
 import {
   idleGesture,
   reduceGesture
-} from '@/lib/litegraph/src/canvas/reduceGesture'
-import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/canvas/reduceGesture'
+import { LGraphCanvas, LiteGraph } from '@comfyorg/litegraph/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { layoutStore } from '@comfyorg/graph-state/layout/layoutStore'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import { useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'

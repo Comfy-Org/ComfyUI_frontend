@@ -61,7 +61,7 @@ import { useTelemetry } from '@comfyorg/telemetry'
 import { getDatadogRum } from '@comfyorg/telemetry/rumContext'
 import { TelemetryEvents } from '@comfyorg/telemetry/types'
 import type { BootstrapCompleteMetadata } from '@comfyorg/telemetry/types'
-import { safeLocalStorage } from '@/base/storage/safeStorage'
+import { safeLocalStorage } from '@comfyorg/shared-frontend-utils/safeStorage'
 
 import { perfMark, perfMeasureSinceOrigin, perfPoint } from './perfMark'
 import type { PerfSpan } from './perfMark'

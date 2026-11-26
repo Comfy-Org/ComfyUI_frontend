@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
-} from '@/lib/litegraph/src/constants'
+} from '@comfyorg/litegraph/constants'
 import type {
   ExportedSubgraph,
   ISerialisedGraph,
@@ -17,7 +17,7 @@ import {
   zComfyWorkflow,
   zComfyWorkflow1
 } from '@comfyorg/graph-model/workflowSchema'
-import { createUuidv4 } from '@/utils/uuid'
+import { createUuidv4 } from '@comfyorg/graph-model/uuid'
 
 import { workflowToClipboardItems } from './workflowToClipboardItems'
 

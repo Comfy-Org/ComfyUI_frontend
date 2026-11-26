@@ -1,8 +1,8 @@
 import type {
   NodeExecutionOutput,
   ResultItem
-} from '@comfyorg/api-client/executionTypes'
-import { zResultItem } from '@comfyorg/api-client/executionTypes'
+} from '@comfyorg/graph-model/nodeOutput'
+import { zResultItem } from '@comfyorg/graph-model/nodeOutput'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 
 const METADATA_KEYS = new Set(['animated'])

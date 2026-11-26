@@ -2,18 +2,18 @@ import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useSelectionOperations } from '@/composables/graph/useSelectionOperations'
-import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
+import { createTestNode } from '@comfyorg/litegraph/__fixtures__/nodeHelpers'
 import {
   CANVAS_CLIPBOARD_ID_KEY,
   CANVAS_CLIPBOARD_KEY
-} from '@/core/graph/clipboard/clipboardStorage'
-import { createTestRootGraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { safeLocalStorage } from '@/base/storage/safeStorage'
+} from '@comfyorg/litegraph/clipboard/clipboardStorage'
+import { createTestRootGraph } from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphHelpers'
+import { safeLocalStorage } from '@comfyorg/shared-frontend-utils/safeStorage'
 import { app } from '@/scripts/app'
 import {
   createMockCanvasRenderingContext2D,
   createTestCanvas
-} from '@/utils/__tests__/canvasTestUtils'
+} from '@comfyorg/litegraph/__fixtures__/canvasTestUtils'
 
 vi.mock(import('@/scripts/app'))
 vi.mock(import('@/services/dialogService'))

@@ -2,7 +2,7 @@ import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import { t } from '@/i18n'
-import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphCanvas, LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { createNode } from '@/utils/createNode'
 import { fullResolutionSrc } from '@/utils/hdrFormatUtil'
 

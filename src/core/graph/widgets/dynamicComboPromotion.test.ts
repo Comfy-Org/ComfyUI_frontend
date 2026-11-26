@@ -12,9 +12,9 @@ import {
   LGraphNode,
   LiteGraph,
   SubgraphNode
-} from '@/lib/litegraph/src/litegraph'
-import type { LGraph, Positionable } from '@/lib/litegraph/src/litegraph'
-import { createTestRootGraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+} from '@comfyorg/litegraph/litegraph'
+import type { LGraph, Positionable } from '@comfyorg/litegraph/litegraph'
+import { createTestRootGraph } from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphHelpers'
 import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
 import {
   bindPromotedDynamicInput,
@@ -23,7 +23,7 @@ import {
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@comfyorg/object-info-parser'
 import { useLitegraphService } from '@/services/litegraphService'
 import { graphToPrompt } from '@/utils/executionUtil'
-import { triggerCallbackOnAllNodes } from '@/utils/graphTraversalUtil'
+import { triggerCallbackOnAllNodes } from '@comfyorg/litegraph/utils/graphTraversalUtil'
 
 const COMBO_NODE_TYPE = 'test/PromotedDynamicCombo'
 const SOURCE_NODE_TYPE = 'test/PromotedDynamicComboSource'

@@ -1,4 +1,4 @@
-import { safeSessionStorage } from '@/base/storage/safeStorage'
+import { safeSessionStorage } from '@comfyorg/shared-frontend-utils/safeStorage'
 import type {
   AgentErrorContext,
   AgentErrorProblem

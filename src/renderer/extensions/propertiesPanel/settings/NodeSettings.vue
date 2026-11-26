@@ -13,7 +13,7 @@
 <script setup lang="ts">
 import { shallowRef, watchEffect } from 'vue'
 
-import type { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphGroup, LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { isLGraphGroup } from '@/utils/litegraphUtil'
 

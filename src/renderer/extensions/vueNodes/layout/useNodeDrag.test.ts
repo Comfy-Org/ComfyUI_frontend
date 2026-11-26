@@ -4,17 +4,17 @@ import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope } from 'vue'
 import type { EffectScope } from 'vue'
 
-import { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { runCanvasFramePhase } from '@/lib/litegraph/src/canvas/canvasFrame'
-import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
-import type { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { LGraphGroup, LGraphNode } from '@comfyorg/litegraph/litegraph'
+import { runCanvasFramePhase } from '@comfyorg/litegraph/canvas/canvasFrame'
+import { AutoPanController } from '@comfyorg/litegraph/canvas/useAutoPan'
+import type { useLayoutMutations } from '@comfyorg/graph-state/layout/layoutMutations'
+import { layoutStore } from '@comfyorg/graph-state/layout/layoutStore'
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 import { useShiftKeySync } from '@/renderer/extensions/vueNodes/composables/useShiftKeySync'
-import { LayoutSource } from '@/renderer/core/layout/types'
+import { LayoutSource } from '@comfyorg/graph-state/layout/types'
 import type { NodeLayout } from '@comfyorg/graph-model/layout'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import type { UUID } from '@/utils/uuid'
+import type { UUID } from '@comfyorg/graph-model/uuid'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 
 // TODO: Simplify test setup — use real layoutStore + createTestingPinia instead
@@ -47,18 +47,18 @@ const testState = vi.hoisted(() => {
   }
 })
 
-vi.mock(import('@/renderer/core/canvas/useAutoPan'), () => ({
+vi.mock(import('@comfyorg/litegraph/canvas/useAutoPan'), () => ({
   AutoPanController: vi.fn()
 }))
 
 vi.mock<unknown>(
-  import('@/renderer/core/layout/operations/layoutMutations'),
+  import('@comfyorg/graph-state/layout/layoutMutations'),
   () => ({
     useLayoutMutations: () => testState.mutationFns
   })
 )
 
-vi.mock(import('@/renderer/core/layout/store/layoutStore'))
+vi.mock(import('@comfyorg/graph-state/layout/layoutStore'))
 
 vi.mock<unknown>(
   import('@/renderer/extensions/vueNodes/composables/useNodeSnap'),

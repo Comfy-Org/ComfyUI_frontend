@@ -1,4 +1,4 @@
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 
 const CANVAS_IMAGE_PREVIEW_NODE_TYPES = new Set([
   'KSampler',

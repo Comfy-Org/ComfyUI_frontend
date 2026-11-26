@@ -6,7 +6,7 @@ import { nextTick } from 'vue'
 
 import { reportError } from '@comfyorg/telemetry/reportError'
 
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraph } from '@comfyorg/litegraph/litegraph'
 import { downloadModel } from '@/platform/workflowErrors/missingModel/missingModelDownload'
 import { useMissingModelDownloadStore } from '@/platform/workflowErrors/missingModel/missingModelDownloadStore'
 import {

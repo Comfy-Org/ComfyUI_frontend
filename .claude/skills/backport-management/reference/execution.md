@@ -58,7 +58,7 @@ Use the result to:
 
 - Send CLEAN PRs through label-driven automation (Step 1)
 - Reserve manual worktree time (Step 3) for CONFLICT PRs only
-- Surface PRs likely to need backport-only compat shims (CONFLICT files in `src/lib/litegraph/` or `src/scripts/app.ts`)
+- Surface PRs likely to need backport-only compat shims (CONFLICT files in `packages/litegraph/` or `src/scripts/app.ts`)
 
 ## Step 1: Label-Driven Automation (Batch)
 
@@ -102,7 +102,7 @@ git cherry-pick -m 1 $MERGE_SHA
 
 Resolve conflicts by category (see the SKILL.md Conflict Triage table and "Conflict Resolution Patterns" below), then `git add` and `GIT_EDITOR=true git cherry-pick --continue`. Never skip a PR based on conflict file count alone.
 
-**Public-API conflict review.** If the resolution touched `node.onXxx` callbacks, methods on `LGraphNode`, `LGraphCanvas`, `LGraph` or `Subgraph`, public exports from `src/lib/litegraph/`, or types published from `src/types/index.ts` (`litegraph-augmentation.d.ts` on older branches), get an independent review before pushing. If a public callback's contract changed, add a backport-only compatibility shim that preserves the old contract and document it in the commit body under `## Backport-only compatibility fix`.
+**Public-API conflict review.** If the resolution touched `node.onXxx` callbacks, methods on `LGraphNode`, `LGraphCanvas`, `LGraph` or `Subgraph`, public exports from `packages/litegraph/`, or types published from `src/types/index.ts` (`litegraph-augmentation.d.ts` on older branches), get an independent review before pushing. If a public callback's contract changed, add a backport-only compatibility shim that preserves the old contract and document it in the commit body under `## Backport-only compatibility fix`.
 
 **Per-PR validation**, scoped to the files the cherry-pick changed:
 

@@ -13,16 +13,22 @@
       "path": "src/core/graph/subgraph/**"
     },
     {
-      "path": "src/core/schemas/**"
-    },
-    {
-      "path": "src/lib/litegraph/src/subgraph/promotedWidgetStoreProjection.ts"
+      "path": "packages/litegraph/src/subgraph/promotedWidgetStoreProjection.ts"
     },
     {
       "path": "src/services/subgraphPseudoWidgetCache.ts"
     },
     {
-      "path": "src/stores/previewExposureStore.ts"
+      "path": "packages/graph-state/src/previewExposureStore.ts"
+    },
+    {
+      "path": "packages/litegraph/src/subgraph/promotion/adoptPromotedWidgetValue.ts"
+    },
+    {
+      "path": "packages/litegraph/src/subgraph/promotion/promotedInputWidget.ts"
+    },
+    {
+      "path": "src/stores/previewExposureStore.test.ts"
     }
   ],
   "publicEntryPoints": [],
@@ -30,7 +36,7 @@
     {
       "name": "Promoted widgets resolve to their concrete inner widgets and keep values",
       "checks": [
-        "src/core/graph/subgraph/resolveConcretePromotedWidget.test.ts",
+        "packages/litegraph/src/subgraph/promotion/resolveConcretePromotedWidget.test.ts",
         "src/core/graph/subgraph/promotedInputWidget.test.ts",
         "src/core/graph/subgraph/promotedWidgetControl.test.ts",
         "src/core/graph/subgraph/promotionAfterReplacement.test.ts"
@@ -40,9 +46,9 @@
       "name": "Legacy proxy widgets and persisted promotion properties migrate safely",
       "checks": [
         "src/core/graph/subgraph/migration/proxyWidgetMigration.test.ts",
-        "src/core/schemas/promotionSchema.test.ts",
-        "src/core/schemas/proxyWidgetQuarantineSchema.test.ts",
-        "src/core/schemas/previewExposureSchema.test.ts"
+        "packages/litegraph/src/subgraph/promotion/promotionSchema.test.ts",
+        "packages/litegraph/src/subgraph/promotion/proxyWidgetQuarantineSchema.test.ts",
+        "packages/graph-state/src/previewExposureSchema.test.ts"
       ]
     },
     {

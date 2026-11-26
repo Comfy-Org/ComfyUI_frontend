@@ -6,14 +6,14 @@ import {
   audioWidgetExtension,
   recordAudioExtension
 } from '@/extensions/core/uploadAudio'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { LGraphNodeConstructor } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode } from '@comfyorg/litegraph/litegraph'
+import type { LGraphNodeConstructor } from '@comfyorg/litegraph/litegraph'
 import {
   coreIsLastWriter,
   serializeWithCapture
-} from '@/lib/litegraph/src/widgets/__fixtures__/widgetFormProofHarness'
-import { proveWidgetForm } from '@/lib/litegraph/src/widgets/widgetFormProof'
-import type { WidgetFormProof } from '@/lib/litegraph/src/widgets/widgetFormProof'
+} from '@comfyorg/litegraph/widgets/__fixtures__/widgetFormProofHarness'
+import { proveWidgetForm } from '@comfyorg/litegraph/widgets/widgetFormProof'
+import type { WidgetFormProof } from '@comfyorg/litegraph/widgets/widgetFormProof'
 import { useImageUploadWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useImageUploadWidget'
 import type { ComfyApp } from '@/scripts/app'
 import '@/scripts/domWidget'

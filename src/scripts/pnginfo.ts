@@ -1,6 +1,6 @@
-import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { withGraphIntentSource } from '@/lib/litegraph/src/graphIntents'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraph, LGraphNode } from '@comfyorg/litegraph/litegraph'
+import { withGraphIntentSource } from '@comfyorg/graph-state/graphIntents'
+import { LiteGraph } from '@comfyorg/litegraph/litegraph'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 
 import { api } from './api'

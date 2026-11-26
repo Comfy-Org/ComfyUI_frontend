@@ -6,7 +6,7 @@ describe('registered LiteGraph type cleanup', { concurrent: false }, () => {
   }) => {
     vi.resetModules()
     const { LGraphNode, LiteGraph } =
-      await import('@/lib/litegraph/src/litegraph')
+      await import('@comfyorg/litegraph/litegraph')
     LiteGraph.registerNodeType(
       'test/reset-module',
       class ResetModuleNode extends LGraphNode {}

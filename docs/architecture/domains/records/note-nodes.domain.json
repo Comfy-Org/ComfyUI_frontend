@@ -7,7 +7,7 @@
       "path": "src/extensions/core/noteNode.ts"
     },
     {
-      "path": "src/lib/litegraph/src/widgets/MarkdownWidget.ts"
+      "path": "packages/litegraph/src/widgets/MarkdownWidget.ts"
     },
     {
       "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetMarkdown.vue"

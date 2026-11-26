@@ -1,12 +1,12 @@
 import type { MaybeRefOrGetter } from 'vue'
 import { computed, toValue } from 'vue'
 
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import {
   deriveWidgetVisibility,
   isWidgetVisibleOnSurface
-} from '@/types/widgetVisibility'
+} from '@comfyorg/graph-model/widgetVisibility'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 
 export type NodeWidgetsList = Array<{ node: LGraphNode; widget: IBaseWidget }>

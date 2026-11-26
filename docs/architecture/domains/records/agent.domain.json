@@ -130,9 +130,6 @@
       "path": "src/workbench/extensions/agent/crdt/batchPlacement.ts"
     },
     {
-      "path": "src/workbench/extensions/agent/crdt/crdtDebugGate.ts"
-    },
-    {
       "path": "src/workbench/extensions/agent/crdt/crdtDebugReport.ts"
     },
     {
@@ -143,9 +140,6 @@
     },
     {
       "path": "src/workbench/extensions/agent/crdt/crossWorkflowPending.test.ts"
-    },
-    {
-      "path": "src/workbench/extensions/agent/crdt/devPanelLog.ts"
     },
     {
       "path": "src/workbench/extensions/agent/crdt/docChangeCollector.ts"

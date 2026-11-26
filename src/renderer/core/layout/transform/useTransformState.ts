@@ -52,7 +52,7 @@ import type { Point2D as Point } from '@comfyorg/shared-frontend-utils/geometry'
  */
 import { computed, reactive, readonly } from 'vue'
 
-import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import type { LGraphCanvas } from '@comfyorg/litegraph/litegraph'
 import { createSharedComposable } from '@vueuse/core'
 
 interface Camera extends Point {

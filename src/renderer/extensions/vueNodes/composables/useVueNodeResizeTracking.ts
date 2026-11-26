@@ -14,7 +14,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import {
   bindMountedNodeSize,
   mountedGraphScope
-} from '@/renderer/core/layout/store/mountedNodeSizes'
+} from '@comfyorg/graph-state/layout/mountedNodeSizes'
 import { syncSlotOffsets } from '@/renderer/core/layout/slots/syncSlotOffsets'
 import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
 

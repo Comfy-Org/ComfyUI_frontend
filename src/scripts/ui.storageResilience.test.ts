@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { attachLegacyUI } from '@/core/legacyUI/attachLegacyUI'
-import { safeLocalStorage } from '@/base/storage/safeStorage'
+import { safeLocalStorage } from '@comfyorg/shared-frontend-utils/safeStorage'
 import { ComfyApp } from '@/scripts/app'
 
 beforeAll(() => {

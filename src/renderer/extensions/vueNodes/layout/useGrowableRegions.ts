@@ -4,7 +4,7 @@ import type { ComputedRef, InjectionKey } from 'vue'
 
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
-import { useWidgetHeightStore } from '@/stores/widgetHeightStore'
+import { useWidgetHeightStore } from '@comfyorg/graph-state/widgetHeightStore'
 
 const USER_HEIGHT_PROBE = '--user-height-probe'
 const NODE_FLOOR = ['--node-height']

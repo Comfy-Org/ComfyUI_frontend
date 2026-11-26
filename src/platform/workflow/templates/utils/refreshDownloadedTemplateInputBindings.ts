@@ -1,6 +1,6 @@
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraph } from '@comfyorg/litegraph/litegraph'
 import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/types'
-import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
+import { getNodeByExecutionId } from '@comfyorg/litegraph/utils/graphTraversalUtil'
 
 export function refreshDownloadedTemplateInputBindings(
   rootGraph: LGraph,

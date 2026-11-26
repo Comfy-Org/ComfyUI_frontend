@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { safeSessionStorage } from '@/base/storage/safeStorage'
+import { safeSessionStorage } from '@comfyorg/shared-frontend-utils/safeStorage'
 
 const STORAGE_KEY = 'Comfy.WebSession.InteractiveSignIn'
 const MAX_AGE_MS = 2 * 60_000

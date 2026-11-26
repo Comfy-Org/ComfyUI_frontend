@@ -3,8 +3,8 @@ import type {
   LGraphCanvas,
   LGraphNode,
   Vector2
-} from '@/lib/litegraph/src/litegraph'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/litegraph'
+import { LiteGraph } from '@comfyorg/litegraph/litegraph'
 import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
 
 /** Creates serialised nodes and links in `graph` at `position`; returns the created nodes in serialised order. */

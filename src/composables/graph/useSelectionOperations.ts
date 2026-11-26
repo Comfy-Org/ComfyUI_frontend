@@ -1,13 +1,13 @@
 import { t } from '@/i18n'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import {
   copyToCanvasClipboard,
   pasteFromCanvasClipboard
-} from '@/core/graph/clipboard/canvasClipboard'
+} from '@comfyorg/litegraph/clipboard/canvasClipboard'
 import {
   insertItems,
   serializeItems
-} from '@/core/graph/clipboard/graphTransfer'
+} from '@comfyorg/litegraph/clipboard/graphTransfer'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import {

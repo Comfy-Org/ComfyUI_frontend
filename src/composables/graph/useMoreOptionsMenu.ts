@@ -2,7 +2,7 @@ import { computed, ref } from 'vue'
 import type { Ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphGroup, LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { useNodeOutputsExport } from '@/platform/assets/integration/useNodeOutputsExport'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import {

@@ -3,13 +3,13 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   promotedInputWidget,
   promotedInputWidgets
-} from '@/core/graph/subgraph/promotedInputWidget'
+} from '@comfyorg/litegraph/subgraph/promotion/promotedInputWidget'
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import {
   createTestSubgraph,
   createTestSubgraphNode
-} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+} from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphHelpers'
 
 vi.mock(import('@/services/litegraphService'))
 

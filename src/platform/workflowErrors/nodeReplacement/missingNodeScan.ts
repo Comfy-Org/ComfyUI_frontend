@@ -1,5 +1,5 @@
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph } from '@comfyorg/litegraph/litegraph'
+import type { LGraph } from '@comfyorg/litegraph/litegraph'
 import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
 import { updatePendingWarnings } from '@/platform/workflow/core/utils/pendingWarnings'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -10,8 +10,8 @@ import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/
 import {
   collectAllNodes,
   getExecutionIdByNode
-} from '@/utils/graphTraversalUtil'
-import { getCnrIdFromNode } from '@/platform/workflowErrors/nodeReplacement/cnrIdUtil'
+} from '@comfyorg/litegraph/utils/graphTraversalUtil'
+import { getCnrIdFromNode } from '@comfyorg/litegraph/utils/cnrIdUtil'
 
 function replacementFieldsFor(nodeType: string) {
   const replacement = useNodeReplacementStore().getReplacementFor(nodeType)

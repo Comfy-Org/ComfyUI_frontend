@@ -17,15 +17,15 @@ import type { AssetItem } from '@comfyorg/assets-core/schema'
 import {
   inputForWidget,
   promotedInputWidgets
-} from '@/core/graph/subgraph/promotedInputWidget'
-import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
+} from '@comfyorg/litegraph/subgraph/promotion/promotedInputWidget'
+import { resolvePromotedWidgetSource } from '@comfyorg/litegraph/subgraph/promotion/resolvePromotedWidgetSource'
 import {
   buildPromotedWidgetExecutionSources,
   resolveActivePromotedWidgetConsumers
-} from '@/core/graph/subgraph/resolveConcretePromotedWidget'
-import type { PromotedWidgetExecutionSource } from '@/core/graph/subgraph/promotedWidgetTypes'
-import type { LGraph } from '@/lib/litegraph/src/LGraph'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+} from '@comfyorg/litegraph/subgraph/promotion/resolveConcretePromotedWidget'
+import type { PromotedWidgetExecutionSource } from '@comfyorg/graph-model/promotedWidgetTypes'
+import type { LGraph } from '@comfyorg/litegraph/LGraph'
+import type { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
 import type {
   IAssetWidget,
   IBaseWidget,
@@ -37,7 +37,7 @@ import {
   collectAllNodes,
   getExecutionIdByNode,
   isExecutionPathActive
-} from '@/utils/graphTraversalUtil'
+} from '@comfyorg/litegraph/utils/graphTraversalUtil'
 import { resolveComboValues } from '@/utils/litegraphUtil'
 
 export type MissingModelWorkflowData = FlattenableWorkflowGraph & {

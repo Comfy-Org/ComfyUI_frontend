@@ -57,12 +57,15 @@ vi.mock(import('@/platform/workflowErrors/missingModel/missingModelDownload'), {
   spy: true
 })
 
-vi.mock<unknown>(import('@/utils/graphTraversalUtil'), () => ({
-  executionIdToNodeLocatorId: vi.fn((id: string) => id),
-  getActiveGraphNodeIds: vi.fn(() => new Set()),
-  getExecutionIdByNode: vi.fn(),
-  getNodeByExecutionId: vi.fn()
-}))
+vi.mock<unknown>(
+  import('@comfyorg/litegraph/utils/graphTraversalUtil'),
+  () => ({
+    executionIdToNodeLocatorId: vi.fn((id: string) => id),
+    getActiveGraphNodeIds: vi.fn(() => new Set()),
+    getExecutionIdByNode: vi.fn(),
+    getNodeByExecutionId: vi.fn()
+  })
+)
 
 function createTestI18n() {
   return createI18n({

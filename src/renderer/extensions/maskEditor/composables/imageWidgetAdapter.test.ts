@@ -1,8 +1,8 @@
 import { fromAny } from '@total-typescript/shoehorn'
 import { describe, expect, it } from 'vitest'
 
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { LGraph, LGraphNode } from '@comfyorg/litegraph/litegraph'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import { writeImageWidgetValue } from './imageWidgetAdapter'

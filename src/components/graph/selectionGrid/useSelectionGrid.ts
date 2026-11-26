@@ -19,11 +19,11 @@ import type {
   PointTuple,
   Rect
 } from '@comfyorg/shared-frontend-utils/geometry'
-import type { LGraph, LGraphNode, Reroute } from '@/lib/litegraph/src/litegraph'
+import type { LGraph, LGraphNode, Reroute } from '@comfyorg/litegraph/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
-import { LayoutSource } from '@/renderer/core/layout/types'
+import { useLayoutMutations } from '@comfyorg/graph-state/layout/layoutMutations'
+import { LayoutSource } from '@comfyorg/graph-state/layout/types'
 
 function measureDrawnBox(
   node: LGraphNode,

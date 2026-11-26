@@ -25,14 +25,14 @@
  * SOFTWARE.
  */
 import type { INodeOutputSlot } from '@comfyorg/graph-model/slots'
-import { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'
-import { NodeOutputSlot } from '@/lib/litegraph/src/node/NodeOutputSlot'
-import { outputLinkIds } from '@/lib/litegraph/src/node/slotLinks'
+import { NodeInputSlot } from '@comfyorg/litegraph/node/NodeInputSlot'
+import { NodeOutputSlot } from '@comfyorg/litegraph/node/NodeOutputSlot'
+import { outputLinkIds } from '@comfyorg/litegraph/node/slotLinks'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
 import { parseNodeId } from '@comfyorg/graph-model/nodeId'
 import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
-import type { SerialisedLLinkArray } from '@/lib/litegraph/src/LLink'
-import type { LGraph, LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
+import type { SerialisedLLinkArray } from '@comfyorg/litegraph/LLink'
+import type { LGraph, LGraphNode, LLink } from '@comfyorg/litegraph/litegraph'
 import type {
   ISerialisedGraph,
   ISerialisedNode

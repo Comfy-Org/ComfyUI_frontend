@@ -12,7 +12,7 @@ import {
   getCompositorLayers
 } from '@/renderer/extensions/layerEditor/compositor/useCompositorLayers'
 import type { LayerEditorSession } from '@comfyorg/layer-editor/vue'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
 import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'
 

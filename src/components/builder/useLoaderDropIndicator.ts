@@ -1,9 +1,9 @@
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'
-import type { useWidgetValueStore } from '@/stores/widgetValueStore'
+import type { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 import { parseWidgetId } from '@comfyorg/graph-model/widgetId'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import {

@@ -21,6 +21,7 @@
     "@comfyorg/object-info-parser": "workspace:*",
     "@comfyorg/shared-frontend-utils": "workspace:*",
     "@comfyorg/viewport3d": "workspace:*",
+    "es-toolkit": "catalog:",
     "zod": "catalog:",
     "zod-validation-error": "catalog:"
   },

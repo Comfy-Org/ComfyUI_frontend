@@ -1,6 +1,6 @@
 import { t } from '@/i18n'
-import { isComboWidget } from '@/lib/litegraph/src/litegraph'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { isComboWidget } from '@comfyorg/litegraph/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import type {
   IBaseWidget,
   IComboWidget,

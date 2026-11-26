@@ -13,13 +13,13 @@ import type {
   EditableInputValueSource,
   InputValueSource
 } from '@/core/graph/subgraph/resolveInputValueSource'
-import { SubgraphIONodeBase } from '@/lib/litegraph/src/subgraph/SubgraphIONodeBase'
-import type { SubgraphInputNode } from '@/lib/litegraph/src/subgraph/SubgraphInputNode'
-import type { SubgraphOutputNode } from '@/lib/litegraph/src/subgraph/SubgraphOutputNode'
+import { SubgraphIONodeBase } from '@comfyorg/litegraph/subgraph/SubgraphIONodeBase'
+import type { SubgraphInputNode } from '@comfyorg/litegraph/subgraph/SubgraphInputNode'
+import type { SubgraphOutputNode } from '@comfyorg/litegraph/subgraph/SubgraphOutputNode'
 import {
   reorderSubgraphInputs,
   reorderSubgraphOutputs
-} from '@/lib/litegraph/src/subgraph/subgraphUtils'
+} from '@comfyorg/litegraph/subgraph/subgraphUtils'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
@@ -28,7 +28,7 @@ import NodeResizeHandle from '@/renderer/extensions/vueNodes/components/NodeResi
 import SlotConnectionDot from '@/renderer/extensions/vueNodes/components/SlotConnectionDot.vue'
 import { RESIZE_HANDLES } from '@/renderer/extensions/vueNodes/interactions/resize/resizeHandleConfig'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
-import { getNodeByState } from '@/utils/graphTraversalUtil'
+import { getNodeByState } from '@comfyorg/litegraph/utils/graphTraversalUtil'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import { cn } from '@comfyorg/tailwind-utils'

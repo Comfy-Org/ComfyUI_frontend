@@ -14,12 +14,12 @@ export const noDirectWebStorage: Rule = {
     type: 'problem',
     docs: {
       description:
-        'Route Web Storage access through the fault-tolerant provider in @/base/storage/safeStorage'
+        'Route Web Storage access through the fault-tolerant provider in @comfyorg/shared-frontend-utils/safeStorage'
     },
     schema: [],
     messages: {
       global:
-        "Do not touch `{{name}}` directly: reading it throws a SecurityError when the browser blocks storage. Use safeLocalStorage / safeSessionStorage from '@/base/storage/safeStorage'.",
+        "Do not touch `{{name}}` directly: reading it throws a SecurityError when the browser blocks storage. Use safeLocalStorage / safeSessionStorage from '@comfyorg/shared-frontend-utils/safeStorage'.",
       composable:
         "Do not use VueUse `{{name}}`: it reads the storage global unguarded. Use useSafeLocalStorage / useSafeSessionStorage from '@/platform/storage/useSafeStorage'."
     }

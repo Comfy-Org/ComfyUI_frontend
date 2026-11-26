@@ -22,17 +22,17 @@ import {
 } from '@/core/graph/widgets/documentSlots'
 import type { INodeFlags } from '@comfyorg/graph-model/interfaces'
 import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
-import { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
-import { withGraphIntentSource } from '@/lib/litegraph/src/graphIntents'
-import { detachSerialisedLinks } from '@/lib/litegraph/src/linkDeduplication'
+import { LGraphCanvas } from '@comfyorg/litegraph/LGraphCanvas'
+import { withGraphIntentSource } from '@comfyorg/graph-state/graphIntents'
+import { detachSerialisedLinks } from '@comfyorg/litegraph/linkDeduplication'
 import {
   LGraphGroup,
   LGraphNode,
   LiteGraph
-} from '@/lib/litegraph/src/litegraph'
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import { containsCentre } from '@/lib/litegraph/src/measure'
-import { topologicalSortSubgraphs } from '@/lib/litegraph/src/subgraph/subgraphDeduplication'
+} from '@comfyorg/litegraph/litegraph'
+import type { LGraph } from '@comfyorg/litegraph/litegraph'
+import { containsCentre } from '@comfyorg/litegraph/measure'
+import { topologicalSortSubgraphs } from '@comfyorg/litegraph/subgraph/subgraphDeduplication'
 import type {
   ExportedSubgraph,
   ISerialisableNodeInput,
@@ -51,7 +51,7 @@ import { transformInputSpecV1ToV2 } from '@comfyorg/object-info-parser/migration
 import type { InputSpec as InputSpecV2 } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { zComfyNode, zGroup } from '@comfyorg/graph-model/workflowSchema'
-import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
+import { BaseWidget } from '@comfyorg/litegraph/widgets/BaseWidget'
 import { inputSpecTree } from '@/core/graph/nodeDef/inputSpecInterpreter'
 import { isValueControlMode } from '@/core/graph/widgets/valueControl'
 import type { LinkId } from '@comfyorg/graph-model/linkId'

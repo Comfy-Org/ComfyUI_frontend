@@ -1,5 +1,5 @@
-import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
-import type { LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import { SUBGRAPH_INPUT_ID } from '@comfyorg/litegraph/constants'
+import type { LGraphNode, SubgraphNode } from '@comfyorg/litegraph/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useApp } from '@/scripts/appInstance'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
@@ -7,7 +7,7 @@ import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import {
   getNodeByState,
   resolveInputSourceNode
-} from '@/utils/graphTraversalUtil'
+} from '@comfyorg/litegraph/utils/graphTraversalUtil'
 import { isSubgraph } from '@/utils/typeGuardUtil'
 
 function viewedSubgraphHost(

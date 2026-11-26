@@ -1,4 +1,4 @@
-import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraph, Subgraph } from '@comfyorg/litegraph/litegraph'
 
 import {
   createDeletedValueMatcher,

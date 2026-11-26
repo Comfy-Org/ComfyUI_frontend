@@ -13,7 +13,7 @@
       "path": "packages/api-client/src/executionTypes.ts"
     },
     {
-      "path": "packages/api-client/src/resultItemTypeSchema.ts"
+      "path": "packages/graph-model/src/resultItemTypeSchema.ts"
     },
     {
       "path": "packages/api-client/src/types.ts"

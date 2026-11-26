@@ -3,7 +3,7 @@ import { effectScope, shallowRef, watch } from 'vue'
 import type { EffectScope } from 'vue'
 import type { Router } from 'vue-router'
 
-import { safeSessionStorage } from '@/base/storage/safeStorage'
+import { safeSessionStorage } from '@comfyorg/shared-frontend-utils/safeStorage'
 import { t } from '@/i18n'
 import {
   clearPreservedQuery,

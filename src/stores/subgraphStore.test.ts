@@ -18,13 +18,13 @@ import {
   createTestSubgraph,
   createTestSubgraphNode,
   enableSubgraphNodeCreation
-} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+} from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphHelpers'
 import { ChangeTracker } from '@/scripts/changeTracker'
-import { ASSERTION_FAILURE_PREFIX } from '@/base/assert'
+import { ASSERTION_FAILURE_PREFIX } from '@comfyorg/shared-frontend-utils/assert'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { createCanvas } from '@/lib/litegraph/src/__fixtures__/canvasHarness'
+import { createCanvas } from '@comfyorg/litegraph/__fixtures__/canvasHarness'
 import { TemplateIncludeOnDistributionEnum } from '@comfyorg/api-client/templateTypes'
 import type { GlobalSubgraphData } from '@comfyorg/api-client/ComfyApi'
 import type { UserDataFullInfo } from '@comfyorg/api-client/types'

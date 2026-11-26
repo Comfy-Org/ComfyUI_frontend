@@ -55,12 +55,12 @@ import { computed, onErrorCaptured, ref, useTemplateRef, watch } from 'vue'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { autogrowInputRole } from '@/core/graph/widgets/dynamicWidgets'
 import { st } from '@/i18n'
-import type { INodeSlot, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { INodeSlot, LGraphNode } from '@comfyorg/litegraph/litegraph'
 import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { syncSlotOffsets } from '@/renderer/core/layout/slots/syncSlotOffsets'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { layoutStore } from '@comfyorg/graph-state/layout/layoutStore'
 import {
   isAdvancedSocketInput,
   linkedWidgetedInputs,
@@ -68,14 +68,17 @@ import {
 } from '@/renderer/extensions/vueNodes/utils/nodeDataUtils'
 import { useApp } from '@/scripts/appInstance'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useLinkStore } from '@/stores/linkStore'
+import { useLinkStore } from '@comfyorg/graph-state/linkStore'
 import type { GraphScope } from '@comfyorg/graph-model/graphScopeId'
 import {
   toOwningGraphId,
   toRootGraphId
 } from '@comfyorg/graph-model/graphScopeId'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
-import { getNodeByState, locatorIdFromState } from '@/utils/graphTraversalUtil'
+import {
+  getNodeByState,
+  locatorIdFromState
+} from '@comfyorg/litegraph/utils/graphTraversalUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import InputSlot from './InputSlot.vue'

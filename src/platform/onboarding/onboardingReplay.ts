@@ -1,5 +1,5 @@
 import { isCloud } from '@/platform/distribution/types'
-import { safeSessionStorage } from '@/base/storage/safeStorage'
+import { safeSessionStorage } from '@comfyorg/shared-frontend-utils/safeStorage'
 import { reportError } from '@comfyorg/telemetry/reportError'
 
 const REPLAY_KEY = 'Comfy.OnboardingReplay'

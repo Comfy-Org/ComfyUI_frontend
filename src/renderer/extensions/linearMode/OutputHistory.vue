@@ -16,7 +16,7 @@ import {
   watchEffect
 } from 'vue'
 
-import { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
+import { CanvasPointer } from '@comfyorg/litegraph/CanvasPointer'
 import OutputHistoryActiveQueueItem from '@/renderer/extensions/linearMode/OutputHistoryActiveQueueItem.vue'
 import OutputHistoryItem from '@/renderer/extensions/linearMode/OutputHistoryItem.vue'
 import { useLinearOutputStore } from '@/renderer/extensions/linearMode/linearOutputStore'

@@ -1,5 +1,5 @@
 import { st } from '@/i18n'
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraph } from '@comfyorg/litegraph/litegraph'
 import { assetService } from '@/platform/assets/services/assetService'
 import { isCloud } from '@/platform/distribution/types'
 import {
@@ -29,7 +29,7 @@ import {
   getNodeByExecutionId,
   isCandidateScopeActive,
   isMissingCandidateActive
-} from '@/utils/graphTraversalUtil'
+} from '@comfyorg/litegraph/utils/graphTraversalUtil'
 
 function endOnAbort(work: Promise<void>, signal: AbortSignal): Promise<void> {
   const aborted = new Promise<void>((resolve) => {

@@ -15,7 +15,7 @@ import type { Op } from '@comfyorg/comfy-multi-player'
 import { render } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraph } from '@comfyorg/litegraph/litegraph'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTelemetry } from '@comfyorg/telemetry'

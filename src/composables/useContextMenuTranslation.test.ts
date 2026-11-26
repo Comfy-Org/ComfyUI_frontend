@@ -6,9 +6,9 @@ import type {
   IContextMenuValue,
   INodeInputSlot,
   IWidget
-} from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/litegraph'
 
-import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraphCanvas, LiteGraph } from '@comfyorg/litegraph/litegraph'
 
 import {
   translateContextMenuItems,

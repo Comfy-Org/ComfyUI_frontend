@@ -19,9 +19,6 @@
       "path": "src/stores/appModeStore.ts"
     },
     {
-      "path": "src/utils/appMode.ts"
-    },
-    {
       "path": "src/views/LinearView.vue"
     }
   ],

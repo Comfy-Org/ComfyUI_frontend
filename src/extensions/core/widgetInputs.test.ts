@@ -6,21 +6,21 @@ import {
   LGraphNode,
   LiteGraph,
   LLink
-} from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/litegraph'
 import type {
   INodeInputSlot,
   INodeOutputSlot,
   ISerialisedNode
-} from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/litegraph'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
-import { LegacyWidget } from '@/lib/litegraph/src/widgets/LegacyWidget'
+import { LegacyWidget } from '@comfyorg/litegraph/widgets/LegacyWidget'
 import { assetService } from '@/platform/assets/services/assetService'
 import type { ComfyNodeDef, InputSpec } from '@comfyorg/object-info-parser'
 import { app } from '@/scripts/app'
 import { CONFIG, GET_CONFIG } from '@comfyorg/graph-model/widgets'
-import { useLinkStore } from '@/stores/linkStore'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { createTestLink } from '@/utils/__tests__/litegraphTestUtils'
+import { useLinkStore } from '@comfyorg/graph-state/linkStore'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
+import { createTestLink } from '@comfyorg/litegraph/__fixtures__/litegraphTestUtils'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
 import { serializeNodeId, toNodeId } from '@comfyorg/graph-model/nodeId'

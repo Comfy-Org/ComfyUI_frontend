@@ -1,6 +1,6 @@
 import type { LocationQuery } from 'vue-router'
 
-import { safeSessionStorage } from '@/base/storage/safeStorage'
+import { safeSessionStorage } from '@comfyorg/shared-frontend-utils/safeStorage'
 
 const OAUTH_REQUEST_ID_STORAGE_KEY = 'Comfy.OAuthRequestId'
 const UUID_PATTERN =

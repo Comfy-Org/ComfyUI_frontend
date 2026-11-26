@@ -4,19 +4,19 @@ import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import type {
   ExecutableLGraphNode,
   ExecutionId
-} from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/litegraph'
 import {
   ExecutableNodeDTO,
   LGraph,
   LGraphEventMode,
   LGraphNode
-} from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/litegraph'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import {
   createTestSubgraph,
   createTestSubgraphNode,
   resetSubgraphFixtureState
-} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+} from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphHelpers'
 
 import { promptBuildErrorFingerprint } from './promptBuildErrorFingerprint'
 

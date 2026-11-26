@@ -4,7 +4,7 @@ import { useDialogStore } from '@/stores/dialogStore'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { createI18n } from 'vue-i18n'
 
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import { useCompositorEditor } from './useCompositorEditor'

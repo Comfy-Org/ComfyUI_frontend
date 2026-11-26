@@ -6,7 +6,7 @@ import {
   copyToCanvasClipboard,
   discardCanvasCopy,
   forgetCanvasCopy
-} from '@/core/graph/clipboard/canvasClipboard'
+} from '@comfyorg/litegraph/clipboard/canvasClipboard'
 import { t } from '@/i18n'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { hasTextSelection } from '@/workbench/eventHelpers'

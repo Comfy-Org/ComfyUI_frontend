@@ -7,11 +7,11 @@ import { createI18n } from 'vue-i18n'
 
 import TooltipProvider from '@comfyorg/design-system/tooltip/TooltipProvider'
 import TidyUpButton from '@/components/graph/selectionToolbox/TidyUpButton.vue'
-import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphCanvas, LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
-import { createTestCanvasElement } from '@/utils/__tests__/canvasTestUtils'
+import { createTestCanvasElement } from '@comfyorg/litegraph/__fixtures__/canvasTestUtils'
 
 const i18n = createI18n({
   legacy: false,

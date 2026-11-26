@@ -7,19 +7,19 @@ import type { LGraphEventMap } from '@comfyorg/graph-model/LGraphEventMap'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
-import type { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
-import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
+import { CustomEventTarget } from '@comfyorg/litegraph/infrastructure/CustomEventTarget'
+import type { LGraph, LGraphCanvas } from '@comfyorg/litegraph/litegraph'
+import { createMockLGraphNode } from '@comfyorg/litegraph/__fixtures__/litegraphTestUtils'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { MinimapDataSource } from '@/renderer/extensions/minimap/data/MinimapDataSource'
 import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
-import { useLinkStore } from '@/stores/linkStore'
+import { useLinkStore } from '@comfyorg/graph-state/linkStore'
 import {
   createMockCanvasRenderingContext2D,
   createTestCanvasElement
-} from '@/utils/__tests__/canvasTestUtils'
+} from '@comfyorg/litegraph/__fixtures__/canvasTestUtils'
 
 import { useMinimap } from './useMinimap'
 
