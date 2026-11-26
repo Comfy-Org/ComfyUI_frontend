@@ -1,3 +1,4 @@
+import { safeSessionStorage } from '@/base/storage/safeStorage'
 import type {
   AgentErrorContext,
   AgentErrorProblem
@@ -22,19 +23,16 @@ export function writePendingSignInAccept({
 
 function tryWrite(record: PendingSignInAccept & { savedAt: number }): boolean {
   try {
-    window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(record))
-    return true
+    return (
+      safeSessionStorage.setItem(STORAGE_KEY, JSON.stringify(record)) === 'ok'
+    )
   } catch {
     return false
   }
 }
 
 export function clearPendingSignInAccept(): void {
-  try {
-    window.sessionStorage.removeItem(STORAGE_KEY)
-  } catch {
-    return
-  }
+  safeSessionStorage.removeItem(STORAGE_KEY)
 }
 
 const ERROR_SCOPES: readonly unknown[] = ['single', 'card', 'all']
@@ -44,6 +42,10 @@ const ERROR_CATEGORIES: readonly unknown[] = [
   'missing_node',
   'validation',
   'execution_failure'
+]
+const MISSING_PACK_REASONS: readonly unknown[] = [
+  'manager_unavailable',
+  'not_in_registry'
 ]
 
 type FieldChecks<T> = { [K in keyof Required<T>]: (value: unknown) => boolean }
@@ -80,7 +82,9 @@ const CONTEXT_FIELDS: FieldChecks<AgentErrorContext> = {
   label: isString,
   severity: (value) => value === 'error' || value === 'warning',
   workflowName: isOptionalString,
-  workflowPath: isOptionalString
+  workflowPath: isOptionalString,
+  packId: (value) => value === null || isOptionalString(value),
+  reason: (value) => value === undefined || MISSING_PACK_REASONS.includes(value)
 }
 
 function isErrorContext(value: unknown): value is AgentErrorContext {
@@ -90,7 +94,7 @@ function isErrorContext(value: unknown): value is AgentErrorContext {
 function readPendingSignInAccept(): PendingSignInAccept | null {
   try {
     const stored: unknown = JSON.parse(
-      window.sessionStorage.getItem(STORAGE_KEY) ?? 'null'
+      safeSessionStorage.getItem(STORAGE_KEY) ?? 'null'
     )
     const { draft, savedAt, errorContext } = (stored ?? {}) as {
       draft?: unknown

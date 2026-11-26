@@ -2,7 +2,7 @@ import type {
   ImportPublishedAssetsRequest,
   ListAssetsData
 } from '@comfyorg/ingest-types'
-import { uniq } from 'es-toolkit'
+import { partition, uniq } from 'es-toolkit'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { fromZodError } from 'zod-validation-error'
 import { z } from 'zod'
@@ -56,6 +56,11 @@ export interface AssetPaginationOptions extends PaginationOptions {
    */
   after?: string
   signal?: AbortSignal
+}
+
+export interface WorkspaceLibraryModels {
+  names: string[]
+  blocked: string[]
 }
 
 interface AssetRequestOptions extends PaginationOptions {
@@ -799,9 +804,11 @@ function createAssetService() {
   }
 
   /**
-   * Lists the unique loader names in one folder of the workspace library.
+   * Lists the unique loader names in one folder of the workspace library, the ones this deployment's Build runs apart from the ones its model rules block.
    */
-  async function getWorkspaceLibraryModels(folder: string): Promise<string[]> {
+  async function getWorkspaceLibraryModels(
+    folder: string
+  ): Promise<WorkspaceLibraryModels> {
     const assets = await walkAssetPages(
       `workspace library folder '${folder}'`,
       undefined,
@@ -817,6 +824,14 @@ function createAssetService() {
           `workspace library models in ${folder}`
         )
     )
+    const [blocked, runnable] = partition(
+      assets,
+      (asset) => asset.blocked_by_model_policy === true
+    )
+    return { names: loaderNames(runnable), blocked: loaderNames(blocked) }
+  }
+
+  function loaderNames(assets: AssetItem[]): string[] {
     return uniq(
       assets
         .map((asset) => asset.loader_path ?? getAssetFilename(asset))

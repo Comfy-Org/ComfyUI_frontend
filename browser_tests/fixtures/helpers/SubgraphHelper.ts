@@ -388,9 +388,24 @@ export class SubgraphHelper {
   }
 
   /**
-   * Disconnects and reconnects the interior link feeding a promoted subgraph
-   * input, forcing every host node of this definition to re-resolve the
-   * promoted widget through `SubgraphNode._setWidget`.
+   * Disconnects the interior link feeding a promoted input.
+   *
+   * Must be called from inside the subgraph.
+   */
+  async disconnectPromotedInput(
+    interiorNode: NodeReference,
+    inputName: string
+  ) {
+    const slot = await interiorNode.getInputByName(inputName)
+    await slot.removeLinks()
+    await this.comfyPage.nextFrame()
+    await slot.expectLinkCount(0, 'Interior link should be disconnected')
+
+    return slot
+  }
+
+  /**
+   * Disconnects and reconnects the interior link feeding a promoted input.
    *
    * Must be called from inside the subgraph.
    */
@@ -398,25 +413,9 @@ export class SubgraphHelper {
     interiorNode: NodeReference,
     inputName: string
   ): Promise<void> {
-    const slotIndex = await this.page.evaluate(
-      ([nodeId, name]) => {
-        const node = window.app!.canvas.graph!.getNodeById(nodeId)
-        if (!node) throw new Error(`Node ${nodeId} not found`)
-        const index = node.inputs.findIndex((input) => input.name === name)
-        if (index === -1) {
-          throw new Error(`Input '${name}' not found on node ${nodeId}`)
-        }
-        return index
-      },
-      [interiorNode.id, inputName] as const
-    )
+    const slot = await this.disconnectPromotedInput(interiorNode, inputName)
 
-    const slot = await interiorNode.getInput(slotIndex)
-    await slot.removeLinks()
-    await this.comfyPage.nextFrame()
-    await slot.expectLinkCount(0, 'Interior link should be detached')
-
-    await this.connectFromInput(interiorNode, slotIndex, inputName)
+    await this.connectFromInput(interiorNode, slot.index, inputName)
     await slot.expectLinkCount(1, 'Interior link should be restored')
   }
 

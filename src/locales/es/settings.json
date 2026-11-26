@@ -59,6 +59,25 @@
     "name": "Mostrar caja de herramientas de selección",
     "tooltip": "Muestra una barra de herramientas flotante cuando se seleccionan nodos, proporcionando acceso rápido a acciones comunes."
   },
+  "Comfy_Canvas_SmartGuides_Enabled": {
+    "name": "Ajustar a nodos, grupos y conexiones cercanos al arrastrar y redimensionar",
+    "tooltip": "Muestra líneas guía y ajusta a bordes alineados, espaciado uniforme y conexiones rectas. Mantén pulsada Mayús para ajustar a la cuadrícula en su lugar."
+  },
+  "Comfy_Canvas_SmartGuides_Gap": {
+    "name": "Separación al ajustar junto a otro nodo"
+  },
+  "Comfy_Canvas_SmartGuides_SnapDistance": {
+    "name": "Distancia de ajuste (píxeles de pantalla)"
+  },
+  "Comfy_Canvas_SmartGuides_SnapToEdges": {
+    "name": "Ajustar a los bordes de otros nodos y grupos"
+  },
+  "Comfy_Canvas_SmartGuides_SnapToSpacing": {
+    "name": "Ajustar a un espaciado uniforme entre nodos"
+  },
+  "Comfy_Canvas_SmartGuides_SnapToWires": {
+    "name": "Ajustar para que las conexiones queden rectas"
+  },
   "Comfy_ConfirmClear": {
     "name": "Requerir confirmación al borrar el flujo de trabajo"
   },
@@ -87,6 +106,10 @@
   "Comfy_ErrorSystem_ShowMissingModels": {
     "name": "Mostrar los modelos que faltan en la pestaña de incidencias",
     "tooltip": "Cuando se desactiva, los archivos de modelo que no se encuentran no se muestran en la pestaña de incidencias y sus nodos no se resaltan."
+  },
+  "Comfy_ErrorSystem_ShowMissingNodes": {
+    "name": "Mostrar los nodos faltantes en la pestaña de problemas",
+    "tooltip": "Cuando está desactivado, los paquetes de nodos faltantes no se muestran en la pestaña de problemas y sus nodos no se resaltan. El flujo de trabajo seguirá sin poder ejecutarse hasta que se instalen."
   },
   "Comfy_Execution_PreviewMethod": {
     "name": "Método de vista previa en vivo",
@@ -468,10 +491,6 @@
   "Comfy_Workflow_ShowMissingMediaWarning": {
     "name": "Mostrar los medios que faltan en la pestaña de incidencias",
     "tooltip": "Cuando se desactiva, las imágenes, los vídeos y el audio de entrada que no se encuentran no se muestran en la pestaña de incidencias y sus nodos no se resaltan."
-  },
-  "Comfy_ErrorSystem_ShowMissingNodes": {
-    "name": "Mostrar los nodos que faltan en la pestaña de incidencias",
-    "tooltip": "Cuando se desactiva, los paquetes de nodos que faltan no se muestran en la pestaña de incidencias y sus nodos no se resaltan. El flujo de trabajo seguirá sin poder ejecutarse hasta que se instalen."
   },
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "Ordenar IDs de nodos al guardar el flujo de trabajo"

@@ -35,6 +35,7 @@ import { t } from '@/i18n'
 import { webSessionRequests } from '@comfyorg/api-client/webSessionFetch'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
+import { safeSessionStorage } from '@/base/storage/safeStorage'
 import { useTelemetry } from '@comfyorg/telemetry'
 import type {
   BillingBalanceResponse,
@@ -155,7 +156,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     ...sessionPorts(),
     resolveUrl: ingestApiUrl,
     fetchImpl: fetchWithRetry,
-    pointerStorage: sessionStorage,
+    pointerStorage: safeSessionStorage,
     hostedDestination: () => flags.hostedBillingDestination,
     onTelemetry: reportTelemetry
   })
@@ -651,6 +652,11 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
       : result
   }
 
+  function savedPaymentMethodsSnapshot(): SavedPaymentMethod[] | undefined {
+    const snapshot = sdk.paymentMethods.getSnapshot()
+    return snapshot && [...snapshot.methods]
+  }
+
   // The one read with nothing to project: the events response carries no
   // int64, so the decoded page already holds the numbers the host's type
   // says it does. Only the scope and read instant the snapshot adds are
@@ -697,6 +703,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     readPlans,
     readCapabilities,
     readPaymentMethods,
+    savedPaymentMethodsSnapshot,
     readEvents,
     dismissOperation
   }

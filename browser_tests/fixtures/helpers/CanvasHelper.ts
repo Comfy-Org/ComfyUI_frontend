@@ -3,7 +3,7 @@ import type { Locator, Page } from '@playwright/test'
 
 import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
 import { TestIds } from '@e2e/fixtures/selectors'
-import type { Position } from '@e2e/fixtures/types'
+import type { Position, Size } from '@e2e/fixtures/types'
 import { nextFrame } from '@e2e/fixtures/utils/timing'
 import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
@@ -464,6 +464,27 @@ export class CanvasHelper {
     return this.page.evaluate((pos) => {
       return window.app!.canvas.ds.convertOffsetToCanvas(pos)
     }, pos)
+  }
+
+  async canvasPosToClientPos(pos: [number, number]): Promise<Position> {
+    const [x, y] = await this.page.evaluate(
+      (pos) => window.app!.canvasPosToClientPos(pos),
+      pos
+    )
+    return { x, y }
+  }
+
+  async getGroupBounds(title: string): Promise<Position & Size> {
+    const bounds = await this.page.evaluate((title) => {
+      const group = window.app!.canvas.graph!.groups.find(
+        (g) => g.title === title
+      )
+      if (!group) return null
+      const [x, y, width, height] = group.boundingRect
+      return { x, y, width, height }
+    }, title)
+    if (!bounds) throw new Error(`Group "${title}" not found`)
+    return bounds
   }
 
   async getNodeCenterByTitle(title: string): Promise<Position | null> {

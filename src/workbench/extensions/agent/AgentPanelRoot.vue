@@ -20,6 +20,7 @@ import {
 import { v4 as uuidv4 } from 'uuid'
 import { useI18n } from 'vue-i18n'
 
+import { safeLocalStorage } from '@/base/storage/safeStorage'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTelemetry } from '@comfyorg/telemetry'
@@ -46,7 +47,7 @@ import {
 } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useAppMode } from '@/composables/useAppMode'
 import { MIME_ASSET_INFO } from '@/platform/assets/constants/assetDrag'
 import { getDroppedAsset } from '@/platform/assets/integration/assetDrop'
@@ -111,7 +112,10 @@ import { useFreeUsePlacement } from './experiments/freeUsePlacement'
 import AgentPanel from './components/agent/AgentPanel.vue'
 import AgentCreditTransitionNotice from './components/agent/AgentCreditTransitionNotice.vue'
 import AgentHostFenceNotice from './components/agent/AgentHostFenceNotice.vue'
-import { agentBoundWorkflowIdKey } from './components/agent/agentBoundWorkflowId'
+import {
+  agentBoundWorkflowActiveKey,
+  agentBoundWorkflowIdKey
+} from './components/agent/agentBoundWorkflowId'
 import AgentGraphActivityBar from './components/AgentGraphActivityBar.vue'
 import OnboardingCoach from './components/agent/OnboardingCoach.vue'
 import {
@@ -228,7 +232,10 @@ import { startCrdtLog } from './crdt/crdtLog'
 import type { CrdtLogLevel } from './crdt/crdtLogLevel'
 import { attachAgentWriteOverwriteWatch } from './crdt/agentWriteOverwrites'
 import { attachDocOpMinter } from './crdt/docOpMinter'
-import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
+import {
+  retainAgentFollowerSessionsForPage,
+  useAgentCrdtFollower
+} from './crdt/useAgentCrdtFollower'
 
 const CrdtDevPanel = defineAsyncComponent(
   () => import('./crdt/CrdtDevPanel.vue')
@@ -538,8 +545,9 @@ const showCreditTransitionNotice = computed(
 )
 
 function onDismissCreditTransitionNotice(): void {
+  if (!agentPanelStore.dismissCreditTransitionNotice(billingIdentity.value))
+    return
   useTelemetry()?.trackAgentCreditTransitionNotice({ action: 'dismissed' })
-  agentPanelStore.dismissCreditTransitionNotice(billingIdentity.value)
 }
 
 function onCreditTransitionNoticeShown(): void {
@@ -666,10 +674,9 @@ const settingStore = useSettingStore()
 const crdtLogLevel = computed({
   get: () => settingStore.get('Comfy.Agent.CrdtDebug.Level'),
   set: (level: CrdtLogLevel) => {
-    try {
-      localStorage.setItem('Comfy.Agent.CrdtDebug.level', level)
-    } catch (error) {
-      reportError(error, {
+    const outcome = safeLocalStorage.write('Comfy.Agent.CrdtDebug.level', level)
+    if (outcome.result !== 'ok') {
+      reportError(outcome.error, {
         surface: 'agent',
         errorType: 'failure_saving_crdt_debug_level_mirror',
         level: 'warning'
@@ -938,6 +945,28 @@ const {
   }
 })
 
+let suppressPickTelemetry = false
+let pendingPickCount = 0
+function reportPlusMenuPicks(count: number): void {
+  if (pendingPickCount === 0)
+    queueMicrotask(() => {
+      const nodeCount = pendingPickCount
+      pendingPickCount = 0
+      useTelemetry()?.trackAgentNodeTagged({
+        source: 'plus_menu',
+        node_count: nodeCount
+      })
+    })
+  pendingPickCount += count
+}
+function withoutPickTelemetry(stage: () => void): void {
+  suppressPickTelemetry = true
+  try {
+    stage()
+  } finally {
+    suppressPickTelemetry = false
+  }
+}
 watch(
   selectionTags,
   (tags, previousTags) => {
@@ -950,10 +979,16 @@ watch(
     if (canvasStore.isPickingNodes) {
       const previousKeys = new Set(previousTags.map(selectedNodeKey))
       const selectedKeys = new Set(selectedNodes.value.map(selectedNodeKey))
+      let pickedCount = 0
       for (const tag of tags) {
         const key = selectedNodeKey(tag)
-        if (!previousKeys.has(key) && selectedKeys.has(key)) nextKeys.add(key)
+        if (!previousKeys.has(key) && selectedKeys.has(key)) {
+          nextKeys.add(key)
+          pickedCount++
+        }
       }
+      if (pickedCount && !suppressPickTelemetry)
+        reportPlusMenuPicks(pickedCount)
     }
     composerStore.setSelectionModeNodeKeys(nextKeys)
   },
@@ -1240,6 +1275,7 @@ const {
   threadId,
   loadThread,
   isThreadDeleted,
+  forgetChat,
   boundWorkflowId,
   bindWorkflow,
   reportWorkflowBound,
@@ -1377,6 +1413,8 @@ const isBoundWorkflowActive = computed(() => {
   )
 })
 
+provide(agentBoundWorkflowActiveKey, isBoundWorkflowActive)
+
 // The CRDT follower is the inbound content channel: subscribes to the
 // session's bound workflow while its tab is active. Suspending the background
 // subscription makes reopening pull state-vector catch-up only after the
@@ -1460,6 +1498,7 @@ const {
     return lineage?.workflowId === workflowId ? lineage.lineageSeq : null
   }
 })
+retainAgentFollowerSessionsForPage(docTransport)
 // The bound document's serialized root graph id, independent of what is
 // currently on the canvas: `beforeLoadNewGraph` persists the outgoing
 // workflow's `activeState` before the shared renderer graph is rewritten, so
@@ -1474,11 +1513,8 @@ function boundRootGraphId(): RootGraphId | null {
 function followerCanDeliver(): boolean {
   return isFollowerActive.value && subscriptionSent()
 }
-function noteUnboundVisibleIntent(): void {
-  const visible = workflowStore.activeWorkflow
-  const workflowId = visible
-    ? bindingStore.workflowIdFor(visible.path)
-    : undefined
+function noteUnboundVisibleIntent(rootGraph: LGraph): void {
+  const workflowId = bindingStore.workflowIdForGraph(rootGraph)
   if (workflowId !== undefined) noteUnboundLocalIntent(workflowId)
 }
 const docOpMinter = attachDocOpMinter({
@@ -1931,8 +1967,9 @@ function onApprovalShown(
   turnId: string,
   workflowId: string | null
 ): void {
-  if (!conversationStore.recordApprovalShown(askId, Date.now())) return
+  if (!conversationStore.recordApprovalShown(askId, turnId, Date.now())) return
   useTelemetry()?.trackAgentRunApprovalShown({
+    ask_id: askId,
     turn_id: turnId,
     workflow_id: workflowId
   })
@@ -1942,12 +1979,15 @@ function trackApprovalResolved(
   askId: string,
   decision: AgentRunApprovalDecision,
   decidedAt = Date.now(),
-  shownAt = conversationStore.approvalShownAt(askId)
+  shownAt = conversationStore.approvalShownAt(askId),
+  turnId = conversationStore.approvalTurnId(askId)
 ): void {
-  if (shownAt === undefined) return
+  if (shownAt === undefined || turnId === undefined) return
   if (decision !== 'open_workflow')
     conversationStore.forgetApprovalTiming(askId)
   useTelemetry()?.trackAgentRunApprovalResolved({
+    ask_id: askId,
+    turn_id: turnId,
     decision,
     time_to_decide_ms: Math.max(0, decidedAt - shownAt)
   })
@@ -1962,10 +2002,31 @@ async function onAnswerAsk(
   answer: AgentAnswerRequest
 ): Promise<void> {
   const shownAt = conversationStore.approvalShownAt(askId)
+  const turnId = conversationStore.approvalTurnId(askId)
+  const isRunApproval = conversationStore.askKind(askId) === 'runApproval'
   const decidedAt = Date.now()
   const decision = runApprovalDecision(answer)
-  if ((await answerAsk(askId, answer)) && decision)
-    trackApprovalResolved(askId, decision, decidedAt, shownAt)
+  if (
+    await answerAsk(askId, answer, () =>
+      trackRunApprovalAnswerFailure(askId, turnId, isRunApproval)
+    )
+  ) {
+    if (decision)
+      trackApprovalResolved(askId, decision, decidedAt, shownAt, turnId)
+    return
+  }
+}
+
+function trackRunApprovalAnswerFailure(
+  askId: string,
+  turnId: string | undefined,
+  isRunApproval = true
+): void {
+  if (!isRunApproval) return
+  useTelemetry()?.trackAgentRunApprovalAnswerFailed({
+    ask_id: askId,
+    turn_id: turnId ?? null
+  })
 }
 
 function runApprovalDecision(
@@ -1985,8 +2046,11 @@ useAutoModeRunApprovals({
       (askId) => conversationStore.askKind(askId) === 'runApproval'
     ),
   approve: (askId) => {
+    const turnId = conversationStore.approvalTurnId(askId)
     conversationStore.forgetApprovalTiming(askId)
-    void answerAsk(askId, { selected: ['run'] })
+    void answerAsk(askId, { selected: ['run'] }, () =>
+      trackRunApprovalAnswerFailure(askId, turnId)
+    )
   }
 })
 
@@ -2686,7 +2750,7 @@ const { submit: submitDraft, withdrawSubmission } = useAgentDraftSubmission({
     staged: selectionTags,
     workflow: () => nodeReferenceWorkflow,
     consume: consumeSelection,
-    replace: replaceSelectionTags,
+    replace: (nodes) => withoutPickTelemetry(() => replaceSelectionTags(nodes)),
     exit: canvasStore.stopNodePicking
   },
   send: (
@@ -2963,6 +3027,7 @@ function onDeleteHistory(id: string): void {
     id === history.activeId ||
     (history.activeId === null && id === threadId.value)
   history.remove(id)
+  forgetChat(id)
   openChats.forget(id)
   chatDrafts.discardChatDraft(id)
   // Deleting the open chat also ends it; a dead thread must not stay editable.
@@ -3379,9 +3444,12 @@ function onOpenAssets(): void {
 function onMentionPick(node: SelectedNode): void {
   if (!canReferenceNodes.value) return
   const stagedBefore = selectionTags.value.length
-  addSelectionTag(node)
+  withoutPickTelemetry(() => addSelectionTag(node))
   if (selectionTags.value.length > stagedBefore)
-    useTelemetry()?.trackAgentNodeTagged({ source: 'mention_picker' })
+    useTelemetry()?.trackAgentNodeTagged({
+      source: 'mention_picker',
+      node_count: 1
+    })
 }
 
 function onRemoveSelectionTag(id: string): void {

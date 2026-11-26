@@ -946,7 +946,7 @@ describe(assetService.getWorkspaceLibraryModels, () => {
         )
       )
 
-    const names = await assetService.getWorkspaceLibraryModels('loras')
+    const { names } = await assetService.getWorkspaceLibraryModels('loras')
 
     expect(names).toEqual([
       'my_style_v2.safetensors',
@@ -975,7 +975,7 @@ describe(assetService.getWorkspaceLibraryModels, () => {
 
     await expect(
       assetService.getWorkspaceLibraryModels('loras')
-    ).resolves.toEqual(['kept.safetensors'])
+    ).resolves.toEqual({ names: ['kept.safetensors'], blocked: [] })
   })
 
   it('names a model by its loader path when its file name differs', async () => {
@@ -993,7 +993,7 @@ describe(assetService.getWorkspaceLibraryModels, () => {
 
     await expect(
       assetService.getWorkspaceLibraryModels('loras')
-    ).resolves.toEqual(['my_style_final.safetensors'])
+    ).resolves.toEqual({ names: ['my_style_final.safetensors'], blocked: [] })
   })
 
   it('lists a loader name once when two members added a model under it', async () => {
@@ -1016,10 +1016,56 @@ describe(assetService.getWorkspaceLibraryModels, () => {
 
     await expect(
       assetService.getWorkspaceLibraryModels('loras')
-    ).resolves.toEqual([
-      'my_style_v2.safetensors',
-      'teammate_style.safetensors'
-    ])
+    ).resolves.toEqual({
+      names: ['my_style_v2.safetensors', 'teammate_style.safetensors'],
+      blocked: []
+    })
+  })
+
+  it("lists apart the models the Build's model rules block, each once, and treats a row without the mark as runnable", async () => {
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(
+      buildAssetListResponse([
+        {
+          ...libraryRow(
+            '3f0b6c1e-0000-4000-8000-000000000010',
+            'banned_style.safetensors'
+          ),
+          blocked_by_model_policy: true
+        },
+        {
+          ...libraryRow(
+            '3f0b6c1e-0000-4000-8000-000000000011',
+            'banned_style.safetensors'
+          ),
+          blocked_by_model_policy: true
+        },
+        {
+          ...libraryRow(
+            '3f0b6c1e-0000-4000-8000-000000000012',
+            '../banned_escape.safetensors'
+          ),
+          blocked_by_model_policy: true
+        },
+        {
+          ...libraryRow(
+            '3f0b6c1e-0000-4000-8000-000000000013',
+            'allowed_style.safetensors'
+          ),
+          blocked_by_model_policy: false
+        },
+        libraryRow(
+          '3f0b6c1e-0000-4000-8000-000000000014',
+          'unmarked_style.safetensors'
+        )
+      ])
+    )
+
+    await expect(
+      assetService.getWorkspaceLibraryModels('loras')
+    ).resolves.toEqual({
+      names: ['allowed_style.safetensors', 'unmarked_style.safetensors'],
+      blocked: ['banned_style.safetensors']
+    })
   })
 
   it('fails when the listing fails, so the dropdown can report it', async () => {

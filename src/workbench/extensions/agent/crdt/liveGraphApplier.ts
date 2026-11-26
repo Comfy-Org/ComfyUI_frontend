@@ -461,9 +461,15 @@ function actorKind(actor: unknown): ActorKind {
   return kind === 'agent' || kind === 'human' ? kind : 'unknown'
 }
 
+const NON_IDENTIFYING_ACTORS: ReadonlySet<string> = new Set([
+  'agent-remote',
+  'agent-collected',
+  'system:client-seed',
+  'system:mint'
+])
+
 function diagnosticActor(actor: string): string {
-  const kind = actorKind(actor)
-  return kind !== 'unknown' && actor.split(':').length === 3 ? kind : actor
+  return NON_IDENTIFYING_ACTORS.has(actor) ? actor : actorKind(actor)
 }
 
 function diagnosticApplyContext(context: RemoteApplyContext) {
@@ -727,7 +733,7 @@ const optionLayouts = new WeakMap<object, OptionLayout>()
 
 function optionLayout(node: LGraphNode): OptionLayout {
   const { nodeData } = node.constructor
-  if (!nodeData) return NO_OPTION_LAYOUT
+  if (!nodeData?.inputs) return NO_OPTION_LAYOUT
   const cached = optionLayouts.get(nodeData)
   if (cached) return cached
 

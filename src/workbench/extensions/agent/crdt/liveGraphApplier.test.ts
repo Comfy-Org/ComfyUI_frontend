@@ -684,6 +684,49 @@ describe('LiveGraphApplier', () => {
     expect(reportError).not.toHaveBeenCalled()
   })
 
+  it('applies widgets on a node whose definition has no inputs', () => {
+    TestPlainWidgets.nodeData = fromPartial<
+      NonNullable<LGraphNode['constructor']['nodeData']>
+    >({ name: 'TestPlainWidgets' })
+    onTestFinished(() => {
+      TestPlainWidgets.nodeData = undefined
+    })
+    const { graph, doc, applyCollected, applyEdit } = setup({
+      nodes: [
+        {
+          id: 1,
+          type: 'TestPlainWidgets',
+          pos: [0, 0],
+          size: [210, 100],
+          widgets_values: [11, 20]
+        }
+      ],
+      links: []
+    })
+
+    applyCollected()
+    applyEdit(() => {
+      const widgets = nodesMap(doc).get('1')?.get('widgets')
+      assert(widgets instanceof Y.Map)
+      widgets.set('known', 12)
+      widgets.set('not_on_node', 'auto')
+    })
+
+    expect(
+      graph.getNodeById(toNodeId(1))?.widgets?.map((widget) => widget.value)
+    ).toEqual([12, 20])
+    expect(reportError).not.toHaveBeenCalledWith(
+      expect.any(TypeError),
+      expect.anything()
+    )
+    expect(reportError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: "Node 1 (TestPlainWidgets) has no widget 'not_on_node'"
+      }),
+      expect.objectContaining({ errorType: 'agent_graph_widget_missing' })
+    )
+  })
+
   it('does not report a widget the node definition does not declare (catalog skew)', () => {
     TestPlainWidgets.nodeData = fromPartial<
       NonNullable<LGraphNode['constructor']['nodeData']>
@@ -2496,13 +2539,53 @@ describe('LiveGraphApplier', () => {
       expect.objectContaining({
         errorType: 'agent_graph_apply_failed',
         context: {
-          actor: 'agent:test',
+          actor: 'agent',
           opIds: ['op-1'],
           omittedOpIdCount: 0
         }
       })
     )
   })
+
+  it.for([
+    ['human:private-user:private-tab', 'human'],
+    ['human:private:user:private-tab', 'human'],
+    ['human:private-user', 'human'],
+    ['agent:private-thread:private-turn:extra', 'agent'],
+    ['private-user@example.com', 'unknown'],
+    ['system:private-user', 'unknown'],
+    ['agent-remote', 'agent-remote'],
+    ['agent-collected', 'agent-collected'],
+    ['system:client-seed', 'system:client-seed'],
+    ['system:mint', 'system:mint']
+  ] as const)(
+    'reports only the actor kind of %s when an operation throws',
+    ([actor, kind]) => {
+      const { graph, doc, applyCollected } = setup({
+        nodes: [sourceNode(1)],
+        links: []
+      })
+      applyCollected()
+      const doomed = graph.getNodeById(toNodeId(1))
+      assert.exists(doomed)
+      doomed.onRemoved = () => {
+        throw new Error('extension hook exploded')
+      }
+      doc.transact(() => nodesMap(doc).delete('1'))
+      applyCollected({ actor, opIds: ['op-1'] })
+
+      expect(reportError).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'extension hook exploded' }),
+        expect.objectContaining({
+          errorType: 'agent_graph_apply_failed',
+          context: { actor: kind, opIds: ['op-1'], omittedOpIdCount: 0 }
+        })
+      )
+      expect(JSON.stringify(vi.mocked(reportError).mock.calls)).not.toContain(
+        'private'
+      )
+    }
+  )
 
   it('counts each frame against its own depth when an extension hook re-enters the applier', () => {
     const { graph, doc, applier, applyCollected, applyEdit } = setup({

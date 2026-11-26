@@ -74,7 +74,7 @@
     </DropdownMenuRadioGroup>
   </template>
   <p
-    v-if="deployments.length === 0"
+    v-if="!listsDeployments"
     class="m-0 w-0 min-w-full px-2 py-1.5 text-xs text-pretty text-muted-foreground"
     data-testid="deployment-switcher-empty"
   >
@@ -82,8 +82,9 @@
   </p>
   <MenuSeparator v-else />
   <DeploymentSwitcherDefaultMenu
-    v-if="canSetDefault && (deployments.length > 0 || defaultGone)"
+    v-if="workspaceDefaultOffered && (deployments.length > 0 || defaultGone)"
     :disabled="isSwitching"
+    :clear-only="!onTeamPlan"
     @set-default="emit('setDefault', $event)"
   />
   <DeploymentSwitcherBuildAction
@@ -119,7 +120,7 @@ import { useDeploymentRows } from '@/platform/workspace/composables/useDeploymen
 import { useKeepRowFocus } from '@/platform/workspace/composables/useKeepRowFocus'
 import { switchReloadNote } from '@/platform/workspace/confirmUnsavedWorkBeforeSwitch'
 import type { DeploymentRowAction } from '@/platform/workspace/deploymentStartState'
-import { isInFlight } from '@/platform/workspace/platformFrame/platformFrameBuild'
+import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
 import { usePlatformFrameStore } from '@/platform/workspace/platformFrame/platformFrameStore'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useDeploymentStartStore } from '@/platform/workspace/stores/deploymentStartStore'
@@ -134,8 +135,9 @@ const STOPPED_PICK_ACTIONS = new Set<DeploymentRowAction>([
   'open'
 ])
 
-const { switchingTo } = defineProps<{
+const { switchingTo, onTeamPlan } = defineProps<{
   switchingTo: string | null
+  onTeamPlan: boolean
 }>()
 
 const emit = defineEmits<{
@@ -159,14 +161,12 @@ const {
   followsWorkspace
 } = storeToRefs(useDeploymentPickStore())
 const { currentLabel, changeSinceBootMessage } = useDeploymentLabels()
-const { sections, pickedValue, pickedRow } = useDeploymentRows()
+const { sections, pickedValue, pickedRow, buildingValue, listsDeployments } =
+  useDeploymentRows()
 const startStore = useDeploymentStartStore()
 const sectionLabelId = useId()
 const frames = usePlatformFrameStore()
 const updatesInEditor = computed(() => frames.isAvailable())
-const buildingDeploymentId = computed(() =>
-  isInFlight(frames.build) ? frames.build?.deploymentId : undefined
-)
 useKeepRowFocus(sections)
 
 const listedSections = computed(() =>
@@ -183,8 +183,7 @@ const listedSections = computed(() =>
         muted: row.action !== 'pick' && !isSwitching.value,
         switching: isSwitching.value && switchingTo === row.value,
         building:
-          row.deploymentId !== null &&
-          row.deploymentId === buildingDeploymentId.value,
+          row.deploymentId !== null && row.deploymentId === buildingValue.value,
         disabled: isSwitching.value || (unpickable && editLabel === null),
         unpickable,
         editLabel
@@ -194,7 +193,7 @@ const listedSections = computed(() =>
 )
 
 function updateLabel(row: DeploymentRow): string | null {
-  if (!updatesInEditor.value || row.deploymentId === null) return null
+  if (!updatesInEditor.value || !row.updatable) return null
   return t(
     'platformFrame.updateDeployment',
     { deployment: row.title },
@@ -202,6 +201,13 @@ function updateLabel(row: DeploymentRow): string | null {
   )
 }
 const defaultGone = computed(() => goneDefaultDeploymentId.value !== null)
+const workspaceDefaultOffered = computed(() =>
+  pendingServerFact(
+    'BE-20674',
+    canSetDefault.value &&
+      (onTeamPlan || defaultDeploymentId.value !== null || defaultGone.value)
+  )
+)
 
 const notice = computed(() => {
   if (goneDeployment.value === 'pick') return t('deploymentSwitcher.pickGone')
@@ -216,7 +222,7 @@ const notice = computed(() => {
     )
   }
   if (goneDeployment.value !== 'default') return null
-  return canSetDefault.value
+  return workspaceDefaultOffered.value && onTeamPlan
     ? t('deploymentSwitcher.defaultGoneOwner')
     : t('deploymentSwitcher.defaultGone')
 })

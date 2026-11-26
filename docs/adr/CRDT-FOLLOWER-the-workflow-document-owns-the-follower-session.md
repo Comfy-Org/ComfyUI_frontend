@@ -362,6 +362,115 @@ _Stage 1b — the session registry._ Add the document-keyed registry with the
 lease semantics of Decision 1; `AgentPanelRoot.vue` resolves instead of
 constructing; panel mount and unmount stop creating and destroying the seam.
 
+**As landed, Stage 1b moved the lifetime and not the instancing, and the
+difference is worth stating because it is the next reader's first question.**
+`followerSessionRegistry.ts` is the document-keyed holder ledger: it mints the
+session on the first claim, hands the same session to every later claim,
+disposes only when the last holder releases, and never lets a repeat release of
+one handle decrement the holder count twice. A repeat release still trips the
+assertion diagnostic. The seam now runs in a
+detached scope the registry owns (`useAgentCrdtFollower.ts`), so a panel
+unmount releases a claim. The page claims the session on behalf of the open
+editor tab bound to the document (`retainAgentFollowerSessionsForPage`) and
+never releases on panel teardown, so the replica, the projection and the op
+sender survive a panel close. Disposal is the product gate being revoked or
+the page session tearing down — `destroyAgentPageSession` releases the follower
+sessions with the transport they follow over, because a session whose
+transport is gone can neither receive an update nor resubscribe.
+
+What is **not** done is one seam instance per document. Today's seam follows a
+document id and deliberately carries workflow A's unsent operations across a
+switch to B; `crossWorkflowPending.test.ts` pins exactly that, including A's
+op reaching the transport tagged for A after B is bound. Instancing per
+document would break that pin and the twenty unit-only scenarios collected on
+FRONT-3582, which is Stage 4's declared cost and not a side effect to take
+here. So a rebind acquires the next document's claim **before** releasing the
+previous one: the holder count never reaches zero, and the ledger's key moves
+without the seam being disposed. Decision 3's "at most one replica per document
+id" therefore still holds, by there being at most one session at a time rather
+than by instancing; a second concurrent document is Stage 4 territory.
+
+A consumer claims the session with **no** document id, because Decision 1 says
+a panel is not one of the document's holders. It still has to claim, or there
+would be no session for it to consume before the page retains one.
+
+**A session's inputs split two ways, and the split is the part a reader has to
+get right.** The transport and the applier dependencies are captured once from
+the consumer that minted the session, because the transport _is_ the owner's
+identity and the applier dependencies read only page-lifetime singletons, so
+neither goes stale when the panel that supplied them remounts. Everything that
+reads consumer-instance state — the active-target flag, the user id, the graph
+accessor, the canvas and lineage lookups and the event handlers — is read from
+the _live_ consumer on every call instead, so a remount installs its own with no
+handoff. That is the whole reason the owner exists: an incomplete handoff is
+indistinguishable from a cold start, which is the defect this stage removes.
+
+Two implementation facts that cost a cycle each, recorded so they are not
+rediscovered. **A freshly mounted panel reads a null binding before its session
+restores one**, so the owner treats a null from a consumer that did not bind as
+silence rather than as an unbind — otherwise a remount drops the subscription
+this stage exists to keep. And **session identity includes the transport**, not
+only the document: the owner is keyed by the doc-frame transport, which is one
+per page in production and is what keeps two independent clients from sharing a
+replica in the tests that model a second tab.
+
+**The page claim watches the gate and the document id separately, and that
+split is load-bearing rather than stylistic.** The two edges want opposite
+scheduling, so one combined watcher cannot serve both. The gate edge must be
+**synchronous** in both directions: a revoked session has to be gone before
+anything can read it, and a same-tick false/true pulse has to leave the page
+holding the fresh session rather than nothing. The document-id edge must be
+**deferred**, because the id is first written from _inside_ the registry's own
+`create()` — so a synchronous claim on that write re-enters `acquire()` before
+it has installed the entry, the inner call sees no session and mints a second
+detached replica for the same document, and the outer call then overwrites it.
+The orphan keeps a `doc_subscribe` and a transport tap that nothing can ever
+release, which is Decision 3's one-replica-per-document rule broken by the very
+mechanism meant to enforce it. The holder-count `assert` in the create path
+cannot see that, because the count genuinely is zero at the moment of re-entry,
+so the registry **refuses a claim raised from inside the minting call**, and the
+refusal is a returned value: `acquire` is `FollowerSessionLease<T> | null`, and
+null means no claim was taken. The refusal cannot be an `assert` alone, for the
+reason this ADR already gives about repeat release — `src/base/assert.ts` throws
+in DEV and otherwise only reports, so a production re-entry would report and
+then carry straight on into `create()`. With a factory that acquires again on
+every construction, that can continue until the call stack is exhausted. A
+factory that re-enters only once instead creates one extra replica. These
+counterexamples use production-mode environment stubs in Vitest, rather than a
+production-bundle execution.
+Returning the refusal rather than throwing it is `docs/guidance/error-handling.md`
+§1, and it is also the better outcome: the refused caller takes no claim and
+mutates nothing, so the page ends a re-entrant pass holding the claim it already
+had while the outer claim still installs exactly one replica. The caller's
+scheduling is what avoids the arrangement; the refusal is what stops a future
+caller losing replicas silently when it does not, and the DEV-only throw cannot
+be read as covering it. Deferring is safe
+because nothing inside the registry writes the product gate, so the
+synchronous half can never fire during construction. The two halves are
+`trackGateEdgeSynchronously` and `trackDocumentEdgeAfterSessionCreationReturns`
+in `useAgentCrdtFollower.ts`; collapsing them back into one watcher is the
+obvious cleanup and it reintroduces the defect, which
+`followerSessionLifetime.test.ts` pins in both directions.
+
+**The acceptance evidence is the state vector, not the subscribe count.**
+Reopening the panel still resubscribes, because the panel's target goes
+inactive and active again, which is an ordinary resubscribe on every other
+disturbance too. What distinguishes a surviving replica is what the subscribe
+carries: `browser_tests/tests/agent/agentPanelCloseKeepsConnection.spec.ts`
+asserts the second `doc_subscribe` carries a different state vector from the
+first, and with the page claim removed it carries the empty-document vector
+`AA==` — the cold seed whose merge cannot express cost A's deletion. A test
+that counted subscribes would pass either way.
+
+FRONT-3582's first falsifiable check names `useAgentCrdtFollower(` in
+`AgentPanelRoot.vue` because, before this stage, calling the composable was
+constructing the seam. It is now a non-owning consumer facade, so the
+enforceable statement of the same invariant is the `session-owns-follower-lifetime`
+rule in `scripts/check-follower-invariants.ts`: `new LayoutFollowerBridge(`,
+`new AgentCrdtProjection(` and `startAgentCrdtFollower(` only inside the
+session owner, and `new FollowerDoc(` only inside the bridge that replaces its
+own replica on a lineage break.
+
 **"Change no behaviour" means no change to how a frame is applied** — the
 applier, the projection and the recovery rules are untouched. It does not mean
 no observable change: the whole point of the stage is that a panel close stops
@@ -391,7 +500,10 @@ _Invariants at risk:_ the replica is replaced only on a lineage break, and a
 reconnect recovers by state-vector delta rather than a wipe; one replica per
 document id.
 _Guards:_ an `assert` in the registry's create path naming the one-replica-per-
-document rule and linking this ADR; a release-idempotency guard — each lease
+document rule and linking this ADR; a returned refusal — null from `acquire` —
+for a claim raised from inside the minting call, which has to be real control
+flow rather than an assertion for the same reason the repeat release below
+cannot rely on one; a release-idempotency guard — each lease
 handle tracks whether it has already released, and a second release of the
 _same_ handle is a no-op, since a holder-count floor of
 zero cannot catch it: with two distinct holders A and B outstanding (count 2),

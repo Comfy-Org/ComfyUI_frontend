@@ -18,6 +18,7 @@ import { escapeRegExp } from 'es-toolkit'
 import { z } from 'zod'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import { TURN_RECOVERY_DELAYS_MS } from '@/workbench/extensions/agent/services/agent/turnRecoverySchedule'
 import type {
   AgentWsEvent,
@@ -563,6 +564,7 @@ export class AgentTurnLockHarness {
   public readonly workingRow: Locator
   public readonly liveProgressRow: Locator
   public readonly userBubbles: Locator
+  public readonly promptQueue: Locator
   public readonly turnInProgressNotice: Locator
   public readonly agentPanel: AgentPanel
   private readonly entryButton: Locator
@@ -622,6 +624,7 @@ export class AgentTurnLockHarness {
       .filter({ visible: true })
       .first()
     this.userBubbles = this.panel.getByTestId('user-message-bubble')
+    this.promptQueue = this.panel.getByTestId('agent-prompt-queue')
     this.turnInProgressNotice = this.panel.getByText(
       enMessages.agent.sendTurnInProgress,
       { exact: true }
@@ -849,13 +852,24 @@ export class AgentTurnLockHarness {
 export const agentTurnLockTest = mergeTests(
   agentTest,
   webSocketFixture
-).extend<{ turnLock: AgentTurnLockHarness }>({
+).extend<{
+  turnLockFeatures: Partial<RemoteConfig> | undefined
+  turnLock: AgentTurnLockHarness
+}>({
+  turnLockFeatures: [undefined, { option: true }],
   turnLock: async (
-    { page, agentFlagEnabled, getAgentSocket, nextAgentSocket },
+    {
+      page,
+      agentFlagEnabled,
+      turnLockFeatures,
+      getAgentSocket,
+      nextAgentSocket
+    },
     use
   ) => {
     const server = new TurnLockServer()
     await bootAgentApp(page, agentFlagEnabled, {
+      features: turnLockFeatures,
       beforeNavigate: (targetPage) => routeTurnLock(targetPage, server)
     })
     await mockSavedWorkflowPersistence(page, WORKFLOW_ID)
