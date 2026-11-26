@@ -27,7 +27,9 @@ branch (port 6006), and `pnpm exec storybook dev -p 6007 --ci` in the
 worktree. When the component has no story, add one in the PR, following
 `.claude/skills/writing-storybook-stories/SKILL.md`, since it also serves
 later reviews. When the story is new in this PR, copy it into the worktree
-for the before capture. When the state only exists inside the running app, such as a
+for the before capture. When the component itself is new, there is no
+before side: show its states in an after-only table and say so in the
+block, such as "New component; no before." When the state only exists inside the running app, such as a
 canvas interaction, use the dev server on both sides with the same workflow
 file instead.
 

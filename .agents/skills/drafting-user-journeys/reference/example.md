@@ -53,7 +53,9 @@ describe 'Connections beside gap handles'
         press Shift+ArrowRight on spinbutton 'Gap between nodes'
         assert aria-valuenow is 10
       test.step 'Drag the handle and press Escape before releasing'
-        comfyMouse drag the handle; press Escape; drop
+        comfyMouse drag the handle
+        assert aria-valuenow is no longer 10
+        press Escape; drop
         assert aria-valuenow is 10 again
       test.step 'Widen one more step and connect the output to the input'
         press Shift+ArrowRight

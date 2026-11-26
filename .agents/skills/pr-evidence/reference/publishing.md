@@ -91,20 +91,22 @@ the PATCH is overwritten.
 
 ```sh
 gh api repos/<owner>/<repo>/pulls/<n> --jq .body > /tmp/posted.md
-rg -o '<details>' /tmp/posted.md | wc -l; rg -o '!\[' /tmp/posted.md | wc -l; rg -o 'https://[^) "]+' /tmp/posted.md | sort -u
+rg -o '<details>' /tmp/posted.md | wc -l; rg -o '!\[' /tmp/posted.md | wc -l; rg -o 'https://[^) "]+' /tmp/posted.md | sort | uniq -c
 ```
 
 Done means:
 
-- The `<details>`, image, and link counts match the draft.
+- The `<details>`, image, and per-URL link counts match the draft.
 - Every `user-attachments` URL sits inside a `<details>` block, and no
   local `./` path is left.
 - Every media URL returns HTTP 200. Private-repo attachments return 404
   without auth, so check them with
   `curl -sL -o /dev/null -w '%{http_code}' -H "Authorization: token $(gh auth token)" <url>`.
-- The marker names the SHAs you captured against, and each side was captured
-  from a clean checkout at that SHA (`git status --short` empty apart from
-  a copied story in the before worktree).
+- The marker names the SHAs the evidence is valid at: each block was
+  captured there, or the stale check below confirmed none of its files
+  changed since its capture. Every capture comes from a clean checkout at
+  the SHA it was taken at (`git status --short` empty apart from a copied
+  story in the before worktree).
 
 ## Stale evidence
 
