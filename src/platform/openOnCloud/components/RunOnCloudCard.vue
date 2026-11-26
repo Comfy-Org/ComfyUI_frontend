@@ -11,7 +11,7 @@
     <template #actions>
       <label
         v-if="needsConsent && !checking"
-        class="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground"
+        class="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground @xl:mr-4"
       >
         <Checkbox
           v-model="dontAskAgain"
