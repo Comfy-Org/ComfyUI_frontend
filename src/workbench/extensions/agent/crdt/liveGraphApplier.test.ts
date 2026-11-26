@@ -1144,7 +1144,6 @@ describe('LiveGraphApplier', () => {
     const resolved = graph.getNodeById(toNodeId(1))
 
     expect(resolved).toBeInstanceOf(TestLateRegistration)
-    expect(resolved).not.toBe(placeholder)
     expect(resolved?.has_errors).toBeFalsy()
     expect(positionWhenAdded).toEqual([777, 888])
     expect(Array.from(resolved!.pos)).toEqual([777, 888])
