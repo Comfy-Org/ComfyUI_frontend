@@ -6,7 +6,10 @@ import { assert, describe, expect, it, test, vi } from 'vitest'
 import { t } from '@/i18n'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import {
+  createTestRootGraph,
+  createTestSubgraph
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { ComfyNode } from '@comfyorg/graph-model/workflowSchema'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
@@ -876,7 +879,7 @@ describe('GroupNodeHandler.convertToNodes', () => {
     })
   })
 
-  it('refuses to unpack a single-member group whose subgraph type is absent from the receiving graph, leaving the group untouched', () => {
+  it('refuses to unpack a group whose later member has a subgraph type absent from the receiving graph, leaving the group and its valid prefix untouched', () => {
     const definitionGraph = new LGraph()
     const definition = createTestSubgraph({
       id: crypto.randomUUID()
@@ -884,19 +887,54 @@ describe('GroupNodeHandler.convertToNodes', () => {
     const ownedSubgraph = definitionGraph.createSubgraph(definition)
     useSubgraphService().registerNewSubgraph(ownedSubgraph, definition)
 
+    const validType = `Valid${crypto.randomUUID()}`
+    class ValidMember extends LGraphNode {}
+    LiteGraph.registerNodeType(validType, ValidMember)
+
     const receivingGraph = new LGraph()
-    const outerNode = new LGraphNode('Single member group')
+    const outerNode = new LGraphNode('Multi member group')
     outerNode.pos = [0, 0]
     receivingGraph.add(outerNode)
 
-    const groupData = new GroupNodeConfig('singleMember', {
-      nodes: [{ type: definition.id }],
+    const groupData = new GroupNodeConfig('multiMember', {
+      nodes: [{ type: validType }, { type: definition.id }],
       links: []
     })
     const handler = new GroupNodeHandler(outerNode, groupData)
 
     expect(() => handler.convertToNodes()).toThrow(GroupNodeUnpackRefusedError)
     expect(receivingGraph.nodes).toEqual([outerNode])
+  })
+
+  it('does not refuse a member registered under an alias of a type the receiving graph owns', () => {
+    const receivingGraph = createTestRootGraph()
+    const definition = createTestSubgraph({
+      id: crypto.randomUUID()
+    }).asSerialisable()
+    const ownedSubgraph = receivingGraph.createSubgraph(definition)
+    useSubgraphService().registerNewSubgraph(ownedSubgraph, definition)
+
+    const Registered = LiteGraph.registered_node_types[definition.id]
+    assert.exists(Registered)
+    class AliasOfRegistered extends Registered {}
+    const aliasType = `Alias${crypto.randomUUID()}`
+    LiteGraph.registerNodeType(aliasType, AliasOfRegistered)
+
+    const outerNode = new LGraphNode('Aliased member group')
+    outerNode.pos = [0, 0]
+    receivingGraph.add(outerNode)
+
+    const groupData = new GroupNodeConfig('aliasedMember', {
+      nodes: [{ type: aliasType }],
+      links: []
+    })
+    const handler = new GroupNodeHandler(outerNode, groupData)
+
+    try {
+      handler.convertToNodes()
+    } catch (error) {
+      expect(error).not.toBeInstanceOf(GroupNodeUnpackRefusedError)
+    }
   })
 })
 
@@ -906,57 +944,43 @@ describe('convertLoadedGroupNodes via groupNodeExtension.afterConfigureGraph', (
     const convertToNodes = vi.fn(() => {
       throw refusalError
     })
-    const isGroupNode = vi
-      .spyOn(GroupNodeHandler, 'isGroupNode')
-      .mockReturnValue(true)
-    const getHandler = vi
-      .spyOn(GroupNodeHandler, 'getHandler')
-      .mockReturnValue(fromPartial({ convertToNodes }))
+    vi.spyOn(GroupNodeHandler, 'isGroupNode').mockReturnValue(true)
+    vi.spyOn(GroupNodeHandler, 'getHandler').mockReturnValue(
+      fromPartial({ convertToNodes })
+    )
 
     const graph = new LGraph()
     const groupNode = new LGraphNode('Refused group')
     graph.add(groupNode)
     const removeSpy = vi.spyOn(graph, 'remove')
 
-    try {
-      await groupNodeExtension.afterConfigureGraph?.([], fromPartial({}), {
-        graph,
-        workflow: null
-      })
+    await groupNodeExtension.afterConfigureGraph?.([], fromPartial({}), {
+      graph,
+      workflow: null
+    })
 
-      expect(removeSpy).not.toHaveBeenCalled()
-      expect(graph.nodes).toEqual([groupNode])
-    } finally {
-      isGroupNode.mockRestore()
-      getHandler.mockRestore()
-    }
+    expect(removeSpy).not.toHaveBeenCalled()
+    expect(graph.nodes).toEqual([groupNode])
   })
 
   it('removes a group node when conversion fails for a reason other than refusal', async () => {
     const convertToNodes = vi.fn(() => {
       throw new Error('unrelated failure')
     })
-    const isGroupNode = vi
-      .spyOn(GroupNodeHandler, 'isGroupNode')
-      .mockReturnValue(true)
-    const getHandler = vi
-      .spyOn(GroupNodeHandler, 'getHandler')
-      .mockReturnValue(fromPartial({ convertToNodes }))
+    vi.spyOn(GroupNodeHandler, 'isGroupNode').mockReturnValue(true)
+    vi.spyOn(GroupNodeHandler, 'getHandler').mockReturnValue(
+      fromPartial({ convertToNodes })
+    )
 
     const graph = new LGraph()
     const groupNode = new LGraphNode('Broken group')
     graph.add(groupNode)
 
-    try {
-      await groupNodeExtension.afterConfigureGraph?.([], fromPartial({}), {
-        graph,
-        workflow: null
-      })
+    await groupNodeExtension.afterConfigureGraph?.([], fromPartial({}), {
+      graph,
+      workflow: null
+    })
 
-      expect(graph.nodes).toEqual([])
-    } finally {
-      isGroupNode.mockRestore()
-      getHandler.mockRestore()
-    }
+    expect(graph.nodes).toEqual([])
   })
 })
