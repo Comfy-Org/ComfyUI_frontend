@@ -3,6 +3,7 @@ export type FrameMessage =
   | { type: 'ready'; signedIn: true; userId: string | null }
   | { type: 'token-wanted'; userId: string }
   | { type: 'step-shown'; step: 'models' }
+  | { type: 'content-height'; height: number | null }
   | {
       type: 'build-started'
       kind: 'new' | 'update'
@@ -81,6 +82,13 @@ function readBuildStarted(data: Fields): FrameMessage | null {
   }
 }
 
+function readContentHeight(data: Fields): FrameMessage | null {
+  const height = data.height
+  if (height === null) return { type: 'content-height', height }
+  if (!counts(data, 'height') || Number(height) <= 0) return null
+  return { type: 'content-height', height: Number(height) }
+}
+
 function readBuildProgress(data: Fields): FrameMessage | null {
   if (!strings(data, 'releaseId', 'label') || !counts(data, 'step', 'of'))
     return null
@@ -128,6 +136,8 @@ export function readFrameMessage(data: unknown): FrameMessage | null {
       return data.step === 'models'
         ? { type: 'step-shown', step: 'models' }
         : null
+    case 'content-height':
+      return readContentHeight(data)
     case 'build-started':
       return readBuildStarted(data)
     case 'build-progress':

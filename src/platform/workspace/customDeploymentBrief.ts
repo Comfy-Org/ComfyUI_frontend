@@ -1,5 +1,5 @@
 /** The section of a Build brief that sends an agent to the build recipe. */
-export const BUILD_RECIPE_SECTION = `## Before you start
+const BUILD_RECIPE_SECTION = `## Before you start
 
 Read the build recipe, and follow it:
 
