@@ -182,8 +182,15 @@ function messageTexts(
 describe('useAgentConversationStore', () => {
   // PM-1440: a turn's charge arrives on `agent_message_done` and is absent
   // from the persisted history row, so a hydrate rebuilds the turn without it
-  // and the credits line disappears for the whole conversation.
+  // and the credits line disappears for the whole conversation. The ids are
+  // deliberately distinct here, as the server mints them: a live turn is keyed
+  // by the assistant ROW id the ack carries (`uuid` for `amid`), a hydrated
+  // one by `turn_id` (a second, independent `uuid`).
   describe('reported turn credits', () => {
+    const ROW_A = 'assistant-row-a' as TurnId
+    const ROW_B = 'assistant-row-b' as TurnId
+    const TURN_A = 'server-turn-a' as TurnId
+    const TURN_B = 'server-turn-b' as TurnId
     const doneWithCharge = (id: string, chargeMicroUsd: number) =>
       chat({
         type: 'agent_message_done',
@@ -193,39 +200,66 @@ describe('useAgentConversationStore', () => {
           usage: { charge_micro_usd: chargeMicroUsd }
         }
       })
-    const settledTurn = (turnId: string) => [
-      historyRow(1, 'user', turnId, 'Add a KSampler node.', 'u1'),
-      historyRow(2, 'assistant', turnId, 'Done.', 'a1')
+    const settledTurn = (
+      turnId: string,
+      assistantRowId: string,
+      seq = 1
+    ): AgentMessages => [
+      historyRow(seq, 'user', turnId, 'Add a KSampler node.', `user-${seq}`),
+      historyRow(seq + 1, 'assistant', turnId, 'Done.', assistantRowId)
     ]
 
     it('keeps the served charge when the same thread rehydrates', () => {
       const store = useAgentConversationStore()
       store.setThreadId('th')
-      store.startTurn(T1)
-      store.ingest(doneWithCharge(T1, 6038))
-      const live = store.messages.find((message) => message.id === T1)
+      store.startTurn(ROW_A)
+      store.ingest(doneWithCharge(ROW_A, 6038))
+      const live = store.messages.find((message) => message.id === ROW_A)
       expect(live?.creditsUsed).toBeCloseTo(1.274)
 
-      store.hydrate(settledTurn(T1))
+      store.hydrate(settledTurn(TURN_A, ROW_A))
 
-      const restored = store.messages.find((message) => message.id === T1)
+      const restored = store.messages.find((message) => message.id === TURN_A)
       expect(restored?.creditsUsed).toBeCloseTo(1.274)
     })
 
-    it('leaves a turn that never reported a charge without one', () => {
+    it('restores only the turns whose charge was served', () => {
       const store = useAgentConversationStore()
       store.setThreadId('th')
-      store.startTurn(T1)
-      store.ingest(done(T1))
+      store.startTurn(ROW_A)
+      store.ingest(doneWithCharge(ROW_A, 6038))
+      store.startTurn(ROW_B)
+      store.ingest(done(ROW_B))
 
-      store.hydrate(settledTurn(T1))
+      store.hydrate([
+        ...settledTurn(TURN_A, ROW_A),
+        ...settledTurn(TURN_B, ROW_B, 3)
+      ])
 
       expect(
-        store.messages.find((message) => message.id === T1)?.creditsUsed
-      ).toBeUndefined()
+        store.messages.find((message) => message.id === TURN_A)?.creditsUsed
+      ).toBeCloseTo(1.274)
       expect(
-        store.messages.find((message) => message.id === T2)?.creditsUsed
+        store.messages.find((message) => message.id === TURN_B)?.creditsUsed
       ).toBeUndefined()
+    })
+
+    // The charge must outlive the new chat the user opened on the way back:
+    // that round trip is the reported bug, so `reset()` must not clear it.
+    it('keeps the served charge across a new chat', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(ROW_A)
+      store.ingest(doneWithCharge(ROW_A, 6038))
+
+      store.reset()
+      expect(store.messages).toEqual([])
+      store.setThreadId('th')
+      store.hydrate(settledTurn(TURN_A, ROW_A))
+
+      expect(
+        store.messages.find((message) => message.id === TURN_A)?.creditsUsed
+      ).toBeCloseTo(1.274)
     })
   })
 

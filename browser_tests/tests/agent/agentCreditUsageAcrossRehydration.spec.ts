@@ -17,7 +17,11 @@ test.describe.configure({ timeout: 120_000 })
 test.use({
   workflowSelectionFeatures: {
     'agent-credit-usage-summary': 'treatment'
-  }
+  },
+  // The charge is served against the assistant row id and a hydrated turn is
+  // keyed by `turn_id`. Collapsing those two makes this spec pass against the
+  // very bug it is here for, so it asks for the production shape.
+  serverTurnIds: 'distinct'
 })
 
 test(

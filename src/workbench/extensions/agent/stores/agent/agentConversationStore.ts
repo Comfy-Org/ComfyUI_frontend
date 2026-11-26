@@ -647,11 +647,11 @@ export const useAgentConversationStore = defineStore(
       { shownAt: number; turnId: string }
     >()
     const shownApprovalIds = new Set<string>()
-    // The charge for a turn rides on its `agent_message_done` frame and is not
-    // persisted on the history row, so a rehydrate would otherwise drop it and
-    // blank the credits line for the whole conversation. Turn ids are unique,
-    // so remembering the server's own number for the life of the page is safe
-    // across threads; nothing here derives or estimates a charge.
+    // Charges this page session was served, keyed by the ASSISTANT ROW id the
+    // ack and `agent_message_done` carry -- not by `turn_id`, which is what a
+    // hydrated message is keyed by. `restoreReportedCredits` bridges the two.
+    // Deliberately not cleared by `reset()`: leaving for a new chat and
+    // reopening the thread is the case this exists for.
     const reportedTurnCredits = new Map<TurnId, number>()
     const undeliverableAskReporter = createUndeliverableAskReporter()
     const departedTurns = new Map<string, 'no-live-turn' | 'settled-turn'>()
@@ -2450,13 +2450,27 @@ export const useAgentConversationStore = defineStore(
         void pendingSendsReconciled.trigger(reconciledIds)
     }
 
+    /**
+     * Reapply the charges this page session was served, which `hydrate` cannot
+     * recover from the rows: they are keyed by the assistant row id, while a
+     * hydrated message is keyed by `turn_id`. The assistant rows bridge the
+     * two, so the pairing is read from `history` rather than guessed.
+     */
     function restoreReportedCredits(
+      history: AgentMessages,
       restored: readonly AssistantMessage[]
     ): void {
-      for (const message of restored) {
-        if (message.creditsUsed !== undefined) continue
-        const credits = reportedTurnCredits.get(message.id)
-        if (credits !== undefined) message.creditsUsed = credits
+      if (reportedTurnCredits.size === 0) return
+      const byTurnId = new Map(
+        restored.map((message) => [message.id as string, message])
+      )
+      for (const row of history) {
+        if (row.role !== 'assistant') continue
+        const credits = reportedTurnCredits.get(toTurnId(row.id))
+        if (credits === undefined) continue
+        const message = byTurnId.get(row.turn_id)
+        if (message !== undefined && message.creditsUsed === undefined)
+          message.creditsUsed = credits
       }
     }
 
@@ -2479,7 +2493,7 @@ export const useAgentConversationStore = defineStore(
         (askId) => isAskRetired(askId)
       )
       reapplyRetiredAsks(transcript)
-      restoreReportedCredits(transcript.messages)
+      restoreReportedCredits(history, transcript.messages)
       messages.value = transcript.messages
       resolvedPaywallIds.value = new Set()
       userTexts.value = transcript.userTexts
