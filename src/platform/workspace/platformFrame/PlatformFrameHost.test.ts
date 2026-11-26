@@ -184,9 +184,9 @@ describe('PlatformFrameHost', () => {
     )
     await nextTick()
 
-    expect(
-      screen.getByRole('dialog', { name: 'Custom Build' })
-    ).toHaveClass('max-w-240')
+    expect(screen.getByRole('dialog', { name: 'Custom Build' })).toHaveClass(
+      'max-w-240'
+    )
   })
 
   it('follows a build kept from before the editor reloaded, with the frame hidden', async () => {

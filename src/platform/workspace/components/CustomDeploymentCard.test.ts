@@ -113,9 +113,7 @@ describe('CustomDeploymentCard', () => {
       })
     ).toBeInTheDocument()
     expect(
-      screen.getByText(
-        'Create a Custom Build that runs your custom nodes.'
-      )
+      screen.getByText('Create a Custom Build that runs your custom nodes.')
     ).toBeVisible()
     expect(
       screen.getAllByRole('listitem').map((item) => item.textContent.trim())
