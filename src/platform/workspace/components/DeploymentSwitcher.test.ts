@@ -32,7 +32,6 @@ import {
   DEPLOYMENT_VERSION_WATCH_MS
 } from '@/platform/workspace/api/deploymentListingTimeouts'
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
-import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import type {
   BuildStage,
   FollowedBuild
@@ -91,7 +90,6 @@ vi.mock(
   }
 )
 vi.mock(import('@/services/dialogService'))
-vi.mock(import('@/platform/billing/composables/useBillingContext'))
 vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
 const distribution = vi.hoisted(() => ({ isCloud: true }))
@@ -171,6 +169,7 @@ function workflowWith(...types: string[]): LGraph {
 function renderSwitcher(plugin = i18n) {
   const user = userEvent.setup({ pointerEventsCheck: 0 })
   render(DeploymentSwitcher, {
+    props: { onTeamPlan: plan.onTeamPlan },
     global: { plugins: [plugin] }
   })
   return user
@@ -195,13 +194,10 @@ async function focusWindowEvery(ms: number, times: number) {
   }
 }
 
-const billingPlan = {
-  isTeamPlan: true,
-  tier: null as 'STANDARD' | 'PRO' | 'ENTERPRISE' | null
-}
+const plan = { onTeamPlan: true }
 
-function onPlan(plan: Partial<typeof billingPlan>) {
-  Object.assign(billingPlan, plan)
+function onPlan(onTeamPlan: boolean) {
+  plan.onTeamPlan = onTeamPlan
 }
 
 function asOwner() {
@@ -216,13 +212,7 @@ describe('DeploymentSwitcher', () => {
 
   beforeEach(() => {
     hoisted.rootGraph = undefined
-    onPlan({ isTeamPlan: true, tier: null })
-    const unplannedBilling = useBillingContext()
-    vi.mocked(useBillingContext).mockImplementation(() => ({
-      ...unplannedBilling,
-      isTeamPlan: computed(() => billingPlan.isTeamPlan),
-      tier: computed(() => billingPlan.tier)
-    }))
+    onPlan(true)
     sessionStorage.clear()
     useSettingStore().$patch({
       settingValues: { 'Comfy.DeploymentSwitcher.Seen': true }
@@ -1294,46 +1284,33 @@ describe('DeploymentSwitcher', () => {
     )
   })
 
-  it.for([
-    { plan: 'a Team plan', isTeamPlan: true, tier: null },
-    { plan: 'an Enterprise plan', isTeamPlan: false, tier: 'ENTERPRISE' }
-  ] as const)(
-    'offers an owner on $plan the workspace default',
-    async ({ isTeamPlan, tier }) => {
-      asOwner()
-      onPlan({ isTeamPlan, tier })
-      mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
-      const user = renderSwitcher()
-      await openList(user)
+  it('offers an owner on a Team or Enterprise plan the workspace default', async () => {
+    asOwner()
+    mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+    const user = renderSwitcher()
+    await openList(user)
 
-      expect(
-        screen.getByTestId('deployment-switcher-default')
-      ).toBeInTheDocument()
-    }
-  )
+    expect(
+      screen.getByTestId('deployment-switcher-default')
+    ).toBeInTheDocument()
+  })
 
-  it.for([
-    { plan: 'an individual plan', tier: 'PRO' },
-    { plan: 'a plan that has not loaded', tier: null }
-  ] as const)(
-    'hides the workspace default from an owner on $plan',
-    async ({ tier }) => {
-      asOwner()
-      onPlan({ isTeamPlan: false, tier })
-      mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
-      const user = renderSwitcher()
-      await openList(user)
+  it('hides the workspace default from an owner on an individual plan', async () => {
+    asOwner()
+    onPlan(false)
+    mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+    const user = renderSwitcher()
+    await openList(user)
 
-      expect(screen.queryByTestId('deployment-switcher-default')).toBeNull()
-      expect(
-        screen.getByRole('menuitem', { name: 'Manage builds' })
-      ).toBeInTheDocument()
-    }
-  )
+    expect(screen.queryByTestId('deployment-switcher-default')).toBeNull()
+    expect(
+      screen.getByRole('menuitem', { name: 'Manage builds' })
+    ).toBeInTheDocument()
+  })
 
   it('tells an owner on an individual plan that a deleted default starts members on Comfy Cloud, without pointing at a hidden row', async () => {
     asOwner()
-    onPlan({ isTeamPlan: false, tier: 'STANDARD' })
+    onPlan(false)
     mockWorkspaceApi.listDeployments.mockResolvedValue({
       ...listing,
       gone_default_deployment_id: GONE

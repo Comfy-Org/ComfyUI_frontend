@@ -51,6 +51,7 @@
       </template>
       <DeploymentSwitcherList
         :switching-to
+        :on-team-plan
         @choose="choose"
         @follow="follow"
         @set-default="changeDefault"
@@ -110,6 +111,10 @@ import { usePlatformFrameStore } from '@/platform/workspace/platformFrame/platfo
 import { NEW_DEPLOYMENT_FROM_NODES } from '@/platform/workspace/platformFrame/platformFrameWaysIn'
 import { useDeploymentSwitcherOffered } from '@/platform/workspace/composables/useDeploymentSwitcherOffered'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
+
+const { onTeamPlan = false } = defineProps<{
+  onTeamPlan?: boolean
+}>()
 
 const { t } = useI18n()
 const store = useDeploymentPickStore()

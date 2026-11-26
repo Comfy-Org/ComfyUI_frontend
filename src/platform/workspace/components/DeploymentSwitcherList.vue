@@ -117,7 +117,6 @@ import { useDeploymentLabels } from '@/platform/workspace/composables/useDeploym
 import type { DeploymentRow } from '@/platform/workspace/composables/useDeploymentRows'
 import { useDeploymentRows } from '@/platform/workspace/composables/useDeploymentRows'
 import { useKeepRowFocus } from '@/platform/workspace/composables/useKeepRowFocus'
-import { useWorkspaceDefaultOffered } from '@/platform/workspace/composables/useWorkspaceDefaultOffered'
 import { switchReloadNote } from '@/platform/workspace/confirmUnsavedWorkBeforeSwitch'
 import type { DeploymentRowAction } from '@/platform/workspace/deploymentStartState'
 import { usePlatformFrameStore } from '@/platform/workspace/platformFrame/platformFrameStore'
@@ -134,8 +133,9 @@ const STOPPED_PICK_ACTIONS = new Set<DeploymentRowAction>([
   'open'
 ])
 
-const { switchingTo } = defineProps<{
+const { switchingTo, onTeamPlan } = defineProps<{
   switchingTo: string | null
+  onTeamPlan: boolean
 }>()
 
 const emit = defineEmits<{
@@ -154,6 +154,7 @@ const {
   defaultDeploymentId,
   goneDefaultDeploymentId,
   goneDeployment,
+  canSetDefault,
   isSwitching,
   followsWorkspace
 } = storeToRefs(useDeploymentPickStore())
@@ -161,7 +162,6 @@ const { currentLabel, changeSinceBootMessage } = useDeploymentLabels()
 const { sections, pickedValue, pickedRow, buildingValue, listsDeployments } =
   useDeploymentRows()
 const startStore = useDeploymentStartStore()
-const workspaceDefaultOffered = useWorkspaceDefaultOffered()
 const sectionLabelId = useId()
 const frames = usePlatformFrameStore()
 const updatesInEditor = computed(() => frames.isAvailable())
@@ -199,6 +199,9 @@ function updateLabel(row: DeploymentRow): string | null {
   )
 }
 const defaultGone = computed(() => goneDefaultDeploymentId.value !== null)
+const workspaceDefaultOffered = computed(
+  () => canSetDefault.value && onTeamPlan
+)
 
 const notice = computed(() => {
   if (goneDeployment.value === 'pick') return t('deploymentSwitcher.pickGone')
