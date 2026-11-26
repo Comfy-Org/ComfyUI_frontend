@@ -543,6 +543,21 @@ test.describe('Smart guides', { tag: ['@vue-nodes', '@canvas'] }, () => {
           .toEqual(distributed)
       })
 
+      test('distributing two lanes shows no gap handles', async ({
+        comfyPage
+      }) => {
+        await comfyPage.workflow.loadWorkflow(
+          'smartGuides/three_notes_two_lanes'
+        )
+
+        await arrange(comfyPage, 'Distribute horizontally')
+        await comfyPage.nextFrame()
+
+        await expect(
+          comfyPage.page.getByRole('separator', GAP_HANDLE)
+        ).toHaveCount(0)
+      })
+
       test('distributing with the Tidy bar open replaces its gap handles', async ({
         comfyPage
       }) => {
