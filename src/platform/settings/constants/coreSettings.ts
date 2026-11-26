@@ -300,6 +300,13 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: true
   },
   {
+    id: 'Comfy.Cloud.AskBeforeCompatibilityCheck',
+    category: ['Comfy', 'Comfy Cloud', 'AskBeforeCompatibilityCheck'],
+    name: 'Ask before sending node and model names to check Comfy Cloud compatibility',
+    type: isCloud ? 'hidden' : 'boolean',
+    defaultValue: true
+  },
+  {
     id: 'Comfy.Desktop.CloudNotificationShown',
     name: 'Cloud notification shown',
     type: 'hidden',
