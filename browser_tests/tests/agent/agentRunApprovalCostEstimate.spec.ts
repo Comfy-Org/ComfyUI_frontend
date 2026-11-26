@@ -59,7 +59,7 @@ test.describe(
       })
     })
 
-    test('a graph whose api nodes cannot be priced says so instead of implying free', async ({
+    test('a graph whose api nodes cannot be priced shows no cost line', async ({
       page,
       startAskTurn
     }) => {
@@ -73,9 +73,7 @@ test.describe(
       await expect(
         panel.getByText(enMessages.agent.runApproval.leadBound)
       ).toBeVisible()
-      await expect(panel.getByTestId('run-approval-cost')).toHaveText(
-        enMessages.agent.runApproval.estimateUnavailable
-      )
+      await expect(panel.getByTestId('run-approval-cost')).toHaveCount(0)
     })
 
     test('an OSS-only graph claims no figure, because GPU time is unpriced', async ({

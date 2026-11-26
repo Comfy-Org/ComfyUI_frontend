@@ -44,19 +44,15 @@ const isEstimable = computed(
 )
 const estimateState = useRunCostEstimate(isEstimable)
 
+// Only a priced floor is worth a line; idle, failed, and unpriceable states show nothing.
 const costLine = computed(() => {
   const state = estimateState.value
-  if (state.status === 'idle') return null
-  if (state.status === 'unavailable')
-    return t('agent.runApproval.estimateUnavailable')
-  const read = state.estimate
-  if (read.pricedCount > 0)
-    return t('agent.runApproval.estimateAtLeast', {
-      credits: formatCreditsRangeValue(read.minUsd, read.maxUsd)
-    })
-  if (read.perUnit.length + read.unpriced.length > 0)
-    return t('agent.runApproval.estimateUnavailable')
-  return null
+  if (state.status !== 'available' || state.estimate.pricedCount === 0)
+    return null
+  const { minUsd, maxUsd } = state.estimate
+  return t('agent.runApproval.estimateAtLeast', {
+    credits: formatCreditsRangeValue(minUsd, maxUsd)
+  })
 })
 </script>
 

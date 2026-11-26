@@ -126,7 +126,7 @@ describe('RunApprovalCard cost estimate', () => {
     )
   })
 
-  it('says the estimate is unavailable rather than implying free', async () => {
+  it('shows no cost line when no api node can be priced', async () => {
     renderCard({
       status: 'available',
       estimate: costEstimate({
@@ -140,9 +140,10 @@ describe('RunApprovalCard cost estimate', () => {
       })
     })
 
-    await waitFor(() =>
-      expect(costLine()).toHaveTextContent('not available for this workflow')
-    )
+    expect(
+      screen.getByText('Comfy Agent wants to run this workflow.')
+    ).toBeInTheDocument()
+    expect(costLine()).toBeNull()
   })
 
   it('claims nothing when the workflow has no api nodes', async () => {
@@ -160,12 +161,10 @@ describe('RunApprovalCard cost estimate', () => {
     expect(costLine()).toBeNull()
   })
 
-  it('shows unavailable after estimation fails and keeps Run enabled', async () => {
+  it('shows no cost line after estimation fails and keeps Run enabled', async () => {
     renderCard({ status: 'unavailable' })
 
-    await waitFor(() =>
-      expect(costLine()).toHaveTextContent('not available for this workflow')
-    )
+    expect(costLine()).toBeNull()
     expect(screen.getByRole('button', { name: 'Run' })).toBeEnabled()
   })
 })
