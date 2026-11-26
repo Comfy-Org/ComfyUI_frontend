@@ -17,7 +17,7 @@
         <TreeVirtualizer
           v-slot="{ item }"
           :estimate-size="36"
-          :text-content="(item) => item.value.label ?? ''"
+          :text-content="(item) => item.label ?? ''"
         >
           <TreeExplorerV2Node
             :item="

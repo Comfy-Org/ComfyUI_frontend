@@ -83,7 +83,6 @@ export class AgentNonValueWidgetRig {
 
     const agentPanel = new AgentPanel(page)
     await agentPanel.open()
-    await agentPanel.selectWorkflow()
     await agentPanel.sendMessage('hello')
     hostSocket.send({
       type: 'agent_message_done',
@@ -132,6 +131,26 @@ export class AgentNonValueWidgetRig {
       },
       { nodeId: String(nodeId), name }
     )
+  }
+
+  startRun(jobId: string): void {
+    this.hostSocket.sendExecution({
+      type: 'execution_start',
+      data: { prompt_id: jobId, timestamp: Date.now() }
+    })
+    this.hostSocket.send({
+      type: 'agent_tool_call',
+      data: {
+        thread_id: this.config.threadId,
+        message_id: this.config.messageId,
+        tool_call_id: `call-run-${jobId}`,
+        tool_name: 'run',
+        status: 'success',
+        duration_ms: 40,
+        job_id: jobId,
+        job_workflow_id: this.config.workflowId
+      }
+    })
   }
 
   widgetValue(nodeId: number, name: string): Promise<unknown> {

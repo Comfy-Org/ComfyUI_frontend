@@ -4,14 +4,13 @@ import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 
-import type { ComfyApp } from '@/types/comfy'
 import { useWidgetHistoryStore } from '@/stores/widgetHistoryStore'
 
 import { travelFocusedNodeHistory } from './focusedNodeHistory'
 
 vi.mock(import('@/scripts/appInstance'), () => ({
   useApp: () =>
-    fromPartial<ComfyApp>({
+    fromPartial({
       rootGraph: { id: 'root' },
       canvas: { graph: { id: 'root' } }
     })

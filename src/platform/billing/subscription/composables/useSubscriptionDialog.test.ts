@@ -35,7 +35,7 @@ import { registerRefreshOnReturn } from '@/platform/billing/refreshOnReturn'
 import { onBillingRefresh } from '@/platform/billing/billingRefresh'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import { useFreeTierQuota } from './useFreeTierQuota'
 import { useSubscriptionDialog } from './useSubscriptionDialog'
 
@@ -346,13 +346,16 @@ describe('useSubscriptionDialog', () => {
       'explains a refused run for a served $state plan with $remaining of $allowance free runs left',
       async ({ state, remaining, allowance, body }) => {
         mockSubscriptionState.value = state
-        remoteConfig.value = {
-          free_tier_balance: {
-            allowance,
-            used: allowance - remaining,
-            remaining
-          }
-        }
+        useRemoteConfigStore().acceptConfig(
+          {
+            free_tier_balance: {
+              allowance,
+              used: allowance - remaining,
+              remaining
+            }
+          },
+          false
+        )
         useFreeTierQuota()
         await nextTick()
         const { showPricingTable } = useSubscriptionDialog()

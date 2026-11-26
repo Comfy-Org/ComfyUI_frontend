@@ -51,6 +51,7 @@ export const BILLING_PAYLOAD_FIELD_HANDLING = {
   error_code: 'optional',
   method_kind: 'optional',
   payment_intent_source: 'optional',
+  plan_line: 'optional',
   presentation: 'optional',
   recovery_outcome: 'optional',
   resumed: 'optional',

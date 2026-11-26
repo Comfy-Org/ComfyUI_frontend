@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ExecutedWsMessage } from '@comfyorg/api-client/executionTypes'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { reportError } from '@comfyorg/telemetry/reportError'
@@ -283,6 +284,58 @@ describe('nodeOutputStore setNodeOutputsByExecutionId with merge', () => {
   })
 })
 
+describe('nodeOutputStore preview stash replacement', () => {
+  beforeEach(() => {
+    app.nodeOutputs = {}
+    app.nodePreviewImages = {}
+    Object.assign(useWorkflowStore(), {
+      openWorkflows: [{ path: 'workflows/preview.json' }]
+    })
+  })
+
+  it('preserves previews and their URLs across repeated empty stashes', () => {
+    const revokeObjectURL = vi.spyOn(URL, 'revokeObjectURL')
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 5 })
+    store.setNodePreviewsByNodeId(node.id, ['blob:repeated-empty-stash'])
+
+    store.stashPreviewsForWorkflow('workflows/preview.json')
+    store.stashPreviewsForWorkflow('workflows/preview.json')
+    store.stashPreviewsForWorkflow('workflows/preview.json')
+    store.resetAllOutputsAndPreviews()
+    store.restorePreviewsForWorkflow('workflows/preview.json')
+
+    expect(store.getNodePreviews(node)).toEqual(['blob:repeated-empty-stash'])
+    expect(app.nodePreviewImages['5']).toEqual(['blob:repeated-empty-stash'])
+    expect(revokeObjectURL).not.toHaveBeenCalled()
+
+    store.resetAllOutputsAndPreviews()
+    expect(revokeObjectURL).toHaveBeenCalledExactlyOnceWith(
+      'blob:repeated-empty-stash'
+    )
+  })
+
+  it('releases the previous URLs when replacing a nonempty stash', () => {
+    const revokeObjectURL = vi.spyOn(URL, 'revokeObjectURL')
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 5 })
+    store.setNodePreviewsByNodeId(node.id, ['blob:replaced-stash'])
+    store.stashPreviewsForWorkflow('workflows/preview.json')
+
+    store.setNodePreviewsByNodeId(node.id, ['blob:replacement-stash'])
+    store.stashPreviewsForWorkflow('workflows/preview.json')
+    store.restorePreviewsForWorkflow('workflows/preview.json')
+
+    expect(store.getNodePreviews(node)).toEqual(['blob:replacement-stash'])
+    expect(revokeObjectURL).toHaveBeenCalledExactlyOnceWith(
+      'blob:replaced-stash'
+    )
+
+    store.resetAllOutputsAndPreviews()
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:replacement-stash')
+  })
+})
+
 describe('nodeOutputStore setNodeOutputsByExecutionId with an unresolved execution id', () => {
   beforeEach(() => {
     app.nodeOutputs = {}
@@ -308,6 +361,7 @@ describe('nodeOutputStore setNodeOutputsByExecutionId with an unresolved executi
         surface: 'graph',
         errorType: 'failure_resolving_node_output_execution_id',
         level: 'warning',
+        sentryMode: 'never',
         tags: { executionId },
         context: { filenames: ['contact_sheet_00001_.png'] }
       })
@@ -922,16 +976,14 @@ describe('nodeOutputStore restoreOutputs + execution interaction', () => {
     expect(app.nodeOutputs['4']).toStrictEqual(execOutput)
   })
 
-  it('should overwrite existing output when execution sends new data for same node', () => {
+  it('should replace a restored input preview when execution sends images for the same node', () => {
     const store = useNodeOutputStore()
 
-    // Restore with input preview
     const inputOutput = createMockOutputs([
       { filename: 'uploaded.png', subfolder: '', type: 'input' }
     ])
     store.restoreOutputs({ '3': inputOutput })
 
-    // Execution sends new output for the same node (non-merge)
     const execOutput = createMockOutputs([
       { filename: 'result.png', subfolder: '', type: 'temp' }
     ])
@@ -940,7 +992,6 @@ describe('nodeOutputStore restoreOutputs + execution interaction', () => {
       execOutput
     )
 
-    // On current main (without PR #9123 guard), execution overwrites
     expect(store.nodeOutputs['3']).toStrictEqual(execOutput)
     expect(app.nodeOutputs['3']).toStrictEqual(execOutput)
   })

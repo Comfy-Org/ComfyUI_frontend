@@ -72,7 +72,7 @@ export function answerWorkflowHandoff({
   return stop
 }
 
-function captureOpenWorkflow(): HandedWorkflow | null {
+export function captureOpenWorkflow(): HandedWorkflow | null {
   const open = useWorkflowStore().activeWorkflow
   try {
     open?.changeTracker.prepareForSave()
@@ -110,7 +110,7 @@ export function openPlatformWithWorkflow(
   return true
 }
 
-function asksForItsOwnTab(event: MouseEvent): boolean {
+export function asksForItsOwnTab(event: MouseEvent): boolean {
   return event.metaKey || event.ctrlKey || event.shiftKey || event.altKey
 }
 

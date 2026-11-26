@@ -58,17 +58,38 @@ describe('captureGesture', () => {
     expect(onInterrupt).toHaveBeenCalledOnce()
   })
 
-  it('still tracks the gesture when the pointer cannot be captured', () => {
+  it.for([
+    {
+      name: 'same-realm DOMException',
+      error: new DOMException('No active pointer', 'NotFoundError')
+    },
+    {
+      name: 'foreign-realm error matched by name',
+      error: { name: 'NotFoundError', message: 'gone' }
+    }
+  ])(
+    'still tracks the gesture when the pointer cannot be captured ($name)',
+    ({ error }) => {
+      const element = document.createElement('div')
+      vi.spyOn(element, 'setPointerCapture').mockImplementation(() => {
+        throw error
+      })
+      const onInterrupt = vi.fn()
+
+      const release = captureGesture(element, 1, onInterrupt)
+      loseCapture(element)
+
+      expect(onInterrupt).toHaveBeenCalledOnce()
+      expect(release).not.toThrow()
+    }
+  )
+
+  it('rethrows errors that are not capture failures', () => {
     const element = document.createElement('div')
     vi.spyOn(element, 'setPointerCapture').mockImplementation(() => {
-      throw new DOMException('No active pointer', 'NotFoundError')
+      throw new TypeError('boom')
     })
-    const onInterrupt = vi.fn()
 
-    const release = captureGesture(element, 1, onInterrupt)
-    loseCapture(element)
-
-    expect(onInterrupt).toHaveBeenCalledOnce()
-    expect(release).not.toThrow()
+    expect(() => captureGesture(element, 1, vi.fn())).toThrow(TypeError)
   })
 })

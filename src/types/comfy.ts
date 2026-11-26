@@ -182,6 +182,12 @@ export interface ComfyApp {
     workflow?: string | null | ComfyWorkflow,
     options?: LoadGraphDataOptions
   ): Promise<LoadedComfyWorkflow | boolean | undefined>
+  /** Create a root graph wired with the app's per-graph lifecycle hooks. */
+  createRootGraph(): LGraph
+  /** Make `graph` the root graph shown on the canvas. */
+  activateRootGraph(graph: LGraph): void
+  /** Run `operation` after every earlier graph load or root graph switch has settled. */
+  enqueueGraphLoad<T>(operation: () => Promise<T>): Promise<T>
   refreshMissingModels(options?: {
     silent?: boolean
     reloadDefs?: boolean
@@ -216,14 +222,14 @@ export interface ComfyApp {
   isApiJson(data: unknown): data is ComfyApiWorkflow
   loadApiJson(
     apiData: ComfyApiWorkflow,
-    fileName: string,
+    fileName?: string,
     options?: { deferWarnings?: boolean }
   ): Promise<void | false>
   registerExtension(extension: ComfyExtension): void
   collectCanvasMenuItems(canvas: LGraphCanvas): IContextMenuValue[]
   collectNodeMenuItems(node: LGraphNode): IContextMenuValue[]
   reloadNodeDefs(defs?: Record<string, ComfyNodeDef>): Promise<boolean>
-  refreshComboInNodes(): Promise<void>
+  refreshComboInNodes(): Promise<boolean>
   clean(): void
   clientPosToCanvasPos(pos: Vector2): Vector2
   canvasPosToClientPos(pos: Vector2): Vector2
@@ -296,6 +302,12 @@ export interface ActionBarButton {
    * Click handler for the button
    */
   onClick: () => void
+}
+
+/** The graph a configure hook runs for and the workflow that owns it, if any. */
+export interface GraphConfigureContext {
+  graph: LGraph
+  workflow: ComfyWorkflow | null
 }
 
 export interface ComfyExtension {
@@ -438,21 +450,25 @@ export interface ComfyExtension {
    * @param graphData The graph data
    * @param missingNodeTypes The missing node types
    * @param app The app instance
+   * @param context The graph being configured, which may not be `app.rootGraph`
    */
   beforeConfigureGraph?(
     graphData: ComfyWorkflowJSON,
     missingNodeTypes: MissingNodeType[],
-    app: ComfyApp
+    app: ComfyApp,
+    context: GraphConfigureContext
   ): Promise<void> | void
 
   /**
    * Allows the extension to run code after the graph is configured.
    * @param missingNodeTypes The missing node types
    * @param app The app instance
+   * @param context The graph that was configured, which may not be `app.rootGraph`
    */
   afterConfigureGraph?(
     missingNodeTypes: MissingNodeType[],
-    app: ComfyApp
+    app: ComfyApp,
+    context: GraphConfigureContext
   ): Promise<void> | void
 
   /**

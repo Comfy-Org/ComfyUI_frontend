@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-vi.mock(import('@/platform/assets/composables/media/assetMappers'))
+vi.mock(import('@/platform/assets/adapters/outputAssetMappers'), { spy: true })
 vi.mock(import('@/services/hdrViewerService'))
 
 import { useResultGallery } from '@/composables/queue/useResultGallery'

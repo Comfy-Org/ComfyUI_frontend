@@ -4,26 +4,23 @@ import * as fc from 'fast-check'
 import { describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type { AssetItem } from '@comfyorg/assets-core/schema'
 
-vi.mock(import('@/platform/assets/utils/outputAssetUtil'))
+vi.mock(import('@/platform/assets/adapters/outputAssetResolver'))
 
-vi.mock<unknown>(
-  import('@/platform/assets/schemas/assetMetadataSchema'),
-  () => ({
-    getOutputAssetMetadata: (metadata: Record<string, unknown> | undefined) => {
-      if (
-        metadata &&
-        typeof metadata.jobId === 'string' &&
-        (typeof metadata.nodeId === 'string' ||
-          typeof metadata.nodeId === 'number')
-      ) {
-        return metadata
-      }
-      return null
+vi.mock<unknown>(import('@/platform/assets/types/outputAssetMetadata'), () => ({
+  getOutputAssetMetadata: (metadata: Record<string, unknown> | undefined) => {
+    if (
+      metadata &&
+      typeof metadata.jobId === 'string' &&
+      (typeof metadata.nodeId === 'string' ||
+        typeof metadata.nodeId === 'number')
+    ) {
+      return metadata
     }
-  })
-)
+    return null
+  }
+}))
 
 import { useOutputStacks } from './useOutputStacks'
 

@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
 
-import { DialogPortal } from 'reka-ui'
+import { DialogPortal, ToolbarButton, ToolbarRoot } from 'reka-ui'
 
 import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
 import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
@@ -61,6 +61,99 @@ describe('Tooltip', () => {
 
     expect(await screen.findByRole('tooltip')).toHaveTextContent('Helpful text')
   })
+
+  it('still describes keyboard focus after a hover hint was cancelled', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    render(TooltipHarness, { props: { delayDuration: 2500 } })
+    const trigger = screen.getByRole('button', { name: 'Trigger' })
+
+    await user.hover(trigger)
+    await fireEvent.wheel(trigger)
+    await user.tab()
+
+    expect(trigger).toHaveAccessibleDescription('Helpful text')
+  })
+
+  it('describes arrow-key focus after a wheel-cancelled hover', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    render({
+      components: {
+        ToolbarRoot,
+        ToolbarButton,
+        Tooltip,
+        TooltipContent,
+        TooltipProvider,
+        TooltipTrigger
+      },
+      template: `
+        <TooltipProvider :delay-duration="2500">
+          <ToolbarRoot>
+            <ToolbarButton>Previous</ToolbarButton>
+            <Tooltip>
+              <TooltipTrigger as-child>
+                <ToolbarButton>Trigger</ToolbarButton>
+              </TooltipTrigger>
+              <TooltipContent>Helpful text</TooltipContent>
+            </Tooltip>
+          </ToolbarRoot>
+        </TooltipProvider>
+      `
+    })
+    const trigger = screen.getByRole('button', { name: 'Trigger' })
+
+    await user.tab()
+    await user.hover(trigger)
+    await fireEvent.wheel(trigger)
+    await user.keyboard('{ArrowRight}')
+
+    expect(trigger).toHaveFocus()
+    expect(trigger).toHaveAccessibleDescription('Helpful text')
+  })
+
+  it.for([
+    { skipDelayDuration: 0, earlyHint: null },
+    { skipDelayDuration: 1000, earlyHint: 'Second hint' }
+  ])(
+    'respects a skip-delay window of $skipDelayDuration ms',
+    async ({ skipDelayDuration, earlyHint }) => {
+      vi.useFakeTimers({ shouldAdvanceTime: false })
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+      render({
+        components: {
+          Tooltip,
+          TooltipContent,
+          TooltipProvider,
+          TooltipTrigger
+        },
+        setup: () => ({ skipDelayDuration }),
+        template: `
+        <TooltipProvider :skip-delay-duration>
+          <Tooltip>
+            <TooltipTrigger>First</TooltipTrigger>
+            <TooltipContent>First hint</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger>Second</TooltipTrigger>
+            <TooltipContent>Second hint</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      `
+      })
+
+      await user.hover(screen.getByRole('button', { name: 'First' }))
+      await vi.advanceTimersByTimeAsync(1499)
+      expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+      await vi.advanceTimersByTimeAsync(1)
+      expect(screen.getByRole('tooltip')).toHaveTextContent('First hint')
+
+      await user.hover(screen.getByRole('button', { name: 'Second' }))
+      expect(screen.queryByRole('tooltip')?.textContent ?? null).toBe(earlyHint)
+      await vi.advanceTimersByTimeAsync(1499)
+      expect(screen.queryByRole('tooltip')?.textContent ?? null).toBe(earlyHint)
+      await vi.advanceTimersByTimeAsync(1)
+      expect(screen.getByRole('tooltip')).toHaveTextContent('Second hint')
+    }
+  )
 
   it('opens on hover when the trigger content stops pointer moves', async () => {
     const user = userEvent.setup()
@@ -147,6 +240,99 @@ describe('Tooltip', () => {
 
     expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
   })
+
+  it('does not reopen while interacting with a widget that stops pointer events', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    render({
+      components: { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger },
+      template: `
+        <TooltipProvider :delay-duration="2500">
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <div><input aria-label="Widget value" @pointerdown.stop @pointermove.stop /></div>
+            </TooltipTrigger>
+            <TooltipContent>Widget hint</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      `
+    })
+    const widget = screen.getByRole('textbox', { name: 'Widget value' })
+
+    await user.hover(widget)
+    await vi.advanceTimersByTimeAsync(2000)
+    await user.pointer({ keys: '[MouseLeft>]', target: widget })
+    await vi.advanceTimersByTimeAsync(3000)
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+
+    await user.pointer({ keys: '[/MouseLeft]', target: widget })
+    await user.type(widget, '42')
+    await vi.advanceTimersByTimeAsync(3000)
+    expect(widget).toHaveValue('42')
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+  })
+
+  it('requires a fresh hover after dragging across a tooltip', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: false })
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    render(TooltipHarness, { props: { delayDuration: 2500 } })
+    const trigger = screen.getByRole('button', { name: 'Trigger' })
+
+    await user.pointer([
+      {
+        keys: '[MouseLeft>]',
+        target: screen.getByRole('button', { name: 'Open dialog' })
+      },
+      { target: trigger },
+      { keys: '[/MouseLeft]', target: trigger }
+    ])
+    await vi.advanceTimersByTimeAsync(3000)
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+
+    await user.unhover(trigger)
+    await user.hover(trigger)
+    await vi.advanceTimersByTimeAsync(2499)
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+    await vi.advanceTimersByTimeAsync(1)
+    expect(screen.getByRole('tooltip')).toHaveTextContent('Helpful text')
+  })
+
+  it('opens only after a stationary touch long press and closes on release', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: false })
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    render(TooltipHarness)
+    const trigger = screen.getByRole('button', { name: 'Trigger' })
+
+    await user.pointer({ keys: '[TouchA>]', target: trigger })
+    await vi.advanceTimersByTimeAsync(1499)
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+    await vi.advanceTimersByTimeAsync(1)
+    expect(screen.getByRole('tooltip')).toHaveTextContent('Helpful text')
+
+    await user.pointer({ keys: '[/TouchA]', target: trigger })
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+  })
+
+  it.for(['pointermove', 'pointercancel'] as const)(
+    'cancels a touch long press on %s',
+    async (event) => {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+      render(TooltipHarness)
+      const trigger = screen.getByRole('button', { name: 'Trigger' })
+
+      await user.pointer({ keys: '[TouchA>]', target: trigger })
+      await fireEvent(
+        trigger,
+        new PointerEvent(event, {
+          bubbles: true,
+          pointerType: 'touch',
+          clientX: 30
+        })
+      )
+      await vi.advanceTimersByTimeAsync(3000)
+
+      expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+    }
+  )
 
   it('keeps the open delay for the next tooltip after an open one unmounts', async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })

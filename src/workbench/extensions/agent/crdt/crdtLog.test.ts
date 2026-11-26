@@ -1,13 +1,16 @@
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { startCrdtLog, wireLog, clearDevEvents, devEvents } from './crdtLog'
 
 describe('crdtLog', () => {
   beforeEach(() => {
     localStorage.clear()
-    remoteConfig.value = { 'Comfy.Agent.CrdtDebug': true }
+    useRemoteConfigStore().acceptConfig(
+      { 'Comfy.Agent.CrdtDebug': true },
+      false
+    )
     useSettingStore().settingValues['Comfy.Agent.CrdtDebug.Level'] = 'info'
     clearDevEvents()
   })
@@ -94,7 +97,10 @@ describe('crdtLog', () => {
   it.for(['warn', 'info', 'debug', 'trace'] as const)(
     'emits no %s events when the feature flag is off',
     (level) => {
-      remoteConfig.value = { 'Comfy.Agent.CrdtDebug': false }
+      useRemoteConfigStore().acceptConfig(
+        { 'Comfy.Agent.CrdtDebug': false },
+        false
+      )
 
       wireLog[level]('doc_update', 'updated')
 

@@ -57,6 +57,28 @@ export const zGetModelsInFolderPath = z.object({
  */
 export const zGetModelsInFolderResponse = z.array(zModelFile)
 
+/**
+ * Success
+ */
+export const zGetFeaturesResponse = z.object({
+  agent: z
+    .object({
+      reason: z.string().optional(),
+      state: z.enum(['starting', 'ready', 'failed'])
+    })
+    .optional(),
+  deploy_to_cloud: z.boolean().optional(),
+  free_tier_balance: z
+    .object({
+      allowance: z.int(),
+      remaining: z.int(),
+      used: z.int()
+    })
+    .optional(),
+  max_upload_size: z.int().optional(),
+  supports_preview_metadata: z.boolean().optional()
+})
+
 export const zExecutePromptBody = zPromptRequest
 
 /**

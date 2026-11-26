@@ -186,6 +186,7 @@ describe('agent CRDT outbound leg: link mint by live position vs. doc order', ()
     const port = attachDocOpMinter({
       isEnabled: () => true,
       isDocBound: () => true,
+      isBoundWorkflow: () => true,
       enqueue: (operations) => minted.push(...operations),
       getGraph: () => rootGraph,
       boundRootGraphId: () => ROOT_GRAPH_ID,

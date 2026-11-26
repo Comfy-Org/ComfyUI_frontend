@@ -7,8 +7,8 @@ import type {
 } from '@comfyorg/ingest-types'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
-import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
+import type { MediaKind } from '@comfyorg/assets-core/media'
+import { MIME_ASSET_INFO } from '@/platform/assets/constants/assetDrag'
 
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
@@ -20,11 +20,6 @@ interface DroppedLibraryAsset {
   displayName: string
   ref: string
   kind: MediaKind
-}
-
-interface WorkflowSelectionControls {
-  savedPaths: string[]
-  finishSave: (success: boolean) => void
 }
 
 export async function dropLibraryAsset(
@@ -105,10 +100,7 @@ export async function serveHistory(
   })
 }
 
-export async function openAgentPanel(
-  page: Page,
-  workflowSelection: WorkflowSelectionControls
-): Promise<Locator> {
+export async function openAgentPanel(page: Page): Promise<Locator> {
   await page
     .getByRole('button', {
       name: enMessages.sideToolbar.newBlankWorkflow,
@@ -117,12 +109,6 @@ export async function openAgentPanel(
     .click()
   const agentPanel = new AgentPanel(page)
   const panel = await agentPanel.open()
-  await agentPanel.workflowPicker.click()
-  await page
-    .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
-    .click()
-  await expect.poll(() => workflowSelection.savedPaths.length).toBe(1)
-  workflowSelection.finishSave(true)
   return panel
 }
 

@@ -2,12 +2,18 @@ import type { CompatibilityModel } from '@comfyorg/ingest-types'
 
 import type {
   CloudWorkflowCheckState,
-  CloudWorkflowGaps
+  CloudWorkflowGaps,
+  UncheckedModelInput
 } from '@/platform/openOnCloud/cloudWorkflowCheck'
 
 export type RunOnCloudModalState =
   | { kind: 'checking' }
-  | { kind: 'ready'; asksToSignIn: boolean }
+  | {
+      kind: 'ready'
+      asksToSignIn: boolean
+      workspaceId?: string
+      uncheckedInputs: UncheckedModelInput[]
+    }
   | { kind: 'deploySetup' }
   | { kind: 'missingModels'; models: CompatibilityModel[] }
 
@@ -27,7 +33,12 @@ export function runOnCloudModalState(
   const { verdict } = check
   switch (verdict.kind) {
     case 'canOpen':
-      return { kind: 'ready', asksToSignIn: !signedIn }
+      return {
+        kind: 'ready',
+        asksToSignIn: !signedIn,
+        workspaceId: verdict.workspaceId,
+        uncheckedInputs: verdict.uncheckedInputs ?? []
+      }
     case 'missing':
       return needsDeployment(verdict.gaps)
         ? { kind: 'deploySetup' }

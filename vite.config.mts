@@ -25,6 +25,7 @@ import {
   devServerAgentRoutes
 } from './build/devAgentConfig.ts'
 import { comfyAPIPlugin } from './build/plugins/comfyAPIPlugin.ts'
+import { vueDevtoolsKitStub } from './build/plugins/vueDevtoolsKitStub.ts'
 import {
   hasCompleteSentryUploadConfig,
   resolveSentryUploadConfig
@@ -50,6 +51,11 @@ const ISOLATED_STORE_TESTS = [
   'src/stores/entityIdStore.test.ts',
   'src/testing/pinia.test.ts'
 ]
+const CENSUS_TESTS = ['scripts/registry-census/*.census.test.ts']
+
+const NODE_ENVIRONMENT_TESTS = [
+  'src/platform/workflow/validation/schemas/shippedTemplates.test.ts'
+]
 
 const CRITICAL_COVERAGE_DIRS = [
   'src/base',
@@ -58,10 +64,12 @@ const CRITICAL_COVERAGE_DIRS = [
   'src/lib/litegraph/src/node',
   'src/lib/litegraph/src/subgraph',
   'src/lib/litegraph/src/utils',
+  'src/platform/assets/adapters',
   'src/platform/assets/composables',
-  'src/platform/assets/mappings',
-  'src/platform/assets/schemas',
+  'src/platform/assets/integration',
   'src/platform/assets/services',
+  'src/platform/assets/stores',
+  'src/platform/assets/types',
   'src/platform/assets/utils',
   'src/platform/extensions',
   'src/platform/billing/api',
@@ -543,6 +551,7 @@ export default defineConfig({
     ...(!DISABLE_VUE_PLUGINS
       ? [vueDevTools(), vue(vuePluginOptions), createHtmlPlugin({})]
       : [vue(vuePluginOptions)]),
+    vueDevtoolsKitStub(!DISABLE_VUE_PLUGINS),
     tailwindcss(),
     typegpuPlugin({}),
     comfyAPIPlugin(IS_DEV),
@@ -987,7 +996,7 @@ export default defineConfig({
             './vitest.timer.setup.ts',
             './vitest.setup.ts'
           ],
-          exclude: ISOLATED_STORE_TESTS,
+          exclude: [...ISOLATED_STORE_TESTS, ...NODE_ENVIRONMENT_TESTS],
           include: [
             'src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
             'packages/api-client/src/**/*.test.ts',
@@ -997,6 +1006,19 @@ export default defineConfig({
             'browser_tests/**/*.test.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
             ...FRONTEND_SCRIPT_TESTS
           ]
+        }
+      },
+      {
+        extends: true,
+        test: {
+          name: 'node-environment',
+          environment: 'node',
+          setupFiles: [
+            './vitest.console.setup.ts',
+            './vitest.network.setup.ts',
+            './vitest.timer.setup.ts'
+          ],
+          include: NODE_ENVIRONMENT_TESTS
         }
       },
       {
@@ -1020,7 +1042,7 @@ export default defineConfig({
             './vitest.console.setup.ts',
             './vitest.network.setup.ts'
           ],
-          exclude: FRONTEND_SCRIPT_TESTS,
+          exclude: [...FRONTEND_SCRIPT_TESTS, ...CENSUS_TESTS],
           include: [
             'scripts/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
             'tools/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
