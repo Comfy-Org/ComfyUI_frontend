@@ -5,7 +5,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
-import type { SubscriptionInfo } from '@/platform/billing/composables/types'
+import type {
+  BillingStatusReadOptions,
+  SubscriptionInfo
+} from '@/platform/billing/composables/types'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import type { AuthUserInfo } from '@comfyorg/api-client/authTypes'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
@@ -600,6 +603,109 @@ describe('useAgentDockMount', () => {
       consent.confirmedAcceptances += 1
       await nextTick()
       expect(fetchStatus).toHaveBeenCalledTimes(2)
+    })
+
+    describe('shared with the panel open that acceptance triggers', () => {
+      function mountWithFreshBilling() {
+        const fetchStatusFresh = vi.fn(async () => true)
+        const fetchStatus = vi.fn(
+          async (_options?: BillingStatusReadOptions) => {}
+        )
+        vi.mocked(useBillingContext).mockReturnValue({
+          ...billingContext,
+          fetchStatus,
+          fetchStatusFresh
+        })
+        useAgentDockMount()
+        // Counted across both entry points, so the assertion is about how many
+        // fresh reads happen rather than which call issues them.
+        const freshReads = () =>
+          fetchStatus.mock.calls.filter(([options]) => options?.fresh === true)
+            .length + fetchStatusFresh.mock.calls.length
+        return {
+          consent: useAgentConsentStore(),
+          store: useAgentPanelStore(),
+          fetchStatus,
+          fetchStatusFresh,
+          freshReads
+        }
+      }
+
+      /** Drains the microtasks a chained refresh is issued on. */
+      const settleRefreshes = async () => {
+        await nextTick()
+        await new Promise((resolve) => setTimeout(resolve, 0))
+      }
+
+      it('reads billing once when acceptance opens the panel', async () => {
+        const { consent, store, freshReads } = mountWithFreshBilling()
+
+        consent.confirmedAcceptances += 1
+        await nextTick()
+        store.isOpen = true
+        await settleRefreshes()
+
+        expect(freshReads()).toBe(1)
+      })
+
+      it('still reads billing on an open that no acceptance triggered', async () => {
+        const { consent, store, fetchStatusFresh } = mountWithFreshBilling()
+
+        consent.confirmedAcceptances += 1
+        await nextTick()
+        store.isOpen = true
+        await nextTick()
+        expect(fetchStatusFresh).toHaveBeenCalledOnce()
+
+        store.close('close_button')
+        await nextTick()
+        store.isOpen = true
+
+        // A reopen read chains after the refresh in flight, so it is issued a
+        // microtask later rather than on this tick.
+        await vi.waitFor(() =>
+          expect(fetchStatusFresh).toHaveBeenCalledTimes(2)
+        )
+      })
+
+      it('leaves a later open its own read when acceptance did not open the panel', async () => {
+        const { consent, store, fetchStatusFresh } = mountWithFreshBilling()
+        store.isOpen = true
+        await nextTick()
+        expect(fetchStatusFresh).toHaveBeenCalledOnce()
+
+        consent.confirmedAcceptances += 1
+        await nextTick()
+        expect(fetchStatusFresh).toHaveBeenCalledTimes(2)
+
+        store.close('close_button')
+        await nextTick()
+        store.isOpen = true
+
+        await vi.waitFor(() =>
+          expect(fetchStatusFresh).toHaveBeenCalledTimes(3)
+        )
+      })
+
+      it('keeps the deferred read when billing routing is not known yet', async () => {
+        const fetchStatusFresh = vi.fn(async () => true)
+        const fetchStatus = vi.fn(async () => {})
+        vi.mocked(useBillingContext).mockReturnValue({
+          ...billingContext,
+          type: computed(() => 'unknown'),
+          fetchStatus,
+          fetchStatusFresh
+        })
+        useAgentDockMount()
+
+        useAgentConsentStore().confirmedAcceptances += 1
+        await nextTick()
+
+        // `fetchStatus` owes the fresh read until routing resolves; the keyed
+        // rail would drop it.
+        expect(fetchStatus).toHaveBeenCalledWith({ fresh: true })
+        expect(fetchStatusFresh).not.toHaveBeenCalled()
+      })
     })
 
     it('reports a failed refresh without rejecting', async () => {

@@ -33,21 +33,6 @@ export function useAgentDockMount(): AgentDockMount {
   )
 
   const consentStore = useAgentConsentStore()
-  watch(
-    () => consentStore.confirmedAcceptances,
-    (count) => {
-      if (!count || count <= agentPanelStore.billingRefreshedAcceptances) return
-      agentPanelStore.billingRefreshedAcceptances = count
-      void fetchStatus({ fresh: true }).catch((error: unknown) => {
-        reportError(error, {
-          surface: 'agent',
-          errorType: 'error_refreshing_agent_billing_status'
-        })
-      })
-    },
-    { immediate: true, flush: 'sync' }
-  )
-
   const billingIdentity = useBillingIdentity()
 
   function reportBillingRefreshError(error: unknown): void {
@@ -56,6 +41,43 @@ export function useAgentDockMount(): AgentDockMount {
       surface: 'agent'
     })
   }
+
+  function acceptanceRefreshKey(
+    billingType: string,
+    identity: string,
+    acceptances: number
+  ): string {
+    return `${billingType}:${identity}:acceptance:${acceptances}`
+  }
+
+  watch(
+    () => consentStore.confirmedAcceptances,
+    (count) => {
+      if (!count || count <= agentPanelStore.billingRefreshedAcceptances) return
+      agentPanelStore.billingRefreshedAcceptances = count
+      // Routing not known yet: `fetchStatus` owes the fresh read until it is,
+      // which `fetchStatusFresh` does not do. There is no panel open to share
+      // with in that window either, so keep the direct call.
+      if (fetchStatusFresh === undefined || type.value === 'unknown') {
+        void fetchStatus({ fresh: true }).catch(reportBillingRefreshError)
+        return
+      }
+      // Otherwise go through the shared refresh registry, so this read is
+      // ordered against the other fresh reads rather than racing them, and
+      // hand it to the panel open that this acceptance is about to trigger.
+      const identity = billingIdentity.value
+      agentPanelStore.recordAcceptanceBillingRefresh(type.value, identity)
+      void agentPanelStore
+        .refreshBillingStatus(
+          acceptanceRefreshKey(type.value, identity, count),
+          fetchStatusFresh,
+          false,
+          reportBillingRefreshError
+        )
+        .catch(reportBillingRefreshError)
+    },
+    { immediate: true, flush: 'sync' }
+  )
 
   function adoptTransitionBaseline(
     billingType: string,
@@ -138,6 +160,11 @@ export function useAgentDockMount(): AgentDockMount {
         refreshTransitionBaseline(identity, refresh.epoch)
         return
       }
+      // The acceptance that opened this panel already issued a fresh read, so
+      // that read is this open's read. `withConsent` accepts and then runs the
+      // gated open, which is why both fire within milliseconds of each other.
+      if (agentPanelStore.claimAcceptanceBillingRefresh(type.value, identity))
+        return
       if (fetchStatusFresh === undefined) return
       void agentPanelStore
         .refreshBillingStatus(

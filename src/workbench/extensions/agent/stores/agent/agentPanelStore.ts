@@ -110,6 +110,11 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     ready: boolean
   } | null>(null)
   const billingRefreshes = new Map<string, BillingRefreshEntry>()
+  const acceptanceBillingRefresh = shallowRef<{
+    billingType: string
+    identity: string
+    openEpoch: number
+  } | null>(null)
   const panelOpenEpoch = ref(0)
   let latestBillingRefresh: Promise<void> | undefined
   let creditTransitionRefreshEpoch = 0
@@ -428,6 +433,41 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     return true
   }
 
+  /**
+   * Record that a consent acceptance has issued a fresh billing read, so that
+   * the panel open the acceptance is about to trigger uses that read instead of
+   * issuing a second identical one. Scoped to the very next open: a later open
+   * is a separate episode and owes its own fresh read. No-op while the panel is
+   * already open, because then there is no open to share the read with.
+   */
+  function recordAcceptanceBillingRefresh(
+    billingType: string,
+    identity: string
+  ): void {
+    if (isOpen.value) return
+    acceptanceBillingRefresh.value = {
+      billingType,
+      identity,
+      openEpoch: panelOpenEpoch.value + 1
+    }
+  }
+
+  /** Consumes the record above, once, for the open it was scoped to. */
+  function claimAcceptanceBillingRefresh(
+    billingType: string,
+    identity: string
+  ): boolean {
+    const current = acceptanceBillingRefresh.value
+    if (
+      current?.billingType !== billingType ||
+      current.identity !== identity ||
+      current.openEpoch !== panelOpenEpoch.value
+    )
+      return false
+    acceptanceBillingRefresh.value = null
+    return true
+  }
+
   function refreshBillingStatus(
     key: string,
     fetchStatus: () => Promise<boolean>,
@@ -565,6 +605,8 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     completeCreditTransitionRefresh,
     claimCompletedCreditTransitionRefresh,
     refreshBillingStatus,
+    recordAcceptanceBillingRefresh,
+    claimAcceptanceBillingRefresh,
     beginFundsRecheck,
     finishFundsRecheck,
     cancelFundsRechecks,
