@@ -48,7 +48,11 @@ it('keeps clipboard indices stable when a target graph refuses a node', () => {
           node(1, missingType, 120),
           node(2, sinkType, 240)
         ],
-        links: [[0, 0, 2, 0, '*']]
+        links: [
+          [0, 0, 2, 0, '*'],
+          [0, 0, 1, 0, '*'],
+          [1, 0, 2, 0, '*']
+        ]
       }),
       graph,
       [0, 0]
@@ -60,7 +64,12 @@ it('keeps clipboard indices stable when a target graph refuses a node', () => {
     sinkType
   ])
   expect(createdNodes.map(({ type }) => type)).toEqual([sourceType, sinkType])
+
+  const [sourceNode, sinkNode] = createdNodes
   expect(graph.links.size).toBe(1)
-  expect(createdNodes[0].outputs[0].links).toHaveLength(1)
-  expect(createdNodes[1].inputs[0].link).not.toBeNull()
+  const [survivingLink] = graph.links.values()
+  expect(survivingLink.origin_id).toBe(sourceNode.id)
+  expect(survivingLink.origin_slot).toBe(0)
+  expect(survivingLink.target_id).toBe(sinkNode.id)
+  expect(survivingLink.target_slot).toBe(0)
 })
