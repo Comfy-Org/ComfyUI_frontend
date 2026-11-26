@@ -180,6 +180,81 @@ function messageTexts(
 }
 
 describe('useAgentConversationStore', () => {
+  describe('reported turn credits', () => {
+    const ROW_A = 'assistant-row-a' as TurnId
+    const ROW_B = 'assistant-row-b' as TurnId
+    const TURN_A = 'server-turn-a' as TurnId
+    const TURN_B = 'server-turn-b' as TurnId
+    const doneWithCharge = (id: string, chargeMicroUsd: number) =>
+      chat({
+        type: 'agent_message_done',
+        data: {
+          message_id: id,
+          thread_id: 'th',
+          usage: { charge_micro_usd: chargeMicroUsd }
+        }
+      })
+    const settledTurn = (
+      turnId: string,
+      assistantRowId: string,
+      seq = 1
+    ): AgentMessages => [
+      historyRow(seq, 'user', turnId, 'Add a KSampler node.', `user-${seq}`),
+      historyRow(seq + 1, 'assistant', turnId, 'Done.', assistantRowId)
+    ]
+
+    it('keeps the served charge when the same thread rehydrates', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(ROW_A)
+      store.ingest(doneWithCharge(ROW_A, 6038))
+      const live = store.messages.find((message) => message.id === ROW_A)
+      expect(live?.creditsUsed).toBeCloseTo(1.274)
+
+      store.hydrate(settledTurn(TURN_A, ROW_A))
+
+      const restored = store.messages.find((message) => message.id === TURN_A)
+      expect(restored?.creditsUsed).toBeCloseTo(1.274)
+    })
+
+    it('restores only the turns whose charge was served', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(ROW_A)
+      store.ingest(doneWithCharge(ROW_A, 6038))
+      store.startTurn(ROW_B)
+      store.ingest(done(ROW_B))
+
+      store.hydrate([
+        ...settledTurn(TURN_A, ROW_A),
+        ...settledTurn(TURN_B, ROW_B, 3)
+      ])
+
+      expect(
+        store.messages.find((message) => message.id === TURN_A)?.creditsUsed
+      ).toBeCloseTo(1.274)
+      expect(
+        store.messages.find((message) => message.id === TURN_B)?.creditsUsed
+      ).toBeUndefined()
+    })
+
+    it('keeps the served charge across a new chat', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(ROW_A)
+      store.ingest(doneWithCharge(ROW_A, 6038))
+
+      store.reset()
+      expect(store.messages).toEqual([])
+      store.setThreadId('th')
+      store.hydrate(settledTurn(TURN_A, ROW_A))
+
+      expect(
+        store.messages.find((message) => message.id === TURN_A)?.creditsUsed
+      ).toBeCloseTo(1.274)
+    })
+  })
+
   it('publishes a turn identity before its live status', () => {
     const store = useAgentConversationStore()
     const observations: [typeof store.status, TurnId | null][] = []

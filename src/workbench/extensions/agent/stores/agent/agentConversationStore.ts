@@ -648,6 +648,7 @@ export const useAgentConversationStore = defineStore(
       { shownAt: number; turnId: string }
     >()
     const shownApprovalIds = new Set<string>()
+    const reportedTurnCredits = new Map<TurnId, number>()
     const undeliverableAskReporter = createUndeliverableAskReporter()
     const departedTurns = new Map<string, 'no-live-turn' | 'settled-turn'>()
     const activeTurnId = computed(() => activeSlot.value?.turnId ?? null)
@@ -712,7 +713,16 @@ export const useAgentConversationStore = defineStore(
       )
     }
 
+    function rememberReportedCharge(
+      turnId: TurnId,
+      message: AssistantMessage
+    ): void {
+      if (message.creditsUsed !== undefined)
+        reportedTurnCredits.set(turnId, message.creditsUsed)
+    }
+
     function publishMessage(turnId: TurnId, message: AssistantMessage): void {
+      rememberReportedCharge(turnId, message)
       replaceActive(message)
       const entry = backgroundTurns.get(turnId)
       if (activeSlot.value?.turnId !== turnId && (!entry || entry.settled))
@@ -2479,6 +2489,24 @@ export const useAgentConversationStore = defineStore(
         void pendingSendsReconciled.trigger(reconciledIds)
     }
 
+    function restoreReportedCredits(
+      history: AgentMessages,
+      restored: readonly AssistantMessage[]
+    ): void {
+      if (reportedTurnCredits.size === 0) return
+      const byTurnId = new Map(
+        restored.map((message) => [message.id as string, message])
+      )
+      for (const row of history) {
+        if (row.role !== 'assistant') continue
+        const credits = reportedTurnCredits.get(toTurnId(row.id))
+        if (credits === undefined) continue
+        const message = byTurnId.get(row.turn_id)
+        if (message !== undefined && message.creditsUsed === undefined)
+          message.creditsUsed = credits
+      }
+    }
+
     function hydrate(
       history: AgentMessages,
       options?: { skipSnapshotTurns?: ReadonlySet<TurnId> }
@@ -2498,6 +2526,7 @@ export const useAgentConversationStore = defineStore(
         (askId) => isAskRetired(askId)
       )
       reapplyRetiredAsks(transcript)
+      restoreReportedCredits(history, transcript.messages)
       messages.value = transcript.messages
       resolvedPaywallIds.value = new Set()
       userTexts.value = transcript.userTexts
