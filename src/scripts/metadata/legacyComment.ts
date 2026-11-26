@@ -10,31 +10,47 @@ type LegacyCommentBlob = {
   prompt?: ComfyApiWorkflow | string
 }
 
-const tryParseObject = <T extends object>(text: string): T | null => {
+type JsonValue =
+  | LegacyCommentBlob
+  | unknown[]
+  | string
+  | number
+  | boolean
+  | null
+
+const parseBlob = (comment: string): LegacyCommentBlob | null => {
   try {
-    const parsed = parseJsonWithNonFinite<T>(text)
-    return typeof parsed === 'object' && parsed !== null ? parsed : null
+    const parsed = parseJsonWithNonFinite<JsonValue>(comment)
+    if (typeof parsed !== 'object' || parsed === null) return null
+    return Array.isArray(parsed) ? null : parsed
   } catch {
     return null
   }
 }
 
+/** Old VHS stored `prompt` as a JSON string inside the JSON comment. */
 const readField = <T extends object>(
   value: T | string | undefined
-): T | null => {
-  if (typeof value === 'string') return tryParseObject<T>(value)
-  return typeof value === 'object' && value !== null ? value : null
+): T | undefined => {
+  if (typeof value !== 'string') return value
+  try {
+    const parsed = parseJsonWithNonFinite<T | string | number | boolean | null>(
+      value
+    )
+    return typeof parsed === 'object' && parsed !== null ? parsed : undefined
+  } catch {
+    return undefined
+  }
 }
 
 /**
  * Reads the workflow and prompt out of a `comment` tag that holds the whole
  * metadata dict as one JSON object, as VideoHelperSuite's Video Combine wrote
- * MP4/WebM/MKV outputs before January 2026. In those files `prompt` is
- * itself a JSON string, so string values are parsed a second time.
+ * MP4/WebM/MKV outputs before January 2026.
  */
 export function getFromLegacyComment(comment: string): ComfyMetadata {
-  const blob = tryParseObject<LegacyCommentBlob>(comment)
-  if (!blob || Array.isArray(blob)) return {}
+  const blob = parseBlob(comment)
+  if (!blob) return {}
 
   const metadata: ComfyMetadata = {}
   const workflow = readField(blob.workflow)

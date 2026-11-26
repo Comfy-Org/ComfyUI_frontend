@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
+import type { ComfyMetadata } from '@/types/metadataTypes'
+
 import { EXPECTED_PROMPT, EXPECTED_WORKFLOW } from './__fixtures__/helpers'
 import {
   getFromLegacyComment,
@@ -57,8 +59,10 @@ describe('withLegacyCommentFallback', () => {
     workflow: EXPECTED_WORKFLOW
   })
 
-  it('keeps metadata that already has a workflow', () => {
-    const own = { workflow: { nodes: [] } }
+  it('keeps metadata that already has its own prompt', () => {
+    const own: ComfyMetadata = {
+      prompt: { '2': { class_type: 'Own', inputs: {} } }
+    }
     expect(withLegacyCommentFallback(own, comment)).toBe(own)
   })
 
