@@ -253,9 +253,7 @@ const MOMENT_RULES: Rule[] = [
     outcome: defer('in_onboarding')
   },
   {
-    when: (m, c) =>
-      c.input.moment !== 'session_start' &&
-      (m.form === 'dialog' || m.form === 'tour'),
+    when: (m, c) => c.input.moment !== 'session_start' && m.form !== 'card',
     outcome: defer('not_quiet')
   },
   { when: (m, c) => budgetHold(m, c.input), outcome: defer('budget_used') }

@@ -332,7 +332,9 @@ describe('decideMessages: runtime contract', () => {
     ['working', 'card', 'defer'],
     ['break', 'card', 'show'],
     ['break', 'dialog', 'defer'],
-    ['session_start', 'dialog', 'show']
+    ['break', 'banner', 'defer'],
+    ['session_start', 'dialog', 'show'],
+    ['session_start', 'banner', 'show']
   ] as const)('at %s a pushed %s gets %s', ([moment, form, expected]) => {
     expect(
       results({ moment, candidates: [message('m', { form })] }).results
