@@ -34,11 +34,26 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 
 import Button from '@comfyorg/design-system/button/Button'
-import { useLocalBuildPrototypeStore } from '@/platform/openOnCloud/localBuildPrototype/localBuildPrototypeStore'
+import {
+  LOCAL_BUILD_DIALOG_KEY,
+  useLocalBuildPrototypeStore
+} from '@/platform/openOnCloud/localBuildPrototype/localBuildPrototypeStore'
+import { openCardDialog } from '@/platform/workspace/openCustomDeploymentDialog'
 
 const store = useLocalBuildPrototypeStore()
 const isBusy = computed(() => store.isRunning || store.phase === 'fixing')
+
+watch(
+  () => store.dialogRequests,
+  () =>
+    void openCardDialog(
+      LOCAL_BUILD_DIALOG_KEY,
+      () =>
+        import('@/platform/openOnCloud/localBuildPrototype/LocalBuildDialog.vue'),
+      {}
+    )
+)
 </script>

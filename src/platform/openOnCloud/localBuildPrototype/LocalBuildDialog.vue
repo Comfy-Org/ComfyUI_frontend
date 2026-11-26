@@ -110,6 +110,14 @@
           </div>
           <footer class="mt-auto flex items-center pt-7">
             <Button
+              variant="link"
+              size="link"
+              data-testid="local-build-advanced-setup"
+              @click="store.openAdvancedSetup()"
+            >
+              {{ $t('localBuildPrototype.start.advancedSetup') }}
+            </Button>
+            <Button
               variant="inverted"
               size="lg"
               class="ml-auto"

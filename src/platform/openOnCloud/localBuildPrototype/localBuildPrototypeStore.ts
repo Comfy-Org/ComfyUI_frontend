@@ -13,7 +13,7 @@ import {
   readLocalBuildPath
 } from '@/platform/openOnCloud/localBuildPrototype/mockLocalBuild'
 import type { LocalBuildItem } from '@/platform/openOnCloud/localBuildPrototype/mockLocalBuild'
-import { openCardDialog } from '@/platform/workspace/openCustomDeploymentDialog'
+import { usePlatformFrameStore } from '@/platform/workspace/platformFrame/platformFrameStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import type { ToastId } from '@/types/toastId'
 
@@ -28,7 +28,7 @@ export type LocalBuildPhase =
   | 'failed'
   | 'fixing'
 
-const DIALOG_KEY = 'global-local-build-prototype'
+export const LOCAL_BUILD_DIALOG_KEY = 'global-local-build-prototype'
 const COMFY_CLOUD_URL = 'https://cloud.comfy.org'
 
 const sumGb = (items: readonly LocalBuildItem[]) =>
@@ -41,6 +41,7 @@ export const useLocalBuildPrototypeStore = defineStore(
     const view = ref<LocalBuildView>('start')
     const phase = ref<LocalBuildPhase>('idle')
     const uploadPercent = ref(0)
+    const dialogRequests = ref(0)
     const name = ref('')
     const removed = ref<Partial<Record<string, boolean>>>({})
     const gpuIndex = ref(DEFAULT_GPU_INDEX)
@@ -67,7 +68,9 @@ export const useLocalBuildPrototypeStore = defineStore(
     const isRunning = computed(() =>
       ['upload', 'build', 'deploy'].includes(phase.value)
     )
-    const isDialogOpen = computed(() => dialogStore.isDialogOpen(DIALOG_KEY))
+    const isDialogOpen = computed(() =>
+      dialogStore.isDialogOpen(LOCAL_BUILD_DIALOG_KEY)
+    )
 
     function toggleItem(item: LocalBuildItem) {
       removed.value = { ...removed.value, [item.name]: !isRemoved(item) }
@@ -125,7 +128,7 @@ export const useLocalBuildPrototypeStore = defineStore(
           }),
           action: {
             label: t('localBuildPrototype.toast.showDetails'),
-            onClick: () => void openDialog()
+            onClick: openDialog
           }
         })
       )
@@ -198,22 +201,21 @@ export const useLocalBuildPrototypeStore = defineStore(
       window.open(COMFY_CLOUD_URL, '_blank', 'noopener')
     }
 
-    async function openDialog() {
+    function openDialog() {
       if (phase.value === 'fixing') return
       if (shownToast) toast.dismiss(shownToast)
       shownToast = undefined
       if (phase.value !== 'idle') view.value = 'progress'
-      if (isDialogOpen.value) return
-      await openCardDialog(
-        DIALOG_KEY,
-        () =>
-          import('@/platform/openOnCloud/localBuildPrototype/LocalBuildDialog.vue'),
-        {}
-      )
+      if (!isDialogOpen.value) dialogRequests.value++
+    }
+
+    function openAdvancedSetup() {
+      closeDialog()
+      usePlatformFrameStore().open({ step: 'new' }, 'overview_dialog')
     }
 
     function closeDialog() {
-      dialogStore.closeDialog({ key: DIALOG_KEY })
+      dialogStore.closeDialog({ key: LOCAL_BUILD_DIALOG_KEY })
     }
 
     return {
@@ -240,7 +242,9 @@ export const useLocalBuildPrototypeStore = defineStore(
       cancelBuild,
       fixWithAgent,
       openComfyCloud,
+      dialogRequests,
       openDialog,
+      openAdvancedSetup,
       closeDialog
     }
   }

@@ -7010,7 +7010,8 @@
       "models": "Models",
       "packs": "{count} pack | {count} packs",
       "modelCount": "{count} model · {size} | {count} models · {size}",
-      "chooseGpu": "Choose a GPU"
+      "chooseGpu": "Choose a GPU",
+      "advancedSetup": "Advanced setup"
     },
     "list": {
       "back": "Back",

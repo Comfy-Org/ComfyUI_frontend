@@ -30,7 +30,7 @@
     <ManagerProgressToast />
   </ToastDock>
   <PartnerNodesEducationCard v-if="!isCloud" />
-  <PlatformFrameHost v-if="isCloud" />
+  <PlatformFrameHost v-if="isCloud || isLocalBuildPrototype()" />
   <UnloadWindowConfirmDialog v-if="!isDesktop" />
   <MenuHamburger />
   <TourOverlay v-if="graphReady" />
@@ -60,6 +60,7 @@ import ToastDock from '@comfyorg/design-system/toast/ToastDock'
 import AppToaster from '@/components/common/AppToaster.vue'
 import TourOverlay from '@/platform/onboarding/TourOverlay.vue'
 import PlatformFrameHost from '@/platform/workspace/platformFrame/PlatformFrameHost.vue'
+import { isLocalBuildPrototype } from '@/platform/openOnCloud/localBuildPrototype/mockLocalBuild'
 import { usePreinstallOffer } from '@/platform/workspace/platformFrame/usePreinstallOffer'
 import FirstRunTour from '@/renderer/extensions/firstRunTour/FirstRunTour.vue'
 import { registerCoreBottomPanelTabs } from '@/composables/bottomPanelTabs/registerCoreBottomPanelTabs'

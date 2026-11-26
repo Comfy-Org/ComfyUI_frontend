@@ -9,6 +9,7 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
+import { isLocalBuildPrototype } from '@/platform/openOnCloud/localBuildPrototype/mockLocalBuild'
 import { DEPLOYMENT_LISTING_BACKSTOP_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
 import { skipLeavePromptOnce } from '@/platform/workflow/management/leavePrompt'
 import { switchToDeployment } from '@/platform/workspace/composables/useDeploymentSwitchGuard'
@@ -124,8 +125,8 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
 
   function isAvailable(): boolean {
     return (
-      isCloud &&
-      useFeatureFlags().flags.customDeploymentsEditorEnabled &&
+      (isLocalBuildPrototype() ||
+        (isCloud && useFeatureFlags().flags.customDeploymentsEditorEnabled)) &&
       platformFrameOrigin() !== null
     )
   }

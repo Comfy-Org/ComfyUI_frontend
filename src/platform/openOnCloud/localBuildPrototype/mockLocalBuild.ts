@@ -28,6 +28,10 @@ export function readLocalBuildPath(
   return PATHS.find((path) => path === value)
 }
 
+export function isLocalBuildPrototype(): boolean {
+  return readLocalBuildPath() !== undefined
+}
+
 export const DEFAULT_BUILD_NAME = 'portrait-upscale'
 
 export const STORAGE_PRICE_PER_GB_MONTH = 0.1
