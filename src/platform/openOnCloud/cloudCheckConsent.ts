@@ -1,37 +1,34 @@
-import type { SettingWriteOutcome } from '@comfyorg/settings-core/settingStore'
 import { reportError } from '@comfyorg/telemetry/reportError'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import { t } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { api } from '@/scripts/api'
 
 export const ASK_BEFORE_CLOUD_CHECK = 'Comfy.Cloud.AskBeforeCompatibilityCheck'
 
 let pendingSave: Promise<void> = Promise.resolve()
 
-function failureCause(outcome: SettingWriteOutcome): unknown {
-  switch (outcome.status) {
-    case 'saved':
-    case 'unchanged':
-      return undefined
-    case 'unconfirmed':
-      return outcome.cause
-    default:
-      return new Error(
-        `Failed to store ${ASK_BEFORE_CLOUD_CHECK}: ${outcome.statusCode} ${outcome.statusText || 'Request failed'}`
-      )
+async function storeAskBeforeCloudCheck(askBeforeCheck: boolean) {
+  if (useSettingStore().get(ASK_BEFORE_CLOUD_CHECK) !== askBeforeCheck) return
+  try {
+    const response = await api.storeSetting(
+      ASK_BEFORE_CLOUD_CHECK,
+      askBeforeCheck
+    )
+    if (response.ok) return
+    reportSaveFailure(
+      new Error(
+        `Failed to store ${ASK_BEFORE_CLOUD_CHECK}: ${response.status} ${response.statusText || 'Request failed'}`
+      ),
+      askBeforeCheck
+    )
+  } catch (cause) {
+    reportSaveFailure(cause, askBeforeCheck)
   }
 }
 
-async function writeAskBeforeCloudCheck(askBeforeCheck: boolean) {
-  const outcome = await useSettingStore()
-    .setWithOutcome(ASK_BEFORE_CLOUD_CHECK, askBeforeCheck)
-    .catch((cause: unknown): SettingWriteOutcome => ({
-      status: 'unconfirmed',
-      cause
-    }))
-  const cause = failureCause(outcome)
-  if (cause === undefined) return
+function reportSaveFailure(cause: unknown, askBeforeCheck: boolean) {
   reportError(cause, {
     surface: 'platform',
     errorType: 'error_saving_cloud_check_consent',
@@ -45,6 +42,13 @@ async function writeAskBeforeCloudCheck(askBeforeCheck: boolean) {
 }
 
 export function saveAskBeforeCloudCheck(askBeforeCheck: boolean) {
-  pendingSave = pendingSave.then(() => writeAskBeforeCloudCheck(askBeforeCheck))
-  return pendingSave
+  const appliedLocally = useSettingStore().applySettingLocally(
+    ASK_BEFORE_CLOUD_CHECK,
+    askBeforeCheck
+  )
+  const save = pendingSave
+    .then(() => appliedLocally)
+    .then(() => storeAskBeforeCloudCheck(askBeforeCheck))
+  pendingSave = save.catch(() => undefined)
+  return save
 }

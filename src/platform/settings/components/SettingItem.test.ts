@@ -6,6 +6,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import SettingItem from '@/platform/settings/components/SettingItem.vue'
 import type { SettingParams } from '@comfyorg/settings-core/types'
 import { i18n } from '@/i18n'
+import {
+  ASK_BEFORE_CLOUD_CHECK,
+  saveAskBeforeCloudCheck
+} from '@/platform/openOnCloud/cloudCheckConsent'
+
+vi.mock(import('@/platform/openOnCloud/cloudCheckConsent'), { spy: true })
 
 const flushPromises = () =>
   new Promise<void>((resolve) => setTimeout(resolve, 0))
@@ -75,13 +81,11 @@ describe('SettingItem', () => {
   })
 
   it('saves the Comfy Cloud ask-before-check choice through its checked save', async () => {
-    const setWithOutcome = vi
-      .mocked(useSettingStore().setWithOutcome)
-      .mockResolvedValue({ status: 'saved' })
+    vi.mocked(saveAskBeforeCloudCheck).mockResolvedValue()
     mockGet.mockReturnValue(false)
 
     renderComponent({
-      id: 'Comfy.Cloud.AskBeforeCompatibilityCheck',
+      id: ASK_BEFORE_CLOUD_CHECK,
       name: 'Ask before checking',
       type: 'boolean',
       defaultValue: true
@@ -90,10 +94,7 @@ describe('SettingItem', () => {
     emitFormValue!(true)
     await flushPromises()
 
-    expect(setWithOutcome).toHaveBeenCalledWith(
-      'Comfy.Cloud.AskBeforeCompatibilityCheck',
-      true
-    )
+    expect(saveAskBeforeCloudCheck).toHaveBeenCalledWith(true)
     expect(mockSet).not.toHaveBeenCalled()
   })
 })

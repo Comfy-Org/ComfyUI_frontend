@@ -58,7 +58,9 @@ describe('saveAskBeforeCloudCheck', () => {
     ])
     expect(reportError).toHaveBeenCalledWith(
       expect.objectContaining({ message: expect.stringContaining('500') }),
-      expect.objectContaining({ errorType: 'error_saving_cloud_check_consent' })
+      expect.objectContaining({
+        errorType: 'error_saving_cloud_check_consent'
+      })
     )
   })
 
@@ -71,27 +73,84 @@ describe('saveAskBeforeCloudCheck', () => {
     expect(useToast().toasts).toHaveLength(1)
     expect(reportError).toHaveBeenCalledWith(
       failure,
-      expect.objectContaining({ errorType: 'error_saving_cloud_check_consent' })
+      expect.objectContaining({
+        errorType: 'error_saving_cloud_check_consent'
+      })
     )
   })
 
-  it('sends a later choice only after the earlier save settles', async () => {
+  it("describes a failed Don't ask again save without promising a prompt", async () => {
+    vi.mocked(api.storeSetting).mockResolvedValueOnce(
+      new Response(null, { status: 500 })
+    )
+
+    await saveAskBeforeCloudCheck(false)
+
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        description: 'Comfy Cloud may ask again next time you open ComfyUI.'
+      })
+    ])
+  })
+
+  it.for([
+    { outcome: 'refused', status: 400 },
+    { outcome: 'indeterminate', status: 500 }
+  ])(
+    'keeps asking on for the session when turning it back on is $outcome',
+    async ({ status }) => {
+      await saveAskBeforeCloudCheck(false)
+      vi.mocked(api.storeSetting).mockResolvedValueOnce(
+        new Response(null, { status })
+      )
+
+      await saveAskBeforeCloudCheck(true)
+
+      expect(useSettingStore().get(ASK_BEFORE_CLOUD_CHECK)).toBe(true)
+    }
+  )
+
+  it('turns asking back on at once while an earlier save is still pending', async () => {
     const slowSave = deferredResponse()
     vi.mocked(api.storeSetting).mockReturnValueOnce(slowSave.promise)
-
     const dontAskAgain = saveAskBeforeCloudCheck(false)
-    const askAgain = saveAskBeforeCloudCheck(true)
     await vi.waitFor(() => expect(api.storeSetting).toHaveBeenCalledOnce())
 
+    const askAgain = saveAskBeforeCloudCheck(true)
+
+    expect(useSettingStore().get(ASK_BEFORE_CLOUD_CHECK)).toBe(true)
+    slowSave.resolve(new Response())
+    await Promise.all([dontAskAgain, askAgain])
     expect(api.storeSetting).toHaveBeenLastCalledWith(
       ASK_BEFORE_CLOUD_CHECK,
-      false
+      true
     )
-    slowSave.resolve(new Response())
+  })
+
+  it('resends a choice that is already shown when the last save failed', async () => {
+    vi.mocked(api.storeSetting).mockRejectedValueOnce(new Error('offline'))
+    await saveAskBeforeCloudCheck(false)
+
+    await saveAskBeforeCloudCheck(false)
+
+    expect(api.storeSetting).toHaveBeenCalledTimes(2)
+  })
+
+  it('reports a save that rejects without a reason', async () => {
+    vi.mocked(api.storeSetting).mockRejectedValueOnce(undefined)
+
+    await saveAskBeforeCloudCheck(false)
+
+    expect(reportError).toHaveBeenCalledOnce()
+    expect(useToast().toasts).toHaveLength(1)
+  })
+
+  it('sends only the latest choice when it changes before the earlier save starts', async () => {
+    const dontAskAgain = saveAskBeforeCloudCheck(false)
+    const askAgain = saveAskBeforeCloudCheck(true)
     await Promise.all([dontAskAgain, askAgain])
 
     expect(vi.mocked(api.storeSetting).mock.calls).toEqual([
-      [ASK_BEFORE_CLOUD_CHECK, false],
       [ASK_BEFORE_CLOUD_CHECK, true]
     ])
     expect(useSettingStore().get(ASK_BEFORE_CLOUD_CHECK)).toBe(true)
