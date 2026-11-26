@@ -139,16 +139,21 @@ describe('WorkflowNeedsDeploymentCard', () => {
 
     expect(
       screen.getByRole('heading', {
-        name: 'Install your missing custom nodes'
+        name: 'Create a Custom Build to run this workflow'
       })
     ).toBeInTheDocument()
     expect(
-      screen.getByText(/^Create a Custom Build to add the custom nodes/)
-    ).toBeVisible()
+      screen.getAllByRole('listitem').map((point) => point.textContent?.trim())
+    ).toEqual([
+      "Use custom nodes and models that aren't on Comfy Cloud",
+      'Work in ComfyUI on the GPU you choose',
+      'Pay only while the GPU is running, plus storage'
+    ])
     expect(screen.getByTestId('custom-deployment-missing')).toHaveTextContent(
       [
         '4 missing node packs',
-        'comfyui-birefnet, comfyui-rmbg, comfyui-impact-pack, and 1 more',
+        'comfyui-birefnet',
+        '+3 more',
         '1 missing node',
         'QwenImage21Cache',
         '1 missing model',
@@ -199,21 +204,21 @@ describe('WorkflowNeedsDeploymentCard', () => {
     )
   })
 
-  it('shows names as written in a row that lists more than three', () => {
+  it('shows the first name as written and counts the rest in a row that lists several', () => {
     renderCard({
       nodeTypes: [
         { type: 'BiRefNet', cnrId: 'comfyui-birefnet', isReplaceable: false }
       ],
       models: [
+        checkpoint("SDXL/Tom's=a&b.safetensors"),
         checkpoint('SDXL/base.safetensors'),
-        checkpoint("SDXL/Tom's=refiner.safetensors"),
         checkpoint('SDXL/a&b.safetensors'),
         checkpoint('SDXL/turbo.safetensors')
       ]
     })
 
     expect(screen.getByTestId('custom-deployment-missing')).toHaveTextContent(
-      "SDXL/base.safetensors, SDXL/Tom's=refiner.safetensors, SDXL/a&b.safetensors, and 1 more"
+      "4 missing modelsSDXL/Tom's=a&b.safetensors+3 more"
     )
   })
 
@@ -239,7 +244,7 @@ describe('WorkflowNeedsDeploymentCard', () => {
     ).toHaveTextContent('Missing 1 node')
   })
 
-  it('says no deployment runs it when the check finds each one lacks nodes', () => {
+  it('asks for a Custom Build under the same title when the check finds each deployment lacks nodes', () => {
     renderCard({
       checked: {
         production: { kind: 'missing', nodeTypes: ['BiRefNet'] },
@@ -249,12 +254,12 @@ describe('WorkflowNeedsDeploymentCard', () => {
 
     expect(
       screen.getByRole('heading', {
-        name: 'Create a Custom Build to run this workflow on Comfy Cloud'
+        name: 'Create a Custom Build to run this workflow'
       })
     ).toBeInTheDocument()
-    expect(screen.getByTestId('custom-deployment-note')).toHaveTextContent(
-      'No deployment in this workspace has all of these nodes.'
-    )
+    expect(
+      screen.getByRole('link', { name: /Create a Custom Build/ })
+    ).toBeInTheDocument()
   })
 
   it.for([
@@ -292,7 +297,7 @@ describe('WorkflowNeedsDeploymentCard', () => {
 
     expect(
       screen.getByRole('heading', {
-        name: 'Create a Custom Build to run this workflow on Comfy Cloud'
+        name: 'Create a Custom Build to run this workflow'
       })
     ).toBeInTheDocument()
     expect(

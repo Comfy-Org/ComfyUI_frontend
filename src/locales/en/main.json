@@ -4371,15 +4371,13 @@
     },
     "workflowNeedsDeployment": {
       "title": "Run this workflow on a Custom Build",
-      "installTitle": "Install your missing custom nodes",
-      "installBody": "Create a Custom Build to add the custom nodes and models Comfy Cloud doesn't have. You set it up on Platform, and it appears under Run on for your workspace.",
+      "createTitle": "Create a Custom Build to run this workflow",
+      "pointBilling": "Pay only while the GPU is running, plus storage",
       "missingPacks": "{count} missing node pack | {count} missing node packs",
       "missingNodes": "{count} missing node | {count} missing nodes",
       "missingModels": "{count} missing model | {count} missing models",
-      "andMore": "{names}, and {count} more",
-      "titleNoneRunItCustomBuild": "Create a Custom Build to run this workflow on Comfy Cloud",
+      "more": "+{count} more",
       "createCustomBuild": "Create a Custom Build",
-      "noneRunIt": "No deployment in this workspace has all of these nodes.",
       "switchBody": "Comfy Cloud is missing these. Switch to a deployment that has them and keep working from there.",
       "switch": "Switch"
     },

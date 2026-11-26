@@ -5,13 +5,18 @@
     <div
       v-for="row in rows"
       :key="row.label"
-      class="flex flex-col gap-x-3 px-3.5 py-2 text-sm/5 @xl:flex-row"
+      class="flex items-baseline gap-3 px-3.5 py-2 text-sm/5"
     >
       <dt class="shrink-0 text-muted-foreground @xl:w-38">
         {{ row.label }}
       </dt>
-      <dd class="m-0 min-w-0 wrap-break-word text-foreground">
-        {{ row.names }}
+      <dd class="m-0 flex min-w-0 flex-1 items-baseline gap-3 text-foreground">
+        <span class="min-w-0 flex-1 truncate" :title="row.name">
+          {{ row.name }}
+        </span>
+        <span v-if="row.more" class="shrink-0 text-muted-foreground">
+          {{ row.more }}
+        </span>
       </dd>
     </div>
   </dl>
