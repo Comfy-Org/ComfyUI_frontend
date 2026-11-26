@@ -7,6 +7,7 @@
     :max-topup-cents="balance?.maxTopupCents"
     :suggested-topup-cents="balance?.suggestedTopupAmountCents"
     :negative-balance-credits="negativeBalanceCredits"
+    :quote-generation="workspaceIdentity.workspaceTransitionGeneration"
     :pending-topup="pendingTopup"
     :plan-line="planLine"
     :auto-top-up="autoTopUpChoice.offer.value"

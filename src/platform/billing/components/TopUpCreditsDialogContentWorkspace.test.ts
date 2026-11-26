@@ -825,6 +825,34 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     expect(quote).toHaveBeenCalledTimes(2)
   })
 
+  it('requotes the balance after when this tab switches workspace', async () => {
+    const quoteFor = (balanceAfter: number) => ({
+      amount_cents: 11_400,
+      credits: 24_054,
+      expires_at: '2027-11-02T00:00:00Z',
+      balance_after_credits: balanceAfter,
+      runs_paused_after: balanceAfter <= 0
+    })
+    const quote = vi
+      .spyOn(billingApi, 'quoteTopup')
+      .mockResolvedValueOnce(quoteFor(2_954))
+      .mockResolvedValueOnce(quoteFor(-840))
+    renderWithBalance(NEGATIVE_BALANCE)
+    expect(
+      await screen.findByText('After this top-up: 2,954 credits.')
+    ).toBeInTheDocument()
+
+    useTeamWorkspaceStore().resetForIdentityChange()
+
+    expect(
+      await screen.findByText('Still negative after this top-up: −840 credits.')
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByText('After this top-up: 2,954 credits.')
+    ).not.toBeInTheDocument()
+    expect(quote).toHaveBeenCalledTimes(2)
+  })
+
   it('shows only the current balance when the quote has no balance after', async () => {
     const quote = vi.spyOn(billingApi, 'quoteTopup').mockResolvedValue({
       amount_cents: 11_400,

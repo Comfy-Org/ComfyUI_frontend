@@ -80,6 +80,8 @@ export interface AddCreditsDialogOptions {
   readonly autoTopUp?: MaybeRefOrGetter<AddCreditsAutoTopUpRequest>
   /** The balance a quote is read against; a change requests a fresh quote. */
   readonly balanceCredits?: MaybeRefOrGetter<number | undefined>
+  /** Bumped when the account behind the quote changes; a change requests a fresh quote. */
+  readonly quoteGeneration?: MaybeRefOrGetter<number | undefined>
   readonly onLanded?: () => void
 }
 
@@ -173,7 +175,7 @@ export function useAddCreditsDialog(options: AddCreditsDialogOptions) {
   const quoteKey = computed(() =>
     quotedCents.value === undefined
       ? undefined
-      : `${quotedCents.value}:${toValue(options.balanceCredits)}`
+      : `${toValue(options.quoteGeneration)}:${quotedCents.value}:${toValue(options.balanceCredits)}`
   )
   const quoteRead = shallowRef<{
     readonly key: string
