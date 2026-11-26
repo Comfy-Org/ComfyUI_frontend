@@ -1,10 +1,10 @@
+import { fileURLToPath } from 'node:url'
+
 import type { PlaywrightTestConfig } from '@playwright/test'
 import { defineConfig, devices } from '@playwright/test'
 
 import { NODES2_ACCEPTANCE_SETTINGS } from './browser_tests/fixtures/data/nodes2AcceptanceSettings'
-import { runFolderName } from './browser_tests/reporters/nodes2Acceptance/reportDir'
-
-process.env.NODES2_ACCEPTANCE_RUN ??= runFolderName(new Date())
+import './browser_tests/reporters/nodes2Acceptance/reportDir'
 
 const distribution = process.env.DISTRIBUTION
 Object.assign(globalThis, {
@@ -62,7 +62,14 @@ export default defineConfig<{ initialSettings: Record<string, unknown> }>({
   forbidOnly: !!process.env.CI,
   reporter: [
     [process.env.PLAYWRIGHT_BLOB_OUTPUT_DIR ? 'blob' : 'html'],
-    ['./browser_tests/reporters/nodes2AcceptanceReporter.ts']
+    [
+      fileURLToPath(
+        new URL(
+          './browser_tests/reporters/nodes2AcceptanceReporter.ts',
+          import.meta.url
+        )
+      )
+    ]
   ],
   ...maybeLocalOptions,
 

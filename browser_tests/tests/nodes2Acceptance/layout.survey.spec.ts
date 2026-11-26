@@ -1,4 +1,3 @@
-import fs from 'node:fs'
 import path from 'node:path'
 
 import {
@@ -25,6 +24,7 @@ import type {
   ProbeTarget
 } from '@e2e/reporters/nodes2Acceptance/layout'
 import { REPORT_DIR } from '@e2e/reporters/nodes2Acceptance/reportDir'
+import { writeReportFile } from '@e2e/reporters/nodes2Acceptance/reportFiles'
 
 const MAX_PROBED_WIDGETS = 6
 
@@ -99,8 +99,7 @@ async function surveyRenderer(
 
 function writeLayoutData(data: LayoutData) {
   const file = path.join(REPORT_DIR, 'layout', 'data', `${data.pack}.json`)
-  fs.mkdirSync(path.dirname(file), { recursive: true })
-  fs.writeFileSync(file, JSON.stringify(data, null, 2))
+  writeReportFile(file, JSON.stringify(data, null, 2))
 }
 
 const surveyedPacks = packData.packs.filter(

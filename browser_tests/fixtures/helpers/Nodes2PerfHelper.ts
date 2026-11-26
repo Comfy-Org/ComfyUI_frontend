@@ -380,7 +380,7 @@ export class Nodes2PerfHelper {
     else
       expect(state.vueNodeElements, 'classic must not mount Vue nodes').toBe(0)
     return {
-      timeToInteractiveMs: round(Math.max(callMs, settledMs), 0),
+      timeToInteractiveMs: round(callMs + settledMs, 0),
       heapMB: await this.heapAfterGcMB(),
       vueNodeElements: state.vueNodeElements
     }

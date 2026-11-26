@@ -144,16 +144,14 @@ const statuses = (runs: RecordedTest[]) =>
   runs.map((run) => run.status).join(', ')
 
 function testedRuns(refs: TestRef[], tests: RecordedTest[]): RefRuns[] {
-  return refs
-    .map((ref) => {
-      const runs = tests.filter(matches(ref))
-      return {
-        ref,
-        classic: runs.filter((run) => run.renderer === 'classic'),
-        subject: runs.filter((run) => run.renderer !== 'classic')
-      }
-    })
-    .filter((entry) => entry.subject.length > 0)
+  return refs.map((ref) => {
+    const runs = tests.filter(matches(ref))
+    return {
+      ref,
+      classic: runs.filter((run) => run.renderer === 'classic'),
+      subject: runs.filter((run) => run.renderer !== 'classic')
+    }
+  })
 }
 
 function litegraphStatus(classicRuns: RecordedTest[]): LitegraphStatus {
@@ -188,6 +186,24 @@ function invalidResult(tested: RefRuns[]): string | undefined {
     .flatMap((entry) => entry.subject)
     .find((run) => run.status !== 'passed' && run.status !== 'failed')
   if (unfinished) return `Test ${unfinished.status} before reaching a result`
+  const missing = tested.filter(
+    (entry) =>
+      entry.subject.length === 0 ||
+      (entry.classic.length === 0 &&
+        entry.subject.some((run) => run.renderer === 'nodes2'))
+  )
+  if (missing.length)
+    return missing
+      .map((entry) =>
+        labelled(
+          tested,
+          entry,
+          entry.subject.length === 0
+            ? 'Missing Nodes 2.0 result'
+            : 'Missing Litegraph control'
+        )
+      )
+      .join(' | ')
   return undefined
 }
 
@@ -198,34 +214,29 @@ function measuredResult(runs: RecordedTest[]) {
     .join(' | ')
 }
 
-function outcome(
-  tested: RefRuns[],
-  requiredTests: number
-): Pick<Row, 'nodes2' | 'result'> {
+function outcome(tested: RefRuns[]): Pick<Row, 'nodes2' | 'result'> {
   const failed = tested.filter((entry) =>
     entry.subject.some((run) => run.status === 'failed')
   )
   const measured = measuredResult(tested.flatMap((entry) => entry.subject))
-  const partial =
-    tested.length < requiredTests
-      ? ` (${requiredTests - tested.length} of ${requiredTests} tests not run)`
-      : ''
   if (failed.length === 0)
     return {
       nodes2: 'pass',
-      result: (measured || 'Meets the requirement') + partial
+      result: measured || 'Meets the requirement'
     }
   const errors = failed
     .map((entry) => labelled(tested, entry, entry.subject.at(-1)!.error))
     .join(' | ')
-  return { nodes2: 'fail', result: (measured || errors) + partial }
+  return { nodes2: 'fail', result: measured || errors }
 }
 
 function rowFor(requirement: Requirement, tests: RecordedTest[]): Row {
   const base = { group: requirement.group, description: requirement.text }
   const refs = requirement.tests ?? []
   const tested = testedRuns(refs, tests)
-  if (tested.length === 0)
+  if (
+    tested.every((entry) => entry.classic.length + entry.subject.length === 0)
+  )
     return {
       ...base,
       litegraph: 'none',
@@ -238,7 +249,7 @@ function rowFor(requirement: Requirement, tests: RecordedTest[]): Row {
   const invalid = invalidResult(tested)
   if (invalid)
     return { ...base, litegraph, nodes2: 'testFailed', result: invalid }
-  return { ...base, litegraph, ...outcome(tested, refs.length) }
+  return { ...base, litegraph, ...outcome(tested) }
 }
 
 function unmappedRows(project: string, tests: RecordedTest[]): Row[] {

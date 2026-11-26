@@ -26,6 +26,10 @@ import {
   REPORT_DIR as OUTPUT_DIR,
   REPORT_ROOT
 } from '@e2e/reporters/nodes2Acceptance/reportDir'
+import {
+  withReportLock,
+  writeReportFile
+} from '@e2e/reporters/nodes2Acceptance/reportFiles'
 import type {
   RunEntry,
   RunPage
@@ -90,7 +94,7 @@ function writeLayoutGallery() {
     path.join(OUTPUT_DIR, 'layout', 'data')
   )
   if (layout.length === 0) return false
-  fs.writeFileSync(
+  writeReportFile(
     path.join(OUTPUT_DIR, 'layout.html'),
     renderLayoutGallery(layout)
   )
@@ -141,7 +145,7 @@ function runEntry(run: string): RunEntry {
 }
 
 function writeRunIndex() {
-  fs.writeFileSync(
+  writeReportFile(
     path.join(REPORT_ROOT, 'index.html'),
     renderRunIndex(subfolders(REPORT_ROOT).map(runEntry))
   )
@@ -155,7 +159,7 @@ function writeProjectData(
   fs.mkdirSync(path.join(OUTPUT_DIR, 'data'), { recursive: true })
   for (const [project, tests] of byProject) {
     const data: ProjectData = { project, commit, finishedAt, tests }
-    fs.writeFileSync(
+    writeReportFile(
       path.join(OUTPUT_DIR, 'data', `${project}.json`),
       JSON.stringify(data, null, 2)
     )
@@ -164,7 +168,7 @@ function writeProjectData(
 
 function writeReport(finishedAt: string) {
   const all = readAllProjectData()
-  fs.writeFileSync(
+  writeReportFile(
     path.join(OUTPUT_DIR, 'report.html'),
     renderReport(
       orderedSections(all),
@@ -174,35 +178,33 @@ function writeReport(finishedAt: string) {
   )
 }
 
-/** Writes a run's acceptance data, report and layout gallery to its own folder, and refreshes the index of all runs. */
 export default class Nodes2AcceptanceReporter implements Reporter {
-  private readonly finalResults = new Map<TestCase, TestResult>()
+  private readonly byProject = new Map<string, RecordedTest[]>()
 
   onTestEnd(test: TestCase, result: TestResult) {
-    if (isAcceptanceProject(test.parent.project()?.name ?? ''))
-      this.finalResults.set(test, result)
+    const project = test.parent.project()?.name ?? ''
+    if (!isAcceptanceProject(project)) return
+    this.byProject.set(project, [
+      ...(this.byProject.get(project) ?? []),
+      record(test, result)
+    ])
   }
 
-  onEnd(result: FullResult) {
-    if (result.status === 'interrupted') return
-    const wroteGallery = writeLayoutGallery()
-    if (this.finalResults.size > 0) {
-      const finishedAt = new Date().toISOString()
-      writeProjectData(this.groupByProject(), currentCommit(), finishedAt)
-      writeReport(finishedAt)
-    }
-    if (wroteGallery || this.finalResults.size > 0) writeRunIndex()
-  }
-
-  private groupByProject() {
-    const byProject = new Map<string, RecordedTest[]>()
-    for (const [test, testResult] of this.finalResults) {
-      const project = test.parent.project()!.name
-      byProject.set(project, [
-        ...(byProject.get(project) ?? []),
-        record(test, testResult)
-      ])
-    }
-    return byProject
+  async onEnd(result: FullResult) {
+    if (
+      result.status === 'interrupted' ||
+      (this.byProject.size === 0 &&
+        !fs.existsSync(path.join(OUTPUT_DIR, 'layout', 'data')))
+    )
+      return
+    await withReportLock(() => {
+      const wroteGallery = writeLayoutGallery()
+      if (this.byProject.size > 0) {
+        const finishedAt = new Date().toISOString()
+        writeProjectData(this.byProject, currentCommit(), finishedAt)
+        writeReport(finishedAt)
+      }
+      if (wroteGallery || this.byProject.size > 0) writeRunIndex()
+    })
   }
 }

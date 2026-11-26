@@ -15,7 +15,7 @@ All four run on the Classic theme, the closest match to Litegraph's metrics. Non
 
 - A local [ComfyUI](https://github.com/comfyanonymous/ComfyUI) checkout with its Python environment. Last run with ComfyUI `v0.28.0-12-gb08e6cf35`.
 - `pnpm install` in this checkout.
-- `git` and `curl`, and network access to clone the pinned packs from GitHub.
+- `git`, `curl` and `lsof`, and network access to clone the pinned packs from GitHub.
 - Ports 18461, 18462 and 18463 free. Change them with the variables below.
 
 The scripts never write into the ComfyUI checkout or its Python environment. Each backend gets its own folder under `temp/nodes2-acceptance/`. The packs' extra Python modules are installed into `temp/nodes2-acceptance/packs/python-overlay` with `pip install --target`. Packs whose `__init__.py` installs software or imports hundreds of heavy nodes are replaced or patched as listed in `browser_tests/fixtures/data/nodes2AcceptancePacks.json`.
@@ -33,7 +33,7 @@ This takes about 45 minutes. The script:
 3. Starts one ComfyUI backend for the inputs tests and one with the packs.
 4. Runs the inputs project alongside the packs project, then the layout survey.
 5. Stops those backends and runs the performance project on its own, so other work doesn't skew the timings.
-6. Prints where the reports are.
+6. Prints where the reports are and exits nonzero if any project failed.
 
 Run only some projects, or only some tests:
 
@@ -48,7 +48,7 @@ NODES2_ACCEPTANCE_PROJECTS=layout NODES2_ACCEPTANCE_GREP=rgthree COMFYUI_DIR=~/C
 | `COMFYUI_PYTHON`                                                                               | `$COMFYUI_DIR/.venv/bin/python` | Its Python                                                                |
 | `NODES2_ACCEPTANCE_PROJECTS`                                                                   | `inputs packs layout perf`      | Which projects to run                                                     |
 | `NODES2_ACCEPTANCE_GREP`                                                                       | none                            | Passed to Playwright's `--grep`                                           |
-| `NODES2_ACCEPTANCE_RUN`                                                                        | start time, `YYYY-MM-DD_HHMMSS` | Report folder name; give two runs the same name to put them in one folder |
+| `NODES2_ACCEPTANCE_RUN`                                                                        | start time plus a unique suffix | Report folder name; give two runs the same name to put them in one folder |
 | `NODES2_ACCEPTANCE_VARIANT`                                                                    | none                            | Subfolder of the run, such as `main` or `inflight`                        |
 | `NODES2_ACCEPTANCE_BUILD`                                                                      | this checkout's commit          | Label for the frontend under test, shown in the report                    |
 | `NODES2_ACCEPTANCE_TEST_BUILD`, `NODES2_ACCEPTANCE_PROD_BUILD`                                 | build from this checkout        | Use existing builds instead, such as another checkout's                   |
@@ -89,7 +89,7 @@ PLAYWRIGHT_TEST_URL=http://127.0.0.1:18462 PLAYWRIGHT_SETUP_API_URL=http://127.0
   --reporter=line,./browser_tests/reporters/nodes2AcceptanceReporter.ts
 ```
 
-`serve.sh <port> <backend folder> <frontend build> [packs...]` copies `tools/devtools` into the backend, which the test fixture needs, and waits until ComfyUI answers. It stops the backend's previous server first; `kill $(cat <backend folder>/server.pid)` stops it afterwards. Run one worker per backend.
+`serve.sh <port> <backend folder> <frontend build> [packs...]` copies `tools/devtools` into the backend and waits for a successful HTTP response from its child process. It rejects occupied ports and live pidfiles without stopping their processes. Failed or interrupted startup stops the child it launched. After successful startup, `kill $(cat <backend folder>/server.pid)` stops that backend. Run one worker per backend.
 
 ## Reports
 
@@ -111,7 +111,7 @@ In `report.html`:
 
 - **PASS**: Nodes 2.0 meets the requirement.
 - **FAIL**: Nodes 2.0 does not; the result column shows the measured value.
-- **TEST FAILED**: the Litegraph control failed, the test timed out, or repeated runs disagreed. The test needs fixing; the row says nothing about Nodes 2.0.
+- **TEST FAILED**: required results are missing, the Litegraph control failed, the test timed out, or attempts disagreed across retries or repeated runs. The row says nothing about Nodes 2.0.
 - **NOT TESTED**: there is no reliable test for the requirement yet; the row says why.
 
 In `layout.html`, each flag is a measurement against Litegraph. Use the screenshots to confirm it:

@@ -17,6 +17,10 @@ import { REQUIREMENTS } from '@e2e/reporters/nodes2Acceptance/requirements'
 
 const ROW_HEIGHT_TEST = 'widget rows are 20 px tall'
 const ROW_HEIGHT_REQUIREMENT = 'Widget row height is 20 px'
+const COMBO_UP_TEST =
+  'arrow up from the first option of an open combo list wraps to the last'
+const COMBO_RIGHT_TEST =
+  'arrow right in an open combo list jumps to the last option'
 
 function recorded(overrides: Partial<RecordedTest>): RecordedTest {
   return {
@@ -110,6 +114,96 @@ describe('buildSection', () => {
     expect(row.nodes2).toBe('testFailed')
     expect(row.result).toContain('inconsistent')
   })
+
+  it.for([
+    ['classic only', 'classic', 'passed', 'pass', 'testFailed'],
+    ['failed classic only', 'classic', 'failed', 'fail', 'testFailed'],
+    ['Nodes 2.0 only', 'nodes2', 'passed', 'none', 'testFailed'],
+    ['failed Nodes 2.0 only', 'nodes2', 'failed', 'none', 'testFailed'],
+    ['single-session comparison passes', 'both', 'passed', 'none', 'pass'],
+    ['single-session comparison fails', 'both', 'failed', 'none', 'fail']
+  ] as const)(
+    'requires complete evidence: %s',
+    ([, renderer, status, litegraph, nodes2]) => {
+      const row = rowNamed(
+        rows([recorded({ renderer, status })]),
+        ROW_HEIGHT_REQUIREMENT
+      )
+
+      expect(row).toMatchObject({ litegraph, nodes2 })
+    }
+  )
+
+  it.for([
+    ['no results', [], 'none', 'notTested'],
+    [
+      'one pair passes',
+      pair({ title: COMBO_UP_TEST }, {}),
+      'pass',
+      'testFailed'
+    ],
+    [
+      'one pair fails',
+      pair({ title: COMBO_UP_TEST }, { status: 'failed' }),
+      'pass',
+      'testFailed'
+    ],
+    [
+      'a sibling has only a passing control',
+      [
+        ...pair({ title: COMBO_UP_TEST }, {}),
+        recorded({ title: COMBO_RIGHT_TEST })
+      ],
+      'pass',
+      'testFailed'
+    ],
+    [
+      'a sibling has only a failed control',
+      [
+        ...pair({ title: COMBO_UP_TEST }, {}),
+        recorded({ title: COMBO_RIGHT_TEST, status: 'failed' })
+      ],
+      'fail',
+      'testFailed'
+    ],
+    [
+      'a sibling lacks its control',
+      [
+        ...pair({ title: COMBO_UP_TEST }, {}),
+        recorded({ title: COMBO_RIGHT_TEST, renderer: 'nodes2' })
+      ],
+      'pass',
+      'testFailed'
+    ],
+    [
+      'both pairs pass',
+      [
+        ...pair({ title: COMBO_UP_TEST }, {}),
+        ...pair({ title: COMBO_RIGHT_TEST }, {})
+      ],
+      'pass',
+      'pass'
+    ],
+    [
+      'a sibling is a single-session comparison',
+      [
+        ...pair({ title: COMBO_UP_TEST }, {}),
+        recorded({ title: COMBO_RIGHT_TEST, renderer: 'both' })
+      ],
+      'pass',
+      'pass'
+    ]
+  ] as const)(
+    'requires every referenced test: %s',
+    ([, runs, litegraph, nodes2]) => {
+      const row = rowNamed(
+        rows([...runs]),
+        'Combo list keys: ↑/↓ wrap, ← first, → last'
+      )
+
+      expect(row).toMatchObject({ litegraph, nodes2 })
+    }
+  )
 
   it('shows the failure detail as the result', () => {
     const row = rowNamed(

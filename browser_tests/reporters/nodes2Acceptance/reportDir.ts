@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import path from 'node:path'
 
 /** Folder name for one acceptance run from its local start time, as `YYYY-MM-DD_HHMMSS`. */
@@ -11,10 +12,8 @@ export function runFolderName(start: Date): string {
 /** Folder holding every acceptance run and their index. */
 export const REPORT_ROOT = 'nodes2-acceptance-report'
 
-/** Directory a run's report, data and layout survey are written to: its own folder under {@link REPORT_ROOT}. */
+process.env.NODES2_ACCEPTANCE_RUN ??= `${runFolderName(new Date())}-${randomUUID()}`
+
 export const REPORT_DIR =
   process.env.NODES2_ACCEPTANCE_REPORT_DIR ??
-  path.join(
-    REPORT_ROOT,
-    process.env.NODES2_ACCEPTANCE_RUN ?? runFolderName(new Date())
-  )
+  path.join(REPORT_ROOT, process.env.NODES2_ACCEPTANCE_RUN)
