@@ -322,7 +322,7 @@ describe('AddCreditsDialog amount step', () => {
       {
         negativeBalanceCredits: 1_895,
         suggestedTopupCents: 11400,
-        quoteGeneration: 0
+        quoteScope: 'workspace-a'
       },
       { credits: 2_325, runsPaused: false }
     )
@@ -331,7 +331,7 @@ describe('AddCreditsDialog amount step', () => {
     ).toBeVisible()
 
     ports.balanceAfter = { credits: -840, runsPaused: true }
-    await rerender({ quoteGeneration: 1 })
+    await rerender({ quoteScope: 'workspace-b' })
 
     expect(
       await screen.findByText('Still negative after this top-up: −840 credits.')

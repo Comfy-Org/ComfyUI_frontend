@@ -667,7 +667,7 @@ const balanceQuoteRequest = computed(() =>
   negativeBalanceCredits.value !== null && isValidAmount.value
     ? {
         amountCents: payAmount.value * 100,
-        key: `${workspaceStore.workspaceTransitionGeneration}:${payAmount.value * 100}:${negativeBalanceCredits.value}`
+        key: `${workspaceStore.workspaceTransitionGeneration}:${workspaceStore.activeWorkspaceId}:${payAmount.value * 100}:${negativeBalanceCredits.value}`
       }
     : null
 )
