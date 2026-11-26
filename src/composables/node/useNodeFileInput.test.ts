@@ -6,7 +6,7 @@ import { useNodeFileInput } from './useNodeFileInput'
 function createNode(overrides: Record<string, unknown> = {}): LGraphNode {
   return {
     ...overrides
-  } as LGraphNode
+  } as unknown as LGraphNode
 }
 
 function createFile(name: string, type = 'image/png'): File {
@@ -16,7 +16,7 @@ function createFile(name: string, type = 'image/png'): File {
 function setInputFiles(input: HTMLInputElement, files: File[]) {
   Object.defineProperty(input, 'files', {
     configurable: true,
-    value: files as unknown as FileList
+    value: files
   })
 }
 
