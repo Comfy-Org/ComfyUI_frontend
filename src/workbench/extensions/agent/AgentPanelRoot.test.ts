@@ -17278,7 +17278,8 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(state.selectItems).not.toHaveBeenCalled()
     expect(useTelemetry()!.trackAgentNodeTagged).toHaveBeenCalledTimes(1)
     expect(useTelemetry()!.trackAgentNodeTagged).toHaveBeenCalledWith({
-      source: 'mention_picker'
+      source: 'mention_picker',
+      node_count: 1
     })
   })
 
@@ -18564,6 +18565,27 @@ describe('AgentPanelRoot workflow binding', () => {
     await nextTick()
     expect(useAgentPanelStore().selectedWorkflow?.path).toBe(other.path)
     expect(useAgentPanelStore().followsVisibleWorkflow).toBe(true)
+  })
+
+  it('tracks nodes picked from the + menu as plus_menu node references', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+    const state = setupNodeSelectionCanvas()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    useAgentPanelStore().isOpen = true
+    await enterNodeSelectionMode()
+    expect(useTelemetry()!.trackAgentNodeTagged).not.toHaveBeenCalled()
+
+    state.selectedItems.add(state.nodes[0])
+    state.selectedItems.add(state.nodes[1])
+    syncFakeSelection()
+    await nextTick()
+
+    expect(useTelemetry()!.trackAgentNodeTagged).toHaveBeenCalledTimes(1)
+    expect(useTelemetry()!.trackAgentNodeTagged).toHaveBeenCalledWith({
+      source: 'plus_menu',
+      node_count: 2
+    })
   })
 
   it('retains the target when a canvas node is actually added before Send', async () => {

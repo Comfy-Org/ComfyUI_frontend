@@ -944,6 +944,9 @@ const {
   }
 })
 
+// A mention pick of a node that is also selected on canvas would otherwise
+// count as a + menu reference too.
+let taggingFromMention = false
 watch(
   selectionTags,
   (tags, previousTags) => {
@@ -956,10 +959,19 @@ watch(
     if (canvasStore.isPickingNodes) {
       const previousKeys = new Set(previousTags.map(selectedNodeKey))
       const selectedKeys = new Set(selectedNodes.value.map(selectedNodeKey))
+      let pickedCount = 0
       for (const tag of tags) {
         const key = selectedNodeKey(tag)
-        if (!previousKeys.has(key) && selectedKeys.has(key)) nextKeys.add(key)
+        if (!previousKeys.has(key) && selectedKeys.has(key)) {
+          nextKeys.add(key)
+          pickedCount++
+        }
       }
+      if (pickedCount && !taggingFromMention)
+        useTelemetry()?.trackAgentNodeTagged({
+          source: 'plus_menu',
+          node_count: pickedCount
+        })
     }
     composerStore.setSelectionModeNodeKeys(nextKeys)
   },
@@ -3418,9 +3430,17 @@ function onOpenAssets(): void {
 function onMentionPick(node: SelectedNode): void {
   if (!canReferenceNodes.value) return
   const stagedBefore = selectionTags.value.length
-  addSelectionTag(node)
+  taggingFromMention = true
+  try {
+    addSelectionTag(node)
+  } finally {
+    taggingFromMention = false
+  }
   if (selectionTags.value.length > stagedBefore)
-    useTelemetry()?.trackAgentNodeTagged({ source: 'mention_picker' })
+    useTelemetry()?.trackAgentNodeTagged({
+      source: 'mention_picker',
+      node_count: 1
+    })
 }
 
 function onRemoveSelectionTag(id: string): void {
