@@ -1,6 +1,7 @@
 import type { ISerialisedGraph } from '@/lib/litegraph/src/litegraph'
 import type { SystemStats } from '@comfyorg/api-client/types'
 import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
+import { fence } from '@/utils/reportTextUtil'
 
 export interface ErrorReportData {
   exceptionType: string
@@ -28,6 +29,10 @@ export function generateErrorReport(error: ErrorReportData): string {
       ? 'Workflow too large. Please manually upload the workflow from local file system.'
       : workflowJSONString
   const systemStats = error.systemStats
+  const logsText =
+    typeof error.serverLogs === 'string'
+      ? error.serverLogs
+      : JSON.stringify(error.serverLogs, null, 2)
 
   return `
 # ComfyUI Error Report
@@ -37,9 +42,7 @@ export function generateErrorReport(error: ErrorReportData): string {
 - **Exception Type:** ${error.exceptionType || 'N/A'}
 - **Exception Message:** ${error.exceptionMessage || 'N/A'}
 ## Stack Trace
-\`\`\`
-${error.traceback || 'No stack trace available'}
-\`\`\`
+${fence('', error.traceback || 'No stack trace available')}
 ## System Information
 - **ComfyUI Version:** ${systemStats.system.comfyui_version}
 - **Arguments:** ${systemStats.system.argv.join(' ')}
@@ -61,14 +64,10 @@ ${systemStats.devices
   )
   .join('\n')}
 ## Logs
-\`\`\`
-${typeof error.serverLogs === 'string' ? error.serverLogs : JSON.stringify(error.serverLogs, null, 2)}
-\`\`\`
+${fence('', logsText)}
 ## Attached Workflow
 Please make sure that workflow does not contain any sensitive information such as API keys or passwords.
-\`\`\`
-${workflowText}
-\`\`\`
+${fence('', workflowText)}
 
 ## Additional Context
 (Please add any additional context or steps to reproduce the error here)

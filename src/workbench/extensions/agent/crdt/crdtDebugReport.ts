@@ -19,6 +19,7 @@ import type { DevEvent } from './crdtLog'
 import { devEventReplacer } from './crdtLog'
 import type { MergeTraceEntry } from './mergeTrace'
 import type { MediaUiDiagnostic } from './mediaUiDiagnostics'
+import { fence, truncate, truncateHeadAndTail } from '@/utils/reportTextUtil'
 const MAX_LOG_CHARS = 40000
 const MAX_WORKFLOW_CHARS = 200000
 const MAX_SECTION_CHARS = 60000
@@ -115,14 +116,6 @@ async function attempt<T>(label: string, load: () => Promise<T>) {
     clearTimeout(timeout)
   }
 }
-function fence(language: string, body: string): string {
-  const longestRun = [...body.matchAll(/`+/g)].reduce(
-    (max, match) => Math.max(max, match[0].length),
-    0
-  )
-  const delimiter = '`'.repeat(Math.max(3, longestRun + 1))
-  return [delimiter + language, body, delimiter].join('\n')
-}
 function json(value: unknown): string {
   try {
     return JSON.stringify(value, devEventReplacer(), 2)
@@ -151,31 +144,8 @@ function fitMediaDiagnostics(
   }
   return retained
 }
-function truncate(text: string, max: number): string {
-  if (text.length <= max) return text
-  const start = text.length - max
-  const safeStart =
-    text.charCodeAt(start) >= 0xdc00 && text.charCodeAt(start) <= 0xdfff
-      ? start + 1
-      : start
-  return `…(${safeStart} earlier characters trimmed)…\n${text.slice(safeStart)}`
-}
 function truncateReport(text: string): string {
-  if (text.length <= MAX_REPORT_CHARS) return text
-  const marker = `\n\n[report truncated to ${MAX_REPORT_CHARS} characters]\n\n`
-  const available = MAX_REPORT_CHARS - marker.length
-  const headLength = Math.floor(available * 0.75)
-  const tailStart = text.length - (available - headLength)
-  const safeHeadLength =
-    text.charCodeAt(headLength - 1) >= 0xd800 &&
-    text.charCodeAt(headLength - 1) <= 0xdbff
-      ? headLength - 1
-      : headLength
-  const safeTailStart =
-    text.charCodeAt(tailStart) >= 0xdc00 && text.charCodeAt(tailStart) <= 0xdfff
-      ? tailStart + 1
-      : tailStart
-  return `${text.slice(0, safeHeadLength)}${marker}${text.slice(safeTailStart)}`
+  return truncateHeadAndTail(text, MAX_REPORT_CHARS)
 }
 type SystemStats = Awaited<ReturnType<typeof api.getSystemStats>>
 function isRecord(value: unknown): value is Record<string, unknown> {
