@@ -80,15 +80,16 @@ function changesAgainstDoc(doc: Y.Doc, changes: FrameChanges): FrameChanges {
 }
 
 function hasFrameChanges(changes: FrameChanges): boolean {
-  return (
-    changes.nodes.size > 0 ||
-    changes.widgets.size > 0 ||
-    changes.resyncNodes.size > 0 ||
-    changes.links.size > 0 ||
-    (changes.interiors?.size ?? 0) > 0 ||
-    (changes.interiorDefinitions?.size ?? 0) > 0 ||
-    (changes.groups?.size ?? 0) > 0
-  )
+  const collections = [
+    changes.nodes,
+    changes.widgets,
+    changes.resyncNodes,
+    changes.links,
+    changes.interiors,
+    changes.interiorDefinitions,
+    changes.groups
+  ]
+  return collections.some((collection) => collection && collection.size > 0)
 }
 
 function pendingNodeDelta(target: BoundTarget, changes: FrameChanges) {
