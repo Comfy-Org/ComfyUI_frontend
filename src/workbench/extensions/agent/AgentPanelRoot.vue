@@ -1295,11 +1295,44 @@ function boundRootGraphId(): RootGraphId | null {
 function followerCanDeliver(): boolean {
   return isFollowerActive.value && subscriptionSent()
 }
-function noteUnboundVisibleIntent(): void {
-  const visible = workflowStore.activeWorkflow
-  const workflowId = visible
-    ? bindingStore.workflowIdFor(visible.path)
-    : undefined
+function workflowRootGraphId(workflow: ComfyWorkflow): string | undefined {
+  return workflow.activeState?.id ?? workflow.initialState?.id
+}
+function reportUnattributedVisibleIntent(matchCount: number): void {
+  const errorType = 'agent_visible_intent_workflow_unresolved'
+  reportError(
+    new Error('agent visible intent workflow could not be resolved'),
+    {
+      surface: 'agent',
+      errorType,
+      level: 'warning',
+      fingerprint: [errorType, matchCount === 0 ? 'missing' : 'ambiguous'],
+      tags: {
+        failure_kind: 'bad_state',
+        feature_area: 'agent',
+        operation: 'record_unsynced_human_ops',
+        outcome: 'withheld'
+      },
+      context: { matchingWorkflowCount: matchCount }
+    }
+  )
+}
+function noteUnboundVisibleIntent(rootGraphId: string): void {
+  const active = workflowStore.activeWorkflow
+  const matches = workflowStore.openWorkflows.filter(
+    (workflow) => workflowRootGraphId(workflow) === rootGraphId
+  )
+  const visible =
+    active && workflowRootGraphId(active) === rootGraphId
+      ? active
+      : matches.length === 1
+        ? matches[0]
+        : undefined
+  if (!visible) {
+    reportUnattributedVisibleIntent(matches.length)
+    return
+  }
+  const workflowId = bindingStore.workflowIdFor(visible.path)
   if (workflowId !== undefined) noteUnboundLocalIntent(workflowId)
 }
 const docOpMinter = attachDocOpMinter({
