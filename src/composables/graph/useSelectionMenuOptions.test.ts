@@ -35,7 +35,8 @@ vi.mock<unknown>(import('@/composables/graph/useNodeArrangement'), () => ({
     alignOptions: [{ localizedName: 'align-left', icon: 'align-left' }],
     distributeOptions: [{ localizedName: 'distribute', icon: 'distribute' }],
     applyAlign: vi.fn(),
-    applyDistribute: vi.fn()
+    applyDistribute: vi.fn(),
+    canDistribute: { value: true }
   })
 }))
 

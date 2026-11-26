@@ -1,3 +1,4 @@
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { RectSide as Direction } from '@comfyorg/shared-frontend-utils/geometry'
@@ -101,10 +102,18 @@ export function useNodeArrangement() {
     canvasRefresh.refreshCanvas()
   }
 
+  const canDistribute = computed(
+    () =>
+      ![...canvasStore.selectedItems].some(
+        (item) => isLGraphNode(item) && item.pinned
+      )
+  )
+
   return {
     alignOptions,
     distributeOptions,
     applyAlign,
-    applyDistribute
+    applyDistribute,
+    canDistribute
   }
 }

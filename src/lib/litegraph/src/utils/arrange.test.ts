@@ -68,12 +68,11 @@ describe('pinned nodes', () => {
     ])
   })
 
-  it('distributeNodes spaces only the unpinned nodes', () => {
+  it('distributeNodes moves nothing when any node is pinned', () => {
     const nodes = [0, 150, 400, 600].map((x, i) =>
-      (i === 3 ? pinnedNodeAt : nodeAt)([x, i * 200], [100, 40])
+      (i === 2 ? pinnedNodeAt : nodeAt)([x, i * 200], [100, 40])
     )
-    const positions = distributeNodes(nodes, 'x')
-    expect(positions.map(({ newPos }) => newPos.x)).toEqual([0, 200, 400])
+    expect(distributeNodes(nodes, 'x')).toEqual([])
   })
 })
 
