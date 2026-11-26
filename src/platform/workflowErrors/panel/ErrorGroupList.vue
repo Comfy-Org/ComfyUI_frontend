@@ -75,6 +75,20 @@
               {{ t('rightSidePanel.askAgent') }}
             </Button>
           </div>
+          <div
+            v-if="offersCustomDeployment"
+            data-testid="errors-summary-custom-deployment"
+            class="px-2 pb-2"
+          >
+            <Button
+              variant="inverted"
+              size="md"
+              class="w-full"
+              @click="customDeploymentSetup?.setUp('errors_panel')"
+            >
+              {{ t('rightSidePanel.setUpCustomDeployment') }}
+            </Button>
+          </div>
           <DeploymentBuildActions
             v-if="buildDeployment"
             :deployment="buildDeployment"
@@ -456,6 +470,7 @@ import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/mis
 import DeploymentBuildActions from './DeploymentBuildActions.vue'
 import { useBootDeploymentLabel } from '@/platform/workspace/composables/useDeploymentLabels'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
+import { useCustomDeploymentSetup } from '@/platform/workspace/composables/useCustomDeploymentSetup'
 import {
   buildAllErrorContext,
   buildGroupErrorContext
@@ -659,6 +674,18 @@ const buildFixesAllSetup = computed(
     )
 )
 
+const customDeploymentSetup = isCloud ? useCustomDeploymentSetup() : null
+const offersCustomDeployment = computed(
+  () => customDeploymentSetup?.offered.value ?? false
+)
+const customDeploymentFixesAllSetup = computed(
+  () =>
+    offersCustomDeployment.value &&
+    filteredGroups.value.every(
+      (group) => group.severity !== 'missing' || group.type === 'missing_node'
+    )
+)
+
 const severityTotals = computed(() => {
   const totals: Record<ErrorGroupSeverity, number> = { error: 0, missing: 0 }
   for (const group of allErrorGroups.value) {
@@ -776,6 +803,18 @@ watch(selectionEmphasisSignature, () => {
   if (selectionHasHiddenSeverity) severityFilter.value = null
 })
 
+function setupDescription(): string {
+  if (buildFixesAllSetup.value)
+    return t(
+      'rightSidePanel.addToDeploymentBuild',
+      { deployment: bootDeploymentLabel.value },
+      { escapeParameter: false }
+    )
+  if (customDeploymentFixesAllSetup.value)
+    return t('rightSidePanel.cloudLacksCustomNodes')
+  return t('rightSidePanel.finishSetupBeforeRun')
+}
+
 const hero = computed(() => {
   if (hasMixedSeverity.value) {
     const total = errorCount.value + missingCount.value
@@ -791,13 +830,7 @@ const hero = computed(() => {
       count: missingCount.value,
       countClass: 'text-warning',
       title: t('rightSidePanel.setupRequired'),
-      description: buildFixesAllSetup.value
-        ? t(
-            'rightSidePanel.addToDeploymentBuild',
-            { deployment: bootDeploymentLabel.value },
-            { escapeParameter: false }
-          )
-        : t('rightSidePanel.finishSetupBeforeRun')
+      description: setupDescription()
     }
   }
   return {
