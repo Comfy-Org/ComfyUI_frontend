@@ -164,7 +164,10 @@ import {
   outputAsSerialisable
 } from './node/slotUtils'
 import type { NodeLike } from './types/NodeLike'
-import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
+import type {
+  CanvasMouseEvent,
+  CanvasPointerEvent
+} from '@comfyorg/graph-model/events'
 import {
   LGraphEventMode,
   NodeSlotType,
@@ -880,13 +883,22 @@ export class LGraphNode
 
   /** @inheritdoc {@link boundingRect} */
   private _boundingRect: Rectangle = new Rectangle()
+  private _measuredPos: Point | undefined
   /**
    * Cached node position & area as `x, y, width, height`.  Includes changes made by {@link onBounding}, if present.
    *
-   * Determines the node hitbox and other rendering effects.  Calculated once at the start of every frame.
+   * Determines the node hitbox and other rendering effects.  Measured once at the start of every frame, and moved with the node until the next measure.
    */
   get boundingRect(): ReadOnlyRectangle {
-    return this._boundingRect
+    const bounds = this._boundingRect
+    const measured = this._measuredPos
+    if (!measured) return bounds
+    const [x, y] = this.pos
+    bounds[0] += x - measured[0]
+    bounds[1] += y - measured[1]
+    measured[0] = x
+    measured[1] = y
+    return bounds
   }
 
   /** The offset from {@link pos} to the top-left of {@link boundingRect}. */
@@ -1170,7 +1182,7 @@ export class LGraphNode
   /** @param pos Offset from {@link LGraphNode.pos}. */
   onDblClick?(
     this: LGraphNode,
-    e: CanvasPointerEvent,
+    e: CanvasMouseEvent,
     pos: Point,
     canvas: LGraphCanvas
   ): void
@@ -1408,8 +1420,7 @@ export class LGraphNode
         )
         reportNamedValuesShadowDiff(
           this,
-          diffNamedValuesShadow(namedValues, legacyShadow),
-          Boolean(info.widgets_values_named)
+          diffNamedValuesShadow(namedValues, legacyShadow)
         )
       }
     } finally {
@@ -2575,6 +2586,7 @@ export class LGraphNode
   updateArea(ctx?: CanvasRenderingContext2D): void {
     const bounds = this._boundingRect
     this.measure(bounds, ctx)
+    this._measuredPos = [this.pos[0], this.pos[1]]
     this.onBounding?.(bounds)
 
     const renderArea = this._renderArea

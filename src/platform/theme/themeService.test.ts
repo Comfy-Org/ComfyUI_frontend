@@ -204,10 +204,12 @@ describe('useThemeService theme variables', () => {
     expect({
       '--primary': readRootProperty('--primary'),
       '--warning': readRootProperty('--warning'),
+      '--success': readRootProperty('--success'),
       colorScheme: document.documentElement.style.colorScheme
     }).toEqual({
       '--primary': '#31b9f4',
       '--warning': '#c77700',
+      '--success': '#00854a',
       colorScheme: 'light'
     })
   })

@@ -38,6 +38,7 @@ def row(pack: str, **over: object) -> dict:
         'newTypes': [],
         'driveTypes': {},
         'hookErrors': [],
+        'hookErrorMethods': [],
         'ops': {'load': {'err': '', 'sig': '{}', 'depr': '', 'desync': ''}},
         'formAgreement': {},
         'formProof': {'graph': {}, 'driven': {}, 'needsForm': []},
@@ -82,8 +83,9 @@ def break_register_custom_nodes(r: dict) -> None:
     r['registerCustomNodes'] = 'boom'
 
 
-def add_hook_error(r: dict) -> None:
-    r['hookErrors'] = ['Error calling extension "x" beforeRegisterNodeDef']
+def add_hook_error(r: dict, method: str = 'beforeRegisterNodeDef') -> None:
+    r['hookErrors'] = [f"Error calling extension 'x' method '{method}'"]
+    r['hookErrorMethods'] = [method]
 
 
 def break_op_err(r: dict) -> None:
@@ -126,7 +128,7 @@ CRITERION_CASES = (
      100 - F['register_node_def']),
     ('registerCustomNodes OK', break_register_custom_nodes,
      100 - F['register_custom_nodes']),
-    ('packs free of contained hook errors', add_hook_error,
+    ('packs free of gated hook errors', add_hook_error,
      100 - F['hook_free']),
     ('every operation clean', break_op_err, 100 - F['op_clean']),
     ('every operation clean', break_op_desync, 100 - F['op_clean']),
@@ -159,6 +161,22 @@ class Criteria(unittest.TestCase):
         v = sm.evaluate(broken(50, break_op_desync), {})
         self.assertEqual(v.code, 1)
         self.assertIn('every operation clean', v.breaches[0])
+
+    def test_errors_from_telemetry_hooks_are_reported_not_gated(self) -> None:
+        every_setup_throws = broken(
+            100, lambda r: add_hook_error(r, 'setup')
+        )
+        v = sm.evaluate(every_setup_throws, {})
+        self.assertEqual(v.code, 0, v.lines)
+        self.assertRegex('\n'.join(v.lines), r'not gated:\n\s+setup\s+100 pack')
+
+        unattributed = 100 - int(F['hook_free']) + 1
+        v = sm.evaluate(
+            broken(unattributed, lambda r: add_hook_error(r, 'unattributed')),
+            {},
+        )
+        self.assertEqual(v.code, 1)
+        self.assertIn('packs free of gated hook errors', v.breaches[0])
 
     def test_ungated_row_fields_are_labelled_telemetry(self) -> None:
         report = '\n'.join(sm.evaluate(population(), {}).lines)
@@ -396,6 +414,69 @@ class DeltaGate(unittest.TestCase):
                 self.assertIn(
                     'previous metrics malformed', '\n'.join(v.lines)
                 )
+
+
+class NewHookDeltaGate(unittest.TestCase):
+    BASELINE = {'entryPct': 100.0, 'newHookFreePct': 100.0, 'runId': 'run-1'}
+
+    def test_a_pack_newly_failing_a_new_hook_breaches(self) -> None:
+        cases = (
+            ('setup throws', lambda r: add_hook_error(r, 'setup')),
+            ('setup hangs', lambda r: r.update(
+                lifecycle={'init': 'OK', 'setup': 'setup did not settle'})),
+        )
+        for name, mutate in cases:
+            with self.subTest(name):
+                v = sm.evaluate(broken(1, mutate), {}, self.BASELINE, 'run-2')
+                self.assertEqual(v.code, 1, v.lines)
+                self.assertEqual(
+                    v.breaches,
+                    ['packs free of new-hook errors dropped 1.0pp'
+                     ' (from 100.0% to 99.0%)'],
+                )
+
+    def test_a_load_hook_that_never_settles_breaches(self) -> None:
+        rows = population()
+        for r in rows:
+            r['ops']['load:afterLoadGraph'] = {
+                'err': '', 'sig': '{}', 'depr': '', 'desync': ''}
+        rows[0]['ops']['load:afterLoadGraph']['err'] = (
+            'Error: afterLoadGraph did not settle within 10000 ms')
+        v = sm.evaluate(rows, {}, self.BASELINE, 'run-2')
+        self.assertEqual(
+            v.breaches,
+            ['packs free of new-hook errors dropped 1.0pp'
+             ' (from 100.0% to 99.0%)'],
+        )
+
+    def test_an_unchanged_new_hook_rate_passes(self) -> None:
+        rows = broken(30, lambda r: add_hook_error(r, 'setup'))
+        prev = {**self.BASELINE, 'newHookFreePct': 70.0}
+        v = sm.evaluate(rows, {}, prev, 'run-2')
+        self.assertEqual(v.code, 0, v.lines)
+        self.assertEqual(v.metrics['newHookFreePct'], 70.0)
+
+    def test_a_drop_of_exactly_the_tolerance_passes(self) -> None:
+        def rows_with_failures(failing: int) -> list[dict]:
+            rows = population(600)
+            for r in rows[:failing]:
+                add_hook_error(r, 'setup')
+            return rows
+
+        baseline = sm.evaluate(rows_with_failures(2), {}).metrics
+        for failing, code in ((5, 0), (6, 1)):
+            with self.subTest(failing=failing):
+                v = sm.evaluate(
+                    rows_with_failures(failing), {}, baseline, 'run-2'
+                )
+                self.assertEqual(v.code, code, v.lines)
+
+    def test_a_baseline_without_the_rate_skips_only_this_delta(self) -> None:
+        rows = broken(30, lambda r: add_hook_error(r, 'setup'))
+        v = sm.evaluate(rows, {}, {'entryPct': 100.0, 'runId': 'run-1'},
+                        'run-2')
+        self.assertEqual(v.code, 0, v.lines)
+        self.assertIn('previous run predates it', '\n'.join(v.lines))
 
 
 class StaleRegistry(unittest.TestCase):

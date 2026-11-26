@@ -36,6 +36,9 @@ export function insertComposerReference(
         : item.textOffset
   }))
   references.splice(referenceIndex, 0, { ...reference, textOffset })
+  let caretReferenceIndex = referenceIndex + 1
+  while (references[caretReferenceIndex]?.textOffset === textOffset)
+    caretReferenceIndex++
   return {
     prompt: {
       text: needsSpace
@@ -45,7 +48,7 @@ export function insertComposerReference(
     },
     insertion: {
       textOffset: textOffset + 1,
-      referenceIndex: referenceIndex + 1
+      referenceIndex: caretReferenceIndex
     }
   }
 }

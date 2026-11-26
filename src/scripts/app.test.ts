@@ -151,7 +151,6 @@ import { extractFilesFromDragEvent } from '@/platform/assets/integration/assetDr
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useCanvasScheduler } from '@/renderer/core/canvas/useCanvasScheduler'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { zeroUuid } from '@comfyorg/graph-model/uuid'
 import { graphsAwaitingNodeTypes } from '@/platform/customNodes/lateLoading/lateNodeTypes'
 import type { importA1111 } from './pnginfo'
@@ -308,6 +307,16 @@ async function useRealWorkflowService(): Promise<WorkflowService> {
     real.restoreRetainedWorkflow
   )
   return real
+}
+
+function useRealWorkflowLifecycle() {
+  const workflowStore = useWorkflowStore()
+  workflowStore.provideChangeTracker(ChangeTracker)
+  vi.mocked(workflowStore.createNewTemporary).mockRestore()
+  vi.mocked(workflowStore.getWorkflowByPath).mockRestore()
+  vi.mocked(workflowStore.isActive).mockRestore()
+  vi.mocked(workflowStore.openWorkflow).mockRestore()
+  return workflowStore
 }
 
 interface ShowGraph {
@@ -5474,6 +5483,30 @@ describe('ComfyApp', () => {
       })
     })
 
+    it.for([
+      {
+        name: 'a top-level message',
+        response: { message: 'failed to process user authentication' },
+        expected: 'failed to process user authentication'
+      },
+      { name: 'an empty body', response: {}, expected: 'HTTP 500' }
+    ])(
+      'surfaces a refused run whose body has $name instead of dropping it',
+      async ({ response, expected }) => {
+        prepareEmptyPromptQueue()
+        vi.spyOn(api, 'queuePrompt').mockRejectedValue(
+          new PromptExecutionError(response, 500)
+        )
+
+        await app.queuePrompt(0)
+
+        expect(useExecutionErrorStore().lastPromptError).toMatchObject({
+          type: 'server_error',
+          message: expected
+        })
+      }
+    )
+
     it('records a rejected submission on the workflow that queued it', async () => {
       prepareEmptyPromptQueue()
       const executionErrorStore = useExecutionErrorStore()
@@ -7834,16 +7867,13 @@ describe('ComfyApp', () => {
       )
 
       it.for(importPaths)(
-        'fits an import through $path whose nodes land only under the agent panel into the uncovered canvas',
+        'fits an import through $path whose nodes land only under a side panel into the uncovered canvas',
         async ({ importFile }) => {
-          const panel = useAgentPanelStore()
-          panel.enabled = true
-          panel.consentAccepted = true
-          panel.isOpen = true
-          panel.setWidth(420)
-          onTestFinished(() => {
-            panel.isOpen = false
-          })
+          const sidePanel = document.createElement('div')
+          sidePanel.id = 'last-side-panel'
+          sidePanel.getBoundingClientRect = () => new DOMRect(380, 0, 420, 600)
+          document.body.append(sidePanel)
+          onTestFinished(() => sidePanel.remove())
           mockCanvas.ds.offset = [400, 0]
           mockCanvas.ds.scale = 1
 
@@ -9121,6 +9151,320 @@ describe('ComfyApp', () => {
         expect(droppedFileWarnings()).toHaveLength(expectedWarnings)
       }
     )
+
+    it('reports user activation only once for the final active tab when multiple workflow files are dropped', async () => {
+      app.canvas = fromPartial<LGraphCanvas>({
+        ...createMockCanvas(),
+        ds: createTestDragAndScale(),
+        graph_mouse: [0, 0],
+        adjustMouseEvent: vi.fn()
+      })
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      const workflowStore = useRealWorkflowLifecycle()
+      await useRealWorkflowService()
+      const activated = vi.fn()
+      workflowStore.onUserActivation(activated)
+
+      const firstFile = createTestFile('first.json', 'application/json')
+      const secondFile = createTestFile('second.json', 'application/json')
+      vi.mocked(extractFilesFromDragEvent).mockResolvedValue([
+        firstFile,
+        secondFile
+      ])
+      vi.mocked(getWorkflowDataFromFile).mockImplementation(async () => ({
+        workflow: JSON.stringify(createWorkflowGraphData())
+      }))
+      addScopedDropHandler()
+
+      document.dispatchEvent(new DragEvent('drop'))
+
+      await vi.waitFor(() =>
+        expect(workflowStore.activeWorkflow?.path).toBe('workflows/second.json')
+      )
+      await vi.waitFor(() => expect(activated).toHaveBeenCalledTimes(1))
+      expect(activated.mock.calls.map(([wf]) => wf.path)).toEqual([
+        'workflows/second.json'
+      ])
+    })
+
+    it('keeps the first dropped workflow activation when a trailing plain image adds a node', async () => {
+      app.canvas = fromPartial<LGraphCanvas>({
+        ...createMockCanvas(),
+        ds: createTestDragAndScale(),
+        graph_mouse: [0, 0],
+        adjustMouseEvent: vi.fn()
+      })
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      const workflowStore = useRealWorkflowLifecycle()
+      await useRealWorkflowService()
+      const activated = vi.fn()
+      workflowStore.onUserActivation(activated)
+
+      const workflowFile = createTestFile('dropped.json', 'application/json')
+      const plainImage = createTestFile('photo.png', 'image/png')
+      vi.mocked(extractFilesFromDragEvent).mockResolvedValue([
+        workflowFile,
+        plainImage
+      ])
+      vi.mocked(getWorkflowDataFromFile).mockImplementation(async (file) =>
+        file === workflowFile
+          ? { workflow: JSON.stringify(createWorkflowGraphData()) }
+          : undefined
+      )
+      vi.mocked(createNode).mockResolvedValue(createMockNode())
+      addScopedDropHandler()
+
+      document.dispatchEvent(new DragEvent('drop'))
+
+      await vi.waitFor(() => expect(pasteImageNode).toHaveBeenCalledOnce())
+      await vi.waitFor(() => expect(activated).toHaveBeenCalledTimes(1))
+      expect(activated.mock.calls.map(([wf]) => wf.path)).toEqual([
+        'workflows/dropped.json'
+      ])
+    })
+
+    it('does not report user activation when dropping media without a workflow', async () => {
+      app.canvas = fromPartial<LGraphCanvas>({
+        ...createMockCanvas(),
+        graph_mouse: [0, 0],
+        adjustMouseEvent: vi.fn()
+      })
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      const workflowStore = useWorkflowStore()
+      vi.mocked(workflowStore.isActive).mockRestore()
+      const activated = vi.fn()
+      workflowStore.onUserActivation(activated)
+
+      vi.mocked(extractFilesFromDragEvent).mockResolvedValue([
+        createTestFile('plain.png', 'image/png')
+      ])
+      vi.mocked(getWorkflowDataFromFile).mockResolvedValue(undefined)
+      vi.mocked(createNode).mockResolvedValue(createMockNode())
+      addScopedDropHandler()
+
+      document.dispatchEvent(new DragEvent('drop'))
+
+      await vi.waitFor(() => expect(pasteImageNode).toHaveBeenCalledOnce())
+      expect(activated).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('user activation reporting', () => {
+    it.for([
+      {
+        name: 'reports when loadGraphData has initiator user and stays active',
+        options: { initiator: 'user' as const },
+        expectedPaths: ['workflows/user-open.json']
+      },
+      {
+        name: 'does not report programmatic loadGraphData without initiator',
+        options: {},
+        expectedPaths: []
+      }
+    ])('$name', async ({ options, expectedPaths }) => {
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(mockCanvas, 'ds', { scale: 1, offset: [0, 0] })
+      const workflowStore = useRealWorkflowLifecycle()
+      await useRealWorkflowService()
+      const activated = vi.fn()
+      workflowStore.onUserActivation(activated)
+
+      await app.loadGraphData(
+        createWorkflowGraphData(),
+        true,
+        true,
+        'user-open',
+        options
+      )
+
+      expect(activated.mock.calls.map(([wf]) => wf.path)).toEqual(expectedPaths)
+    })
+
+    it('does not report loadGraphData user activation when another tab becomes active before completion', async () => {
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(mockCanvas, 'ds', { scale: 1, offset: [0, 0] })
+      const workflowStore = useRealWorkflowLifecycle()
+      await useRealWorkflowService()
+      const other = markLoaded(
+        new ComfyWorkflow({
+          path: 'workflows/other.json',
+          modified: 0,
+          size: 0
+        })
+      )
+      vi.mocked(runMissingModelPipeline).mockImplementationOnce(async () => {
+        workflowStore.activeWorkflow = other
+        return {
+          missingModels: [],
+          confirmedCandidates: [],
+          surfaced: Promise.resolve()
+        }
+      })
+      const activated = vi.fn()
+      workflowStore.onUserActivation(activated)
+
+      await app.loadGraphData(
+        createWorkflowGraphData(),
+        true,
+        true,
+        'late-open',
+        { initiator: 'user' }
+      )
+
+      expect(activated).not.toHaveBeenCalled()
+    })
+
+    it('reports user activation when replacing the active temporary tab in place', async () => {
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(mockCanvas, 'ds', { scale: 1, offset: [0, 0] })
+      const workflowStore = useRealWorkflowLifecycle()
+      await useRealWorkflowService()
+      await app.loadGraphData(
+        createWorkflowGraphData(),
+        true,
+        true,
+        'same-temp'
+      )
+      const activeTemp = workflowStore.activeWorkflow
+      const activated = vi.fn()
+      workflowStore.onUserActivation(activated)
+
+      await app.loadGraphData(
+        createWorkflowGraphData(),
+        true,
+        true,
+        'same-temp',
+        { initiator: 'user' }
+      )
+
+      expect(workflowStore.activeWorkflow).toBe(activeTemp)
+      expect(activated.mock.calls).toEqual([[activeTemp]])
+    })
+
+    it('reports user activation for the reused unloaded saved tab when names match', async () => {
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(mockCanvas, 'ds', { scale: 1, offset: [0, 0] })
+      const workflowStore = useRealWorkflowLifecycle()
+      await useRealWorkflowService()
+      const saved = new ComfyWorkflow({
+        path: 'workflows/saved-match.json',
+        modified: 0,
+        size: 10
+      })
+      vi.mocked(fetch).mockResolvedValueOnce(
+        Response.json(createWorkflowGraphData())
+      )
+      vi.spyOn(workflowStore, 'getWorkflowByPath').mockImplementation((path) =>
+        path === saved.path ? saved : null
+      )
+      const activated = vi.fn()
+      workflowStore.onUserActivation(activated)
+
+      await app.loadGraphData(
+        createWorkflowGraphData(),
+        true,
+        true,
+        'saved-match',
+        { initiator: 'user' }
+      )
+
+      expect(activated.mock.calls).toEqual([[saved]])
+    })
+
+    it.for([
+      {
+        name: 'reports API JSON import with initiator user',
+        initiator: 'user' as const,
+        expectedCount: 1
+      },
+      {
+        name: 'does not report API JSON import without initiator',
+        initiator: undefined,
+        expectedCount: 0
+      }
+    ])('$name', async ({ initiator, expectedCount }) => {
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(mockCanvas, 'ds', { scale: 1, offset: [0, 0] })
+      const workflowStore = useRealWorkflowLifecycle()
+      await useRealWorkflowService()
+      const activated = vi.fn()
+      workflowStore.onUserActivation(activated)
+
+      await app.loadApiJson({}, 'api-import', { initiator })
+
+      expect(activated).toHaveBeenCalledTimes(expectedCount)
+    })
+
+    it.for<{
+      name: string
+      file: File
+      metadata: Record<string, string>
+      initiator: 'user' | undefined
+      expectedCount: number
+    }>([
+      {
+        name: 'reports A1111 import when handleFile has initiator user',
+        file: createTestFile('a1111.png', 'image/png'),
+        metadata: {
+          parameters: 'positive\nNegative prompt: negative\nSteps: 20'
+        },
+        initiator: 'user',
+        expectedCount: 1
+      },
+      {
+        name: 'does not report A1111 import without initiator',
+        file: createTestFile('a1111.png', 'image/png'),
+        metadata: {
+          parameters: 'positive\nNegative prompt: negative\nSteps: 20'
+        },
+        initiator: undefined,
+        expectedCount: 0
+      },
+      {
+        name: 'reports API-format JSON file when handleFile has initiator user',
+        file: createTestFile('api-workflow.json', 'application/json'),
+        metadata: {
+          prompt: JSON.stringify({
+            '1': { class_type: 'KSampler', inputs: {} }
+          })
+        },
+        initiator: 'user',
+        expectedCount: 1
+      },
+      {
+        name: 'does not report API-format JSON file without initiator',
+        file: createTestFile('api-workflow.json', 'application/json'),
+        metadata: {
+          prompt: JSON.stringify({
+            '1': { class_type: 'KSampler', inputs: {} }
+          })
+        },
+        initiator: undefined,
+        expectedCount: 0
+      }
+    ])('$name', async ({ file, metadata, initiator, expectedCount }) => {
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(mockCanvas, 'ds', { scale: 1, offset: [0, 0] })
+      const workflowStore = useRealWorkflowLifecycle()
+      await useRealWorkflowService()
+      vi.mocked(getWorkflowDataFromFile).mockResolvedValue(metadata)
+      mockImportA1111.mockResolvedValue('imported')
+      const activated = vi.fn()
+      workflowStore.onUserActivation(activated)
+
+      await app.handleFile(file, 'file_button', { initiator })
+
+      expect(activated).toHaveBeenCalledTimes(expectedCount)
+    })
   })
 
   describe('canvas keybindings', () => {

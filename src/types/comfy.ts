@@ -96,6 +96,7 @@ export interface LoadGraphDataOptions {
    * sizes and API handles. Extensions must not set it.
    */
   restoreHistory?: boolean
+  initiator?: 'user'
 }
 
 /**
@@ -216,6 +217,7 @@ export interface ComfyApp {
     options?: {
       deferWarnings?: boolean
       onNodeCreated?: (node: LGraphNode) => void
+      initiator?: 'user'
     }
   ): Promise<void | false>
   handleFileList(fileList: File[]): Promise<void>
@@ -227,7 +229,7 @@ export interface ComfyApp {
   loadApiJson(
     apiData: ComfyApiWorkflow,
     fileName?: string,
-    options?: { deferWarnings?: boolean }
+    options?: { deferWarnings?: boolean; initiator?: 'user' }
   ): Promise<void | false>
   registerExtension(extension: ComfyExtension): void
   collectCanvasMenuItems(canvas: LGraphCanvas): IContextMenuValue[]

@@ -35,6 +35,7 @@ type RevertibleSettingId =
   | 'Comfy.Extension.Disabled'
   | 'Comfy.Extension.DisabledPacks'
   | 'Comfy.AgentPanel.OnboardedScopes'
+  | 'Comfy.Templates.HasOpenedLibrary'
 
 export type SettingWriteOutcome =
   | { status: 'saved' | 'unchanged' }

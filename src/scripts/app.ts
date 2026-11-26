@@ -270,6 +270,17 @@ function servedRefusal(error: unknown): unknown {
     : undefined
 }
 
+function unshapedPromptFailure(
+  error: PromptExecutionError
+): PromptError | null {
+  if (Object.keys(error.response.node_errors ?? {}).length > 0) return null
+  return {
+    type: 'server_error',
+    message: error.toString() || `HTTP ${error.status ?? 'error'}`,
+    details: ''
+  }
+}
+
 function withCloudRefusalReason(promptError: PromptError, error: unknown) {
   return isCloud
     ? withRefusalReason(promptError, servedRefusal(error))
@@ -287,6 +298,51 @@ function growToContent(node: LGraphNode, snapTo: number): void {
 function isMeshModelFile(file: File): boolean {
   const name = file.name.toLowerCase()
   return SUPPORTED_MESH_EXTENSIONS.has(name.slice(name.lastIndexOf('.')))
+}
+
+const dropActivationCollector = Symbol('dropActivationCollector')
+
+interface GraphActivationOptions {
+  initiator?: 'user'
+  [dropActivationCollector]?: (workflow: ComfyWorkflow) => void
+}
+
+interface HandleFileOptions extends GraphActivationOptions {
+  deferWarnings?: boolean
+  onNodeCreated?: (node: LGraphNode) => void
+}
+
+function reportActiveWorkflowIfCurrent(
+  workflow: ComfyWorkflow | null | undefined
+) {
+  if (!workflow) return
+  const workflowStore = useWorkflowStore()
+  if (workflowStore.isActive(workflow)) {
+    workflowStore.reportUserActivation(workflow)
+  }
+}
+
+function reportUserGraphActivation(
+  workflow: ComfyWorkflow | null | undefined,
+  options?: GraphActivationOptions
+) {
+  if (!workflow) return
+  const collect = options?.[dropActivationCollector]
+  if (collect) {
+    collect(workflow)
+    return
+  }
+  if (options?.initiator === 'user') {
+    reportActiveWorkflowIfCurrent(workflow)
+  }
+}
+
+function forwardActivationOptions(options?: GraphActivationOptions) {
+  const collect = options?.[dropActivationCollector]
+  return {
+    ...(options?.initiator && { initiator: options.initiator }),
+    ...(collect && { [dropActivationCollector]: collect })
+  }
 }
 
 export function sanitizeNodeName(string: string) {
@@ -728,6 +784,7 @@ export class ComfyApp implements IComfyApp {
         }
 
         const workspace = useWorkspaceStore()
+        let activatedByDrop: ComfyWorkflow | undefined
         try {
           workspace.spinner = true
           const imageFiles = files.filter(hasImageType)
@@ -738,9 +795,12 @@ export class ComfyApp implements IComfyApp {
           const hasMultipleMedia = totalMedia > 1
 
           const createdNodes: LGraphNode[] = []
-          const handleFileOptions = {
+          const handleFileOptions: HandleFileOptions = {
             deferWarnings: true,
-            onNodeCreated: (node: LGraphNode) => createdNodes.push(node)
+            onNodeCreated: (node: LGraphNode) => createdNodes.push(node),
+            [dropActivationCollector]: (workflow: ComfyWorkflow) => {
+              activatedByDrop = workflow
+            }
           }
 
           if (hasMultipleMedia) {
@@ -765,6 +825,7 @@ export class ComfyApp implements IComfyApp {
           this.positionNodes(createdNodes)
         } finally {
           workspace.spinner = false
+          reportActiveWorkflowIfCurrent(activatedByDrop)
         }
         useWorkflowService().showPendingWarnings()
       } catch (error: unknown) {
@@ -1358,7 +1419,7 @@ export class ComfyApp implements IComfyApp {
     clean: boolean = true,
     restore_view: boolean = true,
     workflow: string | null | ComfyWorkflow = null,
-    options: LoadGraphDataOptions = {}
+    options: LoadGraphDataOptions & GraphActivationOptions = {}
   ): Promise<LoadedComfyWorkflow | boolean | undefined> {
     return useMissingModelStore().whileWorkflowLoads(async () => {
       const { loaded, surfaceWarnings } = await this.enqueueGraphLoad(() =>
@@ -1367,6 +1428,8 @@ export class ComfyApp implements IComfyApp {
       if (loaded === false && clean && !(workflow instanceof ComfyWorkflow))
         await useWorkflowService().restoreRetainedWorkflow()
       await surfaceWarnings?.()
+      if (loaded && typeof loaded !== 'boolean')
+        reportUserGraphActivation(loaded, options)
       return loaded
     })
   }
@@ -1406,7 +1469,7 @@ export class ComfyApp implements IComfyApp {
     clean: boolean,
     restore_view: boolean,
     workflow: string | null | ComfyWorkflow,
-    options: LoadGraphDataOptions
+    options: LoadGraphDataOptions & GraphActivationOptions
   ): Promise<{
     loaded: LoadedComfyWorkflow | boolean | undefined
     surfaceWarnings?: () => Promise<void>
@@ -2262,7 +2325,8 @@ export class ComfyApp implements IComfyApp {
               Object.keys(error.response.node_errors ?? {}).length > 0
             const promptError =
               error instanceof PromptExecutionError
-                ? normalizePromptError(error.response.error)
+                ? (normalizePromptError(error.response.error) ??
+                  unshapedPromptFailure(error))
                 : null
             const promptPrecondition = promptError
               ? (resolveAccountPrecondition({
@@ -2411,10 +2475,7 @@ export class ComfyApp implements IComfyApp {
   async handleFile(
     file: File,
     openSource?: WorkflowOpenSource,
-    options?: {
-      deferWarnings?: boolean
-      onNodeCreated?: (node: LGraphNode) => void
-    }
+    options?: HandleFileOptions
   ) {
     const fromGraphLoadHook = isGraphLoadHookOrigin(options)
     const previousDiscovery = this.fileLoadDiscoveryQueue
@@ -2447,12 +2508,7 @@ export class ComfyApp implements IComfyApp {
   private async handleParsedFile(
     file: File,
     openSource: WorkflowOpenSource | undefined,
-    options:
-      | {
-          deferWarnings?: boolean
-          onNodeCreated?: (node: LGraphNode) => void
-        }
-      | undefined,
+    options: HandleFileOptions | undefined,
     workflowData: Awaited<ReturnType<typeof getWorkflowDataFromFile>>,
     fromGraphLoadHook: boolean
   ) {
@@ -2525,7 +2581,8 @@ export class ComfyApp implements IComfyApp {
             fileName,
             {
               openSource,
-              deferWarnings: options?.deferWarnings
+              deferWarnings: options?.deferWarnings,
+              ...forwardActivationOptions(options)
             }
           )
           return outcome === false ? false : undefined
@@ -2549,7 +2606,8 @@ export class ComfyApp implements IComfyApp {
         if (this.isApiJson(promptObj)) {
           try {
             const outcome = await this.loadApiJson(promptObj, fileName, {
-              deferWarnings: options?.deferWarnings
+              deferWarnings: options?.deferWarnings,
+              ...forwardActivationOptions(options)
             })
             return outcome === false ? false : undefined
           } catch (err) {
@@ -2627,11 +2685,13 @@ export class ComfyApp implements IComfyApp {
             graph.serialize() as unknown as ComfyWorkflowJSON,
             graph
           )
+          const activatedWorkflow = useWorkflowStore().activeWorkflow
           this.scheduleImportFit(graph)
           await this.completeGraphLoad(() => {
             releaseCaptureSuppression?.()
             useNodeApiHost().loadEnded()
           })
+          reportUserGraphActivation(activatedWorkflow, options)
           return
         } catch (error) {
           if (!lifecycle.started) throw error
@@ -2776,7 +2836,7 @@ export class ComfyApp implements IComfyApp {
   async loadApiJson(
     apiData: ComfyApiWorkflow,
     fileName?: string,
-    options: { deferWarnings?: boolean } = {}
+    options: GraphActivationOptions & { deferWarnings?: boolean } = {}
   ): Promise<void | false> {
     return this.enqueueImport(() =>
       this.loadApiJsonNow(apiData, fileName, options)
@@ -2786,7 +2846,7 @@ export class ComfyApp implements IComfyApp {
   private async loadApiJsonNow(
     apiData: ComfyApiWorkflow,
     fileName: string | undefined,
-    options: { deferWarnings?: boolean }
+    options: GraphActivationOptions & { deferWarnings?: boolean }
   ): Promise<void> {
     let lifecycleStarted = false
     let lifecycleCompleted = false
@@ -3003,11 +3063,13 @@ export class ComfyApp implements IComfyApp {
         graph.serialize() as unknown as ComfyWorkflowJSON,
         graph
       )
+      const activatedWorkflow = useWorkflowStore().activeWorkflow
       this.scheduleImportFit(graph)
       await this.completeGraphLoad(() => {
         releaseCaptureSuppression?.()
         useNodeApiHost().loadEnded()
       })
+      reportUserGraphActivation(activatedWorkflow, options)
       lifecycleCompleted = true
       if (missingNodeTypes.length) {
         this.showMissingNodesError(missingNodeTypes, options)

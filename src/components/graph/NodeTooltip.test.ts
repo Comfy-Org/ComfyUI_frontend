@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { nextTick } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { appTooltipProviderDefaults } from '@comfyorg/design-system/lib/tooltip/tooltipConfig'
 import { i18n, mergeCustomNodesI18n } from '@/i18n'
 import {
   LGraphNode,
@@ -231,7 +232,9 @@ describe('NodeTooltip', () => {
     expect(screen.queryByText(jsonTooltip)).not.toBeInTheDocument()
 
     await user.pointer({ keys: '[TouchA>]', target: canvas })
-    await vi.advanceTimersByTimeAsync(1499)
+    await vi.advanceTimersByTimeAsync(
+      appTooltipProviderDefaults.delayDuration - 1
+    )
     expect(screen.queryByText(jsonTooltip)).not.toBeInTheDocument()
     await vi.advanceTimersByTimeAsync(1)
     expect(screen.getByText(jsonTooltip)).toBeVisible()

@@ -20027,6 +20027,39 @@
       }
     }
   },
+  "OpenAIChatNodeV2": {
+    "description": "OpenAI의 GPT 모델로 텍스트 응답을 생성합니다. 텍스트 프롬프트를 제공하고, 선택적으로 이미지나 파일을 컨텍스트로 제공할 수 있습니다.",
+    "display_name": "OpenAI ChatGPT",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "응답을 생성하는 데 사용할 모델입니다."
+      },
+      "model_max_output_tokens": {
+        "name": "max_output_tokens"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "model_seed": {
+        "name": "시드"
+      },
+      "model_system_prompt": {
+        "name": "system_prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "OpenAIGPTImage1": {
     "description": "OpenAI의 GPT Image 2 엔드포인트를 통해 동기적으로 이미지를 생성합니다.",
     "display_name": "OpenAI GPT Image 2",
@@ -23093,7 +23126,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "생성에 사용할 모델입니다. recraftv4_styles 모델은 일관된 스타일의 생성을 위해 설계되었으며 항상 style_id 또는 style_references가 필요합니다. recraftv4_1_flash는 가장 빠르고 저렴한 모델이며 스타일을 전혀 지원하지 않습니다."
+        "tooltip": "생성에 사용할 모델입니다. recraftv4_styles 모델은 스타일 일관성이 있는 생성용으로 제작되었으며 항상 style_id 또는 style_references가 필요합니다. recraftv4_1_flash는 가장 빠르고 저렴한 모델인 Recraft V4.1 Flash V2를 실행하며 스타일을 전혀 지원하지 않습니다."
       },
       "model_size": {
         "name": "size"
@@ -23204,6 +23237,14 @@
     "inputs": {
       "image": {
         "name": "이미지"
+      },
+      "shape_stacking": {
+        "name": "shape_stacking",
+        "tooltip": "hierarchical은 도형을 서로 겹치도록 레이어링합니다. cut_out은 플로터, 비닐 커터 및 스크린 인쇄용으로, 절대 겹치지 않는 도형을 만듭니다."
+      },
+      "version": {
+        "name": "버전",
+        "tooltip": "v1_pro (Vectorizer Pro)는 부드러운 곡선, 직선 및 선명한 모서리를 갖춘 더 깔끔한 SVG를 제공하며, 글자 및 복잡한 형태에 가장 적합합니다."
       }
     },
     "outputs": {

@@ -6,13 +6,13 @@ import { computed, defineComponent } from 'vue'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { useAppMode } from '@/composables/useAppMode'
 import type { AssetItem } from '@comfyorg/assets-core/schema'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { extractWorkflowFromAsset } from '@/platform/workflow/utils/workflowExtractionUtil'
 import { app } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
-import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 
 import LinearPreview from './LinearPreview.vue'
 import type { OutputSelection } from './linearModeTypes'
@@ -55,9 +55,11 @@ vi.mock(import('@/platform/assets/composables/useMediaAssetActions'), () => ({
   }))
 }))
 
-vi.mock(import('@/scripts/app'))
+vi.mock(import('@/platform/workflow/utils/workflowExtractionUtil'), () => ({
+  extractWorkflowFromAsset: vi.fn()
+}))
 
-vi.mock(import('@/platform/workflow/utils/workflowExtractionUtil'))
+vi.mock(import('@/scripts/app'))
 
 const i18n = createI18n({
   legacy: false,
@@ -237,7 +239,9 @@ describe('LinearPreview', () => {
     })
     const { user } = renderPreview({}, { asset, canShowPreview: true })
 
-    await user.click(await screen.findByText('Reuse Parameters'))
+    await user.click(
+      await screen.findByRole('button', { name: 'Reuse Parameters' })
+    )
 
     await vi.waitFor(() => expect(app.loadGraphData).toHaveBeenCalledOnce())
     const [loaded, , , , options] = vi.mocked(app.loadGraphData).mock.calls[0]
@@ -246,5 +250,41 @@ describe('LinearPreview', () => {
       tracker.undoQueue.map(({ nodes }) => nodes[0]?.widgets_values)
     ).toEqual([[3]])
     expect(options?.restoreHistory).not.toBe(true)
+  })
+
+  it.for([
+    {
+      name: 'loads a different workflow as a user activation on Reuse Parameters',
+      workflowId: 'other-workflow-id'
+    },
+    {
+      name: 'loads the matching workflow as a user activation when no change tracker exists',
+      workflowId: 'current-workflow-id'
+    }
+  ])('$name', async ({ workflowId }) => {
+    app.rootGraph.id = 'current-workflow-id'
+    const workflow = fromPartial<ComfyWorkflowJSON>({ id: workflowId })
+    vi.mocked(extractWorkflowFromAsset).mockResolvedValue({
+      workflow,
+      filename: 'out.json'
+    })
+    const asset = fromPartial<AssetItem>({
+      id: 'a1',
+      name: 'out.png',
+      tags: []
+    })
+    const selection: OutputSelection = {
+      asset,
+      canShowPreview: true
+    }
+
+    const { user } = renderPreview({}, selection)
+    await user.click(
+      await screen.findByRole('button', { name: 'Reuse Parameters' })
+    )
+
+    expect(app.loadGraphData).toHaveBeenCalledWith(workflow, true, true, null, {
+      initiator: 'user'
+    })
   })
 })

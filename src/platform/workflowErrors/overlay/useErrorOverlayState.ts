@@ -156,10 +156,6 @@ export function useErrorOverlayState() {
     allErrorGroups.value.some((group) => group.severity === 'error')
   )
 
-  const hasMissingNodes = computed(() =>
-    allErrorGroups.value.some((group) => group.type === 'missing_node')
-  )
-
   const downloadableMissingModelGroups = computed(() =>
     allErrorGroups.value.every((group) => group.type === 'missing_model')
       ? missingModelGroups.value
@@ -243,7 +239,6 @@ export function useErrorOverlayState() {
 
   return {
     hasError,
-    hasMissingNodes,
     downloadableMissingModelGroups,
     isVisible,
     overlayMessage,

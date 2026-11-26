@@ -1002,6 +1002,7 @@ export default defineConfig({
           include: [
             'src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
             'packages/api-client/src/**/*.test.ts',
+            'packages/graph-model/src/**/*.test.ts',
             'packages/settings-core/src/**/*.test.ts',
             'packages/theme-core/src/**/*.test.ts',
             'packages/telemetry/src/**/*.test.ts',

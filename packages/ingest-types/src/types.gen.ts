@@ -654,6 +654,10 @@ export type AgentPendingAskBase = {
    */
   allow_other: boolean
   ask_id: string
+  /**
+   * When the server stops waiting for the answer (RFC 3339, UTC). After it the server closes the card with an agent_ask_resolved event. Present only when the ask was opened with a wait of its own; when absent the server sets no answer deadline for this ask and the client must not assume one.
+   */
+  expires_at?: string
   kind: AgentAskKind
   max_selections: number
   message_id: string
@@ -1198,6 +1202,10 @@ export type AgentViewableAttachmentExtension =
  * Represents a user-owned asset (image, video, or other generated output).
  */
 export type Asset = {
+  /**
+   * Set only on a `workspace_library` listing: true when the model policy of the Release that the caller's deployment runs (its own pick or the workspace default) blocks this model, so a Run that names it is refused. Absent when the policy allows it, when there is no policy, and on every other listing.
+   */
+  blocked_by_model_policy?: boolean
   /**
    * Timestamp when the asset was created
    */
@@ -3738,6 +3746,32 @@ export type BillingPlansResponse = {
 }
 
 /**
+ * Answers "should this client show and apply a promotion right now?". Non-null means yes: show the offer, put `promotion_code` on plan links and follow `auto_apply` at checkout. Null means no promotion is running, and clients show and apply nothing. It is not a statement about the caller: it does not say this visitor or workspace qualifies, and a code restricted to first-time customers is still refused at checkout for anyone else.
+ */
+export type BillingPromotion = {
+  /**
+   * Answers "may checkout apply `promotion_code` from the link without a click?". True means apply it on load, once per checkout, and respect the customer removing it. False means fill it in and wait for the customer. It is not a promise that Stripe accepts the code for this customer.
+   */
+  auto_apply: boolean
+  /**
+   * When Stripe stops accepting the code, for display ("ends Monday"). Null when the code has no expiry. Always present. Clients do not need to hide the offer at this time themselves: `promotion` turns null when the code expires.
+   */
+  ends_at: string | null
+  /**
+   * The discount of the coupon behind the code, as a percentage (20 for 20% off), for display. Read from Stripe, so the number clients show is the one checkout applies. Null when the coupon takes a fixed amount off: show the offer without a number. Always present. It is not the price the customer pays, and it says nothing about which plans or billing periods the coupon covers.
+   */
+  percent_off: number | null
+  /**
+   * The customer-facing Stripe promotion code of the running campaign. Clients put it on plan links and may show it. It is the only code checkout may apply without a click; any other code in a link waits for the customer to apply it.
+   */
+  promotion_code: string
+} | null
+
+export type BillingPromotionResponse = {
+  promotion: BillingPromotion
+}
+
+/**
  * Payment lifecycle status
  */
 export type BillingStatus =
@@ -5249,8 +5283,7 @@ export type CreateSessionResponse = {
  */
 export type CreateTopupCheckoutRequest = {
   /**
-   * Amount to charge in cents, before any promotion code the customer
-   * enters. Whole dollars only, from $5.00 to `max_topup_cents` on GET /api/billing/balance. The
+   * Amount to charge in cents, before any discount. Whole dollars only, from $5.00 to `max_topup_cents` on GET /api/billing/balance. The
    * credits granted are derived server-side from this amount and
    * cannot be set by the caller.
    *
@@ -5810,6 +5843,16 @@ export type DesktopLoginCodeRedeemResponse = {
 }
 
 /**
+ * A one-time Firebase custom token for the Desktop grant's user.
+ */
+export type DesktopWebSessionResponse = {
+  /**
+   * Firebase custom token. Valid for one hour; sign in with it at once.
+   */
+  custom_token: string
+}
+
+/**
  * First rejected op in an abort-remainder batch.
  */
 export type DocOpFailure = {
@@ -6021,6 +6064,12 @@ export type ExecutionError = {
    * Python exception type (e.g., "RuntimeError")
    */
   exception_type: string
+  /**
+   * Present when ComfyUI rejected the whole prompt at validation (exception_type ValidationError): the rejected nodes, keyed by node id, in the shape ComfyUI's /prompt returns and cleaned and capped like a prompt_outputs_skipped event's node_errors.
+   */
+  node_errors?: {
+    [key: string]: PromptOutputsSkippedNodeError
+  }
   /**
    * ID of the node that failed
    */
@@ -10949,6 +10998,10 @@ export type WorkspaceWithRole = {
  */
 export type AssetWritable = {
   /**
+   * Set only on a `workspace_library` listing: true when the model policy of the Release that the caller's deployment runs (its own pick or the workspace default) blocks this model, so a Run that names it is refused. Absent when the policy allows it, when there is no policy, and on every other listing.
+   */
+  blocked_by_model_policy?: boolean
+  /**
    * Timestamp when the asset was created
    */
   created_at: string
@@ -12707,8 +12760,14 @@ export type ListAssetsData = {
      * List the workspace's model library: every member's private model
      * rows in this workspace, not only the caller's, and none of the
      * public catalog. A browser that runs on a picked deployment gets the
-     * whole library, not only the Release's models, so its loader
-     * dropdowns can offer a model the deployment downloads for the job.
+     * library, not only the Release's models, so its loader dropdowns can
+     * offer a model the deployment downloads for the job. Every library
+     * row is listed, whatever the Release's model policy says. For a
+     * browser bound to a deployment (its own pick or the workspace
+     * default), each row that policy blocks carries
+     * `blocked_by_model_policy: true`, so a client can show it as blocked
+     * rather than leave it out; a Run that names it is refused. A policy
+     * that cannot be read marks no row.
      * Needs `models` among the tags (`tags_all` or `include_tags`), else
      * 400 `INVALID_TAG_FILTER`. Honoured only while the
      * `runtime_library_models_enabled` flag is on for the caller;
@@ -14268,6 +14327,45 @@ export type RedeemDesktopLoginCodeResponses = {
 export type RedeemDesktopLoginCodeResponse =
   RedeemDesktopLoginCodeResponses[keyof RedeemDesktopLoginCodeResponses]
 
+export type CreateDesktopWebSessionData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/auth/desktop-web-session'
+}
+
+export type CreateDesktopWebSessionErrors = {
+  /**
+   * `INVALID_CREDENTIAL`, or `oauth_grant_ended`: the grant was signed out
+   */
+  401: ErrorResponse
+  /**
+   * `auth_type_not_allowed` (not an OAuth access token, or a token derived from one; answered by the auth policy), `CREDENTIAL_UNSUPPORTED` (not the Desktop grant's own access token), `insufficient_scope` (no `comfy-cloud:web-session:mint`), or `web_session_unavailable` (an SSO sign-in, or no single enabled Firebase account)
+   */
+  403: ErrorResponse
+  /**
+   * Too many web sessions issued to this user, or too many refused, in the current clock hour
+   */
+  429: ErrorResponse
+  /**
+   * `desktop_web_session_disabled` (not switched on), or `SERVICE_UNAVAILABLE` (Firebase could not be reached)
+   */
+  503: ErrorResponse
+}
+
+export type CreateDesktopWebSessionError =
+  CreateDesktopWebSessionErrors[keyof CreateDesktopWebSessionErrors]
+
+export type CreateDesktopWebSessionResponses = {
+  /**
+   * Custom token minted
+   */
+  200: DesktopWebSessionResponse
+}
+
+export type CreateDesktopWebSessionResponse =
+  CreateDesktopWebSessionResponses[keyof CreateDesktopWebSessionResponses]
+
 export type CreateBillingHandoffData = {
   body: BillingHandoffCreateRequest
   path?: never
@@ -15762,6 +15860,37 @@ export type PreviewSubscribeResponses = {
 
 export type PreviewSubscribeResponse2 =
   PreviewSubscribeResponses[keyof PreviewSubscribeResponses]
+
+export type GetBillingPromotionData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/billing/promotion'
+}
+
+export type GetBillingPromotionErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * `code` is `workspace_access_denied`: the selected workspace is unknown, deleted, or the user is not a member; the three look the same. This route also serves anonymous callers, so the session's other refusals fall back to an anonymous request. See the `WebSessionAuth` scheme.
+   */
+  403: ErrorResponse
+}
+
+export type GetBillingPromotionError =
+  GetBillingPromotionErrors[keyof GetBillingPromotionErrors]
+
+export type GetBillingPromotionResponses = {
+  /**
+   * The promotion running right now, or null
+   */
+  200: BillingPromotionResponse
+}
+
+export type GetBillingPromotionResponse =
+  GetBillingPromotionResponses[keyof GetBillingPromotionResponses]
 
 export type AcceptRetentionOfferData = {
   body: RetentionAcceptRequest
