@@ -29,6 +29,7 @@ import type {
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 import { cn } from '@comfyorg/tailwind-utils'
+import { invokeButtonWidgetCallback } from '@/renderer/extensions/vueNodes/widgets/utils/invokeButtonWidgetCallback'
 import { renameWidget } from '@/utils/widgetUtil'
 import type { WidgetValue } from '@/utils/widgetUtil'
 
@@ -103,8 +104,13 @@ const simplifiedWidget = computed((): SimplifiedWidget => {
     options: { ...baseOptions, disabled },
     callback:
       typeof widgetType === 'string' && widgetType.toLowerCase() === 'button'
-        ? (value) =>
-            widget.callback?.(value, canvasStore.canvas ?? undefined, node)
+        ? (_value, click) =>
+            invokeButtonWidgetCallback(
+              widget,
+              node,
+              canvasStore.canvas ?? undefined,
+              click
+            )
         : undefined,
     spec: nodeDefStore.getInputSpecForWidget(node, widgetName),
     controlWidget: getControlWidget(widget)

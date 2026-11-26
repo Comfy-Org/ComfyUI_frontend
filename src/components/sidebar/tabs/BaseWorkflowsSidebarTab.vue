@@ -175,9 +175,9 @@ import { useAppMode } from '@/composables/useAppMode'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useSearchQueryTracking } from '@/platform/telemetry/searchQuery/useSearchQueryTracking'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import { useWorkflowBookmarkStore } from '@/platform/workflow/management/stores/workflowBookmarkStore'
 import {
   ComfyWorkflow,
-  useWorkflowBookmarkStore,
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'

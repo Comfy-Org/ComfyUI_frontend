@@ -388,8 +388,9 @@ const dropdownItems = computed(() =>
       <PopoverContent
         align="end"
         update-position-strategy="always"
+        :side-offset="12"
         hide-when-detached
-        class="pointer-events-auto w-auto rounded-lg border-none bg-transparent p-0 pt-2 shadow-lg data-[state=closed]:animate-none data-[state=open]:animate-none"
+        class="pointer-events-auto flex h-160 w-103 flex-col overflow-hidden rounded-lg border-none bg-transparent p-0 shadow-lg data-[state=closed]:animate-none data-[state=open]:animate-none"
         @interact-outside.prevent
         @close-auto-focus.prevent="focusTrigger"
       >

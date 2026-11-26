@@ -3,6 +3,7 @@ import type { Locator } from '@playwright/test'
 
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 import { measureCadence } from '@e2e/fixtures/helpers/MinimapCadenceHelper'
 import type { CadenceOptions } from '@e2e/fixtures/helpers/MinimapCadenceHelper'
 import type { PerfMeasurement } from '@e2e/fixtures/helpers/PerformanceHelper'
@@ -210,7 +211,6 @@ export async function measureSelectAll(comfyPage: ComfyPage, name: string) {
   return comfyPage.perf.stopMeasuring(name)
 }
 
-const PROGRESS_JOB_ID = 'pan-zoom-perf-job'
 const PROGRESS_MAX = 20
 const PROGRESS_NODES = 8
 const FILL_TOLERANCE = 0.01
@@ -275,12 +275,13 @@ export async function measureProgress(
     { count: PROGRESS_NODES, vueRenderer: renderer === 'vue' }
   )
   expect(nodeIds).toHaveLength(PROGRESS_NODES)
+  const jobId = await new ExecutionHelper(comfyPage).run({ start: false })
   await comfyPage.page.evaluate((jobId) => {
     window.app!.api.dispatchCustomEvent('execution_start', {
       prompt_id: jobId,
       timestamp: Date.now()
     })
-  }, PROGRESS_JOB_ID)
+  }, jobId)
   try {
     const updates = cadence?.updates ?? PROGRESS_MAX
     const step = PROGRESS_MAX / updates
@@ -312,7 +313,7 @@ export async function measureProgress(
             nodeIds,
             value: update * step,
             max: PROGRESS_MAX,
-            jobId: PROGRESS_JOB_ID
+            jobId
           }
         ),
       { ...cadence, updates }

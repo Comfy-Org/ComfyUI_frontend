@@ -1,8 +1,4 @@
-import {
-  StorageSerializers,
-  createEventHook,
-  useLocalStorage
-} from '@vueuse/core'
+import { StorageSerializers, createEventHook } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import {
   computed,
@@ -15,6 +11,7 @@ import {
 import { v4 as uuidv4 } from 'uuid'
 import { z } from 'zod'
 
+import { useSafeLocalStorage } from '@/platform/storage/useSafeStorage'
 import {
   getWorkspaceId,
   StorageKeys
@@ -63,6 +60,23 @@ function resetTextWhenReferencesCleared(
   references: ComposerReference[]
 ): string {
   return references.length === 0 && text.trim() === '' ? '' : text
+}
+
+function reusesErrorChipSlot(
+  existing: ComposerReference,
+  references: ComposerReference[],
+  text: string,
+  insertion: ComposerInsertionPoint
+): boolean {
+  const index = references.indexOf(existing)
+  return (
+    insertion.textOffset === existing.textOffset + 1 &&
+    insertion.referenceIndex > index &&
+    references
+      .slice(index + 1, insertion.referenceIndex)
+      .every((item) => item.textOffset === existing.textOffset) &&
+    text[existing.textOffset] === ' '
+  )
 }
 
 function composerReferencePosition(reference: ComposerReference): string {
@@ -439,18 +453,40 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
   }
 
   function setErrorContext(context: AgentErrorContext): void {
+    const existing = prompt.value.references.find(
+      (item) => item.kind === 'error'
+    )
     const references = prompt.value.references.filter(
       (item) => item.kind !== 'error'
     )
+    const text = draft.value
+    const reusedSlot =
+      existing !== undefined &&
+      reusesErrorChipSlot(
+        existing,
+        prompt.value.references,
+        text,
+        insertionPoint.value
+      )
+        ? existing
+        : undefined
+    const insertion = reusedSlot
+      ? {
+          textOffset: reusedSlot.textOffset,
+          referenceIndex: prompt.value.references
+            .slice(0, prompt.value.references.indexOf(reusedSlot))
+            .filter((item) => item.kind !== 'error').length
+        }
+      : {
+          textOffset: insertionPoint.value.textOffset,
+          referenceIndex: prompt.value.references
+            .slice(0, insertionPoint.value.referenceIndex)
+            .filter((item) => item.kind !== 'error').length
+        }
     const inserted = insertComposerReference(
-      { text: draft.value, references },
+      { text, references },
       { kind: 'error', id: uuidv4(), context, textOffset: 0 },
-      {
-        textOffset: insertionPoint.value.textOffset,
-        referenceIndex: prompt.value.references
-          .slice(0, insertionPoint.value.referenceIndex)
-          .filter((item) => item.kind !== 'error').length
-      }
+      insertion
     )
     insertionPoint.value = inserted.insertion
     promptOrigin.value = 'error_context'
@@ -1058,12 +1094,12 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     else if (keptDrafts.delete(key)) releaseUnusedAssets()
   }
 
-  const savedDraft = useLocalStorage<unknown>(
+  const savedDraft = useSafeLocalStorage<unknown>(
     StorageKeys.agentComposerDraft(getWorkspaceId()),
     null,
     { serializer: StorageSerializers.object }
   )
-  const savedPendingBackups = useLocalStorage<unknown>(
+  const savedPendingBackups = useSafeLocalStorage<unknown>(
     StorageKeys.agentPendingSendDraft(getWorkspaceId()),
     null,
     {

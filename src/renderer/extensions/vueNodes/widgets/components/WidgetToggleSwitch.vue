@@ -10,7 +10,7 @@
       v-if="hasLabels"
       type="single"
       :model-value="modelValue ? 'on' : 'off'"
-      :disabled="Boolean(widget.options?.read_only)"
+      :disabled="isLabelledLocked"
       :class="cn(WidgetInputBaseClass, 'w-full min-w-0 p-1')"
       data-part="widget-toggle-group"
       @update:model-value="(v) => handleOptionChange(v as string)"
@@ -89,6 +89,10 @@ const { t } = useI18n()
 const hasLabels = computed(() => {
   return widget.options?.on != null || widget.options?.off != null
 })
+
+const isLabelledLocked = computed(() =>
+  Boolean(widget.options?.read_only || widget.options?.disabled)
+)
 
 function handleOptionChange(value: string | undefined) {
   if (value) {
