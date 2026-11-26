@@ -552,33 +552,26 @@ function recordAssistantRow(
 
 function keepAuthoritativeAsk(
   message: AssistantMessage,
-  row: AgentMessages[number],
-  isAskUnavailable: (askId: string) => boolean,
-  isAskRetired: (askId: string) => boolean
+  row: AgentMessages[number]
 ): void {
   const rowAsk = row.status === 'streaming' ? row.pending_ask : undefined
-  const priorAvailableAskId = message.parts.findLast((part) => {
-    const askId = askIdOf(part)
-    return (
-      isOpenAskPart(part) &&
-      askId !== undefined &&
-      askId !== rowAsk?.ask_id &&
-      !isAskUnavailable(askId)
-    )
-  })
-  // The snapshot's newest ask stays authoritative even while its answer is
-  // in flight. Falling back then would resurrect an older card.
-  const authoritativeAskId =
-    rowAsk !== undefined && !isAskRetired(rowAsk.ask_id)
-      ? rowAsk.ask_id
-      : ((priorAvailableAskId === undefined
-          ? undefined
-          : askIdOf(priorAvailableAskId)) ?? rowAsk?.ask_id)
-  message.parts = message.parts.filter((part) => {
-    if (!isOpenAskPart(part)) return true
-    const askId = askIdOf(part)
-    return askId !== undefined && askId === authoritativeAskId
-  })
+  const authoritativeAskId = rowAsk?.ask_id
+  let keptAuthoritativeAsk = false
+  message.parts = [...message.parts]
+    .reverse()
+    .filter((part) => {
+      if (!isOpenAskPart(part)) return true
+      const askId = askIdOf(part)
+      if (
+        askId === undefined ||
+        askId !== authoritativeAskId ||
+        keptAuthoritativeAsk
+      )
+        return false
+      keptAuthoritativeAsk = true
+      return true
+    })
+    .reverse()
 }
 
 /**
@@ -627,8 +620,6 @@ function recordTranscriptRow(
     userSkillReferences: Map<TurnId, SkillReference>
     assistants: Map<TurnId, AssistantMessage>
     pendingByTurn: Map<TurnId, NormalizedAgentTranscript['pending']>
-    isAskUnavailable: (askId: string) => boolean
-    isAskRetired: (askId: string) => boolean
   }
 ): string | undefined {
   const turnId = row.turn_id as TurnId
@@ -648,21 +639,13 @@ function recordTranscriptRow(
   if (row.role !== 'assistant') return undefined
   const pending = recordAssistantRow(row, turnId, text, state.assistants)
   const message = state.assistants.get(turnId)
-  if (message)
-    keepAuthoritativeAsk(
-      message,
-      row,
-      state.isAskUnavailable,
-      state.isAskRetired
-    )
+  if (message) keepAuthoritativeAsk(message, row)
   state.pendingByTurn.set(turnId, pending)
   return row.workflow_id ?? undefined
 }
 
 export function normalizeAgentTranscript(
-  history: AgentMessages,
-  isAskUnavailable: (askId: string) => boolean = () => false,
-  isAskRetired: (askId: string) => boolean = () => false
+  history: AgentMessages
 ): NormalizedAgentTranscript {
   let latestWorkflowId: string | undefined
 
@@ -675,9 +658,7 @@ export function normalizeAgentTranscript(
     userWorkflowReferences: new Map<TurnId, WorkflowReference[]>(),
     userSkillReferences: new Map<TurnId, SkillReference>(),
     assistants: new Map<TurnId, AssistantMessage>(),
-    pendingByTurn: new Map<TurnId, NormalizedAgentTranscript['pending']>(),
-    isAskUnavailable,
-    isAskRetired
+    pendingByTurn: new Map<TurnId, NormalizedAgentTranscript['pending']>()
   }
 
   for (const row of [...history].sort((a, b) => a.seq - b.seq)) {

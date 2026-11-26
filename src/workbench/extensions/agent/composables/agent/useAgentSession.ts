@@ -5,6 +5,7 @@ import { useIntervalFn } from '@vueuse/core'
 import { delay, xor } from 'es-toolkit'
 import { computed, ref, shallowReactive, watch } from 'vue'
 import { ZodError } from 'zod'
+import type { infer as ZodInfer } from 'zod'
 
 import { i18n } from '@/i18n'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
@@ -230,15 +231,8 @@ const MAX_HYDRATION_MAILBOXES = 32
 
 /** Upper bound on one recovery job, including any history fetch still in flight. */
 const TURN_RECOVERY_DEADLINE_MS = 60_000
-const THREAD_MISSING_CONFIRMATION_INTERVAL_MS = 1000
-/** How long a restored ask waits for its own broadcast before it counts as lost. */
 const LATE_ASK_FRAME_GRACE_MS = 2000
 
-/**
- * Why a recovery job is running, which is what separates an ask the socket
- * genuinely dropped from one that merely had not been published when a
- * hydrate's history fetch went out. Only the former is a defect.
- */
 type RecoveryCause = 'reconnect' | 'hydrate'
 
 type PendingAsk = NonNullable<AgentMessages[number]['pending_ask']>
@@ -250,6 +244,7 @@ type TurnOutcome =
       ending: 'completed' | 'failed'
     }
   | { kind: 'thread-missing' }
+  | { kind: 'turn-missing' }
   | { kind: 'streaming'; pendingAsk: PendingAsk | undefined }
   | { kind: 'error'; cause: unknown }
 
@@ -440,12 +435,33 @@ function isRetryableAnswerFailure(error: unknown): boolean {
 }
 
 type CommittedAnswerSource = Parameters<typeof toAskResolution>[0]
+type AnswerReceiptSource =
+  | AgentAnswerReceipt
+  | ZodInfer<typeof zAgentAskConflict>
 
-function namesCommittedAnswer({
-  selected,
-  other_text
-}: CommittedAnswerSource): boolean {
-  return Array.isArray(selected) || Boolean(other_text)
+type AskNoticeSink = (owner: string, notice: string) => boolean
+
+let activeAskNoticeSink: AskNoticeSink | undefined
+const pendingAskNotices = new Map<string, { notices: Map<string, number> }>()
+const inFlightAskAnswers = new Set<string>()
+
+function inFlightAskAnswerKey(owner: string, askId: string): string {
+  return `${owner}\u0000${askId}`
+}
+
+function namesCommittedAnswer(
+  { selected, other_text }: CommittedAnswerSource,
+  minSelections?: number,
+  submitted?: AgentAnswerRequest
+): boolean {
+  if (other_text) return true
+  if (!Array.isArray(selected)) return false
+  return (
+    selected.length > 0 ||
+    (minSelections === 0 &&
+      submitted?.selected.length === 0 &&
+      !submitted.other_text)
+  )
 }
 
 function diffAnswers(
@@ -699,6 +715,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   let ownedGeneration = 0
   let connection: SocketConnection = 'initial'
   let receivedStatusSnapshot = false
+  let initialStatusWasOffline = false
   let resolutionChannelEpoch = 0
   interface RunningRecovery {
     controller: AbortController
@@ -706,10 +723,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
     rerun: boolean
     rerunCause: RecoveryCause
     automaticRerun: boolean
-  }
-  interface MissingThreadObservation {
-    count: number
-    observedAt: number
   }
   const recoveringTurns = new Map<string, RunningRecovery>()
   interface PendingAskObservation {
@@ -721,18 +734,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
     string,
     PendingAskObservation
   >()
-  const recoveryThreadMissingCounts = new Map<
-    string,
-    MissingThreadObservation
-  >()
-  /**
-   * Asks recovery must not re-deliver: one it already restored, one a frame
-   * has delivered, and any the user has answered or the server has resolved.
-   * Without the latter, a poll whose snapshot predates the answer would
-   * resurrect a card the user is done with, splitting the reply that has
-   * since resumed streaming. Deliberately outlives `newChat`/`loadThread`:
-   * an `ask_id` carries its `message_id`, so it is never reused.
-   */
   const deliveredAsks = new Set<string>()
   const observedDeliveredAsks = new Set<string>()
   const supersededAnswerReports = new Set<string>()
@@ -774,6 +775,34 @@ export function useAgentSession(deps: AgentSessionDeps) {
     return true
   }
 
+  function showOrQueueSupersededNotice(owner: string): void {
+    showOrQueueAskNotice(
+      owner,
+      i18n.global.t('agent.runApproval.answerSuperseded')
+    )
+  }
+
+  function showOrQueueAskNotice(owner: string, notice: string): void {
+    if (
+      !stopped &&
+      ownedGeneration === sessionGeneration &&
+      owner === conversationStore.threadId
+    ) {
+      pushError(notice)
+      return
+    }
+    if (activeAskNoticeSink?.(owner, notice)) return
+    const pending = pendingAskNotices.get(owner)
+    const notices = pending?.notices ?? new Map<string, number>()
+    notices.set(notice, Date.now())
+    pendingAskNotices.delete(owner)
+    pendingAskNotices.set(owner, {
+      notices
+    })
+    while (pendingAskNotices.size > MAX_DELIVERED_ASKS)
+      pendingAskNotices.delete(pendingAskNotices.keys().next().value!)
+  }
+
   function recordPendingAskObservation(
     key: string,
     pendingAskId: string | undefined,
@@ -793,34 +822,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
     return observation
   }
 
-  function recordThreadAvailability(key: string, outcome: TurnOutcome): number {
-    const previous = recoveryThreadMissingCounts.get(key)
-    if (outcome.kind === 'thread-missing') {
-      const observedAt = Date.now()
-      const consecutive =
-        previous === undefined ||
-        observedAt - previous.observedAt > TURN_RECOVERY_DEADLINE_MS
-          ? 1
-          : observedAt - previous.observedAt >=
-              THREAD_MISSING_CONFIRMATION_INTERVAL_MS
-            ? previous.count + 1
-            : previous.count
-      recoveryThreadMissingCounts.delete(key)
-      recoveryThreadMissingCounts.set(key, { count: consecutive, observedAt })
-      return consecutive
-    }
-    recoveryThreadMissingCounts.delete(key)
-    return previous?.count ?? 0
-  }
-
-  function pruneRecoveryLedgers(): void {
-    while (recoveryThreadMissingCounts.size > MAX_DELIVERED_ASKS) {
-      const oldest = recoveryThreadMissingCounts.keys().next().value
-      if (oldest === undefined) break
-      recoveryThreadMissingCounts.delete(oldest)
-    }
-  }
-
   function lateAskReportKey(threadId: string, askId: string): string {
     return `${threadId}\u0000${askId}`
   }
@@ -835,6 +836,17 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   function pushError(text: string): void {
     notices.value.push({ level: 'error', text })
+  }
+
+  const askNoticeSink: AskNoticeSink = (owner, notice) => {
+    if (
+      stopped ||
+      ownedGeneration !== sessionGeneration ||
+      owner !== conversationStore.threadId
+    )
+      return false
+    pushError(notice)
+    return true
   }
 
   const malformedStreamReports = new Map<TurnId | null, boolean>()
@@ -884,10 +896,36 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   function start({ restore = true }: { restore?: boolean } = {}): void {
     stopped = false
+    activeAskNoticeSink = askNoticeSink
     readyThreadId.value = null
     ownedGeneration = ++sessionGeneration
     connection = 'initial'
     receivedStatusSnapshot = false
+    initialStatusWasOffline = false
+    for (const awaiting of conversationStore.asksAwaitingResolution()) {
+      if (awaiting.cleanupDeferred !== undefined) continue
+      conversationStore.markAskAwaitingResolution(
+        awaiting.askId,
+        awaiting.kind,
+        () => {
+          if (stopped) return false
+          if (awaiting.kind === 'accepted') {
+            reportAcceptedRecoveredAnswer(awaiting.askId, true, false)
+            showOrQueueAskNotice(
+              awaiting.owner,
+              i18n.global.t('agent.runApproval.answerAcceptedUnconfirmed')
+            )
+          } else {
+            reportUnconfirmedConflict(awaiting.askId, false)
+            showOrQueueAskNotice(
+              awaiting.owner,
+              i18n.global.t('agent.runApproval.answerUncertain')
+            )
+          }
+          return true
+        }
+      )
+    }
     const surviving = conversationStore.threadId
     const stored =
       conversationStore.messages.length === 0
@@ -1175,8 +1213,15 @@ export function useAgentSession(deps: AgentSessionDeps) {
     deletedThreads.delete(threadId)
     conversationStore.hydrate(history)
     rememberSnapshotTurn(conversationStore.activeTurnId)
-    reconcileLiveTurns('hydrate')
+    reconcileLiveTurns('hydrate', threadId)
     readyThreadId.value = threadId
+    const pending = pendingAskNotices.get(threadId)
+    if (pending) {
+      pendingAskNotices.delete(threadId)
+      for (const [notice, queuedAt] of pending.notices)
+        if (Date.now() - queuedAt <= TURN_RECOVERY_DEADLINE_MS)
+          pushError(notice)
+    }
     drainHydration(buffer)
     const workflowReady = await workflow?.restored?.(
       conversationStore.latestWorkflowId,
@@ -1266,6 +1311,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   function stop(): void {
     stopped = true
+    if (activeAskNoticeSink === askNoticeSink) activeAskNoticeSink = undefined
     readyThreadId.value = null
     inFlightSends.clear()
     pendingSendEvents.length = 0
@@ -1278,7 +1324,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
     for (const running of recoveringTurns.values()) running.controller.abort()
     recoveringTurns.clear()
     recoveryPendingAskObservations.clear()
-    recoveryThreadMissingCounts.clear()
     clearLateAskReports()
     const stoppedGeneration = ownedGeneration
     queueMicrotask(() => {
@@ -2711,7 +2756,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   async function answerAsk(
     askId: string,
-    answer: AgentAnswerRequest | 'run' | 'cancel',
+    answer: AgentAnswerRequest,
     onRequestFailed?: () => void
   ): Promise<boolean> {
     const currentThreadId = conversationStore.threadId
@@ -2720,14 +2765,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
       return false
     }
     if (answeringAskIds.value.has(askId)) return false
-    const legacyRunApprovalAnswer = typeof answer === 'string'
-    const runApprovalAnswer =
-      legacyRunApprovalAnswer ||
-      conversationStore.askKind(askId) === 'runApproval'
-    const normalizedAnswer = legacyRunApprovalAnswer
-      ? { selected: [answer] }
-      : answer
-    conversationStore.recordAskAnswer(askId, normalizedAnswer, currentThreadId)
+    conversationStore.recordAskAnswer(askId, answer, currentThreadId)
+    const minSelections = conversationStore.submittedAskMinSelections(askId)
     conversationStore.setAskAnswering(askId, true)
     const answerChannelEpoch = resolutionChannelEpoch
     const answerStartedBeforeFirstOpen = connection === 'initial'
@@ -2736,40 +2775,46 @@ export function useAgentSession(deps: AgentSessionDeps) {
       answerStartedDropped || resolutionChannelEpoch !== answerChannelEpoch
     const resolutionChannelWasLost = () =>
       answerStartedBeforeFirstOpen || resolutionChannelDropped()
-    let receipt: AgentAnswerReceipt
+    let answerRetried = false
+    const inFlightKey = inFlightAskAnswerKey(currentThreadId, askId)
+    inFlightAskAnswers.add(inFlightKey)
     try {
-      receipt = await sendAnswer(currentThreadId, askId, normalizedAnswer)
-    } catch (error) {
-      if (!answeringAskIds.value.has(askId)) return false
-      if (!(error instanceof AgentApiError && error.status === 409))
-        onRequestFailed?.()
-      return handleAnswerFailure(
-        error,
-        askId,
-        currentThreadId,
-        runApprovalAnswer,
-        resolutionChannelWasLost()
-      )
-    }
-    try {
+      const receipt = await sendAnswer(currentThreadId, askId, answer, () => {
+        answerRetried = true
+      })
       return commitAskReceipt({
         askId,
-        answer: normalizedAnswer,
+        answer,
         currentThreadId,
         receipt,
-        runApprovalAnswer,
+        minSelections,
         resolutionChannelDropped
       })
     } catch (error) {
+      if (
+        !(error instanceof AgentApiError && error.status === 409) &&
+        conversationStore.isAskRetired(askId, currentThreadId)
+      ) {
+        conversationStore.completeAskResolutionReport(askId)
+        return false
+      }
+      if (
+        answeringAskIds.value.has(askId) &&
+        !(error instanceof AgentApiError && error.status === 409)
+      )
+        onRequestFailed?.()
       if (answeringAskIds.value.has(askId))
         return handleAnswerFailure(
           error,
           askId,
           currentThreadId,
-          runApprovalAnswer,
+          minSelections,
+          answerRetried,
           resolutionChannelWasLost()
         )
       return false
+    } finally {
+      inFlightAskAnswers.delete(inFlightKey)
     }
   }
 
@@ -2778,17 +2823,17 @@ export function useAgentSession(deps: AgentSessionDeps) {
     answer,
     currentThreadId,
     receipt,
-    runApprovalAnswer,
+    minSelections,
     resolutionChannelDropped
   }: {
     askId: string
     answer: AgentAnswerRequest
     currentThreadId: string
     receipt: AgentAnswerReceipt
-    runApprovalAnswer: boolean
+    minSelections: number | undefined
     resolutionChannelDropped: () => boolean
   }): boolean {
-    if (!receiptNamesCommittedAnswer(receipt, runApprovalAnswer))
+    if (!receiptNamesCommittedAnswer(receipt, minSelections, answer))
       return commitStatusOnlyAskReceipt({
         askId,
         answer,
@@ -2807,19 +2852,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   function receiptNamesCommittedAnswer(
-    receipt: {
-      status?: string
-      selected?: string[] | null
-      other_text?: string
-    },
-    runApprovalAnswer = false
+    receipt: AnswerReceiptSource,
+    minSelections: number | undefined,
+    submitted?: AgentAnswerRequest
   ): boolean {
-    if (receipt.status !== undefined && receipt.status !== 'answered')
-      return false
-    if (receipt.other_text !== undefined) return true
-    if (receipt.selected === undefined || receipt.selected === null)
-      return false
-    return !runApprovalAnswer || receipt.selected.length > 0
+    if (receipt.status !== 'answered') return false
+    return namesCommittedAnswer(receipt, minSelections, submitted)
   }
 
   function commitStatusOnlyAskReceipt({
@@ -2834,15 +2872,40 @@ export function useAgentSession(deps: AgentSessionDeps) {
     resolutionChannelDropped: () => boolean
   }): boolean {
     const channelDropped = resolutionChannelDropped()
+    const askKind = conversationStore.submittedAskKind(askId)
+    const askMessageId = conversationStore.submittedAskMessageId(askId)
+    const minSelections = conversationStore.submittedAskMinSelections(askId)
     const resolutionStillPending =
       conversationStore.submittedAskAnswer(askId) !== undefined
-    if (resolutionStillPending)
-      reportAcceptedRecoveredAnswer(askId, channelDropped)
+    if (resolutionStillPending && channelDropped) {
+      reportAcceptedRecoveredAnswer(askId, true, false)
+      showOrQueueAskNotice(
+        currentThreadId,
+        i18n.global.t('agent.runApproval.answerAcceptedUnconfirmed')
+      )
+    }
     recordDeliveredAsk(askId)
-    conversationStore.commitAsk(askId, currentThreadId, { status: 'retired' })
+    if (resolutionStillPending)
+      conversationStore.commitAsk(askId, currentThreadId, {
+        status: 'unconfirmed'
+      })
     if (resolutionStillPending && !channelDropped) {
-      conversationStore.recordAskAnswer(askId, answer, currentThreadId)
-      conversationStore.markAskAwaitingResolution(askId, 'accepted')
+      conversationStore.recordAskAnswer(
+        askId,
+        answer,
+        currentThreadId,
+        askKind,
+        askMessageId,
+        minSelections
+      )
+      conversationStore.markAskAwaitingResolution(askId, 'accepted', () => {
+        reportAcceptedRecoveredAnswer(askId, true, false)
+        showOrQueueAskNotice(
+          currentThreadId,
+          i18n.global.t('agent.runApproval.answerAcceptedUnconfirmed')
+        )
+        return true
+      })
     }
     return !supersededAnswerReports.has(askId)
   }
@@ -2859,7 +2922,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   function reportAcceptedRecoveredAnswer(
     askId: string,
-    resolutionChannelWasLost: boolean
+    resolutionChannelWasLost: boolean,
+    showNotice = true
   ): void {
     if (
       !resolutionChannelWasLost ||
@@ -2870,23 +2934,26 @@ export function useAgentSession(deps: AgentSessionDeps) {
       surface: 'agent',
       errorType: 'agent_ask_answer_winner_unconfirmed'
     })
-    pushError(i18n.global.t('agent.runApproval.answerAcceptedUnconfirmed'))
+    if (showNotice)
+      pushError(i18n.global.t('agent.runApproval.answerAcceptedUnconfirmed'))
   }
 
-  function reportUnconfirmedConflict(askId: string): void {
+  function reportUnconfirmedConflict(askId: string, showNotice = true): void {
     if (!recordAnswerReport(conflictUnconfirmedReports, askId)) return
     reportError(new Error('restored approval conflict cannot be verified'), {
       surface: 'agent',
       errorType: 'agent_ask_answer_unconfirmed'
     })
-    pushError(i18n.global.t('agent.runApproval.answerUncertain'))
+    if (showNotice)
+      pushError(i18n.global.t('agent.runApproval.answerUncertain'))
   }
 
   function handleAnswerFailure(
     error: unknown,
     askId: string,
     threadId: string,
-    runApprovalAnswer: boolean,
+    minSelections: number | undefined,
+    answerRetried: boolean,
     resolutionChannelWasLost = connection === 'dropped'
   ): boolean {
     conversationStore.clearAskAwaitingResolution(askId)
@@ -2895,11 +2962,16 @@ export function useAgentSession(deps: AgentSessionDeps) {
         error,
         askId,
         threadId,
-        runApprovalAnswer,
+        minSelections,
+        answerRetried,
         resolutionChannelWasLost
       )
     }
-    const failure = classifyAnswerFailure(error)
+    const classifiedFailure = classifyAnswerFailure(error)
+    const failure =
+      answerRetried && classifiedFailure === 'refused'
+        ? 'unconfirmed'
+        : classifiedFailure
     reportError(error, {
       surface: 'agent',
       errorType: ANSWER_FAILURE_ERROR_TYPES[failure]
@@ -2912,16 +2984,34 @@ export function useAgentSession(deps: AgentSessionDeps) {
         deliveredAsks.delete(askId)
         conversationStore.takeSubmittedAskAnswer(askId)
         conversationStore.setAskAnswering(askId, false)
-        pushError(i18n.global.t('agent.askUser.answerRejected'))
+        showOrQueueAskNotice(
+          threadId,
+          i18n.global.t('agent.askUser.answerRejected')
+        )
       },
       refused: () => {
-        pushError(i18n.global.t('agent.runApproval.answerFailed'))
+        showOrQueueAskNotice(
+          threadId,
+          i18n.global.t('agent.runApproval.answerFailed')
+        )
         conversationStore.retireAsk(askId, { status: 'retired' }, threadId)
       },
       unconfirmed: () => {
         recordDeliveredAsk(askId)
-        conversationStore.retireAsk(askId, { status: 'unconfirmed' }, threadId)
-        pushError(i18n.global.t('agent.runApproval.answerUncertain'))
+        conversationStore.retireAsk(
+          askId,
+          { status: 'unconfirmed' },
+          threadId,
+          !answerRetried,
+          undefined,
+          answerRetried
+        )
+        if (answerRetried)
+          conversationStore.deferSubmittedAskCleanup(askId, 'unconfirmed')
+        showOrQueueAskNotice(
+          threadId,
+          i18n.global.t('agent.runApproval.answerUncertain')
+        )
       }
     }
     settle[failure]()
@@ -2932,7 +3022,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     error: AgentApiError,
     askId: string,
     threadId: string,
-    runApprovalAnswer: boolean,
+    minSelections: number | undefined,
+    answerRetried: boolean,
     resolutionChannelWasLost: boolean
   ): boolean {
     const conflict = zAgentAskConflict.safeParse(error.body)
@@ -2951,7 +3042,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const submitted = conversationStore.submittedAskAnswer(askId)
     if (
       conflict.success &&
-      receiptNamesCommittedAnswer(conflict.data, runApprovalAnswer)
+      receiptNamesCommittedAnswer(conflict.data, minSelections, submitted)
     ) {
       const committed = toAskResolution(conflict.data)
       const superseded =
@@ -2971,7 +3062,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
       askId,
       threadId,
       submitted,
-      resolutionChannelWasLost
+      resolutionChannelWasLost,
+      answerRetried
     )
     return false
   }
@@ -2981,18 +3073,63 @@ export function useAgentSession(deps: AgentSessionDeps) {
     askId: string,
     threadId: string,
     submitted: AgentAnswerRequest | undefined,
-    resolutionChannelWasLost: boolean
+    resolutionChannelWasLost: boolean,
+    answerRetried: boolean
   ): void {
+    const askKind = conversationStore.submittedAskKind(askId)
+    const askMessageId = conversationStore.submittedAskMessageId(askId)
+    const minSelections = conversationStore.submittedAskMinSelections(askId)
     recordDeliveredAsk(askId)
     conversationStore.retireAsk(
       askId,
-      { status: resolutionChannelWasLost ? 'unconfirmed' : 'retired' },
-      threadId
+      {
+        status: answerRetried ? 'unconfirmed' : 'retired'
+      },
+      threadId,
+      true,
+      undefined,
+      submitted !== undefined
     )
+    if (!answerRetried) {
+      if (resolutionChannelWasLost) {
+        reportUnconfirmedConflict(askId, false)
+        showOrQueueAskNotice(
+          threadId,
+          i18n.global.t('agent.runApproval.answerUncertain')
+        )
+        conversationStore.completeAskResolutionReport(askId)
+      } else if (submitted !== undefined)
+        conversationStore.deferSubmittedAskCleanup(askId)
+      return
+    }
+    if (stopped) {
+      reportUnconfirmedConflict(askId, false)
+      showOrQueueAskNotice(
+        threadId,
+        i18n.global.t('agent.runApproval.answerUncertain')
+      )
+      conversationStore.completeAskResolutionReport(askId)
+      return
+    }
     if (!resolutionChannelWasLost) {
       if (submitted) {
-        conversationStore.recordAskAnswer(askId, submitted, threadId)
-        conversationStore.markAskAwaitingResolution(askId, 'conflict')
+        conversationStore.recordAskAnswer(
+          askId,
+          submitted,
+          threadId,
+          askKind,
+          askMessageId,
+          minSelections
+        )
+        conversationStore.markAskAwaitingResolution(askId, 'conflict', () => {
+          if (stopped) return false
+          reportUnconfirmedConflict(askId, false)
+          showOrQueueAskNotice(
+            threadId,
+            i18n.global.t('agent.runApproval.answerUncertain')
+          )
+          return true
+        })
       }
       return
     }
@@ -3000,14 +3137,25 @@ export function useAgentSession(deps: AgentSessionDeps) {
       surface: 'agent',
       errorType: 'agent_ask_answer_unconfirmed'
     })
-    pushError(i18n.global.t('agent.runApproval.answerUncertain'))
+    showOrQueueAskNotice(
+      threadId,
+      i18n.global.t('agent.runApproval.answerUncertain')
+    )
+    conversationStore.completeAskResolutionReport(askId)
   }
 
   function reportSupersededAnswer(
     askId: string,
     source: CommittedAnswerSource
   ): void {
-    if (!namesCommittedAnswer(source)) return
+    if (
+      !namesCommittedAnswer(
+        source,
+        conversationStore.submittedAskMinSelections(askId),
+        conversationStore.submittedAskAnswer(askId)
+      )
+    )
+      return
     const committed = toAskResolution(source)
     if (committed.status !== 'answered') return
     const submitted = conversationStore.takeSubmittedAskAnswer(askId)
@@ -3032,13 +3180,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
         ask_kind: submitted.kind
       }
     })
-    pushError(i18n.global.t('agent.runApproval.answerSuperseded'))
+    showOrQueueSupersededNotice(submitted.owner)
   }
 
   async function sendAnswer(
     threadId: string,
     askId: string,
-    answer: AgentAnswerRequest
+    answer: AgentAnswerRequest,
+    onRetry: () => void
   ): Promise<AgentAnswerReceipt> {
     for (let attempt = 0; ; attempt++) {
       try {
@@ -3049,6 +3198,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
           !isRetryableAnswerFailure(error)
         )
           throw error
+        onRetry()
         await new Promise((resolve) =>
           setTimeout(resolve, ANSWER_RETRY_BACKOFF_MS[attempt])
         )
@@ -3063,11 +3213,17 @@ export function useAgentSession(deps: AgentSessionDeps) {
     source?: Exclude<AgentSessionThreadStartSource, 'first_open'>,
     blankChatId?: string
   ): void {
+    if (source === 'history_delete' && conversationStore.threadId !== null)
+      pendingAskNotices.delete(conversationStore.threadId)
     readyThreadId.value = null
     loadGeneration++
     promptEditState.value = { phase: 'idle' }
-    conversationStore.stashActiveTurn()
-    conversationStore.reset(blankChatId)
+    if (source === 'history_delete') conversationStore.abortActiveTurn()
+    else conversationStore.stashActiveTurn()
+    conversationStore.reset({
+      discardCurrentThread: source === 'history_delete',
+      blankChatId
+    })
     pruneSkillTurns()
     onThreadActivated?.(null)
     forgetBinding()
@@ -3273,16 +3429,33 @@ export function useAgentSession(deps: AgentSessionDeps) {
   function handleResolvedAsk(
     event: Extract<AgentWsEvent, { type: 'agent_ask_resolved' }>
   ): void {
-    conversationStore.clearAskAwaitingResolution(event.data.ask_id)
     const resolution = toAskResolution(event.data)
+    const namesAnswer =
+      event.data.status === 'answered' &&
+      namesCommittedAnswer(
+        event.data,
+        conversationStore.submittedAskMinSelections(event.data.ask_id),
+        conversationStore.submittedAskAnswer(event.data.ask_id)
+      )
+    if (event.data.status !== 'answered' || namesAnswer)
+      conversationStore.clearAskAwaitingResolution(event.data.ask_id)
     reportSupersededAnswer(event.data.ask_id, event.data)
-    // The owning transport may already be gone, so retire the ask explicitly
-    // before ingest can otherwise leave its card enabled.
+    const preserveSubmitted = event.data.status === 'answered' && !namesAnswer
+    const preserveAnswering =
+      preserveSubmitted &&
+      inFlightAskAnswers.has(
+        inFlightAskAnswerKey(event.data.thread_id, event.data.ask_id)
+      )
     conversationStore.retireAsk(
       event.data.ask_id,
       resolution,
-      event.data.thread_id
+      event.data.thread_id,
+      true,
+      undefined,
+      preserveSubmitted
     )
+    if (preserveAnswering)
+      conversationStore.setAskAnswering(event.data.ask_id, true)
     recordDeliveredAsk(event.data.ask_id)
     onAskResolved?.(event.data.ask_id)
   }
@@ -3431,27 +3604,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
     handleAgentEvent(parsed.data)
   }
 
-  function handleSocketDropped(): void {
-    if (connection === 'initial' && !receivedStatusSnapshot) {
-      receivedStatusSnapshot = true
-      return
-    }
-    receivedStatusSnapshot = true
-    if (connection === 'dropped') return
-    connection = 'dropped'
-    for (const state of inFlightSends.values()) state.missedCause = 'reconnect'
-    resolutionChannelEpoch += 1
-    for (const awaiting of conversationStore.asksAwaitingResolution())
-      if (awaiting.kind === 'accepted')
-        reportAcceptedRecoveredAnswer(awaiting.askId, true)
-      else reportUnconfirmedConflict(awaiting.askId)
-  }
-
   function onStatus(live: boolean): void {
-    if (!live) {
-      handleSocketDropped()
-      return
-    }
+    if (stopped) return
+    if (!live) return handleSocketOffline()
     receivedStatusSnapshot = true
     const reconnected = connection === 'dropped'
     const firstLive = connection === 'initial'
@@ -3463,12 +3618,62 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (reconnected) {
       conversationStore.markActiveTurnMissedFrames()
       reconcileLiveTurns('reconnect')
-    } else if (firstLive) reconcileLiveTurns('hydrate')
+    } else if (firstLive) {
+      if (initialStatusWasOffline) {
+        conversationStore.markActiveTurnMissedFrames()
+        reconcileLiveTurns('reconnect')
+      } else reconcileLiveTurns('hydrate')
+    }
   }
 
-  function reconcileLiveTurns(cause: RecoveryCause): void {
+  function settleAnswersAfterChannelLoss(onlyDeferred = false): void {
+    for (const awaiting of conversationStore.asksAwaitingResolution()) {
+      if (awaiting.cleanupDeferred === 'unconfirmed') continue
+      if (onlyDeferred && awaiting.cleanupDeferred === undefined) continue
+      if (awaiting.kind === 'accepted') {
+        reportAcceptedRecoveredAnswer(awaiting.askId, true, false)
+        showOrQueueAskNotice(
+          awaiting.owner,
+          i18n.global.t('agent.runApproval.answerAcceptedUnconfirmed')
+        )
+      } else {
+        reportUnconfirmedConflict(awaiting.askId, false)
+        showOrQueueAskNotice(
+          awaiting.owner,
+          i18n.global.t('agent.runApproval.answerUncertain')
+        )
+      }
+      conversationStore.retireAsk(
+        awaiting.askId,
+        { status: 'unconfirmed' },
+        awaiting.owner
+      )
+      conversationStore.completeAskResolutionReport(awaiting.askId)
+    }
+  }
+
+  function handleSocketOffline(): void {
+    if (connection === 'initial' && !receivedStatusSnapshot) {
+      receivedStatusSnapshot = true
+      initialStatusWasOffline = true
+      settleAnswersAfterChannelLoss(true)
+      return
+    }
+    receivedStatusSnapshot = true
+    if (connection === 'dropped') return
+    connection = 'dropped'
+    for (const state of inFlightSends.values()) state.missedCause = 'reconnect'
+    resolutionChannelEpoch += 1
+    settleAnswersAfterChannelLoss()
+  }
+
+  function reconcileLiveTurns(
+    cause: RecoveryCause,
+    hydratedThreadId?: string
+  ): void {
     for (const turn of conversationStore.liveTurns())
-      void reconcileTurn(turn, cause)
+      if (hydratedThreadId === undefined || turn.threadId === hydratedThreadId)
+        void reconcileTurn(turn, cause)
   }
 
   async function reconcileTurn(
@@ -3524,11 +3729,27 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   function isRetryableSettledRead(outcome: TurnOutcome): boolean {
-    if (outcome.kind === 'streaming') return true
+    if (
+      outcome.kind === 'streaming' ||
+      outcome.kind === 'turn-missing' ||
+      outcome.kind === 'thread-missing'
+    )
+      return true
     return (
       outcome.kind === 'error' &&
       isRetryableRequestFailure(outcome.cause, false)
     )
+  }
+
+  function retainedSettledOutcomeAtDeadline(
+    signal: AbortSignal,
+    deadlineReason: Error,
+    outcome: TurnOutcome | undefined
+  ): TurnOutcome | undefined {
+    if (signal.reason !== deadlineReason) return undefined
+    return outcome?.kind === 'error' || outcome?.kind === 'turn-missing'
+      ? outcome
+      : undefined
   }
 
   async function fetchSettledTurnOutcome(
@@ -3538,21 +3759,38 @@ export function useAgentSession(deps: AgentSessionDeps) {
     deadlineReason: Error
   ): Promise<TurnOutcome> {
     let outcome: TurnOutcome | undefined
+    let consecutiveThreadMissing = 0
     try {
       outcome = await fetchTurnOutcome(turn, signal)
+      consecutiveThreadMissing = nextThreadMissingCount(
+        outcome,
+        consecutiveThreadMissing
+      )
       for (const ms of TURN_RECOVERY_DELAYS_MS.slice(1)) {
         if (
           !isRetryableSettledRead(outcome) ||
+          (outcome.kind === 'thread-missing' &&
+            consecutiveThreadMissing >= 2) ||
           generation !== sessionGeneration
         )
           return outcome
         await delay(ms, { signal })
         outcome = await fetchTurnOutcome(turn, signal)
+        consecutiveThreadMissing = nextThreadMissingCount(
+          outcome,
+          consecutiveThreadMissing
+        )
       }
-      return outcome
+      return outcome.kind === 'thread-missing' && consecutiveThreadMissing < 2
+        ? { kind: 'turn-missing' }
+        : outcome
     } catch (error) {
-      if (signal.reason === deadlineReason && outcome?.kind === 'error')
-        return outcome
+      const retained = retainedSettledOutcomeAtDeadline(
+        signal,
+        deadlineReason,
+        outcome
+      )
+      if (retained) return retained
       throw error
     }
   }
@@ -3566,6 +3804,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   function applySettledRead(turn: LiveTurn, outcome: TurnOutcome): void {
     if (outcome.kind === 'error') reportSettledReadFailure(outcome.cause)
+    else if (outcome.kind === 'turn-missing')
+      reportSettledReadFailure(new Error('agent turn missing after settlement'))
+    else if (outcome.kind === 'thread-missing') forgetDeletedThread(turn)
     else if (outcome.kind === 'terminal')
       conversationStore.reconcileSettledTurn(turn, outcome.parts)
   }
@@ -3580,10 +3821,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const ownsKey = recoveringTurns.get(key) === state
     if (ownsKey && generation === sessionGeneration)
       conversationStore.reconcileSettledTurn(turn, undefined)
+    if (ownsKey) recoveryPendingAskObservations.delete(key)
     finishRecovery(key, recovery, state, turn)
-    if (!ownsKey) return
-    recoveryPendingAskObservations.delete(key)
-    recoveryThreadMissingCounts.delete(key)
+    if (ownsKey && !state.rerun && isTurnLive(turn, generation))
+      void reconcileTurn(turn, 'hydrate')
   }
 
   async function reconcileSettledSnapshotTurn(turn: LiveTurn): Promise<void> {
@@ -3659,9 +3900,26 @@ export function useAgentSession(deps: AgentSessionDeps) {
     signal: AbortSignal
   ): Promise<boolean> {
     const key = recoveryKey(turn)
-    let previousObservation = recentPendingAskObservation(key)
-    let hasUnconfirmedObservation = false
-    let sawStreamingObservation = false
+    const previousObservation = recentPendingAskObservation(key)
+    const deliveredAtRecoveryStart = new Set(deliveredAsks)
+    const state: RecoveryObservationState = {
+      previousObservation: undefined,
+      hasUnconfirmedObservation: false,
+      sawStreamingObservation: false,
+      consecutiveThreadMissing: 0,
+      deliveredAtRecoveryStart,
+      snapshotNamedDeliveredAsks: new Set(),
+      deliveredAsksAwaitingSnapshot: new Set(
+        previousObservation === undefined
+          ? deliveredAtRecoveryStart
+          : [...deliveredAtRecoveryStart].filter(
+              (askId) =>
+                !previousObservation.deliveredAskIds.has(askId) &&
+                askId !== previousObservation.pendingAskId
+            )
+      ),
+      consumedSnapshotProtection: new Set()
+    }
     for (const ms of TURN_RECOVERY_DELAYS_MS) {
       await delay(ms, { signal })
       if (!isTurnLive(turn, generation)) return false
@@ -3669,46 +3927,113 @@ export function useAgentSession(deps: AgentSessionDeps) {
       const outcome = await fetchTurnOutcome(turn, signal)
       throwIfAborted(signal)
       if (!isTurnLive(turn, generation)) return false
-      const consecutiveThreadMissing = recordThreadAvailability(key, outcome)
-      pruneRecoveryLedgers()
-      if (isTransientMissingTurn(outcome, consecutiveThreadMissing)) {
-        hasUnconfirmedObservation = true
-        continue
-      }
-      if (settleFinishedTurn(turn, outcome)) {
-        recoveryPendingAskObservations.delete(key)
-        recoveryThreadMissingCounts.delete(key)
-        return false
-      }
-      if (outcome.kind !== 'streaming') {
-        hasUnconfirmedObservation = true
-        continue
-      }
-      sawStreamingObservation = true
-      const pendingAskId = streamingPendingAskId(outcome)
-      const pendingAskConfirmed =
-        previousObservation !== undefined &&
-        previousObservation.pendingAskId === pendingAskId
-      hasUnconfirmedObservation = !pendingAskConfirmed
-      const deliveredSincePreviousObservation = new Set(
-        [...deliveredAsks].filter(
-          (askId) => !previousObservation?.deliveredAskIds.has(askId)
+      if (
+        observeRecoveryOutcome(
+          key,
+          state,
+          outcome,
+          deliveredBeforeFetch,
+          turn,
+          cause
         )
       )
-      reconcileStreamingApproval(
-        turn,
-        outcome,
-        cause,
-        pendingAskConfirmed,
-        deliveredSincePreviousObservation
-      )
-      previousObservation = recordPendingAskObservation(
-        key,
-        pendingAskId,
-        deliveredBeforeFetch
-      )
+        return false
     }
-    return hasUnconfirmedObservation && sawStreamingObservation
+    return state.hasUnconfirmedObservation && state.sawStreamingObservation
+  }
+
+  interface RecoveryObservationState {
+    previousObservation: PendingAskObservation | undefined
+    hasUnconfirmedObservation: boolean
+    sawStreamingObservation: boolean
+    consecutiveThreadMissing: number
+    deliveredAtRecoveryStart: Set<string>
+    snapshotNamedDeliveredAsks: Set<string>
+    deliveredAsksAwaitingSnapshot: Set<string>
+    consumedSnapshotProtection: Set<string>
+  }
+
+  function observeRecoveryOutcome(
+    key: string,
+    state: RecoveryObservationState,
+    outcome: TurnOutcome,
+    deliveredBeforeFetch: Set<string>,
+    turn: LiveTurn,
+    cause: RecoveryCause
+  ): boolean {
+    state.consecutiveThreadMissing = nextThreadMissingCount(
+      outcome,
+      state.consecutiveThreadMissing
+    )
+    if (isTransientMissingTurn(outcome, state.consecutiveThreadMissing)) {
+      state.hasUnconfirmedObservation = true
+      return false
+    }
+    if (settleFinishedTurn(turn, outcome)) {
+      recoveryPendingAskObservations.delete(key)
+      return true
+    }
+    if (outcome.kind !== 'streaming') {
+      state.hasUnconfirmedObservation = true
+      return false
+    }
+    state.sawStreamingObservation = true
+    const pendingAskId = streamingPendingAskId(outcome)
+    const pendingAskConfirmed =
+      state.previousObservation !== undefined &&
+      state.previousObservation.pendingAskId === pendingAskId
+    trackDeliveredAsksAwaitingSnapshot(state, pendingAskId)
+    state.hasUnconfirmedObservation = !pendingAskConfirmed
+    reconcileStreamingApproval(
+      turn,
+      outcome,
+      cause,
+      pendingAskConfirmed,
+      state.deliveredAsksAwaitingSnapshot
+    )
+    if (pendingAskConfirmed)
+      consumeDeliveredAskSnapshotProtection(state, pendingAskId)
+    state.previousObservation = recordPendingAskObservation(
+      key,
+      pendingAskId,
+      deliveredBeforeFetch
+    )
+    return false
+  }
+
+  function trackDeliveredAsksAwaitingSnapshot(
+    state: RecoveryObservationState,
+    pendingAskId: string | undefined
+  ): void {
+    if (pendingAskId !== undefined) {
+      state.snapshotNamedDeliveredAsks.add(pendingAskId)
+      state.deliveredAsksAwaitingSnapshot.delete(pendingAskId)
+    }
+    for (const askId of deliveredAsks)
+      if (
+        !state.deliveredAtRecoveryStart.has(askId) &&
+        !state.snapshotNamedDeliveredAsks.has(askId) &&
+        !state.consumedSnapshotProtection.has(askId)
+      )
+        state.deliveredAsksAwaitingSnapshot.add(askId)
+  }
+
+  function consumeDeliveredAskSnapshotProtection(
+    state: RecoveryObservationState,
+    pendingAskId: string | undefined
+  ): void {
+    for (const askId of state.deliveredAsksAwaitingSnapshot)
+      if (askId !== pendingAskId) {
+        state.deliveredAsksAwaitingSnapshot.delete(askId)
+        state.consumedSnapshotProtection.add(askId)
+      }
+  }
+
+  function nextThreadMissingCount(
+    outcome: TurnOutcome,
+    current: number
+  ): number {
+    return outcome.kind === 'thread-missing' ? current + 1 : 0
   }
 
   function recentPendingAskObservation(
@@ -3741,7 +4066,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       conversationStore.hasApprovalShown(turn)
     )
       return
-    restoreMissingApproval(turn, outcome.pendingAsk, cause)
+    restoreMissingApproval(turn, outcome.pendingAsk, cause, pendingAskConfirmed)
   }
 
   function reconcileConfirmedApproval(
@@ -3762,43 +4087,30 @@ export function useAgentSession(deps: AgentSessionDeps) {
     for (const askId of hiddenAskIds) deliveredAsks.delete(askId)
   }
 
-  /**
-   * PM-1738: a turn parked on a tool-call approval stays `streaming` until the
-   * user answers, so a socket drop that swallowed the `agent_ask` frame leaves
-   * the server waiting on a card the panel never drew -- the turn reads as
-   * hung and every follow-up post comes back 409. The polled row still carries
-   * the unanswered ask, so re-deliver it through the store, which routes it to
-   * the same transport the lost frame would have reached, and mirror the one
-   * other thing the socket branch does with an ask.
-   */
   function restoreMissingApproval(
     turn: LiveTurn,
     pendingAsk: PendingAsk | undefined,
-    cause: RecoveryCause
+    cause: RecoveryCause,
+    snapshotConfirmed: boolean
   ): void {
     if (!pendingAsk) return
-    if (deliveredAsks.has(pendingAsk.ask_id)) return
     const trackRunApproval = pendingAsk.kind === 'run_approval'
     if (
-      conversationStore.submittedAskAnswer(pendingAsk.ask_id) !== undefined ||
-      answeringAskIds.value.has(pendingAsk.ask_id)
-    )
-      return
-    if (conversationStore.isAskRetired(pendingAsk.ask_id, turn.threadId)) {
-      if (
-        trackRunApproval &&
-        conversationStore.isAskPermanentlyRetired(
-          pendingAsk.ask_id,
-          turn.threadId
-        )
+      conversationStore.isAskPermanentlyRetired(
+        pendingAsk.ask_id,
+        turn.threadId
       )
+    ) {
+      if (trackRunApproval && cause === 'reconnect')
         trackApprovalRecoveryOutcome(pendingAsk.ask_id, turn, cause, 'retired')
       return
     }
-    if (conversationStore.isAskShown(turn, pendingAsk.ask_id)) return
+    if (!shouldRestoreApproval(turn, pendingAsk, snapshotConfirmed)) return
     if (trackRunApproval)
       trackApprovalRecoveryAttempted(pendingAsk.ask_id, turn, cause)
     const wasDeliveredBefore = observedDeliveredAsks.has(pendingAsk.ask_id)
+    if (snapshotConfirmed)
+      conversationStore.confirmAskPending(pendingAsk.ask_id, turn.threadId)
     conversationStore.ingest({
       type: 'agent_ask',
       data: {
@@ -3855,25 +4167,37 @@ export function useAgentSession(deps: AgentSessionDeps) {
     return conversationStore.liveTurnMessageId(turn) ?? turn.messageId
   }
 
-  /**
-   * The server writes the ask row before it publishes the frame, so a poll
-   * can restore an ask whose broadcast is merely in flight. Only a reconnect
-   * claims a frame was lost, and only once its own broadcast has had a grace
-   * window to turn up -- `withdrawLateAskReport` cancels this when it does.
-   * A hydrate races the same way but never had a dropped socket to blame, so
-   * it files as a warning immediately.
-   */
+  function shouldRestoreApproval(
+    turn: LiveTurn,
+    pendingAsk: PendingAsk | undefined,
+    snapshotConfirmed: boolean
+  ): pendingAsk is PendingAsk {
+    if (!pendingAsk) return false
+    if (!snapshotConfirmed && deliveredAsks.has(pendingAsk.ask_id)) return false
+    if (conversationStore.submittedAskAnswer(pendingAsk.ask_id) !== undefined)
+      return false
+    if (answeringAskIds.value.has(pendingAsk.ask_id)) return false
+    if (
+      !snapshotConfirmed &&
+      conversationStore.isAskRetired(pendingAsk.ask_id, turn.threadId)
+    )
+      return false
+    if (
+      conversationStore.isAskPermanentlyRetired(
+        pendingAsk.ask_id,
+        turn.threadId
+      )
+    )
+      return false
+    return !conversationStore.isAskShown(turn, pendingAsk.ask_id)
+  }
+
   function reportRestoredApproval(
     turn: LiveTurn,
     askId: string,
     cause: RecoveryCause,
     trackRunApproval: boolean
   ): void {
-    const lostFrame = cause === 'reconnect' || connection === 'dropped'
-    if (!lostFrame) {
-      sendRestoredApprovalReport(turn, askId, cause, trackRunApproval)
-      return
-    }
     const key = lateAskReportKey(turn.threadId, askId)
     withdrawLateAskReport(turn.threadId, askId)
     lateAskReports.set(key, {
@@ -4004,6 +4328,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         forgetDeletedThread(turn)
         return true
       case 'streaming':
+      case 'turn-missing':
       case 'error':
         return false
       default: {
@@ -4035,8 +4360,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       const anchor = history.find(
         (entry) => entry.role === 'assistant' && entry.id === turn.messageId
       )
-      if (!anchor)
-        return { kind: 'error', cause: new Error('turn row is not visible') }
+      if (!anchor) return { kind: 'turn-missing' }
       const rows = history
         .filter(
           (entry) =>
@@ -4047,10 +4371,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       if (latest && !isTerminalTurnStatus(latest.status))
         return {
           kind: 'streaming',
-          pendingAsk: rows.findLast(
-            (row) =>
-              !isTerminalTurnStatus(row.status) && row.pending_ask !== undefined
-          )?.pending_ask
+          pendingAsk: latest.pending_ask
         }
       return {
         kind: 'terminal',
@@ -4067,14 +4388,15 @@ export function useAgentSession(deps: AgentSessionDeps) {
     deletedThreads.add(turn.threadId)
     skillTurnUsage.delete(recoveryKey(turn))
     recoveryPendingAskObservations.delete(recoveryKey(turn))
-    recoveryThreadMissingCounts.delete(recoveryKey(turn))
     clearLateAskReports(turn.threadId)
+    pendingAskNotices.delete(turn.threadId)
     if (conversationStore.threadId !== turn.threadId) {
+      conversationStore.discardAskState(turn.threadId)
       conversationStore.settleTurn(turn, undefined, 'failed')
       return
     }
     loadGeneration++
-    conversationStore.reset()
+    conversationStore.reset({ discardCurrentThread: true })
     pruneSkillTurns()
     onThreadActivated?.(null)
     forgetBinding()

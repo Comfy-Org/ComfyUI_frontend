@@ -276,7 +276,7 @@ function deleteApproval(id: string, askId = 'turn-1:call-1') {
     }
   })
 }
-const askUser = (id: string, askId = 'turn-1:call-1') =>
+const askUser = (id: string, askId = 'turn-1:call-1', minSelections = 1) =>
   wire({
     type: 'agent_ask',
     data: {
@@ -289,7 +289,7 @@ const askUser = (id: string, askId = 'turn-1:call-1') =>
         { id: 'sdxl', label: 'SDXL', description: 'Fast' },
         { id: 'flux', label: 'Flux' }
       ],
-      min_selections: 1,
+      min_selections: minSelections,
       max_selections: 2,
       allow_other: true
     }
@@ -2792,7 +2792,8 @@ describe('useAgentSession (v1 composition root)', () => {
 
   describe('ask_user', () => {
     const parkedOnQuestion = async (
-      receipt: AgentAnswerReceipt = { status: 'answered' }
+      receipt: AgentAnswerReceipt = { status: 'answered' },
+      minSelections = 1
     ) => {
       const answerAsk = vi.fn<AgentRestClient['answerAsk']>(async () => receipt)
       const { source, emit, status } = fakeEvents()
@@ -2802,7 +2803,7 @@ describe('useAgentSession (v1 composition root)', () => {
       })
       session.start()
       await session.sendMessage('pick for me')
-      emit(askUser('msg-1'))
+      emit(askUser('msg-1', 'turn-1:call-1', minSelections))
       return { session, answerAsk, emit, status }
     }
     const card = () =>
@@ -2983,6 +2984,10 @@ describe('useAgentSession (v1 composition root)', () => {
       [
         'a null selection',
         { error: 'already answered', status: 'answered', selected: null }
+      ],
+      [
+        'a statusless selection',
+        { error: 'already answered', selected: ['flux'] }
       ]
     ] as const)(
       'does not report a 409 with %s as another answer winning',
@@ -3183,7 +3188,7 @@ describe('useAgentSession (v1 composition root)', () => {
       )
     })
 
-    it('reports an empty committed answer that replaced this one', async () => {
+    it('retains the submitted answer through an empty status-only resolution', async () => {
       const { session, emit } = await parkedOnQuestion()
       await session.answerAsk('turn-1:call-1', { selected: ['sdxl'] })
 
@@ -3192,6 +3197,18 @@ describe('useAgentSession (v1 composition root)', () => {
       expect(card()).toMatchObject({
         resolution: { status: 'answered', selected: [] }
       })
+      expect(reportError).not.toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({ errorType: 'agent_ask_answer_superseded' })
+      )
+      expect(session.notices.value).toEqual([])
+
+      emit(askResolved('msg-1', 'turn-1:call-1', ['flux']))
+
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({ errorType: 'agent_ask_answer_superseded' })
+      )
       expect(session.notices.value).toEqual([
         {
           level: 'error',
@@ -3200,7 +3217,7 @@ describe('useAgentSession (v1 composition root)', () => {
       ])
     })
 
-    it('accepts an explicitly empty answer committed by the server', async () => {
+    it('treats an empty required-answer receipt as status-only', async () => {
       const { session } = await parkedOnQuestion({
         status: 'answered',
         selected: []
@@ -3213,9 +3230,74 @@ describe('useAgentSession (v1 composition root)', () => {
 
       expect(committed).toBe(true)
       expect(card()).toMatchObject({
+        resolution: { status: 'unconfirmed' }
+      })
+      expect(session.notices.value).toEqual([
+        {
+          level: 'error',
+          text: enMessages.agent.runApproval.answerAcceptedUnconfirmed
+        }
+      ])
+    })
+
+    it('accepts an explicitly empty answer when the ask allows it', async () => {
+      const { session } = await parkedOnQuestion(
+        { status: 'answered', selected: [] },
+        0
+      )
+
+      const committed = await session.answerAsk('turn-1:call-1', {
+        selected: []
+      })
+      await vi.advanceTimersByTimeAsync(15_000)
+
+      expect(committed).toBe(true)
+      expect(card()).toMatchObject({
         resolution: { status: 'answered', selected: [] }
       })
       expect(session.notices.value).toEqual([])
+    })
+
+    it('treats an empty optional receipt as status-only after a nonempty answer', async () => {
+      const { session } = await parkedOnQuestion(
+        { status: 'answered', selected: [] },
+        0
+      )
+
+      const committed = await session.answerAsk('turn-1:call-1', {
+        selected: ['sdxl']
+      })
+      await vi.advanceTimersByTimeAsync(15_000)
+
+      expect(committed).toBe(true)
+      expect(card()).toMatchObject({
+        resolution: { status: 'unconfirmed' }
+      })
+      expect(reportError).not.toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({ errorType: 'agent_ask_answer_superseded' })
+      )
+    })
+
+    it('treats an empty optional receipt as status-only after free text', async () => {
+      const { session } = await parkedOnQuestion(
+        { status: 'answered', selected: [] },
+        0
+      )
+
+      await session.answerAsk('turn-1:call-1', {
+        selected: [],
+        other_text: 'A custom model'
+      })
+      await vi.advanceTimersByTimeAsync(15_000)
+
+      expect(card()).toMatchObject({
+        resolution: { status: 'unconfirmed' }
+      })
+      expect(reportError).not.toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({ errorType: 'agent_ask_answer_superseded' })
+      )
     })
 
     it('leaves a status-only 202 to the frame to report', async () => {
@@ -3273,6 +3355,9 @@ describe('useAgentSession (v1 composition root)', () => {
       emit(askResolved('msg-1', 'turn-1:call-1', null, 'cancelled'))
 
       expect(card()).toMatchObject({ resolution: { status: 'closed' } })
+      expect(
+        useAgentConversationStore().submittedAskAnswer('turn-1:call-1')
+      ).toBeUndefined()
     })
 
     it.for<{
@@ -3374,7 +3459,72 @@ describe('useAgentSession (v1 composition root)', () => {
     )
   })
 
-  it('retires a live-socket 409 without a false uncertainty notice', async () => {
+  it('retires a first-attempt live-socket 409 without false uncertainty', async () => {
+    vi.useFakeTimers()
+    try {
+      const answerAsk = vi
+        .fn<AgentRestClient['answerAsk']>()
+        .mockRejectedValue(
+          new AgentApiError('already answered', 409, undefined)
+        )
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({
+        rest: fakeRest({ answerAsk }),
+        events: source
+      })
+      session.start()
+      status(true)
+      await session.sendMessage('build it')
+      emit(runApproval('msg-1'))
+
+      await session.answerAsk('turn-1:call-1', { selected: ['cancel'] })
+
+      await vi.advanceTimersByTimeAsync(15_001)
+      expect(reportError).not.toHaveBeenCalled()
+      status(false)
+
+      expect(reportError).not.toHaveBeenCalled()
+      expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(false)
+      expect(
+        useAgentConversationStore().messages[0].parts.some(
+          (part) => part.type === 'runApproval'
+        )
+      ).toBe(false)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('reports a deferred first-attempt conflict if the socket drops', async () => {
+    const answerAsk = vi
+      .fn<AgentRestClient['answerAsk']>()
+      .mockRejectedValue(new AgentApiError('already answered', 409, undefined))
+    const events = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ answerAsk }),
+      events: events.source
+    })
+    session.start()
+    events.status(true)
+    await session.sendMessage('build it')
+    events.emit(runApproval('msg-1'))
+    await session.answerAsk('turn-1:call-1', { selected: ['cancel'] })
+
+    events.status(false)
+
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({ errorType: 'agent_ask_answer_unconfirmed' })
+    )
+    expect(session.notices.value).toEqual([
+      {
+        level: 'error',
+        text: enMessages.agent.runApproval.answerUncertain
+      }
+    ])
+  })
+
+  it('keeps a first-attempt 409 submission for the winning resolution frame', async () => {
     const answerAsk = vi
       .fn<AgentRestClient['answerAsk']>()
       .mockRejectedValue(new AgentApiError('already answered', 409, undefined))
@@ -3389,15 +3539,122 @@ describe('useAgentSession (v1 composition root)', () => {
     emit(runApproval('msg-1'))
 
     await session.answerAsk('turn-1:call-1', { selected: ['cancel'] })
+    emit(askResolved('msg-1', 'turn-1:call-1', ['run']))
 
-    expect(reportError).not.toHaveBeenCalled()
-    expect(session.notices.value).toEqual([])
-    expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(false)
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({ errorType: 'agent_ask_answer_superseded' })
+    )
+    expect(session.notices.value).toEqual([
+      {
+        level: 'error',
+        text: enMessages.agent.runApproval.answerSuperseded
+      }
+    ])
+  })
+
+  it('routes a stopped session answer notice to its live successor', async () => {
+    let resolveAnswer: ((receipt: AgentAnswerAccepted) => void) | undefined
+    const answerAsk = vi.fn<AgentRestClient['answerAsk']>(
+      () =>
+        new Promise<AgentAnswerAccepted>((resolve) => {
+          resolveAnswer = resolve
+        })
+    )
+    const firstEvents = fakeEvents()
+    const first = useAgentSession({
+      rest: fakeRest({ answerAsk }),
+      events: firstEvents.source
+    })
+    first.start()
+    firstEvents.status(true)
+    await first.sendMessage('build it')
+    firstEvents.emit(runApproval('msg-1'))
+    const answering = first.answerAsk('turn-1:call-1', {
+      selected: ['cancel']
+    })
+    await vi.waitFor(() => expect(answerAsk).toHaveBeenCalledOnce())
+
+    first.stop()
+    const second = useAgentSession({
+      rest: fakeRest(),
+      events: fakeEvents().source
+    })
+    second.start({ restore: false })
+    resolveAnswer?.({ status: 'answered', selected: ['run'] })
+    await answering
+
+    expect(first.notices.value).toEqual([])
+    expect(second.notices.value).toEqual([
+      {
+        level: 'error',
+        text: enMessages.agent.runApproval.answerSuperseded
+      }
+    ])
+  })
+
+  it('reports a 409 after a retry because the first attempt may have landed', async () => {
+    vi.useFakeTimers()
+    try {
+      const answerAsk = vi
+        .fn<AgentRestClient['answerAsk']>()
+        .mockRejectedValueOnce(new TypeError('connection reset'))
+        .mockRejectedValueOnce(
+          new AgentApiError('already answered', 409, undefined)
+        )
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({
+        rest: fakeRest({ answerAsk }),
+        events: source
+      })
+      session.start()
+      status(true)
+      await session.sendMessage('build it')
+      emit(runApproval('msg-1'))
+
+      const answering = session.answerAsk('turn-1:call-1', {
+        selected: ['cancel']
+      })
+      await vi.advanceTimersByTimeAsync(PAST_ANSWER_RETRY_BACKOFF_MS)
+      await answering
+      await vi.advanceTimersByTimeAsync(15_001)
+
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({ errorType: 'agent_ask_answer_unconfirmed' })
+      )
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('keeps a retried refusal unconfirmed for a later resolution frame', async () => {
+    const answerAsk = vi
+      .fn<AgentRestClient['answerAsk']>()
+      .mockRejectedValueOnce(new TypeError('connection reset'))
+      .mockRejectedValueOnce(new AgentApiError('gone', 404, undefined))
+    const { source, emit, status } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ answerAsk }),
+      events: source
+    })
+    session.start()
+    status(true)
+    await session.sendMessage('build it')
+    emit(runApproval('msg-1'))
+
+    await session.answerAsk('turn-1:call-1', { selected: ['cancel'] })
     expect(
       useAgentConversationStore().messages[0].parts.some(
         (part) => part.type === 'runApproval'
       )
     ).toBe(false)
+    emit(askResolved('msg-1', 'turn-1:call-1', ['run']))
+
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({ errorType: 'agent_ask_answer_superseded' })
+    )
   })
 
   // A 500 here is ambiguous, not a clean miss: `asks.go` CASes the answer onto
@@ -3517,7 +3774,7 @@ describe('useAgentSession (v1 composition root)', () => {
       expect(session.notices.value).toEqual([])
     })
 
-    it('retires itself as unconfirmed when a 409 omits the committed answer', async () => {
+    it('reports a first-attempt 409 as unconfirmed when the resolution channel is gone', async () => {
       const answerAsk = vi
         .fn<AgentRestClient['answerAsk']>()
         .mockRejectedValue(
@@ -3542,13 +3799,15 @@ describe('useAgentSession (v1 composition root)', () => {
       expect(session.notices.value).toEqual([
         {
           level: 'error',
-          text: 'Could not confirm your answer reached the agent. It may still have been applied — reload the page to see where things stand.'
+          text: enMessages.agent.runApproval.answerUncertain
         }
       ])
-      expect(reportError).toHaveBeenCalledWith(expect.any(AgentApiError), {
-        surface: 'agent',
-        errorType: 'agent_ask_answer_unconfirmed'
-      })
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'agent_ask_answer_unconfirmed'
+        })
+      )
     })
 
     it.for([403, 404] as const)(
@@ -3704,7 +3963,6 @@ describe('useAgentSession (v1 composition root)', () => {
     })
 
     it('warns from the canonical answer receipt when another selection won', async () => {
-      const onRequestFailed = vi.fn()
       const answerAsk = vi
         .fn<AgentRestClient['answerAsk']>()
         .mockResolvedValue({ status: 'answered', selected: ['run'] })
@@ -3718,14 +3976,11 @@ describe('useAgentSession (v1 composition root)', () => {
       await session.sendMessage('build it and run it')
       events.emit(runApproval('msg-1'))
 
-      const answered = await session.answerAsk(
-        'turn-1:call-1',
-        'cancel',
-        onRequestFailed
-      )
+      const answered = await session.answerAsk('turn-1:call-1', {
+        selected: ['cancel']
+      })
 
       expect(answered).toBe(false)
-      expect(onRequestFailed).not.toHaveBeenCalled()
       expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
         surface: 'agent',
         errorType: 'agent_ask_answer_superseded',
@@ -3748,7 +4003,11 @@ describe('useAgentSession (v1 composition root)', () => {
     it('treats an empty approval receipt as status-only for object answers', async () => {
       const answerAsk = vi
         .fn<AgentRestClient['answerAsk']>()
-        .mockResolvedValue({ status: 'answered', selected: [] })
+        .mockResolvedValue({
+          status: 'answered',
+          selected: [],
+          other_text: ''
+        })
       const events = fakeEvents()
       const session = useAgentSession({
         rest: fakeRest({ answerAsk }),
@@ -3771,11 +4030,43 @@ describe('useAgentSession (v1 composition root)', () => {
       expect(session.notices.value).toEqual([])
     })
 
+    it('keeps the approval kind when resolution beats a status-only receipt', async () => {
+      let accept: (receipt: AgentAnswerAccepted) => void = () => {}
+      const answerAsk = vi.fn(
+        () =>
+          new Promise<AgentAnswerAccepted>((resolve) => {
+            accept = resolve
+          })
+      )
+      const events = fakeEvents()
+      const session = useAgentSession({
+        rest: fakeRest({ answerAsk }),
+        events: events.source
+      })
+      session.start()
+      events.status(true)
+      await session.sendMessage('build it and run it')
+      events.emit(runApproval('msg-1'))
+
+      const answering = session.answerAsk('turn-1:call-1', {
+        selected: ['run']
+      })
+      events.emit(askResolved('msg-1'))
+      accept({ status: 'answered', selected: [] })
+
+      await expect(answering).resolves.toBe(true)
+      expect(reportError).not.toHaveBeenCalledWith(expect.any(Error), {
+        surface: 'agent',
+        errorType: 'agent_ask_answer_superseded'
+      })
+    })
+
     // The resolution frame retires the card on its way through, so by the time
     // a slow request rejects there is nothing left to warn about — and telling
     // the user their answer might not have arrived, after the server has said
     // it resolved, is worse than saying nothing.
     it('stays quiet when a request rejects after the ask was already resolved', async () => {
+      const onRequestFailed = vi.fn()
       let reject: ((reason: unknown) => void) | undefined
       const answerAsk = vi.fn(
         () =>
@@ -3792,9 +4083,11 @@ describe('useAgentSession (v1 composition root)', () => {
       status(true)
       await session.sendMessage('build it and run it')
       emit(runApproval('msg-1'))
-      const answered = session.answerAsk('turn-1:call-1', {
-        selected: ['run']
-      })
+      const answered = session.answerAsk(
+        'turn-1:call-1',
+        { selected: ['run'] },
+        onRequestFailed
+      )
 
       emit(askResolved('msg-1'))
       expect(cardOnScreen()).toBe(false)
@@ -3805,7 +4098,47 @@ describe('useAgentSession (v1 composition root)', () => {
 
       expect(await answered).toBe(false)
       expect(reportError).not.toHaveBeenCalled()
+      expect(onRequestFailed).not.toHaveBeenCalled()
+      expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(false)
+      expect(
+        useAgentConversationStore().submittedAskAnswer('turn-1:call-1')
+      ).toBeUndefined()
       expect(session.notices.value).toEqual([])
+    })
+
+    it('delivers a late failure notice through the successor session', async () => {
+      let reject: ((reason: unknown) => void) | undefined
+      const answerAsk = vi.fn(
+        () =>
+          new Promise<AgentAnswerAccepted>((_resolve, rejectAnswer) => {
+            reject = rejectAnswer
+          })
+      )
+      const firstEvents = fakeEvents()
+      const first = useAgentSession({
+        rest: fakeRest({ answerAsk }),
+        events: firstEvents.source
+      })
+      first.start()
+      firstEvents.status(true)
+      await first.sendMessage('build it and run it')
+      firstEvents.emit(runApproval('msg-1'))
+      const answering = first.answerAsk('turn-1:call-1', {
+        selected: ['run']
+      })
+
+      const second = useAgentSession({
+        rest: fakeRest(),
+        events: fakeEvents().source
+      })
+      second.start({ restore: false })
+      reject?.(new AgentApiError('bad request', 400, undefined))
+
+      await expect(answering).resolves.toBe(false)
+      expect(first.notices.value).toEqual([])
+      expect(second.notices.value).toEqual([
+        { level: 'error', text: enMessages.agent.runApproval.answerUncertain }
+      ])
     })
 
     it('stays quiet when the resolution confirms the selection it sent', async () => {
@@ -4963,7 +5296,7 @@ describe('useAgentSession (v1 composition root)', () => {
     await session.sendMessage('go')
     emit(runApproval('msg-1'))
     status(false)
-    await session.answerAsk('turn-1:call-1', 'run')
+    await session.answerAsk('turn-1:call-1', { selected: ['run'] })
 
     expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
       surface: 'agent',
@@ -5557,6 +5890,45 @@ describe('useAgentSession (v1 composition root)', () => {
     )
   })
 
+  it('(g9a) first live status reconciles turns retained across a remount', async () => {
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-1' })
+      .mockResolvedValueOnce({ thread_id: 'th-2', message_id: 'msg-2' })
+    const getMessages = vi.fn(async (): Promise<AgentMessages> => [])
+    const firstEvents = fakeEvents()
+    const first = useAgentSession({
+      rest: fakeRest({ postMessage, getMessages }),
+      events: firstEvents.source
+    })
+    first.start()
+    firstEvents.status(true)
+    await first.sendMessage('first')
+    firstEvents.emit(deltaIn('th-1', 'msg-1', 'one'))
+    first.newChat()
+    await first.sendMessage('second')
+    firstEvents.emit(deltaIn('th-2', 'msg-2', 'two'))
+
+    first.stop()
+    getMessages.mockClear()
+    const secondEvents = fakeEvents()
+    const second = useAgentSession({
+      rest: fakeRest({ getMessages }),
+      events: secondEvents.source
+    })
+    second.start()
+    await vi.waitFor(() =>
+      expect(getMessages).toHaveBeenCalledWith('th-2', expect.anything())
+    )
+    secondEvents.status(true)
+
+    await vi.waitFor(() =>
+      expect(getMessages).toHaveBeenCalledWith('th-1', expect.anything())
+    )
+  })
+
   it('(g10) a failing recovery fetch does not amplify backend failure and leaves the turn live', async () => {
     const rest = fakeRest({
       getMessages: vi.fn(async (): Promise<AgentMessages> => {
@@ -5606,7 +5978,71 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(session.notices.value).toEqual([])
   })
 
-  it('(g11a) a deleted thread invalidates an in-flight send before its acknowledgement', async () => {
+  it('(g11aa) one final thread 404 does not delete a live thread', async () => {
+    const streaming = [
+      historyRow(1, 'user', 'msg-1', 'go'),
+      {
+        ...historyRow(2, 'assistant', 'msg-1', '', 'msg-1'),
+        content: {},
+        status: 'streaming' as const
+      }
+    ] as AgentMessages
+    const getMessages = vi
+      .fn<AgentRestClient['getMessages']>()
+      .mockResolvedValueOnce(streaming)
+      .mockImplementationOnce(hangingGetMessages)
+      .mockResolvedValueOnce(streaming)
+      .mockResolvedValueOnce(streaming)
+      .mockResolvedValueOnce(streaming)
+      .mockResolvedValueOnce(streaming)
+      .mockResolvedValueOnce(streaming)
+      .mockRejectedValueOnce(new AgentApiError('gone', 404, undefined))
+    const conversation = useAgentConversationStore()
+    conversation.setThreadId('th-1')
+    const events = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ getMessages }),
+      events: events.source
+    })
+    session.start()
+    await vi.waitFor(() => expect(getMessages).toHaveBeenCalledTimes(2))
+
+    vi.useFakeTimers()
+    try {
+      events.emit(thinking('msg-1', 'live after reload'))
+      events.emit(done('msg-1'))
+      await vi.advanceTimersByTimeAsync(40_000)
+    } finally {
+      vi.useRealTimers()
+    }
+
+    expect(getMessages).toHaveBeenCalledTimes(8)
+    expect(session.threadId.value).toBe('th-1')
+    expect(session.entries.value).not.toEqual([])
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      surface: 'agent',
+      errorType: 'failure_recovering_agent_turn'
+    })
+  })
+
+  it('(g11a) deleting the visible history discards its ask recovery state', async () => {
+    const session = useAgentSession({
+      rest: fakeRest(),
+      events: fakeEvents().source
+    })
+    session.start()
+    await session.sendMessage('go')
+    const store = useAgentConversationStore()
+    store.recordAskAnswer('ask-1', { selected: ['run'] }, 'th-1')
+    store.retireAsk('ask-2', { status: 'retired' }, 'th-1')
+
+    session.newChat('history_delete')
+
+    expect(store.submittedAskAnswer('ask-1')).toBeUndefined()
+    expect(store.isAskRetired('ask-2', 'th-1')).toBe(false)
+  })
+
+  it('(g11b) a deleted thread invalidates an in-flight send before its acknowledgement', async () => {
     let resolvePost: ((ack: AgentTurnAccepted) => void) | undefined
     const postMessage = vi
       .fn<AgentRestClient['postMessage']>()
@@ -5738,6 +6174,9 @@ describe('useAgentSession (v1 composition root)', () => {
 
     await session.sendMessage('first')
     emit(deltaIn('th-1', 'msg-1', 'one'))
+    const store = useAgentConversationStore()
+    store.recordAskAnswer('ask-1', { selected: ['run'] }, 'th-1')
+    store.retireAsk('ask-2', { status: 'retired' }, 'th-1')
     session.newChat()
     await session.sendMessage('second')
     emit(deltaIn('th-2', 'msg-2', 'two'))
@@ -5768,6 +6207,8 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(localStorage.getItem(StorageKeys.agentThread('personal'))).toBe(
       'th-2'
     )
+    expect(store.submittedAskAnswer('ask-1')).toBeUndefined()
+    expect(store.isAskRetired('ask-2', 'th-1')).toBe(false)
   })
 
   it('(g18) a history fetch that never answers stops at its deadline', async () => {
@@ -6275,17 +6716,17 @@ describe('useAgentSession (v1 composition root)', () => {
       await session.sendMessage('go')
       emit(runApproval('msg-1'))
       status(false)
-      await session.answerAsk('turn-1:call-1', 'run')
+      await session.answerAsk('turn-1:call-1', { selected: ['run'] })
       expect(approvalParts(session)).toHaveLength(0)
 
       status(true)
       await vi.advanceTimersByTimeAsync(31_000)
 
       expect(approvalParts(session)).toHaveLength(0)
-      expect(reportError).toHaveBeenCalledWith(expect.any(AgentApiError), {
-        surface: 'agent',
-        errorType: 'agent_ask_answer_unconfirmed'
-      })
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({ errorType: 'agent_ask_answer_unconfirmed' })
+      )
     } finally {
       vi.useRealTimers()
     }
@@ -6377,16 +6818,16 @@ describe('useAgentSession (v1 composition root)', () => {
       expect(approvalParts(session)).toHaveLength(1)
 
       status(false)
-      await session.answerAsk('turn-1:call-1', 'run')
+      await session.answerAsk('turn-1:call-1', { selected: ['run'] })
       expect(approvalParts(session)).toHaveLength(0)
 
       await vi.advanceTimersByTimeAsync(31_000)
 
       expect(approvalParts(session)).toHaveLength(0)
-      expect(reportError).toHaveBeenCalledWith(expect.any(AgentApiError), {
-        surface: 'agent',
-        errorType: 'agent_ask_answer_unconfirmed'
-      })
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({ errorType: 'agent_ask_answer_unconfirmed' })
+      )
     } finally {
       vi.useRealTimers()
     }
@@ -6422,7 +6863,9 @@ describe('useAgentSession (v1 composition root)', () => {
       expect(approvalParts(session)).toHaveLength(1)
       await vi.waitFor(() => expect(rest.getMessages).toHaveBeenCalledTimes(2))
 
-      const answered = session.answerAsk('turn-1:call-1', 'run')
+      const answered = session.answerAsk('turn-1:call-1', {
+        selected: ['run']
+      })
       await vi.advanceTimersByTimeAsync(5_000)
       await answered
       expect(approvalParts(session)).toHaveLength(0)
@@ -6445,7 +6888,7 @@ describe('useAgentSession (v1 composition root)', () => {
     emit(runApproval('msg-1'))
     status(false)
 
-    await session.answerAsk('turn-1:call-1', 'run')
+    await session.answerAsk('turn-1:call-1', { selected: ['run'] })
 
     expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
       surface: 'agent',
@@ -6522,6 +6965,104 @@ describe('useAgentSession (v1 composition root)', () => {
     ])
   })
 
+  it('(g39d) turn completion preserves an unresolved accepted-answer report', async () => {
+    vi.useFakeTimers()
+    try {
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({ rest: fakeRest(), events: source })
+      session.start()
+      status(true)
+      await session.sendMessage('go')
+      emit(runApproval('msg-1'))
+
+      await session.answerAsk('turn-1:call-1', { selected: ['run'] })
+      emit(done('msg-1'))
+      await vi.advanceTimersByTimeAsync(15_000)
+
+      expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+        surface: 'agent',
+        errorType: 'agent_ask_answer_winner_unconfirmed'
+      })
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('(g39e) an expired answer from another chat reports without showing there', async () => {
+    vi.useFakeTimers()
+    try {
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({ rest: fakeRest(), events: source })
+      session.start()
+      status(true)
+      await session.sendMessage('go')
+      emit(runApproval('msg-1'))
+
+      await session.answerAsk('turn-1:call-1', { selected: ['run'] })
+      session.newChat()
+      await vi.advanceTimersByTimeAsync(15_000)
+
+      expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+        surface: 'agent',
+        errorType: 'agent_ask_answer_winner_unconfirmed'
+      })
+      expect(session.notices.value).toEqual([])
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('(g39f) an offline answer from another chat reports without showing there', async () => {
+    const { source, emit, status } = fakeEvents()
+    const session = useAgentSession({ rest: fakeRest(), events: source })
+    session.start()
+    status(true)
+    await session.sendMessage('go')
+    emit(runApproval('msg-1'))
+
+    await session.answerAsk('turn-1:call-1', { selected: ['run'] })
+    session.newChat()
+    status(false)
+
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      surface: 'agent',
+      errorType: 'agent_ask_answer_winner_unconfirmed'
+    })
+    expect(session.notices.value).toEqual([])
+  })
+
+  it('(g39g) a channel-lost receipt after switching chats does not show there', async () => {
+    let accept: (receipt: AgentAnswerAccepted) => void = () => {}
+    const rest = fakeRest({
+      answerAsk: vi.fn(
+        () =>
+          new Promise<AgentAnswerAccepted>((resolve) => {
+            accept = resolve
+          })
+      )
+    })
+    const { source, emit, status } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+    status(true)
+    await session.sendMessage('go')
+    emit(runApproval('msg-1'))
+
+    const answering = session.answerAsk('turn-1:call-1', {
+      selected: ['run']
+    })
+    status(false)
+    session.newChat()
+    accept({ status: 'answered', selected: [] })
+    await answering
+
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      surface: 'agent',
+      errorType: 'agent_ask_answer_winner_unconfirmed'
+    })
+    expect(session.notices.value).toEqual([])
+  })
+
   it('(g38) a remount does not restore an ask the prior session retired', async () => {
     vi.useFakeTimers()
     try {
@@ -6537,7 +7078,7 @@ describe('useAgentSession (v1 composition root)', () => {
       await vi.advanceTimersByTimeAsync(0)
       expect(approvalParts(first)).toHaveLength(1)
 
-      await first.answerAsk('turn-1:call-1', 'run')
+      await first.answerAsk('turn-1:call-1', { selected: ['run'] })
       first.stop()
 
       const secondEvents = fakeEvents()
@@ -6556,6 +7097,35 @@ describe('useAgentSession (v1 composition root)', () => {
     } finally {
       vi.useRealTimers()
     }
+  })
+
+  it('(g38a) an initially offline remount reports a deferred conflict', async () => {
+    const rest = parkedOnApprovalRest()
+    vi.mocked(rest.answerAsk).mockRejectedValue(
+      new AgentApiError('already answered', 409, undefined)
+    )
+    const firstEvents = fakeEvents()
+    localStorage.setItem(StorageKeys.agentThread('personal'), 'th-1')
+    const first = useAgentSession({ rest, events: firstEvents.source })
+    first.start()
+    firstEvents.status(true)
+    await vi.advanceTimersByTimeAsync(0)
+    await first.answerAsk('turn-1:call-1', { selected: ['run'] })
+    first.stop()
+
+    const secondEvents = fakeEvents()
+    const second = useAgentSession({ rest, events: secondEvents.source })
+    second.start({ restore: false })
+    secondEvents.status(false)
+
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      surface: 'agent',
+      errorType: 'agent_ask_answer_unconfirmed'
+    })
+    expect(second.notices.value).toEqual([
+      { level: 'error', text: enMessages.agent.runApproval.answerUncertain }
+    ])
+    expect(second.answeringAskIds.value.has('turn-1:call-1')).toBe(false)
   })
 
   // The same lag `(g33)` describes, read from the other side: the server
@@ -6644,11 +7214,11 @@ describe('useAgentSession (v1 composition root)', () => {
 
       expect(approvalParts(session)).toHaveLength(1)
       status(false)
-      await session.answerAsk('turn-1:call-1', 'run')
+      await session.answerAsk('turn-1:call-1', { selected: ['run'] })
       expect(session.notices.value).toEqual([
         {
           level: 'error',
-          text: 'Could not confirm your answer reached the agent. It may still have been applied — reload the page to see where things stand.'
+          text: enMessages.agent.runApproval.answerUncertain
         }
       ])
     } finally {
@@ -6718,7 +7288,12 @@ describe('useAgentSession (v1 composition root)', () => {
 
       status(false)
       status(true)
-      await vi.advanceTimersByTimeAsync(1_000)
+      await vi.advanceTimersByTimeAsync(0)
+      expect(approvalParts(session).map((part) => part.askId)).toEqual([
+        'turn-1:call-1'
+      ])
+
+      await vi.advanceTimersByTimeAsync(3_000)
 
       expect(approvalParts(session).map((part) => part.askId)).toEqual([
         currentAskId
@@ -6746,8 +7321,72 @@ describe('useAgentSession (v1 composition root)', () => {
 
       status(false)
       status(true)
-      await vi.advanceTimersByTimeAsync(1_000)
+      await vi.advanceTimersByTimeAsync(3_000)
 
+      expect(approvalParts(session)).toHaveLength(0)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('(g46b) a restored ask loses snapshot protection after confirmed omission', async () => {
+    vi.useFakeTimers()
+    try {
+      const getMessages = vi
+        .fn<() => Promise<AgentMessages>>()
+        .mockResolvedValueOnce([
+          historyRow(1, 'user', 'msg-1', 'go'),
+          parkedRow()
+        ])
+        .mockResolvedValue([
+          historyRow(1, 'user', 'msg-1', 'go'),
+          unparkedRow()
+        ])
+      const { source, status } = fakeEvents()
+      const session = useAgentSession({
+        rest: fakeRest({ getMessages }),
+        events: source
+      })
+      session.start({ restore: false })
+      status(true)
+      await session.sendMessage('go')
+
+      status(false)
+      status(true)
+      await vi.advanceTimersByTimeAsync(0)
+      expect(approvalParts(session)).toHaveLength(1)
+
+      await vi.advanceTimersByTimeAsync(3_001)
+      expect(approvalParts(session)).toHaveLength(0)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('(g46c) a mid-recovery delivery loses protection after confirmed omission', async () => {
+    vi.useFakeTimers()
+    try {
+      const rest = fakeRest({
+        getMessages: vi.fn(async (): Promise<AgentMessages> => [
+          historyRow(1, 'user', 'msg-1', 'go'),
+          unparkedRow()
+        ])
+      })
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({ rest, events: source })
+      session.start({ restore: false })
+      status(true)
+      await session.sendMessage('go')
+
+      status(false)
+      status(true)
+      await vi.advanceTimersByTimeAsync(0)
+      emit(runApproval('msg-1'))
+      expect(approvalParts(session)).toHaveLength(1)
+
+      // The first poll after delivery grants one-poll protection; the next
+      // confirmed omission consumes it instead of re-adding it forever.
+      await vi.advanceTimersByTimeAsync(3_001)
       expect(approvalParts(session)).toHaveLength(0)
     } finally {
       vi.useRealTimers()
@@ -6772,8 +7411,17 @@ describe('useAgentSession (v1 composition root)', () => {
 
       status(false)
       status(true)
-      await vi.advanceTimersByTimeAsync(1_000)
+      await vi.advanceTimersByTimeAsync(3_001)
       expect(approvalParts(session)).toHaveLength(0)
+      expect(
+        useAgentConversationStore().isAskRetired('turn-1:call-1', 'th-1')
+      ).toBe(true)
+      expect(
+        useAgentConversationStore().isAskPermanentlyRetired(
+          'turn-1:call-1',
+          'th-1'
+        )
+      ).toBe(false)
 
       emit(runApproval('msg-1'))
       expect(approvalParts(session)).toHaveLength(0)
@@ -6853,7 +7501,7 @@ describe('useAgentSession (v1 composition root)', () => {
       status(true)
       await vi.advanceTimersByTimeAsync(0)
       emit(runApproval('msg-1'))
-      await session.answerAsk('turn-1:call-1', 'run')
+      await session.answerAsk('turn-1:call-1', { selected: ['run'] })
 
       expect(session.notices.value).toHaveLength(0)
       expect(reportError).not.toHaveBeenCalledWith(expect.any(Error), {
@@ -6878,7 +7526,7 @@ describe('useAgentSession (v1 composition root)', () => {
       status(false)
       status(true)
       await vi.advanceTimersByTimeAsync(3_000)
-      await session.answerAsk('turn-1:call-1', 'run')
+      await session.answerAsk('turn-1:call-1', { selected: ['run'] })
 
       expect(reportError).not.toHaveBeenCalledWith(expect.any(Error), {
         surface: 'agent',
@@ -6889,7 +7537,7 @@ describe('useAgentSession (v1 composition root)', () => {
     }
   })
 
-  it('(g45) recovery reads the newest ask-bearing open row', async () => {
+  it('(g45) recovery does not fall back to an older ask-bearing row', async () => {
     vi.useFakeTimers()
     try {
       const rest = fakeRest({
@@ -6913,9 +7561,7 @@ describe('useAgentSession (v1 composition root)', () => {
       status(true)
       await vi.advanceTimersByTimeAsync(0)
 
-      expect(approvalParts(session).map((part) => part.askId)).toEqual([
-        'turn-1:call-1'
-      ])
+      expect(approvalParts(session)).toEqual([])
     } finally {
       vi.useRealTimers()
     }
@@ -6945,6 +7591,8 @@ describe('useAgentSession (v1 composition root)', () => {
       await vi.advanceTimersByTimeAsync(0)
 
       expect(approvalParts(session)).toHaveLength(1)
+      expect(reportError).not.toHaveBeenCalled()
+      await vi.advanceTimersByTimeAsync(2_001)
       expect(reportError).toHaveBeenCalledExactlyOnceWith(
         expect.any(Error),
         expect.objectContaining({
@@ -7422,7 +8070,9 @@ describe('useAgentSession (v1 composition root)', () => {
   })
 
   it('(h10b) a continuing turn with no canvas is held instead of retargeting the remembered workflow', async () => {
-    let draft: DraftSnapshot | undefined = { content: { nodes: [], links: [] } }
+    let draft: DraftSnapshot | undefined = {
+      content: { nodes: [], links: [] }
+    }
     const { session, postMessage } = unboundTabSession({
       acks: ['wf-other-tab'],
       draft: () => draft
