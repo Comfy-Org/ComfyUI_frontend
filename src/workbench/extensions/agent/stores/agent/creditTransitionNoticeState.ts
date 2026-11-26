@@ -65,3 +65,22 @@ export function isCreditTransitionNoticeShown(
   if (state === null || state.identity !== identity) return false
   return state.phase === 'armed' || state.phase === 'shown'
 }
+
+/**
+ * A first authoritative read of `false` is not a transition: this account did
+ * not receive an Agent grant in the current session. Keep that case distinct
+ * so the UI can explain paid use without falsely claiming free credits were
+ * exhausted. A real true -> false episode continues to own the transition
+ * notice, including after that notice is dismissed.
+ */
+export function isInitialNoGrant(
+  state: CreditTransitionNoticeState | null,
+  identity: string
+): boolean {
+  return (
+    state !== null &&
+    state.identity === identity &&
+    state.phase === 'idle' &&
+    !state.scopedHasFunds
+  )
+}

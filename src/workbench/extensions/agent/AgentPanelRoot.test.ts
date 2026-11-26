@@ -2092,7 +2092,8 @@ describe('AgentPanelRoot Agent credit transition notice', () => {
     ).toHaveBeenCalledExactlyOnceWith({ action: 'shown' })
   })
 
-  it('does not infer a transition when the first scoped-balance read is false', async () => {
+  it('explains paid use without inferring a transition when the first scoped-balance read is false', async () => {
+    paywallAgentScopedHasFundsAuthoritative.value = true
     observeAgentScopedFunds(false)
     const panel = render(AgentPanelRoot, { global: { plugins: [i18n] } })
     await screen.findByRole('textbox')
@@ -2105,6 +2106,9 @@ describe('AgentPanelRoot Agent credit transition notice', () => {
     await screen.findByRole('textbox')
 
     expect(screen.queryByTestId(NOTICE)).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('note', { name: 'Agent cost notice' })
+    ).toHaveTextContent('Comfy Agent uses your workspace credits')
   })
 
   it('preserves the last defined scoped balance across an omitted read and panel remount', async () => {
