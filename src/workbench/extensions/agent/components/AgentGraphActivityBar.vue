@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import CanvasBanner from '@comfyorg/design-system/common/CanvasBanner'
 import Button from '@comfyorg/design-system/button/Button'
+import type { ReadOnlyRect } from '@comfyorg/shared-frontend-utils/geometry'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { useApp } from '@/scripts/appInstance'
 import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
@@ -54,61 +55,77 @@ const liveNodes = computed(() => {
   })
 })
 
-function viewNodes(): void {
+const FRAME_PADDING = 40
+const BATCH_SETTLE_MS = 150
+
+function uncoveredViewport(): ReadOnlyRect | null {
   const panel = document.querySelector<HTMLElement>('.graph-canvas-panel')
-  if (!canvas || !panel) return
-  const bounds = createPositionBounds(liveNodes.value, 40)
-  if (!bounds) return
-  const canvasRect = canvas.canvas.getBoundingClientRect()
+  if (!canvas || !panel) return null
   const panelRect = panel.getBoundingClientRect()
-  canvas.animateToBounds(bounds, {
-    viewport: [
-      panelRect.left - canvasRect.left,
-      panelRect.top - canvasRect.top,
-      panelRect.width,
-      panelRect.height
-    ]
-  })
+  if (!(panelRect.width > 0) || !(panelRect.height > 0)) return null
+  const canvasRect = canvas.canvas.getBoundingClientRect()
+  return [
+    panelRect.left - canvasRect.left,
+    panelRect.top - canvasRect.top,
+    panelRect.width,
+    panelRect.height
+  ]
 }
 
-/**
- * ADR-AGENT-VIEWPORT-0062: frame the first agent batch on an otherwise empty
- * canvas, once, when none of it is on screen.
- *
- * The user asked for a workflow and is looking at nothing, so there is no
- * position of theirs to protect — the camera is the only thing standing
- * between them and what they asked for. `animateToBounds` abandons its own
- * animation the moment the camera state changes from anywhere else, so a pan
- * or zoom during the move wins without this needing to detect it.
- *
- * Keyed by the activity target so a given turn's batch frames at most once:
- * a build that materializes in several frames must not drag the camera after
- * every one of them.
- */
-const framedTarget = ref<string | null>(null)
+function uncoveredViewportInGraphSpace(): ReadOnlyRect | null {
+  const viewport = uncoveredViewport()
+  if (!canvas || !viewport || !(canvas.ds.scale > 0)) return null
+  const [left, top] = canvas.ds.convertCanvasToOffset([
+    viewport[0],
+    viewport[1]
+  ])
+  return [
+    left,
+    top,
+    viewport[2] / canvas.ds.scale,
+    viewport[3] / canvas.ds.scale
+  ]
+}
+
+function viewNodes(): boolean {
+  const viewport = uncoveredViewport()
+  const bounds = createPositionBounds(liveNodes.value, FRAME_PADDING)
+  if (!canvas || !viewport || !bounds) return false
+  canvas.animateToBounds(bounds, { viewport })
+  return true
+}
+
+const framedTurn = ref<number | null>(null)
+let settleTimer: ReturnType<typeof setTimeout> | undefined
+
+function frameBatchIfUnseen(): void {
+  settleTimer = undefined
+  const nodes = liveNodes.value
+  if (!visibleState.value || !canvas?.graph || nodes.length === 0) return
+  const turn = activity.turnSequence
+  if (framedTurn.value === turn) return
+  const batchIds = new Set(nodes.map((node) => node.id))
+  const frame = shouldFrameAgentBatch({
+    batch: nodes,
+    nodesNotInBatch: canvas.graph.nodes.filter((node) => !batchIds.has(node.id))
+      .length,
+    viewport: uncoveredViewportInGraphSpace()
+  })
+  if (!frame) return
+  if (viewNodes()) framedTurn.value = turn
+}
+
 watch(
   () => [visibleState.value, liveNodes.value] as const,
-  ([state, nodes]) => {
-    if (!state || !canvas?.graph) {
-      framedTarget.value = null
-      return
-    }
-    const key = `${state.workflowId}:${state.rootGraphId}`
-    if (framedTarget.value === key || nodes.length === 0) return
-    const batchIds = new Set(nodes.map((node) => node.id))
-    const frame = shouldFrameAgentBatch({
-      batch: createPositionBounds(nodes, 40),
-      nodesNotInBatch: canvas.graph.nodes.filter(
-        (node) => !batchIds.has(node.id)
-      ).length,
-      viewport: canvas.ds.visible_area
-    })
-    if (!frame) return
-    framedTarget.value = key
-    viewNodes()
+  () => {
+    if (settleTimer !== undefined) clearTimeout(settleTimer)
+    settleTimer = setTimeout(frameBatchIfUnseen, BATCH_SETTLE_MS)
   },
   { flush: 'post' }
 )
+onUnmounted(() => {
+  if (settleTimer !== undefined) clearTimeout(settleTimer)
+})
 </script>
 
 <template>
