@@ -32,6 +32,7 @@ import {
   DEPLOYMENT_VERSION_WATCH_MS
 } from '@/platform/workspace/api/deploymentListingTimeouts'
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import type {
   BuildStage,
   FollowedBuild
@@ -90,6 +91,7 @@ vi.mock(
   }
 )
 vi.mock(import('@/services/dialogService'))
+vi.mock(import('@/platform/billing/composables/useBillingContext'))
 vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
 const distribution = vi.hoisted(() => ({ isCloud: true }))
@@ -193,6 +195,15 @@ async function focusWindowEvery(ms: number, times: number) {
   }
 }
 
+const billingPlan = {
+  isTeamPlan: true,
+  tier: null as 'STANDARD' | 'PRO' | 'ENTERPRISE' | null
+}
+
+function onPlan(plan: Partial<typeof billingPlan>) {
+  Object.assign(billingPlan, plan)
+}
+
 function asOwner() {
   Object.assign(useTeamWorkspaceStore(), {
     workspaceId: 'ws-1',
@@ -205,6 +216,13 @@ describe('DeploymentSwitcher', () => {
 
   beforeEach(() => {
     hoisted.rootGraph = undefined
+    onPlan({ isTeamPlan: true, tier: null })
+    const unplannedBilling = useBillingContext()
+    vi.mocked(useBillingContext).mockImplementation(() => ({
+      ...unplannedBilling,
+      isTeamPlan: computed(() => billingPlan.isTeamPlan),
+      tier: computed(() => billingPlan.tier)
+    }))
     sessionStorage.clear()
     useSettingStore().$patch({
       settingValues: { 'Comfy.DeploymentSwitcher.Seen': true }
@@ -601,13 +619,28 @@ describe('DeploymentSwitcher', () => {
     const user = renderSwitcher()
     await openList(user)
 
-    const builds = screen.getByRole('menuitem', { name: 'Manage deployments' })
+    const builds = screen.getByRole('menuitem', { name: 'Manage builds' })
     expect(builds).toHaveAttribute(
       'href',
       `${getComfyPlatformBaseUrl()}/profile/builds?utm_source=comfyui&utm_medium=app&utm_content=deployment-switcher`
     )
     expect(builds).toHaveAttribute('target', '_blank')
-    expect(screen.queryByTestId('deployment-switcher-create')).toBeNull()
+  })
+
+  it('offers to create a Custom Build in a workspace that already has deployments', async () => {
+    mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+    const user = renderSwitcher()
+    await openList(user)
+
+    await user.click(
+      screen.getByRole('menuitem', { name: 'Create a Custom Build' })
+    )
+
+    await waitFor(() =>
+      expect(
+        useDialogStore().isDialogOpen('global-create-custom-deployment')
+      ).toBe(true)
+    )
   })
 
   function sendRealLinkTelemetry() {
@@ -633,22 +666,20 @@ describe('DeploymentSwitcher', () => {
     properties: { kind: 'manage_deployments', workspace_id: null }
   }
 
-  it('counts a Manage deployments click', async () => {
+  it('counts a Manage builds click', async () => {
     sendRealLinkTelemetry()
     mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
     const user = renderSwitcher()
     await openList(user)
 
-    await user.click(
-      screen.getByRole('menuitem', { name: 'Manage deployments' })
-    )
+    await user.click(screen.getByRole('menuitem', { name: 'Manage builds' }))
 
     await waitFor(() =>
       expect(sentLinkEvents()).toEqual([MANAGE_DEPLOYMENTS_EVENT])
     )
   })
 
-  it('counts a Manage deployments click once when a script cancels and replays it', async () => {
+  it('counts a Manage builds click once when a script cancels and replays it', async () => {
     vi.useFakeTimers()
     onTestFinished(() => {
       vi.useRealTimers()
@@ -661,7 +692,7 @@ describe('DeploymentSwitcher', () => {
       advanceTimers: vi.advanceTimersByTime
     })
     await openList(user)
-    const builds = screen.getByRole('menuitem', { name: 'Manage deployments' })
+    const builds = screen.getByRole('menuitem', { name: 'Manage builds' })
     let replayed = false
     builds.addEventListener('click', (event) => {
       if (builds.dataset.replayed === 'true') {
@@ -1261,6 +1292,59 @@ describe('DeploymentSwitcher', () => {
       'aria-checked',
       'true'
     )
+  })
+
+  it.for([
+    { plan: 'a Team plan', isTeamPlan: true, tier: null },
+    { plan: 'an Enterprise plan', isTeamPlan: false, tier: 'ENTERPRISE' }
+  ] as const)(
+    'offers an owner on $plan the workspace default',
+    async ({ isTeamPlan, tier }) => {
+      asOwner()
+      onPlan({ isTeamPlan, tier })
+      mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+      const user = renderSwitcher()
+      await openList(user)
+
+      expect(
+        screen.getByTestId('deployment-switcher-default')
+      ).toBeInTheDocument()
+    }
+  )
+
+  it.for([
+    { plan: 'an individual plan', tier: 'PRO' },
+    { plan: 'a plan that has not loaded', tier: null }
+  ] as const)(
+    'hides the workspace default from an owner on $plan',
+    async ({ tier }) => {
+      asOwner()
+      onPlan({ isTeamPlan: false, tier })
+      mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+      const user = renderSwitcher()
+      await openList(user)
+
+      expect(screen.queryByTestId('deployment-switcher-default')).toBeNull()
+      expect(
+        screen.getByRole('menuitem', { name: 'Manage builds' })
+      ).toBeInTheDocument()
+    }
+  )
+
+  it('tells an owner on an individual plan that a deleted default starts members on Comfy Cloud, without pointing at a hidden row', async () => {
+    asOwner()
+    onPlan({ isTeamPlan: false, tier: 'STANDARD' })
+    mockWorkspaceApi.listDeployments.mockResolvedValue({
+      ...listing,
+      gone_default_deployment_id: GONE
+    })
+    const user = renderSwitcher()
+    await openList(user)
+
+    expect(screen.getByTestId('deployment-switcher-notice')).toHaveTextContent(
+      /^The workspace default was deleted, so members start on Comfy Cloud\.$/
+    )
+    expect(screen.queryByTestId('deployment-switcher-default')).toBeNull()
   })
 
   it('lets an owner clear the workspace default, a deleted one included, by choosing Comfy Cloud', async () => {
