@@ -233,6 +233,30 @@ describe('useLitegraphService().registerSubgraphNodeDef ownership', () => {
       sentryMode: 'once_per_page'
     })
   })
+
+  it('caps missing-target reports per root graph at 25 distinct definitions', () => {
+    const targetGraph = createTestRootGraph()
+    const subgraphIds = Array.from(
+      { length: 26 },
+      (_, i) => `00000000-0000-4000-9000-${i.toString().padStart(12, '0')}`
+    )
+    for (const subgraphId of subgraphIds) {
+      const ownerGraph = createTestRootGraph()
+      const subgraph = ownerGraph.createSubgraph(
+        createTestSubgraphData({ id: subgraphId })
+      )
+      useLitegraphService().registerSubgraphNodeDef(
+        createNodeDefV1({ name: subgraphId }),
+        subgraph,
+        subgraphInstanceData(subgraphId)
+      )
+      expect(
+        LiteGraph.createNode(subgraphId, undefined, { targetGraph })
+      ).toBeNull()
+    }
+
+    expect(reportError).toHaveBeenCalledTimes(25)
+  })
 })
 
 describe('useLitegraphService().getCanvasCenter', () => {
