@@ -10,12 +10,13 @@
     hands-over-workflow
     :offers-agent="false"
     :frame-request="NEW_DEPLOYMENT_FOR_WORKFLOW"
-    frame-entry="workflow_dialog"
+    :frame-entry="entry"
     @platform-clicked="trackDeploymentLinkClicked('build_on_platform')"
   />
 </template>
 
 <script setup lang="ts">
+import type { CustomDeploymentEntry } from '@comfyorg/telemetry/types'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -41,6 +42,10 @@ import { trackDeploymentLinkClicked } from '@/platform/workspace/platformFrame/c
 import { NEW_DEPLOYMENT_FOR_WORKFLOW } from '@/platform/workspace/platformFrame/platformFrameWaysIn'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { workflowDeploymentOffer } from '@/platform/workspace/workflowDeploymentOffer'
+
+const { entry = 'workflow_dialog' } = defineProps<{
+  entry?: CustomDeploymentEntry
+}>()
 
 const NAMES_SHOWN = 3
 

@@ -5,6 +5,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
+import type { CustomDeploymentEntry } from '@comfyorg/telemetry/types'
 import type { useExternalLink } from '@/composables/useExternalLink'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
@@ -98,8 +99,10 @@ function deployment(id: string): WorkspaceDeployment {
 function renderCard({
   checked = {},
   nodeTypes = missingNodeTypes,
-  models = [checkpoint('sd_xl_base_1.0.safetensors')]
+  models = [checkpoint('sd_xl_base_1.0.safetensors')],
+  entry
 }: {
+  entry?: CustomDeploymentEntry
   checked?: Record<string, DeploymentCompatibilityMark | null>
   nodeTypes?: MissingNodeType[]
   models?: MissingModelCandidate[]
@@ -124,6 +127,7 @@ function renderCard({
   useMissingModelStore(pinia).setMissingModels(models)
   const user = userEvent.setup({ pointerEventsCheck: 0 })
   render(WorkflowNeedsDeploymentCard, {
+    props: entry ? { entry } : {},
     global: { plugins: [pinia, testI18n] }
   })
   return user
@@ -253,20 +257,29 @@ describe('WorkflowNeedsDeploymentCard', () => {
     )
   })
 
-  it('opens the Platform frame from Create a Custom Build when the editor has one', async () => {
-    const frames = usePlatformFrameStore()
-    vi.spyOn(frames, 'isAvailable').mockReturnValue(true)
-    const openFrame = vi.spyOn(frames, 'open').mockReturnValue(true)
-    const openTab = vi.spyOn(window, 'open')
-    const user = renderCard()
+  it.for([
+    { openedFrom: undefined, frameEntry: 'workflow_dialog' },
+    { openedFrom: 'errors_panel', frameEntry: 'errors_panel' }
+  ] as const)(
+    'opens the Platform frame from Create a Custom Build as $frameEntry when the editor has one',
+    async ({ openedFrom, frameEntry }) => {
+      const frames = usePlatformFrameStore()
+      vi.spyOn(frames, 'isAvailable').mockReturnValue(true)
+      const openFrame = vi.spyOn(frames, 'open').mockReturnValue(true)
+      const openTab = vi.spyOn(window, 'open')
+      const user = renderCard({ entry: openedFrom })
 
-    await user.click(
-      screen.getByRole('link', { name: 'Create a Custom Build' })
-    )
+      await user.click(
+        screen.getByRole('link', { name: 'Create a Custom Build' })
+      )
 
-    expect(openFrame).toHaveBeenCalledOnce()
-    expect(openTab).not.toHaveBeenCalled()
-  })
+      expect(openFrame).toHaveBeenCalledExactlyOnceWith(
+        expect.anything(),
+        frameEntry
+      )
+      expect(openTab).not.toHaveBeenCalled()
+    }
+  )
 
   it('asks for a Custom Build when no deployment runs it and the build opens in the editor', () => {
     vi.spyOn(usePlatformFrameStore(), 'isAvailable').mockReturnValue(true)

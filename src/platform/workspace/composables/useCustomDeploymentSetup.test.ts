@@ -78,12 +78,14 @@ describe('useCustomDeploymentSetup', () => {
     expect(useCustomDeploymentSetup().offered.value).toBe(false)
   })
 
-  it('opens the workflow deployment dialog', () => {
+  it('opens the workflow deployment dialog from the errors panel', () => {
     const open = vi.spyOn(usePlatformFrameStore(), 'open')
 
     useCustomDeploymentSetup().setUp()
 
-    expect(openWorkflowNeedsDeploymentDialog).toHaveBeenCalledOnce()
+    expect(openWorkflowNeedsDeploymentDialog).toHaveBeenCalledExactlyOnceWith(
+      'errors_panel'
+    )
     expect(open).not.toHaveBeenCalled()
   })
 
@@ -114,6 +116,11 @@ describe('useCustomDeploymentSetup', () => {
     {
       missing: 'a node from an unknown pack',
       nodeTypes: ['UnknownNode'],
+      covers: false
+    },
+    {
+      missing: 'a custom node with no pack id',
+      nodeTypes: [{ type: 'QwenImage21Cache', isReplaceable: false }],
       covers: false
     }
   ])(

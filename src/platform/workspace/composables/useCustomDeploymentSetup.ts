@@ -1,11 +1,16 @@
 import { computed } from 'vue'
 
+import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { useWorkflowNeedsDeployment } from '@/platform/workspace/composables/useCustomDeploymentOffered'
 import { useMissingNodeDeploymentOffer } from '@/platform/workspace/composables/useMissingNodeDeploymentOffer'
 import { openWorkflowNeedsDeploymentDialog } from '@/platform/workspace/openCustomDeploymentDialog'
 import { nodesNeedingDeployment } from '@/platform/workspace/missingForDeployment'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
+
+function hasPackId(nodeType: MissingNodeType): boolean {
+  return typeof nodeType !== 'string' && Boolean(nodeType.cnrId)
+}
 
 /** Whether to offer a custom deployment for the missing nodes, and how to set one up. */
 export function useCustomDeploymentSetup() {
@@ -22,12 +27,13 @@ export function useCustomDeploymentSetup() {
     const nodeTypes = missingNodesErrorStore.missingNodesError?.nodeTypes ?? []
     return (
       nodeTypes.length > 0 &&
-      nodesNeedingDeployment(nodeTypes).length === nodeTypes.length
+      nodesNeedingDeployment(nodeTypes).filter(hasPackId).length ===
+        nodeTypes.length
     )
   })
 
   function setUp() {
-    void openWorkflowNeedsDeploymentDialog()
+    void openWorkflowNeedsDeploymentDialog('errors_panel')
   }
 
   return { offered, coversEveryMissingNode, setUp }
