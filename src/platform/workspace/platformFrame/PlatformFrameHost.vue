@@ -15,7 +15,13 @@
           cn(
             'overflow-hidden',
             isPreinstall
-              ? 'max-h-[min(32.5rem,calc(100dvh-3rem))] min-h-[min(12rem,calc(100dvh-3rem))] max-w-180'
+              ? [
+                  // fallow-ignore-next-line css-token-drift
+                  'max-h-[min(32.5rem,calc(100dvh-3rem))]',
+                  // fallow-ignore-next-line css-token-drift
+                  'min-h-[min(12rem,calc(100dvh-3rem))]',
+                  'max-w-180'
+                ]
               : 'inset-6 m-auto size-auto max-h-256 max-w-280 translate-none'
           )
         "
