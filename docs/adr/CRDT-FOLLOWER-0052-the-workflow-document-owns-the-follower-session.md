@@ -583,11 +583,30 @@ panel's consumer lease is released on unmount, after which every accessor it
 destructured from `useAgentCrdtFollower` answers with its null fallback while
 the session is still alive behind the page claim. Panel-facing inputs — the
 active-target flag, the graph accessor, the bound-workflow and bound-root-graph
-lookups, the unbound-visible-intent note — are installed by the live panel and
-**retained** across its unmount, because they are closures over refs and Pinia
-stores. That is sound for the same reason the retained session keeps its
-subscription through a close: `useAgentSession.stop()` deliberately does not
-clear `boundWorkflowId`, and a stopped `computed` still evaluates.
+lookups, the visible-workflow lookup, and the identity-change signal — are
+installed by the live panel and **retained** across its unmount, because they
+are closures over refs, Pinia stores and the page session. That is sound for the
+same reason the retained session keeps its subscription through a close:
+`useAgentSession.stop()` deliberately does not clear `boundWorkflowId`, and a
+stopped `computed` still evaluates.
+
+**Both unbound-intent notes are session-facing, and only the lookup one is
+split.** `onUnboundVisibleIntent` needs a tab-binding lookup, so it reads as
+panel-facing — but the note itself must land on the page-held session, which is
+why the panel answers `visibleWorkflowIdFor` and the owner performs the note.
+The first implementation had the panel do the whole thing and lost the marker
+for every edit made with the panel closed; the fact is recorded below.
+
+**The active-target flag is the one retained input whose source is still
+panel-scoped, and that is a live gap rather than a settled split.**
+`isFollowerActive` reads the identity resolver Stage 1a deliberately left behind,
+so it freezes on unmount: an account or workspace change made while the panel is
+closed would otherwise leave a stale identity admitting writes into the
+previously bound document. Until the resolver moves — Stage 1b's own leftover —
+the producer compensates by observing the page session's `onIdentityChange` and
+refusing to mint until a panel installs fresh inputs. That restores the
+pre-stage outcome (nothing minted, unsynced intent recorded) rather than a
+wrong-document write, and it is a mitigation, not the fix.
 
 **The restore queue moved with the edit path, as this stage requires.** The
 delivery trigger was a panel watcher, so a reconnect completing with the panel
