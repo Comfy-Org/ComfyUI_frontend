@@ -154,7 +154,9 @@ describe('DeploymentBuildActions', () => {
     it('opens the Build with the workflow to add the missing nodes and models', async () => {
       const user = renderActions()
 
-      await user.click(screen.getByRole('link', { name: 'Add missing items' }))
+      await user.click(
+        screen.getByRole('link', { name: 'Add missing items to Build' })
+      )
 
       expect(usePlatformFrameStore().open).toHaveBeenCalledExactlyOnceWith(
         { step: 'update', deploymentId: 'dep-1', handsOverWorkflow: true },
@@ -166,14 +168,16 @@ describe('DeploymentBuildActions', () => {
       renderActions()
 
       expect(
-        screen.getByRole('link', { name: 'Add missing items' })
+        screen.getByRole('link', { name: 'Add missing items to Build' })
       ).not.toContainHTML('square-arrow-out-up-right')
     })
 
     it("keeps the Build's page as the link's new-tab fallback", () => {
       renderActions()
 
-      const link = screen.getByRole('link', { name: 'Add missing items' })
+      const link = screen.getByRole('link', {
+        name: 'Add missing items to Build'
+      })
       expect(new URL(link.getAttribute('href') ?? '').pathname).toBe(
         '/profile/builds/build-7'
       )
