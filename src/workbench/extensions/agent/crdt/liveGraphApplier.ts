@@ -461,9 +461,15 @@ function actorKind(actor: unknown): ActorKind {
   return kind === 'agent' || kind === 'human' ? kind : 'unknown'
 }
 
+const NON_IDENTIFYING_ACTORS: ReadonlySet<string> = new Set([
+  'agent-remote',
+  'agent-collected',
+  'system:client-seed',
+  'system:mint'
+])
+
 function diagnosticActor(actor: string): string {
-  const kind = actorKind(actor)
-  return kind !== 'unknown' && actor.split(':').length === 3 ? kind : actor
+  return NON_IDENTIFYING_ACTORS.has(actor) ? actor : actorKind(actor)
 }
 
 function diagnosticApplyContext(context: RemoteApplyContext) {

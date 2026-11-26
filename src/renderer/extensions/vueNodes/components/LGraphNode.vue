@@ -617,7 +617,8 @@ const handleResizePointerDown = (
     startResize(event, corner, {
       element,
       position: position.value,
-      rowSlack: () => bodyLayout.value?.slack ?? 0
+      rowSlack: () => bodyLayout.value?.slack ?? 0,
+      snapItem: resolveLGraphNode() ?? undefined
     })
 }
 

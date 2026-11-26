@@ -394,6 +394,11 @@ function useBillingContextInternal(): BillingContext {
     return activeContext.value.fetchStatus(options)
   }
 
+  async function fetchStatusFresh(): Promise<boolean> {
+    if (type.value === 'unknown') return false
+    return (await activeContext.value.fetchStatusFresh?.()) ?? false
+  }
+
   async function fetchBalance(
     options?: BillingStatusReadOptions
   ): Promise<void> {
@@ -565,6 +570,7 @@ function useBillingContextInternal(): BillingContext {
 
     initialize,
     fetchStatus,
+    fetchStatusFresh,
     fetchBalance,
     reconcileSubscriptionSuccess,
     subscribe,

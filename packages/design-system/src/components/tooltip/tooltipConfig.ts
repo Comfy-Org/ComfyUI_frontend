@@ -1,5 +1,5 @@
 export const appTooltipProviderDefaults = {
-  delayDuration: 1500,
+  delayDuration: 700,
   skipDelayDuration: 0,
   disableHoverableContent: true,
   ignoreNonKeyboardFocus: true

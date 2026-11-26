@@ -14,6 +14,7 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { assetService } from '@/platform/assets/services/assetService'
+import type { WorkspaceLibraryModels } from '@/platform/assets/services/assetService'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useDeploymentLibraryModelsStore } from '@/platform/workspace/stores/deploymentLibraryModelsStore'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
@@ -161,7 +162,7 @@ describe('model widgets on a deployment', () => {
       library.clear()
       vi.mocked(reportError).mockImplementation(() => undefined)
       vi.spyOn(assetService, 'getWorkspaceLibraryModels').mockImplementation(
-        async (folder) => library.get(folder) ?? []
+        async (folder) => ({ names: library.get(folder) ?? [], blocked: [] })
       )
       onWorkspace('ws-1')
       useDeploymentPickStore().bootDeployment = deployment
@@ -216,6 +217,20 @@ describe('model widgets on a deployment', () => {
         'my_style_v2.safetensors'
       ])
       expect(widget.options.values).toBe(widget.options.values)
+    })
+
+    it("offers no library model the Build's model rules block", async () => {
+      vi.mocked(assetService.getWorkspaceLibraryModels).mockResolvedValueOnce({
+        names: ['my_style_v2.safetensors'],
+        blocked: ['banned_style.safetensors']
+      })
+      const widget = loraWidget()
+      await libraryLoaded(widget)
+
+      expect(widget.options.values).toEqual([
+        'release.safetensors',
+        'my_style_v2.safetensors'
+      ])
     })
 
     it('names no library folder when the page booted without a deployment', () => {
@@ -379,7 +394,7 @@ describe('model widgets on a deployment', () => {
     })
 
     it('holds the missing-model check until the library answers', async () => {
-      let answer: (names: string[]) => void = () => {}
+      let answer: (models: WorkspaceLibraryModels) => void = () => {}
       vi.mocked(assetService.getWorkspaceLibraryModels).mockReturnValueOnce(
         new Promise((resolve) => {
           answer = resolve
@@ -390,7 +405,7 @@ describe('model widgets on a deployment', () => {
 
       expect(inventory?.getStatus()).toBe('loading')
       const settled = inventory?.waitForSettled()
-      answer(['my_style_v2.safetensors'])
+      answer({ names: ['my_style_v2.safetensors'], blocked: [] })
       await settled
 
       expect(inventory?.getStatus()).toBe('ready')
@@ -398,7 +413,7 @@ describe('model widgets on a deployment', () => {
     })
 
     it('shows the new workspace library, never the previous one, after a workspace change', async () => {
-      let answerA: (names: string[]) => void = () => {}
+      let answerA: (models: WorkspaceLibraryModels) => void = () => {}
       vi.mocked(assetService.getWorkspaceLibraryModels).mockReturnValueOnce(
         new Promise((resolve) => {
           answerA = resolve
@@ -409,7 +424,7 @@ describe('model widgets on a deployment', () => {
       library.set('loras', ['b_lora.safetensors'])
       onWorkspace('ws-2')
       expect(widget.options.values).toEqual(['release.safetensors'])
-      answerA(['a_lora.safetensors'])
+      answerA({ names: ['a_lora.safetensors'], blocked: [] })
       await libraryLoaded(widget)
 
       expect(widget.options.values).toEqual([
@@ -504,8 +519,8 @@ describe('model widgets on a deployment', () => {
     )
 
     it('lets the newest read of the library win when an older one answers last', async () => {
-      let answerOlder: (names: string[]) => void = () => {}
-      const olderRead = new Promise<string[]>((resolve) => {
+      let answerOlder: (models: WorkspaceLibraryModels) => void = () => {}
+      const olderRead = new Promise<WorkspaceLibraryModels>((resolve) => {
         answerOlder = resolve
       })
       vi.mocked(assetService.getWorkspaceLibraryModels).mockReturnValueOnce(
@@ -516,7 +531,7 @@ describe('model widgets on a deployment', () => {
       useDeploymentLibraryModelsStore().refresh('loras')
       await libraryAnswered()
 
-      answerOlder(['before_upload.safetensors'])
+      answerOlder({ names: ['before_upload.safetensors'], blocked: [] })
       await olderRead
 
       expect(widget.options.values).toEqual([
@@ -601,7 +616,7 @@ describe('model widgets on a deployment', () => {
     )
 
     it('keeps a loader promoted out of a subgraph in step with the library', async () => {
-      let answer: (names: string[]) => void = () => {}
+      let answer: (models: WorkspaceLibraryModels) => void = () => {}
       vi.mocked(assetService.getWorkspaceLibraryModels).mockReturnValueOnce(
         new Promise((resolve) => {
           answer = resolve
@@ -612,7 +627,7 @@ describe('model widgets on a deployment', () => {
       )
       expect(promoted.options.values).toEqual(['release.safetensors'])
 
-      answer(['my_style_v2.safetensors'])
+      answer({ names: ['my_style_v2.safetensors'], blocked: [] })
       await libraryAnswered()
       expect(promoted.options.values).toEqual([
         'release.safetensors',

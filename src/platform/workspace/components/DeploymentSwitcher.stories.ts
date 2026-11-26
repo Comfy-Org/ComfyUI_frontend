@@ -11,6 +11,7 @@ const meta: Meta<typeof DeploymentSwitcher> = {
   title: 'Components/DeploymentSwitcher',
   component: DeploymentSwitcher,
   tags: ['autodocs'],
+  args: { onTeamPlan: true },
   parameters: { layout: 'centered' },
   decorators: [
     (story) => ({

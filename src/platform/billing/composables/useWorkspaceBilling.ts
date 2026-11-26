@@ -375,9 +375,16 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     return adoption
   }
 
-  async function fetchStatus(
+  function adoptStatus(status: BillingStatusResponse): void {
+    seatCapacity.value = seatCapacityFrom(status)
+    statusData.value = status
+    statusReadAuthoritative.value = true
+    adoption = resumePendingOperation(status)
+  }
+
+  async function fetchStatusFresh(
     options?: BillingStatusReadOptions
-  ): Promise<void> {
+  ): Promise<boolean> {
     adoption = Promise.resolve(false)
     const requestId = ++latestBillingReadIds.status
     const workspaceId = workspaceStore.activeWorkspace?.id
@@ -392,12 +399,10 @@ export function useWorkspaceBilling(): WorkspaceBilling {
         status === undefined ||
         isStaleBillingRead('status', requestId, workspaceId)
       )
-        return
+        return false
 
-      seatCapacity.value = seatCapacityFrom(status)
-      statusData.value = status
-      statusReadAuthoritative.value = true
-      adoption = resumePendingOperation(status)
+      adoptStatus(status)
+      return true
     } catch (err) {
       if (requestId === latestBillingReadIds.status) {
         statusReadAuthoritative.value = false
@@ -408,6 +413,12 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     } finally {
       if (requestId === latestBillingReadIds.status) isLoading.value = false
     }
+  }
+
+  async function fetchStatus(
+    options?: BillingStatusReadOptions
+  ): Promise<void> {
+    await fetchStatusFresh(options)
   }
 
   async function fetchBalance(
@@ -891,6 +902,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     // Actions
     initialize,
     fetchStatus,
+    fetchStatusFresh,
     fetchBalance,
     subscribe,
     previewSubscribe,
