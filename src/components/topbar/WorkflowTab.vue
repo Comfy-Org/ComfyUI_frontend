@@ -17,9 +17,10 @@
       >
         <TabsTrigger
           :value="workflowOption.workflow.path"
-          class="h-full w-full py-2 pr-2 pl-3"
+          class="h-full w-full gap-0 py-2 pr-2 pl-3"
         >
-          <span ref="tabContent" class="inline-flex min-w-0 items-center gap-2">
+          <span class="flex-1" />
+          <span class="inline-flex min-w-0 items-center gap-2">
             <template v-if="showModeIcon">
               <i
                 v-if="isBuilderState"
@@ -43,11 +44,8 @@
             <span
               :class="
                 cn(
-                  'relative size-4 shrink-0',
-                  indicatorSharesCloseSpace && [
-                    'group-focus-within/tab:invisible',
-                    revealsCloseOnHover && 'group-hover/tab:invisible'
-                  ]
+                  'relative size-4 shrink-0 group-focus-within/tab:invisible',
+                  revealsCloseOnHover && 'group-hover/tab:invisible'
                 )
               "
             >
@@ -81,22 +79,24 @@
                   )
                 "
               />
-              <span
-                v-else-if="shouldShowUnsavedIndicator"
-                ref="dirtyIndicator"
-                data-testid="workflow-dirty-indicator"
-                :class="
-                  cn(
-                    'absolute top-1/2 left-1/2 z-10 size-2 -translate-1/2 rounded-full',
-                    isActiveTab ? 'bg-foreground' : 'bg-muted-foreground'
-                  )
-                "
-              />
             </span>
+          </span>
+          <span class="@container/close-space relative flex-1 self-stretch">
+            <span
+              v-if="showDirtyIndicator"
+              data-testid="workflow-dirty-indicator"
+              :class="
+                cn(
+                  'absolute top-1/2 right-full z-10 mr-1 size-2 -translate-y-1/2 rounded-full @max-[0.75rem]/close-space:group-focus-within/tab:invisible',
+                  revealsCloseOnHover &&
+                    '@max-[0.75rem]/close-space:group-hover/tab:invisible',
+                  isActiveTab ? 'bg-foreground' : 'bg-muted-foreground'
+                )
+              "
+            />
           </span>
         </TabsTrigger>
         <Button
-          ref="closeButton"
           :class="
             cn(
               'close-button absolute top-1/2 right-2 size-4 -translate-y-1/2 rounded-none p-0 group-focus-within/tab:visible',
@@ -130,9 +130,8 @@
 </template>
 
 <script setup lang="ts">
-import { unrefElement, useResizeObserver } from '@vueuse/core'
 import { ContextMenuRoot, ContextMenuTrigger } from 'reka-ui'
-import { computed, ref, useTemplateRef } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
@@ -195,22 +194,6 @@ const workflowStore = useWorkflowStore()
 const settingStore = useSettingStore()
 const executionStore = useExecutionStore()
 const workflowTabRef = ref<HTMLElement | null>(null)
-const tabContent = useTemplateRef('tabContent')
-const dirtyIndicator = useTemplateRef('dirtyIndicator')
-const closeButton = useTemplateRef('closeButton')
-const closeButtonElement = computed(() => unrefElement(closeButton))
-const dirtyIndicatorOverlapsClose = ref(true)
-
-useResizeObserver(
-  [workflowTabRef, tabContent, dirtyIndicator, closeButtonElement],
-  () => {
-    const dot = dirtyIndicator.value?.getBoundingClientRect()
-    const close = closeButtonElement.value?.getBoundingClientRect()
-    dirtyIndicatorOverlapsClose.value =
-      !dot || !close || (dot.right > close.left && dot.left < close.right)
-  }
-)
-
 const popoverOpen = ref(false)
 const popoverHovered = ref(false)
 const popoverClicked = ref(false)
@@ -299,21 +282,24 @@ const workflowStatusLabel = computed(() =>
     : undefined
 )
 
-const hasStatusIndicator = computed(
+const hasOtherStatusIndicator = computed(
   () =>
     isAgentAwaitingApproval.value ||
     isAgentEditing.value ||
     showUnseenAgentDot.value ||
-    workflowStatus.value !== undefined ||
-    shouldShowUnsavedIndicator.value
+    workflowStatus.value !== undefined
+)
+
+const hasStatusIndicator = computed(
+  () => hasOtherStatusIndicator.value || shouldShowUnsavedIndicator.value
+)
+
+const showDirtyIndicator = computed(
+  () => shouldShowUnsavedIndicator.value && !hasOtherStatusIndicator.value
 )
 
 const revealsCloseOnHover = computed(
   () => isActiveTab.value || !compact || !hasStatusIndicator.value
-)
-
-const indicatorSharesCloseSpace = computed(
-  () => !dirtyIndicator.value || dirtyIndicatorOverlapsClose.value
 )
 
 const closeButtonVisibility = computed(() =>
