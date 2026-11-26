@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
 
-import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
+import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
 import { APP_URL, setupCloudApp } from '@e2e/fixtures/utils/cloudAppSetup'
 import { workspace } from '@e2e/fixtures/utils/workspaceMocks'
 
@@ -27,8 +27,9 @@ interface DialogBox {
 }
 
 interface PlatformFrame {
-  openBuildWizard: () => Promise<DialogBox>
-  openPreinstall: () => Promise<DialogBox>
+  openBuildWizard: () => Promise<void>
+  openPreinstall: () => Promise<void>
+  dialogBox: () => Promise<DialogBox | null>
 }
 
 async function bootCloudWithPlatformFrame(page: Page) {
@@ -48,11 +49,15 @@ async function bootCloudWithPlatformFrame(page: Page) {
   })
 }
 
-async function openAndMeasure(
+function dialogOf(page: Page) {
+  return page.getByTestId('platform-frame-host')
+}
+
+async function openFrame(
   page: Page,
   request: PlatformFrameRequest,
   wayIn: string
-): Promise<DialogBox> {
+) {
   await page.evaluate(
     ([frameRequest, frameWayIn]) => {
       const pinia =
@@ -65,34 +70,39 @@ async function openAndMeasure(
     },
     [request, wayIn] as const
   )
-  const dialog = page.getByTestId('platform-frame-host')
+  const dialog = dialogOf(page)
   await expect(dialog).toBeVisible()
   await dialog.evaluate((element) =>
     Promise.all(element.getAnimations().map((animation) => animation.finished))
   )
-  const box = await dialog.boundingBox()
-  if (!box) throw new Error('Expected the platform frame dialog to lay out')
-  return box
 }
 
-export const platformFrameTest = comfyPageFixture.extend<{
+async function roundedDialogBox(page: Page): Promise<DialogBox | null> {
+  const box = await dialogOf(page).boundingBox()
+  if (!box) return null
+  return {
+    x: Math.round(box.x),
+    y: Math.round(box.y),
+    width: Math.round(box.width),
+    height: Math.round(box.height)
+  }
+}
+
+export const platformFrameTest = base.extend<{
   platformFrame: PlatformFrame
 }>({
   platformFrame: async ({ page }, use) => {
     await bootCloudWithPlatformFrame(page)
     await use({
       openBuildWizard: () =>
-        openAndMeasure(
-          page,
-          { step: 'new', handsOverWorkflow: true },
-          'extensions'
-        ),
+        openFrame(page, { step: 'new', handsOverWorkflow: true }, 'extensions'),
       openPreinstall: () =>
-        openAndMeasure(
+        openFrame(
           page,
           { step: 'preinstall', deploymentId: 'dep-1' },
           'preinstall'
-        )
+        ),
+      dialogBox: () => roundedDialogBox(page)
     })
   }
 })

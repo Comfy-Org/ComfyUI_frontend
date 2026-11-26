@@ -14,14 +14,16 @@ test.describe('Platform frame dialog size', { tag: '@cloud' }, () => {
     test('fills the screen less a 24px margin on every side', async ({
       platformFrame
     }) => {
-      const box = await platformFrame.openBuildWizard()
+      await platformFrame.openBuildWizard()
 
-      expect(box).toEqual({
-        x: SIZE.margin,
-        y: SIZE.margin,
-        width: 1024 - 2 * SIZE.margin,
-        height: 700 - 2 * SIZE.margin
-      })
+      await expect
+        .poll(() => platformFrame.dialogBox())
+        .toEqual({
+          x: SIZE.margin,
+          y: SIZE.margin,
+          width: 1024 - 2 * SIZE.margin,
+          height: 700 - 2 * SIZE.margin
+        })
     })
   })
 
@@ -35,12 +37,16 @@ test.describe('Platform frame dialog size', { tag: '@cloud' }, () => {
       test('caps at 1120 wide and leaves 24px above and below', async ({
         platformFrame
       }) => {
-        const box = await platformFrame.openBuildWizard()
+        await platformFrame.openBuildWizard()
 
-        expect(box.width).toBeCloseTo(SIZE.maxWidth, 0)
-        expect(box.height).toBeCloseTo(viewport.height - 2 * SIZE.margin, 0)
-        expect(box.x).toBeCloseTo((viewport.width - SIZE.maxWidth) / 2, 0)
-        expect(box.y).toBeCloseTo(SIZE.margin, 0)
+        await expect
+          .poll(() => platformFrame.dialogBox())
+          .toEqual({
+            x: (viewport.width - SIZE.maxWidth) / 2,
+            y: SIZE.margin,
+            width: SIZE.maxWidth,
+            height: viewport.height - 2 * SIZE.margin
+          })
       })
     })
   }
@@ -49,12 +55,16 @@ test.describe('Platform frame dialog size', { tag: '@cloud' }, () => {
     test.use({ viewport: { width: 1920, height: 1200 } })
 
     test('caps at 1120 by 1024, centred', async ({ platformFrame }) => {
-      const box = await platformFrame.openBuildWizard()
+      await platformFrame.openBuildWizard()
 
-      expect(box.width).toBeCloseTo(SIZE.maxWidth, 0)
-      expect(box.height).toBeCloseTo(SIZE.maxHeight, 0)
-      expect(box.x).toBeCloseTo((1920 - SIZE.maxWidth) / 2, 0)
-      expect(box.y).toBeCloseTo((1200 - SIZE.maxHeight) / 2, 0)
+      await expect
+        .poll(() => platformFrame.dialogBox())
+        .toEqual({
+          x: (1920 - SIZE.maxWidth) / 2,
+          y: (1200 - SIZE.maxHeight) / 2,
+          width: SIZE.maxWidth,
+          height: SIZE.maxHeight
+        })
     })
   })
 
@@ -62,10 +72,14 @@ test.describe('Platform frame dialog size', { tag: '@cloud' }, () => {
     test.use({ viewport: { width: 1440, height: 900 } })
 
     test('keeps the smaller 720 by 520 dialog', async ({ platformFrame }) => {
-      const box = await platformFrame.openPreinstall()
+      await platformFrame.openPreinstall()
 
-      expect(box.width).toBeCloseTo(SIZE.preinstallWidth, 0)
-      expect(box.height).toBeCloseTo(SIZE.preinstallHeight, 0)
+      await expect
+        .poll(() => platformFrame.dialogBox())
+        .toMatchObject({
+          width: SIZE.preinstallWidth,
+          height: SIZE.preinstallHeight
+        })
     })
   })
 })
