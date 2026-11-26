@@ -7,14 +7,14 @@ import { computed, watch } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
 
-import { LiteGraph } from '../lib/litegraph/src/litegraph'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 
 function useVueFeatureFlagsIndividual() {
   const settingStore = useSettingStore()
 
   const shouldRenderVueNodes = computed(() => {
     try {
-      return settingStore.get('Comfy.VueNodes.Enabled') ?? false
+      return settingStore.get('Comfy.VueNodes.Enabled')
     } catch {
       return false
     }

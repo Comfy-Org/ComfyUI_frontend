@@ -1,11 +1,14 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 import { describe, expect, it, vi } from 'vitest'
 
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
-import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
+import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
+import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { IWidgetOptions } from '@comfyorg/graph-model/widgets'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetToggleSwitch from './WidgetToggleSwitch.vue'
@@ -74,6 +77,70 @@ describe('WidgetToggleSwitch Value Binding', () => {
     return { ...result, user }
   }
 
+  it('uses the display label to identify and toggle a dynamically named field', async () => {
+    const widget = createToggleWidget(false)
+    widget.name = 'loras.0.enabled'
+    widget.label = 'LoRA #1 enabled'
+    const onModelUpdate = vi.fn()
+    const { user } = mountComponent(widget, false, onModelUpdate)
+
+    await user.click(screen.getByRole('switch', { name: 'LoRA #1 enabled' }))
+
+    expect(onModelUpdate).toHaveBeenCalledWith(true)
+  })
+
+  it.for([{}, { on: 'enabled', off: 'disabled' }])(
+    'toggles from either state through the widget label with options=%j',
+    async (options) => {
+      let currentValue = false
+      const { user } = mountComponent(
+        createToggleWidget(false, options),
+        false,
+        (value) => (currentValue = value ?? currentValue)
+      )
+      const label = screen.getByText('test_toggle')
+
+      await user.click(label)
+      expect(currentValue).toBe(true)
+
+      await user.click(label)
+      expect(currentValue).toBe(false)
+    }
+  )
+
+  it.for([
+    { name: 'switch', options: {}, role: 'switch', label: 'test_toggle' },
+    {
+      name: 'labelled toggle',
+      options: { on: 'enabled', off: 'disabled' },
+      role: 'button',
+      label: 'disabled'
+    }
+  ])(
+    'records the updated value after clicking a $name',
+    async ({ options, role, label }) => {
+      let currentValue = true
+      const recordedValues: boolean[] = []
+      useWorkflowStore().activeWorkflow = fromPartial({
+        changeTracker: {
+          captureCanvasState: () => recordedValues.push(currentValue)
+        }
+      })
+      const { user } = mountComponent(
+        createToggleWidget(true, options),
+        true,
+        (value) => {
+          currentValue = value ?? currentValue
+        }
+      )
+
+      await user.click(screen.getByRole(role, { name: label }))
+
+      expect(currentValue).toBe(false)
+      expect(recordedValues).toEqual([false])
+    }
+  )
+
   describe('Vue Event Emission', () => {
     it('emits Vue event when toggled from false to true', async () => {
       const widget = createToggleWidget(false)
@@ -93,6 +160,21 @@ describe('WidgetToggleSwitch Value Binding', () => {
       await user.click(screen.getByRole('switch'))
 
       expect(onModelUpdate).toHaveBeenCalledWith(false)
+    })
+
+    it('keeps its value when Ctrl+Enter is pressed while focused', async () => {
+      const widget = createToggleWidget(false)
+      const onModelUpdate = vi.fn()
+      const { user } = mountComponent(widget, false, onModelUpdate)
+
+      const control = screen.getByRole('switch')
+      await user.tab()
+      expect(control).toHaveFocus()
+
+      await user.keyboard('{Control>}{Enter}{/Control}')
+
+      expect(onModelUpdate).not.toHaveBeenCalled()
+      expect(control).not.toBeChecked()
     })
 
     it('handles value changes gracefully', async () => {
@@ -203,9 +285,9 @@ describe('WidgetToggleSwitch Value Binding', () => {
 
       const offButton = screen.getByText('disabled')
       const onButton = screen.getByText('enabled')
-      // eslint-disable-next-line testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-node-access
       expect(offButton.closest('button')).toHaveAttribute('data-state', 'on')
-      // eslint-disable-next-line testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-node-access
       expect(onButton.closest('button')).toHaveAttribute('data-state', 'off')
     })
 
@@ -218,9 +300,9 @@ describe('WidgetToggleSwitch Value Binding', () => {
 
       const offButton = screen.getByText('disabled')
       const onButton = screen.getByText('enabled')
-      // eslint-disable-next-line testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-node-access
       expect(onButton.closest('button')).toHaveAttribute('data-state', 'on')
-      // eslint-disable-next-line testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-node-access
       expect(offButton.closest('button')).toHaveAttribute('data-state', 'off')
     })
 
@@ -272,19 +354,28 @@ describe('WidgetToggleSwitch Value Binding', () => {
       expect(screen.queryByText('true')).toBeNull()
     })
 
-    it('disables ToggleGroup when read_only option is set', () => {
-      const widget = createToggleWidget(false, {
-        on: 'yes',
-        off: 'no',
-        read_only: true
-      })
-      mountComponent(widget, false)
+    it.for([{ read_only: true }, { disabled: true }])(
+      'keeps a labelled toggle unchanged with options=%j',
+      async (lockOptions) => {
+        const widget = createToggleWidget(false, {
+          on: 'yes',
+          off: 'no',
+          ...lockOptions
+        })
+        const onModelUpdate = vi.fn()
+        const { user } = mountComponent(widget, false, onModelUpdate)
 
-      const buttons = screen.getAllByRole('button')
-      for (const button of buttons) {
-        expect(button).toBeDisabled()
+        await user.click(screen.getByRole('button', { name: 'yes' }))
+        await user.click(screen.getByText('test_toggle'))
+
+        expect(onModelUpdate).not.toHaveBeenCalled()
+        expect(
+          screen
+            .getAllByRole('button')
+            .map((button) => button.hasAttribute('disabled'))
+        ).toEqual([true, true])
       }
-    })
+    )
 
     it('keeps an implicit switch unchanged when read_only is set', async () => {
       const widget = createToggleWidget(false, { read_only: true })

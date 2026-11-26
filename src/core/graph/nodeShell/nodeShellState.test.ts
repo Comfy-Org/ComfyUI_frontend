@@ -1,26 +1,22 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { toRaw } from 'vue'
 
+import { setAssertReporter } from '@/base/assert'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'
 import { createInputSlotView } from '@/lib/litegraph/src/node/slotDescriptorView'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
-import { graphScopeOf } from '@/types/graphScopeId'
-import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
-import type { NodeState } from '@/types/nodeState'
-import { createUuidv4, zeroUuid } from '@/utils/uuid'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import { UNASSIGNED_NODE_ID } from '@comfyorg/graph-model/nodeId'
+import type { NodeState } from '@comfyorg/graph-model/nodeState'
+import { zeroUuid } from '@comfyorg/graph-model/uuid'
+import { createUuidv4 } from '@/utils/uuid'
 
 import { createNodeShellState, unregisterNodeState } from './nodeShellState'
 
 describe('node shell state', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   function addNodeToSubgraph() {
     const subgraph = createTestSubgraph()
     const node = new LGraphNode('Node')
@@ -110,9 +106,7 @@ describe('node shell state', () => {
 
 describe('node registration invariants', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     vi.stubEnv('DEV', true)
-    vi.spyOn(console, 'error').mockImplementation(() => {})
   })
 
   it('refuses to register a node under a second root graph', () => {
@@ -129,6 +123,8 @@ describe('node registration invariants', () => {
 
   it('drops the previous root entry rather than stranding it', () => {
     vi.stubEnv('DEV', false)
+    const reporter = vi.fn()
+    setAssertReporter(reporter)
     const first = new LGraph()
     first.id = createUuidv4()
     const second = new LGraph()
@@ -142,6 +138,15 @@ describe('node registration invariants', () => {
     const owningGraphId = node._state.graphId
     expect(store.getGraphNodesFor(first.id, owningGraphId)).toEqual([])
     expect(store.getGraphNodesFor(second.id, owningGraphId)).toHaveLength(1)
+    expect(reporter).toHaveBeenCalledWith(
+      expect.stringContaining('different root graph'),
+      {
+        nodeId: node.id,
+        previousRootGraphId: first.id,
+        nextRootGraphId: second.id
+      }
+    )
+    setAssertReporter(null)
   })
 
   it('reports a state that drifted out of its bucket before unregistering', () => {
@@ -158,5 +163,29 @@ describe('node registration invariants', () => {
 
     expect(() => unregisterNodeState(node)).toThrow(/identity drift/)
     expect(node._graphScope).toBeUndefined()
+  })
+
+  it('reports the drifted node and graph as structured context', () => {
+    vi.stubEnv('DEV', false)
+    const reporter = vi.fn()
+    setAssertReporter(reporter)
+    const graph = new LGraph()
+    const node = new LGraphNode('Node')
+    graph.add(node)
+    node._state = createNodeShellState(
+      node,
+      createInputSlotView,
+      'Node',
+      'test',
+      undefined
+    )
+
+    unregisterNodeState(node)
+
+    expect(reporter).toHaveBeenCalledWith(
+      expect.stringContaining('identity drift'),
+      { nodeId: node.id, rootGraphId: graph.id }
+    )
+    setAssertReporter(null)
   })
 })

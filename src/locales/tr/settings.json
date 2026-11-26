@@ -69,8 +69,8 @@
     "name": "Geliştirici modu seçeneklerini etkinleştir (API kaydetme, vb.)"
   },
   "Comfy_DisableFloatRounding": {
-    "name": "Varsayılan ondalık sayı widget yuvarlamasını devre dışı bırak.",
-    "tooltip": "(sayfanın yeniden yüklenmesini gerektirir) Arka uçtaki düğüm tarafından yuvarlama ayarlandığında yuvarlama devre dışı bırakılamaz."
+    "name": "Varsayılan kayan noktalı sayı bileşeni yuvarlamasını devre dışı bırak (kullanımdan kaldırıldı).",
+    "tooltip": "(sayfanın yeniden yüklenmesini gerektirir) Kullanımdan kaldırılmıştır ve varsayılan olarak açıktır. Kapatıldığında, düzenlenen kayan noktalı değerler bileşen adımının ondalık basamaklarına yuvarlanır. Düğüm tarafından tanımlanan yuvarlama her zaman uygulanır."
   },
   "Comfy_DisableSliders": {
     "name": "Düğüm widget kaydırıcılarını devre dışı bırak"
@@ -83,6 +83,10 @@
   },
   "Comfy_EnableWorkflowViewRestore": {
     "name": "İş akışlarında tuval konumunu ve yakınlaştırma seviyesini kaydet ve geri yükle"
+  },
+  "Comfy_ErrorSystem_ShowMissingModels": {
+    "name": "Sorunlar sekmesinde eksik modelleri göster",
+    "tooltip": "Devre dışı bırakıldığında, bulunamayan model dosyaları sorunlar sekmesinde listelenmez ve düğümleri vurgulanmaz."
   },
   "Comfy_Execution_PreviewMethod": {
     "name": "Canlı önizleme yöntemi",
@@ -313,6 +317,10 @@
   "Comfy_Node_DoubleClickTitleToEdit": {
     "name": "Düzenlemek için düğüm başlığına çift tıkla"
   },
+  "Comfy_Node_DownscaleImagePreviews": {
+    "name": "Büyük resim önizlemelerini küçült",
+    "tooltip": "Nodes 2.0'da, çok sayıda büyük önizlemenin akıcı kalması için düğümlerdeki büyük resimleri en uzun kenarı en fazla 1024px olan bir kopya olarak gösterin. Her zaman orijinali göstermek için kapatın."
+  },
   "Comfy_Node_MiddleClickRerouteNode": {
     "name": "Orta tıklama yeni bir Yeniden Yönlendirme düğümü oluşturur"
   },
@@ -334,10 +342,6 @@
   "Comfy_Notification_ShowVersionUpdates": {
     "name": "Sürüm güncellemelerini göster",
     "tooltip": "Yeni modeller ve önemli yeni özellikler için güncellemeleri göster."
-  },
-  "Comfy_Pointer_ClickBufferTime": {
-    "name": "İşaretçi tıklama kayma gecikmesi",
-    "tooltip": "Bir işaretçi düğmesine bastıktan sonra, bu, işaretçi hareketinin göz ardı edilebileceği maksimum süredir (milisaniye cinsinden).\n\nTıklarken işaretçi hareket ettirilirse nesnelerin istemeden dürtülmesini önlemeye yardımcı olur."
   },
   "Comfy_Pointer_ClickDrift": {
     "name": "İşaretçi tıklama kayması (maksimum mesafe)",
@@ -461,8 +465,13 @@
   "Comfy_Workflow_Persist": {
     "name": "İş akışı durumunu koru ve sayfayı (yeniden) yüklediğinde geri yükle"
   },
-  "Comfy_Workflow_ShowMissingModelsWarning": {
-    "name": "Eksik model uyarısını göster"
+  "Comfy_Workflow_ShowMissingMediaWarning": {
+    "name": "Sorunlar sekmesinde eksik medyayı göster",
+    "tooltip": "Devre dışı bırakıldığında, bulunamayan giriş görüntüleri, videoları ve ses dosyaları sorunlar sekmesinde listelenmez ve düğümleri vurgulanmaz."
+  },
+  "Comfy_ErrorSystem_ShowMissingNodes": {
+    "name": "Sorunlar sekmesinde eksik düğümleri göster",
+    "tooltip": "Devre dışı bırakıldığında, eksik düğüm paketleri sorunlar sekmesinde listelenmez ve düğümleri vurgulanmaz. İş akışı, yüklenene kadar yine de çalıştırılamaz."
   },
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "İş akışını kaydederken düğüm kimliklerini sırala"

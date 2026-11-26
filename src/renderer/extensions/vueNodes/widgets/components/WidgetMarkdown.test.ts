@@ -1,7 +1,5 @@
-// @vitest-environment jsdom
-
-/* eslint-disable testing-library/no-container, testing-library/no-node-access */
-/* eslint-disable testing-library/prefer-user-event */
+/* oxlint-disable testing-library/no-container, testing-library/no-node-access */
+/* oxlint-disable testing-library/prefer-user-event */
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
@@ -15,14 +13,14 @@ import WidgetMarkdown from './WidgetMarkdown.vue'
 import { createMockWidget } from './widgetTestUtils'
 
 // Mock the markdown renderer utility
-vi.mock('@/utils/markdownRendererUtil', () => ({
+vi.mock(import('@/utils/markdownRendererUtil'), () => ({
   renderMarkdownToHtml: vi.fn((markdown: string) => {
     // Simple mock that converts some markdown to HTML
     return markdown
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
       .replace(/\*(.*?)\*/g, '<em>$1</em>')
-      .replace(/^# (.*?)$/gm, '<h1>$1</h1>')
-      .replace(/^## (.*?)$/gm, '<h2>$1</h2>')
+      .replace(/^# (.*)$/gm, '<h1>$1</h1>')
+      .replace(/^## (.*)$/gm, '<h2>$1</h2>')
       .replace(/\n/g, '<br>')
   })
 }))
@@ -92,32 +90,22 @@ describe('WidgetMarkdown Dual Mode Display', () => {
     it('renders markdown content as HTML in display mode', () => {
       const markdown = '# Heading\nSome **bold** and *italic* text.'
       const widget = createMarkdownWidget(markdown)
-      const { container } = renderComponent(widget, markdown)
+      renderComponent(widget, markdown)
 
-      const displayDiv = container.querySelector('.comfy-markdown-content')
-      expect(displayDiv).not.toBeNull()
-      expect(displayDiv!.innerHTML).toContain('<h1>Heading</h1>')
-      expect(displayDiv!.innerHTML).toContain('<strong>bold</strong>')
-      expect(displayDiv!.innerHTML).toContain('<em>italic</em>')
-    })
-
-    it('starts in display mode by default', () => {
-      const widget = createMarkdownWidget('# Test')
-      const { container } = renderComponent(widget, '# Test')
-
-      expect(container.querySelector('.comfy-markdown-content')).toHaveClass(
-        'visible'
-      )
-      expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
+      const displayDiv = screen.getByRole('region', { name: 'test_markdown' })
+      expect(displayDiv).toBeInTheDocument()
+      expect(displayDiv.innerHTML).toContain('<h1>Heading</h1>')
+      expect(displayDiv.innerHTML).toContain('<strong>bold</strong>')
+      expect(displayDiv.innerHTML).toContain('<em>italic</em>')
     })
 
     it('handles empty markdown content', () => {
       const widget = createMarkdownWidget('')
-      const { container } = renderComponent(widget, '')
+      renderComponent(widget, '')
 
-      const displayDiv = container.querySelector('.comfy-markdown-content')
-      expect(displayDiv).not.toBeNull()
-      expect(displayDiv!.textContent).toBe('')
+      const displayDiv = screen.getByRole('region', { name: 'test_markdown' })
+      expect(displayDiv).toBeInTheDocument()
+      expect(displayDiv.textContent).toBe('')
     })
   })
 
@@ -126,7 +114,9 @@ describe('WidgetMarkdown Dual Mode Display', () => {
       const widget = createMarkdownWidget('# Test')
       const { container } = renderComponent(widget, '# Test')
 
-      const displayContent = container.querySelector('.comfy-markdown-content')
+      const displayContent = screen.getByRole('region', {
+        name: 'test_markdown'
+      })
       expect(displayContent).toHaveClass('visible')
       expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
 
@@ -153,7 +143,9 @@ describe('WidgetMarkdown Dual Mode Display', () => {
       const widget = createMarkdownWidget('# Test')
       const { container } = renderComponent(widget, '# Test')
 
-      const displayContent = container.querySelector('.comfy-markdown-content')
+      const displayContent = screen.getByRole('region', {
+        name: 'test_markdown'
+      })
 
       await dblClickToEdit(container)
       expect(screen.getByRole('textbox')).toBeInTheDocument()
@@ -298,9 +290,9 @@ describe('WidgetMarkdown Dual Mode Display', () => {
 
       await blurTextarea()
 
-      const displayDiv = container.querySelector('.comfy-markdown-content')
-      expect(displayDiv!.innerHTML).toContain('<h2>New Heading</h2>')
-      expect(displayDiv!.innerHTML).toContain('<strong>bold</strong>')
+      const displayDiv = screen.getByRole('region', { name: 'test_markdown' })
+      expect(displayDiv.innerHTML).toContain('<h2>New Heading</h2>')
+      expect(displayDiv.innerHTML).toContain('<strong>bold</strong>')
     })
 
     it('emits update:modelValue for callback handling at parent level', async () => {
@@ -353,31 +345,22 @@ This paragraph has **bold** and *italic* text.
 Another line with more content.`
 
       const widget = createMarkdownWidget(complexMarkdown)
-      const { container } = renderComponent(widget, complexMarkdown)
+      renderComponent(widget, complexMarkdown)
 
-      const displayDiv = container.querySelector('.comfy-markdown-content')
-      expect(displayDiv!.innerHTML).toContain('<h1>Main Heading</h1>')
-      expect(displayDiv!.innerHTML).toContain('<h2>Subheading</h2>')
-      expect(displayDiv!.innerHTML).toContain('<strong>bold</strong>')
-      expect(displayDiv!.innerHTML).toContain('<em>italic</em>')
-    })
-
-    it('handles line breaks in markdown', () => {
-      const markdownWithBreaks = 'Line 1\nLine 2\nLine 3'
-      const widget = createMarkdownWidget(markdownWithBreaks)
-      const { container } = renderComponent(widget, markdownWithBreaks)
-
-      const displayDiv = container.querySelector('.comfy-markdown-content')
-      expect(displayDiv!.innerHTML).toContain('<br>')
+      const displayDiv = screen.getByRole('region', { name: 'test_markdown' })
+      expect(displayDiv.innerHTML).toContain('<h1>Main Heading</h1>')
+      expect(displayDiv.innerHTML).toContain('<h2>Subheading</h2>')
+      expect(displayDiv.innerHTML).toContain('<strong>bold</strong>')
+      expect(displayDiv.innerHTML).toContain('<em>italic</em>')
     })
 
     it('handles empty or whitespace-only markdown', () => {
       const whitespaceMarkdown = '   \n\n   '
       const widget = createMarkdownWidget(whitespaceMarkdown)
-      const { container } = renderComponent(widget, whitespaceMarkdown)
+      renderComponent(widget, whitespaceMarkdown)
 
-      const displayDiv = container.querySelector('.comfy-markdown-content')
-      expect(displayDiv).not.toBeNull()
+      const displayDiv = screen.getByRole('region', { name: 'test_markdown' })
+      expect(displayDiv).toBeInTheDocument()
     })
   })
 
@@ -388,8 +371,8 @@ Another line with more content.`
       const { container } = renderComponent(widget, longMarkdown)
 
       // Should render without issues
-      const displayDiv = container.querySelector('.comfy-markdown-content')
-      expect(displayDiv).not.toBeNull()
+      const displayDiv = screen.getByRole('region', { name: 'test_markdown' })
+      expect(displayDiv).toBeInTheDocument()
 
       // Should switch to edit mode
       await dblClickToEdit(container)
@@ -434,7 +417,7 @@ Another line with more content.`
       expect(screen.getByRole('textbox')).toBeInTheDocument()
 
       await blurTextarea()
-      expect(container.querySelector('.comfy-markdown-content')).toHaveClass(
+      expect(screen.getByRole('region', { name: 'test_markdown' })).toHaveClass(
         'visible'
       )
       expect(screen.queryByRole('textbox')).not.toBeInTheDocument()

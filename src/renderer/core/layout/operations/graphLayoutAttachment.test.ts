@@ -1,23 +1,22 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { LayoutChange } from '@/renderer/core/layout/types'
-import { toNodeId } from '@/types/nodeId'
-import type { UUID } from '@/utils/uuid'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import {
   attachNodeLayout,
   detachGraphLayouts,
   detachNodeLayout,
-  setNodePosition
+  readNodeRenderingSize,
+  setNodePosition,
+  setNodeSize
 } from './graphLayoutAttachment'
 
 describe('node layout attachment ownership', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     layoutStore.resetForTests()
   })
 
@@ -58,13 +57,9 @@ describe('node layout attachment ownership', () => {
     ).toEqual({ x: 60, y: 70 })
   })
 
-  it('carries the direct owner graph on interior node create and delete', async () => {
+  it('scopes interior node create and delete to the root graph', async () => {
     const root = new LGraph()
-    const interiorId: UUID = '00000000-0000-4000-8000-000000000001'
-    const interior = {
-      id: interiorId,
-      rootGraph: root
-    }
+    const interior = { rootGraph: root }
     const node = nodeFor(root, 'interior-node')
     const changes: LayoutChange[] = []
     const detach = layoutStore.onChange((change) => changes.push(change))
@@ -78,25 +73,19 @@ describe('node layout attachment ownership', () => {
       {
         type: 'createNode',
         graphId: root.id,
-        ownerGraphId: interior.id,
         nodeId: node.id
       },
       {
         type: 'deleteNode',
         graphId: root.id,
-        ownerGraphId: interior.id,
         nodeId: node.id
       }
     ])
   })
 
-  it('carries the direct owner graph when a released subgraph is bulk-detached', async () => {
+  it('scopes a bulk-detached interior node delete to the root graph', async () => {
     const root = new LGraph()
-    const interiorId: UUID = '00000000-0000-4000-8000-000000000001'
-    const interior = {
-      id: interiorId,
-      rootGraph: root
-    }
+    const interior = { rootGraph: root }
     const node = nodeFor(root, 'interior-node')
     attachNodeLayout(interior, node)
 
@@ -117,9 +106,52 @@ describe('node layout attachment ownership', () => {
       {
         type: 'deleteNode',
         graphId: root.id,
-        ownerGraphId: interior.id,
         nodeId: node.id
       }
     ])
+  })
+})
+
+describe('requested and measured dimensions', () => {
+  beforeEach(() => {
+    layoutStore.resetForTests()
+  })
+
+  function nodeFor(graph: LGraph, id: string): LGraphNode {
+    const node = new LGraphNode(id)
+    node.id = toNodeId(id)
+    node.graph = graph
+    return node
+  }
+
+  it('lets the rendered size shrink when the view reports the smaller dimensions', () => {
+    const graph = new LGraph()
+    const node = nodeFor(graph, 'flux-image-node')
+    attachNodeLayout(graph, node)
+
+    setNodeSize(node, [220, 100])
+    expect(readNodeRenderingSize(node, { width: 220, height: 400 })).toEqual([
+      220, 400
+    ])
+    setNodeSize(node, [220, 120])
+    expect(readNodeRenderingSize(node, { width: 220, height: 120 })).toEqual([
+      220, 120
+    ])
+  })
+
+  it('keeps a subgraph IO panel measurement through an explicit resize', () => {
+    const { inputNode } = createTestSubgraph()
+    const graphId = inputNode.subgraph.id
+    layoutStore.reportContentSize(graphId, inputNode.id, {
+      width: 90,
+      height: 240
+    })
+
+    setNodeSize(inputNode, [70, 100])
+
+    expect(layoutStore.contentSizeOf(graphId, inputNode.id)).toEqual({
+      width: 90,
+      height: 240
+    })
   })
 })

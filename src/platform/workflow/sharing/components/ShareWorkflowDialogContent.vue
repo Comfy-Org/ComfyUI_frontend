@@ -1,8 +1,6 @@
 <template>
-  <div class="flex w-full flex-col">
-    <header
-      class="flex h-12 items-center justify-between gap-2 border-b border-border-default px-4"
-    >
+  <Card class="flex w-xl max-w-full flex-col shadow-lg">
+    <header class="flex h-12 items-center justify-between gap-2 border-b px-4">
       <div
         v-if="showPublishToHubTab"
         role="tablist"
@@ -24,15 +22,22 @@
           :class="tabButtonClass('publishToHub')"
           @click="handleDialogModeChange('publishToHub')"
         >
-          <i class="icon-[lucide--globe] size-4" aria-hidden="true" />
+          <i class="icon-[lucide--globe]" aria-hidden="true" />
           {{ $t('shareWorkflow.publishToHubTab') }}
         </Button>
       </div>
-      <div v-else class="select-none">
+      <DialogTitle
+        :class="
+          cn(
+            'm-0 text-sm font-normal select-none',
+            showPublishToHubTab && 'sr-only'
+          )
+        "
+      >
         {{ $t('shareWorkflow.shareLinkTab') }}
-      </div>
+      </DialogTitle>
       <Button size="icon" :aria-label="$t('g.close')" @click="onClose">
-        <i class="icon-[lucide--x] size-4" />
+        <i class="icon-[lucide--x]" />
       </Button>
     </header>
 
@@ -116,14 +121,11 @@
             :url="publishResult.shareUrl"
             :share-id="publishResult.shareId"
           />
-          <div class="flex flex-col gap-1">
-            <p
-              v-if="publishResult.publishedAt"
-              class="m-0 text-xs text-muted-foreground"
-            >
+          <div class="flex flex-col gap-1 text-xs text-muted-foreground">
+            <p v-if="publishResult.publishedAt" class="m-0">
               {{ $t('shareWorkflow.publishedOn', { date: formattedDate }) }}
             </p>
-            <p class="m-0 text-xs text-muted-foreground">
+            <p class="m-0">
               {{ $t('shareWorkflow.successDescription') }}
             </p>
           </div>
@@ -183,22 +185,24 @@
         />
       </div>
     </main>
-  </div>
+  </Card>
 </template>
 
 <script setup lang="ts">
+import Card from '@comfyorg/design-system/card/Card'
 import { vAutoAnimate } from '@formkit/auto-animate/vue'
 import { useAsyncState } from '@vueuse/core'
-import { useToast } from 'primevue/usetoast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ComfyHubPublishIntroPanel from '@/platform/workflow/sharing/components/profile/ComfyHubPublishIntroPanel.vue'
 import ShareAssetWarningBox from '@/platform/workflow/sharing/components/ShareAssetWarningBox.vue'
 import ShareUrlCopyField from '@/platform/workflow/sharing/components/ShareUrlCopyField.vue'
-import Button from '@/components/ui/button/Button.vue'
-import Input from '@/components/ui/input/Input.vue'
-import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
+import Input from '@comfyorg/design-system/input/Input'
+import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import { useComfyHubPublishDialog } from '@/platform/workflow/sharing/composables/useComfyHubPublishDialog'
 import type {
   WorkflowPublishResult,
@@ -209,8 +213,9 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useShareFlowContext } from '@/platform/workflow/sharing/composables/useShareFlowContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { appendJsonExt } from '@/utils/formatUtil'
+import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { onClose } = defineProps<{
@@ -288,12 +293,7 @@ function handleOpenPublishDialog() {
 }
 
 function tabButtonClass(mode: DialogMode) {
-  return cn(
-    'cursor-pointer border-none transition-colors',
-    dialogMode.value === mode
-      ? 'bg-secondary-background text-base-foreground'
-      : 'bg-transparent text-muted-foreground hover:bg-secondary-background-hover'
-  )
+  return dialogMode.value === mode ? '' : 'bg-transparent text-muted-foreground'
 }
 
 async function handleDialogModeChange(nextMode: DialogMode) {
@@ -369,10 +369,7 @@ async function refreshDialogState() {
     console.error('Failed to load publish status:', error)
     publishResult.value = null
     dialogState.value = 'ready'
-    toast.add({
-      severity: 'error',
-      summary: t('shareWorkflow.loadFailed')
-    })
+    toast.error(t('shareWorkflow.loadFailed'))
   }
 }
 
@@ -389,7 +386,7 @@ const { isLoading: isSaving, execute: handleSave } = useAsyncState(
       const name = workflowName.value.trim()
       if (!name) return
       const newPath = buildWorkflowPath(workflow.directory, name)
-      await workflowService.renameWorkflow(workflow, newPath)
+      if (!(await workflowService.renameWorkflow(workflow, newPath))) return
       await workflowStore.saveWorkflow(workflow)
     } else {
       await workflowService.saveWorkflow(workflow)
@@ -405,10 +402,8 @@ const { isLoading: isSaving, execute: handleSave } = useAsyncState(
     immediate: false,
     onError: (error) => {
       console.error('Failed to save workflow:', error)
-      toast.add({
-        severity: 'error',
-        summary: t('shareWorkflow.saveFailedTitle'),
-        detail: t('shareWorkflow.saveFailedDescription')
+      toast.error(t('shareWorkflow.saveFailedTitle'), {
+        description: t('shareWorkflow.saveFailedDescription')
       })
     }
   }
@@ -448,10 +443,8 @@ const {
     immediate: false,
     onError: (error) => {
       console.error('Failed to publish workflow:', error)
-      toast.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: error instanceof Error ? error.message : t('g.error')
+      toast.error(t('g.error'), {
+        description: getErrorMessage(error) ?? t('g.error')
       })
     }
   }

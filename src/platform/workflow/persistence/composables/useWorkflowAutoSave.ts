@@ -22,16 +22,13 @@ export function useWorkflowAutoSave() {
   let isSaving = false
   let needsAutoSave = false
 
-  const scheduleAutoSave = () => {
-    // Clear any existing timeout
+  function scheduleAutoSave() {
     if (autoSaveTimeout) {
       clearTimeout(autoSaveTimeout)
       autoSaveTimeout = null
     }
 
-    // If autosave is enabled
     if (autoSaveSetting.value === 'after delay') {
-      // If a save is in progress, mark that we need an autosave after saving
       if (isSaving) {
         needsAutoSave = true
         return
@@ -40,6 +37,10 @@ export function useWorkflowAutoSave() {
       autoSaveTimeout = setTimeout(async () => {
         const activeWorkflow = workflowStore.activeWorkflow
         if (activeWorkflow?.isModified && activeWorkflow.isPersisted) {
+          if (activeWorkflow.changeTracker.hasPreview) {
+            scheduleAutoSave()
+            return
+          }
           try {
             isSaving = true
             await workflowService.saveWorkflow(activeWorkflow)

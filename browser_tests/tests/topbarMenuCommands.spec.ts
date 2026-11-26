@@ -4,16 +4,6 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 
 test.describe('Topbar menu commands', { tag: '@ui' }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-    await comfyPage.settings.setSetting(
-      'Comfy.Workflow.WorkflowTabsPosition',
-      'Topbar'
-    )
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
-    await comfyPage.setup()
-  })
-
   test('New command creates a new workflow tab', async ({ comfyPage }) => {
     const topbar = comfyPage.menu.topbar
     await expect.poll(() => topbar.getTabNames()).toHaveLength(1)
@@ -69,5 +59,55 @@ test.describe('Topbar menu commands', { tag: '@ui' }, () => {
 
     await comfyPage.menu.topbar.triggerTopbarCommand(['View', 'Bottom Panel'])
     await expect(comfyPage.bottomPanel.root).toBeHidden()
+  })
+
+  test('holding View > Zoom In repeatedly zooms without closing the menu', async ({
+    comfyPage
+  }) => {
+    const topbar = comfyPage.menu.topbar
+    const initialScale = await comfyPage.canvasOps.getScale()
+    await topbar.openTopbarMenu()
+    const viewSubmenu = await topbar.openSubmenu('View')
+    await topbar.holdMenuItem('Zoom In', viewSubmenu)
+    try {
+      await expect
+        .poll(() => comfyPage.canvasOps.getScale())
+        .toBeGreaterThan(initialScale)
+      const firstScale = await comfyPage.canvasOps.getScale()
+      await expect
+        .poll(() => comfyPage.canvasOps.getScale())
+        .toBeGreaterThan(firstScale)
+    } finally {
+      await topbar.releaseMenuItem()
+    }
+
+    await expect(viewSubmenu).toBeVisible()
+  })
+})
+
+test.describe('Topbar Help menu', { tag: '@ui' }, () => {
+  test('Help > Contact Support opens the General Questions form', async ({
+    comfyPage
+  }) => {
+    await comfyPage.page
+      .context()
+      .route('https://comfysupport.portal.usepylon.com/**', (route) =>
+        route.fulfill({ body: '<html></html>', contentType: 'text/html' })
+      )
+
+    const popupPromise = comfyPage.page.waitForEvent('popup')
+    await comfyPage.menu.topbar.triggerTopbarCommand([
+      'Help',
+      'Contact Support'
+    ])
+    const popup = await popupPromise
+    await popup.waitForURL('https://comfysupport.portal.usepylon.com/**')
+
+    const url = new URL(popup.url())
+    expect(url.origin + url.pathname).toBe(
+      'https://comfysupport.portal.usepylon.com/forms/question'
+    )
+
+    await popup.close()
   })
 })

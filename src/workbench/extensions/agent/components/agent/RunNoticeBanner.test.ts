@@ -8,9 +8,17 @@ import RunNoticeBanner from './RunNoticeBanner.vue'
 
 const STORAGE_KEY = 'Comfy.AgentPanel.runNoticeDismissed'
 
-function mount(expanded = false) {
+function mount({
+  workflowName = '3d_hunyuan-v2.1',
+  expanded = false,
+  genericNoticeReady = false
+}: {
+  workflowName?: string
+  expanded?: boolean
+  genericNoticeReady?: boolean
+} = {}) {
   return render(RunNoticeBanner, {
-    props: { expanded },
+    props: { expanded, workflowName, genericNoticeReady },
     global: { plugins: [i18n] }
   })
 }
@@ -20,23 +28,37 @@ describe('RunNoticeBanner', () => {
     localStorage.clear()
   })
 
-  it('shows the edit-graph run notice on first launch', () => {
-    mount()
-    expect(
-      screen.getByText(
-        "The agent can modify the graph. You'll need to click run to execute the workflow."
-      )
-    ).not.toBeNull()
+  it('keeps naming the workflow after the generic notice becomes ready', async () => {
+    const { rerender } = mount()
+    expect(screen.getByRole('note')).toHaveTextContent(
+      'The agent can now edit 3d_hunyuan-v2.1. It works on 1 workflow at a time.'
+    )
+
+    await rerender({
+      workflowName: '3d_hunyuan-v2.1',
+      genericNoticeReady: true
+    })
+    expect(screen.getByRole('note')).toHaveTextContent(
+      'The agent can now edit 3d_hunyuan-v2.1. It works on 1 workflow at a time.'
+    )
   })
 
-  it('shows the expanded run notice in the maximized panel', () => {
-    mount(true)
-    expect(
-      screen.getByText(
-        "The agent can modify your workflow. You'll need to click run to execute."
+  it.for([false, true])(
+    'shows the targetless notice only when ready for expanded=%s',
+    async (expanded) => {
+      const { rerender } = mount({ workflowName: '', expanded })
+      expect(screen.queryByRole('note')).toBeNull()
+
+      await rerender({
+        expanded,
+        workflowName: '',
+        genericNoticeReady: true
+      })
+      expect(screen.getByRole('note')).toHaveTextContent(
+        i18n.global.t(expanded ? 'agent.runNoticeExpanded' : 'agent.runNotice')
       )
-    ).not.toBeNull()
-  })
+    }
+  )
 
   it('hides the notice and persists the dismissal when X is clicked', async () => {
     mount()
@@ -50,4 +72,126 @@ describe('RunNoticeBanner', () => {
     mount()
     expect(screen.queryByRole('note')).toBeNull()
   })
+
+  it('keeps a dismissed targetless notice hidden when ready', () => {
+    localStorage.setItem(STORAGE_KEY, 'true')
+    mount({ workflowName: '', genericNoticeReady: true })
+    expect(screen.queryByRole('note')).toBeNull()
+  })
+
+  it('shows mismatch despite educational dismissal and preserves that dismissal when resolved', async () => {
+    localStorage.setItem(STORAGE_KEY, 'true')
+    const { rerender, emitted } = render(RunNoticeBanner, {
+      props: { workflowName: 'portrait', context: 'mismatch' },
+      global: { plugins: [i18n] }
+    })
+    expect(screen.getByRole('note')).toHaveTextContent(
+      i18n.global.t('agent.viewingDifferentWorkflow')
+    )
+    expect(screen.queryByRole('button', { name: 'Dismiss' })).toBeNull()
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Show target workflow: portrait' })
+    )
+    expect(emitted('showTarget')).toHaveLength(1)
+
+    await rerender({ context: undefined })
+    expect(screen.queryByRole('note')).toBeNull()
+    expect(localStorage.getItem(STORAGE_KEY)).toBe('true')
+  })
+
+  it('says the target is unavailable despite educational dismissal and offers a New chat action', async () => {
+    localStorage.setItem(STORAGE_KEY, 'true')
+    const { emitted } = render(RunNoticeBanner, {
+      props: { context: 'unavailable' },
+      global: { plugins: [i18n] }
+    })
+    expect(screen.getByRole('note')).toHaveTextContent(
+      i18n.global.t('agent.targetWorkflowUnavailable')
+    )
+    expect(screen.queryByRole('button', { name: 'Dismiss' })).toBeNull()
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.startNewChat')
+      })
+    )
+    expect(emitted('newChat')).toHaveLength(1)
+  })
+
+  describe('for a chat that follows the visible tab', () => {
+    function mountFollowing(props: Record<string, unknown> = {}) {
+      return render(RunNoticeBanner, {
+        props: {
+          workflowName: 'portrait',
+          followsVisibleWorkflow: true,
+          genericNoticeReady: true,
+          ...props
+        },
+        global: { plugins: [i18n] }
+      })
+    }
+
+    it.for([
+      { isDismissed: false, expectedStored: 'false' },
+      { isDismissed: true, expectedStored: 'true' }
+    ])(
+      'says nothing, with the edit notice dismissed: $isDismissed',
+      ({ isDismissed, expectedStored }) => {
+        if (isDismissed) localStorage.setItem(STORAGE_KEY, 'true')
+
+        mountFollowing()
+
+        expect(screen.queryByRole('note')).toBeNull()
+        expect(localStorage.getItem(STORAGE_KEY)).toBe(expectedStored)
+      }
+    )
+
+    it('shows the edit notice once the chat stops following', async () => {
+      const { rerender } = mountFollowing()
+      expect(screen.queryByRole('note')).toBeNull()
+
+      await rerender({ followsVisibleWorkflow: false })
+
+      expect(screen.getByRole('note')).toHaveTextContent(
+        'The agent can now edit portrait. It works on 1 workflow at a time.'
+      )
+    })
+
+    it('still shows context notices when following the visible tab', () => {
+      mountFollowing({ context: 'mismatch' })
+
+      expect(screen.getByRole('note')).toHaveTextContent(
+        i18n.global.t('agent.viewingDifferentWorkflow')
+      )
+    })
+
+    it('still shows the targetless notice when no workflow is named', () => {
+      mountFollowing({ workflowName: '' })
+
+      expect(screen.getByRole('note')).toHaveTextContent(
+        i18n.global.t('agent.runNotice')
+      )
+    })
+  })
+})
+
+it('hides only the introductory notice while greeting is visible', async () => {
+  const view = render(RunNoticeBanner, {
+    props: { workflowName: 'portrait', hideIntro: true },
+    global: { plugins: [i18n] }
+  })
+  expect(screen.queryByRole('note')).not.toBeInTheDocument()
+  await view.rerender({
+    workflowName: 'portrait',
+    hideIntro: true,
+    context: 'mismatch'
+  })
+  expect(screen.getByRole('note')).toHaveTextContent(
+    i18n.global.t('agent.viewingDifferentWorkflow')
+  )
+  await view.rerender({
+    workflowName: 'portrait',
+    hideIntro: false,
+    context: undefined
+  })
+  expect(screen.getByRole('note')).toHaveTextContent('portrait')
 })

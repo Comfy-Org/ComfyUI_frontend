@@ -1,0 +1,128 @@
+interface WidgetForFormProof {
+  name: string
+  serialize?: boolean
+}
+
+type WidgetFormRefusal =
+  | 'class_may_rewrite_payload'
+  | 'replayed_serialization'
+  | 'widgets_not_serialized'
+  | 'values_missing'
+  | 'values_replaced'
+  | 'values_not_positional'
+  | 'length_mismatch'
+  | 'duplicate_widget_name'
+  | 'unnameable_widget'
+
+export interface WidgetFormOptions {
+  serializeWidgets?: boolean
+  /** True when the payload was replayed from a previous save rather than built here. */
+  replayed: boolean
+  /** True when the node uses core's base serialization implementations. */
+  coreIsLastWriter: boolean
+}
+
+export type WidgetFormProof =
+  | { provable: true; refusal: null; order: string[] }
+  | { provable: false; refusal: WidgetFormRefusal; order: null }
+
+function refuse(refusal: WidgetFormRefusal): WidgetFormProof {
+  return { provable: false, refusal, order: null }
+}
+
+function serializingWidgets(
+  widgets: readonly WidgetForFormProof[]
+): WidgetForFormProof[] {
+  return widgets.filter((widget) => widget.serialize !== false)
+}
+
+function preconditionRefusal(
+  options: WidgetFormOptions
+): WidgetFormRefusal | null {
+  if (!options.coreIsLastWriter) return 'class_may_rewrite_payload'
+  if (options.replayed) return 'replayed_serialization'
+  return null
+}
+
+function provenValues(
+  widgets: readonly WidgetForFormProof[] | undefined,
+  serialised: { widgets_values?: unknown },
+  producedValues: unknown,
+  options: WidgetFormOptions
+): { values: unknown[] } | { refusal: WidgetFormRefusal } {
+  if (!widgets?.length || !options.serializeWidgets) {
+    return { refusal: 'widgets_not_serialized' }
+  }
+
+  const values = serialised.widgets_values
+  if (values === undefined) return { refusal: 'values_missing' }
+  if (producedValues === undefined || values !== producedValues) {
+    return {
+      refusal: Array.isArray(values)
+        ? 'values_replaced'
+        : 'values_not_positional'
+    }
+  }
+  if (!Array.isArray(values)) return { refusal: 'values_not_positional' }
+  return { values }
+}
+
+function addressableOrder(
+  serializing: readonly WidgetForFormProof[]
+): { order: string[] } | { refusal: WidgetFormRefusal } {
+  const order: string[] = []
+  const seen = new Set<string>()
+  for (const widget of serializing) {
+    const name = widget.name
+    if (typeof name !== 'string' || name.length === 0) {
+      return { refusal: 'unnameable_widget' }
+    }
+    if (seen.has(name)) return { refusal: 'duplicate_widget_name' }
+    seen.add(name)
+    order.push(name)
+  }
+  return { order }
+}
+
+/**
+ * Checks positional-array provenance: identity, cardinality and names. The caller must establish
+ * that the name/value correspondence did not change after core produced the values, and must
+ * pass as `producedValues` the array core built before the extension hook ran; passing the final
+ * array makes the identity check vacuous.
+ */
+export function proveWidgetForm(
+  widgets: readonly WidgetForFormProof[] | undefined,
+  serialised: { widgets_values?: unknown },
+  producedValues: unknown,
+  options: WidgetFormOptions
+): WidgetFormProof {
+  const precondition = preconditionRefusal(options)
+  if (precondition !== null) return refuse(precondition)
+
+  const proven = provenValues(widgets, serialised, producedValues, options)
+  if ('refusal' in proven) return refuse(proven.refusal)
+
+  const serializing = serializingWidgets(widgets ?? [])
+  if (serializing.length !== proven.values.length)
+    return refuse('length_mismatch')
+  if (serializing.length === 0) return refuse('widgets_not_serialized')
+
+  const addressed = addressableOrder(serializing)
+  if ('refusal' in addressed) return refuse(addressed.refusal)
+
+  return { provable: true, refusal: null, order: addressed.order }
+}
+
+/** True when object-shaped widget values have no form that interprets them. */
+export function needsFormButHasNone(serialised: {
+  widgets_values?: unknown
+  widgets_values_form?: unknown
+}): boolean {
+  const values = serialised.widgets_values
+  return (
+    values !== null &&
+    typeof values === 'object' &&
+    !Array.isArray(values) &&
+    serialised.widgets_values_form == null
+  )
+}

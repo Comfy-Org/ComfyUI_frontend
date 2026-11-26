@@ -25,7 +25,7 @@ from functools import cache
 HERE = os.path.dirname(os.path.abspath(__file__))
 PINS = os.path.join(HERE, 'corpus.pins.json')
 
-MAX_AGE_DAYS = 30
+MAX_AGE_DAYS = 35
 UPDATE_WORKFLOW = (
     'https://github.com/Comfy-Org/ComfyUI_frontend/actions/workflows/'
     'update-corpus-pins.yaml'

@@ -1,18 +1,24 @@
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { LLink } from '@/lib/litegraph/src/LLink'
-import type { Reroute } from '@/lib/litegraph/src/Reroute'
-import type { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
-import type { LinkConnectorEventMap } from '@/lib/litegraph/src/infrastructure/LinkConnectorEventMap'
 import type {
-  INodeInputSlot,
-  LinkNetwork,
-  Point,
-  SlotIndex
-} from '@/lib/litegraph/src/interfaces'
-import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
-import type { SubgraphInputNode } from '@/lib/litegraph/src/subgraph/SubgraphInputNode'
+  LGraphNode,
+  LLink,
+  Reroute,
+  SubgraphInput,
+  SubgraphInputNode
+} from '@comfyorg/graph-model/entityRegistry'
+import { transferLinkPresentation } from '@/core/graph/transferLinkPresentation'
+import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import type { LinkPresentation } from '@comfyorg/graph-model/linkPresentation'
+
+import type { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
+import type { LinkConnectorEventMap } from '@comfyorg/graph-model/LinkConnectorEventMap'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
+import type { SlotIndex } from '@comfyorg/graph-model/interfaces'
+import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
+import type { LinkNetwork } from '@comfyorg/graph-model/linkNetwork'
+
 import type { NodeLike } from '@/lib/litegraph/src/types/NodeLike'
-import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
+import { LinkDirection } from '@comfyorg/graph-model/globalEnums'
 
 import type { RenderLink } from './RenderLink'
 
@@ -27,6 +33,7 @@ export class ToInputFromIoNodeLink implements RenderLink {
   disconnectOnDrop: boolean
   readonly disconnectOrigin?: Point
   readonly isIoNodeLink = true
+  private readonly presentation: Readonly<LinkPresentation> | undefined
 
   constructor(
     readonly network: LinkNetwork,
@@ -47,6 +54,12 @@ export class ToInputFromIoNodeLink implements RenderLink {
     this.fromPos = fromReroute ? fromReroute.pos : fromSlot.pos
     this.existingLink = existingLink
     this.disconnectOnDrop = true
+    this.presentation = existingLink
+      ? useLinkPresentationStore().getPresentation(
+          graphScopeOf(node.subgraph),
+          existingLink.id
+        )
+      : undefined
 
     if (!existingLink) return
     const toNode = network.getNodeById(existingLink.target_id)
@@ -74,10 +87,12 @@ export class ToInputFromIoNodeLink implements RenderLink {
     )
       return
 
+    const scope = graphScopeOf(this.node.subgraph)
     const newLink = fromSlot.connect(input, node, fromReroute?.id)
 
     if (existingLink) {
       // Moving an existing link
+      transferLinkPresentation(scope, this.presentation, newLink?.id)
       const { input, inputNode } = existingLink.resolve(this.network)
       if (inputNode && input)
         this.node._disconnectNodeInput(inputNode, input, existingLink)
@@ -105,6 +120,8 @@ export class ToInputFromIoNodeLink implements RenderLink {
   ) {
     const { fromSlot, fromReroute } = this
 
+    const scope = graphScopeOf(this.node.subgraph)
+
     // Check before creating new link overwrites the value
     const floatingTerminus = fromReroute?.floating?.slotType === 'output'
 
@@ -112,6 +129,7 @@ export class ToInputFromIoNodeLink implements RenderLink {
     reroute.parentId = fromReroute?.id
 
     const newLink = fromSlot.connect(input, inputNode, link.parentId)
+    transferLinkPresentation(scope, this.presentation, newLink?.id)
 
     // Connecting from the final reroute of a floating reroute chain
     if (floatingTerminus) fromReroute.removeAllFloatingLinks()
@@ -168,4 +186,10 @@ export class ToInputFromIoNodeLink implements RenderLink {
 
     return true
   }
+}
+
+type RegisteredToInputFromIoNodeLink = ToInputFromIoNodeLink
+
+declare module '@comfyorg/graph-model/entityRegistry' {
+  interface ToInputFromIoNodeLink extends RegisteredToInputFromIoNodeLink {}
 }

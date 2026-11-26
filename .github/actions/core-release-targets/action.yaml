@@ -1,0 +1,27 @@
+name: Resolve viable core release targets
+description: Keep current and upcoming release lines plus the rollback window
+outputs:
+  active:
+    description: Space-separated viable release branches
+    value: ${{ steps.targets.outputs.active }}
+  retired:
+    description: Space-separated retired release branches
+    value: ${{ steps.targets.outputs.retired }}
+  pin-sha:
+    description: ComfyUI mainline commit used for the decision
+    value: ${{ steps.targets.outputs.pin-sha }}
+runs:
+  using: composite
+  steps:
+    - name: Read ComfyUI pin history
+      shell: bash
+      run: |
+        set -euo pipefail
+        git clone --bare --filter=blob:none --single-branch --branch master \
+          https://github.com/Comfy-Org/ComfyUI.git "$RUNNER_TEMP/comfyui-pin"
+    - name: Resolve release targets
+      id: targets
+      shell: bash
+      env:
+        COMFYUI_PIN_REPOSITORY: ${{ runner.temp }}/comfyui-pin
+      run: pnpm exec tsx tools/ci/src/cicd/core-release-targets.ts

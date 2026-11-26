@@ -8,46 +8,51 @@ const cleanup = vi.fn()
 
 const viewerOverrides: Record<string, unknown> = {}
 
-vi.mock('@/composables/useLoad3dViewer', () => ({
-  useLoad3dViewer: () => ({
-    initializeStandaloneViewer,
-    cleanup,
-    handleMouseEnter: vi.fn(),
-    handleMouseLeave: vi.fn(),
-    handleResize: vi.fn(),
-    handleBackgroundImageUpdate: vi.fn(),
-    exportModel: vi.fn(),
-    handleSeek: vi.fn(),
-    canUseGizmo: true,
-    canUseLighting: true,
-    canExport: true,
-    materialModes: ['original', 'normal', 'wireframe'],
-    hasSkeleton: false,
-    animations: [],
-    playing: false,
-    selectedSpeed: 1,
-    selectedAnimation: 0,
-    animationProgress: 0,
-    animationDuration: 0,
-    ...viewerOverrides
+vi.mock<unknown>(
+  import('@/extensions/core/load3d/composables/useLoad3dViewer'),
+  () => ({
+    useLoad3dViewer: () => ({
+      initializeStandaloneViewer,
+      cleanup,
+      handleMouseEnter: vi.fn(),
+      handleMouseLeave: vi.fn(),
+      handleResize: vi.fn(),
+      handleBackgroundImageUpdate: vi.fn(),
+      exportModel: vi.fn(),
+      handleSeek: vi.fn(),
+      canUseGizmo: true,
+      canUseLighting: true,
+      canExport: true,
+      materialModes: ['original', 'normal', 'wireframe'],
+      hasSkeleton: false,
+      animations: [],
+      playing: false,
+      selectedSpeed: 1,
+      selectedAnimation: 0,
+      animationProgress: 0,
+      animationDuration: 0,
+      ...viewerOverrides
+    })
   })
-}))
+)
 
-vi.mock('@/components/load3d/Load3DControls.vue', () => ({
-  default: {
-    name: 'Load3DControlsStub',
-    props: [
-      'sceneConfig',
-      'modelConfig',
-      'cameraConfig',
-      'lightConfig',
-      'canUseGizmo',
-      'canUseLighting',
-      'canExport',
-      'materialModes',
-      'hasSkeleton'
-    ],
-    template: `
+vi.mock<unknown>(
+  import('@/extensions/core/load3d/components/Load3DControls.vue'),
+  () => ({
+    default: {
+      name: 'Load3DControlsStub',
+      props: [
+        'sceneConfig',
+        'modelConfig',
+        'cameraConfig',
+        'lightConfig',
+        'canUseGizmo',
+        'canUseLighting',
+        'canExport',
+        'materialModes',
+        'hasSkeleton'
+      ],
+      template: `
       <div data-testid="load3d-controls"
            :data-can-use-gizmo="canUseGizmo"
            :data-can-use-lighting="canUseLighting"
@@ -56,12 +61,16 @@ vi.mock('@/components/load3d/Load3DControls.vue', () => ({
            :data-material-modes="JSON.stringify(materialModes)"
       />
     `
-  }
-}))
+    }
+  })
+)
 
-vi.mock('@/components/load3d/controls/AnimationControls.vue', () => ({
-  default: { template: '<div />' }
-}))
+vi.mock<unknown>(
+  import('@/extensions/core/load3d/components/controls/AnimationControls.vue'),
+  () => ({
+    default: { template: '<div />' }
+  })
+)
 
 describe('Preview3d', () => {
   beforeEach(() => {

@@ -1,0 +1,176 @@
+{
+  "schema_version": "agent-conversation.v2",
+  "source": {
+    "repo": "Comfy-Org/ComfyUI_frontend",
+    "suite": "agent",
+    "case_id": "agent-rec-clear-workflow",
+    "response_side": "recorded",
+    "note": "RECORDED from Comfy-Org/cloud services/agent running NON-standalone local full stack (Postgres + doc host, M2M identity headers) at http://127.0.0.1:6286 (frames: redis SUBSCRIBE channel:ws:<workspace>:u:<user>); NOT a production capture. cloud commit 9dc1da7dae2a1d40a9ca1f2a1f91cd9fd9e10900; model claude-opus-5; thread af8ffc98-ba31-413a-8361-07f1b5511887; messages b91cb105-1d49-486a-a00f-2d8b83e4629c; workflow b1979b02-7501-4b17-bb01-0f3adc08cf06 (seeded by throwaway turn c1feb241-4a2e-43ee-8287-a30b373fb6a7; turn 1 opens on a fresh workflow and switches to it first because the replay subscribes only on an agent_active_tab frame); agent_tool_calls parent rows ad08419c-6441-48b9-8970-cdc707611be2, ad7a103f-7636-4768-a52d-b13df992d4d0, be6d5742-b098-40a2-8827-0e7344db420f, c534bc28-5b62-4dca-ab22-7d86b7e1f7cf; rows agent-rec-clear-workflow.sw-c-clear-010-r3.rows.1.json; raw capture sha256 62b2411464ed1fe96bccee28909f37ac53921939465b79c8a19b9832e42727e8",
+    "capture": {
+      "backend": "Comfy-Org/cloud",
+      "thread_id": "af8ffc98-ba31-413a-8361-07f1b5511887",
+      "exported_at": "2026-09-04T19:03:13.066Z"
+    }
+  },
+  "workflow": {
+    "id": "b1979b02-7501-4b17-bb01-0f3adc08cf06",
+    "name": "Text to image",
+    "catalog": {
+      "types": {
+        "CLIPTextEncode": {
+          "widget_order": ["text"]
+        }
+      }
+    },
+    "seed": {
+      "nodes": [],
+      "links": []
+    }
+  },
+  "turns": [
+    {
+      "message_id": "b91cb105-1d49-486a-a00f-2d8b83e4629c",
+      "request": {
+        "content": "Switch to the open tab named Text to image. Add one CLIPTextEncode node, then clear the entire workflow using clear_canvas. Do not add anything afterward."
+      },
+      "response": [
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_active_tab",
+            "data": {
+              "name": "Text to image",
+              "workflow_id": "b1979b02-7501-4b17-bb01-0f3adc08cf06"
+            }
+          },
+          "at_ms": 0
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_tool_call",
+            "data": {
+              "duration_ms": 8,
+              "status": "success",
+              "tool_call_id": "toolu_01YCHu2NzKXNSjMU6YEN6U5i",
+              "tool_name": "switch_tab"
+            }
+          },
+          "at_ms": 2
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_tool_call",
+            "data": {
+              "duration_ms": 466,
+              "status": "success",
+              "tool_call_id": "toolu_01PwvPexti8D2afVbiCUu8Hn",
+              "tool_name": "ls_nodes"
+            }
+          },
+          "at_ms": 3290
+        },
+        {
+          "kind": "graph_ops",
+          "ops": [
+            {
+              "op": "add_node",
+              "pos": [40, 60],
+              "node": {
+                "id": 3802035302970761,
+                "pos": [40, 60],
+                "mode": 0,
+                "size": [240, 86],
+                "type": "CLIPTextEncode",
+                "flags": {},
+                "order": 0,
+                "inputs": [
+                  {
+                    "link": null,
+                    "name": "clip",
+                    "type": "CLIP"
+                  }
+                ],
+                "outputs": [
+                  {
+                    "name": "CONDITIONING",
+                    "type": "CONDITIONING",
+                    "links": []
+                  }
+                ],
+                "properties": {},
+                "widgets_values": [null]
+              },
+              "node_id": 3802035302970761,
+              "class_type": "CLIPTextEncode"
+            }
+          ],
+          "at_ms": 8072
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_tool_call",
+            "data": {
+              "duration_ms": 904,
+              "status": "success",
+              "tool_call_id": "toolu_01QUGd74nqV7CUUimFNqErNV",
+              "tool_name": "add_node"
+            }
+          },
+          "at_ms": 8072
+        },
+        {
+          "kind": "graph_ops",
+          "ops": [
+            {
+              "op": "clear",
+              "removed_nodes": [3802035302970761]
+            }
+          ],
+          "at_ms": 16756
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_tool_call",
+            "data": {
+              "duration_ms": 150,
+              "status": "success",
+              "tool_call_id": "toolu_01W3uV6Lqjnc42SLEUKk7Uzt",
+              "tool_name": "clear_canvas"
+            }
+          },
+          "at_ms": 16756
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_message_delta",
+            "data": {
+              "delta": "Done — focus is on the \"Text to image\" tab, the text node was added, and the canvas is now empty as you asked. Nothing else was added."
+            }
+          },
+          "at_ms": 18840
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_message_done",
+            "data": {
+              "usage": {
+                "cache_creation_input_tokens": 1373,
+                "cache_read_input_tokens": 192061,
+                "input_tokens": 10,
+                "output_tokens": 784,
+                "total_tokens": 794
+              }
+            }
+          },
+          "at_ms": 18847
+        }
+      ]
+    }
+  ]
+}

@@ -2,11 +2,12 @@ import { expect } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
 
 import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
+import { TestIds } from '@e2e/fixtures/selectors'
 import type { Position } from '@e2e/fixtures/types'
 import { nextFrame } from '@e2e/fixtures/utils/timing'
-import type { Point } from '@/lib/litegraph/src/litegraph'
-import type { NodeId } from '@/types/nodeId'
-import type { RerouteId } from '@/types/rerouteId'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
 
 type NodeGeometry = {
   inputs: Point[]
@@ -15,19 +16,70 @@ type NodeGeometry = {
   size: Point
 }
 
+export async function waitForCanvasViewToSettle(page: Page): Promise<void> {
+  await page.waitForFunction(
+    () =>
+      new Promise<boolean>((resolve) => {
+        const { ds } = window.app!.canvas
+        let previous = [ds.scale, ds.offset[0], ds.offset[1]]
+        let stableFrames = 0
+
+        const check = () => {
+          const current = [ds.scale, ds.offset[0], ds.offset[1]]
+          stableFrames = current.every(
+            (value, index) => value === previous[index]
+          )
+            ? stableFrames + 1
+            : 0
+          previous = current
+          if (stableFrames === 5) resolve(true)
+          else requestAnimationFrame(check)
+        }
+
+        requestAnimationFrame(check)
+      })
+  )
+}
+
 export class CanvasHelper {
+  readonly textareaWidgets: Locator
+
   constructor(
     private page: Page,
-    private canvas: Locator,
-    private resetViewButton: Locator
-  ) {}
+    private canvas: Locator
+  ) {
+    this.textareaWidgets = page.getByTestId('dom-widget-textarea')
+  }
 
-  async resetView(): Promise<void> {
-    if (await this.resetViewButton.isVisible()) {
-      await this.resetViewButton.click()
-    }
-    await this.page.mouse.move(10, 10)
-    await nextFrame(this.page)
+  async getMinimapRightInset(): Promise<number> {
+    const canvasRight = await this.canvas.evaluate(
+      (el) => el.getBoundingClientRect().right
+    )
+    const minimapRight = await this.page
+      .getByTestId(TestIds.canvas.minimapContainer)
+      .evaluate((el) => el.getBoundingClientRect().right)
+    return canvasRight - minimapRight
+  }
+
+  async getNodesOutsideViewportCount(): Promise<number> {
+    return this.page.evaluate(() => {
+      const app = window.app!
+      const view = app.canvas.canvas.getBoundingClientRect()
+      return app.graph.nodes.filter((node) => {
+        const bounds = node.getBounding()
+        const [left, top] = app.canvasPosToClientPos([bounds[0], bounds[1]])
+        const [right, bottom] = app.canvasPosToClientPos([
+          bounds[0] + bounds[2],
+          bounds[1] + bounds[3]
+        ])
+        return (
+          left < view.left ||
+          top < view.top ||
+          right > view.right ||
+          bottom > view.bottom
+        )
+      }).length
+    })
   }
 
   async zoom(deltaY: number, steps: number = 1): Promise<void> {
@@ -175,10 +227,219 @@ export class CanvasHelper {
     await nextFrame(this.page)
   }
 
-  async getOffset(): Promise<[number, number]> {
-    return this.page.evaluate(
-      () => [...window.app!.canvas.ds.offset] as [number, number]
+  async getOffset(): Promise<Point> {
+    return this.page.evaluate(() => [...window.app!.canvas.ds.offset] as Point)
+  }
+
+  async getNavigationWidgetHitTargets() {
+    return this.textareaWidgets.evaluateAll((elements) => {
+      const canvas = window.app!.canvas.canvas.getBoundingClientRect()
+      return elements.map((element) => {
+        const rect = element.getBoundingClientRect()
+        const left = Math.max(rect.left, canvas.left)
+        const right = Math.min(rect.right, canvas.right)
+        const top = Math.max(rect.top, canvas.top)
+        const bottom = Math.min(rect.bottom, canvas.bottom)
+        return {
+          visible: element.checkVisibility(),
+          leftClipped: rect.left < canvas.left,
+          hits: [0.25, 0.75].map((fraction) =>
+            document
+              .elementsFromPoint(
+                left + (right - left) * fraction,
+                (top + bottom) / 2
+              )
+              .includes(element)
+          )
+        }
+      })
+    })
+  }
+
+  async snapshotNavigation() {
+    await this.waitForViewToSettle()
+    const prompts = await this.textareaWidgets.evaluateAll((elements) =>
+      elements.map((element) => {
+        if (!(element instanceof HTMLTextAreaElement))
+          throw new Error('Expected a prompt textarea')
+        const { x, y, width, height } = element.getBoundingClientRect()
+        return { x, y, width, height, value: element.value }
+      })
     )
+    return this.page.evaluate((prompts) => {
+      const { canvas, graph } = window.app!
+      const element = canvas.canvas
+      const rect = element.getBoundingClientRect()
+      const context = element.getContext('2d')!
+      const dpr = element.width / rect.width
+      const { scale, offset } = canvas.ds
+      const samples = graph.nodes.flatMap((node) =>
+        [
+          [8, -16],
+          [node.size[0] - 8, -16],
+          [8, 34],
+          [node.size[0] - 8, 34]
+        ].flatMap(([dx, dy]) => {
+          const x = (node.pos[0] + dx + offset[0]) * scale
+          const y = (node.pos[1] + dy + offset[1]) * scale
+          if (x < 3 || y < 3 || x > rect.width - 3 || y > rect.height - 3)
+            return []
+          return [
+            {
+              x: x + rect.left,
+              y: y + rect.top,
+              rgba: Array.from(
+                context.getImageData(
+                  Math.round(x * dpr),
+                  Math.round(y * dpr),
+                  1,
+                  1
+                ).data
+              )
+            }
+          ]
+        })
+      )
+      return {
+        scale,
+        offset: [...offset],
+        left: rect.left,
+        top: rect.top,
+        selected: Object.keys(canvas.selected_nodes).sort(),
+        nodes: graph.nodes.map((node) => ({
+          id: node.id,
+          pos: [...node.pos],
+          size: [...node.size]
+        })),
+        prompts,
+        samples
+      }
+    }, prompts)
+  }
+
+  async expectNavigationTransform(
+    before: Awaited<ReturnType<CanvasHelper['snapshotNavigation']>>,
+    {
+      ratio = 1,
+      pan = [0, 0],
+      anchor = [before.left, before.top]
+    }: {
+      ratio?: number
+      pan?: Point
+      anchor?: Point
+    }
+  ): Promise<void> {
+    await expect(async () => {
+      const after = await this.snapshotNavigation()
+      expect(after.scale, 'Zoom ratio').toBeCloseTo(before.scale * ratio, 5)
+      expect(
+        after.offset[0],
+        'Horizontal displacement and zoom anchor'
+      ).toBeCloseTo(
+        before.offset[0] +
+          ((anchor[0] - before.left) / before.scale) * (1 / ratio - 1) +
+          pan[0] / (before.scale * ratio),
+        4
+      )
+      expect(
+        after.offset[1],
+        'Vertical displacement and zoom anchor'
+      ).toBeCloseTo(
+        before.offset[1] +
+          ((anchor[1] - before.top) / before.scale) * (1 / ratio - 1) +
+          pan[1] / (before.scale * ratio),
+        4
+      )
+      expect(after.nodes, 'Navigation must not move or resize nodes').toEqual(
+        before.nodes
+      )
+      expect(after.selected, 'Navigation preserves selection').toEqual(
+        before.selected
+      )
+      expect(before.prompts).toHaveLength(2)
+      expect(after.prompts).toHaveLength(2)
+      after.prompts.forEach((prompt, index) => {
+        const previous = before.prompts[index]
+        expect(prompt.x, 'Prompt horizontal placement').toBeCloseTo(
+          anchor[0] + (previous.x - anchor[0]) * ratio + pan[0],
+          0
+        )
+        expect(prompt.y, 'Prompt vertical placement').toBeCloseTo(
+          anchor[1] + (previous.y - anchor[1]) * ratio + pan[1],
+          0
+        )
+        expect(prompt.width, 'Prompt width').toBeCloseTo(
+          previous.width * ratio,
+          0
+        )
+        expect(prompt.height, 'Prompt height').toBeCloseTo(
+          previous.height * ratio,
+          0
+        )
+        expect(prompt.value, 'Prompt text is preserved').toBe(previous.value)
+      })
+      const samples = await this.page.evaluate(
+        ({ samples, ratio, pan, anchor }) => {
+          const element = window.app!.canvas.canvas
+          const rect = element.getBoundingClientRect()
+          const context = element.getContext('2d')!
+          const dpr = element.width / rect.width
+          return samples.flatMap((sample) => {
+            const x =
+              anchor[0] + (sample.x - anchor[0]) * ratio + pan[0] - rect.left
+            const y =
+              anchor[1] + (sample.y - anchor[1]) * ratio + pan[1] - rect.top
+            if (x < 3 || y < 3 || x > rect.width - 3 || y > rect.height - 3)
+              return []
+            const actual = Array.from(
+              context.getImageData(
+                Math.round(x * dpr),
+                Math.round(y * dpr),
+                1,
+                1
+              ).data
+            )
+            return [{ x, y, expected: sample.rgba, actual }]
+          })
+        },
+        { samples: before.samples, ratio, pan, anchor }
+      )
+      expect(samples.length, 'Visible canvas samples').toBeGreaterThan(3)
+      expect(
+        samples.filter(({ expected, actual }) =>
+          actual.some((value, index) => Math.abs(value - expected[index]) > 2)
+        ),
+        'Canvas pixels follow the gesture independently of transform state'
+      ).toEqual([])
+    }).toPass({ timeout: 5_000 })
+  }
+
+  async setOffset(offset: Point): Promise<void> {
+    await this.page.evaluate((offset) => {
+      const canvas = window.app!.canvas
+      canvas.ds.offset = offset
+      canvas.setDirty(true, true)
+    }, offset)
+    await nextFrame(this.page)
+  }
+
+  async getElementWidth(): Promise<number> {
+    return this.page.evaluate(() => window.app!.canvasEl.width)
+  }
+
+  async getVisibleNodeCount(): Promise<number> {
+    return this.page.evaluate(() => {
+      const { canvas } = window.app!
+      if (!canvas.graph) return 0
+      canvas.ds.computeVisibleArea(canvas.viewport)
+      return canvas.graph.nodes.filter((node) =>
+        canvas.ds.visible_area.overlaps(node.boundingRect)
+      ).length
+    })
+  }
+
+  async waitForViewToSettle(): Promise<void> {
+    await waitForCanvasViewToSettle(this.page)
   }
 
   async getNodeTitleHeight(): Promise<number> {
@@ -313,8 +574,10 @@ export class CanvasHelper {
 
       expect(reroutes).toHaveLength(Object.keys(expectedReroutes).length)
       for (const reroute of reroutes) {
+        if (!(reroute.id in expectedReroutes)) {
+          throw new Error(`Unexpected reroute ${reroute.id}`)
+        }
         const expected = expectedReroutes[reroute.id]
-        if (!expected) throw new Error(`Unexpected reroute ${reroute.id}`)
         expect(reroute.x).toBeCloseTo(expected.x, 1)
         expect(reroute.y).toBeCloseTo(expected.y, 1)
       }

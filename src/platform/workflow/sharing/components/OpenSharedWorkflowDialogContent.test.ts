@@ -1,4 +1,4 @@
-/* eslint-disable testing-library/no-container, testing-library/no-node-access */
+/* oxlint-disable testing-library/no-container, testing-library/no-node-access */
 import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
@@ -10,12 +10,15 @@ import type { SharedWorkflowPayload } from '@/platform/workflow/sharing/types/sh
 
 const mockGetSharedWorkflow = vi.fn()
 
-vi.mock('@/platform/workflow/sharing/services/workflowShareService', () => ({
-  SharedWorkflowLoadError: class extends Error {},
-  useWorkflowShareService: () => ({
-    getSharedWorkflow: mockGetSharedWorkflow
+vi.mock<unknown>(
+  import('@/platform/workflow/sharing/services/workflowShareService'),
+  () => ({
+    SharedWorkflowLoadError: class extends Error {},
+    useWorkflowShareService: () => ({
+      getSharedWorkflow: mockGetSharedWorkflow
+    })
   })
-}))
+)
 
 const i18n = createI18n({
   legacy: false,
@@ -97,9 +100,10 @@ describe('OpenSharedWorkflowDialogContent', () => {
 
     it('shows dialog title in header while loading', () => {
       mockGetSharedWorkflow.mockReturnValue(new Promise(() => {}))
-      const { container } = renderComponent()
-      const header = container.querySelector('header h2') as HTMLElement
-      expect(header.textContent).toBe('Open shared workflow')
+      renderComponent()
+      expect(
+        screen.getByRole('heading', { name: 'Open shared workflow' })
+      ).toBeInTheDocument()
     })
   })
 
@@ -300,7 +304,7 @@ describe('OpenSharedWorkflowDialogContent', () => {
       expect(container.textContent).not.toContain(
         'Opening the workflow will create a new copy in your workspace'
       )
-      expect(screen.getByTestId('open-shared-workflow-close')).toBeEnabled()
+      expect(screen.getByRole('button', { name: 'Close' })).toBeEnabled()
       expect(screen.getByTestId('open-shared-workflow-cancel')).toBeDisabled()
       expect(
         screen.getByTestId('open-shared-workflow-open-without-importing')

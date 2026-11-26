@@ -1,5 +1,7 @@
 import type { LocationQuery, LocationQueryRaw } from 'vue-router'
 
+import { safeSessionStorage } from '@/base/storage/safeStorage'
+
 const STORAGE_PREFIX = 'Comfy.PreservedQuery.'
 const preservedQueries = new Map<string, Record<string, string>>()
 
@@ -25,37 +27,43 @@ const isValidQueryRecord = (
 
 const readFromStorage = (namespace: string): Record<string, string> | null => {
   try {
-    const raw = sessionStorage.getItem(getStorageKey(namespace))
+    const raw = safeSessionStorage.getItem(getStorageKey(namespace))
     if (!raw) return null
 
     const parsed = JSON.parse(raw)
     if (!isValidQueryRecord(parsed)) {
       console.warn('[preservedQuery] invalid storage format')
-      sessionStorage.removeItem(getStorageKey(namespace))
+      safeSessionStorage.removeItem(getStorageKey(namespace))
       return null
     }
     return parsed
-  } catch (error) {
+  } catch {
     console.warn('[preservedQuery] storage operation failed')
-    sessionStorage.removeItem(getStorageKey(namespace))
+    removeFromStorage(namespace)
     return null
   }
+}
+
+const removeFromStorage = (namespace: string) => {
+  safeSessionStorage.removeItem(getStorageKey(namespace))
 }
 
 const writeToStorage = (
   namespace: string,
   payload: Record<string, string> | null
 ) => {
-  try {
-    if (!payload || Object.keys(payload).length === 0) {
-      sessionStorage.removeItem(getStorageKey(namespace))
-      return
-    }
-    sessionStorage.setItem(getStorageKey(namespace), JSON.stringify(payload))
-  } catch (error) {
+  if (!payload || Object.keys(payload).length === 0) {
+    safeSessionStorage.removeItem(getStorageKey(namespace))
+    return
+  }
+  const result = safeSessionStorage.setItem(
+    getStorageKey(namespace),
+    JSON.stringify(payload)
+  )
+  if (result !== 'ok') {
     console.warn('[preservedQuery] failed to write storage', {
       namespace,
-      error
+      result
     })
   }
 }
@@ -100,9 +108,9 @@ export const capturePreservedQuery = (
 
   hydratePreservedQuery(namespace)
   const payload: Record<string, string> = {
-    ...(preservedQueries.get(namespace) ?? {})
+    ...preservedQueries.get(namespace)
   }
-  let changed = false
+  const state = { changed: false }
 
   keys.forEach((key) => {
     if (!Object.hasOwn(query, key)) return
@@ -110,19 +118,17 @@ export const capturePreservedQuery = (
     const value = readQueryParam(query[key])
     if (value) {
       payload[key] = value
-      changed = true
+      state.changed = true
       return
     }
 
     if (key in payload) {
       delete payload[key]
-      changed = true
+      state.changed = true
     }
   })
 
-  if (!changed) {
-    return
-  }
+  if (!state.changed) return
 
   if (Object.keys(payload).length === 0) {
     preservedQueries.delete(namespace)
@@ -147,7 +153,7 @@ export const mergePreservedQueryIntoQuery = (
   const payload = preservedQueries.get(namespace)
   if (!payload) return undefined
 
-  const nextQuery: LocationQueryRaw = { ...(query || {}) }
+  const nextQuery: LocationQueryRaw = { ...query }
   let changed = false
 
   for (const [key, value] of Object.entries(payload)) {

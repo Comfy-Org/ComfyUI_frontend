@@ -1,8 +1,8 @@
-import { useExtensionService } from '@/services/extensionService'
+import type { ComfyExtension } from '@/types/comfy'
 
 const HIDDEN_WIDGETS = new Set(['width', 'height', 'bg_color'])
 
-useExtensionService().registerExtension({
+export const painterExtension: ComfyExtension = {
   name: 'Comfy.Painter',
 
   nodeCreated(node) {
@@ -15,8 +15,8 @@ useExtensionService().registerExtension({
 
     for (const widget of node.widgets ?? []) {
       if (HIDDEN_WIDGETS.has(widget.name)) {
-        widget.options.hidden = true
+        widget.hidden = true
       }
     }
   }
-})
+}

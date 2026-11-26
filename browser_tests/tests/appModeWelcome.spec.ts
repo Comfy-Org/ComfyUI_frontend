@@ -4,9 +4,8 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 
 test.describe('App mode welcome states', { tag: '@ui' }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.appMode.enableLinearMode()
-    await comfyPage.appMode.suppressVueNodeSwitchPopup()
+  test.use({
+    initialSettings: { 'Comfy.AppBuilder.VueNodeSwitchDismissed': true }
   })
 
   test('Empty workflow text is visible when no nodes', async ({

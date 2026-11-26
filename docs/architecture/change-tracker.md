@@ -7,7 +7,7 @@ history by comparing serialized graph snapshots.
 
 `captureCanvasState()` is the core method. It:
 
-1. Serializes the current graph via `app.rootGraph.serialize()`
+1. Serializes its own workflow's graph via `workflow.graph.serialize()`
 2. Deep-compares the result against the last known `activeState`
 3. If different, pushes `activeState` onto `undoQueue` and replaces it
 
@@ -18,9 +18,18 @@ links, etc.) are only captured when `captureCanvasState()` is explicitly trigger
 workflow's tracker. Calling it on an inactive tracker logs a warning and
 returns early, preventing cross-workflow data corruption.
 
+**INVARIANT:** `captureCanvasState()` and `squashState()` serialize the
+workflow's own `LGraph`, not whichever graph `app.rootGraph` currently shows.
+Until the workflow has adopted a graph (`adoptGraph()` runs at the end of its
+first load) there is nothing to serialize and both return without capturing.
+The node-history helpers read `app.rootGraph`, so they assume the tracker's
+workflow is the one on screen.
+
 ## Automatic Triggers
 
-These are set up once in `ChangeTracker.init()`:
+`ChangeTracker.init()` runs once at startup. It hands the class to the workflow
+store (`provideChangeTracker`), which constructs a tracker for each workflow it
+loads, and installs these triggers:
 
 | Trigger                             | Event / Hook                                       | What It Catches                                     |
 | ----------------------------------- | -------------------------------------------------- | --------------------------------------------------- |
@@ -108,8 +117,9 @@ The `litegraph:canvas` custom event also supports this with `before-change` /
 
 - `captureCanvasState()` asserts it is called on the active workflow's tracker;
   inactive trackers get an early return (and a warning log)
-- `captureCanvasState()` is a no-op during `loadGraphData` (guarded by
-  `isLoadingGraph`) to prevent cross-workflow corruption
+- `captureCanvasState()` is a no-op while `loadGraphData` is configuring the
+  tracker's graph (guarded by `isGraphLoading`) to prevent cross-workflow
+  corruption
 - `captureCanvasState()` is a no-op during undo/redo (guarded by
   `_restoringState`) to prevent undo history corruption
 - `captureCanvasState()` is a no-op when `changeCount > 0` (inside a transaction)

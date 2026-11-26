@@ -21,7 +21,7 @@
           <i
             :class="
               cn(
-                'icon-[lucide--chevron-right] size-4 text-muted-foreground transition-transform',
+                'icon-[lucide--chevron-right] text-muted-foreground transition-transform',
                 expandedSectionId === section.id && 'rotate-90'
               )
             "
@@ -46,12 +46,14 @@
                 onThumbnailError($event.name, $event.previewUrl)
               "
             />
-            <span
-              v-tooltip="buildTooltipConfig(item.name)"
-              class="truncate text-xs text-base-foreground"
-            >
-              {{ item.name }}
-            </span>
+            <Tooltip :disabled="!item.name">
+              <TooltipTrigger as-child>
+                <span class="truncate text-xs text-foreground">
+                  {{ item.name }}
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>{{ item.name }}</TooltipContent>
+            </Tooltip>
             <span
               v-if="item.in_library"
               class="ml-auto shrink-0 text-xs text-muted-foreground"
@@ -72,12 +74,14 @@ import {
   CollapsibleTrigger
 } from 'reka-ui'
 
-import type { AssetInfo } from '@/schemas/apiSchema'
+import type { AssetInfo } from '@comfyorg/ingest-types'
 import ShareAssetThumbnail from '@/platform/workflow/sharing/components/ShareAssetThumbnail.vue'
 import { useAssetSections } from '@/platform/workflow/sharing/composables/useAssetSections'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
+import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
+import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import { cn } from '@comfyorg/tailwind-utils'
-import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 
 const { items } = defineProps<{
   items: AssetInfo[]

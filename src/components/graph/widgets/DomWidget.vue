@@ -3,6 +3,7 @@
     v-show="widgetState.visible"
     ref="widgetElement"
     class="dom-widget size-full"
+    :data-widget-id="widget.id"
     :title="tooltip"
     :style="style"
   >
@@ -12,6 +13,7 @@
       class="size-full"
       :model-value="widget.value"
       :widget="widget"
+      :node-id="widget.node.id"
       v-bind="widget.props"
       @update:model-value="emit('update:widgetValue', $event)"
     />
@@ -30,6 +32,8 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { isComponentWidget, isDOMWidget } from '@/scripts/domWidget'
 import type { DomWidgetState } from '@/stores/domWidgetStore'
+
+import { reportDomWidgetMountFailure } from './domWidgetMountReporting'
 
 const { widgetState } = defineProps<{
   widgetState: DomWidgetState
@@ -177,17 +181,21 @@ const mountElementIfVisible = () => {
     return
   }
 
-  widget.element.classList.add('h-full', 'w-full')
-  widgetElement.value.appendChild(widget.element)
+  try {
+    widget.element.classList.add('h-full', 'w-full')
+    widgetElement.value.appendChild(widget.element)
+  } catch (error) {
+    reportDomWidgetMountFailure(error, {
+      nodeId: widget.node.id,
+      nodeType: widget.node.type,
+      widgetName: widget.name
+    })
+  }
 }
 
 // Check on mount - but only after next tick to ensure visibility is calculated
 onMounted(() => {
-  nextTick(() => {
-    mountElementIfVisible()
-  }).catch((error) => {
-    console.error('Error mounting DOM widget element:', error)
-  })
+  void nextTick(mountElementIfVisible)
 })
 
 // And watch for visibility changes

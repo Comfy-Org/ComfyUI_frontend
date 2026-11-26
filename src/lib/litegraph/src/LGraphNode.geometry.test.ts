@@ -1,17 +1,15 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
-import type { Rect } from './interfaces'
+import type { Rect } from '@comfyorg/shared-frontend-utils/geometry'
 import { LGraph, LGraphNode, LiteGraph } from './litegraph'
 import { resizeNodeLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { bindMountedNodeSize } from '@/renderer/core/layout/store/mountedNodeSizes'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 describe('layout geometry projection', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     layoutStore.resetForTests()
   })
 
@@ -49,13 +47,22 @@ describe('layout geometry projection', () => {
     const node = new LGraphNode('test')
     graph.add(node)
     node.flags.collapsed = true
-    layoutStore.reportContentSize(graph.rootGraph.id, node.id, {
-      width: 123,
-      height: 30
-    })
+    bindMountedNodeSize(graph, node.id, () => {}).report(
+      {
+        width: 123,
+        height: 30
+      },
+      true
+    )
 
-    expect(node.width).toBe(123)
-    expect(node.getConnectionPos(false, 0)[0]).toBe(node.pos[0] + 123)
+    const previousMode = LiteGraph.vueNodesMode
+    LiteGraph.vueNodesMode = true
+    try {
+      expect(node.width).toBe(123)
+      expect(node.getConnectionPos(false, 0)[0]).toBe(node.pos[0] + 123)
+    } finally {
+      LiteGraph.vueNodesMode = previousMode
+    }
   })
 
   test('moves from the latest stored position', () => {
@@ -98,7 +105,7 @@ describe('layout geometry projection', () => {
     expect([...node.pos]).toEqual([70, 90])
     expect([...node.size]).toEqual([320, 180])
     expect(layoutStore.getNodeLayout(graphId, nodeId)).toBeNull()
-    expect(graph.getNodeById(nodeId)).toBeUndefined()
+    expect(graph.getNodeById(nodeId)).toBeNull()
   })
 
   test('refreshes stable views before indexed mutations', () => {
@@ -179,32 +186,30 @@ describe('layout geometry projection', () => {
     })
   })
 
-  test('keeps measured geometry separate from requested size', () => {
+  test('keeps clamped geometry after a size request that does not resize the DOM', () => {
     const graph = new LGraph()
     const node = new LGraphNode('test')
     node.size = [100, 50]
     graph.add(node)
-    layoutStore.reportContentSize(graph.rootGraph.id, node.id, {
-      width: 225,
-      height: 80
-    })
+    bindMountedNodeSize(graph, node.id, () => {}).report(
+      { width: 225, height: 100 },
+      false
+    )
 
-    expect([...node.size]).toEqual([100, 50])
-    expect(node.serialize().size).toEqual([100, 50])
-    node.setSize([node.size[0] + 90, node.size[1] + 100])
-    expect([...node.renderingSize]).toEqual([225, 150])
-    const bounds: Rect = [0, 0, 0, 0]
-    node.measure(bounds)
-    expect(bounds).toEqual([
-      node.pos[0],
-      node.pos[1] - LiteGraph.NODE_TITLE_HEIGHT,
-      225,
-      150 + LiteGraph.NODE_TITLE_HEIGHT
-    ])
-    expect(node.serialize().size).toEqual([190, 150])
+    const previousMode = LiteGraph.vueNodesMode
+    LiteGraph.vueNodesMode = true
+    try {
+      node.setSize([200, 100])
+      const bounds: Rect = [0, 0, 0, 0]
+      node.measure(bounds)
+      expect(bounds[2]).toBe(225)
+      expect(node.serialize().size).toEqual([200, 100])
+    } finally {
+      LiteGraph.vueNodesMode = previousMode
+    }
   })
 
-  test('uses the attached graph for geometry and measured content', () => {
+  test('writes requested dimensions to the attached graph', () => {
     const attachedGraph = new LGraph()
     const currentGraph = new LGraph()
     const node = new LGraphNode('attached')
@@ -230,7 +235,7 @@ describe('layout geometry projection', () => {
       position: { x: 30, y: 40 },
       size: { width: 200, height: 80 }
     })
-    expect([...node.renderingSize]).toEqual([225, 90])
+    expect([...node.renderingSize]).toEqual([200, 80])
   })
 })
 

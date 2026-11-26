@@ -123,14 +123,13 @@ describe('waits', () => {
 })
 
 describe('structure', () => {
-  it('wraps the test with tags and a view reset', () => {
+  it('wraps the test with tags', () => {
     const code = transform(CODEGEN, {
       testName: 'demo',
       tags: ['@canvas', '@smoke']
     }).code
     expect(code).toContain(`test.describe("demo"`)
     expect(code).toContain(`tag: ["@canvas", "@smoke"]`)
-    expect(code).toContain('comfyPage.canvasOps.resetView()')
   })
 
   it('does not wrap a describe block twice', () => {

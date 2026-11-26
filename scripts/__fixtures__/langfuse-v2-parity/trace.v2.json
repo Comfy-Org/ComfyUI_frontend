@@ -1,0 +1,336 @@
+{
+ "data": [
+  {
+   "id": "obs-1",
+   "traceId": "trace-1",
+   "type": "AGENT",
+   "name": "agent.turn",
+   "startTime": "2026-10-27T11:58:58.143Z",
+   "endTime": "2026-10-27T11:58:58.265Z",
+   "parentObservationId": "obs-2",
+   "input": "text-1",
+   "output": "text-2",
+   "metadata": {
+    "attributes.comfy.thread_id": "thread-1",
+    "attributes.comfy.turn_id": "turn-1",
+    "attributes.gen_ai.operation.name": "invoke_agent"
+   }
+  },
+  {
+   "id": "obs-3",
+   "traceId": "trace-1",
+   "type": "GENERATION",
+   "name": "agent.model_round",
+   "startTime": "2026-10-27T11:58:51.895Z",
+   "endTime": "2026-10-27T11:58:58.079Z",
+   "parentObservationId": "obs-2",
+   "input": "[{\"role\":\"text-3\",\"text\":\"text-4\"},{\"role\":\"text-5\",\"text\":\"text-6\"},{\"role\":\"text-3\",\"text\":\"text-7\"},{\"role\":\"text-5\",\"text\":\"text-8\"},{\"role\":\"text-3\",\"text\":\"text-9\"},{\"role\":\"text-5\",\"text\":\"text-10\"},{\"role\":\"text-3\",\"text\":\"text-11\"},{\"role\":\"text-5\",\"text\":\"text-12\"},{\"role\":\"text-3\",\"text\":\"text-13\"},{\"role\":\"text-5\",\"text\":\"text-14\"},{\"role\":\"text-3\",\"text\":\"text-15\"},{\"role\":\"text-5\",\"tool_calls\":[{\"id\":\"text-16\",\"name\":\"text-17\",\"input\":{\"note\":\"text-18\",\"node_filter\":\"text-19\"}}]},{\"role\":\"text-3\",\"tool_results\":[{\"tool_call_id\":\"text-16\",\"name\":\"text-17\",\"content\":\"text-20\",\"content_ref\":\"text-21\"}]},{\"role\":\"text-5\",\"tool_calls\":[{\"id\":\"text-22\",\"name\":\"text-23\",\"input\":{\"address\":\"text-24\",\"value\":\"text-25\"}},{\"id\":\"text-26\",\"name\":\"text-27\",\"input\":{\"note\":\"text-28\"}}]},{\"role\":\"text-3\",\"tool_results\":[{\"tool_call_id\":\"text-22\",\"name\":\"text-23\",\"content\":\"text-29\"},{\"tool_call_id\":\"text-26\",\"name\":\"text-27\",\"content\":\"text-30\"}]},{\"role\":\"text-5\",\"tool_calls\":[{\"id\":\"text-31\",\"name\":\"text-32\",\"input\":{\"note\":\"text-33\"}}]},{\"role\":\"text-3\",\"tool_results\":[{\"tool_call_id\":\"text-31\",\"name\":\"text-32\",\"content\":\"text-34\",\"runs_reserved\":1}]},{\"role\":\"text-5\",\"text\":\"text-35\",\"tool_calls\":[{\"id\":\"text-36\",\"name\":\"text-37\",\"input\":{\"job_id\":\"text-38\"}}]},{\"role\":\"text-3\",\"tool_results\":[{\"tool_call_id\":\"text-36\",\"name\":\"text-37\",\"content\":\"text-39\"}]},{\"role\":\"text-5\",\"tool_calls\":[{\"id\":\"text-40\",\"name\":\"text-41\",\"input\":{\"asset_id\":\"text-42\"}}]},{\"role\":\"text-3\",\"tool_results\":[{\"tool_call_id\":\"text-40\",\"name\":\"text-41\",\"content\":\"text-43\",\"images\":[{\"media_type\":\"text-44\",\"ref\":\"text-45\"}]}]}]",
+   "output": "{\"text\":\"text-2\",\"reasoning\":[\"text-46\"]}",
+   "metadata": {
+    "attributes.gen_ai.operation.name": "chat",
+    "attributes.gen_ai.response.model": "claude-opus-5-5"
+   }
+  },
+  {
+   "id": "obs-4",
+   "traceId": "trace-1",
+   "type": "SPAN",
+   "name": "agent.admission",
+   "startTime": "2026-10-27T11:58:51.814Z",
+   "endTime": "2026-10-27T11:58:51.816Z",
+   "parentObservationId": "obs-2",
+   "input": null,
+   "output": null,
+   "metadata": {}
+  },
+  {
+   "id": "obs-5",
+   "traceId": "trace-1",
+   "type": "SPAN",
+   "name": "agent.image_offload",
+   "startTime": "2026-10-27T11:58:51.625Z",
+   "endTime": "2026-10-27T11:58:51.772Z",
+   "parentObservationId": "obs-2",
+   "input": null,
+   "output": null,
+   "metadata": {}
+  },
+  {
+   "id": "obs-6",
+   "traceId": "trace-1",
+   "type": "TOOL",
+   "name": "view_asset",
+   "startTime": "2026-10-27T11:58:51.050Z",
+   "endTime": "2026-10-27T11:58:51.625Z",
+   "parentObservationId": "obs-2",
+   "input": "{\"asset_id\":\"text-42\"}",
+   "output": "{\"command\":\"text-41\",\"data\":{\"asset_id\":\"text-42\",\"content_note\":\"text-47\",\"height\":1024,\"media_type\":\"text-44\",\"source_format\":\"text-48\",\"width\":1024},\"ok\":true,\"schema\":\"text-49\"}",
+   "metadata": {
+    "attributes.gen_ai.operation.name": "execute_tool",
+    "attributes.gen_ai.tool.call.id": "call-1",
+    "attributes.gen_ai.tool.name": "view_asset",
+    "attributes.comfy.tool.ok": true
+   }
+  },
+  {
+   "id": "obs-7",
+   "traceId": "trace-1",
+   "type": "GENERATION",
+   "name": "agent.model_round",
+   "startTime": "2026-10-27T11:58:47.605Z",
+   "endTime": "2026-10-27T11:58:50.996Z",
+   "parentObservationId": "obs-2",
+   "input": "[{\"role\":\"text-3\",\"text\":\"text-50\"},{\"role\":\"text-3\",\"text\":\"text-51\"},{\"role\":\"text-5\",\"text\":\"text-6\"},{\"role\":\"text-3\",\"text\":\"text-7\"},{\"role\":\"text-5\",\"text\":\"text-8\"},{\"role\":\"text-3\",\"text\":\"text-9\"},{\"role\":\"text-5\",\"text\":\"text-10\"},{\"role\":\"text-3\",\"text\":\"text-11\"},{\"role\":\"text-5\",\"text\":\"text-12\"},{\"role\":\"text-3\",\"text\":\"text-13\"},{\"role\":\"text-5\",\"text\":\"text-14\"},{\"role\":\"text-3\",\"text\":\"text-15\"},{\"role\":\"text-5\",\"tool_calls\":[{\"id\":\"text-16\",\"name\":\"text-17\",\"input\":{\"note\":\"text-18\",\"node_filter\":\"text-19\"}}]},{\"role\":\"text-3\",\"tool_results\":[{\"tool_call_id\":\"text-16\",\"name\":\"text-17\",\"content\":\"text-20\",\"content_ref\":\"text-21\"}]},{\"role\":\"text-5\",\"tool_calls\":[{\"id\":\"text-22\",\"name\":\"text-23\",\"input\":{\"address\":\"text-24\",\"value\":\"text-25\"}},{\"id\":\"text-26\",\"name\":\"text-27\",\"input\":{\"note\":\"text-28\"}}]},{\"role\":\"text-3\",\"tool_results\":[{\"tool_call_id\":\"text-22\",\"name\":\"text-23\",\"content\":\"text-29\"},{\"tool_call_id\":\"text-26\",\"name\":\"text-27\",\"content\":\"text-30\"}]},{\"role\":\"text-5\",\"tool_calls\":[{\"id\":\"text-31\",\"name\":\"text-32\",\"input\":{\"note\":\"text-33\"}}]},{\"role\":\"text-3\",\"tool_results\":[{\"tool_call_id\":\"text-31\",\"name\":\"text-32\",\"content\":\"text-34\",\"runs_reserved\":1}]},{\"role\":\"text-5\",\"text\":\"text-35\",\"tool_calls\":[{\"id\":\"text-36\",\"name\":\"text-37\",\"input\":{\"job_id\":\"text-38\"}}]},{\"role\":\"text-3\",\"tool_results\":[{\"tool_call_id\":\"text-36\",\"name\":\"text-37\",\"content\":\"text-39\"}]}]",
+   "output": "{\"tool_calls\":[{\"name\":\"text-41\",\"input\":{\"asset_id\":\"text-42\"}}],\"reasoning\":[\"text-52\"]}",
+   "metadata": {
+    "attributes.gen_ai.operation.name": "chat",
+    "attributes.gen_ai.response.model": "claude-opus-5-5"
+   }
+  },
+  {
+   "id": "obs-8",
+   "traceId": "trace-1",
+   "type": "SPAN",
+   "name": "agent.admission",
+   "startTime": "2026-10-27T11:58:47.490Z",
+   "endTime": "2026-10-27T11:58:47.492Z",
+   "parentObservationId": "obs-2",
+   "input": null,
+   "output": null,
+   "metadata": {}
+  },
+  {
+   "id": "obs-9",
+   "traceId": "trace-1",
+   "type": "TOOL",
+   "name": "wait_for_job",
+   "startTime": "2026-10-27T11:58:46.807Z",
+   "endTime": "2026-10-27T11:58:47.446Z",
+   "parentObservationId": "obs-2",
+   "input": "{\"job_id\":\"text-38\"}",
+   "output": "{\"command\":\"text-53\",\"data\":{\"cancelled\":0,\"completed\":1,\"elapsed_seconds\":0.6,\"failed\":0,\"interrupted\":0,\"jobs\":[{\"ok\":true,\"outputs\":[{\"node_id\":\"text-54\",\"url\":\"text-55\",\"width\":null,\"height\":null,\"duration\":null,\"asset_id\":\"text-56\",\"mime_type\":\"text-57\",\"size_bytes\":1143617,\"display_name\":\"text-58\"},{\"node_id\":\"text-59\",\"url\":\"text-60\",\"width\":null,\"height\":null,\"duration\":null,\"asset_id\":\"text-42\",\"mime_type\":\"text-61\",\"size_bytes\":1106165,\"display_name\":\"text-62\"}],\"prompt_id\":\"text-38\",\"status\":\"text-63\"}],\"note\":\"text-64\",\"timed_out\":0,\"total\":1},\"error\":null,\"ok\":true,\"where\":\"text-65\"}",
+   "metadata": {
+    "attributes.gen_ai.operation.name": "execute_tool",
+    "attributes.gen_ai.tool.call.id": "call-2",
+    "attributes.gen_ai.tool.name": "wait_for_job",
+    "attributes.comfy.tool.ok": true
+   }
+  },
+  {
+   "id": "obs-10",
+   "traceId": "trace-1",
+   "type": "GENERATION",
+   "name": "agent.model_round",
+   "startTime": "2026-10-27T11:55:37.754Z",
+   "endTime": "2026-10-27T11:55:41.450Z",
+   "parentObservationId": "obs-2",
+   "input": "[{\"role\":\"text-3\",\"text\":\"text-66\"},{\"role\":\"text-3\",\"text\":\"text-51\"},{\"role\":\"text-5\",\"text\":\"text-6\"},{\"role\":\"text-3\",\"text\":\"text-7\"},{\"role\":\"text-5\",\"text\":\"text-8\"},{\"role\":\"text-3\",\"text\":\"text-9\"},{\"role\":\"text-5\",\"text\":\"text-10\"},{\"role\":\"text-3\",\"text\":\"text-11\"},{\"role\":\"text-5\",\"text\":\"text-12\"},{\"role\":\"text-3\",\"text\":\"text-13\"},{\"role\":\"text-5\",\"text\":\"text-14\"},{\"role\":\"text-3\",\"text\":\"text-15\"},{\"role\":\"text-5\",\"tool_calls\":[{\"id\":\"text-16\",\"name\":\"text-17\",\"input\":{\"note\":\"text-18\",\"node_filter\":\"text-19\"}}]},{\"role\":\"text-3\",\"tool_results\":[{\"tool_call_id\":\"text-16\",\"name\":\"text-17\",\"content\":\"text-20\",\"content_ref\":\"text-21\"}]},{\"role\":\"text-5\",\"tool_calls\":[{\"id\":\"text-22\",\"name\":\"text-23\",\"input\":{\"address\":\"text-24\",\"value\":\"text-25\"}},{\"id\":\"text-26\",\"name\":\"text-27\",\"input\":{\"note\":\"text-28\"}}]},{\"role\":\"text-3\",\"tool_results\":[{\"tool_call_id\":\"text-22\",\"name\":\"text-23\",\"content\":\"text-29\"},{\"tool_call_id\":\"text-26\",\"name\":\"text-27\",\"content\":\"text-30\"}]},{\"role\":\"text-5\",\"tool_calls\":[{\"id\":\"text-31\",\"name\":\"text-32\",\"input\":{\"note\":\"text-33\"}}]},{\"role\":\"text-3\",\"tool_results\":[{\"tool_call_id\":\"text-31\",\"name\":\"text-32\",\"content\":\"text-34\",\"runs_reserved\":1}]}]",
+   "output": "{\"text\":\"text-35\",\"tool_calls\":[{\"name\":\"text-37\",\"input\":{\"job_id\":\"text-38\"}}]}",
+   "metadata": {
+    "attributes.gen_ai.operation.name": "chat",
+    "attributes.gen_ai.response.model": "claude-opus-5-5"
+   }
+  },
+  {
+   "id": "obs-11",
+   "traceId": "trace-1",
+   "type": "SPAN",
+   "name": "agent.admission",
+   "startTime": "2026-10-27T11:55:37.553Z",
+   "endTime": "2026-10-27T11:55:37.555Z",
+   "parentObservationId": "obs-2",
+   "input": null,
+   "output": null,
+   "metadata": {}
+  },
+  {
+   "id": "obs-12",
+   "traceId": "trace-1",
+   "type": "TOOL",
+   "name": "run",
+   "startTime": "2026-10-27T11:55:31.172Z",
+   "endTime": "2026-10-27T11:55:37.511Z",
+   "parentObservationId": "obs-2",
+   "input": "{\"note\":\"text-33\"}",
+   "output": "{\"approval\":{\"required\":true,\"received\":true,\"source\":\"text-67\"},\"command\":\"text-32\",\"data\":{\"base_url\":\"text-68\",\"client_id\":\"text-69\",\"elapsed_seconds\":null,\"outputs\":[],\"prompt_id\":\"text-38\",\"state_file\":\"text-70\",\"status\":\"text-71\",\"watcher_spawned\":false,\"workflow\":\"text-72\"},\"error\":null,\"ok\":true,\"where\":\"text-65\"}",
+   "metadata": {
+    "attributes.gen_ai.operation.name": "execute_tool",
+    "attributes.gen_ai.tool.call.id": "call-3",
+    "attributes.gen_ai.tool.name": "run",
+    "attributes.comfy.tool.ok": true
+   }
+  },
+  {
+   "id": "obs-13",
+   "traceId": "trace-1",
+   "type": "GENERATION",
+   "name": "agent.model_round",
+   "startTime": "2026-10-27T11:49:24.583Z",
+   "endTime": "2026-10-27T11:49:26.684Z",
+   "parentObservationId": "obs-2",
+   "input": "[{\"role\":\"text-3\",\"text\":\"text-66\"},{\"role\":\"text-3\",\"text\":\"text-51\"},{\"role\":\"text-5\",\"text\":\"text-6\"},{\"role\":\"text-3\",\"text\":\"text-7\"},{\"role\":\"text-5\",\"text\":\"text-8\"},{\"role\":\"text-3\",\"text\":\"text-9\"},{\"role\":\"text-5\",\"text\":\"text-10\"},{\"role\":\"text-3\",\"text\":\"text-11\"},{\"role\":\"text-5\",\"text\":\"text-12\"},{\"role\":\"text-3\",\"text\":\"text-13\"},{\"role\":\"text-5\",\"text\":\"text-14\"},{\"role\":\"text-3\",\"text\":\"text-15\"},{\"role\":\"text-5\",\"tool_calls\":[{\"id\":\"text-16\",\"name\":\"text-17\",\"input\":{\"note\":\"text-18\",\"node_filter\":\"text-19\"}}]},{\"role\":\"text-3\",\"tool_results\":[{\"tool_call_id\":\"text-16\",\"name\":\"text-17\",\"content\":\"text-20\",\"content_ref\":\"text-21\"}]},{\"role\":\"text-5\",\"tool_calls\":[{\"id\":\"text-22\",\"name\":\"text-23\",\"input\":{\"address\":\"text-24\",\"value\":\"text-25\"}},{\"id\":\"text-26\",\"name\":\"text-27\",\"input\":{\"note\":\"text-28\"}}]},{\"role\":\"text-3\",\"tool_results\":[{\"tool_call_id\":\"text-22\",\"name\":\"text-23\",\"content\":\"text-29\"},{\"tool_call_id\":\"text-26\",\"name\":\"text-27\",\"content\":\"text-30\"}]}]",
+   "output": "{\"tool_calls\":[{\"name\":\"text-32\",\"input\":{\"note\":\"text-33\"}}]}",
+   "metadata": {
+    "attributes.gen_ai.operation.name": "chat",
+    "attributes.gen_ai.response.model": "claude-opus-5-5"
+   }
+  },
+  {
+   "id": "obs-14",
+   "traceId": "trace-1",
+   "type": "SPAN",
+   "name": "agent.admission",
+   "startTime": "2026-10-27T11:49:24.416Z",
+   "endTime": "2026-10-27T11:49:24.418Z",
+   "parentObservationId": "obs-2",
+   "input": null,
+   "output": null,
+   "metadata": {}
+  },
+  {
+   "id": "obs-15",
+   "traceId": "trace-1",
+   "type": "TOOL",
+   "name": "validate",
+   "startTime": "2026-10-27T11:49:19.053Z",
+   "endTime": "2026-10-27T11:49:24.375Z",
+   "parentObservationId": "obs-2",
+   "input": "{\"note\":\"text-28\"}",
+   "output": "{\"command\":\"text-27\",\"data\":{\"converted_from_ui\":true,\"converted_node_count\":53,\"error_count\":0,\"errors\":[],\"needs_input\":[],\"needs_input_count\":0,\"object_info_source\":{\"mode\":\"text-73\"},\"partner_nodes\":[],\"ready_to_run\":true,\"spends_credits\":false,\"valid\":true,\"warning_count\":0,\"warnings\":[],\"workflow\":\"text-74\"},\"error\":null,\"ok\":true,\"where\":\"text-65\"}",
+   "metadata": {
+    "attributes.gen_ai.operation.name": "execute_tool",
+    "attributes.gen_ai.tool.call.id": "call-4",
+    "attributes.gen_ai.tool.name": "validate",
+    "attributes.comfy.tool.ok": true
+   }
+  },
+  {
+   "id": "obs-16",
+   "traceId": "trace-1",
+   "type": "SPAN",
+   "name": "dochost/apply",
+   "startTime": "2026-10-27T11:49:18.522Z",
+   "endTime": "2026-10-27T11:49:18.662Z",
+   "parentObservationId": "obs-17",
+   "input": null,
+   "output": null,
+   "metadata": {}
+  },
+  {
+   "id": "obs-17",
+   "traceId": "trace-1",
+   "type": "SPAN",
+   "name": "agent.doc.apply",
+   "startTime": "2026-10-27T11:49:18.462Z",
+   "endTime": "2026-10-27T11:49:18.939Z",
+   "parentObservationId": "obs-18",
+   "input": null,
+   "output": null,
+   "metadata": {}
+  },
+  {
+   "id": "obs-18",
+   "traceId": "trace-1",
+   "type": "TOOL",
+   "name": "set_widget",
+   "startTime": "2026-10-27T11:49:16.616Z",
+   "endTime": "2026-10-27T11:49:19.005Z",
+   "parentObservationId": "obs-2",
+   "input": "{\"address\":\"text-24\",\"value\":\"text-25\"}",
+   "output": "{\"command\":\"text-75\",\"data\":{\"base_version\":15,\"draft_committed\":true,\"op\":{\"actor\":\"text-76\",\"base_version\":15,\"node_id\":129,\"old\":15,\"op\":\"text-23\",\"op_id\":\"text-77\",\"promoted\":{\"host_widgets_values\":[\"text-78\",640,640,5,1091999399485608,\"text-79\",\"text-80\",\"text-81\",\"text-82\",\"text-83\",\"text-84\",false],\"instance_path\":[\"text-19\"],\"value_index\":3},\"stamp\":[15,\"text-76\"],\"value\":5,\"widget\":\"text-85\"},\"version\":16,\"workflow\":\"text-74\",\"wrote\":\"text-74\"},\"error\":null,\"ok\":true,\"where\":\"text-65\"}",
+   "metadata": {
+    "attributes.gen_ai.operation.name": "execute_tool",
+    "attributes.gen_ai.tool.call.id": "call-5",
+    "attributes.gen_ai.tool.name": "set_widget",
+    "attributes.comfy.tool.ok": true
+   }
+  },
+  {
+   "id": "obs-19",
+   "traceId": "trace-1",
+   "type": "GENERATION",
+   "name": "agent.model_round",
+   "startTime": "2026-10-27T11:49:12.828Z",
+   "endTime": "2026-10-27T11:49:16.566Z",
+   "parentObservationId": "obs-2",
+   "input": "[{\"role\":\"text-3\",\"text\":\"text-66\"},{\"role\":\"text-3\",\"text\":\"text-51\"},{\"role\":\"text-5\",\"text\":\"text-6\"},{\"role\":\"text-3\",\"text\":\"text-7\"},{\"role\":\"text-5\",\"text\":\"text-8\"},{\"role\":\"text-3\",\"text\":\"text-9\"},{\"role\":\"text-5\",\"text\":\"text-10\"},{\"role\":\"text-3\",\"text\":\"text-11\"},{\"role\":\"text-5\",\"text\":\"text-12\"},{\"role\":\"text-3\",\"text\":\"text-13\"},{\"role\":\"text-5\",\"text\":\"text-14\"},{\"role\":\"text-3\",\"text\":\"text-15\"},{\"role\":\"text-5\",\"tool_calls\":[{\"id\":\"text-16\",\"name\":\"text-17\",\"input\":{\"note\":\"text-18\",\"node_filter\":\"text-19\"}}]},{\"role\":\"text-3\",\"tool_results\":[{\"tool_call_id\":\"text-16\",\"name\":\"text-17\",\"content\":\"text-20\",\"content_ref\":\"text-21\"}]}]",
+   "output": "{\"tool_calls\":[{\"name\":\"text-23\",\"input\":{\"address\":\"text-24\",\"value\":\"text-25\"}},{\"name\":\"text-27\",\"input\":{\"note\":\"text-28\"}}],\"reasoning\":[\"text-86\"]}",
+   "metadata": {
+    "attributes.gen_ai.operation.name": "chat",
+    "attributes.gen_ai.response.model": "claude-opus-5-5"
+   }
+  },
+  {
+   "id": "obs-20",
+   "traceId": "trace-1",
+   "type": "SPAN",
+   "name": "agent.admission",
+   "startTime": "2026-10-27T11:49:12.633Z",
+   "endTime": "2026-10-27T11:49:12.635Z",
+   "parentObservationId": "obs-2",
+   "input": null,
+   "output": null,
+   "metadata": {}
+  },
+  {
+   "id": "obs-21",
+   "traceId": "trace-1",
+   "type": "TOOL",
+   "name": "list_slots",
+   "startTime": "2026-10-27T11:49:07.178Z",
+   "endTime": "2026-10-27T11:49:12.557Z",
+   "parentObservationId": "obs-2",
+   "input": "{\"note\":\"text-18\",\"node_filter\":\"text-19\"}",
+   "output": "{\"command\":\"text-87\",\"data\":{\"count\":57,\"filtered_by\":\"text-19\",\"id\":\"text-88\",\"print_note\":\"text-89\",\"slots\":[\"text-90\",\"text-91\",\"text-92\",\"text-93\",\"text-94\",\"text-95\",\"text-96\",\"text-97\",\"text-98\",\"text-99\",\"text-100\",\"text-101\",\"text-102\",\"text-103\",\"text-104\",\"text-105\",\"text-106\",\"text-107\",\"text-108\",\"text-109\",\"text-110\",\"text-111\",\"text-112\",\"text-113\",\"text-114\",\"text-115\",\"text-116\",\"text-117\",\"text-118\",\"text-119\",\"text-120\",\"text-121\",\"text-122\",\"text-123\",\"text-124\",\"text-125\",\"text-126\",\"text-127\",\"text-128\",\"text-129\",\"text-130\",\"text-131\",\"text-132\",\"text-133\",\"text-134\",\"text-135\",\"text-136\",\"text-137\",\"text-138\",\"text-139\",\"text-140\",\"text-141\",\"text-142\",\"text-143\",\"text-144\",\"text-145\",\"text-146\"],\"subgraph_note\":\"text-147\",\"total_unfiltered\":111},\"error\":null,\"ok\":true,\"where\":\"text-65\"}",
+   "metadata": {
+    "attributes.gen_ai.operation.name": "execute_tool",
+    "attributes.gen_ai.tool.call.id": "call-6",
+    "attributes.gen_ai.tool.name": "list_slots",
+    "attributes.comfy.tool.ok": true
+   }
+  },
+  {
+   "id": "obs-22",
+   "traceId": "trace-1",
+   "type": "GENERATION",
+   "name": "agent.model_round",
+   "startTime": "2026-10-27T11:48:59.331Z",
+   "endTime": "2026-10-27T11:49:07.120Z",
+   "parentObservationId": "obs-2",
+   "input": "[{\"role\":\"text-3\",\"text\":\"text-66\"},{\"role\":\"text-3\",\"text\":\"text-51\"},{\"role\":\"text-5\",\"text\":\"text-6\"},{\"role\":\"text-3\",\"text\":\"text-7\"},{\"role\":\"text-5\",\"text\":\"text-8\"},{\"role\":\"text-3\",\"text\":\"text-9\"},{\"role\":\"text-5\",\"text\":\"text-10\"},{\"role\":\"text-3\",\"text\":\"text-11\"},{\"role\":\"text-5\",\"text\":\"text-12\"},{\"role\":\"text-3\",\"text\":\"text-13\"},{\"role\":\"text-5\",\"text\":\"text-14\"},{\"role\":\"text-3\",\"text\":\"text-15\"}]",
+   "output": "{\"tool_calls\":[{\"name\":\"text-17\",\"input\":{\"note\":\"text-18\",\"node_filter\":\"text-19\"}}],\"reasoning\":[\"text-148\"]}",
+   "metadata": {
+    "attributes.gen_ai.operation.name": "chat",
+    "attributes.gen_ai.response.model": "claude-opus-5-5"
+   }
+  },
+  {
+   "id": "obs-23",
+   "traceId": "trace-1",
+   "type": "SPAN",
+   "name": "agent.admission",
+   "startTime": "2026-10-27T11:48:58.373Z",
+   "endTime": "2026-10-27T11:48:58.436Z",
+   "parentObservationId": "obs-2",
+   "input": null,
+   "output": null,
+   "metadata": {}
+  },
+  {
+   "id": "obs-2",
+   "traceId": "trace-1",
+   "type": "SPAN",
+   "name": "agent.launch",
+   "startTime": "2026-10-27T11:48:58.150Z",
+   "endTime": "2026-10-27T11:48:58.362Z",
+   "parentObservationId": null,
+   "input": null,
+   "output": null,
+   "metadata": {
+    "attributes.comfy.thread_id": "thread-1",
+    "attributes.comfy.turn_id": "turn-1"
+   }
+  }
+ ],
+ "meta": {}
+}

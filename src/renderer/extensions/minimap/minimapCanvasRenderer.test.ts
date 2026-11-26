@@ -1,36 +1,35 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { useThemeStore } from '@/platform/theme/themeStore'
+import { beforeEach, describe, expect, it, test, vi } from 'vitest'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { BUILT_IN_THEME_PRESETS } from '@comfyorg/theme-core/builtInThemePresets'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraph, LGraphGroup } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
-import { renderMinimapToCanvas } from '@/renderer/extensions/minimap/minimapCanvasRenderer'
+import { MinimapDataSource } from './data/MinimapDataSource'
+import { createTestCanvasElement } from '@/utils/__tests__/canvasTestUtils'
+import {
+  MINIMAP_DECORATION_POP_MS,
+  renderMinimapToCanvas
+} from '@/renderer/extensions/minimap/minimapCanvasRenderer'
 import type { MinimapRenderContext } from '@/renderer/extensions/minimap/types'
 import { useLinkStore } from '@/stores/linkStore'
-import { adjustColor } from '@/utils/colorUtil'
+import { adjustColor } from '@comfyorg/shared-frontend-utils/colorUtil'
 import {
   createMockLGraph,
   createMockLGraphNode,
   createMockNodeOutputSlot
 } from '@/utils/__tests__/litegraphTestUtils'
-import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
-import { toLinkId } from '@/types/linkId'
-import { toNodeId } from '@/types/nodeId'
+import {
+  toOwningGraphId,
+  toRootGraphId
+} from '@comfyorg/graph-model/graphScopeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { UUID } from '@/utils/uuid'
 
-const mockUseColorPaletteStore = vi.hoisted(() => vi.fn())
-vi.mock('@/stores/workspace/colorPaletteStore', () => ({
-  useColorPaletteStore: mockUseColorPaletteStore
-}))
-
-vi.mock('@/utils/colorUtil', () => ({
+vi.mock(import('@comfyorg/shared-frontend-utils/colorUtil'), () => ({
   adjustColor: vi.fn((color: string) => color + '_adjusted')
-}))
-
-vi.mock('@/stores/executionStore', () => ({
-  useExecutionStore: vi.fn(() => ({
-    nodeLocationProgressStates: {}
-  }))
 }))
 
 const GRAPH_ID: UUID = 'renderer-graph'
@@ -45,9 +44,7 @@ describe('minimapCanvasRenderer', () => {
   let mockGraph: LGraph
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-
-    mockContext = {
+    mockContext = fromPartial<CanvasRenderingContext2D>({
       clearRect: vi.fn(),
       fillRect: vi.fn(),
       strokeRect: vi.fn(),
@@ -62,11 +59,9 @@ describe('minimapCanvasRenderer', () => {
       lineWidth: 1,
       save: vi.fn(),
       restore: vi.fn()
-    } as Partial<CanvasRenderingContext2D> as CanvasRenderingContext2D
+    })
 
-    mockCanvas = {
-      getContext: vi.fn().mockReturnValue(mockContext)
-    } as Partial<HTMLCanvasElement> as HTMLCanvasElement
+    mockCanvas = createTestCanvasElement({ ctx: mockContext })
 
     mockGraph = createMockLGraph({
       _nodes: [
@@ -91,18 +86,12 @@ describe('minimapCanvasRenderer', () => {
       ],
       _groups: [],
       id: GRAPH_ID,
-      rootGraph: { id: GRAPH_ID } as LGraph,
+      rootGraph: fromPartial<LGraph>({ id: GRAPH_ID }),
+      isRootGraph: true,
       getNodeById: vi.fn()
     })
 
-    mockUseColorPaletteStore.mockReturnValue({
-      completedActivePalette: {
-        id: 'test',
-        name: 'Test Palette',
-        colors: {},
-        light_theme: false
-      }
-    })
+    useThemeStore().activePresetId = 'dark'
   })
 
   it('should clear canvas and render nodes', () => {
@@ -120,12 +109,10 @@ describe('minimapCanvasRenderer', () => {
       height: 200
     }
 
-    renderMinimapToCanvas(mockCanvas, mockGraph, context)
+    renderMinimapToCanvas(mockCanvas, new MinimapDataSource(mockGraph), context)
 
-    // Should clear the canvas first
     expect(mockContext.clearRect).toHaveBeenCalledWith(0, 0, 250, 200)
 
-    // Should render nodes (batch by color)
     expect(mockContext.fillRect).toHaveBeenCalled()
   })
 
@@ -146,7 +133,7 @@ describe('minimapCanvasRenderer', () => {
       height: 200
     }
 
-    renderMinimapToCanvas(mockCanvas, mockGraph, context)
+    renderMinimapToCanvas(mockCanvas, new MinimapDataSource(mockGraph), context)
 
     expect(mockContext.clearRect).toHaveBeenCalledWith(0, 0, 250, 200)
     expect(mockContext.fillRect).not.toHaveBeenCalled()
@@ -167,24 +154,22 @@ describe('minimapCanvasRenderer', () => {
       height: 200
     }
 
-    renderMinimapToCanvas(mockCanvas, mockGraph, context)
+    renderMinimapToCanvas(mockCanvas, new MinimapDataSource(mockGraph), context)
 
-    // Should set fill style for each color group
-    const fillStyleCalls = []
+    const fillStyleCalls: string[] = []
     let currentStyle = ''
 
     mockContext.fillStyle = ''
     Object.defineProperty(mockContext, 'fillStyle', {
       get: () => currentStyle,
-      set: (value) => {
+      set: (value: string) => {
         currentStyle = value
         fillStyleCalls.push(value)
       }
     })
 
-    renderMinimapToCanvas(mockCanvas, mockGraph, context)
+    renderMinimapToCanvas(mockCanvas, new MinimapDataSource(mockGraph), context)
 
-    // Different colors for different nodes
     expect(fillStyleCalls.length).toBeGreaterThan(0)
   })
 
@@ -203,9 +188,8 @@ describe('minimapCanvasRenderer', () => {
       height: 200
     }
 
-    renderMinimapToCanvas(mockCanvas, mockGraph, context)
+    renderMinimapToCanvas(mockCanvas, new MinimapDataSource(mockGraph), context)
 
-    // Node 2 is in bypass mode, should be rendered
     expect(mockContext.fillRect).toHaveBeenCalled()
   })
 
@@ -224,23 +208,20 @@ describe('minimapCanvasRenderer', () => {
       height: 200
     }
 
-    renderMinimapToCanvas(mockCanvas, mockGraph, context)
+    renderMinimapToCanvas(mockCanvas, new MinimapDataSource(mockGraph), context)
 
-    // Should set stroke style for errors
     expect(mockContext.strokeStyle).toBe('#FF0000')
     expect(mockContext.strokeRect).toHaveBeenCalled()
   })
 
   it('should render groups when enabled', () => {
     mockGraph._groups = [
-      {
+      fromPartial<LGraphGroup>({
         pos: [50, 50],
         size: [400, 300],
         color: '#0000FF'
-      }
-    ] as Partial<
-      (typeof mockGraph._groups)[number]
-    >[] as typeof mockGraph._groups
+      })
+    ]
 
     const context: MinimapRenderContext = {
       bounds: { minX: 0, minY: 0, width: 500, height: 400 },
@@ -256,9 +237,8 @@ describe('minimapCanvasRenderer', () => {
       height: 200
     }
 
-    renderMinimapToCanvas(mockCanvas, mockGraph, context)
+    renderMinimapToCanvas(mockCanvas, new MinimapDataSource(mockGraph), context)
 
-    // Groups should be rendered before nodes
     expect(mockContext.fillRect).toHaveBeenCalled()
   })
 
@@ -295,28 +275,19 @@ describe('minimapCanvasRenderer', () => {
       height: 200
     }
 
-    renderMinimapToCanvas(mockCanvas, mockGraph, context)
+    renderMinimapToCanvas(mockCanvas, new MinimapDataSource(mockGraph), context)
 
-    // Should draw connection lines
     expect(mockContext.beginPath).toHaveBeenCalled()
     expect(mockContext.moveTo).toHaveBeenCalled()
     expect(mockContext.lineTo).toHaveBeenCalled()
     expect(mockContext.stroke).toHaveBeenCalled()
 
-    // Should draw connection slots
     expect(mockContext.arc).toHaveBeenCalled()
     expect(mockContext.fill).toHaveBeenCalled()
   })
 
-  it('should handle light theme colors', () => {
-    mockUseColorPaletteStore.mockReturnValue({
-      completedActivePalette: {
-        id: 'test',
-        name: 'Test Palette',
-        colors: {},
-        light_theme: true
-      }
-    })
+  it('lightens node colors when the theme sets a node lightness', () => {
+    useThemeStore().activePresetId = 'light'
 
     const context: MinimapRenderContext = {
       bounds: { minX: 0, minY: 0, width: 500, height: 400 },
@@ -332,10 +303,67 @@ describe('minimapCanvasRenderer', () => {
       height: 200
     }
 
-    renderMinimapToCanvas(mockCanvas, mockGraph, context)
+    renderMinimapToCanvas(mockCanvas, new MinimapDataSource(mockGraph), context)
 
-    // Color adjustment should be called for light theme
     expect(adjustColor).toHaveBeenCalled()
+  })
+
+  it('recomputes group colors when a palette keeps its id but changes node lightness', () => {
+    mockGraph._groups = [
+      fromPartial<LGraphGroup>({
+        pos: [50, 50],
+        size: [400, 300],
+        color: '#0000FF'
+      })
+    ]
+    const fillStyles: unknown[] = []
+    Object.defineProperty(mockContext, 'fillStyle', {
+      set: (value) => fillStyles.push(value),
+      get: () => fillStyles.at(-1)
+    })
+    const context: MinimapRenderContext = {
+      bounds: { minX: 0, minY: 0, width: 500, height: 400 },
+      scale: 0.5,
+      settings: {
+        nodeColors: true,
+        showLinks: false,
+        showGroups: true,
+        renderBypass: false,
+        renderError: false
+      },
+      width: 250,
+      height: 200
+    }
+    const themeStore = useThemeStore()
+    themeStore.addCustomPreset({
+      ...BUILT_IN_THEME_PRESETS.dark,
+      id: 'reused-id'
+    })
+    function renderWithLightness(nodeLightness?: number) {
+      themeStore.customPresets['reused-id'] = {
+        ...BUILT_IN_THEME_PRESETS.dark,
+        id: 'reused-id',
+        colors: {
+          ...BUILT_IN_THEME_PRESETS.dark.colors,
+          litegraph_base: {
+            ...BUILT_IN_THEME_PRESETS.dark.colors.litegraph_base,
+            NODE_LIGHTNESS: nodeLightness
+          }
+        }
+      }
+      fillStyles.length = 0
+      renderMinimapToCanvas(
+        mockCanvas,
+        new MinimapDataSource(mockGraph),
+        context
+      )
+      return fillStyles[0]
+    }
+
+    expect([renderWithLightness(), renderWithLightness(0.5)]).toEqual([
+      '#0000FF',
+      'color-mix(in srgb, #0000FF 50%, transparent)'
+    ])
   })
 
   it('should calculate correct offsets for centering', () => {
@@ -353,11 +381,157 @@ describe('minimapCanvasRenderer', () => {
       height: 200
     }
 
-    renderMinimapToCanvas(mockCanvas, mockGraph, context)
+    renderMinimapToCanvas(mockCanvas, new MinimapDataSource(mockGraph), context)
 
-    // With bounds 200x100 at scale 0.5 = 100x50
-    // Canvas is 250x200, so offset should be (250-100)/2 = 75, (200-50)/2 = 75
-    // This affects node positioning
     expect(mockContext.fillRect).toHaveBeenCalled()
   })
+
+  it('updates decoration outlines after editing the active preset with the same ID', () => {
+    const themeStore = useThemeStore()
+    themeStore.addCustomPreset({
+      ...BUILT_IN_THEME_PRESETS.dark,
+      id: 'minimap-custom'
+    })
+    const context: MinimapRenderContext = {
+      bounds: { minX: 0, minY: 0, width: 500, height: 400 },
+      scale: 0.5,
+      settings: {
+        nodeColors: false,
+        showLinks: false,
+        showGroups: false,
+        renderBypass: false,
+        renderError: false
+      },
+      width: 250,
+      height: 200,
+      decorations: [{ target: { ...GRAPH_SCOPE, nodeId: toNodeId('1') } }]
+    }
+
+    renderMinimapToCanvas(mockCanvas, new MinimapDataSource(mockGraph), context)
+    expect(mockContext.strokeStyle).toBe(
+      themeStore.activeTheme.canvas.nodeSelectedTitleColor
+    )
+
+    themeStore.customPresets['minimap-custom'] = {
+      ...BUILT_IN_THEME_PRESETS.dark,
+      id: 'minimap-custom',
+      colors: {
+        ...BUILT_IN_THEME_PRESETS.dark.colors,
+        litegraph_base: {
+          ...BUILT_IN_THEME_PRESETS.dark.colors.litegraph_base,
+          NODE_SELECTED_TITLE_COLOR: '#123456'
+        }
+      }
+    }
+    renderMinimapToCanvas(mockCanvas, new MinimapDataSource(mockGraph), context)
+
+    expect(mockContext.strokeStyle).toBe('#123456')
+    expect(mockContext.strokeRect).toHaveBeenLastCalledWith(50, 50, 75, 40)
+  })
+
+  test.for([
+    { state: 'running', color: '#00FF00' },
+    { state: 'finished', color: '#239B23' },
+    { state: 'error', color: '#FF0000' }
+  ] satisfies Array<{
+    state: 'running' | 'finished' | 'error'
+    color: string
+  }>)(
+    'renders $state execution outlines from the data source',
+    ({ state, color }) => {
+      const source = new MinimapDataSource(mockGraph, {
+        [createNodeLocatorId(null, toNodeId('1'))]: { state }
+      })
+      mockGraph._nodes[1].has_errors = false
+
+      renderMinimapToCanvas(mockCanvas, source, {
+        bounds: { minX: 0, minY: 0, width: 500, height: 400 },
+        scale: 0.5,
+        settings: {
+          nodeColors: true,
+          showLinks: false,
+          showGroups: false,
+          renderBypass: false,
+          renderError: true
+        },
+        width: 250,
+        height: 200
+      })
+
+      expect(mockContext.strokeStyle).toBe(color)
+      expect(mockContext.strokeRect).toHaveBeenCalledExactlyOnceWith(
+        50,
+        50,
+        75,
+        40
+      )
+    }
+  )
+
+  it('renders a scoped semantic decoration after the base node fill', () => {
+    renderMinimapToCanvas(mockCanvas, new MinimapDataSource(mockGraph), {
+      bounds: { minX: 0, minY: 0, width: 500, height: 400 },
+      scale: 0.5,
+      settings: {
+        nodeColors: false,
+        showLinks: false,
+        showGroups: false,
+        renderBypass: false,
+        renderError: true
+      },
+      width: 250,
+      height: 200,
+      decorations: [
+        {
+          target: { ...GRAPH_SCOPE, nodeId: toNodeId('1') },
+          enter: 'pop',
+          enteredAt: 1_000
+        }
+      ],
+      now: 2_000
+    })
+
+    expect(mockContext.fillRect).toHaveBeenCalledTimes(3)
+    expect(mockContext.fillRect).toHaveBeenLastCalledWith(50, 50, 75, 40)
+    expect(mockContext.strokeRect).toHaveBeenCalledAfter(
+      vi.mocked(mockContext.fillRect)
+    )
+  })
+
+  test.for([0, MINIMAP_DECORATION_POP_MS / 2, MINIMAP_DECORATION_POP_MS])(
+    'keeps tiny pop markers centered and legible at %dms',
+    (elapsed) => {
+      renderMinimapToCanvas(mockCanvas, new MinimapDataSource(mockGraph), {
+        bounds: { minX: 0, minY: 0, width: 50_000, height: 40_000 },
+        scale: 0.005,
+        settings: {
+          nodeColors: false,
+          showLinks: false,
+          showGroups: false,
+          renderBypass: false,
+          renderError: true
+        },
+        width: 250,
+        height: 200,
+        decorations: [
+          {
+            target: { ...GRAPH_SCOPE, nodeId: toNodeId('1') },
+            enter: 'pop',
+            enteredAt: 1_000
+          }
+        ],
+        now: 1_000 + elapsed
+      })
+
+      const marker = vi
+        .mocked(mockContext.strokeRect)
+        .mock.calls.find(([, , width, height]) => width === 2 && height === 2)
+      expect(marker).toBeDefined()
+      const [x, y, width, height] = marker!
+      expect(width).toBe(2)
+      expect(height).toBe(2)
+      expect(x + width / 2).toBeCloseTo(0.875)
+      expect(y + height / 2).toBeCloseTo(0.7)
+    }
+  )
 })

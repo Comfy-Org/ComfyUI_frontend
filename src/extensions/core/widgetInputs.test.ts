@@ -1,59 +1,46 @@
-import { createTestingPinia } from '@pinia/testing'
-import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraph,
+  LGraphNode,
+  LiteGraph,
+  LLink
+} from '@/lib/litegraph/src/litegraph'
 import type {
   INodeInputSlot,
   INodeOutputSlot,
   ISerialisedNode
 } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import { LegacyWidget } from '@/lib/litegraph/src/widgets/LegacyWidget'
 import { assetService } from '@/platform/assets/services/assetService'
-import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
-import { CONFIG, GET_CONFIG } from '@/services/litegraphService'
-import { useLinkStore } from '@/stores/linkStore'
-import { graphScopeOf } from '@/types/graphScopeId'
-import { toLinkId } from '@/types/linkId'
-import { toNodeId } from '@/types/nodeId'
-
-/** `app.configuringGraph` is a getter on the real app, so route it via a ref. */
-const appState = vi.hoisted(() => ({ configuringGraph: false }))
-
-vi.mock('@/scripts/app', () => ({
-  app: {
-    canvas: { graph_mouse: [0, 0], graph: null },
-    get configuringGraph() {
-      return appState.configuringGraph
-    },
-    registerExtension: vi.fn()
-  }
-}))
-
+import type { ComfyNodeDef, InputSpec } from '@comfyorg/object-info-parser'
 import { app } from '@/scripts/app'
+import { CONFIG, GET_CONFIG } from '@comfyorg/graph-model/widgets'
+import { useLinkStore } from '@/stores/linkStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { createTestLink } from '@/utils/__tests__/litegraphTestUtils'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { serializeNodeId, toNodeId } from '@comfyorg/graph-model/nodeId'
 
-import {
+vi.mock(import('@/scripts/app'))
+
+const {
   PrimitiveNode,
   convertToInput,
   getWidgetConfig,
   mergeIfValid,
-  setWidgetConfig
-} from './widgetInputs'
+  setWidgetConfig,
+  widgetInputsExtension
+} = await import('./widgetInputs')
 
 beforeEach(() => {
-  appState.configuringGraph = false
   app.canvas.graph = null
 })
 
-/**
- * `registerExtension` is a mock, and `mockReset: true` clears its calls before
- * the first test runs — so the registered extension is captured at collection.
- */
-const widgetInputsExtension = vi.mocked(app.registerExtension).mock
-  .calls[0]?.[0]
-if (!widgetInputsExtension)
-  throw new Error('Comfy.WidgetInputs was not registered on import')
+const { rerouteNodeExtension } = await import('./rerouteNode')
 
 /**
  * Applies the extension's `beforeRegisterNodeDef` to a throwaway node class.
@@ -86,7 +73,6 @@ function widgetSlot(
 
 describe('PrimitiveNode', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     LiteGraph.namedValuesRestore = false
   })
 
@@ -107,12 +93,12 @@ describe('PrimitiveNode', () => {
   }
 
   function restoreIntPrimitive(
-    primitive: PrimitiveNode,
+    primitive: InstanceType<typeof PrimitiveNode>,
     target: LGraphNode,
     values: ISerialisedNode['widgets_values'],
     named?: ISerialisedNode['widgets_values_named']
   ) {
-    appState.configuringGraph = true
+    vi.mocked(app).configuringGraph = true
     primitive.connect(0, target, 0)
     primitive.configure(
       fromPartial({
@@ -121,7 +107,7 @@ describe('PrimitiveNode', () => {
         outputs: [{ type: 'INT' }]
       })
     )
-    appState.configuringGraph = false
+    vi.mocked(app).configuringGraph = false
     primitive.onAfterGraphConfigured()
   }
 
@@ -140,7 +126,31 @@ describe('PrimitiveNode', () => {
     expect(primitive.widgets?.[0].value).toBe(333)
   })
 
-  it.each([
+  it('restores a boolean string saved for a BOOLEAN target as a boolean', () => {
+    const graph = new LGraph()
+    const target = new LGraphNode('Target')
+    graph.add(target)
+    target.addInput('enabled', 'BOOLEAN')
+    target.inputs[0].widget = {
+      name: 'enabled',
+      [GET_CONFIG]: () => ['BOOLEAN', {}]
+    }
+    target.addWidget('toggle', 'enabled', true, () => {})
+    const primitive = new PrimitiveNode('Primitive')
+    graph.add(primitive)
+    vi.mocked(app).configuringGraph = true
+    primitive.connect(0, target, 0)
+    primitive.configure(
+      fromPartial({ widgets_values: ['false'], outputs: [{ type: 'BOOLEAN' }] })
+    )
+    vi.mocked(app).configuringGraph = false
+
+    primitive.onAfterGraphConfigured()
+
+    expect(primitive.widgets?.[0].value).toBe(false)
+  })
+
+  it.for([
     { label: 'null', value: null },
     { label: 'undefined', value: undefined }
   ])('restores an explicit $label value', ({ value }) => {
@@ -155,12 +165,12 @@ describe('PrimitiveNode', () => {
     target.addWidget('text', 'value', 'stale', () => {})
     const primitive = new PrimitiveNode('Primitive')
     graph.add(primitive)
-    appState.configuringGraph = true
+    vi.mocked(app).configuringGraph = true
     primitive.connect(0, target, 0)
     primitive.configure(
       fromPartial({ widgets_values: [value], outputs: [{ type: 'STRING' }] })
     )
-    appState.configuringGraph = false
+    vi.mocked(app).configuringGraph = false
 
     primitive.onAfterGraphConfigured()
 
@@ -207,7 +217,7 @@ describe('PrimitiveNode', () => {
   })
 
   it('keeps its serialized value for an asset browser widget', () => {
-    vi.spyOn(assetService, 'shouldUseAssetBrowser').mockReturnValue(true)
+    vi.spyOn(assetService, 'shouldUseWidgetAssetPicker').mockReturnValue(true)
     const graph = new LGraph()
     const target = new LGraphNode('Target')
     target.comfyClass = 'CheckpointLoaderSimple'
@@ -223,7 +233,7 @@ describe('PrimitiveNode', () => {
 
     const primitive = new PrimitiveNode('Primitive')
     graph.add(primitive)
-    appState.configuringGraph = true
+    vi.mocked(app).configuringGraph = true
     primitive.connect(0, target, 0)
     primitive.configure(
       fromPartial({
@@ -231,7 +241,7 @@ describe('PrimitiveNode', () => {
         outputs: [{ type: 'COMBO' }]
       })
     )
-    appState.configuringGraph = false
+    vi.mocked(app).configuringGraph = false
 
     primitive.onAfterGraphConfigured()
 
@@ -241,13 +251,151 @@ describe('PrimitiveNode', () => {
     })
   })
 
-  it('restores its serialized value after a reroute resolves its widget config', () => {
+  it('uses the legacy fallback for unsupported widget types', () => {
     const graph = new LGraph()
-    const reroute = new LGraphNode('Reroute')
+    const target = new LGraphNode('Target')
+    graph.add(target)
+    target.addInput('value', 'CUSTOM_WIDGET')
+    target.inputs[0].widget = {
+      name: 'value',
+      [GET_CONFIG]: () => ['CUSTOM_WIDGET', {}]
+    }
+
+    const primitive = new PrimitiveNode('Primitive')
+    graph.add(primitive)
+    primitive.connect(0, target, 0)
+
+    expect(primitive.widgets?.[0]).toBeInstanceOf(LegacyWidget)
+    expect(primitive.widgets?.[0].type).toBe('custom_widget')
+  })
+
+  it('rejects an array slot type when no widget describes its construction', () => {
+    const primitive = new PrimitiveNode('Primitive')
+    const target = new LGraphNode('Target')
+    target.addInput('seed', ['INT'])
+
+    expect(primitive.onConnectOutput(0, '*', target.inputs[0], target, 0)).toBe(
+      false
+    )
+  })
+
+  it.for(['AUDIOUPLOAD', 'IMAGEUPLOAD', 'WEBCAM'])(
+    'refuses a host-bound %s input',
+    (hostBoundType) => {
+      const primitive = new PrimitiveNode('Primitive')
+      const target = new LGraphNode('Loader')
+      target.addInput('upload', hostBoundType)
+      target.inputs[0].widget = {
+        name: 'upload',
+        [GET_CONFIG]: () => [hostBoundType, {}]
+      }
+
+      expect(
+        primitive.onConnectOutput(0, '*', target.inputs[0], target, 0)
+      ).toBe(false)
+    }
+  )
+
+  it.for(['AUDIOUPLOAD', 'IMAGEUPLOAD', 'WEBCAM'])(
+    'disconnects a host-bound %s link restored from a saved workflow',
+    (hostBoundType) => {
+      const graph = new LGraph()
+      const target = new LGraphNode('Loader')
+      graph.add(target)
+      target.addInput('host_bound', hostBoundType)
+      target.inputs[0].widget = {
+        name: 'host_bound',
+        [GET_CONFIG]: () => [hostBoundType, {}]
+      }
+      const primitive = new PrimitiveNode('Primitive')
+      graph.add(primitive)
+      vi.mocked(app).configuringGraph = true
+      primitive.outputs[0].type = hostBoundType
+      const { id: linkId } = createTestLink(graph, primitive, 0, target, 0)
+      primitive.configure(
+        fromPartial({
+          widgets_values: ['host-bound-value'],
+          outputs: [{ type: hostBoundType, links: [linkId] }]
+        })
+      )
+      vi.mocked(app).configuringGraph = false
+      expect(primitive.isOutputConnected(0)).toBe(true)
+
+      expect(() => primitive.onAfterGraphConfigured()).not.toThrow()
+      expect(primitive.isOutputConnected(0)).toBe(false)
+      expect(target.isInputConnected(0)).toBe(false)
+      expect(primitive.widgets ?? []).toHaveLength(0)
+      expect(
+        useWidgetValueStore().getRestoredWidgetValue(
+          graph.rootGraph.id,
+          primitive.id,
+          { name: 'value', type: 'button', options: {} },
+          0
+        )
+      ).toBeUndefined()
+    }
+  )
+
+  it.for([
+    { order: [0, 1], label: 'after' },
+    { order: [1, 0], label: 'before' }
+  ])(
+    'drops a restored host-bound link $label a compatible link',
+    ({ order }) => {
+      const graph = new LGraph()
+      const compatibleTarget = new LGraphNode('Target')
+      graph.add(compatibleTarget)
+      compatibleTarget.addInput('seed', 'INT')
+      compatibleTarget.inputs[0].widget = {
+        name: 'seed',
+        [GET_CONFIG]: () => ['INT', {}]
+      }
+      const hostBoundTarget = new LGraphNode('LoadImage')
+      graph.add(hostBoundTarget)
+      hostBoundTarget.addInput('upload', 'IMAGEUPLOAD')
+      hostBoundTarget.inputs[0].widget = {
+        name: 'upload',
+        [GET_CONFIG]: () => ['IMAGEUPLOAD', { imageInputName: 'image' }]
+      }
+      const primitive = new PrimitiveNode('Primitive')
+      graph.add(primitive)
+      vi.mocked(app).configuringGraph = true
+      primitive.outputs[0].type = 'INT'
+      const targets = [compatibleTarget, hostBoundTarget]
+      const links = order.map((index) =>
+        createTestLink(graph, primitive, 0, targets[index], 0)
+      )
+      primitive.configure(
+        fromPartial({
+          widgets_values: [42],
+          outputs: [{ type: 'INT', links: links.map(({ id }) => id) }]
+        })
+      )
+      vi.mocked(app).configuringGraph = false
+
+      primitive.onAfterGraphConfigured()
+
+      expect(primitive.isOutputConnected(0)).toBe(true)
+      expect(compatibleTarget.isInputConnected(0)).toBe(true)
+      expect(hostBoundTarget.isInputConnected(0)).toBe(false)
+      expect(primitive.widgets?.[0]).toMatchObject({ value: 42 })
+    }
+  )
+
+  it('restores its serialized value through the reroute lifecycle', async () => {
+    await widgetInputsExtension.registerCustomNodes?.(app)
+    localStorage.setItem('Comfy.RerouteNode.DefaultVisibility', 'true')
+    await rerouteNodeExtension.registerCustomNodes?.(app)
+    const frameCallbacks: FrameRequestCallback[] = []
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+      frameCallbacks.push(callback)
+      return frameCallbacks.length
+    })
+
+    const graph = new LGraph()
+    const reroute = LiteGraph.createNode('Reroute')
+    if (!reroute) throw new Error('Reroute was not registered')
     graph.add(reroute)
-    reroute.addInput('', '*')
-    reroute.inputs[0].widget = { name: 'value' }
-    reroute.addOutput('', '*')
     const target = new LGraphNode('Target')
     graph.add(target)
     target.addInput('seed', 'INT')
@@ -256,21 +404,45 @@ describe('PrimitiveNode', () => {
       [GET_CONFIG]: () => ['INT', { control_after_generate: true }]
     }
     target.addWidget('number', 'seed', 111, () => {})
-    const primitive = new PrimitiveNode('Primitive')
+    const primitive = LiteGraph.createNode('PrimitiveNode')
+    if (!(primitive instanceof PrimitiveNode))
+      throw new Error('PrimitiveNode was not registered')
     graph.add(primitive)
-    appState.configuringGraph = true
-    primitive.connect(0, reroute, 0)
-    reroute.connect(0, target, 0)
-    primitive.configure(
-      fromPartial({ widgets_values: [222], outputs: [{ type: 'INT' }] })
+    vi.mocked(app).configuringGraph = true
+    const primitiveLinkId = toLinkId(1)
+    graph._addLink(
+      new LLink(
+        primitiveLinkId,
+        'INT',
+        serializeNodeId(primitive.id),
+        0,
+        serializeNodeId(reroute.id),
+        0
+      )
     )
-    appState.configuringGraph = false
+    graph._addLink(
+      new LLink(
+        toLinkId(2),
+        'INT',
+        serializeNodeId(reroute.id),
+        0,
+        serializeNodeId(target.id),
+        0
+      )
+    )
+    primitive.configure(
+      fromPartial({
+        widgets_values: [222],
+        outputs: [{ type: 'INT', links: [primitiveLinkId] }]
+      })
+    )
+    vi.mocked(app).configuringGraph = false
 
-    primitive.onAfterGraphConfigured()
+    for (const node of graph.nodes) node.onAfterGraphConfigured?.()
     expect(primitive.widgets).toBeUndefined()
-    reroute.inputs[0].widget![GET_CONFIG] =
-      target.inputs[0].widget?.[GET_CONFIG]
-    primitive.recreateWidget()
+
+    expect(frameCallbacks).toHaveLength(1)
+    frameCallbacks.shift()!(0)
 
     expect(primitive.widgets?.[0].value).toBe(222)
   })
@@ -299,7 +471,7 @@ describe('PrimitiveNode', () => {
     expect(primitive.widgets?.[0].value).toBe(111)
   })
 
-  it('keeps an unconsumed serialized value until its widget is first built', () => {
+  it('drops an unconsumed serialized value after graph configuration', () => {
     const { primitive, target } = intFixture()
     primitive.configure(
       fromPartial({ widgets_values: [222], outputs: [{ type: 'INT' }] })
@@ -308,7 +480,7 @@ describe('PrimitiveNode', () => {
     primitive.onAfterGraphConfigured()
     primitive.connect(0, target, 0)
 
-    expect(primitive.widgets?.[0].value).toBe(222)
+    expect(primitive.widgets?.[0].value).toBe(111)
   })
 
   it('clears its serialized value when its output is disconnected', () => {
@@ -350,16 +522,16 @@ describe('getWidgetConfig', () => {
     const declared: InputSpec = ['FLOAT', { step: 0.1 }]
 
     expect(getWidgetConfig(widgetSlot(declared))).toEqual(declared)
-    expect(getWidgetConfig(fromPartial({ name: 'image' }))).toEqual(['*', {}])
+    expect(
+      getWidgetConfig(fromPartial<INodeInputSlot>({ name: 'image' }))
+    ).toEqual(['*', {}])
   })
 })
 
 describe('mergeIfValid', () => {
   it('narrows a numeric range to the intersection and records it on the slot', () => {
-    // The call shape used by groupNode.ts: `config1` is supplied explicitly and
-    // the "slot" is a bare object whose `widget` is the spec itself.
     const spec: InputSpec = ['INT', { min: 0, max: 100 }]
-    const output: Parameters<typeof mergeIfValid>[0] = fromAny({ widget: spec })
+    const output = widgetSlot(spec)
 
     const { customConfig } = mergeIfValid(
       output,
@@ -424,7 +596,6 @@ describe('mergeIfValid', () => {
 
 describe('convertToInput', () => {
   it('warns and resolves the input slot hosting the widget', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const node = new LGraphNode('Target')
     node.addInput('seed', 'INT')
     node.addInput('steps', 'INT')
@@ -434,16 +605,15 @@ describe('convertToInput', () => {
       'steps'
     )
     expect(convertToInput(node, fromPartial({ name: 'seed' }))).toBeUndefined()
-    expect(warn).toHaveBeenCalledWith(
+    expect(console.warn).toHaveBeenCalledWith(
       expect.stringContaining('remove call to convertToInput')
     )
   })
 })
 
 describe('setWidgetConfig', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    widgetInputsExtension.registerCustomNodes?.(app)
+  beforeEach(async () => {
+    await widgetInputsExtension.registerCustomNodes?.(app)
   })
 
   /** A primitive feeding a widget-backed input, as reroute/paste leave it. */
@@ -503,19 +673,46 @@ describe('setWidgetConfig', () => {
 
   it('leaves the upstream primitive connected while the graph is configuring', () => {
     const { primitive, slot } = connectedPrimitive()
-    appState.configuringGraph = true
+    vi.mocked(app).configuringGraph = true
 
     setWidgetConfig(slot, undefined)
 
     expect(primitive.isOutputConnected(0)).toBe(true)
   })
+
+  it('does not duplicate widgets when pruning a forbidden link re-enters widget creation', () => {
+    const graph = new LGraph()
+    const compatibleTarget = new LGraphNode('TargetA')
+    graph.add(compatibleTarget)
+    compatibleTarget.addInput('value', 'INT')
+    compatibleTarget.inputs[0].widget = {
+      name: 'value',
+      [GET_CONFIG]: () => ['INT', { min: 0, max: 10 }]
+    }
+
+    const toBeHostBoundTarget = new LGraphNode('TargetB')
+    graph.add(toBeHostBoundTarget)
+    toBeHostBoundTarget.addInput('value', 'INT')
+    toBeHostBoundTarget.inputs[0].widget = {
+      name: 'value',
+      [GET_CONFIG]: () => ['INT', { min: 0, max: 20 }]
+    }
+
+    const primitive = LiteGraph.createNode('PrimitiveNode')
+    if (!(primitive instanceof PrimitiveNode)) throw new Error('not registered')
+    graph.add(primitive)
+    primitive.connect(0, compatibleTarget, 0)
+    primitive.connect(0, toBeHostBoundTarget, 0)
+
+    setWidgetConfig(toBeHostBoundTarget.inputs[0], ['AUDIOUPLOAD', {}])
+
+    expect(toBeHostBoundTarget.isInputConnected(0)).toBe(false)
+    expect(compatibleTarget.isInputConnected(0)).toBe(true)
+    expect(primitive.widgets).toHaveLength(2)
+  })
 })
 
 describe('Comfy.WidgetInputs node-def hooks', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   describe('onGraphConfigured', () => {
     it('resolves GET_CONFIG from the node definition, chaining the original hook', async () => {
       const original = vi.fn()
@@ -534,7 +731,7 @@ describe('Comfy.WidgetInputs node-def hooks', () => {
       node.onGraphConfigured?.()
 
       expect(original).toHaveBeenCalled()
-      expect(node.inputs[0].widget![GET_CONFIG]!()).toEqual([
+      expect(node.inputs[0].widget[GET_CONFIG]!()).toEqual([
         'INT',
         { min: 0, max: 8 }
       ])
@@ -564,28 +761,25 @@ describe('Comfy.WidgetInputs node-def hooks', () => {
 
       node.onConfigure?.(fromPartial({}))
 
-      expect(node.inputs[0].widget![GET_CONFIG]!()).toEqual([
-        'INT',
-        { max: 50 }
-      ])
+      expect(node.inputs[0].widget[GET_CONFIG]!()).toEqual(['INT', { max: 50 }])
     })
 
     it('defers to onGraphConfigured while a whole graph is loading', async () => {
       const TestNodeType = await applyNodeDefHooks()
-      appState.configuringGraph = true
+      vi.mocked(app).configuringGraph = true
       const node = new TestNodeType('Test')
       node.addInput('steps', 'INT')
       node.inputs[0].widget = { name: 'steps' }
 
       node.onConfigure?.(fromPartial({}))
 
-      expect(node.inputs[0].widget![GET_CONFIG]).toBeUndefined()
+      expect(node.inputs[0].widget[GET_CONFIG]).toBeUndefined()
     })
   })
 
   describe('onInputDblClick', () => {
-    beforeEach(() => {
-      widgetInputsExtension.registerCustomNodes?.(app)
+    beforeEach(async () => {
+      await widgetInputsExtension.registerCustomNodes?.(app)
     })
 
     async function targetIn(graph: LGraph) {
@@ -606,6 +800,22 @@ describe('Comfy.WidgetInputs node-def hooks', () => {
 
       expect(graph.nodes).toHaveLength(1)
     })
+
+    it.for(['AUDIOUPLOAD', 'IMAGEUPLOAD', 'WEBCAM'])(
+      'does not attach a primitive to a host-bound %s input',
+      async (hostBoundType) => {
+        const graph = new LGraph()
+        const node = await targetIn(graph)
+        node.addInput('host_bound', hostBoundType)
+        node.inputs[0].widget = {
+          name: 'host_bound',
+          [GET_CONFIG]: () => [hostBoundType, {}]
+        }
+
+        expect(() => node.onInputDblClick?.(0, fromPartial({}))).not.toThrow()
+        expect(graph.nodes).toHaveLength(1)
+      }
+    )
 
     it('attaches a titled primitive to a widget input', async () => {
       const graph = new LGraph()

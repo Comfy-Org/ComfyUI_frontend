@@ -6,7 +6,7 @@ import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import { usePropertiesPanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
 import {
   isImageNode,
   isLGraphGroup,
@@ -28,7 +28,7 @@ export function useSelectionState() {
   const canvasStore = useCanvasStore()
   const nodeDefStore = useNodeDefStore()
   const settingStore = useSettingStore()
-  const rightSidePanelStore = useRightSidePanelStore()
+  const propertiesPanelStore = usePropertiesPanelStore()
 
   const { selectedItems } = storeToRefs(canvasStore)
 
@@ -53,11 +53,11 @@ export function useSelectionState() {
   const isSingleNode = computed(
     () => hasSingleSelection.value && isLGraphNode(selectedItems.value[0])
   )
-  const isSingleSubgraph = computed(
-    () =>
-      isSingleNode.value &&
-      (selectedItems.value[0] as LGraphNode)?.isSubgraphNode?.()
-  )
+  const isSingleSubgraph = computed(() => {
+    const predicate: (() => boolean) | undefined =
+      selectedNodes.value.at(0)?.isSubgraphNode
+    return isSingleNode.value && (predicate?.() ?? false)
+  })
   const isSingleImageNode = computed(
     () =>
       isSingleNode.value && isImageNode(selectedItems.value[0] as LGraphNode)
@@ -87,7 +87,7 @@ export function useSelectionState() {
   ): NodeSelectionState => {
     if (!nodes.length) return { collapsed: false, pinned: false }
     return {
-      collapsed: nodes.some((n) => n.flags?.collapsed),
+      collapsed: nodes.some((n) => n.flags.collapsed),
       pinned: nodes.some((n) => n.pinned)
     }
   }
@@ -101,14 +101,12 @@ export function useSelectionState() {
     computeSelectionStatesFromNodes(selectedNodes.value)
 
   const canOpenNodeInfo = computed(
-    () =>
-      Boolean(nodeDef.value) &&
-      settingStore.get('Comfy.UseNewMenu') !== 'Disabled'
+    () => Boolean(nodeDef.value) && propertiesPanelStore.isAvailable
   )
 
   const openNodeInfo = () => {
     if (!canOpenNodeInfo.value) return false
-    rightSidePanelStore.openPanel('info')
+    propertiesPanelStore.openPanel('info')
     return true
   }
 

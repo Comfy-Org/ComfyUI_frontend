@@ -1,9 +1,7 @@
-import { createTestingPinia } from '@pinia/testing'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
-import type { INodeOutputSlot } from '@/lib/litegraph/src/interfaces'
+import type { INodeOutputSlot } from '@comfyorg/graph-model/slots'
 import type {
   LGraph,
   LGraphGroup,
@@ -11,18 +9,17 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import { MinimapDataSource } from '@/renderer/extensions/minimap/data/MinimapDataSource'
 import { useLinkStore } from '@/stores/linkStore'
-import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
-import { toLinkId } from '@/types/linkId'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
-import { toNodeId } from '@/types/nodeId'
+import {
+  toOwningGraphId,
+  toRootGraphId
+} from '@comfyorg/graph-model/graphScopeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import {
   createMockLGraph,
   createMockLGraphNode
 } from '@/utils/__tests__/litegraphTestUtils'
-
-const useExecutionStore = vi.hoisted(() => vi.fn())
-
-vi.mock('@/stores/executionStore', () => ({ useExecutionStore }))
 
 const ROOT_GRAPH_ID = '00000000-0000-0000-0000-000000000001'
 const SUBGRAPH_ID = '00000000-0000-0000-0000-000000000002'
@@ -64,11 +61,6 @@ function rootGraph(
 }
 
 describe('MinimapDataSource', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    useExecutionStore.mockReturnValue({ nodeLocationProgressStates: {} })
-  })
-
   it('uses graph position and rendered size', () => {
     const source = new MinimapDataSource(
       rootGraph([graphNode('node1', [10, 20], 0, [100, 50], [240, 180])])
@@ -79,24 +71,23 @@ describe('MinimapDataSource', () => {
     ])
   })
 
-  it('uses graph-scoped execution state', () => {
-    const node = graphNode('node1', [0, 0])
-    const subgraph = createMockLGraph({
-      id: SUBGRAPH_ID,
-      isRootGraph: false,
-      rootGraph: rootGraph(),
-      _nodes: [node]
-    })
-    useExecutionStore.mockReturnValue({
-      nodeLocationProgressStates: {
+  it.for(['node1', 'node:1'])(
+    'uses graph-scoped execution state for %s',
+    (id) => {
+      const node = graphNode(id, [0, 0])
+      const subgraph = createMockLGraph({
+        id: SUBGRAPH_ID,
+        isRootGraph: false,
+        rootGraph: rootGraph(),
+        _nodes: [node]
+      })
+      const source = new MinimapDataSource(subgraph, {
         [createNodeLocatorId(SUBGRAPH_ID, node.id)]: { state: 'running' }
-      }
-    })
+      })
 
-    expect(new MinimapDataSource(subgraph).getNodes()).toMatchObject([
-      { executionState: 'running' }
-    ])
-  })
+      expect(source.getNodes()).toMatchObject([{ executionState: 'running' }])
+    }
+  )
 
   it('handles an empty graph', () => {
     const source = new MinimapDataSource(rootGraph())

@@ -1,34 +1,54 @@
-import { nextTick, ref } from 'vue'
+import { render } from '@testing-library/vue'
+import { defineComponent, nextTick, ref } from 'vue'
+import { createI18n } from 'vue-i18n'
 import { describe, expect, it, vi } from 'vitest'
 
 import type {
   SecretMetadata,
   FirstClassSecretProvider,
-  SecretProviderInfo
-} from '../types'
-import { useSecretForm } from './useSecretForm'
-
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({ t: (key: string) => key })
-}))
+  SecretProviderInfo,
+  SecretErrorCode
+} from '@/platform/secrets/types'
+import { useSecretForm as useSecretFormComposable } from './useSecretForm'
 
 const mockCreate = vi.fn()
 const mockUpdate = vi.fn()
 
-vi.mock('../api/secretsApi', () => ({
+vi.mock(import('@/platform/secrets/api/secretsApi'), () => ({
   createSecret: (payload: unknown) => mockCreate(payload),
   updateSecret: (id: string, payload: unknown) => mockUpdate(id, payload),
   SecretsApiError: class SecretsApiError extends Error {
     constructor(
       message: string,
       public readonly status?: number,
-      public readonly code?: string
+      public readonly code?: SecretErrorCode
     ) {
       super(message)
       this.name = 'SecretsApiError'
     }
   }
 }))
+
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  missingWarn: false,
+  fallbackWarn: false
+})
+
+function useSecretForm(
+  ...options: Parameters<typeof useSecretFormComposable>
+): ReturnType<typeof useSecretFormComposable> {
+  let result!: ReturnType<typeof useSecretFormComposable>
+  const Wrapper = defineComponent({
+    setup() {
+      result = useSecretFormComposable(...options)
+      return () => null
+    }
+  })
+  render(Wrapper, { global: { plugins: [i18n] } })
+  return result
+}
 
 function createMockSecret(
   overrides: Partial<SecretMetadata> = {}
@@ -990,7 +1010,8 @@ describe('useSecretForm', () => {
     })
 
     it('sets apiError on API failure', async () => {
-      const { SecretsApiError } = await import('../api/secretsApi')
+      const { SecretsApiError } =
+        await import('@/platform/secrets/api/secretsApi')
       const visible = ref(true)
       mockCreate.mockRejectedValue(
         new SecretsApiError('Duplicate', 400, 'DUPLICATE_NAME')

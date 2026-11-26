@@ -4,7 +4,7 @@ import type {
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
 import type { useExecutionStore } from '@/stores/executionStore'
-import type { NodeLocatorId } from '@/types/nodeIdentification'
+import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 
 type ProgressStates = Readonly<
   ReturnType<typeof useExecutionStore>['nodeLocationProgressStates']

@@ -1,18 +1,31 @@
 import { useChainCallback } from '@/composables/functional/useChainCallback'
+import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { describeImageLoadFailure } from '@/platform/telemetry/imageFailureDiagnostics'
+import type { ImageLoadFailureMetadata } from '@comfyorg/telemetry/types'
+import { VIDEO_PREVIEW_WIDGET } from '@/core/graph/subgraph/preview/mediaPreviewName'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { getHdrPreviewUrl } from '@/utils/hdrFormatUtil'
 import { fitDimensionsToNodeWidth } from '@/utils/imageUtil'
 
-const VIDEO_WIDGET_NAME = 'video-preview'
 const VIDEO_DEFAULT_OPTIONS = {
   playsInline: true,
   controls: true,
   loop: true
 } as const
-const MEDIA_LOAD_TIMEOUT = 8192
+export const MEDIA_LOAD_TIMEOUT = 8192
 const MAX_RETRIES = 1
 const DEFAULT_VIDEO_SIZE = 256
+const MEDIA_ERR_SRC_NOT_SUPPORTED = 4
+
+/** Message for a failed video load, from the media error codes of its attempts. */
+export function videoFailureMessageKey(errorCodes: (number | undefined)[]) {
+  return errorCodes.includes(MEDIA_ERR_SRC_NOT_SUPPORTED)
+    ? 'g.videoFormatNotSupported'
+    : 'g.videoFailedToLoad'
+}
 
 type MediaElement = HTMLImageElement | HTMLVideoElement
 
@@ -20,6 +33,11 @@ interface NodePreviewOptions<T extends MediaElement> {
   loadElement: (url: string) => Promise<T | null>
   onLoaded?: (elements: T[]) => void
   onFailedLoading?: () => void
+  /** Which canvas surface this is, so the failure can be attributed. */
+  telemetrySource: Extract<
+    ImageLoadFailureMetadata['source'],
+    'canvas_node_image' | 'canvas_node_video'
+  >
 }
 
 interface ShowPreviewOptions {
@@ -36,24 +54,48 @@ const createContainer = () => {
 const createTimeout = (ms: number) =>
   new Promise<null>((resolve) => setTimeout(() => resolve(null), ms))
 
+/** Distinguishes "the load stalled" from "the load was rejected"; both otherwise yield `null`. */
+const MEDIA_LOAD_TIMED_OUT = Symbol('media-load-timed-out')
+
 const useNodePreview = <T extends MediaElement>(
   node: LGraphNode,
   options: NodePreviewOptions<T>
 ) => {
-  const { loadElement, onLoaded, onFailedLoading } = options
+  const { loadElement, onLoaded, onFailedLoading, telemetrySource } = options
   const nodeOutputStore = useNodeOutputStore()
 
   const loadElementWithTimeout = async (
     url: string,
     retryCount = 0
   ): Promise<T | null> => {
-    const result = await Promise.race([
+    // A stalled load and a rejected one both arrive here as `null`, so the
+    // timeout resolves a sentinel instead: a 401 and an 8s hang are different
+    // problems and must not collapse into the same event. The sentinel is
+    // compared rather than a flag set from the timeout's callback — that flag
+    // would record "the timeout eventually fired", which is true even when the
+    // load lost the race by milliseconds.
+    const raced = await Promise.race([
       loadElement(url),
-      createTimeout(MEDIA_LOAD_TIMEOUT)
+      createTimeout(MEDIA_LOAD_TIMEOUT).then(() => MEDIA_LOAD_TIMED_OUT)
     ])
+    const timedOut = raced === MEDIA_LOAD_TIMED_OUT
+    const result: T | null = timedOut ? null : (raced as T | null)
 
     if (result === null && retryCount < MAX_RETRIES) {
       return loadElementWithTimeout(url, retryCount + 1)
+    }
+
+    if (result === null) {
+      // Reported once per URL, after retries are spent — a report per attempt
+      // would inflate the count by exactly `MAX_RETRIES + 1`.
+      void describeImageLoadFailure(url).then((diagnostics) => {
+        useTelemetry()?.trackImageLoadFailed({
+          ...diagnostics,
+          source: telemetrySource,
+          attempts: retryCount + 1,
+          timed_out: timedOut
+        })
+      })
     }
 
     return result
@@ -71,17 +113,21 @@ const useNodePreview = <T extends MediaElement>(
     const outputUrls = nodeOutputStore.getNodeImageUrls(node)
     if (!outputUrls?.length) return
 
-    if (options?.block) node.isLoading = true
+    if (options.block) node.isLoading = true
+    const { images, preview } = node
 
     loadElements(outputUrls)
       .then((elements) => {
+        if (node.images !== images || node.preview !== preview) return
         const validElements = elements.filter(
           (el): el is NonNullable<Awaited<T>> => el !== null
         )
         if (validElements.length) {
           onLoaded?.(validElements)
-          node.graph?.setDirtyCanvas(true)
+        } else {
+          onFailedLoading?.()
         }
+        node.graph?.setDirtyCanvas(true)
       })
       .catch(() => {
         onFailedLoading?.()
@@ -107,7 +153,9 @@ export const useNodeImage = (node: LGraphNode, callback?: () => void) => {
       const img = new Image()
       img.onload = () => resolve(img)
       img.onerror = () => resolve(null)
-      img.src = url
+      const previewUrl = getHdrPreviewUrl(url)
+      if (previewUrl) img.dataset.fileUrl = url
+      img.src = previewUrl ?? url
     })
 
   const onLoaded = (elements: HTMLImageElement[]) => {
@@ -119,8 +167,10 @@ export const useNodeImage = (node: LGraphNode, callback?: () => void) => {
   return useNodePreview(node, {
     loadElement,
     onLoaded,
+    telemetrySource: 'canvas_node_image',
     onFailedLoading: () => {
       node.imgs = undefined
+      callback?.()
     }
   })
 }
@@ -131,17 +181,22 @@ export const useNodeImage = (node: LGraphNode, callback?: () => void) => {
 export const useNodeVideo = (node: LGraphNode, callback?: () => void) => {
   node.previewMediaType = 'video'
   let minHeight = DEFAULT_VIDEO_SIZE
-  let minWidth = DEFAULT_VIDEO_SIZE
+  let minWidth = 0
+  let errorCodes: (number | undefined)[] = []
 
   const { handleWheel, handlePointerDown, handlePointerMove } =
     useCanvasInteractions()
 
+  const findVideoWidget = () =>
+    node.widgets?.find((w) => w.name === VIDEO_PREVIEW_WIDGET)
+
   const setMinDimensions = (video: HTMLVideoElement) => {
+    const shownWidth = findVideoWidget()?.computeLayoutSize?.(node).minWidth
     const { minHeight: calculatedHeight, minWidth: calculatedWidth } =
       fitDimensionsToNodeWidth(
         video.videoWidth,
         video.videoHeight,
-        node.size?.[0] || DEFAULT_VIDEO_SIZE
+        shownWidth || node.size[0] || DEFAULT_VIDEO_SIZE
       )
 
     minWidth = calculatedWidth
@@ -157,22 +212,27 @@ export const useNodeVideo = (node: LGraphNode, callback?: () => void) => {
         setMinDimensions(video)
         resolve(video)
       }
-      video.onerror = () => resolve(null)
+      video.onerror = () => {
+        errorCodes.push(video.error?.code)
+        resolve(null)
+      }
       video.src = url
     })
 
   const addVideoDomWidget = (container: HTMLElement) => {
-    const hasWidget = node.widgets?.some((w) => w.name === VIDEO_WIDGET_NAME)
+    const hasWidget = node.widgets?.some((w) => w.name === VIDEO_PREVIEW_WIDGET)
     if (!hasWidget) {
-      const widget = node.addDOMWidget(VIDEO_WIDGET_NAME, 'video', container, {
-        canvasOnly: true,
-        hideOnZoom: false
-      })
+      const widget = node.addDOMWidget(
+        VIDEO_PREVIEW_WIDGET,
+        'video',
+        container,
+        {
+          surfaces: { canvas: 'shown', vueNode: 'never', panel: 'never' },
+          hideOnZoom: false
+        }
+      )
       widget.serialize = false
-      widget.computeLayoutSize = () => ({
-        minHeight,
-        minWidth
-      })
+      widget.computeLayoutSize = () => ({ minHeight, minWidth })
 
       const controller = new AbortController()
       const { signal } = controller
@@ -186,24 +246,33 @@ export const useNodeVideo = (node: LGraphNode, callback?: () => void) => {
     }
   }
 
-  const onLoaded = (videoElements: HTMLVideoElement[]) => {
-    const videoElement = videoElements[0]
-    if (!videoElement) return
-
+  const showInContainer = (element: HTMLElement) => {
     if (!node.videoContainer) {
       node.videoContainer = createContainer()
       addVideoDomWidget(node.videoContainer)
     }
+    node.videoContainer.replaceChildren(element)
+  }
 
-    node.videoContainer.replaceChildren(videoElement)
+  const onLoaded = (videoElements: HTMLVideoElement[]) => {
+    showInContainer(videoElements[0])
+    const widget = findVideoWidget()
+    if (widget) widget.computeLayoutSize = () => ({ minHeight, minWidth })
+    errorCodes = []
     callback?.()
   }
 
   return useNodePreview(node, {
     loadElement,
     onLoaded,
+    telemetrySource: 'canvas_node_video',
     onFailedLoading: () => {
-      node.videoContainer = undefined
+      const message = document.createElement('p')
+      message.className = 'p-2 text-center text-sm'
+      message.textContent = t(videoFailureMessageKey(errorCodes))
+      errorCodes = []
+      showInContainer(message)
+      callback?.()
     }
   })
 }

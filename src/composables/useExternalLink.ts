@@ -24,7 +24,7 @@ import { i18n } from '@/i18n'
  * ```
  */
 export function useExternalLink() {
-  const locale = computed(() => String(i18n.global.locale.value))
+  const locale = computed(() => i18n.global.locale.value)
 
   const isChinese = computed(() => {
     return locale.value === 'zh' || locale.value === 'zh-TW'

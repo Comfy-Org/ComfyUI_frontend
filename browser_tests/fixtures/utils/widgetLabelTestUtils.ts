@@ -1,5 +1,5 @@
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 export const RENAMED_LABEL = 'Renamed Widget Label'
 const WIDGET_NAME = 'text'

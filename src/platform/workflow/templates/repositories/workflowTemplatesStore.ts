@@ -4,17 +4,20 @@ import { computed, ref, shallowRef, watch } from 'vue'
 import { i18n, st } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
-import type { NavGroupData, NavItemData } from '@/types/navTypes'
+import type {
+  NavGroupData,
+  NavItemData
+} from '@comfyorg/design-system/lib/navigation/types'
 import { generateCategoryId, getCategoryIcon } from '@/utils/categoryUtil'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
-import { zLogoIndex } from '../schemas/templateSchema'
-import type { LogoIndex } from '../schemas/templateSchema'
+import { zLogoIndex } from '@comfyorg/api-client/templateSchema'
+import type { LogoIndex } from '@comfyorg/api-client/templateSchema'
 import type {
   TemplateGroup,
   TemplateInfo,
   WorkflowTemplates
-} from '../types/template'
+} from '@comfyorg/api-client/templateTypes'
 
 // Enhanced template interface for easier filtering
 interface EnhancedTemplate extends TemplateInfo {
@@ -30,6 +33,41 @@ interface EnhancedTemplate extends TemplateInfo {
 export const useWorkflowTemplatesStore = defineStore(
   'workflowTemplates',
   () => {
+    const activeTemplateLoad = shallowRef<{
+      id: string
+      controller: AbortController
+      phase: 'preparing' | 'loading'
+    } | null>(null)
+    const loadingTemplateId = computed(
+      () => activeTemplateLoad.value?.id ?? null
+    )
+
+    function startTemplateLoad(id: string) {
+      if (activeTemplateLoad.value?.phase === 'loading') return
+      activeTemplateLoad.value?.controller.abort()
+      const controller = new AbortController()
+      activeTemplateLoad.value = { id, controller, phase: 'preparing' }
+      return controller
+    }
+
+    function startTemplateGraphLoad(controller: AbortController) {
+      const load = activeTemplateLoad.value
+      if (load?.controller !== controller) return false
+      activeTemplateLoad.value = { ...load, phase: 'loading' }
+      return true
+    }
+
+    function finishTemplateLoad(controller: AbortController) {
+      if (activeTemplateLoad.value?.controller === controller)
+        activeTemplateLoad.value = null
+    }
+
+    function cancelTemplateLoad(controller: AbortController | undefined) {
+      const load = activeTemplateLoad.value
+      if (load?.controller !== controller || load?.phase !== 'preparing') return
+      load.controller.abort()
+      activeTemplateLoad.value = null
+    }
     const customTemplates = shallowRef<{ [moduleName: string]: string[] }>({})
     const coreTemplates = shallowRef<WorkflowTemplates[]>([])
     const englishTemplates = shallowRef<WorkflowTemplates[]>([])
@@ -85,7 +123,7 @@ export const useWorkflowTemplatesStore = defineStore(
       ...templateCategory,
       localizedTitle: st(
         `templateWorkflows.category.${normalizeI18nKey(templateCategory.title)}`,
-        templateCategory.title ?? templateCategory.moduleName
+        templateCategory.title
       ),
       templates: localizeTemplateList(
         templateCategory.templates,
@@ -342,7 +380,7 @@ export const useWorkflowTemplatesStore = defineStore(
       if (essentialCats.length > 0) {
         essentialCats.forEach((essentialCat) => {
           const categoryIcon = essentialCat.icon
-          const categoryTitle = essentialCat.title ?? 'Getting Started'
+          const categoryTitle = essentialCat.title
           const categoryId = generateCategoryId('basics', essentialCat.title)
           items.push({
             id: categoryId,
@@ -535,7 +573,7 @@ export const useWorkflowTemplatesStore = defineStore(
       if (!logoPath) return ''
 
       // Validate path to prevent directory traversal and ensure safe file extensions
-      const safePathPattern = /^[a-zA-Z0-9_\-./]+\.(png|jpg|jpeg|svg|webp)$/i
+      const safePathPattern = /^[a-z0-9_\-./]+\.(png|jpg|jpeg|svg|webp)$/i
       if (
         !safePathPattern.test(logoPath) ||
         logoPath.includes('..') ||
@@ -581,6 +619,11 @@ export const useWorkflowTemplatesStore = defineStore(
       filterTemplatesByCategory,
       isLoaded,
       loadWorkflowTemplates,
+      loadingTemplateId,
+      startTemplateLoad,
+      startTemplateGraphLoad,
+      finishTemplateLoad,
+      cancelTemplateLoad,
       knownTemplateNames,
       getTemplateByName,
       getEnglishMetadata,

@@ -1,8 +1,8 @@
+import type { LGraph, LGraphNode } from '@comfyorg/graph-model/entityRegistry'
 import log from 'loglevel'
 
-import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { compareNodeIds } from '@/types/nodeId'
+import { compareNodeIds } from '@comfyorg/graph-model/nodeId'
 
 const logger = log.getLogger('arrangeForLegacyRender')
 

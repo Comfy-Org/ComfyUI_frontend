@@ -16,6 +16,7 @@ import json
 import os
 import struct
 import subprocess
+import zlib
 
 import av
 from PIL import Image
@@ -147,6 +148,31 @@ def generate_png():
     report('with_metadata.png')
 
 
+def generate_corrupt_itxt_png():
+    name = 'corrupt_compressed_itxt.png'
+    path = out(name)
+    make_1x1_image().save(path, 'PNG')
+
+    with open(path, 'rb') as source:
+        png = bytearray(source.read())
+    corrupt_zlib = bytes.fromhex('789c434c4a4e494d1c25461201003da5c15d')
+    chunk_type = b'iTXt'
+    chunk_data = b'workflow\0\x01\0\0\0' + corrupt_zlib
+    chunk = (
+        struct.pack('>I', len(chunk_data))
+        + chunk_type
+        + chunk_data
+        + struct.pack('>I', zlib.crc32(chunk_type + chunk_data))
+    )
+    first_chunk_length = struct.unpack_from('>I', png, 8)[0]
+    insert_at = 8 + 12 + first_chunk_length
+    png[insert_at:insert_at] = chunk
+
+    with open(path, 'wb') as fixture:
+        fixture.write(png)
+    report(name)
+
+
 def generate_webp():
     img = make_1x1_image()
     exif = build_exif_bytes()
@@ -257,6 +283,7 @@ def generate_nan_variants():
 if __name__ == '__main__':
     print('Generating fixtures...')
     generate_png()
+    generate_corrupt_itxt_png()
     generate_webp()
     generate_avif()
     generate_flac()

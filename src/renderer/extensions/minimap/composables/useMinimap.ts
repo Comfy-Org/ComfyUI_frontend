@@ -1,52 +1,82 @@
-import { useDocumentVisibility, useIntervalFn } from '@vueuse/core'
-import { computed, nextTick, ref, shallowRef, watch } from 'vue'
-import type { ShallowRef } from 'vue'
+import {
+  useDocumentVisibility,
+  useEventListener,
+  useIntervalFn,
+  usePreferredReducedMotion,
+  useRafFn
+} from '@vueuse/core'
+import { computed, watch } from 'vue'
+import type { CSSProperties, ShallowRef } from 'vue'
 
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import {
+  getMinimapDecorations,
+  minimapDecorationRevision
+} from '@/platform/canvas/minimapDecorationRegistry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 
-import type { MinimapCanvas, MinimapSettingsKey } from '../types'
+import { useThemeStore } from '@/platform/theme/themeStore'
+import { useExecutionStore } from '@/stores/executionStore'
+import { MinimapDataSource } from '@/renderer/extensions/minimap/data/MinimapDataSource'
+import {
+  MINIMAP_DECORATION_POP_MS,
+  renderMinimapToCanvas
+} from '@/renderer/extensions/minimap/minimapCanvasRenderer'
+import type {
+  MinimapCanvas,
+  MinimapChange,
+  MinimapSettingsKey
+} from '@/renderer/extensions/minimap/types'
 import { useMinimapGraph } from './useMinimapGraph'
 import { useMinimapInteraction } from './useMinimapInteraction'
-import { useMinimapRenderer } from './useMinimapRenderer'
 import { useMinimapSettings } from './useMinimapSettings'
 import { useMinimapViewport } from './useMinimapViewport'
 
-/** How often to compare digests for state that emits no event; see the poll. */
 const CHANGE_DETECTION_INTERVAL_MS = 100
 
 export function useMinimap({
-  canvasRefMaybe,
-  containerRefMaybe
+  canvasRef,
+  containerRef
 }: {
-  canvasRefMaybe?: Readonly<ShallowRef<HTMLCanvasElement | null>>
-  containerRefMaybe?: Readonly<ShallowRef<HTMLDivElement | null>>
-} = {}) {
+  canvasRef: Readonly<ShallowRef<HTMLCanvasElement | null>>
+  containerRef: Readonly<ShallowRef<HTMLDivElement | null>>
+}) {
   const canvasStore = useCanvasStore()
-  const workflowStore = useWorkflowStore()
   const settingStore = useSettingStore()
-
-  const minimapRef = ref<HTMLElement | null>(null)
-  const canvasRef = canvasRefMaybe ?? shallowRef(null)
-  const containerRef = containerRefMaybe ?? shallowRef(null)
-
-  const visible = ref(true)
-  const initialized = ref(false)
-
+  const executionStore = useExecutionStore()
+  const themeStore = useThemeStore()
+  const motionPreference = usePreferredReducedMotion()
+  const documentVisibility = useDocumentVisibility()
   const width = 250
   const height = 200
-
-  const canvas = computed(() => canvasStore.canvas as MinimapCanvas | null)
-  const graph = computed(() => {
-    // If we're in a subgraph, use that; otherwise use the canvas graph
-    const activeSubgraph = workflowStore.activeSubgraph
-    return (activeSubgraph || canvas.value?.graph) as LGraph | null
+  const graph = computed(() => canvasStore.currentGraph)
+  const canvas = computed<MinimapCanvas | null>(() =>
+    graph.value ? canvasStore.canvas : null
+  )
+  const active = computed(
+    () =>
+      !!canvas.value &&
+      !!canvasRef.value &&
+      documentVisibility.value !== 'hidden'
+  )
+  const decorations = computed(() => {
+    const revision = minimapDecorationRevision.value
+    void revision
+    if (!graph.value) return []
+    const rows = getMinimapDecorations(graphScopeOf(graph.value))
+    const reducedMotion =
+      settingStore.get('Comfy.Appearance.DisableAnimations') ||
+      motionPreference.value === 'reduce'
+    return reducedMotion
+      ? rows.map((row) => ({
+          ...row,
+          enter: undefined,
+          enteredAt: undefined
+        }))
+      : rows
   })
 
-  // Settings
-  const settings = useMinimapSettings()
   const {
     nodeColors,
     showLinks,
@@ -55,18 +85,13 @@ export function useMinimap({
     renderError,
     containerStyles,
     panelStyles
-  } = settings
+  } = useMinimapSettings()
 
-  const updateOption = async (key: MinimapSettingsKey, value: boolean) => {
-    await settingStore.set(key, value)
-    renderer.forceFullRedraw()
-    renderer.updateMinimap(viewport.updateBounds, viewport.updateViewport)
-  }
+  const updateOption = (key: MinimapSettingsKey, value: boolean) =>
+    settingStore.set(key, value)
 
-  // Viewport management
-  const viewport = useMinimapViewport(canvas, graph, width, height)
+  const viewport = useMinimapViewport(canvas, width, height)
 
-  // Interaction handling
   const interaction = useMinimapInteraction(
     containerRef,
     viewport.bounds,
@@ -77,194 +102,138 @@ export function useMinimap({
     canvas
   )
 
-  // Two of the three useMinimap() call sites have no canvas. updateBounds()
-  // runs before renderMinimap discovers there is nothing to draw, and it costs
-  // a full layout-map rebuild, so every path that redraws checks this first.
-  const canDraw = computed(() => visible.value && !!canvasRef.value)
+  const graphReader = useMinimapGraph(graph)
+  let publishedSource: MinimapDataSource | undefined
 
-  // Graph events are hints to compare the digests, not commands to repaint:
-  // graphChanged fires for plenty the minimap does not draw (zIndex from every
-  // widget pointerdown, widget values, title edits), and the digest is the one
-  // place that knows whether the picture moved.
-  const checkAndRepaint = () => {
-    if (!canDraw.value) return
-    if (graphManager.checkForChanges()) {
-      renderer.updateMinimap(viewport.updateBounds, viewport.updateViewport)
-    }
-  }
-
-  const graphManager = useMinimapGraph(graph, () => checkAndRepaint())
-
-  // Rendering
-  const renderer = useMinimapRenderer(
-    canvasRef,
-    graph,
-    viewport.bounds,
-    viewport.scale,
-    graphManager.updateFlags,
-    settings,
-    width,
-    height
-  )
-
-  // Most edits reach the digest comparison through useMinimapGraph's event
-  // hooks. This loop is the backstop for state that emits no event at all:
-  // snapPoint mutating `_pos` elements in place, extensions assigning
-  // `node.pos[0]` directly (only `size` is Proxy-wrapped against that),
-  // `has_errors`, group drags, and execution-state transitions, which arrive
-  // in executionStore rather than as graph events. Repaints happen only when
-  // the digests move, so idle ticks cost one O(n) comparison and nothing else.
-  const { pause: pauseChangeDetection, resume: resumeChangeDetection } =
-    useIntervalFn(checkAndRepaint, CHANGE_DETECTION_INTERVAL_MS, {
-      immediate: false
+  function paint(source: MinimapDataSource, now: number) {
+    if (!active.value || !canvasRef.value) return
+    renderMinimapToCanvas(canvasRef.value, source, {
+      bounds: viewport.bounds.value,
+      scale: viewport.scale.value,
+      settings: {
+        nodeColors: nodeColors.value,
+        showLinks: showLinks.value,
+        showGroups: showGroups.value,
+        renderBypass: renderBypass.value,
+        renderError: renderError.value
+      },
+      width,
+      height,
+      decorations: decorations.value,
+      now
     })
+  }
 
-  // Polling is derived state, not something init() decides once. init() runs
-  // synchronously from the immediate canvas watcher - before the template ref
-  // has mounted - so any start decision taken there sees canvasRef as null and
-  // the poll never starts. Deriving from the refs means the loop starts the
-  // moment the canvas mounts and stops the moment any condition lapses.
-  //
-  // Document visibility is part of the condition because rAF was suspended
-  // entirely on a hidden tab while setInterval is only clamped, and a tab that
-  // is hidden at mount (middle-click, session restore) never fires a
-  // visibilitychange to a transition-only watcher.
-  const documentVisibility = useDocumentVisibility()
-  const shouldPoll = computed(
-    () =>
-      initialized.value &&
-      canDraw.value &&
-      documentVisibility.value !== 'hidden'
-  )
-
-  watch(
-    shouldPoll,
-    (active) => {
-      if (active) resumeChangeDetection()
-      else pauseChangeDetection()
-    },
-    { immediate: true }
-  )
-
-  const init = async () => {
-    if (initialized.value) return
-
-    visible.value = settingStore.get('Comfy.Minimap.Visible')
-
-    if (canvas.value && graph.value) {
-      graphManager.init()
-
-      if (containerRef.value) {
-        interaction.updateContainerRect()
-      }
-      viewport.updateCanvasDimensions()
-
-      window.addEventListener('resize', interaction.updateContainerRect)
-      window.addEventListener('scroll', interaction.updateContainerRect)
-      window.addEventListener('resize', viewport.updateCanvasDimensions)
-
-      renderer.forceFullRedraw()
-      renderer.updateMinimap(viewport.updateBounds, viewport.updateViewport)
+  function refresh(minimum: MinimapChange = 'none', now = performance.now()) {
+    if (!active.value) return
+    const change = graphReader.checkForChanges()
+    if (change === 'none' && minimum === 'none') return
+    const source = new MinimapDataSource(
+      graph.value,
+      executionStore.nodeLocationProgressStates
+    )
+    if (change === 'geometry' || minimum === 'geometry') {
+      viewport.updateBounds(source)
       viewport.updateViewport()
-
-      if (visible.value) viewport.startViewportSync()
-      initialized.value = true
     }
+    publishedSource = source
+    paint(source, now)
   }
 
-  const destroy = () => {
-    pauseChangeDetection()
-    viewport.stopViewportSync()
-    graphManager.destroy()
-
-    window.removeEventListener('resize', interaction.updateContainerRect)
-    window.removeEventListener('scroll', interaction.updateContainerRect)
-    window.removeEventListener('resize', viewport.updateCanvasDimensions)
-
-    initialized.value = false
+  function hasAnimatingDecorations(now: number) {
+    return decorations.value.some(
+      ({ enteredAt }) =>
+        enteredAt !== undefined && now - enteredAt < MINIMAP_DECORATION_POP_MS
+    )
   }
+
+  const decorationFrames = useRafFn(
+    () => {
+      const now = performance.now()
+      if (publishedSource) paint(publishedSource, now)
+      if (!active.value || !hasAnimatingDecorations(now))
+        decorationFrames.pause()
+    },
+    { immediate: false }
+  )
+
+  const changeDetection = useIntervalFn(refresh, CHANGE_DETECTION_INTERVAL_MS, {
+    immediate: false
+  })
+
+  useEventListener(window, 'resize', interaction.updateContainerRect)
+  useEventListener(window, 'scroll', interaction.updateContainerRect)
+  useEventListener(window, 'resize', viewport.updateCanvasDimensions)
 
   watch(
-    canvas,
-    async (newCanvas, oldCanvas) => {
-      if (oldCanvas) {
-        graphManager.cleanupEventListeners()
-        pauseChangeDetection()
-        viewport.stopViewportSync()
-        graphManager.destroy()
-        window.removeEventListener('resize', interaction.updateContainerRect)
-        window.removeEventListener('scroll', interaction.updateContainerRect)
-        window.removeEventListener('resize', viewport.updateCanvasDimensions)
+    [active, canvas, canvasRef, containerRef, graph],
+    ([isActive]) => {
+      changeDetection.pause()
+      viewport.stopViewportSync()
+      decorationFrames.pause()
+      if (!graph.value) {
+        publishedSource = undefined
+        canvasRef.value?.getContext('2d')?.clearRect(0, 0, width, height)
       }
-      if (newCanvas && !initialized.value) {
-        await init()
-      }
+      if (!isActive) return
+      interaction.updateContainerRect()
+      viewport.updateCanvasDimensions()
+      const now = performance.now()
+      refresh('geometry', now)
+      changeDetection.resume()
+      viewport.startViewportSync()
+      if (hasAnimatingDecorations(now)) decorationFrames.resume()
     },
     { immediate: true, flush: 'post' }
   )
 
-  // Watch for graph changes (e.g., when navigating to/from subgraphs)
-  watch(graph, (newGraph, oldGraph) => {
-    if (newGraph && newGraph !== oldGraph) {
-      graphManager.cleanupEventListeners(oldGraph || undefined)
-      graphManager.setupEventListeners()
-      if (!canDraw.value) return
-      renderer.forceFullRedraw()
-      renderer.updateMinimap(viewport.updateBounds, viewport.updateViewport)
-    }
-  })
+  watch(
+    [
+      nodeColors,
+      showLinks,
+      showGroups,
+      renderBypass,
+      renderError,
+      () => themeStore.activeTheme,
+      decorations
+    ],
+    () => {
+      const now = performance.now()
+      refresh('picture', now)
+      if (active.value && hasAnimatingDecorations(now))
+        decorationFrames.resume()
+      else decorationFrames.pause()
+    },
+    { flush: 'post' }
+  )
 
-  watch(visible, async (isVisible) => {
-    if (isVisible) {
-      if (containerRef.value) {
-        interaction.updateContainerRect()
-      }
-      viewport.updateCanvasDimensions()
+  const viewportStyles = {
+    width: `${width}px`,
+    height: `${height}px`,
+    transformOrigin: '0 0',
+    backgroundColor: 'color-mix(in srgb, var(--foreground) 20%, transparent)',
+    willChange: 'transform',
+    pointerEvents: 'none'
+  } satisfies CSSProperties
 
-      renderer.forceFullRedraw()
-
-      await nextTick()
-      await nextTick()
-
-      renderer.updateMinimap(viewport.updateBounds, viewport.updateViewport)
-      viewport.updateViewport()
-      viewport.startViewportSync()
-    } else {
-      viewport.stopViewportSync()
-    }
-  })
-
-  const toggle = async () => {
-    visible.value = !visible.value
-    await settingStore.set('Comfy.Minimap.Visible', visible.value)
-  }
-
-  const setMinimapRef = (ref: HTMLElement | null) => {
-    minimapRef.value = ref
-  }
-
-  // Dynamic viewport styles based on actual viewport transform
-  const viewportStyles = computed(() => {
+  const viewportTransforms = computed(() => {
     const transform = viewport.viewportTransform.value
+    const scaleX = transform.width / width
+    const scaleY = transform.height / height
     return {
-      transform: `translate(${transform.x}px, ${transform.y}px)`,
-      width: `${transform.width}px`,
-      height: `${transform.height}px`,
-      border: `2px solid ${settings.isLightTheme.value ? '#E0E0E0' : '#FFF'}`,
-      backgroundColor: `rgba(255, 255, 255, 0.2)`,
-      willChange: 'transform',
-      backfaceVisibility: 'hidden' as const,
-      perspective: '1000px',
-      pointerEvents: 'none' as const
+      box: `translate(${transform.x}px, ${transform.y}px) scale(${scaleX}, ${scaleY})`,
+      horizontalEdge: `scaleY(${1 / (scaleY || 1)})`,
+      verticalEdge: `scaleX(${1 / (scaleX || 1)})`
     }
   })
 
   return {
-    visible: computed(() => visible.value),
-    initialized: computed(() => initialized.value),
+    interactive: computed(() => !!canvas.value),
+    decorationCount: computed(() => decorations.value.length),
 
     containerStyles,
     viewportStyles,
+    viewportTransforms,
     panelStyles,
     width,
     height,
@@ -275,16 +244,11 @@ export function useMinimap({
     renderBypass,
     renderError,
 
-    init,
-    destroy,
-    toggle,
-    renderMinimap: renderer.renderMinimap,
     handlePointerDown: interaction.handlePointerDown,
     handlePointerMove: interaction.handlePointerMove,
     handlePointerUp: interaction.handlePointerUp,
     handlePointerCancel: interaction.handlePointerCancel,
     handleWheel: interaction.handleWheel,
-    setMinimapRef,
     updateOption
   }
 }

@@ -1,14 +1,14 @@
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { INodeInputSlot, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { forwardMiddleButtonToCanvas } from '@/renderer/extensions/vueNodes/widgets/utils/forwardMiddleButtonToCanvas'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { DOMWidgetImpl, isDOMWidget } from '@/scripts/domWidget'
-import type { BaseDOMWidget } from '@/scripts/domWidget'
+import type { BaseDOMWidget } from '@/types/domWidget'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import type { WidgetId } from '@/types/widgetId'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
 const TRACKPAD_DETECTION_THRESHOLD = 50
 
@@ -26,6 +26,34 @@ export function createMultilineInputElement(
   return element
 }
 
+function mirrorElementValueWrites(
+  widget: BaseDOMWidget<string>,
+  element: HTMLTextAreaElement
+) {
+  const native = Object.getOwnPropertyDescriptor(
+    HTMLTextAreaElement.prototype,
+    'value'
+  )
+  const nativeGet = native?.get
+  const nativeSet = native?.set
+  if (!nativeGet || !nativeSet) return
+  let mirroring = false
+  Object.defineProperty(element, 'value', {
+    configurable: true,
+    get: () => nativeGet.call(element),
+    set: (value: string) => {
+      nativeSet.call(element, value)
+      if (mirroring) return
+      mirroring = true
+      try {
+        widget.options.setValue?.(nativeGet.call(element))
+      } finally {
+        mirroring = false
+      }
+    }
+  })
+}
+
 /**
  * Wires textarea value propagation, trackpad gestures, and middle-button canvas
  * panning onto a `customtext` DOM widget, torn down via the widget's `onRemove`.
@@ -36,6 +64,8 @@ export function bindMultilineTextareaWidget(
 ): void {
   const controller = new AbortController()
   const { signal } = controller
+
+  mirrorElementValueWrites(widget, element)
 
   element.addEventListener(
     'input',
@@ -64,7 +94,7 @@ export function bindMultilineTextareaWidget(
       if (event.ctrlKey) {
         event.preventDefault()
         event.stopPropagation()
-        app.canvas.processMouseWheel(event)
+        useApp().canvas.processMouseWheel(event)
         return
       }
 
@@ -78,7 +108,7 @@ export function bindMultilineTextareaWidget(
       if (gesturesEnabled && isLikelyTrackpad) {
         event.preventDefault()
         event.stopPropagation()
-        app.canvas.processMouseWheel(event)
+        useApp().canvas.processMouseWheel(event)
         return
       }
 
@@ -86,7 +116,7 @@ export function bindMultilineTextareaWidget(
       if (isHorizontal) {
         event.preventDefault()
         event.stopPropagation()
-        app.canvas.processMouseWheel(event)
+        useApp().canvas.processMouseWheel(event)
         return
       }
 
@@ -98,7 +128,7 @@ export function bindMultilineTextareaWidget(
 
       // If textarea can't scroll vertically, pass to canvas
       event.preventDefault()
-      app.canvas.processMouseWheel(event)
+      useApp().canvas.processMouseWheel(event)
     },
     { signal }
   )
@@ -125,8 +155,6 @@ export function createPromotedMultilineWidget(
 ): IBaseWidget | undefined {
   const { subgraphNode, input, widgetId, sourceWidget } = context
 
-  // Only materialize once the host node is settled in its graph; clone/configure
-  // run with a transient id and would leak duplicate DOM widgets.
   const graph = subgraphNode.graph
   if (!graph || graph.getNodeById(subgraphNode.id) !== subgraphNode)
     return undefined
@@ -151,6 +179,7 @@ export function createPromotedMultilineWidget(
     type: 'customtext',
     element,
     options: {
+      vueNodeRenderer: 'native',
       hideOnZoom: true,
       minNodeSize: [400, 200],
       getValue: readValue,

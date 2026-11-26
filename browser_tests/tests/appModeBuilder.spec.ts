@@ -2,40 +2,68 @@ import {
   comfyPageFixture as test,
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
-import {
-  dismissErrorOverlay,
-  enableErrorsOverlay
-} from '@e2e/fixtures/helpers/ErrorsTabHelper'
+import { dismissErrorOverlay } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 
 test.describe('App mode builder selection', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.appMode.enableLinearMode()
-  })
+  test(
+    'keeps selectable inputs beside their sockets',
+    { tag: '@vue-nodes' },
+    async ({ comfyPage }) => {
+      await test.step('Open input selection and center KSampler', async () => {
+        await comfyPage.appMode.enterBuilder()
+        await comfyPage.appMode.steps.goToInputs()
+        const [node] = await comfyPage.nodeOps.getNodeRefsByType('KSampler')
+        await node.centerOnNode()
+      })
 
-  test('Can independently select inputs of same name', async ({
-    comfyPage
-  }) => {
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-    const items = comfyPage.appMode.select.inputItems
+      const row = comfyPage.vueNodes.getWidgetRowByLabel('KSampler', 'seed')
 
-    await comfyPage.vueNodes.selectNodes(['6', '7'])
-    await comfyPage.command.executeCommand('Comfy.Graph.ConvertToSubgraph')
+      await test.step('Check input alignment and usable width', async () => {
+        await expect(row).toBeVisible()
+        await expect(async () => {
+          const input = (await row
+            .getByRole('spinbutton', { name: 'seed' })
+            .boundingBox())!
+          const socket = (await row.getByTestId('slot-dot').boundingBox())!
+          expect(
+            Math.abs(input.y + input.height / 2 - socket.y - socket.height / 2)
+          ).toBeLessThan(2)
+          expect(input.width).toBeGreaterThan(80)
+        }).toPass({ timeout: 5000 })
+      })
 
-    await comfyPage.appMode.enterBuilder()
-    await comfyPage.appMode.steps.goToInputs()
-    await expect(items).toHaveCount(0)
-
-    const prompts = comfyPage.vueNodes
-      .getNodeByTitle('New Subgraph')
-      .locator('.lg-node-widget')
-    const count = await prompts.count()
-    for (let i = 0; i < count; i++) {
-      await expect(prompts.nth(i)).toBeVisible()
-      await prompts.nth(i).click()
-      await expect(items).toHaveCount(i + 1)
+      await test.step('Select the input in the sidebar', async () => {
+        await comfyPage.appMode.select.selectInputWidget('KSampler', 'seed')
+        await expect(comfyPage.appMode.select.inputItems).toHaveCount(1)
+      })
     }
-  })
+  )
+
+  test(
+    'Can independently select inputs of same name',
+    { tag: '@vue-nodes' },
+    async ({ comfyPage }) => {
+      const items = comfyPage.appMode.select.inputItems
+
+      await comfyPage.vueNodes.selectNodes(['6', '7'])
+      await comfyPage.command.executeCommand('Comfy.Graph.ConvertToSubgraph')
+
+      await comfyPage.appMode.enterBuilder()
+      await comfyPage.appMode.steps.goToInputs()
+      await expect(items).toHaveCount(0)
+
+      const prompts = comfyPage.vueNodes
+        .getNodeByTitle('New Subgraph')
+        .locator('.lg-node-widget')
+      const count = await prompts.count()
+      for (let i = 0; i < count; i++) {
+        await expect(prompts.nth(i)).toBeVisible()
+        await prompts.nth(i).click()
+        await expect(items).toHaveCount(i + 1)
+      }
+    }
+  )
 
   test('Can select outputs', async ({ comfyPage }) => {
     await comfyPage.appMode.enterBuilder()
@@ -99,44 +127,49 @@ test.describe('App mode builder selection', () => {
     }
   )
 
-  test(
-    'Can not select a node with an error',
-    { tag: '@vue-nodes' },
-    async ({ comfyPage }) => {
-      test.slow()
-      await comfyPage.workflow.loadWorkflow('default')
-      await enableErrorsOverlay(comfyPage)
+  test.describe('With errors enabled', () => {
+    test.use({
+      initialSettings: { 'Comfy.RightSidePanel.ShowErrorsTab': true }
+    })
 
-      const [checkpointLoader] =
-        await comfyPage.nodeOps.getNodeRefsByTitle('Load Checkpoint')
-      await new ExecutionHelper(comfyPage).mockValidationFailure({
-        [String(checkpointLoader.id)]: {
-          class_type: 'CheckpointLoaderSimple',
-          dependent_outputs: [],
-          errors: [
-            {
-              type: 'value_not_in_list',
-              message: 'Value not in list',
-              details: '',
-              extra_info: { input_name: 'ckpt_name' }
-            }
-          ]
-        }
-      })
-      await comfyPage.runButton.click()
-      await dismissErrorOverlay(comfyPage)
+    test(
+      'Can not select a node with an error',
+      { tag: '@vue-nodes' },
+      async ({ comfyPage }) => {
+        test.slow()
+        await comfyPage.workflow.loadWorkflow('default')
 
-      const items = comfyPage.appMode.select.inputItems
-      await comfyPage.appMode.enterBuilder()
-      await comfyPage.appMode.steps.goToInputs()
-      await comfyPage.appMode.select.selectInputWidget(
-        'Load Checkpoint',
-        'ckpt_name'
-      )
+        const [checkpointLoader] =
+          await comfyPage.nodeOps.getNodeRefsByTitle('Load Checkpoint')
+        await new ExecutionHelper(comfyPage).mockValidationFailure({
+          [String(checkpointLoader.id)]: {
+            class_type: 'CheckpointLoaderSimple',
+            dependent_outputs: [],
+            errors: [
+              {
+                type: 'value_not_in_list',
+                message: 'Value not in list',
+                details: '',
+                extra_info: { input_name: 'ckpt_name' }
+              }
+            ]
+          }
+        })
+        await comfyPage.runButton.click()
+        await dismissErrorOverlay(comfyPage)
 
-      await expect(items).toHaveCount(0)
-    }
-  )
+        const items = comfyPage.appMode.select.inputItems
+        await comfyPage.appMode.enterBuilder()
+        await comfyPage.appMode.steps.goToInputs()
+        await comfyPage.appMode.select.selectInputWidget(
+          'Load Checkpoint',
+          'ckpt_name'
+        )
+
+        await expect(items).toHaveCount(0)
+      }
+    )
+  })
 
   test(
     'Can not select note nodes',

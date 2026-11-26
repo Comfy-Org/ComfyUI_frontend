@@ -21,12 +21,8 @@ async function saveCloseAndReopenAsApp(
 }
 
 test.describe('Builder input reordering', { tag: '@ui' }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.appMode.enableLinearMode()
-    await comfyPage.settings.setSetting(
-      'Comfy.AppBuilder.VueNodeSwitchDismissed',
-      true
-    )
+  test.use({
+    initialSettings: { 'Comfy.AppBuilder.VueNodeSwitchDismissed': true }
   })
 
   test('Drag first input to last position', async ({ comfyPage }) => {
@@ -150,16 +146,34 @@ test.describe('Builder input reordering', { tag: '@ui' }, () => {
   test('Reordering inputs in one app does not corrupt another app', async ({
     comfyPage
   }, testInfo) => {
-    // This test creates 2 apps, switches tabs 3 times, and enters builder 3
-    // times — the default 15s timeout is insufficient in CI.
     testInfo.setTimeout(45_000)
     const { appMode } = comfyPage
     const app2Widgets = ['seed', 'steps']
     const app1Reordered = ['steps', 'cfg', 'seed']
 
     await test.step('Load both apps', async () => {
-      await comfyPage.workflow.loadWorkflow('linear-basic-app-1')
-      await comfyPage.workflow.loadWorkflow('linear-basic-app-2')
+      await comfyPage.workflow.loadWorkflow('default', {
+        fileName: 'linear-basic-app-1',
+        workflow: {
+          extra: {
+            linearData: {
+              inputs: WIDGETS.map((widget) => ['3', widget]),
+              outputs: ['9']
+            }
+          }
+        }
+      })
+      await comfyPage.workflow.loadWorkflow('default', {
+        fileName: 'linear-basic-app-2',
+        workflow: {
+          extra: {
+            linearData: {
+              inputs: app2Widgets.map((widget) => ['3', widget]),
+              outputs: ['9']
+            }
+          }
+        }
+      })
     })
 
     await test.step('Reorder app1 inputs', async () => {

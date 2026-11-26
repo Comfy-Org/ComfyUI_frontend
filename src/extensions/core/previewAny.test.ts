@@ -1,77 +1,154 @@
-import { describe, expect, it, vi } from 'vitest'
+import { assert, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { effectScope, nextTick } from 'vue'
 
-import type { ComfyExtension } from '@/types/comfy'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { app } from '@/scripts/app'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { useTextPreviewSystem } from '@/systems/textPreviewSystem'
 
-const { addTextPreviewWidgets, updateTextPreviewWidgets } = vi.hoisted(() => ({
-  addTextPreviewWidgets: vi.fn(),
-  updateTextPreviewWidgets: vi.fn()
-}))
+import { previewAnyExtension } from './previewAny'
+import { saveTextExtension } from './saveText'
 
-vi.mock('@/extensions/core/textPreviewWidgets', () => ({
-  addTextPreviewWidgets,
-  updateTextPreviewWidgets
-}))
+vi.mock(import('@/scripts/app'))
 
-vi.mock('@/scripts/app', () => ({
-  app: { rootGraph: {} }
-}))
-
-const capturedExtensions: ComfyExtension[] = []
-
-vi.mock('@/services/extensionService', () => ({
-  useExtensionService: () => ({
-    registerExtension: (ext: ComfyExtension) => {
-      capturedExtensions.push(ext)
-    }
-  })
-}))
-
-type BeforeRegister = NonNullable<ComfyExtension['beforeRegisterNodeDef']>
-
-async function setupNode() {
-  const ext = capturedExtensions.find((e) => e.name === 'Comfy.PreviewAny')
-  expect(ext).toBeDefined()
-
-  const nodeType = { prototype: {} } as unknown as Parameters<BeforeRegister>[0]
-  const nodeData = { name: 'PreviewAny' } as Parameters<BeforeRegister>[1]
-  await ext!.beforeRegisterNodeDef!(
-    nodeType,
-    nodeData,
-    {} as Parameters<BeforeRegister>[2]
-  )
-
-  const node = {} as LGraphNode
-  const proto = nodeType.prototype as {
-    onNodeCreated?: () => void
-    onExecuted?: (message: { text?: string }) => void
+function createPreview(type = 'PreviewAny') {
+  class PreviewNode extends LGraphNode {
+    static comfyClass = type
+    override comfyClass = type
   }
-  return { node, proto }
+  const node = new PreviewNode(type)
+  previewAnyExtension.nodeCreated?.(node, app)
+  saveTextExtension.nodeCreated?.(node, app)
+  app.rootGraph.add(node)
+  const preview = node.widgets?.find((widget) => widget.name === 'preview_text')
+  assert.exists(preview)
+  const scope = effectScope()
+  onTestFinished(() => scope.stop())
+  scope.run(useTextPreviewSystem)
+  return { node, preview, scope, outputs: useNodeOutputStore() }
 }
 
-// Registering the extension is a module side effect, so importing once at
-// module scope is enough. Re-importing it per test behind `vi.resetModules()`
-// re-evaluated the whole graph every time - ~8s against the 10s `hookTimeout`
-// once the suite is competing for the transform pipeline. Collection is
-// untimed, so the cost belongs here. Each test still builds its own nodeType,
-// so they stay independent.
-await import('./previewAny')
+describe('built-in text output presentation', () => {
+  it.for(['PreviewAny', 'SaveText'])(
+    '%s displays stored outputs and clears when outputs are replaced',
+    async (type) => {
+      const { node, preview, outputs } = createPreview(type)
 
-describe('PreviewAny extension', () => {
-  it('adds the shared text preview widgets on node creation', async () => {
-    const { node, proto } = await setupNode()
+      outputs.setNodeOutputsByExecutionId(createNodeExecutionId([node.id]), {
+        text: ['first', 'second']
+      })
+      await nextTick()
+      expect(preview.value).toBe('first\n\nsecond')
 
-    proto.onNodeCreated!.call(node)
+      outputs.nodeOutputs = {}
+      await nextTick()
+      expect(preview.value).toBe('')
+    }
+  )
 
-    expect(addTextPreviewWidgets).toHaveBeenCalledWith(node)
+  it.for([
+    { case: 'null', output: null },
+    { case: 'undefined', output: undefined }
+  ])('clears a nullish execution output: $case', async ({ output }) => {
+    const { node, preview, outputs } = createPreview()
+    const executionId = createNodeExecutionId([node.id])
+    outputs.setNodeOutputsByExecutionId(executionId, {
+      text: 'previous output'
+    })
+    await nextTick()
+
+    outputs.setNodeOutputsByExecutionId(executionId, output, { merge: true })
+    await nextTick()
+
+    expect(preview.value).toBe('')
+    expect(outputs.getNodeOutputs(node)).toEqual({})
   })
 
-  it('updates the preview with executed text', async () => {
-    const { node, proto } = await setupNode()
-    const message = { text: 'hello' }
+  it('writes only the preview whose text changed', async () => {
+    const changed = createPreview()
+    const unchanged = createPreview()
+    const outputs = useNodeOutputStore()
+    const unchangedExecutionId = createNodeExecutionId([unchanged.node.id])
+    outputs.setNodeOutputsByExecutionId(unchangedExecutionId, { text: 'same' })
+    await nextTick()
+    unchanged.preview.callback = vi.fn()
 
-    proto.onExecuted!.call(node, message)
+    outputs.setNodeOutputsByExecutionId(
+      createNodeExecutionId([changed.node.id]),
+      {
+        text: 'new'
+      }
+    )
+    outputs.setNodeOutputsByExecutionId(unchangedExecutionId, { text: 'same' })
+    await nextTick()
 
-    expect(updateTextPreviewWidgets).toHaveBeenCalledWith(node, message)
+    expect(changed.preview.value).toBe('new')
+    expect(unchanged.preview.value).toBe('same')
+    expect(unchanged.preview.callback).not.toHaveBeenCalled()
+  })
+
+  it('retains unrelated node outputs when execution provides no output', () => {
+    const node = new LGraphNode('Image output')
+    app.rootGraph.add(node)
+    const outputs = useNodeOutputStore()
+    const executionId = createNodeExecutionId([node.id])
+    const imageOutput = { images: [{ filename: 'retained.png' }] }
+    outputs.setNodeOutputsByExecutionId(executionId, imageOutput)
+
+    outputs.setNodeOutputsByExecutionId(executionId, null)
+
+    expect(outputs.getNodeOutputs(node)).toEqual(imageOutput)
+  })
+
+  it('restores saved output when a preview is registered', async () => {
+    const outputs = useNodeOutputStore()
+    outputs.nodeOutputs['1'] = { text: 'restored' }
+
+    const { preview } = createPreview()
+    await nextTick()
+
+    expect(preview.value).toBe('restored')
+  })
+
+  it('does not persist output text or preview mode in the workflow', async () => {
+    const { node, preview, outputs } = createPreview()
+    node.serialize_widgets = true
+    outputs.nodeOutputs[String(node.id)] = { text: 'runtime only' }
+    await nextTick()
+
+    expect(preview.value).toBe('runtime only')
+    expect(node.serialize().widgets_values).toEqual([])
+  })
+
+  it('stops updating removed widgets and restores output on re-add', async () => {
+    const { node, preview, outputs } = createPreview()
+    outputs.nodeOutputs[String(node.id)] = { text: 'before removal' }
+    await nextTick()
+
+    app.rootGraph.remove(node)
+    outputs.nodeOutputs[String(node.id)] = { text: 'after removal' }
+    await nextTick()
+
+    expect(preview.value).toBe('before removal')
+
+    app.rootGraph.add(node)
+    await nextTick()
+
+    expect(preview.value).toBe('after removal')
+    expect(node.widgets?.map((widget) => widget.name)).toEqual([
+      'preview_text',
+      'preview_mode'
+    ])
+  })
+
+  it('stops projecting when the application scope is disposed', async () => {
+    const { node, preview, scope, outputs } = createPreview()
+    scope.stop()
+
+    outputs.nodeOutputs[String(node.id)] = { text: 'after disposal' }
+    await nextTick()
+
+    expect(preview.value).toBe('')
   })
 })

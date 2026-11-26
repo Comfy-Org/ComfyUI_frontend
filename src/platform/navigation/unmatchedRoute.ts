@@ -1,6 +1,6 @@
 import type { RouteLocation, RouteLocationRaw } from 'vue-router'
 
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 /**
  * An unmatched path is attacker-supplied and unbounded, so it is truncated
@@ -22,6 +22,7 @@ const MAX_REPORTED_PATH_LENGTH = 128
  */
 export function unmatchedRouteRedirect(to: RouteLocation): RouteLocationRaw {
   reportError(new Error('Unmatched route'), {
+    surface: 'platform',
     errorType: 'unmatched_route',
     level: 'warning',
     context: { path: to.path.slice(0, MAX_REPORTED_PATH_LENGTH) }

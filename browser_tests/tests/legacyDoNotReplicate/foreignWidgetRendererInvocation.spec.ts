@@ -3,8 +3,8 @@ import {
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import { toNodeId } from '@/types/nodeId'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 for (const vueNodesEnabled of [false, true] as const) {
   const renderer = vueNodesEnabled ? 'Vue' : 'classic'
@@ -16,10 +16,6 @@ for (const vueNodesEnabled of [false, true] as const) {
     test('invokes prototype behavior from rendering and pointer input', async ({
       comfyPage
     }) => {
-      await comfyPage.settings.setSetting(
-        'Comfy.VueNodes.Enabled',
-        vueNodesEnabled
-      )
       await comfyPage.nodeOps.clearGraph()
       const addForeignWidget = () => {
         class ForeignLegacyWidget implements IBaseWidget {

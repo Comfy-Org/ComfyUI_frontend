@@ -4,11 +4,11 @@ import * as fc from 'fast-check'
 import { describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type { AssetItem } from '@comfyorg/assets-core/schema'
 
-vi.mock('@/platform/assets/utils/outputAssetUtil')
+vi.mock(import('@/platform/assets/adapters/outputAssetResolver'))
 
-vi.mock('@/platform/assets/schemas/assetMetadataSchema', () => ({
+vi.mock<unknown>(import('@/platform/assets/types/outputAssetMetadata'), () => ({
   getOutputAssetMetadata: (metadata: Record<string, unknown> | undefined) => {
     if (
       metadata &&
@@ -31,13 +31,12 @@ function arbAssetList(
   maxLength = 20
 ): fc.Arbitrary<AssetItem[]> {
   return fc.uniqueArray(arbAssetId, { minLength, maxLength }).map((ids) =>
-    ids.map(
-      (id): AssetItem =>
-        fromPartial({
-          id,
-          name: `${id}.png`,
-          tags: ['output']
-        })
+    ids.map((id): AssetItem =>
+      fromPartial({
+        id,
+        name: `${id}.png`,
+        tags: ['output']
+      })
     )
   )
 }
@@ -68,14 +67,14 @@ describe('useOutputStacks properties', () => {
     )
   })
 
-  it('all items have unique keys', () => {
+  it('all items have unique id', () => {
     fc.assert(
       fc.property(arbAssetList(0, 30), (assets) => {
         const assetsRef = ref(assets)
         const { assetItems } = useOutputStacks({ assets: assetsRef })
 
-        const keys = assetItems.value.map((item) => item.key)
-        expect(new Set(keys).size).toBe(keys.length)
+        const ids = assetItems.value.map((item) => item.id)
+        expect(new Set(ids).size).toBe(ids.length)
       })
     )
   })

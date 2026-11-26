@@ -1,0 +1,285 @@
+import { computed, ref } from 'vue'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { useRoute, useRouter } from 'vue-router'
+import type { LocationQueryRaw } from 'vue-router'
+
+import { useTelemetry } from '@comfyorg/telemetry'
+import { useToast } from '@/components/ui/toast/toastStore'
+
+import { topUpLinkAction, useTopUpUrlLoader } from './useTopUpUrlLoader'
+
+const preservedQueryMocks = vi.hoisted(() => ({
+  clearPreservedQuery: vi.fn(),
+  hydratePreservedQuery: vi.fn(),
+  mergePreservedQueryIntoQuery: vi.fn()
+}))
+
+vi.mock(
+  import('@/platform/navigation/preservedQueryManager'),
+  () => preservedQueryMocks
+)
+
+vi.mock(import('vue-router'))
+
+vi.mock(import('@/platform/billing/composables/useBillingDialogs'))
+
+vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
+
+vi.mock(import('@comfyorg/telemetry'))
+
+vi.mock(import('@/i18n'), () => ({ t: (key: string) => key }))
+
+function setRouteQuery(value: LocationQueryRaw) {
+  const query = useRoute().query
+  for (const key of Object.keys(query)) delete query[key]
+  Object.assign(query, value)
+}
+
+describe('useTopUpUrlLoader', () => {
+  beforeEach(() => {
+    preservedQueryMocks.mergePreservedQueryIntoQuery.mockReturnValue(null)
+  })
+
+  it('does nothing when no topup param present', async () => {
+    setRouteQuery({})
+
+    const { loadTopUpFromUrl } = useTopUpUrlLoader()
+    await loadTopUpFromUrl()
+
+    expect(useBillingDialogs().showTopUpCreditsDialog).not.toHaveBeenCalled()
+    expect(useRouter().replace).not.toHaveBeenCalled()
+  })
+
+  it('opens the top-up dialog for an eligible user and strips the param', async () => {
+    setRouteQuery({ topup: '1' })
+
+    const { loadTopUpFromUrl } = useTopUpUrlLoader()
+    await loadTopUpFromUrl()
+
+    expect(
+      useBillingDialogs().showTopUpCreditsDialog
+    ).toHaveBeenCalledExactlyOnceWith({ source: 'deep_link' })
+    expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
+  })
+
+  it('emits deep_link telemetry on an eligible open', async () => {
+    setRouteQuery({ topup: '1' })
+
+    const { loadTopUpFromUrl } = useTopUpUrlLoader()
+    await loadTopUpFromUrl()
+
+    expect(useTelemetry()?.trackAddApiCreditButtonClicked).toHaveBeenCalledWith(
+      {
+        source: 'deep_link'
+      }
+    )
+  })
+
+  it('retains the deep link until capability loading settles', async () => {
+    const canTopUp = ref(false)
+    useBillingCapabilities().canTopUp = computed(() => canTopUp.value)
+
+    let resolveCapabilities!: () => void
+    setRouteQuery({ topup: '1' })
+    vi.mocked(useBillingCapabilities().initialize).mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveCapabilities = resolve
+        })
+    )
+
+    const { loadTopUpFromUrl } = useTopUpUrlLoader()
+    const loading = loadTopUpFromUrl()
+    await Promise.resolve()
+
+    expect(useRouter().replace).not.toHaveBeenCalled()
+    expect(preservedQueryMocks.clearPreservedQuery).not.toHaveBeenCalled()
+
+    canTopUp.value = true
+    resolveCapabilities()
+    await loading
+
+    expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
+    expect(useBillingDialogs().showTopUpCreditsDialog).toHaveBeenCalledOnce()
+  })
+
+  it('is a silent no-op when the server denies top-up', async () => {
+    setRouteQuery({ topup: '1' })
+    useBillingCapabilities().canTopUp = computed(() => false)
+
+    const { loadTopUpFromUrl } = useTopUpUrlLoader()
+    await loadTopUpFromUrl()
+
+    expect(useBillingDialogs().showTopUpCreditsDialog).not.toHaveBeenCalled()
+    expect(
+      useTelemetry()?.trackAddApiCreditButtonClicked
+    ).not.toHaveBeenCalled()
+  })
+
+  it('stays a no-op when only self-serve subscribe is allowed', async () => {
+    setRouteQuery({ topup: '1' })
+    useBillingCapabilities().canTopUp = computed(() => false)
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
+
+    const { loadTopUpFromUrl } = useTopUpUrlLoader()
+    await loadTopUpFromUrl()
+
+    expect(useBillingDialogs().showTopUpCreditsDialog).not.toHaveBeenCalled()
+    expect(
+      useTelemetry()?.trackAddApiCreditButtonClicked
+    ).not.toHaveBeenCalled()
+  })
+
+  it('denies, strips, and clears together when the user is not eligible', async () => {
+    setRouteQuery({ topup: '1', other: 'param' })
+    useBillingCapabilities().canTopUp = computed(() => false)
+
+    const { loadTopUpFromUrl } = useTopUpUrlLoader()
+    await loadTopUpFromUrl()
+
+    expect(useBillingDialogs().showTopUpCreditsDialog).not.toHaveBeenCalled()
+    expect(useRouter().replace).toHaveBeenCalledWith({
+      query: { other: 'param' }
+    })
+    expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
+      'topup'
+    )
+  })
+
+  it('restores preserved query and opens the dialog', async () => {
+    setRouteQuery({})
+    preservedQueryMocks.mergePreservedQueryIntoQuery.mockReturnValue({
+      topup: '1'
+    })
+
+    const { loadTopUpFromUrl } = useTopUpUrlLoader()
+    await loadTopUpFromUrl()
+
+    expect(preservedQueryMocks.hydratePreservedQuery).toHaveBeenCalledWith(
+      'topup'
+    )
+    expect(useBillingDialogs().showTopUpCreditsDialog).toHaveBeenCalledOnce()
+  })
+
+  it('strips but does not open for an empty param', async () => {
+    setRouteQuery({ topup: '' })
+
+    const { loadTopUpFromUrl } = useTopUpUrlLoader()
+    await loadTopUpFromUrl()
+
+    expect(useBillingDialogs().showTopUpCreditsDialog).not.toHaveBeenCalled()
+    expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
+    expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
+      'topup'
+    )
+    expect(useBillingCapabilities().initialize).not.toHaveBeenCalled()
+  })
+
+  it('strips but does not open for a non-string param', async () => {
+    setRouteQuery({ topup: ['array'] })
+
+    const { loadTopUpFromUrl } = useTopUpUrlLoader()
+    await loadTopUpFromUrl()
+
+    expect(useBillingDialogs().showTopUpCreditsDialog).not.toHaveBeenCalled()
+    expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
+  })
+
+  it('opens for an unrecognized topup value', async () => {
+    setRouteQuery({ topup: 'garbage' })
+
+    const { loadTopUpFromUrl } = useTopUpUrlLoader()
+    await loadTopUpFromUrl()
+
+    expect(useBillingDialogs().showTopUpCreditsDialog).toHaveBeenCalledOnce()
+  })
+
+  it('opens an out-of-credits top-up carried across a workspace switch reload, without deep-link attribution', async () => {
+    setRouteQuery({})
+    preservedQueryMocks.mergePreservedQueryIntoQuery.mockReturnValue({
+      topup: 'out_of_credits'
+    })
+
+    const { loadTopUpFromUrl } = useTopUpUrlLoader()
+    await loadTopUpFromUrl()
+
+    expect(
+      useBillingDialogs().showTopUpCreditsDialog
+    ).toHaveBeenCalledExactlyOnceWith({ isInsufficientCredits: true })
+    expect(
+      useTelemetry()?.trackAddApiCreditButtonClicked
+    ).not.toHaveBeenCalled()
+    expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
+      'topup'
+    )
+  })
+
+  it('does not open an out-of-credits top-up when the server denies top-up', async () => {
+    useBillingCapabilities().canTopUp = computed(() => false)
+    setRouteQuery({ topup: 'out_of_credits' })
+
+    const { loadTopUpFromUrl } = useTopUpUrlLoader()
+    await loadTopUpFromUrl()
+
+    expect(useBillingDialogs().showTopUpCreditsDialog).not.toHaveBeenCalled()
+    expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
+      'topup'
+    )
+  })
+
+  describe('when the link named a workspace the viewer could not open', () => {
+    it('does not open the dialog, says why, and strips the param', async () => {
+      setRouteQuery({ topup: '1', other: 'param' })
+
+      const { loadTopUpFromUrl } = useTopUpUrlLoader()
+      await loadTopUpFromUrl({ workspaceLinkRefused: true })
+
+      expect(useBillingDialogs().showTopUpCreditsDialog).not.toHaveBeenCalled()
+      expect(useToast().info).toHaveBeenCalledExactlyOnceWith(
+        'workspace.deepLinkTopUpRefused'
+      )
+      expect(useRouter().replace).toHaveBeenCalledWith({
+        query: { other: 'param' }
+      })
+      expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
+        'topup'
+      )
+    })
+
+    it('stays silent when the topup param would not have opened anyway', async () => {
+      setRouteQuery({ topup: '' })
+
+      const { loadTopUpFromUrl } = useTopUpUrlLoader()
+      await loadTopUpFromUrl({ workspaceLinkRefused: true })
+
+      expect(useToast().info).not.toHaveBeenCalled()
+      expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
+    })
+  })
+
+  it('opens the dialog when the workspace link was honored', async () => {
+    setRouteQuery({ topup: '1' })
+
+    const { loadTopUpFromUrl } = useTopUpUrlLoader()
+    await loadTopUpFromUrl({ workspaceLinkRefused: false })
+
+    expect(useBillingDialogs().showTopUpCreditsDialog).toHaveBeenCalledOnce()
+    expect(useToast().info).not.toHaveBeenCalled()
+  })
+
+  it.for([
+    { param: undefined, workspaceLinkRefused: false, action: 'none' },
+    { param: undefined, workspaceLinkRefused: true, action: 'none' },
+    { param: '', workspaceLinkRefused: true, action: 'strip' },
+    { param: ['1'], workspaceLinkRefused: false, action: 'strip' },
+    { param: '1', workspaceLinkRefused: false, action: 'open' },
+    { param: '1', workspaceLinkRefused: true, action: 'refuse' }
+  ])(
+    'maps topup $param with workspaceLinkRefused $workspaceLinkRefused to $action',
+    ({ action, ...link }) => {
+      expect(topUpLinkAction(link)).toBe(action)
+    }
+  )
+})

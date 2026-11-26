@@ -1,5 +1,5 @@
-import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
-import { app } from '@/scripts/app'
+import { useWorkflowTemplateSelectorDialog } from '@/platform/workflow/templates/composables/useWorkflowTemplateSelectorDialog'
+import { useApp } from '@/scripts/appInstance'
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 
@@ -28,7 +28,8 @@ export function useEmptyWorkflowDialog() {
           closeDialog()
           templateSelectorDialog.show('appbuilder', {
             afterClose: () => {
-              if (app.rootGraph?.nodes?.length) options.onEnterBuilder()
+              if (useApp().rootGraphOrUndefined?.nodes.length)
+                options.onEnterBuilder()
             }
           })
         }

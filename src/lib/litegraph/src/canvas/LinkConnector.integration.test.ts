@@ -1,7 +1,5 @@
 // oxlint-disable no-empty-pattern
 // TODO: Fix these tests after migration
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { afterEach, describe, expect, vi } from 'vitest'
 
 import type {
@@ -12,21 +10,20 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode, LLink, LinkConnector } from '@/lib/litegraph/src/litegraph'
 
-import { slotFloatingLinks } from '../LLink'
-import { test as baseTest } from '../__fixtures__/testExtensions'
-import type { ConnectingLink } from '@/lib/litegraph/src/interfaces'
+import { slotFloatingLinks } from '@/lib/litegraph/src/LLink'
+import { test as baseTest } from '@/lib/litegraph/src/__fixtures__/testExtensions'
+import type { ConnectingLink } from '@comfyorg/graph-model/slots'
 import { useLinkStore } from '@/stores/linkStore'
-import { graphScopeOf } from '@/types/graphScopeId'
-import { toLinkId } from '@/types/linkId'
-import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
-import { toRerouteId } from '@/types/rerouteId'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { UNASSIGNED_NODE_ID, toNodeId } from '@comfyorg/graph-model/nodeId'
+import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
 import {
   createMockCanvasPointerEvent,
   createMockCanvasRenderingContext2D
-} from '@/utils/__tests__/litegraphTestUtils'
+} from '@/utils/__tests__/canvasTestUtils'
 
 interface TestContext {
-  pinia: undefined
   graph: LGraph
   connector: LinkConnector
   setConnectingLinks: (value: ConnectingLink[]) => void
@@ -39,14 +36,6 @@ interface TestContext {
 }
 
 const test = baseTest.extend<TestContext>({
-  pinia: [
-    async ({}, use) => {
-      setActivePinia(createTestingPinia({ stubActions: false }))
-      await use(undefined)
-    },
-    { auto: true }
-  ],
-
   reroutesBeforeTest: async ({ reroutesComplexGraph }, use) => {
     await use([...reroutesComplexGraph.reroutes])
   },
@@ -993,7 +982,7 @@ describe('LinkConnector Integration', () => {
       runIntegrityCheck: true
     }
   ])(
-    'Should allow reconnect from output to any reroute',
+    'Should allow reconnect from output to reroute $targetRerouteId',
     (
       {
         targetRerouteId,
@@ -1121,7 +1110,7 @@ describe('LinkConnector Integration', () => {
       expectedExtraLinks: 1
     }
   ])(
-    'Should allow connecting from reroutes to another reroute',
+    'Should allow connecting from reroute $fromRerouteId to reroute $targetRerouteId',
     (
       {
         fromRerouteId,
@@ -1227,7 +1216,7 @@ describe('LinkConnector Integration', () => {
     { from: 14, to: 13 },
     { from: 10, to: 10 }
   ])(
-    'Connecting reroutes to invalid targets should do nothing',
+    'Connecting reroute $from to invalid target reroute $to should do nothing',
     ({ from, to }, { graph, connector, validateIntegrityNoChanges }) => {
       const listener = vi.fn()
       connector.listenUntilReset('link-created', listener)
@@ -1261,7 +1250,7 @@ describe('LinkConnector Integration', () => {
     { nodeId: toNodeId(4), rerouteId: toRerouteId(12) }
   ]
   test.for(nodeReroutePairs)(
-    'Should ignore connections from input to same node via reroutes',
+    'Should ignore connections from input to same node $nodeId via reroute $rerouteId',
     (
       { nodeId, rerouteId },
       { graph, connector, validateIntegrityNoChanges }
@@ -1292,7 +1281,7 @@ describe('LinkConnector Integration', () => {
   )
 
   test.for(nodeReroutePairs)(
-    'Should ignore connections looping back to the origin node from a reroute',
+    'Should ignore connections looping back to origin node $nodeId from reroute $rerouteId',
     (
       { nodeId, rerouteId },
       { graph, connector, validateIntegrityNoChanges }
@@ -1319,7 +1308,7 @@ describe('LinkConnector Integration', () => {
   )
 
   test.for(nodeReroutePairs)(
-    'Should ignore connections looping back to the origin node input from a reroute',
+    'Should ignore connections looping back to origin node $nodeId input from reroute $rerouteId',
     (
       { nodeId, rerouteId },
       { graph, connector, validateIntegrityNoChanges }

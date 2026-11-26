@@ -1,0 +1,84 @@
+{
+  "id": "20ac2bcd-9a61-4dc2-95e1-79725997caaf",
+  "revision": 0,
+  "last_node_id": 1,
+  "last_link_id": 0,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "Flux2ImageNode",
+      "pos": [200, 100],
+      "size": [420, 420],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+        {
+          "localized_name": "prompt",
+          "name": "prompt",
+          "type": "STRING",
+          "widget": { "name": "prompt" },
+          "link": null
+        },
+        {
+          "localized_name": "width",
+          "name": "model.width",
+          "type": "INT",
+          "widget": { "name": "model.width" },
+          "link": null
+        },
+        {
+          "localized_name": "height",
+          "name": "model.height",
+          "type": "INT",
+          "widget": { "name": "model.height" },
+          "link": null
+        },
+        {
+          "localized_name": "image_1",
+          "name": "model.images.image_1",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": null
+        },
+        {
+          "localized_name": "model",
+          "name": "model",
+          "type": "COMFY_DYNAMICCOMBO_V3",
+          "widget": { "name": "model" },
+          "link": null
+        },
+        {
+          "localized_name": "seed",
+          "name": "seed",
+          "type": "INT",
+          "widget": { "name": "seed" },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "localized_name": "IMAGE",
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": null
+        }
+      ],
+      "properties": { "Node name for S&R": "Flux2ImageNode" },
+      "widgets_values": ["", "Flux.2 [pro]", 1024, 768, 0, "fixed"],
+      "widgets_values_named": {
+        "prompt": "",
+        "model": "Flux.2 [pro]",
+        "model.width": 1024,
+        "model.height": 768,
+        "seed": 0,
+        "control_after_generate": "fixed"
+      }
+    }
+  ],
+  "links": [],
+  "groups": [],
+  "config": {},
+  "extra": { "ds": { "scale": 0.9, "offset": [416, 110] } },
+  "version": 0.4
+}

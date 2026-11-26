@@ -1,7 +1,7 @@
 <script setup lang="ts" generic="T">
 import { onBeforeUnmount, ref, useTemplateRef, watchPostEffect } from 'vue'
 
-import { DraggableList } from '@/scripts/ui/draggableList'
+import { DraggableList, draggableItemClass } from '@/scripts/ui/draggableList'
 
 const modelValue = defineModel<T[]>({ required: true })
 const draggableList = ref<DraggableList>()
@@ -16,29 +16,9 @@ watchPostEffect(() => {
     '.draggable-item'
   )
   draggableList.value.applyNewItemsOrder = function () {
-    const reorderedItems = []
-
-    let oldPosition = -1
-    this.getAllItems().forEach((item, index) => {
-      if (item === this.draggableItem) {
-        oldPosition = index
-        return
-      }
-      if (!this.isItemToggled(item)) {
-        reorderedItems[index] = item
-        return
-      }
-      const newIndex = this.isItemAbove(item) ? index + 1 : index - 1
-      reorderedItems[newIndex] = item
-    })
-
-    for (let index = 0; index < this.getAllItems().length; index++) {
-      const item = reorderedItems[index]
-      if (typeof item === 'undefined') {
-        reorderedItems[index] = this.draggableItem
-      }
-    }
-    const newPosition = reorderedItems.indexOf(this.draggableItem)
+    if (!this.draggableItem) return
+    const { items, oldPosition } = this.getReorderedItems(this.draggableItem)
+    const newPosition = items.indexOf(this.draggableItem)
     const itemList = modelValue.value
     const [item] = itemList.splice(oldPosition, 1)
     itemList.splice(newPosition, 0, item)
@@ -52,8 +32,6 @@ onBeforeUnmount(() => {
 </script>
 <template>
   <div ref="draggableItems" class="mt-0.5 space-y-0.5 px-2 pb-2">
-    <slot
-      drag-class="draggable-item drag-handle cursor-grab [&.is-draggable]:cursor-grabbing"
-    />
+    <slot :drag-class="draggableItemClass" />
   </div>
 </template>

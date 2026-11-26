@@ -1,6 +1,8 @@
-import { readFileSync, writeFileSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { basename } from 'node:path'
 import pc from 'picocolors'
+import { isAlreadyExistsError } from '../cli/fsErrors'
+import { writeFileExclusive } from '../cli/exclusiveWrite'
 import { transform, formatTransformSummary } from '../transform/engine'
 import { formatFile } from '../transform/format'
 import { header } from '../ui/logger'
@@ -13,6 +15,7 @@ export async function runTransform(
     output?: string
     workflow?: string
     featureFlags?: Record<string, unknown>
+    force?: boolean
   } = {}
 ): Promise<void> {
   header('Transform Codegen → Conventions')
@@ -54,7 +57,18 @@ export async function runTransform(
     )
     process.exit(1)
   }
-  writeFileSync(outputPath, result.code)
+  try {
+    writeFileExclusive(outputPath, result.code, options.force === true)
+  } catch (error) {
+    if (isAlreadyExistsError(error)) {
+      console.log(
+        pc.red(`  Refusing to overwrite existing file: ${outputPath}`)
+      )
+      console.log(pc.dim('  Pass --force to overwrite.'))
+      process.exit(1)
+    }
+    throw error
+  }
 
   if (!formatFile(outputPath)) {
     console.log(

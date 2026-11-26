@@ -1,18 +1,25 @@
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { Reroute } from '@/lib/litegraph/src/Reroute'
-import type { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
-import type { LinkConnectorEventMap } from '@/lib/litegraph/src/infrastructure/LinkConnectorEventMap'
 import type {
-  INodeOutputSlot,
-  LinkNetwork,
-  Point,
-  SlotIndex
-} from '@/lib/litegraph/src/interfaces'
-import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
-import type { SubgraphOutputNode } from '@/lib/litegraph/src/subgraph/SubgraphOutputNode'
+  LGraphNode,
+  LLink,
+  Reroute,
+  SubgraphOutput,
+  SubgraphOutputNode
+} from '@comfyorg/graph-model/entityRegistry'
+import { transferLinkPresentation } from '@/core/graph/transferLinkPresentation'
+import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import type { LinkPresentation } from '@comfyorg/graph-model/linkPresentation'
+
+import type { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
+import type { LinkConnectorEventMap } from '@comfyorg/graph-model/LinkConnectorEventMap'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
+import type { SlotIndex } from '@comfyorg/graph-model/interfaces'
+import type { INodeOutputSlot } from '@comfyorg/graph-model/slots'
+import type { LinkNetwork } from '@comfyorg/graph-model/linkNetwork'
+
 import type { NodeLike } from '@/lib/litegraph/src/types/NodeLike'
-import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
-import type { SubgraphIO } from '@/lib/litegraph/src/types/serialisation'
+import { LinkDirection } from '@comfyorg/graph-model/globalEnums'
+import type { SubgraphIO } from '@comfyorg/graph-model/serialisation'
 
 import type { RenderLink } from './RenderLink'
 
@@ -24,13 +31,15 @@ export class ToOutputFromIoNodeLink implements RenderLink {
   readonly fromSlotIndex: SlotIndex
   fromDirection: LinkDirection = LinkDirection.LEFT
   readonly isIoNodeLink = true
+  private readonly presentation: Readonly<LinkPresentation> | undefined
 
   constructor(
     readonly network: LinkNetwork,
     readonly node: SubgraphOutputNode,
     readonly fromSlot: SubgraphOutput,
     readonly fromReroute?: Reroute,
-    public dragDirection: LinkDirection = LinkDirection.CENTER
+    public dragDirection: LinkDirection = LinkDirection.CENTER,
+    existingLink?: LLink
   ) {
     const inputIndex = node.slots.indexOf(fromSlot)
     if (inputIndex === -1 && fromSlot !== node.emptySlot) {
@@ -41,6 +50,12 @@ export class ToOutputFromIoNodeLink implements RenderLink {
 
     this.fromSlotIndex = inputIndex
     this.fromPos = fromReroute ? fromReroute.pos : fromSlot.pos
+    this.presentation = existingLink
+      ? useLinkPresentationStore().getPresentation(
+          graphScopeOf(node.subgraph),
+          existingLink.id
+        )
+      : undefined
   }
 
   canConnectToInput(): false {
@@ -67,6 +82,11 @@ export class ToOutputFromIoNodeLink implements RenderLink {
     const { fromSlot, fromReroute } = this
 
     const newLink = fromSlot.connect(output, node, fromReroute?.id)
+    transferLinkPresentation(
+      graphScopeOf(this.node.subgraph),
+      this.presentation,
+      newLink?.id
+    )
     events.dispatch('link-created', newLink)
   }
 
@@ -82,7 +102,12 @@ export class ToOutputFromIoNodeLink implements RenderLink {
   ): void {
     const { fromSlot } = this
 
-    const newLink = fromSlot.connect(output, outputNode, reroute?.id)
+    const newLink = fromSlot.connect(output, outputNode, reroute.id)
+    transferLinkPresentation(
+      graphScopeOf(this.node.subgraph),
+      this.presentation,
+      newLink?.id
+    )
     events.dispatch('link-created', newLink)
   }
 
