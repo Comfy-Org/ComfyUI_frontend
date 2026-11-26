@@ -19,8 +19,6 @@ blob_at() {
 candidates=$(git diff --name-only --diff-filter=AMR "${base_sha}...${head_sha}" -- \
   'browser_tests/**/*.spec.ts')
 
-# The newest default-branch commit this head already contains, so a spec the
-# default branch changed after the head last merged it still compares equal.
 default_branch_point=
 if [ -n "$default_branch_ref" ] &&
   git rev-parse --quiet --verify "${default_branch_ref}^{commit}" > /dev/null; then
