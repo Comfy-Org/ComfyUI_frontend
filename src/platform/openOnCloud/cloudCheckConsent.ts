@@ -188,6 +188,11 @@ async function persistAskBeforeCloudCheck(
       reportSaveFailure(failure, askBeforeCheck)
       return
     }
+    if (!isLatestChoice(askBeforeCheck, revision)) {
+      if (readLatestChoice()?.revision !== choiceInThisTab?.revision)
+        resendLatestChoice()
+      return
+    }
     if (
       askBeforeCheck &&
       unsettledLateWrites === 0 &&
