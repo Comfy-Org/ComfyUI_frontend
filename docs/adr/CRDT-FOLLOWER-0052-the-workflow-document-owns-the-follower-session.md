@@ -620,6 +620,42 @@ directions. Remove the page claim and the session owner becomes panel-reachable
 again and the exemption becomes wrong, so **that pin is the control, not the
 exemption list.**
 
+**Four implementation facts that cost a cycle each, recorded here because the
+repository's comment rule puts rationale in an ADR rather than in the code.**
+
+_The visible-unbound note must travel on the page-held session too, and routing
+it through the panel silently loses it._ `docOpMinter` has two unbound-intent
+outputs, not one: `onUnboundLocalIntent` for an edit to the bound document and
+`onUnboundVisibleIntent` for an edit to the _visible_ root graph while a
+different one is bound. The second needs a tab-binding lookup, which is what
+tempts a reader to route the whole thing through the panel — and that sends the
+note to the panel's released `useAgentCrdtFollower` handle, so a workflow with
+an unsynced local edit made while the panel was closed reads as clean to every
+gate that consults the marker, `canResumeHeldWorkflow` among them. The producer
+owner therefore asks the panel only for the _lookup_ (`visibleWorkflowIdFor`)
+and performs the note itself against the page-held session.
+
+_There is a sub-tick window where the panel holds a session and the page does
+not, and it cannot carry an edit._ The page claims on the document-id edge
+through a deferred watcher, for the re-entrancy reason Stage 1b sets out at
+length, so between a document binding and the next watcher flush the page-held
+session reads null. Nothing is lost there: `isDocBound()` also requires
+`subscriptionSent()`, which needs a `doc_subscribe` to have gone out and been
+matched, and that cannot complete inside one flush. Reading the panel's handle
+as a fallback would close a window that cannot carry an edit at the cost of the
+invariant this stage establishes.
+
+_Page teardown of the producer is total per step, not per owner._ A throwing
+scope disposer sharing one `try` with the detach would skip the detach and leave
+the producer on the graph-intent bus with its session destroyed — the leak the
+containment exists to prevent. Each step reports under its own `step` tag and
+the loop continues, for the same reason `runPanelTeardown` is keyed per step.
+
+_The producer owner lives outside `crdt/`._ Its panel-facing inputs read tab
+bindings and the active workflow, which Decision 2 forbids anything under
+`crdt/` from doing. It sits beside `agentPageSession.ts`, the other
+page-lifetime owner.
+
 **One guard this stage asked for is a sender-level pin and was not re-added
 here.** "The `op_id`s observed before a panel unmount are the ones sent after
 remount" is a property of the retained batches, not of the producer: the

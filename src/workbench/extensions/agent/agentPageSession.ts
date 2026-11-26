@@ -134,9 +134,6 @@ export function useAgentPageSession(
  * Never call this on panel close.
  */
 export function destroyAgentPageSession(): void {
-  // Producers first: an op producer outlives the panel but not the session it
-  // mints into, and a producer still tapping the graph intent bus after its
-  // session is gone would mint into nothing.
   destroyAgentPageOpMinters()
   destroyAgentFollowerSessions()
   session?.stop()

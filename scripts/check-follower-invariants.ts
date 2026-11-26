@@ -427,33 +427,33 @@ export { pageSessionOwnsTransport as checkPageSessionOwnsTransport }
 export const OP_PRODUCER_OWNER =
   'src/workbench/extensions/agent/agentPageOpMinter.ts'
 
-/** Factories that attach an op producer: one of these owns a `detach`. */
 const OP_PRODUCER_FACTORIES = new Set(['attachDocOpMinter'])
 
-/**
- * Receivers whose `detach()` stops an op producer or the sender it feeds.
- * Extend this when a producer is added, which is the whole maintenance cost of
- * the rule below.
- */
 const OP_PRODUCER_RECEIVERS = new Set(['docOpMinter', 'opSender', 'coalescer'])
 
-/**
- * Disposal routes a panel close reaches. `onBeforeUnmount` alone is too narrow
- * to state the rule with: a producer `detach()` is a thunk in a keyed step list
- * (`runPanelTeardown`) or in an array passed to `runFollowerTeardown` inside an
- * `onScopeDispose`, and unmount stops the scope. A guard that looked only for
- * the Vue hook names would find no caller and report the invariant held.
- */
 const PANEL_CLOSE_DISPOSAL_ROUTES = new Set([
   'onBeforeUnmount',
   'onUnmounted',
   'onScopeDispose',
   'runPanelTeardown',
-  'runFollowerTeardown',
-  'stop'
+  'runFollowerTeardown'
 ])
 
-function producerFactory(node: ts.Node): string | undefined {
+/** Local names bound to an op-producer factory, including aliased imports. */
+function producerFactoryNames(sourceFile: ts.SourceFile): Set<string> {
+  const names = new Set(OP_PRODUCER_FACTORIES)
+  visit(sourceFile, (node) => {
+    if (!ts.isImportSpecifier(node)) return
+    const imported = node.propertyName?.text ?? node.name.text
+    if (OP_PRODUCER_FACTORIES.has(imported)) names.add(node.name.text)
+  })
+  return names
+}
+
+function producerFactory(
+  node: ts.Node,
+  factoryNames: Set<string>
+): string | undefined {
   if (!ts.isCallExpression(node)) return
   const { expression } = node
   const name = ts.isIdentifier(expression)
@@ -461,93 +461,108 @@ function producerFactory(node: ts.Node): string | undefined {
     : ts.isPropertyAccessExpression(expression)
       ? expression.name.text
       : undefined
-  return name !== undefined && OP_PRODUCER_FACTORIES.has(name)
-    ? name
-    : undefined
+  return name !== undefined && factoryNames.has(name) ? name : undefined
 }
 
-/** `<receiver>.detach()` where the receiver is a known op producer. */
-function producerDetach(node: ts.Node): string | undefined {
-  if (!ts.isCallExpression(node)) return
-  const callee = node.expression
-  if (!ts.isPropertyAccessExpression(callee)) return
-  if (callee.name.text !== 'detach') return
-  const receiver = callee.expression
-  const name = ts.isIdentifier(receiver)
-    ? receiver.text
-    : ts.isPropertyAccessExpression(receiver)
-      ? receiver.name.text
-      : undefined
+function receiverName(receiver: ts.Expression): string | undefined {
+  if (ts.isIdentifier(receiver)) return receiver.text
+  if (ts.isPropertyAccessExpression(receiver)) return receiver.name.text
+}
+
+/** `<producer>.detach`, whether called, optional-called, or passed by reference. */
+function producerDetachReference(node: ts.Node): string | undefined {
+  if (!ts.isPropertyAccessExpression(node)) return
+  if (node.name.text !== 'detach') return
+  const name = receiverName(node.expression)
   return name !== undefined && OP_PRODUCER_RECEIVERS.has(name)
     ? name
     : undefined
 }
 
-/** Whether `node` sits inside a call a panel close reaches. */
-function insideAPanelCloseRoute(node: ts.Node): boolean {
-  // `ts.Node.parent` is typed non-nullable but is absent on a SourceFile, so
-  // the walk stops on the kind rather than on a falsy check.
-  // The cast is load-bearing: `ts.Node.parent` is typed non-nullable but is
-  // absent on a SourceFile, so without it the loop guard reads as always
-  // truthy and the walk has no terminator the type checker believes in.
-  let parent = node.parent as ts.Node | undefined
-  while (parent !== undefined) {
-    if (ts.isCallExpression(parent)) {
-      const callee = parent.expression
-      const name = ts.isIdentifier(callee)
-        ? callee.text
-        : ts.isPropertyAccessExpression(callee)
-          ? callee.name.text
-          : undefined
-      if (name !== undefined && PANEL_CLOSE_DISPOSAL_ROUTES.has(name))
-        return true
-    }
-    parent = parent.parent
-  }
-  return false
+function calledName(node: ts.CallExpression): string | undefined {
+  const callee = node.expression
+  if (ts.isIdentifier(callee)) return callee.text
+  if (ts.isPropertyAccessExpression(callee)) return callee.name.text
 }
 
-/**
- * The two modules whose disposal is session or page teardown rather than a
- * panel close, so a producer `detach()` on a disposal route inside them is
- * correct rather than a violation.
- *
- * This is a real narrowing of the rule and the premise it rests on is
- * load-bearing: the session seam's `onScopeDispose` runs
- * `runFollowerTeardown`, which detaches the sender and the coalescer, and that
- * scope is owned by the follower session registry. A panel close releases only
- * the panel's consumer claim while the page keeps its own, so the holder count
- * never reaches zero and the scope is not stopped — which is exactly what
- * `followerSessionLifetime.test.ts` pins in both directions. Were the page
- * claim removed, the session owner would legitimately become panel-reachable
- * again and this exemption would be wrong; that is why the pin, not this list,
- * is the control.
- */
+function isPanelCloseRouteCall(node: ts.Node): node is ts.CallExpression {
+  if (!ts.isCallExpression(node)) return false
+  const name = calledName(node)
+  return name !== undefined && PANEL_CLOSE_DISPOSAL_ROUTES.has(name)
+}
+
+/** Identifiers a panel-close disposal route is handed, directly or in a thunk. */
+function namesReachedByAPanelCloseRoute(
+  sourceFile: ts.SourceFile
+): Set<string> {
+  const reached = new Set<string>()
+  const collect = (node: ts.Node): void => {
+    if (ts.isIdentifier(node)) reached.add(node.text)
+    ts.forEachChild(node, collect)
+  }
+  visit(sourceFile, (node) => {
+    if (!isPanelCloseRouteCall(node)) return
+    for (const argument of node.arguments) collect(argument)
+  })
+  return reached
+}
+
+function enclosingFunctionName(node: ts.Node): string | undefined {
+  let parent = node.parent as ts.Node | undefined
+  while (parent !== undefined) {
+    if (ts.isFunctionDeclaration(parent) && parent.name) return parent.name.text
+    if (
+      (ts.isFunctionExpression(parent) || ts.isArrowFunction(parent)) &&
+      ts.isVariableDeclaration(parent.parent) &&
+      ts.isIdentifier(parent.parent.name)
+    )
+      return parent.parent.name.text
+    parent = parent.parent
+  }
+}
+
+function insideAPanelCloseRoute(
+  node: ts.Node,
+  reachedNames: Set<string>
+): boolean {
+  let parent = node.parent as ts.Node | undefined
+  while (parent !== undefined) {
+    if (isPanelCloseRouteCall(parent)) return true
+    parent = parent.parent
+  }
+  const enclosing = enclosingFunctionName(node)
+  return enclosing !== undefined && reachedNames.has(enclosing)
+}
+
 const SESSION_DISPOSAL_OWNERS = new Set([
   'src/workbench/extensions/agent/crdt/useAgentCrdtFollower.ts',
   'src/workbench/extensions/agent/agentPageOpMinter.ts'
 ])
 
 /**
- * Every op producer outlives the panel. Two halves, because one without the
- * other passes while the defect stands: nothing outside the producer owner may
- * attach a producer (so nothing else holds a `detach` to call), and no producer
- * `detach()` may sit on a route a panel close reaches.
+ * Every op producer outlives the Agent panel: only
+ * {@link OP_PRODUCER_OWNER} attaches one, and no producer `detach` is called or
+ * handed to a route a panel close reaches. See
+ * `docs/adr/CRDT-FOLLOWER-0052-the-workflow-document-owns-the-follower-session.md`
+ * Stage 2.
  */
 function opProducersOutliveThePanel(file: string, source: string): Violation[] {
   if (!isAgentSurfaceFile(file)) return []
-  const mentionsAFactory = [...OP_PRODUCER_FACTORIES].some((name) =>
-    source.includes(name)
+  if (
+    ![...OP_PRODUCER_FACTORIES].some((name) => source.includes(name)) &&
+    !/\bdetach\b/.test(source)
   )
-  if (!mentionsAFactory && !source.includes('.detach(')) return []
+    return []
   const parsed = parse(
     file.endsWith('.vue') ? `${file}.ts` : file,
     scriptOf(file, source)
   )
   if (parsed.violations.length) return atPath(file, parsed.violations)
+  const factoryNames = producerFactoryNames(parsed.sourceFile)
+  const reachedNames = namesReachedByAPanelCloseRoute(parsed.sourceFile)
   const violations: Violation[] = []
   visit(parsed.sourceFile, (node) => {
-    const factory = producerFactory(node)
+    const factory = producerFactory(node, factoryNames)
     if (factory !== undefined && file !== OP_PRODUCER_OWNER)
       violations.push({
         file,
@@ -555,17 +570,17 @@ function opProducersOutliveThePanel(file: string, source: string): Violation[] {
         rule: 'op-producers-outlive-the-panel',
         message: `calls ${factory}() outside ${OP_PRODUCER_OWNER} — the op producer mints at the command site and its lifetime is the page, so a component that attaches one also detaches it on unmount and a hand edit made with the panel closed then mints nothing at all: no operation, no retained batch, nothing for the next resubscribe to replay; see docs/adr/CRDT-FOLLOWER-0052-the-workflow-document-owns-the-follower-session.md Stage 2`
       })
-    const receiver = producerDetach(node)
+    const receiver = producerDetachReference(node)
     if (
       receiver !== undefined &&
       !SESSION_DISPOSAL_OWNERS.has(file) &&
-      insideAPanelCloseRoute(node)
+      insideAPanelCloseRoute(node, reachedNames)
     )
       violations.push({
         file,
         line: lineOf(parsed.sourceFile, node),
         rule: 'op-producers-outlive-the-panel',
-        message: `detaches the ${receiver} op producer from a disposal route a panel close reaches — closing the Agent panel is an ordinary one-click unmount, and an edit made while it is closed must still mint, be held, and replay with its original op_id after the next acknowledged resubscribe; see docs/adr/CRDT-FOLLOWER-0052-the-workflow-document-owns-the-follower-session.md Stage 2`
+        message: `reaches ${receiver}.detach from a disposal route a panel close reaches — closing the Agent panel is an ordinary one-click unmount, and an edit made while it is closed must still mint, be held, and replay with its original op_id after the next acknowledged resubscribe; see docs/adr/CRDT-FOLLOWER-0052-the-workflow-document-owns-the-follower-session.md Stage 2`
       })
   })
   return violations

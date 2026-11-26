@@ -2,17 +2,6 @@ import { expect } from '@playwright/test'
 
 import { agentOfflineEditTest as test } from '@e2e/fixtures/agentOfflineEditFixture'
 
-/**
- * PM-2451 / FRONT-3582 stage 2. `agentPanelCloseKeepsQueuedEdit.spec.ts` covers
- * the edit made *before* the close; this is the other half, and it is the one
- * nobody sees. The op producer used to be attached in `AgentPanelRoot.setup()`
- * and detached from the panel's teardown list, and `DockedAgentPanel.vue`
- * renders the panel under `v-if`, so a one-click close unmounted it. An edit
- * made while the panel was closed then minted nothing at all: no operation, no
- * retained batch, nothing for the next resubscribe to replay, and no error — it
- * did not even reach the `failure_syncing_agent_edit_undeliverable` report the
- * queued-edit case produces.
- */
 test.describe(
   'Hand edits made while the Agent panel is closed',
   { tag: ['@cloud', '@agent', '@vue-nodes', '@widget'] },
@@ -75,21 +64,21 @@ test.describe(
             .toEqual(offlineEdit.humanPrompts)
         })
 
-        const opIdsBeforeReopen = offlineEdit.sentOpIds()
+        const opIdsBeforeReopen = new Set(offlineEdit.sentOpIds())
+        const subscribesBeforeReopen = offlineEdit.subscribeCount()
 
-        await test.step('reopening the panel does not re-mint those edits', async () => {
+        await test.step('reopening the panel mints no further operation', async () => {
           await offlineEdit.openPanel()
+          await expect
+            .poll(() => offlineEdit.subscribeCount(), { timeout: 60_000 })
+            .toBeGreaterThan(subscribesBeforeReopen)
           await expect
             .poll(() => offlineEdit.canvasPromptValues())
             .toEqual(offlineEdit.humanPrompts)
-          // Identity is minted once and never regenerated, so a remount must
-          // not produce a second op for an edit the document already carries.
-          expect(new Set(offlineEdit.sentOpIds()).size).toBe(
-            offlineEdit.sentOpIds().length
-          )
-          expect(
-            offlineEdit.sentOpIds().slice(0, opIdsBeforeReopen.length)
-          ).toEqual(opIdsBeforeReopen)
+          await expect
+            .poll(() => offlineEdit.documentPromptValues(), { timeout: 60_000 })
+            .toEqual(offlineEdit.humanPrompts)
+          expect(new Set(offlineEdit.sentOpIds())).toEqual(opIdsBeforeReopen)
         })
 
         await test.step('the next agent turn reads what the user typed', async () => {

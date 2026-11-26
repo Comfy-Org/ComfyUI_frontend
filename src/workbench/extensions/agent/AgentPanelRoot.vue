@@ -1431,7 +1431,6 @@ const isFollowerActive = computed(
 const {
   status: crdtStatus,
   debugSnapshot: crdtDebugSnapshot,
-  noteUnboundLocalIntent,
   retrySubscription,
   canResumeHeldWorkflow
 } = useAgentCrdtFollower(boundWorkflowId, {
@@ -1501,21 +1500,13 @@ function boundRootGraphId(): RootGraphId | null {
   const id = boundOrOpenWorkflowFor(bound)?.activeState?.id
   return id === undefined ? null : toRootGraphId(id)
 }
-function noteUnboundVisibleIntent(rootGraph: LGraph): void {
-  const workflowId = bindingStore.workflowIdForGraph(rootGraph)
-  if (workflowId !== undefined) noteUnboundLocalIntent(workflowId)
+function visibleWorkflowIdFor(rootGraph: LGraph): string | null {
+  return bindingStore.workflowIdForGraph(rootGraph) ?? null
 }
-// The op producer's lifetime is the page, not this component: a panel close is
-// an unmount (`DockedAgentPanel.vue`'s `v-if`), and a producer that stops there
-// means a hand edit made with the panel closed mints nothing at all — not an
-// operation, not a retained batch, nothing for the next resubscribe to replay.
-// This installs the panel's answers on the page's producer; it does not own it,
-// and `runPanelTeardown` deliberately has no step that detaches it. See ADR
-// CRDT-FOLLOWER-0052 Stage 2 and `agentPageOpMinter.ts`.
 const docOpMinter = retainDocOpMinterForPage(docTransport, {
   isEnabled: () => agentPanelStore.enabled,
   isTargetActive: () => isFollowerActive.value,
-  onUnboundVisibleIntent: noteUnboundVisibleIntent,
+  visibleWorkflowIdFor,
   isBoundWorkflow: (workflow) => {
     const bound = boundWorkflowId.value
     return (
@@ -1523,7 +1514,8 @@ const docOpMinter = retainDocOpMinterForPage(docTransport, {
     )
   },
   getGraph: () => (useApp().isGraphReady ? useApp().rootGraph : null),
-  boundRootGraphId
+  boundRootGraphId,
+  onIdentityChange
 })
 watch([() => crdtStatus.value.connected, boundWorkflowId], () =>
   docOpMinter.deliverHeldRestores()

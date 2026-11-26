@@ -378,10 +378,6 @@ const { events, docTransport } = useAgentPageSession()
 
 describe('checkOpProducersOutliveThePanel', () => {
   test('fails the regression it exists to catch: the panel owning the op producer', () => {
-    // Verbatim shape of AgentPanelRoot.vue before ADR CRDT-FOLLOWER-0052
-    // Stage 2: the producer is attached in the component's setup and detached
-    // from its keyed teardown list, so an edit made with the panel closed
-    // mints nothing at all.
     const fixture = `<script setup lang="ts">
 const docOpMinter = attachDocOpMinter({ isEnabled, isDocBound, enqueue })
 onBeforeUnmount(() =>
@@ -403,9 +399,6 @@ onBeforeUnmount(() =>
   })
 
   test('follows the thunk indirection a Vue-hook grep would miss', () => {
-    // The detach is a thunk in an array passed to runFollowerTeardown inside
-    // onScopeDispose, not a statement in an unmount hook. A guard that looked
-    // for onBeforeUnmount/onUnmounted alone would report the invariant held.
     const fixture = `
       onScopeDispose(() => {
         runFollowerTeardown([() => opSender.detach(), () => client.destroy()])
@@ -418,11 +411,67 @@ onBeforeUnmount(() =>
     ).toEqual([{ rule: 'op-producers-outlive-the-panel', line: 3 }])
   })
 
-  test('catches a producer detached through a scope.stop() route', () => {
+  test('catches a producer detached by a named callback handed to an unmount hook', () => {
     const fixture = `
-      function teardown() {
-        scope.stop(() => coalescer.detach())
+      function releaseProducer() {
+        opSender.detach()
       }
+      onBeforeUnmount(releaseProducer)
+    `
+    expect(
+      checkOpProducersOutliveThePanel(FOLLOWER_FILE, fixture).map(
+        ({ rule, line }) => ({ rule, line })
+      )
+    ).toEqual([{ rule: 'op-producers-outlive-the-panel', line: 3 }])
+  })
+
+  test('catches a producer detached by a named arrow handed to a teardown list', () => {
+    const fixture = `
+      const releaseProducer = () => docOpMinter.detach()
+      onScopeDispose(() => runFollowerTeardown([releaseProducer]))
+    `
+    expect(
+      checkOpProducersOutliveThePanel(FOLLOWER_FILE, fixture).map(
+        ({ rule }) => rule
+      )
+    ).toEqual(['op-producers-outlive-the-panel'])
+  })
+
+  test('does not let whitespace before the call parenthesis skip the check', () => {
+    const fixture = `onBeforeUnmount(() => opSender.detach ())`
+    expect(
+      checkOpProducersOutliveThePanel(FOLLOWER_FILE, fixture).map(
+        ({ rule }) => rule
+      )
+    ).toEqual(['op-producers-outlive-the-panel'])
+  })
+
+  test('catches a producer detach handed to a keyed teardown map by reference', () => {
+    const fixture = `
+      onBeforeUnmount(() =>
+        runPanelTeardown({ detachDocOpMinter: docOpMinter.detach })
+      )
+    `
+    expect(
+      checkOpProducersOutliveThePanel(FOLLOWER_FILE, fixture).map(
+        ({ rule }) => rule
+      )
+    ).toEqual(['op-producers-outlive-the-panel'])
+  })
+
+  test('catches an optional-call detach', () => {
+    const fixture = `onBeforeUnmount(() => opSender.detach?.())`
+    expect(
+      checkOpProducersOutliveThePanel(FOLLOWER_FILE, fixture).map(
+        ({ rule }) => rule
+      )
+    ).toEqual(['op-producers-outlive-the-panel'])
+  })
+
+  test('catches an aliased factory import', () => {
+    const fixture = `
+      import { attachDocOpMinter as attach } from './crdt/docOpMinter'
+      const minter = attach({})
     `
     expect(
       checkOpProducersOutliveThePanel(FOLLOWER_FILE, fixture).map(
@@ -484,6 +533,18 @@ watch(connected, () => docOpMinter.deliverHeldRestores())
       }
     `
     expect(checkOpProducersOutliveThePanel(PANEL_FILE, fixture)).toEqual([])
+  })
+
+  test('passes a named cleanup no panel-close route is handed', () => {
+    const fixture = `
+      function releaseProducer() {
+        docOpMinter.detach()
+      }
+      export function destroyPageSession(): void {
+        releaseProducer()
+      }
+    `
+    expect(checkOpProducersOutliveThePanel(FOLLOWER_FILE, fixture)).toEqual([])
   })
 
   test('passes a non-producer detach on a panel-close route', () => {

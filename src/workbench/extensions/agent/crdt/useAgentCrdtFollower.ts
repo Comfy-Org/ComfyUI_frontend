@@ -339,11 +339,6 @@ interface AgentFollowerSessionOwner {
   pageScope: EffectScope | null
   pageLease: FollowerSessionLease<AgentFollowerSession> | null
   pageLeaseDocumentId: string | null
-  /**
-   * The session behind {@link AgentFollowerSessionOwner.pageLease}, mirrored as
-   * a ref so a page-lifetime consumer can *observe* the claim appearing rather
-   * than poll for it. Written only beside `pageLease`; the two never disagree.
-   */
   readonly pageSession: ShallowRef<AgentFollowerSession | null>
 }
 
@@ -457,10 +452,11 @@ function claimCurrentDocumentForPage(owner: AgentFollowerSessionOwner): void {
 }
 
 function releasePageClaim(owner: AgentFollowerSessionOwner): void {
-  owner.pageLease?.release()
+  const lease = owner.pageLease
+  owner.pageSession.value = null
   owner.pageLease = null
   owner.pageLeaseDocumentId = null
-  owner.pageSession.value = null
+  lease?.release()
 }
 
 function trackGateEdgeSynchronously(
@@ -525,24 +521,14 @@ export function destroyAgentFollowerSessions(): void {
 }
 
 /**
- * The follower session the PAGE holds for this transport, or null when it
- * holds none.
- *
- * An op producer whose lifetime is the page cannot read the session through a
- * panel-held handle: `useAgentCrdtFollower`'s consumer lease is released on
- * unmount, so every one of its delegating accessors answers with its null
- * fallback from that moment on while the session itself is still alive behind
- * the page claim. A producer that outlives the panel therefore resolves the
- * session here on each call. Returned as a reactive read so such a producer can
- * also *observe* the claim appearing rather than poll for it; the owner is
- * created if there is none, because a caller that wants to watch for the claim
- * has to be watching before it is taken. See
+ * The follower session the page holds for `transport`, as a reactive read, or
+ * null when it holds none. Creates the owner if there is none. See
  * `docs/adr/CRDT-FOLLOWER-0052-the-workflow-document-owns-the-follower-session.md`
  * Stage 2.
  */
 export function retainedAgentFollowerSessionRef(
   transport: AgentDocFrameTransport
-): ShallowRef<AgentFollowerSession | null> {
+): Readonly<ShallowRef<AgentFollowerSession | null>> {
   return ownerFor(transport).pageSession
 }
 

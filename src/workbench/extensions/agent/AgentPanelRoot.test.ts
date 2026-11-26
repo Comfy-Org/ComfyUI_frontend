@@ -11509,10 +11509,6 @@ describe('AgentPanelRoot lifecycle', () => {
 
   it('resets the canvas sync gate when an earlier teardown step throws', () => {
     const errorHandler = vi.fn()
-    // Any step ahead of `resetCanvasSyncGate` in the keyed list will do; this
-    // one is chosen because it is cheap to make throw. The step that used to
-    // be used here, `detachDocOpMinter`, is gone: the op producer's lifetime
-    // is the page, not the panel (ADR CRDT-FOLLOWER-0052 Stage 2).
     vi.spyOn(canvasStore, 'stopNodePicking').mockImplementationOnce(() => {
       throw new Error('detach failed')
     })
@@ -11529,8 +11525,6 @@ describe('AgentPanelRoot lifecycle', () => {
 
     panel.unmount()
 
-    // PM-1575: the gate is reset to the always-safe default even though an
-    // earlier step threw.
     expect(setCanvasSyncGate).toHaveBeenCalledOnce()
     const [gate] = setCanvasSyncGate.mock.lastCall ?? []
     expect(gate?.()).toBe('none')
