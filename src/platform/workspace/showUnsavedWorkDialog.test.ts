@@ -8,8 +8,24 @@ vi.mock(import('@comfyorg/telemetry'))
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: false }))
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
-function flushQueue() {
-  return new Promise((resolve) => setTimeout(resolve))
+async function openDialogTitled(title: string) {
+  const dialogStore = useDialogStore()
+  await vi.waitFor(() =>
+    expect(dialogStore.dialogStack.map((d) => d.contentProps.title)).toEqual([
+      title
+    ])
+  )
+  return dialogStore.dialogStack[0]
+}
+
+function answerDialog(
+  dialog: { contentProps: Record<string, unknown> },
+  result: boolean | null
+) {
+  const onResult = dialog.contentProps.onResult as (
+    result: boolean | null
+  ) => void
+  onResult(result)
 }
 
 function prompt(title: string) {
@@ -27,11 +43,7 @@ describe('showUnsavedWorkDialog', () => {
     const dialogStore = useDialogStore()
 
     const answer = showUnsavedWorkDialog(prompt('Portrait'))
-    await flushQueue()
-    const onResult = dialogStore.dialogStack[0].contentProps.onResult as (
-      result: boolean | null
-    ) => void
-    onResult(true)
+    answerDialog(await openDialogTitled('Portrait'), true)
 
     await expect(answer).resolves.toBe(true)
     expect(dialogStore.dialogStack).toHaveLength(0)
@@ -42,22 +54,12 @@ describe('showUnsavedWorkDialog', () => {
 
     const first = showUnsavedWorkDialog(prompt('Portrait'))
     const second = showUnsavedWorkDialog(prompt('Video'))
-    await flushQueue()
 
-    expect(dialogStore.dialogStack).toHaveLength(1)
-    expect(dialogStore.dialogStack[0].contentProps.title).toBe('Portrait')
-
-    dialogStore.closeDialog({ key: dialogStore.dialogStack[0].key })
+    const portrait = await openDialogTitled('Portrait')
+    dialogStore.closeDialog({ key: portrait.key })
     await expect(first).resolves.toBeNull()
-    await flushQueue()
 
-    expect(dialogStore.dialogStack).toHaveLength(1)
-    expect(dialogStore.dialogStack[0].contentProps.title).toBe('Video')
-
-    const onResult = dialogStore.dialogStack[0].contentProps.onResult as (
-      result: boolean | null
-    ) => void
-    onResult(false)
+    answerDialog(await openDialogTitled('Video'), false)
     await expect(second).resolves.toBe(false)
   })
 })
