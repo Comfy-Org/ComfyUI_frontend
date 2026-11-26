@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { useLocalStorage } from '@vueuse/core'
 import { computed, watch } from 'vue'
 
 import Button from '@comfyorg/design-system/button/Button'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useSafeLocalStorage } from '@/platform/storage/useSafeStorage'
 import type { AgentFreeUseNoticeMetadata } from '@comfyorg/telemetry/types'
 import { AGENT_COST_DOCS_URL } from '@/workbench/extensions/agent/agentDocs'
 
@@ -13,7 +13,7 @@ const emit = defineEmits<{ notice: [metadata: AgentFreeUseNoticeMetadata] }>()
 const placement = 'near-composer' as const
 
 const { isAuthInitialized, resolvedUserInfo } = useCurrentUser()
-const dismissed = useLocalStorage(
+const dismissed = useSafeLocalStorage(
   () => freeUseNoticeDismissedKey(resolvedUserInfo.value?.id),
   false,
   { writeDefaults: false }
@@ -44,7 +44,7 @@ function onDismiss(): void {
     class="flex items-start gap-3 rounded-lg bg-primary/30 px-4 py-3 text-foreground"
   >
     <p class="my-0 min-w-0 flex-1 text-sm/5">
-      {{ $t('agent.freeUseNotice') }}
+      {{ $t('agent.firstChatFreeNotice') }}
       <Button
         variant="link"
         size="unset"

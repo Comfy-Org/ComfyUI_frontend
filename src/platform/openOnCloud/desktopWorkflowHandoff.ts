@@ -4,6 +4,7 @@ import {
   cloudEditorUrl,
   LOCAL_HANDOFF_PARAM
 } from '@/platform/openOnCloud/localHandoffProtocol'
+import { safeSessionStorage } from '@/base/storage/safeStorage'
 
 export const DESKTOP_RELAY_PARAM = 'desktop_workflow'
 export const DESKTOP_HANDOFF_HASH = '#desktop_workflow='
@@ -22,7 +23,8 @@ export type DesktopWorkflowHandoff = z.infer<typeof zDesktopWorkflowHandoff>
 
 export async function desktopWorkflowUrl(
   nonce: string,
-  handoff: DesktopWorkflowHandoff
+  handoff: DesktopWorkflowHandoff,
+  workspaceId?: string
 ): Promise<string | undefined> {
   const body = new Blob([JSON.stringify(handoff)])
   if (body.size > MAX_HANDOFF_BYTES) return undefined
@@ -32,7 +34,7 @@ export async function desktopWorkflowUrl(
     Array.from(bytes, (byte) => String.fromCharCode(byte)).join('')
   )
   if (encoded.length > MAX_ENCODED_LENGTH) return undefined
-  const url = new URL(cloudEditorUrl(nonce))
+  const url = new URL(cloudEditorUrl(nonce, workspaceId))
   url.hash = `${DESKTOP_HANDOFF_HASH}${encoded}`
   return url.href
 }
@@ -97,8 +99,12 @@ export async function captureDesktopWorkflowHandoff(
     const value = await readBoundedHandoff(stream)
     const handoff = readStoredHandoff(value ?? null)
     if (!handoff) return false
-    sessionStorage.setItem(`${STORAGE_PREFIX}${nonce}`, JSON.stringify(handoff))
-    return true
+    return (
+      safeSessionStorage.setItem(
+        `${STORAGE_PREFIX}${nonce}`,
+        JSON.stringify(handoff)
+      ) === 'ok'
+    )
   } catch {
     return false
   }
@@ -107,12 +113,11 @@ export async function captureDesktopWorkflowHandoff(
 export function takeDesktopWorkflowHandoff(
   nonce: string
 ): DesktopWorkflowHandoff | undefined {
-  try {
-    const key = `${STORAGE_PREFIX}${nonce}`
-    const value = sessionStorage.getItem(key)
-    sessionStorage.removeItem(key)
-    return readStoredHandoff(value)
-  } catch {
-    return undefined
-  }
+  const key = `${STORAGE_PREFIX}${nonce}`
+  const value = safeSessionStorage.getItem(key)
+  if (value === null) return undefined
+  if (!safeSessionStorage.remove(key).ok) return undefined
+  const remaining = safeSessionStorage.read(key)
+  if (!remaining.ok || remaining.value !== null) return undefined
+  return readStoredHandoff(value)
 }

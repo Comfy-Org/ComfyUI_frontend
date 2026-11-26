@@ -4,13 +4,13 @@ import * as fc from 'fast-check'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type { AssetItem } from '@comfyorg/assets-core/schema'
 
 const mockShiftKey = ref(false)
 const mockCtrlKey = ref(false)
 const mockMetaKey = ref(false)
 
-vi.mock(import('@/platform/assets/composables/media/assetMappers'))
+vi.mock(import('@/platform/assets/adapters/outputAssetMappers'))
 
 vi.mock(import('@vueuse/core'), () => ({
   useKeyModifier: (key: string) => {
@@ -22,7 +22,7 @@ vi.mock(import('@vueuse/core'), () => ({
 }))
 
 import { useAssetSelection } from './useAssetSelection'
-import { useAssetSelectionStore } from './useAssetSelectionStore'
+import { useAssetSelectionStore } from '@/platform/assets/stores/useAssetSelectionStore'
 
 const arbAssetId = fc.stringMatching(/^[a-z0-9]{4,12}$/)
 

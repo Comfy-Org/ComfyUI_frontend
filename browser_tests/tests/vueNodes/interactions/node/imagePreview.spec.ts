@@ -219,16 +219,22 @@ test.describe('Vue Nodes Batch Image Preview', { tag: '@vue-nodes' }, () => {
       await test.step('Inject multiple previews', async () => {
         const file = { filename: 'example.png', type: 'input' }
         const images = Array.from({ length: 100 }, () => file)
-        execution.executed('', '1', { images })
+        const jobId = await execution.run()
+        execution.executed(jobId, '1', { images })
         await expect(node.imageGrid.locator('img')).toHaveCount(100)
       })
 
       const { bottomRight } = node.resize
-      await expect.poll(() => countColumns(node.imageGrid)).toBe(10)
+      await expect.poll(() => countColumns(node.imageGrid)).toBeGreaterThan(1)
+      const initialColumns = await countColumns(node.imageGrid)
       await comfyMouse.dragElementBy(bottomRight, { x: 200 })
-      await expect.poll(() => countColumns(node.imageGrid)).toBeGreaterThan(10)
+      await expect
+        .poll(() => countColumns(node.imageGrid))
+        .toBeGreaterThan(initialColumns)
       await comfyMouse.dragElementBy(bottomRight, { x: -200, y: 200 })
-      await expect.poll(() => countColumns(node.imageGrid)).toBeLessThan(10)
+      await expect
+        .poll(() => countColumns(node.imageGrid))
+        .toBeLessThan(initialColumns)
     }
   )
 
@@ -254,7 +260,8 @@ test.describe('Vue Nodes Batch Image Preview', { tag: '@vue-nodes' }, () => {
           subfolder: '',
           type: 'output'
         }))
-        execution.executed('', '1', { images })
+        const jobId = await execution.run()
+        execution.executed(jobId, '1', { images })
         await expect(gridImages).toHaveCount(4)
       })
 

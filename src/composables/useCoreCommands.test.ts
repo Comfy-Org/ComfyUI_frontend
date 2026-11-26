@@ -1,6 +1,8 @@
 import { useDialogService } from '@/services/dialogService'
 import { useToast } from '@/components/ui/toast/toastStore'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { pick } from 'es-toolkit'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { zClipboardItems } from '@comfyorg/graph-model/workflowSchema'
@@ -16,7 +18,7 @@ import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { LGraphNode, LGraphGroup } from '@/lib/litegraph/src/litegraph'
 
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type { AssetItem } from '@comfyorg/assets-core/schema'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { WorkspaceDeployment } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
@@ -134,9 +136,12 @@ vi.mock<unknown>(
 )
 
 const mockStartModelNodeDrag = vi.hoisted(() => vi.fn())
-vi.mock(import('@/composables/node/startModelNodeDragFromAsset'), () => ({
-  startModelNodeDragFromAsset: mockStartModelNodeDrag
-}))
+vi.mock(
+  import('@/platform/assets/integration/startModelNodeDragFromAsset'),
+  () => ({
+    startModelNodeDragFromAsset: mockStartModelNodeDrag
+  })
+)
 
 const mockChangeTracker = vi.hoisted(() => ({
   captureCanvasState: vi.fn(),
@@ -888,6 +893,40 @@ describe('useCoreCommands', () => {
       expect(app.openClipspace).toHaveBeenCalled()
     })
 
+    it('Comfy.NewBlankWorkflow creates the tab as a user activation', async () => {
+      Object.assign(app.rootGraph, { _nodes: [] })
+
+      await findCmd('Comfy.NewBlankWorkflow').function()
+
+      expect(useWorkflowService().loadBlankWorkflow).toHaveBeenCalledWith({
+        initiator: 'user'
+      })
+    })
+
+    it('Comfy.LoadDefaultWorkflow loads the default tab as a user activation', async () => {
+      Object.assign(app.rootGraph, { _nodes: [] })
+
+      await findCmd('Comfy.LoadDefaultWorkflow').function()
+
+      expect(useWorkflowService().loadDefaultWorkflow).toHaveBeenCalledWith({
+        initiator: 'user'
+      })
+    })
+
+    it('Comfy.DuplicateWorkflow duplicates the active tab as a user activation', async () => {
+      const active = fromPartial<LoadedComfyWorkflow>({
+        path: 'workflows/active.json'
+      })
+      mockWorkflowStore.activeWorkflow = active
+
+      await findCmd('Comfy.DuplicateWorkflow').function()
+
+      expect(useWorkflowService().duplicateWorkflow).toHaveBeenCalledWith(
+        active,
+        { initiator: 'user' }
+      )
+    })
+
     it('Comfy.RefreshNodeDefinitions rescans missing models after refreshing combos', async () => {
       const order: string[] = []
       let resolveComboRefresh: () => void = () => {}
@@ -1341,6 +1380,18 @@ describe('useCoreCommands', () => {
 
     it('shows an error toast when the asset cannot start a drag', async () => {
       mockStartModelNodeDrag.mockReturnValue({
+        code: 'INVALID_ASSET',
+        message: 'Asset has no tags defined',
+        assetId: 'asset-1'
+      })
+
+      await selectAssetFromBrowser()
+
+      expect(useToast().error).toHaveBeenCalled()
+    })
+
+    it('shows a warning toast when the model category has no loader node', async () => {
+      mockStartModelNodeDrag.mockReturnValue({
         code: 'NO_PROVIDER',
         message: 'No node provider registered',
         assetId: 'asset-1'
@@ -1348,7 +1399,8 @@ describe('useCoreCommands', () => {
 
       await selectAssetFromBrowser()
 
-      expect(useToast().error).toHaveBeenCalled()
+      expect(useToast().warning).toHaveBeenCalled()
+      expect(useToast().error).not.toHaveBeenCalled()
     })
   })
 })

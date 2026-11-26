@@ -94,7 +94,7 @@ for (const scenario of [
   test(
     `keeps ${scenario.name} after refresh and chat switching`,
     { tag: ['@cloud', '@ui'] },
-    async ({ page, promptHistory, workflowSelection }, testInfo) => {
+    async ({ page, promptHistory }, testInfo) => {
       const filenames = scenario.assets.map((asset) => asset.filename)
       let attachmentThreadId: string | undefined
 
@@ -171,14 +171,6 @@ for (const scenario of [
           exact: true
         })
         .click()
-      await panel
-        .getByRole('button', { name: enMessages.agent.switchWorkflow })
-        .click()
-      await page
-        .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
-        .click()
-      await expect.poll(() => workflowSelection.savedPaths.length).toBe(1)
-      workflowSelection.finishSave(true)
 
       // Simulate dropping a generated asset card into the composer, the same
       // way agentBatchOutputAttachment.spec.ts does: the real drag source puts

@@ -89,6 +89,7 @@ function capabilitiesResponse(
       can_manage_partner_node_access: false,
       can_view_pending_invites: false,
       can_view_team_usage: false,
+      can_view_workspace_usage: false,
       can_edit_workspace: false,
       can_manage_auto_top_up: false,
       can_view_auto_top_up: false,
@@ -242,14 +243,14 @@ describe('useBillingCapabilities', () => {
     [
       'allowed',
       () => Promise.resolve(capabilitiesResponse(true)),
-      'succeeded',
-      'success'
+      undefined,
+      undefined
     ],
     [
       'policy denied',
       () => Promise.resolve(capabilitiesResponse(false)),
-      'succeeded',
-      'success'
+      undefined,
+      undefined
     ],
     [
       'access denied',
@@ -265,9 +266,15 @@ describe('useBillingCapabilities', () => {
       () => Promise.reject(new Error('network failed')),
       'failed',
       'failure'
+    ],
+    [
+      'resolved for another workspace',
+      () => Promise.resolve(capabilitiesResponse(true, 'workspace-2')),
+      'failed',
+      'failure'
     ]
   ] as const)(
-    'records capability reads when %s',
+    'records only failed capability reads, here %s',
     async ([, response, stage, outcome]) => {
       const record = vi.fn()
       const registry = new TelemetryRegistry()
@@ -636,6 +643,40 @@ describe('useBillingCapabilities', () => {
     expect(billingCapabilities.isReady.value).toBe(true)
     expect(billingCapabilities.snapshotAuthoritative.value).toBe(false)
   })
+
+  it.for([
+    {
+      name: 'a legacy-rail 401',
+      error: new WorkspaceApiError('authentication required', 401),
+      sentryMode: 'never'
+    },
+    {
+      name: 'a 403',
+      error: new WorkspaceApiError('Forbidden', 403),
+      sentryMode: 'always'
+    },
+    {
+      name: 'an outage',
+      error: new Error('unavailable'),
+      sentryMode: 'always'
+    }
+  ])(
+    'reports $name once, keeping only an ended session out of Sentry',
+    async ({ error, sentryMode }) => {
+      vi.mocked(billingApi.getBillingCapabilities).mockRejectedValueOnce(error)
+
+      await billingCapabilities.initialize()
+
+      expect(mockReportError).toHaveBeenCalledExactlyOnceWith(
+        error,
+        expect.objectContaining({
+          errorType: 'billing_capabilities_read_failure'
+        })
+      )
+      const [, options] = mockReportError.mock.calls[0]
+      expect(options.sentryMode).toBe(sentryMode)
+    }
+  )
 
   it('fails closed when the endpoint denies the current actor', async () => {
     vi.mocked(billingApi.getBillingCapabilities).mockRejectedValueOnce(
@@ -1834,6 +1875,33 @@ describe('useBillingCapabilities on the SDK rail', () => {
     railState.rail = null
   })
 
+  it.for([
+    { name: 'with its 401', httpStatus: 401 },
+    { name: 'before any response', httpStatus: undefined }
+  ])(
+    'keeps a NOT_AUTHENTICATED read $name out of Sentry and publishes no capabilities',
+    async ({ httpStatus }) => {
+      readCapabilities.mockResolvedValueOnce({
+        status: 'error',
+        code: 'NOT_AUTHENTICATED',
+        ...(httpStatus === undefined ? {} : { httpStatus })
+      })
+
+      await billingCapabilities.initialize()
+
+      expect(billingCapabilities.isReady.value).toBe(true)
+      expect(billingCapabilities.hasResolvedCapabilities.value).toBe(false)
+      expect(billingCapabilities.canTopUp.value).toBe(false)
+      expect(mockReportError).toHaveBeenCalledExactlyOnceWith(
+        expect.any(WorkspaceApiError),
+        expect.objectContaining({
+          errorType: 'billing_capabilities_read_failure',
+          sentryMode: 'never'
+        })
+      )
+    }
+  )
+
   it('applies the server capability read through the rail and leaves the legacy client alone', async () => {
     readCapabilities.mockResolvedValueOnce({
       status: 'ok',
@@ -1871,6 +1939,7 @@ describe('useBillingCapabilities on the SDK rail', () => {
           can_top_up: true,
           can_view_pending_invites: true,
           can_view_team_usage: false,
+          can_view_workspace_usage: false,
           can_edit_workspace: false,
           can_manage_auto_top_up: false,
           can_view_auto_top_up: false,

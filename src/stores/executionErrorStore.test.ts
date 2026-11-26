@@ -22,7 +22,7 @@ import {
 beforeEach(() => {
   const settings = useSettingStore().settingValues
   settings['Comfy.RightSidePanel.ShowErrorsTab'] = false
-  settings['Comfy.Workflow.ShowMissingNodesWarning'] = true
+  settings['Comfy.ErrorSystem.ShowMissingNodes'] = true
   settings['Comfy.ErrorSystem.ShowMissingModels'] = true
   settings['Comfy.Workflow.ShowMissingMediaWarning'] = true
 })

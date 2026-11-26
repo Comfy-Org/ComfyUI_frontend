@@ -534,9 +534,8 @@ describe('useBillingContext', () => {
       const loaded = holdWorkspaceUnloaded('personal')
       const context = useBillingContext()
       vi.clearAllMocks()
-      vi.mocked(billingApi.getBillingBalance).mockRejectedValue(
-        new Error('balance read rejected')
-      )
+      const initFailure = new Error('balance read rejected')
+      vi.mocked(billingApi.getBillingBalance).mockRejectedValue(initFailure)
 
       await context.fetchStatus({ fresh: true })
 
@@ -546,6 +545,10 @@ describe('useBillingContext', () => {
         expect(billingApi.getBillingStatus).toHaveBeenCalledTimes(2)
       })
       expect(context.isInitialized.value).toBe(false)
+      expect(reportError).toHaveBeenCalledWith(initFailure, {
+        surface: 'billing',
+        errorType: 'error_initializing_billing_context'
+      })
     })
 
     it('shares one adapter initialization between concurrent callers', async () => {

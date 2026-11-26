@@ -1,7 +1,5 @@
 <template>
   <div
-    v-if="visible && initialized"
-    ref="minimapRef"
     :class="
       cn(
         'minimap-main-container absolute right-0 bottom-[54px] isolate flex',
@@ -64,6 +62,7 @@
       />
 
       <div
+        v-show="interactive"
         ref="viewportRef"
         class="minimap-viewport"
         :style="viewportStyles"
@@ -88,6 +87,7 @@
       </div>
 
       <div
+        v-if="interactive"
         class="absolute inset-0 touch-none"
         data-testid="minimap-interaction-overlay"
         @pointerdown="handlePointerDown"
@@ -103,7 +103,7 @@
 
 <script setup lang="ts">
 import { breakpointsTailwind, useBreakpoints } from '@vueuse/core'
-import { onMounted, onUnmounted, ref, useTemplateRef, watch } from 'vue'
+import { ref, useTemplateRef, watch } from 'vue'
 
 import Button from '@comfyorg/design-system/button/Button'
 import { useCompositedTransform } from '@/renderer/core/layout/transform/useCompositedTransform'
@@ -116,13 +116,11 @@ import MiniMapPanel from './MiniMapPanel.vue'
 const isMobile = useBreakpoints(breakpointsTailwind).smaller('md')
 
 const commandStore = useCommandStore()
-const minimapRef = ref<HTMLDivElement>()
 const containerRef = useTemplateRef<HTMLDivElement>('containerRef')
 const canvasRef = useTemplateRef<HTMLCanvasElement>('canvasRef')
 
 const {
-  initialized,
-  visible,
+  interactive,
   decorationCount,
   containerStyles,
   viewportStyles,
@@ -136,17 +134,12 @@ const {
   renderBypass,
   renderError,
   updateOption,
-  destroy,
   handlePointerDown,
   handlePointerMove,
   handlePointerUp,
   handlePointerCancel,
-  handleWheel,
-  setMinimapRef
-} = useMinimap({
-  containerRefMaybe: containerRef,
-  canvasRefMaybe: canvasRef
-})
+  handleWheel
+} = useMinimap({ containerRef, canvasRef })
 
 const viewportRef = useTemplateRef<HTMLDivElement>('viewportRef')
 const viewportBox = useCompositedTransform(viewportRef)
@@ -174,16 +167,6 @@ const showOptionsPanel = ref(false)
 const toggleOptionsPanel = () => {
   showOptionsPanel.value = !showOptionsPanel.value
 }
-
-onMounted(() => {
-  if (minimapRef.value) {
-    setMinimapRef(minimapRef.value)
-  }
-})
-
-onUnmounted(() => {
-  destroy()
-})
 </script>
 
 <style scoped>

@@ -38,6 +38,7 @@ import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import type { WidgetState } from '@comfyorg/graph-model/widgetState'
 import type { LinkTopology } from '@comfyorg/graph-model/linkTopology'
+import { invokeButtonWidgetCallback } from '@/renderer/extensions/vueNodes/widgets/utils/invokeButtonWidgetCallback'
 import { getControlWidget } from '@/types/simplifiedWidget'
 import { isWidgetVisibleOnSurface } from '@/types/widgetVisibility'
 import type { WidgetVisibilityComponent } from '@/types/widgetVisibility'
@@ -401,6 +402,18 @@ function resolveWidgetPresentation(
   }
 }
 
+function isButtonType(type: string) {
+  return type.toLowerCase() === 'button'
+}
+
+function createButtonClickHandler(live: LiveWidgetContext['live']) {
+  if (!live) return undefined
+  return (_value: WidgetValue, click?: MouseEvent) => {
+    invokeButtonWidgetCallback(live.widget, live.node, useApp().canvas, click)
+    live.node.widgets?.forEach((w) => w.triggerDraw?.())
+  }
+}
+
 function widgetTooltipFullValue(type: string, value: WidgetValue) {
   return isTooltipValueType(type) && String(value).length > 10
     ? String(value)
@@ -464,7 +477,9 @@ function processWidget(
     type,
     value,
     borderStyle: advanced ? 'ring ring-primary' : undefined,
-    callback: updateHandler,
+    callback: isButtonType(type)
+      ? createButtonClickHandler(live)
+      : updateHandler,
     controlWidget,
     label: widgetState.label,
     linkedUpstream,

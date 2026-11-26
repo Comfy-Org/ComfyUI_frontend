@@ -137,6 +137,8 @@ export type RemoteConfig = Partial<GetFeaturesResponses[200]> & {
   web_session_lapse_recovery_enabled?: boolean
   sso_enabled?: boolean
   local_web_sso?: boolean
+  /** Comfy MCP connect surface on local installs. Never served on Cloud. */
+  local_mcp_connect?: boolean
   billing_control_enabled?: boolean
   member_credit_limits_enabled?: boolean
   billing_new_ux_enabled?: boolean

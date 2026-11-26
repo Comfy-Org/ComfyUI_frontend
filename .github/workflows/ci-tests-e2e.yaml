@@ -455,8 +455,7 @@ jobs:
           set -euo pipefail
           version=$(awk '
             in_entry && !/^        / { in_entry = 0 }
-            /^importers:/ { in_importers = 1; next }
-            in_importers && /^[^ ]/ { exit }
+            /^[^ ]/ { in_importers = /^importers:$/; in_root = 0; next }
             in_importers && /^  [^ ]/ { in_root = ($0 == "  .:"); next }
             in_root && /^      .@playwright\/test.:$/ { in_entry = 1; next }
             in_entry && /^        version: / { sub(/^        version: /, ""); sub(/\(.*/, ""); print; exit }

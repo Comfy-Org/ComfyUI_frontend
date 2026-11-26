@@ -2,10 +2,7 @@ import { effectScope, toValue, watch } from 'vue'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { useAssetsQuery } from '@/platform/assets/composables/useAssetsQuery'
-import type {
-  AssetItem,
-  AssetResponse
-} from '@/platform/assets/schemas/assetSchema'
+import type { AssetItem, AssetResponse } from '@comfyorg/assets-core/schema'
 import { api } from '@/scripts/api'
 
 // Ported from the deleted useAssetsQuery.test.ts (fe #16254, 606c2ac30b). Only the
@@ -14,6 +11,14 @@ import { api } from '@/scripts/api'
 // behavior on `main` (no overlap dedup, no updated knownIds mid-walk) and would
 // need separate, unrelated fixes to re-add; out of scope for this row.
 vi.mock(import('@/scripts/api'))
+
+const mockIsCloud = vi.hoisted(() => vi.fn(() => false))
+
+vi.mock(import('@/platform/distribution/types'), () => ({
+  get isCloud() {
+    return mockIsCloud()
+  }
+}))
 
 const fetchApiMock = vi.mocked(api.fetchApi)
 
@@ -32,12 +37,13 @@ function response(
   ids: string[],
   {
     hasMore = false,
-    nextCursor
-  }: { hasMore?: boolean; nextCursor?: string } = {}
+    nextCursor,
+    total = ids.length
+  }: { hasMore?: boolean; nextCursor?: string; total?: number } = {}
 ): Response {
   const body: AssetResponse = {
     assets: ids.map(asset),
-    total: ids.length,
+    total,
     has_more: hasMore,
     ...(nextCursor === undefined ? {} : { next_cursor: nextCursor })
   }
@@ -49,7 +55,7 @@ function response(
 async function createList(
   key: string,
   initialIds: string[],
-  options: { hasMore?: boolean; nextCursor?: string } = {}
+  options: { hasMore?: boolean; nextCursor?: string; total?: number } = {}
 ) {
   fetchApiMock.mockResolvedValueOnce(response(initialIds, options))
   const scope = effectScope()
@@ -448,5 +454,47 @@ describe('useAssetsQuery request params', () => {
       expect(params.get('include_total')).toBe('false')
       expect(params.get('include_public')).toBe('false')
     }
+  })
+})
+
+describe('useAssetsQuery capped totals', () => {
+  it.for([
+    { runtime: 'cloud', isCloud: true, expected: 'true' },
+    { runtime: 'local', isCloud: false, expected: null }
+  ])(
+    'sends capped_total=$expected on $runtime',
+    async ({ runtime, isCloud, expected }) => {
+      mockIsCloud.mockReturnValue(isCloud)
+
+      await createList(`capped-total-${runtime}`, ['newest'])
+
+      const requestedUrl = new URL(
+        fetchApiMock.mock.calls[0][0],
+        'http://localhost'
+      )
+      expect(requestedUrl.searchParams.get('capped_total')).toBe(expected)
+    }
+  )
+
+  it('keeps loading pages while has_more holds at the capped total', async () => {
+    mockIsCloud.mockReturnValue(true)
+    const list = await createList('capped-total-paging', ['newest'], {
+      hasMore: true,
+      nextCursor: 'page-2',
+      total: 1
+    })
+    fetchApiMock.mockResolvedValueOnce(
+      response(['older'], {
+        hasMore: true,
+        nextCursor: 'page-3',
+        total: 1
+      })
+    )
+
+    await expect(list.loadMore()).resolves.toBe(true)
+
+    expect(toValue(list.items).map(({ id }) => id)).toEqual(['newest', 'older'])
+    expect(toValue(list.hasMore)).toBe(true)
+    expect(requestedAfterCursors()).toEqual(['page-2'])
   })
 })

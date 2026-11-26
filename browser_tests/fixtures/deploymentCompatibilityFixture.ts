@@ -1,4 +1,9 @@
-import { DEPLOYMENT_LISTING } from '@e2e/fixtures/data/deploymentListing'
+import {
+  DEPLOYMENT_LISTING,
+  JUST_READY_COMPATIBLE,
+  JUST_READY_DEPLOYMENT_LISTING,
+  JUST_READY_UNKNOWN
+} from '@e2e/fixtures/data/deploymentListing'
 import { webSessionTest } from '@e2e/fixtures/webSessionFixture'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
@@ -26,6 +31,35 @@ export const deploymentCompatibilityTest = webSessionTest.extend({
     )
     await page.route('**/api/userdata**', (route) =>
       route.fulfill(jsonRoute([]))
+    )
+    await use(page)
+  }
+})
+
+export const deploymentRecheckTest = deploymentCompatibilityTest.extend({
+  serverFeatures: async ({ serverFeatures }, use) => {
+    await use({
+      ...serverFeatures,
+      deployment_compatibility_marks_enabled: true
+    })
+  },
+  page: async ({ page }, use) => {
+    let compatibilityChecks = 0
+    await page.route('**/api/workspaces/*/deployments', (route) =>
+      route.fulfill(jsonRoute(JUST_READY_DEPLOYMENT_LISTING))
+    )
+    await page.route(
+      '**/api/workspaces/*/deployments/compatibility',
+      (route) => {
+        compatibilityChecks++
+        return route.fulfill(
+          jsonRoute(
+            compatibilityChecks === 1
+              ? JUST_READY_UNKNOWN
+              : JUST_READY_COMPATIBLE
+          )
+        )
+      }
     )
     await use(page)
   }

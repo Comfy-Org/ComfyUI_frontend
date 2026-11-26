@@ -139,6 +139,9 @@ describe('storageKeys', () => {
       expect(StorageKeys.agentDeletedThreads('ws-123')).toBe(
         'Comfy.Agent.DeletedThreads:ws-123'
       )
+      expect(StorageKeys.agentPendingSendDraft('ws-123')).toBe(
+        'Comfy.Agent.PendingSendDraft:ws-123'
+      )
     })
 
     it('exposes prefix patterns for cleanup', async () => {

@@ -1,6 +1,8 @@
 import {
+  awaitWithAbort,
   combineAbortSignals,
-  createTimeoutSignal
+  createTimeoutSignal,
+  throwIfAborted
 } from '@comfyorg/api-client/abortSignal'
 import { zGetFeaturesResponse } from '@comfyorg/ingest-types/zod'
 import { reportError } from '@comfyorg/telemetry/reportError'
@@ -13,7 +15,8 @@ import { getBuildTimeComfyCloudBaseUrl } from '@/config/comfyApi'
 
 const zOpenOnCloudRollout = zGetFeaturesResponse.pick({
   open_on_cloud_enabled: true,
-  open_on_cloud_use_local_agent_enabled: true
+  open_on_cloud_use_local_agent_enabled: true,
+  open_on_cloud_model_upload_enabled: true
 })
 
 type OpenOnCloudRollout = z.infer<typeof zOpenOnCloudRollout>
@@ -22,12 +25,14 @@ type RolloutAttempt =
   | { ok: false; retryable: boolean; cause: unknown }
 
 const rollout = shallowRef<OpenOnCloudRollout>()
+export const UPLOAD_ROLLOUT_REFRESH_MS = 15_000
 type RolloutSession = {
   getToken?: () => Promise<string | undefined>
   signal: AbortSignal
   latestRequest: number
   startupRetryPending: boolean
   revalidation?: Promise<boolean>
+  transferGrantExpiresAt?: number
 }
 let currentSession: RolloutSession | undefined
 
@@ -51,7 +56,7 @@ async function parseRolloutResponse(
     return {
       ok: false,
       retryable: false,
-      cause: new Error('Invalid Cloud rollout response')
+      cause: served.error
     }
   } catch (cause) {
     return { ok: false, retryable: !(cause instanceof SyntaxError), cause }
@@ -64,8 +69,13 @@ async function requestRollout(
   signal: AbortSignal
 ): Promise<RolloutAttempt | undefined> {
   try {
-    const token = await getToken?.()
-    if (signal.aborted) return
+    const requestSignal = combineAbortSignals([
+      signal,
+      createTimeoutSignal(5_000)
+    ])
+    throwIfAborted(requestSignal)
+    const token = await (getToken && awaitWithAbort(getToken(), requestSignal))
+    throwIfAborted(requestSignal)
     if (getToken && !token)
       return {
         ok: false,
@@ -77,7 +87,7 @@ async function requestRollout(
       credentials: 'omit',
       headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       redirect: 'error',
-      signal: combineAbortSignals([signal, createTimeoutSignal(5_000)])
+      signal: requestSignal
     })
     if (!response.ok)
       return {
@@ -130,12 +140,18 @@ async function readRollout(
   const { getToken, signal } = session
   const request = ++session.latestRequest
   const result = await fetchRollout(getToken, signal, retry)
-  if (!result || signal.aborted || request !== session.latestRequest)
-    return false
-  if (result.ok) {
+  if (signal.aborted || request !== session.latestRequest) return false
+  if (result?.ok) {
+    const enabled = result.data.open_on_cloud_enabled === true
+    session.transferGrantExpiresAt =
+      enabled && result.data.open_on_cloud_model_upload_enabled === true
+        ? Date.now() + UPLOAD_ROLLOUT_REFRESH_MS
+        : undefined
     rollout.value = result.data
-    return result.data.open_on_cloud_enabled === true
+    return enabled
   }
+  session.transferGrantExpiresAt = undefined
+  if (!result) return false
   if (!result.retryable) rollout.value = undefined
   if (retry) session.startupRetryPending = result.retryable
   reportRolloutReadFailure(result.cause)
@@ -145,14 +161,24 @@ async function readRollout(
 export function bindLocalOpenOnCloudGrant() {
   const session = currentSession
   const isCurrent = () => session !== undefined && currentSession === session
+  async function revalidate() {
+    if (!session || !isCurrent()) return false
+    session.revalidation ??= readRollout(session, false).finally(() => {
+      session.revalidation = undefined
+    })
+    return await session.revalidation
+  }
+  function hasModelUploadGrant() {
+    return isCurrent() && Date.now() < (session?.transferGrantExpiresAt ?? 0)
+  }
   return {
     isCurrent,
-    async revalidate() {
+    revalidate,
+    async allowsModelTransfer({ refresh = false } = {}) {
       if (!session || !isCurrent()) return false
-      session.revalidation ??= readRollout(session, false).finally(() => {
-        session.revalidation = undefined
-      })
-      return await session.revalidation
+      if (session.revalidation) await session.revalidation
+      else if (refresh || !hasModelUploadGrant()) await revalidate()
+      return hasModelUploadGrant()
     }
   }
 }
@@ -179,9 +205,12 @@ export function startLocalOpenOnCloudRollout(
   )
   const stopRecovery = useEventListener(window, ['online', 'focus'], () => {
     const session = currentSession
-    if (!session?.startupRetryPending) return
-    session.startupRetryPending = false
-    void readRollout(session, true)
+    if (session?.startupRetryPending) {
+      session.startupRetryPending = false
+      void readRollout(session, true)
+    } else if (session?.getToken) {
+      void bindLocalOpenOnCloudGrant().revalidate()
+    }
   })
   return () => {
     stopRecovery()

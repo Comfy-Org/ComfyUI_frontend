@@ -52,6 +52,19 @@ describe('useAskAgentAboutIssues', () => {
     expect(panel.pendingErrorContext).toMatchObject(CONTEXT)
   })
 
+  it('leaves the skills screen so the attached context is visible', async () => {
+    const panel = useAgentPanelStore()
+    panel.enabled = true
+    panel.open('topbar_button')
+    panel.view = { screen: 'skills' }
+    const { askAgentAboutIssues } = useAskAgentAboutIssues()
+
+    await askAgentAboutIssues(CONTEXT)
+
+    expect(panel.view).toEqual({ screen: 'chat' })
+    expect(panel.pendingErrorContext).toMatchObject(CONTEXT)
+  })
+
   it('does nothing when the agent is unavailable', async () => {
     const panel = useAgentPanelStore()
     const { askAgentAboutIssues } = useAskAgentAboutIssues()

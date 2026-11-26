@@ -16,13 +16,16 @@
         tabindex="-1"
         :aria-label="`${widgetLabel}: ${$t('g.previous')}`"
         :disabled="isStepDisabled(-1)"
-        class="h-full w-6 shrink-0 rounded-(--node-widget-radius) triangle-icons:w-5 triangle-icons:text-node-widget-value triangle-icons:hover:bg-transparent triangle-icons:disabled:text-node-widget-disabled triangle-icons:disabled:opacity-100"
+        class="h-full w-6 shrink-0 rounded-(--node-widget-radius)"
+        data-part="widget-stepper"
+        data-direction="decrement"
         variant="muted-textonly"
         size="icon-sm"
         @click="stepOption(-1)"
       >
         <i
-          class="icon-[lucide--chevron-left] triangle-icons:icon-[comfy--play] triangle-icons:size-2.5 triangle-icons:rotate-180"
+          class="icon-[lucide--chevron-left]"
+          data-part="widget-stepper-icon"
           aria-hidden="true"
         />
       </Button>
@@ -67,10 +70,12 @@
               data-testid="widget-select-default-trigger"
               variant="textonly"
               size="sm"
-              class="h-full min-w-0 flex-1 overflow-hidden rounded-none p-0 font-normal text-node-widget-value triangle-icons:hover:bg-transparent"
+              class="h-full min-w-0 flex-1 overflow-hidden rounded-none p-0 font-normal"
+              data-part="widget-select-trigger"
             >
               <span
-                class="min-w-[4ch] flex-1 truncate px-2 text-right triangle-icons:pr-0"
+                class="min-w-[4ch] flex-1 truncate px-2 text-right"
+                data-part="widget-value"
               >
                 {{ selectedSummary || placeholder || '\u00a0' }}
               </span>
@@ -82,13 +87,16 @@
             tabindex="-1"
             :aria-label="`${widgetLabel}: ${$t('g.next')}`"
             :disabled="isStepDisabled(1)"
-            class="h-full w-6 shrink-0 rounded-(--node-widget-radius) triangle-icons:w-5 triangle-icons:text-node-widget-value triangle-icons:hover:bg-transparent triangle-icons:disabled:text-node-widget-disabled triangle-icons:disabled:opacity-100"
+            class="h-full w-6 shrink-0 rounded-(--node-widget-radius)"
+            data-part="widget-stepper"
+            data-direction="increment"
             variant="muted-textonly"
             size="icon-sm"
             @click="stepOption(1)"
           >
             <i
-              class="icon-[lucide--chevron-right] triangle-icons:icon-[comfy--play] triangle-icons:size-2.5"
+              class="icon-[lucide--chevron-right]"
+              data-part="widget-stepper-icon"
               aria-hidden="true"
             />
           </Button>

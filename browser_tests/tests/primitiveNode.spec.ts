@@ -155,8 +155,24 @@ test.describe(
   'Primitive Node image upload admission',
   { tag: ['@canvas', '@node', '@widget'] },
   () => {
-    test('Does not attach to an image upload input', async ({ comfyPage }) => {
+    test('Gives the image upload button no input socket', async ({
+      comfyPage
+    }) => {
       await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
+      const [loadImageNode] =
+        await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
+
+      await expect(loadImageNode.getInputByName('upload')).rejects.toThrow(
+        'Input "upload" not found'
+      )
+    })
+
+    test('Does not attach to an upload socket saved by an older version', async ({
+      comfyPage
+    }) => {
+      await comfyPage.workflow.loadWorkflow(
+        'widgets/load_image_widget_upload_socket'
+      )
       const [loadImageNode] =
         await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
       const uploadInput = await loadImageNode.getInputByName('upload')

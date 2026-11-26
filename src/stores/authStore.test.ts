@@ -1316,6 +1316,47 @@ describe('useAuthStore', () => {
     })
   })
 
+  describe('socket credential refresh', () => {
+    const tokenResponse = (token: string) =>
+      Response.json({
+        token,
+        expires_at: new Date(Date.now() + 3600 * 1000).toISOString(),
+        user_id: mockUser.uid,
+        workspace: {
+          id: 'workspace-personal',
+          name: 'Personal',
+          type: 'personal'
+        },
+        role: 'owner',
+        permissions: ['owner:*']
+      })
+
+    it('re-mints the unified token instead of returning the cached one', async () => {
+      const minted = ['cached-token', 'reminted-token']
+      respondToFetch(/\/auth\/token$/, () => tokenResponse(minted.shift()!))
+
+      await expect(store.getAuthToken()).resolves.toBe('cached-token')
+      await expect(store.getAuthToken()).resolves.toBe('cached-token')
+      await expect(store.getAuthToken({ forceRefresh: true })).resolves.toBe(
+        'reminted-token'
+      )
+    })
+
+    it('has no token when the re-mint is refused', async () => {
+      respondToFetch(/\/auth\/token$/, () => tokenResponse('cached-token'))
+      await expect(store.getAuthToken()).resolves.toBe('cached-token')
+
+      respondToFetch(
+        /\/auth\/token$/,
+        () => new Response(null, { status: 503 })
+      )
+
+      await expect(
+        store.getAuthToken({ forceRefresh: true })
+      ).resolves.toBeUndefined()
+    })
+  })
+
   describe('realtime socket identity lifecycle', () => {
     const accountB: MockUser = {
       ...mockUser,
@@ -1507,6 +1548,29 @@ describe('useAuthStore in local/desktop distribution', () => {
     ).not.toHaveBeenCalled()
   })
 
+  it('waits for workspace initialization when a workspace credential is required', async () => {
+    const teams = useTeamWorkspaceStore()
+    Object.assign(teams, { activeWorkspaceId: null, initState: 'loading' })
+    let finishInitialization!: () => void
+    const initialization = new Promise<void>((resolve) => {
+      finishInitialization = resolve
+    })
+    vi.spyOn(teams, 'initialize').mockReturnValue(initialization)
+    const headers = { Authorization: 'Bearer ws-token' } as const
+    const ensureHeader = vi
+      .spyOn(useWorkspaceAuthStore(), 'ensureWorkspaceAuthHeader')
+      .mockResolvedValue(headers)
+
+    const context = store.getWorkspaceAuthContext({ requireWorkspace: true })
+    expect(teams.initialize).toHaveBeenCalledOnce()
+    expect(ensureHeader).not.toHaveBeenCalled()
+    Object.assign(teams, { activeWorkspaceId: 'ws-ready', initState: 'ready' })
+    finishInitialization()
+
+    await expect(context).resolves.toEqual({ headers, workspaceId: 'ws-ready' })
+    expect(ensureHeader).toHaveBeenCalledWith('ws-ready')
+  })
+
   describe('with the Desktop host session', () => {
     const hostBridge = (state: DesktopHostAuthState) => {
       const listeners = new Set<(next: DesktopHostAuthState) => void>()
@@ -1554,6 +1618,10 @@ describe('useAuthStore in local/desktop distribution', () => {
       await expect(store.getAuthHeader()).resolves.toEqual(hostHeader)
       await expect(store.getUserAuthHeader()).resolves.toEqual(hostHeader)
       await expect(store.getWorkspaceAuthHeader()).resolves.toEqual(hostHeader)
+      await expect(store.getWorkspaceAuthContext()).resolves.toEqual({
+        headers: hostHeader,
+        workspaceId: 'ws-host'
+      })
       expect(bridge.getWorkspaceToken).toHaveBeenCalledWith('ws-host')
       expect(mockUser.getIdToken).not.toHaveBeenCalled()
     })

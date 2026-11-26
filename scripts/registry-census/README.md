@@ -1,10 +1,13 @@
 # Registry corpus & ecosystem matrix
 
-A required PR and merge-queue gate that mirrors every registry pack (~5,100)
-and executes the frontend JS of the ~1,900 that ship any against relevant
-commits under review, then reports a population verdict. The aggregate check
-still appears on docs- and site-only pull requests after verifying that every
-expensive matrix dependency was skipped.
+A release-candidate gate that mirrors every registry pack (~5,100) and executes
+the frontend JS of the ~1,900 that ship any, then reports a population verdict.
+The expensive matrix runs only on same-repository `version-bump-*` and
+`chore/corpus-pins` pull requests with relevant changes or 3,000 or more
+changed files, on relevant pushes to `main`, and on manual dispatches. Its
+aggregate check still appears on ordinary
+pull requests and merge-queue candidates, but passes as not applicable after
+verifying that every expensive matrix dependency was skipped.
 
 **The corpus size and the executed count are different numbers, and the verdict
 is against the executed count.** Roughly 3,100 packs ship no extension-shaped JS
@@ -109,6 +112,12 @@ recorded but do not consume that outage floor. The minimum count of five
 failed targets keeps a small local `--limit` smoke run from acting like a
 census.
 
+Ordinary pull requests and merge-queue candidates do not execute the matrix,
+even when they change source the matrix measures. They receive only the
+successful aggregate not-applicable check. The first automatic execution after
+such a change is the relevant push to `main`; release-candidate pull requests
+execute it earlier.
+
 The cache key covers the pin set plus the fetch and validation code, and
 Actions caches are immutable. Main normally provides the shared entry that
 PRs restore; a PR with no visible main cache can build a branch-scoped entry
@@ -135,24 +144,46 @@ This is the scope of every number below. `ComfyApp.setup()` non-null-asserts
 five DOM elements and needs a 2D canvas context, so the real boot cannot run
 under happy-dom and the lifecycle is simulated.
 
-| extension hook                                                                                                                                                                                                                                                 | driven                      |
-| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------- |
-| `beforeRegisterNodeDef`                                                                                                                                                                                                                                        | yes, via `registerNodeDef`  |
-| `registerCustomNodes`                                                                                                                                                                                                                                          | yes                         |
-| `onNodeCreated`, `onSerialize`, `onConfigure`, `onConnectionsChange`                                                                                                                                                                                           | indirectly, via the battery |
-| `init`, `setup`, `addCustomNodeDefs`, `beforeRegisterVueAppNodeDefs`, `beforeConfigureGraph`, `loadedGraphNode`, `afterConfigureGraph`, `refreshComboInNodes`, `onNodeOutputsUpdated`, `getCanvasMenuItems`, `getNodeMenuItems`, `getSelectionToolboxCommands` | **no**                      |
+| extension hook                                                                                                                                         | driven                      |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------- |
+| `init`, `addCustomNodeDefs`, `setup`                                                                                                                   | yes, in the app's order     |
+| `beforeRegisterNodeDef`                                                                                                                                | yes, via `registerNodeDef`  |
+| `registerCustomNodes`                                                                                                                                  | yes                         |
+| `beforeLoadGraph`, `beforeConfigureGraph`, `loadedGraphNode`, `afterConfigureGraph`, `afterLoadGraph`                                                  | yes, for two workflow loads |
+| `onNodeCreated`, `onSerialize`, `onConfigure`, `onConnectionsChange`                                                                                   | indirectly, via the battery |
+| `beforeRegisterVueAppNodeDefs`, `refreshComboInNodes`, `onNodeOutputsUpdated`, `getCanvasMenuItems`, `getNodeMenuItems`, `getSelectionToolboxCommands` | **no**                      |
 
-The order also differs from the app. Real order is `init` →
-`addCustomNodeDefs(defs)` → `registerNodeDef` → `registerCustomNodes` →
-`setup` (`src/scripts/app.ts`). Here `registerNodeDef` runs first against a
-hardcoded set of defs, so a pack that mutates `defs` in `addCustomNodeDefs`
-has that mutation discarded before the defs it meant to change are
-registered.
+Boot runs `init` → `addCustomNodeDefs(defs)` → `registerNodeDef` →
+`registerCustomNodes` → `setup` against a root graph seeded before `init`, as
+`ComfyApp.setup()` does. Defs a pack adds in `addCustomNodeDefs` are not
+registered; changes it makes to the battery defs are.
 
-**Consequences to read every green run against:** a pack whose only code path
-is `setup(app)` — `api.addEventListener`, patching `LGraphCanvas.prototype`,
-wrapping `app.graphToPrompt`, adding canvas menus — scores as a fully clean
-row. A green matrix did not catch a `setup`-dispatch regression, and cannot.
+The battery workflow is loaded with the load and configure hooks around
+`configure`. After the battery, a second load of the same workflow goes to a
+new root graph where the app gives each workflow its own (`createRootGraph`),
+and to the reconfigured shared root otherwise. `secondRoot` records whether
+that load serialises and prompts the same as the first, so a setup-time patch
+that reaches only the first workflow shows up as a mismatch on the
+per-workflow arm. Canvas work (`activateRootGraph`, camera restore) is not
+driven.
+
+Errors from the hooks this boot and load sequence added (`init`,
+`addCustomNodeDefs`, `setup` and the five load and configure hooks) are
+recorded per hook and printed under "hook errors reported, not gated". About
+one pack in nine throws in one of them, almost all in `setup` or `init`,
+because the hook reaches for a real canvas, settings or the network that
+happy-dom does not provide; the count was identical on both arms. Each of
+these hooks also gets 10 seconds to settle: a `setup` that awaits a `<script>`
+load never settles under happy-dom, which blocked the whole pack until the
+300 s test timeout.
+
+Those errors are too common for a floor, but the share of packs free of them
+(counting a hook that did not settle as a failure, in any phase it is driven
+in) is stable: the same packs failed on both arms and both renderers. The verdict gates
+it as a delta instead: it may not drop more than 0.5 points, about 13 packs,
+below the previous main baseline, so a frontend change that breaks `setup` or
+`init` for a group of packs fails the verdict. Baselines saved before this
+metric existed skip that delta.
 
 ## The widget-form census (telemetry rung)
 
@@ -320,10 +351,11 @@ harness/withheld):
 | entry files load clean                    | >= 91%    | 94.1%             |
 | `registerNodeDef` OK                      | >= 99%    | 100%              |
 | `registerCustomNodes` OK                  | >= 99%    | 100%              |
-| packs free of contained hook errors       | >= 98%    | 99.25%            |
+| packs free of gated hook errors           | >= 98%    | 98.9%             |
 | rows complete (no hang or crash)          | >= 98%    | ~100%             |
 | every operation clean (`err` OR `desync`) | >= 99%    | 99.8%             |
 | entry-clean delta vs baseline             | >= -1.5pp | carried by cache  |
+| new-hook-free delta vs baseline           | >= -0.5pp | carried by cache  |
 
 All must hold. Each floor sits under the baseline so a handful of broken pack
 refs cannot flip the verdict, while a frontend regression that breaks pack
@@ -431,7 +463,7 @@ object.
 Reported by `summarize_form_agreement.py`, which prints a count, the grouped
 shares, a per-verdict table with pack and node-class attribution, and every
 disagreeing node by name. `summarize_matrix.py` does **not** read these fields
-and there is no floor on them, so nothing here can turn the required gate red.
+and there is no floor on them, so nothing here can turn the release gate red.
 A run whose rows carry no form telemetry reports `UNMEASURED` rather than zero
 violations: a channel that stopped firing must not read as agreement.
 
@@ -482,7 +514,7 @@ the runner is ephemeral and tokenless.
 
 ## Runbook
 
-The required gate is red. In order:
+The release gate is red. In order:
 
 1. **Exit 2 — verdict withheld.** This is a harness failure, not an ecosystem
    result. Read the banner: short population (a shard died — check the
@@ -506,11 +538,12 @@ The required gate is red. In order:
    silence it.
 
 **Blast radius:** the workflow reports one aggregate check named
-`Custom Nodes Ecosystem Matrix test` for every pull request and merge-queue
+`Custom Nodes Ecosystem Matrix test` on every pull request and merge-queue
 candidate. Branch protection should require that aggregate, not the internal
-legacy and Vue `matrix-verdict` jobs. On a relevant change, a red, skipped, or
-cancelled dependency makes the aggregate red. On an irrelevant pull request,
-the aggregate passes only after all expensive dependencies report skipped.
+legacy and Vue `matrix-verdict` jobs. On a qualifying release-candidate pull
+request, a red, skipped, or cancelled dependency makes the aggregate red. On
+ordinary pull requests and every merge-queue candidate, the aggregate passes
+only after all expensive dependencies report skipped.
 
 ## Detection proof (counter-evidence)
 

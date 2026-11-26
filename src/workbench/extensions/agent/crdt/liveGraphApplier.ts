@@ -53,6 +53,7 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 import { zComfyNode, zGroup } from '@comfyorg/graph-model/workflowSchema'
 import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import { inputSpecTree } from '@/core/graph/nodeDef/inputSpecInterpreter'
+import { isValueControlMode } from '@/core/graph/widgets/valueControl'
 import type { LinkId } from '@comfyorg/graph-model/linkId'
 import { parseLinkId, toLinkId } from '@comfyorg/graph-model/linkId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
@@ -63,6 +64,7 @@ import { withLiveAgentTurnWrites } from './agentRemoteProvenance'
 import {
   allSubgraphDefinitions,
   readSubgraphDefinitions,
+  readSubgraphInteriorTypes,
   readSubgraphInteriorWidgets
 } from './agentSubgraphDefinitions'
 import type {
@@ -459,9 +461,15 @@ function actorKind(actor: unknown): ActorKind {
   return kind === 'agent' || kind === 'human' ? kind : 'unknown'
 }
 
+const NON_IDENTIFYING_ACTORS: ReadonlySet<string> = new Set([
+  'agent-remote',
+  'agent-collected',
+  'system:client-seed',
+  'system:mint'
+])
+
 function diagnosticActor(actor: string): string {
-  const kind = actorKind(actor)
-  return kind !== 'unknown' && actor.split(':').length === 3 ? kind : actor
+  return NON_IDENTIFYING_ACTORS.has(actor) ? actor : actorKind(actor)
 }
 
 function diagnosticApplyContext(context: RemoteApplyContext) {
@@ -725,7 +733,7 @@ const optionLayouts = new WeakMap<object, OptionLayout>()
 
 function optionLayout(node: LGraphNode): OptionLayout {
   const { nodeData } = node.constructor
-  if (!nodeData) return NO_OPTION_LAYOUT
+  if (!nodeData?.inputs) return NO_OPTION_LAYOUT
   const cached = optionLayouts.get(nodeData)
   if (cached) return cached
 
@@ -883,6 +891,34 @@ function widestSelectionWidgetCount(node: LGraphNode): number {
       ),
     widgets.length
   )
+}
+
+const SYNTHESIZED_CONTROL_NAMES = [
+  'control_after_generate',
+  'control_filter_list'
+] as const
+
+function synthesizedWidgetName(name: string): boolean {
+  return SYNTHESIZED_CONTROL_NAMES.some(
+    (control) => name === control || name.endsWith(` ${control}`)
+  )
+}
+
+function explicitControlName(input: object, name: string): boolean {
+  const { control_after_generate: afterGenerate, control_filter_list: filter } =
+    input as Record<string, unknown>
+  if (filter === name) return true
+  return afterGenerate === name && !isValueControlMode(afterGenerate)
+}
+
+function undeclaredByNodeDefinition(node: LGraphNode, name: string): boolean {
+  const inputs = node.constructor.nodeData?.inputs
+  if (inputs === undefined) return false
+  if (synthesizedWidgetName(name)) return false
+  if (name.includes('.') || name.startsWith('_extra_')) return false
+  if (Object.values(inputs).some((input) => explicitControlName(input, name)))
+    return false
+  return !Object.hasOwn(inputs, name)
 }
 
 function selectionDependentAbsence(node: LGraphNode, name: string): boolean {
@@ -1639,6 +1675,7 @@ export class LiveGraphApplier {
     const hasFull = full !== undefined && full.size > 0
     if (!hasGranular && !hasFull) return
     const docInteriors = readSubgraphInteriorWidgets(doc)
+    const docTypes = readSubgraphInteriorTypes(doc)
     const targets = interiorSyncTargets(granular, full, docInteriors)
     for (const [definitionId, nodes] of targets) {
       this.try(context, () =>
@@ -1647,6 +1684,7 @@ export class LiveGraphApplier {
           definitionId,
           nodes,
           docInteriors,
+          docTypes.get(definitionId),
           mode
         )
       )
@@ -1658,6 +1696,7 @@ export class LiveGraphApplier {
     definitionId: string,
     nodes: ReadonlyMap<string, ReadonlySet<string> | 'all'>,
     docInteriors: ReturnType<typeof readSubgraphInteriorWidgets>,
+    docTypes: ReadonlyMap<string, string | undefined> | undefined,
     mode: ApplyMode
   ): void {
     const subgraph = graph.rootGraph.subgraphs.get(definitionId)
@@ -1679,6 +1718,11 @@ export class LiveGraphApplier {
         ? subgraph.getNodeById(mapped)
         : subgraph.getNodeById(toNodeId(nodeId))
       if (!live) continue
+      const docType = docTypes?.get(nodeId)
+      if (docType !== undefined && docType !== live.type) {
+        this.reportInteriorTypeMismatch(definitionId, nodeId, docType, live)
+        continue
+      }
       this.applyInteriorWidgets(live, widgets, names, mode)
       this.propagateInteriorToHosts(
         graph,
@@ -1689,6 +1733,26 @@ export class LiveGraphApplier {
         mode
       )
     }
+  }
+
+  private reportInteriorTypeMismatch(
+    definitionId: string,
+    nodeId: string,
+    docType: string,
+    live: LGraphNode
+  ): void {
+    this.reportOnce(
+      `interior-type:${definitionId}:${nodeId}`,
+      `Subgraph interior node ${nodeId} is ${docType} in the document but ${live.type} on the canvas`,
+      'agent_graph_interior_type_mismatch',
+      {
+        definitionId,
+        documentNodeId: nodeId,
+        documentType: docType,
+        liveNodeId: live.id,
+        liveType: live.type
+      }
+    )
   }
 
   private propagateInteriorToHosts(
@@ -1875,6 +1939,10 @@ export class LiveGraphApplier {
       if (hiddenRowController(node, name)) continue
       if (selectionDependentAbsence(node, name)) continue
       if (!reportMissing && overflowWidgetIndex(name) === null) continue
+      if (undeclaredByNodeDefinition(node, name)) {
+        this.incrementFailureCount()
+        continue
+      }
       if (placeholder) this.incrementFailureCount()
       else this.reportMissingWidget(node, name)
     }
@@ -2270,21 +2338,22 @@ export class LiveGraphApplier {
     { moveCollisions }: { moveCollisions: boolean }
   ): void {
     const createdSet = new Set(created)
-    const rect = (item: LGraphNode | LGraphGroup): PlacementRect => ({
-      x: item.pos[0],
-      y: item.pos[1],
-      width: item.size[0],
-      height: item.size[1]
+    const groupRect = (group: LGraphGroup): PlacementRect => ({
+      x: group.pos[0],
+      y: group.pos[1],
+      width: group.size[0],
+      height: group.size[1]
     })
     const createdNodes = graph._nodes.filter((node) => createdSet.has(node.id))
     const existingNodes = graph._nodes.filter(
       (node) => !createdSet.has(node.id)
     )
     const ctx = this.deps.getCanvas?.()?.ctx ?? undefined
+    const measureNow = (node: LGraphNode) => pendingBounds(node, ctx)
     const existingBounds = existingNodes.map((node) =>
-      isRendered(node) ? node.boundingRect : pendingBounds(node, ctx)
+      isRendered(node) ? node.boundingRect : measureNow(node)
     )
-    const createdBounds = createdNodes.map((node) => pendingBounds(node, ctx))
+    const createdBounds = createdNodes.map(measureNow)
     const framesOnlyExisting = (group: LGraphGroup) =>
       framesAny(group, existingBounds) && !framesAny(group, createdBounds)
     const kept = createdGroups.filter(framesOnlyExisting)
@@ -2295,11 +2364,16 @@ export class LiveGraphApplier {
     const incoming = [...createdNodes, ...placedGroups]
     const offset = placementOffset({
       existing: [
-        ...existingNodes,
-        ...graph.groups.filter((group) => !placedGroups.includes(group))
-      ].map(rect),
+        ...existingNodes.map((node) => toPlacementRect(measureNow(node))),
+        ...graph.groups
+          .filter((group) => !placedGroups.includes(group))
+          .map(groupRect)
+      ],
       viewport: this.deps.viewportBounds?.() ?? null,
-      incoming: incoming.map(rect),
+      incoming: [
+        ...createdBounds.map(toPlacementRect),
+        ...placedGroups.map(groupRect)
+      ],
       moveCollisions
     })
     if (!offset) return
@@ -2307,6 +2381,10 @@ export class LiveGraphApplier {
       item.pos = [item.pos[0] + offset.dx, item.pos[1] + offset.dy]
     }
   }
+}
+
+function toPlacementRect([x, y, width, height]: ReadOnlyRect): PlacementRect {
+  return { x, y, width, height }
 }
 
 /** True once a frame has measured the node; until then its bounds are zero. */
@@ -2329,6 +2407,13 @@ function pendingBounds(
   const out: Rect = [0, 0, 0, 0]
   const collapsedWidth = node._collapsed_width
   node.measure(out, ctx)
+  if (
+    ctx === undefined &&
+    node.flags.collapsed &&
+    collapsedWidth !== undefined
+  ) {
+    out[2] = Math.max(out[2], collapsedWidth)
+  }
   node._collapsed_width = collapsedWidth
   return out
 }
