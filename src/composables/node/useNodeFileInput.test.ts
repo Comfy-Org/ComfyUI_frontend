@@ -5,6 +5,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useNodeFileInput } from './useNodeFileInput'
 
 function createNode(overrides: Record<string, unknown> = {}): LGraphNode {
+  // @ts-expect-error intentional bare object cast for test mocking
   return fromAny<LGraphNode, unknown>({
     ...overrides
   })
@@ -17,6 +18,7 @@ function createFile(name: string, type = 'image/png'): File {
 function setInputFiles(input: HTMLInputElement, files: File[]) {
   Object.defineProperty(input, 'files', {
     configurable: true,
+    // @ts-expect-error intentional type coercion for test mock object
     value: fromAny<FileList, unknown>(files)
   })
 }
