@@ -48,7 +48,11 @@ case "${1:-}" in
       -c:v libx264 -pix_fmt yuv420p -crf 20 -movflags +faststart -an "$out.mp4"
     if [ "$(size "$out.mp4")" -gt 10000000 ]; then shrink "$out.mp4" "$out.mp4" 10000000; fi
     gif "$out.mp4" "$out.gif" 640 10
-    if [ "$(stat -c %s "$out.gif")" -gt 5000000 ]; then gif "$out.mp4" "$out.gif" 480 8; fi
+    if [ "$(size "$out.gif")" -gt 5000000 ]; then gif "$out.mp4" "$out.gif" 480 8; fi
+    if [ "$(size "$out.gif")" -gt 5000000 ]; then
+      echo "$out.gif is still over 5 MB; trim the clip shorter" >&2
+      exit 1
+    fi
     ls -l "$out.mp4" "$out.gif"
     ;;
   tiles)

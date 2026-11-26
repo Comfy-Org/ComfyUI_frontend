@@ -76,4 +76,6 @@ Each alt text starts with "Before:" or "After:" and names what that side
 shows, so the pair reads correctly without the images. Equal crops keep the
 two columns the same width.
 
-Remove the worktree when done: `git worktree remove /tmp/pr-before`.
+Remove the worktree when done. A copied story leaves it unclean, so check
+`git -C /tmp/pr-before status --short` lists only that story and capture
+output, then run `git worktree remove --force /tmp/pr-before`.

@@ -20,7 +20,7 @@ for the format. Its steps follow [`user-journeys.md`](user-journeys.md).
 <details>
 <summary>Adjust a narrow gap and reconnect the nodes</summary>
 
-Starts from: the default workflow with **VAE Decode** and **Save Image** side by side; selection toolbox on; classic and Vue nodes.
+Starts from: the default workflow with **VAE Decode** and **Save Image** side by side and the link between them removed; selection toolbox on; classic and Vue nodes.
 
 1. Select **VAE Decode** and **Save Image**, then click **Tidy up**.
 2. Set the gap to zero with **Home** on the slider. Focus the gap handle and press **Shift+Right Arrow** to widen it.
@@ -44,7 +44,8 @@ describe 'Connections beside gap handles'
   test.use initialSettings: Comfy.Canvas.SelectionToolbox true
   for renderer of classic, vue (vue adds @vue-nodes)
     test 'connects slots beside a narrow gap in <renderer>'
-      loadWorkflow('default', overrides placing nodes 8 and 9 side by side)
+      loadWorkflow('default', overrides placing nodes 8 and 9 side by side and removing their link)
+      assert input and output each have link count 0
       test.step 'Select VAE Decode and Save Image, then click Tidy up'
         nodeOps.selectNodes(['VAE Decode', 'Save Image']); click button 'Tidy up'
       test.step 'Set the gap to zero, then widen it with Shift+Right Arrow'
@@ -62,4 +63,6 @@ describe 'Connections beside gap handles'
 ```
 
 Each expected result in the journey became one assertion on something the
-user can see or reach: the handle's value and the link.
+user can see or reach: the handle's value and the link. The journey starts
+with the ports unlinked, so the final link count fails when the connect
+gesture does.

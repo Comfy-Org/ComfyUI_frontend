@@ -83,13 +83,15 @@ gh api --method PATCH repos/<owner>/<repo>/pulls/<n> -F body=@/tmp/body.md --jq 
 ```
 
 Fetch the body again right before each write and merge your section into
-it, so edits someone else made in the meantime survive.
+it. This narrows the window for losing someone else's edit but does not close
+it: the PATCH replaces the whole body, so an edit saved between the fetch and
+the PATCH is overwritten.
 
 ## Read back
 
 ```sh
 gh api repos/<owner>/<repo>/pulls/<n> --jq .body > /tmp/posted.md
-rg -c '<details>' /tmp/posted.md; rg -c '!\[' /tmp/posted.md; rg -o 'https://[^) "]+' /tmp/posted.md | sort -u
+rg -o '<details>' /tmp/posted.md | wc -l; rg -o '!\[' /tmp/posted.md | wc -l; rg -o 'https://[^) "]+' /tmp/posted.md | sort -u
 ```
 
 Done means:
@@ -100,7 +102,9 @@ Done means:
 - Every media URL returns HTTP 200. Private-repo attachments return 404
   without auth, so check them with
   `curl -sL -o /dev/null -w '%{http_code}' -H "Authorization: token $(gh auth token)" <url>`.
-- The marker names the SHAs you captured against.
+- The marker names the SHAs you captured against, and each side was captured
+  from a clean checkout at that SHA (`git status --short` empty apart from
+  a copied story in the before worktree).
 
 ## Stale evidence
 

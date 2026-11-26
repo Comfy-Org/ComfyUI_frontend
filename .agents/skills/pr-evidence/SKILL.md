@@ -14,8 +14,10 @@ benchmark table, and diagram sits in a `<details>` block below them.
 On a follow-up round, start with the stale check in
 [`reference/publishing.md`](reference/publishing.md#stale-evidence). Evidence
 is current when the `<!-- pr-evidence ... -->` marker's SHAs still match
-the head and base for every file the evidence depends on. When all of it is
-current, update the marker's SHAs and end the round there.
+the head and base for every file the evidence depends on. Then classify the
+full diff as in step 2: a new commit can add a visible change in files the
+existing evidence does not cover. When every type has current evidence,
+update the marker's SHAs and end the round there.
 
 ## 2. Classify the diff
 

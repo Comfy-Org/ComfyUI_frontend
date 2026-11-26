@@ -8,8 +8,10 @@ inspected clip.
 ## Draft the journeys and specs
 
 Load `drafting-user-journeys` and draft the journeys from the diff: every
-behavior the diff changes appears in at least one journey, and each journey
-maps to a Playwright test whose steps match its numbered steps. Commit any
+behavior the diff changes appears in its coverage table, covered by a
+journey or by the lower-level test the table names, and each journey maps
+to a Playwright test whose steps match its numbered steps. Only journeys get
+a recording. Commit any
 new or extended spec with the PR, since it doubles as the regression test.
 Each test passes locally before you record it.
 
