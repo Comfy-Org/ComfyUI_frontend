@@ -58,8 +58,6 @@ export function reportNamedValuesShadowDiff(
   node: LGraphNode,
   diff: NamedValuesShadowDiffResult | null
 ): void {
-  // The default-rollout decision is complete. Keep ongoing compatibility
-  // evidence in the sampled workflow summary instead of a per-node event.
   if (!diff || !aggregation) return
 
   aggregation.totalNodesChecked++
