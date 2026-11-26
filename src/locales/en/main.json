@@ -4353,7 +4353,7 @@
     "newDeploymentName": "New deployment",
     "noDeployments": "This workspace has no deployments yet.",
     "createCustomDeployment": "Create a Custom Build",
-    "manageDeployments": "Manage deployments",
+    "manageBuilds": "Manage builds",
     "manageDeploymentsTooltip": "Manage your Builds and their deployments on the Developer Platform.",
     "customDeployment": {
       "title": "Create a Custom Build",
