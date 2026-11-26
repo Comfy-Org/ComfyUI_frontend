@@ -76,9 +76,13 @@ missing-media stores if the earlier graph remains owned by its workflow.
 The async dispatcher provides an app proxy for `beforeLoadGraph`,
 `beforeConfigureGraph`, `afterConfigureGraph`, `afterLoadGraph`, and
 `onGraphLoadError`. While the dispatch is unsettled, the proxy's
-`loadGraphData` and `loadApiJson` methods resolve `false`. After the dispatch
-settles, they delegate to the entry points captured when it began.
-Independent callers retain the real app and continue to queue normally.
+`loadGraphData` and `loadApiJson` methods resolve `false`. They delegate to the
+entry points captured when the dispatch began once it runs its cleanup, which
+the settled and rejected paths normally both reach. One exit skips it: an error
+raised while logging an extension's failure escapes the callback loop before
+cleanup, so a proxy retained across that exit keeps refusing loads for the rest
+of the session. Independent callers retain the real app and continue to queue
+normally.
 
 This protection applies only to calls made through that dispatch proxy.
 Synchronously dispatched hooks, including `loadedGraphNode`, receive the real
@@ -206,9 +210,9 @@ extension whose `name` getter throws rejects the dispatch itself.
   close it on a terminal hook alone. Recorded here rather than repaired,
   because the repair is a behavior change on `main` and this is a
   documentation change.
-- An extension's own throw from a graph-load hook is logged and swallowed, so
-  it reaches neither the load nor `onGraphLoadError`. An extension that needs
-  its failure to stop a load has no hook that will do it.
+- An ordinary throw from a graph-load hook is logged and swallowed, so it
+  reaches neither the load nor `onGraphLoadError`. An extension that needs its
+  failure to stop a load has no hook that will do it.
 - A successful background restore dispatches the configure hooks but neither
   load hook, so an extension that tracks loads through `beforeLoadGraph` does
   not see a workflow restored off screen. A failed restore need not reach both
