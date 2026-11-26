@@ -303,7 +303,18 @@ describe('useNodeDrag', () => {
     expect(layoutStore.batchUpdateNodeBounds).not.toHaveBeenCalled()
   })
 
-  it('ends the drag when the root graph is cleared, as undo does', () => {
+  it.for([
+    {
+      clearedGraph: ROOT_GRAPH_ID,
+      title: 'ends the drag when the root graph is cleared, as undo does',
+      moves: 0
+    },
+    {
+      clearedGraph: 'unrelated-graph',
+      title: 'keeps dragging when an unrelated graph is cleared',
+      moves: 2
+    }
+  ])('$title', ({ clearedGraph, moves }) => {
     Object.assign(useCanvasStore(), { selectedNodeIds: new Set([node1]) })
     testState.nodeLayouts.set('1', {
       position: { x: 50, y: 80 },
@@ -313,12 +324,14 @@ describe('useNodeDrag', () => {
     startDrag(pointerEvent(5, 10), node1, false)
     handleDrag(pointerEvent(25, 30), node1)
 
-    new LGraph().clear()
+    const graph = new LGraph()
+    graph.id = clearedGraph
+    graph.clear()
     advanceFrame()
     handleDrag(pointerEvent(45, 50), node1)
     advanceFrame()
 
-    expect(testState.mutationFns.batchMoveNodes).not.toHaveBeenCalled()
+    expect(testState.mutationFns.batchMoveNodes).toHaveBeenCalledTimes(moves)
   })
 
   it('drops pending movement and stops auto-pan when its last consumer is disposed', () => {

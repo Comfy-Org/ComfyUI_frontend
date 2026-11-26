@@ -319,7 +319,8 @@ export const useNodeDrag = createSharedComposable(() => {
   }
 
   const stopClearListen = onGraphIntent((intent) => {
-    if (intent.type === 'clear') resetDragState()
+    if (intent.type === 'clear' && intent.graphId === canvasStore.rootGraphId)
+      resetDragState()
   })
 
   tryOnScopeDispose(() => {
