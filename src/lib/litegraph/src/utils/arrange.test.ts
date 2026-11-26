@@ -16,6 +16,14 @@ function nodeAt(pos: [number, number], size: [number, number]) {
   return node
 }
 
+function undrawnNodeAt(pos: [number, number], size: [number, number]) {
+  const node = new LGraphNode('Node')
+  node.id = toNodeId(++nextId)
+  node.pos = pos
+  node.size = size
+  return node
+}
+
 function pinnedNodeAt(pos: [number, number], size: [number, number]) {
   const node = nodeAt(pos, size)
   node.flags.pinned = true
@@ -51,12 +59,30 @@ describe('pinned nodes', () => {
     ])
   })
 
+  it('a pinned node still sets the edge the others line up on', () => {
+    const pinned = pinnedNodeAt([50, 0], [100, 50])
+    const free = nodeAt([200, 100], [100, 50])
+    const positions = alignNodes([pinned, free], 'left')
+    expect(positions.map(({ node, newPos }) => [node, newPos.x])).toEqual([
+      [free, 50]
+    ])
+  })
+
   it('distributeNodes spaces only the unpinned nodes', () => {
     const nodes = [0, 150, 400, 600].map((x, i) =>
       (i === 3 ? pinnedNodeAt : nodeAt)([x, i * 200], [100, 40])
     )
     const positions = distributeNodes(nodes, 'x')
     expect(positions.map(({ newPos }) => newPos.x)).toEqual([0, 200, 400])
+  })
+})
+
+describe('nodes that have not been drawn yet', () => {
+  it('alignNodes measures them instead of reading an empty rect', () => {
+    const drawn = nodeAt([500, 0], [100, 50])
+    const undrawn = undrawnNodeAt([900, 100], [100, 50])
+    const positions = alignNodes([drawn, undrawn], 'left')
+    expect(positions.map(({ newPos }) => newPos.x)).toEqual([500, 500])
   })
 })
 

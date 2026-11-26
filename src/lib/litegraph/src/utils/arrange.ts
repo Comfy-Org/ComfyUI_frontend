@@ -29,9 +29,14 @@ export interface IBoundaryNodes {
   left: LGraphNode
 }
 
-/** The node's visual bounds, title band included. */
+function measuredRect(node: LGraphNode) {
+  if (node.boundingRect.every((value) => value === 0)) node.updateArea()
+  return node.boundingRect
+}
+
+/** The node's visual bounds, title band included, measured first if it has never been drawn. */
 export function nodeBox(node: LGraphNode): VisualBox {
-  const [x, y, width, height] = node.boundingRect
+  const [x, y, width, height] = measuredRect(node)
   const titleHeight = Math.max(0, Math.min(height, node.boundingOffset[1]))
   return { x, y, width, height, titleHeight }
 }
@@ -75,15 +80,18 @@ function arrangeNodes(
   action: AlignAction,
   reference?: LGraphNode
 ): NewNodePosition[] {
-  const movable = nodes.filter((node) => !node.pinned)
+  const isDistribute = action === 'distributeX' || action === 'distributeY'
+  const framed = isDistribute ? nodes.filter((node) => !node.pinned) : nodes
   const after = arrangePlacements(
-    placementsOf(movable),
+    placementsOf(framed),
     action,
     reference && nodeBox(reference)
   )
-  return movable.flatMap((node) => {
+  return framed.flatMap((node) => {
     const placement = after.get(node.id)
-    return placement ? [{ node, newPos: placement.position }] : []
+    return placement && !node.pinned
+      ? [{ node, newPos: placement.position }]
+      : []
   })
 }
 
