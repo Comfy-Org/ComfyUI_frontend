@@ -309,10 +309,15 @@ is a subgraph placed as a node: `registerSubgraphNodeDef` does not call
     save later never shadows one a published pack saves. Legacy fields carry
     no owner: every V4 pack sees every V1 extension's top-level fields.
 20. `onRemoved` runs before the node leaves its graph, so its handle still
-    reads it, except in a load of another document, which ended the document
-    at the freeze and retired the handle (ADR-EXTENSIONS-NODE-API-0070
-    decision 10). A load, undo or redo removes every node and adds it again,
-    so the hook does not mean the user deleted the node.
+    reads it, except in a tab not on screen, where the handle is retired as
+    it is made (ADR-EXTENSIONS-NODE-API-0070 decision 10). A load, undo or
+    redo of the node's document removes every node and adds it again, so the
+    hook does not mean the user deleted the node. Opening another document
+    removes no node: each open workflow keeps its own graph (#21571), and the
+    nodes of the document shown before leave, and hear `onRemoved`, when its
+    tab closes. The hook rides the node's own `onRemoved`, so it fires exactly
+    when a V1 extension's does; it neither adds removals the host does not
+    make nor drops ones it makes.
 21. `onExecuted` gives an `ExecutionResult`: the string `text` entries and
     the object `images` of the server's output, and a frozen JSON copy of all
     of it as `raw`, built only when a hook receives it.

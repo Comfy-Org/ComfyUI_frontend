@@ -434,6 +434,25 @@ describe('node lifecycle hooks', () => {
       expect(own).toHaveBeenCalledOnce()
       expect(onRemoved).toHaveBeenCalledOnce()
     })
+
+    it('hears nothing when another graph comes on screen, and each node once its own graph is cleared', () => {
+      const removed: [string, string][] = []
+      extend((builder) =>
+        builder.onRemoved((node) => removed.push([node.id, node.graphId]))
+      )
+      const before = graph
+      const node = added(before)
+      const beforeId = before.id
+
+      graph = new LGraph()
+      added(graph)
+
+      expect(removed).toEqual([])
+
+      before.clear()
+
+      expect(removed).toEqual([[String(node.id), beforeId]])
+    })
   })
 
   describe('onExecuted', () => {

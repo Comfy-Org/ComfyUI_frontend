@@ -483,7 +483,10 @@ export interface NodeDefBuilder {
       data: Readonly<Record<string, unknown>>
     ) => void
   ): void
-  /** A node is leaving its graph, removed or rebuilt by a load, undo or redo; its handle still reads it, unless a load of another document ended it. */
+  /**
+   * A node is leaving its graph: removed, rebuilt by a load, undo or redo of its document, or its tab closed; its handle still reads it unless its tab is not on screen.
+   * Opening another document leaves the nodes of the one before in its tab: they hear this when that tab closes.
+   */
   onRemoved(callback: (node: NodeHandle) => void): void
   /** The server finished running a node. */
   onExecuted(
