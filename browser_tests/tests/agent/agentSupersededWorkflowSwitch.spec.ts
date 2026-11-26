@@ -14,7 +14,7 @@ test.describe(
       await expect(
         tabChats.tab(0).and(tabChats.topbar.getActiveTab())
       ).toBeVisible()
-      await expect(tabChats.panel.workflowPicker).toContainText(
+      await expect(tabChats.topbar.getActiveTab()).toContainText(
         tabChats.workflows[0].name
       )
 
@@ -38,7 +38,7 @@ test.describe(
       await expect(
         tabChats.tab(0).and(tabChats.topbar.getActiveTab())
       ).toBeVisible()
-      await expect(tabChats.panel.workflowPicker).toContainText(
+      await expect(tabChats.topbar.getActiveTab()).toContainText(
         tabChats.workflows[0].name
       )
       await expect.poll(heldLoad.abortedLoads).toEqual(['AbortError'])
