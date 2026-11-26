@@ -47,7 +47,7 @@ for (const vueNodesEnabled of [false, true]) {
         const expected = projectWorkflow(legacyWorkflowFixture)
         const expectedPersisted = expectedCanonicalPersistence(expected)
         expect(expected.nodes.length).toBeGreaterThan(0)
-        expect(expected.links?.length).toBeGreaterThan(0)
+        expect(expected.links.length).toBeGreaterThan(0)
         expect(expected.groups?.length).toBeGreaterThan(0)
         expect(expected.reroutes?.length).toBeGreaterThan(0)
         expect(
