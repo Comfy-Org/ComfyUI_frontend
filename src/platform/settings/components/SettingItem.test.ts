@@ -73,4 +73,27 @@ describe('SettingItem', () => {
 
     expect(mockSet).toHaveBeenCalledWith('Comfy.Locale', 'newvalue')
   })
+
+  it('saves the Comfy Cloud ask-before-check choice through its checked save', async () => {
+    const setWithOutcome = vi
+      .mocked(useSettingStore().setWithOutcome)
+      .mockResolvedValue({ status: 'saved' })
+    mockGet.mockReturnValue(false)
+
+    renderComponent({
+      id: 'Comfy.Cloud.AskBeforeCompatibilityCheck',
+      name: 'Ask before checking',
+      type: 'boolean',
+      defaultValue: true
+    })
+
+    emitFormValue!(true)
+    await flushPromises()
+
+    expect(setWithOutcome).toHaveBeenCalledWith(
+      'Comfy.Cloud.AskBeforeCompatibilityCheck',
+      true
+    )
+    expect(mockSet).not.toHaveBeenCalled()
+  })
 })

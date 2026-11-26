@@ -95,6 +95,7 @@ function deferredVerdict() {
 describe('Cloud button compatibility checks', () => {
   beforeEach(() => {
     vi.mocked(openWorkflowOnCloud).mockResolvedValue(undefined)
+    vi.mocked(api.storeSetting).mockResolvedValue(new Response())
     Object.assign(useFeatureFlags().flags, {
       openOnCloudModelUploadEnabled: true
     })

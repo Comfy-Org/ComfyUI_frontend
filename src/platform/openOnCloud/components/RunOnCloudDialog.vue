@@ -32,7 +32,6 @@
 
 <script setup lang="ts">
 import { useTelemetry } from '@comfyorg/telemetry'
-import { reportError } from '@comfyorg/telemetry/reportError'
 import type { RunOnCloudTelemetryEvent } from '@comfyorg/telemetry/types'
 import { storeToRefs } from 'pinia'
 import { computed, onBeforeUnmount, onMounted, ref, toRaw, watch } from 'vue'
@@ -40,6 +39,10 @@ import { computed, onBeforeUnmount, onMounted, ref, toRaw, watch } from 'vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 
+import {
+  ASK_BEFORE_CLOUD_CHECK,
+  saveAskBeforeCloudCheck
+} from '@/platform/openOnCloud/cloudCheckConsent'
 import DeploySetupCard from '@/platform/openOnCloud/components/DeploySetupCard.vue'
 import RunOnCloudCard from '@/platform/openOnCloud/components/RunOnCloudCard.vue'
 import MissingModelsCard from '@/platform/openOnCloud/components/MissingModelsCard.vue'
@@ -74,21 +77,11 @@ const settingStore = useSettingStore()
 function startCheck(dontAskAgain = false) {
   if (checkRequested.value || !requestCheck?.(checkConsent.signal)) return
   checkRequested.value = true
-  if (dontAskAgain)
-    settingStore
-      .set('Comfy.Cloud.AskBeforeCompatibilityCheck', false)
-      .catch((cause: unknown) =>
-        reportError(cause, {
-          surface: 'platform',
-          errorType: 'error_saving_cloud_check_consent',
-          level: 'warning'
-        })
-      )
+  if (dontAskAgain) void saveAskBeforeCloudCheck(false)
 }
 
 onMounted(() => {
-  if (settingStore.get('Comfy.Cloud.AskBeforeCompatibilityCheck') === false)
-    startCheck()
+  if (settingStore.get(ASK_BEFORE_CLOUD_CHECK) === false) startCheck()
 })
 
 const { state: check } = storeToRefs(useCloudWorkflowCheckStore())
