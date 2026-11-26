@@ -222,6 +222,13 @@ describe('snapMove', () => {
     ).toEqual([])
   })
 
+  it('snaps at coordinates too large to step from one bucket to the next', () => {
+    const far = 2 ** 60
+    const index = buildSnapIndex([box(far, 0, 100, 60)], edgesOnly)
+    const { guides } = snapMove(index, box(far, 300, 50, 50), { threshold })
+    expect(guides).toHaveLength(1)
+  })
+
   it('leaves the box alone when nothing is in reach', () => {
     const index = buildSnapIndex([box(0, 0, 100, 100)], edgesOnly)
     const moving = box(400, 400, 50, 50)

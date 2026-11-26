@@ -341,9 +341,10 @@ function* linesWithin(
   reach: number
 ): Generator<SnapLine> {
   if (!buckets) return
-  const last = bucketOf(value + reach)
-  for (let bucket = bucketOf(value - reach); bucket <= last; bucket++)
-    for (const line of buckets.get(bucket) ?? [])
+  const first = bucketOf(value - reach)
+  const span = bucketOf(value + reach) - first
+  for (let step = 0; step <= span; step++)
+    for (const line of buckets.get(first + step) ?? [])
       if (Math.abs(line.value - value) <= reach) yield line
 }
 
