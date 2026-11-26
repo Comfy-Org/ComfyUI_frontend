@@ -59,6 +59,25 @@
     "name": "Show selection toolbox",
     "tooltip": "Display a floating toolbar when nodes are selected, providing quick access to common actions."
   },
+  "Comfy_Canvas_SmartGuides_Enabled": {
+    "name": "Snap to nearby nodes, groups, and wires while dragging and resizing",
+    "tooltip": "Shows guide lines and snaps to aligned edges, even spacing, and straight wires. Hold Shift to snap to the grid instead."
+  },
+  "Comfy_Canvas_SmartGuides_Gap": {
+    "name": "Gap when snapping next to another node"
+  },
+  "Comfy_Canvas_SmartGuides_SnapDistance": {
+    "name": "Snap distance (screen pixels)"
+  },
+  "Comfy_Canvas_SmartGuides_SnapToEdges": {
+    "name": "Snap to the edges of other nodes and groups"
+  },
+  "Comfy_Canvas_SmartGuides_SnapToSpacing": {
+    "name": "Snap to even spacing between nodes"
+  },
+  "Comfy_Canvas_SmartGuides_SnapToWires": {
+    "name": "Snap so that wires become straight"
+  },
   "Comfy_ConfirmClear": {
     "name": "Require confirmation when clearing workflow"
   },

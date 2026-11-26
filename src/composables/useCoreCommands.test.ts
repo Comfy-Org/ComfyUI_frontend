@@ -2,6 +2,7 @@ import { useDialogService } from '@/services/dialogService'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { pick } from 'es-toolkit'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { zClipboardItems } from '@comfyorg/graph-model/workflowSchema'
@@ -900,6 +901,30 @@ describe('useCoreCommands', () => {
       expect(useWorkflowService().loadBlankWorkflow).toHaveBeenCalledWith({
         initiator: 'user'
       })
+    })
+
+    it('Comfy.LoadDefaultWorkflow loads the default tab as a user activation', async () => {
+      Object.assign(app.rootGraph, { _nodes: [] })
+
+      await findCmd('Comfy.LoadDefaultWorkflow').function()
+
+      expect(useWorkflowService().loadDefaultWorkflow).toHaveBeenCalledWith({
+        initiator: 'user'
+      })
+    })
+
+    it('Comfy.DuplicateWorkflow duplicates the active tab as a user activation', async () => {
+      const active = fromPartial<LoadedComfyWorkflow>({
+        path: 'workflows/active.json'
+      })
+      mockWorkflowStore.activeWorkflow = active
+
+      await findCmd('Comfy.DuplicateWorkflow').function()
+
+      expect(useWorkflowService().duplicateWorkflow).toHaveBeenCalledWith(
+        active,
+        { initiator: 'user' }
+      )
     })
 
     it('Comfy.RefreshNodeDefinitions rescans missing models after refreshing combos', async () => {

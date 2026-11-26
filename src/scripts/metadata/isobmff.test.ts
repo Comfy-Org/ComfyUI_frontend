@@ -16,6 +16,10 @@ const nanFixturePath = path.resolve(
   __dirname,
   '__fixtures__/with_nan_metadata.mp4'
 )
+const legacyCommentFixturePath = path.resolve(
+  __dirname,
+  '__fixtures__/with_vhs_legacy_comment.mp4'
+)
 
 describe('ISOBMFF (MP4) metadata', () => {
   it('extracts workflow and prompt from QuickTime keys/ilst boxes', async () => {
@@ -36,6 +40,16 @@ describe('ISOBMFF (MP4) metadata', () => {
 
     expect(result.workflow).toBeUndefined()
     expect(result.prompt).toEqual(EXPECTED_PROMPT_NAN_COERCED)
+  })
+
+  it('reads workflow and prompt from a legacy VideoHelperSuite ©cmt comment', async () => {
+    const bytes = fs.readFileSync(legacyCommentFixturePath)
+    const file = new File([bytes], 'vhs.mp4', { type: 'video/mp4' })
+
+    const result = await getFromIsobmffFile(file)
+
+    expect(result.workflow).toEqual(EXPECTED_WORKFLOW)
+    expect(result.prompt).toEqual(EXPECTED_PROMPT)
   })
 
   describe('when moov sits past the first 64 MiB', () => {
