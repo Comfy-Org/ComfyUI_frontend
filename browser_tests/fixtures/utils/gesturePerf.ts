@@ -1,5 +1,7 @@
 import { expect } from '@playwright/test'
 
+import { thresholdAt } from '@comfyorg/graph-model/arrange/snapSolver'
+
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { findCenterNodeGrip } from '@e2e/fixtures/helpers/PanZoomPerfHelper'
 import { nodeGraphPosition } from '@e2e/fixtures/utils/nodeGraphPosition'
@@ -62,6 +64,13 @@ function expectZoomSteps(
     notches.map((count) => count * Math.log(zoomSpeed)),
     5
   )
+}
+
+async function snapReach(comfyPage: ComfyPage, scale: number) {
+  const distance = await comfyPage.settings.getSetting<number>(
+    'Comfy.Canvas.SmartGuides.SnapDistance'
+  )
+  return thresholdAt(scale, distance).exit
 }
 
 async function findEmptyPoint(comfyPage: ComfyPage) {
@@ -223,6 +232,14 @@ export async function measureNodeNudges(comfyPage: ComfyPage, name: string) {
   }
   const measurement = await comfyPage.perf.stopMeasuring(name)
 
-  expectSteps(positions, steps, 1)
+  const reach = await snapReach(comfyPage, scale)
+  expect(positions).toHaveLength(steps.length + 1)
+  steps.forEach((step, index) => {
+    const moved = positions[index + 1] - positions[index]
+    expect(
+      Math.abs(moved - step),
+      `nudge ${index} moved ${moved}, pointer travelled ${step}`
+    ).toBeLessThanOrEqual(reach)
+  })
   return measurement
 }

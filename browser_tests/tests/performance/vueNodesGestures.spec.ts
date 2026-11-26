@@ -56,11 +56,7 @@ function defineGestureTest(renderer: 'vue' | 'litegraph') {
   })
 }
 
-test.use({
-  trace: 'off',
-  video: 'off',
-  initialSettings: { 'Comfy.Canvas.SmartGuides.Enabled': false }
-})
+test.use({ trace: 'off', video: 'off' })
 
 test.describe('Vue nodes gestures', { tag: ['@perf', '@vue-nodes'] }, () => {
   test.setTimeout(TEST_TIMEOUT_MS)
