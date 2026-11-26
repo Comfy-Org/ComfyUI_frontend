@@ -62,11 +62,13 @@ export function useDeploymentSwitchGuard() {
   }
 
   async function reloadOntoCurrent(
-    confirm: (
-      deployment: string
-    ) => Promise<boolean> = confirmUnsavedWorkBeforeSwitch
+    confirm: typeof confirmUnsavedWorkBeforeSwitch = confirmUnsavedWorkBeforeSwitch
   ) {
-    if (!(await confirm(currentLabel.value)) || isSwitching.value) return
+    if (
+      !(await confirm(currentLabel.value, { reload: true })) ||
+      isSwitching.value
+    )
+      return
     skipLeavePromptOnce()
     reloadForDeploymentSwitch(() => void store.load())
   }

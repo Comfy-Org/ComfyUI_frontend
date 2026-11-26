@@ -24,11 +24,6 @@ interface DeploymentListing {
   pickSource: DeploymentPickSource | null
   /** The workspace's default deployment an owner set, or null. */
   defaultDeploymentId: string | null
-  /**
-   * This browser's own pick, when ingest found it gone (deleted, or no
-   * longer the workspace's) and cleared it. Only the listing that cleared
-   * it says so; the browser is on Comfy Cloud.
-   */
   gonePickedDeploymentId: string | null
   /**
    * The workspace's default deployment, when it is gone; then
