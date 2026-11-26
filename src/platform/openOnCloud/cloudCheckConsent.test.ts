@@ -286,3 +286,12 @@ describe('saveAskBeforeCloudCheck', () => {
     expect(skipsCloudCheckQuestion()).toBe(true)
   })
 })
+
+describe('skipsCloudCheckQuestion before settings load', () => {
+  it('asks when the setting is not registered yet', () => {
+    localStorage.clear()
+
+    expect(useSettingStore().get(ASK_BEFORE_CLOUD_CHECK)).toBeUndefined()
+    expect(skipsCloudCheckQuestion()).toBe(false)
+  })
+})

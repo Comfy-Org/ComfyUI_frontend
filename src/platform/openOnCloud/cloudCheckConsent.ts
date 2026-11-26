@@ -29,7 +29,8 @@ export function skipsCloudCheckQuestion() {
     void saveAskBeforeCloudCheck(true)
     return false
   }
-  return !useSettingStore().get(ASK_BEFORE_CLOUD_CHECK)
+  const savedAsk: unknown = useSettingStore().get(ASK_BEFORE_CLOUD_CHECK)
+  return savedAsk === false
 }
 
 function isCurrentChoice(askBeforeCheck: boolean) {
