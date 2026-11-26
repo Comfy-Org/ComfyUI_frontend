@@ -5569,7 +5569,7 @@
       },
       "text": {
         "name": "文本",
-        "tooltip": "要生成的音效的文本描述。"
+        "tooltip": "请用英语描述声音，最多 450 个字符。其他语言的提示词通常会被朗读出来，而非转换为声音。"
       }
     },
     "outputs": {
@@ -15470,6 +15470,91 @@
       }
     }
   },
+  "MeshyImageToReliefNode": {
+    "description": "将照片转换为用于 3D 打印、激光雕刻和 CNC 雕刻的浅浮雕模型及 16 位深度图。仅会生成并下载已连接的输出；如果未连接模型输出，任务将仅返回深度图。",
+    "display_name": "Meshy：图像转浮雕",
+    "inputs": {
+      "base": {
+        "name": "base",
+        "tooltip": "none 会移除背景且不创建底板。"
+      },
+      "base_base_thickness_mm": {
+        "name": "base_thickness_mm"
+      },
+      "bend": {
+        "name": "bend",
+        "tooltip": "convex 会使正面向外鼓起，concave 会使其向内弯曲。"
+      },
+      "carving_mode": {
+        "name": "carving_mode",
+        "tooltip": "emboss 会使照片中较近的部分凸起，engrave 会将其刻入。"
+      },
+      "color_mapping": {
+        "name": "color_mapping",
+        "tooltip": "使用照片为 GLB、OBJ、FBX 和 USDZ 文件着色。STL 和 3MF 保持白色。"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "浅色背景上的深色图案会凸起。上传前会丢弃透明度，因此请先将透明徽标平铺到白色背景上。"
+      },
+      "mesh_resolution": {
+        "name": "mesh_resolution",
+        "tooltip": "沿照片较长边的网格点数。1024 时，GLB 约为 50 MB，STL 约为 105 MB；2048 时约为 200 MB 和 420 MB；弯曲会使其大小翻倍。"
+      },
+      "relief_type": {
+        "name": "relief_type",
+        "tooltip": "low：适用于激光雕刻、CNC 和铭牌的浅雕刻。high：适用于 3D 打印件的较深雕刻。"
+      },
+      "relief_type_carving_depth_mm": {
+        "name": "carving_depth_mm"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "种子控制节点是否应重新运行；无论种子为何，结果均不具有确定性。更改它可请求在上次运行后连接的输出。"
+      },
+      "size_mm": {
+        "name": "size_mm",
+        "tooltip": "模型上照片较长边的长度，在任何弯曲之前以平面状态测量。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "1": {
+        "name": "STL",
+        "tooltip": null
+      },
+      "2": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": null
+      },
+      "4": {
+        "name": "USDZ",
+        "tooltip": null
+      },
+      "5": {
+        "name": "3MF",
+        "tooltip": null
+      },
+      "6": {
+        "name": "depth_map",
+        "tooltip": "具有完整 16 位范围的深度图；保存图像（高级）会将其写入为 16 位 PNG。"
+      },
+      "7": {
+        "name": "预览",
+        "tooltip": null
+      }
+    }
+  },
   "MeshyMultiImageToModelNode": {
     "display_name": "Meshy：多图像转模型",
     "inputs": {
@@ -15765,6 +15850,44 @@
         "tooltip": null
       },
       "3": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyTextureN1Node": {
+    "description": "使用 Meshy N1，根据同一对象的 1 至 4 个参考视图为先前创建的模型生成纹理。",
+    "display_name": "Meshy：模型纹理（N1）",
+    "inputs": {
+      "enable_original_uv": {
+        "name": "enable_original_uv",
+        "tooltip": "使用模型原始的 UV，而不是生成新的 UV。启用后，Meshy 会保留上传模型中的现有纹理。如果模型没有原始 UV，输出质量可能不会很好。"
+      },
+      "extra_views": {
+        "name": "额外视图",
+        "tooltip": "同一对象的更多视图，顺序不限。与 front_view 合计最多 4 张图像。"
+      },
+      "front_view": {
+        "name": "front_view",
+        "tooltip": "Meshy 视为正面的视图。一张图像会为正面生成纹理，而背面保持空白；请在 extra_views 中添加背面和侧面视图，以获得真实的背面效果。"
+      },
+      "meshy_task_id": {
+        "name": "meshy_task_id"
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "Meshy 任务 ID",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "2": {
         "name": "FBX",
         "tooltip": null
       }
@@ -19904,6 +20027,39 @@
       }
     }
   },
+  "OpenAIChatNodeV2": {
+    "description": "使用 OpenAI 的 GPT 模型生成文本回复。提供文本提示词，并可选择提供图像或文件作为上下文。",
+    "display_name": "OpenAI ChatGPT",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "用于生成回复的模型。"
+      },
+      "model_max_output_tokens": {
+        "name": "max_output_tokens"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_system_prompt": {
+        "name": "system_prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "OpenAIGPTImage1": {
     "description": "通过 OpenAI 的 GPT Image 2 端点同步生成图像。",
     "display_name": "OpenAI GPT Image 2",
@@ -21897,6 +22053,56 @@
       }
     }
   },
+  "PrunaAvatarNode": {
+    "description": "使用 Pruna P-Video-2 Pro 虚拟形象，根据肖像和语音生成说话视频：可使用您自己的音频，或使用文本转语音朗读脚本。",
+    "display_name": "Pruna P-Video-2 Pro 虚拟形象",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "enhance_prompt": {
+        "name": "enhance_prompt",
+        "tooltip": "将肖像中可见的运动（如背景、灯光和身体动作）添加到提示词中。关闭后将按原样使用提示词，并可使用相同的种子精确复现结果。"
+      },
+      "image": {
+        "name": "图像",
+        "tooltip": "视频起始使用的肖像。视频将保留其 1:2 至 4:1 的宽高比；更极端的图像（如 1:5）会被裁剪为 9:16 或 16:9。"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "描述视频所展示的内容。最多 5000 个字符。"
+      },
+      "resolution": {
+        "name": "分辨率",
+        "tooltip": "1080p、2k 和 4k 会对 768p 视频进行放大。2k 最长限 150 秒，4k 最长限 60 秒。"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "生成所用的种子。只有在关闭 enhance_prompt 时，相同的种子才能精确复现结果。"
+      },
+      "speech": {
+        "name": "语音",
+        "tooltip": "使用文本转语音脚本或您自己的音频驱动视频。"
+      },
+      "speech_language": {
+        "name": "语言"
+      },
+      "speech_script": {
+        "name": "脚本"
+      },
+      "speech_voice": {
+        "name": "声音"
+      },
+      "speech_voice_prompt": {
+        "name": "voice_prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PrunaImageToVideoNode": {
     "description": "使用 Pruna 视频模型将图像制作成视频，可选择使用最后一帧、生成的声音或音轨。",
     "display_name": "Pruna P-Video-2 图像转视频",
@@ -21958,6 +22164,48 @@
       "video": {
         "name": "视频",
         "tooltip": "要放大的视频，最大为 512 MiB。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrunaReferenceToVideoNode": {
+    "description": "使用 Pruna 视频模型，根据由参考图像、视频和音频引导的提示词生成视频。",
+    "display_name": "Pruna P-Video-2 Pro 参考图转视频",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "要使用的模型。"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration": {
+        "name": "时长"
+      },
+      "model_enhance_prompt": {
+        "name": "enhance_prompt"
+      },
+      "model_keep_audio": {
+        "name": "keep_audio"
+      },
+      "model_mode": {
+        "name": "模式"
+      },
+      "model_prompt": {
+        "name": "提示词"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "model_seed": {
+        "name": "种子"
       }
     },
     "outputs": {
@@ -22878,7 +23126,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "用于生成的模型。recraftv4_styles 模型专为风格一致的生成而构建，并且始终需要 style_id 或 style_references；recraftv4_1_flash 是最快且最便宜的模型，完全不支持任何风格。"
+        "tooltip": "用于生成的模型。recraftv4_styles 模型专为风格一致的生成而构建，且始终需要 style_id 或 style_references；recraftv4_1_flash 运行 Recraft V4.1 Flash V2，这是速度最快且成本最低的模型，并且完全不支持任何风格。"
       },
       "model_size": {
         "name": "size"
@@ -22989,6 +23237,14 @@
     "inputs": {
       "image": {
         "name": "图像"
+      },
+      "shape_stacking": {
+        "name": "shape_stacking",
+        "tooltip": "hierarchical 会将形状分层叠放；cut_out 会生成永不重叠的形状，适用于绘图仪、乙烯基切割机和丝网印刷。"
+      },
+      "version": {
+        "name": "version",
+        "tooltip": "v1_pro（Vectorizer Pro）可生成更干净的 SVG，具有平滑曲线、直线和锐利的角，最适合文字和复杂形状。"
       }
     },
     "outputs": {
@@ -30307,6 +30563,150 @@
       "0": {
         "name": "文本",
         "tooltip": "已处理的文本"
+      }
+    }
+  },
+  "TypeSafeJevChoice": {
+    "description": "从文本或图像选项中选择一个。将 `choice` 连接到输入包含选项名称的分支节点，或使用 `option_index`。",
+    "display_name": "TypeSafe Jev（选择）",
+    "inputs": {
+      "images": {
+        "name": "图像",
+        "tooltip": "该问题所涉及的图像。总计最多 32 张图像；超过 4 张时将以较小尺寸发送。"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "options": {
+        "name": "选项",
+        "tooltip": "每行一个选项。为不符合任何选项的输入添加如 `other` 这样的选项。"
+      },
+      "question": {
+        "name": "问题",
+        "tooltip": "选项所回答的问题。使用多个输入时，请使用插槽名称，例如“图像_1 中展示的是哪个季节？”"
+      },
+      "text": {
+        "name": "文本",
+        "tooltip": "该问题所涉及的文本，例如提示词或 LLM 回复。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "选择",
+        "tooltip": null
+      },
+      "1": {
+        "name": "选项索引",
+        "tooltip": "所选选项在选项列表中的位置，从 0 开始。"
+      },
+      "2": {
+        "name": "置信度",
+        "tooltip": "Jev 的确定程度，范围从 0（没有明显胜出项）到 1（确定）。"
+      }
+    }
+  },
+  "TypeSafeJevPickImage": {
+    "description": "从批次中选择一张图像。将 `index` 连接到“从批次获取图像”以保留所选图像。",
+    "display_name": "TypeSafe Jev（选择图像）",
+    "inputs": {
+      "images": {
+        "name": "图像",
+        "tooltip": "可供选择的图像，数量为 2 至 32 张。"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "question": {
+        "name": "问题",
+        "tooltip": "选择哪张图像。将提示词连接到 `text`，以选择与其最匹配的图像。"
+      },
+      "text": {
+        "name": "文本",
+        "tooltip": "该问题所涉及的文本，例如生成这些图像时使用的提示词。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "索引",
+        "tooltip": "所选图像在批次中的位置，从 0 开始。"
+      },
+      "1": {
+        "name": "置信度",
+        "tooltip": "Jev 的确定程度，范围从 0（没有明显胜出项）到 1（确定）。"
+      }
+    }
+  },
+  "TypeSafeJevScore": {
+    "description": "为文本或图像按 1 至 10 分评分。将 `result` 连接到“如果/否则切换”节点，以根据评分执行操作。",
+    "display_name": "TypeSafe Jev（评分）",
+    "inputs": {
+      "images": {
+        "name": "图像",
+        "tooltip": "该问题所涉及的图像。总计最多 32 张图像；超过 4 张时将以较小尺寸发送。"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "question": {
+        "name": "问题",
+        "tooltip": "要评分的内容，评分范围为 1 至 10。请像示例中那样说明 1 和 10 分别代表什么。"
+      },
+      "text": {
+        "name": "文本",
+        "tooltip": "问题所涉及的文本，例如提示词或 LLM 回复。"
+      },
+      "threshold": {
+        "name": "阈值",
+        "tooltip": "当评分至少达到此值时，`result` 为 true。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "结果",
+        "tooltip": null
+      },
+      "1": {
+        "name": "得分",
+        "tooltip": null
+      }
+    }
+  },
+  "TypeSafeJevYesNo": {
+    "description": "针对文本或图像提出是/否问题。将 `result` 连接到 If/Else Switch 节点，以在两条路径之间进行选择。",
+    "display_name": "TypeSafe Jev（是/否）",
+    "inputs": {
+      "images": {
+        "name": "图像",
+        "tooltip": "问题所涉及的图像。最多共 32 张图像；超过 4 张时会以较小尺寸发送。"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "question": {
+        "name": "问题",
+        "tooltip": "针对已连接内容提出一个可用是或否回答的问题。请将问题表述为“是”对应你要执行的情形。使用多个输入时，请使用插槽名称，例如“image_2 是否与 image_1 中是同一个人？”"
+      },
+      "text": {
+        "name": "文本",
+        "tooltip": "问题所涉及的文本，例如提示词或 LLM 回复。"
+      },
+      "threshold": {
+        "name": "阈值",
+        "tooltip": "当“是”的概率至少达到此值时，答案为“是”。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "结果",
+        "tooltip": null
+      },
+      "1": {
+        "name": "答案",
+        "tooltip": null
+      },
+      "2": {
+        "name": "概率",
+        "tooltip": null
       }
     }
   },

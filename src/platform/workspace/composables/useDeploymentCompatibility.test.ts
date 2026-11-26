@@ -536,6 +536,107 @@ describe('useDeploymentCompatibility', () => {
     }
   )
 
+  it('asks again after a pause while a deployment cannot be checked, and marks it once it answers', async () => {
+    vi.useFakeTimers()
+    const { markFor, deploymentsThatRunIt } = setup()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(markFor('dep-building')).toEqual({ kind: 'unknown' })
+
+    vi.mocked(workspaceApi.checkDeploymentCompatibility).mockResolvedValue({
+      ...answer,
+      deployments: [
+        {
+          deployment_id: 'dep-rgthree',
+          missing_node_types: [],
+          unknown: false
+        },
+        {
+          deployment_id: 'dep-plain',
+          missing_node_types: ['Power Lora Loader (rgthree)'],
+          unknown: false
+        },
+        {
+          deployment_id: 'dep-building',
+          missing_node_types: [],
+          unknown: false
+        }
+      ]
+    })
+    await vi.advanceTimersByTimeAsync(4_999)
+    expect(workspaceApi.checkDeploymentCompatibility).toHaveBeenCalledOnce()
+    expect(markFor('dep-building')).toEqual({ kind: 'unknown' })
+
+    await vi.advanceTimersByTimeAsync(1)
+
+    expect(workspaceApi.checkDeploymentCompatibility).toHaveBeenCalledTimes(2)
+    expect(markFor('dep-building')).toEqual({ kind: 'runs' })
+    expect(deploymentsThatRunIt.value).toEqual(['dep-rgthree', 'dep-building'])
+
+    await vi.advanceTimersByTimeAsync(60_000)
+    expect(workspaceApi.checkDeploymentCompatibility).toHaveBeenCalledTimes(2)
+  })
+
+  it('stops asking after three rechecks that still cannot check a deployment', async () => {
+    vi.useFakeTimers()
+    const { markFor } = setup()
+
+    await vi.advanceTimersByTimeAsync(5_000 + 10_000 + 20_000)
+    expect(workspaceApi.checkDeploymentCompatibility).toHaveBeenCalledTimes(4)
+
+    await vi.advanceTimersByTimeAsync(10 * 60_000)
+    expect(workspaceApi.checkDeploymentCompatibility).toHaveBeenCalledTimes(4)
+    expect(markFor('dep-building')).toEqual({ kind: 'unknown' })
+  })
+
+  it('starts the rechecks over for a new request and drops the old request’s pending recheck', async () => {
+    vi.useFakeTimers()
+    setup()
+    await vi.advanceTimersByTimeAsync(5_000 + 10_000)
+    expect(workspaceApi.checkDeploymentCompatibility).toHaveBeenCalledTimes(3)
+
+    hoisted.rootGraph = graph({ type: 'KSampler' })
+    __dispatchGraphChanged()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(workspaceApi.checkDeploymentCompatibility).toHaveBeenCalledTimes(4)
+
+    await vi.advanceTimersByTimeAsync(5_000)
+    expect(workspaceApi.checkDeploymentCompatibility).toHaveBeenCalledTimes(5)
+
+    await vi.advanceTimersByTimeAsync(10 * 60_000)
+    const calls = vi.mocked(workspaceApi.checkDeploymentCompatibility).mock
+      .calls
+    expect(calls).toHaveLength(7)
+    expect(calls.slice(3)).toEqual(Array(4).fill(['ws-1', ['KSampler']]))
+  })
+
+  it.for([
+    { when: 'a recheck is waiting', inFlight: false },
+    { when: 'a check is still in flight', inFlight: true }
+  ])(
+    'asks nothing more once its scope ends while $when',
+    async ({ inFlight }) => {
+      vi.useFakeTimers()
+      let answerFirst: (value: DeploymentCompatibility) => void = () => {}
+      if (inFlight) {
+        vi.mocked(
+          workspaceApi.checkDeploymentCompatibility
+        ).mockReturnValueOnce(
+          new Promise((resolve) => {
+            answerFirst = resolve
+          })
+        )
+      }
+      setup()
+      await vi.advanceTimersByTimeAsync(0)
+
+      scope.stop()
+      answerFirst(answer)
+      await vi.advanceTimersByTimeAsync(10 * 60_000)
+
+      expect(workspaceApi.checkDeploymentCompatibility).toHaveBeenCalledOnce()
+    }
+  )
+
   it('ignores an answer for node types the workflow no longer has', async () => {
     vi.useFakeTimers()
     let answerFirst!: (value: DeploymentCompatibility) => void

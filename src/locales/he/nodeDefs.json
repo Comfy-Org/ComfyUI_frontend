@@ -5569,7 +5569,7 @@
       },
       "text": {
         "name": "טקסט",
-        "tooltip": "תיאור טקסטואלי של האפקט הקולי ליצירה."
+        "tooltip": "תארו את הצליל באנגלית, עד 450 תווים. פרומפטים בשפות אחרות מושמעים לעיתים קרובות בקול במקום להפוך לצליל."
       }
     },
     "outputs": {
@@ -15470,6 +15470,91 @@
       }
     }
   },
+  "MeshyImageToReliefNode": {
+    "description": "הפיכת תמונה למודל תבליט נמוך ולמפת עומק של 16 סיביות להדפסת תלת־ממד, חריטת לייזר וגילוף CNC. רק הפלטים המחוברים נוצרים ומורדים; ללא פלט מודל מחובר, המשימה מחזירה רק את מפת העומק.",
+    "display_name": "Meshy: מתמונה לתבליט",
+    "inputs": {
+      "base": {
+        "name": "בסיס",
+        "tooltip": "none מסיר את הרקע ואינו יוצר לוח בסיס."
+      },
+      "base_base_thickness_mm": {
+        "name": "עובי_בסיס_ממ"
+      },
+      "bend": {
+        "name": "כיפוף",
+        "tooltip": "convex בולט את החזית החוצה, concave מקמר אותה פנימה."
+      },
+      "carving_mode": {
+        "name": "מצב_גילוף",
+        "tooltip": "emboss מבליט את החלקים הקרובים יותר בתמונה, engrave חורט אותם פנימה."
+      },
+      "color_mapping": {
+        "name": "מיפוי_צבע",
+        "tooltip": "צביעת קובצי GLB, OBJ, FBX ו־USDZ באמצעות התמונה. קובצי STL ו־3MF נשארים לבנים."
+      },
+      "control_after_generate": {
+        "name": "שליטה לאחר יצירה"
+      },
+      "image": {
+        "name": "תמונה",
+        "tooltip": "איור כהה על רקע בהיר מובלט. השקיפות מוסרת לפני ההעלאה, לכן יש לשטח תחילה לוגו שקוף על רקע לבן."
+      },
+      "mesh_resolution": {
+        "name": "רזולוציית_רשת",
+        "tooltip": "נקודות רשת לאורך הצלע הארוכה יותר של התמונה. ב־1024 גודל ה־GLB הוא כ־50 MB וה־STL כ־105 MB, וב־2048 כ־200 MB ו־420 MB; כיפוף מכפיל אותם."
+      },
+      "relief_type": {
+        "name": "סוג_תבליט",
+        "tooltip": "נמוך: גילוף רדוד לחריטת לייזר, CNC ולוחיות. גבוה: גילוף עמוק יותר לפריטים המודפסים בתלת־ממד."
+      },
+      "relief_type_carving_depth_mm": {
+        "name": "עומק_גילוף_ממ"
+      },
+      "seed": {
+        "name": "זרע",
+        "tooltip": "הזרע קובע אם הצומת יופעל מחדש; התוצאות אינן דטרמיניסטיות ללא קשר לזרע. יש לשנות אותו כדי לבקש פלט שחובר לאחר ההרצה האחרונה."
+      },
+      "size_mm": {
+        "name": "גודל_ממ",
+        "tooltip": "אורך הצלע הארוכה יותר של התמונה במודל, נמדד במישור לפני כל כיפוף."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "1": {
+        "name": "STL",
+        "tooltip": null
+      },
+      "2": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": null
+      },
+      "4": {
+        "name": "USDZ",
+        "tooltip": null
+      },
+      "5": {
+        "name": "3MF",
+        "tooltip": null
+      },
+      "6": {
+        "name": "מפת_עומק",
+        "tooltip": "מפת עומק עם מלוא הטווח של 16 סיביות; Save Image (Advanced) שומר אותה כ־PNG של 16 סיביות."
+      },
+      "7": {
+        "name": "תצוגה מקדימה",
+        "tooltip": null
+      }
+    }
+  },
   "MeshyMultiImageToModelNode": {
     "display_name": "Meshy: המרת מספר תמונות למודל",
     "inputs": {
@@ -15765,6 +15850,44 @@
         "tooltip": null
       },
       "3": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyTextureN1Node": {
+    "description": "הוספת טקסטורה למודל שנוצר קודם לכן באמצעות Meshy N1, על סמך 1 עד 4 תצוגות ייחוס של אותו אובייקט.",
+    "display_name": "Meshy: טקסטור מודל (N1)",
+    "inputs": {
+      "enable_original_uv": {
+        "name": "הפעלת_UV_מקורי",
+        "tooltip": "שימוש ב־UV המקורי של המודל במקום יצירת UV חדשים. כאשר אפשרות זו מופעלת, Meshy משמר את הטקסטורות הקיימות במודל שהועלה. אם למודל אין UV מקורי, איכות הפלט עשויה להיות נמוכה יותר."
+      },
+      "extra_views": {
+        "name": "extra_views",
+        "tooltip": "תצוגות נוספות של אותו אובייקט, בכל סדר. יחד עם front_view, לכל היותר 4 תמונות."
+      },
+      "front_view": {
+        "name": "תצוגה_קדמית",
+        "tooltip": "התצוגה ש־Meshy מתייחס אליה כחזית. תמונה אחת מוסיפה טקסטורה לחזית ומשאירה את הגב חלק; יש להוסיף תצוגות אחוריות וצדדיות ב־extra_views לקבלת גב נאמן למקור."
+      },
+      "meshy_task_id": {
+        "name": "מזהה_משימת_meshy"
+      },
+      "model": {
+        "name": "מודל"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "2": {
         "name": "FBX",
         "tooltip": null
       }
@@ -19904,6 +20027,39 @@
       }
     }
   },
+  "OpenAIChatNodeV2": {
+    "description": "יצירת תגובות טקסט באמצעות מודלי GPT של OpenAI. ספקו פרומפט טקסט, ובאופן אופציונלי תמונות או קבצים כהקשר.",
+    "display_name": "OpenAI ChatGPT",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "המודל המשמש ליצירת התגובה."
+      },
+      "model_max_output_tokens": {
+        "name": "max_output_tokens"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_system_prompt": {
+        "name": "system_prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "OpenAIGPTImage1": {
     "description": "יוצר תמונות באופן סינכרוני דרך נקודת הקצה של OpenAI GPT Image.",
     "display_name": "OpenAI GPT Image 2",
@@ -21897,6 +22053,56 @@
       }
     }
   },
+  "PrunaAvatarNode": {
+    "description": "מחולל סרטון מדבר מדיוקן ומדיבור באמצעות Pruna P-Video-2 Pro Avatar: שמע משלכם או תסריט המוקרא באמצעות המרת טקסט לדיבור.",
+    "display_name": "Pruna P-Video-2 Pro Avatar",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "enhance_prompt": {
+        "name": "enhance_prompt",
+        "tooltip": "הוסיפו לפרומפט את התנועה הנראית בדיוקן, כגון הרקע, האורות ותנועת הגוף. כבו אפשרות זו כדי להשתמש בפרומפט כפי שנכתב וכדי לשחזר תוצאה בדיוק עם אותו seed."
+      },
+      "image": {
+        "name": "תמונה",
+        "tooltip": "הדיוקן שממנו מתחיל הסרטון. הסרטון שומר על יחס הממדים שלו בטווח שבין 1:2 ל־4:1; תמונות קיצוניות יותר, כגון 1:5, נחתכות ל־9:16 או ל־16:9."
+      },
+      "prompt": {
+        "name": "פרומפט",
+        "tooltip": "מתאר את מה שמוצג בסרטון. עד 5000 תווים."
+      },
+      "resolution": {
+        "name": "רזולוציה",
+        "tooltip": "1080p,‏ 2k ו־4k מגדילים את סרטון ה־768p. ‏2k מוגבל ל־150 שניות ו־4k ל־60 שניות."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed עבור היצירה. אותו seed משחזר תוצאה בדיוק רק כאשר enhance_prompt כבוי."
+      },
+      "speech": {
+        "name": "דיבור",
+        "tooltip": "הניעו את הסרטון באמצעות תסריט המרת טקסט לדיבור או באמצעות שמע משלכם."
+      },
+      "speech_language": {
+        "name": "שפה"
+      },
+      "speech_script": {
+        "name": "תסריט"
+      },
+      "speech_voice": {
+        "name": "קול"
+      },
+      "speech_voice_prompt": {
+        "name": "voice_prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PrunaImageToVideoNode": {
     "description": "הנפשת תמונה לסרטון באמצעות מודלי הווידאו של Pruna, עם פריים אחרון אופציונלי, צליל שנוצר או רצועת שמע.",
     "display_name": "Pruna P-Video-2 מתמונה לווידאו",
@@ -21958,6 +22164,48 @@
       "video": {
         "name": "וידאו",
         "tooltip": "הווידאו להגדלת רזולוציה, עד 512 MiB."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrunaReferenceToVideoNode": {
+    "description": "מחולל סרטון מפרומפט בהנחיית תמונות, סרטונים ושמע של ייחוס באמצעות מודלי הווידאו של Pruna.",
+    "display_name": "Pruna P-Video-2 Pro מייחוס לווידאו",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל שבו יש להשתמש."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration": {
+        "name": "משך"
+      },
+      "model_enhance_prompt": {
+        "name": "enhance_prompt"
+      },
+      "model_keep_audio": {
+        "name": "keep_audio"
+      },
+      "model_mode": {
+        "name": "מצב"
+      },
+      "model_prompt": {
+        "name": "פרומפט"
+      },
+      "model_resolution": {
+        "name": "רזולוציה"
+      },
+      "model_seed": {
+        "name": "seed"
       }
     },
     "outputs": {
@@ -22878,7 +23126,7 @@
       },
       "model": {
         "name": "מודל",
-        "tooltip": "המודל שישמש ליצירה. המודלים recraftv4_styles מיועדים ליצירה עקבית מבחינת סגנון ותמיד מחייבים style_id או style_references; ‏recraftv4_1_flash הוא המודל המהיר והזול ביותר ואינו תומך בסגנונות כלל."
+        "tooltip": "המודל שישמש ליצירה. המודלים recraftv4_styles בנויים ליצירה עקבית בסגנון ותמיד דורשים style_id או style_references; ‏recraftv4_1_flash מפעיל את Recraft V4.1 Flash V2, המודל המהיר והזול ביותר, ואינו תומך בסגנונות כלל."
       },
       "model_size": {
         "name": "גודל"
@@ -22989,6 +23237,14 @@
     "inputs": {
       "image": {
         "name": "תמונה"
+      },
+      "shape_stacking": {
+        "name": "shape_stacking",
+        "tooltip": "שכבות היררכיות מציבות צורות זו מעל זו; cut_out יוצר צורות שאינן חופפות לעולם, עבור פלוטרים, חותכי ויניל והדפסת משי."
+      },
+      "version": {
+        "name": "version",
+        "tooltip": "v1_pro (Vectorizer Pro) מספק קובצי SVG נקיים יותר עם עקומות חלקות, קווים ישרים ופינות חדות, ומתאים במיוחד לכיתוב ולצורות מורכבות."
       }
     },
     "outputs": {
@@ -30307,6 +30563,150 @@
       "0": {
         "name": "טקסטים",
         "tooltip": "טקסטים שעובדו"
+      }
+    }
+  },
+  "TypeSafeJevChoice": {
+    "description": "בחרו אחת מהאפשרויות שלכם לטקסט או לתמונות. חברו את `choice` לצומת Branch שהקלטים שלו מכילים את שמות האפשרויות, או השתמשו ב־`option_index`.",
+    "display_name": "TypeSafe Jev (בחירה)",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "התמונות שהשאלה עוסקת בהן. עד 32 תמונות בסך הכול; יותר מ־4 נשלחות בגודל קטן יותר."
+      },
+      "model": {
+        "name": "model"
+      },
+      "options": {
+        "name": "options",
+        "tooltip": "אפשרות אחת בכל שורה. הוסיפו אפשרות כגון `other` עבור קלטים שאינם מתאימים לאף אחת מהן."
+      },
+      "question": {
+        "name": "question",
+        "tooltip": "השאלה שהאפשרויות עונות עליה. כאשר יש כמה קלטים, השתמשו בשמות השקעים, לדוגמה: 'איזו עונה מוצגת ב־image_1?'"
+      },
+      "text": {
+        "name": "text",
+        "tooltip": "הטקסט שהשאלה עוסקת בו, כגון פרומפט או תגובת LLM."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "choice",
+        "tooltip": null
+      },
+      "1": {
+        "name": "option_index",
+        "tooltip": "מיקום האפשרות שנבחרה ברשימת האפשרויות, החל מ־0."
+      },
+      "2": {
+        "name": "confidence",
+        "tooltip": "מידת הביטחון של Jev, מ־0 (אין מנצח ברור) עד 1 (ודאות)."
+      }
+    }
+  },
+  "TypeSafeJevPickImage": {
+    "description": "בחרו תמונה אחת מאצווה. חברו את `index` אל Get Image from Batch כדי לשמור את התמונה שנבחרה.",
+    "display_name": "TypeSafe Jev (בחירת תמונה)",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "התמונות לבחירה, בין 2 ל־32."
+      },
+      "model": {
+        "name": "model"
+      },
+      "question": {
+        "name": "question",
+        "tooltip": "איזו תמונה לבחור. חברו את הפרומפט אל `text` כדי לבחור את התמונה המתאימה לו ביותר."
+      },
+      "text": {
+        "name": "text",
+        "tooltip": "הטקסט שהשאלה עוסקת בו, כגון הפרומפט שממנו נוצרו התמונות."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "index",
+        "tooltip": "מיקום התמונה שנבחרה באצווה, החל מ־0."
+      },
+      "1": {
+        "name": "confidence",
+        "tooltip": "מידת הביטחון של Jev, מ־0 (אין מנצח ברור) עד 1 (ודאות)."
+      }
+    }
+  },
+  "TypeSafeJevScore": {
+    "description": "דרגו טקסט או תמונות מ־1 עד 10. חברו את `result` לצומת If/Else Switch כדי לפעול בהתאם לדירוג.",
+    "display_name": "TypeSafe Jev (דירוג)",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "התמונות שהשאלה עוסקת בהן. עד 32 תמונות בסך הכול; יותר מ־4 נשלחות בגודל קטן יותר."
+      },
+      "model": {
+        "name": "model"
+      },
+      "question": {
+        "name": "question",
+        "tooltip": "מה לדרג, בסולם מ־1 עד 10. ציינו מה המשמעות של 1 ושל 10, כמו בדוגמה."
+      },
+      "text": {
+        "name": "text",
+        "tooltip": "הטקסט שהשאלה עוסקת בו, כגון פרומפט או תגובת LLM."
+      },
+      "threshold": {
+        "name": "threshold",
+        "tooltip": "`result` הוא true כאשר הדירוג הוא לפחות ערך זה."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "תוצאה",
+        "tooltip": null
+      },
+      "1": {
+        "name": "ציון",
+        "tooltip": null
+      }
+    }
+  },
+  "TypeSafeJevYesNo": {
+    "description": "שאלו שאלת כן/לא על טקסט או תמונות. חברו את `result` לצומת מתג If/Else כדי לבחור בין שני נתיבים.",
+    "display_name": "TypeSafe Jev (כן/לא)",
+    "inputs": {
+      "images": {
+        "name": "תמונות",
+        "tooltip": "התמונות שהשאלה עוסקת בהן. עד 32 תמונות בסך הכול; יותר מ־4 נשלחות בגודל קטן יותר."
+      },
+      "model": {
+        "name": "מודל"
+      },
+      "question": {
+        "name": "שאלה",
+        "tooltip": "שאלה עם תשובת כן או לא לגבי מה שמחובר. נסחו אותה כך ש״כן״ יהיה המקרה שבו תפעלו. כאשר יש כמה קלטים, השתמשו בשמות השקעים, לדוגמה 'האם image_2 מציגה את אותו אדם כמו image_1?'"
+      },
+      "text": {
+        "name": "טקסט",
+        "tooltip": "הטקסט שהשאלה עוסקת בו, כגון פרומפט או תגובת LLM."
+      },
+      "threshold": {
+        "name": "סף",
+        "tooltip": "התשובה היא כן כאשר ההסתברות ל׳כן׳ היא לפחות ערך זה."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "תוצאה",
+        "tooltip": null
+      },
+      "1": {
+        "name": "תשובה",
+        "tooltip": null
+      },
+      "2": {
+        "name": "הסתברות",
+        "tooltip": null
       }
     }
   },

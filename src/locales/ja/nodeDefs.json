@@ -5569,7 +5569,7 @@
       },
       "text": {
         "name": "テキスト",
-        "tooltip": "生成する効果音のテキスト説明。"
+        "tooltip": "英語で音を説明してください（450文字まで）。他の言語のプロンプトは、音に変換されずに読み上げられることがよくあります。"
       }
     },
     "outputs": {
@@ -15470,6 +15470,91 @@
       }
     }
   },
+  "MeshyImageToReliefNode": {
+    "description": "写真を、3Dプリント、レーザー彫刻、CNC彫刻向けの浅浮き彫りモデルと16ビット深度マップに変換します。接続されている出力のみが生成・ダウンロードされます。モデル出力が接続されていない場合、タスクは深度マップのみを返します。",
+    "display_name": "Meshy：画像からレリーフへ",
+    "inputs": {
+      "base": {
+        "name": "ベース",
+        "tooltip": "noneでは背景を切り抜き、プレートを作成しません。"
+      },
+      "base_base_thickness_mm": {
+        "name": "ベース厚さ_mm"
+      },
+      "bend": {
+        "name": "曲げ",
+        "tooltip": "convexは前面を外側へ膨らませ、concaveは内側へ湾曲させます。"
+      },
+      "carving_mode": {
+        "name": "彫刻モード",
+        "tooltip": "embossは写真の手前側を盛り上げ、engraveはそれらを彫り込みます。"
+      },
+      "color_mapping": {
+        "name": "カラーマッピング",
+        "tooltip": "GLB、OBJ、FBX、USDZファイルを写真の色で着色します。STLと3MFは白のままです。"
+      },
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "image": {
+        "name": "画像",
+        "tooltip": "明るい背景上の暗いアートワークが盛り上がります。アップロード前に透明度は削除されるため、透明なロゴは先に白い背景へ統合してください。"
+      },
+      "mesh_resolution": {
+        "name": "メッシュ解像度",
+        "tooltip": "写真の長辺に沿ったメッシュポイント数。1024ではGLBは約50 MB、STLは約105 MB、2048では約200 MBと420 MBです。曲げるとこれらは2倍になります。"
+      },
+      "relief_type": {
+        "name": "レリーフタイプ",
+        "tooltip": "low：レーザー彫刻、CNC、銘板向けの浅い彫刻。high：3Dプリント作品向けの深い彫刻。"
+      },
+      "relief_type_carving_depth_mm": {
+        "name": "彫刻深さ_mm"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードを再実行するかどうかを制御します。結果はシードにかかわらず非決定的です。最後の実行後に接続した出力を要求するには、シードを変更してください。"
+      },
+      "size_mm": {
+        "name": "サイズ_mm",
+        "tooltip": "曲げる前の平らな状態で測定した、モデル上の写真の長辺の長さ。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "1": {
+        "name": "STL",
+        "tooltip": null
+      },
+      "2": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": null
+      },
+      "4": {
+        "name": "USDZ",
+        "tooltip": null
+      },
+      "5": {
+        "name": "3MF",
+        "tooltip": null
+      },
+      "6": {
+        "name": "深度マップ",
+        "tooltip": "16ビットの全範囲を持つ深度マップ。Save Image (Advanced) は16ビットPNGとして書き出します。"
+      },
+      "7": {
+        "name": "プレビュー",
+        "tooltip": null
+      }
+    }
+  },
   "MeshyMultiImageToModelNode": {
     "display_name": "Meshy：複数画像からモデルへ",
     "inputs": {
@@ -15765,6 +15850,44 @@
         "tooltip": null
       },
       "3": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyTextureN1Node": {
+    "description": "同じオブジェクトの1～4枚の参照ビューを使用して、以前に作成したモデルをMeshy N1でテクスチャ化します。",
+    "display_name": "Meshy：モデルをテクスチャ化（N1）",
+    "inputs": {
+      "enable_original_uv": {
+        "name": "元のUVを有効化",
+        "tooltip": "新しいUVを生成する代わりに、モデルの元のUVを使用します。有効にすると、Meshyはアップロードしたモデルにある既存のテクスチャを保持します。モデルに元のUVがない場合、出力品質が低下する可能性があります。"
+      },
+      "extra_views": {
+        "name": "追加ビュー",
+        "tooltip": "同じオブジェクトを別の視点から見た画像。順序は任意です。front_view と合わせて最大4枚の画像。"
+      },
+      "front_view": {
+        "name": "正面ビュー",
+        "tooltip": "Meshyが正面として扱うビューです。画像1枚では正面にテクスチャを適用し、背面は無地のままになります。忠実な背面にするには、extra_viewsに背面および側面ビューを追加してください。"
+      },
+      "meshy_task_id": {
+        "name": "meshyタスクID"
+      },
+      "model": {
+        "name": "モデル"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "2": {
         "name": "FBX",
         "tooltip": null
       }
@@ -19904,6 +20027,39 @@
       }
     }
   },
+  "OpenAIChatNodeV2": {
+    "description": "OpenAIのGPTモデルでテキスト応答を生成します。テキストプロンプトを指定し、必要に応じて画像やファイルをコンテキストとして指定できます。",
+    "display_name": "OpenAI ChatGPT",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "応答の生成に使用するモデル。"
+      },
+      "model_max_output_tokens": {
+        "name": "max_output_tokens"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "model_seed": {
+        "name": "シード"
+      },
+      "model_system_prompt": {
+        "name": "system_prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "OpenAIGPTImage1": {
     "description": "OpenAIのGPT Image 2エンドポイントを通じて同期的に画像を生成します。",
     "display_name": "OpenAI GPT Image 2",
@@ -21897,6 +22053,56 @@
       }
     }
   },
+  "PrunaAvatarNode": {
+    "description": "Pruna P-Video-2 Pro アバターを使用して、ポートレートと音声から会話動画を生成します。独自の音声、またはテキスト読み上げで話すスクリプトを使用できます。",
+    "display_name": "Pruna P-Video-2 Pro アバター",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "enhance_prompt": {
+        "name": "enhance_prompt",
+        "tooltip": "背景、照明、体の動きなど、ポートレートに見られる動きをプロンプトに追加します。オフにすると、記述どおりのプロンプトが使用され、同じseedで結果を完全に再現できます。"
+      },
+      "image": {
+        "name": "画像",
+        "tooltip": "動画の開始元となるポートレート。動画は1:2～4:1のアスペクト比を維持します。1:5など、より極端な比率の画像は9:16または16:9に切り抜かれます。"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "動画に表示される内容を記述します。最大5000文字。"
+      },
+      "resolution": {
+        "name": "解像度",
+        "tooltip": "1080p、2k、4kでは768pの動画をアップスケールします。2kは150秒まで、4kは60秒までに制限されます。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "生成用のseed。同じseedで結果を完全に再現できるのは、enhance_promptがオフの場合のみです。"
+      },
+      "speech": {
+        "name": "音声",
+        "tooltip": "テキスト読み上げ用スクリプトまたは独自の音声で動画を動かします。"
+      },
+      "speech_language": {
+        "name": "言語"
+      },
+      "speech_script": {
+        "name": "スクリプト"
+      },
+      "speech_voice": {
+        "name": "音声"
+      },
+      "speech_voice_prompt": {
+        "name": "voice_prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PrunaImageToVideoNode": {
     "description": "Pruna ビデオモデルを使用して画像を動画にアニメーション化します。任意で最後のフレーム、生成されたサウンド、または音声トラックを指定できます。",
     "display_name": "Pruna P-Video-2 Image to Video",
@@ -21958,6 +22164,48 @@
       "video": {
         "name": "動画",
         "tooltip": "アップスケールする動画（最大512 MiB）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrunaReferenceToVideoNode": {
+    "description": "Pruna動画モデルを使用して、参照画像、動画、音声によって導かれたプロンプトから動画を生成します。",
+    "display_name": "Pruna P-Video-2 Pro 参照から動画へ",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "使用するモデル。"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration": {
+        "name": "長さ"
+      },
+      "model_enhance_prompt": {
+        "name": "enhance_prompt"
+      },
+      "model_keep_audio": {
+        "name": "keep_audio"
+      },
+      "model_mode": {
+        "name": "モード"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "model_seed": {
+        "name": "seed"
       }
     },
     "outputs": {
@@ -22878,7 +23126,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "生成に使用するモデルです。recraftv4_stylesモデルはスタイルの一貫した生成向けに構築されており、常にstyle_idまたはstyle_referencesが必要です。recraftv4_1_flashは最速かつ最も低コストのモデルで、スタイルは一切サポートしません。"
+        "tooltip": "生成に使用するモデル。recraftv4_stylesモデルはスタイルの一貫した生成用に構築されており、常にstyle_idまたはstyle_referencesが必要です。recraftv4_1_flashは最速かつ最も低コストなモデルであるRecraft V4.1 Flash V2を実行し、スタイルを一切サポートしません。"
       },
       "model_size": {
         "name": "サイズ"
@@ -22989,6 +23237,14 @@
     "inputs": {
       "image": {
         "name": "画像"
+      },
+      "shape_stacking": {
+        "name": "shape_stacking",
+        "tooltip": "hierarchicalは形状を互いの上に重ねた階層レイヤーにします。cut_outは、プロッター、ビニールカッター、スクリーン印刷向けに、決して重ならない形状を作成します。"
+      },
+      "version": {
+        "name": "バージョン",
+        "tooltip": "v1_pro（Vectorizer Pro）は、滑らかな曲線、直線、シャープな角を備えたよりクリーンなSVGを生成し、レタリングや複雑な形状に最適です。"
       }
     },
     "outputs": {
@@ -30307,6 +30563,150 @@
       "0": {
         "name": "テキスト",
         "tooltip": "処理済みテキスト"
+      }
+    }
+  },
+  "TypeSafeJevChoice": {
+    "description": "テキストまたは画像に対する選択肢から1つを選びます。`choice` を、入力に選択肢名を持つ Branch ノードに接続するか、`option_index` を使用します。",
+    "display_name": "TypeSafe Jev（選択）",
+    "inputs": {
+      "images": {
+        "name": "画像",
+        "tooltip": "質問の対象となる画像です。合計32枚まで指定でき、5枚以上の場合は小さいサイズで送信されます。"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "options": {
+        "name": "選択肢",
+        "tooltip": "1行につき1つの選択肢を指定します。どれにも当てはまらない入力のために、`other` のような選択肢を追加してください。"
+      },
+      "question": {
+        "name": "質問",
+        "tooltip": "選択肢が答える質問です。複数の入力がある場合は、たとえば「image_1 に表示されている季節は？」のようにソケット名を使用します。"
+      },
+      "text": {
+        "name": "テキスト",
+        "tooltip": "プロンプトや LLM の応答など、質問の対象となるテキストです。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "選択",
+        "tooltip": null
+      },
+      "1": {
+        "name": "選択肢インデックス",
+        "tooltip": "options リスト内での選択された選択肢の位置です。0から始まります。"
+      },
+      "2": {
+        "name": "信頼度",
+        "tooltip": "Jev の確信度です。0（明確な勝者なし）から1（確実）までです。"
+      }
+    }
+  },
+  "TypeSafeJevPickImage": {
+    "description": "バッチから画像を1枚選びます。`index` を Get Image from Batch に接続して、選択した画像を取得します。",
+    "display_name": "TypeSafe Jev（画像を選択）",
+    "inputs": {
+      "images": {
+        "name": "画像",
+        "tooltip": "選択する画像です。2～32枚指定できます。"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "question": {
+        "name": "質問",
+        "tooltip": "選ぶ画像を指定します。プロンプトを `text` に接続すると、最も一致する画像を選択します。"
+      },
+      "text": {
+        "name": "テキスト",
+        "tooltip": "画像の生成に使用したプロンプトなど、質問の対象となるテキストです。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "インデックス",
+        "tooltip": "バッチ内での選択した画像の位置です。0から始まります。"
+      },
+      "1": {
+        "name": "信頼度",
+        "tooltip": "Jev の確信度です。0（明確な勝者なし）から1（確実）までです。"
+      }
+    }
+  },
+  "TypeSafeJevScore": {
+    "description": "テキストまたは画像を1～10で評価します。`result` を If/Else Switch ノードに接続して、スコアに応じた処理を行います。",
+    "display_name": "TypeSafe Jev（スコア）",
+    "inputs": {
+      "images": {
+        "name": "画像",
+        "tooltip": "質問の対象となる画像です。合計32枚まで指定でき、5枚以上の場合は小さいサイズで送信されます。"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "question": {
+        "name": "質問",
+        "tooltip": "1～10の尺度で評価する内容です。例のように、1と10が何を意味するかを指定してください。"
+      },
+      "text": {
+        "name": "テキスト",
+        "tooltip": "質問の対象となるテキストです。プロンプトやLLMの応答など。"
+      },
+      "threshold": {
+        "name": "しきい値",
+        "tooltip": "スコアがこの値以上の場合、`result` は true になります。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "結果",
+        "tooltip": null
+      },
+      "1": {
+        "name": "スコア",
+        "tooltip": null
+      }
+    }
+  },
+  "TypeSafeJevYesNo": {
+    "description": "テキストまたは画像について、はい／いいえで答えられる質問をします。`result`をIf/Else Switchノードに接続して、2つのパスから選択します。",
+    "display_name": "TypeSafe Jev（はい／いいえ）",
+    "inputs": {
+      "images": {
+        "name": "画像",
+        "tooltip": "質問の対象となる画像です。合計で最大32枚までで、5枚以上は小さいサイズで送信されます。"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "question": {
+        "name": "質問",
+        "tooltip": "接続されている内容について、はいまたはいいえで答えられる質問です。はいの場合に実行するよう質問してください。複数の入力がある場合は、たとえば「image_2にはimage_1と同じ人物が写っていますか？」のようにソケット名を使用します。"
+      },
+      "text": {
+        "name": "テキスト",
+        "tooltip": "質問の対象となるテキストです。プロンプトやLLMの応答など。"
+      },
+      "threshold": {
+        "name": "しきい値",
+        "tooltip": "はいである確率がこの値以上の場合、回答は「はい」になります。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "結果",
+        "tooltip": null
+      },
+      "1": {
+        "name": "回答",
+        "tooltip": null
+      },
+      "2": {
+        "name": "確率",
+        "tooltip": null
       }
     }
   },

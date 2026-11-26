@@ -2034,6 +2034,7 @@ describe('useWorkspaceAuthStore', () => {
           expect.objectContaining({
             surface: 'auth',
             errorType: 'unified_login_mint_failure',
+            sentryMode: 'once_per_page',
             tags: {
               failure_code: 'TOKEN_EXCHANGE_FAILED',
               http_status: httpStatus,

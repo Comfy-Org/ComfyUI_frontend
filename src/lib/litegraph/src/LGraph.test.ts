@@ -943,6 +943,7 @@ describe('Store-driven serialization parity', () => {
       {
         surface: 'graph',
         errorType: 'graph_serialization_state_mismatch',
+        sentryMode: 'once_per_page',
         tags: { outcome: 'degraded' },
         context: {
           graphId: graph.id,

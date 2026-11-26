@@ -14,6 +14,7 @@ import type { MissingModelGroup } from '@/platform/workflowErrors/missingModel/t
 import type { WorkspaceDeployment } from '@/platform/workspace/api/workspaceApi'
 import { DEPLOYMENT_LISTING_FOCUS_RETRY_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
 import { reloadForDeploymentSwitch } from '@/platform/workspace/deploymentSwitchReload'
+import { usePlatformFrameStore } from '@/platform/workspace/platformFrame/platformFrameStore'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { testI18n } from '@/utils/__tests__/testI18n'
@@ -124,6 +125,47 @@ describe('DeploymentBuildActions', () => {
       expect(link).toHaveAttribute('target', '_blank')
     }
   )
+
+  describe('with the Platform frame on', () => {
+    beforeEach(() => {
+      vi.spyOn(usePlatformFrameStore(), 'isAvailable').mockReturnValue(true)
+      vi.spyOn(usePlatformFrameStore(), 'open').mockReturnValue(true)
+    })
+
+    it('opens Models alone with the workflow when only models are missing', async () => {
+      const user = renderActions({ missingPackGroups: [] })
+
+      await user.click(
+        screen.getByRole('link', {
+          name: 'Add the missing models to the build'
+        })
+      )
+
+      expect(usePlatformFrameStore().open).toHaveBeenCalledExactlyOnceWith(
+        {
+          step: 'models',
+          deploymentId: 'dep-1',
+          handsOverWorkflow: true
+        },
+        'errors_panel'
+      )
+    })
+
+    it.for([
+      { missing: 'nodes are missing too', packs: missingPackGroups },
+      { missing: 'no model is missing', packs: [] }
+    ])('keeps the link to the Build when $missing', ({ packs }) => {
+      renderActions({
+        missingPackGroups: packs,
+        ...(packs.length === 0 && { missingModelGroups: [] })
+      })
+
+      expect(
+        screen.getByRole('link', { name: 'Edit build on Platform' })
+      ).toBeInTheDocument()
+      expect(usePlatformFrameStore().open).not.toHaveBeenCalled()
+    })
+  })
 
   it('copies a brief listing the missing node types and models, then says so', async () => {
     copyToClipboard.mockResolvedValue(true)

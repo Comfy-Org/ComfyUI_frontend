@@ -8,17 +8,24 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
+import { useAssetDownloadStore } from '@/platform/assets/stores/assetDownloadStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 
 interface LibraryFolder {
   names: readonly string[]
+  blocked: readonly string[]
   status: ComboWidgetInventoryStatus
 }
 
 const NO_NAMES: readonly string[] = []
 
-const WORKER_MODEL_FOLDERS = new Set([
+const UNREAD_FOLDER: LibraryFolder = {
+  names: NO_NAMES,
+  blocked: NO_NAMES,
+  status: 'loading'
+}
+
+export const WORKER_MODEL_FOLDERS = new Set([
   'checkpoints',
   'loras',
   'vae',
@@ -59,7 +66,7 @@ export function deploymentDownloads(folder: string, name?: string): boolean {
   )
 }
 
-/** The workspace library's model names by folder, offered after the Release's in a deployment's loader dropdowns. */
+/** The workspace library's model names by folder, offered after the Release's in a deployment's loader dropdowns, and apart from them the names the Build's model rules block. */
 export const useDeploymentLibraryModelsStore = defineStore(
   'deploymentLibraryModels',
   () => {
@@ -111,11 +118,7 @@ export const useDeploymentLibraryModelsStore = defineStore(
       }
     )
 
-    onScopeDispose(
-      assetService.onAssetsChanged(() => {
-        for (const folder of folders.keys()) refresh(folder)
-      })
-    )
+    onScopeDispose(assetService.onAssetsChanged(refreshLoaded))
 
     function folderFor(nodeType: string, widgetName: string) {
       if (!assetService.isAssetBrowserEligible(nodeType, widgetName)) {
@@ -134,17 +137,20 @@ export const useDeploymentLibraryModelsStore = defineStore(
       latestRequest.set(folder, request)
       const isCurrent = () =>
         startedIn === generation && latestRequest.get(folder) === request
-      const previous = folders.get(folder)
+      const previous = folders.get(folder) ?? UNREAD_FOLDER
       const entry: LibraryFolder = {
-        names: previous?.names ?? NO_NAMES,
-        status: previous?.status === 'ready' ? 'ready' : 'loading'
+        ...previous,
+        status: previous.status === 'ready' ? 'ready' : 'loading'
       }
       folders.set(folder, entry)
       void assetService.getWorkspaceLibraryModels(folder).then(
-        (names) => {
+        ({ names, blocked }) => {
           if (!isCurrent()) return
+          const downloadable = (name: string) =>
+            deploymentDownloads(folder, name)
           folders.set(folder, {
-            names: names.filter((name) => deploymentDownloads(folder, name)),
+            names: names.filter(downloadable),
+            blocked: blocked.filter(downloadable),
             status: 'ready'
           })
         },
@@ -161,6 +167,10 @@ export const useDeploymentLibraryModelsStore = defineStore(
       )
     }
 
+    function refreshLoaded() {
+      for (const folder of folders.keys()) refresh(folder)
+    }
+
     function loaded(folder: string): LibraryFolder | undefined {
       return flags.runtimeLibraryModelsEnabled ? folders.get(folder) : undefined
     }
@@ -169,8 +179,16 @@ export const useDeploymentLibraryModelsStore = defineStore(
       return loaded(folder)?.names ?? NO_NAMES
     }
 
+    function blockedIn(folder: string): readonly string[] {
+      return loaded(folder)?.blocked ?? NO_NAMES
+    }
+
     function statusOf(folder: string): ComboWidgetInventoryStatus {
       return loaded(folder)?.status ?? 'ready'
+    }
+
+    function hasLoaded(folder: string): boolean {
+      return loaded(folder)?.status === 'ready'
     }
 
     /**
@@ -214,9 +232,12 @@ export const useDeploymentLibraryModelsStore = defineStore(
       folderFor,
       watchFolder,
       namesIn,
+      blockedIn,
       statusOf,
+      hasLoaded,
       waitForSettled,
-      refresh
+      refresh,
+      refreshLoaded
     }
   }
 )

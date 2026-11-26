@@ -64,11 +64,16 @@ test.describe('Desktop Agent consent', { tag: ['@desktop', '@ui'] }, () => {
       expect(agentConsentWrites).toEqual([])
     })
 
-    await test.step('Send requests consent while preserving the original draft', async () => {
+    await test.step('Send requests consent while showing the optimistic message, then restores the draft on Skip', async () => {
       await agentPanel.composer.fill('Keep this Desktop draft until consent')
       await agentPanel.sendButton.click()
       await expect(agentPanel.consentDialog).toBeVisible()
+      await expect(agentPanel.userMessageBubbles).toHaveText([
+        'Keep this Desktop draft until consent'
+      ])
+      await expect(agentPanel.sendingSpinner).toBeVisible()
       await agentPanel.consentRejectButton.click()
+      await expect(agentPanel.userMessageBubbles).toHaveCount(0)
       await expect(agentPanel.composer).toHaveText(
         'Keep this Desktop draft until consent'
       )
@@ -231,6 +236,8 @@ test.describe('Desktop Agent consent', { tag: ['@desktop', '@ui'] }, () => {
         await agentPanel.composer.fill(message)
         await agentPanel.sendButton.click()
         await expect(agentPanel.consentDialog).toBeVisible()
+        await expect(agentPanel.userMessageBubbles).toHaveText([message])
+        await expect(agentPanel.sendingSpinner).toBeVisible()
       })
 
       await test.step('Agree opens sign-in without saving or sending', async () => {

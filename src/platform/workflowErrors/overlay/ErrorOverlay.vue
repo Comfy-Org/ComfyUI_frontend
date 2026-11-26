@@ -47,8 +47,6 @@
           </p>
         </div>
 
-        <ErrorOverlayDeploymentOffer v-if="hasMissingNodes" />
-
         <div class="flex w-full items-center justify-end gap-2 pt-2">
           <Button
             variant="textonly"
@@ -99,7 +97,6 @@ import { cn } from '@comfyorg/tailwind-utils'
 import Button from '@comfyorg/design-system/button/Button'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useErrorOverlayState } from '@/platform/workflowErrors/overlay/useErrorOverlayState'
-import ErrorOverlayDeploymentOffer from '@/platform/workspace/components/ErrorOverlayDeploymentOffer.vue'
 import { useAskAgentPort } from '@/platform/workflowErrors/askAgentPort'
 import ErrorOverlayDownloadAllModels from '@/platform/workflowErrors/overlay/ErrorOverlayDownloadAllModels.vue'
 
@@ -113,7 +110,6 @@ const { canAskAgent, askAgentAboutIssues } = useAskAgentPort()
 
 const {
   hasError,
-  hasMissingNodes,
   downloadableMissingModelGroups,
   isVisible,
   overlayMessage,

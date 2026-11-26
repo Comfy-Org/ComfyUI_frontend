@@ -16,8 +16,7 @@ vi.mock(import('@/renderer/core/layout/transform/useTransformState'))
 
 const snapState = vi.hoisted(() => ({
   shouldSnap: false,
-  applySnapToPosition: (pos: { x: number; y: number }) => pos,
-  applySnapToSize: (size: { width: number; height: number }) => size
+  gridSize: 0
 }))
 
 vi.mock<unknown>(
@@ -25,23 +24,26 @@ vi.mock<unknown>(
   () => ({
     useNodeSnap: () => ({
       shouldSnap: vi.fn(() => snapState.shouldSnap),
-      applySnapToPosition: vi.fn((pos: { x: number; y: number }) =>
-        snapState.applySnapToPosition(pos)
-      ),
-      applySnapToSize: vi.fn((size: { width: number; height: number }) =>
-        snapState.applySnapToSize(size)
-      )
+      gridSize: {
+        get value() {
+          return snapState.gridSize
+        }
+      }
     })
   })
 )
 
 vi.mock(
   import('@/renderer/extensions/vueNodes/composables/useShiftKeySync'),
-  () => ({
-    useShiftKeySync: () => ({
-      trackShiftKey: vi.fn(() => vi.fn())
-    })
-  })
+  async () => {
+    const { shallowRef } = await import('vue')
+    return {
+      useShiftKeySync: () => ({
+        trackShiftKey: vi.fn(() => vi.fn()),
+        isShiftHeld: shallowRef(false)
+      })
+    }
+  }
 )
 
 vi.mock<unknown>(import('@/renderer/core/layout/store/layoutStore'), () => ({
@@ -56,7 +58,7 @@ function createMockNodeElement(
   minContentHeight = 150
 ): HTMLElement {
   const element = document.createElement('div')
-  element.style.setProperty('min-width', `${MIN_NODE_WIDTH}px`)
+  element.style.setProperty('--min-node-width', `${MIN_NODE_WIDTH}px`)
   element.getBoundingClientRect = () => {
     const nodeHeight = element.style.getPropertyValue('--node-height')
     const h = nodeHeight === '0px' ? minContentHeight : height
@@ -143,8 +145,7 @@ describe('useNodeResize', () => {
 
   beforeEach(() => {
     snapState.shouldSnap = false
-    snapState.applySnapToPosition = (pos) => pos
-    snapState.applySnapToSize = (size) => size
+    snapState.gridSize = 0
 
     callback = vi.fn<ResizeCallback>()
     nodeElement = createMockNodeElement()
@@ -275,7 +276,7 @@ describe('useNodeResize', () => {
       getMinContentHeight: () => number
     ): HTMLElement {
       const element = document.createElement('div')
-      element.style.setProperty('min-width', `${MIN_NODE_WIDTH}px`)
+      element.style.setProperty('--min-node-width', `${MIN_NODE_WIDTH}px`)
       element.getBoundingClientRect = () => {
         const nodeHeight = element.style.getPropertyValue('--node-height')
         const h = nodeHeight === '0px' ? getMinContentHeight() : height
@@ -371,6 +372,24 @@ describe('useNodeResize', () => {
       expect(cb.mock.calls.length).toBe(callsBeforeUp)
     })
 
+    it('ends the previous resize when a second one starts before pointerup', async () => {
+      const { cb, handle: h, startResize } = await setupDynamic(() => 150)
+      function release() {
+        return window.dispatchEvent(
+          new PointerEvent('pointerup', createPointerEvent('pointerup'))
+        )
+      }
+
+      startResizeAt(startResize, h, 'SE')
+      startResizeAt(startResize, h, 'SE')
+      release()
+      release()
+
+      startResizeAt(startResize, h, 'SE')
+      simulateMove(20, 20)
+      expect(cb).toHaveBeenCalledTimes(1)
+    })
+
     it('handles releasePointerCapture throwing without breaking cleanup', async () => {
       const { cb, el, handle: h, startResize } = await setupDynamic(() => 150)
       h.releasePointerCapture = vi.fn(() => {
@@ -392,46 +411,30 @@ describe('useNodeResize', () => {
       expect(el).toBeDefined()
     })
 
-    it('applies snap-to-grid on SE (size only)', async () => {
+    it('rounds the size up to the grid on SE', async () => {
       snapState.shouldSnap = true
-      snapState.applySnapToSize = ({ width, height }) => ({
-        width: Math.round(width / 10) * 10,
-        height: Math.round(height / 10) * 10
-      })
+      snapState.gridSize = 10
 
       const { cb, handle: h, startResize } = await setupDynamic(() => 50)
       startResizeAt(startResize, h, 'SE')
       simulateMove(53, 27)
 
       const payload = cb.mock.calls.at(-1)![0]
-      expect(payload.size.width).toBe(350) // 353 -> 350
-      expect(payload.size.height).toBe(430) // 427 -> 430
+      expect(payload.size).toEqual({ width: 360, height: 430 })
       expect(payload.position).toBeUndefined()
     })
 
-    it('applies snap-to-grid on NW (position + size compensation)', async () => {
+    it('snaps the dragged corner to the grid on NW and keeps the opposite corner', async () => {
       snapState.shouldSnap = true
-      // Snap position down to nearest 10
-      snapState.applySnapToPosition = ({ x, y }) => ({
-        x: Math.floor(x / 10) * 10,
-        y: Math.floor(y / 10) * 10
-      })
-      snapState.applySnapToSize = ({ width, height }) => ({
-        width: Math.round(width / 10) * 10,
-        height: Math.round(height / 10) * 10
-      })
+      snapState.gridSize = 10
 
       const { cb, handle: h, startResize } = await setupDynamic(() => 50)
       startResizeAt(startResize, h, 'NW')
-      // delta: x=-53, y=-27 -> raw newX=47, newY=173
-      // applySnapToPosition floors -> {40, 170}
-      // size compensated: width += 47-40=7 (-> 360), height += 173-170=3 (-> 430)
-      // applySnapToSize rounds -> 360, 430
       simulateMove(-53, -27)
 
       const payload = cb.mock.calls.at(-1)![0]
-      expect(payload.position).toEqual({ x: 40, y: 170 })
-      expect(payload.size).toEqual({ width: 360, height: 430 })
+      expect(payload.position).toEqual({ x: 50, y: 170 })
+      expect(payload.size).toEqual({ width: 350, height: 430 })
     })
 
     it('restores --node-height after measuring (does not clobber state)', async () => {
@@ -450,7 +453,7 @@ describe('useNodeResize', () => {
       // 280; when width >= 350, content fits in 150.
       const breakpointAwareElement = (() => {
         const element = document.createElement('div')
-        element.style.setProperty('min-width', `${MIN_NODE_WIDTH}px`)
+        element.style.setProperty('--min-node-width', `${MIN_NODE_WIDTH}px`)
         element.getBoundingClientRect = () => {
           const nodeHeight = element.style.getPropertyValue('--node-height')
           if (nodeHeight === '0px') {

@@ -7,19 +7,19 @@ import {
 } from '@vueuse/core'
 import { PopoverAnchor, PopoverRoot } from 'reka-ui'
 import type { ComponentPublicInstance } from 'vue'
-import { computed, ref, useTemplateRef } from 'vue'
+import { computed, inject, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import { usePopoverViewportDismiss } from '@comfyorg/design-system/lib/popover/usePopoverViewportDismiss'
 import { useToast } from '@/components/ui/toast/toastStore'
-import { useDismissOnCanvasGesture } from '@/renderer/extensions/vueNodes/widgets/composables/useDismissOnCanvasGesture'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 import type {
   FilterOption,
   OwnershipFilterOption,
   OwnershipOption
-} from '@/platform/assets/types/filterTypes'
+} from '@comfyorg/assets-core/filtering'
 import { isPaged, pagedItems, WrappedList } from '@/utils/pagedList'
 import type { MaybePaged } from '@/utils/pagedList'
 
@@ -30,7 +30,13 @@ import {
   defaultSearcher,
   getDefaultSortOptions
 } from './shared'
-import type { FormDropdownItem, LayoutMode, SortOption } from './types'
+import { AssetKindKey } from './types'
+import type {
+  FormDropdownItem,
+  LayoutMode,
+  SortOption,
+  ThumbnailSize
+} from './types'
 
 interface Props {
   inputId?: string
@@ -108,6 +114,13 @@ const baseModelSelected = defineModel<Set<string>>('baseModelSelected', {
 const isOpen = defineModel<boolean>('isOpen', { default: false })
 
 const toast = useToast()
+const canvasStore = useCanvasStore()
+const assetKind = inject(AssetKindKey)
+const hasThumbnailSizes = computed(
+  () => assetKind?.value === 'image' || assetKind?.value === 'video'
+)
+const thumbnailSize = ref<ThumbnailSize>('standard')
+let canvasPointerId: number | undefined
 const triggerAnchorRef = useTemplateRef<HTMLElement>('triggerAnchorRef')
 const menuRef = useTemplateRef<ComponentPublicInstance>('menuRef')
 const triggerRef =
@@ -217,6 +230,17 @@ useEventListener(
     if (menuEl && path.includes(menuEl)) return
     if (triggerEl && path.includes(triggerEl)) return
     if (path.some(isInsideDropdownPanel)) return
+    const canvas = canvasStore.canvas?.canvas
+    if (
+      canvas &&
+      ((event.button === 0 && path.includes(canvas)) ||
+        (event.button === 1 &&
+          canvas.parentElement &&
+          path.includes(canvas.parentElement)))
+    ) {
+      canvasPointerId = event.pointerId
+      return
+    }
     closeDropdown()
   },
   { capture: true }
@@ -229,7 +253,27 @@ function isInsideDropdownPanel(target: EventTarget): boolean {
   )
 }
 
-useDismissOnCanvasGesture(isOpen, () => closeDropdown())
+useEventListener(
+  window,
+  'pointerup',
+  (event) => {
+    if (event.pointerId !== canvasPointerId) return
+    canvasPointerId = undefined
+    const canvas = canvasStore.canvas
+    const wasPan = canvas?.dragging_canvas && canvas.pointer.dragStarted
+    if (isOpen.value && !wasPan) closeDropdown()
+  },
+  { capture: true }
+)
+
+useEventListener(
+  window,
+  'pointercancel',
+  (event) => {
+    if (event.pointerId === canvasPointerId) canvasPointerId = undefined
+  },
+  { capture: true }
+)
 
 usePopoverViewportDismiss(isOpen, triggerAnchorRef)
 
@@ -343,7 +387,10 @@ const dropdownItems = computed(() =>
       </FormDropdownInput>
       <PopoverContent
         align="end"
-        class="pointer-events-auto w-auto rounded-lg border-none bg-transparent p-0 pt-2 shadow-lg data-[state=closed]:animate-none data-[state=open]:animate-none"
+        update-position-strategy="always"
+        :side-offset="12"
+        hide-when-detached
+        class="pointer-events-auto flex h-160 w-103 flex-col overflow-hidden rounded-lg border-none bg-transparent p-0 shadow-lg data-[state=closed]:animate-none data-[state=open]:animate-none"
         @interact-outside.prevent
         @close-auto-focus.prevent="focusTrigger"
       >
@@ -355,6 +402,8 @@ const dropdownItems = computed(() =>
           v-model:search-query="searchQuery"
           v-model:ownership-selected="ownershipSelected"
           v-model:base-model-selected="baseModelSelected"
+          v-model:thumbnail-size="thumbnailSize"
+          :has-thumbnail-sizes
           :uploadable
           :filter-options
           :sort-options

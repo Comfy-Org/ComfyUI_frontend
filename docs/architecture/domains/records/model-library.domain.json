@@ -22,6 +22,9 @@
       "path": "src/stores/modelStore.ts"
     },
     {
+      "path": "src/stores/modelNodeMappings.ts"
+    },
+    {
       "path": "src/stores/modelToNodeStore.ts"
     }
   ],

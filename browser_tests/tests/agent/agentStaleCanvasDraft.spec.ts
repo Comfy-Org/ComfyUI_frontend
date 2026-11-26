@@ -142,7 +142,6 @@ test.describe(
 
         await test.step('Project two nodes from the first turn', async () => {
           await panel.open()
-          await panel.selectWorkflow()
           await panel.sendMessage('Add two Load Image nodes.')
           await hostSocket.waitForSubscribe()
 

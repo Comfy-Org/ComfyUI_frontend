@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       apply:
-        description: Apply the freeze ruleset and reconcile backport labels
+        description: Apply the freeze ruleset
         type: boolean
         default: false
 
@@ -27,41 +27,12 @@ jobs:
       - uses: ./.github/actions/setup-frontend
       - uses: ./.github/actions/core-release-targets
         id: targets
-      - name: Reconcile branch freezes and labels
-        id: retire
+      - name: Reconcile branch freezes
         env:
           GH_TOKEN: ${{ secrets.RELEASE_ADMIN_TOKEN || github.token }}
           GH_REPO: ${{ github.repository }}
           ACTIVE_CORE_TARGETS: ${{ steps.targets.outputs.active }}
           RETIRED_CORE_TARGETS: ${{ steps.targets.outputs.retired }}
-          MINIMUM_CORE_TARGET: ${{ steps.targets.outputs.minimum }}
           COMFYUI_PIN_SHA: ${{ steps.targets.outputs.pin-sha }}
           APPLY: ${{ github.event_name == 'schedule' || inputs.apply }}
         run: bash tools/ci/src/cicd/reconcile-core-release-targets.sh
-      - name: Report retired targets to Slack
-        if: always() && steps.retire.outputs.retired != ''
-        continue-on-error: true
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-          SLACK_CHANNEL_ID: ${{ vars.SLACK_FRONTEND_RELEASES_CHANNEL_ID }}
-          RETIRED_LABELS: ${{ steps.retire.outputs.retired }}
-        run: |
-          set -euo pipefail
-          if [ -z "$SLACK_CHANNEL_ID" ] || [ -z "$SLACK_BOT_TOKEN" ]; then
-            echo '::warning::Slack retirement reporting is not configured.'
-            exit 0
-          fi
-          RUN_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
-          BODY=$(jq -n --arg channel "$SLACK_CHANNEL_ID" --arg labels "$RETIRED_LABELS" --arg url "$RUN_URL" '{
-            channel: $channel,
-            text: ("Retired core backport labels: " + $labels + ". Affected open PRs were notified before deletion. <" + $url + "|Run details>")
-          }')
-          RESPONSE=$(curl --fail-with-body -sS -X POST \
-            --connect-timeout 10 --max-time 30 \
-            -H "Authorization: Bearer $SLACK_BOT_TOKEN" \
-            -H 'Content-Type: application/json' \
-            -d "$BODY" https://slack.com/api/chat.postMessage)
-          if ! jq -e '.ok == true' <<< "$RESPONSE" >/dev/null; then
-            echo "::error::Slack rejected retirement reporting: $(jq -r '.error // "unparseable response"' <<< "$RESPONSE")"
-            exit 1
-          fi

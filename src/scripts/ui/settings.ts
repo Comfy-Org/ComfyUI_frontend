@@ -116,7 +116,7 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
     params: SettingParams<Settings[K]> & { id: K }
   ) {
     const settingStore = useSettingStore()
-    settingStore.addSetting(params)
+    settingStore.addExtensionSetting(params)
 
     return {
       get value() {

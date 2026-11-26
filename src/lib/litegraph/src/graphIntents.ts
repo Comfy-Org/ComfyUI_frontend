@@ -53,8 +53,15 @@ export type GraphIntentEvent = GraphIntent & { source: GraphIntentSource }
 
 type GraphIntentListener = (event: GraphIntentEvent) => void
 
+interface RootScopedSource {
+  source: GraphIntentSource
+  rootGraph: LGraph
+  enclosing: RootScopedSource | null
+}
+
 const listeners = new Set<GraphIntentListener>()
 let activeSource: GraphIntentSource = 'local'
+let rootScopedSource: RootScopedSource | null = null
 let severedLinkSink: LinkId[] | null = null
 
 export function onGraphIntent(listener: GraphIntentListener): () => void {
@@ -66,13 +73,44 @@ export function withGraphIntentSource<T>(
   source: GraphIntentSource,
   fn: () => T
 ): T {
-  const previous = activeSource
+  const previousSource = activeSource
+  const previousScope = rootScopedSource
   activeSource = source
+  rootScopedSource = null
   try {
     return fn()
   } finally {
-    activeSource = previous
+    activeSource = previousSource
+    rootScopedSource = previousScope
   }
+}
+
+/** Tags only the intents raised inside `rootGraph`; another document keeps the enclosing source. */
+export function withGraphIntentSourceForRootGraph<T>(
+  source: GraphIntentSource,
+  rootGraph: LGraph,
+  fn: () => T
+): T {
+  const enclosing = rootScopedSource
+  rootScopedSource = { source, rootGraph, enclosing }
+  try {
+    return fn()
+  } finally {
+    rootScopedSource = enclosing
+  }
+}
+
+function raisedInside(intent: GraphIntent, rootGraph: LGraph): boolean {
+  return 'graph' in intent
+    ? intent.graph.rootGraph === rootGraph
+    : intent.graphId === rootGraph.id
+}
+
+function sourceFor(intent: GraphIntent): GraphIntentSource {
+  for (let scope = rootScopedSource; scope; scope = scope.enclosing) {
+    if (raisedInside(intent, scope.rootGraph)) return scope.source
+  }
+  return activeSource
 }
 
 /**
@@ -112,7 +150,8 @@ export function emitGraphIntent(intent: GraphIntent): void {
     severedLinkSink.push(intent.link.id)
     return
   }
-  const event: GraphIntentEvent = { ...intent, source: activeSource }
+  const source = sourceFor(intent)
+  const event: GraphIntentEvent = { ...intent, source }
   for (const listener of listeners) {
     try {
       listener(event)
@@ -120,7 +159,7 @@ export function emitGraphIntent(intent: GraphIntent): void {
       reportError(error, {
         surface: 'graph',
         errorType: 'graph_intent_listener_failed',
-        context: { intent: intent.type, source: activeSource }
+        context: { intent: intent.type, source }
       })
     }
   }

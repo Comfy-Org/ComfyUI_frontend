@@ -24,10 +24,6 @@ import type {
   NodeReplacement
 } from '@/platform/workflowErrors/nodeReplacement/types'
 import { useToast } from '@/components/ui/toast/toastStore'
-import {
-  removePendingMissingNodeTypesByType,
-  updatePendingWarnings
-} from '@/platform/workflow/core/utils/pendingWarnings'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { sanitizeNodeName } from '@/scripts/app'
 import { useApp } from '@/scripts/appInstance'
@@ -471,16 +467,6 @@ function replaceWithMapping(
 function removeReplacedMissingNodeTypes(types: string[]): void {
   useMissingNodesErrorStore().removeMissingNodesByType(types)
   useDeprecatedNodesStore().removeByType(types)
-
-  const activeWorkflow = useWorkflowStore().activeWorkflow
-  if (!activeWorkflow) return
-
-  updatePendingWarnings(activeWorkflow, {
-    missingNodeTypes: removePendingMissingNodeTypesByType(
-      activeWorkflow.pendingWarnings?.missingNodeTypes,
-      types
-    )
-  })
 }
 
 function replacePlaceholder(

@@ -1,4 +1,3 @@
-# Description: Validates YAML syntax and style using yamllint with relaxed rules
 name: 'CI: YAML Validation'
 
 on:
@@ -8,10 +7,12 @@ on:
     paths:
       - '**/*.yml'
       - '**/*.yaml'
+      - '.github/scripts/test_telemetry_cost_patterns.py'
   pull_request:
     paths:
       - '**/*.yml'
       - '**/*.yaml'
+      - '.github/scripts/test_telemetry_cost_patterns.py'
 
 jobs:
   yaml-lint:
@@ -31,6 +32,9 @@ jobs:
 
       - name: Validate YAML syntax and style
         run: ./tools/ci/src/cicd/check-yaml.sh
+
+      - name: Test telemetry cost patterns
+        run: python .github/scripts/test_telemetry_cost_patterns.py
 
       - name: Check ComfyUI container versions
         run: ./tools/ci/src/cicd/check-comfyui-container-version.sh

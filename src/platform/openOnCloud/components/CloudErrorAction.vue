@@ -21,12 +21,27 @@ import { OUT_OF_MEMORY_CATALOG_ID } from '@/platform/workflowErrors/errorCatalog
 defineProps<{ catalogId?: string }>()
 
 const { flags } = useFeatureFlags()
+let pendingOpen: Promise<boolean> | null = null
 
-function openFromError() {
+async function openOnce(): Promise<boolean> {
+  if (pendingOpen) return false
+  pendingOpen = openDeploySetupDialog()
+  try {
+    return await pendingOpen
+  } finally {
+    pendingOpen = null
+  }
+}
+
+async function openFromError() {
   useTelemetry()?.trackUiButtonClicked({
     button_id: 'error_tab_run_on_cloud_clicked',
     element_group: 'errors_panel'
   })
-  void openDeploySetupDialog()
+  if (await openOnce())
+    useTelemetry()?.trackRunOnCloudEvent({
+      name: 'app:run_on_cloud_dialog_shown',
+      properties: { state: 'deploy_setup', source: 'errors_panel' }
+    })
 }
 </script>

@@ -22,7 +22,7 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { getJobDetail } from '@/services/jobOutputCache'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { api } from '@/scripts/api'
-import { useAssetsStore } from '@/stores/assetsStore'
+import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
 
 vi.mock(import('@/scripts/api'))
 vi.mock(import('@/composables/useFeatureFlags'))
@@ -104,10 +104,15 @@ describe('assetsStore - resolved history outputs', () => {
 
   it('retains App history through an HTTP failure and accepts a successful empty refresh', async () => {
     vi.mocked(useFeatureFlags().flags).assetsEnabled = true
+    const client = new ComfyApi({
+      isCloud: false,
+      featureFlagOverride: () => undefined,
+      onFreeMemory: () => {}
+    })
     vi.mocked(api.getHistory).mockImplementation((limit, options) =>
-      ComfyApi.prototype.getHistory.call(api, limit, options)
+      client.getHistory(limit, options)
     )
-    vi.mocked(api.fetchApi)
+    vi.spyOn(client, 'fetchApi')
       .mockResolvedValueOnce(
         new Response(
           JSON.stringify({

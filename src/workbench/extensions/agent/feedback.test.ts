@@ -209,9 +209,7 @@ describe('openFeedbackDialog (agent)', () => {
 
     it('reports a send that is still pending in the composer', () => {
       useAgentPanelStore().enabled = true
-      Object.assign(useAgentComposerStore(), {
-        submission: { phase: 'pending' }
-      })
+      useAgentComposerStore().startGateHold('cm-1')
 
       openFeedbackDialog('agent-panel')
 

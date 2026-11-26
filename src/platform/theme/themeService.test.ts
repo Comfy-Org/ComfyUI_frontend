@@ -34,6 +34,7 @@ function clearRootThemeAfterTest() {
     for (const key of themeSchema.keyof().options) {
       document.documentElement.style.removeProperty(`--${key}`)
     }
+    delete document.documentElement.dataset.theme
   })
 }
 
@@ -50,20 +51,20 @@ describe('useThemeService theme variables', () => {
       foreground: readRootProperty('--node-foreground'),
       radius: readRootProperty('--node-radius'),
       titleSize: readRootProperty('--node-title-font-size'),
-      icons: readRootProperty('--node-icon-style'),
       widgetHeight: readRootProperty('--node-widget-height'),
       widgetRadius: readRootProperty('--node-widget-radius'),
-      widgetBorderWidth: readRootProperty('--node-widget-border-width')
+      widgetBorderWidth: readRootProperty('--node-widget-border-width'),
+      stylesheet: document.documentElement.dataset.theme
     }).toEqual({
       node: '#353535',
       header: '#333',
       foreground: '#AAA',
       radius: '8px',
       titleSize: '14px',
-      icons: 'triangle',
       widgetHeight: '20px',
       widgetRadius: '9999px',
-      widgetBorderWidth: '1px'
+      widgetBorderWidth: '1px',
+      stylesheet: 'classic'
     })
 
     await service.setActiveTheme('dark')
@@ -71,11 +72,11 @@ describe('useThemeService theme variables', () => {
     expect([
       readRootProperty('--node-radius'),
       readRootProperty('--node-title-font-size'),
-      readRootProperty('--node-icon-style'),
       readRootProperty('--node-widget-height'),
       readRootProperty('--node-widget-radius'),
-      readRootProperty('--node-widget-border-width')
-    ]).toEqual(['', '', '', '', '', ''])
+      readRootProperty('--node-widget-border-width'),
+      document.documentElement.dataset.theme
+    ]).toEqual(['', '', '', '', '', undefined])
   })
 
   it.for([
@@ -149,7 +150,14 @@ describe('useThemeService theme variables', () => {
     store.addCustomPreset({
       ...nord,
       id: 'custom-theme',
-      colors: { ...nord.colors, theme: { node: '#123456', muted: '#654321' } }
+      colors: {
+        ...nord.colors,
+        theme: {
+          node: '#123456',
+          muted: '#654321',
+          'node-widget-value': '#0a1b2c'
+        }
+      }
     })
     const service = useThemeService()
 
@@ -157,15 +165,17 @@ describe('useThemeService theme variables', () => {
     expect([
       readRootProperty('--node'),
       readRootProperty('--muted'),
+      readRootProperty('--node-widget-value'),
       readRootProperty('--background')
-    ]).toEqual(['#123456', '#654321', '#161b22'])
+    ]).toEqual(['#123456', '#654321', '#0a1b2c', '#161b22'])
 
     await service.setActiveTheme('dark')
     expect([
       readRootProperty('--node'),
       readRootProperty('--muted'),
+      readRootProperty('--node-widget-value'),
       readRootProperty('--background')
-    ]).toEqual(['var(--card)', '#3c3d42', '#171718'])
+    ]).toEqual(['var(--card)', '#3c3d42', '', '#171718'])
   })
 
   it('starts a light custom palette without a theme from the light theme', async () => {
@@ -180,10 +190,12 @@ describe('useThemeService theme variables', () => {
     expect({
       '--primary': readRootProperty('--primary'),
       '--warning': readRootProperty('--warning'),
+      '--success': readRootProperty('--success'),
       colorScheme: document.documentElement.style.colorScheme
     }).toEqual({
       '--primary': '#31b9f4',
       '--warning': '#c77700',
+      '--success': '#00854a',
       colorScheme: 'light'
     })
   })
@@ -337,11 +349,32 @@ describe('useThemeService theme variables', () => {
   it('lists every shipped palette file as a selectable palette', () => {
     const shipped = readdirSync(
       join(process.cwd(), 'packages/theme-core/src/presets')
-    ).map((file) => basename(file, '.json'))
+    )
+      .filter((file) => file.endsWith('.json'))
+      .map((file) => basename(file, '.json'))
 
     expect(useThemeStore().presets.map(({ id }) => id)).toEqual(
       expect.arrayContaining(shipped)
     )
+  })
+
+  it('imports the stylesheet of every built-in palette that names one', () => {
+    const appCss = readFileSync(
+      join(process.cwd(), 'src/assets/css/style.css'),
+      'utf8'
+    )
+    const stylesheets = Object.values(BUILT_IN_THEME_PRESETS).flatMap(
+      ({ stylesheet }) => (stylesheet ? [stylesheet] : [])
+    )
+
+    expect(stylesheets).toEqual(
+      expect.arrayContaining(['classic', 'morning-class'])
+    )
+    expect(
+      stylesheets.filter(
+        (name) => !appCss.includes(`@comfyorg/theme-core/presets/${name}.css`)
+      )
+    ).toEqual([])
   })
 })
 

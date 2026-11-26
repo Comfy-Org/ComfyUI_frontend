@@ -620,7 +620,11 @@ describe('useTemplateWorkflows', () => {
     expect(app.loadGraphData).not.toHaveBeenCalled()
     expect(reportError).toHaveBeenCalledWith(
       expect.stringContaining('Failed to fetch workflow template'),
-      { surface: 'graph', errorType: 'error_fetching_workflow_template' }
+      {
+        surface: 'graph',
+        errorType: 'error_fetching_workflow_template',
+        tags: { template_id: 'template1', source_module: 'default' }
+      }
     )
     expect(useToast().toasts).toContainEqual(
       expect.objectContaining({
@@ -649,12 +653,13 @@ describe('useTemplateWorkflows', () => {
       true,
       true,
       'template1',
-      { openSource: 'template' }
+      { openSource: 'template', initiator: 'user' }
     )
     expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
       surface: 'graph',
       errorType: 'error_validating_workflow_template_schema',
-      level: 'warning'
+      level: 'warning',
+      tags: { template_id: 'template1', source_module: 'default' }
     })
   })
 
@@ -729,7 +734,11 @@ describe('useTemplateWorkflows', () => {
     expect(app.loadGraphData).not.toHaveBeenCalled()
     expect(reportError).toHaveBeenCalledWith(
       expect.stringContaining('not a loadable workflow'),
-      { surface: 'graph', errorType: 'error_validating_workflow_template' }
+      {
+        surface: 'graph',
+        errorType: 'error_validating_workflow_template',
+        tags: { template_id: 'template1', source_module: 'default' }
+      }
     )
   })
 
@@ -747,7 +756,11 @@ describe('useTemplateWorkflows', () => {
     expect(app.loadGraphData).not.toHaveBeenCalled()
     expect(reportError).toHaveBeenCalledWith(
       expect.stringContaining('not a loadable workflow'),
-      { surface: 'graph', errorType: 'error_validating_workflow_template' }
+      {
+        surface: 'graph',
+        errorType: 'error_validating_workflow_template',
+        tags: { template_id: 'template1', source_module: 'default' }
+      }
     )
   })
 
@@ -838,7 +851,7 @@ describe('useTemplateWorkflows', () => {
         true,
         true,
         'video',
-        { openSource: 'template' }
+        { openSource: 'template', initiator: 'user' }
       )
     }
   )
@@ -1006,7 +1019,8 @@ describe('useTemplateWorkflows', () => {
     expect(fetch).toHaveBeenCalledTimes(1)
     expect(api.fetchApi).not.toHaveBeenCalled()
     expect(app.loadGraphData).toHaveBeenCalledWith(graph, true, true, 'video', {
-      openSource: 'template'
+      openSource: 'template',
+      initiator: 'user'
     })
     await vi.waitFor(() =>
       expect(bridge.downloadTemplateInputAsset).toHaveBeenCalledExactlyOnceWith(
@@ -1056,7 +1070,7 @@ describe('useTemplateWorkflows', () => {
         true,
         true,
         expect.any(String),
-        { openSource: 'template' }
+        { openSource: 'template', initiator: 'user' }
       )
     }
   )
@@ -1100,7 +1114,7 @@ describe('useTemplateWorkflows', () => {
       true,
       true,
       expect.any(String),
-      { openSource: 'template' }
+      { openSource: 'template', initiator: 'user' }
     )
   })
 
@@ -1168,7 +1182,7 @@ describe('useTemplateWorkflows', () => {
         true,
         true,
         expect.any(String),
-        { openSource: 'template' }
+        { openSource: 'template', initiator: 'user' }
       )
       expect(fetch).toHaveBeenCalledTimes(1)
       expect(useToast().toasts).toEqual([])
@@ -1212,7 +1226,7 @@ describe('useTemplateWorkflows', () => {
         true,
         true,
         expect.any(String),
-        { openSource: 'template' }
+        { openSource: 'template', initiator: 'user' }
       )
       expect(fetch).toHaveBeenCalledTimes(1)
       expect(api.fetchApi).not.toHaveBeenCalled()
@@ -1266,7 +1280,7 @@ describe('useTemplateWorkflows', () => {
         true,
         true,
         expect.any(String),
-        { openSource: 'template' }
+        { openSource: 'template', initiator: 'user' }
       )
       expect(app.reloadNodeDefs).not.toHaveBeenCalled()
       expect(useDialogStore().closeDialog).toHaveBeenCalled()
@@ -1301,7 +1315,7 @@ describe('useTemplateWorkflows', () => {
       true,
       true,
       expect.any(String),
-      { openSource: 'template' }
+      { openSource: 'template', initiator: 'user' }
     )
     expect(fetch).toHaveBeenCalledTimes(1)
     expect(api.fetchApi).not.toHaveBeenCalled()
@@ -1339,7 +1353,7 @@ describe('useTemplateWorkflows', () => {
       true,
       true,
       expect.any(String),
-      { openSource: 'template' }
+      { openSource: 'template', initiator: 'user' }
     )
   })
 

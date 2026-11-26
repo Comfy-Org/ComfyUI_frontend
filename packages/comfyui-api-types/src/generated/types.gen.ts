@@ -143,6 +143,64 @@ export type GetModelsInFolderResponses = {
 export type GetModelsInFolderResponse =
   GetModelsInFolderResponses[keyof GetModelsInFolderResponses]
 
+export type GetFeaturesData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/features'
+}
+
+export type GetFeaturesResponses = {
+  /**
+   * Success
+   */
+  200: {
+    /**
+     * Local ComfyUI only: lifecycle of the optional local agent host. Present only when the agent is enabled.
+     */
+    agent?: {
+      /**
+       * Why the host failed or crashed. Present whenever set, in any state (including starting after a crash).
+       */
+      reason?: string
+      state: 'starting' | 'ready' | 'failed'
+    }
+    /**
+     * Local ComfyUI only: whether the UI should offer Deploy to Cloud. True when the server is not --offline and this installation has ever had a prompt queued by a non-browser client (a persistent marker in the user directory). A discovery hint only: it grants nothing, and the /api/deploy* routes do not check it. Not settable with --feature-flag.
+     */
+    deploy_to_cloud?: boolean
+    /**
+     * Free-tier job allowance for an authenticated non-paid (FREE-tier) user in the rollout. Absent for paid users and unauthenticated requests. Synthesized from config before a grant row exists so a brand-new user still sees their full allowance.
+     */
+    free_tier_balance?: {
+      /**
+       * Total free jobs granted for the current period
+       */
+      allowance: number
+      /**
+       * Free jobs remaining (allowance - used, floored at 0)
+       */
+      remaining: number
+      /**
+       * Free jobs consumed so far
+       */
+      used: number
+    }
+    /**
+     * Maximum upload size in bytes
+     */
+    max_upload_size?: number
+    /**
+     * Whether the server supports preview metadata
+     */
+    supports_preview_metadata?: boolean
+    [key: string]: unknown
+  }
+}
+
+export type GetFeaturesResponse =
+  GetFeaturesResponses[keyof GetFeaturesResponses]
+
 export type ExecutePromptData = {
   body: PromptRequest
   path?: never
