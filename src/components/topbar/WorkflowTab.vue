@@ -44,11 +44,7 @@
               >
                 {{ workflowOption.workflow.filename }}
               </span>
-              <WorkflowTabStatus
-                class="order-first"
-                :status="primaryStatus"
-                :reserve-space="false"
-              />
+              <WorkflowTabStatus class="order-first" :status="primaryStatus" />
               <span class="size-4 shrink-0" />
             </span>
             <span class="@container/close-space relative flex-1 self-stretch">
@@ -57,7 +53,7 @@
                 data-testid="workflow-dirty-indicator"
                 :class="
                   cn(
-                    'absolute top-1/2 right-full z-10 mr-1 size-2 -translate-y-1/2 rounded-full @max-[0.75rem]/close-space:group-focus-within/tab:invisible @max-[0.75rem]/close-space:group-hover/tab:invisible',
+                    'absolute top-1/2 right-[calc(100%+0.25rem)] z-10 size-2 -translate-y-1/2 rounded-full group-focus-within/tab:right-[max(calc(100%+0.25rem),1rem)] group-hover/tab:right-[max(calc(100%+0.25rem),1rem)] @max-[0.25rem]/close-space:group-focus-within/tab:invisible @max-[0.25rem]/close-space:group-hover/tab:invisible',
                     isActiveTab ? 'bg-foreground' : 'bg-muted-foreground'
                   )
                 "
