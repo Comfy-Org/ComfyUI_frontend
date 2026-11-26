@@ -147,7 +147,9 @@ async function pasteText(
   }
 
   if (isWorkflow(workflow)) {
-    await useApp().loadGraphData(workflow)
+    await useApp().loadGraphData(workflow, true, true, null, {
+      initiator: 'user'
+    })
   } else {
     if (
       (target instanceof HTMLTextAreaElement && target.type === 'textarea') ||

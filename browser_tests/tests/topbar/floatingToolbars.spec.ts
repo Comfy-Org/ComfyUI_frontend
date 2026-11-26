@@ -71,8 +71,7 @@ test.describe('Floating toolbars', { tag: ['@ui', '@canvas'] }, () => {
     await expect.poll(() => readBackgroundColor(cancel)).toBe(secondary)
 
     const exec = new ExecutionHelper(comfyPage, await getWebSocket())
-    const jobId = await exec.run()
-    exec.executionStart(jobId)
+    await exec.run()
 
     await expect(cancel).toBeEnabled()
     await expect.poll(() => readBackgroundColor(cancel)).toBe(destructive)

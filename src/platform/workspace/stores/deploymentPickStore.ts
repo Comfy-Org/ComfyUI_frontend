@@ -79,11 +79,6 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
       ? state.value.goneDefaultDeploymentId
       : null
   )
-  /**
-   * Set once a listing says ingest found this browser's own pick gone and
-   * cleared it. Only that one listing says so, so the page keeps it until a
-   * later listing shows a deployment picked again.
-   */
   const sawPickGone = shallowRef(false)
   const goneDeployment = computed<'pick' | 'default' | null>(() => {
     if (sawPickGone.value) return 'pick'
@@ -328,6 +323,48 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     }
   }
 
+  let forgettingGonePick: AbortController | null = null
+  let forgottenGonePickId: string | null = null
+
+  async function forgetGonePick(): Promise<void> {
+    const id = workspaceStore.workspaceId
+    if (!id || state.value.phase !== 'ready') return
+    const goneId = state.value.gonePickedDeploymentId
+    if (goneId === null || goneId === forgottenGonePickId) return
+    if (forgettingGonePick) return
+    const controller = new AbortController()
+    forgettingGonePick = controller
+    try {
+      await workspaceApi.clearDeployment(id, { signal: controller.signal })
+    } catch (err) {
+      if (!controller.signal.aborted) reportForgetFailure(err)
+      return
+    } finally {
+      forgettingGonePick = null
+    }
+    forgottenGonePickId = goneId
+    await load()
+  }
+
+  function reportForgetFailure(err: unknown) {
+    const datadogOnly =
+      gotNoResponse(err) || isSessionRefused(err) || isRefused(err)
+    reportError(err, {
+      surface: 'workspace',
+      errorType: 'error_forgetting_gone_deployment_pick',
+      level: 'warning',
+      ...(datadogOnly && { sentryMode: 'never' })
+    })
+  }
+
+  watch(
+    isSwitching,
+    (switching) => {
+      if (switching) forgettingGonePick?.abort()
+    },
+    { flush: 'sync' }
+  )
+
   let firstLoad: Promise<void> | null = null
 
   /**
@@ -341,6 +378,7 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     () => workspaceStore.workspaceId,
     () => {
       dispatch({ type: 'workspaceChanged' })
+      forgettingGonePick?.abort()
       sawPickGone.value = false
       listingRefused.value = false
       lastApplied = latestRequest
@@ -581,6 +619,7 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     loadOnce,
     followStart,
     bootOnComfyCloud,
+    forgetGonePick,
     pick,
     pickFromLink,
     followWorkspace,
@@ -637,16 +676,18 @@ function isSessionRefused(err: unknown): boolean {
   return err instanceof WorkspaceApiError && err.status === 401
 }
 
+function isRefused(err: unknown): boolean {
+  return (
+    err instanceof WorkspaceApiError &&
+    (err.status === 403 || err.status === 404)
+  )
+}
+
 function loadFailure(
   err: unknown,
   onFailure: (err: unknown) => void
 ): DeploymentPickEvent {
-  if (
-    err instanceof WorkspaceApiError &&
-    (err.status === 403 || err.status === 404)
-  ) {
-    return { type: 'loadRefused' }
-  }
+  if (isRefused(err)) return { type: 'loadRefused' }
   onFailure(err)
   return { type: 'loadFailed' }
 }

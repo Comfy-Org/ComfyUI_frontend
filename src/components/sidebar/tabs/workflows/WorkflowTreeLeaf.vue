@@ -27,7 +27,7 @@ import { computed } from 'vue'
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import Button from '@comfyorg/design-system/button/Button'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
-import { useWorkflowBookmarkStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useWorkflowBookmarkStore } from '@/platform/workflow/management/stores/workflowBookmarkStore'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 
 const { node } = defineProps<{

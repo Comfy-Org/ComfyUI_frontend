@@ -5,6 +5,8 @@ import { globSync } from 'glob'
 import type { LocaleData } from './i18n-types'
 import { isNestedLocaleData } from './i18n-types'
 
+const GIT_SHOW_MAX_BUFFER = 10 * 1024 * 1024
+
 // Configuration
 const SOURCE_PATTERNS = [
   'src/**/*.{js,ts,vue}',
@@ -70,7 +72,10 @@ function getNewKeysFromStagedFiles(stagedFiles: string[]): Set<string> {
   for (const file of stagedFiles) {
     try {
       // Get the staged content
-      const stagedContent = execSync(`git show :${file}`, { encoding: 'utf-8' })
+      const stagedContent = execSync(`git show :${file}`, {
+        encoding: 'utf-8',
+        maxBuffer: GIT_SHOW_MAX_BUFFER
+      })
       const stagedData: LocaleData = JSON.parse(stagedContent)
       const stagedKeys = new Set(extractKeys(stagedData))
 
@@ -78,7 +83,8 @@ function getNewKeysFromStagedFiles(stagedFiles: string[]): Set<string> {
       let headKeys = new Set<string>()
       try {
         const headContent = execSync(`git show HEAD:${file}`, {
-          encoding: 'utf-8'
+          encoding: 'utf-8',
+          maxBuffer: GIT_SHOW_MAX_BUFFER
         })
         const headData: LocaleData = JSON.parse(headContent)
         headKeys = new Set(extractKeys(headData))

@@ -529,7 +529,8 @@ describe('createHandoffBillingClient', () => {
       can_view_auto_top_up: false,
       can_view_auto_top_up_member_notice: false,
       can_view_pending_invites: false,
-      can_view_team_usage: false
+      can_view_team_usage: false,
+      can_view_workspace_usage: false
     },
     expires_at: '2099-01-01T00:00:00Z',
     resolved_for: { user_id: 'uid-1', workspace_id: 'ws-1' },

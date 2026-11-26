@@ -5,8 +5,8 @@ import { computed, markRaw, ref, shallowRef, toRaw, watch } from 'vue'
 import type { Raw } from 'vue'
 
 import { assert } from '@/base/assert'
-import { useToast } from '@/components/ui/toast/toastStore'
 import { t } from '@/i18n'
+import { showDraftSaveFailedToast } from '@/platform/workflow/persistence/draftSaveFailureToast'
 import type {
   LGraph,
   LGraphNode,
@@ -23,7 +23,6 @@ import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/
 // oxlint-disable-next-line comfy/no-restricted-paths
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { UnauthorizedError } from '@comfyorg/api-client/ComfyApi'
-import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'
 import { getDefaultWorkflow } from '@/platform/workflow/core/services/defaultWorkflowService'
 import { useDialogService } from '@/services/dialogService'
@@ -54,7 +53,8 @@ import type {
   ChangeTrackerConstructor,
   LoadedComfyWorkflow
 } from './comfyWorkflow'
-import type { WorkflowStore } from './workflowStoreTypes'
+import { useWorkflowBookmarkStore } from './workflowBookmarkStore'
+import type { WorkflowRenameResult, WorkflowStore } from './workflowStoreTypes'
 export { ComfyWorkflow, type LoadedComfyWorkflow }
 
 export const useWorkflowStore = defineStore('workflow', () => {
@@ -93,9 +93,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
           errorType: 'error_persisting_workflow_draft'
         })
       }
-      useToast().error(t('g.error'), {
-        description: t('toastMessages.failedToSaveDraft')
-      })
+      showDraftSaveFailedToast()
     },
     removeDraft: (path) => useWorkflowDraftStoreV2().removeDraft(path),
     markDraftUsed: (path) => useWorkflowDraftStoreV2().markDraftUsed(path),
@@ -565,12 +563,12 @@ export const useWorkflowStore = defineStore('workflow', () => {
   }
   const { moveWorkflowThumbnail, clearThumbnail } = useWorkflowThumbnail()
 
-  const pendingRenames = new Map<ComfyWorkflow, Promise<boolean>>()
+  const pendingRenames = new Map<ComfyWorkflow, Promise<WorkflowRenameResult>>()
 
   const renameWorkflow = async (
     workflow: ComfyWorkflow,
     newPath: string
-  ): Promise<boolean> => {
+  ): Promise<WorkflowRenameResult> => {
     for (;;) {
       const occupant = getWorkflowByPath(newPath)
       if (!occupant || toRaw(occupant) === toRaw(workflow)) break
@@ -592,20 +590,16 @@ export const useWorkflowStore = defineStore('workflow', () => {
   const applyRename = async (
     workflow: ComfyWorkflow,
     newPath: string
-  ): Promise<boolean> => {
+  ): Promise<WorkflowRenameResult> => {
     isBusy.value = true
     try {
-      // Capture all needed values upfront
       const oldPath = workflow.path
       const oldKey = workflow.key
-      const wasBookmarked = bookmarkStore.isBookmarked(oldPath)
       const draftStore = useWorkflowDraftStoreV2()
 
       await workflow.rename(newPath)
       void workflowRenamed.trigger(workflow)
 
-      // Synchronously swap old path for new path in lookup and open paths
-      // to avoid a tab flicker caused by an async gap between detach/attach.
       if (toRaw(workflowLookup.value[oldPath]) === toRaw(workflow))
         delete workflowLookup.value[oldPath]
       workflowLookup.value[workflow.path] = workflow
@@ -616,15 +610,11 @@ export const useWorkflowStore = defineStore('workflow', () => {
 
       draftStore.moveDraft(oldPath, newPath, workflow.key)
 
-      // Move thumbnail from old key to new key (using workflow keys, not full paths)
       const newKey = workflow.key
       moveWorkflowThumbnail(oldKey, newKey)
-      // Update bookmarks
-      if (wasBookmarked) {
-        await bookmarkStore.setBookmarked(oldPath, false)
-        await bookmarkStore.setBookmarked(newPath, true)
-      }
-      return true
+      return (await bookmarkStore.moveBookmark(oldPath, newPath))
+        ? true
+        : 'bookmarks-not-updated'
     } finally {
       isBusy.value = false
     }
@@ -635,12 +625,13 @@ export const useWorkflowStore = defineStore('workflow', () => {
     try {
       await workflow.delete()
       useWorkflowDraftStoreV2().removeDraft(workflow.path)
-      if (bookmarkStore.isBookmarked(workflow.path)) {
-        await bookmarkStore.setBookmarked(workflow.path, false)
-      }
-      // Clear thumbnail when workflow is deleted
+      const unbookmarked = await bookmarkStore.setBookmarked(
+        workflow.path,
+        false
+      )
       clearThumbnail(workflow.key)
       detachWorkflow(workflow)
+      return unbookmarked
     } finally {
       isBusy.value = false
     }
@@ -650,11 +641,14 @@ export const useWorkflowStore = defineStore('workflow', () => {
    * Save a workflow, loading it first unless it is active.
    * @param workflow The workflow to save.
    */
-  const saveWorkflow = async (workflow: ComfyWorkflow) => {
+  const saveWorkflow = async (
+    workflow: ComfyWorkflow,
+    options: { overwrite?: boolean } = {}
+  ) => {
     isBusy.value = true
     try {
       if (!workflow.isLoaded && !isActive(workflow)) await workflow.load()
-      await workflow.save()
+      await workflow.save(options)
       // Synchronously detach and re-attach to force refresh the tree objects
       // without an async gap that would cause the tab to disappear.
       const openIndex = detachWorkflow(workflow)
@@ -886,45 +880,3 @@ export const useWorkflowStore = defineStore('workflow', () => {
     nodeLocatorIdToNodeExecutionId
   }
 }) satisfies () => WorkflowStore
-
-export const useWorkflowBookmarkStore = defineStore('workflowBookmark', () => {
-  const bookmarks = ref<Set<string>>(new Set())
-
-  const isBookmarked = (path: string) => bookmarks.value.has(path)
-
-  const loadBookmarks = async () => {
-    const resp = await api.getUserData('workflows/.index.json')
-    if (resp.status === 200) {
-      const info = await resp.json()
-      bookmarks.value = new Set(info?.favorites ?? [])
-    }
-  }
-
-  const saveBookmarks = async () => {
-    await api.storeUserData('workflows/.index.json', {
-      favorites: Array.from(bookmarks.value)
-    })
-  }
-
-  const setBookmarked = async (path: string, value: boolean) => {
-    if (bookmarks.value.has(path) === value) return
-    if (value) {
-      bookmarks.value.add(path)
-    } else {
-      bookmarks.value.delete(path)
-    }
-    await saveBookmarks()
-  }
-
-  const toggleBookmarked = async (path: string) => {
-    await setBookmarked(path, !bookmarks.value.has(path))
-  }
-
-  return {
-    isBookmarked,
-    loadBookmarks,
-    saveBookmarks,
-    setBookmarked,
-    toggleBookmarked
-  }
-})

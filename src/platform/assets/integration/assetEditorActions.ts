@@ -72,7 +72,7 @@ export function useAssetEditorActions() {
     try {
       const apiPrompt = await extractApiPromptFromAsset(asset)
       if (!useApp().isApiJson(apiPrompt)) return { success: false }
-      await useApp().loadApiJson(apiPrompt, filename)
+      await useApp().loadApiJson(apiPrompt, filename, { initiator: 'user' })
       return { success: true }
     } catch (error) {
       console.error('Failed to open API graph as workflow:', error)
