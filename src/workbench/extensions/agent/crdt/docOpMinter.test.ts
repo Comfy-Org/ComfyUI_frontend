@@ -392,8 +392,8 @@ describe('attachDocOpMinter', () => {
       isDocBound: () => bound,
       isBoundWorkflow: (workflow) => workflow === boundWorkflow,
       onUnboundLocalIntent: () => unboundLocalIntents++,
-      onUnboundVisibleIntent: (rootGraphId) =>
-        unboundVisibleIntentRootGraphIds.push(rootGraphId),
+      onUnboundVisibleIntent: (rootGraph) =>
+        unboundVisibleIntentRootGraphIds.push(rootGraph.id),
       enqueue: (operations) => minted.push(...operations),
       getGraph: () => (graphAvailable ? graph : null),
       boundRootGraphId: () => (unbound ? null : rootGraphId),

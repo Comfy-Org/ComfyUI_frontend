@@ -10199,7 +10199,9 @@ describe('AgentPanelRoot history', () => {
         await vi.waitFor(() => expect(messageLoads).toBe(2))
         expect(docOpMinterDeps.current?.isDocBound()).toBe(false)
 
-        docOpMinterDeps.current?.onUnboundVisibleIntent?.('graph-first')
+        const editedGraph = new LGraph()
+        editedGraph.id = 'graph-first'
+        docOpMinterDeps.current?.onUnboundVisibleIntent?.(editedGraph)
         resolveReturnTranscript()
         await vi.waitFor(() =>
           expect(useAgentConversationStore().threadId).toBe('th-first')

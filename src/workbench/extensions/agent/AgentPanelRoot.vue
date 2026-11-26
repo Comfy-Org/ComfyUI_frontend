@@ -47,7 +47,7 @@ import {
 } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useAppMode } from '@/composables/useAppMode'
 import { MIME_ASSET_INFO } from '@/platform/assets/constants/assetDrag'
 import { getDroppedAsset } from '@/platform/assets/integration/assetDrop'
@@ -1484,11 +1484,8 @@ function boundRootGraphId(): RootGraphId | null {
 function followerCanDeliver(): boolean {
   return isFollowerActive.value && subscriptionSent()
 }
-function noteUnboundVisibleIntent(rootGraphId: string): void {
-  const visible = workflowStore.activeWorkflow
-  const workflowId = visible
-    ? bindingStore.workflowIdForVisibleGraph(rootGraphId, visible)
-    : undefined
+function noteUnboundVisibleIntent(rootGraph: LGraph): void {
+  const workflowId = bindingStore.workflowIdForGraph(rootGraph)
   if (workflowId !== undefined) noteUnboundLocalIntent(workflowId)
 }
 const docOpMinter = attachDocOpMinter({
