@@ -32,7 +32,11 @@ export const $el = _$el
 
 export interface LegacyUIApp extends LegacyQueueApp {
   showErrorOnFileLoad(file: File): void
-  handleFile(file: File, openSource?: WorkflowOpenSource): Promise<void | false>
+  handleFile(
+    file: File,
+    openSource?: WorkflowOpenSource,
+    options?: { initiator?: 'user' }
+  ): Promise<void | false>
   refreshComboInNodes(): Promise<boolean>
   openClipspace(): void
   clean(): void
@@ -233,6 +237,7 @@ export class ComfyUI {
   setup(containerElement: HTMLElement) {
     const fileInput = $el('input', {
       id: 'comfy-file-input',
+      dataset: { testid: 'comfy-file-input' },
       type: 'file',
       accept: WORKFLOW_ACCEPT_STRING,
       style: { display: 'none' },
@@ -241,7 +246,9 @@ export class ComfyUI {
         const file = fileInput.files?.[0]
         if (file) {
           try {
-            await this.app.handleFile(file, 'file_button')
+            await this.app.handleFile(file, 'file_button', {
+              initiator: 'user'
+            })
           } catch (error) {
             console.error('Failed to load file:', error)
             if (!isGraphLoadFailurePresented(error))
@@ -512,7 +519,9 @@ export class ComfyUI {
               confirm('Load default workflow?')
             ) {
               this.host.resetView()
-              await this.app.loadGraphData()
+              await this.app.loadGraphData(undefined, true, true, null, {
+                initiator: 'user'
+              })
             }
           }
         }),

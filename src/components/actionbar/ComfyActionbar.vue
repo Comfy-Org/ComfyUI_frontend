@@ -37,7 +37,7 @@
             )
           "
         />
-        <DeploymentSwitcher />
+        <DeploymentSwitcher :on-team-plan="onTeamPlan" />
         <div v-coachmark="FIRST_RUN_COACH_IDS.runButton" class="inline-flex">
           <Suspense @resolve="comfyRunButtonResolved">
             <ComfyRunButton />
@@ -79,6 +79,7 @@ import QueueControls from '@/platform/queue/components/QueueControls.vue'
 import QueueInlineProgress from '@/platform/queue/components/QueueInlineProgress.vue'
 import { useQueueFeatureFlags } from '@/platform/queue/composables/useQueueFeatureFlags'
 import FreeTierQuota from '@/platform/billing/subscription/components/FreeTierQuota.vue'
+import { useTeamOrEnterprisePlan } from '@/platform/billing/composables/useTeamOrEnterprisePlan'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useSafeLocalStorage } from '@/platform/storage/useSafeStorage'
 import DeploymentSwitcher from '@/platform/workspace/components/DeploymentSwitcher.vue'
@@ -104,6 +105,7 @@ const emit = defineEmits<{
 }>()
 
 const settingStore = useSettingStore()
+const onTeamPlan = useTeamOrEnterprisePlan()
 const { t } = useI18n()
 
 const position = computed(() => settingStore.get('Comfy.UseNewMenu'))

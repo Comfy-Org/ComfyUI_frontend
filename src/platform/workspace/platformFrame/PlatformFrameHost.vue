@@ -14,7 +14,9 @@
         :class="
           cn(
             'overflow-hidden',
-            isPreinstall ? 'max-h-130 max-w-180' : 'max-h-190 max-w-240'
+            isPreinstall
+              ? 'max-h-130 max-w-180'
+              : 'inset-6 m-auto size-auto max-h-256 max-w-280 translate-none'
           )
         "
         data-testid="platform-frame-host"

@@ -219,3 +219,25 @@ export function buildAllErrorContext(
     workflowName: options.workflowName
   }
 }
+
+/**
+ * Context for one missing pack, for the row that offers it when no install,
+ * search or manager action can be.
+ */
+export function buildMissingPackErrorContext(
+  pack: MissingPackGroup,
+  label: string,
+  options: BuildOptions = {}
+): AgentErrorContext {
+  const problems = missingNodeTypeProblems([pack], ' is not installed')
+  return {
+    scope: 'card',
+    count: problems.length,
+    problems,
+    label,
+    severity: 'warning',
+    workflowName: options.workflowName,
+    packId: pack.packId,
+    reason: pack.packId === null ? 'not_in_registry' : 'manager_unavailable'
+  }
+}

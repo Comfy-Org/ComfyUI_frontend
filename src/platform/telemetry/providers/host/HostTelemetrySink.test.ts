@@ -438,8 +438,8 @@ describe('HostTelemetrySink', () => {
     {
       name: TelemetryEvents.AGENT_NODE_TAGGED,
       track: (sink: HostTelemetrySink) =>
-        sink.trackAgentNodeTagged({ source: 'mention_picker' }),
-      properties: { source: 'mention_picker' }
+        sink.trackAgentNodeTagged({ source: 'plus_menu', node_count: 2 }),
+      properties: { source: 'plus_menu', node_count: 2 }
     },
     {
       name: TelemetryEvents.AGENT_SKILL_SELECTED,

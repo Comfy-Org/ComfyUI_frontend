@@ -10,7 +10,9 @@ export interface LegacyQueueApp {
   loadGraphData(
     graphData?: ComfyWorkflowJSON,
     clean?: boolean,
-    restore_view?: boolean
+    restore_view?: boolean,
+    workflow?: string | null,
+    options?: { initiator?: 'user' }
   ): Promise<unknown>
   queuePrompt(
     number: number,

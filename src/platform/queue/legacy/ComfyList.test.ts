@@ -70,7 +70,15 @@ describe('legacy queue and history lists', () => {
       within(list.element).getByRole('button', { name: 'Load' })
     )
     await vi.waitFor(() =>
-      expect(app.loadGraphData).toHaveBeenCalledWith(workflow, true, false)
+      expect(app.loadGraphData).toHaveBeenCalledWith(
+        workflow,
+        true,
+        false,
+        null,
+        {
+          initiator: 'user'
+        }
+      )
     )
     expect(host.restoreOutputs).not.toHaveBeenCalled()
     finishLoading()
@@ -109,7 +117,15 @@ describe('legacy queue and history lists', () => {
     )
 
     await vi.waitFor(() =>
-      expect(app.loadGraphData).toHaveBeenCalledWith(undefined, true, false)
+      expect(app.loadGraphData).toHaveBeenCalledWith(
+        undefined,
+        true,
+        false,
+        null,
+        {
+          initiator: 'user'
+        }
+      )
     )
     expect(host.restoreOutputs).not.toHaveBeenCalled()
   })

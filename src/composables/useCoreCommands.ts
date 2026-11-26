@@ -150,7 +150,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Load Default Workflow',
       function: async () => {
         const previousWorkflowHadNodes = useApp().rootGraph._nodes.length > 0
-        await workflowService.loadDefaultWorkflow()
+        await workflowService.loadDefaultWorkflow({ initiator: 'user' })
         telemetry?.trackWorkflowCreated({
           workflow_type: 'default',
           previous_workflow_had_nodes: previousWorkflowHadNodes
@@ -738,7 +738,9 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Duplicate Current Workflow',
       versionAdded: '1.6.15',
       function: async () => {
-        await workflowService.duplicateWorkflow(workflowStore.activeWorkflow!)
+        await workflowService.duplicateWorkflow(workflowStore.activeWorkflow!, {
+          initiator: 'user'
+        })
       }
     },
     {

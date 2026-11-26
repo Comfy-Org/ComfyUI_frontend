@@ -71,7 +71,9 @@ export class ComfyList {
                     const loaded = await this.app.loadGraphData(
                       workflow,
                       true,
-                      false
+                      false,
+                      null,
+                      { initiator: 'user' }
                     )
                     if (loaded === false) return
                     if ('outputs' in job && job.outputs) {

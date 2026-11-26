@@ -85,6 +85,7 @@
       >
         <DeploymentDocsLink class="hidden @xl:mr-auto @xl:inline-flex" />
         <AgentMenu
+          v-if="offersAgent"
           variant="secondary"
           data-testid="custom-deployment-agent"
           :copy-brief="copyBrief"
@@ -146,11 +147,13 @@ const {
   videoSources = [],
   posterSrc = '',
   handsOverWorkflow = false,
+  offersAgent = true,
   frameRequest,
   frameEntry
 } = defineProps<{
   pitch: CustomDeploymentPitch
   handsOverWorkflow?: boolean
+  offersAgent?: boolean
   frameRequest?: PlatformFrameRequest
   frameEntry?: CustomDeploymentEntry
   videoSources?: ComponentProps<typeof Video>['sources']
