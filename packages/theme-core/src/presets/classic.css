@@ -57,6 +57,20 @@
 
     [data-part='widget-row'] > [data-part='row-slot'] {
       width: calc(var(--spacing) * 3.75);
+
+      .lg-slot--input {
+        pointer-events: none;
+      }
+
+      [data-part='slot-dot'] {
+        pointer-events: auto;
+      }
+
+      [data-part='slot-dot']::after {
+        left: calc(var(--spacing) * -5);
+        right: 0;
+        width: auto;
+      }
     }
 
     [data-part='widget-field'] {

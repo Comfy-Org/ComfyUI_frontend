@@ -642,7 +642,10 @@ export const useAgentConversationStore = defineStore(
     const demotedSnapshotByStash = new Map<TurnId, TurnId>()
     const restoredBackgroundMessageIds = new Set<TurnId>()
     const reportedPaywallImpressions = new Set<TurnId>()
-    const approvalShownAtByAsk = new Map<string, number>()
+    const approvalShownAtByAsk = new Map<
+      string,
+      { shownAt: number; turnId: string }
+    >()
     const shownApprovalIds = new Set<string>()
     const undeliverableAskReporter = createUndeliverableAskReporter()
     const departedTurns = new Map<string, 'no-live-turn' | 'settled-turn'>()
@@ -719,15 +722,23 @@ export const useAgentConversationStore = defineStore(
       if (entry) refreshBackgroundAskIds(entry)
     }
 
-    function recordApprovalShown(askId: string, shownAt: number): boolean {
+    function recordApprovalShown(
+      askId: string,
+      turnId: string,
+      shownAt: number
+    ): boolean {
       if (shownApprovalIds.has(askId)) return false
       shownApprovalIds.add(askId)
-      approvalShownAtByAsk.set(askId, shownAt)
+      approvalShownAtByAsk.set(askId, { shownAt, turnId })
       return true
     }
 
     function approvalShownAt(askId: string): number | undefined {
-      return approvalShownAtByAsk.get(askId)
+      return approvalShownAtByAsk.get(askId)?.shownAt
+    }
+
+    function approvalTurnId(askId: string): string | undefined {
+      return approvalShownAtByAsk.get(askId)?.turnId
     }
 
     function forgetApprovalTiming(askId: string): void {
@@ -909,6 +920,10 @@ export const useAgentConversationStore = defineStore(
         retiredAsks.get(key)?.has(askId) === true ||
         provisionalRetiredAsks.get(key)?.has(askId) === true
       )
+    }
+
+    function isAskPermanentlyRetired(askId: string, owner?: string): boolean {
+      return retiredAsks.get(threadKey(owner))?.has(askId) === true
     }
 
     function confirmAskPending(askId: string, owner?: string): void {
@@ -2222,6 +2237,10 @@ export const useAgentConversationStore = defineStore(
       return entry.message
     }
 
+    function liveTurnMessageId(turn: LiveTurn): string | null {
+      return liveTurnMessage(turn)?.id ?? null
+    }
+
     function reconcileApprovalParts(
       turn: LiveTurn,
       pendingAskId?: string,
@@ -3418,6 +3437,7 @@ export const useAgentConversationStore = defineStore(
       latestWorkflowId,
       recordApprovalShown,
       approvalShownAt,
+      approvalTurnId,
       forgetApprovalTiming,
       forgetApproval,
       recordUser,
@@ -3438,6 +3458,7 @@ export const useAgentConversationStore = defineStore(
       commitAsk,
       retireAsk,
       isAskRetired,
+      isAskPermanentlyRetired,
       confirmAskPending,
       reconcileApprovalParts,
       startTurn,
@@ -3450,6 +3471,7 @@ export const useAgentConversationStore = defineStore(
       settleBackgroundTurn,
       dropBackgroundTurns,
       liveTurns,
+      liveTurnMessageId,
       turnUsesSkill,
       historySkillNames,
       settleTurn,

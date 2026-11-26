@@ -393,6 +393,7 @@ interface RenderedReport {
   status: string
   regressions?: number
   lines: string[]
+  details: string[][]
 }
 
 interface ComparedRow {
@@ -483,22 +484,21 @@ function renderFullReport(
     )
   }
 
-  lines.push(
-    `<details><summary>All metrics</summary>`,
-    '',
-    ...tableHeader,
-    ...allRows,
-    '',
-    '</details>',
-    ''
-  )
+  const details = [
+    [
+      `<details><summary>All metrics</summary>`,
+      '',
+      ...tableHeader,
+      ...allRows,
+      '',
+      '</details>',
+      ''
+    ],
+    renderHistoricalVariance(prGroups, historical),
+    renderTrend(prGroups, historical)
+  ]
 
-  lines.push(
-    ...renderHistoricalVariance(prGroups, historical),
-    ...renderTrend(prGroups, historical)
-  )
-
-  return { status, regressions: flaggedRows.length, lines }
+  return { status, regressions: flaggedRows.length, lines, details }
 }
 
 function renderHistoricalVariance(
@@ -562,8 +562,6 @@ function renderColdStartReport(
   const lines: string[] = []
   const baselineGroups = groupByName(baseline.measurements)
   lines.push(
-    '> Significance will appear after 2 main branch runs.',
-    '',
     '<details><summary>All metrics (cold start)</summary>',
     '',
     '| Metric | Baseline | PR | Δ |',
@@ -589,7 +587,8 @@ function renderColdStartReport(
   lines.push('', '</details>')
   return {
     status: `ℹ️ Collecting baseline variance (${historicalCount}/15 runs)`,
-    lines
+    lines: ['> Significance will appear after 2 main branch runs.', ''],
+    details: [lines]
   }
 }
 
@@ -611,7 +610,11 @@ function renderNoBaselineReport(
     }
   }
   lines.push('', '</details>')
-  return { status: 'ℹ️ No baseline — significance unavailable', lines }
+  return {
+    status: 'ℹ️ No baseline — significance unavailable',
+    lines: [],
+    details: [lines]
+  }
 }
 
 function renderComparison(
@@ -642,6 +645,30 @@ function renderRawData(current: PerfReport): string[] {
     '',
     '</details>'
   ]
+}
+
+const MAX_BODY_CHARS_IN_SHARED_PR_COMMENT = 40_000
+
+function fitDetails(lines: string[], details: string[][]): string[] {
+  const body = [...lines]
+  let omitted = false
+  for (const block of details) {
+    if (
+      [...body, ...block].join('\n').length >
+      MAX_BODY_CHARS_IN_SHARED_PR_COMMENT
+    ) {
+      omitted = true
+      continue
+    }
+    body.push(...block)
+  }
+  if (omitted) {
+    body.push(
+      '',
+      '> Some tables were left out to fit GitHub’s comment size limit. The full data is in the `perf-metrics` artifact of the CI: Performance Report run.'
+    )
+  }
+  return body
 }
 
 function perfHeadingStatus(
@@ -676,7 +703,10 @@ function main() {
   const report = renderComparison(prGroups)
 
   const headline = renderHeadlineSummary(prGroups)
-  const body = [...headline.lines, ...report.lines, ...renderRawData(current)]
+  const body = fitDetails(
+    [...headline.lines, ...report.lines],
+    [...report.details, renderRawData(current)]
+  )
   const status = perfHeadingStatus(current, prGroups, report.status)
 
   process.stdout.write(

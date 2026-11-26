@@ -247,6 +247,7 @@ export function createFakeBillingClient(
       can_manage_partner_node_access: false,
       can_view_pending_invites: false,
       can_view_team_usage: false,
+      can_view_workspace_usage: false,
       can_reactivate: false,
       can_revert_scheduled_change: false,
       can_run_workflows: false,

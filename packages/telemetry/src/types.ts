@@ -1412,6 +1412,7 @@ export interface AgentTargetUnavailableMetadata extends Record<
   startup_tab_restore_settled: boolean | null
 }
 export interface AgentRunApprovalShownMetadata extends Record<string, unknown> {
+  ask_id: string
   turn_id: string
   workflow_id: string | null
 }
@@ -1420,8 +1421,41 @@ export interface AgentRunApprovalResolvedMetadata extends Record<
   string,
   unknown
 > {
+  ask_id: string
+  turn_id: string
   decision: AgentRunApprovalDecision
   time_to_decide_ms: number
+}
+export interface AgentRunApprovalAnswerFailedMetadata extends Record<
+  string,
+  unknown
+> {
+  ask_id: string
+  turn_id: string | null
+}
+/** Why an approval ask needed recovery: a dropped socket frame, or a fresh hydrate racing the row write. */
+export type AgentRunApprovalRecoveryCause = 'reconnect' | 'hydrate'
+export interface AgentRunApprovalRecoveryAttemptedMetadata extends Record<
+  string,
+  unknown
+> {
+  ask_id: string
+  turn_id: string
+  cause: AgentRunApprovalRecoveryCause
+}
+export type AgentRunApprovalRecoveryOutcome =
+  | 'restored'
+  | 'superseded'
+  | 'not_found'
+  | 'retired'
+export interface AgentRunApprovalRecoveryOutcomeMetadata extends Record<
+  string,
+  unknown
+> {
+  ask_id: string
+  turn_id: string
+  cause: AgentRunApprovalRecoveryCause
+  outcome: AgentRunApprovalRecoveryOutcome
 }
 export interface AgentRunModeChangedMetadata extends Record<string, unknown> {
   from: AgentRunMode['mode']
@@ -1962,6 +1996,15 @@ export interface TelemetryProvider {
   trackAgentRunApprovalResolved?(
     metadata: AgentRunApprovalResolvedMetadata
   ): void
+  trackAgentRunApprovalAnswerFailed?(
+    metadata: AgentRunApprovalAnswerFailedMetadata
+  ): void
+  trackAgentRunApprovalRecoveryAttempted?(
+    metadata: AgentRunApprovalRecoveryAttemptedMetadata
+  ): void
+  trackAgentRunApprovalRecoveryOutcome?(
+    metadata: AgentRunApprovalRecoveryOutcomeMetadata
+  ): void
   trackAgentRunModeChanged?(metadata: AgentRunModeChangedMetadata): void
   trackAgentThreadStarted?(metadata: AgentThreadStartedMetadata): void
   trackAgentConsentNotOffered?(metadata: AgentConsentNotOfferedMetadata): void
@@ -2156,6 +2199,11 @@ export const TelemetryEvents = {
   AGENT_TARGET_UNAVAILABLE: 'app:agent_target_unavailable',
   AGENT_RUN_APPROVAL_SHOWN: 'app:agent_run_approval_shown',
   AGENT_RUN_APPROVAL_RESOLVED: 'app:agent_run_approval_resolved',
+  AGENT_RUN_APPROVAL_ANSWER_FAILED: 'app:agent_run_approval_answer_failed',
+  AGENT_RUN_APPROVAL_RECOVERY_ATTEMPTED:
+    'app:agent_run_approval_recovery_attempted',
+  AGENT_RUN_APPROVAL_RECOVERY_OUTCOME:
+    'app:agent_run_approval_recovery_outcome',
   AGENT_RUN_MODE_CHANGED: 'app:agent_run_mode_changed',
   AGENT_THREAD_STARTED: 'app:agent_thread_started',
   AGENT_CONSENT_NOT_OFFERED: 'app:agent_consent_not_offered',

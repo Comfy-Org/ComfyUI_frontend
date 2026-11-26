@@ -3706,6 +3706,7 @@ describe('useAgentSession (v1 composition root)', () => {
     })
 
     it('warns from the canonical answer receipt when another selection won', async () => {
+      const onRequestFailed = vi.fn()
       const answerAsk = vi
         .fn<AgentRestClient['answerAsk']>()
         .mockResolvedValue({ status: 'answered', selected: ['run'] })
@@ -3719,9 +3720,14 @@ describe('useAgentSession (v1 composition root)', () => {
       await session.sendMessage('build it and run it')
       events.emit(runApproval('msg-1'))
 
-      const answered = await session.answerAsk('turn-1:call-1', 'cancel')
+      const answered = await session.answerAsk(
+        'turn-1:call-1',
+        'cancel',
+        onRequestFailed
+      )
 
       expect(answered).toBe(false)
+      expect(onRequestFailed).not.toHaveBeenCalled()
       expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
         surface: 'agent',
         errorType: 'agent_ask_answer_superseded',
@@ -3816,6 +3822,7 @@ describe('useAgentSession (v1 composition root)', () => {
     })
 
     it('does not re-drive an answer the server has already refused', async () => {
+      const onRequestFailed = vi.fn()
       const answerAsk = vi
         .fn<AgentRestClient['answerAsk']>()
         .mockRejectedValue(
@@ -3831,9 +3838,14 @@ describe('useAgentSession (v1 composition root)', () => {
       await session.sendMessage('build it and run it')
       events.emit(runApproval('msg-1'))
 
-      await session.answerAsk('turn-1:call-1', { selected: ['run'] })
+      await session.answerAsk(
+        'turn-1:call-1',
+        { selected: ['run'] },
+        onRequestFailed
+      )
 
       expect(answerAsk).toHaveBeenCalledTimes(1)
+      expect(onRequestFailed).not.toHaveBeenCalled()
       expect(cardOnScreen()).toBe(false)
     })
 
@@ -6092,6 +6104,21 @@ describe('useAgentSession (v1 composition root)', () => {
           askId: 'turn-1:call-1'
         }
       })
+      expect(
+        telemetry.trackAgentRunApprovalRecoveryAttempted
+      ).toHaveBeenCalledExactlyOnceWith({
+        ask_id: 'turn-1:call-1',
+        turn_id: 'msg-1',
+        cause: 'reconnect'
+      })
+      expect(
+        telemetry.trackAgentRunApprovalRecoveryOutcome
+      ).toHaveBeenCalledExactlyOnceWith({
+        ask_id: 'turn-1:call-1',
+        turn_id: 'msg-1',
+        cause: 'reconnect',
+        outcome: 'restored'
+      })
     } finally {
       vi.useRealTimers()
     }
@@ -6116,6 +6143,52 @@ describe('useAgentSession (v1 composition root)', () => {
 
       expect(approvalParts(session)).toHaveLength(1)
       expect(reportError).not.toHaveBeenCalled()
+      expect(
+        telemetry.trackAgentRunApprovalRecoveryAttempted
+      ).not.toHaveBeenCalled()
+      expect(
+        telemetry.trackAgentRunApprovalRecoveryOutcome
+      ).not.toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('does not count recovery of a non-run ask in the run approval funnel', async () => {
+    vi.useFakeTimers()
+    try {
+      const rest = fakeRest({
+        getMessages: vi.fn(async (): Promise<AgentMessages> => [
+          historyRow(1, 'user', 'msg-1', 'go'),
+          {
+            ...parkedRow(),
+            pending_ask: {
+              ...PARKED_ASK,
+              kind: 'ask_user',
+              context: undefined
+            }
+          }
+        ])
+      })
+      const { source, status } = fakeEvents()
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      status(true)
+
+      await session.sendMessage('go')
+      status(false)
+      status(true)
+      await vi.advanceTimersByTimeAsync(31_000)
+
+      expect(useAgentConversationStore().pendingAskIds).toContain(
+        'turn-1:call-1'
+      )
+      expect(
+        telemetry.trackAgentRunApprovalRecoveryAttempted
+      ).not.toHaveBeenCalled()
+      expect(
+        telemetry.trackAgentRunApprovalRecoveryOutcome
+      ).not.toHaveBeenCalled()
     } finally {
       vi.useRealTimers()
     }
@@ -6149,7 +6222,7 @@ describe('useAgentSession (v1 composition root)', () => {
     }
   })
 
-  it('(g30) a broadcast that merely lagged the poll renders one card and is not reported', async () => {
+  it('(g30) a broadcast that merely lagged the poll renders one card, is not reported, and settles the recovery as superseded', async () => {
     vi.useFakeTimers()
     try {
       const rest = parkedOnApprovalRest()
@@ -6163,12 +6236,27 @@ describe('useAgentSession (v1 composition root)', () => {
       status(true)
       await vi.advanceTimersByTimeAsync(0)
       expect(approvalParts(session)).toHaveLength(1)
+      expect(
+        telemetry.trackAgentRunApprovalRecoveryAttempted
+      ).toHaveBeenCalledExactlyOnceWith({
+        ask_id: 'turn-1:call-1',
+        turn_id: 'msg-1',
+        cause: 'reconnect'
+      })
 
       emit(runApproval('msg-1'))
       await vi.advanceTimersByTimeAsync(31_000)
 
       expect(approvalParts(session)).toHaveLength(1)
       expect(reportError).not.toHaveBeenCalled()
+      expect(
+        telemetry.trackAgentRunApprovalRecoveryOutcome
+      ).toHaveBeenCalledExactlyOnceWith({
+        ask_id: 'turn-1:call-1',
+        turn_id: 'msg-1',
+        cause: 'reconnect',
+        outcome: 'superseded'
+      })
     } finally {
       vi.useRealTimers()
     }
@@ -6200,6 +6288,67 @@ describe('useAgentSession (v1 composition root)', () => {
         surface: 'agent',
         errorType: 'agent_ask_answer_unconfirmed'
       })
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('reports a retired recovery outcome only once across repeated polls', async () => {
+    vi.useFakeTimers()
+    try {
+      const rest = parkedOnApprovalRest()
+      const { source, status } = fakeEvents()
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      status(true)
+      await session.sendMessage('go')
+      useAgentConversationStore().retireAsk(
+        'turn-1:call-1',
+        { status: 'retired' },
+        'th-1'
+      )
+
+      status(false)
+      status(true)
+      await vi.advanceTimersByTimeAsync(31_000)
+
+      expect(
+        telemetry.trackAgentRunApprovalRecoveryOutcome
+      ).toHaveBeenCalledExactlyOnceWith({
+        ask_id: 'turn-1:call-1',
+        turn_id: 'msg-1',
+        cause: 'reconnect',
+        outcome: 'retired'
+      })
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('keeps a provisional retirement suppressed until polling confirms it pending', async () => {
+    vi.useFakeTimers()
+    try {
+      const rest = parkedOnApprovalRest()
+      const { source, status } = fakeEvents()
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      status(true)
+      await session.sendMessage('go')
+      useAgentConversationStore().retireAsk(
+        'turn-1:call-1',
+        { status: 'retired' },
+        'th-1',
+        false
+      )
+
+      status(false)
+      status(true)
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(approvalParts(session)).toHaveLength(0)
+      expect(
+        telemetry.trackAgentRunApprovalRecoveryOutcome
+      ).not.toHaveBeenCalled()
     } finally {
       vi.useRealTimers()
     }
@@ -6400,6 +6549,12 @@ describe('useAgentSession (v1 composition root)', () => {
       await vi.advanceTimersByTimeAsync(31_000)
 
       expect(approvalParts(second)).toHaveLength(0)
+      expect(
+        telemetry.trackAgentRunApprovalRecoveryAttempted
+      ).not.toHaveBeenCalled()
+      expect(
+        telemetry.trackAgentRunApprovalRecoveryOutcome
+      ).not.toHaveBeenCalled()
     } finally {
       vi.useRealTimers()
     }
@@ -6800,6 +6955,21 @@ describe('useAgentSession (v1 composition root)', () => {
           tags: expect.objectContaining({ recovery_cause: 'hydrate' })
         })
       )
+      expect(
+        telemetry.trackAgentRunApprovalRecoveryAttempted
+      ).toHaveBeenCalledExactlyOnceWith({
+        ask_id: 'turn-1:call-1',
+        turn_id: 'msg-1',
+        cause: 'hydrate'
+      })
+      expect(
+        telemetry.trackAgentRunApprovalRecoveryOutcome
+      ).toHaveBeenCalledExactlyOnceWith({
+        ask_id: 'turn-1:call-1',
+        turn_id: 'msg-1',
+        cause: 'hydrate',
+        outcome: 'restored'
+      })
     } finally {
       vi.useRealTimers()
     }

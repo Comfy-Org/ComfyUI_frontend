@@ -54,9 +54,12 @@ import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
+import { useAgentRunModeStore } from '@/workbench/extensions/agent/stores/agent/agentRunModeStore'
 import { setupInlinePromptEditorDom } from './components/agent/composer/inlinePromptEditorTestSetup'
 import { useAgentConsent } from './composables/agent/useAgentConsent'
 import type { ConsentOfferHooks } from './composables/agent/useAgentConsent'
+import { useAskAgentAboutIssues } from './composables/agent/useAskAgentAboutIssues'
+import type { AgentErrorContext } from '@/platform/workflowErrors/agentErrorContext'
 import { useFreeUsePlacement } from './experiments/freeUsePlacement'
 
 setupInlinePromptEditorDom()
@@ -5562,6 +5565,114 @@ describe('AgentPanelRoot attach flow', () => {
     view.unmount()
     expect(revoke).toHaveBeenCalledTimes(1)
     revoke.mockRestore()
+  })
+})
+
+describe('AgentPanelRoot error context attach (FRONT-4380)', () => {
+  beforeEach(() => {
+    const tab = addTab('workflows/current.json')
+    workflowStore.activeWorkflow = tab
+  })
+
+  function allIssuesContext(
+    overrides: Partial<AgentErrorContext> = {}
+  ): AgentErrorContext {
+    return {
+      scope: 'card',
+      count: 2,
+      label: 'All issues',
+      severity: 'warning',
+      problems: [
+        { category: 'missing_media', message: 'image missing' },
+        { category: 'missing_media', message: 'video missing' }
+      ],
+      ...overrides
+    }
+  }
+
+  it('does not stack a duplicate chip or pad extra spaces when "Ask agent about all issues" is clicked repeatedly', async () => {
+    const store = useAgentComposerStore()
+    renderWithSelectedTarget()
+    useAgentPanelStore().enabled = true
+    const textbox = screen.getByRole('textbox')
+    await userEvent.click(textbox)
+    await userEvent.paste('I need help with 2 workflow issues')
+
+    const { askAgentAboutIssues } = useAskAgentAboutIssues()
+    await askAgentAboutIssues(allIssuesContext({ count: 2 }))
+    await screen.findAllByTestId('error-reference-chip')
+    await waitFor(() => expect(store.errorContext).toMatchObject({ count: 2 }))
+    expect(
+      store.prompt.references.filter((r) => r.kind === 'error')
+    ).toHaveLength(1)
+    const draftAfterFirstClick = store.draft
+
+    await askAgentAboutIssues(allIssuesContext({ count: 3 }))
+    await waitFor(() => expect(store.errorContext).toMatchObject({ count: 3 }))
+    expect(
+      store.prompt.references.filter((r) => r.kind === 'error')
+    ).toHaveLength(1)
+    expect(screen.getAllByTestId('error-reference-chip')).toHaveLength(1)
+    expect(store.draft).toHaveLength(draftAfterFirstClick.length)
+
+    await askAgentAboutIssues(allIssuesContext({ count: 4 }))
+    await waitFor(() => expect(store.errorContext).toMatchObject({ count: 4 }))
+    expect(
+      store.prompt.references.filter((r) => r.kind === 'error')
+    ).toHaveLength(1)
+    expect(screen.getAllByTestId('error-reference-chip')).toHaveLength(1)
+    expect(store.draft).toHaveLength(draftAfterFirstClick.length)
+  })
+
+  it('keeps the chip in its slot when another reference shares its separator', async () => {
+    const store = useAgentComposerStore()
+    renderWithSelectedTarget()
+    useAgentPanelStore().enabled = true
+    const textbox = screen.getByRole('textbox')
+    await userEvent.click(textbox)
+    await userEvent.paste('fix this')
+
+    const { askAgentAboutIssues } = useAskAgentAboutIssues()
+    await askAgentAboutIssues(allIssuesContext({ count: 2 }))
+    await screen.findAllByTestId('error-reference-chip')
+    await waitFor(() => expect(store.errorContext).toMatchObject({ count: 2 }))
+
+    const chip = store.prompt.references.find((r) => r.kind === 'error')
+    assert(chip)
+    store.setInsertionPoint({
+      textOffset: chip.textOffset,
+      referenceIndex: store.prompt.references.indexOf(chip) + 1
+    })
+    store.addAttachment({
+      id: 'att-1',
+      name: 'cat.png',
+      ref: 'uploaded_cat.png'
+    })
+    store.referenceAttachment('att-1')
+    await waitFor(() =>
+      expect(store.prompt.references.map((r) => r.kind)).toEqual([
+        'error',
+        'asset'
+      ])
+    )
+    const draftWithNeighbour = store.draft
+
+    await askAgentAboutIssues(allIssuesContext({ count: 3 }))
+    await waitFor(() => expect(store.errorContext).toMatchObject({ count: 3 }))
+    expect(store.draft).toBe(draftWithNeighbour)
+    expect(store.prompt.references.map((r) => r.kind)).toEqual([
+      'error',
+      'asset'
+    ])
+
+    await askAgentAboutIssues(allIssuesContext({ count: 4 }))
+    await waitFor(() => expect(store.errorContext).toMatchObject({ count: 4 }))
+    expect(store.draft).toBe(draftWithNeighbour)
+    expect(store.prompt.references.map((r) => r.kind)).toEqual([
+      'error',
+      'asset'
+    ])
+    expect(screen.getAllByTestId('error-reference-chip')).toHaveLength(1)
   })
 })
 
@@ -11082,6 +11193,7 @@ describe('AgentPanelRoot run approval telemetry', () => {
     expect(
       telemetry.trackAgentRunApprovalShown
     ).toHaveBeenCalledExactlyOnceWith({
+      ask_id: 'turn-approval:call-1',
       turn_id: 'turn-approval',
       workflow_id: 'workflow-1'
     })
@@ -11099,6 +11211,8 @@ describe('AgentPanelRoot run approval telemetry', () => {
     )
     await vi.waitFor(() =>
       expect(telemetry.trackAgentRunApprovalResolved).toHaveBeenCalledWith({
+        ask_id: 'turn-approval:call-1',
+        turn_id: 'turn-approval',
         decision: 'open_workflow',
         time_to_decide_ms: 150
       })
@@ -11120,8 +11234,22 @@ describe('AgentPanelRoot run approval telemetry', () => {
     resolveAnswer(json(200, { status: 'answered' }))
     await vi.waitFor(() =>
       expect(telemetry.trackAgentRunApprovalResolved.mock.calls).toEqual([
-        [{ decision: 'open_workflow', time_to_decide_ms: 150 }],
-        [{ decision: 'run', time_to_decide_ms: 275 }]
+        [
+          {
+            ask_id: 'turn-approval:call-1',
+            turn_id: 'turn-approval',
+            decision: 'open_workflow',
+            time_to_decide_ms: 150
+          }
+        ],
+        [
+          {
+            ask_id: 'turn-approval:call-1',
+            turn_id: 'turn-approval',
+            decision: 'run',
+            time_to_decide_ms: 275
+          }
+        ]
       ])
     )
     expect(fetchRequests({ method: 'POST', url: /\/asks\// })).toHaveLength(1)
@@ -11129,7 +11257,101 @@ describe('AgentPanelRoot run approval telemetry', () => {
   })
 })
 
-describe('AgentPanelRoot ask_user answer telemetry', () => {
+describe('AgentPanelRoot approval answer telemetry', () => {
+  it('reports a failed auto-mode run approval answer', async () => {
+    localStorage.setItem(
+      'Comfy.Agent.RunModePreference',
+      JSON.stringify({ mode: 'auto', credit_limit: null })
+    )
+    respondToFetch({}, () => json(200, {}))
+    respondToFetch({ method: 'PUT', url: /\/agent\/run-mode/ }, () =>
+      json(200, { mode: 'auto', credit_limit: null })
+    )
+    respondToFetch(/\/agent\/threads/, () => json(200, agentThreadList()))
+    respondToFetch({ method: 'POST', url: /\/asks\// }, () =>
+      json(500, { detail: 'request failed' })
+    )
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await useAgentRunModeStore().save('auto', null)
+    const store = useAgentConversationStore()
+    store.setThreadId('th-1')
+    const turnId = toTurnId('turn-approval')
+    store.recordUser(turnId, 'run it')
+    store.startTurn(turnId)
+    store.ingest(
+      zAgentWsEventForTest({
+        type: 'agent_ask',
+        data: {
+          thread_id: 'th-1',
+          message_id: turnId,
+          ask_id: 'turn-approval:call-1',
+          kind: 'run_approval',
+          context: { workflow_id: 'workflow-1' },
+          prompt: 'Run it?',
+          options: [
+            { id: 'run', label: 'Run' },
+            { id: 'cancel', label: 'Cancel' }
+          ],
+          min_selections: 1,
+          max_selections: 1,
+          allow_other: false
+        }
+      })
+    )
+
+    await vi.waitFor(() =>
+      expect(
+        telemetry.trackAgentRunApprovalAnswerFailed
+      ).toHaveBeenCalledExactlyOnceWith({
+        ask_id: 'turn-approval:call-1',
+        turn_id: null
+      })
+    )
+  })
+
+  it('does not report an ask_user POST failure as a run approval failure', async () => {
+    respondToFetch({}, () => json(200, {}))
+    respondToFetch(/\/agent\/threads/, () => json(200, agentThreadList()))
+    respondToFetch({ method: 'POST', url: /\/asks\// }, () =>
+      json(500, { detail: 'request failed' })
+    )
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    const store = useAgentConversationStore()
+    store.setThreadId('th-1')
+    const turnId = toTurnId('turn-question')
+    store.recordUser(turnId, 'go on')
+    store.startTurn(turnId)
+    store.ingest(
+      zAgentWsEventForTest({
+        type: 'agent_ask',
+        data: {
+          thread_id: 'th-1',
+          message_id: turnId,
+          ask_id: 'turn-question:call-1',
+          kind: 'ask_user',
+          prompt: 'Choose one',
+          options: [{ id: 'first', label: 'First' }],
+          min_selections: 1,
+          max_selections: 1,
+          allow_other: false
+        }
+      })
+    )
+
+    await userEvent.click(await screen.findByRole('radio', { name: 'First' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Submit' }))
+    await vi.waitFor(() => {
+      expect(
+        fetchRequests({ method: 'POST', url: /\/asks\// }).length
+      ).toBeGreaterThan(1)
+      expect(store.answeringAskIds.has('turn-question:call-1')).toBe(false)
+    })
+
+    expect(telemetry.trackAgentRunApprovalAnswerFailed).not.toHaveBeenCalled()
+  })
+
   it('never reports an ask_user answer as a run approval, even one named run', async () => {
     respondToFetch({}, () => json(200, {}))
     respondToFetch(/\/agent\/threads/, () => json(200, agentThreadList()))

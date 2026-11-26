@@ -8,11 +8,13 @@ import { ZodError } from 'zod'
 
 import { i18n } from '@/i18n'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
+import { safeLocalStorage } from '@/base/storage/safeStorage'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import type {
   AgentErrorClass,
   AgentErrorMetadata,
+  AgentRunApprovalRecoveryOutcome,
   AgentSessionRefusalReason,
   AgentStopClickedMetadata,
   AgentStopMethod,
@@ -753,11 +755,16 @@ export function useAgentSession(deps: AgentSessionDeps) {
   const supersededAnswerReports = new Set<string>()
   const acceptedUnconfirmedReports = new Set<string>()
   const conflictUnconfirmedReports = new Set<string>()
+  const approvalRecoveryAttempts = new Set<string>()
+  const approvalRecoveryOutcomes = new Set<string>()
   const lateAskReports = new Map<
     string,
     {
       threadId: string
       messageId: string
+      turn: LiveTurn
+      cause: RecoveryCause
+      trackRunApproval: boolean
       timer: ReturnType<typeof setTimeout>
     }
   >()
@@ -885,7 +892,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     // with no surviving thread has no resumed turn the binding could serve.
     if (
       conversationStore.threadId === null &&
-      localStorage.getItem(threadStorageKey) === null
+      safeLocalStorage.getItem(threadStorageKey) === null
     ) {
       rememberedWorkflowId = null
       boundWorkflowId.value = null
@@ -901,7 +908,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const surviving = conversationStore.threadId
     const stored =
       conversationStore.messages.length === 0
-        ? localStorage.getItem(threadStorageKey)
+        ? safeLocalStorage.getItem(threadStorageKey)
         : null
     const initialThreadId = surviving ?? stored
     initializeWorkflowContext(initialThreadId !== null)
@@ -1429,8 +1436,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
   function forgetMissingThread(threadId: string, clearActive: boolean): void {
     invalidateChat(threadId)
     deletedThreads.add(threadId)
-    if (localStorage.getItem(threadStorageKey) === threadId)
-      localStorage.removeItem(threadStorageKey)
+    if (safeLocalStorage.getItem(threadStorageKey) === threadId)
+      safeLocalStorage.removeItem(threadStorageKey)
     if (clearActive && conversationStore.threadId === threadId) {
       resetToBlankChat()
       onThreadActivated?.(null)
@@ -1698,8 +1705,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
       deletedThreads.add(threadId)
       if (conversationStore.threadId === threadId)
         conversationStore.setThreadId(null)
-      if (localStorage.getItem(threadStorageKey) === threadId)
-        localStorage.removeItem(threadStorageKey)
+      if (safeLocalStorage.getItem(threadStorageKey) === threadId)
+        safeLocalStorage.removeItem(threadStorageKey)
       return false
     }
     const diagnostics = describeAgentRequestFailure(error)
@@ -2040,6 +2047,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
   }
 
+  function reportAcceptedTurnSideEffectFailure(
+    error: unknown,
+    errorType: string
+  ): void {
+    reportError(error, { surface: 'agent', errorType })
+    trackAgentError('request_failed', 'post_acceptance', 'none')
+  }
+
   function runAcceptedTurnSideEffect(
     effect: () => void,
     errorType: string
@@ -2047,8 +2062,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     try {
       effect()
     } catch (error) {
-      reportError(error, { surface: 'agent', errorType })
-      trackAgentError('request_failed', 'post_acceptance', 'none')
+      reportAcceptedTurnSideEffectFailure(error, errorType)
     }
   }
 
@@ -2155,10 +2169,15 @@ export function useAgentSession(deps: AgentSessionDeps) {
       () => onThreadActivated?.(ack.thread_id),
       'agent_thread_activated_callback_failed'
     )
-    runAcceptedTurnSideEffect(
-      () => localStorage.setItem(threadStorageKey, ack.thread_id),
-      'agent_thread_persistence_failed'
+    const threadPersistence = safeLocalStorage.write(
+      threadStorageKey,
+      ack.thread_id
     )
+    if (threadPersistence.result !== 'ok')
+      reportAcceptedTurnSideEffectFailure(
+        threadPersistence.error,
+        'agent_thread_persistence_failed'
+      )
     if (adoptWorkflow)
       runAcceptedTurnSideEffect(
         adoptWorkflow,
@@ -3199,7 +3218,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   async function answerAsk(
     askId: string,
-    answer: AgentAnswerRequest | 'run' | 'cancel'
+    answer: AgentAnswerRequest | 'run' | 'cancel',
+    onRequestFailed?: () => void
   ): Promise<boolean> {
     const currentThreadId = conversationStore.threadId
     if (currentThreadId === null) {
@@ -3223,8 +3243,22 @@ export function useAgentSession(deps: AgentSessionDeps) {
       answerStartedDropped || resolutionChannelEpoch !== answerChannelEpoch
     const resolutionChannelWasLost = () =>
       answerStartedBeforeFirstOpen || resolutionChannelDropped()
+    let receipt: AgentAnswerReceipt
     try {
-      const receipt = await sendAnswer(currentThreadId, askId, normalizedAnswer)
+      receipt = await sendAnswer(currentThreadId, askId, normalizedAnswer)
+    } catch (error) {
+      if (!answeringAskIds.value.has(askId)) return false
+      if (!(error instanceof AgentApiError && error.status === 409))
+        onRequestFailed?.()
+      return handleAnswerFailure(
+        error,
+        askId,
+        currentThreadId,
+        runApprovalAnswer,
+        resolutionChannelWasLost()
+      )
+    }
+    try {
       return commitAskReceipt({
         askId,
         answer: normalizedAnswer,
@@ -3547,7 +3581,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   function resetToBlankChat(blankChatId?: string): void {
     clearUnactivatedThread(blankChatId)
     onThreadActivated?.(null)
-    localStorage.removeItem(threadStorageKey)
+    safeLocalStorage.removeItem(threadStorageKey)
   }
 
   function newChat(
@@ -3567,7 +3601,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   function activateLoadedThread(threadId: string): void {
-    localStorage.setItem(threadStorageKey, threadId)
+    safeLocalStorage.setItem(threadStorageKey, threadId)
     onThreadActivated?.(threadId)
   }
 
@@ -4655,13 +4689,26 @@ export function useAgentSession(deps: AgentSessionDeps) {
   ): void {
     if (!pendingAsk) return
     if (deliveredAsks.has(pendingAsk.ask_id)) return
+    const trackRunApproval = pendingAsk.kind === 'run_approval'
     if (
       conversationStore.submittedAskAnswer(pendingAsk.ask_id) !== undefined ||
       answeringAskIds.value.has(pendingAsk.ask_id)
     )
       return
-    if (conversationStore.isAskRetired(pendingAsk.ask_id, turn.threadId)) return
+    if (conversationStore.isAskRetired(pendingAsk.ask_id, turn.threadId)) {
+      if (
+        trackRunApproval &&
+        conversationStore.isAskPermanentlyRetired(
+          pendingAsk.ask_id,
+          turn.threadId
+        )
+      )
+        trackApprovalRecoveryOutcome(pendingAsk.ask_id, turn, cause, 'retired')
+      return
+    }
     if (conversationStore.isAskShown(turn, pendingAsk.ask_id)) return
+    if (trackRunApproval)
+      trackApprovalRecoveryAttempted(pendingAsk.ask_id, turn, cause)
     const wasDeliveredBefore = observedDeliveredAsks.has(pendingAsk.ask_id)
     conversationStore.ingest({
       type: 'agent_ask',
@@ -4671,10 +4718,52 @@ export function useAgentSession(deps: AgentSessionDeps) {
         message_id: turn.messageId
       }
     })
-    if (!conversationStore.isAskShown(turn, pendingAsk.ask_id)) return
+    if (!conversationStore.isAskShown(turn, pendingAsk.ask_id)) {
+      if (trackRunApproval)
+        trackApprovalRecoveryOutcome(
+          pendingAsk.ask_id,
+          turn,
+          cause,
+          'not_found'
+        )
+      return
+    }
     recordDeliveredAsk(pendingAsk.ask_id)
     if (!wasDeliveredBefore)
-      reportRestoredApproval(turn, pendingAsk.ask_id, cause)
+      reportRestoredApproval(turn, pendingAsk.ask_id, cause, trackRunApproval)
+  }
+
+  function trackApprovalRecoveryAttempted(
+    askId: string,
+    turn: LiveTurn,
+    cause: RecoveryCause
+  ): void {
+    if (!recordAnswerReport(approvalRecoveryAttempts, askId)) return
+    useTelemetry()?.trackAgentRunApprovalRecoveryAttempted({
+      ask_id: askId,
+      turn_id: recoveryTelemetryTurnId(turn),
+      cause
+    })
+  }
+
+  function trackApprovalRecoveryOutcome(
+    askId: string,
+    turn: LiveTurn,
+    cause: RecoveryCause,
+    outcome: AgentRunApprovalRecoveryOutcome
+  ): void {
+    if (!recordAnswerReport(approvalRecoveryOutcomes, `${askId}:${outcome}`))
+      return
+    useTelemetry()?.trackAgentRunApprovalRecoveryOutcome({
+      ask_id: askId,
+      turn_id: recoveryTelemetryTurnId(turn),
+      cause,
+      outcome
+    })
+  }
+
+  function recoveryTelemetryTurnId(turn: LiveTurn): string {
+    return conversationStore.liveTurnMessageId(turn) ?? turn.messageId
   }
 
   /**
@@ -4688,11 +4777,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
   function reportRestoredApproval(
     turn: LiveTurn,
     askId: string,
-    cause: RecoveryCause
+    cause: RecoveryCause,
+    trackRunApproval: boolean
   ): void {
     const lostFrame = cause === 'reconnect' || connection === 'dropped'
     if (!lostFrame) {
-      sendRestoredApprovalReport(turn, askId, cause)
+      sendRestoredApprovalReport(turn, askId, cause, trackRunApproval)
       return
     }
     const key = lateAskReportKey(turn.threadId, askId)
@@ -4700,31 +4790,22 @@ export function useAgentSession(deps: AgentSessionDeps) {
     lateAskReports.set(key, {
       threadId: turn.threadId,
       messageId: turn.messageId,
+      turn,
+      cause,
+      trackRunApproval,
       timer: setTimeout(() => {
         lateAskReports.delete(key)
-        sendRestoredApprovalReport(turn, askId, cause)
+        sendRestoredApprovalReport(turn, askId, cause, trackRunApproval)
       }, LATE_ASK_FRAME_GRACE_MS)
     })
   }
 
-  /**
-   * Routes an inbound `agent_ask`. One already in the ledger is an ask
-   * recovery has supplied, or one the user has finished with; dropping it on
-   * the id rather than on the rendered parts is what stops a frame delayed
-   * past its own resolution from drawing a card over a resumed reply.
-   *
-   * A frame is only ledgered once its card is actually on screen. `ingest`
-   * has nowhere to route one that arrives before its turn is in memory -- the
-   * window between subscribing and the first history fetch landing -- and
-   * ledgering a frame the store dropped would convince recovery the ask had
-   * been delivered, leaving the panel with no card at all.
-   */
   function deliverAsk(
     event: Extract<AgentWsEvent, { type: 'agent_ask' }>
   ): void {
     const askId = event.data.ask_id
     if (conversationStore.isAskRetired(askId, event.data.thread_id)) {
-      withdrawLateAskReport(event.data.thread_id, askId)
+      supersedeLateAskReport(event.data.thread_id, askId)
       return
     }
     const turn = {
@@ -4736,12 +4817,24 @@ export function useAgentSession(deps: AgentSessionDeps) {
       (conversationStore.isAskShown(turn, askId) ||
         conversationStore.submittedAskAnswer(askId) !== undefined)
     ) {
-      withdrawLateAskReport(event.data.thread_id, askId)
+      supersedeLateAskReport(event.data.thread_id, askId)
       return
     }
     conversationStore.ingest(event)
-    withdrawLateAskReport(event.data.thread_id, askId)
+    supersedeLateAskReport(event.data.thread_id, askId)
     if (conversationStore.isAskShown(turn, askId)) recordDeliveredAsk(askId)
+  }
+
+  function supersedeLateAskReport(threadId: string, askId: string): void {
+    const scheduled = lateAskReports.get(lateAskReportKey(threadId, askId))
+    withdrawLateAskReport(threadId, askId)
+    if (scheduled === undefined || !scheduled.trackRunApproval) return
+    trackApprovalRecoveryOutcome(
+      askId,
+      scheduled.turn,
+      scheduled.cause,
+      'superseded'
+    )
   }
 
   function withdrawLateAskReport(threadId: string, askId: string): void {
@@ -4755,8 +4848,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
   function sendRestoredApprovalReport(
     turn: LiveTurn,
     askId: string,
-    cause: RecoveryCause
+    cause: RecoveryCause,
+    trackRunApproval: boolean
   ): void {
+    if (trackRunApproval)
+      trackApprovalRecoveryOutcome(askId, turn, cause, 'restored')
     reportError(
       new Error('Agent approval ask was missing from the panel when polled'),
       {
@@ -4903,7 +4999,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     pruneSkillTurns()
     onThreadActivated?.(null)
     forgetBinding()
-    localStorage.removeItem(threadStorageKey)
+    safeLocalStorage.removeItem(threadStorageKey)
   }
 
   const isSending = computed(() => conversationStore.hasSendingPendingSend)
