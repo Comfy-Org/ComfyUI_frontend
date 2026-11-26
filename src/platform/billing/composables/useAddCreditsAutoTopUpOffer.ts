@@ -6,6 +6,7 @@ import type {
   AutoTopUpDefaultCard
 } from '@comfyorg/account-core/billing'
 import { addCreditsAutoTopUpOffer } from '@comfyorg/account-core/billing'
+import type { SavedPaymentMethod } from '@comfyorg/billing-core'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { billingApi } from '@/platform/billing/api/billingApi'
@@ -40,6 +41,17 @@ async function readSavedMethods(): SavedMethodsRead {
   )
 }
 
+function defaultCardRead(
+  methods: readonly SavedPaymentMethod[]
+): DefaultCardRead {
+  const method = methods.find((saved) => saved.is_default)
+  if (!method) return { kind: 'loaded', card: null }
+  const { brand, last4 } = method
+  return brand && last4
+    ? { kind: 'loaded', card: { brand, last4 } }
+    : { kind: 'unknown' }
+}
+
 async function readDefaultCard(): Promise<DefaultCardRead> {
   const result = await readSavedMethods()
   if (result.status !== 'ok') {
@@ -49,12 +61,39 @@ async function readDefaultCard(): Promise<DefaultCardRead> {
     )
     return { kind: 'unknown' }
   }
-  const method = result.value.find((saved) => saved.is_default)
-  if (!method) return { kind: 'loaded', card: null }
-  const { brand, last4 } = method
-  return brand && last4
-    ? { kind: 'loaded', card: { brand, last4 } }
-    : { kind: 'unknown' }
+  return defaultCardRead(result.value)
+}
+
+function cachedDefaultCard(): DefaultCardRead {
+  if (opensLocalBillingHandoff()) return { kind: 'pending' }
+  const methods = useBillingSdkStore().savedPaymentMethodsSnapshot()
+  return methods ? defaultCardRead(methods) : { kind: 'pending' }
+}
+
+/** Starts the reads the Add credits dialog's auto top-up offer renders from, so the dialog opens with them settled. */
+export function usePrefetchAddCreditsAutoTopUpOffer() {
+  const { flags } = useFeatureFlags()
+  const { autoTopUpEnabled, canManageAutoTopUp } = useBillingCapabilities()
+  const { ensureRead } = useBillingAutoTopUpCard()
+  const readEnabled = computed(() => {
+    if (!autoTopUpEnabled.value) return false
+    return canManageAutoTopUp.value
+  })
+
+  watch(
+    readEnabled,
+    (enabled) => {
+      if (!enabled) return
+      ensureRead()
+      if (
+        flags.billingAutoTopUpAtCheckoutEnabled &&
+        !opensLocalBillingHandoff()
+      ) {
+        void useBillingSdkStore().readPaymentMethods()
+      }
+    },
+    { immediate: true }
+  )
 }
 
 /** The Add credits dialog's auto top-up offer from served facts: the checkbox only with `billing_auto_top_up_at_checkout_enabled`, served to Cloud or to a local web handoff, and a settled saved-cards read, else just the already-on line. */
@@ -85,7 +124,7 @@ export function useAddCreditsAutoTopUpOffer() {
       offersCheckbox() && autoTopUpEnabled.value
         ? readDefaultCard()
         : { kind: 'pending' },
-    { kind: 'pending' }
+    cachedDefaultCard()
   )
 
   const offer = computed<AddCreditsAutoTopUpOffer>(() => {

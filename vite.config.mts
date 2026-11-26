@@ -25,6 +25,7 @@ import {
   devServerAgentRoutes
 } from './build/devAgentConfig.ts'
 import { comfyAPIPlugin } from './build/plugins/comfyAPIPlugin.ts'
+import { vueDevtoolsKitStub } from './build/plugins/vueDevtoolsKitStub.ts'
 import {
   hasCompleteSentryUploadConfig,
   resolveSentryUploadConfig
@@ -550,6 +551,7 @@ export default defineConfig({
     ...(!DISABLE_VUE_PLUGINS
       ? [vueDevTools(), vue(vuePluginOptions), createHtmlPlugin({})]
       : [vue(vuePluginOptions)]),
+    vueDevtoolsKitStub(!DISABLE_VUE_PLUGINS),
     tailwindcss(),
     typegpuPlugin({}),
     comfyAPIPlugin(IS_DEV),
