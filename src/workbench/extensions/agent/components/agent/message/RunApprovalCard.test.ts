@@ -63,6 +63,7 @@ function renderCard(next: RunCostEstimateState) {
 }
 
 const costLine = () => screen.queryByTestId('run-approval-cost')
+const card = () => screen.getByTestId('run-approval-card')
 
 describe('RunApprovalCard cost estimate', () => {
   it('shows the api-node floor the user is approving against', async () => {
@@ -143,6 +144,7 @@ describe('RunApprovalCard cost estimate', () => {
     expect(
       screen.getByText('Comfy Agent wants to run this workflow.')
     ).toBeInTheDocument()
+    expect(card()).toHaveAttribute('data-cost-estimate', 'available')
     expect(costLine()).toBeNull()
   })
 
@@ -158,12 +160,14 @@ describe('RunApprovalCard cost estimate', () => {
   it('claims nothing before the graph is read', async () => {
     renderCard({ status: 'idle' })
 
+    expect(card()).toHaveAttribute('data-cost-estimate', 'idle')
     expect(costLine()).toBeNull()
   })
 
   it('shows no cost line after estimation fails and keeps Run enabled', async () => {
     renderCard({ status: 'unavailable' })
 
+    expect(card()).toHaveAttribute('data-cost-estimate', 'unavailable')
     expect(costLine()).toBeNull()
     expect(screen.getByRole('button', { name: 'Run' })).toBeEnabled()
   })

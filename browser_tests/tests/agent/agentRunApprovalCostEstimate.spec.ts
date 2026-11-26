@@ -73,6 +73,10 @@ test.describe(
       await expect(
         panel.getByText(enMessages.agent.runApproval.leadBound)
       ).toBeVisible()
+      await expect(panel.getByTestId('run-approval-card')).toHaveAttribute(
+        'data-cost-estimate',
+        'available'
+      )
       await expect(panel.getByTestId('run-approval-cost')).toHaveCount(0)
     })
 
@@ -90,6 +94,10 @@ test.describe(
       await expect(
         panel.getByText(enMessages.agent.runApproval.leadBound)
       ).toBeVisible()
+      await expect(panel.getByTestId('run-approval-card')).toHaveAttribute(
+        'data-cost-estimate',
+        'available'
+      )
       await expect(panel.getByTestId('run-approval-cost')).toHaveCount(0)
     })
 

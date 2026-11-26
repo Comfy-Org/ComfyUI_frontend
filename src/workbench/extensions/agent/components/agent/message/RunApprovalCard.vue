@@ -58,6 +58,8 @@ const costLine = computed(() => {
 <template>
   <Card
     surface="secondary"
+    data-testid="run-approval-card"
+    :data-cost-estimate="estimateState.status"
     class="flex w-full flex-col gap-2 overflow-hidden p-4 shadow-md"
   >
     <div class="flex min-w-0 flex-col gap-0.5 text-sm/5">
