@@ -697,7 +697,7 @@ describe('DeploymentSwitcher', () => {
     expect(screen.queryByText(/Switching reloads the editor/)).toBeNull()
 
     await user.click(
-      screen.getByRole('menuitem', { name: 'Create a custom deployment' })
+      screen.getByRole('menuitem', { name: 'Create a Custom Build' })
     )
 
     await waitFor(() =>
@@ -2467,7 +2467,7 @@ describe('DeploymentSwitcher with Platform in the editor', () => {
 
   it.for([
     { way: 'E on a deployment row', item: 'row' },
-    { way: 'Enter on Create a custom deployment', item: 'create' }
+    { way: 'Enter on Create a Custom Build', item: 'create' }
   ])(
     'returns focus to Run on when the frame opened with $way closes',
     async ({ item }) => {
@@ -2489,7 +2489,7 @@ describe('DeploymentSwitcher with Platform in the editor', () => {
       const focused =
         item === 'row'
           ? screen.getByTestId(`deployment-row-${D2}`)
-          : screen.getByRole('menuitem', { name: 'Create a custom deployment' })
+          : screen.getByRole('menuitem', { name: 'Create a Custom Build' })
       focused.focus()
       await waitFor(() => expect(focused).toHaveFocus())
 
@@ -2567,7 +2567,7 @@ describe('DeploymentSwitcher with Platform in the editor', () => {
     expect(mockWorkspaceApi.pickDeployment).not.toHaveBeenCalled()
   })
 
-  it('opens a new deployment at its nodes from Create a custom deployment', async () => {
+  it('opens a new deployment at its nodes from Create a Custom Build', async () => {
     Object.assign(useFeatureFlags().flags, {
       customDeploymentsEditorEnabled: true
     })
@@ -2579,7 +2579,7 @@ describe('DeploymentSwitcher with Platform in the editor', () => {
     await openList(user)
 
     await user.click(
-      screen.getByRole('menuitem', { name: 'Create a custom deployment' })
+      screen.getByRole('menuitem', { name: 'Create a Custom Build' })
     )
 
     expect(framedAt()).toMatchObject({ step: 'new', start: 'nodes' })
