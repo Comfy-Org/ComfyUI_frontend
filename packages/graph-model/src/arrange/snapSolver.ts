@@ -43,8 +43,12 @@ interface SnapLine {
   key: string
   kind: SnapKind
   value: number
+  alignedWith?: VisualBox
   isValid?: (box: VisualBox) => boolean
 }
+
+type LineBuckets = Map<number, SnapLine[]>
+type AnchorLines = Partial<Record<Anchor, LineBuckets>>
 
 export interface SnapOptions {
   edges: boolean
@@ -60,9 +64,9 @@ export interface SnapThreshold {
 
 export type SnapAttachment = Partial<Record<Axis, string>>
 
+/** Snap lines per axis, grouped by the moving box's anchor and bucketed by value. */
 export interface SnapIndex {
-  lines: Record<Axis, SnapLine[]>
-  targets: VisualBox[]
+  lines: Record<Axis, AnchorLines>
 }
 
 interface SnapFrame {
@@ -77,6 +81,7 @@ const KIND_PRIORITY: Record<SnapKind, number> = {
 }
 
 const SPACING_NEIGHBOR_SCAN = 64
+const LINE_BUCKET_SIZE = 64
 
 function right(b: VisualBox) {
   return b.x + b.width
@@ -112,19 +117,31 @@ function crossRange(box: VisualBox, axis: Axis): [number, number] {
 }
 
 function overlapsAcross(a: VisualBox, b: VisualBox, axis: Axis): boolean {
-  const [a0, a1] = crossRange(a, axis)
-  const [b0, b1] = crossRange(b, axis)
-  return a0 < b1 && b0 < a1
+  return axis === 'x'
+    ? a.y < bottom(b) && b.y < bottom(a)
+    : a.x < right(b) && b.x < right(a)
 }
 
-function spanLine(axis: Axis, at: number, boxes: VisualBox[]): SmartGuide {
-  const ranges = boxes.map((b) => crossRange(b, axis))
+function crossDistance(a: VisualBox, b: VisualBox, axis: Axis): number {
+  const [a0, a1] = crossRange(a, axis)
+  const [b0, b1] = crossRange(b, axis)
+  return Math.max(0, a0 - b1, b0 - a1)
+}
+
+function spanLine(
+  axis: Axis,
+  at: number,
+  a: VisualBox,
+  b: VisualBox
+): SmartGuide {
+  const [a0, a1] = crossRange(a, axis)
+  const [b0, b1] = crossRange(b, axis)
   return {
     kind: 'line',
     axis,
-    at,
-    from: Math.min(...ranges.map(([start]) => start)),
-    to: Math.max(...ranges.map(([, end]) => end))
+    at: Math.round(at * 2) / 2,
+    from: Math.min(a0, b0),
+    to: Math.max(a1, b1)
   }
 }
 
@@ -163,7 +180,8 @@ function edgeLines(target: VisualBox, id: string, gap: number): SnapLine[] {
       anchor,
       value,
       kind: 'edge',
-      guides: () => []
+      alignedWith: target,
+      guides: (box) => [spanLine(axis, value, box, target)]
     }
   }
   function abut(
@@ -179,7 +197,11 @@ function edgeLines(target: VisualBox, id: string, gap: number): SnapLine[] {
       value,
       kind: 'edge',
       isValid: (box) => overlapsAcross(box, target, axis),
-      guides: (box) => [gapGuide(axis, ...orderedAlong(box, target, axis))]
+      guides: (box) => [
+        gap === 0
+          ? spanLine(axis, value, box, target)
+          : gapGuide(axis, ...orderedAlong(box, target, axis))
+      ]
     }
   }
 
@@ -324,22 +346,38 @@ export function buildSnapIndex(
   options: SnapOptions,
   wiring?: { movingStart: VisualBox; wires: WireAnchor[] }
 ): SnapIndex {
-  const all = [
-    ...(options.edges
-      ? targets.flatMap((target, i) => edgeLines(target, `t${i}`, options.gap))
-      : []),
-    ...(options.spacing ? spacingLines(targets) : []),
-    ...(options.wires && wiring
-      ? wireLines(wiring.movingStart, wiring.wires)
-      : [])
-  ]
-  return {
-    lines: {
-      x: all.filter((line) => line.axis === 'x'),
-      y: all.filter((line) => line.axis === 'y')
-    },
-    targets: options.edges ? targets : []
+  const lines: SnapIndex['lines'] = { x: {}, y: {} }
+  function add(line: SnapLine) {
+    const buckets = (lines[line.axis][line.anchor] ??= new Map())
+    const bucket = bucketOf(line.value)
+    const sharing = buckets.get(bucket)
+    if (sharing) sharing.push(line)
+    else buckets.set(bucket, [line])
   }
+  if (options.edges)
+    targets.forEach((target, i) =>
+      edgeLines(target, `t${i}`, options.gap).forEach(add)
+    )
+  if (options.spacing) spacingLines(targets).forEach(add)
+  if (options.wires && wiring)
+    wireLines(wiring.movingStart, wiring.wires).forEach(add)
+  return { lines }
+}
+
+function bucketOf(value: number): number {
+  return Math.floor(value / LINE_BUCKET_SIZE)
+}
+
+function* linesWithin(
+  buckets: LineBuckets | undefined,
+  value: number,
+  reach: number
+): Generator<SnapLine> {
+  if (!buckets) return
+  const last = bucketOf(value + reach)
+  for (let bucket = bucketOf(value - reach); bucket <= last; bucket++)
+    for (const line of buckets.get(bucket) ?? [])
+      if (Math.abs(line.value - value) <= reach) yield line
 }
 
 interface Candidate {
@@ -351,7 +389,7 @@ type ApplyDelta = (box: VisualBox, axis: Axis, delta: number) => VisualBox
 type Fits = (box: VisualBox) => boolean
 
 function candidatesFor(
-  lines: SnapLine[],
+  lines: AnchorLines,
   box: VisualBox,
   anchors: readonly Anchor[],
   reach: number,
@@ -359,13 +397,14 @@ function candidatesFor(
   fits: Fits
 ): Candidate[] {
   const candidates: Candidate[] = []
-  for (const line of lines) {
-    if (!anchors.includes(line.anchor)) continue
-    const delta = line.value - anchorValue(box, line.anchor)
-    if (Math.abs(delta) > reach) continue
-    const next = apply(box, line.axis, delta)
-    if (!fits(next) || (line.isValid && !line.isValid(next))) continue
-    candidates.push({ line, delta })
+  for (const anchor of anchors) {
+    const at = anchorValue(box, anchor)
+    for (const line of linesWithin(lines[anchor], at, reach)) {
+      const delta = line.value - at
+      const next = apply(box, line.axis, delta)
+      if (!fits(next) || (line.isValid && !line.isValid(next))) continue
+      candidates.push({ line, delta })
+    }
   }
   return candidates
 }
@@ -409,46 +448,37 @@ export interface SnapResult {
   guides: SmartGuide[]
 }
 
-const ALIGNABLE: Record<Anchor, readonly Anchor[]> = {
-  left: ['left', 'right'],
-  right: ['left', 'right'],
-  center: ['center'],
-  top: ['bottom'],
-  body: ['body'],
-  middle: ['middle'],
-  bottom: ['top', 'bottom']
-}
-
-function alignedWith(
-  value: number,
-  anchor: Anchor,
-  targets: VisualBox[]
-): VisualBox[] {
-  return targets.filter((target) =>
-    ALIGNABLE[anchor].some(
-      (other) => Math.abs(anchorValue(target, other) - value) <= ALIGNED_EPSILON
-    )
+function nearestAlignment(
+  index: SnapIndex,
+  line: SnapLine,
+  target: VisualBox,
+  box: VisualBox
+): SnapLine {
+  let nearest = line
+  let nearestDistance = crossDistance(box, target, line.axis)
+  const sameValue = linesWithin(
+    index.lines[line.axis][line.anchor],
+    line.value,
+    ALIGNED_EPSILON
   )
+  for (const other of sameValue) {
+    if (!other.alignedWith) continue
+    const distance = crossDistance(box, other.alignedWith, line.axis)
+    if (distance < nearestDistance)
+      [nearest, nearestDistance] = [other, distance]
+  }
+  return nearest
 }
 
-function alignedGuides(
-  box: VisualBox,
-  targets: VisualBox[],
-  anchors: Record<Axis, readonly Anchor[]>
+function winnerGuides(
+  index: SnapIndex,
+  { line }: Candidate,
+  box: VisualBox
 ): SmartGuide[] {
-  const guides: SmartGuide[] = []
-  for (const axis of ['x', 'y'] as const) {
-    const aligned = new Map<number, VisualBox[]>()
-    for (const anchor of anchors[axis]) {
-      const value = anchorValue(box, anchor)
-      const matches = alignedWith(value, anchor, targets)
-      if (!matches.length) continue
-      const at = Math.round(value * 2) / 2
-      aligned.set(at, [...(aligned.get(at) ?? [box]), ...matches])
-    }
-    for (const [at, boxes] of aligned) guides.push(spanLine(axis, at, boxes))
-  }
-  return guides
+  const shown = line.alignedWith
+    ? nearestAlignment(index, line, line.alignedWith, box)
+    : line
+  return shown.guides(box)
 }
 
 function holdsAt(winner: Candidate, box: VisualBox) {
@@ -498,18 +528,7 @@ function solve(
   if (winners.x) nextAttachment.x = winners.x.line.key
   if (winners.y) nextAttachment.y = winners.y.line.key
 
-  const flatWires = index.lines.y.filter(
-    (line) =>
-      line.kind === 'wire' &&
-      Math.abs(line.value - snapped.y) <= ALIGNED_EPSILON
-  )
-  const guides = [
-    ...alignedGuides(snapped, index.targets, anchors),
-    ...chosen.flatMap((w) =>
-      w.line.kind === 'wire' ? [] : w.line.guides(snapped)
-    ),
-    ...flatWires.flatMap((line) => line.guides(snapped))
-  ]
+  const guides = chosen.flatMap((w) => winnerGuides(index, w, snapped))
   return { box: snapped, attachment: nextAttachment, guides }
 }
 

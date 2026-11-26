@@ -184,6 +184,34 @@ describe('snapMove', () => {
     expect(guides.filter((g) => g.kind === 'gap')).toHaveLength(2)
   })
 
+  it('draws one alignment line per axis, spanning only to the nearest aligned box', () => {
+    const index = buildSnapIndex(
+      [box(100, 0, 100, 60), box(100, 1000, 100, 60)],
+      edgesOnly
+    )
+    expect(
+      snapMove(index, box(104, 300, 100, 50), { threshold }).guides
+    ).toEqual([{ kind: 'line', axis: 'x', at: 100, from: 0, to: 350 }])
+  })
+
+  it.for([
+    {
+      name: 'a line along the shared edge when the gap is 0',
+      gap: 0,
+      moving: box(104, 10, 50, 50),
+      guides: [{ kind: 'line', axis: 'x', at: 100, from: 0, to: 100 }]
+    },
+    {
+      name: 'the gap measurement when a gap is configured',
+      gap: 20,
+      moving: box(124, 10, 50, 50),
+      guides: [{ kind: 'gap', axis: 'x', from: 100, to: 120, cross: 35 }]
+    }
+  ])('marks an abutment with $name', ({ gap, moving, guides }) => {
+    const index = buildSnapIndex([box(0, 0, 100, 100)], { ...edgesOnly, gap })
+    expect(snapMove(index, moving, { threshold }).guides).toEqual(guides)
+  })
+
   it('draws no alignment lines when edge snapping is off', () => {
     const index = buildSnapIndex([box(100, 0, 100, 60)], {
       ...edgesOnly,
