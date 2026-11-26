@@ -2,56 +2,82 @@ import { expect } from '@playwright/test'
 
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 
-/**
- * A turn whose prompt is a QUESTION must be answered, not built.
- *
- * The user-visible defect this pins: a daily Film/TV/VFX user reported the
- * agent "will work and spend credits without being told to. If I ask a
- * question, it starts working without being told to and spends my money, then
- * I have to tell it to put it back which spends even more of my money."
- * (`#comfy-agent-user-feedback` Typeform intake, 2026-11-26.) Agent spend is
- * metered per MODEL ROUND, not per run (cloud `services/agent/internal/metering`,
- * BE-10157), so an unrequested build costs real credits even when it never
- * reaches the run consent card — and the corrective turn is billed again.
- *
- * The contract lives only in the cloud system prompt
- * (`services/agent/internal/loop/prompt.go`, "ADVICE IS NOT A BUILD"); there is
- * no classifier. So the browser-observable half is what this asserts: for the
- * recorded cloud capture of an interrogative prompt, the canvas the user is
- * looking at is byte-for-byte the graph they had before they asked.
- *
- * `agent-rec-text-only-answer` is a real cloud capture (claude-opus-5, cloud
- * 9dc1da7dae) whose prompt is "Switch to the tab 'Text to image', then tell me
- * what this workflow does." Its recorded turn calls `switch_tab` and
- * `print_workflow` — both reads — and carries zero `graph_ops`.
- *
- * Related: PM-2675 owns the model-side requirement for how-to and ambiguous
- * prompts, which this descriptive-question shape does not cover.
- */
-
 const QUESTION_CASE = 'agent-rec-text-only-answer'
-
-// The graph the user had open before they asked. The agent may not change it.
-const SEED_NODE_IDS = ['4', '6', '3', '8', '9'] as const
+const SEED_NODE_IDS = ['3', '4', '6', '8', '9'] as const
 
 test.describe(
   'Agent question does not edit the canvas',
   { tag: ['@cloud', '@agent', '@canvas', '@vue-nodes'] },
   () => {
-    test.use({ conversationCase: QUESTION_CASE })
+    test.use({ conversationCase: QUESTION_CASE, humanOpsHost: 'apply' })
 
     test('answers an interrogative prompt without touching the graph', async ({
+      page,
       agentConversation
     }) => {
       test.setTimeout(90_000)
 
-      await agentConversation.runTurns()
+      const readGraph = () =>
+        page.evaluate(() => {
+          const graph = window.app!.graph
+          return {
+            nodes: graph
+              .serialize()
+              .nodes.map((node) => ({
+                id: String(node.id),
+                type: node.type,
+                mode: node.mode,
+                widgets: JSON.stringify(node.widgets_values ?? null)
+              }))
+              .sort((a, b) => a.id.localeCompare(b.id)),
+            links: [...graph.links.values()]
+              .map(
+                (link) =>
+                  `${link.origin_id}:${link.origin_slot}->${link.target_id}:${link.target_slot}:${link.type}`
+              )
+              .sort()
+          }
+        })
 
-      await test.step('the recorded turn minted no graph edit', async () => {
-        expect(agentConversation.addedNodeIds()).toEqual([])
+      const recordedGraphOps = agentConversation.conversation.turns
+        .flatMap((turn) => turn.response)
+        .flatMap((entry) => (entry.kind === 'graph_ops' ? entry.ops : []))
+        .map((op) => `${op.op}:${String(op.node_id)}`)
+
+      await test.step('the capture this case replays carries no graph op of any kind', () => {
+        expect(recordedGraphOps).toEqual([])
       })
 
-      await test.step('the canvas still holds exactly the seed nodes', async () => {
+      await expect(agentConversation.vueNodes.nodes).toHaveCount(
+        SEED_NODE_IDS.length
+      )
+      const before = await readGraph()
+      expect(before.nodes.map(({ id }) => id)).toEqual([...SEED_NODE_IDS])
+      expect(before.links).not.toHaveLength(0)
+
+      await agentConversation.runTurns()
+
+      await test.step('the user got a text answer', async () => {
+        await expect(
+          agentConversation.panel.getByText('standard SDXL text-to-image setup')
+        ).toBeVisible()
+      })
+
+      await test.step('the page minted no op of any kind', () => {
+        expect(agentConversation.humanOps()).toEqual([])
+      })
+
+      await test.step('every node type, mode, widget value and link the user had is still there, and nothing else is', async () => {
+        await expect.poll(readGraph).toEqual(before)
+      })
+
+      await test.step('the shared document holds exactly the seed nodes', () => {
+        const hostNodeIds = agentConversation.hostNodeIds()
+        expect(hostNodeIds).toEqual(expect.arrayContaining([...SEED_NODE_IDS]))
+        expect(hostNodeIds).toHaveLength(SEED_NODE_IDS.length)
+      })
+
+      await test.step('the canvas still renders exactly the seed nodes', async () => {
         await expect(agentConversation.vueNodes.nodes).toHaveCount(
           SEED_NODE_IDS.length
         )
@@ -60,18 +86,6 @@ test.describe(
             agentConversation.vueNodes.getNodeLocator(nodeId)
           ).toBeVisible()
         }
-      })
-
-      await test.step('no remote write reached the shared document', () => {
-        const hostNodeIds = agentConversation.hostNodeIds()
-        expect(hostNodeIds).toEqual(expect.arrayContaining([...SEED_NODE_IDS]))
-        expect(hostNodeIds).toHaveLength(SEED_NODE_IDS.length)
-      })
-
-      await test.step('the user got a text answer', async () => {
-        await expect(
-          agentConversation.panel.getByText('standard SDXL text-to-image setup')
-        ).toBeVisible()
       })
     })
   }
