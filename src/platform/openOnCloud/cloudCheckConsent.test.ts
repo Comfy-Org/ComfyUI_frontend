@@ -176,6 +176,44 @@ describe('saveAskBeforeCloudCheck', () => {
     expect(useSettingStore().get(ASK_BEFORE_CLOUD_CHECK)).toBe(true)
   })
 
+  it("resends another tab's newer choice when this tab's save lands after it", async () => {
+    const dontAskAgainSave = deferredResponse()
+    vi.mocked(api.storeSetting)
+      .mockReturnValueOnce(dontAskAgainSave.promise)
+      .mockResolvedValue(new Response())
+    const dontAskAgain = saveAskBeforeCloudCheck(false)
+    await vi.waitFor(() => expect(api.storeSetting).toHaveBeenCalledOnce())
+    choiceSavedInAnotherTab(true, { confirmed: false })
+
+    dontAskAgainSave.resolve(new Response())
+    await dontAskAgain
+    await vi.waitFor(() => expect(api.storeSetting).toHaveBeenCalledTimes(2))
+
+    expect(api.storeSetting).toHaveBeenLastCalledWith(
+      ASK_BEFORE_CLOUD_CHECK,
+      true
+    )
+    expect(skipsCloudCheckQuestion()).toBe(false)
+  })
+
+  it('sends a newer choice from this tab once when an earlier save lands after it was made', async () => {
+    const dontAskAgainSave = deferredResponse()
+    vi.mocked(api.storeSetting)
+      .mockReturnValueOnce(dontAskAgainSave.promise)
+      .mockResolvedValue(new Response())
+    const dontAskAgain = saveAskBeforeCloudCheck(false)
+    await vi.waitFor(() => expect(api.storeSetting).toHaveBeenCalledOnce())
+    const askAgain = saveAskBeforeCloudCheck(true)
+
+    dontAskAgainSave.resolve(new Response())
+    await Promise.all([dontAskAgain, askAgain])
+
+    expect(vi.mocked(api.storeSetting).mock.calls).toEqual([
+      [ASK_BEFORE_CLOUD_CHECK, false],
+      [ASK_BEFORE_CLOUD_CHECK, true]
+    ])
+  })
+
   it('reports a stalled save and moves on to the next choice', async () => {
     vi.useFakeTimers()
     try {

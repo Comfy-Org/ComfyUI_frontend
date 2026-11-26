@@ -198,6 +198,15 @@ function reportSaveFailure(cause: unknown, askBeforeCheck: boolean) {
   })
 }
 
+function settleSavedChoice(askBeforeCheck: boolean, revision: number) {
+  if (!isLatestChoice(askBeforeCheck, revision)) {
+    if (readLatestChoice()?.revision !== choiceInThisTab?.revision)
+      resendLatestChoice()
+    return
+  }
+  if (askBeforeCheck && unsettledLateWrites === 0) setPendingAskAgain(false)
+}
+
 async function persistAskBeforeCloudCheck(
   askBeforeCheck: boolean,
   revision: number,
@@ -211,12 +220,7 @@ async function persistAskBeforeCloudCheck(
       reportSaveFailure(failure, askBeforeCheck)
       return
     }
-    if (
-      askBeforeCheck &&
-      unsettledLateWrites === 0 &&
-      isLatestChoice(true, revision)
-    )
-      setPendingAskAgain(false)
+    settleSavedChoice(askBeforeCheck, revision)
   } catch (cause) {
     reportSaveFailure(cause, askBeforeCheck)
   }
