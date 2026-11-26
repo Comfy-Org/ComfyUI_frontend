@@ -118,32 +118,33 @@ export interface ExecutionErrorWsMessage extends ExecutionWsMessageBase {
   current_outputs?: unknown
   node_errors?: ExecutionError['node_errors']
 }
-const zRelayedNodeError = zPromptOutputsSkippedNodeError.extend({
-  errors: z.array(z.unknown())
-})
 const zRelayedValidationError =
   zPromptOutputsSkippedNodeError.shape.errors.element
 
-function contractNodeErrorEntries(
-  nodeErrors: Record<string, unknown>
-): [string, z.infer<typeof zPromptOutputsSkippedNodeError>][] {
-  return Object.entries(nodeErrors).flatMap(([nodeId, nodeError]) => {
-    const node = zRelayedNodeError.safeParse(nodeError)
-    if (!node.success) return []
-    const errors = node.data.errors.flatMap((error) => {
+const zRelayedValidationErrors = z
+  .array(z.unknown())
+  .catch([])
+  .transform((errors) =>
+    errors.flatMap((error) => {
       const item = zRelayedValidationError.safeParse(error)
       return item.success ? [item.data] : []
     })
-    return [[nodeId, { ...node.data, errors }]]
-  })
-}
-
-/** Relayed `node_errors` reduced to the nodes and errors that match the contract. */
-export const zRelayedNodeErrors = z
-  .record(z.string(), z.unknown())
-  .transform((nodeErrors): NonNullable<ExecutionError['node_errors']> =>
-    Object.fromEntries(contractNodeErrorEntries(nodeErrors))
   )
+
+const zRelayedNodeError = z
+  .object({
+    class_type: zPromptOutputsSkippedNodeError.shape.class_type.catch(''),
+    dependent_outputs:
+      zPromptOutputsSkippedNodeError.shape.dependent_outputs.catch([]),
+    errors: zRelayedValidationErrors
+  })
+  .catch({ class_type: '', dependent_outputs: [], errors: [] })
+
+/** Relayed `node_errors` with every node kept and each part outside the contract emptied. */
+export const zRelayedNodeErrors = z.record(
+  z.string(),
+  zRelayedNodeError
+) satisfies z.ZodType<NonNullable<ExecutionError['node_errors']>>
 
 export interface ProgressTextWsMessage {
   nodeId: NodeId

@@ -233,9 +233,17 @@ describe('fetchJobs', () => {
         expected: { '4': { ...rawComfyNodeErrors['4'], errors: [] } }
       },
       {
-        name: 'keeps the contract nodes beside a malformed sibling',
-        nodeErrors: { ...contractNodeErrors, '7': { class_type: 'LoadImage' } },
-        expected: contractNodeErrors
+        name: 'keeps a malformed node with its parts outside the contract emptied',
+        nodeErrors: {
+          ...contractNodeErrors,
+          '7': { class_type: 'LoadImage' },
+          '8': null
+        },
+        expected: {
+          ...contractNodeErrors,
+          '7': { class_type: 'LoadImage', dependent_outputs: [], errors: [] },
+          '8': { class_type: '', dependent_outputs: [], errors: [] }
+        }
       },
       {
         name: 'drops node errors that are not a node map and keeps the job',

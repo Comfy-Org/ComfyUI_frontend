@@ -280,6 +280,11 @@ describe('executionErrorUtil', () => {
         expected: rejection(summaryOnlyMessage)
       },
       {
+        name: 'the summary rejection when every relayed node is outside the contract',
+        nodeErrors: { '72': { class_type: 'CheckpointLoaderSimple' } },
+        expected: rejection(summaryOnlyMessage)
+      },
+      {
         name: 'the contract nodes beside a node outside the contract',
         nodeErrors: { ...relayedNodeErrors, '80': rawComfyNodeErrors['72'] },
         expected: { kind: 'nodeErrors', nodeErrors: relayedNodeErrors }
