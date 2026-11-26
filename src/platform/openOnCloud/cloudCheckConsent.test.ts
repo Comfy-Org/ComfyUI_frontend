@@ -212,4 +212,28 @@ describe('saveAskBeforeCloudCheck', () => {
       expect.objectContaining({ errorType: 'error_saving_cloud_check_consent' })
     )
   })
+
+  it('resends the latest choice when a timed-out save lands after it', async () => {
+    vi.useFakeTimers()
+    try {
+      const lateSave = deferredResponse()
+      vi.mocked(api.storeSetting).mockReturnValueOnce(lateSave.promise)
+      const dontAskAgain = saveAskBeforeCloudCheck(false)
+      await vi.waitFor(() => expect(api.storeSetting).toHaveBeenCalledOnce())
+      const askAgain = saveAskBeforeCloudCheck(true)
+      await vi.advanceTimersByTimeAsync(CLOUD_CHECK_CONSENT_SAVE_TIMEOUT_MS)
+      await Promise.all([dontAskAgain, askAgain])
+      expect(api.storeSetting).toHaveBeenCalledTimes(2)
+
+      lateSave.resolve(new Response())
+      await vi.waitFor(() => expect(api.storeSetting).toHaveBeenCalledTimes(3))
+
+      expect(api.storeSetting).toHaveBeenLastCalledWith(
+        ASK_BEFORE_CLOUD_CHECK,
+        true
+      )
+    } finally {
+      vi.useRealTimers()
+    }
+  })
 })

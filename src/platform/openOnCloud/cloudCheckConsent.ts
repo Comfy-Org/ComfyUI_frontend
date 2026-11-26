@@ -14,31 +14,36 @@ function isCurrentChoice(askBeforeCheck: boolean) {
   return useSettingStore().get(ASK_BEFORE_CLOUD_CHECK) === askBeforeCheck
 }
 
+const TIMED_OUT = Symbol('timed out')
+
+function resendLatestChoice() {
+  void saveAskBeforeCloudCheck(
+    useSettingStore().get(ASK_BEFORE_CLOUD_CHECK) !== false
+  )
+}
+
 async function storeAskBeforeCloudCheck(askBeforeCheck: boolean) {
+  const request = api.storeSetting(ASK_BEFORE_CLOUD_CHECK, askBeforeCheck)
   let timer: ReturnType<typeof setTimeout> | undefined
-  const timedOut = new Promise<never>((_, reject) => {
-    timer = setTimeout(
-      () =>
-        reject(
-          new Error(
-            `Timed out storing ${ASK_BEFORE_CLOUD_CHECK} after ${CLOUD_CHECK_CONSENT_SAVE_TIMEOUT_MS} ms`
-          )
-        ),
-      CLOUD_CHECK_CONSENT_SAVE_TIMEOUT_MS
-    )
-  })
-  try {
-    const response = await Promise.race([
-      api.storeSetting(ASK_BEFORE_CLOUD_CHECK, askBeforeCheck),
-      timedOut
-    ])
-    if (response.ok) return undefined
+  const result = await Promise.race([
+    request,
+    new Promise<typeof TIMED_OUT>((resolve) => {
+      timer = setTimeout(
+        () => resolve(TIMED_OUT),
+        CLOUD_CHECK_CONSENT_SAVE_TIMEOUT_MS
+      )
+    })
+  ]).finally(() => clearTimeout(timer))
+  if (result === TIMED_OUT) {
+    request.then(resendLatestChoice, resendLatestChoice)
     return new Error(
-      `Failed to store ${ASK_BEFORE_CLOUD_CHECK}: ${response.status} ${response.statusText || 'Request failed'}`
+      `Timed out storing ${ASK_BEFORE_CLOUD_CHECK} after ${CLOUD_CHECK_CONSENT_SAVE_TIMEOUT_MS} ms`
     )
-  } finally {
-    clearTimeout(timer)
   }
+  if (result.ok) return undefined
+  return new Error(
+    `Failed to store ${ASK_BEFORE_CLOUD_CHECK}: ${result.status} ${result.statusText || 'Request failed'}`
+  )
 }
 
 function reportSaveFailure(cause: unknown, askBeforeCheck: boolean) {
