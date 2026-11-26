@@ -1516,17 +1516,15 @@ export class LiveGraphApplier {
       else this.applyWidgets(live, docNode.widgets, mode)
       return 'updated'
     }
-    const preservedPosition =
-      live && replacement ? ([live.pos[0], live.pos[1]] as const) : undefined
+    const preservedLayout =
+      live && replacement
+        ? {
+            pos: [live.pos[0], live.pos[1]] as const,
+            size: [live.size[0], live.size[1]] as const
+          }
+        : undefined
     if (live) graph.remove(live)
-    this.createNode(
-      graph,
-      docNode,
-      mode,
-      context,
-      preservedPosition,
-      replacement
-    )
+    this.createNode(graph, docNode, mode, context, preservedLayout, replacement)
     return live ? 'recreated' : 'created'
   }
 
@@ -1535,7 +1533,10 @@ export class LiveGraphApplier {
     docNode: DocNode,
     mode: ApplyMode,
     context: RemoteApplyContext,
-    position?: readonly [number, number],
+    layout?: {
+      pos: readonly [number, number]
+      size: readonly [number, number]
+    },
     built?: LGraphNode | null
   ): LGraphNode {
     const node =
@@ -1557,11 +1558,12 @@ export class LiveGraphApplier {
     if (docNode.widgetRecord)
       info.widgets_values = docNode.widgetRecord as unknown as WidgetValue[]
     detachSerialisedLinks(info)
-    const resolvedPos: [number, number] = position
-      ? [position[0], position[1]]
+    const resolvedPos: [number, number] = layout
+      ? [layout.pos[0], layout.pos[1]]
       : [info.pos[0], info.pos[1]]
     info.pos = resolvedPos
     node.pos = resolvedPos
+    if (layout) info.size = [layout.size[0], layout.size[1]]
     graph.add(node)
     if (node.id !== toNodeId(docNode.id)) {
       const existingOwner = diagnosticNodeOwner(graph, toNodeId(docNode.id))

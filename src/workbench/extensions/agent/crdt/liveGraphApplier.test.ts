@@ -1120,6 +1120,7 @@ describe('LiveGraphApplier', () => {
     expect(graph.getNodeById(toNodeId(1))).toBe(placeholder)
     assert.exists(placeholder)
     placeholder.pos = [777, 888]
+    placeholder.size = [650, 450]
 
     LiteGraph.registerNodeType(type, TestLateRegistration)
     applyEdit(() => {
@@ -1142,6 +1143,7 @@ describe('LiveGraphApplier', () => {
     expect(resolved?.has_errors).toBeFalsy()
     expect(positionWhenAdded).toEqual([777, 888])
     expect(Array.from(resolved!.pos)).toEqual([777, 888])
+    expect(Array.from(resolved!.size)).toEqual([650, 450])
 
     applyEdit(() => {
       nodesMap(doc).set(
