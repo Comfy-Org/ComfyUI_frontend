@@ -358,6 +358,51 @@ describe('useAgentDockMount', () => {
     )
   })
 
+  it('keeps an unadopted read out of the baseline when it resolves after the refresh timeout', async () => {
+    vi.stubGlobal('__DISTRIBUTION__', 'cloud')
+    const accountId = ref('account-a')
+    useCurrentUser().resolvedUserInfo = computed(() =>
+      fromPartial<AuthUserInfo>({ id: accountId.value })
+    )
+    const subscription = ref({
+      hasFunds: true,
+      agentHasFunds: true,
+      agentScopedHasFunds: true
+    })
+    let finishRefresh: ((adopted: boolean) => void) | undefined
+    const fetchStatusFresh = vi.fn(
+      () =>
+        new Promise<boolean>((resolve) => {
+          finishRefresh = resolve
+        })
+    )
+    vi.mocked(useBillingContext).mockReturnValue({
+      ...billingContext,
+      fetchStatusFresh,
+      type: computed(() => 'workspace'),
+      subscription: computed(() =>
+        fromPartial<SubscriptionInfo>(subscription.value)
+      )
+    })
+    const store = useAgentPanelStore()
+
+    useAgentDockMount()
+    accountId.value = 'account-b'
+    await nextTick()
+    expect(fetchStatusFresh).toHaveBeenCalledOnce()
+
+    await vi.advanceTimersByTimeAsync(15_000)
+
+    finishRefresh?.(false)
+    await vi.runAllTimersAsync()
+    subscription.value = { ...subscription.value, agentScopedHasFunds: false }
+    await nextTick()
+
+    expect(store.claimCreditTransitionNoticeImpression('account-b:none')).toBe(
+      false
+    )
+  })
+
   it('seeds the new identity after a rejected refresh', async () => {
     vi.stubGlobal('__DISTRIBUTION__', 'cloud')
     const accountId = ref('account-a')
