@@ -343,9 +343,27 @@ function* linesWithin(
   if (!buckets) return
   const first = bucketOf(value - reach)
   const span = bucketOf(value + reach) - first
-  for (let step = 0; step <= span; step++)
-    for (const line of buckets.get(first + step) ?? [])
+  for (const lines of coveredBuckets(buckets, first, span))
+    for (const line of lines)
       if (Math.abs(line.value - value) <= reach) yield line
+}
+
+function coveredBuckets(
+  buckets: LineBuckets,
+  first: number,
+  span: number
+): SnapLine[][] {
+  if (span >= buckets.size)
+    return [...buckets]
+      .filter(([bucket]) => bucket >= first && bucket - first <= span)
+      .sort(([a], [b]) => a - b)
+      .map(([, lines]) => lines)
+  const covered: SnapLine[][] = []
+  for (let step = 0; step <= span; step++) {
+    const lines = buckets.get(first + step)
+    if (lines) covered.push(lines)
+  }
+  return covered
 }
 
 interface Candidate {

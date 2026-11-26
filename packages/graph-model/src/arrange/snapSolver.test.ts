@@ -222,11 +222,27 @@ describe('snapMove', () => {
     ).toEqual([])
   })
 
-  it('snaps at coordinates too large to step from one bucket to the next', () => {
-    const far = 2 ** 60
-    const index = buildSnapIndex([box(far, 0, 100, 60)], edgesOnly)
-    const { guides } = snapMove(index, box(far, 300, 50, 50), { threshold })
-    expect(guides).toHaveLength(1)
+  it.for([
+    {
+      name: 'coordinates too large to step from one bucket to the next',
+      target: box(2 ** 60, 0, 100, 60),
+      moving: box(2 ** 60, 300, 50, 50),
+      reach: 14,
+      guides: 1
+    },
+    {
+      name: 'a reach that spans far more buckets than hold lines',
+      target: box(100, 0, 100, 60),
+      moving: box(105, 300, 50, 50),
+      reach: 2 ** 60,
+      guides: 2
+    }
+  ])('still snaps with $name', ({ target, moving, reach, guides }) => {
+    const index = buildSnapIndex([target], edgesOnly)
+    const snapped = snapMove(index, moving, {
+      threshold: { enter: reach, exit: reach }
+    })
+    expect(snapped.guides).toHaveLength(guides)
   })
 
   it('leaves the box alone when nothing is in reach', () => {
