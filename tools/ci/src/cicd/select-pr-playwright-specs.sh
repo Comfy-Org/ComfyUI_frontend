@@ -30,11 +30,6 @@ if [ -z "$candidates" ] || [ -z "$default_branch_point" ]; then
   exit 0
 fi
 
-# A pull request based on a stale branch carries every spec the default branch
-# has changed since the branch point, so the base diff alone selects hundreds of
-# other authors' specs. Recording them wastes the whole job on work nobody in
-# this review will read, and inherits every pre-existing flake as a hard red
-# because the recording run disables retries.
 while IFS= read -r file; do
   [ -n "$file" ] || continue
   head_blob=$(blob_at "$head_sha" "$file")
