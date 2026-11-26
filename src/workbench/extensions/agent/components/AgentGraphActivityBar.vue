@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import CanvasBanner from '@comfyorg/design-system/common/CanvasBanner'
@@ -10,6 +10,7 @@ import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 import { createPositionBounds } from '@/utils/positionBounds'
 
+import { shouldFrameAgentBatch } from '@/workbench/extensions/agent/crdt/batchFraming'
 import { useAgentGraphActivityStore } from '@/workbench/extensions/agent/stores/agent/agentGraphActivityStore'
 
 const { t } = useI18n()
@@ -69,6 +70,45 @@ function viewNodes(): void {
     ]
   })
 }
+
+/**
+ * ADR-AGENT-VIEWPORT-0062: frame the first agent batch on an otherwise empty
+ * canvas, once, when none of it is on screen.
+ *
+ * The user asked for a workflow and is looking at nothing, so there is no
+ * position of theirs to protect — the camera is the only thing standing
+ * between them and what they asked for. `animateToBounds` abandons its own
+ * animation the moment the camera state changes from anywhere else, so a pan
+ * or zoom during the move wins without this needing to detect it.
+ *
+ * Keyed by the activity target so a given turn's batch frames at most once:
+ * a build that materializes in several frames must not drag the camera after
+ * every one of them.
+ */
+const framedTarget = ref<string | null>(null)
+watch(
+  () => [visibleState.value, liveNodes.value] as const,
+  ([state, nodes]) => {
+    if (!state || !canvas?.graph) {
+      framedTarget.value = null
+      return
+    }
+    const key = `${state.workflowId}:${state.rootGraphId}`
+    if (framedTarget.value === key || nodes.length === 0) return
+    const batchIds = new Set(nodes.map((node) => node.id))
+    const frame = shouldFrameAgentBatch({
+      batch: createPositionBounds(nodes, 40),
+      nodesNotInBatch: canvas.graph.nodes.filter(
+        (node) => !batchIds.has(node.id)
+      ).length,
+      viewport: canvas.ds.visible_area
+    })
+    if (!frame) return
+    framedTarget.value = key
+    viewNodes()
+  },
+  { flush: 'post' }
+)
 </script>
 
 <template>
