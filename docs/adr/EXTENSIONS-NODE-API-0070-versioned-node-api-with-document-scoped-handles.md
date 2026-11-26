@@ -416,8 +416,9 @@ look in a particular graph, use `comfy.graph.root()` or
   the workflow would not save. The contract is a copy as the workflow would
   save it, which is what `serialize()` does with `JSON.stringify`. The deep
   freeze is new: nothing in the repository provides one.
-- **Plain-object check.** `isPlainObject` from `es-toolkit`, already a
-  dependency.
+- **Plain-object check.** The API's own `isPlainData`
+  (`shared/savableValue.ts`) accepts only an object whose prototype is
+  `Object.prototype` or `null`, as the argument rules of decision 13 require.
 - **Geometry types.** `Point`, `Size` and `Bounds` are declared in
   `types.ts`, not taken from `shared-frontend-utils/geometry`, whose types
   have the same fields but are mutable and belong to the app; a contract
