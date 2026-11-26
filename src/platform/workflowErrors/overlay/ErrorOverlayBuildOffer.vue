@@ -5,7 +5,11 @@
     data-testid="error-overlay-custom-build"
     :title="
       offer.kind === 'switch'
-        ? t('errorOverlay.switchBuildTo', { build: offer.buildName })
+        ? t(
+            'errorOverlay.switchBuildTo',
+            { build: offer.buildName },
+            { escapeParameter: false }
+          )
         : undefined
     "
     @click="emit('open')"
