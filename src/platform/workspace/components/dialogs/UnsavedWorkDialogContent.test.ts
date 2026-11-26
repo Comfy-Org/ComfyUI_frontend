@@ -56,7 +56,7 @@ describe('UnsavedWorkDialogContent', () => {
     renderDialog()
 
     const save = screen.getByRole('button', { name: 'Save and switch' })
-    expect(save).toHaveClass('bg-primary')
+    expect(save).toHaveClass('bg-foreground')
     expect(
       screen.getByRole('button', { name: 'Switch without saving' })
     ).toHaveClass('bg-secondary')

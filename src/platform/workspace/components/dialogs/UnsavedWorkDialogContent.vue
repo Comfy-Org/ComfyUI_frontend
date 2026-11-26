@@ -1,6 +1,6 @@
 <template>
   <AppDialogPanel
-    body-class="flex flex-col gap-2 text-sm text-muted-foreground"
+    body-class="flex flex-col gap-2 text-sm text-foreground"
     @close="onResult(null)"
   >
     <template #title>
@@ -8,10 +8,10 @@
     </template>
 
     <p class="m-0">{{ message }}</p>
-    <ul class="m-0 list-disc ps-5 break-all text-foreground">
+    <ul class="m-0 max-h-48 list-disc overflow-y-auto ps-5 break-all">
       <li v-for="item of itemList" :key="item">{{ item }}</li>
     </ul>
-    <p v-if="hint" role="status" class="m-0 flex gap-1">
+    <p v-if="hint" role="status" class="m-0 flex gap-1 text-muted-foreground">
       <i class="mt-0.5 icon-[lucide--info]" aria-hidden="true" />
       {{ hint }}
     </p>
@@ -20,7 +20,7 @@
       <Button variant="secondary" size="lg" @click="onResult(false)">
         {{ denyLabel }}
       </Button>
-      <Button variant="primary" size="lg" autofocus @click="onResult(true)">
+      <Button variant="inverted" size="lg" autofocus @click="onResult(true)">
         {{ confirmLabel }}
       </Button>
     </template>
