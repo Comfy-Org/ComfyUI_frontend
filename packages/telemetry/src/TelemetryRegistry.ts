@@ -58,6 +58,8 @@ import type {
   ExecutionSuccessMetadata,
   HelpCenterClosedMetadata,
   HelpCenterOpenedMetadata,
+  VersionUpdateSurfaceResolvedMetadata,
+  VersionUpdateSurfaceShownMetadata,
   HelpResourceClickedMetadata,
   ImageLoadFailureMetadata,
   InAppSurveyEvent,
@@ -399,6 +401,22 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackTemplateFilterChanged(metadata: TemplateFilterMetadata): void {
     this.dispatch((provider) => provider.trackTemplateFilterChanged?.(metadata))
+  }
+
+  trackVersionUpdateSurfaceShown(
+    metadata: VersionUpdateSurfaceShownMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackVersionUpdateSurfaceShown?.(metadata)
+    )
+  }
+
+  trackVersionUpdateSurfaceResolved(
+    metadata: VersionUpdateSurfaceResolvedMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackVersionUpdateSurfaceResolved?.(metadata)
+    )
   }
 
   trackHelpCenterOpened(metadata: HelpCenterOpenedMetadata): void {

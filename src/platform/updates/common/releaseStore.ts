@@ -1,7 +1,9 @@
+import { useTelemetry } from '@comfyorg/telemetry'
 import { until } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { compare, valid } from 'semver'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
+import type { ComputedRef } from 'vue'
 
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useOnboardingOverlayStore } from '@/platform/onboarding/onboardingOverlayStore'
@@ -209,6 +211,55 @@ export const useReleaseStore = defineStore('release', () => {
     return true
   })
 
+  const telemetry = useTelemetry()
+  const shownSurfaces = new Set<string>()
+
+  function reportShown(
+    surface: 'red_dot' | 'whats_new_popup' | 'release_toast'
+  ): void {
+    const release = recentRelease.value
+    if (!release) return
+    const key = `${surface}:${release.version}`
+    if (shownSurfaces.has(key)) return
+    shownSurfaces.add(key)
+    telemetry?.trackVersionUpdateSurfaceShown({
+      surface,
+      release_version: release.version,
+      current_version: currentVersion.value,
+      attention: release.attention
+    })
+  }
+
+  function reportResolved(
+    version: string,
+    action: 'changelog_opened' | 'skipped' | 'whats_new_seen' | 'update_clicked'
+  ): void {
+    telemetry?.trackVersionUpdateSurfaceResolved({
+      release_version: version,
+      action
+    })
+  }
+
+  function watchSurface(
+    visible: ComputedRef<boolean>,
+    surface: 'red_dot' | 'whats_new_popup' | 'release_toast'
+  ): void {
+    watch(
+      () => (visible.value ? recentRelease.value?.version : undefined),
+      (version) => {
+        if (version) reportShown(surface)
+      }
+    )
+  }
+
+  watchSurface(shouldShowRedDot, 'red_dot')
+  watchSurface(shouldShowPopup, 'whats_new_popup')
+  watchSurface(shouldShowToast, 'release_toast')
+
+  function handleUpdateClicked(version: string): void {
+    reportResolved(version, 'update_clicked')
+  }
+
   async function handleSkipRelease(version: string): Promise<void> {
     if (
       version !== recentRelease.value?.version ||
@@ -222,6 +273,7 @@ export const useReleaseStore = defineStore('release', () => {
       'Comfy.Release.Status': 'skipped',
       'Comfy.Release.Timestamp': Date.now()
     })
+    reportResolved(version, 'skipped')
   }
 
   async function handleShowChangelog(version: string): Promise<void> {
@@ -234,6 +286,7 @@ export const useReleaseStore = defineStore('release', () => {
       'Comfy.Release.Status': 'changelog seen',
       'Comfy.Release.Timestamp': Date.now()
     })
+    reportResolved(version, 'changelog_opened')
   }
 
   async function handleWhatsNewSeen(version: string): Promise<void> {
@@ -246,6 +299,7 @@ export const useReleaseStore = defineStore('release', () => {
       'Comfy.Release.Status': "what's new seen",
       'Comfy.Release.Timestamp': Date.now()
     })
+    reportResolved(version, 'whats_new_seen')
   }
 
   // Fetch releases from API
@@ -317,6 +371,7 @@ export const useReleaseStore = defineStore('release', () => {
     handleSkipRelease,
     handleShowChangelog,
     handleWhatsNewSeen,
+    handleUpdateClicked,
     fetchReleases,
     initialize
   }

@@ -168,6 +168,9 @@ const handleLearnMore = () => {
 }
 
 const handleUpdate = async () => {
+  if (latestRelease.value) {
+    releaseStore.handleUpdateClicked(latestRelease.value.version)
+  }
   if (isDesktop) {
     try {
       await useCommandStore().execute('Comfy-Desktop.CheckForUpdates')

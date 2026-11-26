@@ -1,8 +1,9 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { createSharedComposable, until, useStorage } from '@vueuse/core'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { compare, valid } from 'semver'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
 
 import { useOnboardingOverlayStore } from '@/platform/onboarding/onboardingOverlayStore'
@@ -29,6 +30,8 @@ vi.mock(import('@/platform/distribution/types'), () => ({
     return mockData.isCloud
   }
 }))
+
+vi.mock(import('@comfyorg/telemetry'))
 
 vi.mock(import('@/platform/updates/common/releaseService'), () => {
   const getReleases = vi.fn()
@@ -821,6 +824,111 @@ describe('useReleaseStore', () => {
         expect(store.shouldShowToast).toBe(false)
       }
     )
+  })
+
+  describe('telemetry', () => {
+    const telemetryOf = () => vi.mocked(useTelemetry())!
+
+    beforeEach(() => {
+      mockData.isDesktop = false
+    })
+
+    it('reports the red dot once per release, not once per read', async () => {
+      const store = useReleaseStore()
+      vi.mocked(compare).mockReturnValue(1)
+
+      store.releases = [mockRelease]
+      await nextTick()
+
+      void store.shouldShowRedDot
+      void store.shouldShowRedDot
+      await nextTick()
+
+      expect(
+        telemetryOf().trackVersionUpdateSurfaceShown
+      ).toHaveBeenCalledTimes(1)
+      expect(telemetryOf().trackVersionUpdateSurfaceShown).toHaveBeenCalledWith(
+        expect.objectContaining({
+          surface: 'red_dot',
+          release_version: mockRelease.version
+        })
+      )
+    })
+
+    it('reports the same release once even if the surface reappears', async () => {
+      const store = useReleaseStore()
+      vi.mocked(compare).mockReturnValue(1)
+
+      store.releases = [mockRelease]
+      await nextTick()
+
+      store.releases = []
+      await nextTick()
+
+      store.releases = [mockRelease]
+      await nextTick()
+
+      expect(
+        telemetryOf().trackVersionUpdateSurfaceShown
+      ).toHaveBeenCalledTimes(1)
+    })
+
+    it('reports a second release separately', async () => {
+      const store = useReleaseStore()
+      vi.mocked(compare).mockReturnValue(1)
+
+      store.releases = [mockRelease]
+      await nextTick()
+
+      store.releases = [{ ...mockRelease, version: '9.9.9' }]
+      await nextTick()
+
+      expect(
+        telemetryOf().trackVersionUpdateSurfaceShown
+      ).toHaveBeenCalledTimes(2)
+    })
+
+    it('reports skipping a release', async () => {
+      const store = useReleaseStore()
+      store.releases = [mockRelease]
+
+      await store.handleSkipRelease(mockRelease.version)
+
+      expect(
+        telemetryOf().trackVersionUpdateSurfaceResolved
+      ).toHaveBeenCalledWith({
+        release_version: mockRelease.version,
+        action: 'skipped'
+      })
+    })
+
+    it('reports opening the changelog', async () => {
+      const store = useReleaseStore()
+      store.releases = [mockRelease]
+
+      await store.handleShowChangelog(mockRelease.version)
+
+      expect(
+        telemetryOf().trackVersionUpdateSurfaceResolved
+      ).toHaveBeenCalledWith({
+        release_version: mockRelease.version,
+        action: 'changelog_opened'
+      })
+    })
+
+    it('reports clicking update', () => {
+      const store = useReleaseStore()
+      store.releases = [mockRelease]
+
+      store.handleUpdateClicked(mockRelease.version)
+
+      expect(
+        telemetryOf().trackVersionUpdateSurfaceResolved
+      ).toHaveBeenCalledWith({
+        release_version: mockRelease.version,
+        action: 'update_clicked'
+      })
+    })
   })
 
   describe('on Cloud', () => {

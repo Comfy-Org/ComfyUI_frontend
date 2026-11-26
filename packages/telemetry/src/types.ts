@@ -1592,6 +1592,24 @@ export interface NamedValuesShadowDiffSummaryMetadata {
 }
 
 /**
+ * Version-update surface shown metadata
+ */
+export interface VersionUpdateSurfaceShownMetadata {
+  surface: 'red_dot' | 'whats_new_popup' | 'release_toast'
+  release_version: string
+  current_version: string
+  attention: 'low' | 'medium' | 'high'
+}
+
+/**
+ * Version-update surface resolved metadata
+ */
+export interface VersionUpdateSurfaceResolvedMetadata {
+  release_version: string
+  action: 'changelog_opened' | 'skipped' | 'whats_new_seen' | 'update_clicked'
+}
+
+/**
  * Help center opened metadata
  */
 export interface HelpCenterOpenedMetadata {
@@ -1932,6 +1950,13 @@ export interface TelemetryProvider {
 
   // Template filter tracking events
   trackTemplateFilterChanged?(metadata: TemplateFilterMetadata): void
+
+  trackVersionUpdateSurfaceShown?(
+    metadata: VersionUpdateSurfaceShownMetadata
+  ): void
+  trackVersionUpdateSurfaceResolved?(
+    metadata: VersionUpdateSurfaceResolvedMetadata
+  ): void
 
   // Help center events
   trackHelpCenterOpened?(metadata: HelpCenterOpenedMetadata): void
@@ -2332,6 +2357,8 @@ export type TelemetryEventProperties =
   | NamedValuesShadowDiffMismatchMetadata
   | NamedValuesShadowDiffSummaryMetadata
   | LinkDedupDropMetadata
+  | VersionUpdateSurfaceShownMetadata
+  | VersionUpdateSurfaceResolvedMetadata
   | HelpCenterOpenedMetadata
   | HelpResourceClickedMetadata
   | HelpCenterClosedMetadata
