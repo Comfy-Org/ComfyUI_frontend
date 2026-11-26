@@ -4,7 +4,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useDialogService } from '@/services/dialogService'
+import { showUnsavedWorkDialog } from '@/platform/workspace/showUnsavedWorkDialog'
 
 /** Open workflows with changes a switch reload would leave unsaved. */
 export function unsavedWorkflows(): ComfyWorkflow[] {
@@ -40,10 +40,9 @@ export async function confirmUnsavedWorkBeforeSwitch(
   const workflows = unsavedWorkflows()
   if (workflows.length === 0) return true
   const keys = PROMPT_KEYS[reload ? 'reload' : 'switch']
-  const confirmed = await useDialogService().confirm({
+  const confirmed = await showUnsavedWorkDialog({
     title: t(keys.title),
     message: t(keys.message, { deployment }, { escapeParameter: false }),
-    type: 'dirtyClose',
     itemList: workflows.map((workflow) => workflow.path),
     hint: useSettingStore().get('Comfy.Workflow.Persist')
       ? t('deploymentSwitcher.unsaved.tabsReturn')
