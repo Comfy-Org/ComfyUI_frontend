@@ -805,9 +805,10 @@ export const useWorkflowService = () => {
   const completeActivation = (
     workflow: ComfyWorkflow,
     initiator: 'user' | undefined,
-    silent: boolean
+    silent: boolean,
+    opening: WorkflowOpening
   ) => {
-    showPendingWarnings(undefined, { silent, opening: 'reopened' })
+    showPendingWarnings(undefined, { silent, opening })
     if (initiator === 'user') workflowStore.reportUserActivation(workflow)
   }
 
@@ -823,6 +824,7 @@ export const useWorkflowService = () => {
       isCurrent?: () => boolean
       initiator?: 'user'
       keepSavedBaseline?: boolean
+      opening?: WorkflowOpening
       /** Receives the reason when the open resolves false. */
       failure?: { reason?: OpenWorkflowFailure }
     } = {}
@@ -869,7 +871,12 @@ export const useWorkflowService = () => {
             navigationIntentId
           ))
         ) {
-          completeActivation(workflow, options.initiator, true)
+          completeActivation(
+            workflow,
+            options.initiator,
+            true,
+            options.opening ?? 'reopened'
+          )
           return true
         }
 
@@ -907,7 +914,12 @@ export const useWorkflowService = () => {
           return fail('load_failed')
         }
         dismissUnreadableWorkflowToast(workflow)
-        completeActivation(workflow, options.initiator, reusesScans)
+        completeActivation(
+          workflow,
+          options.initiator,
+          reusesScans,
+          options.opening ?? 'reopened'
+        )
         return true
       } catch (error) {
         useSubgraphNavigationStore().endWorkflowNavigation(navigationIntentId)

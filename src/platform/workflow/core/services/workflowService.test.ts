@@ -3538,6 +3538,27 @@ describe('useWorkflowService', () => {
       )
     })
 
+    it('tells the missing nodes notice a workflow was brought in when the caller says so', async () => {
+      const workflow = createWorkflow(
+        { missingNodeTypes: ['CustomNode1'] },
+        { loadable: true }
+      )
+
+      vi.mocked(
+        useMissingNodesErrorStore().surfaceMissingNodes
+      ).mockReturnValue(true)
+
+      await useWorkflowService().openWorkflow(workflow, {
+        force: true,
+        opening: 'brought_in'
+      })
+
+      expect(showMissingNodesNotice).toHaveBeenCalledWith(
+        ['CustomNode1'],
+        'brought_in'
+      )
+    })
+
     it('should show each workflow warnings only when that tab is focused', async () => {
       const workflow1 = createWorkflow(
         { missingNodeTypes: ['MissingNodeA'] },
