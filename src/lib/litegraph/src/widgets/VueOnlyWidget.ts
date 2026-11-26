@@ -17,6 +17,5 @@ export abstract class VueOnlyWidget<
     )
   }
 
-  // fallow-ignore-next-line unused-class-member
   onClick(_options: WidgetEventOptions): void {}
 }
