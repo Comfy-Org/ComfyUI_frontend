@@ -871,14 +871,10 @@ export function findUnconsumedWidgetIndex(
   return -1
 }
 
-/** Thrown before any mutation when a group member's type cannot be created in the receiving graph, leaving the group and graph unchanged. */
-export class GroupNodeUnpackRefusedError extends Error {
-  constructor(public readonly memberType: string) {
-    super(
-      `Group node member type "${memberType}" could not be created in the target graph; leaving the group unchanged.`
-    )
-  }
-}
+/** Result of {@link GroupNodeHandler.convertToNodes}. `refused` is the expected keep-the-group outcome when a member type cannot be created in the receiving graph; the group and graph are left unchanged. */
+export type ConvertToNodesResult =
+  | { readonly refused: false; readonly nodes: LGraphNode[] }
+  | { readonly refused: true; readonly memberType: string }
 
 function missingSubgraphTarget(
   type: string,
@@ -927,11 +923,10 @@ export class GroupNodeHandler {
     this.groupData = groupData
   }
 
-  /** Unpacks this group node into a subgraph, or throws {@link GroupNodeUnpackRefusedError} before any mutation if a member type cannot be created in this graph. */
-  convertToNodes(): LGraphNode[] {
+  convertToNodes(): ConvertToNodesResult {
     const node = this.node
     const graph = node.graph
-    if (!graph) return []
+    if (!graph) return { refused: false, nodes: [] }
     const { nodeData, oldToNewWidgetMap, oldToNewInputMap, newToOldOutputMap } =
       this.groupData
 
@@ -946,7 +941,7 @@ export class GroupNodeHandler {
           )
         }
       }
-      throw new GroupNodeUnpackRefusedError(member.type ?? '<unknown>')
+      return { refused: true, memberType: member.type ?? '<unknown>' }
     }
 
     const addInnerNodes = () => {
@@ -1060,7 +1055,7 @@ export class GroupNodeHandler {
       reconnectInputs(nodesBySourceIndex)
       reconnectOutputs(nodesBySourceIndex)
       graph.remove(this.node)
-      return createdNodes
+      return { refused: false, nodes: createdNodes }
     } finally {
       graph.afterChange()
       if (isVisible) canvas.emitAfterChange()
@@ -1115,20 +1110,21 @@ function convertLoadedGroupNodes(graph: LGraph): {
         graph.remove(node)
         continue
       }
-      const innerNodes = handler.convertToNodes()
-      for (const inner of innerNodes) inner.updateArea()
-      graph.convertToSubgraph(new Set(innerNodes))
-      converted++
-    } catch (error) {
-      failed.add(node)
-      if (error instanceof GroupNodeUnpackRefusedError) {
+      const result = handler.convertToNodes()
+      if (result.refused) {
+        failed.add(node)
         retained.add(node)
         console.warn(
           'Leaving group node unconverted: a member type could not be created in this graph',
-          error
+          result.memberType
         )
         continue
       }
+      for (const inner of result.nodes) inner.updateArea()
+      graph.convertToSubgraph(new Set(result.nodes))
+      converted++
+    } catch (error) {
+      failed.add(node)
       console.error('Failed to convert group node to subgraph', error)
       try {
         graph.remove(node)
@@ -1236,17 +1232,17 @@ export const groupNodeExtension: ComfyExtension = {
         const graph = node.graph
         if (graph && handler && GroupNodeHandler.isGroupNode(node)) {
           try {
-            const innerNodes = handler.convertToNodes()
-            for (const inner of innerNodes) inner.updateArea()
-            graph.convertToSubgraph(new Set(innerNodes))
-          } catch (error) {
-            if (error instanceof GroupNodeUnpackRefusedError) {
+            const result = handler.convertToNodes()
+            if (result.refused) {
               console.warn(
                 'Leaving group node unconverted: a member type could not be created in this graph',
-                error
+                result.memberType
               )
               return
             }
+            for (const inner of result.nodes) inner.updateArea()
+            graph.convertToSubgraph(new Set(result.nodes))
+          } catch (error) {
             console.error(
               'Failed to convert stray group node to subgraph',
               error

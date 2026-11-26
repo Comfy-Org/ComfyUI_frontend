@@ -31,7 +31,6 @@ vi.mock(import('@comfyorg/telemetry/reportError'))
 const {
   GroupNodeConfig,
   GroupNodeHandler,
-  GroupNodeUnpackRefusedError,
   findUnconsumedWidgetIndex,
   replaceLegacySeparators,
   groupNodeExtension
@@ -621,7 +620,7 @@ describe('group node extension beforeConfigureGraph', () => {
   it('skips stray conversion while configuring and converts afterwards', async () => {
     const ext = groupNodeExtension
     if (!ext.nodeCreated) throw new Error('extension not registered')
-    const convertToNodes = vi.fn(() => [])
+    const convertToNodes = vi.fn(() => ({ refused: false, nodes: [] }))
     const isGroupNode = vi
       .spyOn(GroupNodeHandler, 'isGroupNode')
       .mockReturnValue(true)
@@ -854,7 +853,9 @@ describe('GroupNodeHandler.convertToNodes', () => {
     const handler = GroupNodeHandler.getHandler(outerNode)
     if (!handler) throw new Error('No GroupNodeHandler for outer node')
 
-    const innerNodes = handler.convertToNodes()
+    const result = handler.convertToNodes()
+    assert(!result.refused)
+    const innerNodes = result.nodes
     const widgetValues = (node: (typeof innerNodes)[number] | undefined) =>
       Object.fromEntries((node?.widgets ?? []).map((w) => [w.name, w.value]))
 
@@ -896,7 +897,19 @@ describe('GroupNodeHandler.convertToNodes', () => {
     const receivingGraph = new LGraph()
     const outerNode = new LGraphNode('Multi member group')
     outerNode.pos = [0, 0]
+    outerNode.addInput('in', '*')
+    outerNode.addOutput('out', '*')
+    outerNode.addWidget('text', 'label', 'retained value', () => {})
     receivingGraph.add(outerNode)
+
+    const upstreamNode = new LGraphNode('Upstream')
+    upstreamNode.addOutput('out', '*')
+    receivingGraph.add(upstreamNode)
+    const downstreamNode = new LGraphNode('Downstream')
+    downstreamNode.addInput('in', '*')
+    receivingGraph.add(downstreamNode)
+    upstreamNode.connect(0, outerNode, 0)
+    outerNode.connect(0, downstreamNode, 0)
 
     const groupData = new GroupNodeConfig('multiMember', {
       nodes: [{ type: validType }, { type: definition.id }],
@@ -904,8 +917,18 @@ describe('GroupNodeHandler.convertToNodes', () => {
     })
     const handler = new GroupNodeHandler(outerNode, groupData)
 
-    expect(() => handler.convertToNodes()).toThrow(GroupNodeUnpackRefusedError)
-    expect(receivingGraph.nodes).toEqual([outerNode])
+    const result = handler.convertToNodes()
+    expect(result).toEqual({ refused: true, memberType: definition.id })
+    expect(receivingGraph.nodes).toEqual([
+      outerNode,
+      upstreamNode,
+      downstreamNode
+    ])
+    expect(outerNode.getInputLink(0)?.origin_id).toBe(upstreamNode.id)
+    expect(outerNode.outputs[0].links).toEqual([
+      downstreamNode.getInputLink(0)?.id
+    ])
+    expect(outerNode.widgets?.[0]?.value).toBe('retained value')
     expect(reportError).toHaveBeenCalledWith(
       expect.any(Error),
       expect.objectContaining({
@@ -942,7 +965,9 @@ describe('GroupNodeHandler.convertToNodes', () => {
     })
     const handler = new GroupNodeHandler(outerNode, groupData)
 
-    const created = handler.convertToNodes()
+    const result = handler.convertToNodes()
+    assert(!result.refused)
+    const created = result.nodes
     expect(created).toHaveLength(1)
     const [alias] = created
     assert(alias.isSubgraphNode())
@@ -1017,10 +1042,10 @@ describe('GroupNodeHandler.convertToNodes', () => {
 
 describe('convertLoadedGroupNodes via groupNodeExtension.afterConfigureGraph', () => {
   it('leaves a refused group node in place instead of removing it', async () => {
-    const refusalError = new GroupNodeUnpackRefusedError('some/subgraphId')
-    const convertToNodes = vi.fn(() => {
-      throw refusalError
-    })
+    const convertToNodes = vi.fn(() => ({
+      refused: true,
+      memberType: 'some/subgraphId'
+    }))
     vi.spyOn(GroupNodeHandler, 'isGroupNode').mockReturnValue(true)
     vi.spyOn(GroupNodeHandler, 'getHandler').mockReturnValue(
       fromPartial({ convertToNodes })
