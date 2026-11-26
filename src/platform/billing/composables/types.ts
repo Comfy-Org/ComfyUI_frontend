@@ -152,6 +152,8 @@ export interface BillingStatusReadOptions {
 export interface BillingActions {
   initialize: () => Promise<void>
   fetchStatus: (options?: BillingStatusReadOptions) => Promise<void>
+  /** True only when this call's status response was adopted for the active billing scope. */
+  fetchStatusFresh?: () => Promise<boolean>
   fetchBalance: (options?: BillingStatusReadOptions) => Promise<void>
   subscribe: (
     planSlug: string,

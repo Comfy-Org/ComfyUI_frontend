@@ -47,7 +47,7 @@ import {
 } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useAppMode } from '@/composables/useAppMode'
 import { MIME_ASSET_INFO } from '@/platform/assets/constants/assetDrag'
 import { getDroppedAsset } from '@/platform/assets/integration/assetDrop'
@@ -545,8 +545,9 @@ const showCreditTransitionNotice = computed(
 )
 
 function onDismissCreditTransitionNotice(): void {
+  if (!agentPanelStore.dismissCreditTransitionNotice(billingIdentity.value))
+    return
   useTelemetry()?.trackAgentCreditTransitionNotice({ action: 'dismissed' })
-  agentPanelStore.dismissCreditTransitionNotice(billingIdentity.value)
 }
 
 function onCreditTransitionNoticeShown(): void {
@@ -944,6 +945,28 @@ const {
   }
 })
 
+let suppressPickTelemetry = false
+let pendingPickCount = 0
+function reportPlusMenuPicks(count: number): void {
+  if (pendingPickCount === 0)
+    queueMicrotask(() => {
+      const nodeCount = pendingPickCount
+      pendingPickCount = 0
+      useTelemetry()?.trackAgentNodeTagged({
+        source: 'plus_menu',
+        node_count: nodeCount
+      })
+    })
+  pendingPickCount += count
+}
+function withoutPickTelemetry(stage: () => void): void {
+  suppressPickTelemetry = true
+  try {
+    stage()
+  } finally {
+    suppressPickTelemetry = false
+  }
+}
 watch(
   selectionTags,
   (tags, previousTags) => {
@@ -956,10 +979,16 @@ watch(
     if (canvasStore.isPickingNodes) {
       const previousKeys = new Set(previousTags.map(selectedNodeKey))
       const selectedKeys = new Set(selectedNodes.value.map(selectedNodeKey))
+      let pickedCount = 0
       for (const tag of tags) {
         const key = selectedNodeKey(tag)
-        if (!previousKeys.has(key) && selectedKeys.has(key)) nextKeys.add(key)
+        if (!previousKeys.has(key) && selectedKeys.has(key)) {
+          nextKeys.add(key)
+          pickedCount++
+        }
       }
+      if (pickedCount && !suppressPickTelemetry)
+        reportPlusMenuPicks(pickedCount)
     }
     composerStore.setSelectionModeNodeKeys(nextKeys)
   },
@@ -1484,11 +1513,8 @@ function boundRootGraphId(): RootGraphId | null {
 function followerCanDeliver(): boolean {
   return isFollowerActive.value && subscriptionSent()
 }
-function noteUnboundVisibleIntent(): void {
-  const visible = workflowStore.activeWorkflow
-  const workflowId = visible
-    ? bindingStore.workflowIdFor(visible.path)
-    : undefined
+function noteUnboundVisibleIntent(rootGraph: LGraph): void {
+  const workflowId = bindingStore.workflowIdForGraph(rootGraph)
   if (workflowId !== undefined) noteUnboundLocalIntent(workflowId)
 }
 const docOpMinter = attachDocOpMinter({
@@ -2724,7 +2750,7 @@ const { submit: submitDraft, withdrawSubmission } = useAgentDraftSubmission({
     staged: selectionTags,
     workflow: () => nodeReferenceWorkflow,
     consume: consumeSelection,
-    replace: replaceSelectionTags,
+    replace: (nodes) => withoutPickTelemetry(() => replaceSelectionTags(nodes)),
     exit: canvasStore.stopNodePicking
   },
   send: (
@@ -3418,9 +3444,12 @@ function onOpenAssets(): void {
 function onMentionPick(node: SelectedNode): void {
   if (!canReferenceNodes.value) return
   const stagedBefore = selectionTags.value.length
-  addSelectionTag(node)
+  withoutPickTelemetry(() => addSelectionTag(node))
   if (selectionTags.value.length > stagedBefore)
-    useTelemetry()?.trackAgentNodeTagged({ source: 'mention_picker' })
+    useTelemetry()?.trackAgentNodeTagged({
+      source: 'mention_picker',
+      node_count: 1
+    })
 }
 
 function onRemoveSelectionTag(id: string): void {

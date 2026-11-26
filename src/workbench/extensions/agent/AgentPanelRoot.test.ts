@@ -2039,6 +2039,25 @@ describe('AgentPanelRoot Agent credit transition notice', () => {
     ).toHaveBeenCalledExactlyOnceWith({ action: 'shown' })
   })
 
+  it('removes the first-chat offer when the scoped grant is exhausted', async () => {
+    vi.mocked(useFreeUsePlacement).mockReturnValueOnce(
+      fromPartial({ variant: ref('near-composer') })
+    )
+    paywallAgentScopedHasFundsAuthoritative.value = true
+    observeAgentScopedFunds(true)
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    expect(
+      await screen.findByRole('note', { name: 'Free use notice' })
+    ).toBeInTheDocument()
+
+    observeAgentScopedFunds(false)
+    await screen.findByTestId(NOTICE)
+
+    expect(
+      screen.queryByRole('note', { name: 'Free use notice' })
+    ).not.toBeInTheDocument()
+  })
+
   it('reports one impression however often the panel remounts', async () => {
     observeAgentScopedFunds(true)
     const panel = render(AgentPanelRoot, { global: { plugins: [i18n] } })
@@ -10199,7 +10218,9 @@ describe('AgentPanelRoot history', () => {
         await vi.waitFor(() => expect(messageLoads).toBe(2))
         expect(docOpMinterDeps.current?.isDocBound()).toBe(false)
 
-        docOpMinterDeps.current?.onUnboundVisibleIntent?.()
+        const editedGraph = new LGraph()
+        editedGraph.id = 'graph-first'
+        docOpMinterDeps.current?.onUnboundVisibleIntent?.(editedGraph)
         resolveReturnTranscript()
         await vi.waitFor(() =>
           expect(useAgentConversationStore().threadId).toBe('th-first')
@@ -17298,7 +17319,8 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(state.selectItems).not.toHaveBeenCalled()
     expect(useTelemetry()!.trackAgentNodeTagged).toHaveBeenCalledTimes(1)
     expect(useTelemetry()!.trackAgentNodeTagged).toHaveBeenCalledWith({
-      source: 'mention_picker'
+      source: 'mention_picker',
+      node_count: 1
     })
   })
 
@@ -18584,6 +18606,48 @@ describe('AgentPanelRoot workflow binding', () => {
     await nextTick()
     expect(useAgentPanelStore().selectedWorkflow?.path).toBe(other.path)
     expect(useAgentPanelStore().followsVisibleWorkflow).toBe(true)
+  })
+
+  it('tracks nodes picked from the + menu as plus_menu node references', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+    const state = setupNodeSelectionCanvas()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    useAgentPanelStore().isOpen = true
+    await enterNodeSelectionMode()
+    expect(useTelemetry()!.trackAgentNodeTagged).not.toHaveBeenCalled()
+
+    state.selectedItems.add(state.nodes[0])
+    state.selectedItems.add(state.nodes[1])
+    syncFakeSelection()
+    await nextTick()
+
+    expect(useTelemetry()!.trackAgentNodeTagged).toHaveBeenCalledTimes(1)
+    expect(useTelemetry()!.trackAgentNodeTagged).toHaveBeenCalledWith({
+      source: 'plus_menu',
+      node_count: 2
+    })
+  })
+
+  it('reports a box select applied one node at a time as one + menu reference action', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+    const state = setupNodeSelectionCanvas()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    useAgentPanelStore().isOpen = true
+    await enterNodeSelectionMode()
+
+    state.selectedItems.add(state.nodes[0])
+    syncFakeSelection()
+    state.selectedItems.add(state.nodes[1])
+    syncFakeSelection()
+    await nextTick()
+
+    expect(useTelemetry()!.trackAgentNodeTagged).toHaveBeenCalledTimes(1)
+    expect(useTelemetry()!.trackAgentNodeTagged).toHaveBeenCalledWith({
+      source: 'plus_menu',
+      node_count: 2
+    })
   })
 
   it('retains the target when a canvas node is actually added before Send', async () => {
@@ -21057,6 +21121,43 @@ describe('AgentPanelRoot optimistic and chat-owned sends (PR 0)', () => {
     await waitFor(() =>
       expect(screen.getByRole('textbox')).toHaveTextContent('Draft on B')
     )
+  })
+
+  it('queues a follow-up prompt on Enter while streaming and sends it once the active turn finishes', async () => {
+    bindTab('wf-42')
+    const postedBodies = mockMessagesEndpoint('wf-42')
+    renderWithSelectedTarget()
+
+    const textbox = await screen.findByRole('textbox')
+    await userEvent.click(textbox)
+    await userEvent.paste('First turn')
+    await userEvent.keyboard('{Enter}')
+    await screen.findByRole('button', { name: 'Stop' })
+    expect(postedBodies).toHaveLength(1)
+
+    await userEvent.click(textbox)
+    await userEvent.paste('Queued with Enter')
+    await userEvent.keyboard('{Enter}')
+
+    expect(await screen.findByTestId('agent-prompt-queue')).toHaveTextContent(
+      'Queued with Enter'
+    )
+    expect(textbox).toHaveTextContent('')
+    expect(postedBodies).toHaveLength(1)
+
+    const activeTurnId = useAgentConversationStore().activeTurnId
+    const activeThreadId = useAgentConversationStore().threadId
+    expect(activeTurnId).toBeTruthy()
+    expect(activeThreadId).toBeTruthy()
+    dispatchApiEvent('agent_message_done', {
+      thread_id: activeThreadId!,
+      message_id: activeTurnId!
+    })
+
+    await waitFor(() => expect(postedBodies).toHaveLength(2))
+    expect(postedBodies[1]).toMatchObject({
+      content: 'Queued with Enter'
+    })
   })
 })
 
