@@ -32,8 +32,7 @@ import { detachSerialisedLinks } from '@/lib/litegraph/src/linkDeduplication'
 import {
   LGraphGroup,
   LGraphNode,
-  LiteGraph,
-  SubgraphNode
+  LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { containsCentre } from '@/lib/litegraph/src/measure'
@@ -1505,17 +1504,33 @@ export class LiveGraphApplier {
     const docNode = this.readDocNode(doc, id)
     if (!docNode) return 'skipped'
     const live = graph.getNodeById(toNodeId(id))
-    const resolvable = !!live && isResolvablePlaceholder(live, graph)
-    if (live && live.type === docNode.type && !resolvable) {
+    // Build the replacement before removing the placeholder it replaces. A
+    // subgraph class is registered process-wide by definition id but only
+    // builds a node for a graph that owns that definition, so construction can
+    // refuse or throw here — and then the placeholder has to stay.
+    const replacement =
+      live && isResolvablePlaceholder(live)
+        ? LiteGraph.createNode(docNode.type, docNode.serialised.title, {
+            targetGraph: graph
+          })
+        : null
+    if (live && live.type === docNode.type && !replacement) {
       this.applyFields(live, docNode)
       if (docNode.widgetRecord) restoreWidgetRecord(live, docNode.widgetRecord)
       else this.applyWidgets(live, docNode.widgets, mode)
       return 'updated'
     }
     const preservedPosition =
-      live && resolvable ? ([live.pos[0], live.pos[1]] as const) : undefined
+      live && replacement ? ([live.pos[0], live.pos[1]] as const) : undefined
     if (live) graph.remove(live)
-    this.createNode(graph, docNode, mode, context, preservedPosition)
+    this.createNode(
+      graph,
+      docNode,
+      mode,
+      context,
+      preservedPosition,
+      replacement
+    )
     return live ? 'recreated' : 'created'
   }
 
@@ -1524,12 +1539,15 @@ export class LiveGraphApplier {
     docNode: DocNode,
     mode: ApplyMode,
     context: RemoteApplyContext,
-    position?: readonly [number, number]
+    position?: readonly [number, number],
+    built?: LGraphNode | null
   ): LGraphNode {
     const node =
+      built ??
       LiteGraph.createNode(docNode.type, docNode.serialised.title, {
         targetGraph: graph
-      }) ?? missingNode(docNode)
+      }) ??
+      missingNode(docNode)
     node.id = toNodeId(docNode.id)
     const info: ISerialisedNode = {
       ...docNode.serialised,

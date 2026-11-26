@@ -1168,7 +1168,7 @@ describe('LiveGraphApplier', () => {
     expect(graph.getNodeById(toNodeId(1))).toBe(resolved)
   })
 
-  it('keeps a placeholder for a subgraph type the live graph does not own', () => {
+  it('keeps a placeholder when the replacement cannot be built', () => {
     const type = '00000000-0000-4000-8000-00000000f00d'
     const refusals: (GraphOrSubgraph | undefined)[] = []
     class ForeignSubgraphNode extends SubgraphNode {
@@ -1207,10 +1207,51 @@ describe('LiveGraphApplier', () => {
       )
     })
 
-    // The type is registered but unowned here, so retrying would churn the
-    // node out of the graph on every frame that touches it.
+    // The registry carries the type but this graph does not own the
+    // definition, so construction is retried and keeps refusing. The
+    // placeholder must survive each refusal rather than being removed and
+    // rebuilt on every frame that touches the node.
     expect(graph.getNodeById(toNodeId(1))).toBe(placeholder)
-    expect(refusals).toHaveLength(1)
+    expect(refusals).toEqual([graph, graph])
+  })
+
+  it('keeps a placeholder when the replacement constructor throws', () => {
+    const type = 'TestThrowingConstruction'
+    class TestThrowingConstruction extends LGraphNode {
+      constructor() {
+        super('Throwing construction')
+        throw new Error('constructor failed')
+      }
+    }
+    const docNode = (pos: [number, number]) => ({
+      id: 1,
+      type,
+      pos,
+      size: [210, 100]
+    })
+    const { graph, doc, applyCollected, applyEdit } = setup({
+      nodes: [docNode([0, 0])],
+      links: []
+    })
+
+    applyCollected()
+    const placeholder = graph.getNodeById(toNodeId(1))
+    expect(placeholder?.has_errors).toBe(true)
+
+    LiteGraph.registerNodeType(type, TestThrowingConstruction)
+    LiteGraph.catch_exceptions = false
+    onTestFinished(() => {
+      LiteGraph.catch_exceptions = true
+      delete LiteGraph.registered_node_types[type]
+    })
+    applyEdit(() => {
+      nodesMap(doc).set(
+        '1',
+        new Y.Map<unknown>(Object.entries(docNode([20, 30])))
+      )
+    })
+
+    expect(graph.getNodeById(toNodeId(1))).toBe(placeholder)
   })
 
   it('still reports a missing widget on a registered node flagged with errors', () => {
