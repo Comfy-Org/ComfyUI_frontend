@@ -681,7 +681,7 @@ describe('ComfyApp', () => {
       return reported
     }
 
-    async function loadSingleNode(type: string) {
+    async function loadSingleNode(type: string, title?: string) {
       app.canvasElRef.value = document.createElement('canvas')
       Reflect.set(app, 'rootGraphInternal', new LGraph())
       mockExtensionService.invokeExtensionsAsync.mockClear()
@@ -692,6 +692,7 @@ describe('ComfyApp', () => {
           {
             id: 1,
             type,
+            ...(title === undefined ? {} : { title }),
             pos: [0, 0],
             size: [300, 120],
             flags: {},
@@ -803,6 +804,43 @@ describe('ComfyApp', () => {
       expect(saved.nodes.map((node) => node.type)).toEqual([type])
     })
 
+    it('r2-repro-r4696004155: keeps a missing type whose stripped form is a registered type', async () => {
+      const registered = 'AB'
+      const type = 'A&B'
+      LiteGraph.registerNodeType(registered, class extends LGraphNode {})
+      onTestFinished(() => {
+        delete LiteGraph.registered_node_types[registered]
+      })
+      const workflow = await loadSingleNode(type)
+      expect(workflow.nodes[0].type).toBe(type)
+      expect(reportedMissingNodeTypes()).toEqual([{ type, nodeId: '1' }])
+      const live = app.rootGraph.getNodeById(toNodeId(1))
+      const saved = app.rootGraph.serialize()
+      expect(saved.nodes.map((node) => node.type)).toEqual([type])
+      expect(JSON.stringify(saved)).not.toContain('comfyOriginalMissingType')
+      expect(live?.constructor).toBe(LGraphNode)
+      expect(live?.type).toBe(registered)
+      expect(saved.nodes[0]).not.toHaveProperty('title')
+    })
+
+    it('r2-title-probe: placeholder title shows the original missing type', async () => {
+      const type = 'LayerColor: Brightness & Contrast'
+      await loadSingleNode(type)
+      const live = app.rootGraph.getNodeById(toNodeId(1))
+      const shown = live?.getTitle() ?? `❌ ${live?.type}`
+      expect(shown).toBe(type)
+      const saved = app.rootGraph.serialize()
+      expect(saved.nodes[0]).not.toHaveProperty('title')
+
+      const title = 'Keep me'
+      await loadSingleNode(type, title)
+      const titled = app.rootGraph.getNodeById(toNodeId(1))
+      expect(titled?.getTitle()).toBe(title)
+      const titledSaved = app.rootGraph.serialize()
+      expect(titledSaved.nodes[0]?.title).toBe(title)
+      expect(titledSaved.nodes.map((node) => node.type)).toEqual([type])
+    })
+
     it('keeps the original type of one missing subgraph node used by two containers', async () => {
       app.canvasElRef.value = document.createElement('canvas')
       Reflect.set(app, 'rootGraphInternal', new LGraph())
@@ -880,6 +918,92 @@ describe('ComfyApp', () => {
       expect(
         live.filter((node) => node.type === sanitizeNodeName(type))
       ).toHaveLength(1)
+    })
+
+    it('keeps a colliding missing type inside a shared subgraph used by two containers', async () => {
+      const registered = 'AB'
+      const type = 'A&B'
+      LiteGraph.registerNodeType(registered, class extends LGraphNode {})
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      mockExtensionService.invokeExtensionsAsync.mockClear()
+      const subgraphId = '22222222-2222-4222-8222-222222222222'
+      onTestFinished(() => {
+        delete LiteGraph.registered_node_types[registered]
+        delete LiteGraph.registered_node_types[subgraphId]
+      })
+      const workflow = zComfyWorkflow.parse({
+        ...createWorkflowGraphData(),
+        last_node_id: 7,
+        nodes: [1, 2].map((id, index) => ({
+          id,
+          type: subgraphId,
+          pos: [0, index * 180],
+          size: [200, 100],
+          flags: {},
+          order: index,
+          mode: 0,
+          properties: {}
+        })),
+        definitions: {
+          subgraphs: [
+            {
+              id: subgraphId,
+              version: 1,
+              revision: 0,
+              name: 'Shared',
+              state: {
+                lastNodeId: 7,
+                lastLinkId: 0,
+                lastGroupId: 0,
+                lastRerouteId: 0
+              },
+              inputNode: { id: -10, bounding: [0, 0, 120, 60] },
+              outputNode: { id: -20, bounding: [200, 0, 120, 60] },
+              nodes: [
+                {
+                  id: 7,
+                  type,
+                  pos: [0, 0],
+                  size: [200, 80],
+                  flags: {},
+                  order: 0,
+                  mode: 0,
+                  properties: {},
+                  widgets_values: ['marker']
+                }
+              ]
+            }
+          ]
+        }
+      })
+
+      await app.loadGraphData(workflow, false, true, null)
+      useNodeDefStore().removeNodeDef(subgraphId)
+
+      expect(reportedMissingNodeTypes()).toEqual([
+        { type, nodeId: '1:7' },
+        { type, nodeId: '2:7' }
+      ])
+      const defined = workflow.definitions?.subgraphs[0]?.nodes.find(hasMarker)
+      expect(defined?.type).toBe(type)
+      const saved = app.rootGraph.serialize()
+      const savedSubgraphs = saved.definitions?.subgraphs ?? []
+      const savedInner = savedSubgraphs
+        .flatMap((definition) => definition.nodes)
+        .find((node) => node?.id === 7)
+      expect(savedInner?.type).toBe(type)
+      expect(JSON.stringify(saved)).not.toContain('comfyOriginalMissingType')
+      expect(savedInner).not.toHaveProperty('title')
+      const live = [...app.rootGraph.subgraphs.values()].flatMap((subgraph) => [
+        ...subgraph.nodes
+      ])
+      const placeholders = live.filter(
+        (node) => node.constructor === LGraphNode
+      )
+      expect(placeholders).toHaveLength(1)
+      expect(placeholders[0]?.type).toBe(registered)
+      expect(placeholders[0]?.last_serialization?.type).toBe(type)
     })
 
     it('replaces canvas ownership after preparing the outgoing workflow', async () => {

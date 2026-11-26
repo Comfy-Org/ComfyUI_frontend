@@ -292,24 +292,46 @@ export function sanitizeNodeName(string: string) {
 
 const originalMissingTypeField = 'comfyOriginalMissingType'
 
+function deleteOriginalMissingTypeMarker(target: object): void {
+  Reflect.deleteProperty(target, originalMissingTypeField)
+  const extensions = Reflect.get(target, 'extensions')
+  if (extensions !== null && typeof extensions === 'object')
+    Reflect.deleteProperty(extensions, originalMissingTypeField)
+}
+
 function restoreOriginalMissingTypes(
   graph: LGraph,
   originalMissingTypes: ReadonlyMap<FlattenableWorkflowNode, string>
 ): void {
   if (originalMissingTypes.size === 0) return
+  const missingOriginals = new Set(originalMissingTypes.values())
   for (const owner of [graph, ...graph.subgraphs.values()]) {
     for (const live of owner.nodes) {
       const serial = live.last_serialization
       if (!serial) continue
-      const originalType = Reflect.get(serial, originalMissingTypeField)
-      if (typeof originalType === 'string') serial.type = originalType
-      Reflect.deleteProperty(serial, originalMissingTypeField)
-      Reflect.deleteProperty(live, originalMissingTypeField)
+      const marked = Reflect.get(serial, originalMissingTypeField)
+      if (typeof marked === 'string') serial.type = marked
+      deleteOriginalMissingTypeMarker(serial)
+      deleteOriginalMissingTypeMarker(live)
+      const original =
+        typeof marked === 'string'
+          ? marked
+          : missingOriginals.has(serial.type)
+            ? serial.type
+            : undefined
+      if (original === undefined || live.constructor !== LGraphNode) continue
+      const sanitized = sanitizeNodeName(original)
+      if (live.type !== sanitized) live.type = sanitized
+      if (
+        !serial.title &&
+        (live.title === '' || live.title === live.constructor.title)
+      )
+        live.title = original
     }
   }
   for (const [node, originalType] of originalMissingTypes) {
     node.type = originalType
-    Reflect.deleteProperty(node, originalMissingTypeField)
+    deleteOriginalMissingTypeMarker(node)
   }
 }
 
@@ -1572,12 +1594,18 @@ export class ComfyApp implements IComfyApp {
                 })
               }
 
-              if (!originalMissingTypes.has(n))
-                Object.assign(n, {
-                  [originalMissingTypeField]: originalType
-                })
+              const sanitizedType = sanitizeNodeName(originalType)
+              const sanitizedTypeIsRegistered =
+                sanitizedType !== originalType &&
+                sanitizedType in LiteGraph.registered_node_types
+              if (!sanitizedTypeIsRegistered) {
+                if (!originalMissingTypes.has(n))
+                  Object.assign(n, {
+                    [originalMissingTypeField]: originalType
+                  })
+                n.type = sanitizedType
+              }
               originalMissingTypes.set(n, originalType)
-              n.type = sanitizeNodeName(originalType)
             }
           }
         }
