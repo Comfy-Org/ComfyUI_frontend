@@ -70,6 +70,7 @@ import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplace
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 import { showMissingNodesNotice } from '@/platform/workflowErrors/nodeReplacement/missingNodesNotice'
+import type { WorkflowOpening } from '@/platform/workflowErrors/nodeReplacement/types'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import {
   appendJsonExt,
@@ -806,7 +807,7 @@ export const useWorkflowService = () => {
     initiator: 'user' | undefined,
     silent: boolean
   ) => {
-    showPendingWarnings(undefined, { silent })
+    showPendingWarnings(undefined, { silent, opening: 'reopened' })
     if (initiator === 'user') workflowStore.reportUserActivation(workflow)
   }
 
@@ -1487,7 +1488,7 @@ export const useWorkflowService = () => {
    */
   function showPendingWarnings(
     workflow?: ComfyWorkflow | null,
-    options?: { silent?: boolean }
+    options?: { silent?: boolean; opening?: WorkflowOpening }
   ) {
     const wf = workflow ?? workflowStore.activeWorkflow
     if (!wf) return
@@ -1503,7 +1504,7 @@ export const useWorkflowService = () => {
       missingNodesErrorStore.surfaceMissingNodes(missingNodeTypes ?? []) &&
       !options?.silent
     ) {
-      showMissingNodesNotice(missingNodeTypes ?? [])
+      showMissingNodesNotice(missingNodeTypes ?? [], options?.opening)
     }
     if (missingModelCandidates?.length) {
       useMissingModelStore().setMissingModels(missingModelCandidates)

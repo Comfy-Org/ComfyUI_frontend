@@ -1457,6 +1457,7 @@ export class ComfyApp implements IComfyApp {
       openSource,
       shareId,
       deferWarnings = false,
+      opening,
       skipAssetScans = false,
       silentAssetErrors = false,
       workflowNavigationId,
@@ -1924,7 +1925,8 @@ export class ComfyApp implements IComfyApp {
           if (!skipAssetScans) await scanAssets()
           if (deferWarnings || this.rootGraph !== graph) return
           useWorkflowService().showPendingWarnings(undefined, {
-            silent: silentAssetErrors
+            silent: silentAssetErrors,
+            opening
           })
         }
 

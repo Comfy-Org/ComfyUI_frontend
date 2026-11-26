@@ -2,7 +2,7 @@ import { until } from '@vueuse/core'
 
 import { useAppMode } from '@/composables/useAppMode'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
+import type { WorkflowOpening,MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { DEPLOYMENT_LISTING_MISSING_NODES_WAIT_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
@@ -33,12 +33,9 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 /** How long the dialog waits for the compatibility check before it stays closed. */
 export const COMPATIBILITY_WAIT_MS = 3000
 
-function firstNoticeOf(missingNodes: readonly MissingNodeType[]): boolean {
-  return (
-    missingNodes.length > 0 &&
-    useCustomDeploymentOfferStore().offerOnce(
-      missingNodes.map(missingNodeTypeName)
-    )
+function firstOfferFor(missingNodes: readonly MissingNodeType[]): boolean {
+  return useCustomDeploymentOfferStore().offerOnce(
+    missingNodes.map(missingNodeTypeName)
   )
 }
 
@@ -55,6 +52,14 @@ async function compatibilityAnswered(
   })
 }
 
+function offersSwitch(markFor: MarkFor, workflow: CheckedWorkflow): boolean {
+  const deployments = useDeploymentPickStore().deployments
+  return (
+    deployments.length > 0 &&
+    workflowDeploymentOffer(deployments, markFor, workflow).kind === 'switch'
+  )
+}
+
 function knowsWhatToOffer(
   markFor: MarkFor,
   workflow: CheckedWorkflow
@@ -68,7 +73,8 @@ function knowsWhatToOffer(
 
 async function offerCustomDeployment(
   missingNodes: readonly MissingNodeType[],
-  markFor: MarkFor
+  markFor: MarkFor,
+  opening: WorkflowOpening
 ): Promise<void> {
   const workflowStore = useWorkflowStore()
   const noticedWorkflow = workflowStore.activeWorkflow
@@ -89,25 +95,31 @@ async function offerCustomDeployment(
   ) {
     return
   }
+  if (opening === 'reopened' && !offersSwitch(markFor, checkedWorkflow)) return
+  if (!firstOfferFor(missingNodes)) return
   await openWorkflowNeedsDeploymentDialog()
 }
 
 /**
  * Shows the error overlay for the open workflow's missing nodes and, the first
- * time this page meets them, the deployment dialog over it when it has an offer.
+ * time this page offers for them, the deployment dialog over it when it has an
+ * offer. A reopened workflow gets the dialog only to switch to a build that runs
+ * it; otherwise the error overlay alone makes the offer.
  */
 export async function noticeMissingNodes(
   nodeTypes: readonly MissingNodeType[],
-  markFor: MarkFor
+  markFor: MarkFor,
+  opening: WorkflowOpening = 'brought_in'
 ): Promise<void> {
   useExecutionErrorStore().showErrorOverlay()
   const missingNodes = nodesNeedingDeployment(nodeTypes)
-  if (!useDeploymentSwitcherOffered().value || !firstNoticeOf(missingNodes))
-    return
-  await offerCustomDeployment(missingNodes, markFor).catch((error: unknown) => {
-    reportError(error, {
-      errorType: 'error_offering_custom_deployment',
-      surface: 'platform'
-    })
-  })
+  if (!useDeploymentSwitcherOffered().value || missingNodes.length === 0) return
+  await offerCustomDeployment(missingNodes, markFor, opening).catch(
+    (error: unknown) => {
+      reportError(error, {
+        errorType: 'error_offering_custom_deployment',
+        surface: 'platform'
+      })
+    }
+  )
 }

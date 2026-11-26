@@ -2487,6 +2487,20 @@ describe('ComfyApp', () => {
       expect(mockWorkflowService.showPendingWarnings).not.toHaveBeenCalled()
     })
 
+    it('tells the warnings how a loaded workflow was opened', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+
+      await app.loadGraphData(createWorkflowGraphData(), false, false, null, {
+        opening: 'reopened'
+      })
+
+      expect(mockWorkflowService.showPendingWarnings).toHaveBeenCalledWith(
+        undefined,
+        expect.objectContaining({ opening: 'reopened' })
+      )
+    })
+
     it('keeps a configured load when the next queued configure fails without clearing it', async () => {
       app.canvasElRef.value = document.createElement('canvas')
       Reflect.set(app, 'rootGraphInternal', new LGraph())

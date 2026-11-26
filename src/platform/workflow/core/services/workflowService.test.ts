@@ -47,6 +47,7 @@ import {
 } from '@/platform/workflow/core/services/workflowService'
 import type { OpenWorkflowFailure } from '@/platform/workflow/core/services/workflowService'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
+import { showMissingNodesNotice } from '@/platform/workflowErrors/nodeReplacement/missingNodesNotice'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -158,6 +159,12 @@ vi.mock(import('@/platform/customNodes/lateLoading/lateNodeTypes'), {
   spy: true
 })
 vi.mock(import('@/platform/customNodes/lateLoading/waitingNodes'))
+vi.mock(
+  import('@/platform/workflowErrors/nodeReplacement/missingNodesNotice'),
+  {
+    spy: true
+  }
+)
 
 const storeThumbnailMock = vi.hoisted(() => vi.fn())
 
@@ -3511,6 +3518,24 @@ describe('useWorkflowService', () => {
         useMissingNodesErrorStore().surfaceMissingNodes
       ).toHaveBeenCalledWith(['CustomNode1'])
       expect(workflow.pendingWarnings).not.toBeNull()
+    })
+
+    it('tells the missing nodes notice that an opened workflow was reopened', async () => {
+      const workflow = createWorkflow(
+        { missingNodeTypes: ['CustomNode1'] },
+        { loadable: true }
+      )
+
+      vi.mocked(
+        useMissingNodesErrorStore().surfaceMissingNodes
+      ).mockReturnValue(true)
+
+      await useWorkflowService().openWorkflow(workflow, { force: true })
+
+      expect(showMissingNodesNotice).toHaveBeenCalledWith(
+        ['CustomNode1'],
+        'reopened'
+      )
     })
 
     it('should show each workflow warnings only when that tab is focused', async () => {
