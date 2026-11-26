@@ -166,13 +166,25 @@ describe('proactive assignment boundary', () => {
   })
 
   it.for([
-    undefined,
-    null,
-    { ...assignment, user_id: 'another-user' },
-    { ...assignment, workspace_id: 'another-workspace' },
-    { ...assignment, group_key: 'user-a:workspace-a' },
-    { ...assignment, variant: 'unknown' }
-  ])('fails closed for absent, malformed or stale assignments', (wire) => {
+    { caseName: 'undefined', wire: undefined },
+    { caseName: 'null', wire: null },
+    {
+      caseName: 'another user',
+      wire: { ...assignment, user_id: 'another-user' }
+    },
+    {
+      caseName: 'another workspace',
+      wire: { ...assignment, workspace_id: 'another-workspace' }
+    },
+    {
+      caseName: 'another group',
+      wire: { ...assignment, group_key: 'user-a:workspace-a' }
+    },
+    {
+      caseName: 'unknown variant',
+      wire: { ...assignment, variant: 'unknown' }
+    }
+  ])('fails closed for a $caseName assignment', ({ wire }) => {
     expect(
       resolveProactiveGreetingAssignment(
         { agent_proactive_greeting_assignment: wire },
