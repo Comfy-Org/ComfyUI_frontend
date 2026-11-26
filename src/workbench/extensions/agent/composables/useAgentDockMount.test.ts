@@ -606,7 +606,12 @@ describe('useAgentDockMount', () => {
     })
 
     describe('shared with the panel open that acceptance triggers', () => {
-      function mountWithFreshBilling() {
+      /**
+       * `hosts` is load-bearing rather than incidental: in linear mode
+       * `GraphCanvas` stays mounted behind `v-show` while `LinearView` mounts
+       * too, so two instances of this composable watch the same open.
+       */
+      function mountWithFreshBilling(hosts = 1) {
         const fetchStatusFresh = vi.fn(async () => true)
         const fetchStatus = vi.fn(
           async (_options?: BillingStatusReadOptions) => {}
@@ -616,7 +621,7 @@ describe('useAgentDockMount', () => {
           fetchStatus,
           fetchStatusFresh
         })
-        useAgentDockMount()
+        for (let host = 0; host < hosts; host += 1) useAgentDockMount()
         // Counted across both entry points, so the assertion is about how many
         // fresh reads happen rather than which call issues them.
         const freshReads = () =>
@@ -648,14 +653,74 @@ describe('useAgentDockMount', () => {
         expect(freshReads()).toBe(1)
       })
 
-      it('still reads billing on an open that no acceptance triggered', async () => {
-        const { consent, store, fetchStatusFresh } = mountWithFreshBilling()
+      it('reads billing once when acceptance opens the panel in linear mode', async () => {
+        const { consent, store, freshReads } = mountWithFreshBilling(2)
 
         consent.confirmedAcceptances += 1
         await nextTick()
         store.isOpen = true
+        await settleRefreshes()
+
+        expect(freshReads()).toBe(1)
+      })
+
+      it('passes the acceptance read the option that detaches an in-flight read', async () => {
+        const { consent, fetchStatus } = mountWithFreshBilling()
+
+        consent.confirmedAcceptances += 1
+        await settleRefreshes()
+
+        // Without `fresh: true` the read joins a status request that was
+        // already in flight before consent was accepted, so it can answer with
+        // pre-acceptance funds -- and the open that would have corrected it is
+        // now skipped.
+        expect(fetchStatus).toHaveBeenCalledWith({ fresh: true })
+      })
+
+      it('leaves the open its own read when the acceptance read fails', async () => {
+        const { consent, store, fetchStatus, fetchStatusFresh } =
+          mountWithFreshBilling()
+        fetchStatus.mockRejectedValueOnce(new Error('status read failed'))
+
+        consent.confirmedAcceptances += 1
         await nextTick()
-        expect(fetchStatusFresh).toHaveBeenCalledOnce()
+        expect(fetchStatus).toHaveBeenCalledWith({ fresh: true })
+        store.isOpen = true
+
+        // The acceptance read never landed, so this open still owes one: before
+        // the read was shared, every open issued its own.
+        await vi.waitFor(() => expect(fetchStatusFresh).toHaveBeenCalledOnce())
+      })
+
+      it('leaves an unrelated later open its own read when acceptance never opened the panel', async () => {
+        const now = vi.spyOn(Date, 'now')
+        now.mockReturnValue(1_000)
+        const { consent, store, fetchStatus, fetchStatusFresh } =
+          mountWithFreshBilling()
+
+        // An acceptance whose `onAccept` bails on `canOpen()` refreshes billing
+        // and never opens the panel.
+        consent.confirmedAcceptances += 1
+        await settleRefreshes()
+        expect(fetchStatus).toHaveBeenCalledWith({ fresh: true })
+        expect(fetchStatusFresh).not.toHaveBeenCalled()
+
+        // Hours later, an open that has nothing to do with that acceptance must
+        // not inherit its read.
+        now.mockReturnValue(1_000 + 3_600_000)
+        store.isOpen = true
+
+        await vi.waitFor(() => expect(fetchStatusFresh).toHaveBeenCalledOnce())
+      })
+
+      it('still reads billing on an open that no acceptance triggered', async () => {
+        const { consent, store, freshReads } = mountWithFreshBilling()
+
+        consent.confirmedAcceptances += 1
+        await nextTick()
+        store.isOpen = true
+        await settleRefreshes()
+        expect(freshReads()).toBe(1)
 
         store.close('close_button')
         await nextTick()
@@ -663,28 +728,24 @@ describe('useAgentDockMount', () => {
 
         // A reopen read chains after the refresh in flight, so it is issued a
         // microtask later rather than on this tick.
-        await vi.waitFor(() =>
-          expect(fetchStatusFresh).toHaveBeenCalledTimes(2)
-        )
+        await vi.waitFor(() => expect(freshReads()).toBe(2))
       })
 
       it('leaves a later open its own read when acceptance did not open the panel', async () => {
-        const { consent, store, fetchStatusFresh } = mountWithFreshBilling()
+        const { consent, store, freshReads } = mountWithFreshBilling()
         store.isOpen = true
-        await nextTick()
-        expect(fetchStatusFresh).toHaveBeenCalledOnce()
+        await settleRefreshes()
+        expect(freshReads()).toBe(1)
 
         consent.confirmedAcceptances += 1
-        await nextTick()
-        expect(fetchStatusFresh).toHaveBeenCalledTimes(2)
+        await settleRefreshes()
+        expect(freshReads()).toBe(2)
 
         store.close('close_button')
         await nextTick()
         store.isOpen = true
 
-        await vi.waitFor(() =>
-          expect(fetchStatusFresh).toHaveBeenCalledTimes(3)
-        )
+        await vi.waitFor(() => expect(freshReads()).toBe(3))
       })
 
       it('keeps the deferred read when billing routing is not known yet', async () => {
