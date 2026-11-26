@@ -611,6 +611,13 @@ export class AgentTurnLockHarness {
     this.workingRow = this.panel.getByText(enMessages.agent.working, {
       exact: true
     })
+    // The two status rows a live turn can show in this fixture's scenarios.
+    // `working` needs every part settled (AgentMessage.vue's `composing`), so
+    // it covers a turn resumed with its tool call intact; `thinking` covers one
+    // rebuilt from REST, which has no parts at all because the server stores a
+    // live row contentless. Asserting the pair keeps this about whether a live
+    // turn is on screen rather than which recovery shape produced it. Visible
+    // only, so a collapsed WorkSummary's retained trace cannot match.
     this.liveProgressRow = this.workingRow
       .or(this.panel.getByText(enMessages.agent.thinking, { exact: true }))
       .filter({ visible: true })
