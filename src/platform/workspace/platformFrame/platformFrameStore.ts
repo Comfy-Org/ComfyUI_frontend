@@ -77,6 +77,7 @@ interface PlatformFrameSession {
   nonce: string
   workflow: HandedWorkflow | null
   owner: BuildOwner
+  shownStep?: 'models'
 }
 
 export const usePlatformFrameStore = defineStore('platformFrame', () => {
@@ -463,7 +464,7 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
       if (!current) return
       stopBridge?.()
       stopBridge = undefined
-      session.value = { ...current, id: ++sessions }
+      session.value = { ...current, id: ++sessions, shownStep: undefined }
       contentHeight.value = null
       waitForAnswer()
     }, PLATFORM_FRAME_SIGN_IN_RETRY_MS)
@@ -477,14 +478,29 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
   function take(message: FrameMessage) {
     if (message.type === 'ready') {
       contentHeight.value = null
+      if (session.value?.shownStep)
+        session.value = { ...session.value, shownStep: undefined }
       stopWaiting()
       isUnanswered.value = false
       if (message.signedIn) cancelRetry()
       else reloadForSignIn()
     }
-    if (message.type === 'content-height') contentHeight.value = message.height
+    if (message.type === 'step-shown') showStep(message.step)
+    else if (message.type === 'content-height')
+      contentHeight.value = message.height
     else if (message.type === 'build-started') startBuild(message)
     else follow(message)
+  }
+
+  function showStep(step: 'models') {
+    const current = session.value
+    if (
+      !current ||
+      current.request.step !== 'preinstall' ||
+      current.shownStep === step
+    )
+      return
+    session.value = { ...current, shownStep: step }
   }
 
   function attach(frame: Window) {

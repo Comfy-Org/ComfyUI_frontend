@@ -252,6 +252,30 @@ describe('usePlatformFrameStore', () => {
     expect(store.contentHeight).toBeNull()
   })
 
+  it('forgets the step Platform moved to when the frame loads a new page', () => {
+    const store = usePlatformFrameStore()
+    const { frame } = framedWindow()
+    store.open({ step: 'preinstall', deploymentId: 'dep-1' }, 'errors_panel')
+    store.attach(frame)
+    receive({ type: 'step-shown', step: 'models' }, frame)
+    expect(store.session?.shownStep).toBe('models')
+
+    receive({ type: 'ready', signedIn: true, userId: 'uid-ben' }, frame)
+
+    expect(store.session?.shownStep).toBeUndefined()
+  })
+
+  it('takes a shown step only on the pre-install screen', () => {
+    const store = usePlatformFrameStore()
+    const { frame } = framedWindow()
+    store.open({ step: 'models', deploymentId: 'dep-1' }, 'errors_panel')
+    store.attach(frame)
+
+    receive({ type: 'step-shown', step: 'models' }, frame)
+
+    expect(store.session?.shownStep).toBeUndefined()
+  })
+
   it('keeps the frame without the fallback once the page says it is ready', async () => {
     vi.useFakeTimers()
     const store = usePlatformFrameStore()

@@ -111,7 +111,7 @@ const { session, contentHeight, isUnanswered, isHidden } = storeToRefs(store)
 const frame = useTemplateRef<HTMLIFrameElement>('frame')
 const { t } = useI18n()
 const isPreinstall = computed(
-  () => session.value?.request.step === 'preinstall'
+  () => session.value?.request.step === 'preinstall' && !session.value.shownStep
 )
 const fittedHeight = computed(() =>
   isPreinstall.value && contentHeight.value !== null
