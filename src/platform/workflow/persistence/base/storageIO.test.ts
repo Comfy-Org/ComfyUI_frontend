@@ -12,6 +12,7 @@ import {
   deletePayloads,
   getPayloadKeys,
   markStorageUnavailable,
+  measureLocalStorage,
   readActivePath,
   readIndex,
   readOpenPaths,
@@ -794,6 +795,34 @@ describe('storageIO', () => {
         '{}'
       )
       expect(localStorage.getItem('Comfy.Workflow.Drafts:ws-1')).toBe('{}')
+    })
+  })
+
+  describe('measureLocalStorage', () => {
+    it('reports an unavailable measurement when enumeration fails', () => {
+      localStorage.setItem('Comfy.Workflow.Draft.v2:ws-1:abc', '{"data":""}')
+      vi.spyOn(localStorage, 'key').mockImplementation(() => {
+        throw new DOMException('blocked', 'SecurityError')
+      })
+
+      expect(measureLocalStorage()).toBeNull()
+    })
+
+    it('does not report a partial measurement when a key disappears mid-scan', () => {
+      localStorage.setItem('Comfy.Workflow.Draft.v2:ws-1:abc', '{"data":""}')
+      vi.spyOn(localStorage, 'key').mockReturnValue(null)
+
+      expect(measureLocalStorage()).toBeNull()
+    })
+
+    it('measures a genuinely empty store as zero', () => {
+      expect(measureLocalStorage()).toEqual({
+        storageTotalBytes: 0,
+        storageDraftBytes: 0,
+        storageKeyCount: 0,
+        largestOtherStorageKey: null,
+        largestOtherStorageKeyBytes: 0
+      })
     })
   })
 })

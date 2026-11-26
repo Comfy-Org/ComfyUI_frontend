@@ -12,6 +12,10 @@ import { SessionRevokedError } from '@/platform/auth/session/sessionRevokedError
 import { trackSsoWorkspaceLanded } from '@/platform/auth/sso/ssoTelemetry'
 import { ensureSessionCookie } from '@/platform/auth/session/sessionCookieAccess'
 import { isCloud } from '@/platform/distribution/types'
+import {
+  safeLocalStorage,
+  safeSessionStorage
+} from '@comfyorg/shared-frontend-utils/safeStorage'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { clearPreservedQuery } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
@@ -136,44 +140,39 @@ export function sortWorkspaces<T extends WorkspaceWithRole>(list: T[]): T[] {
 }
 
 function getLastWorkspaceId(): string | null {
-  try {
-    return localStorage.getItem(WORKSPACE_STORAGE_KEYS.LAST_WORKSPACE_ID)
-  } catch {
-    return null
-  }
+  return safeLocalStorage.getItem(WORKSPACE_STORAGE_KEYS.LAST_WORKSPACE_ID)
 }
 
 function setLastWorkspaceId(workspaceId: string): void {
-  try {
-    localStorage.setItem(WORKSPACE_STORAGE_KEYS.LAST_WORKSPACE_ID, workspaceId)
-  } catch {
+  const result = safeLocalStorage.setItem(
+    WORKSPACE_STORAGE_KEYS.LAST_WORKSPACE_ID,
+    workspaceId
+  )
+  if (result !== 'ok') {
     console.warn('Failed to persist last workspace ID to localStorage')
   }
 }
 
 /** The workspace a switch reloads into, read once by the next initialization. */
 function setSwitchTargetId(workspaceId: string): void {
-  try {
-    sessionStorage.setItem(WORKSPACE_STORAGE_KEYS.SWITCH_TARGET_ID, workspaceId)
-  } catch {
+  const result = safeSessionStorage.setItem(
+    WORKSPACE_STORAGE_KEYS.SWITCH_TARGET_ID,
+    workspaceId
+  )
+  if (result !== 'ok' || !safeSessionStorage.isPersistent) {
     console.warn('Failed to persist the workspace switch target')
   }
 }
 
 function takeSwitchTargetId(): string | null {
-  try {
-    const id = sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.SWITCH_TARGET_ID)
-    sessionStorage.removeItem(WORKSPACE_STORAGE_KEYS.SWITCH_TARGET_ID)
-    return id
-  } catch {
+  const id = safeSessionStorage.getItem(WORKSPACE_STORAGE_KEYS.SWITCH_TARGET_ID)
+  if (!safeSessionStorage.remove(WORKSPACE_STORAGE_KEYS.SWITCH_TARGET_ID).ok)
     return null
-  }
+  return id
 }
 
 function clearLastWorkspaceId(): void {
-  try {
-    localStorage.removeItem(WORKSPACE_STORAGE_KEYS.LAST_WORKSPACE_ID)
-  } catch {
+  if (!safeLocalStorage.remove(WORKSPACE_STORAGE_KEYS.LAST_WORKSPACE_ID).ok) {
     console.warn('Failed to clear last workspace ID from localStorage')
   }
 }

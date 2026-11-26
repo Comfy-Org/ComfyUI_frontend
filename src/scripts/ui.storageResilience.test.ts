@@ -1,7 +1,12 @@
-import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import { beforeAll, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { attachLegacyUI } from '@/core/legacyUI/attachLegacyUI'
+import { safeLocalStorage } from '@comfyorg/shared-frontend-utils/safeStorage'
 import { ComfyApp } from '@/scripts/app'
+
+beforeAll(() => {
+  expect(safeLocalStorage.backend).toBe('localStorage')
+})
 
 function attachToFreshApp() {
   const app = new ComfyApp()

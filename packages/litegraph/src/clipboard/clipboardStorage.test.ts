@@ -1,8 +1,11 @@
 import { expect, it, onTestFinished, vi } from 'vitest'
 
+import { safeLocalStorage } from '@comfyorg/shared-frontend-utils/safeStorage'
+
 import { readClipboardStorage } from './clipboardStorage'
 
 it('distinguishes blocked storage from an empty clipboard', () => {
+  expect(safeLocalStorage.backend).toBe('localStorage')
   const getItem = vi
     .spyOn(window.localStorage, 'getItem')
     .mockImplementation(() => {

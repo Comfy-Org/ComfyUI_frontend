@@ -6,6 +6,7 @@ import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
+import { LGraph, LGraphCanvas } from '@comfyorg/litegraph/litegraph'
 import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -17,6 +18,7 @@ import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
+import { stubCanvasGetContext } from '@comfyorg/litegraph/__fixtures__/canvasTestUtils'
 
 import WidgetItem from './WidgetItem.vue'
 
@@ -134,14 +136,29 @@ describe('WidgetItem', () => {
           callback
         })
         const node = createMockNode()
+        stubCanvasGetContext()
+        const canvas = new LGraphCanvas(
+          document.createElement('canvas'),
+          new LGraph(),
+          { skip_render: true, skip_events: true }
+        )
+        canvas.ds.scale = 2
+        canvas.ds.offset = [10, 20]
+        useCanvasStore().canvas = canvas
         renderWidgetItem(widget, node)
 
-        await user.click(screen.getByRole('button', { name: widget.name }))
+        await user.pointer({
+          keys: '[MouseLeft]',
+          target: screen.getByRole('button', { name: widget.name }),
+          coords: { clientX: 50, clientY: 30 }
+        })
 
         expect(callback).toHaveBeenCalledExactlyOnceWith(
           undefined,
-          useCanvasStore().canvas,
-          node
+          canvas,
+          node,
+          [15, -5],
+          expect.objectContaining({ type: 'click', canvasX: 15, canvasY: -5 })
         )
         expect(widget.label).toBe('Restored')
       }

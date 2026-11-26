@@ -7,6 +7,7 @@ import {
 import type { ISlotType } from '@comfyorg/graph-model/interfaces'
 import { outputLinks } from '@comfyorg/litegraph/node/slotLinks'
 import { slotTypeKey } from '@comfyorg/litegraph/utils/type'
+import { safeLocalStorage } from '@comfyorg/shared-frontend-utils/safeStorage'
 
 import { useApp } from '@/scripts/appInstance'
 import { getWidgetConfig, mergeIfValid, setWidgetConfig } from './widgetInputs'
@@ -223,16 +224,19 @@ export const rerouteNodeExtension: ComfyExtension = {
       static setDefaultTextVisibility(visible: boolean) {
         RerouteNode.defaultVisibility = visible
         if (visible) {
-          localStorage['Comfy.RerouteNode.DefaultVisibility'] = 'true'
+          safeLocalStorage.setItem(
+            'Comfy.RerouteNode.DefaultVisibility',
+            'true'
+          )
         } else {
-          delete localStorage['Comfy.RerouteNode.DefaultVisibility']
+          safeLocalStorage.removeItem('Comfy.RerouteNode.DefaultVisibility')
         }
       }
     }
 
     // Load default visibility
     RerouteNode.setDefaultTextVisibility(
-      !!localStorage['Comfy.RerouteNode.DefaultVisibility']
+      !!safeLocalStorage.getItem('Comfy.RerouteNode.DefaultVisibility')
     )
 
     function findRootInput(start: RerouteNode, graph: LGraph) {

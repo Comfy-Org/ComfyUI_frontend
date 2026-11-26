@@ -2,6 +2,7 @@ import { ref } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { safeSessionStorage } from '@comfyorg/shared-frontend-utils/safeStorage'
 import { useComfyHubService } from '@/platform/workflow/sharing/services/comfyHubService'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import type { ComfyHubProfile } from '@/platform/workflow/sharing/schemas/shareSchemas'
@@ -16,7 +17,7 @@ const cachedUserId = ref<string | null>(null)
 let inflightFetch: Promise<ComfyHubProfile | null> | null = null
 
 function getCurrentWorkspaceId(): string {
-  const workspaceJson = sessionStorage.getItem(
+  const workspaceJson = safeSessionStorage.getItem(
     WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE
   )
   if (!workspaceJson) {

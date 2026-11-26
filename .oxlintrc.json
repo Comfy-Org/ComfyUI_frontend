@@ -280,6 +280,21 @@
     },
     {
       "files": [
+        "src/**/*.{ts,vue}",
+        "packages/litegraph/src/**/*.ts",
+        "packages/graph-state/src/**/*.ts"
+      ],
+      "excludeFiles": [
+        "**/*.{test,spec,stories}.ts",
+        "src/**/__mocks__/**",
+        "src/platform/storage/useSafeStorage.ts"
+      ],
+      "rules": {
+        "comfy/no-direct-web-storage": "error"
+      }
+    },
+    {
+      "files": [
         "apps/**/*.{js,mjs,cjs,ts,mts,cts,vue}",
         "src/**/*.{js,mjs,cjs,ts,mts,cts,vue}",
         "packages/**/*.{js,mjs,cjs,ts,mts,cts,vue}"

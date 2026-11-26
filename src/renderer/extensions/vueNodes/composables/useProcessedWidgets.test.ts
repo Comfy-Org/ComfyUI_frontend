@@ -1089,6 +1089,32 @@ describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
     expect(callback).toHaveBeenCalledWith(42, undefined, expect.any(LGraphNode))
   })
 
+  it('calls a clicked button callback with its own value and leaves that value unchanged', () => {
+    const callback = vi.fn()
+    const id = widgetId(GRAPH_ID, NODE_ID, 'clear')
+    const widget = createMockWidget({
+      name: 'clear',
+      type: 'button',
+      value: 'clear',
+      widgetId: id,
+      callback
+    })
+    registerWidgetState(id, { type: 'button', value: 'clear' })
+
+    const [processed] = processUpdateWidgets([widget])
+    processed.simplified.callback?.(undefined)
+
+    expect(callback).toHaveBeenCalledExactlyOnceWith(
+      'clear',
+      undefined,
+      expect.any(LGraphNode),
+      undefined,
+      undefined
+    )
+    expect(widget.value).toBe('clear')
+    expect(useWidgetValueStore().getWidget(id)?.value).toBe('clear')
+  })
+
   it('updates widgetState.value when store entry exists', () => {
     const id = widgetId(GRAPH_ID, NODE_ID, 'seed')
     registerWidgetState(id, { type: 'combo', value: 0 })

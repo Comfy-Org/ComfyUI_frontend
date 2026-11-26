@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import { SafeStorage } from '@comfyorg/shared-frontend-utils/safeStorage'
+
 import { loadSplitterSizes, saveSplitterSizes } from './splitterPersistence'
 
 describe('splitter persistence', () => {
@@ -21,11 +23,14 @@ describe('splitter persistence', () => {
 
   it('continues when storage is unavailable', () => {
     vi.stubGlobal('localStorage', undefined)
+    const storage = new SafeStorage(['localStorage'])
 
     expect(() =>
-      saveSplitterSizes('linear-view-splitter', [25, 75])
+      saveSplitterSizes('linear-view-splitter', [25, 75], storage)
     ).not.toThrow()
-    expect(loadSplitterSizes('linear-view-splitter', 2)).toBeUndefined()
+    expect(loadSplitterSizes('linear-view-splitter', 2, storage)).toEqual([
+      25, 75
+    ])
   })
 
   it.for([

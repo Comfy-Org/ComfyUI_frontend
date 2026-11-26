@@ -18,6 +18,7 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { resolveDeployEnv } from '@comfyorg/telemetry/rumContext'
 import { reportError } from '@comfyorg/telemetry/reportError'
+import { safeLocalStorage } from '@comfyorg/shared-frontend-utils/safeStorage'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
@@ -192,37 +193,21 @@ const chipButton = useTemplateRef<HTMLButtonElement>('chipButton')
 const closeButton = useTemplateRef<HTMLButtonElement>('closeButton')
 
 function readOpen(): boolean {
-  try {
-    return localStorage.getItem(OPEN_KEY) === 'true'
-  } catch {
-    return false
-  }
+  return safeLocalStorage.getItem(OPEN_KEY) === 'true'
 }
 
 function readHidden(): boolean {
-  try {
-    return localStorage.getItem(HIDDEN_KEY) === 'true'
-  } catch {
-    return false
-  }
+  return safeLocalStorage.getItem(HIDDEN_KEY) === 'true'
 }
 
 function setHidden(hidden: boolean): void {
-  try {
-    localStorage.setItem(HIDDEN_KEY, String(hidden))
-  } catch {
-    return
-  }
+  safeLocalStorage.setItem(HIDDEN_KEY, String(hidden))
 }
 
 function setOpen(value: boolean) {
   open.value = value
   if (value) void nextTick(poll)
-  try {
-    localStorage.setItem(OPEN_KEY, String(value))
-  } catch {
-    // Storage unavailable — the panel still toggles in-memory.
-  }
+  safeLocalStorage.setItem(OPEN_KEY, String(value))
 }
 
 function onDocumentKeydown(event: KeyboardEvent): void {
@@ -346,21 +331,13 @@ const simulation = shallowRef<MergeSimulation | null>(null)
 const NOTE_KEY = 'Comfy.Agent.CrdtDevPanel.note'
 
 function readNote(): string {
-  try {
-    return localStorage.getItem(NOTE_KEY) ?? ''
-  } catch {
-    return ''
-  }
+  return safeLocalStorage.getItem(NOTE_KEY) ?? ''
 }
 
 const testerNote = ref(readNote())
 
 watch(testerNote, (next) => {
-  try {
-    localStorage.setItem(NOTE_KEY, next)
-  } catch {
-    // Storage unavailable — the note simply does not survive a remount.
-  }
+  safeLocalStorage.setItem(NOTE_KEY, next)
 })
 
 function selectScenario(id: string) {

@@ -8,6 +8,7 @@ import {
   CANVAS_CLIPBOARD_KEY
 } from '@comfyorg/litegraph/clipboard/clipboardStorage'
 import { createTestRootGraph } from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphHelpers'
+import { safeLocalStorage } from '@comfyorg/shared-frontend-utils/safeStorage'
 import { app } from '@/scripts/app'
 import {
   createMockCanvasRenderingContext2D,
@@ -29,6 +30,7 @@ function createSelection() {
 }
 
 function blockStorage() {
+  expect(safeLocalStorage.backend).toBe('localStorage')
   const methods = ['getItem', 'setItem', 'removeItem'] as const
   const spies = methods.map((method) =>
     vi.spyOn(window.localStorage, method).mockImplementation(() => {

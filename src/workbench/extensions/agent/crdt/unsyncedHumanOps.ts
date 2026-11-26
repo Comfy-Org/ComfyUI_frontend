@@ -1,3 +1,5 @@
+import { safeSessionStorage } from '@comfyorg/shared-frontend-utils/safeStorage'
+
 const STORAGE_KEY = 'Comfy.Agent.UnsyncedHumanOps'
 
 let unsyncedAtLoad: Set<string> | null = null
@@ -7,7 +9,7 @@ const pendingByRecorder = new Map<string, ReadonlySet<string>>()
 function readStored(): string[] {
   try {
     const parsed: unknown = JSON.parse(
-      sessionStorage.getItem(STORAGE_KEY) ?? '[]'
+      safeSessionStorage.getItem(STORAGE_KEY) ?? '[]'
     )
     return Array.isArray(parsed)
       ? parsed.filter((id): id is string => typeof id === 'string')
@@ -18,12 +20,8 @@ function readStored(): string[] {
 }
 
 function writeStored(ids: readonly string[]): void {
-  try {
-    if (ids.length === 0) sessionStorage.removeItem(STORAGE_KEY)
-    else sessionStorage.setItem(STORAGE_KEY, JSON.stringify(ids))
-  } catch {
-    return
-  }
+  if (ids.length === 0) safeSessionStorage.removeItem(STORAGE_KEY)
+  else safeSessionStorage.setItem(STORAGE_KEY, JSON.stringify(ids))
 }
 
 function loadOnce(): Set<string> {

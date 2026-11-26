@@ -1,4 +1,11 @@
-import { paymentRecoveryAvailableFact } from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
+import type { AutoTopUpSetup } from '@comfyorg/ingest-types'
+import { autoTopUpCard } from '@/platform/billing/composables/__mocks__/useBillingAutoTopUpCard'
+import {
+  autoTopUpEnabledFact,
+  canManageAutoTopUpFact,
+  paymentRecoveryAvailableFact
+} from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
+import { useBillingAutoTopUpCard } from '@/platform/billing/legacy160/platform/billing/composables/useBillingAutoTopUpCard'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 import { fromPartial } from '@total-typescript/shoehorn'
@@ -68,6 +75,12 @@ vi.mock(import('@/composables/useErrorHandling'))
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
+
+vi.mock(
+  import('@/platform/billing/legacy160/platform/billing/composables/useBillingAutoTopUpCard'),
+  () =>
+    import('@/platform/billing/composables/__mocks__/useBillingAutoTopUpCard')
+)
 
 vi.mock(import('@/platform/billing/subscription/composables/useSubscription'))
 
@@ -1299,5 +1312,48 @@ describe('CreditsTile', () => {
     await waitFor(() =>
       expect(useErrorHandling().toastErrorHandler).toHaveBeenCalledWith(failure)
     )
+  })
+
+  describe('auto top-up settings read for the Add credits dialog', () => {
+    type Served = {
+      enabled: boolean
+      canManage: boolean
+      setup: AutoTopUpSetup | null
+    }
+    const settable: Served = {
+      enabled: true,
+      canManage: true,
+      setup: { state: 'ready' }
+    }
+
+    function renderWithAutoTopUp(served: Served) {
+      const capabilities = useBillingCapabilities()
+      capabilities.autoTopUpEnabled = autoTopUpEnabledFact(served.enabled)
+      capabilities.canManageAutoTopUp = canManageAutoTopUpFact(served.canManage)
+      capabilities.autoTopUpSetup = computed(() => served.setup)
+      const card = autoTopUpCard()
+      vi.mocked(useBillingAutoTopUpCard).mockReturnValue(card)
+      renderTile()
+      return card
+    }
+
+    it('reads the settings before Add credits is clicked when the owner can set up auto top-up', () => {
+      const card = renderWithAutoTopUp(settable)
+
+      expect(card.ensureRead).toHaveBeenCalledOnce()
+    })
+
+    it.for<{ case: string; served: Served }>([
+      { case: 'the flag is off', served: { ...settable, enabled: false } },
+      {
+        case: 'the actor cannot manage auto top-up',
+        served: { ...settable, canManage: false }
+      },
+      { case: 'no setup fact is served', served: { ...settable, setup: null } }
+    ])('skips the read when $case', ({ served }) => {
+      const card = renderWithAutoTopUp(served)
+
+      expect(card.ensureRead).not.toHaveBeenCalled()
+    })
   })
 })

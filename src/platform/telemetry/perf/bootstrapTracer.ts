@@ -61,6 +61,7 @@ import { useTelemetry } from '@comfyorg/telemetry'
 import { getDatadogRum } from '@comfyorg/telemetry/rumContext'
 import { TelemetryEvents } from '@comfyorg/telemetry/types'
 import type { BootstrapCompleteMetadata } from '@comfyorg/telemetry/types'
+import { safeLocalStorage } from '@comfyorg/shared-frontend-utils/safeStorage'
 
 import { perfMark, perfMeasureSinceOrigin, perfPoint } from './perfMark'
 import type { PerfSpan } from './perfMark'
@@ -411,7 +412,10 @@ export class BootstrapTracer {
    * Only emits in dev or when DEBUG_PERF is set.
    */
   private _logSummary(rows: BootstrapPhaseTiming[], totalMs: number): void {
-    if (!import.meta.env.DEV && localStorage.getItem('DEBUG_PERF') !== 'true')
+    if (
+      !import.meta.env.DEV &&
+      safeLocalStorage.getItem('DEBUG_PERF') !== 'true'
+    )
       return
     if (rows.length === 0) return
     console.warn(

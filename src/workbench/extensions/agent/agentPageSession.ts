@@ -6,6 +6,7 @@ import { assert } from '@comfyorg/shared-frontend-utils/assert'
 
 import type { AgentDocFrameTransport } from './crdt/agentDocFrameTransport'
 import { createAgentDocFrameTransport } from './crdt/agentDocFrameTransport'
+import { destroyAgentFollowerSessions } from './crdt/useAgentCrdtFollower'
 import { agentSocketAuthParams } from './services/agent/agentAuth'
 import type { AgentEventSocket } from './services/agent/agentEventSource'
 import { createAgentEventSource } from './services/agent/agentEventSource'
@@ -127,8 +128,12 @@ export function useAgentPageSession(
   return session
 }
 
-/** Tear down the page's agent transport. Never call this on panel close. */
+/**
+ * Tear down the page's agent transport and the follower sessions over it.
+ * Never call this on panel close.
+ */
 export function destroyAgentPageSession(): void {
+  destroyAgentFollowerSessions()
   session?.stop()
   session = null
 }

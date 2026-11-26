@@ -223,6 +223,7 @@ import {
   SIDE_TOOLBAR_WIDTH
 } from '@/constants/splitterConstants'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { safeLocalStorage } from '@comfyorg/shared-frontend-utils/safeStorage'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { usePropertiesPanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
@@ -434,8 +435,11 @@ function defaultPanelWidth(isSidebarPanel: boolean) {
   const edge =
     (sidebarLocation.value === 'left') === isSidebarPanel ? 'first' : 'last'
   const percent =
-    savedPanelPercent((key) => localStorage.getItem(key), stateKeys, edge) ??
-    SIDE_PANEL_SIZE
+    savedPanelPercent(
+      (key) => safeLocalStorage.getItem(key),
+      stateKeys,
+      edge
+    ) ?? SIDE_PANEL_SIZE
   return Math.max(
     isSidebarPanel ? SIDEBAR_MIN_WIDTH : PROPERTIES_PANEL_MIN_WIDTH,
     Math.round((percent / 100) * (window.innerWidth - SIDE_TOOLBAR_WIDTH))

@@ -3,6 +3,7 @@ import { effectScope, shallowRef, watch } from 'vue'
 import type { EffectScope } from 'vue'
 import type { Router } from 'vue-router'
 
+import { safeSessionStorage } from '@comfyorg/shared-frontend-utils/safeStorage'
 import { t } from '@/i18n'
 import {
   clearPreservedQuery,
@@ -292,28 +293,20 @@ const SHOWN_OUTCOME_KEY = 'Comfy.DesktopLogin.ShownOutcome'
 const SHOWN_OUTCOME_TTL_MS = 15 * 60_000
 
 function rememberShownOutcome(status: DesktopLoginRedemptionStatus): void {
-  try {
-    sessionStorage.setItem(
-      SHOWN_OUTCOME_KEY,
-      JSON.stringify({ status, at: Date.now() })
-    )
-  } catch {
-    return
-  }
+  safeSessionStorage.setItem(
+    SHOWN_OUTCOME_KEY,
+    JSON.stringify({ status, at: Date.now() })
+  )
 }
 
 function forgetShownOutcome(): void {
-  try {
-    sessionStorage.removeItem(SHOWN_OUTCOME_KEY)
-  } catch {
-    return
-  }
+  safeSessionStorage.removeItem(SHOWN_OUTCOME_KEY)
 }
 
 function readShownOutcome(): DesktopLoginRedemptionStatus | null {
+  const raw = safeSessionStorage.getItem(SHOWN_OUTCOME_KEY)
+  if (!raw) return null
   try {
-    const raw = sessionStorage.getItem(SHOWN_OUTCOME_KEY)
-    if (!raw) return null
     const parsed: unknown = JSON.parse(raw)
     if (typeof parsed !== 'object' || parsed === null) return null
     const { status, at } = parsed as { status?: unknown; at?: unknown }

@@ -59,6 +59,10 @@
       "types": "./dist-types/pointerUtils.d.ts",
       "default": "./src/pointerUtils.ts"
     },
+    "./safeStorage": {
+      "types": "./dist-types/safeStorage.d.ts",
+      "default": "./src/safeStorage.ts"
+    },
     "./telemetry": {
       "@comfyorg/shared-frontend-utils": "./src/telemetry.ts",
       "types": "./dist-types/telemetry.d.ts",

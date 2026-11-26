@@ -1,5 +1,7 @@
 import type { LocationQuery, LocationQueryRaw } from 'vue-router'
 
+import { safeSessionStorage } from '@comfyorg/shared-frontend-utils/safeStorage'
+
 const STORAGE_PREFIX = 'Comfy.PreservedQuery.'
 const preservedQueries = new Map<string, Record<string, string>>()
 
@@ -25,13 +27,13 @@ const isValidQueryRecord = (
 
 const readFromStorage = (namespace: string): Record<string, string> | null => {
   try {
-    const raw = sessionStorage.getItem(getStorageKey(namespace))
+    const raw = safeSessionStorage.getItem(getStorageKey(namespace))
     if (!raw) return null
 
     const parsed = JSON.parse(raw)
     if (!isValidQueryRecord(parsed)) {
       console.warn('[preservedQuery] invalid storage format')
-      sessionStorage.removeItem(getStorageKey(namespace))
+      safeSessionStorage.removeItem(getStorageKey(namespace))
       return null
     }
     return parsed
@@ -43,27 +45,25 @@ const readFromStorage = (namespace: string): Record<string, string> | null => {
 }
 
 const removeFromStorage = (namespace: string) => {
-  try {
-    sessionStorage.removeItem(getStorageKey(namespace))
-  } catch {
-    return
-  }
+  safeSessionStorage.removeItem(getStorageKey(namespace))
 }
 
 const writeToStorage = (
   namespace: string,
   payload: Record<string, string> | null
 ) => {
-  try {
-    if (!payload || Object.keys(payload).length === 0) {
-      sessionStorage.removeItem(getStorageKey(namespace))
-      return
-    }
-    sessionStorage.setItem(getStorageKey(namespace), JSON.stringify(payload))
-  } catch (error) {
+  if (!payload || Object.keys(payload).length === 0) {
+    safeSessionStorage.removeItem(getStorageKey(namespace))
+    return
+  }
+  const result = safeSessionStorage.setItem(
+    getStorageKey(namespace),
+    JSON.stringify(payload)
+  )
+  if (result !== 'ok') {
     console.warn('[preservedQuery] failed to write storage', {
       namespace,
-      error
+      result
     })
   }
 }

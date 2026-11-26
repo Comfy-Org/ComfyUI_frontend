@@ -1,6 +1,7 @@
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import { webSessionUser } from '@/platform/auth/session/webSessionUser'
 import { isCloud } from '@/platform/distribution/types'
+import { safeSessionStorage } from '@comfyorg/shared-frontend-utils/safeStorage'
 
 const STORAGE_KEY = 'Comfy.FeatureFlagOverride'
 const QUERY_PARAM = 'ff'
@@ -71,12 +72,7 @@ function coerceStoredOverrides(value: unknown): OverrideMap {
 }
 
 function readStoredState(): StoredState {
-  let raw: string | null
-  try {
-    raw = sessionStorage.getItem(STORAGE_KEY)
-  } catch {
-    return emptyState()
-  }
+  const raw = safeSessionStorage.getItem(STORAGE_KEY)
   if (!raw) return emptyState()
 
   let parsed: unknown
@@ -96,9 +92,7 @@ function readStoredState(): StoredState {
 }
 
 function writeStoredState(state: StoredState): void {
-  try {
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state))
-  } catch {
+  if (safeSessionStorage.setItem(STORAGE_KEY, JSON.stringify(state)) !== 'ok') {
     console.warn('[ff] Failed to persist session feature flag overrides')
   }
 }

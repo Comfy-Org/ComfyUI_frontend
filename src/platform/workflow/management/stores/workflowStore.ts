@@ -5,8 +5,8 @@ import { computed, markRaw, ref, shallowRef, toRaw, watch } from 'vue'
 import type { Raw } from 'vue'
 
 import { assert } from '@comfyorg/shared-frontend-utils/assert'
-import { useToast } from '@/components/ui/toast/toastStore'
 import { t } from '@/i18n'
+import { showDraftSaveFailedToast } from '@/platform/workflow/persistence/draftSaveFailureToast'
 import type {
   LGraph,
   LGraphNode,
@@ -93,9 +93,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
           errorType: 'error_persisting_workflow_draft'
         })
       }
-      useToast().error(t('g.error'), {
-        description: t('toastMessages.failedToSaveDraft')
-      })
+      showDraftSaveFailedToast()
     },
     removeDraft: (path) => useWorkflowDraftStoreV2().removeDraft(path),
     markDraftUsed: (path) => useWorkflowDraftStoreV2().markDraftUsed(path),

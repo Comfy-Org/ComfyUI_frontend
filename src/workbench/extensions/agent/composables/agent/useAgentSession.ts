@@ -8,6 +8,7 @@ import { ZodError } from 'zod'
 
 import { i18n } from '@/i18n'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
+import { safeLocalStorage } from '@comfyorg/shared-frontend-utils/safeStorage'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import type {
@@ -874,7 +875,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     // with no surviving thread has no resumed turn the binding could serve.
     if (
       conversationStore.threadId === null &&
-      localStorage.getItem(threadStorageKey) === null
+      safeLocalStorage.getItem(threadStorageKey) === null
     ) {
       rememberedWorkflowId = null
       boundWorkflowId.value = null
@@ -890,7 +891,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const surviving = conversationStore.threadId
     const stored =
       conversationStore.messages.length === 0
-        ? localStorage.getItem(threadStorageKey)
+        ? safeLocalStorage.getItem(threadStorageKey)
         : null
     const initialThreadId = surviving ?? stored
     initializeWorkflowContext(initialThreadId !== null)
@@ -1239,8 +1240,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
       deletedThreads.add(threadId)
       if (conversationStore.threadId === threadId)
         conversationStore.setThreadId(null)
-      if (localStorage.getItem(threadStorageKey) === threadId)
-        localStorage.removeItem(threadStorageKey)
+      if (safeLocalStorage.getItem(threadStorageKey) === threadId)
+        safeLocalStorage.removeItem(threadStorageKey)
       return false
     }
     const diagnostics = describeAgentRequestFailure(error)
@@ -1580,6 +1581,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
   }
 
+  function reportAcceptedTurnSideEffectFailure(
+    error: unknown,
+    errorType: string
+  ): void {
+    reportError(error, { surface: 'agent', errorType })
+    trackAgentError('request_failed', 'post_acceptance', 'none')
+  }
+
   function runAcceptedTurnSideEffect(
     effect: () => void,
     errorType: string
@@ -1587,8 +1596,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     try {
       effect()
     } catch (error) {
-      reportError(error, { surface: 'agent', errorType })
-      trackAgentError('request_failed', 'post_acceptance', 'none')
+      reportAcceptedTurnSideEffectFailure(error, errorType)
     }
   }
 
@@ -1680,10 +1688,15 @@ export function useAgentSession(deps: AgentSessionDeps) {
       () => onThreadActivated?.(ack.thread_id),
       'agent_thread_activated_callback_failed'
     )
-    runAcceptedTurnSideEffect(
-      () => localStorage.setItem(threadStorageKey, ack.thread_id),
-      'agent_thread_persistence_failed'
+    const threadPersistence = safeLocalStorage.write(
+      threadStorageKey,
+      ack.thread_id
     )
+    if (threadPersistence.result !== 'ok')
+      reportAcceptedTurnSideEffectFailure(
+        threadPersistence.error,
+        'agent_thread_persistence_failed'
+      )
     if (adoptWorkflow)
       runAcceptedTurnSideEffect(
         adoptWorkflow,
@@ -3060,7 +3073,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     forgetBinding()
     pendingWorkflowBind = null
     malformedStreamReports.clear()
-    localStorage.removeItem(threadStorageKey)
+    safeLocalStorage.removeItem(threadStorageKey)
     if (source !== undefined)
       pendingThreadSources.set(conversationStore.activeBlankChatId, source)
   }
@@ -3119,7 +3132,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         )
         const opened = hydrated && isCurrent()
         if (opened || outlivedItsNavigation()) {
-          localStorage.setItem(threadStorageKey, threadId)
+          safeLocalStorage.setItem(threadStorageKey, threadId)
           onThreadActivated?.(threadId)
           conversationStore.resumeBackgroundTurn()
         }
@@ -4065,7 +4078,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     pruneSkillTurns()
     onThreadActivated?.(null)
     forgetBinding()
-    localStorage.removeItem(threadStorageKey)
+    safeLocalStorage.removeItem(threadStorageKey)
   }
 
   const isSending = computed(() => conversationStore.hasSendingPendingSend)

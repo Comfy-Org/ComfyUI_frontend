@@ -6,6 +6,11 @@ export interface RetrySignalLifecycle {
   createSignal: () => AbortSignal | undefined
 }
 
+export interface AuthTokenRequest {
+  /** Asks for a newly minted credential. `undefined` means none was minted; a provider that cannot enforce freshness may return its current one. */
+  forceRefresh?: boolean
+}
+
 /**
  * Credentials and retry policy the API client applies to every request.
  * The client itself knows nothing about Firebase or workspace sessions;
@@ -14,7 +19,7 @@ export interface RetrySignalLifecycle {
 export interface ApiAuthProvider {
   waitForInitialization(): Promise<void>
   getAuthHeader(): Promise<AuthHeader | null>
-  getAuthToken(): Promise<string | undefined>
+  getAuthToken(request?: AuthTokenRequest): Promise<string | undefined>
   shouldRetryOn401(): Promise<boolean>
   fetch(
     input: RequestInfo | URL,
