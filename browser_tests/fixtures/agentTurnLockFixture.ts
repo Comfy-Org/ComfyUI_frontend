@@ -563,6 +563,7 @@ export class AgentTurnLockHarness {
   public readonly workingRow: Locator
   public readonly liveProgressRow: Locator
   public readonly userBubbles: Locator
+  public readonly promptQueue: Locator
   public readonly turnInProgressNotice: Locator
   public readonly agentPanel: AgentPanel
   private readonly entryButton: Locator
@@ -610,18 +611,12 @@ export class AgentTurnLockHarness {
     this.workingRow = this.panel.getByText(enMessages.agent.working, {
       exact: true
     })
-    // The two status rows a live turn can show in this fixture's scenarios.
-    // `working` needs every part settled (AgentMessage.vue's `composing`), so
-    // it covers a turn resumed with its tool call intact; `thinking` covers one
-    // rebuilt from REST, which has no parts at all because the server stores a
-    // live row contentless. Asserting the pair keeps this about whether a live
-    // turn is on screen rather than which recovery shape produced it. Visible
-    // only, so a collapsed WorkSummary's retained trace cannot match.
     this.liveProgressRow = this.workingRow
       .or(this.panel.getByText(enMessages.agent.thinking, { exact: true }))
       .filter({ visible: true })
       .first()
     this.userBubbles = this.panel.getByTestId('user-message-bubble')
+    this.promptQueue = this.panel.getByTestId('agent-prompt-queue')
     this.turnInProgressNotice = this.panel.getByText(
       enMessages.agent.sendTurnInProgress,
       { exact: true }

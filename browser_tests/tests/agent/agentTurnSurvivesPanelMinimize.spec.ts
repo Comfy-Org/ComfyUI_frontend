@@ -160,9 +160,9 @@ test.describe(
         await test.step('Enter queues a follow-up without posting a second message', async () => {
           await turnLock.composer.fill('are you still there?')
           await turnLock.composer.press('Enter')
-          await expect(
-            turnLock.panel.getByTestId('agent-prompt-queue')
-          ).toContainText('are you still there?')
+          await expect(turnLock.promptQueue).toContainText(
+            'are you still there?'
+          )
           await expect(turnLock.composer).toHaveText('')
 
           await expect(turnLock.userBubbles).toHaveText([PROMPT])

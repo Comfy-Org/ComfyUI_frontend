@@ -86,9 +86,7 @@ test.describe(
       await turnLock.composer.fill(nextDraft)
       await turnLock.composer.press('Enter')
 
-      await expect(
-        turnLock.panel.getByTestId('agent-prompt-queue')
-      ).toContainText(nextDraft)
+      await expect(turnLock.promptQueue).toContainText(nextDraft)
       await expect(turnLock.composer).toHaveText('')
       await expect(turnLock.stopButton).toBeVisible()
       await expect(turnLock.sendButton).toHaveCount(0)

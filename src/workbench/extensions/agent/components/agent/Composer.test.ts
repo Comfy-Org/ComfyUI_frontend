@@ -281,6 +281,25 @@ describe('Composer', () => {
     expect(emitted().send).toBeUndefined()
   })
 
+  it('submits a non-empty queued prompt edit on Enter while running without stopping the active run', async () => {
+    const composer = useAgentComposerStore()
+    const queue = useAgentPromptQueueStore()
+    composer.setText('first')
+    queue.enqueueFromComposer('first', [], [])
+    queue.begin(queue.items[0].id)
+    composer.setText('second')
+    queue.enqueueFromComposer('second', [], [])
+    composer.clearDraft()
+    expect(queue.startEdit(queue.items[1].id)).toBe(true)
+    composer.setText('revised second')
+    const { emitted } = mount({ streaming: true })
+
+    await userEvent.type(screen.getByRole('textbox'), '{Enter}')
+
+    expect(emitted().stop).toBeUndefined()
+    expect(emitted().send).toEqual([['revised second', []]])
+  })
+
   it('submits a follow-up draft on Enter while running without stopping the active run', async () => {
     const { emitted } = mount({ streaming: true })
     const textbox = screen.getByRole('textbox')
@@ -294,6 +313,16 @@ describe('Composer', () => {
     {
       label: 'derivingWorkflow',
       props: { streaming: true, derivingWorkflow: true },
+      text: 'Next draft'
+    },
+    {
+      label: 'workflowSelecting',
+      props: { streaming: true, workflowSelecting: true },
+      text: 'Next draft'
+    },
+    {
+      label: 'missing workflow target',
+      props: { streaming: true, hasWorkflowTarget: false },
       text: 'Next draft'
     },
     {
