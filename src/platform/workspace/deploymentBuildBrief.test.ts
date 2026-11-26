@@ -240,7 +240,7 @@ describe(deploymentBuildBrief, () => {
     )
 
     expect(decides).toContain(
-      "If no published pack provides a node, stop. List those nodes for the user\nand don't write new node code into the Build."
+      "If no published pack provides a node, stop before you change the Build.\nList those nodes for the user and ask how to go on. Don't write new node\ncode into the Build."
     )
   })
 })
