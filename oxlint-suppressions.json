@@ -949,11 +949,6 @@
       "count": 2
     }
   },
-  "src/services/useNewUserService.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
   "src/stores/apiKeyAuthStore.ts": {
     "comfy/no-new-error-throw": {
       "count": 1
