@@ -59,6 +59,15 @@ test.describe(
             .toBeGreaterThan(subscribesBeforeReopen)
         })
 
+        await test.step('the queued edits reach the shared document', async () => {
+          await expect
+            .poll(() => offlineEdit.documentPromptValues(), {
+              timeout: 60_000,
+              message: 'a panel close must not drop the queued ops'
+            })
+            .toEqual(offlineEdit.humanPrompts)
+        })
+
         await test.step('the canvas still holds what the user typed', async () => {
           await expect
             .poll(() => offlineEdit.canvasPromptValues(), {
