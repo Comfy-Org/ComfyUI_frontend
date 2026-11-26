@@ -403,6 +403,21 @@ describe('Tooltip', () => {
     expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
   })
 
+  it('stays closed when the pointer leaves before the open delay', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: false })
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    const { delayDuration } = appTooltipProviderDefaults
+    render(TooltipHarness, { props: { delayDuration } })
+    const trigger = screen.getByRole('button', { name: 'Trigger' })
+
+    await user.hover(trigger)
+    await vi.advanceTimersByTimeAsync(delayDuration - 1)
+    await user.unhover(trigger)
+    await vi.advanceTimersByTimeAsync(delayDuration)
+
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+  })
+
   it('closes when the wheel scrolls', async () => {
     const user = userEvent.setup()
     render(TooltipHarness)
