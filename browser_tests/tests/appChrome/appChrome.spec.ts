@@ -65,15 +65,24 @@ test.describe(
       }
     })
 
-    test('kitchen sink', async ({ comfyPage, canvasMenu }) => {
-      await expect(comfyPage.menu.sideToolbar).toBeVisible()
-      await expect(comfyPage.actionbar.card).toBeVisible()
-      await expect(canvasMenu.root).toBeVisible()
-      await expect(
-        comfyPage.page.getByTestId('minimap-container')
-      ).toBeVisible()
+    for (const { palette, screenshot } of [
+      { palette: 'dark', screenshot: 'app-kitchen-sink.png' },
+      { palette: 'light', screenshot: 'app-kitchen-sink-light.png' }
+    ]) {
+      test(`kitchen sink in the ${palette} theme`, async ({
+        comfyPage,
+        canvasMenu
+      }) => {
+        await comfyPage.settings.setSetting('Comfy.ColorPalette', palette)
+        await expect(comfyPage.menu.sideToolbar).toBeVisible()
+        await expect(comfyPage.actionbar.card).toBeVisible()
+        await expect(canvasMenu.root).toBeVisible()
+        await expect(
+          comfyPage.page.getByTestId('minimap-container')
+        ).toBeVisible()
 
-      await expectPageScreenshot(comfyPage.page, 'app-kitchen-sink.png')
-    })
+        await expectPageScreenshot(comfyPage.page, screenshot)
+      })
+    }
   }
 )

@@ -30,6 +30,7 @@ function addMarkdownWidget(
   }
 
   const widget = node.addDOMWidget(name, 'MARKDOWN', inputEl, {
+    vueNodeRenderer: 'native',
     getValue(): string {
       const graphId = resolveNodeRootGraphId(node, useApp().rootGraph.id)
       const storedValue = widgetStore.getWidget(

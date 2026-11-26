@@ -1,3 +1,4 @@
+import { serializeItems } from '@/core/graph/clipboard/graphTransfer'
 import { defineStore } from 'pinia'
 
 import { t } from '@/i18n'
@@ -15,7 +16,7 @@ import type {
 } from '@comfyorg/graph-model/workflowSchema'
 import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import type { NodeError } from '@comfyorg/api-client/types'
+import type { NodeError, UserDataFullInfo } from '@comfyorg/api-client/types'
 import type {
   ComfyNodeDef as ComfyNodeDefV1,
   InputSpec
@@ -28,7 +29,7 @@ import { useDialogService } from '@/services/dialogService'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import type { UserFile } from '@/stores/userFileStore'
+import type { UserFile, UserFileSaveOptions } from '@/stores/userFileStore'
 import { BLUEPRINT_TYPE_PREFIX } from '@/utils/blueprintUtils'
 import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 
@@ -89,7 +90,9 @@ export const useSubgraphStore = defineStore('subgraph', () => {
       )
     }
 
-    override async save(): Promise<UserFile> {
+    override async save(
+      options?: Pick<UserFileSaveOptions, 'overwrite'>
+    ): Promise<UserFile> {
       this.validateSubgraph()
       if (
         !this.hasPromptedSave &&
@@ -100,7 +103,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
       }
       // Extract metadata from subgraph.extra to workflow.extra before saving
       this.extractMetadataToWorkflowExtra()
-      const ret = await super.save()
+      const ret = await super.save(options)
       // Force reload to update initialState with saved metadata
       registerNodeDef(await this.load({ force: true }), {
         category: 'Subgraph Blueprints/User'
@@ -246,10 +249,16 @@ export const useSubgraphStore = defineStore('subgraph', () => {
       return Promise.allSettled(filteredEntries.map(loadGlobalBlueprint))
     }
 
+    function isLoadableUserBlueprint(file: UserDataFullInfo) {
+      if (!file.path.endsWith('.json')) return false
+      if (file.size !== 0) return true
+      console.warn('Skipping empty subgraph blueprint', file.path)
+      return false
+    }
     async function loadUserBlueprints() {
       const userSubs = (
         await api.listUserDataFullInfo(SubgraphBlueprint.basePath)
-      ).filter((f) => f.path.endsWith('.json'))
+      ).filter(isLoadableUserBlueprint)
       return Promise.allSettled(userSubs.map(loadBlueprint))
     }
 
@@ -329,7 +338,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     )
       throw new TypeError('Must have single SubgraphNode selected to publish')
 
-    const { nodes = [], subgraphs = [] } = canvas._serializeItems([
+    const { nodes = [], subgraphs = [] } = serializeItems(canvas, [
       subgraphNode
     ])
     if (nodes.length != 1) {

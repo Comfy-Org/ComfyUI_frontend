@@ -11,6 +11,7 @@ import { api } from '@/scripts/api'
 
 import { withAgentAuth } from './agentAuth'
 import { rememberPreviousCredentialForHandoff } from './agentOwnerHandoff'
+import { describeAgentRequestFailure } from './agentRequestFailure'
 
 import type {
   AgentThreadSummary,
@@ -638,6 +639,84 @@ describe('getCloudWorkflow', () => {
       )
     }
   )
+})
+
+describe('getWorkflowSidebarFile', () => {
+  it('GETs the encoded sidebar-file path and returns its workflow path', async () => {
+    respond(
+      jsonResponse(200, {
+        path: 'workflows/projects/saved.json',
+        modified: 1_793_000_000_000,
+        size: 456
+      })
+    )
+
+    await expect(makeClient().getWorkflowSidebarFile('wf/1')).resolves.toEqual({
+      path: 'workflows/projects/saved.json'
+    })
+
+    const { route, init } = lastCall()
+    expect(route).toBe('/workflows/wf%2F1/sidebar-file')
+    expect(init.method).toBe('GET')
+  })
+
+  it.for([404, 409, 500])(
+    'rejects with status %i so unavailable and failed lookups stay distinct',
+    async (status) => {
+      respond(jsonResponse(status, { error: 'nope' }))
+
+      await expect(
+        makeClient().getWorkflowSidebarFile('wf-1')
+      ).rejects.toMatchObject({ name: 'AgentApiError', status })
+    }
+  )
+})
+
+describe('getWorkflowDraft', () => {
+  it('GETs the agent draft by encoded workflow id and returns its content', async () => {
+    const content = { nodes: [], links: [], version: 0.4 }
+    respond(jsonResponse(200, { content, version: 7 }))
+
+    await expect(makeClient().getWorkflowDraft('wf/1')).resolves.toEqual(
+      content
+    )
+
+    const { route, init } = lastCall()
+    expect(route).toBe('/agent/draft?workflow_id=wf%2F1')
+    expect(init.method).toBe('GET')
+  })
+
+  it('rejects a missing draft with status 404', async () => {
+    respond(jsonResponse(404, { error: 'no draft' }))
+
+    await expect(makeClient().getWorkflowDraft('wf-1')).rejects.toMatchObject({
+      name: 'AgentApiError',
+      status: 404
+    })
+  })
+})
+
+describe('getWorkflowContent', () => {
+  it('GETs the encoded content path and returns the workflow JSON', async () => {
+    const workflowJson = { nodes: [{ id: 1 }], links: [], version: 0.4 }
+    respond(
+      jsonResponse(200, {
+        id: 'v-1',
+        version: 2,
+        created_by: 'user-1',
+        created_at: '2026-09-11T10:00:00Z',
+        workflow_json: workflowJson
+      })
+    )
+
+    await expect(makeClient().getWorkflowContent('wf/1')).resolves.toEqual(
+      workflowJson
+    )
+
+    const { route, init } = lastCall()
+    expect(route).toBe('/workflows/wf%2F1/content')
+    expect(init.method).toBe('GET')
+  })
 })
 
 describe('postMessage wire body', () => {
@@ -1679,6 +1758,23 @@ describe('error mapping', () => {
       })
     }
   )
+
+  it('treats a non-SyntaxError body read failure after 202 headers on postMessage as unreadable', async () => {
+    const response = jsonResponse(202, {
+      thread_id: 't1',
+      message_id: 'm1'
+    })
+    vi.spyOn(response, 'json').mockRejectedValueOnce(
+      new TypeError('network stream dropped')
+    )
+    respond(response)
+
+    const error = await makeClient()
+      .postMessage('t1', { content: 'hi' })
+      .catch((e: unknown) => e)
+
+    expect(error).toBeInstanceOf(AgentResponseUnreadableError)
+  })
 })
 
 describe('Retry-After contract', () => {
@@ -1940,5 +2036,44 @@ describe('usage status', () => {
       name: 'AgentApiError',
       status: 500
     })
+  })
+})
+
+describe('postMessage request timeout', () => {
+  it('aborts a stalled body read at 60s, records failure diagnostics, and rejects with AgentResponseUnreadableError', async () => {
+    vi.useFakeTimers()
+    try {
+      vi.mocked(api.fetchApi).mockImplementationOnce(async (_route, init) => {
+        const signal = init?.signal
+        return {
+          ok: true,
+          status: 202,
+          json: () =>
+            new Promise((_resolve, reject) => {
+              signal?.addEventListener('abort', () => reject(signal.reason), {
+                once: true
+              })
+            })
+        } as Response
+      })
+
+      const sending = makeClient().postMessage('new', { content: 'stalled' })
+      const caught = sending.catch((error: unknown) => error)
+
+      await vi.advanceTimersByTimeAsync(60_000)
+
+      const failure = await caught
+      expect(failure).toBeInstanceOf(AgentResponseUnreadableError)
+      expect((failure as Error).cause).toMatchObject({
+        name: 'TimeoutError'
+      })
+      expect(lastCall().init.signal?.aborted).toBe(true)
+      expect(describeAgentRequestFailure(failure)).toEqual({
+        request_path: '/agent/threads/{threadId}/messages',
+        request_error: 'AgentResponseUnreadableError'
+      })
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })

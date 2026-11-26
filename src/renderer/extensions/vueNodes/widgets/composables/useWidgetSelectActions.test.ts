@@ -3,7 +3,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { computed, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { resolveWidgetValueAsset } from '@/platform/assets/utils/resolveWidgetValueAsset'
+import { resolveWidgetValueAsset } from '@/platform/assets/integration/resolveWidgetValueAsset'
 import type { FormDropdownItem } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import { useWidgetSelectActions } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectActions'
 import { api } from '@/scripts/api'
@@ -16,7 +16,7 @@ import enMessages from '@/locales/en/main.json'
 const mockCaptureCanvasState = vi.hoisted(() => vi.fn())
 
 vi.mock(import('@/scripts/api'))
-vi.mock(import('@/platform/assets/utils/resolveWidgetValueAsset'))
+vi.mock(import('@/platform/assets/integration/resolveWidgetValueAsset'))
 
 function createItems(...names: string[]): FormDropdownItem[] {
   return names.map((name, i) => ({

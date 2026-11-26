@@ -4852,6 +4852,131 @@
       }
     }
   },
+  "CreatifyAurora2AvatarNode": {
+    "description": "Creatify Aurora 2.0：1枚の写真と音声または歌唱クリップから、話す・歌う動画を作成します。動画の長さは音声と同じで、音声は変更されません。",
+    "display_name": "Creatify Aurora 2.0 アバター",
+    "inputs": {
+      "audio": {
+        "name": "音声",
+        "tooltip": "音声または歌唱。最大60秒（2kでは14秒）。開始された秒ごとに課金されます。"
+      },
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "image": {
+        "name": "画像",
+        "tooltip": "各辺が256ピクセル以上で、アスペクト比は1:4～4:1。動画は写真のアスペクト比を維持します。"
+      },
+      "resolution": {
+        "name": "解像度"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードを再実行するかどうかを制御します。シードにかかわらず、結果は非決定的です。"
+      },
+      "text_prompt": {
+        "name": "text_prompt",
+        "tooltip": "任意：シーン、カメラ、照明、表情、または動き。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CreatifyBorealH3ReferenceVideoNode": {
+    "description": "Creatify Boreal-H3は、動画広告向けに構築されたCreatifyの追加学習済みH3モデルです。参照画像、動画、音声をガイドとして、音声付き動画を生成します。",
+    "display_name": "Creatify Boreal-H3 参照から動画",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "autoは最初の参照画像に従い、それ以外の場合は最初の参照動画に従います。"
+      },
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "duration": {
+        "name": "長さ",
+        "tooltip": "2kでは最大14秒です。"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "参照は@Image1、@Video1、@Audio1として指定してください。"
+      },
+      "prompt_enhancement": {
+        "name": "prompt_enhancement",
+        "tooltip": "autoとadsは動画広告用にプロンプトを書き換え、話すセリフを追加する場合があります。generalはその他の動画向けに書き換えます。noneは記述どおりにプロンプトをレンダリングします。"
+      },
+      "reference_audios": {
+        "name": "reference_audios",
+        "tooltip": "最大3つのクリップ。@Audio1..@Audio3として参照します。音声は言葉ではなく声をガイドし、インストゥルメンタル音楽はサウンドトラックになる場合があります。"
+      },
+      "reference_images": {
+        "name": "reference_images",
+        "tooltip": "最大9枚の画像。接続順に、プロンプト内で@Image1..@Image9として参照します。画像または動画が少なくとも1つ必要で、参照は合計で最大12件です。"
+      },
+      "reference_videos": {
+        "name": "reference_videos",
+        "tooltip": "1秒以上の動画を最大3本。@Video1..@Video3として参照します。動画の合計は最大15秒まで課金対象です。プロンプトで継続を指定するとその音声が再利用され、プロンプト内の改行は音声を置き換えます。"
+      },
+      "resolution": {
+        "name": "解像度"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードを再実行するかどうかを制御します。Creatifyは独自にランダム性を選択します。prompt_enhancementがnoneの場合、同じ入力では同じ動画が生成されます。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CreatifyBorealH3VideoNode": {
+    "description": "Creatify Boreal-H3は、動画広告向けに構築されたCreatifyの追加学習済みH3モデルです。テキストから音声付き動画を生成します。必要に応じて最初のフレームから開始し、最後のフレームで終了できます。",
+    "display_name": "Creatify Boreal-H3 動画",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "最初のフレームがない場合に使用します。最初のフレームがある場合はautoのままにしてください。動画はフレームの比率に従います。"
+      },
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "duration": {
+        "name": "長さ",
+        "tooltip": "2kでは最大14秒です。"
+      },
+      "first_frame": {
+        "name": "最初のフレーム"
+      },
+      "last_frame": {
+        "name": "最後のフレーム",
+        "tooltip": "最初のフレームが必要です。"
+      },
+      "prompt": {
+        "name": "プロンプト"
+      },
+      "prompt_enhancement": {
+        "name": "プロンプト強化",
+        "tooltip": "auto と ads は動画広告用にプロンプトを書き換え、音声セリフを追加することがあります。general はその他の動画向けに書き換えます。none は入力されたプロンプトのままレンダリングします。"
+      },
+      "resolution": {
+        "name": "解像度"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードを再実行するかどうかを制御します。Creatify は独自のランダム性を選択します。prompt_enhancement が none の場合、同じ入力では同じ動画が生成されます。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "CropByBBoxes": {
     "description": "指定されたバウンディングボックスに基づいて、入力画像バッチから領域を切り抜きリサイズします。",
     "display_name": "CropByBBoxes",
@@ -5444,7 +5569,7 @@
       },
       "text": {
         "name": "テキスト",
-        "tooltip": "生成する効果音のテキスト説明。"
+        "tooltip": "英語で音を説明してください（450文字まで）。他の言語のプロンプトは、音に変換されずに読み上げられることがよくあります。"
       }
     },
     "outputs": {
@@ -7350,6 +7475,174 @@
       }
     }
   },
+  "GeminiDecisionChoice": {
+    "description": "テキスト、画像、音声、動画に対する選択肢を1つ選びます。`choice` を、入力が選択肢名になっている Branch ノードに接続するか、`option_index` を使用します。",
+    "display_name": "Google Gemini 判定（選択）",
+    "inputs": {
+      "audio": {
+        "name": "音声",
+        "tooltip": "モデルのコンテキストとして使用する任意の音声クリップです。"
+      },
+      "images": {
+        "name": "画像",
+        "tooltip": "モデルのコンテキストとして使用する任意の画像です。最大16枚。"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "options": {
+        "name": "選択肢",
+        "tooltip": "1行につき1つの選択肢を入力し、入力どおりにそのまま使用されます。どれにも当てはまらない入力のために、`other` などの選択肢を追加します。"
+      },
+      "question": {
+        "name": "質問",
+        "tooltip": "選択肢が答える質問です。複数の入力がある場合は、たとえば「image_1 にはどの季節が写っていますか？」のようにソケット名を使用します。"
+      },
+      "text": {
+        "name": "テキスト",
+        "tooltip": "プロンプトや LLM の応答など、質問の対象となるテキストです。"
+      },
+      "video": {
+        "name": "動画",
+        "tooltip": "モデルのコンテキストとして使用する任意の動画クリップです。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "選択",
+        "tooltip": null
+      },
+      "1": {
+        "name": "選択肢インデックス",
+        "tooltip": "選択された選択肢の options リスト内での位置です。0から始まります。"
+      },
+      "2": {
+        "name": "信頼度",
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiDecisionPickImage": {
+    "description": "バッチから画像を1枚選びます。選んだ画像を保持するには、`index` を Get Image from Batch に接続します。",
+    "display_name": "Google Gemini 判定（画像を選択）",
+    "inputs": {
+      "images": {
+        "name": "画像",
+        "tooltip": "選択対象の画像です。2～64枚。"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "question": {
+        "name": "質問",
+        "tooltip": "どの画像を選ぶかを指定します。最も一致する画像を選ぶには、プロンプトを `text` に接続します。"
+      },
+      "text": {
+        "name": "テキスト",
+        "tooltip": "画像の作成に使用したプロンプトなど、質問の対象となるテキストです。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "インデックス",
+        "tooltip": null
+      },
+      "1": {
+        "name": "信頼度",
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiDecisionScore": {
+    "description": "テキスト、画像、音声、動画を1～10で評価します。スコアに応じて動作させるには、`result` を If/Else Switch ノードに接続します。",
+    "display_name": "Google Gemini 判定（スコア）",
+    "inputs": {
+      "audio": {
+        "name": "音声",
+        "tooltip": "モデルのコンテキストとして使用する任意の音声クリップ。"
+      },
+      "images": {
+        "name": "画像",
+        "tooltip": "モデルのコンテキストとして使用する任意の画像です。最大16枚。"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "question": {
+        "name": "質問",
+        "tooltip": "1～10の尺度で評価する対象です。例のように、1と10が何を意味するかを指定してください。"
+      },
+      "text": {
+        "name": "テキスト",
+        "tooltip": "プロンプトやLLMの応答など、質問の対象となるテキスト。"
+      },
+      "threshold": {
+        "name": "しきい値",
+        "tooltip": "スコアがこの値以上の場合、`result` は true になります。きれいで鮮明な画像はおよそ7～8、ひどく損傷した画像はおよそ3～5です。"
+      },
+      "video": {
+        "name": "動画",
+        "tooltip": "モデルのコンテキストとして使用する任意の動画クリップ。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "結果",
+        "tooltip": null
+      },
+      "1": {
+        "name": "スコア",
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiDecisionYesNo": {
+    "description": "テキスト、画像、音声、または動画について、はい／いいえで答えられる質問をします。`result` を If/Else Switch ノードに接続して、2つのパスから選択します。",
+    "display_name": "Google Gemini 判定（はい／いいえ）",
+    "inputs": {
+      "audio": {
+        "name": "音声",
+        "tooltip": "モデルのコンテキストとして使用する任意の音声クリップ。"
+      },
+      "images": {
+        "name": "画像",
+        "tooltip": "モデルのコンテキストとして使用する任意の画像。最大16枚。"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "question": {
+        "name": "質問",
+        "tooltip": "接続されている内容について、はいまたはいいえで答えられる質問です。実行したいケースが「はい」になるように質問してください。複数の入力がある場合は、たとえば「Does image_2 show the same person as image_1?」のようにソケット名を使用します。"
+      },
+      "text": {
+        "name": "テキスト",
+        "tooltip": "プロンプトやLLMの応答など、質問の対象となるテキスト。"
+      },
+      "threshold": {
+        "name": "しきい値",
+        "tooltip": "「はい」の確率がこの値以上の場合、回答は「はい」になります。明確な「はい」の回答は約0.85～0.92のスコアになるため、0.9以上にするとその多くが除外されます。"
+      },
+      "video": {
+        "name": "動画",
+        "tooltip": "モデルのコンテキストとして使用する任意の動画クリップ。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "結果",
+        "tooltip": null
+      },
+      "1": {
+        "name": "回答",
+        "tooltip": null
+      },
+      "2": {
+        "name": "確率",
+        "tooltip": null
+      }
+    }
+  },
   "GeminiImage2Node": {
     "description": "Google Vertex API を通じて画像を同期的に生成または編集します。",
     "display_name": "Nano Banana Pro（Google Gemini Image）",
@@ -8632,6 +8925,143 @@
       }
     }
   },
+  "HeyGenDecisionChoice": {
+    "description": "テキスト、画像、音声、または動画に対して、選択肢の中から1つを選びます。`choice` を、入力に選択肢名を持つ Branch ノードに接続するか、`option_index` を使用します。",
+    "display_name": "HeyGen 判定（選択）",
+    "inputs": {
+      "audio_1": {
+        "name": "audio_1",
+        "tooltip": "最大30分の音声。"
+      },
+      "images": {
+        "name": "画像",
+        "tooltip": "バッチのすべてのフレームを数えて、合計で最大4枚の画像。画像はソケット全体で順に image_1 から image_4 として番号付けされるため、最初のソケットに2枚のバッチがある場合は image_1 と image_2 になります。"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "options": {
+        "name": "選択肢",
+        "tooltip": "1行につき1つの選択肢を入力し、入力どおりに使用されます。いずれにも当てはまらない入力用に、`other` などの選択肢を追加してください。"
+      },
+      "question": {
+        "name": "質問",
+        "tooltip": "選択肢が答える質問です。複数の入力がある場合は、たとえば「Which season is shown in image_1?」のように、image_1、image_2、audio_1、video_1 として参照します。"
+      },
+      "text": {
+        "name": "テキスト",
+        "tooltip": "プロンプトやLLMの応答など、質問の対象となるテキスト。"
+      },
+      "video_1": {
+        "name": "video_1",
+        "tooltip": "最大60秒の動画。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "選択肢",
+        "tooltip": null
+      },
+      "1": {
+        "name": "option_index",
+        "tooltip": "選択した選択肢の、オプション一覧内での位置（0から開始）。"
+      },
+      "2": {
+        "name": "信頼度",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenDecisionScore": {
+    "description": "テキスト、画像、音声、または動画を1から10で評価します。`result` を If/Else Switch ノードに接続して、スコアに応じた処理を行います。",
+    "display_name": "HeyGen 判定（スコア）",
+    "inputs": {
+      "audio_1": {
+        "name": "audio_1",
+        "tooltip": "最大30分の音声。"
+      },
+      "images": {
+        "name": "画像",
+        "tooltip": "バッチのすべてのフレームを含めて、合計最大4枚の画像。ソケット全体で順番に image_1 から image_4 として番号付けされるため、最初のソケットに2枚のバッチを接続すると image_1 と image_2 になります。"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "question": {
+        "name": "質問",
+        "tooltip": "1から10の尺度で何を評価するかを指定します。例のように、1と10が何を意味するかを記述してください。"
+      },
+      "text": {
+        "name": "テキスト",
+        "tooltip": "プロンプトや LLM の応答など、質問の対象となるテキスト。"
+      },
+      "threshold": {
+        "name": "しきい値",
+        "tooltip": "スコアがこの値以上の場合、`result` は true になります。きれいで鮮明な画像はおよそ7、ひどく損傷した画像はおよそ3から5になります。"
+      },
+      "video_1": {
+        "name": "video_1",
+        "tooltip": "最大60秒の動画。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "結果",
+        "tooltip": null
+      },
+      "1": {
+        "name": "スコア",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenDecisionYesNo": {
+    "description": "テキスト、画像、音声、または動画について、はい／いいえで答えられる質問をします。`result` を If/Else Switch ノードに接続して、2つのパスから選択します。",
+    "display_name": "HeyGen 判定（はい／いいえ）",
+    "inputs": {
+      "audio_1": {
+        "name": "audio_1",
+        "tooltip": "最大30分の音声。"
+      },
+      "images": {
+        "name": "画像",
+        "tooltip": "バッチのすべてのフレームを含めて、合計最大4枚の画像。ソケット全体で順番に image_1 から image_4 として番号付けされるため、最初のソケットに2枚のバッチを接続すると image_1 と image_2 になります。"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "question": {
+        "name": "質問",
+        "tooltip": "接続されている内容について、はいまたはいいえで答えられる質問です。処理を行うケースが「はい」になるように質問してください。複数の入力がある場合は、たとえば image_1、image_2、audio_1、video_1 のように参照します。例:「image_2 は image_1 と同じ人物を写していますか？」"
+      },
+      "text": {
+        "name": "テキスト",
+        "tooltip": "プロンプトや LLM の応答など、質問の対象となるテキスト。"
+      },
+      "threshold": {
+        "name": "しきい値",
+        "tooltip": "「はい」である確率がこの値以上の場合、回答は「はい」になります。明確な回答は0または1に近くなります。"
+      },
+      "video_1": {
+        "name": "video_1",
+        "tooltip": "最大60秒の動画。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "結果",
+        "tooltip": null
+      },
+      "1": {
+        "name": "回答",
+        "tooltip": null
+      },
+      "2": {
+        "name": "確率",
+        "tooltip": null
+      }
+    }
+  },
   "HeyGenImageToVideoNode": {
     "description": "HeyGen Video 1.0 を使用して、画像を同期した会話と音声を含む動画にアニメーション化します。画像は最初のフレームとして使用されます。",
     "display_name": "HeyGen Video 1.0 画像から動画",
@@ -8859,8 +9289,46 @@
       }
     }
   },
+  "HeyGenVoiceCloneTextToSpeechNode": {
+    "description": "1人の話者の録音から声をクローンし、HeyGen Voice 1.0でその声にテキストを話させます。",
+    "display_name": "HeyGen Voice 1.0 即時クローン テキスト読み上げ",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "model_expressiveness_boost": {
+        "name": "表現力の強化"
+      },
+      "model_language": {
+        "name": "言語"
+      },
+      "model_recording_language": {
+        "name": "録音の言語"
+      },
+      "model_remove_background_noise": {
+        "name": "背景ノイズを除去"
+      },
+      "model_seed": {
+        "name": "シード"
+      },
+      "model_similarity": {
+        "name": "類似度"
+      },
+      "model_text": {
+        "name": "テキスト"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HeyGenVoiceTextToSpeechNode": {
-    "description": "HeyGen Voice 1.0 Instant Cloneでクローンした声でテキストを読み上げます。",
+    "description": "HeyGen Voice 1.0で、HeyGenの音声にテキストを話させます。録音からクローンした音声で話させるには、HeyGen Voice 1.0 Instant Clone Text to Speechを使用してください。",
     "display_name": "HeyGen Voice 1.0 Text to Speech",
     "inputs": {
       "model": {
@@ -9400,8 +9868,8 @@
     }
   },
   "IdeogramEditApi": {
-    "description": "Ideogram 4.5 を使用して、テキストプロンプトに従い最大5枚の画像を編集または結合します。画像全体を再レンダリングするため、サイズやアスペクト比が変わる場合があります。変更していないピクセルをそのまま維持するには、Ideogram 4.5 Precise Edit を使用してください。",
-    "display_name": "Ideogram 4.5 編集",
+    "description": "Ideogram 4.6 または 4.5 を使用し、テキストプロンプトに従って最大5枚の画像を編集または結合します。画像全体を再レンダリングするため、サイズやアスペクト比が変わる場合があります。変更しないピクセルを維持するには Ideogram Precise Edit を使用してください。",
+    "display_name": "Ideogram 編集",
     "inputs": {
       "control_after_generate": {
         "name": "生成後の制御"
@@ -9409,6 +9877,9 @@
       "model": {
         "name": "モデル",
         "tooltip": "使用するモデル。"
+      },
+      "model_background": {
+        "name": "背景"
       },
       "model_height": {
         "name": "高さ"
@@ -9478,8 +9949,8 @@
     }
   },
   "IdeogramPreciseEditApi": {
-    "description": "Ideogram 4.5の精密編集を使用し、テキストプロンプトに従って画像を編集します。プロンプトで指定された部分だけが変更され、変更されないピクセルは同一のまま保持され、出力は画像1のサイズを維持します（約4 MPを超える画像は先に縮小されます）。maskまたはバウンディングボックスで指定した単一領域を編集し、フルサイズで画像を返すこともできます。最大4枚の参照画像を受け付けます（context_window_mask使用時は3枚）。",
-    "display_name": "Ideogram 4.5 精密編集",
+    "description": "Ideogram 4.6 または 4.5 の精密編集を使用し、テキストプロンプトに従って画像を編集します。プロンプトで指定された部分のみが変更され、変更されていないピクセルは同一のままで、出力は画像1のサイズを維持します（大きな画像はまず縮小されます）。mask またはバウンディングボックスで指定した単一領域の編集や、フルサイズでの画像の返却も可能です。最大4枚の参照画像を受け付けます（mask 使用時は3枚）。",
+    "display_name": "Ideogram 精密編集",
     "inputs": {
       "control_after_generate": {
         "name": "生成後の制御"
@@ -9508,8 +9979,8 @@
     }
   },
   "IdeogramTextToImageApi": {
-    "description": "Ideogram 4.5 を使用して、テキストプロンプトから画像を生成します。",
-    "display_name": "Ideogram 4.5 テキストから画像",
+    "description": "Ideogram 4.6 または 4.5 を使用して、テキストプロンプトから画像を生成します。",
+    "display_name": "Ideogram テキストから画像",
     "inputs": {
       "control_after_generate": {
         "name": "生成後に制御"
@@ -9517,6 +9988,12 @@
       "model": {
         "name": "モデル",
         "tooltip": "使用するモデル。"
+      },
+      "model_background": {
+        "name": "背景"
+      },
+      "model_height": {
+        "name": "高さ"
       },
       "model_magic_prompt": {
         "name": "magic_prompt"
@@ -9532,6 +10009,9 @@
       },
       "model_size": {
         "name": "サイズ"
+      },
+      "model_width": {
+        "name": "幅"
       }
     },
     "outputs": {
@@ -14990,6 +15470,91 @@
       }
     }
   },
+  "MeshyImageToReliefNode": {
+    "description": "写真を、3Dプリント、レーザー彫刻、CNC彫刻向けの浅浮き彫りモデルと16ビット深度マップに変換します。接続されている出力のみが生成・ダウンロードされます。モデル出力が接続されていない場合、タスクは深度マップのみを返します。",
+    "display_name": "Meshy：画像からレリーフへ",
+    "inputs": {
+      "base": {
+        "name": "ベース",
+        "tooltip": "noneでは背景を切り抜き、プレートを作成しません。"
+      },
+      "base_base_thickness_mm": {
+        "name": "ベース厚さ_mm"
+      },
+      "bend": {
+        "name": "曲げ",
+        "tooltip": "convexは前面を外側へ膨らませ、concaveは内側へ湾曲させます。"
+      },
+      "carving_mode": {
+        "name": "彫刻モード",
+        "tooltip": "embossは写真の手前側を盛り上げ、engraveはそれらを彫り込みます。"
+      },
+      "color_mapping": {
+        "name": "カラーマッピング",
+        "tooltip": "GLB、OBJ、FBX、USDZファイルを写真の色で着色します。STLと3MFは白のままです。"
+      },
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "image": {
+        "name": "画像",
+        "tooltip": "明るい背景上の暗いアートワークが盛り上がります。アップロード前に透明度は削除されるため、透明なロゴは先に白い背景へ統合してください。"
+      },
+      "mesh_resolution": {
+        "name": "メッシュ解像度",
+        "tooltip": "写真の長辺に沿ったメッシュポイント数。1024ではGLBは約50 MB、STLは約105 MB、2048では約200 MBと420 MBです。曲げるとこれらは2倍になります。"
+      },
+      "relief_type": {
+        "name": "レリーフタイプ",
+        "tooltip": "low：レーザー彫刻、CNC、銘板向けの浅い彫刻。high：3Dプリント作品向けの深い彫刻。"
+      },
+      "relief_type_carving_depth_mm": {
+        "name": "彫刻深さ_mm"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードを再実行するかどうかを制御します。結果はシードにかかわらず非決定的です。最後の実行後に接続した出力を要求するには、シードを変更してください。"
+      },
+      "size_mm": {
+        "name": "サイズ_mm",
+        "tooltip": "曲げる前の平らな状態で測定した、モデル上の写真の長辺の長さ。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "1": {
+        "name": "STL",
+        "tooltip": null
+      },
+      "2": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": null
+      },
+      "4": {
+        "name": "USDZ",
+        "tooltip": null
+      },
+      "5": {
+        "name": "3MF",
+        "tooltip": null
+      },
+      "6": {
+        "name": "深度マップ",
+        "tooltip": "16ビットの全範囲を持つ深度マップ。Save Image (Advanced) は16ビットPNGとして書き出します。"
+      },
+      "7": {
+        "name": "プレビュー",
+        "tooltip": null
+      }
+    }
+  },
   "MeshyMultiImageToModelNode": {
     "display_name": "Meshy：複数画像からモデルへ",
     "inputs": {
@@ -15285,6 +15850,44 @@
         "tooltip": null
       },
       "3": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyTextureN1Node": {
+    "description": "同じオブジェクトの1～4枚の参照ビューを使用して、以前に作成したモデルをMeshy N1でテクスチャ化します。",
+    "display_name": "Meshy：モデルをテクスチャ化（N1）",
+    "inputs": {
+      "enable_original_uv": {
+        "name": "元のUVを有効化",
+        "tooltip": "新しいUVを生成する代わりに、モデルの元のUVを使用します。有効にすると、Meshyはアップロードしたモデルにある既存のテクスチャを保持します。モデルに元のUVがない場合、出力品質が低下する可能性があります。"
+      },
+      "extra_views": {
+        "name": "追加ビュー",
+        "tooltip": "同じオブジェクトを別の視点から見た画像。順序は任意です。front_view と合わせて最大4枚の画像。"
+      },
+      "front_view": {
+        "name": "正面ビュー",
+        "tooltip": "Meshyが正面として扱うビューです。画像1枚では正面にテクスチャを適用し、背面は無地のままになります。忠実な背面にするには、extra_viewsに背面および側面ビューを追加してください。"
+      },
+      "meshy_task_id": {
+        "name": "meshyタスクID"
+      },
+      "model": {
+        "name": "モデル"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "2": {
         "name": "FBX",
         "tooltip": null
       }
@@ -16318,6 +16921,9 @@
       "model": {
         "name": "モデル",
         "tooltip": "使用するモデル。"
+      },
+      "model_auto_downscale": {
+        "name": "自動ダウンスケール"
       },
       "model_negative_prompt": {
         "name": "negative_prompt"
@@ -17790,6 +18396,206 @@
       },
       "video_head_modulation_": {
         "name": "動画ヘッド変調."
+      }
+    }
+  },
+  "ModelMergeMiniMaxH3": {
+    "description": "互換性のある2つの MiniMax H3 モデルをコンポーネントごとにマージします。各比率は model1 の割合です。バッファは model1 から保持されます。",
+    "display_name": "モデルマージ MiniMax H3",
+    "inputs": {
+      "audio_patch_proj_": {
+        "name": "audio_patch_proj."
+      },
+      "blocks_0_": {
+        "name": "blocks.0."
+      },
+      "blocks_10_": {
+        "name": "blocks.10."
+      },
+      "blocks_11_": {
+        "name": "ブロック.11."
+      },
+      "blocks_12_": {
+        "name": "ブロック.12."
+      },
+      "blocks_13_": {
+        "name": "ブロック.13."
+      },
+      "blocks_14_": {
+        "name": "ブロック.14."
+      },
+      "blocks_15_": {
+        "name": "ブロック.15."
+      },
+      "blocks_16_": {
+        "name": "ブロック.16."
+      },
+      "blocks_17_": {
+        "name": "ブロック.17."
+      },
+      "blocks_18_": {
+        "name": "ブロック.18."
+      },
+      "blocks_19_": {
+        "name": "ブロック.19."
+      },
+      "blocks_1_": {
+        "name": "blocks.1."
+      },
+      "blocks_20_": {
+        "name": "ブロック.20."
+      },
+      "blocks_21_": {
+        "name": "ブロック.21."
+      },
+      "blocks_22_": {
+        "name": "ブロック.22."
+      },
+      "blocks_23_": {
+        "name": "ブロック.23."
+      },
+      "blocks_24_": {
+        "name": "ブロック.24."
+      },
+      "blocks_25_": {
+        "name": "ブロック.25."
+      },
+      "blocks_26_": {
+        "name": "ブロック.26."
+      },
+      "blocks_27_": {
+        "name": "ブロック.27."
+      },
+      "blocks_28_": {
+        "name": "ブロック.28."
+      },
+      "blocks_29_": {
+        "name": "ブロック.29."
+      },
+      "blocks_2_": {
+        "name": "blocks.2."
+      },
+      "blocks_30_": {
+        "name": "ブロック.30."
+      },
+      "blocks_31_": {
+        "name": "ブロック.31."
+      },
+      "blocks_32_": {
+        "name": "ブロック.32."
+      },
+      "blocks_33_": {
+        "name": "ブロック.33."
+      },
+      "blocks_34_": {
+        "name": "ブロック.34."
+      },
+      "blocks_35_": {
+        "name": "ブロック.35."
+      },
+      "blocks_36_": {
+        "name": "ブロック.36."
+      },
+      "blocks_37_": {
+        "name": "ブロック.37."
+      },
+      "blocks_38_": {
+        "name": "ブロック.38."
+      },
+      "blocks_39_": {
+        "name": "ブロック.39."
+      },
+      "blocks_3_": {
+        "name": "blocks.3."
+      },
+      "blocks_40_": {
+        "name": "ブロック.40."
+      },
+      "blocks_41_": {
+        "name": "ブロック.41."
+      },
+      "blocks_42_": {
+        "name": "ブロック.42."
+      },
+      "blocks_43_": {
+        "name": "ブロック.43."
+      },
+      "blocks_44_": {
+        "name": "ブロック.44."
+      },
+      "blocks_45_": {
+        "name": "ブロック.45."
+      },
+      "blocks_46_": {
+        "name": "ブロック.46."
+      },
+      "blocks_47_": {
+        "name": "ブロック.47."
+      },
+      "blocks_48_": {
+        "name": "ブロック.48."
+      },
+      "blocks_49_": {
+        "name": "ブロック.49."
+      },
+      "blocks_4_": {
+        "name": "blocks.4."
+      },
+      "blocks_5_": {
+        "name": "blocks.5."
+      },
+      "blocks_6_": {
+        "name": "blocks.6."
+      },
+      "blocks_7_": {
+        "name": "blocks.7."
+      },
+      "blocks_8_": {
+        "name": "blocks.8."
+      },
+      "blocks_9_": {
+        "name": "blocks.9."
+      },
+      "condition_proj_": {
+        "name": "condition_proj."
+      },
+      "final_layer_adaln_proj_": {
+        "name": "final_layer.adaln_proj."
+      },
+      "final_layer_audio_out_": {
+        "name": "final_layer.audio_out."
+      },
+      "final_layer_norm_": {
+        "name": "最終レイヤー.正規化."
+      },
+      "final_layer_video_out_": {
+        "name": "final_layer.video_out."
+      },
+      "model1": {
+        "name": "model1"
+      },
+      "model2": {
+        "name": "model2"
+      },
+      "time_embedder_": {
+        "name": "time_embedder."
+      },
+      "token_refiner_blocks_0_": {
+        "name": "token_refiner.blocks.0."
+      },
+      "token_refiner_blocks_1_": {
+        "name": "token_refiner.blocks.1."
+      },
+      "token_refiner_final_norm_": {
+        "name": "token_refiner.final_norm."
+      },
+      "video_patch_proj_": {
+        "name": "video_patch_proj."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -21214,6 +22020,56 @@
       }
     }
   },
+  "PrunaAvatarNode": {
+    "description": "Pruna P-Video-2 Pro アバターを使用して、ポートレートと音声から会話動画を生成します。独自の音声、またはテキスト読み上げで話すスクリプトを使用できます。",
+    "display_name": "Pruna P-Video-2 Pro アバター",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "enhance_prompt": {
+        "name": "enhance_prompt",
+        "tooltip": "背景、照明、体の動きなど、ポートレートに見られる動きをプロンプトに追加します。オフにすると、記述どおりのプロンプトが使用され、同じseedで結果を完全に再現できます。"
+      },
+      "image": {
+        "name": "画像",
+        "tooltip": "動画の開始元となるポートレート。動画は1:2～4:1のアスペクト比を維持します。1:5など、より極端な比率の画像は9:16または16:9に切り抜かれます。"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "動画に表示される内容を記述します。最大5000文字。"
+      },
+      "resolution": {
+        "name": "解像度",
+        "tooltip": "1080p、2k、4kでは768pの動画をアップスケールします。2kは150秒まで、4kは60秒までに制限されます。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "生成用のseed。同じseedで結果を完全に再現できるのは、enhance_promptがオフの場合のみです。"
+      },
+      "speech": {
+        "name": "音声",
+        "tooltip": "テキスト読み上げ用スクリプトまたは独自の音声で動画を動かします。"
+      },
+      "speech_language": {
+        "name": "言語"
+      },
+      "speech_script": {
+        "name": "スクリプト"
+      },
+      "speech_voice": {
+        "name": "音声"
+      },
+      "speech_voice_prompt": {
+        "name": "voice_prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PrunaImageToVideoNode": {
     "description": "Pruna ビデオモデルを使用して画像を動画にアニメーション化します。任意で最後のフレーム、生成されたサウンド、または音声トラックを指定できます。",
     "display_name": "Pruna P-Video-2 Image to Video",
@@ -21275,6 +22131,48 @@
       "video": {
         "name": "動画",
         "tooltip": "アップスケールする動画（最大512 MiB）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrunaReferenceToVideoNode": {
+    "description": "Pruna動画モデルを使用して、参照画像、動画、音声によって導かれたプロンプトから動画を生成します。",
+    "display_name": "Pruna P-Video-2 Pro 参照から動画へ",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "使用するモデル。"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration": {
+        "name": "長さ"
+      },
+      "model_enhance_prompt": {
+        "name": "enhance_prompt"
+      },
+      "model_keep_audio": {
+        "name": "keep_audio"
+      },
+      "model_mode": {
+        "name": "モード"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "model_seed": {
+        "name": "seed"
       }
     },
     "outputs": {
@@ -23152,15 +24050,15 @@
       },
       "bbox_height": {
         "name": "bbox_height",
-        "tooltip": "バウンディングボックスの高さ（Z軸）。"
+        "tooltip": "バウンディングボックスの高さ（垂直）。"
       },
       "bbox_length": {
         "name": "bbox_length",
-        "tooltip": "バウンディングボックスの長さ（X軸）。"
+        "tooltip": "バウンディングボックスの長さ（前後）。"
       },
       "bbox_width": {
         "name": "bbox_width",
-        "tooltip": "バウンディングボックスの幅（Y軸）。他と合わせて0にするとバウンディングボックスをスキップします。"
+        "tooltip": "バウンディングボックスの幅（左右）。他の値とともに0に設定すると、バウンディングボックスをスキップします。"
       },
       "control_after_generate": {
         "name": "control after generate"
@@ -23233,15 +24131,15 @@
       },
       "bbox_height": {
         "name": "バウンディングボックス高さ",
-        "tooltip": "バウンディングボックスの高さ（Z軸）。"
+        "tooltip": "バウンディングボックスの高さ（垂直）。"
       },
       "bbox_length": {
         "name": "バウンディングボックス長さ",
-        "tooltip": "バウンディングボックスの長さ（X軸）。"
+        "tooltip": "バウンディングボックスの長さ（前後）。"
       },
       "bbox_width": {
         "name": "バウンディングボックス幅",
-        "tooltip": "バウンディングボックスの幅（Y軸）。他と合わせて0にするとバウンディングボックスをスキップします。"
+        "tooltip": "バウンディングボックスの幅（左右）。他の値とともに0に設定すると、バウンディングボックスをスキップします。"
       },
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -29215,6 +30113,37 @@
       }
     }
   },
+  "TripoSmartUVNode": {
+    "description": "モデルのUVを再アンラップし、テクスチャ、リグ、アニメーションを新しいレイアウトに再マッピングします。入力は80,000三角形を超えてはいけません（四角形は2つとして数えます）。より大きいモデルは、Tripo: リトポロジーまたはface_limitで削減してください。",
+    "display_name": "Tripo: スマートUV",
+    "inputs": {
+      "bake": {
+        "name": "bake",
+        "tooltip": "既存のテクスチャを新しいUVレイアウトにベイクします。オフにするとベイクをスキップし、カラーテクスチャなしでモデルを返します。"
+      },
+      "model_task_id": {
+        "name": "model_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "モデル task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "ソースモデルがFBXの場合は空です。"
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "ソースモデルがFBXの場合にのみ出力されます。例: 四角形メッシュ。"
+      },
+      "3": {
+        "name": "UVアトラス",
+        "tooltip": null
+      }
+    }
+  },
   "TripoSplatConditioning": {
     "description": "画像をDINOv3とFlux2 VAEでエンコードし、TripoSplatのポジティブ／ネガティブコンディショニングを作成し、KSampler用の固定サイズノイズターゲット（latent＋カメラ）を生成します。",
     "display_name": "TripoSplatコンディショニング",
@@ -29593,6 +30522,150 @@
       "0": {
         "name": "テキスト",
         "tooltip": "処理済みテキスト"
+      }
+    }
+  },
+  "TypeSafeJevChoice": {
+    "description": "テキストまたは画像に対する選択肢から1つを選びます。`choice` を、入力に選択肢名を持つ Branch ノードに接続するか、`option_index` を使用します。",
+    "display_name": "TypeSafe Jev（選択）",
+    "inputs": {
+      "images": {
+        "name": "画像",
+        "tooltip": "質問の対象となる画像です。合計32枚まで指定でき、5枚以上の場合は小さいサイズで送信されます。"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "options": {
+        "name": "選択肢",
+        "tooltip": "1行につき1つの選択肢を指定します。どれにも当てはまらない入力のために、`other` のような選択肢を追加してください。"
+      },
+      "question": {
+        "name": "質問",
+        "tooltip": "選択肢が答える質問です。複数の入力がある場合は、たとえば「image_1 に表示されている季節は？」のようにソケット名を使用します。"
+      },
+      "text": {
+        "name": "テキスト",
+        "tooltip": "プロンプトや LLM の応答など、質問の対象となるテキストです。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "選択",
+        "tooltip": null
+      },
+      "1": {
+        "name": "選択肢インデックス",
+        "tooltip": "options リスト内での選択された選択肢の位置です。0から始まります。"
+      },
+      "2": {
+        "name": "信頼度",
+        "tooltip": "Jev の確信度です。0（明確な勝者なし）から1（確実）までです。"
+      }
+    }
+  },
+  "TypeSafeJevPickImage": {
+    "description": "バッチから画像を1枚選びます。`index` を Get Image from Batch に接続して、選択した画像を取得します。",
+    "display_name": "TypeSafe Jev（画像を選択）",
+    "inputs": {
+      "images": {
+        "name": "画像",
+        "tooltip": "選択する画像です。2～32枚指定できます。"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "question": {
+        "name": "質問",
+        "tooltip": "選ぶ画像を指定します。プロンプトを `text` に接続すると、最も一致する画像を選択します。"
+      },
+      "text": {
+        "name": "テキスト",
+        "tooltip": "画像の生成に使用したプロンプトなど、質問の対象となるテキストです。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "インデックス",
+        "tooltip": "バッチ内での選択した画像の位置です。0から始まります。"
+      },
+      "1": {
+        "name": "信頼度",
+        "tooltip": "Jev の確信度です。0（明確な勝者なし）から1（確実）までです。"
+      }
+    }
+  },
+  "TypeSafeJevScore": {
+    "description": "テキストまたは画像を1～10で評価します。`result` を If/Else Switch ノードに接続して、スコアに応じた処理を行います。",
+    "display_name": "TypeSafe Jev（スコア）",
+    "inputs": {
+      "images": {
+        "name": "画像",
+        "tooltip": "質問の対象となる画像です。合計32枚まで指定でき、5枚以上の場合は小さいサイズで送信されます。"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "question": {
+        "name": "質問",
+        "tooltip": "1～10の尺度で評価する内容です。例のように、1と10が何を意味するかを指定してください。"
+      },
+      "text": {
+        "name": "テキスト",
+        "tooltip": "質問の対象となるテキストです。プロンプトやLLMの応答など。"
+      },
+      "threshold": {
+        "name": "しきい値",
+        "tooltip": "スコアがこの値以上の場合、`result` は true になります。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "結果",
+        "tooltip": null
+      },
+      "1": {
+        "name": "スコア",
+        "tooltip": null
+      }
+    }
+  },
+  "TypeSafeJevYesNo": {
+    "description": "テキストまたは画像について、はい／いいえで答えられる質問をします。`result`をIf/Else Switchノードに接続して、2つのパスから選択します。",
+    "display_name": "TypeSafe Jev（はい／いいえ）",
+    "inputs": {
+      "images": {
+        "name": "画像",
+        "tooltip": "質問の対象となる画像です。合計で最大32枚までで、5枚以上は小さいサイズで送信されます。"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "question": {
+        "name": "質問",
+        "tooltip": "接続されている内容について、はいまたはいいえで答えられる質問です。はいの場合に実行するよう質問してください。複数の入力がある場合は、たとえば「image_2にはimage_1と同じ人物が写っていますか？」のようにソケット名を使用します。"
+      },
+      "text": {
+        "name": "テキスト",
+        "tooltip": "質問の対象となるテキストです。プロンプトやLLMの応答など。"
+      },
+      "threshold": {
+        "name": "しきい値",
+        "tooltip": "はいである確率がこの値以上の場合、回答は「はい」になります。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "結果",
+        "tooltip": null
+      },
+      "1": {
+        "name": "回答",
+        "tooltip": null
+      },
+      "2": {
+        "name": "確率",
+        "tooltip": null
       }
     }
   },

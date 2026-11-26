@@ -64,6 +64,10 @@ import { deriveWidgetVisibility } from '@/types/widgetVisibility'
 
 import { ExecutableNodeDTO } from './ExecutableNodeDTO'
 import { hostInputOf } from './hostInput'
+import {
+  followSubgraphInputOrder,
+  followSubgraphOutputOrder
+} from './hostSlotOrder'
 import type { ExecutableLGraphNode, ExecutionId } from './ExecutableNodeDTO'
 import { createPromotedWidgetStoreProjection } from './promotedWidgetStoreProjection'
 
@@ -227,6 +231,33 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       'removing-output',
       (e) => {
         this.removeOutput(e.detail.index)
+        this.setDirtyCanvas(true, true)
+      },
+      { signal }
+    )
+
+    subgraphEvents.addEventListener(
+      'inputs-reordered',
+      () => {
+        if (!followSubgraphInputOrder(this)) return
+        this.invalidatePromotedViews()
+        useWidgetValueStore().setNodeWidgetOrder(
+          this.rootGraph.id,
+          this.id,
+          this.inputs.flatMap((input) => {
+            const id = input.widgetId ?? this.getWidgetFromSlot(input)?.widgetId
+            return id ? [id] : []
+          })
+        )
+        this.setDirtyCanvas(true, true)
+      },
+      { signal }
+    )
+
+    subgraphEvents.addEventListener(
+      'outputs-reordered',
+      (e) => {
+        followSubgraphOutputOrder(this, e.detail.oldOrder, e.detail.newOrder)
         this.setDirtyCanvas(true, true)
       },
       { signal }

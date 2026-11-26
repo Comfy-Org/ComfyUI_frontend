@@ -1057,6 +1057,11 @@
         "count": 1
       }
     },
+    "src/core/graph/clipboard/graphTransfer.ts": {
+      "complexity_high": {
+        "count": 2
+      }
+    },
     "src/core/graph/nodeDef/ComfyNodeDefImpl.ts": {
       "crap_moderate": {
         "count": 2
@@ -1294,7 +1299,7 @@
         "count": 21
       },
       "complexity_high": {
-        "count": 13
+        "count": 11
       },
       "complexity_moderate": {
         "count": 4
@@ -2958,7 +2963,7 @@
         "count": 1
       }
     },
-    "src/utils/vintageClipboard.ts": {
+    "src/core/graph/clipboard/vintageClipboard.ts": {
       "complexity_moderate": {
         "count": 1
       }

@@ -1,6 +1,6 @@
 {
   "name": "@comfyorg/comfyui-frontend",
-  "version": "1.61.4",
+  "version": "1.61.8",
   "private": true,
   "description": "Official front-end implementation of ComfyUI",
   "homepage": "https://comfy.org",
@@ -12,6 +12,7 @@
     "architecture:check": "tsx tools/architecture/src/cli.ts --check",
     "architecture:update": "tsx tools/architecture/src/cli.ts --update",
     "adr:check": "tsx scripts/check-adrs.ts",
+    "agent-replay": "tsx scripts/agent-replay.ts",
     "command-locales:check": "tsx scripts/check-command-locales.ts",
     "follower-invariants:check": "tsx scripts/check-follower-invariants.ts",
     "audit:inherited-classes": "tsx tools/design-system-audits/src/cli.ts",
@@ -102,9 +103,11 @@
     "@comfyorg/account-core": "workspace:*",
     "@comfyorg/account-ui": "workspace:*",
     "@comfyorg/api-client": "workspace:*",
+    "@comfyorg/assets-core": "workspace:*",
     "@comfyorg/billing-contract": "workspace:*",
     "@comfyorg/billing-core": "workspace:*",
     "@comfyorg/comfy-multi-player": "catalog:",
+    "@comfyorg/comfyui-api-types": "workspace:*",
     "@comfyorg/comfyui-desktop-bridge-types": "catalog:",
     "@comfyorg/comfyui-electron-types": "catalog:",
     "@comfyorg/design-system": "workspace:*",
@@ -218,6 +221,7 @@
     "eslint-plugin-vue": "catalog:",
     "fallow": "catalog:",
     "fast-check": "catalog:",
+    "ffmpeg-static": "catalog:",
     "fs-extra": "catalog:",
     "globals": "catalog:",
     "happy-dom": "catalog:",
@@ -259,5 +263,5 @@
     "node": ">=26.8.2 <27",
     "pnpm": ">=11.3"
   },
-  "packageManager": "pnpm@11.28.10"
+  "packageManager": "pnpm@12.23.0"
 }

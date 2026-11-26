@@ -169,4 +169,37 @@ describe('composer prompt boundaries', () => {
       insertion: { textOffset: 5, referenceIndex: 2 }
     })
   })
+
+  it('reports a caret past every reference that shares the reused separator', () => {
+    const prompt: ComposerPrompt = {
+      text: 'a b',
+      references: [{ kind: 'workflow', id: 'A', name: 'First', textOffset: 1 }]
+    }
+    expect(
+      insertComposerReference(
+        prompt,
+        {
+          kind: 'node',
+          scope: 'A',
+          node: { id: '12', title: 'KSampler' },
+          textOffset: 0
+        },
+        { textOffset: 1, referenceIndex: 0 }
+      )
+    ).toEqual({
+      prompt: {
+        text: 'a b',
+        references: [
+          {
+            kind: 'node',
+            scope: 'A',
+            node: { id: '12', title: 'KSampler' },
+            textOffset: 1
+          },
+          prompt.references[0]
+        ]
+      },
+      insertion: { textOffset: 2, referenceIndex: 2 }
+    })
+  })
 })

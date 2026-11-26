@@ -559,6 +559,39 @@ describe('ConversationView', () => {
     expect(screen.getByRole('button', { name: 'Latest' })).toBeInTheDocument()
   })
 
+  it('keeps following when content grows before a short follow scroll lands', async () => {
+    const assistant = assistantMessage({ streaming: true })
+    let scrollTop = 0
+    const scrollTo = vi.fn((options?: ScrollToOptions | number) => {
+      scrollTop = typeof options === 'number' ? options : (options?.top ?? 0)
+    })
+    Element.prototype.scrollTo = scrollTo
+    render(ConversationView, {
+      props: { entries: [assistant] },
+      global: { plugins: [i18n] }
+    })
+    let scrollHeight = 276
+    const scrollContainer = screen.getByTestId('agent-conversation-scroll')
+    Object.defineProperties(scrollContainer, {
+      scrollHeight: { get: () => scrollHeight },
+      scrollTop: { get: () => scrollTop },
+      clientHeight: { value: 272 }
+    })
+    await nextTick()
+
+    resizeCallbacks.at(0)?.()
+    expect(scrollTop).toBe(4)
+    scrollHeight = 404
+    scrollContainer.dispatchEvent(new Event('scroll'))
+    resizeCallbacks.at(0)?.()
+    await nextTick()
+
+    expect(scrollTop).toBe(132)
+    expect(
+      screen.queryByRole('button', { name: 'Latest' })
+    ).not.toBeInTheDocument()
+  })
+
   it('fades only the edges where content continues past the view', async () => {
     const assistant = assistantMessage()
 
@@ -594,5 +627,57 @@ describe('ConversationView', () => {
     await fireEvent.scroll(scroll)
     expect(scroll.classList.contains(bottomMask)).toBe(true)
     expect(scroll.classList.contains(topMask)).toBe(false)
+  })
+
+  it('keeps a single persistent sr-only status live region that announces when any visible user message is sending', async () => {
+    const sendingLabel = i18n.global.t('agent.sendingMessage')
+    const { rerender } = render(ConversationView, {
+      props: { entries: [assistantMessage()] },
+      global: { plugins: [i18n] }
+    })
+
+    const statusRegions = screen.getAllByRole('status')
+    expect(statusRegions).toHaveLength(1)
+    const status = statusRegions[0]
+    expect(status).toHaveClass('sr-only')
+    expect(status).toHaveTextContent('')
+    expect(status).not.toHaveAttribute('aria-label')
+
+    await rerender({
+      entries: [
+        assistantMessage(),
+        {
+          id: toTurnId('cm-1'),
+          role: 'user',
+          text: 'first sending',
+          pending: { clientMessageId: 'cm-1', status: 'sending' }
+        },
+        {
+          id: toTurnId('cm-2'),
+          role: 'user',
+          text: 'second sending',
+          pending: { clientMessageId: 'cm-2', status: 'sending' }
+        }
+      ]
+    })
+
+    expect(screen.getAllByRole('status')).toEqual([status])
+    expect(status).toHaveTextContent(sendingLabel)
+    expect(status).toHaveAttribute('aria-label', sendingLabel)
+
+    await rerender({
+      entries: [
+        assistantMessage(),
+        {
+          id: toTurnId('cm-1'),
+          role: 'user',
+          text: 'first sending'
+        }
+      ]
+    })
+
+    expect(screen.getAllByRole('status')).toEqual([status])
+    expect(status).toHaveTextContent('')
+    expect(status).not.toHaveAttribute('aria-label')
   })
 })

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { whenever } from '@vueuse/core'
-import { onMounted, ref, watch } from 'vue'
+import { onMounted, onUpdated, ref, watch } from 'vue'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { DOMWidget } from '@/types/domWidget'
@@ -39,6 +39,7 @@ onMounted(() => {
   mountWidgetElement()
 })
 
+onUpdated(mountWidgetElement)
 whenever(() => !canvasStore.linearMode, mountWidgetElement)
 watch(owner, mountWidgetElement, { flush: 'post' })
 </script>

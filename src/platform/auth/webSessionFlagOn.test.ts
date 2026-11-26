@@ -63,7 +63,6 @@ import { installCloudApiAuth } from '@/platform/auth/cloudApiAuthProvider'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { billingApi } from '@/platform/billing/api/billingApi'
 import { installWorkspaceApiAuth } from '@/platform/workspace/api/workspaceApiAuth'
@@ -391,7 +390,6 @@ describe('cloud app on the shared web session', () => {
   afterEach(() => {
     hooks?.stop()
     hooks = undefined
-    remoteConfig.value = {}
   })
 
   it('creates the session once per interactive sign-in, never on refresh, and deletes it on sign-out', async () => {
@@ -725,6 +723,7 @@ function capabilitiesResponse({
       can_manage_partner_node_access: false,
       can_view_pending_invites: false,
       can_view_team_usage: false,
+      can_view_workspace_usage: false,
       can_edit_workspace: false,
       can_manage_auto_top_up: false,
       can_view_auto_top_up: false,
@@ -963,7 +962,6 @@ describe('cloud API requests on the shared web session', () => {
   })
 
   afterEach(() => {
-    remoteConfig.value = {}
     localStorage.clear()
   })
 
@@ -1227,7 +1225,6 @@ describe('workspace API and global settings on the shared web session', () => {
   })
 
   afterEach(() => {
-    remoteConfig.value = {}
     localStorage.clear()
   })
 
@@ -1395,7 +1392,6 @@ describe('live updates and media on the shared web session', () => {
   })
 
   afterEach(() => {
-    remoteConfig.value = {}
     localStorage.clear()
   })
 
@@ -1794,7 +1790,6 @@ describe('comfy-api calls on the shared web session', () => {
   })
 
   afterEach(() => {
-    remoteConfig.value = {}
     localStorage.clear()
   })
 
@@ -2105,7 +2100,6 @@ describe('billing SDK rails on a tab that arrived by session', () => {
   })
 
   afterEach(() => {
-    remoteConfig.value = {}
     localStorage.clear()
   })
 
@@ -2224,7 +2218,6 @@ describe('the Run token on the shared web session', () => {
   })
 
   afterEach(() => {
-    remoteConfig.value = {}
     localStorage.clear()
   })
 
@@ -2531,7 +2524,6 @@ describe('a sibling tab on the unified Cloud JWT', () => {
   })
 
   afterEach(() => {
-    remoteConfig.value = {}
     localStorage.clear()
   })
 
@@ -2623,7 +2615,6 @@ describe('billing on a tab that arrived by session', () => {
   })
 
   afterEach(() => {
-    remoteConfig.value = {}
     localStorage.clear()
   })
 
@@ -2742,10 +2733,6 @@ describe('a tab that arrived on the session with no Firebase login', () => {
     vi.spyOn(api, 'reconnectSocket').mockResolvedValue()
   })
 
-  afterEach(() => {
-    remoteConfig.value = {}
-  })
-
   it('takes its identity from the session', async () => {
     const { authStore } = await bootSessionOnly()
     const user = useCurrentUser()
@@ -2823,10 +2810,6 @@ describe('booting the cloud identity from the session', () => {
     firebaseSignOut.mockImplementation(async () => identity.signOut())
     vi.spyOn(api, 'resetSocket').mockResolvedValue()
     vi.spyOn(api, 'reconnectSocket').mockResolvedValue()
-  })
-
-  afterEach(() => {
-    remoteConfig.value = {}
   })
 
   it('signs in on the session alone', async () => {
@@ -3042,6 +3025,7 @@ describe('booting the cloud identity from the session', () => {
       markInteractiveSignIn('user-a')
       const reloaded = createDisposablePinia()
       setActivePinia(reloaded.pinia)
+      await refreshRemoteConfig({ useAuth: false })
       useAuthStore()
       identity.resolve(USER_A)
 
@@ -3221,6 +3205,7 @@ describe('signing in again after a sign-out', () => {
     const page = createDisposablePinia()
     pages.push(page)
     setActivePinia(page.pinia)
+    await refreshRemoteConfig({ useAuth: false })
     useAuthStore()
     identity.resolve(user)
     const webSession = useCloudWebSessionStore()
@@ -3253,7 +3238,6 @@ describe('signing in again after a sign-out', () => {
 
   afterEach(() => {
     pages.splice(0).forEach((page) => page[Symbol.dispose]())
-    remoteConfig.value = {}
   })
 
   it('creates the session once on the reload after an interactive sign-in, then signs in', async () => {
@@ -3314,10 +3298,10 @@ describe('signing in again after a sign-out', () => {
 
   it('keeps the marker when a pending sign-in fails to create the session, so the next load retries', async () => {
     const server = installServer('revoked')
-    await refreshRemoteConfig({ useAuth: false })
     const page = createDisposablePinia()
     pages.push(page)
     setActivePinia(page.pinia)
+    await refreshRemoteConfig({ useAuth: false })
     useAuthStore()
     server.dropPosts = true
     await useAuthStore().login('user-a@example.com', 'password')
@@ -3368,7 +3352,6 @@ describe('a lapsed SSO session signs in again through SSO (sso_enabled)', () => 
 
   afterEach(() => {
     pages.splice(0).forEach((page) => page[Symbol.dispose]())
-    remoteConfig.value = {}
   })
 
   const loadPage = async (
@@ -3724,10 +3707,6 @@ describe('an SSO account with no Firebase login (sso_enabled)', () => {
     vi.spyOn(api, 'reconnectSocket').mockResolvedValue()
   })
 
-  afterEach(() => {
-    remoteConfig.value = {}
-  })
-
   it.for<{
     name: string
     sso: boolean
@@ -3888,7 +3867,6 @@ describe('an SSO session with no Firebase login reaching Firebase-only paths', (
   })
 
   afterEach(() => {
-    remoteConfig.value = {}
     localStorage.clear()
     clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.DESKTOP_LOGIN)
   })

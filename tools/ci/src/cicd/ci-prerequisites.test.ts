@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
-import { parse } from 'yaml'
+import { parse, parseAllDocuments } from 'yaml'
 import { z } from 'zod'
 
 const workflowSchema = z.object({
@@ -224,7 +224,7 @@ describe('merge-reports Playwright version', () => {
           })
         })
       })
-      .parse(parse(lockfile))
+      .parse(parseAllDocuments(lockfile).at(-1)?.toJSON())
     expect(readLockedPlaywrightVersion(lockfile)).toEqual({
       status: 0,
       output: `version=${root.importers['.'].devDependencies['@playwright/test'].version.replace(/\(.*/, '')}\n`

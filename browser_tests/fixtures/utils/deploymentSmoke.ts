@@ -3,13 +3,19 @@ import type { Page, Request, Response } from '@playwright/test'
 const APP_CHUNK_RESOURCE_TYPES = new Set(['script', 'stylesheet'])
 
 const I18N_404_IN_EVERY_CLOUD_ENVIRONMENT =
-  /^Failed to load resource: the server responded with a status of 404 \([^)]*\) \[https:\/\/[^\s\]]+\/api\/i18n(?:[?#][^\s\]]*)?\]$/
+  /^Failed to load resource: the server responded with a status of 404 \([^)]*\) \[https:\/\/[^\s\]/?#]+\/api\/i18n(?:[?#][^\s\]]*)?\]$/
 
-/** True only for the `/api/i18n` 404 console line that every Cloud environment logs at boot. */
+const SIGNED_OUT_SESSION_401_IN_EVERY_CLOUD_ENVIRONMENT =
+  /^Failed to load resource: the server responded with a status of 401 \([^)]*\) \[https:\/\/[^\s\]/?#]+\/api\/auth\/session\]$/
+
+/** True only for the console lines every Cloud environment logs at a signed-out boot: the `/api/i18n` 404 and the `/api/auth/session` 401. */
 export function isBootConsoleErrorInEveryCloudEnvironment(
   error: string
 ): boolean {
-  return I18N_404_IN_EVERY_CLOUD_ENVIRONMENT.test(error)
+  return (
+    I18N_404_IN_EVERY_CLOUD_ENVIRONMENT.test(error) ||
+    SIGNED_OUT_SESSION_401_IN_EVERY_CLOUD_ENVIRONMENT.test(error)
+  )
 }
 
 /** Records failed same-origin JS/CSS requests, one line per URL, and counts those still in flight. */

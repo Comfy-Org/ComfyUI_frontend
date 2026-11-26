@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
 import { autogrowInputRole } from '@/core/graph/widgets/dynamicWidgets'
+import { prefersDOMElement } from '@/lib/litegraph/src/utils/widget'
 import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget, IWidgetOptions } from '@comfyorg/graph-model/widgets'
@@ -24,6 +25,7 @@ import {
   stripGraphPrefix,
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
+import type { WidgetRenderState } from '@/stores/widgetValueStore'
 import {
   createNodeExecutionId,
   createNodeLocatorId
@@ -34,7 +36,9 @@ import type {
 } from '@comfyorg/graph-model/nodeIdentification'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
+import type { WidgetState } from '@comfyorg/graph-model/widgetState'
 import type { LinkTopology } from '@comfyorg/graph-model/linkTopology'
+import { invokeButtonWidgetCallback } from '@/renderer/extensions/vueNodes/widgets/utils/invokeButtonWidgetCallback'
 import { getControlWidget } from '@/types/simplifiedWidget'
 import { isWidgetVisibleOnSurface } from '@/types/widgetVisibility'
 import type { WidgetVisibilityComponent } from '@/types/widgetVisibility'
@@ -360,6 +364,62 @@ interface WidgetProcessingContext {
   ui: WidgetUiCallbacks
 }
 
+function resolveWidgetComponent(
+  type: string,
+  renderState: WidgetRenderState = {},
+  widget: IBaseWidget | undefined
+): ProcessedWidget['vueComponent'] {
+  if (widget && prefersDOMElement(widget)) return WidgetDOM
+  if (!renderState.isDOMWidget && typeof widget?.draw === 'function')
+    return WidgetLegacy
+  return (
+    getComponent(type) || (renderState.isDOMWidget ? WidgetDOM : WidgetLegacy)
+  )
+}
+
+function resolveWidgetPresentation(
+  widgetState: WidgetState,
+  visibility: WidgetVisibilityComponent | undefined,
+  slotInfo: WidgetSlotMetadata | undefined,
+  showAdvanced: boolean
+) {
+  const { linked, promoted, originNodeId, originOutputName } = slotInfo ?? {}
+  const options: IWidgetOptions = { ...widgetState.options }
+  const advanced = visibility
+    ? visibility.surfaces.vueNode === 'advanced'
+    : (options.advanced ?? false)
+  const isDisabled = linked || widgetState.disabled
+  const linkedUpstream: LinkedUpstreamInfo | undefined =
+    linked && originNodeId
+      ? { nodeId: originNodeId, outputName: originOutputName }
+      : undefined
+
+  return {
+    visible: isWidgetVisible(visibility, showAdvanced, linked || promoted),
+    advanced,
+    widgetOptions: isDisabled ? { ...options, disabled: true } : options,
+    linkedUpstream
+  }
+}
+
+function isButtonType(type: string) {
+  return type.toLowerCase() === 'button'
+}
+
+function createButtonClickHandler(live: LiveWidgetContext['live']) {
+  if (!live) return undefined
+  return (_value: WidgetValue, click?: MouseEvent) => {
+    invokeButtonWidgetCallback(live.widget, live.node, useApp().canvas, click)
+    live.node.widgets?.forEach((w) => w.triggerDraw?.())
+  }
+}
+
+function widgetTooltipFullValue(type: string, value: WidgetValue) {
+  return isTooltipValueType(type) && String(value).length > 10
+    ? String(value)
+    : undefined
+}
+
 function widgetContextMenu(
   ctx: WidgetProcessingContext,
   widgetName: string
@@ -386,28 +446,20 @@ function processWidget(
   const renderState = ctx.widgetValueStore.getWidgetRenderState(id)
   const visibility = ctx.widgetValueStore.getWidgetVisibility(id)
   if (!type) return null
-  const options: IWidgetOptions = { ...widgetState.options }
 
   const { live, errorTarget, controlWidget, sourceExecutionId } =
     resolveLiveWidgetContext(ctx.rootGraph, ctx.hostNode, liveWidget)
 
   const slotInfo = ctx.slotMetadata.get(widgetState.name)
-  const visible = isWidgetVisible(
-    visibility,
-    ctx.showAdvanced,
-    slotInfo?.linked || slotInfo?.promoted
-  )
-  const advanced = visibility
-    ? visibility.surfaces.vueNode === 'advanced'
-    : (options.advanced ?? false)
-  const isDisabled = slotInfo?.linked || widgetState.disabled
-  const widgetOptions = isDisabled ? { ...options, disabled: true } : options
+  const { visible, advanced, widgetOptions, linkedUpstream } =
+    resolveWidgetPresentation(
+      widgetState,
+      visibility,
+      slotInfo,
+      ctx.showAdvanced
+    )
   const value = normalizeWidgetValue(widgetState.value)
   const bareWidgetId = stripGraphPrefix(widgetState.nodeId)
-  const linkedUpstream: LinkedUpstreamInfo | undefined =
-    slotInfo?.linked && slotInfo.originNodeId
-      ? { nodeId: slotInfo.originNodeId, outputName: slotInfo.originOutputName }
-      : undefined
 
   const updateHandler = createWidgetUpdateHandler({
     id,
@@ -425,7 +477,9 @@ function processWidget(
     type,
     value,
     borderStyle: advanced ? 'ring ring-primary' : undefined,
-    callback: updateHandler,
+    callback: isButtonType(type)
+      ? createButtonClickHandler(live)
+      : updateHandler,
     controlWidget,
     label: widgetState.label,
     linkedUpstream,
@@ -436,13 +490,9 @@ function processWidget(
       : undefined
   }
 
-  const fullValue =
-    isTooltipValueType(type) && String(value).length > 10
-      ? String(value)
-      : undefined
   const tooltipText = ctx.ui.getTooltipText(
     { name: widgetState.name, tooltip: renderState?.tooltip },
-    fullValue
+    widgetTooltipFullValue(type, value)
   )
 
   const error = computed(() =>
@@ -466,11 +516,7 @@ function processWidget(
     },
     widgetId: id,
     renderKey: `${id}:${type}`,
-    vueComponent:
-      !renderState?.isDOMWidget && typeof liveWidget?.draw === 'function'
-        ? WidgetLegacy
-        : getComponent(type) ||
-          (renderState?.isDOMWidget ? WidgetDOM : WidgetLegacy),
+    vueComponent: resolveWidgetComponent(type, renderState, liveWidget),
     simplified,
     visible,
     suppressedByConnection: visibility?.suppression.byConnection ?? false,

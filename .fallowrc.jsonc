@@ -9,6 +9,7 @@
       "@comfyorg/account-core",
       "@comfyorg/account-ui",
       "@comfyorg/api-client",
+      "@comfyorg/assets-core",
       "@comfyorg/billing-contract",
       "@comfyorg/billing-core",
       "@comfyorg/comfyui-api-types",
@@ -44,7 +45,8 @@
         "packages/comfyui-api-types/openapi-ts.config.ts",
         "packages/ingest-types/openapi-ts.config.ts",
         "scripts/**/*.{js,ts}",
-        "tools/ci/src/**/*.ts"
+        "tools/ci/src/**/*.ts",
+        "vitest.*.config.mts"
       ],
       "entryPointRole": "support"
     },
@@ -117,6 +119,10 @@
     },
     {
       "file": "packages/comfyui-api-types/src/generated/types.gen.ts",
+      "exports": ["*"]
+    },
+    {
+      "file": "packages/comfyui-api-types/src/generated/zod.gen.ts",
       "exports": ["*"]
     },
     // Public extension API surface, deliberately exported for the 40+ custom-node

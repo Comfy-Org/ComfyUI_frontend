@@ -13,6 +13,7 @@ import {
 import { computed, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import type { AddCreditsPlanLine } from '@comfyorg/account-core/billing'
 import type { HostedTopupCheckout } from '@comfyorg/ingest-types'
 
 import { useTelemetry } from '@comfyorg/telemetry'
@@ -73,6 +74,7 @@ const hoisted = vi.hoisted(() => ({
   reopenTopUp: vi.fn<() => Promise<unknown>>(async () => undefined),
   cloudTabNavigate: vi.fn<(url: string) => void>(),
   paymentConfigured: true,
+  planLine: undefined as AddCreditsPlanLine | undefined,
   openTopupPurchase:
     vi.fn<
       (
@@ -149,7 +151,7 @@ vi.mock(
   import('@/platform/billing/composables/useTopUpPlanCreditCopy'),
   async () => {
     const { computed } = await import('vue')
-    return { useAddCreditsPlanLine: () => computed(() => undefined) }
+    return { useAddCreditsPlanLine: () => computed(() => hoisted.planLine) }
   }
 )
 vi.mock(import('@/platform/billing/composables/usePendingTopup'), () => ({
@@ -1042,6 +1044,32 @@ describe('AddCreditsDialogContent top-up telemetry', () => {
     expect(trackedBillingEvents()).toEqual(['topup.intent', 'topup.started'])
     expect(trackedJourneyPhases()).toEqual(['entered', 'submitted'])
   })
+
+  it.for<{ shown: AddCreditsPlanLine | undefined; reported: string }>([
+    { shown: 'no_plan', reported: 'no_plan' },
+    { shown: undefined, reported: 'none' }
+  ])(
+    'reports plan line $reported on the top-up started',
+    async ({ shown, reported }) => {
+      hoisted.planLine = shown
+      onTestFinished(() => {
+        hoisted.planLine = undefined
+      })
+      hoisted.createHostedCheckout.mockResolvedValue({
+        url: CHECKOUT_URL,
+        sessionId: 'cs_1'
+      })
+      const { user } = renderDialog({ atCheckout: false })
+
+      await user.click(continueButton())
+
+      await waitFor(() =>
+        expect(useTelemetry()!.trackBillingEvent).toHaveBeenCalledWith(
+          expect.objectContaining({ stage: 'started', plan_line: reported })
+        )
+      )
+    }
+  )
 
   it('does not count closing the dialog on the opened checkout as abandoning it', async () => {
     hoisted.createHostedCheckout.mockResolvedValue({

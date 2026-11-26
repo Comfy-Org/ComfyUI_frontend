@@ -1,4 +1,4 @@
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 
 import {
   getBillingWebUrl,
@@ -26,10 +26,6 @@ describe('normalizeHostedBillingDestination', () => {
 })
 
 describe('getBillingWebUrl', () => {
-  beforeEach(() => {
-    remoteConfig.value = {}
-  })
-
   it('accepts an HTTPS deployment URL from the env fallback', () => {
     vi.stubEnv('VITE_BILLING_WEB_URL', 'https://billing.comfy.org/app')
 
@@ -53,21 +49,27 @@ describe('getBillingWebUrl', () => {
   })
 
   it('prefers the server value over the env fallback', () => {
-    remoteConfig.value = { billing_web_url: 'https://stagingbilling.comfy.org' }
+    useRemoteConfigStore().acceptConfig(
+      { billing_web_url: 'https://stagingbilling.comfy.org' },
+      false
+    )
     vi.stubEnv('VITE_BILLING_WEB_URL', 'http://localhost:5174')
 
     expect(getBillingWebUrl()?.href).toBe('https://stagingbilling.comfy.org/')
   })
 
   it('falls through to the env fallback when the server sends nothing', () => {
-    remoteConfig.value = {}
+    useRemoteConfigStore().acceptConfig({}, false)
     vi.stubEnv('VITE_BILLING_WEB_URL', 'http://localhost:5174')
 
     expect(getBillingWebUrl()?.href).toBe('http://localhost:5174/')
   })
 
   it('fails closed to null when the server value is invalid, ignoring the env fallback', () => {
-    remoteConfig.value = { billing_web_url: 'http://billing.example.com' }
+    useRemoteConfigStore().acceptConfig(
+      { billing_web_url: 'http://billing.example.com' },
+      false
+    )
     vi.stubEnv('VITE_BILLING_WEB_URL', 'https://billing.comfy.org')
 
     expect(getBillingWebUrl()).toBeNull()

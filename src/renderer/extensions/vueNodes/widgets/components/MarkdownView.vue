@@ -2,6 +2,7 @@
   <SanitizedHtml
     class="comfy-markdown-content size-full min-h-16 overflow-y-auto rounded-lg contain-size"
     tabindex="0"
+    data-markdown-preview
     data-capture-wheel="true"
     role="region"
     :html

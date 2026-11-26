@@ -520,7 +520,9 @@ describe('installDesktopLoginRedemption', () => {
       expect(useDialogService().confirm).toHaveBeenCalledTimes(2)
       expect(fetch).toHaveBeenLastCalledWith(
         REDEEM_URL,
-        expect.objectContaining({ body: JSON.stringify({ code: SECOND_CODE }) })
+        expect.objectContaining({
+          body: JSON.stringify({ code: SECOND_CODE })
+        })
       )
       expect(stashedCode()).toBeUndefined()
     }
@@ -653,7 +655,9 @@ describe('installDesktopLoginRedemption', () => {
       expect(useDialogService().confirm).toHaveBeenCalledTimes(2)
       expect(fetch).toHaveBeenLastCalledWith(
         REDEEM_URL,
-        expect.objectContaining({ body: JSON.stringify({ code: SECOND_CODE }) })
+        expect.objectContaining({
+          body: JSON.stringify({ code: SECOND_CODE })
+        })
       )
       expect(stashedCode()).toBeUndefined()
     }
@@ -764,6 +768,60 @@ describe('installDesktopLoginRedemption', () => {
       await flushRedemption()
 
       expect(status.value).toBe('expired')
+    })
+  })
+
+  describe('reloading the approval page', () => {
+    async function settleOnApprovalPageThenReload({ leave = false } = {}) {
+      const { trigger, seedStash, claimStatus } = await setup()
+      claimStatus()
+      seedStash(VALID_CODE)
+      respondToFetch(REDEEM_URL, okResponse)
+      await trigger()
+      if (leave) {
+        const { releaseDesktopLoginRedemptionStatus } =
+          await import('./desktopLoginRedemption')
+        releaseDesktopLoginRedemptionStatus()
+      }
+      vi.resetModules()
+      return await import('./desktopLoginRedemption')
+    }
+
+    it('shows the outcome the page already showed', async () => {
+      const reloaded = await settleOnApprovalPageThenReload()
+
+      reloaded.claimDesktopLoginRedemptionStatus()
+
+      expect(reloaded.hasPendingDesktopLoginCode()).toBe(false)
+      expect(reloaded.restoreShownDesktopLoginRedemptionStatus()).toBe(true)
+      expect(reloaded.desktopLoginRedemptionStatus.value).toBe('redeemed')
+    })
+
+    it('has nothing to show once the tab left the page', async () => {
+      const reloaded = await settleOnApprovalPageThenReload({ leave: true })
+
+      expect(reloaded.restoreShownDesktopLoginRedemptionStatus()).toBe(false)
+      expect(reloaded.desktopLoginRedemptionStatus.value).toBe('idle')
+    })
+
+    it('has nothing to show after the outcome is 15 minutes old', async () => {
+      const reloaded = await settleOnApprovalPageThenReload()
+
+      vi.advanceTimersByTime(15 * 60_000 + 1)
+
+      expect(reloaded.restoreShownDesktopLoginRedemptionStatus()).toBe(false)
+      expect(reloaded.desktopLoginRedemptionStatus.value).toBe('idle')
+    })
+
+    it('does not keep an outcome no approval page showed', async () => {
+      const { trigger, seedStash } = await setup()
+      seedStash(VALID_CODE)
+      respondToFetch(REDEEM_URL, okResponse)
+      await trigger()
+      vi.resetModules()
+      const reloaded = await import('./desktopLoginRedemption')
+
+      expect(reloaded.restoreShownDesktopLoginRedemptionStatus()).toBe(false)
     })
   })
 

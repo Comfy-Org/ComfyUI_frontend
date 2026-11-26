@@ -552,11 +552,12 @@ export const CORE_SETTINGS: SettingParams[] = [
   {
     id: 'Comfy.DisableFloatRounding',
     category: ['LiteGraph', 'Node Widget', 'DisableFloatRounding'],
-    name: 'Disable default float widget rounding.',
+    name: 'Disable default float widget rounding (deprecated).',
     tooltip:
-      '(requires page reload) Cannot disable round when round is set by the node in the backend.',
+      '(requires page reload) Deprecated and on by default. Turning it off rounds edited float values to the decimal places of the widget step. Rounding declared by the node always applies.',
     type: 'boolean',
-    defaultValue: false
+    defaultValue: true,
+    versionModified: '1.61.5'
   },
   {
     id: 'Comfy.FloatRoundingPrecision',
@@ -580,7 +581,7 @@ export const CORE_SETTINGS: SettingParams[] = [
       max: 3000,
       step: 50
     },
-    defaultValue: 500,
+    defaultValue: 1500,
     versionAdded: '1.9.0'
   },
   {
@@ -1339,7 +1340,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.40.0'
   },
   {
-    id: 'Comfy.Workflow.ShowMissingNodesWarning',
+    id: 'Comfy.ErrorSystem.ShowMissingNodes',
     category: ['Comfy', 'Error System', 'MissingNodes'],
     sortOrder: -1,
     name: 'Show missing nodes in the issues tab',
@@ -1347,7 +1348,7 @@ export const CORE_SETTINGS: SettingParams[] = [
       'When disabled, missing node packs are not listed in the issues tab and their nodes are not highlighted. The workflow still cannot run until they are installed.',
     type: 'boolean',
     defaultValue: true,
-    versionAdded: '1.55.0'
+    versionAdded: '1.62.0'
   },
   {
     id: 'Comfy.ErrorSystem.ShowMissingModels',

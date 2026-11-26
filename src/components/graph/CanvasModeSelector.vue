@@ -5,7 +5,6 @@
         ref="buttonRef"
         variant="secondary"
         class="group rounded-none! bg-transparent p-0 transition-none! hover:rounded-lg! hover:bg-accent!"
-        :style="buttonStyles"
         :aria-label="$t('graphCanvasMenu.canvasMode')"
         aria-haspopup="menu"
         :aria-expanded="isOpen"
@@ -106,11 +105,6 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
-interface Props {
-  buttonStyles?: Record<string, string>
-}
-
-defineProps<Props>()
 const buttonRef = ref<ComponentPublicInstance | null>(null)
 const menuRef = ref<HTMLElement | null>(null)
 const isOpen = ref(false)

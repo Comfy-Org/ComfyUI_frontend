@@ -7,12 +7,14 @@ import {
   clearActivePath,
   clearAllWorkspaceStorage,
   clearAllWorkflowStorage,
+  clearUnscopedDraftStorage,
   clearWorkflowRestoreState,
   deleteOrphanPayloads,
   deletePayload,
   deletePayloads,
   getPayloadKeys,
   markStorageUnavailable,
+  measureLocalStorage,
   readActivePath,
   readIndex,
   readOpenPaths,
@@ -441,6 +443,42 @@ describe('storageIO', () => {
     })
   })
 
+  describe('clearUnscopedDraftStorage', () => {
+    it('removes draft keys without an account scope and V1 drafts', () => {
+      localStorage.setItem('Comfy.Workflow.DraftIndex.v2:personal', '{}')
+      localStorage.setItem('Comfy.Workflow.Draft.v2:personal:abc', '{}')
+      localStorage.setItem('Comfy.Workflow.Draft.v2:ws-2:def', '{}')
+      localStorage.setItem('Comfy.Workflow.Drafts:personal', '{}')
+      localStorage.setItem('Comfy.Workflow.DraftOrder:personal', '[]')
+      localStorage.setItem('Comfy.Workflow.Drafts', '{}')
+      localStorage.setItem('Comfy.Workflow.DraftOrder', '[]')
+      localStorage.setItem('Comfy.Workflow.DraftIndex.v2:user-a:personal', '{}')
+      localStorage.setItem('Comfy.Workflow.Draft.v2:user-a:personal:abc', '{}')
+      localStorage.setItem('Comfy.Workflow.Draft.v2:user-b:ws-2:def', '{}')
+      localStorage.setItem(
+        'Comfy.Workflow.Draft.v2:unauthenticated:personal:abc',
+        '{}'
+      )
+      localStorage.setItem('unrelated', 'keep')
+
+      clearUnscopedDraftStorage()
+
+      const remaining = [...Array(localStorage.length)].map((_, index) =>
+        localStorage.key(index)
+      )
+      expect(remaining).toHaveLength(5)
+      expect(remaining).toEqual(
+        expect.arrayContaining([
+          'Comfy.Workflow.Draft.v2:unauthenticated:personal:abc',
+          'Comfy.Workflow.Draft.v2:user-a:personal:abc',
+          'Comfy.Workflow.Draft.v2:user-b:ws-2:def',
+          'Comfy.Workflow.DraftIndex.v2:user-a:personal',
+          'unrelated'
+        ])
+      )
+    })
+  })
+
   describe('clearAllWorkflowStorage', () => {
     it('clears all restorable workflow keys from localStorage', () => {
       localStorage.setItem('Comfy.Workflow.DraftIndex.v2:ws-1', '{}')
@@ -554,16 +592,42 @@ describe('storageIO', () => {
   })
 
   describe('clearAllWorkspaceStorage', () => {
+    it('forgets the build the account was following on logout', () => {
+      sessionStorage.setItem('Comfy.Deployment.FollowedBuild', '{}')
+      sessionStorage.setItem('unrelated', 'keep')
+
+      clearAllWorkspaceStorage()
+
+      expect(
+        sessionStorage.getItem('Comfy.Deployment.FollowedBuild')
+      ).toBeNull()
+      expect(sessionStorage.getItem('unrelated')).toBe('keep')
+    })
+
     it('clears scoped and legacy Agent persistence on account logout', () => {
       localStorage.setItem('Comfy.Agent.ThreadId:personal', 'thread-a')
       localStorage.setItem('Comfy.Agent.WorkflowTabBindings:ws-1', '{}')
       localStorage.setItem('Comfy.Agent.ChatTitles:ws-1', '{}')
       localStorage.setItem('Comfy.Agent.DeletedThreads:ws-1', '[]')
+      localStorage.setItem('Comfy.Agent.PendingSendDraft:ws-1', '[]')
       localStorage.setItem('Comfy.Agent.ThreadId', 'legacy-thread')
       localStorage.setItem('Comfy.Agent.WorkflowTabBindings', '{}')
       localStorage.setItem('Comfy.Agent.WorkflowTabBindings.v2', '{}')
       localStorage.setItem('Comfy.Agent.ChatTitles', '{}')
       localStorage.setItem('Comfy.Agent.DeletedThreads', '[]')
+      localStorage.setItem('unrelated', 'keep')
+
+      clearAllWorkspaceStorage()
+
+      expect(
+        [...Array(localStorage.length)].map((_, index) =>
+          localStorage.key(index)
+        )
+      ).toEqual(['unrelated'])
+    })
+
+    it('clears saved skill drafts on account logout', () => {
+      localStorage.setItem('Comfy.Agent.SkillDrafts:["scope"]', '{}')
       localStorage.setItem('unrelated', 'keep')
 
       clearAllWorkspaceStorage()
@@ -932,6 +996,34 @@ describe('storageIO', () => {
         '{}'
       )
       expect(localStorage.getItem('Comfy.Workflow.Drafts:ws-1')).toBe('{}')
+    })
+  })
+
+  describe('measureLocalStorage', () => {
+    it('reports an unavailable measurement when enumeration fails', () => {
+      localStorage.setItem('Comfy.Workflow.Draft.v2:ws-1:abc', '{"data":""}')
+      vi.spyOn(localStorage, 'key').mockImplementation(() => {
+        throw new DOMException('blocked', 'SecurityError')
+      })
+
+      expect(measureLocalStorage()).toBeNull()
+    })
+
+    it('does not report a partial measurement when a key disappears mid-scan', () => {
+      localStorage.setItem('Comfy.Workflow.Draft.v2:ws-1:abc', '{"data":""}')
+      vi.spyOn(localStorage, 'key').mockReturnValue(null)
+
+      expect(measureLocalStorage()).toBeNull()
+    })
+
+    it('measures a genuinely empty store as zero', () => {
+      expect(measureLocalStorage()).toEqual({
+        storageTotalBytes: 0,
+        storageDraftBytes: 0,
+        storageKeyCount: 0,
+        largestOtherStorageKey: null,
+        largestOtherStorageKeyBytes: 0
+      })
     })
   })
 })

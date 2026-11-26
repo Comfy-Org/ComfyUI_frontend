@@ -1,4 +1,4 @@
-export type MediaAssetDateFilter = '' | 'today' | 'week' | 'month' | 'year'
+import type { MediaAssetDateFilter } from '@comfyorg/assets-core/media'
 
 interface FilterOption<T extends string> {
   value: T
