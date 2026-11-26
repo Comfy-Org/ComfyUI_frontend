@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 
+import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { useCustomDeploymentOffered } from '@/platform/workspace/composables/useCustomDeploymentOffered'
 import { useCustomDeploymentSetup } from '@/platform/workspace/composables/useCustomDeploymentSetup'
 import { useMissingNodeDeploymentOffer } from '@/platform/workspace/composables/useMissingNodeDeploymentOffer'
@@ -61,4 +62,47 @@ describe('useCustomDeploymentSetup', () => {
 
     expect(openWorkflowNeedsDeploymentDialog).toHaveBeenCalledOnce()
   })
+
+  it.for([
+    {
+      missing: 'only custom nodes with no replacement',
+      nodeTypes: [
+        {
+          type: 'VHS_VideoCombine',
+          cnrId: 'comfyui-videohelpersuite',
+          isReplaceable: false
+        }
+      ],
+      covers: true
+    },
+    {
+      missing: 'a core node beside a custom node',
+      nodeTypes: [
+        {
+          type: 'VHS_VideoCombine',
+          cnrId: 'comfyui-videohelpersuite',
+          isReplaceable: false
+        },
+        { type: 'NewCoreNode', cnrId: 'comfy-core', isReplaceable: false }
+      ],
+      covers: false
+    },
+    {
+      missing: 'a node from an unknown pack',
+      nodeTypes: ['UnknownNode'],
+      covers: false
+    }
+  ])(
+    'a custom deployment covers every missing node with $missing: $covers',
+    ({ nodeTypes, covers }) => {
+      vi.mocked(useCustomDeploymentOffered).mockReturnValue(
+        computed(() => true)
+      )
+      useMissingNodesErrorStore().setMissingNodeTypes(nodeTypes)
+
+      expect(useCustomDeploymentSetup().coversEveryMissingNode.value).toBe(
+        covers
+      )
+    }
+  )
 })

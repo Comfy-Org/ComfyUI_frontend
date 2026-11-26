@@ -676,12 +676,15 @@ const buildFixesAllSetup = computed(
 
 const customDeploymentSetup = isCloud ? useCustomDeploymentSetup() : null
 const offersCustomDeployment = computed(
-  () => customDeploymentSetup?.offered.value ?? false
+  () =>
+    (customDeploymentSetup?.offered.value ?? false) &&
+    filteredGroups.value.some((group) => group.type === 'missing_node')
 )
 const customDeploymentFixesAllSetup = computed(
   () =>
     offersCustomDeployment.value &&
-    filteredGroups.value.every(
+    (customDeploymentSetup?.coversEveryMissingNode.value ?? false) &&
+    allErrorGroups.value.every(
       (group) => group.severity !== 'missing' || group.type === 'missing_node'
     )
 )
