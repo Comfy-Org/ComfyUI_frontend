@@ -769,15 +769,13 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     return true
   }
 
-  function noteVisibleEditWhileOtherBound(
-    owner: LGraphNode | null,
-    graph: LGraph,
-    rootGraphId: string
-  ): boolean {
+  function rootGraphIdForWidgetWrite(owner: LGraphNode | null, graph: LGraph) {
+    const rootGraphId = deps.boundRootGraphId() ?? graph.id
     const ownerRootGraphId = owner?.graph?.rootGraph.id
-    if (ownerRootGraphId !== graph.id || graph.id === rootGraphId) return false
+    if (ownerRootGraphId !== graph.id || graph.id === rootGraphId)
+      return rootGraphId
     noteVisibleUnboundEdit(ownerRootGraphId)
-    return true
+    return null
   }
 
   function routeSetWidget(
@@ -793,8 +791,8 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       ? findNodeInHierarchy(eventGraph, event.nodeId)
       : null
     if (!isValueWidgetWrite(owner, event)) return
-    const rootGraphId = deps.boundRootGraphId() ?? graph.id
-    if (noteVisibleEditWhileOtherBound(owner, graph, rootGraphId)) return
+    const rootGraphId = rootGraphIdForWidgetWrite(owner, graph)
+    if (rootGraphId === null) return
     const routed = routedWidgetOperation(graph, rootGraphId, event, owner, deps)
     if ('unresolvedGraphId' in routed) {
       reportUnresolvedWidgetOwner(routed.unresolvedGraphId, event)
