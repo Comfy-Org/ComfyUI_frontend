@@ -1,4 +1,4 @@
-# ADR-HISTORY-PREVIEW-0045: Workflow-owned layout previews
+# ADR-HISTORY-PREVIEW-workflow-owned-layout-previews: Workflow-owned layout previews
 
 Date: 2026-10-22
 

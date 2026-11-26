@@ -1,4 +1,4 @@
-# ADR-AGENT-ERRORS-0059: Error reports reach the agent as files, not prompt text
+# ADR-AGENT-ERRORS-error-reports-travel-as-files: Error reports reach the agent as files, not prompt text
 
 Date: 2026-11-24
 

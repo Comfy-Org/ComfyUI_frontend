@@ -1,4 +1,4 @@
-# ADR-MESSAGING-ARBITER-0061: One pure decision for pushed messages
+# ADR-MESSAGING-ARBITER-one-pure-decision-for-pushed-messages: One pure decision for pushed messages
 
 Date: 2026-11-22
 
