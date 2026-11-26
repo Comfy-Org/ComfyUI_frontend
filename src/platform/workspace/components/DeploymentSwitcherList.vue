@@ -120,6 +120,7 @@ import { useDeploymentRows } from '@/platform/workspace/composables/useDeploymen
 import { useKeepRowFocus } from '@/platform/workspace/composables/useKeepRowFocus'
 import { switchReloadNote } from '@/platform/workspace/confirmUnsavedWorkBeforeSwitch'
 import type { DeploymentRowAction } from '@/platform/workspace/deploymentStartState'
+import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
 import { usePlatformFrameStore } from '@/platform/workspace/platformFrame/platformFrameStore'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useDeploymentStartStore } from '@/platform/workspace/stores/deploymentStartStore'
@@ -200,10 +201,12 @@ function updateLabel(row: DeploymentRow): string | null {
   )
 }
 const defaultGone = computed(() => goneDefaultDeploymentId.value !== null)
-const workspaceDefaultOffered = computed(
-  () =>
+const workspaceDefaultOffered = computed(() =>
+  pendingServerFact(
+    'BE-20674',
     canSetDefault.value &&
-    (onTeamPlan || defaultDeploymentId.value !== null || defaultGone.value)
+      (onTeamPlan || defaultDeploymentId.value !== null || defaultGone.value)
+  )
 )
 
 const notice = computed(() => {
