@@ -1,4 +1,7 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+
+import { showUnsavedWorkDialog } from '@/platform/workspace/showUnsavedWorkDialog'
+import { useDialogStore } from '@/stores/dialogStore'
 
 vi.mock(import('@/i18n'))
 vi.mock(import('@comfyorg/telemetry'))
@@ -19,22 +22,9 @@ function prompt(title: string) {
   }
 }
 
-async function importModules() {
-  const [{ showUnsavedWorkDialog }, { useDialogStore }] = await Promise.all([
-    import('@/platform/workspace/showUnsavedWorkDialog'),
-    import('@/stores/dialogStore')
-  ])
-  return { showUnsavedWorkDialog, dialogStore: useDialogStore() }
-}
-
-describe('showUnsavedWorkDialog', { timeout: 30_000 }, () => {
-  beforeEach(() => {
-    vi.useRealTimers()
-    vi.resetModules()
-  })
-
+describe('showUnsavedWorkDialog', () => {
   it('answers with the button picked and closes the dialog', async () => {
-    const { showUnsavedWorkDialog, dialogStore } = await importModules()
+    const dialogStore = useDialogStore()
 
     const answer = showUnsavedWorkDialog(prompt('Portrait'))
     await flushQueue()
@@ -48,7 +38,7 @@ describe('showUnsavedWorkDialog', { timeout: 30_000 }, () => {
   })
 
   it('settles both asks when a second comes while the first is open', async () => {
-    const { showUnsavedWorkDialog, dialogStore } = await importModules()
+    const dialogStore = useDialogStore()
 
     const first = showUnsavedWorkDialog(prompt('Portrait'))
     const second = showUnsavedWorkDialog(prompt('Video'))
