@@ -1,10 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import type { WorkspaceDeployment } from '@/platform/workspace/api/workspaceApi'
-import {
-  deploymentBuildBrief,
-  workflowDeploymentBrief
-} from '@/platform/workspace/deploymentBuildBrief'
+import { deploymentBuildBrief } from '@/platform/workspace/deploymentBuildBrief'
 
 const deployment: WorkspaceDeployment = {
   deployment_id: 'dep-1',
@@ -219,69 +216,16 @@ describe(deploymentBuildBrief, () => {
     expect(brief).toContain('**dep-1**')
     expect(brief).toContain('release `rel-3` of\nits Build on')
   })
-})
 
-describe(workflowDeploymentBrief, () => {
-  it('asks for a custom deployment that adds what the workflow lacks', () => {
-    const brief = workflowDeploymentBrief(
-      [{ packId: 'comfyui-birefnet', nodeTypes: ['BiRefNet'] }],
-      [{ name: 'BiRefNet-general.safetensors', directory: 'BiRefNet' }],
-      'portrait.json'
-    )
-
-    expect(brief).toContain('# Create a custom deployment that runs a workflow')
-    expect(brief).toContain(
-      'The browser downloaded the workflow as `portrait.json`, most likely\nto the download directory. Create the Build from that file'
-    )
-    expect(brief).toContain('- Pack `comfyui-birefnet`: `BiRefNet`')
-    expect(brief).toContain(
-      '- `BiRefNet-general.safetensors` in `models/BiRefNet`'
-    )
-    expect(brief).toContain('comfy skills show comfy-build')
-    expect(brief).toContain(
-      'Ask the user which GPU the deployment should run on.'
-    )
-    expect(brief).toContain('Ask the user before you deploy it.')
-  })
-})
-
-describe('workflowDeploymentBrief without a workflow file', () => {
-  it('leaves the workflow section out', () => {
+  it('tells the agent to find the models the listed custom nodes load', () => {
     expect(
-      workflowDeploymentBrief(
+      deploymentBuildBrief(
+        deployment,
         [{ packId: 'comfyui-birefnet', nodeTypes: ['BiRefNet'] }],
         []
       )
-    ).not.toContain('## The workflow')
+    ).toContain(
+      'The editor cannot see the models those custom nodes load, so they are not\nlisted'
+    )
   })
-})
-
-describe('both briefs', () => {
-  it.for([
-    {
-      brief: 'deploymentBuildBrief',
-      build: () =>
-        deploymentBuildBrief(
-          deployment,
-          [{ packId: 'comfyui-birefnet', nodeTypes: ['BiRefNet'] }],
-          []
-        )
-    },
-    {
-      brief: 'workflowDeploymentBrief',
-      build: () =>
-        workflowDeploymentBrief(
-          [{ packId: 'comfyui-birefnet', nodeTypes: ['BiRefNet'] }],
-          [],
-          'portrait.json'
-        )
-    }
-  ])(
-    '$brief tells the agent to find the models the listed custom nodes load',
-    ({ build }) => {
-      expect(build()).toContain(
-        'The editor cannot see the models those custom nodes load, so they are not\nlisted'
-      )
-    }
-  )
 })
