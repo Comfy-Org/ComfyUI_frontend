@@ -606,6 +606,27 @@ describe('graphTraversalUtil', () => {
         expect(visited).toEqual([10, 11, 1])
       })
 
+      it('terminates on an ancestor subgraph reference', () => {
+        const firstNodes: LGraphNode[] = []
+        const first = createMockSubgraph('first-cycle-uuid', firstNodes)
+        const second = createMockSubgraph('second-cycle-uuid', [
+          createMockNode(20, { isSubgraph: true, subgraph: first })
+        ])
+        firstNodes.push(
+          createMockNode(10, { isSubgraph: true, subgraph: second })
+        )
+        const graph = createMockGraph([
+          createMockNode(1, { isSubgraph: true, subgraph: first })
+        ])
+
+        const visited: number[] = []
+        forEachNode(graph, (node) => {
+          visited.push(Number(node.id))
+        })
+
+        expect(visited).toEqual([20, 10, 1])
+      })
+
       it('visits a shared subgraph for each sibling host node', () => {
         const innerNode = createMockNode(100)
         const subgraph = createMockSubgraph('shared-uuid', [innerNode])
