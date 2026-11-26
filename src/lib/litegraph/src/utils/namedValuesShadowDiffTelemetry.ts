@@ -56,32 +56,17 @@ export function endNamedValuesShadowDiffLoad(): void {
 
 export function reportNamedValuesShadowDiff(
   node: LGraphNode,
-  diff: NamedValuesShadowDiffResult | null,
-  hadNamedField: boolean
+  diff: NamedValuesShadowDiffResult | null
 ): void {
-  if (!diff) return
+  // The default-rollout decision is complete. Keep ongoing compatibility
+  // evidence in the sampled workflow summary instead of a per-node event.
+  if (!diff || !aggregation) return
 
-  const nodeType = getBareClassName(node)
-  const packId = getCnrIdFromNode(node)
-
-  if (aggregation) {
-    aggregation.totalNodesChecked++
-    if (diff.mismatchWidgetCount > 0) {
-      aggregation.nodesWithMismatch++
-      aggregation.mismatchedNodeTypes.add(nodeType)
-      if (packId) aggregation.mismatchedPackIds.add(packId)
-    }
+  aggregation.totalNodesChecked++
+  if (diff.mismatchWidgetCount > 0) {
+    aggregation.nodesWithMismatch++
+    aggregation.mismatchedNodeTypes.add(getBareClassName(node))
+    const packId = getCnrIdFromNode(node)
+    if (packId) aggregation.mismatchedPackIds.add(packId)
   }
-
-  if (diff.mismatchWidgetCount === 0) return
-
-  useTelemetry()?.trackNamedValuesShadowDiffMismatch({
-    node_type: nodeType,
-    pack_id: packId,
-    mismatch_widget_count: diff.mismatchWidgetCount,
-    checked_widget_count: diff.checkedWidgetCount,
-    had_named_field: hadNamedField,
-    has_on_serialize_hook: typeof node.onSerialize === 'function',
-    has_on_configure_hook: typeof node.onConfigure === 'function'
-  })
 }
