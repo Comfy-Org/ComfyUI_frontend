@@ -269,6 +269,17 @@ function servedRefusal(error: unknown): unknown {
     : undefined
 }
 
+function unshapedPromptFailure(
+  error: PromptExecutionError
+): PromptError | null {
+  if (Object.keys(error.response.node_errors ?? {}).length > 0) return null
+  return {
+    type: 'server_error',
+    message: error.toString() || `HTTP ${error.status ?? 'error'}`,
+    details: ''
+  }
+}
+
 function withCloudRefusalReason(promptError: PromptError, error: unknown) {
   return isCloud
     ? withRefusalReason(promptError, servedRefusal(error))
@@ -2278,7 +2289,8 @@ export class ComfyApp implements IComfyApp {
               Object.keys(error.response.node_errors ?? {}).length > 0
             const promptError =
               error instanceof PromptExecutionError
-                ? normalizePromptError(error.response.error)
+                ? (normalizePromptError(error.response.error) ??
+                  unshapedPromptFailure(error))
                 : null
             const promptPrecondition = promptError
               ? (resolveAccountPrecondition({
