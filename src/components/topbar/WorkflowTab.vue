@@ -42,7 +42,7 @@
           <span
             :class="
               cn(
-                'relative size-4 shrink-0 group-focus-within/tab:invisible',
+                'relative size-4 shrink-0 group-focus-within/tab:invisible touch:invisible',
                 revealsCloseOnHover && 'group-hover/tab:invisible'
               )
             "
@@ -92,7 +92,7 @@
         <Button
           :class="
             cn(
-              'close-button absolute top-1/2 right-2 size-4 -translate-y-1/2 rounded-none p-0 group-focus-within/tab:visible',
+              'close-button absolute top-1/2 right-2 size-4 -translate-y-1/2 rounded-none p-0 group-focus-within/tab:visible touch:visible',
               closeButtonVisibility,
               revealsCloseOnHover && 'group-hover/tab:visible'
             )
