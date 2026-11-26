@@ -5,14 +5,21 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
 
+import { formatCreditsRangeValue } from '@comfyorg/shared-frontend-utils/nodePricing'
+
 import type { RunApprovalPart } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
-import { agentBoundWorkflowIdKey } from '@/workbench/extensions/agent/components/agent/agentBoundWorkflowId'
+import {
+  agentBoundWorkflowActiveKey,
+  agentBoundWorkflowIdKey
+} from '@/workbench/extensions/agent/components/agent/agentBoundWorkflowId'
+import { useRunCostEstimate } from '@/workbench/extensions/agent/composables/useRunCostEstimate'
 
 const { part, answering = false } = defineProps<{
   part: RunApprovalPart
   answering?: boolean
 }>()
 const boundWorkflowId = inject(agentBoundWorkflowIdKey, ref(undefined))
+const boundWorkflowActive = inject(agentBoundWorkflowActiveKey, ref(false))
 const hideWorkflowName = computed(
   () => !!boundWorkflowId.value && part.workflowId === boundWorkflowId.value
 )
@@ -31,6 +38,26 @@ const workflowLabel = computed(
     part.workflowId?.trim() ||
     t('agent.runApproval.thisWorkflow')
 )
+
+const isEstimable = computed(
+  () => hideWorkflowName.value && boundWorkflowActive.value
+)
+const estimateState = useRunCostEstimate(isEstimable)
+
+const costLine = computed(() => {
+  const state = estimateState.value
+  if (state.status === 'idle') return null
+  if (state.status === 'unavailable')
+    return t('agent.runApproval.estimateUnavailable')
+  const read = state.estimate
+  if (read.pricedCount > 0)
+    return t('agent.runApproval.estimateAtLeast', {
+      credits: formatCreditsRangeValue(read.minUsd, read.maxUsd)
+    })
+  if (read.perUnit.length + read.unpriced.length > 0)
+    return t('agent.runApproval.estimateUnavailable')
+  return null
+})
 </script>
 
 <template>
@@ -75,6 +102,13 @@ const workflowLabel = computed(
           </span>
         </li>
       </ul>
+      <p
+        v-if="costLine"
+        class="m-0 text-muted-foreground"
+        data-testid="run-approval-cost"
+      >
+        {{ costLine }}
+      </p>
       <p class="m-0 text-muted-foreground">
         {{ t('agent.runApproval.question') }}
       </p>

@@ -1462,6 +1462,7 @@ describe('useAgentConversationStore', () => {
 
     expect(store.submittedAskAnswer('ask-1')).toEqual({ selected: ['run'] })
     expect(store.isAskRetired('ask-2', 'th')).toBe(true)
+    expect(store.isAskPermanentlyRetired('ask-2', 'th')).toBe(false)
   })
 
   it('clears provisional tombstones when the matching turn settles', () => {
@@ -1473,6 +1474,7 @@ describe('useAgentConversationStore', () => {
     store.settleTurn({ threadId: 'th', messageId: T1 }, undefined)
 
     expect(store.isAskRetired('ask-2', 'th')).toBe(false)
+    expect(store.isAskPermanentlyRetired('ask-2', 'th')).toBe(false)
   })
 
   it('holds the thread id and clears it on reset', () => {
@@ -1486,25 +1488,27 @@ describe('useAgentConversationStore', () => {
   it('scopes approval dedupe and timing to the conversation that owns them', () => {
     const store = useAgentConversationStore()
     store.setThreadId('th')
-    expect(store.recordApprovalShown('ask-1', 1_000)).toBe(true)
-    expect(store.recordApprovalShown('ask-1', 2_000)).toBe(false)
+    expect(store.recordApprovalShown('ask-1', 'turn-1', 1_000)).toBe(true)
+    expect(store.recordApprovalShown('ask-1', 'turn-1', 2_000)).toBe(false)
     expect(store.approvalShownAt('ask-1')).toBe(1_000)
+    expect(store.approvalTurnId('ask-1')).toBe('turn-1')
 
     // Remount hydration of the same thread keeps the shown state: a replayed
     // approval card must not re-emit or restart the decision timer.
     store.setThreadId('th')
     store.hydrate([])
     expect(store.approvalShownAt('ask-1')).toBe(1_000)
-    expect(store.recordApprovalShown('ask-1', 3_000)).toBe(false)
+    expect(store.recordApprovalShown('ask-1', 'turn-1', 3_000)).toBe(false)
 
     // Leaving the thread drops its abandoned asks with it.
     store.setThreadId('th-other')
     expect(store.approvalShownAt('ask-1')).toBeUndefined()
-    expect(store.recordApprovalShown('ask-1', 4_000)).toBe(true)
+    expect(store.approvalTurnId('ask-1')).toBeUndefined()
+    expect(store.recordApprovalShown('ask-1', 'turn-2', 4_000)).toBe(true)
 
     store.reset()
     expect(store.approvalShownAt('ask-1')).toBeUndefined()
-    expect(store.recordApprovalShown('ask-1', 5_000)).toBe(true)
+    expect(store.recordApprovalShown('ask-1', 'turn-3', 5_000)).toBe(true)
   })
 
   it('snapshots local workflow references on the submitted turn', () => {
@@ -2052,6 +2056,9 @@ describe('useAgentConversationStore', () => {
     store.ingest(delta('t1', ' after'))
 
     expect(store.liveTurns()).toEqual([{ threadId: 'th', messageId: T1 }])
+    expect(store.liveTurnMessageId({ threadId: 'th', messageId: T1 })).toBe(
+      'server-turn'
+    )
     expect(store.messages.map((message) => message.id)).toEqual(['server-turn'])
     expect(partTexts(store)).toEqual(['before during after'])
     expect(store.entries[0]).toMatchObject({

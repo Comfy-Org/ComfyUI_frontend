@@ -423,6 +423,71 @@ function pageSessionOwnsTransport(file: string, source: string): Violation[] {
 
 export { pageSessionOwnsTransport as checkPageSessionOwnsTransport }
 
+/** The one module allowed to own a follower session's lifetime. */
+export const FOLLOWER_SESSION_OWNER =
+  'src/workbench/extensions/agent/crdt/useAgentCrdtFollower.ts'
+
+/** The one module allowed to mint and replace a document's semantic replica. */
+export const FOLLOWER_REPLICA_OWNER =
+  'src/workbench/extensions/agent/crdt/layoutFollowerBridge.ts'
+
+const SESSION_OWNED_CONSTRUCTIONS = new Map<string, string>([
+  ['LayoutFollowerBridge', FOLLOWER_SESSION_OWNER],
+  ['AgentCrdtProjection', FOLLOWER_SESSION_OWNER],
+  ['startAgentCrdtFollower', FOLLOWER_SESSION_OWNER],
+  ['FollowerDoc', FOLLOWER_REPLICA_OWNER]
+])
+
+function sessionOwnedName(node: ts.Node): string | undefined {
+  const callee = ts.isNewExpression(node)
+    ? node.expression
+    : ts.isCallExpression(node)
+      ? node.expression
+      : undefined
+  if (callee === undefined) return
+  const name = ts.isIdentifier(callee)
+    ? callee.text
+    : ts.isPropertyAccessExpression(callee)
+      ? callee.name.text
+      : undefined
+  return name !== undefined && SESSION_OWNED_CONSTRUCTIONS.has(name)
+    ? name
+    : undefined
+}
+
+function sessionOwnsFollowerLifetime(
+  file: string,
+  source: string
+): Violation[] {
+  if (!isAgentSurfaceFile(file)) return []
+  const names = [...SESSION_OWNED_CONSTRUCTIONS.keys()].filter(
+    (name) =>
+      SESSION_OWNED_CONSTRUCTIONS.get(name) !== file && source.includes(name)
+  )
+  if (names.length === 0) return []
+  const parsed = parse(
+    file.endsWith('.vue') ? `${file}.ts` : file,
+    scriptOf(file, source)
+  )
+  if (parsed.violations.length) return atPath(file, parsed.violations)
+  const violations: Violation[] = []
+  visit(parsed.sourceFile, (node) => {
+    const name = sessionOwnedName(node)
+    if (name === undefined) return
+    const owner = SESSION_OWNED_CONSTRUCTIONS.get(name)
+    if (owner === undefined || owner === file) return
+    violations.push({
+      file,
+      line: lineOf(parsed.sourceFile, node),
+      rule: 'session-owns-follower-lifetime',
+      message: `constructs ${name} outside ${owner} — the workflow document owns the follower session, so only the session owner creates and disposes the replica, the projection and the seam; see docs/adr/CRDT-FOLLOWER-0052-the-workflow-document-owns-the-follower-session.md Decisions 1 to 3`
+    })
+  })
+  return violations
+}
+
+export { sessionOwnsFollowerLifetime as checkSessionOwnsFollowerLifetime }
+
 export function checkFile(file: string, source: string): Violation[] {
   if (!isFollowerSeamFile(file)) return []
   const parsed = parse(file, source)
@@ -499,6 +564,7 @@ export function checkAgentSurfaceFiles(
       continue
     }
     violations.push(...pageSessionOwnsTransport(file, source))
+    violations.push(...sessionOwnsFollowerLifetime(file, source))
   }
   return violations
 }

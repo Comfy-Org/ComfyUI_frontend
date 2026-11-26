@@ -148,6 +148,7 @@ test.describe(
 
       await test.step('stream a text output into the preview widget', async () => {
         // Through the node's own `onExecuted` hook.
+        rig.startRun(JOB_ID)
         sendTextOutput(hostSocket, 'tensor([1, 2, 3])')
 
         // The widget really was written, so this test cannot pass by never

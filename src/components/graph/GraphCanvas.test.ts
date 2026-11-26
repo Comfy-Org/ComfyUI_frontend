@@ -367,6 +367,36 @@ describe('GraphCanvas settings startup failure', () => {
     )
     expect(window.location.reload).toHaveBeenCalledOnce()
   })
+
+  it.for(['Comfy.userId', 'Comfy.userName'])(
+    'fails startup instead of reloading when %s cannot be cleared',
+    async (key) => {
+      vi.spyOn(window.location, 'reload').mockReturnValue()
+      const complete = vi.spyOn(bootstrapTracer, 'complete')
+      const removalError = new DOMException('denied', 'SecurityError')
+      const removeItem = window.localStorage.removeItem.bind(
+        window.localStorage
+      )
+      vi.spyOn(window.localStorage, 'removeItem').mockImplementation(
+        (storageKey) => {
+          if (storageKey === key) throw removalError
+          removeItem(storageKey)
+        }
+      )
+      useSettingStore().error = new UnauthorizedError('expired session')
+      const errors: unknown[] = []
+
+      await mountGraphCanvas({}, (error) => errors.push(error), {
+        settingsReady: false
+      })
+
+      expect(errors).toEqual([removalError])
+      expect(complete).toHaveBeenCalledExactlyOnceWith('failed', {
+        error: removalError
+      })
+      expect(window.location.reload).not.toHaveBeenCalled()
+    }
+  )
 })
 
 describe('GraphCanvas legacy settings bridge', () => {
