@@ -1026,7 +1026,7 @@ describe('GroupNodeHandler.convertToNodes', () => {
       refused_group: refusedData
     }
 
-    await groupNodeExtension.afterConfigureGraph?.([], fromAny({}), {
+    await groupNodeExtension.afterConfigureGraph?.([], app, {
       graph,
       workflow: null
     })
