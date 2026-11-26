@@ -551,6 +551,23 @@ describe('decideMessages: decision boundaries', () => {
       results({ candidates: [M.whatsnew, ending(NOW + 3 * DAY + 1)] }).slot
     ).toBe('whatsnew-v1.30')
   })
+
+  it('shows only the newest of two eligible announcements', () => {
+    const old = message('a-old', { startsAt: NOW - DAY })
+    const recent = message('z-new', { startsAt: NOW })
+    expect(results({ candidates: [old, recent] })).toEqual({
+      results: { 'a-old': 'suppress', 'z-new': 'show' },
+      slot: 'z-new'
+    })
+    expect(results({ candidates: [recent, old] })).toEqual({
+      results: { 'a-old': 'suppress', 'z-new': 'show' },
+      slot: 'z-new'
+    })
+    expect(reason({ candidates: [old, recent] }, 'a-old')).toEqual({
+      result: 'suppress',
+      reason: 'superseded'
+    })
+  })
 })
 
 describe('mergeExposure', () => {

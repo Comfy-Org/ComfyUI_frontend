@@ -104,6 +104,7 @@ type ArbiterReason =
   | 'shown_out'
   | 'turned_off'
   | 'replaced'
+  | 'superseded'
   | 'budget_used'
   | 'too_early'
   | 'snoozed'
@@ -147,6 +148,7 @@ interface GateContext {
   input: ArbiterInput
   seen: MessageExposure | undefined
   replacedIds: ReadonlySet<string>
+  supersededIds: ReadonlySet<string>
 }
 
 interface Rule {
@@ -173,6 +175,18 @@ const isLiveReplacement = (
   m.forUser &&
   !notStarted(m, input) &&
   !ended(m, input)
+const isLiveAnnouncement = (m: MessageEnvelope, input: ArbiterInput) =>
+  isPushed(m) &&
+  m.class === 'announcement' &&
+  !missingRecord(m) &&
+  !m.switchedOff &&
+  m.forUser &&
+  !notStarted(m, input) &&
+  !ended(m, input)
+const isNewerAnnouncement = (a: MessageEnvelope, b: MessageEnvelope) => {
+  const startsAt = (m: MessageEnvelope) => m.startsAt ?? 0
+  return startsAt(a) !== startsAt(b) ? startsAt(a) > startsAt(b) : a.id < b.id
+}
 const isEarlyUser = ({ user, now }: ArbiterInput) =>
   user.firstSession ||
   (user.signedUpAt !== undefined && now - user.signedUpAt < EARLY_USER_MS)
@@ -194,6 +208,10 @@ const RECORD_RULES: Rule[] = [
   },
   { when: (m) => !m.forUser, outcome: suppress('not_for_user') },
   { when: (m, c) => c.replacedIds.has(m.id), outcome: suppress('replaced') },
+  {
+    when: (m, c) => c.supersededIds.has(m.id),
+    outcome: suppress('superseded')
+  },
   { when: (_, c) => c.seen?.done === true, outcome: suppress('dismissed') },
   {
     when: (m, c) =>
@@ -341,6 +359,18 @@ function collectReplacedIds(
   return replacedIds
 }
 
+function collectSupersededIds(
+  candidates: readonly MessageEnvelope[],
+  input: ArbiterInput
+): Set<string> {
+  const live = candidates.filter((m) => isLiveAnnouncement(m, input))
+  const newest = live.reduce<MessageEnvelope | undefined>(
+    (best, m) => (best && isNewerAnnouncement(best, m) ? best : m),
+    undefined
+  )
+  return new Set(live.filter((m) => m.id !== newest?.id).map((m) => m.id))
+}
+
 /**
  * Decides every candidate for one moment of the messaging playbook rules
  * (#22003). Pure: callers pass `now`, the screen and exposure. Candidate
@@ -350,6 +380,7 @@ export function decideMessages(input: ArbiterInput): ArbiterDecision {
   const outcomes = new Map<string, ArbiterOutcome>()
   const candidates = uniqBy(input.candidates, (m) => m.id)
   const replacedIds = collectReplacedIds(candidates, input)
+  const supersededIds = collectSupersededIds(candidates, input)
 
   const pushed: MessageEnvelope[] = []
   const started: MessageEnvelope[] = []
@@ -357,14 +388,14 @@ export function decideMessages(input: ArbiterInput): ArbiterDecision {
     const seen = Object.hasOwn(input.exposure, m.id)
       ? input.exposure[m.id]
       : undefined
-    const blocked = gate(m, { input, seen, replacedIds })
+    const blocked = gate(m, { input, seen, replacedIds, supersededIds })
     if (blocked) outcomes.set(m.id, blocked)
     else (isPushed(m) ? pushed : started).push(m)
   }
 
   let winner = pickPushed(
     pushed,
-    { input, seen: undefined, replacedIds },
+    { input, seen: undefined, replacedIds, supersededIds },
     outcomes
   )
   for (const m of started) {
