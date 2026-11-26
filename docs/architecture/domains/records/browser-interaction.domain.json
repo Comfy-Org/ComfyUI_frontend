@@ -14,6 +14,9 @@
     },
     {
       "path": "src/composables/usePragmaticDragAndDrop.ts"
+    },
+    {
+      "path": "src/utils/eventUtils.ts"
     }
   ],
   "publicEntryPoints": [],
@@ -32,6 +35,10 @@
     {
       "name": "Pragmatic drag-and-drop adapters register droppables for canvas drops",
       "checks": ["src/composables/useCanvasDrop.test.ts"]
+    },
+    {
+      "name": "Browser file drops retain file names, MIME types, and URI fetch behavior",
+      "checks": ["src/utils/eventUtils.test.ts"]
     }
   ],
   "adrs": [],

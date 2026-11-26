@@ -5569,7 +5569,7 @@
       },
       "text": {
         "name": "text",
-        "tooltip": "Description textuelle de l’effet sonore à générer."
+        "tooltip": "Décrivez le son en anglais, avec un maximum de 450 caractères. Les prompts dans d’autres langues sont souvent lus à voix haute au lieu d’être transformés en son."
       }
     },
     "outputs": {
@@ -15470,6 +15470,91 @@
       }
     }
   },
+  "MeshyImageToReliefNode": {
+    "description": "Transformez une photo en modèle bas-relief et en carte de profondeur 16 bits pour l’impression 3D, la gravure laser et l’usinage CNC. Seules les sorties connectées sont générées et téléchargées ; sans sortie de modèle connectée, la tâche renvoie uniquement la carte de profondeur.",
+    "display_name": "Meshy : image en relief",
+    "inputs": {
+      "base": {
+        "name": "base",
+        "tooltip": "none retire l’arrière-plan et ne crée aucune plaque."
+      },
+      "base_base_thickness_mm": {
+        "name": "base_thickness_mm"
+      },
+      "bend": {
+        "name": "bend",
+        "tooltip": "convex bombe la face avant vers l’extérieur, concave la courbe vers l’intérieur."
+      },
+      "carving_mode": {
+        "name": "carving_mode",
+        "tooltip": "emboss rehausse les parties les plus proches de la photo, engrave les creuse."
+      },
+      "color_mapping": {
+        "name": "color_mapping",
+        "tooltip": "Colore les fichiers GLB, OBJ, FBX et USDZ avec la photo. Les fichiers STL et 3MF restent blancs."
+      },
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Les motifs sombres sur fond clair sont rehaussés. La transparence est supprimée avant l’envoi ; aplatissez donc d’abord un logo transparent sur un fond blanc."
+      },
+      "mesh_resolution": {
+        "name": "mesh_resolution",
+        "tooltip": "Points de maillage le long du côté le plus long de la photo. À 1024, le GLB fait environ 50 Mo et le STL environ 105 Mo ; à 2048, environ 200 Mo et 420 Mo. Une courbure double ces tailles."
+      },
+      "relief_type": {
+        "name": "relief_type",
+        "tooltip": "low : gravure peu profonde pour la gravure laser, la CNC et les plaques. high : gravure plus profonde pour les pièces imprimées en 3D."
+      },
+      "relief_type_carving_depth_mm": {
+        "name": "carving_depth_mm"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "La graine contrôle si le nœud doit être relancé ; les résultats ne sont pas déterministes, quelle que soit la graine. Modifiez-la pour demander une sortie qui a été connectée après la dernière exécution."
+      },
+      "size_mm": {
+        "name": "size_mm",
+        "tooltip": "Longueur du côté le plus long de la photo sur le modèle, mesurée à plat avant toute courbure."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "1": {
+        "name": "STL",
+        "tooltip": null
+      },
+      "2": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": null
+      },
+      "4": {
+        "name": "USDZ",
+        "tooltip": null
+      },
+      "5": {
+        "name": "3MF",
+        "tooltip": null
+      },
+      "6": {
+        "name": "depth_map",
+        "tooltip": "Carte de profondeur utilisant toute la plage 16 bits ; Save Image (Advanced) l’écrit sous forme de PNG 16 bits."
+      },
+      "7": {
+        "name": "aperçu",
+        "tooltip": null
+      }
+    }
+  },
   "MeshyMultiImageToModelNode": {
     "display_name": "Meshy : Multi-image vers modèle",
     "inputs": {
@@ -15765,6 +15850,44 @@
         "tooltip": null
       },
       "3": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyTextureN1Node": {
+    "description": "Appliquez une texture à un modèle créé précédemment avec Meshy N1 à partir de 1 à 4 vues de référence du même objet.",
+    "display_name": "Meshy : texturer un modèle (N1)",
+    "inputs": {
+      "enable_original_uv": {
+        "name": "enable_original_uv",
+        "tooltip": "Utilisez les UV d’origine du modèle au lieu de générer de nouveaux UV. Lorsqu’elle est activée, Meshy préserve les textures existantes du modèle envoyé. Si le modèle ne possède pas d’UV d’origine, la qualité de la sortie pourrait être moins bonne."
+      },
+      "extra_views": {
+        "name": "extra_views",
+        "tooltip": "Vues supplémentaires du même objet, dans n’importe quel ordre. Avec front_view, 4 images au maximum."
+      },
+      "front_view": {
+        "name": "front_view",
+        "tooltip": "La vue que Meshy considère comme la face avant. Une image texture la face avant et laisse l’arrière uni ; ajoutez des vues arrière et latérales dans extra_views pour obtenir un arrière fidèle."
+      },
+      "meshy_task_id": {
+        "name": "meshy_task_id"
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "2": {
         "name": "FBX",
         "tooltip": null
       }
@@ -21897,6 +22020,56 @@
       }
     }
   },
+  "PrunaAvatarNode": {
+    "description": "Génère une vidéo parlante à partir d’un portrait et de parole avec Pruna P-Video-2 Pro Avatar : votre propre audio ou un script lu par synthèse vocale.",
+    "display_name": "Pruna P-Video-2 Pro Avatar",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "enhance_prompt": {
+        "name": "enhance_prompt",
+        "tooltip": "Ajoute au prompt les mouvements visibles dans le portrait, tels que ceux de l’arrière-plan, des lumières et du corps. Désactivez cette option pour utiliser le prompt tel qu’il est écrit et reproduire exactement un résultat avec le même seed."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Portrait à partir duquel commence la vidéo. La vidéo conserve un rapport largeur/hauteur de 1:2 à 4:1 ; les images plus extrêmes, comme 1:5, sont recadrées en 9:16 ou 16:9."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Décrit ce que montre la vidéo. Jusqu’à 5 000 caractères."
+      },
+      "resolution": {
+        "name": "résolution",
+        "tooltip": "1080p, 2k et 4k mettent à l’échelle la vidéo 768p. La 2k est limitée à 150 secondes et la 4k à 60 secondes."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed pour la génération. Le même seed ne reproduit exactement un résultat que lorsque enhance_prompt est désactivé."
+      },
+      "speech": {
+        "name": "parole",
+        "tooltip": "Pilotez la vidéo avec un script de synthèse vocale ou votre propre audio."
+      },
+      "speech_language": {
+        "name": "langue"
+      },
+      "speech_script": {
+        "name": "script"
+      },
+      "speech_voice": {
+        "name": "voix"
+      },
+      "speech_voice_prompt": {
+        "name": "voice_prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PrunaImageToVideoNode": {
     "description": "Anime une image en vidéo à l’aide des modèles vidéo Pruna, avec en option une dernière image, un son généré ou une piste audio.",
     "display_name": "Pruna P-Video-2 Image en vidéo",
@@ -21958,6 +22131,48 @@
       "video": {
         "name": "vidéo",
         "tooltip": "Vidéo à agrandir, jusqu’à 512 Mio."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrunaReferenceToVideoNode": {
+    "description": "Génère une vidéo à partir d’un prompt, guidée par des images, vidéos et fichiers audio de référence, à l’aide des modèles vidéo Pruna.",
+    "display_name": "Pruna P-Video-2 Pro Référence vers vidéo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Modèle à utiliser."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration": {
+        "name": "durée"
+      },
+      "model_enhance_prompt": {
+        "name": "enhance_prompt"
+      },
+      "model_keep_audio": {
+        "name": "keep_audio"
+      },
+      "model_mode": {
+        "name": "mode"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "résolution"
+      },
+      "model_seed": {
+        "name": "seed"
       }
     },
     "outputs": {
@@ -30307,6 +30522,150 @@
       "0": {
         "name": "textes",
         "tooltip": "Textes traités"
+      }
+    }
+  },
+  "TypeSafeJevChoice": {
+    "description": "Choisissez l’une de vos options pour du texte ou des images. Connectez `choice` à un nœud Branch dont les entrées portent les noms des options, ou utilisez `option_index`.",
+    "display_name": "TypeSafe Jev (Choix)",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "Les images auxquelles se rapporte la question. Jusqu’à 32 images au total ; plus de 4 images sont envoyées dans une taille réduite."
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "options": {
+        "name": "options",
+        "tooltip": "Une option par ligne. Ajoutez une option telle que `other` pour les entrées qui ne correspondent à aucune d’entre elles."
+      },
+      "question": {
+        "name": "question",
+        "tooltip": "La question à laquelle répondent les options. Avec plusieurs entrées, utilisez les noms des sockets, par exemple « Quelle saison est représentée dans image_1 ? »"
+      },
+      "text": {
+        "name": "texte",
+        "tooltip": "Le texte auquel se rapporte la question, comme un prompt ou une réponse de LLM."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "choix",
+        "tooltip": null
+      },
+      "1": {
+        "name": "option_index",
+        "tooltip": "Position de l’option choisie dans la liste des options, à partir de 0."
+      },
+      "2": {
+        "name": "confiance",
+        "tooltip": "Niveau de certitude de Jev, de 0 (aucun gagnant clair) à 1 (certain)."
+      }
+    }
+  },
+  "TypeSafeJevPickImage": {
+    "description": "Choisissez une image dans un lot. Connectez `index` à Get Image from Batch pour conserver l’image sélectionnée.",
+    "display_name": "TypeSafe Jev (Sélectionner une image)",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "Les images parmi lesquelles choisir, de 2 à 32."
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "question": {
+        "name": "question",
+        "tooltip": "L’image à sélectionner. Connectez le prompt à `text` pour sélectionner l’image qui lui correspond le mieux."
+      },
+      "text": {
+        "name": "texte",
+        "tooltip": "Le texte auquel se rapporte la question, comme le prompt à partir duquel les images ont été créées."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "index",
+        "tooltip": "Position de l’image sélectionnée dans le lot, à partir de 0."
+      },
+      "1": {
+        "name": "confiance",
+        "tooltip": "Niveau de certitude de Jev, de 0 (aucun gagnant clair) à 1 (certain)."
+      }
+    }
+  },
+  "TypeSafeJevScore": {
+    "description": "Évaluez du texte ou des images de 1 à 10. Connectez `result` à un nœud If/Else Switch pour agir en fonction du score.",
+    "display_name": "TypeSafe Jev (Évaluation)",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "Les images auxquelles se rapporte la question. Jusqu’à 32 images au total ; plus de 4 images sont envoyées dans une taille réduite."
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "question": {
+        "name": "question",
+        "tooltip": "Ce qu’il faut évaluer, sur une échelle de 1 à 10. Indiquez ce que signifient 1 et 10, comme dans l’exemple."
+      },
+      "text": {
+        "name": "texte",
+        "tooltip": "Le texte concerné par la question, comme un prompt ou une réponse de LLM."
+      },
+      "threshold": {
+        "name": "seuil",
+        "tooltip": "`result` est vrai lorsque le score est au moins égal à cette valeur."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "résultat",
+        "tooltip": null
+      },
+      "1": {
+        "name": "score",
+        "tooltip": null
+      }
+    }
+  },
+  "TypeSafeJevYesNo": {
+    "description": "Posez une question oui/non sur du texte ou des images. Connectez `result` à un nœud If/Else Switch pour choisir entre deux chemins.",
+    "display_name": "TypeSafe Jev (Oui/Non)",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "Les images concernées par la question. Jusqu’à 32 images au total ; au-delà de 4, elles sont envoyées dans une taille plus petite."
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "question": {
+        "name": "question",
+        "tooltip": "Une question dont la réponse est oui ou non sur ce qui est connecté. Formulez-la de sorte que oui corresponde au cas sur lequel vous souhaitez agir. Avec plusieurs entrées, utilisez les noms des sockets, par exemple « image_2 montre-t-elle la même personne que image_1 ? »"
+      },
+      "text": {
+        "name": "texte",
+        "tooltip": "Le texte concerné par la question, comme un prompt ou une réponse de LLM."
+      },
+      "threshold": {
+        "name": "seuil",
+        "tooltip": "La réponse est oui lorsque la probabilité de oui est au moins égale à cette valeur."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "résultat",
+        "tooltip": null
+      },
+      "1": {
+        "name": "réponse",
+        "tooltip": null
+      },
+      "2": {
+        "name": "probabilité",
+        "tooltip": null
       }
     }
   },

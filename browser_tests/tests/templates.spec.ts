@@ -9,7 +9,6 @@ import {
   hasElementFlashed,
   trackElementFlash
 } from '@e2e/fixtures/utils/flashDetector'
-import { assetPath } from '@e2e/fixtures/utils/paths'
 import type { WorkflowTemplates } from '@comfyorg/api-client/templateTypes'
 import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
@@ -47,21 +46,10 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
   })
 
   test('Can load template workflows', async ({ comfyPage }) => {
-    await comfyPage.page.route(
-      /^https:\/\/raw\.githubusercontent\.com\/Comfy-Org\/workflow_templates\/[a-f0-9]{40}\/input\/transparent_rgb_gaming_mouse\.png$/,
-      (route) =>
-        route.fulfill({
-          path: assetPath('test_upload_image.png'),
-          contentType: 'image/png'
-        })
-    )
-
-    // Clear the workflow
     await comfyPage.menu.workflowsTab.open()
     await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
     await comfyPage.expectNodeCount(0)
 
-    // Load a template
     await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
     await expect(comfyPage.templates.content).toBeVisible()
 
@@ -69,6 +57,9 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     const firstPopularTemplate = comfyPage.templates.allTemplateCards.first()
     await expect(firstPopularTemplate).toBeVisible()
     await firstPopularTemplate.click()
+    await comfyPage.page
+      .getByRole('button', { name: 'Just open', exact: true })
+      .click()
     await expect(comfyPage.templates.content).toBeHidden()
 
     await comfyPage.expectNodeCountMinimum(1)

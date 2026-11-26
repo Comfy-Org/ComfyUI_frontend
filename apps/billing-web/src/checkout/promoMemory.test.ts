@@ -2,7 +2,8 @@ import type { PromoEntry } from '@/checkout/promoEntry'
 import {
   checkoutIdentity,
   codeToRemember,
-  createPromoMemory
+  createPromoMemory,
+  createPromoRemoval
 } from '@/checkout/promoMemory'
 
 const PRO = checkoutIdentity(
@@ -124,5 +125,42 @@ describe('createPromoMemory', () => {
 
     expect(() => memory.keep('LAUNCH20')).not.toThrow()
     expect(() => memory.keep(undefined)).not.toThrow()
+  })
+})
+
+describe('createPromoRemoval', () => {
+  const CREATOR = checkoutIdentity(
+    { product: 'comfyui', plan: 'creator_monthly' },
+    'ws-team'
+  )
+
+  it('remembers a removed code for this checkout across a fresh reader, in any letters', () => {
+    createPromoRemoval(() => PRO).remember('BLACKFRIDAY26')
+
+    expect(createPromoRemoval(() => PRO).removed(' blackfriday26 ')).toBe(true)
+  })
+
+  it('keeps each checkout separate, after moving to another and back', () => {
+    createPromoRemoval(() => PRO).remember('BLACKFRIDAY26')
+    createPromoRemoval(() => CREATOR).remember('BLACKFRIDAY26')
+
+    expect(createPromoRemoval(() => PRO).removed('BLACKFRIDAY26')).toBe(true)
+  })
+
+  it('does not hide a different code, another checkout, or anything without storage', () => {
+    createPromoRemoval(() => PRO).remember('BLACKFRIDAY26')
+
+    expect(createPromoRemoval(() => PRO).removed('LAUNCH20')).toBe(false)
+    expect(createPromoRemoval(() => CREATOR).removed('BLACKFRIDAY26')).toBe(
+      false
+    )
+    expect(
+      createPromoRemoval(
+        () => PRO,
+        () => {
+          throw new Error('storage blocked')
+        }
+      ).removed('BLACKFRIDAY26')
+    ).toBe(false)
   })
 })

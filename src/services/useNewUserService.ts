@@ -1,6 +1,7 @@
 import { ref, shallowRef } from 'vue'
 import { createSharedComposable } from '@vueuse/core'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { safeLocalStorage } from '@/base/storage/safeStorage'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import { reportError } from '@comfyorg/telemetry/reportError'
 
@@ -27,11 +28,13 @@ function hasV2DraftHistory(raw: string | null): boolean {
 }
 
 function hasV2DraftHistoryInAnyWorkspace(): boolean {
-  return Object.keys(localStorage).some(
-    (key) =>
-      key.startsWith(StorageKeys.prefixes.draftIndex) &&
-      hasV2DraftHistory(localStorage.getItem(key))
-  )
+  return safeLocalStorage
+    .keys()
+    .some(
+      (key) =>
+        key.startsWith(StorageKeys.prefixes.draftIndex) &&
+        hasV2DraftHistory(safeLocalStorage.getItem(key))
+    )
 }
 
 function _useNewUserService() {
@@ -52,12 +55,12 @@ function _useNewUserService() {
       !settingStore.get('Comfy.TutorialCompleted')
 
     const hasNoLegacyWorkflow =
-      !localStorage.getItem('workflow') &&
-      !localStorage.getItem('Comfy.PreviousWorkflow')
+      !safeLocalStorage.getItem('workflow') &&
+      !safeLocalStorage.getItem('Comfy.PreviousWorkflow')
 
     const hasNoV1Drafts =
-      !localStorage.getItem('Comfy.Workflow.Drafts') &&
-      !localStorage.getItem('Comfy.Workflow.DraftOrder')
+      !safeLocalStorage.getItem('Comfy.Workflow.Drafts') &&
+      !safeLocalStorage.getItem('Comfy.Workflow.DraftOrder')
 
     return (
       isNewUserSettings &&

@@ -46,4 +46,13 @@ describe('deployment switch reload', () => {
     expect(reload).toHaveBeenCalledOnce()
     expect(takeDeploymentSwitchLanding()).toBe(false)
   })
+
+  it('reports no landing when the landing mark cannot be cleared', () => {
+    reloadForDeploymentSwitch(() => {})
+    vi.spyOn(window.sessionStorage, 'removeItem').mockImplementation(() => {
+      throw new DOMException('denied', 'SecurityError')
+    })
+
+    expect(takeDeploymentSwitchLanding()).toBe(false)
+  })
 })

@@ -165,8 +165,9 @@ export function useNodeResize(
       }
 
       const minWidth =
-        parseFloat(nodeElement.style.getPropertyValue('min-width') || '0') ||
-        MIN_NODE_WIDTH
+        parseFloat(
+          nodeElement.style.getPropertyValue('--min-node-width') || '0'
+        ) || MIN_NODE_WIDTH
       if (newWidth < minWidth) {
         if (isWestCorner) {
           newX =

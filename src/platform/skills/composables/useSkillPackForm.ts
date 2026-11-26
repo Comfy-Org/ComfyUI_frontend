@@ -1,14 +1,19 @@
 import type { MaybeRefOrGetter } from 'vue'
-import { computed, onScopeDispose, reactive, ref, toValue, watch } from 'vue'
+import { computed, onScopeDispose, reactive, ref, toValue } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { reportError } from '@comfyorg/telemetry/reportError'
+import type {
+  AgentSkillSaveMode,
+  AgentSkillSaveOutcome
+} from '@comfyorg/telemetry/types'
 
 import {
   publishSkillPack,
   SkillPacksApiError
 } from '@/platform/skills/api/skillsApi'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
+import type { SkillDraftFields } from '@/platform/skills/stores/skillDraftStore'
 import type { SkillPack } from '@/platform/skills/types'
 import {
   CONTROL_CHARACTERS,
@@ -20,26 +25,45 @@ import {
   utf8ByteLength
 } from '@/platform/skills/types'
 
+type SkillPackSaveFailureOutcome = Exclude<AgentSkillSaveOutcome, 'saved'>
+
 interface UseSkillPackFormOptions {
   pack?: MaybeRefOrGetter<SkillPack | undefined>
-  visible: { value: boolean }
+  onSaved?: (
+    saved: SkillPack,
+    submitted: SkillDraftFields,
+    mode: AgentSkillSaveMode
+  ) => void
+  onFailed?: (
+    outcome: SkillPackSaveFailureOutcome,
+    mode: AgentSkillSaveMode
+  ) => void
+  onUnavailable?: () => void
+}
+
+function classifyPublishFailure(error: unknown): SkillPackSaveFailureOutcome {
+  if (!(error instanceof SkillPacksApiError)) return 'other'
+  if (error.status === 400) return 'rejected'
+  if (error.status === 409) return 'budget_full'
+  if (error.status === 404) return 'unavailable'
+  return 'other'
 }
 
 export function useSkillPackForm(options: UseSkillPackFormOptions) {
   const { t } = useI18n()
-  const { pack: packRef, visible } = options
+  const { pack: packRef, onSaved, onFailed, onUnavailable } = options
   const store = useSkillPacksStore()
 
   const loading = ref(false)
-  let formGeneration = 0
+  let disposed = false
   const fieldError = ref<string | null>(null)
-  // The server's 409 message names the configured limit and overage.
   const budgetError = ref<string | null>(null)
 
+  const initialPack = toValue(packRef)
   const form = reactive({
-    name: '',
-    description: '',
-    body: ''
+    name: initialPack?.name ?? '',
+    description: initialPack?.description ?? '',
+    body: initialPack?.body ?? ''
   })
 
   const errors = reactive({
@@ -54,31 +78,9 @@ export function useSkillPackForm(options: UseSkillPackFormOptions) {
 
   const bodyBytes = computed(() => utf8ByteLength(form.body))
 
-  function resetForm() {
-    const pack = toValue(packRef)
-    form.name = pack?.name ?? ''
-    form.description = pack?.description ?? ''
-    form.body = pack?.body ?? ''
-    errors.name = ''
-    errors.description = ''
-    errors.body = ''
-    fieldError.value = null
-    budgetError.value = null
-  }
-
-  resetForm()
-  watch(
-    () => visible.value,
-    () => formGeneration++,
-    { flush: 'sync' }
-  )
-  watch(
-    () => visible.value,
-    (isVisible) => {
-      if (isVisible) resetForm()
-    }
-  )
-  onScopeDispose(() => formGeneration++)
+  onScopeDispose(() => {
+    disposed = true
+  })
 
   function validateName(): boolean {
     const name = form.name.trim()
@@ -146,10 +148,12 @@ export function useSkillPackForm(options: UseSkillPackFormOptions) {
     return true
   }
 
-  function handlePublishFailure(error: unknown, generation: number) {
-    if (error instanceof SkillPacksApiError && error.status === 404) {
+  function handlePublishFailure(error: unknown, mode: AgentSkillSaveMode) {
+    const outcome = classifyPublishFailure(error)
+    if (outcome === 'unavailable') {
       store.markUnavailable()
-      if (generation === formGeneration) visible.value = false
+      onFailed?.(outcome, mode)
+      onUnavailable?.()
       return
     }
     if (!(error instanceof SkillPacksApiError)) {
@@ -158,7 +162,8 @@ export function useSkillPackForm(options: UseSkillPackFormOptions) {
         surface: 'agent'
       })
     }
-    if (generation !== formGeneration) return
+    onFailed?.(outcome, mode)
+    if (disposed) return
     if (error instanceof SkillPacksApiError && error.status === 409) {
       budgetError.value = error.message
     } else if (error instanceof SkillPacksApiError) {
@@ -169,11 +174,17 @@ export function useSkillPackForm(options: UseSkillPackFormOptions) {
   }
 
   async function handleSubmit() {
-    if (loading.value || !visible.value) return
+    if (loading.value) return
     if (!validate()) return
 
-    const generation = formGeneration
     const requestScope = store.scope
+    const requestGeneration = store.catalogGeneration
+    const mode: AgentSkillSaveMode = toValue(packRef) ? 'edit' : 'add'
+    const submitted: SkillDraftFields = {
+      name: form.name,
+      description: form.description,
+      body: form.body
+    }
     loading.value = true
     try {
       const saved = await publishSkillPack({
@@ -181,13 +192,12 @@ export function useSkillPackForm(options: UseSkillPackFormOptions) {
         description: form.description,
         body: form.body
       })
-      if (!store.isCurrentScope(requestScope)) return
+      if (!store.isCurrentScope(requestScope, requestGeneration)) return
       store.upsertPack(saved, requestScope)
-      if (generation !== formGeneration) return
-      visible.value = false
+      onSaved?.(saved, submitted, mode)
     } catch (error) {
-      if (!store.isCurrentScope(requestScope)) return
-      handlePublishFailure(error, generation)
+      if (!store.isCurrentScope(requestScope, requestGeneration)) return
+      handlePublishFailure(error, mode)
     } finally {
       loading.value = false
     }

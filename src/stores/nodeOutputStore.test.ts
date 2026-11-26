@@ -976,16 +976,14 @@ describe('nodeOutputStore restoreOutputs + execution interaction', () => {
     expect(app.nodeOutputs['4']).toStrictEqual(execOutput)
   })
 
-  it('should overwrite existing output when execution sends new data for same node', () => {
+  it('should replace a restored input preview when execution sends images for the same node', () => {
     const store = useNodeOutputStore()
 
-    // Restore with input preview
     const inputOutput = createMockOutputs([
       { filename: 'uploaded.png', subfolder: '', type: 'input' }
     ])
     store.restoreOutputs({ '3': inputOutput })
 
-    // Execution sends new output for the same node (non-merge)
     const execOutput = createMockOutputs([
       { filename: 'result.png', subfolder: '', type: 'temp' }
     ])
@@ -994,7 +992,6 @@ describe('nodeOutputStore restoreOutputs + execution interaction', () => {
       execOutput
     )
 
-    // On current main (without PR #9123 guard), execution overwrites
     expect(store.nodeOutputs['3']).toStrictEqual(execOutput)
     expect(app.nodeOutputs['3']).toStrictEqual(execOutput)
   })

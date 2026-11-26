@@ -581,7 +581,7 @@ export const CORE_SETTINGS: SettingParams[] = [
       max: 3000,
       step: 50
     },
-    defaultValue: 500,
+    defaultValue: 1500,
     versionAdded: '1.9.0'
   },
   {
@@ -1347,7 +1347,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.40.0'
   },
   {
-    id: 'Comfy.Workflow.ShowMissingNodesWarning',
+    id: 'Comfy.ErrorSystem.ShowMissingNodes',
     category: ['Comfy', 'Error System', 'MissingNodes'],
     sortOrder: -1,
     name: 'Show missing nodes in the issues tab',
@@ -1355,7 +1355,7 @@ export const CORE_SETTINGS: SettingParams[] = [
       'When disabled, missing node packs are not listed in the issues tab and their nodes are not highlighted. The workflow still cannot run until they are installed.',
     type: 'boolean',
     defaultValue: true,
-    versionAdded: '1.55.0'
+    versionAdded: '1.62.0'
   },
   {
     id: 'Comfy.ErrorSystem.ShowMissingModels',

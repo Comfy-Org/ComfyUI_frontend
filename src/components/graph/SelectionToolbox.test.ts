@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { appTooltipProviderDefaults } from '@comfyorg/design-system/lib/tooltip/tooltipConfig'
 import SelectionToolbox from '@/components/graph/SelectionToolbox.vue'
 import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
@@ -62,7 +63,7 @@ function renderToolbox() {
         })
       ],
       stubs: {
-        ArrangeButton: true,
+        TidyUpButton: true,
         ColorPickerButton: {
           template: '<button aria-label="Color" />'
         },
@@ -308,15 +309,17 @@ describe('SelectionToolbox', () => {
     expect(useCanvasInteractions().forwardEventToCanvas).toHaveBeenCalledOnce()
   })
 
-  it('waits a full second before showing a tooltip over the canvas', async () => {
-    vi.useFakeTimers()
+  it('waits for deliberate hover before showing a tooltip over the canvas', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: false })
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
     setCanvasSelection([new LGraphNode('Test Node')])
     renderToolbox()
     await user.hover(screen.getByRole('button', { name: 'More Options' }))
-    await vi.advanceTimersByTimeAsync(500)
+    await vi.advanceTimersByTimeAsync(
+      appTooltipProviderDefaults.delayDuration - 1
+    )
     expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
-    await vi.advanceTimersByTimeAsync(500)
+    await vi.advanceTimersByTimeAsync(1)
     expect(screen.getByTestId('tooltip-content')).toHaveTextContent(
       'More Options'
     )

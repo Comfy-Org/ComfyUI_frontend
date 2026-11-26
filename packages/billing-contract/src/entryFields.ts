@@ -57,7 +57,7 @@ export const OPTIONAL_ENTRY_FIELDS: readonly OptionalEntryField[] = [
     param: 'team_credit_stop_id',
     code: 'INVALID_TEAM_CREDIT_STOP_ID'
   },
-  /** Prefills checkout's promo field; billing applies it only on the customer's Apply. */
+  /** Prefills checkout's promo field; billing applies it on the customer's Apply, or on load under `billing_web_promo_auto_apply`. */
   { key: 'promotionCode', param: 'promo', code: 'INVALID_PROMOTION_CODE' },
   /** An unfinished operation checkout resumes instead of whatever the status reports pending. */
   {
