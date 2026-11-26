@@ -1,10 +1,19 @@
 import type { Locator, Page } from '@playwright/test'
 
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import type { ComfyPageCore } from '@e2e/fixtures/comfyPageCore'
+import type { CommandHelper } from '@e2e/fixtures/helpers/CommandHelper'
+import type { ContextMenu } from '@e2e/fixtures/components/ContextMenu'
+import type { SettingsHelper } from '@e2e/fixtures/helpers/SettingsHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { BaseDialog } from '@e2e/fixtures/components/BaseDialog'
 import { KeybindingPanel } from '@e2e/fixtures/components/KeybindingPanel'
 import { comfyExpect as expect } from '@e2e/fixtures/utils/customMatchers'
+
+type ComfyPageHost = ComfyPageCore & {
+  readonly command: CommandHelper
+  readonly contextMenu: ContextMenu
+  readonly settings: SettingsHelper
+}
 
 export class SettingDialog extends BaseDialog {
   public readonly categories: Locator
@@ -16,7 +25,7 @@ export class SettingDialog extends BaseDialog {
 
   constructor(
     page: Page,
-    public readonly comfyPage: ComfyPage
+    public readonly comfyPage: ComfyPageHost
   ) {
     super(page, TestIds.dialogs.settings)
     this.categories = this.root.locator('nav').getByRole('button')

@@ -2,9 +2,16 @@ import { expect } from '@playwright/test'
 import type { Locator } from '@playwright/test'
 
 import type { RootCategoryId } from '@/components/searchbox/v2/rootCategories'
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import type { ComfyPageCore } from '@e2e/fixtures/comfyPageCore'
+import type { CommandHelper } from '@e2e/fixtures/helpers/CommandHelper'
+import type { WorkflowHelper } from '@e2e/fixtures/helpers/WorkflowHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
 import type { Position } from '@e2e/fixtures/types'
+
+type ComfyPageHost = ComfyPageCore & {
+  readonly command: CommandHelper
+  readonly workflow: WorkflowHelper
+}
 
 const { searchBoxV2 } = TestIds
 
@@ -21,7 +28,7 @@ export class ComfyNodeSearchBoxV2 {
   readonly sidebarBackdrop: Locator
   readonly filterChipsScroll: Locator
 
-  constructor(private comfyPage: ComfyPage) {
+  constructor(private comfyPage: ComfyPageHost) {
     const page = comfyPage.page
     this.dialog = page.getByRole('search')
     this.input = this.dialog.getByRole('combobox')

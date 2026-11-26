@@ -49,9 +49,9 @@ import { TestIds } from '@e2e/fixtures/selectors'
 import type {
   AgentConversation,
   AgentConversationTurn,
-  RecordedGraphOperation,
   RecordedWsEvent
 } from '@e2e/fixtures/data/agent/agentConversation'
+import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/recordedGraphOperation'
 import { loadAgentConversation } from '@e2e/fixtures/data/agent/agentConversation'
 import {
   agentHumanAddBlueprint,

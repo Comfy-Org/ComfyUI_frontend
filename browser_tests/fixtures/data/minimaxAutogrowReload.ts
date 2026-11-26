@@ -1,4 +1,4 @@
-import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
+import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/recordedGraphOperation'
 import { BYTEDANCE_REFERENCE_NODE_TYPE } from '@e2e/fixtures/data/byteDanceReferenceNodeDef'
 
 export const SOURCE_NODE_ID = 100

@@ -1,6 +1,6 @@
 import type { Locator, Page } from '@playwright/test'
 
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import type { ComfyPageCore } from '@e2e/fixtures/comfyPageCore'
 import { TestIds } from '@e2e/fixtures/selectors'
 
 export class BuilderFooterHelper {
@@ -14,7 +14,7 @@ export class BuilderFooterHelper {
   public readonly saveAsChevron: Locator
   public readonly opensAsPopover: Locator
 
-  constructor(private readonly comfyPage: ComfyPage) {
+  constructor(private readonly comfyPage: ComfyPageCore) {
     this.nav = this.page.getByTestId(TestIds.builder.footerNav)
     this.exitButton = this.buttonByName('Exit app builder')
     this.nextButton = this.buttonByName('Next')

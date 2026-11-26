@@ -20,7 +20,7 @@ import {
   catalog,
   emptySeed
 } from '@e2e/fixtures/data/agent/agentRemoteApply'
-import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
+import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/recordedGraphOperation'
 import { agentReplayNodeDefs } from '@e2e/fixtures/data/agentReplayNodeDefs'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 

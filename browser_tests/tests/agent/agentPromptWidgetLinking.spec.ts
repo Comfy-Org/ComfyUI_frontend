@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
-import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
+import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/recordedGraphOperation'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 // Three stories of qa/user-story-test-matrix.md (in-app-agent-program), all

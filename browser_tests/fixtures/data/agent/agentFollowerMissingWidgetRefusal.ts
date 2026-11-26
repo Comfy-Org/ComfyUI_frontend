@@ -1,7 +1,7 @@
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 
-import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
+import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/recordedGraphOperation'
 
 const missingWidgetNodeType = 'TestMissingWidgetAddress'
 export const missingWidgetNodeId = 811

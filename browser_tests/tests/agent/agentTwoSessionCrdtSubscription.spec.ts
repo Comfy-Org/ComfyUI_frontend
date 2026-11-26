@@ -6,7 +6,7 @@ import type {
   AgentTwoSessionCrdtHarness
 } from '@e2e/fixtures/agentTwoSessionCrdtFixture'
 import { loadAgentConversation } from '@e2e/fixtures/data/agent/agentConversation'
-import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
+import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/recordedGraphOperation'
 
 const WORKFLOW_A = { id: '11111111-1111-4111-8111-111111111111', name: 'Alpha' }
 const WORKFLOW_B = { id: '22222222-2222-4222-8222-222222222222', name: 'Bravo' }

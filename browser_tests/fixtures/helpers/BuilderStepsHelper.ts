@@ -1,11 +1,11 @@
 import type { Locator, Page } from '@playwright/test'
 
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import type { ComfyPageCore } from '@e2e/fixtures/comfyPageCore'
 
 export class BuilderStepsHelper {
   public readonly toolbar: Locator
 
-  constructor(private readonly comfyPage: ComfyPage) {
+  constructor(private readonly comfyPage: ComfyPageCore) {
     this.toolbar = this.page.getByRole('navigation', { name: 'App Builder' })
   }
 

@@ -1,6 +1,6 @@
 import type { Locator, Page } from '@playwright/test'
 
-import { comfyExpect as expect } from '@e2e/fixtures/ComfyPage'
+import { comfyExpect as expect } from '@e2e/fixtures/utils/customMatchers'
 import { TestIds } from '@e2e/fixtures/selectors'
 
 export class QueuePanel {

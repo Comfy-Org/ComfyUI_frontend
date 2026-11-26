@@ -1,6 +1,9 @@
 import type { Locator, Page } from '@playwright/test'
 
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import type { ComfyPageCore } from '@e2e/fixtures/comfyPageCore'
+import type { ComfyMenu } from '@e2e/fixtures/components/ComfyMenu'
+import type { CommandHelper } from '@e2e/fixtures/helpers/CommandHelper'
+import type { WorkflowHelper } from '@e2e/fixtures/helpers/WorkflowHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
 
 import { OutputHistoryComponent } from '@e2e/fixtures/components/OutputHistory'
@@ -11,6 +14,13 @@ import { BuilderSaveAsHelper } from '@e2e/fixtures/helpers/BuilderSaveAsHelper'
 import { BuilderSelectHelper } from '@e2e/fixtures/helpers/BuilderSelectHelper'
 import { BuilderStepsHelper } from '@e2e/fixtures/helpers/BuilderStepsHelper'
 import { MobileAppHelper } from '@e2e/fixtures/helpers/MobileAppHelper'
+
+type ComfyPageHost = ComfyPageCore & {
+  readonly workflow: WorkflowHelper
+  readonly menu: ComfyMenu
+  readonly command: CommandHelper
+} & ConstructorParameters<typeof BuilderSelectHelper>[0] &
+  ConstructorParameters<typeof AppModeWidgetHelper>[0]
 
 export class AppModeHelper {
   readonly arrangeNoOutputs: Locator
@@ -47,7 +57,7 @@ export class AppModeHelper {
   readonly widgets: AppModeWidgetHelper
   readonly workflowActions: WorkflowActionsDropdown
 
-  constructor(private readonly comfyPage: ComfyPage) {
+  constructor(private readonly comfyPage: ComfyPageHost) {
     this.mobile = new MobileAppHelper(comfyPage)
     this.footer = new BuilderFooterHelper(comfyPage)
     this.saveAs = new BuilderSaveAsHelper(comfyPage)

@@ -5,12 +5,12 @@ import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { parsePreviewExposures } from '@/core/schemas/previewExposureSchema'
 import type { PreviewExposure } from '@/core/schemas/previewExposureSchema'
 
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import type { ComfyPageCore } from '@e2e/fixtures/comfyPageCore'
 
 export type PromotedWidgetEntry = [string, string]
 
 export async function setPromotedHostWidgetValue(
-  comfyPage: ComfyPage,
+  comfyPage: ComfyPageCore,
   hostNodeId: number | NodeId,
   widgetName: string,
   value: string,
@@ -89,7 +89,7 @@ function isNodeProperty(value: unknown): value is NodeProperty {
  * deleted widget-object contract.
  */
 export async function getPromotedWidgets(
-  comfyPage: ComfyPage,
+  comfyPage: ComfyPageCore,
   nodeId: string
 ): Promise<PromotedWidgetEntry[]> {
   const localNodeId = toNodeId(nodeId)
@@ -153,7 +153,7 @@ export async function getPromotedWidgets(
 }
 
 export async function getPromotedWidgetNames(
-  comfyPage: ComfyPage,
+  comfyPage: ComfyPageCore,
   nodeId: string
 ): Promise<string[]> {
   const promotedWidgets = await getPromotedWidgets(comfyPage, nodeId)
@@ -161,7 +161,7 @@ export async function getPromotedWidgetNames(
 }
 
 export async function getPromotedWidgetCount(
-  comfyPage: ComfyPage,
+  comfyPage: ComfyPageCore,
   nodeId: string
 ): Promise<number> {
   const promotedWidgets = await getPromotedWidgets(comfyPage, nodeId)
@@ -173,7 +173,7 @@ function isPseudoPreviewEntry(entry: PromotedWidgetEntry): boolean {
 }
 
 export async function getPseudoPreviewWidgets(
-  comfyPage: ComfyPage,
+  comfyPage: ComfyPageCore,
   nodeId: string
 ): Promise<PromotedWidgetEntry[]> {
   const widgets = await getPromotedWidgets(comfyPage, nodeId)
@@ -181,7 +181,7 @@ export async function getPseudoPreviewWidgets(
 }
 
 export async function getPromotedWidgetCountByName(
-  comfyPage: ComfyPage,
+  comfyPage: ComfyPageCore,
   nodeId: string,
   widgetName: string
 ): Promise<number> {
@@ -190,7 +190,7 @@ export async function getPromotedWidgetCountByName(
 }
 
 export async function getAllHostPromotedWidgets(
-  comfyPage: ComfyPage
+  comfyPage: ComfyPageCore
 ): Promise<{ hostNodeId: string; promotedWidgets: PromotedWidgetEntry[] }[]> {
   const hostNodeIds = await comfyPage.page.evaluate(() => {
     const graph = window.app!.canvas.graph!

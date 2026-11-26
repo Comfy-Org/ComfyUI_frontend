@@ -3,9 +3,21 @@ import { expect } from '@playwright/test'
 import type { Rect } from '@comfyorg/shared-frontend-utils/geometry'
 import type { SerialisableLLink } from '@comfyorg/graph-model/serialisation'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import type { ComfyPageCore } from '@e2e/fixtures/comfyPageCore'
+import type { CanvasHelper } from '@e2e/fixtures/helpers/CanvasHelper'
+import type { ClipboardHelper } from '@e2e/fixtures/helpers/ClipboardHelper'
+import type { ContextMenu } from '@e2e/fixtures/components/ContextMenu'
 import type { Position, Size } from '@e2e/fixtures/types'
 import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
+
+type ComfyPageHost = ComfyPageCore & {
+  readonly canvasOps: CanvasHelper
+  readonly nodeOps: {
+    getNodeRefsByTitle(title: string): Promise<NodeReference[]>
+  }
+  readonly contextMenu: ContextMenu
+  readonly clipboard: ClipboardHelper
+}
 
 export const getMiddlePoint = (pos1: Position, pos2: Position) => {
   return {
@@ -18,7 +30,7 @@ export class SubgraphSlotReference {
   constructor(
     readonly type: 'input' | 'output',
     readonly slotName: string,
-    readonly comfyPage: ComfyPage
+    readonly comfyPage: ComfyPageHost
   ) {}
 
   async getPosition(): Promise<Position> {
@@ -277,7 +289,7 @@ class NodeWidgetReference {
 export class NodeReference {
   constructor(
     readonly id: NodeId,
-    readonly comfyPage: ComfyPage
+    readonly comfyPage: ComfyPageHost
   ) {}
   async exists(): Promise<boolean> {
     return await this.comfyPage.page.evaluate((id) => {

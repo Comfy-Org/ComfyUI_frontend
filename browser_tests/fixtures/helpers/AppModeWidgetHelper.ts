@@ -1,9 +1,16 @@
 import type { Locator, Page } from '@playwright/test'
 
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import type { ComfyPageCore } from '@e2e/fixtures/comfyPageCore'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { WidgetSelectDefaultFixture } from '@e2e/fixtures/components/WidgetSelectDefault'
 import { WidgetSelectDropdownFixture } from '@e2e/fixtures/components/WidgetSelectDropdown'
+
+type ComfyPageHost = ComfyPageCore & {
+  readonly appMode: {
+    readonly linearWidgets: Locator
+    readonly runButton: Locator
+  }
+}
 
 /**
  * Helper for interacting with widgets rendered in app mode (linear view).
@@ -13,7 +20,7 @@ import { WidgetSelectDropdownFixture } from '@e2e/fixtures/components/WidgetSele
  * `graphId:nodeId:widgetName` WidgetEntityId.
  */
 export class AppModeWidgetHelper {
-  constructor(private readonly comfyPage: ComfyPage) {}
+  constructor(private readonly comfyPage: ComfyPageHost) {}
 
   private get page(): Page {
     return this.comfyPage.page

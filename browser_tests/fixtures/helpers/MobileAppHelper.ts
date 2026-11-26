@@ -1,7 +1,7 @@
 import type { Locator, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import type { ComfyPageCore } from '@e2e/fixtures/comfyPageCore'
 import { TestIds } from '@e2e/fixtures/selectors'
 
 export class MobileAppHelper {
@@ -12,7 +12,7 @@ export class MobileAppHelper {
   readonly view: Locator
   readonly workflows: Locator
 
-  constructor(comfyPage: ComfyPage) {
+  constructor(comfyPage: ComfyPageCore) {
     this.page = comfyPage.page
     this.view = this.page.getByTestId(TestIds.linear.mobile)
     this.contentPanel = this.view.getByRole('tabpanel').first()

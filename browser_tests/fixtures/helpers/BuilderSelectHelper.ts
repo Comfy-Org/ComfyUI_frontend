@@ -1,9 +1,18 @@
 import { expect } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
 
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import type { ComfyPageCore } from '@e2e/fixtures/comfyPageCore'
+import type { CanvasHelper } from '@e2e/fixtures/helpers/CanvasHelper'
+import type { NodeOperationsHelper } from '@e2e/fixtures/helpers/NodeOperationsHelper'
+import type { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { dragByIndex } from '@e2e/fixtures/utils/dragAndDrop'
+
+type ComfyPageHost = ComfyPageCore & {
+  readonly vueNodes: VueNodeHelpers
+  readonly nodeOps: NodeOperationsHelper
+  readonly canvasOps: CanvasHelper
+}
 
 export class BuilderSelectHelper {
   /** All IoItem locators in the current step sidebar. */
@@ -13,7 +22,7 @@ export class BuilderSelectHelper {
   /** All widget label locators in the preview/arrange sidebar. */
   public readonly previewWidgetLabels: Locator
 
-  constructor(private readonly comfyPage: ComfyPage) {
+  constructor(private readonly comfyPage: ComfyPageHost) {
     this.inputItems = this.page.getByTestId(TestIds.builder.ioItem)
     this.inputItemTitles = this.page.getByTestId(TestIds.builder.ioItemTitle)
     this.previewWidgetLabels = this.page.getByTestId(
