@@ -1,4 +1,3 @@
-import type { Locator } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -11,6 +10,7 @@ import {
   storedOnboardedScopes
 } from '@e2e/fixtures/agentPanelFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { isPlaced, settledBox } from '@e2e/fixtures/utils/agentTourGeometry'
 import { expectRegionScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 test.describe('Agent onboarding tour', { tag: ['@cloud', '@ui'] }, () => {
@@ -222,62 +222,14 @@ test.describe('Agent onboarding tour', { tag: ['@cloud', '@ui'] }, () => {
       .getByRole('dialog')
       .filter({ has: page.getByText(/^\d+ of \d+$/) })
 
-    const settledBox = (target: Locator) =>
-      target.evaluate(
-        (element, frames: number) =>
-          new Promise<{
-            x: number
-            y: number
-            width: number
-            height: number
-            drift: number
-          }>((resolve) => {
-            const first = element.getBoundingClientRect()
-            let drift = 0
-            let remaining = frames
-            const sample = () => {
-              const now = element.getBoundingClientRect()
-              drift = Math.max(
-                drift,
-                Math.abs(now.x - first.x),
-                Math.abs(now.y - first.y)
-              )
-              remaining -= 1
-              if (remaining > 0) {
-                requestAnimationFrame(sample)
-                return
-              }
-              resolve({
-                x: now.x,
-                y: now.y,
-                width: now.width,
-                height: now.height,
-                drift
-              })
-            }
-            requestAnimationFrame(sample)
-          }),
-        SETTLE_FRAMES
-      )
-
-    const placed = (target: Locator) =>
-      target.evaluate((element) => {
-        const box = element.getBoundingClientRect()
-        return (
-          Number(getComputedStyle(element).opacity) === 1 &&
-          box.width > 0 &&
-          box.height > 0
-        )
-      })
-
     const cardOrigins: { x: number; y: number }[] = []
     const walked: string[] = []
 
     for (let step = 1; step <= MAX_CARDS_WALKED; step++) {
       await expect(card).toBeVisible()
       await expect(spotlight).toBeVisible()
-      await expect.poll(() => placed(card)).toBe(true)
-      await expect.poll(() => placed(spotlight)).toBe(true)
+      await expect.poll(() => isPlaced(card)).toBe(true)
+      await expect.poll(() => isPlaced(spotlight)).toBe(true)
 
       const heading = card.getByRole('heading').first()
       const title = (await heading.textContent())?.trim()
@@ -285,8 +237,8 @@ test.describe('Agent onboarding tour', { tag: ['@cloud', '@ui'] }, () => {
 
       const [panelBox, spotlightBox, cardBox] = await Promise.all([
         panel.boundingBox(),
-        settledBox(spotlight),
-        settledBox(card)
+        settledBox(spotlight, SETTLE_FRAMES),
+        settledBox(card, SETTLE_FRAMES)
       ])
       if (!panelBox) throw new Error('the Agent panel has no box')
 
