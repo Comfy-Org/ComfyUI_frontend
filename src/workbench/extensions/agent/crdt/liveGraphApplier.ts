@@ -1128,6 +1128,16 @@ function isConstructorFallbackShell(node: LGraphNode): boolean {
   return constructorFallbackShells.has(node)
 }
 
+function layoutOf(node: LGraphNode): {
+  pos: readonly [number, number]
+  size: readonly [number, number]
+} {
+  return {
+    pos: [node.pos[0], node.pos[1]],
+    size: [node.size[0], node.size[1]]
+  }
+}
+
 /**
  * Whether a placeholder can be replaced by a real node now. A subgraph node
  * class is registered process-wide by definition id but only builds a node for
@@ -1511,21 +1521,23 @@ export class LiveGraphApplier {
           })
         : null
     if (live && live.type === docNode.type && !replacement) {
-      this.applyFields(live, docNode)
-      if (docNode.widgetRecord) restoreWidgetRecord(live, docNode.widgetRecord)
-      else this.applyWidgets(live, docNode.widgets, mode)
+      this.updateLiveNode(live, docNode, mode)
       return 'updated'
     }
-    const preservedLayout =
-      live && replacement
-        ? {
-            pos: [live.pos[0], live.pos[1]] as const,
-            size: [live.size[0], live.size[1]] as const
-          }
-        : undefined
+    const preservedLayout = live && replacement ? layoutOf(live) : undefined
     if (live) graph.remove(live)
     this.createNode(graph, docNode, mode, context, preservedLayout, replacement)
     return live ? 'recreated' : 'created'
+  }
+
+  private updateLiveNode(
+    live: LGraphNode,
+    docNode: DocNode,
+    mode: ApplyMode
+  ): void {
+    this.applyFields(live, docNode)
+    if (docNode.widgetRecord) restoreWidgetRecord(live, docNode.widgetRecord)
+    else this.applyWidgets(live, docNode.widgets, mode)
   }
 
   private createNode(
@@ -1566,64 +1578,88 @@ export class LiveGraphApplier {
     if (layout) info.size = [layout.size[0], layout.size[1]]
     graph.add(node)
     if (node.id !== toNodeId(docNode.id)) {
-      const existingOwner = diagnosticNodeOwner(graph, toNodeId(docNode.id))
-      this.reportOnce(
-        `node-id:${docNode.id}`,
-        `Live graph reminted node ${docNode.id} as ${String(node.id)}`,
-        'agent_graph_node_id_reminted',
-        {
-          nodeId: docNode.id,
-          liveId: node.id,
-          nodeType: docNode.type,
-          mode,
-          ...existingOwner,
-          ...diagnosticApplyContext(context),
-          liveAgentTurn: context.liveAgentTurn === true
-        }
-      )
+      this.reportRemintedNode(graph, docNode, node, mode, context)
     }
     if (node.has_errors) {
       node.last_serialization = info
       configureRemoteNode(node, info)
+    } else if (node.isSubgraphNode()) {
+      this.configureSubgraphNodeWidgets(node, docNode, info, mode)
     } else {
-      if (node.isSubgraphNode()) {
-        const beforeConfigurePromotedKeys = promotedInputKeys(node)
-        configureRemoteNode(node, info)
-        this.applyConfiguredHostWidgets(
-          node,
-          docNode.widgets,
-          beforeConfigurePromotedKeys,
-          mode
-        )
-      } else {
-        const constructed = serializableWidgets(node)
-        const constructedNames = new Set(
-          node.widgets?.map((widget) => widget.name)
-        )
-        const deferred = deferredRowCounts(node, constructed, docNode.widgets)
-        configureRemoteNode(node, {
-          ...info,
-          widgets_values:
-            docNode.widgetRecord === undefined
-              ? positionalWidgetValues(node, docNode.widgets, deferred)
-              : info.widgets_values
-        })
-        const mounted = mountedWidgetValues(
-          node,
-          docNode.widgets,
-          constructed,
-          constructedNames,
-          deferred
-        )
-        if (mounted)
-          this.applyWidgets(node, mounted, mode, {
-            documentWidgets: docNode.widgets,
-            reportMissing: false
-          })
-      }
+      this.configureOrdinaryNodeWidgets(node, docNode, info, mode)
     }
     floorSizeToContent(node)
     return node
+  }
+
+  private reportRemintedNode(
+    graph: LGraph,
+    docNode: DocNode,
+    node: LGraphNode,
+    mode: ApplyMode,
+    context: RemoteApplyContext
+  ): void {
+    const existingOwner = diagnosticNodeOwner(graph, toNodeId(docNode.id))
+    this.reportOnce(
+      `node-id:${docNode.id}`,
+      `Live graph reminted node ${docNode.id} as ${String(node.id)}`,
+      'agent_graph_node_id_reminted',
+      {
+        nodeId: docNode.id,
+        liveId: node.id,
+        nodeType: docNode.type,
+        mode,
+        ...existingOwner,
+        ...diagnosticApplyContext(context),
+        liveAgentTurn: context.liveAgentTurn === true
+      }
+    )
+  }
+
+  private configureSubgraphNodeWidgets(
+    node: LGraphNode,
+    docNode: DocNode,
+    info: ISerialisedNode,
+    mode: ApplyMode
+  ): void {
+    const beforeConfigurePromotedKeys = promotedInputKeys(node)
+    configureRemoteNode(node, info)
+    this.applyConfiguredHostWidgets(
+      node,
+      docNode.widgets,
+      beforeConfigurePromotedKeys,
+      mode
+    )
+  }
+
+  private configureOrdinaryNodeWidgets(
+    node: LGraphNode,
+    docNode: DocNode,
+    info: ISerialisedNode,
+    mode: ApplyMode
+  ): void {
+    const constructed = serializableWidgets(node)
+    const constructedNames = new Set(node.widgets?.map((widget) => widget.name))
+    const deferred = deferredRowCounts(node, constructed, docNode.widgets)
+    configureRemoteNode(node, {
+      ...info,
+      widgets_values:
+        docNode.widgetRecord === undefined
+          ? positionalWidgetValues(node, docNode.widgets, deferred)
+          : info.widgets_values
+    })
+    const mounted = mountedWidgetValues(
+      node,
+      docNode.widgets,
+      constructed,
+      constructedNames,
+      deferred
+    )
+    if (mounted)
+      this.applyWidgets(node, mounted, mode, {
+        documentWidgets: docNode.widgets,
+        reportMissing: false
+      })
   }
 
   private applyFields(
