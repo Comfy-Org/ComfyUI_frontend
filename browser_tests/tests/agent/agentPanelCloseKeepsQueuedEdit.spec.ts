@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 
 import { agentOfflineEditTest as test } from '@e2e/fixtures/agentOfflineEditFixture'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 
 test.describe(
   'Hand edits queued behind a stalled transport when the Agent panel closes',
@@ -19,7 +20,9 @@ test.describe(
           }
         ]
       },
-      async ({ offlineEdit }) => {
+      async ({ page, offlineEdit }) => {
+        const panel = new AgentPanel(page)
+
         await test.step('the agent builds two prompt nodes', async () => {
           await offlineEdit.buildAgentPromptNodes()
           await expect
@@ -43,13 +46,13 @@ test.describe(
         })
 
         await test.step('the user closes the Agent panel while the edits are still queued', async () => {
-          await offlineEdit.closePanel()
+          await panel.close()
         })
 
         const subscribesBeforeReopen = offlineEdit.subscribeCount()
 
         await test.step('the panel is reopened and the agent comes back', async () => {
-          await offlineEdit.reopenPanel()
+          await panel.open()
           offlineEdit.restoreAgent()
           await expect
             .poll(() => offlineEdit.subscribeCount(), { timeout: 90_000 })
