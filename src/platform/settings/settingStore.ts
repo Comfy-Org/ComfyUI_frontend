@@ -439,6 +439,7 @@ export const useSettingStore = defineStore('setting', () => {
     error,
     load,
     addSetting,
+    applySettingLocally,
     set,
     setMany,
     get,

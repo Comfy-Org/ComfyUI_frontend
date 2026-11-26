@@ -35,6 +35,10 @@ import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
 import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import { st } from '@/i18n'
+import {
+  ASK_BEFORE_CLOUD_CHECK,
+  saveAskBeforeCloudCheck
+} from '@/platform/openOnCloud/cloudCheckConsent'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type {
   SettingOption,
@@ -89,6 +93,10 @@ const formItem = computed(() => {
 const settingStore = useSettingStore()
 const settingValue = computed(() => settingStore.get(props.setting.id))
 async function updateSettingValue(newValue: unknown) {
+  if (props.setting.id === ASK_BEFORE_CLOUD_CHECK) {
+    await saveAskBeforeCloudCheck(newValue === true)
+    return
+  }
   await settingStore.set(
     props.setting.id,
     newValue as Settings[typeof props.setting.id]
