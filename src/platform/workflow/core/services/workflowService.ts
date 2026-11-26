@@ -806,7 +806,7 @@ export const useWorkflowService = () => {
     workflow: ComfyWorkflow,
     initiator: 'user' | undefined,
     silent: boolean,
-    opening: WorkflowOpening
+    opening: WorkflowOpening = 'reopened'
   ) => {
     showPendingWarnings(undefined, { silent, opening })
     if (initiator === 'user') workflowStore.reportUserActivation(workflow)
@@ -871,12 +871,7 @@ export const useWorkflowService = () => {
             navigationIntentId
           ))
         ) {
-          completeActivation(
-            workflow,
-            options.initiator,
-            true,
-            options.opening ?? 'reopened'
-          )
+          completeActivation(workflow, options.initiator, true, options.opening)
           return true
         }
 
@@ -918,7 +913,7 @@ export const useWorkflowService = () => {
           workflow,
           options.initiator,
           reusesScans,
-          options.opening ?? 'reopened'
+          options.opening
         )
         return true
       } catch (error) {
