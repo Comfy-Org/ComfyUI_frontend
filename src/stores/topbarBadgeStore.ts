@@ -4,6 +4,7 @@ import { computed } from 'vue'
 import type { TopbarBadge } from '@/types/comfy'
 
 import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
+import { useNodeApiHost } from '@/platform/nodeApi/nodeApiHost'
 
 export const useTopbarBadgeStore = defineStore('topbarBadge', () => {
   const extensionStore = useExtensionStore()
@@ -12,6 +13,7 @@ export const useTopbarBadgeStore = defineStore('topbarBadge', () => {
     extensionStore.extensions
       .filter((e) => extensionStore.contributes(e.name))
       .flatMap((e) => e.topbarBadges ?? [])
+      .concat(useNodeApiHost().topbarBadges)
   )
 
   return {

@@ -1,4 +1,5 @@
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import type { ActionBarButton, TopbarBadge } from '@/types/comfy'
 import type { FrontendExecution } from '@/utils/executionUtil'
 
 import type { CanvasSource } from './canvasSource'
@@ -53,6 +54,10 @@ export interface VersionNotices {
 }
 
 export interface VersionHost extends VersionNotices {
+  /** The top-bar badges packs have added, for the host to show. */
+  readonly topbarBadges: readonly TopbarBadge[]
+  /** The action-bar buttons packs have added, for the host to show. */
+  readonly actionBarButtons: readonly ActionBarButton[]
   /** What `queuePrompt` tells the queue. */
   readonly queue: QueueHost
   /** `found` if it holds a workflow; otherwise what a pack's importer reads from `file`. */

@@ -91,6 +91,22 @@ export interface Comfy {
   readonly workflow: WorkflowHandle
   /** Running the workflow, and hearing runs start, finish and fail. */
   readonly queue: QueueHandle
+  /** Declaring, reading, writing and watching settings. */
+  readonly settings: SettingsHandle
+  /** Text the pack keeps in the current user's data on the server. */
+  readonly storage: StorageHandle
+  /** Commands, their default keys, and notifications. */
+  readonly commands: CommandsHandle
+  /** Calls to the backend and the messages it sends. */
+  readonly backend: BackendHandle
+  /** The model files the backend lists. */
+  readonly models: ModelsHandle
+  /** What a pack adds to the app around the graph. */
+  readonly ui: UiHandle
+  /** Translations a pack adds to the app's messages. */
+  readonly localization: LocalizationHandle
+  /** The machine the backend runs on. */
+  readonly system: SystemHandle
 }
 
 /** The graph on screen at each call: the root graph, or the subgraph the user opened. An argument a member cannot use throws a `TypeError`. */
@@ -1328,4 +1344,418 @@ export interface PromptInputProjection {
 
 export interface PreviewFrame {
   readonly blob: Blob
+}
+
+/** A setting's value as the settings file holds it. A value read is a frozen copy. */
+export type SettingValue =
+  | string
+  | number
+  | boolean
+  | null
+  | readonly SettingValue[]
+  | { readonly [key: string]: SettingValue }
+
+/** Core's settings and the pack's own. */
+export interface SettingsHandle {
+  /**
+   * Adds a setting to the settings panel for the life of the page. A value the
+   * user stored under its id is kept. An id already declared throws.
+   */
+  declare(setting: SettingDef): void
+  /** The value, else the default; `undefined` for an undeclared id holding nothing. */
+  get(id: string): SettingValue | undefined
+  /**
+   * Applies `value` at once. Rejects if the server cannot be reached; resolves once it answers,
+   * even if it refused to save the value.
+   */
+  set(id: string, value: SettingValue): Promise<void>
+  /** Calls `listener` after a declared setting's value changes, and when it is declared. */
+  onChange(
+    id: string,
+    listener: (
+      value: SettingValue | undefined,
+      previous: SettingValue | undefined
+    ) => void
+  ): Unsubscribe
+}
+
+/** The control the settings panel shows. */
+export type SettingType =
+  | 'boolean'
+  | 'number'
+  | 'slider'
+  | 'combo'
+  | 'text'
+  | 'color'
+
+export interface SettingDef {
+  /** Shared with core and every pack, and the key the value is saved under: `MyPack.size`. */
+  readonly id: string
+  readonly name: string
+  readonly type: SettingType
+  /** A boolean; a number for `number` and `slider`; a string, or a number for `combo`. */
+  readonly defaultValue: string | number | boolean
+  readonly tooltip?: string
+  /** Where the panel lists the setting. Defaults to the id split on dots. */
+  readonly category?: readonly string[]
+  /** The choices of a `combo`. */
+  readonly options?: readonly SettingOption[]
+  /** The range of a `number` or `slider`. */
+  readonly attrs?: SettingAttrs
+  /** Called with copies after the value changes, and once when the setting is declared. */
+  readonly onChange?: (
+    value: SettingValue | undefined,
+    previous: SettingValue | undefined
+  ) => void
+}
+
+/** A choice saved and shown as one string, or a saved value with its label. */
+export type SettingOption =
+  | string
+  | { readonly value: string | number; readonly label: string }
+
+export interface SettingAttrs {
+  readonly min?: number
+  readonly max?: number
+  readonly step?: number
+}
+
+/** A name is a relative path such as `MyPack/presets.json`: no empty, `.` or `..` segment. */
+export interface StorageHandle {
+  /** `ok` is false when the server could not be read; `text` is `undefined` when nothing is stored. */
+  get(name: string): Promise<StoredText>
+  /** Stores `text` under `name`, replacing what was there. `false` if the server did not store it. */
+  set(name: string, text: string): Promise<boolean>
+  /** `true` once nothing is stored under `name`; `false` if the server did not remove it. */
+  remove(name: string): Promise<boolean>
+  /** Every name stored under `folder`, as `get` takes it; `undefined` if the server could not list them. */
+  list(folder: string): Promise<readonly string[] | undefined>
+}
+
+export type StoredText =
+  | { readonly ok: true; readonly text: string | undefined }
+  | { readonly ok: false }
+
+export interface CommandsHandle {
+  /**
+   * Adds a command for the life of the page. An id already registered throws.
+   * `false` if another command holds the key by default; the command is added without it.
+   */
+  register(command: CommandDef): boolean
+  /** Runs a command by id. Resolves `false` if no command has that id. */
+  run(id: string): Promise<boolean>
+  /** Shows a toast. */
+  notify(notification: NotifyDef): void
+}
+
+export interface CommandDef {
+  /** Shared with core and every pack: `MyPack.doTheThing`. */
+  readonly id: string
+  /** A function is called each time the host shows the label; one that throws or gives no string shows the id. */
+  readonly label: string | (() => string)
+  /** The host shows a failure to the user, as for any command. */
+  readonly run: () => void | Promise<void>
+  /** The default key. A key the user binds to the command wins. */
+  readonly keybinding?: KeyCombo
+  /** `'canvas'` limits the key to the graph, so typing in a field does not run it. */
+  readonly scope?: 'canvas'
+}
+
+/** `meta`, Cmd on macOS, is the same key to the host as `ctrl`. */
+export interface KeyCombo {
+  readonly key: string
+  readonly ctrl?: boolean
+  readonly alt?: boolean
+  readonly shift?: boolean
+  readonly meta?: boolean
+}
+
+export interface NotifyDef {
+  /** Defaults to `'info'`. */
+  readonly severity?: 'success' | 'info' | 'warn' | 'error'
+  readonly summary: string
+  readonly detail?: string
+  /** Milliseconds before it closes. Omitted, it stays until the user closes it. */
+  readonly life?: number
+}
+
+/** A route starts with exactly one `/`. */
+export interface BackendHandle {
+  /** The URL of an API route, such as `/view?filename=a.png`, under the host's base path. */
+  url(route: string): string
+  /** The URL of a file the server serves outside its API, such as `/extensions/MyPack/icon.png`. */
+  assetUrl(route: string): string
+  /**
+   * Calls an API route with the host's credentials. Resolves with the response whatever its status, and rejects as `fetch` does when the server cannot be reached.
+   * `init` is `fetch`'s own `RequestInit`; one that is not an object, or headers `Headers` cannot take, throw a `TypeError`.
+   */
+  fetch(route: string, init?: RequestInit): Promise<Response>
+  /** Calls `listener` with a frozen copy of each payload the backend sends as `event`. */
+  on(event: string, listener: (detail: unknown) => void): Unsubscribe
+  /**
+   * The backend's V4 version, such as `4.0.0`, once the server has sent its feature flags; `undefined` if it has no V4.
+   */
+  getApiVersion(): Promise<string | undefined>
+}
+
+export interface ModelsHandle {
+  /**
+   * The model names in a folder such as `loras`, each once, in the backend's order.
+   * An unknown folder lists none; `undefined` if the server could not list them.
+   */
+  list(folder: string): Promise<readonly string[] | undefined>
+}
+
+/** The pack renders a contribution's content into the element it is given. */
+export interface UiHandle {
+  /** Adds a tab to the sidebar until the returned function removes it. An id already there throws. */
+  addSidebarTab(tab: SidebarTabDef): Unsubscribe
+  /** Shows a readout in the top bar until `remove()`. An id already shown throws. */
+  addTopBarBadge(badge: BadgeContribution): ChromeItemHandle<BadgeContribution>
+  /** Adds a button to the action bar until `remove()`. An id already shown throws. */
+  addActionBarButton(
+    button: ButtonContribution
+  ): ChromeItemHandle<ButtonContribution>
+  /** Opens a dialog, or raises the one already open under `key`. */
+  showDialog(dialog: DialogDef): DialogHandle
+  /** Shows a menu at the pointer. It closes when an item is chosen or the user clicks away. */
+  showMenu(menu: MenuDef): void
+  /** Asks the user for text. Resolves `undefined` if they cancel. */
+  prompt(prompt: PromptDef): Promise<string | undefined>
+  /**
+   * Mounts a panel over the graph view, once the app has one, until the disposer is called; the pack tears
+   * its own content down before calling it. An id already mounted throws.
+   */
+  mountViewportPanel(panel: ViewportPanelDef): Unsubscribe
+  /** Mounts a canvas over the graph, on the graph view once the app has one. An id already mounted throws. */
+  mountGraphOverlay(overlay: GraphOverlayDef): GraphOverlayHandle
+}
+
+export interface SidebarTabDef {
+  /** Unique across core and every pack: `MyPack.assets`. */
+  readonly id: string
+  readonly title: string
+  /** An icon class, such as `icon-[lucide--activity]`. */
+  readonly icon?: string
+  readonly tooltip?: string
+  /** Fills the tab's panel each time the tab is shown. */
+  render(container: HTMLElement): void
+  /** Called when the panel is taken down, once after each `render`. */
+  destroy?(): void
+}
+
+export interface BadgeContribution {
+  /** Unique among badges: `MyPack.monitor`. */
+  readonly id: string
+  readonly text: string
+  readonly label?: string
+  readonly variant?: 'info' | 'warning' | 'error'
+  readonly tooltip?: string
+}
+
+export interface ButtonContribution {
+  /** Unique among buttons: `MyPack.open`. */
+  readonly id: string
+  /** An icon class, such as `icon-[lucide--camera]`. */
+  readonly icon: string
+  readonly label?: string
+  readonly tooltip?: string
+  /** Called on a click, with the click's event. */
+  run(event?: MouseEvent): void
+}
+
+/** What a pack keeps of a badge or button it added. */
+export interface ChromeItemHandle<T> {
+  /** Replaces the fields given. `false` once removed, whatever it is given, and nothing changes. */
+  update(changes: Partial<Omit<T, 'id'>>): boolean
+  /** Takes the item away. Safe to call more than once. */
+  remove(): void
+}
+
+export interface DialogDef {
+  /** Names the dialog among those packs open: `MyPack.settings`. */
+  readonly key: string
+  readonly title?: string
+  /** Fills the dialog when it opens. */
+  render(container: HTMLElement): void
+  /** Called when the dialog closes. */
+  destroy?(): void
+}
+
+export interface DialogHandle {
+  /** Closes the dialog if it is still open. */
+  close(): void
+}
+
+export interface MenuDef {
+  readonly items: readonly MenuItemDef[]
+  readonly title?: string
+  /** The click that asked for the menu; the menu opens at its pointer. */
+  readonly event: MouseEvent
+}
+
+export interface MenuItemDef {
+  readonly label: string
+  /** Shown, but cannot be chosen. */
+  readonly disabled?: boolean
+  /** A menu that opens from this item. An item has a submenu or `run`, not both. */
+  readonly submenu?: readonly MenuItemDef[]
+  run?(): void
+}
+
+export interface PromptDef {
+  /** What is asked for, such as "Strength". */
+  readonly label: string
+  /** The text the field starts with. */
+  readonly value?: string
+  readonly placeholder?: string
+}
+
+export type ViewportPanelAnchor =
+  | 'top-left'
+  | 'top-center'
+  | 'top-right'
+  | 'bottom-left'
+  | 'bottom-center'
+  | 'bottom-right'
+
+/** A panel over the graph view that stays put as the graph pans and zooms. */
+export interface ViewportPanelDef {
+  /** Unique among mounted panels: `MyPack.progress`. */
+  readonly id: string
+  /** The panel's accessible name. */
+  readonly ariaLabel: string
+  /** The edge or corner the panel sits against. Defaults to `'top-left'`. */
+  readonly anchor?: ViewportPanelAnchor
+  /** Pixels in from the anchored side, or along from the center. */
+  readonly offsetX?: number
+  /** Pixels in from the anchored top or bottom. */
+  readonly offsetY?: number
+  /** Pixels. */
+  readonly width?: number
+  /** Pixels. */
+  readonly maxHeight?: number
+  /** Fills the panel once, when it joins the graph view. */
+  render(container: HTMLElement): void
+}
+
+export interface LocalizationHandle {
+  /**
+   * Merges `catalog.messages` into the app's messages for `locale`, for the life of the page.
+   * A later catalog wins. A locale the app does not ship throws.
+   */
+  registerCatalog(locale: string, catalog: LocalizationCatalog): void
+}
+
+/** A message, or a group of them by key. `null` leaves the key to the fallback locale. */
+export type LocalizationMessage =
+  | string
+  | null
+  | { readonly [key: string]: LocalizationMessage }
+
+export interface LocalizationCatalog {
+  /** Keyed as the app's own messages: `nodeDefs`, `commands`, `settings` and the rest. In `en`, node text comes from the backend. */
+  readonly messages: { readonly [key: string]: LocalizationMessage }
+}
+
+export interface SystemHandle {
+  /** One reading of the backend's memory and devices; `undefined` if the server could not be read. */
+  monitor(): Promise<SystemMonitorSnapshot | undefined>
+}
+
+export interface SystemMonitorSnapshot {
+  /** The backend's RAM. */
+  readonly memory: SystemMonitorMemory
+  /** The backend's devices other than the CPU. */
+  readonly accelerators: readonly SystemMonitorAccelerator[]
+}
+
+/** Bytes. */
+export interface SystemMonitorMemory {
+  readonly total: number
+  readonly available: number
+}
+
+export interface SystemMonitorAccelerator {
+  /** The device's name, which the backend gives each device. */
+  readonly id: string
+  readonly name: string
+  /** Bytes. */
+  readonly memoryTotal: number
+  /** Bytes. */
+  readonly memoryAvailable: number
+}
+
+/** A canvas over the graph and its nodes, below the viewport panels. Points are viewport pixels from its top left. */
+export interface GraphOverlayDef {
+  /** Unique among mounted overlays: `MyPack.notes`. */
+  readonly id: string
+  /** The overlay's accessible name. */
+  readonly ariaLabel: string
+  /** Defaults to `true`. */
+  readonly visible?: boolean
+  /** Takes the pointer in its hit regions, and keys while it has focus. Defaults to `false`. */
+  readonly interactive?: boolean
+  /** Draws on a cleared canvas after each frame the graph draws, and after `redraw()`, while visible. */
+  draw(
+    context: CanvasRenderingContext2D,
+    size: readonly [width: number, height: number],
+    viewport: GraphOverlayViewport
+  ): void
+  /** A press the overlay takes. It also gets that pointer's moves and its release or cancel. */
+  onPointerDown?(event: GraphOverlayPointerEvent): void
+  onPointerMove?(event: GraphOverlayPointerEvent): void
+  onPointerUp?(event: GraphOverlayPointerEvent): void
+  onPointerCancel?(event: GraphOverlayPointerEvent): void
+  /** A key pressed while the interactive overlay has focus. The app's shortcuts do not see it. */
+  onKeyDown?(event: GraphOverlayKeyEvent): void
+}
+
+/** The view on the graph when `draw` was called. */
+export interface GraphOverlayViewport {
+  readonly scale: number
+  /** Where a point in graph space is on the overlay now. */
+  graphToViewport(point: Point): Point
+}
+
+export interface GraphOverlayPointerEvent {
+  readonly pointerId: number
+  readonly pointerType: string
+  readonly button: number
+  readonly viewport: Point
+  readonly graph: Point
+}
+
+export interface GraphOverlayKeyEvent {
+  readonly key: string
+  readonly repeat: boolean
+  readonly ctrlKey: boolean
+  readonly metaKey: boolean
+  readonly shiftKey: boolean
+}
+
+export type GraphOverlayHitRegion =
+  | {
+      readonly kind: 'circle'
+      readonly x: number
+      readonly y: number
+      readonly radius: number
+    }
+  | {
+      readonly kind: 'rect'
+      readonly x: number
+      readonly y: number
+      readonly width: number
+      readonly height: number
+    }
+
+export interface GraphOverlayHandle {
+  /** Draws the overlay again at the next frame. */
+  redraw(): void
+  setInteractive(interactive: boolean): void
+  setVisible(visible: boolean): void
+  /** Limits the pointer the overlay takes to these regions; `[]` takes none. A pointer it took stays its own. */
+  setHitRegions(regions: readonly GraphOverlayHitRegion[]): void
+  /** Takes the overlay off the graph. Safe to call more than once. */
+  remove(): void
 }

@@ -1,4 +1,7 @@
+import type { ComputedRef } from 'vue'
+
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import type { ActionBarButton, TopbarBadge } from '@/types/comfy'
 
 import type { CanvasSource } from '@/platform/nodeApi/shared/canvasSource'
 import { createDocumentHandles } from '@/platform/nodeApi/shared/documentHandles'
@@ -36,6 +39,14 @@ import { createGraphScopes } from './graphScopeHandle'
 import { createNodeHandles } from './nodeHandle'
 import { createPacks } from './packs'
 import type { Comfy } from './types'
+import { createBackendHandle } from './utilities/backendHandle'
+import { createCommandsHandle } from './utilities/commandsHandle'
+import { createLocalizationHandle } from './utilities/localizationHandle'
+import { createModelsHandle } from './utilities/modelsHandle'
+import { createSettingsHandle } from './utilities/settingsHandle'
+import { createStorageHandle } from './utilities/storageHandle'
+import { createSystemHandle } from './utilities/systemHandle'
+import { createUi } from './utilities/ui/uiHandle'
 import { createWidgetCollections } from './widgets/widgetCollection'
 
 export interface ComfyApiServices {
@@ -54,8 +65,12 @@ export interface ComfyApiServices {
 
 export interface ComfyApiHost extends Omit<
   VersionHost,
-  'publish' | 'provideCanvas'
+  'publish' | 'provideCanvas' | 'topbarBadges' | 'actionBarButtons'
 > {
+  /** The top-bar badges packs have added, for the host to show. */
+  readonly topbarBadges: ComputedRef<readonly TopbarBadge[]>
+  /** The action-bar buttons packs have added, for the host to show. */
+  readonly actionBarButtons: ComputedRef<readonly ActionBarButton[]>
   /** The extension through which the host tells the API about node types. */
   readonly nodeTypeHooks: NodeTypeHooks
   /** A startup of the canvas begins: `onReady` waits for its {@link VersionHost.markReady}. */
@@ -72,6 +87,7 @@ export function createComfyApi(services: ComfyApiServices): ComfyApi {
   const lifecycle = createAppLifecycle()
   const handles = createDocumentHandles(() => services.shownRoot?.())
   const canvas = () => services.canvas?.()
+  const chrome = createUi(canvas)
   const runner = createEditRunner(() => services.history?.())
   const widgets = createWidgetCollections(
     handles,
@@ -162,6 +178,14 @@ export function createComfyApi(services: ComfyApiServices): ComfyApi {
         resolvedSupplies: () => suppliesIn(visible) ?? Object.freeze([])
       })
     ),
+    settings: createSettingsHandle(),
+    storage: createStorageHandle(),
+    commands: createCommandsHandle(),
+    backend: createBackendHandle(),
+    models: createModelsHandle(),
+    ui: chrome.ui,
+    localization: createLocalizationHandle(),
+    system: createSystemHandle(),
     sameEntity: (a: unknown, b: unknown) => a === b && handles.owns(a)
   } satisfies Comfy)
 
@@ -169,6 +193,8 @@ export function createComfyApi(services: ComfyApiServices): ComfyApi {
     comfy,
     edit,
     host: {
+      topbarBadges: chrome.topbarBadges,
+      actionBarButtons: chrome.actionBarButtons,
       nodeTypeHooks: definitions.nodeTypeHooks,
       reapplyTypeColors: definitions.reapplyTypeColors,
       frontendExecution: execution.prompt,

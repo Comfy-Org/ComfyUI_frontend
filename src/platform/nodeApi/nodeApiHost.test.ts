@@ -24,6 +24,12 @@ function showOnCanvas(graph: LGraph) {
 function laterVersion(graph: LGraph): { comfy: Comfy; version: VersionHost } {
   const { comfy, host } = createComfyApi({ getGraph: () => graph })
   const version: VersionHost = {
+    get topbarBadges() {
+      return host.topbarBadges.value
+    },
+    get actionBarButtons() {
+      return host.actionBarButtons.value
+    },
     provideCanvas: vi.fn(),
     publish: vi.fn(),
     markReady: host.markReady,
@@ -140,6 +146,32 @@ describe('the node API host', () => {
     host.workflowLoaded()
 
     expect(heard).toEqual(['current', 'later'])
+  })
+
+  it("shows every version's badges and buttons, oldest version first, as they change", () => {
+    current.ui.addTopBarBadge({ id: 'Current.badge', text: 'current' })
+    const laterBadge = later.comfy.ui.addTopBarBadge({
+      id: 'Later.badge',
+      text: 'later'
+    })
+    later.comfy.ui.addActionBarButton({
+      id: 'Later.button',
+      icon: 'icon-[lucide--camera]',
+      label: 'Later',
+      run: () => {}
+    })
+
+    expect(host.topbarBadges.value.map(({ text }) => text)).toEqual([
+      'current',
+      'later'
+    ])
+    expect(host.actionBarButtons.value.map(({ label }) => label)).toEqual([
+      'Later'
+    ])
+
+    laterBadge.remove()
+
+    expect(host.topbarBadges.value.map(({ text }) => text)).toEqual(['current'])
   })
 
   it('keeps the workflow the first version that reads a file finds', async () => {
