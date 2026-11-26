@@ -4162,6 +4162,30 @@ describe('ComfyApp', () => {
       })
     })
 
+    it.for([
+      {
+        name: 'a top-level message',
+        response: { message: 'failed to process user authentication' },
+        expected: 'failed to process user authentication'
+      },
+      { name: 'an empty body', response: {}, expected: 'HTTP 500' }
+    ])(
+      'surfaces a refused run whose body has $name instead of dropping it',
+      async ({ response, expected }) => {
+        prepareEmptyPromptQueue()
+        vi.spyOn(api, 'queuePrompt').mockRejectedValue(
+          new PromptExecutionError(response, 500)
+        )
+
+        await app.queuePrompt(0)
+
+        expect(useExecutionErrorStore().lastPromptError).toMatchObject({
+          type: 'server_error',
+          message: expected
+        })
+      }
+    )
+
     it('records a rejected submission on the workflow that queued it', async () => {
       prepareEmptyPromptQueue()
       const executionErrorStore = useExecutionErrorStore()
