@@ -847,12 +847,13 @@ describe('useLoad3dViewer', () => {
       const model1 = 'model1.glb'
       const model2 = 'model2.glb'
 
-      let resolveFirstLoad: (outcome: string) => void = () => {}
-      const firstLoad = new Promise<string>((resolve) => {
+      type LoadOutcome = Awaited<ReturnType<Load3d['loadModel']>>
+      let resolveFirstLoad: (outcome: LoadOutcome) => void = () => {}
+      const firstLoad = new Promise<LoadOutcome>((resolve) => {
         resolveFirstLoad = resolve
       })
       vi.mocked(mockLoad3d.loadModel!)
-        .mockReturnValueOnce(firstLoad as ReturnType<Load3d['loadModel']>)
+        .mockReturnValueOnce(firstLoad)
         .mockResolvedValueOnce('loaded')
 
       const firstInit = viewer.initializeStandaloneViewer(containerRef, model1)
