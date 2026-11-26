@@ -50,15 +50,18 @@ describe('API version', () => {
     expectRefusal(() => isApiVersionAtLeast(version), 'isApiVersionAtLeast')
   })
 
-  it.for([undefined, null, 4, [4, 0, 0], new String('v4.0.0')])(
-    'refuses %j from untyped code',
-    (version) => {
-      expectRefusal(
-        () => Reflect.apply(isApiVersionAtLeast, undefined, [version]),
-        'isApiVersionAtLeast'
-      )
-    }
-  )
+  it.for([
+    { name: 'undefined', version: undefined },
+    { name: 'null', version: null },
+    { name: 'a number', version: 4 },
+    { name: 'a list', version: [4, 0, 0] },
+    { name: 'a String object', version: new String('v4.0.0') }
+  ])('refuses $name from untyped code', ({ version }) => {
+    expectRefusal(
+      () => Reflect.apply(isApiVersionAtLeast, undefined, [version]),
+      'isApiVersionAtLeast'
+    )
+  })
 
   it('names the call and what it was given when it refuses', () => {
     expect(() => isApiVersionAtLeast('4.0')).toThrow(

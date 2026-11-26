@@ -103,9 +103,14 @@ describe('app readiness', () => {
     expect(nested).toHaveBeenCalledOnce()
   })
 
-  it.for([undefined, null, 'ready', {}])(
-    'refuses %j as a listener when it is offered, not when the app becomes ready',
-    (listener) => {
+  it.for([
+    { name: 'undefined', listener: undefined },
+    { name: 'null', listener: null },
+    { name: 'text', listener: 'ready' },
+    { name: 'an object', listener: {} }
+  ])(
+    'refuses $name as a listener when it is offered, not when the app becomes ready',
+    ({ listener }) => {
       const lifecycle = createAppLifecycle()
 
       expectRefusal(

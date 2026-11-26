@@ -472,7 +472,12 @@ describe('node definitions', () => {
       expect(Object.isFrozen(all)).toBe(true)
     })
 
-    it.for([5, undefined, null, {}])('refuses %j as a type name', (type) => {
+    it.for([
+      { name: 'a number', type: 5 },
+      { name: 'undefined', type: undefined },
+      { name: 'null', type: null },
+      { name: 'an object', type: {} }
+    ])('refuses $name as a type name', ({ type }) => {
       expectRefusal(() => Reflect.apply(defs.get, defs, [type]), 'get')
       expectRefusal(() => Reflect.apply(defs.has, defs, [type]), 'has')
     })
