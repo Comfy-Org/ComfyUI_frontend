@@ -14621,7 +14621,7 @@ describe('AgentPanelRoot workflow binding', () => {
     )
   })
 
-  it('transitions the bound tab from editing to modified when the turn completes', async () => {
+  it('TS-05 transitions the bound tab from editing to unseen when the turn completes in the background', async () => {
     makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
 
@@ -14630,6 +14630,7 @@ describe('AgentPanelRoot workflow binding', () => {
     const activity = useWorkflowTabActivityStore()
     expect([...activity.editingPaths]).toEqual(['workflows/current.json'])
 
+    workflowStore.activeWorkflow = addTab('workflows/elsewhere.json')
     dispatchApiEvent('agent_message_done', {
       message_id: 'm-1',
       thread_id: 'th-1'
@@ -14639,6 +14640,25 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(activity.unseenModifiedPaths.has('workflows/current.json')).toBe(
       true
     )
+  })
+
+  it('TS-06 does not mark the bound tab as unseen when its turn completes while the user is on it', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+
+    await renderAndSend('add an upscaler')
+
+    dispatchApiEvent('agent_message_done', {
+      message_id: 'm-1',
+      thread_id: 'th-1'
+    })
+    await screen.findByRole('button', { name: 'Send' })
+
+    expect(
+      useWorkflowTabActivityStore().unseenModifiedPaths.has(
+        'workflows/current.json'
+      )
+    ).toBe(false)
   })
 
   it('clears the spinner and creating flags when the panel unmounts mid-turn', async () => {
