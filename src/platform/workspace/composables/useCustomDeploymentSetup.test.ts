@@ -2,11 +2,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
-import { useCustomDeploymentOffered } from '@/platform/workspace/composables/useCustomDeploymentOffered'
+import { useWorkflowNeedsDeployment } from '@/platform/workspace/composables/useCustomDeploymentOffered'
 import { useCustomDeploymentSetup } from '@/platform/workspace/composables/useCustomDeploymentSetup'
 import { useMissingNodeDeploymentOffer } from '@/platform/workspace/composables/useMissingNodeDeploymentOffer'
+import {
+  loadedEvent,
+  reduceDeploymentPick
+} from '@/platform/workspace/deploymentPickState'
 import { openWorkflowNeedsDeploymentDialog } from '@/platform/workspace/openCustomDeploymentDialog'
 import { usePlatformFrameStore } from '@/platform/workspace/platformFrame/platformFrameStore'
+import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 
 vi.mock(import('@/platform/workspace/composables/useCustomDeploymentOffered'))
 vi.mock(
@@ -17,9 +22,31 @@ vi.mock(import('@/platform/workspace/openCustomDeploymentDialog'))
 type Offer = ReturnType<typeof useMissingNodeDeploymentOffer>['offer']['value']
 
 const offer = ref<Offer>(null)
+const needsDeployment = ref(true)
+
+function loadDeployments(ids: string[]) {
+  useDeploymentPickStore().state = reduceDeploymentPick(
+    { phase: 'idle' },
+    loadedEvent({
+      builds_visible: true,
+      items: ids.map((id) => ({
+        deployment_id: id,
+        deployment_name: id,
+        release_id: `rel-${id}`,
+        status: 'ready',
+        created_at: '2026-10-01T00:00:00Z',
+        can_start: false
+      }))
+    })
+  )
+}
 
 beforeEach(() => {
   offer.value = null
+  needsDeployment.value = true
+  vi.mocked(useWorkflowNeedsDeployment).mockReturnValue(
+    computed(() => needsDeployment.value)
+  )
   vi.mocked(useMissingNodeDeploymentOffer).mockReturnValue({
     offer: computed(() => offer.value)
   } as ReturnType<typeof useMissingNodeDeploymentOffer>)
@@ -27,10 +54,14 @@ beforeEach(() => {
 })
 
 describe('useCustomDeploymentSetup', () => {
+  it('offers a custom deployment when the workspace has no deployments', () => {
+    loadDeployments([])
+
+    expect(useCustomDeploymentSetup().offered.value).toBe(true)
+  })
+
   it('offers a custom deployment once no deployment runs the workflow', () => {
-    vi.mocked(useCustomDeploymentOffered).mockImplementation((noneRunIt) =>
-      computed(() => (typeof noneRunIt === 'function' ? noneRunIt() : false))
-    )
+    loadDeployments(['production'])
     const { offered } = useCustomDeploymentSetup()
 
     expect(offered.value).toBe(false)
@@ -40,8 +71,14 @@ describe('useCustomDeploymentSetup', () => {
     expect(offered.value).toBe(true)
   })
 
+  it('offers nothing when the workflow needs no deployment', () => {
+    needsDeployment.value = false
+    loadDeployments([])
+
+    expect(useCustomDeploymentSetup().offered.value).toBe(false)
+  })
+
   it('opens the workflow deployment dialog', () => {
-    vi.mocked(useCustomDeploymentOffered).mockReturnValue(computed(() => true))
     const open = vi.spyOn(usePlatformFrameStore(), 'open')
 
     useCustomDeploymentSetup().setUp()
@@ -82,9 +119,6 @@ describe('useCustomDeploymentSetup', () => {
   ])(
     'a custom deployment covers every missing node with $missing: $covers',
     ({ nodeTypes, covers }) => {
-      vi.mocked(useCustomDeploymentOffered).mockReturnValue(
-        computed(() => true)
-      )
       useMissingNodesErrorStore().setMissingNodeTypes(nodeTypes)
 
       expect(useCustomDeploymentSetup().coversEveryMissingNode.value).toBe(
