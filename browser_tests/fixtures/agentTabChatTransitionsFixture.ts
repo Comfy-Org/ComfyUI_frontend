@@ -298,7 +298,7 @@ class TabChatTransitions {
 
   updated(index: number) {
     return this.tab(index).getByRole('img', {
-      name: enMessages.g.agentModified,
+      name: enMessages.g.agentFinishedUnseen,
       exact: true
     })
   }
