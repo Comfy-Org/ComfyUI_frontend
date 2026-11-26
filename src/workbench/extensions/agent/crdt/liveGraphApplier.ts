@@ -461,10 +461,22 @@ function actorKind(actor: unknown): ActorKind {
   return kind === 'agent' || kind === 'human' ? kind : 'unknown'
 }
 
+/** Fixed client/server actors that carry no user identity: reported as-is. */
+const NON_IDENTIFYING_ACTORS: ReadonlySet<string> = new Set([
+  'agent-remote',
+  'agent-collected',
+  'system:client-seed',
+  'system:mint'
+])
+
+function diagnosticActor(actor: string): string {
+  return NON_IDENTIFYING_ACTORS.has(actor) ? actor : actorKind(actor)
+}
+
 function diagnosticApplyContext(context: RemoteApplyContext) {
   const opIds = context.opIds.slice(0, MAX_REPORTED_OP_IDS)
   return boundedContext({
-    actor: actorKind(context.actor),
+    actor: diagnosticActor(context.actor),
     opIds,
     omittedOpIdCount: context.opIds.length - opIds.length
   })

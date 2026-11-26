@@ -2553,7 +2553,9 @@ describe('LiveGraphApplier', () => {
     ['human:private-user', 'human'],
     ['agent:private-thread:private-turn:extra', 'agent'],
     ['private-user@example.com', 'unknown'],
-    ['system:private-user', 'unknown']
+    ['system:private-user', 'unknown'],
+    ['agent-remote', 'agent-remote'],
+    ['system:mint', 'system:mint']
   ] as const)(
     'reports only the actor kind of %s when an operation throws',
     ([actor, kind]) => {
