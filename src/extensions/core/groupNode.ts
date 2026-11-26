@@ -1207,7 +1207,7 @@ export const groupNodeExtension: ComfyExtension = {
     const { converted, retained } = convertLoadedGroupNodes(graph)
     if (converted > 0) {
       const definitions = graph.extra.groupNodes as
-        | Record<string, GroupNodeWorkflowData>
+        | Record<string, unknown>
         | undefined
       const groupTypePrefix = `${PREFIX}${SEPARATOR}`
       const neededGroups = new Set(
