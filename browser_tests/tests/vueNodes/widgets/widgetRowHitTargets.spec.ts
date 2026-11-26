@@ -11,10 +11,14 @@ for (const palette of ['dark', 'classic']) {
     () => {
       test.use({ initialSettings: { 'Comfy.ColorPalette': palette } })
 
+      test.beforeEach(async ({ comfyPage }) => {
+        await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
+      })
+
       test('every enabled KSampler widget button receives clicks across its width', async ({
         comfyPage
       }) => {
-        const [node] = await comfyPage.nodeOps.getNodeRefsByType('KSampler')
+        const node = await comfyPage.nodeOps.getNodeRefById(3)
         await node.centerOnNode()
         const buttons = comfyPage.vueNodes
           .getNodeByTitle('KSampler')
