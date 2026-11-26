@@ -10,6 +10,8 @@ import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
+import { parse } from 'yaml'
+import { z } from 'zod'
 
 const SCRIPT = join(import.meta.dirname, 'select-pr-playwright-specs.sh')
 
@@ -219,13 +221,28 @@ describe('select-pr-playwright-specs.sh', () => {
   })
 
   it('passes the default branch ref from the video workflow', () => {
-    const workflow = readFileSync(
-      '.github/workflows/ci-playwright-videos.yaml',
-      'utf8'
-    )
+    const workflow = z
+      .object({
+        jobs: z.object({
+          plan: z.object({
+            steps: z.array(
+              z.object({
+                id: z.string().optional(),
+                env: z.record(z.string(), z.string()).optional()
+              })
+            )
+          })
+        })
+      })
+      .parse(
+        parse(
+          readFileSync('.github/workflows/ci-playwright-videos.yaml', 'utf8')
+        )
+      )
+    const detect = workflow.jobs.plan.steps.find((step) => step.id === 'detect')
 
-    expect(workflow).toContain(
-      'DEFAULT_BRANCH_REF: origin/${{ github.event.pull_request.base.repo.default_branch }}'
+    expect(detect?.env?.DEFAULT_BRANCH_REF).toBe(
+      'origin/${{ github.event.pull_request.base.repo.default_branch }}'
     )
   })
 
