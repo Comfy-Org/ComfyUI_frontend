@@ -461,15 +461,10 @@ function actorKind(actor: unknown): ActorKind {
   return kind === 'agent' || kind === 'human' ? kind : 'unknown'
 }
 
-function diagnosticActor(actor: string): string {
-  const kind = actorKind(actor)
-  return kind !== 'unknown' && actor.split(':').length === 3 ? kind : actor
-}
-
 function diagnosticApplyContext(context: RemoteApplyContext) {
   const opIds = context.opIds.slice(0, MAX_REPORTED_OP_IDS)
   return boundedContext({
-    actor: diagnosticActor(context.actor),
+    actor: actorKind(context.actor),
     opIds,
     omittedOpIdCount: context.opIds.length - opIds.length
   })
