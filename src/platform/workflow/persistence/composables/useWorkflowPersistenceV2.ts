@@ -196,6 +196,7 @@ export function useWorkflowPersistenceV2() {
     teamWorkspaceStore.initState === 'error'
 
   function resumePersistenceWhenWorkspaceIsReady(): void {
+    stopPendingWorkspaceReadinessWatcher()
     if (isWorkspaceInitConcluded()) {
       releaseWorkflowStorageAuthFence()
       return
@@ -265,12 +266,14 @@ export function useWorkflowPersistenceV2() {
           await draftStore.loadPersistedWorkflow({
             fallbackToLatestDraft: true
           })
-        } finally {
-          transition.release()
+        } catch (error) {
           if (transitionVersion === authTransitionVersion) {
             draftStore.setAuthSubject(user.id)
             resumePersistenceWhenWorkspaceIsReady()
           }
+          throw error
+        } finally {
+          transition.release()
         }
       })
       .catch((error: unknown) => {
