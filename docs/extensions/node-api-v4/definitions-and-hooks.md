@@ -85,8 +85,14 @@ stop()
   of the node's state, which no hook can reach (core issue #23732).
 - A load, an undo and a redo rebuild the graph: their nodes are `loading` in
   `onCreated`, and `onRemoved` is called for every node they replace, not only
-  for a node the user deleted. In a load of another document the handle
-  `onRemoved` gets is already retired, as every handle to that document is.
+  for a node the user deleted. Opening another document, `workflow.open` and a
+  new blank workflow included, replaces no node: each open tab keeps its own
+  graph (#21571), so the nodes of the document shown before stay in its tab,
+  and `onRemoved` is called for them when that tab closes. The handle it gets
+  then is already retired, as every handle in a tab not on screen is, but
+  still gives `id` and `graphId`. Two open tabs can each hold a live node with
+  the same id, so keep per-node state by handle, or by `graphId` and `id`, never
+  by `id` alone.
 - In a load's `onCreated` the node has not taken its saved state yet, and
   that state replaces what an edit sets, so an edit to the node then answers
   `false` and changes nothing. Make it in `onConfigured`, which runs once the

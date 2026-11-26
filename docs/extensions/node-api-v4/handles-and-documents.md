@@ -53,7 +53,10 @@ comfy.onWorkflowLoaded(() => {
 ```
 
 A node id alone names a node only within its graph and document: another
-document reuses the same ids. Keep the handle, not the id.
+document reuses the same ids, and with each tab keeping its own graph two open
+tabs can each hold a live node with the same id at once. Keep the handle, not
+the id. A root graph id is unique among the open documents: a workflow opened
+while another tab holds its id gets a new one.
 
 ## Graphs
 

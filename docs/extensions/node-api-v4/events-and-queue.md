@@ -70,6 +70,11 @@ comfy.workflow.registerImporter({
 `workflow.open(data)` opens a workflow as a new document and resolves whether
 the editor loaded it: `false` for an object that is not a workflow. Data that
 is not an object throws a `TypeError` at the call, not as a rejected promise.
+It does not replace the document on screen: that one stays open in its tab,
+with its nodes, and the opened one is a new tab. The opened graph keeps
+`data.id` unless another open document holds that id, as one does when a pack
+opens a copy of the document on screen; then it gets a new id, so a graph id
+saved in the data does not survive opening a copy.
 
 ## The queue
 
