@@ -31,12 +31,12 @@ export function deserialiseIntoGraphWithSourceIndices(
     topLeft[1] = position[1]
   }
 
-  const nodesByClipboardIndex: (LGraphNode | null)[] = []
+  const nodesBySourceIndex: (LGraphNode | null)[] = []
   for (const info of deserialised.nodes) {
     const node = LiteGraph.createNode(info.type, undefined, {
       targetGraph: graph
     })
-    nodesByClipboardIndex.push(node)
+    nodesBySourceIndex.push(node)
     if (!node) continue
 
     node.configure(info)
@@ -52,16 +52,16 @@ export function deserialiseIntoGraphWithSourceIndices(
   for (const info of deserialised.links) {
     const relativeId = info[0]
     const outNode =
-      relativeId != null ? nodesByClipboardIndex[relativeId] : undefined
+      relativeId != null ? nodesBySourceIndex[relativeId] : undefined
 
-    const inNode = nodesByClipboardIndex[info[2]]
+    const inNode = nodesBySourceIndex[info[2]]
     if (outNode && inNode) outNode.connect(info[1], inNode, info[3])
     else console.warn('Warning, nodes missing on pasting')
   }
-  const createdNodes = nodesByClipboardIndex.filter(
+  const createdNodes = nodesBySourceIndex.filter(
     (node): node is LGraphNode => node !== null
   )
-  return { createdNodes, nodesBySourceIndex: nodesByClipboardIndex }
+  return { createdNodes, nodesBySourceIndex }
 }
 
 /** Creates serialised nodes and links in `graph` at `position`; returns created nodes in source order. */
