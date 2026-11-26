@@ -155,7 +155,7 @@ describe('WorkflowNeedsDeploymentCard', () => {
       screen.queryByTestId('custom-deployment-missing')
     ).not.toHaveTextContent('comfyui-old')
     expect(
-      screen.getByRole('link', { name: /Build on Platform/ })
+      screen.getByRole('link', { name: /Create a Custom Build/ })
     ).toBeInTheDocument()
     expect(
       screen.queryByTestId('custom-deployment-video')
@@ -165,7 +165,7 @@ describe('WorkflowNeedsDeploymentCard', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('opens the platform build wizard for the open workflow from Build on Platform on Cloud', async () => {
+  it('opens the platform build wizard in a new tab when the editor has no Platform frame', async () => {
     vi.stubGlobal('__DISTRIBUTION__', 'cloud')
     const user = renderCard()
     useWorkflowStore().activeWorkflow = fromPartial({
@@ -182,7 +182,9 @@ describe('WorkflowNeedsDeploymentCard', () => {
       })
     )
 
-    await user.click(screen.getByRole('link', { name: /Build on Platform/ }))
+    await user.click(
+      screen.getByRole('link', { name: /Create a Custom Build/ })
+    )
 
     expect(open).toHaveBeenCalledExactlyOnceWith(
       expect.stringContaining('/profile/builds/new?step=import&handoff='),
@@ -249,6 +251,21 @@ describe('WorkflowNeedsDeploymentCard', () => {
     expect(screen.getByTestId('custom-deployment-note')).toHaveTextContent(
       'No deployment in this workspace has all of these nodes.'
     )
+  })
+
+  it('opens the Platform frame from Create a Custom Build when the editor has one', async () => {
+    const frames = usePlatformFrameStore()
+    vi.spyOn(frames, 'isAvailable').mockReturnValue(true)
+    const openFrame = vi.spyOn(frames, 'open').mockReturnValue(true)
+    const openTab = vi.spyOn(window, 'open')
+    const user = renderCard()
+
+    await user.click(
+      screen.getByRole('link', { name: 'Create a Custom Build' })
+    )
+
+    expect(openFrame).toHaveBeenCalledOnce()
+    expect(openTab).not.toHaveBeenCalled()
   })
 
   it('asks for a Custom Build when no deployment runs it and the build opens in the editor', () => {
