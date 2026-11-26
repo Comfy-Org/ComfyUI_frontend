@@ -4,7 +4,11 @@ import type { workspaceApi as realWorkspaceApi } from '@/platform/workspace/api/
 
 export const workspaceApi = vi.mockObject<typeof realWorkspaceApi>(
   {
-    list: async () => ({ workspaces: [], can_create_workspace: true }),
+    list: async () => ({
+      workspaces: [],
+      can_create_workspace: true,
+      max_owned_workspaces: 10
+    }),
     getCurrentWorkspace: async () => ({
       id: 'workspace-1',
       name: 'Personal',
@@ -31,6 +35,7 @@ export const workspaceApi = vi.mockObject<typeof realWorkspaceApi>(
     listDeployments: async () => ({ items: [], builds_visible: true }),
     pickDeployment: async () => {},
     clearDeployment: async () => {},
+    startDeployment: async () => ({ deployment_id: '', status: 'starting' }),
     setDefaultDeployment: async () => {},
     clearDefaultDeployment: async () => {},
     getDeploymentCpuServer: async () => ({ cpu_server: 'none' }),

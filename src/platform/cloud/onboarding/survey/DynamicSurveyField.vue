@@ -11,7 +11,7 @@
       v-if="field.type === 'single'"
       :model-value="(modelValue as string) ?? ''"
       type="single"
-      class="flex w-full flex-col gap-2"
+      class="w-full flex-col gap-2"
       @update:model-value="onSingleChange"
     >
       <ToggleGroupItem
@@ -34,7 +34,7 @@
       v-else
       :model-value="(modelValue as string[]) ?? []"
       type="multiple"
-      class="flex w-full flex-col gap-2"
+      class="w-full flex-col gap-2"
       @update:model-value="onMultiChange"
     >
       <ToggleGroupItem
@@ -128,7 +128,7 @@ const { t, te, locale } = useI18n()
 const controlId = useId()
 
 const optionCardClass =
-  'group h-auto w-full items-center justify-start gap-3 rounded-md border border-solid border-smoke-800/10 bg-smoke-800/10 px-4 py-3 text-left text-sm text-primary-comfy-canvas shadow-inset-highlight transition-colors hover:bg-sand-300/20 data-[state=on]:bg-sand-300/15 data-[state=on]:ring-1 data-[state=on]:ring-inset data-[state=on]:ring-brand-yellow'
+  'group h-auto w-full justify-start gap-3 rounded-md border border-solid border-smoke-800/10 bg-smoke-800/10 px-4 py-3 text-left text-primary-comfy-canvas shadow-inset-highlight transition-colors hover:bg-sand-300/20 data-[state=on]:bg-sand-300/15 data-[state=on]:ring-1 data-[state=on]:ring-inset data-[state=on]:ring-brand-yellow'
 
 const checkMarkClass =
   'icon-[lucide--check] text-brand-yellow opacity-0 group-data-[state=on]:opacity-100'

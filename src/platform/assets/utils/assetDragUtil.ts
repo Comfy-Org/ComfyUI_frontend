@@ -14,29 +14,27 @@ import { api } from '@/scripts/api'
 import {
   getAssetType,
   isGeneratedTempOutput
-} from '@/platform/assets/composables/media/assetMappers'
-import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
-import { getAssetUrlFilename, getOutputSubfolder } from './assetMetadataUtils'
+} from '@/platform/assets/adapters/outputAssetMappers'
+import type { AssetItem } from '@comfyorg/assets-core/schema'
+import { MIME_ASSET_INFO } from '@/platform/assets/constants/assetDrag'
+import { getOutputSubfolder } from '@comfyorg/assets-core/metadata'
+import { getStoredOutputIdentity } from '@/platform/assets/adapters/outputAssetResolver'
+import { getAssetStoredFilename } from './assetStoragePolicy'
 import { resolvePreviewUrl } from './assetPreviewUtil'
 import { getAssetFileUrl } from './assetUrlUtil'
+import { parseUrl } from '@/utils/urlSafety'
 
 function resolveThumbnailUrl(url: string): URL | null {
-  const source =
-    URL.canParse(url) || url.startsWith('//') ? url : api.apiURL(url)
-  return URL.parse(source, location.href)
+  const source = parseUrl(url) || url.startsWith('//') ? url : api.apiURL(url)
+  return parseUrl(source, location.href)
 }
 
 function assetMediaSources(asset: AssetItem) {
   const mediaKind = getMediaTypeFromFilename(asset.name)
-  const previewUrl = URL.parse(resolvePreviewUrl(asset), location.href)
+  const previewUrl = parseUrl(resolvePreviewUrl(asset), location.href)
   const playable = mediaKind === 'video' || mediaKind === 'audio'
   const mediaUrl = playable
-    ? URL.parse(
-        getAssetFileUrl(asset, { disposition: 'inline' }),
-        location.href
-      )
+    ? parseUrl(getAssetFileUrl(asset, { disposition: 'inline' }), location.href)
     : undefined
   const posterUrl = asset.preview_id
     ? previewUrl
@@ -79,29 +77,18 @@ export function startAssetDrag(
   const { dataTransfer } = event
   if (!dataTransfer) return
 
-  const output = getOutputAssetMetadata(asset.user_metadata)?.allOutputs?.[0]
+  const storedHash = asset.hash ?? getStoredOutputIdentity(asset)?.hash
   const assetInfo = {
-    ...(output?.filename
-      ? {
-          filename: output.filename,
-          subfolder: output.subfolder,
-          type: output.type,
-          display_name: output.display_name
-        }
-      : {
-          filename: asset.name,
-          subfolder: getOutputSubfolder(asset.user_metadata),
-          type: isGeneratedTempOutput(asset)
-            ? 'temp'
-            : getAssetType(asset.tags),
-          display_name: asset.display_name ?? undefined
-        }),
-    attachment_ref: getAssetUrlFilename(asset),
+    filename: getAssetStoredFilename(asset, storedHash),
+    subfolder: getOutputSubfolder(asset),
+    type: isGeneratedTempOutput(asset) ? 'temp' : getAssetType(asset.tags),
+    display_name: asset.display_name || asset.name,
+    attachment_ref: storedHash ?? asset.name,
     ...assetMediaSources(asset)
   }
   dataTransfer.setData(MIME_ASSET_INFO, JSON.stringify(assetInfo))
 
-  const fileUrl = URL.parse(getAssetFileUrl(asset), location.href)
+  const fileUrl = parseUrl(getAssetFileUrl(asset), location.href)
   if (!fileUrl) return
 
   dataTransfer.setData('text/uri-list', fileUrl.toString())

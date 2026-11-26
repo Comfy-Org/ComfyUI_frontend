@@ -7,22 +7,22 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 import { useCanvasRefresh } from './useCanvasRefresh'
+import { useThemeStore } from '@/platform/theme/themeStore'
+
 import type { MenuOption } from './menuOption'
 import { useNodeCustomization } from './useNodeCustomization'
 
-/**
- * Composable for group-related menu operations
- */
 export function useGroupMenuOptions() {
   const { t } = useI18n()
+  const themeStore = useThemeStore()
   const canvasStore = useCanvasStore()
   const workflowStore = useWorkflowStore()
   const settingStore = useSettingStore()
   const canvasRefresh = useCanvasRefresh()
-  const { shapeOptions, colorOptions, applyColor, isLightTheme } =
-    useNodeCustomization()
+  const { shapeOptions, colorOptions, applyColor } = useNodeCustomization()
 
   const getFitGroupToNodesOption = (groupContext: LGraphGroup): MenuOption => ({
+    id: 'fitGroup',
     label: 'Fit Group To Nodes',
     icon: 'icon-[lucide--move-diagonal-2]',
     action: () => {
@@ -45,6 +45,7 @@ export function useGroupMenuOptions() {
     groupContext: LGraphGroup,
     bump: () => void
   ): MenuOption => ({
+    id: 'shape',
     label: t('contextMenu.Shape'),
     icon: 'icon-[lucide--box]',
     hasSubmenu: true,
@@ -63,15 +64,14 @@ export function useGroupMenuOptions() {
     _groupContext: LGraphGroup,
     bump: () => void
   ): MenuOption => ({
+    id: 'color',
     label: t('contextMenu.Color'),
     icon: 'icon-[lucide--palette]',
     hasSubmenu: true,
     isColorPicker: true,
     submenu: colorOptions.map((colorOption) => ({
       label: colorOption.localizedName,
-      color: isLightTheme.value
-        ? colorOption.value.light
-        : colorOption.value.dark,
+      color: themeStore.toNodeColor(colorOption.value),
       action: () => {
         applyColor(colorOption.name === 'noColor' ? null : colorOption)
         bump()
@@ -95,7 +95,6 @@ export function useGroupMenuOptions() {
     const groupNodes = groupContext.nodes
     if (!groupNodes.length) return options
 
-    // Check if all nodes have the same mode
     let allSame = true
     for (let i = 1; i < groupNodes.length; i++) {
       if (groupNodes[i].mode !== groupNodes[0].mode) {
@@ -104,7 +103,16 @@ export function useGroupMenuOptions() {
       }
     }
 
-    const createModeAction = (label: string, mode: LGraphEventMode) => ({
+    const createModeAction = (
+      label: string,
+      mode: LGraphEventMode
+    ): MenuOption => ({
+      id:
+        mode === LGraphEventMode.ALWAYS
+          ? 'groupAlways'
+          : mode === LGraphEventMode.NEVER
+            ? 'groupNever'
+            : 'groupBypass',
       label: t(`selectionToolbox.${label}`),
       icon:
         mode === LGraphEventMode.BYPASS

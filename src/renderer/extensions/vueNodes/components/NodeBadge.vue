@@ -1,6 +1,6 @@
 <template>
   <div
-    v-if="text"
+    v-if="text || cssIcon"
     class="flex min-w-max items-center gap-1 rounded-sm bg-node px-1 py-0.5 text-xs"
     :style="{
       color: fgColor,

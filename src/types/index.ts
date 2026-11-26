@@ -1,4 +1,7 @@
-import type { ComfyDesktop2Bridge } from '@comfyorg/comfyui-desktop-bridge-types'
+import type {
+  ComfyDesktop2Bridge,
+  ComfyDownloadProgress
+} from '@comfyorg/comfyui-desktop-bridge-types'
 
 import type { DesktopHostAuthBridge } from '@/platform/auth/desktopHost/desktopHostAuthBridge'
 import type {
@@ -14,13 +17,13 @@ import type {
   UserConfigResponse,
   UserData,
   UserDataFullInfo
-} from '@/platform/remote/comfyui/types'
+} from '@comfyorg/api-client/types'
 import type {
   LogEntry,
   LogsRawResponse,
   TerminalSize
-} from '@/platform/remote/comfyui/execution/types'
-import type { Settings } from '@/platform/settings/types'
+} from '@comfyorg/api-client/executionTypes'
+import type { Settings } from '@comfyorg/settings-core/types'
 import type { ComfyApp } from '@/types/comfy'
 import type { ContextMenu } from '@/lib/litegraph/src/ContextMenu'
 import type { DragAndScale } from '@/lib/litegraph/src/DragAndScale'
@@ -44,20 +47,27 @@ import type {
 } from './extensionTypes'
 import type { ToastId } from './toastId'
 
-export type { NodeId, SerializedNodeId } from './nodeId'
-export { toNodeId, parseNodeId } from './nodeId'
-export type { LinkId } from './linkId'
-export { toLinkId } from './linkId'
-export type { RerouteId } from './rerouteId'
-export { toRerouteId } from './rerouteId'
-export type { SlotDirection, SlotId, SlotIndex } from './slotId'
-export { slotId } from './slotId'
+export type { NodeId, SerializedNodeId } from '@comfyorg/graph-model/nodeId'
+export { toNodeId, parseNodeId } from '@comfyorg/graph-model/nodeId'
+export type { LinkId } from '@comfyorg/graph-model/linkId'
+export { toLinkId } from '@comfyorg/graph-model/linkId'
+export type { RerouteId } from '@comfyorg/graph-model/rerouteId'
+export { toRerouteId } from '@comfyorg/graph-model/rerouteId'
+export type {
+  SlotDirection,
+  SlotId,
+  SlotIndex
+} from '@comfyorg/graph-model/slotId'
+export { slotId } from '@comfyorg/graph-model/slotId'
 export type { ComfyExtension } from './comfy'
-export type { ComfyDesktop2Bridge } from '@comfyorg/comfyui-desktop-bridge-types'
-export type { ComfyApi } from '@/scripts/api'
+export type {
+  ComfyDesktop2Bridge,
+  ComfyDownloadProgress
+} from '@comfyorg/comfyui-desktop-bridge-types'
+export type { ComfyApi } from '@comfyorg/api-client/ComfyApi'
 export type { ComfyApp } from '@/types/comfy'
-export type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-export type { InputSpec } from '@/schemas/nodeDefSchema'
+export type { ComfyNodeDef } from '@comfyorg/object-info-parser'
+export type { InputSpec } from '@comfyorg/object-info-parser'
 export type {
   NodeLocatorId,
   NodeExecutionId,
@@ -67,7 +77,7 @@ export type {
   createNodeLocatorId,
   parseNodeExecutionId,
   createNodeExecutionId
-} from './nodeIdentification'
+} from '@comfyorg/graph-model/nodeIdentification'
 export type { DOMWidget, DOMWidgetOptions } from '@/types/domWidget'
 export type {
   EmbeddingsResponse,
@@ -127,12 +137,14 @@ export type {
   IColorable,
   INodeFlags,
   INodeSlot,
-  ISlotType,
-  Point,
+  ISlotType
+} from '@comfyorg/graph-model/interfaces'
+export type {
+  PointTuple as Point,
   ReadOnlyRect,
   Rect,
-  Size
-} from '@/lib/litegraph/src/interfaces'
+  SizeTuple as Size
+} from '@comfyorg/shared-frontend-utils/geometry'
 export type { CreateNodeOptions } from '@/lib/litegraph/src/LiteGraphGlobal'
 export type {
   IContextMenuOptions,
@@ -141,12 +153,12 @@ export type {
 export type {
   LinkNetwork,
   ReadonlyLinkNetwork
-} from '@/lib/litegraph/src/types/linkNetwork'
+} from '@comfyorg/graph-model/linkNetwork'
 export type {
   ConnectingLink,
   INodeInputSlot,
   INodeOutputSlot
-} from '@/lib/litegraph/src/types/slots'
+} from '@comfyorg/graph-model/slots'
 export type { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 
 export type {
@@ -198,7 +210,7 @@ export type {
   VideoEditTrim,
   VideoEditValue,
   WidgetCallbackOptions
-} from '@/lib/litegraph/src/types/widgets'
+} from '@comfyorg/graph-model/widgets'
 export type { WidgetTypeMap } from '@/lib/litegraph/src/widgets/widgetMap'
 
 export type {
@@ -212,7 +224,7 @@ export type {
   SerialisableGraph,
   SerialisableLLink,
   SerialisableReroute
-} from '@/lib/litegraph/src/types/serialisation'
+} from '@comfyorg/graph-model/serialisation'
 
 export type {
   EaseFunction,
@@ -223,19 +235,19 @@ export type {
   NodeSlotType,
   RenderShape,
   TitleMode
-} from '@/lib/litegraph/src/types/globalEnums'
+} from '@comfyorg/graph-model/globalEnums'
 export type { SlotShape, SlotType } from '@/lib/litegraph/src/draw'
 
-export type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
+export type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
 export type { LGraphCanvasEventMap } from '@/lib/litegraph/src/infrastructure/LGraphCanvasEventMap'
-export type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
+export type { LGraphEventMap } from '@comfyorg/graph-model/LGraphEventMap'
 
 declare global {
   interface Window {
-    /** For use by extensions and in the browser console. Where possible, import `app` from '@/scripts/app' instead. */
+    /** For use by extensions and in the browser console. First-party code calls `useApp()` from '@/scripts/appInstance' instead. */
     app?: ComfyApp
 
-    /** For use by extensions and in the browser console. Where possible, import `app` and access via `app.graph` instead. */
+    /** For use by extensions and in the browser console. First-party code reads `useApp().rootGraph` instead. */
     graph?: unknown
 
     LiteGraph?: LiteGraphGlobal
@@ -258,6 +270,9 @@ declare global {
     __comfyDesktop2?: ComfyDesktop2Bridge & {
       Auth?: DesktopHostAuthBridge
       getInstallId?: () => string
+      listModelDownloads?: () => Promise<ComfyDownloadProgress[]>
+      /** Desktop flashes the taskbar or bounces the dock while this is `true` and its window is unfocused. Absent on Desktop builds predating it. */
+      setAttentionNeeded?: (needed: boolean) => void
     }
   }
 }

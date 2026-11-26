@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
+  clearOnboardingReplay,
   consumeFirstRunReplayRequest,
   consumeSurveyReplayRequest,
   isFirstRunReplayRequested,
@@ -19,7 +20,9 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({ reportError }))
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
+  reportError
+}))
 
 describe('onboardingReplay', () => {
   beforeEach(() => {
@@ -107,6 +110,33 @@ describe('onboardingReplay', () => {
       expect(isFirstRunReplayRequested(OWNER_ID)).toBe(false)
     })
 
+    it('disarms both gates when clearing cannot remove the request or read it back', () => {
+      requestOnboardingReplay(OWNER_ID)
+      const removeItem = vi
+        .spyOn(sessionStorage, 'removeItem')
+        .mockImplementation(() => {
+          throw new DOMException('blocked', 'SecurityError')
+        })
+      const getItem = vi
+        .spyOn(sessionStorage, 'getItem')
+        .mockImplementation(() => {
+          throw new DOMException('blocked', 'SecurityError')
+        })
+
+      clearOnboardingReplay(OWNER_ID)
+      removeItem.mockRestore()
+      getItem.mockRestore()
+
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(DOMException),
+        expect.objectContaining({
+          errorType: 'error_clearing_onboarding_replay_request'
+        })
+      )
+      expect(isSurveyReplayRequested(OWNER_ID)).toBe(false)
+      expect(isFirstRunReplayRequested(OWNER_ID)).toBe(false)
+    })
+
     it('restores only the survey gate after navigation fails', () => {
       requestOnboardingReplay(OWNER_ID)
       consumeSurveyReplayRequest(OWNER_ID)
@@ -133,18 +163,12 @@ describe('onboardingReplay', () => {
     })
 
     it('fails safely when replay storage cannot be read', () => {
+      requestOnboardingReplay(OWNER_ID)
       vi.spyOn(sessionStorage, 'getItem').mockImplementation(() => {
         throw new Error('SecurityError')
       })
 
       expect(isSurveyReplayRequested(OWNER_ID)).toBe(false)
-      expect(reportError).toHaveBeenCalledWith(
-        expect.objectContaining({ message: 'SecurityError' }),
-        {
-          surface: 'platform',
-          errorType: 'error_reading_onboarding_replay_request'
-        }
-      )
     })
 
     it('fails safely when replay JSON is invalid', () => {

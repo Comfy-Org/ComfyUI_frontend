@@ -1,5 +1,9 @@
 <template>
-  <AppDialogPanel body-class="flex flex-col gap-6 text-sm" @close="onClose">
+  <AppDialogPanel
+    body-class="flex flex-col gap-6 text-sm"
+    class="w-lg max-w-full"
+    @close="onClose"
+  >
     <template #title>
       {{
         $t('workspacePanel.members.creditLimitDialog.title', {

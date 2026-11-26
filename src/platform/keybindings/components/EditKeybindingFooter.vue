@@ -31,9 +31,9 @@
 import type { Reactive } from 'vue'
 
 import Button from '@comfyorg/design-system/button/Button'
-import { KeybindingImpl } from '@/platform/keybindings/keybinding'
+import { KeybindingImpl } from '@comfyorg/keybindings/keybinding'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
-import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
+import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
 import type { EditKeybindingDialogState } from '@/platform/keybindings/components/editKeybindingDialogState'

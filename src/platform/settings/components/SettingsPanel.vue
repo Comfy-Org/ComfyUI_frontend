@@ -16,9 +16,9 @@
 </template>
 
 <script setup lang="ts">
-import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
+import NoResultsPlaceholder from '@comfyorg/design-system/common/NoResultsPlaceholder'
 import SettingGroup from '@/platform/settings/components/SettingGroup.vue'
-import type { ISettingGroup } from '@/platform/settings/types'
+import type { ISettingGroup } from '@comfyorg/settings-core/types'
 
 const props = defineProps<{
   settingGroups: ISettingGroup[]

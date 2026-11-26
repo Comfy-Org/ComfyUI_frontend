@@ -4,19 +4,32 @@
   </div>
   <div
     v-else
-    :class="cn('lg-node-header w-full min-w-0 p-1 text-xs', headerShapeClass)"
+    :class="
+      cn(
+        'lg-node-header flex w-full min-w-0 flex-col justify-center py-1 pr-2 pl-1 text-(length:--node-title-font-size) leading-4 group-data-collapsed/node:pr-7',
+        headerShapeClass
+      )
+    "
     :data-testid="`node-header-${nodeData?.id || ''}`"
     @dblclick="handleDoubleClick"
   >
-    <div class="flex min-w-0 items-center justify-between gap-1">
-      <!-- Collapse/Expand Button -->
-      <div class="relative mr-auto flex min-w-0 items-center gap-1">
+    <div
+      class="flex min-w-0 items-center justify-between gap-1"
+      data-part="node-header-row"
+    >
+      <div
+        class="relative mr-auto flex min-w-0 items-center gap-1"
+        data-part="node-header-lead"
+      >
         <div class="flex shrink-0 items-center px-0.5">
           <Button
             size="icon-sm"
             variant="textonly"
             class="text-inherit hover:bg-transparent"
             data-testid="node-collapse-button"
+            data-part="node-collapse-button"
+            :aria-label="$t(collapsed ? 'g.expand' : 'g.collapse')"
+            :aria-expanded="!collapsed"
             @click.stop="handleCollapse"
             @dblclick.stop
           >
@@ -27,56 +40,67 @@
                   collapsed && '-rotate-90'
                 )
               "
+              data-part="node-collapse-chevron"
+            />
+            <span
+              :class="
+                cn(
+                  'hidden size-2.5 rounded-full bg-node-border transition-colors',
+                  collapsed && 'bg-node-foreground'
+                )
+              "
+              data-part="node-collapse-dot"
             />
           </Button>
         </div>
-        <Tooltip :disabled="!tooltipText">
-          <TooltipTrigger as-child>
-            <div
-              class="flex min-w-0 flex-1 items-center gap-2"
-              data-testid="node-title"
-            >
-              <div class="flex-1 truncate">
-                <EditableText
-                  :model-value="displayTitle"
-                  :is-editing="isEditing"
-                  :input-attrs="{ 'data-testid': 'node-title-input' }"
-                  @edit="handleTitleEdit"
-                  @cancel="handleTitleCancel"
-                />
-              </div>
-            </div>
-          </TooltipTrigger>
-          <TooltipContent>{{ tooltipText }}</TooltipContent>
-        </Tooltip>
+        <div
+          :data-node-tooltip="nodeDescription || undefined"
+          :data-node-tooltip-title="titleTooltipHeading"
+          class="flex min-w-0 flex-1 items-center gap-2"
+          data-part="node-title"
+          data-testid="node-title"
+          @pointerenter="measureTitleTruncation"
+        >
+          <div ref="titleText" class="flex-1 truncate">
+            <EditableText
+              :model-value="displayTitle"
+              :is-editing="isEditing"
+              :input-attrs="{ 'data-testid': 'node-title-input' }"
+              @edit="handleTitleEdit"
+              @cancel="handleTitleCancel"
+            />
+          </div>
+        </div>
       </div>
 
-      <CreditBadge
-        v-for="badge in priceBadges ?? []"
-        :key="badge.required"
-        :text="badge.required"
-        :rest="badge.rest"
+      <NodeBadge
+        v-if="statusBadge"
+        v-bind="statusBadge"
+        data-part="node-status-badge"
       />
-      <NodeBadge v-if="statusBadge" v-bind="statusBadge" />
       <i
         v-if="isPinned"
         class="icon-[comfy--pin]"
         data-testid="node-pin-indicator"
+      />
+      <i
+        v-if="showMissingWarning"
+        role="img"
+        :aria-label="
+          st('rightSidePanel.missingResourcesWarning', 'Missing resources')
+        "
+        class="icon-[lucide--triangle-alert]"
       />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onErrorCaptured, ref } from 'vue'
+import { computed, onErrorCaptured, ref, useTemplateRef } from 'vue'
 
 import EditableText from '@comfyorg/design-system/common/EditableText'
-import CreditBadge from '@comfyorg/design-system/badge/CreditBadge'
 import Button from '@comfyorg/design-system/button/Button'
-import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
-import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
-import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
-import type { NodeState } from '@/types/nodeState'
+import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
 import { LGraphEventMode, RenderShape } from '@/lib/litegraph/src/litegraph'
@@ -90,10 +114,11 @@ import type { NodeBadgeProps } from './NodeBadge.vue'
 interface NodeHeaderProps {
   nodeData?: NodeState
   collapsed?: boolean
-  priceBadges?: { required: string; rest?: string }[]
+  showMissingWarning?: boolean
 }
 
-const { nodeData, collapsed } = defineProps<NodeHeaderProps>()
+const { nodeData, collapsed, showMissingWarning } =
+  defineProps<NodeHeaderProps>()
 
 const emit = defineEmits<{
   collapse: []
@@ -113,10 +138,23 @@ onErrorCaptured((error) => {
 // Editing state
 const isEditing = ref(false)
 
-const { getNodeDescription } = useNodeTooltips(nodeData?.type || '')
+const { getNodeDescription } = useNodeTooltips(() => nodeData?.type || '')
 
-const tooltipText = computed(() =>
+const titleText = useTemplateRef<HTMLElement>('titleText')
+const isTitleTruncated = ref(false)
+
+function measureTitleTruncation() {
+  const el = titleText.value
+  isTitleTruncated.value = !!el && el.scrollWidth > el.clientWidth
+}
+
+const showFullTitle = computed(() => !isEditing.value && isTitleTruncated.value)
+const nodeDescription = computed(() =>
   isEditing.value ? '' : getNodeDescription.value
+)
+
+const titleTooltipHeading = computed(() =>
+  showFullTitle.value ? displayTitle.value : undefined
 )
 
 const resolveTitle = (info: NodeState | undefined) => {
@@ -150,18 +188,18 @@ const headerShapeClass = computed(() => {
       case RenderShape.BOX:
         return 'rounded-none'
       case RenderShape.CARD:
-        return 'rounded-tl-xl rounded-br-xl rounded-tr-none rounded-bl-none'
+        return 'rounded-tl-(--node-radius) rounded-br-(--node-radius) rounded-tr-none rounded-bl-none'
       default:
-        return 'rounded-xl'
+        return 'rounded-(--node-radius)'
     }
   }
   switch (nodeData?.shape) {
     case RenderShape.BOX:
       return 'rounded-t-none'
     case RenderShape.CARD:
-      return 'rounded-tl-xl rounded-tr-none'
+      return 'rounded-tl-(--node-radius) rounded-tr-none'
     default:
-      return 'rounded-t-xl'
+      return 'rounded-t-(--node-radius)'
   }
 })
 

@@ -13,15 +13,16 @@ import type {
 } from '@/lib/litegraph/src/__fixtures__/canvasHarness'
 import { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
 import { LGraph, LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { Positionable } from '@/lib/litegraph/src/interfaces'
+import type { Positionable } from '@comfyorg/graph-model/interfaces'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { useNodeMouseCallbacks } from '@/renderer/extensions/vueNodes/composables/useNodeMouseCallbacks'
 import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import { useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
-import type { NodeState } from '@/types/nodeState'
+import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { createNodeState } from '@/utils/__tests__/litegraphTestUtils'
 
 vi.mock(import('@/renderer/core/canvas/useCanvasInteractions'))
@@ -65,7 +66,7 @@ function mountNode(nodeState: NodeState) {
   const interactions = scope.run(() => useNodePointerInteractions(nodeState))
   if (!interactions) throw new Error('interactions require an active scope')
   const element = document.createElement('div')
-  const { pointerHandlers } = interactions
+  const { pointerHandlers, isDragging } = interactions
   element.addEventListener('pointerdown', pointerHandlers.onPointerdown)
   element.addEventListener('pointermove', pointerHandlers.onPointermove)
   element.addEventListener('pointerup', pointerHandlers.onPointerup)
@@ -87,6 +88,7 @@ function mountNode(nodeState: NodeState) {
     element,
     scope,
     pointerHandlers,
+    isDragging,
     press: (x: number, y: number, options?: PointerEventOptions) =>
       dispatch('pointerdown', x, y, options),
     move: (x: number, y: number, options?: PointerEventOptions) =>
@@ -303,6 +305,21 @@ describe('useNodePointerInteractions', () => {
     expect(selectedTitles(canvas)).toEqual(['First'])
   })
 
+  it('reports dragging only on the pressed node', async () => {
+    const { first, second } = await setup()
+    const pressed = mountNode(createNodeState({ id: first.id }))
+    const other = mountNode(createNodeState({ id: second.id }))
+
+    pressed.press(10, 10)
+    pressed.move(10 + DRIFT + 1, 10)
+
+    expect(pressed.isDragging.value).toBe(true)
+    expect(other.isDragging.value).toBe(false)
+
+    pressed.release(40, 10)
+    expect(pressed.isDragging.value).toBe(false)
+  })
+
   it('movement past the click drift selects and drags without toggling on release', async () => {
     const { canvas, first, second } = await setup()
     const { startDrag, handleDrag, endDrag } = useNodeDrag()
@@ -321,6 +338,25 @@ describe('useNodePointerInteractions', () => {
     expect(endDrag).toHaveBeenCalledExactlyOnceWith(up, first.id)
     expect(layoutStore.isDraggingVueNodes.value).toBe(false)
     expect(selectedTitles(canvas)).toEqual(['First', 'Second'])
+  })
+
+  it('a node whose classic onMouseDown returns true neither selects nor drags', async () => {
+    const { canvas, first, second } = await setup()
+    first.onMouseDown = () => true
+    const node = mountNode(createNodeState({ id: first.id }))
+    node.scope.run(() => useNodeMouseCallbacks(first.id, node.element))
+    await nextTick()
+    canvas.select(second)
+    onTestFinished(() => {
+      window.dispatchEvent(new PointerEvent('pointercancel', { pointerId: 1 }))
+    })
+
+    node.press(10, 10)
+    node.move(10 + DRIFT + 1, 10)
+    node.release(40, 10)
+
+    expect(useNodeDrag().startDrag).not.toHaveBeenCalled()
+    expect(selectedTitles(canvas)).toEqual(['Second'])
   })
 
   it('plain drag of a selected node keeps the multi-selection', async () => {

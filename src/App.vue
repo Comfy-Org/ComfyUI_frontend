@@ -13,29 +13,41 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, watch } from 'vue'
+import { useEventListener } from '@vueuse/core'
+import { computed, onMounted, provide, watch } from 'vue'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
+import { useAgentExtensionNotices } from '@/composables/useAgentExtensionNotices'
+import { AskAgentPortKey } from '@/platform/workflowErrors/askAgentPort'
+import { createAskAgentPort } from '@/workbench/extensions/agent/composables/agent/createAskAgentPort'
 import config from '@/config'
 import TooltipProvider from '@comfyorg/design-system/tooltip/TooltipProvider'
 import SessionReconnecting from '@/platform/auth/session/components/SessionReconnecting.vue'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import {
   reportPreloadError,
+  reportPreloadErrorUnlessExtensionImport,
   reportResourceLoadError
 } from '@/platform/telemetry/assetLoadErrorReporting'
-import { app } from '@/scripts/app'
+import '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { registerExtensionDialogService } from '@/services/dialogService'
 import { createExtensionDialogService } from '@/services/extensionDialogService'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { electronAPI } from '@/utils/envUtil'
-import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
+import {
+  isAppChunkLoadFailure,
+  parsePreloadError
+} from '@/utils/preloadErrorUtil'
+import { useConflictDetection } from '@/platform/customNodes/manager/composables/useConflictDetection'
 
 registerExtensionDialogService(createExtensionDialogService())
+provide(AskAgentPortKey, createAskAgentPort())
 const workspaceStore = useWorkspaceStore()
-app.extensionManager = useWorkspaceStore()
+useApp().extensionManager = useWorkspaceStore()
 
 const conflictDetection = useConflictDetection()
+useAgentExtensionNotices()
 const isLoading = computed<boolean>(() => workspaceStore.spinner)
 
 watch(
@@ -68,8 +80,13 @@ onMounted(() => {
 
   // Handle preload errors that occur during dynamic imports (e.g., stale chunks after deployment)
   // See: https://vite.dev/guide/build#load-error-handling
-  window.addEventListener('vite:preloadError', (event) => {
-    event.preventDefault()
+  useEventListener(window, 'vite:preloadError', (event) => {
+    const preloadError = parsePreloadError(event.payload)
+    if (preloadError.url === null) {
+      reportPreloadErrorUnlessExtensionImport(event.payload)
+      return
+    }
+    if (!isAppChunkLoadFailure(preloadError)) event.preventDefault()
     reportPreloadError(event.payload)
     // No toast: third-party custom node extensions frequently trigger this
     // (e.g., bare "vue" imports, wrong relative paths to scripts/app.js, missing

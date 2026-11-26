@@ -7,7 +7,7 @@
     <div :style="mergedGridStyle">
       <div
         v-for="(item, i) in renderedItems"
-        :key="item.key"
+        :key="item.key ?? item.id"
         data-virtual-grid-item
       >
         <slot name="item" :item :index="state.start + i" />
@@ -28,6 +28,8 @@ import { clamp, debounce } from 'es-toolkit/compat'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import type { CSSProperties } from 'vue'
 
+type HasKeyOrId = { key: string; id?: string } | { key?: string; id: string }
+
 type GridState = {
   start: number
   end: number
@@ -41,16 +43,19 @@ const {
   defaultItemHeight = 200,
   defaultItemWidth = 200,
   maxColumns = Infinity,
+  minItemWidth,
   onLoadMore,
   canLoadMore = false
 } = defineProps<{
-  items: (T & { key: string })[]
+  items: readonly (T & HasKeyOrId)[]
   gridStyle: CSSProperties
   bufferRows?: number
   resizeDebounce?: number
   defaultItemHeight?: number
   defaultItemWidth?: number
   maxColumns?: number
+  /** Container width each column needs; columns drop below `maxColumns` when the grid is narrower. */
+  minItemWidth?: number
   onLoadMore?: () => unknown
   canLoadMore?: boolean
 }>()
@@ -64,15 +69,18 @@ const { y: scrollY } = useScroll(container, {
 })
 
 const cols = computed(() => {
-  if (maxColumns !== Infinity) return maxColumns
-  return Math.floor(width.value / itemWidth.value) || 1
+  if (maxColumns === Infinity) {
+    return Math.floor(width.value / itemWidth.value) || 1
+  }
+  if (!minItemWidth) return maxColumns
+  return clamp(Math.floor(width.value / minItemWidth), 1, maxColumns)
 })
 
 const mergedGridStyle = computed<CSSProperties>(() => {
   if (maxColumns === Infinity) return gridStyle
   return {
     ...gridStyle,
-    gridTemplateColumns: `repeat(${maxColumns}, minmax(0, 1fr))`
+    gridTemplateColumns: `repeat(${cols.value}, minmax(0, 1fr))`
   }
 })
 

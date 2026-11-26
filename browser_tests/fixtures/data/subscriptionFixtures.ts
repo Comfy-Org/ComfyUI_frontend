@@ -12,11 +12,13 @@ export function createSubscriptionStatus(
     is_active: false,
     subscription_tier: 'FREE',
     has_funds: false,
-    billing_rail: 'legacy_stripe',
+    billing_rail: 'stripe',
     max_seats: 0,
     occupied_seats: 0,
+    ended_at: null,
     team_credit_stop: null,
     scheduled_change: null,
+    next_charge: null,
     ...overrides
   }
 }

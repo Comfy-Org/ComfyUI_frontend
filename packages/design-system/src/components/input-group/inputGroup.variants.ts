@@ -2,7 +2,7 @@ import type { VariantProps } from 'cva'
 import { cva } from 'cva'
 
 export const inputGroupAddonVariants = cva({
-  base: 'flex h-auto cursor-text items-center justify-center gap-2 py-1.5 text-sm font-medium text-muted-foreground select-none group-has-[[data-slot=input-group-control]:disabled]/input-group:opacity-50',
+  base: 'flex h-auto cursor-text items-center justify-center gap-2 py-1.5 text-sm font-medium text-muted-foreground select-none [[data-slot=input-group]:has([data-slot=input-group-control]:disabled)_&]:opacity-50',
   variants: {
     align: {
       'inline-start': 'order-first pl-3 has-[>button]:pl-1',

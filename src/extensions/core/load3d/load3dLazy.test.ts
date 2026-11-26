@@ -1,8 +1,15 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
+import { load3dLazyExtension } from '@/extensions/core/load3d/load3dLazy'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
+import { app } from '@/scripts/app'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { useExtensionService } from '@/platform/extensions/services/extensionService'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
+import { useTopbarBadgeStore } from '@/stores/topbarBadgeStore'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 
 const lazyModules = vi.hoisted(() => {
   const defineExtension = (name: string) => ({
@@ -11,7 +18,10 @@ const lazyModules = vi.hoisted(() => {
   })
   return {
     load3d: {
-      load3dExtension: defineExtension('Comfy.Load3D'),
+      load3dExtension: {
+        ...defineExtension('Comfy.Load3D'),
+        commands: [{ id: 'test.lazy3d.command', function: vi.fn() }]
+      },
       preview3DExtension: defineExtension('Comfy.Preview3D'),
       preview3DAdvancedExtension: defineExtension('Comfy.Preview3DAdvanced'),
       save3DAdvancedExtension: defineExtension('Comfy.Save3DAdvanced')
@@ -112,20 +122,11 @@ function makeWorkflow(rootTypes: string[], subgraphTypes: string[] = []) {
   })
 }
 
-const { load3dLazyExtension } =
-  await import('@/extensions/core/load3d/load3dLazy')
-
 type ComfyWorkflowJSON = Parameters<
   NonNullable<typeof load3dLazyExtension.beforeConfigureGraph>
 >[0]
 
-async function loadLazyExtensionFresh() {
-  vi.resetModules()
-  const { load3dLazyExtension } =
-    await import('@/extensions/core/load3d/load3dLazy')
-  const { useExtensionStore } = await import('@/stores/extensionStore')
-  const { app } = await import('@/scripts/app')
-  const { reportError } = await import('@/platform/telemetry/reportError')
+function useLazyExtension() {
   const extensionStore = useExtensionStore()
   return {
     app,
@@ -139,7 +140,10 @@ async function loadLazyExtensionFresh() {
         app
       ),
     configureGraph: (graphData: ComfyWorkflowJSON) =>
-      load3dLazyExtension.beforeConfigureGraph!(graphData, [], app),
+      load3dLazyExtension.beforeConfigureGraph!(graphData, [], app, {
+        graph: app.rootGraph,
+        workflow: null
+      }),
     createNode: (node: LGraphNode) =>
       load3dLazyExtension.nodeCreated!(node, app)
   }
@@ -149,8 +153,7 @@ describe('load3dLazy', () => {
   it.for(['PlainNode', 'Load3D', 'Preview3D', 'SaveGLB', 'CameraAngle'])(
     'does not load the 3D extensions when registering the %s node def',
     async (nodeName) => {
-      const { registeredNames, registerNodeDef } =
-        await loadLazyExtensionFresh()
+      const { registeredNames, registerNodeDef } = useLazyExtension()
 
       await registerNodeDef(makeNodeDef(nodeName))
 
@@ -218,7 +221,7 @@ describe('load3dLazy', () => {
   ])(
     'patches the $name node def inputs $required to $expected',
     async ({ name, required, expected }) => {
-      const { registerNodeDef } = await loadLazyExtensionFresh()
+      const { registerNodeDef } = useLazyExtension()
       const nodeData = makeNodeDef(name, { input: fromAny({ required }) })
 
       await registerNodeDef(nodeData)
@@ -228,7 +231,7 @@ describe('load3dLazy', () => {
   )
 
   it('adds the PREVIEW_3D input to a SaveGLB node def that has no inputs', async () => {
-    const { registerNodeDef } = await loadLazyExtensionFresh()
+    const { registerNodeDef } = useLazyExtension()
     const nodeData = makeNodeDef('SaveGLB')
 
     await registerNodeDef(nodeData)
@@ -258,7 +261,7 @@ describe('load3dLazy', () => {
   ])(
     'before configuring a workflow with $case, loads the 3D extensions: $loads',
     async ({ root, subgraph, loads }) => {
-      const { registeredNames, configureGraph } = await loadLazyExtensionFresh()
+      const { registeredNames, configureGraph } = useLazyExtension()
 
       await configureGraph(makeWorkflow(root, subgraph))
 
@@ -269,7 +272,7 @@ describe('load3dLazy', () => {
   )
 
   it('ignores non-3D nodes as they are created', async () => {
-    const { registeredNames, createNode } = await loadLazyExtensionFresh()
+    const { registeredNames, createNode } = useLazyExtension()
 
     await createNode(makeNode('KSampler'))
 
@@ -278,7 +281,7 @@ describe('load3dLazy', () => {
   })
 
   it('loads the 3D extensions for a 3D node created before they loaded and replays their nodeCreated hooks', async () => {
-    const { app, registeredNames, createNode } = await loadLazyExtensionFresh()
+    const { app, registeredNames, createNode } = useLazyExtension()
     const node = makeNode('Load3D')
 
     await createNode(node)
@@ -288,7 +291,7 @@ describe('load3dLazy', () => {
   })
 
   it('replays nodeCreated for every 3D node created while the load is in flight', async () => {
-    const { app, createNode } = await loadLazyExtensionFresh()
+    const { app, createNode } = useLazyExtension()
     const load3dNode = makeNode('Load3D')
     const cameraNode = makeNode('CreateCameraInfo')
 
@@ -303,7 +306,7 @@ describe('load3dLazy', () => {
   })
 
   it('reports a replayed nodeCreated hook that throws and still replays the others', async () => {
-    const { app, reportError, createNode } = await loadLazyExtensionFresh()
+    const { app, reportError, createNode } = useLazyExtension()
     const cause = new Error('hook failed')
     vi.mocked(
       lazyModules.load3d.load3dExtension.nodeCreated
@@ -325,7 +328,7 @@ describe('load3dLazy', () => {
   })
 
   it('does not replay nodeCreated for 3D nodes created after the load completes', async () => {
-    const { configureGraph, createNode } = await loadLazyExtensionFresh()
+    const { configureGraph, createNode } = useLazyExtension()
     await configureGraph(makeWorkflow(['Load3D']))
 
     await createNode(makeNode('Preview3D'))
@@ -334,8 +337,7 @@ describe('load3dLazy', () => {
   })
 
   it('registers but does not replay lazy extensions that are disabled', async () => {
-    const { extensionStore, registeredNames, createNode } =
-      await loadLazyExtensionFresh()
+    const { extensionStore, registeredNames, createNode } = useLazyExtension()
     extensionStore.loadDisabledExtensionNames(['Comfy.Preview3D'])
 
     await createNode(makeNode('Preview3D'))
@@ -349,14 +351,48 @@ describe('load3dLazy', () => {
     ).toHaveBeenCalledOnce()
   })
 
+  it('keeps disabled lazy core commands after startup without exempting third-party extensions', async () => {
+    const { extensionStore, configureGraph } = useLazyExtension()
+    extensionStore.registerExtension({ name: 'Comfy.StartupCore' })
+    extensionStore.captureCoreExtensions()
+    extensionStore.loadDisabledExtensionNames([
+      'Comfy.Load3D',
+      'Comfy.ThirdParty'
+    ])
+
+    await configureGraph(makeWorkflow(['Load3D']))
+
+    expect(useCommandStore().isRegistered('test.lazy3d.command')).toBe(true)
+    expect(extensionStore.isCoreExtension('Comfy.StartupCore')).toBe(true)
+    expect(extensionStore.hasThirdPartyExtensions).toBe(false)
+
+    useExtensionService().registerExtension({
+      name: 'Comfy.ThirdParty',
+      commands: [{ id: 'test.thirdParty.command', function: vi.fn() }]
+    })
+
+    expect(useCommandStore().isRegistered('test.thirdParty.command')).toBe(
+      false
+    )
+    expect(extensionStore.hasThirdPartyExtensions).toBe(true)
+  })
+
   it('rolls back a partial registration when a lazy 3D extension name is taken, then retries once it is free', async () => {
     const { extensionStore, registeredNames, createNode, reportError } =
-      await loadLazyExtensionFresh()
-    extensionStore.registerExtension({ name: 'Comfy.CreateLightInfo' })
+      useLazyExtension()
+    extensionStore.captureCoreExtensions()
+    extensionStore.loadDisabledExtensionNames(['Comfy.CreateLightInfo'])
+    extensionStore.registerExtension({
+      name: 'Comfy.CreateLightInfo',
+      topbarBadges: [{ text: 'Disabled third-party badge' }]
+    })
+    expect(useTopbarBadgeStore().badges).toEqual([])
 
     await expect(createNode(makeNode('Load3D'))).resolves.toBeUndefined()
 
     expect(registeredNames()).toEqual(['Comfy.CreateLightInfo'])
+    expect(useTopbarBadgeStore().badges).toEqual([])
+    expect(extensionStore.hasThirdPartyExtensions).toBe(true)
     expect(replayedNodes()).toEqual(lazyExtensions.map(() => []))
     expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.anything(), {
       errorType: 'error_loading_3d_extensions',
@@ -367,5 +403,15 @@ describe('load3dLazy', () => {
     await createNode(makeNode('Preview3D'))
 
     expect(registeredNames()).toEqual(LAZY_EXTENSION_REGISTRATION_ORDER)
+    expect(extensionStore.hasThirdPartyExtensions).toBe(false)
+
+    extensionStore.unregisterExtension('Comfy.CreateLightInfo')
+    extensionStore.registerExtension({
+      name: 'Comfy.CreateLightInfo',
+      topbarBadges: [{ text: 'Replacement third-party badge' }]
+    })
+
+    expect(useTopbarBadgeStore().badges).toEqual([])
+    expect(extensionStore.hasThirdPartyExtensions).toBe(true)
   })
 })

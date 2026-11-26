@@ -1,3 +1,8 @@
+import type {
+  Size2D,
+  CompactRect as Rect,
+  Point2D as Vec2
+} from '@comfyorg/shared-frontend-utils/geometry'
 import { BakeRasterCommand, snapshotRaster } from '#/commands/bakeContent'
 import { AddNodeCommand, ReorderCommand } from '#/commands/structure'
 import type { Compositor, CompositeInput } from '#/compositor'
@@ -11,10 +16,8 @@ import type {
   ChannelData,
   GroupData,
   RasterData,
-  Rect,
   SceneNode,
-  Transform,
-  Vec2
+  Transform
 } from '#/node'
 import { getNodeKind } from '#/nodeKind'
 import {
@@ -468,10 +471,8 @@ export function createEditor(opts: EditorOptions): Editor {
 
   function anchorAsNewLayer(
     item: FloatingItem,
-    entry: {
+    entry: Size2D & {
       canvas: HTMLCanvasElement
-      width: number
-      height: number
       uploadedUrl: string | null
     }
   ): void {

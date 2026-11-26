@@ -23,7 +23,7 @@
       <i :class="cn('text-muted-foreground', tile.partnerLogo)" />
     </span>
     <TextTickerMultiLine
-      class="flex h-7.5 w-full shrink-0 flex-col justify-center px-2 text-center text-xs/3.75 font-normal text-foreground @min-[7rem]:h-9 @min-[7rem]:text-sm/4.5"
+      class="flex h-7.5 shrink-0 flex-col justify-center px-2 text-center text-xs/3.75 font-normal text-foreground @min-[7rem]:h-9 @min-[7rem]:text-sm/4.5"
       :text="nodeDef?.display_name ?? tile.nodeName"
     />
   </div>

@@ -1,15 +1,13 @@
-import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
 import type {
   RetentionFlowEventRequest,
   RetentionFlowResponse
 } from '@comfyorg/ingest-types'
 
-import { supportsInAppCancellation } from '@/platform/billing/composables/billingRail'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { t } from '@/i18n'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
-import { reportError } from '@/platform/telemetry/reportError'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { billingApi } from '@/platform/billing/api/billingApi'
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
@@ -104,10 +102,7 @@ function canOfferRetention(launchWorkspaceId: string | null): boolean {
   return (
     useBillingContext().type.value === 'workspace' &&
     !!launchWorkspaceId &&
-    workspaceStore.isInPersonalWorkspace &&
-    supportsInAppCancellation(
-      useWorkspaceBillingStateStore().activeWorkspaceBillingRail
-    )
+    workspaceStore.isInPersonalWorkspace
   )
 }
 
@@ -142,7 +137,8 @@ async function showCancellationFlow(
   try {
     await showFlow({
       cancelAt,
-      surveyId: remoteConfig.value.cancellation_survey_id || undefined,
+      surveyId:
+        useRemoteConfigStore().config.cancellation_survey_id || undefined,
       flow,
       workspaceId: launchWorkspaceId,
       isScopeCurrent

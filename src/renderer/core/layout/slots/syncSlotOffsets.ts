@@ -1,8 +1,8 @@
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import type { SlotOffset, SlotOffsetMode } from '@/renderer/core/layout/types'
-import type { NodeId } from '@/types/nodeId'
-import { parseSlotId } from '@/types/slotId'
+import type { SlotOffset, SlotOffsetMode } from '@comfyorg/graph-model/layout'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { parseSlotId } from '@comfyorg/graph-model/slotId'
 import type { UUID } from '@/utils/uuid'
 
 export function syncSlotOffsets(
@@ -34,19 +34,20 @@ export function syncSlotOffsets(
     const slotRect = slotElement.getBoundingClientRect()
     if (slotRect.width <= 0 || slotRect.height <= 0) continue
 
+    const width = slotRect.width / scale
+    const height = slotRect.height / scale
+    const anchorX = (slotRect.left + slotRect.width / 2 - nodeRect.x) / scale
+    const anchorY =
+      (slotRect.top + slotRect.height / 2 - nodeRect.y) / scale -
+      LiteGraph.NODE_TITLE_HEIGHT
     offsets.push({
       index: slotId.index,
       type: slotId.direction,
-      position: {
-        x:
-          mode === 'collapsed'
-            ? (slotRect.left + slotRect.width / 2 - nodeRect.x) / scale
-            : slotId.direction === 'input'
-              ? 0
-              : nodeElement.offsetWidth,
-        y:
-          (slotRect.top + slotRect.height / 2 - nodeRect.y) / scale -
-          LiteGraph.NODE_TITLE_HEIGHT
+      bounds: {
+        x: anchorX - width / 2,
+        y: anchorY - height / 2,
+        width,
+        height
       }
     })
   }

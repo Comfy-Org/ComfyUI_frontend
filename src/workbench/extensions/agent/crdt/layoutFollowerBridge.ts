@@ -1,5 +1,5 @@
 import { assert } from '@/base/assert'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 import type {
   DocFrameClient,
@@ -145,11 +145,35 @@ export class LayoutFollowerBridge extends EventTarget {
     return Math.max(this.lastSeq ?? 0, this.ackSeq ?? 0)
   }
 
+  /** True from a subscribe until its catch-up, if any, has been integrated. */
+  get isCatchingUp(): boolean {
+    return (
+      this.sentWorkflowId !== null &&
+      (this.ackSeq === null || this.catchUpPending)
+    )
+  }
+
   get isSubscribeBaselineIntegrated(): boolean {
     return (
       this.ackSeq !== null &&
       this.integratedSeq !== null &&
       this.integratedSeq >= this.ackSeq &&
+      this.schemaError === null
+    )
+  }
+
+  /**
+   * True while the current subscribe was acknowledged at seq 0 and no
+   * document frame has been applied in this lineage: the workflow has no
+   * document yet. Documents mint only at agent turn start, and that mint
+   * seeds from the canvas. A frame applied before the acknowledgement means
+   * a document exists, so this stays false and the normal refusal applies.
+   */
+  get isPreMintBaseline(): boolean {
+    return (
+      this.ackSeq === 0 &&
+      this.lastSeq === null &&
+      this.integratedSeq === null &&
       this.schemaError === null
     )
   }
@@ -398,7 +422,9 @@ export class LayoutFollowerBridge extends EventTarget {
 
   private reportGap(workflowId: string, expected: number, received: number) {
     this.dispatchEvent(
-      new CustomEvent('doc_gap', { detail: { workflowId, expected, received } })
+      new CustomEvent('doc_gap', {
+        detail: { workflowId, expected, received }
+      })
     )
     this.resubscribe()
   }

@@ -11,7 +11,7 @@ import {
 import { STALE_SCHEMA_RESEED_REQUIRED } from './docFrameCodes'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: vi.fn()
 }))
 

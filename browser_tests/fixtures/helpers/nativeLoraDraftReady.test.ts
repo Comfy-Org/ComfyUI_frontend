@@ -3,7 +3,7 @@ import { afterEach, assert, describe, expect, it, vi } from 'vitest'
 
 import type { ComfyApp } from '@/scripts/app'
 import { hashPath } from '@/platform/workflow/persistence/base/hashUtil'
-import { zComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { zComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import nativeWorkflow from '@e2e/assets/inputs/native_lora_model.json'
 import { nativeLoraDraftReady } from '@e2e/fixtures/helpers/nativeLoraDraftReady'
 

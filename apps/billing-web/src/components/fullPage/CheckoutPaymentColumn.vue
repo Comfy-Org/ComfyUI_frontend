@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { SavedPaymentMethod } from '@comfyorg/account-core/billing'
@@ -38,7 +38,8 @@ const {
   reopening,
   keepSubscription,
   savedMethods = [],
-  purchase = 'subscribe'
+  purchase = 'subscribe',
+  savesCardOffSession = false
 } = defineProps<{
   page: Extract<CheckoutPage, { kind: 'resolving' | 'capture' | 'waiting' }>
   charge?: CheckoutCharge
@@ -50,6 +51,8 @@ const {
   keepSubscription?: KeepSubscriptionCopy
   savedMethods?: readonly SavedPaymentMethod[]
   purchase?: PlanPurchase | 'credits'
+  /** A new card is saved for off-session charges, as auto top-up with no default card requires. */
+  savesCardOffSession?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -68,6 +71,8 @@ const emit = defineEmits<{
 const { t } = useI18n()
 
 const SECTION_LABEL = 'm-0 text-base font-normal text-foreground'
+
+const tokenizing = ref(false)
 
 const phase = computed(() => submitPhaseOf(page))
 const locked = computed(() => isLocked(page))
@@ -122,6 +127,14 @@ const elementLive = computed(() => {
   )
 })
 
+const formMounted = computed(() => elementLive.value && charge !== undefined)
+
+watch(formMounted, (mounted) => {
+  if (!mounted) tokenizing.value = false
+})
+
+const tabsLocked = computed(() => locked.value || tokenizing.value)
+
 const copy = computed<StripePaymentCopy>(() => ({
   paymentMethod: t('checkout.paymentMethod'),
   methodChoice: t('checkout.methodChoice'),
@@ -138,6 +151,7 @@ const copy = computed<StripePaymentCopy>(() => ({
     :data-testid="page.kind === 'waiting' ? 'checkout-waiting' : undefined"
   >
     <div class="flex w-full max-w-lg flex-col px-6 py-12 lg:px-16">
+      <slot name="before" />
       <div v-if="!view" class="flex flex-col gap-6">
         <div class="flex flex-col gap-3">
           <h3 :class="SECTION_LABEL">{{ t('checkout.paymentMethod') }}</h3>
@@ -196,7 +210,7 @@ const copy = computed<StripePaymentCopy>(() => ({
           v-if="tabbed"
           :rail="tabbed"
           :methods="savedMethods"
-          :locked
+          :locked="tabsLocked"
           @select-tab="emit('selectTab', $event)"
           @pay-saved="
             emit('pay', {
@@ -235,8 +249,10 @@ const copy = computed<StripePaymentCopy>(() => ({
           :can-submit="canPay"
           :locked
           :pay-once="purchase === 'credits'"
+          :saves-card-off-session
           page-layout
           @phase="emit('phase', $event)"
+          @submitting-change="tokenizing = $event"
           @confirm="
             (token, methodType) =>
               emit('pay', { confirmationToken: token, methodType })

@@ -3,7 +3,7 @@ import type {
   ISerialisedGraph,
   ISerialisedNode,
   SerialisableGraph
-} from './types/serialisation'
+} from '@comfyorg/graph-model/serialisation'
 
 type JsonValue = null | boolean | number | string | JsonValue[] | JsonObject
 type JsonObject = { [key: string]: JsonValue }

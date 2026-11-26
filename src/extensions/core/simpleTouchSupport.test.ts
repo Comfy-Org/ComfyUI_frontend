@@ -14,26 +14,40 @@ type Viewport = Pick<
   'scale' | 'offset' | 'min_scale' | 'max_scale'
 >
 
-const { canvasEl, container, canvasAvailability } = vi.hoisted(() => {
-  const container = document.createElement('div')
-  const canvasEl = document.createElement('canvas')
-  container.append(canvasEl)
-  return { container, canvasEl, canvasAvailability: { missing: false } }
-})
+const { canvasEl, container, canvasAvailability, ds, pointer } = vi.hoisted(
+  () => {
+    const container = document.createElement('div')
+    const canvasEl = document.createElement('canvas')
+    container.append(canvasEl)
+    const ds: Viewport = {
+      scale: 1,
+      offset: [0, 0],
+      min_scale: 0.1,
+      max_scale: 10
+    }
+    const pointer = {
+      isDown: false,
+      reset() {
+        pointer.isDown = false
+      }
+    }
+    return {
+      container,
+      canvasEl,
+      canvasAvailability: { missing: false },
+      ds,
+      pointer
+    }
+  }
+)
 
 const processMouseDown = vi.fn()
 const processMouseMove = vi.fn()
 
 vi.mock(import('@/scripts/app'), () => {
-  const ds: Viewport = {
-    scale: 1,
-    offset: [0, 0],
-    min_scale: 0.1,
-    max_scale: 10
-  }
   const canvas = fromPartial<LGraphCanvas>({
     ds,
-    pointer: { isDown: false },
+    pointer,
     setDirty: vi.fn()
   })
   return {
@@ -132,6 +146,47 @@ describe('Comfy.SimpleTouchSupport', () => {
     expect(processMouseDown).toHaveBeenCalledOnce()
   })
 
+  it('lets a mouse press through after setup reruns mid-gesture', async () => {
+    dispatchTouch('touchstart', [touchAt(canvasEl), touchAt(canvasEl, 100)])
+
+    await simpleTouchSupportExtension.setup?.(fromPartial({}))
+
+    pressPointer({ pointerType: 'mouse', isPrimary: true })
+    expect(processMouseDown).toHaveBeenCalledOnce()
+  })
+
+  it('lets a mouse press through once touches from before a resetup end', async () => {
+    const twoFingers = [touchAt(canvasEl), touchAt(canvasEl, 100)]
+    dispatchTouch('touchstart', twoFingers)
+
+    await simpleTouchSupportExtension.setup?.(fromPartial({}))
+
+    dispatchTouch('touchend', [twoFingers[1]], [twoFingers[0]])
+    dispatchTouch('touchend', [], [twoFingers[1]])
+
+    pressPointer({ pointerType: 'mouse', isPrimary: true })
+    expect(processMouseDown).toHaveBeenCalledOnce()
+  })
+
+  it('keeps blocking the mouse while a finger from before a resetup is still down', async () => {
+    const [a, b] = [touchAt(canvasEl), touchAt(canvasEl, 100)]
+    dispatchTouch('touchstart', [a, b])
+
+    await simpleTouchSupportExtension.setup?.(fromPartial({}))
+
+    const c = touchAt(canvasEl, 200)
+    dispatchTouch('touchstart', [a, b, c], [c])
+    dispatchTouch('touchend', [b, c], [a])
+
+    pressPointer({ pointerType: 'mouse', isPrimary: true })
+    expect(processMouseDown).not.toHaveBeenCalled()
+
+    dispatchTouch('touchend', [], [b, c])
+
+    pressPointer({ pointerType: 'mouse', isPrimary: true })
+    expect(processMouseDown).toHaveBeenCalledOnce()
+  })
+
   it('still blocks a second finger during a live gesture', () => {
     pressPointer({ isPrimary: true })
     dispatchTouch('touchstart', [touchAt(canvasEl)])
@@ -164,13 +219,108 @@ describe('Comfy.SimpleTouchSupport', () => {
 
   it('ignores a pinch when no canvas exists', () => {
     withoutCanvas()
+    const listenerErrors = vi.fn()
+    window.addEventListener('error', listenerErrors)
+    onTestFinished(() => window.removeEventListener('error', listenerErrors))
     const twoFingers = [touchAt(canvasEl), touchAt(canvasEl, 100)]
 
     dispatchTouch('touchstart', twoFingers)
     dispatchTouch('touchmove', twoFingers)
     pressPointer({ isPrimary: true })
 
+    expect(listenerErrors).not.toHaveBeenCalled()
     expect(processMouseDown).toHaveBeenCalledOnce()
+  })
+
+  describe('pinch zoom', () => {
+    function resetViewport() {
+      ds.scale = 1
+      ds.offset[0] = 0
+      ds.offset[1] = 0
+    }
+
+    it.for([
+      { name: 'start on the same point', start: 0, move: 100 },
+      { name: 'start and stay on the same point', start: 0, move: 0 },
+      { name: 'end on the same point', start: 100, move: 0 }
+    ])(
+      'leaves the viewport unchanged when two fingers $name',
+      ({ start, move }) => {
+        resetViewport()
+
+        dispatchTouch('touchstart', [
+          touchAt(canvasEl),
+          touchAt(canvasEl, start)
+        ])
+        dispatchTouch('touchmove', [touchAt(canvasEl), touchAt(canvasEl, move)])
+
+        expect({ scale: ds.scale, offset: [...ds.offset] }).toEqual({
+          scale: 1,
+          offset: [0, 0]
+        })
+      }
+    )
+
+    it('waits for a usable distance before measuring a pinch', () => {
+      resetViewport()
+
+      dispatchTouch('touchstart', [touchAt(canvasEl), touchAt(canvasEl)])
+      dispatchTouch('touchmove', [touchAt(canvasEl), touchAt(canvasEl, 7)])
+      dispatchTouch('touchmove', [touchAt(canvasEl), touchAt(canvasEl, 50)])
+
+      expect(ds.scale).toBe(1)
+    })
+
+    it('zooms once fingers that started on the same point move apart', () => {
+      resetViewport()
+
+      dispatchTouch('touchstart', [touchAt(canvasEl), touchAt(canvasEl)])
+      dispatchTouch('touchmove', [touchAt(canvasEl), touchAt(canvasEl, 50)])
+      dispatchTouch('touchmove', [touchAt(canvasEl), touchAt(canvasEl, 100)])
+
+      expect(ds.scale).toBe(2)
+    })
+
+    it('uses the minimum scale when converting pinch movement to an offset', () => {
+      resetViewport()
+      ds.scale = ds.min_scale
+
+      dispatchTouch('touchstart', [touchAt(canvasEl), touchAt(canvasEl, 100)])
+      dispatchTouch('touchmove', [touchAt(canvasEl, 20), touchAt(canvasEl, 70)])
+
+      expect({ scale: ds.scale, offset: [...ds.offset] }).toEqual({
+        scale: 0.1,
+        offset: [-50, 0]
+      })
+    })
+
+    it('cancels the one-finger pointer operation when a pinch starts', () => {
+      resetViewport()
+      pointer.isDown = true
+      const reset = vi.spyOn(pointer, 'reset')
+      onTestFinished(() => reset.mockRestore())
+
+      dispatchTouch('touchstart', [touchAt(canvasEl), touchAt(canvasEl, 100)])
+
+      expect(reset).toHaveBeenCalledOnce()
+      expect(pointer.isDown).toBe(false)
+    })
+
+    it('pans once per move after setup runs again', async () => {
+      await simpleTouchSupportExtension.setup?.(fromPartial({}))
+      resetViewport()
+
+      dispatchTouch('touchstart', [touchAt(canvasEl), touchAt(canvasEl, 100)])
+      dispatchTouch('touchmove', [
+        touchAt(canvasEl, 20),
+        touchAt(canvasEl, 120)
+      ])
+
+      expect({ scale: ds.scale, offset: [...ds.offset] }).toEqual({
+        scale: 1,
+        offset: [20, 0]
+      })
+    })
   })
 })
 

@@ -3,7 +3,7 @@ import { computed } from 'vue'
 
 import Button from '@comfyorg/design-system/button/Button'
 import { useModelUpload } from '@/platform/assets/composables/useModelUpload'
-import type { FilterOption } from '@/platform/assets/types/filterTypes'
+import type { FilterOption } from '@comfyorg/assets-core/filtering'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { filterOptions } = defineProps<{
@@ -20,11 +20,8 @@ const { isUploadButtonEnabled, showUploadDialog } = useModelUpload()
 
 const singleFilterOption = computed(() => filterOptions.length === 1)
 
-const uploadButtonStyle = cn(
-  'ml-auto h-8 rounded-lg bg-foreground text-background',
-  'flex items-center justify-center gap-2 p-2',
-  'transition-all duration-150 hover:bg-foreground/90 active:scale-95'
-)
+const uploadButtonStyle =
+  'ml-auto flex transition-all duration-150 hover:bg-foreground/90 active:scale-95'
 </script>
 
 <template>
@@ -38,10 +35,10 @@ const uploadButtonStyle = cn(
         cn(
           'inline-flex appearance-none items-center justify-center rounded-md border-0 px-4 py-2 text-foreground select-none',
           !singleFilterOption &&
-            'cursor-pointer transition-all duration-150 hover:bg-accent hover:text-foreground active:scale-95',
+            'cursor-pointer transition-all duration-150 hover:text-foreground active:scale-95',
           !singleFilterOption && filterSelected === option.value
-            ? 'bg-muted! text-foreground'
-            : 'bg-transparent'
+            ? 'bg-muted'
+            : 'bg-transparent hover:bg-accent'
         )
       "
       @click="filterSelected = option.value"
@@ -50,7 +47,7 @@ const uploadButtonStyle = cn(
     </button>
     <Button
       v-if="isUploadButtonEnabled && singleFilterOption"
-      variant="textonly"
+      variant="inverted"
       size="md"
       :class="uploadButtonStyle"
       @click="showUploadDialog"
@@ -61,7 +58,7 @@ const uploadButtonStyle = cn(
     <Button
       v-else-if="uploadable"
       :title="$t('g.upload')"
-      variant="textonly"
+      variant="inverted"
       size="md"
       :class="uploadButtonStyle"
       @click="emit('show-picker')"

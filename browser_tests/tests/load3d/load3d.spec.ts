@@ -2,7 +2,7 @@ import { expect } from '@playwright/test'
 
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import { load3dTest as test } from '@e2e/fixtures/helpers/Load3DFixtures'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 test.describe('Load3D', { tag: '@vue-nodes' }, () => {
@@ -154,6 +154,38 @@ test.describe('Load3D', { tag: '@vue-nodes' }, () => {
       )
     }
   )
+
+  test('Shows model statistics over the viewport while a model is loaded', async ({
+    comfyPage,
+    load3d
+  }) => {
+    await expect(load3d.node.getByRole('term')).toHaveCount(0)
+
+    await test.step('Uploading a model shows its counts', async () => {
+      const fileChooserPromise = comfyPage.page.waitForEvent('filechooser')
+      await load3d.getUploadButton('upload 3d model').click()
+      const fileChooser = await fileChooserPromise
+      await fileChooser.setFiles(assetPath('cube.obj'))
+      await load3d.waitForModelLoaded()
+
+      await expect(load3d.node.getByRole('term')).toHaveText([
+        'Vertices',
+        'Edges',
+        'Triangles'
+      ])
+      await expect(load3d.node.getByRole('definition')).toHaveText([
+        '8',
+        '18',
+        '12'
+      ])
+    })
+
+    await test.step('Clearing the model removes the counts', async () => {
+      await load3d.getUploadButton('clear').click()
+
+      await expect(load3d.node.getByRole('term')).toHaveCount(0)
+    })
+  })
 
   test(
     'Uploading a background image populates Scene Config and surfaces panorama/remove controls',

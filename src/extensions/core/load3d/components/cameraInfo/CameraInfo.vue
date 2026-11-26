@@ -86,7 +86,7 @@ import { useCameraInfo } from '@/extensions/core/load3d/composables/useCameraInf
 import { useLiveGraphNode } from '@/composables/useLiveGraphNode'
 import type { TransformGizmoMode } from '@comfyorg/viewport3d/cameraInfo/CameraInfoViewport'
 import type { ComponentWidget } from '@/types/domWidget'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { resolveNode } from '@/utils/litegraphUtil'
 

@@ -1,4 +1,4 @@
-import type { SettingParams } from '@/platform/settings/types'
+import type { SettingParams } from '@comfyorg/settings-core/types'
 
 export const load3dSettings: SettingParams[] = [
   {

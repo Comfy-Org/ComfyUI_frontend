@@ -121,7 +121,7 @@ function renderRunningJobWithActions(args: AssetsListItemProps) {
           </div>
         </template>
         <template #secondary>
-          <div class="flex items-center gap-1 text-muted-foreground">
+          <div class="flex items-center gap-1">
             <span>CLIP Text Encode:</span>
             <span>70%</span>
           </div>

@@ -8,7 +8,7 @@ import {
   sharedWorkflowImportScenario
 } from '@e2e/fixtures/sharedWorkflowImportFixture'
 import type { SharedWorkflowImportMocks } from '@e2e/fixtures/sharedWorkflowImportFixture'
-import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
+import { PropertiesPanel } from '@e2e/fixtures/components/PropertiesPanel'
 import type { WorkspaceStore } from '@e2e/types/globals'
 
 const IMPORT_ORDER_TIMEOUT_MS = 5_000
@@ -66,7 +66,7 @@ async function openPanelAndExpectNoMissingMedia(
   const errorOverlay = page.getByTestId(TestIds.dialogs.errorOverlay)
   await expect(errorOverlay).toBeHidden()
 
-  const panel = new PropertiesPanelHelper(page)
+  const panel = new PropertiesPanel(page)
   await panel.open(comfyPage.actionbar.propertiesButton)
   await expect(
     panel.root.getByTestId(TestIds.propertiesPanel.errorsTab)
@@ -82,18 +82,14 @@ test.describe('Shared workflow missing media', { tag: '@cloud' }, () => {
   // Missing media only surfaces the overlay when the Errors tab is enabled
   // (src/stores/executionErrorStore.ts).
   test.use({
+    initialUrl: `/?share=${sharedWorkflowImportScenario.shareId}`,
     initialSettings: {
       'Comfy.RightSidePanel.ShowErrorsTab': true
     }
   })
 
-  test.beforeEach(async ({ comfyPage, sharedWorkflowImportMocks }) => {
+  test.beforeEach(async ({ sharedWorkflowImportMocks }) => {
     sharedWorkflowImportMocks.resetAndStartRecording()
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
-    await comfyPage.setup({
-      clearStorage: false,
-      url: `/?share=${sharedWorkflowImportScenario.shareId}`
-    })
   })
 
   test('imports shared media before loading workflow so missing media is not surfaced', async ({

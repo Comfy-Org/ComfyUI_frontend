@@ -2,14 +2,19 @@ import { delay } from 'es-toolkit'
 import { computed } from 'vue'
 
 import type { BillingClient } from '@comfyorg/account-core/billing'
-
-import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import type { CreateTopupResponse } from '@comfyorg/billing-core'
+import type { TopupAutoTopUpSettings } from '@comfyorg/ingest-types'
+import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
+
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { billingApi } from '@/platform/billing/api/billingApi'
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import { useBillingSdkStore } from '@/platform/billing/sdk/billingSdkStore'
+import type {
+  HostedCheckoutSession,
+  TopupQuoteFacts
+} from '@/platform/billing/sdk/topupOperationView'
 import { useBillingOperationStore } from '@/platform/billing/stores/billingOperationStore'
 
 const RETRYABLE_CHECKOUT_REFUSALS: ReadonlyArray<readonly [number, string]> = [
@@ -30,16 +35,14 @@ function isRetryableCheckoutRefusal(error: unknown): boolean {
 }
 
 /**
- * The top-up purchase and the operation the dialog reads, from one rail.
+ * The top-up quote, checkout session and operation the dialog reads, from one rail.
  * The rail is fixed when the dialog opens: a flag flip mid-operation must not
  * issue on one rail and observe on the other, or move a live operation
  * between two observers.
  */
 export function useTopupOperation() {
   const { flags } = useFeatureFlags()
-  const sdkStore = flags.billingSdkTopupRailEnabled
-    ? useBillingSdkStore()
-    : null
+  const sdkStore = flags.billingSdkRailEnabled ? useBillingSdkStore() : null
   const operationStore = useBillingOperationStore()
   const billingContext = useBillingContext()
   const billingClient: BillingClient = sdkStore ? 'sdk' : 'legacy'
@@ -61,33 +64,84 @@ export function useTopupOperation() {
   async function createHostedCheckout(
     amountCents: number,
     returnUrl: string,
-    signal?: AbortSignal
-  ): Promise<string> {
+    signal?: AbortSignal,
+    autoTopUp?: TopupAutoTopUpSettings
+  ): Promise<HostedCheckoutSession> {
     for (const retryDelayMs of CHECKOUT_RETRY_DELAYS_MS) {
       try {
-        return await mintHostedCheckout(amountCents, returnUrl, signal)
+        return await mintHostedCheckout(
+          amountCents,
+          returnUrl,
+          signal,
+          autoTopUp
+        )
       } catch (error) {
         if (!isRetryableCheckoutRefusal(error)) throw error
         await delay(retryDelayMs, { signal })
       }
     }
-    return mintHostedCheckout(amountCents, returnUrl, signal)
+    return mintHostedCheckout(amountCents, returnUrl, signal, autoTopUp)
   }
 
   async function mintHostedCheckout(
     amountCents: number,
     returnUrl: string,
-    signal: AbortSignal | undefined
-  ): Promise<string> {
+    signal: AbortSignal | undefined,
+    autoTopUp: TopupAutoTopUpSettings | undefined
+  ): Promise<HostedCheckoutSession> {
     if (sdkStore) {
-      return sdkStore.createHostedTopupCheckout(amountCents, returnUrl, signal)
+      return sdkStore.createHostedTopupCheckout(
+        amountCents,
+        returnUrl,
+        signal,
+        autoTopUp
+      )
     }
-    const { checkout_url } = await billingApi.createTopupCheckout(
+    const { checkout_url, session_id } = await billingApi.createTopupCheckout(
       amountCents,
       returnUrl,
-      signal
+      signal,
+      autoTopUp
     )
-    return checkout_url
+    return session_id === undefined
+      ? { url: checkout_url }
+      : { url: checkout_url, sessionId: session_id }
+  }
+
+  async function openTopupPurchase(
+    amountCents: number,
+    signal: AbortSignal,
+    autoTopUp: TopupAutoTopUpSettings | undefined
+  ): Promise<string | undefined> {
+    if (sdkStore)
+      return useBillingSdkStore().openTopupPurchase(
+        amountCents,
+        signal,
+        autoTopUp
+      )
+    try {
+      return (
+        await billingApi.createTopupPurchase(amountCents, signal, autoTopUp)
+      ).purchase_id
+    } catch {
+      return undefined
+    }
+  }
+
+  async function quoteTopup(
+    amountCents: number,
+    signal: AbortSignal
+  ): Promise<TopupQuoteFacts | null> {
+    if (sdkStore) return sdkStore.quoteTopup(amountCents, signal)
+    try {
+      const quoted = await billingApi.quoteTopup(amountCents, signal)
+      return {
+        credits: quoted.credits,
+        paymentConfigured: quoted.payment_method_configuration_id !== undefined
+      }
+    } catch {
+      return null
+    }
   }
 
   function dismissOperation(operationId: string): void {
@@ -95,12 +149,6 @@ export function useTopupOperation() {
     else operationStore.dismissOperation(operationId)
   }
 
-  /**
-   * Adopt a top-up the purchase left pending, so the caller is told when it
-   * settles. On the SDK rail the lifecycle adopted it when the command was
-   * issued, so there is nothing to register and a second registration would be
-   * a second poller on one operation.
-   */
   async function adoptPendingOperation(
     operationId: string,
     metadata: {
@@ -119,6 +167,8 @@ export function useTopupOperation() {
     topup,
     createHostedCheckout,
     dismissOperation,
-    adoptPendingOperation
+    adoptPendingOperation,
+    openTopupPurchase,
+    quoteTopup
   }
 }

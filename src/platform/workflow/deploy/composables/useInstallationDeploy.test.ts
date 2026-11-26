@@ -9,7 +9,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { t } from '@/i18n'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useInstallationDeploy } from '@/platform/workflow/deploy/composables/useInstallationDeploy'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
@@ -24,6 +24,7 @@ const CANVAS_GRAPH = { last_node_id: 1, nodes: [{ id: 1, type: 'KSampler' }] }
 
 const BUNDLE_ID = 'b78dcd79-8aba-4d5f-abd7-d35e4d33cbce'
 const BUILDER_URL = `https://platform.comfy.org/profile/builds/new?step=import&bundle=${BUNDLE_ID}&workspace=ws-1`
+const TAGGED_BUILDER_URL = `${BUILDER_URL}&utm_source=comfyui&utm_medium=app&utm_content=deploy-installation-button`
 
 function bundleCreated(url = BUILDER_URL) {
   return Response.json({
@@ -76,7 +77,10 @@ describe(useInstallationDeploy, () => {
         body: '{}'
       })
     )
-    expect(state.value).toEqual({ status: 'ready', url: BUILDER_URL })
+    expect(state.value).toEqual({
+      status: 'ready',
+      url: TAGGED_BUILDER_URL
+    })
   })
 
   it('uploads the open workflow as it stands on the canvas', async () => {
@@ -110,7 +114,10 @@ describe(useInstallationDeploy, () => {
       vi.mocked(api.fetchApi).mock.calls.map(([, init]) => init?.body)
     ).toEqual([JSON.stringify({ workflow: CANVAS_GRAPH }), '{}'])
     expect(useToast().error).not.toHaveBeenCalled()
-    expect(state.value).toEqual({ status: 'ready', url: BUILDER_URL })
+    expect(state.value).toEqual({
+      status: 'ready',
+      url: TAGGED_BUILDER_URL
+    })
   })
 
   it('does not retry without the workflow when the builder is busy', async () => {
@@ -205,7 +212,10 @@ describe(useInstallationDeploy, () => {
         }
       })
     )
-    expect(state.value).toEqual({ status: 'ready', url: BUILDER_URL })
+    expect(state.value).toEqual({
+      status: 'ready',
+      url: TAGGED_BUILDER_URL
+    })
   })
 
   it('reports a sign-in prompt that fails to open, and lets the next deploy try again', async () => {

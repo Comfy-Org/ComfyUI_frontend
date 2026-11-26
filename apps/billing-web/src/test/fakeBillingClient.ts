@@ -145,6 +145,7 @@ export function createFakeBillingClient(
       max_seats: 1,
       occupied_seats: 1,
       scheduled_change: null,
+      ended_at: null,
       team_credit_stop: null
     },
     topupQuote = { status: 'error', code: 'REQUEST_FAILED' },
@@ -235,6 +236,8 @@ export function createFakeBillingClient(
       can_edit_workspace: false,
       can_invite_members: false,
       can_manage_auto_top_up: false,
+      can_view_auto_top_up: false,
+      can_view_auto_top_up_member_notice: false,
       can_manage_members: false,
       can_manage_subscription: false,
       can_open_plans: false,
@@ -244,9 +247,12 @@ export function createFakeBillingClient(
       can_manage_partner_node_access: false,
       can_view_pending_invites: false,
       can_view_team_usage: false,
+      can_view_workspace_usage: false,
       can_reactivate: false,
       can_revert_scheduled_change: false,
       can_run_workflows: false,
+      can_set_budgets: false,
+      can_set_hard_caps: false,
       can_subscribe_self_serve: false,
       can_top_up: false,
       can_upgrade: false,
@@ -347,7 +353,9 @@ export function createFakeBillingClient(
       createInteractiveTopup,
       createHostedTopupCheckout: unusedByHostedSurfaces(
         'topup.createHostedTopupCheckout'
-      )
+      ),
+      createTopupPurchase: unusedByHostedSurfaces('topup.createTopupPurchase'),
+      readTopupPurchase: unusedByHostedSurfaces('topup.readTopupPurchase')
     },
     commands: {
       subscribe,

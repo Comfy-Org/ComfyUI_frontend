@@ -14,7 +14,7 @@ import {
   enableSubgraphNodeCreation,
   resetSubgraphFixtureState
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef as ComfyNodeDefV1 } from '@comfyorg/object-info-parser'
 import { useLitegraphService } from '@/services/litegraphService'
 
 const GPT_IMAGE_TYPE = 'test/FE3463GPTImage'

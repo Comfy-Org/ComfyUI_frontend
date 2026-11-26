@@ -8,16 +8,13 @@
 import type { BillingIntent } from '@comfyorg/billing-contract'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { useTelemetry } from '@/platform/telemetry'
-import type { PaymentIntentSource } from '@/platform/telemetry/types'
+import { useTelemetry } from '@comfyorg/telemetry'
+import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
 import { reserveBillingTab } from '@/platform/billing/billingTab'
-import {
-  readCheckoutOperation,
-  refreshBilling
-} from '@/platform/billing/billingRefresh'
+import { refreshBillingAccount } from '@/platform/billing/billingAccountRefresh'
+import { readCheckoutOperation } from '@/platform/billing/billingRefresh'
 import { hostedBillingRoute } from '@/platform/billing/hostedBillingRoutes'
 import { registerRefreshOnReturn } from '@/platform/billing/refreshOnReturn'
-import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 import { createJourneyId } from '@/platform/billing/utils/checkoutJourney'
 
@@ -89,12 +86,7 @@ function armReturnRefresh(
   workspaceId: string | undefined
 ): void {
   disarmHostedBillingReturnRefresh()
-  stopReturnRefresh = registerRefreshOnReturn(() =>
-    Promise.allSettled([
-      refreshBilling('account'),
-      useBillingCapabilities().refresh()
-    ])
-  )
+  stopReturnRefresh = registerRefreshOnReturn(refreshBillingAccount)
   if (OPERATION_INTENTS.has(intent)) {
     stopOperationWatch = watchForHostedOperation(
       readCheckoutOperation,

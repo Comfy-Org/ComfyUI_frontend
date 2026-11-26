@@ -26,8 +26,9 @@ import {
   enableSubgraphNodeCreation
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { graphScopeOf } from '@/types/graphScopeId'
-import { toNodeId } from '@/types/nodeId'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import { AgentCrdtProjection } from './agentCrdtProjection'
 import { FollowerDoc } from './followerDoc'
@@ -153,7 +154,8 @@ function forwardDefinitionEdit(
   state: ReturnType<typeof startFollower>,
   widget: string,
   value: unknown,
-  seq: number
+  seq: number,
+  interiorType?: string
 ) {
   const vector = Y.encodeStateVector(state.hostDoc)
   state.hostDoc.transact(() => {
@@ -163,6 +165,7 @@ function forwardDefinitionEdit(
       if (!(nodes instanceof Y.Map)) return
       const interior = nodes.get('7')
       if (!(interior instanceof Y.Map)) return
+      if (interiorType !== undefined) interior.set('type', interiorType)
       const widgets = interior.get('widgets')
       if (widgets instanceof Y.Map) widgets.set(widget, value)
     })
@@ -363,5 +366,23 @@ describe('FE-3468 agent CRDT follower on subgraph definition interiors', () => {
     expect(second.widgets.map((w) => [w.name, w.value])).toEqual([
       ['value', 42]
     ])
+  })
+
+  it('does not write a document interior onto a live node of another type', () => {
+    const state = startFollower()
+    forwardDefinitionEdit(state, 'value', 42, 1, 'LoadBackgroundRemovalModel')
+
+    expect(interiorWidgets(state)).toEqual({ value: 1, detail: 10 })
+    expect(surfaceWidgets(state)).toEqual({ value: HOST_INITIAL_VALUE })
+    expect(reportError).toHaveBeenCalledTimes(1)
+    expect(reportError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message:
+          'Subgraph interior node 7 is LoadBackgroundRemovalModel in the document but interior-node on the canvas'
+      }),
+      expect.objectContaining({
+        errorType: 'agent_graph_interior_type_mismatch'
+      })
+    )
   })
 })

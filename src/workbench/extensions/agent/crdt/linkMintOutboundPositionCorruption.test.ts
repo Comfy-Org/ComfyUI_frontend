@@ -31,8 +31,8 @@ import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LLink } from '@/lib/litegraph/src/LLink'
 import { readDocPromotedWidgets } from './agentSubgraphDefinitions'
 import { readDocSlotNames, readDocWidgetValue } from './liveGraphApplier'
-import { toRootGraphId } from '@/types/graphScopeId'
-import { toNodeId } from '@/types/nodeId'
+import { toRootGraphId } from '@comfyorg/graph-model/graphScopeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import { attachDocOpMinter } from './docOpMinter'
 import type { GraphOperation } from './graphOperations'
@@ -186,6 +186,7 @@ describe('agent CRDT outbound leg: link mint by live position vs. doc order', ()
     const port = attachDocOpMinter({
       isEnabled: () => true,
       isDocBound: () => true,
+      isBoundWorkflow: () => true,
       enqueue: (operations) => minted.push(...operations),
       getGraph: () => rootGraph,
       boundRootGraphId: () => ROOT_GRAPH_ID,

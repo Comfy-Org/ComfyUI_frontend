@@ -27,8 +27,8 @@ describe('useWorkflowStatusDismissal', () => {
   beforeEach(() => {
     mockActiveWorkflow = storeToRefs(useWorkflowStore()).activeWorkflow
     const executionStore = useExecutionStore()
-    vi.mocked(executionStore.getWorkflowStatus).mockImplementation(
-      (workflow) => (workflow ? statusMap.value.get(workflow) : undefined)
+    vi.mocked(executionStore.getWorkflowStatus).mockImplementation((workflow) =>
+      workflow ? statusMap.value.get(workflow) : undefined
     )
     vi.mocked(executionStore.clearWorkflowStatus).mockImplementation(
       (workflow) => {

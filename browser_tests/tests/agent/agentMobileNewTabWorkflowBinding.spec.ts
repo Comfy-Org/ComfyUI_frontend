@@ -49,6 +49,7 @@ const SAVED_WORKFLOW_ID = 'a81718a4-02ae-41e6-ae85-000000000001'
 // A workflow the account has never seen, standing in for a server-side mint.
 const MINTED_WORKFLOW_ID = 'b3e5d7f9-1a2c-4d6e-8f01-2a3b4c5d6e7f'
 const THREAD_ID = '59dbdbf7-ec7f-4a51-93b2-602668f3f1b4'
+const SAVED_THREAD_ID = '6a8c9e0f-1b2d-4c3e-9a4b-5c6d7e8f9a01'
 
 const FIRST_MESSAGE_ID = '5c7e1a2b-8d4f-4e93-a016-3b8c5d9e0f12'
 const SECOND_MESSAGE_ID = '7a1c3e5d-2b4f-4068-9c13-5e7a9b0d1f24'
@@ -74,7 +75,7 @@ test.describe(
   'Agent workflow binding on cloud mobile web, opened from a new tab',
   { tag: ['@cloud', '@agent'] },
   () => {
-    test('follows the tab on screen rather than a saved workflow, and holds a hand-picked target across the next turn', async ({
+    test('follows the tab on screen rather than a saved workflow, and switches to the saved tab chat on return', async ({
       page,
       workflowSelection,
       getAgentSocket
@@ -87,9 +88,6 @@ test.describe(
         message_id: FIRST_MESSAGE_ID,
         workflow_id: MINTED_WORKFLOW_ID
       }
-      // Registered from the test body so it resolves ahead of the selection
-      // fixture's thread-list route, which would otherwise answer the POST
-      // with a list instead of an accepted turn.
       await page.route('**/api/agent/threads/*/messages', (route: Route) => {
         const request = route.request()
         if (request.method() !== 'POST') return route.fallback()
@@ -97,24 +95,24 @@ test.describe(
         return route.fulfill({ ...jsonRoute(nextAck), status: 202 })
       })
 
-      // The workflow chip is disabled while a turn is in flight, so a turn
-      // that never ends would make "the binding survived the next turn"
-      // untestable (and is itself what the reporter sat through: this thread
-      // waited 101s and 121s for a first reply). Close each turn over the
-      // socket the way the server would.
-      const finishTurn = async (messageId: string): Promise<void> => {
+      const finishTurn = async (
+        messageId: string,
+        expectedBubbles: number,
+        threadId = THREAD_ID
+      ): Promise<void> => {
+        await expect(agentPanel.userMessageBubbles).toHaveCount(expectedBubbles)
         const socket = await getAgentSocket()
         socket.send(
           JSON.stringify({
             type: 'agent_message_done',
-            data: { message_id: messageId, thread_id: THREAD_ID }
+            data: { message_id: messageId, thread_id: threadId }
           })
         )
+        await expect(agentPanel.sendButton).toBeVisible()
       }
 
       const agentPanel = new AgentPanel(page)
       const panel = agentPanel.root
-      const picker = agentPanel.workflowPicker
       const topbar = new Topbar(page)
       const newBlankTab = page.getByRole('button', {
         name: enMessages.sideToolbar.newBlankWorkflow,
@@ -122,17 +120,21 @@ test.describe(
       })
 
       await test.step('the account already has a saved workflow', async () => {
+        await expect(topbar.integratedTabBarActions).toHaveAttribute(
+          'data-agent-gate-settled',
+          'true',
+          { timeout: 15_000 }
+        )
+        await workflowSelection.suppressActivationNudge()
         await agentPanel.open()
-        await agentPanel.chooseWorkflow(SAVED_TAB)
+        await agentPanel.close()
+        const saving = topbar.saveWorkflowAs(SAVED_TAB)
         await expect.poll(() => workflowSelection.savedPaths.length).toBe(1)
         workflowSelection.finishSave(true)
-        await expect(picker).toHaveText(SAVED_TAB)
+        await saving
+        await agentPanel.open()
       })
 
-      // Reading 2 says the user cannot tell which graph the agent holds on a
-      // phone. The measurement behind that: the panel is the entire viewport,
-      // so the canvas and the tab strip are gone while it is open and the chip
-      // is the whole of what the user can see about the binding.
       await test.step('at a phone width the panel is the entire viewport', async () => {
         const viewport = page.viewportSize()
         expect(
@@ -148,10 +150,6 @@ test.describe(
         expect(box!.height).toBe(viewport!.height)
         expect(box!.y).toBe(0)
         await expect(
-          picker,
-          'the chip is the only affordance naming the bound workflow at this width'
-        ).toBeVisible()
-        await expect(
           agentPanel.closeButton,
           'and the close control is the only way back to the canvas'
         ).toBeVisible()
@@ -163,15 +161,8 @@ test.describe(
         await expect(topbar.getActiveTab()).toHaveText(NEW_TAB)
       })
 
-      await test.step('the user reopens the Agent and starts a chat on that tab', async () => {
+      await test.step('the user reopens the Agent on that tab', async () => {
         await agentPanel.open()
-        await panel
-          .getByRole('button', { name: enMessages.agent.newChat })
-          .click()
-        await expect(
-          picker,
-          'a new chat targets the tab on screen, not the account-saved workflow'
-        ).toHaveText(NEW_TAB)
       })
 
       await test.step('the first turn names the tab on screen, not the saved workflow', async () => {
@@ -192,9 +183,8 @@ test.describe(
         ).not.toBe(SAVED_WORKFLOW_ID)
       })
 
-      await test.step('the minted workflow the server returns stays named in the chip', async () => {
-        await finishTurn(FIRST_MESSAGE_ID)
-        await expect(picker).toHaveText(NEW_TAB)
+      await test.step('the minted workflow the server returns stays bound on the next turn', async () => {
+        await finishTurn(FIRST_MESSAGE_ID, 1)
 
         nextAck = {
           ...nextAck,
@@ -206,19 +196,19 @@ test.describe(
           posted[1].workflow_id,
           'the turn after minting must carry the minted workflow id'
         ).toBe(MINTED_WORKFLOW_ID)
-        await finishTurn(SECOND_MESSAGE_ID)
+        await finishTurn(SECOND_MESSAGE_ID, 2)
       })
 
-      // PM-1933 acceptance scenario 2: "a hand-picked binding holds".
-      await test.step('the user hand-picks the saved workflow from the chip', async () => {
-        await expect(picker).toBeEnabled()
-        await agentPanel.chooseWorkflow(SAVED_TAB)
-        await expect(picker).toHaveText(SAVED_TAB)
+      await test.step('the user activates the saved workflow tab', async () => {
+        await agentPanel.close()
+        await topbar.getWorkflowTab(SAVED_TAB).click()
+        await expect(topbar.getActiveTab()).toHaveText(SAVED_TAB)
+        await agentPanel.open()
       })
 
-      await test.step('the next turn is still bound to that pick, with no re-selection', async () => {
+      await test.step('the next turn is bound to that saved workflow', async () => {
         nextAck = {
-          ...nextAck,
+          thread_id: SAVED_THREAD_ID,
           message_id: THIRD_MESSAGE_ID,
           workflow_id: SAVED_WORKFLOW_ID
         }
@@ -226,17 +216,14 @@ test.describe(
         await expect.poll(() => posted.length).toBe(3)
         expect(
           posted[2].workflow_id,
-          'the turn after a hand-pick must carry the workflow the user picked'
+          'switching to the saved tab must carry that workflow id'
         ).toBe(SAVED_WORKFLOW_ID)
         expect(
           posted[2].current_tab_unbound,
-          'a bound pick is not an unbound tab'
+          'a bound tab is not an unbound tab'
         ).toBeUndefined()
-        await finishTurn(THIRD_MESSAGE_ID)
-        await expect(
-          picker,
-          'the binding must survive the turn without a second hand-pick'
-        ).toHaveText(SAVED_TAB)
+        await finishTurn(THIRD_MESSAGE_ID, 1, SAVED_THREAD_ID)
+        await expect(panel.getByRole('note')).toContainText(SAVED_TAB)
       })
     })
   }

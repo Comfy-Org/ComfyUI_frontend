@@ -119,8 +119,11 @@ How well main holds each one:
 - **Do not hold.** Requirement 3 does not hold. No visible outcome exists for
   an edit that ends `unacknowledged`, `unconfirmed` or `undeliverable`, and
   the time bound exists only while the tab is active. A rejection that
-  arrives after the sender gave up is swallowed. Requirement 4 does not hold
-  either: a same-id collision with another writer is not reported.
+  arrives after the sender gave up is swallowed. Requirement 4 holds only
+  partially: a human op the host acknowledges in `lww_dropped` is reported and
+  reverted, and an op a resend acknowledges only as skipped is reported as
+  unconfirmed and reverted, but a same-id merge or recreate the host does not
+  classify is still silent.
 
 A per-op protected set of the kind this record once proposed is not
 reintroduced. Pending intent is protected by construction, because a frame
@@ -171,13 +174,17 @@ bound document's root graph is mintable; an op for another graph, or for the
 interior of a subgraph, is not minted and is reported once per flush. A batch ends in
 exactly one of four outcomes:
 
-| Outcome          | Produced when                                                                                                                                               | Time bound                                       |
-| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
-| `acknowledged`   | a result arrives for the batch's op ids (an anonymous failure also counts when a send happened)                                                             | none, the result decides                         |
-| `unacknowledged` | no result within the result timeout, after one silent resend of the same ops                                                                                | about 20 seconds from the first send, tab active |
-| `unconfirmed`    | the batch was sent, then the sender was unbound, aborted by a `doc_reset`, detached, or its subscribe was refused                                           | immediate on the event                           |
-| `undeliverable`  | the batch was never sent (queued or detached), or the transport refused it for the whole retry budget (five retries, six tries in all, half a second apart) | about 2.5 seconds of retry, or immediate         |
+| Outcome          | Produced when                                                                                                                | Time bound                                       |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| `acknowledged`   | a result arrives for the batch's op ids (an anonymous failure also counts when a send happened)                              | none, the result decides                         |
+| `unacknowledged` | no result within the result timeout, after one silent resend of the same ops                                                 | about 20 seconds from the first send, tab active |
+| `unconfirmed`    | the batch was sent, then the sender was unbound, aborted by a `doc_reset`, detached, or its subscribe was refused            | immediate on the event                           |
+| `undeliverable`  | the batch was never sent and its document was unbound, reset or detached; or admission was refused under `counter_exhausted` | immediate on the event or refused admission      |
 
+A transport that refuses the batch for the whole retry budget (five retries,
+six tries in all, half a second apart) holds it instead of settling it; the
+held batch goes out once the reconnect's catch-up lands, re-stamped under
+[CRDT-STAMPS-0051](CRDT-STAMPS-0051-human-ops-stamp-above-what-they-have-received.md).
 A suspension parks the batch instead of sending or settling it. A resume
 sends it again, unless the sender is now bound to a different workflow, in
 which case it settles `unconfirmed` or `undeliverable`. A `doc_reset` aborts
@@ -233,12 +240,17 @@ node of a different type is removed and recreated with its links, so the
 document wins either way. The one related report is for a created node whose
 live id differs from the document's.
 
-Collisions are mostly avoided rather than detected. A graph bound to a
-document mints node ids from a range disjoint from the ids the agent mints
-(`idAllocation.ts`, the `crdt-disjoint` mode), so ids minted while bound
-cannot collide. Ids that were minted sequentially before binding are the
-residue. `agentNodeIdCollision.spec.ts` pins the remaining failure as an
-expected failure.
+Collisions are avoided first and recovered second. A graph bound to a document
+mints node ids from a range disjoint from the ids the agent mints
+(`idAllocation.ts`, the `crdt-disjoint` mode), so ids minted while bound cannot
+collide. If a replayed or pre-binding id still loses a last-writer-wins race,
+the host names the losing op in `lww_dropped`. The frontend reports the lost
+edit, reverts its optimistic projection, and re-reads the document through the
+lifecycle's bounded subscribe retry, holding later edits until that subscribe
+is confirmed, so the canvas shows the canonical winner instead of retaining a
+silent disagreement. A resend acknowledged only as skipped gets the same
+recovery under an unconfirmed notice, because the host answers a replayed op
+id as a replay and cannot say whether the first send applied or lost.
 
 ### Widget in-flight hold
 
@@ -249,7 +261,8 @@ local write arrived and applying it would rewind what the user typed. The
 hold lifts when the document catches up (an own-actor echo), when a settled
 op carries the register's latest value, or on a `doc_reset`. The follower
 settles holds for every outcome state, so a timed-out write stops being held
-and the next remote value overwrites the local one. This is the one place
+and the next remote value overwrites the local one. A batch held through an
+outage has not settled, so its hold survives the catch-up. This is the one place
 where the first requirement is bounded by sender settlement instead of by
 confirmation.
 
@@ -267,12 +280,12 @@ from the local graph there.
 
 ## Requirements
 
-| Requirement                 | Holds today | How                                                                       | Remaining                                                                                                                                                                    |
-| --------------------------- | ----------- | ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Pending intent is kept      | Mostly      | Merge mode applies only the delta; replace is armed only by `doc_reset`   | A remote or rejected field write rewinds sibling fields, and a rejected widget write on a positional-array node rewinds sibling widgets; widget hold lifts on any settlement |
-| A rejection is reported     | Mostly      | Revert from the document plus a throttled toast, for every op kind        | A rejection that arrives after the sender gave up is not seen (follow-up 1)                                                                                                  |
-| Delivery-unknown is visible | No          | Four sender outcomes; about 20 seconds when active, immediate on unbind   | No user-visible outcome; no late correlation; no bound while the tab is inactive                                                                                             |
-| A collision is reported     | No          | Own-actor echo drop and disjoint id minting avoid most; the document wins | Same-id merge or recreate is silent                                                                                                                                          |
+| Requirement                 | Holds today | How                                                                                                                          | Remaining                                                                                                                                                                    |
+| --------------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Pending intent is kept      | Mostly      | Merge mode applies only the delta; replace is armed only by `doc_reset`                                                      | A remote or rejected field write rewinds sibling fields, and a rejected widget write on a positional-array node rewinds sibling widgets; widget hold lifts on any settlement |
+| A rejection is reported     | Mostly      | Revert from the document plus a throttled toast, for every op kind                                                           | A rejection that arrives after the sender gave up is not seen (follow-up 1)                                                                                                  |
+| Delivery-unknown is visible | No          | Four sender outcomes; about 20 seconds when active, immediate on unbind                                                      | No user-visible outcome; no late correlation; no bound while the tab is inactive                                                                                             |
+| A collision is reported     | Partially   | Disjoint id minting avoids most; `lww_dropped` and replay-only resends are reported, reverted and re-read; the document wins | Same-id merge or recreate the host does not classify is silent                                                                                                               |
 
 Known gaps outside the four requirements: the `doc_reset` replace, the named
 exception above, removes local-only nodes and links without a report (follow-up
@@ -301,15 +314,15 @@ blueprint mint is still open.
 2. **Retention across the panel lifetime.** Held batches have no deadline
    while the tab is inactive and die with the panel. This is
    CRDT-REPLAY-0039; do not duplicate it here.
-3. **Report collisions.** The smallest option is a one-per-session report from
-   the merge path when it updates or replaces a live node of the same id whose
-   local add the document never accepted (an add still unacknowledged or
-   rejected). An update or replace from a non-own frame is not a signal on its
-   own, because it is also what every ordinary agent edit and catch-up replay
-   looks like. If the applier cannot learn that provenance without a second
-   registry of op identity, detection is blocked on that signal. It pairs with
-   the expected-failure spec above and must stay inside the follower boundary
-   (no sweep).
+3. **Report unclassified collisions.** Ops the host names in `lww_dropped`,
+   and ops a resend acknowledges only as skipped, are reported and reverted
+   already. What remains is a same-id merge or recreate with no host
+   classification, such as a late or unanswered outcome. The smallest option is
+   a one-per-session report from the merge path when it updates or replaces a
+   live node of the same id whose local add the document never accepted. An
+   update or replace from a non-own frame is not a signal on its own, because
+   it is also what every ordinary agent edit and catch-up replay looks like.
+   It must stay inside the follower boundary (no sweep).
 4. **Report what the replace exception removes.** The `doc_reset` replace is
    the named exception to requirement 1; the follow-up is to report how many
    local-only nodes and links it removed. The rationale for the current
@@ -336,8 +349,8 @@ blueprint mint is still open.
      workflow's.
 7. **Blueprint definitions.** Mint `define_subgraph` from the human insert
    path, scheduled with the node's add. This is frontend-only.
-8. **Backend dependencies, still open.** Per-op outcomes so that a dropped
-   last-writer or delete-wins op stops counting as applied, op ids on
+8. **Backend dependencies, still open.** A replayed op id that keeps its
+   original outcome instead of reading as a skipped replay, op ids on
    `doc_update` so that echoes could be matched instead of filtered by actor,
    a lineage token, and an echoed subscribe identity so that an
    acknowledgement can be tied to a subscribe.
@@ -411,10 +424,12 @@ cited as pointers.
   stay diverged silently.
 - A widget value stops being held when its op settles, so after a timeout the
   next remote value overwrites what the user typed.
-- Same-id collisions with another writer are resolved silently in the
-  document's favor. Ids from before binding remain exposed.
-- An op the host drops as last-writer-loses or delete-wins is counted as
-  applied until the host reports per-op outcomes.
+- A same-id collision the host does not classify, such as one whose outcome
+  never arrives, is resolved silently in the document's favor. Ids from before
+  binding remain exposed.
+- A resend acknowledged only as skipped cannot say whether the first send
+  applied or lost, so the edit is reported as unconfirmed and re-read rather
+  than reported as overwritten.
 - The human path still mints no `define_subgraph`, and subgraph interior edits
   are not representable.
 - Dropping the own actor wholesale loses an agent effect folded into such a

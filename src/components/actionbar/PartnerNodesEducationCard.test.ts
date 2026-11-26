@@ -6,11 +6,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import * as runGateModule from '@/platform/billing/composables/usePartnerNodesRunGate'
+import * as runGateModule from '@/platform/auth/partnerNode/usePartnerNodesRunGate'
 import * as partnerNodesInGraphModule from '@/composables/node/usePartnerNodesInGraph'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { api } from '@/scripts/api'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -35,7 +35,7 @@ vi.mock<unknown>(
 )
 
 vi.mock(
-  import('@/platform/billing/composables/usePartnerNodesRunGate'),
+  import('@/platform/auth/partnerNode/usePartnerNodesRunGate'),
   async () => {
     const { computed, ref } = await import('vue')
     const gate = ref<'sign-in' | 'none'>('none')

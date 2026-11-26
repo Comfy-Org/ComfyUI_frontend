@@ -7,7 +7,7 @@ import type { ComposerAttachment } from '@/workbench/extensions/agent/types/comp
 vi.mock(import('@/workbench/extensions/agent/services/agent/agentAuth'))
 
 it('keeps a 4 MiB upload alive past 60 seconds and aborts it at 94 seconds', async () => {
-  vi.useFakeTimers()
+  vi.useFakeTimers({ shouldAdvanceTime: false })
   onTestFinished(() => {
     vi.useRealTimers()
   })

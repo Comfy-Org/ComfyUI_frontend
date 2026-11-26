@@ -5,6 +5,10 @@ import { expect } from '@playwright/test'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { getWav } from '@e2e/fixtures/components/AudioPreview'
 import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
+import {
+  routeObjectInfoFromSetupApi,
+  setComboInputOptions
+} from '@e2e/fixtures/utils/objectInfo'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import {
   expectRegionScreenshot,
@@ -220,10 +224,23 @@ test.describe(
 )
 
 test.describe('Image widget', { tag: ['@screenshot', '@widget'] }, () => {
+  test.beforeEach(async ({ page }) => {
+    await routeObjectInfoFromSetupApi(page, (objectInfo) =>
+      setComboInputOptions(objectInfo, 'LoadImage', 'image', [
+        'example.png',
+        'image32x32.webp'
+      ])
+    )
+  })
+
   test('Can load image', async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
     const [loadImageNode] =
       await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
+    await expect
+      .poll(() => loadImageNode.getDecodedPreviewImageSrc())
+      .toContain('example.png')
+    await comfyPage.nextFrame()
     await expectRegionScreenshot(
       comfyPage.page,
       [loadImageNode],
@@ -243,14 +260,18 @@ test.describe('Image widget', { tag: ['@screenshot', '@widget'] }, () => {
       dropPosition: { x, y }
     })
 
+    const fileComboWidget = await loadImageNode.getWidget(0)
+    await expect.poll(() => fileComboWidget.getValue()).toBe('image32x32.webp')
+    await expect
+      .poll(() => loadImageNode.getDecodedPreviewImageSrc())
+      .toContain('image32x32.webp')
+    await comfyPage.nextFrame()
+
     await expectRegionScreenshot(
       comfyPage.page,
       [loadImageNode],
       'image_preview_drag_and_dropped.png'
     )
-
-    const fileComboWidget = await loadImageNode.getWidget(0)
-    await expect.poll(() => fileComboWidget.getValue()).toBe('image32x32.webp')
   })
 
   test('Can change image by changing the filename combo value', async ({
@@ -285,21 +306,10 @@ test.describe('Image widget', { tag: ['@screenshot', '@widget'] }, () => {
     await comboEntry.click()
 
     await expect
-      .poll(
-        () =>
-          comfyPage.page.evaluate((nodeId) => {
-            const node = window.app!.graph.getNodeById(nodeId)
-            const img = node?.imgs?.[0]
-            return (
-              !!img &&
-              img.complete &&
-              img.naturalWidth > 0 &&
-              img.src.includes('image32x32.webp')
-            )
-          }, loadImageNode.id),
-        { timeout: 10_000 }
-      )
-      .toBe(true)
+      .poll(() => loadImageNode.getDecodedPreviewImageSrc(), {
+        timeout: 10_000
+      })
+      .toContain('image32x32.webp')
     await comfyPage.nextFrame()
 
     await expectRegionScreenshot(

@@ -4,8 +4,8 @@ import type { WebSession } from '@comfyorg/account-core/webSession'
 import type {
   WebSessionRequestScope,
   WebSessionRequests
-} from '@/platform/auth/session/webSessionFetch'
-import { provideWebSessionRequests } from '@/platform/auth/session/webSessionFetch'
+} from '@comfyorg/api-client/webSessionFetch'
+import { provideWebSessionRequests } from '@comfyorg/api-client/webSessionFetch'
 import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
 import { SessionRevokedError } from '@/platform/auth/session/sessionRevokedError'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
@@ -23,10 +23,7 @@ import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import {
-  remoteConfigErrorStatus,
-  remoteConfigState
-} from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 
 import {
   stubAccountIdentityPort,
@@ -47,7 +44,7 @@ async function flushPromises() {
 }
 
 const mockReportError = vi.hoisted(() => vi.fn())
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 
@@ -91,8 +88,8 @@ describe('WorkspaceAuthGate', () => {
     Object.assign(useAuthStore(), { isInitialized: false })
     Object.assign(useAuthStore(), { currentUser: null })
     Object.assign(useApiKeyAuthStore(), { isAuthenticated: false })
-    remoteConfigState.value = 'authenticated'
-    remoteConfigErrorStatus.value = null
+    const remoteConfigStore = useRemoteConfigStore()
+    remoteConfigStore.acceptConfig(remoteConfigStore.config, true)
     Object.assign(useTeamWorkspaceStore(), { initState: 'uninitialized' })
     Object.assign(useTeamWorkspaceStore(), {
       activeWorkspaceId: 'workspace-123'
@@ -152,6 +149,21 @@ describe('WorkspaceAuthGate', () => {
       expect(useTeamWorkspaceStore().initialize).toHaveBeenCalledOnce()
       expect(useBillingCapabilities().initialize).toHaveBeenCalledOnce()
       expect(mockRefreshRemoteConfig).not.toHaveBeenCalled()
+    })
+
+    it('reads billing capabilities for a host sign-in once its in-flight workspace setup finishes', async () => {
+      mockIsCloud.value = false
+      Object.assign(useAuthStore(), {
+        isInitialized: true,
+        userId: 'host-user'
+      })
+      Object.assign(useTeamWorkspaceStore(), { initState: 'loading' })
+
+      mountComponent()
+      await flushPromises()
+
+      expect(useTeamWorkspaceStore().initialize).toHaveBeenCalledOnce()
+      expect(useBillingCapabilities().initialize).toHaveBeenCalledOnce()
     })
 
     it('does not read billing capabilities when the local workspace context fails', async () => {
@@ -310,11 +322,7 @@ describe('WorkspaceAuthGate', () => {
       })
     })
 
-    it('mints unified auth after refreshing authenticated flags', async () => {
-      mockRefreshRemoteConfig.mockImplementation(async () => {
-        vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = true
-      })
-
+    it('mints unified auth for the signed-in user', async () => {
       mountComponent()
       await flushPromises()
 
@@ -412,7 +420,6 @@ describe('WorkspaceAuthGate', () => {
           session: fromPartial<WebSession>({ user: { id: 'user-a' } })
         }
       })
-      vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = true
       vi.mocked(useWorkspaceAuthStore().getUnifiedToken).mockReturnValue(
         undefined
       )
@@ -448,7 +455,6 @@ describe('WorkspaceAuthGate', () => {
     beforeEach(() => {
       Object.assign(useAuthStore(), { isInitialized: true })
       Object.assign(useAuthStore(), { currentUser: { uid: 'user-a' } })
-      vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = true
       vi.mocked(useWorkspaceAuthStore().getUnifiedToken).mockReturnValue(
         undefined
       )
@@ -590,7 +596,7 @@ describe('WorkspaceAuthGate', () => {
     })
 
     it('shows a recoverable error when authenticated config is unavailable', async () => {
-      remoteConfigState.value = 'error'
+      useRemoteConfigStore().failLoad(true)
 
       mountComponent()
       await flushPromises()
@@ -603,8 +609,7 @@ describe('WorkspaceAuthGate', () => {
 
     it('requires sign out when authenticated config rejects the credential', async () => {
       const user = userEvent.setup()
-      remoteConfigState.value = 'error'
-      remoteConfigErrorStatus.value = 401
+      useRemoteConfigStore().failLoad(true, { reason: 'http', status: 401 })
 
       mountComponent()
       await flushPromises()
@@ -621,7 +626,6 @@ describe('WorkspaceAuthGate', () => {
     })
 
     it('shows a recoverable error when unified auth initialization fails', async () => {
-      vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = true
       vi.mocked(useWorkspaceAuthStore().mintAtLogin).mockResolvedValue(false)
 
       mountComponent()
@@ -772,7 +776,6 @@ describe('WorkspaceAuthGate', () => {
     })
 
     it('shows a recoverable error when workspace setup clears unified auth', async () => {
-      vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = true
       vi.mocked(useWorkspaceAuthStore().getUnifiedToken).mockReturnValue(
         undefined
       )
@@ -787,6 +790,7 @@ describe('WorkspaceAuthGate', () => {
 
     it('shows a recoverable error without a ready workspace context', async () => {
       Object.assign(useTeamWorkspaceStore(), { initState: 'loading' })
+      vi.mocked(useTeamWorkspaceStore().initialize).mockResolvedValueOnce()
 
       mountComponent()
       await flushPromises()

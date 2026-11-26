@@ -1,3 +1,4 @@
+import type { Vector3 } from '@comfyorg/shared-frontend-utils/geometry'
 /**
  * PLY (Polygon File Format) decoder
  * Parses ASCII PLY files and extracts vertex positions and colors
@@ -5,10 +6,7 @@
 interface PLYHeader {
   vertexCount: number
   hasColor: boolean
-  propertyIndices: {
-    x: number
-    y: number
-    z: number
+  propertyIndices: Vector3 & {
     red: number
     green: number
     blue: number

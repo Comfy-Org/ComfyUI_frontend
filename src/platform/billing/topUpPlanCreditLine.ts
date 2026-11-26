@@ -1,17 +1,25 @@
+import type { PlanKind } from '@comfyorg/account-core/billing'
 import type { SubscriptionState } from '@comfyorg/ingest-types'
 
-/** Add credits line on Cloud for a served `subscription_state` that has no plan. */
-export function topUpPlanCreditLine(facts: {
+type TopUpPlanCreditLine =
+  | 'planRequiredFreeRuns'
+  | 'planRequiredSubscribe'
+  | 'planRequiredResubscribe'
+
+export type PlanCreditLine = TopUpPlanCreditLine | 'planRequiredContactSales'
+
+interface TopUpPlanCreditFacts {
   isCloud: boolean
   isBillingInitialized: boolean
   canTopUp: boolean
   subscriptionState: SubscriptionState | null
   freeRunsRemaining: number
-}):
-  | 'planRequiredFreeRuns'
-  | 'planRequiredSubscribe'
-  | 'planRequiredResubscribe'
-  | null {
+}
+
+/** Add credits line on Cloud for a served `subscription_state` that has no plan. */
+export function topUpPlanCreditLine(
+  facts: TopUpPlanCreditFacts
+): TopUpPlanCreditLine | null {
   if (!facts.isCloud) return null
   if (!facts.isBillingInitialized) return null
   if (!facts.canTopUp) return null
@@ -21,4 +29,15 @@ export function topUpPlanCreditLine(facts: {
   }
   if (facts.subscriptionState === 'ended') return 'planRequiredResubscribe'
   return null
+}
+
+/** The same line, sending an ended plan to sales when the served `plan_kind` is `sales_managed`. */
+export function planCreditLine(
+  facts: TopUpPlanCreditFacts & { planKind: PlanKind | null }
+): PlanCreditLine | null {
+  const line = topUpPlanCreditLine(facts)
+  return line === 'planRequiredResubscribe' &&
+    facts.planKind === 'sales_managed'
+    ? 'planRequiredContactSales'
+    : line
 }

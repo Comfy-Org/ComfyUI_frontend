@@ -8,8 +8,8 @@ import { emitGraphIntent } from '@/lib/litegraph/src/graphIntents'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LLink } from '@/lib/litegraph/src/LLink'
-import { toRootGraphId } from '@/types/graphScopeId'
-import { toNodeId } from '@/types/nodeId'
+import { toRootGraphId } from '@comfyorg/graph-model/graphScopeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import { readDocPromotedWidgets } from './agentSubgraphDefinitions'
 import { attachDocOpMinter } from './docOpMinter'
@@ -156,6 +156,7 @@ describe('a human link into a widget input the agent-built document lacks', () =
       const port = attachDocOpMinter({
         isEnabled: () => true,
         isDocBound: () => true,
+        isBoundWorkflow: () => true,
         enqueue: (ops) => minted.push(...ops),
         getGraph: () => rootGraph,
         boundRootGraphId: () => ROOT_GRAPH_ID,
@@ -224,6 +225,7 @@ describe('a human link into a widget input the agent-built document lacks', () =
     const port = attachDocOpMinter({
       isEnabled: () => true,
       isDocBound: () => true,
+      isBoundWorkflow: () => true,
       enqueue: (ops) => minted.push(...ops),
       getGraph: () => rootGraph,
       boundRootGraphId: () => ROOT_GRAPH_ID,

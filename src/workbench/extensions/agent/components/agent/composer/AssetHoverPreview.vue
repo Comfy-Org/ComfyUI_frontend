@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { useElementHover } from '@vueuse/core'
+import { useElementHover, useEventListener } from '@vueuse/core'
 import { PopoverAnchor, PopoverRoot } from 'reka-ui'
 import { computed, onBeforeUnmount, useId, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { ComponentInstance } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
-import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
+import type { MediaKind } from '@comfyorg/assets-core/media'
 import AssetMediaPreview from './AssetMediaPreview.vue'
 
 import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
@@ -96,6 +96,17 @@ function onInteractOutside(event: Event): void {
   if (event.target instanceof Node && trigger.value?.contains(event.target))
     event.preventDefault()
 }
+
+function dismissOnEscape(event: KeyboardEvent): void {
+  if (!open.value || event.key !== 'Escape') return
+  if (event.defaultPrevented || event.isComposing) return
+  event.preventDefault()
+  event.stopPropagation()
+  onEscape()
+  onOpenChange(false)
+}
+
+useEventListener(document, 'keydown', dismissOnEscape, { capture: true })
 </script>
 
 <template>

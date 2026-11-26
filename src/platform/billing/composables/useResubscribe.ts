@@ -4,13 +4,15 @@ import { useI18n } from 'vue-i18n'
 
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
+import type { PlanCommandOutcome } from '@comfyorg/account-core/billing'
 
 /**
  * Reactivates a cancelled-but-still-active subscription and surfaces success or
  * failure as a toast, tracking the in-flight state for the calling button.
+ * Resolves to the outcome so a confirm can stay open on refusal.
  */
 export function useResubscribe() {
   const { t } = useI18n()
@@ -21,17 +23,14 @@ export function useResubscribe() {
 
   const isResubscribing = ref(false)
 
-  async function handleResubscribe() {
-    if (!canReactivatePlan.value) return
+  async function handleResubscribe(): Promise<PlanCommandOutcome> {
+    if (!canReactivatePlan.value) return { ok: false, serverMessage: null }
 
     const source = 'settings_billing_panel' as const
     const startedAt = Date.now()
     const isWorkspaceResubscribe = shouldUseWorkspaceBilling.value
 
     useTelemetry()?.trackResubscribeClicked({ source })
-    // Emitted before the awaited call so a failure always has a preceding
-    // `started` — emitting it only after the call meant a failure produced a
-    // `failed` with no matching `started`, pushing failed/started over 100%.
     useTelemetry()?.trackBillingEvent({
       operation: 'resubscribe',
       stage: 'started',
@@ -41,11 +40,6 @@ export function useResubscribe() {
     isResubscribing.value = true
     try {
       await resubscribe({ source })
-      // Workspace's resubscribe() call is itself the terminal reactivation, so it
-      // gets an immediate `succeeded` here. Legacy only opens a Stripe checkout
-      // tab, which isn't terminal — its `succeeded` is emitted later, from
-      // useSubscription.ts's pending-checkout recovery, once a status poll
-      // confirms the payment actually went through.
       if (isWorkspaceResubscribe) {
         useTelemetry()?.trackBillingEvent({
           operation: 'resubscribe',
@@ -56,11 +50,10 @@ export function useResubscribe() {
         })
       }
       toast.success(t('subscription.resubscribeSuccess'), { duration: 5000 })
+      return { ok: true }
     } catch (error) {
-      const detail =
-        error instanceof Error && error.message.trim()
-          ? error.message
-          : t('subscription.resubscribeFailed')
+      const serverMessage =
+        error instanceof Error && error.message.trim() ? error.message : null
       useTelemetry()?.trackBillingEvent({
         operation: 'resubscribe',
         stage: 'failed',
@@ -71,7 +64,10 @@ export function useResubscribe() {
           duration_ms: Date.now() - startedAt
         })
       })
-      toast.error(t('g.error'), { description: detail })
+      toast.error(t('g.error'), {
+        description: serverMessage ?? t('subscription.resubscribeFailed')
+      })
+      return { ok: false, serverMessage }
     } finally {
       isResubscribing.value = false
     }

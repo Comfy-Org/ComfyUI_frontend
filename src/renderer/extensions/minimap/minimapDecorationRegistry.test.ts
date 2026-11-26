@@ -4,9 +4,12 @@ import {
   getMinimapDecorations,
   registerMinimapDecorationLayer
 } from '@/platform/canvas/minimapDecorationRegistry'
-import { reportError } from '@/platform/telemetry/reportError'
-import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
-import { toNodeId } from '@/types/nodeId'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import {
+  toOwningGraphId,
+  toRootGraphId
+} from '@comfyorg/graph-model/graphScopeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 const scopeA = {
   rootGraphId: toRootGraphId('workflow-a'),

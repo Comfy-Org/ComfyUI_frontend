@@ -151,9 +151,13 @@ export class Topbar {
     return this._saveWorkflow(workflowName, 'Export')
   }
 
+  exportWorkflowImage(workflowName: string): Promise<void> {
+    return this._saveWorkflow(workflowName, 'Export (Workflow Image)')
+  }
+
   async _saveWorkflow(
     workflowName: string,
-    command: 'Save' | 'Save As' | 'Export'
+    command: 'Save' | 'Save As' | 'Export' | 'Export (Workflow Image)'
   ) {
     await this.triggerTopbarCommand(['File', command])
     await this.getSaveDialog().fill(workflowName)
@@ -161,7 +165,7 @@ export class Topbar {
 
     await this.getSaveDialog().waitFor({ state: 'hidden' })
 
-    if (command === 'Export') return
+    if (command === 'Export' || command === 'Export (Workflow Image)') return
 
     const confirmationDialog = this.page
       .getByRole('dialog')

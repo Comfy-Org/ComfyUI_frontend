@@ -5,12 +5,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { IWidgetResolutionPreviewOptions } from '@/lib/litegraph/src/types/widgets'
+import type { IWidgetResolutionPreviewOptions } from '@comfyorg/graph-model/widgets'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import { widgetId } from '@/types/widgetId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { resolveNode } from '@/utils/litegraphUtil'
 
 import WidgetResolutionPreview from './WidgetResolutionPreview.vue'
@@ -25,8 +25,8 @@ vi.mock(import('@/composables/useLiveGraphNode'), async () => {
   const { computed, onScopeDispose, shallowRef } = await import('vue')
   return {
     useLiveGraphNode: (resolve) => {
-      const node = shallowRef(resolve() ?? null)
-      const reload = () => (node.value = resolve() ?? null)
+      const node = shallowRef(resolve() ?? undefined)
+      const reload = () => (node.value = resolve() ?? undefined)
       liveGraphNodes.reloads.add(reload)
       onScopeDispose(() => liveGraphNodes.reloads.delete(reload))
       return computed(() => node.value)

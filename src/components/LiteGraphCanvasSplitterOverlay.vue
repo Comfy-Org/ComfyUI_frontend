@@ -1,6 +1,6 @@
 <template>
   <div
-    class="pointer-events-none absolute top-0 left-0 z-999 flex size-full flex-col"
+    class="pointer-events-none absolute top-0 left-0 isolate flex size-full flex-col"
   >
     <slot name="workflow-tabs" />
 
@@ -223,9 +223,10 @@ import {
   SIDE_TOOLBAR_WIDTH
 } from '@/constants/splitterConstants'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { safeLocalStorage } from '@/base/storage/safeStorage'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
-import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import { usePropertiesPanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import {
@@ -237,7 +238,7 @@ import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/ag
 
 const workspaceStore = useWorkspaceStore()
 const settingStore = useSettingStore()
-const rightSidePanelStore = useRightSidePanelStore()
+const propertiesPanelStore = usePropertiesPanelStore()
 const sidebarTabStore = useSidebarTabStore()
 const agentPanelStore = useAgentPanelStore()
 const { t } = useI18n()
@@ -256,10 +257,10 @@ const { isPickingNodes: agentNodeSelectionActive } =
 const { isSelectMode, isBuilderMode } = useAppMode()
 const { activeSidebarTabId, activeSidebarTab } = storeToRefs(sidebarTabStore)
 const { bottomPanelVisible } = storeToRefs(useBottomPanelStore())
-const { isOpen: rightSidePanelVisible } = storeToRefs(rightSidePanelStore)
+const { isOpen: propertiesPanelVisible } = storeToRefs(propertiesPanelStore)
 const { isVisible: agentPanelOpen } = storeToRefs(agentPanelStore)
 const oppositeSidePanelVisible = computed(
-  () => rightSidePanelVisible.value || isSelectMode.value
+  () => propertiesPanelVisible.value || isSelectMode.value
 )
 
 const agentPanelHasOpaqueNeighbor = computed(
@@ -434,8 +435,11 @@ function defaultPanelWidth(isSidebarPanel: boolean) {
   const edge =
     (sidebarLocation.value === 'left') === isSidebarPanel ? 'first' : 'last'
   const percent =
-    savedPanelPercent((key) => localStorage.getItem(key), stateKeys, edge) ??
-    SIDE_PANEL_SIZE
+    savedPanelPercent(
+      (key) => safeLocalStorage.getItem(key),
+      stateKeys,
+      edge
+    ) ?? SIDE_PANEL_SIZE
   return Math.max(
     isSidebarPanel ? SIDEBAR_MIN_WIDTH : PROPERTIES_PANEL_MIN_WIDTH,
     Math.round((percent / 100) * (window.innerWidth - SIDE_TOOLBAR_WIDTH))

@@ -9,12 +9,12 @@ import type {
   TierKey
 } from '@/platform/billing/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/billing/subscription/utils/subscriptionTierRank'
+import { safeLocalStorage } from '@/base/storage/safeStorage'
 import type {
-  BeginCheckoutMetadata,
   PaymentIntentSource,
   ResubscribeClickMetadata,
   SubscriptionSuccessMetadata
-} from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry/types'
 
 const PENDING_SUBSCRIPTION_CHECKOUT_MAX_AGE_MS = 6 * 60 * 60 * 1000
 const PENDING_SUBSCRIPTION_CHECKOUT_MAX_FUTURE_SKEW_MS = 5 * 60 * 1000
@@ -117,33 +117,6 @@ const createAttemptId = (): string => {
   }
 
   return `attempt-${Date.now()}`
-}
-
-type CheckoutStorage = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>
-
-const getStorage = (): CheckoutStorage | null => {
-  let storage: unknown
-
-  try {
-    storage = globalThis.localStorage
-  } catch {
-    return null
-  }
-
-  return isCheckoutStorage(storage) ? storage : null
-}
-
-function isCheckoutStorage(value: unknown): value is CheckoutStorage {
-  return (
-    !!value &&
-    typeof value === 'object' &&
-    'getItem' in value &&
-    typeof value.getItem === 'function' &&
-    'setItem' in value &&
-    typeof value.setItem === 'function' &&
-    'removeItem' in value &&
-    typeof value.removeItem === 'function'
-  )
 }
 
 function isUnknownRecord(value: unknown): value is Record<string, unknown> {
@@ -266,48 +239,23 @@ const isPaymentIntentSource = (value: unknown): value is PaymentIntentSource =>
   Object.hasOwn(VALID_PAYMENT_INTENT_SOURCES, value)
 
 export const clearPendingSubscriptionCheckoutAttempt = (): void => {
-  const storage = getStorage()
-  if (!storage) {
-    return
-  }
-
-  try {
-    storage.removeItem(PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY)
-    storage.removeItem(PENDING_SUBSCRIPTION_CHECKOUT_TERMINAL_STORAGE_KEY)
-  } catch {
-    return
-  }
+  const removal = safeLocalStorage.remove(
+    PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY
+  )
+  safeLocalStorage.remove(PENDING_SUBSCRIPTION_CHECKOUT_TERMINAL_STORAGE_KEY)
+  if (!removal.ok) return
+  const remaining = safeLocalStorage.read(
+    PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY
+  )
+  if (!remaining.ok || remaining.value !== null) return
   dispatchPendingCheckoutChangeEvent()
-}
-
-const persistClampedStartTime = (
-  storage: CheckoutStorage,
-  attempt: PendingSubscriptionCheckoutAttempt
-) => {
-  try {
-    storage.setItem(
-      PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
-      JSON.stringify(attempt)
-    )
-  } catch {
-    return
-  }
 }
 
 export const getPendingSubscriptionCheckoutAttempt =
   (): PendingSubscriptionCheckoutAttempt | null => {
-    const storage = getStorage()
-    if (!storage) {
-      return null
-    }
-
-    let rawAttempt: string | null
-
-    try {
-      rawAttempt = storage.getItem(PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY)
-    } catch {
-      return null
-    }
+    const rawAttempt = safeLocalStorage.getItem(
+      PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY
+    )
 
     if (!rawAttempt) {
       return null
@@ -326,7 +274,10 @@ export const getPendingSubscriptionCheckoutAttempt =
         isUnknownRecord(parsed) &&
         parsed.started_at_ms !== attempt.started_at_ms
       ) {
-        persistClampedStartTime(storage, attempt)
+        safeLocalStorage.setItem(
+          PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
+          JSON.stringify(attempt)
+        )
       }
 
       return attempt
@@ -362,16 +313,12 @@ const parsePendingCheckoutTerminalClaim = (
 export const getPendingCheckoutTerminal = (
   attemptId: string
 ): PendingCheckoutTerminal | null => {
-  try {
-    const rawClaim = getStorage()?.getItem(
-      PENDING_SUBSCRIPTION_CHECKOUT_TERMINAL_STORAGE_KEY
-    )
-    if (!rawClaim) return null
-    const claim = parsePendingCheckoutTerminalClaim(rawClaim)
-    return claim?.attempt_id === attemptId ? claim.terminal : null
-  } catch {
-    return null
-  }
+  const rawClaim = safeLocalStorage.getItem(
+    PENDING_SUBSCRIPTION_CHECKOUT_TERMINAL_STORAGE_KEY
+  )
+  if (!rawClaim) return null
+  const claim = parsePendingCheckoutTerminalClaim(rawClaim)
+  return claim?.attempt_id === attemptId ? claim.terminal : null
 }
 
 export const claimPendingCheckoutTerminal = (
@@ -386,12 +333,12 @@ export const claimPendingCheckoutTerminal = (
     return null
   }
 
-  try {
-    getStorage()?.setItem(
+  if (
+    safeLocalStorage.setItem(
       PENDING_SUBSCRIPTION_CHECKOUT_TERMINAL_STORAGE_KEY,
       JSON.stringify({ attempt_id: attemptId, terminal })
-    )
-  } catch {
+    ) !== 'ok'
+  ) {
     return null
   }
 
@@ -401,7 +348,7 @@ export const claimPendingCheckoutTerminal = (
 export const hasPendingSubscriptionCheckoutAttempt = (): boolean =>
   getPendingSubscriptionCheckoutAttempt() !== null
 
-export const createPendingSubscriptionCheckoutAttempt = (
+const createPendingSubscriptionCheckoutAttempt = (
   input: PendingSubscriptionCheckoutAttemptInput
 ): PendingSubscriptionCheckoutAttempt => {
   return {
@@ -430,20 +377,15 @@ export const createPendingSubscriptionCheckoutAttempt = (
   }
 }
 
-export const persistPendingSubscriptionCheckoutAttempt = (
+const persistPendingSubscriptionCheckoutAttempt = (
   attempt: PendingSubscriptionCheckoutAttempt
 ): PendingSubscriptionCheckoutAttempt => {
-  const storage = getStorage()
-  if (!storage) {
-    return attempt
-  }
-
-  try {
-    storage.setItem(
+  if (
+    safeLocalStorage.setItem(
       PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
       JSON.stringify(attempt)
-    )
-  } catch {
+    ) !== 'ok'
+  ) {
     return attempt
   }
   dispatchPendingCheckoutChangeEvent()
@@ -457,14 +399,6 @@ export const recordPendingSubscriptionCheckoutAttempt = (
   persistPendingSubscriptionCheckoutAttempt(
     createPendingSubscriptionCheckoutAttempt(input)
   )
-
-export const withPendingCheckoutAttemptId = (
-  metadata: BeginCheckoutMetadata,
-  attempt: PendingSubscriptionCheckoutAttempt
-): BeginCheckoutMetadata => ({
-  ...metadata,
-  checkout_attempt_id: attempt.attempt_id
-})
 
 const didAttemptSucceed = (
   attempt: PendingSubscriptionCheckoutAttempt,

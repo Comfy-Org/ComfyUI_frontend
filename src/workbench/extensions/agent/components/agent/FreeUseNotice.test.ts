@@ -5,8 +5,6 @@ import { computed, nextTick, ref } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { i18n } from '@/i18n'
-import type { AgentFreeUsePlacement } from '@/platform/telemetry/types'
-
 import FreeUseNotice from './FreeUseNotice.vue'
 import { freeUseNoticeDismissedKey } from './freeUseNoticeDismissal'
 
@@ -35,9 +33,8 @@ function withoutNavigation() {
   )
 }
 
-function mount(placement: AgentFreeUsePlacement = 'top-banner') {
+function mount() {
   return render(FreeUseNotice, {
-    props: { placement },
     global: { plugins: [i18n] }
   })
 }
@@ -64,8 +61,8 @@ describe('FreeUseNotice', () => {
     await userEvent.click(screen.getByRole('link', { name: 'Learn more' }))
 
     expect(emitted('notice')).toEqual([
-      [{ action: 'shown', placement: 'top-banner' }],
-      [{ action: 'learn_more_clicked', placement: 'top-banner' }]
+      [{ action: 'shown', placement: 'near-composer' }],
+      [{ action: 'learn_more_clicked', placement: 'near-composer' }]
     ])
   })
 
@@ -76,12 +73,12 @@ describe('FreeUseNotice', () => {
 
     expect(screen.queryByRole('note')).toBeNull()
     expect(first.emitted('notice')).toEqual([
-      [{ action: 'shown', placement: 'top-banner' }],
-      [{ action: 'dismissed', placement: 'top-banner' }]
+      [{ action: 'shown', placement: 'near-composer' }],
+      [{ action: 'dismissed', placement: 'near-composer' }]
     ])
     first.unmount()
 
-    const { emitted } = mount('inside-input')
+    const { emitted } = mount()
 
     expect(screen.queryByRole('note')).toBeNull()
     expect(emitted('notice')).toBeUndefined()
@@ -98,7 +95,7 @@ describe('FreeUseNotice', () => {
 
     expect(screen.getByRole('note')).toBeInTheDocument()
     expect(emitted('notice')).toEqual([
-      [{ action: 'shown', placement: 'top-banner' }]
+      [{ action: 'shown', placement: 'near-composer' }]
     ])
   })
 
@@ -137,7 +134,7 @@ describe('FreeUseNotice', () => {
 
     expect(await screen.findByRole('note')).toBeInTheDocument()
     expect(emitted('notice')).toEqual([
-      [{ action: 'shown', placement: 'top-banner' }]
+      [{ action: 'shown', placement: 'near-composer' }]
     ])
   })
 })

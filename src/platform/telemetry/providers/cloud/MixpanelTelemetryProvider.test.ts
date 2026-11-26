@@ -21,10 +21,6 @@ vi.mock(import('@/platform/telemetry/utils/surveyNormalization'), () => ({
   normalizeSurveyResponses: mockNormalizeSurveyResponses
 }))
 
-vi.mock<unknown>(import('@/platform/remoteConfig/remoteConfig'), () => ({
-  remoteConfig: { value: null }
-}))
-
 import { MixpanelTelemetryProvider } from '@/platform/telemetry/providers/cloud/MixpanelTelemetryProvider'
 import type {
   AuthMetadata,
@@ -42,8 +38,8 @@ import type {
   TemplateMetadata,
   WorkflowImportMetadata,
   WorkflowSavedMetadata
-} from '@/platform/telemetry/types'
-import { TelemetryEvents } from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry/types'
+import { TelemetryEvents } from '@comfyorg/telemetry/types'
 
 const waitForMixpanelInit = () =>
   vi.waitFor(() => expect(mockMixpanel.init).toHaveBeenCalled())

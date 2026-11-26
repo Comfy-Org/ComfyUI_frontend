@@ -9,7 +9,7 @@ import { createDefaultLight } from '@comfyorg/viewport3d/lightInfo/types'
 import type { LightInfoEntry } from '@comfyorg/viewport3d/lightInfo/types'
 import enMessages from '@/locales/en/main.json'
 import type { ComfyApp } from '@/scripts/app'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import LightInfo from './LightInfo.vue'
 import { useLightInfo } from '@/extensions/core/load3d/composables/useLightInfo'
@@ -84,8 +84,8 @@ vi.mock(import('@/composables/useLiveGraphNode'), async () => {
   const { computed, onScopeDispose, shallowRef } = await import('vue')
   return {
     useLiveGraphNode: (resolve) => {
-      const node = shallowRef(resolve() ?? null)
-      const reload = () => (node.value = resolve() ?? null)
+      const node = shallowRef(resolve() ?? undefined)
+      const reload = () => (node.value = resolve() ?? undefined)
       liveGraphNodes.reloads.add(reload)
       onScopeDispose(() => liveGraphNodes.reloads.delete(reload))
       return computed(() => node.value)
@@ -104,7 +104,7 @@ const i18n = createI18n({
 })
 
 function lightState(lights: LightInfoEntry[] = [], selected = 0) {
-  const state = useLightInfo(null)
+  const state = useLightInfo(undefined)
   state.lights.value = lights
   state.selectedIndex.value = lights.length ? selected : -1
   return state

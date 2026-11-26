@@ -93,6 +93,15 @@ does not live in the package.
    > identically. Host couplings (`Button`, telemetry, journey events) still
    > arrive as inputs.
 
+   > **Amended 2026-11-02 (FRONT-3797):** the Billing tab sections that the
+   > cloud app and Platform billing both render (plan row, credits card,
+   > auto top-up card and member block, billing banners) live in
+   > `./billing` as well. They render the view states derived in
+   > `@comfyorg/account-core/billing`, take host-translated copy, emit their
+   > actions instead of navigating, and keep the cloud app's look as the
+   > default. Platform restyles through a `classes` hook per part, `variant`
+   > props, and named slots for actions, not by forking.
+
 5. **Transport, commands and readers stay in `@comfyorg/account-core`.**
    This decision moves presentation only. It also does not make a surface
    shareable merely by moving it: state the frontend assembles from several

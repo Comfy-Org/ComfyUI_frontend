@@ -12,7 +12,7 @@ import {
   useLoad3d
 } from '@/extensions/core/load3d/composables/useLoad3d'
 import type { Load3dCachedOutput } from '@/extensions/core/load3d/composables/useLoad3d'
-import { createExportMenuItems } from '@/extensions/core/load3d/exportMenuHelper'
+import { createNodeExportMenuItems } from '@/extensions/core/load3d/exportMenuHelper'
 import type {
   CameraConfig,
   CameraState,
@@ -33,9 +33,9 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import type {
   NodeExecutionOutput,
   NodeOutputWith
-} from '@/platform/remote/comfyui/execution/types'
-import { reportError } from '@/platform/telemetry/reportError'
-import type { NodeLocatorId } from '@/types/nodeIdentification'
+} from '@comfyorg/api-client/executionTypes'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 type Matrix = number[][]
@@ -46,7 +46,8 @@ const MAX_STALE_CAPTURE_RETRIES = 2
 type Load3dPreviewOutput = NodeOutputWith<{
   result?: [string?, CameraState?, string?, Matrix?, Matrix?]
 }>
-import { ComfyApp, app } from '@/scripts/app'
+import { ComfyApp } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { useLoad3dService } from '@/extensions/core/load3d/services/load3dService'
 import { useDialogStore } from '@/stores/dialogStore'
 import type { ComfyExtension } from '@/types/comfy'
@@ -61,7 +62,7 @@ export const load3dExtension: ComfyExtension = {
       icon: 'icon-[lucide--pencil]',
       label: 'Open 3D Viewer (Beta) for Selected Node',
       function: () => {
-        const selectedNodes = selectedCanvasNodes(app.canvas)
+        const selectedNodes = selectedCanvasNodes(useApp().canvas)
         if (selectedNodes.length !== 1) return
 
         const [selectedNode] = selectedNodes
@@ -88,15 +89,9 @@ export const load3dExtension: ComfyExtension = {
     }
   ],
   getNodeMenuItems(node: LGraphNode): (IContextMenuValue | null)[] {
-    // Only show menu items for Load3D nodes
     if (node.constructor.comfyClass !== 'Load3D') return []
 
-    const load3d = useLoad3dService().getLoad3d(node)
-    if (!load3d) return []
-
-    if (load3d.isSplatModel()) return []
-
-    return createExportMenuItems(load3d)
+    return createNodeExportMenuItems(node)
   },
 
   async nodeCreated(node: LGraphNode) {
@@ -282,7 +277,7 @@ export const preview3DExtension: ComfyExtension = {
       const result = (output as Load3dPreviewOutput).result
       if (!result?.[0]) continue
 
-      const node = getNodeByLocatorId(app.rootGraph, locatorId)
+      const node = getNodeByLocatorId(useApp().rootGraph, locatorId)
       if (!node || node.constructor.comfyClass !== 'Preview3D') continue
 
       applyPreview3DOutput(node, result)
@@ -290,15 +285,9 @@ export const preview3DExtension: ComfyExtension = {
   },
 
   getNodeMenuItems(node: LGraphNode): (IContextMenuValue | null)[] {
-    // Only show menu items for Preview3D nodes
     if (node.constructor.comfyClass !== 'Preview3D') return []
 
-    const load3d = useLoad3dService().getLoad3d(node)
-    if (!load3d) return []
-
-    if (load3d.isSplatModel()) return []
-
-    return createExportMenuItems(load3d)
+    return createNodeExportMenuItems(node)
   },
 
   async nodeCreated(node: LGraphNode) {
@@ -452,7 +441,7 @@ function createPreview3DAdvancedExtension(
         const reported = readModel3DOutput(output)
         if (!reported) continue
 
-        const node = getNodeByLocatorId(app.rootGraph, locatorId)
+        const node = getNodeByLocatorId(useApp().rootGraph, locatorId)
         if (!node || node.constructor.comfyClass !== comfyClass) continue
 
         useLoad3d(node).waitForLoad3d((load3d) => {
@@ -470,12 +459,7 @@ function createPreview3DAdvancedExtension(
     getNodeMenuItems(node: LGraphNode): (IContextMenuValue | null)[] {
       if (node.constructor.comfyClass !== comfyClass) return []
 
-      const load3d = useLoad3dService().getLoad3d(node)
-      if (!load3d) return []
-
-      if (load3d.isSplatModel()) return []
-
-      return createExportMenuItems(load3d)
+      return createNodeExportMenuItems(node)
     },
 
     async nodeCreated(node: LGraphNode) {
@@ -489,6 +473,31 @@ function createPreview3DAdvancedExtension(
 
       const onExecuted = node.onExecuted
       const { onLoad3dReady, waitForLoad3d } = useLoad3d(node)
+
+      // Installed synchronously (not inside waitForLoad3d below): a live "executed"
+      // event calls node.onExecuted directly before the viewer may have mounted,
+      // and a result arriving while this is unset is dropped for good.
+      node.onExecuted = function (output: NodeExecutionOutput) {
+        onExecuted?.call(this, output)
+
+        const reported = readModel3DOutput(output)
+        if (!reported) {
+          const msg = t('toastMessages.unableToGetModelFilePath')
+          console.error(msg)
+          useToast().warning(msg)
+          return
+        }
+
+        waitForLoad3d((load3d) => {
+          applyPreview3DAdvancedResult(
+            node,
+            nodeToLoad3dMap.get(node) ?? load3d,
+            reported,
+            loadFolder,
+            comfyClass
+          )
+        })
+      }
 
       onLoad3dReady((load3d) => {
         const lastTimeModelFile = node.properties['Last Time Model File']
@@ -578,26 +587,6 @@ function createPreview3DAdvancedExtension(
             recording: '',
             model_3d_info
           }
-        }
-
-        node.onExecuted = function (output: NodeExecutionOutput) {
-          onExecuted?.call(this, output)
-
-          const reported = readModel3DOutput(output)
-          if (!reported) {
-            const msg = t('toastMessages.unableToGetModelFilePath')
-            console.error(msg)
-            useToast().warning(msg)
-            return
-          }
-
-          applyPreview3DAdvancedResult(
-            node,
-            resolveLoad3d(),
-            reported,
-            loadFolder,
-            comfyClass
-          )
         }
       })
     }

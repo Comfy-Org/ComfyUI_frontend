@@ -1,4 +1,4 @@
-import type { Point } from './types'
+import type { Point2D as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import { catmullRomSpline, resampleSegment } from './splineUtils'
 
 export class StrokeProcessor {

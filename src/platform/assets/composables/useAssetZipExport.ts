@@ -3,8 +3,8 @@ import { useI18n } from 'vue-i18n'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import { assetService } from '@/platform/assets/services/assetService'
-import { reportError } from '@/platform/telemetry/reportError'
-import { useAssetExportStore } from '@/stores/assetExportStore'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { useAssetExportStore } from '@/platform/assets/stores/assetExportStore'
 
 export function useAssetZipExport() {
   const { t } = useI18n()

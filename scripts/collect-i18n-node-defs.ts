@@ -1,7 +1,8 @@
 import * as fs from 'fs'
 
-import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import { transformNodeDefV1ToV2 } from '@comfyorg/object-info-parser/migration'
+import type { ComfyNodeDef as ComfyNodeDefV2 } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 
 import { comfyPageFixture as test } from '../browser_tests/fixtures/ComfyPage'
 import type { WidgetLabels } from './nodeDefLocaleSerializer'
@@ -11,30 +12,21 @@ const localePath = './src/locales/en/main.json'
 const nodeDefsPath = './src/locales/en/nodeDefs.json'
 
 test('collect-i18n-node-defs', async ({ comfyPage }) => {
-  // Mock view route
   await comfyPage.page.route('**/view**', async (route) => {
     await route.fulfill({
       body: JSON.stringify({})
     })
   })
 
-  // Note: Don't mock the object_info API endpoint - let it hit the actual backend
-
-  const nodeDefs: ComfyNodeDefV2[] = await comfyPage.page.evaluate(async () => {
+  const rawNodeDefs = await comfyPage.page.evaluate(async () => {
     const app = window.app
     if (!app) throw new Error('ComfyUI app is not initialized')
 
-    const rawNodeDefs = await app.api.getNodeDefs()
-    const { transformNodeDefV1ToV2 } =
-      await import('../src/schemas/nodeDef/migration')
-
-    return (
-      Object.values(rawNodeDefs)
-        // Ignore DevTools nodes (used for internal testing)
-        .filter((def: ComfyNodeDef) => !def.name.startsWith('DevTools'))
-        .map((def: ComfyNodeDef) => transformNodeDefV1ToV2(def))
-    )
+    return app.api.getNodeDefs()
   })
+  const nodeDefs: ComfyNodeDefV2[] = Object.values(rawNodeDefs)
+    .filter((def: ComfyNodeDef) => !def.name.startsWith('DevTools'))
+    .map((def: ComfyNodeDef) => transformNodeDefV1ToV2(def))
 
   async function extractWidgetLabels() {
     const nodeLabels: WidgetLabels = {}

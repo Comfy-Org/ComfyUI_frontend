@@ -72,7 +72,6 @@ test.describe('Agent reply assets', { tag: '@cloud' }, () => {
   test('looks up 3D previews only for the reply assets on screen', async ({
     agentPanel,
     page,
-    postedMessages,
     getWebSocket,
     getAgentSocket
   }) => {
@@ -92,7 +91,7 @@ test.describe('Agent reply assets', { tag: '@cloud' }, () => {
     await test.step('send a reply containing model assets', async () => {
       await agentPanel.open()
       await agentPanel.sendMessage('show me every mesh')
-      await expect.poll(() => postedMessages.length).toBeGreaterThanOrEqual(1)
+      await agentPanel.expectUserMessages(['show me every mesh'])
       const ws = await getWebSocket()
       ws.send(JSON.stringify({ type: 'feature_flags', data: { assets: true } }))
       const agentSocket = await getAgentSocket()
@@ -122,7 +121,6 @@ test.describe('Agent reply assets', { tag: '@cloud' }, () => {
   test('keeps the reply readable when one asset preview cannot be rendered', async ({
     agentPanel,
     page,
-    postedMessages,
     getWebSocket,
     getAgentSocket
   }) => {
@@ -146,7 +144,7 @@ test.describe('Agent reply assets', { tag: '@cloud' }, () => {
     await test.step('send a reply whose first asset cannot be previewed', async () => {
       await agentPanel.open()
       await agentPanel.sendMessage('show me every mesh')
-      await expect.poll(() => postedMessages.length).toBeGreaterThanOrEqual(1)
+      await agentPanel.expectUserMessages(['show me every mesh'])
       const ws = await getWebSocket()
       ws.send(JSON.stringify({ type: 'feature_flags', data: { assets: true } }))
       const agentSocket = await getAgentSocket()

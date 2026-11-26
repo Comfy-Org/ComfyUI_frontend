@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { PaymentIntentSource } from '@/platform/telemetry/types'
+import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
 import type { SubscriptionCheckoutSelection } from '@/platform/billing/composables/types'
 
 import SubscriptionRequiredDialogContentWorkspace from './SubscriptionRequiredDialogContentWorkspace.vue'
@@ -85,6 +85,7 @@ function renderComponent(
     paymentIntentSource?: PaymentIntentSource
     isPersonal?: boolean
     initialCheckout?: SubscriptionCheckoutSelection
+    creditsLocked?: boolean
   } = {}
 ) {
   return render(SubscriptionRequiredDialogContentWorkspace, {
@@ -92,6 +93,7 @@ function renderComponent(
       onClose: props.onClose ?? vi.fn(),
       paymentIntentSource: props.paymentIntentSource,
       ...(props.reason ? { reason: props.reason } : {}),
+      ...(props.creditsLocked ? { creditsLocked: true } : {}),
       ...(props.isPersonal !== undefined
         ? { isPersonal: props.isPersonal }
         : {}),
@@ -102,6 +104,9 @@ function renderComponent(
     global: {
       plugins: [getActivePinia()!, i18n],
       stubs: {
+        CreditsLockedNotice: {
+          template: '<div data-testid="credits-locked-notice" />'
+        },
         PricingTableWorkspace: PricingTableStub,
         SubscriptionAddPaymentPreviewWorkspace: AddPaymentPreviewStub,
         SubscriptionTransitionPreviewWorkspace: TransitionPreviewStub,
@@ -133,6 +138,15 @@ describe('SubscriptionRequiredDialogContentWorkspace', () => {
     })
     mockCheckoutStep.value = 'pricing'
     mockPreviewData.value = null
+  })
+
+  it('explains locked credits only when told to', () => {
+    const { unmount } = renderComponent()
+    expect(screen.queryByTestId('credits-locked-notice')).toBeNull()
+    unmount()
+
+    renderComponent({ creditsLocked: true })
+    expect(screen.getByTestId('credits-locked-notice')).toBeInTheDocument()
   })
 
   it('shows pricing table on pricing step', () => {

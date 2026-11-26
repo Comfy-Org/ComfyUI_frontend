@@ -8,7 +8,7 @@ import type {
 import { CORE_MENU_COMMANDS } from '@/constants/coreMenuCommands'
 import type { ComfyExtension } from '@/types/comfy'
 
-import { useCommandStore } from './commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 
 export interface CommandMenuItem extends MenuItemAction {
   commandId: string

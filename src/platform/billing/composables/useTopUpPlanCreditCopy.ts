@@ -1,33 +1,61 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { topUpPlanCreditLine } from '@/platform/billing/topUpPlanCreditLine'
+import type { AddCreditsPlanLine } from '@comfyorg/account-core/billing'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { planCreditLine } from '@/platform/billing/topUpPlanCreditLine'
+import type { PlanCreditLine } from '@/platform/billing/topUpPlanCreditLine'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useFreeTierQuota } from '@/platform/billing/subscription/composables/useFreeTierQuota'
 import { isCloud } from '@/platform/distribution/types'
 
-const LINE_KEYS = {
+export const TOP_UP_PLAN_CREDIT_LINE_KEYS = {
   planRequiredFreeRuns: 'credits.topUp.planRequiredFreeRuns',
   planRequiredSubscribe: 'credits.topUp.planRequiredSubscribe',
-  planRequiredResubscribe: 'credits.topUp.planRequiredResubscribe'
+  planRequiredResubscribe: 'credits.topUp.planRequiredResubscribe',
+  planRequiredContactSales: 'credits.topUp.planRequiredContactSales'
 } as const
 
-/** The plan-required Add credits line, or null when it does not apply. */
-export function useTopUpPlanCreditCopy() {
-  const { t } = useI18n()
-  const { isInitialized, subscriptionState } = useBillingContext()
-  const { canTopUp } = useBillingCapabilities()
-  const { available: freeRunsRemaining } = useFreeTierQuota()
+const ADD_CREDITS_LINES = {
+  planRequiredFreeRuns: 'free_runs',
+  planRequiredSubscribe: 'no_plan',
+  planRequiredResubscribe: 'ended',
+  planRequiredContactSales: 'ended_sales_managed'
+} as const satisfies Record<PlanCreditLine, AddCreditsPlanLine>
 
-  return computed(() => {
-    const line = topUpPlanCreditLine({
+/** Which plan-required line applies on Cloud, or null when none does. */
+export function usePlanCreditLine() {
+  const { isInitialized, subscriptionState } = useBillingContext()
+  const { canTopUp, planKind } = useBillingCapabilities()
+  const { available: freeRunsRemaining } = useFreeTierQuota()
+  const { flags } = useFeatureFlags()
+
+  return computed(() =>
+    planCreditLine({
       isCloud,
       isBillingInitialized: isInitialized.value,
       canTopUp: canTopUp.value,
       subscriptionState: subscriptionState.value,
+      planKind: flags.billingNewUxEnabled ? planKind.value : null,
       freeRunsRemaining: freeRunsRemaining.value
     })
-    return line === null ? null : t(LINE_KEYS[line])
-  })
+  )
+}
+
+/** The plan-required Add credits line, or null when it does not apply. */
+export function useTopUpPlanCreditCopy() {
+  const { t } = useI18n()
+  const line = usePlanCreditLine()
+  return computed(() =>
+    line.value === null ? null : t(TOP_UP_PLAN_CREDIT_LINE_KEYS[line.value])
+  )
+}
+
+/** The same line as the Add credits dialog's plan-line fact. */
+export function useAddCreditsPlanLine() {
+  const line = usePlanCreditLine()
+  return computed(() =>
+    line.value === null ? undefined : ADD_CREDITS_LINES[line.value]
+  )
 }

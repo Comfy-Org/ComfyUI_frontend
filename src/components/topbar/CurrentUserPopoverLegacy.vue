@@ -4,6 +4,7 @@
     <!-- User Info Section -->
     <div class="mb-4 flex flex-col items-center px-0 py-3">
       <UserAvatar
+        :label="$t('auth.login.userAvatar')"
         class="mb-1"
         :photo-url="userPhotoUrl"
         icon-class="size-6"
@@ -70,6 +71,15 @@
     >
       <i class="icon-[lucide--coins] text-sm text-credit" />
       <Skeleton v-if="isLoading" class="h-5 w-16" />
+      <span
+        v-else-if="isBalanceUnavailable"
+        class="text-base font-semibold text-muted-foreground"
+        data-testid="credits-balance-unavailable"
+        :title="$t('profileMenu.balanceUnavailable')"
+        >—<span class="sr-only">{{
+          $t('profileMenu.balanceUnavailable')
+        }}</span></span
+      >
       <span v-else class="text-base font-semibold text-foreground">{{
         formattedBalance
       }}</span>
@@ -156,14 +166,15 @@ import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
-import UserAvatar from '@/components/common/UserAvatar.vue'
+import UserAvatar from '@comfyorg/design-system/common/UserAvatar'
 import Button from '@comfyorg/design-system/button/Button'
 import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { refreshBalanceInBackground } from '@/platform/billing/refreshBalanceInBackground'
 import { useExternalLink } from '@/composables/useExternalLink'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { paymentIntentSourceForAddCreditsClick } from '@/platform/telemetry/utils/paymentIntentSource'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
@@ -188,9 +199,13 @@ const {
   tier,
   subscription,
   balance,
+  balanceReadFailed,
   isLoading,
   fetchBalance
 } = useBillingContext()
+const isBalanceUnavailable = computed(
+  () => balanceReadFailed.value && !isLoading.value && !balance.value
+)
 const { formatTierName } = useWorkspaceTierLabel()
 const { locale } = useI18n()
 
@@ -252,6 +267,6 @@ const handleLogout = async () => {
 }
 
 onMounted(() => {
-  void fetchBalance()
+  void refreshBalanceInBackground(fetchBalance)
 })
 </script>

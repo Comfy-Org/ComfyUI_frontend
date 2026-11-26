@@ -7,16 +7,16 @@ import { useI18n } from 'vue-i18n'
 
 import Loader from '@/components/loader/Loader.vue'
 import ToastPanel from '@comfyorg/design-system/toast/ToastPanel'
-import ProgressToastItem from '@/components/toast/ProgressToastItem.vue'
+import ProgressToastItem from '@/platform/assets/components/ModelImportProgressItem.vue'
 import Button from '@comfyorg/design-system/button/Button'
 import { usePopoverViewportDismiss } from '@comfyorg/design-system/lib/popover/usePopoverViewportDismiss'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type { TaskId } from '@/platform/tasks/services/taskService'
 import {
   isDownloadCancelled,
   useAssetDownloadStore
-} from '@/stores/assetDownloadStore'
+} from '@/platform/assets/stores/assetDownloadStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { t } = useI18n()
@@ -75,6 +75,15 @@ const outcomeLabel = computed(() => {
       count: failedJobs.value.length
     })
   if (cancelledJobs.value.length > 0) return t('electronFileDownload.cancelled')
+  if (downloadJobs.value.every((job) => job.source === 'upload'))
+    return t(
+      'progressToast.uploadsInLibrary',
+      {
+        name: downloadJobs.value[0]?.assetName,
+        count: downloadJobs.value.length
+      },
+      downloadJobs.value.length
+    )
   return t('progressToast.allDownloadsCompleted')
 })
 
@@ -161,7 +170,7 @@ async function cancelDownload(taskId: TaskId) {
                   size="sm"
                   :class="
                     cn(
-                      'w-full justify-start bg-transparent',
+                      'w-full justify-start',
                       activeFilter === option.value && 'bg-muted'
                     )
                   "

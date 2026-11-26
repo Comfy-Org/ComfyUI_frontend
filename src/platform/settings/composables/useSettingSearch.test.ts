@@ -5,7 +5,7 @@ import { st } from '@/i18n'
 import { useSettingSearch } from '@/platform/settings/composables/useSettingSearch'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingTreeNode } from '@/platform/settings/composables/useSettingSearch'
-import type { SettingParams } from '@/platform/settings/types'
+import type { SettingParams } from '@comfyorg/settings-core/types'
 
 vi.mock(import('@/i18n'))
 

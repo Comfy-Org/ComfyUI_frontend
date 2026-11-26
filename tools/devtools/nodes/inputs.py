@@ -441,6 +441,27 @@ class PreviewBridge:
         return ()
 
 
+class PlagueKindSimulacrum:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {"required": {
+            "image_slot": (["imaginary-cat.png"],),
+            "video_slot": (["stunt-potato.webm"],),
+            "caption": ("STRING", {
+                "multiline": True,
+                "default": "Test-only impersonator. No media was harmed (or loaded).",
+            }),
+        }}
+
+    RETURN_TYPES = ()
+    FUNCTION = "pretend"
+    CATEGORY = "DevTools/Definitely Fake"
+    DESCRIPTION = "Test-only PlagueKind-style DOM tabs. Zero plagues, zero media processing."
+
+    def pretend(self, image_slot, video_slot, caption):
+        return ()
+
+
 class NodeWithPriceBadge(IO.ComfyNode):
     @classmethod
     def define_schema(cls):
@@ -483,6 +504,28 @@ class NodeWithNumericCombo(IO.ComfyNode):
 
     @classmethod
     async def execute(cls, duration):
+        return IO.NodeOutput()
+
+
+class NodeWithAdvancedSocketInput(IO.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return IO.Schema(
+            node_id="DevToolsNodeWithAdvancedSocketInput",
+            display_name="Node With Advanced Socket Input",
+            category="DevTools",
+            description="A node with an advanced input that has no widget",
+            inputs=[
+                IO.Image.Input("image"),
+                IO.Mask.Input("mask", optional=True, advanced=True),
+                IO.Int.Input(
+                    "iteration_outer", optional=True, force_input=True, advanced=True
+                ),
+            ],
+        )
+
+    @classmethod
+    async def execute(cls, image, mask=None, iteration_outer=None):
         return IO.NodeOutput()
 
 
@@ -586,8 +629,10 @@ NODE_CLASS_MAPPINGS = {
     "DevToolsRefModLoader": RefModLoader,
     "DevToolsPreviewBridge": PreviewBridge,
     "DevToolsFancyTimer": FancyTimer,
+    "DevToolsPlagueKindSimulacrum": PlagueKindSimulacrum,
     "DevToolsNodeWithPriceBadge": NodeWithPriceBadge,
     "DevToolsNodeWithNumericCombo": NodeWithNumericCombo,
+    "DevToolsNodeWithAdvancedSocketInput": NodeWithAdvancedSocketInput,
     "DevToolsNodeWithDynamicCombo": NodeWithDynamicCombo,
     "DevToolsBranchNode": TestBranchNode,
 }
@@ -619,8 +664,10 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "DevToolsRefModLoader": "RefMod Loader Compatibility",
     "DevToolsPreviewBridge": "Preview Bridge Compatibility",
     "DevToolsFancyTimer": "Fancy Timer Compatibility",
+    "DevToolsPlagueKindSimulacrum": "PlagueKind-ish (TEST ONLY, zero plagues)",
     "DevToolsNodeWithPriceBadge": "Node With Price Badge",
     "DevToolsNodeWithNumericCombo": "Node With Numeric Combo",
+    "DevToolsNodeWithAdvancedSocketInput": "Node With Advanced Socket Input",
     "DevToolsNodeWithDynamicCombo": "Node With Dynamic Combo",
     "DevToolsBranchNode": "Test Branch Node",
 }

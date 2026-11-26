@@ -1,6 +1,6 @@
 import type { Op, WidgetCatalog } from '@comfyorg/comfy-multi-player'
 
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 
 import subgraphWorkflow from '@e2e/assets/subgraphs/agent-subgraph-with-two-promoted-widgets.json' with { type: 'json' }
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
@@ -10,8 +10,10 @@ export const AGENT_SUBGRAPH_WORKFLOW_ID = 'a81718a4-02ae-41e6-ae85-c33b7bb880f6'
 export const AGENT_SUBGRAPH_DRIFT_WORKFLOW_ID =
   'b92718a4-02ae-41e6-ae85-c33b7bb880f7'
 export const AGENT_SUBGRAPH_HOST_ID = 11
+const AGENT_SUBGRAPH_INTERIOR_TEXT_NODE_ID = 10
 export const AGENT_SUBGRAPH_REUSED_HOST_ID = 5_123_456_789_012
 export const AGENT_SUBGRAPH_LINK_ID = 21
+export const AGENT_SUBGRAPH_CLIP_SOURCE_ID = 20
 export const AGENT_SUBGRAPH_INITIAL_TEXT = 'a photo of a pier'
 export const AGENT_SUBGRAPH_INITIAL_SEED = 0
 export const AGENT_SUBGRAPH_EDITED_SEED = 42
@@ -107,11 +109,11 @@ const initialOps = [
     base_version: 1,
     stamp: [1, 'agent:e2e'],
     op: 'add_node',
-    node_id: 20,
+    node_id: AGENT_SUBGRAPH_CLIP_SOURCE_ID,
     class_type: 'AgentClipSource',
     pos: [40, 300],
     node: {
-      id: 20,
+      id: AGENT_SUBGRAPH_CLIP_SOURCE_ID,
       type: 'AgentClipSource',
       pos: [40, 300],
       size: [180, 80],
@@ -126,7 +128,7 @@ const initialOps = [
     stamp: [2, 'agent:e2e'],
     op: 'connect',
     link_id: AGENT_SUBGRAPH_LINK_ID,
-    from_node: 20,
+    from_node: AGENT_SUBGRAPH_CLIP_SOURCE_ID,
     from_slot: 0,
     to_node: AGENT_SUBGRAPH_HOST_ID,
     to_slot: 0,
@@ -247,6 +249,19 @@ export function agentOutOfOrderSubgraphFrames(): HostFrame[] {
 
 export const AGENT_SUBGRAPH_INTERIOR_EDITED_TEXT = 'a lighthouse at dawn'
 export const AGENT_SUBGRAPH_INTERIOR_EDITED_STEPS = 33
+/** The interior `KSampler`'s `steps`, read from the asset so the two cannot drift. */
+export const AGENT_SUBGRAPH_INTERIOR_INITIAL_STEPS = (() => {
+  const sampler = subgraphWorkflow.definitions.subgraphs
+    .flatMap((definition) => definition.nodes)
+    .find((node) => node.type === 'KSampler')
+  const value =
+    sampler?.widgets_values[
+      catalog.types.KSampler.widget_order.indexOf('steps')
+    ]
+  if (typeof value !== 'number')
+    throw new Error('Subgraph fixture has no interior KSampler steps value')
+  return value
+})()
 
 export function agentSubgraphInteriorFrames(): {
   initial: HostFrame[]
@@ -273,10 +288,13 @@ export function agentSubgraphInteriorFrames(): {
   const textEdit = host.apply([
     {
       op: 'set_widget',
-      node_id: 10,
+      node_id: AGENT_SUBGRAPH_INTERIOR_TEXT_NODE_ID,
       widget: 'text',
       value: AGENT_SUBGRAPH_INTERIOR_EDITED_TEXT,
-      path: ['11', '10'],
+      path: [
+        String(AGENT_SUBGRAPH_HOST_ID),
+        String(AGENT_SUBGRAPH_INTERIOR_TEXT_NODE_ID)
+      ],
       inner_widget: 'text'
     }
   ])

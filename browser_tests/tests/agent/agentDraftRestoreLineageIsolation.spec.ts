@@ -3,7 +3,7 @@ import type { Page } from '@playwright/test'
 
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import {
@@ -106,7 +106,6 @@ test.describe(
       await expect(nodes.getNodeLocator(String(STALE_NODE_ID))).toBeVisible()
       const panel = new AgentPanel(page)
       await panel.open()
-      await panel.selectWorkflow()
       await panel.sendMessage('Inspect this restored workflow.')
 
       await expect.poll(() => hostSocket.subscribeCount()).toBeGreaterThan(0)

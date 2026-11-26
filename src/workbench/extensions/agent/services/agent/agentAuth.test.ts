@@ -12,16 +12,24 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import { api } from '@/scripts/api'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
-import type { AuthCredential, AuthHeader, AuthScheme } from '@/types/authTypes'
+import type {
+  AuthCredential,
+  AuthHeader,
+  AuthScheme
+} from '@comfyorg/api-client/authTypes'
 
 import {
   agentSocketAuthParams,
   ensureSignedIn,
+  agentSettingsAuthHeader,
+  hasAgentCredential,
+  peekLastAgentCredential,
   withAgentAuth
 } from './agentAuth'
 
 beforeEach(() => {
   distribution.isCloud = false
+  localStorage.removeItem('comfy_api_key')
 })
 
 function userHeader(header: AuthHeader | null): void {
@@ -41,6 +49,25 @@ function storedApiKey(key: string): void {
   vi.spyOn(useApiKeyAuthStore(), 'getAuthHeader').mockReturnValue({
     'X-API-KEY': key
   })
+}
+
+type CreateCustomerResponse = Awaited<
+  ReturnType<ReturnType<typeof useAuthStore>['createCustomer']>
+>
+
+function validationPending(): () => Promise<void> {
+  let resolveValidation: (value: CreateCustomerResponse) => void = () => {}
+  vi.spyOn(useAuthStore(), 'createCustomer').mockReturnValue(
+    new Promise((resolve) => {
+      resolveValidation = resolve
+    })
+  )
+  return async () => {
+    resolveValidation({ id: 'api-key-user' })
+    await vi.waitFor(() =>
+      expect(useApiKeyAuthStore().isAuthenticated).toBe(true)
+    )
+  }
 }
 
 function signInPersonal(): void {
@@ -67,6 +94,95 @@ function signInWithout(token: undefined | Error, apiKey: boolean) {
   if (apiKey) storedApiKey('comfyui-key')
   workspaceToken(token)
 }
+
+describe('agentSettingsAuthHeader', () => {
+  it('carries the workspace bearer off-cloud, not the personal header', async () => {
+    signInPersonal()
+    workspaceToken('workspace-token')
+
+    await expect(agentSettingsAuthHeader()).resolves.toEqual({
+      Authorization: 'Bearer workspace-token'
+    })
+  })
+
+  it('sends a stored API key as itself off-cloud', async () => {
+    storedApiKey('comfyui-key')
+
+    await expect(agentSettingsAuthHeader()).resolves.toEqual({
+      'X-API-KEY': 'comfyui-key'
+    })
+  })
+
+  it('uses the workspace header on cloud', async () => {
+    distribution.isCloud = true
+    vi.spyOn(useAuthStore(), 'getWorkspaceAuthHeader').mockResolvedValue({
+      Authorization: 'Bearer cloud-workspace'
+    })
+
+    await expect(agentSettingsAuthHeader()).resolves.toEqual({
+      Authorization: 'Bearer cloud-workspace'
+    })
+  })
+
+  it.for(missingWorkspaceTokens)(
+    'resolves null rather than rejecting with $label',
+    async ({ token, apiKey }) => {
+      signInWithout(token, apiKey)
+
+      await expect(agentSettingsAuthHeader()).resolves.toBeNull()
+    }
+  )
+
+  it('resolves null when the cloud workspace header cannot be obtained', async () => {
+    distribution.isCloud = true
+    vi.spyOn(useAuthStore(), 'getWorkspaceAuthHeader').mockRejectedValue(
+      new Error('token exchange failed')
+    )
+
+    await expect(agentSettingsAuthHeader()).resolves.toBeNull()
+  })
+})
+
+describe('hasAgentCredential', () => {
+  it('is false with no account and no stored key, which is what opens the sign-in dialog', () => {
+    expect(hasAgentCredential()).toBe(false)
+  })
+
+  it('is true for a signed-in account', () => {
+    Object.assign(useAuthStore(), { isAuthenticated: true })
+
+    expect(hasAgentCredential()).toBe(true)
+  })
+
+  it('is true for a stored API key with no account', async () => {
+    const finishValidation = validationPending()
+    localStorage.setItem('comfy_api_key', 'comfyui-persisted')
+    const keys = useApiKeyAuthStore()
+
+    try {
+      expect(keys.getAuthHeader()).toEqual({
+        'X-API-KEY': 'comfyui-persisted'
+      })
+      expect(hasAgentCredential()).toBe(true)
+    } finally {
+      await finishValidation()
+    }
+  })
+
+  it('is true for a persisted key still validating, while the credential is not', async () => {
+    const finishValidation = validationPending()
+    localStorage.setItem('comfy_api_key', 'comfyui-unvalidated')
+    const keys = useApiKeyAuthStore()
+
+    try {
+      expect(keys.isAuthenticated).toBe(false)
+      expect(hasAgentCredential()).toBe(true)
+      await expect(agentSettingsAuthHeader()).resolves.toBeNull()
+    } finally {
+      await finishValidation()
+    }
+  })
+})
 
 describe('withAgentAuth', () => {
   it.for<{
@@ -160,6 +276,26 @@ describe('withAgentAuth', () => {
     expect(new Headers(init.headers).has('Authorization')).toBe(false)
     expect(new Headers(init.headers).has('X-API-KEY')).toBe(false)
     expect(init.redirect).toBeUndefined()
+  })
+
+  it('remembers the attached credential for a later owner handoff (BE-25360)', async () => {
+    storedApiKey('comfyui-key')
+
+    await withAgentAuth({ method: 'GET' })
+
+    expect(peekLastAgentCredential()).toBe('comfyui-key')
+  })
+
+  it('leaves the last remembered credential alone for a signed-out request', async () => {
+    storedApiKey('comfyui-key')
+    await withAgentAuth({ method: 'GET' })
+
+    workspaceToken(undefined)
+    Object.assign(useApiKeyAuthStore(), { isAuthenticated: false })
+    vi.spyOn(useApiKeyAuthStore(), 'getAuthHeader').mockReturnValue(null)
+    await withAgentAuth({ method: 'GET' })
+
+    expect(peekLastAgentCredential()).toBe('comfyui-key')
   })
 })
 

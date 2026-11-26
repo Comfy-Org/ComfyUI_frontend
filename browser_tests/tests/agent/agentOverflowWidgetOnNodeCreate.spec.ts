@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
-import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef, InputSpec } from '@comfyorg/object-info-parser'
 import type { AgentRunModePreference } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import {
@@ -165,7 +165,6 @@ test.describe(
 
       await test.step('open the agent panel and target the workflow', async () => {
         await agentPanel.open()
-        await agentPanel.selectWorkflow()
       })
 
       await test.step('send a turn so the session binds the workflow', async () => {

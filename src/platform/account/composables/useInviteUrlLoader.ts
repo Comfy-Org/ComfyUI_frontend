@@ -9,10 +9,10 @@ import {
   mergePreservedQueryIntoQuery
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useWorkspaceDialogs } from '@/platform/account/composables/useWorkspaceDialogs'
 import { useAuthStore } from '@/stores/authStore'
-import { getErrorMessage } from '@/utils/errorUtil'
+import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 
 import {
   MEMBERSHIP_MANAGED_BY_DIRECTORY,

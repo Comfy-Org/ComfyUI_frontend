@@ -1,10 +1,7 @@
-import { getActivePinia } from 'pinia'
-
-/** Gates store-backed telemetry setup until `main.ts` installs Pinia. */
 let storesReady: Promise<void> = Promise.resolve()
 let resolveStoresReady: (() => void) | undefined
 
-/** Opens the window during which no Pinia instance is installed yet. */
+/** Opens the window during which Pinia is not installed into the app yet. */
 export function markStoresPending(): void {
   if (resolveStoresReady) return
   storesReady = new Promise<void>((resolve) => {
@@ -21,5 +18,5 @@ export function markStoresReady(): void {
 
 /** Resolves once store-backed composables are safe to call. */
 export function whenStoresReady(): Promise<void> {
-  return getActivePinia() ? Promise.resolve() : storesReady
+  return storesReady
 }

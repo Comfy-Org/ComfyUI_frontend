@@ -1,17 +1,20 @@
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { ExecutedWsMessage } from '@/platform/remote/comfyui/execution/types'
+import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { ExecutedWsMessage } from '@comfyorg/api-client/executionTypes'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import {
   createNodeExecutionId,
   createNodeLocatorId
-} from '@/types/nodeIdentification'
-import { toNodeId } from '@/types/nodeId'
+} from '@comfyorg/graph-model/nodeIdentification'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import * as graphTraversalUtil from '@/utils/graphTraversalUtil'
 import * as litegraphUtil from '@/utils/litegraphUtil'
+import { resultItemPreviewUrl } from '@/utils/resultItemUrl'
 
 vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
   isAnimatedOutput: vi.fn(),
@@ -21,23 +24,24 @@ vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
 
 vi.mock(import('@/scripts/app'))
 
-const createMockNode = (
-  overrides: Record<string, unknown> = {}
-): LGraphNode => {
-  const { id = 1, ...rest } = overrides
-  return fromAny<LGraphNode, unknown>({
-    id: toNodeId(id as string | number),
-    type: 'TestNode',
-    ...rest
+const createMockNode = ({
+  id = 1,
+  ...fields
+}: { id?: number } & Partial<
+  Pick<LGraphNode, 'comfyClass' | 'images'>
+> = {}): LGraphNode =>
+  Object.assign(new LGraphNode('TestNode', 'TestNode'), {
+    id: toNodeId(id),
+    ...fields
   })
-}
 
 const createMockOutputs = (
   images?: ExecutedWsMessage['output']['images']
 ): ExecutedWsMessage['output'] => ({ images })
 
 vi.mock<unknown>(import('@/utils/graphTraversalUtil'), () => ({
-  executionIdToNodeLocatorId: vi.fn((_rootGraph: unknown, id: string) => id)
+  executionIdToNodeLocatorId: vi.fn((_rootGraph: unknown, id: string) => id),
+  getNodeByLocatorId: vi.fn(() => ({}))
 }))
 
 describe('nodeOutputStore setNodeOutputsByExecutionId with merge', () => {
@@ -280,6 +284,171 @@ describe('nodeOutputStore setNodeOutputsByExecutionId with merge', () => {
   })
 })
 
+describe('nodeOutputStore preview stash replacement', () => {
+  beforeEach(() => {
+    app.nodeOutputs = {}
+    app.nodePreviewImages = {}
+    Object.assign(useWorkflowStore(), {
+      openWorkflows: [{ path: 'workflows/preview.json' }]
+    })
+  })
+
+  it('preserves previews and their URLs across repeated empty stashes', () => {
+    const revokeObjectURL = vi.spyOn(URL, 'revokeObjectURL')
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 5 })
+    store.setNodePreviewsByNodeId(node.id, ['blob:repeated-empty-stash'])
+
+    store.stashPreviewsForWorkflow('workflows/preview.json')
+    store.stashPreviewsForWorkflow('workflows/preview.json')
+    store.stashPreviewsForWorkflow('workflows/preview.json')
+    store.resetAllOutputsAndPreviews()
+    store.restorePreviewsForWorkflow('workflows/preview.json')
+
+    expect(store.getNodePreviews(node)).toEqual(['blob:repeated-empty-stash'])
+    expect(app.nodePreviewImages['5']).toEqual(['blob:repeated-empty-stash'])
+    expect(revokeObjectURL).not.toHaveBeenCalled()
+
+    store.resetAllOutputsAndPreviews()
+    expect(revokeObjectURL).toHaveBeenCalledExactlyOnceWith(
+      'blob:repeated-empty-stash'
+    )
+  })
+
+  it('releases the previous URLs when replacing a nonempty stash', () => {
+    const revokeObjectURL = vi.spyOn(URL, 'revokeObjectURL')
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 5 })
+    store.setNodePreviewsByNodeId(node.id, ['blob:replaced-stash'])
+    store.stashPreviewsForWorkflow('workflows/preview.json')
+
+    store.setNodePreviewsByNodeId(node.id, ['blob:replacement-stash'])
+    store.stashPreviewsForWorkflow('workflows/preview.json')
+    store.restorePreviewsForWorkflow('workflows/preview.json')
+
+    expect(store.getNodePreviews(node)).toEqual(['blob:replacement-stash'])
+    expect(revokeObjectURL).toHaveBeenCalledExactlyOnceWith(
+      'blob:replaced-stash'
+    )
+
+    store.resetAllOutputsAndPreviews()
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:replacement-stash')
+  })
+})
+
+describe('nodeOutputStore setNodeOutputsByExecutionId with an unresolved execution id', () => {
+  beforeEach(() => {
+    app.nodeOutputs = {}
+  })
+
+  it('reports the execution id and output filenames instead of dropping the output silently', () => {
+    vi.mocked(
+      graphTraversalUtil.executionIdToNodeLocatorId
+    ).mockReturnValueOnce(undefined)
+    const store = useNodeOutputStore()
+    const executionId = createNodeExecutionId([toNodeId(63)])
+    const outputs = createMockOutputs([
+      { filename: 'contact_sheet_00001_.png' }
+    ])
+
+    store.setNodeOutputsByExecutionId(executionId, outputs)
+
+    expect(reportError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: 'No live node resolves the executed output'
+      }),
+      expect.objectContaining({
+        surface: 'graph',
+        errorType: 'failure_resolving_node_output_execution_id',
+        level: 'warning',
+        sentryMode: 'never',
+        tags: { executionId },
+        context: { filenames: ['contact_sheet_00001_.png'] }
+      })
+    )
+  })
+
+  it('omits filenames when the output carries none', () => {
+    vi.mocked(
+      graphTraversalUtil.executionIdToNodeLocatorId
+    ).mockReturnValueOnce(undefined)
+    const store = useNodeOutputStore()
+    const executionId = createNodeExecutionId([toNodeId(63)])
+
+    store.setNodeOutputsByExecutionId(executionId, createMockOutputs())
+
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        tags: { executionId },
+        context: { filenames: undefined }
+      })
+    )
+  })
+
+  it('omits filenames when the output carries an empty image list', () => {
+    vi.mocked(
+      graphTraversalUtil.executionIdToNodeLocatorId
+    ).mockReturnValueOnce(undefined)
+    const store = useNodeOutputStore()
+    const executionId = createNodeExecutionId([toNodeId(63)])
+
+    store.setNodeOutputsByExecutionId(executionId, createMockOutputs([]))
+
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        tags: { executionId },
+        context: { filenames: undefined }
+      })
+    )
+  })
+
+  it('reports a top-level execution id whose node was deleted', () => {
+    vi.mocked(graphTraversalUtil.getNodeByLocatorId).mockReturnValueOnce(null)
+    const store = useNodeOutputStore()
+    const executionId = createNodeExecutionId([toNodeId(63)])
+
+    store.setNodeOutputsByExecutionId(
+      executionId,
+      createMockOutputs([{ filename: 'deleted-node.png' }])
+    )
+
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        tags: { executionId },
+        context: { filenames: ['deleted-node.png'] }
+      })
+    )
+    expect(store.nodeOutputs[executionId]).toBeUndefined()
+  })
+
+  it('stores top-level output while the root graph is being initialized', () => {
+    vi.spyOn(app, 'rootGraphOrUndefined', 'get').mockReturnValueOnce(undefined)
+    const store = useNodeOutputStore()
+    const executionId = createNodeExecutionId([toNodeId(63)])
+    const outputs = createMockOutputs([{ filename: 'restored.png' }])
+
+    store.setNodeOutputsByExecutionId(executionId, outputs)
+
+    expect(reportError).not.toHaveBeenCalled()
+    expect(store.nodeOutputs[executionId]).toEqual(outputs)
+  })
+
+  it('does not report when the execution id resolves to a node', () => {
+    const store = useNodeOutputStore()
+    const executionId = createNodeExecutionId([toNodeId(63)])
+
+    store.setNodeOutputsByExecutionId(
+      executionId,
+      createMockOutputs([{ filename: 'resolved.png' }])
+    )
+
+    expect(reportError).not.toHaveBeenCalled()
+  })
+})
+
 describe('nodeOutputStore legacy entry synchronization', () => {
   beforeEach(() => {
     app.nodeOutputs = {}
@@ -315,14 +484,11 @@ describe('nodeOutputStore replaceNodeOutputImages', () => {
   it('drops the previous output metadata when replacing the images', () => {
     const store = useNodeOutputStore()
     const node = createMockNode({ id: 7 })
-    store.setOutputFromLegacy(
-      '7',
-      fromAny({
-        images: [{ filename: 'previous.webp' }],
-        animated: [true],
-        video: [{ filename: 'previous.mp4' }]
-      })
-    )
+    store.setOutputFromLegacy('7', {
+      images: [{ filename: 'previous.webp' }],
+      animated: [true],
+      video: [{ filename: 'previous.mp4' }]
+    })
 
     const images = [
       {
@@ -810,16 +976,14 @@ describe('nodeOutputStore restoreOutputs + execution interaction', () => {
     expect(app.nodeOutputs['4']).toStrictEqual(execOutput)
   })
 
-  it('should overwrite existing output when execution sends new data for same node', () => {
+  it('should replace a restored input preview when execution sends images for the same node', () => {
     const store = useNodeOutputStore()
 
-    // Restore with input preview
     const inputOutput = createMockOutputs([
       { filename: 'uploaded.png', subfolder: '', type: 'input' }
     ])
     store.restoreOutputs({ '3': inputOutput })
 
-    // Execution sends new output for the same node (non-merge)
     const execOutput = createMockOutputs([
       { filename: 'result.png', subfolder: '', type: 'temp' }
     ])
@@ -828,7 +992,6 @@ describe('nodeOutputStore restoreOutputs + execution interaction', () => {
       execOutput
     )
 
-    // On current main (without PR #9123 guard), execution overwrites
     expect(store.nodeOutputs['3']).toStrictEqual(execOutput)
     expect(app.nodeOutputs['3']).toStrictEqual(execOutput)
   })
@@ -901,6 +1064,92 @@ describe('nodeOutputStore merge mode interactions', () => {
   })
 })
 
+describe('nodeOutputStore image url cache busting', () => {
+  beforeEach(() => {
+    app.nodeOutputs = {}
+    app.nodePreviewImages = {}
+    let calls = 0
+    vi.mocked(app.getRandParam).mockImplementation(() => `&rand=${calls++}`)
+  })
+
+  it.for(['blob:original-image', 'https://example.com/original.png'])(
+    'preserves explicit original and preview URLs for %s',
+    (url) => {
+      const store = useNodeOutputStore()
+      const node = createMockNode({ id: 7 })
+      const image = {
+        filename: 'original.png',
+        url,
+        previewUrl: 'blob:preview-image'
+      }
+      store.nodeOutputs['7'] = { images: [image] }
+
+      expect(store.getNodeOutputItems(node)).toEqual([
+        expect.objectContaining({ url, previewUrl: 'blob:preview-image' })
+      ])
+    }
+  )
+
+  it.for([
+    { bucket: 'video', filename: 'movie.webm', url: 'blob:movie' },
+    {
+      bucket: 'audio',
+      filename: 'sound.flac',
+      url: 'https://example.com/sound.flac'
+    }
+  ])(
+    'uses an explicit $bucket URL without a separate preview',
+    ({ bucket, filename, url }) => {
+      const store = useNodeOutputStore()
+      const node = createMockNode({ id: 7 })
+      store.nodeOutputs['7'] = { [bucket]: [{ filename, url }] }
+
+      expect(store.getNodeOutputItems(node)).toEqual([
+        expect.objectContaining({ url, previewUrl: url })
+      ])
+    }
+  )
+
+  it('reuses one url for the same outputs and a fresh one for new outputs', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 7 })
+
+    store.setNodeOutputs(node, 'same-name.png')
+    const first = store.getNodeImageUrls(node)
+    const firstItems = store.getNodeOutputItems(node)
+    const again = store.getNodeImageUrls(node)
+    const againItems = store.getNodeOutputItems(node)
+    store.setNodeOutputs(node, 'same-name.png')
+    const afterReload = store.getNodeImageUrls(node)
+    const afterItems = store.getNodeOutputItems(node)
+
+    expect(again).toEqual(first)
+    expect(afterReload).not.toEqual(first)
+    expect(againItems).toEqual(firstItems)
+    expect(
+      firstItems.map((item) =>
+        new URL(
+          resultItemPreviewUrl(item),
+          window.location.origin
+        ).searchParams.get('rand')
+      )
+    ).toEqual(['0'])
+    expect(
+      afterItems.map((item) =>
+        new URL(
+          resultItemPreviewUrl(item),
+          window.location.origin
+        ).searchParams.get('rand')
+      )
+    ).toEqual(['1'])
+    expect(
+      afterItems.map((item) => resultItemPreviewUrl(item, { fullRes: true }))
+    ).not.toEqual(
+      firstItems.map((item) => resultItemPreviewUrl(item, { fullRes: true }))
+    )
+  })
+})
+
 describe('nodeOutputStore setNodeOutputs (widget path)', () => {
   beforeEach(() => {
     app.nodeOutputs = {}
@@ -969,6 +1218,55 @@ describe('nodeOutputStore setNodeOutputs (widget path)', () => {
 
     expect(node.images).toBe(images)
     expect(node.images).not.toBe(store.nodeOutputs['5']?.images)
+  })
+
+  it.for([
+    {
+      value: 'sky.exr',
+      preview: { filename: 'sky.exr', subfolder: '', type: 'input' as const }
+    },
+    {
+      value: 'renders/sky.exr [output]',
+      preview: {
+        filename: 'sky.exr',
+        subfolder: 'renders',
+        type: 'output' as const
+      }
+    }
+  ])(
+    'keeps the resolved preview of $value when the widget path writes it again',
+    ({ value, preview }) => {
+      const store = useNodeOutputStore()
+      const node = createMockNode({ id: 5 })
+      const resolved = { ...preview, preview_id: 'preview-1' }
+      store.nodeOutputs['5'] = { images: [resolved] }
+
+      store.setNodeOutputs(node, value)
+
+      expect(store.nodeOutputs['5']?.images).toEqual([resolved])
+      expect(app.nodeOutputs['5']?.images).toEqual([resolved])
+    }
+  )
+
+  it('replaces a resolved preview when the widget path writes another value', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 5 })
+    store.nodeOutputs['5'] = {
+      images: [
+        { filename: 'sky.exr', subfolder: '', type: 'output', preview_id: 'p' }
+      ]
+    }
+
+    store.setNodeOutputs(node, 'other.exr [output]')
+
+    const previewUrl = new URL(
+      store.getNodeImageUrls(node)?.[0] ?? '',
+      window.location.origin
+    )
+    expect(store.nodeOutputs['5']?.images).toHaveLength(1)
+    expect(store.nodeOutputs['5']?.images?.[0]?.preview_id).toBeUndefined()
+    expect(previewUrl.searchParams.get('filename')).toBe('other.exr')
+    expect(previewUrl.searchParams.get('type')).toBe('output')
   })
 
   it('should skip empty array of filenames after createOutputs', () => {

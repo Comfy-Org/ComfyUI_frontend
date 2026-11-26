@@ -3,8 +3,10 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import type * as THREE from 'three'
 
 import type Load3d from '@comfyorg/viewport3d/load3d/Load3d'
+import { MAX_MODEL_LOAD_BYTES } from '@comfyorg/viewport3d/load3d/constants'
+import { ModelTooLargeError } from '@comfyorg/viewport3d/load3d/ModelAdapter'
 import type { createLoad3d as createLoad3dContract } from '@comfyorg/viewport3d/load3d/createLoad3d'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { generateModelThumbnail } from './modelThumbnail'
 
 type ThumbnailLoad3d = Pick<Load3d, 'loadModel' | 'captureThumbnail' | 'remove'>
@@ -170,6 +172,22 @@ describe('generateModelThumbnail', () => {
     const result = await generateModelThumbnail('/broken.glb', 'broken.glb')
 
     expect(result).toEqual({ status: 'failed' })
+    expect(instance.remove).toHaveBeenCalledTimes(1)
+  })
+
+  it('gives up on a model over the preview size limit without reporting it', async () => {
+    const instance = mockInstance({
+      loadModel: vi
+        .fn()
+        .mockRejectedValue(new ModelTooLargeError(MAX_MODEL_LOAD_BYTES + 1))
+    })
+    createLoad3d.mockReturnValue(instance)
+
+    await expect(
+      generateModelThumbnail('/huge.glb', 'huge.glb')
+    ).resolves.toEqual({ status: 'tooLarge' })
+    expect(reportErrorMock).not.toHaveBeenCalled()
+    expect(instance.captureThumbnail).not.toHaveBeenCalled()
     expect(instance.remove).toHaveBeenCalledTimes(1)
   })
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useDialogStore } from '@/stores/dialogStore'
 
 describe('useSettingsDialog without a registered component', () => {

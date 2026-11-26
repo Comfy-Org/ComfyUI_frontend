@@ -55,7 +55,7 @@ import SelectItem from '@comfyorg/design-system/select/SelectItem'
 import SelectTrigger from '@comfyorg/design-system/select/SelectTrigger'
 import SelectValue from '@comfyorg/design-system/select/SelectValue'
 import { useKeybindingPresetService } from '@/platform/keybindings/presetService'
-import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
+import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
 
 const { presetNames } = defineProps<{
   presetNames: string[]

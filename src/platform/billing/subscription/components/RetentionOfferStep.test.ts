@@ -29,6 +29,7 @@ function settlesAs(status: TerminalOperation['status']) {
       type,
       status,
       errorMessage: null,
+      paymentMethodUrl: null,
       startedAt: 0,
       operationStartedAt: 0,
       actionUrl: null,
@@ -64,8 +65,13 @@ function onPlan(tier: SubscriptionInfo['tier']) {
 
 function renderOffer({
   isScopeCurrent = (): boolean => true,
-  unitAmount = 10000
-}: { isScopeCurrent?: () => boolean; unitAmount?: number } = {}) {
+  unitAmount = 10000,
+  periodEnd = Date.UTC(2026, 10, 12, 12) / 1000
+}: {
+  isScopeCurrent?: () => boolean
+  unitAmount?: number
+  periodEnd?: number
+} = {}) {
   const onDecide = vi.fn<(outcome: RetentionOfferOutcome) => void>()
   render(RetentionOfferStep, {
     props: {
@@ -78,7 +84,7 @@ function renderOffer({
         currency: 'usd',
         unit_amount: unitAmount,
         quantity: 1,
-        period_end: Date.UTC(2026, 10, 12, 12) / 1000
+        period_end: periodEnd
       },
       sessionId: 'session-1',
       workspaceId: 'workspace-1',
@@ -188,13 +194,43 @@ describe('RetentionOfferStep', () => {
       screen.getByText("You'll save $90.00 across these 3 payments.")
     ).toBeInTheDocument()
     expect(
-      screen.getByText('Renews at $100.00 on February 12, 2027.')
+      screen.getByText('After the offer ends, your plan renews at $100.00/mo.')
     ).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Done' }))
 
     expect(onDecide).toHaveBeenCalledExactlyOnceWith('retained')
   })
+
+  it.for([
+    { periodEnd: Date.UTC(2027, 1, 28, 12), starting: 'February 28, 2027' },
+    { periodEnd: Date.UTC(2028, 1, 29, 12), starting: 'February 29, 2028' },
+    { periodEnd: Date.UTC(2027, 3, 30, 12), starting: 'April 30, 2027' }
+  ])(
+    'renders no full-price date after a renewal on $starting',
+    async ({ periodEnd, starting }) => {
+      settlesAs('succeeded')
+      const { user } = renderOffer({ periodEnd: periodEnd / 1000 })
+
+      await user.click(
+        screen.getByRole('button', { name: 'Keep Pro and save 30%' })
+      )
+
+      expect(
+        await screen.findByText(
+          `30% off is applied to your next 3 payments, starting ${starting}.`
+        )
+      ).toBeInTheDocument()
+      expect(
+        screen.getByText(
+          'After the offer ends, your plan renews at $100.00/mo.'
+        )
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByText(/renews at \$100\.00 on/i)
+      ).not.toBeInTheDocument()
+    }
+  )
 
   it('offers to check again, but not to cancel, when the outcome is unconfirmed', async () => {
     settlesAs('timeout')

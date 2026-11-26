@@ -219,7 +219,7 @@ describe('operationOutcomeOf', () => {
         authenticationState: 'failed_retryable',
         declineReason: 'payment_not_completed'
       },
-      outcome: { kind: 'not_completed', operationId: 'op_x' }
+      outcome: { kind: 'not_verified', operationId: 'op_x' }
     },
     {
       name: 'an Alipay payment the customer backed out of, still pending',
@@ -228,7 +228,7 @@ describe('operationOutcomeOf', () => {
         authenticationState: 'failed_retryable',
         declineReason: 'authentication_failed'
       },
-      outcome: { kind: 'not_completed', operationId: 'op_x' }
+      outcome: { kind: 'not_verified', operationId: 'op_x' }
     },
     {
       name: 'a pending payment the bank refused for missing authentication',
@@ -237,7 +237,7 @@ describe('operationOutcomeOf', () => {
         authenticationState: 'failed_retryable',
         declineReason: 'authentication_required'
       },
-      outcome: { kind: 'not_completed', operationId: 'op_x' }
+      outcome: { kind: 'not_verified', operationId: 'op_x' }
     },
     {
       name: 'an attempt the server ended unpaid and marks a plain retry',

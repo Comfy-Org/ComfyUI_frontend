@@ -4,14 +4,21 @@ import { join } from 'node:path'
 import { beforeEach, describe, expect, test } from 'vitest'
 
 import {
+  PAGE_SESSION_OWNER,
+  checkAgentSurfaceFiles,
   checkCatalogPinnedBySha,
   checkFile,
   checkFollowerFiles,
   checkNoHardcodedEndpoint,
-  checkNoOutboundUpdateB64
+  checkNoOutboundUpdateB64,
+  checkPageSessionOwnsTransport,
+  findAgentSurfaceFiles
 } from './check-follower-invariants'
 
 const FOLLOWER_FILE = 'src/workbench/extensions/agent/crdt/follower.ts'
+const PANEL_FILE = 'src/workbench/extensions/agent/AgentPanelRoot.vue'
+const REPOSITORY_ROOT = join(import.meta.dirname, '..')
+const REPOSITORY_SCAN_TIMEOUT = 60_000
 
 describe('checkNoOutboundUpdateB64', () => {
   test('fails a forbidden mutation fixture: constructing an outbound update_b64 frame', () => {
@@ -192,6 +199,138 @@ describe('checkNoHardcodedEndpoint', () => {
   ])('passes the shared event endpoint: %s', (fixture) => {
     expect(checkNoHardcodedEndpoint(FOLLOWER_FILE, fixture)).toEqual([])
   })
+})
+
+describe('checkPageSessionOwnsTransport', () => {
+  test('fails the regression it exists to catch: a component constructing the transport', () => {
+    const fixture = `<script setup lang="ts">
+const events = createAgentEventSource({ endpoint: api.apiURL('/agent/events') })
+const docTransport = createAgentDocFrameTransport(events)
+onBeforeUnmount(() => docTransport.destroy())
+</script>`
+    expect(
+      checkPageSessionOwnsTransport(PANEL_FILE, fixture).map(
+        ({ rule, line }) => ({ rule, line })
+      )
+    ).toEqual([
+      { rule: 'page-session-owns-transport', line: 2 },
+      { rule: 'page-session-owns-transport', line: 3 }
+    ])
+  })
+
+  test('reports the line in the .vue file, not in the extracted script', () => {
+    const fixture = `<template>\n  <div />\n</template>\n\n<script setup lang="ts">\nconst events = createAgentEventSource({})\n</script>`
+    expect(checkPageSessionOwnsTransport(PANEL_FILE, fixture)).toEqual([
+      expect.objectContaining({ line: 6 })
+    ])
+  })
+
+  test('fails closed when a .vue script block does not parse', () => {
+    const fixture = `<script setup lang="ts">\nconst events = createAgentEventSource({\n</script>`
+    expect(
+      checkPageSessionOwnsTransport(PANEL_FILE, fixture).map(({ rule }) => rule)
+    ).toContain('syntax-error')
+  })
+
+  test('reports a parse failure against the .vue path, not the parser alias', () => {
+    const fixture = `<script setup lang="ts">\nconst events = createAgentEventSource({\n</script>`
+    for (const violation of checkPageSessionOwnsTransport(PANEL_FILE, fixture))
+      expect(violation.file).toBe(PANEL_FILE)
+  })
+
+  test.for([
+    'generic="T extends Array<string>"',
+    "generic='T extends Array<string>'",
+    'generic="T extends Record<string, () => void>"'
+  ])('catches the forbidden call in an SFC opened with %s', (attribute) => {
+    const fixture = `<script setup lang="ts" ${attribute}>\nconst events = createAgentEventSource({})\n</script>`
+    expect(checkPageSessionOwnsTransport(PANEL_FILE, fixture)).toEqual([
+      expect.objectContaining({
+        file: PANEL_FILE,
+        line: 2,
+        rule: 'page-session-owns-transport'
+      })
+    ])
+  })
+
+  test('keeps real-line anchors when a generic opening tag spans lines', () => {
+    const fixture = `<template>\n  <div />\n</template>\n\n<script\n  setup\n  lang="ts"\n  generic="T extends Array<string>"\n>\nconst events = createAgentEventSource({})\n</script>`
+    expect(checkPageSessionOwnsTransport(PANEL_FILE, fixture)).toEqual([
+      expect.objectContaining({ line: 10 })
+    ])
+  })
+})
+
+describe('checkPageSessionOwnsTransport allowed shapes', () => {
+  test('passes the owner module itself', () => {
+    const fixture = `
+      const events = createAgentEventSource({ endpoint, getAuthParams })
+      return { events, docTransport: createAgentDocFrameTransport(events) }
+    `
+    expect(checkPageSessionOwnsTransport(PAGE_SESSION_OWNER, fixture)).toEqual(
+      []
+    )
+  })
+
+  test('passes a component that consumes the page session', () => {
+    const fixture = `<script setup lang="ts">
+const { events, docTransport } = useAgentPageSession()
+</script>`
+    expect(checkPageSessionOwnsTransport(PANEL_FILE, fixture)).toEqual([])
+  })
+
+  test('passes the factory definitions, which declare rather than call', () => {
+    const fixture = `
+      export function createAgentDocFrameTransport(source: AgentEventSocket) {
+        return { destroy() {} }
+      }
+    `
+    expect(
+      checkPageSessionOwnsTransport(
+        'src/workbench/extensions/agent/crdt/agentDocFrameTransport.ts',
+        fixture
+      )
+    ).toEqual([])
+  })
+
+  test('ignores a factory name that only appears in a comment or a string', () => {
+    const fixture = `
+      const label = 'createAgentDocFrameTransport'
+    `
+    expect(checkPageSessionOwnsTransport(FOLLOWER_FILE, fixture)).toEqual([])
+  })
+
+  test('ignores files outside the agent surface', () => {
+    const fixture = 'const events = createAgentEventSource({})'
+    expect(
+      checkPageSessionOwnsTransport('src/scripts/app.ts', fixture)
+    ).toEqual([])
+  })
+})
+
+describe('agent surface enforcement against this repository', () => {
+  test('discovers the agent surface, including .vue components', () => {
+    const files = findAgentSurfaceFiles(REPOSITORY_ROOT)
+    expect(files).toContain(PANEL_FILE)
+    expect(files).toContain(PAGE_SESSION_OWNER)
+    expect(files.some((file) => file.endsWith('.test.ts'))).toBe(false)
+  })
+
+  test(
+    'the agent surface holds the transport-ownership invariant',
+    () => {
+      expect(checkAgentSurfaceFiles(REPOSITORY_ROOT)).toEqual([])
+    },
+    REPOSITORY_SCAN_TIMEOUT
+  )
+
+  test(
+    'the follower seam holds its invariants',
+    () => {
+      expect(checkFollowerFiles(REPOSITORY_ROOT)).toEqual([])
+    },
+    REPOSITORY_SCAN_TIMEOUT
+  )
 })
 
 describe('checkFile', () => {

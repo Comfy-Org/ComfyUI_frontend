@@ -1,7 +1,7 @@
 import type { AutoTopUpCardStatus } from '@comfyorg/account-core/billing'
 import { watch } from 'vue'
 
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 
 export function useAutoTopUpCardViewed(
   renderedStatus: () => AutoTopUpCardStatus | undefined

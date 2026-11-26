@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 
 import {
   agentTest as test,
@@ -227,7 +227,6 @@ test.describe(
 
       await test.step('bind the workflow so the follower subscribes', async () => {
         await agentPanel.open()
-        await agentPanel.selectWorkflow()
         await agentPanel.sendMessage('hello')
         await expect(agentPanel.root.getByText('hello').first()).toBeVisible()
         hostSocket.send({

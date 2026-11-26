@@ -1,23 +1,14 @@
+import type {
+  CompactRect as Rect,
+  CompactRect
+} from '@comfyorg/shared-frontend-utils/geometry'
 import type { FillSpec } from './fill'
 import type { LayerMode } from './mode'
+export type { Point2D as Vec2 } from '@comfyorg/shared-frontend-utils/geometry'
 
-export interface Vec2 {
-  x: number
-  y: number
-}
+export type { CompactRect as Rect } from '@comfyorg/shared-frontend-utils/geometry'
 
-export interface Rect {
-  x: number
-  y: number
-  w: number
-  h: number
-}
-
-export interface Transform {
-  x: number
-  y: number
-  w: number
-  h: number
+export interface Transform extends CompactRect {
   rotation: number
 }
 

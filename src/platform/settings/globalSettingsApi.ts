@@ -6,16 +6,16 @@ import type {
 import { zErrorResponse, zGlobalSetting } from '@comfyorg/ingest-types/zod'
 
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
+import { isCloud } from '@/platform/distribution/types'
+import { api } from '@/scripts/api'
 import {
   fetchWithUnifiedRemint,
   shouldRemintCloudRequest
 } from '@/platform/auth/unified/remintRetry'
-import { isCloud } from '@/platform/distribution/types'
-import { api } from '@/scripts/api'
-import type { WebSessionSend } from '@/platform/auth/session/webSessionFetch'
-import { useAuthStore } from '@/stores/authStore'
-import type { AuthHeader } from '@/types/authTypes'
-import { retryingSend } from '@/utils/fetchWithRetry'
+import type { WebSessionSend } from '@comfyorg/api-client/webSessionFetch'
+import type { AuthHeader } from '@comfyorg/api-client/authTypes'
+import { retryingSend } from '@comfyorg/api-client/fetchWithRetry'
+import { sessionRevokedRefusal } from '@/platform/auth/session/sessionRevokedError'
 
 export class GlobalSettingsApiError extends Error {
   constructor(
@@ -32,13 +32,6 @@ function globalSettingsUrl(key?: GlobalSettingKey): string {
   return isCloud ? api.apiURL(path) : `${getComfyApiBaseUrl()}/api${path}`
 }
 
-export async function getGlobalSettingsAuthHeader(): Promise<AuthHeader | null> {
-  const authStore = useAuthStore()
-  return isCloud
-    ? authStore.getWorkspaceAuthHeader()
-    : authStore.getUserAuthHeader()
-}
-
 async function responseBody(response: Response): Promise<unknown> {
   try {
     return await response.json()
@@ -48,6 +41,18 @@ async function responseBody(response: Response): Promise<unknown> {
       response.status
     )
   }
+}
+
+async function refusalBodyOrUndefined(response: Response): Promise<unknown> {
+  return response.json().catch(() => undefined)
+}
+
+function refusalError(status: number, body: unknown): Error {
+  const message = `Global setting request failed: ${status}`
+  return (
+    sessionRevokedRefusal(message, status, body) ??
+    new GlobalSettingsApiError(message, status)
+  )
 }
 
 type GlobalSettingsAuth = AuthHeader | WebSessionSend
@@ -72,10 +77,7 @@ function sendGlobalSetting(
 
 async function storedSetting(response: Response): Promise<GlobalSetting> {
   if (!response.ok) {
-    throw new GlobalSettingsApiError(
-      `Global setting request failed: ${response.status}`,
-      response.status
-    )
+    throw refusalError(response.status, await refusalBodyOrUndefined(response))
   }
   const payload = zGlobalSetting.safeParse(await responseBody(response))
   if (!payload.success) {

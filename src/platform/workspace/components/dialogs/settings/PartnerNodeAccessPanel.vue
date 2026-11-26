@@ -578,6 +578,7 @@ function confirmDisableAll() {
     headerProps: { title: t('workspacePanel.partnerNodes.disableAllTitle') },
     props: { promptText: t('workspacePanel.partnerNodes.disableAllMessage') },
     footerProps: {
+      cancelText: t('g.cancel'),
       confirmText: t('workspacePanel.partnerNodes.disableAll'),
       confirmVariant: 'destructive',
       optionsDisabled: isSaving,
@@ -648,6 +649,7 @@ function confirmAccessModeChange(
       )}`
     },
     footerProps: {
+      cancelText: t('g.cancel'),
       confirmText: t('g.confirm'),
       confirmVariant: 'secondary',
       optionsDisabled: isSaving,

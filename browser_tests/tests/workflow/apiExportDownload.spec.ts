@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises'
 
-import type { ComfyApiWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyApiWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import {
   comfyPageFixture as test,
   comfyExpect as expect

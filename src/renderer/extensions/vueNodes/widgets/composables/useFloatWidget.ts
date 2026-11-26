@@ -1,28 +1,28 @@
 import { clamp } from 'es-toolkit/compat'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { INumericWidget } from '@/lib/litegraph/src/types/widgets'
+import type { INumericWidget } from '@comfyorg/graph-model/widgets'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { isFloatInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { isFloatInputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
+import type { InputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import type { ComfyWidgetConstructorV2 } from '@/types/widgetConstructor'
 import { addValueControlWidget } from '@/core/graph/widgets/valueControlWidgets'
-import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
+import { transformInputSpecV2ToV1 } from '@comfyorg/object-info-parser/migration'
 
-function onFloatValueChange(this: INumericWidget, v: number) {
-  const round = this.options.round
-  if (round) {
-    const precision =
-      this.options.precision ?? Math.max(0, -Math.floor(Math.log10(round)))
-    const rounded = Math.round(v / round) * round
-    this.value = clamp(
-      Number(rounded.toFixed(precision)),
-      this.options.min ?? -Infinity,
-      this.options.max ?? Infinity
-    )
-  } else {
-    this.value = v
-  }
+function onFloatValueChange(this: INumericWidget, v: number | null) {
+  this.value = clamp(
+    roundToOption(Number(v), this.options),
+    this.options.min ?? -Infinity,
+    this.options.max ?? Infinity
+  )
+}
+
+function roundToOption(v: number, options: INumericWidget['options']) {
+  const { round } = options
+  if (!round) return v
+  const precision =
+    options.precision ?? Math.max(0, -Math.floor(Math.log10(round)))
+  return Number((Math.round(v / round) * round).toFixed(precision))
 }
 
 export const _for_testing = {

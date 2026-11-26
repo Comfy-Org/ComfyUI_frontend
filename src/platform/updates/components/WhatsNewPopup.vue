@@ -1,13 +1,16 @@
 <template>
-  <div v-if="shouldShow" class="whats-new-popup-container left-4">
+  <div
+    v-if="shouldShow"
+    class="whats-new-popup-container left-4 max-w-[calc(100%-var(--sidebar-default-connected-width)-2rem)] [&.sidebar-left]:left-[calc(var(--sidebar-default-connected-width)+1rem)]"
+  >
     <div
-      class="whats-new-popup relative flex w-100 max-w-100 flex-col rounded-lg border bg-popover shadow-md"
+      class="whats-new-popup relative flex w-100 max-w-full flex-col rounded-lg border bg-popover shadow-md"
       @click.stop
     >
       <Button
-        class="absolute top-2 right-2 z-10 size-8 rounded-lg p-2 opacity-50"
+        class="absolute top-2 right-2 z-10 p-2 opacity-50"
         :aria-label="$t('g.close')"
-        size="icon-sm"
+        size="icon"
         variant="muted-textonly"
         @click="closePopup"
       >
@@ -171,7 +174,6 @@ defineExpose({
 
   position: absolute;
   bottom: var(--whats-new-popup-bottom);
-  z-index: 1000;
   pointer-events: auto;
 }
 

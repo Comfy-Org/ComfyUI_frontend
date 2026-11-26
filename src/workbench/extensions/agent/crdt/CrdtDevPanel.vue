@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { useClipboard, useEventListener } from '@vueuse/core'
+import Button from '@comfyorg/design-system/button/Button'
+import { useEventListener } from '@vueuse/core'
 import {
   computed,
   nextTick,
@@ -14,20 +15,23 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { resolveDeployEnv } from '@/platform/telemetry/rumContext'
-import { reportError } from '@/platform/telemetry/reportError'
+import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
+import { resolveDeployEnv } from '@comfyorg/telemetry/rumContext'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { safeLocalStorage } from '@/base/storage/safeStorage'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { collectAllNodes } from '@/utils/graphTraversalUtil'
-
 import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
-import type { CrdtLogLevel } from './crdtDebugGate'
-import { CRDT_LOG_LEVELS, crdtLogLevel, setCrdtLogLevel } from './crdtDebugGate'
+
+import type { CrdtLogScope, DevEvent, DevEventKind } from './crdtLog'
+import type { CrdtLogLevel } from './crdtLogLevel'
+import { CRDT_LOG_LEVELS } from './crdtLogLevel'
 import type {
   CrdtDebugReportInput,
   ReportIdentifiers,
@@ -38,14 +42,13 @@ import {
   DEFAULT_REPORT_SOURCES,
   collectCrdtDebugReport
 } from './crdtDebugReport'
-import type { CrdtLogScope, DevEvent, DevEventKind } from './devPanelLog'
 import {
   DEV_EVENT_KINDS,
   clearDevEvents,
   devEventReplacer,
   devEvents,
   stringifyDevEvents
-} from './devPanelLog'
+} from './crdtLog'
 import type { MergeScenario, MergeSimulation } from './mergeScenarios'
 import { getMergeScenarios, runScenario } from './mergeScenarios'
 import type { MergeTraceEntry, NodeLifecycleRow } from './mergeTrace'
@@ -190,37 +193,21 @@ const chipButton = useTemplateRef<HTMLButtonElement>('chipButton')
 const closeButton = useTemplateRef<HTMLButtonElement>('closeButton')
 
 function readOpen(): boolean {
-  try {
-    return localStorage.getItem(OPEN_KEY) === 'true'
-  } catch {
-    return false
-  }
+  return safeLocalStorage.getItem(OPEN_KEY) === 'true'
 }
 
 function readHidden(): boolean {
-  try {
-    return localStorage.getItem(HIDDEN_KEY) === 'true'
-  } catch {
-    return false
-  }
+  return safeLocalStorage.getItem(HIDDEN_KEY) === 'true'
 }
 
 function setHidden(hidden: boolean): void {
-  try {
-    localStorage.setItem(HIDDEN_KEY, String(hidden))
-  } catch {
-    return
-  }
+  safeLocalStorage.setItem(HIDDEN_KEY, String(hidden))
 }
 
 function setOpen(value: boolean) {
   open.value = value
   if (value) void nextTick(poll)
-  try {
-    localStorage.setItem(OPEN_KEY, String(value))
-  } catch {
-    // Storage unavailable — the panel still toggles in-memory.
-  }
+  safeLocalStorage.setItem(OPEN_KEY, String(value))
 }
 
 function onDocumentKeydown(event: KeyboardEvent): void {
@@ -335,12 +322,7 @@ const visibleLogRows = computed<readonly LogRow[]>(() =>
     })
 )
 
-const level = ref<CrdtLogLevel>(crdtLogLevel())
-
-function onLevelChange(next: CrdtLogLevel) {
-  level.value = next
-  setCrdtLogLevel(next)
-}
+const level = defineModel<CrdtLogLevel>('level', { default: 'info' })
 
 // ── merge lab ─────────────────────────────────────────────────────────────
 const mergeScenarios = getMergeScenarios()
@@ -349,21 +331,13 @@ const simulation = shallowRef<MergeSimulation | null>(null)
 const NOTE_KEY = 'Comfy.Agent.CrdtDevPanel.note'
 
 function readNote(): string {
-  try {
-    return localStorage.getItem(NOTE_KEY) ?? ''
-  } catch {
-    return ''
-  }
+  return safeLocalStorage.getItem(NOTE_KEY) ?? ''
 }
 
 const testerNote = ref(readNote())
 
 watch(testerNote, (next) => {
-  try {
-    localStorage.setItem(NOTE_KEY, next)
-  } catch {
-    // Storage unavailable — the note simply does not survive a remount.
-  }
+  safeLocalStorage.setItem(NOTE_KEY, next)
 })
 
 function selectScenario(id: string) {
@@ -409,7 +383,7 @@ const reportCopyState = ref<
 >({ status: 'idle' })
 const itemCopy = ref<{ key: string; state: 'done' | 'failed' } | null>(null)
 const reportSources = ref<ReportSources>({ ...DEFAULT_REPORT_SOURCES })
-const { copy } = useClipboard({ legacy: true })
+const { copyToClipboard } = useCopyToClipboard()
 let itemCopyRequest = 0
 
 const copyReportLabel = computed(() => {
@@ -427,16 +401,13 @@ const copyLogLabel = computed(() => {
 })
 
 async function writeClipboard(text: string): Promise<boolean> {
-  try {
-    await copy(text)
-    return true
-  } catch (error) {
-    reportError(error, {
+  const copied = await copyToClipboard(text, { toastOnSuccess: false })
+  if (!copied)
+    reportError(new Error('Clipboard write failed'), {
       surface: 'agent',
       errorType: 'crdt_dev_panel_clipboard_write_failed'
     })
-    return false
-  }
+  return copied
 }
 
 async function copyItem(key: string, text: string) {
@@ -507,7 +478,7 @@ function collectCurrentMediaUiDiagnostics() {
   try {
     const nodeOutputStore = useNodeOutputStore()
     return collectMediaUiDiagnostics({
-      nodes: collectAllNodes(app.rootGraph),
+      nodes: collectAllNodes(useApp().rootGraph),
       getNodeOutputs: (node) => nodeOutputStore.getNodeOutputs(node),
       getNodeImageUrls: (node) => nodeOutputStore.getNodeImageUrls(node),
       root: document
@@ -523,9 +494,7 @@ function collectCurrentMediaUiDiagnostics() {
 }
 
 async function copyCollectedReport(report: string): Promise<void> {
-  try {
-    await navigator.clipboard.writeText(report)
-  } catch {
+  if (!(await writeClipboard(report))) {
     reportCopyState.value = { status: 'failed', report }
     return
   }
@@ -555,7 +524,7 @@ function serializeActiveWorkflow(): Pick<
   'workflow' | 'workflowError'
 > {
   try {
-    return { workflow: app.rootGraph.serialize() }
+    return { workflow: useApp().rootGraph.serialize() }
   } catch (error) {
     return { workflowError: String(error) }
   }
@@ -738,7 +707,6 @@ function fmtTime(at: number): string {
             v-model="level"
             class="rounded-sm border bg-secondary px-1 py-0.5"
             data-testid="crdt-dev-panel-verbosity"
-            @change="onLevelChange(level)"
           >
             <option
               v-for="option in CRDT_LOG_LEVELS"
@@ -808,17 +776,18 @@ function fmtTime(at: number): string {
                   </td>
                   <td class="break-all">
                     {{ row[1]() }}
-                    <button
+                    <Button
                       v-if="row[0] === 'doc id' && status.workflowId"
-                      type="button"
-                      class="ml-1 cursor-pointer rounded-sm border px-1.5 py-0.5 hover:bg-accent"
+                      variant="outline"
+                      size="sm"
+                      class="ml-1"
                       :aria-label="S.copyDocumentId"
                       @click="
                         copyItem(`doc:${status.workflowId}`, status.workflowId)
                       "
                     >
                       {{ itemCopyLabel(`doc:${status.workflowId}`) }}
-                    </button>
+                    </Button>
                   </td>
                 </tr>
               </tbody>
@@ -887,13 +856,9 @@ function fmtTime(at: number): string {
             <span class="ml-auto text-muted-foreground"
               >{{ matchingEvents.length }} {{ S.events }}</span
             >
-            <button
-              type="button"
-              class="cursor-pointer rounded-sm border px-1.5 py-0.5 hover:bg-accent"
-              @click="clearDevEvents()"
-            >
+            <Button variant="outline" size="sm" @click="clearDevEvents()">
               {{ S.clear }}
-            </button>
+            </Button>
           </div>
 
           <div class="space-y-1" data-testid="crdt-dev-panel-log">
@@ -933,25 +898,25 @@ function fmtTime(at: number): string {
                 v-if="row.detail || row.nodeIds.length"
                 class="mt-1 flex flex-wrap gap-1"
               >
-                <button
+                <Button
                   v-if="row.detail"
-                  type="button"
-                  class="cursor-pointer rounded-sm border px-1.5 py-0.5 hover:bg-accent"
+                  variant="outline"
+                  size="sm"
                   :aria-label="S.copyLogDetail"
                   @click="copyItem(`detail:${row.event.seq}`, row.detail)"
                 >
                   {{ itemCopyLabel(`detail:${row.event.seq}`) }}
-                </button>
-                <button
+                </Button>
+                <Button
                   v-for="nodeId in row.nodeIds"
                   :key="nodeId"
-                  type="button"
-                  class="cursor-pointer rounded-sm border px-1.5 py-0.5 hover:bg-accent"
+                  variant="outline"
+                  size="sm"
                   :aria-label="`${S.copy} node id ${nodeId}`"
                   @click="copyItem(`node:${row.event.seq}:${nodeId}`, nodeId)"
                 >
                   {{ itemCopyLabel(`node:${row.event.seq}:${nodeId}`, nodeId) }}
-                </button>
+                </Button>
                 <span
                   v-if="row.hiddenNodeIdCount"
                   class="px-1.5 py-0.5 text-muted-foreground"
@@ -990,14 +955,15 @@ function fmtTime(at: number): string {
             {{ S.question }}: {{ scenario.question }}
           </p>
 
-          <button
-            type="button"
-            class="w-full cursor-pointer rounded-sm border border-primary px-2 py-1 hover:bg-accent"
+          <Button
+            variant="outline"
+            size="sm"
+            class="w-full border-primary"
             data-testid="crdt-dev-panel-run"
             @click="run"
           >
             {{ S.run }}
-          </button>
+          </Button>
 
           <template v-if="simulation">
             <ol
@@ -1146,22 +1112,19 @@ function fmtTime(at: number): string {
         </div>
         <p class="mt-0 mb-2 text-muted-foreground">{{ S.includeHint }}</p>
         <div class="flex gap-1">
-          <button
-            type="button"
-            class="flex-1 cursor-pointer rounded-sm border px-2 py-1 hover:bg-accent"
-            @click="copyLog"
-          >
+          <Button variant="outline" size="sm" class="flex-1" @click="copyLog">
             {{ copyLogLabel }}
-          </button>
-          <button
-            type="button"
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
             :disabled="reportCopyState.status === 'busy'"
-            class="flex-2 cursor-pointer rounded-sm border border-primary px-2 py-1 hover:bg-accent disabled:cursor-default"
+            class="flex-2 border-primary"
             data-testid="crdt-dev-panel-copy-report"
             @click="copyReport"
           >
             {{ copyReportLabel }}
-          </button>
+          </Button>
         </div>
         <div v-if="reportCopyState.status === 'failed'" class="mt-2">
           <p role="alert" class="m-0 text-destructive">

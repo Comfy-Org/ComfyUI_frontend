@@ -213,9 +213,9 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useShareFlowContext } from '@/platform/workflow/sharing/composables/useShareFlowContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { appendJsonExt } from '@/utils/formatUtil'
-import { getErrorMessage } from '@/utils/errorUtil'
+import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { onClose } = defineProps<{
@@ -293,12 +293,7 @@ function handleOpenPublishDialog() {
 }
 
 function tabButtonClass(mode: DialogMode) {
-  return cn(
-    'cursor-pointer border-none transition-colors',
-    dialogMode.value === mode
-      ? 'bg-secondary text-foreground'
-      : 'bg-transparent text-muted-foreground hover:bg-accent'
-  )
+  return dialogMode.value === mode ? '' : 'bg-transparent text-muted-foreground'
 }
 
 async function handleDialogModeChange(nextMode: DialogMode) {
@@ -391,7 +386,7 @@ const { isLoading: isSaving, execute: handleSave } = useAsyncState(
       const name = workflowName.value.trim()
       if (!name) return
       const newPath = buildWorkflowPath(workflow.directory, name)
-      await workflowService.renameWorkflow(workflow, newPath)
+      if (!(await workflowService.renameWorkflow(workflow, newPath))) return
       await workflowStore.saveWorkflow(workflow)
     } else {
       await workflowService.saveWorkflow(workflow)

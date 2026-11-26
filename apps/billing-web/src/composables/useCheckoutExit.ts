@@ -1,20 +1,28 @@
 import { computed } from 'vue'
 import type { Ref } from 'vue'
 
+import type { BillingEntry, ReturnTarget } from '@comfyorg/billing-contract'
 import { buildReturnUrl } from '@comfyorg/billing-contract'
 
 import type { CheckoutPage } from '@/checkout/checkoutPage'
-import { planCreditsSettingsUrl } from '@/checkout/cloudLinks'
+import { platformBillingUrl, platformPlansUrl } from '@/checkout/platformLinks'
 import { useBilledWorkspace } from '@/composables/useBilledWorkspace'
 import { BILLING_WEB_ENV } from '@/config/env'
 import { useBillingEntry } from '@/entry/billingEntry'
+import { returnToHost } from '@/entry/returnToHost'
+import { handoffTab } from '@/handoff/handoffTab'
 
-/**
- * Where a full-page checkout leaves to: back to the product, with a settled
- * payment's outcome and reference, or to the workspace's Plan & Credits
- * settings when this family has no destination for the link's target. Only
- * a tab a script opened can close itself.
- */
+const CLOUD_RETURN_TARGETS: readonly ReturnTarget[] = [
+  'comfyui_workspace',
+  'comfyui_credits'
+]
+
+const backsOutToPlatformPlans = (arrival: BillingEntry) =>
+  arrival.intent === 'checkout' &&
+  arrival.product === 'platform' &&
+  CLOUD_RETURN_TARGETS.includes(arrival.returnTo)
+
+/** Where a full-page checkout leaves to; Close in a handoff tab only ever closes it. */
 export function useCheckoutExit(page: Readonly<Ref<CheckoutPage>>) {
   const { entry } = useBillingEntry()
   const billedWorkspace = useBilledWorkspace()
@@ -23,8 +31,10 @@ export function useCheckoutExit(page: Readonly<Ref<CheckoutPage>>) {
     const workspace = billedWorkspace()
     const arrival = entry.value
     const current = page.value
-    const host =
-      arrival &&
+    if (!arrival) return platformBillingUrl(workspace)
+    if (current.kind !== 'terminal' && backsOutToPlatformPlans(arrival))
+      return platformPlansUrl(arrival, workspace)
+    return (
       buildReturnUrl({
         target: arrival.returnTo,
         environment: BILLING_WEB_ENV,
@@ -32,15 +42,15 @@ export function useCheckoutExit(page: Readonly<Ref<CheckoutPage>>) {
         ...(current.kind === 'terminal'
           ? { result: 'success', reference: current.operation?.id }
           : {})
-      })?.href
-    return host ?? planCreditsSettingsUrl(workspace)
+      })?.href ?? platformBillingUrl(workspace)
+    )
   })
 
   const openedByScript = Boolean(window.opener)
 
   function close() {
-    if (openedByScript) window.close()
-    else window.location.assign(returnLink.value)
+    if (handoffTab.value === undefined) returnToHost(returnLink.value)
+    else window.close()
   }
 
   return { returnLink, openedByScript, close }

@@ -49,6 +49,8 @@ See @docs/guidance/\*.md for file-type-specific conventions (auto-loaded by glob
 
 The project uses **pnpm workspaces** for monorepo organization and native tool CLIs for task execution
 
+- Use Vite for frontend package bundling with TypeScript `moduleResolution: "bundler"`. Fix package exports and source imports; do not patch compiler or resolver dependencies to make package builds pass.
+
 ## Package Manager
 
 This project uses **pnpm**. Always prefer scripts defined in `package.json` (e.g., `pnpm test:unit`, `pnpm lint`). To run arbitrary packages not in scripts, use `pnpx` or `pnpm dlx` — never `npx`.
@@ -245,6 +247,12 @@ ADR files are named `<DOMAIN>[-<SUBDOMAIN>]-<NNNN>-descriptive-title.md`: at mos
   disable the control, never grant it. A missing fact is a backend ticket plus
   `pendingServerFact('BE-xxxx', expr)`, never another field. See
   `docs/adr/API-SERVER-FACTS-0042-server-facts-are-rendered-not-derived.md`
+- NEVER change the `@comfyorg/comfy-multi-player` pin in `pnpm-workspace.yaml` by hand. Cloud opens the
+  `sync-multiplayer-pin-*` PR that moves it
+- NEVER approve or merge any PR that changes the `@comfyorg/comfy-multi-player` pin, manual or automated, unless its
+  `SCHEMA_VERSION` matches the one the cloud comfy-agent doc host runs: the CRDT follower refuses any other schema,
+  which breaks live multiplayer sync. When a required check fails on the sync PR, read the failure first; if it shows the
+  new version is incompatible with this repo, fix the frontend rather than merging past it
 - NEVER use `any` type - use proper TypeScript types
 - NEVER use `as any` type assertions - fix the underlying type issue
 - NEVER add `@ts-ignore` or `@ts-nocheck`. Use `@ts-expect-error` only in a test
@@ -298,7 +306,7 @@ ADR files are named `<DOMAIN>[-<SUBDOMAIN>]-<NNNN>-descriptive-title.md`: at mos
     suggests adding a comment. An example that contains comments is not
     permission to write them.
 - NEVER call `captureException` or `datadogRum.addError` directly
-  - Use `reportError()` from `@/platform/telemetry/reportError`; see `src/AGENTS.md`
+  - Use `reportError()` from `@comfyorg/telemetry/reportError`; see `src/AGENTS.md`
   - Each raw sink reaches one console, so the failure reads as zero in the other
 - NEVER use the `dark:` tailwind variant
   - Instead use a semantic value from the `style.css` theme
@@ -312,8 +320,8 @@ ADR files are named `<DOMAIN>[-<SUBDOMAIN>]-<NNNN>-descriptive-title.md`: at mos
 - NEVER use arbitrary percentage values like `w-[80%]` when a Tailwind fraction utility exists
   - Use `w-4/5` instead of `w-[80%]`, `w-1/2` instead of `w-[50%]`, etc.
 - NEVER use font-size classes (`text-xs`, `text-sm`, etc.) to size `icon-[...]` (iconify) icons
-  - Iconify icons size via `width`/`height: 1.2em`, so font-size produces unpredictable results
-  - Use `size-*` classes for explicit sizing, or set font-size on the **parent** container and let `1.2em` scale naturally
+  - Iconify icons default to `size-4`, and font size has no effect on them
+  - Override the size with a `size-*` class on the icon itself
 
 ## Agent-only rules
 

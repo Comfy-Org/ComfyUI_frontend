@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 
-import { toNodeId } from '@/types/nodeId'
+import { RenderShape } from '@comfyorg/graph-model/globalEnums'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
@@ -11,32 +12,29 @@ test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
 // If an input is optional by node definition, it should be shown as
 // a hollow circle no matter what shape it was defined in the workflow JSON.
 test.describe('Optional input', { tag: ['@screenshot', '@node'] }, () => {
-  test('No shape specified', async ({ comfyPage }) => {
-    await comfyPage.workflow.loadWorkflow('inputs/optional_input_no_shape')
-    await expectRegionScreenshot(
-      comfyPage.page,
-      await comfyPage.nodeOps.getAllNodeRefs(),
-      'optional_input.png'
-    )
-  })
-
-  test('Wrong shape specified', async ({ comfyPage }) => {
-    await comfyPage.workflow.loadWorkflow('inputs/optional_input_wrong_shape')
-    await expectRegionScreenshot(
-      comfyPage.page,
-      await comfyPage.nodeOps.getAllNodeRefs(),
-      'optional_input.png'
-    )
-  })
-
-  test('Correct shape specified', async ({ comfyPage }) => {
-    await comfyPage.workflow.loadWorkflow('inputs/optional_input_correct_shape')
-    await expectRegionScreenshot(
-      comfyPage.page,
-      await comfyPage.nodeOps.getAllNodeRefs(),
-      'optional_input.png'
-    )
-  })
+  for (const { name, shape } of [
+    { name: 'No shape specified', shape: undefined },
+    { name: 'Wrong shape specified', shape: RenderShape.GRID },
+    { name: 'Correct shape specified', shape: RenderShape.HollowCircle }
+  ]) {
+    test(name, async ({ comfyPage }) => {
+      await comfyPage.workflow.loadWorkflow('inputs/optional_input_no_shape', {
+        nodes: {
+          5: {
+            inputs: [
+              { name: 'required_input', type: 'IMAGE', link: null },
+              { name: 'optional_input', type: 'IMAGE', link: null, shape }
+            ]
+          }
+        }
+      })
+      await expectRegionScreenshot(
+        comfyPage.page,
+        await comfyPage.nodeOps.getAllNodeRefs(),
+        'optional_input.png'
+      )
+    })
+  }
 
   test('Force input', async ({ comfyPage }) => {
     test.info().annotations.push({
@@ -135,7 +133,19 @@ test.describe('Optional input', { tag: ['@screenshot', '@node'] }, () => {
   })
 
   test('dynamically added input', async ({ comfyPage }) => {
-    await comfyPage.workflow.loadWorkflow('inputs/dynamically_added_input')
+    await comfyPage.workflow.loadWorkflow('nodes/single_ksampler', {
+      nodes: {
+        3: {
+          inputs: [
+            { name: 'model', type: 'MODEL', link: null },
+            { name: 'positive', type: 'CONDITIONING', link: null },
+            { name: 'negative', type: 'CONDITIONING', link: null },
+            { name: 'latent_image', type: 'LATENT', link: null },
+            { name: 'dynamic_input', type: 'FLOAT', link: null }
+          ]
+        }
+      }
+    })
     await expectRegionScreenshot(
       comfyPage.page,
       await comfyPage.nodeOps.getAllNodeRefs(),

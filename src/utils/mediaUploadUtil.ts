@@ -15,3 +15,11 @@ export function isUploadableVideo(file: File) {
 export function isExtensionlessVideo(file: File) {
   return file.type.startsWith('video/') && !hasFilenameExtension(file)
 }
+
+/** Extensionless file on a video-only route, where the browser may report no MIME type. */
+export function isUntypedOrVideoWithoutExtension(file: File) {
+  return (
+    (file.type === '' || file.type.startsWith('video/')) &&
+    !hasFilenameExtension(file)
+  )
+}

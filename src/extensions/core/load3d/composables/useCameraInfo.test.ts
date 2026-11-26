@@ -75,7 +75,7 @@ function widget(node: FakeNode, name: string): FakeWidget {
 }
 
 function nodeRef(node: FakeNode) {
-  return ref(node) as unknown as Ref<LGraphNode | null>
+  return ref(node) as unknown as Ref<LGraphNode | undefined>
 }
 
 beforeEach(() => {
@@ -103,7 +103,7 @@ describe('useCameraInfo', () => {
   })
 
   it('does nothing when the node is null', () => {
-    const camera = useCameraInfo(ref(null))
+    const camera = useCameraInfo(ref())
     camera.initialize(document.createElement('div'))
 
     expect(ViewportMock).not.toHaveBeenCalled()

@@ -15,7 +15,9 @@ import type {
   CapabilitiesReadOptions,
   PendingBillingOperation,
   PreviewSubscribeInput,
-  SubscribeInput
+  SubscribeInput,
+  BillingStatusReadOptions,
+  CreditsReadOptions
 } from '@comfyorg/account-core/billing'
 import {
   BILLING_CHECKOUT_FRICTION_TELEMETRY_EVENT,
@@ -30,10 +32,11 @@ import { computed, shallowRef } from 'vue'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
-import { webSessionRequests } from '@/platform/auth/session/webSessionFetch'
+import { webSessionRequests } from '@comfyorg/api-client/webSessionFetch'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
-import { useTelemetry } from '@/platform/telemetry'
+import { safeSessionStorage } from '@/base/storage/safeStorage'
+import { useTelemetry } from '@comfyorg/telemetry'
 import type {
   BillingBalanceResponse,
   BillingCapabilitiesRead,
@@ -61,13 +64,15 @@ import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdenti
 import { useWorkspaceSession } from '@/platform/workspace/ports/workspaceSession'
 import { getCheckoutJourneyPaymentIntentSource } from '@/platform/billing/utils/checkoutJourney'
 import { useDialogStore } from '@/stores/dialogStore'
-import { fetchWithRetry } from '@/utils/fetchWithRetry'
+import { fetchWithRetry } from '@comfyorg/api-client/fetchWithRetry'
 
+import { projectBillingBalance } from './billingBalanceView'
 import { projectBillingCapabilities } from './billingCapabilitiesView'
 import { projectBillingPlans } from './billingPlansView'
 import { projectBillingStatus } from './billingStatusView'
 import type { BillingSdkOptions } from '@comfyorg/billing-core/sdk'
 import { createBillingSdk } from '@comfyorg/billing-core/sdk'
+import type { TopupAutoTopUpSettings } from '@comfyorg/ingest-types'
 import type { BillingOperationRecordView } from './operationRecordView'
 import { projectOperationRecord } from './operationRecordView'
 import type {
@@ -82,6 +87,10 @@ import {
   projectSubscribeResult,
   projectSubscriptionResult
 } from './subscriptionOperationView'
+import type {
+  HostedCheckoutSession,
+  TopupQuoteFacts
+} from './topupOperationView'
 import {
   declineDetail,
   projectHostedTopupCheckoutResult,
@@ -122,6 +131,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
   const callerStarted = new Set<BillingOperationKind>()
   const offeredActions = new Map<string, Set<string>>()
   const progressToasts = new Map<string, ProgressToast>()
+  const closedProgressToasts = new Set<string>()
 
   function sessionPorts(): Pick<
     BillingSdkOptions,
@@ -146,7 +156,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     ...sessionPorts(),
     resolveUrl: ingestApiUrl,
     fetchImpl: fetchWithRetry,
-    pointerStorage: sessionStorage,
+    pointerStorage: safeSessionStorage,
     hostedDestination: () => flags.hostedBillingDestination,
     onTelemetry: reportTelemetry
   })
@@ -278,6 +288,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
       return
     }
     clearProgressToast(state.id)
+    closedProgressToasts.delete(state.id)
     dismissed.value = new Set(
       [...dismissed.value].filter((id) => id !== state.id)
     )
@@ -297,8 +308,16 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     })
     const current = progressToasts.get(state.id)
     if (current?.kind === progress) return
+    if (current && toast.takeClosedByUser(current.id)) {
+      closedProgressToasts.add(state.id)
+    }
     clearProgressToast(state.id)
-    if (progress === undefined) return
+    if (
+      progress === undefined ||
+      (progress === 'processing' && closedProgressToasts.has(state.id))
+    ) {
+      return
+    }
     const title = t(PROGRESS_SUMMARY[kind][progress])
     const id =
       progress === 'action' ? toast.warning(title) : toast.loading(title)
@@ -315,6 +334,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
   function onSubscriptionChanged(state: BillingOperationState) {
     if (state.phase !== 'pending') {
       clearProgressToast(state.id)
+      closedProgressToasts.delete(state.id)
       offeredActions.delete(state.id)
       if (resumedOperations.delete(state.id)) {
         void settleResumedSubscription(state)
@@ -326,25 +346,34 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     openHostedAction(state)
   }
 
-  // One offer per hosted step, not per poll, and not again for a step this
-  // operation already offered: the open runs off the lifecycle rather than a
-  // click, so a browser that blocked the first one blocks every retry and each
-  // retry would repeat the warning. An operation reattached on load is never
-  // offered at all, since no click of this page started it. A step the
-  // customer still owes stays on `subscriptionActionUrl` for the checkout to
-  // put behind a button of their own.
+  function openHostedStep(operationId: string, actionUrl: string): boolean {
+    if (!openBillingUrl(actionUrl)) return false
+    sdk.lifecycle.reportHostedStepOpened(operationId, 'new_tab')
+    return true
+  }
+
+  function isHostedStepOwed(operationId: string, actionUrl: string): boolean {
+    const current = sdk.lifecycle.get(operationId)
+    return current !== undefined && hostedActionUrl(current) === actionUrl
+  }
+
   function openHostedAction(state: PendingBillingOperation) {
     const actionUrl = hostedActionUrl(state)
     if (actionUrl === undefined) return
     const offered = offeredActions.get(state.id) ?? new Set<string>()
     if (offered.has(actionUrl)) return
     offeredActions.set(state.id, offered.add(actionUrl))
-    if (openBillingUrl(actionUrl)) {
-      sdk.lifecycle.reportHostedStepOpened(state.id, 'new_tab')
-      return
-    }
+    if (openHostedStep(state.id, actionUrl)) return
     toast.warning(t('g.warning'), {
-      description: t('subscription.preview.paymentPopupBlocked')
+      description: t('subscription.preview.paymentPopupBlocked'),
+      action: {
+        label: t('subscription.planLoadErrorRetry'),
+        onClick: () => {
+          if (isHostedStepOwed(state.id, actionUrl)) {
+            openHostedStep(state.id, actionUrl)
+          }
+        }
+      }
     })
   }
 
@@ -400,16 +429,45 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     return projectTopupResult(result, amountCents)
   }
 
+  async function quoteTopup(
+    amountCents: number,
+    signal: AbortSignal
+  ): Promise<TopupQuoteFacts | null> {
+    const quoted = await sdk.topup.quoteTopup({ amountCents, signal })
+    return quoted.status === 'ok'
+      ? {
+          credits: quoted.value.credits,
+          paymentConfigured:
+            quoted.value.paymentMethodConfigurationId !== undefined
+        }
+      : null
+  }
+
+  async function openTopupPurchase(
+    amountCents: number,
+    signal: AbortSignal,
+    autoTopUp: TopupAutoTopUpSettings | undefined
+  ): Promise<string | undefined> {
+    const opened = await sdk.topup.createTopupPurchase({
+      amountCents,
+      signal,
+      ...(autoTopUp === undefined ? {} : { autoTopUp })
+    })
+    return opened.status === 'ok' ? opened.value.purchaseId : undefined
+  }
+
   async function createHostedTopupCheckout(
     amountCents: number,
     returnUrl: string,
-    signal?: AbortSignal
-  ): Promise<string> {
+    signal?: AbortSignal,
+    autoTopUp?: TopupAutoTopUpSettings
+  ): Promise<HostedCheckoutSession> {
     return projectHostedTopupCheckoutResult(
       await sdk.topup.createHostedTopupCheckout({
         amountCents,
         returnUrl,
-        ...(signal === undefined ? {} : { signal })
+        ...(signal === undefined ? {} : { signal }),
+        ...(autoTopUp === undefined ? {} : { autoTopUp })
       })
     )
   }
@@ -547,8 +605,10 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
   // The readers the commands above already refresh after a success, exposed
   // so the panels read the state the rail settled rather than a second read
   // through the workspace client.
-  async function readStatus(): Promise<BillingResult<BillingStatusResponse>> {
-    const result = await sdk.status.read()
+  async function readStatus(
+    options?: BillingStatusReadOptions
+  ): Promise<BillingResult<BillingStatusResponse>> {
+    const result = await sdk.status.read(options)
     if (result.status === 'error') return result
     const status = projectBillingStatus(result.value.status)
     return status === undefined
@@ -556,10 +616,12 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
       : { status: 'ok', value: status }
   }
 
-  async function readBalance(): Promise<BillingResult<BillingBalanceResponse>> {
-    const result = await sdk.credits.read()
+  async function readBalance(
+    options?: CreditsReadOptions
+  ): Promise<BillingResult<BillingBalanceResponse>> {
+    const result = await sdk.credits.read(options)
     return result.status === 'ok'
-      ? { status: 'ok', value: result.value.balance }
+      ? { status: 'ok', value: projectBillingBalance(result.value.balance) }
       : result
   }
 
@@ -588,6 +650,11 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     return result.status === 'ok'
       ? { status: 'ok', value: [...result.value.methods] }
       : result
+  }
+
+  function savedPaymentMethodsSnapshot(): SavedPaymentMethod[] | undefined {
+    const snapshot = sdk.paymentMethods.getSnapshot()
+    return snapshot && [...snapshot.methods]
   }
 
   // The one read with nothing to project: the events response carries no
@@ -622,6 +689,8 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     recoverPendingOperation,
     createTopup,
     createHostedTopupCheckout,
+    openTopupPurchase,
+    quoteTopup,
     subscribe,
     previewSubscribe,
     cancelSubscription,
@@ -634,6 +703,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     readPlans,
     readCapabilities,
     readPaymentMethods,
+    savedPaymentMethodsSnapshot,
     readEvents,
     dismissOperation
   }

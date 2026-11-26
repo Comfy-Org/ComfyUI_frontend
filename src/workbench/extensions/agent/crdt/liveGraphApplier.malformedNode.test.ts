@@ -12,8 +12,9 @@ import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { reportError } from '@/platform/telemetry/reportError'
-import { toNodeId } from '@/types/nodeId'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import { followedDoc } from './__fixtures__/followedDoc'
 import { LiveGraphApplier } from './liveGraphApplier'
@@ -124,6 +125,49 @@ describe('LiveGraphApplier malformed node report', () => {
       'IMAGE',
       'MASK'
     ])
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it.for<unknown>(['tracked', '4', null])(
+    'projects a node whose stored mode is %o with the default mode, without a report',
+    (mode) => {
+      const { graph, doc, applyCollected } = setup({
+        nodes: [sinkNode({ name: 'image', type: 'IMAGE', link: null })],
+        links: []
+      })
+      nodesMap(doc).get(String(NODE_ID))?.set('mode', mode)
+
+      applyCollected()
+
+      expect(graph.getNodeById(toNodeId(NODE_ID))?.mode).toBe(
+        LGraphEventMode.ALWAYS
+      )
+      expect(reportError).not.toHaveBeenCalled()
+    }
+  )
+
+  it('keeps the live mode when the document mode stops being a number', () => {
+    const { graph, doc, collector, applier, applyCollected } = setup({
+      nodes: [
+        {
+          ...sinkNode({ name: 'image', type: 'IMAGE', link: null }),
+          mode: LGraphEventMode.BYPASS
+        }
+      ],
+      links: []
+    })
+    applyCollected()
+
+    doc.transact(() => {
+      const node = nodesMap(doc).get(String(NODE_ID))
+      node?.set('mode', 'bypass')
+      node?.set('title', 'renamed')
+    })
+    applier.applyChanges(doc, collector.take(), CONTEXT)
+
+    const live = graph.getNodeById(toNodeId(NODE_ID))
+    expect(live?.mode).toBe(LGraphEventMode.BYPASS)
+    expect(live?.title).toBe('renamed')
     expect(reportError).not.toHaveBeenCalled()
   })
 

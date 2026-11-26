@@ -13,7 +13,9 @@
           ref="searchBoxRef"
           v-model="searchQuery"
           :clear-label="$t('g.clear')"
-          :accessible-label="$t('g.search')"
+          :accessible-label="
+            $t('g.searchPlaceholder', { subject: $t('g.nodes') })
+          "
           :placeholder="$t('g.searchPlaceholder', { subject: $t('g.nodes') })"
           @search="handleSearch"
         />
@@ -97,7 +99,6 @@
 </template>
 
 <script setup lang="ts">
-import { useLocalStorage } from '@vueuse/core'
 import { mapValues } from 'es-toolkit'
 import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 import {
@@ -122,6 +123,7 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
 import { usePerTabState } from '@/composables/usePerTabState'
 import { ESSENTIAL_SECTIONS } from '@/constants/essentialsNodes'
+import { useSafeLocalStorage } from '@/platform/storage/useSafeStorage'
 import { useSearchQueryTracking } from '@/platform/telemetry/searchQuery/useSearchQueryTracking'
 import {
   DEFAULT_SORTING_ID,
@@ -153,7 +155,7 @@ const { flags } = useFeatureFlags()
 
 const scrollContainerRef = useTemplateRef('scrollContainerRef')
 
-const selectedTab = useLocalStorage<TabId>(
+const selectedTab = useSafeLocalStorage<TabId>(
   'Comfy.NodeLibrary.Tab',
   DEFAULT_TAB_ID
 )
@@ -168,7 +170,7 @@ watchEffect(() => {
   }
 })
 
-const sortOrderByTab = useLocalStorage<Record<TabId, SortingStrategyId>>(
+const sortOrderByTab = useSafeLocalStorage<Record<TabId, SortingStrategyId>>(
   'Comfy.NodeLibrary.SortByTab',
   {
     essentials: DEFAULT_SORTING_ID,

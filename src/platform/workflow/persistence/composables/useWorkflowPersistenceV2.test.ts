@@ -1,19 +1,34 @@
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import { computed, createApp, defineComponent, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useNewUserService } from '@/services/useNewUserService'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { api } from '@/scripts/api'
+import { blankGraph } from '@/scripts/defaultGraph'
+import { isValidUuid } from '@/utils/formatUtil'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
+import { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import '@/scripts/changeTracker'
+import { ChangeTracker } from '@/scripts/changeTracker'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import * as storageIO from '@/platform/workflow/persistence/base/storageIO'
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
 import { useWorkflowPersistenceV2 } from './useWorkflowPersistenceV2'
+import type { useWorkflowLinkUrlLoader } from '@/platform/workflow/management/composables/useWorkflowLinkUrlLoader'
 
 const apiEvents: EventTarget = api
 
@@ -49,6 +64,23 @@ vi.mock(
       loadTemplateFromUrl: vi.fn()
     })
   })
+)
+
+const workflowLinkUrlLoader = vi.hoisted(() => ({
+  openWorkflowLinkFromUrl: vi.fn<
+    ReturnType<typeof useWorkflowLinkUrlLoader>['openWorkflowLinkFromUrl']
+  >(async () => 'absent'),
+  isLinkSettled: vi.fn<
+    ReturnType<typeof useWorkflowLinkUrlLoader>['isLinkSettled']
+  >(() => false),
+  hasLinkInFlight: vi.fn<
+    ReturnType<typeof useWorkflowLinkUrlLoader>['hasLinkInFlight']
+  >(() => false)
+}))
+
+vi.mock(
+  import('@/platform/workflow/management/composables/useWorkflowLinkUrlLoader'),
+  () => ({ useWorkflowLinkUrlLoader: () => workflowLinkUrlLoader })
 )
 
 const folderWorkflowsUrlLoader = vi.hoisted(() => ({
@@ -104,7 +136,11 @@ vi.mock<unknown>(import('@/platform/navigation/preservedQueryManager'), () => ({
 vi.mock<unknown>(
   import('@/platform/navigation/preservedQueryNamespaces'),
   () => ({
-    PRESERVED_QUERY_NAMESPACES: { TEMPLATE: 'template', SHARE: 'share' }
+    PRESERVED_QUERY_NAMESPACES: {
+      TEMPLATE: 'template',
+      SHARE: 'share',
+      LOCAL_HANDOFF: 'local_handoff'
+    }
   })
 )
 
@@ -139,11 +175,14 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
 }))
 
 vi.mock(import('@/scripts/api'))
+vi.mock(import('@/composables/useFeatureFlags'))
 
 type WorkflowPersistence = ReturnType<typeof useWorkflowPersistenceV2>
 
 beforeEach(() => {
+  useWorkflowStore().provideChangeTracker(ChangeTracker)
   vi.mocked(useCommandStore().execute).mockResolvedValue(undefined)
+  openWorkflowMock.mockResolvedValue(true)
 })
 
 describe('useWorkflowPersistenceV2', () => {
@@ -347,6 +386,26 @@ describe('useWorkflowPersistenceV2', () => {
       expect(mocks.loadGraphDataMock).not.toHaveBeenCalled()
     })
 
+    it('falls back to the latest draft when the session workflow does not open', async () => {
+      const workflowStore = useWorkflowStore()
+      vi.spyOn(workflowStore, 'loadWorkflows').mockResolvedValue()
+      const savedWorkflow = workflowStore.createTemporary('Unreadable.json')
+      writeActivePath(savedWorkflow.path)
+      openWorkflowMock.mockResolvedValue(false)
+      const draftStore = useWorkflowDraftStoreV2()
+      const fallback = vi
+        .spyOn(draftStore, 'loadPersistedWorkflow')
+        .mockResolvedValue(false)
+
+      const { initializeWorkflow } = mountWorkflowPersistence()
+      const outcome = await initializeWorkflow()
+
+      expect(fallback).toHaveBeenLastCalledWith(
+        expect.objectContaining({ fallbackToLatestDraft: true })
+      )
+      expect(outcome).not.toBe('restored')
+    })
+
     it('prefers draft over saved workflow when draft exists', async () => {
       const workflowStore = useWorkflowStore()
       vi.spyOn(workflowStore, 'loadWorkflows').mockResolvedValue()
@@ -419,6 +478,34 @@ describe('useWorkflowPersistenceV2', () => {
       expect(loadWorkflowsSpy).toHaveBeenCalledOnce()
     })
 
+    it('drops unreachable unscoped drafts after the new-user check', async () => {
+      distributionMocks.isCloud = true
+      const newUserService = useNewUserService()
+      newUserService.reset()
+      localStorage.setItem('Comfy.Workflow.Draft.v2:personal:abc', '{}')
+      localStorage.setItem('Comfy.Workflow.Draft.v2:user-a:personal:abc', '{}')
+
+      mountWorkflowPersistence()
+      const onUserResolved = vi.mocked(useCurrentUser().onUserResolved).mock
+        .calls[0][0]
+      onUserResolved({ id: 'user-a' })
+      await nextTick()
+
+      expect(localStorage.getItem('Comfy.Workflow.Draft.v2:personal:abc')).toBe(
+        '{}'
+      )
+
+      await newUserService.initializeIfNewUser()
+      await nextTick()
+
+      expect(localStorage.getItem('Comfy.Workflow.Draft.v2:personal:abc')).toBe(
+        null
+      )
+      expect(
+        localStorage.getItem('Comfy.Workflow.Draft.v2:user-a:personal:abc')
+      ).toBe('{}')
+    })
+
     it('waits for workflow metadata before restoring tab pointers', async () => {
       const workflowStore = useWorkflowStore()
       const loadWorkflowsSpy = vi.spyOn(workflowStore, 'loadWorkflows')
@@ -437,10 +524,13 @@ describe('useWorkflowPersistenceV2', () => {
       expect(loadWorkflowsSpy).toHaveBeenCalledOnce()
       expect(openWorkflowMock).not.toHaveBeenCalled()
 
+      expect(workflowStore.tabsRestored).toBe(false)
+
       gate.resolve()
       await pending
 
       expect(openWorkflowMock).toHaveBeenCalledWith(workflowB)
+      expect(workflowStore.tabsRestored).toBe(true)
     })
 
     it('does not open the previous account tabs after a switch during metadata loading', async () => {
@@ -491,6 +581,7 @@ describe('useWorkflowPersistenceV2', () => {
 
       expect(loadBlankWorkflowMock).toHaveBeenCalled()
       expect(openWorkflowMock).not.toHaveBeenCalled()
+      expect(workflowStore.tabsRestored).toBe(true)
     })
 
     it('activates the correct workflow at storedActiveIndex', async () => {
@@ -518,6 +609,116 @@ describe('useWorkflowPersistenceV2', () => {
       await restoreWorkflowTabsState()
 
       expect(openWorkflowMock).toHaveBeenCalledWith(workflowB)
+    })
+
+    it('keeps the draft of an unsaved background tab when it is first loaded', async () => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      onTestFinished(() => {
+        vi.useRealTimers()
+      })
+      const workflowStore = useWorkflowStore()
+      vi.spyOn(workflowStore, 'loadWorkflows').mockResolvedValue()
+      const draftStore = useWorkflowDraftStoreV2()
+      const draftPath = 'workflows/Background.json'
+      const draftGraph = JSON.stringify({
+        ...blankGraph,
+        id: '6f1e9a2b-3c4d-4e5f-8a9b-0c1d2e3f4a5b',
+        extra: { a: 1 }
+      })
+      draftStore.saveDraft(draftPath, draftGraph, {
+        name: 'Background.json',
+        isTemporary: true
+      })
+      const active = workflowStore.createTemporary('Active.json')
+      writeTabState([draftPath, active.path], 1)
+      vi.advanceTimersByTime(60_000)
+
+      const { restoreWorkflowTabsState } = mountWorkflowPersistence()
+      await restoreWorkflowTabsState()
+      const background = workflowStore.getWorkflowByPath(draftPath)
+      expect(background?.isLoaded).toBe(false)
+
+      await background!.load()
+
+      expect(draftStore.getDraft(draftPath)?.data).toBe(draftGraph)
+    })
+
+    it.for([
+      ['no id', {}],
+      ['a legacy id', { id: 'legacy-workflow-id' }]
+    ] as const)(
+      'keeps the draft of an unsaved background tab with %s when it is first loaded',
+      async ([, idFields]) => {
+        vi.useFakeTimers({ toFake: ['Date'] })
+        onTestFinished(() => {
+          vi.useRealTimers()
+        })
+        const workflowStore = useWorkflowStore()
+        vi.spyOn(workflowStore, 'loadWorkflows').mockResolvedValue()
+        const draftStore = useWorkflowDraftStoreV2()
+        const draftPath = 'workflows/Background.json'
+        draftStore.saveDraft(
+          draftPath,
+          JSON.stringify({ ...blankGraph, ...idFields, extra: { a: 1 } }),
+          { name: 'Background.json', isTemporary: true }
+        )
+        const stored = draftStore.getDraft(draftPath)
+        const active = workflowStore.createTemporary('Active.json')
+        writeTabState([draftPath, active.path], 1)
+        vi.advanceTimersByTime(60_000)
+
+        const { restoreWorkflowTabsState } = mountWorkflowPersistence()
+        await restoreWorkflowTabsState()
+        const background = workflowStore.getWorkflowByPath(draftPath)
+        expect(background?.isLoaded).toBe(false)
+        expect(draftStore.getDraft(draftPath)).toMatchObject({
+          data: stored!.data,
+          updatedAt: stored!.updatedAt
+        })
+
+        await background!.load()
+
+        expect(JSON.parse(draftStore.getDraft(draftPath)!.data).extra).toEqual({
+          a: 1
+        })
+        expect(background!.activeState?.extra).toEqual({ a: 1 })
+        const tabId = background!.initialState?.id
+        expect(isValidUuid(tabId)).toBe(true)
+        expect(background!.activeState?.id).toBe(tabId)
+      }
+    )
+
+    it('leaves a reused workflow outside the workflows folder unstamped', async () => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      onTestFinished(() => {
+        vi.useRealTimers()
+      })
+      const workflowStore = useWorkflowStore()
+      vi.spyOn(workflowStore, 'loadWorkflows').mockResolvedValue()
+      const draftStore = useWorkflowDraftStoreV2()
+      const id = '7a2b3c4d-5e6f-4a1b-8c2d-3e4f5a6b7c8d'
+      const graph = { ...blankGraph, id }
+      const outside = new ComfyWorkflow({
+        path: 'templates/Shared.json',
+        modified: Date.now(),
+        size: -1
+      })
+      outside.originalContent = outside.content = JSON.stringify(graph)
+      await outside.load()
+      workflowStore.attachWorkflow(outside)
+      const outsideModified = outside.lastModified
+      vi.advanceTimersByTime(60_000)
+      draftStore.saveDraft('workflows/Shared.json', JSON.stringify(graph), {
+        name: 'Shared.json',
+        isTemporary: true
+      })
+      const active = workflowStore.createTemporary('Active.json')
+      writeTabState(['workflows/Shared.json', active.path], 1)
+
+      const { restoreWorkflowTabsState } = mountWorkflowPersistence()
+      await restoreWorkflowTabsState()
+
+      expect(outside.lastModified).toBe(outsideModified)
     })
 
     it('activates first tab when storedActiveIndex is 0', async () => {
@@ -737,6 +938,77 @@ describe('useWorkflowPersistenceV2', () => {
         expect(loadBlankWorkflowMock).toHaveBeenCalled()
       }
     )
+
+    it.for(
+      [
+        {
+          name: 'local handoff param in URL',
+          applyIntent: () => (routeMocks.query = { from_local: 'nonce' })
+        },
+        {
+          name: 'local handoff preserved across the sign-in redirect',
+          applyIntent: () =>
+            (preservedQueryMocks.payloads.local_handoff = {
+              from_local: 'nonce'
+            })
+        }
+      ].flatMap((intent) => [
+        { ...intent, openOnCloudEnabled: true, outcome: 'url-intent' },
+        { ...intent, openOnCloudEnabled: false, outcome: 'fresh' }
+      ])
+    )(
+      'reports $outcome with $name while Open on Cloud is $openOnCloudEnabled',
+      async ({ applyIntent, openOnCloudEnabled, outcome }) => {
+        Object.assign(useFeatureFlags().flags, { openOnCloudEnabled })
+        applyIntent()
+
+        const { initializeWorkflow } = mountWorkflowPersistence()
+
+        await expect(initializeWorkflow()).resolves.toBe(outcome)
+      }
+    )
+  })
+
+  describe('a workflow-id link', () => {
+    it('defers Getting Started while a workflow-id link waits for navigation', async () => {
+      workflowLinkUrlLoader.openWorkflowLinkFromUrl.mockResolvedValue('pending')
+      vi.spyOn(useWorkflowStore(), 'loadWorkflows').mockResolvedValue()
+
+      await expect(
+        mountWorkflowPersistence().initializeWorkflow()
+      ).resolves.toBe('url-intent')
+    })
+
+    it.for(['opened', 'failed', 'pending'] as const)(
+      'does not fall back to a folder when the workflow-id link result is %s',
+      async (status) => {
+        workflowLinkUrlLoader.openWorkflowLinkFromUrl.mockResolvedValue(status)
+        vi.spyOn(useWorkflowStore(), 'loadWorkflows').mockResolvedValue()
+        const { initializeWorkflow } = mountWorkflowPersistence()
+
+        await initializeWorkflow()
+
+        expect(
+          folderWorkflowsUrlLoader.openFolderWorkflowsFromUrl
+        ).not.toHaveBeenCalled()
+      }
+    )
+
+    it('keeps restored tabs behind the linked workflow without replacing the active tab', async () => {
+      const store = useWorkflowStore()
+      vi.spyOn(store, 'loadWorkflows').mockResolvedValue()
+      const previous = store.createTemporary('Previous.json')
+      writeTabState([previous.path], 0)
+      workflowLinkUrlLoader.openWorkflowLinkFromUrl.mockResolvedValue('opened')
+      const { initializeWorkflow, restoreWorkflowTabsState } =
+        mountWorkflowPersistence()
+
+      await initializeWorkflow()
+      await restoreWorkflowTabsState()
+
+      expect(store.openWorkflows).toEqual([previous])
+      expect(openWorkflowMock).not.toHaveBeenCalled()
+    })
   })
 
   describe('a link that names a workflows folder', () => {
@@ -793,29 +1065,137 @@ describe('useWorkflowPersistenceV2', () => {
     })
   })
 
-  it('flushes a pending workflow edit when the page is unloaded', async () => {
+  it.for([false, true])(
+    'flushes a pending draft with preview active: %s',
+    async (hasPreview) => {
+      const workflowStore = useWorkflowStore()
+      const workflow = await workflowStore.createTemporary('Draft.json').load()
+      workflowStore.activeWorkflow = workflow
+      mountWorkflowPersistence()
+      await nextTick()
+
+      const finishPreview = hasPreview
+        ? workflow.changeTracker.beginPreview(() => {})
+        : undefined
+      workflow.changeTracker.activeState = {
+        ...blankGraph,
+        extra: { marker: 'final-edit' }
+      }
+      apiEvents.dispatchEvent(new Event('graphChanged'))
+      mocks.state.currentGraph = { ...blankGraph, extra: { marker: 'live' } }
+
+      const payloadKey = StorageKeys.draftPayload(workflow.path, 'personal')
+      expect(localStorage.getItem(payloadKey)).toBeNull()
+
+      window.dispatchEvent(new PageTransitionEvent('pagehide'))
+      finishPreview?.()
+
+      const payload = JSON.parse(localStorage.getItem(payloadKey)!)
+      expect(JSON.parse(payload.data)).toEqual({
+        ...blankGraph,
+        extra: { marker: hasPreview ? 'final-edit' : 'live' }
+      })
+    }
+  )
+
+  it('keeps the last saved edit after an index write fails during a newer edit', async () => {
     const workflowStore = useWorkflowStore()
     const workflow = await workflowStore.createTemporary('Draft.json').load()
     workflowStore.activeWorkflow = workflow
     mountWorkflowPersistence()
     await nextTick()
 
+    const firstEdit = { ...blankGraph, extra: { marker: 1 } }
+    mocks.state.currentGraph = firstEdit
+    apiEvents.dispatchEvent(new Event('graphChanged'))
+    await vi.runAllTimersAsync()
+
+    const indexKey = StorageKeys.draftIndex('personal')
+    const realSetItem = localStorage.setItem.bind(localStorage)
+    let indexFailureInjected = false
+    vi.spyOn(localStorage, 'setItem').mockImplementation((key, value) => {
+      if (key === indexKey && !indexFailureInjected) {
+        indexFailureInjected = true
+        throw new DOMException('Quota exceeded', 'QuotaExceededError')
+      }
+      return realSetItem(key, value)
+    })
+
+    mocks.state.currentGraph = { ...blankGraph, extra: { marker: 2 } }
+    apiEvents.dispatchEvent(new Event('graphChanged'))
+    await vi.runAllTimersAsync()
+
+    mocks.state.currentGraph = firstEdit
+    apiEvents.dispatchEvent(new Event('graphChanged'))
+    await vi.runAllTimersAsync()
+
+    expect(indexFailureInjected).toBe(true)
+    expect(useWorkflowDraftStoreV2().getDraft(workflow.path)?.data).toBe(
+      JSON.stringify(firstEdit)
+    )
+  })
+
+  it('backs off repeated quota writes and reports one toast per failure episode', async () => {
+    const workflowStore = useWorkflowStore()
+    const workflow = await workflowStore.createTemporary('Draft.json').load()
+    workflowStore.activeWorkflow = workflow
+    mountWorkflowPersistence()
+    await nextTick()
+
+    const setItem = localStorage.setItem.bind(localStorage)
+    const write = vi
+      .spyOn(localStorage, 'setItem')
+      .mockImplementation((key, value) => {
+        if (key.startsWith(StorageKeys.prefixes.draftPayload))
+          throw new DOMException('Full', 'QuotaExceededError')
+        setItem(key, value)
+      })
+    const toastError = vi.spyOn(useToast(), 'error')
+    const payloadWrites = () =>
+      write.mock.calls.filter(([key]) =>
+        key.startsWith(StorageKeys.prefixes.draftPayload)
+      )
+
+    mocks.state.currentGraph = { ...blankGraph, extra: { marker: 1 } }
+    apiEvents.dispatchEvent(new Event('graphChanged'))
+    await vi.advanceTimersByTimeAsync(512)
+
+    mocks.state.currentGraph = { ...blankGraph, extra: { marker: 2 } }
+    apiEvents.dispatchEvent(new Event('graphChanged'))
+    await vi.advanceTimersByTimeAsync(512)
+
+    expect(payloadWrites()).toHaveLength(1)
+    expect(toastError).toHaveBeenCalledOnce()
+
+    await vi.advanceTimersByTimeAsync(5_000)
+    mocks.state.currentGraph = { ...blankGraph, extra: { marker: 3 } }
+    apiEvents.dispatchEvent(new Event('graphChanged'))
+    await vi.advanceTimersByTimeAsync(512)
+
+    expect(payloadWrites()).toHaveLength(2)
+    expect(toastError).toHaveBeenCalledOnce()
+  })
+
+  it('keeps a pending edit recoverable when the server clock is ahead', async () => {
+    const path = 'workflows/Saved.json'
+    const modified = Date.now() + 60_000
+    vi.mocked(api.getUserData).mockResolvedValueOnce(Response.json(blankGraph))
+    const workflow = await new ComfyWorkflow({ path, modified, size: 1 }).load()
+    workflow.isModified = true
+    useWorkflowStore().activeWorkflow = workflow
+    mountWorkflowPersistence()
+    await nextTick()
+
     mocks.state.currentGraph = {
-      nodes: [],
-      extra: { marker: 'final-edit' }
+      ...blankGraph,
+      extra: { marker: 'new edit' }
     }
     apiEvents.dispatchEvent(new Event('graphChanged'))
-
-    const payloadKey = StorageKeys.draftPayload(workflow.path, 'personal')
-    expect(localStorage.getItem(payloadKey)).toBeNull()
-
     window.dispatchEvent(new PageTransitionEvent('pagehide'))
 
-    const payload = JSON.parse(localStorage.getItem(payloadKey)!)
-    expect(JSON.parse(payload.data)).toEqual({
-      nodes: [],
-      extra: { marker: 'final-edit' }
-    })
+    vi.mocked(api.getUserData).mockResolvedValueOnce(Response.json(blankGraph))
+    const reopened = await new ComfyWorkflow({ path, modified, size: 1 }).load()
+    expect(reopened.activeState.extra?.marker).toBe('new edit')
   })
 
   it('does not flush a pending workflow edit after disposal', async () => {
@@ -861,7 +1241,7 @@ describe('useWorkflowPersistenceV2', () => {
     mountWorkflowPersistence()
 
     mocks.state.currentGraph = {
-      nodes: [],
+      ...blankGraph,
       extra: { marker: 'workspace-a-final-edit' }
     }
     apiEvents.dispatchEvent(new Event('graphChanged'))
@@ -882,7 +1262,7 @@ describe('useWorkflowPersistenceV2', () => {
       JSON.stringify({ id: destinationWorkspaceId, type: 'team' })
     )
     mocks.state.currentGraph = {
-      nodes: [],
+      ...blankGraph,
       extra: { marker: 'late-source-write' }
     }
     apiEvents.dispatchEvent(new Event('graphChanged'))
@@ -890,7 +1270,7 @@ describe('useWorkflowPersistenceV2', () => {
 
     const sourcePayload = JSON.parse(localStorage.getItem(sourcePayloadKey)!)
     expect(JSON.parse(sourcePayload.data)).toEqual({
-      nodes: [],
+      ...blankGraph,
       extra: { marker: 'workspace-a-final-edit' }
     })
     expect(localStorage.getItem(destinationPayloadKey)).toBeNull()

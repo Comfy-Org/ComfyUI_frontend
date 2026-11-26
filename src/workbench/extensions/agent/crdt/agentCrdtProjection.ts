@@ -3,10 +3,10 @@ import type { Op } from '@comfyorg/comfy-multi-player'
 import type * as Y from 'yjs'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
-import { recordDevEvent } from './devPanelLog'
-import { DocChangeCollector, groupIds } from './docChangeCollector'
+import { recordDevEvent } from './crdtLog'
+import { DocChangeCollector } from './docChangeCollector'
 import type { DocUpdate } from './docFrameClient'
 import type { FollowerDoc } from './followerDoc'
 import type { GraphOperation } from './graphOperations'
@@ -75,11 +75,7 @@ function changesAgainstDoc(doc: Y.Doc, changes: FrameChanges): FrameChanges {
     if (!docNodes.has(id)) nodes.set(id, 'delete')
     else nodes.set(id, change === 'delete' ? 'update' : change)
   }
-  const docGroups = groupIds(doc.getMap('meta').get('groups'))
-  const removedGroups = new Set(
-    [...(changes.removedGroups ?? [])].filter((id) => !docGroups.has(id))
-  )
-  return { ...changes, nodes, removedGroups }
+  return { ...changes, nodes }
 }
 
 function pendingNodeDelta(target: BoundTarget, changes: FrameChanges) {
@@ -239,12 +235,14 @@ export class AgentCrdtProjection {
   }
 
   /**
-   * Puts the registers a rejected human batch claimed back the way the
-   * document has them. Only those registers are touched: the rejection says
-   * nothing about the rest of the live graph.
+   * Ends the local-write holds of a rejected human batch and puts the
+   * registers it claimed back the way the document has them. Only those
+   * registers are touched: the rejection says nothing about the rest of the
+   * live graph.
    * @returns the apply result for the rejected operations.
    */
   revertRejected(workflowId: string, ops: readonly Op[]): FrameOutcome {
+    this.localWrites.settle(ops)
     const target = this.targets.get(workflowId)
     if (!target || ops.length === 0 || !this.getGraph())
       return { applied: false, nodes: EMPTY_DELTA }

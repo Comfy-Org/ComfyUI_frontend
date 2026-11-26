@@ -5,25 +5,21 @@ import type {
 } from 'axios'
 import axios, { AxiosHeaders } from 'axios'
 
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import type { RetrySignalLifecycle } from '@/platform/auth/apiAuthProvider'
+import type { RetrySignalLifecycle } from '@comfyorg/api-client/apiAuthProvider'
 import {
   presentForRefusal,
   presentForResponse
 } from '@/platform/auth/sso/ssoRequired'
 import { isCloud } from '@/platform/distribution/types'
-import { useTelemetry } from '@/platform/telemetry'
-import { reportError } from '@/platform/telemetry/reportError'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type {
   UnifiedAuthRetryFailureReason,
   UnifiedAuthRetryMetadata
-} from '@/platform/telemetry/types'
-import { fetchWithRetry } from '@/utils/fetchWithRetry'
-import type { RetryPolicy } from '@/utils/retryPolicy'
-
-let cachedUnifiedFlags:
-  | { readonly unifiedCloudAuthEnabled: boolean }
-  | undefined
+} from '@comfyorg/telemetry/types'
+import { fetchWithRetry } from '@comfyorg/api-client/fetchWithRetry'
+import type { RetryPolicy } from '@comfyorg/api-client/retryPolicy'
+import { withSignInRefusalRetry } from '@comfyorg/api-client/retryPolicy'
 
 type UnifiedRemint = (expectedToken: string) => Promise<string | null>
 
@@ -34,17 +30,16 @@ export function provideUnifiedRemint(remint: UnifiedRemint): void {
   remintUnified = remint
 }
 
-/**
- * Single gate for the reactive guard: a cloud build with `unified_cloud_auth`
- * ON. Memoizes the feature-flag accessor so the hot `fetchApi` path does not
- * build a fresh reactive proxy per request (the cached getter still reflects
- * live flag changes), and is reused at every cloud request seam so the gate
- * cannot be forgotten on a new call site.
- */
+/** Single gate for the reactive 401 guard, reused at every cloud request seam: true on Cloud. */
 export async function shouldRemintCloudRequest(): Promise<boolean> {
-  if (!isCloud) return false
-  if (!cachedUnifiedFlags) cachedUnifiedFlags = useFeatureFlags().flags
-  return cachedUnifiedFlags.unifiedCloudAuthEnabled
+  return isCloud
+}
+
+/** `policy`, also sending a write the sign-in check refused once more on cloud. */
+export function cloudRetryPolicy(
+  policy?: RetryPolicy
+): RetryPolicy | undefined {
+  return isCloud ? withSignInRefusalRetry(policy) : policy
 }
 
 /**
@@ -137,9 +132,7 @@ async function presentSsoRequired(present: () => unknown): Promise<void> {
  * replayed, so such a request surfaces its original `401` without a retry (no
  * current cloud caller sends one).
  *
- * `shouldRetryOn401` is the caller's gate (see {@link shouldRemintCloudRequest}):
- * flag-OFF traffic returns after a single `fetch` and never enters the re-mint
- * path, so the legacy cascade stays untouched for instant rollback.
+ * `shouldRetryOn401` is the caller's gate (see {@link shouldRemintCloudRequest}).
  *
  * `retrySignalLifecycle`, when supplied, ends the initial fetch's timeout
  * before re-minting and creates a fresh signal immediately before the retry.
@@ -151,11 +144,12 @@ export async function fetchWithUnifiedRemint(
   retrySignalLifecycle?: RetrySignalLifecycle,
   retryPolicy?: RetryPolicy
 ): Promise<Response> {
+  const policy = cloudRetryPolicy(retryPolicy)
   const retryInput =
     shouldRetryOn401 && input instanceof Request && input.body !== null
       ? input.clone()
       : input
-  const response = await fetchWithRetry(input, init, { policy: retryPolicy })
+  const response = await fetchWithRetry(input, init, { policy })
   if (response.status === 403 && isCloud) {
     await presentSsoRequired(() => presentForResponse(response))
   }
@@ -192,7 +186,7 @@ export async function fetchWithUnifiedRemint(
     : { ...init, headers }
   try {
     const retryResponse = await fetchWithRetry(retryInput, retryInit, {
-      policy: retryPolicy
+      policy
     })
     trackRetryResponse('fetch', retryResponse.status)
     return retryResponse
@@ -225,9 +219,8 @@ async function presentSsoRefusal(error: unknown): Promise<void> {
 /**
  * Installs a response interceptor that gives a cloud axios client the same
  * reactive 401 guard as {@link fetchWithUnifiedRemint}: a single re-mint + a
- * single retry on `401`, surfacing a persistent `401` unchanged. A strict
- * no-op while `unified_cloud_auth` is OFF — the original error rejects exactly
- * as it does today.
+ * single retry on `401`, surfacing a persistent `401` unchanged. A no-op off
+ * Cloud: the original error rejects unchanged.
  */
 export function attachUnifiedRemintInterceptor(client: AxiosInstance): void {
   client.interceptors.response.use(

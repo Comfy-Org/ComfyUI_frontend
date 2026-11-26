@@ -23,7 +23,7 @@ import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/ag
 vi.mock(import('firebase/auth'))
 vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 vi.mock(
   import('@/platform/distribution/types'),
   (): typeof DistributionTypes => ({
@@ -48,7 +48,7 @@ vi.mock(
   () => ({ registerWorkflowTabActivityTracker: vi.fn(() => () => {}) })
 )
 const mocks = vi.hoisted(() => ({ capturedExtensions: [] as ComfyExtension[] }))
-vi.mock(import('@/services/extensionService'), () => ({
+vi.mock(import('@/platform/extensions/services/extensionService'), () => ({
   useExtensionService: () =>
     fromPartial({
       registerExtension: (extension: ComfyExtension) => {

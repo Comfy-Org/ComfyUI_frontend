@@ -4,9 +4,9 @@ import { computed, watch } from 'vue'
 import { provideCurrentUser } from '@/platform/auth/currentUserAccess'
 import { desktopHostUser } from '@/platform/auth/desktopHost/desktopHostSession'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useAuthStore } from '@/stores/authStore'
-import type { AuthUserInfo } from '@/types/authTypes'
+import type { AuthUserInfo } from '@comfyorg/api-client/authTypes'
 
 export const useCurrentUser = () => {
   const authStore = useAuthStore()
@@ -57,7 +57,7 @@ export const useCurrentUser = () => {
     })
 
   const userDisplayName = computed(() => {
-    if (desktopHostUser.value) return undefined
+    if (desktopHostUser.value) return desktopHostUser.value.name
     if (isApiKeyLogin.value) {
       return apiKeyStore.currentUser?.name
     }

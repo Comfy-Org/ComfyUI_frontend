@@ -1,11 +1,13 @@
 import { assert, describe, expect, it, vi } from 'vitest'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import { parseAssetInfo } from '@/platform/assets/schemas/mediaAssetSchema'
+import type { AssetItem } from '@comfyorg/assets-core/schema'
+import {
+  parseAssetInfo,
+  getDroppedAsset
+} from '@/platform/assets/integration/assetDrop'
 import { api } from '@/scripts/api'
 import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
-import { getDroppedAsset } from '@/utils/eventUtils'
 
 import { startAssetDrag } from './assetDragUtil'
 
@@ -187,4 +189,39 @@ describe('asset drag root for non-output assets tagged temp', () => {
       expect(createAnnotatedPath(dropped)).toBe(written)
     }
   )
+})
+
+describe('asset drag on browsers without URL.parse or URL.canParse', () => {
+  it('still resolves the drag media sources', () => {
+    vi.mocked(useFeatureFlags().flags).assetsEnabled = true
+    vi.mocked(api.apiURL).mockImplementation(
+      (path) => `http://localhost:8188/api${path}`
+    )
+    vi.stubGlobal(
+      'URL',
+      Object.assign(class extends URL {}, {
+        parse: undefined,
+        canParse: undefined
+      })
+    )
+
+    expect(
+      drag({
+        id: 'video-id',
+        name: 'clip.mp4',
+        display_name: 'My clip',
+        tags: ['input'],
+        created_at: '2026-10-05T00:00:00Z',
+        updated_at: '2026-10-05T00:00:00Z',
+        thumbnail_url: '/view?filename=poster.png',
+        preview_url: '/view?filename=clip.mp4'
+      })
+    ).toMatchObject({
+      kind: 'video',
+      uri: 'http://localhost:8188/api/assets/video-id/content',
+      mediaUrl:
+        'http://localhost:8188/api/assets/video-id/content?disposition=inline',
+      previewUrl: 'http://localhost:8188/api/view?filename=poster.png'
+    })
+  })
 })

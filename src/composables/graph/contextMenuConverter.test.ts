@@ -1,6 +1,16 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
+import { createI18n } from 'vue-i18n'
 
-import { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraph,
+  LGraphCanvas,
+  LGraphNode,
+  LiteGraph
+} from '@/lib/litegraph/src/litegraph'
+import { markNodeMenuCallback } from '@/lib/litegraph/src/types/nodeMenu'
+import en from '@/locales/en/main.json'
+import fr from '@/locales/fr/main.json'
+import { createTestCanvasElement } from '@/utils/__tests__/canvasTestUtils'
 
 import type { MenuOption } from './menuOption'
 import {
@@ -8,378 +18,286 @@ import {
   convertContextMenuToOptions
 } from './contextMenuConverter'
 
-describe('contextMenuConverter', () => {
-  describe('buildStructuredMenu', () => {
-    it('should order core items before extension items', () => {
+describe('node menu assembly', () => {
+  it.for(['en', 'fr'])(
+    'keeps media first, core sections ordered, extensions intact and Delete last in %s',
+    (locale) => {
+      const { t } = createI18n({
+        legacy: false,
+        locale,
+        messages: { en, fr }
+      }).global
       const options: MenuOption[] = [
-        { label: 'Custom Extension Item', source: 'litegraph' },
-        { label: 'Copy', source: 'vue' },
-        { label: 'Rename', source: 'vue' }
+        { id: 'delete', label: t('contextMenu.Delete') },
+        { label: t('contextMenu.Copy'), action: vi.fn() },
+        { id: 'color', label: t('contextMenu.Color') },
+        { id: 'pin', label: t('contextMenu.Unpin') },
+        { id: 'copy', label: t('contextMenu.Copy') },
+        { id: 'downloadImages', label: t('contextMenu.Download Images') },
+        {
+          id: 'previewResolution',
+          label: t('contextMenu.Show Full Resolution')
+        },
+        { id: 'rename', label: t('contextMenu.Rename') },
+        { id: 'openImage', label: t('contextMenu.Open Image') }
       ]
 
-      const result = buildStructuredMenu(options)
+      const result = buildStructuredMenu(options, t('contextMenu.Extensions'))
 
-      // Core items (Rename, Copy) should come before extension items
-      const renameIndex = result.findIndex((opt) => opt.label === 'Rename')
-      const copyIndex = result.findIndex((opt) => opt.label === 'Copy')
-      const extensionIndex = result.findIndex(
-        (opt) => opt.label === 'Custom Extension Item'
-      )
-
-      expect(renameIndex).toBeLessThan(extensionIndex)
-      expect(copyIndex).toBeLessThan(extensionIndex)
-    })
-
-    it('should add Extensions category label before extension items', () => {
-      const options: MenuOption[] = [
-        { label: 'Copy', source: 'vue' },
-        { label: 'My Custom Extension', source: 'litegraph' }
-      ]
-
-      const result = buildStructuredMenu(options)
-
-      const extensionsLabel = result.find(
-        (opt) => opt.label === 'Extensions' && opt.type === 'category'
-      )
-      expect(extensionsLabel).toBeDefined()
-      expect(extensionsLabel?.disabled).toBe(true)
-    })
-
-    it('should place Delete at the very end', () => {
-      const options: MenuOption[] = [
-        { label: 'Delete', action: () => {}, source: 'vue' },
-        { label: 'Copy', source: 'vue' },
-        { label: 'Rename', source: 'vue' }
-      ]
-
-      const result = buildStructuredMenu(options)
-
-      const lastNonDivider = [...result]
-        .reverse()
-        .find((opt) => opt.type !== 'divider')
-      expect(lastNonDivider?.label).toBe('Delete')
-    })
-
-    it('should deduplicate items with same label, preferring vue source', () => {
-      const options: MenuOption[] = [
-        { label: 'Copy', action: () => {}, source: 'litegraph' },
-        { label: 'Copy', action: () => {}, source: 'vue' }
-      ]
-
-      const result = buildStructuredMenu(options)
-
-      const copyItems = result.filter((opt) => opt.label === 'Copy')
-      expect(copyItems).toHaveLength(1)
-      expect(copyItems[0].source).toBe('vue')
-    })
-
-    it('should preserve dividers between sections', () => {
-      const options: MenuOption[] = [
-        { label: 'Rename', source: 'vue' },
-        { label: 'Copy', source: 'vue' },
-        { label: 'Pin', source: 'vue' }
-      ]
-
-      const result = buildStructuredMenu(options)
-
-      const dividers = result.filter((opt) => opt.type === 'divider')
-      expect(dividers.length).toBeGreaterThan(0)
-    })
-
-    it('should handle empty input', () => {
-      const result = buildStructuredMenu([])
-      expect(result).toEqual([])
-    })
-
-    it('should handle only dividers', () => {
-      const options: MenuOption[] = [{ type: 'divider' }, { type: 'divider' }]
-
-      const result = buildStructuredMenu(options)
-
-      // Should be empty since dividers are filtered initially
-      expect(result).toEqual([])
-    })
-
-    it('should recognize Remove as equivalent to Delete', () => {
-      const options: MenuOption[] = [
-        { label: 'Remove', action: () => {}, source: 'vue' },
-        { label: 'Copy', source: 'vue' }
-      ]
-
-      const result = buildStructuredMenu(options)
-
-      // Remove should be placed at the end like Delete
-      const lastNonDivider = [...result]
-        .reverse()
-        .find((opt) => opt.type !== 'divider')
-      expect(lastNonDivider?.label).toBe('Remove')
-    })
-
-    it('should group core items in correct section order', () => {
-      const options: MenuOption[] = [
-        { label: 'Color', source: 'vue' },
-        { label: 'Node Info', source: 'vue' },
-        { label: 'Pin', source: 'vue' },
-        { label: 'Rename', source: 'vue' }
-      ]
-
-      const result = buildStructuredMenu(options)
-
-      // Get indices of items (excluding dividers and categories)
-      const getIndex = (label: string) =>
-        result.findIndex((opt) => opt.label === label)
-
-      // Rename (section 1) should come before Pin (section 2)
-      expect(getIndex('Rename')).toBeLessThan(getIndex('Pin'))
-      // Pin (section 2) should come before Node Info (section 4)
-      expect(getIndex('Pin')).toBeLessThan(getIndex('Node Info'))
-      // Node Info (section 4) should come before or with Color (section 4)
-      expect(getIndex('Node Info')).toBeLessThanOrEqual(getIndex('Color'))
-    })
-
-    it('blacklists the legacy Bypass push so Vue supplies the only item', () => {
-      const legacyOptions = convertContextMenuToOptions(
-        [{ content: 'Bypass', callback: () => {} }],
-        undefined,
-        false
-      )
       expect(
-        legacyOptions.find(
-          (opt) => opt.label === 'Bypass' || opt.label === 'Remove Bypass'
-        )
-      ).toBeUndefined()
-
-      const vueBypass: MenuOption = {
-        label: 'Remove Bypass',
-        icon: 'icon-[lucide--redo-dot]',
-        shortcut: 'Ctrl+B',
-        action: () => {},
-        source: 'vue'
-      }
-      const result = buildStructuredMenu([...legacyOptions, vueBypass])
-
-      const bypassItems = result.filter(
-        (opt) => opt.label === 'Bypass' || opt.label === 'Remove Bypass'
-      )
-      expect(bypassItems).toHaveLength(1)
-      expect(bypassItems[0].source).toBe('vue')
-      expect(bypassItems[0].shortcut).toBe('Ctrl+B')
-    })
-
-    it('does not treat Bypass and Remove Bypass as label equivalents', () => {
-      const options: MenuOption[] = [
-        { label: 'Bypass', action: () => {}, source: 'vue' },
-        { label: 'Remove Bypass', action: () => {}, source: 'litegraph' }
-      ]
-
-      const result = buildStructuredMenu(options)
-
-      const labels = result
-        .map((opt) => opt.label)
-        .filter((l) => l === 'Bypass' || l === 'Remove Bypass')
-      expect(labels).toEqual(
-        expect.arrayContaining(['Bypass', 'Remove Bypass'])
-      )
-    })
-
-    it('should recognize Frame Nodes as a core menu item', () => {
-      const options: MenuOption[] = [
-        { label: 'Rename', source: 'vue' },
-        { label: 'Frame Nodes', source: 'vue' },
-        { label: 'Custom Extension', source: 'vue' }
-      ]
-
-      const result = buildStructuredMenu(options)
-
-      // Frame Nodes should appear in the core items section (before Extensions)
-      const frameNodesIndex = result.findIndex(
-        (opt) => opt.label === 'Frame Nodes'
-      )
-      const extensionsCategoryIndex = result.findIndex(
-        (opt) => opt.label === 'Extensions' && opt.type === 'category'
-      )
-
-      // Frame Nodes should come before Extensions category
-      expect(frameNodesIndex).toBeLessThan(extensionsCategoryIndex)
-    })
-  })
-
-  describe('media node ordering (FE-839)', () => {
-    const IMAGE_GROUP = [
-      'Open Image',
-      'Open in Mask Editor',
-      'Copy Image',
-      'Paste Image',
-      'Save Image'
-    ]
-
-    // Input order is intentionally scrambled to prove the rendered order is
-    // governed by MENU_ORDER, not by the order options are passed in.
-    const mediaNodeOptions = (): MenuOption[] => [
-      { label: 'Rename', source: 'vue' },
-      { label: 'Copy', source: 'vue' },
-      { label: 'Pin', source: 'vue' },
-      { label: 'Node Info', source: 'vue' },
-      { label: 'Open in Mask Editor', source: 'vue' },
-      { label: 'Open Image', source: 'vue' },
-      { label: 'Copy Image', source: 'vue' },
-      { label: 'Paste Image', source: 'vue' },
-      { label: 'Save Image', source: 'vue' }
-    ]
-
-    const firstActionLabel = (result: MenuOption[]) =>
-      result.find((opt) => opt.type !== 'divider' && opt.type !== 'category')
-        ?.label
-    const indexOfLabel = (result: MenuOption[], label: string) =>
-      result.findIndex((opt) => opt.label === label)
-
-    it('places Open Image as the first item for media nodes', () => {
-      expect(firstActionLabel(buildStructuredMenu(mediaNodeOptions()))).toBe(
-        'Open Image'
-      )
-    })
-
-    it('surfaces the whole image action group above generic node actions', () => {
-      const result = buildStructuredMenu(mediaNodeOptions())
-      const renameIndex = indexOfLabel(result, 'Rename')
-      for (const label of IMAGE_GROUP) {
-        expect(indexOfLabel(result, label)).toBeLessThan(renameIndex)
-      }
-    })
-
-    it('keeps Copy Image, Paste Image, Save Image in that relative order', () => {
-      const result = buildStructuredMenu(mediaNodeOptions())
-      expect(indexOfLabel(result, 'Copy Image')).toBeLessThan(
-        indexOfLabel(result, 'Paste Image')
-      )
-      expect(indexOfLabel(result, 'Paste Image')).toBeLessThan(
-        indexOfLabel(result, 'Save Image')
-      )
-    })
-
-    it('separates the image group from core actions with a divider', () => {
-      const result = buildStructuredMenu(mediaNodeOptions())
-      const saveIndex = indexOfLabel(result, 'Save Image')
-      const renameIndex = indexOfLabel(result, 'Rename')
-      const hasDividerBetween = result
-        .slice(saveIndex + 1, renameIndex)
-        .some((opt) => opt.type === 'divider')
-      expect(hasDividerBetween).toBe(true)
-    })
-
-    it('preserves the relative order of core actions below the image group', () => {
-      const result = buildStructuredMenu(mediaNodeOptions())
-      expect(indexOfLabel(result, 'Rename')).toBeLessThan(
-        indexOfLabel(result, 'Pin')
-      )
-      expect(indexOfLabel(result, 'Pin')).toBeLessThan(
-        indexOfLabel(result, 'Node Info')
-      )
-    })
-
-    it('leaves non-media node menus starting with Rename', () => {
-      const result = buildStructuredMenu([
-        { label: 'Node Info', source: 'vue' },
-        { label: 'Pin', source: 'vue' },
-        { label: 'Rename', source: 'vue' },
-        { label: 'Copy', source: 'vue' }
+        result.map((option) => option.id ?? option.type ?? option.label)
+      ).toEqual([
+        'openImage',
+        'previewResolution',
+        'downloadImages',
+        'divider',
+        'rename',
+        'copy',
+        'divider',
+        'pin',
+        'divider',
+        'color',
+        'divider',
+        'category',
+        t('contextMenu.Copy'),
+        'divider',
+        'delete'
       ])
-      expect(firstActionLabel(result)).toBe('Rename')
-    })
+      expect(result.at(-1)?.label).toBe(t('contextMenu.Delete'))
+      expect(result.find((option) => option.id === 'openImage')?.label).toBe(
+        t('contextMenu.Open Image')
+      )
+    }
+  )
+
+  it('prefers the Vue replacement only for the same core identity', () => {
+    const nativeAction = vi.fn()
+    const vueAction = vi.fn()
+    const extensionAction = vi.fn()
+    const native = {
+      id: 'pin',
+      label: 'Pin',
+      action: nativeAction
+    } satisfies MenuOption
+    const vue = {
+      id: 'pin',
+      label: 'Désépingler',
+      action: vueAction
+    } satisfies MenuOption
+    const extension = { label: 'Désépingler', action: extensionAction }
+
+    const result = buildStructuredMenu([native, extension, vue], 'Extensions')
+
+    expect(result.filter((option) => option.action)).toEqual([vue, extension])
+    result[0].action?.()
+    result[3].action?.()
+    expect(vueAction).toHaveBeenCalledOnce()
+    expect(extensionAction).toHaveBeenCalledOnce()
+    expect(nativeAction).not.toHaveBeenCalled()
   })
 
-  describe('convertContextMenuToOptions', () => {
-    it('should convert empty array to empty result', () => {
-      const result = convertContextMenuToOptions([])
-      expect(result).toEqual([])
-    })
-
-    it('should convert null items to dividers', () => {
-      const result = convertContextMenuToOptions([null], undefined, false)
-      expect(result).toHaveLength(1)
-      expect(result[0].type).toBe('divider')
-    })
-
-    it('should skip blacklisted items like Properties', () => {
-      const items = [{ content: 'Properties', callback: () => {} }]
-      const result = convertContextMenuToOptions(items, undefined, false)
-      expect(result.find((opt) => opt.label === 'Properties')).toBeUndefined()
-    })
-
-    it.for([
-      { label: 'Resize', callback: LGraphCanvas.onMenuResizeNode },
-      { label: 'Collapse', callback: LGraphCanvas.onMenuNodeCollapse },
-      { label: 'Expand', callback: LGraphCanvas.onMenuNodeCollapse }
-    ])(
-      'should skip built-in LiteGraph $label entry by callback identity',
-      ({ label, callback }) => {
-        const items = [{ content: label, callback }]
-        const result = convertContextMenuToOptions(items, undefined, false)
-        expect(result.find((opt) => opt.label === label)).toBeUndefined()
-      }
+  it('preserves same-label extensions, including labels formerly blacklisted or treated as Delete', () => {
+    const extensions = ['Copy', 'Copy', 'Properties', 'Remove', 'Bypass'].map(
+      (content) => ({ content })
     )
 
-    it.for(['Resize', 'Collapse', 'Expand'])(
-      'should keep extension-provided %s entries (different callback identity)',
-      (label) => {
-        const items = [{ content: label, callback: () => {} }]
-        const result = convertContextMenuToOptions(items, undefined, false)
-        expect(result.find((opt) => opt.label === label)).toBeDefined()
-      }
+    const result = buildStructuredMenu(
+      [
+        ...convertContextMenuToOptions(extensions),
+        { id: 'copy', label: 'Copy' },
+        { id: 'delete', label: 'Delete' }
+      ],
+      'Extensions'
     )
 
-    it('should convert basic menu items with content', () => {
-      const items = [{ content: 'Test Item', callback: () => {} }]
-      const result = convertContextMenuToOptions(items, undefined, false)
-      expect(result).toHaveLength(1)
-      expect(result[0].label).toBe('Test Item')
-    })
+    expect(result.map((option) => option.label ?? option.type)).toEqual([
+      'Copy',
+      'divider',
+      'Extensions',
+      'Copy',
+      'Copy',
+      'Properties',
+      'Remove',
+      'Bypass',
+      'divider',
+      'Delete'
+    ])
+  })
 
-    it('should mark items as litegraph source', () => {
-      const items = [{ content: 'Test Item', callback: () => {} }]
-      const result = convertContextMenuToOptions(items, undefined, false)
-      expect(result[0].source).toBe('litegraph')
-    })
+  it.for([
+    { name: 'empty', options: [], expected: [] },
+    { name: 'separators only', options: [{ type: 'divider' }], expected: [] },
+    {
+      name: 'Delete only',
+      options: [{ id: 'delete', label: 'Delete' }],
+      expected: ['Delete']
+    },
+    {
+      name: 'extensions only',
+      options: [{ label: 'Custom' }],
+      expected: ['Extensions', 'Custom']
+    }
+  ] satisfies { name: string; options: MenuOption[]; expected: string[] }[])(
+    'avoids empty sections and stray dividers for $name',
+    ({ options, expected }) => {
+      expect(
+        buildStructuredMenu(options, 'Extensions').map(
+          (option) => option.label ?? option.type
+        )
+      ).toEqual(expected)
+    }
+  )
 
-    it('should pass through disabled state', () => {
-      const items = [{ content: 'Disabled Item', disabled: true }]
-      const result = convertContextMenuToOptions(items, undefined, false)
-      expect(result[0].disabled).toBe(true)
-    })
+  it('keeps legacy-only core actions and scoped widget actions outside Extensions', () => {
+    const firstWidget = {
+      id: 'widget:graph:1:seed:favorite',
+      label: 'Favorite seed'
+    } satisfies MenuOption
+    const secondWidget = {
+      id: 'widget:graph:1:steps:favorite',
+      label: 'Favorite steps'
+    } satisfies MenuOption
+    const result = buildStructuredMenu(
+      [
+        firstWidget,
+        secondWidget,
+        firstWidget,
+        { id: 'pasteClipspace', label: 'Paste (Clipspace)' },
+        { id: 'advanced', label: 'Show Advanced' },
+        { id: 'editSubgraphWidgets', label: 'Edit Subgraph Widgets' }
+      ],
+      'Extensions'
+    )
 
-    it('forwards the LGraphNode argument to the callback (LGraphCanvas.onMenuNode* contract)', () => {
-      const node = new LGraphNode('Custom Action')
-      let receivedNode: unknown = 'NOT_CALLED'
-      const callback = function (
-        this: unknown,
-        _value: unknown,
-        _options: unknown,
-        _e: unknown,
-        _menu: unknown,
-        node: unknown
-      ) {
-        receivedNode = node
+    expect(result.map((option) => option.label ?? option.type)).toEqual([
+      'Show Advanced',
+      'divider',
+      'Edit Subgraph Widgets',
+      'Paste (Clipspace)',
+      'divider',
+      'Favorite seed',
+      'Favorite steps'
+    ])
+  })
+})
+
+describe('LiteGraph menu conversion', () => {
+  it.for([false, true])(
+    'retains native subgraph conversion while suppressing replaced actions after relabeling, multiple selection: %s',
+    (multiple) => {
+      const graph = new LGraph()
+      const canvas = new LGraphCanvas(createTestCanvasElement(), graph, {
+        skip_render: true,
+        skip_events: true
+      })
+      const node = new LGraphNode('Core node')
+      graph.add(node)
+      const nodes = multiple ? [node, new LGraphNode('Second node')] : [node]
+      if (multiple) graph.add(nodes[1])
+      canvas.selectItems(nodes)
+
+      const items = canvas.getNodeMenuOptions(node).map((item) => {
+        if (item) item.content = 'Localized core action'
+        return item
+      })
+      const result = convertContextMenuToOptions(items, node)
+
+      expect(
+        result
+          .filter((option) => option.type !== 'divider')
+          .map((option) => option.id)
+      ).toEqual(['convertSubgraph'])
+    }
+  )
+
+  it('recognizes registered closure identities without touching same-label extensions', () => {
+    const extensionAction = vi.fn()
+    const options = convertContextMenuToOptions([
+      { content: 'Bypass', callback: markNodeMenuCallback(vi.fn(), null) },
+      { content: 'Bypass', callback: extensionAction },
+      {
+        content: 'Coller',
+        callback: markNodeMenuCallback(vi.fn(), 'pasteClipspace')
       }
-      const items = [{ content: 'Custom Action', callback }]
+    ])
 
-      const result = convertContextMenuToOptions(items, node, false)
-      result[0].action?.()
+    expect(options.map((option) => [option.id, option.label])).toEqual([
+      [undefined, 'Bypass'],
+      ['pasteClipspace', 'Coller']
+    ])
+    options[0].action?.()
+    expect(extensionAction).toHaveBeenCalledOnce()
+  })
 
-      expect(receivedNode).toBe(node)
-    })
+  it('forwards node context, disabled state and separators', () => {
+    const node = new LGraphNode('Custom Action')
+    const callback = vi.fn()
+    const disabledCallback = vi.fn()
+    const options = convertContextMenuToOptions(
+      [
+        { content: 'Custom Action', callback },
+        null,
+        {
+          content: 'Disabled Action',
+          disabled: true,
+          callback: disabledCallback
+        }
+      ],
+      node
+    )
 
-    it('should apply structuring by default', () => {
-      const items = [
-        { content: 'Copy', callback: () => {} },
-        { content: 'Custom Extension', callback: () => {} }
-      ]
-      const result = convertContextMenuToOptions(items)
+    options[0].action?.()
+    options[2].action?.()
 
-      // With structuring, there should be Extensions category
-      const hasExtensionsCategory = result.some(
-        (opt) => opt.label === 'Extensions' && opt.type === 'category'
-      )
-      expect(hasExtensionsCategory).toBe(true)
-    })
+    expect(callback.mock.calls[0]?.[4]).toBe(node)
+    expect(options[1]).toEqual({ type: 'divider' })
+    expect(options[2].disabled).toBe(true)
+    expect(disabledCallback).not.toHaveBeenCalled()
+  })
+
+  it('adapts static submenus and sanitizes their labels', () => {
+    const callback = vi.fn()
+    const options = convertContextMenuToOptions([
+      {
+        content: 'Custom submenu',
+        has_submenu: true,
+        submenu: {
+          options: [
+            { content: '<b>Run</b>', callback },
+            { content: 'Unavailable', disabled: true }
+          ]
+        }
+      }
+    ])
+
+    expect(options[0].submenu?.map((option) => option.label)).toEqual([
+      'Run',
+      'Unavailable'
+    ])
+    expect(options[0].submenu?.[1].disabled).toBe(true)
+    options[0].submenu?.[0].action()
+    expect(callback).toHaveBeenCalledOnce()
+  })
+
+  it('captures dynamic submenus and restores the native constructor', () => {
+    const original = LiteGraph.ContextMenu
+    const callback = vi.fn()
+    const options = convertContextMenuToOptions([
+      {
+        content: 'Save',
+        has_submenu: true,
+        callback: () => {
+          new LiteGraph.ContextMenu(['GLB', 'OBJ'], { callback })
+        }
+      }
+    ])
+
+    expect(LiteGraph.ContextMenu).toBe(original)
+    expect(options[0].submenu?.map((option) => option.label)).toEqual([
+      'GLB',
+      'OBJ'
+    ])
+    options[0].submenu?.[1].action()
+    expect(callback.mock.calls[0]?.[0]).toBe('OBJ')
   })
 })

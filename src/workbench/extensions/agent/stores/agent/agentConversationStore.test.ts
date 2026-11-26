@@ -4,13 +4,14 @@ import { nextTick, watch } from 'vue'
 
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 import type {
   AgentMessages,
   TurnId
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import {
+  toTurnId,
   zAgentMessages,
   zAgentWsEvent
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
@@ -156,6 +157,8 @@ const activeTab = (
     type: 'agent_active_tab',
     data: { workflow_id: workflowId, message_id: id, thread_id: threadId }
   })
+
+type ConversationStore = ReturnType<typeof useAgentConversationStore>
 
 const tabLinkIds = (store: ReturnType<typeof useAgentConversationStore>) =>
   store.messages.flatMap((m) =>
@@ -352,6 +355,20 @@ describe('useAgentConversationStore', () => {
       name: 'add_node',
       ok: true
     })
+  })
+
+  it('settles an unresolved tool call before the next turn starts', () => {
+    const store = useAgentConversationStore()
+    store.startTurn(T1)
+    store.ingest(toolCall('t1', 'run', 'running'))
+    store.ingest(done('t1'))
+
+    store.startTurn(T2)
+
+    const tool = store.messages[0].parts.find((part) => part.type === 'tool')
+    expect(tool).toMatchObject({ state: 'done' })
+    expect(tool?.ok).toBeUndefined()
+    expect(store.activeTurnId).toBe(T2)
   })
 
   // PM-1575 regression: a tool call held back pending canvas catch-up must
@@ -842,6 +859,24 @@ describe('useAgentConversationStore', () => {
     expect(partTexts(store)).toEqual(['authoritative reply'])
   })
 
+  it('does not let a retired unresolved tool overwrite hydrated content', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'go')
+    store.ingest(toolCall('t1', 'run', 'running'))
+    store.stashActiveTurn()
+    store.ingest(done('t1'))
+
+    store.hydrate([
+      historyRow(1, 'user', 't1', 'go'),
+      historyRow(2, 'assistant', 't1', 'authoritative reply', 't1')
+    ])
+    store.resumeBackgroundTurn()
+
+    expect(partTexts(store)).toEqual(['authoritative reply'])
+  })
+
   // PM-1575 regression (finding #7, medium): canvasSyncGate used to be
   // captured BY VALUE at transport-creation time, so a later
   // setCanvasSyncGate() call (e.g. AgentPanelRoot.vue re-registering after a
@@ -1079,6 +1114,15 @@ describe('useAgentConversationStore', () => {
         ])[0]
       ]
       store.hydrate(deleteTranscript())
+      store.retireAsk('turn-1:call-1', { status: 'retired' }, 'th', false)
+      store.confirmAskPending('turn-1:call-1', 'th')
+      expect(
+        store.messages.flatMap((message) =>
+          message.parts.filter((part) => part.type === 'deleteApproval')
+        )
+      ).toEqual([
+        expect.not.objectContaining({ resolution: expect.anything() })
+      ])
       store.retireAsk(
         'turn-1:call-1',
         { status: 'answered', selected: ['keep'] },
@@ -1221,6 +1265,7 @@ describe('useAgentConversationStore', () => {
     store.hydrate(parkedTranscript)
     store.retireAsk('turn-1:call-1', { status: 'retired' })
 
+    store.hydrate(parkedTranscript)
     store.hydrate(parkedTranscript)
 
     expect(
@@ -1377,6 +1422,61 @@ describe('useAgentConversationStore', () => {
     expect(store.isStreaming).toBe(false)
   })
 
+  it('reset discards foreground ask recovery state', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('foreground')
+    store.recordAskAnswer('ask-1', { selected: ['run'] })
+    store.retireAsk('ask-2', { status: 'retired' })
+
+    store.reset()
+
+    expect(store.submittedAskAnswer('ask-1')).toBeUndefined()
+    expect(store.isAskRetired('ask-2', 'foreground')).toBe(false)
+  })
+
+  it('reset preserves ask recovery state owned by a background turn', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('background')
+    store.startTurn(T1)
+    store.recordAskAnswer('ask-1', { selected: ['run'] })
+    store.retireAsk('ask-2', { status: 'retired' })
+    store.stashActiveTurn()
+
+    store.reset()
+
+    expect(store.submittedAskAnswer('ask-1')).toEqual({ selected: ['run'] })
+    expect(store.isAskRetired('ask-2', 'background')).toBe(true)
+  })
+
+  it('does not clear live ask state when a stale turn settlement arrives', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordAskAnswer('ask-1', { selected: ['run'] }, 'th')
+    store.retireAsk('ask-2', { status: 'retired' }, 'th', false)
+
+    store.settleTurn(
+      { threadId: 'th', messageId: 'stale' as TurnId },
+      undefined
+    )
+
+    expect(store.submittedAskAnswer('ask-1')).toEqual({ selected: ['run'] })
+    expect(store.isAskRetired('ask-2', 'th')).toBe(true)
+    expect(store.isAskPermanentlyRetired('ask-2', 'th')).toBe(false)
+  })
+
+  it('clears provisional tombstones when the matching turn settles', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.retireAsk('ask-2', { status: 'retired' }, 'th', false)
+
+    store.settleTurn({ threadId: 'th', messageId: T1 }, undefined)
+
+    expect(store.isAskRetired('ask-2', 'th')).toBe(false)
+    expect(store.isAskPermanentlyRetired('ask-2', 'th')).toBe(false)
+  })
+
   it('holds the thread id and clears it on reset', () => {
     const store = useAgentConversationStore()
     store.setThreadId('th-7')
@@ -1388,25 +1488,27 @@ describe('useAgentConversationStore', () => {
   it('scopes approval dedupe and timing to the conversation that owns them', () => {
     const store = useAgentConversationStore()
     store.setThreadId('th')
-    expect(store.recordApprovalShown('ask-1', 1_000)).toBe(true)
-    expect(store.recordApprovalShown('ask-1', 2_000)).toBe(false)
+    expect(store.recordApprovalShown('ask-1', 'turn-1', 1_000)).toBe(true)
+    expect(store.recordApprovalShown('ask-1', 'turn-1', 2_000)).toBe(false)
     expect(store.approvalShownAt('ask-1')).toBe(1_000)
+    expect(store.approvalTurnId('ask-1')).toBe('turn-1')
 
     // Remount hydration of the same thread keeps the shown state: a replayed
     // approval card must not re-emit or restart the decision timer.
     store.setThreadId('th')
     store.hydrate([])
     expect(store.approvalShownAt('ask-1')).toBe(1_000)
-    expect(store.recordApprovalShown('ask-1', 3_000)).toBe(false)
+    expect(store.recordApprovalShown('ask-1', 'turn-1', 3_000)).toBe(false)
 
     // Leaving the thread drops its abandoned asks with it.
     store.setThreadId('th-other')
     expect(store.approvalShownAt('ask-1')).toBeUndefined()
-    expect(store.recordApprovalShown('ask-1', 4_000)).toBe(true)
+    expect(store.approvalTurnId('ask-1')).toBeUndefined()
+    expect(store.recordApprovalShown('ask-1', 'turn-2', 4_000)).toBe(true)
 
     store.reset()
     expect(store.approvalShownAt('ask-1')).toBeUndefined()
-    expect(store.recordApprovalShown('ask-1', 5_000)).toBe(true)
+    expect(store.recordApprovalShown('ask-1', 'turn-3', 5_000)).toBe(true)
   })
 
   it('snapshots local workflow references on the submitted turn', () => {
@@ -1954,6 +2056,9 @@ describe('useAgentConversationStore', () => {
     store.ingest(delta('t1', ' after'))
 
     expect(store.liveTurns()).toEqual([{ threadId: 'th', messageId: T1 }])
+    expect(store.liveTurnMessageId({ threadId: 'th', messageId: T1 })).toBe(
+      'server-turn'
+    )
     expect(store.messages.map((message) => message.id)).toEqual(['server-turn'])
     expect(partTexts(store)).toEqual(['before during after'])
     expect(store.entries[0]).toMatchObject({
@@ -1963,6 +2068,56 @@ describe('useAgentConversationStore', () => {
     store.ingest(done('t1'))
     expect(store.isStreaming).toBe(false)
     expect(store.liveTurns()).toEqual([])
+  })
+
+  it.for([
+    {
+      name: 'the displayed turn',
+      turn: { threadId: 'th-front', messageId: T1 },
+      askId: 'front-ask',
+      otherAskId: 'back-ask'
+    },
+    {
+      name: 'a stashed background turn',
+      turn: { threadId: 'th-back', messageId: T2 },
+      askId: 'back-ask',
+      otherAskId: 'front-ask'
+    }
+  ])(
+    'reads back the approval showing on $name, and only that one',
+    ({ turn, askId, otherAskId }) => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th-back')
+      store.startTurn(T2)
+      store.recordUser(T2, 'background prompt')
+      store.ingest(runApproval('t2', 'back-ask'))
+      store.stashActiveTurn()
+      store.setThreadId('th-front')
+      store.hydrate([])
+      store.startTurn(T1)
+      store.recordUser(T1, 'front prompt')
+      store.ingest(runApproval('t1', 'front-ask'))
+
+      expect(store.isApprovalShown(turn, askId)).toBe(true)
+      expect(store.isApprovalShown(turn, otherAskId)).toBe(false)
+      expect(store.isApprovalShown(turn, 'never-delivered')).toBe(false)
+    }
+  )
+
+  it('stops reporting an approval once its turn has settled', () => {
+    const store = useAgentConversationStore()
+    const turn = { threadId: 'th', messageId: T1 }
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'go')
+    store.ingest(runApproval('t1', 'ask-1'))
+    expect(store.isApprovalShown(turn, 'ask-1')).toBe(true)
+
+    store.settleTurn(turn, [
+      { type: 'text', text: 'persisted final', state: 'done' }
+    ])
+
+    expect(store.isApprovalShown(turn, 'ask-1')).toBe(false)
   })
 
   it.for([
@@ -2015,6 +2170,872 @@ describe('useAgentConversationStore', () => {
     }
   )
 
+  describe('reconciling a snapshot-restored turn settled on the socket', () => {
+    const SNAPSHOT_ROW_ID = toTurnId('assistant-row-7')
+    const SNAPSHOT_TURN_ID = toTurnId('turn-7')
+    const liveSnapshot = (): AgentMessages =>
+      zAgentMessages.parse([
+        historyRow(1, 'user', SNAPSHOT_TURN_ID, 'add a loader', 'user-row-1'),
+        {
+          id: SNAPSHOT_ROW_ID,
+          thread_id: 'th',
+          seq: 2,
+          role: 'assistant',
+          status: 'streaming',
+          turn_id: SNAPSHOT_TURN_ID
+        }
+      ])
+    const storedTool = (): AssistantMessage['parts'][number] => ({
+      type: 'tool',
+      callId: 'call-add_node',
+      name: 'add_node',
+      state: 'done',
+      ok: true
+    })
+    const storedParts = (): AssistantMessage['parts'] => [
+      { type: 'thinking', text: 'before the reload', state: 'done' },
+      storedTool(),
+      { type: 'thinking', text: 'after the reload', state: 'done' },
+      { type: 'text', text: 'Added it.', state: 'done' }
+    ]
+    const reconciledParts = (
+      store: ConversationStore
+    ): AssistantMessage['parts'] | undefined =>
+      store.messages.find((message) => message.id === SNAPSHOT_TURN_ID)?.parts
+    const restoredAndSettled = () => {
+      const store = useAgentConversationStore()
+      const settled: TurnId[] = []
+      store.onSnapshotTurnSettled((turn) => settled.push(turn.messageId))
+      store.setThreadId('th')
+      store.hydrate(liveSnapshot())
+      store.ingest(thinking(SNAPSHOT_ROW_ID, 'after the reload'))
+      store.ingest(done(SNAPSHOT_ROW_ID))
+      return { store, settled }
+    }
+
+    it('announces the turn and folds the stored row in', () => {
+      const { store, settled } = restoredAndSettled()
+      expect(settled).toEqual([SNAPSHOT_ROW_ID])
+
+      store.reconcileSettledTurn(
+        { threadId: 'th', messageId: SNAPSHOT_ROW_ID },
+        storedParts()
+      )
+
+      const message = store.messages.find((m) => m.id === SNAPSHOT_TURN_ID)
+      expect(message?.streaming).toBe(false)
+      expect(message?.parts).toEqual(storedParts())
+    })
+
+    it('reconciles once, so a second read cannot re-apply the row', () => {
+      const { store } = restoredAndSettled()
+      const turn = { threadId: 'th', messageId: SNAPSHOT_ROW_ID }
+      store.reconcileSettledTurn(turn, storedParts())
+
+      store.reconcileSettledTurn(turn, [
+        { type: 'text', text: 'a later read', state: 'done' }
+      ])
+
+      expect(
+        store.messages.find((m) => m.id === SNAPSHOT_TURN_ID)?.parts
+      ).toEqual(storedParts())
+    })
+
+    it.for([
+      {
+        reason: 'is longer than the stored copy',
+        live: 'after the reload continues'
+      },
+      { reason: 'is a suffix of the stored copy', live: ' reload' },
+      {
+        reason: 'is missing from the stored row',
+        live: 'a round the row dropped'
+      },
+      { reason: 'repeats an earlier stored round', live: 'before the reload' }
+    ])(
+      'renders the stored thinking when the live round $reason',
+      ({ live }) => {
+        const store = useAgentConversationStore()
+        store.setThreadId('th')
+        store.hydrate(liveSnapshot())
+        store.ingest(thinking(SNAPSHOT_ROW_ID, live))
+        store.ingest(done(SNAPSHOT_ROW_ID))
+
+        store.reconcileSettledTurn(
+          { threadId: 'th', messageId: SNAPSHOT_ROW_ID },
+          storedParts()
+        )
+
+        expect(reconciledParts(store)).toEqual(storedParts())
+      }
+    )
+
+    it('renders the stored thinking when the row keys the live call differently', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.hydrate(liveSnapshot())
+      store.ingest(thinking(SNAPSHOT_ROW_ID, 'after the reload, partial'))
+      store.ingest(toolCall(SNAPSHOT_ROW_ID, 'save', 'success'))
+      store.ingest(done(SNAPSHOT_ROW_ID))
+      const persisted: AssistantMessage['parts'] = [
+        { type: 'thinking', text: 'before the reload', state: 'done' },
+        storedTool(),
+        { type: 'thinking', text: 'after the reload', state: 'done' },
+        {
+          type: 'tool',
+          callId: 'row-fallback-id',
+          name: 'save',
+          state: 'done',
+          ok: true
+        },
+        { type: 'text', text: 'Saved it.', state: 'done' }
+      ]
+
+      store.reconcileSettledTurn(
+        { threadId: 'th', messageId: SNAPSHOT_ROW_ID },
+        persisted
+      )
+
+      expect(reconciledParts(store)).toEqual(persisted)
+    })
+
+    it('keeps live thinking when the stored row holds no thinking at all', () => {
+      const { store } = restoredAndSettled()
+
+      store.reconcileSettledTurn(
+        { threadId: 'th', messageId: SNAPSHOT_ROW_ID },
+        [storedTool(), { type: 'text', text: 'Added it.', state: 'done' }]
+      )
+
+      expect(reconciledParts(store)).toEqual([
+        storedTool(),
+        { type: 'thinking', text: 'after the reload', state: 'done' },
+        { type: 'text', text: 'Added it.', state: 'done' }
+      ])
+    })
+
+    it('places a post-reload tab link after the stored pre-reload tool', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.hydrate(liveSnapshot())
+      store.ingest(activeTab('wf-1', SNAPSHOT_ROW_ID))
+      store.ingest(thinking(SNAPSHOT_ROW_ID, 'after the reload'))
+      store.ingest(done(SNAPSHOT_ROW_ID))
+
+      store.reconcileSettledTurn(
+        { threadId: 'th', messageId: SNAPSHOT_ROW_ID },
+        storedParts()
+      )
+
+      expect(reconciledParts(store)?.map((part) => part.type)).toEqual([
+        'thinking',
+        'tool',
+        'thinking',
+        'tabLink',
+        'text'
+      ])
+    })
+
+    it('keeps a post-reload tab link behind the live tool it followed when a later tool was missed', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.hydrate(liveSnapshot())
+      store.ingest(toolCall(SNAPSHOT_ROW_ID, 'save', 'success'))
+      store.ingest(toolCall(SNAPSHOT_ROW_ID, 'run', 'success'))
+      store.ingest(activeTab('wf-1', SNAPSHOT_ROW_ID))
+      store.ingest(done(SNAPSHOT_ROW_ID))
+
+      store.reconcileSettledTurn(
+        { threadId: 'th', messageId: SNAPSHOT_ROW_ID },
+        [
+          storedTool(),
+          {
+            type: 'tool',
+            callId: 'call-save',
+            name: 'save',
+            state: 'done',
+            ok: true
+          },
+          {
+            type: 'tool',
+            callId: 'call-connect',
+            name: 'connect',
+            state: 'done',
+            ok: true
+          },
+          {
+            type: 'tool',
+            callId: 'call-run',
+            name: 'run',
+            state: 'done',
+            ok: true
+          }
+        ]
+      )
+
+      expect(
+        reconciledParts(store)?.map((part) =>
+          part.type === 'tool' ? part.name : part.type
+        )
+      ).toEqual(['add_node', 'save', 'connect', 'run', 'tabLink'])
+    })
+
+    it('keeps a live canvas confirmation for a call the stored row keys by row id', () => {
+      const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
+      const store = useAgentConversationStore()
+      store.setCanvasSyncGate(() => 'awaiting')
+      store.setThreadId('th')
+      store.hydrate(liveSnapshot())
+      store.ingest(
+        toolCall(SNAPSHOT_ROW_ID, 'add_node', 'success', {
+          workflow_id: workflowId,
+          op_ids: ['op-add']
+        })
+      )
+      store.ingest(done(SNAPSHOT_ROW_ID))
+      store.notifyCanvasCaughtUp(liveCanvasEvidence(workflowId, ['op-add']))
+
+      store.reconcileSettledTurn(
+        { threadId: 'th', messageId: SNAPSHOT_ROW_ID },
+        [
+          {
+            type: 'tool',
+            callId: 'row-fallback-id',
+            name: 'add_node',
+            state: 'done',
+            ok: true,
+            canvasConfirmed: false
+          },
+          { type: 'text', text: 'Added it.', state: 'done' }
+        ]
+      )
+
+      expect(
+        reconciledParts(store)?.find((part) => part.type === 'tool')
+      ).toMatchObject({ callId: 'row-fallback-id', canvasConfirmed: true })
+    })
+
+    it('lets stored thinking win when the recovery read settles the turn', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.hydrate(liveSnapshot())
+      store.ingest(thinking(SNAPSHOT_ROW_ID, 'a round the row dropped'))
+
+      store.settleTurn(
+        { threadId: 'th', messageId: SNAPSHOT_ROW_ID },
+        storedParts()
+      )
+
+      expect(reconciledParts(store)).toEqual(storedParts())
+    })
+
+    it('places a post-reload tab link after the stored pre-reload tool when the recovery read settles the turn', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.hydrate(liveSnapshot())
+      store.ingest(activeTab('wf-1', SNAPSHOT_ROW_ID))
+      store.ingest(thinking(SNAPSHOT_ROW_ID, 'after the reload'))
+
+      store.settleTurn(
+        { threadId: 'th', messageId: SNAPSHOT_ROW_ID },
+        storedParts()
+      )
+
+      expect(reconciledParts(store)?.map((part) => part.type)).toEqual([
+        'thinking',
+        'tool',
+        'thinking',
+        'tabLink',
+        'text'
+      ])
+    })
+
+    it('keeps a live canvas confirmation for a call the stored row keys by row id when the recovery read settles the turn', () => {
+      const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
+      const store = useAgentConversationStore()
+      store.setCanvasSyncGate(() => 'awaiting')
+      store.setThreadId('th')
+      store.hydrate(liveSnapshot())
+      store.ingest(
+        toolCall(SNAPSHOT_ROW_ID, 'add_node', 'success', {
+          workflow_id: workflowId,
+          op_ids: ['op-add']
+        })
+      )
+      store.notifyCanvasCaughtUp(liveCanvasEvidence(workflowId, ['op-add']))
+
+      store.settleTurn({ threadId: 'th', messageId: SNAPSHOT_ROW_ID }, [
+        {
+          type: 'tool',
+          callId: 'row-fallback-id',
+          name: 'add_node',
+          state: 'done',
+          ok: true,
+          canvasConfirmed: false
+        },
+        { type: 'text', text: 'Added it.', state: 'done' }
+      ])
+
+      expect(
+        reconciledParts(store)?.find((part) => part.type === 'tool')
+      ).toMatchObject({ callId: 'row-fallback-id', canvasConfirmed: true })
+    })
+
+    const verdictWorkflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
+    const verdictTurn = { threadId: 'th', messageId: SNAPSHOT_ROW_ID }
+    function settleBySocket(store: ConversationStore) {
+      store.ingest(done(SNAPSHOT_ROW_ID))
+      store.reconcileSettledTurn(verdictTurn, storedParts())
+    }
+    function settleByRecoveryRead(store: ConversationStore) {
+      store.settleTurn(verdictTurn, storedParts())
+    }
+    function liveCanvasEdit(gate: 'awaiting' | 'unavailable') {
+      const store = useAgentConversationStore()
+      store.setCanvasSyncGate(() => gate)
+      store.setThreadId('th')
+      store.hydrate(liveSnapshot())
+      store.ingest(
+        toolCall(SNAPSHOT_ROW_ID, 'add_node', 'success', {
+          workflow_id: verdictWorkflowId,
+          op_ids: ['op-add']
+        })
+      )
+      return store
+    }
+    function settledTool(store: ConversationStore) {
+      return reconciledParts(store)?.find((part) => part.type === 'tool')
+    }
+
+    it.for([
+      { through: 'socket', settle: settleBySocket },
+      { through: 'recovery read', settle: settleByRecoveryRead }
+    ])(
+      'keeps an observed canvas edit confirmed when the $through settles the turn',
+      ({ settle }) => {
+        const store = liveCanvasEdit('awaiting')
+        store.notifyCanvasCaughtUp(
+          liveCanvasEvidence(verdictWorkflowId, ['op-add'])
+        )
+
+        settle(store)
+
+        expect(settledTool(store)).toMatchObject({
+          callId: 'call-add_node',
+          canvasConfirmed: true
+        })
+      }
+    )
+
+    it.for([
+      { gate: 'unavailable', through: 'socket', settle: settleBySocket },
+      {
+        gate: 'unavailable',
+        through: 'recovery read',
+        settle: settleByRecoveryRead
+      },
+      {
+        gate: 'awaiting',
+        through: 'recovery read',
+        settle: settleByRecoveryRead
+      }
+    ] as const)(
+      'keeps an unobserved canvas edit unconfirmed ($gate) when the $through settles the turn',
+      ({ gate, settle }) => {
+        const store = liveCanvasEdit(gate)
+
+        settle(store)
+
+        expect(settledTool(store)).toMatchObject({
+          callId: 'call-add_node',
+          canvasConfirmed: false
+        })
+      }
+    )
+
+    it('does not move a live canvas verdict onto a different stored tool', () => {
+      const store = useAgentConversationStore()
+      store.setCanvasSyncGate(() => 'unavailable')
+      store.setThreadId('th')
+      store.hydrate(liveSnapshot())
+      store.ingest(toolCall(SNAPSHOT_ROW_ID, 'add_node', 'success'))
+
+      store.settleTurn({ threadId: 'th', messageId: SNAPSHOT_ROW_ID }, [
+        {
+          type: 'tool',
+          callId: 'row-fallback-id',
+          name: 'search_nodes',
+          state: 'done',
+          ok: true
+        }
+      ])
+
+      expect(
+        reconciledParts(store)?.find((part) => part.type === 'tool')
+      ).not.toHaveProperty('canvasConfirmed')
+    })
+
+    it('does not move a live canvas verdict onto a stored tool when the row omits a call', () => {
+      const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
+      function liveAddNode(n: number): AgentChatEvent {
+        return chat({
+          type: 'agent_tool_call',
+          data: {
+            tool_call_id: `live-${n}`,
+            tool_name: 'add_node',
+            status: 'success',
+            workflow_id: workflowId,
+            op_ids: [`op-${n}`],
+            message_id: SNAPSHOT_ROW_ID,
+            thread_id: 'th'
+          }
+        })
+      }
+      const store = useAgentConversationStore()
+      store.setCanvasSyncGate(() => 'awaiting')
+      store.setThreadId('th')
+      store.hydrate(liveSnapshot())
+      store.ingest(liveAddNode(1))
+      store.ingest(liveAddNode(2))
+      store.ingest(liveAddNode(3))
+      store.notifyCanvasCaughtUp(
+        liveCanvasEvidence(workflowId, ['op-1', 'op-3'])
+      )
+      function stored(callId: string): AssistantMessage['parts'][number] {
+        return {
+          type: 'tool',
+          callId,
+          name: 'add_node',
+          state: 'done',
+          ok: true
+        }
+      }
+
+      store.settleTurn({ threadId: 'th', messageId: SNAPSHOT_ROW_ID }, [
+        stored('row-1'),
+        stored('row-3')
+      ])
+
+      expect(
+        reconciledParts(store)?.filter((part) => part.type === 'tool')
+      ).toEqual([stored('row-1'), stored('row-3')])
+    })
+
+    it('waits for a held tool call to clear before announcing the turn', () => {
+      const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
+      const store = useAgentConversationStore()
+      const settled: TurnId[] = []
+      store.onSnapshotTurnSettled((turn) => settled.push(turn.messageId))
+      store.setCanvasSyncGate(() => 'awaiting')
+      store.setThreadId('th')
+      store.hydrate(liveSnapshot())
+      store.ingest(
+        toolCall(SNAPSHOT_ROW_ID, 'add_node', 'success', {
+          workflow_id: workflowId,
+          op_ids: ['op-add']
+        })
+      )
+      store.ingest(done(SNAPSHOT_ROW_ID))
+      expect(settled).toEqual([])
+
+      store.notifyCanvasCaughtUp(liveCanvasEvidence(workflowId, ['op-add']))
+      expect(settled).toEqual([SNAPSHOT_ROW_ID])
+
+      store.reconcileSettledTurn(
+        { threadId: 'th', messageId: SNAPSHOT_ROW_ID },
+        storedParts().map((part) =>
+          part.type === 'tool' ? { ...part, canvasConfirmed: false } : part
+        )
+      )
+
+      expect(
+        store.messages
+          .find((message) => message.id === SNAPSHOT_TURN_ID)
+          ?.parts.find((part) => part.type === 'tool')
+      ).toMatchObject({
+        callId: 'call-add_node',
+        ok: true,
+        canvasConfirmed: true
+      })
+    })
+
+    it.for([
+      { through: 'reset', leave: (store: ConversationStore) => store.reset() },
+      {
+        through: 'hydrate',
+        leave: (store: ConversationStore) => store.hydrate([])
+      }
+    ])(
+      'does not announce a held turn when the thread is left through $through',
+      ({ leave }) => {
+        const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
+        const store = useAgentConversationStore()
+        const settled: TurnId[] = []
+        store.onSnapshotTurnSettled((turn) => settled.push(turn.messageId))
+        store.setCanvasSyncGate(() => 'awaiting')
+        store.setThreadId('th')
+        store.hydrate(liveSnapshot())
+        store.ingest(
+          toolCall(SNAPSHOT_ROW_ID, 'add_node', 'success', {
+            workflow_id: workflowId,
+            op_ids: ['op-add']
+          })
+        )
+        store.ingest(done(SNAPSHOT_ROW_ID))
+
+        leave(store)
+
+        expect(settled).toEqual([])
+      }
+    )
+
+    it('keeps the reconciled row when a late ask retirement follows a stale held tool call', () => {
+      const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
+      const store = useAgentConversationStore()
+      const settled: TurnId[] = []
+      store.onSnapshotTurnSettled((turn) => settled.push(turn.messageId))
+      store.setCanvasSyncGate(() => 'awaiting')
+      store.setThreadId('th')
+      store.hydrate(liveSnapshot())
+      store.ingest(
+        toolCall(SNAPSHOT_ROW_ID, 'add_node', 'success', {
+          workflow_id: workflowId,
+          op_ids: ['op-add']
+        })
+      )
+      store.ingest(runApproval(SNAPSHOT_ROW_ID, 'turn-7:call-1'))
+      store.ingest(done(SNAPSHOT_ROW_ID))
+      expect(settled).toEqual([])
+
+      vi.advanceTimersByTime(30_000)
+      expect(settled).toEqual([SNAPSHOT_ROW_ID])
+      store.reconcileSettledTurn(
+        { threadId: 'th', messageId: SNAPSHOT_ROW_ID },
+        storedParts()
+      )
+
+      store.retireAsk('turn-7:call-1', { status: 'retired' })
+
+      expect(reconciledParts(store)).toEqual(
+        storedParts().map((part) =>
+          part.type === 'tool' ? { ...part, canvasConfirmed: false } : part
+        )
+      )
+    })
+
+    it('keeps a re-registered held turn for its own read when an earlier read lands late', () => {
+      const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
+      const { store, settled } = restoredAndSettled()
+      const earlierRead = { threadId: 'th', messageId: SNAPSHOT_ROW_ID }
+      store.setCanvasSyncGate(() => 'awaiting')
+      store.hydrate(liveSnapshot())
+      store.ingest(
+        toolCall(SNAPSHOT_ROW_ID, 'add_node', 'success', {
+          workflow_id: workflowId,
+          op_ids: ['op-add']
+        })
+      )
+      store.ingest(done(SNAPSHOT_ROW_ID))
+      expect(settled).toEqual([SNAPSHOT_ROW_ID])
+
+      store.reconcileSettledTurn(earlierRead, undefined)
+      store.notifyCanvasCaughtUp(liveCanvasEvidence(workflowId, ['op-add']))
+      expect(settled).toEqual([SNAPSHOT_ROW_ID, SNAPSHOT_ROW_ID])
+      store.reconcileSettledTurn(
+        { threadId: 'th', messageId: SNAPSHOT_ROW_ID },
+        storedParts()
+      )
+
+      expect(reconciledParts(store)?.map((part) => part.type)).toEqual([
+        'thinking',
+        'tool',
+        'thinking',
+        'text'
+      ])
+    })
+
+    it('announces a held turn only once when the canvas reports twice', () => {
+      const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
+      const store = useAgentConversationStore()
+      const settled: TurnId[] = []
+      store.onSnapshotTurnSettled((turn) => settled.push(turn.messageId))
+      store.setCanvasSyncGate(() => 'awaiting')
+      store.setThreadId('th')
+      store.hydrate(liveSnapshot())
+      store.ingest(
+        toolCall(SNAPSHOT_ROW_ID, 'add_node', 'success', {
+          workflow_id: workflowId,
+          op_ids: ['op-add']
+        })
+      )
+      store.ingest(done(SNAPSHOT_ROW_ID))
+
+      store.notifyCanvasCaughtUp(liveCanvasEvidence(workflowId, ['op-add']))
+      store.notifyCanvasCaughtUp(liveCanvasEvidence(workflowId, ['op-add']))
+
+      expect(settled).toEqual([SNAPSHOT_ROW_ID])
+    })
+
+    it('leaves a turn this client started alone', () => {
+      const store = useAgentConversationStore()
+      const settled: TurnId[] = []
+      store.onSnapshotTurnSettled((turn) => settled.push(turn.messageId))
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.ingest(delta('t1', 'local reply'))
+      store.ingest(done('t1'))
+      expect(settled).toEqual([])
+
+      store.reconcileSettledTurn({ threadId: 'th', messageId: T1 }, [
+        { type: 'text', text: 'persisted reply', state: 'done' }
+      ])
+
+      expect(messageTexts(store, T1)).toEqual(['local reply'])
+    })
+
+    it('drops the registration when the thread is left', () => {
+      const { store } = restoredAndSettled()
+      store.reset()
+      store.setThreadId('th')
+      store.startTurn(SNAPSHOT_TURN_ID)
+
+      store.reconcileSettledTurn(
+        { threadId: 'th', messageId: SNAPSHOT_ROW_ID },
+        storedParts()
+      )
+
+      expect(
+        store.messages.find((m) => m.id === SNAPSHOT_TURN_ID)?.parts
+      ).toEqual([])
+    })
+  })
+
+  describe('a local turn that missed frames while the connection was down', () => {
+    const storedParts = (): AssistantMessage['parts'] => [
+      { type: 'thinking', text: 'round one', state: 'done' },
+      {
+        type: 'tool',
+        callId: 'call-add_node',
+        name: 'add_node',
+        state: 'done',
+        ok: true
+      },
+      { type: 'thinking', text: 'round two', state: 'done' },
+      { type: 'text', text: 'Added it.', state: 'done' }
+    ]
+    const missedToolCallThenSettled = () => {
+      const store = useAgentConversationStore()
+      const settled: TurnId[] = []
+      store.onSnapshotTurnSettled((turn) => settled.push(turn.messageId))
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.ingest(thinking('t1', 'round one'))
+      store.markActiveTurnMissedFrames()
+      store.ingest(thinking('t1', 'round two'))
+      store.ingest(delta('t1', 'Added it.'))
+      store.ingest(done('t1'))
+      return { store, settled }
+    }
+
+    it('asks for the stored row when the socket settles it first', () => {
+      const { settled } = missedToolCallThenSettled()
+
+      expect(settled).toEqual([T1])
+    })
+
+    it('renders the stored row, so the missed tool call shows and each round shows once', () => {
+      const { store } = missedToolCallThenSettled()
+
+      store.reconcileSettledTurn(
+        { threadId: 'th', messageId: T1 },
+        storedParts()
+      )
+
+      expect(store.messages[0].parts).toEqual(storedParts())
+    })
+
+    it('keeps a tab link sent before the drop in front of the tool call it missed', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.ingest(activeTab('wf-1', 't1'))
+      store.markActiveTurnMissedFrames()
+      store.ingest(toolCall('t1', 'save', 'success'))
+      store.ingest(done('t1'))
+
+      store.reconcileSettledTurn({ threadId: 'th', messageId: T1 }, [
+        {
+          type: 'tool',
+          callId: 'call-add_node',
+          name: 'add_node',
+          state: 'done',
+          ok: true
+        },
+        {
+          type: 'tool',
+          callId: 'call-save',
+          name: 'save',
+          state: 'done',
+          ok: true
+        },
+        { type: 'text', text: 'Saved it.', state: 'done' }
+      ])
+
+      expect(
+        store.messages[0].parts.map((part) =>
+          part.type === 'tool' ? part.name : part.type
+        )
+      ).toEqual(['tabLink', 'add_node', 'save', 'text'])
+    })
+
+    it('keeps a tab link sent after a live tool call right behind that call', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.ingest(toolCall('t1', 'add_node', 'success'))
+      store.markActiveTurnMissedFrames()
+      store.ingest(toolCall('t1', 'save', 'success'))
+      store.ingest(activeTab('wf-1', 't1'))
+      store.ingest(done('t1'))
+
+      store.reconcileSettledTurn({ threadId: 'th', messageId: T1 }, [
+        {
+          type: 'tool',
+          callId: 'call-add_node',
+          name: 'add_node',
+          state: 'done',
+          ok: true
+        },
+        {
+          type: 'tool',
+          callId: 'call-connect',
+          name: 'connect',
+          state: 'done',
+          ok: true
+        },
+        {
+          type: 'tool',
+          callId: 'call-save',
+          name: 'save',
+          state: 'done',
+          ok: true
+        }
+      ])
+
+      expect(
+        store.messages[0].parts.map((part) =>
+          part.type === 'tool' ? part.name : part.type
+        )
+      ).toEqual(['add_node', 'connect', 'save', 'tabLink'])
+    })
+
+    function confirmedLiveAddNode() {
+      const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
+      const store = useAgentConversationStore()
+      store.setCanvasSyncGate(() => 'awaiting')
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.markActiveTurnMissedFrames()
+      store.ingest(
+        toolCall('t1', 'add_node', 'success', {
+          workflow_id: workflowId,
+          op_ids: ['op-add']
+        })
+      )
+      store.notifyCanvasCaughtUp(liveCanvasEvidence(workflowId, ['op-add']))
+      store.ingest(done('t1'))
+      return store
+    }
+    const storedAddNode = (
+      callId: string
+    ): AssistantMessage['parts'][number] => ({
+      type: 'tool',
+      callId,
+      name: 'add_node',
+      state: 'done',
+      ok: true,
+      canvasConfirmed: false
+    })
+    const canvasVerdicts = (store: ConversationStore) =>
+      store.messages[0].parts.flatMap((part) =>
+        part.type === 'tool' ? [part.canvasConfirmed] : []
+      )
+
+    it('keeps a live canvas confirmation on the stored call with the same id when an earlier call was missed', () => {
+      const store = confirmedLiveAddNode()
+
+      store.reconcileSettledTurn({ threadId: 'th', messageId: T1 }, [
+        storedAddNode('call-missed'),
+        storedAddNode('call-add_node')
+      ])
+
+      expect(canvasVerdicts(store)).toEqual([false, true])
+    })
+
+    it('does not move a live canvas confirmation onto a stored call it cannot identify', () => {
+      const store = confirmedLiveAddNode()
+
+      store.reconcileSettledTurn({ threadId: 'th', messageId: T1 }, [
+        storedAddNode('row-1'),
+        storedAddNode('row-2')
+      ])
+
+      expect(canvasVerdicts(store)).toEqual([false, false])
+    })
+
+    it('anchors local parts by call id when the recovery read settles a reconnected turn', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.ingest(toolCall('t1', 'add_node', 'success'))
+      store.markActiveTurnMissedFrames()
+      store.ingest(toolCall('t1', 'save', 'success'))
+      store.ingest(activeTab('wf-1', 't1'))
+
+      store.settleTurn({ threadId: 'th', messageId: T1 }, [
+        {
+          type: 'tool',
+          callId: 'call-add_node',
+          name: 'add_node',
+          state: 'done',
+          ok: true
+        },
+        {
+          type: 'tool',
+          callId: 'call-connect',
+          name: 'connect',
+          state: 'done',
+          ok: true
+        },
+        {
+          type: 'tool',
+          callId: 'call-save',
+          name: 'save',
+          state: 'done',
+          ok: true
+        }
+      ])
+
+      expect(
+        store.messages[0].parts.map((part) =>
+          part.type === 'tool' ? part.name : part.type
+        )
+      ).toEqual(['add_node', 'connect', 'save', 'tabLink'])
+    })
+
+    it('does not ask for the stored row when the turn kept its connection', () => {
+      const store = useAgentConversationStore()
+      const settled: TurnId[] = []
+      store.onSnapshotTurnSettled((turn) => settled.push(turn.messageId))
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.ingest(thinking('t1', 'round one'))
+      store.ingest(done('t1'))
+
+      expect(settled).toEqual([])
+    })
+  })
+
   it('keeps a local tab link between persisted text and tool parts', () => {
     const store = useAgentConversationStore()
     store.setThreadId('th')
@@ -2044,6 +3065,52 @@ describe('useAgentConversationStore', () => {
     ])
   })
 
+  it('keeps each live tool start time when recovery reorders persisted parts', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    vi.setSystemTime(1_234)
+    store.ingest(toolCall('t1', 'add_node', 'running'))
+    vi.setSystemTime(5_678)
+    store.ingest(toolCall('t1', 'run_workflow', 'running'))
+
+    store.settleTurn({ threadId: 'th', messageId: T1 }, [
+      {
+        type: 'tool',
+        callId: 'call-run_workflow',
+        name: 'run_workflow',
+        state: 'done',
+        ok: true
+      },
+      {
+        type: 'tool',
+        callId: 'call-add_node',
+        name: 'add_node',
+        state: 'done',
+        ok: true
+      }
+    ])
+
+    expect(store.messages[0].parts).toEqual([
+      {
+        type: 'tool',
+        callId: 'call-run_workflow',
+        name: 'run_workflow',
+        state: 'done',
+        ok: true,
+        startedAtMs: 5_678
+      },
+      {
+        type: 'tool',
+        callId: 'call-add_node',
+        name: 'add_node',
+        state: 'done',
+        ok: true,
+        startedAtMs: 1_234
+      }
+    ])
+  })
+
   it('finalizes locally streaming parts when an empty successful row settles the turn', () => {
     const store = useAgentConversationStore()
     store.setThreadId('th')
@@ -2055,8 +3122,9 @@ describe('useAgentConversationStore', () => {
 
     expect(store.messages[0].parts).toMatchObject([
       { type: 'text', text: 'partial', state: 'done' },
-      { type: 'tool', name: 'add_node', state: 'done', ok: false }
+      { type: 'tool', name: 'add_node', state: 'done' }
     ])
+    expect(store.messages[0].parts[1]).not.toHaveProperty('ok')
   })
 
   it('drops a provisional draft before preserving an empty successful row', () => {
@@ -2779,6 +3847,45 @@ describe('useAgentConversationStore', () => {
       }
     )
 
+    it.for([false, true])(
+      'lists pending asks, including one being answered, until retired (stashed: %s)',
+      (stashed) => {
+        openTab('workflows/a.json')
+        const store = storeWithTurnOn(knownTab('workflows/a.json'), stashed)
+
+        store.ingest(runApproval('t1', 'ask-1'))
+        expect(store.pendingAskIds).toEqual(['ask-1'])
+
+        store.setAskAnswering('ask-1', true)
+        expect(store.pendingAskIds).toEqual(['ask-1'])
+
+        store.setAskAnswering('ask-1', false)
+        store.retireAsk('ask-1', { status: 'retired' }, 'th')
+        expect(store.pendingAskIds).toEqual([])
+      }
+    )
+
+    it('lists a background question again when recovery confirms it is still pending', () => {
+      openTab('workflows/a.json')
+      const store = storeWithTurnOn(knownTab('workflows/a.json'), true)
+      store.ingest(
+        runApproval('t1', 'ask-1', {
+          kind: 'ask_user',
+          prompt: 'Allow network access to github.com?',
+          options: [
+            { id: 'allow', label: 'Allow' },
+            { id: 'deny', label: 'Deny' }
+          ]
+        })
+      )
+      store.retireAsk('ask-1', { status: 'retired' }, 'th', false)
+      expect(store.pendingAskIds).toEqual([])
+
+      store.confirmAskPending('ask-1', 'th')
+
+      expect(store.pendingAskIds).toEqual(['ask-1'])
+    })
+
     const pendingAsks = [
       {
         kind: 'ask_user',
@@ -2946,5 +4053,1054 @@ describe('useAgentConversationStore', () => {
         expect(spinningPaths(store)).toEqual(after)
       }
     )
+  })
+
+  describe('pending sends and background acceptance (PR 0)', () => {
+    it('tracks pending sends per origin, appends them after settled entries, and clears on take', () => {
+      const store = useAgentConversationStore()
+      const blankOrigin = store.currentOrigin()
+      expect(blankOrigin.kind).toBe('blank')
+
+      store.startPendingSend({
+        clientMessageId: 'cm-blank',
+        text: 'hello blank',
+        attachments: [],
+        tags: [],
+        workflowReferences: []
+      })
+
+      expect(store.hasSendingPendingSend).toBe(true)
+      expect(store.hasSendingForOrigin(blankOrigin)).toBe(true)
+      expect(store.entries).toMatchObject([
+        {
+          id: 'cm-blank',
+          role: 'user',
+          text: 'hello blank',
+          pending: { clientMessageId: 'cm-blank', status: 'sending' }
+        }
+      ])
+
+      store.reset()
+      expect(store.isOriginOnScreen(blankOrigin)).toBe(false)
+      expect(store.hasSendingPendingSend).toBe(false)
+      expect(store.hasSendingForOrigin(blankOrigin)).toBe(true)
+      expect(store.entries).toEqual([])
+
+      expect(
+        store.failPendingSend('cm-blank', {
+          kind: 'network',
+          message: 'offline'
+        })
+      ).toBe(true)
+      expect(store.hasSendingForOrigin(blankOrigin)).toBe(false)
+      expect(store.getPendingSend('cm-blank')).toMatchObject({
+        status: 'failed',
+        failure: { kind: 'network', message: 'offline' }
+      })
+      expect(store.takePendingSend('cm-blank')?.clientMessageId).toBe(
+        'cm-blank'
+      )
+      expect(store.getPendingSend('cm-blank')).toBeUndefined()
+    })
+
+    it('only adopts certain failed sends from the accepted blank chat, preserves chronology, and clears preceding order on retry', () => {
+      const store = useAgentConversationStore()
+      const blankOrigin = store.currentOrigin()
+      expect(blankOrigin.kind).toBe('blank')
+
+      for (const [clientMessageId, workspaceId] of [
+        ['cm-certain', 'ws-a'],
+        ['cm-uncertain', 'ws-a'],
+        ['cm-sending', 'ws-a'],
+        ['cm-other-workspace', 'ws-b']
+      ] as const) {
+        store.startPendingSend({
+          clientMessageId,
+          text: clientMessageId,
+          attachments: [],
+          tags: [],
+          workflowReferences: [],
+          workspaceId
+        })
+      }
+      store.failPendingSend('cm-certain', {
+        kind: 'request',
+        message: 'Rejected'
+      })
+      store.failPendingSend('cm-uncertain', {
+        kind: 'network',
+        message: 'Connection lost',
+        uncertain: true
+      })
+      store.failPendingSend('cm-other-workspace', {
+        kind: 'request',
+        message: 'Rejected'
+      })
+
+      const boundEvents: Array<{
+        clientMessageIds: readonly string[]
+        threadId: string
+        acceptedTurnId: string
+      }> = []
+      store.onBlankChatFailuresBound((event) => {
+        boundEvents.push(event)
+      })
+
+      store.bindCertainBlankChatFailures(
+        blankOrigin.kind === 'blank' ? blankOrigin.blankChatId : '',
+        'th-accepted',
+        toTurnId('turn-accepted'),
+        'ws-a'
+      )
+
+      expect(boundEvents).toEqual([
+        {
+          clientMessageIds: ['cm-certain'],
+          threadId: 'th-accepted',
+          acceptedTurnId: 'turn-accepted'
+        }
+      ])
+
+      expect(store.getPendingSend('cm-certain')).toMatchObject({
+        origin: { kind: 'thread', threadId: 'th-accepted' },
+        precedesThreadTranscript: true,
+        knownTurnIdsAtSend: new Set(['turn-accepted'])
+      })
+      for (const clientMessageId of [
+        'cm-uncertain',
+        'cm-sending',
+        'cm-other-workspace'
+      ]) {
+        expect(store.getPendingSend(clientMessageId)?.origin).toEqual(
+          blankOrigin
+        )
+      }
+
+      store.setThreadId('th-accepted')
+      store.hydrate([
+        historyRow(1, 'user', 'turn-accepted', 'Accepted', 'user-accepted'),
+        historyRow(
+          2,
+          'assistant',
+          'turn-accepted',
+          'Response',
+          'assistant-accepted'
+        )
+      ])
+      expect(store.entries.map(({ id }) => id)).toEqual([
+        'cm-certain',
+        'turn-accepted',
+        'turn-accepted'
+      ])
+
+      const retried = store.retryPendingSend('cm-certain', 'cm-certain-retry')
+      expect(retried).toMatchObject({
+        clientMessageId: 'cm-certain-retry',
+        status: 'sending',
+        knownTurnIdsAtSend: new Set(['turn-accepted'])
+      })
+      expect(retried?.precedesThreadTranscript).toBeUndefined()
+      expect(store.entries.map(({ id }) => id)).toEqual([
+        'turn-accepted',
+        'turn-accepted',
+        'cm-certain-retry'
+      ])
+    })
+
+    it('does not leak another open thread turns into knownTurnIdsAtSend during background blank-chat adoption', () => {
+      const store = useAgentConversationStore()
+      const blankOrigin = store.currentOrigin()
+      expect(blankOrigin.kind).toBe('blank')
+      store.startPendingSend({
+        clientMessageId: 'cm-certain-bg',
+        text: 'Failed before switch',
+        attachments: [],
+        tags: [],
+        workflowReferences: [],
+        workspaceId: 'ws-a'
+      })
+      store.failPendingSend('cm-certain-bg', {
+        kind: 'request',
+        message: 'Rejected'
+      })
+
+      store.setThreadId('th-other')
+      store.hydrate([
+        historyRow(1, 'user', 'turn-other', 'Other prompt', 'u-other'),
+        historyRow(2, 'assistant', 'turn-other', 'Other reply', 'a-other')
+      ])
+
+      store.bindCertainBlankChatFailures(
+        blankOrigin.kind === 'blank' ? blankOrigin.blankChatId : '',
+        'th-adopted-bg',
+        toTurnId('turn-adopted'),
+        'ws-a'
+      )
+
+      expect(store.getPendingSend('cm-certain-bg')?.knownTurnIdsAtSend).toEqual(
+        new Set(['turn-adopted'])
+      )
+    })
+
+    it('orders earlier failures before and later failures after the accepted transcript', () => {
+      const store = useAgentConversationStore()
+      const blankOrigin = store.currentOrigin()
+      expect(blankOrigin.kind).toBe('blank')
+
+      store.startPendingSend({
+        clientMessageId: 'cm-before',
+        text: 'Failed earlier',
+        attachments: [],
+        tags: [],
+        workflowReferences: [],
+        workspaceId: 'ws-a'
+      })
+      store.failPendingSend('cm-before', {
+        kind: 'request',
+        message: 'Rejected earlier'
+      })
+
+      store.startPendingSend({
+        clientMessageId: 'cm-accepted',
+        text: 'Accepted starter',
+        attachments: [],
+        tags: [],
+        workflowReferences: [],
+        workspaceId: 'ws-a'
+      })
+
+      store.startPendingSend({
+        clientMessageId: 'cm-after',
+        text: 'Busy while starter in flight',
+        attachments: [],
+        tags: [],
+        workflowReferences: [],
+        workspaceId: 'ws-a'
+      })
+      store.failPendingSend('cm-after', {
+        kind: 'request',
+        message: 'A message is already being sent'
+      })
+
+      const taken = store.takePendingSend('cm-accepted')
+
+      store.bindCertainBlankChatFailures(
+        blankOrigin.kind === 'blank' ? blankOrigin.blankChatId : '',
+        'th-ordered',
+        toTurnId('turn-accepted'),
+        'ws-a',
+        taken?.createdOrder
+      )
+
+      expect(store.getPendingSend('cm-before')?.precedesThreadTranscript).toBe(
+        true
+      )
+      expect(
+        store.getPendingSend('cm-after')?.precedesThreadTranscript
+      ).toBeUndefined()
+
+      store.setThreadId('th-ordered')
+      store.hydrate([
+        historyRow(
+          1,
+          'user',
+          'turn-accepted',
+          'Accepted starter',
+          'user-accepted'
+        ),
+        historyRow(
+          2,
+          'assistant',
+          'turn-accepted',
+          'Response',
+          'assistant-accepted'
+        )
+      ])
+      expect(store.entries.map(({ id }) => id)).toEqual([
+        'cm-before',
+        'turn-accepted',
+        'turn-accepted',
+        'cm-after'
+      ])
+    })
+
+    it('batch-adopts multiple blank-chat failures in order and deletes an adopted failure without disturbing the thread', () => {
+      const store = useAgentConversationStore()
+      const blankOrigin = store.currentOrigin()
+      expect(blankOrigin.kind).toBe('blank')
+
+      for (const [id, text] of [
+        ['cm-fail-1', 'First failure'],
+        ['cm-fail-2', 'Second failure']
+      ] as const) {
+        store.startPendingSend({
+          clientMessageId: id,
+          text,
+          attachments: [],
+          tags: [],
+          workflowReferences: [],
+          workspaceId: 'ws-a'
+        })
+        store.failPendingSend(id, {
+          kind: 'request',
+          message: 'Rejected'
+        })
+      }
+
+      const accepted = store.startPendingSend({
+        clientMessageId: 'cm-starter',
+        text: 'Accepted starter',
+        attachments: [],
+        tags: [],
+        workflowReferences: [],
+        workspaceId: 'ws-a'
+      })
+      store.takePendingSend('cm-starter')
+
+      const boundEvents: Array<{
+        clientMessageIds: readonly string[]
+        threadId: string
+        acceptedTurnId: string
+      }> = []
+      store.onBlankChatFailuresBound((event) => {
+        boundEvents.push(event)
+      })
+
+      store.bindCertainBlankChatFailures(
+        blankOrigin.kind === 'blank' ? blankOrigin.blankChatId : '',
+        'th-batch',
+        toTurnId('turn-starter'),
+        'ws-a',
+        accepted.createdOrder
+      )
+
+      expect(boundEvents).toEqual([
+        {
+          clientMessageIds: ['cm-fail-1', 'cm-fail-2'],
+          threadId: 'th-batch',
+          acceptedTurnId: 'turn-starter'
+        }
+      ])
+
+      store.setThreadId('th-batch')
+      store.hydrate([
+        historyRow(
+          1,
+          'user',
+          'turn-starter',
+          'Accepted starter',
+          'user-starter'
+        ),
+        historyRow(
+          2,
+          'assistant',
+          'turn-starter',
+          'Response',
+          'assistant-starter'
+        )
+      ])
+      expect(store.entries.map(({ id }) => id)).toEqual([
+        'cm-fail-1',
+        'cm-fail-2',
+        'turn-starter',
+        'turn-starter'
+      ])
+
+      expect(store.takePendingSend('cm-fail-1')?.clientMessageId).toBe(
+        'cm-fail-1'
+      )
+      expect(store.entries.map(({ id }) => id)).toEqual([
+        'cm-fail-2',
+        'turn-starter',
+        'turn-starter'
+      ])
+    })
+
+    it('registers a background turn directly and resumes without duplicating user rows', () => {
+      const store = useAgentConversationStore()
+      const turnId = toTurnId('msg-bg')
+      store.startBackgroundTurn({
+        threadId: 'th-bg',
+        turnId,
+        text: 'Build background',
+        attachments: [],
+        tags: [],
+        workflowReferences: [],
+        tab: { status: 'unknown' }
+      })
+
+      expect(store.threadId).toBeNull()
+      expect(store.entries).toEqual([])
+      expect(store.liveTurns()).toEqual([
+        { threadId: 'th-bg', messageId: turnId }
+      ])
+
+      store.setThreadId('th-bg')
+      store.hydrate([
+        {
+          id: 'u-row',
+          thread_id: 'th-bg',
+          turn_id: 'msg-bg',
+          seq: 1,
+          role: 'user',
+          content: { text: 'Build background' },
+          status: 'complete',
+          created_at: '2026-11-18T00:00:00Z'
+        }
+      ])
+      store.resumeBackgroundTurn()
+
+      expect(
+        store.entries.filter((entry) => entry.role === 'user')
+      ).toHaveLength(1)
+      expect(store.activeTurnId).toBe(turnId)
+    })
+
+    it('retries a failed pending send in place without moving it to the end and marks paywall pending sends resolved', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th-1')
+      store.startPendingSend({
+        clientMessageId: 'cm-1',
+        text: 'first',
+        attachments: [],
+        tags: [],
+        workflowReferences: []
+      })
+      store.startPendingSend({
+        clientMessageId: 'cm-2',
+        text: 'second',
+        attachments: [],
+        tags: [],
+        workflowReferences: []
+      })
+      vi.useFakeTimers()
+      vi.setSystemTime(1_700_000_000_000)
+      try {
+        store.failPendingSend('cm-1', {
+          kind: 'paywall',
+          message: 'no credits'
+        })
+        store.failPendingSend('cm-2', {
+          kind: 'retry_after',
+          message: 'wait',
+          retryAfterSeconds: 10
+        })
+
+        expect(store.entries[0]).toMatchObject({
+          id: 'cm-1',
+          pending: { paywallResolved: false }
+        })
+        expect(store.getPendingSend('cm-2')?.failure?.retryAtMs).toBe(
+          1_700_000_010_000
+        )
+      } finally {
+        vi.useRealTimers()
+      }
+
+      store.resolvePaywalls()
+      expect(store.entries[0]).toMatchObject({
+        id: 'cm-1',
+        pending: { paywallResolved: true }
+      })
+
+      const retried = store.retryPendingSend('cm-1', 'cm-1-retry')
+      expect(retried).toMatchObject({
+        clientMessageId: 'cm-1-retry',
+        status: 'sending'
+      })
+      expect(retried?.failure).toBeUndefined()
+      expect(store.getPendingSend('cm-1')).toBeUndefined()
+      expect(store.entries.map((entry) => entry.id)).toEqual([
+        'cm-1-retry',
+        'cm-2'
+      ])
+    })
+
+    it('restores a settled background turn reply when hydrate returns an empty streaming row sharing turnId (O0-07)', () => {
+      const store = useAgentConversationStore()
+      const turnId = toTurnId('msg-bg')
+      store.startBackgroundTurn({
+        threadId: 'th',
+        turnId,
+        text: 'Background prompt',
+        tab: { status: 'unknown' }
+      })
+      store.ingest(delta('msg-bg', 'Background reply'))
+      store.ingest(done('msg-bg'))
+
+      store.setThreadId('th')
+      store.hydrate([
+        historyRow(1, 'user', 'msg-bg', 'Background prompt', 'u-bg'),
+        {
+          ...historyRow(2, 'assistant', 'msg-bg', '', 'msg-bg'),
+          content: {},
+          status: 'streaming'
+        }
+      ])
+      store.resumeBackgroundTurn()
+
+      expect(store.entries).toMatchObject([
+        { role: 'user', text: 'Background prompt' },
+        {
+          role: 'assistant',
+          id: 'msg-bg',
+          streaming: false,
+          parts: [{ type: 'text', text: 'Background reply', state: 'done' }]
+        }
+      ])
+    })
+
+    it('keeps a resolved pending paywall across reset and hydrate until retried', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th-pay')
+      store.startPendingSend({
+        clientMessageId: 'cm-pay',
+        text: 'paywall prompt',
+        attachments: [],
+        tags: [],
+        workflowReferences: []
+      })
+      store.failPendingSend('cm-pay', {
+        kind: 'paywall',
+        message: 'no credits'
+      })
+      store.resolvePaywalls()
+      expect(store.entries[0]).toMatchObject({
+        id: 'cm-pay',
+        pending: { paywallResolved: true }
+      })
+
+      store.reset()
+      store.setThreadId('th-pay')
+      store.hydrate([])
+
+      expect(store.entries[0]).toMatchObject({
+        id: 'cm-pay',
+        pending: { paywallResolved: true }
+      })
+
+      store.retryPendingSend('cm-pay', 'cm-pay-retry')
+      store.failPendingSend('cm-pay-retry', {
+        kind: 'paywall',
+        message: 'still out'
+      })
+      expect(store.entries[0]).toMatchObject({
+        id: 'cm-pay-retry',
+        pending: { paywallResolved: false }
+      })
+    })
+
+    it('restores background user tags and attachments even when history already holds the text', () => {
+      const store = useAgentConversationStore()
+      store.startBackgroundTurn({
+        threadId: 'th',
+        turnId: toTurnId('msg-bg-meta'),
+        text: 'Tag prompt',
+        attachments: [{ name: 'ref.png', kind: 'image' }],
+        tags: ['KSampler #1'],
+        tab: { status: 'unknown' }
+      })
+
+      store.setThreadId('th')
+      store.hydrate([
+        historyRow(1, 'user', 'msg-bg-meta', 'Tag prompt', 'u-meta'),
+        {
+          ...historyRow(2, 'assistant', 'msg-bg-meta', '', 'msg-bg-meta'),
+          content: {},
+          status: 'streaming'
+        }
+      ])
+      store.resumeBackgroundTurn()
+
+      expect(store.entries[0]).toMatchObject({
+        role: 'user',
+        text: 'Tag prompt',
+        attachments: [{ name: 'ref.png', kind: 'image' }],
+        tags: ['KSampler #1']
+      })
+    })
+
+    it('drops failed cross-workspace pending sends across blank and thread origins while preserving sending entries and excluded entries', () => {
+      const store = useAgentConversationStore()
+      const blankId = store.activeBlankChatId
+      expect(blankId).toBeTruthy()
+      store.startPendingSend({
+        clientMessageId: 'cm-ws-a-blank',
+        text: 'Blank in A',
+        attachments: [],
+        tags: [],
+        workflowReferences: [],
+        workspaceId: 'ws-a'
+      })
+      store.failPendingSend('cm-ws-a-blank', {
+        kind: 'network',
+        message: 'Failed'
+      })
+      store.setThreadId('th-ws-a')
+      store.startPendingSend({
+        clientMessageId: 'cm-ws-a-thread',
+        text: 'Thread in A',
+        attachments: [],
+        tags: [],
+        workflowReferences: [],
+        workspaceId: 'ws-a'
+      })
+      store.failPendingSend('cm-ws-a-thread', {
+        kind: 'network',
+        message: 'Failed'
+      })
+      store.startPendingSend({
+        clientMessageId: 'cm-ws-a-in-flight',
+        text: 'Still sending in A',
+        attachments: [],
+        tags: [],
+        workflowReferences: [],
+        workspaceId: 'ws-a'
+      })
+      store.markPendingSendStopped(
+        { kind: 'thread', threadId: 'th-ws-a' },
+        'button'
+      )
+      store.startPendingSend({
+        clientMessageId: 'cm-ws-b-held',
+        text: 'Held in A during switch',
+        attachments: [],
+        tags: [],
+        workflowReferences: [],
+        workspaceId: 'ws-a'
+      })
+      store.failPendingSend('cm-ws-b-held', {
+        kind: 'network',
+        message: 'Failed'
+      })
+      store.startPendingSend({
+        clientMessageId: 'cm-ws-b-stay',
+        text: 'Already in B',
+        attachments: [],
+        tags: [],
+        workflowReferences: [],
+        workspaceId: 'ws-b'
+      })
+      store.failPendingSend('cm-ws-b-stay', {
+        kind: 'network',
+        message: 'Failed'
+      })
+
+      const dropped = store.discardPendingSendsOutsideWorkspace(
+        'ws-b',
+        'cm-ws-b-held'
+      )
+
+      expect(dropped).toEqual(['cm-ws-a-blank', 'cm-ws-a-thread'])
+      expect(store.hasPendingSendForBlankChat(blankId, 'ws-a')).toBe(false)
+      expect(store.getPendingSend('cm-ws-a-blank')).toBeUndefined()
+      expect(store.getPendingSend('cm-ws-a-thread')).toBeUndefined()
+      expect(store.getPendingSend('cm-ws-a-in-flight')).toMatchObject({
+        status: 'sending',
+        stopRequested: { method: 'button' }
+      })
+      expect(store.getPendingSend('cm-ws-b-held')).toBeDefined()
+      expect(store.getPendingSend('cm-ws-b-stay')).toBeDefined()
+    })
+
+    it('captures canvas baseline right before postTurn and keeps per-send canvas evidence across reset', () => {
+      const store = useAgentConversationStore()
+      let outcomeCount = 1
+      store.setCanvasSyncGate(
+        () => 'awaiting',
+        () => outcomeCount
+      )
+      store.startPendingSend({
+        clientMessageId: 'cm-canvas',
+        text: 'Canvas send',
+        attachments: [],
+        tags: [],
+        workflowReferences: []
+      })
+      expect(
+        store.getPendingSend('cm-canvas')?.canvasOutcomeAtStart
+      ).toBeUndefined()
+
+      store.notifyCanvasCaughtUp({
+        workflowId: 'wf-before',
+        opIds: ['op-before'],
+        isLive: true
+      })
+      expect(store.getPendingSend('cm-canvas')?.canvasEvidence).toBeUndefined()
+
+      outcomeCount = 4
+      store.capturePendingSendCanvasBaseline('cm-canvas')
+      expect(store.getPendingSend('cm-canvas')?.canvasOutcomeAtStart).toBe(4)
+
+      store.notifyCanvasCaughtUp({
+        workflowId: 'wf-live',
+        opIds: ['op-live'],
+        isLive: true
+      })
+      expect(store.getPendingSend('cm-canvas')?.canvasEvidence).toEqual([
+        { workflowId: 'wf-live', opIds: ['op-live'], isLive: true }
+      ])
+
+      store.reset()
+      expect(store.getPendingSend('cm-canvas')?.canvasOutcomeAtStart).toBe(4)
+      expect(store.getPendingSend('cm-canvas')?.canvasEvidence).toEqual([
+        { workflowId: 'wf-live', opIds: ['op-live'], isLive: true }
+      ])
+    })
+
+    it('reconciles a failed pending send on hydrate once a new matching server user row appears without removing earlier-turn matches', () => {
+      const store = useAgentConversationStore()
+      const reconciled: string[][] = []
+      const sub = store.onPendingSendsReconciled((ids) =>
+        reconciled.push([...ids])
+      )
+      store.setThreadId('th-dup')
+      store.hydrate([
+        historyRow(1, 'user', 'turn-1', 'Repeat prompt', 'u-1'),
+        historyRow(2, 'assistant', 'turn-1', 'First reply', 'a-1')
+      ])
+
+      store.startPendingSend({
+        clientMessageId: 'cm-uncertain',
+        text: 'Repeat prompt',
+        attachments: [],
+        tags: [],
+        workflowReferences: []
+      })
+      store.failPendingSend('cm-uncertain', {
+        kind: 'request',
+        message: 'uncertain',
+        retryable: false,
+        uncertain: true
+      })
+
+      store.hydrate([
+        historyRow(1, 'user', 'turn-1', 'Repeat prompt', 'u-1'),
+        historyRow(2, 'assistant', 'turn-1', 'First reply', 'a-1')
+      ])
+      expect(reconciled).toEqual([])
+      expect(
+        store.entries.filter((entry) => entry.role === 'user')
+      ).toHaveLength(2)
+
+      store.hydrate([
+        historyRow(1, 'user', 'turn-1', 'Repeat prompt', 'u-1'),
+        historyRow(2, 'assistant', 'turn-1', 'First reply', 'a-1'),
+        historyRow(3, 'user', 'turn-2', 'Repeat prompt', 'u-2'),
+        historyRow(4, 'assistant', 'turn-2', 'Second reply', 'a-2')
+      ])
+      expect(reconciled).toEqual([['cm-uncertain']])
+      expect(store.getPendingSend('cm-uncertain')).toBeUndefined()
+      expect(
+        store.entries.filter((entry) => entry.role === 'user')
+      ).toHaveLength(2)
+      sub.off()
+    })
+
+    it('matches each newly persisted server user turn against at most one failed pending send', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th-once')
+      store.hydrate([])
+
+      store.startPendingSend({
+        clientMessageId: 'cm-first',
+        text: 'Same text',
+        attachments: [],
+        tags: [],
+        workflowReferences: []
+      })
+      store.failPendingSend('cm-first', {
+        kind: 'request',
+        message: 'uncertain',
+        retryable: false,
+        uncertain: true
+      })
+      store.startPendingSend({
+        clientMessageId: 'cm-second',
+        text: 'Same text',
+        attachments: [],
+        tags: [],
+        workflowReferences: []
+      })
+      store.failPendingSend('cm-second', {
+        kind: 'request',
+        message: 'uncertain',
+        retryable: false,
+        uncertain: true
+      })
+
+      store.hydrate([
+        historyRow(1, 'user', 'turn-1', 'Same text', 'u-1'),
+        historyRow(2, 'assistant', 'turn-1', 'Reply', 'a-1')
+      ])
+
+      expect(store.getPendingSend('cm-first')).toBeUndefined()
+      expect(store.getPendingSend('cm-second')).toBeDefined()
+      expect(
+        store.entries.filter((entry) => entry.role === 'user')
+      ).toHaveLength(2)
+    })
+
+    it('leaves definitive failures and off-screen sends without knownTurnIdsAtSend untouched on hydrate', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th-def')
+      store.hydrate([])
+
+      store.startPendingSend({
+        clientMessageId: 'cm-403',
+        text: 'Rejected prompt',
+        attachments: [],
+        tags: [],
+        workflowReferences: []
+      })
+      store.failPendingSend('cm-403', {
+        kind: 'request',
+        message: 'Forbidden',
+        retryable: false
+      })
+      store.startPendingSend({
+        clientMessageId: 'cm-offscreen',
+        origin: { kind: 'thread', threadId: 'th-other' },
+        text: 'Other thread prompt',
+        attachments: [],
+        tags: [],
+        workflowReferences: []
+      })
+      store.failPendingSend('cm-offscreen', {
+        kind: 'request',
+        message: 'uncertain',
+        retryable: false,
+        uncertain: true
+      })
+
+      store.hydrate([
+        historyRow(1, 'user', 'turn-1', 'Rejected prompt', 'u-1'),
+        historyRow(2, 'assistant', 'turn-1', 'Reply', 'a-1')
+      ])
+      expect(store.getPendingSend('cm-403')).toBeDefined()
+
+      store.setThreadId('th-other')
+      store.hydrate([
+        historyRow(1, 'user', 'turn-old', 'Other thread prompt', 'u-old')
+      ])
+      expect(store.getPendingSend('cm-offscreen')).toBeDefined()
+    })
+
+    it('reconciles an uncertain failed send whose current-workflow chip stayed inline in server text', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th-wf-chip')
+      store.hydrate([])
+
+      store.startPendingSend({
+        clientMessageId: 'cm-wf-chip',
+        text: ' make it blue',
+        attachments: [],
+        tags: [],
+        workflowReferences: [
+          { id: 'wf-current', name: 'Current', textOffset: 0 }
+        ]
+      })
+      store.failPendingSend('cm-wf-chip', {
+        kind: 'request',
+        message: 'uncertain',
+        retryable: false,
+        uncertain: true
+      })
+
+      store.hydrate([
+        historyRow(
+          1,
+          'user',
+          'turn-chip',
+          '[Current](workflow://wf-current) make it blue',
+          'u-chip'
+        )
+      ])
+      expect(store.getPendingSend('cm-wf-chip')).toBeUndefined()
+      expect(
+        store.entries.filter((entry) => entry.role === 'user')
+      ).toHaveLength(1)
+    })
+
+    it('tracks per-tab blank chat ids and discards only failed pending sends for an origin', () => {
+      const store = useAgentConversationStore()
+      store.adoptInitialBlankTab('tab-a')
+      expect(store.activeBlankChatId).toBe('blank:tab-a')
+      expect(store.currentOrigin()).toEqual({
+        kind: 'blank',
+        blankChatId: 'blank:tab-a'
+      })
+
+      store.startPendingSend({
+        clientMessageId: 'cm-sending',
+        text: 'still sending',
+        attachments: [],
+        tags: [],
+        workflowReferences: []
+      })
+      store.startPendingSend({
+        clientMessageId: 'cm-failed',
+        workspaceId: 'ws-a',
+        text: 'failed',
+        attachments: [],
+        tags: [],
+        workflowReferences: []
+      })
+      store.failPendingSend('cm-failed', {
+        kind: 'network',
+        message: 'offline'
+      })
+      store.startPendingSend({
+        clientMessageId: 'cm-failed-other-ws',
+        origin: { kind: 'blank', blankChatId: 'blank:tab-a' },
+        workspaceId: 'ws-b',
+        text: 'failed in workspace b',
+        attachments: [],
+        tags: [],
+        workflowReferences: []
+      })
+      store.failPendingSend('cm-failed-other-ws', {
+        kind: 'network',
+        message: 'offline'
+      })
+      store.startPendingSend({
+        clientMessageId: 'cm-failed-b',
+        origin: { kind: 'blank', blankChatId: 'blank:tab-b' },
+        workspaceId: 'ws-a',
+        text: 'failed on tab b',
+        attachments: [],
+        tags: [],
+        workflowReferences: []
+      })
+      store.failPendingSend('cm-failed-b', {
+        kind: 'network',
+        message: 'offline'
+      })
+
+      expect(
+        store.hasPendingSendForOrigin({
+          kind: 'blank',
+          blankChatId: 'blank:tab-a'
+        })
+      ).toBe(true)
+      expect(
+        store.discardFailedPendingSends(
+          {
+            kind: 'blank',
+            blankChatId: 'blank:tab-a'
+          },
+          'ws-a'
+        )
+      ).toEqual(['cm-failed'])
+      expect(store.getPendingSend('cm-failed')).toBeUndefined()
+      expect(store.getPendingSend('cm-sending')).toBeDefined()
+      expect(store.getPendingSend('cm-failed-other-ws')).toBeDefined()
+      expect(store.getPendingSend('cm-failed-b')).toBeDefined()
+
+      store.reset('blank:tab-b')
+      expect(store.activeBlankChatId).toBe('blank:tab-b')
+      expect(store.getPendingSend('cm-failed-b')).toBeDefined()
+      expect(store.entries.map((entry) => entry.role)).toEqual(['user'])
+    })
+
+    it('preserves user attachments, tags, and workflow references when stashing an active turn and keeps blob previews alive until released', () => {
+      const revoke = vi
+        .spyOn(URL, 'revokeObjectURL')
+        .mockImplementation(() => {})
+      const store = useAgentConversationStore()
+      const attachments = [
+        { name: 'cat.png', ref: 'cat.png', previewUrl: 'blob:stashed-cat' }
+      ]
+      const tags = ['KSampler']
+      const workflowReferences = [{ id: 'wf-ref', name: 'Ref', textOffset: 0 }]
+
+      store.setThreadId('th-stash')
+      store.recordUser(
+        T1,
+        'use this node',
+        attachments,
+        tags,
+        workflowReferences
+      )
+      store.startTurn(T1)
+      store.stashActiveTurn()
+      store.reset('blank:other')
+
+      expect(revoke).not.toHaveBeenCalledWith('blob:stashed-cat')
+
+      store.setThreadId('th-stash')
+      store.hydrate([])
+      expect(revoke).not.toHaveBeenCalledWith('blob:stashed-cat')
+
+      store.resumeBackgroundTurn()
+
+      const userEntry = store.entries.find((entry) => entry.role === 'user')
+      expect(userEntry).toMatchObject({
+        text: 'use this node',
+        attachments,
+        tags,
+        workflowReferences
+      })
+
+      store.stashActiveTurn()
+      store.reset('blank:after')
+      expect(revoke).not.toHaveBeenCalledWith('blob:stashed-cat')
+
+      store.dropBackgroundTurns()
+      expect(revoke).toHaveBeenCalledWith('blob:stashed-cat')
+      revoke.mockRestore()
+    })
+
+    it('revokes a stashed blob preview when a settled background turn is retired by a persisted transcript copy', () => {
+      const revoke = vi
+        .spyOn(URL, 'revokeObjectURL')
+        .mockImplementation(() => {})
+      const store = useAgentConversationStore()
+      store.setThreadId('th-retire')
+      store.recordUser(
+        T1,
+        'with image',
+        [{ name: 'cat.png', ref: 'cat.png', previewUrl: 'blob:persisted-cat' }],
+        [],
+        []
+      )
+      store.startTurn(T1)
+      store.stashActiveTurn()
+      store.ingest({
+        type: 'agent_message_done',
+        data: { thread_id: 'th-retire', message_id: T1 }
+      })
+      store.reset('blank:other')
+      expect(revoke).not.toHaveBeenCalledWith('blob:persisted-cat')
+
+      store.setThreadId('th-retire')
+      store.hydrate([
+        {
+          id: 'u-1',
+          thread_id: 'th-retire',
+          turn_id: T1,
+          seq: 1,
+          role: 'user',
+          status: 'complete',
+          content: {
+            text: 'with image',
+            attachments: [{ filename: 'cat.png', type: 'input' }]
+          }
+        },
+        {
+          id: T1,
+          thread_id: 'th-retire',
+          turn_id: T1,
+          seq: 2,
+          role: 'assistant',
+          status: 'complete',
+          content: { text: 'done' }
+        }
+      ])
+      store.resumeBackgroundTurn()
+
+      expect(revoke).toHaveBeenCalledWith('blob:persisted-cat')
+      revoke.mockRestore()
+    })
   })
 })

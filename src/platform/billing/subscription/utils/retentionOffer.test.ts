@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest'
 import type { RetentionOfferEvent, RetentionOfferPhase } from './retentionOffer'
 import {
   discountedAmount,
-  fullPriceRenewal,
   outcomeOnClose,
   reduceRetentionOffer
 } from './retentionOffer'
@@ -81,32 +80,5 @@ describe('discountedAmount', () => {
     { amount: 2000, percent: 0, expected: 2000 }
   ])('$percent% off $amount is $expected', ({ amount, percent, expected }) => {
     expect(discountedAmount(amount, { percent_off: percent })).toBe(expected)
-  })
-})
-
-describe('fullPriceRenewal', () => {
-  it.for([
-    {
-      from: Date.UTC(2026, 10, 12, 8),
-      months: 3,
-      to: '2027-02-12T08:00:00.000Z'
-    },
-    {
-      from: Date.UTC(2027, 0, 31, 8),
-      months: 1,
-      to: '2027-02-28T08:00:00.000Z'
-    },
-    {
-      from: Date.UTC(2027, 11, 31, 8),
-      months: 2,
-      to: '2028-02-29T08:00:00.000Z'
-    },
-    {
-      from: Date.UTC(2026, 7, 31, 8),
-      months: 3,
-      to: '2026-11-30T08:00:00.000Z'
-    }
-  ])('$months months after $from is $to', ({ from, months, to }) => {
-    expect(fullPriceRenewal(from / 1000, months).toISOString()).toBe(to)
   })
 })

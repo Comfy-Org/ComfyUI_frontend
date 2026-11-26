@@ -4,13 +4,10 @@
   "description": "Camera stream setup, frame capture, preview, and capture-on-queue upload for the webcam capture node.",
   "modules": [
     {
-      "path": "src/extensions/core/webcamCapture.ts",
-      "role": "integration"
+      "path": "src/extensions/core/webcamCapture.ts"
     }
   ],
   "publicEntryPoints": ["src/extensions/core/webcamCapture.ts"],
-  "allowedDependencies": [],
-  "allowedConsumers": ["extension-runtime"],
   "characterizationScenarios": [
     {
       "name": "Stream readiness, permissions, capture, and queued upload preserve webcam node behavior",

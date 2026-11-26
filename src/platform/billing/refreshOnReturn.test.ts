@@ -38,7 +38,7 @@ describe('registerRefreshOnReturn', () => {
   function held() {
     const settles: Array<() => void> = []
     const refresh = vi.fn(
-      () =>
+      (_returned: Event) =>
         new Promise<void>((resolve) => {
           settles.push(resolve)
         })
@@ -90,6 +90,34 @@ describe('registerRefreshOnReturn', () => {
     await settle(0)
 
     expect(refresh).toHaveBeenCalledTimes(2)
+  })
+
+  it('hands each refresh the return it answers, the trailing one the return that queued it', async () => {
+    const { refresh, settle } = held()
+    onTestFinished(registerRefreshOnReturn(refresh))
+    const first = new Event('focus')
+    const second = new Event('focus')
+
+    window.dispatchEvent(first)
+    leave()
+    window.dispatchEvent(second)
+    await settle(0)
+
+    expect(refresh.mock.calls[0][0]).toBe(first)
+    expect(refresh.mock.calls[1][0]).toBe(second)
+  })
+
+  it('drops a queued trailing refresh once the returned callback runs', async () => {
+    const { refresh, settle } = held()
+    const stop = registerRefreshOnReturn(refresh)
+
+    come()
+    leave()
+    come()
+    stop()
+    await settle(0)
+
+    expect(refresh).toHaveBeenCalledTimes(1)
   })
 
   it('stops listening once the returned callback runs', () => {

@@ -6,7 +6,9 @@ import { useRoute, useRouter } from 'vue-router'
 import type { LocationQueryRaw } from 'vue-router'
 
 import type { TeamCreditStops } from '@comfyorg/billing-core'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
+import { useToast } from '@/components/ui/toast/toastStore'
 
 import { usePricingTableUrlLoader } from './usePricingTableUrlLoader'
 
@@ -23,6 +25,10 @@ vi.mock(
 
 vi.mock(import('vue-router'))
 
+vi.mock(import('@comfyorg/telemetry'))
+
+vi.mock(import('@/i18n'), () => ({ t: (key: string) => key }))
+
 import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
 import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
 
@@ -30,14 +36,12 @@ vi.mock(
   import('@/platform/billing/subscription/composables/useSubscriptionDialog')
 )
 
-const mockPermissions = vi.hoisted(() => ({
-  value: { canManageSubscription: true }
-}))
+const mockPermissions = ref({ canManageSubscription: true })
 const mockTeamCreditStops = ref<TeamCreditStops | null>(null)
 
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
-const mockCanOpenPricingSurface = vi.hoisted(() => ({ value: true }))
+const mockCanOpenPricingSurface = ref(true)
 
 vi.mock(import('@/platform/billing/composables/useBillingUI'))
 
@@ -90,6 +94,7 @@ describe('usePricingTableUrlLoader', () => {
 
     mockPermissions.value = { canManageSubscription: true }
     mockCanOpenPricingSurface.value = true
+    vi.mocked(useTelemetry()!.trackBillingEvent).mockClear()
 
     mockTeamCreditStops.value = TEAM_CREDIT_STOPS
     preservedQueryMocks.mergePreservedQueryIntoQuery.mockReturnValue(null)
@@ -191,6 +196,7 @@ describe('usePricingTableUrlLoader', () => {
 
     expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledWith({
       reason: 'deep_link',
+      sameTab: true,
       planMode: 'personal',
       initialCheckout: {
         planMode: 'personal',
@@ -247,6 +253,7 @@ describe('usePricingTableUrlLoader', () => {
     )
     expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledWith({
       reason: 'deep_link',
+      sameTab: true,
       planMode: 'team',
       initialCheckout: {
         planMode: 'team',
@@ -368,6 +375,7 @@ describe('usePricingTableUrlLoader', () => {
 
       expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledWith({
         reason: 'deep_link',
+        sameTab: true,
         planMode: 'team',
         initialCheckout: {
           planMode: 'team',
@@ -415,6 +423,106 @@ describe('usePricingTableUrlLoader', () => {
     )
   })
 
+  describe('refusal telemetry', () => {
+    function refusal(
+      reason: 'pricing_surface_unavailable' | 'cannot_manage_subscription',
+      phase: 'before_catalog_fetch' | 'after_catalog_fetch'
+    ) {
+      return {
+        operation: 'entry',
+        stage: 'pricing_link_refused',
+        outcome: 'pending',
+        reason,
+        phase
+      }
+    }
+
+    async function load() {
+      const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
+      await loadPricingTableFromUrl()
+      return vi.mocked(useTelemetry()!.trackBillingEvent)
+    }
+
+    it('reports a link refused for manage permission before the fetch', async () => {
+      setRouteQuery({ pricing: '1' })
+      mockPermissions.value = { canManageSubscription: false }
+
+      const track = await load()
+
+      expect(track).toHaveBeenCalledExactlyOnceWith(
+        refusal('cannot_manage_subscription', 'before_catalog_fetch')
+      )
+    })
+
+    it('reports a link refused for pricing access before the fetch', async () => {
+      setRouteQuery({ pricing: '1' })
+      mockCanOpenPricingSurface.value = false
+
+      const track = await load()
+
+      expect(track).toHaveBeenCalledExactlyOnceWith(
+        refusal('pricing_surface_unavailable', 'before_catalog_fetch')
+      )
+    })
+
+    it('reports a link refused for pricing access after the fetch', async () => {
+      setRouteQuery({ pricing: 'team', stop: 'team_700', cycle: 'yearly' })
+      mockTeamCreditStops.value = null
+      vi.mocked(useBillingContext().fetchPlans).mockImplementationOnce(
+        async () => {
+          mockCanOpenPricingSurface.value = false
+        }
+      )
+
+      const track = await load()
+
+      expect(track).toHaveBeenCalledExactlyOnceWith(
+        refusal('pricing_surface_unavailable', 'after_catalog_fetch')
+      )
+    })
+
+    it('reports a link refused for manage permission after the fetch', async () => {
+      setRouteQuery({ pricing: 'team', stop: 'team_700', cycle: 'yearly' })
+      mockTeamCreditStops.value = null
+      vi.mocked(useBillingContext().fetchPlans).mockImplementationOnce(
+        async () => {
+          mockPermissions.value = { canManageSubscription: false }
+        }
+      )
+
+      const track = await load()
+
+      expect(track).toHaveBeenCalledExactlyOnceWith(
+        refusal('cannot_manage_subscription', 'after_catalog_fetch')
+      )
+    })
+
+    it('reports nothing when the pricing table opens', async () => {
+      setRouteQuery({ pricing: '1' })
+
+      const track = await load()
+
+      expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalled()
+      expect(track).not.toHaveBeenCalled()
+    })
+  })
+
+  it('does not open when the workspace becomes sales-managed during the catalog fetch', async () => {
+    setRouteQuery({ pricing: 'team', stop: 'team_700', cycle: 'yearly' })
+    mockTeamCreditStops.value = null
+    vi.mocked(useBillingContext().fetchPlans).mockImplementationOnce(
+      async () => {
+        mockCanOpenPricingSurface.value = false
+      }
+    )
+
+    const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
+    await loadPricingTableFromUrl()
+
+    expect(useBillingContext().fetchPlans).toHaveBeenCalledOnce()
+    expect(useSubscriptionDialog().showPricingTable).not.toHaveBeenCalled()
+  })
+
   it('falls back to the Team table when the catalog fetch fails', async () => {
     setRouteQuery({
       pricing: 'team',
@@ -431,6 +539,7 @@ describe('usePricingTableUrlLoader', () => {
 
     expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledWith({
       reason: 'deep_link',
+      sameTab: true,
       planMode: 'team'
     })
     expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
@@ -449,6 +558,7 @@ describe('usePricingTableUrlLoader', () => {
 
     expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledWith({
       reason: 'deep_link',
+      sameTab: true,
       planMode: 'team'
     })
   })
@@ -465,6 +575,7 @@ describe('usePricingTableUrlLoader', () => {
 
     expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledWith({
       reason: 'deep_link',
+      sameTab: true,
       planMode: 'team'
     })
     expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
@@ -497,5 +608,28 @@ describe('usePricingTableUrlLoader', () => {
 
     expect(useSubscriptionDialog().showPricingTable).not.toHaveBeenCalled()
     expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
+  })
+
+  it('fails closed when the link named a workspace the viewer could not open', async () => {
+    setRouteQuery({ pricing: 'team', stop: 'team_700', cycle: 'monthly' })
+
+    const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
+    await loadPricingTableFromUrl({ workspaceLinkRefused: true })
+
+    expect(useSubscriptionDialog().showPricingTable).not.toHaveBeenCalled()
+    expect(useToast().info).toHaveBeenCalledExactlyOnceWith(
+      'workspace.deepLinkPricingRefused'
+    )
+    expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
+  })
+
+  it('opens the pricing table when the workspace link was honored', async () => {
+    setRouteQuery({ pricing: '1' })
+
+    const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
+    await loadPricingTableFromUrl({ workspaceLinkRefused: false })
+
+    expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledOnce()
+    expect(useToast().info).not.toHaveBeenCalled()
   })
 })

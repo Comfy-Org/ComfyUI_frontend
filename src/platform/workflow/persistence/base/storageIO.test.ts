@@ -2,14 +2,17 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { DraftIndexV2, DraftPayloadV2 } from './draftTypes'
 import {
+  clearActivePath,
   clearAllWorkspaceStorage,
   clearAllWorkflowStorage,
+  clearUnscopedDraftStorage,
   clearWorkflowRestoreState,
   deleteOrphanPayloads,
   deletePayload,
   deletePayloads,
   getPayloadKeys,
   markStorageUnavailable,
+  measureLocalStorage,
   readActivePath,
   readIndex,
   readOpenPaths,
@@ -275,6 +278,201 @@ describe('storageIO', () => {
       )
       expect(JSON.parse(raw!).workspaceId).toBe('ws-B')
     })
+
+    describe('when the client id changes on every page load', () => {
+      const workspaceId = 'ws-reload'
+
+      it('restores the open tabs written last, not an older list', () => {
+        writeOpenPaths('load-1', {
+          workspaceId,
+          paths: ['workflows/a.json', 'workflows/b.json', 'workflows/c.json'],
+          activeIndex: 0
+        })
+
+        const latest = {
+          workspaceId,
+          paths: ['workflows/c.json', 'workflows/a.json'],
+          activeIndex: 0
+        }
+        writeOpenPaths('load-2', latest)
+
+        expect(readOpenPaths('load-3', workspaceId)).toEqual(latest)
+      })
+
+      it('restores the active tab written last, not an older one', () => {
+        writeActivePath('load-1', { workspaceId, path: 'workflows/a.json' })
+        writeActivePath('load-2', { workspaceId, path: 'workflows/c.json' })
+
+        expect(readActivePath('load-3', workspaceId)).toEqual({
+          workspaceId,
+          path: 'workflows/c.json'
+        })
+      })
+
+      it('prefers the previous page load’s tabs over older leftovers', () => {
+        const older = {
+          workspaceId,
+          paths: ['workflows/a.json', 'workflows/b.json'],
+          activeIndex: 0
+        }
+        const latest = {
+          workspaceId,
+          paths: ['workflows/b.json'],
+          activeIndex: 0
+        }
+        sessionStorage.setItem(
+          'Comfy.Workflow.OpenPaths:load-1',
+          JSON.stringify(older)
+        )
+        sessionStorage.setItem(
+          'Comfy.Workflow.OpenPaths:load-2',
+          JSON.stringify(latest)
+        )
+
+        expect(readOpenPaths('load-3', workspaceId, 'load-2')).toEqual(latest)
+      })
+
+      it('prefers the previous page load’s active tab over older leftovers', () => {
+        sessionStorage.setItem(
+          'Comfy.Workflow.ActivePath:load-1',
+          JSON.stringify({ workspaceId, path: 'workflows/a.json' })
+        )
+        sessionStorage.setItem(
+          'Comfy.Workflow.ActivePath:load-2',
+          JSON.stringify({ workspaceId, path: 'workflows/b.json' })
+        )
+
+        expect(readActivePath('load-3', workspaceId, 'load-2')).toEqual({
+          workspaceId,
+          path: 'workflows/b.json'
+        })
+      })
+
+      it('drops every older tab list for the workspace when writing', () => {
+        sessionStorage.setItem(
+          'Comfy.Workflow.OpenPaths:load-1',
+          JSON.stringify({
+            workspaceId,
+            paths: ['workflows/load-1.json'],
+            activeIndex: 0
+          })
+        )
+        sessionStorage.setItem(
+          'Comfy.Workflow.OpenPaths:load-2',
+          JSON.stringify({
+            workspaceId,
+            paths: ['workflows/load-2.json'],
+            activeIndex: 0
+          })
+        )
+        sessionStorage.setItem(
+          'Comfy.Workflow.OpenPaths:load-3',
+          JSON.stringify({
+            workspaceId,
+            paths: ['workflows/load-3.json'],
+            activeIndex: 0
+          })
+        )
+        const latest = {
+          workspaceId,
+          paths: ['workflows/latest.json'],
+          activeIndex: 0
+        }
+        writeOpenPaths('load-4', latest)
+
+        expect(
+          sessionStorage.getItem('Comfy.Workflow.OpenPaths:load-1')
+        ).toBeNull()
+        expect(
+          sessionStorage.getItem('Comfy.Workflow.OpenPaths:load-2')
+        ).toBeNull()
+        expect(
+          sessionStorage.getItem('Comfy.Workflow.OpenPaths:load-3')
+        ).toBeNull()
+        expect(readOpenPaths('load-5', workspaceId)).toEqual(latest)
+      })
+
+      it('restores the latest saved tabs when the session copy cannot be written', () => {
+        writeOpenPaths('load-1', {
+          workspaceId,
+          paths: ['workflows/old.json'],
+          activeIndex: 0
+        })
+        const latest = {
+          workspaceId,
+          paths: ['workflows/latest.json'],
+          activeIndex: 0
+        }
+        const setItem = vi
+          .spyOn(sessionStorage, 'setItem')
+          .mockImplementation(() => {
+            throw new DOMException('full', 'QuotaExceededError')
+          })
+        writeOpenPaths('load-2', latest)
+        setItem.mockRestore()
+
+        expect(readOpenPaths('load-3', workspaceId)).toEqual(latest)
+      })
+
+      it('forgets the active tab saved under the previous page load’s id', () => {
+        writeActivePath('load-1', { workspaceId, path: 'workflows/a.json' })
+        clearActivePath('load-2', workspaceId)
+
+        expect(readActivePath('load-3', workspaceId)).toBeNull()
+      })
+
+      it('keeps another workspace’s tabs when writing this one', () => {
+        const other = {
+          workspaceId: 'ws-other',
+          paths: ['workflows/other.json'],
+          activeIndex: 0
+        }
+        writeOpenPaths('load-1', other)
+        writeOpenPaths('load-2', {
+          workspaceId,
+          paths: ['workflows/a.json'],
+          activeIndex: 0
+        })
+
+        expect(readOpenPaths('load-3', 'ws-other')).toEqual(other)
+      })
+    })
+  })
+
+  describe('clearUnscopedDraftStorage', () => {
+    it('removes draft keys without an account scope and V1 drafts', () => {
+      localStorage.setItem('Comfy.Workflow.DraftIndex.v2:personal', '{}')
+      localStorage.setItem('Comfy.Workflow.Draft.v2:personal:abc', '{}')
+      localStorage.setItem('Comfy.Workflow.Draft.v2:ws-2:def', '{}')
+      localStorage.setItem('Comfy.Workflow.Drafts:personal', '{}')
+      localStorage.setItem('Comfy.Workflow.DraftOrder:personal', '[]')
+      localStorage.setItem('Comfy.Workflow.Drafts', '{}')
+      localStorage.setItem('Comfy.Workflow.DraftOrder', '[]')
+      localStorage.setItem('Comfy.Workflow.DraftIndex.v2:user-a:personal', '{}')
+      localStorage.setItem('Comfy.Workflow.Draft.v2:user-a:personal:abc', '{}')
+      localStorage.setItem('Comfy.Workflow.Draft.v2:user-b:ws-2:def', '{}')
+      localStorage.setItem(
+        'Comfy.Workflow.Draft.v2:unauthenticated:personal:abc',
+        '{}'
+      )
+      localStorage.setItem('unrelated', 'keep')
+
+      clearUnscopedDraftStorage()
+
+      const remaining = [...Array(localStorage.length)].map((_, index) =>
+        localStorage.key(index)
+      )
+      expect(remaining).toHaveLength(5)
+      expect(remaining).toEqual(
+        expect.arrayContaining([
+          'Comfy.Workflow.Draft.v2:unauthenticated:personal:abc',
+          'Comfy.Workflow.Draft.v2:user-a:personal:abc',
+          'Comfy.Workflow.Draft.v2:user-b:ws-2:def',
+          'Comfy.Workflow.DraftIndex.v2:user-a:personal',
+          'unrelated'
+        ])
+      )
+    })
   })
 
   describe('clearAllWorkflowStorage', () => {
@@ -390,16 +588,42 @@ describe('storageIO', () => {
   })
 
   describe('clearAllWorkspaceStorage', () => {
+    it('forgets the build the account was following on logout', () => {
+      sessionStorage.setItem('Comfy.Deployment.FollowedBuild', '{}')
+      sessionStorage.setItem('unrelated', 'keep')
+
+      clearAllWorkspaceStorage()
+
+      expect(
+        sessionStorage.getItem('Comfy.Deployment.FollowedBuild')
+      ).toBeNull()
+      expect(sessionStorage.getItem('unrelated')).toBe('keep')
+    })
+
     it('clears scoped and legacy Agent persistence on account logout', () => {
       localStorage.setItem('Comfy.Agent.ThreadId:personal', 'thread-a')
       localStorage.setItem('Comfy.Agent.WorkflowTabBindings:ws-1', '{}')
       localStorage.setItem('Comfy.Agent.ChatTitles:ws-1', '{}')
       localStorage.setItem('Comfy.Agent.DeletedThreads:ws-1', '[]')
+      localStorage.setItem('Comfy.Agent.PendingSendDraft:ws-1', '[]')
       localStorage.setItem('Comfy.Agent.ThreadId', 'legacy-thread')
       localStorage.setItem('Comfy.Agent.WorkflowTabBindings', '{}')
       localStorage.setItem('Comfy.Agent.WorkflowTabBindings.v2', '{}')
       localStorage.setItem('Comfy.Agent.ChatTitles', '{}')
       localStorage.setItem('Comfy.Agent.DeletedThreads', '[]')
+      localStorage.setItem('unrelated', 'keep')
+
+      clearAllWorkspaceStorage()
+
+      expect(
+        [...Array(localStorage.length)].map((_, index) =>
+          localStorage.key(index)
+        )
+      ).toEqual(['unrelated'])
+    })
+
+    it('clears saved skill drafts on account logout', () => {
+      localStorage.setItem('Comfy.Agent.SkillDrafts:["scope"]', '{}')
       localStorage.setItem('unrelated', 'keep')
 
       clearAllWorkspaceStorage()
@@ -571,6 +795,34 @@ describe('storageIO', () => {
         '{}'
       )
       expect(localStorage.getItem('Comfy.Workflow.Drafts:ws-1')).toBe('{}')
+    })
+  })
+
+  describe('measureLocalStorage', () => {
+    it('reports an unavailable measurement when enumeration fails', () => {
+      localStorage.setItem('Comfy.Workflow.Draft.v2:ws-1:abc', '{"data":""}')
+      vi.spyOn(localStorage, 'key').mockImplementation(() => {
+        throw new DOMException('blocked', 'SecurityError')
+      })
+
+      expect(measureLocalStorage()).toBeNull()
+    })
+
+    it('does not report a partial measurement when a key disappears mid-scan', () => {
+      localStorage.setItem('Comfy.Workflow.Draft.v2:ws-1:abc', '{"data":""}')
+      vi.spyOn(localStorage, 'key').mockReturnValue(null)
+
+      expect(measureLocalStorage()).toBeNull()
+    })
+
+    it('measures a genuinely empty store as zero', () => {
+      expect(measureLocalStorage()).toEqual({
+        storageTotalBytes: 0,
+        storageDraftBytes: 0,
+        storageKeyCount: 0,
+        largestOtherStorageKey: null,
+        largestOtherStorageKeyBytes: 0
+      })
     })
   })
 })

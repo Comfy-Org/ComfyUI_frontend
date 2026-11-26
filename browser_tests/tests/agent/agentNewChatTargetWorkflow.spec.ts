@@ -1,13 +1,57 @@
 import { expect, mergeTests } from '@playwright/test'
+import type { AgentPostMessageRequest } from '@comfyorg/ingest-types'
+import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import type { AgentTurnAccepted } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import { agentTest } from '@e2e/fixtures/agentPanelFixture'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { workflowSelectionTest } from '@e2e/fixtures/agentWorkflowSelectionFixture'
+import { agentUserTranscript } from '@e2e/fixtures/data/agent/agentThreadList'
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
-const test = mergeTests(agentTest, workflowSelectionTest)
+type PostedAgentMessage = {
+  url: string
+  body: AgentPostMessageRequest
+}
+
+const test = mergeTests(agentTest, workflowSelectionTest).extend<{
+  postedMessages: PostedAgentMessage[]
+}>({
+  postedMessages: async (
+    { page, workflowSelection: _workflowSelection },
+    use
+  ) => {
+    const posted: PostedAgentMessage[] = []
+    await page.route('**/api/agent/threads/*/messages', (route) => {
+      if (route.request().method() === 'GET') {
+        return route.fulfill(
+          jsonRoute(
+            agentUserTranscript(
+              'th-a',
+              posted[0]?.body.workflow_id ?? '',
+              posted[0]?.body.content ?? ''
+            )
+          )
+        )
+      }
+      if (route.request().method() !== 'POST') return route.fallback()
+      const body = zAgentPostMessageRequest.parse(
+        route.request().postDataJSON()
+      )
+      posted.push({ url: route.request().url(), body })
+      const accepted: AgentTurnAccepted = {
+        thread_id: 'th-a',
+        message_id: 'msg-a',
+        workflow_id: body.workflow_id ?? undefined
+      }
+      return route.fulfill({ ...jsonRoute(accepted), status: 202 })
+    })
+    await use(posted)
+  }
+})
 
 // PM-1321 (parent) / PM-1322 (tab switch) / PM-1415 (tab creation): New Chat
 // used to keep whatever tab the previous chat was pinned to instead of
@@ -22,52 +66,54 @@ test.describe(
   'New chat targets the workflow tab on screen',
   { tag: ['@cloud', '@agent'] },
   () => {
-    test('PM-1322: retargets to a tab the user switched to', async ({
+    test('PM-1322 / PM-2251: retargets to a tab the user switched to and starts with an empty composer', async ({
       page,
-      workflowSelection
+      workflowSelection,
+      postedMessages: posted
     }, testInfo) => {
       const agentPanel = new AgentPanel(page)
       await agentPanel.open()
       const panel = agentPanel.root
-      const targetPicker = panel.getByRole('button', {
-        name: enMessages.agent.switchWorkflow
-      })
+      const topbar = new Topbar(page)
 
-      // Save tab A so the existing conversation has a Cloud identity.
-      await targetPicker.click()
-      await page
-        .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
-        .click()
+      const saving = topbar.saveWorkflowAs('Unsaved Workflow')
       await expect.poll(() => workflowSelection.savedPaths.length).toBe(1)
       workflowSelection.finishSave(true)
-      await expect(targetPicker).toHaveText('Unsaved Workflow')
+      await saving
+
       const initialComposer = panel.getByRole('textbox', {
         includeHidden: true
       })
       await initialComposer.fill('Start in this workflow')
+      const postAccepted = page.waitForResponse(
+        (response) =>
+          response.request().method() === 'POST' &&
+          /\/api\/agent\/threads\/[^/]+\/messages$/.test(response.url()) &&
+          response.status() === 202
+      )
       await initialComposer.press('Enter')
-      await expect.poll(() => workflowSelection.postedMessages.length).toBe(1)
-      await expect(initialComposer).toHaveText('Start in this workflow')
-      await initialComposer.fill('')
+      await postAccepted
+      await expect(initialComposer).toHaveText('')
+      await expect(panel.getByTestId('user-message-bubble')).toBeVisible()
+      await expect(panel.getByTestId('user-message-bubble')).toHaveText([
+        'Start in this workflow'
+      ])
+      await expect(agentPanel.sendingSpinner).toHaveCount(0)
+      await expect(panel.getByTestId('pending-send-error')).toHaveCount(0)
+      await expect(agentPanel.stopButton).toBeVisible()
+      await initialComposer.fill('Only edit workflow A')
 
-      // Open a second workflow tab (B), then switch back to A so B is just
-      // another open tab rather than the newest/active one.
       await page
         .getByRole('button', {
           name: enMessages.sideToolbar.newBlankWorkflow,
           exact: true
         })
         .click()
-      const topbar = new Topbar(page)
       await expect(topbar.tabs).toHaveCount(2)
       await topbar.getTab(0).click()
       await expect(topbar.getActiveTab()).toHaveText('Unsaved Workflow')
+      await expect(initialComposer).toHaveText('Only edit workflow A')
 
-      // A pinned target surviving a plain tab switch is intentional (asserted
-      // elsewhere in agentWorkflowSelection.spec.ts); it is not the bug here.
-      await expect(targetPicker).toHaveText('Unsaved Workflow')
-
-      // Now bring tab B on screen and start a new chat from there.
       await topbar.getTab(1).click()
       await expect(topbar.getActiveTab()).toHaveText('Unsaved Workflow (2)')
       const panelBeforeNewChat = await panel.screenshot({
@@ -79,7 +125,17 @@ test.describe(
       const composer = panel.getByRole('textbox', { includeHidden: true })
       await expect(composer).toHaveText('')
       await expect(topbar.getActiveTab()).toHaveText('Unsaved Workflow (2)')
-      await expect(targetPicker).toHaveText('Unsaved Workflow (2)')
+      await composer.fill('Edit workflow B')
+      await composer.press('Enter')
+      await expect.poll(() => posted.length).toBe(2)
+      expect(new URL(posted[1].url).pathname).toBe(
+        '/api/agent/threads/new/messages'
+      )
+      expect(posted[1].body).toMatchObject({
+        current_tab_unbound: true
+      })
+      expect(posted[1].body.workflow_id).toBeUndefined()
+      expect(posted[1].body.current_tab).toBeUndefined()
 
       await testInfo.attach('before-new-chat', {
         body: panelBeforeNewChat,
@@ -95,49 +151,64 @@ test.describe(
 
     test('PM-1415: retargets to a tab created for this session', async ({
       page,
-      workflowSelection
+      workflowSelection,
+      postedMessages: posted
     }) => {
       const agentPanel = new AgentPanel(page)
       await agentPanel.open()
       const panel = agentPanel.root
-      const targetPicker = panel.getByRole('button', {
-        name: enMessages.agent.switchWorkflow
-      })
+      const topbar = new Topbar(page)
 
-      // Save the workflow before establishing this conversation.
-      await targetPicker.click()
-      await page
-        .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
-        .click()
+      const saving = topbar.saveWorkflowAs('Unsaved Workflow')
       await expect.poll(() => workflowSelection.savedPaths.length).toBe(1)
       workflowSelection.finishSave(true)
-      await expect(targetPicker).toHaveText('Unsaved Workflow')
+      await saving
+
       const initialComposer = panel.getByRole('textbox', {
         includeHidden: true
       })
       await initialComposer.fill('Start in this workflow')
+      const postAccepted = page.waitForResponse(
+        (response) =>
+          response.request().method() === 'POST' &&
+          /\/api\/agent\/threads\/[^/]+\/messages$/.test(response.url()) &&
+          response.status() === 202
+      )
       await initialComposer.press('Enter')
-      await expect.poll(() => workflowSelection.postedMessages.length).toBe(1)
-      await expect(initialComposer).toHaveText('Start in this workflow')
-      await initialComposer.fill('')
+      await postAccepted
+      await expect(initialComposer).toHaveText('')
+      await expect(panel.getByTestId('user-message-bubble')).toBeVisible()
+      await expect(panel.getByTestId('user-message-bubble')).toHaveText([
+        'Start in this workflow'
+      ])
+      await expect(agentPanel.sendingSpinner).toHaveCount(0)
+      await expect(panel.getByTestId('pending-send-error')).toHaveCount(0)
+      await expect(agentPanel.stopButton).toBeVisible()
 
-      // Create a brand new, still-unsaved tab - it becomes the one on screen.
       await page
         .getByRole('button', {
           name: enMessages.sideToolbar.newBlankWorkflow,
           exact: true
         })
         .click()
-      await expect(new Topbar(page).getActiveTab()).toHaveText(
-        'Unsaved Workflow (2)'
-      )
+      await expect(topbar.getActiveTab()).toHaveText('Unsaved Workflow (2)')
 
       await panel
         .getByRole('button', { name: enMessages.agent.newChat })
         .click()
       const composer = panel.getByRole('textbox', { includeHidden: true })
       await expect(composer).toHaveText('')
-      await expect(targetPicker).toHaveText('Unsaved Workflow (2)')
+      await composer.fill('Ask on new tab')
+      await composer.press('Enter')
+      await expect.poll(() => posted.length).toBe(2)
+      expect(new URL(posted[1].url).pathname).toBe(
+        '/api/agent/threads/new/messages'
+      )
+      expect(posted[1].body).toMatchObject({
+        current_tab_unbound: true
+      })
+      expect(posted[1].body.workflow_id).toBeUndefined()
+      expect(posted[1].body.current_tab).toBeUndefined()
     })
   }
 )

@@ -40,6 +40,7 @@ true.
 | Record setup answers   | Guided prompts                                                                      | `record --workflow --tags --feature-flags --use-case --description --name`                                    |
 | Feature flags          | Feature-flag selector and custom flag prompt                                        | `record`, `plan`, or `transform --feature-flags <specs>`                                                      |
 | PR checkout            | Safe switch confirmation                                                            | `record --pr <number>`                                                                                        |
+| Overwrite a spec       | “Overwrite it?” confirmation                                                        | `record --force`; `transform --output <f> --force`                                                            |
 | Secret scrubbing       | Automatic during `record`, with a loud alert                                        | Automatic in `transform <file>`; findings print as 🔒 lines in the summary                                    |
 | Supervisor guidance    | Woven into `record` prompts and warnings                                            | `guide` prints the full operating manual for an agent helping a human                                         |
 | Agent replay           | `agent-replay` with no flags asks which recording to replay and whether to watch it | `agent-replay [--case <id>] [--spec <path>] [--url <dev server>] [--headed] [--video]`; `--help` runs nothing |
@@ -52,7 +53,7 @@ recording template branches on the selected distribution
 (`recordingTarget` in `src/recorder/template.ts`):
 
 - **local** — full `comfyPage` template: workflow pre-load, `test.use({
-initialFeatureFlags })`.
+  initialFeatureFlags })`.
 - **cloud / cloud-staging / cloud-prod / custom** — bare-page template:
   `page.goto(PLAYWRIGHT_TEST_URL)` and the recorder enabled immediately —
   no boot gate, so a sign-in screen can't stall the recorder (sign in

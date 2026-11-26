@@ -3,7 +3,7 @@ import { expect } from '@playwright/test'
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import type { DocResetFrame } from '@comfyorg/ingest-types'
 
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 
 import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
@@ -116,7 +116,6 @@ test.describe(
 
       const agentPanel = new AgentPanel(page)
       await agentPanel.open()
-      await agentPanel.selectWorkflow()
       await agentPanel.sendMessage('Check the workflow.')
 
       // A reset sent before the follower subscribed to WORKFLOW_ID is dropped

@@ -14,7 +14,7 @@
           v-for="option in thumbnailOptions"
           :key="option.value"
           :value="option.value"
-          class="flex h-auto w-full gap-2 rounded-sm bg-card p-2 font-inter text-foreground data-[state=on]:bg-muted"
+          class="flex h-auto w-full gap-2 bg-card p-2 font-inter text-foreground data-[state=on]:bg-muted"
         >
           <i :class="option.icon" />
           <span class="text-center text-sm font-bold">

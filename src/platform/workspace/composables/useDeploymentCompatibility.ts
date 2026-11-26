@@ -14,15 +14,15 @@ import type {
   LGraph
 } from '@/lib/litegraph/src/litegraph'
 import { ExecutableNodeDTO } from '@/lib/litegraph/src/litegraph'
-import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
-import { reportError } from '@/platform/telemetry/reportError'
+import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { DeploymentCompatibility } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 
 /** Whether a deployment, or Comfy Cloud, can run the open workflow. */
 export type DeploymentCompatibilityMark =
@@ -54,6 +54,12 @@ export function workflowNodeTypes(graph: LGraph): string[] {
   return [...types].sort()
 }
 
+const UNKNOWN_RECHECK_DELAYS_MS: readonly number[] = [5_000, 10_000, 20_000]
+
+function hasUnknownDeployment(compatibility: DeploymentCompatibility): boolean {
+  return compatibility.deployments.some((d) => d.unknown)
+}
+
 function missingMark(missing: string[]): DeploymentCompatibilityMark {
   return missing.length === 0
     ? { kind: 'runs' }
@@ -83,7 +89,9 @@ export const useDeploymentCompatibility = createSharedComposable(() => {
 
   function readNodeTypes() {
     const next =
-      canAsk.value && app.isGraphReady ? workflowNodeTypes(app.rootGraph) : []
+      canAsk.value && useApp().isGraphReady
+        ? workflowNodeTypes(useApp().rootGraph)
+        : []
     // graphChanged also fires on moves and resizes; keep the same array then
     // so the request key is not rebuilt.
     if (isEqual(next, nodeTypes.value)) return
@@ -140,26 +148,44 @@ export const useDeploymentCompatibility = createSharedComposable(() => {
 
   watch(
     requestKey,
-    async (key) => {
+    (key, _previousKey, onCleanup) => {
       const check = ++latestCheck
       answer.value = null
       const current = request.value
       if (key === null || current === null) return
-      try {
-        const compatibility = await workspaceApi.checkDeploymentCompatibility(
-          current.workspaceId,
-          current.nodeTypes
-        )
-        if (check === latestCheck) answer.value = { key, compatibility }
-      } catch (error) {
-        if (checkFailureReported) return
-        checkFailureReported = true
-        reportError(error, {
-          surface: 'workspace',
-          errorType: 'deployment_compatibility_check_failure',
-          level: 'warning'
-        })
+      let recheck: ReturnType<typeof setTimeout> | undefined
+      onCleanup(() => {
+        latestCheck++
+        clearTimeout(recheck)
+      })
+      const ask = async (attempt: number) => {
+        try {
+          const compatibility = await workspaceApi.checkDeploymentCompatibility(
+            current.workspaceId,
+            current.nodeTypes
+          )
+          if (check !== latestCheck) return
+          answer.value = { key, compatibility }
+          if (
+            hasUnknownDeployment(compatibility) &&
+            attempt < UNKNOWN_RECHECK_DELAYS_MS.length
+          ) {
+            recheck = setTimeout(
+              () => void ask(attempt + 1),
+              UNKNOWN_RECHECK_DELAYS_MS[attempt]
+            )
+          }
+        } catch (error) {
+          if (checkFailureReported) return
+          checkFailureReported = true
+          reportError(error, {
+            surface: 'workspace',
+            errorType: 'deployment_compatibility_check_failure',
+            level: 'warning'
+          })
+        }
       }
+      void ask(0)
     },
     { immediate: true }
   )

@@ -1,5 +1,14 @@
 const SAFE_EXTERNAL_URL_SCHEMES = new Set(['http:', 'https:'])
 
+/** `URL.parse` for browsers that lack it (Chrome < 126, Safari < 18). */
+export function parseUrl(url: string, base?: string): URL | null {
+  try {
+    return new URL(url, base)
+  } catch {
+    return null
+  }
+}
+
 /**
  * Checks that `url` is a syntactically valid URL using only an http(s)
  * scheme, for use wherever a URL is bound to a clickable `href` (e.g. an

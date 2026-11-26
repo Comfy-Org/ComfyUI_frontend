@@ -57,10 +57,11 @@
  *
  *   await bootstrapTracer.settle('bootstrap/object-info', () => this.getNodeDefs())
  */
-import { useTelemetry } from '@/platform/telemetry'
-import { getDatadogRum } from '@/platform/telemetry/rumContext'
-import { TelemetryEvents } from '@/platform/telemetry/types'
-import type { BootstrapCompleteMetadata } from '@/platform/telemetry/types'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { getDatadogRum } from '@comfyorg/telemetry/rumContext'
+import { TelemetryEvents } from '@comfyorg/telemetry/types'
+import type { BootstrapCompleteMetadata } from '@comfyorg/telemetry/types'
+import { safeLocalStorage } from '@/base/storage/safeStorage'
 
 import { perfMark, perfMeasureSinceOrigin, perfPoint } from './perfMark'
 import type { PerfSpan } from './perfMark'
@@ -71,6 +72,31 @@ import type { PerfSpan } from './perfMark'
  * were minutes.
  */
 const BOOTSTRAP_WATCHDOG_MS = 30_000
+
+const SAFE_ERROR_NAMES = new Set([
+  'AggregateError',
+  'DOMException',
+  'Error',
+  'EvalError',
+  'RangeError',
+  'ReferenceError',
+  'SyntaxError',
+  'TypeError',
+  'UnauthorizedError',
+  'URIError'
+])
+
+function safeErrorName(error: unknown): string {
+  try {
+    if (!(error instanceof Error)) return typeof error
+    const { name } = error
+    return typeof name === 'string' && SAFE_ERROR_NAMES.has(name)
+      ? name
+      : 'Error'
+  } catch {
+    return 'uninspectable'
+  }
+}
 
 function toRumTimingName(name: string): string {
   return name.replace(/\//g, '.')
@@ -86,7 +112,13 @@ const BOOTSTRAP_PHASES = {
     'router',
     'sentry-init'
   ],
-  'auth-gate': ['initialized', 'user-store', 'needs-login'],
+  'auth-gate': [
+    'initialized',
+    'identity',
+    'sign-in',
+    'user-store',
+    'needs-login'
+  ],
   bootstrap: [
     'settings',
     'workflows',
@@ -113,7 +145,9 @@ type BootstrapSubphase<Namespace extends BootstrapPhaseNamespace> =
   (typeof BOOTSTRAP_PHASES)[Namespace][number]
 
 export type BootstrapPhase = {
-  [Namespace in BootstrapPhaseNamespace]: `${Namespace}/${BootstrapSubphase<Namespace>}`
+  [
+    Namespace in BootstrapPhaseNamespace
+  ]: `${Namespace}/${BootstrapSubphase<Namespace>}`
 }[BootstrapPhaseNamespace]
 
 function untracedMs(rows: BootstrapPhaseTiming[], totalMs: number): number {
@@ -125,6 +159,47 @@ function untracedMs(rows: BootstrapPhaseTiming[], totalMs: number): number {
     coveredUntil = Math.max(coveredUntil, endMs)
   }
   return totalMs - tracedMs
+}
+
+class HiddenTimeMeter {
+  private _hiddenMs = 0
+  private _hiddenSince: number | undefined
+  private _listening = new AbortController()
+
+  constructor() {
+    if (typeof document === 'undefined') return
+    const buffered = performance.getEntriesByType('visibility-state')
+    if (buffered.length > 0) {
+      for (const entry of buffered)
+        this._record(entry.name === 'hidden', entry.startTime)
+    } else if (document.visibilityState === 'hidden') {
+      this._hiddenSince = 0
+    }
+    document.addEventListener(
+      'visibilitychange',
+      () =>
+        this._record(document.visibilityState === 'hidden', performance.now()),
+      { signal: this._listening.signal }
+    )
+  }
+
+  private _record(hidden: boolean, atMs: number): void {
+    if (hidden) {
+      this._hiddenSince ??= atMs
+    } else if (this._hiddenSince !== undefined) {
+      this._hiddenMs += atMs - this._hiddenSince
+      this._hiddenSince = undefined
+    }
+  }
+
+  stop(): void {
+    this._listening.abort()
+  }
+
+  hiddenMsUntil(nowMs: number): number {
+    const open = this._hiddenSince === undefined ? 0 : nowMs - this._hiddenSince
+    return Math.round(this._hiddenMs + Math.max(0, open))
+  }
 }
 
 export interface BootstrapPhaseTiming {
@@ -140,6 +215,8 @@ export class BootstrapTracer {
   private _outcome: 'completed' | 'failed' | undefined
   private _timeoutReported = false
   private _watchdog: ReturnType<typeof setTimeout> | undefined
+  private _hidden = new HiddenTimeMeter()
+  private _failurePhases = new Map<unknown, BootstrapPhase>()
 
   /**
    * Start timing a phase. Returns a handle; call `.stop()` when complete.
@@ -169,20 +246,24 @@ export class BootstrapTracer {
     return durationMs
   }
 
-  /**
-   * Time `work` and record the phase whether it resolves or rejects, then
-   * re-settle exactly as `work` did.
-   *
-   * A phase stopped only on the success path goes unrecorded precisely when
-   * startup went wrong, so the surviving sessions are the fast ones and every
-   * percentile reads better than reality.
-   */
+  /** Time `work`, record its phase, and preserve its settlement. */
   async settle<T>(phase: BootstrapPhase, work: () => Promise<T>): Promise<T> {
     const span = this.startPhase(phase)
     try {
       return await work()
+    } catch (error) {
+      if (!this._completed && !this._failurePhases.has(error)) {
+        this._failurePhases.set(error, phase)
+      }
+      throw error
     } finally {
       span.stop()
+    }
+  }
+
+  noteFailure(phase: BootstrapPhase, error: unknown): void {
+    if (!this._completed && !this._failurePhases.has(error)) {
+      this._failurePhases.set(error, phase)
     }
   }
 
@@ -224,22 +305,50 @@ export class BootstrapTracer {
     return [...this._timings].sort((a, b) => a.startMs - b.startMs)
   }
 
-  get outcome(): 'completed' | 'failed' | 'pending' {
-    return this._outcome ?? 'pending'
+  /**
+   * `timed_out` is not terminal: startup can still finish after the watchdog
+   * fires, and the outcome then becomes `completed` or `failed`.
+   */
+  get outcome(): 'completed' | 'failed' | 'timed_out' | 'pending' {
+    return this._outcome ?? (this._timeoutReported ? 'timed_out' : 'pending')
   }
 
-  /**
-   * Close out startup: stop any phase still open, emit one aggregate event
-   * carrying total wall-clock and the per-phase breakdown, and log the trace
-   * locally. Idempotent — only the first call reports.
-   */
-  complete(outcome: 'completed' | 'failed' = 'completed'): void {
+  complete(
+    outcome: 'completed' | 'failed' = 'completed',
+    terminal?: { error: unknown }
+  ): void {
     if (this._completed) return
     this._completed = true
     this._outcome = outcome
     clearTimeout(this._watchdog)
+    const failure =
+      outcome === 'failed' ? this._failureCause(terminal) : undefined
+    this._failurePhases = new Map()
     for (const phase of Array.from(this._spans.keys())) this._stopPhase(phase)
-    this._report(outcome)
+    this._report(outcome, undefined, failure)
+    this._hidden.stop()
+  }
+
+  private _failureCause(
+    terminal: { error: unknown } | undefined
+  ): Pick<BootstrapCompleteMetadata, 'failure_phase' | 'failure_error'> {
+    const newestOpen = Array.from(this._spans.keys()).at(-1)
+    if (terminal) {
+      return {
+        failure_phase:
+          this._failurePhases.get(terminal.error) ?? newestOpen ?? 'untraced',
+        failure_error: safeErrorName(terminal.error)
+      }
+    }
+    const first = this._failurePhases.entries().next().value
+    if (first) {
+      const [error, phase] = first
+      return {
+        failure_phase: phase,
+        failure_error: safeErrorName(error)
+      }
+    }
+    return { failure_phase: newestOpen ?? 'untraced' }
   }
 
   /**
@@ -271,18 +380,23 @@ export class BootstrapTracer {
 
   private _report(
     outcome: BootstrapCompleteMetadata['outcome'],
-    pending?: BootstrapPhase[]
+    pending?: BootstrapPhase[],
+    failure?: Pick<BootstrapCompleteMetadata, 'failure_phase' | 'failure_error'>
   ): void {
     try {
       const totalMs = Math.round(performance.now())
       const rows = this.summary()
+      const hiddenMs = Math.min(this._hidden.hiddenMsUntil(totalMs), totalMs)
       const metadata: BootstrapCompleteMetadata = {
         total_ms: totalMs,
         outcome,
         phase_count: rows.length,
         untraced_ms: untracedMs(rows, totalMs),
+        hidden_ms: hiddenMs,
+        visible_ms: totalMs - hiddenMs,
         phases: Object.fromEntries(rows.map((r) => [r.name, r.durationMs])),
-        ...(pending?.length ? { pending } : {})
+        ...(pending?.length ? { pending } : {}),
+        ...failure
       }
       getDatadogRum()?.addAction(TelemetryEvents.BOOTSTRAP_COMPLETE, metadata)
       useTelemetry()?.trackBootstrapComplete(metadata)
@@ -298,7 +412,10 @@ export class BootstrapTracer {
    * Only emits in dev or when DEBUG_PERF is set.
    */
   private _logSummary(rows: BootstrapPhaseTiming[], totalMs: number): void {
-    if (!import.meta.env.DEV && localStorage.getItem('DEBUG_PERF') !== 'true')
+    if (
+      !import.meta.env.DEV &&
+      safeLocalStorage.getItem('DEBUG_PERF') !== 'true'
+    )
       return
     if (rows.length === 0) return
     console.warn(

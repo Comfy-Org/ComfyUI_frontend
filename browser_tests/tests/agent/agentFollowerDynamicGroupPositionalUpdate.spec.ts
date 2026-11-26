@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 
 import type { WorkflowJSON } from '@comfyorg/comfy-multi-player'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 
 import {
   agentTest as test,
@@ -116,7 +116,6 @@ test.describe(
 
       const agentPanel = new AgentPanel(page)
       await agentPanel.open()
-      await agentPanel.selectWorkflow()
       await agentPanel.sendMessage('Inspect the workflow')
       await hostSocket.waitForSubscribe()
 

@@ -3,30 +3,29 @@ import type {
   LinkConnector,
   SubgraphInput,
   SubgraphOutput
-} from '@/lib/litegraph/src/types/entityRegistry'
-import type { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
+} from '@comfyorg/graph-model/entityRegistry'
 
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { LLink, slotFloatingLinks } from '@/lib/litegraph/src/LLink'
 import {
   linkIdReservations,
   mintLinkId
 } from '@/lib/litegraph/src/idAllocation'
-import type { RerouteId } from '@/types/rerouteId'
+import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
 
 import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
 import type {
   DefaultConnectionColors,
   ISlotType,
   Positionable
-} from '@/lib/litegraph/src/interfaces'
+} from '@comfyorg/graph-model/interfaces'
 import type {
   INodeInputSlot,
   INodeOutputSlot
-} from '@/lib/litegraph/src/types/slots'
+} from '@comfyorg/graph-model/slots'
 import type { NodeLike } from '@/lib/litegraph/src/types/NodeLike'
-import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
-import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
+import { NodeSlotType } from '@comfyorg/graph-model/globalEnums'
 import { findFreeSlotOfType } from '@/lib/litegraph/src/utils/collections'
 import { nextUniqueName } from '@/lib/litegraph/src/strings'
 
@@ -40,6 +39,7 @@ export class SubgraphInputNode
   implements Positionable
 {
   readonly id: NodeId = SUBGRAPH_INPUT_ID
+  readonly slotDirection = 'output'
 
   readonly emptySlot: EmptySubgraphInput = new EmptySubgraphInput(this)
 
@@ -51,40 +51,16 @@ export class SubgraphInputNode
     return [...this.slots, this.emptySlot]
   }
 
-  get slotAnchorX() {
-    const [x, , width] = this.boundingRect
-    return x + width - SubgraphIONodeBase.roundedRadius
+  protected override fitSize(width: number, height: number): Point {
+    const [requestedWidth, requestedHeight] = this.size
+    return [Math.max(requestedWidth, width), Math.max(requestedHeight, height)]
   }
 
-  override onPointerDown(
-    e: CanvasPointerEvent,
-    pointer: CanvasPointer,
-    linkConnector: LinkConnector
+  protected override dragNewLink(
+    linkConnector: LinkConnector,
+    slot: SubgraphInput
   ): void {
-    // Left-click handling for dragging connections
-    if (e.button === 0) {
-      for (const slot of this.allSlots) {
-        // Check if click is within the full slot area (including label)
-        if (slot.boundingRect.containsXy(e.canvasX, e.canvasY)) {
-          pointer.onDragStart = () => {
-            linkConnector.dragNewFromSubgraphInput(this.subgraph, this, slot)
-          }
-          pointer.onDragEnd = (eUp) => {
-            linkConnector.dropLinks(this.subgraph, eUp)
-          }
-          pointer.onDoubleClick = () => {
-            this.handleSlotDoubleClick(slot, e)
-          }
-          pointer.finally = () => {
-            linkConnector.reset(true)
-          }
-        }
-      }
-      // Check for right-click
-    } else if (e.button === 2) {
-      const slot = this.getSlotInPosition(e.canvasX, e.canvasY)
-      if (slot) this.showSlotContextMenu(slot, e)
-    }
+    linkConnector.dragNewFromSubgraphInput(this.subgraph, this, slot)
   }
 
   /** @inheritdoc */
@@ -311,6 +287,6 @@ provideSubgraphInputGuard(isSubgraphInput)
 
 type RegisteredSubgraphInputNode = SubgraphInputNode
 
-declare module '../types/entityRegistry' {
+declare module '@comfyorg/graph-model/entityRegistry' {
   interface SubgraphInputNode extends RegisteredSubgraphInputNode {}
 }

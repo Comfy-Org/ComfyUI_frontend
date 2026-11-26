@@ -1,0 +1,15 @@
+{
+  "name": "design-system-css-consumer",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "vite build && node verifyStyles.ts"
+  },
+  "dependencies": {
+    "tailwindcss": "4.3.2"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "4.3.2",
+    "vite": "8.2.2"
+  }
+}

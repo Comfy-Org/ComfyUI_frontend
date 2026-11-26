@@ -3,13 +3,14 @@ import { expect } from '@playwright/test'
 import type {
   AgentMessage,
   AgentThreadListResponse,
-  WorkflowListResponse
+  WorkflowListResponse,
+  WorkflowSidebarFileResponse
 } from '@comfyorg/ingest-types'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { UserDataFullInfo } from '@comfyorg/api-client/types'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 
 import {
   agentTest as test,
@@ -174,6 +175,17 @@ test.describe(
           await page.route('**/api/workflows?*', (route) =>
             route.fulfill(jsonRoute(cloudWorkflows))
           )
+          await page.route(
+            `**/api/workflows/${SAVED_WORKFLOW_ID}/sidebar-file`,
+            (route) => {
+              const sidebarFile: WorkflowSidebarFileResponse = {
+                path: SAVED_WORKFLOW_PATH,
+                modified: Date.parse(SAVED_AT),
+                size: JSON.stringify(SAVED_WORKFLOW).length
+              }
+              return route.fulfill(jsonRoute(sidebarFile))
+            }
+          )
           await page.route('**/api/userdata?*', (route) => {
             const dir = new URL(route.request().url()).searchParams.get('dir')
             if (dir !== 'workflows') return route.fallback()
@@ -253,7 +265,6 @@ test.describe(
         await expect(historyHeading).toBeHidden()
         await expect(markerNode).toBeVisible()
         await expect(topbar.getActiveTab()).toHaveText(SAVED_WORKFLOW_NAME)
-        await expect(agentPanel.workflowPicker).toHaveText(SAVED_WORKFLOW_NAME)
       })
     })
   }

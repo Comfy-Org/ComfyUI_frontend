@@ -1,7 +1,4 @@
-import type {
-  IBaseWidget,
-  INumericWidget
-} from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget, INumericWidget } from '@comfyorg/graph-model/widgets'
 
 /** Finds the numeric widget with the given name. */
 export function findNumericWidget(

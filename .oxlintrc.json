@@ -3,7 +3,6 @@
   "ignorePatterns": [
     "**/vite.config.*.timestamp*",
     "**/vitest.config.*.timestamp*",
-    ".agents/checks/eslint.strict.config.js",
     "ComfyUI/**",
     "apps/*/coverage/**",
     "apps/*/dist/**",
@@ -185,12 +184,14 @@
         "src/**/*.vue",
         "apps/*/src/**/*.ts",
         "apps/*/src/**/*.tsx",
-        "apps/*/src/**/*.vue"
+        "apps/*/src/**/*.vue",
+        "packages/api-client/src/**/*.ts",
+        "packages/settings-core/src/**/*.ts"
       ],
       "excludeFiles": [
         "**/*.test.ts",
         "**/*.spec.ts",
-        "src/platform/remote/comfyui/jobs/jobTypes.ts"
+        "packages/api-client/src/jobTypes.ts"
       ],
       "rules": {
         "comfy/no-unsafe-error-assertion": "error"
@@ -282,10 +283,80 @@
       }
     },
     {
-      "files": ["src/**/*.{ts,tsx,vue}"],
+      "files": ["src/**/*.{ts,vue}"],
+      "excludeFiles": ["src/**/*.{test,stories}.ts", "src/**/__mocks__/**"],
+      "rules": {
+        "comfy/no-app-singleton-import": "error"
+      }
+    },
+    {
+      "files": ["src/**/*.{ts,vue}"],
+      "excludeFiles": [
+        "src/**/*.{test,spec,stories}.ts",
+        "src/**/__mocks__/**",
+        "src/base/storage/safeStorage.ts",
+        "src/platform/storage/useSafeStorage.ts"
+      ],
+      "rules": {
+        "comfy/no-direct-web-storage": "error"
+      }
+    },
+    {
+      "files": [
+        "apps/**/*.{js,mjs,cjs,ts,mts,cts,vue}",
+        "src/**/*.{js,mjs,cjs,ts,mts,cts,vue}",
+        "packages/**/*.{js,mjs,cjs,ts,mts,cts,vue}"
+      ],
+      "excludeFiles": [
+        "**/*.{test,spec}.{ts,tsx}",
+        "packages/api-client/src/abortSignal.ts",
+        "apps/billing-web/src/handoff/timeoutSignal.ts"
+      ],
+      "rules": {
+        "no-restricted-properties": [
+          "error",
+          {
+            "object": "AbortSignal",
+            "property": "any",
+            "message": "Crashes on Chrome < 116. Use combineAbortSignals from @comfyorg/api-client/abortSignal."
+          },
+          {
+            "object": "AbortSignal",
+            "property": "timeout",
+            "message": "Crashes on Chrome < 103 and Safari < 16. Use createTimeoutSignal from @comfyorg/api-client/abortSignal."
+          },
+          {
+            "property": "throwIfAborted",
+            "message": "Crashes on Chrome < 100 and Safari < 15.4. Use throwIfAborted(signal) from @comfyorg/api-client/abortSignal, or check signal.aborted in packages."
+          },
+          {
+            "object": "URL",
+            "property": "parse",
+            "message": "Crashes on Chrome < 126. Use parseUrl from @/utils/urlSafety, or try/catch around new URL() in packages."
+          },
+          {
+            "object": "URL",
+            "property": "canParse",
+            "message": "Crashes on Chrome < 120. Use parseUrl from @/utils/urlSafety, or try/catch around new URL() in packages."
+          },
+          {
+            "object": "Intl",
+            "property": "Segmenter",
+            "message": "Missing on Firefox < 125 (Firefox 115 ESR is still in use). Read Intl.Segmenter once into a local under a one-line disable, typeof-check the local and fall back, as graphemeSegmenter in src/workbench/extensions/agent/utils/sessionTitle.ts does."
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "src/**/*.{ts,tsx,vue}",
+        "packages/api-client/src/**/*.ts",
+        "packages/settings-core/src/**/*.ts"
+      ],
       "excludeFiles": [
         "src/**/*.d.ts",
         "src/**/*.{test,spec,stories}.{ts,tsx,vue}",
+        "packages/*/src/**/*.test.ts",
         "src/**/{test,tests,__test__,__tests__,__fixtures__,fixtures}/**",
         "src/**/{generated,vendor}/**"
       ],
@@ -316,12 +387,36 @@
       }
     },
     {
-      "files": ["src/platform/remote/**/*.ts", "src/platform/remote/**/*.vue"],
+      "files": [
+        "src/components/graph/**/*.{ts,vue}",
+        "src/composables/canvas/**/*.{ts,vue}",
+        "src/composables/graph/**/*.{ts,vue}",
+        "src/renderer/**/*.{ts,vue}"
+      ],
       "excludeFiles": [
         "**/*.test.ts",
         "**/*.spec.ts",
-        "src/platform/remote/comfyui/execution/types.ts",
-        "src/platform/remote/comfyui/jobs/jobTypes.ts"
+        "src/renderer/core/layout/transform/useCompositedTransform.ts",
+        "src/renderer/core/canvas/workflowImage/rasterizeElement.ts"
+      ],
+      "rules": {
+        "comfy/no-direct-transform-write": "error"
+      }
+    },
+    {
+      "files": [
+        "src/platform/remote/**/*.ts",
+        "src/platform/remote/**/*.vue",
+        "packages/api-client/src/**/*.ts"
+      ],
+      "excludeFiles": [
+        "**/*.test.ts",
+        "**/*.spec.ts",
+        "packages/api-client/src/executionTypes.ts",
+        "packages/api-client/src/jobTypes.ts",
+        "packages/api-client/src/resultItemTypeSchema.ts",
+        "packages/api-client/src/taskSchema.ts",
+        "packages/api-client/src/templateSchema.ts"
       ],
       "rules": {
         "comfy/no-new-zod-for-remote-api-types": "error"
@@ -359,7 +454,6 @@
       "files": ["src/schemas/**/*.ts"],
       "excludeFiles": [
         "src/schemas/**/*.test.ts",
-        "src/schemas/colorPaletteSchema.ts",
         "src/schemas/signInSchema.ts"
       ],
       "rules": {
@@ -450,7 +544,11 @@
       }
     },
     {
-      "files": ["scripts/**", "tools/test-recorder/**/*.ts"],
+      "files": [
+        "scripts/**",
+        "tools/ci/**/*.ts",
+        "tools/test-recorder/**/*.ts"
+      ],
       "rules": {
         "no-console": "allow"
       }
@@ -493,12 +591,12 @@
               {
                 "name": "@sentry/vue",
                 "importNames": ["captureException"],
-                "message": "Use reportError() from '@/platform/telemetry/reportError'. A raw captureException reaches Sentry only, so the failure stays invisible to every Datadog dashboard and alert."
+                "message": "Use reportError() from '@comfyorg/telemetry/reportError'. A raw captureException reaches Sentry only, so the failure stays invisible to every Datadog dashboard and alert."
               },
               {
                 "name": "@datadog/browser-rum",
                 "importNames": ["datadogRum"],
-                "message": "Use reportError() from '@/platform/telemetry/reportError'. A raw datadogRum.addError reaches Datadog only, and skips the pre-init buffer that keeps early-boot failures from being dropped."
+                "message": "Use reportError() from '@comfyorg/telemetry/reportError'. A raw datadogRum.addError reaches Datadog only, and skips the pre-init buffer that keeps early-boot failures from being dropped."
               }
             ]
           }
@@ -507,7 +605,12 @@
     },
     {
       "files": ["**/*.ts"],
-      "excludeFiles": ["**/use[A-Z]*.ts", "**/*.test.ts", "src/i18n.ts"],
+      "excludeFiles": [
+        "**/use[A-Z]*.ts",
+        "**/*.test.ts",
+        "src/i18n.ts",
+        "src/platform/telemetry/initErrorReporter.ts"
+      ],
       "rules": {
         "no-restricted-imports": [
           "error",
@@ -526,12 +629,13 @@
               {
                 "name": "@sentry/vue",
                 "importNames": ["captureException"],
-                "message": "Use reportError() from '@/platform/telemetry/reportError'. A raw captureException reaches Sentry only, so the failure stays invisible to every Datadog dashboard and alert."
+                "allowTypeImports": true,
+                "message": "Use reportError() from '@comfyorg/telemetry/reportError'. A raw captureException reaches Sentry only, so the failure stays invisible to every Datadog dashboard and alert."
               },
               {
                 "name": "@datadog/browser-rum",
                 "importNames": ["datadogRum"],
-                "message": "Use reportError() from '@/platform/telemetry/reportError'. A raw datadogRum.addError reaches Datadog only, and skips the pre-init buffer that keeps early-boot failures from being dropped."
+                "message": "Use reportError() from '@comfyorg/telemetry/reportError'. A raw datadogRum.addError reaches Datadog only, and skips the pre-init buffer that keeps early-boot failures from being dropped."
               }
             ]
           }
@@ -553,12 +657,12 @@
               {
                 "name": "@sentry/vue",
                 "importNames": ["captureException"],
-                "message": "Use reportError() from '@/platform/telemetry/reportError'. A raw captureException reaches Sentry only, so the failure stays invisible to every Datadog dashboard and alert."
+                "message": "Use reportError() from '@comfyorg/telemetry/reportError'. A raw captureException reaches Sentry only, so the failure stays invisible to every Datadog dashboard and alert."
               },
               {
                 "name": "@datadog/browser-rum",
                 "importNames": ["datadogRum"],
-                "message": "Use reportError() from '@/platform/telemetry/reportError'. A raw datadogRum.addError reaches Datadog only, and skips the pre-init buffer that keeps early-boot failures from being dropped."
+                "message": "Use reportError() from '@comfyorg/telemetry/reportError'. A raw datadogRum.addError reaches Datadog only, and skips the pre-init buffer that keeps early-boot failures from being dropped."
               }
             ]
           }
@@ -730,9 +834,12 @@
         "playwright/no-eval": "error",
         "playwright/no-focused-test": "error",
         "playwright/no-force-option": "error",
+        "playwright/no-identical-title": "error",
+        "playwright/no-export": "error",
         "playwright/no-networkidle": "error",
         "playwright/no-page-pause": "error",
         "playwright/no-skipped-test": "error",
+        "playwright/no-test-return-statement": "error",
         "playwright/no-unsafe-references": "error",
         "playwright/no-unused-locators": "error",
         "playwright/no-useless-await": "error",
@@ -746,6 +853,7 @@
         "playwright/prefer-to-have-length": "error",
         "playwright/prefer-web-first-assertions": "error",
         "playwright/prefer-native-locators": "error",
+        "playwright/require-annotation-reason": "error",
         "playwright/require-to-pass-timeout": "error",
         "playwright/valid-expect": "error",
         "playwright/valid-expect-in-promise": "error",

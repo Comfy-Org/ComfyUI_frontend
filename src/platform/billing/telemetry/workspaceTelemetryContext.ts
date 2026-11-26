@@ -1,8 +1,8 @@
 import { onScopeDispose, watch } from 'vue'
 
 import { webSessionUser } from '@/platform/auth/session/webSessionUser'
-import { useTelemetry } from '@/platform/telemetry'
-import type { WorkspaceTelemetryContext } from '@/platform/telemetry/types'
+import { useTelemetry } from '@comfyorg/telemetry'
+import type { WorkspaceTelemetryContext } from '@comfyorg/telemetry/types'
 import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
 

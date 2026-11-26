@@ -3,7 +3,7 @@ import { effectScope } from 'vue'
 
 vi.mock(import('firebase/auth'), { spy: true })
 
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import type {
   BillingStatusResponse,
   PreviewSubscribeResponse
@@ -21,18 +21,13 @@ import { useBillingOperationStore } from '@/platform/billing/stores/billingOpera
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
 const flagState = vi.hoisted(() => ({
-  billingSdkSubscriptionEnabled: false,
-  unifiedCloudAuthEnabled: true
+  billingSdkRailEnabled: false
 }))
 vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   useFeatureFlags: () => ({
     flags: {
-      billingSdkTopupRailEnabled: false,
-      get billingSdkSubscriptionRailEnabled() {
-        return (
-          flagState.billingSdkSubscriptionEnabled &&
-          flagState.unifiedCloudAuthEnabled
-        )
+      get billingSdkRailEnabled() {
+        return flagState.billingSdkRailEnabled
       }
     }
   })
@@ -58,7 +53,7 @@ vi.mock(
 
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 const mockCreateBillingSdk = vi.hoisted(() => vi.fn<() => BillingSdk>())
 vi.mock(import('@comfyorg/billing-core/sdk'), () => ({
@@ -66,6 +61,7 @@ vi.mock(import('@comfyorg/billing-core/sdk'), () => ({
 }))
 
 const STATUS: BillingStatusResponse = {
+  ended_at: null,
   is_active: true,
   max_seats: 1,
   occupied_seats: 1,
@@ -142,8 +138,7 @@ beforeEach(() => {
   stubFirebaseAuthHarness()
   harness = fakeBillingSdk()
   mockCreateBillingSdk.mockReturnValue(harness.sdk)
-  flagState.billingSdkSubscriptionEnabled = false
-  flagState.unifiedCloudAuthEnabled = true
+  flagState.billingSdkRailEnabled = false
   vi.spyOn(billingApi, 'getBillingStatus').mockResolvedValue(STATUS)
   vi.spyOn(billingApi, 'getBillingBalance').mockResolvedValue({
     amount_micros: 0,
@@ -180,18 +175,8 @@ describe('cancel subscription on the billing SDK rail', () => {
     expect(mockCreateBillingSdk).not.toHaveBeenCalled()
   })
 
-  it('stays on the workspace client while unified auth is off', async () => {
-    flagState.billingSdkSubscriptionEnabled = true
-    flagState.unifiedCloudAuthEnabled = false
-
-    await setupBilling().cancelSubscription()
-
-    expect(billingApi.cancelSubscription).toHaveBeenCalledOnce()
-    expect(mockCreateBillingSdk).not.toHaveBeenCalled()
-  })
-
   it('issues through the SDK command while the rail is on', async () => {
-    flagState.billingSdkSubscriptionEnabled = true
+    flagState.billingSdkRailEnabled = true
     vi.mocked(harness.sdk.commands.cancelSubscription).mockResolvedValue(
       SETTLED
     )
@@ -203,7 +188,7 @@ describe('cancel subscription on the billing SDK rail', () => {
   })
 
   it('falls back to the workspace client once when the route is missing', async () => {
-    flagState.billingSdkSubscriptionEnabled = true
+    flagState.billingSdkRailEnabled = true
     vi.mocked(harness.sdk.commands.cancelSubscription).mockResolvedValue(
       ROUTE_MISSING
     )
@@ -228,7 +213,7 @@ describe('cancel subscription on the billing SDK rail', () => {
   ] as const)(
     'reports %o as its own detail instead of retrying on legacy',
     async ([failure, detail]) => {
-      flagState.billingSdkSubscriptionEnabled = true
+      flagState.billingSdkRailEnabled = true
       vi.mocked(harness.sdk.commands.cancelSubscription).mockResolvedValue(
         failure
       )
@@ -243,7 +228,7 @@ describe('cancel subscription on the billing SDK rail', () => {
   )
 
   it('reports an operation that never settled as a failure', async () => {
-    flagState.billingSdkSubscriptionEnabled = true
+    flagState.billingSdkRailEnabled = true
     vi.mocked(harness.sdk.commands.cancelSubscription).mockResolvedValue({
       status: 'ok',
       value: {
@@ -253,7 +238,7 @@ describe('cancel subscription on the billing SDK rail', () => {
     })
 
     await expect(setupBilling().cancelSubscription()).rejects.toThrow(
-      "We couldn't update your subscription. Please try again."
+      'Subscription cancellation timed out'
     )
     expect(billingApi.cancelSubscription).not.toHaveBeenCalled()
   })
@@ -281,7 +266,7 @@ describe('cancel telemetry on the billing SDK rail', () => {
   }
 
   it('reports one started and leaves the terminal to the lifecycle when a rail cancel settles an operation', async () => {
-    flagState.billingSdkSubscriptionEnabled = true
+    flagState.billingSdkRailEnabled = true
     vi.mocked(harness.sdk.commands.cancelSubscription).mockResolvedValue(
       SETTLED
     )
@@ -292,7 +277,7 @@ describe('cancel telemetry on the billing SDK rail', () => {
   })
 
   it('reports one started and one succeeded when the server says the cancel already held', async () => {
-    flagState.billingSdkSubscriptionEnabled = true
+    flagState.billingSdkRailEnabled = true
     vi.mocked(harness.sdk.commands.cancelSubscription).mockResolvedValue({
       status: 'ok',
       value: { phase: 'succeeded' }
@@ -304,7 +289,7 @@ describe('cancel telemetry on the billing SDK rail', () => {
   })
 
   it('reports a rail cancel that fails before any operation exists', async () => {
-    flagState.billingSdkSubscriptionEnabled = true
+    flagState.billingSdkRailEnabled = true
     vi.mocked(harness.sdk.commands.cancelSubscription).mockResolvedValue({
       status: 'error',
       code: 'REQUEST_FAILED',
@@ -325,7 +310,7 @@ describe('cancel telemetry on the billing SDK rail', () => {
   })
 
   it('closes the refused SDK attempt and starts the workspace client attempt on its own client', async () => {
-    flagState.billingSdkSubscriptionEnabled = true
+    flagState.billingSdkRailEnabled = true
     vi.mocked(harness.sdk.commands.cancelSubscription).mockResolvedValue(
       ROUTE_MISSING
     )
@@ -361,7 +346,7 @@ describe('resubscribe on the billing SDK rail', () => {
   })
 
   it('issues through the SDK command while the rail is on', async () => {
-    flagState.billingSdkSubscriptionEnabled = true
+    flagState.billingSdkRailEnabled = true
     vi.mocked(harness.sdk.commands.resubscribe).mockResolvedValue(SETTLED)
 
     await setupBilling().resubscribe()
@@ -371,7 +356,7 @@ describe('resubscribe on the billing SDK rail', () => {
   })
 
   it('falls back to the workspace client when the route is missing', async () => {
-    flagState.billingSdkSubscriptionEnabled = true
+    flagState.billingSdkRailEnabled = true
     vi.mocked(harness.sdk.commands.resubscribe).mockResolvedValue(ROUTE_MISSING)
 
     await setupBilling().resubscribe()
@@ -391,7 +376,7 @@ describe('subscribe on the billing SDK rail', () => {
   })
 
   it('maps the host options onto the generated request body', async () => {
-    flagState.billingSdkSubscriptionEnabled = true
+    flagState.billingSdkRailEnabled = true
     vi.mocked(harness.sdk.commands.subscribe).mockResolvedValue(
       SETTLED_SUBSCRIBE
     )
@@ -434,7 +419,7 @@ describe('subscribe on the billing SDK rail', () => {
   })
 
   it('falls back to the workspace client once when the route is missing', async () => {
-    flagState.billingSdkSubscriptionEnabled = true
+    flagState.billingSdkRailEnabled = true
     vi.mocked(harness.sdk.commands.subscribe).mockResolvedValue(ROUTE_MISSING)
     const billing = setupBilling()
 
@@ -467,7 +452,7 @@ describe('subscribe on the billing SDK rail', () => {
   ])(
     'moves a start the caller $caller to the workspace client when the route is missing',
     async ({ options, events }) => {
-      flagState.billingSdkSubscriptionEnabled = true
+      flagState.billingSdkRailEnabled = true
       vi.mocked(harness.sdk.commands.subscribe).mockResolvedValue(ROUTE_MISSING)
 
       await setupBilling().subscribe('pro-monthly', options)
@@ -498,7 +483,7 @@ describe('subscribe on the billing SDK rail', () => {
   )
 
   it('surfaces a reactivation block under the code the checkout branches on', async () => {
-    flagState.billingSdkSubscriptionEnabled = true
+    flagState.billingSdkRailEnabled = true
     vi.mocked(harness.sdk.commands.subscribe).mockResolvedValue({
       status: 'error',
       code: 'REACTIVATION_CONFIRMATION_REQUIRED'
@@ -511,7 +496,7 @@ describe('subscribe on the billing SDK rail', () => {
   })
 
   it('surfaces a refused transition under the server code', async () => {
-    flagState.billingSdkSubscriptionEnabled = true
+    flagState.billingSdkRailEnabled = true
     vi.mocked(harness.sdk.commands.subscribe).mockResolvedValue({
       status: 'error',
       code: 'CONFLICT',
@@ -526,7 +511,7 @@ describe('subscribe on the billing SDK rail', () => {
   })
 
   it('reports an operation that never settled as a failure', async () => {
-    flagState.billingSdkSubscriptionEnabled = true
+    flagState.billingSdkRailEnabled = true
     vi.mocked(harness.sdk.commands.subscribe).mockResolvedValue({
       status: 'ok',
       value: {
@@ -537,7 +522,7 @@ describe('subscribe on the billing SDK rail', () => {
 
     await expect(setupBilling().subscribe('pro-monthly')).rejects.toMatchObject(
       {
-        message: "We couldn't update your subscription. Please try again.",
+        message: 'Subscription verification timed out',
         code: 'timed_out'
       }
     )
@@ -558,7 +543,7 @@ describe('preview subscribe on the billing SDK rail', () => {
   })
 
   it('quotes through the SDK command while the rail is on', async () => {
-    flagState.billingSdkSubscriptionEnabled = true
+    flagState.billingSdkRailEnabled = true
     vi.mocked(harness.sdk.commands.previewSubscribe).mockResolvedValue({
       status: 'ok',
       value: SDK_QUOTE
@@ -579,7 +564,7 @@ describe('preview subscribe on the billing SDK rail', () => {
   })
 
   it('falls back to the workspace client when the route is missing', async () => {
-    flagState.billingSdkSubscriptionEnabled = true
+    flagState.billingSdkRailEnabled = true
     vi.mocked(harness.sdk.commands.previewSubscribe).mockResolvedValue(
       ROUTE_MISSING
     )
@@ -608,7 +593,7 @@ describe('payment portal on the billing SDK rail', () => {
   })
 
   it('opens the SDK URL for the current page while the rail is on', async () => {
-    flagState.billingSdkSubscriptionEnabled = true
+    flagState.billingSdkRailEnabled = true
     vi.mocked(harness.sdk.commands.openPaymentPortal).mockResolvedValue({
       status: 'ok',
       value: { url: 'https://portal.sdk.example/session' }
@@ -624,7 +609,7 @@ describe('payment portal on the billing SDK rail', () => {
   })
 
   it('falls back to the workspace client when the route is missing', async () => {
-    flagState.billingSdkSubscriptionEnabled = true
+    flagState.billingSdkRailEnabled = true
     vi.mocked(harness.sdk.commands.openPaymentPortal).mockResolvedValue(
       ROUTE_MISSING
     )
@@ -672,7 +657,7 @@ describe('payment portal telemetry', () => {
   ])(
     'reports the portal opening from $name and one return',
     async ({ railOn, billingClient }) => {
-      flagState.billingSdkSubscriptionEnabled = railOn
+      flagState.billingSdkRailEnabled = railOn
       vi.mocked(harness.sdk.commands.openPaymentPortal).mockResolvedValue({
         status: 'ok',
         value: { url: 'https://portal.sdk.example/session' }

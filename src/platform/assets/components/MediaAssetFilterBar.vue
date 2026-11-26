@@ -4,7 +4,11 @@
       <SearchInput
         v-model="searchQuery"
         :clear-label="$t('g.clear')"
-        :accessible-label="$t('g.search')"
+        :accessible-label="
+          $t('g.searchPlaceholder', {
+            subject: $t('sideToolbar.labels.assets')
+          })
+        "
         :placeholder="
           $t('g.searchPlaceholder', {
             subject: $t('sideToolbar.labels.assets')
@@ -85,7 +89,7 @@ import {
   dateFilterOptions,
   mediaTypeFilterOptions
 } from '@/platform/assets/mediaAssetFilterOptions'
-import type { MediaAssetDateFilter } from '@/platform/assets/mediaAssetFilterOptions'
+import type { MediaAssetDateFilter } from '@comfyorg/assets-core/media'
 
 import MediaAssetFilterMenu from './MediaAssetFilterMenu.vue'
 import MediaAssetSettingsButton from './MediaAssetSettingsButton.vue'

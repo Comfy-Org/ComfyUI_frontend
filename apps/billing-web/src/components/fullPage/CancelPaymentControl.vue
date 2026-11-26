@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
+import { buttonVariants } from '@comfyorg/design-system/button.variants'
+import { cn } from '@comfyorg/tailwind-utils'
+
 import type { CancelOffer } from '@/checkout/checkoutPage'
 
 const { offer } = defineProps<{ offer: CancelOffer }>()
@@ -22,7 +25,12 @@ const { t } = useI18n()
     type="button"
     :disabled="offer === 'canceling'"
     :aria-busy="offer === 'canceling'"
-    class="flex h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-muted px-4 text-sm font-semibold text-foreground hover:bg-muted/80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
+    :class="
+      cn(
+        buttonVariants({ variant: 'tertiary', size: 'lg' }),
+        'w-full font-semibold'
+      )
+    "
     @click="emit('cancel')"
   >
     <template v-if="offer === 'canceling'">

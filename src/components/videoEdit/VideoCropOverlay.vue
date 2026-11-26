@@ -53,7 +53,7 @@ import { computed, toRef, useTemplateRef } from 'vue'
 
 import { useCropBoxEditor } from '@/composables/video/useCropBoxEditor'
 import type { CropResizeDir } from '@/composables/video/useCropBoxEditor'
-import type { Bounds } from '@/renderer/core/layout/types'
+import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const CORNER_HANDLES: Array<{ dir: CropResizeDir; cursor: string }> = [

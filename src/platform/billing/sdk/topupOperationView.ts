@@ -33,6 +33,7 @@ export interface TopupOperationView {
   readonly actionUrl: string | null
   readonly phase: BillingOperationPhase | null
   readonly authenticationState: BillingAuthenticationState | null
+  readonly authenticationDeadline?: string
   readonly isAuthenticating: boolean
   readonly canRetryAuthentication: boolean
   readonly errorMessage: string | null
@@ -67,6 +68,7 @@ export function projectTopupOperation(
     actionUrl: state.actionUrl ?? null,
     phase: state.serverPhase ?? null,
     authenticationState,
+    authenticationDeadline: state.authenticationDeadline,
     isAuthenticating: state.challenge?.status === 'in_progress',
     canRetryAuthentication: state.challenge?.status === 'required',
     errorMessage:
@@ -104,11 +106,15 @@ function topupFailureError(
     )
   }
   const serverCode = 'serverCode' in failure ? failure.serverCode : undefined
+  const serverMessage =
+    'serverMessage' in failure ? failure.serverMessage : undefined
   return new WorkspaceApiError(
-    t('credits.topUp.unknownError'),
+    serverMessage ?? t('credits.topUp.unknownError'),
     'httpStatus' in failure ? failure.httpStatus : undefined,
     serverCode === undefined ? failure.code : unwrapServerCode(serverCode),
-    topupFailureCategory(failure)
+    topupFailureCategory(failure),
+    undefined,
+    'retryAfterSeconds' in failure ? failure.retryAfterSeconds : undefined
   )
 }
 
@@ -180,10 +186,23 @@ export function projectTopupResult(
   }
 }
 
-/** The hosted Checkout URL, or the failure as the error the dialog handles. */
+/** A quote's credits, and whether Cloud named a payment configuration for paying it in the page. */
+export interface TopupQuoteFacts {
+  readonly credits: number
+  readonly paymentConfigured: boolean
+}
+
+export type HostedCheckoutSession = Pick<
+  Extract<HostedTopupCheckoutResult, { status: 'ok' }>,
+  'url' | 'sessionId'
+>
+
+/** The hosted Checkout session, or the failure as the error the dialog handles. */
 export function projectHostedTopupCheckoutResult(
   result: HostedTopupCheckoutResult
-): string {
-  if (result.status === 'ok') return result.url
-  throw topupFailureError(result)
+): HostedCheckoutSession {
+  if (result.status !== 'ok') throw topupFailureError(result)
+  return result.sessionId === undefined
+    ? { url: result.url }
+    : { url: result.url, sessionId: result.sessionId }
 }

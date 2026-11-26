@@ -8,7 +8,7 @@ import ExecuteButton from '@/components/graph/selectionToolbox/ExecuteButton.vue
 import { useSelectionState } from '@/composables/graph/useSelectionState'
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 
 vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
   isLGraphNode: vi.fn((node) => !!node?.type)
@@ -55,7 +55,7 @@ describe('ExecuteButton', () => {
     const commandStore = useCommandStore()
 
     vi.spyOn(canvasStore, 'getCanvas').mockReturnValue(mockCanvas)
-    vi.spyOn(commandStore, 'execute').mockResolvedValue()
+    vi.spyOn(commandStore, 'execute').mockResolvedValue(undefined)
 
     vi.mocked(useSelectionState).mockReturnValue(
       fromPartial<ReturnType<typeof useSelectionState>>({

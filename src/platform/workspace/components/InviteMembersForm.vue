@@ -56,7 +56,7 @@
       <Button
         variant="secondary"
         size="lg"
-        :class="cn(!cancelLabel && 'w-full rounded-lg')"
+        :class="cn(!cancelLabel && 'w-full')"
         :loading
         :disabled="!canSubmit"
         :aria-busy="loading"
@@ -78,8 +78,8 @@ import { useI18n } from 'vue-i18n'
 import Button from '@comfyorg/design-system/button/Button'
 import TagEditor from '@/components/common/TagEditor.vue'
 import TagsInputInput from '@comfyorg/design-system/tags-input/TagsInputInput'
-import { useTelemetry } from '@/platform/telemetry'
-import type { WorkspaceInviteMetadata } from '@/platform/telemetry/types'
+import { useTelemetry } from '@comfyorg/telemetry'
+import type { WorkspaceInviteMetadata } from '@comfyorg/telemetry/types'
 import type { WorkspacePendingInvite } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {

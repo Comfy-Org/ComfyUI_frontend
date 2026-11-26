@@ -40,7 +40,7 @@ const {
 
 vi.mock(import('@/i18n'))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 beforeEach(() => {
   useDowngradeToPersonal.mockReturnValue({
@@ -52,7 +52,7 @@ beforeEach(() => {
   const billing = useBillingContext()
   billing.canAccessSubscriptionFeatures = computed(() => true)
   billing.isFreeTier = computed(() => false)
-  billing.type = computed(() => 'legacy')
+  billing.type = computed(() => 'workspace')
   vi.mocked(useBillingContext).mockReturnValue(billing)
 })
 

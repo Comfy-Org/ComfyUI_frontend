@@ -23,7 +23,7 @@ import { SCHEMA_VERSION, mint, nodesMap } from '@comfyorg/comfy-multi-player'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import * as Y from 'yjs'
 
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 import type { DocFrameTransport, DocOp, DocUpdate } from './docFrameClient'
 import { DocFrameClient, encodeBase64 } from './docFrameClient'
@@ -960,6 +960,62 @@ describe('subscribe catch-up state', () => {
       docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 1)
     )
     expect(bridge.isSubscribeBaselineIntegrated).toBe(true)
+  })
+
+  it('reports a pre-mint baseline only until the first document update', () => {
+    const { transport, bridge } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    expect(bridge.isPreMintBaseline).toBe(false)
+
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 0
+    })
+    expect(bridge.isPreMintBaseline).toBe(true)
+    expect(bridge.isSubscribeBaselineIntegrated).toBe(false)
+
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 1)
+    )
+    expect(bridge.isPreMintBaseline).toBe(false)
+    expect(bridge.isSubscribeBaselineIntegrated).toBe(true)
+  })
+
+  it('reports no pre-mint baseline when a document frame landed before a seq-0 ack', () => {
+    const { transport, bridge } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 1)
+    )
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 0
+    })
+
+    expect(bridge.lastSequence).toBe(1)
+    expect(bridge.isPreMintBaseline).toBe(false)
+  })
+
+  it('reports no pre-mint baseline for a document that has a sequence', () => {
+    const { transport, bridge } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 3
+    })
+
+    expect(bridge.isPreMintBaseline).toBe(false)
   })
 
   it('recognizes an already-current same-lineage resubscribe', () => {

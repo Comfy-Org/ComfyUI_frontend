@@ -56,7 +56,7 @@ test.describe('Design-system tooltip', { tag: '@canvas' }, () => {
     })
   })
 
-  test('shares one app-level provider, so a neighbouring tooltip skips the open delay', async ({
+  test('waits for deliberate hover on neighbouring tooltips', async ({
     comfyPage
   }) => {
     const menu = new GraphCanvasMenu(comfyPage.page)
@@ -71,7 +71,7 @@ test.describe('Design-system tooltip', { tag: '@canvas' }, () => {
     await menu.zoomControlsButton.hover()
     await expect(
       tooltips.surface(tooltips.named('Zoom Controls'))
-    ).toHaveAttribute('data-state', 'instant-open')
+    ).toHaveAttribute('data-state', 'delayed-open')
     await expect(tooltips.open).toHaveCount(1)
   })
 })

@@ -2,6 +2,10 @@ import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
+import {
+  reportPreloadError,
+  reportPreloadErrorUnlessExtensionImport
+} from '@/platform/telemetry/assetLoadErrorReporting'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 
 import App from './App.vue'
@@ -12,8 +16,12 @@ vi.mock<unknown>(import('@/components/dialog/GlobalDialog.vue'), () => ({
   default: { template: '<div />' }
 }))
 vi.mock<unknown>(import('@/scripts/app'), () => ({ app: {} }))
+vi.mock(import('@/platform/telemetry/assetLoadErrorReporting'))
+vi.mock<unknown>(import('@/composables/useAgentExtensionNotices'), () => ({
+  useAgentExtensionNotices: vi.fn()
+}))
 vi.mock<unknown>(
-  import('@/workbench/extensions/manager/composables/useConflictDetection'),
+  import('@/platform/customNodes/manager/composables/useConflictDetection'),
   () => ({
     useConflictDetection: () => ({
       initializeConflictDetection: vi.fn()
@@ -53,4 +61,97 @@ describe('App', () => {
     unmount()
     expect(overlay.style.zIndex).toBe('')
   })
+
+  function dispatchPreloadError(payload: Error) {
+    const event = Object.assign(
+      new Event('vite:preloadError', { cancelable: true }),
+      { payload }
+    )
+    window.dispatchEvent(event)
+    return event
+  }
+
+  it.for([
+    "Unexpected token '}'",
+    'Unexpected end of input',
+    'Importing a module script failed.'
+  ])(
+    'lets a preload failure without a URL (%s) reject at its importer and reports it unless an extension import claims it',
+    (message) => {
+      const { unmount } = render(App, {
+        global: { stubs: { RouterView: true } }
+      })
+
+      const payload = new SyntaxError(message)
+
+      const event = dispatchPreloadError(payload)
+
+      expect(event.defaultPrevented).toBe(false)
+      expect(reportPreloadError).not.toHaveBeenCalled()
+      expect(
+        reportPreloadErrorUnlessExtensionImport
+      ).toHaveBeenCalledExactlyOnceWith(payload)
+      unmount()
+    }
+  )
+
+  it.for([
+    'Failed to fetch dynamically imported module: {origin}/assets/GraphView-abc123.js',
+    'error loading dynamically imported module: {origin}/assets/GraphView-abc123.js'
+  ])(
+    'lets one of our own chunks that failed to load (%s) reject at its importer and reports it',
+    (template) => {
+      const { unmount } = render(App, {
+        global: { stubs: { RouterView: true } }
+      })
+      const payload = new TypeError(
+        template.replace('{origin}', window.location.origin)
+      )
+
+      const event = dispatchPreloadError(payload)
+
+      expect(event.defaultPrevented).toBe(false)
+      expect(reportPreloadError).toHaveBeenCalledExactlyOnceWith(payload)
+      unmount()
+    }
+  )
+
+  it('makes a failed import of one of our own chunks reject instead of resolving to undefined', async () => {
+    const { unmount } = render(App, {
+      global: { stubs: { RouterView: true } }
+    })
+    const failure = new TypeError(
+      `Failed to fetch dynamically imported module: ${window.location.origin}/assets/load3d-abc123.js`
+    )
+    const importLoad3d = Promise.reject(failure).catch((error: Error) => {
+      const event = dispatchPreloadError(error)
+      if (!event.defaultPrevented) throw error
+      return undefined
+    })
+
+    await expect(importLoad3d).rejects.toBe(failure)
+    unmount()
+  })
+
+  it.for([
+    'Unable to preload CSS for {origin}/assets/GraphView-abc123.css',
+    'Failed to fetch dynamically imported module: {origin}/extensions/some-pack/assets/widget.js',
+    'Failed to fetch dynamically imported module: https://cdn.example.com/assets/vendor-abc123.js'
+  ])(
+    'keeps swallowing and reporting a CSS dependency, a custom node script or another origin (%s)',
+    (template) => {
+      const { unmount } = render(App, {
+        global: { stubs: { RouterView: true } }
+      })
+      const payload = new Error(
+        template.replace('{origin}', window.location.origin)
+      )
+
+      const event = dispatchPreloadError(payload)
+
+      expect(event.defaultPrevented).toBe(true)
+      expect(reportPreloadError).toHaveBeenCalledExactlyOnceWith(payload)
+      unmount()
+    }
+  )
 })

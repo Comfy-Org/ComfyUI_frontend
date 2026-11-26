@@ -12,6 +12,7 @@ import {
   withUnsubscribed
 } from '@e2e/fixtures/helpers/SubscriptionHelper'
 import { mockWorkspace, workspace } from '@e2e/fixtures/utils/workspaceMocks'
+import { mockTopupQuote } from '@e2e/fixtures/utils/topupQuoteRoute'
 
 const LOCAL_AUTH_BOOT_TIMEOUT = 45_000
 type CreateCustomerResponse =
@@ -52,6 +53,7 @@ export const localAuthFixture = base.extend<{ comfyPage: ComfyPage }>({
     await page.route('**/api/billing/plans', (route) =>
       route.fulfill({ json: EMPTY_BILLING_PLANS })
     )
+    await mockTopupQuote(page)
     await page.route('**/customers', (route) =>
       route.fulfill({
         status: 201,

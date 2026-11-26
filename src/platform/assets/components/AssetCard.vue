@@ -30,7 +30,7 @@
         class="size-full cursor-pointer object-cover"
       />
 
-      <AssetBadgeGroup :badges="asset.badges" />
+      <AssetBadgeGroup :badges="badges" />
       <IconGroup
         :class="
           cn(
@@ -153,9 +153,9 @@ import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import AssetBadgeGroup from '@/platform/assets/components/AssetBadgeGroup.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 import { assetService } from '@/platform/assets/services/assetService'
-import { getAssetCardTitle } from '@/platform/assets/utils/assetMetadataUtils'
+import { getAssetCardTitle } from '@comfyorg/assets-core/metadata'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
+import { useAssetDownloadStore } from '@/platform/assets/stores/assetDownloadStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -176,6 +176,12 @@ const { t, d } = useI18n()
 const settingStore = useSettingStore()
 const { closeDialog } = useDialogStore()
 const { isDownloadedThisSession, acknowledgeAsset } = useAssetDownloadStore()
+
+const badges = computed<AssetDisplayItem['badges']>(() =>
+  asset.isWorkspaceLibrary
+    ? [{ label: t('assetBrowser.library'), type: 'type' }, ...asset.badges]
+    : asset.badges
+)
 
 const assetMenuOpen = ref(false)
 
@@ -224,10 +230,10 @@ function confirmDeletion() {
       promptText
     },
     footerProps: {
+      cancelText: t('g.cancel'),
       confirmText: t('g.delete'),
-      // TODO: These need to be put into the new Button Variants once we have them.
       confirmClass: cn(
-        'bg-destructive text-foreground ring-foreground hover:bg-destructive/80 focus:bg-destructive/80 focus:ring'
+        'bg-destructive ring-foreground hover:bg-destructive/80 focus:bg-destructive/80 focus:ring'
       ),
       optionsDisabled,
       onCancel: () => {
@@ -243,7 +249,6 @@ function confirmDeletion() {
           promptText.value = t('assetBrowser.deletion.complete', {
             assetName
           })
-          // Give a second for the completion message
           await new Promise((resolve) => setTimeout(resolve, 1_000))
           emit('deleted', asset)
         } catch (err: unknown) {
@@ -251,7 +256,6 @@ function confirmDeletion() {
           promptText.value = t('assetBrowser.deletion.failed', {
             assetName
           })
-          // Give a second for the completion message
           await new Promise((resolve) => setTimeout(resolve, 3_000))
         } finally {
           closeDialog(confirmDialog)

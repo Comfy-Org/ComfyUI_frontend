@@ -4,7 +4,7 @@ import {
   until,
   useBreakpoints
 } from '@vueuse/core'
-import { computed, ref, watch } from 'vue'
+import { computed, readonly, ref, watch } from 'vue'
 
 import { useSubscription } from '@/platform/billing/subscription/composables/useSubscription'
 import { isCloud } from '@/platform/distribution/types'
@@ -14,12 +14,12 @@ import {
 } from '@/platform/onboarding/onboardingReplay'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftTypes'
 import type { SharedWorkflowUrlLoadStatus } from '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'
 import { useNewUserService } from '@/services/useNewUserService'
 import { useAuthStore } from '@/stores/authStore'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 
 import { useFirstRunTourController } from '@/renderer/extensions/firstRunTour/tour/useFirstRunTourController'
 
@@ -78,6 +78,7 @@ export const useFirstRunEntry = createSharedComposable(() => {
   const settingStore = useSettingStore()
   const firstRunScreen = ref<FirstRunScreenState>({ phase: 'released' })
   const startupDecided = ref(false)
+  const localFirstRun = ref(false)
   let authGeneration = 0
   const isDesktopWidth =
     useBreakpoints(breakpointsTailwind).greaterOrEqual('md')
@@ -153,6 +154,7 @@ export const useFirstRunEntry = createSharedComposable(() => {
       if (outcome === 'restored') return
       if (settingStore.get('Comfy.TutorialCompleted')) return
     }
+    if (!isCloud) localFirstRun.value = true
 
     if (outcome === 'url-intent') {
       if (decision === 'complete') await markTutorialCompleted()
@@ -253,6 +255,8 @@ export const useFirstRunEntry = createSharedComposable(() => {
   return {
     gettingStartedVisible,
     firstRunHoldsScreen,
+    isStartupDecided: readonly(startupDecided),
+    isLocalFirstRun: readonly(localFirstRun),
     whenStartupDecided,
     handleStartupOutcome,
     handleUrlWorkflow,

@@ -1,6 +1,7 @@
 <template>
   <AppDialogPanel
     size="compact"
+    class="w-90 max-w-full"
     data-testid="member-resubscribe-message"
     @close="onClose"
   >

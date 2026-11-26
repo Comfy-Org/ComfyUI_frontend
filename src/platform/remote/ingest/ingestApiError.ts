@@ -6,7 +6,8 @@ export class WorkspaceApiError extends Error {
     public readonly status?: number,
     public readonly code?: string,
     public readonly failureCategory?: BillingTelemetryFailure['failure_category'],
-    public readonly operation?: string
+    public readonly operation?: string,
+    public readonly retryAfterSeconds?: number
   ) {
     super(message)
     this.name = 'WorkspaceApiError'

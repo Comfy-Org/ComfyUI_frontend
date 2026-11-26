@@ -1,11 +1,21 @@
 import type { LGraphNode, Subgraph } from '@/lib/litegraph/src/litegraph'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
-import type { NodeId } from '@/types/nodeId'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+import type {
+  NodeExecutionId,
+  NodeLocatorId
+} from '@comfyorg/graph-model/nodeIdentification'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
-import type { ComfyWorkflow, LoadedComfyWorkflow } from './comfyWorkflow'
+import type {
+  ChangeTrackerConstructor,
+  ComfyWorkflow,
+  LoadedComfyWorkflow
+} from './comfyWorkflow'
+
+export type WorkflowRenameResult = boolean | 'bookmarks-not-updated'
 
 export interface WorkflowStore {
+  provideChangeTracker: (tracker: ChangeTrackerConstructor) => void
   activeWorkflow: LoadedComfyWorkflow | null
   attachWorkflow: (workflow: ComfyWorkflow, openIndex?: number) => void
   isActive: (workflow: ComfyWorkflow) => boolean
@@ -28,10 +38,16 @@ export interface WorkflowStore {
     path?: string,
     workflowData?: ComfyWorkflowJSON
   ) => ComfyWorkflow
-  renameWorkflow: (workflow: ComfyWorkflow, newPath: string) => Promise<void>
-  deleteWorkflow: (workflow: ComfyWorkflow) => Promise<void>
+  renameWorkflow: (
+    workflow: ComfyWorkflow,
+    newPath: string
+  ) => Promise<WorkflowRenameResult>
+  deleteWorkflow: (workflow: ComfyWorkflow) => Promise<boolean>
   saveAs: (existingWorkflow: ComfyWorkflow, path: string) => ComfyWorkflow
-  saveWorkflow: (workflow: ComfyWorkflow) => Promise<void>
+  saveWorkflow: (
+    workflow: ComfyWorkflow,
+    options?: { overwrite?: boolean }
+  ) => Promise<void>
 
   workflows: ComfyWorkflow[]
   bookmarkedWorkflows: ComfyWorkflow[]
@@ -42,6 +58,15 @@ export interface WorkflowStore {
   isSyncLoading: boolean
   loadWorkflows: () => Promise<void>
   reorderWorkflows: (from: number, to: number) => void
+
+  /**
+   * `true` once startup has finished restoring the previous session's open
+   * tabs, including unsaved drafts recreated from local storage. Until then,
+   * a workflow with no open tab may simply not have been restored yet.
+   */
+  tabsRestored: boolean
+  /** Called once startup tab restoration settles, including when startup fails first. */
+  markTabsRestored: () => void
 
   /** `true` if any subgraph is currently being viewed. */
   isSubgraphActive: boolean

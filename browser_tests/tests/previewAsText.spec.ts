@@ -5,6 +5,7 @@ import {
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
+import { heightOf } from '@e2e/fixtures/utils/locatorBox'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
 const wstest = mergeTests(test, webSocketFixture)
@@ -47,6 +48,55 @@ test.describe('Preview as Text node', () => {
   })
 
   wstest(
+    'switches between Markdown and plain text in the classic renderer',
+    async ({ comfyPage, getWebSocket }) => {
+      const execution = new ExecutionHelper(comfyPage, await getWebSocket())
+      const source = '# Heading\n\nSome **bold** text'
+
+      await comfyPage.menu.topbar.newWorkflowButton.click()
+      const node = await comfyPage.nodeOps.addNode(
+        'PreviewAny',
+        {},
+        {
+          x: 300,
+          y: 200
+        }
+      )
+      const jobId = await execution.run()
+      execution.executed(jobId, String(node.id), { text: [source] })
+
+      const plaintext = comfyPage.page.getByRole('textbox', {
+        name: 'preview_text'
+      })
+      const heading = comfyPage.page.getByRole('heading', {
+        name: 'Heading',
+        level: 1
+      })
+      await expect(plaintext).toHaveValue(source)
+
+      const modeToggle = await node.getWidgetByName('preview_mode')
+      const toggleTop = await modeToggle.getPosition()
+      const widgetHeight = await comfyPage.page.evaluate(
+        () => window.LiteGraph!.NODE_WIDGET_HEIGHT
+      )
+      const clickModeToggle = () =>
+        comfyPage.page.mouse.click(toggleTop.x, toggleTop.y + widgetHeight / 2)
+
+      await test.step('Markdown mode renders the source', async () => {
+        await clickModeToggle()
+        await expect(heading).toBeVisible()
+        await expect(plaintext).toBeHidden()
+      })
+
+      await test.step('plain text mode shows the source', async () => {
+        await clickModeToggle()
+        await expect(plaintext).toHaveValue(source)
+        await expect(heading).toBeHidden()
+      })
+    }
+  )
+
+  wstest(
     'restoring workflow restores state',
     { tag: '@vue-nodes' },
     async ({ comfyPage, getWebSocket }) => {
@@ -62,7 +112,8 @@ test.describe('Preview as Text node', () => {
 
       await test.step('node previews execution result', async () => {
         const id = await comfyPage.vueNodes.getNodeIdByTitle('Preview as Text')
-        execution.executed('', id, { text: 'massive fennec ears' })
+        const jobId = await execution.run()
+        execution.executed(jobId, id, { text: 'massive fennec ears' })
         await expect(preview).toHaveValue('massive fennec ears')
       })
 
@@ -80,6 +131,77 @@ test.describe('Preview as Text node', () => {
   )
 
   wstest(
+    'Save Text previews its execution result',
+    { tag: '@vue-nodes' },
+    async ({ comfyPage, getWebSocket }) => {
+      const execution = new ExecutionHelper(comfyPage, await getWebSocket())
+
+      await comfyPage.menu.topbar.newWorkflowButton.click()
+      await comfyPage.searchBoxV2.addNode('Save Text')
+      const preview = comfyPage.vueNodes.getWidgetByName(
+        'Save Text',
+        'preview_text'
+      )
+      const id = await comfyPage.vueNodes.getNodeIdByTitle('Save Text')
+      const jobId = await execution.run()
+
+      await test.step('shows the saved text', async () => {
+        execution.executed(jobId, id, { text: ['saved notes'] })
+        await expect(preview).toHaveValue('saved notes')
+      })
+
+      await test.step('replaces it with the next output', async () => {
+        execution.executed(jobId, id, { text: ['revised notes'] })
+        await expect(preview).toHaveValue('revised notes')
+      })
+
+      await test.step('clears it when the output is empty', async () => {
+        execution.executed(jobId, id, null)
+        await expect(preview).toHaveValue('')
+      })
+    }
+  )
+
+  wstest(
+    'keeps its size and scrolls when switching long output to Markdown',
+    { tag: '@vue-nodes' },
+    async ({ comfyPage, getWebSocket }) => {
+      const execution = new ExecutionHelper(comfyPage, await getWebSocket())
+      const source = Array.from(
+        { length: 40 },
+        (_, index) => `- item ${index + 1}`
+      ).join('\n')
+
+      await comfyPage.menu.topbar.newWorkflowButton.click()
+      await comfyPage.searchBoxV2.addNode('Preview as Text')
+      const node = await comfyPage.vueNodes.getFixtureByTitle('Preview as Text')
+      const id = await comfyPage.vueNodes.getNodeIdByTitle('Preview as Text')
+      const preview = comfyPage.vueNodes.getWidgetByName(
+        'Preview as Text',
+        'preview_text'
+      )
+      const jobId = await execution.run()
+      execution.executed(jobId, id, { text: [source] })
+      await expect(preview).toHaveValue(source)
+      const plaintextHeight = await heightOf(node.root)
+
+      await test.step('Markdown mode keeps the node height', async () => {
+        await node.root.getByRole('button', { name: 'Markdown' }).click()
+        await expect(preview.getByRole('listitem')).toHaveCount(40)
+        await expect.poll(() => heightOf(node.root)).toBe(plaintextHeight)
+      })
+
+      await test.step('the focused Markdown preview scrolls', async () => {
+        await preview.click()
+        await comfyPage.page.mouse.wheel(0, 200)
+        await expect
+          .poll(() => preview.evaluate((el) => el.scrollTop))
+          .toBeGreaterThan(0)
+      })
+    }
+  )
+
+  wstest(
     'renders the payloads users reported blank',
     { tag: '@vue-nodes' },
     async ({ comfyPage, getWebSocket }) => {
@@ -92,7 +214,7 @@ test.describe('Preview as Text node', () => {
         'preview_text'
       )
       const id = await comfyPage.vueNodes.getNodeIdByTitle('Preview as Text')
-      const jobId = ''
+      const jobId = await execution.run()
 
       const payloads = [
         ['compact JSON from an LLM node', '{"name":"Comfy","emoji":"🌟"}'],

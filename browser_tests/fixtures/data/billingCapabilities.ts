@@ -10,11 +10,9 @@ export function createBillingCapabilities(
   overrides: Partial<BillingCapabilities> = {}
 ): BillingCapabilitiesResponse {
   return {
+    auto_top_up_enabled: false,
+    billing_web_checkout_ui: 'full_page',
     resolved_for: {
-      // The signed-in uid `CloudAuthHelper` mocks. Capabilities resolve per
-      // (user, workspace) and the SDK reader checks both halves
-      // (`capabilities.ts:180`), discarding an answer resolved for anyone else
-      // — so a placeholder here reads as "no capabilities" on the SDK rail.
       user_id: 'test-user-e2e',
       workspace_id: workspaceId
     },
@@ -30,11 +28,16 @@ export function createBillingCapabilities(
       can_manage_partner_node_access: false,
       can_view_pending_invites: false,
       can_view_team_usage: false,
+      can_view_workspace_usage: false,
       can_edit_workspace: false,
       can_manage_auto_top_up: false,
+      can_view_auto_top_up: false,
+      can_view_auto_top_up_member_notice: false,
       can_manage_subscription: true,
       can_open_plans: true,
       can_run_workflows: false,
+      can_set_budgets: false,
+      can_set_hard_caps: false,
       can_upgrade: false,
       can_reactivate: false,
       can_revert_scheduled_change: false,
@@ -48,7 +51,6 @@ export function createBillingCapabilities(
       can_top_up: false
     },
     revision: 1,
-    // Far-future expiry so the snapshot never goes stale mid-test.
     expires_at: '2099-01-01T00:00:00Z'
   }
 }
@@ -76,6 +78,7 @@ export function createWorkspaceBillingCapabilities(
     can_reactivate: isOwner,
     can_subscribe_self_serve: isOwner,
     can_top_up: isOwner,
+    can_view_auto_top_up_member_notice: !isOwner,
     ...overrides
   })
 }

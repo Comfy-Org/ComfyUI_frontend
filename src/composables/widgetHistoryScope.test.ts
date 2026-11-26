@@ -3,9 +3,9 @@ import { describe, expect, it, vi } from 'vitest'
 
 import type { Subgraph } from '@/lib/litegraph/src/LGraph'
 import { app } from '@/scripts/app'
-import { toNodeId } from '@/types/nodeId'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
-import { widgetId } from '@/types/widgetId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 
 import { widgetHistoryScope } from './widgetHistoryScope'
 

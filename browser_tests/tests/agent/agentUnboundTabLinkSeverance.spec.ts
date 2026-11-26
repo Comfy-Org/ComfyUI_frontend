@@ -1,8 +1,7 @@
 import type { AgentPostMessageRequest } from '@comfyorg/ingest-types'
 import { expect, mergeTests } from '@playwright/test'
 
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import { zComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { zComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 
 import defaultWorkflow from '@e2e/assets/default.json' with { type: 'json' }
 import { webSocketFixture } from '@e2e/fixtures/ws'
@@ -58,8 +57,8 @@ test.describe(
       const secondPrompt = 'Is it still connected?'
 
       await test.step('another tab owns the workflow id the server remembers', async () => {
+        await comfyPage.menu.topbar.saveWorkflowAs('Unsaved Workflow')
         await agentPanel.open()
-        await agentPanel.selectWorkflow()
       })
 
       const { severedLink, targetInput, unboundTab } =
@@ -73,10 +72,9 @@ test.describe(
             .locator('.workflow-label')
             .innerText()
           expect(unboundTab).toMatch(/^Unsaved Workflow/)
-          await agentPanel.root
-            .getByRole('button', { name: enMessages.agent.newChat })
-            .click()
-          await expect(agentPanel.workflowPicker).toHaveText(unboundTab)
+          await expect(comfyPage.menu.topbar.getActiveTab()).toHaveText(
+            unboundTab
+          )
           const targetNode = await comfyPage.nodeOps.getNodeRefById(6)
           const targetInput = await targetNode.getInputByName('clip')
           const severedLink = {
@@ -103,7 +101,9 @@ test.describe(
         const socket = await getAgentSocket()
         pushAgentEvent(socket, MESSAGE_DONE_EVENT)
         await agentPanel.expectTurnSettled()
-        await expect(agentPanel.workflowPicker).toHaveText(unboundTab)
+        await expect(comfyPage.menu.topbar.getActiveTab()).toHaveText(
+          unboundTab
+        )
       })
 
       await test.step('the user severs the link on the selected canvas', async () => {
@@ -128,10 +128,10 @@ test.describe(
         await expect.poll(() => postedMessages.length).toBe(2)
         const second = sentTurn(postedMessages, 1)
         expect(second.workflow_id).toBeUndefined()
-        test.fail(
-          second.draft === undefined,
-          'PM-1410: a continuing turn on a still-unbound tab drops its updated draft'
-        )
+        expect(
+          second.current_tab_unbound,
+          'the tab never adopted the other tab workflow, so it is still unbound'
+        ).toBe(true)
         expect(
           carriesLink(second, severedLink),
           'the continuing turn must carry the updated draft without the severed link'

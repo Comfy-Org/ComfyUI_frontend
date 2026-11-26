@@ -6,13 +6,16 @@ import {
   zAgentAttachmentRejected,
   zAgentCancelAccepted,
   zAgentError as zGeneratedAgentError,
+  zAgentExtensionChangedData as zGeneratedAgentExtensionChangedData,
   zAgentIdentity as zGeneratedAgentIdentity,
   zAgentMessage as zGeneratedAgentMessage,
   zAgentPendingAskBase,
   zAgentRunMode as zGeneratedAgentRunMode,
   zAgentThreadListResponse as zGeneratedAgentThreadListResponse,
   zAgentToolCallData as zGeneratedAgentToolCallData,
+  zAgentThinkingEntry,
   zAgentTurnAccepted as zGeneratedAgentTurnAccepted,
+  zAgentTurnUsage as zGeneratedAgentTurnUsage,
   zToolCallSummary,
   zWorkflowListResponse
 } from '@comfyorg/ingest-types/zod'
@@ -26,7 +29,7 @@ import type {
 } from '@comfyorg/ingest-types'
 import { z } from 'zod'
 
-import { isNodeLocatorId } from '@/types/nodeIdentification'
+import { isNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 
 export { zAgentAdmissionError, zAgentCancelAccepted }
 export type {
@@ -61,7 +64,8 @@ export type AgentTurnAccepted = GeneratedAgentTurnAccepted & {
 export const RENDERED_ASK_KINDS = [
   'run_approval',
   'ask_user',
-  'delete_approval'
+  'delete_approval',
+  'paused'
 ] as const satisfies readonly AgentAskKind[]
 export type RenderedAskKind = (typeof RENDERED_ASK_KINDS)[number]
 
@@ -106,6 +110,10 @@ const zSkillName = z
   .transform((skill) => Array.from(skill).slice(0, SKILL_NAME_MAX).join(''))
   .nullish()
 
+const zDownloadName = zGeneratedAgentToolCallData.shape.download
+  .refine((name) => name === undefined || !/\p{Cc}/u.test(name))
+  .catch(undefined)
+
 /**
  * One entry of a persisted assistant row's `content.tool_calls` (see
  * `agentTranscript.ts`'s `parseToolCallEntry`), the reload-path counterpart
@@ -145,12 +153,12 @@ export type PersistedToolCallSummary = z.infer<typeof zPersistedToolCallSummary>
 
 /**
  * One persisted `content.thinking` entry: a model round's thinking text,
- * anchored to that round's first tool call when it made one.
+ * anchored to that round's first tool call, `truncated` where it was cut.
  */
-export const zPersistedThinkingEntry = z.object({
-  text: z.string(),
-  tool_call_id: z.string().nullish()
-})
+export const zPersistedThinkingEntry = zAgentThinkingEntry
+  .pick({ text: true, truncated: true })
+  .extend({ tool_call_id: z.string().nullish() })
+export type PersistedThinkingEntry = z.infer<typeof zPersistedThinkingEntry>
 
 /**
  * The message-parse boundary's `content.tool_calls` field is deliberately
@@ -212,6 +220,13 @@ export const zAttachmentRejection = zAgentAttachmentRejected.pick({
   type: true
 })
 
+export const zLoopbackOnlyRefusal = zGeneratedAgentError
+  .extend({
+    error: z.string().trim().min(1),
+    code: z.literal('agent_loopback_only')
+  })
+  .passthrough()
+
 /**
  * The 403 body the agent service returns when it will not serve the turn's
  * `workflow_id` to the caller's workspace, whether the row is gone or belongs
@@ -220,6 +235,19 @@ export const zAttachmentRejection = zAgentAttachmentRejected.pick({
  */
 export const zDisownedWorkflowError = z.object({
   error: z.literal('workflow not found or access denied')
+})
+
+/**
+ * The 403 body the local agent server returns when the request's credential
+ * no longer owns the agent process - the signed-in account changed and
+ * nobody has handed ownership to the new one yet
+ * (`services/agent/local/internal/server/authority.go`, `bindOwner`).
+ * `POST /agent/owner`, carrying the new credential as auth and the previous
+ * owner's in the body, moves ownership so the refused request can be
+ * retried (BE-25360).
+ */
+export const zCredentialNotOwnerError = z.object({
+  code: z.literal('credential_not_owner')
 })
 
 /**
@@ -246,13 +274,15 @@ const zAgentThinkingData = z
   .object({
     delta: z.string(),
     message_id: z.string(),
-    thread_id: z.string()
+    thread_id: z.string(),
+    tool_call_id: z.string().optional().catch(undefined)
   })
   .passthrough()
 
 const zAgentToolCallData = zGeneratedAgentToolCallData
   .extend({
     skill: zSkillName,
+    download: zDownloadName,
     args: z.never().optional(),
     workflow_id: zGeneratedAgentToolCallData.shape.workflow_id.catch(undefined),
     op_ids: zGeneratedAgentToolCallData.shape.op_ids.catch(undefined),
@@ -300,7 +330,8 @@ const zAgentUsage = z
     output_tokens: z.number().nullish(),
     total_tokens: z.number().nullish(),
     cache_read_input_tokens: z.number().nullish(),
-    cache_creation_input_tokens: z.number().nullish()
+    cache_creation_input_tokens: z.number().nullish(),
+    charge_micro_usd: zGeneratedAgentTurnUsage.shape.charge_micro_usd
   })
   .passthrough()
 
@@ -347,6 +378,11 @@ const zAgentMessageDraftEvent = z.object({
   data: zAgentMessageDraftData
 })
 
+const zAgentThinkingDraftEvent = z.object({
+  type: z.literal('agent_thinking_draft'),
+  data: zAgentMessageDraftData
+})
+
 const zAgentMessageDoneEvent = z.object({
   type: z.literal('agent_message_done'),
   data: zAgentMessageDoneData
@@ -367,15 +403,28 @@ const zAgentAskResolvedEvent = z.object({
   data: zAgentAskResolvedData
 })
 
+const zAgentExtensionChangedEvent = z.object({
+  type: z.literal('agent_extension_changed'),
+  data: zGeneratedAgentExtensionChangedData
+    .extend({
+      pack: zGeneratedAgentExtensionChangedData.shape.pack
+        .max(256)
+        .refine((pack) => !/[\p{Cc}\p{Cf}]/u.test(pack))
+    })
+    .passthrough()
+})
+
 export const zAgentWsEvent = z.discriminatedUnion('type', [
   zAgentThinkingEvent,
   zAgentToolCallEvent,
   zAgentMessageDeltaEvent,
   zAgentMessageDraftEvent,
+  zAgentThinkingDraftEvent,
   zAgentMessageDoneEvent,
   zAgentActiveTabEvent,
   zAgentAskEvent,
-  zAgentAskResolvedEvent
+  zAgentAskResolvedEvent,
+  zAgentExtensionChangedEvent
 ])
 export type AgentWsEvent = z.infer<typeof zAgentWsEvent>
 
@@ -396,9 +445,3 @@ export function parseAgentWsEvent(
 export const zAgentIdentity = zGeneratedAgentIdentity.extend({
   user_id: z.string().min(1)
 })
-
-/** The server's `agent` feature, pushed again on every change. */
-export interface AgentServerFeature {
-  state: 'starting' | 'ready' | 'failed'
-  reason?: string | null
-}

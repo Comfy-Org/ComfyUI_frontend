@@ -1,7 +1,7 @@
 import type { AgentRunMode, JobsListResponse } from '@comfyorg/ingest-types'
 import { expect } from '@playwright/test'
 
-import type { ModelFolderInfo } from '@/platform/assets/schemas/assetSchema'
+import type { ModelFolderInfo } from '@comfyorg/api-client/types'
 
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
@@ -122,6 +122,52 @@ test.describe(
         await agentConversation.sendPrompt()
         expect(await posted).toContain('local edit before automatic restore')
       })
+    })
+
+    test('keeps a saved local edit made while restored-target identity is pending', async ({
+      agentConversation,
+      page
+    }) => {
+      test.setTimeout(90_000)
+      const reload = new RestoredBindingReloadDriver(page, agentConversation)
+      await agentConversation.persistSavedWorkflow()
+      await agentConversation.runTurns()
+      const prompt = agentConversation.vueNodes
+        .getNodeLocator('6')
+        .getByRole('textbox')
+      await agentConversation.topbar.saveWorkflowAs('Restored reload')
+      await reload.persistThreadTranscript()
+
+      let releaseIdentity!: () => void
+      const identityPending = new Promise<void>((resolve) => {
+        releaseIdentity = resolve
+      })
+      await page.route('**/api/agent/identity', async (route) => {
+        await identityPending
+        await route.fallback()
+      })
+
+      await reload.reloadIntoRestoredTarget('Restored reload')
+      await prompt.fill('local edit while identity is pending')
+      await agentConversation.topbar.saveWorkflowAs('Restored reload')
+
+      const subscribesBeforeSecondReload = agentConversation.subscribeCount()
+      await reload.reloadIntoRestoredTarget('Restored reload')
+      await expect(prompt).toHaveValue('local edit while identity is pending')
+
+      const identityResponse = page.waitForResponse('**/api/agent/identity')
+      releaseIdentity()
+      await identityResponse
+      await page.evaluate(
+        () =>
+          new Promise<void>((resolve) =>
+            requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+          )
+      )
+      expect(agentConversation.subscribeCount()).toBe(
+        subscribesBeforeSecondReload
+      )
+      await expect(prompt).toHaveValue('local edit while identity is pending')
     })
   }
 )

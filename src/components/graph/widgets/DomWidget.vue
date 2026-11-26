@@ -3,6 +3,7 @@
     v-show="widgetState.visible"
     ref="widgetElement"
     class="dom-widget size-full"
+    :data-widget-id="widget.id"
     :title="tooltip"
     :style="style"
   >
@@ -12,6 +13,7 @@
       class="size-full"
       :model-value="widget.value"
       :widget="widget"
+      :node-id="widget.node.id"
       v-bind="widget.props"
       @update:model-value="emit('update:widgetValue', $event)"
     />

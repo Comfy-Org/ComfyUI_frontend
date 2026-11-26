@@ -1,10 +1,12 @@
+import type {
+  ReadOnlyRectEdges as RectEdges,
+  ReadOnlyRect,
+  PointTuple,
+  Bounds
+} from '@comfyorg/shared-frontend-utils/geometry'
 import { clamp } from 'es-toolkit/math'
 
-import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
-import type { Bounds } from '@/renderer/core/layout/types'
-
-/** A rectangle's viewport edges: the DOMRect subset, so a DOMRect is directly assignable. */
-export type RectEdges = Pick<DOMRect, 'left' | 'top' | 'right' | 'bottom'>
+export type { ReadOnlyRectEdges as RectEdges } from '@comfyorg/shared-frontend-utils/geometry'
 
 /**
  * Clips a rectangle to `bounds`: each edge is limited independently, so the
@@ -44,8 +46,7 @@ export function denormalize(
   return min + normalized * (max - min)
 }
 
-/** Simple 2D point or size as [x, y] or [width, height] */
-type Vec2 = readonly [number, number]
+type Vec2 = Readonly<PointTuple>
 
 /** `value` wrapped into `[0, length)`. Unlike `%`, negatives wrap to the end. */
 export const wrapIndex = (value: number, length: number): number =>

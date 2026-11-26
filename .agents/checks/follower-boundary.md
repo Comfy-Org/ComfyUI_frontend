@@ -87,10 +87,12 @@ Flag:
 - **A store-level reconciliation pass** — any code that diffs a snapshot of the stores
   against the live graph or the document and patches one to match the other
   (`reconcile*`, `resync*`, snapshot-diff, slot-array merge). The applier reads the
-  document's own change set (`DocChangeCollector`) for incremental frames. For catch-up,
-  `syncFromDoc` drives the live graph to the document through the graph API: it adds,
-  updates, and removes graph entities, sparing only the local human's pending edits
-  (`PendingLocalEdits`). It never patches stores or "corrects" store state directly.
+  document's own change set (`DocChangeCollector`) for incremental frames. After a lineage
+  reset, `AgentCrdtProjection.replaceOnNextFrame` makes the next frame apply in `replace`
+  mode, which drives the live graph to the document through the graph API: it adds,
+  updates, and removes graph entities. Between frames, `LocalWidgetWrites` holds back a
+  frame's value for a widget the local human edited until the document holds the local
+  value. Neither patches stores or "corrects" store state directly.
 - **Remote writes outside the provenance scope** — a graph-API call for a remote change
   that runs outside `withGraphIntentSource('agent-remote', ...)` / `withRemoteActor`, or
   asynchronous work started inside that scope and finished later (it will be attributed

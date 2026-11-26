@@ -1,24 +1,27 @@
 import { toValue } from 'vue'
-import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
+import type { MaybeRefOrGetter, Ref } from 'vue'
 import type { UploadImageResponse } from '@comfyorg/ingest-types'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { t } from '@/i18n'
-import { resolveWidgetValueAsset } from '@/platform/assets/utils/resolveWidgetValueAsset'
-import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
+import { resolveWidgetValueAsset } from '@/platform/assets/integration/resolveWidgetValueAsset'
+import type { ResultItem } from '@comfyorg/api-client/executionTypes'
 import { ServerFeatureFlag } from '@/platform/remoteConfig/serverFeatureFlag'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { FormDropdownItem } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
-import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
+import type { ResultItemType } from '@comfyorg/api-client/resultItemTypeSchema'
 import { api } from '@/scripts/api'
-import { useAssetsStore } from '@/stores/assetsStore'
+import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import type { NodeLocatorId } from '@/types/nodeIdentification'
+import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
-import { isExtensionlessVideo } from '@/utils/mediaUploadUtil'
+import { parseImageWidgetValue } from '@/utils/imageUtil'
+import {
+  isExtensionlessVideo,
+  isUntypedOrVideoWithoutExtension
+} from '@/utils/mediaUploadUtil'
 import { isResultItemType } from '@/utils/typeGuardUtil'
 
 const BYTES_PER_MB = 1024 * 1024
@@ -58,11 +61,12 @@ function addMissingOptionValues(
 
 interface UseWidgetSelectActionsOptions {
   modelValue: Ref<string | undefined>
-  dropdownItems: ComputedRef<FormDropdownItem[]>
+  dropdownItems: MaybeRefOrGetter<readonly FormDropdownItem[]>
   widget: MaybeRefOrGetter<SimplifiedWidget<string | undefined>>
   uploadFolder: MaybeRefOrGetter<ResultItemType | undefined>
   uploadSubfolder: MaybeRefOrGetter<string | undefined>
   locatorId?: MaybeRefOrGetter<NodeLocatorId | undefined>
+  videoOnly?: MaybeRefOrGetter<boolean>
 }
 
 export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
@@ -78,18 +82,18 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
 
   const showHdrPreviewIfApplicable = wrapWithErrorHandlingAsync(
     async (widgetValue: string | undefined) => {
-      if (!widgetValue || !isHdrImageFilename(widgetValue)) return
+      if (!widgetValue) return
+      const { filename, subfolder, type } = parseImageWidgetValue(widgetValue)
+      if (!isHdrImageFilename(filename)) return
 
       const asset = await resolveWidgetValueAsset(widgetValue)
       if (!asset?.preview_id || modelValue.value !== widgetValue) return
 
-      const { filepath, rootFolder } = parseAnnotatedPath(widgetValue)
-      const separatorIndex = filepath.lastIndexOf('/')
       setPreviewImage({
-        filename: filepath.slice(separatorIndex + 1),
+        filename,
         preview_id: asset.preview_id,
-        subfolder: filepath.slice(0, Math.max(separatorIndex, 0)),
-        type: isResultItemType(rootFolder) ? rootFolder : undefined
+        subfolder,
+        type: isResultItemType(type) ? type : undefined
       })
     }
   )
@@ -102,7 +106,7 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
     const name =
       id == null
         ? undefined
-        : dropdownItems.value.find((item) => item.id === id)?.name
+        : toValue(dropdownItems).find((item) => item.id === id)?.name
 
     modelValue.value = name
     void showHdrPreviewIfApplicable(name)
@@ -163,7 +167,10 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
   const handleFilesUpdate = wrapWithErrorHandlingAsync(
     async (files: File[]) => {
       if (files.length === 0) return
-      if (files.some(isExtensionlessVideo)) {
+      const isRejectedVideo = toValue(options.videoOnly)
+        ? isUntypedOrVideoWithoutExtension
+        : isExtensionlessVideo
+      if (files.some(isRejectedVideo)) {
         toast.warning(t('g.videoFilenameExtensionRequired'))
         return
       }

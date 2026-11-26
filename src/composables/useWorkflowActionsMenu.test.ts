@@ -1,9 +1,7 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import {
-  useWorkflowBookmarkStore,
-  useWorkflowStore
-} from '@/platform/workflow/management/stores/workflowStore'
-import { useCommandStore } from '@/stores/commandStore'
+import { useWorkflowBookmarkStore } from '@/platform/workflow/management/stores/workflowBookmarkStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { render } from '@testing-library/vue'
@@ -16,7 +14,7 @@ import { useWorkflowActionsMenu as useWorkflowActionsMenuComposable } from '@/co
 import * as lazyDeployToComfyApiDialog from '@/platform/workflow/deploy/composables/lazyDeployToComfyApiDialog'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import type { WorkflowMenuAction } from '@/types/workflowMenuItem'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 
 const i18n = createI18n({
@@ -95,7 +93,7 @@ describe('useWorkflowActionsMenu', () => {
     mockSubgraphStore = useSubgraphStore()
     mockAppModeStore = useAppModeStore()
     vi.mocked(mockCommandStore.execute).mockResolvedValue(undefined)
-    vi.mocked(mockBookmarkStore.toggleBookmarked).mockResolvedValue(undefined)
+    vi.mocked(mockBookmarkStore.toggleBookmarked).mockResolvedValue(true)
     vi.mocked(mockBookmarkStore.isBookmarked).mockReturnValue(false)
     vi.mocked(mockSubgraphStore.isSubgraphBlueprint).mockReturnValue(false)
     vi.mocked(

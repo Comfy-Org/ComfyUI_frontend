@@ -1,9 +1,9 @@
 import { useAppMode } from '@/composables/useAppMode'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import type {
   ExecutionTriggerSource,
   RunButtonProperties
-} from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry/types'
 import { getActionbarDockState } from '@/platform/telemetry/utils/getActionbarDockState'
 import { getAgentPanelOpen } from '@/platform/telemetry/utils/getAgentPanelOpen'
 import { getExecutionContext } from '@/platform/telemetry/utils/getExecutionContext'

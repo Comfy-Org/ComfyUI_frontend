@@ -54,6 +54,16 @@
       "count": 1
     }
   },
+  "packages/api-client/src/ComfyApi.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 7
+    }
+  },
+  "packages/settings-core/src/settingStore.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 1
+    }
+  },
   "packages/viewport3d/src/load3d/HDRIManager.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 2
@@ -81,7 +91,7 @@
   },
   "src/base/common/downloadUtil.ts": {
     "comfy/no-new-error-throw": {
-      "count": 2
+      "count": 1
     }
   },
   "src/components/builder/builderViewOptions.ts": {
@@ -99,17 +109,7 @@
       "count": 1
     }
   },
-  "src/components/rightSidePanel/errors/MissingNodeCard.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
   "src/components/sidebar/SideToolbar.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
-  "src/components/sidebar/tabs/AssetsSidebarTab.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 1
     }
@@ -141,16 +141,11 @@
   },
   "src/composables/auth/useAuthActions.ts": {
     "comfy/no-new-error-throw": {
-      "count": 3
+      "count": 1
     }
   },
   "src/composables/canvas/useFocusNode.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
-  "src/composables/graph/contextMenuConverter.ts": {
-    "comfy/no-positional-boolean-params": {
       "count": 1
     }
   },
@@ -165,11 +160,6 @@
     }
   },
   "src/composables/useCoreCommands.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
-  "src/composables/useImageCrop.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 1
     }
@@ -274,10 +264,10 @@
       "count": 9
     },
     "comfy/no-positional-boolean-params": {
-      "count": 7
+      "count": 6
     },
     "comfy/no-reexports": {
-      "count": 2
+      "count": 1
     }
   },
   "src/lib/litegraph/src/LGraphCanvas.ts": {
@@ -291,19 +281,8 @@
     }
   },
   "src/lib/litegraph/src/LGraphNode.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 1
-    },
     "comfy/no-positional-boolean-params": {
       "count": 22
-    },
-    "comfy/no-reexports": {
-      "count": 1
-    }
-  },
-  "src/lib/litegraph/src/LLink.ts": {
-    "comfy/no-reexports": {
-      "count": 1
     }
   },
   "src/lib/litegraph/src/LiteGraphGlobal.ts": {
@@ -314,9 +293,6 @@
   "src/lib/litegraph/src/Reroute.ts": {
     "comfy/no-positional-boolean-params": {
       "count": 1
-    },
-    "comfy/no-reexports": {
-      "count": 2
     }
   },
   "src/lib/litegraph/src/canvas/FloatingRenderLink.ts": {
@@ -359,14 +335,14 @@
       "count": 4
     }
   },
-  "src/lib/litegraph/src/interfaces.ts": {
-    "comfy/no-reexports": {
+  "src/lib/litegraph/src/connectivitySystem.ts": {
+    "comfy/no-new-error-throw": {
       "count": 1
     }
   },
   "src/lib/litegraph/src/litegraph.ts": {
     "comfy/no-reexports": {
-      "count": 55
+      "count": 43
     }
   },
   "src/lib/litegraph/src/litegraphInstance.ts": {
@@ -384,7 +360,7 @@
   },
   "src/lib/litegraph/src/subgraph/ExecutableNodeDTO.ts": {
     "comfy/no-new-error-throw": {
-      "count": 6
+      "count": 5
     }
   },
   "src/lib/litegraph/src/subgraph/Subgraph.ts": {
@@ -408,11 +384,6 @@
     }
   },
   "src/lib/litegraph/src/subgraph/subgraphUtils.ts": {
-    "comfy/no-reexports": {
-      "count": 1
-    }
-  },
-  "src/lib/litegraph/src/types/widgets.ts": {
     "comfy/no-reexports": {
       "count": 1
     }
@@ -467,44 +438,14 @@
       "count": 21
     }
   },
-  "src/platform/assets/utils/assetFilterUtils.ts": {
-    "comfy/no-positional-boolean-params": {
+  "src/platform/assets/stores/assetsStore.ts": {
+    "comfy/no-new-error-throw": {
       "count": 1
-    }
-  },
-  "src/platform/assets/utils/assetMetadataUtils.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 8
     }
   },
   "src/platform/assets/utils/assetPreviewUtil.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 1
-    }
-  },
-  "src/platform/assets/utils/marqueeSelectionUtil.property.test.ts": {
-    "comfy/prefer-array-containing": {
-      "count": 2
-    }
-  },
-  "src/platform/assets/utils/marqueeSelectionUtil.test.ts": {
-    "comfy/prefer-array-containing": {
-      "count": 1
-    }
-  },
-  "src/platform/assets/utils/marqueeSelectionUtil.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 1
-    }
-  },
-  "src/platform/assets/utils/resolveModelNodeFromAsset.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
-  "src/platform/auth/session/useSessionCookie.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 5
     }
   },
   "src/platform/auth/unified/remintRetry.ts": {
@@ -518,11 +459,6 @@
     }
   },
   "src/platform/billing/components/SubscriptionTransitionPreviewWorkspaceReactivation.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
-  "src/platform/billing/components/TopUpCreditsDialogContentLegacy.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 1
     }
@@ -592,21 +528,6 @@
       "count": 1
     }
   },
-  "src/platform/billing/subscription/components/CreditsTile.vue": {
-    "comfy/no-new-error-throw": {
-      "count": 1
-    }
-  },
-  "src/platform/billing/subscription/components/PricingTable.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
-  "src/platform/billing/subscription/composables/usePricingTableUrlLoader.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 2
-    }
-  },
   "src/platform/billing/subscription/composables/useSubscriptionActions.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 1
@@ -625,11 +546,6 @@
   "src/platform/billing/subscription/launchCancellationFlow.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 1
-    }
-  },
-  "src/platform/billing/subscription/utils/subscriptionCheckoutUtil.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 2
     }
   },
   "src/platform/cloud/oauth/oauthApi.ts": {
@@ -652,9 +568,9 @@
       "count": 2
     }
   },
-  "src/platform/keybindings/keybindingStore.ts": {
+  "src/platform/extensions/stores/extensionStore.ts": {
     "comfy/no-new-error-throw": {
-      "count": 1
+      "count": 2
     }
   },
   "src/platform/keybindings/presetService.test.ts": {
@@ -677,11 +593,6 @@
       "count": 1
     }
   },
-  "src/platform/settings/settingStore.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 1
-    }
-  },
   "src/platform/telemetry/TelemetryRegistry.test.ts": {
     "comfy/prefer-array-containing": {
       "count": 1
@@ -692,11 +603,6 @@
       "count": 1
     }
   },
-  "src/platform/telemetry/redactTelemetryUrls.ts": {
-    "regexp/no-dupe-characters-character-class": {
-      "count": 13
-    }
-  },
   "src/platform/telemetry/utils/surveyNormalization.ts": {
     "regexp/no-empty-alternative": {
       "count": 2
@@ -704,7 +610,7 @@
   },
   "src/platform/workflow/management/stores/comfyWorkflow.ts": {
     "comfy/no-new-error-throw": {
-      "count": 2
+      "count": 1
     }
   },
   "src/platform/workflow/management/stores/workflowStore.ts": {
@@ -743,11 +649,6 @@
     }
   },
   "src/platform/workflow/sharing/utils/shareAuthAttribution.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 1
-    }
-  },
-  "src/platform/workflow/templates/services/templateInputService.ts": {
     "comfy/no-positional-boolean-params": {
       "count": 1
     }
@@ -847,11 +748,6 @@
       "count": 1
     }
   },
-  "src/renderer/core/layout/types.ts": {
-    "comfy/no-reexports": {
-      "count": 3
-    }
-  },
   "src/renderer/extensions/firstRunTour/gettingStarted/firstRunEntry.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 1
@@ -867,29 +763,9 @@
       "count": 2
     }
   },
-  "src/renderer/extensions/layerEditor/composables/useLayerEditorExport.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 1
-    }
-  },
   "src/renderer/extensions/linearMode/LinearControls.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 1
-    }
-  },
-  "src/renderer/extensions/maskEditor/components/PointerZone.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 2
-    }
-  },
-  "src/renderer/extensions/maskEditor/components/ToolPanel.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
-  "src/renderer/extensions/maskEditor/composables/useImageLoader.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 2
     }
   },
   "src/renderer/extensions/maskEditor/composables/useMaskEditorLoader.ts": {
@@ -900,11 +776,6 @@
   "src/renderer/extensions/maskEditor/composables/useMaskEditorSaver.ts": {
     "comfy/no-new-error-throw": {
       "count": 5
-    }
-  },
-  "src/renderer/extensions/minimap/composables/useMinimap.progressBaseline.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 4
     }
   },
   "src/renderer/extensions/painter/composables/usePainter.ts": {
@@ -920,11 +791,6 @@
   "src/renderer/extensions/vueNodes/composables/useSlotLinkInteraction.autoPan.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 1
-    }
-  },
-  "src/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 3
     }
   },
   "src/renderer/extensions/vueNodes/layout/useNodeDrag.test.ts": {
@@ -1017,11 +883,6 @@
       "count": 10
     }
   },
-  "src/scripts/api.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 8
-    }
-  },
   "src/scripts/app.getNodeDefs.test.ts": {
     "comfy/prefer-array-containing": {
       "count": 1
@@ -1078,11 +939,6 @@
       "count": 1
     }
   },
-  "src/services/extensionLoader.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 1
-    }
-  },
   "src/services/jobOutputCache.test.ts": {
     "comfy/prefer-array-containing": {
       "count": 1
@@ -1090,7 +946,7 @@
   },
   "src/services/litegraphService.ts": {
     "comfy/no-new-error-throw": {
-      "count": 3
+      "count": 2
     }
   },
   "src/services/nodeHelpService.ts": {
@@ -1111,21 +967,6 @@
   "src/stores/apiKeyAuthStore.ts": {
     "comfy/no-new-error-throw": {
       "count": 1
-    }
-  },
-  "src/stores/assetsStore.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 1
-    }
-  },
-  "src/stores/commandStore.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 1
-    }
-  },
-  "src/stores/extensionStore.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 2
     }
   },
   "src/stores/nodeBookmarkStore.ts": {
@@ -1153,11 +994,6 @@
       "count": 1
     }
   },
-  "src/stores/workspace/colorPaletteStore.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 2
-    }
-  },
   "src/types/extensionTypes.ts": {
     "comfy/no-reexports": {
       "count": 2
@@ -1165,26 +1001,11 @@
   },
   "src/types/index.ts": {
     "comfy/no-reexports": {
-      "count": 67
-    }
-  },
-  "src/types/nodeState.ts": {
-    "comfy/no-reexports": {
-      "count": 1
-    }
-  },
-  "src/types/simplifiedWidget.ts": {
-    "comfy/no-reexports": {
-      "count": 1
+      "count": 35
     }
   },
   "src/types/slotId.test.ts": {
     "comfy/prefer-array-containing": {
-      "count": 1
-    }
-  },
-  "src/types/widgetId.ts": {
-    "comfy/no-new-error-throw": {
       "count": 1
     }
   },
@@ -1251,21 +1072,6 @@
   "src/workbench/extensions/agent/composables/agent/useAgentSession.ts": {
     "comfy/no-positional-boolean-params": {
       "count": 1
-    }
-  },
-  "src/workbench/extensions/agent/crdt/CrdtDevPanel.clipboard.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
-  "src/workbench/extensions/agent/crdt/crdtDebugGate.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 1
-    }
-  },
-  "src/workbench/extensions/agent/crdt/crdtDebugReport.ts": {
-    "regexp/no-dupe-disjunctions": {
-      "count": 2
     }
   },
   "src/workbench/extensions/agent/crdt/liveGraphApplier.test.ts": {

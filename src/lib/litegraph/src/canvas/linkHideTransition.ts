@@ -1,5 +1,5 @@
-import type { RootGraphId } from '@/types/graphScopeId'
-import type { LinkId } from '@/types/linkId'
+import type { RootGraphId } from '@comfyorg/graph-model/graphScopeId'
+import type { LinkId } from '@comfyorg/graph-model/linkId'
 
 export const LINK_HIDE_TRANSITION = {
   snapMs: 380,

@@ -1,15 +1,54 @@
 <script setup lang="ts">
+import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { ReplyVisualAsset } from '@/workbench/extensions/agent/utils/replyAssets'
 
-const { asset, multi, modelThumbnailSrc } = defineProps<{
+const {
+  asset,
+  multi,
+  modelThumbnailSrc,
+  unavailable = false
+} = defineProps<{
   asset: ReplyVisualAsset
   multi: boolean
   modelThumbnailSrc: string
+  unavailable?: boolean
 }>()
 
-defineEmits<{ inspect: [] }>()
+const emit = defineEmits<{ inspect: []; unavailable: [] }>()
+
+const { t } = useI18n()
+
+const previewing = ref(false)
+
+const name = computed(() => asset.label ?? asset.filename)
+
+const loadErrored = ref(false)
+const loadFailed = computed(() => unavailable || loadErrored.value)
+
+function markUnavailable(): void {
+  loadErrored.value = true
+  emit('unavailable')
+}
+
+const unavailableLabel = computed(() =>
+  t('agent.assetLoadFailed', { name: name.value }, { escapeParameter: false })
+)
+
+const label = computed(() =>
+  loadFailed.value
+    ? unavailableLabel.value
+    : asset.kind === 'video'
+      ? t('agent.openVideo', { name: name.value }, { escapeParameter: false })
+      : name.value
+)
+
+const showPlayBadge = computed(
+  () => asset.kind === 'video' && !previewing.value && !loadFailed.value
+)
 
 function playPreview(event: Event): void {
   const video = event.target
@@ -20,28 +59,52 @@ function stopPreview(event: Event): void {
   const video = event.target
   if (video instanceof HTMLVideoElement) video.pause()
 }
+
+function clearPreviewingUnlessLooping(event: Event): void {
+  if (event.target instanceof HTMLVideoElement && event.target.seeking) return
+  previewing.value = false
+}
 </script>
 
 <template>
   <button
     type="button"
-    :aria-label="asset.label ?? asset.filename"
+    :aria-label="label"
+    :disabled="loadFailed"
     :class="
       cn(
-        'relative cursor-pointer overflow-hidden rounded-lg border-none p-0',
+        'relative cursor-pointer overflow-hidden rounded-lg border-none p-0 disabled:cursor-default',
         multi && 'aspect-square bg-accent',
         !multi && asset.kind === '3D' && 'justify-self-end'
       )
     "
-    @click="$emit('inspect')"
+    @click="emit('inspect')"
   >
+    <span
+      v-if="loadFailed"
+      data-testid="reply-asset-unavailable"
+      :class="
+        cn(
+          'flex items-center gap-2 bg-accent text-muted-foreground',
+          multi
+            ? 'size-full flex-col justify-center p-2 text-xs'
+            : 'px-3 py-2 text-sm'
+        )
+      "
+    >
+      <i aria-hidden="true" class="icon-[lucide--image-off]" />
+      <span :class="multi ? 'line-clamp-3 text-center break-all' : 'break-all'">
+        {{ unavailableLabel }}
+      </span>
+    </span>
     <img
-      v-if="asset.kind === 'image'"
+      v-else-if="asset.kind === 'image'"
       :src="asset.url"
-      :alt="asset.label ?? asset.filename"
+      :alt="name"
       data-testid="reply-image-preview"
       loading="lazy"
       :class="multi ? 'size-full object-cover' : 'block h-auto max-w-full'"
+      @error="markUnavailable"
     />
     <video
       v-else-if="asset.kind === 'video'"
@@ -54,11 +117,15 @@ function stopPreview(event: Event): void {
       :class="multi ? 'size-full object-cover' : 'block h-auto max-w-full'"
       @mouseenter="playPreview"
       @mouseleave="stopPreview"
+      @playing="previewing = true"
+      @pause="previewing = false"
+      @waiting="clearPreviewingUnlessLooping"
+      @error="markUnavailable"
     />
     <img
       v-else-if="modelThumbnailSrc"
       :src="modelThumbnailSrc"
-      :alt="asset.label ?? asset.filename"
+      :alt="name"
       loading="lazy"
       :class="multi ? 'size-full object-cover' : 'block h-auto max-w-full'"
     />
@@ -77,7 +144,7 @@ function stopPreview(event: Event): void {
       />
     </span>
     <span
-      v-if="asset.kind === 'video'"
+      v-if="showPlayBadge"
       data-testid="reply-video-affordance"
       aria-hidden="true"
       class="pointer-events-none absolute inset-0 flex items-center justify-center"

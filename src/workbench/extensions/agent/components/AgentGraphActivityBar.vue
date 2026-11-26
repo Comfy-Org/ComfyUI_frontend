@@ -5,8 +5,8 @@ import { useI18n } from 'vue-i18n'
 import CanvasBanner from '@comfyorg/design-system/common/CanvasBanner'
 import Button from '@comfyorg/design-system/button/Button'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
-import { app } from '@/scripts/app'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
+import { useApp } from '@/scripts/appInstance'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 import { createPositionBounds } from '@/utils/positionBounds'
 
@@ -48,7 +48,7 @@ const liveNodes = computed(() => {
   if (!state || !canvas) return []
   return state.nodeIds.flatMap((nodeId) => {
     const locator = createNodeLocatorId(null, nodeId)
-    const node = getNodeByLocatorId(app.rootGraph, locator)
+    const node = getNodeByLocatorId(useApp().rootGraph, locator)
     return locator && node?.graph === canvas.graph ? [node] : []
   })
 })
@@ -75,7 +75,7 @@ function viewNodes(): void {
   <Teleport v-if="teleportTarget" :to="teleportTarget">
     <div
       v-if="visibleState"
-      class="pointer-events-none absolute inset-x-2 bottom-8 z-1100 flex justify-center"
+      class="pointer-events-none absolute inset-x-2 bottom-8 flex justify-center"
     >
       <CanvasBanner
         :data-testid="presentation.testId"

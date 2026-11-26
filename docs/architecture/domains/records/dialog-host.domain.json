@@ -4,58 +4,25 @@
   "description": "Global dialog state, stacking, focus, dismissal guards, confirmation and prompt dialogs, and extension dialog dispatch. Feature-specific dialog contents remain with their owning modules.",
   "modules": [
     {
-      "path": "src/components/dialog/**",
-      "role": "presentation"
+      "path": "src/components/dialog/**"
     },
     {
-      "path": "src/components/dialog/content/confirmationDialogTypes.ts",
-      "role": "domain"
+      "path": "src/services/__mocks__/dialogService.ts"
     },
     {
-      "path": "src/services/__mocks__/dialogService.ts",
-      "role": "application"
+      "path": "src/services/dialogService.ts"
     },
     {
-      "path": "src/services/dialogService.concurrency.test.ts",
-      "role": "application"
+      "path": "src/services/dialogServiceTypes.ts"
     },
     {
-      "path": "src/services/dialogService.errorCatalog.test.ts",
-      "role": "application"
+      "path": "src/services/extensionDialogService.ts"
     },
     {
-      "path": "src/services/dialogService.options.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/services/dialogService.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/services/dialogServiceTypes.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/services/extensionDialogService.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/stores/dialogStore.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/dialogStore.ts",
-      "role": "application"
+      "path": "src/stores/dialogStore.ts"
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [
-    "agent",
-    "bounding-boxes",
-    "image-compositor",
-    "settings"
-  ],
   "characterizationScenarios": [
     {
       "name": "Global dialog renders stacked dialogs and restores body pointer events on close",

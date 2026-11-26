@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
-import { topUpPlanCreditLine } from '@/platform/billing/topUpPlanCreditLine'
+import {
+  planCreditLine,
+  topUpPlanCreditLine
+} from '@/platform/billing/topUpPlanCreditLine'
 
 const cloudReady = {
   isCloud: true,
@@ -80,5 +83,58 @@ describe('topUpPlanCreditLine', () => {
     }
   ] as const)('is $line for $case', ({ facts, line }) => {
     expect(topUpPlanCreditLine({ ...cloudReady, ...facts })).toBe(line)
+  })
+})
+
+describe('planCreditLine', () => {
+  it.for([
+    {
+      case: 'an ended plan that sales manages',
+      facts: { subscriptionState: 'ended', planKind: 'sales_managed' },
+      line: 'planRequiredContactSales'
+    },
+    {
+      case: 'an ended self-serve plan',
+      facts: { subscriptionState: 'ended', planKind: 'self_serve' },
+      line: 'planRequiredResubscribe'
+    },
+    {
+      case: 'an ended plan with no served plan_kind',
+      facts: { subscriptionState: 'ended', planKind: null },
+      line: 'planRequiredResubscribe'
+    },
+    {
+      case: 'a sales-managed workspace that never subscribed',
+      facts: {
+        subscriptionState: 'never_subscribed',
+        planKind: 'sales_managed'
+      },
+      line: 'planRequiredSubscribe'
+    },
+    {
+      case: 'an active plan that sales manages',
+      facts: { subscriptionState: 'active', planKind: 'sales_managed' },
+      line: null
+    },
+    {
+      case: 'an ended sales-managed plan whose top-up is refused',
+      facts: {
+        subscriptionState: 'ended',
+        planKind: 'sales_managed',
+        canTopUp: false
+      },
+      line: null
+    },
+    {
+      case: 'an ended sales-managed plan on local or Desktop',
+      facts: {
+        subscriptionState: 'ended',
+        planKind: 'sales_managed',
+        isCloud: false
+      },
+      line: null
+    }
+  ] as const)('is $line for $case', ({ facts, line }) => {
+    expect(planCreditLine({ ...cloudReady, ...facts })).toBe(line)
   })
 })

@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 
 import { AgentNonValueWidgetRig } from '@e2e/fixtures/agentNonValueWidgetRig'
 import type { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
@@ -148,6 +148,7 @@ test.describe(
 
       await test.step('stream a text output into the preview widget', async () => {
         // Through the node's own `onExecuted` hook.
+        rig.startRun(JOB_ID)
         sendTextOutput(hostSocket, 'tensor([1, 2, 3])')
 
         // The widget really was written, so this test cannot pass by never

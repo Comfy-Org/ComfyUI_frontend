@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Tag from '@/components/chip/Tag.vue'
+import Tag from '@comfyorg/design-system/chip/Tag'
 import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
 import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
 import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
@@ -34,7 +34,7 @@ const tooltipCopy = computed(() => {
         <Tag
           :label="$t('templateWorkflows.paidTemplate.badgeLabel')"
           shape="overlay"
-          class="h-7 rounded-lg bg-black/30 px-2 backdrop-blur-[20px] [&>span]:sr-only"
+          class="h-7 rounded-lg bg-black/30 backdrop-blur-[20px] [&>span]:sr-only"
         >
           <template #icon>
             <i

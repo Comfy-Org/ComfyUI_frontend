@@ -1,15 +1,20 @@
 import { zUploadImageResponse } from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
 
+import {
+  combineAbortSignals,
+  createTimeoutSignal,
+  throwIfAborted
+} from '@comfyorg/api-client/abortSignal'
 import type {
   ComfyNode,
   ComfyWorkflowJSON
-} from '@/platform/workflow/validation/schemas/workflowSchema'
-import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
-import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'
+} from '@comfyorg/graph-model/workflowSchema'
+import { isWidgetValue } from '@comfyorg/graph-model/widgets'
+import type { TWidgetValue } from '@comfyorg/graph-model/widgets'
 import { api } from '@/scripts/api'
 
-import { zTemplateInput } from '@/platform/workflow/templates/schemas/templateSchema'
+import { zTemplateInput } from '@comfyorg/api-client/templateSchema'
 
 const INPUT_BASE =
   'https://raw.githubusercontent.com/Comfy-Org/workflow_templates/'
@@ -56,7 +61,10 @@ async function uploadTemplateInput(
   sourceRevision: string,
   signal: AbortSignal
 ): Promise<{ ok: true; path: string } | { ok: false; error: Error }> {
-  const requestSignal = AbortSignal.any([signal, AbortSignal.timeout(120_000)])
+  const requestSignal = combineAbortSignals([
+    signal,
+    createTimeoutSignal(120_000)
+  ])
   let operation = 'download'
   function failure(cause: unknown): { ok: false; error: Error } {
     return {
@@ -75,7 +83,7 @@ async function uploadTemplateInput(
     )
     if (!response.ok) return failure(new Error(`HTTP ${response.status}`))
     const bytes = await response.arrayBuffer()
-    requestSignal.throwIfAborted()
+    throwIfAborted(requestSignal)
     const body = new FormData()
     body.append('image', new File([bytes], file))
     body.append('type', 'input')
@@ -96,12 +104,12 @@ async function uploadTemplateInput(
         : result.name
     }
   } catch (cause) {
-    signal.throwIfAborted()
+    throwIfAborted(signal)
     return failure(cause)
   }
 }
 
-function getTemplateInputFiles(
+function getDeclaredInputFiles(
   inputs: unknown,
   bindings: NonNullable<ReturnType<typeof getInputBinding>>[]
 ) {
@@ -140,16 +148,13 @@ function getTemplateInputFiles(
   return { files, errors }
 }
 
-export async function prepareTemplateInputs(
+export function getTemplateInputPlan(
   workflow: ComfyWorkflowJSON,
   inputs: unknown,
-  signal: AbortSignal,
-  restoreNamed: boolean,
-  onStart?: () => void
-): Promise<PreparationResult> {
+  { restoreNamed }: { restoreNamed: boolean }
+) {
   const errors: unknown[] = []
-  const prepared = structuredClone(workflow)
-  const bindings = prepared.nodes.flatMap((node) => {
+  const bindings = workflow.nodes.flatMap((node) => {
     try {
       const binding = getInputBinding(node, restoreNamed)
       return binding ? [binding] : []
@@ -158,20 +163,33 @@ export async function prepareTemplateInputs(
       return []
     }
   })
-  const { files, errors: declarationErrors } = getTemplateInputFiles(
+  const { files, errors: declarationErrors } = getDeclaredInputFiles(
     inputs,
     bindings
   )
   errors.push(...declarationErrors)
-  signal.throwIfAborted()
+  return { bindings, files, errors }
+}
+
+export async function prepareTemplateInputs(
+  workflow: ComfyWorkflowJSON,
+  inputs: unknown,
+  signal: AbortSignal,
+  { restoreNamed, onStart }: { restoreNamed: boolean; onStart?: () => void }
+): Promise<PreparationResult> {
+  const prepared = structuredClone(workflow)
+  const { bindings, files, errors } = getTemplateInputPlan(prepared, inputs, {
+    restoreNamed
+  })
+  throwIfAborted(signal)
   if (!files.size) return { workflow, uploadedCount: 0, errors }
   onStart?.()
   let uploadedCount = 0
   for (const [file, sourceRevision] of files) {
-    signal.throwIfAborted()
+    throwIfAborted(signal)
     try {
       const uploaded = await uploadTemplateInput(file, sourceRevision, signal)
-      signal.throwIfAborted()
+      throwIfAborted(signal)
       if (!uploaded.ok) {
         errors.push(uploaded.error)
         continue
@@ -187,7 +205,7 @@ export async function prepareTemplateInputs(
       }
       uploadedCount++
     } catch (error) {
-      signal.throwIfAborted()
+      throwIfAborted(signal)
       errors.push(error)
     }
   }

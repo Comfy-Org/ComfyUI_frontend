@@ -47,7 +47,9 @@ export class PointCloudModelAdapter implements ModelAdapter {
         : (this.plyLoader.setPath(path), this.plyLoader.parse(arrayBuffer))
 
     ctx.setOriginalModel(plyGeometry)
-    plyGeometry.computeVertexNormals()
+    if (!plyGeometry.hasAttribute('normal')) {
+      plyGeometry.computeVertexNormals()
+    }
 
     const hasVertexColors = plyGeometry.hasAttribute('color')
     const hasFaces = (plyGeometry.index?.count ?? 0) > 0

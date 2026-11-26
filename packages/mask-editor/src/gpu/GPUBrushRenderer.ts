@@ -1,3 +1,4 @@
+import type { Point2D, Size2D } from '@comfyorg/shared-frontend-utils/geometry'
 import * as d from 'typegpu/data'
 import { StrokePoint } from './gpuSchema'
 import {
@@ -445,19 +446,17 @@ export class GPUBrushRenderer {
   }
 
   public renderStrokeToAccumulator(
-    points: { x: number; y: number; pressure: number }[],
-    settings: {
+    points: (Point2D & { pressure: number })[],
+    settings: Size2D & {
       size: number
       coverage: number
       hardness: number
       color: [number, number, number]
-      width: number
-      height: number
       brushShape: number
     }
   ) {
     if (!this.currentStrokeView) return
-    // Render stroke using accumulation pipeline
+
     this.renderStrokeInternal(
       this.currentStrokeView,
       this.accumulatePipeline,
@@ -534,17 +533,14 @@ export class GPUBrushRenderer {
     this.device.queue.submit([encoder.finish()])
   }
 
-  // Direct rendering method
   public renderStroke(
     targetView: GPUTextureView,
-    points: { x: number; y: number; pressure: number }[],
-    settings: {
+    points: (Point2D & { pressure: number })[],
+    settings: Size2D & {
       size: number
       opacity: number
       hardness: number
       color: [number, number, number]
-      width: number
-      height: number
       brushShape: number
     }
   ) {
@@ -554,20 +550,17 @@ export class GPUBrushRenderer {
   private renderStrokeInternal(
     targetView: GPUTextureView,
     pipeline: GPURenderPipeline,
-    points: { x: number; y: number; pressure: number }[],
-    settings: {
+    points: (Point2D & { pressure: number })[],
+    settings: Size2D & {
       size: number
       opacity: number
       hardness: number
       color: [number, number, number]
-      width: number
-      height: number
       brushShape: number
     }
   ) {
     if (points.length === 0) return
 
-    // 1. Update Uniforms
     const buffer = new ArrayBuffer(UNIFORM_SIZE)
     const f32 = new Float32Array(buffer)
     const u32 = new Uint32Array(buffer)
@@ -577,13 +570,12 @@ export class GPUBrushRenderer {
     f32[2] = settings.color[2]
     f32[3] = settings.opacity
     f32[4] = settings.hardness
-    f32[5] = 0 // Padding
+    f32[5] = 0
     f32[6] = settings.width
     f32[7] = settings.height
     u32[8] = settings.brushShape
     this.device.queue.writeBuffer(this.uniformBuffer, 0, buffer)
 
-    // 2. Batch Rendering
     let processedPoints = 0
     while (processedPoints < points.length) {
       const batchSize = Math.min(points.length - processedPoints, MAX_STROKES)
@@ -599,7 +591,6 @@ export class GPUBrushRenderer {
 
       this.device.queue.writeBuffer(this.instanceBuffer, 0, iData)
 
-      // 3. Render Pass
       const encoder = this.device.createCommandEncoder()
       const pass = encoder.beginRenderPass({
         colorAttachments: [

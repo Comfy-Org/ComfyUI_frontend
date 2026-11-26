@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, nextTick } from 'vue'
+import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
@@ -11,19 +11,22 @@ import WidgetSelectDefault from './WidgetSelectDefault.vue'
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
+  escapeParameter: true,
   messages: {
     en: {
       g: {
         noResultsFound: 'No results found',
-        search: 'Search'
+        search: 'Search',
+        back: 'Back',
+        previous: 'Previous',
+        next: 'Next'
+      },
+      widgets: {
+        selectFolder: 'Folder: {name}',
+        backFromFolder: 'Back: {name}'
       }
     }
   }
-})
-
-const WidgetLayoutFieldStub = defineComponent({
-  name: 'WidgetLayoutField',
-  template: '<div class="relative"><slot /></div>'
 })
 
 const flushPromises = () =>
@@ -48,7 +51,8 @@ describe('WidgetSelectDefault', () => {
   function renderComponent(
     widget: SimplifiedWidget<string | undefined>,
     modelValue?: WidgetValue,
-    slots?: Record<string, string>
+    slots?: Record<string, string>,
+    filenameSummary = false
   ) {
     const onUpdate = vi.fn()
     const user = userEvent.setup()
@@ -56,14 +60,12 @@ describe('WidgetSelectDefault', () => {
       props: {
         widget,
         modelValue,
+        filenameSummary,
         'onUpdate:modelValue': onUpdate
       },
       slots,
       global: {
-        plugins: [i18n],
-        stubs: {
-          WidgetLayoutField: WidgetLayoutFieldStub
-        }
+        plugins: [i18n]
       }
     })
 
@@ -78,6 +80,305 @@ describe('WidgetSelectDefault', () => {
 
   const optionLabels = () =>
     screen.queryAllByRole('option').map((option) => option.textContent.trim())
+
+  it('opens from the gap in a unified row without changing its value', async () => {
+    const user = userEvent.setup()
+    const { emitted } = render(WidgetSelectDefault, {
+      props: {
+        widget: createWidget(['euler', 'heun']),
+        modelValue: 'euler'
+      },
+      global: {
+        plugins: [i18n]
+      }
+    })
+
+    await user.click(screen.getByTestId('widget-row-hit-area'))
+
+    expect(screen.getByRole('combobox')).toHaveAttribute(
+      'aria-expanded',
+      'true'
+    )
+    expect(await screen.findByRole('listbox')).toBeVisible()
+    expect(emitted()['update:modelValue']).toBeUndefined()
+  })
+
+  it.for([
+    {
+      raw: 'studio/models/portrait.safetensors',
+      summary: 'portrait.safetensors',
+      filenameSummary: true
+    },
+    {
+      raw: 'C:\\models\\portrait.safetensors',
+      summary: 'portrait.safetensors',
+      filenameSummary: true
+    }
+  ])('displays $raw as $summary', ({ raw, summary, filenameSummary }) => {
+    renderComponent(createWidget([raw]), raw, undefined, filenameSummary)
+    expect(screen.getByRole('combobox').textContent.trim()).toBe(summary)
+    expect(screen.getByRole('combobox')).not.toHaveAttribute('title')
+  })
+
+  it.for([
+    { current: 42, action: 'Next', expected: 89 },
+    { current: 42, action: 'Previous', expected: 11 },
+    { current: 11, action: 'Next', expected: 42 },
+    { current: 89, action: 'Previous', expected: 42 }
+  ])(
+    'steps $action from $current to raw value $expected',
+    async ({ current, action, expected }) => {
+      const { user, onUpdate } = renderComponent(
+        createWidget([11, 42, 89]),
+        current,
+        undefined,
+        false
+      )
+      await user.click(
+        screen.getByRole('button', { name: `test_combo: ${action}` })
+      )
+      expect(onUpdate).toHaveBeenCalledWith(expected)
+    }
+  )
+
+  it.for([
+    { values: [11, 42, 89], current: 11, expected: [true, false] },
+    { values: [11, 42, 89], current: 89, expected: [false, true] },
+    { values: [11], current: 11, expected: [true, true] },
+    { values: [], current: undefined, expected: [true, true] }
+  ])(
+    'disables unavailable directions for $values with current=$current',
+    ({ values, current, expected }) => {
+      renderComponent(createWidget(values), current)
+
+      expect(
+        [
+          screen.getByRole('button', { name: 'test_combo: Previous' }),
+          screen.getByRole('button', { name: 'test_combo: Next' })
+        ].map((button) => button.hasAttribute('disabled'))
+      ).toEqual(expected)
+    }
+  )
+
+  it.for([
+    { initial: [11, 42], action: 'Next', expected: 89 },
+    { initial: [42, 89], action: 'Previous', expected: 11 }
+  ])(
+    'discovers new dynamic options with $action without opening the popup',
+    async ({ initial, action, expected }) => {
+      let values = initial
+      const { user, onUpdate } = renderComponent(
+        createWidget(() => values),
+        42,
+        undefined,
+        false
+      )
+      const arrow = screen.getByRole('button', {
+        name: `test_combo: ${action}`
+      })
+
+      await user.click(arrow)
+      expect(onUpdate).not.toHaveBeenCalled()
+
+      values = [11, 42, 89]
+      await user.click(arrow)
+
+      expect(onUpdate).toHaveBeenCalledWith(expected)
+      expect(screen.getByRole('combobox')).toHaveAttribute(
+        'aria-expanded',
+        'false'
+      )
+    }
+  )
+
+  it('keeps custom labels intact when filename summaries are requested', () => {
+    renderComponent(
+      createWidget(['studio/model.safetensors'], {
+        getOptionLabel: () => 'Studio / approved'
+      }),
+      'studio/model.safetensors',
+      undefined,
+      true
+    )
+    expect(screen.getByRole('combobox')).toHaveTextContent('Studio / approved')
+  })
+
+  it('distinguishes raw paths with the same normalized directory', async () => {
+    const first = '/studio/models/portrait.safetensors'
+    const second = 'studio/models/portrait.safetensors'
+    const { user, onUpdate } = renderComponent(
+      createWidget([first, second]),
+      first,
+      undefined,
+      true
+    )
+    await openDropdown(user)
+    expect(screen.getByRole('option', { name: first })).toBeVisible()
+    await user.click(screen.getByRole('option', { name: second }))
+    expect(onUpdate).toHaveBeenCalledWith(second)
+  })
+
+  it.for([
+    { path: 'studio/models/portrait.safetensors' },
+    { path: 'studio\\models\\portrait.safetensors' },
+    { path: '/studio//models/portrait.safetensors' },
+    { path: '\\\\studio\\models\\portrait.safetensors' }
+  ])(
+    'browses nested folders without changing $path until a file is selected',
+    async ({ path }) => {
+      const { user, onUpdate } = renderComponent(
+        createWidget(['None', path, 'other/portrait.safetensors']),
+        'None',
+        undefined,
+        true
+      )
+      await openDropdown(user)
+      expect(optionLabels()).toEqual(['studio', 'other', 'None'])
+      await user.click(screen.getByRole('option', { name: 'Folder: studio' }))
+      await user.click(screen.getByRole('option', { name: 'Folder: models' }))
+      expect(
+        screen.getByRole('option', { name: 'Back: studio / models' })
+      ).toBeVisible()
+      expect(onUpdate).not.toHaveBeenCalled()
+      expect(screen.getByRole('combobox', { name: 'Search' })).toHaveFocus()
+      await user.click(
+        screen.getByRole('option', { name: 'Back: studio / models' })
+      )
+      expect(
+        screen.getByRole('option', { name: 'Folder: models' })
+      ).toBeVisible()
+      await user.click(screen.getByRole('option', { name: 'Folder: models' }))
+      await user.click(
+        screen.getByRole('option', { name: 'portrait.safetensors' })
+      )
+      expect(onUpdate).toHaveBeenCalledWith(path)
+      expect(
+        screen.queryByTestId('widget-select-default-overlay')
+      ).not.toBeInTheDocument()
+    }
+  )
+
+  it.for([
+    'studio/models/portrait.safetensors',
+    'studio\\models\\portrait.safetensors',
+    '/studio//models/portrait.safetensors',
+    '\\\\studio\\models\\portrait.safetensors'
+  ])('opens the directory containing the selected %s', async (path) => {
+    const { user, onUpdate } = renderComponent(
+      createWidget(['None', path, 'archive/portrait.safetensors']),
+      path,
+      undefined,
+      true
+    )
+    await openDropdown(user)
+    expect(optionLabels()).toEqual(['studio / models', 'portrait.safetensors'])
+    expect(
+      screen.getByRole('option', {
+        name: 'portrait.safetensors',
+        selected: true
+      })
+    ).toBeVisible()
+    expect(onUpdate).not.toHaveBeenCalled()
+  })
+
+  it('keeps empty-search status and focus outside the option list', async () => {
+    const { user } = renderComponent(
+      createWidget([
+        'None',
+        'studio/portrait.safetensors',
+        'archive/portrait.safetensors'
+      ]),
+      'None',
+      undefined,
+      true
+    )
+    await openDropdown(user)
+    const search = screen.getByRole('combobox', { name: 'Search' })
+    const listbox = screen.getByRole('listbox', { name: 'test_combo' })
+    expect(listbox).not.toContainElement(search)
+    expect(search).toHaveAttribute('aria-controls', listbox.id)
+    await user.click(screen.getByRole('option', { name: 'Folder: studio' }))
+    await user.type(search, 'missing')
+    expect(screen.queryByRole('option')).not.toBeInTheDocument()
+    expect(listbox).not.toContainElement(screen.getByRole('status'))
+    expect(search).not.toHaveAttribute('aria-activedescendant')
+    expect(search).toHaveFocus()
+  })
+
+  it('searches every directory and preserves duplicate filename identities', async () => {
+    const { user, onUpdate } = renderComponent(
+      createWidget([
+        'None',
+        'studio/portrait.safetensors',
+        'archive/portrait.safetensors'
+      ]),
+      'None',
+      undefined,
+      true
+    )
+    await openDropdown(user)
+    await user.click(screen.getByRole('option', { name: 'Folder: studio' }))
+    await user.type(
+      screen.getByRole('combobox', { name: 'Search' }),
+      'PORTRAIT'
+    )
+    expect(optionLabels()).toEqual([
+      'studio/portrait.safetensors',
+      'archive/portrait.safetensors'
+    ])
+    await user.click(
+      screen.getByRole('option', { name: 'archive/portrait.safetensors' })
+    )
+    expect(onUpdate).toHaveBeenCalledWith('archive/portrait.safetensors')
+  })
+
+  it('navigates into and out of folders with the keyboard before selecting a file', async () => {
+    const { user, onUpdate } = renderComponent(
+      createWidget(['studio/models/portrait.safetensors']),
+      '',
+      undefined,
+      true
+    )
+    await openDropdown(user)
+    await user.keyboard('{Home}{Enter}')
+    await expectHighlightedOption('Back: studio')
+    await user.keyboard('{ArrowDown}{Enter}')
+    await expectHighlightedOption('Back: studio / models')
+    await user.keyboard('{Enter}')
+    await expectHighlightedOption('Back: studio')
+    expect(onUpdate).not.toHaveBeenCalled()
+    await user.keyboard('{ArrowDown}{Enter}')
+    await expectHighlightedOption('Back: studio / models')
+    await user.keyboard('{End}')
+    await expectHighlightedOption('portrait.safetensors')
+    await user.keyboard('{Enter}')
+    expect(onUpdate).toHaveBeenCalledWith('studio/models/portrait.safetensors')
+  })
+
+  it.for([
+    {
+      values: ['schedule/custom', 'N/A'],
+      options: {},
+      labels: ['schedule/custom', 'N/A']
+    },
+    {
+      values: ['studio/portrait.safetensors'],
+      options: { getOptionLabel: () => 'Studio / approved' },
+      labels: ['Studio / approved']
+    }
+  ])(
+    'retains flat labels $labels for non-file values and custom labelers',
+    async ({ values, options, labels }) => {
+      const { user } = renderComponent(
+        createWidget(values, options),
+        values[0],
+        undefined,
+        false
+      )
+      await openDropdown(user)
+      expect(optionLabels()).toEqual(labels)
+    }
+  )
 
   async function expectHighlightedOption(name: string) {
     await waitFor(() => {
@@ -299,6 +600,24 @@ describe('WidgetSelectDefault', () => {
   })
 
   describe('focus restore behavior', () => {
+    it('returns focus to the combo after keyboard selection from a short list', async () => {
+      const { user, onUpdate } = renderComponent(
+        createWidget(['on', 'off']),
+        'on'
+      )
+      const trigger = screen.getByRole('combobox', { name: 'test_combo' })
+      await user.tab()
+      expect(trigger).toHaveFocus()
+      await user.keyboard('{Enter}')
+      await waitFor(() =>
+        expect(screen.getByRole('option', { name: 'on' })).toHaveFocus()
+      )
+      await user.keyboard('{ArrowDown}{Enter}')
+
+      expect(onUpdate).toHaveBeenCalledWith('off')
+      expect(trigger).toHaveFocus()
+    })
+
     it('keeps the search focused when viewport pointerdown causes focus outside', async () => {
       const { user } = renderComponent(
         createWidget(['alpha', 'bravo', 'charlie', 'delta', 'echo'])

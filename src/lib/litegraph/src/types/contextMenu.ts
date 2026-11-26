@@ -1,9 +1,9 @@
 import type {
   ContextMenu,
   LGraphNode
-} from '@/lib/litegraph/src/types/entityRegistry'
+} from '@comfyorg/graph-model/entityRegistry'
 
-import type { IFoundSlot } from './slots'
+import type { IFoundSlot } from '@comfyorg/graph-model/slots'
 
 interface IContextMenuBase {
   title?: string

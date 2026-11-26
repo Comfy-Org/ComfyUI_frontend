@@ -77,14 +77,14 @@ describe('ColorCustomizationSelector', () => {
     await nextTick()
 
     expect(
-      screen.queryByRole('button', { name: 'Color #0d6efd' })
+      screen.queryByRole('button', { name: '#0d6efd 100%' })
     ).not.toBeInTheDocument()
     const toggleButtons = getToggleButtons()
     await user.click(toggleButtons[toggleButtons.length - 1])
     await nextTick()
 
     expect(
-      screen.getByRole('button', { name: 'Color #0d6efd' })
+      screen.getByRole('button', { name: '#0d6efd 100%' })
     ).toHaveTextContent('#0d6efd')
   })
 
@@ -97,7 +97,7 @@ describe('ColorCustomizationSelector', () => {
 
     expect(customButton).toHaveAttribute('aria-pressed', 'true')
     expect(
-      screen.getByRole('button', { name: 'Color #0d6efd' })
+      screen.getByRole('button', { name: '#0d6efd 100%' })
     ).toHaveTextContent('#0d6efd')
   })
 

@@ -1,4 +1,4 @@
-import type { Positionable } from '@/lib/litegraph/src/interfaces'
+import type { Positionable } from '@comfyorg/graph-model/interfaces'
 import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
 import { LGraphEventMode, LGraphGroup } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode, LGraphCanvas } from '@/lib/litegraph/src/litegraph'

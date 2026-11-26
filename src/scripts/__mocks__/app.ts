@@ -84,6 +84,7 @@ const actions = vi.mockObject<
     | 'getRandParam'
     | 'graphToPrompt'
     | 'handleFile'
+    | 'hasPendingCamera'
     | 'loadGraphData'
     | 'openClipspace'
     | 'queuePrompt'
@@ -121,12 +122,15 @@ const actions = vi.mockObject<
     async refreshMissingModels() {
       assert.fail('Configure app.refreshMissingModels for this test')
     },
-    async refreshComboInNodes() {},
+    async refreshComboInNodes() {
+      return true
+    },
     clean() {},
     openClipspace() {},
     getPreviewFormatParam: () => '',
     getRandParam: () => '',
     async handleFile() {},
+    hasPendingCamera: () => false,
     showErrorOnFileLoad() {}
   },
   { spy: true }
@@ -160,12 +164,14 @@ const uiActions: Pick<RealComfyApp['ui'], 'restoreMenuPosition'> = {
 }
 
 type AppState = {
-  -readonly [K in
-    | 'configuringGraph'
-    | 'lastExecutionError'
-    | 'nodeOutputs'
-    | 'nodePreviewImages'
-    | 'vueAppReady']: RealComfyApp[K]
+  -readonly [
+    K in
+      | 'configuringGraph'
+      | 'lastExecutionError'
+      | 'nodeOutputs'
+      | 'nodePreviewImages'
+      | 'vueAppReady'
+  ]: RealComfyApp[K]
 } & {
   rootGraph: ShallowRef<RealComfyApp['rootGraphOrUndefined']>
   canvas: Canvas
@@ -270,6 +276,12 @@ export const app = {
   get isGraphReady() {
     return state().rootGraph.value !== undefined
   },
+  createRootGraph: vi.fn(() => new LGraph()),
+  enqueueGraphLoad: vi.fn(<T>(operation: () => Promise<T>) => operation()),
+  activateRootGraph: vi.fn((graph: LGraph) => {
+    state().rootGraph.value = graph
+    state().canvas.setGraph(graph)
+  }),
   get nodeOutputs() {
     return state().nodeOutputs
   },

@@ -1,4 +1,4 @@
-import { useAssetsStore } from '@/stores/assetsStore'
+import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
@@ -8,12 +8,12 @@ import type { ComponentProps } from 'vue-component-type-helpers'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
-import { unflattenOutputAssets } from '@/platform/assets/composables/media/assetMappers'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
+import { unflattenOutputAssets } from '@/platform/assets/adapters/outputAssetMappers'
+import type { AssetItem } from '@comfyorg/assets-core/schema'
+import { MIME_ASSET_INFO } from '@/platform/assets/constants/assetDrag'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
-import { provideWebSessionRequests } from '@/platform/auth/session/webSessionFetch'
-import type { WebSessionRequests } from '@/platform/auth/session/webSessionFetch'
+import { provideWebSessionRequests } from '@comfyorg/api-client/webSessionFetch'
+import type { WebSessionRequests } from '@comfyorg/api-client/webSessionFetch'
 
 const mockIsCloud = vi.hoisted(() => ({ value: false }))
 
@@ -155,7 +155,9 @@ describe('MediaAssetCard', () => {
     })
 
     it('includes the asset metadata with display_name in the drag payload', () => {
-      const { container } = renderCard()
+      const { container } = renderCard({
+        asset: { ...asset, display_name: 'Display A', tags: ['output'] }
+      })
 
       const { event, add } = dispatchDragStart(container)
 
@@ -283,6 +285,17 @@ describe('MediaAssetCard', () => {
     await user.dblClick(preview)
 
     expect(emitted().zoom).toEqual([[hdrAsset]])
+  })
+
+  it('inspects a video asset on double click', async () => {
+    const user = userEvent.setup()
+    const videoAsset = { ...asset, name: 'clip.mp4' }
+    const { emitted } = renderCard({ loading: false, asset: videoAsset })
+    const video = await screen.findByTestId('media-asset-video')
+
+    await user.dblClick(video)
+
+    expect(emitted().zoom).toEqual([[videoAsset]])
   })
 
   it('selects non-video assets from the preview', async () => {

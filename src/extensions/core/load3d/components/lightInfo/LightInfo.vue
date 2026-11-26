@@ -110,7 +110,7 @@ import WidgetHistoryButtons from '@/components/widgetHistory/WidgetHistoryButton
 import { widgetHistoryScope } from '@/composables/widgetHistoryScope'
 import type { LightTransformGizmoMode } from '@comfyorg/viewport3d/lightInfo/LightInfoViewport'
 import { LIGHT_TYPE_LABEL_KEYS } from '@comfyorg/viewport3d/lightInfo/types'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { resolveNode } from '@/utils/litegraphUtil'
 
@@ -132,7 +132,7 @@ function lightChipClass(active: boolean) {
     chipClass,
     'border border-transparent bg-transparent font-mono text-xs',
     active
-      ? 'border-node-border bg-muted text-foreground'
+      ? 'border-node-border bg-muted'
       : 'text-muted-foreground hover:bg-accent hover:text-foreground'
   )
 }

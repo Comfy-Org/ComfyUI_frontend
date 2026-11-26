@@ -16,7 +16,7 @@ export function useSubscriptionPaywall() {
   const subscriptionDialog = useSubscriptionDialogAccess()
 
   function showForRail(options?: SubscriptionDialogOptions): void {
-    if (type.value === 'workspace') subscriptionDialog.show(options)
+    if (type.value === 'workspace') void subscriptionDialog.show(options)
     else void showSubscriptionRequiredDialog(options)
   }
 

@@ -69,8 +69,8 @@
     "name": "Optionen für den Entwicklermodus aktivieren (API-Speichern usw.)"
   },
   "Comfy_DisableFloatRounding": {
-    "name": "Standardrundung von Float-Widgets deaktivieren.",
-    "tooltip": "(Neuladen der Seite erforderlich) Die Rundung kann nicht deaktiviert werden, wenn sie vom Node im Backend festgelegt wird."
+    "name": "Standardmäßige Rundung des Float-Widgets deaktivieren (veraltet).",
+    "tooltip": "(erfordert ein Neuladen der Seite) Veraltet und standardmäßig aktiviert. Wenn Sie dies deaktivieren, werden bearbeitete Float-Werte auf die Dezimalstellen der Widget-Schrittweite gerundet. Die vom Node deklarierte Rundung wird immer angewendet."
   },
   "Comfy_DisableSliders": {
     "name": "Slider für Node-Widgets deaktivieren"
@@ -317,6 +317,10 @@
   "Comfy_Node_DoubleClickTitleToEdit": {
     "name": "Node-Titel per Doppelklick bearbeiten"
   },
+  "Comfy_Node_DownscaleImagePreviews": {
+    "name": "Große Bildvorschauen verkleinern",
+    "tooltip": "In Nodes 2.0 werden große Bilder auf Nodes als Kopie mit maximal 1024 px an der längsten Seite angezeigt, damit viele große Vorschauen reaktionsschnell bleiben. Deaktivieren Sie dies, um immer das Original anzuzeigen."
+  },
   "Comfy_Node_MiddleClickRerouteNode": {
     "name": "Mittelklick erstellt einen neuen Reroute-Node"
   },
@@ -465,7 +469,7 @@
     "name": "Fehlende Medien im Probleme-Tab anzeigen",
     "tooltip": "Wenn deaktiviert, werden nicht gefundene Eingabebilder, Videos und Audiodateien nicht im Probleme-Tab aufgeführt und ihre Nodes nicht hervorgehoben."
   },
-  "Comfy_Workflow_ShowMissingNodesWarning": {
+  "Comfy_ErrorSystem_ShowMissingNodes": {
     "name": "Fehlende Nodes im Probleme-Tab anzeigen",
     "tooltip": "Wenn deaktiviert, werden fehlende Node-Pakete nicht im Probleme-Tab aufgeführt und ihre Nodes nicht hervorgehoben. Der Workflow kann weiterhin nicht ausgeführt werden, bis sie installiert sind."
   },

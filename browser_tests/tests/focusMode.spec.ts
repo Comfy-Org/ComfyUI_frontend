@@ -2,7 +2,7 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
-import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
+import { PropertiesPanel } from '@e2e/fixtures/components/PropertiesPanel'
 
 test.describe('Focus Mode', { tag: '@ui' }, () => {
   test('Focus mode hides UI chrome', async ({ comfyPage }) => {
@@ -64,7 +64,7 @@ test.describe('Focus Mode', { tag: '@ui' }, () => {
     comfyPage
   }) => {
     const sidebar = comfyPage.menu.nodeLibraryTabV2
-    const properties = new PropertiesPanelHelper(comfyPage.page)
+    const properties = new PropertiesPanel(comfyPage.page)
     await sidebar.open()
     await sidebar.searchInput.fill('KSampler')
     await properties.open(comfyPage.actionbar.propertiesButton)

@@ -37,16 +37,12 @@ import type {
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { ObjectInfoResponse } from '@/schemas/nodeDefSchema'
+import type { ObjectInfoResponse } from '@comfyorg/object-info-parser'
 import { parseAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import type { GraphOperation } from '@/workbench/extensions/agent/crdt/graphOperations'
 import { mintWireOps } from '@/workbench/extensions/agent/crdt/opEnvelope'
 
-import {
-  agentTest,
-  bootAgentApp,
-  mockWorkflowPersistence
-} from '@e2e/fixtures/agentPanelFixture'
+import { agentTest, bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
 import type {
   HostFrame,
   WireApplyResult
@@ -212,11 +208,6 @@ export class IdCollisionHarness {
       objectInfo: 'server'
     })
     await new AgentPanel(this.page).open(30_000)
-    await this.selectWorkflowTarget()
-    // `useAgentSession` only binds the CRDT workflow id (which is what makes
-    // the follower's `isTargetActive` watch subscribe) once a turn's POST ack
-    // names it — selecting the target alone does not. A real turn is not
-    // needed for that binding, so this prompt is never answered.
     await this.sendMinimalPrompt()
     await this.waitForSubscribe(1)
     // The seed's one node materializes from the doc's catch-up frame.
@@ -287,18 +278,6 @@ export class IdCollisionHarness {
         `${event.type} frame is not a valid agent event: ${parsed.error.message}`
       )
     this.hostSocket.send(parsed.data)
-  }
-
-  private async selectWorkflowTarget(): Promise<void> {
-    await mockWorkflowPersistence(this.page, WORKFLOW_ID)
-    const picker = this.panel.getByRole('button', {
-      name: enMessages.agent.switchWorkflow
-    })
-    await picker.click()
-    await this.page
-      .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
-      .click()
-    await expect(picker).toHaveText('Unsaved Workflow')
   }
 
   /**

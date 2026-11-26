@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { useExtensionStore } from '@/stores/extensionStore'
+import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/platform/distribution/types'), () => ({

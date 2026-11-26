@@ -19,7 +19,8 @@ function withoutAppSrcAlias(alias: AliasOptions = []): Alias[] {
 const config: StorybookConfig = {
   stories: [
     '../src/**/*.stories.@(js|jsx|mjs|ts|tsx)',
-    '../packages/design-system/src/**/*.stories.@(js|jsx|mjs|ts|tsx)'
+    '../packages/design-system/src/**/*.stories.@(js|jsx|mjs|ts|tsx)',
+    '../packages/account-ui/src/**/*.stories.@(js|jsx|mjs|ts|tsx)'
   ],
   staticDirs: ['../public'],
   addons: ['@storybook/addon-docs', '@storybook/addon-mcp'],
@@ -88,6 +89,10 @@ const config: StorybookConfig = {
       resolve: {
         tsconfigPaths: true,
         alias: [
+          {
+            find: '@comfyorg/design-system/css/style.css',
+            replacement: process.cwd() + '/.storybook/style.css'
+          },
           {
             find: '@/composables/queue/useJobList',
             replacement: process.cwd() + '/src/storybook/mocks/useJobList.ts'

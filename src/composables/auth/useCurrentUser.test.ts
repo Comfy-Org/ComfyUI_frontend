@@ -100,6 +100,27 @@ describe('useCurrentUser', () => {
     expect(userDisplayName.value).toBeUndefined()
   })
 
+  it('shows a host account by the name its session carries', async () => {
+    const signedIn = {
+      status: 'signed_in',
+      userId: 'host-user',
+      email: 'sso@example.com',
+      name: 'Denys Puziak'
+    } as const
+    await startDesktopHostSession({
+      getState: async () => signedIn,
+      getWorkspaceToken: async () => 'host-token',
+      requestSignIn: async () => signedIn,
+      signOut: async () => ({ status: 'signed_out' }),
+      onChanged: () => () => {}
+    })
+
+    const { userDisplayName, userEmail } = useCurrentUser()
+
+    expect(userDisplayName.value).toBe('Denys Puziak')
+    expect(userEmail.value).toBe('sso@example.com')
+  })
+
   it('reads a Firebase-only login entirely from Firebase', () => {
     mockAuthState.currentUser = fromPartial<
       NonNullable<typeof mockAuthState.currentUser>

@@ -4,12 +4,13 @@ import type {
   AgentMessage,
   AgentThreadListResponse,
   WorkflowListResponse,
-  WorkflowResponse
+  WorkflowResponse,
+  WorkflowSidebarFileResponse
 } from '@comfyorg/ingest-types'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { UserDataFullInfo } from '@comfyorg/api-client/types'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 
 import {
   agentTest as test,
@@ -181,6 +182,17 @@ test.describe(
               return route.fallback()
             return route.fulfill(jsonRoute(workflowRow(DRAFT_WORKFLOW_ID)))
           })
+          await page.route(
+            `**/api/workflows/${SAVED_WORKFLOW_ID}/sidebar-file`,
+            (route) => {
+              const sidebarFile: WorkflowSidebarFileResponse = {
+                path: SAVED_WORKFLOW_PATH,
+                modified: Date.parse(AT),
+                size: JSON.stringify(EMPTY_WORKFLOW).length
+              }
+              return route.fulfill(jsonRoute(sidebarFile))
+            }
+          )
           await page.route('**/api/userdata?*', (route) => {
             const dir = new URL(route.request().url()).searchParams.get('dir')
             if (dir !== 'workflows') return route.fallback()
@@ -223,7 +235,7 @@ test.describe(
           data: { workflow_id: DRAFT_WORKFLOW_ID, name: DRAFT_TAB_NAME }
         })
         await expect(topbar.getWorkflowTab(DRAFT_TAB_NAME)).toBeVisible()
-        await expect(agentPanel.workflowPicker).toHaveText(DRAFT_TAB_NAME)
+        await expect(topbar.getActiveTab()).toContainText(DRAFT_TAB_NAME)
         await expect(unavailable).toBeHidden()
       })
 
@@ -247,7 +259,6 @@ test.describe(
           DRAFT_REQUEST
         ])
         await expect(unavailable).toBeHidden()
-        await expect(agentPanel.workflowPicker).toHaveText(DRAFT_TAB_NAME)
         await expect(topbar.getActiveTab()).toContainText(DRAFT_TAB_NAME)
       })
 

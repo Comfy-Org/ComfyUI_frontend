@@ -23,13 +23,13 @@ import type { WidgetValuesForm } from '@comfyorg/comfy-multi-player'
 
 import { assert } from '@/base/assert'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import { reportError } from '@/platform/telemetry/reportError'
+import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import type { WidgetState } from '@/types/widgetState'
-import { widgetId } from '@/types/widgetId'
+import type { WidgetState } from '@comfyorg/graph-model/widgetState'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 
 /** The post-hook halves of a serialized node this module reads. */
 type SerializedWidgetValues = Pick<ISerialisedNode, 'widgets_values_named'>

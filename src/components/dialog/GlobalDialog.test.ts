@@ -1,5 +1,6 @@
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { getActivePinia } from 'pinia'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { computed, defineComponent, h, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -112,7 +113,7 @@ const Body = defineComponent({
 
 function mountDialog() {
   return render(GlobalDialog, {
-    global: { plugins: [i18n] }
+    global: { plugins: [getActivePinia()!, i18n] }
   })
 }
 
