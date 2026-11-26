@@ -12,7 +12,7 @@ import {
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { importApiPrompt } from '@/platform/workflow/utils/importApiPrompt'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { createHandoffScopeCheck } from '@/platform/workflow/utils/createHandoffScopeCheck'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { t } from '@/i18n'
 import { api } from '@/scripts/api'
@@ -22,16 +22,15 @@ import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
 
 type OutputAsset = Awaited<ReturnType<typeof assetService.getAssetDetails>>
 
-async function outputMetadata(asset: OutputAsset, inScope: () => boolean) {
+async function createOutputReader(assetId: string, inScope: () => boolean) {
   const media =
-    '/assets/' + encodeURIComponent(asset.id) + '/content?disposition=inline'
-  const cookieSession = isCloud && (await signedInOnWebSession())
-  const token =
-    isCloud && !cookieSession
-      ? await useAuthStore().getWorkspaceAuthToken()
-      : undefined
-  if (isCloud && !cookieSession && !token) return
-  const fetchContent = async (range?: string) => {
+    '/assets/' + encodeURIComponent(assetId) + '/content?disposition=inline'
+  const needsToken = isCloud && !(await signedInOnWebSession())
+  const token = needsToken
+    ? await useAuthStore().getWorkspaceAuthToken()
+    : undefined
+  if (needsToken && !token) return
+  return async (range?: string) => {
     if (!inScope()) return
     const headers = new Headers(
       token ? { Authorization: 'Bearer ' + token } : undefined
@@ -43,27 +42,60 @@ async function outputMetadata(asset: OutputAsset, inScope: () => boolean) {
     if (!response.ok || !inScope()) return
     return response
   }
-  if (asset.size && /\.(?:mp4|m4v|mov)$/i.test(asset.name)) {
-    let wholeFile: Blob | undefined
-    return getMovieMetadataFromRanges(asset.size, async (start, end) => {
-      if (!wholeFile) {
-        const response = await fetchContent(`bytes=${start}-${end - 1}`)
-        if (!response) return
-        if (response.status === 206) {
-          const bytes = await response.arrayBuffer()
-          return bytes.byteLength === end - start ? bytes : undefined
-        }
-        wholeFile = await response.blob()
+}
+
+function readMovieMetadata(
+  size: number,
+  fetchContent: (range?: string) => Promise<Response | undefined>
+) {
+  let wholeFile: Blob | undefined
+  return getMovieMetadataFromRanges(size, async (start, end) => {
+    if (!wholeFile) {
+      const response = await fetchContent(`bytes=${start}-${end - 1}`)
+      if (!response) return
+      if (response.status === 206) {
+        const bytes = await response.arrayBuffer()
+        return bytes.byteLength === end - start ? bytes : undefined
       }
-      return wholeFile.slice(start, end).arrayBuffer()
-    })
-  }
+      wholeFile = await response.blob()
+    }
+    return wholeFile.slice(start, end).arrayBuffer()
+  })
+}
+
+async function outputMetadata(asset: OutputAsset, inScope: () => boolean) {
+  const fetchContent = await createOutputReader(asset.id, inScope)
+  if (!fetchContent) return
+  if (asset.size && /\.(?:mp4|m4v|mov)$/i.test(asset.name))
+    return readMovieMetadata(asset.size, fetchContent)
   const response = await fetchContent()
   if (!response) return
   const blob = await response.blob()
   return getWorkflowDataFromFile(
     new File([blob], asset.name, { type: asset.mime_type || blob.type })
   )
+}
+
+function isMatchingOutput(asset: OutputAsset, id: string): boolean {
+  return asset.id === id && asset.tags.includes('output')
+}
+
+async function openAssetWorkflow(id: string, inScope: () => boolean) {
+  if (!inScope()) return false
+  const asset = await assetService.getAssetDetails(id)
+  if (!inScope() || !isMatchingOutput(asset, id)) return false
+  const metadata = await outputMetadata(asset, inScope)
+  if (!inScope()) return false
+  const data =
+    typeof metadata?.prompt === 'string'
+      ? parseJsonWithNonFinite(metadata.prompt)
+      : metadata?.prompt
+  const basename =
+    asset.name
+      .split('/')
+      .pop()
+      ?.replace(/\.[^.]+$/, '') || id
+  return importApiPrompt(data, basename)
 }
 
 /** Open the embedded API graph of an output even when its job is no longer available. */
@@ -85,29 +117,10 @@ export function useAssetWorkflowUrlLoader() {
       await router.replace({ query })
       if (typeof id !== 'string' || !/^[a-zA-Z0-9_-]{1,128}$/.test(id))
         return void reportFailure()
-      const workspace = isCloud ? useTeamWorkspaceStore() : null
-      const inScope = () =>
-        workspace
-          ? typeof assetWorkspace === 'string' &&
-            !!assetWorkspace &&
-            workspace.activeWorkspaceId === assetWorkspace
-          : assetWorkspace === undefined
-      if (!inScope()) return void reportFailure()
-      const asset = await assetService.getAssetDetails(id)
-      if (!inScope() || asset.id !== id || !asset.tags.includes('output'))
-        return void reportFailure()
-      const metadata = await outputMetadata(asset, inScope)
-      if (!inScope()) return void reportFailure()
-      const data =
-        typeof metadata?.prompt === 'string'
-          ? parseJsonWithNonFinite(metadata.prompt)
-          : metadata?.prompt
-      const basename =
-        asset.name
-          .split('/')
-          .pop()
-          ?.replace(/\.[^.]+$/, '') || id
-      if (!(await importApiPrompt(data, basename))) reportFailure()
+      if (
+        !(await openAssetWorkflow(id, createHandoffScopeCheck(assetWorkspace)))
+      )
+        reportFailure()
     } catch {
       reportFailure()
     }

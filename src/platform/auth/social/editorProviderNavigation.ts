@@ -162,21 +162,43 @@ export function takeProviderReturn(): ProviderReturn | Error | undefined {
   return { attempt, requestUri }
 }
 
+function validProviderReturn({ attempt, requestUri }: ProviderReturn): boolean {
+  const url = new URL(requestUri)
+  return (
+    url.origin === location.origin &&
+    url.pathname === callbackPath &&
+    fresh(attempt) &&
+    url.searchParams.getAll('state').length === 1 &&
+    url.searchParams.get('state') === attempt.state &&
+    !url.searchParams.has('error') &&
+    url.searchParams.getAll('code').length === 1 &&
+    Boolean(url.searchParams.get('code'))
+  )
+}
+
+function providerCredentialFor(
+  provider: EditorProvider,
+  result: Record<string, unknown>
+) {
+  const accessToken =
+    typeof result.oauthAccessToken === 'string'
+      ? result.oauthAccessToken
+      : undefined
+  if (provider === 'github')
+    return accessToken ? GithubAuthProvider.credential(accessToken) : undefined
+  const idToken =
+    typeof result.oauthIdToken === 'string' ? result.oauthIdToken : undefined
+  return idToken || accessToken
+    ? GoogleAuthProvider.credential(idToken, accessToken)
+    : undefined
+}
+
 export async function exchangeProviderReturn(
-  { attempt, requestUri }: ProviderReturn,
+  value: ProviderReturn,
   isCurrent: () => boolean
 ) {
-  const url = new URL(requestUri)
-  if (
-    url.origin !== location.origin ||
-    url.pathname !== callbackPath ||
-    !fresh(attempt) ||
-    url.searchParams.getAll('state').length !== 1 ||
-    url.searchParams.get('state') !== attempt.state ||
-    url.searchParams.has('error') ||
-    url.searchParams.getAll('code').length !== 1 ||
-    !url.searchParams.get('code')
-  )
+  const { attempt, requestUri } = value
+  if (!validProviderReturn(value))
     return new Error('Sign-in was cancelled or expired.')
   const result = await identityCall('signInWithIdp', {
     requestUri,
@@ -195,20 +217,8 @@ export async function exchangeProviderReturn(
     !result.localId
   )
     return new Error('The identity provider requires another sign-in step.')
-  const idToken =
-    typeof result.oauthIdToken === 'string' ? result.oauthIdToken : undefined
-  const accessToken =
-    typeof result.oauthAccessToken === 'string'
-      ? result.oauthAccessToken
-      : undefined
-  let providerCredential
-  if (attempt.provider === 'google' && (idToken || accessToken)) {
-    providerCredential = GoogleAuthProvider.credential(idToken, accessToken)
-  } else if (attempt.provider === 'github' && accessToken) {
-    providerCredential = GithubAuthProvider.credential(accessToken)
-  } else {
-    return new Error('Missing provider credential.')
-  }
+  const providerCredential = providerCredentialFor(attempt.provider, result)
+  if (!providerCredential) return new Error('Missing provider credential.')
   const auth = getAuth()
   const credential = await signInWithCredential(auth, providerCredential)
   if (credential.user.uid !== result.localId) {
