@@ -23126,7 +23126,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "用于生成的模型。recraftv4_styles 模型专为风格一致的生成而构建，并且始终需要 style_id 或 style_references；recraftv4_1_flash 是最快且最便宜的模型，完全不支持任何风格。"
+        "tooltip": "用于生成的模型。recraftv4_styles 模型专为风格一致的生成而构建，且始终需要 style_id 或 style_references；recraftv4_1_flash 运行 Recraft V4.1 Flash V2，这是速度最快且成本最低的模型，完全不支持任何风格。"
       },
       "model_size": {
         "name": "size"
@@ -23237,6 +23237,14 @@
     "inputs": {
       "image": {
         "name": "图像"
+      },
+      "shape_stacking": {
+        "name": "形状堆叠",
+        "tooltip": "hierarchical 会将形状按层级相互叠放；cut_out 会生成绝不重叠的形状，适用于绘图机、乙烯基切割机和丝网印刷。"
+      },
+      "version": {
+        "name": "版本",
+        "tooltip": "v1_pro（Vectorizer Pro）可生成更简洁的 SVG，具有平滑曲线、直线和清晰锐角，最适合文字和复杂形状。"
       }
     },
     "outputs": {

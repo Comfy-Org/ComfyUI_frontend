@@ -23126,7 +23126,7 @@
       },
       "model": {
         "name": "מודל",
-        "tooltip": "המודל שישמש ליצירה. המודלים recraftv4_styles מיועדים ליצירה עקבית מבחינת סגנון ותמיד מחייבים style_id או style_references; ‏recraftv4_1_flash הוא המודל המהיר והזול ביותר ואינו תומך בסגנונות כלל."
+        "tooltip": "המודל שיש להשתמש בו לצורך יצירה. המודלים recraftv4_styles נבנו ליצירה עקבית מבחינת סגנון ותמיד דורשים style_id או style_references; ‏recraftv4_1_flash מריץ את Recraft V4.1 Flash V2, המודל המהיר והזול ביותר, ואינו תומך בסגנונות כלל."
       },
       "model_size": {
         "name": "גודל"
@@ -23237,6 +23237,14 @@
     "inputs": {
       "image": {
         "name": "תמונה"
+      },
+      "shape_stacking": {
+        "name": "shape_stacking",
+        "tooltip": "hierarchical מציב צורות בשכבות זו מעל זו; cut_out יוצר צורות שאינן חופפות לעולם, עבור פלוטרים, חותכי ויניל ודפוס משי."
+      },
+      "version": {
+        "name": "גרסה",
+        "tooltip": "v1_pro ‏(Vectorizer Pro) מספק קובצי SVG נקיים יותר עם עקומות חלקות, קווים ישרים ופינות חדות, ומתאים במיוחד לאותיות ולצורות מורכבות."
       }
     },
     "outputs": {

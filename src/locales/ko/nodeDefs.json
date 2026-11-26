@@ -23126,7 +23126,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "생성에 사용할 모델입니다. recraftv4_styles 모델은 일관된 스타일의 생성을 위해 설계되었으며 항상 style_id 또는 style_references가 필요합니다. recraftv4_1_flash는 가장 빠르고 저렴한 모델이며 스타일을 전혀 지원하지 않습니다."
+        "tooltip": "생성에 사용할 모델입니다. recraftv4_styles 모델은 스타일 일관성을 유지하는 생성용으로 제작되었으며 항상 style_id 또는 style_references가 필요합니다. recraftv4_1_flash는 가장 빠르고 저렴한 모델인 Recraft V4.1 Flash V2를 실행하며, 스타일을 전혀 지원하지 않습니다."
       },
       "model_size": {
         "name": "size"
@@ -23237,6 +23237,14 @@
     "inputs": {
       "image": {
         "name": "이미지"
+      },
+      "shape_stacking": {
+        "name": "shape_stacking",
+        "tooltip": "hierarchical은 도형을 서로 겹쳐 계층적으로 쌓고, cut_out은 플로터, 비닐 커터 및 스크린 인쇄용으로 절대 겹치지 않는 도형을 만듭니다."
+      },
+      "version": {
+        "name": "버전",
+        "tooltip": "v1_pro (Vectorizer Pro)는 매끄러운 곡선, 직선, 선명한 모서리를 갖춘 더 깔끔한 SVG를 제공하며, 글자와 복잡한 형태에 가장 적합합니다."
       }
     },
     "outputs": {

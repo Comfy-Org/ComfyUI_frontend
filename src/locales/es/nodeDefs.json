@@ -23126,7 +23126,7 @@
       },
       "model": {
         "name": "modelo",
-        "tooltip": "El modelo que se utilizará para la generación. Los modelos recraftv4_styles están diseñados para generar resultados coherentes en estilo y siempre requieren un style_id o style_references; recraftv4_1_flash es el modelo más rápido y económico, y no admite estilos en absoluto."
+        "tooltip": "El modelo que se utilizará para la generación. Los modelos recraftv4_styles están diseñados para la generación con estilos coherentes y siempre requieren un style_id o style_references; recraftv4_1_flash ejecuta Recraft V4.1 Flash V2, el modelo más rápido y económico, y no admite estilos en absoluto."
       },
       "model_size": {
         "name": "tamaño"
@@ -23237,6 +23237,14 @@
     "inputs": {
       "image": {
         "name": "imagen"
+      },
+      "shape_stacking": {
+        "name": "shape_stacking",
+        "tooltip": "hierarchical apila las formas en capas jerárquicas unas sobre otras; cut_out crea formas que nunca se superponen, para trazadores, cortadoras de vinilo y serigrafía."
+      },
+      "version": {
+        "name": "versión",
+        "tooltip": "v1_pro (Vectorizer Pro) proporciona SVG más limpios con curvas suaves, líneas rectas y esquinas nítidas; es ideal para texto y formas complejas."
       }
     },
     "outputs": {

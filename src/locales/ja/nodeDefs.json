@@ -23126,7 +23126,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "生成に使用するモデルです。recraftv4_stylesモデルはスタイルの一貫した生成向けに構築されており、常にstyle_idまたはstyle_referencesが必要です。recraftv4_1_flashは最速かつ最も低コストのモデルで、スタイルは一切サポートしません。"
+        "tooltip": "生成に使用するモデルです。recraftv4_styles モデルはスタイルの一貫した生成向けに構築されており、常に style_id または style_references が必要です。recraftv4_1_flash は最速かつ最も低コストのモデルである Recraft V4.1 Flash V2 を実行し、スタイルは一切サポートしません。"
       },
       "model_size": {
         "name": "サイズ"
@@ -23237,6 +23237,14 @@
     "inputs": {
       "image": {
         "name": "画像"
+      },
+      "shape_stacking": {
+        "name": "shape_stacking",
+        "tooltip": "hierarchical は形状を互いに重ねた階層レイヤーにします。cut_out は、プロッター、ビニールカッター、スクリーン印刷向けに、決して重ならない形状を作成します。"
+      },
+      "version": {
+        "name": "バージョン",
+        "tooltip": "v1_pro（Vectorizer Pro）は、滑らかな曲線、直線、鋭い角を備えたよりクリーンなSVGを生成し、文字や複雑な形状に最適です。"
       }
     },
     "outputs": {

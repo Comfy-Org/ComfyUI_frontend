@@ -23126,7 +23126,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "用於生成的模型。recraftv4_styles 模型專為風格一致的生成而設計，且一律需要 style_id 或 style_references；recraftv4_1_flash 是最快且最便宜的模型，完全不支援任何風格。"
+        "tooltip": "用於生成的模型。recraftv4_styles 模型專為風格一致的生成而打造，且一律需要 style_id 或 style_references；recraftv4_1_flash 執行 Recraft V4.1 Flash V2，這是速度最快且成本最低的模型，完全不支援任何風格。"
       },
       "model_size": {
         "name": "size"
@@ -23237,6 +23237,14 @@
     "inputs": {
       "image": {
         "name": "圖片"
+      },
+      "shape_stacking": {
+        "name": "shape_stacking",
+        "tooltip": "hierarchical 會將形狀分層疊放；cut_out 會建立永不重疊的形狀，適用於繪圖機、乙烯基切割機與網版印刷。"
+      },
+      "version": {
+        "name": "版本",
+        "tooltip": "v1_pro（Vectorizer Pro）可產生更乾淨的 SVG，具有平滑曲線、直線與銳利角落，最適合文字設計與複雜形狀。"
       }
     },
     "outputs": {

@@ -23103,7 +23103,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "The model to use for generation. The recraftv4_styles models are built for style-consistent generation and always require a style_id or style_references; recraftv4_1_flash is the fastest and cheapest model and supports no styles at all."
+        "tooltip": "The model to use for generation. The recraftv4_styles models are built for style-consistent generation and always require a style_id or style_references; recraftv4_1_flash runs Recraft V4.1 Flash V2, the fastest and cheapest model, and supports no styles at all."
       },
       "n": {
         "name": "n",
@@ -23209,6 +23209,14 @@
     "inputs": {
       "image": {
         "name": "image"
+      },
+      "version": {
+        "name": "version",
+        "tooltip": "v1_pro (Vectorizer Pro) gives cleaner SVGs with smooth curves, straight lines and sharp corners, best for lettering and intricate shapes."
+      },
+      "shape_stacking": {
+        "name": "shape_stacking",
+        "tooltip": "hierarchical layers shapes on top of each other; cut_out makes shapes that never overlap, for plotters, vinyl cutters and screen printing."
       }
     },
     "outputs": {
