@@ -342,6 +342,20 @@ describe('usePlatformFrameStore', () => {
       expect(store.session?.id).toBe(second?.id)
     })
 
+    it('forgets the height the first page asked for', () => {
+      vi.useFakeTimers()
+      const store = usePlatformFrameStore()
+      const { frame } = framedWindow()
+      store.open({ step: 'preinstall', deploymentId: 'dep-1' }, 'errors_panel')
+      store.attach(frame)
+      receive({ type: 'content-height', height: 304 }, frame)
+
+      receive({ type: 'ready', signedIn: false }, frame)
+      vi.advanceTimersByTime(PLATFORM_FRAME_SIGN_IN_RETRY_MS)
+
+      expect(store.contentHeight).toBeNull()
+    })
+
     it('waits for the reloaded page to answer', () => {
       vi.useFakeTimers()
       const store = usePlatformFrameStore()

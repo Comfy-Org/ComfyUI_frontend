@@ -463,6 +463,7 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
       stopBridge?.()
       stopBridge = undefined
       session.value = { ...current, id: ++sessions }
+      contentHeight.value = null
       waitForAnswer()
     }, PLATFORM_FRAME_SIGN_IN_RETRY_MS)
   }
