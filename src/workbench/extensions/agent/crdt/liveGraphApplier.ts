@@ -1545,10 +1545,7 @@ export class LiveGraphApplier {
     docNode: DocNode,
     mode: ApplyMode,
     context: RemoteApplyContext,
-    layout?: {
-      pos: readonly [number, number]
-      size: readonly [number, number]
-    },
+    layout?: ReturnType<typeof layoutOf>,
     built?: LGraphNode | null
   ): LGraphNode {
     const node =
