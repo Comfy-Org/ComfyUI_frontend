@@ -84,19 +84,18 @@ function recordNewChoice(askBeforeCheck: boolean): LatestChoice {
 }
 
 function hasPendingAskAgain() {
-  return (
-    safeLocalStorage.getItem(keyForCurrentProfile(PENDING_ASK_AGAIN_KEY)) ===
-    'true'
+  const forProfile = safeLocalStorage.getItem(
+    keyForCurrentProfile(PENDING_ASK_AGAIN_KEY)
   )
+  if (forProfile !== null) return forProfile === 'true'
+  return safeLocalStorage.getItem(PENDING_ASK_AGAIN_KEY) === 'true'
 }
 
 function setPendingAskAgain(pending: boolean) {
-  if (pending)
-    safeLocalStorage.setItem(
-      keyForCurrentProfile(PENDING_ASK_AGAIN_KEY),
-      'true'
-    )
-  else safeLocalStorage.removeItem(keyForCurrentProfile(PENDING_ASK_AGAIN_KEY))
+  const key = keyForCurrentProfile(PENDING_ASK_AGAIN_KEY)
+  if (pending) safeLocalStorage.setItem(key, 'true')
+  else if (currentProfile()) safeLocalStorage.setItem(key, 'false')
+  else safeLocalStorage.removeItem(key)
 }
 
 export function skipsCloudCheckQuestion() {
