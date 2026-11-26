@@ -132,8 +132,8 @@ Run this on every follow-up round, before recapturing anything.
 
    Run the diffs once per block.
 
-4. A block with any listed file is stale on that side: recapture and
-   replace it. Delete a block whose journey or state the head no longer
-   changes, such as one a follow-up reverted. Update the marker only after
-   every block is current or deleted; when no block lists a file, update
-   only the marker's SHAs.
+4. A block with any listed file, or with a diff that failed, is stale on
+   that side: recapture and replace it. Delete a block whose journey or
+   state the head no longer changes, such as one a follow-up reverted.
+   Update the marker only after every block is current or deleted; when
+   every diff succeeds and none lists a file, update only the marker's SHAs.
