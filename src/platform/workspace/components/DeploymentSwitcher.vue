@@ -17,7 +17,7 @@
           variant="secondary"
           size="unset"
           :disabled="isSwitching"
-          :tooltip="buildStatus ?? hoverTooltip"
+          :tooltip="buildStatus?.text ?? hoverTooltip"
           tooltip-side="bottom"
           :aria-label="triggerLabel"
           class="group h-8 gap-1 rounded-lg pr-1.5 pl-2 data-[state=open]:bg-accent"
@@ -47,10 +47,20 @@
             class="icon-[lucide--chevron-down] size-3 text-muted-foreground transition-transform duration-150 group-data-[state=open]:rotate-180"
             aria-hidden="true"
           />
+          <template v-if="buildStatus" #tooltip>
+            {{ buildStatus.stage
+            }}<span
+              v-if="buildStatus.step"
+              class="opacity-50"
+              data-testid="deployment-switcher-build-step"
+              >{{ ` ${buildStatus.step}` }}</span
+            >
+          </template>
         </Button>
       </template>
       <DeploymentSwitcherList
         :switching-to
+        :on-team-plan
         @choose="choose"
         @follow="follow"
         @set-default="changeDefault"
@@ -110,6 +120,10 @@ import { usePlatformFrameStore } from '@/platform/workspace/platformFrame/platfo
 import { NEW_DEPLOYMENT_FROM_NODES } from '@/platform/workspace/platformFrame/platformFrameWaysIn'
 import { useDeploymentSwitcherOffered } from '@/platform/workspace/composables/useDeploymentSwitcherOffered'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
+
+const { onTeamPlan = false } = defineProps<{
+  onTeamPlan?: boolean
+}>()
 
 const { t } = useI18n()
 const store = useDeploymentPickStore()
@@ -327,9 +341,8 @@ const buildStatus = computed(() => {
     { escapeParameter: false }
   )
   const progress = current.stage === 'building' ? current.progress : null
-  return progress
-    ? `${stage} · ${t('platformFrame.buildStep', progress)}`
-    : stage
+  const step = progress ? t('platformFrame.buildStep', progress) : null
+  return { stage, step, text: step ? `${stage} ${step}` : stage }
 })
 
 const switcher = useTemplateRef<HTMLElement>('switcher')

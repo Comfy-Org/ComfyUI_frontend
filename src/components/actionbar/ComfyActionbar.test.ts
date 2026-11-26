@@ -9,6 +9,7 @@ import { coachmarkElements } from '@/platform/onboarding/coachmarkRegistry'
 import { vCoachmark } from '@/platform/onboarding/vCoachmark'
 import { useSettingStore } from '@/platform/settings/settingStore'
 
+vi.mock(import('@/platform/billing/composables/useBillingContext'))
 vi.mock(
   import('@/components/actionbar/ComfyRunButton/ComfyRunButton.vue'),
   async () => {

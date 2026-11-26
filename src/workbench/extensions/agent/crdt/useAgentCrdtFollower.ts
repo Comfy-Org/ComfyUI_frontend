@@ -105,14 +105,20 @@ function reportAgentProjection(
   outcome: FrameOutcome
 ): void {
   const opIds = frame.opIds?.filter((id) => id.length > 0) ?? []
+  const addedCount = outcome.nodes.added.length
+  const removedCount = outcome.nodes.removed.length
+  const applyFailureCount = outcome.applied ? outcome.failureCount : 0
+  if (outcome.applied && !outcome.hadChanges && applyFailureCount === 0) {
+    return
+  }
   useTelemetry()?.trackAgentGraphProjection({
     op_id: opIds[0] ?? null,
     op_count: opIds.length,
     sequence: frame.seq,
     stage,
-    added_count: outcome.nodes.added.length,
-    removed_count: outcome.nodes.removed.length,
-    apply_failure_count: outcome.applied ? outcome.failureCount : 0
+    added_count: addedCount,
+    removed_count: removedCount,
+    apply_failure_count: applyFailureCount
   })
 }
 
@@ -356,16 +362,19 @@ function createOwner(
     documentId.value = creator.workflowId.value
     const scope = effectScope(true)
     const session = scope.run(() => {
-      watchEffect(() => {
-        const active = consumer.value
-        const next = active?.workflowId.value ?? null
-        if (next !== null) {
-          binding.boundBy = active
-          documentId.value = next
-          return
-        }
-        if (active === binding.boundBy) documentId.value = null
-      })
+      watchEffect(
+        () => {
+          const active = consumer.value
+          const next = active?.workflowId.value ?? null
+          if (next !== null) {
+            binding.boundBy = active
+            documentId.value = next
+            return
+          }
+          if (active === binding.boundBy) documentId.value = null
+        },
+        { flush: 'sync' }
+      )
       const inputsCapturedFromTheFirstConsumer = {
         transport,
         applierDeps: creator.applierDeps

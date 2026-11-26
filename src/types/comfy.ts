@@ -92,6 +92,7 @@ export interface LoadGraphDataOptions {
   isReady?: () => boolean
   /** Graph to load, produced at the front of the queue; undefined skips the load. */
   resolveGraphData?: () => ComfyWorkflowJSON | undefined
+  initiator?: 'user'
 }
 
 /**
@@ -212,6 +213,7 @@ export interface ComfyApp {
     options?: {
       deferWarnings?: boolean
       onNodeCreated?: (node: LGraphNode) => void
+      initiator?: 'user'
     }
   ): Promise<void | false>
   handleFileList(fileList: File[]): Promise<void>
@@ -223,7 +225,7 @@ export interface ComfyApp {
   loadApiJson(
     apiData: ComfyApiWorkflow,
     fileName?: string,
-    options?: { deferWarnings?: boolean }
+    options?: { deferWarnings?: boolean; initiator?: 'user' }
   ): Promise<void | false>
   registerExtension(extension: ComfyExtension): void
   collectCanvasMenuItems(canvas: LGraphCanvas): IContextMenuValue[]
