@@ -9,15 +9,18 @@ test.describe(
   { tag: ['@cloud', '@agent'] },
   () => {
     for (const status of [200, 500]) {
-      test(`late B messages ${status} cannot take over after returning to A`, async ({
+      test(`a late recheck of B’s chat (${status}) cannot take over after returning to A`, async ({
         tabChats
       }) => {
         const pending = tabChats.holdMessages(1, status)
 
         await tabChats.tab(1).click()
         await pending.entered
-        await expect(tabChats.opening(1)).toBeVisible()
-        await expect(tabChats.panel.sendButton).toBeDisabled()
+        await expect(tabChats.panel.userMessageBubbles).toHaveText([
+          'Landscape existing request'
+        ])
+        await expect(tabChats.opening(1)).toHaveCount(0)
+        await expect(tabChats.panel.composer).toBeEditable()
         await tabChats.tab(0).click()
         await expect(tabChats.panel.userMessageBubbles).toHaveText([
           'Portrait existing request'
@@ -74,6 +77,7 @@ test.describe(
 
       await expect.poll(() => tabChats.posted).toHaveLength(1)
       expect(tabChats.posted[0]).toMatchObject({
+        requestedThreadId: tabChats.threads[0],
         threadId: tabChats.threads[0],
         body: {
           content: 'Draft addressed to Portrait',
@@ -133,7 +137,10 @@ test.describe(
 
       await tabChats.tab(1).click()
       await pending.entered
-      await expect(tabChats.opening(1)).toBeVisible()
+      await expect(tabChats.panel.userMessageBubbles).toHaveText([
+        'Landscape existing request'
+      ])
+      await expect(tabChats.opening(1)).toHaveCount(0)
       await expect(tabChats.working(0)).toBeVisible()
       await pending.release()
       await expect(tabChats.panel.userMessageBubbles).toHaveText([
@@ -168,6 +175,106 @@ test.describe(
         'Still Life existing request'
       ])
       expect(tabChats.posted).toHaveLength(2)
+    })
+
+    test('kept chat with a newer turn in this page shows at once on return without duplicates (TC-17, TC-18)', async ({
+      tabChats
+    }) => {
+      const assistantReplies =
+        tabChats.panel.conversation.getByTestId('markdown-stream')
+      await tabChats.panel.sendMessage('New prompt in A')
+      await expect.poll(() => tabChats.posted).toHaveLength(1)
+      tabChats.sendDelta(0, 'Reply in A')
+      await expect(assistantReplies).toHaveText(['Reply in A'])
+
+      await tabChats.tab(1).click()
+      await tabChats.panel.sendMessage('New prompt in B')
+      await expect.poll(() => tabChats.posted).toHaveLength(2)
+      await expect(tabChats.working(1)).toBeVisible()
+
+      const pendingA = tabChats.holdMessages(0)
+      await tabChats.tab(0).click()
+
+      await expect(tabChats.panel.userMessageBubbles).toHaveText([
+        'Portrait existing request',
+        'New prompt in A'
+      ])
+      await expect(assistantReplies).toHaveText(['Reply in A'])
+      await expect(tabChats.panel.stopButton).toBeVisible()
+      await expect(tabChats.opening(0)).toHaveCount(0)
+
+      tabChats.complete(0)
+      await pendingA.entered
+      await pendingA.release()
+
+      await expect(tabChats.panel.userMessageBubbles).toHaveText([
+        'Portrait existing request',
+        'New prompt in A'
+      ])
+      await expect(assistantReplies).toHaveText(['Reply in A'])
+      await expect(tabChats.panel.sendButton).toBeVisible()
+    })
+
+    test('Ryan sequence: two blank tabs create chats and returning to each shows at once without loading or duplicates (TC-15, TC-16, TC-18)', async ({
+      blankTabChats
+    }) => {
+      const assistantReplies =
+        blankTabChats.panel.conversation.getByTestId('markdown-stream')
+
+      await test.step('send hi in blank tab A', async () => {
+        await blankTabChats.panel.sendMessage('hi')
+        await expect.poll(() => blankTabChats.posted).toHaveLength(1)
+        blankTabChats.sendDelta(0, 'Reply in A')
+        await expect(assistantReplies).toHaveText(['Reply in A'])
+        await expect(blankTabChats.panel.stopButton).toBeVisible()
+      })
+
+      await test.step('switch to blank tab B and send hi', async () => {
+        await blankTabChats.tab(1).click()
+        await expect(blankTabChats.panel.userMessageBubbles).toHaveCount(0)
+
+        await blankTabChats.panel.sendMessage('hi')
+        await expect.poll(() => blankTabChats.posted).toHaveLength(2)
+        blankTabChats.sendDelta(1, 'Reply in B')
+        blankTabChats.complete(1)
+      })
+
+      await test.step('return to A while A runs and verify no loading or duplicates', async () => {
+        const pendingA = blankTabChats.holdMessages(0)
+        await blankTabChats.tab(0).click()
+
+        await expect(blankTabChats.panel.userMessageBubbles).toHaveText(['hi'])
+        await expect(assistantReplies).toHaveText(['Reply in A'])
+        await expect(blankTabChats.panel.stopButton).toBeVisible()
+        await expect(blankTabChats.opening(0)).toHaveCount(0)
+
+        blankTabChats.sendDelta(0, '!')
+        await expect(assistantReplies).toHaveText(['Reply in A!'])
+        blankTabChats.complete(0)
+        await pendingA.entered
+        await pendingA.release()
+
+        await expect(blankTabChats.panel.userMessageBubbles).toHaveText(['hi'])
+        await expect(assistantReplies).toHaveText(['Reply in A!'])
+        await expect(blankTabChats.panel.sendButton).toBeVisible()
+      })
+
+      await test.step('return to B after B finished and verify no loading or duplicates', async () => {
+        const pendingB = blankTabChats.holdMessages(1)
+        await blankTabChats.tab(1).click()
+        await pendingB.entered
+
+        await expect(blankTabChats.panel.userMessageBubbles).toHaveText(['hi'])
+        await expect(assistantReplies).toHaveText(['Reply in B'])
+        await expect(blankTabChats.panel.stopButton).toHaveCount(0)
+        await expect(blankTabChats.opening(1)).toHaveCount(0)
+
+        blankTabChats.setAssistantReply(1, 'Persisted reply in B')
+        await pendingB.release()
+
+        await expect(blankTabChats.panel.userMessageBubbles).toHaveText(['hi'])
+        await expect(assistantReplies).toHaveText(['Persisted reply in B'])
+      })
     })
   }
 )

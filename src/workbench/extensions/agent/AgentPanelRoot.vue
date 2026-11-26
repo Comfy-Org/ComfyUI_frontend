@@ -1246,6 +1246,7 @@ const {
   threadId,
   loadThread,
   isThreadDeleted,
+  forgetChat,
   boundWorkflowId,
   bindWorkflow,
   reportWorkflowBound,
@@ -3000,6 +3001,7 @@ function onDeleteHistory(id: string): void {
     id === history.activeId ||
     (history.activeId === null && id === threadId.value)
   history.remove(id)
+  forgetChat(id)
   openChats.forget(id)
   chatDrafts.discardChatDraft(id)
   // Deleting the open chat also ends it; a dead thread must not stay editable.
