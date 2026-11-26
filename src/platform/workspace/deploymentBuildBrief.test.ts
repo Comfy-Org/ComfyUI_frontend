@@ -1,31 +1,15 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import type { WorkspaceDeployment } from '@/platform/workspace/api/workspaceApi'
-import {
-  deploymentBuildBrief,
-  workflowDeploymentBrief
-} from '@/platform/workspace/deploymentBuildBrief'
-
-const deployment: WorkspaceDeployment = {
-  deployment_id: 'dep-1',
-  deployment_name: 'production',
-  build_id: 'build-7',
-  build_name: 'video-minimax-h3 copy',
-  release_id: 'rel-3',
-  status: 'ready',
-  created_at: '2026-10-01T00:00:00Z',
-  can_start: false
-}
+import { workflowDeploymentBrief } from '@/platform/workspace/deploymentBuildBrief'
 
 function section(brief: string, title: string): string {
   const [, rest = ''] = brief.split(`## ${title}\n`)
   return rest.split('\n## ')[0]
 }
 
-describe(deploymentBuildBrief, () => {
-  it('names the deployment, its Build and release, and lists what it lacks', () => {
-    const brief = deploymentBuildBrief(
-      deployment,
+describe('workflowDeploymentBrief lists', () => {
+  it('lists the packs and models the workflow lacks', () => {
+    const brief = workflowDeploymentBrief(
       [
         {
           packId: null,
@@ -43,10 +27,6 @@ describe(deploymentBuildBrief, () => {
       ]
     )
 
-    expect(brief).toContain('**production**\n(`dep-1`)')
-    expect(brief).toContain(
-      'release `rel-3` of\nthe Build **video-minimax-h3 copy** (`build-7`)'
-    )
     expect(brief).toContain(
       '- Pack unknown: `QwenImage21Cache`, `TextEncodeQwenImage21`'
     )
@@ -55,13 +35,10 @@ describe(deploymentBuildBrief, () => {
       '- `qwen_image_2.1_vae.safetensors` in `models/vae`, from https://huggingface.co/comfy/qwen/resolve/main/vae.safetensors'
     )
     expect(brief).toContain('- `mystery.safetensors`\n')
-    expect(brief).toContain('comfy skills show comfy-build')
-    expect(brief).toContain('you deploy it to **production**.')
   })
 
   it('lists a node type once however many nodes in the workflow use it', () => {
-    const brief = deploymentBuildBrief(
-      deployment,
+    const brief = workflowDeploymentBrief(
       [
         {
           packId: 'comfyui-kjnodes',
@@ -90,8 +67,7 @@ describe(deploymentBuildBrief, () => {
   ])(
     'asks to fix, not add, a pack the Build cannot load when ComfyUI logged $logged',
     ({ cause, line }) => {
-      const brief = deploymentBuildBrief(
-        deployment,
+      const brief = workflowDeploymentBrief(
         [
           {
             packId: 'comfyui-nvidia-vfx',
@@ -128,17 +104,14 @@ describe(deploymentBuildBrief, () => {
       section: '## Models'
     }
   ])(
-    'leaves out an empty list when the deployment lacks $lacks',
+    'leaves out an empty list when the workflow lacks $lacks',
     ({ packs, models, section }) => {
-      expect(deploymentBuildBrief(deployment, packs, models)).not.toContain(
-        section
-      )
+      expect(workflowDeploymentBrief(packs, models)).not.toContain(section)
     }
   )
 
   it('keeps names from the workflow inside their own list line', () => {
-    const brief = deploymentBuildBrief(
-      deployment,
+    const brief = workflowDeploymentBrief(
       [{ packId: 'pack`\n## Run', nodeTypes: ['Node`\n\n## Delete'] }],
       [{ name: 'm`\u2028## Upload.safetensors', directory: 'vae\r\n## x' }]
     )
@@ -153,8 +126,7 @@ describe(deploymentBuildBrief, () => {
   it('drops characters that do not show from names taken from the workflow', () => {
     const hidden =
       '\u200B\u202E\u2066\uFEFF\u{E0072}\u{E0075}\u{E006E}\uFE0F\u{E0100}\u3164\u034F'
-    const brief = deploymentBuildBrief(
-      deployment,
+    const brief = workflowDeploymentBrief(
       [{ packId: `pack${hidden}`, nodeTypes: [`Node${hidden}`] }],
       [{ name: `m${hidden}.safetensors`, directory: `vae${hidden}` }]
     )
@@ -169,8 +141,7 @@ describe(deploymentBuildBrief, () => {
       'URL',
       Object.assign(class extends URL {}, { canParse: undefined })
     )
-    const brief = deploymentBuildBrief(
-      deployment,
+    const brief = workflowDeploymentBrief(
       [],
       [
         {
@@ -187,8 +158,7 @@ describe(deploymentBuildBrief, () => {
   })
 
   it('leaves out a model link from a source the editor does not download from', () => {
-    const brief = deploymentBuildBrief(
-      deployment,
+    const brief = workflowDeploymentBrief(
       [],
       [
         {
@@ -201,23 +171,6 @@ describe(deploymentBuildBrief, () => {
 
     expect(brief.split('\n')).toContain('- `m.ckpt` in `models/vae`')
     expect(brief).not.toContain('models.example')
-  })
-
-  it('falls back to the deployment id and an unnamed Build when the listing has no names', () => {
-    const brief = deploymentBuildBrief(
-      {
-        deployment_id: 'dep-1',
-        release_id: 'rel-3',
-        status: 'ready',
-        created_at: '2026-10-01T00:00:00Z',
-        can_start: false
-      },
-      [],
-      [{ name: 'm.safetensors', directory: 'vae' }]
-    )
-
-    expect(brief).toContain('**dep-1**')
-    expect(brief).toContain('release `rel-3` of\nits Build on')
   })
 })
 
@@ -256,32 +209,16 @@ describe('workflowDeploymentBrief without a workflow file', () => {
   })
 })
 
-describe('both briefs', () => {
-  it.for([
-    {
-      brief: 'deploymentBuildBrief',
-      build: () =>
-        deploymentBuildBrief(
-          deployment,
-          [{ packId: 'comfyui-birefnet', nodeTypes: ['BiRefNet'] }],
-          []
-        )
-    },
-    {
-      brief: 'workflowDeploymentBrief',
-      build: () =>
-        workflowDeploymentBrief(
-          [{ packId: 'comfyui-birefnet', nodeTypes: ['BiRefNet'] }],
-          [],
-          'portrait.json'
-        )
-    }
-  ])(
-    '$brief tells the agent to find the models the listed custom nodes load',
-    ({ build }) => {
-      expect(build()).toContain(
-        'The editor cannot see the models those custom nodes load, so they are not\nlisted'
+describe('workflowDeploymentBrief with custom nodes', () => {
+  it('tells the agent to find the models the listed custom nodes load', () => {
+    expect(
+      workflowDeploymentBrief(
+        [{ packId: 'comfyui-birefnet', nodeTypes: ['BiRefNet'] }],
+        [],
+        'portrait.json'
       )
-    }
-  )
+    ).toContain(
+      'The editor cannot see the models those custom nodes load, so they are not\nlisted'
+    )
+  })
 })
