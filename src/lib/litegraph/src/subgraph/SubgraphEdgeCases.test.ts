@@ -24,7 +24,6 @@ describe('SubgraphEdgeCases - Recursion Detection', () => {
     const sub1 = createTestSubgraph({ name: 'Sub1' })
     const sub2 = createTestSubgraph({ name: 'Sub2' })
 
-    // Create circular reference
     const node1 = createTestSubgraphNode(sub1, { id: 1 })
     const node2 = createTestSubgraphNode(sub2, { id: 2 })
 
