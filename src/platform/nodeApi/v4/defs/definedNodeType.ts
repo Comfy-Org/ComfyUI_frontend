@@ -21,10 +21,13 @@ import type {
   NodeDef,
   NodeDefBuilder,
   NodeDefinition,
-  PackId
+  PackId,
+  Resolver,
+  WidgetDef
 } from '@/platform/nodeApi/v4/types'
 import { PACK_PROPERTIES } from '@/platform/nodeApi/v4/packs'
 import type { IssuedPack } from '@/platform/nodeApi/v4/packs'
+import { checkedWidgetDef } from '@/platform/nodeApi/v4/widgets/widgetDef'
 import { checkedPresentation } from './nodePresentation'
 import type { CheckedPresentation } from './nodePresentation'
 
@@ -56,7 +59,9 @@ export interface CheckedDefinition {
   readonly outputs: readonly CheckedSlot[]
   readonly execution: 'backend' | 'frontend'
   readonly presentation: CheckedPresentation
+  readonly widgets: readonly WidgetDef[]
   readonly hooks: DefinitionHooks
+  readonly resolve: Resolver | undefined
 }
 
 const DEFINITION_FIELDS = {
@@ -68,12 +73,14 @@ const DEFINITION_FIELDS = {
   outputs: true,
   execution: true,
   presentation: true,
+  widgets: true,
   onCreated: true,
   onConfigured: true,
   onRemoved: true,
   onSerialize: true,
   onConnectionsChanged: true,
-  onPropertyChanged: true
+  onPropertyChanged: true,
+  resolve: true
 } satisfies Record<keyof NodeDefinition, true>
 
 const EXECUTIONS = ['backend', 'frontend'] as const
@@ -87,6 +94,7 @@ export function checkedDefinition(given: unknown): CheckedDefinition {
     DEFINITION_FIELDS
   )
   const type = checkedTypeName(definition.type)
+  const execution = checkedExecution(definition.execution)
   return {
     type,
     title: optionalText('title', definition.title) || type,
@@ -94,8 +102,9 @@ export function checkedDefinition(given: unknown): CheckedDefinition {
     description: optionalText('description', definition.description) ?? '',
     inputs: checkedSlots('inputs', definition.inputs),
     outputs: checkedSlots('outputs', definition.outputs),
-    execution: checkedExecution(definition.execution),
+    execution,
     presentation: checkedPresentation(definition.presentation),
+    widgets: checkedWidgets(definition.widgets),
     hooks: {
       onCreated: optionalHook('onCreated', definition.onCreated),
       onConfigured: optionalHook('onConfigured', definition.onConfigured),
@@ -109,15 +118,20 @@ export function checkedDefinition(given: unknown): CheckedDefinition {
         'onPropertyChanged',
         definition.onPropertyChanged
       )
-    }
+    },
+    resolve: checkedResolver(
+      optionalHook('resolve', definition.resolve),
+      execution
+    )
   }
 }
 
 /** Adds the hooks a definition declares, as an extension of its own type. */
 export function addDefinitionHooks(
   builder: NodeDefBuilder,
-  { hooks }: CheckedDefinition
+  { hooks, widgets }: CheckedDefinition
 ): void {
+  for (const widget of widgets) builder.addWidget(widget)
   if (hooks.onCreated) builder.onCreated(hooks.onCreated)
   if (hooks.onConfigured) builder.onConfigured(hooks.onConfigured)
   if (hooks.onRemoved) builder.onRemoved(hooks.onRemoved)
@@ -209,11 +223,27 @@ function checkedTypeName(type: unknown): string {
   return type
 }
 
-function optionalHook<K extends keyof DefinitionHooks>(
+type DefinitionCallbacks = DefinitionHooks & { readonly resolve?: Resolver }
+
+function optionalHook<K extends keyof DefinitionCallbacks>(
   name: K,
   hook: unknown
-): DefinitionHooks[K] {
-  return optionalCallback('define', name, hook) as DefinitionHooks[K]
+): DefinitionCallbacks[K] {
+  return optionalCallback('define', name, hook) as DefinitionCallbacks[K]
+}
+
+function checkedResolver(
+  resolver: Resolver | undefined,
+  execution: CheckedDefinition['execution']
+): Resolver | undefined {
+  if (resolver && execution !== 'frontend') {
+    throw invalidArgument(
+      'define',
+      "a resolve only with execution: 'frontend'",
+      execution
+    )
+  }
+  return resolver
 }
 
 function optionalText(field: string, value: unknown): string | undefined {
@@ -260,6 +290,16 @@ function checkedSlots(
       shape
     })
   })
+}
+
+function checkedWidgets(widgets: unknown): readonly WidgetDef[] {
+  if (widgets === undefined) return []
+  if (!Array.isArray(widgets)) {
+    throw invalidArgument('define', 'a list of widgets', widgets)
+  }
+  return Array.from(widgets, (widget: unknown) =>
+    checkedWidgetDef(widget, 'define')
+  )
 }
 
 function checkedExecution(execution: unknown): CheckedDefinition['execution'] {

@@ -13,7 +13,8 @@ import type {
   Deliver,
   DispatchContext,
   HookSource,
-  MethodInstaller
+  MethodInstaller,
+  NodeHookSource
 } from './dispatchContext'
 import type { HookInstaller, NodeType } from './extensions'
 import { connectionInstallers } from './connectionDispatch'
@@ -39,11 +40,16 @@ const METHODS_FOR: Readonly<Record<HookName, readonly string[]>> = {
   onDoubleClick: ['onDblClick'],
   onDragOver: ['onDragOver'],
   onDrop: ['onDragDrop'],
-  addMenuItem: []
+  addMenuItem: [],
+  setSupply: [],
+  onPromptSerialize: [],
+  onPreview: []
 }
 
 interface HookDispatch extends HookInstaller {
   menuItemsFor(node: LGraphNode): IContextMenuValue[]
+  callbacksOf: NodeHookSource['callbacksOf']
+  deliverTo: NodeHookSource['deliverTo']
 }
 
 export function createHookDispatch(
@@ -164,6 +170,14 @@ export function createHookDispatch(
         stopHearingAdds = undefined
       }
     },
+    callbacksOf: (node, hook) =>
+      isMadeFromKnownClass(node)
+        ? source
+            .callbacksFor(node, hook, joined.get(node) ?? 0)
+            .map(({ callback }) => callback)
+        : [],
+    deliverTo: (node, hook, call) =>
+      isMadeFromKnownClass(node) ? deliver(node.type, hook, node, call) : [],
     menuItemsFor(node) {
       if (!isMadeFromKnownClass(node)) return []
       const entries = deliver(

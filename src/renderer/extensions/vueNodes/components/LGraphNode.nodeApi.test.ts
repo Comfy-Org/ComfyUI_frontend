@@ -12,8 +12,13 @@ import {
   hostNodeDef,
   registerHostType
 } from '@/platform/nodeApi/v4/defs/__fixtures__/hostNodeTypes'
-import type { NodeDefBuilder, NodeHandle } from '@/platform/nodeApi/v4/types'
+import type {
+  NodeDefBuilder,
+  NodeHandle,
+  NodeMoveEvent
+} from '@/platform/nodeApi/v4/types'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useNodeApiCanvasSource } from '@/renderer/core/canvas/nodeApiCanvasSource'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 import { app } from '@/scripts/app'
@@ -39,7 +44,10 @@ async function vueNode({ hooks, build }: VueNodeSetup = {}) {
   const type = `Pack/VueNode${++types}`
   const graph = app.rootGraph
   const canvasStore = useCanvasStore()
-  const api = createComfyApi({ getGraph: () => graph })
+  const api = createComfyApi({
+    getGraph: () => graph,
+    canvas: useNodeApiCanvasSource
+  })
   registerHostType(api.host.nodeTypeHooks, hostNodeDef(type))
   if (hooks)
     onTestFinished(api.comfy.defs.extend(registerTestPack(api), type, hooks))
@@ -158,6 +166,81 @@ describe('the node API under Vue nodes, through LGraphNode.vue', () => {
       await recomputeBadges(graph)
 
       expect(within(root).queryByText('Gone')).toBeNull()
+    })
+  })
+
+  describe('a widget given a height', () => {
+    const fixedForms: [string, (node: NodeHandle) => void][] = [
+      [
+        'MountDef.height',
+        (node) =>
+          node.widgets.mount({ name: 'fixed', render: () => {}, height: 150 })
+      ],
+      [
+        'CanvasDef.height',
+        (node) =>
+          node.widgets.canvas({ name: 'fixed', draw: () => {}, height: 150 })
+      ],
+      [
+        'setHeight',
+        (node) =>
+          node.widgets
+            .mount({ name: 'fixed', render: () => {} })
+            ?.setHeight(150)
+      ]
+    ]
+
+    it.for(fixedForms)(
+      'keeps the height %s gives, while a DOM widget without one shares the free height',
+      async ([, addFixed]) => {
+        const { root } = await vueNode({
+          build: (node) => {
+            addFixed(node)
+            node.widgets.mount({ name: 'shared', render: () => {} })
+          }
+        })
+
+        const [fixed, shared] = within(root).getAllByTestId('node-widget')
+
+        expect(fixed.style.minHeight).toBe('150px')
+        expect(fixed.className).toContain('flex-none')
+        expect(shared.className).toContain('grow')
+      }
+    )
+  })
+
+  it('does not show a widget with an empty name, as the widget JSDoc says', async () => {
+    const { root } = await vueNode({
+      build: (node) => {
+        node.widgets.add({ type: 'number', name: '', value: 1 })
+        node.widgets.add({ type: 'number', name: 'shown', value: 2 })
+      }
+    })
+
+    expect(within(root).getAllByTestId('node-widget')).toHaveLength(1)
+  })
+
+  describe('onNodeMoved', () => {
+    it('reports a node the user drags, with its handle and new position', async () => {
+      const { api, node, root } = await vueNode()
+      const [x, y] = node.pos
+      const moves: NodeMoveEvent[] = []
+      api.comfy.onNodeMoved((event) => moves.push(event))
+
+      await userEvent.setup().pointer([
+        {
+          keys: '[MouseLeft>]',
+          target: root,
+          coords: { clientX: 10, clientY: 10 }
+        },
+        { target: root, coords: { clientX: 60, clientY: 40 } },
+        { keys: '[/MouseLeft]', target: root }
+      ])
+
+      expect(moves.at(-1)).toEqual({
+        node: api.comfy.graph.node(String(node.id)),
+        position: { x: x + 50, y: y + 30 }
+      })
     })
   })
 })

@@ -558,7 +558,15 @@ describe('node definitions', () => {
       },
       {
         name: 'an unknown field',
-        definition: { type: 'T', resolve: () => {} }
+        definition: { type: 'T', supply: () => {} }
+      },
+      {
+        name: 'a resolve that is not a function',
+        definition: { type: 'T', execution: 'frontend', resolve: {} }
+      },
+      {
+        name: 'a resolve on a backend type',
+        definition: { type: 'T', execution: 'backend', resolve: () => ({}) }
       },
       { name: 'a title that is not text', definition: { type: 'T', title: 5 } },
       {

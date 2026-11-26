@@ -34,11 +34,63 @@ export interface Comfy {
    */
   readonly graph: GraphHandle
   /**
-   * True if `a` and `b` are the same node, group, slot or graph-scope handle; `false` for anything else.
+   * True if `a` and `b` are the same node, group, slot, widget or graph-scope handle; `false` for anything else.
    * There is one such handle per entity, so `a === b` gives the same answer for two of them.
    */
   sameEntity(a: unknown, b: unknown): boolean
   readonly defs: DefRegistry
+  /**
+   * A node's title, mode or color was set by the user or a pack, in the graphs `options.scope` names. A load, undo or
+   * redo is not reported, except each saved mode or color unlike a new node's; re-read nodes in `onWorkflowLoaded`.
+   */
+  onNodeChanged(
+    listener: (event: NodeChangeEvent) => void,
+    options?: NodeChangeOptions
+  ): Unsubscribe
+  /**
+   * A node was moved, under either renderer. A pack sees its own moves too, and a load, undo or redo reports each
+   * node it places, first at its saved x and y 10, then at its saved position.
+   */
+  onNodeMoved(listener: (event: NodeMoveEvent) => void): Unsubscribe
+  /** A drag of nodes or other canvas items ended. */
+  onNodeDragEnd(listener: () => void): Unsubscribe
+  /** True while the user drags a link, resizes a node or drags a widget. */
+  isInteracting(): boolean
+  /**
+   * The view on the graph panned or zoomed. Hiding the canvas menu or entering builder mode after the first
+   * listener subscribed silences it until every listener has left and one subscribes again.
+   */
+  onViewportChanged(listener: () => void): Unsubscribe
+  /** The nodes selected in the graph on screen changed. Passes them in the graph's order. */
+  onSelectionChanged(
+    listener: (nodes: readonly NodeHandle[]) => void
+  ): Unsubscribe
+  /** The node the backend is running, in the open document, or `undefined`. */
+  executingNode(): NodeHandle | undefined
+  /** The node a backend execution id such as `'12:5'` names in the open document. */
+  executionNode(id: string): NodeHandle | undefined
+  /** Fires when `executingNode()` changes, including to `undefined`. */
+  onExecutingNodeChanged(
+    listener: (node: NodeHandle | undefined) => void
+  ): Unsubscribe
+  /**
+   * Fires after every workflow load, undo and redo, with the open document. After a load, a listener's edit is the
+   * first undo step; after an undo or redo, it is part of the restored state and keeps redo.
+   */
+  onWorkflowLoaded(
+    listener: (document: DocumentHandle | undefined) => void
+  ): Unsubscribe
+  /** An open document became the one on screen. */
+  onDocumentActivated(listener: (document: DocumentHandle) => void): Unsubscribe
+  /**
+   * An open document was closed, or replaced when the host reloaded its changed file. Its handle reports
+   * `isDeleted` from then on; a reloaded file opens as a new document.
+   */
+  onDocumentClosed(listener: (document: DocumentHandle) => void): Unsubscribe
+  /** The open documents, opening a workflow, and files the host cannot read. */
+  readonly workflow: WorkflowHandle
+  /** Running the workflow, and hearing runs start, finish and fail. */
+  readonly queue: QueueHandle
 }
 
 /** The graph on screen at each call: the root graph, or the subgraph the user opened. An argument a member cannot use throws a `TypeError`. */
@@ -61,6 +113,24 @@ export interface GraphHandle {
    * these happens, and never goes back to a value it has left.
    */
   readonly version: number | undefined
+  /** The selected nodes of the graph on screen, in the graph's order. */
+  selection(): readonly NodeHandle[]
+  /** The selected groups of the graph on screen, in the graph's draw order. */
+  groupSelection(): readonly GroupHandle[]
+  /**
+   * Selects exactly these nodes; an empty list clears the selection. `false`,
+   * and nothing changes, if one is gone or not on screen.
+   */
+  select(nodes: readonly NodeHandle[]): boolean
+  /** Pans the view so the node is in its middle; `false` if it is gone or not on screen. */
+  centerOn(node: NodeHandle): boolean
+  /** Where the pointer last was over the canvas, in graph space, or `undefined` before there is a canvas. */
+  pointerPosition(): Point | undefined
+  /** Zooms the view about its center; 1 is unzoomed. Clamped to the zoom the canvas allows. */
+  setZoom(scale: number): void
+  /** Pans the view by `delta` screen pixels, the same at every zoom. */
+  panBy(delta: Point): void
+
   /**
    * Adds a node of a registered type to the graph on screen, placed before it joins.
    * `undefined` before there is a graph, or if no such type is registered.
@@ -75,6 +145,8 @@ export interface GraphHandle {
   links(): readonly LinkInfo[]
   /** The groups in the graph on screen, in draw order; none before there is one. */
   groups(): readonly GroupHandle[]
+  /** The supplies a prompt would use in the graph on screen, by the inputs they feed in the graph's order; none before there is one. */
+  resolvedSupplies(): readonly ResolvedSupply[]
 }
 
 /** One particular graph: the root graph, or a subgraph definition. */
@@ -91,6 +163,11 @@ export interface GraphScopeHandle {
   nodes(): readonly NodeHandle[] | undefined
   /** The groups in this graph, in draw order. */
   groups(): readonly GroupHandle[] | undefined
+  /**
+   * The supplies a prompt would use in this graph, by the inputs they feed in the graph's order.
+   * `undefined` while there is no such graph.
+   */
+  resolvedSupplies(): readonly ResolvedSupply[] | undefined
 }
 
 /**
@@ -144,6 +221,12 @@ export interface NodeHandle {
   getSize(): Size | undefined
   /** The rectangle the node occupies in graph space, title bar included. */
   getBounds(): Bounds | undefined
+  /** The node's widgets. */
+  readonly widgets: WidgetCollection
+  /** The node's rectangle on the page; `undefined` when its graph is not on screen. */
+  getScreenRect(): Bounds | undefined
+  /** Where a slot sits, in graph space; `undefined` if the node has no slot there. */
+  getSlotPosition(side: SlotSide, index: number): Point | undefined
 
   setTitle(title: string): boolean
   setMode(mode: NodeMode): boolean
@@ -277,6 +360,8 @@ export interface GroupHandle {
    * editor's minimum group size is raised to it. `false` if the group is gone. Width and height are zero or more.
    */
   setBounds(bounds: Bounds): boolean
+  /** Pans the view so the group is in its middle; `false` if it is gone or not on screen. */
+  centerOn(): boolean
 }
 
 export type SlotSide = 'input' | 'output'
@@ -450,6 +535,11 @@ export interface DefRegistry {
   /** The colors of an entry of the node color menu, such as `red`. */
   nodeColor(name: string): NodeColor | undefined
   isTypeCompatible(outputType: string, inputType: string): boolean
+  /**
+   * Makes every input of `type` a widget `def` renders. A type the host or a
+   * pack already defines throws a `TypeError`. The disposer removes it.
+   */
+  defineWidgetType(type: string, def: WidgetTypeDef): Unsubscribe
 }
 
 export interface NodeColor {
@@ -531,6 +621,24 @@ export interface NodeDefBuilder {
     ) => boolean | void | Promise<boolean | void>
   ): void
   addMenuItem(item: NodeMenuItem): void
+  /** Adds the widget `def` describes to each node of the type as it is made. */
+  addWidget(def: WidgetDef): void
+  /** Hides the widget named `name` on each node of the type as it is made. */
+  hideWidget(name: string): void
+  /**
+   * Feeds inputs that no link feeds, of the nodes of a node's graph, when a prompt is built.
+   * One that throws or answers wrongly is reported and feeds nothing.
+   */
+  setSupply(supply: Supplier): void
+  /**
+   * Leaves inputs out of a node's entry in each prompt built; the saved workflow keeps them.
+   * One that throws or answers wrongly is reported and leaves nothing out.
+   */
+  onPromptSerialize(
+    callback: (node: NodeHandle) => PromptInputProjection | void
+  ): void
+  /** The server sent a preview image while running a node. */
+  onPreview(callback: (node: NodeHandle, frame: PreviewFrame) => void): void
 }
 
 /** An entry of a node's context menu. It needs `run`, `items`, or both. */
@@ -650,6 +758,13 @@ export interface NodeDefinition {
   onSerialize?(node: NodeHandle): Readonly<Record<string, unknown>> | void
   onConnectionsChanged?(node: NodeHandle, event: ConnectionChangeEvent): void
   onPropertyChanged?(node: NodeHandle, event: PropertyChangeEvent): void
+  /** Widgets each node of the type gets as it is made, after its inputs. Saved only with `setSerializeWidgets(true)`. */
+  readonly widgets?: readonly WidgetDef[]
+  /**
+   * With `execution: 'frontend'`, says what each output stands for when a prompt is built.
+   * One that throws or answers wrongly is reported, and the node is built as if it had none.
+   */
+  readonly resolve?: Resolver
 }
 
 export interface NodeDefinitionSlot {
@@ -673,4 +788,544 @@ export interface NodePresentation {
   readonly resizable?: boolean
   /** `false` stops the user collapsing the nodes. `setCollapsed` can still collapse one. */
   readonly collapsible?: boolean
+}
+
+/** A widget's value, as the workflow saves it. */
+export type WidgetValue = string | number | boolean | object | null
+
+/**
+ * A node's widgets, in the order the node shows them. On a deleted node every
+ * read is `undefined` and every change does nothing and returns `false` or `undefined`.
+ */
+export interface WidgetCollection extends Iterable<WidgetHandle> {
+  readonly length: number | undefined
+  get(name: string): WidgetHandle | undefined
+  /** The widget at `index`. A negative index counts back from the end. */
+  at(index: number): WidgetHandle | undefined
+  all(): readonly WidgetHandle[] | undefined
+  names(): readonly string[] | undefined
+  /** Adds a widget after the others. A name the node already has throws a `TypeError`. */
+  add(def: WidgetDef): WidgetHandle | undefined
+  /** Removes the widget. `false` if the node has none by that name. */
+  remove(name: string): boolean
+  /** Puts the widgets in this order. `names` names every widget once. `false` if the node is gone. */
+  reorder(names: readonly string[]): boolean
+  /**
+   * Moves one widget to `index`, clamped to the end of the list; a negative index throws.
+   * `false` if the node has no widget by that name.
+   */
+  move(name: string, index: number): boolean
+  /** Adds a widget whose element the pack fills. A name the node already has throws a `TypeError`. */
+  mount(def: MountDef): WidgetHandle | undefined
+  /** Adds a widget the pack draws on its own canvas. A name the node already has throws a `TypeError`. */
+  canvas(def: CanvasDef): CanvasHandle | undefined
+}
+
+/**
+ * One widget, named by its node and its name. On a deleted widget every read
+ * is `undefined` and every change does nothing and returns `false`.
+ */
+export interface WidgetHandle {
+  readonly name: string
+  /** True while the node has no widget by this name. */
+  readonly isDeleted: boolean
+  /** The widget's type, e.g. `number` or `combo`. */
+  readonly widgetType: string | undefined
+
+  /** A frozen copy of the value. `undefined` too if the workflow cannot save it. */
+  getValue(): WidgetValue | undefined
+  /** Commits a value as a user's edit does: the widget's callbacks run, and it is one undo step. */
+  setValue(value: WidgetValue): boolean
+  /** A frozen copy of the options. An option that is a function is left out. */
+  getOptions(): Readonly<WidgetOptions> | undefined
+  setOption(key: string, value: WidgetValue): boolean
+  setLabel(label: string): boolean
+  isHidden(): boolean | undefined
+  /** Hides or shows the widget and every widget linked to it. */
+  setHidden(hidden: boolean): boolean
+  isDisabled(): boolean | undefined
+  setDisabled(disabled: boolean): boolean
+  /** False if the widget is kept out of its node's saved values; a node saves none unless `isSerializingWidgets()`. */
+  isSerialized(): boolean | undefined
+  /**
+   * Fixes the height the widget takes on its node, in graph units (under Vue nodes, at least that), and grows the
+   * node to fit; the widget no longer shares the node's free height.
+   */
+  setHeight(height: number): boolean
+  /** The widgets linked to this one, such as a seed's control. */
+  linked(): readonly WidgetHandle[] | undefined
+  /** Links these widgets of the same node to this one, in place of any linked before. */
+  setLinked(names: readonly string[]): boolean
+
+  /**
+   * Runs after a commit leaves a value other than the last commit's, with copies of both. Not while a workflow
+   * loads or an undo or redo restores it, the restore's `onWorkflowLoaded` listeners included.
+   */
+  on(
+    event: 'change',
+    listener: (
+      value: WidgetValue | undefined,
+      previous: WidgetValue | undefined
+    ) => void
+  ): Unsubscribe
+  /**
+   * Runs after each commit not made by `setValue`, such as a click on a button, and not while a workflow loads.
+   * On a DOM widget (a mount, canvas, declared type or text area) the host's commit runs it twice.
+   */
+  on(
+    event: 'activate',
+    listener: (value: WidgetValue | undefined) => void
+  ): Unsubscribe
+  /** Runs once when the widget is removed from its node; for a mount, canvas or declared type also when the node is deleted. */
+  on(event: 'removed', listener: () => void): Unsubscribe
+  /** Runs each time a prompt is built (queueing, Export, Export (API), sharing), to send another value in that prompt only. */
+  on(
+    event: 'beforeSerialize',
+    listener: (event: WidgetSerializeEvent) => void
+  ): Unsubscribe
+}
+
+/** A widget's value about to be sent in a prompt the app builds. */
+export interface WidgetSerializeEvent {
+  /** Where the value goes: a prompt, whether queued or exported. The saved workflow cannot be changed. */
+  readonly context: 'prompt'
+  /** A copy of what is sent unless a listener replaces it. */
+  readonly value: WidgetValue | undefined
+  /** Sends `value` in its place. Called during the listener; the last call wins. */
+  setSerializedValue(value: WidgetValue): void
+}
+
+/** What a widget is created from. */
+export interface WidgetDef {
+  readonly type: string
+  /** May be empty; the Vue canvas does not show a widget with an empty name. */
+  readonly name: string
+  readonly value?: WidgetValue
+  readonly options?: WidgetOptions
+  /** `false` keeps the value out of the saved workflow. `options.serialize` decides the prompt. */
+  readonly serialize?: boolean
+  readonly disabled?: boolean
+  readonly hidden?: boolean
+}
+
+/** Options the host's widgets read. A widget type may read others. */
+export interface WidgetOptions {
+  readonly [key: string]: unknown
+  /** A combo's choices: a list, or a function (called with no arguments) or getter returning one, read each time. */
+  readonly values?: unknown
+  readonly min?: number
+  readonly max?: number
+  readonly step?: number
+  readonly step2?: number
+  readonly precision?: number
+  readonly multiline?: boolean
+  readonly placeholder?: string
+  readonly read_only?: boolean
+  readonly on?: string
+  readonly off?: string
+  /** `false` keeps the value out of the prompt. */
+  readonly serialize?: boolean
+  readonly property?: string
+  readonly socketless?: boolean
+  readonly canvasOnly?: boolean
+  readonly hideInPanel?: boolean
+  readonly hidden?: boolean
+  readonly disabled?: boolean
+  readonly nodeType?: string
+  readonly iconClass?: string
+  readonly useGrouping?: boolean
+  readonly showThumbnails?: boolean
+  readonly showItemNavigators?: boolean
+}
+
+/** What a mounted or canvas widget holds. `null` is held as `''`, as the host holds a missing value. */
+export type MountedData = WidgetValue
+
+/** A widget whose element the pack fills with its own tools. */
+export interface MountDef {
+  readonly name: string
+  /** Called once, with the element mounted on the node. A throw is reported. */
+  render(container: HTMLElement, value: MountedValue): void
+  /**
+   * Called once when the host releases the widget, which relies on the host fix #23520 in `main`
+   * (#23476: before it, a widget removed before its node had it called again). A throw is reported.
+   */
+  destroy?(): void
+  /** The height the widget takes on its node, in graph units (under Vue nodes, at least that); omit to share the free space. */
+  readonly height?: number
+  /** Defaults to `true`: a placeholder is drawn instead at low zoom. */
+  readonly hideOnZoom?: boolean
+  /** Whether the value is saved in the workflow. Defaults to whether `defaultValue` is given. */
+  readonly serialize?: boolean
+  /** Whether the value is sent in the prompt. Defaults to `serialize`. */
+  readonly sendToPrompt?: boolean
+  /** The value before one is set or loaded. */
+  readonly defaultValue?: MountedData
+}
+
+/** The value a mounted widget holds. Once the widget is off its node, `get` is `undefined` and `set` is `false`. */
+export interface MountedValue {
+  /** A frozen copy of the value. */
+  get(): MountedData | undefined
+  /** Commits a value as `WidgetHandle.setValue` does, to this widget only, not one added later under its name. */
+  set(value: MountedData): boolean
+  /** Runs when the value changes other than through `set`, as when a workflow loads. */
+  onChange(listener: (value: MountedData | undefined) => void): Unsubscribe
+}
+
+/** A widget the pack draws on a canvas element of its own. */
+export interface CanvasDef {
+  readonly name: string
+  /**
+   * Draws the widget, in CSS pixels. Called when the widget is mounted, when
+   * its element is resized, on `redraw()`, and when its value changes.
+   */
+  draw(
+    context: CanvasRenderingContext2D,
+    size: readonly [width: number, height: number],
+    theme: CanvasTheme,
+    value: MountedValue | undefined
+  ): void
+  /** The primary button went down. The node underneath does not see it. */
+  onPointerDown?(event: CanvasPointerEvent): void
+  /** The pointer moved, during a drag or not. */
+  onPointerMove?(event: CanvasPointerEvent): void
+  onPointerUp?(event: CanvasPointerEvent): void
+  /** As for `MountDef`: the canvas's height on its node, in graph units. */
+  readonly height?: number
+  /** As for `MountDef`. `draw` receives the value only when this is given. */
+  readonly defaultValue?: MountedData
+  readonly serialize?: boolean
+  readonly sendToPrompt?: boolean
+}
+
+export interface CanvasHandle {
+  readonly widget: WidgetHandle
+  /** Draws the canvas again now. Does nothing before it is mounted or after it is released. */
+  redraw(): void
+}
+
+/** A pointer event on a canvas widget, at the position `draw` uses. */
+export interface CanvasPointerEvent {
+  readonly x: number
+  readonly y: number
+  readonly event: PointerEvent
+}
+
+/** The theme's colors for a canvas widget, read again for every draw. */
+export interface CanvasTheme {
+  readonly surface: string
+  readonly surfaceHovered: string
+  readonly border: string
+  readonly text: string
+  readonly textSecondary: string
+}
+
+/** How every input of a declared widget type is shown. */
+export interface WidgetTypeDef {
+  /**
+   * Fills the widget's element for the input named `name`. Return a teardown
+   * to run once when the host releases the widget (as `MountDef.destroy`, #23520). A throw is reported.
+   */
+  render(
+    container: HTMLElement,
+    value: WidgetTypeValue,
+    name: string,
+    context: WidgetTypeContext
+  ): Unsubscribe | void
+  /** Used when the input's declaration gives no default it can hold. */
+  readonly defaultValue?: MountedData
+  /** As for `MountDef`: the widget's height on its node, in graph units. */
+  readonly height?: number
+  /** The least height the node gives the widget, in graph units. */
+  readonly minHeight?: number
+  /** Defaults to `true`: the value is saved and sent. */
+  readonly serialize?: boolean
+}
+
+/** The value a declared widget holds. */
+export type WidgetTypeValue = MountedValue
+
+export interface WidgetTypeContext {
+  /** A frozen copy of the options the input was declared with. `undefined` if they cannot be saved. */
+  getOptions(): Readonly<Record<string, unknown>> | undefined
+}
+
+/** Which graphs `onNodeChanged` hears: the graph on screen by default. */
+export interface NodeChangeOptions {
+  readonly scope?: NodeQueryScope
+}
+
+/** `to` is what the node's matching read returns after the change. */
+export type NodeChangeEvent =
+  | NodeChangeOf<'title' | 'color' | 'bgColor', string>
+  | NodeChangeOf<'mode', NodeMode>
+
+interface NodeChangeOf<TProperty extends string, TValue> {
+  readonly node: NodeHandle
+  /** The id of the graph the node is in. */
+  readonly graphId: string
+  readonly property: TProperty
+  readonly to: TValue | undefined
+}
+
+export interface NodeMoveEvent {
+  readonly node: NodeHandle
+  /** The node's new top-left corner, in graph space. */
+  readonly position: Point
+}
+
+/** One open workflow: an editing session, from opening it until closing it. */
+export interface DocumentHandle {
+  /**
+   * The same through undo, redo and tab switches; a reopened workflow, or one
+   * reloaded from disk, gets a new one. It means nothing after a page reload, so do not save it.
+   */
+  readonly id: string
+  /** True once the document is closed, and every other read is `undefined`. */
+  readonly isDeleted: boolean
+  /** The file name, without its directory or extension. */
+  readonly name: string | undefined
+  /** Where the workflow is saved, or `undefined` while it has never been saved. */
+  readonly path: string | undefined
+}
+
+/** Parsed ComfyUI workflow JSON. */
+export type WorkflowData = Readonly<Record<string, unknown>>
+
+/** An argument a member cannot use throws a `TypeError`. */
+export interface WorkflowHandle {
+  /** The open document on screen, or `undefined` before there is one. */
+  current(): DocumentHandle | undefined
+  /** The id of `current()`. */
+  documentId(): string | undefined
+  /** A frozen copy of the open document's workflow, as it would be saved. */
+  snapshot(): WorkflowData | undefined
+  /**
+   * Opens `data` as a new document on screen, leaving the one before open in its tab; the graph gets a new id if another open document holds `data.id`.
+   * Resolves `false` if it is not a workflow or the host did not load it. Data that is not an object throws a `TypeError`.
+   */
+  open(data: WorkflowData): Promise<boolean>
+  /** `value` with `%date:…%` and `%Node.widget%` expanded in the open document. */
+  applyTextReplacements(value: string): string | undefined
+  /** Asks `importer` for a workflow when a file the host cannot read is opened or dropped. */
+  registerImporter(importer: WorkflowImporter): Unsubscribe
+  /** A frozen copy of `key` in the `extra` the document's workflow saves; `undefined` if absent or closed. */
+  getExtra(document: DocumentHandle | undefined, key: string): unknown
+  /**
+   * Writes `key` in the on-screen document's `extra` as one undo step; `undefined` deletes it. False for any
+   * other document, and while a graph loads or an undo or redo restores it, the restore's `onWorkflowLoaded` included.
+   * The keys are one namespace with the editor's own and every pack's, so prefix yours.
+   */
+  setExtra(
+    document: DocumentHandle | undefined,
+    key: string,
+    value: unknown
+  ): boolean
+}
+
+export interface WorkflowImportContext {
+  readonly name: string
+  /** The MIME type the browser gives the file, or `''`. */
+  readonly type: string
+}
+
+export type WorkflowImportResult =
+  | { readonly workflow: WorkflowData | string }
+  | { readonly prompt: WorkflowData | string }
+
+/** Reads a workflow or prompt from a file the host cannot read itself. */
+export interface WorkflowImporter {
+  /** Names the importer in error reports; no two importers share one. */
+  readonly id: string
+  /** Offered files of these MIME types or extensions; every file when neither is given. */
+  readonly mimeTypes?: readonly string[]
+  readonly extensions?: readonly string[]
+  /** Files larger than this are not offered. */
+  readonly maxBytes: number
+  enabled?(): boolean | Promise<boolean>
+  /** Returns nothing to decline the file. A throw is reported and the next importer is asked. */
+  parse(
+    bytes: Uint8Array,
+    context: WorkflowImportContext
+  ):
+    | WorkflowImportResult
+    | null
+    | undefined
+    | Promise<WorkflowImportResult | null | undefined>
+}
+
+export interface RunOptions {
+  /** Run only these nodes and what feeds them: live handles of the open document, at least one. */
+  readonly nodes?: readonly NodeHandle[]
+}
+
+export interface RunSubmission {
+  readonly promptId: string
+  /** How many backend nodes the prompt holds; a partial run executes only those its targets need. */
+  readonly nodeCount: number
+}
+
+export interface RunSubmittedEvent {
+  /** The prompts the backend accepted, in the order they were sent. */
+  readonly promptIds: readonly string[]
+  readonly submissions: readonly RunSubmission[]
+}
+
+/** An argument a member cannot use throws a `TypeError`. */
+export interface QueueHandle {
+  /**
+   * Queues the workflow as Run does: `true` once this call's prompts are submitted, and when a request fails with
+   * no answer from the backend. `false` if a node it names is gone, or the call was folded into a run, refused, given node errors or stopped.
+   * Rejects, as Run does, when the prompt cannot be built (a widget's own `serializeValue` throws).
+   */
+  run(options?: RunOptions): Promise<boolean>
+  /** Called as each run starts, before its prompt is built. A function it returns is called once that run is sent or refused. */
+  onBeforeRun(listener: () => (() => void) | void): Unsubscribe
+  /** Once for each run the backend accepted a prompt from. A run whose every prompt was refused fires only `onRejected`. */
+  onAfterRun(listener: (event: RunSubmittedEvent) => void): Unsubscribe
+  /** The backend refused a prompt. */
+  onRejected(listener: () => void): Unsubscribe
+  /** How many prompts are waiting or running, as the backend last said. */
+  pending(): number
+  onPendingChanged(listener: (pending: number) => void): Unsubscribe
+  /** Cancels the prompt that is running. The rest of the queue stays. */
+  interrupt(): Promise<void>
+  /** A run was interrupted, by anyone. */
+  onInterrupted(listener: () => void): Unsubscribe
+  /** Turns automatic queuing off, and leaves the run in progress alone. */
+  disableAutoQueue(): void
+}
+
+/** Answers, by output index or name, what the outputs it names stand for. Must not change the graph. */
+export type Resolver = (
+  view: ResolveView
+) => Readonly<Record<string, OutputResolution>>
+
+/** What a resolver sees: its node, and the other nodes of its graph. */
+export interface ResolveView {
+  readonly self: ResolvedNodeView
+  /** The nodes of `type` in the resolved node's own graph, in the graph's order. */
+  nodesOfType(type: string): readonly ResolvedNodeView[]
+}
+
+/** An output left out of the prompt, standing for whatever feeds an input, or a value. */
+export type OutputResolution =
+  | { readonly omit: true }
+  | { readonly forwardTo: InputRef }
+  | { readonly literal: WidgetValue }
+
+/** An input of a node in the same graph as the node that names it. */
+export interface InputRef {
+  readonly nodeId: string
+  readonly input: number
+}
+
+/** A frozen view of a node while a prompt is built. Its properties, groups, inputs and outputs are read when first asked for. */
+export interface ResolvedNodeView {
+  readonly id: string
+  readonly type: string
+  /** `undefined` for a mode that has no name here. */
+  readonly mode: NodeMode | undefined
+  readonly color: string | undefined
+  /** A copy of the node's saved properties. */
+  readonly properties: Readonly<Record<string, unknown>>
+  /** The groups that hold the node's center, in draw order. */
+  readonly groups: readonly GroupMembership[]
+  readonly inputs: readonly OwnInput[]
+  readonly outputs: readonly OwnOutput[]
+  /** A copy of the value of the node's widget with this name; `undefined` if it has none or it cannot be saved. */
+  widgetValue(name: string): WidgetValue | undefined
+  /** The input at this index, or the first with this name; `undefined` if there is none. */
+  input(ref: string | number): InputRef | undefined
+}
+
+export interface OwnInput {
+  readonly index: number
+  readonly name: string
+  /** The name the editor shows: the label, else the localized name, else the name. */
+  readonly label: string
+  /** The type the link into the input carries; `undefined` with no link. */
+  readonly connectedType: string | undefined
+  /** The node the link comes from; in a subgraph, the subgraph's input node for its own input. */
+  readonly sourceNodeId: string | undefined
+}
+
+export interface OwnOutput {
+  readonly index: number
+  readonly name: string
+  /** The name the editor shows: the label, else the localized name, else the name. */
+  readonly label: string
+  readonly type: string
+}
+
+export interface GroupMembership {
+  readonly id: string
+  readonly title: string
+}
+
+/** Names the inputs a node feeds, and from what. Not asked for a muted or bypassed node. Must not change the graph. */
+export type Supplier = (view: SupplyView) => readonly SuppliedEdge[]
+
+export interface SupplyView {
+  readonly self: ResolvedNodeView
+  /** Every input of the node's graph that no link feeds, of nodes other than frontend and subgraph nodes, in the graph's order. */
+  unconnectedInputs(): readonly UnconnectedInput[]
+}
+
+/** An input that no link feeds, and its node. */
+export interface UnconnectedInput {
+  readonly nodeId: string
+  readonly nodeType: string
+  readonly nodeTitle: string
+  /** `undefined` for a mode that has no name here. */
+  readonly nodeMode: NodeMode | undefined
+  readonly nodeColor: string | undefined
+  /** The groups that hold the node's center, in draw order. */
+  readonly nodeGroups: readonly GroupMembership[]
+  /** A copy of the node's saved properties. */
+  readonly nodeProperties: Readonly<Record<string, unknown>>
+  /** The input's index on its node. */
+  readonly input: number
+  readonly name: string
+  /** The name the editor shows: the label, else the localized name, else the name. */
+  readonly label: string
+  readonly type: string
+  /** True for the socket form of a widget. */
+  readonly isWidgetInput: boolean
+}
+
+/** An input a supplier feeds, from one of its own outputs or from whatever feeds one of its own inputs. */
+export interface SuppliedEdge {
+  /** One of `unconnectedInputs()`. */
+  readonly to: InputRef
+  readonly from: { readonly output: number } | { readonly forwardInput: number }
+  /** The highest claim on an input feeds it, and equal highest claims feed nothing. Defaults to 0. */
+  readonly priority?: number
+}
+
+/** The claim that feeds an input, with its source in the graph. */
+export interface ResolvedSupply {
+  readonly supplierNodeId: string
+  readonly to: InputRef
+  readonly from: ResolvedSource
+}
+
+/** Where a supply comes from in its own graph, once resolved frontend nodes are followed. */
+export type ResolvedSource =
+  | {
+      readonly kind: 'output'
+      readonly nodeId: string
+      readonly output: number
+    }
+  | { readonly kind: 'literal' }
+  | { readonly kind: 'omitted' }
+
+export interface PromptInputProjection {
+  /** Names of the node's inputs and widgets, as the prompt names them. */
+  readonly omitInputs: readonly string[]
+}
+
+export interface PreviewFrame {
+  readonly blob: Blob
 }

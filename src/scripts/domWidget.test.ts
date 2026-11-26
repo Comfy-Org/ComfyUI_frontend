@@ -200,3 +200,39 @@ describe('DOM widget value accessors with a non-function getValue/setValue', () 
     expect(widget.value).toBe('next')
   })
 })
+
+describe('DOM widget values that are not text or objects', () => {
+  function heldWidget(initial: number | boolean) {
+    const graph = new LGraph()
+    const node = new LGraphNode('test-node')
+    node.serialize_widgets = true
+    graph.add(node)
+    let held: number | boolean = initial
+    const widget = new DOMWidgetImpl<HTMLDivElement, number | boolean>({
+      node,
+      name: 'held',
+      type: 'custom',
+      element: document.createElement('div'),
+      options: {
+        getValue: () => held,
+        setValue: (value) => {
+          held = value
+        }
+      }
+    })
+    addWidget(node, widget)
+    return { node, widget }
+  }
+
+  test('holds, saves and restores a number or a boolean as it is', () => {
+    const { node, widget } = heldWidget(0)
+
+    expect(widget.value).toBe(0)
+    expect(node.serialize().widgets_values).toEqual([0])
+
+    widget.value = false
+    expect(widget.value).toBe(false)
+    node.configure({ ...node.serialize(), widgets_values: [7] })
+    expect(widget.value).toBe(7)
+  })
+})

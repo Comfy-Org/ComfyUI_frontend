@@ -54,7 +54,7 @@ function nodeOfType(type: unknown): (node: LGraphNode) => boolean {
   )
 }
 
-function checkedScope(member: string, scope: unknown): NodeQueryScope {
+export function checkedScope(member: string, scope: unknown): NodeQueryScope {
   if (scope === undefined) return 'visible'
   if (!isScope(scope)) {
     throw invalidArgument(

@@ -419,7 +419,8 @@ flowchart TD
     `defs/hostPaths.test.ts`, the drop through the editor's own `drop`
     handler in `app.test.ts`, and Vue nodes by mounting `LGraphNode.vue` on
     a real graph and canvas (`LGraphNode.nodeApi.test.ts`: hover, drag-over,
-    and the node dropped on becoming the drop target).
+    the node dropped on becoming the drop target, a widget's height and a
+    node move).
     - `onDragOver` and `onDrop` get the node's handle and the browser's
       `DragEvent`. Both renderers call `onDragOver` while a drag is over the
       node; the node is the drop target if the type's own method accepts or

@@ -61,6 +61,7 @@ import { useWorkflowService } from '@/platform/workflow/core/services/workflowSe
 import type { useWorkflowValidation } from '@/platform/workflow/validation/composables/useWorkflowValidation'
 import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
 import { ChangeTracker } from '@/scripts/changeTracker'
+import { beginChangeCaptureSuppression } from '@/services/changeCaptureSuppression'
 import {
   isCanvasOwner,
   bindCanvasTracker
@@ -102,10 +103,16 @@ import {
   hostNodeDef,
   registerHostType
 } from '@/platform/nodeApi/v4/defs/__fixtures__/hostNodeTypes'
+import {
+  addBackendNode,
+  addNodeOfType
+} from '@/platform/nodeApi/v4/execution/__fixtures__/promptGraphs'
 import type {
   Comfy,
   NodeCreatedEvent,
-  NodeHandle
+  NodeHandle,
+  WidgetCollection,
+  WidgetHandle
 } from '@/platform/nodeApi/v4/types'
 import { runMissingModelPipeline } from '@/platform/workflowErrors/missingModel/missingModelPipeline'
 import * as missingMediaPipeline from '@/platform/workflowErrors/missingMedia/missingMediaPipeline'
@@ -138,6 +145,7 @@ import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
+import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import {
   createTestRootGraph,
   createTestSubgraph,
@@ -3161,6 +3169,29 @@ describe('ComfyApp', () => {
       expect(graphA.getNodeById(toNodeId(1))?.title).toBe('Edited on screen')
     })
 
+    it('tells onWorkflowLoaded listeners about the tab a switch shows from its live graph, after its afterLoadGraph hooks', async () => {
+      const { comfy, workflowService, tabA } = await twoLiveTabs()
+      const heard: string[] = []
+      mockExtensionService.invokeExtensionsAsync.mockImplementation(
+        async (hook) => {
+          heard.push(hook)
+        }
+      )
+      onTestFinished(
+        comfy.onWorkflowLoaded((document) =>
+          heard.push(`loaded ${document?.name}`)
+        )
+      )
+
+      await workflowService.openWorkflow(tabA)
+
+      expect(heard).toEqual([
+        'beforeLoadGraph',
+        'afterLoadGraph',
+        'loaded tab-a'
+      ])
+    })
+
     it('records what a legacy afterLoadGraph hook changes on a switch to a live tab as an undo step, and keeps that tab’s saved baseline', async () => {
       const { workflowService, tabA, graphA } = await twoLiveTabs()
       const tracker = tabA.changeTracker
@@ -3381,6 +3412,89 @@ describe('ComfyApp', () => {
         return added
       }
 
+      describe('a pack that fits a mounted widget to its content each time the node mounts', () => {
+        function packThatFitsWhenMounted() {
+          const { comfy, packId } =
+            nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
+          class Fitted extends LGraphNode {
+            constructor(title?: string) {
+              super(title ?? 'Fitted')
+              this.serialize_widgets = true
+              this.addWidget('number', 'width', 512, () => {}, {})
+            }
+          }
+          LiteGraph.registerNodeType('Fitted', Fitted)
+          const [[nodeTypeHooks]] = vi.mocked(
+            mockExtensionService.registerExtension
+          ).mock.calls
+          nodeTypeHooks.beforeRegisterNodeDef?.(
+            LiteGraph.registered_node_types.Fitted,
+            hostNodeDef('Fitted'),
+            app
+          )
+          const resized: (() => void)[] = []
+          onTestFinished(
+            comfy.defs.extend(packId, 'Fitted', (builder) =>
+              builder.onCreated((node) => {
+                const mounted = node.widgets.mount({
+                  name: 'preview',
+                  render: () => {}
+                })
+                resized.push(() => {
+                  mounted?.setHeight(40)
+                  node.setSizeConstraints({ autoHeight: true })
+                })
+              })
+            )
+          )
+          const observeResizes = () => {
+            for (const fit of resized.splice(0)) fit()
+          }
+          return { comfy, observeResizes }
+        }
+
+        it.for([
+          {
+            step: 'a widget value',
+            take: (node: NodeHandle) => node.widgets.get('width')?.setValue(513)
+          },
+          {
+            step: 'removing the node',
+            take: (node: NodeHandle) => node.remove()
+          }
+        ])(
+          'keeps redo after undoing $step, when the fit runs again as the restored node mounts',
+          async ({ take }) => {
+            const { comfy, observeResizes } = packThatFitsWhenMounted()
+            await app.loadGraphData(workflowWithFixedIdAndOneNode(), false)
+            const { tracker } = historyOfTheOpenWorkflow()
+            const added = comfy.graph.add('Fitted')
+            assert(added)
+            observeResizes()
+            take(added)
+            const taken = structuredClone(
+              app.rootGraph.serialize()
+            ) as ComfyWorkflowJSON
+            const undoSteps = tracker.undoQueue.length
+
+            await tracker.undo()
+            observeResizes()
+
+            expect([
+              tracker.undoQueue.length,
+              tracker.redoQueue.length
+            ]).toEqual([undoSteps - 1, 1])
+            await tracker.redo()
+            expect(
+              ChangeTracker.graphEqual(
+                app.rootGraph.serialize() as ComfyWorkflowJSON,
+                taken
+              )
+            ).toBe(true)
+          }
+        )
+      })
+
       describe('a pack that settles the types of a node’s slots some time after the node is created', () => {
         const later = {
           'a microtask': () =>
@@ -3505,6 +3619,200 @@ describe('ComfyApp', () => {
         expect(kept.type).toBe('HandleProbe')
       })
 
+      describe('a widget change made after the node is, rebuilt from the saved state', () => {
+        class ThreeWidgets extends LGraphNode {
+          constructor(title?: string) {
+            super(title ?? 'ThreeWidgets')
+            this.serialize_widgets = true
+            this.addWidget('number', 'a', 1, () => {}, {})
+            this.addWidget('number', 'b', 2, () => {}, {})
+            this.addWidget('number', 'c', 3, () => {}, {})
+          }
+        }
+
+        function savedThreeWidgets(): ComfyWorkflowJSON {
+          const workflow = workflowWithFixedIdAndOneNode()
+          return {
+            ...workflow,
+            nodes: workflow.nodes.map((node) => ({
+              ...node,
+              type: 'ThreeWidgets',
+              widgets_values: [10, 20, 30]
+            }))
+          }
+        }
+
+        function shown(): string {
+          const widgets = app.rootGraph.getNodeById(toNodeId(1))?.widgets
+          return (widgets ?? [])
+            .map(({ name, value }) => `${name}=${String(value)}`)
+            .join(' ')
+        }
+
+        async function stepsAfter(
+          named: boolean,
+          change: (widgets: WidgetCollection) => void
+        ) {
+          const { comfy } = nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
+          LiteGraph.registerNodeType('ThreeWidgets', ThreeWidgets)
+          const before = LiteGraph.namedValuesRestore
+          LiteGraph.namedValuesRestore = named
+          onTestFinished(() => {
+            LiteGraph.namedValuesRestore = before
+          })
+          await app.loadGraphData(savedThreeWidgets(), false)
+          const { tracker } = historyOfTheOpenWorkflow()
+          const node = comfy.graph.node('1')
+          assert(node)
+          change(node.widgets)
+          const made = shown()
+          await tracker.undo()
+          const undone = shown()
+          await tracker.redo()
+          const redone = shown()
+          tracker.userActed()
+          comfy.graph.node('1')?.setTitle('a later edit')
+          await tracker.undo()
+          const laterUndone = shown()
+          await app.loadGraphData(
+            structuredClone(app.rootGraph.serialize()) as ComfyWorkflowJSON,
+            false
+          )
+          return { made, undone, redone, laterUndone, reloaded: shown() }
+        }
+
+        const changes: Record<string, (widgets: WidgetCollection) => void> = {
+          reorder: (widgets) => widgets.reorder(['c', 'a', 'b']),
+          move: (widgets) => widgets.move('c', 0),
+          remove: (widgets) => {
+            widgets.remove('a')
+          },
+          add: (widgets) => {
+            widgets.add({ type: 'number', name: 'd', value: 40 })
+          }
+        }
+
+        it.for([
+          {
+            change: 'reorder',
+            named: false,
+            made: 'c=30 a=10 b=20',
+            rebuilt: 'a=30 b=10 c=20'
+          },
+          {
+            change: 'reorder',
+            named: true,
+            made: 'c=30 a=10 b=20',
+            rebuilt: 'a=10 b=20 c=30'
+          },
+          {
+            change: 'move',
+            named: false,
+            made: 'c=30 a=10 b=20',
+            rebuilt: 'a=30 b=10 c=20'
+          },
+          {
+            change: 'move',
+            named: true,
+            made: 'c=30 a=10 b=20',
+            rebuilt: 'a=10 b=20 c=30'
+          },
+          {
+            change: 'remove',
+            named: false,
+            made: 'b=20 c=30',
+            rebuilt: 'a=20 b=30 c=3'
+          },
+          {
+            change: 'remove',
+            named: true,
+            made: 'b=20 c=30',
+            rebuilt: 'a=1 b=20 c=30'
+          },
+          {
+            change: 'add',
+            named: false,
+            made: 'a=10 b=20 c=30 d=40',
+            rebuilt: 'a=10 b=20 c=30'
+          },
+          {
+            change: 'add',
+            named: true,
+            made: 'a=10 b=20 c=30 d=40',
+            rebuilt: 'a=10 b=20 c=30'
+          }
+        ])(
+          'after $change with named restore $named, undo gives back the state before it, and redo, a later undo and a reload give the type’s widgets with the values the host restores',
+          async ({ change, named, made, rebuilt }) => {
+            const steps = await stepsAfter(named, changes[change])
+
+            expect(steps).toEqual({
+              made,
+              undone: 'a=10 b=20 c=30',
+              redone: rebuilt,
+              laterUndone: rebuilt,
+              reloaded: rebuilt
+            })
+          }
+        )
+      })
+
+      function showTheRootGraph() {
+        useComfyApiStore().provideCanvas({
+          visibleGraph: () => app.rootGraph,
+          canvas: () => null,
+          followMoves: () => () => {},
+          followDragEnds: () => () => {}
+        })
+      }
+
+      it('reports what a pack changes, not what an undo or redo gives back, and a saved mode or color the rebuilt node did not start with', async () => {
+        const { comfy } = nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
+        await app.loadGraphData(workflowWithFixedIdAndOneNode(), false)
+        showTheRootGraph()
+        const { tracker } = historyOfTheOpenWorkflow()
+        const heard: string[] = []
+        onTestFinished(
+          comfy.onNodeChanged(({ property, to }) =>
+            heard.push(`${property} ${String(to)}`)
+          )
+        )
+        const node = comfy.graph.node('1')
+        assert(node)
+        node.setTitle('Renamed')
+        node.setMode('bypass')
+        node.setColor('#123456')
+
+        expect(heard.splice(0)).toEqual([
+          'title Renamed',
+          'mode bypass',
+          'color #123456'
+        ])
+
+        const heardPerStep: string[][] = []
+        for (const step of ['undo', 'undo', 'undo', 'redo', 'redo', 'redo']) {
+          await (step === 'undo' ? tracker.undo() : tracker.redo())
+          heardPerStep.push(heard.splice(0))
+        }
+
+        expect(node.getTitle()).toBe('Renamed')
+        expect(heardPerStep).toEqual([
+          ['mode bypass'],
+          [],
+          [],
+          [],
+          ['mode bypass'],
+          ['mode bypass', 'color #123456']
+        ])
+
+        await app.loadGraphData(
+          structuredClone(app.rootGraph.serialize()) as ComfyWorkflowJSON,
+          false
+        )
+
+        expect(heard).toEqual(['mode bypass', 'color #123456'])
+      })
+
       it('gives back the same handle to a node in a subgraph when undo restores the subgraph node that redo removed again', async () => {
         const { comfy } = nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
         await app.loadGraphData(workflowWithFixedIdAndOneNode(), false)
@@ -3529,6 +3837,48 @@ describe('ComfyApp', () => {
         expect(kept.isDeleted).toBe(false)
         expect(comfy.graph.subgraphs()[0]?.node(String(interior.id))).toBe(kept)
       })
+
+      it.for([
+        {
+          format: 'a workflow',
+          load: () => app.loadGraphData(workflowWithFixedIdAndOneNode(), false)
+        },
+        {
+          format: 'API JSON',
+          load: () =>
+            app.loadApiJson(
+              { '1': { class_type: 'HandleProbe', inputs: {} } },
+              'probe.json'
+            )
+        },
+        { format: 'an A1111 image', load: () => importA1111ImageWithProbe() }
+      ])(
+        'makes an edit a pack makes when told $format loaded the first undo step, marking the workflow modified',
+        async ({ load }) => {
+          const { comfy } = nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
+          await app.loadGraphData(workflowWithFixedIdAndOneNode(), false)
+          const { tracker, workflow } = historyOfTheOpenWorkflow()
+          const unsubscribe = comfy.onWorkflowLoaded(() =>
+            comfy.graph.node('1')?.setTitle('Set when loaded')
+          )
+          await load()
+          unsubscribe()
+
+          expect(tracker.undoQueue).toHaveLength(1)
+          expect(workflow.isModified).toBe(true)
+          comfy.graph.node('1')?.setTitle('Edited by the user')
+          await tracker.undo()
+
+          expect(app.rootGraph.getNodeById(toNodeId(1))?.title).toBe(
+            'Set when loaded'
+          )
+          await tracker.undo()
+          expect(app.rootGraph.getNodeById(toNodeId(1))?.title).not.toBe(
+            'Set when loaded'
+          )
+          expect(workflow.isModified).toBe(false)
+        }
+      )
 
       const loadFormats = [
         {
@@ -3701,6 +4051,40 @@ describe('ComfyApp', () => {
         ).toEqual([true])
       })
 
+      it.for(['a history restore', 'an undo across a load'])(
+        'keeps an onWorkflowLoaded edit made during %s in the restored state, so the next undo leaves it and redo is kept',
+        async (kind) => {
+          const { comfy } = nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
+          await app.loadGraphData(workflowWithFixedIdAndOneNode(), false)
+          const { tracker } = historyOfTheOpenWorkflow()
+          comfy.graph.node('1')?.setTitle('Edited by the user')
+          if (kind === 'an undo across a load') {
+            const replacement = workflowWithFixedIdAndOneNode()
+            replacement.nodes[0].title = 'Replacement'
+            await app.loadGraphData(replacement, false)
+          }
+          let armed = true
+          onTestFinished(
+            comfy.onWorkflowLoaded(() => {
+              if (!armed) return
+              armed = false
+              comfy.graph.node('1')?.setColor('#123456')
+            })
+          )
+
+          await tracker.undo()
+          const redoAfterUndo = tracker.redoQueue.length
+          tracker.userActed()
+          tracker.captureCanvasState()
+          const redoAfterClick = tracker.redoQueue.length
+          comfy.graph.node('1')?.setMode('bypass')
+          await tracker.undo()
+
+          expect(redoAfterClick).toBe(redoAfterUndo)
+          expect(app.rootGraph.getNodeById(toNodeId(1))?.color).toBe('#123456')
+        }
+      )
+
       it('retires the handle to a node of a replacement load when undo goes back across that load', async () => {
         const { comfy } = nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
         await app.loadGraphData(workflowWithFixedIdAndOneNode(), false)
@@ -3754,6 +4138,48 @@ describe('ComfyApp', () => {
         expect(removedByRedo[0]).toBe(kept)
         expect(kept.isDeleted).toBe(false)
         expect(comfy.graph.node(kept.id)).toBe(kept)
+      })
+
+      it('gives a removal hook the pack’s own widget handle, still reading its widget, when redo removes a node undo restored', async () => {
+        const { comfy, packId } =
+          nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
+        const [[nodeTypeHooks]] = vi.mocked(
+          mockExtensionService.registerExtension
+        ).mock.calls
+        nodeTypeHooks.beforeRegisterNodeDef?.(
+          LiteGraph.registered_node_types.HandleProbe,
+          hostNodeDef('HandleProbe'),
+          app
+        )
+        const removed: [string, WidgetHandle | undefined, unknown][] = []
+        onTestFinished(
+          comfy.defs.extend(packId, 'HandleProbe', (builder) => {
+            builder.onCreated((node) => {
+              node.widgets.add({ type: 'number', name: 'level', value: 3 })
+            })
+            builder.onRemoved((node) => {
+              const widget = node.widgets.get('level')
+              removed.push([node.id, widget, widget?.getValue()])
+            })
+          })
+        )
+        await app.loadGraphData(workflowWithFixedIdAndOneNode(), false)
+        const { tracker } = historyOfTheOpenWorkflow()
+        const kept = await addedProbe(comfy)
+        expect(kept.remove()).toBe(true)
+        await tracker.undo()
+        const keptWidget = kept.widgets.get('level')
+        assert(keptWidget)
+        removed.length = 0
+
+        await tracker.redo()
+        const [[, widget, value], ...more] = removed.filter(
+          ([id]) => id === kept.id
+        )
+
+        expect(more).toEqual([])
+        expect(widget).toBe(keptWidget)
+        expect(value).toBe(3)
       })
 
       it('retires the handle when undo goes back to before the node was added, so the node that takes its id next gets another', async () => {
@@ -3841,6 +4267,8 @@ describe('ComfyApp', () => {
       app.rootGraph.add(undone)
       const kept = comfy.graph.node(String(undone.id))
       assert(kept)
+      const keptWidget = kept.widgets.get('level')
+      assert(keptWidget)
 
       AddsANodeOnRestore.adding = true
       await app.loadGraphData(beforeAdding, false, false, null, {
@@ -3853,6 +4281,8 @@ describe('ComfyApp', () => {
       expect(taken).not.toBe(kept)
       expect(taken?.isDeleted).toBe(false)
       expect(comfy.graph.node(kept.id)).toBe(taken)
+      expect(keptWidget.getValue()).toBeUndefined()
+      expect(taken?.widgets.get('level')?.getValue()).toBe(2)
     })
 
     it.for(['a legacy onRemoved', 'a V4 onRemoved hook'])(
@@ -3991,6 +4421,103 @@ describe('ComfyApp', () => {
 
       expect(kept.isDeleted).toBe(true)
       expect(kept.getTitle()).toBeUndefined()
+    })
+
+    describe('a mounted widget a pack listens to', () => {
+      function packThatMountsAndListens() {
+        const { comfy, packId } =
+          nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
+        const [[nodeTypeHooks]] = vi.mocked(
+          mockExtensionService.registerExtension
+        ).mock.calls
+        nodeTypeHooks.beforeRegisterNodeDef?.(
+          LiteGraph.registered_node_types.HandleProbe,
+          hostNodeDef('HandleProbe'),
+          app
+        )
+        const heard: string[] = []
+        onTestFinished(
+          comfy.defs.extend(packId, 'HandleProbe', (builder) =>
+            builder.onCreated((node) => {
+              node.setSerializeWidgets(true)
+              const mounted = node.widgets.mount({
+                name: 'm',
+                defaultValue: 'default',
+                render: () => {}
+              })
+              mounted?.on('change', (to, from) =>
+                heard.push(`change ${String(from)} ${String(to)}`)
+              )
+              mounted?.on('activate', (value) =>
+                heard.push(`activate ${String(value)}`)
+              )
+            })
+          )
+        )
+        return { heard }
+      }
+
+      function savedWithValue(value: string): ComfyWorkflowJSON {
+        const workflow = workflowWithFixedIdAndOneNode()
+        return {
+          ...workflow,
+          nodes: workflow.nodes.map((node) => ({
+            ...node,
+            widgets_values: [value]
+          }))
+        }
+      }
+
+      function mountedWidget() {
+        const widget = app.rootGraph
+          .getNodeById(toNodeId(1))
+          ?.widgets?.find(({ name }) => name === 'm')
+        assert(widget instanceof BaseWidget)
+        return widget
+      }
+
+      it('hears nothing while a load or an undo restores its value, and hears the next commit', async () => {
+        const { heard } = packThatMountsAndListens()
+
+        await app.loadGraphData(savedWithValue('loaded'), false)
+        await app.loadGraphData(savedWithValue('undone'), false, false, null, {
+          restoreHistory: true
+        })
+
+        expect(mountedWidget().value).toBe('undone')
+        expect(heard).toEqual([])
+
+        mountedWidget().value = 'typed'
+
+        expect(heard).toEqual(['change undone typed', 'activate typed'])
+      })
+
+      it('hears a canvas commit once as a change and twice as an activation, as the DOM widget runs its callback twice', async () => {
+        const { heard } = packThatMountsAndListens()
+        await app.loadGraphData(savedWithValue('loaded'), false)
+        const node = app.rootGraph.getNodeById(toNodeId(1))
+        assert(node)
+
+        mountedWidget().setValue('typed', { node })
+
+        expect(heard).toEqual([
+          'change loaded typed',
+          'activate typed',
+          'activate typed'
+        ])
+      })
+
+      it('hears nothing while the host suppresses change capture for an import, and hears again after', async () => {
+        const { heard } = packThatMountsAndListens()
+        await app.loadGraphData(savedWithValue('loaded'), false)
+
+        const release = beginChangeCaptureSuppression()
+        mountedWidget().value = 'imported'
+        release()
+        mountedWidget().value = 'typed'
+
+        expect(heard).toEqual(['change imported typed', 'activate typed'])
+      })
     })
 
     it('retires the handles of the open document when a load freezes it, and gives working ones once that load is replaced before it configures the graph', async () => {
@@ -4306,6 +4833,139 @@ describe('ComfyApp', () => {
         ])
       }
     )
+
+    it.for([
+      {
+        format: 'a workflow',
+        load: () => app.loadGraphData(workflowWithFixedIdAndOneNode(), false)
+      },
+      {
+        format: 'an undo or redo',
+        load: () =>
+          app.loadGraphData(
+            workflowWithFixedIdAndOneNode(),
+            false,
+            false,
+            null,
+            {
+              restoreHistory: true
+            }
+          )
+      },
+      {
+        format: 'API JSON',
+        load: () =>
+          app.loadApiJson(
+            { '1': { class_type: 'HandleProbe', inputs: {} } },
+            'probe.json'
+          )
+      },
+      { format: 'an A1111 image', load: importA1111ImageWithProbe }
+    ])('tells packs once that $format loaded', async ({ load }) => {
+      const { comfy } = nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
+      const loaded = vi.fn()
+      onTestFinished(comfy.onWorkflowLoaded(loaded))
+
+      await load()
+
+      expect(loaded).toHaveBeenCalledOnce()
+    })
+
+    it('does not tell packs a workflow loaded when the load fails', async () => {
+      const { comfy } = nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
+      const loaded = vi.fn()
+      onTestFinished(comfy.onWorkflowLoaded(loaded))
+      vi.spyOn(app.rootGraph, 'configure').mockImplementationOnce(() => {
+        throw new Error('broken workflow')
+      })
+
+      await expect(
+        app.loadGraphData(workflowWithFixedIdAndOneNode(), false)
+      ).resolves.toBe(false)
+      expect(loaded).not.toHaveBeenCalled()
+
+      await app.loadGraphData(workflowWithFixedIdAndOneNode(), false)
+
+      expect(loaded).toHaveBeenCalledOnce()
+    })
+
+    it('keeps the document id through undo and redo', async () => {
+      const { comfy } = nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
+      useWorkflowStore().activeWorkflow = markLoaded(
+        new ComfyWorkflow({ path: 'workflows/open.json', modified: 0, size: 0 })
+      )
+      const before = comfy.workflow.documentId()
+      const seen: (string | undefined)[] = []
+      onTestFinished(
+        comfy.onWorkflowLoaded((document) => seen.push(document?.id))
+      )
+
+      await app.loadGraphData(
+        workflowWithFixedIdAndOneNode(),
+        false,
+        false,
+        null,
+        {
+          restoreHistory: true
+        }
+      )
+
+      expect(before).toBeDefined()
+      expect(seen).toEqual([before])
+    })
+
+    it('opens a workflow a pack hands it through the real loader', async () => {
+      const { comfy } = nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
+
+      await expect(
+        comfy.workflow.open(workflowWithFixedIdAndOneNode())
+      ).resolves.toBe(true)
+
+      expect(app.rootGraph.id).toBe(DOCUMENT_ID)
+      expect(comfy.graph.node('1')?.type).toBe('HandleProbe')
+    })
+
+    it('loads the workflow a pack importer reads from a file the host cannot read', async () => {
+      const { comfy } = nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
+      vi.mocked(getWorkflowDataFromFile).mockResolvedValue(undefined)
+      comfy.workflow.registerImporter({
+        id: 'test.importer',
+        extensions: ['bin'],
+        maxBytes: 1024,
+        parse: () => ({ workflow: workflowWithFixedIdAndOneNode() })
+      })
+
+      await app.handleFile(createTestFile('graph.bin', ''))
+
+      expect(app.rootGraph.id).toBe(DOCUMENT_ID)
+    })
+  })
+
+  describe('node API in the prompt', () => {
+    it('builds the prompt with the resolvers packs defined', async () => {
+      onTestFinished(() => {
+        delete window.comfy_v4
+      })
+      useComfyApiStore().publish()
+      assert(window.comfy_v4)
+      const packId = registerPublishedTestPack(window.comfy_v4)
+      onTestFinished(
+        window.comfy_v4.defs.define(packId, {
+          type: 'Pack/Constant',
+          execution: 'frontend',
+          outputs: [{ name: 'out', type: 'STRING' }],
+          resolve: () => ({ 0: { literal: 'answered' } })
+        })
+      )
+      const graph = new LGraph()
+      const constant = addNodeOfType(graph, 'Pack/Constant')
+      const consumer = addBackendNode(graph, 'Consumer', { inputs: ['x'] })
+      constant.connect(0, consumer, 0)
+
+      const { output } = await app.graphToPrompt(graph)
+
+      expect(output[String(consumer.id)].inputs).toEqual({ x: 'answered' })
+    })
   })
 
   describe('nodeOutputs', () => {
@@ -5863,6 +6523,271 @@ describe('ComfyApp', () => {
 
       await expect(firstQueue).resolves.toBe(true)
       expect(useExecutionErrorStore().lastNodeErrors).toBeNull()
+    })
+  })
+
+  describe('the node API queue', () => {
+    function queueOnTheApp() {
+      const workflow = new ComfyWorkflow({
+        path: 'workflows/queued.json',
+        modified: 0,
+        size: 0
+      })
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      app.canvas = fromPartial<LGraphCanvas>({ graph, draw: vi.fn() })
+      onTestFinished(attachLegacyUI(app))
+      useWorkflowStore().activeWorkflow = markLoaded(workflow)
+      vi.spyOn(app, 'graphToPrompt').mockResolvedValue({
+        output: { '1': { class_type: 'PreviewAny', inputs: {} } },
+        workflow: createWorkflowGraphData()
+      })
+      useComfyApiStore().publish()
+      onTestFinished(() => {
+        delete window.comfy_v4
+      })
+      const { comfy_v4 } = window
+      assert(comfy_v4)
+      return comfy_v4.queue
+    }
+
+    const NODE_ERRORS: Record<string, NodeError> = {
+      '1': {
+        class_type: 'PreviewAny',
+        dependent_outputs: ['1'],
+        errors: [
+          {
+            type: 'required_input_missing',
+            message: 'Required input is missing: source',
+            details: ''
+          }
+        ]
+      }
+    }
+
+    it('runs a pack listener as each run call starts, and its cleanup once the queue settles', async () => {
+      const queue = queueOnTheApp()
+      const order: string[] = []
+      vi.spyOn(api, 'queuePrompt').mockImplementation(async () => {
+        order.push('submitted')
+        return { prompt_id: 'job-1' }
+      })
+      queue.onBeforeRun(() => {
+        order.push('before run')
+        return () => order.push('cleanup')
+      })
+
+      await app.queuePrompt(0, 2)
+
+      expect(order).toEqual(['before run', 'submitted', 'submitted', 'cleanup'])
+    })
+
+    it.for([
+      {
+        stop: 'a failed workspace switch',
+        arrange: () =>
+          vi
+            .mocked(useTeamWorkspaceStore().waitForWorkspaceSwitch)
+            .mockRejectedValueOnce(new Error('Token exchange failed'))
+      },
+      {
+        stop: 'a missing workspace credential',
+        arrange: () =>
+          vi
+            .mocked(useAuthStore().getWorkspaceAuthToken)
+            .mockResolvedValueOnce(undefined)
+      },
+      {
+        stop: 'a prompt that cannot be built',
+        arrange: () =>
+          vi
+            .spyOn(app, 'graphToPrompt')
+            .mockRejectedValueOnce(new Error('cannot build'))
+      }
+    ])(
+      'runs the cleanup when the queue stops early on $stop',
+      async ({ arrange }) => {
+        const queue = queueOnTheApp()
+        const cleanup = vi.fn()
+        queue.onBeforeRun(() => cleanup)
+        arrange()
+        const submit = vi.spyOn(api, 'queuePrompt')
+
+        await app.queuePrompt(0).catch(() => false)
+
+        expect(submit).not.toHaveBeenCalled()
+        expect(cleanup).toHaveBeenCalledOnce()
+      }
+    )
+
+    it('tells a pack the ids of the prompts a run call submitted', async () => {
+      const queue = queueOnTheApp()
+      let next = 0
+      vi.spyOn(api, 'queuePrompt').mockImplementation(async () => ({
+        prompt_id: `job-${++next}`
+      }))
+      const submitted = vi.fn()
+      queue.onAfterRun(submitted)
+
+      await app.queuePrompt(0, 2)
+
+      expect(submitted).toHaveBeenCalledExactlyOnceWith({
+        promptIds: ['job-1', 'job-2'],
+        submissions: [
+          { promptId: 'job-1', nodeCount: 1 },
+          { promptId: 'job-2', nodeCount: 1 }
+        ]
+      })
+    })
+
+    it('tells a pack about a refusal on the ordinary validation failure, and nothing after it', async () => {
+      const queue = queueOnTheApp()
+      vi.spyOn(api, 'queuePrompt').mockRejectedValue(
+        new PromptExecutionError(
+          {
+            error: {
+              type: 'prompt_outputs_failed_validation',
+              message: 'Prompt outputs failed validation',
+              details: ''
+            },
+            node_errors: NODE_ERRORS
+          },
+          400
+        )
+      )
+      const rejected = vi.fn()
+      const submitted = vi.fn()
+      queue.onRejected(rejected)
+      queue.onAfterRun(submitted)
+
+      await app.queuePrompt(0)
+
+      expect(rejected).toHaveBeenCalledOnce()
+      expect(submitted).not.toHaveBeenCalled()
+    })
+
+    it('tells a pack about a refusal the backend answers without a prompt id', async () => {
+      const queue = queueOnTheApp()
+      vi.spyOn(api, 'queuePrompt').mockResolvedValue({
+        node_errors: NODE_ERRORS
+      })
+      const rejected = vi.fn()
+      queue.onRejected(rejected)
+
+      await app.queuePrompt(0)
+
+      expect(rejected).toHaveBeenCalledOnce()
+    })
+
+    it.for([
+      {
+        outcome: 'submits its prompt',
+        respond: async () => ({ prompt_id: 'job-1' }),
+        resolves: true
+      },
+      {
+        outcome: 'is answered with neither a prompt id nor an error',
+        respond: async () => ({}),
+        resolves: true
+      },
+      {
+        outcome: 'fails before the backend answers',
+        respond: async () => {
+          throw new TypeError('Failed to fetch')
+        },
+        resolves: true
+      },
+      {
+        outcome: 'is accepted with node errors',
+        respond: async () => ({ prompt_id: 'job-1', node_errors: NODE_ERRORS }),
+        resolves: false
+      },
+      {
+        outcome: 'is refused with node errors',
+        respond: async () => {
+          throw new PromptExecutionError({
+            error: { type: 'invalid_prompt', message: 'Invalid', details: '' },
+            node_errors: NODE_ERRORS
+          })
+        },
+        resolves: false
+      },
+      {
+        outcome: 'is refused with a prompt error',
+        respond: async () => {
+          throw new PromptExecutionError({
+            error: {
+              type: 'prompt_no_outputs',
+              message: 'No outputs',
+              details: ''
+            },
+            node_errors: {}
+          })
+        },
+        resolves: false
+      }
+    ])(
+      'resolves $resolves from queue.run() when the run $outcome',
+      async ({ respond, resolves }) => {
+        const queue = queueOnTheApp()
+        const submit = vi.spyOn(api, 'queuePrompt').mockImplementation(respond)
+
+        await expect(queue.run()).resolves.toBe(resolves)
+        expect(submit).toHaveBeenCalledOnce()
+      }
+    )
+
+    it('resolves false from queue.run() when the queue stops before sending', async () => {
+      const queue = queueOnTheApp()
+      vi.mocked(
+        useTeamWorkspaceStore().waitForWorkspaceSwitch
+      ).mockRejectedValueOnce(new Error('Token exchange failed'))
+      const submit = vi.spyOn(api, 'queuePrompt')
+
+      await expect(queue.run()).resolves.toBe(false)
+      expect(submit).not.toHaveBeenCalled()
+    })
+
+    it('resolves false from queue.run() when it is folded into a run in progress', async () => {
+      const queue = queueOnTheApp()
+      let finishFirst: () => void = () => {}
+      vi.spyOn(api, 'queuePrompt').mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            finishFirst = () => resolve({ prompt_id: 'job-1' })
+          })
+      )
+      const first = app.queuePrompt(0)
+      await vi.waitFor(() => expect(api.queuePrompt).toHaveBeenCalledOnce())
+
+      await expect(queue.run()).resolves.toBe(false)
+
+      finishFirst()
+      await vi.waitFor(() => expect(api.queuePrompt).toHaveBeenCalledTimes(2))
+      finishFirst()
+      await expect(first).resolves.toBe(true)
+    })
+
+    it('submits only the nodes a pack names', async () => {
+      const queue = queueOnTheApp()
+      const root = app.rootGraph
+      const outer = new LGraphNode('Outer')
+      root.add(outer)
+      const submit = vi
+        .spyOn(api, 'queuePrompt')
+        .mockResolvedValue({ prompt_id: 'job-1' })
+      const comfy = window.comfy_v4
+      assert(comfy)
+      const handle = comfy.graph.node(String(outer.id))
+      assert(handle)
+
+      await expect(queue.run({ nodes: [handle] })).resolves.toBe(true)
+
+      expect(submit).toHaveBeenCalledWith(
+        0,
+        expect.anything(),
+        expect.objectContaining({ partialExecutionTargets: [String(outer.id)] })
+      )
     })
   })
 
@@ -7570,6 +8495,68 @@ describe('ComfyApp', () => {
       expect(node.onExecuted).toHaveBeenCalledExactlyOnceWith({
         text: ['done']
       })
+    })
+
+    it("gives a preview of the open workflow's run to the onPreview hooks of a node in a subgraph, and not another workflow's", () => {
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      const workflowA = markLoaded(
+        new ComfyWorkflow({ path: 'workflows/a.json', modified: 0, size: 0 })
+      )
+      workflowA.changeTracker.activeState = workflowGraphData(workflowAId)
+      useWorkflowStore().activeWorkflow = workflowA
+      onTestFinished(() => {
+        delete window.comfy_v4
+      })
+      useComfyApiStore().publish()
+      assert(window.comfy_v4)
+      const { defs } = window.comfy_v4
+      const packId = registerPublishedTestPack(window.comfy_v4)
+      onTestFinished(defs.define(packId, { type: 'Pack/Preview' }))
+      const previews: [string | undefined, Blob][] = []
+      onTestFinished(
+        defs.extend(packId, 'Pack/Preview', (builder) =>
+          builder.onPreview((node, frame) =>
+            previews.push([node.graphId, frame.blob])
+          )
+        )
+      )
+      const subgraph = createTestSubgraph({ rootGraph: graph })
+      graph.subgraphs.set(subgraph.id, subgraph)
+      const inner = addNodeOfType(subgraph, 'Pack/Preview')
+      const placement = createTestSubgraphNode(subgraph)
+      graph.add(placement)
+      vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:preview')
+      const addEventListener = vi
+        .spyOn(api, 'addEventListener')
+        .mockImplementation(() => {})
+      vi.spyOn(api, 'init').mockResolvedValue()
+      Reflect.apply(Reflect.get(app, 'addApiUpdateHandlers'), app, [])
+      const previewHandler = addEventListener.mock.calls.find(
+        ([name]) => name === 'b_preview_with_metadata'
+      )?.[1]
+      assert(typeof previewHandler === 'function')
+      const preview = (blob: Blob, workflowId: string) =>
+        previewHandler(
+          new CustomEvent('b_preview_with_metadata', {
+            detail: {
+              blob,
+              nodeId: String(inner.id),
+              parentNodeId: String(placement.id),
+              displayNodeId: `${placement.id}:${inner.id}`,
+              realNodeId: String(inner.id),
+              jobId: `job-${workflowId}`,
+              workflowId
+            }
+          })
+        )
+      const own = new Blob(['own'])
+      useExecutionStore().activeJobId = `job-${workflowAId}`
+
+      preview(own, workflowAId)
+      preview(new Blob(['foreign']), workflowBId)
+
+      expect(previews).toEqual([[subgraph.id, own]])
     })
 
     it('restores the failed run state when returning to a workflow tab', async () => {

@@ -154,4 +154,33 @@ describe('calling a pack callback', () => {
       })
     )
   })
+
+  it('gives each listener the arguments of a notify, and of a drain', () => {
+    const listeners = createListeners<[number, string]>('test')
+    const listener = vi.fn()
+    listeners.add(listener)
+
+    listeners.notify(1, 'a')
+    listeners.drain(2, 'b')
+    listeners.notify(3, 'c')
+
+    expect(listener.mock.calls).toEqual([
+      [1, 'a'],
+      [2, 'b']
+    ])
+  })
+
+  it('says whether any listener is registered', () => {
+    const listeners = createListeners('test')
+
+    expect(listeners.isEmpty()).toBe(true)
+
+    const stop = listeners.add(vi.fn())
+
+    expect(listeners.isEmpty()).toBe(false)
+
+    stop()
+
+    expect(listeners.isEmpty()).toBe(true)
+  })
 })

@@ -12,9 +12,14 @@ import { createListeners } from '@/platform/nodeApi/shared/listeners'
 import { savedCopier, savedRecord } from '@/platform/nodeApi/shared/savedCopy'
 import { useApp } from '@/scripts/appInstance'
 import type { ComfyExtension } from '@/types/comfy'
-import type { DefRegistry, Unsubscribe } from '@/platform/nodeApi/v4/types'
+import type {
+  DefRegistry,
+  Resolver,
+  Unsubscribe
+} from '@/platform/nodeApi/v4/types'
 import type { NodeHandles } from '@/platform/nodeApi/v4/nodeHandle'
 import type { Packs } from '@/platform/nodeApi/v4/packs'
+import type { WidgetTypes } from '@/platform/nodeApi/v4/widgets/widgetTypes'
 import {
   addDefinitionHooks,
   checkedDefinition,
@@ -24,6 +29,7 @@ import {
 import { SELECTOR_NEEDED, checkedSelector } from './defSelector'
 import { createExtensions } from './extensions'
 import type { NodeType } from './extensions'
+import type { NodeHookSource } from './dispatchContext'
 import { createHookDispatch } from './hookDispatch'
 import { categoryOfHostDef, nodeDefFromHost } from './nodeDef'
 import { checkedReadable } from '@/platform/nodeApi/shared/readableInput'
@@ -40,14 +46,28 @@ export interface NodeTypeHooks extends ComfyExtension {
   getNodeMenuItems(node: LGraphNode): IContextMenuValue[]
 }
 
+/** The resolvers of the types packs defined with one, for the nodes made from those definitions. */
+export interface DefinedResolvers {
+  resolverFor(node: LGraphNode): Resolver | undefined
+  any(): boolean
+}
+
+interface DefinedResolver {
+  readonly resolve: Resolver
+  readonly nodeClass: typeof LGraphNode
+}
+
 interface DefRegistryParts {
   readonly defs: DefRegistry
   readonly nodeTypeHooks: NodeTypeHooks
+  readonly resolvers: DefinedResolvers
+  readonly nodeHooks: NodeHookSource
   reapplyTypeColors(): void
 }
 
 export function createDefRegistry(
   nodes: NodeHandles,
+  widgetTypes: WidgetTypes,
   packs: Pick<Packs, 'checked'>
 ): DefRegistryParts {
   const copyOfSaved = savedCopier()
@@ -65,6 +85,7 @@ export function createDefRegistry(
   const extensions = createExtensions(dispatch)
   const refreshed = createListeners('onRefreshed')
   const colors = createTypeColors()
+  const resolving = new Map<string, DefinedResolver>()
   const hostRegistering = new Set<string>()
 
   function registerHostType(
@@ -118,9 +139,14 @@ export function createDefRegistry(
       addDefinitionHooks(builder, checked)
     )
     extensions.typeRegistered(nodeType)
+    const resolver = checked.resolve && { resolve: checked.resolve, nodeClass }
+    if (resolver) resolving.set(checked.type, resolver)
     return once(() => {
       stopHooks()
       extensions.typeUnregistered(nodeType)
+      if (resolver && resolving.get(checked.type) === resolver) {
+        resolving.delete(checked.type)
+      }
       if (LiteGraph.registered_node_types[checked.type] === nodeClass) {
         LiteGraph.unregisterNodeType(checked.type)
       }
@@ -156,7 +182,8 @@ export function createDefRegistry(
     typeColor: colors.typeColor,
     setTypeColor: colors.setTypeColor,
     nodeColor: colors.nodeColor,
-    isTypeCompatible: colors.isTypeCompatible
+    isTypeCompatible: colors.isTypeCompatible,
+    defineWidgetType: widgetTypes.define
   })
 
   return {
@@ -164,10 +191,24 @@ export function createDefRegistry(
     nodeTypeHooks: {
       name: NODE_TYPE_HOOKS_NAME,
       beforeRegisterNodeDef: registerHostType,
-      refreshComboInNodes: refreshed.notify,
+      refreshComboInNodes: () => refreshed.notify(),
       getNodeMenuItems: dispatch.menuItemsFor
     },
-    reapplyTypeColors: colors.reapply
+    reapplyTypeColors: colors.reapply,
+    resolvers: {
+      resolverFor(node) {
+        const resolver = resolving.get(node.type)
+        return resolver && node instanceof resolver.nodeClass
+          ? resolver.resolve
+          : undefined
+      },
+      any: () => resolving.size > 0
+    },
+    nodeHooks: {
+      callbacksOf: dispatch.callbacksOf,
+      demand: (hook) => extensions.demand(hook),
+      deliverTo: dispatch.deliverTo
+    }
   }
 }
 

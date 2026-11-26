@@ -70,6 +70,9 @@
       "path": "src/renderer/core/canvas/litegraph/**"
     },
     {
+      "path": "src/renderer/core/canvas/nodeApiCanvasSource.ts"
+    },
+    {
       "path": "src/renderer/core/canvas/pathRenderer.ts"
     },
     {

@@ -40,6 +40,30 @@ describe('widgetStore', () => {
     })
   })
 
+  describe('unregisterCustomWidget', () => {
+    it('removes the custom widget registered for a type', () => {
+      const store = useWidgetStore()
+      const customFn = vi.fn()
+      store.registerCustomWidgets({ CUSTOM_TYPE: customFn })
+
+      store.unregisterCustomWidget('CUSTOM_TYPE', customFn)
+
+      expect(store.widgets.has('CUSTOM_TYPE')).toBe(false)
+    })
+
+    it('keeps a widget another registration put in its place', () => {
+      const store = useWidgetStore()
+      const first = vi.fn()
+      const second = vi.fn()
+      store.registerCustomWidgets({ CUSTOM_TYPE: first })
+      store.registerCustomWidgets({ CUSTOM_TYPE: second })
+
+      store.unregisterCustomWidget('CUSTOM_TYPE', first)
+
+      expect(store.widgets.get('CUSTOM_TYPE')).toBe(second)
+    })
+  })
+
   describe('inputIsWidget', () => {
     it('returns true for known widget type (v1 spec)', () => {
       const store = useWidgetStore()

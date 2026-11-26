@@ -11,7 +11,7 @@ import { publishedApi, withoutPublishedApi } from './v4/__tests__/publishedApi'
 import { moduleUrl, TEST_PACK } from './v4/__tests__/testPack'
 import { createComfyApi } from './v4/comfyApi'
 import { useComfyApiStore } from './v4/comfyApiStore'
-import type { Comfy } from './v4/types'
+import type { Comfy, WorkflowImporter } from './v4/types'
 
 function showOnCanvas(graph: LGraph) {
   const previousCanvas = app.canvasOrUndefined
@@ -24,6 +24,7 @@ function showOnCanvas(graph: LGraph) {
 function laterVersion(graph: LGraph): { comfy: Comfy; version: VersionHost } {
   const { comfy, host } = createComfyApi({ getGraph: () => graph })
   const version: VersionHost = {
+    provideCanvas: vi.fn(),
     publish: vi.fn(),
     markReady: host.markReady,
     providePacks: host.providePacks,
@@ -32,9 +33,18 @@ function laterVersion(graph: LGraph): { comfy: Comfy; version: VersionHost } {
     beginDocument: host.beginDocument,
     beforeHistoryRestore: host.beforeHistoryRestore,
     afterHistoryRestore: host.afterHistoryRestore,
-    reapplyTypeColors: host.reapplyTypeColors
+    workflowLoaded: host.workflowLoaded,
+    reapplyTypeColors: host.reapplyTypeColors,
+    deliverPreview: host.deliverPreview,
+    queue: host.queue,
+    importWorkflowFile: host.importWorkflowFile,
+    frontendExecution: host.frontendExecution
   }
   return { comfy, version }
+}
+
+function importer(id: string, version: number): WorkflowImporter {
+  return { id, maxBytes: 1024, parse: () => ({ workflow: { version } }) }
 }
 
 describe('the node API host', () => {
@@ -76,9 +86,18 @@ describe('the node API host', () => {
     ])
   })
 
-  it('publishes every version', () => {
+  it('gives the canvas to every version and publishes each', () => {
+    const source = {
+      visibleGraph: () => graph,
+      canvas: () => null,
+      followMoves: () => () => {},
+      followDragEnds: () => () => {}
+    }
+
+    host.provideCanvas(source)
     host.publish()
 
+    expect(later.version.provideCanvas).toHaveBeenCalledExactlyOnceWith(source)
     expect(later.version.publish).toHaveBeenCalledOnce()
     expect(window.comfy_v4).toBe(current)
   })
@@ -113,7 +132,51 @@ describe('the node API host', () => {
     ).toEqual(['2.0.0', '2.0.0'])
   })
 
+  it('tells every version a workflow loaded', () => {
+    const heard: string[] = []
+    current.onWorkflowLoaded(() => heard.push('current'))
+    later.comfy.onWorkflowLoaded(() => heard.push('later'))
+
+    host.workflowLoaded()
+
+    expect(heard).toEqual(['current', 'later'])
+  })
+
+  it('keeps the workflow the first version that reads a file finds', async () => {
+    const file = new File(['bytes'], 'a.bin')
+    const unregister = current.workflow.registerImporter(
+      importer('Current.reader', 1)
+    )
+    later.comfy.workflow.registerImporter(importer('Later.reader', 2))
+
+    expect(await host.importWorkflowFile(file, undefined)).toEqual({
+      workflow: { version: 1 }
+    })
+
+    unregister()
+
+    expect(await host.importWorkflowFile(file, undefined)).toEqual({
+      workflow: { version: 2 }
+    })
+  })
+
+  it('hands a file that already holds a workflow back untouched', async () => {
+    const found = { workflow: { version: 0.4 } }
+    const parse = vi.fn()
+    later.comfy.workflow.registerImporter({
+      id: 'Later.reader',
+      maxBytes: 1024,
+      parse
+    })
+
+    expect(await host.importWorkflowFile(new File([''], 'a.png'), found)).toBe(
+      found
+    )
+    expect(parse).not.toHaveBeenCalled()
+  })
+
   it.for([
+    { call: 'provideCanvas', args: ['canvas'] },
     { call: 'publish', args: [] },
     { call: 'markReady', args: [] },
     { call: 'providePacks', args: [[]] },
@@ -122,7 +185,9 @@ describe('the node API host', () => {
     { call: 'beginDocument', args: [] },
     { call: 'beforeHistoryRestore', args: ['graph', { nodes: [] }] },
     { call: 'afterHistoryRestore', args: [] },
-    { call: 'reapplyTypeColors', args: [] }
+    { call: 'workflowLoaded', args: [] },
+    { call: 'reapplyTypeColors', args: [] },
+    { call: 'deliverPreview', args: ['root', '3', 'blob'] }
   ] as const)(
     'hands $call to every version, oldest first, with its arguments',
     ({ call, args }) => {
@@ -149,4 +214,44 @@ describe('the node API host', () => {
       ])
     }
   )
+
+  it('hands the queue’s calls and the prompt’s nodes to every version, and leaves out the inputs any of them omits', () => {
+    const heard: string[] = []
+    const version = (name: string, omitted: string[]) =>
+      fromPartial<VersionHost>({
+        queue: {
+          promptSubmitted: (...args) => heard.push(`${name} ${args.join(' ')}`),
+          promptRejected: () => heard.push(`${name} rejected`),
+          queueSettled: () => heard.push(`${name} settled`)
+        },
+        frontendExecution: {
+          adoptNodes: () => heard.push(`${name} adopted`),
+          omittedInputs: () => omitted
+        }
+      })
+    const fanned = createNodeApiHost([
+      version('older', ['a']),
+      version('newer', ['b'])
+    ])
+
+    fanned.queue.promptSubmitted(1, 'p', 2)
+    fanned.queue.promptRejected()
+    fanned.queue.queueSettled()
+    fanned.frontendExecution.adoptNodes(fromAny(new Map()))
+
+    expect(heard).toEqual([
+      'older 1 p 2',
+      'newer 1 p 2',
+      'older rejected',
+      'newer rejected',
+      'older settled',
+      'newer settled',
+      'older adopted',
+      'newer adopted'
+    ])
+    expect(fanned.frontendExecution.omittedInputs(fromAny({}))).toEqual([
+      'a',
+      'b'
+    ])
+  })
 })

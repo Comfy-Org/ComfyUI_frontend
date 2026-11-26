@@ -2,12 +2,13 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 
 import { invalidArgument } from './invalidArgument'
 
-interface Listeners {
-  add(listener: () => void): () => void
+interface Listeners<TArgs extends unknown[]> {
+  add(listener: (...args: TArgs) => void): () => void
   /** `add` for a listener a pack passed; anything but a function throws, naming the event. */
   subscribe(listener: unknown): () => void
-  drain(): void
-  notify(): void
+  drain(...args: TArgs): void
+  notify(...args: TArgs): void
+  isEmpty(): boolean
 }
 
 type IsolatedCall<T> = { ok: true; value: T } | { ok: false }
@@ -51,11 +52,17 @@ export function callListener<T>(
   return result.ok ? result.value : undefined
 }
 
-export function createListeners(event: string): Listeners {
-  const registrations = new Set<{ readonly listener: () => void }>()
-  const call = (listener: () => void) => callListener(event, listener)
+/** Listeners for one event, each called with the arguments the event carries. */
+export function createListeners<TArgs extends unknown[] = []>(
+  event: string
+): Listeners<TArgs> {
+  const registrations = new Set<{
+    readonly listener: (...args: TArgs) => void
+  }>()
+  const call = (listener: (...args: TArgs) => void, args: TArgs) =>
+    callListener(event, () => listener(...args))
 
-  function add(listener: () => void): () => void {
+  function add(listener: (...args: TArgs) => void): () => void {
     const registration = { listener }
     registrations.add(registration)
     return () => {
@@ -69,21 +76,22 @@ export function createListeners(event: string): Listeners {
       if (typeof listener !== 'function') {
         throw invalidArgument(event, 'a function to call', listener)
       }
-      return add(() => Reflect.apply(listener, undefined, []))
+      return add((...args) => Reflect.apply(listener, undefined, args))
     },
 
-    drain() {
+    drain(...args) {
       for (const registration of Array.from(registrations)) {
-        if (registrations.delete(registration)) {
-          callIsolated(event, registration.listener)
-        }
+        if (registrations.delete(registration))
+          call(registration.listener, args)
       }
     },
 
-    notify() {
+    notify(...args) {
       for (const registration of Array.from(registrations)) {
-        if (registrations.has(registration)) call(registration.listener)
+        if (registrations.has(registration)) call(registration.listener, args)
       }
-    }
+    },
+
+    isEmpty: () => registrations.size === 0
   }
 }

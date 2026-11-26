@@ -734,6 +734,7 @@ export const useWorkflowService = () => {
         loaded.changeTracker.restore()
         useNodeOutputStore().restorePreviewsForWorkflow(loaded.path)
         await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
+        useNodeApiHost().workflowLoaded()
         requestAnimationFrame(() => {
           app.canvas.setDirty(true, true)
         })
