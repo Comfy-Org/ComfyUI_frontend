@@ -13,6 +13,7 @@ export const PENDING_ASK_AGAIN_KEY =
 
 let pendingSave: Promise<void> = Promise.resolve()
 let unsettledLateWrites = 0
+let latestRevision = 0
 
 function hasPendingAskAgain() {
   try {
@@ -40,6 +41,10 @@ export function skipsCloudCheckQuestion() {
   return savedAsk === false
 }
 
+function isLatestChoice(askBeforeCheck: boolean, revision: number) {
+  return revision === latestRevision && isCurrentChoice(askBeforeCheck)
+}
+
 function isCurrentChoice(askBeforeCheck: boolean) {
   return useSettingStore().get(ASK_BEFORE_CLOUD_CHECK) === askBeforeCheck
 }
@@ -50,7 +55,10 @@ function resendLatestChoice() {
   void saveAskBeforeCloudCheck(useSettingStore().get(ASK_BEFORE_CLOUD_CHECK))
 }
 
-async function storeAskBeforeCloudCheck(askBeforeCheck: boolean) {
+async function storeAskBeforeCloudCheck(
+  askBeforeCheck: boolean,
+  revision: number
+) {
   const request = api.storeSetting(ASK_BEFORE_CLOUD_CHECK, askBeforeCheck)
   let timer: ReturnType<typeof setTimeout> | undefined
   const result = await Promise.race([
@@ -66,7 +74,7 @@ async function storeAskBeforeCloudCheck(askBeforeCheck: boolean) {
     unsettledLateWrites += 1
     const settleLateWrite = (landed: boolean) => {
       unsettledLateWrites -= 1
-      if (!isCurrentChoice(askBeforeCheck)) {
+      if (!isLatestChoice(askBeforeCheck, revision)) {
         resendLatestChoice()
         return
       }
@@ -103,17 +111,22 @@ function reportSaveFailure(cause: unknown, askBeforeCheck: boolean) {
 
 async function persistAskBeforeCloudCheck(
   askBeforeCheck: boolean,
+  revision: number,
   appliedLocally: Promise<unknown>
 ) {
   try {
     await appliedLocally
     if (!isCurrentChoice(askBeforeCheck)) return
-    const failure = await storeAskBeforeCloudCheck(askBeforeCheck)
+    const failure = await storeAskBeforeCloudCheck(askBeforeCheck, revision)
     if (failure) {
       reportSaveFailure(failure, askBeforeCheck)
       return
     }
-    if (askBeforeCheck && unsettledLateWrites === 0 && isCurrentChoice(true))
+    if (
+      askBeforeCheck &&
+      unsettledLateWrites === 0 &&
+      isLatestChoice(true, revision)
+    )
       setPendingAskAgain(false)
   } catch (cause) {
     reportSaveFailure(cause, askBeforeCheck)
@@ -126,8 +139,10 @@ export function saveAskBeforeCloudCheck(askBeforeCheck: boolean) {
     ASK_BEFORE_CLOUD_CHECK,
     askBeforeCheck
   )
+  latestRevision += 1
+  const revision = latestRevision
   pendingSave = pendingSave.then(() =>
-    persistAskBeforeCloudCheck(askBeforeCheck, appliedLocally)
+    persistAskBeforeCloudCheck(askBeforeCheck, revision, appliedLocally)
   )
   return pendingSave
 }
