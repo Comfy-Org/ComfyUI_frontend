@@ -18,8 +18,6 @@ import type { WebHandoffBillingEvent } from './webHandoffEvent'
 import type { WebReturnBillingEvent } from './webReturnEvent'
 import type { WebSessionBillingEvent } from './webSessionEvent'
 
-export type BillingSurface = 'cloud_app' | 'billing_web'
-
 export type BillingClient = 'sdk' | 'legacy'
 
 export type BillingTelemetryEvent = {

@@ -1,7 +1,5 @@
-import type {
-  BillingSurface,
-  BillingTelemetryEvent
-} from './billingTelemetryEvent'
+import type { BillingTelemetryEvent } from './billingTelemetryEvent'
+import type { BillingSurface } from './vocabulary'
 
 type BillingTelemetryPayload = Record<string, unknown>
 

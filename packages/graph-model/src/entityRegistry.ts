@@ -1,5 +1,5 @@
 import type { ReadOnlyRect } from '@comfyorg/shared-frontend-utils/geometry'
-import type { SerialisedLLinkArray as LinkTuple } from './serialisation'
+import type { SerialisedLLinkArray as LinkTuple } from './serialisedLinkTuple'
 
 export interface LitegraphEntityRegistry {}
 

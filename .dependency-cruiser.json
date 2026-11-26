@@ -60,7 +60,9 @@
     },
     "enhancedResolveOptions": {
       "extensions": [".ts", ".mts", ".js", ".vue", ".json"],
-      "mainFields": ["module", "main", "types"]
+      "mainFields": ["module", "main", "types"],
+      "exportsFields": ["exports"],
+      "conditionNames": ["import", "default"]
     }
   }
 }

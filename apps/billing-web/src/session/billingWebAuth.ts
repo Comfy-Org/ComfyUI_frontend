@@ -31,7 +31,7 @@ import {
   liveHandoffSession,
   sessionTabStorage
 } from '@/handoff/handoffTab'
-import type { BillingWebSessionPhase } from '@/router'
+import type { BillingWebSessionPhase } from '@/session/sessionPhase'
 import type { BillingWebClient } from '@/session/billingWebClient'
 import {
   createBillingWebClient,

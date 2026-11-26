@@ -19,18 +19,12 @@ import type {
 } from '@comfyorg/shared-frontend-utils/geometry'
 import type { INodeInputSlot, INodeOutputSlot } from './slots'
 import type { RenderShape } from './globalEnums'
+import type { SerialisedLLinkArray } from './serialisedLinkTuple'
 import type { TWidgetValue } from './widgets'
 
 export type RendererType = 'LG' | 'Vue' | 'Vue-corrected'
 
-export type SerialisedLLinkArray = [
-  id: number,
-  origin_id: SerializedNodeId,
-  origin_slot: number,
-  target_id: SerializedNodeId,
-  target_slot: number,
-  type: ISlotType
-]
+export type { SerialisedLLinkArray }
 
 /**
  * An object that implements custom pre-serialization logic via {@link Serialisable.asSerialisable}.

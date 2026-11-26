@@ -4,7 +4,7 @@ import type { WebEntryBounceTarget } from '@comfyorg/account-core/billing'
 import type { BillingEnvironment } from '@comfyorg/billing-contract'
 import { respondToFetch } from '@comfyorg/test-utils/fetch'
 
-import type { BillingWebSessionPhase } from '@/router'
+import type { BillingWebSessionPhase } from '@/session/sessionPhase'
 
 const h = vi.hoisted(() => ({
   livePhase: undefined as BillingWebSessionPhase | undefined,

@@ -1,7 +1,7 @@
 import type { WebSessionMode } from '@comfyorg/account-core/billing'
 import type { SessionErrorCode } from '@comfyorg/account-core/session'
 
-import type { BillingWebSessionPhase } from '@/router'
+import type { BillingWebSessionPhase } from '@/session/sessionPhase'
 import { trackOncePerTab } from '@/telemetry/trackOncePerTab'
 
 function signinReason(phase: BillingWebSessionPhase | undefined) {

@@ -6,7 +6,6 @@ export type {
 } from './stages'
 export type {
   BillingClient,
-  BillingSurface,
   BillingTelemetryEvent,
   BillingTelemetryEventName
 } from './billingTelemetryEvent'
@@ -70,6 +69,7 @@ export type { TopupAmountPreset } from './topupEvent'
 export { getTopupAmountPreset, TOPUP_AMOUNT_PRESETS_USD } from './topupEvent'
 export type {
   BillingCycle,
+  BillingSurface,
   BillingTierKey,
   HostedBillingIntent,
   PaymentIntentSource,
