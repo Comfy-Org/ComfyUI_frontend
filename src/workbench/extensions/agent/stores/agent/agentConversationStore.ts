@@ -647,11 +647,6 @@ export const useAgentConversationStore = defineStore(
       { shownAt: number; turnId: string }
     >()
     const shownApprovalIds = new Set<string>()
-    // Charges this page session was served, keyed by the ASSISTANT ROW id the
-    // ack and `agent_message_done` carry -- not by `turn_id`, which is what a
-    // hydrated message is keyed by. `restoreReportedCredits` bridges the two.
-    // Deliberately not cleared by `reset()`: leaving for a new chat and
-    // reopening the thread is the case this exists for.
     const reportedTurnCredits = new Map<TurnId, number>()
     const undeliverableAskReporter = createUndeliverableAskReporter()
     const departedTurns = new Map<string, 'no-live-turn' | 'settled-turn'>()
@@ -2457,12 +2452,6 @@ export const useAgentConversationStore = defineStore(
         void pendingSendsReconciled.trigger(reconciledIds)
     }
 
-    /**
-     * Reapply the charges this page session was served, which `hydrate` cannot
-     * recover from the rows: they are keyed by the assistant row id, while a
-     * hydrated message is keyed by `turn_id`. The assistant rows bridge the
-     * two, so the pairing is read from `history` rather than guessed.
-     */
     function restoreReportedCredits(
       history: AgentMessages,
       restored: readonly AssistantMessage[]

@@ -180,12 +180,6 @@ function messageTexts(
 }
 
 describe('useAgentConversationStore', () => {
-  // PM-1440: a turn's charge arrives on `agent_message_done` and is absent
-  // from the persisted history row, so a hydrate rebuilds the turn without it
-  // and the credits line disappears for the whole conversation. The ids are
-  // deliberately distinct here, as the server mints them: a live turn is keyed
-  // by the assistant ROW id the ack carries (`uuid` for `amid`), a hydrated
-  // one by `turn_id` (a second, independent `uuid`).
   describe('reported turn credits', () => {
     const ROW_A = 'assistant-row-a' as TurnId
     const ROW_B = 'assistant-row-b' as TurnId
@@ -244,8 +238,6 @@ describe('useAgentConversationStore', () => {
       ).toBeUndefined()
     })
 
-    // The charge must outlive the new chat the user opened on the way back:
-    // that round trip is the reported bug, so `reset()` must not clear it.
     it('keeps the served charge across a new chat', () => {
       const store = useAgentConversationStore()
       store.setThreadId('th')

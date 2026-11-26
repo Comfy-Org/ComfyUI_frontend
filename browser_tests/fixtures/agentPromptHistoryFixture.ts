@@ -37,13 +37,6 @@ type MockAgentMessage = Omit<AgentMessage, 'content'> & {
 }
 
 export const promptHistoryTest = base.extend<{
-  /**
-   * Whether the mocked server mints `turn_id` independently of the assistant
-   * row id its 202 carries, which is what it does in production. Collapsed by
-   * default because flipping it for every spec on this fixture uncovers a
-   * separate defect that wants its own change; opt in from any spec that
-   * asserts on a rehydrated turn, where the two identities diverge.
-   */
   serverTurnIds: 'collapsed' | 'distinct'
   agentPanel: AgentPanel
   promptHistory: {
