@@ -22,7 +22,6 @@ import {
 } from '@/core/graph/widgets/documentSlots'
 import type { INodeFlags } from '@comfyorg/graph-model/interfaces'
 import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
-import { constructedValueControlName } from '@/core/graph/widgets/valueControlWidgets'
 import {
   isValueControlWidget,
   isValueControlMode
@@ -926,27 +925,11 @@ function selectionDependentAbsence(node: LGraphNode, name: string): boolean {
     : index < widestSelectionWidgetCount(node)
 }
 
-/**
- * Whether `name` names a value control the node's type would have constructed
- * but the live node no longer has, so a pack dropped it on purpose rather than
- * the node having drifted out of sync with the document (e.g. a stale doc
- * entry, or a node type that never had this control at all).
- *
- * Presence and naming are asked of {@link constructedValueControlName}, which
- * the widget layer owns, so this never re-derives the factory's rule. The
- * names are read from the current `nodeData.inputs` on every call rather than
- * memoised: a cache keyed on the definition object goes stale if an extension
- * mutates an input record in place after registration.
- */
 function removedValueControl(node: LGraphNode, name: string): boolean {
-  const { nodeData } = node.constructor
-  if (!nodeData?.inputs) return false
-  const declared = Object.values(nodeData.inputs).some(
-    (spec) => constructedValueControlName(spec) === name
-  )
-  if (!declared) return false
-  return !(node.widgets ?? []).some(
-    (widget) => widget.name === name && isValueControlWidget(widget)
+  return (node.widgets ?? []).some((widget) =>
+    widget.linkedWidgets?.some(
+      (linked) => linked.name === name && isValueControlWidget(linked)
+    )
   )
 }
 

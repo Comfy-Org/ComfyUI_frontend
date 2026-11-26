@@ -8,7 +8,6 @@ import type {
 } from '@comfyorg/graph-model/widgets'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { InputSpec } from '@comfyorg/object-info-parser'
-import type { InputSpec as InputSpecV2 } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import { CONTROL_OPTIONS } from '@/types/simplifiedWidget'
 
 import { IS_CONTROL_WIDGET } from './controlWidgetMarker'
@@ -36,49 +35,6 @@ const HAS_EXECUTED = Symbol()
 function controlAfterGenerateNameOverride(value: unknown): string | undefined {
   if (typeof value !== 'string' || value.trim() === '') return undefined
   return isValueControlMode(value) ? undefined : value
-}
-
-/** Effective widget kinds whose factory builds a value control at all. */
-const CONTROL_CAPABLE_WIDGET_TYPES = new Set(['INT', 'FLOAT', 'COMBO'])
-
-/** INT inputs get an implicit control under these names with no flag set. */
-const IMPLICIT_CONTROL_INPUT_NAMES = new Set(['seed', 'noise_seed'])
-
-function declaresValueControl(spec: InputSpecV2, widgetType: string): boolean {
-  const control = spec.control_after_generate
-  // `useIntWidget` alone falls back to the input's name; `??` means an
-  // explicit `false` suppresses the control rather than reaching the fallback.
-  if (widgetType === 'INT')
-    return !!(control ?? IMPLICIT_CONTROL_INPUT_NAMES.has(spec.name))
-  return !!control
-}
-
-/**
- * The name of the value control the widget factories build for `spec`, or
- * `undefined` when they build none.
- *
- * This is the single source of truth for value-control presence and naming.
- * It mirrors `addInputWidget`'s `forceInput` bail-out, which kind of factory
- * adds a control, each factory's own flag test, and {@link addValueControlWidgets}'s
- * naming fallback. Callers that need to reason about a control they did not
- * construct themselves must use this rather than re-deriving the rule, because
- * a second copy of it drifts silently in both directions: a flag-free `seed`
- * input does get a control, and a `forceInput` input never gets any widget.
- */
-export function constructedValueControlName(
-  spec: InputSpecV2
-): string | undefined {
-  // `addInputWidget` returns before calling the factory, so nothing is built.
-  if (spec.forceInput) return undefined
-  const widgetType = spec.widgetType ?? spec.type
-  if (!CONTROL_CAPABLE_WIDGET_TYPES.has(widgetType)) return undefined
-  if (!declaresValueControl(spec, widgetType)) return undefined
-  const override = controlAfterGenerateNameOverride(spec.control_after_generate)
-  if (override !== undefined) return override
-  const { control_prefix: prefix } = spec
-  return typeof prefix === 'string' && prefix
-    ? `${prefix} control_after_generate`
-    : 'control_after_generate'
 }
 
 export function addValueControlWidget(
