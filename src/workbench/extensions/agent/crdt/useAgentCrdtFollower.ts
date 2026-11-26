@@ -108,12 +108,7 @@ function reportAgentProjection(
   const addedCount = outcome.nodes.added.length
   const removedCount = outcome.nodes.removed.length
   const applyFailureCount = outcome.applied ? outcome.failureCount : 0
-  if (
-    stage === 'applied' &&
-    addedCount === 0 &&
-    removedCount === 0 &&
-    applyFailureCount === 0
-  ) {
+  if (outcome.applied && !outcome.hadChanges && applyFailureCount === 0) {
     return
   }
   useTelemetry()?.trackAgentGraphProjection({
