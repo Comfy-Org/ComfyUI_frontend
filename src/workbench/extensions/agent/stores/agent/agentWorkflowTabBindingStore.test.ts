@@ -77,6 +77,11 @@ describe('agentWorkflowTabBindingStore', () => {
 
   it('resolves a binding by document identity, not by path', async () => {
     seedBindings({
+      'wf-without-graph': {
+        tabPath: 'workflows/unassigned.json',
+        graphId: null,
+        confirmedAt: Date.now()
+      },
       'wf-abandoned': {
         tabPath: DEFAULT_PATH,
         graphId: DRAFT_GRAPH_ID,
@@ -93,6 +98,7 @@ describe('agentWorkflowTabBindingStore', () => {
     expect(bindings.matchesWorkflow('wf-abandoned', fresh)).toBe(false)
     expect(bindings.tabPathFor('wf-abandoned')).toBeUndefined()
     expect(bindings.workflowIdFor(DEFAULT_PATH)).toBeUndefined()
+    expect(bindings.workflowIdForGraph(DRAFT_GRAPH_ID)).toBeUndefined()
 
     await workflows.closeWorkflow(fresh)
     const restored = workflows.createTemporary('Unsaved Workflow.json', {
@@ -105,6 +111,7 @@ describe('agentWorkflowTabBindingStore', () => {
     expect(restored.path).toBe(DEFAULT_PATH)
     expect(bindings.tabPathFor('wf-abandoned')).toBe(DEFAULT_PATH)
     expect(bindings.workflowIdFor(DEFAULT_PATH)).toBe('wf-abandoned')
+    expect(bindings.workflowIdForGraph(DRAFT_GRAPH_ID)).toBe('wf-abandoned')
     expect(bindings.matchesWorkflow('wf-abandoned', restored)).toBe(true)
   })
 

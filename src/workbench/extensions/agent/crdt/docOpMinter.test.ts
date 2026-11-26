@@ -358,8 +358,8 @@ describe('attachDocOpMinter', () => {
   let seededPromotedDocs: Set<ReturnType<typeof mint>>
   let dynamicComboDocs: Set<ReturnType<typeof mint>>
   let unboundLocalIntents: number
-  let unboundVisibleIntents: number
   let boundWorkflow: ComfyWorkflow
+  let unboundVisibleIntentRootGraphIds: string[]
 
   function registeredDynamicComboScenario() {
     const scenario = dynamicComboScenario(graph)
@@ -385,14 +385,15 @@ describe('attachDocOpMinter', () => {
     seededPromotedDocs = new Set()
     dynamicComboDocs = new Set()
     unboundLocalIntents = 0
-    unboundVisibleIntents = 0
     boundWorkflow = fromPartial<ComfyWorkflow>({ path: 'workflows/bound.json' })
+    unboundVisibleIntentRootGraphIds = []
     minter = attachDocOpMinter({
       isEnabled: () => enabled,
       isDocBound: () => bound,
       isBoundWorkflow: (workflow) => workflow === boundWorkflow,
       onUnboundLocalIntent: () => unboundLocalIntents++,
-      onUnboundVisibleIntent: () => unboundVisibleIntents++,
+      onUnboundVisibleIntent: (rootGraphId) =>
+        unboundVisibleIntentRootGraphIds.push(rootGraphId),
       enqueue: (operations) => minted.push(...operations),
       getGraph: () => (graphAvailable ? graph : null),
       boundRootGraphId: () => (unbound ? null : rootGraphId),
@@ -1095,7 +1096,7 @@ describe('attachDocOpMinter', () => {
     await afterFlush()
 
     expect(unboundLocalIntents).toBe(0)
-    expect(unboundVisibleIntents).toBe(2)
+    expect(unboundVisibleIntentRootGraphIds).toEqual([graph.id, graph.id])
     expect(minted).toEqual([])
   })
 
@@ -1109,10 +1110,30 @@ describe('attachDocOpMinter', () => {
 
     expect(minted).toEqual([])
     expect(unboundLocalIntents).toBe(0)
-    expect(unboundVisibleIntents).toBe(2)
+    expect(unboundVisibleIntentRootGraphIds).toEqual([graph.id, graph.id])
     expect(
       vi.mocked(reportError).mock.calls.map(([, meta]) => meta.errorType)
     ).toEqual(['agent_crdt_op_for_unbound_graph'])
+  })
+
+  it('marks a visible-workflow widget edit whose live owner disappeared before routing', async () => {
+    const { source } = seedGraph(graph)
+    rootGraphId = toRootGraphId('other-root-graph')
+    vi.spyOn(graph, 'getNodeById').mockReturnValue(null)
+
+    emitGraphIntent({
+      type: 'set_widget',
+      graphId: graph.id,
+      nodeId: source.id,
+      name: 'steps',
+      value: 5,
+      previous: 20
+    })
+    await afterFlush()
+
+    expect(minted).toEqual([])
+    expect(unboundVisibleIntentRootGraphIds).toEqual([graph.id])
+    expect(reportError).not.toHaveBeenCalled()
   })
 
   it('snapshots a pasted node after its same-tick configure, folding the widget and field writes into add_node', async () => {

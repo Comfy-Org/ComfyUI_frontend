@@ -74,7 +74,7 @@ export interface DocOpMinterDeps {
   /** Records a local edit that cannot yet enter the semantic document. */
   onUnboundLocalIntent?(): void
   /** Records a local edit to the visible workflow while another one, or none, is bound. */
-  onUnboundVisibleIntent?(): void
+  onUnboundVisibleIntent?(rootGraphId: string): void
   /** Whether `workflow` is the one whose document the panel is bound to. */
   isBoundWorkflow(workflow: ComfyWorkflow): boolean
   /** Receives minted semantic operations (the sender's inbox). */
@@ -877,8 +877,8 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
   }
 
   function noteVisibleUnboundEdit(eventRootGraphId: string): void {
-    if (eventRootGraphId === deps.getGraph()?.id)
-      deps.onUnboundVisibleIntent?.()
+    if (eventRootGraphId === deps.getGraph()?.rootGraph.id)
+      deps.onUnboundVisibleIntent?.(eventRootGraphId)
   }
 
   /** True when `graph` is the bound document's root graph. */
@@ -911,6 +911,24 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     return true
   }
 
+  function rootGraphIdForWidgetWrite(
+    owner: LGraphNode | null,
+    eventGraph: LGraph | Subgraph | null,
+    graph: LGraph
+  ) {
+    const visibleRootGraphId = graph.rootGraph.id
+    const rootGraphId = deps.boundRootGraphId() ?? visibleRootGraphId
+    const ownerRootGraphId =
+      owner?.graph?.rootGraph.id ?? eventGraph?.rootGraph.id
+    if (
+      ownerRootGraphId !== visibleRootGraphId ||
+      visibleRootGraphId === rootGraphId
+    )
+      return rootGraphId
+    noteVisibleUnboundEdit(ownerRootGraphId)
+    return null
+  }
+
   function routeSetWidget(
     event: IntentOf<'set_widget'>,
     retried: HeldPromotedWrite | null
@@ -924,12 +942,8 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       ? findNodeInHierarchy(eventGraph, event.nodeId)
       : null
     if (!isValueWidgetWrite(owner, event)) return
-    const rootGraphId = deps.boundRootGraphId() ?? graph.id
-    const ownerRootGraphId = owner?.graph?.rootGraph.id
-    if (ownerRootGraphId === graph.id && graph.id !== rootGraphId) {
-      noteVisibleUnboundEdit(ownerRootGraphId)
-      return
-    }
+    const rootGraphId = rootGraphIdForWidgetWrite(owner, eventGraph, graph)
+    if (rootGraphId === null) return
     const routed = routedWidgetOperation(graph, rootGraphId, event, owner, deps)
     if ('unresolvedGraphId' in routed) {
       reportUnresolvedWidgetOwner(routed.unresolvedGraphId, event)
@@ -1616,7 +1630,8 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     if (eventRootGraphId === null) return
     if (eventRootGraphId === deps.boundRootGraphId())
       deps.onUnboundLocalIntent?.()
-    else if (eventRootGraphId === graph?.id) deps.onUnboundVisibleIntent?.()
+    else if (eventRootGraphId === graph?.rootGraph.id)
+      deps.onUnboundVisibleIntent?.(eventRootGraphId)
   }
 
   function onIntent(event: GraphIntentEvent): void {
