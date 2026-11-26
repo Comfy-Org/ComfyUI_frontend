@@ -96,7 +96,9 @@ rg -o '<details>' /tmp/posted.md | wc -l; rg -o '!\[' /tmp/posted.md | wc -l; rg
 
 Done means:
 
-- The `<details>`, image, and per-URL link counts match the draft.
+- The `<details>` and image counts match the draft. Each `./` reference in
+  the draft appears as one `user-attachments` URL, and every other URL's
+  count matches the draft.
 - Every `user-attachments` URL sits inside a `<details>` block, and no
   local `./` path is left.
 - Every media URL returns HTTP 200. Private-repo attachments return 404
@@ -114,19 +116,23 @@ Run this on every follow-up round, before recapturing anything.
 
 1. Read the marker: `rg -o 'pr-evidence before=\S+ after=\S+' /tmp/posted.md`.
    A body with evidence but no marker is stale.
-2. List the files the evidence depends on: the components and styles
-   captured, the specs recorded, their fixtures, and the code a benchmark
-   runs.
+2. For each block, list the files it depends on: the components and styles
+   it captured, the spec it recorded, its fixtures, or the code its
+   benchmark runs.
 3. Fetch, then diff each side, treating an unreachable SHA as moved:
 
    ```sh
-   git diff --name-only <after> <head> -- <paths>
-   git diff --name-only <before> "$(git merge-base origin/main <head>)" -- <paths>
+   git diff --name-only <after> <head> -- <block paths>
+   git diff --name-only <before> "$(git merge-base origin/main <head>)" -- <block paths>
    ```
 
    Use `origin/main` in place of the merge-base when the before capture
    came from main.
 
-4. Any listed file means that side is stale. Recapture only the affected
-   blocks, replace them, and update the marker. When nothing is listed,
-   update only the marker's SHAs.
+   Run the diffs once per block.
+
+4. A block with any listed file is stale on that side: recapture and
+   replace it. Delete a block whose journey or state the head no longer
+   changes, such as one a follow-up reverted. Update the marker only after
+   every block is current or deleted; when no block lists a file, update
+   only the marker's SHAs.
