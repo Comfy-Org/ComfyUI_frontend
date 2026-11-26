@@ -1149,7 +1149,7 @@ describe('LiveGraphApplier', () => {
     expect(resolved).not.toBe(placeholder)
     expect(resolved?.has_errors).toBeFalsy()
     expect(positionWhenAdded).toEqual([777, 888])
-    expect(Array.from(resolved!.pos)).toEqual([20, 30])
+    expect(Array.from(resolved!.pos)).toEqual([777, 888])
 
     applyEdit(() => {
       nodesMap(doc).set(

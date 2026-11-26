@@ -8,6 +8,7 @@ import type {
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { NODE_CREATION_GRAPH_FACTORY } from '@/lib/litegraph/src/LiteGraphGlobal'
 import { outputLinks } from '@/lib/litegraph/src/node/slotLinks'
 import { slotTypeKey } from '@/lib/litegraph/src/utils/type'
 import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
@@ -866,6 +867,29 @@ export function findUnconsumedWidgetIndex(
   return -1
 }
 
+/** Thrown before any mutation when a group member's type cannot be created in the receiving graph, leaving the group and graph unchanged. */
+export class GroupNodeUnpackRefusedError extends Error {
+  constructor(public readonly memberType: string) {
+    super(
+      `Group node member type "${memberType}" could not be created in the target graph; leaving the group unpacked.`
+    )
+  }
+}
+
+function canCreateGroupMember(type: string, graph: LGraph): boolean {
+  const baseClass = Object.hasOwn(LiteGraph.registered_node_types, type)
+    ? LiteGraph.registered_node_types[type]
+    : undefined
+  if (!baseClass) return false
+
+  const graphAwareClass = baseClass as typeof LGraphNode & {
+    [NODE_CREATION_GRAPH_FACTORY]?: unknown
+  }
+  if (!graphAwareClass[NODE_CREATION_GRAPH_FACTORY]) return true
+
+  return graph.rootGraph.subgraphs.has(type)
+}
+
 /**
  * Migration-only adapter for deprecated group nodes.
  *
@@ -892,7 +916,10 @@ export class GroupNodeHandler {
    * the group node. Returns the newly created nodes.
    *
    * Lossiness is accepted: group nodes nested inside subgraphs are unpacked into
-   * the root graph rather than their original container.
+   * the root graph rather than their original container. A member whose type
+   * cannot be created in this graph instead throws
+   * {@link GroupNodeUnpackRefusedError} before any mutation, leaving the group
+   * and the graph unchanged.
    */
   convertToNodes(): LGraphNode[] {
     const node = this.node
@@ -900,6 +927,15 @@ export class GroupNodeHandler {
     if (!graph) return []
     const { nodeData, oldToNewWidgetMap, oldToNewInputMap, newToOldOutputMap } =
       this.groupData
+
+    const unresolvedMember = nodeData.nodes.find(
+      (n) => !n.type || !canCreateGroupMember(n.type, graph)
+    )
+    if (unresolvedMember) {
+      throw new GroupNodeUnpackRefusedError(
+        unresolvedMember.type ?? '<unknown>'
+      )
+    }
 
     const addInnerNodes = () => {
       const c = { ...nodeData }
@@ -1047,13 +1083,6 @@ export const replaceLegacySeparators = (nodes: ComfyNode[]): void => {
   }
 }
 
-/**
- * Converts every group node in the root graph to a subgraph. Re-scans until none
- * remain so group nodes revealed by a previous conversion are also migrated. A
- * failed conversion removes the offending node so loading can continue (accepted
- * lossiness) and the scan cannot loop forever.
- * @returns the number of group nodes converted
- */
 function convertLoadedGroupNodes(graph: LGraph): number {
   let converted = 0
   const failed = new Set<LGraphNode>()
@@ -1075,8 +1104,15 @@ function convertLoadedGroupNodes(graph: LGraph): number {
       graph.convertToSubgraph(new Set(innerNodes))
       converted++
     } catch (error) {
-      console.error('Failed to convert group node to subgraph', error)
       failed.add(node)
+      if (error instanceof GroupNodeUnpackRefusedError) {
+        console.warn(
+          'Leaving group node unconverted: a member type could not be created in this graph',
+          error
+        )
+        continue
+      }
+      console.error('Failed to convert group node to subgraph', error)
       try {
         graph.remove(node)
       } catch (removeError) {

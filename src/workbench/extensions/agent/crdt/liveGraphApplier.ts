@@ -1557,9 +1557,11 @@ export class LiveGraphApplier {
     if (docNode.widgetRecord)
       info.widgets_values = docNode.widgetRecord as unknown as WidgetValue[]
     detachSerialisedLinks(info)
-    node.pos = position
+    const resolvedPos: [number, number] = position
       ? [position[0], position[1]]
       : [info.pos[0], info.pos[1]]
+    info.pos = resolvedPos
+    node.pos = resolvedPos
     graph.add(node)
     if (node.id !== toNodeId(docNode.id)) {
       const existingOwner = diagnosticNodeOwner(graph, toNodeId(docNode.id))
