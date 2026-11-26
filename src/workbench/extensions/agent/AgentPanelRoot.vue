@@ -231,7 +231,10 @@ import { startCrdtLog } from './crdt/crdtLog'
 import type { CrdtLogLevel } from './crdt/crdtLogLevel'
 import { attachAgentWriteOverwriteWatch } from './crdt/agentWriteOverwrites'
 import { attachDocOpMinter } from './crdt/docOpMinter'
-import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
+import {
+  retainAgentFollowerSessionsForPage,
+  useAgentCrdtFollower
+} from './crdt/useAgentCrdtFollower'
 
 const CrdtDevPanel = defineAsyncComponent(
   () => import('./crdt/CrdtDevPanel.vue')
@@ -1454,6 +1457,7 @@ const {
     return lineage?.workflowId === workflowId ? lineage.lineageSeq : null
   }
 })
+retainAgentFollowerSessionsForPage(docTransport)
 // The bound document's serialized root graph id, independent of what is
 // currently on the canvas: `beforeLoadNewGraph` persists the outgoing
 // workflow's `activeState` before the shared renderer graph is rewritten, so

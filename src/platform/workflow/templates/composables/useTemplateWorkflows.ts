@@ -290,7 +290,7 @@ export function useTemplateWorkflows() {
         true,
         true,
         workflowName,
-        { openSource: 'template' }
+        { openSource: 'template', initiator: 'user' }
       )
       if (loadedWorkflow === false) return 'graph-failed'
       if (loadedWorkflow === undefined) return 'not-started'

@@ -3,7 +3,7 @@ import { spawnSync } from 'node:child_process'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import type { ISerialisedNode } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -82,6 +82,142 @@ describe('matrix runner', () => {
       expect(row.registryForms).toBeUndefined()
     }
   )
+
+  it.for([
+    {
+      patch: 'every root graph',
+      roots: 'per-workflow',
+      patchTarget: (graph: LGraph): LGraph => Object.getPrototypeOf(graph),
+      createRootGraph: () => new LGraph(),
+      matches: true
+    },
+    {
+      patch: 'only the setup-time root graph',
+      roots: 'per-workflow',
+      patchTarget: (graph: LGraph): LGraph => graph,
+      createRootGraph: () => new LGraph(),
+      matches: false
+    },
+    {
+      patch: 'only the setup-time root graph',
+      roots: 'shared',
+      patchTarget: (graph: LGraph): LGraph => graph,
+      createRootGraph: undefined,
+      matches: true
+    }
+  ])(
+    'records whether a second workflow on $roots roots serialises the same when setup patches $patch',
+    { timeout: 30_000 },
+    async ({ patchTarget, createRootGraph, matches }) => {
+      outputDir = fs.mkdtempSync(path.join(os.tmpdir(), 'matrix-runner-'))
+      vi.stubEnv('MATRIX_OUT', outputDir)
+      vi.stubEnv('MATRIX_VUE', '')
+      const { app } = await import('@/scripts/app')
+      Reflect.set(app, 'createRootGraph', createRootGraph)
+      onTestFinished(() => {
+        Reflect.deleteProperty(app, 'createRootGraph')
+      })
+
+      await runPack(
+        'setup-patcher',
+        {
+          entry: async () => {
+            app.registerExtension({
+              name: 'matrix.setupPatcher',
+              setup() {
+                const target = patchTarget(app.rootGraph)
+                const serialize = target.serialize
+                vi.spyOn(target, 'serialize').mockImplementation(function (
+                  this: LGraph,
+                  ...args
+                ) {
+                  const data = serialize.apply(this, args)
+                  data.extra = { ...data.extra, patched: true }
+                  return data
+                })
+              }
+            })
+          }
+        },
+        ['entry'],
+        'setup-patcher'
+      )
+
+      const row = JSON.parse(
+        fs.readFileSync(path.join(outputDir, 'setup-patcher.json'), 'utf8')
+      ) as {
+        lifecycle?: Record<string, string>
+        serialized?: string
+        perWorkflowRoots?: boolean
+        secondRoot?: { serialisationMatches?: boolean }
+      }
+
+      expect(row.lifecycle?.setup).toBe('OK')
+      expect(row.perWorkflowRoots).toBe(createRootGraph !== undefined)
+      expect(JSON.parse(row.serialized ?? '{}').extra.patched).toBe(true)
+      expect(row.secondRoot?.serialisationMatches).toBe(matches)
+    }
+  )
+
+  it('records a second load whose snapshot throws on both roots as a mismatch', async () => {
+    outputDir = fs.mkdtempSync(path.join(os.tmpdir(), 'matrix-runner-'))
+    vi.stubEnv('MATRIX_OUT', outputDir)
+    vi.stubEnv('MATRIX_VUE', '')
+    vi.spyOn(LGraph.prototype, 'serialize').mockImplementation(() => {
+      throw new Error('serialize unavailable')
+    })
+
+    await runPack('serialize-unavailable', {}, [], 'serialize-unavailable')
+
+    const row = JSON.parse(
+      fs.readFileSync(
+        path.join(outputDir, 'serialize-unavailable.json'),
+        'utf8'
+      )
+    ) as { secondRoot?: Record<string, unknown> }
+
+    expect(row.secondRoot).toMatchObject({
+      serialisationMatches: false,
+      firstSerialised: 'THREW Error: serialize unavailable',
+      secondSerialised: 'THREW Error: serialize unavailable'
+    })
+  }, 30_000)
+
+  it('finishes the row when a lifecycle hook never settles and names the hook that threw', async () => {
+    outputDir = fs.mkdtempSync(path.join(os.tmpdir(), 'matrix-runner-'))
+    vi.stubEnv('MATRIX_OUT', outputDir)
+    vi.stubEnv('MATRIX_VUE', '')
+    const { app } = await import('@/scripts/app')
+
+    await runPack(
+      'hanging-setup',
+      {
+        entry: async () => {
+          app.registerExtension({
+            name: 'matrix.hangingSetup',
+            init() {
+              throw new Error('init needs a canvas')
+            },
+            setup: () => new Promise<void>(() => {})
+          })
+        }
+      },
+      ['entry'],
+      'hanging-setup'
+    )
+
+    const row = JSON.parse(
+      fs.readFileSync(path.join(outputDir, 'hanging-setup.json'), 'utf8')
+    ) as {
+      incomplete?: boolean
+      lifecycle?: Record<string, string>
+      hookErrorMethods?: string[]
+    }
+
+    expect(row.incomplete).toBeUndefined()
+    expect(row.lifecycle?.setup).toMatch(/setup did not settle/)
+    expect(row.hookErrorMethods).toEqual(['init'])
+  }, 60_000)
 
   it(
     'drives more than eight frontend-registered node types from one pack',

@@ -1,9 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import log from 'loglevel'
-import { describe, expect, it, vi } from 'vitest'
-
-vi.mock(import('@/composables/auth/useCurrentUser'))
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import LinkDestinationButton from '@/components/graph/selectionToolbox/LinkDestinationButton.vue'
@@ -25,7 +23,6 @@ import {
   createMockCanvas,
   createTestDragAndScale
 } from '@/utils/__tests__/canvasTestUtils'
-import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 const i18n = createI18n({
   legacy: false,
@@ -195,11 +192,11 @@ describe('LinkDestinationButton', () => {
   )
 
   it('centres the source in the uncovered canvas at the current zoom in one step when animations are turned off', async () => {
-    const panel = useAgentPanelStore()
-    panel.enabled = true
-    panel.consentAccepted = true
-    panel.isOpen = true
-    panel.setWidth(500)
+    const sidePanel = document.createElement('div')
+    sidePanel.id = 'last-side-panel'
+    sidePanel.getBoundingClientRect = () => new DOMRect(500, 0, 500, 600)
+    document.body.append(sidePanel)
+    onTestFinished(() => sidePanel.remove())
     const ds = createTestDragAndScale(1000, 600)
     ds.scale = 1.7
     ds.offset = [13, 29]

@@ -51,6 +51,7 @@ export type FrameOutcome =
   | { applied: false; nodes: DocNodeDelta }
   | {
       applied: true
+      hadChanges: boolean
       nodes: DocNodeDelta
       createdNodeIds: NodeId[]
       failureCount: number
@@ -76,6 +77,19 @@ function changesAgainstDoc(doc: Y.Doc, changes: FrameChanges): FrameChanges {
     else nodes.set(id, change === 'delete' ? 'update' : change)
   }
   return { ...changes, nodes }
+}
+
+function hasFrameChanges(changes: FrameChanges): boolean {
+  const collections = [
+    changes.nodes,
+    changes.widgets,
+    changes.resyncNodes,
+    changes.links,
+    changes.interiors,
+    changes.interiorDefinitions,
+    changes.groups
+  ]
+  return collections.some((collection) => collection && collection.size > 0)
 }
 
 function pendingNodeDelta(target: BoundTarget, changes: FrameChanges) {
@@ -334,6 +348,7 @@ export class AgentCrdtProjection {
     }
     return {
       applied: true,
+      hadChanges: mode === 'replace' || hasFrameChanges(changes),
       nodes: docNodeDelta(changes),
       createdNodeIds,
       failureCount
