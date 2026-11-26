@@ -3581,6 +3581,41 @@ describe('useWorkflowService', () => {
       )
     })
 
+    it('remembers the opening of a silent activation for a later notice', () => {
+      const workflow = createWorkflow({ missingNodeTypes: ['CustomNode1'] })
+      vi.mocked(
+        useMissingNodesErrorStore().surfaceMissingNodes
+      ).mockReturnValue(true)
+      const service = useWorkflowService()
+
+      service.showPendingWarnings(workflow, {
+        silent: true,
+        defaultOpening: 'reopened'
+      })
+      service.showPendingWarnings(workflow)
+
+      expect(showMissingNodesNotice).toHaveBeenCalledExactlyOnceWith(
+        ['CustomNode1'],
+        'reopened'
+      )
+    })
+
+    it('does not remember the fallback when no caller says how it was opened', () => {
+      const workflow = createWorkflow({ missingNodeTypes: ['CustomNode1'] })
+      vi.mocked(
+        useMissingNodesErrorStore().surfaceMissingNodes
+      ).mockReturnValue(true)
+      const service = useWorkflowService()
+
+      service.showPendingWarnings(workflow, { silent: true })
+      service.showPendingWarnings(workflow, { defaultOpening: 'reopened' })
+
+      expect(showMissingNodesNotice).toHaveBeenCalledExactlyOnceWith(
+        ['CustomNode1'],
+        'reopened'
+      )
+    })
+
     it('keeps a reopened workflow reopened when its warnings surface again', async () => {
       const workflow = createWorkflow(
         { missingNodeTypes: ['CustomNode1'] },

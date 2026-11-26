@@ -281,18 +281,17 @@ const workflowOpenings = new WeakMap<ComfyWorkflow, WorkflowOpening>()
 function rememberOpening(
   workflow: ComfyWorkflow,
   {
-    silent,
     opening,
-    defaultOpening = 'brought_in'
+    defaultOpening
   }: {
-    silent?: boolean
     opening?: WorkflowOpening
     defaultOpening?: WorkflowOpening
   } = {}
 ): WorkflowOpening {
   const raw = toRaw(workflow)
   const resolved = opening ?? workflowOpenings.get(raw) ?? defaultOpening
-  if (!silent) workflowOpenings.set(raw, resolved)
+  if (!resolved) return 'brought_in'
+  workflowOpenings.set(raw, resolved)
   return resolved
 }
 
