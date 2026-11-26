@@ -1207,10 +1207,6 @@ describe('LiveGraphApplier', () => {
       )
     })
 
-    // The registry carries the type but this graph does not own the
-    // definition, so construction is retried and keeps refusing. The
-    // placeholder must survive each refusal rather than being removed and
-    // rebuilt on every frame that touches the node.
     expect(graph.getNodeById(toNodeId(1))).toBe(placeholder)
     expect(refusals).toEqual([graph, graph])
   })

@@ -1504,10 +1504,6 @@ export class LiveGraphApplier {
     const docNode = this.readDocNode(doc, id)
     if (!docNode) return 'skipped'
     const live = graph.getNodeById(toNodeId(id))
-    // Build the replacement before removing the placeholder it replaces. A
-    // subgraph class is registered process-wide by definition id but only
-    // builds a node for a graph that owns that definition, so construction can
-    // refuse or throw here — and then the placeholder has to stay.
     const replacement =
       live && isResolvablePlaceholder(live)
         ? LiteGraph.createNode(docNode.type, docNode.serialised.title, {
