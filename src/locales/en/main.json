@@ -7021,5 +7021,78 @@
       "claudeDesktop": "Add to claude_desktop_config.json (Settings > Developer > Edit Config), then restart Claude Desktop.",
       "cursor": "Add to ~/.cursor/mcp.json, or .cursor/mcp.json in a project."
     }
+  },
+  "localBuildPrototype": {
+    "buttonLabel": "Run your install on Comfy Cloud",
+    "buildSize": "Build size",
+    "openComfyCloud": "Open Comfy Cloud",
+    "start": {
+      "title": "Run your install on Comfy Cloud",
+      "subtitle": "Keep only what you use. Small builds are faster and cheaper.",
+      "nameLabel": "Name",
+      "namePlaceholder": "Name your build",
+      "customNodes": "Custom nodes",
+      "models": "Models",
+      "packs": "{count} pack | {count} packs",
+      "modelCount": "{count} model · {size} | {count} models · {size}",
+      "chooseGpu": "Choose a GPU"
+    },
+    "list": {
+      "back": "Back",
+      "unused": "Unused",
+      "remove": "Remove {name}",
+      "undoRemove": "Undo removing {name}",
+      "undo": "Undo",
+      "done": "Done",
+      "unusedModels": "{count} model isn’t in your saved workflows · {size} | {count} models aren’t in your saved workflows · {size}",
+      "removedModels": "{count} model removed · {size} | {count} models removed · {size}",
+      "removeUnused": "Remove"
+    },
+    "gpu": {
+      "title": "Choose a GPU",
+      "subtitle": "You pay for GPU time while a job runs, and for storage each month.",
+      "name": "GPU",
+      "vram": "VRAM",
+      "price": "Price/hr",
+      "gpuTime": "GPU time, while a job runs",
+      "perHour": "{price}/hr",
+      "storage": "Storage for {size}, every month",
+      "perMonth": "{price}/mo",
+      "create": "Create a build"
+    },
+    "progress": {
+      "creatingTitle": "Creating {name}",
+      "uploadingSubtitle": "Keep ComfyUI open until your models have uploaded.",
+      "buildingSubtitle": "Keep working. A message says when it is ready.",
+      "readyTitle": "{name} is ready",
+      "readySubtitle": "Open Comfy Cloud to run your workflows on it.",
+      "failedTitle": "Build failed",
+      "failedSubtitle": "A dependency conflict stopped the build. Your agent can fix it and build again.",
+      "uploadStep": "Upload models",
+      "buildStep": "Build",
+      "deployStep": "Deploy",
+      "uploaded": "{done} of {total}",
+      "stepDone": "Done",
+      "afterUpload": "After the upload",
+      "buildTime": "About 10 minutes",
+      "failed": "Failed",
+      "afterBuild": "After the build",
+      "onGpu": "On {gpu}",
+      "cancel": "Cancel build",
+      "close": "Close",
+      "viewLog": "View log",
+      "fixWithAgent": "Fix with your agent",
+      "comfyAgent": "Comfy Agent",
+      "claudeCode": "Claude Code",
+      "codex": "Codex",
+      "copyPrompt": "Copy prompt"
+    },
+    "toast": {
+      "readyTitle": "{name} is ready",
+      "failedBody": "{name} was not built.",
+      "showDetails": "Show details",
+      "fixingTitle": "Your agent is fixing {name}",
+      "fixingBody": "It builds again once the conflict is fixed. A message says when it is ready."
+    }
   }
 }
