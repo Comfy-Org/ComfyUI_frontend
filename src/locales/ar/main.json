@@ -166,6 +166,7 @@
     "attach": "إرفاق ملف",
     "attachFiles": "ارفع صورًا أو ملفات",
     "attachmentCountExceeded": "يمكن إرفاق {count} ملفات فقط برسالة واحدة",
+    "attachmentEmpty": "{name} فارغ ولم يتمكّن من إرفاقه",
     "attachmentInvalidVideo": "{name} ليس ملف فيديو صالحًا. أزِله وجرّب ملفًا آخر.",
     "attachmentNamesOverflow": "{names} و{count} أخرى",
     "attachmentTooLarge": "حجم {name} أكبر من {limit}",
@@ -179,10 +180,8 @@
     "beta": "تجريبي",
     "canvasIsEmptyAfterTurn": "هذه اللوحة فارغة — لم يُضف إليها شيء. لا يوجد هنا ما يمكن تشغيله أو حفظه أو تصديره بعد.",
     "canvasNotReadyForSend": "لوحة الرسم في علامة التبويب هذه ليست جاهزة بعد، لذا لم تُرسل رسالتك. حاول مجددًا بعد قليل.",
-    "changeWorkflowForChat": "غيّر سير العمل الذي يمكن للوكيل تعديله",
     "chatOptions": "خيارات المحادثة",
     "chooseWorkflow": "اختر سير عمل",
-    "chooseWorkflowForChat": "اختر سير عمل لهذه الدردشة",
     "close": "إغلاق",
     "coachBody": "صِف أفكارك واطلب منه إنشاء مهام سير العمل وتشغيلها. يمكنه رؤية لوحة الرسم والملفات الخاصة بك.",
     "coachHistoryBody": "تُحفظ المحادثات السابقة هنا. افتح إحداها لمراجعتها أو لمتابعة العمل مع الوكيل.",
@@ -190,7 +189,7 @@
     "coachHoldNotice": "سيتم إرسال رسالتك عند إنهاء الجولة أو تخطيها.",
     "coachProgress": "{current} من {total}",
     "coachTitle": "تعرّف على وكيل Comfy",
-    "coachWorkflowBody": "يظهر اسم سير العمل هذا أعلى مربع الرسالة. انقر على الاسم لاختيار سير عمل آخر. يمكن أن يؤدي النقر على علامة تبويب سير عمل إلى فتح أحدث دردشة له، ما لم يكن في مربع الرسالة مسودة.",
+    "coachWorkflowBody": "لكل علامة تبويب لسير العمل دردشاتها الخاصة. يؤدي التبديل بين علامات التبويب إلى التبديل إلى دردشة علامة التبويب تلك.",
     "coachWorkflowTitle": "يحرّر الوكيل سير عمل واحدًا في كل مرة",
     "consent": {
       "accept": "ابدأ استخدام Comfy Agent",
@@ -217,7 +216,6 @@
     "copyUnavailable": "لا يمكن نسخ سوى المحادثة الحالية في هذا الإصدار",
     "creditTransitionNotice": "لقد استخدمت أرصدة الوكيل المجانية. تستخدم أنشطة الوكيل اللاحقة أرصدة مساحة العمل الخاصة بك، والتي قد تتضمن أرصدة مدفوعة.",
     "creditsUsed": "استخدم الوكيل {credits} رصيدًا | استخدم الوكيل {credits} أرصدة",
-    "currentTab": "علامة التبويب الحالية",
     "delete": "حذف",
     "deleteApproval": {
       "answered": "تمت الإجابة",
@@ -307,6 +305,7 @@
     "historyYesterday": "أمس",
     "latest": "الأحدث",
     "loadFailed": "تعذر تحميل لوحة الوكيل.",
+    "loadingWorkflowChats": "جارٍ تحميل الدردشات الخاصة بـ {workflowName}",
     "malformedEvent": "أرسل الوكيل حدثًا تعذّر على هذه اللوحة قراءته",
     "manageSkills": "إدارة المهارات",
     "maximize": "تكبير اللوحة",
@@ -334,7 +333,6 @@
     "openWorkflowTab": "فتح {name}",
     "openingChat": "جارٍ فتح الدردشة…",
     "openingWorkflowChat": "جارٍ فتح الدردشة لـ {workflowName}…",
-    "otherOpenWorkflows": "مهام سير العمل المفتوحة الأخرى",
     "paused": {
       "recheck": "سيحاول مرة أخرى تلقائيًا خلال نحو {seconds} ثانية. | سيحاول مرة أخرى تلقائيًا خلال نحو {seconds} ثوانٍ.",
       "resume": "استئناف",
@@ -410,6 +408,8 @@
       "answerSuperseded": "تمت الإجابة عن هذا بالفعل في مكان آخر، لذا استُخدمت تلك الإجابة بدلًا من إجابتك.",
       "answerUncertain": "تعذر تأكيد وصول إجابتك إلى الوكيل. ربما كانت قد طُبقت بالفعل — أعد تحميل الصفحة لمعرفة الوضع الحالي.",
       "cancel": "إلغاء",
+      "estimateAtLeast": "التكلفة المقدّرة: {credits} رصيدًا على الأقل",
+      "estimateUnavailable": "التكلفة المقدّرة: غير متاحة لسير العمل هذا",
       "lead": "يريد Comfy Agent تشغيل سير العمل:",
       "leadBound": "يريد وكيل Comfy تشغيل سير العمل هذا.",
       "question": "هل توافق؟",
@@ -434,8 +434,6 @@
     "runPermissions": "أذونات التشغيل",
     "runPermissionsDescription": "اختر متى يحتاج الوكيل إلى موافقتك",
     "savingWorkflow": "جارٍ حفظ سير العمل",
-    "searchWorkflows": "ابحث في سير العمل",
-    "selectWorkflowForAgent": "حدد سير عمل ليعمل فيه الوكيل",
     "selectWorkflowForNodes": "يرجى تحديد سير عمل أولاً",
     "selectWorkflowToGenerate": "اختر سير عمل للإنشاء فيه",
     "send": "إرسال",
@@ -444,7 +442,14 @@
     "sendBlockedByUnsupportedType": "{name} ليس نوع ملف يقبله الوكيل. أزِله للإرسال.",
     "sendBusy": "يجري بالفعل إرسال رسالة",
     "sendFailed": "تعذر إرسال الرسالة",
+    "sendFailedDisownedWorkflow": "لم يعد سير العمل هذا متاحًا.",
+    "sendFailedNetwork": "لم تصل الرسالة إلى الخادم. تحقّق من اتصالك وحاول مرة أخرى.",
+    "sendFailedOffscreen": "تعذّر إرسال رسالتك",
+    "sendFailedOffscreenShow": "إظهار",
+    "sendFailedTurnInProgress": "كانت هناك استجابة لا تزال قيد التشغيل في هذه الدردشة.",
+    "sendFailedUncertain": "تعذّر التأكد مما إذا كان الخادم قد تلقّى رسالتك. تحقّق من دردشتك قبل الإرسال مرة أخرى.",
     "sendTurnInProgress": "لا تزال هناك استجابة قيد التشغيل في هذه الدردشة. انتظر حتى تنتهي، أو أوقفها، ثم أرسل مرة أخرى.",
+    "sendingMessage": "جارٍ الإرسال…",
     "showChatHistory": "إظهار سجل المحادثات",
     "showLess": "إظهار أقل",
     "showMore": "إظهار المزيد",
@@ -472,6 +477,7 @@
     "skillsLoading": "جارٍ تحميل المهارات…",
     "skillsUnavailable": "المهارات غير متاحة الآن.",
     "skip": "تخطي",
+    "startNewChat": "ابدأ دردشة جديدة",
     "stop": "إيقاف",
     "stopShortcut": "Esc",
     "suggestedPrompts": {
@@ -499,10 +505,8 @@
         ]
       }
     },
-    "switchWorkflow": "تبديل سير العمل",
     "switchWorkflowForNodes": "انتقل إلى {workflowName} لإضافة عُقد.",
     "takeTour": "ابدأ الجولة",
-    "targetFollowsVisibleWorkflow": "يتبع مخطط سير العمل المستهدف علامة التبويب الظاهرة إلى أن تختار هدفًا أو تشير إلى عقد أو ترسل رسالة.",
     "targetForThisChat": "هدف الوكيل لهذه الدردشة",
     "targetNavigationUnavailable": "لم يعد هدف سير العمل هذا متاحًا.",
     "targetWorkflowOpenFailed": "تعذّر فتح سير العمل المستهدف.",
@@ -545,7 +549,7 @@
     "workedForMinutes": "عمل لمدة {minutes} د {seconds} ث",
     "workedForSeconds": "عمل لمدة {seconds} ثوانٍ",
     "workedNotConfirmedOnCanvas": "لم يتم تأكيد التغييرات على لوحة العمل الخاصة بك",
-    "workflowEditNotice": "يمكن للوكيل الآن تعديل {workflow}. يعمل على سير عمل واحد في كل مرة، ويمكنك التبديل بين سير العمل أثناء الدردشة.",
+    "workflowEditNotice": "يمكن للوكيل الآن تعديل {workflow}. وهو يعمل على سير عمل واحد في كل مرة.",
     "workflowReferenceUnavailableReason": "سير العمل المشار إليه هذا لم يعد متاحًا أو ليس لديك صلاحية الوصول إليه.",
     "workflowSyncFailedDetail": "أُنشئ مخطط سير العمل هذا بإصدار مستند غير متوافق. لم يتم تغيير لوحتك.",
     "workflowSyncFailedDetailCatalogMismatch": "تغيّرت عقدة في سير العمل هذا منذ أن رآها الوكيل آخر مرة. لم يتم تغيير لوحة العمل الخاصة بك. سترسل رسالتك التالية لوحة العمل الخاصة بك كي يتمكن الوكيل من إعادة بناء نسخته من سير العمل.",
@@ -726,6 +730,7 @@
     },
     "modelName": "اسم النموذج",
     "modelNamePlaceholder": "أدخل اسمًا لهذا النموذج",
+    "modelTypeNotAddable": "لا يمكن إضافة هذا النوع من النماذج إلى اللوحة من مكتبة النماذج. أضف عقدة تحمّله، ثم اختر النموذج من هناك.",
     "modelTypeSelectorLabel": "ما نوع هذا النموذج؟",
     "modelTypeSelectorPlaceholder": "اختر نوع النموذج",
     "modelUploaded": "تم استيراد النموذج بنجاح.",
@@ -1499,7 +1504,8 @@
       "apiNodeUsage": "استخدام عقدة الشريك",
       "apiUsage": "استخدام API",
       "creditAdded": "تمت إضافة أرصدة",
-      "gpuUsage": "استخدام GPU"
+      "gpuUsage": "استخدام GPU",
+      "routerUsage": "استخدام Router"
     },
     "faqs": "الأسئلة المتكررة",
     "formerMember": "{name} (عضو سابق)",
@@ -1516,6 +1522,15 @@
     "member": "عضو",
     "messageSupport": "مراسلة الدعم",
     "model": "النموذج",
+    "personalWallet": {
+      "addCredits": "إضافة أرصدة شخصية",
+      "apiKeyDescription": "تُحتسب تكلفة هذا المفتاح على حسابك الشخصي. أنشئ مفتاح API للفريق أو أضف أرصدة شخصية.",
+      "createTeamApiKey": "إنشاء مفتاح API للفريق",
+      "sessionDescription": "تُحتسب تكلفة هذه الجلسة على حسابك الشخصي. للاحتساب على فريق بدلًا من ذلك، انتقل إلى مساحة عمله.",
+      "sessionNoTeamsDescription": "تُحتسب تكلفة هذه الجلسة على حسابك الشخصي. أضف أرصدة شخصية للمتابعة.",
+      "switchTo": "التبديل إلى {workspaceName}",
+      "title": "نفدت أرصدة حسابك الشخصي"
+    },
     "purchaseCredits": "شراء رصيد",
     "refreshes": "يتم التحديث في {date}",
     "time": "الوقت",
@@ -1772,6 +1787,7 @@
     "incompatibleEnvironments": "البيئات غير المتوافقة",
     "labelWithDetail": "{label} · {detail}",
     "landed": "يعمل على {deployment}",
+    "later": "لاحقًا",
     "linkRefused": "تعذر فتح بيئة النشر هذه",
     "linkTimedOut": "استغرقت بيئة النشر هذه وقتًا طويلًا جدًا للفتح. جرّب الرابط مرة أخرى.",
     "linkWorkspaceRefused": "تعذر التبديل إلى مساحة العمل تلك. ما زلت في {workspaceName}.",
@@ -1784,6 +1800,7 @@
     "missingNodesAfterReason": "لا يمكنه تشغيل سير العمل هذا. فهو يفتقد {nodes}.",
     "missingNodesNamed": "لا يمكن لـ {deployment} تشغيل سير العمل هذا. فهو يفتقد {nodes}.",
     "namedDeployment": "{name}",
+    "newDeploymentName": "نشر جديد",
     "noDeployments": "لا تحتوي مساحة العمل هذه على أي بيئات نشر بعد.",
     "notChecked": "لم يتم التحقق",
     "notCheckedAfterReason": "تعذر التحقق مما إذا كان يمكنه تشغيل سير العمل هذا.",
@@ -1801,6 +1818,10 @@
       "stopped": "تم إيقاف {deployment}. ابدأه لتشغيل المهام عليه."
     },
     "releaseChanged": "تشغّل بيئة النشر هذه الآن إصدارًا مختلفًا. أعد التحميل للحصول على عُقده.",
+    "releaseChangedRun": "يشغّل {deployment} الآن الإصدار v{version}. أعد التحميل للتشغيل عليه.",
+    "releaseChangedRunNoVersion": "يشغّل {deployment} الآن إصدارًا مختلفًا. أعد التحميل للتشغيل عليه.",
+    "releaseChangedRunUnknown": "تتجه عمليات التشغيل الآن إلى إصدار مختلف. أعد التحميل للتشغيل عليه.",
+    "releaseChangedRunUnknownTarget": "الإصدار الجديد",
     "reload": "إعادة التحميل",
     "retry": "إعادة المحاولة",
     "retryLabel": "إعادة محاولة بدء {deployment}",
@@ -1824,6 +1845,7 @@
     "startLabel": "بدء {deployment}",
     "startOnPlatformLabel": "بدء {deployment} على منصة المطورين",
     "status": {
+      "building": "جارٍ الإنشاء",
       "failed": "فشل",
       "notReady": "غير جاهز",
       "provisioning": "جارٍ البدء",
@@ -1842,16 +1864,23 @@
     "unnamedDeployment": "النشر {id}",
     "unsaved": {
       "message": "سيؤدي التبديل إلى {deployment} إلى إعادة تحميل علامة التبويب. تحتوي مهام سير العمل هذه على تغييرات لم تُحفَظ بعد.",
+      "reloadMessage": "تؤدي إعادة تحميل علامة التبويب إلى تشغيلها على {deployment}. تحتوي مسارات العمل هذه على تغييرات لم تُحفظ بعد.",
+      "reloadTitle": "حفظ مسارات العمل قبل إعادة التحميل؟",
+      "reloadWithoutSaving": "إعادة التحميل دون حفظ",
+      "saveAndReload": "حفظ وإعادة التحميل",
       "saveAndSwitch": "حفظ والتبديل",
       "switchWithoutSaving": "التبديل دون حفظ",
       "tabsReturn": "ستعود علامات التبويب المفتوحة بعد إعادة التحميل في كلتا الحالتين.",
       "title": "هل تريد حفظ مهام سير العمل قبل التبديل؟"
     },
     "version": "v{version}",
+    "versionChanged": "يشغّل {deployment} الآن الإصدار v{version}. أعد التحميل لاستخدام عُقده.",
+    "versionChangedNoVersion": "يشغّل {deployment} الآن إصدارًا مختلفًا. أعد التحميل لاستخدام عُقده.",
     "workflowNeedsDeployment": {
       "andMore": "{names}، و{count} أخرى",
       "buildOnPlatform": "إنشاء إصدار على Platform",
-      "installBody": "انشر إصدارًا مخصصًا لإضافة العقد المخصصة والنماذج التي لا تتوفر في Comfy Cloud. يمكنك إعداده على Platform، وسيظهر ضمن «التشغيل على» لمساحة العمل الخاصة بك.",
+      "createCustomBuild": "إنشاء إصدار مخصص",
+      "installBody": "أنشئ إصدارًا مخصصًا لإضافة العُقد والنماذج المخصصة التي لا يوفرها Comfy Cloud. يمكنك إعداده على Platform، وسيظهر ضمن «التشغيل على» لمساحة عملك.",
       "installTitle": "ثبّت العقد المخصصة المفقودة لديك",
       "missingModels": "{count} نموذج مفقود | {count} نماذج مفقودة",
       "missingNodes": "{count} عقدة مفقودة | {count} عقد مفقودة",
@@ -1860,7 +1889,8 @@
       "switch": "تبديل",
       "switchBody": "يفتقد Comfy Cloud هذه العناصر. انتقل إلى عملية نشر تحتوي عليها وتابع العمل من هناك.",
       "title": "شغّل سير العمل هذا على عملية نشر مخصصة",
-      "titleNoneRunIt": "أنشئ عملية نشر لتشغيل سير العمل هذا على Comfy Cloud"
+      "titleNoneRunIt": "أنشئ عملية نشر لتشغيل سير العمل هذا على Comfy Cloud",
+      "titleNoneRunItCustomBuild": "أنشئ إصدارًا مخصصًا لتشغيل سير العمل هذا على Comfy Cloud"
     },
     "workspaceDefault": "الإعداد الافتراضي لمساحة العمل"
   },
@@ -2109,6 +2139,13 @@
         "title": "فشل التوليد",
         "toastMessage": "لا توجد ذاكرة GPU كافية. حاول تقليل دقة الصورة أو حجم الدفعة وأعد المحاولة.",
         "toastTitle": "فشل التوليد"
+      },
+      "personal_wallet_insufficient_credits": {
+        "itemLabel": "{nodeName}",
+        "message": "تم احتساب تكلفة هذا التشغيل على حسابك الشخصي، الذي نفد رصيده.",
+        "title": "رصيد غير كافٍ",
+        "toastMessage": "تم احتساب تكلفة هذا التشغيل على حسابك الشخصي، الذي نفد رصيده.",
+        "toastTitle": "رصيد غير كافٍ"
       },
       "preprocessing_failed": {
         "itemLabel": "{nodeName}",
@@ -2591,7 +2628,8 @@
     "galleryImagePosition": "صورة المعرض {index} من {total}",
     "galleryThumbnail": "صورة مصغرة للمعرض",
     "galleryThumbnailPosition": "صورة مصغّرة للمعرض {index} من {total}",
-    "gapHandle": "المسافة بين العقد",
+    "gapHandle": "المسافة بين العُقد",
+    "gapValue": "{value} وحدة قماش | {value} وحدات قماش",
     "getHelpAction": "الحصول على المساعدة",
     "goToNode": "الانتقال إلى العقدة",
     "graphNavigation": "التنقل في الرسم البياني",
@@ -2812,6 +2850,7 @@
     "selectItemsToRename": "حدد العناصر لإعادة التسمية",
     "selected": "محدَّد",
     "selectedFile": "الملف المحدد",
+    "sessionRevoked": "انتهى وصولك إلى مساحة العمل هذه. سجّل الدخول مجددًا لإعادة الاتصال.",
     "setAKeybindingForTheFollowing": "تعيين اختصار لوحة المفاتيح لما يلي:",
     "setAsBackground": "تعيين كخلفية",
     "settings": "الإعدادات",
@@ -2848,7 +2887,7 @@
     "terminal": "الطرفية",
     "textFailedToLoad": "فشل تحميل النص",
     "tidyUp": "ترتيب",
-    "tidyUpTooltip": "رتّب العقد في صفوف وأعمدة واجعل المسافات بينها متساوية",
+    "tidyUpTooltip": "رتّب العُقد في صفوف وأعمدة وساوِ المسافات بينها",
     "title": "العنوان",
     "triggerPhrase": "عبارة التشغيل",
     "unknownError": "خطأ غير معروف",
@@ -3454,6 +3493,27 @@
     "newerVersionRequired": "تتطلب بعض العقد إصدارًا أحدث من ComfyUI (الحالي: {version}). يُرجى التحديث لاستخدام جميع العقد.",
     "newerVersionRequiredGeneric": "تتطلب بعض العقد إصدارًا أحدث من ComfyUI. يُرجى التحديث لاستخدام جميع العقد.",
     "unknownVersion": "غير معروف"
+  },
+  "localMcp": {
+    "clients": {
+      "claudeCode": "Claude Code",
+      "claudeDesktop": "Claude Desktop",
+      "cursor": "Cursor"
+    },
+    "connected": "متصل: شغّل وكيل سير عمل هنا عبر Comfy MCP.",
+    "copyConfig": "نسخ",
+    "description": "اسمح لوكيل ذكاء اصطناعي مثل Claude أو Cursor بتشغيل سير العمل على ComfyUI هذا عبر Comfy MCP. يعمل على جهازك.",
+    "label": "الوكيل",
+    "locations": {
+      "claudeDesktop": "أضفه إلى claude_desktop_config.json ‏(الإعدادات > المطوّر > تعديل الإعدادات)، ثم أعد تشغيل Claude Desktop.",
+      "cursor": "أضفه إلى ~/.cursor/mcp.json، أو إلى .cursor/mcp.json في مشروع."
+    },
+    "openDocs": "دليل الإعداد الكامل",
+    "step1": "1. ثبّت Comfy MCP",
+    "step2": "2. أضفه إلى عميلك",
+    "step3": "3. اطلب من وكيلك تشغيل سير عمل",
+    "step3Hint": "أعد تشغيل عميلك، ثم اطلب منه تأكيد أن ComfyUI المحلي لديك قيد التشغيل وتشغيل سير عمل. تعرض هذه اللوحة «متصل» بعد التشغيل الأول.",
+    "title": "وصّل وكيل الذكاء الاصطناعي الخاص بك"
   },
   "logsTerminal": {
     "loadError": "تعذر تحميل السجلات، يرجى التأكد من أنك قمت بتحديث الواجهة الخلفية لـ ComfyUI.",
@@ -4282,6 +4342,18 @@
       "workspaceLabel": "مساحة العمل"
     },
     "scopes": {
+      "comfy-mcp:tools:call": {
+        "label": "تشغيل سير العمل ونماذج الشركاء نيابةً عنك باستخدام أرصدتك"
+      },
+      "comfy-mcp:tools:read": {
+        "label": "عرض أدوات سير العمل المتاحة لك"
+      },
+      "comfy-router:models:invoke": {
+        "label": "تشغيل نماذج الشركاء عبر Comfy Router باستخدام أرصدتك"
+      },
+      "comfy-router:models:read": {
+        "label": "عرض كتالوج نماذج Comfy Router"
+      },
       "mcp:tools:call": {
         "label": "تشغيل سير العمل نيابةً عنك"
       },
@@ -4414,12 +4486,13 @@
     "cloudButton": {
       "checking": "جارٍ التحقق من Comfy Cloud…",
       "resumeUpload": "استئناف رفع النموذج",
-      "tooltip": "تشغيل على Comfy Cloud",
+      "tooltip": "شغّل مسار العمل هذا على Comfy Cloud",
       "uploading": "جارٍ رفع النماذج إلى Comfy Cloud، {percent}%"
     },
     "deploySetup": "انشر إعداداتك على Comfy Cloud",
     "deploySetupDialog": {
       "body": "انشر إعدادك المحلي على Comfy Cloud كبنية، ثم استخدمه في ComfyUI أو استدعه كواجهة API ذات تحجيم تلقائي.",
+      "missingNodesBody": "لا تتوفر في Comfy Cloud بعض العُقد التي يستخدمها مسار العمل هذا. انشر إعدادك المحلي إلى Comfy Cloud كـ Build، ثم استخدمه في ComfyUI أو استدعه كواجهة API ذات تحجيم تلقائي.",
       "platformTabBlocked": "تم حفظ سير العمل. انقر على «النشر على المنصة» مرة أخرى للمتابعة.",
       "pointGpu": "شغّل على وحدات GPU سحابية قوية",
       "pointNodes": "أحضر العُقد والنماذج المخصصة لديك",
@@ -4477,10 +4550,14 @@
     "prepareFailed": "تعذر تجهيز سير العمل هذا لـ Comfy Cloud",
     "prepareFailedDetail": "تحقق من وجود أخطاء في سير العمل، واحفظه، ثم حاول مرة أخرى.",
     "runDialog": {
-      "asksToSignIn": "سيطلب منك Comfy Cloud تسجيل الدخول.",
+      "body": "افتح مسار العمل هذا على Comfy Cloud، أو انشر إعدادك المحلي كـ Build إذا كان يحتاج إلى عُقد مخصصة.",
+      "checkCompatibility": "التحقق من التوافق",
       "openOnCloud": "فتح على Comfy Cloud",
+      "pointApi": "استخدمه في ComfyUI أو استدعه كواجهة API",
       "ready": "يحتوي Comfy Cloud على كل عقدة ونموذج يستخدمهما سير العمل هذا. سيفتح في علامة تبويب جديدة، جاهزًا للتشغيل.",
-      "title": "تشغيل على Comfy Cloud"
+      "readyWithUncheckedInputs": "تحتوي Comfy Cloud على كل عقدة ونموذج تمكّنت من التحقق منهما. لم تتمكن من التحقق من النماذج لهذه المدخلات: {inputs}. سيفتح في علامة تبويب جديدة.",
+      "sends": "سيؤدي التحقق إلى إرسال أسماء عُقد ونماذج مسار العمل هذا إلى Comfy Cloud.",
+      "uncheckedInput": "{input} على {nodeType}"
     },
     "verifyAccessFailed": "تعذر التحقق من الوصول إلى Comfy Cloud",
     "verifyAccessFailedDetail": "إذا كان زر Cloud لا يزال متاحًا، فاختر «فتح على Comfy Cloud» مرة أخرى."
@@ -4537,6 +4614,33 @@
     "tooltip": "تشغّل عُقد الشركاء نماذج مغلقة المصدر مثل Kling أو Veo على عتاد المزوّد، عبر Comfy. وهي تستخدم الأرصدة؛ ويبقى باقي Comfy مجانيًا.",
     "unmuteOpen": "إلغاء كتم صوت clip ذي الأوزان المفتوحة",
     "unmutePartner": "إلغاء كتم صوت clip لعقدة الشريك"
+  },
+  "platformFrame": {
+    "buildFailed": "فشل الإنشاء. لم يتم نشر {deployment}.",
+    "buildStep": "الخطوة {step} من {of}",
+    "buildTakesMinutes": "يستغرق هذا بضع دقائق. يمكنك متابعة العمل.",
+    "building": "جارٍ إنشاء {deployment}",
+    "deployFailed": "فشل النشر. تم إنشاء {deployment} ولكن لم يتم نشره.",
+    "deploying": "جارٍ نشر {deployment}",
+    "finishingOnPrevious": "جارٍ إنهاء مهمتك على الإصدار v{version}. | جارٍ إنهاء {count} من مهامك على الإصدار v{version}.",
+    "getStarted": "ابدأ",
+    "later": "لاحقًا",
+    "nothingChanged": "لم يتغير شيء: لا يزال {deployment} يعمل بالإصدار v{version}.",
+    "nothingChangedNoVersion": "لم يتغير شيء: لا يزال {deployment} يعمل كما كان سابقًا.",
+    "openOnPlatform": "فتح على المنصة",
+    "preinstallTitle": "ثبّت النماذج مسبقًا لتشغيل مسار العمل هذا",
+    "readyNew": "{deployment} جاهز",
+    "readyUpdate": "يعمل {deployment} الآن بالإصدار v{version}.",
+    "readyUpdateReload": "يعمل {deployment} الآن بالإصدار v{version}. أعد التحميل لاستخدام عُقده.",
+    "reload": "إعادة التحميل",
+    "switch": "تبديل",
+    "switchListingUnavailable": "لم يتم تحميل عمليات النشر الخاصة بك. حاول مجددًا من «تشغيل على».",
+    "title": "نشر مخصص",
+    "unanswered": "لم تُفتح المنصة هنا.",
+    "updateDeployment": "تحديث {deployment}",
+    "updateShortcut": "اضغط E لتحديثه.",
+    "updateUnfinished": "لم يُكمل {deployment} التحديث إلى الإصدار v{version}.",
+    "viewDetails": "عرض التفاصيل"
   },
   "profileMenu": {
     "balanceUnavailable": "تعذّر تحميل رصيدك.",
@@ -4636,6 +4740,7 @@
   },
   "rightSidePanel": {
     "addFavorite": "إضافة إلى المفضلة",
+    "addMissingModelsToBuild": "أضف النماذج المفقودة إلى البناء",
     "addToDeploymentBuild": "أضف هذه إلى إصدار {deployment} على Platform، ثم انشر إصداراً جديداً.",
     "advancedInputs": "مدخلات متقدمة",
     "askAgent": "اسأل الوكيل",
@@ -5152,6 +5257,7 @@
     "viewControls": "عناصر تحكم العرض"
   },
   "sideToolbar": {
+    "addModelsToDeployment": "إضافة نماذج إلى هذا النشر",
     "assets": "الأصول",
     "backToAssets": "العودة إلى جميع الأصول",
     "browseTemplates": "تصفح القوالب المثال",
@@ -5318,6 +5424,7 @@
     "templates": "القوالب",
     "themeToggle": "تبديل المظهر",
     "workflowTab": {
+      "bookmarkSaveFailed": "لم يُحفَظ تغيير الإشارة المرجعية. تحقّق من اتصالك وحاول مرة أخرى.",
       "confirmDelete": "هل أنت متأكد من رغبتك في حذف هذا السير؟",
       "confirmDeleteTitle": "حذف سير العمل؟",
       "confirmOverwrite": "الملف أدناه موجود بالفعل. هل تريد الكتابة فوقه؟",
@@ -5325,17 +5432,27 @@
       "deleteFailed": "فشل محاولة حذف سير العمل.",
       "deleteFailedTitle": "فشل الحذف",
       "deleted": "تم حذف سير العمل",
+      "deletedButBookmarksNotUpdated": "تم حذف سير العمل، لكن تعذر تحديث إشاراتك المرجعية",
       "dirtyClose": "تم تعديل الملفات أدناه. هل تريد حفظها قبل الإغلاق؟",
       "dirtyCloseAnyway": "إغلاق على أي حال",
       "dirtyCloseHint": "اضغط Shift للإغلاق بدون تنبيه",
       "dirtyCloseTitle": "حفظ التغييرات؟",
+      "renamedButBookmarksNotUpdated": "تمت إعادة تسمية سير العمل، لكن تعذر تحديث إشاراتك المرجعية",
       "workflowTreeType": {
         "bookmarks": "العلامات",
         "browse": "تصفح",
         "open": "فتح"
       }
     },
-    "workflows": "سير العمل"
+    "workflows": "سير العمل",
+    "workspaceLibrary": {
+      "empty": "لا توجد نماذج في مكتبة مساحة عملك.",
+      "explainer": "النماذج في مساحة عملك. تُنزَّل النماذج غير الموجودة في هذا الإصدار عندما تحتاجها مهمة.",
+      "fromWorkspace": "من مساحة عملك",
+      "loadFailed": "تعذر تحميل مكتبة مساحة عملك.",
+      "modelCount": "{count} نموذج | {count} نماذج",
+      "title": "مكتبة مساحة العمل"
+    }
   },
   "skillPacks": {
     "errors": {
@@ -6053,6 +6170,7 @@
     "a1111CoreNodesUnavailable": "تعذر تحميل سير العمل لأن تثبيت ComfyUI هذا يفتقد إلى العقد الأساسية. تحقق من أن الواجهة الخلفية بدأت بشكل صحيح.",
     "a1111EmbeddingsUnavailable": "تعذر تحميل التضمينات من الخادم. تم استيراد سير العمل، لكن تُركت أسماء التضمينات كنص عادي.",
     "assetDropFailed": "تعذر تحميل الأصل المُفلت",
+    "batchStoppedOnWorkflowChange": "تمت إضافة {queued} من أصل {requested} إلى قائمة الانتظار. توقفت العملية لأنك بدّلت سير العمل، لذا كانت البقية ستشغّل سير العمل الخاطئ.",
     "cannotCreateSubgraph": "لا يمكن إنشاء مخطط فرعي",
     "couldNotDetermineFileType": "تعذر تحديد نوع الملف",
     "dropFileError": "غير قادر على معالجة العنصر المسقط: {error}",
@@ -6282,6 +6400,12 @@
       "placeholderModel": "اختر نموذج...",
       "placeholderUnknown": "اختر وسائط...",
       "placeholderVideo": "اختر فيديو...",
+      "thumbnailSize": "حجم الصورة المصغرة",
+      "thumbnailSizes": {
+        "compact": "مضغوط",
+        "large": "كبير",
+        "standard": "قياسي"
+      },
       "topResult": "أفضل نتيجة: {result}"
     },
     "valueControl": {

@@ -4494,8 +4494,8 @@
       "sends": "Checking will send this workflow’s node and model names to Comfy Cloud.",
       "checkCompatibility": "Check compatibility",
       "ready": "Comfy Cloud has every node and model this workflow uses. It opens in a new tab, ready to run.",
-    "readyWithUncheckedInputs": "Comfy Cloud has every node and model it could check. It could not check the models for these inputs: {inputs}. It opens in a new tab.",
-    "uncheckedInput": "{input} on {nodeType}",
+      "readyWithUncheckedInputs": "Comfy Cloud has every node and model it could check. It could not check the models for these inputs: {inputs}. It opens in a new tab.",
+      "uncheckedInput": "{input} on {nodeType}",
       "openOnCloud": "Open on Comfy Cloud"
     },
     "agentMenu": {

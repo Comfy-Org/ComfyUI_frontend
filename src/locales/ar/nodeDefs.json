@@ -20027,6 +20027,39 @@
       }
     }
   },
+  "OpenAIChatNodeV2": {
+    "description": "أنشئ استجابات نصية باستخدام نماذج GPT من OpenAI. وفّر موجّهًا نصيًا، ويمكنك اختياريًا توفير صور أو ملفات كسياق.",
+    "display_name": "OpenAI ChatGPT",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control_after_generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "النموذج المستخدم لإنشاء الاستجابة."
+      },
+      "model_max_output_tokens": {
+        "name": "max_output_tokens"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_system_prompt": {
+        "name": "system_prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "OpenAIGPTImage1": {
     "description": "ينشئ صورًا بشكل متزامن عبر نقطة نهاية GPT Image 2 من OpenAI.",
     "display_name": "OpenAI GPT صورة 2",
@@ -23093,7 +23126,7 @@
       },
       "model": {
         "name": "النموذج",
-        "tooltip": "النموذج المراد استخدامه للتوليد. صُممت نماذج recraftv4_styles لتوليد متسق في الأسلوب، وتتطلب دائمًا style_id أو style_references؛ أما recraftv4_1_flash فهو النموذج الأسرع والأقل تكلفة ولا يدعم أي أنماط على الإطلاق."
+        "tooltip": "النموذج المستخدم للتوليد. صُممت نماذج recraftv4_styles للتوليد المتسق في الأسلوب وتتطلب دائمًا style_id أو style_references؛ يشغّل recraftv4_1_flash نموذج Recraft V4.1 Flash V2، وهو النموذج الأسرع والأقل تكلفة، ولا يدعم أي أنماط على الإطلاق."
       },
       "model_size": {
         "name": "الحجم"
@@ -23204,6 +23237,14 @@
     "inputs": {
       "image": {
         "name": "صورة"
+      },
+      "shape_stacking": {
+        "name": "shape_stacking",
+        "tooltip": "تضع hierarchical الطبقات والأشكال فوق بعضها بعضًا؛ وينشئ cut_out أشكالًا لا تتداخل أبدًا، لمخططات الرسم وقواطع الفينيل والطباعة بالشاشة الحريرية."
+      },
+      "version": {
+        "name": "version",
+        "tooltip": "يوفر v1_pro ‏(Vectorizer Pro) ملفات SVG أنظف بمنحنيات ناعمة وخطوط مستقيمة وزوايا حادة، وهو الأفضل للنصوص والأشكال المعقدة."
       }
     },
     "outputs": {

@@ -166,6 +166,7 @@
     "attach": "צרף קובץ",
     "attachFiles": "העלאת תמונות או קבצים",
     "attachmentCountExceeded": "ניתן לצרף רק {count} קבצים להודעה אחת",
+    "attachmentEmpty": "{name} ריק ולא ניתן היה לצרף אותו",
     "attachmentInvalidVideo": "{name} אינו קובץ וידאו תקין. הסר אותו ונסה קובץ אחר.",
     "attachmentNamesOverflow": "{names} ועוד {count}",
     "attachmentTooLarge": "{name} גדול מ-{limit}",
@@ -179,10 +180,8 @@
     "beta": "בטא",
     "canvasIsEmptyAfterTurn": "קנבס זה ריק — לא נוסף אליו דבר. עדיין אין כאן מה להפעיל, לשמור או לייצא.",
     "canvasNotReadyForSend": "הקנבס של לשונית זו עדיין אינו מוכן, ולכן ההודעה שלך לא נשלחה. נסה שוב בעוד רגע.",
-    "changeWorkflowForChat": "שנו את תהליך העבודה שהסוכן יכול לערוך",
     "chatOptions": "אפשרויות צ'אט",
     "chooseWorkflow": "בחר תהליך עבודה",
-    "chooseWorkflowForChat": "בחר תהליך עבודה עבור צ'אט זה",
     "close": "סגור",
     "coachBody": "תארו את הרעיונות שלכם, ובקשו ממנו לבנות ולהריץ תהליכי עבודה. הוא רואה את הקנבס והקבצים שלכם.",
     "coachHistoryBody": "שיחות קודמות נשמרות כאן. פתחו אחת כדי לעיין בה או להמשיך לעבוד עם הסוכן.",
@@ -190,7 +189,7 @@
     "coachHoldNotice": "ההודעה שלך תישלח כשתסיים או תדלג על הסיור.",
     "coachProgress": "{current} מתוך {total}",
     "coachTitle": "הכירו את Comfy Agent שלכם",
-    "coachWorkflowBody": "שם תהליך העבודה מופיע בחלק העליון של תיבת ההודעות. לחץ על השם כדי לבחור תהליך עבודה אחר. לחיצה על לשונית של תהליך עבודה עשויה לפתוח את השיחה האחרונה שלו, אלא אם כן יש טיוטה בתיבת ההודעות.",
+    "coachWorkflowBody": "לכל לשונית של תהליך עבודה יש צ'אטים משלה. מעבר בין לשוניות מעביר לצ'אט של אותה לשונית.",
     "coachWorkflowTitle": "הסוכן עורך תהליך עבודה אחד בכל פעם",
     "consent": {
       "accept": "התחלת השימוש ב-Comfy Agent",
@@ -217,7 +216,6 @@
     "copyUnavailable": "בגרסה זו ניתן להעתיק רק את השיחה הנוכחית",
     "creditTransitionNotice": "ניצלת את הקרדיטים החינמיים של הסוכן. פעילות נוספת של הסוכן משתמשת בקרדיטים של סביבת העבודה שלך, שעשויים לכלול קרדיטים בתשלום.",
     "creditsUsed": "הסוכן השתמש ב-{credits} קרדיט | הסוכן השתמש ב-{credits} קרדיטים",
-    "currentTab": "הלשונית הנוכחית",
     "delete": "מחק",
     "deleteApproval": {
       "answered": "נענה",
@@ -307,6 +305,7 @@
     "historyYesterday": "אתמול",
     "latest": "העדכני ביותר",
     "loadFailed": "טעינת חלונית הסוכן נכשלה.",
+    "loadingWorkflowChats": "טוען את הצ'אטים עבור {workflowName}",
     "malformedEvent": "הסוכן שלח אירוע שלוח זה לא הצליח לקרוא",
     "manageSkills": "ניהול מיומנויות",
     "maximize": "הגדל את הלוח",
@@ -334,7 +333,6 @@
     "openWorkflowTab": "פתיחת {name}",
     "openingChat": "פתיחת צ'אט…",
     "openingWorkflowChat": "פתיחת צ'אט עבור {workflowName}…",
-    "otherOpenWorkflows": "תהליכי עבודה פתוחים אחרים",
     "paused": {
       "recheck": "הסוכן ינסה שוב באופן אוטומטי בעוד כ-{seconds} שנייה. | הסוכן ינסה שוב באופן אוטומטי בעוד כ-{seconds} שניות.",
       "resume": "המשך",
@@ -410,6 +408,8 @@
       "answerSuperseded": "כבר ניתנה תשובה במקום אחר, ולכן נעשה שימוש בתשובה זו במקום בתשובתכם.",
       "answerUncertain": "לא ניתן היה לאשר שתשובתכם הגיעה לסוכן. ייתכן שהיא עדיין הוחלה — טענו מחדש את הדף כדי לראות מה המצב.",
       "cancel": "ביטול",
+      "estimateAtLeast": "עלות משוערת: לפחות {credits} קרדיטים",
+      "estimateUnavailable": "עלות משוערת: אינה זמינה עבור תהליך עבודה זה",
       "lead": "Comfy Agent מבקש להריץ את תהליך העבודה:",
       "leadBound": "Comfy Agent מבקש להפעיל את תהליך העבודה הזה.",
       "question": "האם לאשר?",
@@ -434,8 +434,6 @@
     "runPermissions": "הרשאות הפעלה",
     "runPermissionsDescription": "בחר מתי הסוכן זקוק להסכמתך",
     "savingWorkflow": "שומר תהליך עבודה",
-    "searchWorkflows": "חפש תהליכי עבודה",
-    "selectWorkflowForAgent": "בחרו תהליך עבודה שבו הסוכן יעבוד",
     "selectWorkflowForNodes": "יש לבחור תחילה תהליך עבודה",
     "selectWorkflowToGenerate": "בחר תהליך עבודה ליצירה בו",
     "send": "שלח",
@@ -444,7 +442,14 @@
     "sendBlockedByUnsupportedType": "{name} אינו מסוג קובץ שהסוכן מקבל. הסירו אותו כדי לשלוח.",
     "sendBusy": "הודעה כבר נשלחת",
     "sendFailed": "שליחת ההודעה נכשלה",
+    "sendFailedDisownedWorkflow": "תהליך עבודה זה אינו זמין עוד.",
+    "sendFailedNetwork": "ההודעה לא הגיעה לשרת. בדוק את החיבור שלך ונסה שוב.",
+    "sendFailedOffscreen": "לא ניתן היה לשלוח את ההודעה שלך",
+    "sendFailedOffscreenShow": "הצג",
+    "sendFailedTurnInProgress": "תשובה עדיין הייתה בתהליך בצ'אט זה.",
+    "sendFailedUncertain": "לא ניתן היה לאשר אם השרת קיבל את הודעתך. בדוק את הצ'אט לפני שליחה חוזרת.",
     "sendTurnInProgress": "בצ'אט זה עדיין פועלת תגובה. המתן לסיומה, או עצור אותה, ולאחר מכן שלח שוב.",
+    "sendingMessage": "שולח…",
     "showChatHistory": "הצג היסטוריית צ'אטים",
     "showLess": "הצג פחות",
     "showMore": "הצג עוד",
@@ -472,6 +477,7 @@
     "skillsLoading": "טוען מיומנויות…",
     "skillsUnavailable": "המיומנויות אינן זמינות כרגע.",
     "skip": "דלג",
+    "startNewChat": "התחל צ'אט חדש",
     "stop": "עצור",
     "stopShortcut": "Esc",
     "suggestedPrompts": {
@@ -499,10 +505,8 @@
         ]
       }
     },
-    "switchWorkflow": "החלף תהליך עבודה",
     "switchWorkflowForNodes": "עברו אל {workflowName} כדי להוסיף צמתים.",
     "takeTour": "התחל סיור",
-    "targetFollowsVisibleWorkflow": "תהליך העבודה המיועד מתעדכן לפי הלשונית הגלויה, עד שתבחר יעד, תפנה לצמתים או תשלח הודעה.",
     "targetForThisChat": "יעד הסוכן עבור שיחה זו",
     "targetNavigationUnavailable": "יעד זה של תהליך העבודה אינו זמין עוד.",
     "targetWorkflowOpenFailed": "לא ניתן היה לפתוח את תהליך העבודה המבוקש.",
@@ -545,7 +549,7 @@
     "workedForMinutes": "עבד במשך {minutes}m {seconds}s",
     "workedForSeconds": "עבד במשך {seconds} שניות",
     "workedNotConfirmedOnCanvas": "השינויים לא אושרו בקנבס שלכם",
-    "workflowEditNotice": "הסוכן יכול כעת לערוך את {workflow}. הוא עובד על תהליך עבודה אחד בכל פעם, וניתן להחליף תהליכי עבודה במהלך השיחה.",
+    "workflowEditNotice": "הסוכן יכול כעת לערוך את {workflow}. הוא עובד על תהליך עבודה אחד בכל פעם.",
     "workflowReferenceUnavailableReason": "תהליך העבודה שאליו בוצעה ההפניה אינו זמין עוד או שאין לך גישה אליו.",
     "workflowSyncFailedDetail": "תהליך עבודה זה נוצר באמצעות גרסת מסמך שאינה תואמת. הקנבס שלך נותר ללא שינוי.",
     "workflowSyncFailedDetailCatalogMismatch": "צומת בתהליך עבודה זה השתנה מאז שהסוכן ראה אותו לאחרונה. הקנבס שלכם נותר ללא שינוי. ההודעה הבאה שלכם תשלח את הקנבס שלכם כדי שהסוכן יוכל לבנות מחדש את העותק שלו של תהליך העבודה.",
@@ -726,6 +730,7 @@
     },
     "modelName": "שם המודל",
     "modelNamePlaceholder": "הזן שם עבור מודל זה",
+    "modelTypeNotAddable": "לא ניתן להוסיף סוג מודל זה לקנבס מספריית המודלים. הוסף צומת שטוען אותו ולאחר מכן בחר את המודל שם.",
     "modelTypeSelectorLabel": "איזה סוג מודל זה?",
     "modelTypeSelectorPlaceholder": "בחר סוג מודל",
     "modelUploaded": "המודל יובא בהצלחה.",
@@ -1499,7 +1504,8 @@
       "apiNodeUsage": "שימוש בצומת שותף",
       "apiUsage": "שימוש ב-API",
       "creditAdded": "קרדיטים נוספו",
-      "gpuUsage": "שימוש ב-GPU"
+      "gpuUsage": "שימוש ב-GPU",
+      "routerUsage": "שימוש ב-Router"
     },
     "faqs": "שאלות נפוצות",
     "formerMember": "{name} (חבר/ת לשעבר)",
@@ -1516,6 +1522,15 @@
     "member": "חבר/ת",
     "messageSupport": "שליחת הודעה לתמיכה",
     "model": "מודל",
+    "personalWallet": {
+      "addCredits": "הוספת קרדיטים אישיים",
+      "apiKeyDescription": "מפתח זה מחייב את החשבון האישי שלך. יש ליצור מפתח API של צוות או להוסיף קרדיטים אישיים.",
+      "createTeamApiKey": "יצירת מפתח API של צוות",
+      "sessionDescription": "הפעלה זו מחייבת את החשבון האישי שלך. כדי לחייב צוות במקום זאת, יש לעבור לסביבת העבודה שלו.",
+      "sessionNoTeamsDescription": "הפעלה זו מחייבת את החשבון האישי שלך. יש להוסיף קרדיטים אישיים כדי להמשיך.",
+      "switchTo": "מעבר אל {workspaceName}",
+      "title": "בחשבון האישי שלך אזלו הקרדיטים"
+    },
     "purchaseCredits": "רכישת קרדיטים",
     "refreshes": "מתחדש ב-{date}",
     "time": "זמן",
@@ -1772,6 +1787,7 @@
     "incompatibleEnvironments": "סביבות שאינן תואמות",
     "labelWithDetail": "{label} · {detail}",
     "landed": "פועל על {deployment}",
+    "later": "מאוחר יותר",
     "linkRefused": "לא ניתן היה לפתוח פריסה זו",
     "linkTimedOut": "לפריסה זו לקח זמן רב מדי להיפתח. נסה שוב את הקישור.",
     "linkWorkspaceRefused": "לא ניתן היה לעבור לאותה סביבת עבודה. אתה עדיין ב־{workspaceName}.",
@@ -1784,6 +1800,7 @@
     "missingNodesAfterReason": "הוא אינו יכול להריץ תהליך עבודה זה. חסרים בו {nodes}.",
     "missingNodesNamed": "{deployment} אינו יכול להריץ תהליך עבודה זה. חסרים בו {nodes}.",
     "namedDeployment": "{name}",
+    "newDeploymentName": "פריסה חדשה",
     "noDeployments": "לסביבת עבודה זו עדיין אין פריסות.",
     "notChecked": "לא נבדק",
     "notCheckedAfterReason": "לא ניתן היה לבדוק אם הוא יכול להריץ תהליך עבודה זה.",
@@ -1801,6 +1818,10 @@
       "stopped": "{deployment} נעצר. הפעילו אותו כדי להריץ עליו משימות."
     },
     "releaseChanged": "פריסה זו פועלת כעת עם מהדורה אחרת. טען מחדש כדי לקבל את הצמתים שלה.",
+    "releaseChangedRun": "{deployment} מפעיל כעת את v{version}. יש לטעון מחדש כדי להפעיל עליו.",
+    "releaseChangedRunNoVersion": "{deployment} מפעיל כעת גרסה אחרת. יש לטעון מחדש כדי להפעיל עליו.",
+    "releaseChangedRunUnknown": "הפעלות נשלחות כעת לגרסה אחרת. יש לטעון מחדש כדי להפעיל עליה.",
+    "releaseChangedRunUnknownTarget": "הגרסה החדשה",
     "reload": "טען מחדש",
     "retry": "ניסיון חוזר",
     "retryLabel": "ניסיון חוזר להפעלת {deployment}",
@@ -1824,6 +1845,7 @@
     "startLabel": "הפעלת {deployment}",
     "startOnPlatformLabel": "הפעלת {deployment} ב-Developer Platform",
     "status": {
+      "building": "בתהליך בנייה",
       "failed": "נכשל",
       "notReady": "לא מוכן",
       "provisioning": "מתחיל",
@@ -1842,16 +1864,23 @@
     "unnamedDeployment": "פריסה {id}",
     "unsaved": {
       "message": "מעבר אל {deployment} יטען מחדש את הלשונית. בתהליכי עבודה אלה יש שינויים שטרם נשמרו.",
+      "reloadMessage": "טעינה מחדש של הלשונית תפעיל אותה ב־{deployment}. בתהליכי עבודה אלה יש שינויים שטרם נשמרו.",
+      "reloadTitle": "לשמור את תהליכי העבודה לפני הטעינה מחדש?",
+      "reloadWithoutSaving": "טעינה מחדש ללא שמירה",
+      "saveAndReload": "שמירה וטעינה מחדש",
       "saveAndSwitch": "שמירה והחלפה",
       "switchWithoutSaving": "החלפה ללא שמירה",
       "tabsReturn": "הלשוניות הפתוחות שלך יחזרו לאחר הטעינה מחדש בכל מקרה.",
       "title": "לשמור את תהליכי העבודה לפני ההחלפה?"
     },
     "version": "v{version}",
+    "versionChanged": "{deployment} מפעיל כעת את v{version}. יש לטעון מחדש כדי להשתמש בצמתים שלו.",
+    "versionChangedNoVersion": "{deployment} מפעיל כעת גרסה אחרת. יש לטעון מחדש כדי להשתמש בצמתים שלו.",
     "workflowNeedsDeployment": {
       "andMore": "{names}, ועוד {count}",
       "buildOnPlatform": "Build ב-Platform",
-      "installBody": "פרוס Build מותאם אישית כדי להוסיף את הצמתים והמודלים המותאמים האישית שאין ל-Comfy Cloud. הגדר אותו ב-Platform, והוא יופיע תחת \"הפעל על\" עבור סביבת העבודה שלך.",
+      "createCustomBuild": "יצירת Custom Build",
+      "installBody": "יש ליצור Custom Build כדי להוסיף את הצמתים והמודלים המותאמים אישית שאין ב-Comfy Cloud. מגדירים אותו ב-Platform, והוא מופיע תחת Run on עבור סביבת העבודה שלך.",
       "installTitle": "התקן את הצמתים המותאמים האישית החסרים",
       "missingModels": "מודל אחד חסר: {count} | חסרים {count} מודלים",
       "missingNodes": "צומת אחד חסר: {count} | חסרים {count} צמתים",
@@ -1860,7 +1889,8 @@
       "switch": "החלפה",
       "switchBody": "צמתים אלה חסרים ב-Comfy Cloud. עברו לפריסה שמכילה אותם והמשיכו לעבוד משם.",
       "title": "הפעלת תהליך עבודה זה בפריסה מותאמת אישית",
-      "titleNoneRunIt": "צרו פריסה כדי להפעיל תהליך עבודה זה ב-Comfy Cloud"
+      "titleNoneRunIt": "צרו פריסה כדי להפעיל תהליך עבודה זה ב-Comfy Cloud",
+      "titleNoneRunItCustomBuild": "יצירת Custom Build להפעלת תהליך עבודה זה ב-Comfy Cloud"
     },
     "workspaceDefault": "ברירת מחדל של סביבת העבודה"
   },
@@ -2109,6 +2139,13 @@
         "title": "היצירה נכשלה",
         "toastMessage": "אין מספיק זיכרון GPU. נסה להקטין את רזולוציית התמונה או את גודל האצווה ולהריץ שוב.",
         "toastTitle": "היצירה נכשלה"
+      },
+      "personal_wallet_insufficient_credits": {
+        "itemLabel": "{nodeName}",
+        "message": "החיוב עבור הרצה זו בוצע לחשבון האישי שלך, שאין בו מספיק קרדיטים.",
+        "title": "אין מספיק קרדיטים",
+        "toastMessage": "החיוב עבור הרצה זו בוצע לחשבון האישי שלך, שאין בו מספיק קרדיטים.",
+        "toastTitle": "אין מספיק קרדיטים"
       },
       "preprocessing_failed": {
         "itemLabel": "{nodeName}",
@@ -2592,6 +2629,7 @@
     "galleryThumbnail": "תמונה ממוזערת בגלריה",
     "galleryThumbnailPosition": "תמונה ממוזערת בגלריה {index} מתוך {total}",
     "gapHandle": "מרווח בין צמתים",
+    "gapValue": "{value} יחידת קנבס | {value} יחידות קנבס",
     "getHelpAction": "קבלת עזרה",
     "goToNode": "מעבר לצומת",
     "graphNavigation": "ניווט בגרף",
@@ -2812,6 +2850,7 @@
     "selectItemsToRename": "בחר פריטים לשינוי שם",
     "selected": "נבחר",
     "selectedFile": "הקובץ הנבחר",
+    "sessionRevoked": "הגישה שלך לסביבת עבודה זו הסתיימה. יש להתחבר שוב כדי להתחבר מחדש.",
     "setAKeybindingForTheFollowing": "הגדר מקש קיצור עבור הפעולה הבאה:",
     "setAsBackground": "הגדרה כרקע",
     "settings": "הגדרות",
@@ -2848,7 +2887,7 @@
     "terminal": "טרמינל",
     "textFailedToLoad": "טעינת הטקסט נכשלה",
     "tidyUp": "סידור",
-    "tidyUpTooltip": "יישר את הצמתים בשורות ובעמודות והשווה את המרווחים",
+    "tidyUpTooltip": "יישור הצמתים בשורות ובעמודות והשוואת המרווחים ביניהם",
     "title": "כותרת",
     "triggerPhrase": "ביטוי הפעלה",
     "unknownError": "שגיאה לא ידועה",
@@ -3454,6 +3493,27 @@
     "newerVersionRequired": "חלק מהצמתים דורשים גרסה חדשה יותר של ComfyUI (נוכחית: {version}). יש לעדכן כדי להשתמש בכל הצמתים.",
     "newerVersionRequiredGeneric": "חלק מהצמתים דורשים גרסה חדשה יותר של ComfyUI. יש לעדכן כדי להשתמש בכל הצמתים.",
     "unknownVersion": "לא ידוע"
+  },
+  "localMcp": {
+    "clients": {
+      "claudeCode": "Claude Code",
+      "claudeDesktop": "Claude Desktop",
+      "cursor": "Cursor"
+    },
+    "connected": "מחובר: סוכן הריץ כאן תהליך עבודה באמצעות Comfy MCP.",
+    "copyConfig": "העתק",
+    "description": "אפשר לסוכן AI כגון Claude או Cursor להריץ תהליכי עבודה ב-ComfyUI זה באמצעות Comfy MCP. הוא פועל במחשב שלך.",
+    "label": "סוכן",
+    "locations": {
+      "claudeDesktop": "הוסף אל claude_desktop_config.json (הגדרות > מפתחים > עריכת תצורה), ולאחר מכן הפעל מחדש את Claude Desktop.",
+      "cursor": "הוסף אל ~/.cursor/mcp.json, או אל .cursor/mcp.json בפרויקט."
+    },
+    "openDocs": "מדריך הגדרה מלא",
+    "step1": "1. התקן את Comfy MCP",
+    "step2": "2. הוסף אותו ללקוח שלך",
+    "step3": "3. בקש מהסוכן שלך להריץ תהליך עבודה",
+    "step3Hint": "הפעל מחדש את הלקוח שלך, ולאחר מכן בקש ממנו לאשר שה-ComfyUI המקומי שלך פועל ולהריץ תהליך עבודה. לוח זה יציג את המצב מחובר לאחר ההרצה הראשונה.",
+    "title": "חבר את סוכן ה-AI שלך"
   },
   "logsTerminal": {
     "loadError": "לא ניתן לטעון את היומנים, אנא ודא שעדכנת את שרת ComfyUI שלך.",
@@ -4282,6 +4342,18 @@
       "workspaceLabel": "סביבת עבודה"
     },
     "scopes": {
+      "comfy-mcp:tools:call": {
+        "label": "הפעלת תהליכי עבודה ומודלים של שותפים בשמך, באמצעות הקרדיטים שלך"
+      },
+      "comfy-mcp:tools:read": {
+        "label": "הצגת כלי תהליך העבודה הזמינים לך"
+      },
+      "comfy-router:models:invoke": {
+        "label": "הפעלת מודלים של שותפים דרך Comfy Router, באמצעות הקרדיטים שלך"
+      },
+      "comfy-router:models:read": {
+        "label": "הצגת קטלוג המודלים של Comfy Router"
+      },
       "mcp:tools:call": {
         "label": "הרצת תהליכי עבודה בשמך"
       },
@@ -4414,12 +4486,13 @@
     "cloudButton": {
       "checking": "מתבצעת בדיקה של Comfy Cloud…",
       "resumeUpload": "המשך העלאת מודל",
-      "tooltip": "הפעל ב-Comfy Cloud",
+      "tooltip": "הפעלת תהליך עבודה זה ב־Comfy Cloud",
       "uploading": "מעלה מודלים ל-Comfy Cloud, {percent}%"
     },
     "deploySetup": "פרסו את ההגדרה שלכם ל-Comfy Cloud",
     "deploySetupDialog": {
       "body": "פרסו את ההגדרה המקומית שלכם ל-Comfy Cloud כ-Build, ולאחר מכן השתמשו בה ב-ComfyUI או קראו לה כ-API בעל התאמה אוטומטית לעומס.",
+      "missingNodesBody": "ב־Comfy Cloud חסרים חלק מהצמתים שבהם משתמש תהליך עבודה זה. פרוס את ההגדרה המקומית שלך ל־Comfy Cloud כ־Build, ולאחר מכן השתמש בה ב־ComfyUI או קרא לה כ־API עם התאמה אוטומטית של קנה המידה.",
       "platformTabBlocked": "תהליך העבודה נשמר. לחצו שוב על פרסום בפלטפורמה כדי להמשיך.",
       "pointGpu": "הפעילו על מעבדי GPU עוצמתיים בענן",
       "pointNodes": "הביאו את הצמתים והמודלים המותאמים אישית שלכם",
@@ -4477,10 +4550,14 @@
     "prepareFailed": "לא ניתן היה להכין את תהליך העבודה הזה עבור Comfy Cloud",
     "prepareFailedDetail": "בדקו את תהליך העבודה לאיתור שגיאות, שמרו אותו ונסו שוב.",
     "runDialog": {
-      "asksToSignIn": "Comfy Cloud יבקש מכם להתחבר.",
+      "body": "פתח תהליך עבודה זה ב־Comfy Cloud, או פרוס את ההגדרה המקומית שלך כ־Build אם הוא זקוק לצמתים מותאמים אישית.",
+      "checkCompatibility": "בדיקת תאימות",
       "openOnCloud": "פתח ב-Comfy Cloud",
+      "pointApi": "השתמש בו ב־ComfyUI או קרא לו כ־API",
       "ready": "ב-Comfy Cloud קיימים כל הצמתים והמודלים שבהם תהליך העבודה הזה משתמש. הוא ייפתח בלשונית חדשה, מוכן להפעלה.",
-      "title": "הפעל ב-Comfy Cloud"
+      "readyWithUncheckedInputs": "ב־Comfy Cloud קיימים כל הצמתים והמודלים שניתן היה לבדוק. לא ניתן היה לבדוק את המודלים עבור הקלטים האלה: {inputs}. התהליך ייפתח בלשונית חדשה.",
+      "sends": "הבדיקה תשלח ל־Comfy Cloud את שמות הצמתים והמודלים של תהליך עבודה זה.",
+      "uncheckedInput": "{input} ב־{nodeType}"
     },
     "verifyAccessFailed": "לא ניתן היה לאמת את הגישה אל Comfy Cloud",
     "verifyAccessFailedDetail": "אם הלחצן Cloud עדיין זמין, בחרו שוב באפשרות פתיחה ב-Comfy Cloud."
@@ -4537,6 +4614,33 @@
     "tooltip": "צומתי שותפים מפעילים דרך Comfy מודלים בקוד סגור, כגון Kling או Veo, על חומרת הספק. הם משתמשים בקרדיטים; שאר Comfy נשאר חינמי.",
     "unmuteOpen": "ביטול השתקת clip בעל משקלים פתוחים",
     "unmutePartner": "ביטול השתקת clip של צומת שותף"
+  },
+  "platformFrame": {
+    "buildFailed": "הבנייה נכשלה. {deployment} לא נפרס.",
+    "buildStep": "שלב {step} מתוך {of}",
+    "buildTakesMinutes": "הפעולה נמשכת כמה דקות. אפשר להמשיך לעבוד.",
+    "building": "מתבצעת בנייה של {deployment}",
+    "deployFailed": "הפריסה נכשלה. {deployment} נבנה אך לא נפרס.",
+    "deploying": "מתבצעת פריסה של {deployment}",
+    "finishingOnPrevious": "מסיים את המשימה שלך בגרסה v{version}. | מסיים {count} מהמשימות שלך בגרסה v{version}.",
+    "getStarted": "תחילת העבודה",
+    "later": "מאוחר יותר",
+    "nothingChanged": "לא השתנה דבר: {deployment} עדיין פועל בגרסה v{version}.",
+    "nothingChangedNoVersion": "לא השתנה דבר: {deployment} עדיין פועל כפי שפעל קודם לכן.",
+    "openOnPlatform": "פתיחה בפלטפורמה",
+    "preinstallTitle": "התקן מראש מודלים כדי להפעיל תהליך עבודה זה",
+    "readyNew": "{deployment} מוכן",
+    "readyUpdate": "{deployment} פועל כעת בגרסה v{version}.",
+    "readyUpdateReload": "{deployment} פועל כעת בגרסה v{version}. טען מחדש כדי להשתמש בצמתים שלו.",
+    "reload": "טעינה מחדש",
+    "switch": "החלפה",
+    "switchListingUnavailable": "הפריסות שלך לא נטענו. נסה שוב מתוך \"הפעלה ב\".",
+    "title": "פריסה מותאמת אישית",
+    "unanswered": "הפלטפורמה לא נפתחה כאן.",
+    "updateDeployment": "עדכון {deployment}",
+    "updateShortcut": "לחץ על E כדי לעדכן אותו.",
+    "updateUnfinished": "{deployment} לא סיים להתעדכן לגרסה v{version}.",
+    "viewDetails": "הצגת פרטים"
   },
   "profileMenu": {
     "balanceUnavailable": "לא הצלחנו לטעון את היתרה שלכם.",
@@ -4636,6 +4740,7 @@
   },
   "rightSidePanel": {
     "addFavorite": "הוספה למועדפים",
+    "addMissingModelsToBuild": "הוסף את המודלים החסרים לבנייה",
     "addToDeploymentBuild": "הוסיפו אותם ל-build של {deployment} ב-Platform, ולאחר מכן פרסו מהדורה חדשה.",
     "advancedInputs": "קלטים מתקדמים",
     "askAgent": "שאל את הסוכן",
@@ -5152,6 +5257,7 @@
     "viewControls": "בקרות תצוגה"
   },
   "sideToolbar": {
+    "addModelsToDeployment": "הוספת מודלים לפריסה זו",
     "assets": "נכסים",
     "backToAssets": "חזרה לכל הנכסים",
     "browseTemplates": "עיון בתבניות לדוגמה",
@@ -5318,6 +5424,7 @@
     "templates": "תבניות",
     "themeToggle": "החלפת ערכת הנושא",
     "workflowTab": {
+      "bookmarkSaveFailed": "השינוי בסימנייה לא נשמר. יש לבדוק את החיבור ולנסות שוב.",
       "confirmDelete": "האם אתה בטוח שברצונך למחוק את תהליך העבודה הזה?",
       "confirmDeleteTitle": "למחוק את תהליך העבודה?",
       "confirmOverwrite": "הקובץ שלמטה כבר קיים. האם ברצונך לדרוס אותו?",
@@ -5325,17 +5432,27 @@
       "deleteFailed": "הניסיון למחוק את תהליך העבודה נכשל.",
       "deleteFailedTitle": "המחיקה נכשלה",
       "deleted": "תהליך העבודה נמחק",
+      "deletedButBookmarksNotUpdated": "תהליך העבודה נמחק, אך לא ניתן היה לעדכן את הסימניות שלך",
       "dirtyClose": "הקבצים שלמטה שונו. האם ברצונך לשמור אותם לפני הסגירה?",
       "dirtyCloseAnyway": "סגור בכל זאת",
       "dirtyCloseHint": "החזק Shift כדי לסגור ללא בקשת אישור",
       "dirtyCloseTitle": "לשמור את השינויים?",
+      "renamedButBookmarksNotUpdated": "שם תהליך העבודה שונה, אך לא ניתן היה לעדכן את הסימניות שלך",
       "workflowTreeType": {
         "bookmarks": "סימניות",
         "browse": "עיון",
         "open": "פתוחים"
       }
     },
-    "workflows": "תהליכי עבודה"
+    "workflows": "תהליכי עבודה",
+    "workspaceLibrary": {
+      "empty": "אין מודלים בספריית סביבת העבודה שלך.",
+      "explainer": "מודלים בסביבת העבודה שלך. מודלים שאינם ב-build זה יורדו כאשר משימה תזדקק להם.",
+      "fromWorkspace": "מסביבת העבודה שלך",
+      "loadFailed": "לא ניתן היה לטעון את ספריית סביבת העבודה שלך.",
+      "modelCount": "{count} מודל | {count} מודלים",
+      "title": "ספריית סביבת העבודה"
+    }
   },
   "skillPacks": {
     "errors": {
@@ -6053,6 +6170,7 @@
     "a1111CoreNodesUnavailable": "לא ניתן לטעון את תהליך העבודה כי התקנת ComfyUI זו חסרה צמתים חיוניים. בדוק שהשרת האחורי הופעל כראוי.",
     "a1111EmbeddingsUnavailable": "לא ניתן היה לטעון Embeddings מהשרת. תהליך העבודה יובא, אך שמות ה-embeddings נותרו כטקסט פשוט.",
     "assetDropFailed": "לא ניתן לטעון את הנכס שנגרר",
+    "batchStoppedOnWorkflowChange": "נוספו לתור {queued} מתוך {requested}. הפעולה נעצרה מפני שהחלפת תהליך עבודה, ולכן השאר היו מופעלים בתהליך הלא נכון.",
     "cannotCreateSubgraph": "לא ניתן ליצור תת-גרף",
     "couldNotDetermineFileType": "לא ניתן היה לקבוע את סוג הקובץ",
     "dropFileError": "לא ניתן לעבד את הפריט שנגרר: {error}",
@@ -6282,6 +6400,12 @@
       "placeholderModel": "בחר מודל...",
       "placeholderUnknown": "בחר מדיה...",
       "placeholderVideo": "בחר סרטון...",
+      "thumbnailSize": "גודל תמונה ממוזערת",
+      "thumbnailSizes": {
+        "compact": "קומפקטי",
+        "large": "גדול",
+        "standard": "רגיל"
+      },
       "topResult": "התוצאה המובילה: {result}"
     },
     "valueControl": {

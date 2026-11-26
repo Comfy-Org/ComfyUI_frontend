@@ -88,6 +88,10 @@
     "name": "Sorunlar sekmesinde eksik modelleri göster",
     "tooltip": "Devre dışı bırakıldığında, bulunamayan model dosyaları sorunlar sekmesinde listelenmez ve düğümleri vurgulanmaz."
   },
+  "Comfy_ErrorSystem_ShowMissingNodes": {
+    "name": "Sorunlar sekmesinde eksik düğümleri göster",
+    "tooltip": "Devre dışı bırakıldığında, eksik düğüm paketleri Sorunlar sekmesinde listelenmez ve düğümleri vurgulanmaz. İş akışı, bunlar yüklenene kadar yine de çalıştırılamaz."
+  },
   "Comfy_Execution_PreviewMethod": {
     "name": "Canlı önizleme yöntemi",
     "options": {
@@ -468,10 +472,6 @@
   "Comfy_Workflow_ShowMissingMediaWarning": {
     "name": "Sorunlar sekmesinde eksik medyayı göster",
     "tooltip": "Devre dışı bırakıldığında, bulunamayan giriş görüntüleri, videoları ve ses dosyaları sorunlar sekmesinde listelenmez ve düğümleri vurgulanmaz."
-  },
-  "Comfy_ErrorSystem_ShowMissingNodes": {
-    "name": "Sorunlar sekmesinde eksik düğümleri göster",
-    "tooltip": "Devre dışı bırakıldığında, eksik düğüm paketleri sorunlar sekmesinde listelenmez ve düğümleri vurgulanmaz. İş akışı, yüklenene kadar yine de çalıştırılamaz."
   },
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "İş akışını kaydederken düğüm kimliklerini sırala"

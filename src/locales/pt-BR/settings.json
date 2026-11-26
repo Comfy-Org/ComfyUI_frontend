@@ -88,6 +88,10 @@
     "name": "Mostrar modelos ausentes na aba de problemas",
     "tooltip": "Quando desativado, os arquivos de modelo não encontrados não são listados na aba de problemas e seus nós não são destacados."
   },
+  "Comfy_ErrorSystem_ShowMissingNodes": {
+    "name": "Mostrar nós ausentes na aba de problemas",
+    "tooltip": "Quando desativado, os pacotes de nós ausentes não são listados na aba de problemas, e seus nós não são destacados. O fluxo de trabalho ainda não poderá ser executado até que sejam instalados."
+  },
   "Comfy_Execution_PreviewMethod": {
     "name": "Método de visualização ao vivo",
     "options": {
@@ -468,10 +472,6 @@
   "Comfy_Workflow_ShowMissingMediaWarning": {
     "name": "Mostrar mídias ausentes na aba de problemas",
     "tooltip": "Quando desativado, as imagens, os vídeos e os áudios de entrada não encontrados não são listados na aba de problemas e seus nós não são destacados."
-  },
-  "Comfy_ErrorSystem_ShowMissingNodes": {
-    "name": "Mostrar nós ausentes na aba de problemas",
-    "tooltip": "Quando desativado, os pacotes de nós ausentes não são listados na aba de problemas e seus nós não são destacados. O fluxo de trabalho ainda não poderá ser executado até que sejam instalados."
   },
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "Ordenar IDs dos nós ao salvar fluxo de trabalho"

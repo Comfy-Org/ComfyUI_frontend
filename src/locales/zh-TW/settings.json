@@ -88,6 +88,10 @@
     "name": "在問題分頁中顯示缺少的模型",
     "tooltip": "停用時，找不到的模型檔案不會列在問題分頁中，其節點也不會醒目顯示。"
   },
+  "Comfy_ErrorSystem_ShowMissingNodes": {
+    "name": "在問題分頁中顯示缺少的節點",
+    "tooltip": "停用後，問題分頁中不會列出缺少的節點套件，其節點也不會被醒目標示。在安裝這些套件之前，工作流程仍無法執行。"
+  },
   "Comfy_Execution_PreviewMethod": {
     "name": "即時預覽方式",
     "options": {
@@ -468,10 +472,6 @@
   "Comfy_Workflow_ShowMissingMediaWarning": {
     "name": "在問題分頁中顯示缺少的媒體",
     "tooltip": "停用時，找不到的輸入影像、影片和音訊不會列在問題分頁中，其節點也不會醒目顯示。"
-  },
-  "Comfy_ErrorSystem_ShowMissingNodes": {
-    "name": "在問題分頁中顯示缺少的節點",
-    "tooltip": "停用時，缺少的節點套件不會列在問題分頁中，其節點也不會醒目顯示。在安裝前，工作流程仍無法執行。"
   },
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "儲存工作流程時排序節點 ID"

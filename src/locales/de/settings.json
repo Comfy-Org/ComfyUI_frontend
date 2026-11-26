@@ -88,6 +88,10 @@
     "name": "Fehlende Modelle im Probleme-Tab anzeigen",
     "tooltip": "Wenn deaktiviert, werden nicht gefundene Modelldateien nicht im Probleme-Tab aufgeführt und ihre Nodes nicht hervorgehoben."
   },
+  "Comfy_ErrorSystem_ShowMissingNodes": {
+    "name": "Fehlende Nodes im Probleme-Tab anzeigen",
+    "tooltip": "Wenn diese Option deaktiviert ist, werden fehlende Node-Pakete nicht im Probleme-Tab aufgeführt und ihre Nodes nicht hervorgehoben. Der Workflow kann dennoch erst ausgeführt werden, wenn sie installiert sind."
+  },
   "Comfy_Execution_PreviewMethod": {
     "name": "Methode für Live-Vorschau",
     "options": {
@@ -468,10 +472,6 @@
   "Comfy_Workflow_ShowMissingMediaWarning": {
     "name": "Fehlende Medien im Probleme-Tab anzeigen",
     "tooltip": "Wenn deaktiviert, werden nicht gefundene Eingabebilder, Videos und Audiodateien nicht im Probleme-Tab aufgeführt und ihre Nodes nicht hervorgehoben."
-  },
-  "Comfy_ErrorSystem_ShowMissingNodes": {
-    "name": "Fehlende Nodes im Probleme-Tab anzeigen",
-    "tooltip": "Wenn deaktiviert, werden fehlende Node-Pakete nicht im Probleme-Tab aufgeführt und ihre Nodes nicht hervorgehoben. Der Workflow kann weiterhin nicht ausgeführt werden, bis sie installiert sind."
   },
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "Node-IDs beim Speichern des Workflows sortieren"
