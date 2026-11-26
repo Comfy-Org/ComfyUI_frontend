@@ -362,16 +362,19 @@ function createOwner(
     documentId.value = creator.workflowId.value
     const scope = effectScope(true)
     const session = scope.run(() => {
-      watchEffect(() => {
-        const active = consumer.value
-        const next = active?.workflowId.value ?? null
-        if (next !== null) {
-          binding.boundBy = active
-          documentId.value = next
-          return
-        }
-        if (active === binding.boundBy) documentId.value = null
-      })
+      watchEffect(
+        () => {
+          const active = consumer.value
+          const next = active?.workflowId.value ?? null
+          if (next !== null) {
+            binding.boundBy = active
+            documentId.value = next
+            return
+          }
+          if (active === binding.boundBy) documentId.value = null
+        },
+        { flush: 'sync' }
+      )
       const inputsCapturedFromTheFirstConsumer = {
         transport,
         applierDeps: creator.applierDeps
