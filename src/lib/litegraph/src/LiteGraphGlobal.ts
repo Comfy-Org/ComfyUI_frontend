@@ -41,6 +41,10 @@ import { createUuidv4 } from '@/utils/uuid'
 import type { GraphOrSubgraph } from '@comfyorg/graph-model/entityRegistry'
 
 export const NODE_CREATION_GRAPH_FACTORY = Symbol('nodeCreationGraphFactory')
+/** The subgraph id a {@link NODE_CREATION_GRAPH_FACTORY} targets, independent of the type's registration key. */
+export const NODE_CREATION_TARGET_SUBGRAPH_ID = Symbol(
+  'nodeCreationTargetSubgraphId'
+)
 
 /** Options for {@link LiteGraphGlobal.createNode}. Node fields are shallow-copied onto the new node. */
 export interface CreateNodeOptions {

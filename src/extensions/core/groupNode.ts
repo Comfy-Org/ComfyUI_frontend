@@ -8,8 +8,12 @@ import type {
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { NODE_CREATION_GRAPH_FACTORY } from '@/lib/litegraph/src/LiteGraphGlobal'
+import {
+  NODE_CREATION_GRAPH_FACTORY,
+  NODE_CREATION_TARGET_SUBGRAPH_ID
+} from '@/lib/litegraph/src/LiteGraphGlobal'
 import { outputLinks } from '@/lib/litegraph/src/node/slotLinks'
+import { useLitegraphService } from '@/services/litegraphService'
 import { slotTypeKey } from '@/lib/litegraph/src/utils/type'
 import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import type {
@@ -871,23 +875,37 @@ export function findUnconsumedWidgetIndex(
 export class GroupNodeUnpackRefusedError extends Error {
   constructor(public readonly memberType: string) {
     super(
-      `Group node member type "${memberType}" could not be created in the target graph; leaving the group unpacked.`
+      `Group node member type "${memberType}" could not be created in the target graph; leaving the group unchanged.`
     )
   }
 }
 
-function canCreateGroupMember(type: string, graph: LGraph): boolean {
+/** The subgraph id missing from `graph`, if `type` is a graph-aware type this graph cannot create; `undefined` if creatable or unregistered. */
+function missingSubgraphTarget(
+  type: string,
+  graph: LGraph
+): string | undefined {
   const baseClass = Object.hasOwn(LiteGraph.registered_node_types, type)
     ? LiteGraph.registered_node_types[type]
     : undefined
-  if (!baseClass) return false
+  if (!baseClass) return undefined
 
   const graphAwareClass = baseClass as typeof LGraphNode & {
     [NODE_CREATION_GRAPH_FACTORY]?: unknown
+    [NODE_CREATION_TARGET_SUBGRAPH_ID]?: string
   }
-  if (!graphAwareClass[NODE_CREATION_GRAPH_FACTORY]) return true
+  if (!graphAwareClass[NODE_CREATION_GRAPH_FACTORY]) return undefined
 
-  return graph.rootGraph.subgraphs.has(type)
+  const targetSubgraphId =
+    graphAwareClass[NODE_CREATION_TARGET_SUBGRAPH_ID] ?? type
+  return graph.rootGraph.subgraphs.has(targetSubgraphId)
+    ? undefined
+    : targetSubgraphId
+}
+
+function canCreateGroupMember(type: string, graph: LGraph): boolean {
+  if (!Object.hasOwn(LiteGraph.registered_node_types, type)) return false
+  return missingSubgraphTarget(type, graph) === undefined
 }
 
 /**
@@ -910,17 +928,7 @@ export class GroupNodeHandler {
     this.groupData = groupData
   }
 
-  /**
-   * Unpacks this group node into its constituent nodes within the root graph,
-   * copying current widget values and reconnecting external links, then removes
-   * the group node. Returns the newly created nodes.
-   *
-   * Lossiness is accepted: group nodes nested inside subgraphs are unpacked into
-   * the root graph rather than their original container. A member whose type
-   * cannot be created in this graph instead throws
-   * {@link GroupNodeUnpackRefusedError} before any mutation, leaving the group
-   * and the graph unchanged.
-   */
+  /** Unpacks this group node into a subgraph, or throws {@link GroupNodeUnpackRefusedError} before any mutation if a member type cannot be created in this graph. */
   convertToNodes(): LGraphNode[] {
     const node = this.node
     const graph = node.graph
@@ -928,13 +936,18 @@ export class GroupNodeHandler {
     const { nodeData, oldToNewWidgetMap, oldToNewInputMap, newToOldOutputMap } =
       this.groupData
 
-    const unresolvedMember = nodeData.nodes.find(
-      (n) => !n.type || !canCreateGroupMember(n.type, graph)
-    )
-    if (unresolvedMember) {
-      throw new GroupNodeUnpackRefusedError(
-        unresolvedMember.type ?? '<unknown>'
-      )
+    for (const member of nodeData.nodes) {
+      if (member.type && canCreateGroupMember(member.type, graph)) continue
+      if (member.type) {
+        const missingSubgraphId = missingSubgraphTarget(member.type, graph)
+        if (missingSubgraphId) {
+          useLitegraphService().reportMissingSubgraphTarget(
+            graph.rootGraph,
+            missingSubgraphId
+          )
+        }
+      }
+      throw new GroupNodeUnpackRefusedError(member.type ?? '<unknown>')
     }
 
     const addInnerNodes = () => {
@@ -1209,6 +1222,13 @@ export const groupNodeExtension: ComfyExtension = {
             for (const inner of innerNodes) inner.updateArea()
             graph.convertToSubgraph(new Set(innerNodes))
           } catch (error) {
+            if (error instanceof GroupNodeUnpackRefusedError) {
+              console.warn(
+                'Leaving group node unconverted: a member type could not be created in this graph',
+                error
+              )
+              return
+            }
             console.error(
               'Failed to convert stray group node to subgraph',
               error

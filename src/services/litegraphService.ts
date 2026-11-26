@@ -106,7 +106,10 @@ import { getOrderedInputSpecs } from '@/workbench/utils/nodeDefOrderingUtil'
 import { useExtensionService } from '@/platform/extensions/services/extensionService'
 import type { GraphOrSubgraph } from '@comfyorg/graph-model/entityRegistry'
 import { reportError } from '@comfyorg/telemetry/reportError'
-import { NODE_CREATION_GRAPH_FACTORY } from '@/lib/litegraph/src/LiteGraphGlobal'
+import {
+  NODE_CREATION_GRAPH_FACTORY,
+  NODE_CREATION_TARGET_SUBGRAPH_ID
+} from '@/lib/litegraph/src/LiteGraphGlobal'
 
 interface SubgraphNodeRegistration {
   nodeDef: ComfyNodeDefImpl
@@ -145,6 +148,19 @@ function shouldReportMissingSubgraphTarget(
   }
   reported.add(subgraphId)
   return true
+}
+
+function reportMissingSubgraphTarget(rootGraph: LGraph, subgraphId: string) {
+  if (!shouldReportMissingSubgraphTarget(rootGraph, subgraphId)) return
+  reportError(
+    new Error('Subgraph node type is missing from the target graph'),
+    {
+      errorType: 'failure_creating_subgraph_node_target_missing',
+      surface: 'graph',
+      context: { subgraphId, rootGraphId: rootGraph.id },
+      sentryMode: 'once_per_page'
+    }
+  )
 }
 
 function subgraphNodeRegistration(
@@ -485,6 +501,7 @@ export const useLitegraphService = () => {
       static override title: string
       static override category: string
       static override nodeData: ComfyNodeDefV1 & ComfyNodeDefV2
+      static [NODE_CREATION_TARGET_SUBGRAPH_ID] = subgraphId
 
       static [NODE_CREATION_GRAPH_FACTORY](
         title: string,
@@ -492,17 +509,7 @@ export const useLitegraphService = () => {
       ): SubgraphNode | null {
         const ownedSubgraph = graph.rootGraph.subgraphs.get(subgraphId)
         if (!ownedSubgraph) {
-          if (shouldReportMissingSubgraphTarget(graph.rootGraph, subgraphId)) {
-            reportError(
-              new Error('Subgraph node type is missing from the target graph'),
-              {
-                errorType: 'failure_creating_subgraph_node_target_missing',
-                surface: 'graph',
-                context: { subgraphId, rootGraphId: graph.rootGraph.id },
-                sentryMode: 'once_per_page'
-              }
-            )
-          }
+          reportMissingSubgraphTarget(graph.rootGraph, subgraphId)
           return null
         }
         const context: SubgraphConstructionContext = {
@@ -1083,6 +1090,7 @@ export const useLitegraphService = () => {
   return {
     registerNodeDef,
     registerSubgraphNodeDef,
+    reportMissingSubgraphTarget,
     addNodeOnGraph,
     addNodeInput,
     getCanvasCenter,
