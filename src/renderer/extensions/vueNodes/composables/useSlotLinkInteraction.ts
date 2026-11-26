@@ -863,7 +863,9 @@ export function useSlotLinkInteraction({
         capture: true
       })
     )
-    const targetType: 'input' | 'output' = type === 'input' ? 'output' : 'input'
+    const targetType =
+      activeAdapter.linkConnector.state.connectingTo ??
+      (type === 'input' ? 'output' : 'input')
     clearCompatible()
     for (const candidateNode of graph.nodes) {
       const slots =
