@@ -170,13 +170,13 @@ describe('PlatformFrameHost', () => {
       name: 'Pre-install models to run this workflow'
     })
     expect(dialog).toHaveClass('max-w-180')
-    expect(dialog).not.toHaveClass('max-w-7xl')
+    expect(dialog).not.toHaveClass('max-w-280')
     expect(screen.getByTestId('platform-frame').getAttribute('src')).toMatch(
       /^https:\/\/platform\.comfy\.org\/embed\/custom-deployment\?step=preinstall&.*deployment=dep-1/
     )
   })
 
-  it('fills the viewport less a 24px margin, up to 1280 by 1024, on the other screens', async () => {
+  it('fills the viewport less a 24px margin, up to 1120 by 1024, on the other screens', async () => {
     renderHost()
     usePlatformFrameStore().open(
       { step: 'update', deploymentId: 'dep-1' },
@@ -190,7 +190,7 @@ describe('PlatformFrameHost', () => {
       'h-[calc(100dvh-3rem)]',
       'max-h-256',
       'w-[calc(100vw-3rem)]',
-      'max-w-7xl'
+      'max-w-280'
     )
   })
 
