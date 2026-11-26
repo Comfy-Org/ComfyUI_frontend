@@ -7,7 +7,7 @@
       {{ title }}
     </template>
 
-    <p class="m-0">{{ message }}</p>
+    <p class="m-0 wrap-break-word">{{ message }}</p>
     <ul class="m-0 max-h-48 list-disc overflow-y-auto ps-5 break-all">
       <li v-for="item of itemList" :key="item">{{ item }}</li>
     </ul>

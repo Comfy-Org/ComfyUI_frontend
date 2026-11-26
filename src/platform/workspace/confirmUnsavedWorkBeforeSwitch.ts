@@ -32,10 +32,23 @@ export interface UnsavedWorkPrompt {
   reload?: boolean
 }
 
+let askInFlight: Promise<boolean> | null = null
+
 /** Asks to save unsaved workflows before a switch or reload; false to stay put. */
-export async function confirmUnsavedWorkBeforeSwitch(
+export function confirmUnsavedWorkBeforeSwitch(
   deployment: string,
-  { reload = false }: UnsavedWorkPrompt = {}
+  prompt: UnsavedWorkPrompt = {}
+): Promise<boolean> {
+  if (askInFlight) return Promise.resolve(false)
+  askInFlight = askThenSave(deployment, prompt).finally(() => {
+    askInFlight = null
+  })
+  return askInFlight
+}
+
+async function askThenSave(
+  deployment: string,
+  { reload = false }: UnsavedWorkPrompt
 ): Promise<boolean> {
   const workflows = unsavedWorkflows()
   if (workflows.length === 0) return true

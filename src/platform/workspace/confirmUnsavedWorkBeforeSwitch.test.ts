@@ -128,4 +128,35 @@ describe('confirmUnsavedWorkBeforeSwitch', () => {
     expect(await confirmUnsavedWorkBeforeSwitch('Comfy Cloud')).toBe(false)
     expect(savedWorkflows()).toEqual([portrait])
   })
+
+  it('stays put on a second ask while the first is still asking or saving', async () => {
+    let answer: (result: boolean) => void = () => {}
+    vi.mocked(showUnsavedWorkDialog).mockReturnValueOnce(
+      new Promise((resolve) => {
+        answer = resolve
+      })
+    )
+
+    const first = confirmUnsavedWorkBeforeSwitch('Comfy Cloud', {
+      reload: true
+    })
+    const second = confirmUnsavedWorkBeforeSwitch('Comfy Cloud', {
+      reload: true
+    })
+    answer(true)
+
+    expect(await second).toBe(false)
+    expect(await first).toBe(true)
+    expect(showUnsavedWorkDialog).toHaveBeenCalledOnce()
+    expect(savedWorkflows()).toEqual([portrait, upscale])
+  })
+
+  it('asks again once the first ask has settled', async () => {
+    vi.mocked(showUnsavedWorkDialog).mockResolvedValue(null)
+
+    await confirmUnsavedWorkBeforeSwitch('Comfy Cloud')
+    await confirmUnsavedWorkBeforeSwitch('Comfy Cloud')
+
+    expect(showUnsavedWorkDialog).toHaveBeenCalledTimes(2)
+  })
 })
