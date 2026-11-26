@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, nextTick, ref } from 'vue'
+import { computed, defineComponent, nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
 
 import { render } from '@testing-library/vue'
@@ -125,9 +125,11 @@ import {
   useAgentPageSession
 } from '@/workbench/extensions/agent/agentPageSession'
 import { createAgentEventSource } from '@/workbench/extensions/agent/services/agent/agentEventSource'
+import { hasUnsyncedHumanOps } from './unsyncedHumanOps'
 
 const DOC_A = 'a4b8c2d6-1e30-4f59-8b7a-2c9d0e5f1a63'
 const DOC_B = 'b7e1f093-45ac-4d12-9e68-3f1a7c0d2b85'
+const DOC_C = 'c9a4d1e2-6b78-4f30-a123-4e5f6a7b8c9d'
 
 function deleteNode(nodeId: string): GraphOperation {
   return { op: 'delete_node', node_id: nodeId, removed_links: [] }
@@ -308,5 +310,59 @@ describe('FRONT-3582 stage 1b: the document owns the follower session', () => {
 
     expect(bridgeState.built[0].destroy).toHaveBeenCalled()
     expect(heldAgentFollowerDocumentIds()).toEqual([])
+  })
+
+  it('keeps held operations intact when active tab and workflowId restore in the same tick', async () => {
+    const transport = createFakeAgentSocket().transport
+    const activeTab = ref(true)
+    const workflowId = ref<string | null>(DOC_C)
+    const isTargetActive = computed(
+      () => workflowId.value !== null && activeTab.value
+    )
+    let followerApi: ReturnType<typeof useAgentCrdtFollower> | undefined
+    const host = defineComponent({
+      setup() {
+        followerApi = useAgentCrdtFollower(workflowId, {
+          transport,
+          isTargetActive
+        })
+        return () => null
+      }
+    })
+    const panel = render(host)
+    retainAgentFollowerSessionsForPage(transport)
+    await nextTick()
+
+    followerApi?.enqueueHumanOperations([deleteNode('held-same-tick')])
+    await Promise.resolve()
+    expect(clientState.sent).toHaveLength(1)
+    expect(hasUnsyncedHumanOps(DOC_C)).toBe(true)
+
+    activeTab.value = false
+    workflowId.value = null
+    await nextTick()
+    expect(followerApi?.canResumeHeldWorkflow(DOC_C)).toBe(true)
+
+    activeTab.value = true
+    workflowId.value = DOC_C
+    await nextTick()
+
+    expect(bridgeState.built[0].subscribedWorkflowId).toBe(DOC_C)
+    expect(bridgeState.built[0].unsubscribe).toHaveBeenCalledTimes(1)
+    expect(bridgeState.built[0].subscribe).toHaveBeenCalledTimes(2)
+    bridgeState.built[0].dispatchEvent(
+      new CustomEvent('doc_ops_result', {
+        detail: {
+          ok: true,
+          workflowId: DOC_C,
+          seq: 1,
+          applied: clientState.sent[0].ops.map(({ op_id }) => op_id),
+          skipped: [],
+          lwwDropped: []
+        }
+      })
+    )
+    expect(hasUnsyncedHumanOps(DOC_C)).toBe(false)
+    panel.unmount()
   })
 })

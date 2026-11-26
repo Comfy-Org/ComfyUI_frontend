@@ -1,4 +1,4 @@
-import type { Point2D, Size2D } from '@comfyorg/shared-frontend-utils/geometry'
+import type { Point2D } from '@comfyorg/shared-frontend-utils/geometry'
 import { computed } from 'vue'
 
 import { snapPoint } from '@/lib/litegraph/src/measure'
@@ -25,22 +25,10 @@ export function useNodeSnap() {
     return { ...position }
   }
 
-  function applySnapToSize(size: Size2D): Size2D {
-    const gridSizeValue = gridSize.value
-    if (!gridSizeValue) return { ...size }
-
-    const sizeArray: [number, number] = [size.width, size.height]
-    if (snapPoint(sizeArray, gridSizeValue, 'ceil')) {
-      return { width: sizeArray[0], height: sizeArray[1] }
-    }
-    return { ...size }
-  }
-
   return {
     gridSize,
     alwaysSnap,
     shouldSnap,
-    applySnapToPosition,
-    applySnapToSize
+    applySnapToPosition
   }
 }

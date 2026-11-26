@@ -388,11 +388,6 @@
       "count": 1
     }
   },
-  "src/lib/litegraph/src/utils/arrange.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 1
-    }
-  },
   "src/lib/litegraph/src/widgets/widgetMap.ts": {
     "comfy/no-positional-boolean-params": {
       "count": 1

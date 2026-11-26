@@ -15,7 +15,12 @@ import {
   screenshotRegion
 } from '@e2e/fixtures/utils/screenshotRegion'
 
-test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
+test.use({
+  initialSettings: {
+    'Comfy.UseNewMenu': 'Disabled',
+    'Comfy.Canvas.SmartGuides.Enabled': false
+  }
+})
 
 test.describe('Combo text widget', { tag: ['@screenshot', '@widget'] }, () => {
   test('Truncates text when resized', async ({ comfyPage }) => {

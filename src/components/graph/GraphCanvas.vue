@@ -42,6 +42,8 @@
       :delay-duration="settingStore.get('LiteGraph.Node.TooltipDelay')"
     />
     <SelectionRectangle v-if="comfyAppReady" />
+    <SmartGuidesOverlay v-if="comfyAppReady" />
+    <DistributeGapHandles v-if="comfyAppReady" />
     <NodeTooltip v-if="tooltipEnabled" />
     <NodeSearchboxPopover ref="nodeSearchboxPopoverRef" />
     <NodeDragPreview />
@@ -225,6 +227,9 @@ import { forEachNode } from '@/utils/graphTraversalUtil'
 import { isSubgraph } from '@/utils/typeGuardUtil'
 
 import SelectionRectangle from './SelectionRectangle.vue'
+import SmartGuidesOverlay from './SmartGuidesOverlay.vue'
+import DistributeGapHandles from './DistributeGapHandles.vue'
+import { useSmartGuides } from '@/renderer/core/canvas/smartGuides/useSmartGuides'
 import { useUrlActionLoaders } from '@/composables/useUrlActionLoaders'
 
 const { t } = useI18n()
@@ -518,6 +523,7 @@ useCanvasDrop(canvasRef)
 useCanvasDrop(vueNodeDropTarget)
 useLitegraphSettings()
 useNodeBadge()
+useSmartGuides()
 useNodeEmphasis()
 useTextPreviewSystem()
 
