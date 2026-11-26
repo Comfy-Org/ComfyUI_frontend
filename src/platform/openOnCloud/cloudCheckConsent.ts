@@ -12,9 +12,58 @@ export const CLOUD_CHECK_CONSENT_SAVE_TIMEOUT_MS = 10_000
 export const PENDING_ASK_AGAIN_KEY =
   'Comfy.Cloud.AskBeforeCompatibilityCheck.PendingRestore'
 
+export const LATEST_CHOICE_KEY =
+  'Comfy.Cloud.AskBeforeCompatibilityCheck.LatestChoice'
+
+interface LatestChoice {
+  askBeforeCheck: boolean
+  revision: number
+}
+
 let pendingSave: Promise<void> = Promise.resolve()
 let unsettledLateWrites = 0
-let latestRevision = 0
+let choiceInThisTab: LatestChoice | undefined
+
+function parseLatestChoice(raw: string | null): LatestChoice | undefined {
+  if (!raw) return undefined
+  try {
+    const parsed: unknown = JSON.parse(raw)
+    if (
+      typeof parsed === 'object' &&
+      parsed !== null &&
+      'askBeforeCheck' in parsed &&
+      'revision' in parsed &&
+      typeof parsed.askBeforeCheck === 'boolean' &&
+      typeof parsed.revision === 'number'
+    )
+      return {
+        askBeforeCheck: parsed.askBeforeCheck,
+        revision: parsed.revision
+      }
+  } catch {
+    return undefined
+  }
+  return undefined
+}
+
+function readLatestChoice(): LatestChoice | undefined {
+  const shared = parseLatestChoice(safeLocalStorage.getItem(LATEST_CHOICE_KEY))
+  if (!shared) return choiceInThisTab
+  if (!choiceInThisTab || shared.revision >= choiceInThisTab.revision)
+    return shared
+  return choiceInThisTab
+}
+
+function recordNewChoice(askBeforeCheck: boolean): LatestChoice {
+  const previousRevision = readLatestChoice()?.revision ?? 0
+  const choice = {
+    askBeforeCheck,
+    revision: Math.max(Date.now(), previousRevision + 1)
+  }
+  choiceInThisTab = choice
+  safeLocalStorage.setItem(LATEST_CHOICE_KEY, JSON.stringify(choice))
+  return choice
+}
 
 function hasPendingAskAgain() {
   return safeLocalStorage.getItem(PENDING_ASK_AGAIN_KEY) === 'true'
@@ -31,14 +80,20 @@ export function skipsCloudCheckQuestion() {
     return false
   }
   const savedAsk: unknown = useSettingStore().get(ASK_BEFORE_CLOUD_CHECK)
-  return savedAsk === false
+  const latestAsk = readLatestChoice()?.askBeforeCheck ?? false
+  return savedAsk === false && !latestAsk
 }
 
 function isLatestChoice(askBeforeCheck: boolean, revision: number) {
-  return revision === latestRevision && isCurrentChoice(askBeforeCheck)
+  const latest = readLatestChoice()
+  return (
+    latest?.revision === revision && latest.askBeforeCheck === askBeforeCheck
+  )
 }
 
 function isCurrentChoice(askBeforeCheck: boolean) {
+  const latest = readLatestChoice()
+  if (latest) return latest.askBeforeCheck === askBeforeCheck
   return useSettingStore().get(ASK_BEFORE_CLOUD_CHECK) === askBeforeCheck
 }
 
@@ -57,8 +112,13 @@ function queueSave(
 }
 
 function resendLatestChoice() {
-  const latestChoice: boolean = useSettingStore().get(ASK_BEFORE_CLOUD_CHECK)
-  void queueSave(latestChoice, latestRevision, Promise.resolve())
+  const latest = readLatestChoice()
+  if (!latest) return
+  const appliedLocally = useSettingStore().applySettingLocally(
+    ASK_BEFORE_CLOUD_CHECK,
+    latest.askBeforeCheck
+  )
+  void queueSave(latest.askBeforeCheck, latest.revision, appliedLocally)
 }
 
 async function storeAskBeforeCloudCheck(
@@ -122,7 +182,7 @@ async function persistAskBeforeCloudCheck(
 ) {
   try {
     await appliedLocally
-    if (!isCurrentChoice(askBeforeCheck)) return
+    if (!isLatestChoice(askBeforeCheck, revision)) return
     const failure = await storeAskBeforeCloudCheck(askBeforeCheck, revision)
     if (failure) {
       reportSaveFailure(failure, askBeforeCheck)
@@ -145,6 +205,6 @@ export function saveAskBeforeCloudCheck(askBeforeCheck: boolean) {
     ASK_BEFORE_CLOUD_CHECK,
     askBeforeCheck
   )
-  latestRevision += 1
-  return queueSave(askBeforeCheck, latestRevision, appliedLocally)
+  const { revision } = recordNewChoice(askBeforeCheck)
+  return queueSave(askBeforeCheck, revision, appliedLocally)
 }
