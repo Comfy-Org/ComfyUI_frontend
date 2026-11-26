@@ -176,6 +176,26 @@ describe('PlatformFrameHost', () => {
     )
   })
 
+  it('fits the pre-install frame to the height Platform asks for', async () => {
+    renderHost()
+    const store = usePlatformFrameStore()
+    store.open({ step: 'preinstall', deploymentId: 'dep-1' }, 'preinstall')
+    store.contentHeight = 304
+    await nextTick()
+
+    expect(screen.getByTestId('platform-frame-host').style.height).toBe('304px')
+  })
+
+  it('keeps the full frame for the other steps', async () => {
+    renderHost()
+    const store = usePlatformFrameStore()
+    store.open({ step: 'new' }, 'extensions')
+    store.contentHeight = 304
+    await nextTick()
+
+    expect(screen.getByTestId('platform-frame-host').style.height).toBe('')
+  })
+
   it('follows a build kept from before the editor reloaded, with the frame hidden', async () => {
     keepBuild({ ...KEPT, startedAt: Date.now() })
     renderHost()

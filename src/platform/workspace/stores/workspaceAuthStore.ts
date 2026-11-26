@@ -698,7 +698,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     refusalCode?: string
   ): boolean {
     const hadContext = currentWorkspace.value !== null
-    const cancelWorkflowTransition =
+    const workflowFence =
       isCloud && hadContext ? prepareWorkflowWorkspaceTransition() : undefined
     // A reload would take down the SSO-required screen this refusal opens.
     if (
@@ -708,7 +708,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       })
     ) {
       clearWorkspaceContext()
-      cancelWorkflowTransition?.()
+      workflowFence?.release()
       return false
     }
     const revokedWorkspaceHandled = revokedWorkspaceId
@@ -724,7 +724,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       window.location.reload()
       return false
     }
-    cancelWorkflowTransition?.()
+    workflowFence?.release()
     return !isCloud && revokedWorkspaceHandled
   }
 

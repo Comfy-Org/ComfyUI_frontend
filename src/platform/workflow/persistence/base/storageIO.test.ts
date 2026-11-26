@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { reportError } from '@comfyorg/telemetry/reportError'
+
 import type { DraftIndexV2, DraftPayloadV2 } from './draftTypes'
 import {
   clearActivePath,
@@ -22,6 +24,8 @@ import {
   writeOpenPaths,
   writePayload
 } from './storageIO'
+
+vi.mock(import('@comfyorg/telemetry/reportError'), { spy: true })
 
 describe('storageIO', () => {
   beforeEach(() => {
@@ -645,12 +649,18 @@ describe('storageIO', () => {
         'Storage unavailable',
         'SecurityError'
       )
-      const unregisterFailedFlush =
-        isolatedStorageIO.registerWorkflowPersistenceFlush(() => {
+      isolatedStorageIO.registerWorkflowPersistence({
+        flush: () => {
           throw flushError
-        })
-      const unregisterSuccessfulFlush =
-        isolatedStorageIO.registerWorkflowPersistenceFlush(successfulFlush)
+        },
+        cancel: () => {},
+        resumeAfterAbort: () => {}
+      })
+      isolatedStorageIO.registerWorkflowPersistence({
+        flush: successfulFlush,
+        cancel: () => {},
+        resumeAfterAbort: () => {}
+      })
 
       expect(() =>
         isolatedStorageIO.prepareWorkflowWorkspaceTransition()
@@ -658,12 +668,11 @@ describe('storageIO', () => {
 
       expect(successfulFlush).toHaveBeenCalledOnce()
       expect(localStorage.getItem('workflow')).toBeNull()
-      expect(console.warn).toHaveBeenCalledWith(
-        'Failed to flush pending workflow persistence',
-        flushError
-      )
-      unregisterFailedFlush()
-      unregisterSuccessfulFlush()
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(flushError, {
+        surface: 'workspace',
+        errorType: 'failure_flushing_workflow_persistence',
+        level: 'error'
+      })
     })
 
     it('resumes writes when a workspace transition is cancelled', async () => {
@@ -678,7 +687,7 @@ describe('storageIO', () => {
         })
       ).toBe(false)
 
-      cancelTransition()
+      cancelTransition.release()
 
       expect(
         isolatedStorageIO.writePayload('ws-1', 'resumed', {
@@ -694,7 +703,7 @@ describe('storageIO', () => {
       isolatedStorageIO.markStorageUnavailable()
       const cancelTransition =
         isolatedStorageIO.prepareWorkflowWorkspaceTransition()
-      cancelTransition()
+      cancelTransition.release()
 
       expect(isolatedStorageIO.isStorageAvailable()).toBe(false)
       expect(
@@ -705,15 +714,18 @@ describe('storageIO', () => {
       ).toBe(false)
     })
 
-    it('only resumes logout transitions after authentication recovers', async () => {
+    it('keeps a workspace transition fenced when logout completes', async () => {
       const isolatedStorageIO = await import('./storageIO')
 
-      isolatedStorageIO.prepareWorkflowWorkspaceTransition()
-      isolatedStorageIO.completeWorkflowLogoutTransition()
+      const cancelWorkspaceTransition =
+        isolatedStorageIO.prepareWorkflowWorkspaceTransition()
       expect(isolatedStorageIO.isStorageAvailable()).toBe(false)
 
-      isolatedStorageIO.prepareWorkflowLogoutTransition()
-      isolatedStorageIO.completeWorkflowLogoutTransition()
+      const transition = isolatedStorageIO.prepareWorkflowLogoutTransition()
+      transition.release()
+
+      expect(isolatedStorageIO.isStorageAvailable()).toBe(false)
+      cancelWorkspaceTransition.release()
 
       expect(isolatedStorageIO.isStorageAvailable()).toBe(true)
     })
@@ -722,10 +734,212 @@ describe('storageIO', () => {
       const isolatedStorageIO = await import('./storageIO')
 
       isolatedStorageIO.markStorageUnavailable()
-      isolatedStorageIO.prepareWorkflowLogoutTransition()
-      isolatedStorageIO.completeWorkflowLogoutTransition()
+      const transition = isolatedStorageIO.prepareWorkflowLogoutTransition()
+      transition.release()
 
       expect(isolatedStorageIO.isStorageAvailable()).toBe(false)
+    })
+
+    it('fences logout writes before cancelling pending persistence', async () => {
+      const isolatedStorageIO = await import('./storageIO')
+      const writesDuringCancel: boolean[] = []
+      isolatedStorageIO.registerWorkflowPersistence({
+        flush: () => {},
+        cancel: () =>
+          writesDuringCancel.push(
+            isolatedStorageIO.writePayload('ws-1', 'stale', {
+              data: '{}',
+              updatedAt: 1
+            })
+          ),
+        resumeAfterAbort: () => {}
+      })
+
+      isolatedStorageIO.prepareWorkflowLogoutTransition()
+
+      expect(writesDuringCancel).toEqual([false])
+    })
+
+    it('reports cancellation failure once and keeps logout writes fenced', async () => {
+      const isolatedStorageIO = await import('./storageIO')
+      const error = new DOMException('Cancellation failed', 'AbortError')
+      const successfulCancel = vi.fn()
+      isolatedStorageIO.registerWorkflowPersistence({
+        flush: () => {},
+        cancel: () => {
+          throw error
+        },
+        resumeAfterAbort: () => {}
+      })
+      isolatedStorageIO.registerWorkflowPersistence({
+        flush: () => {},
+        cancel: successfulCancel,
+        resumeAfterAbort: () => {}
+      })
+
+      expect(() =>
+        isolatedStorageIO.prepareWorkflowLogoutTransition()
+      ).not.toThrow()
+
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(error, {
+        surface: 'workspace',
+        errorType: 'failure_cancelling_workflow_persistence',
+        level: 'error'
+      })
+      expect(isolatedStorageIO.isStorageAvailable()).toBe(false)
+      expect(successfulCancel).toHaveBeenCalledOnce()
+    })
+
+    it('resumes only after every live logout transition settles', async () => {
+      const isolatedStorageIO = await import('./storageIO')
+      const resumeAfterAbort = vi.fn()
+      isolatedStorageIO.registerWorkflowPersistence({
+        flush: () => {},
+        cancel: () => {},
+        resumeAfterAbort
+      })
+
+      const accountSwitch = isolatedStorageIO.prepareWorkflowLogoutTransition()
+      const failedLogout = isolatedStorageIO.prepareWorkflowLogoutTransition()
+      accountSwitch.release()
+      expect(failedLogout.releaseAndResumePersistence()).toBe(true)
+      expect(isolatedStorageIO.isStorageAvailable()).toBe(true)
+      expect(resumeAfterAbort).toHaveBeenCalledOnce()
+    })
+
+    it('keeps overlapping failed logouts fenced until the last abort', async () => {
+      const isolatedStorageIO = await import('./storageIO')
+      const resumeAfterAbort = vi.fn()
+      isolatedStorageIO.registerWorkflowPersistence({
+        flush: () => {},
+        cancel: () => {},
+        resumeAfterAbort
+      })
+
+      const firstLogout = isolatedStorageIO.prepareWorkflowLogoutTransition()
+      const secondLogout = isolatedStorageIO.prepareWorkflowLogoutTransition()
+
+      expect(firstLogout.releaseAndResumePersistence()).toBe(false)
+      expect(isolatedStorageIO.isStorageAvailable()).toBe(false)
+      expect(resumeAfterAbort).not.toHaveBeenCalled()
+
+      expect(secondLogout.releaseAndResumePersistence()).toBe(true)
+      expect(isolatedStorageIO.isStorageAvailable()).toBe(true)
+      expect(resumeAfterAbort).toHaveBeenCalledOnce()
+    })
+
+    it('keeps a workspace fence when an overlapping logout aborts', async () => {
+      const isolatedStorageIO = await import('./storageIO')
+      const cancelWorkspaceTransition =
+        isolatedStorageIO.prepareWorkflowWorkspaceTransition()
+      const logoutTransition =
+        isolatedStorageIO.prepareWorkflowLogoutTransition()
+
+      expect(logoutTransition.releaseAndResumePersistence()).toBe(false)
+      expect(isolatedStorageIO.isStorageAvailable()).toBe(false)
+
+      cancelWorkspaceTransition.release()
+      expect(isolatedStorageIO.isStorageAvailable()).toBe(true)
+    })
+
+    it('reports resume failure and continues remaining abort recovery', async () => {
+      const isolatedStorageIO = await import('./storageIO')
+      const error = new DOMException('Resume failed', 'QuotaExceededError')
+      const successfulResume = vi.fn()
+      isolatedStorageIO.registerWorkflowPersistence({
+        flush: () => {},
+        cancel: () => {},
+        resumeAfterAbort: () => {
+          throw error
+        }
+      })
+      isolatedStorageIO.registerWorkflowPersistence({
+        flush: () => {},
+        cancel: () => {},
+        resumeAfterAbort: successfulResume
+      })
+      const transition = isolatedStorageIO.prepareWorkflowLogoutTransition()
+
+      expect(transition.releaseAndResumePersistence()).toBe(true)
+
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(error, {
+        surface: 'workspace',
+        errorType: 'failure_resuming_workflow_persistence',
+        level: 'error'
+      })
+      expect(successfulResume).toHaveBeenCalledOnce()
+    })
+
+    it('releases an auth-state fence without releasing an owned logout', async () => {
+      const isolatedStorageIO = await import('./storageIO')
+      const logoutTransition =
+        isolatedStorageIO.prepareWorkflowLogoutTransition()
+      isolatedStorageIO.fenceWorkflowStorageForAuthState()
+
+      isolatedStorageIO.releaseWorkflowStorageAuthFence()
+      expect(isolatedStorageIO.isStorageAvailable()).toBe(false)
+
+      logoutTransition.release()
+      expect(isolatedStorageIO.isStorageAvailable()).toBe(true)
+    })
+
+    it('holds a repeated auth-state fence as one owner', async () => {
+      const isolatedStorageIO = await import('./storageIO')
+
+      const firstOwner = isolatedStorageIO.fenceWorkflowStorageForAuthState()
+      const repeatedOwner = isolatedStorageIO.fenceWorkflowStorageForAuthState()
+
+      expect(repeatedOwner).toBe(firstOwner)
+      isolatedStorageIO.releaseWorkflowStorageAuthFence()
+      expect(isolatedStorageIO.isStorageAvailable()).toBe(true)
+    })
+
+    it('does not let a stale auth owner abort a newer fence', async () => {
+      const isolatedStorageIO = await import('./storageIO')
+      const staleOwner = isolatedStorageIO.fenceWorkflowStorageForAuthState()
+      isolatedStorageIO.releaseWorkflowStorageAuthFence(staleOwner)
+      isolatedStorageIO.fenceWorkflowStorageForAuthState()
+
+      expect(isolatedStorageIO.abortWorkflowStorageAuthFence(staleOwner)).toBe(
+        false
+      )
+      expect(isolatedStorageIO.isStorageAvailable()).toBe(false)
+    })
+
+    it('fences again after an auth-state fence is released', async () => {
+      const isolatedStorageIO = await import('./storageIO')
+      isolatedStorageIO.fenceWorkflowStorageForAuthState()
+      isolatedStorageIO.releaseWorkflowStorageAuthFence()
+
+      isolatedStorageIO.fenceWorkflowStorageForAuthState()
+
+      expect(isolatedStorageIO.isStorageAvailable()).toBe(false)
+    })
+
+    it('blocks reads while a logout transition is in flight', async () => {
+      const isolatedStorageIO = await import('./storageIO')
+
+      isolatedStorageIO.writePayload('ws-1', 'draft', {
+        data: '{}',
+        updatedAt: 1
+      })
+      isolatedStorageIO.prepareWorkflowLogoutTransition()
+
+      expect(isolatedStorageIO.readPayload('ws-1', 'draft')).toBeNull()
+      expect(isolatedStorageIO.getPayloadKeys('ws-1')).toEqual([])
+    })
+
+    it('blocks reads when a logout overlaps a workspace transition', async () => {
+      const isolatedStorageIO = await import('./storageIO')
+      isolatedStorageIO.writePayload('ws-1', 'draft', {
+        data: '{}',
+        updatedAt: 1
+      })
+      isolatedStorageIO.prepareWorkflowWorkspaceTransition()
+
+      isolatedStorageIO.prepareWorkflowLogoutTransition()
+
+      expect(isolatedStorageIO.readPayload('ws-1', 'draft')).toBeNull()
     })
 
     it('does not let a duplicate transition cancel the owner transition', async () => {
@@ -734,10 +948,10 @@ describe('storageIO', () => {
       const cancelOwner = isolatedStorageIO.prepareWorkflowWorkspaceTransition()
       const cancelDuplicate =
         isolatedStorageIO.prepareWorkflowWorkspaceTransition()
-      cancelDuplicate()
+      cancelDuplicate.release()
       expect(isolatedStorageIO.isStorageAvailable()).toBe(false)
 
-      cancelOwner()
+      cancelOwner.release()
       expect(isolatedStorageIO.isStorageAvailable()).toBe(true)
     })
 
@@ -753,7 +967,7 @@ describe('storageIO', () => {
 
       expect(isolatedStorageIO.readPayload('ws-1', 'draft')).not.toBeNull()
       expect(isolatedStorageIO.getPayloadKeys('ws-1')).toContain('draft')
-      cancelTransition()
+      cancelTransition.release()
     })
   })
 

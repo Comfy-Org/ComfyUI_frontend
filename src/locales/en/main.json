@@ -4865,6 +4865,7 @@
   "assetBrowser": {
     "library": "Library",
     "errorLoadingModels": "Some models couldn’t load. Reopen the Model Library to try again.",
+    "useDisabledNoProvider": "This model type is not supported yet",
     "allCategory": "All {category}",
     "allModels": "All Models",
     "byType": "By type",
