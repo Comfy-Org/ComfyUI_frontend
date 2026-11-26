@@ -1126,9 +1126,6 @@ describe('LiveGraphApplier', () => {
     if (placeholder) placeholder.pos = [777, 888]
 
     LiteGraph.registerNodeType(type, TestLateRegistration)
-    onTestFinished(() => {
-      delete LiteGraph.registered_node_types[type]
-    })
     applyEdit(() => {
       nodesMap(doc).set(
         '1',
@@ -1181,9 +1178,6 @@ describe('LiveGraphApplier', () => {
       }
     }
     LiteGraph.registerNodeType(type, fromPartial(ForeignSubgraphNode))
-    onTestFinished(() => {
-      delete LiteGraph.registered_node_types[type]
-    })
     const docNode = (pos: [number, number]) => ({
       id: 1,
       type,
@@ -1238,7 +1232,6 @@ describe('LiveGraphApplier', () => {
     LiteGraph.catch_exceptions = false
     onTestFinished(() => {
       LiteGraph.catch_exceptions = true
-      delete LiteGraph.registered_node_types[type]
     })
     applyEdit(() => {
       nodesMap(doc).set(

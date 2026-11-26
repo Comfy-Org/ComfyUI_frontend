@@ -1,4 +1,4 @@
-import { expect, it, onTestFinished, vi } from 'vitest'
+import { expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 
@@ -24,10 +24,6 @@ it('keeps clipboard indices stable when a target graph refuses a node', () => {
   const missingType = 'test/vintage-missing-subgraph'
   LiteGraph.registerNodeType(sourceType, VintageSource)
   LiteGraph.registerNodeType(sinkType, VintageSink)
-  onTestFinished(() => {
-    delete LiteGraph.registered_node_types[sourceType]
-    delete LiteGraph.registered_node_types[sinkType]
-  })
   vi.mocked(console.warn).mockImplementation(() => {})
   const graph = new LGraph()
   const node = (id: number, type: string, x: number) => ({
