@@ -40,6 +40,7 @@ import type {
   GraphAddOptions,
   IContextMenuValue,
   INodeInputSlot,
+  LGraph,
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
 import { markNodeMenuCallback } from '@/lib/litegraph/src/types/nodeMenu'
@@ -116,6 +117,27 @@ const subgraphNodeRegistrations = new WeakMap<
   Subgraph,
   SubgraphNodeRegistration
 >()
+const missingSubgraphTargetReports = new WeakMap<LGraph, Set<string>>()
+const MAX_MISSING_SUBGRAPH_TARGET_REPORTS_PER_GRAPH = 25
+
+function shouldReportMissingSubgraphTarget(
+  rootGraph: LGraph,
+  subgraphId: string
+): boolean {
+  let reported = missingSubgraphTargetReports.get(rootGraph)
+  if (!reported) {
+    reported = new Set()
+    missingSubgraphTargetReports.set(rootGraph, reported)
+  }
+  if (
+    reported.has(subgraphId) ||
+    reported.size >= MAX_MISSING_SUBGRAPH_TARGET_REPORTS_PER_GRAPH
+  ) {
+    return false
+  }
+  reported.add(subgraphId)
+  return true
+}
 
 function subgraphNodeRegistration(
   subgraph: Subgraph
@@ -455,6 +477,28 @@ export const useLitegraphService = () => {
       static override category: string
       static override nodeData: ComfyNodeDefV1 & ComfyNodeDefV2
 
+      static [NODE_CREATION_GRAPH_FACTORY](
+        title: string,
+        graph: GraphOrSubgraph = useApp().rootGraph
+      ): SubgraphNode | null {
+        const ownedSubgraph = graph.rootGraph.subgraphs.get(subgraphId)
+        if (!ownedSubgraph) {
+          if (shouldReportMissingSubgraphTarget(graph.rootGraph, subgraphId)) {
+            reportError(
+              new Error('Subgraph node type is missing from the target graph'),
+              {
+                errorType: 'failure_creating_subgraph_node_target_missing',
+                surface: 'graph',
+                context: { subgraphId, rootGraphId: graph.rootGraph.id },
+                sentryMode: 'once_per_page'
+              }
+            )
+          }
+          return null
+        }
+        return new this(title, graph, ownedSubgraph)
+      }
+
       constructor(
         _title?: string,
         targetGraphOrType?: string | GraphOrSubgraph,
@@ -567,33 +611,6 @@ export const useLitegraphService = () => {
 
         super.configure(data)
       }
-    }
-
-    const graphAwareNode = node as typeof node & {
-      [NODE_CREATION_GRAPH_FACTORY]: (
-        title: string,
-        graph?: GraphOrSubgraph
-      ) => SubgraphNode | null
-    }
-    graphAwareNode[NODE_CREATION_GRAPH_FACTORY] = function (
-      this: typeof node,
-      title,
-      graph = useApp().rootGraph
-    ) {
-      const ownedSubgraph = graph.rootGraph.subgraphs.get(subgraphId)
-      if (!ownedSubgraph) {
-        reportError(
-          new Error('Subgraph node type is missing from the target graph'),
-          {
-            errorType: 'subgraph_node_target_missing',
-            surface: 'graph',
-            context: { subgraphId, rootGraphId: graph.rootGraph.id },
-            sentryMode: 'once_per_page'
-          }
-        )
-        return null
-      }
-      return new this(title, graph, ownedSubgraph)
     }
 
     addNodeContextMenuHandler(node)

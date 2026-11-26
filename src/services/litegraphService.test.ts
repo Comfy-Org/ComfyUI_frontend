@@ -1,14 +1,5 @@
 import { cloneDeep } from 'es-toolkit'
-import {
-  afterEach,
-  assert,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  onTestFinished,
-  vi
-} from 'vitest'
+import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock(import('@/scripts/app'))
 vi.mock(import('@comfyorg/telemetry/reportError'))
@@ -16,8 +7,7 @@ vi.mock(import('@comfyorg/telemetry/reportError'))
 import { i18n, mergeCustomNodesI18n } from '@/i18n'
 import type {
   ExportedSubgraphInstance,
-  IContextMenuValue,
-  UUID
+  IContextMenuValue
 } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph, SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import {
@@ -56,7 +46,7 @@ function createNodeDefV1(
   }
 }
 
-function subgraphInstanceData(type: UUID): ExportedSubgraphInstance {
+function subgraphInstanceData(type: string): ExportedSubgraphInstance {
   return {
     id: -1,
     type,
@@ -94,7 +84,7 @@ describe('useLitegraphService().registerNodeDef preview ownership', () => {
 
 describe('useLitegraphService().registerSubgraphNodeDef ownership', () => {
   it('binds a colliding subgraph type to the graph receiving the node', () => {
-    const subgraphId = '00000000-0000-4000-8000-000000000123' as UUID
+    const subgraphId = '00000000-0000-4000-8000-000000000123'
     const visibleGraph = createTestRootGraph()
     const backgroundGraph = createTestRootGraph()
     const visibleSubgraph = visibleGraph.createSubgraph(
@@ -130,10 +120,6 @@ describe('useLitegraphService().registerSubgraphNodeDef ownership', () => {
       properties: { definitionOwner: 'background' }
     }
     Reflect.set(app, 'rootGraph', visibleGraph)
-    onTestFinished(() => {
-      delete LiteGraph.registered_node_types[subgraphId]
-    })
-
     useLitegraphService().registerSubgraphNodeDef(
       visibleNodeDef,
       visibleSubgraph,
@@ -168,6 +154,11 @@ describe('useLitegraphService().registerSubgraphNodeDef ownership', () => {
       'backgroundOnly'
     ])
     expect(backgroundNode.properties.definitionOwner).toBe('background')
+    expect(Object.hasOwn(backgroundNode, 'targetGraph')).toBe(false)
+
+    const backgroundClone = backgroundNode.clone()
+    assert.instanceOf(backgroundClone, SubgraphNode)
+    expect(backgroundClone.subgraph).toBe(backgroundSubgraph)
 
     const restoredGraph = createTestRootGraph()
     restoredGraph.configure(backgroundGraph.serialize())
@@ -179,14 +170,11 @@ describe('useLitegraphService().registerSubgraphNodeDef ownership', () => {
   })
 
   it('constructs an extension subclass through the graph-aware factory', () => {
-    const subgraphId = '00000000-0000-4000-8000-000000000125' as UUID
+    const subgraphId = '00000000-0000-4000-8000-000000000125'
     const graph = createTestRootGraph()
     const subgraph = graph.createSubgraph(
       createTestSubgraphData({ id: subgraphId })
     )
-    onTestFinished(() => {
-      delete LiteGraph.registered_node_types[subgraphId]
-    })
     useLitegraphService().registerSubgraphNodeDef(
       createNodeDefV1({ name: subgraphId }),
       subgraph,
@@ -206,15 +194,12 @@ describe('useLitegraphService().registerSubgraphNodeDef ownership', () => {
   })
 
   it('reports and refuses a subgraph type missing from the target graph', () => {
-    const subgraphId = '00000000-0000-4000-8000-000000000124' as UUID
+    const subgraphId = '00000000-0000-4000-8000-000000000124'
     const ownerGraph = createTestRootGraph()
     const targetGraph = createTestRootGraph()
     const subgraph = ownerGraph.createSubgraph(
       createTestSubgraphData({ id: subgraphId })
     )
-    onTestFinished(() => {
-      delete LiteGraph.registered_node_types[subgraphId]
-    })
     useLitegraphService().registerSubgraphNodeDef(
       createNodeDefV1({ name: subgraphId }),
       subgraph,
@@ -224,10 +209,15 @@ describe('useLitegraphService().registerSubgraphNodeDef ownership', () => {
     const node = LiteGraph.createNode(subgraphId, undefined, {
       targetGraph
     })
+    const repeated = LiteGraph.createNode(subgraphId, undefined, {
+      targetGraph
+    })
 
     expect(node).toBeNull()
+    expect(repeated).toBeNull()
+    expect(reportError).toHaveBeenCalledOnce()
     expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
-      errorType: 'subgraph_node_target_missing',
+      errorType: 'failure_creating_subgraph_node_target_missing',
       surface: 'graph',
       context: { subgraphId, rootGraphId: targetGraph.id },
       sentryMode: 'once_per_page'
