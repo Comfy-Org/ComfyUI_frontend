@@ -3,12 +3,13 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { computed, nextTick, ref } from 'vue'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type { AssetItem } from '@comfyorg/assets-core/schema'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
-import type { OwnershipOption } from '@/platform/assets/types/filterTypes'
+import type { OwnershipOption } from '@comfyorg/assets-core/filtering'
+import { useWidgetSelectActions } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectActions'
 import { useWidgetSelectItems } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems'
 import type { UseWidgetSelectItemsOptions } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems'
-import { useAssetsStore } from '@/stores/assetsStore'
+import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
 import { api } from '@/scripts/api'
 import { isPaged, pagedItems } from '@/utils/pagedList'
 
@@ -143,28 +144,52 @@ describe('useWidgetSelectItems', () => {
     ])
   })
 
+  it('selects a hashed generated output by its local loader path', () => {
+    const previewUrl = '/api/assets/hashed-media/content'
+    storeAssets.flatOutput = [
+      makeOutput('hashed-media', 'storage-name.png', {
+        hash: `blake3:${'a'.repeat(64)}`,
+        loader_path: 'renders/day-2/storage-name.png',
+        display_name: 'Human label.png',
+        preview_url: previewUrl
+      })
+    ]
+    const modelValue = ref<string>()
+    const { dropdownItems, selectedSet } = useWidgetSelectItems(
+      createDefaultOptions({ modelValue, filterSelected: 'outputs' })
+    )
+    const { updateSelectedItems } = useWidgetSelectActions({
+      modelValue,
+      dropdownItems: () => pagedItems(dropdownItems.value),
+      widget: fromPartial({ name: 'image', type: 'combo' }),
+      uploadFolder: 'input',
+      uploadSubfolder: undefined
+    })
+
+    updateSelectedItems(new Set(['hashed-media']))
+
+    expect(modelValue.value).toBe('renders/day-2/storage-name.png [output]')
+    expect([...selectedSet.value]).toEqual(['hashed-media'])
+    expect(pagedItems(dropdownItems.value)).toMatchObject([
+      { label: 'Human label.png', thumbnail: { src: previewUrl } }
+    ])
+  })
+
   describe('base asset mapping', () => {
     it.for([
       {
-        kind: 'image',
-        asset: makeOutput('hashed-media', 'storage-name.png', {
-          hash: 'blake3:abc.png',
-          display_name: 'Human label.png'
-        }),
-        expectedName: 'blake3:abc.png [output]',
-        expectedLabel: 'Human label.png'
-      },
-      {
+        case: 'a temporary subfolder output',
         kind: 'image',
         asset: makeOutput('temporary-media', 'transient.png', {
           tags: ['output', 'temp'],
-          hash: 'blake3:temporary.png',
+          hash: `blake3:${'b'.repeat(64)}`,
           user_metadata: { jobId: 'temporary-job', subfolder: 'previews/draft' }
         }),
-        expectedName: 'previews/draft/blake3:temporary.png [temp]',
+        expectedName: 'previews/draft/transient.png [temp]',
         expectedLabel: 'transient.png'
       },
       {
+        case: 'a nested loader path',
         kind: 'mesh',
         asset: makeOutput('nested-mesh', 'model.glb', {
           metadata: { kind: 'mesh' },
@@ -174,7 +199,7 @@ describe('useWidgetSelectItems', () => {
         expectedLabel: 'model.glb'
       }
     ] as const)(
-      'preserves the serialized identity of $kind media',
+      'preserves the serialized identity of $kind media from $case',
       ({ kind, asset, expectedName, expectedLabel }) => {
         storeAssets.flatOutput = [asset]
         const { dropdownItems, selectedSet } = useWidgetSelectItems(

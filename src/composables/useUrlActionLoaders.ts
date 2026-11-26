@@ -1,5 +1,5 @@
 import { useRouter } from 'vue-router'
-import type { LocationQuery } from 'vue-router'
+import type { LocationQuery, LocationQueryRaw } from 'vue-router'
 
 import { useAssetsUrlLoader } from '@/platform/assets/composables/useAssetsUrlLoader'
 import { usePricingTableUrlLoader } from '@/platform/billing/subscription/composables/usePricingTableUrlLoader'
@@ -11,8 +11,15 @@ import {
 } from '@/platform/billing/subscription/utils/paymentReturnUrl'
 import { isCloud } from '@/platform/distribution/types'
 import {
+  forgetPaymentLinkWorkspace,
+  isPaymentLinkWorkspaceRefused,
+  rememberPaymentLinkWorkspace
+} from '@/platform/billing/subscription/utils/paymentLinkWorkspace'
+import {
   clearPreservedQuery,
-  getPreservedQueryParam
+  getPreservedQueryParam,
+  hydratePreservedQuery,
+  mergePreservedQueryIntoQuery
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { useLocalHandoffUrlLoader } from '@/platform/openOnCloud/composables/useLocalHandoffUrlLoader'
@@ -24,6 +31,7 @@ import { useCreateWorkspaceUrlLoader } from '@/platform/account/composables/useC
 import { useDeploymentUrlLoader } from '@/platform/workspace/composables/useDeploymentUrlLoader'
 import { useInviteUrlLoader } from '@/platform/account/composables/useInviteUrlLoader'
 import { useWorkspaceUrlLoader } from '@/platform/workspace/composables/useWorkspaceUrlLoader'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 interface UrlActionStep {
   /** What the loader does, for the failure log — not shown to the customer. */
@@ -134,6 +142,7 @@ function sweepStep(
     failureMessage: 'Failed to clear handled deep-link params from the URL:',
     run: async () => {
       clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.WORKFLOWS)
+      forgetPaymentLinkWorkspace()
       const query = { ...router.currentRoute.value.query }
       const params = [
         ...HANDLED_PARAMS.filter((param) => param in query),
@@ -142,6 +151,30 @@ function sweepStep(
       if (params.length === 0) return
       for (const param of params) delete query[param]
       await router.replace({ query })
+    }
+  }
+}
+
+const PAYMENT_LINK_NAMESPACES = [
+  PRESERVED_QUERY_NAMESPACES.WORKSPACE,
+  PRESERVED_QUERY_NAMESPACES.TOPUP,
+  PRESERVED_QUERY_NAMESPACES.PRICING
+]
+
+function rememberPaymentLinkStep(
+  router: ReturnType<typeof useRouter>
+): UrlActionStep {
+  return {
+    failureMessage: 'Failed to remember the workspace a payment link names:',
+    run: () => {
+      const query = PAYMENT_LINK_NAMESPACES.reduce<LocationQueryRaw>(
+        (merged, namespace) => {
+          hydratePreservedQuery(namespace)
+          return mergePreservedQueryIntoQuery(namespace, merged) ?? merged
+        },
+        router.currentRoute.value.query
+      )
+      rememberPaymentLinkWorkspace(query)
     }
   }
 }
@@ -159,9 +192,16 @@ function deferredToNewerLink(
 
 function buildUrlActionSteps(
   loaders: UrlActionLoaders,
-  router: ReturnType<typeof useRouter>
+  router: ReturnType<typeof useRouter>,
+  activeWorkspaceId: () => string | undefined
 ): UrlActionStep[] {
-  const steps = deploymentLinkSteps(loaders.deploymentUrlLoader)
+  const paymentLinkGate = () => ({
+    workspaceLinkRefused: isPaymentLinkWorkspaceRefused(activeWorkspaceId())
+  })
+  const steps = [
+    rememberPaymentLinkStep(router),
+    ...deploymentLinkSteps(loaders.deploymentUrlLoader)
+  ]
 
   if (loaders.workspaceUrlLoader) {
     const loader = loaders.workspaceUrlLoader
@@ -191,14 +231,14 @@ function buildUrlActionSteps(
     const loader = loaders.pricingTableUrlLoader
     laterSteps.push({
       failureMessage: 'Failed to load pricing table from URL:',
-      run: () => loader.loadPricingTableFromUrl()
+      run: () => loader.loadPricingTableFromUrl(paymentLinkGate())
     })
   }
   if (loaders.topUpUrlLoader) {
     const loader = loaders.topUpUrlLoader
     laterSteps.push({
       failureMessage: 'Failed to load top-up dialog from URL:',
-      run: () => loader.loadTopUpFromUrl()
+      run: () => loader.loadTopUpFromUrl(paymentLinkGate())
     })
   }
   if (loaders.settingsUrlLoader) {
@@ -298,6 +338,7 @@ export function useUrlActionLoaders() {
   const assetsUrlLoader = useIfCloud(useAssetsUrlLoader)
   const localHandoffUrlLoader = useIfCloud(useLocalHandoffUrlLoader)
   const subscriptionDialog = useIfCloud(useSubscriptionDialog)
+  const workspaceStore = useIfCloud(useTeamWorkspaceStore)
 
   const steps = isCloud
     ? buildUrlActionSteps(
@@ -313,7 +354,8 @@ export function useUrlActionLoaders() {
           assetsUrlLoader,
           localHandoffUrlLoader
         },
-        router
+        router,
+        () => workspaceStore?.activeWorkspace?.id
       )
     : []
 

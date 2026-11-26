@@ -1,4 +1,7 @@
+import type { ComputedRef, InjectionKey } from 'vue'
+
 import type { Thumbnail } from '@/platform/assets/utils/assetThumbnailUtil'
+import type { AssetKind } from '@/types/widgetTypes'
 
 /**
  * Minimal interface for items in FormDropdown.
@@ -25,6 +28,8 @@ export interface SortOption<TId extends string = string> {
 
 export type LayoutMode = 'list' | 'grid' | 'list-small'
 
+export type ThumbnailSize = 'compact' | 'standard' | 'large'
+
 export interface FormDropdownInputProps {
   inputId?: string
   isOpen?: boolean
@@ -46,3 +51,6 @@ export interface FormDropdownMenuItemProps {
   label?: string
   layout?: LayoutMode
 }
+
+export const AssetKindKey: InjectionKey<ComputedRef<AssetKind | undefined>> =
+  Symbol('assetKind')

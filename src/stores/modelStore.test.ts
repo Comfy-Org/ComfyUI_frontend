@@ -4,7 +4,7 @@ import { reactive, watch } from 'vue'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { assetService } from '@/platform/assets/services/assetService'
 import type * as DistributionTypes from '@/platform/distribution/types'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import { api } from '@/scripts/api'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import {
@@ -20,8 +20,6 @@ const mockDistribution = vi.hoisted(
 )
 
 vi.mock(import('@/platform/distribution/types'), () => mockDistribution)
-
-vi.mock(import('@/platform/remoteConfig/remoteConfig'))
 
 const featureState = {
   serverFeatures: {} as Record<string, unknown>
@@ -97,7 +95,6 @@ describe('useModelStore', () => {
   beforeEach(async () => {
     mockDistribution.isCloud = false
     featureState.serverFeatures = reactive({ assets: false })
-    remoteConfig.value = {}
   })
 
   it('lists and refreshes Release models without asset filtering on a picked deployment', async () => {
@@ -816,7 +813,10 @@ describe('useModelStore', () => {
       )
 
       featureState.serverFeatures.assets = true
-      remoteConfig.value = { supports_model_type_tags: true }
+      useRemoteConfigStore().acceptConfig(
+        { supports_model_type_tags: true },
+        false
+      )
       await vi.advanceTimersByTimeAsync(1000)
       await Promise.all(eagerLoads)
 
@@ -839,7 +839,10 @@ describe('useModelStore', () => {
       expect(api.getModelFolders).toHaveBeenCalledTimes(1)
       expect(assetService.getAssetModels).toHaveBeenCalledTimes(1)
 
-      remoteConfig.value = { supports_model_type_tags: true }
+      useRemoteConfigStore().acceptConfig(
+        { supports_model_type_tags: true },
+        false
+      )
 
       await vi.waitFor(() => {
         expect(api.getModelFolders).toHaveBeenCalledTimes(2)
@@ -851,14 +854,20 @@ describe('useModelStore', () => {
 
     it('rebuilds again when the capability rolls back', async () => {
       enableMocks(true)
-      remoteConfig.value = { supports_model_type_tags: true }
+      useRemoteConfigStore().acceptConfig(
+        { supports_model_type_tags: true },
+        false
+      )
       store = useModelStore()
       await store.loadModelFolders()
       await store.getLoadedModelFolder('checkpoints')
       expect(api.getModelFolders).toHaveBeenCalledTimes(1)
       expect(assetService.getAssetModels).toHaveBeenCalledTimes(1)
 
-      remoteConfig.value = { supports_model_type_tags: false }
+      useRemoteConfigStore().acceptConfig(
+        { supports_model_type_tags: false },
+        false
+      )
 
       await vi.waitFor(() => {
         expect(api.getModelFolders).toHaveBeenCalledTimes(2)

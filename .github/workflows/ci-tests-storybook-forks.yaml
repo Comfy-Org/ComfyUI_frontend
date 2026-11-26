@@ -69,8 +69,8 @@ jobs:
           SUMMARY_FILE: storybook-section.md
           BRANCH_NAME: ${{ github.event.workflow_run.head_branch }}
         run: |
-          chmod +x scripts/cicd/pr-storybook-deploy-and-comment.sh
-          ./scripts/cicd/pr-storybook-deploy-and-comment.sh \
+          chmod +x tools/ci/src/cicd/pr-storybook-deploy-and-comment.sh
+          ./tools/ci/src/cicd/pr-storybook-deploy-and-comment.sh \
             "${{ steps.pr.outputs.number }}" \
             "$BRANCH_NAME" \
             "completed"

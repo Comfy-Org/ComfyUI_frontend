@@ -18,13 +18,15 @@ export type Settings = {
   'Comfy.Canvas.BackgroundImage'?: string
   'Comfy.ConfirmClear': boolean
   'Comfy.DevMode': boolean
+  'Comfy.Agent.CrdtDebug.Level': 'warn' | 'info' | 'debug' | 'trace'
   'Comfy.Appearance.DisableAnimations': boolean
   'Comfy.UI.TabBarLayout': 'Default' | 'Legacy'
   'Comfy.Workflow.ShowMissingModelsWarning': boolean
   'Comfy.ErrorSystem.ShowMissingModels': boolean
-  'Comfy.Workflow.ShowMissingNodesWarning': boolean
+  'Comfy.ErrorSystem.ShowMissingNodes': boolean
   'Comfy.Workflow.ShowMissingMediaWarning': boolean
   'Comfy.Workflow.WarnBlueprintOverwrite': boolean
+  'Comfy.Cloud.AskBeforeCompatibilityCheck': boolean
   'Comfy.Desktop.CloudNotificationShown': boolean
   'Comfy.DeploymentSwitcher.Seen': boolean
   'Comfy.DisableFloatRounding': boolean
@@ -79,6 +81,12 @@ export type Settings = {
   'Comfy.Sidebar.UnifiedWidth': boolean
   'Comfy.Sidebar.Style': 'floating' | 'connected'
   'Comfy.SnapToGrid.GridSize': number
+  'Comfy.Canvas.SmartGuides.Enabled': boolean
+  'Comfy.Canvas.SmartGuides.SnapToEdges': boolean
+  'Comfy.Canvas.SmartGuides.SnapToWires': boolean
+  'Comfy.Canvas.SmartGuides.SnapToSpacing': boolean
+  'Comfy.Canvas.SmartGuides.SnapDistance': number
+  'Comfy.Canvas.SmartGuides.Gap': number
   'Comfy.TextareaWidget.FontSize': number
   'Comfy.TextareaWidget.Spellcheck': boolean
   'Comfy.UseNewMenu': 'Disabled' | 'Top'
@@ -170,6 +178,7 @@ export type Settings = {
   'Comfy.Templates.SelectedModels': Array<string>
   'Comfy.Templates.SelectedUseCases': Array<string>
   'Comfy.Templates.SelectedRunsOn': Array<string>
+  'Comfy.Templates.HasOpenedLibrary': boolean
   'Comfy.Templates.SortBy':
     | 'recommended'
     | 'popular'

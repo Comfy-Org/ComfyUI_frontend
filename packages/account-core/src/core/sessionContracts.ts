@@ -66,10 +66,7 @@ export type SessionResult =
        * reason keeps the TOKEN_EXCHANGE_FAILED code and its handling.
        */
       readonly reason?: ExchangeFailureReason
-      /**
-       * Non-identifying detail for `reason`: the failing schema field paths,
-       * or `expires_in_ms=<n>` (local clock) for an expiry rejected on arrival.
-       */
+      /** Non-identifying detail for `reason`: schema paths, or `expires_in_ms=<n>[,clock_skew_ms=<n>]`. */
       readonly detail?: string
     }
 

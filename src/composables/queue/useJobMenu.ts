@@ -57,7 +57,7 @@ export function useJobMenu(
     const filename = `Job ${target.id}.json`
     const temp = workflowStore.createTemporary(filename, data)
     try {
-      await workflowService.openWorkflow(temp)
+      await workflowService.openWorkflow(temp, { initiator: 'user' })
     } catch (error) {
       useDialogService().showErrorDialog(error, {
         title: t('errorDialog.queueOpenWorkflowFailedTitle'),
@@ -171,7 +171,7 @@ export function useJobMenu(
     if (!item) return
     const result: AugmentedResultItem | undefined = item.taskRef?.previewOutput
     if (!result) return
-    downloadFile(resultItemUrl(result))
+    downloadFile(resultItemUrl(result), undefined, 'job_menu')
   }
 
   /**

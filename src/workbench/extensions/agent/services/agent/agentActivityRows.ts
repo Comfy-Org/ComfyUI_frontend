@@ -9,6 +9,7 @@ interface ToolRow {
   kind: 'tool'
   name: string
   skill?: string
+  download?: string
   state: PartState
   ok?: boolean
   count: number
@@ -31,7 +32,8 @@ function matchingToolStep(
   if (
     previous?.kind !== 'tool' ||
     previous.name !== part.name ||
-    (part.name === 'load_skill' && previous.skill !== part.skill)
+    (part.name === 'load_skill' && previous.skill !== part.skill) ||
+    previous.download !== part.download
   )
     return undefined
   return previous
@@ -77,6 +79,7 @@ export function foldActivity(parts: readonly ActivityPart[]): ActivityRow[] {
         kind: 'tool',
         name: part.name,
         skill: part.skill,
+        download: part.download,
         state: part.state,
         ok: part.ok,
         canvasConfirmed: part.canvasConfirmed,

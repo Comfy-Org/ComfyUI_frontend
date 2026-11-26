@@ -2,6 +2,7 @@ import type { Point2D as Position2D } from '@comfyorg/shared-frontend-utils/geom
 import { extractWorkflow } from '@comfyorg/api-client/fetchJobs'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { safeLocalStorage } from '@/base/storage/safeStorage'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { WORKFLOW_ACCEPT_STRING } from '@/platform/workflow/core/types/formats'
 import type {
@@ -32,7 +33,9 @@ export interface LegacyUIApp {
   loadGraphData(
     graphData?: ComfyWorkflowJSON,
     clean?: boolean,
-    restore_view?: boolean
+    restore_view?: boolean,
+    workflow?: string | null,
+    options?: { initiator?: 'user' }
   ): Promise<unknown>
   queuePrompt(
     number: number,
@@ -40,8 +43,12 @@ export interface LegacyUIApp {
     options?: { intent?: WorkflowQueueIntent }
   ): Promise<boolean>
   showErrorOnFileLoad(file: File): void
-  handleFile(file: File, openSource?: WorkflowOpenSource): Promise<void | false>
-  refreshComboInNodes(): Promise<void>
+  handleFile(
+    file: File,
+    openSource?: WorkflowOpenSource,
+    options?: { initiator?: 'user' }
+  ): Promise<void | false>
+  refreshComboInNodes(): Promise<boolean>
   openClipspace(): void
   clean(): void
 }
@@ -105,24 +112,20 @@ function dragElement(dragEl: HTMLElement, signal: AbortSignal): () => void {
     dragEl.style.bottom = 'unset'
 
     if (savePos) {
-      try {
-        localStorage.setItem(
-          'Comfy.MenuPosition',
-          JSON.stringify({
-            x: dragEl.offsetLeft,
-            y: dragEl.offsetTop
-          })
-        )
-      } catch {
-        return
-      }
+      safeLocalStorage.setItem(
+        'Comfy.MenuPosition',
+        JSON.stringify({
+          x: dragEl.offsetLeft,
+          y: dragEl.offsetTop
+        })
+      )
     }
   }
 
   function restorePos() {
     let pos: Position2D
     try {
-      const posString = localStorage.getItem('Comfy.MenuPosition')
+      const posString = safeLocalStorage.getItem('Comfy.MenuPosition')
       if (!posString) return
       pos = JSON.parse(posString) as Position2D
     } catch {
@@ -258,7 +261,9 @@ class ComfyList {
                     const job = await api.getJobDetail(item.id)
                     if (!job) return
                     const workflow = await extractWorkflow(job)
-                    await this.app.loadGraphData(workflow, true, false)
+                    await this.app.loadGraphData(workflow, true, false, null, {
+                      initiator: 'user'
+                    })
                     if ('outputs' in job && job.outputs) {
                       this.host.restoreOutputs(job.outputs)
                     }
@@ -372,6 +377,7 @@ export class ComfyUI {
   setup(containerElement: HTMLElement) {
     const fileInput = $el('input', {
       id: 'comfy-file-input',
+      dataset: { testid: 'comfy-file-input' },
       type: 'file',
       accept: WORKFLOW_ACCEPT_STRING,
       style: { display: 'none' },
@@ -380,7 +386,9 @@ export class ComfyUI {
         const file = fileInput.files?.[0]
         if (file) {
           try {
-            await this.app.handleFile(file, 'file_button')
+            await this.app.handleFile(file, 'file_button', {
+              initiator: 'user'
+            })
           } catch (error) {
             console.error('Failed to load file:', error)
             if (!isGraphLoadFailurePresented(error))
@@ -666,7 +674,9 @@ export class ComfyUI {
               confirm('Load default workflow?')
             ) {
               this.host.resetView()
-              await this.app.loadGraphData()
+              await this.app.loadGraphData(undefined, true, true, null, {
+                initiator: 'user'
+              })
             }
           }
         }),

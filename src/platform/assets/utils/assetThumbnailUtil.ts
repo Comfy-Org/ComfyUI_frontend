@@ -1,4 +1,4 @@
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type { AssetItem } from '@comfyorg/assets-core/schema'
 import { resolveMediaSrc } from '@/platform/assets/utils/assetUrlUtil'
 import { iconForFilename } from '@/platform/assets/utils/mediaIconUtil'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'

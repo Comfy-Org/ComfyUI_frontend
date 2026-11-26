@@ -12,7 +12,7 @@ import { useBillingCapabilities } from '@/platform/billing/composables/useBillin
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useSubscriptionPaymentRecovery } from '@/platform/billing/composables/useSubscriptionPaymentRecovery'
 import { registerRefreshOnReturn } from '@/platform/billing/refreshOnReturn'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 vi.mock(import('@comfyorg/telemetry/reportError'))
@@ -48,13 +48,13 @@ const SECRET_ONLY_SIGNUP_OPERATION: Awaited<
 }
 
 function serveBillingWebDestination() {
-  remoteConfig.value = {
-    hosted_billing_destination: 'billing_web',
-    billing_web_url: 'https://billing.comfy.org'
-  }
-  onTestFinished(() => {
-    remoteConfig.value = {}
-  })
+  useRemoteConfigStore().acceptConfig(
+    {
+      hosted_billing_destination: 'billing_web',
+      billing_web_url: 'https://billing.comfy.org'
+    },
+    false
+  )
 }
 
 function trackedTab(): BillingTab & { opened: string[]; closed: boolean } {

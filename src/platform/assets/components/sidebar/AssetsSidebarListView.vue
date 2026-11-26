@@ -1,0 +1,184 @@
+<template>
+  <div class="flex h-full flex-col">
+    <VirtualGrid
+      class="flex-1"
+      :items="pagedItems(assetItems)"
+      :grid-style="listGridStyle"
+      :max-columns="1"
+      :default-item-height="48"
+      :on-load-more="loadMore"
+      :can-load-more="isPaged(assetItems) && toValue(assetItems.hasMore)"
+    >
+      <template #item="{ item }">
+        <div class="relative">
+          <LoadingOverlay
+            :loading="assetsStore.isAssetDeleting(item.asset.id)"
+            size="sm"
+          >
+            <i class="icon-[lucide--trash-2] size-3" />
+          </LoadingOverlay>
+          <AssetsListItem
+            role="button"
+            tabindex="0"
+            :aria-label="
+              t('assetBrowser.ariaLabel.assetCard', {
+                name: getAssetDisplayName(item.asset),
+                type: getMediaTypeFromFilename(item.asset.name)
+              })
+            "
+            :class="
+              cn(
+                getAssetCardClass(isSelected(item.asset.id)),
+                item.isChild && 'pl-6'
+              )
+            "
+            :preview-url="assetThumbnail(item.asset).src"
+            :preview-alt="getAssetDisplayName(item.asset)"
+            :icon-name="assetThumbnail(item.asset).icon"
+            :is-video-preview="assetThumbnail(item.asset).isVideo"
+            :primary-text="getAssetPrimaryText(item.asset)"
+            :secondary-text="getAssetSecondaryText(item.asset)"
+            :stack-count="getStackCount(item.asset)"
+            :stack-indicator-label="t('mediaAsset.actions.seeMoreOutputs')"
+            :stack-expanded="isStackExpanded(item.asset)"
+            :draggable="true"
+            @dragstart="startAssetDrag($event, item.asset)"
+            @mouseenter="onAssetEnter(item.asset.id)"
+            @mouseleave="onAssetLeave(item.asset.id)"
+            @contextmenu.prevent.stop="emit('context-menu', $event, item.asset)"
+            @click.stop="emit('select-asset', item.asset, selectableAssets)"
+            @dblclick.stop="emit('preview-asset', item.asset)"
+            @preview-click="emit('preview-asset', item.asset)"
+            @stack-toggle="void toggleStack(item.asset)"
+          >
+            <template v-if="hoveredAssetId === item.asset.id" #actions>
+              <Button
+                variant="secondary"
+                size="icon"
+                :aria-label="t('mediaAsset.actions.moreOptions')"
+                @click.stop="emit('context-menu', $event, item.asset)"
+              >
+                <i class="icon-[lucide--ellipsis]" />
+              </Button>
+            </template>
+          </AssetsListItem>
+        </div>
+      </template>
+    </VirtualGrid>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, toValue } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import LoadingOverlay from '@comfyorg/design-system/common/LoadingOverlay'
+import VirtualGrid from '@comfyorg/design-system/common/VirtualGrid'
+import Button from '@comfyorg/design-system/button/Button'
+import AssetsListItem from '@/platform/assets/components/AssetsListItem.vue'
+import type { OutputStackListItem } from '@/platform/assets/composables/useOutputStacks'
+import { getOutputAssetMetadata } from '@/platform/assets/types/outputAssetMetadata'
+import type { AssetItem } from '@comfyorg/assets-core/schema'
+import { startAssetDrag } from '@/platform/assets/utils/assetDragUtil'
+import { getAssetDisplayName } from '@comfyorg/assets-core/metadata'
+import { assetThumbnail } from '@/platform/assets/utils/assetThumbnailUtil'
+import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
+import {
+  formatDuration,
+  formatSize,
+  getMediaTypeFromFilename,
+  truncateFilename
+} from '@/utils/formatUtil'
+import { isPaged, pagedItems } from '@/utils/pagedList'
+import type { MaybePaged } from '@/utils/pagedList'
+import { cn } from '@comfyorg/tailwind-utils'
+
+const {
+  assetItems,
+  selectableAssets,
+  isSelected,
+  isStackExpanded,
+  toggleStack
+} = defineProps<{
+  assetItems: MaybePaged<OutputStackListItem>
+  selectableAssets: AssetItem[]
+  isSelected: (assetId: string) => boolean
+  isStackExpanded: (asset: AssetItem) => boolean
+  toggleStack: (asset: AssetItem) => Promise<void>
+}>()
+
+const assetsStore = useAssetsStore()
+
+const emit = defineEmits<{
+  (e: 'select-asset', asset: AssetItem, assets?: AssetItem[]): void
+  (e: 'preview-asset', asset: AssetItem): void
+  (e: 'context-menu', event: MouseEvent, asset: AssetItem): void
+}>()
+
+const { t } = useI18n()
+const hoveredAssetId = ref<string | null>(null)
+
+function loadMore() {
+  return isPaged(assetItems) ? assetItems.loadMore() : undefined
+}
+
+const listGridStyle = {
+  display: 'grid',
+  gridTemplateColumns: 'minmax(0, 1fr)',
+  padding: '0 0.5rem',
+  gap: '0.5rem'
+}
+
+function getAssetPrimaryText(asset: AssetItem): string {
+  return truncateFilename(getAssetDisplayName(asset))
+}
+
+function getAssetSecondaryText(asset: AssetItem): string {
+  const metadata = getOutputAssetMetadata(asset.user_metadata)
+  if (typeof metadata?.executionTimeInSeconds === 'number') {
+    return `${metadata.executionTimeInSeconds.toFixed(2)}s`
+  }
+
+  const duration = asset.user_metadata?.duration
+  if (typeof duration === 'number') {
+    return formatDuration(duration)
+  }
+
+  if (typeof asset.size === 'number') {
+    return formatSize(asset.size)
+  }
+
+  return ''
+}
+
+function getStackCount(asset: AssetItem): number | undefined {
+  const metadata = getOutputAssetMetadata(asset.user_metadata)
+  if (typeof metadata?.outputCount === 'number') {
+    return metadata.outputCount
+  }
+
+  if (Array.isArray(metadata?.allOutputs)) {
+    return metadata.allOutputs.length
+  }
+
+  return undefined
+}
+
+function getAssetCardClass(selected: boolean): string {
+  return cn(
+    'w-full text-foreground transition-colors hover:bg-accent',
+    'cursor-pointer',
+    selected && 'bg-accent ring-1 ring-muted-foreground ring-inset'
+  )
+}
+
+function onAssetEnter(assetId: string) {
+  hoveredAssetId.value = assetId
+}
+
+function onAssetLeave(assetId: string) {
+  if (hoveredAssetId.value === assetId) {
+    hoveredAssetId.value = null
+  }
+}
+</script>

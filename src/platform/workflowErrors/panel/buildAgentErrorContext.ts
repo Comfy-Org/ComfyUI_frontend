@@ -30,18 +30,21 @@ function problemMessage(error: ErrorItem): string {
 }
 
 function executionProblems(cards: ErrorCardData[]): AgentErrorProblem[] {
-  return cards.flatMap((card) =>
-    card.errors.map((error) => ({
+  return cards.flatMap((card) => {
+    const nodeId = card.nodeId ?? card.graphNodeId ?? card.rawNodeId
+    return card.errors.map((error) => ({
       category: error.isRuntimeError
         ? ('execution_failure' as const)
         : ('validation' as const),
+      catalogId: error.catalogId,
+      jobId: error.jobId,
       message: problemMessage(error),
       details: error.details ?? error.displayDetails,
-      nodeId: card.nodeId ?? card.graphNodeId ?? card.rawNodeId,
-      nodeType: card.title,
+      nodeId,
+      nodeType: nodeId == null ? undefined : card.title,
       nodeTitle: card.nodeTitle
     }))
-  )
+  })
 }
 
 interface NodeUse {
@@ -130,13 +133,30 @@ function missingNodeTypeProblems(
   )
 }
 
+function withGroupCatalogId(
+  problems: AgentErrorProblem[],
+  catalogId: string | undefined
+): AgentErrorProblem[] {
+  if (!catalogId) return problems
+  return problems.map((problem) => ({ catalogId, ...problem }))
+}
+
 function problemsForGroup(
   group: ErrorGroup,
   context: MissingGroupContext
 ): AgentErrorProblem[] {
+  if (group.type === 'execution') return executionProblems(group.cards)
+  return withGroupCatalogId(
+    missingProblemsForGroup(group, context),
+    group.catalogId
+  )
+}
+
+function missingProblemsForGroup(
+  group: Exclude<ErrorGroup, { type: 'execution' }>,
+  context: MissingGroupContext
+): AgentErrorProblem[] {
   switch (group.type) {
-    case 'execution':
-      return executionProblems(group.cards)
     case 'missing_model':
       return missingModelProblems(context.missingModelGroups)
     case 'missing_media':
@@ -197,5 +217,27 @@ export function buildAllErrorContext(
     label: options.label,
     severity,
     workflowName: options.workflowName
+  }
+}
+
+/**
+ * Context for one missing pack, for the row that offers it when no install,
+ * search or manager action can be.
+ */
+export function buildMissingPackErrorContext(
+  pack: MissingPackGroup,
+  label: string,
+  options: BuildOptions = {}
+): AgentErrorContext {
+  const problems = missingNodeTypeProblems([pack], ' is not installed')
+  return {
+    scope: 'card',
+    count: problems.length,
+    problems,
+    label,
+    severity: 'warning',
+    workflowName: options.workflowName,
+    packId: pack.packId,
+    reason: pack.packId === null ? 'not_in_registry' : 'manager_unavailable'
   }
 }

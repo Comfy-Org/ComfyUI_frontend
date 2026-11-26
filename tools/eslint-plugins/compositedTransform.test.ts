@@ -67,7 +67,7 @@ describe('composited transform bindings', () => {
       'src/renderer/extensions/vueNodes/components/LGraphNode.vue',
       boundTransform
     ]
-  ])('allows %s', async ([filePath, template]) => {
+  ])('allows fixture %# in %s', async ([filePath, template]) => {
     expect(await restrictedSyntaxMessages(filePath, template)).toEqual([])
   })
 

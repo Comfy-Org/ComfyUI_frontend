@@ -116,7 +116,6 @@ test.describe(
 
       const agentPanel = new AgentPanel(page)
       await agentPanel.open()
-      await agentPanel.selectWorkflow()
       await agentPanel.sendMessage('Check the workflow.')
 
       // A reset sent before the follower subscribed to WORKFLOW_ID is dropped

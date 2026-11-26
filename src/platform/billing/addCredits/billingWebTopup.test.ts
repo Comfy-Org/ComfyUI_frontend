@@ -1,4 +1,4 @@
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 
 import { billingWebTopupUrl } from './billingWebTopup'
 
@@ -13,7 +13,10 @@ const query = (url: string | undefined) =>
 
 describe('billingWebTopupUrl', () => {
   beforeEach(() => {
-    remoteConfig.value = { billing_web_url: 'https://billing.comfy.org' }
+    useRemoteConfigStore().acceptConfig(
+      { billing_web_url: 'https://billing.comfy.org' },
+      false
+    )
   })
 
   it.for([
@@ -62,7 +65,7 @@ describe('billingWebTopupUrl', () => {
   })
 
   it('has no page when this host has no billing-web origin', () => {
-    remoteConfig.value = {}
+    useRemoteConfigStore().acceptConfig({}, false)
 
     expect(billingWebTopupUrl(5000, undefined, 'ws-1', 'tpp_1')).toBeUndefined()
   })

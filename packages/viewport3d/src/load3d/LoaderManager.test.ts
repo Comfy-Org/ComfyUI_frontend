@@ -16,7 +16,7 @@ import type {
   ModelAdapterCapabilities,
   ModelLoadContext
 } from './ModelAdapter'
-import { fetchModelData } from './ModelAdapter'
+import { ModelTooLargeError, fetchModelData } from './ModelAdapter'
 
 function makeEventManagerStub() {
   return {
@@ -595,6 +595,31 @@ describe('LoaderManager', () => {
         null
       )
       expect(console.error).toHaveBeenCalled()
+    })
+
+    it('reports too-large when the model exceeds the size limit, instead of failed', async () => {
+      const { lm, eventManager } = makeLoaderManager()
+      meshLoad.mockRejectedValueOnce(new ModelTooLargeError(200 * 1024 * 1024))
+
+      await expect(lm.loadModel('api/view?filename=galleon.glb')).resolves.toBe(
+        'too-large'
+      )
+
+      expect(eventManager.emitEvent).toHaveBeenCalledWith(
+        'modelLoadingEnd',
+        null
+      )
+    })
+
+    it('rejects with ModelTooLargeError when silent is set', async () => {
+      const { lm } = makeLoaderManager()
+      meshLoad.mockRejectedValueOnce(new ModelTooLargeError(200 * 1024 * 1024))
+
+      await expect(
+        lm.loadModel('api/view?filename=galleon.glb', undefined, {
+          silent: true
+        })
+      ).rejects.toThrow(ModelTooLargeError)
     })
 
     it.for([

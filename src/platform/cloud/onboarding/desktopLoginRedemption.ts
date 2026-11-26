@@ -1,7 +1,9 @@
 import { createTimeoutSignal } from '@comfyorg/api-client/abortSignal'
-import { watch } from 'vue'
+import { effectScope, shallowRef, watch } from 'vue'
+import type { EffectScope } from 'vue'
 import type { Router } from 'vue-router'
 
+import { safeSessionStorage } from '@/base/storage/safeStorage'
 import { t } from '@/i18n'
 import {
   clearPreservedQuery,
@@ -101,6 +103,7 @@ function handleTransientFailure(
   }
   // Budget spent: drop the code and tell the user instead of failing silently.
   settle(code, state)
+  reportSettledStatus('failed')
   useToast().error(t('desktopLogin.failedSummary'), {
     description: t('desktopLogin.failedDetail'),
     duration: 6000
@@ -132,6 +135,7 @@ function settledForSsoSession(
   const auth = useAuthStore()
   if (auth.currentUser !== null || !auth.signedInWithSso) return false
   settle(code, state)
+  reportSettledStatus('sso_unavailable')
   useToast().warning(t('desktopLogin.ssoUnavailableSummary'), {
     description: t('desktopLogin.ssoUnavailableDetail'),
     duration: 8000
@@ -158,9 +162,12 @@ async function redeemCode(code: string): Promise<void> {
   // the stash and let the reloaded app prompt on a stable route.
   if (onAuthHandoffRoute()) return
 
+  desktopLoginRedemptionStatus.value = 'awaiting_approval'
+  forgetShownOutcome()
   if (!(await confirmRedemption(state, user.uid))) {
     // Declined/dismissed: drop the code without an error.
     settle(code, state)
+    reportSettledStatus('declined')
     return
   }
 
@@ -168,8 +175,12 @@ async function redeemCode(code: string): Promise<void> {
   // dialog was open, keep the code stashed and let the (replayed) auth-change
   // trigger re-prompt under the now-current account.
   const approvedUser = useAuthStore().currentUser
-  if (!approvedUser || approvedUser.uid !== state.approvedUserUid) return
+  if (!approvedUser || approvedUser.uid !== state.approvedUserUid) {
+    desktopLoginRedemptionStatus.value = 'idle'
+    return
+  }
 
+  desktopLoginRedemptionStatus.value = 'redeeming'
   state.attempts++
 
   // Token comes straight from the Firebase user: authStore.getIdToken()
@@ -208,6 +219,7 @@ async function redeemCode(code: string): Promise<void> {
 
   if (response.ok) {
     settle(code, state)
+    reportSettledStatus('redeemed')
     useToast().success(t('desktopLogin.successSummary'), {
       description: t('desktopLogin.successDetail'),
       duration: 4000
@@ -217,6 +229,7 @@ async function redeemCode(code: string): Promise<void> {
 
   if (TERMINAL_REDEEM_STATUSES.has(response.status)) {
     settle(code, state)
+    reportSettledStatus('expired')
     useToast().error(t('desktopLogin.expiredSummary'), {
       description: t('desktopLogin.expiredDetail'),
       duration: 6000
@@ -227,6 +240,142 @@ async function redeemCode(code: string): Promise<void> {
   // A 401 usually means a stale cached id token; mint a fresh one on retry.
   if (response.status === 401) state.forceTokenRefresh = true
   handleTransientFailure(code, state, `status ${response.status}`)
+}
+
+type DesktopLoginRedemptionStatus =
+  | 'idle'
+  | 'awaiting_approval'
+  | 'redeeming'
+  | 'redeemed'
+  | 'failed'
+  | 'expired'
+  | 'declined'
+  | 'sso_unavailable'
+
+export const desktopLoginRedemptionStatus =
+  shallowRef<DesktopLoginRedemptionStatus>('idle')
+
+const IN_FLIGHT_STATUSES: ReadonlySet<DesktopLoginRedemptionStatus> = new Set([
+  'idle',
+  'awaiting_approval',
+  'redeeming'
+])
+
+const SETTLED_STATUSES: ReadonlySet<string> =
+  new Set<DesktopLoginRedemptionStatus>([
+    'redeemed',
+    'failed',
+    'expired',
+    'declined',
+    'sso_unavailable'
+  ])
+
+export function isDesktopLoginRedemptionSettled(
+  status: DesktopLoginRedemptionStatus
+): boolean {
+  return !IN_FLIGHT_STATUSES.has(status)
+}
+
+let pendingStatusRelease: EffectScope | null = null
+
+function cancelStatusRelease(): void {
+  pendingStatusRelease?.stop()
+  pendingStatusRelease = null
+}
+
+let statusClaimed = false
+
+function onApprovalRoute(): boolean {
+  return activeRouter?.currentRoute.value.name === 'cloud-desktop-login'
+}
+
+const SHOWN_OUTCOME_KEY = 'Comfy.DesktopLogin.ShownOutcome'
+const SHOWN_OUTCOME_TTL_MS = 15 * 60_000
+
+function rememberShownOutcome(status: DesktopLoginRedemptionStatus): void {
+  safeSessionStorage.setItem(
+    SHOWN_OUTCOME_KEY,
+    JSON.stringify({ status, at: Date.now() })
+  )
+}
+
+function forgetShownOutcome(): void {
+  safeSessionStorage.removeItem(SHOWN_OUTCOME_KEY)
+}
+
+function readShownOutcome(): DesktopLoginRedemptionStatus | null {
+  const raw = safeSessionStorage.getItem(SHOWN_OUTCOME_KEY)
+  if (!raw) return null
+  try {
+    const parsed: unknown = JSON.parse(raw)
+    if (typeof parsed !== 'object' || parsed === null) return null
+    const { status, at } = parsed as { status?: unknown; at?: unknown }
+    const age = typeof at === 'number' ? Date.now() - at : Infinity
+    if (
+      typeof status !== 'string' ||
+      !SETTLED_STATUSES.has(status) ||
+      age < 0 ||
+      age > SHOWN_OUTCOME_TTL_MS
+    ) {
+      return null
+    }
+    return status as DesktopLoginRedemptionStatus
+  } catch {
+    return null
+  }
+}
+
+function reportSettledStatus(status: DesktopLoginRedemptionStatus): void {
+  if (statusClaimed || onApprovalRoute()) {
+    desktopLoginRedemptionStatus.value = status
+    rememberShownOutcome(status)
+    return
+  }
+  cancelStatusRelease()
+  desktopLoginRedemptionStatus.value = 'idle'
+}
+
+/** Shows the redemption outcome on the current approval-page visit. */
+export function claimDesktopLoginRedemptionStatus(): void {
+  cancelStatusRelease()
+  statusClaimed = true
+}
+
+/**
+ * On an approval-page visit with nothing to approve, shows the outcome this
+ * tab already showed there (the page was reloaded). False when there is none.
+ */
+export function restoreShownDesktopLoginRedemptionStatus(): boolean {
+  const status = readShownOutcome()
+  if (!status) {
+    forgetShownOutcome()
+    return false
+  }
+  desktopLoginRedemptionStatus.value = status
+  return true
+}
+
+export function releaseDesktopLoginRedemptionStatus(): void {
+  cancelStatusRelease()
+  statusClaimed = false
+  forgetShownOutcome()
+  if (isDesktopLoginRedemptionSettled(desktopLoginRedemptionStatus.value)) {
+    desktopLoginRedemptionStatus.value = 'idle'
+    return
+  }
+  const scope = effectScope(true)
+  pendingStatusRelease = scope
+  scope.run(() =>
+    watch(
+      desktopLoginRedemptionStatus,
+      (status) => {
+        if (!isDesktopLoginRedemptionSettled(status)) return
+        cancelStatusRelease()
+        desktopLoginRedemptionStatus.value = 'idle'
+      },
+      { flush: 'sync' }
+    )
+  )
 }
 
 export function hasPendingDesktopLoginCode(): boolean {
@@ -256,6 +405,8 @@ async function redeemPendingDesktopLoginCode(): Promise<void> {
     } while (retriggerRequested)
   } catch (error) {
     console.error('[DesktopLoginRedemption] Redemption failed:', error)
+    clearPreservedQuery(NAMESPACE)
+    reportSettledStatus('failed')
   } finally {
     draining = false
   }

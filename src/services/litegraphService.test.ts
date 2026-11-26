@@ -37,6 +37,28 @@ function createNodeDefV1(
   }
 }
 
+describe('useLitegraphService().registerNodeDef preview ownership', () => {
+  it('opts generated nodes and their subclasses into default output previews', async () => {
+    const nodeName = 'TestDefaultPreviewOwnership'
+    await useLitegraphService().registerNodeDef(
+      nodeName,
+      createNodeDefV1({ name: nodeName })
+    )
+    const NodeType = LiteGraph.registered_node_types[nodeName]
+    assert.exists(NodeType)
+    class DerivedNode extends NodeType {}
+
+    const node = LiteGraph.createNode(nodeName)
+    assert.exists(node)
+    const derived = new DerivedNode(nodeName)
+
+    expect([node.hideOutputImages, derived.hideOutputImages]).toEqual([
+      false,
+      false
+    ])
+  })
+})
+
 describe('useLitegraphService().getCanvasCenter', () => {
   it('returns origin when canvas is not yet initialised', () => {
     app.canvas.ds.visible_area.set([10, 20, 200, 100])
@@ -299,9 +321,9 @@ describe('canvas Copy Image action', () => {
     const original = document.createElement('img')
     original.width = 4096
     original.height = 2048
+    vi.spyOn(original, 'decode').mockResolvedValue(undefined)
     vi.stubGlobal('createImageBitmap', undefined)
     vi.spyOn(globalThis, 'Image').mockImplementation(function () {
-      queueMicrotask(() => original.dispatchEvent(new Event('load')))
       return original
     })
     const context = createMockCanvasRenderingContext2D()
@@ -319,7 +341,6 @@ describe('canvas Copy Image action', () => {
     )
     const write = vi
       .spyOn(navigator.clipboard, 'write')
-      .mockRejectedValueOnce(new Error('Unsupported image/webp'))
       .mockResolvedValue(undefined)
     const options: (IContextMenuValue | null)[] = []
     node.getExtraMenuOptions?.(app.canvas, options)
@@ -332,9 +353,9 @@ describe('canvas Copy Image action', () => {
       new URL('http://localhost/view?filename=original.webp')
     )
     expect(bounds).toEqual([4096, 2048])
-    expect(context.drawImage).toHaveBeenCalledWith(original, 0, 0)
-    expect(write).toHaveBeenCalledTimes(2)
-    expect(await write.mock.calls[1][0][0].getType('image/png')).toBe(png)
+    expect(write).toHaveBeenCalledOnce()
+    const copied = await write.mock.calls[0][0][0].getType('image/png')
+    expect(await copied.text()).toBe('original pixels')
   })
 })
 

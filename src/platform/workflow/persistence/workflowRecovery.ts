@@ -39,7 +39,7 @@ export function checkpointWorkflowRecovery(): boolean {
   try {
     const snapshots = workflowStore.modifiedWorkflows.map((workflow) => {
       const graph =
-        workflow.path === active.path
+        workflow.path === active.path && !active.changeTracker.hasPreview
           ? useApp().rootGraph.serialize()
           : workflow.activeState
       return { workflow, data: graph ? JSON.stringify(graph) : null }
@@ -56,7 +56,7 @@ export function checkpointWorkflowRecovery(): boolean {
           name: active.key,
           isTemporary: active.isTemporary
         },
-        { evict: false }
+        { evict: false, minUpdatedAt: active.lastModified }
       )
     )
       return false

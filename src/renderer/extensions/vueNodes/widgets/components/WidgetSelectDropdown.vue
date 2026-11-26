@@ -1,16 +1,17 @@
 <script setup lang="ts">
-import { computed, ref, toRef, useId } from 'vue'
+import { computed, provide, ref, toRef, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { SUPPORTED_EXTENSIONS_ACCEPT } from '@comfyorg/viewport3d/load3d/constants'
 import FormDropdown from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdown.vue'
+import { AssetKindKey } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import type { LayoutMode } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import WidgetLayoutField from '@/renderer/extensions/vueNodes/widgets/components/layout/WidgetLayoutField.vue'
-import { useAssetWidgetData } from '@/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData'
+import { useAssetWidgetData } from '@/platform/assets/composables/useAssetWidgetData'
 import { useWidgetSelectActions } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectActions'
 import { useWidgetSelectItems } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems'
 import type { ResultItemType } from '@comfyorg/api-client/resultItemTypeSchema'
-import type { OwnershipOption } from '@/platform/assets/types/filterTypes'
+import type { OwnershipOption } from '@comfyorg/assets-core/filtering'
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
 import type { AssetKind } from '@/types/widgetTypes'
 import { pagedItems } from '@/utils/pagedList'
@@ -32,6 +33,11 @@ interface Props {
 
 const props = defineProps<Props>()
 const inputId = useId()
+
+provide(
+  AssetKindKey,
+  computed(() => props.assetKind)
+)
 
 const modelValue = defineModel<WidgetValue>({
   default(modelProps: Record<string, unknown>) {

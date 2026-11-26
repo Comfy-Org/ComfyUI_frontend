@@ -4852,6 +4852,131 @@
       }
     }
   },
+  "CreatifyAurora2AvatarNode": {
+    "description": "Creatify Aurora 2.0: حوّل صورة واحدة ومقطع كلام أو غناء إلى فيديو ناطق أو مغنٍّ. تكون مدة الفيديو بطول الصوت ويحافظ عليه دون تغيير.",
+    "display_name": "Creatify Aurora 2.0 أفاتار",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "كلام أو غناء، لمدة تصل إلى 60 ثانية (14 عند 2k). تُحتسب التكلفة لكل ثانية بدأت."
+      },
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "256 بكسلًا على الأقل في كل جانب، بنسبة عرض إلى ارتفاع بين 1:4 و4:1. يحافظ الفيديو على نسبة أبعاد الصورة."
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "يتحكم Seed في ما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن seed."
+      },
+      "text_prompt": {
+        "name": "text_prompt",
+        "tooltip": "اختياري: المشهد أو الكاميرا أو الإضاءة أو التعبير أو الحركة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CreatifyBorealH3ReferenceVideoNode": {
+    "description": "Creatify Boreal-H3، نموذج H3 من Creatify المدرَّب لاحقًا والمصمم لإعلانات الفيديو. أنشئ فيديو بصوت مسترشدًا بالصور ومقاطع الفيديو والصوت المرجعية.",
+    "display_name": "Creatify Boreal-H3 من مرجع إلى فيديو",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "يتبع auto الصورة المرجعية الأولى، وإلا فيتبع الفيديو المرجعي الأول."
+      },
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "عند 2k، الحد الأقصى هو 14 ثانية."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "أشر إلى المراجع بصيغة @Image1 و@Video1 و@Audio1."
+      },
+      "prompt_enhancement": {
+        "name": "prompt_enhancement",
+        "tooltip": "يعيد auto وads صياغة prompt لإعلان فيديو ويمكنهما إضافة سطور منطوقة؛ ويعيد general صياغته لأي فيديو آخر؛ بينما يعرض none prompt كما هو مكتوب."
+      },
+      "reference_audios": {
+        "name": "reference_audios",
+        "tooltip": "حتى 3 مقاطع، يُشار إليها بصيغة @Audio1..@Audio3. يوجّه الكلام الصوتَ لا الكلمات؛ ويمكن أن تصبح الموسيقى الآلية هي الموسيقى التصويرية."
+      },
+      "reference_images": {
+        "name": "reference_images",
+        "tooltip": "حتى 9 صور، يُشار إليها في prompt بصيغة @Image1..@Image9 حسب ترتيب الاتصال. يلزم وجود صورة أو فيديو واحد على الأقل، وبحد أقصى 12 مرجعًا إجمالًا."
+      },
+      "reference_videos": {
+        "name": "reference_videos",
+        "tooltip": "حتى 3 مقاطع فيديو لا تقل مدة كل منها عن ثانية واحدة، يُشار إليها بصيغة @Video1..@Video3. تُحتسب التكلفة لما لا يزيد على 15 ثانية من الفيديو إجمالًا. يُعاد استخدام صوتها عندما يطلب prompt متابعته؛ ويستبدله سطر جديد في prompt."
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "يتحكم Seed في ما إذا كان يجب إعادة تشغيل العقدة. يختار Creatify عشوائيته الخاصة: مع prompt_enhancement none، تعطي المدخلات نفسها الفيديو نفسه."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CreatifyBorealH3VideoNode": {
+    "description": "Creatify Boreal-H3، نموذج H3 من Creatify المدرَّب لاحقًا والمصمم لإعلانات الفيديو. أنشئ فيديو بصوت من النص، مع إمكانية البدء بإطار أول والانتهاء بإطار أخير.",
+    "display_name": "فيديو Creatify Boreal-H3",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "يُستخدم دون إطار أول. مع إطار أول، أبقِ auto: يتبع الفيديو نسبة أبعاد الإطار."
+      },
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "عند 2k، الحد الأقصى هو 14 ثانية."
+      },
+      "first_frame": {
+        "name": "الإطار الأول"
+      },
+      "last_frame": {
+        "name": "الإطار الأخير",
+        "tooltip": "يتطلب إطارًا أولًا."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "prompt_enhancement": {
+        "name": "تحسين الموجّه",
+        "tooltip": "يعيد auto وads صياغة الموجّه لإعلان فيديو، ويمكنهما إضافة أسطر منطوقة؛ ويعيد general صياغته لأي فيديو آخر؛ بينما يعرض none الموجّه كما كُتب."
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "تتحكم البذرة في ما إذا كان ينبغي للعقدة إعادة التشغيل. يختار Creatify عشوائيته الخاصة: عند استخدام prompt_enhancement بالقيمة none، تؤدي المدخلات نفسها إلى الفيديو نفسه."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "CropByBBoxes": {
     "description": "قص وتغيير حجم المناطق من دفعة الصور المدخلة بناءً على مربعات التحديد المقدمة.",
     "display_name": "CropByBBoxes",
@@ -5444,7 +5569,7 @@
       },
       "text": {
         "name": "النص",
-        "tooltip": "الوصف النصي للمؤثر الصوتي المراد توليده."
+        "tooltip": "صِف الصوت بالإنجليزية، بحد أقصى 450 حرفًا. غالبًا ما تُنطق المطالبات باللغات الأخرى بصوت عالٍ بدلًا من تحويلها إلى صوت."
       }
     },
     "outputs": {
@@ -7350,6 +7475,174 @@
       }
     }
   },
+  "GeminiDecisionChoice": {
+    "description": "اختر أحد خياراتك للنصوص أو الصور أو الصوت أو الفيديو. صِل `choice` بعقدة Branch التي تحمل مدخلاتها أسماء الخيارات، أو استخدم `option_index`.",
+    "display_name": "قرار Google Gemini (اختيار)",
+    "inputs": {
+      "audio": {
+        "name": "الصوت",
+        "tooltip": "مقطع صوتي اختياري لاستخدامه كسياق للنموذج."
+      },
+      "images": {
+        "name": "الصور",
+        "tooltip": "صورة أو صور اختيارية لاستخدامها كسياق للنموذج. حتى 16 صورة."
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "options": {
+        "name": "الخيارات",
+        "tooltip": "خيار واحد في كل سطر، ويُستخدم تمامًا كما كُتب. أضف خيارًا مثل `other` للمدخلات التي لا ينطبق عليها أي منها."
+      },
+      "question": {
+        "name": "السؤال",
+        "tooltip": "السؤال الذي تجيب عنه الخيارات. عند وجود عدة مدخلات، استخدم أسماء المقابس، مثل: «أي فصل يظهر في image_1؟»"
+      },
+      "text": {
+        "name": "النص",
+        "tooltip": "النص الذي يدور حوله السؤال، مثل موجّه أو استجابة LLM."
+      },
+      "video": {
+        "name": "الفيديو",
+        "tooltip": "مقطع فيديو اختياري لاستخدامه كسياق للنموذج."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "الاختيار",
+        "tooltip": null
+      },
+      "1": {
+        "name": "فهرس_الخيار",
+        "tooltip": "موضع الخيار المختار في قائمة الخيارات، بدءًا من 0."
+      },
+      "2": {
+        "name": "الثقة",
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiDecisionPickImage": {
+    "description": "اختر صورة واحدة من دفعة. صِل `index` بعقدة Get Image from Batch للاحتفاظ بالصورة المختارة.",
+    "display_name": "قرار Google Gemini (اختيار صورة)",
+    "inputs": {
+      "images": {
+        "name": "الصور",
+        "tooltip": "الصور المراد الاختيار منها، من 2 إلى 64."
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "question": {
+        "name": "السؤال",
+        "tooltip": "الصورة المطلوب اختيارها. صِل الموجّه بـ `text` لاختيار الصورة الأكثر تطابقًا معه."
+      },
+      "text": {
+        "name": "النص",
+        "tooltip": "النص الذي يدور حوله السؤال، مثل الموجّه الذي أُنشئت الصور منه."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "الفهرس",
+        "tooltip": null
+      },
+      "1": {
+        "name": "الثقة",
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiDecisionScore": {
+    "description": "قيّم النصوص أو الصور أو الصوت أو الفيديو من 1 إلى 10. صِل `result` بعقدة If/Else Switch للتصرف بناءً على التقييم.",
+    "display_name": "قرار Google Gemini (تقييم)",
+    "inputs": {
+      "audio": {
+        "name": "الصوت",
+        "tooltip": "مقطع صوتي اختياري لاستخدامه كسياق للنموذج."
+      },
+      "images": {
+        "name": "الصور",
+        "tooltip": "صورة أو صور اختيارية لاستخدامها كسياق للنموذج. حتى 16 صورة."
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "question": {
+        "name": "السؤال",
+        "tooltip": "ما الذي تريد تقييمه، على مقياس من 1 إلى 10. وضّح ما الذي يعنيه 1 و10، كما في المثال."
+      },
+      "text": {
+        "name": "نص",
+        "tooltip": "النص الذي يدور حوله السؤال، مثل موجّه أو استجابة من نموذج لغوي كبير."
+      },
+      "threshold": {
+        "name": "العتبة",
+        "tooltip": "تكون قيمة `result` صحيحة عندما يكون التقييم مساويًا لهذه القيمة على الأقل. تحصل الصور النظيفة والواضحة على نحو 7 إلى 8، والمُتضررة بشدة على نحو 3 إلى 5."
+      },
+      "video": {
+        "name": "فيديو",
+        "tooltip": "مقطع فيديو اختياري لاستخدامه كسياق للنموذج."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "النتيجة",
+        "tooltip": null
+      },
+      "1": {
+        "name": "الدرجة",
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiDecisionYesNo": {
+    "description": "اطرح سؤالًا إجابته نعم أو لا عن النص أو الصور أو الصوت أو الفيديو. وصّل `result` بعقدة تبديل If/Else للاختيار بين مسارين.",
+    "display_name": "قرار Google Gemini (نعم/لا)",
+    "inputs": {
+      "audio": {
+        "name": "صوت",
+        "tooltip": "مقطع صوتي اختياري لاستخدامه كسياق للنموذج."
+      },
+      "images": {
+        "name": "الصور",
+        "tooltip": "صورة أو صور اختيارية لاستخدامها كسياق للنموذج. حتى 16 صورة."
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "question": {
+        "name": "السؤال",
+        "tooltip": "سؤال إجابته نعم أو لا عمّا هو متصل. صِغه بحيث تكون «نعم» هي الحالة التي ستتخذ إجراءً بناءً عليها. عند وجود عدة مدخلات، استخدم أسماء المقابس، مثل: «هل تُظهر image_2 الشخص نفسه الذي تظهره image_1؟»"
+      },
+      "text": {
+        "name": "نص",
+        "tooltip": "النص الذي يدور حوله السؤال، مثل موجّه أو استجابة من نموذج لغوي كبير."
+      },
+      "threshold": {
+        "name": "العتبة",
+        "tooltip": "تكون الإجابة «نعم» عندما يكون احتمال «نعم» مساويًا لهذه القيمة على الأقل. تسجّل إجابات «نعم» الواضحة درجة تقارب 0.85 إلى 0.92، لذا فإن 0.9 أو أكثر يستبعد كثيرًا منها."
+      },
+      "video": {
+        "name": "فيديو",
+        "tooltip": "مقطع فيديو اختياري لاستخدامه كسياق للنموذج."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "النتيجة",
+        "tooltip": null
+      },
+      "1": {
+        "name": "الإجابة",
+        "tooltip": null
+      },
+      "2": {
+        "name": "الاحتمال",
+        "tooltip": null
+      }
+    }
+  },
   "GeminiImage2Node": {
     "description": "توليد أو تعديل الصور بشكل متزامن عبر Google Vertex API.",
     "display_name": "Nano Banana Pro (Google Gemini Image)",
@@ -8632,6 +8925,143 @@
       }
     }
   },
+  "HeyGenDecisionChoice": {
+    "description": "اختر أحد خياراتك للنص أو الصور أو الصوت أو الفيديو. وصّل `choice` بعقدة Branch تكون مدخلاتها بأسماء الخيارات، أو استخدم `option_index`.",
+    "display_name": "قرار HeyGen (اختيار)",
+    "inputs": {
+      "audio_1": {
+        "name": "audio_1",
+        "tooltip": "صوت لمدة تصل إلى 30 دقيقة."
+      },
+      "images": {
+        "name": "الصور",
+        "tooltip": "حتى 4 صور إجمالًا، مع احتساب كل إطار في الدفعة. تُرقّم من image_1 إلى image_4 بالترتيب عبر المقابس، لذا تكون الدفعة المكوّنة من صورتين في المقبس الأول هي image_1 وimage_2."
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "options": {
+        "name": "الخيارات",
+        "tooltip": "خيار واحد في كل سطر، ويُستخدم تمامًا كما كُتب. أضف خيارًا مثل `other` للمدخلات التي لا ينطبق عليها أيّ منها."
+      },
+      "question": {
+        "name": "السؤال",
+        "tooltip": "السؤال الذي تجيب عنه الخيارات. عند وجود عدة مدخلات، أشِر إليها بصيغة image_1 أو image_2 أو audio_1 أو video_1، مثل: «أي فصل يظهر في image_1؟»"
+      },
+      "text": {
+        "name": "نص",
+        "tooltip": "النص الذي يدور حوله السؤال، مثل موجّه أو استجابة من نموذج لغوي كبير."
+      },
+      "video_1": {
+        "name": "video_1",
+        "tooltip": "فيديو لمدة تصل إلى 60 ثانية."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "اختيار",
+        "tooltip": null
+      },
+      "1": {
+        "name": "option_index",
+        "tooltip": "موضع الخيار المختار في قائمة الخيارات، بدءًا من 0."
+      },
+      "2": {
+        "name": "الثقة",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenDecisionScore": {
+    "description": "قيّم النصوص أو الصور أو الصوت أو الفيديو من 1 إلى 10. صِل `result` بعقدة تبديل If/Else للتصرف بناءً على الدرجة.",
+    "display_name": "قرار HeyGen (الدرجة)",
+    "inputs": {
+      "audio_1": {
+        "name": "audio_1",
+        "tooltip": "صوت لمدة تصل إلى 30 دقيقة."
+      },
+      "images": {
+        "name": "الصور",
+        "tooltip": "حتى 4 صور إجمالًا، مع احتساب كل إطار في الدفعة. تُرقّم من image_1 إلى image_4 بالترتيب عبر المقابس، لذا فإن دفعة من صورتين في المقبس الأول تكون image_1 وimage_2."
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "question": {
+        "name": "السؤال",
+        "tooltip": "ما الذي تريد تقييمه، على مقياس من 1 إلى 10. وضّح معنى 1 و10، كما في المثال."
+      },
+      "text": {
+        "name": "النص",
+        "tooltip": "النص الذي يتعلق به السؤال، مثل موجّه أو استجابة LLM."
+      },
+      "threshold": {
+        "name": "العتبة",
+        "tooltip": "تكون `result` صحيحة عندما تكون الدرجة على الأقل بهذه القيمة. تحصل الصور النظيفة والواضحة على درجة تقارب 7، بينما تحصل الصور المتضررة بشدة على درجة تقارب 3 إلى 5."
+      },
+      "video_1": {
+        "name": "video_1",
+        "tooltip": "فيديو لمدة تصل إلى 60 ثانية."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "النتيجة",
+        "tooltip": null
+      },
+      "1": {
+        "name": "الدرجة",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenDecisionYesNo": {
+    "description": "اطرح سؤالًا بنعم/لا عن النصوص أو الصور أو الصوت أو الفيديو. صِل `result` بعقدة تبديل If/Else للاختيار بين مسارين.",
+    "display_name": "قرار HeyGen (نعم/لا)",
+    "inputs": {
+      "audio_1": {
+        "name": "audio_1",
+        "tooltip": "صوت لمدة تصل إلى 30 دقيقة."
+      },
+      "images": {
+        "name": "الصور",
+        "tooltip": "حتى 4 صور إجمالًا، مع احتساب كل إطار في الدفعة. تُرقّم من image_1 إلى image_4 بالترتيب عبر المقابس، لذا فإن دفعة من صورتين في المقبس الأول تكون image_1 وimage_2."
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "question": {
+        "name": "السؤال",
+        "tooltip": "سؤال إجابته نعم أو لا حول ما هو متصل. صِغه بحيث تكون «نعم» هي الحالة التي ستتخذ إجراءً بناءً عليها. عند وجود عدة مدخلات، أشر إليها مثلًا باعتبارها image_1 أو image_2 أو audio_1 أو video_1، مثل: «هل تظهر image_2 الشخص نفسه الذي يظهر في image_1؟»"
+      },
+      "text": {
+        "name": "النص",
+        "tooltip": "النص الذي يتعلق به السؤال، مثل موجّه أو استجابة LLM."
+      },
+      "threshold": {
+        "name": "العتبة",
+        "tooltip": "تكون الإجابة نعم عندما يكون احتمال نعم على الأقل بهذه القيمة. تكون الإجابات الواضحة قريبة من 0 أو 1."
+      },
+      "video_1": {
+        "name": "video_1",
+        "tooltip": "فيديو لمدة تصل إلى 60 ثانية."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "النتيجة",
+        "tooltip": null
+      },
+      "1": {
+        "name": "الإجابة",
+        "tooltip": null
+      },
+      "2": {
+        "name": "الاحتمال",
+        "tooltip": null
+      }
+    }
+  },
   "HeyGenImageToVideoNode": {
     "description": "حرّك صورة وحوّلها إلى فيديو بحوار وصوت متزامنين باستخدام HeyGen Video 1.0. تُستخدم الصورة كإطار أول.",
     "display_name": "HeyGen Video 1.0 من صورة إلى فيديو",
@@ -8859,8 +9289,46 @@
       }
     }
   },
+  "HeyGenVoiceCloneTextToSpeechNode": {
+    "description": "استنسخ صوتًا من تسجيل لمتحدث واحد واجعل النص يُنطَق به باستخدام HeyGen Voice 1.0.",
+    "display_name": "HeyGen Voice 1.0 استنساخ فوري من النص إلى كلام",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "model_expressiveness_boost": {
+        "name": "expressiveness_boost"
+      },
+      "model_language": {
+        "name": "اللغة"
+      },
+      "model_recording_language": {
+        "name": "recording_language"
+      },
+      "model_remove_background_noise": {
+        "name": "remove_background_noise"
+      },
+      "model_seed": {
+        "name": "البذرة"
+      },
+      "model_similarity": {
+        "name": "التشابه"
+      },
+      "model_text": {
+        "name": "النص"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HeyGenVoiceTextToSpeechNode": {
-    "description": "انطق النص بصوت مستنسخ باستخدام HeyGen Voice 1.0 Instant Clone.",
+    "description": "انطق النص بصوت HeyGen باستخدام HeyGen Voice 1.0. للنطق بصوت مستنسخ من تسجيل، استخدم HeyGen Voice 1.0 Instant Clone Text to Speech.",
     "display_name": "تحويل النص إلى كلام HeyGen Voice 1.0",
     "inputs": {
       "model": {
@@ -9400,8 +9868,8 @@
     }
   },
   "IdeogramEditApi": {
-    "description": "يحرر أو يدمج ما يصل إلى 5 صور بتوجيه من موجّه نصي باستخدام Ideogram 4.5. يعيد تصيير الصورة كاملةً ويمكنه تغيير حجمها أو نسبة عرضها إلى ارتفاعها؛ استخدم Ideogram 4.5 Precise Edit للإبقاء على وحدات البكسل غير المعدلة دون تغيير.",
-    "display_name": "Ideogram 4.5 تحرير",
+    "description": "يحرر أو يدمج ما يصل إلى 5 صور بالاستناد إلى موجّه نصي باستخدام Ideogram 4.6 أو 4.5. يعيد تصيير الصورة بأكملها ويمكنه تغيير حجمها أو نسبة أبعادها؛ استخدم Ideogram Precise Edit للإبقاء على البكسلات غير المعدلة دون تغيير.",
+    "display_name": "تحرير Ideogram",
     "inputs": {
       "control_after_generate": {
         "name": "التحكم بعد التوليد"
@@ -9409,6 +9877,9 @@
       "model": {
         "name": "النموذج",
         "tooltip": "النموذج المراد استخدامه."
+      },
+      "model_background": {
+        "name": "الخلفية"
       },
       "model_height": {
         "name": "الارتفاع"
@@ -9478,8 +9949,8 @@
     }
   },
   "IdeogramPreciseEditApi": {
-    "description": "يحرر صورة مسترشدًا بموجّه نصي باستخدام التحرير الدقيق في Ideogram 4.5: يتغير فقط ما يطلبه الموجّه، وتبقى البكسلات غير المتأثرة مطابقة، ويحافظ الناتج على حجم الصورة 1 (تُصغّر الصور التي تزيد عن نحو 4 MP أولًا). يمكنه أيضًا تحرير منطقة واحدة، تحددها mask أو مربعات إحاطة، وإرجاع الصورة بحجمها الكامل. يقبل حتى 4 صور مرجعية (3 مع context_window_mask).",
-    "display_name": "Ideogram 4.5 تحرير دقيق",
+    "description": "يحرر صورة بالاستناد إلى موجّه نصي باستخدام التحرير الدقيق في Ideogram 4.6 أو 4.5: لا يتغير إلا ما يطلبه الموجّه، وتبقى البكسلات غير المعدلة مطابقة، ويحافظ الإخراج على حجم الصورة 1 (تُصغّر الصور الكبيرة أولًا). يمكنه أيضًا تحرير منطقة واحدة، تُحدد بواسطة mask أو مربعات إحاطة، وإرجاع الصورة بحجمها الكامل. يقبل ما يصل إلى 4 صور مرجعية (3 مع mask).",
+    "display_name": "تحرير Ideogram الدقيق",
     "inputs": {
       "control_after_generate": {
         "name": "التحكم بعد التوليد"
@@ -9508,8 +9979,8 @@
     }
   },
   "IdeogramTextToImageApi": {
-    "description": "يُنشئ صورًا من موجّه نصي باستخدام Ideogram 4.5.",
-    "display_name": "Ideogram 4.5 من نص إلى صورة",
+    "description": "يولّد صورًا من موجّه نصي باستخدام Ideogram 4.6 أو 4.5.",
+    "display_name": "Ideogram من النص إلى الصورة",
     "inputs": {
       "control_after_generate": {
         "name": "التحكم بعد التوليد"
@@ -9517,6 +9988,12 @@
       "model": {
         "name": "النموذج",
         "tooltip": "النموذج المراد استخدامه."
+      },
+      "model_background": {
+        "name": "الخلفية"
+      },
+      "model_height": {
+        "name": "الارتفاع"
       },
       "model_magic_prompt": {
         "name": "magic_prompt"
@@ -9532,6 +10009,9 @@
       },
       "model_size": {
         "name": "الحجم"
+      },
+      "model_width": {
+        "name": "العرض"
       }
     },
     "outputs": {
@@ -14990,6 +15470,91 @@
       }
     }
   },
+  "MeshyImageToReliefNode": {
+    "description": "حوّل صورة إلى نموذج نقش بارز منخفض وخريطة عمق بعمق لوني 16-بت للطباعة ثلاثية الأبعاد والنقش بالليزر والنحت باستخدام CNC. لا يتم إنشاء وتنزيل سوى المخرجات المتصلة؛ وإذا لم يكن أي مخرج للنموذج متصلاً، فستُرجع المهمة خريطة العمق فقط.",
+    "display_name": "Meshy: من الصورة إلى نقش بارز",
+    "inputs": {
+      "base": {
+        "name": "base",
+        "tooltip": "none يزيل الخلفية ولا ينشئ أي قاعدة."
+      },
+      "base_base_thickness_mm": {
+        "name": "base_thickness_mm"
+      },
+      "bend": {
+        "name": "bend",
+        "tooltip": "convex يحدّب الواجهة إلى الخارج، وconcave يقوّسها إلى الداخل."
+      },
+      "carving_mode": {
+        "name": "carving_mode",
+        "tooltip": "emboss يرفع الأجزاء الأقرب من الصورة، وengrave ينحتها إلى الداخل."
+      },
+      "color_mapping": {
+        "name": "color_mapping",
+        "tooltip": "لوّن ملفات GLB وOBJ وFBX وUSDZ باستخدام الصورة. يبقى STL و3MF باللون الأبيض."
+      },
+      "control_after_generate": {
+        "name": "التحكم بعد الإنشاء"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "يبرز العمل الفني الداكن على خلفية فاتحة. تُزال الشفافية قبل الرفع، لذا سطّح الشعار الشفاف على خلفية بيضاء أولاً."
+      },
+      "mesh_resolution": {
+        "name": "mesh_resolution",
+        "tooltip": "نقاط الشبكة على امتداد الضلع الأطول للصورة. عند 1024، يبلغ حجم GLB نحو 50 MB وSTL نحو 105 MB، وعند 2048 نحو 200 MB و420 MB؛ ويضاعف الانحناء هذه الأحجام."
+      },
+      "relief_type": {
+        "name": "relief_type",
+        "tooltip": "low: نحت ضحل للنقش بالليزر وCNC واللوحات. high: نحت أعمق للقطع المطبوعة ثلاثية الأبعاد."
+      },
+      "relief_type_carving_depth_mm": {
+        "name": "carving_depth_mm"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "يتحكم البذرة في ما إذا كان ينبغي للعقدة إعادة التشغيل؛ فالنتائج غير حتمية بغض النظر عن البذرة. غيّرها لطلب مخرج تم توصيله بعد آخر تشغيل."
+      },
+      "size_mm": {
+        "name": "size_mm",
+        "tooltip": "طول الضلع الأطول للصورة على النموذج، ويُقاس وهو مسطح قبل أي انحناء."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "1": {
+        "name": "STL",
+        "tooltip": null
+      },
+      "2": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": null
+      },
+      "4": {
+        "name": "USDZ",
+        "tooltip": null
+      },
+      "5": {
+        "name": "3MF",
+        "tooltip": null
+      },
+      "6": {
+        "name": "depth_map",
+        "tooltip": "خريطة عمق بالنطاق الكامل ذي 16-بت؛ يحفظها Save Image (Advanced) كملف PNG بعمق 16-بت."
+      },
+      "7": {
+        "name": "معاينة",
+        "tooltip": null
+      }
+    }
+  },
   "MeshyMultiImageToModelNode": {
     "display_name": "Meshy: من صور متعددة إلى نموذج",
     "inputs": {
@@ -15285,6 +15850,44 @@
         "tooltip": null
       },
       "3": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyTextureN1Node": {
+    "description": "أكسِ نموذجًا تم إنشاؤه مسبقًا باستخدام Meshy N1 عبر 1 إلى 4 مناظر مرجعية للكائن نفسه.",
+    "display_name": "Meshy: إكساء النموذج (N1)",
+    "inputs": {
+      "enable_original_uv": {
+        "name": "enable_original_uv",
+        "tooltip": "استخدم UV الأصلي للنموذج بدلًا من إنشاء UVs جديدة. عند التمكين، يحافظ Meshy على الإكساءات الموجودة في النموذج المرفوع. إذا لم يكن للنموذج UV أصلي، فقد لا تكون جودة المخرج جيدة بالقدر نفسه."
+      },
+      "extra_views": {
+        "name": "مناظر إضافية",
+        "tooltip": "مناظر إضافية للكائن نفسه، بأي ترتيب. مع front_view، بحد أقصى 4 صور."
+      },
+      "front_view": {
+        "name": "front_view",
+        "tooltip": "المنظر الذي يتعامل معه Meshy باعتباره الواجهة الأمامية. تقوم صورة واحدة بإكساء الواجهة الأمامية وتترك الخلفية دون إكساء؛ أضف المناظر الخلفية والجانبية في extra_views للحصول على خلفية مطابقة."
+      },
+      "meshy_task_id": {
+        "name": "meshy_task_id"
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "2": {
         "name": "FBX",
         "tooltip": null
       }
@@ -16318,6 +16921,9 @@
       "model": {
         "name": "النموذج",
         "tooltip": "النموذج المراد استخدامه."
+      },
+      "model_auto_downscale": {
+        "name": "auto_downscale"
       },
       "model_negative_prompt": {
         "name": "negative_prompt"
@@ -17793,6 +18399,206 @@
       }
     }
   },
+  "ModelMergeMiniMaxH3": {
+    "description": "يدمج نموذجي MiniMax H3 متوافقين بحسب المكوّن. تمثل كل نسبة حصة model1. وتُحتفظ بالمخازن المؤقتة من model1.",
+    "display_name": "دمج نموذج MiniMax H3",
+    "inputs": {
+      "audio_patch_proj_": {
+        "name": "audio_patch_proj."
+      },
+      "blocks_0_": {
+        "name": "blocks.0."
+      },
+      "blocks_10_": {
+        "name": "blocks.10."
+      },
+      "blocks_11_": {
+        "name": "الكتل.11."
+      },
+      "blocks_12_": {
+        "name": "الكتل.12."
+      },
+      "blocks_13_": {
+        "name": "الكتل.13."
+      },
+      "blocks_14_": {
+        "name": "الكتل.14."
+      },
+      "blocks_15_": {
+        "name": "الكتل.15."
+      },
+      "blocks_16_": {
+        "name": "الكتل.16."
+      },
+      "blocks_17_": {
+        "name": "الكتل.17."
+      },
+      "blocks_18_": {
+        "name": "الكتل.18."
+      },
+      "blocks_19_": {
+        "name": "الكتل.19."
+      },
+      "blocks_1_": {
+        "name": "blocks.1."
+      },
+      "blocks_20_": {
+        "name": "الكتل.20."
+      },
+      "blocks_21_": {
+        "name": "الكتل.21."
+      },
+      "blocks_22_": {
+        "name": "الكتل.22."
+      },
+      "blocks_23_": {
+        "name": "الكتل.23."
+      },
+      "blocks_24_": {
+        "name": "الكتل.24."
+      },
+      "blocks_25_": {
+        "name": "الكتل.25."
+      },
+      "blocks_26_": {
+        "name": "الكتل.26."
+      },
+      "blocks_27_": {
+        "name": "الكتل.27."
+      },
+      "blocks_28_": {
+        "name": "الكتل.28."
+      },
+      "blocks_29_": {
+        "name": "الكتل.29."
+      },
+      "blocks_2_": {
+        "name": "blocks.2."
+      },
+      "blocks_30_": {
+        "name": "الكتل.30."
+      },
+      "blocks_31_": {
+        "name": "الكتل.31."
+      },
+      "blocks_32_": {
+        "name": "الكتل.32."
+      },
+      "blocks_33_": {
+        "name": "الكتل.33."
+      },
+      "blocks_34_": {
+        "name": "الكتل.34."
+      },
+      "blocks_35_": {
+        "name": "الكتل.35."
+      },
+      "blocks_36_": {
+        "name": "الكتل.36."
+      },
+      "blocks_37_": {
+        "name": "الكتل.37."
+      },
+      "blocks_38_": {
+        "name": "الكتل.38."
+      },
+      "blocks_39_": {
+        "name": "الكتل.39."
+      },
+      "blocks_3_": {
+        "name": "blocks.3."
+      },
+      "blocks_40_": {
+        "name": "الكتل.40."
+      },
+      "blocks_41_": {
+        "name": "الكتل.41."
+      },
+      "blocks_42_": {
+        "name": "الكتل.42."
+      },
+      "blocks_43_": {
+        "name": "الكتل.43."
+      },
+      "blocks_44_": {
+        "name": "الكتل.44."
+      },
+      "blocks_45_": {
+        "name": "الكتل.45."
+      },
+      "blocks_46_": {
+        "name": "الكتل.46."
+      },
+      "blocks_47_": {
+        "name": "الكتل.47."
+      },
+      "blocks_48_": {
+        "name": "الكتل.48."
+      },
+      "blocks_49_": {
+        "name": "الكتل.49."
+      },
+      "blocks_4_": {
+        "name": "blocks.4."
+      },
+      "blocks_5_": {
+        "name": "blocks.5."
+      },
+      "blocks_6_": {
+        "name": "blocks.6."
+      },
+      "blocks_7_": {
+        "name": "blocks.7."
+      },
+      "blocks_8_": {
+        "name": "blocks.8."
+      },
+      "blocks_9_": {
+        "name": "blocks.9."
+      },
+      "condition_proj_": {
+        "name": "condition_proj."
+      },
+      "final_layer_adaln_proj_": {
+        "name": "final_layer.adaln_proj."
+      },
+      "final_layer_audio_out_": {
+        "name": "final_layer.audio_out."
+      },
+      "final_layer_norm_": {
+        "name": "الطبقة_النهائية.التطبيع."
+      },
+      "final_layer_video_out_": {
+        "name": "final_layer.video_out."
+      },
+      "model1": {
+        "name": "model1"
+      },
+      "model2": {
+        "name": "model2"
+      },
+      "time_embedder_": {
+        "name": "time_embedder."
+      },
+      "token_refiner_blocks_0_": {
+        "name": "token_refiner.blocks.0."
+      },
+      "token_refiner_blocks_1_": {
+        "name": "token_refiner.blocks.1."
+      },
+      "token_refiner_final_norm_": {
+        "name": "token_refiner.final_norm."
+      },
+      "video_patch_proj_": {
+        "name": "video_patch_proj."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ModelMergeMochiPreview": {
     "display_name": "ModelMergeMochiPreview",
     "inputs": {
@@ -19213,6 +20019,39 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "مدخلات نصية للنموذج، تُستخدم لإنشاء رد."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenAIChatNodeV2": {
+    "description": "أنشئ استجابات نصية باستخدام نماذج GPT من OpenAI. وفّر موجّهًا نصيًا، ويمكنك اختياريًا توفير صور أو ملفات كسياق.",
+    "display_name": "OpenAI ChatGPT",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control_after_generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "النموذج المستخدم لإنشاء الاستجابة."
+      },
+      "model_max_output_tokens": {
+        "name": "max_output_tokens"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_system_prompt": {
+        "name": "system_prompt"
       }
     },
     "outputs": {
@@ -21214,6 +22053,56 @@
       }
     }
   },
+  "PrunaAvatarNode": {
+    "description": "ينشئ فيديو ناطقًا من صورة شخصية وكلام باستخدام Pruna P-Video-2 Pro Avatar: صوتك الخاص أو نص يُنطَق بتحويل النص إلى كلام.",
+    "display_name": "Pruna P-Video-2 Pro Avatar",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "enhance_prompt": {
+        "name": "enhance_prompt",
+        "tooltip": "أضف إلى الموجّه الحركة الظاهرة في الصورة الشخصية، مثل الخلفية والإضاءة وحركة الجسم. أوقفه لاستخدام الموجّه كما هو مكتوب ولإعادة إنتاج نتيجة مطابقة تمامًا باستخدام البذرة نفسها."
+      },
+      "image": {
+        "name": "صورة",
+        "tooltip": "الصورة الشخصية التي يبدأ منها الفيديو. يحافظ الفيديو على نسبة أبعاده من 1:2 إلى 4:1؛ وتُقص الصور الأكثر تطرفًا، مثل 1:5، إلى 9:16 أو 16:9."
+      },
+      "prompt": {
+        "name": "موجّه",
+        "tooltip": "يصف ما يعرضه الفيديو. حتى 5000 حرف."
+      },
+      "resolution": {
+        "name": "الدقة",
+        "tooltip": "تُحسّن 1080p و2k و4k دقة الفيديو 768p. تقتصر 2k على 150 ثانية و4k على 60 ثانية."
+      },
+      "seed": {
+        "name": "بذرة",
+        "tooltip": "بذرة للتوليد. لا تعيد البذرة نفسها إنتاج نتيجة مطابقة تمامًا إلا عند إيقاف enhance_prompt."
+      },
+      "speech": {
+        "name": "كلام",
+        "tooltip": "وجّه الفيديو بنص لتحويل النص إلى كلام أو بصوتك الخاص."
+      },
+      "speech_language": {
+        "name": "اللغة"
+      },
+      "speech_script": {
+        "name": "النص"
+      },
+      "speech_voice": {
+        "name": "الصوت"
+      },
+      "speech_voice_prompt": {
+        "name": "voice_prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PrunaImageToVideoNode": {
     "description": "يحوّل صورة إلى فيديو متحرك باستخدام نماذج فيديو Pruna، مع إطار أخير اختياري أو صوت مُولَّد أو مسار صوتي.",
     "display_name": "Pruna P-Video-2 من صورة إلى فيديو",
@@ -21275,6 +22164,48 @@
       "video": {
         "name": "فيديو",
         "tooltip": "الفيديو المراد رفع دقته، حتى 512 MiB."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrunaReferenceToVideoNode": {
+    "description": "ينشئ فيديو من موجّه مسترشدًا بالصور ومقاطع الفيديو والصوت المرجعية باستخدام نماذج فيديو Pruna.",
+    "display_name": "Pruna P-Video-2 Pro من مرجع إلى فيديو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج المراد استخدامه."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "model_enhance_prompt": {
+        "name": "enhance_prompt"
+      },
+      "model_keep_audio": {
+        "name": "keep_audio"
+      },
+      "model_mode": {
+        "name": "الوضع"
+      },
+      "model_prompt": {
+        "name": "موجّه"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "model_seed": {
+        "name": "بذرة"
       }
     },
     "outputs": {
@@ -22195,7 +23126,7 @@
       },
       "model": {
         "name": "النموذج",
-        "tooltip": "النموذج المراد استخدامه للتوليد. صُممت نماذج recraftv4_styles لتوليد متسق في الأسلوب، وتتطلب دائمًا style_id أو style_references؛ أما recraftv4_1_flash فهو النموذج الأسرع والأقل تكلفة ولا يدعم أي أنماط على الإطلاق."
+        "tooltip": "النموذج المستخدم للتوليد. صُممت نماذج recraftv4_styles للتوليد المتسق في الأسلوب وتتطلب دائمًا style_id أو style_references؛ يشغّل recraftv4_1_flash نموذج Recraft V4.1 Flash V2، وهو النموذج الأسرع والأقل تكلفة، ولا يدعم أي أنماط على الإطلاق."
       },
       "model_size": {
         "name": "الحجم"
@@ -22306,6 +23237,14 @@
     "inputs": {
       "image": {
         "name": "صورة"
+      },
+      "shape_stacking": {
+        "name": "shape_stacking",
+        "tooltip": "تضع hierarchical الطبقات والأشكال فوق بعضها بعضًا؛ وينشئ cut_out أشكالًا لا تتداخل أبدًا، لمخططات الرسم وقواطع الفينيل والطباعة بالشاشة الحريرية."
+      },
+      "version": {
+        "name": "version",
+        "tooltip": "يوفر v1_pro ‏(Vectorizer Pro) ملفات SVG أنظف بمنحنيات ناعمة وخطوط مستقيمة وزوايا حادة، وهو الأفضل للنصوص والأشكال المعقدة."
       }
     },
     "outputs": {
@@ -23152,15 +24091,15 @@
       },
       "bbox_height": {
         "name": "ارتفاع الصندوق المحيط",
-        "tooltip": "ارتفاع الصندوق المحيط (محور Z)."
+        "tooltip": "ارتفاع مربع الإحاطة (عموديًا)."
       },
       "bbox_length": {
         "name": "طول الصندوق المحيط",
-        "tooltip": "طول الصندوق المحيط (محور X)."
+        "tooltip": "طول مربع الإحاطة (من الأمام إلى الخلف)."
       },
       "bbox_width": {
         "name": "عرض الصندوق المحيط",
-        "tooltip": "عرض الصندوق المحيط (محور Y). ضع القيمة ٠ مع البقية لتخطي الصندوق."
+        "tooltip": "عرض مربع الإحاطة (من جانب إلى جانب). اضبطه على 0 مع القيم الأخرى لتجاوز bbox."
       },
       "control_after_generate": {
         "name": "التحكم بعد التوليد"
@@ -23233,15 +24172,15 @@
       },
       "bbox_height": {
         "name": "ارتفاع الصندوق المحيط",
-        "tooltip": "ارتفاع الصندوق المحيط (محور Z)."
+        "tooltip": "ارتفاع مربع الإحاطة (عموديًا)."
       },
       "bbox_length": {
         "name": "طول الصندوق المحيط",
-        "tooltip": "طول الصندوق المحيط (محور X)."
+        "tooltip": "طول مربع الإحاطة (من الأمام إلى الخلف)."
       },
       "bbox_width": {
         "name": "عرض الصندوق المحيط",
-        "tooltip": "عرض الصندوق المحيط (محور Y). ضع القيمة ٠ مع القيم الأخرى لتخطي الصندوق."
+        "tooltip": "عرض مربع الإحاطة (من جانب إلى جانب). اضبطه على 0 مع القيم الأخرى لتجاوز bbox."
       },
       "control_after_generate": {
         "name": "التحكم بعد التوليد"
@@ -29215,6 +30154,37 @@
       }
     }
   },
+  "TripoSmartUVNode": {
+    "description": "يعيد فكّ تغليف إحداثيات UV للنموذج ويعيد تعيين خاماته وهيكله العظمي ورسومه المتحركة إلى التخطيط الجديد. يجب ألا يتجاوز الإدخال 80,000 مثلثًا (يُحتسب كل رباعي كمثلثين)؛ قلّل النماذج الأكبر باستخدام Tripo: إعادة تنظيم الشبكة الطوبولوجية أو face_limit أولًا.",
+    "display_name": "Tripo: UV ذكي",
+    "inputs": {
+      "bake": {
+        "name": "bake",
+        "tooltip": "يخبز الخامات الحالية على تخطيط UV الجديد. يؤدي إيقافه إلى تخطي الخبز وإرجاع النموذج دون خامات الألوان الخاصة به."
+      },
+      "model_task_id": {
+        "name": "model_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "النموذج task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "فارغ عندما يكون النموذج المصدر بصيغة FBX."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "لا يُملأ إلا عندما يكون النموذج المصدر بصيغة FBX، مثل شبكة رباعية."
+      },
+      "3": {
+        "name": "أطلس UV",
+        "tooltip": null
+      }
+    }
+  },
   "TripoSplatConditioning": {
     "description": "ترميز الصورة باستخدام DINOv3 وFlux2 VAE إلى تهيئة إيجابية/سلبية لـ TripoSplat، وإنشاء هدف الضوضاء ذو الحجم الثابت (latent + camera) لـ KSampler",
     "display_name": "تهيئة TripoSplat",
@@ -29593,6 +30563,150 @@
       "0": {
         "name": "النصوص",
         "tooltip": "النصوص المعالجة"
+      }
+    }
+  },
+  "TypeSafeJevChoice": {
+    "description": "اختر أحد خياراتك للنص أو الصور. صِل `choice` بعقدة Branch تحمل مدخلاتها أسماء الخيارات، أو استخدم `option_index`.",
+    "display_name": "TypeSafe Jev (اختيار)",
+    "inputs": {
+      "images": {
+        "name": "الصور",
+        "tooltip": "الصور التي يتعلق بها السؤال. حتى 32 صورة إجمالًا؛ ويُرسل ما يزيد على 4 منها بحجم أصغر."
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "options": {
+        "name": "الخيارات",
+        "tooltip": "خيار واحد في كل سطر. أضف خيارًا مثل `other` للمدخلات التي لا ينطبق عليها أيّ منها."
+      },
+      "question": {
+        "name": "السؤال",
+        "tooltip": "السؤال الذي تجيب عنه الخيارات. عند وجود عدة مدخلات، استخدم أسماء المقابس، مثل «أي فصل يظهر في image_1؟»"
+      },
+      "text": {
+        "name": "النص",
+        "tooltip": "النص الذي يتعلق به السؤال، مثل مطالبة أو استجابة من LLM."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "الاختيار",
+        "tooltip": null
+      },
+      "1": {
+        "name": "فهرس_الخيار",
+        "tooltip": "موضع الخيار المختار في قائمة الخيارات، بدءًا من 0."
+      },
+      "2": {
+        "name": "الثقة",
+        "tooltip": "مدى تأكد Jev، من 0 (لا فائز واضح) إلى 1 (مؤكد)."
+      }
+    }
+  },
+  "TypeSafeJevPickImage": {
+    "description": "اختر صورة واحدة من دفعة. صِل `index` بعقدة Get Image from Batch للاحتفاظ بالصورة المختارة.",
+    "display_name": "TypeSafe Jev (اختيار صورة)",
+    "inputs": {
+      "images": {
+        "name": "الصور",
+        "tooltip": "الصور التي تختار منها، من 2 إلى 32."
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "question": {
+        "name": "السؤال",
+        "tooltip": "الصورة المطلوب اختيارها. صِل المطالبة بـ `text` لاختيار الصورة الأكثر تطابقًا معها."
+      },
+      "text": {
+        "name": "النص",
+        "tooltip": "النص الذي يتعلق به السؤال، مثل المطالبة التي أُنشئت الصور منها."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "الفهرس",
+        "tooltip": "موضع الصورة المختارة في الدفعة، بدءًا من 0."
+      },
+      "1": {
+        "name": "الثقة",
+        "tooltip": "مدى تأكد Jev، من 0 (لا فائز واضح) إلى 1 (مؤكد)."
+      }
+    }
+  },
+  "TypeSafeJevScore": {
+    "description": "قيّم النص أو الصور من 1 إلى 10. صِل `result` بعقدة If/Else Switch للتصرف بناءً على التقييم.",
+    "display_name": "TypeSafe Jev (تقييم)",
+    "inputs": {
+      "images": {
+        "name": "الصور",
+        "tooltip": "الصور التي يتعلق بها السؤال. حتى 32 صورة إجمالًا؛ ويُرسل ما يزيد على 4 منها بحجم أصغر."
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "question": {
+        "name": "السؤال",
+        "tooltip": "ما الذي تريد تقييمه، على مقياس من 1 إلى 10. وضّح ما الذي يعنيه 1 و10، كما في المثال."
+      },
+      "text": {
+        "name": "النص",
+        "tooltip": "النص الذي يدور حوله السؤال، مثل موجّه أو استجابة من LLM."
+      },
+      "threshold": {
+        "name": "العتبة",
+        "tooltip": "تكون `result` صحيحة عندما يكون التقييم مساويًا لهذه القيمة على الأقل."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "result",
+        "tooltip": null
+      },
+      "1": {
+        "name": "score",
+        "tooltip": null
+      }
+    }
+  },
+  "TypeSafeJevYesNo": {
+    "description": "اطرح سؤالًا بنعم/لا حول النص أو الصور. صِل `result` بعقدة If/Else Switch للاختيار بين مسارين.",
+    "display_name": "TypeSafe Jev (نعم/لا)",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "الصور التي يدور حولها السؤال. حتى 32 صورة إجمالًا؛ تُرسل أكثر من 4 صور بحجم أصغر."
+      },
+      "model": {
+        "name": "model"
+      },
+      "question": {
+        "name": "question",
+        "tooltip": "سؤال إجابته نعم أو لا حول ما هو متصل. صُغه بحيث تكون «نعم» هي الحالة التي ستتخذ إجراءً بناءً عليها. عند وجود عدة مدخلات، استخدم أسماء المقابس، مثل: «هل تُظهر image_2 الشخص نفسه الظاهر في image_1؟»"
+      },
+      "text": {
+        "name": "text",
+        "tooltip": "النص الذي يدور حوله السؤال، مثل موجّه أو استجابة من LLM."
+      },
+      "threshold": {
+        "name": "threshold",
+        "tooltip": "تكون الإجابة «نعم» عندما يكون احتمال «نعم» مساويًا لهذه القيمة على الأقل."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "result",
+        "tooltip": null
+      },
+      "1": {
+        "name": "answer",
+        "tooltip": null
+      },
+      "2": {
+        "name": "probability",
+        "tooltip": null
       }
     }
   },

@@ -153,22 +153,17 @@ test.describe(
 
           await expect(turnLock.composer).toBeVisible()
           await expect(turnLock.userBubbles).toHaveText([PROMPT])
-
-          // Composer renders Stop and Send as one button whose label flips, so
-          // Send being absent IS Stop being offered: the restored turn
-          // withholds the send the server would answer with 409.
           await expect(turnLock.sendButton).toHaveCount(0)
           await expect(turnLock.stopButton).toBeVisible()
         })
 
-        await test.step('Enter does not post a second message', async () => {
-          // Enter is the one affordance left that could still post. A running
-          // turn swallows it, so the draft staying in the composer is the
-          // settle that makes the three negative assertions below real checks
-          // rather than ones that pass on a send still in flight.
+        await test.step('Enter queues a follow-up without posting a second message', async () => {
           await turnLock.composer.fill('are you still there?')
           await turnLock.composer.press('Enter')
-          await expect(turnLock.composer).toHaveText('are you still there?')
+          await expect(turnLock.promptQueue).toContainText(
+            'are you still there?'
+          )
+          await expect(turnLock.composer).toHaveText('')
 
           await expect(turnLock.userBubbles).toHaveText([PROMPT])
           await expect(

@@ -982,7 +982,7 @@ describe('LinkConnector Integration', () => {
       runIntegrityCheck: true
     }
   ])(
-    'Should allow reconnect from output to any reroute',
+    'Should allow reconnect from output to reroute $targetRerouteId',
     (
       {
         targetRerouteId,
@@ -1110,7 +1110,7 @@ describe('LinkConnector Integration', () => {
       expectedExtraLinks: 1
     }
   ])(
-    'Should allow connecting from reroutes to another reroute',
+    'Should allow connecting from reroute $fromRerouteId to reroute $targetRerouteId',
     (
       {
         fromRerouteId,
@@ -1216,7 +1216,7 @@ describe('LinkConnector Integration', () => {
     { from: 14, to: 13 },
     { from: 10, to: 10 }
   ])(
-    'Connecting reroutes to invalid targets should do nothing',
+    'Connecting reroute $from to invalid target reroute $to should do nothing',
     ({ from, to }, { graph, connector, validateIntegrityNoChanges }) => {
       const listener = vi.fn()
       connector.listenUntilReset('link-created', listener)
@@ -1250,7 +1250,7 @@ describe('LinkConnector Integration', () => {
     { nodeId: toNodeId(4), rerouteId: toRerouteId(12) }
   ]
   test.for(nodeReroutePairs)(
-    'Should ignore connections from input to same node via reroutes',
+    'Should ignore connections from input to same node $nodeId via reroute $rerouteId',
     (
       { nodeId, rerouteId },
       { graph, connector, validateIntegrityNoChanges }
@@ -1281,7 +1281,7 @@ describe('LinkConnector Integration', () => {
   )
 
   test.for(nodeReroutePairs)(
-    'Should ignore connections looping back to the origin node from a reroute',
+    'Should ignore connections looping back to origin node $nodeId from reroute $rerouteId',
     (
       { nodeId, rerouteId },
       { graph, connector, validateIntegrityNoChanges }
@@ -1308,7 +1308,7 @@ describe('LinkConnector Integration', () => {
   )
 
   test.for(nodeReroutePairs)(
-    'Should ignore connections looping back to the origin node input from a reroute',
+    'Should ignore connections looping back to origin node $nodeId input from reroute $rerouteId',
     (
       { nodeId, rerouteId },
       { graph, connector, validateIntegrityNoChanges }

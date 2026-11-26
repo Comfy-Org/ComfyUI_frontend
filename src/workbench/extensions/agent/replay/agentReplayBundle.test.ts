@@ -118,6 +118,52 @@ describe('parseAgentReplayBundle basic validation', () => {
       reason: 'invalid_bundle'
     })
   })
+
+  it('accepts an explained transcript-only degraded replay', () => {
+    const input = {
+      ...completeBundle(),
+      workflows: [],
+      entries: [
+        {
+          kind: 'visible_event',
+          at_ms: 0,
+          event: {
+            type: 'agent_message',
+            role: 'user',
+            content: { text: 'Hi' }
+          }
+        }
+      ],
+      final_graph_digests: {},
+      fidelity: {
+        complete: false,
+        level: 'degraded',
+        reasons: ['historical_workflow_baseline_unavailable']
+      }
+    }
+    expect(parseAgentReplayBundle(input)).toEqual({ ok: true, bundle: input })
+  })
+
+  it('rejects full fidelity without workflow evidence', () => {
+    expect(
+      parseAgentReplayBundle({
+        ...completeBundle(),
+        workflows: [],
+        entries: [
+          {
+            kind: 'visible_event',
+            at_ms: 0,
+            event: {
+              type: 'agent_message',
+              role: 'user',
+              content: { text: 'Hi' }
+            }
+          }
+        ],
+        final_graph_digests: {}
+      })
+    ).toMatchObject({ ok: false, reason: 'invalid_bundle' })
+  })
 })
 
 describe('parseAgentReplayBundle workflow validation', () => {

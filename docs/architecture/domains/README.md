@@ -1,6 +1,6 @@
-# Frontend domain catalog
+# Domain catalog
 
-This directory records which `src` and workspace package paths belong to
+This directory records which application, package and tooling source paths belong to
 which domain, and which parts of each domain other domains may import. Fallow enforces the boundaries; `tools/architecture` generates its
 config from the records and tracks architecture suppressions.
 
@@ -27,7 +27,7 @@ Owners come from `CODEOWNERS`; records do not repeat them.
 ## Module paths
 
 A module path is a file or a directory ending in `/**` under `src/` or
-under a workspace package's `packages/<name>/src/`. Prefer directories: a file
+under `packages/<name>/src/` or `tools/<name>/src/`. Prefer directories: a file
 added under a claimed directory joins its domain without a record change.
 Paths may nest. Each file belongs to the most specific path that matches it: a
 file path beats any directory, and a deeper directory beats a shallower one.
@@ -44,11 +44,12 @@ subject, has the same domain.
 `architecture:catalog` also reports classification coverage: each domain's
 `sourceFileCount`, and a top-level `coverage` object with `total`,
 `classified`, and `unclassified` counts plus the sorted `unclassifiedFiles`
-list. Coverage counts `src/**/*.{ts,tsx,vue}` and
-`packages/*/src/**/*.{ts,tsx,vue}`, tests included. It excludes `apps/`,
-package files outside `src/` such as build and test configs, and non-code
+list. Coverage counts `src/**/*.{ts,tsx,vue}`,
+`packages/*/src/**/*.{ts,tsx,vue}` and `tools/*/src/**/*.{ts,tsx,vue}`, tests included. It excludes `apps/`,
+workspace files outside `src/` such as build and test configs, and non-code
 files such as JSON, CSS, and assets, so 100% coverage means every `src` and
-package `src` code file belongs to a domain.
+workspace `src` code file belongs to a domain. Tooling may be a technical domain
+without being a frontend product domain. Unclaimed tooling remains unclassified.
 
 ## Boundaries
 
@@ -58,7 +59,7 @@ points become a `<domain>/public` zone. Inventory domains share one
 name every zone they allow. Fallow puts a file in the first zone that matches
 it, so a path that contains another domain's path moves to a later
 `outer-<n>` zone with the same rules.
-Every other `src` or package `src` file falls into the `unclassified` zone.
+Every other covered source file falls into the `unclassified` zone.
 The generated rules allow:
 
 - any import within a domain;

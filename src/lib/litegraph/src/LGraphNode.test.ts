@@ -9,6 +9,7 @@ import type {
   PointTuple as Point,
   Rect
 } from '@comfyorg/shared-frontend-utils/geometry'
+import { bindMountedNodeSize } from '@/renderer/core/layout/store/mountedNodeSizes'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
 import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
@@ -747,6 +748,43 @@ describe('LGraphNode', () => {
       expect(node.widgets![0].value).toBe(1)
       expect(node.widgets![1].value).toBe(100)
     })
+
+    test('should serialize a widget that only options.serialize excludes', () => {
+      const node = new LGraphNode('TestNode')
+      node.serialize_widgets = true
+
+      node.addWidget('number', 'seed', 42, null)
+      node.addWidget('combo', 'control_after_generate', 'fixed', null, {
+        values: ['fixed', 'increment'],
+        serialize: false
+      })
+      node.addWidget('number', 'steps', 20, null)
+      expect(node.widgets![1].serialize).toBeUndefined()
+
+      const serialized = node.serialize()
+
+      expect(serialized.widgets_values).toEqual([42, 'fixed', 20])
+      expect(serialized.widgets_values_named).toEqual({
+        seed: 42,
+        control_after_generate: 'fixed',
+        steps: 20
+      })
+    })
+
+    test('should compact a non-trailing widget.serialize === false', () => {
+      const node = new LGraphNode('TestNode')
+      node.serialize_widgets = true
+
+      node.addWidget('number', 'steps', 20, null)
+      node.addWidget('button', 'action', 'Click', null)
+      node.widgets![1].serialize = false
+      node.addWidget('number', 'seed', 12345, null)
+
+      const serialized = node.serialize()
+
+      expect(serialized.widgets_values_named).not.toHaveProperty('action')
+      expect(serialized.widgets_values).toStrictEqual([20, 12345])
+    })
   })
 
   describe('getInputSlotPos', () => {
@@ -876,10 +914,13 @@ describe('LGraphNode', () => {
     test('Vue mode measures collapsed content without replacing requested size', () => {
       const graph = new LGraph()
       graph.add(node)
-      layoutStore.reportContentSize(graph.rootGraph.id, node.id, {
-        width: 90,
-        height: 12
-      })
+      bindMountedNodeSize(graph, node.id, () => {}).report(
+        {
+          width: 90,
+          height: 12
+        },
+        true
+      )
       LiteGraph.vueNodesMode = true
       node.measure(out)
 
@@ -995,4 +1036,18 @@ describe('snapToGrid', () => {
     expect(node.snapToGrid(20)).toBe(false)
     expect(applyOperation).not.toHaveBeenCalled()
   })
+})
+
+describe('LGraphNode renderingColor', () => {
+  test.for([{ color: 0xff0000 }, { color: { r: 255 } }])(
+    'uses the default color when the node color is $color',
+    ({ color }) => {
+      const node = new LGraphNode('Colored')
+      const defaultNode = new LGraphNode('Default')
+      Reflect.set(node, 'color', color)
+
+      expect(node.renderingColor).toBe(defaultNode.renderingColor)
+      expect(typeof node.renderingColor).toBe('string')
+    }
+  )
 })

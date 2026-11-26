@@ -4852,6 +4852,131 @@
       }
     }
   },
+  "CreatifyAurora2AvatarNode": {
+    "display_name": "Creatify Aurora 2.0 Avatar",
+    "description": "Creatify Aurora 2.0: turn one photo and a speech or song clip into a talking or singing video. The video is as long as the audio and keeps it unchanged.",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "At least 256 pixels on each side, aspect ratio between 1:4 and 4:1. The video keeps the photo's aspect ratio."
+      },
+      "audio": {
+        "name": "audio",
+        "tooltip": "Speech or song, up to 60 seconds (14 at 2k). Billed per started second."
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "text_prompt": {
+        "name": "text_prompt",
+        "tooltip": "Optional: scene, camera, lighting, expression or motion."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CreatifyBorealH3ReferenceVideoNode": {
+    "display_name": "Creatify Boreal-H3 Reference to Video",
+    "description": "Creatify Boreal-H3, Creatify's post-trained H3 model built for video ads. Generate video with sound guided by reference images, videos and audio.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Refer to references as @Image1, @Video1, @Audio1."
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "auto follows the first reference image, otherwise the first reference video."
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "At 2k the maximum is 14 seconds."
+      },
+      "prompt_enhancement": {
+        "name": "prompt_enhancement",
+        "tooltip": "auto and ads rewrite the prompt for a video ad and can add spoken lines; general rewrites it for any other video; none renders the prompt as written."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run. Creatify picks its own randomness: with prompt_enhancement none the same inputs give the same video."
+      },
+      "reference_images": {
+        "name": "reference_images",
+        "tooltip": "Up to 9 images, referred to in the prompt as @Image1..@Image9 in connection order. At least one image or video is required, 12 references at most in total."
+      },
+      "reference_videos": {
+        "name": "reference_videos",
+        "tooltip": "Up to 3 videos of at least 1 second, referred to as @Video1..@Video3. Billed for at most 15 seconds of video in total. Their sound is reused when the prompt asks to continue it; a new line in the prompt replaces it."
+      },
+      "reference_audios": {
+        "name": "reference_audios",
+        "tooltip": "Up to 3 clips, referred to as @Audio1..@Audio3. Speech guides the voice, not the words; instrumental music can become the soundtrack."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CreatifyBorealH3VideoNode": {
+    "display_name": "Creatify Boreal-H3 Video",
+    "description": "Creatify Boreal-H3, Creatify's post-trained H3 model built for video ads. Generate video with sound from text, optionally starting from a first frame and ending on a last frame.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "Used without a first frame. With a first frame keep auto: the video follows the frame's ratio."
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "At 2k the maximum is 14 seconds."
+      },
+      "prompt_enhancement": {
+        "name": "prompt_enhancement",
+        "tooltip": "auto and ads rewrite the prompt for a video ad and can add spoken lines; general rewrites it for any other video; none renders the prompt as written."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run. Creatify picks its own randomness: with prompt_enhancement none the same inputs give the same video."
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "last_frame": {
+        "name": "last_frame",
+        "tooltip": "Needs a first frame."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "CropByBBoxes": {
     "display_name": "Crop By Bounding Boxes",
     "description": "Crop and resize regions from the input image batch based on provided bounding boxes.",
@@ -5427,7 +5552,7 @@
     "inputs": {
       "text": {
         "name": "text",
-        "tooltip": "Text description of the sound effect to generate."
+        "tooltip": "Describe the sound in English, up to 450 characters. Prompts in other languages are often spoken aloud instead of turned into a sound."
       },
       "model": {
         "name": "model",
@@ -7242,6 +7367,174 @@
       }
     }
   },
+  "GeminiDecisionChoice": {
+    "display_name": "Google Gemini Decision (Choice)",
+    "description": "Pick one of your options for text, images, audio or video. Connect `choice` to a Branch node whose inputs carry the option names, or use `option_index`.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "question": {
+        "name": "question",
+        "tooltip": "The question the options answer. With several inputs, use the socket names, for example 'Which season is shown in image_1?'"
+      },
+      "options": {
+        "name": "options",
+        "tooltip": "One option per line, used exactly as typed. Add an option such as `other` for inputs that fit none of them."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Optional image(s) to use as context for the model. Up to 16 images."
+      },
+      "audio": {
+        "name": "audio",
+        "tooltip": "Optional audio clip to use as context for the model."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Optional video clip to use as context for the model."
+      },
+      "text": {
+        "name": "text",
+        "tooltip": "The text the question is about, such as a prompt or an LLM response."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "choice",
+        "tooltip": null
+      },
+      "1": {
+        "name": "option_index",
+        "tooltip": "Position of the chosen option in the options list, starting at 0."
+      },
+      "2": {
+        "name": "confidence",
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiDecisionPickImage": {
+    "display_name": "Google Gemini Decision (Pick Image)",
+    "description": "Pick one image from a batch. Connect `index` to Get Image from Batch to keep the picked image.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "question": {
+        "name": "question",
+        "tooltip": "Which image to pick. Connect the prompt to `text` to pick the image that matches it best."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "The images to choose from, 2 to 64."
+      },
+      "text": {
+        "name": "text",
+        "tooltip": "The text the question is about, such as the prompt the images were made from."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "index",
+        "tooltip": null
+      },
+      "1": {
+        "name": "confidence",
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiDecisionScore": {
+    "display_name": "Google Gemini Decision (Score)",
+    "description": "Rate text, images, audio or video from 1 to 10. Connect `result` to an If/Else Switch node to act on the score.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "question": {
+        "name": "question",
+        "tooltip": "What to rate, on a scale from 1 to 10. Say what 1 and 10 mean, as in the example."
+      },
+      "threshold": {
+        "name": "threshold",
+        "tooltip": "`result` is true when the score is at least this value. Clean, sharp images score about 7 to 8, badly damaged ones about 3 to 5."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Optional image(s) to use as context for the model. Up to 16 images."
+      },
+      "audio": {
+        "name": "audio",
+        "tooltip": "Optional audio clip to use as context for the model."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Optional video clip to use as context for the model."
+      },
+      "text": {
+        "name": "text",
+        "tooltip": "The text the question is about, such as a prompt or an LLM response."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "result",
+        "tooltip": null
+      },
+      "1": {
+        "name": "score",
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiDecisionYesNo": {
+    "display_name": "Google Gemini Decision (Yes/No)",
+    "description": "Ask a yes/no question about text, images, audio or video. Connect `result` to an If/Else Switch node to choose between two paths.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "question": {
+        "name": "question",
+        "tooltip": "A question with a yes or no answer about what is connected. Ask it so that yes is the case you act on. With several inputs, use the socket names, for example 'Does image_2 show the same person as image_1?'"
+      },
+      "threshold": {
+        "name": "threshold",
+        "tooltip": "The answer is yes when the probability of yes is at least this value. Clear yes answers score about 0.85 to 0.92, so 0.9 or more rejects many of them."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Optional image(s) to use as context for the model. Up to 16 images."
+      },
+      "audio": {
+        "name": "audio",
+        "tooltip": "Optional audio clip to use as context for the model."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Optional video clip to use as context for the model."
+      },
+      "text": {
+        "name": "text",
+        "tooltip": "The text the question is about, such as a prompt or an LLM response."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "result",
+        "tooltip": null
+      },
+      "1": {
+        "name": "answer",
+        "tooltip": null
+      },
+      "2": {
+        "name": "probability",
+        "tooltip": null
+      }
+    }
+  },
   "GeminiImage2Node": {
     "display_name": "Nano Banana Pro (Google Gemini Image)",
     "description": "Generate or edit images synchronously via Google Vertex API.",
@@ -8632,6 +8925,143 @@
       }
     }
   },
+  "HeyGenDecisionChoice": {
+    "display_name": "HeyGen Decision (Choice)",
+    "description": "Pick one of your options for text, images, audio or video. Connect `choice` to a Branch node whose inputs carry the option names, or use `option_index`.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "question": {
+        "name": "question",
+        "tooltip": "The question the options answer. With several inputs, refer to them as image_1, image_2, audio_1 or video_1, for example 'Which season is shown in image_1?'"
+      },
+      "options": {
+        "name": "options",
+        "tooltip": "One option per line, used exactly as typed. Add an option such as `other` for inputs that fit none of them."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Up to 4 images in total, counting every frame of a batch. They are numbered image_1 to image_4 in order across the sockets, so a batch of 2 on the first socket is image_1 and image_2."
+      },
+      "audio_1": {
+        "name": "audio_1",
+        "tooltip": "Audio up to 30 minutes."
+      },
+      "video_1": {
+        "name": "video_1",
+        "tooltip": "Video up to 60 seconds."
+      },
+      "text": {
+        "name": "text",
+        "tooltip": "The text the question is about, such as a prompt or an LLM response."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "choice",
+        "tooltip": null
+      },
+      "1": {
+        "name": "option_index",
+        "tooltip": "Position of the chosen option in the options list, starting at 0."
+      },
+      "2": {
+        "name": "confidence",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenDecisionScore": {
+    "display_name": "HeyGen Decision (Score)",
+    "description": "Rate text, images, audio or video from 1 to 10. Connect `result` to an If/Else Switch node to act on the score.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "question": {
+        "name": "question",
+        "tooltip": "What to rate, on a scale from 1 to 10. Say what 1 and 10 mean, as in the example."
+      },
+      "threshold": {
+        "name": "threshold",
+        "tooltip": "`result` is true when the score is at least this value. Clean, sharp images score about 7, badly damaged ones about 3 to 5."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Up to 4 images in total, counting every frame of a batch. They are numbered image_1 to image_4 in order across the sockets, so a batch of 2 on the first socket is image_1 and image_2."
+      },
+      "audio_1": {
+        "name": "audio_1",
+        "tooltip": "Audio up to 30 minutes."
+      },
+      "video_1": {
+        "name": "video_1",
+        "tooltip": "Video up to 60 seconds."
+      },
+      "text": {
+        "name": "text",
+        "tooltip": "The text the question is about, such as a prompt or an LLM response."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "result",
+        "tooltip": null
+      },
+      "1": {
+        "name": "score",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenDecisionYesNo": {
+    "display_name": "HeyGen Decision (Yes/No)",
+    "description": "Ask a yes/no question about text, images, audio or video. Connect `result` to an If/Else Switch node to choose between two paths.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "question": {
+        "name": "question",
+        "tooltip": "A question with a yes or no answer about what is connected. Ask it so that yes is the case you act on. With several inputs, refer to them as image_1, image_2, audio_1 or video_1, for example 'Does image_2 show the same person as image_1?'"
+      },
+      "threshold": {
+        "name": "threshold",
+        "tooltip": "The answer is yes when the probability of yes is at least this value. Clear answers are close to 0 or 1."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Up to 4 images in total, counting every frame of a batch. They are numbered image_1 to image_4 in order across the sockets, so a batch of 2 on the first socket is image_1 and image_2."
+      },
+      "audio_1": {
+        "name": "audio_1",
+        "tooltip": "Audio up to 30 minutes."
+      },
+      "video_1": {
+        "name": "video_1",
+        "tooltip": "Video up to 60 seconds."
+      },
+      "text": {
+        "name": "text",
+        "tooltip": "The text the question is about, such as a prompt or an LLM response."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "result",
+        "tooltip": null
+      },
+      "1": {
+        "name": "answer",
+        "tooltip": null
+      },
+      "2": {
+        "name": "probability",
+        "tooltip": null
+      }
+    }
+  },
   "HeyGenImageToVideoNode": {
     "display_name": "HeyGen Video 1.0 Image to Video",
     "description": "Animate an image into a video with synchronized dialogue and sound using HeyGen Video 1.0. The image is used as the first frame.",
@@ -8859,9 +9289,47 @@
       }
     }
   },
+  "HeyGenVoiceCloneTextToSpeechNode": {
+    "display_name": "HeyGen Voice 1.0 Instant Clone Text to Speech",
+    "description": "Clone a voice from a recording of one speaker and speak text in it with HeyGen Voice 1.0.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_expressiveness_boost": {
+        "name": "expressiveness_boost"
+      },
+      "model_language": {
+        "name": "language"
+      },
+      "model_recording_language": {
+        "name": "recording_language"
+      },
+      "model_remove_background_noise": {
+        "name": "remove_background_noise"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_similarity": {
+        "name": "similarity"
+      },
+      "model_text": {
+        "name": "text"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HeyGenVoiceTextToSpeechNode": {
     "display_name": "HeyGen Voice 1.0 Text to Speech",
-    "description": "Speak text in a voice cloned with HeyGen Voice 1.0 Instant Clone.",
+    "description": "Speak text in a HeyGen voice with HeyGen Voice 1.0. To speak in a voice cloned from a recording, use HeyGen Voice 1.0 Instant Clone Text to Speech.",
     "inputs": {
       "model": {
         "name": "model"
@@ -9400,8 +9868,8 @@
     }
   },
   "IdeogramEditApi": {
-    "display_name": "Ideogram 4.5 Edit",
-    "description": "Edits or combines up to 5 images guided by a text prompt using Ideogram 4.5. Re-renders the whole image and can change its size or aspect ratio; use Ideogram 4.5 Precise Edit to keep untouched pixels unchanged.",
+    "display_name": "Ideogram Edit",
+    "description": "Edits or combines up to 5 images guided by a text prompt using Ideogram 4.6 or 4.5. Re-renders the whole image and can change its size or aspect ratio; use Ideogram Precise Edit to keep untouched pixels unchanged.",
     "inputs": {
       "model": {
         "name": "model",
@@ -9409,6 +9877,9 @@
       },
       "control_after_generate": {
         "name": "control after generate"
+      },
+      "model_background": {
+        "name": "background"
       },
       "model_height": {
         "name": "height"
@@ -9478,8 +9949,8 @@
     }
   },
   "IdeogramPreciseEditApi": {
-    "display_name": "Ideogram 4.5 Precise Edit",
-    "description": "Edits an image guided by a text prompt using Ideogram 4.5 precise editing: only what the prompt asks for changes, untouched pixels stay identical and the output keeps the size of image 1 (images above ~4 MP are scaled down first). Can also edit a single region, set by a mask or bounding boxes, and return the image at full size. Accepts up to 4 reference images (3 with context_window_mask).",
+    "display_name": "Ideogram Precise Edit",
+    "description": "Edits an image guided by a text prompt using Ideogram 4.6 or 4.5 precise editing: only what the prompt asks for changes, untouched pixels stay identical and the output keeps the size of image 1 (large images are scaled down first). Can also edit a single region, set by a mask or bounding boxes, and return the image at full size. Accepts up to 4 reference images (3 with a mask).",
     "inputs": {
       "model": {
         "name": "model",
@@ -9508,8 +9979,8 @@
     }
   },
   "IdeogramTextToImageApi": {
-    "display_name": "Ideogram 4.5 Text to Image",
-    "description": "Generates images from a text prompt using Ideogram 4.5.",
+    "display_name": "Ideogram Text to Image",
+    "description": "Generates images from a text prompt using Ideogram 4.6 or 4.5.",
     "inputs": {
       "model": {
         "name": "model",
@@ -9517,6 +9988,12 @@
       },
       "control_after_generate": {
         "name": "control after generate"
+      },
+      "model_background": {
+        "name": "background"
+      },
+      "model_height": {
+        "name": "height"
       },
       "model_magic_prompt": {
         "name": "magic_prompt"
@@ -9532,6 +10009,9 @@
       },
       "model_size": {
         "name": "size"
+      },
+      "model_width": {
+        "name": "width"
       }
     },
     "outputs": {
@@ -14913,6 +15393,91 @@
       }
     }
   },
+  "MeshyImageToReliefNode": {
+    "display_name": "Meshy: Image to Relief",
+    "description": "Turn a photo into a bas-relief model and a 16-bit depth map for 3D printing, laser engraving and CNC carving. Only the connected outputs are generated and downloaded; with no model output connected the task returns just the depth map.",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "Dark artwork on a light background is raised. Transparency is dropped before upload, so flatten a transparent logo onto a white background first."
+      },
+      "relief_type": {
+        "name": "relief_type",
+        "tooltip": "low: shallow carving for laser engraving, CNC and plaques. high: deeper carving for 3D-printed pieces."
+      },
+      "size_mm": {
+        "name": "size_mm",
+        "tooltip": "Length of the photo's longer side on the model, measured flat before any bend."
+      },
+      "carving_mode": {
+        "name": "carving_mode",
+        "tooltip": "emboss raises the nearer parts of the photo, engrave cuts them in."
+      },
+      "base": {
+        "name": "base",
+        "tooltip": "none cuts the background away and builds no plate."
+      },
+      "bend": {
+        "name": "bend",
+        "tooltip": "convex bulges the front outward, concave curves it inward."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed. Change it to request an output that was connected after the last run."
+      },
+      "mesh_resolution": {
+        "name": "mesh_resolution",
+        "tooltip": "Mesh points along the photo's longer side. At 1024 the GLB is about 50 MB and the STL about 105 MB, at 2048 about 200 MB and 420 MB; a bend doubles them."
+      },
+      "color_mapping": {
+        "name": "color_mapping",
+        "tooltip": "Color the GLB, OBJ, FBX and USDZ files with the photo. STL and 3MF stay white."
+      },
+      "base_base_thickness_mm": {
+        "name": "base_thickness_mm"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "relief_type_carving_depth_mm": {
+        "name": "carving_depth_mm"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "1": {
+        "name": "STL",
+        "tooltip": null
+      },
+      "2": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": null
+      },
+      "4": {
+        "name": "USDZ",
+        "tooltip": null
+      },
+      "5": {
+        "name": "3MF",
+        "tooltip": null
+      },
+      "6": {
+        "name": "depth_map",
+        "tooltip": "Depth map with the full 16-bit range; Save Image (Advanced) writes it as a 16-bit PNG."
+      },
+      "7": {
+        "name": "preview",
+        "tooltip": null
+      }
+    }
+  },
   "MeshyMultiImageToModelNode": {
     "display_name": "Meshy: Multi-Image to Model",
     "inputs": {
@@ -15208,6 +15773,44 @@
         "tooltip": null
       },
       "3": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyTextureN1Node": {
+    "display_name": "Meshy: Texture Model (N1)",
+    "description": "Texture a previously created model with Meshy N1 from 1 to 4 reference views of the same object.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "meshy_task_id": {
+        "name": "meshy_task_id"
+      },
+      "front_view": {
+        "name": "front_view",
+        "tooltip": "The view Meshy treats as the front. One image textures the front and leaves the back plain; add back and side views in extra_views for a faithful back."
+      },
+      "enable_original_uv": {
+        "name": "enable_original_uv",
+        "tooltip": "Use the original UV of the model instead of generating new UVs. When enabled, Meshy preserves existing textures from the uploaded model. If the model has no original UV, the quality of the output might not be as good."
+      },
+      "extra_views": {
+        "name": "extra_views",
+        "tooltip": "Further views of the same object, in any order. Together with front_view at most 4 images."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "2": {
         "name": "FBX",
         "tooltip": null
       }
@@ -16241,6 +16844,9 @@
       },
       "control_after_generate": {
         "name": "control after generate"
+      },
+      "model_auto_downscale": {
+        "name": "auto_downscale"
       },
       "model_negative_prompt": {
         "name": "negative_prompt"
@@ -17394,6 +18000,206 @@
       },
       "proj_out_": {
         "name": "proj_out."
+      }
+    }
+  },
+  "ModelMergeMiniMaxH3": {
+    "display_name": "Model Merge MiniMax H3",
+    "description": "Merge two compatible MiniMax H3 models by component. Each ratio is the share of model1. Buffers are kept from model1.",
+    "inputs": {
+      "model1": {
+        "name": "model1"
+      },
+      "model2": {
+        "name": "model2"
+      },
+      "video_patch_proj_": {
+        "name": "video_patch_proj."
+      },
+      "audio_patch_proj_": {
+        "name": "audio_patch_proj."
+      },
+      "condition_proj_": {
+        "name": "condition_proj."
+      },
+      "time_embedder_": {
+        "name": "time_embedder."
+      },
+      "token_refiner_blocks_0_": {
+        "name": "token_refiner.blocks.0."
+      },
+      "token_refiner_blocks_1_": {
+        "name": "token_refiner.blocks.1."
+      },
+      "token_refiner_final_norm_": {
+        "name": "token_refiner.final_norm."
+      },
+      "blocks_0_": {
+        "name": "blocks.0."
+      },
+      "blocks_1_": {
+        "name": "blocks.1."
+      },
+      "blocks_2_": {
+        "name": "blocks.2."
+      },
+      "blocks_3_": {
+        "name": "blocks.3."
+      },
+      "blocks_4_": {
+        "name": "blocks.4."
+      },
+      "blocks_5_": {
+        "name": "blocks.5."
+      },
+      "blocks_6_": {
+        "name": "blocks.6."
+      },
+      "blocks_7_": {
+        "name": "blocks.7."
+      },
+      "blocks_8_": {
+        "name": "blocks.8."
+      },
+      "blocks_9_": {
+        "name": "blocks.9."
+      },
+      "blocks_10_": {
+        "name": "blocks.10."
+      },
+      "blocks_11_": {
+        "name": "blocks.11."
+      },
+      "blocks_12_": {
+        "name": "blocks.12."
+      },
+      "blocks_13_": {
+        "name": "blocks.13."
+      },
+      "blocks_14_": {
+        "name": "blocks.14."
+      },
+      "blocks_15_": {
+        "name": "blocks.15."
+      },
+      "blocks_16_": {
+        "name": "blocks.16."
+      },
+      "blocks_17_": {
+        "name": "blocks.17."
+      },
+      "blocks_18_": {
+        "name": "blocks.18."
+      },
+      "blocks_19_": {
+        "name": "blocks.19."
+      },
+      "blocks_20_": {
+        "name": "blocks.20."
+      },
+      "blocks_21_": {
+        "name": "blocks.21."
+      },
+      "blocks_22_": {
+        "name": "blocks.22."
+      },
+      "blocks_23_": {
+        "name": "blocks.23."
+      },
+      "blocks_24_": {
+        "name": "blocks.24."
+      },
+      "blocks_25_": {
+        "name": "blocks.25."
+      },
+      "blocks_26_": {
+        "name": "blocks.26."
+      },
+      "blocks_27_": {
+        "name": "blocks.27."
+      },
+      "blocks_28_": {
+        "name": "blocks.28."
+      },
+      "blocks_29_": {
+        "name": "blocks.29."
+      },
+      "blocks_30_": {
+        "name": "blocks.30."
+      },
+      "blocks_31_": {
+        "name": "blocks.31."
+      },
+      "blocks_32_": {
+        "name": "blocks.32."
+      },
+      "blocks_33_": {
+        "name": "blocks.33."
+      },
+      "blocks_34_": {
+        "name": "blocks.34."
+      },
+      "blocks_35_": {
+        "name": "blocks.35."
+      },
+      "blocks_36_": {
+        "name": "blocks.36."
+      },
+      "blocks_37_": {
+        "name": "blocks.37."
+      },
+      "blocks_38_": {
+        "name": "blocks.38."
+      },
+      "blocks_39_": {
+        "name": "blocks.39."
+      },
+      "blocks_40_": {
+        "name": "blocks.40."
+      },
+      "blocks_41_": {
+        "name": "blocks.41."
+      },
+      "blocks_42_": {
+        "name": "blocks.42."
+      },
+      "blocks_43_": {
+        "name": "blocks.43."
+      },
+      "blocks_44_": {
+        "name": "blocks.44."
+      },
+      "blocks_45_": {
+        "name": "blocks.45."
+      },
+      "blocks_46_": {
+        "name": "blocks.46."
+      },
+      "blocks_47_": {
+        "name": "blocks.47."
+      },
+      "blocks_48_": {
+        "name": "blocks.48."
+      },
+      "blocks_49_": {
+        "name": "blocks.49."
+      },
+      "final_layer_norm_": {
+        "name": "final_layer.norm."
+      },
+      "final_layer_adaln_proj_": {
+        "name": "final_layer.adaln_proj."
+      },
+      "final_layer_video_out_": {
+        "name": "final_layer.video_out."
+      },
+      "final_layer_audio_out_": {
+        "name": "final_layer.audio_out."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -19213,6 +20019,39 @@
       "advanced_options": {
         "name": "advanced_options",
         "tooltip": "Optional configuration for the model. Accepts inputs from the OpenAI Chat Advanced Options node."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenAIChatNodeV2": {
+    "display_name": "OpenAI ChatGPT",
+    "description": "Generate text responses with OpenAI's GPT models. Provide a text prompt and, optionally, images or files as context.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "The model used to generate the response."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_max_output_tokens": {
+        "name": "max_output_tokens"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_system_prompt": {
+        "name": "system_prompt"
       }
     },
     "outputs": {
@@ -21214,6 +22053,56 @@
       }
     }
   },
+  "PrunaAvatarNode": {
+    "display_name": "Pruna P-Video-2 Pro Avatar",
+    "description": "Generates a talking video from a portrait and speech using Pruna P-Video-2 Pro Avatar: your own audio, or a script spoken with text-to-speech.",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "Portrait the video starts from. The video keeps its aspect ratio from 1:2 to 4:1; more extreme images, such as 1:5, are cropped to 9:16 or 16:9."
+      },
+      "speech": {
+        "name": "speech",
+        "tooltip": "Drive the video with a text-to-speech script or your own audio."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Describes what the video shows. Up to 5000 characters."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "1080p, 2k and 4k upscale the 768p video. 2k is limited to 150 seconds and 4k to 60 seconds."
+      },
+      "enhance_prompt": {
+        "name": "enhance_prompt",
+        "tooltip": "Add the motion seen in the portrait, such as background, lights and body movement, to the prompt. Turn it off to use the prompt as written and to reproduce a result exactly with the same seed."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed for the generation. The same seed reproduces a result exactly only when enhance_prompt is off."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "speech_language": {
+        "name": "language"
+      },
+      "speech_script": {
+        "name": "script"
+      },
+      "speech_voice": {
+        "name": "voice"
+      },
+      "speech_voice_prompt": {
+        "name": "voice_prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PrunaImageToVideoNode": {
     "display_name": "Pruna P-Video-2 Image to Video",
     "description": "Animates an image into a video using Pruna video models, with an optional last frame, generated sound or audio track.",
@@ -21275,6 +22164,48 @@
       "turbo": {
         "name": "turbo",
         "tooltip": "Faster upscale with softer detail, at the same price."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrunaReferenceToVideoNode": {
+    "display_name": "Pruna P-Video-2 Pro Reference to Video",
+    "description": "Generates a video from a prompt guided by reference images, videos and audio using Pruna video models.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Model to use."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_enhance_prompt": {
+        "name": "enhance_prompt"
+      },
+      "model_keep_audio": {
+        "name": "keep_audio"
+      },
+      "model_mode": {
+        "name": "mode"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
       }
     },
     "outputs": {
@@ -22172,7 +23103,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "The model to use for generation. The recraftv4_styles models are built for style-consistent generation and always require a style_id or style_references; recraftv4_1_flash is the fastest and cheapest model and supports no styles at all."
+        "tooltip": "The model to use for generation. The recraftv4_styles models are built for style-consistent generation and always require a style_id or style_references; recraftv4_1_flash runs Recraft V4.1 Flash V2, the fastest and cheapest model, and supports no styles at all."
       },
       "n": {
         "name": "n",
@@ -22278,6 +23209,14 @@
     "inputs": {
       "image": {
         "name": "image"
+      },
+      "version": {
+        "name": "version",
+        "tooltip": "v1_pro (Vectorizer Pro) gives cleaner SVGs with smooth curves, straight lines and sharp corners, best for lettering and intricate shapes."
+      },
+      "shape_stacking": {
+        "name": "shape_stacking",
+        "tooltip": "hierarchical layers shapes on top of each other; cut_out makes shapes that never overlap, for plotters, vinyl cutters and screen printing."
       }
     },
     "outputs": {
@@ -23157,15 +24096,15 @@
       },
       "bbox_width": {
         "name": "bbox_width",
-        "tooltip": "Bounding-box width (Y axis). Set to 0 with the others to skip bbox."
+        "tooltip": "Bounding-box width (side to side). Set to 0 with the others to skip bbox."
       },
       "bbox_height": {
         "name": "bbox_height",
-        "tooltip": "Bounding-box height (Z axis)."
+        "tooltip": "Bounding-box height (vertical)."
       },
       "bbox_length": {
         "name": "bbox_length",
-        "tooltip": "Bounding-box length (X axis)."
+        "tooltip": "Bounding-box length (front to back)."
       },
       "height_cm": {
         "name": "height_cm",
@@ -23234,15 +24173,15 @@
       },
       "bbox_width": {
         "name": "bbox_width",
-        "tooltip": "Bounding-box width (Y axis). Set to 0 with the others to skip bbox."
+        "tooltip": "Bounding-box width (side to side). Set to 0 with the others to skip bbox."
       },
       "bbox_height": {
         "name": "bbox_height",
-        "tooltip": "Bounding-box height (Z axis)."
+        "tooltip": "Bounding-box height (vertical)."
       },
       "bbox_length": {
         "name": "bbox_length",
-        "tooltip": "Bounding-box length (X axis)."
+        "tooltip": "Bounding-box length (front to back)."
       },
       "height_cm": {
         "name": "height_cm",
@@ -29215,6 +30154,37 @@
       }
     }
   },
+  "TripoSmartUVNode": {
+    "display_name": "Tripo: Smart UV",
+    "description": "Re-unwraps the UVs of a model and remaps its textures, rig and animation onto the new layout. The input must not exceed 80,000 triangles (a quad counts as two); reduce larger models with Tripo: Retopology or a face_limit first.",
+    "inputs": {
+      "model_task_id": {
+        "name": "model_task_id"
+      },
+      "bake": {
+        "name": "bake",
+        "tooltip": "Bake the existing textures onto the new UV layout. Off skips the bake and returns the model without its colour textures."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "Empty when the source model is FBX."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "Only populated when the source model is FBX, e.g. a quad mesh."
+      },
+      "3": {
+        "name": "UV atlas",
+        "tooltip": null
+      }
+    }
+  },
   "TripoSplatConditioning": {
     "display_name": "TripoSplat Conditioning",
     "description": "Encode the image with DINOv3 and the Flux2 VAE into TripoSplat positive/negative conditioning, and create the fixed size noise target (latent + camera) for the KSampler",
@@ -29593,6 +30563,150 @@
       "0": {
         "name": "texts",
         "tooltip": "Processed texts"
+      }
+    }
+  },
+  "TypeSafeJevChoice": {
+    "display_name": "TypeSafe Jev (Choice)",
+    "description": "Pick one of your options for text or images. Connect `choice` to a Branch node whose inputs carry the option names, or use `option_index`.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "question": {
+        "name": "question",
+        "tooltip": "The question the options answer. With several inputs, use the socket names, for example 'Which season is shown in image_1?'"
+      },
+      "options": {
+        "name": "options",
+        "tooltip": "One option per line. Add an option such as `other` for inputs that fit none of them."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "The images the question is about. Up to 32 images in total; more than 4 are sent at a smaller size."
+      },
+      "text": {
+        "name": "text",
+        "tooltip": "The text the question is about, such as a prompt or an LLM response."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "choice",
+        "tooltip": null
+      },
+      "1": {
+        "name": "option_index",
+        "tooltip": "Position of the chosen option in the options list, starting at 0."
+      },
+      "2": {
+        "name": "confidence",
+        "tooltip": "How sure Jev is, from 0 (no clear winner) to 1 (certain)."
+      }
+    }
+  },
+  "TypeSafeJevPickImage": {
+    "display_name": "TypeSafe Jev (Pick Image)",
+    "description": "Pick one image from a batch. Connect `index` to Get Image from Batch to keep the picked image.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "question": {
+        "name": "question",
+        "tooltip": "Which image to pick. Connect the prompt to `text` to pick the image that matches it best."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "The images to choose from, 2 to 32."
+      },
+      "text": {
+        "name": "text",
+        "tooltip": "The text the question is about, such as the prompt the images were made from."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "index",
+        "tooltip": "Position of the picked image in the batch, starting at 0."
+      },
+      "1": {
+        "name": "confidence",
+        "tooltip": "How sure Jev is, from 0 (no clear winner) to 1 (certain)."
+      }
+    }
+  },
+  "TypeSafeJevScore": {
+    "display_name": "TypeSafe Jev (Score)",
+    "description": "Rate text or images from 1 to 10. Connect `result` to an If/Else Switch node to act on the score.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "question": {
+        "name": "question",
+        "tooltip": "What to rate, on a scale from 1 to 10. Say what 1 and 10 mean, as in the example."
+      },
+      "threshold": {
+        "name": "threshold",
+        "tooltip": "`result` is true when the score is at least this value."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "The images the question is about. Up to 32 images in total; more than 4 are sent at a smaller size."
+      },
+      "text": {
+        "name": "text",
+        "tooltip": "The text the question is about, such as a prompt or an LLM response."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "result",
+        "tooltip": null
+      },
+      "1": {
+        "name": "score",
+        "tooltip": null
+      }
+    }
+  },
+  "TypeSafeJevYesNo": {
+    "display_name": "TypeSafe Jev (Yes/No)",
+    "description": "Ask a yes/no question about text or images. Connect `result` to an If/Else Switch node to choose between two paths.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "question": {
+        "name": "question",
+        "tooltip": "A question with a yes or no answer about what is connected. Ask it so that yes is the case you act on. With several inputs, use the socket names, for example 'Does image_2 show the same person as image_1?'"
+      },
+      "threshold": {
+        "name": "threshold",
+        "tooltip": "The answer is yes when the probability of yes is at least this value."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "The images the question is about. Up to 32 images in total; more than 4 are sent at a smaller size."
+      },
+      "text": {
+        "name": "text",
+        "tooltip": "The text the question is about, such as a prompt or an LLM response."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "result",
+        "tooltip": null
+      },
+      "1": {
+        "name": "answer",
+        "tooltip": null
+      },
+      "2": {
+        "name": "probability",
+        "tooltip": null
       }
     }
   },

@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createAgentEventSource } from './agentEventSource'
+import type { AgentSocketFailure } from './agentEventSource'
 
 class FakeSocket extends EventTarget {
   static readonly CONNECTING = 0
@@ -62,6 +63,7 @@ function createSource(
     getAuthParams?: () => Promise<URLSearchParams | null>
     random?: () => number
     maxReconnectDelayMs?: number
+    reportFailure?: (error: unknown, failure: AgentSocketFailure) => void
   } = {}
 ) {
   return createAgentEventSource({
@@ -627,5 +629,178 @@ describe('createAgentEventSource send', () => {
     await connected()
 
     expect(sockets()).toHaveLength(1)
+  })
+  it('reports an auth read that keeps failing once per run, not once per backoff', async () => {
+    const failure = new Error('refresh rejected')
+    const reportFailure = vi.fn()
+    const source = createSource({
+      getAuthParams: () => Promise.reject(failure),
+      reportFailure
+    })
+
+    source.subscribe(() => {})
+    await connected()
+    await vi.advanceTimersByTimeAsync(120_000)
+
+    expect(reportFailure.mock.calls).toEqual([[failure, 'auth_read']])
+  })
+
+  it('reports a refused socket by name, without the credentialed URL', async () => {
+    const reportFailure = vi.fn()
+    const refusal = new SyntaxError(
+      "The URL 'ws://host/api/agent/events?token=secret-value' is invalid."
+    )
+    const RealSocket = globalThis.WebSocket
+    vi.stubGlobal(
+      'WebSocket',
+      class {
+        constructor() {
+          throw refusal
+        }
+      }
+    )
+    try {
+      const source = createSource({
+        reportFailure,
+        getAuthParams: async () => tokenParams('secret-value')
+      })
+      source.subscribe(() => {})
+      await connected()
+
+      expect(reportFailure).toHaveBeenCalledOnce()
+      const [reported, failure] = reportFailure.mock.calls[0]
+      expect(failure).toBe('socket_construct')
+      expect(reported).not.toBe(refusal)
+      expect((reported as Error).message).toContain('SyntaxError')
+      expect(JSON.stringify(reported)).not.toContain('secret-value')
+      expect((reported as Error).message).not.toContain('secret-value')
+    } finally {
+      vi.stubGlobal('WebSocket', RealSocket)
+    }
+  })
+
+  it('reports again after a socket that opened ends the failure run', async () => {
+    const failure = new Error('refresh rejected')
+    const reportFailure = vi.fn()
+    const getAuthParams = vi
+      .fn<() => Promise<URLSearchParams | null>>()
+      .mockRejectedValueOnce(failure)
+      .mockResolvedValueOnce(tokenParams('good'))
+      .mockRejectedValue(failure)
+    const source = createSource({ getAuthParams, reportFailure })
+
+    source.subscribe(() => {})
+    await connected()
+    expect(reportFailure).toHaveBeenCalledTimes(1)
+
+    await vi.advanceTimersByTimeAsync(30_000)
+    lastSocket().open()
+    await connected()
+    await vi.advanceTimersByTimeAsync(30_000)
+    lastSocket().close()
+    await vi.advanceTimersByTimeAsync(30_000)
+
+    expect(reportFailure).toHaveBeenCalledTimes(2)
+  })
+  it('reports each failure kind once, so an alternating run does not report every attempt', async () => {
+    const reportFailure = vi.fn()
+    const authFailure = new Error('refresh rejected')
+    let refuse = false
+    const RealSocket = globalThis.WebSocket
+    vi.stubGlobal(
+      'WebSocket',
+      class {
+        constructor() {
+          throw new SyntaxError('refused')
+        }
+      }
+    )
+    try {
+      const source = createSource({
+        reportFailure,
+        getAuthParams: async () => {
+          refuse = !refuse
+          if (refuse) throw authFailure
+          return tokenParams('ok')
+        }
+      })
+      source.subscribe(() => {})
+      await connected()
+      await vi.advanceTimersByTimeAsync(300_000)
+
+      const kinds = reportFailure.mock.calls.map(([, failure]) => failure)
+      expect(kinds).toEqual(
+        expect.arrayContaining(['auth_read', 'socket_construct'])
+      )
+      expect(kinds).toHaveLength(2)
+    } finally {
+      vi.stubGlobal('WebSocket', RealSocket)
+    }
+  })
+
+  it('does not report an auth read that a reconnect already superseded', async () => {
+    const reportFailure = vi.fn()
+    const pending: Array<(params: URLSearchParams) => void> = []
+    const rejecters: Array<(error: unknown) => void> = []
+    const source = createSource({
+      reportFailure,
+      getAuthParams: () =>
+        new Promise<URLSearchParams>((resolve, reject) => {
+          pending.push(resolve)
+          rejecters.push(reject)
+        })
+    })
+
+    source.subscribe(() => {})
+    await connected()
+    source.reconnect()
+    await connected()
+    pending[1]?.(tokenParams('current'))
+    await connected()
+
+    rejecters[0]?.(new Error('stale refresh rejected'))
+    await connected()
+
+    expect(reportFailure).not.toHaveBeenCalled()
+    expect(sockets()).toHaveLength(1)
+  })
+
+  it("reports a new identity's failure after a reconnect clears the run", async () => {
+    const failure = new Error('refresh rejected')
+    const reportFailure = vi.fn()
+    const source = createSource({
+      reportFailure,
+      getAuthParams: () => Promise.reject(failure)
+    })
+
+    source.subscribe(() => {})
+    await connected()
+    expect(reportFailure).toHaveBeenCalledOnce()
+
+    source.reconnect()
+    await connected()
+
+    expect(reportFailure).toHaveBeenCalledTimes(2)
+  })
+
+  it('keeps recovering after a reporter throws', async () => {
+    const getAuthParams = vi
+      .fn<() => Promise<URLSearchParams | null>>()
+      .mockRejectedValueOnce(new Error('refresh rejected'))
+      .mockResolvedValue(tokenParams('recovered'))
+    const source = createSource({
+      getAuthParams,
+      reportFailure: () => {
+        throw new Error('reporter exploded')
+      }
+    })
+
+    source.subscribe(() => {})
+    await connected()
+    expect(sockets()).toHaveLength(0)
+
+    await vi.advanceTimersByTimeAsync(30_000)
+
+    expect(lastSocket().url).toContain('token=recovered')
   })
 })

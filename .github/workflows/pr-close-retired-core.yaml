@@ -1,0 +1,53 @@
+name: 'PR: Close Retired Core Targets'
+
+on:
+  pull_request_target:
+    types: [opened, reopened, edited]
+    branches: ['core/**']
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: close-retired-core-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  close:
+    if: github.repository == 'Comfy-Org/ComfyUI_frontend'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          persist-credentials: false
+      - uses: ./.github/actions/setup-frontend
+      - uses: ./.github/actions/core-release-targets
+        id: targets
+      - uses: actions/github-script@v9
+        env:
+          RETIRED_CORE_TARGETS: ${{ steps.targets.outputs.retired }}
+          COMFYUI_PIN_SHA: ${{ steps.targets.outputs.pin-sha }}
+        with:
+          script: |
+            const { data: pin } = await github.rest.git.getRef({
+              owner: 'Comfy-Org',
+              repo: 'ComfyUI',
+              ref: 'heads/master'
+            })
+            if (pin.object.sha !== process.env.COMFYUI_PIN_SHA) {
+              throw new Error('ComfyUI changed; retry with fresh pin history.')
+            }
+            const { data: pr } = await github.rest.pulls.get({
+              ...context.repo,
+              pull_number: context.issue.number
+            })
+            const retired = process.env.RETIRED_CORE_TARGETS.split(' ')
+            if (pr.state !== 'open' || !retired.includes(pr.base.ref)) return
+            await github.rest.pulls.update({
+              ...context.repo,
+              pull_number: context.issue.number,
+              state: 'closed'
+            })
