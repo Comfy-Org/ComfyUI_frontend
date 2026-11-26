@@ -56,6 +56,7 @@ function queueSave(
   revision: number,
   appliedLocally: Promise<unknown>
 ) {
+  setPendingAskAgain(askBeforeCheck)
   pendingSave = pendingSave.then(() =>
     persistAskBeforeCloudCheck(askBeforeCheck, revision, appliedLocally)
   )
