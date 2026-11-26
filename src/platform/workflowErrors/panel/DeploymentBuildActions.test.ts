@@ -164,6 +164,17 @@ describe('DeploymentBuildActions', () => {
       )
     })
 
+    it("links to the Build's page instead of the frame when nothing is missing", () => {
+      renderActions({ missingPackGroups: [], missingModelGroups: [] })
+
+      expect(
+        screen.getByRole('link', { name: 'Edit build on Platform' })
+      ).toHaveAttribute('target', '_blank')
+      expect(
+        screen.queryByRole('link', { name: 'Add missing items to Build' })
+      ).toBeNull()
+    })
+
     it('shows no new-tab icon on the link that opens the frame', () => {
       renderActions()
 

@@ -157,6 +157,15 @@ describe('PlatformFrameHost', () => {
         handsOverWorkflow: true
       },
       handsOver: false
+    },
+    {
+      label: 'a Custom Build being pre-installed',
+      request: {
+        step: 'preinstall' as const,
+        deploymentId: 'dep-1',
+        handsOverWorkflow: true
+      },
+      handsOver: false
     }
   ])(
     'hands the workflow to a new build from Open on Platform only for $label',
@@ -178,6 +187,23 @@ describe('PlatformFrameHost', () => {
       )
     }
   )
+
+  it("keeps Open on Platform on the Custom Build's page for an existing Custom Build", async () => {
+    renderHost()
+    usePlatformFrameStore().open(
+      { step: 'update', deploymentId: 'dep-1', handsOverWorkflow: true },
+      'errors_panel'
+    )
+    await nextTick()
+    await vi.advanceTimersByTimeAsync(PLATFORM_FRAME_UNANSWERED_MS)
+    await nextTick()
+
+    const link = screen.getByRole('link', { name: 'Open on Platform' })
+    expect(new URL(link.getAttribute('href') ?? '').pathname).toBe(
+      '/profile/deployments/dep-1'
+    )
+    expect(link).toHaveAttribute('target', '_blank')
+  })
 
   it.for([
     { way: 'the close button', close: 'button' },

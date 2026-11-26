@@ -118,8 +118,12 @@ const lacksOnlyModels = computed(
   () => missingPackGroups.length === 0 && missingModelGroups.length > 0
 )
 
+const lacksNothing = computed(
+  () => missingPackGroups.length === 0 && missingModelGroups.length === 0
+)
+
 const frameRequest = computed<PlatformFrameRequest | null>(() => {
-  if (!platformFrames.isAvailable()) return null
+  if (lacksNothing.value || !platformFrames.isAvailable()) return null
   return lacksOnlyModels.value
     ? deploymentModelsRequest(deployment.deployment_id, {
         handsOverWorkflow: true
