@@ -1322,10 +1322,39 @@ describe('DeploymentSwitcher', () => {
       await openDefaultMenu(user)
 
       expect(screen.getByTestId('default-row-cloud')).toBeInTheDocument()
-      expect(screen.queryByTestId(`default-row-${D1}`)).not.toBeInTheDocument()
       expect(screen.queryByTestId(`default-row-${D2}`)).not.toBeInTheDocument()
     }
   )
+
+  it('keeps the current default checked in the clear-only menu for an owner on an individual plan', async () => {
+    asOwner()
+    mockWorkspaceApi.listDeployments.mockResolvedValue({
+      ...listing,
+      default_deployment_id: D1
+    })
+    const user = renderSwitcher(i18n, { onTeamPlan: false })
+    await openList(user)
+    await openDefaultMenu(user)
+
+    expect(screen.getByTestId(`default-row-${D1}`)).toHaveAttribute(
+      'aria-checked',
+      'true'
+    )
+  })
+
+  it('does not send an owner on an individual plan to choose a new default when it was deleted', async () => {
+    asOwner()
+    mockWorkspaceApi.listDeployments.mockResolvedValue({
+      ...listing,
+      gone_default_deployment_id: GONE
+    })
+    const user = renderSwitcher(i18n, { onTeamPlan: false })
+    await openList(user)
+
+    expect(
+      screen.getByTestId('deployment-switcher-notice')
+    ).not.toHaveTextContent('Choose a new one under Workspace default')
+  })
 
   it('lets an owner clear the workspace default, a deleted one included, by choosing Comfy Cloud', async () => {
     asOwner()

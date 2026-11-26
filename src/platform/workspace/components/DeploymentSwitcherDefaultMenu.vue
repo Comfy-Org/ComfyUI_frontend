@@ -91,11 +91,18 @@ const { deployments, defaultDeploymentId, goneDefaultDeploymentId } =
   storeToRefs(useDeploymentPickStore())
 const { deploymentRowLabels, defaultTitle } = useDeploymentLabels()
 
+const offeredDeployments = computed(() =>
+  clearOnly
+    ? deployments.value.filter(
+        ({ deployment_id }) => deployment_id === defaultDeploymentId.value
+      )
+    : deployments.value
+)
 const rows = computed(() => [
   deploymentRowLabels(null),
-  ...(clearOnly
-    ? []
-    : deployments.value.map((deployment) => deploymentRowLabels(deployment)))
+  ...offeredDeployments.value.map((deployment) =>
+    deploymentRowLabels(deployment)
+  )
 ])
 
 const defaultGone = computed(() => goneDefaultDeploymentId.value !== null)

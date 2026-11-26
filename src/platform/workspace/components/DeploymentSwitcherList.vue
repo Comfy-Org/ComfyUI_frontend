@@ -219,7 +219,7 @@ const notice = computed(() => {
     )
   }
   if (goneDeployment.value !== 'default') return null
-  return workspaceDefaultOffered.value
+  return workspaceDefaultOffered.value && onTeamPlan
     ? t('deploymentSwitcher.defaultGoneOwner')
     : t('deploymentSwitcher.defaultGone')
 })
