@@ -12,34 +12,39 @@ test('Dragging a typed output reveals compatible widget input slots @vue-nodes',
   )
   const { page } = comfyPage
   const ksampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
-  const widgetSlot = (name: string) => ksampler.getSlot(name).locator('../..')
   const intNode = await comfyPage.nodeOps.getNodeRefByType('PrimitiveInt')
   const intOutput = page
     .locator(`[data-slot-key="${getSlotKey(intNode.id, 0, false)}"]`)
     .locator('..')
 
-  await expect(widgetSlot('seed')).toHaveCSS('opacity', '0')
+  await expect(ksampler.getWidgetSlotContainer('seed')).toHaveCSS(
+    'opacity',
+    '0'
+  )
 
   await intOutput.hover()
   await page.mouse.down()
   const { x, y } = (await intOutput.boundingBox())!
   await page.mouse.move(x, y + 200, { steps: 5 })
 
-  await expect(widgetSlot('seed'), 'INT widget accepts INT').toHaveCSS(
-    'opacity',
-    '1'
-  )
-  await expect(widgetSlot('steps'), 'INT widget accepts INT').toHaveCSS(
-    'opacity',
-    '1'
-  )
-  await expect(widgetSlot('cfg'), 'FLOAT widget rejects INT').toHaveCSS(
+  await expect(
+    ksampler.getWidgetSlotContainer('seed'),
+    'INT widget accepts INT'
+  ).toHaveCSS('opacity', '1')
+  await expect(
+    ksampler.getWidgetSlotContainer('steps'),
+    'INT widget accepts INT'
+  ).toHaveCSS('opacity', '1')
+  await expect(
+    ksampler.getWidgetSlotContainer('cfg'),
+    'FLOAT widget rejects INT'
+  ).toHaveCSS('opacity', '0')
+
+  await page.mouse.up()
+  await expect(ksampler.getWidgetSlotContainer('seed')).toHaveCSS(
     'opacity',
     '0'
   )
-
-  await page.mouse.up()
-  await expect(widgetSlot('seed')).toHaveCSS('opacity', '0')
 })
 
 test('MatchType updates output color @vue-nodes', async ({ comfyPage }) => {

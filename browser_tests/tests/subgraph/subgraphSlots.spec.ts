@@ -748,7 +748,7 @@ test(
 
     await ksampler.title.hover()
 
-    const slotParent = stepsSlot.locator('../..')
+    const slotParent = ksampler.getWidgetSlotContainer('steps')
     await expect(slotParent, 'unconnected slot is hidden').toHaveCSS(
       'opacity',
       '0'
