@@ -15,7 +15,7 @@
           cn(
             'overflow-hidden',
             isPreinstall
-              ? 'max-h-[min(32.5rem,calc(100dvh-3rem))] min-h-48 max-w-180'
+              ? 'max-h-[min(32.5rem,calc(100dvh-3rem))] min-h-[min(12rem,calc(100dvh-3rem))] max-w-180'
               : 'inset-6 m-auto size-auto max-h-256 max-w-280 translate-none'
           )
         "

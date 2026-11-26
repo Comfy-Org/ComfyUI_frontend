@@ -302,6 +302,7 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
           )
         : undefined
     const isNew = build.value?.buildId !== message.buildId
+    contentHeight.value = null
     build.value = startFollowing(message, running, currentOwner())
     if (isNew) trackDeploymentCreateClicked(build.value)
     keepBuild(build.value)
@@ -475,6 +476,7 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
 
   function take(message: FrameMessage) {
     if (message.type === 'ready') {
+      contentHeight.value = null
       stopWaiting()
       isUnanswered.value = false
       if (message.signedIn) cancelRetry()
