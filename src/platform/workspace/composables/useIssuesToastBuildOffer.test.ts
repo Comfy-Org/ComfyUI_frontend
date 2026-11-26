@@ -51,8 +51,10 @@ beforeEach(() => {
     computed(() => needsDeployment.value)
   )
   vi.mocked(useDeploymentCompatibility).mockReturnValue({
-    markFor: (id: string | null) => marks.value[id ?? 'cloud'] ?? null
-  } as ReturnType<typeof useDeploymentCompatibility>)
+    compatibility: computed(() => null),
+    markFor: (id: string | null) => marks.value[id ?? 'cloud'] ?? null,
+    deploymentsThatRunIt: computed(() => null)
+  })
   vi.mocked(openWorkflowForCheck).mockReturnValue({
     nodeTypes: ['ApplyInstantID', 'SaveImage'],
     missingNodeTypes: ['ApplyInstantID']
