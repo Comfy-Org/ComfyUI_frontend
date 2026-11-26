@@ -21,6 +21,7 @@ import { useDialogStore } from '@/stores/dialogStore'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import type { WorkspaceDeployment } from '@/platform/workspace/api/workspaceApi'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
+import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 import {
@@ -52,6 +53,7 @@ import { createWorkflowErrorManager } from '@/platform/customNodes/manager/compo
 import ErrorGroupList from '@/platform/workflowErrors/panel/ErrorGroupList.vue'
 
 vi.mock(import('@/composables/useFeatureFlags'))
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
@@ -511,6 +513,80 @@ describe('ErrorGroupList selection emphasis', () => {
         "Add these to R&D's studio's build on Platform, then deploy a new release."
       )
     ).toBeInTheDocument()
+  })
+
+  function showMissingCustomNodesOnComfyCloud() {
+    distribution.isCloud = true
+    onTestFinished(() => {
+      distribution.isCloud = false
+    })
+    const pinia = getActivePinia()!
+    const pickStore = useDeploymentPickStore(pinia)
+    pickStore.state = {
+      phase: 'ready',
+      deployments: [],
+      pickedDeploymentId: null,
+      pickSource: 'browser',
+      defaultDeploymentId: null,
+      gonePickedDeploymentId: null,
+      goneDefaultDeploymentId: null,
+      buildsVisible: true
+    }
+    pickStore.bootDeployment = null
+    useMissingNodesErrorStore(pinia).setMissingNodeTypes([
+      {
+        type: 'VHS_VideoCombine',
+        cnrId: 'comfyui-videohelpersuite',
+        isReplaceable: false
+      }
+    ])
+    return pinia
+  }
+
+  it('on Comfy Cloud, the summary offers a custom deployment for custom nodes Cloud lacks', () => {
+    renderList(showMissingCustomNodesOnComfyCloud())
+
+    const hero = screen.getByTestId('errors-summary-hero')
+    expect(
+      within(hero).getByText("Comfy Cloud doesn't have these custom nodes")
+    ).toBeInTheDocument()
+    expect(
+      within(hero).getByRole('button', { name: 'Set up a Custom Build' })
+    ).toBeInTheDocument()
+  })
+
+  it('keeps the general setup line beside the offer when other setup is also missing', () => {
+    const pinia = showMissingCustomNodesOnComfyCloud()
+    useMissingModelStore(pinia).setMissingModels([
+      {
+        nodeId: '1',
+        nodeType: 'VAELoader',
+        widgetName: 'vae_name',
+        name: 'qwen_image_2.1_vae.safetensors',
+        directory: 'vae',
+        isMissing: true,
+        isAssetSupported: true
+      }
+    ])
+    renderList(pinia)
+
+    const hero = screen.getByTestId('errors-summary-hero')
+    expect(
+      within(hero).getByText('Finish setup before running the workflow')
+    ).toBeInTheDocument()
+    expect(
+      within(hero).getByRole('button', { name: 'Set up a Custom Build' })
+    ).toBeInTheDocument()
+  })
+
+  it('offers no custom deployment while running on a deployment', () => {
+    showMissingCustomNodesOnComfyCloud()
+    useDeploymentPickStore(getActivePinia()).bootDeployment = production
+    renderList(getActivePinia()!)
+
+    expect(
+      screen.queryByRole('button', { name: 'Set up a Custom Build' })
+    ).not.toBeInTheDocument()
   })
 
   it('labels a missing-only selection as an issue', async () => {

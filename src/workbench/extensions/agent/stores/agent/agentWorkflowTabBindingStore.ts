@@ -3,6 +3,7 @@ import { defineStore } from 'pinia'
 import { computed, toRaw, watch } from 'vue'
 
 import { safeLocalStorage } from '@/base/storage/safeStorage'
+import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import { areWorkflowIdsEquivalent } from '@/platform/workflow/core/utils/workflowId'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -369,13 +370,34 @@ export const useAgentWorkflowTabBindingStore = defineStore(
         : undefined
     }
 
+    function workflowIdForGraph(rootGraph: LGraph): string | undefined {
+      const exactOwners = workflows.openWorkflows.filter(
+        (tab) => tab.graph === rootGraph
+      )
+      if (exactOwners.length !== 0)
+        return exactOwners.length === 1
+          ? workflowIdFor(exactOwners[0].path)
+          : undefined
+      const identityOwners = workflows.openWorkflows.filter((tab) => {
+        const graphId = graphIdOf(tab)
+        return (
+          graphId !== undefined &&
+          areWorkflowIdsEquivalent(graphId, rootGraph.id, tab.legacyId)
+        )
+      })
+      return identityOwners.length === 1
+        ? workflowIdFor(identityOwners[0].path)
+        : undefined
+    }
+
     return {
       bind,
       unbind,
       unbindWorkflow,
       matchesWorkflow,
       tabPathFor,
-      workflowIdFor
+      workflowIdFor,
+      workflowIdForGraph
     }
   }
 )

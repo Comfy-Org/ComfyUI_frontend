@@ -12,6 +12,7 @@ import {
   storedOnboardedScopes
 } from '@e2e/fixtures/agentPanelFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { isPlaced, settledBox } from '@e2e/fixtures/utils/agentTourGeometry'
 import { expectRegionScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 const ONBOARDING_KEY = StorageKeys.agentOnboarded(
@@ -203,6 +204,105 @@ test.describe('Agent onboarding tour', { tag: ['@cloud', '@ui'] }, () => {
       ).toHaveCount(0)
     }
   )
+
+  test('spotlights only the Agent panel and holds each card still', async ({
+    page,
+    agentFlagEnabled
+  }) => {
+    const MAX_CARD_TRAVEL_PX = 64
+    const EDGE_TOLERANCE_PX = 2
+    const SETTLE_FRAMES = 10
+    const MAX_CARDS_WALKED = 8
+
+    await bootAgentApp(page, agentFlagEnabled, {
+      onboardingCompleted: false
+    })
+    await new AgentPanel(page).open()
+
+    const panel = page.locator('#agent-panel-root')
+    const spotlight = page.getByTestId('agent-coach-spotlight')
+    await expect(panel).toBeVisible()
+
+    const stepLabel = page.getByRole('dialog').getByText(/^\d+ of \d+$/)
+    const card = page
+      .getByRole('dialog')
+      .filter({ has: page.getByText(/^\d+ of \d+$/) })
+
+    const cardOrigins: { x: number; y: number }[] = []
+    const walked: string[] = []
+
+    for (let step = 1; step <= MAX_CARDS_WALKED; step++) {
+      await expect(card).toBeVisible()
+      await expect(spotlight).toBeVisible()
+      await expect.poll(() => isPlaced(card)).toBe(true)
+      await expect.poll(() => isPlaced(spotlight)).toBe(true)
+
+      const heading = card.getByRole('heading').first()
+      const title = (await heading.textContent())?.trim()
+      walked.push(title ?? `card ${step}`)
+
+      const [panelBox, spotlightBox, cardBox] = await Promise.all([
+        panel.boundingBox(),
+        settledBox(spotlight, SETTLE_FRAMES),
+        settledBox(card, SETTLE_FRAMES)
+      ])
+      if (!panelBox) throw new Error('the Agent panel has no box')
+
+      await test.step(`card "${title}" spotlights inside the panel and stays beside it`, () => {
+        expect({
+          spotlightLeftOfPanelEdge:
+            spotlightBox.x >= panelBox.x - EDGE_TOLERANCE_PX,
+          spotlightRightOfPanelEdge:
+            spotlightBox.x + spotlightBox.width <=
+            panelBox.x + panelBox.width + EDGE_TOLERANCE_PX,
+          spotlightBelowPanelTop:
+            spotlightBox.y >= panelBox.y - EDGE_TOLERANCE_PX,
+          spotlightAbovePanelBottom:
+            spotlightBox.y + spotlightBox.height <=
+            panelBox.y + panelBox.height + EDGE_TOLERANCE_PX,
+          cardBelowPanelTop: cardBox.y >= panelBox.y - EDGE_TOLERANCE_PX,
+          cardAbovePanelBottom:
+            cardBox.y + cardBox.height <=
+            panelBox.y + panelBox.height + EDGE_TOLERANCE_PX,
+          cardHugsPanelLeftEdge:
+            Math.abs(cardBox.x + cardBox.width - panelBox.x) <=
+            MAX_CARD_TRAVEL_PX
+        }).toEqual({
+          spotlightLeftOfPanelEdge: true,
+          spotlightRightOfPanelEdge: true,
+          spotlightBelowPanelTop: true,
+          spotlightAbovePanelBottom: true,
+          cardBelowPanelTop: true,
+          cardAbovePanelBottom: true,
+          cardHugsPanelLeftEdge: true
+        })
+      })
+
+      await test.step(`card "${title}" does not move once it is visible`, () => {
+        expect(cardBox.drift).toBeLessThanOrEqual(EDGE_TOLERANCE_PX)
+        expect(spotlightBox.drift).toBeLessThanOrEqual(EDGE_TOLERANCE_PX)
+      })
+
+      cardOrigins.push({ x: cardBox.x, y: cardBox.y })
+
+      const next = card.getByRole('button', { name: enMessages.g.next })
+      if ((await next.count()) === 0) break
+      const label = (await stepLabel.textContent())?.trim()
+      await next.click()
+      await expect(stepLabel).not.toHaveText(label ?? '')
+      await expect(heading).not.toHaveText(title ?? '')
+    }
+
+    expect(walked).toEqual([
+      enMessages.agent.coachTitle,
+      enMessages.agent.coachWorkflowTitle,
+      enMessages.agent.coachHistoryTitle
+    ])
+    const lefts = cardOrigins.map((origin) => origin.x)
+    expect(Math.max(...lefts) - Math.min(...lefts)).toBeLessThanOrEqual(
+      MAX_CARD_TRAVEL_PX
+    )
+  })
 
   test('Escape leaves the last card, which has no Skip button', async ({
     page,
