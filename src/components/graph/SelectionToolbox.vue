@@ -51,6 +51,7 @@
 
               <ColorPickerButton v-if="hasAnySelection" />
               <TidyUpButton v-if="hasMultipleSelection" v-model:lift="lift" />
+              <AlignButton v-if="hasMultipleSelection" />
               <ToolboxButton
                 v-if="hasMultipleSelection"
                 :label="$t('g.frameNodes')"
@@ -145,6 +146,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
+import AlignButton from '@/components/graph/selectionToolbox/AlignButton.vue'
 import TidyUpButton from '@/components/graph/selectionToolbox/TidyUpButton.vue'
 import ColorPickerButton from '@/components/graph/selectionToolbox/ColorPickerButton.vue'
 import ExecuteButton from '@/components/graph/selectionToolbox/ExecuteButton.vue'
