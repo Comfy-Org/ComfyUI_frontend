@@ -5,6 +5,7 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 import { useToast } from '@/components/ui/toast/toastStore'
 import {
   ASK_BEFORE_CLOUD_CHECK,
+  CLOUD_CHECK_CONSENT_SAVE_TIMEOUT_MS,
   saveAskBeforeCloudCheck
 } from '@/platform/openOnCloud/cloudCheckConsent'
 import { CORE_SETTINGS } from '@/platform/settings/constants/coreSettings'
@@ -154,5 +155,61 @@ describe('saveAskBeforeCloudCheck', () => {
       [ASK_BEFORE_CLOUD_CHECK, true]
     ])
     expect(useSettingStore().get(ASK_BEFORE_CLOUD_CHECK)).toBe(true)
+  })
+
+  it('reports a stalled save and moves on to the next choice', async () => {
+    vi.useFakeTimers()
+    try {
+      vi.mocked(api.storeSetting).mockReturnValueOnce(new Promise(() => {}))
+      const dontAskAgain = saveAskBeforeCloudCheck(false)
+      await vi.waitFor(() => expect(api.storeSetting).toHaveBeenCalledOnce())
+      const askAgain = saveAskBeforeCloudCheck(true)
+
+      await vi.advanceTimersByTimeAsync(CLOUD_CHECK_CONSENT_SAVE_TIMEOUT_MS)
+      await Promise.all([dontAskAgain, askAgain])
+
+      expect(reportError).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: expect.stringContaining('Timed out')
+        }),
+        expect.objectContaining({
+          errorType: 'error_saving_cloud_check_consent'
+        })
+      )
+      expect(api.storeSetting).toHaveBeenLastCalledWith(
+        ASK_BEFORE_CLOUD_CHECK,
+        true
+      )
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('shows no toast for a failed save that a later choice replaced', async () => {
+    const slowSave = deferredResponse()
+    vi.mocked(api.storeSetting).mockReturnValueOnce(slowSave.promise)
+    const dontAskAgain = saveAskBeforeCloudCheck(false)
+    await vi.waitFor(() => expect(api.storeSetting).toHaveBeenCalledOnce())
+    const askAgain = saveAskBeforeCloudCheck(true)
+
+    slowSave.resolve(new Response(null, { status: 500 }))
+    await Promise.all([dontAskAgain, askAgain])
+
+    expect(reportError).toHaveBeenCalledOnce()
+    expect(useToast().toasts).toEqual([])
+  })
+
+  it('reports a choice that fails to apply in memory', async () => {
+    const failure = new Error('listener failed')
+    vi.spyOn(useSettingStore(), 'applySettingLocally').mockRejectedValueOnce(
+      failure
+    )
+
+    await expect(saveAskBeforeCloudCheck(false)).resolves.toBeUndefined()
+
+    expect(reportError).toHaveBeenCalledWith(
+      failure,
+      expect.objectContaining({ errorType: 'error_saving_cloud_check_consent' })
+    )
   })
 })
