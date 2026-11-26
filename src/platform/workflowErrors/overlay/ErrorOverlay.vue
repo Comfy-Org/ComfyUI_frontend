@@ -129,7 +129,9 @@ const {
 
 const issuesToastBuildOffer = isCloud ? useIssuesToastBuildOffer() : null
 const buildOffer = computed(() =>
-  appMode ? null : (issuesToastBuildOffer?.offer.value ?? null)
+  appMode || !overlayGroupKeys.value.includes('missing_node')
+    ? null
+    : (issuesToastBuildOffer?.offer.value ?? null)
 )
 
 const message = computed(() =>
