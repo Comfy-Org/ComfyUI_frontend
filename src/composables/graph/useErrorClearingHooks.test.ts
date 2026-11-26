@@ -530,9 +530,9 @@ describe('installErrorClearingHooks lifecycle', () => {
 
     const cleanup = installErrorClearingHooks(rootGraph)
 
-    for (const [index, node] of nodes.entries()) {
-      expect(node.onConnectionsChange).not.toBe(originals[index])
-    }
+    expect(
+      nodes.map((node, index) => node.onConnectionsChange === originals[index])
+    ).toEqual([false, false, false])
 
     cleanup()
 
