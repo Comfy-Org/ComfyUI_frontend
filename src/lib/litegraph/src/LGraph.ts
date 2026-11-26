@@ -2278,6 +2278,7 @@ export class LGraph
 
     // Create subgraph node object
     const subgraphNode = LiteGraph.createNode(subgraph.id, subgraph.name, {
+      targetGraph: this,
       outputs: structuredClone(outputs)
     })
     if (!subgraphNode) throw new Error('Failed to create subgraph node')
@@ -3170,7 +3171,9 @@ export class LGraph
 
           for (const n_info of effectiveNodesData) {
             // stored info
-            let node = LiteGraph.createNode(n_info.type, n_info.title)
+            let node = LiteGraph.createNode(n_info.type, n_info.title, {
+              targetGraph: this
+            })
             if (!node) {
               if (LiteGraph.debug)
                 console.warn('Node not found or has errors:', n_info.type)

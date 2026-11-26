@@ -103,6 +103,9 @@ import {
 import { getOrderedInputSpecs } from '@/workbench/utils/nodeDefOrderingUtil'
 
 import { useExtensionService } from '@/platform/extensions/services/extensionService'
+import type { GraphOrSubgraph } from '@comfyorg/graph-model/entityRegistry'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { NODE_CREATION_GRAPH_FACTORY } from '@/lib/litegraph/src/LiteGraphGlobal'
 
 export function getExtraOptionsForWidget(
   node: LGraphNode,
@@ -395,20 +398,31 @@ export const useLitegraphService = () => {
     subgraph: Subgraph,
     instanceData: ExportedSubgraphInstance
   ) {
+    const subgraphId = subgraph.id
     const node = class ComfyNode extends SubgraphNode {
       static comfyClass: string
       static override title: string
       static override category: string
       static override nodeData: ComfyNodeDefV1 & ComfyNodeDefV2
 
-      constructor() {
-        super(useApp().rootGraph, subgraph, instanceData)
+      constructor(
+        _title?: string,
+        targetGraphOrType?: string | GraphOrSubgraph,
+        ownedSubgraph?: Subgraph
+      ) {
+        const targetGraph =
+          typeof targetGraphOrType === 'object'
+            ? targetGraphOrType
+            : useApp().rootGraph
+        ownedSubgraph ??=
+          targetGraph.rootGraph.subgraphs.get(subgraphId) ?? subgraph
+        super(targetGraph, ownedSubgraph, instanceData)
 
-        subgraph.events.addEventListener('widget-promoted', () => {
+        ownedSubgraph.events.addEventListener('widget-promoted', () => {
           invalidateSubgraphPseudoWidgetCache(this)
         })
 
-        subgraph.events.addEventListener('widget-demoted', () => {
+        ownedSubgraph.events.addEventListener('widget-demoted', () => {
           invalidateSubgraphPseudoWidgetCache(this)
         })
 
@@ -498,6 +512,32 @@ export const useLitegraphService = () => {
 
         super.configure(data)
       }
+    }
+
+    const graphAwareNode = node as typeof node & {
+      [NODE_CREATION_GRAPH_FACTORY]: (
+        title: string,
+        graph?: GraphOrSubgraph
+      ) => SubgraphNode | null
+    }
+    graphAwareNode[NODE_CREATION_GRAPH_FACTORY] = (
+      title,
+      graph = useApp().rootGraph
+    ) => {
+      const ownedSubgraph = graph.rootGraph.subgraphs.get(subgraphId)
+      if (!ownedSubgraph) {
+        reportError(
+          new Error('Subgraph node type is missing from the target graph'),
+          {
+            errorType: 'subgraph_node_target_missing',
+            surface: 'graph',
+            context: { subgraphId, rootGraphId: graph.rootGraph.id },
+            sentryMode: 'once_per_page'
+          }
+        )
+        return null
+      }
+      return new node(title, graph, ownedSubgraph)
     }
 
     addNodeContextMenuHandler(node)
@@ -880,13 +920,11 @@ export const useLitegraphService = () => {
       return node
     }
 
-    const node = LiteGraph.createNode(
-      nodeDef.name,
-      nodeDef.display_name,
-      options
-    )
-
     const graph = useWorkflowStore().activeSubgraph ?? useApp().rootGraph
+    const node = LiteGraph.createNode(nodeDef.name, nodeDef.display_name, {
+      ...options,
+      targetGraph: graph
+    })
     if (!node) return null
 
     graph.add(node, addOptions)

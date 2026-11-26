@@ -1505,7 +1505,9 @@ export class LGraphNode
   }
 
   clone(): LGraphNode | null {
-    const node = LiteGraph.createNode(this.type)
+    const node = LiteGraph.createNode(this.type, undefined, {
+      targetGraph: this.graph ?? undefined
+    })
     if (!node) return null
 
     // we clone it because serialize returns shared containers

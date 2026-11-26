@@ -1505,8 +1505,9 @@ export class LiveGraphApplier {
     context: RemoteApplyContext
   ): LGraphNode {
     const node =
-      LiteGraph.createNode(docNode.type, docNode.serialised.title) ??
-      missingNode(docNode)
+      LiteGraph.createNode(docNode.type, docNode.serialised.title, {
+        targetGraph: graph
+      }) ?? missingNode(docNode)
     node.id = toNodeId(docNode.id)
     const info: ISerialisedNode = {
       ...docNode.serialised,

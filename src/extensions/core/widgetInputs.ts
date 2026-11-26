@@ -666,8 +666,10 @@ export const widgetInputsExtension: ComfyExtension = {
       }
 
       // Create a primitive node
-      const node = LiteGraph.createNode('PrimitiveNode')
       const graph = useApp().canvas.graph
+      const node = LiteGraph.createNode('PrimitiveNode', undefined, {
+        targetGraph: graph ?? undefined
+      })
       if (!node || !graph) return r
 
       graph.add(node)

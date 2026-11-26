@@ -38,9 +38,13 @@ import {
   TitleMode
 } from '@comfyorg/graph-model/globalEnums'
 import { createUuidv4 } from '@/utils/uuid'
+import type { GraphOrSubgraph } from '@comfyorg/graph-model/entityRegistry'
 
-/** Options for {@link LiteGraphGlobal.createNode}. Shallow-copied onto the new node. */
+export const NODE_CREATION_GRAPH_FACTORY = Symbol('nodeCreationGraphFactory')
+
+/** Options for {@link LiteGraphGlobal.createNode}. Node fields are shallow-copied onto the new node. */
 export interface CreateNodeOptions {
+  targetGraph?: GraphOrSubgraph
   pos?: Point
   size?: Size
   properties?: Dictionary<NodeProperty | undefined>
@@ -642,7 +646,20 @@ export class LiteGraphGlobal {
     let node: LGraphNode
 
     try {
-      node = new base_class(title)
+      const graphAwareClass = base_class as typeof LGraphNode & {
+        [NODE_CREATION_GRAPH_FACTORY]?: (
+          title: string,
+          graph?: GraphOrSubgraph
+        ) => LGraphNode | null
+      }
+      const createdNode = graphAwareClass[NODE_CREATION_GRAPH_FACTORY]
+        ? graphAwareClass[NODE_CREATION_GRAPH_FACTORY](
+            title,
+            options?.targetGraph
+          )
+        : new base_class(title)
+      if (!createdNode) return null
+      node = createdNode
       node._state.type = type
     } catch (error) {
       if (!this.catch_exceptions) throw error
@@ -656,7 +673,8 @@ export class LiteGraphGlobal {
 
     // extra options
     if (options) {
-      Object.assign(node, options)
+      const { targetGraph: _, ...nodeOptions } = options
+      Object.assign(node, nodeOptions)
     }
 
     // callback

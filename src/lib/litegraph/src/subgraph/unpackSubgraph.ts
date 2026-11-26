@@ -104,7 +104,9 @@ function cloneNodesForUnpack(
       })
     }
 
-    const clonedNode = LiteGraph.createNode(node.type)
+    const clonedNode = LiteGraph.createNode(node.type, undefined, {
+      targetGraph: node.graph ?? undefined
+    })
     if (!clonedNode) {
       console.warn('Failed to create node', node.type)
       clonedNodes.push(nodeInfo)
@@ -132,8 +134,10 @@ function cloneNodesForUnpack(
   return clonedNodes
 }
 
-function createNodeForUnpack(nodeInfo: ISerialisedNode) {
-  const node = LiteGraph.createNode(nodeInfo.type, nodeInfo.title)
+function createNodeForUnpack(nodeInfo: ISerialisedNode, graph: LGraph) {
+  const node = LiteGraph.createNode(nodeInfo.type, nodeInfo.title, {
+    targetGraph: graph
+  })
   if (node) return node
   console.warn(
     `Cannot unpack node of type "${nodeInfo.type}" - node creation failed. Creating placeholder node.`
@@ -200,7 +204,7 @@ export function materializeSubgraphNodes({
   const materializedNodes: LGraphNode[] = []
 
   for (const nodeInfo of nodeInfos) {
-    const node = createNodeForUnpack(nodeInfo)
+    const node = createNodeForUnpack(nodeInfo, graph)
     const oldNodeId = toNodeId(nodeInfo.id)
 
     // Strip links before configure so callbacks cannot resolve subgraph link

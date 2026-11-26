@@ -2844,7 +2844,9 @@ export class ComfyApp implements IComfyApp {
         for (const id of ids) {
           const data = apiData[id]
           const nodeId = localNodeIdsByApiId.get(id) ?? toNodeId(id)
-          let node = LiteGraph.createNode(data.class_type)
+          let node = LiteGraph.createNode(data.class_type, undefined, {
+            targetGraph: graph
+          })
           let placeholderEntry:
             | Extract<MissingNodeType, { type: string }>
             | undefined

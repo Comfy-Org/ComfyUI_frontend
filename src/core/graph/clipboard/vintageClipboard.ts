@@ -28,7 +28,9 @@ export function deserialiseIntoGraph(
 
   const nodes: LGraphNode[] = []
   for (const info of deserialised.nodes) {
-    const node = LiteGraph.createNode(info.type)
+    const node = LiteGraph.createNode(info.type, undefined, {
+      targetGraph: graph
+    })
     if (!node) continue
 
     node.configure(info)

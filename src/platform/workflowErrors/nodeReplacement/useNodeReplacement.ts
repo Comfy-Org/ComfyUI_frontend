@@ -479,7 +479,9 @@ function replacePlaceholder(
   const idx = nodeGraph._nodes.indexOf(node)
   if (idx === -1) return false
 
-  const newNode = LiteGraph.createNode(replacement.new_node_id)
+  const newNode = LiteGraph.createNode(replacement.new_node_id, undefined, {
+    targetGraph: nodeGraph
+  })
   if (!newNode) return false
 
   const hasMapping =
