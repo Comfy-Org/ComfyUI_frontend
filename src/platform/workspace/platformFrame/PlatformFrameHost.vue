@@ -16,7 +16,7 @@
             'overflow-hidden',
             isPreinstall
               ? 'max-h-130 max-w-180'
-              : 'h-[calc(100dvh-3rem)] max-h-256 w-[calc(100vw-3rem)] max-w-280'
+              : 'inset-6 m-auto size-auto max-h-256 max-w-280 translate-none'
           )
         "
         data-testid="platform-frame-host"
