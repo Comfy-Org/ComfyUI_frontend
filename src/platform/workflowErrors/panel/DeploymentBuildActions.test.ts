@@ -9,6 +9,7 @@ import type { MissingModelGroup } from '@/platform/workflowErrors/missingModel/t
 import type { WorkspaceDeployment } from '@/platform/workspace/api/workspaceApi'
 import { DEPLOYMENT_LISTING_FOCUS_RETRY_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
 import { reloadForDeploymentSwitch } from '@/platform/workspace/deploymentSwitchReload'
+import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { usePlatformFrameStore } from '@/platform/workspace/platformFrame/platformFrameStore'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -131,6 +132,16 @@ describe('DeploymentBuildActions', () => {
         },
         'errors_panel'
       )
+    })
+
+    it('keeps the link to the Build when the workflow lacks nodes the panel hides', () => {
+      useMissingNodesErrorStore().setMissingNodeTypes(['QwenImage21Cache'])
+      renderActions({ missingPackGroups: [] })
+
+      expect(
+        screen.getByRole('link', { name: 'Edit build on Platform' })
+      ).toBeInTheDocument()
+      expect(usePlatformFrameStore().open).not.toHaveBeenCalled()
     })
 
     it.for([

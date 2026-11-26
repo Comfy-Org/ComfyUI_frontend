@@ -58,7 +58,9 @@ import { computed } from 'vue'
 
 import type { MissingPackGroup } from '@/platform/workflowErrors/panel/useErrorGroups'
 import Button from '@comfyorg/design-system/button/Button'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { MissingModelGroup } from '@/platform/workflowErrors/missingModel/types'
+import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { DEPLOYMENT_LISTING_FOCUS_RETRY_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
 import type { WorkspaceDeployment } from '@/platform/workspace/api/workspaceApi'
 import { useDeploymentLabels } from '@/platform/workspace/composables/useDeploymentLabels'
@@ -92,9 +94,17 @@ useEventListener(window, 'focus', () => {
 })
 
 const platformFrames = usePlatformFrameStore()
+const workflows = useWorkflowStore()
+const missingNodes = useMissingNodesErrorStore()
+const workflowLacksNodes = computed(
+  () =>
+    missingNodes.missingNodesError !== null ||
+    !!workflows.activeWorkflow?.pendingWarnings?.missingNodeTypes?.length
+)
 const addsMissingModels = computed(
   () =>
     missingPackGroups.length === 0 &&
+    !workflowLacksNodes.value &&
     missingModelGroups.length > 0 &&
     platformFrames.isAvailable()
 )
