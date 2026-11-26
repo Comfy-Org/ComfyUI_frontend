@@ -7,7 +7,6 @@ import { useCustomDeploymentSetup } from '@/platform/workspace/composables/useCu
 import { useMissingNodeDeploymentOffer } from '@/platform/workspace/composables/useMissingNodeDeploymentOffer'
 import { openWorkflowNeedsDeploymentDialog } from '@/platform/workspace/openCustomDeploymentDialog'
 import { usePlatformFrameStore } from '@/platform/workspace/platformFrame/platformFrameStore'
-import { NEW_DEPLOYMENT_FOR_WORKFLOW } from '@/platform/workspace/platformFrame/platformFrameWaysIn'
 
 vi.mock(import('@/platform/workspace/composables/useCustomDeploymentOffered'))
 vi.mock(
@@ -41,26 +40,14 @@ describe('useCustomDeploymentSetup', () => {
     expect(offered.value).toBe(true)
   })
 
-  it('opens the Platform frame for a new deployment when it can', () => {
+  it('opens the workflow deployment dialog', () => {
     vi.mocked(useCustomDeploymentOffered).mockReturnValue(computed(() => true))
-    vi.spyOn(usePlatformFrameStore(), 'open').mockReturnValue(true)
+    const open = vi.spyOn(usePlatformFrameStore(), 'open')
 
-    useCustomDeploymentSetup().setUp('errors_panel')
-
-    expect(usePlatformFrameStore().open).toHaveBeenCalledWith(
-      NEW_DEPLOYMENT_FOR_WORKFLOW,
-      'errors_panel'
-    )
-    expect(openWorkflowNeedsDeploymentDialog).not.toHaveBeenCalled()
-  })
-
-  it('opens the custom deployment dialog when the frame is not available', () => {
-    vi.mocked(useCustomDeploymentOffered).mockReturnValue(computed(() => true))
-    vi.spyOn(usePlatformFrameStore(), 'open').mockReturnValue(false)
-
-    useCustomDeploymentSetup().setUp('errors_panel')
+    useCustomDeploymentSetup().setUp()
 
     expect(openWorkflowNeedsDeploymentDialog).toHaveBeenCalledOnce()
+    expect(open).not.toHaveBeenCalled()
   })
 
   it.for([

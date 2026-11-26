@@ -1,5 +1,3 @@
-import type { CustomDeploymentEntry } from '@comfyorg/telemetry/types'
-
 import { computed } from 'vue'
 
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
@@ -7,8 +5,6 @@ import { useCustomDeploymentOffered } from '@/platform/workspace/composables/use
 import { useMissingNodeDeploymentOffer } from '@/platform/workspace/composables/useMissingNodeDeploymentOffer'
 import { openWorkflowNeedsDeploymentDialog } from '@/platform/workspace/openCustomDeploymentDialog'
 import { nodesNeedingDeployment } from '@/platform/workspace/missingForDeployment'
-import { usePlatformFrameStore } from '@/platform/workspace/platformFrame/platformFrameStore'
-import { NEW_DEPLOYMENT_FOR_WORKFLOW } from '@/platform/workspace/platformFrame/platformFrameWaysIn'
 
 /** Whether to offer a custom deployment for the missing nodes, and how to set one up. */
 export function useCustomDeploymentSetup() {
@@ -23,8 +19,7 @@ export function useCustomDeploymentSetup() {
     )
   })
 
-  function setUp(entry: CustomDeploymentEntry) {
-    if (usePlatformFrameStore().open(NEW_DEPLOYMENT_FOR_WORKFLOW, entry)) return
+  function setUp() {
     void openWorkflowNeedsDeploymentDialog()
   }
 

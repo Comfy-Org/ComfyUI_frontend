@@ -84,7 +84,7 @@
               variant="inverted"
               size="md"
               class="w-full"
-              @click="customDeploymentSetup?.setUp('errors_panel')"
+              @click="customDeploymentSetup?.setUp()"
             >
               {{ t('rightSidePanel.setUpCustomDeployment') }}
             </Button>
