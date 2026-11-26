@@ -1514,8 +1514,7 @@ const docOpMinter = retainDocOpMinterForPage(docTransport, {
     )
   },
   getGraph: () => (useApp().isGraphReady ? useApp().rootGraph : null),
-  boundRootGraphId,
-  onIdentityChange
+  boundRootGraphId
 })
 watch([() => crdtStatus.value.connected, boundWorkflowId], () =>
   docOpMinter.deliverHeldRestores()

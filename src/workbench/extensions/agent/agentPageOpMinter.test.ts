@@ -63,7 +63,6 @@ describe('retainDocOpMinterForPage', () => {
   let boundWorkflow: ComfyWorkflow
   let minted: GraphOperation[]
   let unboundVisibleIntents: string[]
-  let identityListeners: (() => void)[]
 
   function panelInputs(
     overrides: Partial<AgentPanelOpMinterInputs> = {}
@@ -75,14 +74,6 @@ describe('retainDocOpMinterForPage', () => {
       isBoundWorkflow: (workflow) => workflow === boundWorkflow,
       boundRootGraphId: () => rootGraphId,
       visibleWorkflowIdFor: () => VISIBLE_WORKFLOW_ID,
-      onIdentityChange: (listener) => {
-        identityListeners.push(listener)
-        return () => {
-          identityListeners = identityListeners.filter(
-            (candidate) => candidate !== listener
-          )
-        }
-      },
       ...overrides
     }
   }
@@ -94,7 +85,6 @@ describe('retainDocOpMinterForPage', () => {
     boundWorkflow = fromPartial<ComfyWorkflow>({ path: 'workflows/bound.json' })
     minted = []
     unboundVisibleIntents = []
-    identityListeners = []
     held.value = fakeSession(minted)
   })
 
@@ -214,24 +204,6 @@ describe('retainDocOpMinterForPage', () => {
     expect(noted).toEqual([VISIBLE_WORKFLOW_ID])
   })
 
-  it('stops minting after an identity change until a panel reinstalls its inputs', async () => {
-    retainDocOpMinterForPage(transport, panelInputs())
-    for (const listener of identityListeners) listener()
-
-    graph.add(new TestSource())
-    await afterFlush()
-    await afterFlush()
-
-    expect(minted).toEqual([])
-
-    retainDocOpMinterForPage(transport, panelInputs())
-    graph.add(new TestSource())
-    await afterFlush()
-    await afterFlush()
-
-    expect(minted.map((operation) => operation.op)).toEqual(['add_node'])
-  })
-
   it('reports the edit rather than dropping it when the claim goes before flush', async () => {
     retainDocOpMinterForPage(transport, panelInputs())
 
@@ -260,23 +232,6 @@ describe('retainDocOpMinterForPage', () => {
     await afterFlush()
 
     expect(minted).toEqual([])
-  })
-
-  it('releases its identity observer on teardown', () => {
-    retainDocOpMinterForPage(transport, panelInputs())
-    expect(identityListeners).toHaveLength(1)
-
-    destroyAgentPageOpMinters()
-
-    expect(identityListeners).toEqual([])
-  })
-
-  it('replaces rather than stacks its identity observer across remounts', () => {
-    retainDocOpMinterForPage(transport, panelInputs())
-    retainDocOpMinterForPage(transport, panelInputs())
-    retainDocOpMinterForPage(transport, panelInputs())
-
-    expect(identityListeners).toHaveLength(1)
   })
 
   it('re-attaches after a teardown, so a second page session mints again', async () => {

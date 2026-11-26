@@ -598,15 +598,31 @@ The first implementation had the panel do the whole thing and lost the marker
 for every edit made with the panel closed; the fact is recorded below.
 
 **The active-target flag is the one retained input whose source is still
-panel-scoped, and that is a live gap rather than a settled split.**
-`isFollowerActive` reads the identity resolver Stage 1a deliberately left behind,
-so it freezes on unmount: an account or workspace change made while the panel is
-closed would otherwise leave a stale identity admitting writes into the
-previously bound document. Until the resolver moves — Stage 1b's own leftover —
-the producer compensates by observing the page session's `onIdentityChange` and
-refusing to mint until a panel installs fresh inputs. That restores the
-pre-stage outcome (nothing minted, unsynced intent recorded) rather than a
-wrong-document write, and it is a mitigation, not the fix.
+panel-scoped, and it is an open dependency rather than a settled split.**
+`isFollowerActive` reads the identity resolver Stage 1a deliberately left behind
+(`resolveAgentIdentity`), so it freezes on unmount. An account or workspace
+change made while the panel is closed therefore leaves a stale non-null identity
+answering the flag until the next mount. The fix is the resolver's move to page
+lifetime, which Stage 1a names as Stage 1b's work and Stage 1b did not do.
+
+**A latch in the producer was tried for this and reverted, which is worth
+recording so it is not tried again.** Observing the page session's
+`onIdentityChange` and refusing to mint until a panel reinstalled its inputs
+looked like a cheap safe-direction mitigation. It is not: inputs are installed
+only in `AgentPanelRoot.setup()`, so an identity change with the panel **open**
+latched the gate with nothing to clear it and stopped every hand edit minting
+for the rest of the page session. It also bypassed `deliverHeldRestores`, which
+checks the binding and the document rather than any such latch. That trades a
+narrow window for a page-wide outage, so the exposure stays named and
+unmitigated here.
+
+The window is also narrower than it first reads, because the host is the real
+gate: an identity change reconnects the socket through the page-lifetime
+`agentSocketIdentity` watcher, and a resubscribe the new identity does not own
+is refused, which takes `subscriptionSent()` — and so `isDocBound()` — false.
+What remains exposed is the interval between the identity change and that
+resubscribe resolving, during which ops may still mint under the previous
+actor against a document that actor did own.
 
 **The restore queue moved with the edit path, as this stage requires.** The
 delivery trigger was a panel watcher, so a reconnect completing with the panel

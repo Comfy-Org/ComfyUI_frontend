@@ -32,12 +32,6 @@ export interface AgentPanelOpMinterInputs {
   boundRootGraphId(): RootGraphId | null
   /** The workflow id a visible root graph is bound to, or null for none. */
   visibleWorkflowIdFor(rootGraph: LGraph): string | null
-  /**
-   * Observe the signed-in identity changing. The producer stops minting until a
-   * panel installs fresh inputs, because {@link isTargetActive} is answered from
-   * a panel-scoped identity resolver that freezes on unmount.
-   */
-  onIdentityChange(listener: () => void): () => void
 }
 
 interface PageOpMinter {
@@ -45,28 +39,10 @@ interface PageOpMinter {
   readonly scope: EffectScope
   minter: DocOpMinter | null
   inputs: AgentPanelOpMinterInputs
-  stopObservingIdentity: (() => void) | null
-  identityChangedSinceInstall: boolean
 }
 
 const minters = new WeakMap<AgentDocFrameTransport, PageOpMinter>()
 const liveMinters = new Set<PageOpMinter>()
-
-function installInputs(
-  owner: PageOpMinter,
-  inputs: AgentPanelOpMinterInputs
-): void {
-  owner.inputs = inputs
-  owner.identityChangedSinceInstall = false
-  owner.stopObservingIdentity?.()
-  owner.stopObservingIdentity = inputs.onIdentityChange(() => {
-    owner.identityChangedSinceInstall = true
-  })
-}
-
-function mayMint(owner: PageOpMinter): boolean {
-  return !owner.identityChangedSinceInstall && owner.inputs.isEnabled()
-}
 
 /**
  * Resolve the page's op producer for `transport`, creating it on first use, and
@@ -84,22 +60,19 @@ export function retainDocOpMinterForPage(
 ): { deliverHeldRestores(): void } {
   const existing = minters.get(transport)
   if (existing !== undefined) {
-    installInputs(existing, inputs)
+    existing.inputs = inputs
     return { deliverHeldRestores: () => existing.minter?.deliverHeldRestores() }
   }
   const owner: PageOpMinter = {
     transport,
     inputs,
     minter: null,
-    scope: effectScope(true),
-    stopObservingIdentity: null,
-    identityChangedSinceInstall: false
+    scope: effectScope(true)
   }
-  installInputs(owner, inputs)
   const pageHeldSession = retainedAgentFollowerSessionRef(transport)
   const session = () => pageHeldSession.value
   const attached = attachDocOpMinter({
-    isEnabled: () => mayMint(owner),
+    isEnabled: () => owner.inputs.isEnabled(),
     isDocBound: () =>
       owner.inputs.isTargetActive() && (session()?.subscriptionSent() ?? false),
     onUnboundLocalIntent: () => session()?.noteUnboundLocalIntent(),
@@ -150,7 +123,7 @@ export function retainDocOpMinterForPage(
 }
 
 function releaseWithoutPropagating(
-  step: 'identity' | 'scope' | 'detach',
+  step: 'scope' | 'detach',
   dispose: () => void
 ): void {
   try {
@@ -174,10 +147,8 @@ function releaseWithoutPropagating(
  */
 export function destroyAgentPageOpMinters(): void {
   for (const owner of liveMinters) {
-    releaseWithoutPropagating('identity', () => owner.stopObservingIdentity?.())
     releaseWithoutPropagating('scope', () => owner.scope.stop())
     releaseWithoutPropagating('detach', () => owner.minter?.detach())
-    owner.stopObservingIdentity = null
     owner.minter = null
     minters.delete(owner.transport)
   }
