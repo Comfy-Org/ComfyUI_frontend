@@ -14,7 +14,6 @@
 import { readFileSync } from 'node:fs'
 
 import { expect, mergeTests } from '@playwright/test'
-import type { Page } from '@playwright/test'
 
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import {
@@ -24,6 +23,7 @@ import {
 } from '@e2e/fixtures/jobsRouteFixture'
 import { getMimeType } from '@e2e/fixtures/utils/mimeTypeUtil'
 import { assetPath } from '@e2e/fixtures/utils/paths'
+import { mockViewFiles } from '@e2e/fixtures/utils/viewFileMocks'
 
 const test = mergeTests(comfyPageFixture, jobsRouteFixture)
 
@@ -39,6 +39,13 @@ const videoBaseNames = [
 
 const videoFileNames: readonly string[] = videoBaseNames.map(
   (baseName) => `${baseName}.mp4`
+)
+
+const videoViewFiles = Object.fromEntries(
+  videoFileNames.map((filename) => [
+    filename,
+    { body: videoBytes, contentType: getMimeType(filename) }
+  ])
 )
 
 /**
@@ -61,35 +68,12 @@ const videoJobs = videoFileNames.map((filename, index) =>
   })
 )
 
-async function mockVideoViewFiles(page: Page) {
-  await page.route('**/api/view**', async (route) => {
-    if (route.request().method().toUpperCase() !== 'GET') {
-      await route.fallback()
-      return
-    }
-
-    const filename = new URL(route.request().url()).searchParams.get('filename')
-    if (!filename || !videoFileNames.includes(filename)) {
-      await route.fulfill({
-        status: 404,
-        json: { error: `Unknown filename: ${filename}` }
-      })
-      return
-    }
-
-    await route.fulfill({
-      body: videoBytes,
-      contentType: getMimeType(filename)
-    })
-  })
-}
-
 test.describe('Video asset multi-selection', { tag: ['@ui'] }, () => {
   test.beforeEach(async ({ comfyPage, jobsRoutes, page }) => {
     await jobsRoutes.mockJobsQueue([])
     await jobsRoutes.mockJobsHistory(videoJobs)
     await comfyPage.assets.mockInputFiles([])
-    await mockVideoViewFiles(page)
+    await mockViewFiles(page, videoViewFiles)
   })
 
   test('shift-click and Ctrl/Cmd-click build a multi-selection of video assets', async ({
