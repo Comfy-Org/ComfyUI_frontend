@@ -2,6 +2,7 @@ import {
   comfyPageFixture as test,
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
+import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 
 test('Dragging a typed output reveals compatible widget input slots @vue-nodes', async ({
@@ -116,6 +117,46 @@ test('Dragging from a subgraph input reveals compatible widget input slots @vue-
 
   await page.mouse.up()
   await expect(ksampler.getWidgetSlotContainer('steps')).toHaveCSS(
+    'opacity',
+    '0'
+  )
+})
+
+test('A node added mid-drag reveals its compatible widget input slots @vue-nodes', async ({
+  comfyPage
+}) => {
+  await comfyPage.workflow.loadWorkflow(
+    'primitive/static_primitive_unconnected'
+  )
+  const { page } = comfyPage
+  const intNode = await comfyPage.nodeOps.getNodeRefByType('PrimitiveInt')
+  const intOutput = page
+    .locator(`[data-slot-key="${getSlotKey(intNode.id, 0, false)}"]`)
+    .locator('..')
+  await intOutput.hover()
+  await page.mouse.down()
+  const { x, y } = (await intOutput.boundingBox())!
+  await page.mouse.move(x, y + 200, { steps: 5 })
+
+  const added = await comfyPage.nodeOps.addNode('KSampler', undefined, {
+    x: 600,
+    y: 500
+  })
+  const addedSampler = new VueNodeFixture(
+    comfyPage.vueNodes.getNodeLocator(String(added.id))
+  )
+
+  await expect(
+    addedSampler.getWidgetSlotContainer('steps'),
+    'INT widget on the added node accepts INT'
+  ).toHaveCSS('opacity', '1')
+  await expect(
+    addedSampler.getWidgetSlotContainer('cfg'),
+    'FLOAT widget on the added node rejects INT'
+  ).toHaveCSS('opacity', '0')
+
+  await page.mouse.up()
+  await expect(addedSampler.getWidgetSlotContainer('steps')).toHaveCSS(
     'opacity',
     '0'
   )

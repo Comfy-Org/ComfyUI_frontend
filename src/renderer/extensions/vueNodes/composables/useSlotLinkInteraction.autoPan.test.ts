@@ -68,6 +68,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
       graph: {
         rootGraph: { id: 'autopan-graph' },
         nodes: [],
+        events: new EventTarget(),
         getNodeById: mockGetNodeById,
         getLink: () => null,
         getReroute: () => null
