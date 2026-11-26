@@ -141,8 +141,6 @@ describe('select-pr-playwright-specs.sh', () => {
 
   it('skips a spec the stale base is merely missing from the default branch', () => {
     withRepo((root, firstMain) => {
-      // A pull request that targets a teammate's branch rather than the default
-      // branch, and resolves it by merging the default branch in.
       git(root, 'checkout', '-q', '-b', 'teammate', firstMain)
       writeSpec(root, 'browser_tests/tests/pr/carried.spec.ts', 'carried')
       const base = commitAll(root, 'teammate spec')
@@ -156,9 +154,11 @@ describe('select-pr-playwright-specs.sh', () => {
       writeSpec(root, 'browser_tests/tests/pr/mine.spec.ts', 'mine')
       const head = commitAll(root, 'spec this PR authored')
 
-      // Without the default-branch filter the stale base selects main's spec too.
       const unfiltered = select(root, base, head).split('\n')
-      expect(unfiltered).toEqual(
+      expect(
+        unfiltered,
+        'without the default branch ref the stale base carries main’s spec'
+      ).toEqual(
         expect.arrayContaining([
           'browser_tests/tests/main/elsewhere.spec.ts',
           'browser_tests/tests/pr/mine.spec.ts'
@@ -204,9 +204,10 @@ describe('select-pr-playwright-specs.sh', () => {
       writeSpec(root, 'browser_tests/tests/main/elsewhere.spec.ts', 'revised')
       commitAll(root, 'main revises its own spec after the merge')
 
-      // Comparing against the branch tip would resurrect it; comparing against
-      // the default-branch commit this head contains does not.
-      expect(select(root, base, head, 'main')).toBe('')
+      expect(
+        select(root, base, head, 'main'),
+        'the branch tip would resurrect this spec; the default branch commit the head contains does not'
+      ).toBe('')
     })
   })
 
