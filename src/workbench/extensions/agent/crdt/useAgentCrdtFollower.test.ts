@@ -2218,6 +2218,21 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
+    it('does not report an empty reconnect catch-up frame', () => {
+      const { unmount } = mountFollower('wf-1', true, () => fakeGraph)
+
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 9,
+        actor: 'agent:private-thread:private-turn',
+        catchUp: true,
+        opIds: ['op-join']
+      })
+
+      expect(useTelemetry()?.trackAgentGraphProjection).not.toHaveBeenCalled()
+      unmount()
+    })
+
     it('reports an actorless frame with a non-node graph change', () => {
       projectionState.applyFrame.mockReturnValueOnce(
         projectionState.applied([], { added: [], removed: [] }, 0, true)
