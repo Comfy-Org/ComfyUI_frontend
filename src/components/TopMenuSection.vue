@@ -96,12 +96,17 @@
                   class="absolute top-0.5 right-1 size-2 rounded-full bg-destructive"
                 />
               </Button>
+              <LocalBuildButton v-if="isLocalBuildPrototype" />
               <CloudButton
-                v-if="isCloudButtonShown || hasCloudUploadRecovery"
+                v-else-if="isCloudButtonShown || hasCloudUploadRecovery"
                 :show-cloud-action="isCloudButtonShown"
               />
               <Button
-                v-if="!isCloudButtonShown && isDeployButtonShown"
+                v-if="
+                  !isLocalBuildPrototype &&
+                  !isCloudButtonShown &&
+                  isDeployButtonShown
+                "
                 :tooltip="t('deployToComfyApi.buttonLabel')"
                 tooltip-side="bottom"
                 variant="secondary"
@@ -230,6 +235,8 @@ import { usePropertiesPanelStore } from '@/renderer/extensions/propertiesPanel/p
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { isCloud } from '@/platform/distribution/types'
 import CloudButton from '@/components/CloudButton.vue'
+import LocalBuildButton from '@/platform/openOnCloud/localBuildPrototype/LocalBuildButton.vue'
+import { readLocalBuildPath } from '@/platform/openOnCloud/localBuildPrototype/mockLocalBuild'
 import { canHandOffToCloud } from '@/platform/openOnCloud/localHandoffProtocol'
 import { useLocalModelUploadStore } from '@/platform/openOnCloud/stores/localModelUploadStore'
 import { openDeployToComfyApiDialog } from '@/platform/workflow/deploy/composables/lazyDeployToComfyApiDialog'
@@ -255,6 +262,7 @@ const { isLoggedIn } = useCurrentUser()
 const { t } = useI18n()
 const { toastErrorHandler } = useErrorHandling()
 const { flags } = useFeatureFlags()
+const isLocalBuildPrototype = !isCloud && readLocalBuildPath() !== undefined
 const isCloudButtonShown = computed(
   () => !isCloud && flags.openOnCloudEnabled && canHandOffToCloud()
 )
@@ -298,6 +306,7 @@ const hasDockedButtons = computed(() => {
   if (!isIntegratedTabBar.value) return true
   if (managerState.shouldShowExtensionsButton.value) return true
   if (
+    isLocalBuildPrototype ||
     isCloudButtonShown.value ||
     hasCloudUploadRecovery.value ||
     isDeployButtonShown.value
