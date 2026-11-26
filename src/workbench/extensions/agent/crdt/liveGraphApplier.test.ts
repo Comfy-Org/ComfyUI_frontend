@@ -23,12 +23,7 @@ import {
 import * as Y from 'yjs'
 
 import { markDynamicGroupController } from '@/core/graph/widgets/dynamicGroupDiagnostics'
-import {
-  LGraph,
-  LGraphNode,
-  LiteGraph,
-  SubgraphNode
-} from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { NODE_CREATION_GRAPH_FACTORY } from '@/lib/litegraph/src/LiteGraphGlobal'
 import type { GraphOrSubgraph } from '@comfyorg/graph-model/entityRegistry'
 import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
@@ -1168,7 +1163,7 @@ describe('LiveGraphApplier', () => {
   it('keeps a placeholder when the replacement cannot be built', () => {
     const type = '00000000-0000-4000-8000-00000000f00d'
     const refusals: (GraphOrSubgraph | undefined)[] = []
-    class ForeignSubgraphNode extends SubgraphNode {
+    class ForeignSubgraphNode extends LGraphNode {
       static [NODE_CREATION_GRAPH_FACTORY](
         _title: string,
         targetGraph?: GraphOrSubgraph
@@ -1177,7 +1172,7 @@ describe('LiveGraphApplier', () => {
         return null
       }
     }
-    LiteGraph.registerNodeType(type, fromPartial(ForeignSubgraphNode))
+    LiteGraph.registerNodeType(type, ForeignSubgraphNode)
     const docNode = (pos: [number, number]) => ({
       id: 1,
       type,
