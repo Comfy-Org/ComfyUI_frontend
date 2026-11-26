@@ -44,7 +44,6 @@ const isEstimable = computed(
 )
 const estimateState = useRunCostEstimate(isEstimable)
 
-// Only a priced floor is worth a line; idle, failed, and unpriceable states show nothing.
 const costLine = computed(() => {
   const state = estimateState.value
   if (state.status !== 'available' || state.estimate.pricedCount === 0)
