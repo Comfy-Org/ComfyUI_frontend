@@ -1,3 +1,11 @@
+import { createApp, h, shallowReactive, shallowRef } from 'vue'
+
+import ScrubableNumberInput from '@/components/common/ScrubableNumberInput.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import TooltipProvider from '@comfyorg/design-system/tooltip/TooltipProvider'
+import { i18n } from '@/i18n'
+import WidgetLayoutFieldLabel from '@/renderer/extensions/vueNodes/widgets/components/layout/WidgetLayoutFieldLabel.vue'
+import type { NumberInputOptions } from '@/types/numberInput'
 import { dynamicWidgets } from '@/core/graph/widgets/dynamicWidgets'
 import {
   addValueControlWidget as _addValueControlWidget,
@@ -93,3 +101,107 @@ export function isValidWidgetType(
 export const addValueControlWidget = _addValueControlWidget
 export const addValueControlWidgets = _addValueControlWidgets
 export const updateControlWidgetLabel = _updateControlWidgetLabel
+
+export function createNumberInput(options: NumberInputOptions) {
+  const state = shallowReactive({ ...options })
+  const control = shallowRef<InstanceType<typeof ScrubableNumberInput>>()
+  const element = document.createElement('div')
+  const inputId = crypto.randomUUID()
+  element.className =
+    'h-full text-xs text-foreground in-[.dom-widget]:px-3 in-[.dom-widget]:py-0.5'
+  let app: ReturnType<typeof createApp> | undefined
+  function mount() {
+    if (app) return
+    app = createApp({
+      render() {
+        return h(TooltipProvider, null, () =>
+          h(
+            ScrubableNumberInput,
+            {
+              ref: control,
+              class: 'h-full cursor-ew-resize',
+              modelValue: state.value,
+              displayValue: state.displayValue,
+              disabled: state.disabled,
+              onInteraction: state.onInteraction,
+              inputAttrs: {
+                id: inputId,
+                'aria-label': state.name,
+                onFocus: () => control.value?.edit()
+              }
+            },
+            {
+              label: () =>
+                h(WidgetLayoutFieldLabel, {
+                  widget: { name: state.name },
+                  inputId,
+                  class: 'pl-2'
+                }),
+              default: () => [
+                state.annotation &&
+                  h(
+                    'span',
+                    { class: 'content-center truncate text-muted-foreground' },
+                    state.annotation
+                  ),
+                state.unit &&
+                  h(
+                    'span',
+                    { class: 'content-center text-muted-foreground' },
+                    state.unit
+                  ),
+                state.action &&
+                  h(
+                    Button,
+                    {
+                      'aria-label': state.action.label,
+                      title: state.action.label,
+                      disabled: state.disabled || state.action.disabled,
+                      variant: 'muted-textonly',
+                      size: 'unset',
+                      class: 'aspect-square h-full rounded-none p-0',
+                      tabindex: -1,
+                      onClick: state.action.onClick
+                    },
+                    () =>
+                      h('i', {
+                        class:
+                          state.action?.icon === 'disable'
+                            ? 'icon-[lucide--ban]'
+                            : 'icon-[lucide--rotate-ccw]'
+                      })
+                  )
+              ]
+            }
+          )
+        )
+      }
+    })
+    app.use(i18n).mount(element)
+  }
+  mount()
+  for (const type of [
+    'keydown',
+    'keyup',
+    'pointerdown',
+    'pointermove',
+    'pointerup',
+    'dblclick'
+  ]) {
+    element.addEventListener(type, (event) => event.stopPropagation())
+  }
+  return {
+    element,
+    mount,
+    update(next: Partial<NumberInputOptions>) {
+      Object.assign(state, next)
+    },
+    edit() {
+      control.value?.edit()
+    },
+    destroy() {
+      app?.unmount()
+      app = undefined
+    }
+  }
+}
