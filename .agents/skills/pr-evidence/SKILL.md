@@ -52,7 +52,7 @@ Follow [`reference/publishing.md`](reference/publishing.md) for every type:
 the section layout, media URLs, the marker, the PATCH, and the read-back.
 Done means the read-back body has the expected `<details>`, image, and
 link counts, every media URL returns HTTP 200, and the marker names the
-SHAs you captured.
+SHAs the evidence is valid at, as `publishing.md` defines them.
 
 ## Reviewing a PR
 
