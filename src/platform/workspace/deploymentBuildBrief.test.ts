@@ -228,4 +228,19 @@ describe(deploymentBuildBrief, () => {
       'The editor cannot see the models those custom nodes load, so they are not\nlisted'
     )
   })
+
+  it('tells the agent to stop rather than write a node no published pack provides', () => {
+    const decides = section(
+      deploymentBuildBrief(
+        deployment,
+        [{ packId: null, nodeTypes: ['QwenImage21Cache'] }],
+        []
+      ),
+      'Where the user decides'
+    )
+
+    expect(decides).toContain(
+      "If no published pack provides a node, stop. List those nodes for the user\nand don't write new node code into the Build."
+    )
+  })
 })

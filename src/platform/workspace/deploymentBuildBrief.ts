@@ -119,6 +119,8 @@ export function deploymentBuildBrief(
     '',
     'Find the pack for any node under an unknown pack, and a download link for',
     'any model without one.',
+    'If no published pack provides a node, stop. List those nodes for the user',
+    "and don't write new node code into the Build.",
     ...UNLISTED_MODELS,
     'Show the user what you will change in the Build, and wait for a yes. Then',
     'cut a new release of it, as the recipe says.',
