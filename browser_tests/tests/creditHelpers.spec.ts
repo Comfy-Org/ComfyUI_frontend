@@ -215,7 +215,7 @@ testWithMockedObjectInfo.describe(
         const { header, priceBadge } =
           await comfyPage.vueNodes.getFixtureByTitle('Test Credit API Node USD')
         await expect(header).toBeVisible()
-        const badge = priceBadge.required
+        const badge = priceBadge
 
         await expect(badge).toBeVisible()
 
