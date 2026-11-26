@@ -7,12 +7,17 @@ import type {
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
 
-/** Creates serialised nodes and links in `graph` at `position`; returns the created nodes in serialised order. */
-export function deserialiseIntoGraph(
+export interface DeserialisedGraphNodes {
+  createdNodes: LGraphNode[]
+  nodesBySourceIndex: (LGraphNode | null)[]
+}
+
+/** Creates serialised nodes and links while retaining the source index of refused nodes. */
+export function deserialiseIntoGraphWithSourceIndices(
   data: string,
   graph: LGraph,
   position: Readonly<Vector2>
-): LGraphNode[] {
+): DeserialisedGraphNodes {
   const deserialised = JSON.parse(data)
 
   const topLeft = [Infinity, Infinity]
@@ -53,9 +58,20 @@ export function deserialiseIntoGraph(
     if (outNode && inNode) outNode.connect(info[1], inNode, info[3])
     else console.warn('Warning, nodes missing on pasting')
   }
-  return nodesByClipboardIndex.filter(
+  const createdNodes = nodesByClipboardIndex.filter(
     (node): node is LGraphNode => node !== null
   )
+  return { createdNodes, nodesBySourceIndex: nodesByClipboardIndex }
+}
+
+/** Creates serialised nodes and links in `graph` at `position`; returns created nodes in source order. */
+export function deserialiseIntoGraph(
+  data: string,
+  graph: LGraph,
+  position: Readonly<Vector2>
+): LGraphNode[] {
+  return deserialiseIntoGraphWithSourceIndices(data, graph, position)
+    .createdNodes
 }
 
 /** Inserts legacy relative-index payloads, configuring nodes before graph attachment. */

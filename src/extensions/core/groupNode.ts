@@ -24,7 +24,7 @@ import type {
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import type { ComfyExtension } from '@/types/comfy'
-import { deserialiseIntoGraph } from '@/core/graph/clipboard/vintageClipboard'
+import { deserialiseIntoGraphWithSourceIndices } from '@/core/graph/clipboard/vintageClipboard'
 
 import { useApp } from '@/scripts/appInstance'
 import { mergeIfValid } from './widgetInputs'
@@ -904,13 +904,15 @@ export class GroupNodeHandler {
     const addInnerNodes = () => {
       const c = { ...nodeData }
       c.nodes = c.nodes.map((n) => ({ ...n, id: undefined }))
-      const newNodes = deserialiseIntoGraph(JSON.stringify(c), graph, [0, 0])
+      const { createdNodes, nodesBySourceIndex } =
+        deserialiseIntoGraphWithSourceIndices(JSON.stringify(c), graph, [0, 0])
 
       const [x, y] = node.pos
       let top: number | undefined
       let left: number | undefined
       const consumedOuterWidgetIndices = new Set<number>()
-      for (const [i, newNode] of newNodes.entries()) {
+      for (const [i, newNode] of nodesBySourceIndex.entries()) {
+        if (!newNode) continue
         const innerNodeData = nodeData.nodes.at(i)
 
         if (left == null || newNode.pos[0] < left) left = newNode.pos[0]
@@ -956,19 +958,19 @@ export class GroupNodeHandler {
         }
       }
 
-      for (const newNode of newNodes) {
+      for (const newNode of createdNodes) {
         newNode.pos = [
           newNode.pos[0] - ((left ?? 0) - x),
           newNode.pos[1] - ((top ?? 0) - y)
         ]
       }
 
-      return newNodes
+      return { createdNodes, nodesBySourceIndex }
     }
 
-    const reconnectInputs = (newNodes: LGraphNode[]) => {
+    const reconnectInputs = (nodesBySourceIndex: (LGraphNode | null)[]) => {
       for (const [innerNodeIndex, map] of Object.entries(oldToNewInputMap)) {
-        const newNode = newNodes.at(Number(innerNodeIndex))
+        const newNode = nodesBySourceIndex.at(Number(innerNodeIndex))
         if (!newNode || !map) continue
         for (const [innerInputName, groupSlotId] of Object.entries(map)) {
           const link = node.getInputLink(groupSlotId)
@@ -982,7 +984,7 @@ export class GroupNodeHandler {
       }
     }
 
-    const reconnectOutputs = (newNodes: LGraphNode[]) => {
+    const reconnectOutputs = (nodesBySourceIndex: (LGraphNode | null)[]) => {
       for (
         let groupOutputId = 0;
         groupOutputId < node.outputs.length;
@@ -993,7 +995,7 @@ export class GroupNodeHandler {
           const slot = newToOldOutputMap[groupOutputId]
           if (!slot) continue
           const targetNode = graph.getNodeById(link.target_id)
-          const newNode = newNodes.at(slot.node.index ?? 0)
+          const newNode = nodesBySourceIndex.at(slot.node.index ?? 0)
           if (targetNode) {
             newNode?.connect(slot.slot, targetNode, link.target_slot)
           }
@@ -1006,11 +1008,11 @@ export class GroupNodeHandler {
     if (isVisible) canvas.emitBeforeChange()
     graph.beforeChange()
     try {
-      const newNodes = addInnerNodes()
-      reconnectInputs(newNodes)
-      reconnectOutputs(newNodes)
+      const { createdNodes, nodesBySourceIndex } = addInnerNodes()
+      reconnectInputs(nodesBySourceIndex)
+      reconnectOutputs(nodesBySourceIndex)
       graph.remove(this.node)
-      return newNodes
+      return createdNodes
     } finally {
       graph.afterChange()
       if (isVisible) canvas.emitAfterChange()

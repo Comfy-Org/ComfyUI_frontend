@@ -171,26 +171,36 @@ describe('useLitegraphService().registerSubgraphNodeDef ownership', () => {
 
   it('constructs an extension subclass through the graph-aware factory', () => {
     const subgraphId = '00000000-0000-4000-8000-000000000125'
-    const graph = createTestRootGraph()
-    const subgraph = graph.createSubgraph(
-      createTestSubgraphData({ id: subgraphId })
+    const visibleGraph = createTestRootGraph()
+    const backgroundGraph = createTestRootGraph()
+    visibleGraph.createSubgraph(
+      createTestSubgraphData({ id: subgraphId, name: 'Visible definition' })
     )
+    const backgroundSubgraph = backgroundGraph.createSubgraph(
+      createTestSubgraphData({ id: subgraphId, name: 'Background definition' })
+    )
+    Reflect.set(app, 'rootGraph', visibleGraph)
     useLitegraphService().registerSubgraphNodeDef(
       createNodeDefV1({ name: subgraphId }),
-      subgraph,
+      backgroundSubgraph,
       subgraphInstanceData(subgraphId)
     )
     const Registered = LiteGraph.registered_node_types[subgraphId]
     assert.exists(Registered)
-    class DerivedSubgraphNode extends Registered {}
+    class DerivedSubgraphNode extends Registered {
+      constructor(title: string) {
+        super(title)
+      }
+    }
     LiteGraph.registerNodeType(subgraphId, DerivedSubgraphNode)
 
     const node = LiteGraph.createNode(subgraphId, undefined, {
-      targetGraph: graph
+      targetGraph: backgroundGraph
     })
 
     expect(node).toBeInstanceOf(DerivedSubgraphNode)
     expect(node).toBeInstanceOf(SubgraphNode)
+    expect((node as SubgraphNode).subgraph).toBe(backgroundSubgraph)
   })
 
   it('reports and refuses a subgraph type missing from the target graph', () => {

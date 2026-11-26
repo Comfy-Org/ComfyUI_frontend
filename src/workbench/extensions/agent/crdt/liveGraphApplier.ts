@@ -1502,8 +1502,12 @@ export class LiveGraphApplier {
       else this.applyWidgets(live, docNode.widgets, mode)
       return 'updated'
     }
+    const preservedPosition =
+      live && isResolvablePlaceholder(live)
+        ? ([live.pos[0], live.pos[1]] as const)
+        : undefined
     if (live) graph.remove(live)
-    this.createNode(graph, docNode, mode, context)
+    this.createNode(graph, docNode, mode, context, preservedPosition)
     return live ? 'recreated' : 'created'
   }
 
@@ -1511,7 +1515,8 @@ export class LiveGraphApplier {
     graph: LGraph,
     docNode: DocNode,
     mode: ApplyMode,
-    context: RemoteApplyContext
+    context: RemoteApplyContext,
+    position?: readonly [number, number]
   ): LGraphNode {
     const node =
       LiteGraph.createNode(docNode.type, docNode.serialised.title, {
@@ -1530,7 +1535,9 @@ export class LiveGraphApplier {
     if (docNode.widgetRecord)
       info.widgets_values = docNode.widgetRecord as unknown as WidgetValue[]
     detachSerialisedLinks(info)
-    node.pos = [info.pos[0], info.pos[1]]
+    node.pos = position
+      ? [position[0], position[1]]
+      : [info.pos[0], info.pos[1]]
     graph.add(node)
     if (node.id !== toNodeId(docNode.id)) {
       const existingOwner = diagnosticNodeOwner(graph, toNodeId(docNode.id))

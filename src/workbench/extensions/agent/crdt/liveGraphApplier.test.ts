@@ -1086,10 +1086,15 @@ describe('LiveGraphApplier', () => {
 
   it('rebuilds a missing-node placeholder once its type becomes registered', () => {
     const type = 'TestLateRegistration'
+    let positionWhenAdded: [number, number] | undefined
     class TestLateRegistration extends LGraphNode {
       constructor() {
         super('Late registration')
         this.addInput('value', '*')
+      }
+
+      override onAdded(): void {
+        positionWhenAdded = [this.pos[0], this.pos[1]]
       }
     }
     const { graph, doc, applyCollected, applyEdit } = setup({
@@ -1111,6 +1116,7 @@ describe('LiveGraphApplier', () => {
 
     applyEdit(() => nodesMap(doc).get('1')?.set('pos', [10, 20]))
     expect(graph.getNodeById(toNodeId(1))).toBe(placeholder)
+    if (placeholder) placeholder.pos = [777, 888]
 
     LiteGraph.registerNodeType(type, TestLateRegistration)
     onTestFinished(() => {
@@ -1135,6 +1141,8 @@ describe('LiveGraphApplier', () => {
     expect(resolved).toBeInstanceOf(TestLateRegistration)
     expect(resolved).not.toBe(placeholder)
     expect(resolved?.has_errors).toBeFalsy()
+    expect(positionWhenAdded).toEqual([777, 888])
+    expect(Array.from(resolved!.pos)).toEqual([20, 30])
 
     applyEdit(() => {
       nodesMap(doc).set(

@@ -2,7 +2,7 @@ import { expect, it, onTestFinished, vi } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 
-import { deserialiseIntoGraph } from './vintageClipboard'
+import { deserialiseIntoGraphWithSourceIndices } from './vintageClipboard'
 
 class VintageSource extends LGraphNode {
   constructor() {
@@ -40,21 +40,27 @@ it('keeps clipboard indices stable when a target graph refuses a node', () => {
     mode: 0
   })
 
-  const created = deserialiseIntoGraph(
-    JSON.stringify({
-      nodes: [
-        node(0, sourceType, 0),
-        node(1, missingType, 120),
-        node(2, sinkType, 240)
-      ],
-      links: [[0, 0, 2, 0, '*']]
-    }),
-    graph,
-    [0, 0]
-  )
+  const { createdNodes, nodesBySourceIndex } =
+    deserialiseIntoGraphWithSourceIndices(
+      JSON.stringify({
+        nodes: [
+          node(0, sourceType, 0),
+          node(1, missingType, 120),
+          node(2, sinkType, 240)
+        ],
+        links: [[0, 0, 2, 0, '*']]
+      }),
+      graph,
+      [0, 0]
+    )
 
-  expect(created.map(({ type }) => type)).toEqual([sourceType, sinkType])
+  expect(nodesBySourceIndex.map((node) => node?.type ?? null)).toEqual([
+    sourceType,
+    null,
+    sinkType
+  ])
+  expect(createdNodes.map(({ type }) => type)).toEqual([sourceType, sinkType])
   expect(graph.links.size).toBe(1)
-  expect(created[0].outputs[0].links).toHaveLength(1)
-  expect(created[1].inputs[0].link).not.toBeNull()
+  expect(createdNodes[0].outputs[0].links).toHaveLength(1)
+  expect(createdNodes[1].inputs[0].link).not.toBeNull()
 })

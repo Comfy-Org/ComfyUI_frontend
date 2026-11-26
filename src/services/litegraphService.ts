@@ -113,12 +113,20 @@ interface SubgraphNodeRegistration {
   instanceData: ExportedSubgraphInstance
 }
 
+interface SubgraphConstructionContext {
+  token: symbol
+  graph: GraphOrSubgraph
+  ownedSubgraph: Subgraph
+  consumed: boolean
+}
+
 const subgraphNodeRegistrations = new WeakMap<
   Subgraph,
   SubgraphNodeRegistration
 >()
 const missingSubgraphTargetReports = new WeakMap<LGraph, Set<string>>()
 const MAX_MISSING_SUBGRAPH_TARGET_REPORTS_PER_GRAPH = 25
+const subgraphConstructionContexts: SubgraphConstructionContext[] = []
 
 function shouldReportMissingSubgraphTarget(
   rootGraph: LGraph,
@@ -471,6 +479,7 @@ export const useLitegraphService = () => {
       nodeDef,
       instanceData: structuredClone(instanceData)
     })
+    const constructionToken = Symbol('subgraphConstruction')
     const node = class ComfyNode extends SubgraphNode {
       static comfyClass: string
       static override title: string
@@ -496,7 +505,18 @@ export const useLitegraphService = () => {
           }
           return null
         }
-        return new this(title, graph, ownedSubgraph)
+        const context: SubgraphConstructionContext = {
+          token: constructionToken,
+          graph,
+          ownedSubgraph,
+          consumed: false
+        }
+        subgraphConstructionContexts.push(context)
+        try {
+          return new this(title, graph, ownedSubgraph)
+        } finally {
+          subgraphConstructionContexts.pop()
+        }
       }
 
       constructor(
@@ -504,12 +524,21 @@ export const useLitegraphService = () => {
         targetGraphOrType?: string | GraphOrSubgraph,
         ownedSubgraph?: Subgraph
       ) {
+        const pendingContext = subgraphConstructionContexts.at(-1)
+        const constructionContext =
+          pendingContext?.token === constructionToken &&
+          !pendingContext.consumed
+            ? pendingContext
+            : undefined
+        if (constructionContext) constructionContext.consumed = true
         const targetGraph =
           typeof targetGraphOrType === 'object'
             ? targetGraphOrType
-            : useApp().rootGraph
+            : (constructionContext?.graph ?? useApp().rootGraph)
         ownedSubgraph ??=
-          targetGraph.rootGraph.subgraphs.get(subgraphId) ?? subgraph
+          constructionContext?.ownedSubgraph ??
+          targetGraph.rootGraph.subgraphs.get(subgraphId) ??
+          subgraph
         const registration = subgraphNodeRegistration(ownedSubgraph)
         super(
           targetGraph,
