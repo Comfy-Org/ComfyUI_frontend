@@ -18,7 +18,7 @@ import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPi
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
-import { useDialogService } from '@/services/dialogService'
+import { showUnsavedWorkDialog } from '@/platform/workspace/showUnsavedWorkDialog'
 import { useAuthStore } from '@/stores/authStore'
 
 import { useReleaseNoticeStore } from '@/platform/workspace/stores/releaseNoticeStore'
@@ -52,7 +52,7 @@ vi.mock(import('@/scripts/api'))
 vi.mock(import('@comfyorg/telemetry'))
 vi.mock(import('@comfyorg/telemetry/reportError'))
 vi.mock(import('firebase/auth'))
-vi.mock(import('@/services/dialogService'))
+vi.mock(import('@/platform/workspace/showUnsavedWorkDialog'))
 vi.mock(import('@/platform/workspace/platformWorkflowHandoff'), () => ({
   captureOpenWorkflow: vi.fn(() => ({
     filename: 'portrait.json',
@@ -726,7 +726,7 @@ describe('following a build after the dialog closes', () => {
     useToast().toasts[0].actions[0].onClick()
 
     await vi.waitFor(() =>
-      expect(useDialogService().confirm).toHaveBeenCalledWith(
+      expect(showUnsavedWorkDialog).toHaveBeenCalledWith(
         expect.objectContaining({
           title: 'Save your workflows before reloading?',
           denyLabel: 'Reload without saving',
