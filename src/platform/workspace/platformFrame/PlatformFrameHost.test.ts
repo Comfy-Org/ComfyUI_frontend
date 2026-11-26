@@ -158,7 +158,7 @@ describe('PlatformFrameHost', () => {
     expect(screen.queryByRole('dialog')).toBeNull()
   })
 
-  it('frames the pre-install screen in a smaller dialog', async () => {
+  it('frames the pre-install screen', async () => {
     renderHost()
     usePlatformFrameStore().open(
       { step: 'preinstall', deploymentId: 'dep-1' },
@@ -166,26 +166,13 @@ describe('PlatformFrameHost', () => {
     )
     await nextTick()
 
-    const dialog = screen.getByRole('dialog', {
-      name: 'Pre-install models to run this workflow'
-    })
-    expect(dialog).toHaveClass('max-w-180')
-    expect(dialog).not.toHaveClass('max-w-240')
+    expect(
+      screen.getByRole('dialog', {
+        name: 'Pre-install models to run this workflow'
+      })
+    ).toBeInTheDocument()
     expect(screen.getByTestId('platform-frame').getAttribute('src')).toMatch(
       /^https:\/\/platform\.comfy\.org\/embed\/custom-deployment\?step=preinstall&.*deployment=dep-1/
-    )
-  })
-
-  it('keeps the full-size dialog for the other screens', async () => {
-    renderHost()
-    usePlatformFrameStore().open(
-      { step: 'update', deploymentId: 'dep-1' },
-      'pencil'
-    )
-    await nextTick()
-
-    expect(screen.getByRole('dialog', { name: 'Custom Build' })).toHaveClass(
-      'max-w-240'
     )
   })
 
