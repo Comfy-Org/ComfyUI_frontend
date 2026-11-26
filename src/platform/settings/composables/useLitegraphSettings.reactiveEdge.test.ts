@@ -3,7 +3,7 @@ import { expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
-// oxlint-disable-next-line comfy/no-restricted-paths -- Settings adapter verifies legacy canvas synchronization.
+// oxlint-disable-next-line comfy/no-restricted-paths -- Settings adapter verifies legacy canvas synchronization (integration test).
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 import { useLitegraphSettings } from './useLitegraphSettings'
