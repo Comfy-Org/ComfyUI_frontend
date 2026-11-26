@@ -23,7 +23,8 @@
       @pointerdown="startDrag($event, handle.index)"
       @wheel="forwardEventToCanvas"
       @keydown="nudge($event, handle.index)"
-      @keyup="commitNudges($event)"
+      @keyup="NUDGE_KEYS[$event.key] && commitNudges()"
+      @blur="commitNudges"
     >
       <div
         :class="
@@ -152,6 +153,8 @@ function sameHandles(a: GapHandle[], b: GapHandle[]) {
   )
 }
 
+watch(distributeSession, commitNudges)
+
 function clearHandles() {
   distributeSession.value = null
   handles.value = []
@@ -216,7 +219,10 @@ function editableLanes() {
 }
 
 let endActiveDrag: (() => void) | undefined
-onBeforeUnmount(() => endActiveDrag?.())
+onBeforeUnmount(() => {
+  endActiveDrag?.()
+  commitNudges()
+})
 
 function startDrag(event: PointerEvent, index: number) {
   if (event.button !== 0) return forwardEventToCanvas(event)
@@ -316,8 +322,8 @@ function nudge(event: KeyboardEvent, index: number) {
   nudgePending = true
 }
 
-function commitNudges(event: KeyboardEvent) {
-  if (!nudgePending || !NUDGE_KEYS[event.key]) return
+function commitNudges() {
+  if (!nudgePending) return
   nudgePending = false
   workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
 }

@@ -521,6 +521,28 @@ test.describe('Smart guides', { tag: ['@vue-nodes', '@canvas'] }, () => {
           .toEqual(distributed)
       })
 
+      test('a held ArrowRight still undoes in one step when focus leaves before keyup', async ({
+        comfyPage
+      }) => {
+        const gaps = await distributeRow(comfyPage)
+        const [evenGap] = await gapValues(comfyPage)
+        const distributed = await leftsOf(comfyPage, ROW_TITLES)
+        const { keyboard } = comfyPage.page
+
+        await gaps.first().focus()
+        for (const _ of [1, 2, 3, 4, 5]) await keyboard.down('ArrowRight')
+        await expect
+          .poll(() => gapValues(comfyPage))
+          .toEqual([evenGap + 5, evenGap + 5])
+        await gaps.first().blur()
+        await keyboard.up('ArrowRight')
+
+        await comfyPage.keyboard.undo()
+        await expect
+          .poll(() => leftsOf(comfyPage, ROW_TITLES))
+          .toEqual(distributed)
+      })
+
       test('gap handles disappear once the distributed nodes are pinned', async ({
         comfyPage
       }) => {
