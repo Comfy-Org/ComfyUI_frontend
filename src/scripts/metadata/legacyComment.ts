@@ -1,7 +1,7 @@
 import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
-} from '@comfyorg/graph-model/workflowSchema'
+} from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ComfyMetadata } from '@/types/metadataTypes'
 import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
 
