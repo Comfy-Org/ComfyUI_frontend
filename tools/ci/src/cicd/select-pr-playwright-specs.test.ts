@@ -152,22 +152,18 @@ describe('select-pr-playwright-specs.sh', () => {
       git(root, 'checkout', '-q', '-b', 'reconcile', base)
       git(root, 'merge', '--no-ff', '-qm', 'merge main', 'main')
       writeSpec(root, 'browser_tests/tests/pr/mine.spec.ts', 'mine')
+      writeSpec(root, 'browser_tests/tests/pr/second.spec.ts', 'second')
       const head = commitAll(root, 'spec this PR authored')
 
-      const unfiltered = select(root, base, head).split('\n')
-      expect(
-        unfiltered,
-        'without the default branch ref the stale base carries main’s spec'
-      ).toEqual(
-        expect.arrayContaining([
-          'browser_tests/tests/main/elsewhere.spec.ts',
-          'browser_tests/tests/pr/mine.spec.ts'
-        ])
-      )
-      expect(unfiltered).toHaveLength(2)
-      expect(select(root, base, head, 'main')).toBe(
-        'browser_tests/tests/pr/mine.spec.ts'
-      )
+      expect(select(root, base, head).split('\n')).toEqual([
+        'browser_tests/tests/main/elsewhere.spec.ts',
+        'browser_tests/tests/pr/mine.spec.ts',
+        'browser_tests/tests/pr/second.spec.ts'
+      ])
+      expect(select(root, base, head, 'main').split('\n')).toEqual([
+        'browser_tests/tests/pr/mine.spec.ts',
+        'browser_tests/tests/pr/second.spec.ts'
+      ])
     })
   })
 
