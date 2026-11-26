@@ -228,8 +228,18 @@ describe('fetchJobs', () => {
         expected: contractNodeErrors
       },
       {
-        name: 'drops node errors outside the contract shape and keeps the job',
+        name: 'keeps a node whose errors are outside the contract shape, without those errors',
         nodeErrors: rawComfyNodeErrors,
+        expected: { '4': { ...rawComfyNodeErrors['4'], errors: [] } }
+      },
+      {
+        name: 'keeps the contract nodes beside a malformed sibling',
+        nodeErrors: { ...contractNodeErrors, '7': { class_type: 'LoadImage' } },
+        expected: contractNodeErrors
+      },
+      {
+        name: 'drops node errors that are not a node map and keeps the job',
+        nodeErrors: ['not', 'a', 'map'],
         expected: undefined
       }
     ])('$name', async ({ nodeErrors, expected }) => {
@@ -244,14 +254,12 @@ describe('fetchJobs', () => {
           node_errors: nodeErrors
         }
       }
-      const mockFetch = vi.fn().mockResolvedValue({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            ...createMockResponse([createMockJob('job2', 'completed')]),
-            jobs: [failedJob, createMockJob('job2', 'completed')]
-          })
-      })
+      const mockFetch = vi.fn<JobsFetchApi>().mockResolvedValue(
+        Response.json({
+          ...createMockResponse([createMockJob('job2', 'completed')]),
+          jobs: [failedJob, createMockJob('job2', 'completed')]
+        })
+      )
 
       const result = await fetchHistory(mockFetch)
 

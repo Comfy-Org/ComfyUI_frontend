@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
+import { zJobDetail } from '@comfyorg/api-client/jobTypes'
+
 import {
   isCloudValidationError,
   tryExtractValidationError,
@@ -163,7 +165,7 @@ describe('executionErrorUtil', () => {
         name: 'the relayed node_errors, ignoring JSON embedded in the message',
         detail: {
           exception_type: 'ValidationError',
-          exception_message: `${summaryOnlyMessage} {"node_errors":{"1":{"errors":[{}]}},"error":""}`,
+          exception_message: `${summaryOnlyMessage} ${JSON.stringify({ node_errors: embeddedNodeErrors })}`,
           node_errors: relayedNodeErrors
         },
         expected: { kind: 'nodeErrors', nodeErrors: relayedNodeErrors }
@@ -258,6 +260,51 @@ describe('executionErrorUtil', () => {
     ])('classifies from $name', ({ detail, expected }) => {
       expect(classifyCloudValidationError(detail)).toEqual(expected)
     })
+
+    const rawComfyNodeErrors = {
+      '72': {
+        ...relayedNodeErrors['72'],
+        errors: [
+          {
+            ...relayedNodeErrors['72'].errors[0],
+            extra_info: { input_name: 'image', received_value: ['a.png'] }
+          }
+        ]
+      }
+    }
+
+    it.for([
+      {
+        name: 'the summary rejection when every relayed error is outside the contract',
+        nodeErrors: rawComfyNodeErrors,
+        expected: rejection(summaryOnlyMessage)
+      },
+      {
+        name: 'the contract nodes beside a node outside the contract',
+        nodeErrors: { ...relayedNodeErrors, '80': rawComfyNodeErrors['72'] },
+        expected: { kind: 'nodeErrors', nodeErrors: relayedNodeErrors }
+      }
+    ])(
+      'classifies a job read back from the Jobs API from $name',
+      ({ nodeErrors, expected }) => {
+        const { execution_error } = zJobDetail.parse({
+          id: 'job',
+          status: 'failed',
+          create_time: 1,
+          execution_error: {
+            node_id: '72',
+            node_type: 'CheckpointLoaderSimple',
+            exception_type: 'ValidationError',
+            exception_message: summaryOnlyMessage,
+            node_errors: nodeErrors
+          }
+        })
+
+        expect(
+          execution_error && classifyCloudValidationError(execution_error)
+        ).toEqual(expected)
+      }
+    )
 
     it('retains node validation when a sibling entry lacks unused metadata', () => {
       const nodeErrors = {

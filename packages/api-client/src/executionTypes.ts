@@ -4,6 +4,7 @@ import type {
   ExecutionError,
   PromptInfo
 } from '@comfyorg/ingest-types'
+import { zPromptOutputsSkippedNodeError } from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
 import { zNodeId } from '@comfyorg/graph-model/workflowSchema'
 import type { TaskStatus } from './taskSchema'
@@ -117,6 +118,33 @@ export interface ExecutionErrorWsMessage extends ExecutionWsMessageBase {
   current_outputs?: unknown
   node_errors?: ExecutionError['node_errors']
 }
+const zRelayedNodeError = zPromptOutputsSkippedNodeError.extend({
+  errors: z.array(z.unknown())
+})
+const zRelayedValidationError =
+  zPromptOutputsSkippedNodeError.shape.errors.element
+
+function contractNodeErrorEntries(
+  nodeErrors: Record<string, unknown>
+): [string, z.infer<typeof zPromptOutputsSkippedNodeError>][] {
+  return Object.entries(nodeErrors).flatMap(([nodeId, nodeError]) => {
+    const node = zRelayedNodeError.safeParse(nodeError)
+    if (!node.success) return []
+    const errors = node.data.errors.flatMap((error) => {
+      const item = zRelayedValidationError.safeParse(error)
+      return item.success ? [item.data] : []
+    })
+    return [[nodeId, { ...node.data, errors }]]
+  })
+}
+
+/** Relayed `node_errors` reduced to the nodes and errors that match the contract. */
+export const zRelayedNodeErrors = z
+  .record(z.string(), z.unknown())
+  .transform((nodeErrors): NonNullable<ExecutionError['node_errors']> =>
+    Object.fromEntries(contractNodeErrorEntries(nodeErrors))
+  )
+
 export interface ProgressTextWsMessage {
   nodeId: NodeId
   text: string

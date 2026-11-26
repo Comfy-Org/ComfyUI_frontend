@@ -1,9 +1,10 @@
 import type { NodeError, PromptError } from '@comfyorg/api-client/types'
 import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import type { ExecutionErrorWsMessage } from '@comfyorg/api-client/executionTypes'
-import { zPromptOutputsSkippedNodeError } from '@comfyorg/ingest-types/zod'
+import { zRelayedNodeErrors } from '@comfyorg/api-client/executionTypes'
+import type { zPromptOutputsSkippedNodeError } from '@comfyorg/ingest-types/zod'
 import { isPlainObject } from 'es-toolkit'
-import { z } from 'zod'
+import type { z } from 'zod'
 
 type PromptOutputsSkippedNodeError = z.infer<
   typeof zPromptOutputsSkippedNodeError
@@ -132,33 +133,9 @@ export function isMissingNodePromptError(
   return promptError?.type === 'missing_node_type'
 }
 
-const zRelayedNodeError = zPromptOutputsSkippedNodeError.extend({
-  errors: z.array(z.unknown())
-})
-const zRelayedValidationError =
-  zPromptOutputsSkippedNodeError.shape.errors.element
-
-function relayedNodeErrorOf(
-  nodeError: unknown
-): PromptOutputsSkippedNodeError | null {
-  const parsed = zRelayedNodeError.safeParse(nodeError)
-  if (!parsed.success) return null
-  const errors = parsed.data.errors.flatMap((error) => {
-    const item = zRelayedValidationError.safeParse(error)
-    return item.success ? [item.data] : []
-  })
-  return { ...parsed.data, errors }
-}
-
 function relayedNodeErrorsOf(nodeErrors: unknown): Record<string, NodeError> {
-  if (!isPlainObject(nodeErrors)) return {}
-  const valid = Object.fromEntries(
-    Object.entries(nodeErrors).flatMap(([nodeId, nodeError]) => {
-      const parsed = relayedNodeErrorOf(nodeError)
-      return parsed ? [[nodeId, parsed] as const] : []
-    })
-  )
-  return normalizeRelayedNodeErrors(valid)
+  const parsed = zRelayedNodeErrors.safeParse(nodeErrors)
+  return parsed.success ? normalizeRelayedNodeErrors(parsed.data) : {}
 }
 
 function usableNodeError(nodeError: NodeError | null): NodeError | null {

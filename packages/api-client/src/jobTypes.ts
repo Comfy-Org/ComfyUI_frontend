@@ -6,15 +6,11 @@
  * Jobs API provides a memory-optimized alternative to history API.
  */
 
-import {
-  zExecutionError as zIngestExecutionError,
-  zJobEntry,
-  zJobExecutionMetaEntry
-} from '@comfyorg/ingest-types/zod'
+import { zJobEntry, zJobExecutionMetaEntry } from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
 
 import { resultItemType } from './resultItemTypeSchema'
-import { zTaskOutput } from './executionTypes'
+import { zRelayedNodeErrors, zTaskOutput } from './executionTypes'
 
 export { zJobExecutionMetaEntry }
 
@@ -55,7 +51,7 @@ const zExecutionError = z
     traceback: z.array(z.string()).nullish(),
     current_inputs: z.unknown().optional(),
     current_outputs: z.unknown().optional(),
-    node_errors: zIngestExecutionError.shape.node_errors.catch(undefined)
+    node_errors: zRelayedNodeErrors.optional().catch(undefined)
   })
   .passthrough()
 
