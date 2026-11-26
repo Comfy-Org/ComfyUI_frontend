@@ -4462,7 +4462,7 @@
     "updateDeployment": "Update {deployment}",
     "building": "Building {deployment}",
     "deploying": "Deploying {deployment}",
-    "buildStep": "step {step} of {of}",
+    "buildStep": "Step {step} of {of}",
     "buildTakesMinutes": "This takes a few minutes. You can keep working.",
     "readyNew": "{deployment} is ready",
     "switch": "Switch",
