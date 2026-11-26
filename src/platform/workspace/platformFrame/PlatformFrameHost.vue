@@ -157,8 +157,13 @@ function keepOpenOnOutsidePointer(event: Event) {
   event.preventDefault()
 }
 
+const handsOverToNewBuild = computed(() => {
+  const request = session.value?.request
+  return !!request?.handsOverWorkflow && !request.deploymentId
+})
+
 function openOnPlatform(event: MouseEvent) {
-  if (session.value?.request.handsOverWorkflow)
+  if (handsOverToNewBuild.value)
     handOverWorkflowOnClick(event, 'custom-deployment-card')
   store.dismiss()
 }
