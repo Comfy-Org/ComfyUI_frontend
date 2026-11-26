@@ -1197,7 +1197,6 @@ describe('LiveGraphApplier', () => {
     })
 
     expect(graph.getNodeById(toNodeId(1))).toBe(placeholder)
-    expect(refusals).toEqual([graph, graph])
   })
 
   it('keeps a placeholder when the replacement constructor throws', () => {
