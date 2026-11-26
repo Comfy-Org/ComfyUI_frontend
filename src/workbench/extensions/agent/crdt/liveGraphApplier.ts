@@ -32,7 +32,8 @@ import { detachSerialisedLinks } from '@/lib/litegraph/src/linkDeduplication'
 import {
   LGraphGroup,
   LGraphNode,
-  LiteGraph
+  LiteGraph,
+  SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { containsCentre } from '@/lib/litegraph/src/measure'
@@ -1128,11 +1129,19 @@ function isConstructorFallbackShell(node: LGraphNode): boolean {
   return constructorFallbackShells.has(node)
 }
 
-function isResolvablePlaceholder(node: LGraphNode): boolean {
-  return (
-    missingNodePlaceholders.has(node) &&
-    Object.hasOwn(LiteGraph.registered_node_types, node.type)
-  )
+/**
+ * Whether a placeholder can be replaced by a real node now. A subgraph node
+ * class is registered process-wide by definition id but only builds a node for
+ * a graph that owns that definition, so a registry hit alone would rebuild the
+ * same placeholder on every frame that touches the node.
+ */
+function isResolvablePlaceholder(node: LGraphNode, graph: LGraph): boolean {
+  if (!missingNodePlaceholders.has(node)) return false
+  if (!Object.hasOwn(LiteGraph.registered_node_types, node.type)) return false
+  const registered = LiteGraph.registered_node_types[node.type]
+  if (registered.prototype instanceof SubgraphNode)
+    return graph.rootGraph.subgraphs.has(node.type)
+  return true
 }
 
 function missingNode(docNode: DocNode): LGraphNode {
@@ -1496,16 +1505,15 @@ export class LiveGraphApplier {
     const docNode = this.readDocNode(doc, id)
     if (!docNode) return 'skipped'
     const live = graph.getNodeById(toNodeId(id))
-    if (live && live.type === docNode.type) {
+    const resolvable = !!live && isResolvablePlaceholder(live, graph)
+    if (live && live.type === docNode.type && !resolvable) {
       this.applyFields(live, docNode)
       if (docNode.widgetRecord) restoreWidgetRecord(live, docNode.widgetRecord)
       else this.applyWidgets(live, docNode.widgets, mode)
       return 'updated'
     }
     const preservedPosition =
-      live && isResolvablePlaceholder(live)
-        ? ([live.pos[0], live.pos[1]] as const)
-        : undefined
+      live && resolvable ? ([live.pos[0], live.pos[1]] as const) : undefined
     if (live) graph.remove(live)
     this.createNode(graph, docNode, mode, context, preservedPosition)
     return live ? 'recreated' : 'created'

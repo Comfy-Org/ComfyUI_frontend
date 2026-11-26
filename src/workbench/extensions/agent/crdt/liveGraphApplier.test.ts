@@ -23,7 +23,14 @@ import {
 import * as Y from 'yjs'
 
 import { markDynamicGroupController } from '@/core/graph/widgets/dynamicGroupDiagnostics'
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraph,
+  LGraphNode,
+  LiteGraph,
+  SubgraphNode
+} from '@/lib/litegraph/src/litegraph'
+import { NODE_CREATION_GRAPH_FACTORY } from '@/lib/litegraph/src/LiteGraphGlobal'
+import type { GraphOrSubgraph } from '@comfyorg/graph-model/entityRegistry'
 import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
 import type { GraphIntentEvent } from '@/lib/litegraph/src/graphIntents'
 import {
@@ -1159,6 +1166,51 @@ describe('LiveGraphApplier', () => {
       )
     })
     expect(graph.getNodeById(toNodeId(1))).toBe(resolved)
+  })
+
+  it('keeps a placeholder for a subgraph type the live graph does not own', () => {
+    const type = '00000000-0000-4000-8000-00000000f00d'
+    const refusals: (GraphOrSubgraph | undefined)[] = []
+    class ForeignSubgraphNode extends SubgraphNode {
+      static [NODE_CREATION_GRAPH_FACTORY](
+        _title: string,
+        targetGraph?: GraphOrSubgraph
+      ): LGraphNode | null {
+        refusals.push(targetGraph)
+        return null
+      }
+    }
+    LiteGraph.registerNodeType(type, fromPartial(ForeignSubgraphNode))
+    onTestFinished(() => {
+      delete LiteGraph.registered_node_types[type]
+    })
+    const docNode = (pos: [number, number]) => ({
+      id: 1,
+      type,
+      pos,
+      size: [210, 100]
+    })
+    const { graph, doc, applyCollected, applyEdit } = setup({
+      nodes: [docNode([0, 0])],
+      links: []
+    })
+
+    applyCollected()
+    const placeholder = graph.getNodeById(toNodeId(1))
+    expect(placeholder?.has_errors).toBe(true)
+    expect(refusals).toEqual([graph])
+
+    applyEdit(() => {
+      nodesMap(doc).set(
+        '1',
+        new Y.Map<unknown>(Object.entries(docNode([20, 30])))
+      )
+    })
+
+    // The type is registered but unowned here, so retrying would churn the
+    // node out of the graph on every frame that touches it.
+    expect(graph.getNodeById(toNodeId(1))).toBe(placeholder)
+    expect(refusals).toHaveLength(1)
   })
 
   it('still reports a missing widget on a registered node flagged with errors', () => {
