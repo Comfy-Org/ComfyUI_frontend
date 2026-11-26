@@ -43,8 +43,8 @@ export const localeDefinitions = {
   'pt-BR': { text: 'Português (BR)', loaders: loadersFor('pt-BR') },
   fa: { text: 'فارسی', loaders: loadersFor('fa') },
   he: { text: 'עברית', loaders: loadersFor('he') },
-  it: { text: 'Italiano', loaders: loadersFor('it') },
-  sv: { text: 'Svenska', loaders: loadersFor('sv') }
+  sv: { text: 'Svenska', loaders: loadersFor('sv') },
+  it: { text: 'Italiano', loaders: loadersFor('it') }
 } as const satisfies Record<string, LocaleDefinition>
 
 export type SupportedLocale = keyof typeof localeDefinitions
