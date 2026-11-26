@@ -26,11 +26,12 @@ export function deserialiseIntoGraph(
     topLeft[1] = position[1]
   }
 
-  const nodes: LGraphNode[] = []
+  const nodesByClipboardIndex: (LGraphNode | null)[] = []
   for (const info of deserialised.nodes) {
     const node = LiteGraph.createNode(info.type, undefined, {
       targetGraph: graph
     })
+    nodesByClipboardIndex.push(node)
     if (!node) continue
 
     node.configure(info)
@@ -41,18 +42,20 @@ export function deserialiseIntoGraph(
     ]
 
     withNodeAddSource('paste', () => graph.add(node, true))
-    nodes.push(node)
   }
 
   for (const info of deserialised.links) {
     const relativeId = info[0]
-    const outNode = relativeId != null ? nodes[relativeId] : undefined
+    const outNode =
+      relativeId != null ? nodesByClipboardIndex[relativeId] : undefined
 
-    const inNode = nodes[info[2]]
-    if (outNode) outNode.connect(info[1], inNode, info[3])
+    const inNode = nodesByClipboardIndex[info[2]]
+    if (outNode && inNode) outNode.connect(info[1], inNode, info[3])
     else console.warn('Warning, nodes missing on pasting')
   }
-  return nodes
+  return nodesByClipboardIndex.filter(
+    (node): node is LGraphNode => node !== null
+  )
 }
 
 /** Inserts legacy relative-index payloads, configuring nodes before graph attachment. */

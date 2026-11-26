@@ -98,30 +98,51 @@ describe('useLitegraphService().registerSubgraphNodeDef ownership', () => {
     const visibleGraph = createTestRootGraph()
     const backgroundGraph = createTestRootGraph()
     const visibleSubgraph = visibleGraph.createSubgraph(
-      createTestSubgraphData({ id: subgraphId, name: 'Visible definition' })
+      createTestSubgraphData({
+        id: subgraphId,
+        name: 'Visible definition',
+        inputs: [{ id: 'visible-slot', name: 'visibleSlot', type: 'STRING' }]
+      })
     )
     const backgroundSubgraph = backgroundGraph.createSubgraph(
-      createTestSubgraphData({ id: subgraphId, name: 'Background definition' })
+      createTestSubgraphData({
+        id: subgraphId,
+        name: 'Background definition',
+        inputs: [{ id: 'background-slot', name: 'backgroundSlot', type: 'INT' }]
+      })
     )
-    const nodeDef = createNodeDefV1({
+    const visibleNodeDef = createNodeDefV1({
       name: subgraphId,
-      display_name: 'Shared subgraph'
+      display_name: 'Visible subgraph',
+      input: { required: { visibleOnly: ['STRING', {}] } }
     })
-    const instanceData = subgraphInstanceData(subgraphId)
+    const backgroundNodeDef = createNodeDefV1({
+      name: subgraphId,
+      display_name: 'Background subgraph',
+      input: { required: { backgroundOnly: ['INT', {}] } }
+    })
+    const visibleInstanceData = {
+      ...subgraphInstanceData(subgraphId),
+      properties: { definitionOwner: 'visible' }
+    }
+    const backgroundInstanceData = {
+      ...subgraphInstanceData(subgraphId),
+      properties: { definitionOwner: 'background' }
+    }
     Reflect.set(app, 'rootGraph', visibleGraph)
     onTestFinished(() => {
       delete LiteGraph.registered_node_types[subgraphId]
     })
 
     useLitegraphService().registerSubgraphNodeDef(
-      nodeDef,
+      visibleNodeDef,
       visibleSubgraph,
-      instanceData
+      visibleInstanceData
     )
     useLitegraphService().registerSubgraphNodeDef(
-      nodeDef,
+      backgroundNodeDef,
       backgroundSubgraph,
-      instanceData
+      backgroundInstanceData
     )
 
     const node = LiteGraph.createNode(subgraphId)
@@ -129,6 +150,11 @@ describe('useLitegraphService().registerSubgraphNodeDef ownership', () => {
     visibleGraph.add(node)
 
     expect(node.subgraph).toBe(visibleSubgraph)
+    expect(node.inputs.map(({ name }) => name)).toEqual([
+      'visibleSlot',
+      'visibleOnly'
+    ])
+    expect(node.properties.definitionOwner).toBe('visible')
 
     const backgroundNode = LiteGraph.createNode(subgraphId, undefined, {
       targetGraph: backgroundGraph
@@ -137,6 +163,11 @@ describe('useLitegraphService().registerSubgraphNodeDef ownership', () => {
     backgroundGraph.add(backgroundNode)
 
     expect(backgroundNode.subgraph).toBe(backgroundSubgraph)
+    expect(backgroundNode.inputs.map(({ name }) => name)).toEqual([
+      'backgroundSlot',
+      'backgroundOnly'
+    ])
+    expect(backgroundNode.properties.definitionOwner).toBe('background')
 
     const restoredGraph = createTestRootGraph()
     restoredGraph.configure(backgroundGraph.serialize())
@@ -145,6 +176,33 @@ describe('useLitegraphService().registerSubgraphNodeDef ownership', () => {
 
     expect(restoredNode.subgraph.rootGraph).toBe(restoredGraph)
     expect(restoredNode.subgraph.name).toBe('Background definition')
+  })
+
+  it('constructs an extension subclass through the graph-aware factory', () => {
+    const subgraphId = '00000000-0000-4000-8000-000000000125' as UUID
+    const graph = createTestRootGraph()
+    const subgraph = graph.createSubgraph(
+      createTestSubgraphData({ id: subgraphId })
+    )
+    onTestFinished(() => {
+      delete LiteGraph.registered_node_types[subgraphId]
+    })
+    useLitegraphService().registerSubgraphNodeDef(
+      createNodeDefV1({ name: subgraphId }),
+      subgraph,
+      subgraphInstanceData(subgraphId)
+    )
+    const Registered = LiteGraph.registered_node_types[subgraphId]
+    assert.exists(Registered)
+    class DerivedSubgraphNode extends Registered {}
+    LiteGraph.registerNodeType(subgraphId, DerivedSubgraphNode)
+
+    const node = LiteGraph.createNode(subgraphId, undefined, {
+      targetGraph: graph
+    })
+
+    expect(node).toBeInstanceOf(DerivedSubgraphNode)
+    expect(node).toBeInstanceOf(SubgraphNode)
   })
 
   it('reports and refuses a subgraph type missing from the target graph', () => {

@@ -107,6 +107,51 @@ import type { GraphOrSubgraph } from '@comfyorg/graph-model/entityRegistry'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { NODE_CREATION_GRAPH_FACTORY } from '@/lib/litegraph/src/LiteGraphGlobal'
 
+interface SubgraphNodeRegistration {
+  nodeDef: ComfyNodeDefImpl
+  instanceData: ExportedSubgraphInstance
+}
+
+const subgraphNodeRegistrations = new WeakMap<
+  Subgraph,
+  SubgraphNodeRegistration
+>()
+
+function subgraphNodeRegistration(
+  subgraph: Subgraph
+): SubgraphNodeRegistration {
+  const registered = subgraphNodeRegistrations.get(subgraph)
+  if (registered) return registered
+
+  const fallback: SubgraphNodeRegistration = {
+    nodeDef: new ComfyNodeDefImpl({
+      input: { required: {} },
+      output: [],
+      output_is_list: [],
+      output_name: [],
+      name: subgraph.id,
+      display_name: subgraph.name,
+      description: subgraph.description || `Subgraph node for ${subgraph.name}`,
+      category: 'subgraph',
+      output_node: false,
+      python_module: 'nodes'
+    }),
+    instanceData: {
+      id: -1,
+      type: subgraph.id,
+      pos: [0, 0],
+      size: [100, 100],
+      inputs: [],
+      outputs: [],
+      flags: {},
+      order: 0,
+      mode: 0
+    }
+  }
+  subgraphNodeRegistrations.set(subgraph, fallback)
+  return fallback
+}
+
 export function getExtraOptionsForWidget(
   node: LGraphNode,
   widget: IBaseWidget
@@ -399,6 +444,11 @@ export const useLitegraphService = () => {
     instanceData: ExportedSubgraphInstance
   ) {
     const subgraphId = subgraph.id
+    const nodeDef = new ComfyNodeDefImpl(nodeDefV1)
+    subgraphNodeRegistrations.set(subgraph, {
+      nodeDef,
+      instanceData: structuredClone(instanceData)
+    })
     const node = class ComfyNode extends SubgraphNode {
       static comfyClass: string
       static override title: string
@@ -416,7 +466,12 @@ export const useLitegraphService = () => {
             : useApp().rootGraph
         ownedSubgraph ??=
           targetGraph.rootGraph.subgraphs.get(subgraphId) ?? subgraph
-        super(targetGraph, ownedSubgraph, instanceData)
+        const registration = subgraphNodeRegistration(ownedSubgraph)
+        super(
+          targetGraph,
+          ownedSubgraph,
+          structuredClone(registration.instanceData)
+        )
 
         ownedSubgraph.events.addEventListener('widget-promoted', () => {
           invalidateSubgraphPseudoWidgetCache(this)
@@ -427,8 +482,8 @@ export const useLitegraphService = () => {
         })
 
         setupStrokeStyles(this)
-        addInputs(this, ComfyNode.nodeData.inputs)
-        addOutputs(this, ComfyNode.nodeData.outputs)
+        addInputs(this, registration.nodeDef.inputs)
+        addOutputs(this, registration.nodeDef.outputs)
         setInitialSize(this)
         this.serialize_widgets = true
         void extensionService.invokeExtensionsAsync('nodeCreated', this)
@@ -505,7 +560,7 @@ export const useLitegraphService = () => {
         )
 
         data.widgets_values = migrateWidgetsValues(
-          ComfyNode.nodeData.inputs,
+          subgraphNodeRegistration(this.subgraph).nodeDef.inputs,
           this.widgets,
           data.widgets_values ?? []
         )
@@ -520,10 +575,11 @@ export const useLitegraphService = () => {
         graph?: GraphOrSubgraph
       ) => SubgraphNode | null
     }
-    graphAwareNode[NODE_CREATION_GRAPH_FACTORY] = (
+    graphAwareNode[NODE_CREATION_GRAPH_FACTORY] = function (
+      this: typeof node,
       title,
       graph = useApp().rootGraph
-    ) => {
+    ) {
       const ownedSubgraph = graph.rootGraph.subgraphs.get(subgraphId)
       if (!ownedSubgraph) {
         reportError(
@@ -537,7 +593,7 @@ export const useLitegraphService = () => {
         )
         return null
       }
-      return new node(title, graph, ownedSubgraph)
+      return new this(title, graph, ownedSubgraph)
     }
 
     addNodeContextMenuHandler(node)
@@ -548,7 +604,6 @@ export const useLitegraphService = () => {
     node.prototype.comfyClass = nodeDefV1.name
     node.comfyClass = nodeDefV1.name
 
-    const nodeDef = new ComfyNodeDefImpl(nodeDefV1)
     node.nodeData = nodeDef
     LiteGraph.registerNodeType(subgraph.id, node)
     // Note: Do not following assignments before `LiteGraph.registerNodeType`

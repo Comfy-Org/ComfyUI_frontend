@@ -1084,6 +1084,75 @@ describe('LiveGraphApplier', () => {
     )
   })
 
+  it('rebuilds a missing-node placeholder once its type becomes registered', () => {
+    const type = 'TestLateRegistration'
+    class TestLateRegistration extends LGraphNode {
+      constructor() {
+        super('Late registration')
+        this.addInput('value', '*')
+      }
+    }
+    const { graph, doc, applyCollected, applyEdit } = setup({
+      nodes: [
+        {
+          id: 1,
+          type,
+          pos: [0, 0],
+          size: [210, 100],
+          inputs: [{ name: 'value', type: '*', link: null }]
+        }
+      ],
+      links: []
+    })
+
+    applyCollected()
+    const placeholder = graph.getNodeById(toNodeId(1))
+    expect(placeholder?.has_errors).toBe(true)
+
+    applyEdit(() => nodesMap(doc).get('1')?.set('pos', [10, 20]))
+    expect(graph.getNodeById(toNodeId(1))).toBe(placeholder)
+
+    LiteGraph.registerNodeType(type, TestLateRegistration)
+    onTestFinished(() => {
+      delete LiteGraph.registered_node_types[type]
+    })
+    applyEdit(() => {
+      nodesMap(doc).set(
+        '1',
+        new Y.Map<unknown>(
+          Object.entries({
+            id: 1,
+            type,
+            pos: [20, 30],
+            size: [210, 100],
+            inputs: [{ name: 'value', type: '*', link: null }]
+          })
+        )
+      )
+    })
+    const resolved = graph.getNodeById(toNodeId(1))
+
+    expect(resolved).toBeInstanceOf(TestLateRegistration)
+    expect(resolved).not.toBe(placeholder)
+    expect(resolved?.has_errors).toBeFalsy()
+
+    applyEdit(() => {
+      nodesMap(doc).set(
+        '1',
+        new Y.Map<unknown>(
+          Object.entries({
+            id: 1,
+            type,
+            pos: [30, 40],
+            size: [210, 100],
+            inputs: [{ name: 'value', type: '*', link: null }]
+          })
+        )
+      )
+    })
+    expect(graph.getNodeById(toNodeId(1))).toBe(resolved)
+  })
+
   it('still reports a missing widget on a registered node flagged with errors', () => {
     const { graph, doc, applyCollected, applyEdit } = setup({
       nodes: [

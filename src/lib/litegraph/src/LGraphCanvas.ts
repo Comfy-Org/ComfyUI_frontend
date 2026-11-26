@@ -7505,11 +7505,17 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           }
 
           // join node after inserting
-          if (options.node_from) {
-            connectSearchBoxNodeFrom(options.node_from, options.slot_from, node)
-          }
-          if (options.node_to) {
-            connectSearchBoxNodeTo(options.node_to, options.slot_from, node)
+          if (node) {
+            if (options.node_from) {
+              connectSearchBoxNodeFrom(
+                options.node_from,
+                options.slot_from,
+                node
+              )
+            }
+            if (options.node_to) {
+              connectSearchBoxNodeTo(options.node_to, options.slot_from, node)
+            }
           }
 
           graphcanvas.graph.afterChange()

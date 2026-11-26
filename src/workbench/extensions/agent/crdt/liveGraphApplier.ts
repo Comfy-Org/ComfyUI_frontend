@@ -1122,9 +1122,17 @@ function isUnregisteredPlaceholder(node: LGraphNode): boolean {
  * shell stands in for an edit the live graph never actually applied.
  */
 const constructorFallbackShells = new WeakSet<LGraphNode>()
+const missingNodePlaceholders = new WeakSet<LGraphNode>()
 
 function isConstructorFallbackShell(node: LGraphNode): boolean {
   return constructorFallbackShells.has(node)
+}
+
+function isResolvablePlaceholder(node: LGraphNode): boolean {
+  return (
+    missingNodePlaceholders.has(node) &&
+    Object.hasOwn(LiteGraph.registered_node_types, node.type)
+  )
 }
 
 function missingNode(docNode: DocNode): LGraphNode {
@@ -1134,6 +1142,7 @@ function missingNode(docNode: DocNode): LGraphNode {
   )
   node.has_errors = true
   constructorFallbackShells.add(node)
+  missingNodePlaceholders.add(node)
   return node
 }
 
