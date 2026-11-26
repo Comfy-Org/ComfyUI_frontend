@@ -242,6 +242,17 @@ describe('decideMessages: runtime contract', () => {
     ).toEqual({ results: { old: 'suppress', fix: 'show' }, slot: 'fix' })
   })
 
+  it('shows a correction even when its ID sorts after the one it replaces', () => {
+    expect(
+      results({
+        candidates: [message('a-old'), message('z-fix', { replaces: 'a-old' })]
+      })
+    ).toEqual({
+      results: { 'a-old': 'suppress', 'z-fix': 'show' },
+      slot: 'z-fix'
+    })
+  })
+
   it.for([
     ['critical', 'show'],
     ['recommended_update', 'show'],

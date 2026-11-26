@@ -361,9 +361,12 @@ function collectReplacedIds(
 
 function collectSupersededIds(
   candidates: readonly MessageEnvelope[],
-  input: ArbiterInput
+  input: ArbiterInput,
+  replacedIds: ReadonlySet<string>
 ): Set<string> {
-  const live = candidates.filter((m) => isLiveAnnouncement(m, input))
+  const live = candidates.filter(
+    (m) => isLiveAnnouncement(m, input) && !replacedIds.has(m.id)
+  )
   const newest = live.reduce<MessageEnvelope | undefined>(
     (best, m) => (best && isNewerAnnouncement(best, m) ? best : m),
     undefined
@@ -379,7 +382,7 @@ export function decideMessages(input: ArbiterInput): ArbiterDecision {
   const outcomes = new Map<string, ArbiterOutcome>()
   const candidates = uniqBy(input.candidates, (m) => m.id)
   const replacedIds = collectReplacedIds(candidates, input)
-  const supersededIds = collectSupersededIds(candidates, input)
+  const supersededIds = collectSupersededIds(candidates, input, replacedIds)
 
   const pushed: MessageEnvelope[] = []
   const started: MessageEnvelope[] = []
