@@ -160,7 +160,7 @@ export function reorderSubgraphInputsByWidgetOrder(
   orderedWidgets: readonly Pick<IBaseWidget, 'widgetId'>[]
 ): void {
   const remainingIndices = new Set(subgraphNode.subgraph.inputs.keys())
-  const orderedIndices = orderedWidgets.flatMap((orderedWidget) => {
+  const matchedIndices = orderedWidgets.flatMap((orderedWidget) => {
     for (const index of remainingIndices) {
       if (isSamePromotedInput(subgraphNode, index, orderedWidget)) {
         remainingIndices.delete(index)
@@ -170,7 +170,10 @@ export function reorderSubgraphInputsByWidgetOrder(
     return []
   })
 
-  for (const index of remainingIndices) orderedIndices.push(index)
+  let nextMatched = 0
+  const orderedIndices = [...subgraphNode.subgraph.inputs.keys()].map((index) =>
+    remainingIndices.has(index) ? index : matchedIndices[nextMatched++]
+  )
 
   applySubgraphInputOrder(subgraphNode, orderedIndices)
 }

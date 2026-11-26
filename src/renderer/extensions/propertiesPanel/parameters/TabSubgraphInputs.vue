@@ -127,6 +127,7 @@ const advancedInputsWidgets = computed((): NodeWidgetsList => {
 
   const hiddenHostWidgets = promotedInputWidgets(node)
     .filter(isHiddenPromotedWidget)
+    .filter(isPromotedWidgetVisibleInPanel)
     .map((widget) => ({ node, widget }))
 
   return [

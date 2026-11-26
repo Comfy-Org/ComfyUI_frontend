@@ -359,6 +359,14 @@ function promoteCandidate([node, widget]: WidgetItem) {
 }
 
 function showAll() {
+  const subgraphNode = activeNode.value
+  if (!subgraphNode) return
+  const hiddenRows = filteredHiddenPromoted.value
+  for (const row of hiddenRows) subgraphNode.showInput(row.input.name)
+  if (hiddenRows.length > 0) {
+    refreshPromotedRows()
+    refreshActiveNodeRendering()
+  }
   for (const item of filteredCandidates.value) {
     promoteCandidate(item)
   }

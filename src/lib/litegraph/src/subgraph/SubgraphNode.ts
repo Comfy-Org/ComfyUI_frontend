@@ -227,12 +227,31 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     )
   }
 
+  private _parseHiddenInputNames(property: unknown): Set<string> {
+    if (!Array.isArray(property)) return new Set()
+    const inputNames = new Set(this.inputs.map((input) => input.name))
+    return new Set(
+      property.filter(
+        (name): name is string =>
+          typeof name === 'string' && inputNames.has(name)
+      )
+    )
+  }
+
   private _readHiddenInputNames(property: unknown): void {
     this._hiddenInputNames.clear()
-    if (!Array.isArray(property)) return
-    for (const name of property) {
-      if (typeof name === 'string') this._hiddenInputNames.add(name)
+    for (const name of this._parseHiddenInputNames(property))
+      this._hiddenInputNames.add(name)
+  }
+
+  override setProperty(name: string, value: TWidgetValue): void {
+    if (name !== 'hiddenInputs') return super.setProperty(name, value)
+    const next = this._parseHiddenInputNames(value)
+    for (const hidden of this._hiddenInputNames) {
+      if (!next.has(hidden)) this.showInput(hidden)
     }
+    for (const hidden of next) this.hideInput(hidden)
+    delete this.properties.hiddenInputs
   }
 
   private _eventAbortController = new AbortController()
