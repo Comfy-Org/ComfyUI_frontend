@@ -1,4 +1,3 @@
-/* fallow-ignore-file css-selector-complexity */
 @layer presets {
   :root[data-theme='classic'] .lg-node {
     .lg-node-header {
