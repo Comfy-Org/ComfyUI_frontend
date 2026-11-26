@@ -1,3 +1,4 @@
+import type { Locator } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -198,28 +199,13 @@ test.describe('Agent onboarding tour', { tag: ['@cloud', '@ui'] }, () => {
     }
   )
 
-  // PM-2396: the tour used to spotlight the canvas on card 3, so it threw the
-  // spotlight and the focused card from the panel on the right edge across to
-  // the middle of the screen and back again. The card count and the copy are
-  // covered above; what is covered here is the invariant that fix established,
-  // which nothing else asserts: every card spotlights something inside the
-  // Agent panel, and a card does not move once the user can see it. A card
-  // re-anchored outside the panel keeps the count and the copy intact and only
-  // shows up as geometry.
   test('spotlights only the Agent panel and holds each card still', async ({
     page,
     agentFlagEnabled
   }) => {
-    // Generous enough to ignore the per-card placement offset (16px measured
-    // across the three cards), tight enough that a card anchored to the canvas
-    // a third of a screen away cannot pass.
     const MAX_CARD_TRAVEL_PX = 64
-    // Subpixel only: card 1 spotlights the panel itself, so its box is the
-    // panel's box.
     const EDGE_TOLERANCE_PX = 2
     const SETTLE_FRAMES = 10
-    // Only a bound on the walk, so a tour that never reaches a last card fails
-    // instead of looping.
     const MAX_CARDS_WALKED = 8
 
     await bootAgentApp(page, agentFlagEnabled, {
@@ -230,72 +216,123 @@ test.describe('Agent onboarding tour', { tag: ['@cloud', '@ui'] }, () => {
     const panel = page.locator('#agent-panel-root')
     const spotlight = page.getByTestId('agent-coach-spotlight')
     await expect(panel).toBeVisible()
-    const panelBox = await panel.boundingBox()
-    if (!panelBox) throw new Error('the Agent panel has no box')
 
-    // Walked by following Next rather than by a known card list, so a card
-    // added back outside the panel fails on its own geometry instead of on a
-    // step count.
-    const cardLefts: number[] = []
-    const walked: string[] = []
+    const stepLabel = page.getByRole('dialog').getByText(/^\d+ of \d+$/)
     const card = page
       .getByRole('dialog')
       .filter({ has: page.getByText(/^\d+ of \d+$/) })
 
+    const settledBox = (target: Locator) =>
+      target.evaluate(
+        (element, frames: number) =>
+          new Promise<{
+            x: number
+            y: number
+            width: number
+            height: number
+            drift: number
+          }>((resolve) => {
+            const first = element.getBoundingClientRect()
+            let drift = 0
+            let remaining = frames
+            const sample = () => {
+              const now = element.getBoundingClientRect()
+              drift = Math.max(
+                drift,
+                Math.abs(now.x - first.x),
+                Math.abs(now.y - first.y)
+              )
+              remaining -= 1
+              if (remaining > 0) {
+                requestAnimationFrame(sample)
+                return
+              }
+              resolve({
+                x: now.x,
+                y: now.y,
+                width: now.width,
+                height: now.height,
+                drift
+              })
+            }
+            requestAnimationFrame(sample)
+          }),
+        SETTLE_FRAMES
+      )
+
+    const placed = (target: Locator) =>
+      target.evaluate((element) => {
+        const box = element.getBoundingClientRect()
+        return (
+          Number(getComputedStyle(element).opacity) === 1 &&
+          box.width > 0 &&
+          box.height > 0
+        )
+      })
+
+    const cardOrigins: { x: number; y: number }[] = []
+    const walked: string[] = []
+
     for (let step = 1; step <= MAX_CARDS_WALKED; step++) {
       await expect(card).toBeVisible()
       await expect(spotlight).toBeVisible()
-      const title = (
-        await card.getByRole('heading').first().textContent()
-      )?.trim()
+      await expect.poll(() => placed(card)).toBe(true)
+      await expect.poll(() => placed(spotlight)).toBe(true)
+
+      const heading = card.getByRole('heading').first()
+      const title = (await heading.textContent())?.trim()
       walked.push(title ?? `card ${step}`)
 
-      await test.step(`card "${title}" spotlights inside the panel`, async () => {
-        const spotlightBox = await spotlight.boundingBox()
-        if (!spotlightBox) throw new Error('the spotlight has no box')
+      const [panelBox, spotlightBox, cardBox] = await Promise.all([
+        panel.boundingBox(),
+        settledBox(spotlight),
+        settledBox(card)
+      ])
+      if (!panelBox) throw new Error('the Agent panel has no box')
+
+      await test.step(`card "${title}" spotlights inside the panel and stays beside it`, () => {
         expect({
-          leftOfPanelEdge: spotlightBox.x >= panelBox.x - EDGE_TOLERANCE_PX,
-          rightOfPanelEdge:
+          spotlightLeftOfPanelEdge:
+            spotlightBox.x >= panelBox.x - EDGE_TOLERANCE_PX,
+          spotlightRightOfPanelEdge:
             spotlightBox.x + spotlightBox.width <=
             panelBox.x + panelBox.width + EDGE_TOLERANCE_PX,
-          belowPanelTop: spotlightBox.y >= panelBox.y - EDGE_TOLERANCE_PX,
-          abovePanelBottom:
+          spotlightBelowPanelTop:
+            spotlightBox.y >= panelBox.y - EDGE_TOLERANCE_PX,
+          spotlightAbovePanelBottom:
             spotlightBox.y + spotlightBox.height <=
-            panelBox.y + panelBox.height + EDGE_TOLERANCE_PX
+            panelBox.y + panelBox.height + EDGE_TOLERANCE_PX,
+          cardBelowPanelTop: cardBox.y >= panelBox.y - EDGE_TOLERANCE_PX,
+          cardAbovePanelBottom:
+            cardBox.y + cardBox.height <=
+            panelBox.y + panelBox.height + EDGE_TOLERANCE_PX,
+          cardHugsPanelLeftEdge:
+            Math.abs(cardBox.x + cardBox.width - panelBox.x) <=
+            MAX_CARD_TRAVEL_PX
         }).toEqual({
-          leftOfPanelEdge: true,
-          rightOfPanelEdge: true,
-          belowPanelTop: true,
-          abovePanelBottom: true
+          spotlightLeftOfPanelEdge: true,
+          spotlightRightOfPanelEdge: true,
+          spotlightBelowPanelTop: true,
+          spotlightAbovePanelBottom: true,
+          cardBelowPanelTop: true,
+          cardAbovePanelBottom: true,
+          cardHugsPanelLeftEdge: true
         })
       })
 
-      await test.step(`card "${title}" does not move once it is visible`, async () => {
-        const first = await card.boundingBox()
-        if (!first) throw new Error('the tour card has no box')
-        let maxDrift = 0
-        for (let frame = 0; frame < SETTLE_FRAMES; frame++) {
-          await page.evaluate(
-            () =>
-              new Promise((resolve) =>
-                requestAnimationFrame(() => resolve(null))
-              )
-          )
-          const next = await card.boundingBox()
-          if (!next) throw new Error('the tour card lost its box')
-          maxDrift = Math.max(
-            maxDrift,
-            Math.abs(next.x - first.x),
-            Math.abs(next.y - first.y)
-          )
-        }
-        expect(maxDrift).toBeLessThanOrEqual(EDGE_TOLERANCE_PX)
-        cardLefts.push(first.x)
+      await test.step(`card "${title}" does not move once it is visible`, () => {
+        expect(cardBox.drift).toBeLessThanOrEqual(EDGE_TOLERANCE_PX)
+        expect(spotlightBox.drift).toBeLessThanOrEqual(EDGE_TOLERANCE_PX)
       })
+
+      cardOrigins.push({ x: cardBox.x, y: cardBox.y })
 
       const next = card.getByRole('button', { name: enMessages.g.next })
       if ((await next.count()) === 0) break
+      const label = (await stepLabel.textContent())?.trim()
       await next.click()
+      await expect(stepLabel).not.toHaveText(label ?? '')
+      await expect(heading).not.toHaveText(title ?? '')
     }
 
     expect(walked).toEqual([
@@ -303,7 +340,8 @@ test.describe('Agent onboarding tour', { tag: ['@cloud', '@ui'] }, () => {
       enMessages.agent.coachWorkflowTitle,
       enMessages.agent.coachHistoryTitle
     ])
-    expect(Math.max(...cardLefts) - Math.min(...cardLefts)).toBeLessThanOrEqual(
+    const lefts = cardOrigins.map((origin) => origin.x)
+    expect(Math.max(...lefts) - Math.min(...lefts)).toBeLessThanOrEqual(
       MAX_CARD_TRAVEL_PX
     )
   })
