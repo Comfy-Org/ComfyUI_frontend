@@ -30,14 +30,13 @@ overlay=""
 [[ -d $backend/python-overlay ]] && overlay="$backend/python-overlay"
 
 server_pid=""
-cleanup() {
+trap '
   if [[ -n $server_pid ]]; then
     kill "$server_pid" 2>/dev/null || true
     wait "$server_pid" 2>/dev/null || true
     rm -f "$backend/server.pid"
   fi
-}
-trap cleanup EXIT
+' EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM
 
