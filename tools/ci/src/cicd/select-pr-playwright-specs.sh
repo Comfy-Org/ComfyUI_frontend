@@ -3,9 +3,6 @@ set -euo pipefail
 
 base_sha=${1:?base SHA is required}
 head_sha=${2:?PR head SHA is required}
-# Optional: a ref for the branch these recordings are reviewed against. When it
-# resolves, a spec whose head content already matches that branch is not this
-# pull request's to record. Unset or unresolvable leaves the base diff untouched.
 default_branch_ref=${DEFAULT_BRANCH_REF:-}
 
 for sha in "$base_sha" "$head_sha"; do
