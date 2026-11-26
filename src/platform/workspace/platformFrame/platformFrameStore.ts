@@ -77,6 +77,7 @@ interface PlatformFrameSession {
   nonce: string
   workflow: HandedWorkflow | null
   owner: BuildOwner
+  shownStep?: 'models'
 }
 
 export const usePlatformFrameStore = defineStore('platformFrame', () => {
@@ -459,7 +460,7 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
       if (!current) return
       stopBridge?.()
       stopBridge = undefined
-      session.value = { ...current, id: ++sessions }
+      session.value = { ...current, id: ++sessions, shownStep: undefined }
       waitForAnswer()
     }, PLATFORM_FRAME_SIGN_IN_RETRY_MS)
   }
@@ -476,8 +477,15 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
       if (message.signedIn) cancelRetry()
       else reloadForSignIn()
     }
-    if (message.type === 'build-started') startBuild(message)
+    if (message.type === 'step-shown') showStep(message.step)
+    else if (message.type === 'build-started') startBuild(message)
     else follow(message)
+  }
+
+  function showStep(step: 'models') {
+    const current = session.value
+    if (!current || current.shownStep === step) return
+    session.value = { ...current, shownStep: step }
   }
 
   function attach(frame: Window) {

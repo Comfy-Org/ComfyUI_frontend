@@ -176,6 +176,33 @@ describe('PlatformFrameHost', () => {
     )
   })
 
+  it('grows the pre-install frame to the wizard once Platform shows the models step', async () => {
+    renderHost()
+    const store = usePlatformFrameStore()
+    store.open({ step: 'preinstall', deploymentId: 'dep-1' }, 'preinstall')
+    await nextTick()
+    expect(
+      screen.getByRole('dialog', {
+        name: 'Pre-install models to run this workflow'
+      })
+    ).toBeInTheDocument()
+
+    const platformPage = fromPartial<Window>({ postMessage: vi.fn() })
+    store.attach(platformPage)
+    window.dispatchEvent(
+      new MessageEvent('message', {
+        data: { type: 'step-shown', step: 'models' },
+        origin: 'https://platform.comfy.org',
+        source: platformPage
+      })
+    )
+    await nextTick()
+
+    expect(
+      screen.getByRole('dialog', { name: 'Custom Build' })
+    ).toBeInTheDocument()
+  })
+
   it('follows a build kept from before the editor reloaded, with the frame hidden', async () => {
     keepBuild({ ...KEPT, startedAt: Date.now() })
     renderHost()
