@@ -251,6 +251,46 @@ describe('saveAskBeforeCloudCheck', () => {
     }
   })
 
+  it('sends nothing more when a timed-out save lands with no newer choice', async () => {
+    vi.useFakeTimers()
+    try {
+      const lateSave = deferredResponse()
+      vi.mocked(api.storeSetting).mockReturnValueOnce(lateSave.promise)
+      const dontAskAgain = saveAskBeforeCloudCheck(false)
+      await vi.advanceTimersByTimeAsync(CLOUD_CHECK_CONSENT_SAVE_TIMEOUT_MS)
+      await dontAskAgain
+
+      lateSave.resolve(new Response())
+      await vi.advanceTimersByTimeAsync(CLOUD_CHECK_CONSENT_SAVE_TIMEOUT_MS)
+
+      expect(api.storeSetting).toHaveBeenCalledOnce()
+      expect(reportError).toHaveBeenCalledOnce()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('confirms ask-again when its timed-out save lands with no newer choice', async () => {
+    vi.useFakeTimers()
+    try {
+      const lateSave = deferredResponse()
+      vi.mocked(api.storeSetting).mockReturnValueOnce(lateSave.promise)
+      const askAgain = saveAskBeforeCloudCheck(true)
+      await vi.advanceTimersByTimeAsync(CLOUD_CHECK_CONSENT_SAVE_TIMEOUT_MS)
+      await askAgain
+      expect(localStorage.getItem(PENDING_ASK_AGAIN_KEY)).toBe('true')
+
+      lateSave.resolve(new Response())
+      await vi.waitFor(() =>
+        expect(localStorage.getItem(PENDING_ASK_AGAIN_KEY)).toBeNull()
+      )
+
+      expect(api.storeSetting).toHaveBeenCalledOnce()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('remembers an ask-again choice in this browser until the server confirms it', async () => {
     const slowSave = deferredResponse()
     vi.mocked(api.storeSetting).mockReturnValueOnce(slowSave.promise)

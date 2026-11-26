@@ -57,11 +57,19 @@ async function storeAskBeforeCloudCheck(askBeforeCheck: boolean) {
   ]).finally(() => clearTimeout(timer))
   if (result === TIMED_OUT) {
     unsettledLateWrites += 1
-    const settleLateWrite = () => {
+    const settleLateWrite = (landed: boolean) => {
       unsettledLateWrites -= 1
-      resendLatestChoice()
+      if (!isCurrentChoice(askBeforeCheck)) {
+        resendLatestChoice()
+        return
+      }
+      if (landed && askBeforeCheck && unsettledLateWrites === 0)
+        setPendingAskAgain(false)
     }
-    request.then(settleLateWrite, settleLateWrite)
+    request.then(
+      (response) => settleLateWrite(response.ok),
+      () => settleLateWrite(false)
+    )
     return new Error(
       `Timed out storing ${ASK_BEFORE_CLOUD_CHECK} after ${CLOUD_CHECK_CONSENT_SAVE_TIMEOUT_MS} ms`
     )
