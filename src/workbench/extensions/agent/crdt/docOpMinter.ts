@@ -735,6 +735,11 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     reportError(new Error(message), { surface: 'agent', errorType, context })
   }
 
+  function noteVisibleUnboundEdit(eventRootGraphId: string): void {
+    if (eventRootGraphId === deps.getGraph()?.id)
+      deps.onUnboundVisibleIntent?.()
+  }
+
   /** True when `graph` is the bound document's root graph. */
   function isMintableRootScope(
     graph: LGraph,
@@ -744,6 +749,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     const boundRootGraphId = deps.boundRootGraphId()
     const rootGraphId = graph.rootGraph.id
     if (boundRootGraphId !== null && rootGraphId !== boundRootGraphId) {
+      noteVisibleUnboundEdit(rootGraphId)
       reportOnce(
         `${action}:${rootGraphId}:${boundRootGraphId}`,
         `${action} targets graph ${rootGraphId}, not the bound document's root graph ${boundRootGraphId}; refusing to mint`,
@@ -764,6 +770,15 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     return true
   }
 
+  function rootGraphIdForWidgetWrite(owner: LGraphNode | null, graph: LGraph) {
+    const rootGraphId = deps.boundRootGraphId() ?? graph.id
+    const ownerRootGraphId = owner?.graph?.rootGraph.id
+    if (ownerRootGraphId !== graph.id || graph.id === rootGraphId)
+      return rootGraphId
+    noteVisibleUnboundEdit(ownerRootGraphId)
+    return null
+  }
+
   function routeSetWidget(
     event: IntentOf<'set_widget'>,
     retried: HeldPromotedWrite | null
@@ -777,7 +792,8 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       ? findNodeInHierarchy(eventGraph, event.nodeId)
       : null
     if (!isValueWidgetWrite(owner, event)) return
-    const rootGraphId = deps.boundRootGraphId() ?? graph.id
+    const rootGraphId = rootGraphIdForWidgetWrite(owner, graph)
+    if (rootGraphId === null) return
     const routed = routedWidgetOperation(graph, rootGraphId, event, owner, deps)
     if ('unresolvedGraphId' in routed) {
       reportUnresolvedWidgetOwner(routed.unresolvedGraphId, event)
@@ -1176,6 +1192,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     if (event.nodeIds.length === 0) return
     const boundRootGraphId = deps.boundRootGraphId()
     if (boundRootGraphId !== null && event.graphId !== boundRootGraphId) {
+      noteVisibleUnboundEdit(event.graphId)
       reportOnce(
         `clear:${event.graphId}:${boundRootGraphId}`,
         `clear targets graph ${event.graphId}, not the bound document's root graph ${boundRootGraphId}; refusing to mint`,
