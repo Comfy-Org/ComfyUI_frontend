@@ -2708,7 +2708,7 @@ describe('DeploymentSwitcher with Platform in the editor', () => {
     {
       stage: 'building',
       progress: { step: 3, of: 5 },
-      text: 'Building production · step 3 of 5'
+      text: 'Building production Step 3 of 5'
     },
     { stage: 'building', progress: null, text: 'Building production' },
     { stage: 'deploying', progress: null, text: 'Deploying production' }
@@ -2727,6 +2727,18 @@ describe('DeploymentSwitcher with Platform in the editor', () => {
       expect(await screen.findByRole('tooltip')).toHaveTextContent(text)
     }
   )
+
+  it('shows the build step apart from the stage, after the deployment name', async () => {
+    mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+    following('building', { step: 2, of: 5 })
+    const user = renderSwitcher()
+    await user.hover(await screen.findByTestId('deployment-switcher-trigger'))
+
+    expect(
+      await screen.findByTestId('deployment-switcher-build-step')
+    ).toHaveTextContent(/^Step 2 of 5$/)
+    expect(await screen.findByRole('tooltip')).not.toHaveTextContent('·')
+  })
 
   it('spins the row of the deployment being built', async () => {
     mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
