@@ -174,6 +174,14 @@ class AgentOfflineEditScenario {
     this.hostSocket.endAgentOutage()
   }
 
+  async closePanel(): Promise<void> {
+    await this.panel.close()
+  }
+
+  async reopenPanel(): Promise<void> {
+    await this.panel.open()
+  }
+
   async saveWorkflow(): Promise<void> {
     await this.topbar.saveWorkflowAs(SAVED_NAME)
   }
