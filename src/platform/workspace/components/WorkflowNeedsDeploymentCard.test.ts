@@ -243,7 +243,7 @@ describe('WorkflowNeedsDeploymentCard', () => {
 
     expect(
       screen.getByRole('heading', {
-        name: 'Create a deployment to run this workflow on Comfy Cloud'
+        name: 'Create a Custom Build to run this workflow on Comfy Cloud'
       })
     ).toBeInTheDocument()
     expect(screen.getByTestId('custom-deployment-note')).toHaveTextContent(

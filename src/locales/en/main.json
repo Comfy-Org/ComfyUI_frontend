@@ -4377,7 +4377,7 @@
       "missingNodes": "{count} missing node | {count} missing nodes",
       "missingModels": "{count} missing model | {count} missing models",
       "andMore": "{names}, and {count} more",
-      "titleNoneRunIt": "Create a deployment to run this workflow on Comfy Cloud",
+      "titleNoneRunIt": "Create a Custom Build to run this workflow on Comfy Cloud",
       "titleNoneRunItCustomBuild": "Create a Custom Build to run this workflow on Comfy Cloud",
       "createCustomBuild": "Create a Custom Build",
       "noneRunIt": "No deployment in this workspace has all of these nodes.",
