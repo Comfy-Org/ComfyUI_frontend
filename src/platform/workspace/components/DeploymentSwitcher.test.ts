@@ -36,7 +36,7 @@ import type {
   BuildStage,
   FollowedBuild
 } from '@/platform/workspace/platformFrame/platformFrameBuild'
-import { trackDeploymentLinkClicked } from '@/platform/workspace/platformFrame/customDeploymentTelemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { usePlatformFrameStore } from '@/platform/workspace/platformFrame/platformFrameStore'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -82,7 +82,13 @@ vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
 vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/scripts/api'))
 vi.mock(import('@comfyorg/telemetry/reportError'), { spy: true })
-vi.mock(import('@/platform/workspace/platformFrame/customDeploymentTelemetry'))
+vi.mock(import('@comfyorg/telemetry'))
+vi.mock(
+  import('@/platform/workspace/platformFrame/customDeploymentTelemetry'),
+  {
+    spy: true
+  }
+)
 vi.mock(import('@/services/dialogService'))
 vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
@@ -604,21 +610,76 @@ describe('DeploymentSwitcher', () => {
     expect(screen.queryByTestId('deployment-switcher-create')).toBeNull()
   })
 
+  function sendRealLinkTelemetry() {
+    Object.assign(useFeatureFlags().flags, {
+      customDeploymentsEditorEnabled: true
+    })
+    onTestFinished(() => {
+      Object.assign(useFeatureFlags().flags, {
+        customDeploymentsEditorEnabled: false
+      })
+    })
+  }
+
+  function sentLinkEvents() {
+    return vi
+      .mocked(useTelemetry()!.trackCustomDeploymentEvent)
+      .mock.calls.map(([event]) => event)
+      .filter((event) => event.name === 'platform:deployment_link_clicked')
+  }
+
+  const MANAGE_DEPLOYMENTS_EVENT = {
+    name: 'platform:deployment_link_clicked',
+    properties: { kind: 'manage_deployments', workspace_id: null }
+  }
+
   it('counts a Manage deployments click', async () => {
+    sendRealLinkTelemetry()
     mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
     const user = renderSwitcher()
     await openList(user)
-    document.addEventListener('click', (event) => event.preventDefault(), {
-      once: true
-    })
 
     await user.click(
       screen.getByRole('menuitem', { name: 'Manage deployments' })
     )
 
-    expect(trackDeploymentLinkClicked).toHaveBeenCalledExactlyOnceWith(
-      'manage_deployments'
+    await waitFor(() =>
+      expect(sentLinkEvents()).toEqual([MANAGE_DEPLOYMENTS_EVENT])
     )
+  })
+
+  it('counts a Manage deployments click once when a script cancels and replays it', async () => {
+    vi.useFakeTimers()
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
+    sendRealLinkTelemetry()
+    mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+    render(DeploymentSwitcher, { global: { plugins: [i18n] } })
+    const user = userEvent.setup({
+      pointerEventsCheck: 0,
+      advanceTimers: vi.advanceTimersByTime
+    })
+    await openList(user)
+    const builds = screen.getByRole('menuitem', { name: 'Manage deployments' })
+    let replayed = false
+    builds.addEventListener('click', (event) => {
+      if (builds.dataset.replayed === 'true') {
+        delete builds.dataset.replayed
+        replayed = true
+        return
+      }
+      builds.dataset.replayed = 'true'
+      setTimeout(() => builds.click(), 10)
+      event.preventDefault()
+    })
+
+    await user.click(builds)
+
+    await vi.advanceTimersByTimeAsync(20)
+
+    expect(replayed).toBe(true)
+    expect(sentLinkEvents()).toEqual([MANAGE_DEPLOYMENTS_EVENT])
   })
 
   it('says a workspace with no deployments has none yet and opens the creation dialog', async () => {
@@ -636,7 +697,7 @@ describe('DeploymentSwitcher', () => {
     expect(screen.queryByText(/Switching reloads the editor/)).toBeNull()
 
     await user.click(
-      screen.getByRole('menuitem', { name: 'Create a custom deployment' })
+      screen.getByRole('menuitem', { name: 'Create a Custom Build' })
     )
 
     await waitFor(() =>
@@ -2406,7 +2467,7 @@ describe('DeploymentSwitcher with Platform in the editor', () => {
 
   it.for([
     { way: 'E on a deployment row', item: 'row' },
-    { way: 'Enter on Create a custom deployment', item: 'create' }
+    { way: 'Enter on Create a Custom Build', item: 'create' }
   ])(
     'returns focus to Run on when the frame opened with $way closes',
     async ({ item }) => {
@@ -2428,7 +2489,7 @@ describe('DeploymentSwitcher with Platform in the editor', () => {
       const focused =
         item === 'row'
           ? screen.getByTestId(`deployment-row-${D2}`)
-          : screen.getByRole('menuitem', { name: 'Create a custom deployment' })
+          : screen.getByRole('menuitem', { name: 'Create a Custom Build' })
       focused.focus()
       await waitFor(() => expect(focused).toHaveFocus())
 
@@ -2506,7 +2567,7 @@ describe('DeploymentSwitcher with Platform in the editor', () => {
     expect(mockWorkspaceApi.pickDeployment).not.toHaveBeenCalled()
   })
 
-  it('opens a new deployment at its nodes from Create a custom deployment', async () => {
+  it('opens a new deployment at its nodes from Create a Custom Build', async () => {
     Object.assign(useFeatureFlags().flags, {
       customDeploymentsEditorEnabled: true
     })
@@ -2518,7 +2579,7 @@ describe('DeploymentSwitcher with Platform in the editor', () => {
     await openList(user)
 
     await user.click(
-      screen.getByRole('menuitem', { name: 'Create a custom deployment' })
+      screen.getByRole('menuitem', { name: 'Create a Custom Build' })
     )
 
     expect(framedAt()).toMatchObject({ step: 'new', start: 'nodes' })

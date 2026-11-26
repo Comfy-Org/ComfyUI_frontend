@@ -20,6 +20,7 @@ import {
 import { v4 as uuidv4 } from 'uuid'
 import { useI18n } from 'vue-i18n'
 
+import { safeLocalStorage } from '@/base/storage/safeStorage'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTelemetry } from '@comfyorg/telemetry'
@@ -111,7 +112,10 @@ import { useFreeUsePlacement } from './experiments/freeUsePlacement'
 import AgentPanel from './components/agent/AgentPanel.vue'
 import AgentCreditTransitionNotice from './components/agent/AgentCreditTransitionNotice.vue'
 import AgentHostFenceNotice from './components/agent/AgentHostFenceNotice.vue'
-import { agentBoundWorkflowIdKey } from './components/agent/agentBoundWorkflowId'
+import {
+  agentBoundWorkflowActiveKey,
+  agentBoundWorkflowIdKey
+} from './components/agent/agentBoundWorkflowId'
 import AgentGraphActivityBar from './components/AgentGraphActivityBar.vue'
 import OnboardingCoach from './components/agent/OnboardingCoach.vue'
 import {
@@ -228,7 +232,10 @@ import { startCrdtLog } from './crdt/crdtLog'
 import type { CrdtLogLevel } from './crdt/crdtLogLevel'
 import { attachAgentWriteOverwriteWatch } from './crdt/agentWriteOverwrites'
 import { attachDocOpMinter } from './crdt/docOpMinter'
-import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
+import {
+  retainAgentFollowerSessionsForPage,
+  useAgentCrdtFollower
+} from './crdt/useAgentCrdtFollower'
 
 const CrdtDevPanel = defineAsyncComponent(
   () => import('./crdt/CrdtDevPanel.vue')
@@ -666,10 +673,9 @@ const settingStore = useSettingStore()
 const crdtLogLevel = computed({
   get: () => settingStore.get('Comfy.Agent.CrdtDebug.Level'),
   set: (level: CrdtLogLevel) => {
-    try {
-      localStorage.setItem('Comfy.Agent.CrdtDebug.level', level)
-    } catch (error) {
-      reportError(error, {
+    const outcome = safeLocalStorage.write('Comfy.Agent.CrdtDebug.level', level)
+    if (outcome.result !== 'ok') {
+      reportError(outcome.error, {
         surface: 'agent',
         errorType: 'failure_saving_crdt_debug_level_mirror',
         level: 'warning'
@@ -1240,6 +1246,7 @@ const {
   threadId,
   loadThread,
   isThreadDeleted,
+  forgetChat,
   boundWorkflowId,
   bindWorkflow,
   reportWorkflowBound,
@@ -1377,6 +1384,8 @@ const isBoundWorkflowActive = computed(() => {
   )
 })
 
+provide(agentBoundWorkflowActiveKey, isBoundWorkflowActive)
+
 // The CRDT follower is the inbound content channel: subscribes to the
 // session's bound workflow while its tab is active. Suspending the background
 // subscription makes reopening pull state-vector catch-up only after the
@@ -1460,6 +1469,7 @@ const {
     return lineage?.workflowId === workflowId ? lineage.lineageSeq : null
   }
 })
+retainAgentFollowerSessionsForPage(docTransport)
 // The bound document's serialized root graph id, independent of what is
 // currently on the canvas: `beforeLoadNewGraph` persists the outgoing
 // workflow's `activeState` before the shared renderer graph is rewritten, so
@@ -2991,6 +3001,7 @@ function onDeleteHistory(id: string): void {
     id === history.activeId ||
     (history.activeId === null && id === threadId.value)
   history.remove(id)
+  forgetChat(id)
   openChats.forget(id)
   chatDrafts.discardChatDraft(id)
   // Deleting the open chat also ends it; a dead thread must not stay editable.

@@ -1896,7 +1896,13 @@ describe('useWorkflowService', () => {
         service.closeWorkflow(lastOpen, { warnIfUnsaved: false })
       ).resolves.toBe(true)
 
-      expect(app.loadGraphData).toHaveBeenCalledExactlyOnceWith(defaultGraph)
+      expect(app.loadGraphData).toHaveBeenCalledExactlyOnceWith(
+        defaultGraph,
+        true,
+        true,
+        null,
+        {}
+      )
     })
 
     it('keeps the tab open and its draft intact when the replacement load fails', async () => {
@@ -2664,7 +2670,14 @@ describe('useWorkflowService', () => {
       expect(workflowStore.openWorkflows).not.toContain(closing)
       expect(workflowStore.activeWorkflow.path).toBe(final.path)
       expect(app.loadGraphData).toHaveBeenCalledTimes(2)
-      expect(app.loadGraphData).toHaveBeenNthCalledWith(1, expect.anything())
+      expect(app.loadGraphData).toHaveBeenNthCalledWith(
+        1,
+        expect.anything(),
+        true,
+        true,
+        null,
+        {}
+      )
       expect(app.loadGraphData).toHaveBeenNthCalledWith(
         2,
         expect.anything(),
@@ -3303,7 +3316,13 @@ describe('useWorkflowService', () => {
 
       await useWorkflowService().closeWorkflows([only], options)
 
-      expect(app.loadGraphData).toHaveBeenCalledWith(defaultGraph)
+      expect(app.loadGraphData).toHaveBeenCalledWith(
+        defaultGraph,
+        true,
+        true,
+        null,
+        {}
+      )
       expect(activated.mock.calls.map(([workflow]) => workflow.path)).toEqual(
         expectedPaths
       )
@@ -3428,6 +3447,29 @@ describe('useWorkflowService', () => {
         await useWorkflowService().loadBlankWorkflow({ initiator: 'user' })
 
         expect(activated).not.toHaveBeenCalled()
+      })
+    })
+
+    describe('loadDefaultWorkflow', () => {
+      it.for([
+        {
+          name: 'forwards initiator user to loadGraphData',
+          options: { initiator: 'user' as const }
+        },
+        {
+          name: 'omits initiator when loaded programmatically',
+          options: {}
+        }
+      ])('$name', async ({ options }) => {
+        await useWorkflowService().loadDefaultWorkflow(options)
+
+        expect(app.loadGraphData).toHaveBeenCalledWith(
+          defaultGraph,
+          true,
+          true,
+          null,
+          options
+        )
       })
     })
   })
@@ -4123,7 +4165,34 @@ describe('useWorkflowService', () => {
         expect.objectContaining({ id: expect.any(String) }),
         true,
         true,
-        expect.objectContaining({ path: 'workflows/source (Copy) (2).json' })
+        expect.objectContaining({ path: 'workflows/source (Copy) (2).json' }),
+        {}
+      )
+    })
+
+    it.for([
+      {
+        name: 'forwards initiator user to loadGraphData',
+        options: { initiator: 'user' as const }
+      },
+      {
+        name: 'omits initiator when duplicated programmatically',
+        options: {}
+      }
+    ])('$name', async ({ options }) => {
+      const source = createModeTestWorkflow({
+        path: 'workflows/source.json'
+      })
+      source.changeTracker.activeState = makeWorkflowData()
+
+      await useWorkflowService().duplicateWorkflow(source, options)
+
+      expect(app.loadGraphData).toHaveBeenCalledWith(
+        expect.objectContaining({ id: expect.any(String) }),
+        true,
+        true,
+        expect.objectContaining({ path: 'workflows/source (Copy).json' }),
+        options
       )
     })
   })

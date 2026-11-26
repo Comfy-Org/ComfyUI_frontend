@@ -9,6 +9,7 @@ import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
 import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
 import TooltipProvider from '@comfyorg/design-system/tooltip/TooltipProvider'
 import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
+import { appTooltipProviderDefaults } from '@comfyorg/design-system/lib/tooltip/tooltipConfig'
 
 const TooltipHarness = defineComponent({
   components: {
@@ -141,14 +142,18 @@ describe('Tooltip', () => {
       })
 
       await user.hover(screen.getByRole('button', { name: 'First' }))
-      await vi.advanceTimersByTimeAsync(1499)
+      await vi.advanceTimersByTimeAsync(
+        appTooltipProviderDefaults.delayDuration - 1
+      )
       expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
       await vi.advanceTimersByTimeAsync(1)
       expect(screen.getByRole('tooltip')).toHaveTextContent('First hint')
 
       await user.hover(screen.getByRole('button', { name: 'Second' }))
       expect(screen.queryByRole('tooltip')?.textContent ?? null).toBe(earlyHint)
-      await vi.advanceTimersByTimeAsync(1499)
+      await vi.advanceTimersByTimeAsync(
+        appTooltipProviderDefaults.delayDuration - 1
+      )
       expect(screen.queryByRole('tooltip')?.textContent ?? null).toBe(earlyHint)
       await vi.advanceTimersByTimeAsync(1)
       expect(screen.getByRole('tooltip')).toHaveTextContent('Second hint')
@@ -303,7 +308,9 @@ describe('Tooltip', () => {
     const trigger = screen.getByRole('button', { name: 'Trigger' })
 
     await user.pointer({ keys: '[TouchA>]', target: trigger })
-    await vi.advanceTimersByTimeAsync(1499)
+    await vi.advanceTimersByTimeAsync(
+      appTooltipProviderDefaults.delayDuration - 1
+    )
     expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
     await vi.advanceTimersByTimeAsync(1)
     expect(screen.getByRole('tooltip')).toHaveTextContent('Helpful text')
@@ -392,6 +399,21 @@ describe('Tooltip', () => {
     await user.hover(trigger)
     await screen.findByRole('tooltip')
     await user.unhover(trigger)
+
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+  })
+
+  it('stays closed when the pointer leaves before the open delay', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: false })
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    const { delayDuration } = appTooltipProviderDefaults
+    render(TooltipHarness, { props: { delayDuration } })
+    const trigger = screen.getByRole('button', { name: 'Trigger' })
+
+    await user.hover(trigger)
+    await vi.advanceTimersByTimeAsync(delayDuration - 1)
+    await user.unhover(trigger)
+    await vi.advanceTimersByTimeAsync(delayDuration)
 
     expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
   })

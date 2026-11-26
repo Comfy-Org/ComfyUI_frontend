@@ -1749,3 +1749,320 @@ describe('FullPageTopupView with auto top-up from the link', () => {
     }
   )
 })
+
+describe('FullPageTopupView paying with WeChat Pay or Alipay', () => {
+  const hostedOption = () =>
+    screen.queryByRole('button', { name: 'Pay with WeChat Pay or Alipay' })
+
+  function stubHostedCheckout(fake: FakeBillingClient) {
+    return vi.spyOn(fake.client.topup, 'createHostedTopupCheckout')
+  }
+
+  const hostedMethodsFlag = (on: boolean) => async () =>
+    new Response(
+      JSON.stringify({
+        unified_billing_settings: true,
+        billing_web_topup_hosted_methods: on
+      })
+    )
+
+  beforeEach(() => {
+    form.mounts = 0
+    serveFeatures(hostedMethodsFlag(true))
+  })
+
+  it('offers no WeChat Pay or Alipay option while billing_web_topup_hosted_methods is off', async () => {
+    serveFeatures(hostedMethodsFlag(false))
+    renderTopup({
+      topupQuote: PAYS_ONCE,
+      paymentMethods: { status: 'ok', value: [VISA] }
+    })
+    await screen.findByText('Add credits · Acme Team')
+    await waitFor(() => expect(payButton()).toBeEnabled())
+
+    expect(hostedOption()).not.toBeInTheDocument()
+  })
+
+  it.for([
+    { name: 'a card-only page', path: TOPUP_PATH },
+    { name: 'a Cloud purchase', path: PURCHASE_PATH }
+  ])(
+    'sends $name to the hosted checkout for the same amount, with no card',
+    async ({ path }) => {
+      const assign = vi
+        .spyOn(window.location, 'assign')
+        .mockImplementation(() => {})
+      let hosted: ReturnType<typeof stubHostedCheckout> | undefined
+      const fake = renderTopup(
+        {
+          topupQuote: PAYS_ONCE,
+          paymentMethods: { status: 'ok', value: [VISA] }
+        },
+        path,
+        (built) => {
+          built.client.topup.readTopupPurchase = async () =>
+            purchaseRead('open')
+          hosted = stubHostedCheckout(built).mockResolvedValue({
+            status: 'ok',
+            url: 'https://checkout.stripe.com/c/pay/cs_test_wechat'
+          })
+        }
+      )
+      await screen.findByText('Add credits · Acme Team')
+
+      const option = await screen.findByRole('button', {
+        name: 'Pay with WeChat Pay or Alipay'
+      })
+      await userEvent.click(option)
+
+      await waitFor(() =>
+        expect(assign).toHaveBeenCalledWith(
+          'https://checkout.stripe.com/c/pay/cs_test_wechat'
+        )
+      )
+      expect(hosted).toHaveBeenCalledExactlyOnceWith({
+        amountCents: 2500,
+        returnUrl: `${window.location.origin}/return/topup`
+      })
+      expect(fake.createInteractiveTopup).not.toHaveBeenCalled()
+    }
+  )
+
+  it('offers the option as another way to pay, with the one terms note under it', async () => {
+    renderTopup({
+      topupQuote: PAYS_ONCE,
+      paymentMethods: { status: 'ok', value: [VISA] }
+    })
+    await screen.findByText('Add credits · Acme Team')
+    const option = await screen.findByRole('button', {
+      name: 'Pay with WeChat Pay or Alipay'
+    })
+
+    const [terms, ...more] = screen.getAllByText(/By continuing/)
+    expect(more).toHaveLength(0)
+    expect(
+      option.compareDocumentPosition(terms) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy()
+    expect(screen.getByText('or')).toBeVisible()
+  })
+
+  it('keeps the customer on the page with the refusal when the hosted checkout is refused', async () => {
+    const assign = vi
+      .spyOn(window.location, 'assign')
+      .mockImplementation(() => {})
+    renderTopup(
+      {
+        topupQuote: PAYS_ONCE,
+        paymentMethods: { status: 'ok', value: [VISA] }
+      },
+      TOPUP_PATH,
+      (built) => {
+        stubHostedCheckout(built).mockResolvedValue({
+          status: 'error',
+          code: 'REQUEST_FAILED'
+        })
+      }
+    )
+    await screen.findByText('Add credits · Acme Team')
+
+    await userEvent.click(
+      await screen.findByRole('button', {
+        name: 'Pay with WeChat Pay or Alipay'
+      })
+    )
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      "Payment couldn't be processed"
+    )
+    expect(assign).not.toHaveBeenCalled()
+    expect(hostedOption()).toBeEnabled()
+  })
+
+  it('opens no hosted checkout for a purchase another tab already paid, and follows that payment', async () => {
+    const assign = vi
+      .spyOn(window.location, 'assign')
+      .mockImplementation(() => {})
+    const { fake, purchase, readTopupPurchase } = renderPurchase(
+      purchaseRead('open')
+    )
+    const hosted = stubHostedCheckout(fake)
+    await screen.findByText('Add credits · Acme Team')
+    const option = await screen.findByRole('button', {
+      name: 'Pay with WeChat Pay or Alipay'
+    })
+    const readsBefore = readTopupPurchase.mock.calls.length
+
+    purchase.read = purchaseRead('paid', 'op_topup')
+    await userEvent.click(option)
+
+    await waitFor(() =>
+      expect(readTopupPurchase.mock.calls.length).toBeGreaterThan(
+        readsBefore + 1
+      )
+    )
+    expect(hosted).not.toHaveBeenCalled()
+    expect(assign).not.toHaveBeenCalled()
+  })
+
+  it('locks Pay and the option while it re-reads the purchase', async () => {
+    const { fake, readTopupPurchase } = renderPurchase(purchaseRead('open'))
+    const hosted = stubHostedCheckout(fake)
+    await screen.findByText('Add credits · Acme Team')
+    const option = await screen.findByRole('button', {
+      name: 'Pay with WeChat Pay or Alipay'
+    })
+    await waitFor(() => expect(option).toBeEnabled())
+    readTopupPurchase.mockReturnValueOnce(new Promise(() => {}))
+
+    await userEvent.click(option)
+
+    await waitFor(() => expect(option).toBeDisabled())
+    expect(payButton()).toBeDisabled()
+    expect(hosted).not.toHaveBeenCalled()
+  })
+
+  it('keeps the option usable when the card form fails to load', async () => {
+    vi.spyOn(window.location, 'assign').mockImplementation(() => {})
+    let hosted: ReturnType<typeof stubHostedCheckout> | undefined
+    renderTopup(
+      { topupQuote: PAYS_ONCE, paymentMethods: { status: 'ok', value: [] } },
+      TOPUP_PATH,
+      (built) => {
+        hosted = stubHostedCheckout(built).mockResolvedValue({
+          status: 'ok',
+          url: 'https://checkout.stripe.com/c/pay/cs_test_wechat'
+        })
+      }
+    )
+    await screen.findByText('Add credits · Acme Team')
+    form.emit('phase', { phase: 'payment_element_failed', element: 'payment' })
+
+    const option = await screen.findByRole('button', {
+      name: 'Pay with WeChat Pay or Alipay'
+    })
+    await waitFor(() => expect(option).toBeEnabled())
+    await userEvent.click(option)
+
+    await waitFor(() => expect(hosted).toHaveBeenCalledOnce())
+  })
+
+  it('shows the refusal beside the option when the card form failed to load', async () => {
+    renderTopup(
+      { topupQuote: PAYS_ONCE, paymentMethods: { status: 'ok', value: [] } },
+      TOPUP_PATH,
+      (built) => {
+        stubHostedCheckout(built).mockResolvedValue({
+          status: 'error',
+          code: 'REQUEST_FAILED'
+        })
+      }
+    )
+    await screen.findByText('Add credits · Acme Team')
+    form.emit('phase', { phase: 'payment_element_failed', element: 'payment' })
+    const option = await screen.findByRole('button', {
+      name: 'Pay with WeChat Pay or Alipay'
+    })
+    await waitFor(() => expect(option).toBeEnabled())
+
+    await userEvent.click(option)
+
+    expect(
+      await screen.findByText("Payment couldn't be processed")
+    ).toBeVisible()
+    expect(hostedOption()).toBeEnabled()
+  })
+
+  it('shows the refusal beside the option on Add new when the card form failed to load', async () => {
+    renderTopup(
+      {
+        topupQuote: PAYS_ONCE,
+        paymentMethods: { status: 'ok', value: [VISA] }
+      },
+      TOPUP_PATH,
+      (built) => {
+        stubHostedCheckout(built).mockResolvedValue({
+          status: 'error',
+          code: 'REQUEST_FAILED'
+        })
+      }
+    )
+    await screen.findByText('Add credits · Acme Team')
+    await userEvent.click(
+      await screen.findByRole('tab', { name: 'Add new payment' })
+    )
+    form.emit('phase', { phase: 'payment_element_failed', element: 'payment' })
+    const option = await screen.findByRole('button', {
+      name: 'Pay with WeChat Pay or Alipay'
+    })
+    await waitFor(() => expect(option).toBeEnabled())
+
+    await userEvent.click(option)
+
+    expect(
+      await screen.findByText("Payment couldn't be processed")
+    ).toBeVisible()
+    expect(hostedOption()).toBeEnabled()
+  })
+
+  it('lets the customer try again when the purchase cannot be re-read', async () => {
+    const { fake, readTopupPurchase } = renderPurchase(purchaseRead('open'))
+    const hosted = stubHostedCheckout(fake)
+    await screen.findByText('Add credits · Acme Team')
+    const option = await screen.findByRole('button', {
+      name: 'Pay with WeChat Pay or Alipay'
+    })
+    await waitFor(() => expect(option).toBeEnabled())
+    readTopupPurchase.mockResolvedValueOnce({
+      status: 'error',
+      code: 'REQUEST_FAILED'
+    })
+
+    await userEvent.click(option)
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      "Payment couldn't be processed"
+    )
+    expect(hostedOption()).toBeEnabled()
+    expect(hosted).not.toHaveBeenCalled()
+  })
+
+  it('locks the option while a new card is being tokenized', async () => {
+    renderTopup({
+      topupQuote: PAYS_ONCE,
+      paymentMethods: { status: 'ok', value: [] }
+    })
+    await screen.findByText('Add credits · Acme Team')
+    readyCardForm()
+    const option = await screen.findByRole('button', {
+      name: 'Pay with WeChat Pay or Alipay'
+    })
+    await waitFor(() => expect(option).toBeEnabled())
+
+    form.emit('submitting-change', true)
+
+    await waitFor(() => expect(option).toBeDisabled())
+  })
+
+  it('offers no WeChat Pay or Alipay option on a page that pays the method on file', async () => {
+    renderTopup({
+      topupQuote: QUOTED,
+      paymentMethods: { status: 'ok', value: [VISA] }
+    })
+    await screen.findByText('Add credits · Acme Team')
+    await waitFor(() => expect(payButton()).toBeInTheDocument())
+
+    expect(hostedOption()).not.toBeInTheDocument()
+  })
+
+  it('offers no WeChat Pay or Alipay option on a link that turns auto top-up on', async () => {
+    renderAutoTopUp(
+      AUTO_TOP_UP_PATH,
+      { status: 'ok', value: [{ ...VISA, is_default: true }] },
+      PAYS_ONCE
+    )
+    await screen.findByTestId('checkout-auto-top-up-consent')
+    await waitFor(() => expect(payButton()).toBeInTheDocument())
+
+    expect(hostedOption()).not.toBeInTheDocument()
+  })
+})
