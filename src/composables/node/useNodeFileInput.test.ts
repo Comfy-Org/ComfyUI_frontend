@@ -1,14 +1,12 @@
-import { fromAny } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useNodeFileInput } from './useNodeFileInput'
 
 function createNode(overrides: Record<string, unknown> = {}): LGraphNode {
-  // @ts-expect-error intentional bare object cast for test mocking
-  return fromAny<LGraphNode, unknown>({
+  return {
     ...overrides
-  })
+  } as LGraphNode
 }
 
 function createFile(name: string, type = 'image/png'): File {
@@ -18,8 +16,7 @@ function createFile(name: string, type = 'image/png'): File {
 function setInputFiles(input: HTMLInputElement, files: File[]) {
   Object.defineProperty(input, 'files', {
     configurable: true,
-    // @ts-expect-error intentional type coercion for test mock object
-    value: fromAny<FileList, unknown>(files)
+    value: files as unknown as FileList
   })
 }
 
