@@ -543,6 +543,31 @@ test.describe('Smart guides', { tag: ['@vue-nodes', '@canvas'] }, () => {
           .toEqual(distributed)
       })
 
+      test('distributing with the Tidy bar open replaces its gap handles', async ({
+        comfyPage
+      }) => {
+        await comfyPage.workflow.loadWorkflow('smartGuides/three_notes_row')
+        await comfyPage.canvasOps.pan({ x: 0, y: 200 }, { x: 100, y: 600 })
+        await comfyPage.keyboard.selectAll()
+        await comfyPage.selectionToolbox
+          .getByRole('button', { name: 'Tidy up', exact: true })
+          .click()
+        const tidyGaps = comfyPage.page.getByRole('spinbutton', {
+          name: 'Gap between nodes'
+        })
+        await expect(tidyGaps).not.toHaveCount(0)
+
+        await openAlign(comfyPage)
+        await comfyPage.page
+          .getByRole('button', { name: 'Distribute horizontally' })
+          .click()
+
+        await expect(
+          comfyPage.page.getByRole('separator', GAP_HANDLE)
+        ).toHaveCount(2)
+        await expect(tidyGaps).toHaveCount(0)
+      })
+
       test('gap handles disappear once the distributed nodes are pinned', async ({
         comfyPage
       }) => {
