@@ -262,6 +262,23 @@ describe('retainDocOpMinterForPage', () => {
     expect(minted).toEqual([])
   })
 
+  it('releases its identity observer on teardown', () => {
+    retainDocOpMinterForPage(transport, panelInputs())
+    expect(identityListeners).toHaveLength(1)
+
+    destroyAgentPageOpMinters()
+
+    expect(identityListeners).toEqual([])
+  })
+
+  it('replaces rather than stacks its identity observer across remounts', () => {
+    retainDocOpMinterForPage(transport, panelInputs())
+    retainDocOpMinterForPage(transport, panelInputs())
+    retainDocOpMinterForPage(transport, panelInputs())
+
+    expect(identityListeners).toHaveLength(1)
+  })
+
   it('re-attaches after a teardown, so a second page session mints again', async () => {
     retainDocOpMinterForPage(transport, panelInputs())
     destroyAgentPageOpMinters()

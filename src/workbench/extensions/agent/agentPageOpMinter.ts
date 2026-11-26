@@ -150,7 +150,7 @@ export function retainDocOpMinterForPage(
 }
 
 function releaseWithoutPropagating(
-  step: 'scope' | 'detach',
+  step: 'identity' | 'scope' | 'detach',
   dispose: () => void
 ): void {
   try {
@@ -174,8 +174,10 @@ function releaseWithoutPropagating(
  */
 export function destroyAgentPageOpMinters(): void {
   for (const owner of liveMinters) {
+    releaseWithoutPropagating('identity', () => owner.stopObservingIdentity?.())
     releaseWithoutPropagating('scope', () => owner.scope.stop())
     releaseWithoutPropagating('detach', () => owner.minter?.detach())
+    owner.stopObservingIdentity = null
     owner.minter = null
     minters.delete(owner.transport)
   }
