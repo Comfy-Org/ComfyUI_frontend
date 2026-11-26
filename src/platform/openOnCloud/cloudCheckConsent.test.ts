@@ -328,6 +328,34 @@ describe('saveAskBeforeCloudCheck', () => {
     }
   })
 
+  it('keeps ask-again pending when another tab cleared it and the repair after a late save fails', async () => {
+    vi.useFakeTimers()
+    try {
+      const lateDontAskAgain = deferredResponse()
+      vi.mocked(api.storeSetting)
+        .mockReturnValueOnce(lateDontAskAgain.promise)
+        .mockResolvedValueOnce(new Response())
+        .mockResolvedValueOnce(new Response(null, { status: 500 }))
+      const dontAskAgain = saveAskBeforeCloudCheck(false)
+      await vi.advanceTimersByTimeAsync(CLOUD_CHECK_CONSENT_SAVE_TIMEOUT_MS)
+      await dontAskAgain
+      await saveAskBeforeCloudCheck(true)
+      localStorage.removeItem(PENDING_ASK_AGAIN_KEY)
+
+      lateDontAskAgain.resolve(new Response())
+      await vi.waitFor(() => expect(api.storeSetting).toHaveBeenCalledTimes(3))
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(api.storeSetting).toHaveBeenLastCalledWith(
+        ASK_BEFORE_CLOUD_CHECK,
+        true
+      )
+      expect(localStorage.getItem(PENDING_ASK_AGAIN_KEY)).toBe('true')
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('stops resending once every late save for an older choice has landed', async () => {
     vi.useFakeTimers()
     try {
