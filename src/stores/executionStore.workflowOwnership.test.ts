@@ -5,6 +5,7 @@ import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { zeroUuid } from '@comfyorg/graph-model/uuid'
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 
@@ -304,6 +305,51 @@ describe('executionStore workflow ownership', () => {
       store.forgetFinishedJobs(['job-here'])
 
       expect(store.rememberStampAndCheckActiveWorkflow('job-here')).toBe(false)
+    })
+  })
+
+  describe('an output frame handled before any leg can answer', () => {
+    const output = {
+      images: [{ filename: 'late.png', subfolder: '', type: 'output' }]
+    }
+
+    /**
+     * A run that starts, finishes and is forgotten with no owner named. Each
+     * case uses its own node id because node outputs outlive a single case.
+     */
+    function unownedRunFinishes(jobId: string, nodeId: string) {
+      fire('execution_start', { prompt_id: jobId, timestamp: 1 })
+      fire('executed', {
+        prompt_id: jobId,
+        node: nodeId,
+        display_node: nodeId,
+        output
+      })
+      fire('execution_success', { prompt_id: jobId, timestamp: 2 })
+    }
+
+    it('still reaches the node when the owner is named afterwards', () => {
+      unownedRunFinishes('job-owned-late', '1')
+      expect(
+        store.queuedJobs['job-owned-late'],
+        'execution_success forgot the job, so its own output buffer is gone'
+      ).toBeUndefined()
+      expect(useNodeOutputStore().nodeOutputs['1']).toBeUndefined()
+
+      store.registerJobOwner('job-owned-late', workflowA)
+
+      expect(useNodeOutputStore().nodeOutputs['1']).toEqual(output)
+    })
+
+    it('does not reach a tab the job turns out not to belong to', () => {
+      unownedRunFinishes('job-owned-elsewhere', '2')
+
+      store.registerJobOwner('job-owned-elsewhere', workflowB)
+
+      expect(
+        useNodeOutputStore().nodeOutputs['2'],
+        'B owns the run and A is the visible tab'
+      ).toBeUndefined()
     })
   })
 })

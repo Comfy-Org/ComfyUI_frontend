@@ -228,6 +228,14 @@ export const useExecutionStore = defineStore('execution', () => {
     string,
     Record<string, NodeError>
   >()
+  // Outputs whose `executed` frame arrived while ownership was still
+  // unresolved. `executed` is one-shot and `execution_success` forgets the
+  // job, so the job's own `outputs` are gone before a late `registerJobOwner`
+  // could read them — this holds the same object alive until then.
+  const pendingOutputsByJobId = new Map<
+    string,
+    Partial<Record<string, ExecutedWsMessage['output']>>
+  >()
 
   function bufferPendingWorkflowStatus(
     jobId: string,
@@ -542,6 +550,7 @@ export const useExecutionStore = defineStore('execution', () => {
     pendingWorkflowStatusByJobId.clear()
     pendingExecutionErrorsByJobId.clear()
     pendingSkippedOutputsByJobId.clear()
+    pendingOutputsByJobId.clear()
     jobIdToWorkflow.clear()
     jobIdToStampedWorkflowId.clear()
 
@@ -618,17 +627,38 @@ export const useExecutionStore = defineStore('execution', () => {
     return isJobOwnedBy(jobId, activeWorkflow, workflowId)
   }
 
+  /** `undefined` when no leg can answer yet, so ownership is still unknown. */
+  function ownershipOf(
+    jobId: JobId,
+    workflow: ComfyWorkflow,
+    workflowId?: string
+  ): boolean | undefined {
+    return (
+      ownershipByInstance(jobId, workflow) ??
+      ownershipByPath(jobId, workflow) ??
+      ownershipByWorkflowId(jobId, workflow, workflowId)
+    )
+  }
+
   function isJobOwnedBy(
     jobId: JobId,
     workflow: ComfyWorkflow,
     workflowId?: string
   ): boolean {
-    return (
-      ownershipByInstance(jobId, workflow) ??
-      ownershipByPath(jobId, workflow) ??
-      ownershipByWorkflowId(jobId, workflow, workflowId) ??
-      false
-    )
+    return ownershipOf(jobId, workflow, workflowId) ?? false
+  }
+
+  /**
+   * True while no ownership leg has an answer for `jobId`. A job sits here
+   * between its first execution frame and the `registerJobOwner` that names
+   * its workflow — for a client submission that is the `/api/prompt` response,
+   * and for an agent run the `run` tool call's own frame. Both can lose the
+   * race to `executed`, so "unresolved" is not the same as "not ours".
+   */
+  function ownershipIsUnresolved(jobId: JobId, workflowId?: string): boolean {
+    const activeWorkflow = workflowStore.activeWorkflow
+    if (!activeWorkflow) return true
+    return ownershipOf(jobId, activeWorkflow, workflowId) === undefined
   }
 
   function focusedJobFor(workflow: ComfyWorkflow): JobId | undefined {
@@ -774,7 +804,12 @@ export const useExecutionStore = defineStore('execution', () => {
     if (!(jobId in queuedJobs.value)) return
     const queuedJob = queuedJobs.value[jobId]
     queuedJob.nodes[e.detail.node] = true
-    recordJobOutput(queuedJob, e.detail)
+    const outputs = recordJobOutput(queuedJob, e.detail)
+    // The display gate in `app.ts` refuses an unowned job, and this frame will
+    // not come again. Keep the buffer reachable so the `registerJobOwner` that
+    // lost the race can still put the output on the canvas.
+    if (ownershipIsUnresolved(jobId, e.detail.workflow_id))
+      bufferByJobId(pendingOutputsByJobId, jobId, outputs)
   }
 
   function recordJobOutput(queuedJob: QueuedJob, detail: ExecutedWsMessage) {
@@ -785,12 +820,28 @@ export const useExecutionStore = defineStore('execution', () => {
       detail.merge && existing
         ? mergeNodeOutput(existing, detail.output)
         : detail.output
+    return outputs
   }
 
   function showJobOutputs(jobId: JobId | null | undefined) {
     const outputs = jobId ? queuedJobs.value[jobId]?.outputs : undefined
     if (!outputs || !rememberStampAndCheckActiveWorkflow(jobId ?? undefined))
       return
+    applyOutputsToNodes(outputs)
+  }
+
+  /** Replays outputs buffered before this job's ownership was known. */
+  function flushPendingOutputs(jobId: JobId) {
+    const outputs = pendingOutputsByJobId.get(jobId)
+    if (!outputs) return
+    pendingOutputsByJobId.delete(jobId)
+    if (!rememberStampAndCheckActiveWorkflow(jobId)) return
+    applyOutputsToNodes(outputs)
+  }
+
+  function applyOutputsToNodes(
+    outputs: Partial<Record<string, ExecutedWsMessage['output']>>
+  ) {
     const nodeOutputStore = useNodeOutputStore()
     for (const [id, output] of Object.entries(outputs)) {
       const executionId = tryNormalizeNodeExecutionId(id)
@@ -1324,6 +1375,7 @@ export const useExecutionStore = defineStore('execution', () => {
     flushPendingWorkflowStatus(id, workflow)
     flushPendingExecutionError(id)
     flushPendingSkippedOutputs(id)
+    flushPendingOutputs(id)
     if (id === activeJobId.value) showActiveJobProgress()
     else if (
       id in queuedJobs.value &&
