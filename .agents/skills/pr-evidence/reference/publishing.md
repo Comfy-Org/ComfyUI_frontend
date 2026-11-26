@@ -119,7 +119,8 @@ Run this on every follow-up round, before recapturing anything.
 2. For each block, list the files it depends on: the components and styles
    it captured, the spec it recorded, its fixtures, or the code its
    benchmark runs.
-3. Fetch, then diff each side, treating an unreachable SHA as moved:
+3. Fetch, then diff each side. A diff that exits non-zero, such as for an
+   unreachable SHA or a failed merge-base lookup, counts as moved:
 
    ```sh
    git diff --name-only <after> <head> -- <block paths>
