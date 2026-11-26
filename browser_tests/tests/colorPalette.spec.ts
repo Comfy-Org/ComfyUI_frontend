@@ -380,6 +380,21 @@ test.describe('Color Palette', { tag: ['@screenshot', '@settings'] }, () => {
       await expect(field).toHaveCSS('background-color', 'rgb(34, 34, 34)')
     })
 
+    test('keeps the widget slot off the decrement button', async ({
+      comfyPage
+    }) => {
+      const { input, decrementButton } =
+        comfyPage.vueNodes.getInputNumberControls(
+          comfyPage.vueNodes.getWidgetRowByLabel('Save Animated WEBP', 'fps')
+        )
+      await expect(input).toHaveValue('6.00')
+
+      const { height } = (await decrementButton.boundingBox())!
+      await decrementButton.click({ position: { x: 1, y: height / 2 } })
+
+      await expect(input).toHaveValue('5.99')
+    })
+
     test('fits the boolean switch into the curve of its row', async ({
       comfyPage
     }) => {

@@ -115,7 +115,7 @@ describe('SwitchDeploymentCard', () => {
 
     expect(
       screen.getByRole('heading', {
-        name: 'Run this workflow on a custom deployment'
+        name: 'Run this workflow on a Custom Build'
       })
     ).toBeInTheDocument()
     expect(screen.getByRole('combobox', { name: 'Run on' })).toHaveTextContent(

@@ -61,7 +61,7 @@ import {
 import { useBilledWorkspace } from '@/composables/useBilledWorkspace'
 import { useCheckoutExit } from '@/composables/useCheckoutExit'
 import type { PayChoice } from '@/composables/useFullPageCheckout'
-import { awaitInPageTopup } from '@/config/checkoutUi'
+import { awaitInPageTopup, awaitTopupHostedMethods } from '@/config/checkoutUi'
 import { awaitBillingWebStripeKey } from '@/config/stripeKey'
 import { useBillingEntry } from '@/entry/billingEntry'
 import { useAutoTopUpSettings } from '@/session/autoTopUpSettings'
@@ -178,6 +178,10 @@ export function useFullPageTopup() {
   const quote = shallowRef<TopupQuote>()
   const inPageTopup = awaitInPageTopup()
   const interactiveAllowed = shallowRef(false)
+  const hostedMethodsAllowed = shallowRef(false)
+  void awaitTopupHostedMethods().then((allowed) => {
+    hostedMethodsAllowed.value = allowed
+  })
   const paysOnce = computed(
     () =>
       interactiveAllowed.value &&
@@ -453,17 +457,25 @@ export function useFullPageTopup() {
     dispatch({ type: 'payFailed', outcome })
   }
 
-  async function payWithAutoTopUp(amount: number, choice: EntryAutoTopUp) {
-    const mine = ++payGeneration
-    dispatch({ type: 'paySubmitted' })
+  async function requestHostedCheckout(
+    mine: number,
+    amount: number,
+    choice?: EntryAutoTopUp
+  ) {
     const result = await topup.createHostedTopupCheckout({
       amountCents: amount,
       returnUrl: new URL(TOPUP_RETURN_PATH, window.location.origin).href,
-      autoTopUp: topupAutoTopUpOf(choice)
+      ...(choice === undefined ? {} : { autoTopUp: topupAutoTopUpOf(choice) })
     })
     if (mine !== payGeneration) return
     if (result.status === 'ok') return window.location.assign(result.url)
     await follow(refusalVerdict(result))
+  }
+
+  function payOnHostedCheckout(amount: number, choice: EntryAutoTopUp) {
+    const mine = ++payGeneration
+    dispatch({ type: 'paySubmitted' })
+    return requestHostedCheckout(mine, amount, choice)
   }
 
   function refusePay(code: string) {
@@ -495,8 +507,43 @@ export function useFullPageTopup() {
       )
     )
       return refusePay(PURCHASE_NOT_PAYABLE_HERE)
-    if (hosted !== undefined) return payWithAutoTopUp(amountCents, hosted)
+    if (hosted !== undefined) return payOnHostedCheckout(amountCents, hosted)
     return payDirect(choice, amountCents)
+  }
+
+  const offersHostedMethods = computed(
+    () =>
+      hostedMethodsAllowed.value &&
+      paysOnce.value &&
+      autoTopUp === undefined &&
+      page.value.kind === 'capture'
+  )
+
+  const canPayHosted = computed(() => {
+    const current = page.value
+    return (
+      current.kind === 'capture' &&
+      current.attempt.kind !== 'sent' &&
+      current.outcome?.kind !== 'reconciling' &&
+      quote.value !== undefined &&
+      !moneyInFlight.value
+    )
+  })
+
+  async function payWithHostedMethods() {
+    if (!canPayHosted.value || !offersHostedMethods.value) return
+    if (amountCents === undefined) return
+    const mine = ++payGeneration
+    dispatch({ type: 'paySubmitted' })
+    if (purchaseId === undefined)
+      return requestHostedCheckout(mine, amountCents)
+    const read = await topup.readTopupPurchase(purchaseId)
+    if (mine !== payGeneration) return
+    if (read.status !== 'ok') return follow(refusalVerdict(read))
+    if (read.value.status === 'open')
+      return requestHostedCheckout(mine, amountCents)
+    dispatch({ type: 'payRejectedAsPending' })
+    return reconcile()
   }
 
   const { returnLink, openedByScript, close } = useCheckoutExit(page)
@@ -527,6 +574,9 @@ export function useFullPageTopup() {
     retryLoad,
     reconcile,
     pay,
+    offersHostedMethods,
+    canPayHosted,
+    payWithHostedMethods,
     reopening: shallowReadonly(reopening),
     continueVerification: purchase.continueVerification
   }

@@ -33,8 +33,18 @@ import {
   isOpenAskPart,
   isPendingAskPart,
   retireAskParts,
-  settleResolution
+  settleResolution,
+  snapshotMessage
 } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
+import type {
+  KnownChatState,
+  KnownTurnSnapshot
+} from '@/workbench/extensions/agent/services/agent/agentKnownChat'
+import {
+  alignKnownChatHistory,
+  latestWorkflowIdOf,
+  pruneSettledLocalTurns
+} from '@/workbench/extensions/agent/services/agent/agentKnownChat'
 import {
   normalizeAgentTranscript,
   settleLiveMessage
@@ -123,6 +133,7 @@ interface PendingSend {
   assetIds?: readonly string[]
   targetTabPath?: string | null
   targetTabInstanceId?: string | null
+  tab: TurnTab
   inputMethod?: AgentInputMethod
   starterPrompt?: AgentStarterPromptSource | null
   status: PendingSendStatus
@@ -183,6 +194,14 @@ interface ActiveTurnSlot {
   message: AssistantMessage
   transport: AgentEventTransport
   tab: TurnTab
+}
+
+const KEPT_KNOWN_CHATS = 12
+
+function settledCopyOf(message: AssistantMessage): AssistantMessage {
+  const copy = snapshotMessage(message)
+  if (copy.streaming) settleLiveMessage(copy)
+  return copy
 }
 
 export type TurnTab =
@@ -624,7 +643,10 @@ export const useAgentConversationStore = defineStore(
     const demotedSnapshotByStash = new Map<TurnId, TurnId>()
     const restoredBackgroundMessageIds = new Set<TurnId>()
     const reportedPaywallImpressions = new Set<TurnId>()
-    const approvalShownAtByAsk = new Map<string, number>()
+    const approvalShownAtByAsk = new Map<
+      string,
+      { shownAt: number; turnId: string }
+    >()
     const shownApprovalIds = new Set<string>()
     const undeliverableAskReporter = createUndeliverableAskReporter()
     const departedTurns = new Map<string, 'no-live-turn' | 'settled-turn'>()
@@ -692,25 +714,32 @@ export const useAgentConversationStore = defineStore(
 
     function publishMessage(turnId: TurnId, message: AssistantMessage): void {
       replaceActive(message)
+      const entry = backgroundTurns.get(turnId)
+      if (activeSlot.value?.turnId !== turnId && (!entry || entry.settled))
+        syncKnownTurnMessage(entry?.threadId ?? threadId.value, turnId, message)
       const unreconciled = unreconciledSnapshotTurns.get(turnId)
       if (unreconciled !== undefined)
         announceReconcilableSnapshotTurn(unreconciled)
-      const entry = backgroundTurns.get(turnId)
-      if (!entry) return
-      const pendingAskIds = pendingAskIdsOf(message)
-      if (!isEqual(pendingAskIds, entry.pendingAskIds))
-        updateBackgroundTurn(turnId, { pendingAskIds })
+      if (entry) refreshBackgroundAskIds(entry)
     }
 
-    function recordApprovalShown(askId: string, shownAt: number): boolean {
+    function recordApprovalShown(
+      askId: string,
+      turnId: string,
+      shownAt: number
+    ): boolean {
       if (shownApprovalIds.has(askId)) return false
       shownApprovalIds.add(askId)
-      approvalShownAtByAsk.set(askId, shownAt)
+      approvalShownAtByAsk.set(askId, { shownAt, turnId })
       return true
     }
 
     function approvalShownAt(askId: string): number | undefined {
-      return approvalShownAtByAsk.get(askId)
+      return approvalShownAtByAsk.get(askId)?.shownAt
+    }
+
+    function approvalTurnId(askId: string): string | undefined {
+      return approvalShownAtByAsk.get(askId)?.turnId
     }
 
     function forgetApprovalTiming(askId: string): void {
@@ -849,6 +878,14 @@ export const useAgentConversationStore = defineStore(
       for (const entry of backgroundTurns.values())
         if (entry.threadId === key)
           entry.transport.retireAskPart(askId, resolution)
+      const known = knownChats.get(key)
+      if (known) {
+        for (const turn of known.localTurns) {
+          const parts = retireAskParts(turn.message.parts, askId, resolution)
+          if (parts !== turn.message.parts)
+            turn.message = { ...turn.message, parts }
+        }
+      }
       if (permanent) {
         const retired = retiredAsksFor(key)
         retired.set(askId, settleResolution(retired.get(askId), resolution))
@@ -886,6 +923,10 @@ export const useAgentConversationStore = defineStore(
       )
     }
 
+    function isAskPermanentlyRetired(askId: string, owner?: string): boolean {
+      return retiredAsks.get(threadKey(owner))?.has(askId) === true
+    }
+
     function confirmAskPending(askId: string, owner?: string): void {
       const key = threadKey(owner)
       const provisional = provisionalRetiredAsks.get(key)
@@ -904,6 +945,10 @@ export const useAgentConversationStore = defineStore(
           refreshBackgroundAskIds(entry)
         }
       if (key === threadKey()) messages.value.forEach(reopen)
+      const known = knownChats.get(key)
+      if (known) {
+        for (const turn of known.localTurns) reopenAsk(turn.message, askId)
+      }
     }
 
     const submittedAskAnswers = new Map<string, SubmittedAskAnswer>()
@@ -1069,6 +1114,36 @@ export const useAgentConversationStore = defineStore(
       return hasSendingForOrigin(origin) || hasLiveTurnForOrigin(origin)
     }
 
+    function resolvePendingSendTab(
+      tab: TurnTab | undefined,
+      targetTabPath: string | null | undefined,
+      targetTabInstanceId: string | null | undefined
+    ): TurnTab {
+      if (tab) return tab
+      if (targetTabInstanceId)
+        return { status: 'known', workflowInstanceId: targetTabInstanceId }
+      if (targetTabPath) {
+        const match = workflowStore.openWorkflows.find(
+          (workflow) => workflow.path === targetTabPath
+        )
+        if (match)
+          return { status: 'known', workflowInstanceId: match.instanceId }
+      }
+      return resolveTurnTab()
+    }
+
+    function pendingSendTurnTabs(coveredPaths: Set<string>): AgentTurnTab[] {
+      const sending: AgentTurnTab[] = []
+      for (const send of pendingSends.values()) {
+        if (send.status !== 'sending') continue
+        const path = openPathOf(send.tab)
+        if (path === null || coveredPaths.has(path)) continue
+        coveredPaths.add(path)
+        sending.push({ path, awaitingApproval: false })
+      }
+      return sending
+    }
+
     function startPendingSend(input: {
       clientMessageId: string
       origin?: PendingSendOrigin
@@ -1083,6 +1158,7 @@ export const useAgentConversationStore = defineStore(
       assetIds?: readonly string[]
       targetTabPath?: string | null
       targetTabInstanceId?: string | null
+      tab?: TurnTab
       inputMethod?: AgentInputMethod
       starterPrompt?: AgentStarterPromptSource | null
     }): PendingSend {
@@ -1093,7 +1169,7 @@ export const useAgentConversationStore = defineStore(
       const origin = input.origin ?? currentOrigin()
       const knownTurnIdsAtSend =
         origin.kind === 'thread' && isOriginOnScreen(origin)
-          ? new Set(userTexts.value.keys())
+          ? new Set(knownUserTurnIds())
           : undefined
       const record: PendingSend = {
         ...input,
@@ -1102,6 +1178,11 @@ export const useAgentConversationStore = defineStore(
         sentAttachments: input.sentAttachments ?? [],
         sentTags: input.sentTags ?? [],
         origin,
+        tab: resolvePendingSendTab(
+          input.tab,
+          input.targetTabPath,
+          input.targetTabInstanceId
+        ),
         text: parsed.text,
         workflowReferences: parsed.workflowReferences,
         skillReference: parsed.skillReference,
@@ -1113,8 +1194,29 @@ export const useAgentConversationStore = defineStore(
       return record
     }
 
+    const displayedTurnServerIds = new Map<TurnId, Set<string>>()
+
+    function recordDisplayedTurnAliases(
+      serverTurnToLocal: ReadonlyMap<string, TurnId>
+    ): void {
+      for (const [serverTurnId, localTurnId] of serverTurnToLocal) {
+        if (serverTurnId === localTurnId) continue
+        let aliases = displayedTurnServerIds.get(localTurnId)
+        if (!aliases) {
+          aliases = new Set()
+          displayedTurnServerIds.set(localTurnId, aliases)
+        }
+        aliases.add(serverTurnId)
+      }
+    }
+
     function knownUserTurnIds(): TurnId[] {
-      return [...userTexts.value.keys()]
+      const ids = new Set<TurnId>(userTexts.value.keys())
+      for (const [localTurnId, aliases] of displayedTurnServerIds) {
+        if (!userTexts.value.has(localTurnId)) continue
+        for (const serverTurnId of aliases) ids.add(toTurnId(serverTurnId))
+      }
+      return [...ids]
     }
 
     function capturePendingSendCanvasBaseline(clientMessageId: string): void {
@@ -1165,7 +1267,7 @@ export const useAgentConversationStore = defineStore(
           existing.origin.kind === 'thread' && isOriginOnScreen(existing.origin)
             ? new Set([
                 ...(existing.knownTurnIdsAtSend ?? []),
-                ...userTexts.value.keys()
+                ...knownUserTurnIds()
               ])
             : existing.knownTurnIdsAtSend,
         precedesThreadTranscript: undefined,
@@ -1555,8 +1657,10 @@ export const useAgentConversationStore = defineStore(
     // something pending -- a settled transport with nothing held has no
     // reason to stay reachable.
     function settleActiveTurn(activeTransport: AgentEventTransport): void {
+      const slot = activeSlot.value
       rememberDepartedActiveTurn('settled-turn')
       activeTransport.settle()
+      if (slot) syncKnownTurnMessage(slot.threadId, slot.turnId, slot.message)
       const restoredFromSnapshot = recordUnreconciledSnapshotTurn()
       if (activeTransport.hasPendingCanvasSync())
         settledActiveTransports.add(activeTransport)
@@ -1620,6 +1724,7 @@ export const useAgentConversationStore = defineStore(
         finishReconnectedTurn(reconciled, persistedParts)
       else finishSnapshotTurn(reconciled, persistedParts)
       messages.value[index] = reconciled
+      syncKnownTurnMessage(turn.threadId, turn.messageId, reconciled)
     }
 
     function ingestActiveTabEvent(
@@ -1652,6 +1757,7 @@ export const useAgentConversationStore = defineStore(
         if (entry.settled) return
         entry.transport.ingest(event)
         entry.transport.settle()
+        syncKnownTurnMessage(entry.threadId, entry.messageId, entry.message)
         updateBackgroundTurn(entry.messageId, { settled: true })
         announceCompletion(entry.tab)
         return
@@ -1704,6 +1810,7 @@ export const useAgentConversationStore = defineStore(
       // cancel their timers now rather than leaving them reachable only by
       // their own STALE_AFTER_MS fallback (or, worse, orphaned).
       slot.transport.dispose()
+      syncKnownTurnMessage(slot.threadId, slot.turnId, slot.message)
       clearActive()
     }
 
@@ -1714,6 +1821,7 @@ export const useAgentConversationStore = defineStore(
         abortActiveTurn()
         return
       }
+      syncKnownTurnMessage(slot.threadId, slot.turnId, slot.message)
       backgroundTurns.set(slot.turnId, {
         threadId: slot.threadId,
         messageId: slot.turnId,
@@ -1901,7 +2009,7 @@ export const useAgentConversationStore = defineStore(
     }
 
     function addBlobPreviews(
-      attachments: readonly UserAttachment[] | undefined,
+      attachments: readonly { previewUrl?: string }[] | undefined,
       target: Set<string>
     ): void {
       for (const { previewUrl } of attachments ?? []) {
@@ -1917,13 +2025,20 @@ export const useAgentConversationStore = defineStore(
         for (const attachments of userAttachments.value.values())
           addBlobPreviews(attachments, owned)
       }
+      for (const send of pendingSends.values()) {
+        addBlobPreviews(send.attachments, owned)
+        addBlobPreviews(send.sentAttachments, owned)
+      }
       for (const entry of backgroundTurns.values())
         addBlobPreviews(entry.attachments, owned)
+      for (const known of knownChats.values())
+        for (const turn of known.localTurns)
+          addBlobPreviews(turn.attachments, owned)
       return owned
     }
 
     function revokeUnownedBlobPreviews(
-      attachments: readonly UserAttachment[] | undefined,
+      attachments: readonly { previewUrl?: string }[] | undefined,
       owned: ReadonlySet<string>
     ): void {
       for (const { previewUrl } of attachments ?? []) {
@@ -2001,6 +2116,7 @@ export const useAgentConversationStore = defineStore(
         rememberDepartedTurn(entry.threadId, entry.messageId, 'settled-turn')
         entry.transport.settle()
         entry.transport.dispose()
+        syncKnownTurnMessage(entry.threadId, entry.messageId, entry.message)
         backgroundTurns.delete(entry.messageId)
         revokeUnownedBlobPreviews(
           entry.attachments,
@@ -2078,7 +2194,6 @@ export const useAgentConversationStore = defineStore(
         turn.threadId === slot.threadId &&
         turn.messageId === slot.turnId
       if (isActive) {
-        clearSettledAskState(turn.threadId)
         finishActiveTurn(
           slot,
           persistedParts,
@@ -2087,17 +2202,27 @@ export const useAgentConversationStore = defineStore(
         rememberDepartedActiveTurn('settled-turn')
         slot.transport.settle()
         slot.transport.dispose()
+        syncKnownTurnMessage(turn.threadId, turn.messageId, slot.message)
         clearActive()
-        if (ending === 'completed') announceCompletion(slot.tab)
+        finalizeSettledTurn(turn.threadId, slot.tab, ending)
         return
       }
       const entry = backgroundTurns.get(turn.messageId)
       if (!entry || entry.messageId !== turn.messageId || entry.settled) return
-      clearSettledAskState(turn.threadId)
       finishWithPersistedParts(entry.message, persistedParts)
       entry.transport.settle()
+      syncKnownTurnMessage(turn.threadId, turn.messageId, entry.message)
       updateBackgroundTurn(entry.messageId, { settled: true })
-      if (ending === 'completed') announceCompletion(entry.tab)
+      finalizeSettledTurn(turn.threadId, entry.tab, ending)
+    }
+
+    function finalizeSettledTurn(
+      turnThreadId: string,
+      tab: TurnTab,
+      ending: 'completed' | 'failed'
+    ): void {
+      if (!threadHasLiveTurn(turnThreadId)) clearSettledAskState(turnThreadId)
+      if (ending === 'completed') announceCompletion(tab)
     }
 
     function departedTurnKey(threadId: string, messageId: string): string {
@@ -2147,6 +2272,10 @@ export const useAgentConversationStore = defineStore(
       )
         return null
       return entry.message
+    }
+
+    function liveTurnMessageId(turn: LiveTurn): string | null {
+      return liveTurnMessage(turn)?.id ?? null
     }
 
     function reconcileApprovalParts(
@@ -2221,10 +2350,18 @@ export const useAgentConversationStore = defineStore(
       settledActiveTransports.clear()
     }
 
+    function revokeDetachedPreviews(turns: readonly KnownTurnSnapshot[]): void {
+      const dropped = new Set<string>()
+      for (const turn of turns) addBlobPreviews(turn.attachments, dropped)
+      if (dropped.size === 0) return
+      const owned = collectOwnedBlobPreviews(true)
+      for (const url of dropped) if (!owned.has(url)) URL.revokeObjectURL(url)
+    }
+
     function dropAttachmentPreviews(): void {
-      const retainedByBackground = collectOwnedBlobPreviews(false)
+      const owned = collectOwnedBlobPreviews(false)
       for (const attachments of userAttachments.value.values())
-        revokeUnownedBlobPreviews(attachments, retainedByBackground)
+        revokeUnownedBlobPreviews(attachments, owned)
       userAttachments.value = new Map()
     }
 
@@ -2254,6 +2391,7 @@ export const useAgentConversationStore = defineStore(
       reportedPaywallImpressions.clear()
       undeliverableAskReporter.reset()
       departedTurns.clear()
+      displayedTurnServerIds.clear()
       clearActive()
     }
 
@@ -2341,10 +2479,14 @@ export const useAgentConversationStore = defineStore(
         void pendingSendsReconciled.trigger(reconciledIds)
     }
 
-    function hydrate(history: AgentMessages): void {
+    function hydrate(
+      history: AgentMessages,
+      options?: { skipSnapshotTurns?: ReadonlySet<TurnId> }
+    ): void {
       const replacedSlot = activeSlot.value
       if (replacedSlot) rememberDepartedActiveTurn('no-live-turn')
       unreconciledSnapshotTurns.clear()
+      displayedTurnServerIds.clear()
       disposeActiveAndSettledTransports()
       clearActive()
       const transcript = normalizeAgentTranscript(
@@ -2403,7 +2545,9 @@ export const useAgentConversationStore = defineStore(
         })
       }
       const pending = unstashedLiveTurn(transcript)
-      if (pending) {
+      if (pending && options?.skipSnapshotTurns?.has(pending.messageId)) {
+        settleLiveMessage(pending.message)
+      } else if (pending) {
         activeSlot.value = {
           origin: 'snapshot',
           turnId: pending.messageId,
@@ -2418,7 +2562,7 @@ export const useAgentConversationStore = defineStore(
             reportUndeliverableAskData
           ),
           tab:
-            replacedSlot?.turnId === pending.messageId
+            replacedSlot !== null && replacedSlot.turnId === pending.messageId
               ? replacedSlot.tab
               : resolveTurnTab()
         }
@@ -2603,16 +2747,681 @@ export const useAgentConversationStore = defineStore(
             : [{ path, awaitingApproval: awaitsAnswer(pendingAskIds) }]
         }
       )
-      return activePath === null
-        ? background
-        : [
-            {
-              path: activePath,
-              awaitingApproval: activeTurnAwaitsAnswer.value
-            },
-            ...background
-          ]
+      const live: AgentTurnTab[] =
+        activePath === null
+          ? background
+          : [
+              {
+                path: activePath,
+                awaitingApproval: activeTurnAwaitsAnswer.value
+              },
+              ...background
+            ]
+      const sending = pendingSendTurnTabs(new Set(live.map(({ path }) => path)))
+      return sending.length === 0 ? live : [...live, ...sending]
     })
+    const knownChats = new Map<string, KnownChatState>()
+
+    function threadHasLiveTurn(id: string): boolean {
+      if (activeSlot.value?.threadId === id) return true
+      for (const entry of backgroundTurns.values()) {
+        if (entry.threadId === id && !entry.settled) return true
+      }
+      return false
+    }
+
+    function evictKnownChatEntries(
+      protectedId: string,
+      includeLive: boolean,
+      evicted: KnownTurnSnapshot[]
+    ): void {
+      for (const [oldest, oldestState] of knownChats) {
+        if (knownChats.size <= KEPT_KNOWN_CHATS) break
+        if (oldest === protectedId) continue
+        if (!includeLive && threadHasLiveTurn(oldest)) continue
+        knownChats.delete(oldest)
+        evicted.push(...oldestState.localTurns)
+      }
+    }
+
+    function touchKnownChatEntry(id: string, state: KnownChatState): void {
+      knownChats.delete(id)
+      knownChats.set(id, state)
+      const evicted: KnownTurnSnapshot[] = []
+      evictKnownChatEntries(id, false, evicted)
+      evictKnownChatEntries(id, true, evicted)
+      if (evicted.length > 0) revokeDetachedPreviews(evicted)
+    }
+
+    function liveOrInitialTurnMessage(turnId: TurnId): AssistantMessage {
+      if (activeSlot.value?.turnId === turnId) return activeSlot.value.message
+      return (
+        backgroundTurns.get(turnId)?.message ?? createAssistantMessage(turnId)
+      )
+    }
+
+    function upsertLocalTurn(
+      known: KnownChatState,
+      turn: KnownTurnSnapshot
+    ): KnownTurnSnapshot | undefined {
+      const index = known.localTurns.findIndex(
+        (existing) => existing.turnId === turn.turnId
+      )
+      if (index === -1) {
+        known.localTurns.push(turn)
+        return undefined
+      }
+      const replaced = known.localTurns[index]
+      known.localTurns[index] = turn
+      return replaced
+    }
+
+    function recordAcceptedTurn(input: {
+      threadId: string
+      turnId: TurnId
+      clientMessageId?: string
+      createdHere: boolean
+      workflowId?: string
+      text: string
+      attachments?: UserAttachment[]
+      tags?: string[]
+      workflowReferences?: WorkflowReference[]
+    }): void {
+      let known = knownChats.get(input.threadId)
+      if (!known && !input.createdHere) return
+      known ??= {
+        createdHere: true,
+        fetchedFromServer: false,
+        version: 0,
+        baseHistory: [],
+        latestWorkflowId: input.workflowId,
+        localTurns: []
+      }
+      known.version += 1
+      if (input.workflowId !== undefined)
+        known.latestWorkflowId = input.workflowId
+      const prompt = parseSkillReferenceText(
+        input.text,
+        input.workflowReferences
+      )
+      const replaced = upsertLocalTurn(known, {
+        turnId: input.turnId,
+        clientMessageId: input.clientMessageId,
+        userText: prompt.text,
+        attachments: input.attachments,
+        tags: input.tags,
+        workflowReferences: input.workflowReferences?.length
+          ? prompt.workflowReferences
+          : undefined,
+        skillReference: prompt.skillReference,
+        message: snapshotMessage(liveOrInitialTurnMessage(input.turnId))
+      })
+      touchKnownChatEntry(input.threadId, known)
+      if (replaced) revokeDetachedPreviews([replaced])
+    }
+
+    function syncKnownTurnMessage(
+      turnThreadId: string | null,
+      turnId: TurnId,
+      message: AssistantMessage
+    ): void {
+      if (!turnThreadId) return
+      const local = knownChats
+        .get(turnThreadId)
+        ?.localTurns.find((turn) => turn.turnId === turnId)
+      if (local) local.message = snapshotMessage(message)
+    }
+
+    function bumpKnownChatVersion(id: string): void {
+      const known = knownChats.get(id)
+      if (known) known.version += 1
+    }
+
+    function knownChatVersion(id: string): number {
+      return knownChats.get(id)?.version ?? 0
+    }
+
+    function isKnownChat(id: string): boolean {
+      return knownChats.has(id)
+    }
+
+    function hasKnownLocalTurn(id: string, turnId: TurnId): boolean {
+      return (
+        knownChats.get(id)?.localTurns.some((turn) => turn.turnId === turnId) ??
+        false
+      )
+    }
+
+    function isKnownChatSettledFromServer(id: string): boolean {
+      const known = knownChats.get(id)
+      return (
+        known !== undefined &&
+        known.fetchedFromServer &&
+        known.localTurns.length === 0
+      )
+    }
+
+    function normalizedMessageCopy(
+      message: AssistantMessage,
+      turnId: TurnId,
+      settle: boolean
+    ): AssistantMessage {
+      const copy = settle ? settledCopyOf(message) : snapshotMessage(message)
+      copy.id = turnId
+      return copy
+    }
+
+    function liveTurnsAsLocalSnapshots(id: string): KnownTurnSnapshot[] {
+      const snapshots: KnownTurnSnapshot[] = []
+      const seen = new Set<TurnId>()
+      const slot = activeSlot.value
+      if (slot?.threadId === id && slot.origin !== 'snapshot') {
+        seen.add(slot.turnId)
+        const displayId = slot.message.id
+        snapshots.push({
+          turnId: slot.turnId,
+          userText:
+            userTexts.value.get(displayId) ?? userTexts.value.get(slot.turnId),
+          attachments:
+            userAttachments.value.get(displayId) ??
+            userAttachments.value.get(slot.turnId),
+          tags:
+            userTags.value.get(displayId) ?? userTags.value.get(slot.turnId),
+          workflowReferences:
+            userWorkflowReferences.value.get(displayId) ??
+            userWorkflowReferences.value.get(slot.turnId),
+          skillReference:
+            userSkillReferences.value.get(displayId) ??
+            userSkillReferences.value.get(slot.turnId),
+          message: normalizedMessageCopy(slot.message, slot.turnId, false)
+        })
+      }
+      for (const entry of backgroundTurns.values()) {
+        if (entry.threadId !== id || seen.has(entry.messageId)) continue
+        seen.add(entry.messageId)
+        snapshots.push({
+          turnId: entry.messageId,
+          userText: entry.userText,
+          attachments: entry.attachments,
+          tags: entry.tags,
+          workflowReferences: entry.workflowReferences,
+          skillReference: entry.skillReference,
+          message: normalizedMessageCopy(entry.message, entry.messageId, false)
+        })
+      }
+      return snapshots
+    }
+
+    function expandSendKnownTurnIds(
+      send: PendingSend,
+      serverTurnToLocal: ReadonlyMap<string, TurnId>
+    ): void {
+      const known = send.knownTurnIdsAtSend
+      if (known === undefined) return
+      let expanded: Set<string> | undefined
+      for (const [serverTurnId, localTurnId] of serverTurnToLocal) {
+        if (known.has(localTurnId) && !known.has(serverTurnId)) {
+          expanded ??= new Set(known)
+          expanded.add(serverTurnId)
+        }
+      }
+      if (expanded !== undefined) send.knownTurnIdsAtSend = expanded
+    }
+
+    function aliasKnownPendingSendTurns(
+      id: string,
+      serverTurnToLocal: ReadonlyMap<string, TurnId>
+    ): void {
+      if (serverTurnToLocal.size === 0) return
+      for (const send of pendingSends.values()) {
+        if (send.origin.kind === 'thread' && send.origin.threadId === id)
+          expandSendKnownTurnIds(send, serverTurnToLocal)
+      }
+    }
+
+    function nextHydratedKnownEntry(
+      existing: KnownChatState | undefined,
+      candidateLocalTurns: readonly KnownTurnSnapshot[],
+      history: AgentMessages,
+      settledServerTurns: ReadonlySet<TurnId>,
+      workflowId?: string
+    ): { entry: KnownChatState; dropped: KnownTurnSnapshot[] } {
+      const resolvedWorkflow = workflowId ?? latestWorkflowIdOf(history)
+      const nextLocal = pruneSettledLocalTurns(
+        candidateLocalTurns,
+        settledServerTurns
+      )
+      if (!existing) {
+        return {
+          entry: {
+            createdHere: false,
+            fetchedFromServer: true,
+            version: 1,
+            baseHistory: history,
+            latestWorkflowId: resolvedWorkflow,
+            localTurns: nextLocal
+          },
+          dropped: []
+        }
+      }
+      return {
+        entry: {
+          createdHere: existing.createdHere,
+          fetchedFromServer: true,
+          version: existing.version + 1,
+          baseHistory: history,
+          latestWorkflowId: resolvedWorkflow ?? existing.latestWorkflowId,
+          localTurns: nextLocal
+        },
+        dropped: existing.localTurns.filter((turn) => !nextLocal.includes(turn))
+      }
+    }
+
+    function recordHydratedChat(
+      id: string,
+      history: AgentMessages,
+      workflowId?: string
+    ): void {
+      const existing = knownChats.get(id)
+      const candidateLocalTurns = existing
+        ? existing.localTurns
+        : liveTurnsAsLocalSnapshots(id)
+      const alignment = alignKnownChatHistory(
+        history,
+        existing ? existing.baseHistory : [],
+        candidateLocalTurns
+      )
+      if (alignment.status !== 'aligned') {
+        invalidateKnownChat(id)
+        return
+      }
+      aliasKnownPendingSendTurns(id, alignment.serverTurnToLocal)
+      const { entry, dropped } = nextHydratedKnownEntry(
+        existing,
+        candidateLocalTurns,
+        history,
+        alignment.settledServerTurns,
+        workflowId
+      )
+      touchKnownChatEntry(id, entry)
+      if (dropped.length > 0) revokeDetachedPreviews(dropped)
+    }
+
+    function recallKnownChat(id: string) {
+      const known = knownChats.get(id)
+      if (!known) return undefined
+      touchKnownChatEntry(id, known)
+      return {
+        version: known.version,
+        createdHere: known.createdHere,
+        hasLocalTurns: known.localTurns.length > 0,
+        hasBaseHistory: known.fetchedFromServer,
+        latestWorkflowId: known.latestWorkflowId
+      }
+    }
+
+    function invalidateKnownChat(id: string): void {
+      const removed = knownChats.get(id)
+      if (!removed) return
+      knownChats.delete(id)
+      if (removed.localTurns.length > 0)
+        revokeDetachedPreviews(removed.localTurns)
+    }
+
+    function invalidateAllKnownChats(): void {
+      const dropped = [...knownChats.values()].flatMap(
+        (known) => known.localTurns
+      )
+      knownChats.clear()
+      if (dropped.length > 0) revokeDetachedPreviews(dropped)
+    }
+
+    function setIfMissing<K, V>(
+      map: Map<K, V>,
+      key: K,
+      value: V | undefined
+    ): void {
+      if (value !== undefined && !map.has(key)) map.set(key, value)
+    }
+
+    function retireSettledBackgroundTurn(id: string, turnId: TurnId): void {
+      const bg = backgroundTurns.get(turnId)
+      if (!bg || bg.threadId !== id) return
+      backgroundTurns.delete(bg.messageId)
+      bg.transport.settle()
+      retireBackgroundTurn(bg)
+      if (!threadHasLiveTurn(id)) clearSettledAskState(id)
+    }
+
+    interface SettledServerLiveTurn {
+      turn: LiveTurn
+      persistedParts: AssistantMessage['parts'] | undefined
+      ending: 'completed' | 'failed'
+    }
+
+    function serverEndingOf(
+      aligned: AgentMessages,
+      turnId: TurnId
+    ): 'completed' | 'failed' {
+      const last = aligned
+        .filter((row) => row.role === 'assistant' && row.turn_id === turnId)
+        .sort((a, b) => a.seq - b.seq)
+        .at(-1)
+      return last?.status === 'complete' ? 'completed' : 'failed'
+    }
+
+    function setListIfMissing<T>(
+      map: Map<TurnId, T[]>,
+      key: TurnId,
+      items: T[] | undefined
+    ): void {
+      if (items && items.length > 0 && !map.has(key)) map.set(key, items)
+    }
+
+    function restoreLocalTurnSkill(localTurn: KnownTurnSnapshot): void {
+      const skill = localTurn.skillReference
+      if (!skill || userSkillReferences.value.has(localTurn.turnId)) return
+      userSkillReferences.value.set(localTurn.turnId, skill)
+      if (!historySkillNames.value.includes(skill.name))
+        historySkillNames.value = [...historySkillNames.value, skill.name]
+    }
+
+    function restoreLocalTurnUserMetadata(localTurn: KnownTurnSnapshot): void {
+      setIfMissing(userTexts.value, localTurn.turnId, localTurn.userText)
+      setListIfMissing(
+        userAttachments.value,
+        localTurn.turnId,
+        localTurn.attachments
+      )
+      if (localTurn.tags && localTurn.tags.length > 0)
+        userTags.value.set(localTurn.turnId, localTurn.tags)
+      setListIfMissing(
+        userWorkflowReferences.value,
+        localTurn.turnId,
+        localTurn.workflowReferences
+      )
+      restoreLocalTurnSkill(localTurn)
+    }
+
+    function collectSettledOverlayTurn(
+      id: string,
+      localTurn: KnownTurnSnapshot,
+      bg: BackgroundTurn | undefined,
+      srvIdx: number,
+      updatedMessages: AssistantMessage[],
+      aligned: AgentMessages,
+      settledLiveTurns: SettledServerLiveTurn[]
+    ): void {
+      if (bg && !bg.settled) {
+        settledLiveTurns.push({
+          turn: { threadId: id, messageId: localTurn.turnId },
+          persistedParts:
+            srvIdx !== -1 ? updatedMessages[srvIdx].parts : undefined,
+          ending: serverEndingOf(aligned, localTurn.turnId)
+        })
+      } else if (bg) {
+        retireSettledBackgroundTurn(id, bg.messageId)
+      }
+    }
+
+    function takeOverlayMessage(
+      localTurn: KnownTurnSnapshot,
+      bg: BackgroundTurn | undefined
+    ): { message: AssistantMessage; resume?: BackgroundTurn } {
+      if (bg && !bg.settled) {
+        bg.message.id = localTurn.turnId
+        return { message: bg.message, resume: bg }
+      }
+      if (bg?.settled) {
+        backgroundTurns.delete(bg.messageId)
+        retireBackgroundTurn(bg)
+        return {
+          message: normalizedMessageCopy(bg.message, localTurn.turnId, true)
+        }
+      }
+      return {
+        message: normalizedMessageCopy(
+          localTurn.message,
+          localTurn.turnId,
+          true
+        )
+      }
+    }
+
+    function applyOverlayTurn(
+      id: string,
+      localTurn: KnownTurnSnapshot,
+      updatedMessages: AssistantMessage[],
+      aligned: AgentMessages,
+      settledServerTurns: ReadonlySet<TurnId>,
+      settledLiveTurns: SettledServerLiveTurn[],
+      nextLocal: KnownTurnSnapshot[]
+    ): { entry: BackgroundTurn; index: number } | undefined {
+      const srvIdx = updatedMessages.findIndex(
+        (msg) => msg.id === localTurn.turnId
+      )
+      const bgRaw = backgroundTurns.get(localTurn.turnId)
+      const bg = bgRaw?.threadId === id ? bgRaw : undefined
+
+      if (settledServerTurns.has(localTurn.turnId)) {
+        collectSettledOverlayTurn(
+          id,
+          localTurn,
+          bg,
+          srvIdx,
+          updatedMessages,
+          aligned,
+          settledLiveTurns
+        )
+        return undefined
+      }
+
+      const display = takeOverlayMessage(localTurn, bg)
+      const screenMessage = display.resume
+        ? snapshotMessage(display.message)
+        : display.message
+      const idx =
+        srvIdx !== -1
+          ? ((updatedMessages[srvIdx] = screenMessage), srvIdx)
+          : updatedMessages.push(screenMessage) - 1
+      restoreLocalTurnUserMetadata(localTurn)
+      nextLocal.push({
+        ...localTurn,
+        message: snapshotMessage(display.message)
+      })
+      return display.resume ? { entry: display.resume, index: idx } : undefined
+    }
+
+    function overlayLocalTurnsOnScreen(
+      id: string,
+      known: KnownChatState,
+      aligned: AgentMessages,
+      settledServerTurns: ReadonlySet<TurnId>
+    ): {
+      nextLocal: KnownTurnSnapshot[]
+      settledLiveTurns: SettledServerLiveTurn[]
+    } {
+      const nextLocal: KnownTurnSnapshot[] = []
+      const settledLiveTurns: SettledServerLiveTurn[] = []
+      let resumed: { entry: BackgroundTurn; index: number } | undefined
+      const updatedMessages = [...messages.value]
+
+      for (const localTurn of known.localTurns) {
+        const candidate = applyOverlayTurn(
+          id,
+          localTurn,
+          updatedMessages,
+          aligned,
+          settledServerTurns,
+          settledLiveTurns,
+          nextLocal
+        )
+        if (candidate) resumed = candidate
+      }
+
+      messages.value = updatedMessages
+      if (resumed) {
+        backgroundTurns.delete(resumed.entry.messageId)
+        claimSlotForBackgroundTurn(resumed.entry, resumed.index, id)
+      } else if (activeSlot.value === null && threadHasLiveTurn(id))
+        resumeBackgroundTurn()
+      return { nextLocal, settledLiveTurns }
+    }
+
+    function collectOffScreenSettledTurns(
+      id: string,
+      aligned: AgentMessages,
+      settledServerTurns: ReadonlySet<TurnId>
+    ): SettledServerLiveTurn[] {
+      const settledLiveTurns: SettledServerLiveTurn[] = []
+      for (const bg of backgroundTurns.values()) {
+        if (bg.threadId !== id || !settledServerTurns.has(bg.messageId))
+          continue
+        if (!bg.settled) {
+          const parsed = normalizeAgentTranscript(
+            aligned.filter((row) => row.turn_id === bg.messageId)
+          )
+          settledLiveTurns.push({
+            turn: { threadId: id, messageId: bg.messageId },
+            persistedParts: parsed.messages[0]?.parts,
+            ending: serverEndingOf(aligned, bg.messageId)
+          })
+        } else {
+          retireSettledBackgroundTurn(id, bg.messageId)
+        }
+      }
+      return settledLiveTurns
+    }
+
+    function skipSnapshotTurnsOf(
+      id: string,
+      localTurns: readonly KnownTurnSnapshot[]
+    ): Set<TurnId> {
+      const skip = new Set<TurnId>()
+      for (const turn of localTurns) {
+        const bg = backgroundTurns.get(turn.turnId)
+        if (!(bg?.threadId === id && !bg.settled)) skip.add(turn.turnId)
+      }
+      return skip
+    }
+
+    function applyKnownChatOnScreen(
+      id: string,
+      known: KnownChatState,
+      aligned: AgentMessages,
+      serverHistory: AgentMessages,
+      settledServerTurns: ReadonlySet<TurnId>,
+      serverTurnToLocal: ReadonlyMap<string, TurnId>,
+      skipIfUnchanged: boolean
+    ): {
+      nextLocal: KnownTurnSnapshot[]
+      settledLiveTurns: SettledServerLiveTurn[]
+      unchanged?: true
+    } {
+      if (
+        skipIfUnchanged &&
+        known.localTurns.length === 0 &&
+        isEqual(known.baseHistory, serverHistory)
+      ) {
+        latestWorkflowId.value ??= known.latestWorkflowId
+        return {
+          nextLocal: known.localTurns,
+          settledLiveTurns: [],
+          unchanged: true
+        }
+      }
+
+      if (activeSlot.value?.threadId === id) stashActiveTurn()
+      hydrate(aligned, {
+        skipSnapshotTurns: skipSnapshotTurnsOf(id, known.localTurns)
+      })
+      recordDisplayedTurnAliases(serverTurnToLocal)
+      latestWorkflowId.value ??= known.latestWorkflowId
+      known.latestWorkflowId = latestWorkflowId.value ?? known.latestWorkflowId
+      return overlayLocalTurnsOnScreen(id, known, aligned, settledServerTurns)
+    }
+
+    function applyKnownChatState(
+      id: string,
+      serverHistory: AgentMessages,
+      onScreen: boolean,
+      skipIfUnchanged = false
+    ):
+      | { status: 'applied'; settledLiveTurns: SettledServerLiveTurn[] }
+      | { status: 'ambiguous' | 'unowned-streaming' | 'missing' } {
+      const known = knownChats.get(id)
+      if (!known) return { status: 'missing' }
+      const alignment = alignKnownChatHistory(
+        serverHistory,
+        known.baseHistory,
+        known.localTurns
+      )
+      if (alignment.status !== 'aligned') {
+        invalidateKnownChat(id)
+        return { status: alignment.status }
+      }
+
+      const {
+        history: aligned,
+        settledServerTurns,
+        serverTurnToLocal
+      } = alignment
+      aliasKnownPendingSendTurns(id, serverTurnToLocal)
+      const dropped = known.localTurns.filter((turn) =>
+        settledServerTurns.has(turn.turnId)
+      )
+
+      let nextLocal: KnownTurnSnapshot[]
+      let settledLiveTurns: SettledServerLiveTurn[]
+      if (!onScreen || threadId.value !== id) {
+        settledLiveTurns = collectOffScreenSettledTurns(
+          id,
+          aligned,
+          settledServerTurns
+        )
+        nextLocal = pruneSettledLocalTurns(known.localTurns, settledServerTurns)
+        known.latestWorkflowId =
+          latestWorkflowIdOf(serverHistory) ?? known.latestWorkflowId
+      } else {
+        const applied = applyKnownChatOnScreen(
+          id,
+          known,
+          aligned,
+          serverHistory,
+          settledServerTurns,
+          serverTurnToLocal,
+          skipIfUnchanged
+        )
+        if (applied.unchanged)
+          return { status: 'applied', settledLiveTurns: [] }
+        nextLocal = applied.nextLocal
+        settledLiveTurns = applied.settledLiveTurns
+      }
+
+      known.baseHistory = serverHistory
+      known.fetchedFromServer ||= skipIfUnchanged
+      known.localTurns = nextLocal
+      if (dropped.length > 0) revokeDetachedPreviews(dropped)
+      return { status: 'applied', settledLiveTurns }
+    }
+
+    function hydrateKnownChat(id: string): boolean {
+      const known = knownChats.get(id)
+      if (!known) return false
+      return (
+        applyKnownChatState(id, known.baseHistory, true, false).status ===
+        'applied'
+      )
+    }
+
+    function reconcileKnownChat(
+      id: string,
+      fresh: AgentMessages,
+      onScreen: boolean
+    ) {
+      return applyKnownChatState(id, fresh, onScreen, true)
+    }
+
     const status = computed<ConversationStatus>(() => {
       const message = activeMessage.value
       if (!message?.streaming) return 'idle'
@@ -2668,6 +3477,7 @@ export const useAgentConversationStore = defineStore(
       latestWorkflowId,
       recordApprovalShown,
       approvalShownAt,
+      approvalTurnId,
       forgetApprovalTiming,
       forgetApproval,
       recordUser,
@@ -2688,6 +3498,7 @@ export const useAgentConversationStore = defineStore(
       commitAsk,
       retireAsk,
       isAskRetired,
+      isAskPermanentlyRetired,
       confirmAskPending,
       reconcileApprovalParts,
       startTurn,
@@ -2700,6 +3511,7 @@ export const useAgentConversationStore = defineStore(
       settleBackgroundTurn,
       dropBackgroundTurns,
       liveTurns,
+      liveTurnMessageId,
       turnUsesSkill,
       historySkillNames,
       settleTurn,
@@ -2709,7 +3521,20 @@ export const useAgentConversationStore = defineStore(
       isAskShown,
       hasApprovalShown,
       reset,
-      hydrate
+      hydrate,
+      recordAcceptedTurn,
+      bumpKnownChatVersion,
+      knownChatVersion,
+      isKnownChat,
+      hasKnownLocalTurn,
+      isKnownChatSettledFromServer,
+      recordHydratedChat,
+      recallKnownChat,
+      invalidateKnownChat,
+      invalidateAllKnownChats,
+      hydrateKnownChat,
+      reconcileKnownChat,
+      retireSettledBackgroundTurn
     }
   }
 )

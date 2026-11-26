@@ -1,5 +1,5 @@
 import { useTelemetry } from '@comfyorg/telemetry'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { FollowedBuild } from '@/platform/workspace/platformFrame/platformFrameBuild'
@@ -8,7 +8,8 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import {
   trackDeploymentCreateClicked,
   trackDeploymentDialogOpened,
-  trackDeploymentLinkClicked
+  trackDeploymentLinkClicked,
+  trackDeploymentLinkOpened
 } from './customDeploymentTelemetry'
 
 vi.mock(import('@comfyorg/telemetry'))
@@ -109,6 +110,39 @@ describe('custom deployment funnel events', () => {
       ])
     }
   )
+
+  it('sends a link click once its default action went ahead', async () => {
+    vi.useFakeTimers()
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
+    const click = new MouseEvent('click', { cancelable: true })
+
+    trackDeploymentLinkOpened(click, 'manage_deployments')
+    expect(sent()).toEqual([])
+    await vi.runAllTimersAsync()
+
+    expect(sent()).toEqual([
+      {
+        name: 'platform:deployment_link_clicked',
+        properties: { kind: 'manage_deployments', workspace_id: 'ws-1' }
+      }
+    ])
+  })
+
+  it('sends nothing for a link click whose default action was cancelled', async () => {
+    vi.useFakeTimers()
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
+    const click = new MouseEvent('click', { cancelable: true })
+
+    trackDeploymentLinkOpened(click, 'manage_deployments')
+    click.preventDefault()
+    await vi.runAllTimersAsync()
+
+    expect(sent()).toEqual([])
+  })
 
   it('sends nothing with the flag off', () => {
     flagOn(false)

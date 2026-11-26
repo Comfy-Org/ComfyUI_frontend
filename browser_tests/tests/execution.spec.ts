@@ -158,6 +158,7 @@ test.describe('Execution validation errors', { tag: '@workflow' }, () => {
     let promptRequestBody: unknown
 
     const jobId = await exec.run({
+      start: false,
       nodeErrors,
       onPromptRequest: (requestBody) => {
         promptRequestBody = requestBody
@@ -190,7 +191,6 @@ test.describe('Execution validation errors', { tag: '@workflow' }, () => {
     const ws = await getWebSocket()
     const exec = new ExecutionHelper(comfyPage, ws)
     const jobId = await exec.run()
-    exec.executionStart(jobId)
     exec.outputsSkipped(jobId, {
       [VALIDATION_ERROR_NODE_ID]: buildPreviewAnyValidationError()
     })
@@ -302,7 +302,6 @@ test.describe('Execution validation errors', { tag: '@workflow' }, () => {
       const ws = await getWebSocket()
       const exec = new ExecutionHelper(comfyPage, ws)
       const jobId = await exec.run()
-      exec.executionStart(jobId)
       exec.validationError(jobId, VALIDATION_ERROR_NODE_ID, {
         [VALIDATION_ERROR_NODE_ID]: {
           class_type: 'PreviewAny',

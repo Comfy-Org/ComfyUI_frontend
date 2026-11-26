@@ -186,6 +186,11 @@
     "fullPage": {
       "logo": "Comfy",
       "payForCredits": "Pay",
+      "hostedMethods": {
+        "or": "or",
+        "pay": "Pay with WeChat Pay or Alipay",
+        "note": "You'll finish paying on Stripe's checkout page."
+      },
       "confirmUpgrade": "Confirm upgrade",
       "confirmChange": "Confirm change",
       "planName": "{tier} Plan",

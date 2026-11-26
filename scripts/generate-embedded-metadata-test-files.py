@@ -16,6 +16,7 @@ import json
 import os
 import struct
 import subprocess
+import tempfile
 import zlib
 
 import av
@@ -280,6 +281,35 @@ def generate_nan_variants():
     report('with_nan_metadata.json')
 
 
+def generate_vhs_legacy_comment():
+    """VideoHelperSuite Video Combine before Jan 2026 wrote ALL metadata as one
+    JSON blob in the `comment` tag (MP4 ilst ©cmt, Matroska COMMENT),
+    with `prompt` itself double-encoded as a JSON string."""
+    blob = json.dumps({'prompt': PROMPT_JSON, 'workflow': WORKFLOW})
+    for char, escaped in (
+        ('\\', '\\\\'), (';', '\\;'), ('#', '\\#'), ('=', '\\='), ('\n', '\\\n'),
+    ):
+        blob = blob.replace(char, escaped)
+    with tempfile.NamedTemporaryFile('w', suffix='.txt', delete=False) as f:
+        f.write(';FFMETADATA1\ncomment=' + blob)
+        metadata_path = f.name
+    try:
+        for name, codec in (
+            ('with_vhs_legacy_comment.mp4', 'aac'),
+            ('with_vhs_legacy_comment.webm', 'libvorbis'),
+        ):
+            subprocess.run([
+                'ffmpeg', '-y', '-loglevel', 'error',
+                '-i', metadata_path,
+                '-f', 'lavfi', '-i', 'anullsrc=r=44100:cl=mono',
+                '-map', '1:a', '-t', '0.01', '-c:a', codec,
+                out(name),
+            ], check=True)
+            report(name)
+    finally:
+        os.unlink(metadata_path)
+
+
 if __name__ == '__main__':
     print('Generating fixtures...')
     generate_png()
@@ -292,4 +322,5 @@ if __name__ == '__main__':
     generate_mp4()
     generate_webm()
     generate_nan_variants()
+    generate_vhs_legacy_comment()
     print('Done.')
