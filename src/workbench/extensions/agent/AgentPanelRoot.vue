@@ -944,9 +944,15 @@ const {
   }
 })
 
-// A mention pick of a node that is also selected on canvas would otherwise
-// count as a + menu reference too.
-let taggingFromMention = false
+let suppressPickTelemetry = false
+function withoutPickTelemetry(stage: () => void): void {
+  suppressPickTelemetry = true
+  try {
+    stage()
+  } finally {
+    suppressPickTelemetry = false
+  }
+}
 watch(
   selectionTags,
   (tags, previousTags) => {
@@ -967,7 +973,7 @@ watch(
           pickedCount++
         }
       }
-      if (pickedCount && !taggingFromMention)
+      if (pickedCount && !suppressPickTelemetry)
         useTelemetry()?.trackAgentNodeTagged({
           source: 'plus_menu',
           node_count: pickedCount
@@ -2736,7 +2742,7 @@ const { submit: submitDraft, withdrawSubmission } = useAgentDraftSubmission({
     staged: selectionTags,
     workflow: () => nodeReferenceWorkflow,
     consume: consumeSelection,
-    replace: replaceSelectionTags,
+    replace: (nodes) => withoutPickTelemetry(() => replaceSelectionTags(nodes)),
     exit: canvasStore.stopNodePicking
   },
   send: (
@@ -3430,12 +3436,7 @@ function onOpenAssets(): void {
 function onMentionPick(node: SelectedNode): void {
   if (!canReferenceNodes.value) return
   const stagedBefore = selectionTags.value.length
-  taggingFromMention = true
-  try {
-    addSelectionTag(node)
-  } finally {
-    taggingFromMention = false
-  }
+  withoutPickTelemetry(() => addSelectionTag(node))
   if (selectionTags.value.length > stagedBefore)
     useTelemetry()?.trackAgentNodeTagged({
       source: 'mention_picker',
