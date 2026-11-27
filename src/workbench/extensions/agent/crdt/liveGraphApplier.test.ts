@@ -1185,7 +1185,6 @@ describe('LiveGraphApplier', () => {
         return null
       }
     }
-    LiteGraph.registerNodeType(type, ForeignSubgraphNode)
     const docNode = (pos: [number, number]) => ({
       id: 1,
       type,
@@ -1200,7 +1199,7 @@ describe('LiveGraphApplier', () => {
     applyCollected()
     const placeholder = graph.getNodeById(toNodeId(1))
     expect(placeholder?.has_errors).toBe(true)
-    expect(refusals).toEqual([graph])
+    LiteGraph.registerNodeType(type, ForeignSubgraphNode)
 
     applyEdit(() => {
       nodesMap(doc).set(
@@ -1210,6 +1209,7 @@ describe('LiveGraphApplier', () => {
     })
 
     expect(graph.getNodeById(toNodeId(1))).toBe(placeholder)
+    expect(refusals).toEqual([graph])
   })
 
   it('uses document layout when a placeholder changes to another type', () => {
