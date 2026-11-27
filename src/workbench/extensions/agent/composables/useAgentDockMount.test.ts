@@ -773,6 +773,7 @@ describe('useAgentDockMount', () => {
           await vi.advanceTimersByTimeAsync(15_000)
 
           expect(fetchStatusFresh).toHaveBeenCalledTimes(2)
+          expect(fetchStatusFresh).toHaveBeenNthCalledWith(2, { fresh: true })
         } finally {
           vi.useRealTimers()
         }

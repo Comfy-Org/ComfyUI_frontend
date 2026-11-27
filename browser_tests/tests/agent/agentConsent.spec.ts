@@ -164,6 +164,42 @@ test.describe('Manual agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
     })
   })
 
+  test('starts an independent billing read after an acceptance read times out', async ({
+    comfyPage,
+    agentBilling
+  }) => {
+    const page = comfyPage.page
+    const dialog = page.getByRole('dialog', {
+      name: enMessages.agent.consent.title
+    })
+    const panel = page.locator('#agent-panel-root')
+
+    await agentBilling.waitForInitialStatusResponse()
+    const billingRequestsBeforeAccept = agentBilling.statusRequestCount
+    const heldRefresh = agentBilling.holdNextFundedRefresh()
+
+    try {
+      await requestConsentFromOpenPanel(page)
+      await page.clock.install()
+      await dialog
+        .getByRole('button', { name: enMessages.agent.consent.accept })
+        .click()
+      await heldRefresh.entered
+      expect(agentBilling.statusRequestCount).toBe(
+        billingRequestsBeforeAccept + 1
+      )
+
+      await page.clock.fastForward(15_000)
+
+      await expect
+        .poll(() => agentBilling.statusRequestCount)
+        .toBe(billingRequestsBeforeAccept + 2)
+      await expect(panel).toBeVisible()
+    } finally {
+      heldRefresh.release()
+    }
+  })
+
   test.describe('with a restored open intent', () => {
     test.use({ agentPanelInitiallyOpen: true })
 

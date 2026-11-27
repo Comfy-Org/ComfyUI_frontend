@@ -148,15 +148,17 @@ export function useAgentDockMount(): AgentDockMount {
   function refreshOnOpen(
     identity: string,
     epoch: number,
+    readStatus?: () => Promise<boolean>,
     afterCurrent = true
   ): void {
-    if (fetchStatusFresh === undefined) return
+    const statusReader = readStatus ?? fetchStatusFresh
+    if (statusReader === undefined) return
     if (!agentPanelStore.isOpen || agentPanelStore.panelOpenEpoch !== epoch)
       return
     void agentPanelStore
       .refreshBillingStatus(
         `${type.value}:${identity}:reopen:${epoch}`,
-        fetchStatusFresh,
+        statusReader,
         afterCurrent,
         reportBillingRefreshError
       )
@@ -181,9 +183,10 @@ export function useAgentDockMount(): AgentDockMount {
       if (accepted) {
         void accepted.then(
           (adopted) => {
-            if (!adopted) refreshOnOpen(identity, epoch, false)
+            if (!adopted)
+              refreshOnOpen(identity, epoch, readBillingFresh, false)
           },
-          () => refreshOnOpen(identity, epoch, false)
+          () => refreshOnOpen(identity, epoch, readBillingFresh, false)
         )
         return
       }
