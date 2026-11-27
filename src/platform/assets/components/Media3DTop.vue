@@ -4,6 +4,7 @@
       v-if="thumbnailSrc"
       :src="thumbnailSrc"
       :alt="asset?.name"
+      data-testid="media-3d-thumbnail"
       class="size-full object-contain transition-transform duration-300 group-hover:scale-105 group-data-[selected=true]:scale-105"
       :draggable="false"
     />
