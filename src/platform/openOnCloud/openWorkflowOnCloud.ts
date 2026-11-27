@@ -1,11 +1,14 @@
+import { isWorkspaceId } from '@comfyorg/account-core/workspaceLink'
 import { downloadBlob } from '@/base/common/downloadUtil'
 import { useToast } from '@/components/ui/toast/toastStore'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
 import { handsPopupsToSystemBrowser } from '@/platform/distribution/desktopBrowser'
+import { bindLocalOpenOnCloudGrant } from '@/platform/openOnCloud/localOpenOnCloudRollout'
 import {
   cloudEditorUrl,
-  cloudOrigin,
   localHandoffWorkflow,
+  trustedCloudHandoffOrigin,
   zLocalHandoffReady
 } from '@/platform/openOnCloud/localHandoffProtocol'
 import { serializeRootGraph } from '@/platform/openOnCloud/serializeRootGraph'
@@ -77,17 +80,18 @@ function downloadWorkflow(filename: string, workflow: ComfyWorkflowJSON) {
 function armHandoff(
   tab: CloudTab,
   nonce: string,
+  origin: string,
   filename: string,
-  prepared: Promise<ComfyWorkflowJSON | null>
+  prepared: Promise<ComfyWorkflowJSON | null>,
+  revalidate: () => Promise<boolean>
 ): void {
-  const origin = cloudOrigin()
   function onMessage(event: MessageEvent) {
     if (!tab.isSourceOf(event) || event.origin !== origin) return
     const ready = zLocalHandoffReady.safeParse(event.data)
     if (!ready.success || ready.data.nonce !== nonce) return
     stop()
-    void prepared.then((workflow) => {
-      if (workflow)
+    void prepared.then(async (workflow) => {
+      if (workflow && (await revalidate()) && !tab.closed)
         tab.postMessage(localHandoffWorkflow(nonce, filename, workflow), origin)
     })
   }
@@ -108,15 +112,25 @@ function armHandoff(
 
 async function openFromDesktop(
   tabs: CloudTabOpener,
-  filename: string
+  filename: string,
+  isAuthorized: () => boolean,
+  revalidate: () => Promise<boolean>,
+  workspaceId?: string
 ): Promise<void> {
   const workflow = await prepareWorkflow()
+  if (!isAuthorized()) return
   if (!workflow) return showPrepareFailed()
-  const relay = await stageDesktopWorkflowHandoff(filename, workflow).catch(
-    () => undefined
-  )
+  let checked: Promise<boolean> | undefined
+  const authorize = () => (checked ??= revalidate())
+  const relay = await stageDesktopWorkflowHandoff(
+    filename,
+    workflow,
+    authorize,
+    workspaceId
+  ).catch(() => undefined)
+  if (!(await authorize()) || !isAuthorized()) return
   if (relay) return tabs.openDisowned(relay)
-  tabs.openDisowned(cloudEditorUrl())
+  tabs.openDisowned(cloudEditorUrl(undefined, workspaceId))
   downloadWorkflow(filename, workflow)
   useToast().info(t('openOnCloud.downloaded'), {
     description: t('openOnCloud.downloadedDetail'),
@@ -125,18 +139,48 @@ async function openFromDesktop(
 }
 
 export async function openWorkflowOnCloud(
-  tabs: CloudTabOpener = browserTabs
+  tabs: CloudTabOpener = browserTabs,
+  workspaceId?: string
 ): Promise<void> {
+  if (workspaceId !== undefined && !isWorkspaceId(workspaceId))
+    return showPrepareFailed()
+  const { flags } = useFeatureFlags()
+  const origin = trustedCloudHandoffOrigin()
+  if (!origin) return
+  const grant = bindLocalOpenOnCloudGrant()
+  const isAuthorized = () =>
+    flags.openOnCloudEnabled &&
+    grant.isCurrent() &&
+    trustedCloudHandoffOrigin() === origin
+  const revalidate = async () => {
+    if (!isAuthorized()) return false
+    const verified = await grant.revalidate()
+    if (!verified && grant.isCurrent()) {
+      useToast().error(t('openOnCloud.verifyAccessFailed'), {
+        description: t('openOnCloud.verifyAccessFailedDetail'),
+        duration: NOTICE_MS
+      })
+    }
+    return verified && isAuthorized()
+  }
+  if (!isAuthorized()) return
   const filename = useWorkflowStore().activeWorkflow?.filename ?? 'workflow'
-  if (handsPopupsToSystemBrowser()) return openFromDesktop(tabs, filename)
+  if (handsPopupsToSystemBrowser())
+    return openFromDesktop(
+      tabs,
+      filename,
+      isAuthorized,
+      revalidate,
+      workspaceId
+    )
 
   const nonce = handoffNonce()
-  const tab = tabs.open(cloudEditorUrl(nonce))
+  const tab = tabs.open(cloudEditorUrl(nonce, workspaceId))
   if (!tab) {
     useToast().error(t('openOnCloud.popupBlocked'), { duration: NOTICE_MS })
     return
   }
   const prepared = prepareWorkflow()
-  armHandoff(tab, nonce, filename, prepared)
+  armHandoff(tab, nonce, origin, filename, prepared, revalidate)
   if (!(await prepared)) showPrepareFailed()
 }

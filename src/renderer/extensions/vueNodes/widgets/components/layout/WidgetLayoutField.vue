@@ -32,6 +32,7 @@ const hideLayoutField = useHideLayoutField()
         rootClass
       )
     "
+    data-part="widget-field"
     @pointerdown.stop
     @pointermove.stop
     @pointerup.stop
@@ -47,6 +48,7 @@ const hideLayoutField = useHideLayoutField()
     <WidgetLayoutFieldLabel
       :widget
       :input-id
+      :data-leading="$slots.leading ? '' : undefined"
       :class="cn($slots.leading ? 'pl-2' : 'pl-3', fullWidthControl && 'z-10')"
     />
     <slot name="between" />

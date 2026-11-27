@@ -6,6 +6,8 @@ import {
   zClipboardItems
 } from '@comfyorg/graph-model/workflowSchema'
 import { defaultGraph } from '@/scripts/defaultGraph'
+import { createTestSubgraphData } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
 
 const WORKFLOW_DIR = 'src/platform/workflow/validation/schemas/__fixtures__'
 
@@ -396,6 +398,38 @@ describe('parseComfyWorkflow', () => {
 })
 
 describe('zClipboardItems', () => {
+  it('accepts custom serializers that omit properties at every graph depth', () => {
+    const node = {
+      id: 1,
+      type: 'Extension/Custom',
+      pos: [30, 50],
+      size: [140, 80],
+      flags: {},
+      order: 0,
+      mode: 0
+    } satisfies ISerialisedNode
+    const nested = createTestSubgraphData({ nodes: [node] })
+    const subgraph = createTestSubgraphData({
+      nodes: [node, { ...node, id: 99, properties: { retained: 7 } }],
+      definitions: { subgraphs: [nested] }
+    })
+
+    const items = zClipboardItems.parse({
+      nodes: [node],
+      subgraphs: [subgraph]
+    })
+
+    expect(items.nodes?.[0].properties).toEqual({})
+    expect(items.subgraphs?.[0].nodes?.map((node) => node.properties)).toEqual([
+      {},
+      { retained: 7 }
+    ])
+    expect(
+      items.subgraphs?.[0].definitions?.subgraphs?.[0].nodes?.[0].properties
+    ).toEqual({})
+    expect(node).not.toHaveProperty('properties')
+  })
+
   it('normalizes array-like widget values and preserves array slot types', () => {
     const node = {
       ...structuredClone(defaultGraph.nodes[0]),

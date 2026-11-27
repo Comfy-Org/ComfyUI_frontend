@@ -353,17 +353,23 @@ it('does not restart usage work when an outstanding send settles after disposal'
 
 describe('Desktop local history qualification', () => {
   it.for([
-    { response: { has_used_agent: false }, eligible: false },
     {
+      caseName: 'unused unscoped history',
+      response: { has_used_agent: false },
+      eligible: false
+    },
+    {
+      caseName: 'used installation-scoped history',
       response: { has_used_agent: true, scope: 'local_installation' as const },
       eligible: false
     },
     {
+      caseName: 'unused installation-scoped history',
       response: { has_used_agent: false, scope: 'local_installation' as const },
       eligible: true
     }
   ])(
-    'requires unused installation-scoped history: $eligible',
+    'requires unused installation-scoped history: $caseName',
     async ({ response, eligible }) => {
       const state = setup({ requireLocalInstallation: true })
       state.getUsageStatus.mockResolvedValue(response)

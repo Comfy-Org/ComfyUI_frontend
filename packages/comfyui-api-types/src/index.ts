@@ -1,6 +1,12 @@
-export type { PromptRequest, PromptResponse } from './generated'
+export type {
+  GetFeaturesResponse,
+  GetModelsInFolderResponse,
+  PromptRequest,
+  PromptResponse
+} from './generated'
+export { zGetModelsInFolderResponse } from './generated/zod.gen'
 
-import type { PromptRequest } from './generated'
+import type { GetFeaturesResponse, PromptRequest } from './generated'
 
 type StringMap<T extends Record<string, string>> = T
 
@@ -8,3 +14,6 @@ type StringMap<T extends Record<string, string>> = T
 export type PromptWorkflowMetadata = StringMap<
   NonNullable<PromptRequest['workflow_metadata']>
 >
+
+/** Core's `agent` server feature: the local agent host's lifecycle. */
+export type ComfyAgentFeature = NonNullable<GetFeaturesResponse['agent']>

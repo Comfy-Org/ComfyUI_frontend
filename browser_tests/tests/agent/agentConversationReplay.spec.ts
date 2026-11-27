@@ -8,6 +8,7 @@ import {
   expectElementScreenshot,
   screenshotRegion
 } from '@e2e/fixtures/utils/screenshotRegion'
+import { pinCanvasTransform } from '@e2e/fixtures/utils/pinCanvasTransform'
 
 import {
   BYTEDANCE_REFERENCE_NODE_TYPE,
@@ -95,6 +96,15 @@ test.describe(
         test.setTimeout(90_000)
         await agentConversation.runTurns()
         await page.evaluate(() => window.app!.canvas.deselectAll())
+        await pinCanvasTransform(
+          page,
+          0.8991596638655462,
+          [307.5, 680.7476635514018]
+        )
+
+        await expect
+          .poll(() => overlappingNodePairs(agentConversation.vueNodes.nodes))
+          .toEqual([])
 
         const region = await screenshotRegion(
           page,
@@ -263,7 +273,8 @@ test.describe(
         })
 
         test('keeps prompt keystrokes when a doc frame resyncs the widget', async ({
-          agentConversation
+          agentConversation,
+          comfyPage
         }) => {
           test.setTimeout(60_000)
           const nodeId = '4181654812796082'
@@ -274,6 +285,9 @@ test.describe(
           ).rejects.toThrow(
             `Host widget ${nodeId}.missing-widget does not exist`
           )
+          await (
+            await comfyPage.nodeOps.getNodeRefById(toNodeId(nodeId))
+          ).centerOnNode()
 
           const field = agentConversation.vueNodes
             .getNodeLocator(nodeId)

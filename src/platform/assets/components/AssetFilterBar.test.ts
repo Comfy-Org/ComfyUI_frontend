@@ -12,8 +12,8 @@ import {
   createAssetWithSpecificExtension,
   createAssetWithoutBaseModel
 } from '@/platform/assets/fixtures/ui-mock-assets'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import type { AssetFilterState } from '@/platform/assets/types/filterTypes'
+import type { AssetItem } from '@comfyorg/assets-core/schema'
+import type { AssetFilterState } from '@comfyorg/assets-core/filtering'
 
 const i18n = createI18n({
   legacy: false,

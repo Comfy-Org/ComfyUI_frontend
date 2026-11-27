@@ -15,7 +15,9 @@ import type {
   CapabilitiesReadOptions,
   PendingBillingOperation,
   PreviewSubscribeInput,
-  SubscribeInput
+  SubscribeInput,
+  BillingStatusReadOptions,
+  CreditsReadOptions
 } from '@comfyorg/account-core/billing'
 import {
   BILLING_CHECKOUT_FRICTION_TELEMETRY_EVENT,
@@ -33,6 +35,7 @@ import { t } from '@/i18n'
 import { webSessionRequests } from '@comfyorg/api-client/webSessionFetch'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
+import { safeSessionStorage } from '@/base/storage/safeStorage'
 import { useTelemetry } from '@comfyorg/telemetry'
 import type {
   BillingBalanceResponse,
@@ -84,7 +87,10 @@ import {
   projectSubscribeResult,
   projectSubscriptionResult
 } from './subscriptionOperationView'
-import type { HostedCheckoutSession } from './topupOperationView'
+import type {
+  HostedCheckoutSession,
+  TopupQuoteFacts
+} from './topupOperationView'
 import {
   declineDetail,
   projectHostedTopupCheckoutResult,
@@ -150,7 +156,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     ...sessionPorts(),
     resolveUrl: ingestApiUrl,
     fetchImpl: fetchWithRetry,
-    pointerStorage: sessionStorage,
+    pointerStorage: safeSessionStorage,
     hostedDestination: () => flags.hostedBillingDestination,
     onTelemetry: reportTelemetry
   })
@@ -426,9 +432,28 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
   async function quoteTopup(
     amountCents: number,
     signal: AbortSignal
-  ): Promise<number | null> {
+  ): Promise<TopupQuoteFacts | null> {
     const quoted = await sdk.topup.quoteTopup({ amountCents, signal })
-    return quoted.status === 'ok' ? quoted.value.credits : null
+    return quoted.status === 'ok'
+      ? {
+          credits: quoted.value.credits,
+          paymentConfigured:
+            quoted.value.paymentMethodConfigurationId !== undefined
+        }
+      : null
+  }
+
+  async function openTopupPurchase(
+    amountCents: number,
+    signal: AbortSignal,
+    autoTopUp: TopupAutoTopUpSettings | undefined
+  ): Promise<string | undefined> {
+    const opened = await sdk.topup.createTopupPurchase({
+      amountCents,
+      signal,
+      ...(autoTopUp === undefined ? {} : { autoTopUp })
+    })
+    return opened.status === 'ok' ? opened.value.purchaseId : undefined
   }
 
   async function createHostedTopupCheckout(
@@ -580,8 +605,10 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
   // The readers the commands above already refresh after a success, exposed
   // so the panels read the state the rail settled rather than a second read
   // through the workspace client.
-  async function readStatus(): Promise<BillingResult<BillingStatusResponse>> {
-    const result = await sdk.status.read()
+  async function readStatus(
+    options?: BillingStatusReadOptions
+  ): Promise<BillingResult<BillingStatusResponse>> {
+    const result = await sdk.status.read(options)
     if (result.status === 'error') return result
     const status = projectBillingStatus(result.value.status)
     return status === undefined
@@ -589,8 +616,10 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
       : { status: 'ok', value: status }
   }
 
-  async function readBalance(): Promise<BillingResult<BillingBalanceResponse>> {
-    const result = await sdk.credits.read()
+  async function readBalance(
+    options?: CreditsReadOptions
+  ): Promise<BillingResult<BillingBalanceResponse>> {
+    const result = await sdk.credits.read(options)
     return result.status === 'ok'
       ? { status: 'ok', value: projectBillingBalance(result.value.balance) }
       : result
@@ -621,6 +650,11 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     return result.status === 'ok'
       ? { status: 'ok', value: [...result.value.methods] }
       : result
+  }
+
+  function savedPaymentMethodsSnapshot(): SavedPaymentMethod[] | undefined {
+    const snapshot = sdk.paymentMethods.getSnapshot()
+    return snapshot && [...snapshot.methods]
   }
 
   // The one read with nothing to project: the events response carries no
@@ -655,6 +689,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     recoverPendingOperation,
     createTopup,
     createHostedTopupCheckout,
+    openTopupPurchase,
     quoteTopup,
     subscribe,
     previewSubscribe,
@@ -668,6 +703,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     readPlans,
     readCapabilities,
     readPaymentMethods,
+    savedPaymentMethodsSnapshot,
     readEvents,
     dismissOperation
   }

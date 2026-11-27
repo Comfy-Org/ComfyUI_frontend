@@ -13,10 +13,7 @@ import { getHostProactiveGreetingAdmission } from '@/platform/telemetry/hostProa
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
-import {
-  authenticatedRemoteConfigState,
-  remoteConfig
-} from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useAuthStore } from '@/stores/authStore'
 
@@ -25,7 +22,6 @@ import {
   useProactiveGreetingAssignment
 } from './useProactiveGreetingAssignment'
 
-vi.mock(import('@/platform/remoteConfig/remoteConfig'))
 vi.mock(import('@comfyorg/telemetry/reportError'))
 vi.mock(import('@/platform/remote/ingest/ingestApi'), { spy: true })
 vi.mock(import('@/platform/telemetry/hostProactiveGreeting'), { spy: true })
@@ -92,22 +88,42 @@ describe('proactive assignment boundary', () => {
     Object.assign(useTeamWorkspaceStore(), {
       activeWorkspaceId: identity.workspaceId
     })
-    remoteConfig.value = {
-      agent_proactive_greeting_assignment: { ...assignment, variant: 'generic' }
-    }
+    const remoteConfigStore = useRemoteConfigStore()
+    remoteConfigStore.acceptConfig(
+      {
+        agent_proactive_greeting_assignment: {
+          ...assignment,
+          variant: 'generic'
+        }
+      },
+      false
+    )
     const result = useProactiveGreetingAssignment()
     expect(result.value).toBeUndefined()
-    authenticatedRemoteConfigState.value = 'authenticated'
+    remoteConfigStore.acceptConfig(
+      {
+        agent_proactive_greeting_assignment: {
+          ...assignment,
+          variant: 'generic'
+        }
+      },
+      true
+    )
     expect(result.value?.variant).toBe('B')
     const first = result.value
-    remoteConfig.value = {
-      agent_proactive_greeting_assignment: { ...assignment, variant: 'generic' }
-    }
+    remoteConfigStore.acceptConfig(
+      {
+        agent_proactive_greeting_assignment: {
+          ...assignment,
+          variant: 'generic'
+        }
+      },
+      true
+    )
     expect(result.value).toBe(first)
-    authenticatedRemoteConfigState.value = 'error'
+    remoteConfigStore.failLoad(true)
     expect(result.value).toBeUndefined()
-    authenticatedRemoteConfigState.value = 'authenticated'
-    remoteConfig.value = {}
+    remoteConfigStore.acceptConfig({}, true)
     expect(result.value).toBeUndefined()
   })
 
@@ -117,10 +133,15 @@ describe('proactive assignment boundary', () => {
     Object.assign(useTeamWorkspaceStore(), {
       activeWorkspaceId: identity.workspaceId
     })
-    remoteConfig.value = {
-      agent_proactive_greeting_assignment: { ...assignment, variant: 'generic' }
-    }
-    authenticatedRemoteConfigState.value = 'authenticated'
+    useRemoteConfigStore().acceptConfig(
+      {
+        agent_proactive_greeting_assignment: {
+          ...assignment,
+          variant: 'generic'
+        }
+      },
+      true
+    )
     const scope = effectScope()
     onTestFinished(() => scope.stop())
     expect(scope.run(useProactiveGreetingAssignment)?.value).toBeUndefined()
@@ -145,13 +166,25 @@ describe('proactive assignment boundary', () => {
   })
 
   it.for([
-    undefined,
-    null,
-    { ...assignment, user_id: 'another-user' },
-    { ...assignment, workspace_id: 'another-workspace' },
-    { ...assignment, group_key: 'user-a:workspace-a' },
-    { ...assignment, variant: 'unknown' }
-  ])('fails closed for absent, malformed or stale assignments', (wire) => {
+    { caseName: 'undefined', wire: undefined },
+    { caseName: 'null', wire: null },
+    {
+      caseName: 'another user',
+      wire: { ...assignment, user_id: 'another-user' }
+    },
+    {
+      caseName: 'another workspace',
+      wire: { ...assignment, workspace_id: 'another-workspace' }
+    },
+    {
+      caseName: 'another group',
+      wire: { ...assignment, group_key: 'user-a:workspace-a' }
+    },
+    {
+      caseName: 'unknown variant',
+      wire: { ...assignment, variant: 'unknown' }
+    }
+  ])('fails closed for a $caseName assignment', ({ wire }) => {
     expect(
       resolveProactiveGreetingAssignment(
         { agent_proactive_greeting_assignment: wire },
@@ -173,7 +206,7 @@ describe('proactive assignment boundary', () => {
 describe('Desktop remote assignment', () => {
   beforeEach(() => {
     installHost()
-    remoteConfig.value = { enable_telemetry: true }
+    useRemoteConfigStore().acceptConfig({ enable_telemetry: true }, false)
     distribution.isCloud = false
     useAuthStore().currentUser = fromPartial<User>({ uid: identity.userId })
     Object.assign(useTeamWorkspaceStore(), {
@@ -270,7 +303,7 @@ describe('Desktop remote assignment', () => {
 
   it('follows late Desktop identity and live consent while the panel stays open', async () => {
     const invalidateAdmission = installHost()
-    remoteConfig.value = {}
+    useRemoteConfigStore().acceptConfig({}, false)
     useAuthStore().currentUser = null
     vi.mocked(getHostProactiveGreetingAdmission).mockResolvedValue('denied')
     const get = vi.spyOn(ingestApiClient, 'get').mockResolvedValue({
@@ -437,14 +470,16 @@ describe('Desktop remote assignment', () => {
     'requires host admission for Cloud hosted inside Desktop: $admitted',
     async ({ admitted, expectedVariant }) => {
       distribution.isCloud = true
-      remoteConfig.value = {
-        enable_telemetry: true,
-        agent_proactive_greeting_assignment: {
-          ...assignment,
-          variant: 'generic'
-        }
-      }
-      authenticatedRemoteConfigState.value = 'authenticated'
+      useRemoteConfigStore().acceptConfig(
+        {
+          enable_telemetry: true,
+          agent_proactive_greeting_assignment: {
+            ...assignment,
+            variant: 'generic'
+          }
+        },
+        true
+      )
       const admission = deferred<'allowed' | 'denied'>()
       vi.mocked(getHostProactiveGreetingAdmission).mockReturnValue(
         admission.promise

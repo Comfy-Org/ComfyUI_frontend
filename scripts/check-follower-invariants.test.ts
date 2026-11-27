@@ -4,6 +4,8 @@ import { join } from 'node:path'
 import { beforeEach, describe, expect, test } from 'vitest'
 
 import {
+  FOLLOWER_REPLICA_OWNER,
+  FOLLOWER_SESSION_OWNER,
   PAGE_SESSION_OWNER,
   checkAgentSurfaceFiles,
   checkCatalogPinnedBySha,
@@ -12,6 +14,7 @@ import {
   checkNoHardcodedEndpoint,
   checkNoOutboundUpdateB64,
   checkPageSessionOwnsTransport,
+  checkSessionOwnsFollowerLifetime,
   findAgentSurfaceFiles
 } from './check-follower-invariants'
 
@@ -198,6 +201,69 @@ describe('checkNoHardcodedEndpoint', () => {
     "const socket = new WebSocket(api.apiURL('/api/agent/events'))"
   ])('passes the shared event endpoint: %s', (fixture) => {
     expect(checkNoHardcodedEndpoint(FOLLOWER_FILE, fixture)).toEqual([])
+  })
+})
+
+describe('checkSessionOwnsFollowerLifetime', () => {
+  const OWNER = FOLLOWER_SESSION_OWNER
+  const REPLICA_OWNER = FOLLOWER_REPLICA_OWNER
+
+  test.for([
+    'startAgentCrdtFollower(workflowId, { transport })',
+    'new AgentCrdtProjection(getGraph, applierDeps)'
+  ])('fails a component constructing %s', (expression) => {
+    const fixture = `<script setup lang="ts">
+const follower = ${expression}
+onBeforeUnmount(() => follower.destroy())
+</script>`
+    expect(
+      checkSessionOwnsFollowerLifetime(PANEL_FILE, fixture).map(
+        ({ rule, line }) => ({ rule, line })
+      )
+    ).toEqual([{ rule: 'session-owns-follower-lifetime', line: 2 }])
+  })
+
+  test('fails a second replica minted outside the bridge', () => {
+    const fixture = `const doc = new FollowerDoc()\n`
+    expect(
+      checkSessionOwnsFollowerLifetime(OWNER, fixture).map(({ rule }) => rule)
+    ).toEqual(['session-owns-follower-lifetime'])
+  })
+
+  test('passes the owner constructing the bridge and the projection', () => {
+    const fixture = `
+      const bridge = new LayoutFollowerBridge(client)
+      const projection = new AgentCrdtProjection(getGraph, applierDeps)
+    `
+    expect(checkSessionOwnsFollowerLifetime(OWNER, fixture)).toEqual([])
+  })
+
+  test('passes the bridge replacing its own replica on a lineage break', () => {
+    const fixture = `this.followerDoc = new FollowerDoc()\n`
+    expect(checkSessionOwnsFollowerLifetime(REPLICA_OWNER, fixture)).toEqual([])
+  })
+
+  test('passes a panel consuming the session through the composable', () => {
+    const fixture = `<script setup lang="ts">
+const crdt = useAgentCrdtFollower(boundWorkflowId, { transport: docTransport })
+</script>`
+    expect(checkSessionOwnsFollowerLifetime(PANEL_FILE, fixture)).toEqual([])
+  })
+
+  test('reports the line in the .vue file, not in the extracted script', () => {
+    const fixture = `<template>\n  <div />\n</template>\n\n<script setup lang="ts">\nconst b = new LayoutFollowerBridge(client)\n</script>`
+    expect(checkSessionOwnsFollowerLifetime(PANEL_FILE, fixture)).toEqual([
+      expect.objectContaining({ line: 6 })
+    ])
+  })
+
+  test('ignores a file outside the agent surface', () => {
+    expect(
+      checkSessionOwnsFollowerLifetime(
+        'src/stores/workflowStore.ts',
+        'const b = new LayoutFollowerBridge(client)\n'
+      )
+    ).toEqual([])
   })
 })
 

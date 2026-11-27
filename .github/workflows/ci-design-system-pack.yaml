@@ -14,7 +14,7 @@ on:
       - 'package.json'
       - 'patches/**'
       - 'scripts/vue-tsc-native.ts'
-      - 'scripts/cicd/check-design-system-*'
+      - 'tools/ci/src/cicd/check-design-system-*'
       - '.github/actions/setup-frontend/**'
       - '.github/workflows/ci-design-system-pack.yaml'
       - '.storybook/main.ts'
@@ -43,7 +43,7 @@ jobs:
         run: pnpm -C packages/design-system build
 
       - name: Verify compiled imports are declared dependencies
-        run: pnpm exec tsx scripts/cicd/check-design-system-imports.ts
+        run: pnpm exec tsx tools/ci/src/cicd/check-design-system-imports.ts
 
       - name: Verify packed tarball only contains public design system files
         shell: bash
@@ -102,4 +102,4 @@ jobs:
           echo 'Packed tarball contains only expected files.'
 
       - name: Check an isolated packed consumer
-        run: scripts/cicd/check-design-system-consumer.sh
+        run: tools/ci/src/cicd/check-design-system-consumer.sh

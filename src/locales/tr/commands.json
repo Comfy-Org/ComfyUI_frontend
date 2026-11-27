@@ -149,6 +149,9 @@
   "Comfy_ExportWorkflowAPI": {
     "label": "İş Akışını Dışa Aktar (API Formatı)"
   },
+  "Comfy_ExportWorkflowImage": {
+    "label": "İş Akışı Görüntüsünü Dışa Aktar"
+  },
   "Comfy_Graph_ConvertToSubgraph": {
     "label": "Seçimi Alt Grafiğe Dönüştür"
   },

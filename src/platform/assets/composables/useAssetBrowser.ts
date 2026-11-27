@@ -8,28 +8,25 @@ import { t } from '@/i18n'
 import type {
   AssetFilterState,
   OwnershipOption
-} from '@/platform/assets/types/filterTypes'
-import type {
-  AssetItem,
-  ModelBrowserAsset
-} from '@/platform/assets/schemas/assetSchema'
+} from '@comfyorg/assets-core/filtering'
+import type { AssetItem, ModelBrowserAsset } from '@comfyorg/assets-core/schema'
 import { useAssetFilterOptions } from '@/platform/assets/composables/useAssetFilterOptions'
 import {
   filterByBaseModels,
   filterByCategory,
   filterByFileFormats,
-  filterByOwnership
-} from '@/platform/assets/utils/assetFilterUtils'
+  filterByOwnership,
+  sortAssets
+} from '@comfyorg/assets-core/filtering'
 import {
   getAssetBaseModels,
   getAssetCategories,
   getAssetFilename,
-  getAssetTypeBadges
-} from '@/platform/assets/utils/assetMetadataUtils'
-import { MODELS_TAG } from '@/platform/assets/services/assetService'
-import { sortAssets } from '@/platform/assets/utils/assetSortUtils'
+  getAssetTypeBadges,
+  MODELS_TAG
+} from '@comfyorg/assets-core/metadata'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
+import { useAssetDownloadStore } from '@/platform/assets/stores/assetDownloadStore'
 import type {
   NavGroupData,
   NavItemData

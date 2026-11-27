@@ -56,17 +56,12 @@
   },
   "packages/api-client/src/ComfyApi.ts": {
     "comfy/no-new-error-throw": {
-      "count": 8
+      "count": 7
     }
   },
   "packages/settings-core/src/settingStore.ts": {
     "comfy/no-new-error-throw": {
       "count": 1
-    }
-  },
-  "packages/telemetry/src/redactTelemetryUrls.ts": {
-    "regexp/no-dupe-characters-character-class": {
-      "count": 13
     }
   },
   "packages/viewport3d/src/load3d/HDRIManager.test.ts": {
@@ -96,7 +91,7 @@
   },
   "src/base/common/downloadUtil.ts": {
     "comfy/no-new-error-throw": {
-      "count": 2
+      "count": 1
     }
   },
   "src/components/builder/builderViewOptions.ts": {
@@ -115,11 +110,6 @@
     }
   },
   "src/components/sidebar/SideToolbar.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
-  "src/components/sidebar/tabs/AssetsSidebarTab.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 1
     }
@@ -398,16 +388,6 @@
       "count": 1
     }
   },
-  "src/lib/litegraph/src/utils/arrange.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 1
-    }
-  },
-  "src/lib/litegraph/src/utils/namedValuesShadowDiffTelemetry.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 1
-    }
-  },
   "src/lib/litegraph/src/widgets/widgetMap.ts": {
     "comfy/no-positional-boolean-params": {
       "count": 1
@@ -448,37 +428,12 @@
       "count": 21
     }
   },
-  "src/platform/assets/utils/assetFilterUtils.ts": {
-    "comfy/no-positional-boolean-params": {
+  "src/platform/assets/stores/assetsStore.ts": {
+    "comfy/no-new-error-throw": {
       "count": 1
-    }
-  },
-  "src/platform/assets/utils/assetMetadataUtils.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 8
     }
   },
   "src/platform/assets/utils/assetPreviewUtil.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
-  "src/platform/assets/utils/marqueeSelectionUtil.property.test.ts": {
-    "comfy/prefer-array-containing": {
-      "count": 2
-    }
-  },
-  "src/platform/assets/utils/marqueeSelectionUtil.test.ts": {
-    "comfy/prefer-array-containing": {
-      "count": 1
-    }
-  },
-  "src/platform/assets/utils/marqueeSelectionUtil.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 1
-    }
-  },
-  "src/platform/assets/utils/resolveModelNodeFromAsset.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 1
     }
@@ -813,11 +768,6 @@
       "count": 5
     }
   },
-  "src/renderer/extensions/minimap/composables/useMinimap.progressBaseline.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 4
-    }
-  },
   "src/renderer/extensions/painter/composables/usePainter.ts": {
     "comfy/no-new-error-throw": {
       "count": 4
@@ -831,11 +781,6 @@
   "src/renderer/extensions/vueNodes/composables/useSlotLinkInteraction.autoPan.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 1
-    }
-  },
-  "src/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 3
     }
   },
   "src/renderer/extensions/vueNodes/layout/useNodeDrag.test.ts": {
@@ -991,7 +936,7 @@
   },
   "src/services/litegraphService.ts": {
     "comfy/no-new-error-throw": {
-      "count": 3
+      "count": 2
     }
   },
   "src/services/nodeHelpService.ts": {
@@ -1010,11 +955,6 @@
     }
   },
   "src/stores/apiKeyAuthStore.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 1
-    }
-  },
-  "src/stores/assetsStore.ts": {
     "comfy/no-new-error-throw": {
       "count": 1
     }
@@ -1122,21 +1062,6 @@
   "src/workbench/extensions/agent/composables/agent/useAgentSession.ts": {
     "comfy/no-positional-boolean-params": {
       "count": 1
-    }
-  },
-  "src/workbench/extensions/agent/crdt/CrdtDevPanel.clipboard.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
-  "src/workbench/extensions/agent/crdt/crdtDebugGate.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 1
-    }
-  },
-  "src/workbench/extensions/agent/crdt/crdtDebugReport.ts": {
-    "regexp/no-dupe-disjunctions": {
-      "count": 2
     }
   },
   "src/workbench/extensions/agent/crdt/liveGraphApplier.test.ts": {

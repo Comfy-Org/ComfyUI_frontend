@@ -290,6 +290,18 @@
       }
     },
     {
+      "files": ["src/**/*.{ts,vue}"],
+      "excludeFiles": [
+        "src/**/*.{test,spec,stories}.ts",
+        "src/**/__mocks__/**",
+        "src/base/storage/safeStorage.ts",
+        "src/platform/storage/useSafeStorage.ts"
+      ],
+      "rules": {
+        "comfy/no-direct-web-storage": "error"
+      }
+    },
+    {
       "files": [
         "apps/**/*.{js,mjs,cjs,ts,mts,cts,vue}",
         "src/**/*.{js,mjs,cjs,ts,mts,cts,vue}",
@@ -297,7 +309,8 @@
       ],
       "excludeFiles": [
         "**/*.{test,spec}.{ts,tsx}",
-        "packages/api-client/src/abortSignal.ts"
+        "packages/api-client/src/abortSignal.ts",
+        "apps/billing-web/src/handoff/timeoutSignal.ts"
       ],
       "rules": {
         "no-restricted-properties": [
@@ -306,6 +319,15 @@
             "object": "AbortSignal",
             "property": "any",
             "message": "Crashes on Chrome < 116. Use combineAbortSignals from @comfyorg/api-client/abortSignal."
+          },
+          {
+            "object": "AbortSignal",
+            "property": "timeout",
+            "message": "Crashes on Chrome < 103 and Safari < 16. Use createTimeoutSignal from @comfyorg/api-client/abortSignal."
+          },
+          {
+            "property": "throwIfAborted",
+            "message": "Crashes on Chrome < 100 and Safari < 15.4. Use throwIfAborted(signal) from @comfyorg/api-client/abortSignal, or check signal.aborted in packages."
           },
           {
             "object": "URL",
@@ -522,7 +544,11 @@
       }
     },
     {
-      "files": ["scripts/**", "tools/test-recorder/**/*.ts"],
+      "files": [
+        "scripts/**",
+        "tools/ci/**/*.ts",
+        "tools/test-recorder/**/*.ts"
+      ],
       "rules": {
         "no-console": "allow"
       }

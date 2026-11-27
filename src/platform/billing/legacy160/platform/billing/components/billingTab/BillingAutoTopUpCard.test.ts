@@ -179,6 +179,7 @@ describe('BillingAutoTopUpCard', () => {
   })
 
   it.for<{
+    case: string
     status: AutoReloadSettings['status']
     settings?: AutoReloadSettings
     disabledReason?: string
@@ -189,6 +190,7 @@ describe('BillingAutoTopUpCard', () => {
     expectedIcon: string
   }>([
     {
+      case: 'after a declined charge',
       status: 'failed',
       label: 'Failed',
       lines: [FAILED],
@@ -197,6 +199,7 @@ describe('BillingAutoTopUpCard', () => {
       expectedIcon: 'icon-[lucide--arrow-up-right]'
     },
     {
+      case: 'after consecutive declined charges',
       status: 'failed',
       disabledReason: 'consecutive_declines',
       label: 'Turned off',
@@ -208,6 +211,7 @@ describe('BillingAutoTopUpCard', () => {
       expectedIcon: 'icon-[lucide--arrow-up-right]'
     },
     {
+      case: 'when not configured',
       status: 'off',
       settings: notConfigured,
       label: 'Off',
@@ -217,6 +221,7 @@ describe('BillingAutoTopUpCard', () => {
       expectedIcon: 'icon-[lucide--arrow-up-right]'
     },
     {
+      case: 'without a default payment method',
       status: 'on_hold',
       label: 'On hold',
       lines: [
@@ -228,6 +233,7 @@ describe('BillingAutoTopUpCard', () => {
       expectedIcon: 'icon-[lucide--arrow-up-right]'
     },
     {
+      case: 'with a reset date',
       status: 'paused_by_budget',
       label: 'Limit reached',
       lines: [RULE, 'Monthly limit reached. Resumes November 28.'],
@@ -236,6 +242,7 @@ describe('BillingAutoTopUpCard', () => {
       expectedIcon: 'icon-[lucide--arrow-up-right]'
     },
     {
+      case: 'without a reset date',
       status: 'paused_by_budget',
       settings: { ...configured, cycle_resets_at: null },
       label: 'Limit reached',
@@ -245,6 +252,7 @@ describe('BillingAutoTopUpCard', () => {
       expectedIcon: 'icon-[lucide--arrow-up-right]'
     },
     {
+      case: 'over the limit with a reset date',
       status: 'paused_by_budget',
       settings: { ...configured, paused_by_budget_remainder: true },
       label: 'Limit reached',
@@ -257,6 +265,7 @@ describe('BillingAutoTopUpCard', () => {
       expectedIcon: 'icon-[lucide--arrow-up-right]'
     },
     {
+      case: 'over the limit without a reset date',
       status: 'paused_by_budget',
       settings: {
         ...configured,
@@ -270,6 +279,7 @@ describe('BillingAutoTopUpCard', () => {
       expectedIcon: 'icon-[lucide--arrow-up-right]'
     },
     {
+      case: 'at default maximum with a reset date',
       status: 'paused_by_budget',
       settings: { ...configured, monthly_budget_is_default: true },
       label: 'Maximum reached',
@@ -279,6 +289,7 @@ describe('BillingAutoTopUpCard', () => {
       expectedIcon: 'icon-[lucide--arrow-up-right]'
     },
     {
+      case: 'at default maximum, next top-up over it',
       status: 'paused_by_budget',
       settings: {
         ...configured,
@@ -292,6 +303,7 @@ describe('BillingAutoTopUpCard', () => {
       expectedIcon: 'icon-[lucide--arrow-up-right]'
     },
     {
+      case: 'at default maximum without a reset date',
       status: 'paused_by_budget',
       settings: {
         ...configured,
@@ -305,6 +317,7 @@ describe('BillingAutoTopUpCard', () => {
       expectedIcon: 'icon-[lucide--arrow-up-right]'
     },
     {
+      case: 'with the default maximum',
       status: 'on',
       settings: { ...configured, monthly_budget_is_default: true },
       label: 'On',
@@ -314,6 +327,7 @@ describe('BillingAutoTopUpCard', () => {
       expectedIcon: 'icon-[lucide--arrow-up-right]'
     },
     {
+      case: 'with a custom limit',
       status: 'on',
       label: 'On',
       lines: [RULE, 'Monthly limit: $50 of $200 used'],
@@ -322,6 +336,7 @@ describe('BillingAutoTopUpCard', () => {
       expectedIcon: 'icon-[lucide--arrow-up-right]'
     },
     {
+      case: 'without a target balance',
       status: 'on',
       settings: { ...configured, target_credits: null },
       label: 'On',
@@ -331,7 +346,7 @@ describe('BillingAutoTopUpCard', () => {
       expectedIcon: 'icon-[lucide--arrow-up-right]'
     }
   ])(
-    'renders the served $status status as $label',
+    'renders the served $status status as $label $case',
     async ({
       status,
       settings = configured,

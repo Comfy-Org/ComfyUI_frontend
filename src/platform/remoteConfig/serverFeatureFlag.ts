@@ -17,6 +17,7 @@ export enum ServerFeatureFlag {
   USER_SECRETS_ENABLED = 'user_secrets_enabled',
   NODE_REPLACEMENTS = 'node_replacements',
   OPEN_ON_CLOUD_ENABLED = 'open_on_cloud_enabled',
+  OPEN_ON_CLOUD_MODEL_UPLOAD_ENABLED = 'open_on_cloud_model_upload_enabled',
   OPEN_ON_CLOUD_USE_LOCAL_AGENT_ENABLED = 'open_on_cloud_use_local_agent_enabled',
   DEPLOY_TO_CLOUD = 'deploy_to_cloud',
   NODE_LIBRARY_ESSENTIALS_ENABLED = 'node_library_essentials_enabled',
@@ -24,6 +25,7 @@ export enum ServerFeatureFlag {
   COMFYHUB_PROFILE_GATE_ENABLED = 'comfyhub_profile_gate_enabled',
   DEPLOYMENT_COMPATIBILITY_MARKS_ENABLED = 'deployment_compatibility_marks_enabled',
   LATE_CUSTOM_NODES_ENABLED = 'late_custom_nodes_enabled',
+  CUSTOM_DEPLOYMENTS_EDITOR_ENABLED = 'custom_deployments_editor_enabled',
   RUNTIME_LIBRARY_MODELS_ENABLED = 'runtime_library_models_enabled',
   MODEL_UPLOAD_FOLDERS = 'model_upload_folders',
   HOSTED_BILLING_DESTINATION = 'hosted_billing_destination',
@@ -31,6 +33,7 @@ export enum ServerFeatureFlag {
   SSO_ENABLED = 'sso_enabled',
   WEB_SESSION_LAPSE_RECOVERY_ENABLED = 'web_session_lapse_recovery_enabled',
   LOCAL_WEB_SSO = 'local_web_sso',
+  LOCAL_MCP_CONNECT = 'local_mcp_connect',
   BILLING_CONTROL_ENABLED = 'billing_control_enabled',
   MEMBER_CREDIT_LIMITS_ENABLED = 'member_credit_limits_enabled',
   BILLING_NEW_UX_ENABLED = 'billing_new_ux_enabled',
@@ -42,5 +45,6 @@ export enum ServerFeatureFlag {
   SIGNUP_TURNSTILE = 'signup_turnstile',
   SUPPORTS_MODEL_TYPE_TAGS = 'supports_model_type_tags',
   AGENT_IN_APP_EXPERIENCE = 'agent-in-app-experience',
+  AGENT_CRDT_DEBUG = 'Comfy.Agent.CrdtDebug',
   AGENT = 'agent'
 }

@@ -2,6 +2,14 @@
 
 The suite checks the Open on Cloud behavior from a signed-out local editor using a real ComfyUI backend and the deployed Cloud feature and compatibility APIs.
 
+> [!IMPORTANT]
+> Every suite on this page is **local-SUT**: the system under test is a local
+> frontend talking to a deployed Cloud origin, so all of them need
+> `localhost:5173` and `localhost:8188`. The one spec in `tests/liveCloud/` that
+> tests a _deployed_ frontend is the staging release gate — see
+> [Staging smoke gate](./staging-smoke-gate.md). Do not run the bare
+> `cloud-live` project as a deployment gate.
+
 ## Prerequisites
 
 - Start a local single-user ComfyUI backend. Set the local editor's **Use new menu** setting to **Top**.

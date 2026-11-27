@@ -1,8 +1,142 @@
 {
+  "kind": "health",
   "finding_counts": {
+    ".github/scripts/crdt-skew-report.mjs": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
     ".storybook/main.ts": {
       "crap_moderate": {
         "count": 2
+      }
+    },
+    "browser_tests/fixtures/ComfyPage.ts": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "browser_tests/fixtures/customNode/ComfyTarget.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "browser_tests/fixtures/customNode/allNodesExecutionTier.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "complexity_moderate": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "browser_tests/fixtures/customNode/allNodesMountTier.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "complexity_high": {
+        "count": 2
+      },
+      "crap_high": {
+        "count": 2
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "browser_tests/fixtures/customNode/allNodesRoundtripTier.ts": {
+      "complexity_critical": {
+        "count": 2
+      },
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "browser_tests/fixtures/customNode/autoRun.ts": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "browser_tests/fixtures/customNode/interactionProbe.ts": {
+      "complexity_high": {
+        "count": 1
+      }
+    },
+    "browser_tests/fixtures/customNode/interactionProfiles.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "complexity_moderate": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "browser_tests/fixtures/customNode/manifest.ts": {
+      "complexity_critical": {
+        "count": 3
+      },
+      "complexity_high": {
+        "count": 2
+      },
+      "crap_critical": {
+        "count": 3
+      },
+      "crap_high": {
+        "count": 2
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "browser_tests/fixtures/customNode/outputHashes.ts": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "browser_tests/fixtures/customNode/promptSubmission.ts": {
+      "complexity_high": {
+        "count": 1
+      }
+    },
+    "browser_tests/fixtures/customNode/typePairing.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "complexity_moderate": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "browser_tests/fixtures/data/agent/agentConversation.ts": {
+      "complexity_moderate": {
+        "count": 1
       }
     },
     "browser_tests/fixtures/helpers/AssetHelper.ts": {
@@ -11,36 +145,82 @@
       },
       "crap_high": {
         "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
       }
     },
     "browser_tests/fixtures/helpers/DragDropHelper.ts": {
+      "crap_high": {
+        "count": 1
+      },
       "crap_moderate": {
         "count": 1
       }
     },
     "browser_tests/fixtures/helpers/SubgraphHelper.ts": {
-      "complexity_high": {
+      "crap_moderate": {
         "count": 1
-      },
+      }
+    },
+    "browser_tests/fixtures/workflowDraftForeignWindowSignInFixture.ts": {
       "crap_high": {
         "count": 1
       }
     },
-    "browser_tests/fixtures/utils/promotedWidgets.ts": {
+    "browser_tests/tests/agent/agentPanelMocks.ts": {
       "crap_moderate": {
         "count": 1
       }
     },
     "browser_tests/tests/containAudit.spec.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "browser_tests/tests/customNodes/connectivity.spec.ts": {
       "complexity_critical": {
+        "count": 1
+      },
+      "complexity_high": {
+        "count": 1
+      },
+      "complexity_moderate": {
         "count": 1
       },
       "crap_critical": {
         "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "browser_tests/tests/customNodes/customNode.regression.spec.ts": {
+      "complexity_moderate": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "browser_tests/tests/customNodes/interactionProfiles.spec.ts": {
+      "crap_moderate": {
+        "count": 1
       }
     },
     "browser_tests/tests/graph.spec.ts": {
-      "crap_critical": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "browser_tests/tests/legacyDoNotReplicate/foreignWidgetRendererInvocation.spec.ts": {
+      "crap_moderate": {
         "count": 1
       }
     },
@@ -52,768 +232,120 @@
         "count": 1
       }
     },
-    "browser_tests/tests/vueNodes/interactions/links/linkInteraction.spec.ts": {
-      "crap_high": {
-        "count": 1
-      },
-      "crap_moderate": {
-        "count": 2
-      }
-    },
     "browser_tests/tests/workflowPersistence.spec.ts": {
       "complexity_moderate": {
         "count": 1
       },
       "crap_moderate": {
-        "count": 1
-      }
-    },
-    "browser_tests/utils/backupUtils.ts": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "packages/design-system/src/css/iconifyDynamicPlugin.ts": {
-      "crap_high": {
-        "count": 1
-      }
-    },
-    "packages/design-system/src/css/lucideStrokePlugin.js": {
-      "crap_critical": {
-        "count": 1
-      }
-    },
-    "scripts/bundle-categories.js": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "scripts/check-unused-i18n-keys.ts": {
-      "crap_moderate": {
-        "count": 3
-      }
-    },
-    "scripts/cicd/extract-playwright-counts.ts": {
-      "complexity_critical": {
-        "count": 1
-      },
-      "crap_critical": {
-        "count": 1
-      },
-      "crap_high": {
-        "count": 1
-      },
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "scripts/cicd/resolve-comfyui-release.ts": {
-      "complexity_high": {
-        "count": 1
-      },
-      "crap_high": {
-        "count": 1
-      }
-    },
-    "scripts/collect-i18n-node-defs.ts": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "scripts/coverage-slack-notify.ts": {
-      "complexity_critical": {
-        "count": 1
-      },
-      "crap_critical": {
         "count": 2
-      },
-      "crap_moderate": {
-        "count": 1
       }
     },
-    "scripts/diff-i18n.ts": {
+    "packages/account-core/src/core/refreshScheduler.ts": {
       "crap_high": {
         "count": 1
       }
     },
-    "scripts/perf-report.ts": {
+    "packages/api-client/src/ComfyApi.ts": {
       "complexity_critical": {
-        "count": 2
+        "count": 1
       },
       "complexity_high": {
+        "count": 2
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 4
+      },
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "packages/design-system/src/components/common/MarkdownText.vue": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "packages/design-system/src/components/layout/BaseModalLayout.vue": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "packages/layer-editor/src/compositor/webglCompositor.ts": {
+      "complexity_critical": {
         "count": 1
       },
       "crap_critical": {
-        "count": 2
-      },
-      "crap_high": {
         "count": 1
       },
       "crap_moderate": {
         "count": 2
       }
     },
-    "scripts/release-sheriff/release-sheriff.ts": {
-      "complexity_moderate": {
+    "packages/layer-editor/src/editor/editor.selection.test.ts": {
+      "complexity_high": {
         "count": 1
-      },
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "scripts/size-collect.js": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "scripts/size-report.js": {
-      "crap_critical": {
-        "count": 3
       },
       "crap_high": {
-        "count": 2
-      },
-      "crap_moderate": {
         "count": 1
       }
     },
-    "src/components/LiteGraphCanvasSplitterOverlay.vue": {
-      "complexity_critical": {
-        "count": 1
-      },
-      "crap_critical": {
+    "packages/layer-editor/src/editor/editor.ts": {
+      "crap_high": {
         "count": 1
       },
       "crap_moderate": {
         "count": 1
       }
     },
-    "src/components/TopMenuSection.vue": {
-      "complexity_critical": {
-        "count": 1
-      },
-      "crap_critical": {
-        "count": 1
-      }
-    },
-    "src/components/actionbar/ComfyActionbar.vue": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/components/breadcrumb/SubgraphBreadcrumbItem.vue": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/components/builder/AppBuilder.vue": {
+    "packages/layer-editor/src/editor/selectionMath.ts": {
       "complexity_critical": {
         "count": 1
       },
       "complexity_high": {
         "count": 1
-      },
-      "crap_critical": {
-        "count": 1
-      },
-      "crap_high": {
-        "count": 1
-      }
-    },
-    "src/components/builder/AppModeWidgetList.vue": {
-      "complexity_high": {
-        "count": 1
-      },
-      "crap_high": {
-        "count": 1
-      }
-    },
-    "src/components/common/DropdownItem.vue": {
-      "complexity_high": {
-        "count": 1
-      },
-      "crap_high": {
-        "count": 1
-      }
-    },
-    "src/components/common/FormItem.vue": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/components/common/LazyImage.vue": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/components/common/TreeExplorerV2.vue": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/components/common/TreeExplorerV2Node.vue": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/components/common/WaveAudioPlayer.vue": {
-      "complexity_high": {
-        "count": 1
-      },
-      "crap_high": {
-        "count": 1
-      }
-    },
-    "src/components/common/WorkflowActionsList.vue": {
-      "complexity_moderate": {
-        "count": 1
-      },
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/components/curve/curveUtils.ts": {
-      "complexity_moderate": {
-        "count": 1
-      }
-    },
-    "src/platform/workflow/templates/components/WorkflowTemplateSelectorDialog.vue": {
-      "complexity_critical": {
-        "count": 1
-      },
-      "crap_critical": {
-        "count": 1
-      }
-    },
-    "src/components/dialog/GlobalDialog.vue": {
-      "complexity_critical": {
-        "count": 1
-      },
-      "crap_critical": {
-        "count": 1
-      }
-    },
-    "src/components/dialog/content/ConfirmationDialogContent.vue": {
-      "complexity_high": {
-        "count": 1
-      },
-      "crap_high": {
-        "count": 1
-      }
-    },
-    "src/components/dialog/content/SignInContent.vue": {
-      "complexity_high": {
-        "count": 1
-      },
-      "crap_high": {
-        "count": 1
-      }
-    },
-    "src/platform/keybindings/components/KeybindingPanel.vue": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/platform/billing/components/settings/UsageLogsTable.vue": {
-      "complexity_high": {
-        "count": 1
-      },
-      "crap_high": {
-        "count": 1
-      },
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/components/dialog/content/signin/SignInForm.vue": {
-      "crap_high": {
-        "count": 1
-      }
-    },
-    "src/components/error/useErrorOverlayState.ts": {
-      "crap_critical": {
-        "count": 1
-      }
-    },
-    "src/components/graph/DomWidgets.vue": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/components/graph/GraphCanvas.vue": {
-      "complexity_critical": {
-        "count": 1
-      },
-      "crap_critical": {
-        "count": 1
-      }
-    },
-    "src/components/graph/NodeTooltip.vue": {
-      "complexity_critical": {
-        "count": 1
-      },
-      "crap_critical": {
-        "count": 1
-      }
-    },
-    "src/components/graph/SelectionToolbox.vue": {
-      "complexity_critical": {
-        "count": 1
-      },
-      "crap_critical": {
-        "count": 1
-      }
-    },
-    "src/components/hdr/HdrViewerContent.vue": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/components/helpcenter/HelpCenterMenuContent.vue": {
-      "complexity_high": {
-        "count": 1
-      },
-      "crap_high": {
-        "count": 1
-      }
-    },
-    "src/components/imagecrop/WidgetImageCrop.vue": {
-      "complexity_high": {
-        "count": 1
-      },
-      "crap_high": {
-        "count": 1
-      }
-    },
-    "src/extensions/core/load3d/components/Load3DControls.vue": {
-      "complexity_high": {
-        "count": 1
-      },
-      "crap_high": {
-        "count": 1
-      }
-    },
-    "src/extensions/core/load3d/components/Load3DMenuBar.vue": {
-      "complexity_critical": {
-        "count": 1
-      },
-      "crap_critical": {
-        "count": 1
-      }
-    },
-    "src/extensions/core/load3d/components/controls/HDRIControls.vue": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/extensions/core/load3d/components/controls/ModelControls.vue": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/extensions/core/load3d/components/controls/SceneControls.vue": {
-      "crap_high": {
-        "count": 1
-      }
-    },
-    "src/extensions/core/load3d/components/menubar/GizmoMenuGroup.vue": {
-      "complexity_moderate": {
-        "count": 1
-      },
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/extensions/core/load3d/components/menubar/HdriMenuGroup.vue": {
-      "complexity_high": {
-        "count": 1
-      },
-      "crap_high": {
-        "count": 1
-      }
-    },
-    "src/extensions/core/load3d/components/menubar/ModelMenuGroup.vue": {
-      "complexity_moderate": {
-        "count": 1
-      },
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/extensions/core/load3d/components/menubar/SceneMenuGroup.vue": {
-      "complexity_critical": {
-        "count": 1
-      },
-      "crap_critical": {
-        "count": 1
-      }
-    },
-    "src/renderer/extensions/maskEditor/components/MaskEditorContent.vue": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/components/node/NodeHelpContent.vue": {
-      "complexity_moderate": {
-        "count": 1
-      },
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/components/node/NodePreview.vue": {
-      "complexity_moderate": {
-        "count": 1
-      },
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/components/node/NodePreviewCard.vue": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/renderer/extensions/painter/components/WidgetPainter.vue": {
-      "crap_high": {
-        "count": 1
-      }
-    },
-    "src/components/queue/job/JobAssetsList.vue": {
-      "complexity_high": {
-        "count": 1
-      },
-      "crap_high": {
-        "count": 1
-      }
-    },
-    "src/components/queue/job/JobDetailsPopover.vue": {
-      "complexity_high": {
-        "count": 1
-      },
-      "crap_high": {
-        "count": 1
-      }
-    },
-    "src/components/queue/job/JobFilterActions.vue": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/components/queue/job/useQueueEstimates.test.ts": {
-      "crap_high": {
-        "count": 1
-      }
-    },
-    "src/components/range/RangeEditor.vue": {
-      "complexity_high": {
-        "count": 1
-      },
-      "crap_high": {
-        "count": 1
-      }
-    },
-    "src/components/range/WidgetRange.vue": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/components/rightSidePanel/RightSidePanel.vue": {
-      "complexity_critical": {
-        "count": 1
-      },
-      "crap_critical": {
-        "count": 1
-      }
-    },
-    "src/platform/workflowErrors/panel/ErrorGroupList.vue": {
-      "complexity_critical": {
-        "count": 1
-      },
-      "crap_critical": {
-        "count": 1
-      }
-    },
-    "src/components/rightSidePanel/errors/ErrorNodeCard.vue": {
-      "complexity_critical": {
-        "count": 1
-      },
-      "crap_critical": {
-        "count": 1
-      }
-    },
-    "src/components/rightSidePanel/errors/MissingNodeCard.vue": {
-      "complexity_moderate": {
-        "count": 1
-      },
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/components/rightSidePanel/errors/MissingPackGroupRow.vue": {
-      "complexity_critical": {
-        "count": 1
-      },
-      "crap_critical": {
-        "count": 1
-      }
-    },
-    "src/components/rightSidePanel/errors/useErrorGroups.ts": {
-      "complexity_moderate": {
-        "count": 1
-      },
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/components/rightSidePanel/errors/useErrorReport.ts": {
-      "complexity_moderate": {
-        "count": 1
-      },
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/components/rightSidePanel/parameters/TabNormalInputs.vue": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/components/rightSidePanel/parameters/WidgetItem.vue": {
-      "crap_high": {
-        "count": 1
-      },
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/components/rightSidePanel/subgraph/SubgraphEditor.vue": {
-      "complexity_moderate": {
-        "count": 1
-      },
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/components/searchbox/NodeSearchItem.vue": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/components/searchbox/v2/NodeSearchCategoryTreeNode.vue": {
-      "crap_high": {
-        "count": 1
-      }
-    },
-    "src/components/searchbox/v2/NodeSearchContent.vue": {
-      "complexity_high": {
-        "count": 1
-      },
-      "crap_high": {
-        "count": 1
-      },
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/components/searchbox/v2/NodeSearchListItem.vue": {
-      "complexity_critical": {
-        "count": 1
-      },
-      "crap_critical": {
-        "count": 1
-      }
-    },
-    "src/components/sidebar/ComfyMenuButton.vue": {
-      "crap_high": {
-        "count": 1
-      }
-    },
-    "src/components/sidebar/SideToolbar.vue": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/components/sidebar/tabs/AssetsSidebarTab.vue": {
-      "complexity_moderate": {
-        "count": 1
-      },
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/components/sidebar/tabs/BaseWorkflowsSidebarTab.vue": {
-      "complexity_moderate": {
-        "count": 1
-      },
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/components/sidebar/tabs/NodeLibrarySidebarTab.vue": {
-      "complexity_high": {
-        "count": 1
-      },
-      "crap_high": {
-        "count": 1
-      }
-    },
-    "src/components/sidebar/tabs/modelLibrary/DownloadItem.vue": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/components/sidebar/tabs/nodeLibrary/EssentialNodesPanel.vue": {
-      "complexity_moderate": {
-        "count": 1
-      },
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/components/sidebar/tabs/queue/MediaLightbox.vue": {
-      "complexity_moderate": {
-        "count": 1
-      }
-    },
-    "src/components/topbar/CurrentUserButton.vue": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/components/topbar/CurrentUserPopoverLegacy.vue": {
-      "complexity_high": {
-        "count": 1
-      },
-      "crap_high": {
-        "count": 1
-      }
-    },
-    "src/components/topbar/TopbarBadge.vue": {
-      "complexity_high": {
-        "count": 1
-      },
-      "crap_high": {
-        "count": 1
-      }
-    },
-    "src/components/ui/Popover.vue": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/components/ui/chart/useChart.ts": {
-      "crap_high": {
-        "count": 1
-      }
-    },
-    "src/components/ui/multi-select/MultiSelect.vue": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/components/videoEdit/VideoEditPanel.vue": {
-      "complexity_critical": {
-        "count": 1
-      },
-      "crap_critical": {
-        "count": 1
-      }
-    },
-    "src/components/videoEdit/VideoFilmstripTrim.vue": {
-      "complexity_critical": {
-        "count": 1
-      },
-      "crap_critical": {
-        "count": 1
-      }
-    },
-    "src/components/widget/layout/BaseModalLayout.vue": {
-      "complexity_moderate": {
-        "count": 1
-      },
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/composables/auth/useAuthActions.ts": {
-      "complexity_high": {
-        "count": 1
-      },
-      "crap_high": {
-        "count": 1
-      }
-    },
-    "src/platform/billing/composables/useBillingDialogs.ts": {
-      "crap_high": {
-        "count": 1
-      }
-    },
-    "src/composables/bottomPanelTabs/useLogsTerminal.ts": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/composables/boundingBoxes/boundingBoxesUtil.ts": {
-      "complexity_critical": {
-        "count": 1
-      },
-      "crap_critical": {
-        "count": 1
-      }
-    },
-    "src/composables/boundingBoxes/useBoundingBoxes.ts": {
-      "complexity_critical": {
-        "count": 1
-      },
-      "crap_critical": {
-        "count": 1
-      },
-      "crap_high": {
-        "count": 1
-      },
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/composables/graph/contextMenuConverter.ts": {
-      "complexity_high": {
-        "count": 2
       },
       "complexity_moderate": {
-        "count": 1
-      },
-      "crap_high": {
-        "count": 1
-      }
-    },
-    "src/composables/graph/useErrorClearingHooks.ts": {
-      "crap_high": {
-        "count": 1
-      }
-    },
-    "src/composables/graph/useGraphNodeManager.ts": {
-      "complexity_moderate": {
-        "count": 1
-      },
-      "crap_high": {
-        "count": 1
+        "count": 4
       },
       "crap_moderate": {
         "count": 3
       }
     },
-    "src/composables/graph/useGroupMenuOptions.ts": {
+    "packages/layer-editor/src/kinds/group.ts": {
       "crap_moderate": {
         "count": 1
       }
     },
-    "src/composables/graph/useImageMenuOptions.ts": {
+    "packages/layer-editor/src/kinds/raster.ts": {
       "crap_moderate": {
         "count": 1
       }
     },
-    "src/composables/graph/useMoreOptionsMenu.ts": {
+    "packages/layer-editor/src/persistence/compositorLayerState.ts": {
+      "complexity_moderate": {
+        "count": 2
+      },
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "packages/layer-editor/src/render/renderStack.ts": {
+      "complexity_high": {
+        "count": 1
+      },
+      "complexity_moderate": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "packages/layer-editor/src/snapping.ts": {
       "complexity_critical": {
         "count": 1
       },
@@ -821,12 +353,31 @@
         "count": 1
       }
     },
-    "src/composables/graph/useNodeErrorFlagSync.ts": {
-      "complexity_moderate": {
+    "packages/layer-editor/src/tools/selectTool.ts": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "packages/layer-editor/src/tools/transformTool.ts": {
+      "complexity_high": {
+        "count": 2
+      },
+      "crap_high": {
+        "count": 2
+      }
+    },
+    "packages/layer-editor/src/vue/useLayerEditorSession.ts": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
         "count": 1
       },
       "crap_moderate": {
-        "count": 1
+        "count": 4
       }
     },
     "packages/mask-editor/src/useBrushDrawing.ts": {
@@ -862,18 +413,7 @@
       }
     },
     "packages/mask-editor/src/useKeyboard.ts": {
-      "crap_high": {
-        "count": 1
-      }
-    },
-    "src/renderer/extensions/maskEditor/composables/useMaskEditorLoader.ts": {
-      "complexity_critical": {
-        "count": 1
-      },
-      "crap_critical": {
-        "count": 1
-      },
-      "crap_high": {
+      "crap_moderate": {
         "count": 1
       }
     },
@@ -890,11 +430,446 @@
         "count": 1
       }
     },
-    "src/composables/node/useNodeBadge.ts": {
+    "packages/settings-core/src/settingStore.ts": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "packages/shared-frontend-utils/src/colorUtil.ts": {
+      "complexity_high": {
+        "count": 2
+      },
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "packages/shared-frontend-utils/src/nodePricing.ts": {
+      "complexity_high": {
+        "count": 1
+      },
+      "complexity_moderate": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 2
+      }
+    },
+    "packages/telemetry/src/reportError.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "packages/viewport3d/src/cameraInfo/CameraInfoViewport.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "packages/viewport3d/src/load3d/CameraManager.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "packages/viewport3d/src/load3d/Load3d.ts": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "packages/viewport3d/src/load3d/LoaderManager.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "packages/viewport3d/src/load3d/SceneManager.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "packages/viewport3d/src/load3d/SceneModelManager.ts": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "packages/viewport3d/src/load3d/loader/ply.ts": {
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "scripts/agent-replay.ts": {
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "scripts/agentConversationAssemble.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "scripts/agentConversationFromLangfuse.ts": {
       "complexity_critical": {
         "count": 1
       },
       "crap_critical": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "scripts/agentConversationRecord.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "scripts/check-unused-i18n-keys.ts": {
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "scripts/cloud-manifest.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "complexity_high": {
+        "count": 2
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "scripts/dev-agent-integration.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "scripts/dev-agent-options.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "complexity_moderate": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "scripts/diff-i18n.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "scripts/i18n/translate.ts": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "scripts/i18n/update-locales.ts": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "scripts/registry-census/matrix_runner.ts": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "scripts/release-sheriff/release-sheriff.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/base/storage/safeStorage.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/components/LiteGraphCanvasSplitterOverlay.vue": {
+      "complexity_critical": {
+        "count": 1
+      }
+    },
+    "src/components/TopMenuSection.vue": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/components/builder/AppBuilder.vue": {
+      "complexity_high": {
+        "count": 2
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/components/builder/AppModeWidgetList.vue": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/components/common/FormItem.vue": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/components/common/LazyImage.vue": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/components/common/WaveAudioPlayer.vue": {
+      "complexity_high": {
+        "count": 1
+      }
+    },
+    "src/components/curve/curveUtils.ts": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/components/dialog/GlobalDialog.vue": {
+      "complexity_high": {
+        "count": 1
+      }
+    },
+    "src/components/dialog/content/ConfirmationDialogContent.vue": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/components/dialog/content/SignInContent.vue": {
+      "complexity_high": {
+        "count": 1
+      }
+    },
+    "src/components/graph/DomWidgets.vue": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "src/components/graph/GraphCanvas.vue": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/components/graph/NodeTooltip.vue": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "src/components/graph/SelectionToolbox.vue": {
+      "complexity_critical": {
+        "count": 1
+      }
+    },
+    "src/components/helpcenter/HelpCenterMenuContent.vue": {
+      "complexity_high": {
+        "count": 1
+      }
+    },
+    "src/components/imagecrop/WidgetImageCrop.vue": {
+      "complexity_high": {
+        "count": 1
+      }
+    },
+    "src/components/node/NodeHelpContent.vue": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/components/node/NodePreview.vue": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/components/queue/job/JobAssetsList.vue": {
+      "complexity_high": {
+        "count": 1
+      }
+    },
+    "src/components/queue/job/JobDetailsPopover.vue": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/components/queue/job/useQueueEstimates.test.ts": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/components/range/RangeEditor.vue": {
+      "complexity_high": {
+        "count": 1
+      }
+    },
+    "src/components/searchbox/v2/NodeSearchContent.vue": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/components/searchbox/v2/NodeSearchListItem.vue": {
+      "complexity_high": {
+        "count": 1
+      }
+    },
+    "src/components/sidebar/tabs/BaseWorkflowsSidebarTab.vue": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/components/sidebar/tabs/NodeLibrarySidebarTab.vue": {
+      "complexity_high": {
+        "count": 1
+      }
+    },
+    "src/components/sidebar/tabs/nodeLibrary/EssentialNodesPanel.vue": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/components/sidebar/tabs/queue/MediaLightbox.vue": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/components/topbar/CurrentUserPopoverLegacy.vue": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/components/topbar/TopbarBadge.vue": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/components/videoEdit/VideoEditPanel.vue": {
+      "complexity_critical": {
+        "count": 1
+      }
+    },
+    "src/components/videoEdit/VideoFilmstripTrim.vue": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/composables/auth/useAuthActions.ts": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/composables/bottomPanelTabs/useLogsTerminal.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/composables/boundingBoxes/boundingBoxesUtil.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/composables/boundingBoxes/useBoundingBoxes.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/composables/graph/contextMenuConverter.ts": {
+      "complexity_high": {
+        "count": 1
+      }
+    },
+    "src/composables/graph/useErrorClearingHooks.ts": {
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "src/composables/graph/useImageMenuOptions.ts": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/composables/graph/useMoreOptionsMenu.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "src/composables/graph/useNodeErrorFlagSync.ts": {
+      "complexity_moderate": {
+        "count": 1
+      },
+      "crap_moderate": {
         "count": 1
       }
     },
@@ -903,34 +878,7 @@
         "count": 1
       }
     },
-    "src/composables/node/useNodePricing.ts": {
-      "complexity_critical": {
-        "count": 1
-      },
-      "complexity_moderate": {
-        "count": 2
-      },
-      "crap_critical": {
-        "count": 1
-      },
-      "crap_moderate": {
-        "count": 4
-      }
-    },
-    "src/composables/node/usePriceBadge.ts": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
     "src/composables/node/usePromotedPreviews.ts": {
-      "crap_moderate": {
-        "count": 2
-      }
-    },
-    "src/renderer/extensions/painter/composables/usePainter.ts": {
-      "crap_high": {
-        "count": 2
-      },
       "crap_moderate": {
         "count": 1
       }
@@ -964,6 +912,11 @@
         "count": 1
       }
     },
+    "src/composables/queue/useResultGallery.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
     "src/composables/useCanvasDrop.ts": {
       "complexity_high": {
         "count": 1
@@ -972,16 +925,8 @@
         "count": 1
       }
     },
-    "src/composables/useContextMenuTranslation.ts": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
     "src/composables/useCoreCommands.ts": {
       "complexity_moderate": {
-        "count": 1
-      },
-      "crap_moderate": {
         "count": 1
       }
     },
@@ -993,37 +938,15 @@
         "count": 1
       },
       "crap_moderate": {
-        "count": 2
-      }
-    },
-    "src/extensions/core/load3d/composables/useLoad3d.ts": {
-      "complexity_high": {
-        "count": 1
-      },
-      "crap_high": {
-        "count": 4
-      },
-      "crap_moderate": {
-        "count": 2
-      }
-    },
-    "src/extensions/core/load3d/composables/useLoad3dViewer.ts": {
-      "complexity_critical": {
-        "count": 1
-      },
-      "crap_critical": {
-        "count": 1
-      }
-    },
-    "src/composables/usePaste.ts": {
-      "complexity_critical": {
-        "count": 1
-      },
-      "crap_critical": {
         "count": 1
       }
     },
     "src/composables/useRangeEditor.test.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/composables/useWaveAudioPlayer.ts": {
       "crap_moderate": {
         "count": 1
       }
@@ -1041,25 +964,35 @@
         "count": 1
       }
     },
+    "src/composables/video/useVideoEditModel.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
     "src/composables/video/useVideoFilmstrip.ts": {
       "complexity_critical": {
-        "count": 1
-      },
-      "complexity_moderate": {
         "count": 1
       },
       "crap_critical": {
         "count": 1
       }
     },
-    "src/composables/video/useVideoSourceUrl.ts": {
-      "crap_moderate": {
+    "src/core/graph/clipboard/graphTransfer.ts": {
+      "complexity_high": {
+        "count": 2
+      }
+    },
+    "src/core/graph/clipboard/vintageClipboard.ts": {
+      "complexity_moderate": {
         "count": 1
       }
     },
     "src/core/graph/nodeDef/ComfyNodeDefImpl.ts": {
+      "crap_high": {
+        "count": 1
+      },
       "crap_moderate": {
-        "count": 2
+        "count": 1
       }
     },
     "src/core/graph/subgraph/migration/proxyWidgetMigration.ts": {
@@ -1085,25 +1018,27 @@
       "complexity_high": {
         "count": 1
       },
-      "crap_high": {
+      "crap_moderate": {
         "count": 1
       }
     },
     "src/core/graph/widgets/dynamicWidgets.ts": {
-      "complexity_critical": {
+      "complexity_high": {
         "count": 1
       },
-      "complexity_high": {
-        "count": 2
-      },
-      "crap_critical": {
+      "complexity_moderate": {
         "count": 1
       },
       "crap_high": {
-        "count": 2
+        "count": 1
       },
       "crap_moderate": {
-        "count": 2
+        "count": 7
+      }
+    },
+    "src/core/graph/widgets/valueControl.ts": {
+      "crap_moderate": {
+        "count": 1
       }
     },
     "src/extensions/core/editAttention.ts": {
@@ -1119,78 +1054,69 @@
         "count": 4
       },
       "complexity_high": {
-        "count": 1
+        "count": 2
       },
       "complexity_moderate": {
-        "count": 4
+        "count": 2
       },
       "crap_critical": {
         "count": 4
       },
       "crap_high": {
-        "count": 1
+        "count": 2
       },
       "crap_moderate": {
-        "count": 4
+        "count": 3
       }
     },
-    "src/extensions/core/groupOptions.ts": {
+    "src/extensions/core/load3d/components/Load3DControls.vue": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/extensions/core/load3d/components/Load3DMenuBar.vue": {
+      "complexity_high": {
+        "count": 1
+      }
+    },
+    "src/extensions/core/load3d/components/menubar/HdriMenuGroup.vue": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/extensions/core/load3d/components/menubar/ModelMenuGroup.vue": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/extensions/core/load3d/components/menubar/SceneMenuGroup.vue": {
+      "complexity_high": {
+        "count": 1
+      }
+    },
+    "src/extensions/core/load3d/composables/useLoad3d.ts": {
+      "crap_high": {
+        "count": 2
+      },
       "crap_moderate": {
+        "count": 2
+      }
+    },
+    "src/extensions/core/load3d/composables/useLoad3dViewer.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
         "count": 1
       }
     },
     "src/extensions/core/load3d/load3d.ts": {
       "crap_moderate": {
-        "count": 2
-      }
-    },
-    "src/extensions/core/load3d/CameraManager.ts": {
-      "crap_moderate": {
         "count": 1
       }
     },
-    "src/extensions/core/load3d/Load3d.ts": {
-      "crap_high": {
-        "count": 1
-      }
-    },
-    "src/extensions/core/load3d/LoaderManager.ts": {
-      "complexity_moderate": {
-        "count": 1
-      },
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/extensions/core/load3d/PointCloudModelAdapter.ts": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/extensions/core/load3d/RecordingManager.ts": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/extensions/core/load3d/SceneManager.ts": {
-      "complexity_moderate": {
-        "count": 1
-      },
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/extensions/core/load3d/SceneModelManager.ts": {
+    "src/extensions/core/load3d/load3dInstances.ts": {
       "complexity_high": {
-        "count": 1
-      },
-      "complexity_moderate": {
-        "count": 1
-      },
-      "crap_high": {
-        "count": 1
-      },
-      "crap_moderate": {
         "count": 1
       }
     },
@@ -1202,26 +1128,19 @@
         "count": 1
       }
     },
-    "src/extensions/core/simpleTouchSupport.ts": {
-      "crap_high": {
-        "count": 1
-      }
-    },
     "src/extensions/core/slotDefaults.ts": {
-      "complexity_high": {
+      "complexity_moderate": {
         "count": 1
       },
-      "crap_high": {
-        "count": 1
-      }
-    },
-    "src/extensions/core/uploadAudio.ts": {
-      "complexity_moderate": {
+      "crap_moderate": {
         "count": 1
       }
     },
     "src/extensions/core/widgetInputs.ts": {
       "complexity_critical": {
+        "count": 1
+      },
+      "complexity_high": {
         "count": 1
       },
       "complexity_moderate": {
@@ -1231,16 +1150,10 @@
         "count": 1
       },
       "crap_high": {
-        "count": 1
-      },
-      "crap_moderate": {
-        "count": 1
+        "count": 3
       }
     },
     "src/i18n.ts": {
-      "complexity_moderate": {
-        "count": 1
-      },
       "crap_moderate": {
         "count": 1
       }
@@ -1250,35 +1163,45 @@
         "count": 1
       },
       "complexity_high": {
-        "count": 2
+        "count": 1
+      },
+      "complexity_moderate": {
+        "count": 1
       },
       "crap_critical": {
         "count": 1
       },
       "crap_high": {
-        "count": 2
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
       }
     },
     "src/lib/litegraph/src/CurveEditor.ts": {
       "crap_moderate": {
-        "count": 2
+        "count": 1
+      }
+    },
+    "src/lib/litegraph/src/LGraph.deepCollision.test.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/lib/litegraph/src/LGraph.inputSlotRealign.test.ts": {
+      "crap_moderate": {
+        "count": 1
       }
     },
     "src/lib/litegraph/src/LGraph.ts": {
       "complexity_critical": {
-        "count": 6
-      },
-      "complexity_high": {
-        "count": 1
+        "count": 7
       },
       "complexity_moderate": {
-        "count": 3
+        "count": 1
       },
       "crap_critical": {
-        "count": 6
-      },
-      "crap_high": {
-        "count": 1
+        "count": 7
       },
       "crap_moderate": {
         "count": 5
@@ -1291,22 +1214,22 @@
     },
     "src/lib/litegraph/src/LGraphCanvas.ts": {
       "complexity_critical": {
-        "count": 21
+        "count": 18
       },
       "complexity_high": {
-        "count": 13
+        "count": 8
       },
       "complexity_moderate": {
-        "count": 4
+        "count": 5
       },
       "crap_critical": {
-        "count": 21
+        "count": 18
       },
       "crap_high": {
-        "count": 14
+        "count": 10
       },
       "crap_moderate": {
-        "count": 15
+        "count": 12
       }
     },
     "src/lib/litegraph/src/LGraphGroup.ts": {
@@ -1316,23 +1239,26 @@
     },
     "src/lib/litegraph/src/LGraphNode.ts": {
       "complexity_critical": {
-        "count": 6
+        "count": 4
       },
       "complexity_high": {
-        "count": 2
+        "count": 3
+      },
+      "complexity_moderate": {
+        "count": 1
       },
       "crap_critical": {
-        "count": 6
+        "count": 4
       },
       "crap_high": {
-        "count": 6
+        "count": 7
       },
       "crap_moderate": {
-        "count": 9
+        "count": 6
       }
     },
     "src/lib/litegraph/src/LLink.ts": {
-      "crap_moderate": {
+      "crap_high": {
         "count": 1
       }
     },
@@ -1340,25 +1266,20 @@
       "complexity_critical": {
         "count": 1
       },
-      "complexity_high": {
-        "count": 1
-      },
       "complexity_moderate": {
-        "count": 1
+        "count": 2
       },
       "crap_critical": {
         "count": 1
       },
       "crap_high": {
-        "count": 5
+        "count": 3
+      },
+      "crap_moderate": {
+        "count": 2
       }
     },
     "src/lib/litegraph/src/Reroute.ts": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/lib/litegraph/src/canvas/FloatingRenderLink.ts": {
       "crap_moderate": {
         "count": 1
       }
@@ -1377,16 +1298,10 @@
       }
     },
     "src/lib/litegraph/src/canvas/LinkConnector.ts": {
-      "complexity_critical": {
-        "count": 1
-      },
       "complexity_high": {
         "count": 3
       },
       "complexity_moderate": {
-        "count": 1
-      },
-      "crap_critical": {
         "count": 1
       },
       "crap_high": {
@@ -1398,11 +1313,6 @@
     },
     "src/lib/litegraph/src/canvas/ToInputFromIoNodeLink.ts": {
       "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/lib/litegraph/src/contextMenuCompat.ts": {
-      "crap_high": {
         "count": 1
       }
     },
@@ -1420,8 +1330,32 @@
         "count": 1
       }
     },
+    "src/lib/litegraph/src/contextMenuCompat.ts": {
+      "crap_high": {
+        "count": 1
+      }
+    },
     "src/lib/litegraph/src/draw.ts": {
       "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/lib/litegraph/src/extensionPersistence.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/lib/litegraph/src/linkDeduplication.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "complexity_high": {
+        "count": 1
+      },
+      "complexity_moderate": {
+        "count": 1
+      },
+      "crap_critical": {
         "count": 1
       }
     },
@@ -1440,27 +1374,30 @@
     },
     "src/lib/litegraph/src/subgraph/ExecutableNodeDTO.ts": {
       "complexity_high": {
-        "count": 2
+        "count": 1
       },
       "crap_high": {
-        "count": 2
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
       }
     },
     "src/lib/litegraph/src/subgraph/SubgraphInput.ts": {
       "crap_high": {
         "count": 1
+      }
+    },
+    "src/lib/litegraph/src/subgraph/SubgraphNode.ts": {
+      "complexity_moderate": {
+        "count": 1
       },
       "crap_moderate": {
         "count": 1
       }
     },
-    "src/lib/litegraph/src/subgraph/SubgraphInputNode.ts": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
     "src/lib/litegraph/src/subgraph/SubgraphOutput.ts": {
-      "crap_high": {
+      "crap_moderate": {
         "count": 1
       }
     },
@@ -1477,6 +1414,9 @@
     "src/lib/litegraph/src/subgraph/subgraphDeduplication.ts": {
       "complexity_moderate": {
         "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
       }
     },
     "src/lib/litegraph/src/subgraph/subgraphUtils.ts": {
@@ -1491,12 +1431,12 @@
     },
     "src/lib/litegraph/src/utils/mathParser.ts": {
       "crap_moderate": {
-        "count": 2
+        "count": 1
       }
     },
     "src/lib/litegraph/src/widgets/BaseWidget.ts": {
       "crap_moderate": {
-        "count": 1
+        "count": 2
       }
     },
     "src/lib/litegraph/src/widgets/ComboWidget.ts": {
@@ -1504,7 +1444,7 @@
         "count": 1
       },
       "crap_moderate": {
-        "count": 2
+        "count": 1
       }
     },
     "src/lib/litegraph/src/widgets/KnobWidget.ts": {
@@ -1513,34 +1453,64 @@
       }
     },
     "src/lib/litegraph/src/widgets/widgetMap.ts": {
-      "complexity_high": {
+      "complexity_critical": {
         "count": 1
       },
-      "crap_high": {
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "src/lib/litegraph/test/fixtures/cleanExtensionCompatFixture.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/platform/account/auth/WorkspaceAuthGate.vue": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "src/platform/account/components/SubscriptionPanelContentWorkspace.vue": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "src/platform/account/components/dialogs/settings/MembersPanelContent.vue": {
+      "complexity_critical": {
+        "count": 1
+      }
+    },
+    "src/platform/account/composables/useMembersPanel.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/platform/account/composables/useWorkspaceMenuItems.ts": {
+      "crap_moderate": {
         "count": 1
       }
     },
     "src/platform/assets/components/AssetCard.vue": {
-      "complexity_high": {
-        "count": 1
-      },
-      "crap_high": {
+      "complexity_moderate": {
         "count": 1
       }
     },
     "src/platform/assets/components/AssetExportProgressDialog.vue": {
       "complexity_high": {
         "count": 1
-      },
-      "crap_high": {
-        "count": 1
       }
     },
     "src/platform/assets/components/AssetsListItem.vue": {
-      "complexity_high": {
-        "count": 1
-      },
-      "crap_high": {
+      "complexity_moderate": {
         "count": 1
       }
     },
@@ -1550,22 +1520,6 @@
       }
     },
     "src/platform/assets/components/MediaAssetCard.vue": {
-      "complexity_critical": {
-        "count": 1
-      },
-      "crap_critical": {
-        "count": 1
-      },
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/platform/assets/components/MediaAssetContextMenu.vue": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/platform/assets/components/MediaAssetFilterMenu.vue": {
       "complexity_moderate": {
         "count": 1
       },
@@ -1573,42 +1527,28 @@
         "count": 1
       }
     },
-    "src/platform/assets/components/MediaAssetSettingsMenu.vue": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/platform/assets/components/ModelImportProgressDialog.vue": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/platform/assets/components/UploadModelConfirmation.vue": {
-      "crap_high": {
+    "src/platform/assets/components/MediaAssetFilterMenu.vue": {
+      "complexity_moderate": {
         "count": 1
       }
     },
     "src/platform/assets/components/UploadModelFooter.vue": {
-      "complexity_high": {
-        "count": 1
-      },
-      "crap_high": {
+      "complexity_moderate": {
         "count": 1
       }
     },
     "src/platform/assets/components/UploadModelProgress.vue": {
-      "complexity_critical": {
-        "count": 1
-      },
-      "crap_critical": {
+      "complexity_moderate": {
         "count": 1
       }
     },
     "src/platform/assets/components/modelInfo/ModelInfoPanel.vue": {
-      "complexity_critical": {
+      "complexity_moderate": {
         "count": 1
-      },
-      "crap_critical": {
+      }
+    },
+    "src/platform/assets/components/sidebar/AssetsSidebarTab.vue": {
+      "complexity_moderate": {
         "count": 1
       }
     },
@@ -1617,26 +1557,12 @@
         "count": 1
       }
     },
-    "src/platform/assets/composables/useAssetSelection.ts": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
     "src/platform/assets/composables/useMediaAssetActions.ts": {
-      "complexity_critical": {
-        "count": 1
-      },
       "complexity_high": {
-        "count": 1
-      },
-      "crap_critical": {
         "count": 1
       },
       "crap_high": {
         "count": 1
-      },
-      "crap_moderate": {
-        "count": 2
       }
     },
     "src/platform/assets/composables/useUploadModelWizard.ts": {
@@ -1650,6 +1576,11 @@
         "count": 1
       },
       "crap_high": {
+        "count": 2
+      }
+    },
+    "src/platform/assets/integration/assetEditorActions.ts": {
+      "crap_moderate": {
         "count": 1
       }
     },
@@ -1661,7 +1592,62 @@
         "count": 2
       }
     },
-    "src/platform/cloud/oauth/OAuthConsentView.vue": {
+    "src/platform/assets/stores/assetDownloadStore.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/platform/assets/stores/assetExportStore.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/platform/assets/stores/assetsSidebarBadgeStore.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/platform/assets/stores/assetsStore.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/platform/billing/components/PricingTableWorkspace.vue": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/platform/billing/components/SubscriptionRequiredDialogContentUnified.vue": {
+      "complexity_high": {
+        "count": 1
+      }
+    },
+    "src/platform/billing/components/SubscriptionRequiredDialogContentWorkspace.vue": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/platform/billing/components/UnifiedPricingTable.vue": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/platform/billing/components/settings/BillingStatusBanner.vue": {
       "complexity_moderate": {
         "count": 1
       },
@@ -1669,69 +1655,87 @@
         "count": 1
       }
     },
-    "src/platform/cloud/oauth/oauthApi.ts": {
+    "src/platform/billing/components/settings/UsageLogsTable.vue": {
+      "complexity_high": {
+        "count": 2
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/platform/billing/composables/useBillingAutoTopUpCard.ts": {
       "crap_moderate": {
         "count": 1
       }
     },
-    "src/platform/cloud/onboarding/CloudSubscriptionRedirectView.vue": {
-      "complexity_high": {
+    "src/platform/billing/composables/useBillingCapabilities.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
         "count": 1
       },
       "crap_high": {
         "count": 1
       }
     },
-    "src/platform/cloud/onboarding/desktopLoginRedemption.ts": {
+    "src/platform/billing/composables/useBillingDialogs.ts": {
       "crap_high": {
         "count": 1
       }
     },
-    "src/platform/cloud/onboarding/survey/DynamicSurveyField.vue": {
-      "complexity_high": {
+    "src/platform/billing/composables/useDowngradeToPersonal.ts": {
+      "complexity_critical": {
         "count": 1
       },
-      "crap_high": {
+      "crap_critical": {
         "count": 1
       }
     },
-    "src/platform/cloud/onboarding/survey/DynamicSurveyForm.vue": {
+    "src/platform/billing/composables/useSubscriptionCheckout.ts": {
+      "complexity_critical": {
+        "count": 3
+      },
+      "complexity_high": {
+        "count": 2
+      },
       "complexity_moderate": {
         "count": 1
       },
+      "crap_critical": {
+        "count": 3
+      },
+      "crap_high": {
+        "count": 3
+      },
       "crap_moderate": {
-        "count": 1
+        "count": 2
       }
     },
-    "src/platform/cloud/onboarding/survey/surveySchema.ts": {
+    "src/platform/billing/composables/useWorkspaceBilling.ts": {
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "src/platform/billing/stores/billingOperationStore.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
       "complexity_high": {
         "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 3
+      },
+      "crap_moderate": {
+        "count": 2
       }
     },
     "src/platform/billing/subscription/components/CreditsTile.vue": {
-      "complexity_high": {
-        "count": 1
-      },
-      "crap_high": {
-        "count": 1
-      }
-    },
-    "src/platform/billing/subscription/components/PricingTable.vue": {
-      "complexity_high": {
-        "count": 1
-      },
-      "complexity_moderate": {
-        "count": 1
-      },
-      "crap_high": {
-        "count": 1
-      },
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/platform/billing/subscription/components/SubscriptionPanelContentLegacy.vue": {
-      "crap_moderate": {
+      "complexity_critical": {
         "count": 1
       }
     },
@@ -1746,16 +1750,98 @@
     "src/platform/billing/subscription/composables/useSubscriptionDialog.ts": {
       "crap_high": {
         "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
       }
     },
     "src/platform/billing/subscription/utils/subscriptionCheckoutTracker.ts": {
       "crap_high": {
         "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
       }
     },
-    "src/platform/billing/subscription/utils/subscriptionCheckoutUtil.ts": {
+    "src/platform/billing/utils/pendingSubscriptionCheckout.ts": {
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/platform/cloud/oauth/OAuthConsentView.vue": {
+      "complexity_high": {
+        "count": 1
+      }
+    },
+    "src/platform/cloud/oauth/oauthApi.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/platform/cloud/onboarding/desktopLoginRedemption.ts": {
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/platform/cloud/onboarding/survey/DynamicSurveyField.vue": {
+      "complexity_high": {
+        "count": 1
+      }
+    },
+    "src/platform/cloud/onboarding/survey/DynamicSurveyForm.vue": {
       "complexity_moderate": {
         "count": 1
+      }
+    },
+    "src/platform/cloud/onboarding/survey/surveySchema.ts": {
+      "complexity_high": {
+        "count": 1
+      }
+    },
+    "src/platform/customNodes/manager/components/ManagerProgressToast.vue": {
+      "complexity_critical": {
+        "count": 1
+      }
+    },
+    "src/platform/customNodes/manager/components/manager/NodeConflictDialogContent.vue": {
+      "complexity_high": {
+        "count": 1
+      }
+    },
+    "src/platform/customNodes/manager/components/manager/infoPanel/InfoPanel.vue": {
+      "complexity_high": {
+        "count": 1
+      }
+    },
+    "src/platform/customNodes/manager/composables/dialogs/useManagerDialog.ts": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/platform/customNodes/manager/composables/useConflictDetection.ts": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/platform/customNodes/manager/composables/useManagerDisplayPacks.ts": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/platform/customNodes/manager/services/comfyManagerService.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/platform/customNodes/useReconnectNodeDefinitionRefresh.ts": {
+      "crap_moderate": {
+        "count": 2
       }
     },
     "src/platform/keybindings/keybindingService.ts": {
@@ -1771,55 +1857,8 @@
         "count": 1
       }
     },
-    "src/platform/workflowErrors/missingMedia/missingMediaScan.ts": {
-      "complexity_moderate": {
-        "count": 1
-      }
-    },
-    "src/platform/workflowErrors/missingModel/components/MissingModelRow.vue": {
-      "complexity_critical": {
-        "count": 1
-      },
-      "crap_critical": {
-        "count": 1
-      }
-    },
-    "src/platform/workflowErrors/missingModel/missingModelScan.ts": {
-      "complexity_moderate": {
-        "count": 1
-      }
-    },
-    "src/platform/workflowErrors/missingModel/missingModelStore.ts": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/platform/workflowErrors/nodeReplacement/components/SwapNodeGroupRow.vue": {
-      "complexity_moderate": {
-        "count": 1
-      },
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/platform/workflowErrors/nodeReplacement/missingNodeScan.ts": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/platform/workflowErrors/nodeReplacement/useNodeReplacement.ts": {
-      "complexity_high": {
-        "count": 3
-      },
-      "crap_high": {
-        "count": 3
-      }
-    },
     "src/platform/onboarding/TourSpotlight.vue": {
-      "complexity_high": {
-        "count": 1
-      },
-      "crap_high": {
+      "complexity_moderate": {
         "count": 1
       }
     },
@@ -1836,36 +1875,54 @@
         "count": 1
       }
     },
+    "src/platform/openOnCloud/cloudCompatibilityApi.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/platform/openOnCloud/components/RunOnCloudDialog.vue": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/platform/openOnCloud/localOpenOnCloudRollout.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/platform/openOnCloud/openRunOnCloudDialog.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/platform/openOnCloud/stores/cloudWorkflowCheckStore.ts": {
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "src/platform/openOnCloud/stores/localModelUploadStore.ts": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/platform/openOnCloud/useRunOnCloudHandoff.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
     "src/platform/remoteConfig/refreshRemoteConfig.ts": {
       "complexity_moderate": {
         "count": 1
       }
     },
     "src/platform/secrets/components/SecretFormDialog.vue": {
-      "complexity_high": {
-        "count": 1
-      },
-      "crap_high": {
+      "complexity_moderate": {
         "count": 1
       }
     },
-    "src/platform/settings/components/SettingDialog.vue": {
+    "src/platform/skills/composables/useSkillPackForm.ts": {
       "crap_moderate": {
         "count": 1
-      }
-    },
-    "packages/settings-core/src/settingStore.ts": {
-      "complexity_critical": {
-        "count": 1
-      },
-      "crap_critical": {
-        "count": 1
-      },
-      "crap_high": {
-        "count": 1
-      },
-      "crap_moderate": {
-        "count": 2
       }
     },
     "src/platform/telemetry/providers/cloud/DatadogRumTelemetryProvider.ts": {
@@ -1884,35 +1941,24 @@
       }
     },
     "src/platform/updates/common/releaseService.ts": {
-      "complexity_critical": {
-        "count": 1
-      },
-      "crap_critical": {
+      "crap_high": {
         "count": 1
       }
     },
     "src/platform/updates/common/releaseStore.ts": {
       "crap_moderate": {
-        "count": 2
-      }
-    },
-    "src/platform/updates/common/useFrontendVersionMismatchWarning.test.ts": {
-      "crap_moderate": {
-        "count": 1
+        "count": 3
       }
     },
     "src/platform/workflow/core/services/workflowService.ts": {
       "complexity_critical": {
-        "count": 1
-      },
-      "complexity_high": {
-        "count": 1
+        "count": 5
       },
       "crap_critical": {
-        "count": 1
+        "count": 5
       },
-      "crap_high": {
-        "count": 2
+      "crap_moderate": {
+        "count": 6
       }
     },
     "src/platform/workflow/management/stores/comfyWorkflow.ts": {
@@ -1920,21 +1966,18 @@
         "count": 1
       }
     },
-    "src/platform/workflow/persistence/stores/workflowDraftStoreV2.ts": {
+    "src/platform/workflow/management/stores/workflowStore.ts": {
       "crap_moderate": {
-        "count": 1
+        "count": 2
       }
     },
-    "src/platform/workflow/sharing/components/OpenSharedWorkflowDialogContent.vue": {
+    "src/platform/workflow/persistence/base/storageIO.ts": {
       "crap_moderate": {
         "count": 1
       }
     },
     "src/platform/workflow/sharing/components/ShareWorkflowDialogContent.vue": {
       "complexity_critical": {
-        "count": 1
-      },
-      "crap_critical": {
         "count": 1
       }
     },
@@ -1943,21 +1986,8 @@
         "count": 1
       }
     },
-    "src/platform/workflow/sharing/components/publish/ComfyHubPublishNav.vue": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/platform/workflow/sharing/components/publish/ComfyHubPublishWizardContent.vue": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
     "src/platform/workflow/sharing/components/publish/ComfyHubThumbnailStep.vue": {
       "complexity_high": {
-        "count": 1
-      },
-      "crap_high": {
         "count": 1
       }
     },
@@ -1975,6 +2005,9 @@
       },
       "crap_critical": {
         "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
       }
     },
     "src/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader.ts": {
@@ -1983,7 +2016,12 @@
       }
     },
     "src/platform/workflow/sharing/services/workflowShareService.ts": {
-      "crap_moderate": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/platform/workflow/templates/components/WorkflowTemplateSelectorDialog.vue": {
+      "complexity_critical": {
         "count": 1
       }
     },
@@ -1992,28 +2030,80 @@
         "count": 1
       }
     },
-    "src/platform/workspace/auth/WorkspaceAuthGate.vue": {
-      "complexity_high": {
-        "count": 1
-      },
-      "crap_high": {
+    "src/platform/workflowErrors/missingMedia/missingMediaScan.ts": {
+      "complexity_moderate": {
         "count": 1
       }
     },
-    "src/platform/workspace/components/CurrentUserPopoverWorkspace.vue": {
+    "src/platform/workflowErrors/missingModel/components/MissingModelRow.vue": {
       "complexity_critical": {
         "count": 1
-      },
-      "crap_critical": {
+      }
+    },
+    "src/platform/workflowErrors/missingModel/missingModelScan.ts": {
+      "complexity_moderate": {
         "count": 1
       }
     },
-    "src/platform/workspace/components/InviteMembersForm.vue": {
+    "src/platform/workflowErrors/missingModel/missingModelStore.ts": {
       "crap_moderate": {
         "count": 1
       }
     },
-    "src/platform/billing/components/PricingTableWorkspace.vue": {
+    "src/platform/workflowErrors/nodeReplacement/components/SwapNodeGroupRow.vue": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/platform/workflowErrors/nodeReplacement/useNodeReplacement.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "complexity_high": {
+        "count": 1
+      },
+      "complexity_moderate": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 2
+      },
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "src/platform/workflowErrors/overlay/useErrorOverlayState.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/platform/workflowErrors/panel/ErrorGroupList.vue": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/platform/workflowErrors/panel/ErrorNodeCard.vue": {
+      "complexity_high": {
+        "count": 1
+      }
+    },
+    "src/platform/workflowErrors/panel/MissingNodeCard.vue": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/platform/workflowErrors/panel/MissingPackGroupRow.vue": {
+      "complexity_critical": {
+        "count": 1
+      }
+    },
+    "src/platform/workflowErrors/panel/useErrorGroups.ts": {
       "complexity_moderate": {
         "count": 1
       },
@@ -2021,71 +2111,7 @@
         "count": 1
       }
     },
-    "src/platform/billing/components/SubscriptionPanelContentWorkspace.vue": {
-      "complexity_critical": {
-        "count": 1
-      },
-      "crap_critical": {
-        "count": 1
-      },
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/platform/billing/components/SubscriptionRequiredDialogContentUnified.vue": {
-      "complexity_critical": {
-        "count": 1
-      },
-      "crap_critical": {
-        "count": 1
-      }
-    },
-    "src/platform/billing/components/SubscriptionRequiredDialogContentWorkspace.vue": {
-      "complexity_high": {
-        "count": 1
-      },
-      "crap_high": {
-        "count": 1
-      }
-    },
-    "src/platform/billing/components/SubscriptionTransitionPreviewWorkspace.vue": {
-      "complexity_moderate": {
-        "count": 1
-      },
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/platform/billing/components/TopUpCreditsDialogContentWorkspace.vue": {
-      "complexity_critical": {
-        "count": 1
-      },
-      "crap_critical": {
-        "count": 1
-      }
-    },
-    "src/platform/billing/components/UnifiedPricingTable.vue": {
-      "complexity_high": {
-        "count": 1
-      },
-      "crap_high": {
-        "count": 1
-      }
-    },
-    "src/platform/workspace/components/WorkspaceSwitcherPopover.vue": {
-      "complexity_moderate": {
-        "count": 1
-      },
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/platform/workspace/components/dialogs/TeamWorkspacesDialogContent.vue": {
-      "crap_high": {
-        "count": 1
-      }
-    },
-    "src/platform/billing/components/settings/BillingStatusBanner.vue": {
+    "src/platform/workflowErrors/panel/useErrorReport.ts": {
       "complexity_moderate": {
         "count": 1
       },
@@ -2094,108 +2120,57 @@
       }
     },
     "src/platform/workspace/components/dialogs/settings/MemberListItem.vue": {
-      "complexity_high": {
-        "count": 1
-      },
-      "crap_high": {
-        "count": 1
-      }
-    },
-    "src/platform/workspace/components/dialogs/settings/MembersPanelContent.vue": {
-      "complexity_critical": {
-        "count": 1
-      },
-      "crap_critical": {
+      "complexity_moderate": {
         "count": 1
       }
     },
     "src/platform/workspace/components/dialogs/settings/PartnerNodeAccessPanel.vue": {
       "complexity_critical": {
         "count": 1
-      },
-      "crap_critical": {
-        "count": 1
       }
     },
-    "src/platform/billing/composables/useDowngradeToPersonal.ts": {
-      "complexity_critical": {
-        "count": 1
-      },
-      "crap_critical": {
-        "count": 1
-      }
-    },
-    "src/platform/workspace/composables/useMembersPanel.ts": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/platform/billing/composables/useSubscriptionCheckout.ts": {
-      "complexity_critical": {
-        "count": 2
-      },
-      "complexity_high": {
-        "count": 2
-      },
-      "crap_critical": {
-        "count": 2
-      },
-      "crap_high": {
-        "count": 3
-      },
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/platform/billing/composables/useWorkspaceBilling.ts": {
-      "complexity_high": {
-        "count": 1
-      },
-      "crap_high": {
-        "count": 1
-      }
-    },
-    "src/platform/workspace/composables/useWorkspaceUI.ts": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/platform/billing/stores/billingOperationStore.ts": {
-      "complexity_high": {
-        "count": 1
-      },
-      "crap_high": {
-        "count": 1
-      },
+    "src/platform/workspace/stores/deploymentPickStore.ts": {
       "crap_moderate": {
         "count": 1
       }
     },
     "src/platform/workspace/stores/partnerNodeGovernanceStore.ts": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      },
       "crap_moderate": {
-        "count": 2
+        "count": 1
       }
     },
     "src/platform/workspace/stores/teamWorkspaceStore.ts": {
       "complexity_critical": {
         "count": 1
       },
+      "complexity_moderate": {
+        "count": 1
+      },
       "crap_critical": {
         "count": 1
       },
       "crap_moderate": {
-        "count": 2
+        "count": 3
       }
     },
     "src/platform/workspace/stores/workspaceAuthStore.ts": {
-      "complexity_high": {
-        "count": 3
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
       },
       "crap_high": {
-        "count": 3
+        "count": 1
       },
       "crap_moderate": {
-        "count": 3
+        "count": 1
       }
     },
     "src/renderer/core/canvas/links/linkDropOrchestrator.ts": {
@@ -2215,17 +2190,30 @@
       "complexity_critical": {
         "count": 1
       },
+      "complexity_moderate": {
+        "count": 1
+      },
       "crap_critical": {
         "count": 1
       },
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "src/renderer/core/canvas/smartGuides/dragSnapSession.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/renderer/core/canvas/smartGuides/useAlignSelection.ts": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/renderer/core/clipboard/usePaste.ts": {
       "crap_high": {
         "count": 1
       },
-      "crap_moderate": {
-        "count": 3
-      }
-    },
-    "src/renderer/core/layout/operations/layoutMutations.ts": {
       "crap_moderate": {
         "count": 1
       }
@@ -2234,11 +2222,9 @@
       "complexity_moderate": {
         "count": 1
       },
-      "crap_moderate": {
-        "count": 2
-      }
-    },
-    "src/renderer/core/layout/sync/useLayoutSync.ts": {
+      "crap_high": {
+        "count": 1
+      },
       "crap_moderate": {
         "count": 1
       }
@@ -2253,50 +2239,38 @@
         "count": 1
       }
     },
+    "src/renderer/extensions/firstRunTour/gettingStarted/firstRunEntry.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
     "src/renderer/extensions/firstRunTour/roles/heuristicRoles.test.ts": {
       "crap_moderate": {
         "count": 1
       }
     },
-    "src/renderer/extensions/firstRunTour/roles/heuristicRoles.ts": {
+    "src/renderer/extensions/firstRunTour/tour/useFirstRunTourController.ts": {
       "crap_moderate": {
         "count": 1
       }
     },
     "src/renderer/extensions/linearMode/DropZone.vue": {
-      "complexity_high": {
-        "count": 1
-      },
-      "crap_high": {
+      "complexity_moderate": {
         "count": 1
       }
     },
     "src/renderer/extensions/linearMode/LinearControls.vue": {
       "complexity_critical": {
         "count": 1
-      },
-      "crap_critical": {
-        "count": 1
       }
     },
     "src/renderer/extensions/linearMode/LinearPreview.vue": {
-      "complexity_critical": {
-        "count": 1
-      },
-      "crap_critical": {
-        "count": 1
-      }
-    },
-    "src/renderer/extensions/linearMode/MobileDisplay.vue": {
-      "crap_moderate": {
+      "complexity_moderate": {
         "count": 1
       }
     },
     "src/renderer/extensions/linearMode/OutputHistory.vue": {
-      "complexity_high": {
-        "count": 1
-      },
-      "crap_high": {
+      "complexity_moderate": {
         "count": 1
       },
       "crap_moderate": {
@@ -2313,13 +2287,14 @@
         "count": 1
       }
     },
-    "src/renderer/extensions/minimap/composables/useMinimapGraph.ts": {
-      "crap_high": {
+    "src/renderer/extensions/maskEditor/composables/useMaskEditorLoader.ts": {
+      "complexity_critical": {
         "count": 1
-      }
-    },
-    "src/renderer/extensions/minimap/data/AbstractMinimapDataSource.ts": {
-      "complexity_moderate": {
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_high": {
         "count": 1
       }
     },
@@ -2331,11 +2306,39 @@
         "count": 1
       }
     },
-    "src/renderer/extensions/vueNodes/VideoPreview.vue": {
+    "src/renderer/extensions/painter/composables/usePainter.ts": {
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "src/renderer/extensions/propertiesPanel/PropertiesPanel.vue": {
       "complexity_high": {
         "count": 1
       },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/renderer/extensions/propertiesPanel/parameters/SectionWidgets.vue": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/renderer/extensions/propertiesPanel/parameters/WidgetItem.vue": {
       "crap_high": {
+        "count": 1
+      }
+    },
+    "src/renderer/extensions/propertiesPanel/subgraph/SubgraphEditor.vue": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/renderer/extensions/vueNodes/VideoPreview.vue": {
+      "complexity_moderate": {
         "count": 1
       }
     },
@@ -2343,14 +2346,6 @@
       "complexity_critical": {
         "count": 1
       },
-      "crap_critical": {
-        "count": 1
-      },
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/renderer/extensions/vueNodes/components/InputSlot.vue": {
       "crap_moderate": {
         "count": 1
       }
@@ -2359,13 +2354,7 @@
       "complexity_critical": {
         "count": 1
       },
-      "crap_critical": {
-        "count": 1
-      },
       "crap_high": {
-        "count": 1
-      },
-      "crap_moderate": {
         "count": 1
       }
     },
@@ -2374,43 +2363,19 @@
         "count": 1
       }
     },
-    "src/renderer/extensions/vueNodes/components/NodeBadges.vue": {
+    "src/renderer/extensions/vueNodes/components/NodeFooter.vue": {
       "complexity_moderate": {
         "count": 1
-      },
+      }
+    },
+    "src/renderer/extensions/vueNodes/components/SharedNodeTooltip.vue": {
       "crap_moderate": {
         "count": 1
       }
     },
-    "src/renderer/extensions/vueNodes/components/NodeContent.vue": {
+    "src/renderer/extensions/vueNodes/composables/processedWidgetRenderModel.ts": {
       "crap_moderate": {
         "count": 1
-      }
-    },
-    "src/renderer/extensions/vueNodes/components/NodeFooter.vue": {
-      "complexity_critical": {
-        "count": 1
-      },
-      "crap_critical": {
-        "count": 1
-      }
-    },
-    "src/renderer/extensions/vueNodes/components/NodeSlots.vue": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/renderer/extensions/vueNodes/components/NodeWidgets.vue": {
-      "complexity_high": {
-        "count": 1
-      },
-      "crap_high": {
-        "count": 1
-      }
-    },
-    "src/renderer/extensions/vueNodes/composables/useNodeEventHandlers.ts": {
-      "crap_moderate": {
-        "count": 2
       }
     },
     "src/renderer/extensions/vueNodes/composables/useNodePointerInteractions.ts": {
@@ -2419,23 +2384,10 @@
       }
     },
     "src/renderer/extensions/vueNodes/composables/usePartitionedBadges.ts": {
-      "complexity_high": {
-        "count": 1
-      },
-      "crap_high": {
-        "count": 2
-      }
-    },
-    "src/renderer/extensions/vueNodes/composables/useProcessedWidgets.ts": {
       "complexity_critical": {
         "count": 1
       },
       "crap_critical": {
-        "count": 1
-      }
-    },
-    "src/renderer/extensions/vueNodes/composables/useSlotElementTracking.ts": {
-      "complexity_moderate": {
         "count": 1
       }
     },
@@ -2446,9 +2398,6 @@
       "complexity_high": {
         "count": 1
       },
-      "complexity_moderate": {
-        "count": 1
-      },
       "crap_critical": {
         "count": 2
       },
@@ -2459,19 +2408,8 @@
         "count": 2
       }
     },
-    "src/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking.ts": {
-      "complexity_critical": {
-        "count": 1
-      },
-      "crap_critical": {
-        "count": 1
-      }
-    },
     "src/renderer/extensions/vueNodes/interactions/resize/useNodeResize.ts": {
-      "complexity_critical": {
-        "count": 1
-      },
-      "crap_critical": {
+      "crap_moderate": {
         "count": 1
       }
     },
@@ -2480,46 +2418,22 @@
         "count": 1
       },
       "crap_high": {
-        "count": 1
-      },
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/renderer/extensions/vueNodes/widgets/components/DisplayCarousel.vue": {
-      "complexity_high": {
-        "count": 1
-      },
-      "crap_high": {
-        "count": 1
-      }
-    },
-    "src/renderer/extensions/vueNodes/widgets/components/WidgetGalleria.vue": {
-      "crap_moderate": {
-        "count": 1
+        "count": 2
       }
     },
     "src/renderer/extensions/vueNodes/widgets/components/WidgetRecordAudio.vue": {
-      "complexity_high": {
-        "count": 1
-      },
-      "crap_high": {
+      "complexity_moderate": {
         "count": 1
       }
     },
-    "src/renderer/extensions/vueNodes/widgets/components/WidgetSelect.vue": {
-      "crap_moderate": {
+    "src/renderer/extensions/vueNodes/widgets/components/WidgetResolutionPreview.vue": {
+      "crap_high": {
         "count": 1
       }
     },
     "src/renderer/extensions/vueNodes/widgets/components/WidgetSelectDefault.vue": {
       "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/renderer/extensions/vueNodes/widgets/components/WidgetToggleSwitch.vue": {
-      "crap_moderate": {
-        "count": 1
+        "count": 2
       }
     },
     "src/renderer/extensions/vueNodes/widgets/components/audio/AudioPreviewPlayer.vue": {
@@ -2530,27 +2444,26 @@
         "count": 1
       }
     },
+    "src/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdown.vue": {
+      "crap_high": {
+        "count": 1
+      }
+    },
     "src/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdownMenuActions.vue": {
       "complexity_high": {
-        "count": 1
-      },
-      "crap_high": {
         "count": 1
       }
     },
     "src/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdownMenuItem.vue": {
-      "complexity_high": {
-        "count": 1
-      },
-      "crap_high": {
+      "complexity_moderate": {
         "count": 1
       }
     },
     "src/renderer/extensions/vueNodes/widgets/composables/useComboWidget.ts": {
-      "complexity_moderate": {
+      "complexity_high": {
         "count": 1
       },
-      "crap_moderate": {
+      "crap_high": {
         "count": 1
       }
     },
@@ -2571,7 +2484,10 @@
       }
     },
     "src/renderer/extensions/vueNodes/widgets/composables/useIntWidget.ts": {
-      "crap_moderate": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
         "count": 1
       }
     },
@@ -2580,12 +2496,9 @@
         "count": 1
       }
     },
-    "src/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems.ts": {
-      "complexity_moderate": {
-        "count": 1
-      },
+    "src/renderer/extensions/vueNodes/widgets/composables/useTextareaWidget.ts": {
       "crap_moderate": {
-        "count": 3
+        "count": 1
       }
     },
     "src/renderer/glsl/useGLSLPreview.ts": {
@@ -2632,54 +2545,34 @@
         "count": 1
       }
     },
-    "packages/api-client/src/ComfyApi.ts": {
-      "complexity_critical": {
-        "count": 1
-      },
-      "complexity_high": {
-        "count": 1
-      },
-      "crap_critical": {
-        "count": 1
-      },
-      "crap_high": {
-        "count": 2
-      },
-      "crap_moderate": {
-        "count": 2
-      }
-    },
     "src/scripts/app.ts": {
       "complexity_critical": {
         "count": 5
       },
       "complexity_high": {
-        "count": 3
+        "count": 2
       },
       "complexity_moderate": {
-        "count": 2
+        "count": 1
       },
       "crap_critical": {
         "count": 5
       },
       "crap_high": {
-        "count": 3
+        "count": 2
       },
       "crap_moderate": {
-        "count": 4
+        "count": 3
       }
     },
     "src/scripts/changeTracker.test.ts": {
-      "crap_high": {
+      "crap_moderate": {
         "count": 1
       }
     },
     "src/scripts/changeTracker.ts": {
-      "crap_high": {
-        "count": 1
-      },
       "crap_moderate": {
-        "count": 4
+        "count": 3
       }
     },
     "src/scripts/clipspace.ts": {
@@ -2720,24 +2613,16 @@
         "count": 1
       }
     },
-    "src/scripts/metadata/ply.ts": {
-      "crap_high": {
-        "count": 1
-      },
-      "crap_moderate": {
-        "count": 1
-      }
-    },
     "src/scripts/metadata/png.ts": {
       "complexity_critical": {
         "count": 1
       }
     },
     "src/scripts/pnginfo.ts": {
-      "complexity_high": {
-        "count": 2
+      "complexity_moderate": {
+        "count": 1
       },
-      "crap_high": {
+      "crap_moderate": {
         "count": 1
       }
     },
@@ -2746,30 +2631,20 @@
         "count": 1
       }
     },
-    "src/core/graph/widgets/valueControl.ts": {
-      "crap_moderate": {
+    "src/services/comfyRegistryService.ts": {
+      "crap_high": {
         "count": 1
       }
     },
-    "src/services/comfyRegistryService.ts": {
+    "src/services/litegraphService.ts": {
       "complexity_critical": {
         "count": 1
       },
       "crap_critical": {
         "count": 1
-      }
-    },
-    "src/platform/billing/api/customerEventsService.ts": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/services/litegraphService.ts": {
-      "crap_high": {
-        "count": 1
       },
       "crap_moderate": {
-        "count": 4
+        "count": 2
       }
     },
     "src/services/mediaCacheService.ts": {
@@ -2777,16 +2652,6 @@
         "count": 1
       },
       "crap_high": {
-        "count": 1
-      }
-    },
-    "src/services/providers/algoliaSearchProvider.ts": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/services/providers/registrySearchProvider.ts": {
-      "crap_moderate": {
         "count": 1
       }
     },
@@ -2801,44 +2666,9 @@
         "count": 1
       }
     },
-    "src/stores/assetDownloadStore.ts": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/stores/assetExportStore.ts": {
-      "crap_high": {
-        "count": 1
-      },
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/stores/assetsStore.test.ts": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/stores/assetsStore.ts": {
-      "complexity_critical": {
-        "count": 1
-      },
-      "complexity_high": {
-        "count": 1
-      },
-      "crap_critical": {
-        "count": 1
-      },
-      "crap_high": {
-        "count": 1
-      },
-      "crap_moderate": {
-        "count": 2
-      }
-    },
     "src/stores/authStore.ts": {
       "crap_moderate": {
-        "count": 1
+        "count": 2
       }
     },
     "src/stores/executionErrorStore.ts": {
@@ -2847,9 +2677,11 @@
       }
     },
     "src/stores/executionStore.ts": {
-      "crap_high": {
-        "count": 1
-      },
+      "crap_moderate": {
+        "count": 4
+      }
+    },
+    "src/stores/linkStore.ts": {
       "crap_moderate": {
         "count": 1
       }
@@ -2860,16 +2692,16 @@
       }
     },
     "src/stores/nodeOutputStore.ts": {
-      "complexity_moderate": {
-        "count": 1
-      },
       "crap_moderate": {
-        "count": 1
+        "count": 2
       }
     },
     "src/stores/subgraphNavigationStore.ts": {
-      "complexity_high": {
-        "count": 1
+      "complexity_critical": {
+        "count": 2
+      },
+      "crap_critical": {
+        "count": 2
       },
       "crap_high": {
         "count": 1
@@ -2891,18 +2723,12 @@
         "count": 1
       }
     },
-    "src/stores/workspace/assetsSidebarBadgeStore.ts": {
+    "src/stores/widgetValueStore.ts": {
       "crap_moderate": {
         "count": 1
       }
     },
-    "src/utils/colorUtil.ts": {
-      "complexity_high": {
-        "count": 2
-      },
-      "crap_high": {
-        "count": 1
-      },
+    "src/systems/badgeSystem.ts": {
       "crap_moderate": {
         "count": 1
       }
@@ -2949,17 +2775,12 @@
       }
     },
     "src/utils/queueDisplay.ts": {
-      "complexity_moderate": {
+      "complexity_high": {
         "count": 1
       }
     },
     "src/utils/searchAndReplace.ts": {
       "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/utils/vintageClipboard.ts": {
-      "complexity_moderate": {
         "count": 1
       }
     },
@@ -2971,12 +2792,154 @@
     "src/views/LinearView.vue": {
       "complexity_critical": {
         "count": 1
+      }
+    },
+    "src/workbench/extensions/agent/AgentPanelRoot.test.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/workbench/extensions/agent/AgentPanelRoot.vue": {
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "src/workbench/extensions/agent/components/agent/composer/InlinePromptEditor.vue": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/workbench/extensions/agent/composables/agent/useAgentConsent.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/workbench/extensions/agent/composables/agent/useAgentMentionPicker.ts": {
+      "complexity_moderate": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/workbench/extensions/agent/composables/agent/useAgentSession.ts": {
+      "crap_moderate": {
+        "count": 5
+      }
+    },
+    "src/workbench/extensions/agent/composables/agent/useAgentWorkflowResolver.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/workbench/extensions/agent/composables/agent/useAgentWorkflowSelection.ts": {
+      "complexity_high": {
+        "count": 2
+      },
+      "crap_high": {
+        "count": 2
+      },
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "src/workbench/extensions/agent/composables/agent/useAttachment.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/workbench/extensions/agent/composables/agent/useCanvasSelection.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/workbench/extensions/agent/crdt/CrdtDevPanel.vue": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/workbench/extensions/agent/crdt/crdtDebugReport.ts": {
+      "complexity_high": {
+        "count": 2
+      },
+      "crap_high": {
+        "count": 2
+      }
+    },
+    "src/workbench/extensions/agent/crdt/docFrameClient.ts": {
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "src/workbench/extensions/agent/crdt/docOpMinter.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/workbench/extensions/agent/crdt/liveGraphApplier.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/workbench/extensions/agent/crdt/mergeTrace.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/workbench/extensions/agent/stores/agent/agentComposerStore.ts": {
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "src/workbench/extensions/agent/stores/agent/agentConversationStore.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/workbench/extensions/agent/stores/agent/agentPromptQueueStore.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/workbench/extensions/agent/stores/agent/agentRunModeStore.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/workbench/extensions/agent/utils/replyAssets.ts": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "tools/ci/src/checkAssetsFlagArtifact.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "tools/ci/src/cicd/backport-token-scopes.test.ts": {
+      "complexity_critical": {
+        "count": 1
       },
       "crap_critical": {
         "count": 1
       }
     },
-    "src/platform/customNodes/manager/components/ManagerProgressToast.vue": {
+    "tools/ci/src/cicd/check-stranded-release-commits.ts": {
       "complexity_high": {
         "count": 1
       },
@@ -2984,12 +2947,23 @@
         "count": 1
       }
     },
-    "src/platform/customNodes/manager/components/manager/ManagerDialog.vue": {
+    "tools/ci/src/cicd/custom-node-results.ts": {
+      "complexity_high": {
+        "count": 1
+      },
+      "complexity_moderate": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "tools/ci/src/cicd/extract-playwright-counts.ts": {
       "crap_moderate": {
         "count": 1
       }
     },
-    "src/platform/customNodes/manager/components/manager/NodeConflictDialogContent.vue": {
+    "tools/ci/src/cicd/resolve-comfyui-release.ts": {
       "complexity_high": {
         "count": 1
       },
@@ -2997,30 +2971,12 @@
         "count": 1
       }
     },
-    "src/platform/customNodes/manager/components/manager/infoPanel/InfoPanel.vue": {
-      "complexity_high": {
-        "count": 1
-      },
-      "crap_high": {
-        "count": 1
-      }
-    },
-    "src/platform/customNodes/manager/components/manager/infoPanel/MarkdownText.vue": {
+    "tools/ci/src/coverage-slack-notify.ts": {
       "complexity_moderate": {
         "count": 1
       }
     },
-    "src/platform/customNodes/manager/components/manager/infoPanel/tabs/DescriptionTabPanel.vue": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/platform/customNodes/manager/composables/nodePack/useMissingNodes.test.ts": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/platform/customNodes/manager/composables/useConflictDetection.ts": {
+    "tools/ci/src/customNodeQuarantine.ts": {
       "crap_high": {
         "count": 1
       },
@@ -3028,197 +2984,423 @@
         "count": 1
       }
     },
-    "src/platform/customNodes/manager/composables/useManagerDialog.ts": {
+    "tools/ci/src/perf-report.ts": {
       "crap_high": {
         "count": 1
+      },
+      "crap_moderate": {
+        "count": 5
       }
     },
-    "src/platform/customNodes/manager/composables/useManagerDisplayPacks.ts": {
-      "crap_high": {
-        "count": 1
-      }
-    },
-    "src/platform/customNodes/manager/composables/useManagerState.ts": {
+    "tools/ci/src/size-collect.ts": {
       "crap_moderate": {
         "count": 1
       }
     },
-    "src/platform/customNodes/manager/services/comfyManagerService.ts": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "src/workbench/utils/nodeDefOrderingUtil.ts": {
-      "complexity_moderate": {
-        "count": 1
-      }
-    },
-    "vite.config.mts": {
+    "tools/ci/src/size-report.ts": {
       "crap_moderate": {
         "count": 2
       }
     },
-    "src/extensions/core/load3d/load3dInstances.ts": {
+    "tools/oxlint-plugins/comfyIngestTypes.ts": {
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "tools/oxlint-plugins/globalPinia.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "tools/oxlint-plugins/noDirectWebStorage.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "tools/test-recorder/src/checks/models.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "tools/test-recorder/src/commands/record.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "tools/test-recorder/src/commands/recordPrefill.ts": {
       "complexity_high": {
+        "count": 1
+      }
+    },
+    "tools/test-recorder/src/pr/gh.test.ts": {
+      "crap_moderate": {
+        "count": 5
+      }
+    },
+    "tools/test-recorder/src/pr/gh.ts": {
+      "complexity_high": {
+        "count": 1
+      }
+    },
+    "tools/test-recorder/src/transform/engine.ts": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "tools/test-recorder/src/ui/logger.ts": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "vitest.matrix.config.mts": {
+      "crap_moderate": {
         "count": 1
       }
     }
   },
   "runtime_coverage_findings": [],
   "target_keys": [
-    "src/platform/keybindings/keybindingService.ts:complexity",
-    "src/platform/telemetry/TelemetryRegistry.ts:high impact",
-    "src/platform/telemetry/utils/getExecutionContext.ts:circular dependency",
-    "src/scripts/app.ts:circular dependency",
+    "src/core/graph/clipboard/graphTransfer.ts:complexity",
+    "src/lib/litegraph/src/linkDeduplication.ts:high impact",
+    "src/lib/litegraph/src/widgets/widgetMap.ts:hidden coupling",
+    "src/extensions/core/customWidgets.ts:high impact",
+    "src/composables/__mocks__/useAppMode.ts:high impact",
+    "src/platform/openOnCloud/cloudCompatibilityApi.ts:high impact",
+    "src/platform/auth/session/useSessionCookie.ts:high impact",
+    "src/platform/billing/localBillingHandoff.ts:hidden coupling",
+    "src/platform/billing/composables/__mocks__/useBillingContext.ts:high impact",
+    "src/renderer/extensions/vueNodes/widgets/registry/widgetRegistry.ts:hidden coupling",
+    "src/router.ts:complexity",
+    "src/platform/openOnCloud/openRunOnCloudDialog.ts:high impact",
+    "src/scripts/app.ts:complexity",
+    "packages/graph-model/src/arrange/arrange.ts:high impact",
+    "src/platform/billing/composables/useBillingCapabilities.ts:high impact",
+    "src/platform/workspace/stores/deploymentLibraryModelsStore.ts:high impact",
+    "src/renderer/core/layout/store/__mocks__/layoutStore.ts:high impact",
+    "src/platform/customNodes/useReconnectNodeDefinitionRefresh.ts:high impact",
+    "src/scripts/widgets.ts:hidden coupling",
+    "src/platform/workflow/core/services/workflowService.ts:complexity",
     "src/stores/appModeStore.ts:high impact",
-    "src/composables/useUpstreamValue.ts:high impact",
-    "src/renderer/glsl/useGLSLUniforms.ts:high impact",
-    "src/renderer/extensions/vueNodes/composables/usePartitionedBadges.ts:untested risk",
-    "src/lib/litegraph/src/LGraphCanvas.ts:circular dependency",
-    "src/extensions/core/load3d/composables/useLoad3d.ts:circular dependency",
-    "src/composables/node/usePriceBadge.ts:circular dependency",
-    "src/platform/keybindings/keyCombo.ts:high impact",
-    "src/views/LinearView.vue:complexity",
-    "src/lib/litegraph/src/LGraphNode.ts:circular dependency",
-    "src/core/graph/subgraph/promotionUtils.ts:circular dependency",
-    "src/lib/litegraph/src/LGraph.ts:circular dependency",
-    "src/composables/useTreeExpansion.ts:high impact",
-    "src/platform/billing/subscription/components/CreditsTile.vue:complexity",
-    "src/platform/assets/composables/useMediaAssetActions.ts:complexity",
-    "src/platform/workflow/core/services/workflowService.ts:circular dependency",
-    "src/services/litegraphService.ts:circular dependency",
-    "src/lib/litegraph/src/subgraph/SubgraphNode.ts:circular dependency",
-    "src/components/rightSidePanel/errors/MissingPackGroupRow.vue:complexity",
-    "src/platform/customNodes/manager/composables/nodePack/useMissingNodes.ts:circular dependency",
-    "browser_tests/fixtures/ComfyPage.ts:circular dependency",
-    "src/platform/billing/subscription/composables/useSubscriptionDialog.ts:circular dependency",
-    "src/components/error/useErrorOverlayState.ts:high impact",
-    "src/platform/keybindings/components/EditKeybindingFooter.vue:circular dependency",
-    "src/renderer/extensions/vueNodes/components/ImagePreview.vue:complexity",
-    "src/renderer/extensions/vueNodes/composables/useProcessedWidgets.ts:complexity",
-    "src/stores/subgraphNavigationStore.ts:circular dependency",
-    "src/components/builder/AppBuilder.vue:complexity",
+    "browser_tests/fixtures/helpers/BAD_DO_NOT_DO_THIS_LegacyApiHelper.ts:high impact",
+    "src/lib/litegraph/src/LGraphCanvas.ts:complexity",
+    "src/platform/workspace/loadedRelease.ts:high impact",
+    "browser_tests/fixtures/customNode/typePairing.ts:complexity",
+    "src/platform/auth/session/cloudIdentityBoot.ts:high impact",
+    "src/platform/workspace/stores/teamWorkspaceStore.ts:complexity",
+    "src/stores/subgraphNavigationStore.ts:complexity",
+    "src/workbench/extensions/agent/composables/agent/useProactiveGreetingAssignment.ts:high impact",
+    "src/platform/billing/components/AddCreditsDialogContent.vue:hidden coupling",
+    "src/components/sidebar/tabs/ModelLibrarySidebarTab.vue:hidden coupling",
+    "src/core/graph/widgets/nodeWidgetValues.ts:high impact",
+    "packages/design-system/src/components/popover/usePopoverViewportDismiss.ts:high impact",
     "src/composables/node/useNodeDragAndDrop.ts:high impact",
-    "src/lib/litegraph/src/node/NodeInputSlot.ts:circular dependency",
-    "src/lib/litegraph/src/utils/type.ts:high impact",
-    "src/components/graph/SelectionToolbox.vue:complexity",
-    "src/platform/workflowErrors/missingModel/missingModelStore.ts:circular dependency",
-    "src/platform/workspace/stores/workspaceAuthStore.ts:circular dependency",
-    "src/platform/workspace/stores/teamWorkspaceStore.ts:circular dependency",
-    "src/platform/workflow/management/stores/workflowStore.ts:circular dependency",
-    "src/components/rightSidePanel/RightSidePanel.vue:complexity",
-    "src/stores/workspace/sidebarTabStore.ts:circular dependency",
-    "src/components/TopMenuSection.vue:complexity",
-    "src/composables/video/useVideoSourceUrl.ts:high impact",
-    "src/platform/billing/subscription/composables/useFreeTierQuota.ts:high impact",
-    "src/platform/assets/utils/assetFilterUtils.ts:high impact",
-    "src/services/dialogService.ts:circular dependency",
-    "src/scripts/ui/utils.ts:complexity",
-    "src/composables/usePaste.ts:circular dependency",
-    "src/platform/customNodes/manager/composables/useConflictDetection.ts:circular dependency",
-    "src/renderer/core/canvas/canvasStore.ts:circular dependency",
-    "src/base/webviewDetection.ts:high impact",
-    "src/components/builder/useResolvedSelectedInputs.ts:high impact",
-    "src/platform/billing/composables/useDowngradeToPersonal.ts:complexity",
-    "src/lib/litegraph/src/Reroute.ts:circular dependency",
-    "src/platform/workspace/components/CurrentUserPopoverWorkspace.vue:complexity",
-    "src/composables/useCanvasDrop.ts:complexity",
-    "src/renderer/extensions/linearMode/LinearControls.vue:complexity",
-    "src/platform/customNodes/manager/components/manager/button/PackEnableToggle.vue:circular dependency",
-    "src/composables/graph/useMoreOptionsMenu.ts:circular dependency",
-    "src/platform/workflowErrors/missingMedia/missingMediaStore.ts:circular dependency",
-    "src/stores/assetsStore.ts:complexity",
-    "src/platform/workflow/sharing/components/ShareWorkflowDialogContent.vue:complexity",
-    "src/renderer/extensions/vueNodes/utils/nodeDataUtils.ts:high impact",
-    "src/composables/auth/useCurrentUser.ts:high impact",
-    "src/extensions/core/widgetInputs.ts:high impact",
-    "src/extensions/core/groupNode.ts:complexity",
-    "src/lib/litegraph/src/subgraph/ExecutableNodeDTO.ts:circular dependency",
-    "src/platform/customNodes/manager/components/manager/button/PackInstallButton.vue:circular dependency",
-    "src/platform/billing/components/TopUpCreditsDialogContentWorkspace.vue:complexity",
-    "src/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking.ts:complexity",
-    "src/platform/customNodes/manager/composables/nodePack/usePackInstall.ts:circular dependency",
-    "src/lib/litegraph/src/LGraphGroup.ts:circular dependency",
-    "src/platform/customNodes/manager/stores/comfyManagerStore.ts:circular dependency",
-    "src/lib/litegraph/src/DragAndScale.ts:circular dependency",
-    "src/components/videoEdit/VideoEditPanel.vue:complexity",
-    "src/utils/eventUtils.ts:high impact",
-    "src/composables/useAppMode.ts:high impact",
-    "src/lib/litegraph/src/utils/collections.ts:circular dependency",
-    "src/renderer/extensions/vueNodes/components/LGraphNode.vue:complexity",
-    "src/components/searchbox/v2/NodeSearchListItem.vue:complexity",
-    "src/platform/billing/composables/useTeamPlan.ts:high impact",
-    "src/components/rightSidePanel/errors/ErrorNodeCard.vue:complexity",
-    "src/platform/settings/settingStore.ts:circular dependency",
-    "src/platform/billing/components/SubscriptionPanelContentWorkspace.vue:complexity",
-    "src/platform/customNodes/manager/services/comfyManagerService.ts:circular dependency",
-    "src/platform/customNodes/manager/composables/useManagerState.ts:circular dependency",
-    "src/renderer/extensions/vueNodes/composables/useSlotLinkInteraction.ts:complexity",
-    "src/lib/litegraph/src/node/NodeSlot.ts:complexity",
-    "src/lib/litegraph/src/subgraph/subgraphUtils.ts:circular dependency",
-    "src/utils/hdrFormatUtil.ts:high impact",
-    "src/lib/litegraph/src/canvas/LinkConnector.ts:complexity",
-    "src/lib/litegraph/src/widgets/NumberWidget.ts:high impact",
-    "src/platform/customNodes/manager/components/manager/infoPanel/InfoPanel.vue:circular dependency",
-    "src/platform/customNodes/manager/components/manager/infoPanel/InfoPanelMultiItem.vue:circular dependency",
-    "src/extensions/core/load3d/services/load3dService.ts:circular dependency",
-    "src/platform/workspace/components/dialogs/settings/MembersPanelContent.vue:complexity",
-    "src/lib/litegraph/src/node/NodeOutputSlot.ts:circular dependency",
-    "src/renderer/extensions/vueNodes/widgets/composables/useImagePreviewWidget.ts:complexity",
-    "src/components/dialog/GlobalDialog.vue:complexity",
-    "src/platform/customNodes/manager/components/manager/PackVersionSelectorPopover.vue:circular dependency",
-    "src/components/graph/GraphCanvas.vue:complexity",
-    "src/renderer/glsl/useGLSLPreview.ts:complexity",
-    "src/core/graph/widgets/dynamicWidgets.ts:untested risk",
-    "src/platform/cloud/onboarding/survey/surveySchema.ts:high impact",
-    "browser_tests/fixtures/helpers/SubgraphHelper.ts:circular dependency",
-    "packages/mask-editor/src/useKeyboard.ts:high impact",
-    "src/core/graph/subgraph/migration/proxyWidgetMigration.ts:complexity",
-    "src/renderer/extensions/vueNodes/widgets/components/DisplayCarousel.vue:complexity",
-    "src/extensions/core/load3d/components/menubar/SceneMenuGroup.vue:complexity",
-    "src/extensions/core/load3d/composables/useLoad3dViewer.ts:circular dependency",
-    "src/lib/litegraph/src/utils/mathParser.ts:untested risk",
-    "src/composables/node/useNodePricing.ts:complexity",
-    "src/platform/workflowErrors/missingModel/components/MissingModelRow.vue:complexity",
-    "src/utils/linkFixer.ts:complexity",
-    "src/platform/customNodes/manager/composables/useManagerDisplayPacks.ts:circular dependency",
-    "src/extensions/core/load3d/Load3dUtils.ts:circular dependency",
-    "src/platform/customNodes/manager/components/manager/packCard/PackCard.vue:circular dependency",
-    "src/components/dialog/content/SignInContent.vue:complexity",
-    "src/lib/litegraph/src/ContextMenu.ts:complexity",
-    "src/platform/customNodes/manager/components/manager/PackVersionBadge.vue:circular dependency",
-    "src/platform/workflow/sharing/components/publish/ComfyHubThumbnailStep.vue:complexity",
-    "src/platform/customNodes/manager/components/manager/packCard/PackCardFooter.vue:circular dependency",
-    "src/lib/litegraph/src/LiteGraphGlobal.ts:circular dependency",
-    "src/platform/cloud/onboarding/survey/DynamicSurveyField.vue:complexity",
-    "src/platform/keybindings/composables/useEditKeybindingDialog.ts:circular dependency",
-    "packages/mask-editor/src/maskEditorStore.ts:circular dependency",
-    "src/components/videoEdit/VideoFilmstripTrim.vue:complexity",
-    "src/composables/boundingBoxes/useBoundingBoxes.ts:complexity",
-    "src/extensions/core/rerouteNode.ts:complexity",
-    "src/renderer/core/canvas/litegraph/litegraphLinkAdapter.ts:complexity",
-    "src/platform/workflow/templates/components/WorkflowTemplateSelectorDialog.vue:complexity",
+    "src/platform/assets/integration/resolveWidgetValueAsset.ts:high impact",
+    "src/lib/litegraph/src/LGraph.ts:complexity",
+    "src/lib/litegraph/src/LGraphNode.ts:complexity",
+    "src/platform/workflow/core/services/__mocks__/workflowService.ts:high impact",
+    "src/platform/workspace/components/DeploymentSwitcher.vue:hidden coupling",
+    "src/composables/useUpstreamValue.ts:high impact",
+    "src/utils/litegraphUtil.ts:high impact",
     "src/utils/executionUtil.ts:complexity",
-    "src/scripts/metadata/avif.ts:complexity",
-    "src/platform/workflowErrors/panel/ErrorGroupList.vue:complexity",
-    "src/renderer/extensions/linearMode/DropZone.vue:complexity",
-    "src/platform/customNodes/manager/components/manager/ManagerDialog.vue:circular dependency",
-    "packages/mask-editor/src/useCanvasHistory.ts:circular dependency",
-    "src/platform/customNodes/manager/components/manager/button/PackUpdateButton.vue:circular dependency",
-    "src/platform/billing/subscription/components/PricingTable.vue:complexity",
-    "src/composables/sidebarTabs/useJobHistorySidebarTab.ts:circular dependency",
-    "src/platform/customNodes/manager/composables/nodePack/useUpdateAvailableNodes.ts:circular dependency",
-    "src/platform/workspace/components/dialogs/settings/PartnerNodeAccessPanel.vue:complexity",
-    "src/components/helpcenter/HelpCenterMenuContent.vue:complexity",
+    "packages/assets-core/src/metadata.ts:high impact",
+    "packages/keybindings/src/keyCombo.ts:high impact",
+    "src/core/graph/widgets/dynamicWidgets.ts:high impact",
+    "packages/layer-editor/src/persistence/compositorLayerState.ts:high impact",
+    "src/composables/auth/useCurrentUser.ts:high impact",
+    "src/composables/useTreeExpansion.ts:high impact",
+    "src/platform/account/composables/__mocks__/useWorkspaceDialogs.ts:high impact",
+    "src/platform/assets/stores/assetsStore.ts:complexity",
+    "src/platform/billing/components/settings/UsageLogsTable.vue:complexity",
+    "src/views/LinearView.vue:complexity",
+    "src/composables/useCanvasDrop.ts:complexity",
+    "src/platform/keybindings/keybindingService.ts:complexity",
+    "packages/telemetry/src/TelemetryRegistry.ts:high impact",
+    "src/components/TopMenuSection.vue:complexity",
+    "src/components/dialog/GlobalDialog.vue:complexity",
+    "src/composables/useFeatureFlags.ts:hidden coupling",
+    "src/components/builder/AppBuilder.vue:complexity",
+    "browser_tests/fixtures/ComfyPage.ts:circular dependency",
+    "src/renderer/extensions/vueNodes/components/InputSlot.vue:hidden coupling",
+    "src/workbench/extensions/agent/utils/replyAssets.ts:high impact",
+    "src/workbench/extensions/agent/services/agent/agentAuth.ts:high impact",
+    "src/renderer/extensions/vueNodes/components/SharedNodeTooltip.vue:high impact",
+    "src/renderer/extensions/vueNodes/widgets/composables/useStringWidget.ts:hidden coupling",
+    "src/lib/litegraph/src/canvas/linkVisibility.ts:hidden coupling",
+    "src/platform/workspace/workflowDeploymentOffer.ts:high impact",
+    "src/workbench/extensions/agent/stores/agent/agentWorkflowTabBindingStore.ts:high impact",
+    "src/utils/resultItem.ts:high impact",
+    "src/extensions/core/agentPanel.ts:high impact",
+    "src/core/graph/subgraph/promotedInputWidget.ts:high impact",
+    "src/utils/resultItemUrl.ts:high impact",
+    "src/platform/billing/subscription/composables/usePricingTableUrlLoader.ts:complexity",
+    "src/renderer/extensions/propertiesPanel/PropertiesPanel.vue:complexity",
+    "src/renderer/extensions/vueNodes/layout/useNodeLayout.ts:high impact",
+    "src/workbench/extensions/agent/crdt/unsyncedHumanOps.ts:high impact",
+    "src/platform/billing/composables/__mocks__/useBillingCapabilities.ts:high impact",
+    "src/platform/billing/composables/useDowngradeToPersonal.ts:complexity",
+    "src/extensions/core/widgetInputs.ts:high impact",
+    "src/renderer/extensions/vueNodes/composables/useSlotLinkInteraction.ts:complexity",
+    "src/platform/workspace/missingForDeployment.ts:high impact",
+    "src/platform/billing/subscription/composables/__mocks__/useSubscription.ts:high impact",
+    "src/utils/envUtil.ts:high impact",
+    "packages/account-core/src/webviewDetection.ts:high impact",
+    "src/renderer/extensions/linearMode/LinearControls.vue:complexity",
+    "src/renderer/extensions/maskEditor/composables/useMaskEditorLoader.ts:complexity",
+    "src/composables/auth/__mocks__/useCurrentUser.ts:high impact",
+    "tools/test-recorder/src/ui/logger.ts:high impact",
+    "src/lib/litegraph/src/connectivitySystem.ts:complexity",
+    "src/platform/workflow/sharing/composables/useComfyHubPublishWizard.ts:high impact",
+    "src/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdown.vue:hidden coupling",
+    "src/extensions/core/load3d/load3dInstances.ts:complexity",
+    "src/lib/litegraph/src/canvas/getCanvasContextMenuTarget.ts:hidden coupling",
+    "packages/graph-model/src/nodeId.ts:high impact",
+    "src/platform/secrets/components/SecretFormDialog.vue:hidden coupling",
+    "src/platform/workflow/sharing/components/ShareWorkflowDialogContent.vue:complexity",
+    "src/lib/litegraph/src/subgraph/subgraphUtils.ts:complexity",
+    "src/platform/assets/integration/clearNodePreviewCacheForValues.ts:high impact",
+    "src/platform/customNodes/manager/components/ManagerProgressToast.vue:complexity",
+    "src/workbench/extensions/agent/experiments/freeUsePlacement.ts:hidden coupling",
+    "src/composables/auth/__mocks__/useAuthActions.ts:high impact",
+    "src/components/graph/SelectionToolbox.vue:complexity",
+    "src/platform/billing/composables/useBillingRouting.ts:high impact",
+    "src/lib/litegraph/src/utils/type.ts:high impact",
+    "browser_tests/fixtures/utils/customMatchers.ts:high impact",
+    "src/extensions/core/load3d/components/Load3DMenuBar.vue:complexity",
+    "src/platform/workspace/components/CustomDeploymentCard.vue:hidden coupling",
+    "src/workbench/extensions/agent/components/agent/composer/AssetThumbnail.vue:high impact",
+    "packages/assets-core/src/filtering.ts:high impact",
+    "src/platform/billing/composables/__mocks__/useBillingUI.ts:high impact",
+    "scripts/i18n/locale-tree.ts:high impact",
+    "src/composables/boundingBoxes/boundingBoxesUtil.ts:high impact",
+    "src/components/curve/curveUtils.ts:hidden coupling",
+    "src/components/searchbox/v2/NodeSearchListItem.vue:complexity",
+    "src/platform/workflowErrors/panel/MissingPackGroupRow.vue:complexity",
+    "src/renderer/core/canvas/useCanvasScheduler.ts:high impact",
+    "src/stores/resultItemParsing.ts:high impact",
+    "src/workbench/extensions/agent/composables/agent/useOnboarding.ts:hidden coupling",
+    "packages/design-system/src/components/tooltip/TooltipTrigger.vue:high impact",
+    "src/platform/billing/localBillingWebEnabled.ts:high impact",
+    "src/composables/useAppMode.ts:high impact",
+    "src/renderer/extensions/vueNodes/components/LGraphNode.vue:complexity",
+    "src/utils/hdrFormatUtil.ts:high impact",
+    "src/platform/workspace/components/DeploymentSwitcherList.vue:hidden coupling",
+    "browser_tests/fixtures/utils/recordOpenedUrl.ts:high impact",
+    "tools/test-recorder/src/commands/recordPrefill.ts:complexity",
+    "src/workbench/extensions/agent/composables/agent/useCanvasSelection.ts:high impact",
+    "src/platform/workflowErrors/missingModel/missingModelDownloadStore.ts:high impact",
+    "src/composables/useBrowserTabTitle.ts:high impact",
+    "src/platform/workspace/components/SwitchDeploymentCard.vue:hidden coupling",
+    "src/scripts/clipspace.ts:complexity",
+    "scripts/dev-agent-options.ts:complexity",
+    "src/platform/account/components/dialogs/settings/MembersPanelContent.vue:complexity",
+    "packages/test-utils/src/fetch.ts:high impact",
+    "src/platform/cloud/onboarding/CloudLoginView.vue:hidden coupling",
+    "src/workbench/extensions/agent/crdt/agentDocFrameTransport.ts:high impact",
+    "src/renderer/extensions/vueNodes/components/OutputSlot.vue:hidden coupling",
+    "packages/api-client/src/abortSignal.ts:high impact",
+    "src/components/dialog/content/SignInContent.vue:complexity",
+    "src/platform/account/components/ProfileMenuWorkspace.vue:hidden coupling",
+    "src/workbench/extensions/agent/utils/resolveReplyAssetDownload.ts:high impact",
+    "browser_tests/fixtures/utils/timing.ts:high impact",
+    "packages/shared-frontend-utils/src/errorUtil.ts:high impact",
+    "src/workbench/extensions/agent/utils/derivedWorkflowAttachment.ts:high impact",
+    "packages/account-core/src/core/requestTimeout.ts:high impact",
+    "packages/graph-model/src/linkId.ts:high impact",
+    "packages/layer-editor/src/history.ts:high impact",
+    "src/extensions/core/rerouteNode.ts:complexity",
+    "src/platform/billing/composables/useScheduledPlanChange.ts:high impact",
+    "tools/architecture/src/records.ts:high impact",
+    "src/components/graph/GraphCanvas.vue:complexity",
+    "src/platform/cloud/oauth/OAuthConsentView.vue:complexity",
+    "src/renderer/extensions/vueNodes/widgets/composables/useMarkdownWidget.ts:hidden coupling",
+    "src/lib/litegraph/src/canvas/linkBadgeRenderer.ts:hidden coupling",
+    "src/platform/billing/composables/useWorkspaceBilling.ts:hidden coupling",
+    "apps/billing-web/src/composables/useFullPageCheckout.ts:hidden coupling",
+    "src/platform/workflowErrors/nodeReplacement/useNodeReplacement.ts:complexity",
+    "packages/viewport3d/src/lightInfo/lightsValue.ts:high impact",
+    "src/workbench/extensions/agent/utils/starterPrompts.ts:hidden coupling",
+    "src/workbench/extensions/agent/components/agent/EmptyState.vue:hidden coupling",
+    "apps/billing-web/src/checkout/checkoutPage.ts:hidden coupling",
+    "packages/account-core/src/firebase/index.ts:hidden coupling",
+    "src/components/LiteGraphCanvasSplitterOverlay.vue:complexity",
+    "src/workbench/extensions/agent/crdt/agentSubgraphDefinitions.ts:high impact",
+    "apps/billing-web/src/checkout/promoMemory.ts:high impact",
+    "packages/layer-editor/src/impl/contentStore.ts:high impact",
+    "packages/mask-editor/src/useKeyboard.ts:high impact",
     "src/scripts/pnginfo.ts:complexity",
+    "scripts/dev-agent-supervisor.ts:high impact",
+    "src/lib/litegraph/src/node/NodeSlot.ts:complexity",
+    "apps/billing-web/src/checkout/summaryLedger.ts:hidden coupling",
+    "src/extensions/core/groupNode.ts:complexity",
+    "src/renderer/extensions/vueNodes/components/ImagePreview.vue:complexity",
+    "src/workbench/extensions/agent/composables/agent/useAgentDraftSubmission.ts:hidden coupling",
+    "src/renderer/extensions/vueNodes/widgets/composables/useImagePreviewWidget.ts:complexity",
+    "src/lib/litegraph/src/canvas/LinkConnector.ts:complexity",
+    "src/lib/litegraph/src/canvas/linkBadges.ts:hidden coupling",
+    "src/workbench/extensions/agent/services/agent/agentEventTransport.ts:hidden coupling",
+    "src/platform/cloud/onboarding/survey/surveySchema.ts:high impact",
+    "src/platform/workflowErrors/panel/ErrorNodeCard.vue:complexity",
+    "src/utils/modalUtil.ts:high impact",
+    "tools/oxlint-plugins/globalPinia.ts:complexity",
+    "src/platform/billing/subscription/components/CreditsTile.vue:complexity",
+    "packages/account-ui/src/billing/__fixtures__/billingHarness.ts:hidden coupling",
+    "packages/design-system/src/components/menu/usePointMenu.ts:high impact",
+    "src/workbench/eventHelpers.ts:high impact",
+    "src/core/graph/widgets/dynamicGroupWidget.ts:hidden coupling",
+    "src/scripts/ui/utils.ts:complexity",
+    "src/workbench/extensions/agent/components/agent/message/ActivityTrace.vue:hidden coupling",
+    "src/platform/cloud/onboarding/CloudSignupView.vue:hidden coupling",
+    "tools/test-recorder/src/checks/engines.ts:high impact",
+    "src/core/graph/subgraph/migration/proxyWidgetMigration.ts:complexity",
+    "browser_tests/fixtures/helpers/SubgraphHelper.ts:circular dependency",
+    "browser_tests/fixtures/customNode/allNodesMountTier.ts:complexity",
+    "browser_tests/fixtures/customNode/promptSubmission.ts:complexity",
+    "src/extensions/core/load3d/components/menubar/SceneMenuGroup.vue:complexity",
+    "src/platform/workspace/components/DeploymentSwitcherRow.vue:hidden coupling",
+    "browser_tests/fixtures/helpers/LinkVisibilityHelper.ts:hidden coupling",
+    "src/platform/remote/ingest/capabilityRevision.ts:high impact",
+    "src/platform/workflowErrors/missingModel/components/MissingModelRow.vue:complexity",
+    "src/composables/graph/contextMenuConverter.ts:complexity",
+    "browser_tests/fixtures/desktopFixture.ts:high impact",
+    "apps/billing-web/src/composables/useFullPageTopup.ts:hidden coupling",
+    "scripts/registry-census/matrix_runner.ts:complexity",
+    "src/platform/telemetry/providers/cloud/PostHogTelemetryProvider.ts:hidden coupling",
+    "src/components/graph/selectionGrid/selectionGridLayout.ts:high impact",
+    "src/renderer/glsl/useGLSLPreview.ts:complexity",
+    "browser_tests/fixtures/helpers/AppModeHelper.ts:hidden coupling",
+    "src/workbench/extensions/agent/composables/agent/useComposer.ts:hidden coupling",
+    "src/platform/billing/composables/useTeamPlan.ts:high impact",
+    "src/platform/auth/localWeb/localWebSession.ts:hidden coupling",
+    "src/composables/boundingBoxes/useBoundingBoxes.ts:complexity",
+    "src/workbench/extensions/agent/crdt/CrdtDevPanel.vue:complexity",
+    "browser_tests/fixtures/customNode/interactionProbe.ts:complexity",
+    "src/platform/cloud/onboarding/survey/DynamicSurveyField.vue:complexity",
+    "src/platform/workflow/sharing/components/publish/ComfyHubThumbnailStep.vue:complexity",
+    "src/platform/workspace/components/WorkflowNeedsDeploymentCard.test.ts:hidden coupling",
+    "packages/layer-editor/src/tools/transformTool.ts:complexity",
+    "src/lib/litegraph/src/canvas/getCanvasContextMenuTarget.test.ts:hidden coupling",
+    "src/scripts/metadata/avif.ts:complexity",
     "src/scripts/metadata/png.ts:complexity",
-    "src/composables/graph/useSelectionMenuOptions.ts:circular dependency",
-    "src/lib/litegraph/src/widgets/LegacyWidget.ts:circular dependency",
-    "src/platform/customNodes/manager/composables/useManagerDialog.ts:circular dependency",
-    "browser_tests/fixtures/components/SubgraphEditor.ts:circular dependency",
-    "scripts/cicd/extract-playwright-counts.ts:complexity",
+    "src/platform/account/components/SubscriptionPanelContentWorkspace.vue:complexity",
+    "src/platform/workflow/templates/components/WorkflowTemplateSelectorDialog.vue:complexity",
+    "src/lib/litegraph/src/ContextMenu.ts:complexity",
+    "src/scripts/metadata/ebml.ts:hidden coupling",
+    "src/composables/__mocks__/useFeatureFlags.ts:hidden coupling",
+    "browser_tests/fixtures/customNode/allNodesExecutionTier.ts:complexity",
+    "src/workbench/extensions/agent/crdt/rejectedOpNotice.ts:hidden coupling",
+    "tools/test-recorder/src/pr/gh.test.ts:untested risk",
+    "src/platform/billing/components/UnifiedPricingTable.vue:complexity",
+    "src/platform/workspace/components/dialogs/settings/PartnerNodeAccessPanel.vue:complexity",
+    "src/platform/workflowErrors/panel/ErrorGroupList.vue:complexity",
+    "packages/shared-frontend-utils/src/nodePricing.ts:complexity",
+    "src/scripts/metadata/isobmff.ts:hidden coupling",
+    "tools/architecture/src/boundaries.ts:hidden coupling",
+    "src/components/videoEdit/VideoEditPanel.vue:complexity",
+    "tools/test-recorder/src/commands/record.ts:complexity",
+    "src/renderer/extensions/minimap/composables/useMinimap.test.ts:hidden coupling",
+    "src/renderer/extensions/minimap/composables/useMinimapGraph.test.ts:hidden coupling",
+    "browser_tests/fixtures/data/billingCapabilities.ts:hidden coupling",
+    "src/platform/cloud/onboarding/CloudSignupView.test.ts:hidden coupling",
+    "src/renderer/core/canvas/litegraph/litegraphLinkAdapter.ts:complexity",
+    "packages/layer-editor/src/snapping.ts:complexity",
+    "apps/billing-web/e2e/fixtures/scenario.ts:hidden coupling",
     "browser_tests/fixtures/components/QueuePanel.ts:circular dependency",
-    "scripts/cicd/resolve-comfyui-release.ts:complexity",
-    "scripts/perf-report.ts:complexity"
+    "src/workbench/extensions/agent/crdt/useAgentCrdtFollower.humanAddTabSwitch.test.ts:hidden coupling",
+    "src/components/common/WaveAudioPlayer.vue:complexity",
+    "src/workbench/extensions/agent/crdt/CrdtDevPanel.clipboard.test.ts:hidden coupling",
+    "src/workbench/extensions/agent/components/agent/FreeUseNotice.vue:hidden coupling",
+    "src/workbench/extensions/agent/crdt/linkMintOutboundPositionCorruption.test.ts:hidden coupling",
+    "src/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdownMenuActions.vue:complexity",
+    "src/platform/assets/composables/useUploadModelWizard.ts:complexity",
+    "apps/billing-web/src/components/SubscriptionPanel.vue:hidden coupling",
+    "src/components/helpcenter/HelpCenterMenuContent.vue:complexity",
+    "src/components/sidebar/tabs/NodeLibrarySidebarTab.vue:complexity",
+    "packages/ingest-types/src/zod.gen.ts:hidden coupling",
+    "src/utils/linkFixer.ts:complexity",
+    "src/workbench/extensions/agent/crdt/CrdtDevPanel.test.ts:hidden coupling",
+    "src/composables/graph/useGroupContextMenu.test.ts:hidden coupling",
+    "src/platform/updates/components/WhatsNewPopup.test.ts:hidden coupling",
+    "src/workbench/extensions/agent/services/agent/agentActivityRows.ts:hidden coupling",
+    "browser_tests/fixtures/customNode/allNodesRoundtripTier.ts:complexity",
+    "packages/layer-editor/src/editor/selectionMath.ts:complexity",
+    "src/platform/cloud/onboarding/CloudLoginView.test.ts:hidden coupling",
+    "apps/billing-web/src/views/FullPageCheckoutView.test.ts:hidden coupling",
+    "src/lib/litegraph/src/LGraphCanvas.selection.test.ts:hidden coupling",
+    "src/platform/billing/localBillingHandoff.test.ts:hidden coupling",
+    "src/core/graph/widgets/dynamicGroupWidget.test.ts:hidden coupling",
+    "src/platform/billing/composables/useBillingContext.test.ts:hidden coupling",
+    "src/platform/auth/localWeb/localWebSession.test.ts:hidden coupling",
+    "apps/billing-web/src/views/FullPageTopupView.test.ts:hidden coupling",
+    "src/platform/billing/composables/useBillingCapabilities.test.ts:hidden coupling",
+    "src/platform/telemetry/providers/host/HostTelemetrySink.ts:hidden coupling",
+    "src/platform/workspace/components/DeploymentSwitcher.test.ts:hidden coupling",
+    "src/components/curve/CurveEditor.vue:hidden coupling",
+    "browser_tests/tests/customNodes/connectivity.spec.ts:complexity",
+    "scripts/cloud-manifest.ts:complexity",
+    "browser_tests/tests/links/linkVisibility.spec.ts:hidden coupling",
+    "src/components/boundingBoxes/WidgetBoundingBoxes.vue:hidden coupling",
+    "tools/architecture/src/schema.ts:hidden coupling",
+    "browser_tests/fixtures/components/SubgraphEditor.ts:circular dependency",
+    "src/platform/updates/components/ReleaseNotificationToast.test.ts:hidden coupling",
+    "packages/account-core/src/firebase/configSource.ts:hidden coupling",
+    "src/platform/assets/components/UploadModelFooter.vue:hidden coupling",
+    "packages/account-core/src/core/billing/topup.test.ts:hidden coupling",
+    "browser_tests/tests/agent/agentFreeUsePlacement.spec.ts:hidden coupling",
+    "src/platform/telemetry/providers/cloud/PostHogTelemetryProvider.test.ts:hidden coupling",
+    "src/workbench/extensions/agent/composables/agent/useOnboarding.test.ts:hidden coupling",
+    "src/lib/litegraph/src/LGraphCanvas.linkVisibility.test.ts:hidden coupling",
+    "src/workbench/extensions/agent/components/agent/AgentPanel.freeUsePlacement.test.ts:hidden coupling",
+    "apps/billing-web/src/views/SubscriptionView.test.ts:hidden coupling",
+    "src/workbench/extensions/agent/components/agent/FreeUseNotice.test.ts:hidden coupling",
+    "packages/account-core/src/core/billing/scopedReader.test.ts:hidden coupling",
+    "browser_tests/tests/billing/localWebBillingHandoff.spec.ts:hidden coupling",
+    "src/composables/boundingBoxes/useBoundingBoxes.test.ts:hidden coupling",
+    "src/workbench/extensions/agent/composables/agent/useComposer.test.ts:hidden coupling",
+    "src/workbench/extensions/agent/services/agent/agentEventTransport.test.ts:hidden coupling",
+    "packages/layer-editor/src/compositor/webglCompositor.ts:complexity",
+    "browser_tests/tests/agent/agentOnboarding.spec.ts:hidden coupling",
+    "src/workbench/extensions/agent/crdt/useAgentCrdtFollower.rejectedWidgetWrite.test.ts:hidden coupling",
+    "src/platform/assets/components/UploadModelUrlInput.vue:hidden coupling",
+    "tools/ci/src/cicd/resolve-comfyui-release.ts:complexity",
+    "browser_tests/tests/subgraph/subgraphPromotionDom.spec.ts:hidden coupling",
+    "browser_tests/tests/subgraph/subgraphSerialization.spec.ts:hidden coupling",
+    "src/platform/auth/localWeb/localWebAuthBridge.test.ts:hidden coupling",
+    "src/platform/cloud/oauth/OAuthConsentView.test.ts:hidden coupling",
+    "apps/billing-web/e2e/full-page-authentication.spec.ts:hidden coupling",
+    "apps/billing-web/e2e/full-page-endings.spec.ts:hidden coupling",
+    "src/platform/secrets/composables/useSecretForm.test.ts:hidden coupling",
+    "packages/account-core/src/firebase/index.test.ts:hidden coupling",
+    "src/workbench/extensions/agent/components/agent/message/WorkSummary.test.ts:hidden coupling",
+    "src/workbench/extensions/agent/services/agent/agentActivityRows.test.ts:hidden coupling",
+    "packages/account-ui/src/billing/addCredits/AddCreditsDialog.test.ts:hidden coupling",
+    "src/lib/litegraph/src/canvas/linkBadges.test.ts:hidden coupling",
+    "packages/account-core/src/firebase/configSource.test.ts:hidden coupling",
+    "browser_tests/tests/workspaceSwitcher.spec.ts:hidden coupling",
+    "src/workbench/extensions/agent/components/agent/EmptyState.test.ts:hidden coupling",
+    "browser_tests/tests/subgraph/subgraphPromotion.spec.ts:hidden coupling",
+    "src/workbench/extensions/agent/experiments/freeUsePlacement.test.ts:hidden coupling",
+    "src/platform/telemetry/providers/host/HostTelemetrySink.test.ts:hidden coupling",
+    "src/workbench/extensions/agent/utils/starterPrompts.test.ts:hidden coupling",
+    "apps/billing-web/e2e/full-page-summary.spec.ts:hidden coupling",
+    "tools/architecture/src/boundaries.test.ts:hidden coupling",
+    "src/platform/telemetry/TelemetryRegistry.test.ts:hidden coupling",
+    "src/platform/cloud/oauth/oauthApi.test.ts:hidden coupling",
+    "tools/architecture/src/cli.test.ts:hidden coupling",
+    "browser_tests/tests/appModeWidgetRename.spec.ts:hidden coupling",
+    "packages/account-core/src/core/billing/contracts/billingCapabilities.contract.test.ts:hidden coupling",
+    "apps/billing-web/src/checkout/summaryLedger.test.ts:hidden coupling",
+    "src/workbench/extensions/agent/schemas/agentApiSchema.test.ts:hidden coupling",
+    "src/workbench/extensions/agent/stores/agent/agentComposerStore.test.ts:hidden coupling",
+    "apps/billing-web/src/checkout/checkoutPage.test.ts:hidden coupling",
+    "src/platform/cloud/oauth/OAuthConsentView.stories.ts:hidden coupling"
   ]
 }

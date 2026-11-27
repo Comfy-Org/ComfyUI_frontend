@@ -16,6 +16,14 @@ const checkpoint: CompatibilityModel = {
   name: 'juggernautXL_v9.safetensors',
   folder: 'checkpoints'
 }
+const pickleCheckpoint: CompatibilityModel = {
+  name: 'legacy/model.pkl',
+  folder: 'checkpoints'
+}
+const pixelSpace: CompatibilityModel = {
+  name: 'pixel_space',
+  folder: 'vae'
+}
 
 const packsOnly: CloudWorkflowGaps = {
   nodePacks: ['rgthree-comfy', 'comfyui-impact-pack'],
@@ -25,9 +33,17 @@ const packsAndModel: CloudWorkflowGaps = {
   nodePacks: ['rgthree-comfy'],
   models: [lora]
 }
+const pixelSpaceOnly: CloudWorkflowGaps = {
+  nodePacks: [],
+  models: [pixelSpace]
+}
+const modelFileAndPixelSpace: CloudWorkflowGaps = {
+  nodePacks: [],
+  models: [checkpoint, pixelSpace]
+}
 const modelsOnly: CloudWorkflowGaps = {
   nodePacks: [],
-  models: [lora, checkpoint]
+  models: [lora, checkpoint, pickleCheckpoint]
 }
 
 function answered(
@@ -58,8 +74,31 @@ describe(runOnCloudModalState, () => {
     {
       name: 'Comfy Cloud can run it: Open, which asks a signed-out person to sign in',
       check: answered({ kind: 'canOpen' }),
-      signedIn: { kind: 'ready', asksToSignIn: false },
-      signedOut: { kind: 'ready', asksToSignIn: true }
+      signedIn: { kind: 'ready', asksToSignIn: false, uncheckedInputs: [] },
+      signedOut: { kind: 'ready', asksToSignIn: true, uncheckedInputs: [] }
+    },
+    {
+      name: 'Comfy Cloud can run it but could not check a linked model: Open, naming the input',
+      check: answered({
+        kind: 'canOpen',
+        uncheckedInputs: [
+          { nodeType: 'CheckpointLoaderSimple', input: 'ckpt_name' }
+        ]
+      }),
+      signedIn: {
+        kind: 'ready',
+        asksToSignIn: false,
+        uncheckedInputs: [
+          { nodeType: 'CheckpointLoaderSimple', input: 'ckpt_name' }
+        ]
+      },
+      signedOut: {
+        kind: 'ready',
+        asksToSignIn: true,
+        uncheckedInputs: [
+          { nodeType: 'CheckpointLoaderSimple', input: 'ckpt_name' }
+        ]
+      }
     },
     {
       name: 'node packs missing: Deploy your setup',
@@ -74,15 +113,27 @@ describe(runOnCloudModalState, () => {
       signedOut: { kind: 'deploySetup' }
     },
     {
-      name: 'only models missing: show the missing models',
+      name: 'a missing model that is not a file: Deploy your setup',
+      check: answered({ kind: 'missing', gaps: pixelSpaceOnly }),
+      signedIn: { kind: 'deploySetup' },
+      signedOut: { kind: 'deploySetup' }
+    },
+    {
+      name: 'a missing model file and one that is not a file: Deploy your setup',
+      check: answered({ kind: 'missing', gaps: modelFileAndPixelSpace }),
+      signedIn: { kind: 'deploySetup' },
+      signedOut: { kind: 'deploySetup' }
+    },
+    {
+      name: 'only model files missing: show the missing models',
       check: answered({ kind: 'missing', gaps: modelsOnly }),
       signedIn: {
         kind: 'missingModels',
-        models: [lora, checkpoint]
+        models: [lora, checkpoint, pickleCheckpoint]
       },
       signedOut: {
         kind: 'missingModels',
-        models: [lora, checkpoint]
+        models: [lora, checkpoint, pickleCheckpoint]
       }
     }
   ])('$name', ({ check, signedIn, signedOut }) => {

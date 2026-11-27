@@ -8,7 +8,7 @@ import Menu from '@comfyorg/design-system/menu/Menu'
 import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 import { useAppMode } from '@/composables/useAppMode'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type { AssetItem } from '@comfyorg/assets-core/schema'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { extractWorkflowFromAsset } from '@/platform/workflow/utils/workflowExtractionUtil'
 import ImagePreview from '@/renderer/extensions/linearMode/ImagePreview.vue'
@@ -78,13 +78,13 @@ function handleSelection(sel: OutputSelection) {
 
 function downloadAsset(item?: AssetItem) {
   for (const output of allOutputs(item))
-    downloadFile(resultItemUrl(output), output.filename)
+    downloadFile(resultItemUrl(output), output.filename, 'linear')
 }
 
 function downloadOutput(output?: AugmentedResultItem) {
   if (!output) return
   const url = resultItemUrl(output)
-  if (url) downloadFile(url)
+  if (url) downloadFile(url, undefined, 'linear')
 }
 
 async function loadWorkflow(item: AssetItem | undefined) {
@@ -93,10 +93,15 @@ async function loadWorkflow(item: AssetItem | undefined) {
   if (!workflow) return
 
   if (workflow.id !== useApp().rootGraph.id)
-    return useApp().loadGraphData(workflow)
+    return useApp().loadGraphData(workflow, true, true, null, {
+      initiator: 'user'
+    })
   //update graph to new version, set old to top of undo queue
   const changeTracker = useWorkflowStore().activeWorkflow?.changeTracker
-  if (!changeTracker) return useApp().loadGraphData(workflow)
+  if (!changeTracker)
+    return useApp().loadGraphData(workflow, true, true, null, {
+      initiator: 'user'
+    })
   changeTracker.redoQueue = []
   await changeTracker.updateState([workflow], changeTracker.undoQueue)
 }

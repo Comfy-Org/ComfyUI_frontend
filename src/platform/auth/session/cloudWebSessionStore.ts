@@ -326,6 +326,13 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
       scope: requestScope,
       workspaceId: () => (currentSession() ? selectedWorkspaceId() : undefined),
       send: (url, init, scope) => send(url, init, scope, authorize),
+      ingestHeaders: async ({ session, workspaceId }, method) => {
+        const { headers } = await authorize(
+          { kind: 'session', session },
+          { target: 'ingest', method, workspaceId }
+        )
+        return headers
+      },
       workspaceToken: async (scope) =>
         settleScopedToken(scope, await mint.mint(scope.workspaceId)),
       remintWorkspaceToken: async (scope) =>

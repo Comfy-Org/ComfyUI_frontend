@@ -3,8 +3,10 @@
     <MenuRadioItem
       v-bind="$attrs"
       :value
+      as-child
       :disabled
       :aria-describedby="describedBy"
+      :aria-keyshortcuts="editLabel ? 'E' : undefined"
       :class="
         cn(
           switcherItemClass,
@@ -13,59 +15,60 @@
         )
       "
       @select="emit('select', $event)"
+      @keydown="editOnKey"
     >
-      <DeploymentStatusIcon
-        :tone
-        icon-class="size-3.5 text-muted-foreground"
-        ring-class="ring-1 ring-background group-data-highlighted:ring-accent group-aria-checked:ring-secondary group-aria-checked:group-data-highlighted:ring-accent"
-      />
-      <span
-        ref="titleText"
-        :class="
-          cn(
-            'min-w-0 flex-1 truncate',
-            muted ? 'text-muted-foreground' : 'text-foreground'
-          )
-        "
-      >
-        {{ title }}
-      </span>
-      <span
-        ref="deploymentText"
-        class="w-16 shrink-0 truncate text-muted-foreground"
-      >
-        {{ deployment }}
-      </span>
-      <span v-if="showsAction" class="flex min-w-14 shrink-0">
+      <div :aria-disabled="disabled || unpickable || undefined">
+        <DeploymentStatusIcon
+          :tone
+          icon-class="size-3.5 text-muted-foreground"
+          ring-class="ring-1 ring-background group-data-highlighted:ring-accent group-aria-checked:ring-secondary group-aria-checked:group-data-highlighted:ring-accent"
+        />
         <span
-          class="flex h-6 items-center rounded-md bg-accent px-2.5 whitespace-nowrap text-foreground group-data-highlighted:bg-muted"
-          aria-hidden="true"
+          ref="titleText"
+          :class="
+            cn(
+              'min-w-0 flex-1 truncate',
+              muted ? 'text-muted-foreground' : 'text-foreground'
+            )
+          "
         >
-          {{ actionLabel }}
-          <i
-            v-if="actionIcon"
-            :class="cn(actionIcon, 'ml-1 size-3')"
+          {{ title }}
+        </span>
+        <span
+          ref="deploymentText"
+          class="w-16 shrink-0 truncate text-muted-foreground"
+        >
+          {{ deployment }}
+        </span>
+        <span v-if="showsAction" class="flex min-w-14 shrink-0">
+          <span
+            class="flex h-6 items-center rounded-md bg-accent px-2.5 whitespace-nowrap text-foreground group-data-highlighted:bg-muted"
             aria-hidden="true"
+          >
+            {{ actionLabel }}
+            <i
+              v-if="actionIcon"
+              :class="cn(actionIcon, 'ml-1 size-3')"
+              aria-hidden="true"
+            />
+          </span>
+        </span>
+        <span v-else ref="detailCell" :class="detailClass">
+          {{ switching ? $t('deploymentSwitcher.switching') : detail }}
+        </span>
+        <span :class="switcherTrailingSlotClass">
+          <DeploymentSwitcherRowTrailing
+            :switching
+            :building
+            :edit-label="editLabel"
+            @edit="emit('edit')"
           />
         </span>
-      </span>
-      <span v-else ref="detailCell" :class="detailClass">
-        {{ switching ? $t('deploymentSwitcher.switching') : detail }}
-      </span>
-      <span :class="switcherTrailingSlotClass">
-        <i
-          v-if="switching"
-          class="icon-[lucide--loader-circle] size-3.5 animate-spin text-muted-foreground"
-          aria-hidden="true"
-        />
-        <DropdownMenuItemIndicator v-else class="flex">
-          <i
-            class="icon-[lucide--check] size-3.5 text-foreground"
-            aria-hidden="true"
-          />
-        </DropdownMenuItemIndicator>
-      </span>
-      <span v-if="note" :id="noteId" hidden>{{ note }}</span>
+        <span v-if="note" :id="noteId" hidden>{{ note }}</span>
+        <span v-if="editLabel" :id="editHintId" hidden>
+          {{ $t('platformFrame.updateShortcut') }}
+        </span>
+      </div>
     </MenuRadioItem>
   </TextTooltip>
   <div
@@ -86,12 +89,12 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import { useResizeObserver } from '@vueuse/core'
-import { DropdownMenuItemIndicator } from 'reka-ui'
 import { computed, onMounted, onUpdated, ref, useId, useTemplateRef } from 'vue'
 
 import MenuRadioItem from '@comfyorg/design-system/menu/MenuRadioItem'
 import TextTooltip from '@comfyorg/design-system/tooltip/TextTooltip'
 import DeploymentStatusIcon from '@/platform/workspace/components/DeploymentStatusIcon.vue'
+import DeploymentSwitcherRowTrailing from '@/platform/workspace/components/DeploymentSwitcherRowTrailing.vue'
 import {
   switcherItemClass,
   switcherTrailingSlotClass
@@ -113,7 +116,10 @@ const {
   problem = null,
   muted = false,
   switching = false,
-  disabled = false
+  building = false,
+  disabled = false,
+  unpickable = false,
+  editLabel = null
 } = defineProps<{
   value: string
   title: string
@@ -128,20 +134,34 @@ const {
   problem?: { summary: string; message: string | null; fix: string } | null
   muted?: boolean
   switching?: boolean
+  building?: boolean
   disabled?: boolean
+  unpickable?: boolean
+  editLabel?: string | null
 }>()
 
 const emit = defineEmits<{
   select: [event: Event]
+  edit: []
 }>()
 
 const noteId = useId()
 const problemId = useId()
+const editHintId = useId()
 const describedBy = computed(
   () =>
-    [note && noteId, problem && problemId].filter(Boolean).join(' ') ||
-    undefined
+    [note && noteId, problem && problemId, editLabel && editHintId]
+      .filter(Boolean)
+      .join(' ') || undefined
 )
+
+function editOnKey(event: KeyboardEvent) {
+  if (!editLabel || event.key.toLowerCase() !== 'e') return
+  if (event.ctrlKey || event.metaKey || event.altKey) return
+  event.preventDefault()
+  event.stopPropagation()
+  emit('edit')
+}
 
 const showsAction = computed(() => actionLabel !== null && !switching)
 const detailClass = computed(() =>

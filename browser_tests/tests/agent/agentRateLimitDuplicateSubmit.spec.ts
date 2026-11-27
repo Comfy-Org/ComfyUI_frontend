@@ -1,4 +1,5 @@
 import { expect } from '@playwright/test'
+import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
 
 import type { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import {
@@ -22,19 +23,19 @@ test.describe(
       postedMessages: string[]
     }): Promise<void> {
       await agentPanel.open()
-      await agentPanel.selectWorkflow()
 
       await agentPanel.composer.fill(prompt)
       await agentPanel.composer.press('Enter')
-      await expect(
-        agentPanel.root.getByText(FUNDS_UNAVAILABLE_MESSAGE)
-      ).toBeVisible()
-      await expect(agentPanel.composer).toHaveText(prompt)
-      await expect(agentPanel.sendButton).toBeEnabled()
+      await expect(agentPanel.pendingSendError).toContainText(
+        FUNDS_UNAVAILABLE_MESSAGE
+      )
+      await expect(agentPanel.composer).toHaveText('')
+      await expect(agentPanel.retryPendingButton).toBeDisabled()
+      await expect(agentPanel.deletePendingButton).toBeEnabled()
       await expect.poll(() => postedMessages).toHaveLength(1)
     }
 
-    test('keeps repeated Enter presses to one rejected send', async ({
+    test('disables Retry while Retry-After holds and leaves the composer free', async ({
       agentPanel,
       postedMessages
     }) => {
@@ -42,41 +43,62 @@ test.describe(
 
       await agentPanel.composer.press('Enter')
       await agentPanel.composer.press('Enter')
-      await expect(agentPanel.composer).toHaveText(prompt)
-      await expect(agentPanel.sendButton).toBeEnabled()
+      await expect(agentPanel.composer).toHaveText('')
+      await expect(agentPanel.retryPendingButton).toBeDisabled()
 
-      await expect(
-        agentPanel.root.getByTestId('user-message-bubble')
-      ).toHaveText([prompt])
+      await expect(agentPanel.userMessageBubbles).toHaveText([prompt])
       await expect.poll(() => postedMessages).toHaveLength(1)
     })
 
-    test('retries the restored prompt from the Send button', async ({
+    test('allows sending a new prompt from the composer while the failed message waits', async ({
       agentPanel,
       postedMessages
     }) => {
       await rejectOneSend({ agentPanel, postedMessages })
 
-      await agentPanel.sendButton.click()
-
-      await expect.poll(() => postedMessages).toHaveLength(2)
-      await expect(agentPanel.composer).toHaveText(prompt)
-      await expect(agentPanel.sendButton).toBeEnabled()
-    })
-
-    test('allows Enter again once the restored prompt is edited', async ({
-      agentPanel,
-      postedMessages
-    }) => {
-      await rejectOneSend({ agentPanel, postedMessages })
-
-      const edited = `${prompt} at dusk`
-      await agentPanel.composer.fill(edited)
-      await expect(agentPanel.composer).toHaveText(edited)
+      const followUp = `${prompt} at dusk`
+      await agentPanel.composer.fill(followUp)
+      await expect(agentPanel.composer).toHaveText(followUp)
       await agentPanel.composer.press('Enter')
 
       await expect.poll(() => postedMessages).toHaveLength(2)
-      await expect(agentPanel.composer).toHaveText(edited)
+      expect(
+        zAgentPostMessageRequest.parse(JSON.parse(postedMessages[1]))
+      ).toMatchObject({ content: followUp })
+      await expect(agentPanel.composer).toHaveText('')
+      await expect(agentPanel.userMessageBubbles).toHaveText([prompt, followUp])
+    })
+
+    test.describe('when the retry window expires', () => {
+      test.use({ agentRetryAfter: '1' })
+
+      test('enables Retry after the delay and retries the failed message once', async ({
+        agentPanel,
+        page,
+        postedMessages
+      }) => {
+        await page.clock.install()
+        await agentPanel.open()
+        await page.clock.pauseAt(Date.now() + 1_000)
+
+        await agentPanel.composer.fill(prompt)
+        await agentPanel.composer.press('Enter')
+        await expect(agentPanel.pendingSendError).toContainText(
+          FUNDS_UNAVAILABLE_MESSAGE
+        )
+        await expect(agentPanel.composer).toHaveText('')
+        await expect(agentPanel.retryPendingButton).toBeDisabled()
+        await expect(agentPanel.deletePendingButton).toBeEnabled()
+        await expect.poll(() => postedMessages).toHaveLength(1)
+
+        await page.clock.runFor(1_100)
+        await expect(agentPanel.retryPendingButton).toBeEnabled()
+        await page.clock.resume()
+        await agentPanel.retryPendingButton.click()
+
+        await expect.poll(() => postedMessages).toHaveLength(2)
+        await expect(agentPanel.userMessageBubbles).toHaveText([prompt])
+      })
     })
   }
 )

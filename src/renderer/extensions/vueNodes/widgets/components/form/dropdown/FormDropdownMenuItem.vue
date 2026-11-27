@@ -120,7 +120,7 @@ function handleVideoLoad(event: Event) {
           'aspect-square w-full overflow-hidden outline-1 -outline-offset-1 outline-border',
           'transition-[transform,box-shadow] duration-150',
           {
-            'max-w-16 min-w-16 rounded-l-lg': layout === 'list',
+            'w-16 shrink-0 rounded-l-lg': layout === 'list',
             'rounded-sm group-hover/item:scale-108 group-active/item:scale-95':
               layout === 'grid',
             // selection

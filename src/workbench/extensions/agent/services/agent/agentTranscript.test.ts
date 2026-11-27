@@ -88,6 +88,16 @@ describe('normalizeAgentTranscript', () => {
       'wf-a'
     )
   })
+
+  it('restores the latest workflow target from an assistant row when no user row exists', () => {
+    const assistant = {
+      ...row(1, 'assistant', 'turn-agent', 'Want me to wire it up?', 'row-1'),
+      workflow_id: 'wf-agent-started'
+    }
+    expect(normalizeAgentTranscript([assistant]).latestWorkflowId).toBe(
+      'wf-agent-started'
+    )
+  })
   it('orders rows by sequence and groups them by stable turn identity', () => {
     const transcript = normalizeAgentTranscript([
       row(4, 'assistant', 'turn-b', 'Second reply', 'row-4'),
@@ -453,7 +463,12 @@ describe('normalizeAgentTranscript', () => {
     const transcript = normalizeAgentTranscript([message])
 
     expect(transcript.messages[0].parts).toEqual([
-      { type: 'thinking', text: 'Looking it up.', state: 'done' },
+      {
+        type: 'thinking',
+        text: 'Looking it up.',
+        state: 'done',
+        toolCallId: 'call-1'
+      },
       {
         type: 'tool',
         callId: 'call-1',
@@ -461,7 +476,12 @@ describe('normalizeAgentTranscript', () => {
         state: 'done',
         ok: true
       },
-      { type: 'thinking', text: 'The audit row is gone.', state: 'done' },
+      {
+        type: 'thinking',
+        text: 'The audit row is gone.',
+        state: 'done',
+        toolCallId: 'call-missing'
+      },
       { type: 'text', text: 'Done', state: 'done' }
     ])
   })
@@ -1097,15 +1117,23 @@ describe('normalizeAgentTranscript', () => {
     ])
   })
 
-  it.for([
-    { tool_calls: 'not-an-array' },
-    { tool_calls: [null, 17, 'a-string'] },
-    { tool_calls: [{ tool_name: 'no_id', status: 'success' }] },
-    {
-      tool_calls: [{ id: 'call-1', tool_call_id: 'call-1', status: 'success' }]
-    },
-    { tool_calls: [] }
-  ])('ignores malformed tool_calls metadata: $tool_calls', (content) => {
+  it.for<[string, { tool_calls: unknown }]>([
+    ['a non-array value', { tool_calls: 'not-an-array' }],
+    ['non-object entries', { tool_calls: [null, 17, 'a-string'] }],
+    [
+      'an entry without an id',
+      { tool_calls: [{ tool_name: 'no_id', status: 'success' }] }
+    ],
+    [
+      'an entry without a tool name',
+      {
+        tool_calls: [
+          { id: 'call-1', tool_call_id: 'call-1', status: 'success' }
+        ]
+      }
+    ],
+    ['an empty list', { tool_calls: [] }]
+  ])('ignores malformed tool_calls metadata: %s', ([, content]) => {
     const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
     message.content = {
       text: 'Done',
