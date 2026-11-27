@@ -38,7 +38,7 @@ import { showPlaceholdersAsWaiting } from '@/platform/customNodes/lateLoading/wa
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 import { app } from '@/scripts/app'
-import { UserDataExistsError } from '@/scripts/api'
+import { UserDataExistsError } from '@comfyorg/api-client/ComfyApi'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { useAppMode } from '@/composables/useAppMode'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
