@@ -4636,6 +4636,11 @@
       "count": 1
     }
   },
+  "src/platform/billing/composables/useTeamOrEnterprisePlan.test.ts": {
+    "typescript/no-restricted-types": {
+      "count": 1
+    }
+  },
   "src/platform/billing/composables/useTeamPlan.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 5
@@ -5339,6 +5344,16 @@
       "count": 2
     }
   },
+  "src/platform/messaging/messageArbiter.test.ts": {
+    "typescript/no-restricted-types": {
+      "count": 1
+    }
+  },
+  "src/platform/messaging/messageArbiter.ts": {
+    "typescript/no-restricted-types": {
+      "count": 6
+    }
+  },
   "src/platform/navigation/preservedQueryManager.ts": {
     "typescript/no-restricted-types": {
       "count": 2
@@ -5397,6 +5412,11 @@
   "src/platform/onboarding/vCoachmark.ts": {
     "typescript/no-restricted-types": {
       "count": 2
+    }
+  },
+  "src/platform/openOnCloud/cloudCheckConsent.ts": {
+    "typescript/no-restricted-types": {
+      "count": 1
     }
   },
   "src/platform/openOnCloud/cloudCompatibilityApi.ts": {
@@ -6079,7 +6099,7 @@
   },
   "src/platform/workflowErrors/agentErrorContext.ts": {
     "typescript/no-restricted-types": {
-      "count": 1
+      "count": 2
     }
   },
   "src/platform/workflowErrors/errorCatalog/errorMessageResolver.ts": {
@@ -6241,6 +6261,11 @@
       "count": 4
     }
   },
+  "src/platform/workflowErrors/panel/DeploymentBuildActions.vue": {
+    "typescript/no-restricted-types": {
+      "count": 1
+    }
+  },
   "src/platform/workflowErrors/panel/ErrorGroupList.vue": {
     "typescript/no-restricted-types": {
       "count": 1
@@ -6331,11 +6356,6 @@
       "count": 3
     }
   },
-  "src/platform/workspace/components/WorkflowNeedsDeploymentCard.vue": {
-    "typescript/no-restricted-types": {
-      "count": 1
-    }
-  },
   "src/platform/workspace/components/WorkspaceProfilePic.vue": {
     "typescript/no-restricted-types": {
       "count": 1
@@ -6352,6 +6372,11 @@
     }
   },
   "src/platform/workspace/components/dialogs/SetMemberCreditLimitDialogContent.vue": {
+    "typescript/no-restricted-types": {
+      "count": 1
+    }
+  },
+  "src/platform/workspace/components/dialogs/UnsavedWorkDialogContent.vue": {
     "typescript/no-restricted-types": {
       "count": 1
     }
@@ -6406,6 +6431,16 @@
       "count": 6
     }
   },
+  "src/platform/workspace/composables/useIssuesToastBuildOffer.test.ts": {
+    "typescript/no-restricted-types": {
+      "count": 2
+    }
+  },
+  "src/platform/workspace/composables/useIssuesToastBuildOffer.ts": {
+    "typescript/no-restricted-types": {
+      "count": 1
+    }
+  },
   "src/platform/workspace/composables/useMissingNodeDeploymentOffer.ts": {
     "typescript/no-restricted-types": {
       "count": 3
@@ -6427,6 +6462,11 @@
     }
   },
   "src/platform/workspace/confirmUnsavedWorkBeforeSwitch.test.ts": {
+    "typescript/no-restricted-types": {
+      "count": 1
+    }
+  },
+  "src/platform/workspace/confirmUnsavedWorkBeforeSwitch.ts": {
     "typescript/no-restricted-types": {
       "count": 1
     }
@@ -6503,7 +6543,7 @@
   },
   "src/platform/workspace/platformFrame/platformFrameMessages.ts": {
     "typescript/no-restricted-types": {
-      "count": 6
+      "count": 8
     }
   },
   "src/platform/workspace/platformFrame/platformFrameNotices.ts": {
@@ -6513,7 +6553,7 @@
   },
   "src/platform/workspace/platformFrame/platformFrameStore.ts": {
     "typescript/no-restricted-types": {
-      "count": 6
+      "count": 7
     }
   },
   "src/platform/workspace/platformFrame/platformFrameUrl.ts": {
@@ -6527,11 +6567,6 @@
     }
   },
   "src/platform/workspace/platformFrame/useDeploymentModelsFrame.test.ts": {
-    "typescript/no-restricted-types": {
-      "count": 2
-    }
-  },
-  "src/platform/workspace/platformFrame/usePreinstallOffer.test.ts": {
     "typescript/no-restricted-types": {
       "count": 2
     }
@@ -6564,6 +6599,16 @@
   "src/platform/workspace/recommendedDeployment.ts": {
     "typescript/no-restricted-types": {
       "count": 2
+    }
+  },
+  "src/platform/workspace/showUnsavedWorkDialog.test.ts": {
+    "typescript/no-restricted-types": {
+      "count": 2
+    }
+  },
+  "src/platform/workspace/showUnsavedWorkDialog.ts": {
+    "typescript/no-restricted-types": {
+      "count": 3
     }
   },
   "src/platform/workspace/stores/deploymentPickStore.test.ts": {
@@ -7659,7 +7704,7 @@
       "count": 1
     },
     "typescript/no-restricted-types": {
-      "count": 21
+      "count": 22
     }
   },
   "src/scripts/appInstance.ts": {
@@ -7831,11 +7876,6 @@
   },
   "src/services/subgraphPseudoWidgetCache.ts": {
     "typescript/no-restricted-types": {
-      "count": 1
-    }
-  },
-  "src/services/useNewUserService.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
       "count": 1
     }
   },
@@ -8129,7 +8169,7 @@
   },
   "src/utils/executionErrorUtil.ts": {
     "typescript/no-restricted-types": {
-      "count": 4
+      "count": 8
     }
   },
   "src/utils/executionUtil.stability.test.ts": {
@@ -8639,7 +8679,7 @@
   },
   "src/workbench/extensions/agent/crdt/docOpMinter.ts": {
     "typescript/no-restricted-types": {
-      "count": 21
+      "count": 23
     }
   },
   "src/workbench/extensions/agent/crdt/documentSlotAddress.test.ts": {
@@ -8888,7 +8928,7 @@
   },
   "src/workbench/extensions/agent/stores/agent/agentPanelStore.ts": {
     "typescript/no-restricted-types": {
-      "count": 12
+      "count": 15
     }
   },
   "src/workbench/extensions/agent/stores/agent/agentPromptQueueStore.ts": {
@@ -8916,7 +8956,7 @@
   },
   "src/workbench/extensions/agent/stores/agent/creditTransitionNoticeState.ts": {
     "typescript/no-restricted-types": {
-      "count": 4
+      "count": 5
     }
   },
   "src/workbench/extensions/agent/stores/agent/promptQueueState.ts": {

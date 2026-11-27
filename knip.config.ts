@@ -122,7 +122,7 @@ const config: KnipConfig = {
     config: ['playwright?(.*).config.ts'],
     entry: ['browser_tests/**/*.@(spec|test).?(c|m)[jt]s?(x)']
   },
-  tags: ['-knipIgnoreUnusedButUsedByCustomNodes', '-knipIgnoreUsedByStackedPR']
+  tags: ['-knipIgnoreUnusedButUsedByCustomNodes']
 }
 
 export default config

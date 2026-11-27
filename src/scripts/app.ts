@@ -151,6 +151,7 @@ import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
+import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useJobPreviewStore } from '@/stores/jobPreviewStore'
@@ -267,6 +268,17 @@ function servedRefusal(error: unknown): unknown {
   return error instanceof PromptExecutionError
     ? error.response.error
     : undefined
+}
+
+function unshapedPromptFailure(
+  error: PromptExecutionError
+): PromptError | null {
+  if (Object.keys(error.response.node_errors ?? {}).length > 0) return null
+  return {
+    type: 'server_error',
+    message: error.toString() || `HTTP ${error.status ?? 'error'}`,
+    details: ''
+  }
 }
 
 function withCloudRefusalReason(promptError: PromptError, error: unknown) {
@@ -1272,6 +1284,7 @@ export class ComfyApp implements IComfyApp {
       nodeDefArray
     )
     nodeDefStore.updateNodeDefs(nodeDefArray)
+    useModelToNodeStore().registerDefaults()
   }
 
   async getNodeDefs(): Promise<Record<string, ComfyNodeDefV1>> {
@@ -2278,7 +2291,8 @@ export class ComfyApp implements IComfyApp {
               Object.keys(error.response.node_errors ?? {}).length > 0
             const promptError =
               error instanceof PromptExecutionError
-                ? normalizePromptError(error.response.error)
+                ? (normalizePromptError(error.response.error) ??
+                  unshapedPromptFailure(error))
                 : null
             const promptPrecondition = promptError
               ? (resolveAccountPrecondition({

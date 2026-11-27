@@ -4,7 +4,7 @@ import { z } from 'zod'
 
 import { safeLocalStorage } from '@/base/storage/safeStorage'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
-import { isLogoutTransition } from '@/platform/workflow/persistence/base/storageIO'
+import { isIdentityTransition } from '@/platform/workflow/persistence/base/storageIO'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 
 const zSkillDraftFields = z.object({
@@ -83,7 +83,7 @@ export const useSkillDraftStore = defineStore('skillDrafts', () => {
     target: SkillDraftTarget,
     fields: SkillDraftFields | null
   ): void {
-    if (fields && isLogoutTransition()) return
+    if (fields && isIdentityTransition()) return
     const next = readDrafts(scope)
     if (target.kind === 'new') next.newSkill = fields
     else if (fields) next.edits[editKey(target.name)] = fields

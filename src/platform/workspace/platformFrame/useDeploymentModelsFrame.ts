@@ -15,6 +15,10 @@ export function deploymentModelsRequest(
   }
 }
 
+export function preinstallRequest(deploymentId: string): PlatformFrameRequest {
+  return { step: 'preinstall', deploymentId, handsOverWorkflow: true }
+}
+
 export function useDeploymentModelsFrame() {
   const pickStore = useDeploymentPickStore()
   const frames = usePlatformFrameStore()

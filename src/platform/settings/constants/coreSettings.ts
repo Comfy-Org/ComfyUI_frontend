@@ -307,6 +307,13 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: true
   },
   {
+    id: 'Comfy.Cloud.AskBeforeCompatibilityCheck',
+    category: ['Comfy', 'Comfy Cloud', 'AskBeforeCompatibilityCheck'],
+    name: 'Ask before sending node and model names to check Comfy Cloud compatibility',
+    type: isCloud ? 'hidden' : 'boolean',
+    defaultValue: true
+  },
+  {
     id: 'Comfy.Desktop.CloudNotificationShown',
     name: 'Cloud notification shown',
     type: 'hidden',
@@ -1267,6 +1274,13 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Template library - Selected runs on filters',
     type: 'hidden',
     defaultValue: []
+  },
+  {
+    id: 'Comfy.Templates.HasOpenedLibrary',
+    name: 'Template library - Opened at least once',
+    type: 'hidden',
+    defaultValue: false,
+    versionAdded: '1.62.0'
   },
   {
     id: 'Comfy.Templates.SortBy',

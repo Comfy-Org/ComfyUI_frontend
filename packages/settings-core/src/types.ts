@@ -26,6 +26,7 @@ export type Settings = {
   'Comfy.ErrorSystem.ShowMissingNodes': boolean
   'Comfy.Workflow.ShowMissingMediaWarning': boolean
   'Comfy.Workflow.WarnBlueprintOverwrite': boolean
+  'Comfy.Cloud.AskBeforeCompatibilityCheck': boolean
   'Comfy.Desktop.CloudNotificationShown': boolean
   'Comfy.DeploymentSwitcher.Seen': boolean
   'Comfy.DisableFloatRounding': boolean
@@ -177,6 +178,7 @@ export type Settings = {
   'Comfy.Templates.SelectedModels': Array<string>
   'Comfy.Templates.SelectedUseCases': Array<string>
   'Comfy.Templates.SelectedRunsOn': Array<string>
+  'Comfy.Templates.HasOpenedLibrary': boolean
   'Comfy.Templates.SortBy':
     | 'recommended'
     | 'popular'

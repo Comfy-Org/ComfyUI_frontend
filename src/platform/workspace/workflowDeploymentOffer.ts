@@ -1,3 +1,4 @@
+import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
 import type { WorkspaceDeployment } from '@/platform/workspace/api/workspaceApi'
 import type { DeploymentCompatibilityMark } from '@/platform/workspace/composables/useDeploymentCompatibility'
 
@@ -49,9 +50,13 @@ function runs(choice: DeploymentChoice): boolean {
   return choice.mark?.kind === 'runs'
 }
 
+function switchableNow(deployment: WorkspaceDeployment): boolean {
+  return pendingServerFact('BE-27617', deployment.status === 'ready')
+}
+
 /** Whether Switch may pick this deployment: it runs the workflow and is ready. */
 export function canSwitchTo(choice: DeploymentChoice): boolean {
-  return runs(choice) && choice.deployment.status === 'ready'
+  return runs(choice) && switchableNow(choice.deployment)
 }
 
 /** What the dialog for a workflow Comfy Cloud lacks nodes for offers, from the compatibility check's answer; a switch lists the deployments it can pick first. */

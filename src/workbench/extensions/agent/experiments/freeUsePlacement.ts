@@ -13,18 +13,18 @@ export type FreeUseVariant = (typeof FREE_USE_VARIANTS)[number]
 
 export function useFreeUsePlacement(isCloudDistribution: boolean) {
   const panelStore = useAgentPanelStore()
-  const variant = computed<FreeUseVariant>(() =>
-    isCloudDistribution ? 'control' : LOCAL_FREE_USE_PLACEMENT
-  )
+  const variant = computed<FreeUseVariant>(() => LOCAL_FREE_USE_PLACEMENT)
 
   function reportNotice(metadata: AgentFreeUseNoticeMetadata): void {
-    if (isCloudDistribution) return
     if (metadata.action === 'shown' && panelStore.reportedFreeUseImpression)
       return
     const telemetry = useTelemetry()
     if (!telemetry) return
     if (metadata.action === 'shown') panelStore.reportedFreeUseImpression = true
-    telemetry.trackAgentFreeUseNotice({ ...metadata, deployment: 'local' })
+    telemetry.trackAgentFreeUseNotice({
+      ...metadata,
+      deployment: isCloudDistribution ? 'cloud' : 'local'
+    })
   }
 
   return { variant, reportNotice }
