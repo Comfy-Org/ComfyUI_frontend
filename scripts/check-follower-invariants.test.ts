@@ -440,11 +440,45 @@ onBeforeUnmount(() =>
     ).toEqual([{ rule: 'op-producers-outlive-the-panel', line: 3 }])
   })
 
-  test('catches a producer detached by a named arrow handed to a teardown list', () => {
-    const fixture = `
+  test.for([
+    {
+      name: 'a producer detached by a named arrow handed to a teardown list',
+      fixture: `
       const releaseProducer = () => docOpMinter.detach()
       onScopeDispose(() => runFollowerTeardown([releaseProducer]))
     `
+    },
+    {
+      name: 'whitespace before the call parenthesis',
+      fixture: `onBeforeUnmount(() => opSender.detach ())`
+    },
+    {
+      name: 'a producer detach handed to a keyed teardown map by reference',
+      fixture: `
+      onBeforeUnmount(() =>
+        runPanelTeardown({ detachDocOpMinter: docOpMinter.detach })
+      )
+    `
+    },
+    {
+      name: 'a producer detach bound to a name a disposal route is handed',
+      fixture: `
+      const releaseProducer = opSender.detach
+      onBeforeUnmount(releaseProducer)
+    `
+    },
+    {
+      name: 'an optional-call detach',
+      fixture: `onBeforeUnmount(() => opSender.detach?.())`
+    },
+    {
+      name: 'an aliased factory import',
+      fixture: `
+      import { attachDocOpMinter as attach } from './crdt/docOpMinter'
+      const minter = attach({})
+    `
+    }
+  ])('catches $name', ({ fixture }) => {
     expect(
       checkOpProducersOutliveThePanel(FOLLOWER_FILE, fixture).map(
         ({ rule }) => rule
@@ -474,61 +508,6 @@ onBeforeUnmount(() =>
       const beforeUnmount = onBeforeUnmount
       const releaseProducer = () => opSender.detach()
       beforeUnmount(releaseProducer)
-    `
-    expect(
-      checkOpProducersOutliveThePanel(FOLLOWER_FILE, fixture).map(
-        ({ rule }) => rule
-      )
-    ).toEqual(['op-producers-outlive-the-panel'])
-  })
-
-  test('does not let whitespace before the call parenthesis skip the check', () => {
-    const fixture = `onBeforeUnmount(() => opSender.detach ())`
-    expect(
-      checkOpProducersOutliveThePanel(FOLLOWER_FILE, fixture).map(
-        ({ rule }) => rule
-      )
-    ).toEqual(['op-producers-outlive-the-panel'])
-  })
-
-  test('catches a producer detach handed to a keyed teardown map by reference', () => {
-    const fixture = `
-      onBeforeUnmount(() =>
-        runPanelTeardown({ detachDocOpMinter: docOpMinter.detach })
-      )
-    `
-    expect(
-      checkOpProducersOutliveThePanel(FOLLOWER_FILE, fixture).map(
-        ({ rule }) => rule
-      )
-    ).toEqual(['op-producers-outlive-the-panel'])
-  })
-
-  test('catches a producer detach bound to a name a disposal route is handed', () => {
-    const fixture = `
-      const releaseProducer = opSender.detach
-      onBeforeUnmount(releaseProducer)
-    `
-    expect(
-      checkOpProducersOutliveThePanel(FOLLOWER_FILE, fixture).map(
-        ({ rule }) => rule
-      )
-    ).toEqual(['op-producers-outlive-the-panel'])
-  })
-
-  test('catches an optional-call detach', () => {
-    const fixture = `onBeforeUnmount(() => opSender.detach?.())`
-    expect(
-      checkOpProducersOutliveThePanel(FOLLOWER_FILE, fixture).map(
-        ({ rule }) => rule
-      )
-    ).toEqual(['op-producers-outlive-the-panel'])
-  })
-
-  test('catches an aliased factory import', () => {
-    const fixture = `
-      import { attachDocOpMinter as attach } from './crdt/docOpMinter'
-      const minter = attach({})
     `
     expect(
       checkOpProducersOutliveThePanel(FOLLOWER_FILE, fixture).map(

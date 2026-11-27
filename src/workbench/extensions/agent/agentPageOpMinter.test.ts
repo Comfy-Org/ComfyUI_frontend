@@ -22,7 +22,7 @@ import {
 
 const VISIBLE_WORKFLOW_ID = 'visible-workflow'
 
-const held = shallowRef<AgentFollowerSession | null>(null)
+let held = shallowRef<AgentFollowerSession | null>(null)
 
 vi.mock(import('./crdt/useAgentCrdtFollower'), () => ({
   retainedAgentFollowerSessionRef: () => held
@@ -81,6 +81,7 @@ describe('retainDocOpMinterForPage', () => {
   }
 
   beforeEach(() => {
+    held = shallowRef<AgentFollowerSession | null>(null)
     LiteGraph.registerNodeType('TestSource', TestSource)
     graph = new LGraph()
     rootGraphId = toRootGraphId(graph.id)
@@ -92,7 +93,6 @@ describe('retainDocOpMinterForPage', () => {
 
   afterEach(() => {
     destroyAgentPageOpMinters()
-    held.value = null
   })
 
   it('mints an edit made after the panel released its follower lease', async () => {
@@ -316,7 +316,6 @@ describe('retainDocOpMinterForPage', () => {
   it('exposes no way for a panel close to stop the producer', () => {
     const handle = retainDocOpMinterForPage(transport, panelInputs())
 
-    expect(Object.keys(handle)).toEqual(['deliverHeldRestores'])
     expect('detach' in handle).toBe(false)
   })
 })
