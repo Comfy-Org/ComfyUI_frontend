@@ -321,6 +321,21 @@ describe('useWorkflowService', () => {
       workflowStore = useWorkflowStore()
     })
 
+    it('cancels ghost placement before deactivating the outgoing tracker', () => {
+      const activeWorkflow = createModeTestWorkflow()
+      const tracker = createMockChangeTracker()
+      const deactivate = vi.spyOn(tracker, 'deactivate')
+      activeWorkflow.changeTracker = tracker
+      workflowStore.activeWorkflow = activeWorkflow
+
+      useWorkflowService().beforeLoadNewGraph()
+
+      expect(app.canvas.finalizeGhostPlacement).toHaveBeenCalledWith(true)
+      expect(app.canvas.finalizeGhostPlacement).toHaveBeenCalledBefore(
+        deactivate
+      )
+    })
+
     it('forwards the clean flag to saveCurrentViewport', () => {
       workflowStore.activeWorkflow = createModeTestWorkflow()
 
