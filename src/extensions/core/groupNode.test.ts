@@ -1016,6 +1016,78 @@ describe('GroupNodeHandler.convertToNodes', () => {
     expect(graph.nodes).toEqual([group])
   })
 
+  it('stops updating an attached subgraph prefix when a later member fails', () => {
+    const graph = createTestRootGraph()
+    const definitionData = createTestSubgraph({
+      id: crypto.randomUUID()
+    }).asSerialisable()
+    const definition = graph.createSubgraph(definitionData)
+    useSubgraphService().registerNewSubgraph(definition, definitionData)
+    useLitegraphService().registerSubgraphNodeDef(
+      nodeDef({ name: definition.id, output: [] }),
+      definition,
+      fromAny({
+        id: -1,
+        type: definition.id,
+        pos: [0, 0],
+        size: [100, 100],
+        inputs: [],
+        outputs: [],
+        flags: {},
+        order: 0,
+        mode: 0
+      })
+    )
+    const Registered = LiteGraph.registered_node_types[definition.id]
+    assert.exists(Registered)
+    const constructed: LGraphNode[] = []
+    class CapturingSubgraphNode extends Registered {
+      constructor(title: string) {
+        super(title)
+        constructed.push(this)
+      }
+    }
+    LiteGraph.registerNodeType(definition.id, CapturingSubgraphNode)
+    const sibling = LiteGraph.createNode(definition.id, undefined, {
+      targetGraph: graph
+    })
+    assert.exists(sibling)
+    graph.add(sibling)
+
+    const throwingType = `Throwing${crypto.randomUUID()}`
+    class ThrowingMember extends LGraphNode {
+      constructor() {
+        super('Throwing member')
+        throw new Error('construction failed')
+      }
+    }
+    LiteGraph.registerNodeType(throwingType, ThrowingMember)
+    const group = new LGraphNode('Group')
+    graph.add(group)
+    const handler = new GroupNodeHandler(
+      group,
+      new GroupNodeConfig('abandonedPrefix', {
+        nodes: [
+          fromAny({ type: definition.id, pos: [0, 0] }),
+          fromAny({ type: throwingType, pos: [100, 0] })
+        ],
+        links: []
+      })
+    )
+
+    expect(handler.convertToNodes()).toEqual({
+      refused: true,
+      memberType: throwingType
+    })
+    const abandoned = constructed.at(-1)
+    assert.exists(abandoned)
+
+    definition.addOutput('afterFailure', 'MASK')
+
+    expect(abandoned.outputs).toEqual([])
+    expect(sibling.outputs.map(({ name }) => name)).toEqual(['afterFailure'])
+  })
+
   it('keeps definitions for refused groups while migrating a sibling group, using the real handler', async () => {
     await registerRealNodeDefs()
     const fixture = JSON.parse(
