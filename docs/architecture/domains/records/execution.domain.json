@@ -53,6 +53,9 @@
     },
     {
       "path": "src/utils/objectUrlUtil.ts"
+    },
+    {
+      "path": "src/platform/execution/composables/useQueueProgress.ts"
     }
   ],
   "publicEntryPoints": [],
@@ -101,6 +104,10 @@
         "src/composables/useViewErrorsInGraph.test.ts",
         "src/utils/nodeOutputUtil.test.ts"
       ]
+    },
+    {
+      "name": "Live progress projection supports queue and linear mode views",
+      "checks": ["src/platform/execution/composables/useQueueProgress.test.ts"]
     }
   ],
   "adrs": [],

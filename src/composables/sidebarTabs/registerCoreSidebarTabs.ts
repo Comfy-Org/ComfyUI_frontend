@@ -1,7 +1,7 @@
 import { watch } from 'vue'
 
 import { useAssetsSidebarTab } from '@/platform/assets/integration/useAssetsSidebarTab'
-import { useJobHistorySidebarTab } from '@/composables/sidebarTabs/useJobHistorySidebarTab'
+import { useJobHistorySidebarTab } from '@/platform/queue/sidebar/useJobHistorySidebarTab'
 import { useModelLibrarySidebarTab } from '@/platform/assets/integration/useModelLibrarySidebarTab'
 import { useNodeLibrarySidebarTab } from '@/composables/sidebarTabs/useNodeLibrarySidebarTab'
 import { registerLocalMcpSurface } from '@/platform/localMcp/registerLocalMcpSurface'

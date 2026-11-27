@@ -23,7 +23,7 @@ const stubTab = (id: string): SidebarTabExtension => ({
 vi.mock(import('@/platform/assets/integration/useAssetsSidebarTab'), () => ({
   useAssetsSidebarTab: () => stubTab('assets')
 }))
-vi.mock(import('@/composables/sidebarTabs/useJobHistorySidebarTab'), () => ({
+vi.mock(import('@/platform/queue/sidebar/useJobHistorySidebarTab'), () => ({
   useJobHistorySidebarTab: () => stubTab('job-history')
 }))
 vi.mock(import('@/composables/sidebarTabs/useNodeLibrarySidebarTab'), () => ({

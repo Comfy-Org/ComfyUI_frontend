@@ -11,7 +11,7 @@ import { webSocketFixture } from '@e2e/fixtures/ws'
 import type {
   RawJobListItem,
   JobsListResponse
-} from '@comfyorg/api-client/jobTypes'
+} from '@comfyorg/api-client/jobs/jobTypes'
 
 const test = mergeTests(comfyPageFixture, webSocketFixture)
 

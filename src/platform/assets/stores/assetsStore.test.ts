@@ -14,7 +14,7 @@ import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { AssetItem, AssetResponse } from '@comfyorg/assets-core/schema'
 import { assetService } from '@/platform/assets/services/assetService'
-import type { JobListItem } from '@comfyorg/api-client/jobTypes'
+import type { JobListItem } from '@comfyorg/api-client/jobs/jobTypes'
 import { api } from '@/scripts/api'
 
 vi.mock(import('@/scripts/api'))

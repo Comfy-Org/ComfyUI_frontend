@@ -1,8 +1,8 @@
 import { useEventListener } from '@vueuse/core'
 
-import { useReconnectQueueRefresh } from '@/composables/useReconnectQueueRefresh'
 import { useReconnectingNotification } from '@/composables/useReconnectingNotification'
 import { useReconnectNodeDefinitionRefresh } from '@/platform/customNodes/useReconnectNodeDefinitionRefresh'
+import { useReconnectQueueRefresh } from '@/platform/queue/runtime/useReconnectQueueRefresh'
 import { api } from '@/scripts/api'
 import { reportError } from '@comfyorg/telemetry/reportError'
 

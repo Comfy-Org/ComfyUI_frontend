@@ -4,7 +4,7 @@ import _ from 'es-toolkit/compat'
 import { reactive, unref, shallowRef } from 'vue'
 
 import { useToast } from '@/components/ui/toast/toastStore'
-import { partnerRunGateBlocksAutoQueue } from '@/platform/auth/partnerNode/usePartnerNodesRunGate'
+import { QueueSubmission } from '@/platform/queue/submission/queueSubmission'
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import { normalizeCameraState } from '@/renderer/core/canvas/cameraState'
 import {
@@ -17,12 +17,7 @@ import { selectedCanvasNodes } from '@/renderer/core/canvas/litegraph/selectionA
 import { resolveDynamicInputSpec } from '@/core/graph/widgets/dynamicInputSpec'
 import { setBackendNodeText, st, t } from '@/i18n'
 import { normalizeI18nKey } from '@/utils/formatUtil'
-import {
-  beginGraphLoad,
-  endGraphLoad,
-  getGraphLoadGeneration,
-  isGraphLoading
-} from '@/core/graph/graphLoadState'
+import { beginGraphLoad, endGraphLoad } from '@/core/graph/graphLoadState'
 import { registerApp } from '@/scripts/appRegistry'
 import {
   clipspace,
@@ -44,7 +39,6 @@ import { snapPoint } from '@/lib/litegraph/src/measure'
 import type { ISerialisedGraph, Vector2 } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget, TWidgetValue } from '@comfyorg/graph-model/widgets'
 import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
-import { useFreeTierQuota } from '@/platform/billing/subscription/composables/useFreeTierQuota'
 import { isCloud } from '@/platform/distribution/types'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
 import {
@@ -56,17 +50,8 @@ import { useTelemetry } from '@comfyorg/telemetry'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import { installNodeAddedTelemetry } from '@/platform/telemetry/nodeAdded/installNodeAddedTelemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
-import { normalizeExecutionTriggerSource } from '@comfyorg/telemetry/types'
-import { getExecutionContext } from '@/platform/telemetry/utils/getExecutionContext'
 import { groupMissingNodesByPack } from '@/platform/telemetry/utils/groupMissingNodesByPack'
-import { toWorkflowExecutionContext } from '@/platform/telemetry/utils/workflowExecutionContext'
-import type {
-  ExecutionContext,
-  WorkflowExecutionContext,
-  WorkflowExecutionIntent,
-  WorkflowOpenSource,
-  WorkflowQueueIntent
-} from '@comfyorg/telemetry/types'
+import type { WorkflowOpenSource } from '@comfyorg/telemetry/types'
 import { MIME_ASSET_INFO } from '@/platform/assets/constants/assetDrag'
 import { extractFilesFromDragEvent } from '@/platform/assets/integration/assetDrop'
 import { restoreDynamicGroupInputs } from '@/platform/workflow/core/utils/restoreDynamicGroupInputs'
@@ -103,7 +88,7 @@ import type {
   ExecutionErrorWsMessage,
   NodeExecutionOutput
 } from '@comfyorg/api-client/executionTypes'
-import type { NodeError, PromptError } from '@comfyorg/api-client/types'
+import type { NodeError } from '@comfyorg/api-client/types'
 import {
   isComboInputSpecV1,
   isComboInputSpecV2
@@ -115,20 +100,9 @@ import {
   unregisterDomWidgets
 } from '@/scripts/rootGraphDomWidgets'
 import type { BaseDOMWidget } from '@/types/domWidget'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useAccountPreconditionDialog } from '@/platform/billing/subscription/composables/useAccountPreconditionDialog'
-import {
-  promptErrorHasLockedCredits,
-  promptRefusalPrecondition,
-  withRefusalReason,
-  resolveAccountPrecondition
-} from '@/platform/workflowErrors/errorCatalog/accountPreconditionRouting'
-import { useJobModelDownloadStore } from '@/stores/jobModelDownloadStore'
-import {
-  handledReleaseChange,
-  loadedReleaseId
-} from '@/platform/workspace/loadedRelease'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { resolveAccountPrecondition } from '@/platform/workflowErrors/errorCatalog/accountPreconditionRouting'
+import { useJobModelDownloadStore } from '@/platform/queue/stores/jobModelDownloadStore'
 import { useDialogService } from '@/services/dialogService'
 import {
   isGraphLoadHookOrigin,
@@ -142,9 +116,6 @@ import {
 import { applyLegacyGraphPatches } from '@/services/legacyGraphPatchCompat'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useSubgraphService } from '@/services/subgraphService'
-import { isDesktopHostSignedIn } from '@/platform/auth/desktopHost/desktopHostSession'
-import { queueAuthToken } from '@/platform/auth/partnerNode/partnerNodeQueueToken'
-import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { createCanvasInteractionMode } from '@/renderer/core/canvas/interaction/canvasInteractionMode'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
@@ -152,7 +123,6 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
-import { useAuthStore } from '@/stores/authStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useJobPreviewStore } from '@/stores/jobPreviewStore'
 import {
@@ -180,16 +150,11 @@ import type {
 import type { ExtensionManager } from '@/types/extensionTypes'
 import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
-import { normalizePromptError } from '@/utils/executionErrorUtil'
 import { graphToPrompt, unwrapExportedWidgetValue } from '@/utils/executionUtil'
-import { promptBuildErrorFingerprint } from '@/platform/workflow/execution/promptBuildErrorFingerprint'
 import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
 import { getCnrIdFromProperties } from '@/platform/workflowErrors/nodeReplacement/cnrIdUtil'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
-import {
-  refreshMissingNodeReplacements,
-  rescanAndSurfaceMissingNodes
-} from '@/platform/workflowErrors/nodeReplacement/missingNodeScan'
+import { refreshMissingNodeReplacements } from '@/platform/workflowErrors/nodeReplacement/missingNodeScan'
 import {
   refreshMissingModelPipeline,
   runMissingModelPipeline
@@ -203,24 +168,17 @@ import type {
 import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/types'
 import { runMissingMediaPipeline } from '@/platform/workflowErrors/missingMedia/missingMediaPipeline'
 
-import { getWorkflowMode } from '@comfyorg/graph-model/appMode'
 import { anyItemOverlapsRect } from '@/utils/mathUtil'
 import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
 import { warnAboutSlowHasSelectors } from '@/utils/slowHasSelectorUtil'
 import { ensureNonZeroUuid } from '@/utils/uuid'
 import {
-  collectAllNodes,
   forEachNode,
   getNodeByExecutionId,
   isAncestorPathActive,
   triggerCallbackOnAllNodes
 } from '@/utils/graphTraversalUtil'
-import {
-  executeWidgetsCallback,
-  isImageNode,
-  isSelectOnly,
-  isVideoNode
-} from '@/utils/litegraphUtil'
+import { isImageNode, isSelectOnly, isVideoNode } from '@/utils/litegraphUtil'
 import { createNode } from '@/utils/createNode'
 import {
   createSharedObjectUrl,
@@ -234,10 +192,8 @@ import {
 import { deserialiseAndCreate } from '@/core/graph/clipboard/vintageClipboard'
 
 import type { ComfyApi } from '@comfyorg/api-client/ComfyApi'
-import { PromptExecutionError } from '@comfyorg/api-client/ComfyApi'
 import { api } from './api'
 import { importA1111 } from './pnginfo'
-import { applyPromotedWidgetControl } from '@/core/graph/subgraph/promotedWidgetControl'
 import { syncPromotedComboHostOptions } from '@/core/graph/widgets/syncPromotedComboHostOptions'
 import type { ComfyUI } from './ui'
 import type { ComfyAppMenu } from './ui/menu/index'
@@ -262,30 +218,6 @@ import {
 } from '@/renderer/core/clipboard/mediaClipboard'
 
 export { ANIM_PREVIEW_WIDGET } from '@/core/graph/subgraph/preview/mediaPreviewName'
-
-function servedRefusal(error: unknown): unknown {
-  if (!useFeatureFlags().flags.billingNewUxEnabled) return undefined
-  return error instanceof PromptExecutionError
-    ? error.response.error
-    : undefined
-}
-
-function unshapedPromptFailure(
-  error: PromptExecutionError
-): PromptError | null {
-  if (Object.keys(error.response.node_errors ?? {}).length > 0) return null
-  return {
-    type: 'server_error',
-    message: error.toString() || `HTTP ${error.status ?? 'error'}`,
-    details: ''
-  }
-}
-
-function withCloudRefusalReason(promptError: PromptError, error: unknown) {
-  return isCloud
-    ? withRefusalReason(promptError, servedRefusal(error))
-    : promptError
-}
 
 function isMeshModelFile(file: File): boolean {
   const name = file.name.toLowerCase()
@@ -355,16 +287,6 @@ export function sanitizeNodeName(string: string) {
 function isOwnedByWorkflow(graph: LGraph): boolean {
   return useWorkflowStore().workflows.some(
     (workflow) => workflow.graph === graph
-  )
-}
-
-function hasQueueingGraphReloadedInPlace(
-  graph: LGraph,
-  queueingGraphGeneration: number
-): boolean {
-  return (
-    isGraphLoading(graph) ||
-    getGraphLoadGeneration(graph) !== queueingGraphGeneration
   )
 }
 
@@ -443,24 +365,7 @@ function toNodeDefs(response: unknown): Record<string, ComfyNodeDefV1> {
 }
 
 export class ComfyApp implements IComfyApp {
-  /**
-   * List of entries to queue
-   */
-  private queueItems: {
-    number: number
-    batchCount: number
-    requestId: number
-    queueNodeIds?: NodeExecutionId[]
-    workflowQueueIntent?: WorkflowQueueIntent
-    queueingWorkflowKey: string | undefined
-    queueingGraph: LGraph
-    queueingGraphGeneration: number
-  }[] = []
-  private nextQueueRequestId = 1
-  /**
-   * If the queue is currently being processed
-   */
-  private processingQueue: boolean = false
+  private readonly queueSubmission = new QueueSubmission(this)
 
   /**
    * Content Clipboard, kept as statics for custom-node compatibility.
@@ -2000,437 +1905,11 @@ export class ComfyApp implements IComfyApp {
     batchCount: number = 1,
     optionsOrQueueNodeIds: QueuePromptOptions | NodeExecutionId[] = {}
   ): Promise<boolean> {
-    const options = Array.isArray(optionsOrQueueNodeIds)
-      ? { queueNodeIds: optionsOrQueueNodeIds }
-      : optionsOrQueueNodeIds
-    const { queueNodeIds, intent } = options
-    if (
-      intent?.trigger_source === 'auto_queue' &&
-      partnerRunGateBlocksAutoQueue()
-    ) {
-      return false
-    }
-    const requestId = this.nextQueueRequestId++
-    const queueingWorkflow = useWorkspaceStore().workflow.activeWorkflow as
-      | ComfyWorkflow
-      | undefined
-    this.queueItems.push({
+    return this.queueSubmission.queuePrompt(
       number,
       batchCount,
-      queueNodeIds,
-      requestId,
-      workflowQueueIntent: intent,
-      queueingWorkflowKey:
-        queueingWorkflow?.instanceId ?? queueingWorkflow?.path,
-      queueingGraph: queueingWorkflow?.graph ?? this.rootGraph,
-      queueingGraphGeneration: getGraphLoadGeneration(
-        queueingWorkflow?.graph ?? this.rootGraph
-      )
-    })
-    api.dispatchCustomEvent('promptQueueing', {
-      requestId,
-      batchCount
-    })
-
-    if (this.processingQueue) {
-      return false
-    }
-
-    this.processingQueue = true
-    const executionStore = useExecutionStore()
-    const executionErrorStore = useExecutionErrorStore()
-    const telemetry = useTelemetry()
-    executionErrorStore.clearRunErrors()
-    let queueResultOverride: boolean | null = null
-
-    const teamWorkspaceStore = useTeamWorkspaceStore()
-    try {
-      await teamWorkspaceStore.waitForWorkspaceSwitch()
-    } catch (error) {
-      useDialogService().showErrorDialog(error, {
-        title: t('errorDialog.promptExecutionError'),
-        reportType: 'promptExecutionError'
-      })
-      this.queueItems.length = 0
-      this.processingQueue = false
-      return false
-    }
-    const workspaceIdBeforeAuthentication = teamWorkspaceStore.activeWorkspaceId
-    const workspaceGenerationBeforeAuthentication =
-      teamWorkspaceStore.workspaceTransitionGeneration
-    const workspaceAuthToken = await useAuthStore().getWorkspaceAuthToken()
-    const executionWorkspaceId = teamWorkspaceStore.activeWorkspaceId
-    const executionWorkspaceGeneration =
-      teamWorkspaceStore.workspaceTransitionGeneration
-    const comfyOrgAuthToken = await queueAuthToken(
-      workspaceAuthToken,
-      executionWorkspaceId
+      optionsOrQueueNodeIds
     )
-    const workspaceChangedWhileAuthenticating =
-      (workspaceIdBeforeAuthentication !== executionWorkspaceId ||
-        workspaceGenerationBeforeAuthentication !==
-          executionWorkspaceGeneration) &&
-      (isCloud || workspaceIdBeforeAuthentication !== null)
-    const desktopHostAuth = isDesktopHostSignedIn()
-    const comfyOrgApiKey = desktopHostAuth
-      ? null
-      : useApiKeyAuthStore().getApiKey()
-    const isApiKeySessionExecution =
-      !desktopHostAuth &&
-      !useAuthStore().currentUser &&
-      !useAuthStore().sessionOnlyUser &&
-      useApiKeyAuthStore().isAuthenticated
-    if (
-      executionWorkspaceId &&
-      !comfyOrgAuthToken &&
-      !isApiKeySessionExecution
-    ) {
-      useDialogService().showErrorDialog(
-        new Error(t('toastMessages.userNotAuthenticated')),
-        {
-          title: t('errorDialog.promptExecutionError'),
-          reportType: 'promptExecutionError'
-        }
-      )
-      this.queueItems.length = 0
-      this.processingQueue = false
-      return false
-    }
-
-    try {
-      while (this.queueItems.length) {
-        const {
-          number,
-          batchCount,
-          queueNodeIds,
-          requestId,
-          workflowQueueIntent,
-          queueingWorkflowKey,
-          queueingGraph,
-          queueingGraphGeneration
-        } = this.queueItems.pop()!
-        let queuedCount = 0
-        let acceptedCount = 0
-        const workflowExecutionIntent: WorkflowExecutionIntent = {
-          trigger_source: normalizeExecutionTriggerSource(
-            workflowQueueIntent?.trigger_source
-          )
-        }
-        const previewMethod = useSettingStore().get(
-          'Comfy.Execution.PreviewMethod'
-        )
-
-        const isPartialExecution = !!queueNodeIds?.length
-        let stoppedOnWorkflowChange = false
-        for (let i = 0; i < batchCount; i++) {
-          const currentWorkflow = useWorkspaceStore().workflow
-            .activeWorkflow as ComfyWorkflow | undefined
-          const currentWorkflowKey =
-            currentWorkflow?.instanceId ?? currentWorkflow?.path
-          if (
-            currentWorkflowKey !== queueingWorkflowKey ||
-            this.rootGraph !== queueingGraph ||
-            hasQueueingGraphReloadedInPlace(
-              queueingGraph,
-              queueingGraphGeneration
-            )
-          ) {
-            stoppedOnWorkflowChange = true
-            break
-          }
-          let executionContext: ExecutionContext | undefined
-          let submissionAccepted = false
-          if (telemetry) {
-            try {
-              executionContext = getExecutionContext()
-            } catch (error) {
-              console.error(
-                '[Telemetry] Workflow context collection failed',
-                error
-              )
-            }
-          }
-
-          const queuedNodes = collectAllNodes(queueingGraph)
-
-          forEachNode(queueingGraph, (node) => {
-            for (const widget of node.widgets ?? []) {
-              widget.beforeQueued?.({ isPartialExecution })
-            }
-            applyPromotedWidgetControl(node, 'beforeQueued')
-          })
-
-          const queuedWorkflow = useWorkspaceStore().workflow
-            .activeWorkflow as ComfyWorkflow
-          const queuedRunErrorKey = executionErrorStore.captureRunErrorKey()
-          const queuedMode = getWorkflowMode(queuedWorkflow)
-          const startTime = performance.now()
-          const p = await this.graphToPrompt(queueingGraph).catch(
-            (error: unknown) => {
-              telemetry?.trackExecutionOutcome({
-                startTime,
-                endTime: performance.now(),
-                success: false,
-                failureReason: 'prompt_build_failed',
-                ...workflowExecutionIntent
-              })
-              reportError(error, {
-                surface: 'graph',
-                errorType: 'error_building_prompt',
-                fingerprint: promptBuildErrorFingerprint(error),
-                logToConsole: false
-              })
-              throw error
-            }
-          )
-          if (
-            hasQueueingGraphReloadedInPlace(
-              queueingGraph,
-              queueingGraphGeneration
-            )
-          ) {
-            stoppedOnWorkflowChange = true
-            break
-          }
-          let workflowContext: WorkflowExecutionContext | undefined
-          if (executionContext) {
-            workflowContext = toWorkflowExecutionContext(executionContext, {
-              executableNodeCount: Object.keys(p.output).length,
-              executionScope: isPartialExecution ? 'partial' : 'full',
-              viewMode: queuedMode
-            })
-          }
-          if (
-            workspaceChangedWhileAuthenticating ||
-            executionWorkspaceId !== teamWorkspaceStore.activeWorkspaceId ||
-            executionWorkspaceGeneration !==
-              teamWorkspaceStore.workspaceTransitionGeneration
-          ) {
-            useDialogService().showErrorDialog(
-              new Error(t('errorDialog.workspaceChangedDuringExecution')),
-              {
-                title: t('errorDialog.promptExecutionError'),
-                reportType: 'promptExecutionError'
-              }
-            )
-            queueResultOverride = false
-            break
-          }
-          try {
-            api.authToken = comfyOrgAuthToken
-            api.apiKey = comfyOrgApiKey ?? undefined
-            api.loadedReleaseId = loadedReleaseId()
-            executionErrorStore.recordNodeErrors(null, queuedRunErrorKey)
-            const res = await api.queuePrompt(number, p, {
-              partialExecutionTargets: queueNodeIds,
-              previewMethod
-            })
-            const responseReceivedAt = performance.now()
-            delete api.authToken
-            delete api.apiKey
-            delete api.loadedReleaseId
-            submissionAccepted = Boolean(res.prompt_id)
-            if (!res.prompt_id) {
-              telemetry?.trackExecutionOutcome({
-                startTime,
-                endTime: responseReceivedAt,
-                success: false,
-                failureReason: 'submission_rejected',
-                ...workflowExecutionIntent,
-                ...(workflowContext && { workflowContext })
-              })
-            }
-            executionErrorStore.recordSubmissionNodeErrors(
-              res.node_errors,
-              queuedRunErrorKey,
-              res.prompt_id
-            )
-            queueResultOverride = null
-            try {
-              if (res.prompt_id) {
-                executionStore.storeJob({
-                  id: res.prompt_id,
-                  nodes: Object.keys(p.output),
-                  promptOutput: p.output,
-                  startTime,
-                  submissionAcceptedAt: responseReceivedAt,
-                  workflow: queuedWorkflow,
-                  mode: queuedMode,
-                  workflowContext,
-                  workflowExecutionIntent
-                })
-              }
-            } catch (error) {
-              console.warn('Failed to store queued job metadata', {
-                promptId: res.prompt_id,
-                error
-              })
-            }
-            if (executionErrorStore.hasNodeError) {
-              if (useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) {
-                executionErrorStore.showErrorOverlay()
-              }
-              this.canvas.draw(true, true)
-            }
-          } catch (error: unknown) {
-            telemetry?.trackExecutionOutcome({
-              startTime,
-              endTime: performance.now(),
-              success: false,
-              failureReason:
-                error instanceof PromptExecutionError
-                  ? 'submission_rejected'
-                  : 'submission_failed',
-              ...workflowExecutionIntent,
-              ...(workflowContext && { workflowContext })
-            })
-            if (error instanceof PromptExecutionError) {
-              queueResultOverride = !error.response.node_errors
-            }
-            if (handledReleaseChange(error)) {
-              queueResultOverride = false
-              break
-            }
-            const hasPromptNodeErrors =
-              error instanceof PromptExecutionError &&
-              Object.keys(error.response.node_errors ?? {}).length > 0
-            const promptError =
-              error instanceof PromptExecutionError
-                ? (normalizePromptError(error.response.error) ??
-                  unshapedPromptFailure(error))
-                : null
-            const promptPrecondition = promptError
-              ? (resolveAccountPrecondition({
-                  exceptionType: promptError.type,
-                  exceptionMessage: promptError.message
-                }) ?? promptRefusalPrecondition(servedRefusal(error)))
-              : undefined
-            if (promptPrecondition) {
-              const opened = await useAccountPreconditionDialog().open(
-                promptPrecondition,
-                {
-                  runRefused: true,
-                  creditsLocked: promptErrorHasLockedCredits(
-                    error instanceof PromptExecutionError
-                      ? error.response.error
-                      : null
-                  ),
-                  ...(promptError?.type &&
-                    promptError.type !== 'error' && {
-                      refusalType: promptError.type
-                    })
-                }
-              )
-              if (opened) {
-                console.error(error)
-                break
-              }
-            }
-            if (
-              error instanceof PromptExecutionError &&
-              promptError?.type === 'missing_node_type'
-            ) {
-              rescanAndSurfaceMissingNodes(this.rootGraph)
-            } else if (
-              error instanceof PromptExecutionError &&
-              error.status === 403 &&
-              !hasPromptNodeErrors
-            ) {
-              const raw: Record<string, unknown> = error.response
-              const rawError =
-                raw.error && typeof raw.error === 'object'
-                  ? (raw.error as Record<string, unknown>)
-                  : undefined
-              const detail =
-                typeof raw.message === 'string'
-                  ? raw.message
-                  : typeof rawError?.message === 'string'
-                    ? rawError.message
-                    : typeof raw.error === 'string'
-                      ? raw.error
-                      : t('errorDialog.accessRestrictedMessage')
-              useDialogService().showErrorDialog(new Error(detail), {
-                title: t('errorDialog.accessRestrictedTitle'),
-                reportType: 'accessRestrictedError'
-              })
-            } else if (
-              !useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab') ||
-              !(error instanceof PromptExecutionError)
-            ) {
-              useDialogService().showErrorDialog(error, {
-                title: t('errorDialog.promptExecutionError'),
-                reportType: 'promptExecutionError'
-              })
-            }
-            console.error(error)
-
-            if (error instanceof PromptExecutionError) {
-              const nodeErrors = error.response.node_errors
-              executionErrorStore.recordNodeErrors(
-                nodeErrors ?? null,
-                queuedRunErrorKey
-              )
-
-              if (
-                (!nodeErrors || Object.keys(nodeErrors).length === 0) &&
-                promptError
-              ) {
-                executionErrorStore.recordPromptError(
-                  withCloudRefusalReason(promptError, error),
-                  queuedRunErrorKey
-                )
-              }
-
-              if (useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) {
-                executionErrorStore.showErrorOverlay()
-              }
-              this.canvas.draw(true, true)
-            }
-            break
-          }
-
-          queuedCount++
-          if (submissionAccepted) {
-            acceptedCount++
-          }
-
-          executeWidgetsCallback(queuedNodes, 'afterQueued', {
-            isPartialExecution
-          })
-          for (const node of queuedNodes) {
-            applyPromotedWidgetControl(node, 'afterQueued')
-          }
-          useFreeTierQuota().trackRun()
-        }
-
-        if (stoppedOnWorkflowChange) {
-          useToast().warning(
-            t('toastMessages.batchStoppedOnWorkflowChange', {
-              queued: acceptedCount,
-              requested: batchCount
-            })
-          )
-        }
-
-        if (queuedCount > 0) {
-          this.canvas.draw(true, true)
-          void this.ui.queue.update().catch((error) => {
-            reportError(error, {
-              surface: 'graph',
-              errorType: 'queue_ui_update_failure'
-            })
-          })
-          api.dispatchCustomEvent('promptQueued', {
-            number,
-            batchCount: queuedCount,
-            requestId
-          })
-        }
-      }
-    } finally {
-      this.processingQueue = false
-    }
-    return queueResultOverride ?? !executionErrorStore.lastNodeErrors
   }
 
   showErrorOnFileLoad(file: File) {

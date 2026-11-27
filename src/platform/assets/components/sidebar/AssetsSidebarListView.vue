@@ -90,7 +90,8 @@ import {
   getMediaTypeFromFilename,
   truncateFilename
 } from '@/utils/formatUtil'
-import { hdrPreviewAssetUrl, isHdrImageFilename } from '@/utils/hdrFormatUtil'
+import { hdrPreviewAssetUrl } from '@/utils/hdrFormatUtil'
+import { isHdrImageFilename } from '@comfyorg/shared-frontend-utils/formatUtil'
 import { isPaged, pagedItems } from '@/utils/pagedList'
 import type { MaybePaged } from '@/utils/pagedList'
 import { cn } from '@comfyorg/tailwind-utils'

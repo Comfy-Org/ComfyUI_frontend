@@ -1,5 +1,5 @@
 import type { AssetItem } from '@comfyorg/assets-core/schema'
-import type { AugmentedResultItem } from '@/utils/resultItem'
+import type { AugmentedResultItem } from '@comfyorg/api-client/results/resultItem'
 
 export interface InProgressItem {
   id: string

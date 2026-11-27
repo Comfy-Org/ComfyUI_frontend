@@ -8,7 +8,6 @@ import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewpor
 import { useSubgraphOperations } from '@/composables/graph/useSubgraphOperations'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useModelSelectorDialog } from '@/composables/useModelSelectorDialog'
-import { useRunButtonTelemetry } from '@/composables/useRunButtonTelemetry'
 import {
   DEFAULT_DARK_THEME_PRESET,
   DEFAULT_LIGHT_THEME_PRESET
@@ -29,20 +28,15 @@ import {
   toggleNodeLinks
 } from '@/lib/litegraph/src/canvas/linkSelection'
 import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
-import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
-import { useSubscriptionPaywall } from '@/platform/billing/composables/useSubscriptionPaywall'
 import { openModelLibraryBrowser } from '@/platform/assets/integration/openModelLibraryBrowser'
-import { isSalesManagedTier } from '@/platform/billing/subscription/constants/tierPricing'
-import { subscribeToRunDialogOptions } from '@/platform/billing/subscription/utils/subscribeToRunDialogOptions'
 import { isCloud } from '@/platform/distribution/types'
-import { useUnreadyDeploymentRun } from '@/platform/workspace/composables/useUnreadyDeploymentRun'
+import { useQueueCommands } from '@/platform/queue/commands/useQueueCommands'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import { resetOnboardingState } from '@/platform/onboarding/onboardingReset'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { openSupportForm } from '@/platform/support/openSupportForm'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
-import type { ExecutionTriggerSource } from '@comfyorg/telemetry/types'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -60,11 +54,8 @@ import { useDialogService } from '@/services/dialogService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
 import type { ComfyCommand } from '@comfyorg/keybindings/commandStore'
-import { useExecutionStore } from '@/stores/executionStore'
 import { useModelStore } from '@/stores/modelStore'
 import { useHelpCenterStore } from '@/stores/helpCenterStore'
-import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
-import { useQueueStore, useQueueUIStore } from '@/stores/queueStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
@@ -73,11 +64,7 @@ import { usePropertiesPanelStore } from '@/renderer/extensions/propertiesPanel/p
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { ensureWorkflowSuffix, getWorkflowSuffix } from '@/utils/formatUtil'
-import {
-  getAllNonIoNodesInSubgraph,
-  getExecutionIdsForSelectedNodes
-} from '@/utils/graphTraversalUtil'
-import { filterOutputNodes } from '@/utils/nodeFilterUtil'
+import { getAllNonIoNodesInSubgraph } from '@/utils/graphTraversalUtil'
 import {
   ManagerUIState,
   useManagerState
@@ -94,61 +81,6 @@ const moveSelectedNodesVersionAdded = '1.22.2'
 let onboardingReplayInProgress: Promise<void> | undefined
 
 export function useCoreCommands(): ComfyCommand[] {
-  const {
-    canAccessSubscriptionFeatures,
-    subscription,
-    subscriptionState,
-    isInitialized,
-    initialize,
-    type: billingType
-  } = useBillingContext()
-  const { showSubscriptionDialog } = useSubscriptionPaywall()
-  const { openSwitcherInsteadOfRun } = useUnreadyDeploymentRun()
-
-  function activeWorkflowTarget(): readonly unknown[] {
-    return [workflowStore.activeWorkflow]
-  }
-
-  function selectedNodesTarget(): readonly unknown[] {
-    return [workflowStore.activeWorkflow, ...getSelectedNodes()]
-  }
-
-  async function deploymentStopsRun(
-    runTarget: () => readonly unknown[]
-  ): Promise<boolean> {
-    const canvasStore = useCanvasStore()
-    if (canvasStore.isPickingNodes) return false
-    const asked = runTarget()
-    return openSwitcherInsteadOfRun(() => {
-      if (canvasStore.isPickingNodes) return false
-      const now = runTarget()
-      return (
-        asked.length === now.length &&
-        asked.every((item, index) => item === now[index])
-      )
-    })
-  }
-
-  async function blockRunWithoutSubscription(): Promise<boolean> {
-    if (!isCloud) return false
-    if (!isInitialized.value) await initialize().catch(() => undefined)
-    if (billingType.value === 'unknown') return true
-    if (canAccessSubscriptionFeatures.value) return false
-    if (isSalesManagedTier(subscription.value?.tier)) {
-      toast.warning(t('subscription.salesManagedRunBlockedTitle'), {
-        description: t('subscription.salesManagedRunBlockedDetail'),
-        duration: 5000
-      })
-    } else {
-      showSubscriptionDialog(
-        subscribeToRunDialogOptions({
-          subscriptionState: subscriptionState.value,
-          hasFunds: subscription.value?.hasFunds
-        })
-      )
-    }
-    return true
-  }
   const workflowService = useWorkflowService()
   const workflowStore = useWorkflowStore()
   const settingsDialog = useSettingsDialog()
@@ -158,11 +90,9 @@ export function useCoreCommands(): ComfyCommand[] {
   const authActions = useAuthActions()
   const toast = useToast()
   const canvasStore = useCanvasStore()
-  const executionStore = useExecutionStore()
   const modelStore = useModelStore()
   const missingModelStore = useMissingModelStore()
   const telemetry = useTelemetry()
-  const { trackRunButton } = useRunButtonTelemetry()
   const { staticUrls, buildDocsUrl } = useExternalLink()
   const settingStore = useSettingStore()
 
@@ -174,14 +104,6 @@ export function useCoreCommands(): ComfyCommand[] {
   const { getSelectedNodes, getSelectedNodesShallow, toggleSelectedNodesMode } =
     useSelectedLiteGraphItems()
   const getTracker = () => workflowStore.activeWorkflow?.changeTracker
-
-  function isQueuePanelV2Enabled() {
-    return settingStore.get('Comfy.Queue.QPOV2')
-  }
-
-  async function toggleQueuePanelV2() {
-    await settingStore.set('Comfy.Queue.QPOV2', !isQueuePanelV2Enabled())
-  }
 
   const moveSelectedNodes = (
     positionUpdater: (pos: Point, gridSize: number) => Point
@@ -196,7 +118,7 @@ export function useCoreCommands(): ComfyCommand[] {
     useApp().canvas.setDirty(true, true)
   }
 
-  const commands = [
+  const commands: ComfyCommand[] = [
     {
       id: 'Comfy.NewBlankWorkflow',
       icon: 'icon-[lucide--plus]',
@@ -404,37 +326,6 @@ export function useCoreCommands(): ComfyCommand[] {
       }
     },
     {
-      id: 'Comfy.Interrupt',
-      icon: 'icon-[lucide--square]',
-      label: 'Interrupt',
-      category: 'essentials' as const,
-      function: async (metadata?: Record<string, unknown>) => {
-        const requestedJobId = metadata?.jobId
-        const jobId =
-          typeof requestedJobId === 'string' && requestedJobId.length > 0
-            ? requestedJobId
-            : executionStore.activeJobId
-        await api.interrupt(jobId)
-        toast.info(t('g.interrupted'), {
-          description: t('toastMessages.interrupted'),
-          duration: 1000
-        })
-      }
-    },
-    {
-      id: 'Comfy.ClearPendingTasks',
-      icon: 'icon-[lucide--square]',
-      label: 'Clear Pending Tasks',
-      category: 'essentials' as const,
-      function: async () => {
-        await useQueueStore().clear(['queue'])
-        toast.info(t('g.confirmed'), {
-          description: t('toastMessages.pendingTasksDeleted'),
-          duration: 3000
-        })
-      }
-    },
-    {
       id: 'Comfy.BrowseTemplates',
       icon: 'icon-[lucide--folder-open]',
       label: 'Browse Templates',
@@ -539,10 +430,8 @@ export function useCoreCommands(): ComfyCommand[] {
           const currentMode = settingStore.get('Comfy.LinkRenderMode')
 
           if (currentMode === LiteGraph.HIDDEN_LINK) {
-            // If links are hidden, restore the last positive value or default to spline mode
             await settingStore.set('Comfy.LinkRenderMode', lastLinksRenderMode)
           } else {
-            // If links are visible, store the current mode and hide links
             lastLinksRenderMode = currentMode
             await settingStore.set(
               'Comfy.LinkRenderMode',
@@ -568,101 +457,6 @@ export function useCoreCommands(): ComfyCommand[] {
         )
       },
       active: () => useSettingStore().get('Comfy.Minimap.Visible')
-    },
-    {
-      id: 'Comfy.Queue.ToggleOverlay',
-      icon: 'icon-[lucide--history]',
-      label: () => t('queue.toggleJobHistory'),
-      menubarLabel: () => t('queue.jobHistory'),
-      versionAdded: '1.37.0',
-      category: 'view-controls' as const,
-      function: () => {
-        useQueueUIStore().toggleOverlay()
-      },
-      active: () => useQueueUIStore().isOverlayExpanded
-    },
-    {
-      id: 'Comfy.QueuePrompt',
-      icon: 'icon-[lucide--play]',
-      label: 'Queue Prompt',
-      versionAdded: '1.3.7',
-      category: 'essentials' as const,
-      function: async (metadata?: {
-        subscribe_to_run?: boolean
-        trigger_source?: ExecutionTriggerSource
-      }) => {
-        if (await deploymentStopsRun(activeWorkflowTarget)) return
-        trackRunButton(metadata)
-        if (await blockRunWithoutSubscription()) return
-
-        const batchCount = useQueueSettingsStore().batchCount
-
-        useTelemetry()?.trackWorkflowExecution()
-
-        await useApp().queuePrompt(0, batchCount, { intent: metadata })
-      }
-    },
-    {
-      id: 'Comfy.QueuePromptFront',
-      icon: 'icon-[lucide--play]',
-      label: 'Queue Prompt (Front)',
-      versionAdded: '1.3.7',
-      category: 'essentials' as const,
-      function: async (metadata?: {
-        subscribe_to_run?: boolean
-        trigger_source?: ExecutionTriggerSource
-      }) => {
-        if (await deploymentStopsRun(activeWorkflowTarget)) return
-        trackRunButton(metadata)
-        if (await blockRunWithoutSubscription()) return
-
-        const batchCount = useQueueSettingsStore().batchCount
-
-        useTelemetry()?.trackWorkflowExecution()
-
-        await useApp().queuePrompt(-1, batchCount, { intent: metadata })
-      }
-    },
-    {
-      id: 'Comfy.QueueSelectedOutputNodes',
-      icon: 'icon-[lucide--play]',
-      label: 'Queue Selected Output Nodes',
-      versionAdded: '1.19.6',
-      function: async (metadata?: {
-        subscribe_to_run?: boolean
-        trigger_source?: ExecutionTriggerSource
-      }) => {
-        if (await deploymentStopsRun(selectedNodesTarget)) return
-        trackRunButton(metadata)
-        if (await blockRunWithoutSubscription()) return
-
-        const batchCount = useQueueSettingsStore().batchCount
-        const selectedNodes = getSelectedNodes()
-        const selectedOutputNodes = filterOutputNodes(selectedNodes)
-
-        if (selectedOutputNodes.length === 0) {
-          toast.error(t('toastMessages.nothingToQueue'), {
-            description: t('toastMessages.pleaseSelectOutputNodes')
-          })
-          return
-        }
-
-        // Get execution IDs for all selected output nodes and their descendants
-        const executionIds =
-          getExecutionIdsForSelectedNodes(selectedOutputNodes)
-
-        if (executionIds.length === 0) {
-          toast.error(t('toastMessages.failedToQueue'), {
-            description: t('toastMessages.failedExecutionPathResolution')
-          })
-          return
-        }
-        useTelemetry()?.trackWorkflowExecution()
-        await useApp().queuePrompt(0, batchCount, {
-          queueNodeIds: executionIds,
-          intent: metadata
-        })
-      }
     },
     {
       id: 'Comfy.ShowSettingsDialog',
@@ -1136,7 +930,6 @@ export function useCoreCommands(): ComfyCommand[] {
       function: async () => {
         const state = useManagerState().managerUIState.value
 
-        // For DISABLED state, show error toast instead of opening settings
         if (state === ManagerUIState.DISABLED) {
           toast.error(t('g.error'), {
             description: t('manager.notAvailable')
@@ -1466,12 +1259,6 @@ export function useCoreCommands(): ComfyCommand[] {
       }
     },
     {
-      id: 'Comfy.ToggleQPOV2',
-      icon: 'icon-[lucide--list]',
-      label: 'Toggle Queue Panel V2',
-      function: toggleQueuePanelV2
-    },
-    {
       id: 'Comfy.ToggleLinear',
       icon: 'icon-[lucide--database]',
       label: 'Toggle App Mode',
@@ -1485,5 +1272,7 @@ export function useCoreCommands(): ComfyCommand[] {
     }
   ]
 
-  return commands.map((command) => ({ ...command, source: 'System' }))
+  return commands
+    .concat(useQueueCommands(() => canvasStore.isPickingNodes))
+    .map((command) => ({ ...command, source: 'System' }))
 }

@@ -1,7 +1,7 @@
 import type { WebSocketRoute } from '@playwright/test'
 import { mergeTests } from '@playwright/test'
 
-import type { RawJobListItem } from '@comfyorg/api-client/jobTypes'
+import type { RawJobListItem } from '@comfyorg/api-client/jobs/jobTypes'
 import {
   comfyPageFixture,
   comfyExpect as expect

@@ -8,7 +8,10 @@ import type { AssetItem } from '@comfyorg/assets-core/schema'
 import { getOutputAssetMetadata } from '@/platform/assets/types/outputAssetMetadata'
 import { getAssetUrl } from '@/platform/assets/utils/assetUrlUtil'
 import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
-import { getJobApiPrompt, getJobWorkflow } from '@/services/jobOutputCache'
+import {
+  getJobApiPrompt,
+  getJobWorkflow
+} from '@/platform/queue/services/jobOutputCache'
 import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
 
 /**

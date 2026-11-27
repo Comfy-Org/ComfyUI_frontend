@@ -16,7 +16,7 @@ import type {
   JobStatus,
   RawJobListItem,
   JobsListResponse
-} from '@comfyorg/api-client/jobTypes'
+} from '@comfyorg/api-client/jobs/jobTypes'
 
 const terminalJobStatuses = [
   'completed',

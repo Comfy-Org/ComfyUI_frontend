@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import type { AugmentedResultItem } from '@/utils/resultItem'
+import type { AugmentedResultItem } from '@comfyorg/api-client/results/resultItem'
 
 import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { useSettingStore } from '@/platform/settings/settingStore'

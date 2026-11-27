@@ -9,7 +9,7 @@ import SanitizedHtml from '@comfyorg/design-system/common/SanitizedHtml'
 import MediaLightbox from '@/components/sidebar/tabs/queue/MediaLightbox.vue'
 import { useCanvasActionShortcutKeys } from '@/platform/keybindings/canvasActionShortcuts'
 import { api } from '@/scripts/api'
-import type { AugmentedResultItem } from '@/utils/resultItem'
+import type { AugmentedResultItem } from '@comfyorg/api-client/results/resultItem'
 import {
   renderMarkdownToHtml,
   resolveMarkdownUrl

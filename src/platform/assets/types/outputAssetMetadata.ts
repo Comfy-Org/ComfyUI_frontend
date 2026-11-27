@@ -1,5 +1,5 @@
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
-import type { AugmentedResultItem } from '@/utils/resultItem'
+import type { AugmentedResultItem } from '@comfyorg/api-client/results/resultItem'
 
 /**
  * Metadata for output assets from queue store

@@ -32,11 +32,8 @@ import {
   parseAnnotatedPath
 } from '@/utils/createAnnotatedPath'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
-import {
-  hdrPreviewAssetUrl,
-  isHdrImageFilename,
-  isHdrImageUrl
-} from '@/utils/hdrFormatUtil'
+import { hdrPreviewAssetUrl, isHdrImageUrl } from '@/utils/hdrFormatUtil'
+import { isHdrImageFilename } from '@comfyorg/shared-frontend-utils/formatUtil'
 import { parseImageWidgetValue } from '@/utils/imageUtil'
 import { pagedItems, WrappedList } from '@/utils/pagedList'
 import type { MaybePaged } from '@/utils/pagedList'

@@ -14,7 +14,8 @@ import {
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { hdrPreviewAssetUrl, isHdrImageFilename } from '@/utils/hdrFormatUtil'
+import { hdrPreviewAssetUrl } from '@/utils/hdrFormatUtil'
+import { isHdrImageFilename } from '@comfyorg/shared-frontend-utils/formatUtil'
 import { getGridThumbnailUrl } from '@/utils/imageUtil'
 
 const EXPORT_DIALOG_KEY = 'node-outputs-export'

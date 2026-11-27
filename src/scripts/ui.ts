@@ -1,21 +1,24 @@
 import type { Point2D as Position2D } from '@comfyorg/shared-frontend-utils/geometry'
-import { extractWorkflow } from '@comfyorg/api-client/fetchJobs'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { safeLocalStorage } from '@/base/storage/safeStorage'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { WORKFLOW_ACCEPT_STRING } from '@/platform/workflow/core/types/formats'
-import type {
-  ExecutedWsMessage,
-  ExecutionErrorWsMessage,
-  StatusWsMessageStatus
-} from '@comfyorg/api-client/executionTypes'
+import type { StatusWsMessageStatus } from '@comfyorg/api-client/executionTypes'
 import type {
   WorkflowOpenSource,
   WorkflowQueueIntent
 } from '@comfyorg/telemetry/types'
-import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
+import { ComfyList } from '@/platform/queue/legacy/ComfyList'
+import type {
+  LegacyQueueApp,
+  LegacyQueueHost
+} from '@/platform/queue/legacy/types'
+import {
+  setupLegacyAutoQueue,
+  updateLegacyAutoQueueStatus
+} from '@/platform/queue/runtime/legacyAutoQueue'
 import { isGraphLoadFailurePresented } from '@/services/graphLoadFailure'
 
 import { api } from './api'
@@ -27,21 +30,7 @@ import { toggleSwitch } from './ui/toggleSwitch'
 export const ComfyDialog = _ComfyDialog
 export const $el = _$el
 
-/** The slice of the app the legacy menu drives. `ComfyApp` implements it. */
-export interface LegacyUIApp {
-  readonly lastExecutionError: ExecutionErrorWsMessage | null
-  loadGraphData(
-    graphData?: ComfyWorkflowJSON,
-    clean?: boolean,
-    restore_view?: boolean,
-    workflow?: string | null,
-    options?: { initiator?: 'user' }
-  ): Promise<unknown>
-  queuePrompt(
-    number: number,
-    batchCount?: number,
-    options?: { intent?: WorkflowQueueIntent }
-  ): Promise<boolean>
+export interface LegacyUIApp extends LegacyQueueApp {
   showErrorOnFileLoad(file: File): void
   handleFile(
     file: File,
@@ -51,6 +40,12 @@ export interface LegacyUIApp {
   refreshComboInNodes(): Promise<boolean>
   openClipspace(): void
   clean(): void
+}
+
+export interface LegacyMenuHost extends LegacyQueueHost {
+  resetView(): void
+  trackRunButton(intent: WorkflowQueueIntent): void
+  enterFocusMode(): void
 }
 
 function dragElement(dragEl: HTMLElement, signal: AbortSignal): () => void {
@@ -188,141 +183,6 @@ function dragElement(dragEl: HTMLElement, signal: AbortSignal): () => void {
   return restorePos
 }
 
-export interface LegacyMenuHost {
-  resetView(): void
-  restoreOutputs(
-    outputs: Partial<Record<string, ExecutedWsMessage['output']>>
-  ): void
-  trackRunButton(intent: WorkflowQueueIntent): void
-  enterFocusMode(): void
-}
-
-class ComfyList {
-  private _type: string
-  private _text: string
-  private _reverse: boolean
-  element: HTMLDivElement
-  button?: HTMLButtonElement
-
-  constructor(
-    private readonly app: LegacyUIApp,
-    private readonly host: LegacyMenuHost,
-    text: string,
-    type?: string,
-    reverse?: boolean
-  ) {
-    this._text = text
-    this._type = type || text.toLowerCase()
-    this._reverse = reverse || false
-    this.element = $el('div.comfy-list') as HTMLDivElement
-    this.element.style.display = 'none'
-
-    console.warn(
-      '[ComfyUI] The legacy queue/history menu is deprecated. ' +
-        'Core functionality in this menu may break at any time. ' +
-        'Issues and feature requests related to the legacy menu will not be addressed. ' +
-        'To switch to the new menu: Settings → search "Use new menu" → change from "Disabled" to "Top".'
-    )
-  }
-
-  get visible() {
-    return this.element.style.display !== 'none'
-  }
-
-  async load() {
-    const items =
-      this._type === 'history'
-        ? { history: await api.getHistory() }
-        : await api.getQueue()
-    this.element.replaceChildren(
-      ...Object.entries(items).flatMap(([section, sectionItems]) => [
-        $el('h4', {
-          textContent: section
-        }),
-        $el(
-          'div.comfy-list-items',
-          (this._reverse ? sectionItems.reverse() : sectionItems).map(
-            (item) => {
-              // Allow items to specify a custom remove action (e.g. for interrupt current prompt)
-              const removeAction =
-                section === 'Running'
-                  ? {
-                      name: 'Cancel',
-                      cb: () => api.interrupt(item.id)
-                    }
-                  : {
-                      name: 'Delete',
-                      cb: () => api.deleteItem(this._type, item.id)
-                    }
-              return $el('div', { textContent: item.priority + ': ' }, [
-                $el('button', {
-                  textContent: 'Load',
-                  onclick: async () => {
-                    const job = await api.getJobDetail(item.id)
-                    if (!job) return
-                    const workflow = await extractWorkflow(job)
-                    await this.app.loadGraphData(workflow, true, false, null, {
-                      initiator: 'user'
-                    })
-                    if ('outputs' in job && job.outputs) {
-                      this.host.restoreOutputs(job.outputs)
-                    }
-                  }
-                }),
-                $el('button', {
-                  textContent: removeAction.name,
-                  onclick: async () => {
-                    await removeAction.cb()
-                    await this.update()
-                  }
-                })
-              ])
-            }
-          )
-        )
-      ]),
-      $el('div.comfy-list-actions', [
-        $el('button', {
-          textContent: 'Clear ' + this._text,
-          onclick: async () => {
-            await api.clearItems(this._type)
-            await this.load()
-          }
-        }),
-        $el('button', { textContent: 'Refresh', onclick: () => this.load() })
-      ])
-    )
-  }
-
-  async update() {
-    if (this.visible) {
-      await this.load()
-    }
-  }
-
-  async show() {
-    this.element.style.display = 'block'
-    if (this.button) this.button.textContent = 'Close'
-
-    await this.load()
-  }
-
-  hide() {
-    this.element.style.display = 'none'
-    if (this.button) this.button.textContent = 'View ' + this._text
-  }
-
-  toggle() {
-    if (this.visible) {
-      this.hide()
-      return false
-    } else {
-      void this.show()
-      return true
-    }
-  }
-}
-
 export class ComfyUI {
   app: LegacyUIApp
   private readonly host: LegacyMenuHost
@@ -424,22 +284,7 @@ export class ComfyUI {
     )
     autoQueueModeEl.style.display = 'none'
 
-    api.addEventListener(
-      'autoQueueGraphChanged',
-      () => {
-        if (this.autoQueueMode === 'change' && this.autoQueueEnabled) {
-          if (this.lastQueueSize === 0) {
-            this.graphHasChanged = false
-            void this.app.queuePrompt(0, this.batchCount, {
-              intent: { trigger_source: 'auto_queue' }
-            })
-          } else {
-            this.graphHasChanged = true
-          }
-        }
-      },
-      { signal: this.lifetime.signal }
-    )
+    setupLegacyAutoQueue(this, this.lifetime.signal)
 
     this.menuContainer = $el(
       'div.comfy-menu.no-drag',
@@ -704,20 +549,6 @@ export class ComfyUI {
     if (queueRemaining == null) return
 
     this.queueSize.textContent = 'Queue size: ' + queueRemaining
-    if (
-      this.lastQueueSize != 0 &&
-      queueRemaining == 0 &&
-      this.autoQueueEnabled &&
-      (this.autoQueueMode === 'instant' || this.graphHasChanged) &&
-      !this.app.lastExecutionError
-    ) {
-      void this.app.queuePrompt(0, this.batchCount, {
-        intent: { trigger_source: 'auto_queue' }
-      })
-      this.graphHasChanged = false
-      this.lastQueueSize = queueRemaining + this.batchCount
-    } else {
-      this.lastQueueSize = queueRemaining
-    }
+    updateLegacyAutoQueueStatus(this, queueRemaining)
   }
 }

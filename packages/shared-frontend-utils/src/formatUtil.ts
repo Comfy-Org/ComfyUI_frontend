@@ -1,5 +1,11 @@
 import type { operations } from '@comfyorg/registry-types'
 
+export function isHdrImageFilename(filename: string | undefined): boolean {
+  if (!filename) return false
+  const lower = filename.toLowerCase()
+  return ['.exr', '.hdr'].some((ext) => lower.endsWith(ext))
+}
+
 export function formatCamelCase(str: string): string {
   // Check if the string is camel case
   const isCamelCase = /^([A-Z][a-z]*)+$/.test(str)

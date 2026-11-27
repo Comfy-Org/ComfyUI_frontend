@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import type { JobDetail } from '@comfyorg/api-client/jobTypes'
+import type { JobDetail } from '@comfyorg/api-client/jobs/jobTypes'
 
 /** `comfy_usage_source` stamped on jobs submitted by Comfy MCP. */
 export const LOCAL_MCP_USAGE_SOURCE = 'comfy-cli/comfy-mcp'

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { JobDetail } from '@comfyorg/api-client/jobTypes'
+import type { JobDetail } from '@comfyorg/api-client/jobs/jobTypes'
 
 import {
   LOCAL_MCP_USAGE_SOURCE,

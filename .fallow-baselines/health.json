@@ -479,7 +479,7 @@
         "count": 1
       }
     },
-    "src/components/queue/job/JobAssetsList.vue": {
+    "src/platform/queue/components/job/JobAssetsList.vue": {
       "complexity_high": {
         "count": 1
       },
@@ -487,7 +487,7 @@
         "count": 1
       }
     },
-    "src/components/queue/job/JobDetailsPopover.vue": {
+    "src/platform/queue/components/job/JobDetailsPopover.vue": {
       "complexity_high": {
         "count": 1
       },
@@ -495,12 +495,12 @@
         "count": 1
       }
     },
-    "src/components/queue/job/JobFilterActions.vue": {
+    "src/platform/queue/components/job/JobFilterActions.vue": {
       "crap_moderate": {
         "count": 1
       }
     },
-    "src/components/queue/job/useQueueEstimates.test.ts": {
+    "src/platform/queue/composables/useQueueEstimates.test.ts": {
       "crap_high": {
         "count": 1
       }
@@ -943,7 +943,7 @@
         "count": 1
       }
     },
-    "src/composables/queue/useJobList.ts": {
+    "src/platform/queue/composables/useJobList.ts": {
       "complexity_moderate": {
         "count": 1
       },
@@ -954,12 +954,12 @@
         "count": 1
       }
     },
-    "src/composables/queue/useJobMenu.ts": {
+    "src/platform/queue/composables/useJobMenu.ts": {
       "crap_high": {
         "count": 1
       }
     },
-    "src/composables/queue/useQueueNotificationBanners.ts": {
+    "src/platform/queue/composables/useQueueNotificationBanners.ts": {
       "crap_moderate": {
         "count": 1
       }
@@ -2656,7 +2656,7 @@
     },
     "src/scripts/app.ts": {
       "complexity_critical": {
-        "count": 5
+        "count": 4
       },
       "complexity_high": {
         "count": 3
@@ -2665,13 +2665,21 @@
         "count": 2
       },
       "crap_critical": {
-        "count": 5
+        "count": 4
       },
       "crap_high": {
         "count": 3
       },
       "crap_moderate": {
         "count": 4
+      }
+    },
+    "src/platform/queue/submission/queueSubmission.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
       }
     },
     "src/scripts/changeTracker.test.ts": {
@@ -2953,8 +2961,8 @@
         "count": 1
       }
     },
-    "src/utils/queueDisplay.ts": {
-      "complexity_moderate": {
+    "src/platform/queue/presentation/queueDisplay.ts": {
+      "complexity_high": {
         "count": 1
       }
     },

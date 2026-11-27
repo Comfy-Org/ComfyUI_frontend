@@ -5,7 +5,7 @@ import { useAppMode } from '@/composables/useAppMode'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { flattenNodeOutput } from '@/renderer/extensions/linearMode/flattenNodeOutput'
 import type { InProgressItem } from '@/renderer/extensions/linearMode/linearModeTypes'
-import type { AugmentedResultItem } from '@/utils/resultItem'
+import type { AugmentedResultItem } from '@comfyorg/api-client/results/resultItem'
 import type {
   ExecutedWsMessage,
   JobId

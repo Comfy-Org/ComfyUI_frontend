@@ -1,0 +1,294 @@
+<template>
+  <ButtonGroup class="queue-button-group h-8 rounded-lg bg-secondary">
+    <BatchCountEdit />
+    <Button
+      :tooltip="queueButtonTooltip"
+      tooltip-side="bottom"
+      :variant="queueButtonVariant"
+      size="unset"
+      :class="
+        cn(
+          'h-full gap-1.5 rounded-l-lg rounded-r-none px-4',
+          !paymentRecoveryLock && 'font-light',
+          blockedBy && 'opacity-50'
+        )
+      "
+      data-testid="queue-button"
+      @click="queuePrompt"
+    >
+      <i :class="iconClass" data-testid="queue-button-icon" />
+      {{ queueButtonLabel }}
+    </Button>
+
+    <Menu side="bottom" :side-offset="4" class="min-w-44">
+      <template #trigger>
+        <Button
+          :variant="queueMenuTriggerVariant"
+          size="unset"
+          :disabled="Boolean(paymentRecoveryLock)"
+          :class="
+            cn(
+              queueMenuTriggerClass,
+              queueMenuTriggerVariantClass[queueMenuTriggerVariant],
+              blockedBy && 'opacity-50'
+            )
+          "
+          :aria-label="t('menu.runOptions')"
+          data-testid="queue-mode-menu-trigger"
+        >
+          <TinyChevronIcon />
+        </Button>
+      </template>
+      <MenuRadioGroup
+        :model-value="selectedQueueMode"
+        :options="queueModeMenuItems"
+        @select.prevent
+      />
+    </Menu>
+  </ButtonGroup>
+</template>
+
+<script setup lang="ts">
+import { storeToRefs } from 'pinia'
+import { computed, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import BatchCountEdit from '@/platform/queue/components/run/BatchCountEdit.vue'
+import TinyChevronIcon from '@comfyorg/design-system/icon/TinyChevronIcon'
+import Button from '@comfyorg/design-system/button/Button'
+import ButtonGroup from '@comfyorg/design-system/button-group/ButtonGroup'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import MenuRadioGroup from '@comfyorg/design-system/menu/MenuRadioGroup'
+import { isCloud } from '@/platform/distribution/types'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
+import type { UnreadyDeploymentReason } from '@/platform/workspace/composables/useUnreadyDeploymentRun'
+import { useUnreadyDeploymentRun } from '@/platform/workspace/composables/useUnreadyDeploymentRun'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import {
+  isInstantMode,
+  isInstantRunningMode,
+  useQueueSettingsStore
+} from '@/platform/queue/stores/queueSettingsStore'
+import { useWorkspaceStore } from '@/stores/workspaceStore'
+import { cn } from '@comfyorg/tailwind-utils'
+
+const workspaceStore = useWorkspaceStore()
+const { mode: queueMode, batchCount } = storeToRefs(useQueueSettingsStore())
+const { hasMissingError } = storeToRefs(useExecutionErrorStore())
+
+const { t } = useI18n()
+const { unreadyReason } = useUnreadyDeploymentRun()
+const UNREADY_TOOLTIP_KEYS: Record<UnreadyDeploymentReason, string> = {
+  stopped: 'deploymentSwitcher.runBlocked.stopped',
+  starting: 'deploymentSwitcher.runBlocked.starting',
+  failed: 'deploymentSwitcher.runBlocked.failed',
+  notReady: 'deploymentSwitcher.runBlocked.notReady'
+}
+type QueueModeMenuKey = 'disabled' | 'change' | 'instant-idle'
+type PaymentRecoveryLock = 'owner' | 'member'
+
+const { paymentRecoveryLock = null } = defineProps<{
+  paymentRecoveryLock?: PaymentRecoveryLock | null
+}>()
+const emit = defineEmits<{
+  paymentRecoveryClick: []
+}>()
+
+watch(
+  () => paymentRecoveryLock,
+  (lock) => {
+    if (lock) queueMode.value = 'disabled'
+  },
+  { immediate: true }
+)
+
+interface QueueModeMenuItem {
+  value: QueueModeMenuKey
+  label: string
+  tooltip: string
+  command: () => void
+}
+
+const selectedQueueMode = computed<QueueModeMenuKey>(() =>
+  isInstantMode(queueMode.value) ? 'instant-idle' : queueMode.value
+)
+
+const queueModeMenuItemLookup = computed<Record<string, QueueModeMenuItem>>(
+  () => {
+    const items: Record<string, QueueModeMenuItem> = {
+      disabled: {
+        value: 'disabled',
+        label: t('menu.run'),
+        tooltip: t('menu.disabledTooltip'),
+        command: () => {
+          queueMode.value = 'disabled'
+        }
+      },
+      change: {
+        value: 'change',
+        label: `${t('menu.run')} (${t('menu.onChange')})`,
+        tooltip: t('menu.onChangeTooltip'),
+        command: () => {
+          useTelemetry()?.trackUiButtonClicked({
+            button_id: 'queue_mode_option_run_on_change_selected',
+            element_group: 'queue'
+          })
+          queueMode.value = 'change'
+        }
+      }
+    }
+
+    if (!isCloud) {
+      items['instant-idle'] = {
+        value: 'instant-idle',
+        label: `${t('menu.run')} (${t('menu.instant')})`,
+        tooltip: t('menu.instantTooltip'),
+        command: () => {
+          useTelemetry()?.trackUiButtonClicked({
+            button_id: 'queue_mode_option_run_instant_selected',
+            element_group: 'queue'
+          })
+          queueMode.value = 'instant-idle'
+        }
+      }
+    }
+
+    return items
+  }
+)
+
+const activeQueueModeMenuItem = computed(() => {
+  return (
+    queueModeMenuItemLookup.value[selectedQueueMode.value] ||
+    queueModeMenuItemLookup.value.disabled
+  )
+})
+const queueModeMenuItems = computed(() =>
+  Object.values(queueModeMenuItemLookup.value)
+)
+
+const isStopInstantAction = computed(() =>
+  isInstantRunningMode(queueMode.value)
+)
+
+const blockedBy = computed(() =>
+  paymentRecoveryLock || isStopInstantAction.value ? null : unreadyReason.value
+)
+
+const queueButtonLabel = computed(() =>
+  paymentRecoveryLock === 'owner'
+    ? t('subscription.paymentRecovery.ownerRunLabel')
+    : paymentRecoveryLock === 'member'
+      ? t('subscription.paymentRecovery.memberRunLabel')
+      : isStopInstantAction.value
+        ? t('menu.stopRunInstant')
+        : String(activeQueueModeMenuItem.value?.label ?? '')
+)
+
+const queueButtonVariant = computed<
+  'destructive' | 'primary' | 'secondary' | 'subscribe'
+>(() =>
+  paymentRecoveryLock === 'owner'
+    ? 'subscribe'
+    : paymentRecoveryLock === 'member'
+      ? 'secondary'
+      : isStopInstantAction.value
+        ? 'destructive'
+        : 'primary'
+)
+const queueMenuTriggerVariant = computed(() =>
+  queueButtonVariant.value === 'subscribe'
+    ? 'secondary'
+    : queueButtonVariant.value
+)
+const queueMenuTriggerVariantClass = {
+  destructive: 'border-black/20 data-[state=open]:bg-destructive/90',
+  primary: 'data-[state=open]:bg-primary/90',
+  secondary: 'text-muted-foreground'
+} satisfies Record<typeof queueMenuTriggerVariant.value, string>
+const queueMenuTriggerClass =
+  'h-full w-6 rounded-l-none rounded-r-lg border-0 border-l border-solid border-current/25 p-0'
+
+const iconClass = computed(() => {
+  if (paymentRecoveryLock) {
+    return 'icon-[lucide--lock]'
+  }
+  if (isStopInstantAction.value) {
+    return 'icon-[lucide--square]'
+  }
+  if (hasMissingError.value) {
+    return 'icon-[lucide--triangle-alert]'
+  }
+  if (workspaceStore.shiftDown) {
+    return 'icon-[lucide--list-start]'
+  }
+  if (queueMode.value === 'disabled') {
+    return 'icon-[lucide--play]'
+  }
+  if (isInstantMode(queueMode.value)) {
+    return 'icon-[lucide--fast-forward]'
+  }
+  if (queueMode.value === 'change') {
+    return 'icon-[lucide--step-forward]'
+  }
+  return 'icon-[lucide--play]'
+})
+
+const queueButtonTooltip = computed(() => {
+  if (paymentRecoveryLock === 'owner') {
+    return t('subscription.paymentRecovery.ownerRunTooltip')
+  }
+  if (paymentRecoveryLock === 'member') {
+    return t('subscription.paymentRecovery.memberRunTooltip')
+  }
+  if (isStopInstantAction.value) {
+    return t('menu.stopRunInstantTooltip')
+  }
+  if (blockedBy.value) {
+    return t(UNREADY_TOOLTIP_KEYS[blockedBy.value])
+  }
+  if (hasMissingError.value) {
+    return t('menu.runWorkflowMissingResources')
+  }
+  if (workspaceStore.shiftDown) {
+    return t('menu.runWorkflowFront')
+  }
+  return t('menu.runWorkflow')
+})
+
+const commandStore = useCommandStore()
+const queuePrompt = async (e: Event) => {
+  if (paymentRecoveryLock) {
+    emit('paymentRecoveryClick')
+    return
+  }
+  if (isStopInstantAction.value) {
+    queueMode.value = 'instant-idle'
+    return
+  }
+
+  const isShiftPressed = 'shiftKey' in e && e.shiftKey
+  const commandId = isShiftPressed
+    ? 'Comfy.QueuePromptFront'
+    : 'Comfy.QueuePrompt'
+
+  if (isInstantMode(queueMode.value)) {
+    queueMode.value = 'instant-running'
+  }
+
+  if (batchCount.value > 1) {
+    useTelemetry()?.trackUiButtonClicked({
+      button_id: 'queue_run_multiple_batches_submitted',
+      element_group: 'queue'
+    })
+  }
+
+  await commandStore.execute(commandId, {
+    metadata: {
+      subscribe_to_run: false,
+      trigger_source: 'button'
+    }
+  })
+}
+</script>

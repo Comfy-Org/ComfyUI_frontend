@@ -3,7 +3,7 @@ import { mergeTests } from '@playwright/test'
 import type {
   RawJobListItem,
   JobsListResponse
-} from '@comfyorg/api-client/jobTypes'
+} from '@comfyorg/api-client/jobs/jobTypes'
 
 import {
   comfyExpect as expect,

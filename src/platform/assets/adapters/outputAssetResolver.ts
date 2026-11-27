@@ -1,15 +1,15 @@
 import type { OutputAssetMetadata } from '@/platform/assets/types/outputAssetMetadata'
 import type { AssetItem } from '@comfyorg/assets-core/schema'
 import { isCloud } from '@/platform/distribution/types'
-import type { JobOutputAsset } from '@comfyorg/api-client/jobTypes'
+import type { JobOutputAsset } from '@comfyorg/api-client/jobs/jobTypes'
 import { getOutputKey } from '@/platform/assets/utils/outputKeyUtil'
 import {
   getJobAssets,
   getJobDetail,
   getPreviewableOutputsFromJobDetail
-} from '@/services/jobOutputCache'
+} from '@/platform/queue/services/jobOutputCache'
 import type { ResultItemType } from '@comfyorg/api-client/resultItemTypeSchema'
-import type { AugmentedResultItem } from '@/utils/resultItem'
+import type { AugmentedResultItem } from '@comfyorg/api-client/results/resultItem'
 import { resultItemPreviewUrl, resultItemUrl } from '@/utils/resultItemUrl'
 
 const storedOutputIdentityKey = Symbol('storedOutputIdentity')

@@ -3,11 +3,11 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { toRef } from 'vue'
 
-import type { JobListItem } from '@/composables/queue/useJobList'
+import type { JobListItem } from '@/platform/queue/presentation/queueDisplay'
 import { useOutputStacks } from '@/platform/assets/composables/useOutputStacks'
 import type { AssetItem } from '@comfyorg/assets-core/schema'
-import { setMockJobItems } from '@/storybook/mocks/useJobList'
-import { iconForJobState } from '@/utils/queueDisplay'
+import { setMockJobItems } from '@/platform/queue/testing/useJobList'
+import { iconForJobState } from '@/platform/queue/presentation/queueDisplay'
 
 import AssetsSidebarListView from '@/platform/assets/components/sidebar/AssetsSidebarListView.vue'
 

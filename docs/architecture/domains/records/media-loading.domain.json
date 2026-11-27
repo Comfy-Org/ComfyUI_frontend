@@ -11,6 +11,9 @@
     },
     {
       "path": "src/services/uploadTempFile.ts"
+    },
+    {
+      "path": "src/utils/resultItemUrl.ts"
     }
   ],
   "publicEntryPoints": [],
@@ -21,6 +24,10 @@
         "src/composables/media/useRetryableMediaSrc.test.ts",
         "src/composables/useTextFileContent.test.ts"
       ]
+    },
+    {
+      "name": "Authenticated result URLs preserve matching and preview behavior",
+      "checks": ["src/utils/resultItemUrl.test.ts"]
     }
   ],
   "adrs": [],

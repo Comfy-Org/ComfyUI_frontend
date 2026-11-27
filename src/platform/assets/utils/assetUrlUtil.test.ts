@@ -10,7 +10,7 @@ import {
 } from '@/platform/assets/utils/assetUrlUtil'
 import { getAssetSubfolder } from '@comfyorg/assets-core/metadata'
 import { api } from '@/scripts/api'
-import type { AugmentedResultItem } from '@/utils/resultItem'
+import type { AugmentedResultItem } from '@comfyorg/api-client/results/resultItem'
 
 vi.mock(import('@/scripts/api'))
 

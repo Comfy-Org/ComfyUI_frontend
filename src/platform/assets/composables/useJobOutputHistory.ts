@@ -1,4 +1,4 @@
-import type { JobListItem } from '@comfyorg/api-client/jobTypes'
+import type { JobListItem } from '@comfyorg/api-client/jobs/jobTypes'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { createSharedComposable, useEventListener } from '@vueuse/core'
 import { computed, ref } from 'vue'
@@ -6,7 +6,7 @@ import { computed, ref } from 'vue'
 import { mapTaskOutputToAssetItem } from '@/platform/assets/adapters/outputAssetMappers'
 import type { AssetItem } from '@comfyorg/assets-core/schema'
 import { api } from '@/scripts/api'
-import { TaskItemImpl } from '@/stores/queueStore'
+import { TaskItemImpl } from '@comfyorg/api-client/jobs/taskItem'
 import type { PagedList } from '@/utils/pagedList'
 
 function mapHistoryToAssets(historyItems: JobListItem[]): AssetItem[] {

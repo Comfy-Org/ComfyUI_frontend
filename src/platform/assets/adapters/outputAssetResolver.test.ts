@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { OutputAssetMetadata } from '@/platform/assets/types/outputAssetMetadata'
 import type { AssetItem } from '@comfyorg/assets-core/schema'
 import { getOutputKey } from '@/platform/assets/utils/outputKeyUtil'
-import type { AugmentedResultItem } from '@/utils/resultItem'
+import type { AugmentedResultItem } from '@comfyorg/api-client/results/resultItem'
 import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 
 import { getTotalAssetOutputCount } from '@/platform/assets/utils/outputAssetCountUtil'
@@ -18,7 +18,7 @@ const mocks = vi.hoisted(() => ({
   isCloud: false
 }))
 
-vi.mock(import('@/services/jobOutputCache'), () => ({
+vi.mock(import('@/platform/queue/services/jobOutputCache'), () => ({
   getJobDetail: mocks.getJobDetail,
   getPreviewableOutputsFromJobDetail: mocks.getPreviewableOutputsFromJobDetail,
   getJobAssets: mocks.getJobAssets

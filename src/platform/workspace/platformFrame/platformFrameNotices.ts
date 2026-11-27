@@ -3,7 +3,7 @@ import { t } from '@/i18n'
 import { switchReloadNote } from '@/platform/workspace/confirmUnsavedWorkBeforeSwitch'
 import type { FollowedBuild } from '@/platform/workspace/platformFrame/platformFrameBuild'
 import { useReleaseNoticeStore } from '@/platform/workspace/stores/releaseNoticeStore'
-import { useQueueStore } from '@/stores/queueStore'
+import { useQueueStore } from '@/platform/queue/stores/queueStore'
 import type { ToastId } from '@/types/toastId'
 
 const SHORT_NOTICE_MS = 8000

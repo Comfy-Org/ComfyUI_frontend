@@ -54,7 +54,7 @@ import { getDroppedAsset } from '@/platform/assets/integration/assetDrop'
 import { findServerPreviewUrl } from '@/platform/assets/utils/assetPreviewUtil'
 import type { DroppedAsset } from '@/platform/assets/integration/assetDrop'
 import { fetchDroppedFile } from '@/utils/eventUtils'
-import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
+import { isHdrImageFilename } from '@comfyorg/shared-frontend-utils/formatUtil'
 import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
 import {
   AGENT_ATTACH_ACCEPT,

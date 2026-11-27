@@ -7,7 +7,7 @@ import { i18n } from '@/i18n'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { hasAudioType, hasImageType, hasVideoType } from '@/utils/eventUtils'
 import { formatSize, getMediaTypeFromFilename } from '@/utils/formatUtil'
-import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
+import { isHdrImageFilename } from '@comfyorg/shared-frontend-utils/formatUtil'
 import type { MediaKind } from '@comfyorg/assets-core/media'
 import {
   AgentApiError,

@@ -5,6 +5,7 @@ import { createI18n } from 'vue-i18n'
 import type { ComfyDesktop2Bridge } from '@comfyorg/comfyui-desktop-bridge-types'
 import type { ElectronAPI } from '@comfyorg/comfyui-electron-types'
 
+import { setupAutoQueueHandler } from '@/platform/queue/runtime/autoQueueService'
 import { useServerReconnectLifecycle } from '@/composables/useServerReconnectLifecycle'
 import type * as DistributionTypes from '@/platform/distribution/types'
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
@@ -21,7 +22,7 @@ import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
-import { useQueueStore } from '@/stores/queueStore'
+import { useQueueStore } from '@/platform/queue/stores/queueStore'
 import { useTemplateInputDownloadStore } from '@/platform/workflow/templates/stores/templateInputDownloadStore'
 import { syncCompletedTemplateInputsWithCurrentGraph } from '@/platform/workflow/templates/composables/useTemplateInputDownloadGraphSync'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
@@ -135,7 +136,7 @@ vi.mock(import('@/composables/useBrowserTabTitle'), () => ({
 vi.mock(import('@/composables/useCoreCommands'), () => ({
   useCoreCommands: () => []
 }))
-vi.mock(import('@/platform/remote/comfyui/useQueuePolling'), () => ({
+vi.mock(import('@/platform/queue/runtime/useQueuePolling'), () => ({
   useQueuePolling: vi.fn()
 }))
 vi.mock(import('@/composables/useErrorHandling'))
@@ -170,8 +171,8 @@ vi.mock(
   })
 )
 
-vi.mock(import('@/services/autoQueueService'), () => ({
-  setupAutoQueueHandler: vi.fn()
+vi.mock(import('@/platform/queue/runtime/autoQueueService'), () => ({
+  setupAutoQueueHandler: vi.fn(() => () => {})
 }))
 vi.mock<unknown>(import('@/platform/keybindings/keybindingService'), () => ({
   useKeybindingService: () => ({
@@ -273,6 +274,17 @@ describe('GraphView - reconnect wiring', () => {
     render(GraphView, { global: { plugins: [i18n] } })
 
     expect(useServerReconnectLifecycle).toHaveBeenCalledOnce()
+  })
+
+  it('stops auto-queue handling when the view unmounts', () => {
+    const stopAutoQueue = vi.fn()
+    vi.mocked(setupAutoQueueHandler).mockReturnValueOnce(stopAutoQueue)
+    const { unmount } = render(GraphView, { global: { plugins: [i18n] } })
+
+    expect(stopAutoQueue).not.toHaveBeenCalled()
+    unmount()
+
+    expect(stopAutoQueue).toHaveBeenCalledOnce()
   })
 
   it.for([

@@ -6,7 +6,7 @@ import Loader from '@/components/loader/Loader.vue'
 import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import Button from '@comfyorg/design-system/button/Button'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
-import { useQueueStore } from '@/stores/queueStore'
+import { useQueueStore } from '@/platform/queue/stores/queueStore'
 
 const { queueCount } = defineProps<{
   queueCount: number

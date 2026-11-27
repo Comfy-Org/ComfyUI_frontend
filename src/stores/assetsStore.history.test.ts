@@ -1,4 +1,4 @@
-import type { JobDetail, JobListItem } from '@comfyorg/api-client/jobTypes'
+import type { JobDetail, JobListItem } from '@comfyorg/api-client/jobs/jobTypes'
 import { ComfyApi } from '@comfyorg/api-client/ComfyApi'
 import { useJobOutputHistory } from '@/platform/assets/composables/useJobOutputHistory'
 import {
@@ -19,7 +19,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useExecutionStore } from '@/stores/executionStore'
 
-import { getJobDetail } from '@/services/jobOutputCache'
+import { getJobDetail } from '@/platform/queue/services/jobOutputCache'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { api } from '@/scripts/api'
 import { useAssetsStore } from '@/platform/assets/stores/assetsStore'

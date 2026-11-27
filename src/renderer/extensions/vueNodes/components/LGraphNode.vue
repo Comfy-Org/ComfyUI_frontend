@@ -329,7 +329,7 @@ import { shouldExpand } from '@/renderer/extensions/vueNodes/widgets/registry/wi
 import { shapeVariantClass } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import { useApp } from '@/scripts/appInstance'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { isVideoResult } from '@/utils/resultItem'
+import { isVideoResult } from '@comfyorg/api-client/results/resultItem'
 import {
   stripGraphPrefix,
   useWidgetValueStore

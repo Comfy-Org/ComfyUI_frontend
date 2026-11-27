@@ -19,7 +19,7 @@ import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedGraph } from '@comfyorg/graph-model/serialisation'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useNodeDataStore } from '@/stores/nodeDataStore'
-import type { AugmentedResultItem } from '@/utils/resultItem'
+import type { AugmentedResultItem } from '@comfyorg/api-client/results/resultItem'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { AgentCrdtProjection } from '@/workbench/extensions/agent/crdt/agentCrdtProjection'
 import { FollowerDoc } from '@/workbench/extensions/agent/crdt/followerDoc'

@@ -5,6 +5,16 @@
   "type": "module",
   "exports": {
     "./clientFeatureFlags.json": "./src/clientFeatureFlags.json",
+    "./fetchJobs": {
+      "@comfyorg/api-client": "./src/jobs/fetchJobs.ts",
+      "types": "./dist-types/jobs/fetchJobs.d.ts",
+      "default": "./src/jobs/fetchJobs.ts"
+    },
+    "./jobTypes": {
+      "@comfyorg/api-client": "./src/jobs/jobTypes.ts",
+      "types": "./dist-types/jobs/jobTypes.d.ts",
+      "default": "./src/jobs/jobTypes.ts"
+    },
     "./*": {
       "@comfyorg/api-client": "./src/*.ts",
       "types": "./dist-types/*.d.ts",
@@ -24,6 +34,7 @@
     "@comfyorg/ingest-types": "workspace:*",
     "@comfyorg/object-info-parser": "workspace:*",
     "@comfyorg/settings-core": "workspace:*",
+    "@comfyorg/shared-frontend-utils": "workspace:*",
     "@comfyorg/telemetry": "workspace:*",
     "@sentry/vue": "catalog:",
     "axios": "catalog:",
@@ -32,6 +43,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@total-typescript/shoehorn": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }

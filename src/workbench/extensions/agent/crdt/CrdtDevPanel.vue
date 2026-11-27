@@ -24,7 +24,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'
 import { useExecutionStore } from '@/stores/executionStore'
-import { useQueueStore } from '@/stores/queueStore'
+import { useQueueStore } from '@/platform/queue/stores/queueStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { collectAllNodes } from '@/utils/graphTraversalUtil'
 import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'

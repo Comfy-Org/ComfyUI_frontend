@@ -43,46 +43,7 @@
             <ComfyRunButton />
           </Suspense>
         </div>
-        <Button
-          :tooltip="t('menu.interrupt')"
-          tooltip-side="bottom"
-          :variant="canInterrupt ? 'destructive' : 'secondary'"
-          size="icon"
-          :disabled="!canInterrupt"
-          :aria-label="t('menu.interrupt')"
-          @click="cancelCurrentJob"
-        >
-          <i class="icon-[lucide--x]" />
-        </Button>
-        <ContextMenu :model="queueContextMenuItems">
-          <Button
-            :tooltip="queueToggleLabel"
-            tooltip-side="bottom"
-            variant="secondary"
-            size="md"
-            :aria-pressed="
-              isQueuePanelV2Enabled
-                ? activeSidebarTabId === 'job-history'
-                : queueOverlayExpanded
-            "
-            class="px-3"
-            data-testid="queue-overlay-toggle"
-            @click="toggleQueueOverlay"
-            @contextmenu.stop
-          >
-            <span class="text-sm font-normal tabular-nums">
-              {{ activeJobsLabel }}
-            </span>
-            <Badge
-              v-if="activeJobsCount > 0"
-              data-testid="active-jobs-indicator"
-              variant="dot"
-              severity="default"
-              class="pointer-events-none absolute -top-0.5 -right-0.5 animate-pulse"
-            />
-            <span class="sr-only">{{ queueToggleLabel }}</span>
-          </Button>
-        </ContextMenu>
+        <QueueControls :queue-overlay-expanded="queueOverlayExpanded" />
       </div>
       <FreeTierQuota v-if="!isDocked" />
       <PartnerNodesRunCaption v-if="!isDocked" />
@@ -110,30 +71,21 @@ import {
   watchDebounced
 } from '@vueuse/core'
 import { clamp } from 'es-toolkit/compat'
-import { storeToRefs } from 'pinia'
 import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import PartnerNodesRunCaption from '@/components/actionbar/PartnerNodesRunCaption.vue'
-import Badge from '@comfyorg/design-system/badge/Badge'
-import QueueInlineProgress from '@/components/queue/QueueInlineProgress.vue'
-import Button from '@comfyorg/design-system/button/Button'
-import ContextMenu from '@comfyorg/design-system/menu/ContextMenu'
-import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
-import { useInterruptibleJob } from '@/components/queue/useInterruptibleJob'
-import { useQueueFeatureFlags } from '@/composables/queue/useQueueFeatureFlags'
+import QueueControls from '@/platform/queue/components/QueueControls.vue'
+import QueueInlineProgress from '@/platform/queue/components/QueueInlineProgress.vue'
+import { useQueueFeatureFlags } from '@/platform/queue/composables/useQueueFeatureFlags'
 import FreeTierQuota from '@/platform/billing/subscription/components/FreeTierQuota.vue'
 import { useTeamOrEnterprisePlan } from '@/platform/billing/composables/useTeamOrEnterprisePlan'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useSafeLocalStorage } from '@/platform/storage/useSafeStorage'
 import DeploymentSwitcher from '@/platform/workspace/components/DeploymentSwitcher.vue'
 import { useTelemetry } from '@comfyorg/telemetry'
-import { useCommandStore } from '@/platform/keybindings/commandStore'
-import { useExecutionStore } from '@/stores/executionStore'
 import { FIRST_RUN_COACH_IDS } from '@/platform/onboarding/onboardingTours'
 import { vCoachmark } from '@/platform/onboarding/vCoachmark'
-import { useQueueStore } from '@/stores/queueStore'
-import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import ComfyRunButton from './ComfyRunButton/ComfyRunButton.vue'
@@ -154,14 +106,7 @@ const emit = defineEmits<{
 
 const settingStore = useSettingStore()
 const onTeamPlan = useTeamOrEnterprisePlan()
-const commandStore = useCommandStore()
-const executionStore = useExecutionStore()
-const queueStore = useQueueStore()
-const sidebarTabStore = useSidebarTabStore()
-const { t, n } = useI18n()
-const { interruptibleJobId, canInterrupt } = useInterruptibleJob()
-const { activeJobsCount } = storeToRefs(queueStore)
-const { activeSidebarTabId } = storeToRefs(sidebarTabStore)
+const { t } = useI18n()
 
 const position = computed(() => settingStore.get('Comfy.UseNewMenu'))
 const visible = computed(() => position.value !== 'Disabled')
@@ -393,52 +338,4 @@ watch(isDragging, (dragging) => {
     isMouseOverDropZone.value = false
   }
 })
-
-const queueToggleLabel = computed(() =>
-  t(
-    isQueuePanelV2Enabled.value
-      ? 'sideToolbar.queueProgressOverlay.viewJobHistory'
-      : 'sideToolbar.queueProgressOverlay.expandCollapsedQueue'
-  )
-)
-const activeJobsLabel = computed(() => {
-  const count = activeJobsCount.value
-  return t(
-    'sideToolbar.queueProgressOverlay.activeJobsShort',
-    { count: n(count) },
-    count
-  )
-})
-const queueContextMenuItems = computed<MenuItem[]>(() => [
-  {
-    label: t('sideToolbar.queueProgressOverlay.clearQueueTooltip'),
-    icon: 'icon-[lucide--list-x] text-destructive',
-    class: '*:text-destructive',
-    disabled: queueStore.pendingTasks.length === 0,
-    command: () => {
-      void handleClearQueue()
-    }
-  }
-])
-
-const cancelCurrentJob = async () => {
-  const jobId = interruptibleJobId.value
-  if (!jobId) return
-  await commandStore.execute('Comfy.Interrupt', { metadata: { jobId } })
-}
-const toggleQueueOverlay = () => {
-  if (isQueuePanelV2Enabled.value) {
-    sidebarTabStore.toggleSidebarTab('job-history')
-    return
-  }
-  commandStore.execute('Comfy.Queue.ToggleOverlay')
-}
-const handleClearQueue = async () => {
-  const pendingJobIds = queueStore.pendingTasks
-    .map((task) => task.jobId)
-    .filter((id): id is string => typeof id === 'string' && id.length > 0)
-
-  await commandStore.execute('Comfy.ClearPendingTasks')
-  executionStore.clearInitializationByJobIds(pendingJobIds)
-}
 </script>

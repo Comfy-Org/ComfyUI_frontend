@@ -34,7 +34,7 @@ import { computed, onErrorCaptured, ref } from 'vue'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
-import type { AugmentedResultItem } from '@/utils/resultItem'
+import type { AugmentedResultItem } from '@comfyorg/api-client/results/resultItem'
 import { resultItemPreviewUrl } from '@/utils/resultItemUrl'
 
 import AudioPreview from '@comfyorg/design-system/media/AudioPreview'

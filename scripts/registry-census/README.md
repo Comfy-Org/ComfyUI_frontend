@@ -91,10 +91,10 @@ python3 scripts/registry-census/fetch_corpus.py --write-pins    # bump the pins
 python3 -m unittest discover -s scripts/registry-census         # verdict unit tests
 ```
 
-**`deps:audit` is `depcruise src`, and `build_matrix.py` writes ~1.1GB of
+**`deps:audit` cruises `src`, and `build_matrix.py` writes ~1.1GB of
 third-party pack JS into `src/__ecs_matrix__/`.** `tsconfig.json`,
 `.oxfmtrc.json`, `.oxlintrc.json` and `knip.config.ts` already exclude that
-path; `.dependency-cruiser.json` does too, as of the widget-form census.
+path; `.dependency-cruiser.ts` does too, as of the widget-form census.
 Without it, following the instructions above makes the repo unpushable with an
 OOM that `--max-old-space-size` does not save.
 

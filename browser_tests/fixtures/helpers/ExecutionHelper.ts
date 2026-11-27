@@ -12,7 +12,7 @@ import type {
   PromptOutputsSkippedFrame,
   PromptOutputsSkippedNodeError
 } from '@comfyorg/ingest-types'
-import type { RawJobListItem } from '@comfyorg/api-client/jobTypes'
+import type { RawJobListItem } from '@comfyorg/api-client/jobs/jobTypes'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { createMockJob } from '@e2e/fixtures/helpers/AssetsHelper'
 

@@ -41,6 +41,7 @@
       "name": "comfyui-support-entry-points",
       "enablers": ["fallow"],
       "entryPoints": [
+        ".dependency-cruiser.ts",
         "**/.storybook/{main.ts,preview.ts,style.css}",
         "packages/comfyui-api-types/openapi-ts.config.ts",
         "packages/ingest-types/openapi-ts.config.ts",
@@ -71,6 +72,7 @@
     "tools/devtools/**",
     // Storybook-only mocks, reached through Storybook's vite alias, not the prod graph.
     "src/storybook/mocks/**",
+    "src/platform/queue/testing/**",
     // The 1.60 Billing tab, restored verbatim behind billing_new_ux_enabled; deleted with the flag.
     "src/platform/billing/legacy160/**",
     "src/platform/account/components/dialogs/settings/BillingTabLegacy.*",

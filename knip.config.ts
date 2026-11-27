@@ -7,12 +7,14 @@ const config: KnipConfig = {
     '.': {
       entry: [
         '{build,scripts}/**/*.{js,ts}',
+        '.dependency-cruiser.ts',
         'vitest.matrix.config.mts',
         'vitest.census.config.mts',
         'src/assets/css/style.css',
         'src/scripts/ui/menu/index.ts',
         'src/types/index.ts',
         'src/storybook/mocks/**/*.ts',
+        'src/platform/queue/testing/**/*.ts',
         'tools/oxlint-plugins/comfyIngestTypes.ts',
         'tools/oxlint-plugins/serverFacts.ts',
         'tools/oxlint-plugins/vitestCleanup.ts'

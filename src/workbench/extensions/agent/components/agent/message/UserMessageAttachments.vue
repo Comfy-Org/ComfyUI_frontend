@@ -5,7 +5,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
 import { api } from '@/scripts/api'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
-import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
+import { isHdrImageFilename } from '@comfyorg/shared-frontend-utils/formatUtil'
 
 import type { UserAttachment } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 import type { ReplyAsset } from '@/workbench/extensions/agent/utils/replyAssets'

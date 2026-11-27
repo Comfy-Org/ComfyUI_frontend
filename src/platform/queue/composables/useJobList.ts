@@ -1,0 +1,431 @@
+import { refDebounced } from '@vueuse/core'
+import { orderBy } from 'es-toolkit/array'
+import { computed, onUnmounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import { isCloud } from '@/platform/distribution/types'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useExecutionStore } from '@/stores/executionStore'
+import { useJobPreviewStore } from '@/stores/jobPreviewStore'
+import { useJobModelDownloadStore } from '@/platform/queue/stores/jobModelDownloadStore'
+import type { JobModelDownload } from '@/platform/queue/stores/jobModelDownloadStore'
+import { useQueueStore } from '@/platform/queue/stores/queueStore'
+import type { TaskItemImpl } from '@comfyorg/api-client/jobs/taskItem'
+import {
+  dateKey,
+  formatClockTime,
+  formatShortMonthDay,
+  isToday,
+  isYesterday
+} from '@/utils/dateTimeUtil'
+import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
+import { clampPercentInt } from '@/utils/numberUtil'
+import {
+  buildJobDisplay,
+  isActiveJobState,
+  jobStateFromTask,
+  withDeploymentBuildName
+} from '@/platform/queue/presentation/queueDisplay'
+
+import type { JobTab } from '@/platform/queue/composables/jobTabs'
+
+import type {
+  JobState,
+  JobGroup,
+  JobListItem,
+  JobSortMode
+} from '@/platform/queue/presentation/queueDisplay'
+const ADDED_HINT_DURATION_MS = 3000
+const toPercent = (fraction: number) =>
+  clampPercentInt(Math.round(fraction * 100))
+const relativeTimeFormatterCache = new Map<string, Intl.RelativeTimeFormat>()
+const optionalValue = <T>(value: T | null | undefined): T | undefined =>
+  value ?? undefined
+const taskIdToKey = (id: string | number | undefined) => {
+  if (id === undefined) return null
+  const key = String(id)
+  return key.length ? key : null
+}
+
+/**
+ * Returns localized Today/Yesterday (capitalized) or localized Mon DD.
+ */
+const dateLabelForTimestamp = (
+  ts: number,
+  locale: string,
+  relativeFormatter: Intl.RelativeTimeFormat
+) => {
+  const formatRelativeDay = (value: number) => {
+    const formatted = relativeFormatter.format(value, 'day')
+    return formatted
+      ? formatted[0].toLocaleUpperCase(locale) + formatted.slice(1)
+      : formatted
+  }
+  if (isToday(ts)) {
+    return formatRelativeDay(0)
+  }
+  if (isYesterday(ts)) {
+    return formatRelativeDay(-1)
+  }
+  return formatShortMonthDay(ts, locale)
+}
+
+type TaskWithState = {
+  task: TaskItemImpl
+  state: JobState
+}
+
+function downloadPercent({ progress }: JobModelDownload) {
+  return progress === null ? undefined : progress * 100
+}
+
+type JobProgress = {
+  totalPercent: number
+  currentNodePercent: number
+  currentNodeName: string
+}
+
+function progressFills(
+  progress?: JobProgress,
+  modelDownload?: JobModelDownload
+) {
+  return {
+    progressTotalPercent: modelDownload ? undefined : progress?.totalPercent,
+    progressCurrentPercent: modelDownload
+      ? downloadPercent(modelDownload)
+      : progress?.currentNodePercent
+  }
+}
+
+/**
+ * Builds the reactive job list, filters, and grouped view for the queue overlay.
+ */
+export function useJobList() {
+  const { t, locale } = useI18n()
+  const queueStore = useQueueStore()
+  const executionStore = useExecutionStore()
+  const modelDownloadStore = useJobModelDownloadStore()
+  const jobPreviewStore = useJobPreviewStore()
+  const workflowStore = useWorkflowStore()
+
+  const seenPendingIds = ref<Set<string>>(new Set())
+  const recentlyAddedPendingIds = ref<Set<string>>(new Set())
+  const addedHintTimeouts = new Map<string, ReturnType<typeof setTimeout>>()
+
+  const clearAddedHintTimeout = (id: string) => {
+    const timeoutId = addedHintTimeouts.get(id)
+    if (timeoutId !== undefined) {
+      clearTimeout(timeoutId)
+      addedHintTimeouts.delete(id)
+    }
+  }
+
+  const scheduleAddedHintExpiry = (id: string) => {
+    clearAddedHintTimeout(id)
+    const timeoutId = setTimeout(() => {
+      addedHintTimeouts.delete(id)
+      const updated = new Set(recentlyAddedPendingIds.value)
+      if (updated.delete(id)) {
+        recentlyAddedPendingIds.value = updated
+      }
+    }, ADDED_HINT_DURATION_MS)
+    addedHintTimeouts.set(id, timeoutId)
+  }
+
+  watch(
+    () =>
+      queueStore.pendingTasks
+        .map((task) => taskIdToKey(task.jobId))
+        .filter((id): id is string => !!id),
+    (pendingIds) => {
+      const pendingSet = new Set(pendingIds)
+      const nextAdded = new Set(recentlyAddedPendingIds.value)
+      const nextSeen = new Set(seenPendingIds.value)
+
+      pendingIds.forEach((id) => {
+        if (!nextSeen.has(id)) {
+          nextSeen.add(id)
+          nextAdded.add(id)
+          scheduleAddedHintExpiry(id)
+        }
+      })
+
+      for (const id of Array.from(nextSeen)) {
+        if (!pendingSet.has(id)) {
+          nextSeen.delete(id)
+          nextAdded.delete(id)
+          clearAddedHintTimeout(id)
+        }
+      }
+
+      recentlyAddedPendingIds.value = nextAdded
+      seenPendingIds.value = nextSeen
+    },
+    { immediate: true }
+  )
+
+  const shouldShowAddedHint = (task: TaskItemImpl, state: JobState) => {
+    if (state !== 'pending') return false
+    const id = taskIdToKey(task.jobId)
+    if (!id) return false
+    return recentlyAddedPendingIds.value.has(id)
+  }
+
+  onUnmounted(() => {
+    addedHintTimeouts.forEach((timeoutId) => clearTimeout(timeoutId))
+    addedHintTimeouts.clear()
+    seenPendingIds.value = new Set<string>()
+    recentlyAddedPendingIds.value = new Set<string>()
+  })
+
+  const relativeTimeFormatter = computed(() => {
+    const localeValue = locale.value
+    let formatter = relativeTimeFormatterCache.get(localeValue)
+    if (!formatter) {
+      formatter = new Intl.RelativeTimeFormat(localeValue, { numeric: 'auto' })
+      relativeTimeFormatterCache.set(localeValue, formatter)
+    }
+    return formatter
+  })
+  const undatedLabel = computed(() => t('queue.jobList.undated') || 'Undated')
+
+  const isJobInitializing = (jobId: string | number | undefined) =>
+    executionStore.isJobInitializing(jobId)
+
+  function jobProgress(jobId: string): JobProgress {
+    return {
+      totalPercent: toPercent(executionStore.executionProgressForJob(jobId)),
+      currentNodePercent: toPercent(
+        executionStore.executingNodeProgressForJob(jobId) ?? 0
+      ),
+      currentNodeName: resolveNodeDisplayName(
+        executionStore.executingNodeForJob(jobId),
+        { emptyLabel: t('g.emDash'), untitledLabel: t('g.untitled') }
+      )
+    }
+  }
+
+  const currentNodeName = computed(() =>
+    executionStore.activeJobId
+      ? jobProgress(executionStore.activeJobId).currentNodeName
+      : t('g.emDash')
+  )
+
+  const selectedJobTab = ref<JobTab>('All')
+  const selectedWorkflowFilter = ref<'all' | 'current'>('all')
+  const selectedSortMode = ref<JobSortMode>('mostRecent')
+  const searchQuery = ref('')
+  const debouncedSearchQuery = refDebounced(searchQuery, 150)
+
+  const mostRecentTimestamp = (task: TaskItemImpl) =>
+    optionalValue(task.createTime) ?? 0
+
+  const allTasksSorted = computed<TaskItemImpl[]>(() => {
+    const all = [
+      ...queueStore.pendingTasks,
+      ...queueStore.runningTasks,
+      ...queueStore.historyTasks
+    ]
+    return orderBy(all, [mostRecentTimestamp], ['desc'])
+  })
+
+  const tasksWithJobState = computed<TaskWithState[]>(() =>
+    allTasksSorted.value.map((task) => ({
+      task,
+      state: jobStateFromTask(task, {
+        isInitializing: isJobInitializing(task.jobId)
+      })
+    }))
+  )
+
+  const hasFailedJobs = computed(() =>
+    tasksWithJobState.value.some(({ state }) => state === 'failed')
+  )
+
+  watch(
+    () => hasFailedJobs.value,
+    (hasFailed) => {
+      if (!hasFailed && selectedJobTab.value === 'Failed') {
+        selectedJobTab.value = 'All'
+      }
+    }
+  )
+
+  const filteredTaskEntries = computed<TaskWithState[]>(() => {
+    let entries = tasksWithJobState.value
+    if (selectedJobTab.value === 'Completed') {
+      entries = entries.filter(({ state }) => state === 'completed')
+    } else if (selectedJobTab.value === 'Failed') {
+      entries = entries.filter(({ state }) => state === 'failed')
+    }
+
+    if (selectedWorkflowFilter.value === 'current') {
+      const activeWorkflow = optionalValue<
+        typeof workflowStore.activeWorkflow | null
+      >(workflowStore.activeWorkflow)
+      if (!activeWorkflow) return []
+      const activeId = optionalValue<typeof activeWorkflow.activeState | null>(
+        activeWorkflow.activeState
+      )?.id
+      if (!activeId) return []
+      entries = entries.filter(({ task }) => {
+        const wid = task.workflowId
+        return !!wid && wid === activeId
+      })
+    }
+    return entries
+  })
+
+  const normalizedSearchQuery = computed(() =>
+    debouncedSearchQuery.value.trim().toLocaleLowerCase()
+  )
+
+  const filteredTasks = computed<TaskItemImpl[]>(() =>
+    searchableTaskEntries.value.map(({ task }) => task)
+  )
+
+  function activeDownload(jobId: string, state: JobState) {
+    return isActiveJobState(state)
+      ? modelDownloadStore.downloadFor(jobId)
+      : undefined
+  }
+
+  const jobItems = computed<JobListItem[]>(() => {
+    return filteredTaskEntries.value.map(({ task, state }) => {
+      const isFocused =
+        state === 'running' && task.jobId === executionStore.activeJobId
+      const isActive =
+        isFocused ||
+        (state === 'running' &&
+          task.jobId in executionStore.nodeProgressStatesByJob)
+      const progress = isActive ? jobProgress(task.jobId) : undefined
+      const modelDownload = activeDownload(task.jobId, state)
+      const showAddedHint = shouldShowAddedHint(task, state)
+      const promptKey = taskIdToKey(task.jobId)
+      const promptPreviewUrl =
+        state === 'running' && jobPreviewStore.isPreviewEnabled && promptKey
+          ? jobPreviewStore.previewsByPromptId[promptKey]
+          : undefined
+
+      const display = buildJobDisplay(task, state, {
+        t,
+        locale: locale.value,
+        formatClockTimeFn: formatClockTime,
+        isActive,
+        ...progress,
+        showAddedHint,
+        isCloud,
+        modelDownload
+      })
+
+      return {
+        id: task.jobId,
+        title: display.primary,
+        meta: withDeploymentBuildName(display.secondary, task, t),
+        state,
+        iconName: display.iconName,
+        iconImageUrl: promptPreviewUrl ?? display.iconImageUrl,
+        showClear: display.showClear,
+        taskRef: task,
+        ...progressFills(progress, modelDownload),
+        runningNodeName: progress?.currentNodeName,
+        isFocused,
+        canFocus:
+          state === 'running' &&
+          !(
+            isFocused &&
+            executionStore.rememberStampAndCheckActiveWorkflow(task.jobId)
+          ) &&
+          !!executionStore.openWorkflowForJob(task.jobId),
+        executionTimeMs: task.executionTime,
+        computeHours:
+          task.executionTime !== undefined
+            ? task.executionTime / 3_600_000
+            : undefined
+      }
+    })
+  })
+
+  const jobItemById = computed(() => {
+    const m = new Map<string, JobListItem>()
+    jobItems.value.forEach((ji) => m.set(ji.id, ji))
+    return m
+  })
+
+  const searchableTaskEntries = computed<TaskWithState[]>(() => {
+    if (!normalizedSearchQuery.value) return filteredTaskEntries.value
+
+    return filteredTaskEntries.value.filter(({ task }) => {
+      const taskId = task.jobId.toLocaleLowerCase()
+      const item = jobItemById.value.get(task.jobId)
+      if (!item) {
+        return taskId.includes(normalizedSearchQuery.value)
+      }
+
+      const title = item.title.toLocaleLowerCase()
+      const meta = item.meta.toLocaleLowerCase()
+      return (
+        title.includes(normalizedSearchQuery.value) ||
+        meta.includes(normalizedSearchQuery.value) ||
+        taskId.includes(normalizedSearchQuery.value)
+      )
+    })
+  })
+
+  const groupedJobItems = computed<JobGroup[]>(() => {
+    const groups: JobGroup[] = []
+    const index = new Map<string, number>()
+    const localeValue = locale.value
+    for (const { task, state } of searchableTaskEntries.value) {
+      let ts: number | undefined
+      if (state === 'completed' || state === 'failed') {
+        ts = optionalValue(task.executionEndTimestamp ?? task.createTime)
+      } else {
+        ts = optionalValue(task.createTime)
+      }
+      const key = ts === undefined ? 'undated' : dateKey(ts)
+      let groupIdx = index.get(key)
+      if (groupIdx === undefined) {
+        const label =
+          ts === undefined
+            ? undatedLabel.value
+            : dateLabelForTimestamp(
+                ts,
+                localeValue,
+                relativeTimeFormatter.value
+              )
+        groups.push({ key, label, items: [] })
+        groupIdx = groups.length - 1
+        index.set(key, groupIdx)
+      }
+      const ji = jobItemById.value.get(task.jobId)
+      if (ji) groups[groupIdx].items.push(ji)
+    }
+
+    if (selectedSortMode.value === 'totalGenerationTime') {
+      const valueOrDefault = (value: JobListItem['executionTimeMs']) =>
+        typeof value === 'number' && !Number.isNaN(value) ? value : -1
+      const sortByExecutionTimeDesc = (a: JobListItem, b: JobListItem) =>
+        valueOrDefault(b.executionTimeMs) - valueOrDefault(a.executionTimeMs)
+
+      groups.forEach((group) => {
+        group.items.sort(sortByExecutionTimeDesc)
+      })
+    }
+
+    return groups
+  })
+
+  return {
+    selectedJobTab,
+    selectedWorkflowFilter,
+    selectedSortMode,
+    searchQuery,
+    hasFailedJobs,
+    allTasksSorted,
+    filteredTasks,
+    jobItems,
+    groupedJobItems,
+    currentNodeName
+  }
+}

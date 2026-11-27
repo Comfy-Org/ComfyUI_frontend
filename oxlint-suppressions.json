@@ -154,11 +154,6 @@
       "count": 3
     }
   },
-  "src/composables/queue/useJobList.ts": {
-    "comfy/no-reexports": {
-      "count": 1
-    }
-  },
   "src/composables/useCoreCommands.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 1
@@ -573,6 +568,11 @@
       "count": 6
     }
   },
+  "src/platform/queue/services/jobOutputCache.test.ts": {
+    "comfy/prefer-array-containing": {
+      "count": 1
+    }
+  },
   "src/platform/serverFacts/serverFact.ts": {
     "comfy/no-positional-boolean-params": {
       "count": 1
@@ -924,11 +924,6 @@
       "count": 1
     }
   },
-  "src/services/jobOutputCache.test.ts": {
-    "comfy/prefer-array-containing": {
-      "count": 1
-    }
-  },
   "src/services/litegraphService.ts": {
     "comfy/no-new-error-throw": {
       "count": 2
@@ -1020,11 +1015,6 @@
     }
   },
   "src/utils/missingResourceAbsorption.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 1
-    }
-  },
-  "src/utils/queueUtil.ts": {
     "comfy/no-positional-boolean-params": {
       "count": 1
     }

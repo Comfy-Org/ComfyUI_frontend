@@ -1,11 +1,11 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it } from 'vitest'
 
+import { isHdrImageFilename } from '@comfyorg/shared-frontend-utils/formatUtil'
 import {
   getHdrPreviewUrl,
   getImageFileUrl,
   getImageFilenameFromUrl,
-  isHdrImageFilename,
   isHdrImageUrl,
   toFullResolutionUrl
 } from './hdrFormatUtil'

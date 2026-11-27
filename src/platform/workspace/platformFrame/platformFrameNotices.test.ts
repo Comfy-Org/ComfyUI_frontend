@@ -1,11 +1,11 @@
-import type { JobListItem } from '@comfyorg/api-client/jobTypes'
+import type { JobListItem } from '@comfyorg/api-client/jobs/jobTypes'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useReleaseNoticeStore } from '@/platform/workspace/stores/releaseNoticeStore'
-import { useQueueStore } from '@/stores/queueStore'
+import { useQueueStore } from '@/platform/queue/stores/queueStore'
 import { createToastId } from '@/types/toastId'
 
 import type { FollowedBuild } from './platformFrameBuild'

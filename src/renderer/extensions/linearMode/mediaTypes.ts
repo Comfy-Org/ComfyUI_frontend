@@ -1,5 +1,9 @@
-import type { AugmentedResultItem } from '@/utils/resultItem'
-import { isImageResult, isTextResult, isVideoResult } from '@/utils/resultItem'
+import type { AugmentedResultItem } from '@comfyorg/api-client/results/resultItem'
+import {
+  isImageResult,
+  isTextResult,
+  isVideoResult
+} from '@comfyorg/api-client/results/resultItem'
 
 export const mediaTypes: Record<string, { iconClass: string }> = {
   '3d': {

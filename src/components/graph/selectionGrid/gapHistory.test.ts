@@ -32,7 +32,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
-import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
+import { useQueueSettingsStore } from '@/platform/queue/stores/queueSettingsStore'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 
 vi.mock(import('@vueuse/router'), () => ({ useRouteHash: () => ref('') }))

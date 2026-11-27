@@ -1,4 +1,4 @@
-import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
+import { isHdrImageFilename } from '@comfyorg/shared-frontend-utils/formatUtil'
 
 export interface DroppedFile {
   name: string

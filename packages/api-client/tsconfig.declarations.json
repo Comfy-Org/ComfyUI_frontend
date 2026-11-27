@@ -17,9 +17,12 @@
       "path": "../settings-core/tsconfig.declarations.json"
     },
     {
+      "path": "../shared-frontend-utils/tsconfig.declarations.json"
+    },
+    {
       "path": "../telemetry/tsconfig.declarations.json"
     }
   ],
-  "exclude": ["src/__mocks__/**", "src/**/*.test.ts"],
+  "exclude": ["src/**/__mocks__/**", "src/**/*.test.ts"],
   "include": ["src/**/*.ts", "src/**/*.json"]
 }

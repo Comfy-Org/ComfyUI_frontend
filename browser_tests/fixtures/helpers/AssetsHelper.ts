@@ -6,7 +6,10 @@ import type {
   ListAssetsResponse
 } from '@comfyorg/ingest-types'
 
-import type { JobDetail, RawJobListItem } from '@comfyorg/api-client/jobTypes'
+import type {
+  JobDetail,
+  RawJobListItem
+} from '@comfyorg/api-client/jobs/jobTypes'
 import type {
   AssetDownloadWsMessage,
   AssetExportWsMessage

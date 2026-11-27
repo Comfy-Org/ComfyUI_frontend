@@ -191,7 +191,7 @@
       "excludeFiles": [
         "**/*.test.ts",
         "**/*.spec.ts",
-        "packages/api-client/src/jobTypes.ts"
+        "packages/api-client/src/jobs/jobTypes.ts"
       ],
       "rules": {
         "comfy/no-unsafe-error-assertion": "error"
@@ -413,7 +413,7 @@
         "**/*.test.ts",
         "**/*.spec.ts",
         "packages/api-client/src/executionTypes.ts",
-        "packages/api-client/src/jobTypes.ts",
+        "packages/api-client/src/jobs/jobTypes.ts",
         "packages/api-client/src/resultItemTypeSchema.ts",
         "packages/api-client/src/taskSchema.ts",
         "packages/api-client/src/templateSchema.ts"

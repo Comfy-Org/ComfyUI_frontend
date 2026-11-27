@@ -16,7 +16,7 @@ import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
+import { isHdrImageFilename } from '@comfyorg/shared-frontend-utils/formatUtil'
 import { parseImageWidgetValue } from '@/utils/imageUtil'
 import { uploadTimeoutMs } from '@/utils/uploadTimeout'
 import {

@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
 import type { WatchHandle } from 'vue'
 
-import type { JobDetail } from '@comfyorg/api-client/jobTypes'
+import type { JobDetail } from '@comfyorg/api-client/jobs/jobTypes'
 import { useTelemetry } from '@comfyorg/telemetry'
 import type {
   LocalMcpClient,
@@ -14,9 +14,9 @@ import {
   LOCAL_MCP_USAGE_SOURCE,
   readJobUsageSource
 } from '@/platform/localMcp/localMcpConnection'
+import { getJobDetail } from '@/platform/queue/services/jobOutputCache'
+import { useQueueStore } from '@/platform/queue/stores/queueStore'
 import { useSafeLocalStorage } from '@/platform/storage/useSafeStorage'
-import { getJobDetail } from '@/services/jobOutputCache'
-import { useQueueStore } from '@/stores/queueStore'
 
 const MAX_DETAIL_ATTEMPTS = 3
 

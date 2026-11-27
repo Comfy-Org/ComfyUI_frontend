@@ -66,7 +66,7 @@ import { useProgressTextPreviews } from '@/composables/node/useProgressTextPrevi
 import { registerCoreSidebarTabs } from '@/composables/sidebarTabs/registerCoreSidebarTabs'
 import { useBrowserTabTitle } from '@/composables/useBrowserTabTitle'
 import { useCoreCommands } from '@/composables/useCoreCommands'
-import { useQueuePolling } from '@/platform/remote/comfyui/useQueuePolling'
+import { useQueuePolling } from '@/platform/queue/runtime/useQueuePolling'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useServerReconnectLifecycle } from '@/composables/useServerReconnectLifecycle'
 import { useProgressFavicon } from '@/composables/useProgressFavicon'
@@ -103,7 +103,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { StatusWsMessageStatus } from '@comfyorg/api-client/executionTypes'
 import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'
-import { setupAutoQueueHandler } from '@/services/autoQueueService'
+import { setupAutoQueueHandler } from '@/platform/queue/runtime/autoQueueService'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
 import { useAppMode } from '@/composables/useAppMode'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
@@ -117,7 +117,7 @@ import { useNodeFrequencyStore } from '@/stores/nodeFrequencyStore'
 import {
   useQueuePendingTaskCountStore,
   useQueueStore
-} from '@/stores/queueStore'
+} from '@/platform/queue/stores/queueStore'
 import { useServerConfigStore } from '@/stores/serverConfigStore'
 import { useTemplateInputDownloadStore } from '@/platform/workflow/templates/stores/templateInputDownloadStore'
 import { useMissingModelDownloadStore } from '@/platform/workflowErrors/missingModel/missingModelDownloadStore'
@@ -131,7 +131,7 @@ import BuilderToolbar from '@/components/builder/BuilderToolbar.vue'
 import LinearView from '@/views/LinearView.vue'
 import ManagerProgressToast from '@/platform/customNodes/manager/components/ManagerProgressToast.vue'
 
-setupAutoQueueHandler()
+onBeforeUnmount(setupAutoQueueHandler())
 useProgressFavicon()
 useProgressTextPreviews()
 useBrowserTabTitle()

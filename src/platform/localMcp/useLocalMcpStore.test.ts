@@ -1,17 +1,18 @@
 import { nextTick } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { JobDetail, JobListItem } from '@comfyorg/api-client/jobTypes'
+import type { JobDetail, JobListItem } from '@comfyorg/api-client/jobs/jobTypes'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { TelemetryEvents } from '@comfyorg/telemetry/types'
 
 import { LOCAL_MCP_USAGE_SOURCE } from '@/platform/localMcp/localMcpConnection'
 import { useLocalMcpStore } from '@/platform/localMcp/useLocalMcpStore'
-import { getJobDetail } from '@/services/jobOutputCache'
-import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
+import { getJobDetail } from '@/platform/queue/services/jobOutputCache'
+import { TaskItemImpl } from '@comfyorg/api-client/jobs/taskItem'
+import { useQueueStore } from '@/platform/queue/stores/queueStore'
 
 vi.mock(import('@comfyorg/telemetry'))
-vi.mock(import('@/services/jobOutputCache'), { spy: true })
+vi.mock(import('@/platform/queue/services/jobOutputCache'), { spy: true })
 
 const NOW = 1_000_000
 

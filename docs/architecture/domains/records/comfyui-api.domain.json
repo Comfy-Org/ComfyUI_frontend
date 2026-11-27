@@ -1,7 +1,7 @@
 {
   "id": "comfyui-api",
   "capability": "ComfyUI API contracts",
-  "description": "Shared wire contracts for the ComfyUI backend: prompt, node-error, system-stats, and user-data response types, websocket message and execution-output schemas (result items, task outputs, progress, logs, asset download and export events), and HTTP error payload parsing used by API clients. Job list and detail schemas and the jobs client belong to the job queue; client execution state belongs to execution.",
+  "description": "Shared wire contracts and normalized execution outputs for the ComfyUI backend: prompt, node-error, system-stats, and user-data response types, websocket message and execution-output schemas, result parsing and media classification, and HTTP error payload parsing used by API clients. Job list and detail schemas and the jobs client belong to the job queue; client execution state and authenticated media URLs remain separate.",
   "modules": [
     {
       "path": "src/platform/remote/comfyui/**"
@@ -13,14 +13,25 @@
       "path": "packages/api-client/src/executionTypes.ts"
     },
     {
+      "path": "packages/api-client/src/results/**"
+    },
+    {
       "path": "packages/api-client/src/resultItemTypeSchema.ts"
     },
     {
       "path": "packages/api-client/src/types.ts"
     }
   ],
-  "publicEntryPoints": ["packages/api-client/src/executionTypes.ts"],
+  "publicEntryPoints": [
+    "packages/api-client/src/executionTypes.ts",
+    "packages/api-client/src/results/resultItem.ts",
+    "packages/api-client/src/results/resultItemParsing.ts"
+  ],
   "characterizationScenarios": [
+    {
+      "name": "Shared output parsing preserves media and text results across job and live execution consumers",
+      "checks": ["packages/api-client/src/results/resultItemParsing.test.ts"]
+    },
     {
       "name": "Websocket execution-output schemas accept backend result items and task outputs",
       "checks": ["packages/api-client/src/executionTypes.test.ts"]

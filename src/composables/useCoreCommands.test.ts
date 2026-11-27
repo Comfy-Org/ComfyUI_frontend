@@ -20,6 +20,7 @@ import { LGraphNode, LGraphGroup } from '@/lib/litegraph/src/litegraph'
 
 import type { AssetItem } from '@comfyorg/assets-core/schema'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useQueueSettingsStore } from '@/platform/queue/stores/queueSettingsStore'
 import type { WorkspaceDeployment } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
@@ -984,6 +985,20 @@ describe('useCoreCommands', () => {
     })
   })
 
+  it.for([false, true])(
+    'reports the pending-clear outcome without a false success: %s',
+    async (cleared) => {
+      vi.mocked(api.clearItems).mockResolvedValue(cleared)
+      const commandStore = useCommandStore()
+      commandStore.registerCommands(useCoreCommands())
+
+      await commandStore.execute('Comfy.ClearPendingTasks')
+
+      expect(useToast().info).toHaveBeenCalledTimes(cleared ? 1 : 0)
+      expect(useToast().error).toHaveBeenCalledTimes(cleared ? 0 : 1)
+    }
+  )
+
   describe('Queue commands deployment gate', () => {
     const findCmd = (id: string) =>
       useCoreCommands().find((cmd) => cmd.id === id)!
@@ -1178,6 +1193,24 @@ describe('useCoreCommands', () => {
   describe('Queue commands subscription gate', () => {
     const findCmd = (id: string) =>
       useCoreCommands().find((cmd) => cmd.id === id)!
+
+    it.for([
+      ['Comfy.QueuePrompt', 0],
+      ['Comfy.QueuePromptFront', -1]
+    ] as const)(
+      '%s preserves batch count and trigger attribution through the central command registry',
+      async ([id, number]) => {
+        useQueueSettingsStore().batchCount = 3
+        const metadata = { trigger_source: 'keybinding' }
+
+        await findCmd(id).function(metadata)
+
+        expect(app.queuePrompt).toHaveBeenCalledExactlyOnceWith(number, 3, {
+          intent: metadata
+        })
+        expect(useTelemetry()?.trackWorkflowExecution).toHaveBeenCalledOnce()
+      }
+    )
 
     it.for([
       ['Comfy.QueuePrompt', 0],

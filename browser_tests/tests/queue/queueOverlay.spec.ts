@@ -6,7 +6,7 @@ import {
   jobsRouteFixture
 } from '@e2e/fixtures/jobsRouteFixture'
 import { TestIds } from '@e2e/fixtures/selectors'
-import type { RawJobListItem } from '@comfyorg/api-client/jobTypes'
+import type { RawJobListItem } from '@comfyorg/api-client/jobs/jobTypes'
 
 const test = mergeTests(comfyPageFixture, jobsRouteFixture).extend<{
   mockInitialJobs: void

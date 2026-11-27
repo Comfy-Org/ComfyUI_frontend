@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useQueueProgress } from '@/composables/queue/useQueueProgress'
+import { useQueueProgress } from '@/platform/execution/composables/useQueueProgress'
 import { useExecutionStore } from '@/stores/executionStore'
 import { cn } from '@comfyorg/tailwind-utils'
 

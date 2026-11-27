@@ -8,8 +8,8 @@ import type { OutputAssetMetadata } from '@/platform/assets/types/outputAssetMet
 import { getOutputAssetMetadata } from '@/platform/assets/types/outputAssetMetadata'
 import { getStoredOutputIdentity } from '@/platform/assets/adapters/outputAssetResolver'
 import { getAssetViewUrl } from '@/platform/assets/utils/assetUrlUtil'
-import type { TaskItemImpl } from '@/stores/queueStore'
-import type { AugmentedResultItem } from '@/utils/resultItem'
+import type { TaskItemImpl } from '@comfyorg/api-client/jobs/taskItem'
+import type { AugmentedResultItem } from '@comfyorg/api-client/results/resultItem'
 import { resultItemPreviewUrl, resultItemUrl } from '@/utils/resultItemUrl'
 import {
   getMediaTypeFromFilename,
