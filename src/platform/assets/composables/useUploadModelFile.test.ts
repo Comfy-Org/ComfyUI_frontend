@@ -15,10 +15,20 @@ import {
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { api } from '@/scripts/api'
 import { useAssetDownloadStore } from '@/platform/assets/stores/assetDownloadStore'
+import { deploymentModelUploadApi } from '@/platform/workspace/api/deploymentModelUploadApi'
+import type {
+  DeploymentModelOutcome,
+  DeploymentModelUploadResult
+} from '@/platform/workspace/api/deploymentModelUploadApi'
+import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { app as comfyApp } from '@/scripts/app'
 
 import { useUploadModelFile } from '@/platform/assets/composables/useUploadModelFile'
+import type { UploadDestination } from '@/platform/assets/composables/useUploadModelFile'
 
 vi.mock(import('@/scripts/api'))
+vi.mock(import('@/scripts/app'))
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@comfyorg/telemetry/reportError'), { spy: true })
 
@@ -29,11 +39,11 @@ type UploadOptions = Parameters<typeof modelFileUploadApi.uploadModelFile>[1]
 
 const mountedApps: App<Element>[] = []
 
-function setup() {
+function setup(initialDestination?: UploadDestination) {
   let upload: ReturnType<typeof useUploadModelFile> | undefined
   const app = createApp({
     setup() {
-      upload = useUploadModelFile()
+      upload = useUploadModelFile(initialDestination)
       return () => null
     }
   })
@@ -781,5 +791,220 @@ describe('useUploadModelFile', () => {
     expect(server.options().signal.aborted).toBe(true)
     server.finish({ ok: false, reason: 'cancelled' })
     await expect(result).resolves.toBeNull()
+  })
+
+  describe('with a deployment picked', () => {
+    type DeploymentUploadOptions = Parameters<
+      typeof deploymentModelUploadApi.uploadModelToDeployment
+    >[2]
+
+    beforeEach(() => {
+      Object.assign(useDeploymentPickStore(), {
+        bootDeployment: {
+          deployment_id: 'dep-1',
+          release_id: 'release-1',
+          status: 'ready',
+          can_start: false,
+          created_at: '2026-10-01T00:00:00Z'
+        }
+      })
+      Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-1' })
+      vi.mocked(comfyApp.refreshComboInNodes).mockResolvedValue(true)
+    })
+
+    function pendingDeploymentUpload() {
+      let options: DeploymentUploadOptions | undefined
+      let finish!: (result: DeploymentModelUploadResult) => void
+      const spy = vi
+        .spyOn(deploymentModelUploadApi, 'uploadModelToDeployment')
+        .mockImplementation((_file, _target, opts) => {
+          options = opts
+          return new Promise((resolve) => {
+            finish = resolve
+          })
+        })
+      let settle!: (outcome: DeploymentModelOutcome) => void
+      const wait = vi
+        .spyOn(deploymentModelUploadApi, 'waitForDeploymentModel')
+        .mockImplementation(
+          () =>
+            new Promise((resolve) => {
+              settle = resolve
+            })
+        )
+      return {
+        spy,
+        wait,
+        options: () => {
+          if (!options) throw new Error('upload not started')
+          return options
+        },
+        finish: (result: DeploymentModelUploadResult) => finish(result),
+        settle: (outcome: DeploymentModelOutcome) => settle(outcome)
+      }
+    }
+
+    it('keeps the workspace library as where the file goes, and uploads there as today', async () => {
+      const { upload } = setup()
+      const library = pendingUpload()
+      const deployment = pendingDeploymentUpload()
+      upload.choose(lora)
+
+      expect(upload.canChooseDestination.value).toBe(true)
+      expect(upload.destination.value).toBe('library')
+      const result = upload.upload()
+      library.finish({ ok: true, taskId: TASK_ID })
+
+      await expect(result).resolves.toMatchObject({ taskId: TASK_ID })
+      expect(modelFileUploadApi.uploadModelFile).toHaveBeenCalledOnce()
+      expect(deployment.spy).not.toHaveBeenCalled()
+    })
+
+    it('checks the file, shows bytes sent, then adding, then ready on the deployment', async () => {
+      const { upload } = setup('deployment')
+      const library = vi.spyOn(modelFileUploadApi, 'uploadModelFile')
+      const server = pendingDeploymentUpload()
+      upload.choose(lora)
+
+      const result = upload.upload()
+      expect(upload.state.value).toEqual({ status: 'checking', file: lora })
+      expect(server.spy).toHaveBeenCalledWith(
+        lora,
+        { workspaceId: 'ws-1', deploymentId: 'dep-1' },
+        expect.objectContaining({ type: 'loras' })
+      )
+      server.options().onSending()
+      server.options().onProgress(4)
+      expect(upload.state.value).toMatchObject({
+        status: 'uploading',
+        file: lora,
+        sent: 4
+      })
+
+      server.finish({ ok: true, modelId: 'model-1' })
+      await expect(result).resolves.toEqual({
+        filename: lora.name,
+        modelType: 'loras',
+        status: 'processing'
+      })
+      expect(upload.state.value).toEqual({ status: 'adding', file: lora })
+      expect(server.wait).toHaveBeenCalledWith(
+        { workspaceId: 'ws-1', deploymentId: 'dep-1' },
+        'model-1',
+        expect.any(AbortSignal)
+      )
+
+      server.settle('ready')
+      await vi.waitFor(() =>
+        expect(upload.state.value).toEqual({
+          status: 'done',
+          file: lora,
+          modelType: 'loras',
+          onDeployment: true
+        })
+      )
+      expect(comfyApp.refreshComboInNodes).toHaveBeenCalledOnce()
+      expect(library).not.toHaveBeenCalled()
+    })
+
+    it.for([{ outcome: 'failed' as const }, { outcome: 'gone' as const }])(
+      'says the file was not added when the row ends $outcome',
+      async ({ outcome }) => {
+        const { upload } = setup('deployment')
+        const server = pendingDeploymentUpload()
+        upload.choose(lora)
+
+        const result = upload.upload()
+        server.finish({ ok: true, modelId: 'model-1' })
+        await result
+        server.settle(outcome)
+
+        await vi.waitFor(() =>
+          expect(upload.state.value).toEqual({
+            status: 'failed',
+            file: lora,
+            error:
+              'my_style_v2.safetensors was not added to this deployment. Remove it and add it again.'
+          })
+        )
+        expect(comfyApp.refreshComboInNodes).not.toHaveBeenCalled()
+      }
+    )
+
+    it("shows comfy-deploy's sentence when the add is refused", async () => {
+      const { upload } = setup('deployment')
+      const server = pendingDeploymentUpload()
+      upload.choose(lora)
+      const message = 'This deployment already has a model named my_style_v2.'
+
+      const result = upload.upload()
+      server.finish({ ok: false, reason: 'refused', message })
+
+      await expect(result).resolves.toBeNull()
+      expect(upload.state.value).toEqual({
+        status: 'failed',
+        file: lora,
+        error: message
+      })
+      expect(upload.destination.value).toBe('deployment')
+    })
+
+    it('turns the choice to the workspace library when adding is not on', async () => {
+      const { upload } = setup('deployment')
+      const server = pendingDeploymentUpload()
+      upload.choose(lora)
+
+      const result = upload.upload()
+      server.finish({ ok: false, reason: 'notOn' })
+      await result
+
+      expect(upload.state.value).toEqual({
+        status: 'failed',
+        file: lora,
+        error: "Adding models to a deployment isn't on for this workspace yet.",
+        libraryOffered: true
+      })
+      expect(upload.destination.value).toBe('library')
+
+      const library = pendingUpload()
+      const retry = upload.upload()
+      library.finish({ ok: true, taskId: TASK_ID })
+      await expect(retry).resolves.toMatchObject({ taskId: TASK_ID })
+      expect(server.spy).toHaveBeenCalledOnce()
+    })
+
+    it('stops the deployment upload on cancel', async () => {
+      const { upload } = setup('deployment')
+      const server = pendingDeploymentUpload()
+      upload.choose(lora)
+
+      const result = upload.upload()
+      upload.cancel()
+      expect(server.options().signal.aborted).toBe(true)
+      server.finish({ ok: false, reason: 'cancelled' })
+
+      await expect(result).resolves.toBeNull()
+      expect(upload.state.value).toEqual({
+        status: 'failed',
+        file: lora,
+        error: 'Upload canceled.'
+      })
+    })
+  })
+
+  it('offers no choice of where the file goes with no deployment picked', () => {
+    const { upload } = setup('deployment')
+    pendingUpload()
+    const deployment = vi.spyOn(
+      deploymentModelUploadApi,
+      'uploadModelToDeployment'
+    )
+    upload.choose(lora)
+
+    expect(upload.canChooseDestination.value).toBe(false)
+    expect(upload.goesToDeployment.value).toBe(false)
+    void upload.upload()
+    expect(modelFileUploadApi.uploadModelFile).toHaveBeenCalledOnce()
+    expect(deployment).not.toHaveBeenCalled()
   })
 })

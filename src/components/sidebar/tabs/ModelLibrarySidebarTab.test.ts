@@ -73,17 +73,26 @@ const mockModel = fromPartial<ComfyModelDef>({
 vi.mock(import('@/composables/useFeatureFlags'))
 type DeploymentModelsFrame = ReturnType<typeof useDeploymentModelsFrame>
 const modelsFrame = vi.hoisted(() => ({
-  deploymentId: undefined as DeploymentModelsFrame['bootDeploymentId']['value'],
-  addModels: vi.fn<DeploymentModelsFrame['addModels']>(() => true)
+  deploymentId: undefined as DeploymentModelsFrame['bootDeploymentId']['value']
 }))
+const showDeploymentUploadDialog = vi.hoisted(() => vi.fn())
+vi.mock(import('@/platform/assets/composables/useModelUpload'), async () => {
+  const { computed } = await import('vue')
+  return {
+    useModelUpload: () => ({
+      isUploadButtonEnabled: computed(() => true),
+      showUploadDialog: vi.fn(),
+      showDeploymentUploadDialog
+    })
+  }
+})
 vi.mock(
   import('@/platform/workspace/platformFrame/useDeploymentModelsFrame'),
   async () => {
     const { computed } = await import('vue')
     return {
       useDeploymentModelsFrame: () => ({
-        bootDeploymentId: computed(() => modelsFrame.deploymentId),
-        addModels: modelsFrame.addModels
+        bootDeploymentId: computed(() => modelsFrame.deploymentId)
       })
     }
   }
@@ -172,7 +181,7 @@ describe('ModelLibrarySidebarTab', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('opens Models alone from the plus on a custom deployment', async () => {
+  it('opens the upload dialog onto the deployment from the plus', async () => {
     modelsFrame.deploymentId = 'dep-1'
     renderComponent()
 
@@ -182,7 +191,7 @@ describe('ModelLibrarySidebarTab', () => {
       })
     )
 
-    expect(modelsFrame.addModels).toHaveBeenCalledOnce()
+    expect(showDeploymentUploadDialog).toHaveBeenCalledOnce()
   })
 
   it.for([

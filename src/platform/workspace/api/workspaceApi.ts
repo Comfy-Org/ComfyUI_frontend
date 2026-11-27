@@ -1,13 +1,21 @@
 import { throwIfAborted } from '@comfyorg/api-client/abortSignal'
+import axios from 'axios'
 import type { AxiosRequestConfig } from 'axios'
+import { isPlainObject } from 'es-toolkit'
+import { z } from 'zod'
 
 import type {
   AcceptInviteResponse,
   CreateInviteRequest,
   CreateWorkspaceRequest,
+  AddDeploymentModelRequest,
   CurrentWorkspaceResponse,
   DeploymentCompatibility,
   DeploymentCompatibilityRequest,
+  DeploymentModelUpload,
+  DeploymentModelUploadPart,
+  DeploymentModelUploadParts,
+  DeploymentModelUploadRequest,
   ListInvitesResponse,
   ListMembersResponse,
   ListWorkspacesResponse,
@@ -71,6 +79,56 @@ export type { DeploymentCompatibility }
 export type { WorkspaceDeploymentCpuServer }
 
 const CPU_SERVER_READ_TIMEOUT_MS = 15_000
+
+export type { DeploymentModelUploadPart }
+
+const zDeploymentModelEntry = z.object({
+  id: z.string(),
+  filename: z.string(),
+  status: z.string()
+})
+
+type DeploymentModelEntry = z.infer<typeof zDeploymentModelEntry>
+
+const zDeploymentModelList = z.object({
+  models: z.array(zDeploymentModelEntry)
+})
+
+function deploymentPath(
+  workspaceId: WorkspaceId,
+  deploymentId: string,
+  path: string
+): string {
+  return ingestApiUrl(
+    `/workspaces/${workspaceId}/deployments/${encodeURIComponent(deploymentId)}${path}`
+  )
+}
+
+async function postToDeployment<T = unknown>(
+  workspaceId: WorkspaceId,
+  deploymentId: string,
+  path: string,
+  body: unknown,
+  signal?: AbortSignal
+): Promise<T> {
+  const auth = await requestAuth()
+  throwIfAborted(signal)
+  const response = await workspaceApiClient.post<T>(
+    deploymentPath(workspaceId, deploymentId, path),
+    body,
+    { ...auth, signal }
+  )
+  return response.data
+}
+
+function isModelsSwitchOff(err: unknown): boolean {
+  if (!axios.isAxiosError(err) || err.response?.status !== 404) return false
+  const body: unknown = err.response.data
+  return (
+    !isPlainObject(body) ||
+    (!('code' in body) && body.error !== 'UPLOAD_NOT_FOUND')
+  )
+}
 
 /** For callers that already retry on their own schedule. */
 interface ReadOptions {
@@ -194,6 +252,117 @@ export const workspaceApi = {
       return zStartWorkspaceDeploymentResult.parse(response.data)
     } catch (err) {
       handleAxiosError(err, 'startDeployment')
+    }
+  },
+  async createDeploymentModelUpload(
+    workspaceId: WorkspaceId,
+    deploymentId: string,
+    payload: DeploymentModelUploadRequest,
+    signal?: AbortSignal
+  ): Promise<DeploymentModelUpload> {
+    try {
+      return await postToDeployment<DeploymentModelUpload>(
+        workspaceId,
+        deploymentId,
+        '/model-uploads',
+        payload,
+        signal
+      )
+    } catch (err) {
+      handleAxiosError(err, 'createDeploymentModelUpload')
+    }
+  },
+  async refreshDeploymentModelUploadParts(
+    workspaceId: WorkspaceId,
+    deploymentId: string,
+    blobId: string,
+    signal?: AbortSignal
+  ): Promise<DeploymentModelUploadPart[]> {
+    try {
+      const { parts } = await postToDeployment<DeploymentModelUploadParts>(
+        workspaceId,
+        deploymentId,
+        `/model-uploads/${encodeURIComponent(blobId)}/parts`,
+        undefined,
+        signal
+      )
+      return parts
+    } catch (err) {
+      handleAxiosError(err, 'refreshDeploymentModelUploadParts')
+    }
+  },
+  async completeDeploymentModelUpload(
+    workspaceId: WorkspaceId,
+    deploymentId: string,
+    blobId: string,
+    signal?: AbortSignal
+  ): Promise<void> {
+    try {
+      await postToDeployment(
+        workspaceId,
+        deploymentId,
+        `/model-uploads/${encodeURIComponent(blobId)}/complete`,
+        undefined,
+        signal
+      )
+    } catch (err) {
+      handleAxiosError(err, 'completeDeploymentModelUpload')
+    }
+  },
+  async addDeploymentModel(
+    workspaceId: WorkspaceId,
+    deploymentId: string,
+    payload: AddDeploymentModelRequest,
+    signal?: AbortSignal
+  ): Promise<DeploymentModelEntry | 'notOn'> {
+    try {
+      const data = await postToDeployment(
+        workspaceId,
+        deploymentId,
+        '/models',
+        payload,
+        signal
+      )
+      return zDeploymentModelEntry.parse(data)
+    } catch (err) {
+      if (isModelsSwitchOff(err)) return 'notOn'
+      handleAxiosError(err, 'addDeploymentModel')
+    }
+  },
+  async listDeploymentModels(
+    workspaceId: WorkspaceId,
+    deploymentId: string,
+    signal?: AbortSignal
+  ): Promise<DeploymentModelEntry[]> {
+    const auth = await requestAuth()
+    throwIfAborted(signal)
+    try {
+      const response = await workspaceApiClient.get<unknown>(
+        deploymentPath(workspaceId, deploymentId, '/models'),
+        { ...auth, signal }
+      )
+      return zDeploymentModelList.parse(response.data).models
+    } catch (err) {
+      handleAxiosError(err, 'listDeploymentModels')
+    }
+  },
+  async removeDeploymentModel(
+    workspaceId: WorkspaceId,
+    deploymentId: string,
+    modelId: string
+  ): Promise<void> {
+    const auth = await requestAuth()
+    try {
+      await workspaceApiClient.delete(
+        deploymentPath(
+          workspaceId,
+          deploymentId,
+          `/models/${encodeURIComponent(modelId)}`
+        ),
+        auth
+      )
+    } catch (err) {
+      handleAxiosError(err, 'removeDeploymentModel')
     }
   },
   async clearDeployment(

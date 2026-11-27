@@ -1,64 +1,66 @@
 <template>
   <div class="flex h-full flex-col justify-between gap-6 text-sm">
     <div class="flex flex-col gap-6">
-      <div class="flex flex-col gap-2">
-        <p class="m-0">
-          {{ $t('assetBrowser.uploadModelDescription1Generic') }}
-        </p>
-        <div>
-          <p class="m-0 text-muted-foreground">
-            {{ $t('assetBrowser.uploadModelDescription2Generic') }}
+      <template v-if="linkImport">
+        <div class="flex flex-col gap-2">
+          <p class="m-0">
+            {{ $t('assetBrowser.uploadModelDescription1Generic') }}
           </p>
-          <span class="mt-2 inline-flex flex-wrap items-center gap-1">
-            <span class="inline-flex items-center gap-1">
-              <img
-                :src="civitaiIcon"
-                :alt="$t('assetBrowser.providerCivitai')"
-                class="size-4"
-              />
-              <a
-                :href="civitaiUrl"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="text-muted-foreground underline"
-              >
-                {{ $t('assetBrowser.providerCivitai') }}</a
-              ><span>,</span>
+          <div>
+            <p class="m-0 text-muted-foreground">
+              {{ $t('assetBrowser.uploadModelDescription2Generic') }}
+            </p>
+            <span class="mt-2 inline-flex flex-wrap items-center gap-1">
+              <span class="inline-flex items-center gap-1">
+                <img
+                  :src="civitaiIcon"
+                  :alt="$t('assetBrowser.providerCivitai')"
+                  class="size-4"
+                />
+                <a
+                  :href="civitaiUrl"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="text-muted-foreground underline"
+                >
+                  {{ $t('assetBrowser.providerCivitai') }}</a
+                ><span>,</span>
+              </span>
+              <span class="inline-flex items-center gap-1">
+                <img
+                  :src="huggingFaceIcon"
+                  :alt="$t('assetBrowser.providerHuggingFace')"
+                  class="size-4"
+                />
+                <a
+                  :href="huggingFaceUrl"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="text-muted-foreground underline"
+                >
+                  {{ $t('assetBrowser.providerHuggingFace') }}
+                </a>
+              </span>
             </span>
-            <span class="inline-flex items-center gap-1">
-              <img
-                :src="huggingFaceIcon"
-                :alt="$t('assetBrowser.providerHuggingFace')"
-                class="size-4"
-              />
-              <a
-                :href="huggingFaceUrl"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="text-muted-foreground underline"
-              >
-                {{ $t('assetBrowser.providerHuggingFace') }}
-              </a>
-            </span>
-          </span>
+          </div>
         </div>
-      </div>
 
-      <div class="flex flex-col gap-2">
-        <Input
-          v-model="url"
-          autofocus
-          :placeholder="$t('assetBrowser.genericLinkPlaceholder')"
-          data-attr="upload-model-step1-url-input"
-        />
-        <p v-if="error" class="text-destructive">
-          {{ error }}
-        </p>
-      </div>
+        <div class="flex flex-col gap-2">
+          <Input
+            v-model="url"
+            autofocus
+            :placeholder="$t('assetBrowser.genericLinkPlaceholder')"
+            data-attr="upload-model-step1-url-input"
+          />
+          <p v-if="error" class="text-destructive">
+            {{ error }}
+          </p>
+        </div>
+      </template>
       <slot />
     </div>
 
-    <div class="flex flex-col gap-6 text-muted-foreground">
+    <div v-if="linkImport" class="flex flex-col gap-6 text-muted-foreground">
       <div v-if="showSecretsHint">
         <i18n-t keypath="assetBrowser.apiKeyHint" tag="span">
           <template #link>
@@ -97,9 +99,10 @@ function openSecretsSettings() {
   settingsDialog.show('secrets')
 }
 
-const props = defineProps<{
+const { modelValue, linkImport = true } = defineProps<{
   modelValue: string
   error?: string
+  linkImport?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -107,7 +110,7 @@ const emit = defineEmits<{
 }>()
 
 const url = computed({
-  get: () => props.modelValue,
+  get: () => modelValue,
   set: (value: string) => emit('update:modelValue', value)
 })
 

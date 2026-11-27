@@ -30,7 +30,7 @@
         size="icon"
         :aria-label="$t('sideToolbar.addModelsToDeployment')"
         data-testid="model-library-add-to-deployment"
-        @click="addModels()"
+        @click="showDeploymentUploadDialog()"
       >
         <i class="icon-[lucide--plus]" />
       </Button>
@@ -105,6 +105,7 @@ import Button from '@comfyorg/design-system/button/Button'
 import { startModelLoaderDrag } from '@/composables/node/startModelLoaderDrag'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
+import { useModelUpload } from '@/platform/assets/composables/useModelUpload'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useDeploymentModelsFrame } from '@/platform/workspace/platformFrame/useDeploymentModelsFrame'
 import { useDeploymentLibraryModelsStore } from '@/platform/workspace/stores/deploymentLibraryModelsStore'
@@ -130,7 +131,8 @@ const toast = useToast()
 const { t } = useI18n()
 const { flags } = useFeatureFlags()
 const assetDownloadStore = useAssetDownloadStore()
-const { bootDeploymentId, addModels } = useDeploymentModelsFrame()
+const { bootDeploymentId } = useDeploymentModelsFrame()
+const { showDeploymentUploadDialog } = useModelUpload()
 const searchBoxRef = ref()
 const searchQuery = ref<string>('')
 /**

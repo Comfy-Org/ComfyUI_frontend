@@ -3,12 +3,18 @@
     <UploadModelFileUpload
       v-if="fileState.status !== 'idle'"
       v-model="fileModelType"
+      v-model:destination="fileDestination"
       :state="fileState"
       :folders="fileUpload.uploadFolders.value"
+      :can-choose-destination="showDestination"
       @upload="handleUploadFile"
       @cancel="fileUpload.cancel"
       @back="fileUpload.reset"
       @close="handleClose"
+    />
+    <UploadModelDestination
+      v-if="showStartDestination"
+      v-model="fileDestination"
     />
     <!-- Scrollable content area -->
     <div v-else class="min-h-0 flex-auto basis-0 overflow-y-auto">
@@ -17,6 +23,7 @@
         v-if="currentStep === 1"
         v-model="wizardData.url"
         :error="uploadError"
+        :link-import="!fileUpload.goesToDeployment.value"
       >
         <UploadModelFilePicker
           v-if="canUploadFile"
@@ -57,6 +64,7 @@
       :can-upload-model="canUploadModel"
       :upload-status="uploadStatus"
       :can-import-another="!isMissingModelResolution"
+      :link-import="!fileUpload.goesToDeployment.value"
       @back="goToPreviousStep"
       @fetch-metadata="handleFetchMetadata"
       @upload="handleUploadModel"
@@ -70,6 +78,7 @@
 import { computed, onMounted } from 'vue'
 
 import UploadModelConfirmation from '@/platform/assets/components/UploadModelConfirmation.vue'
+import UploadModelDestination from '@/platform/assets/components/UploadModelDestination.vue'
 import UploadModelFilePicker from '@/platform/assets/components/UploadModelFilePicker.vue'
 import UploadModelFileUpload from '@/platform/assets/components/UploadModelFileUpload.vue'
 import UploadModelFooter from '@/platform/assets/components/UploadModelFooter.vue'
@@ -77,6 +86,7 @@ import UploadModelProgress from '@/platform/assets/components/UploadModelProgres
 import UploadModelUrlInput from '@/platform/assets/components/UploadModelUrlInput.vue'
 import { useModelTypes } from '@/platform/assets/composables/useModelTypes'
 import { useUploadModelFile } from '@/platform/assets/composables/useUploadModelFile'
+import type { UploadDestination } from '@/platform/assets/composables/useUploadModelFile'
 import type {
   UploadModelDialogContext,
   UploadModelSuccess
@@ -84,14 +94,19 @@ import type {
 import { useUploadModelWizard } from '@/platform/assets/composables/useUploadModelWizard'
 import { useDialogStore } from '@/stores/dialogStore'
 
-const dialogStore = useDialogStore()
-const fileUpload = useUploadModelFile()
-const { state: fileState, modelType: fileModelType } = fileUpload
-const { modelTypes, fetchModelTypes } = useModelTypes()
-
-const { uploadContext } = defineProps<{
+const { uploadContext, initialDestination } = defineProps<{
   uploadContext?: UploadModelDialogContext
+  initialDestination?: UploadDestination
 }>()
+
+const dialogStore = useDialogStore()
+const fileUpload = useUploadModelFile(initialDestination)
+const {
+  state: fileState,
+  modelType: fileModelType,
+  destination: fileDestination
+} = fileUpload
+const { modelTypes, fetchModelTypes } = useModelTypes()
 
 const emit = defineEmits<{
   'upload-success': [result: UploadModelSuccess]
@@ -130,6 +145,15 @@ const fileError = computed(() =>
 )
 const canUploadFile = computed(
   () => fileUpload.isAvailable.value && !isMissingModelResolution.value
+)
+const showDestination = computed(
+  () => fileUpload.canChooseDestination.value && !isMissingModelResolution.value
+)
+const showStartDestination = computed(
+  () =>
+    showDestination.value &&
+    currentStep.value === 1 &&
+    fileState.value.status === 'idle'
 )
 
 async function handleUploadFile() {

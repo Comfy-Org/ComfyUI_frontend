@@ -29,6 +29,8 @@
         {{ state.error }}
       </p>
 
+      <UploadModelDestination v-if="showDestination" v-model="destination" />
+
       <div
         v-if="state.status === 'chosen' || state.status === 'failed'"
         class="flex flex-col gap-2"
@@ -49,12 +51,8 @@
       </div>
 
       <div v-else-if="state.status === 'done'" class="flex flex-col gap-2">
-        <p class="m-0 font-bold text-foreground">
-          {{ $t('assetBrowser.modelUploaded') }}
-        </p>
-        <p class="m-0">
-          {{ $t('assetBrowser.findInLibrary', { type: modelTypeLabel }) }}
-        </p>
+        <p class="m-0 font-bold text-foreground">{{ doneTitle }}</p>
+        <p class="m-0">{{ doneDetail }}</p>
       </div>
 
       <p v-if="transferEstimate" class="m-0">{{ transferEstimate }}</p>
@@ -74,7 +72,7 @@
         {{ $t('g.cancel') }}
       </Button>
       <Button
-        v-else-if="state.status === 'saving'"
+        v-else-if="isWaitingOnServer"
         variant="secondary"
         size="lg"
         data-attr="upload-model-file-close-button"
@@ -116,11 +114,7 @@
           :disabled="!modelType"
           @click="emit('upload')"
         >
-          {{
-            state.status === 'failed'
-              ? $t('assetBrowser.fileUpload.tryAgain')
-              : $t('assetBrowser.fileUpload.upload')
-          }}
+          {{ uploadLabel }}
         </Button>
       </template>
     </div>
@@ -134,16 +128,28 @@ import { useI18n } from 'vue-i18n'
 
 import AppSingleSelect from '@/components/common/AppSingleSelect.vue'
 import Button from '@comfyorg/design-system/button/Button'
+import UploadModelDestination from '@/platform/assets/components/UploadModelDestination.vue'
 import { useModelTypes } from '@/platform/assets/composables/useModelTypes'
-import type { ModelFileUpload } from '@/platform/assets/composables/useUploadModelFile'
+import type {
+  ModelFileUpload,
+  UploadDestination
+} from '@/platform/assets/composables/useUploadModelFile'
 import { formatSize } from '@comfyorg/shared-frontend-utils/formatUtil'
 
-const { state, folders } = defineProps<{
+const {
+  state,
+  folders,
+  canChooseDestination = false
+} = defineProps<{
   state: Exclude<ModelFileUpload, { status: 'idle' }>
   folders: readonly string[]
+  canChooseDestination?: boolean
 }>()
 
 const modelType = defineModel<string>({ required: true })
+const destination = defineModel<UploadDestination>('destination', {
+  default: 'library'
+})
 
 const emit = defineEmits<{
   upload: []
@@ -167,7 +173,10 @@ const percent = computed(() =>
 )
 
 const canCancel = computed(
-  () => isTransferring.value || state.status === 'stopping'
+  () =>
+    isTransferring.value ||
+    state.status === 'stopping' ||
+    state.status === 'checking'
 )
 
 const transferEstimate = computed(() => {
@@ -191,7 +200,39 @@ const statusLine = computed(() => {
     return t('assetBrowser.fileUpload.reconnecting')
   if (state.status === 'saving') return t('assetBrowser.fileUpload.saving')
   if (state.status === 'stopping') return t('assetBrowser.fileUpload.stopping')
+  if (state.status === 'checking') return t('assetBrowser.fileUpload.checking')
+  if (state.status === 'adding')
+    return t('assetBrowser.fileUpload.addingToDeployment')
   return undefined
+})
+
+const showDestination = computed(
+  () =>
+    canChooseDestination &&
+    (state.status === 'chosen' || state.status === 'failed')
+)
+
+const isWaitingOnServer = computed(
+  () => state.status === 'saving' || state.status === 'adding'
+)
+
+const doneTitle = computed(() =>
+  state.status === 'done' && state.onDeployment
+    ? t('assetBrowser.fileUpload.ready')
+    : t('assetBrowser.modelUploaded')
+)
+
+const doneDetail = computed(() =>
+  state.status === 'done' && state.onDeployment
+    ? t('assetBrowser.fileUpload.findInLoader')
+    : t('assetBrowser.findInLibrary', { type: modelTypeLabel.value })
+)
+
+const uploadLabel = computed(() => {
+  if (state.status !== 'failed') return t('assetBrowser.fileUpload.upload')
+  return state.libraryOffered
+    ? t('assetBrowser.fileUpload.uploadToLibrary')
+    : t('assetBrowser.fileUpload.tryAgain')
 })
 
 function formatTimeLeft(seconds: number) {

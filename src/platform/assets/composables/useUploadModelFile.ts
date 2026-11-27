@@ -9,16 +9,32 @@ import {
   modelFileUploadApi
 } from '@/platform/assets/services/modelFileUploadApi'
 import type { ModelFileUploadResult } from '@/platform/assets/services/modelFileUploadApi'
+import { createTimeoutSignal } from '@comfyorg/api-client/abortSignal'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import {
   isDownloadCancelled,
   useAssetDownloadStore
 } from '@/platform/assets/stores/assetDownloadStore'
 import type { AssetDownloadStatus } from '@/platform/assets/stores/assetDownloadStore'
+import { deploymentModelUploadApi } from '@/platform/workspace/api/deploymentModelUploadApi'
+import type {
+  DeploymentModelOutcome,
+  DeploymentModelTarget,
+  DeploymentModelUploadResult
+} from '@/platform/workspace/api/deploymentModelUploadApi'
+import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useApp } from '@/scripts/appInstance'
 
 const DEFAULT_MODEL_TYPE = 'loras'
+const ADDING_WAIT_MS = 60 * 60_000
 
-type UploadStopped = Extract<ModelFileUploadResult, { ok: false }>
+type UploadStopped = Extract<
+  ModelFileUploadResult | DeploymentModelUploadResult,
+  { ok: false }
+>
+
+export type UploadDestination = 'library' | 'deployment'
 
 const FAILURE_COPY: Partial<Record<UploadStopped['reason'], string>> = {
   accessDenied: 'assetBrowser.fileUpload.accessDenied',
@@ -28,7 +44,8 @@ const FAILURE_COPY: Partial<Record<UploadStopped['reason'], string>> = {
   unsupportedFile: 'assetBrowser.fileUpload.notSafetensors',
   unsupportedType: 'assetBrowser.fileUpload.unsupportedType',
   privateModelsDisabled: 'assetBrowser.fileUpload.privateModelsDisabled',
-  planUnavailable: 'assetBrowser.fileUpload.planUnavailable'
+  planUnavailable: 'assetBrowser.fileUpload.planUnavailable',
+  notOn: 'assetBrowser.fileUpload.deploymentModelsOff'
 }
 
 /** Where one model file upload stands. */
@@ -36,6 +53,7 @@ export type ModelFileUpload =
   | { status: 'idle'; error?: string }
   | { status: 'chosen'; file: File }
   | { status: 'stopping'; file: File }
+  | { status: 'checking'; file: File }
   | {
       status: 'uploading' | 'reconnecting'
       file: File
@@ -43,8 +61,15 @@ export type ModelFileUpload =
       bytesPerSecond?: number
     }
   | { status: 'saving'; file: File }
-  | { status: 'done'; file: File; modelType: string }
-  | { status: 'failed'; file: File; error: string; taskId?: string }
+  | { status: 'adding'; file: File }
+  | { status: 'done'; file: File; modelType: string; onDeployment?: true }
+  | {
+      status: 'failed'
+      file: File
+      error: string
+      taskId?: string
+      libraryOffered?: true
+    }
 
 type ReadyToSend = Extract<ModelFileUpload, { status: 'chosen' | 'failed' }>
 
@@ -58,14 +83,33 @@ interface FollowedTask {
 
 /**
  * One model file chosen from the computer and uploaded into the workspace
- * library: choose it, pick its type, upload with progress or cancel.
+ * library, or onto the deployment this page booted on: choose it, pick its
+ * type and where it goes, upload with progress or cancel.
  */
-export function useUploadModelFile() {
+export function useUploadModelFile(
+  initialDestination: UploadDestination = 'library'
+) {
   const { t } = useI18n()
   const { flags } = useFeatureFlags()
   const downloads = useAssetDownloadStore()
+  const deploymentPick = useDeploymentPickStore()
+  const workspaceStore = useTeamWorkspaceStore()
   const uploadFolders = computed(() => flags.modelUploadFolders)
   const isAvailable = computed(() => uploadFolders.value.length > 0)
+  const deploymentTarget = computed<DeploymentModelTarget | undefined>(() => {
+    const deploymentId = deploymentPick.bootDeployment?.deployment_id
+    const workspaceId = workspaceStore.workspaceId
+    return deploymentId && workspaceId
+      ? { workspaceId, deploymentId }
+      : undefined
+  })
+  const canChooseDestination = computed(
+    () => isAvailable.value && deploymentTarget.value !== undefined
+  )
+  const destination = ref<UploadDestination>(initialDestination)
+  const goesToDeployment = computed(
+    () => canChooseDestination.value && destination.value === 'deployment'
+  )
 
   function defaultModelType() {
     return uploadFolders.value.includes(DEFAULT_MODEL_TYPE)
@@ -254,28 +298,19 @@ export function useUploadModelFile() {
     return { run: generation, signal: controller.signal }
   }
 
-  async function upload(): Promise<UploadModelSuccess | null> {
-    const current = state.value
-    if (current.status !== 'chosen' && current.status !== 'failed') return null
-
-    const { run, signal } = beginAttempt()
-    const { file } = current
-    const type = modelType.value
-
-    const followed = followedTaskOf(current)
-    if (followed && !(await settleFollowedTask(followed, run, signal))) {
-      return null
-    }
-    stopFollowing()
-    state.value = { status: 'uploading', file, sent: 0 }
+  function progressHandlers(run: number, signal: AbortSignal, file: File) {
     let sampleTime = performance.now()
     let sampleBytes = 0
-
-    const result = await modelFileUploadApi.uploadModelFile(file, {
-      tags: ['models', type],
-      signal,
-      onProgress: (sent) => {
-        if (run !== generation || signal.aborted) return
+    const isCurrent = () => run === generation && !signal.aborted
+    return {
+      startSending() {
+        if (!isCurrent()) return
+        sampleTime = performance.now()
+        sampleBytes = 0
+        state.value = { status: 'uploading', file, sent: 0 }
+      },
+      onProgress(sent: number) {
+        if (!isCurrent()) return
         const current = state.value
         if (current.status !== 'uploading' && current.status !== 'reconnecting')
           return
@@ -286,8 +321,8 @@ export function useUploadModelFile() {
             : undefined
         state.value = { ...current, sent, bytesPerSecond }
       },
-      onReconnecting: (reconnecting) => {
-        if (run !== generation || signal.aborted) return
+      onReconnecting(reconnecting: boolean) {
+        if (!isCurrent()) return
         const current = state.value
         if (current.status !== 'uploading' && current.status !== 'reconnecting')
           return
@@ -297,18 +332,134 @@ export function useUploadModelFile() {
         sampleBytes = current.sent
         state.value = { status, file, sent: current.sent }
       }
+    }
+  }
+
+  function failedUpload(
+    file: File,
+    result: UploadStopped,
+    to: UploadDestination
+  ): ModelFileUpload {
+    if (result.reason === 'failed') {
+      reportError(result.cause, {
+        surface: 'assets',
+        errorType: 'error_uploading_model_file',
+        level: 'warning',
+        tags: { destination: to }
+      })
+    }
+    const error = failureText(result)
+    if (result.reason !== 'notOn') return { status: 'failed', file, error }
+    destination.value = 'library'
+    return { status: 'failed', file, error, libraryOffered: true }
+  }
+
+  function outcomeOnDeployment(
+    outcome: DeploymentModelOutcome,
+    file: File,
+    type: string
+  ): ModelFileUpload {
+    if (outcome === 'ready') {
+      return { status: 'done', file, modelType: type, onDeployment: true }
+    }
+    return {
+      status: 'failed',
+      file,
+      error: t('assetBrowser.fileUpload.notAddedToDeployment', {
+        name: file.name
+      })
+    }
+  }
+
+  async function followDeploymentModel(
+    target: DeploymentModelTarget,
+    modelId: string,
+    file: File,
+    type: string,
+    run: number
+  ) {
+    const outcome = await deploymentModelUploadApi.waitForDeploymentModel(
+      target,
+      modelId,
+      createTimeoutSignal(ADDING_WAIT_MS)
+    )
+    if (outcome === 'ready') {
+      void useApp()
+        .refreshComboInNodes()
+        .catch((error: unknown) =>
+          reportError(error, {
+            surface: 'assets',
+            errorType: 'error_refreshing_deployment_models',
+            level: 'warning'
+          })
+        )
+    }
+    if (outcome === undefined || run !== generation) return
+    if (state.value.status !== 'adding') return
+    state.value = outcomeOnDeployment(outcome, file, type)
+  }
+
+  async function uploadToDeployment(
+    file: File,
+    type: string,
+    target: DeploymentModelTarget,
+    run: number,
+    signal: AbortSignal
+  ): Promise<UploadModelSuccess | null> {
+    state.value = { status: 'checking', file }
+    const progress = progressHandlers(run, signal, file)
+    const result = await deploymentModelUploadApi.uploadModelToDeployment(
+      file,
+      target,
+      {
+        type,
+        signal,
+        onSending: progress.startSending,
+        onProgress: progress.onProgress
+      }
+    )
+    if (run !== generation) return null
+    if (!result.ok) {
+      state.value = failedUpload(file, result, 'deployment')
+      return null
+    }
+    state.value = { status: 'adding', file }
+    void followDeploymentModel(target, result.modelId, file, type, run)
+    return { filename: file.name, modelType: type, status: 'processing' }
+  }
+
+  async function upload(): Promise<UploadModelSuccess | null> {
+    const current = state.value
+    if (current.status !== 'chosen' && current.status !== 'failed') return null
+
+    const { run, signal } = beginAttempt()
+    const { file } = current
+    const type = modelType.value
+
+    const target = goesToDeployment.value ? deploymentTarget.value : undefined
+    if (target) {
+      stopFollowing()
+      return uploadToDeployment(file, type, target, run, signal)
+    }
+
+    const followed = followedTaskOf(current)
+    if (followed && !(await settleFollowedTask(followed, run, signal))) {
+      return null
+    }
+    stopFollowing()
+    const progress = progressHandlers(run, signal, file)
+    progress.startSending()
+
+    const result = await modelFileUploadApi.uploadModelFile(file, {
+      tags: ['models', type],
+      signal,
+      onProgress: progress.onProgress,
+      onReconnecting: progress.onReconnecting
     })
     if (run !== generation) return null
 
     if (!result.ok) {
-      if (result.reason === 'failed') {
-        reportError(result.cause, {
-          surface: 'assets',
-          errorType: 'error_uploading_model_file',
-          level: 'warning'
-        })
-      }
-      state.value = { status: 'failed', file, error: failureText(result) }
+      state.value = failedUpload(file, result, 'library')
       return null
     }
 
@@ -334,6 +485,9 @@ export function useUploadModelFile() {
   return {
     isAvailable,
     uploadFolders,
+    canChooseDestination,
+    destination,
+    goesToDeployment,
     state,
     modelType,
     choose,

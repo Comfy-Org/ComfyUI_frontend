@@ -36,6 +36,20 @@ export const workspaceApi = vi.mockObject<typeof realWorkspaceApi>(
     pickDeployment: async () => {},
     clearDeployment: async () => {},
     startDeployment: async () => ({ deployment_id: '', status: 'starting' }),
+    createDeploymentModelUpload: async () => ({
+      blobId: 'blob-1',
+      deduplicated: false,
+      parts: []
+    }),
+    refreshDeploymentModelUploadParts: async () => [],
+    completeDeploymentModelUpload: async () => {},
+    addDeploymentModel: async (_workspaceId, _deploymentId, { filename }) => ({
+      id: 'model-1',
+      filename: filename ?? '',
+      status: 'adding'
+    }),
+    listDeploymentModels: async () => [],
+    removeDeploymentModel: async () => {},
     setDefaultDeployment: async () => {},
     clearDefaultDeployment: async () => {},
     getDeploymentCpuServer: async () => ({ cpu_server: 'none' }),

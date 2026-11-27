@@ -1,6 +1,9 @@
 <template>
   <div class="flex w-full justify-end gap-2">
-    <div v-if="currentStep === 1" class="mr-auto flex items-center gap-2">
+    <div
+      v-if="currentStep === 1 && linkImport"
+      class="mr-auto flex items-center gap-2"
+    >
       <i class="icon-[lucide--circle-question-mark] text-muted-foreground" />
       <Button
         variant="muted-textonly"
@@ -42,7 +45,7 @@
     <span v-else />
 
     <Button
-      v-if="currentStep === 1"
+      v-if="currentStep === 1 && linkImport"
       variant="secondary"
       size="lg"
       data-attr="upload-model-step1-continue-button"
@@ -132,7 +135,7 @@ import VideoHelpDialog from '@/platform/assets/components/VideoHelpDialog.vue'
 const showCivitaiHelp = ref(false)
 const showHuggingFaceHelp = ref(false)
 
-const { canImportAnother = true } = defineProps<{
+const { canImportAnother = true, linkImport = true } = defineProps<{
   currentStep: number
   isFetchingMetadata: boolean
   isUploading: boolean
@@ -140,6 +143,7 @@ const { canImportAnother = true } = defineProps<{
   canUploadModel: boolean
   uploadStatus?: 'processing' | 'success' | 'error'
   canImportAnother?: boolean
+  linkImport?: boolean
 }>()
 
 const emit = defineEmits<{
