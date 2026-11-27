@@ -452,6 +452,36 @@ onBeforeUnmount(() =>
     ).toEqual(['op-producers-outlive-the-panel'])
   })
 
+  test('follows a panel cleanup through named helpers', () => {
+    const fixture = `
+      function releaseProducer() {
+        opSender.detach()
+      }
+      function teardown() {
+        releaseProducer()
+      }
+      onBeforeUnmount(teardown)
+    `
+    expect(
+      checkOpProducersOutliveThePanel(FOLLOWER_FILE, fixture).map(
+        ({ rule }) => rule
+      )
+    ).toEqual(['op-producers-outlive-the-panel'])
+  })
+
+  test('follows an aliased panel-close hook', () => {
+    const fixture = `
+      const beforeUnmount = onBeforeUnmount
+      const releaseProducer = () => opSender.detach()
+      beforeUnmount(releaseProducer)
+    `
+    expect(
+      checkOpProducersOutliveThePanel(FOLLOWER_FILE, fixture).map(
+        ({ rule }) => rule
+      )
+    ).toEqual(['op-producers-outlive-the-panel'])
+  })
+
   test('does not let whitespace before the call parenthesis skip the check', () => {
     const fixture = `onBeforeUnmount(() => opSender.detach ())`
     expect(
@@ -569,6 +599,19 @@ watch(connected, () => docOpMinter.deliverHeldRestores())
       }
       export function destroyPageSession(): void {
         releaseProducer()
+      }
+    `
+    expect(checkOpProducersOutliveThePanel(FOLLOWER_FILE, fixture)).toEqual([])
+  })
+
+  test('does not join same-named helpers from unrelated scopes', () => {
+    const fixture = `
+      function first() {
+        const releaseProducer = () => opSender.detach()
+      }
+      function second() {
+        const releaseProducer = () => notifyReleased()
+        onBeforeUnmount(releaseProducer)
       }
     `
     expect(checkOpProducersOutliveThePanel(FOLLOWER_FILE, fixture)).toEqual([])

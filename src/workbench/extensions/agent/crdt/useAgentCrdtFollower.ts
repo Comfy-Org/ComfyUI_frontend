@@ -520,12 +520,6 @@ export function destroyAgentFollowerSessions(): void {
   liveOwners.clear()
 }
 
-/**
- * The follower session the page holds for `transport`, as a reactive read, or
- * null when it holds none. Creates the owner if there is none. See
- * `docs/adr/CRDT-FOLLOWER-0052-the-workflow-document-owns-the-follower-session.md`
- * Stage 2.
- */
 export function retainedAgentFollowerSessionRef(
   transport: AgentDocFrameTransport
 ): Readonly<ShallowRef<AgentFollowerSession | null>> {

@@ -570,9 +570,9 @@ What a panel close still reached was `docOpMinter.detach()`, a step in
 `AgentPanelRoot.vue`'s own `runPanelTeardown` list — so an edit made _while_ the
 panel was closed minted nothing at all, which is strictly worse than a dropped
 batch because it produces no report either. `agentPageOpMinter.ts` is now the
-producer's owner: one producer per doc-frame transport, attached in a detached
-`effectScope`, with the panel installing its answers on each mount and nothing
-removing them on unmount.
+producer's owner: one producer per doc-frame transport, with its reconnect
+watcher in a detached `effectScope`. The panel installs its answers on each
+mount and nothing removes them on unmount.
 
 **The producer's inputs split the same two ways a session's do, and getting the
 split wrong reproduces the defect with extra machinery.** Session-facing inputs
@@ -583,7 +583,7 @@ panel's consumer lease is released on unmount, after which every accessor it
 destructured from `useAgentCrdtFollower` answers with its null fallback while
 the session is still alive behind the page claim. Panel-facing inputs — the
 active-target flag, the graph accessor, the bound-workflow and bound-root-graph
-lookups, the visible-workflow lookup, and the identity-change signal — are
+lookups, and the visible-workflow lookup — are
 installed by the live panel and **retained** across its unmount, because they
 are closures over refs, Pinia stores and the page session. That is sound for the
 same reason the retained session keeps its subscription through a close:
@@ -597,13 +597,12 @@ why the panel answers `visibleWorkflowIdFor` and the owner performs the note.
 The first implementation had the panel do the whole thing and lost the marker
 for every edit made with the panel closed; the fact is recorded below.
 
-**The active-target flag is the one retained input whose source is still
-panel-scoped, and it is an open dependency rather than a settled split.**
-`isFollowerActive` reads the identity resolver Stage 1a deliberately left behind
-(`resolveAgentIdentity`), so it freezes on unmount. An account or workspace
-change made while the panel is closed therefore leaves a stale non-null identity
-answering the flag until the next mount. The fix is the resolver's move to page
-lifetime, which Stage 1a names as Stage 1b's work and Stage 1b did not do.
+**The active-target flag now reads page-owned identity.** The page session
+retains `resolveAgentIdentity`, resets it on an authenticated socket identity
+change, and stops it only during page teardown. Account and workspace changes
+therefore make the identity pending before reconnect delivery can resume, even
+when the panel is closed. Fresh admission and held delivery remain gated until
+the current identity resolves and the follower acknowledges its subscription.
 
 **A latch in the producer was tried for this and reverted, which is worth
 recording so it is not tried again.** Observing the page session's
@@ -616,29 +615,12 @@ checks the binding and the document rather than any such latch. That trades a
 narrow window for a page-wide outage, so the exposure stays named and
 unmitigated here.
 
-**The stale session answer predates this stage; minting or sending under that
-answer does not.** `useAgentCrdtFollower`'s cleanup clears `follower.value` and
-releases the lease but deliberately leaves `owner.consumer.value` installed,
-and the session reads `isTargetActive` and `userId` from that live record on
-every call. Since Stage 1b the page-retained session has therefore answered
-with the last mounted panel's frozen identity after a close. Before Stage 2,
-however, closing the panel detached the producer, so that answer could not mint
-an operation while the panel was closed. Stage 2 keeps the producer attached
-and thereby creates the interval in which an edit can be stamped with the
-previous account's actor and handed to the sender before the new identity's
-resubscribe takes `subscriptionSent()` — and therefore `isDocBound()` — false.
-Reverting Stage 2 would retire that mint/send consequence even though it would
-not repair the older frozen consumer answer.
-
-**Stage 2 is complete only when no operation is minted or sent under an account
-identity other than the current account.** That requirement covers fresh edits
-and previously held delivery. Moving `resolveAgentIdentity` to page lifetime is
-the intended source of a current answer; the producer and sender still have to
-gate on it through the identity-change and resubscribe interval. Host refusal
-of a resubscribe the new identity does not own is containment, not the design
-guarantee: this ADR cites no backend test proving rejection of an operation
-stamped with the previous actor, and frontend correctness must not depend on
-such rejection.
+**Stage 2 requires that no operation be minted or sent under an account identity
+other than the current account.** That covers fresh edits and previously held
+delivery. The page-owned resolver supplies the current answer, while the
+active-target and acknowledged-subscription gates close the identity-change
+and resubscribe interval. Host refusal remains containment rather than a
+frontend correctness dependency.
 
 **The restore queue moved with the edit path, as this stage requires.** The
 delivery trigger was a panel watcher, so a reconnect completing with the panel
@@ -655,7 +637,7 @@ call `attachDocOpMinter` (so nothing else holds a `detach` to call, and the
 owner's returned handle deliberately exposes only `deliverHeldRestores`), and no
 producer `detach()` may sit inside a call this stage names as a disposal route a
 panel close reaches — `onBeforeUnmount`, `onUnmounted`, `onScopeDispose`,
-`runPanelTeardown`, `runFollowerTeardown`, `scope.stop`. The route list is what
+`runPanelTeardown`, `runFollowerTeardown`. The route list is what
 this stage asked for above: a guard built from the Vue hook names alone finds no
 caller, because the call is a thunk in a keyed object or in an array, so the
 rule walks enclosing calls rather than matching statements. Its first test is
@@ -686,15 +668,11 @@ gate that consults the marker, `canResumeHeldWorkflow` among them. The producer
 owner therefore asks the panel only for the _lookup_ (`visibleWorkflowIdFor`)
 and performs the note itself against the page-held session.
 
-_There is a sub-tick window where the panel holds a session and the page does
-not, and it cannot carry an edit._ The page claims on the document-id edge
-through a deferred watcher, for the re-entrancy reason Stage 1b sets out at
-length, so between a document binding and the next watcher flush the page-held
-session reads null. Nothing is lost there: `isDocBound()` also requires
-`subscriptionSent()`, which needs a `doc_subscribe` to have gone out and been
-matched, and that cannot complete inside one flush. Reading the panel's handle
-as a fallback would close a window that cannot carry an edit at the cost of the
-invariant this stage establishes.
+_The page claim follows a document-id edge through a deferred watcher._ Before
+that watcher runs, page-session accessors return null. `subscriptionSent()`
+describes a sent subscribe frame, not an acknowledged one. Unbound-intent notes
+can occur without a subscribed document and need a destination during this
+interval.
 
 _Page teardown of the producer is total per step, not per owner._ A throwing
 scope disposer sharing one `try` with the detach would skip the detach and leave

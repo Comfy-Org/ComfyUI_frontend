@@ -208,7 +208,6 @@ import { isCreditsStopPart } from './services/agent/agentMessageParts'
 import type { CanvasConfirmation } from './services/agent/agentEventTransport'
 import { toolCanClaimCanvasContent } from './services/agent/agentToolClassification'
 import { areAgentWorkflowIdsEquivalent } from './services/agent/agentWorkflowId'
-import { resolveAgentIdentity } from './services/agent/agentIdentity'
 import { desktopHostUser } from '@/platform/auth/desktopHost/desktopHostSession'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
@@ -310,18 +309,18 @@ const rest = createAgentRestClient()
 const authStore = useAuthStore()
 const apiKeyAuthStore = useApiKeyAuthStore()
 const teamWorkspaceStore = useTeamWorkspaceStore()
-const { events, docTransport, onIdentityChange } = useAgentPageSession(() =>
-  toSocketIdentity(
-    authStore.userId,
-    apiKeyAuthStore.currentUser?.id,
-    teamWorkspaceStore.activeWorkspaceId,
-    desktopHostUser.value?.workspaceId
+const { events, docTransport, onIdentityChange, retainIdentity } =
+  useAgentPageSession(() =>
+    toSocketIdentity(
+      authStore.userId,
+      apiKeyAuthStore.currentUser?.id,
+      teamWorkspaceStore.activeWorkspaceId,
+      desktopHostUser.value?.workspaceId
+    )
   )
-)
 
-const agentIdentity = resolveAgentIdentity({
+const agentIdentity = retainIdentity({
   getIdentity: () => rest.getIdentity(),
-  onSocketOpen: (listener) => docTransport.onSocketOpen(listener),
   isRetryable: (error) => isRetryableRequestFailure(error, false),
   onFailure: (error) =>
     reportError(error, {
@@ -330,9 +329,6 @@ const agentIdentity = resolveAgentIdentity({
       level: 'warning'
     })
 })
-onBeforeUnmount(() => agentIdentity.stop())
-
-onBeforeUnmount(onIdentityChange(() => agentIdentity.reset()))
 onBeforeUnmount(onIdentityChange(() => captureOutgoingCredentialForHandoff()))
 
 function onPaywallAction(

@@ -11,6 +11,11 @@ import { destroyAgentFollowerSessions } from './crdt/useAgentCrdtFollower'
 import { agentSocketAuthParams } from './services/agent/agentAuth'
 import type { AgentEventSocket } from './services/agent/agentEventSource'
 import { createAgentEventSource } from './services/agent/agentEventSource'
+import type {
+  AgentIdentityDeps,
+  ResolvedAgentIdentity
+} from './services/agent/agentIdentity'
+import { resolveAgentIdentity } from './services/agent/agentIdentity'
 
 /** Agent transport resources whose lifetime is the page, not the Agent panel. */
 export interface AgentPageSession {
@@ -20,6 +25,10 @@ export interface AgentPageSession {
   readonly docTransport: AgentDocFrameTransport
   /** Observe the signed-in identity changing, after the socket reconnects. */
   onIdentityChange(listener: () => void): () => void
+  /** Resolve the agent actor for the page lifetime. Only the first deps are installed. */
+  retainIdentity(
+    deps: Omit<AgentIdentityDeps, 'onSocketOpen'>
+  ): ResolvedAgentIdentity
 }
 
 export type SocketIdentity = readonly [
@@ -76,6 +85,7 @@ function create(readIdentity: SocketIdentitySource): PageSessionInternals {
     'minted a second agent event source while one already exists for this page — the page session owns exactly one event source and one doc-frame transport for the page lifetime, see docs/adr/CRDT-FOLLOWER-0052-the-workflow-document-owns-the-follower-session.md Decision 2'
   )
   const listeners = new Set<() => void>()
+  let agentIdentity: ResolvedAgentIdentity | null = null
 
   const pageScope = effectScope(true)
   const built = pageScope.run(() => {
@@ -113,9 +123,20 @@ function create(readIdentity: SocketIdentitySource): PageSessionInternals {
       listeners.add(listener)
       return () => listeners.delete(listener)
     },
+    retainIdentity(deps) {
+      if (agentIdentity !== null) return agentIdentity
+      agentIdentity = resolveAgentIdentity({
+        ...deps,
+        onSocketOpen: (listener) => docTransport.onSocketOpen(listener)
+      })
+      listeners.add(agentIdentity.reset)
+      return agentIdentity
+    },
     stop() {
       pageScope.stop()
       listeners.clear()
+      agentIdentity?.stop()
+      agentIdentity = null
       docTransport.destroy()
     }
   }

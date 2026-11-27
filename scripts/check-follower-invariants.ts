@@ -56,12 +56,12 @@ function violation(
   return { file, line: lineOf(sourceFile, node), rule, message }
 }
 
-function visit(sourceFile: ts.SourceFile, inspect: (node: ts.Node) => void) {
+function visit(root: ts.Node, inspect: (node: ts.Node) => void) {
   const walk = (node: ts.Node): void => {
     inspect(node)
     ts.forEachChild(node, walk)
   }
-  walk(sourceFile)
+  walk(root)
 }
 
 function propertyName(name: ts.PropertyName | undefined): string | undefined {
@@ -423,7 +423,6 @@ function pageSessionOwnsTransport(file: string, source: string): Violation[] {
 
 export { pageSessionOwnsTransport as checkPageSessionOwnsTransport }
 
-/** The one module allowed to attach a human-write-leg op producer. */
 export const OP_PRODUCER_OWNER =
   'src/workbench/extensions/agent/agentPageOpMinter.ts'
 
@@ -439,7 +438,6 @@ const PANEL_CLOSE_DISPOSAL_ROUTES = new Set([
   'runFollowerTeardown'
 ])
 
-/** Local names bound to an op-producer factory, including aliased imports. */
 function producerFactoryNames(sourceFile: ts.SourceFile): Set<string> {
   const names = new Set(OP_PRODUCER_FACTORIES)
   visit(sourceFile, (node) => {
@@ -469,7 +467,6 @@ function receiverName(receiver: ts.Expression): string | undefined {
   if (ts.isPropertyAccessExpression(receiver)) return receiver.name.text
 }
 
-/** `<producer>.detach`, whether called, optional-called, or passed by reference. */
 function producerDetachReference(node: ts.Node): string | undefined {
   if (!ts.isPropertyAccessExpression(node)) return
   if (node.name.text !== 'detach') return
@@ -485,25 +482,159 @@ function calledName(node: ts.CallExpression): string | undefined {
   if (ts.isPropertyAccessExpression(callee)) return callee.name.text
 }
 
-function isPanelCloseRouteCall(node: ts.Node): node is ts.CallExpression {
-  if (!ts.isCallExpression(node)) return false
-  const name = calledName(node)
-  return name !== undefined && PANEL_CLOSE_DISPOSAL_ROUTES.has(name)
+function importedPanelCloseRouteAlias(node: ts.Node): string | undefined {
+  if (!ts.isImportSpecifier(node)) return
+  const imported = node.propertyName?.text ?? node.name.text
+  if (PANEL_CLOSE_DISPOSAL_ROUTES.has(imported)) return node.name.text
 }
 
-/** Identifiers a panel-close disposal route is handed, directly or in a thunk. */
-function namesReachedByAPanelCloseRoute(
-  sourceFile: ts.SourceFile
+function assignedPanelCloseRouteAlias(
+  node: ts.Node,
+  routeNames: Set<string>
+): string | undefined {
+  if (
+    ts.isVariableDeclaration(node) &&
+    ts.isIdentifier(node.name) &&
+    node.initializer &&
+    ts.isIdentifier(node.initializer) &&
+    routeNames.has(node.initializer.text)
+  )
+    return node.name.text
+}
+
+function panelCloseRouteAlias(
+  node: ts.Node,
+  routeNames: Set<string>
+): string | undefined {
+  return (
+    importedPanelCloseRouteAlias(node) ??
+    assignedPanelCloseRouteAlias(node, routeNames)
+  )
+}
+
+function panelCloseRouteNames(sourceFile: ts.SourceFile): Set<string> {
+  const names = new Set(PANEL_CLOSE_DISPOSAL_ROUTES)
+  visit(sourceFile, (node) => {
+    const alias = panelCloseRouteAlias(node, names)
+    if (alias !== undefined) names.add(alias)
+  })
+  return names
+}
+
+function isPanelCloseRouteCall(
+  node: ts.Node,
+  routeNames: Set<string>
+): node is ts.CallExpression {
+  if (!ts.isCallExpression(node)) return false
+  const name = calledName(node)
+  return name !== undefined && routeNames.has(name)
+}
+
+interface CallableBinding {
+  body: ts.ConciseBody
+  name: string
+}
+
+function callableBinding(node: ts.Node): CallableBinding | undefined {
+  if (ts.isFunctionDeclaration(node) && node.name && node.body)
+    return { name: node.name.text, body: node.body }
+  if (
+    ts.isVariableDeclaration(node) &&
+    ts.isIdentifier(node.name) &&
+    node.initializer &&
+    (ts.isArrowFunction(node.initializer) ||
+      ts.isFunctionExpression(node.initializer))
+  )
+    return { name: node.name.text, body: node.initializer.body }
+}
+
+function calledNames(root: ts.Node): Set<string> {
+  const calls = new Set<string>()
+  visit(root, (node) => {
+    if (!ts.isCallExpression(node)) return
+    const name = calledName(node)
+    if (name !== undefined) calls.add(name)
+  })
+  return calls
+}
+
+function identifierNames(root: ts.Node): Set<string> {
+  const names = new Set<string>()
+  visit(root, (node) => {
+    if (ts.isIdentifier(node)) names.add(node.text)
+  })
+  return names
+}
+
+function callableBindings(sourceFile: ts.SourceFile): {
+  callsByBinding: Map<string, Set<string>>
+  declarationCounts: Map<string, number>
+} {
+  const callsByBinding = new Map<string, Set<string>>()
+  const declarationCounts = new Map<string, number>()
+  visit(sourceFile, (node) => {
+    const declaration = callableBinding(node)
+    if (declaration === undefined) return
+    declarationCounts.set(
+      declaration.name,
+      (declarationCounts.get(declaration.name) ?? 0) + 1
+    )
+    const calls = callsByBinding.get(declaration.name) ?? new Set<string>()
+    for (const called of calledNames(declaration.body)) calls.add(called)
+    callsByBinding.set(declaration.name, calls)
+  })
+  return { callsByBinding, declarationCounts }
+}
+
+function directlyReachedNames(
+  sourceFile: ts.SourceFile,
+  routeNames: Set<string>
 ): Set<string> {
   const reached = new Set<string>()
-  const collect = (node: ts.Node): void => {
-    if (ts.isIdentifier(node)) reached.add(node.text)
-    ts.forEachChild(node, collect)
-  }
   visit(sourceFile, (node) => {
-    if (!isPanelCloseRouteCall(node)) return
-    for (const argument of node.arguments) collect(argument)
+    if (!isPanelCloseRouteCall(node, routeNames)) return
+    for (const argument of node.arguments)
+      for (const name of identifierNames(argument)) reached.add(name)
   })
+  return reached
+}
+
+function expandReachedNames(
+  reached: Set<string>,
+  callsByBinding: Map<string, Set<string>>,
+  declarationCounts: Map<string, number>
+): void {
+  let changed = true
+  while (changed) {
+    changed = false
+    for (const name of reached) {
+      if ((declarationCounts.get(name) ?? 0) !== 1) continue
+      for (const called of callsByBinding.get(name) ?? []) {
+        if (reached.has(called)) continue
+        reached.add(called)
+        changed = true
+      }
+    }
+  }
+}
+
+function removeAmbiguousNames(
+  reached: Set<string>,
+  declarationCounts: Map<string, number>
+): void {
+  for (const [name, count] of declarationCounts) {
+    if (count > 1) reached.delete(name)
+  }
+}
+
+function namesReachedByAPanelCloseRoute(
+  sourceFile: ts.SourceFile,
+  routeNames: Set<string>
+): Set<string> {
+  const reached = directlyReachedNames(sourceFile, routeNames)
+  const { callsByBinding, declarationCounts } = callableBindings(sourceFile)
+  expandReachedNames(reached, callsByBinding, declarationCounts)
+  removeAmbiguousNames(reached, declarationCounts)
   return reached
 }
 
@@ -522,11 +653,12 @@ function enclosingBoundNames(node: ts.Node): string[] {
 
 function insideAPanelCloseRoute(
   node: ts.Node,
-  reachedNames: Set<string>
+  reachedNames: Set<string>,
+  routeNames: Set<string>
 ): boolean {
   let parent = node.parent as ts.Node | undefined
   while (parent !== undefined) {
-    if (isPanelCloseRouteCall(parent)) return true
+    if (isPanelCloseRouteCall(parent, routeNames)) return true
     parent = parent.parent
   }
   return enclosingBoundNames(node).some((name) => reachedNames.has(name))
@@ -537,13 +669,6 @@ const SESSION_DISPOSAL_OWNERS = new Set([
   'src/workbench/extensions/agent/agentPageOpMinter.ts'
 ])
 
-/**
- * Every op producer outlives the Agent panel: only
- * {@link OP_PRODUCER_OWNER} attaches one, and no producer `detach` is called or
- * handed to a route a panel close reaches. See
- * `docs/adr/CRDT-FOLLOWER-0052-the-workflow-document-owns-the-follower-session.md`
- * Stage 2.
- */
 function opProducersOutliveThePanel(file: string, source: string): Violation[] {
   if (!isAgentSurfaceFile(file)) return []
   if (
@@ -557,7 +682,11 @@ function opProducersOutliveThePanel(file: string, source: string): Violation[] {
   )
   if (parsed.violations.length) return atPath(file, parsed.violations)
   const factoryNames = producerFactoryNames(parsed.sourceFile)
-  const reachedNames = namesReachedByAPanelCloseRoute(parsed.sourceFile)
+  const routeNames = panelCloseRouteNames(parsed.sourceFile)
+  const reachedNames = namesReachedByAPanelCloseRoute(
+    parsed.sourceFile,
+    routeNames
+  )
   const violations: Violation[] = []
   visit(parsed.sourceFile, (node) => {
     const factory = producerFactory(node, factoryNames)
@@ -572,7 +701,7 @@ function opProducersOutliveThePanel(file: string, source: string): Violation[] {
     if (
       receiver !== undefined &&
       !SESSION_DISPOSAL_OWNERS.has(file) &&
-      insideAPanelCloseRoute(node, reachedNames)
+      insideAPanelCloseRoute(node, reachedNames, routeNames)
     )
       violations.push({
         file,

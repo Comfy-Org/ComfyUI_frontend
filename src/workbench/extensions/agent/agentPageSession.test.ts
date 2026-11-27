@@ -1,4 +1,4 @@
-import { effectScope, getCurrentScope } from 'vue'
+import { effectScope, getCurrentScope, nextTick, ref } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createFakeAgentSocket } from './crdt/__fixtures__/agentSocket'
@@ -10,20 +10,33 @@ import {
   useAgentPageSession
 } from './agentPageSession'
 import { createAgentEventSource } from './services/agent/agentEventSource'
+import { resolveAgentIdentity } from './services/agent/agentIdentity'
+import type {
+  AgentIdentityState,
+  ResolvedAgentIdentity
+} from './services/agent/agentIdentity'
 
 vi.mock(import('@/scripts/api'))
 vi.mock(import('./services/agent/agentAuth'))
 vi.mock(import('./services/agent/agentEventSource'), { spy: true })
+vi.mock(import('./services/agent/agentIdentity'), { spy: true })
 
 let agentSocket: ReturnType<typeof createFakeAgentSocket>
+let resolvedIdentity: ResolvedAgentIdentity
 
-let identity: SocketIdentity = [null, null, null]
-const readIdentity = () => identity
+const identity = ref<SocketIdentity>([null, null, null])
+const readIdentity = () => identity.value
 
 beforeEach(() => {
-  identity = [null, null, null]
+  identity.value = [null, null, null]
   agentSocket = createFakeAgentSocket()
   vi.mocked(createAgentEventSource).mockReturnValue(agentSocket.socket)
+  resolvedIdentity = {
+    state: ref<AgentIdentityState>({ status: 'resolved', userId: 'account-a' }),
+    reset: vi.fn(),
+    stop: vi.fn()
+  }
+  vi.mocked(resolveAgentIdentity).mockReturnValue(resolvedIdentity)
   destroyAgentPageSession()
 })
 
@@ -101,6 +114,53 @@ describe('useAgentPageSession', () => {
 
     expect(createAgentEventSource).toHaveBeenCalledTimes(2)
     expect(second.docTransport).not.toBe(first.docTransport)
+  })
+
+  it('retains identity resolution across a panel scope ending', () => {
+    const panelScope = effectScope()
+    const first = panelScope.run(() =>
+      useAgentPageSession(readIdentity).retainIdentity({
+        getIdentity: vi.fn(),
+        isRetryable: vi.fn(),
+        onFailure: vi.fn()
+      })
+    )
+
+    panelScope.stop()
+    const remounted = useAgentPageSession(readIdentity).retainIdentity({
+      getIdentity: vi.fn(),
+      isRetryable: vi.fn(),
+      onFailure: vi.fn()
+    })
+
+    expect(remounted).toBe(first)
+    expect(resolvedIdentity.stop).not.toHaveBeenCalled()
+    expect(resolveAgentIdentity).toHaveBeenCalledTimes(1)
+  })
+
+  it('resets the retained agent identity when the socket identity changes', async () => {
+    useAgentPageSession(readIdentity).retainIdentity({
+      getIdentity: vi.fn(),
+      isRetryable: vi.fn(),
+      onFailure: vi.fn()
+    })
+
+    identity.value = ['account-b', null, null]
+    await nextTick()
+
+    expect(resolvedIdentity.reset).toHaveBeenCalledOnce()
+  })
+
+  it('stops retained identity resolution on page teardown', () => {
+    useAgentPageSession(readIdentity).retainIdentity({
+      getIdentity: vi.fn(),
+      isRetryable: vi.fn(),
+      onFailure: vi.fn()
+    })
+
+    destroyAgentPageSession()
+
+    expect(resolvedIdentity.stop).toHaveBeenCalledOnce()
   })
 })
 

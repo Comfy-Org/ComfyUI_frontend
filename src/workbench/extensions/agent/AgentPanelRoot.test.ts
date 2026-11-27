@@ -19178,13 +19178,15 @@ describe('AgentPanelRoot agent socket', () => {
   })
 
   it('reconnects on an account switch made while the panel is closed', async () => {
+    const reset = vi.fn()
+    const stop = vi.fn()
     vi.mocked(resolveAgentIdentity).mockReturnValue({
       state: ref<AgentIdentityState>({
         status: 'resolved',
         userId: 'account-a'
       }),
-      reset: vi.fn(),
-      stop: () => {}
+      reset,
+      stop
     })
     signInAs({ firebase: 'account-a', apiKeyUser: null })
     const panel = render(AgentPanelRoot, { global: { plugins: [i18n] } })
@@ -19192,11 +19194,13 @@ describe('AgentPanelRoot agent socket', () => {
     panel.unmount()
     await nextTick()
     agentSocket.reconnect.mockClear()
+    expect(stop).not.toHaveBeenCalled()
 
     signInAs({ firebase: 'account-b', apiKeyUser: null })
     await nextTick()
 
     expect(agentSocket.reconnect).toHaveBeenCalledOnce()
+    expect(reset).toHaveBeenCalledOnce()
   })
 
   it('handshakes once for a workspace switch that passes through null', async () => {

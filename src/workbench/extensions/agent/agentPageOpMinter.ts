@@ -13,24 +13,15 @@ import { attachDocOpMinter } from './crdt/docOpMinter'
 import { reportLostEdit } from './crdt/reportLostEdit'
 import { retainedAgentFollowerSessionRef } from './crdt/useAgentCrdtFollower'
 
-/**
- * Op-producer inputs only a mounted Agent panel can answer. Each is a closure
- * over a ref or a Pinia store, so it keeps answering after that panel
- * unmounts. See `docs/adr/CRDT-FOLLOWER-0052-the-workflow-document-owns-the-follower-session.md`
- * Stage 2.
- */
 export interface AgentPanelOpMinterInputs {
-  /** The product gate — `enabled`, which a panel close does not clear. */
   isEnabled(): boolean
   /** Whether the bound workflow's tab is active and an identity is resolved. */
   isTargetActive(): boolean
-  /** The live root graph, or null when no workflow is open. */
   getGraph(): LGraph | null
   /** Whether `workflow` is the one whose document the session is bound to. */
   isBoundWorkflow(workflow: ComfyWorkflow): boolean
   /** The bound workflow's own serialized root graph id. */
   boundRootGraphId(): RootGraphId | null
-  /** The workflow id a visible root graph is bound to, or null for none. */
   visibleWorkflowIdFor(rootGraph: LGraph): string | null
 }
 
@@ -136,7 +127,7 @@ function releaseWithoutPropagating(
         tags: { step }
       })
     } catch {
-      // A reporter that throws must not abort the teardown it reports on.
+      void 0
     }
   }
 }
