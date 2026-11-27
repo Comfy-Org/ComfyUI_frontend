@@ -15,37 +15,44 @@
     <PopoverContent
       side="top"
       :side-offset="5"
-      class="w-auto overflow-visible rounded-lg border-border/50 p-2 shadow-sm"
+      class="w-fit overflow-visible rounded-lg border-border/50 p-2 shadow-sm [--align-button-size:--spacing(8)] [--align-gap:--spacing(1)] [--align-inset:calc(--spacing(4)+2px)]"
+      :style="{ '--align-row-width': alignRowWidth(alignOptionCount) }"
     >
-      <div class="flex flex-wrap gap-1 max-[390px]:flex-col">
+      <div
+        class="flex flex-wrap gap-(--align-gap) [@container_style(--reka-popover-content-available-width<var(--align-row-width))]:flex-col"
+      >
         <div
           v-for="(groups, section) in alignOptionSections"
           :key="section"
-          :class="
-            cn(
-              'flex flex-wrap gap-1',
-              section === 'alignment'
-                ? 'max-[246px]:flex-col'
-                : 'max-[174px]:flex-col'
+          class="min-w-0"
+          :style="{
+            '--align-row-width': alignRowWidth(
+              Object.values(groups).flat().length
             )
-          "
+          }"
         >
           <div
-            v-for="(options, group) in groups"
-            :key="group"
-            class="flex gap-1"
+            class="flex flex-wrap gap-(--align-gap) [@container_style(--reka-popover-content-available-width<var(--align-row-width))]:flex-col"
           >
-            <Button
-              v-for="option in options"
-              :key="option.action"
-              :tooltip="t(option.label)"
-              variant="muted-textonly"
-              :aria-label="t(option.label)"
-              :disabled="!canAlign(option.action)"
-              @click="align(option.action)"
+            <div
+              v-for="(options, group) in groups"
+              :key="group"
+              class="flex gap-(--align-gap)"
             >
-              <i :class="option.icon" />
-            </Button>
+              <Button
+                v-for="option in options"
+                :key="option.action"
+                :tooltip="t(option.label)"
+                size="unset"
+                class="size-(--align-button-size) rounded-lg"
+                variant="muted-textonly"
+                :aria-label="t(option.label)"
+                :disabled="!canAlign(option.action)"
+                @click="align(option.action)"
+              >
+                <i :class="option.icon" />
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -60,7 +67,6 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
 import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
-import { cn } from '@comfyorg/tailwind-utils'
 import { useAlignSelection } from '@/renderer/core/canvas/smartGuides/useAlignSelection'
 import type { AlignAction } from '@comfyorg/graph-model/arrange/arrange'
 
@@ -138,4 +144,12 @@ const alignOptionSections = {
     ]
   }
 } satisfies Record<string, Record<string, AlignOption[]>>
+
+const alignOptionCount = Object.values(alignOptionSections).flatMap((groups) =>
+  Object.values(groups).flat()
+).length
+
+function alignRowWidth(buttonCount: number) {
+  return `calc(${buttonCount} * var(--align-button-size) + ${buttonCount - 1} * var(--align-gap) + var(--align-inset))`
+}
 </script>
