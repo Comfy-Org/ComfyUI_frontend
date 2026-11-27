@@ -27,7 +27,7 @@ import type {
   DialogComponentProps,
   ShowDialogOptions
 } from '@/stores/dialogStore'
-import { tryExtractValidationError } from '@/utils/executionErrorUtil'
+import { cloudValidationErrorOf } from '@/utils/executionErrorUtil'
 
 const GLOBAL_PROMPT_KEY = 'global-prompt'
 
@@ -145,9 +145,7 @@ export const useDialogService = (): CoreDialogService => {
   const dialogStore = useDialogStore()
 
   function showExecutionErrorDialog(executionError: ExecutionErrorDialogInput) {
-    const validationError = tryExtractValidationError(
-      executionError.exception_message
-    )
+    const validationError = cloudValidationErrorOf(executionError)
     const validationSources = getPromptErrorSources(validationError)
     const props: ComponentAttrs<typeof ErrorDialogContent> = {
       errorSources: validationSources.length
