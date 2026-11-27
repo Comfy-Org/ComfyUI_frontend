@@ -720,33 +720,51 @@ describe('useAgentDockMount', () => {
       })
 
       it('passes the acceptance read the option that detaches an in-flight read', async () => {
-        const { consent, fetchStatus } = mountWithFreshBilling()
+        const { consent, fetchStatusFresh } = mountWithFreshBilling()
 
         consent.confirmedAcceptances += 1
         await settleRefreshes()
 
-        expect(fetchStatus).toHaveBeenCalledWith({ fresh: true })
+        expect(fetchStatusFresh).toHaveBeenCalledWith({ fresh: true })
       })
 
       it('leaves the open its own read when the acceptance read fails', async () => {
         const { consent, store, fetchStatus, fetchStatusFresh } =
           mountWithFreshBilling()
-        fetchStatus.mockRejectedValueOnce(new Error('status read failed'))
+        fetchStatusFresh.mockRejectedValueOnce(new Error('status read failed'))
 
         consent.confirmedAcceptances += 1
         await nextTick()
-        expect(fetchStatus).toHaveBeenCalledWith({ fresh: true })
+        expect(fetchStatusFresh).toHaveBeenCalledWith({ fresh: true })
         store.isOpen = true
 
-        await vi.waitFor(() => expect(fetchStatusFresh).toHaveBeenCalledOnce())
+        await vi.waitFor(() =>
+          expect(fetchStatusFresh).toHaveBeenCalledTimes(2)
+        )
+        expect(fetchStatus).not.toHaveBeenCalled()
+      })
+
+      it('leaves the open its own read when the acceptance read is not adopted', async () => {
+        const { consent, store, fetchStatus, fetchStatusFresh } =
+          mountWithFreshBilling()
+        fetchStatusFresh.mockResolvedValueOnce(false)
+
+        consent.confirmedAcceptances += 1
+        await nextTick()
+        store.isOpen = true
+
+        await vi.waitFor(() =>
+          expect(fetchStatusFresh).toHaveBeenCalledTimes(2)
+        )
+        expect(fetchStatusFresh).toHaveBeenNthCalledWith(1, { fresh: true })
+        expect(fetchStatus).not.toHaveBeenCalled()
       })
 
       it('starts the open read when the acceptance read times out', async () => {
         vi.useFakeTimers()
         try {
-          const { consent, store, fetchStatus, fetchStatusFresh } =
-            mountWithFreshBilling()
-          fetchStatus.mockImplementationOnce(() => new Promise(() => {}))
+          const { consent, store, fetchStatusFresh } = mountWithFreshBilling()
+          fetchStatusFresh.mockImplementationOnce(() => new Promise(() => {}))
 
           consent.confirmedAcceptances += 1
           await nextTick()
@@ -754,7 +772,7 @@ describe('useAgentDockMount', () => {
           await nextTick()
           await vi.advanceTimersByTimeAsync(15_000)
 
-          expect(fetchStatusFresh).toHaveBeenCalledOnce()
+          expect(fetchStatusFresh).toHaveBeenCalledTimes(2)
         } finally {
           vi.useRealTimers()
         }
@@ -763,18 +781,18 @@ describe('useAgentDockMount', () => {
       it('leaves an unrelated later open its own read when acceptance never opened the panel', async () => {
         const now = vi.spyOn(Date, 'now')
         now.mockReturnValue(1_000)
-        const { consent, store, fetchStatus, fetchStatusFresh } =
-          mountWithFreshBilling()
+        const { consent, store, fetchStatusFresh } = mountWithFreshBilling()
 
         consent.confirmedAcceptances += 1
         await settleRefreshes()
-        expect(fetchStatus).toHaveBeenCalledWith({ fresh: true })
-        expect(fetchStatusFresh).not.toHaveBeenCalled()
+        expect(fetchStatusFresh).toHaveBeenCalledWith({ fresh: true })
 
         now.mockReturnValue(1_000 + 3_600_000)
         store.isOpen = true
 
-        await vi.waitFor(() => expect(fetchStatusFresh).toHaveBeenCalledOnce())
+        await vi.waitFor(() =>
+          expect(fetchStatusFresh).toHaveBeenCalledTimes(2)
+        )
       })
 
       it('still reads billing on an open that no acceptance triggered', async () => {

@@ -47,8 +47,7 @@ export function useAgentDockMount(): AgentDockMount {
   }
 
   const readBillingFresh = async (): Promise<boolean> => {
-    await fetchStatus({ fresh: true })
-    return true
+    return fetchStatusFresh?.({ fresh: true }) ?? false
   }
 
   watch(
