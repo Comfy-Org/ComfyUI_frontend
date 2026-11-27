@@ -162,7 +162,7 @@ describe('useJobMenu', () => {
         filename: 'Job 55.json',
         content: JSON.stringify(workflow)
       },
-      { initiator: 'user' }
+      { initiator: 'user', opening: 'brought_in' }
     )
   })
 

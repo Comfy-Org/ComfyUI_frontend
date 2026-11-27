@@ -48,6 +48,22 @@ export const Sides: Story = {
   })
 }
 
+export const LongUnbrokenText: Story = {
+  args: { defaultOpen: true },
+  render: (args) => ({
+    components: { Button, Tooltip, TooltipContent, TooltipTrigger },
+    setup: () => ({ args }),
+    template: `
+      <Tooltip v-bind="args">
+        <TooltipTrigger as-child>
+          <Button variant="secondary">Hover or focus</Button>
+        </TooltipTrigger>
+        <TooltipContent>qwen21_5\\qwen2.1_head_swap_copy_copy_512only_copy_masked_copy_linear_noquant_000000400.safetensors</TooltipContent>
+      </Tooltip>
+    `
+  })
+}
+
 export const OnButton: Story = {
   render: () => ({
     components: { Button },

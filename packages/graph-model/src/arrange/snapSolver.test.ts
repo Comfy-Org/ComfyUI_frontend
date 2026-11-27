@@ -184,6 +184,34 @@ describe('snapMove', () => {
     expect(guides.filter((g) => g.kind === 'gap')).toHaveLength(2)
   })
 
+  it('draws one alignment line per axis, spanning only to the nearest aligned box', () => {
+    const index = buildSnapIndex(
+      [box(100, 0, 100, 60), box(100, 1000, 100, 60)],
+      edgesOnly
+    )
+    expect(
+      snapMove(index, box(104, 300, 100, 50), { threshold }).guides
+    ).toEqual([{ kind: 'line', axis: 'x', at: 100, from: 0, to: 350 }])
+  })
+
+  it.for([
+    {
+      name: 'a line along the shared edge when the gap is 0',
+      gap: 0,
+      moving: box(104, 10, 50, 50),
+      guides: [{ kind: 'line', axis: 'x', at: 100, from: 0, to: 100 }]
+    },
+    {
+      name: 'the gap measurement when a gap is configured',
+      gap: 20,
+      moving: box(124, 10, 50, 50),
+      guides: [{ kind: 'gap', axis: 'x', from: 100, to: 120, cross: 35 }]
+    }
+  ])('marks an abutment with $name', ({ gap, moving, guides }) => {
+    const index = buildSnapIndex([box(0, 0, 100, 100)], { ...edgesOnly, gap })
+    expect(snapMove(index, moving, { threshold }).guides).toEqual(guides)
+  })
+
   it('draws no alignment lines when edge snapping is off', () => {
     const index = buildSnapIndex([box(100, 0, 100, 60)], {
       ...edgesOnly,
@@ -192,6 +220,29 @@ describe('snapMove', () => {
     expect(
       snapMove(index, box(100, 300, 100, 60), { threshold }).guides
     ).toEqual([])
+  })
+
+  it.for([
+    {
+      name: 'coordinates too large to step from one bucket to the next',
+      target: box(2 ** 60, 0, 100, 60),
+      moving: box(2 ** 60, 300, 50, 50),
+      reach: 14,
+      guides: 1
+    },
+    {
+      name: 'a reach that spans far more buckets than hold lines',
+      target: box(100, 0, 100, 60),
+      moving: box(105, 300, 50, 50),
+      reach: 2 ** 60,
+      guides: 2
+    }
+  ])('still snaps with $name', ({ target, moving, reach, guides }) => {
+    const index = buildSnapIndex([target], edgesOnly)
+    const snapped = snapMove(index, moving, {
+      threshold: { enter: reach, exit: reach }
+    })
+    expect(snapped.guides).toHaveLength(guides)
   })
 
   it('leaves the box alone when nothing is in reach', () => {
