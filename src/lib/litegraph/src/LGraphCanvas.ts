@@ -8472,7 +8472,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       })
     }
 
-    if (selectedCanvasNodes(this).length > 1) {
+    const selectedNodes = selectedCanvasNodes(this)
+    if (selectedNodes.length > 1) {
       options.push(
         {
           content: 'Align Selected To',
@@ -8482,6 +8483,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         {
           content: 'Distribute Nodes',
           has_submenu: true,
+          disabled: selectedNodes.some((selected) => selected.pinned),
           callback: LGraphCanvas.createDistributeMenu
         }
       )

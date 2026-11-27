@@ -78,6 +78,9 @@
   "Comfy_Canvas_SmartGuides_SnapToWires": {
     "name": "吸附使連線變為筆直"
   },
+  "Comfy_Cloud_AskBeforeCompatibilityCheck": {
+    "name": "在傳送節點和模型名稱以檢查 Comfy Cloud 相容性前先詢問"
+  },
   "Comfy_ConfirmClear": {
     "name": "清除工作流程時需要確認"
   },

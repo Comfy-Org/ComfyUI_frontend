@@ -40,7 +40,7 @@ import { useTelemetry } from '@comfyorg/telemetry'
 import { usePlatformFrameStore } from '@/platform/workspace/platformFrame/platformFrameStore'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useDialogService } from '@/services/dialogService'
+import { showUnsavedWorkDialog } from '@/platform/workspace/showUnsavedWorkDialog'
 import { useDialogStore } from '@/stores/dialogStore'
 import { api } from '@/scripts/api'
 
@@ -89,7 +89,7 @@ vi.mock(
     spy: true
   }
 )
-vi.mock(import('@/services/dialogService'))
+vi.mock(import('@/platform/workspace/showUnsavedWorkDialog'))
 vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
 const distribution = vi.hoisted(() => ({ isCloud: true }))
@@ -449,6 +449,46 @@ describe('DeploymentSwitcher', () => {
       'Start Studio Build · staging on the Developer Platform'
     )
     expect(screen.queryByTestId('deployment-switcher-default')).toBeNull()
+  })
+
+  it('names the Build beside the icon on a deployment', async () => {
+    mockWorkspaceApi.listDeployments.mockResolvedValue({
+      ...listing,
+      picked_deployment_id: D2
+    })
+    renderSwitcher()
+
+    expect(
+      await screen.findByTestId('deployment-switcher-build-name')
+    ).toHaveTextContent(/^Studio Build$/)
+  })
+
+  it('shows only the icon on a deployment without a Build name', async () => {
+    mockWorkspaceApi.listDeployments.mockResolvedValue({
+      ...listing,
+      picked_deployment_id: D2,
+      items: [
+        { ...listing.items[0], build_name: undefined },
+        ...listing.items.slice(1)
+      ]
+    })
+    renderSwitcher()
+
+    const trigger = await screen.findByTestId('deployment-switcher-trigger')
+    await waitFor(() => expect(trigger).toHaveAccessibleName(/production/))
+    expect(
+      screen.queryByTestId('deployment-switcher-build-name')
+    ).not.toBeInTheDocument()
+  })
+
+  it('shows only the icon on Comfy Cloud', async () => {
+    mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+    renderSwitcher()
+
+    await screen.findByTestId('deployment-switcher-trigger')
+    expect(
+      screen.queryByTestId('deployment-switcher-build-name')
+    ).not.toBeInTheDocument()
   })
 
   it('marks the engine button until its first open closes, and remembers it on every device as soon as it opens', async () => {
@@ -1530,7 +1570,7 @@ describe('DeploymentSwitcher', () => {
         mockWorkspaceApi.listDeployments
           .mockResolvedValueOnce(boot)
           .mockResolvedValue(next)
-        vi.mocked(useDialogService().confirm).mockResolvedValueOnce(null)
+        vi.mocked(showUnsavedWorkDialog).mockResolvedValueOnce(null)
         const user = renderSwitcher()
         await screen.findByTestId('deployment-switcher-trigger')
         await openList(user)
@@ -1538,7 +1578,7 @@ describe('DeploymentSwitcher', () => {
         await act(user)
 
         await waitFor(() =>
-          expect(useDialogService().confirm).toHaveBeenCalledWith(
+          expect(showUnsavedWorkDialog).toHaveBeenCalledWith(
             expect.objectContaining({
               message,
               itemList: ['workflows/portrait.json']
@@ -1561,7 +1601,7 @@ describe('DeploymentSwitcher', () => {
       async ({ answer, saved }) => {
         mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
         mockWorkspaceApi.pickDeployment.mockResolvedValue(undefined)
-        vi.mocked(useDialogService().confirm).mockResolvedValueOnce(answer)
+        vi.mocked(showUnsavedWorkDialog).mockResolvedValueOnce(answer)
         const user = renderSwitcher()
         await openList(user)
 
@@ -1585,15 +1625,13 @@ describe('DeploymentSwitcher', () => {
         settingValues: { 'Comfy.DeploymentSwitcher.Seen': false }
       })
       mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
-      vi.mocked(useDialogService().confirm).mockResolvedValueOnce(null)
+      vi.mocked(showUnsavedWorkDialog).mockResolvedValueOnce(null)
       const user = renderSwitcher()
       await openList(user)
 
       await user.click(screen.getByTestId(`deployment-row-${D2}`))
 
-      await waitFor(() =>
-        expect(useDialogService().confirm).toHaveBeenCalledOnce()
-      )
+      await waitFor(() => expect(showUnsavedWorkDialog).toHaveBeenCalledOnce())
       expect(screen.queryByRole('menu')).not.toBeInTheDocument()
       await waitFor(() =>
         expect(
@@ -1604,7 +1642,7 @@ describe('DeploymentSwitcher', () => {
 
     it('stays put when a save does not finish', async () => {
       mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
-      vi.mocked(useDialogService().confirm).mockResolvedValueOnce(true)
+      vi.mocked(showUnsavedWorkDialog).mockResolvedValueOnce(true)
       vi.mocked(useWorkflowService().saveWorkflow).mockResolvedValueOnce(false)
       const user = renderSwitcher()
       await openList(user)
@@ -1623,7 +1661,7 @@ describe('DeploymentSwitcher', () => {
       mockWorkspaceApi.pickDeployment.mockRejectedValue(
         new WorkspaceApiError('deployment is not in this workspace', 403)
       )
-      vi.mocked(useDialogService().confirm).mockResolvedValueOnce(false)
+      vi.mocked(showUnsavedWorkDialog).mockResolvedValueOnce(false)
       const user = renderSwitcher()
       await openList(user)
 
@@ -1648,7 +1686,7 @@ describe('DeploymentSwitcher', () => {
 
       await user.click(screen.getByTestId(`default-row-${D2}`))
 
-      expect(useDialogService().confirm).not.toHaveBeenCalled()
+      expect(showUnsavedWorkDialog).not.toHaveBeenCalled()
       expect(mockWorkspaceApi.setDefaultDeployment).not.toHaveBeenCalled()
     })
 
@@ -1670,7 +1708,7 @@ describe('DeploymentSwitcher', () => {
           'ws-1'
         )
       )
-      expect(useDialogService().confirm).not.toHaveBeenCalled()
+      expect(showUnsavedWorkDialog).not.toHaveBeenCalled()
       expect(reload).not.toHaveBeenCalled()
     })
 
@@ -1700,7 +1738,7 @@ describe('DeploymentSwitcher', () => {
       expect(mockWorkspaceApi.clearDeployment).toHaveBeenCalledWith('ws-1', {
         follow: 'workspace'
       })
-      expect(useDialogService().confirm).not.toHaveBeenCalled()
+      expect(showUnsavedWorkDialog).not.toHaveBeenCalled()
       expect(reload).not.toHaveBeenCalled()
     })
   })
@@ -2703,6 +2741,24 @@ describe('DeploymentSwitcher with Platform in the editor', () => {
       } satisfies FollowedBuild
     })
   }
+
+  it('drops the Build name while the spinner follows a build', async () => {
+    mockWorkspaceApi.listDeployments.mockResolvedValue({
+      ...listing,
+      picked_deployment_id: D2
+    })
+    following('building', null)
+    renderSwitcher()
+
+    const trigger = await screen.findByTestId('deployment-switcher-trigger')
+    await waitFor(() => expect(trigger).toHaveAccessibleName(/Studio Build/))
+    expect(
+      screen.getByTestId('deployment-switcher-building')
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByTestId('deployment-switcher-build-name')
+    ).not.toBeInTheDocument()
+  })
 
   it.for([
     {

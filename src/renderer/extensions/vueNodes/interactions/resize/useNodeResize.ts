@@ -22,6 +22,7 @@ import { useTransformState } from '@/renderer/core/layout/transform/useTransform
 interface ResizeOrigin {
   element: HTMLElement
   position: Point
+  rowSlack?: () => number
   snapItem?: Positionable
 }
 
@@ -59,7 +60,12 @@ export function useNodeResize(
   const startResize = (
     event: PointerEvent,
     corner: CompassCorners,
-    { element: nodeElement, position, snapItem }: ResizeOrigin
+    {
+      element: nodeElement,
+      position,
+      rowSlack = () => 0,
+      snapItem
+    }: ResizeOrigin
   ) => {
     event.stopPropagation()
 
@@ -85,7 +91,7 @@ export function useNodeResize(
       nodeElement.style.setProperty('--node-height', savedHeight || '')
       nodeElement.style.setProperty('--node-width', savedWidth || '')
       const currentScale = transformState.camera.z || 1
-      return measured / currentScale
+      return measured / currentScale - rowSlack()
     }
 
     const { canvas } = canvasStore

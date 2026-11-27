@@ -79,8 +79,8 @@ export class BuilderSelectHelper {
       .click()
 
     const input = this.page
-      .getByTestId(TestIds.builder.ioItemTitle)
       .getByRole('textbox')
+      .and(this.page.getByTestId(TestIds.builder.ioItemTitle))
     await expect(input).toBeFocused()
     await input.fill(newName)
     await this.page.keyboard.press('Enter')
@@ -99,8 +99,8 @@ export class BuilderSelectHelper {
     await titleEl.dblclick()
 
     const input = this.page
-      .getByTestId(TestIds.builder.ioItemTitle)
       .getByRole('textbox')
+      .and(this.page.getByTestId(TestIds.builder.ioItemTitle))
     await input.fill(newName)
     await this.page.keyboard.press('Enter')
     await this.comfyPage.nextFrame()
