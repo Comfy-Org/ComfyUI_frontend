@@ -4575,7 +4575,7 @@
     "checkFailure": {
       "unreachable": "Could not reach Comfy Cloud. Check your internet connection, then try again.",
       "busy": "Comfy Cloud is busy right now. Try again in a minute.",
-      "workspace": "Could not use your Comfy Cloud workspace. Sign out and back in, then try again.",
+      "workspace": "Could not use your Comfy Cloud workspace. Try again in a minute, or sign out and back in.",
       "tooBig": "This workflow is too big to check on Comfy Cloud. It can have up to 2,000 node types and 500 models.",
       "outdated": "This version of ComfyUI can't read Comfy Cloud's answer. Update ComfyUI, then try again.",
       "unreadable": "Could not read this workflow to check it. Reload ComfyUI, then try again."

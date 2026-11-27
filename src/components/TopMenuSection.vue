@@ -244,6 +244,7 @@ import { useManagerState } from '@/platform/customNodes/manager/composables/useM
 import { useManagerSurveyDialog } from '@/platform/customNodes/manager/composables/dialogs/useManagerSurveyDialog'
 import { ManagerTab } from '@/platform/customNodes/manager/types/comfyManagerTypes'
 import { cn } from '@comfyorg/tailwind-utils'
+import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
 
 const settingStore = useSettingStore()
 const workspaceStore = useWorkspaceStore()
@@ -260,8 +261,10 @@ const cloudWorkflowCheck = isCloud ? undefined : useCloudWorkflowCheckStore()
 const isCloudButtonShown = computed(
   () =>
     !isCloud &&
-    flags.openOnCloudEnabled &&
-    !cloudWorkflowCheck?.isSwitchedOffOnCloud &&
+    pendingServerFact(
+      'BE-27740',
+      flags.openOnCloudEnabled && !cloudWorkflowCheck?.isSwitchedOffOnCloud
+    ) &&
     canHandOffToCloud()
 )
 const localModelUploads = isCloud ? undefined : useLocalModelUploadStore()

@@ -889,7 +889,7 @@ describe('Cloud button compatibility checks', () => {
       name: 'asks to sign in again when the workspace cannot be used',
       result: { kind: 'checkFailed', reason: 'workspace' },
       message:
-        'Could not use your Comfy Cloud workspace. Sign out and back in, then try again.',
+        'Could not use your Comfy Cloud workspace. Try again in a minute, or sign out and back in.',
       properties: { reason: 'workspace' }
     },
     {

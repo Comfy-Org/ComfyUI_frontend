@@ -73,18 +73,25 @@ export const useCloudWorkflowCheckStore = defineStore(
           controller.signal
         )
         if (controller.signal.aborted) return
-        if (result?.kind === 'canOpen' || result?.kind === 'missing') {
-          isSwitchedOffOnCloud.value = false
-          dispatch({ type: 'answered', run, verdict: result })
-        } else {
-          dispatch({ type: 'failed', run, blocker: result })
-          if (result?.kind === 'checkFailed' && result.reason === 'switchedOff')
-            await hideAfterFailureIsShown(run)
-        }
+        await settle(run, result)
       } finally {
         signal?.removeEventListener('abort', cancelPendingCheck)
         if (activeCheck === pending) activeCheck = undefined
       }
+    }
+
+    async function settle(
+      run: number,
+      result: Awaited<ReturnType<typeof checkCloudCompatibility>>
+    ) {
+      if (result?.kind === 'canOpen' || result?.kind === 'missing') {
+        isSwitchedOffOnCloud.value = false
+        dispatch({ type: 'answered', run, verdict: result })
+        return
+      }
+      dispatch({ type: 'failed', run, blocker: result })
+      if (result?.kind === 'checkFailed' && result.reason === 'switchedOff')
+        await hideAfterFailureIsShown(run)
     }
 
     async function hideAfterFailureIsShown(run: number) {
