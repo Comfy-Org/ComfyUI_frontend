@@ -22151,7 +22151,7 @@
     "inputs": {
       "fps": {
         "name": "fps",
-        "tooltip": "Ausgabe-Framerate. „source“ behält die Framerate des Videos bei, bis zu 60. Eine höhere Framerate wird interpoliert. Ausgabe über 30 fps kostet doppelt so viel."
+        "tooltip": "Ausgabe-Bildrate. „source“ behält die Bildrate des Videos bei, bis zu 60. Eine höhere Rate wird interpoliert. Ausgabe über 30 fps kostet doppelt so viel, außer mit Turbo."
       },
       "target": {
         "name": "Ziel",
@@ -22159,7 +22159,7 @@
       },
       "turbo": {
         "name": "Turbo",
-        "tooltip": "Schnelleres Upscaling mit weicheren Details zum gleichen Preis."
+        "tooltip": "Schnelleres Upscaling mit weicheren Details zu einem niedrigeren Preis."
       },
       "video": {
         "name": "Video",

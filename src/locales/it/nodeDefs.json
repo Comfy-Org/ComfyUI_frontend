@@ -22151,7 +22151,7 @@
     "inputs": {
       "fps": {
         "name": "fps",
-        "tooltip": "Frequenza dei fotogrammi di output. 'source' mantiene la frequenza del video, fino a 60. Una frequenza più alta viene interpolata. L'output oltre 30 fps costa il doppio."
+        "tooltip": "Frequenza dei fotogrammi in uscita. 'source' mantiene la frequenza del video, fino a 60. Una frequenza superiore viene interpolata. L'output oltre 30 fps costa il doppio, tranne con turbo."
       },
       "target": {
         "name": "destinazione",
@@ -22159,7 +22159,7 @@
       },
       "turbo": {
         "name": "turbo",
-        "tooltip": "Upscale più veloce con dettagli più morbidi, allo stesso prezzo."
+        "tooltip": "Upscale più rapido con dettagli più morbidi, a un prezzo inferiore."
       },
       "video": {
         "name": "video",

@@ -22151,7 +22151,7 @@
     "inputs": {
       "fps": {
         "name": "fps",
-        "tooltip": "Frecuencia de fotogramas de salida. 'source' conserva la frecuencia del vídeo, hasta 60. Se interpola una frecuencia mayor. La salida por encima de 30 fps cuesta el doble."
+        "tooltip": "Frecuencia de fotogramas de salida. «source» mantiene la frecuencia del vídeo, hasta 60. Una frecuencia superior se interpola. La salida por encima de 30 fps cuesta el doble, excepto con turbo."
       },
       "target": {
         "name": "objetivo",
@@ -22159,7 +22159,7 @@
       },
       "turbo": {
         "name": "turbo",
-        "tooltip": "Aumento de resolución más rápido con detalles más suaves, al mismo precio."
+        "tooltip": "Reescalado más rápido con detalles más suaves, a un precio menor."
       },
       "video": {
         "name": "vídeo",

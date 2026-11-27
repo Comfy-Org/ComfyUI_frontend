@@ -22159,11 +22159,11 @@
       },
       "fps": {
         "name": "fps",
-        "tooltip": "Output frame rate. 'source' keeps the rate of the video, up to 60. A higher rate is interpolated. Output above 30 fps costs twice as much."
+        "tooltip": "Output frame rate. 'source' keeps the rate of the video, up to 60. A higher rate is interpolated. Output above 30 fps costs twice as much, except with turbo."
       },
       "turbo": {
         "name": "turbo",
-        "tooltip": "Faster upscale with softer detail, at the same price."
+        "tooltip": "Faster upscale with softer detail, at a lower price."
       }
     },
     "outputs": {

@@ -22151,7 +22151,7 @@
     "inputs": {
       "fps": {
         "name": "fps",
-        "tooltip": "Taxa de quadros da saída. 'source' mantém a taxa do vídeo, até 60. Uma taxa mais alta é interpolada. Saída acima de 30 fps custa o dobro."
+        "tooltip": "Taxa de quadros de saída. 'source' mantém a taxa do vídeo, até 60. Uma taxa mais alta é interpolada. A saída acima de 30 fps custa o dobro, exceto com turbo."
       },
       "target": {
         "name": "destino",
@@ -22159,7 +22159,7 @@
       },
       "turbo": {
         "name": "turbo",
-        "tooltip": "Ampliação mais rápida com detalhes mais suaves, pelo mesmo preço."
+        "tooltip": "Upscale mais rápido, com detalhes mais suaves, por um preço menor."
       },
       "video": {
         "name": "vídeo",
