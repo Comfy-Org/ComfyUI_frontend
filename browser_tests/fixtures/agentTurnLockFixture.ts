@@ -601,12 +601,7 @@ export class AgentTurnLockHarness {
     })
     this.workSummary = this.panel.getByRole('button', {
       name: new RegExp(
-        `^(${[
-          enMessages.agent.worked,
-          enMessages.agent.workedNotConfirmedOnCanvas
-        ]
-          .map(escapeRegExp)
-          .join('|')})$`
+        `^(${escapeRegExp(enMessages.agent.worked)}(?: for .+)?|${escapeRegExp(enMessages.agent.workedNotConfirmedOnCanvas)})$`
       )
     })
     this.workingRow = this.panel.getByText(enMessages.agent.working, {

@@ -302,7 +302,8 @@ describe('WorkSummary', () => {
             durationMs: 100
           },
           tool('c1', 'add_node', 'done', true, 1300),
-          tool('c2', 'switch_tab', 'done', true, 900)
+          tool('c2', 'switch_tab', 'done', true, 900),
+          tool('c3', 'list_slots', 'done', true)
         ]
       },
       global: { plugins: [i18n] }
