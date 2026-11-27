@@ -6,18 +6,17 @@ import {
   zQueueManageRequest,
   zQueueManageResponse
 } from '@comfyorg/ingest-types/zod'
+import type {
+  HistoryManageRequest,
+  QueueManageRequest
+} from '@comfyorg/ingest-types'
 
 import type {
+  JobDetailInput,
   JobStatus,
   RawJobListItem,
-  zJobDetail,
-  zJobsListResponse
+  JobsListResponse
 } from '@comfyorg/api-client/jobs/jobTypes'
-
-type JobsListResponse = z.infer<typeof zJobsListResponse>
-type JobDetailPayload = z.input<typeof zJobDetail>
-type HistoryManageRequest = z.infer<typeof zHistoryManageRequest>
-type QueueManageRequest = z.infer<typeof zQueueManageRequest>
 
 const terminalJobStatuses = [
   'completed',
@@ -188,7 +187,7 @@ export class JobsRouteMocker {
     return await this.mockPostManageRoute('history', zHistoryManageRequest, {})
   }
 
-  async mockJobDetail(jobId: string, detail: JobDetailPayload): Promise<void> {
+  async mockJobDetail(jobId: string, detail: JobDetailInput): Promise<void> {
     await this.page.route(
       (url) => url.pathname.endsWith(`/api/jobs/${encodeURIComponent(jobId)}`),
       async (requestRoute) => {

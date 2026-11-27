@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { createI18n } from 'vue-i18n'
 
 import type { JobListItem } from '@comfyorg/api-client/jobs/jobTypes'
 import type {
@@ -7,7 +8,8 @@ import type {
 } from '@/platform/queue/presentation/queueDisplay'
 import {
   buildJobDisplay,
-  iconForJobState
+  iconForJobState,
+  withDeploymentBuildName
 } from '@/platform/queue/presentation/queueDisplay'
 
 type QueueDisplayTask = Parameters<typeof buildJobDisplay>[0]
@@ -271,5 +273,126 @@ describe('buildJobDisplay while a model downloads', () => {
       'queue.downloadingModelOf(name=my_style_v2.safetensors,index=2,count=3)'
     )
     expect(display.secondary).toBe('50 MB')
+  })
+})
+
+describe('withDeploymentBuildName', () => {
+  const onFluxStudio = {
+    deployment_id: 'dep-flux',
+    release_id: 'rel-flux-3',
+    name: 'production',
+    build_name: 'Flux Studio',
+    release_version: 3
+  }
+
+  it('ends the queued time with the Build name', () => {
+    const task = createTask({
+      job: { status: 'pending', deployment: onFluxStudio }
+    })
+
+    expect(
+      withDeploymentBuildName(
+        buildJobDisplay(task, 'pending', createCtx()).secondary,
+        task,
+        createCtx().t
+      )
+    ).toBe('queue.onBuild(detail=en-US:1710000000000,build=Flux Studio)')
+  })
+
+  it('shows the Build name alone when the row has no other detail', () => {
+    const task = createTask({
+      job: { status: 'in_progress', deployment: onFluxStudio }
+    })
+
+    expect(
+      withDeploymentBuildName(
+        buildJobDisplay(task, 'running', createCtx()).secondary,
+        task,
+        createCtx().t
+      )
+    ).toBe('Flux Studio')
+  })
+
+  it('falls back to the deployment name when the Build name is absent', () => {
+    const task = createTask({
+      job: {
+        status: 'pending',
+        deployment: { ...onFluxStudio, build_name: undefined }
+      }
+    })
+
+    expect(
+      withDeploymentBuildName(
+        buildJobDisplay(task, 'pending', createCtx()).secondary,
+        task,
+        createCtx().t
+      )
+    ).toBe('queue.onBuild(detail=en-US:1710000000000,build=production)')
+  })
+
+  it.for([
+    ['a blank Build name', { build_name: '  ' }],
+    ['a null Build name', { build_name: null }],
+    ['a malformed release version', { build_name: null, release_version: 'v3' }]
+  ])('falls back to the deployment name for %s', ([, override]) => {
+    const task = createTask({
+      job: {
+        status: 'pending',
+        deployment: { ...onFluxStudio, ...(override as object) }
+      }
+    })
+
+    expect(
+      withDeploymentBuildName(
+        buildJobDisplay(task, 'pending', createCtx()).secondary,
+        task,
+        createCtx().t
+      )
+    ).toBe('queue.onBuild(detail=en-US:1710000000000,build=production)')
+  })
+
+  it('leaves a Comfy Cloud job as it was', () => {
+    const task = createTask({ job: { status: 'pending' } })
+
+    expect(
+      withDeploymentBuildName(
+        buildJobDisplay(task, 'pending', createCtx()).secondary,
+        task,
+        createCtx().t
+      )
+    ).toBe('en-US:1710000000000')
+  })
+
+  it('leaves the row as it was when the deployment has no name to show', () => {
+    const task = createTask({
+      job: {
+        status: 'pending',
+        deployment: { deployment_id: 'dep-flux', release_id: 'rel-flux-3' }
+      }
+    })
+
+    expect(
+      withDeploymentBuildName(
+        buildJobDisplay(task, 'pending', createCtx()).secondary,
+        task,
+        createCtx().t
+      )
+    ).toBe('en-US:1710000000000')
+  })
+
+  it('keeps punctuation in the detail as plain text', () => {
+    const { t } = createI18n({
+      legacy: false,
+      locale: 'en',
+      escapeParameter: true,
+      messages: { en: { queue: { onBuild: '{detail} · {build}' } } }
+    }).global
+    const task = createTask({
+      job: { status: 'pending', deployment: onFluxStudio }
+    })
+
+    expect(withDeploymentBuildName('Pass 1/2 <b>', task, t)).toBe(
+      'Pass 1/2 <b> · Flux Studio'
+    )
   })
 })

@@ -23,7 +23,8 @@ import { clampPercentInt } from '@/utils/numberUtil'
 import {
   buildJobDisplay,
   isActiveJobState,
-  jobStateFromTask
+  jobStateFromTask,
+  withDeploymentBuildName
 } from '@/platform/queue/presentation/queueDisplay'
 
 import type { JobTab } from '@/platform/queue/composables/jobTabs'
@@ -320,7 +321,7 @@ export function useJobList() {
       return {
         id: task.jobId,
         title: display.primary,
-        meta: display.secondary,
+        meta: withDeploymentBuildName(display.secondary, task, t),
         state,
         iconName: display.iconName,
         iconImageUrl: promptPreviewUrl ?? display.iconImageUrl,

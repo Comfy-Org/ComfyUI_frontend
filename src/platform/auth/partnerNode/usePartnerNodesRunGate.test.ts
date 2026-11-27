@@ -152,13 +152,13 @@ describe('usePartnerNodesRunGate', () => {
         held: 'a Firebase user',
         firebase: true,
         apiKey: false,
-        sentryMode: 'always'
+        sentryMode: 'once_per_page'
       },
       {
         held: 'a validated API key',
         firebase: false,
         apiKey: true,
-        sentryMode: 'always'
+        sentryMode: 'once_per_page'
       }
     ])('while holding $held', async ({ firebase, apiKey, sentryMode }) => {
       useCurrentUser().isLoggedIn = computed(() => false)

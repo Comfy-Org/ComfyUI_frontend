@@ -216,12 +216,16 @@ describe('executionErrorUtil', () => {
       },
       {
         name: 'the embedded JSON when no node_errors are relayed',
-        detail: { exception_message: embeddedMessage },
+        detail: {
+          exception_type: 'ValidationError',
+          exception_message: embeddedMessage
+        },
         expected: { kind: 'nodeErrors', nodeErrors: embeddedNodeErrors }
       },
       {
         name: 'only the usable embedded entries when a sibling is null',
         detail: {
+          exception_type: 'ValidationError',
           exception_message: `400: ${JSON.stringify({ node_errors: { ...embeddedNodeErrors, '10': null } })}`
         },
         expected: { kind: 'nodeErrors', nodeErrors: embeddedNodeErrors }
@@ -229,6 +233,7 @@ describe('executionErrorUtil', () => {
       {
         name: 'only the object errors of an embedded node',
         detail: {
+          exception_type: 'ValidationError',
           exception_message: `400: ${JSON.stringify({
             node_errors: {
               '9': {
@@ -338,6 +343,7 @@ describe('executionErrorUtil', () => {
 
       expect(
         classifyCloudValidationError({
+          exception_type: 'ValidationError',
           exception_message: `Failed: ${JSON.stringify({ node_errors: nodeErrors })}`
         })
       ).toEqual({ kind: 'nodeErrors', nodeErrors })
@@ -369,6 +375,7 @@ describe('executionErrorUtil', () => {
       const message = `Failed to send prompt request: status 400: ${embedded}`
 
       const result = classifyCloudValidationError({
+        exception_type: 'ValidationError',
         exception_message: message
       })
 
@@ -386,6 +393,7 @@ describe('executionErrorUtil', () => {
       const message = `Failed: ${embedded}`
 
       const result = classifyCloudValidationError({
+        exception_type: 'ValidationError',
         exception_message: message
       })
 
@@ -403,6 +411,7 @@ describe('executionErrorUtil', () => {
       const message = `Failed: ${embedded}`
 
       const result = classifyCloudValidationError({
+        exception_type: 'ValidationError',
         exception_message: message
       })
 
@@ -414,14 +423,20 @@ describe('executionErrorUtil', () => {
 
     it('should return null when message has no embedded JSON', () => {
       expect(
-        classifyCloudValidationError({ exception_message: 'plain error' })
+        classifyCloudValidationError({
+          exception_type: 'ValidationError',
+          exception_message: 'plain error'
+        })
       ).toBeNull()
     })
 
     it('should return null when embedded JSON has no error or node_errors', () => {
       const message = 'error: {"foo": "bar"}'
       expect(
-        classifyCloudValidationError({ exception_message: message })
+        classifyCloudValidationError({
+          exception_type: 'ValidationError',
+          exception_message: message
+        })
       ).toBeNull()
     })
 
@@ -430,7 +445,10 @@ describe('executionErrorUtil', () => {
       const message = `Failed: ${embedded}`
 
       expect(
-        classifyCloudValidationError({ exception_message: message })
+        classifyCloudValidationError({
+          exception_type: 'ValidationError',
+          exception_message: message
+        })
       ).toBeNull()
     })
 
@@ -448,6 +466,7 @@ describe('executionErrorUtil', () => {
       const message = `Failed: ${embedded}`
 
       const result = classifyCloudValidationError({
+        exception_type: 'ValidationError',
         exception_message: message
       })
 
@@ -462,6 +481,7 @@ describe('executionErrorUtil', () => {
       const message = `Failed: ${embedded}`
 
       const result = classifyCloudValidationError({
+        exception_type: 'ValidationError',
         exception_message: message
       })
 

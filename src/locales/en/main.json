@@ -1596,6 +1596,7 @@
     "downloadingModel": "Downloading {name}",
     "downloadingModelOf": "Downloading {name} ({index} of {count})",
     "downloadedOfTotal": "{downloaded} of {total}",
+    "onBuild": "{detail} · {build}",
     "jobMenu": {
       "openAsWorkflowNewTab": "Open as workflow in new tab",
       "openWorkflowNewTab": "Open workflow in new tab",

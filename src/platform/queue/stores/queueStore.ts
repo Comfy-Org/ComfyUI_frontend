@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { isEqual } from 'es-toolkit'
 import { computed, ref, shallowRef, toValue } from 'vue'
 import { TaskItemImpl } from '@comfyorg/api-client/jobs/taskItem'
 import type { StatusWsMessageStatus } from '@comfyorg/api-client/executionTypes'
@@ -96,7 +97,8 @@ export const useQueueStore = defineStore('queue', () => {
           if (
             existing.outputsCount !== (job.outputs_count ?? undefined) ||
             existing.previewableOutputsCount !==
-              (job.previewable_outputs_count ?? undefined)
+              (job.previewable_outputs_count ?? undefined) ||
+            !isEqual(existing.job.deployment, job.deployment)
           ) {
             return new TaskItemImpl(job)
           }

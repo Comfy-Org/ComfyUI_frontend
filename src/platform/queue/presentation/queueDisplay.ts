@@ -1,3 +1,6 @@
+import { zJobDeployment } from '@comfyorg/ingest-types/zod'
+import { z } from 'zod'
+
 import type { JobModelDownload } from '@/platform/queue/stores/jobModelDownloadStore'
 import type { TaskItemImpl } from '@comfyorg/api-client/jobs/taskItem'
 import { resultItemUrl } from '@/utils/resultItemUrl'
@@ -55,6 +58,40 @@ const buildQueuedTime = (
   const ts = task.createTime
   return formatClockTimeFn(ts, locale)
 }
+
+const zDeploymentNames = z.object({
+  build_name: zJobDeployment.shape.build_name.nullable().catch(undefined),
+  name: zJobDeployment.shape.name.nullable().catch(undefined)
+})
+
+const deploymentBuildName = (task: TaskItemImpl): string | undefined => {
+  const deployment = zDeploymentNames.safeParse(task.job.deployment)
+  if (!deployment.success) return undefined
+  const { build_name, name } = deployment.data
+  return build_name?.trim() || name?.trim() || undefined
+}
+
+type PlainTextTranslate = (
+  key: string,
+  named: Record<string, unknown>,
+  options: { escapeParameter: boolean }
+) => string
+
+export const withDeploymentBuildName = (
+  secondary: string,
+  task: TaskItemImpl,
+  t: PlainTextTranslate
+): string => {
+  const build = deploymentBuildName(task)
+  if (!build) return secondary
+  if (!secondary) return build
+  return t(
+    'queue.onBuild',
+    { detail: secondary, build },
+    { escapeParameter: false }
+  )
+}
+
 export const buildJobDisplay = (
   task: TaskItemImpl,
   state: JobState,

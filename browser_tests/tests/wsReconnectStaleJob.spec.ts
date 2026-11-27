@@ -1,6 +1,5 @@
 import type { WebSocketRoute } from '@playwright/test'
 import { mergeTests } from '@playwright/test'
-import type { z } from 'zod'
 
 import {
   comfyExpect as expect,
@@ -11,10 +10,8 @@ import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 import type {
   RawJobListItem,
-  zJobsListResponse
+  JobsListResponse
 } from '@comfyorg/api-client/jobs/jobTypes'
-
-type JobsListResponse = z.infer<typeof zJobsListResponse>
 
 const test = mergeTests(comfyPageFixture, webSocketFixture)
 

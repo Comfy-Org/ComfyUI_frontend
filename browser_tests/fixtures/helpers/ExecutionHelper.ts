@@ -18,12 +18,6 @@ import { createMockJob } from '@e2e/fixtures/helpers/AssetsHelper'
 
 const PROMPT_ROUTE_PATTERN = /\/api\/prompt$/
 
-type CloudExecutionErrorFrame = {
-  type: 'execution_error'
-  data: Omit<ExecutionErrorWsMessage, 'executed'> &
-    Partial<Pick<ExecutionErrorWsMessage, 'executed'>>
-}
-
 type RunOptions = {
   start?: boolean
   nodeErrors?: Record<string, NodeError>
@@ -283,12 +277,13 @@ export class ExecutionHelper {
           timestamp: Date.now(),
           node_id: nodeId,
           node_type: nodeErrors[nodeId].class_type,
+          executed: [],
           exception_message: summary,
           exception_type: 'ValidationError',
           traceback: [],
           node_errors: nodeErrors
         }
-      } satisfies CloudExecutionErrorFrame)
+      } satisfies { type: 'execution_error'; data: ExecutionErrorWsMessage })
     )
   }
 
