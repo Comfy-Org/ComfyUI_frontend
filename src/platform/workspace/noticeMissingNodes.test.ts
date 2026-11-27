@@ -211,6 +211,23 @@ describe(noticeMissingNodes, () => {
       expect(openWorkflowNeedsDeploymentDialog).not.toHaveBeenCalled()
     })
 
+    it('opens the dialog for a reopened workflow once the check finds a ready deployment that runs it', async () => {
+      void noticeMissingNodes(UNSUPPORTED, markFor, 'reopened')
+      checkAnswers({ 'dep-1': RUNS, 'dep-stopped': LACKS_BIREFNET })
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(openWorkflowNeedsDeploymentDialog).toHaveBeenCalledOnce()
+    })
+
+    it('leaves the offer to the error overlay for a reopened workflow no deployment runs', async () => {
+      void noticeMissingNodes(UNSUPPORTED, markFor, 'reopened')
+      checkAnswers({ 'dep-1': LACKS_BIREFNET, 'dep-stopped': LACKS_BIREFNET })
+      await vi.advanceTimersByTimeAsync(COMPATIBILITY_WAIT_MS)
+
+      expect(openWorkflowNeedsDeploymentDialog).not.toHaveBeenCalled()
+      expect(useExecutionErrorStore().isErrorOverlayOpen).toBe(true)
+    })
+
     it('opens no dialog once another workflow is active', async () => {
       void noticeMissingNodes(UNSUPPORTED, markFor)
       anotherWorkflowOpens()
@@ -389,6 +406,28 @@ describe(noticeMissingNodes, () => {
 
     expect(useExecutionErrorStore().isErrorOverlayOpen).toBe(true)
     expect(openWorkflowNeedsDeploymentDialog).not.toHaveBeenCalled()
+  })
+
+  it('leaves the offer to the error overlay for a reopened workflow in a workspace with no deployments', async () => {
+    listing(true, null)
+    workflowMissing(UNSUPPORTED)
+
+    await noticeMissingNodes(UNSUPPORTED, markFor, 'reopened')
+
+    expect(openWorkflowNeedsDeploymentDialog).not.toHaveBeenCalled()
+    expect(useExecutionErrorStore().isErrorOverlayOpen).toBe(true)
+  })
+
+  it('still opens the dialog for nodes a reopened workflow left to the error overlay, once a workflow with them is brought in', async () => {
+    const rmbg: MissingNodeType[] = [
+      { type: 'RMBG', cnrId: 'comfyui-rmbg', isReplaceable: false }
+    ]
+    listing(true, null)
+    workflowMissing(rmbg)
+    await noticeMissingNodes(rmbg, markFor, 'reopened')
+    await noticeMissingNodes(rmbg, markFor)
+
+    expect(openWorkflowNeedsDeploymentDialog).toHaveBeenCalledOnce()
   })
 
   it('opens the dialog on its own once per page for the same missing nodes, and again for others', async () => {

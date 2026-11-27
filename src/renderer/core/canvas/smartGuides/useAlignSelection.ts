@@ -45,7 +45,11 @@ export function useAlignSelection() {
 
   function canAlign(action: AlignAction) {
     if (canvasStore.isReadOnly) return false
-    return nodesFor(action).length >= (DISTRIBUTE_AXIS[action] ? 3 : 2)
+    if (!DISTRIBUTE_AXIS[action]) return nodesFor(action).length >= 2
+    return (
+      movableNodes.value.length >= 3 &&
+      movableNodes.value.length === selectedNodes.value.length
+    )
   }
 
   function align(action: AlignAction) {

@@ -43,7 +43,7 @@
           <p
             class="m-0 line-clamp-3 min-w-0 flex-1 text-sm/snug wrap-break-word whitespace-pre-wrap text-muted-foreground"
           >
-            {{ overlayMessage }}
+            {{ message }}
           </p>
         </div>
 
@@ -73,6 +73,11 @@
           >
             {{ t('errorOverlay.askAgent') }}
           </Button>
+          <ErrorOverlayBuildOffer
+            v-if="buildOffer"
+            :offer="buildOffer"
+            @open="issuesToastBuildOffer?.open()"
+          />
         </div>
 
         <Button
@@ -91,6 +96,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -98,6 +104,9 @@ import Button from '@comfyorg/design-system/button/Button'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useErrorOverlayState } from '@/platform/workflowErrors/overlay/useErrorOverlayState'
 import { useAskAgentPort } from '@/platform/workflowErrors/askAgentPort'
+import { isCloud } from '@/platform/distribution/types'
+import { useIssuesToastBuildOffer } from '@/platform/workspace/composables/useIssuesToastBuildOffer'
+import ErrorOverlayBuildOffer from '@/platform/workflowErrors/overlay/ErrorOverlayBuildOffer.vue'
 import ErrorOverlayDownloadAllModels from '@/platform/workflowErrors/overlay/ErrorOverlayDownloadAllModels.vue'
 
 const { appMode = false } = defineProps<{ appMode?: boolean }>()
@@ -117,6 +126,21 @@ const {
   overlayGroupKeys,
   askAgentContext
 } = useErrorOverlayState()
+
+const issuesToastBuildOffer = isCloud ? useIssuesToastBuildOffer() : null
+const buildOffer = computed(() =>
+  appMode || !overlayGroupKeys.value.includes('missing_node')
+    ? null
+    : (issuesToastBuildOffer?.offer.value ?? null)
+)
+
+const message = computed(() =>
+  buildOffer.value &&
+  overlayMessage.value ===
+    t('errorCatalog.missingErrors.missing_node.displayMessageCloud')
+    ? t('errorOverlay.missingNodesOnCloud')
+    : overlayMessage.value
+)
 
 function dismiss() {
   executionErrorStore.dismissErrorOverlay()
