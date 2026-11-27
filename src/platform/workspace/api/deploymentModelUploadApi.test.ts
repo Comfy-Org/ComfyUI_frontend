@@ -17,6 +17,7 @@ class StorageRequest {
   method = ''
   url = ''
   body: Blob | undefined
+  headers: Record<string, string> = {}
   status = 0
   done = false
   upload: { onprogress: ((event: { loaded: number }) => void) | null } = {
@@ -34,6 +35,9 @@ class StorageRequest {
   open(method: string, url: string) {
     this.method = method
     this.url = url
+  }
+  setRequestHeader(name: string, value: string) {
+    this.headers[name] = value
   }
   send(body: Blob) {
     this.body = body
@@ -189,6 +193,11 @@ describe('deploymentModelUploadApi.uploadModelToDeployment', () => {
       parts.map((part) => part.uploadUrl)
     )
     expect(StorageRequest.sent.every((r) => r.method === 'PUT')).toBe(true)
+    expect(
+      StorageRequest.sent.every(
+        (r) => r.headers['x-goog-if-generation-match'] === '0'
+      )
+    ).toBe(true)
     await expect(StorageRequest.sent[2].body?.text()).resolves.toBe(
       await file.slice(20, 30).text()
     )

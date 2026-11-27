@@ -24,7 +24,13 @@
         @change="onFileChange"
       />
       <span class="text-muted-foreground">
-        {{ $t('assetBrowser.fileUpload.drop') }}
+        {{
+          $t(
+            fileOnly
+              ? 'assetBrowser.fileUpload.dropAlone'
+              : 'assetBrowser.fileUpload.drop'
+          )
+        }}
       </span>
       <span
         class="rounded-md bg-secondary px-3 py-1.5 font-medium text-foreground"
@@ -44,8 +50,9 @@ import { ref } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-const { error } = defineProps<{
+const { error, fileOnly = false } = defineProps<{
   error?: string
+  fileOnly?: boolean
 }>()
 
 const emit = defineEmits<{

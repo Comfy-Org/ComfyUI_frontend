@@ -1,5 +1,11 @@
 <template>
   <div class="upload-model-dialog flex flex-col gap-6 border-t p-4 pt-6">
+    <UploadModelDestination
+      v-if="showStartDestination"
+      v-model="fileDestination"
+      :build-offered="buildModels.bootDeploymentId.value !== undefined"
+      @build="openBuildModels"
+    />
     <UploadModelFileUpload
       v-if="fileState.status !== 'idle'"
       v-model="fileModelType"
@@ -11,12 +17,6 @@
       @cancel="fileUpload.cancel"
       @back="fileUpload.reset"
       @close="handleClose"
-    />
-    <UploadModelDestination
-      v-if="showStartDestination"
-      v-model="fileDestination"
-      :build-offered="buildModels.bootDeploymentId.value !== undefined"
-      @build="openBuildModels"
     />
     <!-- Scrollable content area -->
     <div v-else class="min-h-0 flex-auto basis-0 overflow-y-auto">
@@ -30,6 +30,7 @@
         <UploadModelFilePicker
           v-if="canUploadFile"
           :error="fileError"
+          :file-only="fileUpload.goesToDeployment.value"
           @choose="fileUpload.choose"
         />
       </UploadModelUrlInput>

@@ -4938,6 +4938,7 @@
       "deploymentModelsOff": "Adding models to a deployment isn't on for this workspace yet.",
       "destination": "Upload to",
       "drop": "Or drop a .safetensors file here",
+      "dropAlone": "Drop a .safetensors file here",
       "failed": "Upload failed. Try again.",
       "featureDisabled": "Model uploads are currently unavailable.",
       "findInLoader": "Pick it from a loader's model list.",

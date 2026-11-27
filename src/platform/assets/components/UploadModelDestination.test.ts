@@ -100,6 +100,7 @@ describe('UploadModelDialog destination', () => {
     await user.click(screen.getByRole('radio', { name: copy.toDeployment }))
 
     expect(linkInput()).not.toBeInTheDocument()
+    expect(screen.getByText(copy.dropAlone)).toBeInTheDocument()
     expect(screen.getByText(copy.choose)).toBeInTheDocument()
     expect(
       screen.queryByRole('button', { name: enMessages.g.continue })

@@ -50,6 +50,7 @@ function putPiece(
     if (signal.aborted) return resolve(0)
     signal.addEventListener('abort', abort, { once: true })
     request.open('PUT', url)
+    request.setRequestHeader('x-goog-if-generation-match', '0')
     request.send(body)
   })
 }
