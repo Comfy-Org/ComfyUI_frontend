@@ -104,7 +104,7 @@ const missing = computed<MissingItemsRow[]>(() => [
 const pitch = computed<CustomDeploymentPitch>(() => ({
   ...customDeploymentPitch(),
   title: t('deploymentSwitcher.workflowNeedsDeployment.createTitle'),
-  body: undefined,
+  body: t('deploymentSwitcher.workflowNeedsDeployment.createBody'),
   points: [
     t('deploymentSwitcher.customDeployment.pointNodes'),
     t('deploymentSwitcher.customDeployment.pointGpu'),

@@ -143,6 +143,11 @@ describe('WorkflowNeedsDeploymentCard', () => {
       })
     ).toBeInTheDocument()
     expect(
+      screen.getByText(
+        'A Custom Build adds what Comfy Cloud is missing, so this workflow runs as it is.'
+      )
+    ).toBeInTheDocument()
+    expect(
       screen.getAllByRole('listitem').map((point) => point.textContent.trim())
     ).toEqual([
       "Use custom nodes and models that aren't on Comfy Cloud",

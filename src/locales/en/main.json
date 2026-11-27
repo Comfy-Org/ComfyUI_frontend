@@ -4372,6 +4372,7 @@
     "workflowNeedsDeployment": {
       "title": "Run this workflow on a Custom Build",
       "createTitle": "Create a Custom Build to run this workflow",
+      "createBody": "A Custom Build adds what Comfy Cloud is missing, so this workflow runs as it is.",
       "pointBilling": "Pay only while the GPU is running, plus storage",
       "missingPacks": "{count} missing node pack | {count} missing node packs",
       "missingNodes": "{count} missing node | {count} missing nodes",
