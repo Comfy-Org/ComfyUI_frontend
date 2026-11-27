@@ -3,10 +3,10 @@ import {
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import {
-  RESIZE_HANDLES,
   hasNorthEdge,
   hasWestEdge
-} from '@/renderer/extensions/vueNodes/interactions/resize/resizeHandleConfig'
+} from '@comfyorg/graph-model/arrange/cornerResize'
+import { RESIZE_HANDLES } from '@/renderer/extensions/vueNodes/interactions/resize/resizeHandleConfig'
 
 test.describe(
   'Vue Node Resizing',

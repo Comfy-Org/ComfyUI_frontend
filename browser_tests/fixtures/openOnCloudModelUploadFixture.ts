@@ -8,6 +8,7 @@ import type {
 } from '@comfyorg/ingest-types'
 import type { Page, Request } from '@playwright/test'
 
+import { mockDeployMedia } from '@e2e/fixtures/deployToComfyApiFixture'
 import { localSignedOutFixture } from '@e2e/fixtures/localSignedOutFixture'
 
 export const LOCAL_MODEL_FILE = {
@@ -39,6 +40,7 @@ async function mockComfyCloud(
   let stored = false
   let checksAfterStorage = 0
 
+  await mockDeployMedia(page)
   await page.route(onCloud(page, '/api/features'), (route) =>
     route.fulfill({
       headers: CORS,

@@ -2,6 +2,7 @@ import type { Locator, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 import type {
   AgentAskServerFrame,
   AgentError,
@@ -11,11 +12,7 @@ import type {
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
-import {
-  agentTest,
-  bootAgentApp,
-  mockWorkflowPersistence
-} from '@e2e/fixtures/agentPanelFixture'
+import { agentTest, bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
 import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
@@ -51,10 +48,16 @@ function isAnswerTo(askId: string): (url: URL) => boolean {
   return (url) => decodeURIComponent(url.pathname) === answerPath(askId)
 }
 
+/** Node definitions a spec needs on the canvas, e.g. a priced api node. */
+export interface AskTurnOptions {
+  objectInfo?: Record<string, ComfyNodeDef>
+}
+
 async function startAskTurn(
   page: Page,
   prompt: string,
-  storedMode: AgentRunMode['mode']
+  storedMode: AgentRunMode['mode'],
+  { objectInfo }: AskTurnOptions = {}
 ): Promise<AskTurn> {
   const hostSocket = new AgentFollowerHostSocket(
     page,
@@ -93,7 +96,8 @@ async function startAskTurn(
   await hostSocket.install()
 
   await bootAgentApp(page, true, {
-    settings: { 'Comfy.Graph.CanvasInfo': false }
+    settings: { 'Comfy.Graph.CanvasInfo': false },
+    ...(objectInfo && { objectInfo })
   })
 
   const panel = page.locator('#agent-panel-root')
@@ -104,16 +108,6 @@ async function startAskTurn(
   )
   await new AgentPanel(page).open(30_000)
 
-  await mockWorkflowPersistence(page, ASK_WORKFLOW_ID)
-
-  const picker = panel.getByRole('button', {
-    name: enMessages.agent.switchWorkflow
-  })
-  await picker.click()
-  await page
-    .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
-    .click()
-  await expect(picker).toHaveText('Unsaved Workflow')
   await expect.poll(() => hostSocket.connectionCount()).toBeGreaterThan(0)
 
   await panel.getByRole('textbox', { name: AGENT_COMPOSER_LABEL }).fill(prompt)
@@ -161,10 +155,13 @@ async function startAskTurn(
 export const agentAskTest = agentTest.extend<{
   startAskTurn: (
     prompt: string,
-    storedMode: AgentRunMode['mode']
+    storedMode: AgentRunMode['mode'],
+    options?: AskTurnOptions
   ) => Promise<AskTurn>
 }>({
   startAskTurn: async ({ page }, use) => {
-    await use((prompt, storedMode) => startAskTurn(page, prompt, storedMode))
+    await use((prompt, storedMode, options) =>
+      startAskTurn(page, prompt, storedMode, options)
+    )
   }
 })

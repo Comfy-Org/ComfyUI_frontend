@@ -85,6 +85,7 @@
     >
       <div
         data-testid="node-inner-wrapper"
+        data-part="node-frame"
         :class="
           cn(
             'flex flex-1 flex-col bg-node-header',
@@ -144,11 +145,8 @@
         </template>
 
         <template v-else-if="!isCollapsed">
-          <div class="relative">
-            <NodeProgressBar
-              v-if="executing && progress !== undefined"
-              :progress
-            />
+          <div v-if="executing && progress !== undefined" class="relative">
+            <NodeProgressBar :progress />
           </div>
 
           <div
@@ -157,6 +155,7 @@
             "
             :style="{ rowGap: `${NODE_CONTENT_GAP}px` }"
             :data-testid="`node-body-${nodeData.id}`"
+            data-part="node-body"
           >
             <NodeSlots :node-data />
 
@@ -194,13 +193,13 @@
                   : { gridTemplateRows: userHeightTrack(region.height) }
               "
             >
-              <div class="flex min-h-0 flex-1 flex-col">
-                <LivePreview
-                  v-if="region.media.type === 'preview'"
-                  :image-url="region.media.url"
-                />
-                <NodeContent v-else :node-data :media="region.media" />
+              <div
+                v-if="region.media.type === 'preview'"
+                class="flex min-h-0 flex-1 flex-col"
+              >
+                <LivePreview :image-url="region.media.url" />
               </div>
+              <NodeContent v-else :node-data :media="region.media" />
               <GrowableRegionHandle
                 :name="region.name"
                 :label="
@@ -570,7 +569,12 @@ const handleResizePointerDown = (
 ) => {
   if (event.button !== 0 || !canResizeNode.value) return
   const element = nodeRef.value
-  if (element) startResize(event, corner, { element, position: position.value })
+  if (element)
+    startResize(event, corner, {
+      element,
+      position: position.value,
+      snapItem: resolveLGraphNode() ?? undefined
+    })
 }
 
 const mediaRegions = computed(() => [

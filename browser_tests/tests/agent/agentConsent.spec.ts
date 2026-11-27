@@ -90,11 +90,16 @@ test.describe('Manual agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
       await agentBilling.waitForInitialStatusResponse()
       const billingRequestsBeforeAccept = agentBilling.statusRequestCount
       agentBilling.setFundingState('exhausted')
-      const billingRefresh = page.waitForResponse(
-        (response) =>
-          response.request().method() === 'GET' &&
-          new URL(response.url()).pathname === '/api/billing/status'
+      const isBillingStatusRead = (url: string, method: string): boolean =>
+        method === 'GET' && new URL(url).pathname === '/api/billing/status'
+      const billingRefresh = page.waitForResponse((response) =>
+        isBillingStatusRead(response.url(), response.request().method())
       )
+      let billingReadsAfterAccept = 0
+      page.on('request', (request) => {
+        if (isBillingStatusRead(request.url(), request.method()))
+          billingReadsAfterAccept += 1
+      })
       let releaseSave = () => {}
       agentConsentSave.pending = new Promise<void>((resolve) => {
         releaseSave = resolve
@@ -119,10 +124,20 @@ test.describe('Manual agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
       expect(agentBilling.statusRequestCount).toBe(
         billingRequestsBeforeAccept + 1
       )
+      expect(billingReadsAfterAccept).toBe(1)
+      const duplicateBillingRead = page
+        .waitForRequest(
+          (request) => isBillingStatusRead(request.url(), request.method()),
+          { timeout: 2_000 }
+        )
+        .then(
+          () => true,
+          () => false
+        )
       await expect(dialog).toHaveCount(0)
       await expect(panel).toBeVisible()
+      expect(await duplicateBillingRead).toBe(false)
 
-      await agentPanel.selectWorkflow()
       await agentPanel.sendMessage('Build a workflow after accepting consent')
       await expect(agentPanel.userMessageBubbles).toHaveText([
         'Build a workflow after accepting consent'
@@ -147,6 +162,42 @@ test.describe('Manual agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
       await expect(dialog).toHaveCount(0)
       await expect(panel).toBeVisible()
     })
+  })
+
+  test('starts an independent billing read after an acceptance read times out', async ({
+    comfyPage,
+    agentBilling
+  }) => {
+    const page = comfyPage.page
+    const dialog = page.getByRole('dialog', {
+      name: enMessages.agent.consent.title
+    })
+    const panel = page.locator('#agent-panel-root')
+
+    await agentBilling.waitForInitialStatusResponse()
+    const billingRequestsBeforeAccept = agentBilling.statusRequestCount
+    const heldRefresh = agentBilling.holdNextFundedRefresh()
+
+    try {
+      await requestConsentFromOpenPanel(page)
+      await page.clock.install()
+      await dialog
+        .getByRole('button', { name: enMessages.agent.consent.accept })
+        .click()
+      await heldRefresh.entered
+      expect(agentBilling.statusRequestCount).toBe(
+        billingRequestsBeforeAccept + 1
+      )
+
+      await page.clock.fastForward(15_000)
+
+      await expect
+        .poll(() => agentBilling.statusRequestCount)
+        .toBe(billingRequestsBeforeAccept + 2)
+      await expect(panel).toBeVisible()
+    } finally {
+      heldRefresh.release()
+    }
   })
 
   test.describe('with a restored open intent', () => {

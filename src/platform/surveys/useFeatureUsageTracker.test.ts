@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { effectScope, nextTick } from 'vue'
 
 import { useFeatureUsageTracker } from './useFeatureUsageTracker'
@@ -46,6 +46,23 @@ describe('useFeatureUsageTracker', () => {
     trackUsage()
 
     expect(usage.value?.lastUsed).toBeGreaterThan(firstLastUsed)
+  })
+
+  it('keeps trackers in sync when only in-memory storage is available', async () => {
+    vi.stubGlobal('localStorage', undefined)
+    vi.stubGlobal('sessionStorage', undefined)
+    const featureId = `memory-only-feature-${crypto.randomUUID()}`
+    const scope = effectScope()
+    onTestFinished(() => scope.stop())
+    const [writer, reader] = scope.run(() => [
+      useFeatureUsageTracker(featureId),
+      useFeatureUsageTracker(featureId)
+    ])!
+
+    writer.trackUsage()
+    await nextTick()
+
+    expect(reader.useCount.value).toBe(1)
   })
 
   it('reset clears feature data', () => {

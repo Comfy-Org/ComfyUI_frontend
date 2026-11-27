@@ -73,7 +73,7 @@ const baseModelSelected = defineModel<Set<string>>('baseModelSelected')
 type LayoutConfig = {
   maxColumns: number
   itemHeight: number
-  itemWidth: number
+  minItemWidth?: number
   gap: string
 }
 
@@ -81,30 +81,28 @@ const LAYOUT_CONFIGS: Record<LayoutMode, LayoutConfig> = {
   grid: {
     maxColumns: 4,
     itemHeight: 120,
-    itemWidth: 89,
+    minItemWidth: 96,
     gap: 'var(--spacing-4) var(--spacing-2)'
   },
   list: {
     maxColumns: 1,
     itemHeight: 64,
-    itemWidth: 380,
     gap: 'var(--spacing-2)'
   },
   'list-small': {
     maxColumns: 1,
     itemHeight: 40,
-    itemWidth: 380,
     gap: 'var(--spacing-1)'
   }
 }
 
 const thumbnailLayouts = {
-  compact: { maxColumns: 5, itemHeight: 104, itemWidth: 69 },
+  compact: { maxColumns: 5, itemHeight: 104, minItemWidth: 76 },
   standard: LAYOUT_CONFIGS.grid,
-  large: { maxColumns: 1, itemHeight: 412, itemWidth: 380 }
+  large: { maxColumns: 1, itemHeight: 412 }
 } satisfies Record<
   ThumbnailSize,
-  Pick<LayoutConfig, 'maxColumns' | 'itemHeight' | 'itemWidth'>
+  Pick<LayoutConfig, 'maxColumns' | 'itemHeight' | 'minItemWidth'>
 >
 
 const layoutConfig = computed<LayoutConfig>(() => {
@@ -139,7 +137,7 @@ const onWheel = (event: WheelEvent) => {
 
 <template>
   <div
-    class="flex h-[640px] w-103 flex-col rounded-lg bg-node pt-4 outline -outline-offset-1 outline-node-border"
+    class="flex min-h-0 flex-1 flex-col rounded-lg bg-node pt-4 outline -outline-offset-1 outline-node-border"
     data-capture-wheel="true"
     data-testid="form-dropdown-menu"
     @wheel="onWheel"
@@ -189,7 +187,7 @@ const onWheel = (event: WheelEvent) => {
       :grid-style
       :max-columns="layoutConfig.maxColumns"
       :default-item-height="layoutConfig.itemHeight"
-      :default-item-width="layoutConfig.itemWidth"
+      :min-item-width="layoutConfig.minItemWidth"
       :buffer-rows="2"
       class="mt-2 min-h-0 flex-1"
       :on-load-more="loadMore"

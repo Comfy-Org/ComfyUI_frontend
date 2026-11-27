@@ -25,17 +25,36 @@
       </RadioGroupItem>
     </RadioGroupRoot>
 
-    <p
+    <div
       v-if="negativeBalanceCredits !== undefined"
-      :class="cn('m-0 text-muted-foreground', ui.line)"
+      :class="
+        cn(
+          'flex flex-col text-muted-foreground',
+          balanceAfter?.runsPaused && 'text-warning',
+          ui.line
+        )
+      "
       data-testid="add-credits-negative-balance"
     >
-      {{
-        translate('negativeBalance', {
-          credits: format.count(negativeBalanceCredits)
-        })
-      }}
-    </p>
+      <p class="m-0">
+        {{
+          translate('negativeBalance', {
+            credits: format.count(negativeBalanceCredits)
+          })
+        }}
+      </p>
+      <p v-if="balanceAfter" class="m-0">
+        {{
+          balanceAfter.credits < 0
+            ? translate('stillNegativeAfter', {
+                credits: format.count(-balanceAfter.credits)
+              })
+            : translate('balanceAfter', {
+                credits: format.count(balanceAfter.credits)
+              })
+        }}
+      </p>
+    </div>
     <p
       v-if="planLine"
       :class="cn('m-0 text-muted-foreground', ui.line)"
@@ -151,6 +170,9 @@ const customInput = computed(() =>
 const amountError = computed(() => amountErrorFor(view, bounds, context.value))
 const noticeCopy = computed(() => noticeCopyFor(view.notice, context.value))
 const footer = computed(() => footerCopyFor(view, quote, context.value))
+const balanceAfter = computed(() =>
+  quote?.status === 'ok' ? quote.balanceAfter : undefined
+)
 
 function pickPreset(value: unknown) {
   if (typeof value === 'string') emit('preset', Number(value))

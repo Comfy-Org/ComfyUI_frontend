@@ -1,5 +1,6 @@
 import { PromptExecutionError } from '@comfyorg/api-client/ComfyApi'
 
+import { safeSessionStorage } from '@/base/storage/safeStorage'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
@@ -9,10 +10,14 @@ import { fullDeploymentLabel } from '@/platform/workspace/composables/useDeploym
 import { confirmUnsavedWorkBeforeSwitch } from '@/platform/workspace/confirmUnsavedWorkBeforeSwitch'
 import { reloadForDeploymentSwitch } from '@/platform/workspace/deploymentSwitchReload'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
-import { createToastId } from '@/types/toastId'
+import {
+  releaseNoticeId,
+  useReleaseNoticeStore
+} from '@/platform/workspace/stores/releaseNoticeStore'
 
 const KEPT_RELEASE_KEY = 'Comfy.Deployment.ReleaseForReload'
 const RELEASE_CHANGED = 'RELEASE_CHANGED'
+const RUN_NOTICE_OWNER = 'refusedRun'
 
 interface KeptRelease {
   deploymentId: string
@@ -21,7 +26,6 @@ interface KeptRelease {
 }
 
 let keptForThisPage: KeptRelease | null = null
-const noticeId = createToastId()
 
 function isKeptRelease(value: unknown): value is KeptRelease {
   return (
@@ -39,7 +43,7 @@ function isKeptRelease(value: unknown): value is KeptRelease {
 
 function keepForReload(kept: KeptRelease) {
   try {
-    sessionStorage.setItem(KEPT_RELEASE_KEY, JSON.stringify(kept))
+    safeSessionStorage.setItem(KEPT_RELEASE_KEY, JSON.stringify(kept))
   } catch {
     return
   }
@@ -47,10 +51,11 @@ function keepForReload(kept: KeptRelease) {
 
 export function takeReleaseKeptForReload(): void {
   keptForThisPage = null
+  const outcome = safeSessionStorage.read(KEPT_RELEASE_KEY)
+  if (!outcome.ok || !safeSessionStorage.remove(KEPT_RELEASE_KEY).ok) return
   try {
-    const raw = sessionStorage.getItem(KEPT_RELEASE_KEY)
-    sessionStorage.removeItem(KEPT_RELEASE_KEY)
-    const kept: unknown = raw === null ? null : JSON.parse(raw)
+    const kept: unknown =
+      outcome.value === null ? null : JSON.parse(outcome.value)
     if (isKeptRelease(kept)) keptForThisPage = kept
   } catch {
     return
@@ -81,7 +86,8 @@ function changedReleaseId(error: unknown): string | null | undefined {
 }
 
 async function reloadOntoNewRelease(deployment: string) {
-  if (!(await confirmUnsavedWorkBeforeSwitch(deployment))) return
+  if (!(await confirmUnsavedWorkBeforeSwitch(deployment, { reload: true })))
+    return
   const store = useDeploymentPickStore()
   if (store.isSwitching) return
   skipLeavePromptOnce()
@@ -150,8 +156,9 @@ export function handledReleaseChange(error: unknown): boolean {
     })
   }
   const notice = releaseNotice(releaseId)
+  useReleaseNoticeStore().markShown(RUN_NOTICE_OWNER)
   useToast().info(notice.title, {
-    id: noticeId,
+    id: releaseNoticeId,
     action: {
       label: t('deploymentSwitcher.reload'),
       onClick: () => void reloadOntoNewRelease(notice.target)

@@ -11,6 +11,7 @@ import {
   mergePreservedQueryIntoQuery
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
+import { safeSessionStorage } from '@/base/storage/safeStorage'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
@@ -52,23 +53,20 @@ function linkQuery(routeQuery: LocationQueryRaw): LocationQueryRaw {
  * again.
  */
 function takeSwitchTarget(): string | null {
-  try {
-    const id = sessionStorage.getItem(SWITCH_KEY)
-    sessionStorage.removeItem(SWITCH_KEY)
-    return id
-  } catch {
-    return null
-  }
+  const id = safeSessionStorage.getItem(SWITCH_KEY)
+  if (!safeSessionStorage.remove(SWITCH_KEY).ok) return null
+  return id
 }
 
 function setSwitchTarget(workspaceId: string | null): boolean {
-  try {
-    if (workspaceId === null) sessionStorage.removeItem(SWITCH_KEY)
-    else sessionStorage.setItem(SWITCH_KEY, workspaceId)
+  if (workspaceId === null) {
+    safeSessionStorage.removeItem(SWITCH_KEY)
     return true
-  } catch {
-    return false
   }
+  return (
+    safeSessionStorage.isPersistent &&
+    safeSessionStorage.setItem(SWITCH_KEY, workspaceId) === 'ok'
+  )
 }
 
 /**

@@ -1,17 +1,11 @@
-function getStorage() {
-  try {
-    return globalThis.localStorage
-  } catch {
-    return undefined
-  }
-}
+import { safeLocalStorage } from '@/base/storage/safeStorage'
+import type { SafeStorage } from '@/base/storage/safeStorage'
 
 export function loadSplitterSizes(
   key: string,
   panelCount: number,
-  storage = getStorage()
+  storage: Pick<SafeStorage, 'getItem'> = safeLocalStorage
 ): number[] | undefined {
-  if (!storage) return undefined
   try {
     const value: unknown = JSON.parse(storage.getItem(key) ?? 'null')
     if (
@@ -44,12 +38,7 @@ export function loadSplitterSizes(
 export function saveSplitterSizes(
   key: string,
   sizes: number[],
-  storage = getStorage()
+  storage: Pick<SafeStorage, 'setItem'> = safeLocalStorage
 ) {
-  try {
-    storage?.setItem(key, JSON.stringify(sizes))
-    return Boolean(storage)
-  } catch {
-    return false
-  }
+  return storage.setItem(key, JSON.stringify(sizes)) === 'ok'
 }

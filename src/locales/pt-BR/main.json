@@ -166,6 +166,7 @@
     "attach": "Anexar um arquivo",
     "attachFiles": "Envie imagens ou arquivos",
     "attachmentCountExceeded": "Apenas {count} arquivos podem ser anexados a uma mensagem",
+    "attachmentEmpty": "{name} está vazio e não pôde ser anexado",
     "attachmentInvalidVideo": "{name} não é um arquivo de vídeo válido. Remova-o e tente outro arquivo.",
     "attachmentNamesOverflow": "{names} e mais {count}",
     "attachmentTooLarge": "{name} é maior que {limit}",
@@ -179,10 +180,8 @@
     "beta": "BETA",
     "canvasIsEmptyAfterTurn": "Este canvas está vazio — nada foi adicionado a ele. Ainda não há nada aqui para executar, salvar ou exportar.",
     "canvasNotReadyForSend": "A tela desta aba ainda não está pronta, então sua mensagem não foi enviada. Tente novamente em instantes.",
-    "changeWorkflowForChat": "Altere o fluxo de trabalho que o agente pode editar",
     "chatOptions": "Opções de conversa",
     "chooseWorkflow": "Escolha um fluxo de trabalho",
-    "chooseWorkflowForChat": "Escolha um fluxo de trabalho para este chat",
     "close": "Fechar",
     "coachBody": "Descreva suas ideias e peça para ele criar e executar fluxos de trabalho. Ele vê seu canvas e seus arquivos.",
     "coachHistoryBody": "As conversas anteriores são salvas aqui. Abra uma para revisá-la ou continue trabalhando com o agente.",
@@ -190,7 +189,7 @@
     "coachHoldNotice": "Sua mensagem será enviada quando você concluir ou pular o tour.",
     "coachProgress": "{current} de {total}",
     "coachTitle": "Conheça seu Agente Comfy",
-    "coachWorkflowBody": "O nome desse workflow aparece na parte superior da caixa de mensagens. Clique no nome para escolher outro. Clicar em uma aba de workflow pode abrir a conversa mais recente dele, a menos que haja um rascunho na caixa de mensagens.",
+    "coachWorkflowBody": "Cada aba de fluxo de trabalho tem suas próprias conversas. Alternar entre abas muda para a conversa daquela aba.",
     "coachWorkflowTitle": "O agente edita um workflow por vez",
     "consent": {
       "accept": "Começar a usar o Comfy Agent",
@@ -217,7 +216,6 @@
     "copyUnavailable": "Somente a conversa atual pode ser copiada nesta versão",
     "creditTransitionNotice": "Você usou seus créditos gratuitos do agente. As atividades futuras do agente usam os créditos do seu espaço de trabalho, que podem incluir créditos pagos.",
     "creditsUsed": "O agente usou {credits} crédito | O agente usou {credits} créditos",
-    "currentTab": "Aba atual",
     "delete": "Excluir",
     "deleteApproval": {
       "answered": "Respondido",
@@ -307,6 +305,7 @@
     "historyYesterday": "Ontem",
     "latest": "Mais recente",
     "loadFailed": "Não foi possível carregar o painel do agente.",
+    "loadingWorkflowChats": "Carregando as conversas de {workflowName}",
     "malformedEvent": "O agente enviou um evento que este painel não conseguiu ler",
     "manageSkills": "Gerenciar habilidades",
     "maximize": "Maximizar painel",
@@ -334,7 +333,6 @@
     "openWorkflowTab": "Abrir {name}",
     "openingChat": "Abrindo o chat…",
     "openingWorkflowChat": "Abrindo o chat para {workflowName}…",
-    "otherOpenWorkflows": "Outros fluxos de trabalho abertos",
     "paused": {
       "recheck": "Ele tentará novamente por conta própria em cerca de {seconds} segundo. | Ele tentará novamente por conta própria em cerca de {seconds} segundos.",
       "resume": "Retomar",
@@ -410,6 +408,8 @@
       "answerSuperseded": "Isso já foi respondido em outro lugar, então essa resposta foi usada em vez da sua.",
       "answerUncertain": "Não foi possível confirmar que sua resposta chegou ao agente. Ela ainda pode ter sido aplicada — recarregue a página para ver a situação.",
       "cancel": "Cancelar",
+      "estimateAtLeast": "Custo estimado: pelo menos {credits} créditos",
+      "estimateUnavailable": "Custo estimado: não disponível para este fluxo de trabalho",
       "lead": "O Comfy Agent quer executar o fluxo de trabalho:",
       "leadBound": "O Agente Comfy quer executar este fluxo de trabalho.",
       "question": "Você aprova?",
@@ -434,8 +434,6 @@
     "runPermissions": "Permissões de execução",
     "runPermissionsDescription": "Escolha quando o agente precisa do seu consentimento",
     "savingWorkflow": "Salvando fluxo de trabalho",
-    "searchWorkflows": "Pesquisar fluxos de trabalho",
-    "selectWorkflowForAgent": "Selecione um fluxo de trabalho para o agente trabalhar",
     "selectWorkflowForNodes": "Selecione primeiro um fluxo de trabalho",
     "selectWorkflowToGenerate": "Selecione um fluxo de trabalho para gerar",
     "send": "Enviar",
@@ -444,7 +442,14 @@
     "sendBlockedByUnsupportedType": "{name} não é um tipo de arquivo aceito pelo agente. Remova-o para enviar.",
     "sendBusy": "Uma mensagem já está sendo enviada",
     "sendFailed": "Falha ao enviar mensagem",
+    "sendFailedDisownedWorkflow": "Este fluxo de trabalho não está mais disponível.",
+    "sendFailedNetwork": "A mensagem não chegou ao servidor. Verifique sua conexão e tente novamente.",
+    "sendFailedOffscreen": "Não foi possível enviar sua mensagem",
+    "sendFailedOffscreenShow": "Mostrar",
+    "sendFailedTurnInProgress": "Uma resposta ainda estava em execução nesta conversa.",
+    "sendFailedUncertain": "Não foi possível confirmar se o servidor recebeu sua mensagem. Verifique a conversa antes de enviar novamente.",
     "sendTurnInProgress": "Este chat ainda tem uma resposta em andamento. Aguarde a conclusão ou interrompa-a e envie novamente.",
+    "sendingMessage": "Enviando…",
     "showChatHistory": "Mostrar histórico de conversas",
     "showLess": "Mostrar menos",
     "showMore": "Mostrar mais",
@@ -472,6 +477,7 @@
     "skillsLoading": "Carregando habilidades…",
     "skillsUnavailable": "As habilidades não estão disponíveis no momento.",
     "skip": "Pular",
+    "startNewChat": "Iniciar uma nova conversa",
     "stop": "Parar",
     "stopShortcut": "Esc",
     "suggestedPrompts": {
@@ -499,10 +505,8 @@
         ]
       }
     },
-    "switchWorkflow": "Alternar fluxo de trabalho",
     "switchWorkflowForNodes": "Alterne para {workflowName} para adicionar nós.",
     "takeTour": "Faça o tour",
-    "targetFollowsVisibleWorkflow": "O fluxo de trabalho de destino segue a aba visível até que você escolha um destino, referencie nós ou envie uma mensagem.",
     "targetForThisChat": "Alvo do agente para este chat",
     "targetNavigationUnavailable": "Este destino do fluxo de trabalho não está mais disponível.",
     "targetWorkflowOpenFailed": "Não foi possível abrir o fluxo de trabalho de destino.",
@@ -545,7 +549,7 @@
     "workedForMinutes": "Concluído em {minutes}m {seconds}s",
     "workedForSeconds": "Concluído em {seconds} segundos",
     "workedNotConfirmedOnCanvas": "Alterações não confirmadas no seu canvas",
-    "workflowEditNotice": "O agente agora pode editar {workflow}. Ele trabalha em um fluxo de trabalho por vez, e você pode alternar entre fluxos de trabalho durante o chat.",
+    "workflowEditNotice": "Agora, o agente pode editar {workflow}. Ele trabalha em 1 fluxo de trabalho por vez.",
     "workflowReferenceUnavailableReason": "Este fluxo de trabalho referenciado não está mais disponível ou você não tem acesso a ele.",
     "workflowSyncFailedDetail": "Este fluxo de trabalho foi criado com uma versão de documento incompatível. Sua tela foi mantida inalterada.",
     "workflowSyncFailedDetailCatalogMismatch": "Um nó deste fluxo de trabalho foi alterado desde a última vez que o agente o viu. Seu canvas foi mantido inalterado. Sua próxima mensagem enviará seu canvas para que o agente possa recriar sua cópia do fluxo de trabalho.",
@@ -726,6 +730,7 @@
     },
     "modelName": "Nome do modelo",
     "modelNamePlaceholder": "Digite um nome para este modelo",
+    "modelTypeNotAddable": "Este tipo de modelo não pode ser adicionado ao canvas pela Biblioteca de Modelos. Adicione um nó que o carregue e escolha o modelo nele.",
     "modelTypeSelectorLabel": "Qual o tipo deste modelo?",
     "modelTypeSelectorPlaceholder": "Selecione o tipo de modelo",
     "modelUploaded": "Modelo importado com sucesso.",
@@ -1499,7 +1504,8 @@
       "apiNodeUsage": "Uso de Node Parceiro",
       "apiUsage": "Uso da API",
       "creditAdded": "Créditos adicionados",
-      "gpuUsage": "Uso de GPU"
+      "gpuUsage": "Uso de GPU",
+      "routerUsage": "Uso do Router"
     },
     "faqs": "Perguntas frequentes",
     "formerMember": "{name} (ex-membro)",
@@ -1516,6 +1522,15 @@
     "member": "Membro",
     "messageSupport": "Suporte por mensagem",
     "model": "Modelo",
+    "personalWallet": {
+      "addCredits": "Adicionar créditos pessoais",
+      "apiKeyDescription": "Esta chave cobra da sua conta pessoal. Crie uma chave de API de equipe ou adicione créditos pessoais.",
+      "createTeamApiKey": "Criar uma chave de API de equipe",
+      "sessionDescription": "Esta sessão cobra da sua conta pessoal. Para cobrar de uma equipe, mude para o espaço de trabalho dela.",
+      "sessionNoTeamsDescription": "Esta sessão cobra da sua conta pessoal. Adicione créditos pessoais para continuar.",
+      "switchTo": "Mudar para {workspaceName}",
+      "title": "Sua conta pessoal ficou sem créditos"
+    },
     "purchaseCredits": "Comprar créditos",
     "refreshes": "Atualiza em {date}",
     "time": "Hora",
@@ -1745,21 +1760,21 @@
   "deploymentSwitcher": {
     "comfyCloud": "Comfy Cloud",
     "compatibleEnvironments": "Ambientes compatíveis",
-    "createCustomDeployment": "Criar uma implantação personalizada",
+    "createCustomDeployment": "Criar um Build personalizado",
     "currentTooltip": "Em execução em {deployment}",
     "customDeployment": {
-      "body": "Uma implantação personalizada adiciona os nós personalizados e modelos que o Comfy Cloud não tem. Você a configura na Platform, e ela aparece em Executar em para seu espaço de trabalho.",
+      "body": "Um Build personalizado adiciona os nós personalizados e modelos que o Comfy Cloud não tem. Você o configura na Platform, e ele aparece em Executar em para seu espaço de trabalho.",
       "createOnPlatform": "Criar na Platform",
       "pointApi": "Chame-a do seu produto como uma API com escalonamento automático",
       "pointGpu": "Trabalhe no ComfyUI com a GPU que você escolher",
       "pointNodes": "Use nós personalizados e modelos que não estão no Comfy Cloud",
-      "title": "Criar uma implantação personalizada"
+      "title": "Criar um Build personalizado"
     },
     "defaultDeleted": "Excluído",
     "defaultGone": "O padrão do espaço de trabalho foi excluído, então os membros iniciam no Comfy Cloud.",
     "defaultGoneOwner": "O padrão do espaço de trabalho foi excluído, então os membros iniciam no Comfy Cloud. Escolha um novo em Padrão do espaço de trabalho.",
     "deployCustomNodes": {
-      "body": "Crie uma implantação personalizada que execute seus nós personalizados e modelos no Comfy Cloud e apareça em Executar em para seu espaço de trabalho.",
+      "body": "Crie um Build personalizado que execute seus nós personalizados e modelos no Comfy Cloud e apareça em Executar em para seu espaço de trabalho.",
       "pointNodes": "Implante os pacotes de nós personalizados ou privados de que seus fluxos de trabalho precisam",
       "title": "Implantar nós personalizados no Comfy Cloud"
     },
@@ -1772,6 +1787,7 @@
     "incompatibleEnvironments": "Ambientes incompatíveis",
     "labelWithDetail": "{label} · {detail}",
     "landed": "Em execução em {deployment}",
+    "later": "Mais tarde",
     "linkRefused": "Não foi possível abrir esta implantação",
     "linkTimedOut": "Esta implantação demorou muito para abrir. Tente o link novamente.",
     "linkWorkspaceRefused": "Não foi possível alternar para esse espaço de trabalho. Você ainda está em {workspaceName}.",
@@ -1784,6 +1800,7 @@
     "missingNodesAfterReason": "Ela não pode executar este fluxo de trabalho. Faltam {nodes}.",
     "missingNodesNamed": "{deployment} não pode executar este fluxo de trabalho. Faltam {nodes}.",
     "namedDeployment": "{name}",
+    "newDeploymentName": "Nova implantação",
     "noDeployments": "Este espaço de trabalho ainda não tem implantações.",
     "notChecked": "Não verificado",
     "notCheckedAfterReason": "Não foi possível verificar se ela pode executar este fluxo de trabalho.",
@@ -1801,6 +1818,10 @@
       "stopped": "{deployment} está parada. Inicie-a para executar trabalhos nela."
     },
     "releaseChanged": "Esta implantação agora executa uma versão diferente. Recarregue para obter seus nós.",
+    "releaseChangedRun": "{deployment} agora executa a v{version}. Recarregue para executar nela.",
+    "releaseChangedRunNoVersion": "{deployment} agora executa uma versão diferente. Recarregue para executar nela.",
+    "releaseChangedRunUnknown": "As execuções agora vão para uma versão diferente. Recarregue para executar nela.",
+    "releaseChangedRunUnknownTarget": "a nova versão",
     "reload": "Recarregar",
     "retry": "Tentar novamente",
     "retryLabel": "Tentar iniciar {deployment} novamente",
@@ -1824,6 +1845,7 @@
     "startLabel": "Iniciar {deployment}",
     "startOnPlatformLabel": "Iniciar {deployment} na Plataforma do Desenvolvedor",
     "status": {
+      "building": "Em compilação",
       "failed": "Falhou",
       "notReady": "Não está pronto",
       "provisioning": "Iniciando",
@@ -1842,16 +1864,23 @@
     "unnamedDeployment": "Implantação {id}",
     "unsaved": {
       "message": "Mudar para {deployment} recarrega a aba. Estes fluxos de trabalho têm alterações que ainda não foram salvas.",
+      "reloadMessage": "Ao recarregar a aba, eles serão executados em {deployment}. Estes fluxos de trabalho têm alterações que ainda não foram salvas.",
+      "reloadTitle": "Salvar seus fluxos de trabalho antes de recarregar?",
+      "reloadWithoutSaving": "Recarregar sem salvar",
+      "saveAndReload": "Salvar e recarregar",
       "saveAndSwitch": "Salvar e mudar",
       "switchWithoutSaving": "Mudar sem salvar",
       "tabsReturn": "Suas abas abertas voltarão após a recarga de qualquer forma.",
       "title": "Salvar seus fluxos de trabalho antes de mudar?"
     },
     "version": "v{version}",
+    "versionChanged": "{deployment} agora executa a v{version}. Recarregue para usar seus nós.",
+    "versionChangedNoVersion": "{deployment} agora executa uma versão diferente. Recarregue para usar seus nós.",
     "workflowNeedsDeployment": {
       "andMore": "{names} e mais {count}",
       "buildOnPlatform": "Criar na Platform",
-      "installBody": "Implante uma Build personalizada para adicionar os nós personalizados e modelos que o Comfy Cloud não tem. Você a configura na Platform, e ela aparece em Executar em para seu espaço de trabalho.",
+      "createCustomBuild": "Criar uma Custom Build",
+      "installBody": "Crie uma Custom Build para adicionar os nós personalizados e modelos que o Comfy Cloud não tem. Você a configura na Platform, e ela aparece em Executar em para seu espaço de trabalho.",
       "installTitle": "Instale os nós personalizados que estão faltando",
       "missingModels": "{count} modelo ausente | {count} modelos ausentes",
       "missingNodes": "{count} nó ausente | {count} nós ausentes",
@@ -1859,8 +1888,9 @@
       "noneRunIt": "Nenhuma implantação neste espaço de trabalho tem todos estes nós.",
       "switch": "Alternar",
       "switchBody": "O Comfy Cloud não tem estes itens. Mude para uma implantação que os tenha e continue trabalhando nela.",
-      "title": "Execute este fluxo de trabalho em uma implantação personalizada",
-      "titleNoneRunIt": "Crie uma implantação para executar este fluxo de trabalho no Comfy Cloud"
+      "title": "Executar este fluxo de trabalho em um Build personalizado",
+      "titleNoneRunIt": "Crie uma implantação para executar este fluxo de trabalho no Comfy Cloud",
+      "titleNoneRunItCustomBuild": "Crie uma Custom Build para executar este fluxo de trabalho no Comfy Cloud"
     },
     "workspaceDefault": "Padrão do espaço de trabalho"
   },
@@ -2109,6 +2139,13 @@
         "title": "Geração falhou",
         "toastMessage": "Memória de GPU insuficiente. Tente reduzir a resolução da imagem ou o tamanho do lote e execute novamente.",
         "toastTitle": "Geração falhou"
+      },
+      "personal_wallet_insufficient_credits": {
+        "itemLabel": "{nodeName}",
+        "message": "Esta execução foi cobrada da sua conta pessoal, que está sem créditos.",
+        "title": "Créditos insuficientes",
+        "toastMessage": "Esta execução foi cobrada da sua conta pessoal, que está sem créditos.",
+        "toastTitle": "Créditos insuficientes"
       },
       "preprocessing_failed": {
         "itemLabel": "{nodeName}",
@@ -2365,13 +2402,8 @@
     "missingMedia": "Alguns nós estão sem as entradas necessárias",
     "missingModels": "{count} modelo necessário está ausente | {count} modelos necessários estão ausentes",
     "missingNodes": "Alguns nós estão ausentes e precisam ser instalados",
-    "moreDeployments": "mais {count}",
     "multipleIssueCount": "{count} problema encontrado | {count} problemas encontrados",
     "multipleIssuesMessage": "Resolva estes problemas antes de executar o fluxo de trabalho.",
-    "runOnCustomDeployment": "Execute em uma implantação personalizada",
-    "runsOn": "É executado em {deployment}",
-    "setUpCustomDeployment": "Configurar",
-    "switchDeployment": "Mudar",
     "viewDetails": "Ver detalhes"
   },
   "errorPanelSurvey": {
@@ -2447,16 +2479,18 @@
     "agentModified": "O agente atualizou este fluxo de trabalho",
     "agentNeedsApproval": "O agente está aguardando sua resposta",
     "agentWorking": "O agente está trabalhando neste fluxo de trabalho",
+    "align": "Alinhar",
+    "alignBottom": "Alinhar bordas inferiores",
+    "alignHorizontalCenters": "Alinhar centros horizontalmente",
+    "alignLeft": "Alinhar bordas à esquerda",
+    "alignRight": "Alinhar bordas à direita",
+    "alignTop": "Alinhar bordas superiores",
+    "alignVerticalCenters": "Alinhar centros verticalmente",
     "all": "Todos",
     "allKeybindingsReset": "Todos os atalhos redefinidos para o padrão",
     "amount": "Quantidade",
     "apply": "Aplicar",
     "architecture": "Arquitetura",
-    "arrange": "Organizar",
-    "arrangeAsGrid": "Organizar como grade",
-    "arrangeHorizontally": "Organizar horizontalmente",
-    "arrangeSpacing": "Espaçamento da organização",
-    "arrangeVertically": "Organizar verticalmente",
     "asset": "{count} ativo | {count} ativos",
     "audioFailedToLoad": "Falha ao carregar áudio",
     "audioPlaybackFailed": "Não foi possível reproduzir este áudio. Tente novamente ou baixe-o para reproduzi-lo em outro aplicativo.",
@@ -2535,6 +2569,9 @@
     "disabling": "Desativando {id}",
     "disconnectedFromBackend": "Desconectado do backend. Verifique se o servidor está em execução.",
     "dismiss": "Dispensar",
+    "distributeGap": "Espaço entre nós distribuídos",
+    "distributeHorizontally": "Distribuir horizontalmente",
+    "distributeVertically": "Distribuir verticalmente",
     "download": "Baixar",
     "downloadAudio": "Baixar áudio",
     "downloadImage": "Baixar imagem",
@@ -2596,6 +2633,8 @@
     "galleryImagePosition": "Imagem da galeria {index} de {total}",
     "galleryThumbnail": "Miniatura da galeria",
     "galleryThumbnailPosition": "Miniatura da galeria {index} de {total}",
+    "gapHandle": "Espaço entre nós",
+    "gapValue": "{value} unidade da tela | {value} unidades da tela",
     "getHelpAction": "Obter Ajuda",
     "goToNode": "Ir para o nó",
     "graphNavigation": "Navegação no grafo",
@@ -2669,12 +2708,15 @@
     "logs": "Logs",
     "manageExtensions": "Gerenciar extensões",
     "markdown": "markdown",
+    "matchHeight": "Igualar altura",
+    "matchWidth": "Igualar largura",
     "maximizeDialog": "Maximizar diálogo",
     "megapixelsValue": "{count} MP",
     "micPermissionDenied": "Permissão do microfone negada",
     "migrate": "Migrar",
     "missing": "Faltando",
     "missingNodeTypesInGroup": "ausentes: {types}",
+    "mixedGaps": "Misto",
     "modifyKeybinding": "Modificar atalho",
     "more": "Mais",
     "moreOptions": "Mais opções",
@@ -2815,6 +2857,7 @@
     "selectItemsToRename": "Selecione itens para renomear",
     "selected": "Selecionado",
     "selectedFile": "Arquivo selecionado",
+    "sessionRevoked": "Seu acesso a este espaço de trabalho foi encerrado. Entre novamente para se reconectar.",
     "setAKeybindingForTheFollowing": "Definir um atalho para o seguinte:",
     "setAsBackground": "Definir como plano de fundo",
     "settings": "Configurações",
@@ -2850,6 +2893,8 @@
     "systemStatsTemplatesVersion": "Versão dos Modelos",
     "terminal": "Terminal",
     "textFailedToLoad": "Falha ao carregar o texto",
+    "tidyUp": "Organizar",
+    "tidyUpTooltip": "Alinhe os nós em linhas e colunas e iguale os espaçamentos",
     "title": "Título",
     "triggerPhrase": "Frase de gatilho",
     "unknownError": "Erro desconhecido",
@@ -3455,6 +3500,27 @@
     "newerVersionRequired": "Alguns nós exigem uma versão mais recente do ComfyUI (atual: {version}). Atualize para usar todos os nós.",
     "newerVersionRequiredGeneric": "Alguns nós exigem uma versão mais recente do ComfyUI. Atualize para usar todos os nós.",
     "unknownVersion": "desconhecida"
+  },
+  "localMcp": {
+    "clients": {
+      "claudeCode": "Claude Code",
+      "claudeDesktop": "Claude Desktop",
+      "cursor": "Cursor"
+    },
+    "connected": "Conectado: um agente executou um fluxo de trabalho aqui por meio do Comfy MCP.",
+    "copyConfig": "Copiar",
+    "description": "Permita que um agente de IA, como Claude ou Cursor, execute fluxos de trabalho neste ComfyUI por meio do Comfy MCP. Ele é executado na sua máquina.",
+    "label": "Agente",
+    "locations": {
+      "claudeDesktop": "Adicione a claude_desktop_config.json (Configurações > Desenvolvedor > Editar configuração) e reinicie o Claude Desktop.",
+      "cursor": "Adicione a ~/.cursor/mcp.json ou a .cursor/mcp.json em um projeto."
+    },
+    "openDocs": "Guia completo de configuração",
+    "step1": "1. Instale o Comfy MCP",
+    "step2": "2. Adicione-o ao seu cliente",
+    "step3": "3. Peça ao seu agente para executar um fluxo de trabalho",
+    "step3Hint": "Reinicie seu cliente e peça para ele confirmar que seu ComfyUI local está em execução e executar um fluxo de trabalho. Este painel mostrará Conectado após a primeira execução.",
+    "title": "Conecte seu agente de IA"
   },
   "logsTerminal": {
     "loadError": "Não foi possível carregar os logs. Certifique-se de que você atualizou o backend do ComfyUI.",
@@ -4283,6 +4349,18 @@
       "workspaceLabel": "Workspace"
     },
     "scopes": {
+      "comfy-mcp:tools:call": {
+        "label": "Executar fluxos de trabalho e modelos parceiros em seu nome, usando seus créditos"
+      },
+      "comfy-mcp:tools:read": {
+        "label": "Ver as ferramentas de fluxo de trabalho disponíveis para você"
+      },
+      "comfy-router:models:invoke": {
+        "label": "Executar modelos parceiros pelo Comfy Router, usando seus créditos"
+      },
+      "comfy-router:models:read": {
+        "label": "Ver o catálogo de modelos do Comfy Router"
+      },
       "mcp:tools:call": {
         "label": "Executar workflows em seu nome"
       },
@@ -4415,12 +4493,13 @@
     "cloudButton": {
       "checking": "Verificando o Comfy Cloud…",
       "resumeUpload": "Retomar envio do modelo",
-      "tooltip": "Executar no Comfy Cloud",
+      "tooltip": "Executar este fluxo de trabalho no Comfy Cloud",
       "uploading": "Enviando modelos para o Comfy Cloud, {percent}%"
     },
     "deploySetup": "Implante sua configuração no Comfy Cloud",
     "deploySetupDialog": {
       "body": "Implante sua configuração local no Comfy Cloud como uma Build e use-a no ComfyUI ou chame-a como uma API com escalonamento automático.",
+      "missingNodesBody": "O Comfy Cloud não tem alguns dos nós usados por este fluxo de trabalho. Implante sua configuração local no Comfy Cloud como uma Build e use-a no ComfyUI ou chame-a como uma API com escalonamento automático.",
       "platformTabBlocked": "Fluxo de trabalho salvo. Clique em Implantar na plataforma novamente para continuar.",
       "pointGpu": "Execute em GPUs potentes na nuvem",
       "pointNodes": "Traga seus nós personalizados e modelos",
@@ -4478,10 +4557,14 @@
     "prepareFailed": "Não foi possível preparar este fluxo de trabalho para o Comfy Cloud",
     "prepareFailedDetail": "Verifique se há erros no fluxo de trabalho, salve-o e tente novamente.",
     "runDialog": {
-      "asksToSignIn": "O Comfy Cloud solicitará que você faça login.",
+      "body": "Abra este fluxo de trabalho no Comfy Cloud ou implante sua configuração local como uma Build caso ele precise de nós personalizados.",
+      "checkCompatibility": "Verificar compatibilidade",
       "openOnCloud": "Abrir no Comfy Cloud",
+      "pointApi": "Use-o no ComfyUI ou chame-o como uma API",
       "ready": "O Comfy Cloud tem todos os nós e modelos usados por este fluxo de trabalho. Ele será aberto em uma nova aba, pronto para executar.",
-      "title": "Executar no Comfy Cloud"
+      "readyWithUncheckedInputs": "O Comfy Cloud tem todos os nós e modelos que pôde verificar. Não foi possível verificar os modelos para estas entradas: {inputs}. Ele será aberto em uma nova aba.",
+      "sends": "A verificação enviará os nomes dos nós e modelos deste fluxo de trabalho ao Comfy Cloud.",
+      "uncheckedInput": "{input} em {nodeType}"
     },
     "verifyAccessFailed": "Não foi possível verificar o acesso ao Comfy Cloud",
     "verifyAccessFailedDetail": "Se o botão Cloud ainda estiver disponível, selecione Abrir no Comfy Cloud novamente."
@@ -4538,6 +4621,33 @@
     "tooltip": "Os nós parceiros executam modelos de código fechado, como Kling ou Veo, no hardware do provedor, pelo Comfy. Eles usam créditos; o restante do Comfy continua grátis.",
     "unmuteOpen": "Ativar som do clipe de pesos abertos",
     "unmutePartner": "Ativar som do clipe de nó parceiro"
+  },
+  "platformFrame": {
+    "buildFailed": "Falha na compilação. {deployment} não foi implantado.",
+    "buildStep": "etapa {step} de {of}",
+    "buildTakesMinutes": "Isso leva alguns minutos. Você pode continuar trabalhando.",
+    "building": "Compilando {deployment}",
+    "deployFailed": "Falha na implantação. {deployment} foi compilado, mas não implantado.",
+    "deploying": "Implantando {deployment}",
+    "finishingOnPrevious": "Concluindo sua tarefa na v{version}. | Concluindo {count} das suas tarefas na v{version}.",
+    "getStarted": "Começar",
+    "later": "Mais tarde",
+    "nothingChanged": "Nada mudou: {deployment} ainda executa a v{version}.",
+    "nothingChangedNoVersion": "Nada mudou: {deployment} ainda executa como antes.",
+    "openOnPlatform": "Abrir na plataforma",
+    "preinstallTitle": "Pré-instale modelos para executar este fluxo de trabalho",
+    "readyNew": "{deployment} está pronto",
+    "readyUpdate": "{deployment} agora executa a v{version}.",
+    "readyUpdateReload": "{deployment} agora executa a v{version}. Recarregue para usar seus nós.",
+    "reload": "Recarregar",
+    "switch": "Alternar",
+    "switchListingUnavailable": "Suas implantações não foram carregadas. Tente novamente em Executar em.",
+    "title": "Build personalizado",
+    "unanswered": "A plataforma não foi aberta aqui.",
+    "updateDeployment": "Atualizar {deployment}",
+    "updateShortcut": "Pressione E para atualizá-lo.",
+    "updateUnfinished": "{deployment} não terminou de atualizar para a v{version}.",
+    "viewDetails": "Ver detalhes"
   },
   "profileMenu": {
     "balanceUnavailable": "Não foi possível carregar seu saldo.",
@@ -4637,6 +4747,7 @@
   },
   "rightSidePanel": {
     "addFavorite": "Favoritar",
+    "addMissingModelsToBuild": "Adicionar os modelos ausentes à compilação",
     "addToDeploymentBuild": "Adicione estes itens à build de {deployment} na Platform e, em seguida, faça uma nova implantação.",
     "advancedInputs": "ENTRADAS AVANÇADAS",
     "askAgent": "Perguntar ao agente",
@@ -5078,6 +5189,7 @@
     "Server-Config": "Configuração do Servidor",
     "Settings": "Configurações",
     "Sidebar": "Barra Lateral",
+    "Smart Guides": "Guias inteligentes",
     "Tree Explorer": "Explorador de Árvore",
     "UV": "UV",
     "User": "Usuário",
@@ -5153,6 +5265,7 @@
     "viewControls": "Controles de Visualização"
   },
   "sideToolbar": {
+    "addModelsToDeployment": "Adicionar modelos a esta implantação",
     "assets": "Ativos",
     "backToAssets": "Voltar para todos os ativos",
     "browseTemplates": "Explorar modelos de exemplo",
@@ -5319,6 +5432,7 @@
     "templates": "Modelos",
     "themeToggle": "Alternar tema",
     "workflowTab": {
+      "bookmarkSaveFailed": "A alteração no seu marcador não foi salva. Verifique sua conexão e tente novamente.",
       "confirmDelete": "Tem certeza de que deseja excluir este workflow?",
       "confirmDeleteTitle": "Excluir workflow?",
       "confirmOverwrite": "O arquivo abaixo já existe. Deseja sobrescrevê-lo?",
@@ -5326,17 +5440,27 @@
       "deleteFailed": "Falha ao tentar excluir o workflow.",
       "deleteFailedTitle": "Falha ao excluir",
       "deleted": "Workflow excluído",
+      "deletedButBookmarksNotUpdated": "Fluxo de trabalho excluído, mas não foi possível atualizar seus marcadores",
       "dirtyClose": "Os arquivos abaixo foram alterados. Deseja salvá-los antes de fechar?",
       "dirtyCloseAnyway": "Fechar mesmo assim",
       "dirtyCloseHint": "Segure Shift para fechar sem perguntar",
       "dirtyCloseTitle": "Salvar alterações?",
+      "renamedButBookmarksNotUpdated": "Fluxo de trabalho renomeado, mas não foi possível atualizar seus marcadores",
       "workflowTreeType": {
         "bookmarks": "Favoritos",
         "browse": "Explorar",
         "open": "Abrir"
       }
     },
-    "workflows": "Workflows"
+    "workflows": "Workflows",
+    "workspaceLibrary": {
+      "empty": "Não há modelos na biblioteca do seu espaço de trabalho.",
+      "explainer": "Modelos no seu espaço de trabalho. Os que não estão nesta build são baixados quando um trabalho precisa deles.",
+      "fromWorkspace": "Do seu espaço de trabalho",
+      "loadFailed": "Não foi possível carregar a biblioteca do seu espaço de trabalho.",
+      "modelCount": "{count} modelo | {count} modelos",
+      "title": "Biblioteca do espaço de trabalho"
+    }
   },
   "skillPacks": {
     "errors": {
@@ -6054,6 +6178,7 @@
     "a1111CoreNodesUnavailable": "Não foi possível carregar o fluxo de trabalho porque esta instalação do ComfyUI está sem os nós principais. Verifique se o backend foi iniciado corretamente.",
     "a1111EmbeddingsUnavailable": "Não foi possível carregar os embeddings do servidor. O fluxo de trabalho foi importado, mas os nomes dos embeddings foram mantidos como texto simples.",
     "assetDropFailed": "Não foi possível carregar o recurso solto",
+    "batchStoppedOnWorkflowChange": "{queued} de {requested} enfileirados. Interrompido porque você mudou de fluxo de trabalho; caso contrário, o restante teria executado o fluxo errado.",
     "cannotCreateSubgraph": "Não é possível criar subgrafo",
     "couldNotDetermineFileType": "Não foi possível determinar o tipo de arquivo",
     "dropFileError": "Não foi possível processar o item arrastado: {error}",
@@ -6283,6 +6408,12 @@
       "placeholderModel": "Selecionar modelo...",
       "placeholderUnknown": "Selecionar mídia...",
       "placeholderVideo": "Selecionar vídeo...",
+      "thumbnailSize": "Tamanho da miniatura",
+      "thumbnailSizes": {
+        "compact": "Compacto",
+        "large": "Grande",
+        "standard": "Padrão"
+      },
       "topResult": "Melhor resultado: {result}"
     },
     "valueControl": {

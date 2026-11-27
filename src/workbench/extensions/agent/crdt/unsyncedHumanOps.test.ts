@@ -78,4 +78,33 @@ describe('unsyncedHumanOps', () => {
     page.forgetUnsyncedAtLoad('wf-a')
     expect(page.hasUnsyncedHumanOps('wf-a')).toBe(false)
   })
+
+  it('treats live pending ops as non-blocking only for their own recorder until reload or disposal and persists once per update', async () => {
+    const page = await loadPage()
+    const setItem = vi.spyOn(sessionStorage, 'setItem')
+    page.recordUnsyncedHumanOps('tab-1', [], ['wf-a'])
+    expect(setItem).toHaveBeenCalledOnce()
+    setItem.mockRestore()
+
+    expect(page.hasUnsyncedHumanOps('wf-a')).toBe(true)
+    expect(page.hasBlockingUnsyncedHumanOps('wf-a', 'tab-1')).toBe(false)
+    expect(page.hasBlockingUnsyncedHumanOps('wf-a', 'tab-2')).toBe(true)
+    expect(page.hasBlockingUnsyncedHumanOps('wf-a')).toBe(true)
+
+    page.recordUnsyncedHumanOps('tab-1', ['wf-a'])
+    expect(page.hasBlockingUnsyncedHumanOps('wf-a', 'tab-1')).toBe(true)
+
+    page.recordUnsyncedHumanOps('tab-1', [])
+    expect(page.hasBlockingUnsyncedHumanOps('wf-a', 'tab-1')).toBe(false)
+
+    const reloaded = await loadPage()
+    expect(reloaded.hasUnsyncedHumanOps('wf-a')).toBe(true)
+    expect(reloaded.hasBlockingUnsyncedHumanOps('wf-a', 'tab-1')).toBe(true)
+    reloaded.forgetUnsyncedAtLoad('wf-a')
+    expect(reloaded.hasUnsyncedHumanOps('wf-a')).toBe(false)
+
+    reloaded.recordUnsyncedHumanOps('tab-1', [], ['wf-b'])
+    reloaded.releaseUnsyncedHumanOpsRecorder('tab-1')
+    expect(reloaded.hasBlockingUnsyncedHumanOps('wf-b', 'tab-1')).toBe(true)
+  })
 })

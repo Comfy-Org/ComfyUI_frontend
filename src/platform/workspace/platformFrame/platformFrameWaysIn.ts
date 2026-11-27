@@ -6,7 +6,8 @@ import { asksForItsOwnTab } from '@/platform/workspace/platformWorkflowHandoff'
 
 export const NEW_DEPLOYMENT_FROM_NODES: PlatformFrameRequest = {
   step: 'new',
-  startAtNodes: true
+  startAtNodes: true,
+  handsOverWorkflow: true
 }
 
 export const NEW_DEPLOYMENT_FOR_WORKFLOW: PlatformFrameRequest = {

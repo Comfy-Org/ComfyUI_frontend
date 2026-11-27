@@ -25,6 +25,7 @@ import {
   devServerAgentRoutes
 } from './build/devAgentConfig.ts'
 import { comfyAPIPlugin } from './build/plugins/comfyAPIPlugin.ts'
+import { vueDevtoolsKitStub } from './build/plugins/vueDevtoolsKitStub.ts'
 import {
   hasCompleteSentryUploadConfig,
   resolveSentryUploadConfig
@@ -51,6 +52,10 @@ const ISOLATED_STORE_TESTS = [
   'src/testing/pinia.test.ts'
 ]
 const CENSUS_TESTS = ['scripts/registry-census/*.census.test.ts']
+
+const NODE_ENVIRONMENT_TESTS = [
+  'src/platform/workflow/validation/schemas/shippedTemplates.test.ts'
+]
 
 const CRITICAL_COVERAGE_DIRS = [
   'src/base',
@@ -546,6 +551,7 @@ export default defineConfig({
     ...(!DISABLE_VUE_PLUGINS
       ? [vueDevTools(), vue(vuePluginOptions), createHtmlPlugin({})]
       : [vue(vuePluginOptions)]),
+    vueDevtoolsKitStub(!DISABLE_VUE_PLUGINS),
     tailwindcss(),
     typegpuPlugin({}),
     comfyAPIPlugin(IS_DEV),
@@ -990,16 +996,30 @@ export default defineConfig({
             './vitest.timer.setup.ts',
             './vitest.setup.ts'
           ],
-          exclude: ISOLATED_STORE_TESTS,
+          exclude: [...ISOLATED_STORE_TESTS, ...NODE_ENVIRONMENT_TESTS],
           include: [
             'src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
             'packages/api-client/src/**/*.test.ts',
+            'packages/graph-model/src/**/*.test.ts',
             'packages/settings-core/src/**/*.test.ts',
             'packages/theme-core/src/**/*.test.ts',
             'packages/telemetry/src/**/*.test.ts',
             'browser_tests/**/*.test.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
             ...FRONTEND_SCRIPT_TESTS
           ]
+        }
+      },
+      {
+        extends: true,
+        test: {
+          name: 'node-environment',
+          environment: 'node',
+          setupFiles: [
+            './vitest.console.setup.ts',
+            './vitest.network.setup.ts',
+            './vitest.timer.setup.ts'
+          ],
+          include: NODE_ENVIRONMENT_TESTS
         }
       },
       {

@@ -23,6 +23,7 @@ import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import { api } from '@/scripts/api'
 import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { serializeSkillReference } from '@/workbench/extensions/agent/utils/skillReferenceText'
 
 import type {
   AgentAnswerAccepted,
@@ -59,6 +60,7 @@ import { useAgentWorkflowTabBindingStore } from '@/workbench/extensions/agent/st
 import type { SelectedNode } from './useCanvasSelection'
 import type {
   AgentEventSource,
+  AgentSessionDeps,
   TurnOrigin,
   WorkflowTurnContext
 } from './useAgentSession'
@@ -3704,6 +3706,7 @@ describe('useAgentSession (v1 composition root)', () => {
     })
 
     it('warns from the canonical answer receipt when another selection won', async () => {
+      const onRequestFailed = vi.fn()
       const answerAsk = vi
         .fn<AgentRestClient['answerAsk']>()
         .mockResolvedValue({ status: 'answered', selected: ['run'] })
@@ -3717,9 +3720,14 @@ describe('useAgentSession (v1 composition root)', () => {
       await session.sendMessage('build it and run it')
       events.emit(runApproval('msg-1'))
 
-      const answered = await session.answerAsk('turn-1:call-1', 'cancel')
+      const answered = await session.answerAsk(
+        'turn-1:call-1',
+        'cancel',
+        onRequestFailed
+      )
 
       expect(answered).toBe(false)
+      expect(onRequestFailed).not.toHaveBeenCalled()
       expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
         surface: 'agent',
         errorType: 'agent_ask_answer_superseded',
@@ -3814,6 +3822,7 @@ describe('useAgentSession (v1 composition root)', () => {
     })
 
     it('does not re-drive an answer the server has already refused', async () => {
+      const onRequestFailed = vi.fn()
       const answerAsk = vi
         .fn<AgentRestClient['answerAsk']>()
         .mockRejectedValue(
@@ -3829,9 +3838,14 @@ describe('useAgentSession (v1 composition root)', () => {
       await session.sendMessage('build it and run it')
       events.emit(runApproval('msg-1'))
 
-      await session.answerAsk('turn-1:call-1', { selected: ['run'] })
+      await session.answerAsk(
+        'turn-1:call-1',
+        { selected: ['run'] },
+        onRequestFailed
+      )
 
       expect(answerAsk).toHaveBeenCalledTimes(1)
+      expect(onRequestFailed).not.toHaveBeenCalled()
       expect(cardOnScreen()).toBe(false)
     })
 
@@ -6090,6 +6104,21 @@ describe('useAgentSession (v1 composition root)', () => {
           askId: 'turn-1:call-1'
         }
       })
+      expect(
+        telemetry.trackAgentRunApprovalRecoveryAttempted
+      ).toHaveBeenCalledExactlyOnceWith({
+        ask_id: 'turn-1:call-1',
+        turn_id: 'msg-1',
+        cause: 'reconnect'
+      })
+      expect(
+        telemetry.trackAgentRunApprovalRecoveryOutcome
+      ).toHaveBeenCalledExactlyOnceWith({
+        ask_id: 'turn-1:call-1',
+        turn_id: 'msg-1',
+        cause: 'reconnect',
+        outcome: 'restored'
+      })
     } finally {
       vi.useRealTimers()
     }
@@ -6114,6 +6143,52 @@ describe('useAgentSession (v1 composition root)', () => {
 
       expect(approvalParts(session)).toHaveLength(1)
       expect(reportError).not.toHaveBeenCalled()
+      expect(
+        telemetry.trackAgentRunApprovalRecoveryAttempted
+      ).not.toHaveBeenCalled()
+      expect(
+        telemetry.trackAgentRunApprovalRecoveryOutcome
+      ).not.toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('does not count recovery of a non-run ask in the run approval funnel', async () => {
+    vi.useFakeTimers()
+    try {
+      const rest = fakeRest({
+        getMessages: vi.fn(async (): Promise<AgentMessages> => [
+          historyRow(1, 'user', 'msg-1', 'go'),
+          {
+            ...parkedRow(),
+            pending_ask: {
+              ...PARKED_ASK,
+              kind: 'ask_user',
+              context: undefined
+            }
+          }
+        ])
+      })
+      const { source, status } = fakeEvents()
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      status(true)
+
+      await session.sendMessage('go')
+      status(false)
+      status(true)
+      await vi.advanceTimersByTimeAsync(31_000)
+
+      expect(useAgentConversationStore().pendingAskIds).toContain(
+        'turn-1:call-1'
+      )
+      expect(
+        telemetry.trackAgentRunApprovalRecoveryAttempted
+      ).not.toHaveBeenCalled()
+      expect(
+        telemetry.trackAgentRunApprovalRecoveryOutcome
+      ).not.toHaveBeenCalled()
     } finally {
       vi.useRealTimers()
     }
@@ -6147,7 +6222,7 @@ describe('useAgentSession (v1 composition root)', () => {
     }
   })
 
-  it('(g30) a broadcast that merely lagged the poll renders one card and is not reported', async () => {
+  it('(g30) a broadcast that merely lagged the poll renders one card, is not reported, and settles the recovery as superseded', async () => {
     vi.useFakeTimers()
     try {
       const rest = parkedOnApprovalRest()
@@ -6161,12 +6236,27 @@ describe('useAgentSession (v1 composition root)', () => {
       status(true)
       await vi.advanceTimersByTimeAsync(0)
       expect(approvalParts(session)).toHaveLength(1)
+      expect(
+        telemetry.trackAgentRunApprovalRecoveryAttempted
+      ).toHaveBeenCalledExactlyOnceWith({
+        ask_id: 'turn-1:call-1',
+        turn_id: 'msg-1',
+        cause: 'reconnect'
+      })
 
       emit(runApproval('msg-1'))
       await vi.advanceTimersByTimeAsync(31_000)
 
       expect(approvalParts(session)).toHaveLength(1)
       expect(reportError).not.toHaveBeenCalled()
+      expect(
+        telemetry.trackAgentRunApprovalRecoveryOutcome
+      ).toHaveBeenCalledExactlyOnceWith({
+        ask_id: 'turn-1:call-1',
+        turn_id: 'msg-1',
+        cause: 'reconnect',
+        outcome: 'superseded'
+      })
     } finally {
       vi.useRealTimers()
     }
@@ -6198,6 +6288,67 @@ describe('useAgentSession (v1 composition root)', () => {
         surface: 'agent',
         errorType: 'agent_ask_answer_unconfirmed'
       })
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('reports a retired recovery outcome only once across repeated polls', async () => {
+    vi.useFakeTimers()
+    try {
+      const rest = parkedOnApprovalRest()
+      const { source, status } = fakeEvents()
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      status(true)
+      await session.sendMessage('go')
+      useAgentConversationStore().retireAsk(
+        'turn-1:call-1',
+        { status: 'retired' },
+        'th-1'
+      )
+
+      status(false)
+      status(true)
+      await vi.advanceTimersByTimeAsync(31_000)
+
+      expect(
+        telemetry.trackAgentRunApprovalRecoveryOutcome
+      ).toHaveBeenCalledExactlyOnceWith({
+        ask_id: 'turn-1:call-1',
+        turn_id: 'msg-1',
+        cause: 'reconnect',
+        outcome: 'retired'
+      })
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('keeps a provisional retirement suppressed until polling confirms it pending', async () => {
+    vi.useFakeTimers()
+    try {
+      const rest = parkedOnApprovalRest()
+      const { source, status } = fakeEvents()
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      status(true)
+      await session.sendMessage('go')
+      useAgentConversationStore().retireAsk(
+        'turn-1:call-1',
+        { status: 'retired' },
+        'th-1',
+        false
+      )
+
+      status(false)
+      status(true)
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(approvalParts(session)).toHaveLength(0)
+      expect(
+        telemetry.trackAgentRunApprovalRecoveryOutcome
+      ).not.toHaveBeenCalled()
     } finally {
       vi.useRealTimers()
     }
@@ -6398,6 +6549,12 @@ describe('useAgentSession (v1 composition root)', () => {
       await vi.advanceTimersByTimeAsync(31_000)
 
       expect(approvalParts(second)).toHaveLength(0)
+      expect(
+        telemetry.trackAgentRunApprovalRecoveryAttempted
+      ).not.toHaveBeenCalled()
+      expect(
+        telemetry.trackAgentRunApprovalRecoveryOutcome
+      ).not.toHaveBeenCalled()
     } finally {
       vi.useRealTimers()
     }
@@ -6798,6 +6955,21 @@ describe('useAgentSession (v1 composition root)', () => {
           tags: expect.objectContaining({ recovery_cause: 'hydrate' })
         })
       )
+      expect(
+        telemetry.trackAgentRunApprovalRecoveryAttempted
+      ).toHaveBeenCalledExactlyOnceWith({
+        ask_id: 'turn-1:call-1',
+        turn_id: 'msg-1',
+        cause: 'hydrate'
+      })
+      expect(
+        telemetry.trackAgentRunApprovalRecoveryOutcome
+      ).toHaveBeenCalledExactlyOnceWith({
+        ask_id: 'turn-1:call-1',
+        turn_id: 'msg-1',
+        cause: 'hydrate',
+        outcome: 'restored'
+      })
     } finally {
       vi.useRealTimers()
     }
@@ -8579,6 +8751,7 @@ describe('useAgentSession (v1 composition root)', () => {
 
     const staleSameThread = session.loadThread('th-1')
     const detour = session.loadThread('th-2')
+    session.forgetChat('th-1')
     const current = session.loadThread('th-1')
 
     pending[2].resolve([historyRow(1, 'user', 'turn-A', 'go')])
@@ -8788,6 +8961,7 @@ describe('useAgentSession (v1 composition root)', () => {
     await session.sendMessage('go')
     emit(delta('msg-1', 'work'))
     await session.loadThread('th-2')
+    session.forgetChat('th-1')
 
     const pendingBack = session.loadThread('th-1')
     session.newChat()
@@ -8835,12 +9009,14 @@ describe('useAgentSession (v1 composition root)', () => {
 
     await session.loadThread('th-1')
     expect(session.isStreaming.value).toBe(false)
-    expect(session.entries.value.map((e) => e.role)).toEqual([
-      'user',
-      'assistant',
-      'user',
-      'assistant'
-    ])
+    await vi.waitFor(() =>
+      expect(session.entries.value.map((e) => e.role)).toEqual([
+        'user',
+        'assistant',
+        'user',
+        'assistant'
+      ])
+    )
   })
 
   it('(l15) reopening after a mid-turn close renders history, not a dead live turn', async () => {
@@ -10630,7 +10806,9 @@ describe('useAgentSession optimistic and chat-owned sends (PR 0)', () => {
     expect(conversation.hasSendingPendingSend).toBe(false)
     expect(onBackgroundTurnAccepted).toHaveBeenCalledWith(
       { thread_id: 'th-stopped', message_id: 'msg-stopped' },
-      'Late unmount reply'
+      'Late unmount reply',
+      undefined,
+      'cm-stopped'
     )
   })
 
@@ -12385,5 +12563,2916 @@ describe('useAgentSession optimistic and chat-owned sends (PR 0)', () => {
         )
       ).toBe(true)
     )
+  })
+
+  it('still installs the accepted turn when onBlankSendAccepted throws', async () => {
+    const conversation = useAgentConversationStore()
+    const events = fakeEvents()
+    const postMessage = vi.fn().mockResolvedValue({
+      thread_id: 'th-blank-cb',
+      message_id: 'msg-blank-cb'
+    })
+    const onBlankSendAccepted = vi.fn(() => {
+      throw new Error('blank callback failed')
+    })
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: events.source,
+      onBlankSendAccepted
+    })
+    session.start()
+
+    const sent = await session.sendMessage(
+      'First blank message',
+      [],
+      [],
+      [],
+      () => undefined,
+      'cm-blank-cb'
+    )
+
+    expect(sent).toBe(true)
+    expect(onBlankSendAccepted).toHaveBeenCalledOnce()
+    expect(conversation.threadId).toBe('th-blank-cb')
+    expect(conversation.messages.map((message) => message.id)).toContain(
+      'msg-blank-cb'
+    )
+  })
+
+  it('clears isHydrating once a newer load makes the thread ready even while an older load is still pending', async () => {
+    const events = fakeEvents()
+    let resolveStale!: (rows: []) => void
+    const getMessages = vi
+      .fn()
+      .mockImplementationOnce(
+        () =>
+          new Promise<[]>((resolve) => {
+            resolveStale = resolve
+          })
+      )
+      .mockResolvedValueOnce([])
+    const session = useAgentSession({
+      rest: fakeRest({ getMessages }),
+      events: events.source
+    })
+    session.start({ restore: false })
+
+    const staleLoad = session.loadThread('th-race')
+    expect(session.isHydrating.value).toBe(true)
+
+    expect(await session.loadThread('th-race')).toBe(true)
+    expect(session.isTranscriptReady.value).toBe(true)
+    expect(session.isHydrating.value).toBe(false)
+
+    resolveStale([])
+    await staleLoad
+    expect(session.isHydrating.value).toBe(false)
+  })
+
+  it('clears isHydrating immediately when a 409 reattachment hydration times out', async () => {
+    vi.useFakeTimers()
+    try {
+      const conversation = useAgentConversationStore()
+      const events = fakeEvents()
+      let resolveReattach!: (rows: []) => void
+      const getMessages = vi.fn(
+        () =>
+          new Promise<[]>((resolve) => {
+            resolveReattach = resolve
+          })
+      )
+      const postMessage = vi.fn().mockRejectedValueOnce(
+        new AgentApiError(
+          'a turn is already in progress for this thread',
+          409,
+          {
+            error: 'a turn is already in progress for this thread',
+            type: 'TURN_IN_PROGRESS',
+            active_message_id: 'turn-active',
+            turn_id: 'turn-active'
+          }
+        )
+      )
+      const session = useAgentSession({
+        rest: fakeRest({ postMessage, getMessages }),
+        events: events.source
+      })
+      session.start({ restore: false })
+      conversation.setThreadId('th-reattach')
+
+      const sending = session.sendMessage(
+        'second prompt',
+        [],
+        [],
+        [],
+        () => undefined,
+        'cm-409-timeout'
+      )
+      await vi.waitFor(() => expect(getMessages).toHaveBeenCalledOnce())
+      expect(session.isHydrating.value).toBe(true)
+
+      await vi.advanceTimersByTimeAsync(15_000)
+      expect(await sending).toBe(false)
+      expect(session.isHydrating.value).toBe(false)
+
+      resolveReattach([])
+      await Promise.resolve()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+})
+
+describe('useAgentSession transcript cache (TC-01..TC-14)', () => {
+  type Rows = AgentMessages
+  type Answer = () => Promise<Rows>
+
+  beforeEach(() => {
+    localStorage.clear()
+  })
+
+  const rowsOf = (
+    threadId: string,
+    answer = `Answer in ${threadId}`,
+    status: 'complete' | 'streaming' = 'complete',
+    turnId = `${threadId}-turn`,
+    prompt = `Prompt in ${threadId}`
+  ): Rows => [
+    {
+      ...historyRow(1, 'user', turnId, prompt, `${threadId}-user`),
+      thread_id: threadId
+    },
+    {
+      ...historyRow(
+        2,
+        'assistant',
+        turnId,
+        answer,
+        turnId === `${threadId}-turn` ? `${threadId}-assistant` : turnId
+      ),
+      thread_id: threadId,
+      status
+    }
+  ]
+
+  const ok =
+    (rows: Rows): Answer =>
+    () =>
+      Promise.resolve(rows)
+  const failing = (): Answer => () => Promise.reject(new Error('offline'))
+
+  function held() {
+    let release!: (rows: Rows) => void
+    let fail!: (error: unknown) => void
+    const rows = new Promise<Rows>((resolve, reject) => {
+      release = resolve
+      fail = reject
+    })
+    return { answer: (): Promise<Rows> => rows, release, fail }
+  }
+
+  function heldPost() {
+    let resolve!: (ack: AgentTurnAccepted) => void
+    let reject!: (error: unknown) => void
+    const response = new Promise<AgentTurnAccepted>((res, rej) => {
+      resolve = res
+      reject = rej
+    })
+    return { response, resolve, reject }
+  }
+
+  function serve(queues: Record<string, Answer[]> = {}) {
+    return vi.fn(
+      async (
+        threadId: string,
+        options: { signal?: AbortSignal } = {}
+      ): Promise<Rows> =>
+        options.signal
+          ? hangingGetMessages(threadId, options)
+          : (queues[threadId]?.shift() ?? ok(rowsOf(threadId)))()
+    )
+  }
+
+  function openSession(
+    getMessages: ReturnType<typeof serve>,
+    rest: Partial<AgentRestClient> = {},
+    extraDeps: Partial<AgentSessionDeps> = {}
+  ) {
+    const events = fakeEvents()
+    const restored = vi.fn<() => Promise<boolean> | boolean>(() => true)
+    let backgroundReadCount = 0
+    const backgroundReadWaiters: Array<() => void> = []
+    const session = useAgentSession({
+      rest: fakeRest({ getMessages, ...rest }),
+      events: events.source,
+      workflow: { current: () => undefined, adopted: vi.fn(), restored },
+      onBackgroundTranscriptSettled: () => {
+        backgroundReadCount += 1
+        while (backgroundReadWaiters.length > 0)
+          backgroundReadWaiters.shift()?.()
+      },
+      ...extraDeps
+    })
+    session.start({ restore: false })
+    async function afterBackgroundRead(
+      action?: () => void | Promise<unknown>,
+      expected = 1
+    ): Promise<void> {
+      const target = backgroundReadCount + expected
+      await action?.()
+      while (backgroundReadCount < target) {
+        await new Promise<void>((resolve) => {
+          backgroundReadWaiters.push(resolve)
+        })
+      }
+    }
+    return { session, events, restored, getMessages, afterBackgroundRead }
+  }
+
+  type Session = ReturnType<typeof openSession>['session']
+
+  const prompts = (session: Session): string[] =>
+    session.entries.value.flatMap((entry) =>
+      entry.role === 'user' ? [entry.text] : []
+    )
+
+  const answerShown = (session: Session): string =>
+    session.entries.value
+      .flatMap((entry) => (entry.role === 'assistant' ? entry.parts : []))
+      .flatMap((part) => (part.type === 'text' ? [part.text] : []))
+      .join('')
+
+  const fetchesExcludingPolls = (
+    getMessages: ReturnType<typeof serve>,
+    threadId: string
+  ): number =>
+    getMessages.mock.calls.filter(
+      ([id, options]) => id === threadId && options === undefined
+    ).length
+
+  async function sessionThatLeftAForB(
+    queues: Record<string, Answer[]> = {},
+    rest: Partial<AgentRestClient> = {},
+    extraDeps: Partial<AgentSessionDeps> = {}
+  ) {
+    const opened = openSession(serve(queues), rest, extraDeps)
+    await opened.session.loadThread('th-a')
+    await opened.session.loadThread('th-b')
+    return opened
+  }
+
+  it.for([
+    { via: 'a History row', options: undefined },
+    {
+      via: 'a tab returning to its chat',
+      options: { keepOpenChatUntilLoaded: true }
+    }
+  ])(
+    'TC-01 shows a chat it fetched before in the same step as $via, without waiting for the server',
+    async ({ options }) => {
+      const recheck = held()
+      const { session } = await sessionThatLeftAForB({
+        'th-a': [ok(rowsOf('th-a')), recheck.answer]
+      })
+
+      const returning = session.loadThread('th-a', () => true, options)
+
+      expect(session.threadId.value).toBe('th-a')
+      expect(session.isTranscriptReady.value).toBe(true)
+      expect(prompts(session)).toEqual(['Prompt in th-a'])
+      expect(await returning).toBe(true)
+      session.stop()
+    }
+  )
+
+  it('TC-02 leaves the rows alone when the re-check finds the same transcript', async () => {
+    const recheck = held()
+    const { session, getMessages, afterBackgroundRead } =
+      await sessionThatLeftAForB({
+        'th-a': [ok(rowsOf('th-a')), recheck.answer]
+      })
+    const returning = session.loadThread('th-a')
+    expect(prompts(session)).toEqual(['Prompt in th-a'])
+    await returning
+    const shown = session.entries.value
+    await vi.waitFor(() =>
+      expect(fetchesExcludingPolls(getMessages, 'th-a')).toBe(2)
+    )
+
+    await afterBackgroundRead(() => recheck.release(rowsOf('th-a')))
+
+    expect(session.entries.value).toBe(shown)
+    session.stop()
+  })
+
+  it('TC-03 replaces the rows in place when the re-check finds the chat moved on, without restoring its workflow again', async () => {
+    const recheck = held()
+    const { session, restored } = await sessionThatLeftAForB({
+      'th-a': [ok(rowsOf('th-a')), recheck.answer]
+    })
+    const returning = session.loadThread('th-a')
+    expect(answerShown(session)).toBe('Answer in th-a')
+    await returning
+    expect(restored).toHaveBeenCalledTimes(3)
+
+    recheck.release(rowsOf('th-a', 'An answer written elsewhere'))
+
+    await vi.waitFor(() =>
+      expect(answerShown(session)).toBe('An answer written elsewhere')
+    )
+    expect(session.threadId.value).toBe('th-a')
+    expect(restored).toHaveBeenCalledTimes(3)
+    session.stop()
+  })
+
+  it('TC-04 drops the re-check when a follow-up send is still optimistic in flight before POST acceptance', async () => {
+    const recheck = held()
+    const post = heldPost()
+    const { session, afterBackgroundRead } = await sessionThatLeftAForB(
+      { 'th-a': [ok(rowsOf('th-a')), recheck.answer] },
+      { postMessage: vi.fn(() => post.response) }
+    )
+    const returning = session.loadThread('th-a')
+    await returning
+
+    const sending = session.sendMessage('Optimistic follow-up')
+    expect(prompts(session)).toEqual(['Prompt in th-a', 'Optimistic follow-up'])
+
+    await afterBackgroundRead(() =>
+      recheck.release(rowsOf('th-a', 'An answer written elsewhere'))
+    )
+
+    expect(prompts(session)).toEqual(['Prompt in th-a', 'Optimistic follow-up'])
+    expect(answerShown(session)).toBe('Answer in th-a')
+
+    post.resolve({ thread_id: 'th-a', message_id: 'msg-a' })
+    await sending
+    session.stop()
+  })
+
+  it('TC-04 drops the re-check when an optimistic follow-up send failed on screen', async () => {
+    const recheck = held()
+    const post = heldPost()
+    const { session, afterBackgroundRead } = await sessionThatLeftAForB(
+      { 'th-a': [ok(rowsOf('th-a')), recheck.answer] },
+      { postMessage: vi.fn(() => post.response) }
+    )
+    await session.loadThread('th-a')
+
+    const sending = session.sendMessage('Failed follow-up')
+    post.reject(new TypeError('Failed to fetch'))
+    expect(await sending).toBe(false)
+
+    await afterBackgroundRead(() =>
+      recheck.release(rowsOf('th-a', 'An answer written elsewhere'))
+    )
+
+    expect(prompts(session)).toEqual(['Prompt in th-a', 'Failed follow-up'])
+    expect(answerShown(session)).toBe('Answer in th-a')
+    session.stop()
+  })
+
+  it('TC-04 drops the answer of the re-check when the user sent a message meanwhile and it accepted', async () => {
+    const recheck = held()
+    const { session, afterBackgroundRead } = await sessionThatLeftAForB(
+      { 'th-a': [ok(rowsOf('th-a')), recheck.answer] },
+      {
+        postMessage: vi.fn(async (threadId: string) => ({
+          thread_id: threadId,
+          message_id: 'msg-a'
+        }))
+      }
+    )
+    const returning = session.loadThread('th-a')
+    expect(prompts(session)).toEqual(['Prompt in th-a'])
+    await returning
+
+    await session.sendMessage('A follow-up')
+    await afterBackgroundRead(() =>
+      recheck.release(rowsOf('th-a', 'An answer written elsewhere'))
+    )
+
+    expect(prompts(session)).toContain('A follow-up')
+    expect(answerShown(session)).not.toContain('An answer written elsewhere')
+    session.stop()
+  })
+
+  it('TC-04 also drops the answer of the re-check when the turn the user started has finished by then', async () => {
+    const recheck = held()
+    const { session, events, afterBackgroundRead } = await sessionThatLeftAForB(
+      { 'th-a': [ok(rowsOf('th-a')), recheck.answer] },
+      {
+        postMessage: vi.fn(async (threadId: string) => ({
+          thread_id: threadId,
+          message_id: 'msg-a'
+        }))
+      }
+    )
+    await session.loadThread('th-a')
+
+    await session.sendMessage('A follow-up')
+    events.emit(doneIn('th-a', 'msg-a'))
+    await afterBackgroundRead(() =>
+      recheck.release(rowsOf('th-a', 'An answer written elsewhere'))
+    )
+
+    expect(prompts(session)).toContain('A follow-up')
+    expect(answerShown(session)).not.toContain('An answer written elsewhere')
+    session.stop()
+  })
+
+  it('TC-05 keeps the screen on what the user opened meanwhile, and keeps the fresh transcript for the next switch', async () => {
+    const recheck = held()
+    const { session, afterBackgroundRead } = await sessionThatLeftAForB({
+      'th-a': [
+        ok(rowsOf('th-a')),
+        recheck.answer,
+        ok(rowsOf('th-a', 'An answer written elsewhere'))
+      ]
+    })
+    const returning = session.loadThread('th-a')
+    expect(prompts(session)).toEqual(['Prompt in th-a'])
+    await returning
+    await session.loadThread('th-b')
+
+    await afterBackgroundRead(() =>
+      recheck.release(rowsOf('th-a', 'An answer written elsewhere'))
+    )
+    expect(prompts(session)).toEqual(['Prompt in th-b'])
+
+    const back = session.loadThread('th-a')
+    expect(answerShown(session)).toBe('An answer written elsewhere')
+    await back
+    session.stop()
+  })
+
+  it('TC-06 loads a chat as before once something happened in it after it was fetched', async () => {
+    const warm = held()
+    const reload = held()
+    const { session, events } = openSession(
+      serve({ 'th-a': [ok(rowsOf('th-a')), warm.answer, reload.answer] })
+    )
+    await session.loadThread('th-a')
+    events.emit(deltaIn('th-a', 'th-a-turn', 'Typing'))
+    await session.loadThread('th-b')
+
+    const returning = session.loadThread('th-a')
+
+    expect(session.isTranscriptReady.value).toBe(false)
+    reload.release(rowsOf('th-a', 'The answer after it moved on'))
+    expect(await returning).toBe(true)
+    expect(answerShown(session)).toBe('The answer after it moved on')
+    session.stop()
+  })
+
+  it('TC-17 keeps a kept transcript plus in-page follow-up ready at once on return', async () => {
+    const recheck = held()
+    const { session } = openSession(
+      serve({ 'th-a': [ok(rowsOf('th-a')), recheck.answer] }),
+      {
+        postMessage: vi.fn(async (threadId: string) => ({
+          thread_id: threadId,
+          message_id: 'msg-a'
+        }))
+      }
+    )
+    await session.loadThread('th-a')
+    await session.sendMessage('A follow-up')
+    await session.loadThread('th-b')
+
+    const returning = session.loadThread('th-a')
+
+    expect(session.isTranscriptReady.value).toBe(true)
+    expect(prompts(session)).toEqual(['Prompt in th-a', 'A follow-up'])
+    recheck.release(rowsOf('th-a', 'The answer after it moved on'))
+    expect(await returning).toBe(true)
+    session.stop()
+  })
+
+  it('TC-06 + T1-13 touches cache on send start, skips warming a left chat while its send is in flight, and warms once accepted and done', async () => {
+    const post = heldPost()
+    const recheck1 = held()
+    const warm = held()
+    const recheck2 = held()
+    const { session, events, getMessages, afterBackgroundRead } = openSession(
+      serve({
+        'th-a': [
+          ok(rowsOf('th-a')),
+          recheck1.answer,
+          warm.answer,
+          recheck2.answer
+        ]
+      }),
+      { postMessage: vi.fn(() => post.response) }
+    )
+    await session.loadThread('th-a')
+
+    const sending = session.sendMessage('In-flight follow-up')
+    await session.loadThread('th-b')
+
+    expect(fetchesExcludingPolls(getMessages, 'th-a')).toBe(1)
+
+    const backWhileInFlight = session.loadThread('th-a')
+    expect(session.isTranscriptReady.value).toBe(true)
+    expect(prompts(session)).toEqual(['Prompt in th-a', 'In-flight follow-up'])
+    await afterBackgroundRead(() => recheck1.release(rowsOf('th-a')))
+    await backWhileInFlight
+
+    await session.loadThread('th-b')
+    post.resolve({ thread_id: 'th-a', message_id: 'msg-a-bg' })
+    await sending
+    expect(fetchesExcludingPolls(getMessages, 'th-a')).toBe(2)
+
+    events.emit(deltaIn('th-a', 'msg-a-bg', 'Background reply'))
+    events.emit(doneIn('th-a', 'msg-a-bg'))
+    expect(fetchesExcludingPolls(getMessages, 'th-a')).toBe(3)
+    await afterBackgroundRead(() =>
+      warm.release([
+        ...rowsOf('th-a'),
+        {
+          ...historyRow(3, 'user', 'msg-a-bg', 'In-flight follow-up', 'u-bg'),
+          thread_id: 'th-a'
+        },
+        {
+          ...historyRow(
+            4,
+            'assistant',
+            'msg-a-bg',
+            'Background reply',
+            'msg-a-bg'
+          ),
+          thread_id: 'th-a'
+        }
+      ])
+    )
+
+    const returning = session.loadThread('th-a')
+    expect(session.isTranscriptReady.value).toBe(true)
+    expect(answerShown(session)).toBe('Answer in th-aBackground reply')
+    recheck2.release(rowsOf('th-a'))
+    await returning
+    session.stop()
+  })
+
+  it('TC-06 invalidates kept transcripts for frames held behind an unrelated in-flight send', async () => {
+    const postB = heldPost()
+    const reload = held()
+    const { session, events } = openSession(
+      serve({ 'th-a': [ok(rowsOf('th-a')), reload.answer] }),
+      { postMessage: vi.fn(() => postB.response) }
+    )
+    await session.loadThread('th-a')
+    await session.loadThread('th-b')
+
+    const sendingB = session.sendMessage('Pending in b')
+    events.emit(deltaIn('th-a', 'msg-other-turn', 'Moved on'))
+
+    const returning = session.loadThread('th-a')
+    expect(session.isTranscriptReady.value).toBe(false)
+    reload.release(rowsOf('th-a', 'Moved on'))
+    await returning
+
+    postB.resolve({ thread_id: 'th-b', message_id: 'msg-b' })
+    await sendingB
+    session.stop()
+  })
+
+  it('TC-06 does not count a tab notice as something that happened in the chat', async () => {
+    const recheck = held()
+    const { session, events } = await sessionThatLeftAForB({
+      'th-a': [ok(rowsOf('th-a')), recheck.answer]
+    })
+    events.emit(
+      wire({
+        type: 'agent_active_tab',
+        data: { thread_id: 'th-a', message_id: 'msg-a', workflow_id: 'wf-1' }
+      })
+    )
+
+    const returning = session.loadThread('th-a')
+
+    expect(session.isTranscriptReady.value).toBe(true)
+    await returning
+    session.stop()
+  })
+
+  it('TC-06 counts an extension change in the chat as something that happened in it', async () => {
+    const reload = held()
+    const { session, events } = await sessionThatLeftAForB({
+      'th-a': [ok(rowsOf('th-a')), reload.answer]
+    })
+    events.emit(
+      wire({
+        type: 'agent_extension_changed',
+        data: {
+          thread_id: 'th-a',
+          message_id: 'msg-a',
+          action: 'enabled',
+          pack: 'pack-a',
+          agent_created: false,
+          restart_required: false
+        }
+      })
+    )
+
+    const returning = session.loadThread('th-a')
+
+    expect(session.isTranscriptReady.value).toBe(false)
+    reload.release(rowsOf('th-a'))
+    await returning
+    session.stop()
+  })
+
+  it('TC-08 fetches a chat the user leaves in the background, so that coming back is quick', async () => {
+    const recheck = held()
+    const { session, events, getMessages, afterBackgroundRead } = openSession(
+      serve({
+        'th-1': [
+          ok(
+            rowsOf('th-1', 'Server warmed reply', 'complete', 'msg-1', 'hello')
+          ),
+          recheck.answer
+        ]
+      })
+    )
+    await session.sendMessage('hello')
+    events.emit(delta('msg-1', 'Hello there'))
+    events.emit(done('msg-1'))
+    await afterBackgroundRead(() => session.loadThread('th-2'))
+    expect(fetchesExcludingPolls(getMessages, 'th-1')).toBe(1)
+
+    const returning = session.loadThread('th-1')
+
+    expect(session.isTranscriptReady.value).toBe(true)
+    expect(answerShown(session)).toBe('Server warmed reply')
+    await returning
+    session.stop()
+  })
+
+  it('TC-16 shows a chat created here at once even when the user is back before the background warm arrives', async () => {
+    const warm = held()
+    const reload = held()
+    const { session, events } = openSession(
+      serve({ 'th-1': [warm.answer, reload.answer] })
+    )
+    await session.sendMessage('hello')
+    events.emit(delta('msg-1', 'Hello there'))
+    events.emit(done('msg-1'))
+    await session.loadThread('th-2')
+
+    const returning = session.loadThread('th-1')
+
+    expect(session.isTranscriptReady.value).toBe(true)
+    expect(answerShown(session)).toBe('Hello there')
+    reload.release([
+      {
+        ...historyRow(1, 'user', 'msg-1', 'hello', 'u-msg-1'),
+        thread_id: 'th-1'
+      },
+      {
+        ...historyRow(2, 'assistant', 'msg-1', 'Hello there', 'msg-1'),
+        thread_id: 'th-1'
+      }
+    ])
+    expect(await returning).toBe(true)
+    warm.release(rowsOf('th-1', 'Hello there'))
+    session.stop()
+  })
+
+  it('TC-08 also fetches a chat the user leaves for a blank chat', async () => {
+    const recheck = held()
+    const { session, events, getMessages, afterBackgroundRead } = openSession(
+      serve({
+        'th-1': [
+          ok(
+            rowsOf('th-1', 'Server warmed reply', 'complete', 'msg-1', 'hello')
+          ),
+          recheck.answer
+        ]
+      })
+    )
+    await session.sendMessage('hello')
+    events.emit(delta('msg-1', 'Hello there'))
+    events.emit(done('msg-1'))
+    await afterBackgroundRead(() =>
+      session.newChat('new_chat_button', 'blank:tab-b')
+    )
+    expect(fetchesExcludingPolls(getMessages, 'th-1')).toBe(1)
+
+    const returning = session.loadThread('th-1')
+
+    expect(session.isTranscriptReady.value).toBe(true)
+    expect(answerShown(session)).toBe('Server warmed reply')
+    await returning
+    session.stop()
+  })
+
+  it('TC-09 fetches the transcript of a chat whose turn finishes while the user is elsewhere, and not before', async () => {
+    const recheck = held()
+    const { session, events, getMessages, afterBackgroundRead } = openSession(
+      serve({
+        'th-1': [
+          ok(rowsOf('th-1', 'Hello there', 'complete', 'msg-1', 'hello')),
+          recheck.answer
+        ]
+      })
+    )
+    await session.sendMessage('hello')
+    await session.loadThread('th-2')
+    expect(fetchesExcludingPolls(getMessages, 'th-1')).toBe(0)
+    events.emit(delta('msg-1', 'Hello there'))
+    await afterBackgroundRead(() => events.emit(done('msg-1')))
+    expect(fetchesExcludingPolls(getMessages, 'th-1')).toBe(1)
+
+    const returning = session.loadThread('th-1')
+
+    expect(session.isTranscriptReady.value).toBe(true)
+    expect(answerShown(session)).toBe('Hello there')
+    await returning
+    session.stop()
+  })
+
+  it('TC-10 keeps nothing once the session stops', async () => {
+    const reload = held()
+    const { session } = openSession(
+      serve({ 'th-a': [ok(rowsOf('th-a')), reload.answer] })
+    )
+    await session.loadThread('th-a')
+    session.stop()
+    session.start({ restore: false })
+
+    const reopening = session.loadThread('th-a')
+
+    expect(session.isTranscriptReady.value).toBe(false)
+    reload.release(rowsOf('th-a'))
+    expect(await reopening).toBe(true)
+    session.stop()
+  })
+
+  it('TC-11 shows no error for a failed re-check and fetches the chat again next time', async () => {
+    const warm = held()
+    const reload = held()
+    const { session, getMessages, afterBackgroundRead } =
+      await sessionThatLeftAForB({
+        'th-a': [ok(rowsOf('th-a')), failing(), warm.answer, reload.answer]
+      })
+    await afterBackgroundRead(async () => {
+      const returning = session.loadThread('th-a')
+      expect(prompts(session)).toEqual(['Prompt in th-a'])
+      await returning
+    })
+    expect(fetchesExcludingPolls(getMessages, 'th-a')).toBe(2)
+
+    expect(prompts(session)).toEqual(['Prompt in th-a'])
+    expect(session.notices.value).toEqual([])
+    await session.loadThread('th-b')
+    const again = session.loadThread('th-a')
+    expect(session.isTranscriptReady.value).toBe(false)
+    reload.release(rowsOf('th-a'))
+    await again
+    session.stop()
+  })
+
+  it('TC-14 restores the workflow of a chat shown from memory, as for a fetched one', async () => {
+    const { session, restored } = await sessionThatLeftAForB()
+    expect(restored).toHaveBeenCalledTimes(2)
+
+    await session.loadThread('th-a')
+
+    expect(restored).toHaveBeenCalledTimes(3)
+    session.stop()
+  })
+
+  it('TC-15: Ryan sequence — two created chats show at once while replies stream, then reconcile once settled', async () => {
+    const warmA = held()
+    const recheckB = held()
+    let threadCount = 0
+    const getMessages = serve({
+      'th-a': [warmA.answer],
+      'th-b': [recheckB.answer]
+    })
+    const { session, events } = openSession(getMessages, {
+      postMessage: vi.fn(async () => {
+        threadCount += 1
+        return threadCount === 1
+          ? { thread_id: 'th-a', message_id: 'msg-a', workflow_id: 'wf-a' }
+          : { thread_id: 'th-b', message_id: 'msg-b', workflow_id: 'wf-b' }
+      })
+    })
+    const conversation = useAgentConversationStore()
+
+    await session.sendMessage('hi')
+    events.emit(deltaIn('th-a', 'msg-a', 'working in a '))
+
+    session.newChat('new_chat_button', 'blank:tab-b')
+    await session.sendMessage('hi')
+    events.emit(deltaIn('th-b', 'msg-b', 'working in b '))
+
+    const returnA = session.loadThread('th-a', () => true, {
+      keepOpenChatUntilLoaded: true
+    })
+    expect(session.threadId.value).toBe('th-a')
+    expect(session.isTranscriptReady.value).toBe(true)
+    expect(prompts(session)).toEqual(['hi'])
+    expect(answerShown(session)).toBe('working in a ')
+    expect(session.isStreaming.value).toBe(true)
+    await returnA
+
+    events.emit(deltaIn('th-a', 'msg-a', 'more in a'))
+    expect(answerShown(session)).toBe('working in a more in a')
+
+    const returnB = session.loadThread('th-b', () => true, {
+      keepOpenChatUntilLoaded: true
+    })
+    expect(session.threadId.value).toBe('th-b')
+    expect(session.isTranscriptReady.value).toBe(true)
+    expect(prompts(session)).toEqual(['hi'])
+    expect(answerShown(session)).toBe('working in b ')
+    expect(session.isStreaming.value).toBe(true)
+    await returnB
+    expect(getMessages).not.toHaveBeenCalled()
+
+    events.emit(doneIn('th-a', 'msg-a'))
+    events.emit(doneIn('th-b', 'msg-b'))
+    warmA.release([
+      { ...historyRow(1, 'user', 'msg-a', 'hi', 'u-a'), thread_id: 'th-a' },
+      {
+        ...historyRow(2, 'assistant', 'msg-a', 'Server final A', 'msg-a'),
+        thread_id: 'th-a',
+        status: 'complete'
+      }
+    ])
+    recheckB.release([
+      { ...historyRow(1, 'user', 'msg-b', 'hi', 'u-b'), thread_id: 'th-b' },
+      {
+        ...historyRow(2, 'assistant', 'msg-b', 'Server final B', 'msg-b'),
+        thread_id: 'th-b',
+        status: 'complete'
+      }
+    ])
+    await vi.waitFor(() => expect(answerShown(session)).toBe('Server final B'))
+    expect(prompts(session)).toEqual(['hi'])
+    expect(session.isStreaming.value).toBe(false)
+    expect(conversation.isKnownChat('th-a')).toBe(true)
+    expect(conversation.isKnownChat('th-b')).toBe(true)
+
+    const backToA = session.loadThread('th-a', () => true, {
+      keepOpenChatUntilLoaded: true
+    })
+    expect(session.isTranscriptReady.value).toBe(true)
+    expect(prompts(session)).toEqual(['hi'])
+    expect(answerShown(session)).toBe('Server final A')
+    expect(session.isStreaming.value).toBe(false)
+    await backToA
+    session.stop()
+  })
+
+  it('TC-16: shows a chat created here at once when its background reply already finished before warm fetch arrives', async () => {
+    const warm = held()
+    const recheck = held()
+    const { session, events, afterBackgroundRead } = openSession(
+      serve({ 'th-a': [warm.answer, recheck.answer] }),
+      {
+        postMessage: vi.fn(async () => ({
+          thread_id: 'th-a',
+          message_id: 'msg-a'
+        }))
+      }
+    )
+
+    await session.sendMessage('hi')
+    session.newChat('new_chat_button', 'blank:tab-b')
+    events.emit(deltaIn('th-a', 'msg-a', 'Finished off screen'))
+    events.emit(doneIn('th-a', 'msg-a'))
+
+    const returning = session.loadThread('th-a', () => true, {
+      keepOpenChatUntilLoaded: true
+    })
+
+    expect(session.threadId.value).toBe('th-a')
+    expect(session.isTranscriptReady.value).toBe(true)
+    expect(prompts(session)).toEqual(['hi'])
+    expect(answerShown(session)).toBe('Finished off screen')
+    expect(session.isStreaming.value).toBe(false)
+    await returning
+
+    const finishedRows: Rows = [
+      {
+        ...historyRow(1, 'user', 'msg-a', 'hi', 'u-msg-a'),
+        thread_id: 'th-a'
+      },
+      {
+        ...historyRow(2, 'assistant', 'msg-a', 'Finished off screen', 'msg-a'),
+        thread_id: 'th-a'
+      }
+    ]
+    await afterBackgroundRead(() => {
+      warm.release(finishedRows)
+      recheck.release(finishedRows)
+    }, 2)
+    expect(prompts(session)).toEqual(['hi'])
+    expect(answerShown(session)).toBe('Finished off screen')
+    session.stop()
+  })
+
+  it('TC-17: shows a kept transcript plus newer page turns at once without duplicates, whether running or finished', async () => {
+    const recheckOnDone = held()
+    const recheckDone = held()
+    const { session, events, getMessages } = openSession(
+      serve({
+        'th-a': [
+          ok(rowsOf('th-a', 'First answer')),
+          recheckOnDone.answer,
+          recheckDone.answer
+        ]
+      }),
+      {
+        postMessage: vi.fn(async () => ({
+          thread_id: 'th-a',
+          message_id: 'msg-2'
+        }))
+      }
+    )
+
+    await session.loadThread('th-a')
+    await session.sendMessage('Second prompt')
+    events.emit(deltaIn('th-a', 'msg-2', 'Second partial'))
+
+    await session.loadThread('th-b')
+
+    const returnRunning = session.loadThread('th-a', () => true, {
+      keepOpenChatUntilLoaded: true
+    })
+    expect(session.isTranscriptReady.value).toBe(true)
+    expect(prompts(session)).toEqual(['Prompt in th-a', 'Second prompt'])
+    expect(answerShown(session)).toBe('First answerSecond partial')
+    expect(session.isStreaming.value).toBe(true)
+    await returnRunning
+    expect(fetchesExcludingPolls(getMessages, 'th-a')).toBe(1)
+
+    events.emit(deltaIn('th-a', 'msg-2', ' + live'))
+    expect(prompts(session)).toEqual(['Prompt in th-a', 'Second prompt'])
+    expect(answerShown(session)).toBe('First answerSecond partial + live')
+    expect(session.isStreaming.value).toBe(true)
+
+    events.emit(doneIn('th-a', 'msg-2'))
+    expect(fetchesExcludingPolls(getMessages, 'th-a')).toBe(2)
+    recheckOnDone.release([
+      ...rowsOf('th-a', 'First answer'),
+      {
+        ...historyRow(3, 'user', 'msg-2', 'Second prompt', 'u-srv-2'),
+        thread_id: 'th-a'
+      },
+      {
+        ...historyRow(4, 'assistant', 'msg-2', 'Second settled', 'msg-2'),
+        thread_id: 'th-a',
+        status: 'complete'
+      }
+    ])
+    await vi.waitFor(() =>
+      expect(answerShown(session)).toBe('First answerSecond settled')
+    )
+
+    await session.loadThread('th-b')
+    const returnDone = session.loadThread('th-a', () => true, {
+      keepOpenChatUntilLoaded: true
+    })
+    expect(session.isTranscriptReady.value).toBe(true)
+    expect(prompts(session)).toEqual(['Prompt in th-a', 'Second prompt'])
+    expect(answerShown(session)).toBe('First answerSecond settled')
+    expect(session.isStreaming.value).toBe(false)
+    await returnDone
+
+    recheckDone.release([
+      ...rowsOf('th-a', 'First answer'),
+      {
+        ...historyRow(3, 'user', 'msg-2', 'Second prompt', 'u-srv-2'),
+        thread_id: 'th-a'
+      },
+      {
+        ...historyRow(4, 'assistant', 'msg-2', 'Second settled again', 'msg-2'),
+        thread_id: 'th-a',
+        status: 'complete'
+      }
+    ])
+    await vi.waitFor(() =>
+      expect(answerShown(session)).toBe('First answerSecond settled again')
+    )
+    expect(prompts(session)).toEqual(['Prompt in th-a', 'Second prompt'])
+    session.stop()
+  })
+
+  it('TC-18: reconciles finished replies by client_message_id / turn_id without duplicating, keeps server-only rows, and guards against newer sends', async () => {
+    const warm = held()
+    const recheck = held()
+    const recheckWithNewer = held()
+    let seq = 0
+    const { session, events, afterBackgroundRead } = openSession(
+      serve({
+        'th-a': [warm.answer, recheck.answer, recheckWithNewer.answer]
+      }),
+      {
+        postMessage: vi.fn(async () => {
+          seq += 1
+          return { thread_id: 'th-a', message_id: `msg-${seq}` }
+        })
+      }
+    )
+
+    await session.sendMessage(
+      'Created here',
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      'cm-created'
+    )
+    events.emit(deltaIn('th-a', 'msg-1', 'Local reply'))
+    events.emit(doneIn('th-a', 'msg-1'))
+    session.newChat('new_chat_button', 'blank:tab-b')
+    warm.release([
+      {
+        id: 'u-srv-1',
+        thread_id: 'th-a',
+        seq: 1,
+        role: 'user',
+        status: 'complete',
+        turn_id: 'msg-1',
+        content: { text: 'Created here', client_message_id: 'cm-created' }
+      },
+      {
+        id: 'msg-1',
+        thread_id: 'th-a',
+        seq: 2,
+        role: 'assistant',
+        status: 'complete',
+        turn_id: 'msg-1',
+        content: { text: 'Local reply' }
+      }
+    ])
+
+    await session.loadThread('th-a', () => true, {
+      keepOpenChatUntilLoaded: true
+    })
+    expect(prompts(session)).toEqual(['Created here'])
+
+    recheck.release([
+      {
+        id: 'u-srv-1',
+        thread_id: 'th-a',
+        seq: 1,
+        role: 'user',
+        status: 'complete',
+        turn_id: 'msg-1',
+        content: { text: 'Created here', client_message_id: 'cm-created' }
+      },
+      {
+        id: 'msg-1',
+        thread_id: 'th-a',
+        seq: 2,
+        role: 'assistant',
+        status: 'complete',
+        turn_id: 'msg-1',
+        content: { text: 'Persisted reply' }
+      },
+      {
+        id: 'u-srv-other',
+        thread_id: 'th-a',
+        seq: 3,
+        role: 'user',
+        status: 'complete',
+        turn_id: 'msg-other',
+        content: { text: 'From other device' }
+      },
+      {
+        id: 'msg-other',
+        thread_id: 'th-a',
+        seq: 4,
+        role: 'assistant',
+        status: 'complete',
+        turn_id: 'msg-other',
+        content: { text: 'Other device reply' }
+      }
+    ])
+    await vi.waitFor(() =>
+      expect(prompts(session)).toEqual(['Created here', 'From other device'])
+    )
+    expect(answerShown(session)).toBe('Persisted replyOther device reply')
+
+    session.newChat('new_chat_button', 'blank:tab-b')
+    await session.loadThread('th-a')
+    await session.sendMessage('Newer local send')
+
+    await afterBackgroundRead(() =>
+      recheckWithNewer.release(rowsOf('th-a', 'Stale overwrite'))
+    )
+
+    expect(prompts(session)).toContain('Newer local send')
+    expect(answerShown(session)).not.toContain('Stale overwrite')
+    session.stop()
+  })
+
+  it('TC-18: keeps unpersisted local user send and settled reply if server reconcile lags behind', async () => {
+    const warm = held()
+    const recheck = held()
+    const { session, events, afterBackgroundRead } = openSession(
+      serve({ 'th-a': [warm.answer, recheck.answer] }),
+      {
+        postMessage: vi.fn(async () => ({
+          thread_id: 'th-a',
+          message_id: 'msg-1'
+        }))
+      }
+    )
+
+    await session.sendMessage('Local only so far')
+    events.emit(deltaIn('th-a', 'msg-1', 'Already done locally'))
+    events.emit(doneIn('th-a', 'msg-1'))
+    session.newChat('new_chat_button', 'blank:tab-b')
+    await afterBackgroundRead(() => warm.release([]))
+
+    await session.loadThread('th-a')
+    await afterBackgroundRead(() => recheck.release([]))
+
+    expect(prompts(session)).toEqual(['Local only so far'])
+    expect(answerShown(session)).toBe('Already done locally')
+    expect(session.isStreaming.value).toBe(false)
+    session.stop()
+  })
+
+  it('TC-18: keeps a multi-row turn streaming when an earlier assistant row is complete and a newer row is streaming', async () => {
+    const { session, events } = openSession(serve())
+    const conversation = useAgentConversationStore()
+    await session.sendMessage('Run multi-step')
+    events.emit(delta('msg-1', 'Step 1'))
+    await session.loadThread('th-2')
+
+    const returning = session.loadThread('th-1', () => true, {
+      keepOpenChatUntilLoaded: true
+    })
+    await returning
+
+    expect(
+      conversation.reconcileKnownChat(
+        'th-1',
+        [
+          {
+            ...historyRow(1, 'user', 'srv-turn-1', 'Run multi-step', 'u-1'),
+            thread_id: 'th-1'
+          },
+          {
+            ...historyRow(2, 'assistant', 'srv-turn-1', 'Step 1', 'msg-1'),
+            thread_id: 'th-1',
+            status: 'complete'
+          },
+          {
+            ...historyRow(3, 'assistant', 'srv-turn-1', '', 'row-stream-3'),
+            thread_id: 'th-1',
+            status: 'streaming'
+          }
+        ],
+        true
+      )
+    ).toEqual({ status: 'applied', settledLiveTurns: [] })
+
+    expect(session.isStreaming.value).toBe(true)
+    events.emit(delta('msg-1', ' + Step 2'))
+    expect(answerShown(session)).toBe('Step 1 + Step 2')
+    session.stop()
+  })
+
+  it('TC-19: loads as today after a reconnect gap on a live turn or when workflow restore failed', async () => {
+    const reloadAfterReconnect = held()
+    const reloadAfterRestoreFail = held()
+    const restored = vi
+      .fn<() => Promise<boolean>>()
+      .mockResolvedValueOnce(true)
+      .mockResolvedValueOnce(false)
+      .mockResolvedValueOnce(true)
+    const events = fakeEvents()
+    const getMessages = serve({
+      'th-a': [reloadAfterReconnect.answer],
+      'th-c': [ok(rowsOf('th-c')), reloadAfterRestoreFail.answer]
+    })
+    const session = useAgentSession({
+      rest: fakeRest({
+        getMessages,
+        postMessage: vi.fn(async () => ({
+          thread_id: 'th-a',
+          message_id: 'msg-a',
+          workflow_id: 'wf-a'
+        }))
+      }),
+      events: events.source,
+      workflow: { current: () => undefined, adopted: vi.fn(), restored }
+    })
+    session.start({ restore: false })
+    events.status(true)
+
+    await session.sendMessage('hi')
+    session.newChat('new_chat_button', 'blank:tab-b')
+    events.status(false)
+    events.status(true)
+
+    const backAfterReconnect = session.loadThread('th-a', () => true, {
+      keepOpenChatUntilLoaded: true
+    })
+    expect(session.isTranscriptReady.value).toBe(false)
+    reloadAfterReconnect.release(rowsOf('th-a', 'Recovered from server'))
+    expect(await backAfterReconnect).toBe(true)
+    expect(answerShown(session)).toBe('Recovered from server')
+
+    expect(await session.loadThread('th-c')).toBe(false)
+    const retryC = session.loadThread('th-c')
+    expect(session.isTranscriptReady.value).toBe(false)
+    reloadAfterRestoreFail.release(rowsOf('th-c', 'Restored on retry'))
+    expect(await retryC).toBe(true)
+    expect(answerShown(session)).toBe('Restored on retry')
+    session.stop()
+  })
+
+  it('TC-20: keeps what is drawn on a failed reconcile without error and retries reconcile on next return', async () => {
+    const recheckOk = held()
+    const { session, events, getMessages, afterBackgroundRead } = openSession(
+      serve({ 'th-a': [failing(), failing(), failing(), recheckOk.answer] }),
+      {
+        postMessage: vi.fn(async () => ({
+          thread_id: 'th-a',
+          message_id: 'msg-a'
+        }))
+      }
+    )
+
+    await session.sendMessage('Created here')
+    events.emit(deltaIn('th-a', 'msg-a', 'Kept answer'))
+    events.emit(doneIn('th-a', 'msg-a'))
+    await afterBackgroundRead(() =>
+      session.newChat('new_chat_button', 'blank:tab-b')
+    )
+
+    await afterBackgroundRead(() => session.loadThread('th-a'))
+
+    expect(prompts(session)).toEqual(['Created here'])
+    expect(answerShown(session)).toBe('Kept answer')
+    expect(session.notices.value).toEqual([])
+    expect(fetchesExcludingPolls(getMessages, 'th-a')).toBe(2)
+
+    session.newChat('new_chat_button', 'blank:tab-b')
+    const secondReturn = session.loadThread('th-a')
+    expect(session.isTranscriptReady.value).toBe(true)
+    expect(prompts(session)).toEqual(['Created here'])
+    await secondReturn
+    recheckOk.release([
+      {
+        ...historyRow(1, 'user', 'msg-a', 'Created here', 'u-msg-a'),
+        thread_id: 'th-a'
+      },
+      {
+        ...historyRow(
+          2,
+          'assistant',
+          'msg-a',
+          'Fresh on second return',
+          'msg-a'
+        ),
+        thread_id: 'th-a'
+      }
+    ])
+    await vi.waitFor(() =>
+      expect(answerShown(session)).toBe('Fresh on second return')
+    )
+    session.stop()
+  })
+
+  it('TC-21: keeps an unaccepted pending first message on its blank new-chat screen without marking a thread known', async () => {
+    const post = heldPost()
+    const { session } = openSession(serve(), {
+      postMessage: vi.fn(() => post.response)
+    })
+    const conversation = useAgentConversationStore()
+    const blankA = conversation.activeBlankChatId
+
+    const sending = session.sendMessage('Still pending first')
+    expect(session.threadId.value).toBeNull()
+    expect(
+      conversation.hasPendingSendForOrigin({
+        kind: 'blank',
+        blankChatId: blankA
+      })
+    ).toBe(true)
+
+    session.newChat('new_chat_button', 'blank:tab-b')
+    expect(session.openBlankChat(blankA)).toBe(true)
+    expect(prompts(session)).toEqual(['Still pending first'])
+
+    post.reject(new TypeError('Failed to fetch'))
+    expect(await sending).toBe(false)
+    expect(session.threadId.value).toBeNull()
+    expect(conversation.isKnownChat('th-1')).toBe(false)
+    session.stop()
+  })
+
+  it('keeps a locally settled turn settled when a lagging recheck returns it as streaming (no zombie snapshot)', async () => {
+    const warm = held()
+    const recheck = held()
+    const { session, events, afterBackgroundRead } = openSession(
+      serve({ 'th-1': [warm.answer, recheck.answer] })
+    )
+    const conversation = useAgentConversationStore()
+
+    await session.sendMessage('hi')
+    events.emit(delta('msg-1', 'Finished locally'))
+    events.emit(done('msg-1'))
+    expect(session.isStreaming.value).toBe(false)
+
+    await session.loadThread('th-2')
+    const returning = session.loadThread('th-1')
+    expect(session.isStreaming.value).toBe(false)
+    expect(answerShown(session)).toBe('Finished locally')
+    await returning
+
+    await afterBackgroundRead(() => {
+      recheck.release([
+        { ...historyRow(1, 'user', 'msg-1', 'hi', 'u-1'), thread_id: 'th-1' },
+        {
+          ...historyRow(2, 'assistant', 'msg-1', '', 'msg-1'),
+          thread_id: 'th-1',
+          status: 'streaming'
+        }
+      ])
+      warm.release([])
+    }, 2)
+
+    expect(session.isStreaming.value).toBe(false)
+    expect(conversation.activeTurnId).toBeNull()
+    expect(answerShown(session)).toBe('Finished locally')
+    session.stop()
+  })
+
+  it('preserves kept blob attachment preview URLs across navigation and revokes them on stop', async () => {
+    const revokeSpy = vi
+      .spyOn(URL, 'revokeObjectURL')
+      .mockImplementation(() => {})
+    const warm = held()
+    const recheck = held()
+    const { session, events, afterBackgroundRead } = openSession(
+      serve({ 'th-1': [warm.answer, recheck.answer] })
+    )
+
+    await session.sendMessage('see image', [
+      {
+        name: 'photo.png',
+        ref: 'photo-ref.png',
+        previewUrl: 'blob:http://localhost/preview-1'
+      }
+    ])
+    events.emit(delta('msg-1', 'Got it'))
+    events.emit(done('msg-1'))
+
+    await session.loadThread('th-2')
+    expect(revokeSpy).not.toHaveBeenCalledWith(
+      'blob:http://localhost/preview-1'
+    )
+
+    await session.loadThread('th-1')
+    await afterBackgroundRead(() => {
+      warm.release([])
+      recheck.release([])
+    }, 2)
+
+    expect(revokeSpy).not.toHaveBeenCalledWith(
+      'blob:http://localhost/preview-1'
+    )
+    const user = session.entries.value.find((e) => e.role === 'user')
+    expect(user?.role === 'user' ? user.attachments?.[0]?.previewUrl : '').toBe(
+      'blob:http://localhost/preview-1'
+    )
+
+    await session.loadThread('th-2')
+    session.stop()
+    expect(revokeSpy).toHaveBeenCalledWith('blob:http://localhost/preview-1')
+    revokeSpy.mockRestore()
+  })
+
+  it('never merges two identical prompts, attachment-only prompts, or skill-prefixed prompts when ambiguous', async () => {
+    const warm = held()
+    const recheck = held()
+    let seq = 0
+    const { session, events, afterBackgroundRead } = openSession(
+      serve({ 'th-1': [warm.answer, recheck.answer] }),
+      {
+        postMessage: vi.fn(async () => {
+          seq += 1
+          return { thread_id: 'th-1', message_id: `msg-${seq}` }
+        })
+      }
+    )
+
+    await session.sendMessage(
+      'hi',
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      'cm-1'
+    )
+    events.emit(delta('msg-1', 'Reply 1'))
+    events.emit(done('msg-1'))
+
+    await session.sendMessage(
+      'hi',
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      'cm-2'
+    )
+    events.emit(delta('msg-2', 'Reply 2'))
+    events.emit(done('msg-2'))
+
+    await session.loadThread('th-2')
+    await afterBackgroundRead(() => warm.release([]))
+    await session.loadThread('th-1')
+    expect(prompts(session)).toEqual(['hi', 'hi'])
+
+    recheck.release([
+      {
+        ...historyRow(1, 'user', 'srv-1', 'hi', 'u-1'),
+        thread_id: 'th-1',
+        content: { text: 'hi', client_message_id: 'cm-1' }
+      },
+      {
+        ...historyRow(2, 'assistant', 'srv-1', 'Server 1', 'msg-1'),
+        thread_id: 'th-1'
+      }
+    ])
+    await vi.waitFor(() => expect(answerShown(session)).toBe('Server 1Reply 2'))
+    expect(prompts(session)).toEqual(['hi', 'hi'])
+    session.stop()
+    useAgentConversationStore().reset()
+
+    const ambigWarm = held()
+    const ambigRecheck = held()
+    const ambig = openSession(
+      serve({ 'th-1': [ambigWarm.answer, ambigRecheck.answer] })
+    )
+    await ambig.session.sendMessage('', [{ name: 'img.png', ref: 'ref.png' }])
+    ambig.events.emit(delta('msg-1', 'Attachment reply'))
+    ambig.events.emit(done('msg-1'))
+    await ambig.session.loadThread('th-2')
+    await ambig.afterBackgroundRead(() => ambigWarm.release([]))
+    await ambig.session.loadThread('th-1')
+    await ambig.afterBackgroundRead(() =>
+      ambigRecheck.release([
+        {
+          ...historyRow(1, 'user', 'srv-other', '', 'u-unkeyed'),
+          thread_id: 'th-1',
+          content: { text: '', attachments: ['ref.png'] }
+        },
+        {
+          ...historyRow(2, 'assistant', 'srv-other', '', 'msg-other'),
+          thread_id: 'th-1',
+          status: 'streaming'
+        }
+      ])
+    )
+    expect(useAgentConversationStore().isKnownChat('th-1')).toBe(false)
+    expect(answerShown(ambig.session)).toBe('Attachment reply')
+    ambig.session.stop()
+    useAgentConversationStore().reset()
+
+    const skillWarm = held()
+    const skillRecheck = held()
+    const skillSession = openSession(
+      serve({ 'th-1': [skillWarm.answer, skillRecheck.answer] })
+    )
+    const serializedSkillPrompt = `${serializeSkillReference({ name: 'my-skill', description: 'Run skill' })} run`
+    await skillSession.session.sendMessage(serializedSkillPrompt)
+    skillSession.events.emit(delta('msg-1', 'Skill reply'))
+    skillSession.events.emit(done('msg-1'))
+    await skillSession.session.loadThread('th-2')
+    await skillSession.afterBackgroundRead(() => skillWarm.release([]))
+    await skillSession.session.loadThread('th-1')
+    await skillSession.afterBackgroundRead(() =>
+      skillRecheck.release([
+        {
+          ...historyRow(
+            1,
+            'user',
+            'srv-skill',
+            serializedSkillPrompt,
+            'u-skill'
+          ),
+          thread_id: 'th-1'
+        }
+      ])
+    )
+    expect(useAgentConversationStore().isKnownChat('th-1')).toBe(false)
+    expect(prompts(skillSession.session)).toEqual([' run'])
+    expect(answerShown(skillSession.session)).toBe('Skill reply')
+    skillSession.session.stop()
+  })
+
+  it('TC-14: never shows a known chat when async workflow restore fails and falls back to server if cache drops during restore', async () => {
+    let resolveFailRestore!: (ready: boolean) => void
+    let resolveReconnectRestore!: (ready: boolean) => void
+    const restored = vi
+      .fn<() => Promise<boolean> | boolean>()
+      .mockReturnValueOnce(true)
+      .mockReturnValueOnce(true)
+      .mockImplementationOnce(
+        () =>
+          new Promise<boolean>((resolve) => {
+            resolveFailRestore = resolve
+          })
+      )
+      .mockReturnValueOnce(true)
+      .mockReturnValueOnce(true)
+      .mockResolvedValueOnce(false)
+      .mockReturnValueOnce(true)
+      .mockReturnValueOnce(true)
+      .mockImplementationOnce(
+        () =>
+          new Promise<boolean>((resolve) => {
+            resolveReconnectRestore = resolve
+          })
+      )
+    const fallbackFetch = held()
+    const getMessages = serve({
+      'th-a': [
+        ok(rowsOf('th-a')),
+        ok(rowsOf('th-a')),
+        ok(rowsOf('th-a')),
+        fallbackFetch.answer
+      ],
+      'th-b': [ok(rowsOf('th-b')), ok(rowsOf('th-b')), ok(rowsOf('th-b'))]
+    })
+    const events = fakeEvents()
+    const onThreadActivated = vi.fn()
+    const session = useAgentSession({
+      rest: fakeRest({ getMessages }),
+      events: events.source,
+      onThreadActivated,
+      workflow: { current: () => undefined, adopted: vi.fn(), restored }
+    })
+    session.start({ restore: false })
+    events.status(true)
+
+    await session.loadThread('th-a')
+    await session.loadThread('th-b')
+    onThreadActivated.mockClear()
+
+    const keepOpenReturn = session.loadThread('th-a', () => true, {
+      keepOpenChatUntilLoaded: true
+    })
+    expect(session.isTranscriptReady.value).toBe(false)
+    expect(prompts(session)).toEqual(['Prompt in th-b'])
+
+    resolveFailRestore(false)
+    expect(await keepOpenReturn).toBe(false)
+    expect(session.isTranscriptReady.value).toBe(false)
+    expect(session.threadId.value).toBeNull()
+    expect(prompts(session)).toEqual([])
+    expect(onThreadActivated).not.toHaveBeenCalledWith('th-a')
+    expect(useAgentConversationStore().isKnownChat('th-a')).toBe(false)
+
+    await session.loadThread('th-a')
+    await session.loadThread('th-b')
+    const historyReturn = session.loadThread('th-a')
+    expect(session.isTranscriptReady.value).toBe(false)
+    expect(await historyReturn).toBe(false)
+    expect(session.isTranscriptReady.value).toBe(false)
+    expect(session.threadId.value).toBeNull()
+    expect(prompts(session)).toEqual([])
+    expect(useAgentConversationStore().isKnownChat('th-a')).toBe(false)
+
+    await session.loadThread('th-a')
+    await session.loadThread('th-b')
+    const restoredCountBefore = restored.mock.calls.length
+    const historyDuringReconnect = session.loadThread('th-a')
+    events.status(false)
+    events.status(true)
+    expect(useAgentConversationStore().isKnownChat('th-a')).toBe(false)
+
+    resolveReconnectRestore(true)
+    await vi.waitFor(() =>
+      expect(fetchesExcludingPolls(getMessages, 'th-a')).toBe(4)
+    )
+    fallbackFetch.release(rowsOf('th-a', 'Fetched after reconnect'))
+    expect(await historyDuringReconnect).toBe(true)
+    expect(session.isTranscriptReady.value).toBe(true)
+    expect(answerShown(session)).toBe('Fetched after reconnect')
+    expect(restored).toHaveBeenCalledTimes(restoredCountBefore + 1)
+    session.stop()
+  })
+
+  it('TC-14: clears the open thread when known-chat workflow restore throws or rejects so a follow-up send never targets the failed thread, without clobbering a newer switch', async () => {
+    let rejectStaleRestore!: (error: Error) => void
+    const restored = vi
+      .fn<() => Promise<boolean> | boolean>()
+      .mockReturnValueOnce(true)
+      .mockReturnValueOnce(true)
+      .mockImplementationOnce(() => {
+        throw new Error('sync restore boom')
+      })
+      .mockReturnValueOnce(true)
+      .mockReturnValueOnce(true)
+      .mockRejectedValueOnce(new Error('async restore boom'))
+      .mockReturnValueOnce(true)
+      .mockReturnValueOnce(true)
+      .mockImplementationOnce(
+        () =>
+          new Promise<boolean>((_resolve, reject) => {
+            rejectStaleRestore = reject
+          })
+      )
+      .mockReturnValueOnce(true)
+    const postMessage = vi.fn(async () => ({
+      thread_id: 'th-fresh',
+      message_id: 'msg-fresh'
+    }))
+    const getMessages = serve({
+      'th-a': [ok(rowsOf('th-a')), ok(rowsOf('th-a')), ok(rowsOf('th-a'))],
+      'th-b': [ok(rowsOf('th-b')), ok(rowsOf('th-b')), ok(rowsOf('th-b'))],
+      'th-c': [ok(rowsOf('th-c'))]
+    })
+    const events = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ getMessages, postMessage }),
+      events: events.source,
+      workflow: { current: () => undefined, adopted: vi.fn(), restored }
+    })
+    session.start({ restore: false })
+    events.status(true)
+
+    await session.loadThread('th-a')
+    await session.loadThread('th-b')
+    expect(await session.loadThread('th-a')).toBe(false)
+    expect(session.threadId.value).toBeNull()
+    expect(prompts(session)).toEqual([])
+    expect(session.isTranscriptReady.value).toBe(false)
+    expect(useAgentConversationStore().isKnownChat('th-a')).toBe(false)
+
+    await session.sendMessage('After failed restore')
+    expect(postMessage).toHaveBeenCalledWith('new', expect.any(Object))
+
+    await session.loadThread('th-a')
+    await session.loadThread('th-b')
+    expect(
+      await session.loadThread('th-a', () => true, {
+        keepOpenChatUntilLoaded: true
+      })
+    ).toBe(false)
+    expect(session.threadId.value).toBeNull()
+    expect(prompts(session)).toEqual([])
+    expect(useAgentConversationStore().isKnownChat('th-a')).toBe(false)
+
+    await session.loadThread('th-a')
+    await session.loadThread('th-b')
+    const superseded = session.loadThread('th-a')
+    await session.loadThread('th-c')
+    rejectStaleRestore(new Error('late failure'))
+    expect(await superseded).toBe(false)
+    expect(session.threadId.value).toBe('th-c')
+    expect(prompts(session)).toEqual(['Prompt in th-c'])
+    expect(session.isTranscriptReady.value).toBe(true)
+    session.stop()
+  })
+
+  it('keeps answered asks retired across leave/return and refuses unowned streaming even on a known chat', async () => {
+    const recheck = held()
+    const { session, events, afterBackgroundRead } = openSession(
+      serve({
+        'th-1': [ok(rowsOf('th-1')), ok(rowsOf('th-1')), recheck.answer]
+      }),
+      {
+        postMessage: vi.fn(async () => ({
+          thread_id: 'th-1',
+          message_id: 'msg-2'
+        }))
+      }
+    )
+    const conversation = useAgentConversationStore()
+
+    await session.loadThread('th-1')
+    await session.sendMessage('ask me')
+    events.emit(
+      wire({
+        type: 'agent_ask',
+        data: {
+          thread_id: 'th-1',
+          message_id: 'msg-2',
+          ask_id: 'ask-1',
+          kind: 'ask_user',
+          prompt: 'Pick one',
+          options: [{ id: 'a', label: 'A' }],
+          min_selections: 1,
+          max_selections: 1,
+          allow_other: false
+        }
+      })
+    )
+    conversation.retireAsk(
+      'ask-1',
+      { status: 'answered', selected: ['a'] },
+      'th-1'
+    )
+    events.emit(done('msg-2'))
+
+    await session.loadThread('th-2')
+    await session.loadThread('th-1')
+    const assistant = session.entries.value.find(
+      (e) => e.role === 'assistant' && e.id === 'msg-2'
+    )
+    expect(
+      assistant?.role === 'assistant'
+        ? assistant.parts.some(
+            (p) => p.type === 'askUser' && p.resolution?.status === 'answered'
+          )
+        : false
+    ).toBe(true)
+
+    await afterBackgroundRead(() =>
+      recheck.release([
+        ...rowsOf('th-1'),
+        {
+          ...historyRow(3, 'user', 'msg-other', 'Other device', 'u-other'),
+          thread_id: 'th-1'
+        },
+        {
+          ...historyRow(4, 'assistant', 'msg-other', '', 'msg-other'),
+          thread_id: 'th-1',
+          status: 'streaming'
+        }
+      ])
+    )
+    expect(conversation.isKnownChat('th-1')).toBe(false)
+    session.stop()
+  })
+
+  it('gates recheck on read.isOutdated and keeps the cache intact when a live turn settles after revisiting', async () => {
+    const recheck = held()
+    const retryAfterRemote = held()
+    const { session, events, getMessages, afterBackgroundRead } = openSession(
+      serve({
+        'th-1': [ok(rowsOf('th-1')), recheck.answer, retryAfterRemote.answer]
+      })
+    )
+
+    await session.loadThread('th-1')
+    await session.loadThread('th-2')
+
+    const returning = session.loadThread('th-1')
+    await returning
+    events.emit(deltaIn('th-1', 'msg-outdated', 'ws frame marks read outdated'))
+    await afterBackgroundRead(() =>
+      recheck.release(rowsOf('th-1', 'Stale recheck'))
+    )
+    expect(answerShown(session)).toBe('Answer in th-1')
+    expect(fetchesExcludingPolls(getMessages, 'th-1')).toBe(3)
+    await afterBackgroundRead(() =>
+      retryAfterRemote.release(rowsOf('th-1', 'Fresh after remote frame'))
+    )
+    expect(answerShown(session)).toBe('Fresh after remote frame')
+    session.stop()
+    useAgentConversationStore().reset()
+
+    const deferredRecheck = held()
+    const live = openSession(serve({ 'th-1': [deferredRecheck.answer] }), {
+      postMessage: vi.fn(async () => ({
+        thread_id: 'th-1',
+        message_id: 'msg-1',
+        workflow_id: 'wf-1'
+      }))
+    })
+    const conversation = useAgentConversationStore()
+    await live.session.sendMessage('run')
+    live.events.emit(deltaIn('th-1', 'msg-1', 'partial'))
+    await live.session.loadThread('th-2')
+    const returningLive = live.session.loadThread('th-1', () => true, {
+      keepOpenChatUntilLoaded: true
+    })
+    await returningLive
+    expect(fetchesExcludingPolls(live.getMessages, 'th-1')).toBe(0)
+
+    live.events.emit(deltaIn('th-1', 'msg-1', ' done'))
+    live.events.emit(doneIn('th-1', 'msg-1'))
+    expect(live.session.isStreaming.value).toBe(false)
+    expect(fetchesExcludingPolls(live.getMessages, 'th-1')).toBe(1)
+    expect(conversation.isKnownChat('th-1')).toBe(true)
+
+    deferredRecheck.release([
+      { ...historyRow(1, 'user', 'msg-1', 'run', 'u-1'), thread_id: 'th-1' },
+      {
+        ...historyRow(2, 'assistant', 'msg-1', 'Settled from server', 'msg-1'),
+        thread_id: 'th-1',
+        status: 'complete'
+      }
+    ])
+    await vi.waitFor(() =>
+      expect(answerShown(live.session)).toBe('Settled from server')
+    )
+    expect(conversation.isKnownChat('th-1')).toBe(true)
+
+    await live.session.loadThread('th-2')
+    const secondReturn = live.session.loadThread('th-1', () => true, {
+      keepOpenChatUntilLoaded: true
+    })
+    expect(live.session.isTranscriptReady.value).toBe(true)
+    expect(answerShown(live.session)).toBe('Settled from server')
+    await secondReturn
+    live.session.stop()
+  })
+
+  it('falls back cleanly on multi-row turn exposing only newer streaming row without duplicate rows', async () => {
+    const { session, events } = openSession(serve())
+    const conversation = useAgentConversationStore()
+    await session.sendMessage('Run multi')
+    events.emit(delta('msg-1', 'Working'))
+    await session.loadThread('th-2')
+
+    await session.loadThread('th-1', () => true, {
+      keepOpenChatUntilLoaded: true
+    })
+    expect(
+      conversation.reconcileKnownChat(
+        'th-1',
+        [
+          {
+            ...historyRow(1, 'user', 'srv-turn', 'Run multi', 'u-srv'),
+            thread_id: 'th-1'
+          },
+          {
+            ...historyRow(2, 'assistant', 'srv-turn', '', 'row-stream-only'),
+            thread_id: 'th-1',
+            status: 'streaming'
+          }
+        ],
+        true
+      )
+    ).toEqual({ status: 'ambiguous' })
+
+    expect(prompts(session)).toEqual(['Run multi'])
+    expect(session.isStreaming.value).toBe(true)
+    expect(answerShown(session)).toBe('Working')
+    session.stop()
+  })
+
+  it('TC-12: enforces the 12-chat capacity across both hydrated and locally created chats', async () => {
+    let created = 0
+    const { session, events, getMessages } = openSession(serve(), {
+      postMessage: vi.fn(async () => {
+        created += 1
+        return { thread_id: `th-c-${created}`, message_id: `msg-c-${created}` }
+      })
+    })
+    const conversation = useAgentConversationStore()
+
+    for (let i = 1; i <= 10; i += 1) await session.loadThread(`th-h-${i}`)
+    for (let i = 1; i <= 3; i += 1) {
+      session.newChat('new_chat_button', `blank:t-${i}`)
+      await session.sendMessage(`Prompt ${i}`)
+      events.emit(doneIn(`th-c-${i}`, `msg-c-${i}`))
+    }
+
+    expect(conversation.isKnownChat('th-h-1')).toBe(false)
+    expect(conversation.isKnownChat('th-h-2')).toBe(true)
+    expect(conversation.isKnownChat('th-c-3')).toBe(true)
+    expect(fetchesExcludingPolls(getMessages, 'th-h-1')).toBe(1)
+
+    await session.loadThread('th-h-1')
+    expect(fetchesExcludingPolls(getMessages, 'th-h-1')).toBe(2)
+
+    session.stop()
+  })
+
+  it('does not clear a newer load readiness or cache when a superseded workflow restore fails or rejects for the same thread', async () => {
+    let resolveStaleServerRestore!: (ready: boolean) => void
+    let resolveStaleKnownRestore!: (ready: boolean) => void
+    let rejectStaleKnownRestore!: (error: Error) => void
+    const restored = vi
+      .fn<() => Promise<boolean> | boolean>()
+      .mockImplementationOnce(
+        () =>
+          new Promise<boolean>((resolve) => {
+            resolveStaleServerRestore = resolve
+          })
+      )
+      .mockReturnValueOnce(true)
+      .mockReturnValueOnce(true)
+      .mockReturnValueOnce(true)
+      .mockImplementationOnce(
+        () =>
+          new Promise<boolean>((resolve) => {
+            resolveStaleKnownRestore = resolve
+          })
+      )
+      .mockReturnValueOnce(true)
+      .mockReturnValueOnce(true)
+      .mockReturnValueOnce(true)
+      .mockImplementationOnce(
+        () =>
+          new Promise<boolean>((_resolve, reject) => {
+            rejectStaleKnownRestore = reject
+          })
+      )
+      .mockReturnValueOnce(true)
+      .mockReturnValueOnce(true)
+    const { session } = openSession(
+      serve(),
+      {},
+      {
+        workflow: { current: () => undefined, adopted: vi.fn(), restored }
+      }
+    )
+    const conversation = useAgentConversationStore()
+
+    const staleServer = session.loadThread('th-a')
+    await vi.waitFor(() =>
+      expect(resolveStaleServerRestore).toBeTypeOf('function')
+    )
+    await session.loadThread('th-b')
+    expect(await session.loadThread('th-a')).toBe(true)
+
+    resolveStaleServerRestore(false)
+    expect(await staleServer).toBe(false)
+    expect(session.threadId.value).toBe('th-a')
+    expect(session.isTranscriptReady.value).toBe(true)
+    expect(conversation.isKnownChat('th-a')).toBe(true)
+    expect(prompts(session)).toEqual(['Prompt in th-a'])
+
+    await session.loadThread('th-b')
+    const staleKnown = session.loadThread('th-a')
+    await session.loadThread('th-b')
+    expect(await session.loadThread('th-a')).toBe(true)
+
+    resolveStaleKnownRestore(false)
+    expect(await staleKnown).toBe(false)
+    expect(session.threadId.value).toBe('th-a')
+    expect(session.isTranscriptReady.value).toBe(true)
+    expect(conversation.isKnownChat('th-a')).toBe(true)
+
+    await session.loadThread('th-b')
+    const staleReject = session.loadThread('th-a')
+    await session.loadThread('th-b')
+    expect(await session.loadThread('th-a')).toBe(true)
+
+    rejectStaleKnownRestore(new Error('stale boom'))
+    expect(await staleReject).toBe(false)
+    expect(session.threadId.value).toBe('th-a')
+    expect(session.isTranscriptReady.value).toBe(true)
+    expect(conversation.isKnownChat('th-a')).toBe(true)
+
+    session.stop()
+  })
+
+  it('rechecks the displayed chat after discarding an outdated read for remote completion without overwriting a local prompt', async () => {
+    const firstRecheck = held()
+    const freshRecheck = held()
+    const { session, events, getMessages, afterBackgroundRead } =
+      await sessionThatLeftAForB({
+        'th-a': [ok(rowsOf('th-a')), firstRecheck.answer, freshRecheck.answer]
+      })
+
+    await session.loadThread('th-a')
+    events.emit(doneIn('th-a', 'msg-remote'))
+
+    await afterBackgroundRead(() =>
+      firstRecheck.release(rowsOf('th-a', 'Discarded response'))
+    )
+    expect(answerShown(session)).toBe('Answer in th-a')
+    expect(fetchesExcludingPolls(getMessages, 'th-a')).toBe(3)
+
+    await afterBackgroundRead(() =>
+      freshRecheck.release(rowsOf('th-a', 'Completed on another device'))
+    )
+    expect(answerShown(session)).toBe('Completed on another device')
+    session.stop()
+    useAgentConversationStore().reset()
+
+    const guardedRecheck = held()
+    const post = heldPost()
+    const guarded = await sessionThatLeftAForB(
+      { 'th-a': [ok(rowsOf('th-a')), guardedRecheck.answer] },
+      { postMessage: vi.fn(() => post.response) }
+    )
+    await guarded.session.loadThread('th-a')
+    const sending = guarded.session.sendMessage('Local failed prompt')
+    post.reject(new TypeError('Failed to fetch'))
+    expect(await sending).toBe(false)
+    guarded.events.emit(doneIn('th-a', 'msg-remote'))
+
+    await guarded.afterBackgroundRead(() =>
+      guardedRecheck.release(rowsOf('th-a', 'Remote overwrite'))
+    )
+    expect(fetchesExcludingPolls(guarded.getMessages, 'th-a')).toBe(2)
+    expect(prompts(guarded.session)).toEqual([
+      'Prompt in th-a',
+      'Local failed prompt'
+    ])
+    expect(answerShown(guarded.session)).toBe('Answer in th-a')
+    guarded.session.stop()
+  })
+
+  it('rejects superseded rechecks before writing or evicting newer cached history while keeping the newest read eligible off screen', async () => {
+    const firstRecheck = held()
+    const secondRecheck = held()
+    const thirdRecheck = held()
+    const { session, afterBackgroundRead } = await sessionThatLeftAForB({
+      'th-a': [
+        ok(rowsOf('th-a', 'Initial')),
+        firstRecheck.answer,
+        secondRecheck.answer,
+        thirdRecheck.answer
+      ]
+    })
+    const conversation = useAgentConversationStore()
+
+    await session.loadThread('th-a')
+    await session.loadThread('th-b')
+    await session.loadThread('th-a')
+
+    await afterBackgroundRead(() =>
+      secondRecheck.release(rowsOf('th-a', 'Newer answer'))
+    )
+    expect(answerShown(session)).toBe('Newer answer')
+
+    await afterBackgroundRead(() =>
+      firstRecheck.release(rowsOf('th-a', 'Stale older answer'))
+    )
+    await session.loadThread('th-b')
+    const back = session.loadThread('th-a')
+    expect(answerShown(session)).toBe('Newer answer')
+    await back
+    expect(conversation.isKnownChat('th-a')).toBe(true)
+
+    const lateFailFirst = held()
+    const lateFailSecond = held()
+    const rejectionCase = await sessionThatLeftAForB({
+      'th-a': [
+        ok(rowsOf('th-a', 'Initial')),
+        lateFailFirst.answer,
+        lateFailSecond.answer
+      ]
+    })
+    await rejectionCase.session.loadThread('th-a')
+    await rejectionCase.session.loadThread('th-b')
+    await rejectionCase.session.loadThread('th-a')
+    await rejectionCase.afterBackgroundRead(() =>
+      lateFailSecond.release(rowsOf('th-a', 'Fresh answer'))
+    )
+    await rejectionCase.afterBackgroundRead(() =>
+      lateFailFirst.fail(new Error('network'))
+    )
+    expect(useAgentConversationStore().isKnownChat('th-a')).toBe(true)
+
+    session.stop()
+    rejectionCase.session.stop()
+  })
+
+  it('treats a current recheck 404 as a missing chat even for a locally created entry while keeping transient errors quiet', async () => {
+    const warm = held()
+    const recheck404 = held()
+    const onThreadActivated = vi.fn()
+    const postMessage = vi
+      .fn<AgentRestClient['postMessage']>()
+      .mockResolvedValueOnce({ thread_id: 'th-gone', message_id: 'msg-1' })
+      .mockResolvedValueOnce({ thread_id: 'th-fresh', message_id: 'msg-2' })
+    const { session, events, afterBackgroundRead } = openSession(
+      serve({ 'th-gone': [warm.answer, recheck404.answer] }),
+      { postMessage },
+      { onThreadActivated }
+    )
+    const conversation = useAgentConversationStore()
+
+    await session.sendMessage('Created before remote delete')
+    events.emit(deltaIn('th-gone', 'msg-1', 'Local answer'))
+    events.emit(doneIn('th-gone', 'msg-1'))
+    session.newChat('new_chat_button', 'blank:tab-b')
+
+    await session.loadThread('th-gone')
+    expect(session.threadId.value).toBe('th-gone')
+    expect(localStorage.getItem(StorageKeys.agentThread('personal'))).toBe(
+      'th-gone'
+    )
+
+    await afterBackgroundRead(() =>
+      recheck404.fail(new AgentApiError('not found', 404, null))
+    )
+
+    expect(conversation.isKnownChat('th-gone')).toBe(false)
+    expect(session.threadId.value).toBeNull()
+    expect(session.isTranscriptReady.value).toBe(false)
+    expect(prompts(session)).toEqual([])
+    expect(localStorage.getItem(StorageKeys.agentThread('personal'))).toBeNull()
+    expect(onThreadActivated).toHaveBeenLastCalledWith(null)
+    expect(session.notices.value).toEqual([])
+
+    await session.sendMessage('After 404')
+    expect(postMessage).toHaveBeenLastCalledWith('new', expect.any(Object))
+    warm.release([])
+    session.stop()
+  })
+
+  it('restores the workflow from the installed transcript when a cache miss or cache update changes workflow_id during restore', async () => {
+    let resolveFirstRestore!: (ready: boolean) => void
+    const restored = vi
+      .fn<(workflowId: string | undefined) => Promise<boolean> | boolean>()
+      .mockReturnValueOnce(true)
+      .mockReturnValueOnce(true)
+      .mockImplementationOnce(
+        () =>
+          new Promise<boolean>((resolve) => {
+            resolveFirstRestore = resolve
+          })
+      )
+      .mockReturnValueOnce(true)
+    const rowsWithWorkflow = (
+      threadId: string,
+      workflowId: string,
+      answer: string
+    ): Rows => [
+      {
+        ...historyRow(1, 'user', `${threadId}-turn`, `Prompt in ${threadId}`),
+        thread_id: threadId,
+        workflow_id: workflowId
+      },
+      {
+        ...historyRow(2, 'assistant', `${threadId}-turn`, answer),
+        thread_id: threadId,
+        workflow_id: workflowId
+      }
+    ]
+    const fallbackReload = held()
+    const { session, events } = openSession(
+      serve({
+        'th-a': [
+          ok(rowsWithWorkflow('th-a', 'wf-old', 'Old reply')),
+          fallbackReload.answer
+        ],
+        'th-b': [ok(rowsWithWorkflow('th-b', 'wf-b', 'B reply'))]
+      }),
+      {},
+      { workflow: { current: () => undefined, adopted: vi.fn(), restored } }
+    )
+
+    await session.loadThread('th-a')
+    await session.loadThread('th-b')
+
+    const reopening = session.loadThread('th-a')
+    events.emit(deltaIn('th-a', 'msg-other', 'invalidates cache'))
+    resolveFirstRestore(true)
+    fallbackReload.release(rowsWithWorkflow('th-a', 'wf-new', 'New reply'))
+    expect(await reopening).toBe(true)
+
+    expect(restored).toHaveBeenLastCalledWith('wf-new', expect.any(Function))
+    expect(restored).toHaveBeenCalledTimes(4)
+    expect(answerShown(session)).toBe('New reply')
+    session.stop()
+    useAgentConversationStore().reset()
+
+    let resolveCachedUpdateRestore!: (ready: boolean) => void
+    const restoredOnUpdate = vi
+      .fn<(workflowId: string | undefined) => Promise<boolean> | boolean>()
+      .mockReturnValueOnce(true)
+      .mockReturnValueOnce(true)
+      .mockReturnValueOnce(true)
+      .mockReturnValueOnce(true)
+      .mockImplementationOnce(
+        () =>
+          new Promise<boolean>((resolve) => {
+            resolveCachedUpdateRestore = resolve
+          })
+      )
+      .mockReturnValueOnce(true)
+    const offscreenRecheck = held()
+    const updated = openSession(
+      serve({
+        'th-a': [
+          ok(rowsWithWorkflow('th-a', 'wf-old', 'Old reply')),
+          offscreenRecheck.answer,
+          ok(rowsWithWorkflow('th-a', 'wf-new', 'Updated reply'))
+        ],
+        'th-b': [ok(rowsWithWorkflow('th-b', 'wf-b', 'B reply'))]
+      }),
+      {},
+      {
+        workflow: {
+          current: () => undefined,
+          adopted: vi.fn(),
+          restored: restoredOnUpdate
+        }
+      }
+    )
+
+    await updated.session.loadThread('th-a')
+    await updated.session.loadThread('th-b')
+    await updated.session.loadThread('th-a')
+    await updated.session.loadThread('th-b')
+
+    const reopeningAfterUpdate = updated.session.loadThread('th-a')
+    await updated.afterBackgroundRead(() =>
+      offscreenRecheck.release(
+        rowsWithWorkflow('th-a', 'wf-new', 'Updated reply')
+      )
+    )
+    resolveCachedUpdateRestore(true)
+    expect(await reopeningAfterUpdate).toBe(true)
+
+    expect(restoredOnUpdate).toHaveBeenLastCalledWith(
+      'wf-new',
+      expect.any(Function)
+    )
+    expect(answerShown(updated.session)).toBe('Updated reply')
+    updated.session.stop()
+  })
+
+  it('warms an off-screen chat from recovery transcript without an extra GET when recovery settles its turn', async () => {
+    const recoveredRows: Rows = [
+      { ...historyRow(1, 'user', 'msg-1', 'hello', 'u-1'), thread_id: 'th-1' },
+      {
+        ...historyRow(2, 'assistant', 'msg-1', 'Recovered reply', 'msg-1'),
+        thread_id: 'th-1',
+        status: 'complete'
+      }
+    ]
+    const recheck = held()
+    let pollCount = 0
+    const getMessages = vi.fn(
+      async (
+        threadId: string,
+        options?: { signal?: AbortSignal }
+      ): Promise<Rows> => {
+        if (options?.signal) {
+          pollCount += 1
+          return recoveredRows
+        }
+        if (threadId === 'th-1') return recheck.answer()
+        return rowsOf(threadId)
+      }
+    )
+    const { session, events } = openSession(getMessages)
+
+    await session.sendMessage('hello')
+    await session.loadThread('th-2')
+    expect(fetchesExcludingPolls(getMessages, 'th-1')).toBe(0)
+
+    events.status(true)
+    await vi.waitFor(() => expect(pollCount).toBe(1))
+    await vi.waitFor(() =>
+      expect(
+        useAgentConversationStore().isKnownChatSettledFromServer('th-1')
+      ).toBe(true)
+    )
+    expect(fetchesExcludingPolls(getMessages, 'th-1')).toBe(0)
+
+    const returning = session.loadThread('th-1')
+    expect(session.isTranscriptReady.value).toBe(true)
+    expect(answerShown(session)).toBe('Recovered reply')
+    await returning
+    session.stop()
+  })
+
+  it('clears isHydrating when a superseded known-chat workflow restore is still pending and keeps isHydrating false on a synchronous known-chat hit', async () => {
+    let resolveStaleRestore!: (ready: boolean) => void
+    const restored = vi
+      .fn<() => Promise<boolean> | boolean>()
+      .mockReturnValueOnce(true)
+      .mockReturnValueOnce(true)
+      .mockReturnValueOnce(true)
+      .mockReturnValueOnce(true)
+      .mockImplementationOnce(
+        () =>
+          new Promise<boolean>((resolve) => {
+            resolveStaleRestore = resolve
+          })
+      )
+      .mockReturnValueOnce(true)
+      .mockReturnValueOnce(true)
+    const { session } = openSession(
+      serve({
+        'th-a': [
+          ok(rowsOf('th-a', 'A answer')),
+          ok(rowsOf('th-a', 'A answer')),
+          ok(rowsOf('th-a', 'A answer'))
+        ],
+        'th-b': [
+          ok(rowsOf('th-b', 'B answer')),
+          ok(rowsOf('th-b', 'B answer')),
+          ok(rowsOf('th-b', 'B answer'))
+        ]
+      }),
+      {},
+      {
+        workflow: { current: () => undefined, adopted: vi.fn(), restored }
+      }
+    )
+
+    await session.loadThread('th-a')
+    await session.loadThread('th-b')
+
+    const syncReturn = session.loadThread('th-a')
+    expect(session.isTranscriptReady.value).toBe(true)
+    expect(session.isHydrating.value).toBe(false)
+    expect(await syncReturn).toBe(true)
+
+    await session.loadThread('th-b')
+    const staleKnown = session.loadThread('th-a')
+    expect(session.isHydrating.value).toBe(true)
+
+    await session.loadThread('th-b')
+    const freshKnown = session.loadThread('th-a')
+    expect(session.isTranscriptReady.value).toBe(true)
+    expect(session.isHydrating.value).toBe(false)
+    expect(await freshKnown).toBe(true)
+    expect(session.isHydrating.value).toBe(false)
+
+    resolveStaleRestore(true)
+    expect(await staleKnown).toBe(false)
+    expect(session.isHydrating.value).toBe(false)
+    session.stop()
+  })
+
+  it('clears the selected thread back to the prior blank chat when a cold tab-follow workflow restore fails or throws without clobbering a newer load', async () => {
+    let resolveSupersededRestore!: (ready: boolean) => void
+    const restored = vi
+      .fn<() => Promise<boolean> | boolean>()
+      .mockResolvedValueOnce(false)
+      .mockRejectedValueOnce(new Error('cold restore boom'))
+      .mockImplementationOnce(
+        () =>
+          new Promise<boolean>((resolve) => {
+            resolveSupersededRestore = resolve
+          })
+      )
+      .mockReturnValueOnce(true)
+    const { session } = openSession(
+      serve({
+        'th-fail': [ok(rowsOf('th-fail', 'Fail reply'))],
+        'th-throw': [ok(rowsOf('th-throw', 'Throw reply'))],
+        'th-stale': [ok(rowsOf('th-stale', 'Stale reply'))],
+        'th-other': [ok(rowsOf('th-other', 'Other reply'))]
+      }),
+      {},
+      {
+        workflow: { current: () => undefined, adopted: vi.fn(), restored }
+      }
+    )
+    const conversation = useAgentConversationStore()
+
+    session.newChat('new_chat_button', 'blank:tab-fail')
+    expect(
+      await session.loadThread('th-fail', () => true, {
+        keepOpenChatUntilLoaded: true
+      })
+    ).toBe(false)
+    expect(session.threadId.value).toBeNull()
+    expect(conversation.activeBlankChatId).toBe('blank:tab-fail')
+    expect(prompts(session)).toEqual([])
+    expect(session.isTranscriptReady.value).toBe(false)
+    expect(conversation.isKnownChat('th-fail')).toBe(false)
+
+    session.newChat('new_chat_button', 'blank:tab-throw')
+    expect(
+      await session.loadThread('th-throw', () => true, {
+        keepOpenChatUntilLoaded: true
+      })
+    ).toBe(false)
+    expect(session.threadId.value).toBeNull()
+    expect(conversation.activeBlankChatId).toBe('blank:tab-throw')
+    expect(prompts(session)).toEqual([])
+    expect(session.isTranscriptReady.value).toBe(false)
+    expect(conversation.isKnownChat('th-throw')).toBe(false)
+
+    session.newChat('new_chat_button', 'blank:tab-stale')
+    const superseded = session.loadThread('th-stale', () => true, {
+      keepOpenChatUntilLoaded: true
+    })
+    await vi.waitFor(() => expect(restored).toHaveBeenCalledTimes(3))
+    expect(await session.loadThread('th-other')).toBe(true)
+
+    resolveSupersededRestore(false)
+    expect(await superseded).toBe(false)
+    expect(session.threadId.value).toBe('th-other')
+    expect(session.isTranscriptReady.value).toBe(true)
+    expect(prompts(session)).toEqual(['Prompt in th-other'])
+    session.stop()
+  })
+
+  it('TC-18: reconciles independently when only client_message_id matches and when only turn_id matches', async () => {
+    const cmWarm = held()
+    const cmRecheck = held()
+    const turnWarm = held()
+    const turnRecheck = held()
+    let seq = 0
+    const { session, events, afterBackgroundRead } = openSession(
+      serve({
+        'th-cm': [cmWarm.answer, cmRecheck.answer],
+        'th-turn': [turnWarm.answer, turnRecheck.answer]
+      }),
+      {
+        postMessage: vi.fn(async () => {
+          seq += 1
+          return seq === 1
+            ? { thread_id: 'th-cm', message_id: 'local-msg-1' }
+            : { thread_id: 'th-turn', message_id: 'msg-turn-only' }
+        })
+      }
+    )
+
+    await session.sendMessage(
+      'Via client id',
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      'cm-only'
+    )
+    events.emit(deltaIn('th-cm', 'local-msg-1', 'Local client reply'))
+    events.emit(doneIn('th-cm', 'local-msg-1'))
+    session.newChat('new_chat_button', 'blank:between')
+    cmWarm.release([])
+
+    await session.loadThread('th-cm', () => true, {
+      keepOpenChatUntilLoaded: true
+    })
+    await afterBackgroundRead(() =>
+      cmRecheck.release([
+        {
+          id: 'u-srv-cm',
+          thread_id: 'th-cm',
+          seq: 1,
+          role: 'user',
+          status: 'complete',
+          turn_id: 'srv-turn-99',
+          content: { text: 'Via client id', client_message_id: 'cm-only' }
+        },
+        {
+          id: 'srv-asst-99',
+          thread_id: 'th-cm',
+          seq: 2,
+          role: 'assistant',
+          status: 'complete',
+          turn_id: 'srv-turn-99',
+          content: { text: 'Matched by client id' }
+        }
+      ])
+    )
+    expect(prompts(session)).toEqual(['Via client id'])
+    expect(answerShown(session)).toBe('Matched by client id')
+
+    session.newChat('new_chat_button', 'blank:second')
+    await session.sendMessage('Via turn id')
+    events.emit(deltaIn('th-turn', 'msg-turn-only', 'Local turn reply'))
+    events.emit(doneIn('th-turn', 'msg-turn-only'))
+    session.newChat('new_chat_button', 'blank:after')
+    turnWarm.release([])
+
+    await session.loadThread('th-turn', () => true, {
+      keepOpenChatUntilLoaded: true
+    })
+    await afterBackgroundRead(() =>
+      turnRecheck.release([
+        {
+          id: 'u-srv-turn',
+          thread_id: 'th-turn',
+          seq: 1,
+          role: 'user',
+          status: 'complete',
+          turn_id: 'msg-turn-only',
+          content: { text: 'Via turn id' }
+        },
+        {
+          id: 'msg-turn-only',
+          thread_id: 'th-turn',
+          seq: 2,
+          role: 'assistant',
+          status: 'complete',
+          turn_id: 'msg-turn-only',
+          content: { text: 'Matched by turn id' }
+        }
+      ])
+    )
+    expect(prompts(session)).toEqual(['Via turn id'])
+    expect(answerShown(session)).toBe('Matched by turn id')
+    session.stop()
+  })
+
+  it('retries a rejected recheck once after draining buffered remote completion without retrying ordinary failures', async () => {
+    const failedWithRemote = held()
+    const retryAnswer = held()
+    const plainFail = held()
+    const { session, events, getMessages, afterBackgroundRead } = openSession(
+      serve({
+        'th-a': [
+          ok(rowsOf('th-a', 'Initial A')),
+          failedWithRemote.answer,
+          retryAnswer.answer,
+          plainFail.answer
+        ],
+        'th-b': [ok(rowsOf('th-b', 'B'))]
+      })
+    )
+
+    await session.loadThread('th-a')
+    await session.loadThread('th-b')
+    await session.loadThread('th-a')
+
+    events.emit(doneIn('th-a', 'remote-msg-1'))
+    failedWithRemote.fail(new AgentApiError('temporary failure', 503, null))
+    await vi.waitFor(() =>
+      expect(fetchesExcludingPolls(getMessages, 'th-a')).toBe(3)
+    )
+    await afterBackgroundRead(() =>
+      retryAnswer.release([
+        ...rowsOf('th-a', 'Initial A'),
+        {
+          ...historyRow(3, 'user', 'remote-msg-1', 'Remote prompt', 'u-rem-1'),
+          thread_id: 'th-a'
+        },
+        {
+          ...historyRow(
+            4,
+            'assistant',
+            'remote-msg-1',
+            'Remote reply',
+            'remote-msg-1'
+          ),
+          thread_id: 'th-a'
+        }
+      ])
+    )
+    expect(prompts(session)).toEqual(['Prompt in th-a', 'Remote prompt'])
+    expect(answerShown(session)).toBe('Initial ARemote reply')
+
+    await session.loadThread('th-b')
+    await session.loadThread('th-a')
+    await afterBackgroundRead(() =>
+      plainFail.fail(new AgentApiError('quiet error', 503, null))
+    )
+    expect(fetchesExcludingPolls(getMessages, 'th-a')).toBe(4)
+    expect(session.notices.value).toEqual([])
+    session.stop()
+  })
+
+  it('rolls back an already-opened cached tab-follow fallback when its fallback GET fails', async () => {
+    let resolveRestore!: (ready: boolean) => void
+    const restored = vi
+      .fn<() => Promise<boolean> | boolean>()
+      .mockReturnValueOnce(true)
+      .mockImplementationOnce(
+        () =>
+          new Promise<boolean>((resolve) => {
+            resolveRestore = resolve
+          })
+      )
+    const fallbackGet = held()
+    const { session, events } = openSession(
+      serve({
+        'th-a': [ok(rowsOf('th-a', 'Cached A')), fallbackGet.answer]
+      }),
+      {},
+      {
+        workflow: { current: () => undefined, adopted: vi.fn(), restored }
+      }
+    )
+    events.status(true)
+    const conversation = useAgentConversationStore()
+
+    await session.loadThread('th-a')
+    session.newChat('new_chat_button', 'blank:tab-a')
+
+    const reopening = session.loadThread('th-a', () => true, {
+      keepOpenChatUntilLoaded: true
+    })
+    events.status(false)
+    events.status(true)
+    resolveRestore(true)
+
+    await vi.waitFor(() => expect(conversation.isKnownChat('th-a')).toBe(false))
+    fallbackGet.fail(new AgentApiError('server error', 500, null))
+    expect(await reopening).toBe(false)
+    expect(session.threadId.value).toBeNull()
+    expect(conversation.activeBlankChatId).toBe('blank:tab-a')
+    expect(prompts(session)).toEqual([])
+    session.stop()
+  })
+
+  it('clears the attempted thread and its rows when a cold History workflow restore fails or rejects without clearing the prior active thread', async () => {
+    const restored = vi
+      .fn<() => Promise<boolean> | boolean>()
+      .mockReturnValueOnce(true)
+      .mockResolvedValueOnce(false)
+      .mockRejectedValueOnce(new Error('history restore boom'))
+    let activeThreadId: string | null = null
+    const { session } = openSession(
+      serve({
+        'th-prev': [ok(rowsOf('th-prev', 'Previous reply'))],
+        'th-fail': [ok(rowsOf('th-fail', 'Failed reply'))],
+        'th-reject': [ok(rowsOf('th-reject', 'Rejected reply'))]
+      }),
+      {},
+      {
+        onThreadActivated: (id) => {
+          activeThreadId = id
+        },
+        workflow: { current: () => undefined, adopted: vi.fn(), restored }
+      }
+    )
+    const conversation = useAgentConversationStore()
+
+    await session.loadThread('th-prev')
+    expect(activeThreadId).toBe('th-prev')
+
+    expect(await session.loadThread('th-fail')).toBe(false)
+    expect(session.threadId.value).toBeNull()
+    expect(prompts(session)).toEqual([])
+    expect(conversation.isKnownChat('th-fail')).toBe(false)
+    expect(activeThreadId).toBe('th-prev')
+    expect(localStorage.getItem(StorageKeys.agentThread('personal'))).toBe(
+      'th-prev'
+    )
+
+    expect(await session.loadThread('th-reject')).toBe(false)
+    expect(session.threadId.value).toBeNull()
+    expect(prompts(session)).toEqual([])
+    expect(conversation.isKnownChat('th-reject')).toBe(false)
+    expect(activeThreadId).toBe('th-prev')
+    expect(localStorage.getItem(StorageKeys.agentThread('personal'))).toBe(
+      'th-prev'
+    )
+    session.stop()
+  })
+
+  it('keeps a deferred recheck queued until the last live turn in the chat settles', async () => {
+    const finalRecheck = held()
+    const { session, events, getMessages, afterBackgroundRead } = openSession(
+      serve({
+        'th-multi': [finalRecheck.answer],
+        'th-other': [ok(rowsOf('th-other', 'Other'))]
+      })
+    )
+    const conversation = useAgentConversationStore()
+    const turn1 = toTurnId('msg-m1')
+    const turn2 = toTurnId('msg-m2')
+
+    conversation.setThreadId('th-multi')
+    conversation.recordUser(turn1, 'First')
+    conversation.startTurn(turn1)
+    conversation.recordAcceptedTurn({
+      threadId: 'th-multi',
+      turnId: turn1,
+      createdHere: true,
+      text: 'First'
+    })
+    conversation.stashActiveTurn()
+
+    conversation.recordUser(turn2, 'Second')
+    conversation.startTurn(turn2)
+    conversation.recordAcceptedTurn({
+      threadId: 'th-multi',
+      turnId: turn2,
+      createdHere: false,
+      text: 'Second'
+    })
+    conversation.stashActiveTurn()
+
+    await session.loadThread('th-other')
+    await session.loadThread('th-multi', () => true, {
+      keepOpenChatUntilLoaded: true
+    })
+    expect(fetchesExcludingPolls(getMessages, 'th-multi')).toBe(0)
+
+    events.emit(doneIn('th-multi', 'msg-m1'))
+    expect(fetchesExcludingPolls(getMessages, 'th-multi')).toBe(0)
+
+    events.emit(doneIn('th-multi', 'msg-m2'))
+    expect(fetchesExcludingPolls(getMessages, 'th-multi')).toBe(1)
+
+    await afterBackgroundRead(() =>
+      finalRecheck.release([
+        {
+          ...historyRow(1, 'user', 'msg-m1', 'First', 'u-m1'),
+          thread_id: 'th-multi'
+        },
+        {
+          ...historyRow(2, 'assistant', 'msg-m1', 'Settled 1', 'msg-m1'),
+          thread_id: 'th-multi'
+        },
+        {
+          ...historyRow(3, 'user', 'msg-m2', 'Second', 'u-m2'),
+          thread_id: 'th-multi'
+        },
+        {
+          ...historyRow(4, 'assistant', 'msg-m2', 'Settled 2', 'msg-m2'),
+          thread_id: 'th-multi'
+        }
+      ])
+    )
+    expect(answerShown(session)).toBe('Settled 1Settled 2')
+    session.stop()
+  })
+
+  it('retains a cached local reply when a late agent_ask_resolved frame arrives after turn completion', async () => {
+    const warm = held()
+    const recheck = held()
+    const { session, events, afterBackgroundRead } = openSession(
+      serve({
+        'th-1': [warm.answer, recheck.answer],
+        'th-2': [ok(rowsOf('th-2', 'Other'))]
+      })
+    )
+    const conversation = useAgentConversationStore()
+
+    await session.sendMessage('Ask then finish')
+    events.emit(runApproval('msg-1', 'msg-1:call-1'))
+    events.emit(delta('msg-1', 'Local ask reply'))
+    events.emit(done('msg-1'))
+
+    events.emit(askResolved('msg-1', 'msg-1:call-1'))
+    expect(conversation.isKnownChat('th-1')).toBe(true)
+
+    await session.loadThread('th-2')
+    const returning = session.loadThread('th-1')
+    expect(session.isTranscriptReady.value).toBe(true)
+    expect(answerShown(session)).toBe('Local ask reply')
+    await returning
+    await afterBackgroundRead(() => {
+      warm.release([])
+      recheck.release([])
+    }, 2)
+    session.stop()
+  })
+
+  it('retains a stashed live turn in the recreated cache entry after a reconnect cold load and omits it once settled on server', async () => {
+    const recheckAfterReturn = held()
+    const { session, events, getMessages, afterBackgroundRead } = openSession(
+      serve({
+        'th-1': [
+          ok(rowsOf('th-1', 'Older reply')),
+          ok(rowsOf('th-1', 'Older reply')),
+          recheckAfterReturn.answer
+        ],
+        'th-2': [ok(rowsOf('th-2', 'B reply')), ok(rowsOf('th-2', 'B reply'))]
+      }),
+      {
+        postMessage: vi.fn(async () => ({
+          thread_id: 'th-1',
+          message_id: 'msg-live'
+        }))
+      }
+    )
+    events.status(true)
+
+    await session.loadThread('th-1')
+    await session.sendMessage('Live prompt')
+    events.emit(delta('msg-live', 'Live partial'))
+
+    await session.loadThread('th-2')
+    events.status(false)
+    events.status(true)
+    expect(useAgentConversationStore().isKnownChat('th-1')).toBe(false)
+
+    await session.loadThread('th-1')
+    expect(session.isStreaming.value).toBe(true)
+    expect(
+      useAgentConversationStore().isKnownChatSettledFromServer('th-1')
+    ).toBe(false)
+    events.emit(delta('msg-live', ' finished'))
+    events.emit(done('msg-live'))
+    expect(
+      useAgentConversationStore().isKnownChatSettledFromServer('th-1')
+    ).toBe(false)
+
+    await session.loadThread('th-2')
+
+    const back = session.loadThread('th-1')
+    expect(session.isTranscriptReady.value).toBe(true)
+    expect(prompts(session)).toEqual(['Prompt in th-1', 'Live prompt'])
+    expect(answerShown(session)).toBe('Older replyLive partial finished')
+    await back
+    expect(fetchesExcludingPolls(getMessages, 'th-1')).toBe(3)
+    await afterBackgroundRead(() =>
+      recheckAfterReturn.release(rowsOf('th-1', 'Older reply'))
+    )
+    session.stop()
+
+    useAgentConversationStore().reset()
+    const settled = openSession(
+      serve({
+        'th-3': [
+          ok(rowsOf('th-3', 'Initial')),
+          ok([
+            ...rowsOf('th-3', 'Initial'),
+            {
+              ...historyRow(3, 'user', 'msg-done', 'Done prompt', 'u-done'),
+              thread_id: 'th-3'
+            },
+            {
+              ...historyRow(
+                4,
+                'assistant',
+                'msg-done',
+                'Server done',
+                'msg-done'
+              ),
+              thread_id: 'th-3',
+              status: 'complete'
+            }
+          ])
+        ],
+        'th-4': [ok(rowsOf('th-4', 'Other'))]
+      }),
+      {
+        postMessage: vi.fn(async () => ({
+          thread_id: 'th-3',
+          message_id: 'msg-done'
+        }))
+      }
+    )
+    settled.events.status(true)
+    await settled.session.loadThread('th-3')
+    await settled.session.sendMessage('Done prompt')
+    await settled.session.loadThread('th-4')
+    settled.events.status(false)
+    settled.events.status(true)
+    await settled.session.loadThread('th-3')
+    expect(
+      useAgentConversationStore().isKnownChatSettledFromServer('th-3')
+    ).toBe(true)
+    settled.session.stop()
+  })
+
+  it('forgets a deleted chat when an outdated recheck returns 404 unless a newer send superseded it', async () => {
+    const outdated404 = held()
+    const { session, events, afterBackgroundRead } = openSession(
+      serve({
+        'th-a': [ok(rowsOf('th-a', 'Cached A')), outdated404.answer],
+        'th-b': [ok(rowsOf('th-b', 'Cached B'))]
+      })
+    )
+    const conversation = useAgentConversationStore()
+
+    await session.loadThread('th-a')
+    await session.loadThread('th-b')
+    await session.loadThread('th-a')
+
+    events.emit(doneIn('th-a', 'remote-msg-before-delete'))
+    await afterBackgroundRead(() =>
+      outdated404.fail(new AgentApiError('not found', 404, null))
+    )
+
+    expect(session.threadId.value).toBeNull()
+    expect(session.isTranscriptReady.value).toBe(false)
+    expect(session.isThreadDeleted('th-a')).toBe(true)
+    expect(conversation.isKnownChat('th-a')).toBe(false)
+    expect(localStorage.getItem(StorageKeys.agentThread('personal'))).toBeNull()
+    session.stop()
+  })
+
+  it('rolls back an already-opened cached History fallback when its fallback GET fails without leaking the previous chat rows', async () => {
+    let resolveRestore!: (ready: boolean) => void
+    const restored = vi
+      .fn<() => Promise<boolean> | boolean>()
+      .mockReturnValueOnce(true)
+      .mockReturnValueOnce(true)
+      .mockImplementationOnce(
+        () =>
+          new Promise<boolean>((resolve) => {
+            resolveRestore = resolve
+          })
+      )
+    const fallbackGet = held()
+    const { session, events } = openSession(
+      serve({
+        'th-a': [ok(rowsOf('th-a', 'Answer A'))],
+        'th-b': [ok(rowsOf('th-b', 'Answer B')), fallbackGet.answer]
+      }),
+      {},
+      {
+        workflow: { current: () => undefined, adopted: vi.fn(), restored }
+      }
+    )
+    events.status(true)
+    const conversation = useAgentConversationStore()
+
+    await session.loadThread('th-b')
+    await session.loadThread('th-a')
+    expect(prompts(session)).toEqual(['Prompt in th-a'])
+
+    const reopeningB = session.loadThread('th-b')
+    events.status(false)
+    events.status(true)
+    resolveRestore(true)
+
+    await vi.waitFor(() => expect(conversation.isKnownChat('th-b')).toBe(false))
+    fallbackGet.fail(new AgentApiError('server error', 500, null))
+    expect(await reopeningB).toBe(false)
+    expect(session.threadId.value).toBeNull()
+    expect(prompts(session)).toEqual([])
+    expect(localStorage.getItem(StorageKeys.agentThread('personal'))).toBe(
+      'th-a'
+    )
+    session.stop()
   })
 })

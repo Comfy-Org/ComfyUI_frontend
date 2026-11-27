@@ -1,25 +1,27 @@
 <template>
-  <div class="editable-text inline">
-    <component :is="labelType" v-if="!isEditing" :class="labelClass">
-      {{ modelValue }}
-    </component>
-    <Input
-      v-else
-      ref="inputRef"
-      v-model="inputValue"
-      v-focus
-      type="text"
-      class="h-full rounded-none p-0 focus-visible:ring-0"
-      v-bind="inputAttrs"
-      @blur="finishEditing"
-      @keydown.enter.capture.stop="inputRef?.blur()"
-      @keydown.escape.capture.stop="cancelEditing"
-      @click.stop
-      @contextmenu.stop
-      @pointerdown.stop.capture
-      @pointermove.stop.capture
-    />
-  </div>
+  <component
+    :is="labelType"
+    v-if="!isEditing"
+    :class="['editable-text', labelClass]"
+  >
+    {{ modelValue }}
+  </component>
+  <Input
+    v-else
+    ref="inputRef"
+    v-model="inputValue"
+    v-focus
+    type="text"
+    class="editable-text h-full rounded-none p-0 focus-visible:ring-0"
+    v-bind="inputAttrs"
+    @blur="finishEditing"
+    @keydown.enter.capture.stop="inputRef?.blur()"
+    @keydown.escape.capture.stop="cancelEditing"
+    @click.stop
+    @contextmenu.stop
+    @pointerdown.stop.capture
+    @pointermove.stop.capture
+  />
 </template>
 
 <script setup lang="ts">

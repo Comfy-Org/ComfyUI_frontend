@@ -1,0 +1,84 @@
+name: 'CI: Shipped Templates'
+
+on:
+  pull_request:
+    paths:
+      - 'packages/graph-model/src/**'
+      - 'src/platform/workflow/validation/schemas/shippedTemplates.test.ts'
+      - 'tools/ci/src/cicd/resolve-shipped-templates.py'
+      - '.github/workflows/ci-shipped-templates.yaml'
+      - 'vite.config.mts'
+      - 'vitest.*.setup.ts'
+      - 'pnpm-lock.yaml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'packages/graph-model/src/**'
+      - 'src/platform/workflow/validation/schemas/shippedTemplates.test.ts'
+      - 'tools/ci/src/cicd/resolve-shipped-templates.py'
+      - '.github/workflows/ci-shipped-templates.yaml'
+      - 'vite.config.mts'
+      - 'vitest.*.setup.ts'
+      - 'pnpm-lock.yaml'
+  schedule:
+    - cron: '45 7 * * *'
+  workflow_dispatch:
+    inputs:
+      templates_version:
+        description: 'comfyui-workflow-templates version to check (empty = the version ComfyUI pins)'
+        required: false
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+        with:
+          node_cache: 'false'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Resolve the templates release ComfyUI pins
+        id: templates
+        shell: bash
+        env:
+          TEMPLATES_VERSION: ${{ inputs.templates_version }}
+        run: |
+          python3 tools/ci/src/cicd/resolve-shipped-templates.py "$TEMPLATES_VERSION" \
+            | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Install the templates JSON bundle
+        env:
+          JSON_PIN: ${{ steps.templates.outputs.json_pin }}
+        run: pip install "comfyui-workflow-templates-json==$JSON_PIN"
+
+      - name: Locate the installed templates
+        id: corpus
+        run: |
+          set -euo pipefail
+          DIR="$(python3 -c 'import importlib.resources as r, comfyui_workflow_templates_json as m; print(r.files(m) / "templates")')"
+          test -d "$DIR"
+          echo "dir=$DIR" >> "$GITHUB_OUTPUT"
+
+      - name: Check every shipped template against the workflow schema
+        env:
+          COMFYUI_TEMPLATES_DIR: ${{ steps.corpus.outputs.dir }}
+        run: pnpm vitest run src/platform/workflow/validation/schemas/shippedTemplates.test.ts

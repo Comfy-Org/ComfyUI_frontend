@@ -116,6 +116,8 @@ const baseModelSelected = defineModel<Set<string>>('baseModelSelected', {
 })
 const isOpen = defineModel<boolean>('isOpen', { default: false })
 
+defineOptions({ inheritAttrs: false })
+
 const toast = useToast()
 const canvasStore = useCanvasStore()
 const assetKind = inject(AssetKindKey)
@@ -124,10 +126,12 @@ const hasThumbnailSizes = computed(
 )
 const thumbnailSize = ref<ThumbnailSize>('standard')
 let canvasPointerId: number | undefined
-const triggerAnchorRef = useTemplateRef<HTMLElement>('triggerAnchorRef')
 const menuRef = useTemplateRef<ComponentPublicInstance>('menuRef')
 const triggerRef =
   useTemplateRef<InstanceType<typeof FormDropdownInput>>('triggerRef')
+const triggerAnchorRef = computed<HTMLElement | undefined>(
+  () => triggerRef.value?.$el
+)
 const displayedSearchQuery = ref('')
 const isFiltering = ref(false)
 
@@ -383,66 +387,66 @@ const dropdownItems = computed(() =>
 </script>
 
 <template>
-  <div ref="triggerAnchorRef">
-    <PopoverRoot v-model:open="isOpen">
-      <FormDropdownInput
-        ref="triggerRef"
-        :input-id
-        :files
-        :is-open
-        :placeholder="placeholderText"
+  <PopoverRoot v-model:open="isOpen">
+    <FormDropdownInput
+      ref="triggerRef"
+      v-bind="$attrs"
+      :input-id
+      :files
+      :is-open
+      :placeholder="placeholderText"
+      :selected-items
+      :max-selectable
+      :uploadable
+      :disabled
+      :accept
+      :is-uploading
+      @select-click="toggleDropdown"
+      @file-change="handleFileChange"
+    >
+      <template #anchor="{ element }">
+        <PopoverAnchor as="template" :reference="element" />
+      </template>
+    </FormDropdownInput>
+    <PopoverContent
+      align="end"
+      update-position-strategy="always"
+      :side-offset="12"
+      hide-when-detached
+      class="pointer-events-auto flex h-160 w-103 flex-col overflow-hidden rounded-lg border-none bg-transparent p-0 shadow-lg data-[state=closed]:animate-none data-[state=open]:animate-none"
+      @interact-outside.prevent
+      @close-auto-focus.prevent="focusTrigger"
+    >
+      <FormDropdownMenu
+        ref="menuRef"
+        v-model:filter-selected="filterSelected"
+        v-model:layout-mode="layoutMode"
+        v-model:sort-selected="sortSelected"
+        v-model:search-query="searchQuery"
+        v-model:ownership-selected="ownershipSelected"
+        v-model:base-model-selected="baseModelSelected"
+        v-model:thumbnail-size="thumbnailSize"
+        :has-thumbnail-sizes
+        :uploadable
+        :filter-options
+        :sort-options
+        :show-ownership-filter
+        :ownership-options
+        :show-base-model-filter
+        :base-model-options
+        :disabled
+        :items="dropdownItems"
+        :candidate-index
+        :candidate-label
+        :is-selected="internalIsSelected"
         :selected-items
         :max-selectable
-        :uploadable
-        :disabled
-        :accept
-        :is-uploading
-        @select-click="toggleDropdown"
-        @file-change="handleFileChange"
-      >
-        <template #anchor="{ element }">
-          <PopoverAnchor as="template" :reference="element" />
-        </template>
-      </FormDropdownInput>
-      <PopoverContent
-        align="end"
-        update-position-strategy="always"
-        hide-when-detached
-        class="pointer-events-auto w-auto rounded-lg border-none bg-transparent p-0 pt-2 shadow-lg data-[state=closed]:animate-none data-[state=open]:animate-none"
-        @interact-outside.prevent
-        @close-auto-focus.prevent="focusTrigger"
-      >
-        <FormDropdownMenu
-          ref="menuRef"
-          v-model:filter-selected="filterSelected"
-          v-model:layout-mode="layoutMode"
-          v-model:sort-selected="sortSelected"
-          v-model:search-query="searchQuery"
-          v-model:ownership-selected="ownershipSelected"
-          v-model:base-model-selected="baseModelSelected"
-          v-model:thumbnail-size="thumbnailSize"
-          :has-thumbnail-sizes
-          :uploadable
-          :filter-options
-          :sort-options
-          :show-ownership-filter
-          :ownership-options
-          :show-base-model-filter
-          :base-model-options
-          :disabled
-          :items="dropdownItems"
-          :candidate-index
-          :candidate-label
-          :is-selected="internalIsSelected"
-          :selected-items
-          :max-selectable
-          @close="closeDropdown"
-          @search-enter="handleSearchEnter"
-          @item-click="handleSelection"
-          @show-picker="showPicker"
-          @reorder="reorderSelection"
-        />
-      </PopoverContent>
-    </PopoverRoot>
-  </div>
+        @close="closeDropdown"
+        @search-enter="handleSearchEnter"
+        @item-click="handleSelection"
+        @show-picker="showPicker"
+        @reorder="reorderSelection"
+      />
+    </PopoverContent>
+  </PopoverRoot>
 </template>
