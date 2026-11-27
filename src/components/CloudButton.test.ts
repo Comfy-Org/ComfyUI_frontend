@@ -861,10 +861,45 @@ describe('Cloud button compatibility checks', () => {
       }
     },
     {
-      name: 'asks to try again when Comfy Cloud gives no answer',
-      result: null,
-      message: 'Could not check this workflow on Comfy Cloud. Try again.',
-      properties: { reason: 'no_verdict' }
+      name: 'says Comfy Cloud could not be reached',
+      result: { kind: 'checkFailed', reason: 'unreachable' },
+      message:
+        'Could not reach Comfy Cloud. Check your internet connection, then try again.',
+      properties: { reason: 'unreachable' }
+    },
+    {
+      name: 'asks to wait a minute when Comfy Cloud is busy',
+      result: { kind: 'checkFailed', reason: 'busy' },
+      message: 'Comfy Cloud is busy right now. Try again in a minute.',
+      properties: { reason: 'busy' }
+    },
+    {
+      name: 'asks to sign in again when the workspace cannot be used',
+      result: { kind: 'checkFailed', reason: 'workspace' },
+      message:
+        'Could not use your Comfy Cloud workspace. Sign out and back in, then try again.',
+      properties: { reason: 'workspace' }
+    },
+    {
+      name: 'names the limits when the workflow is too big',
+      result: { kind: 'checkFailed', reason: 'tooBig' },
+      message:
+        'This workflow is too big to check on Comfy Cloud. It can have up to 2,000 node types and 500 models.',
+      properties: { reason: 'too_big' }
+    },
+    {
+      name: 'asks to update when the answer cannot be read',
+      result: { kind: 'checkFailed', reason: 'outdated' },
+      message:
+        "This version of ComfyUI can't read Comfy Cloud's answer. Update ComfyUI, then try again.",
+      properties: { reason: 'outdated' }
+    },
+    {
+      name: 'asks to reload when the workflow cannot be read',
+      result: { kind: 'checkFailed', reason: 'unreadable' },
+      message:
+        'Could not read this workflow to check it. Reload ComfyUI, then try again.',
+      properties: { reason: 'unreadable' }
     }
   ])('$name', async ({ result, message, properties }) => {
     vi.mocked(checkCloudCompatibility).mockResolvedValue(result)
@@ -884,6 +919,27 @@ describe('Cloud button compatibility checks', () => {
     expect(useDialogStore().isDialogOpen('global-run-on-comfy-cloud')).toBe(
       false
     )
+  })
+
+  it('shows no toast and hides the check when Comfy Cloud has switched it off', async () => {
+    vi.mocked(checkCloudCompatibility).mockResolvedValue({
+      kind: 'checkFailed',
+      reason: 'switchedOff'
+    })
+    renderCloudButton()
+
+    await requestCloudCheck(userEvent.setup())
+
+    await waitFor(() =>
+      expect(useCloudWorkflowCheckStore().isSwitchedOffOnCloud).toBe(true)
+    )
+    expect(useToast().toasts).toEqual([])
+    expect(
+      useTelemetry()?.trackRunOnCloudEvent
+    ).toHaveBeenCalledExactlyOnceWith({
+      name: 'app:run_on_cloud_check_failed',
+      properties: { reason: 'switched_off' }
+    })
   })
 
   it('says nodes are missing and offers a Build when Cloud lacks a node pack', async () => {

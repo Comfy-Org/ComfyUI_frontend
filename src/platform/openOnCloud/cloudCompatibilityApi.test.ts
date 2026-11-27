@@ -10,6 +10,7 @@ import {
   checkCloudCompatibility,
   readCloudMissingModels
 } from '@/platform/openOnCloud/cloudCompatibilityApi'
+import type { CloudCheckFailureReason } from '@/platform/openOnCloud/cloudWorkflowCheck'
 import { LGraphEventMode, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import {
@@ -98,7 +99,10 @@ describe(checkCloudCompatibility, () => {
   })
 
   it.for([
-    { uploadsEnabled: true, expected: null },
+    {
+      uploadsEnabled: true,
+      expected: { kind: 'checkFailed', reason: 'outdated' }
+    },
     { uploadsEnabled: false, expected: { kind: 'canOpen' } }
   ])(
     'checks a workflow with models and no model verdict when uploads are $uploadsEnabled',
@@ -135,7 +139,10 @@ describe(checkCloudCompatibility, () => {
         headers
       })
 
-      await expect(checkCloudCompatibility()).resolves.toBeNull()
+      await expect(checkCloudCompatibility()).resolves.toEqual({
+        kind: 'checkFailed',
+        reason: 'workspace'
+      })
       expect(authStore.getWorkspaceAuthContext).toHaveBeenCalledWith({
         requireWorkspace: true
       })
@@ -740,26 +747,139 @@ describe(checkCloudCompatibility, () => {
     ])
   })
 
-  it.for([
-    { name: 'a network failure', response: () => new TypeError('offline') },
+  it.for<{
+    name: string
+    response: () => Response | Error
+    reason: CloudCheckFailureReason
+  }>([
     {
-      name: 'a failed response',
-      response: () => new Response(null, { status: 503 })
+      name: 'a network failure',
+      response: () => new TypeError('offline'),
+      reason: 'unreachable'
+    },
+    {
+      name: 'a 503 while the node list loads',
+      response: () => new Response(null, { status: 503 }),
+      reason: 'busy'
+    },
+    {
+      name: 'a 500 reading the models',
+      response: () => new Response(null, { status: 500 }),
+      reason: 'busy'
+    },
+    {
+      name: 'a 429',
+      response: () => new Response(null, { status: 429 }),
+      reason: 'busy'
+    },
+    {
+      name: 'a 400 for too many node types',
+      response: () =>
+        Response.json(
+          {
+            code: 'INVALID_REQUEST',
+            message: 'at most 2000 distinct node types'
+          },
+          { status: 400 }
+        ),
+      reason: 'tooBig'
+    },
+    {
+      name: 'a 413 for a body over the limit',
+      response: () => new Response(null, { status: 413 }),
+      reason: 'tooBig'
+    },
+    {
+      name: 'a 400 for a workspace the credential does not match',
+      response: () =>
+        Response.json(
+          { code: 'workspace_id_invalid', message: 'conflict' },
+          { status: 400 }
+        ),
+      reason: 'workspace'
+    },
+    {
+      name: 'a 403',
+      response: () => new Response(null, { status: 403 }),
+      reason: 'workspace'
+    },
+    {
+      name: 'an unexpected 4xx',
+      response: () => new Response(null, { status: 422 }),
+      reason: 'outdated'
     },
     {
       name: 'a body outside the contract',
-      response: () => Response.json({ cloud: { missing_node_types: 'none' } })
+      response: () => Response.json({ cloud: { missing_node_types: 'none' } }),
+      reason: 'outdated'
     }
-  ])('reports $name and returns no verdict', async ({ response }) => {
+  ])('reports $name as $reason', async ({ response, reason }) => {
     workflowHas(node('KSampler'))
     cloudAnswers(response())
 
-    await expect(checkCloudCompatibility()).resolves.toBeNull()
+    await expect(checkCloudCompatibility()).resolves.toEqual({
+      kind: 'checkFailed',
+      reason
+    })
     expect(reportError).toHaveBeenCalledExactlyOnceWith(
       expect.anything(),
       expect.objectContaining({
         errorType: 'failure_checking_cloud_compatibility'
       })
     )
+  })
+
+  it('reports a 404 as switched off without an error report', async () => {
+    workflowHas(node('KSampler'))
+    cloudAnswers(new Response(null, { status: 404 }))
+
+    await expect(checkCloudCompatibility()).resolves.toEqual({
+      kind: 'checkFailed',
+      reason: 'switchedOff'
+    })
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('reports no answer within the deadline as busy', async () => {
+    workflowHas(node('KSampler'))
+    const deadline = new AbortController()
+    vi.spyOn(AbortSignal, 'timeout').mockReturnValueOnce(deadline.signal)
+    vi.mocked(fetch).mockImplementation(
+      (_input, init) =>
+        new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () =>
+            reject(init.signal?.reason)
+          )
+          deadline.abort(new DOMException('Test deadline', 'TimeoutError'))
+        })
+    )
+
+    await expect(checkCloudCompatibility()).resolves.toEqual({
+      kind: 'checkFailed',
+      reason: 'busy'
+    })
+  })
+
+  it('reports a workflow it cannot read as unreadable', async () => {
+    vi.spyOn(app, 'rootGraph', 'get').mockImplementation(() => {
+      throw new Error('broken graph')
+    })
+
+    await expect(checkCloudCompatibility()).resolves.toEqual({
+      kind: 'checkFailed',
+      reason: 'unreadable'
+    })
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
+  it('returns no verdict when the caller cancels the check', async () => {
+    workflowHas(node('KSampler'))
+    const controller = new AbortController()
+    controller.abort()
+
+    await expect(
+      checkCloudCompatibility(undefined, controller.signal)
+    ).resolves.toBeNull()
+    expect(reportError).not.toHaveBeenCalled()
   })
 })

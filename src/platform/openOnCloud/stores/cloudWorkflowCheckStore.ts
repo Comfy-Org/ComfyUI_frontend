@@ -24,6 +24,7 @@ export const useCloudWorkflowCheckStore = defineStore(
     const { flags } = useFeatureFlags()
     const workspaces = useTeamWorkspaceStore()
     const state = shallowRef<CloudWorkflowCheckState>({ phase: 'idle' })
+    const isSwitchedOffOnCloud = shallowRef(false)
     const workflowRevision = shallowRef(0)
     let lastRun = 0
     let activeCheck:
@@ -74,6 +75,8 @@ export const useCloudWorkflowCheckStore = defineStore(
         if (result?.kind === 'canOpen' || result?.kind === 'missing') {
           dispatch({ type: 'answered', run, verdict: result })
         } else {
+          if (result?.kind === 'checkFailed' && result.reason === 'switchedOff')
+            isSwitchedOffOnCloud.value = true
           dispatch({ type: 'failed', run, blocker: result })
         }
       } finally {
@@ -160,6 +163,7 @@ export const useCloudWorkflowCheckStore = defineStore(
 
     return {
       state,
+      isSwitchedOffOnCloud,
       check,
       invalidate,
       bindWorkflowRevision,

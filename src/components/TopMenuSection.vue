@@ -231,6 +231,7 @@ import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { isCloud } from '@/platform/distribution/types'
 import CloudButton from '@/components/CloudButton.vue'
 import { canHandOffToCloud } from '@/platform/openOnCloud/localHandoffProtocol'
+import { useCloudWorkflowCheckStore } from '@/platform/openOnCloud/stores/cloudWorkflowCheckStore'
 import { useLocalModelUploadStore } from '@/platform/openOnCloud/stores/localModelUploadStore'
 import { openDeployToComfyApiDialog } from '@/platform/workflow/deploy/composables/lazyDeployToComfyApiDialog'
 import {
@@ -255,8 +256,13 @@ const { isLoggedIn } = useCurrentUser()
 const { t } = useI18n()
 const { toastErrorHandler } = useErrorHandling()
 const { flags } = useFeatureFlags()
+const cloudWorkflowCheck = isCloud ? undefined : useCloudWorkflowCheckStore()
 const isCloudButtonShown = computed(
-  () => !isCloud && flags.openOnCloudEnabled && canHandOffToCloud()
+  () =>
+    !isCloud &&
+    flags.openOnCloudEnabled &&
+    !cloudWorkflowCheck?.isSwitchedOffOnCloud &&
+    canHandOffToCloud()
 )
 const localModelUploads = isCloud ? undefined : useLocalModelUploadStore()
 const hasCloudUploadRecovery = computed(
