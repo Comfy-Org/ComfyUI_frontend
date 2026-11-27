@@ -159,6 +159,20 @@ describe('useLitegraphService().registerSubgraphNodeDef ownership', () => {
     expect(backgroundNode.properties.definitionOwner).toBe('background')
     expect(Object.hasOwn(backgroundNode, 'targetGraph')).toBe(false)
 
+    Reflect.set(app, 'rootGraph', backgroundGraph)
+    const explicitVisibleNode = LiteGraph.createNode(subgraphId, undefined, {
+      targetGraph: visibleGraph
+    })
+    assert.instanceOf(explicitVisibleNode, SubgraphNode)
+    expect(explicitVisibleNode.subgraph).toBe(visibleSubgraph)
+    expect(explicitVisibleNode.inputs.map(({ name }) => name)).toEqual([
+      'visibleSlot',
+      'visibleOnly'
+    ])
+    expect(explicitVisibleNode.constructor.nodeData?.display_name).toBe(
+      'Visible subgraph'
+    )
+
     const backgroundClone = backgroundNode.clone()
     assert.instanceOf(backgroundClone, SubgraphNode)
     expect(backgroundClone.subgraph).toBe(backgroundSubgraph)
@@ -176,13 +190,18 @@ describe('useLitegraphService().registerSubgraphNodeDef ownership', () => {
     const subgraphId = '00000000-0000-4000-8000-000000000125'
     const visibleGraph = createTestRootGraph()
     const backgroundGraph = createTestRootGraph()
-    visibleGraph.createSubgraph(
+    const visibleSubgraph = visibleGraph.createSubgraph(
       createTestSubgraphData({ id: subgraphId, name: 'Visible definition' })
     )
     const backgroundSubgraph = backgroundGraph.createSubgraph(
       createTestSubgraphData({ id: subgraphId, name: 'Background definition' })
     )
     Reflect.set(app, 'rootGraph', visibleGraph)
+    useLitegraphService().registerSubgraphNodeDef(
+      createNodeDefV1({ name: subgraphId }),
+      visibleSubgraph,
+      subgraphInstanceData(subgraphId)
+    )
     useLitegraphService().registerSubgraphNodeDef(
       createNodeDefV1({ name: subgraphId }),
       backgroundSubgraph,
@@ -198,13 +217,13 @@ describe('useLitegraphService().registerSubgraphNodeDef ownership', () => {
     LiteGraph.registerNodeType(subgraphId, DerivedSubgraphNode)
 
     const node = LiteGraph.createNode(subgraphId, undefined, {
-      targetGraph: backgroundGraph
+      targetGraph: visibleGraph
     })
 
     assert.instanceOf(node, SubgraphNode)
     expect(node).toBeInstanceOf(DerivedSubgraphNode)
-    expect(node.graph).toBe(backgroundGraph)
-    expect(node.subgraph).toBe(backgroundSubgraph)
+    expect(node.graph).toBe(visibleGraph)
+    expect(node.subgraph.rootGraph).toBe(visibleGraph)
   })
 
   it('reports and refuses a subgraph type missing from the target graph', () => {

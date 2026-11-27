@@ -117,7 +117,7 @@ interface SubgraphNodeRegistration {
 }
 
 interface SubgraphConstructionContext {
-  token: symbol
+  nodeType: typeof LGraphNode
   graph: GraphOrSubgraph
   ownedSubgraph: Subgraph
   consumed: boolean
@@ -128,6 +128,7 @@ const subgraphNodeRegistrations = new WeakMap<
   SubgraphNodeRegistration
 >()
 const subgraphNodeTypes = new WeakMap<Subgraph, typeof LGraphNode>()
+const generatedSubgraphNodeTypes = new WeakSet<typeof LGraphNode>()
 const missingSubgraphTargetReports = new WeakMap<LGraph, Set<string>>()
 const MAX_MISSING_SUBGRAPH_TARGET_REPORTS_PER_GRAPH = 25
 const subgraphConstructionContexts: SubgraphConstructionContext[] = []
@@ -496,7 +497,6 @@ export const useLitegraphService = () => {
       nodeDef,
       instanceData: structuredClone(instanceData)
     })
-    const constructionToken = Symbol('subgraphConstruction')
     const node = class ComfyNode extends SubgraphNode {
       static comfyClass: string
       static override title: string
@@ -513,19 +513,17 @@ export const useLitegraphService = () => {
           reportMissingSubgraphTarget(graph.rootGraph, subgraphId)
           return null
         }
-        const context: SubgraphConstructionContext = {
-          token: constructionToken,
+        const ownerNodeType = subgraphNodeTypes.get(ownedSubgraph)
+        const NodeType = generatedSubgraphNodeTypes.has(this)
+          ? (ownerNodeType ?? this)
+          : this
+        subgraphConstructionContexts.push({
+          nodeType: NodeType,
           graph,
           ownedSubgraph,
           consumed: false
-        }
-        subgraphConstructionContexts.push(context)
+        })
         try {
-          const ownerNodeType = subgraphNodeTypes.get(ownedSubgraph)
-          const NodeType =
-            ownerNodeType && !(this.prototype instanceof ownerNodeType)
-              ? ownerNodeType
-              : this
           return new NodeType(title) as SubgraphNode
         } finally {
           subgraphConstructionContexts.pop()
@@ -539,7 +537,8 @@ export const useLitegraphService = () => {
       ) {
         const pendingContext = subgraphConstructionContexts.at(-1)
         const constructionContext =
-          pendingContext?.token === constructionToken &&
+          (pendingContext?.nodeType === node ||
+            pendingContext?.nodeType.prototype instanceof node) &&
           !pendingContext.consumed
             ? pendingContext
             : undefined
@@ -669,6 +668,7 @@ export const useLitegraphService = () => {
     node.comfyClass = nodeDefV1.name
 
     node.nodeData = nodeDef
+    generatedSubgraphNodeTypes.add(node)
     subgraphNodeTypes.set(subgraph, node)
     LiteGraph.registerNodeType(subgraph.id, node)
     // Note: Do not following assignments before `LiteGraph.registerNodeType`
