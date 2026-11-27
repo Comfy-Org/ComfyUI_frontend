@@ -169,6 +169,7 @@ export type RawJobListItem = z.infer<typeof zRawJobListItem>
 export type JobListItem = RawJobListItem & { priority: number }
 export type JobDetail = z.infer<typeof zJobDetail>
 export type JobDetailInput = z.input<typeof zJobDetail>
+export type JobsListResponse = z.infer<typeof zJobsListResponse>
 export type JobOutputAsset = z.infer<typeof zJobOutputAsset>
 
 /**

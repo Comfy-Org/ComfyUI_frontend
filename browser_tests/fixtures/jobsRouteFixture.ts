@@ -6,17 +6,17 @@ import {
   zQueueManageRequest,
   zQueueManageResponse
 } from '@comfyorg/ingest-types/zod'
+import type {
+  HistoryManageRequest,
+  QueueManageRequest
+} from '@comfyorg/ingest-types'
 
 import type {
   JobDetailInput,
   JobStatus,
   RawJobListItem,
-  zJobsListResponse
+  JobsListResponse
 } from '@comfyorg/api-client/jobTypes'
-
-type JobsListResponse = z.infer<typeof zJobsListResponse>
-type HistoryManageRequest = z.infer<typeof zHistoryManageRequest>
-type QueueManageRequest = z.infer<typeof zQueueManageRequest>
 
 const terminalJobStatuses = [
   'completed',
