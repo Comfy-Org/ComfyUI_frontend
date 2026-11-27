@@ -17,18 +17,24 @@
       :side-offset="5"
       class="w-auto overflow-visible rounded-lg border-border/50 p-2 shadow-sm"
     >
-      <div class="flex gap-1 overflow-x-auto">
-        <Button
-          v-for="option in alignOptions"
-          :key="option.action"
-          :tooltip="t(option.label)"
-          variant="muted-textonly"
-          :aria-label="t(option.label)"
-          :disabled="!canAlign(option.action)"
-          @click="align(option.action)"
+      <div class="flex flex-wrap gap-1">
+        <div
+          v-for="(options, group) in alignOptionGroups"
+          :key="group"
+          class="flex gap-1"
         >
-          <i :class="option.icon" />
-        </Button>
+          <Button
+            v-for="option in options"
+            :key="option.action"
+            :tooltip="t(option.label)"
+            variant="muted-textonly"
+            :aria-label="t(option.label)"
+            :disabled="!canAlign(option.action)"
+            @click="align(option.action)"
+          >
+            <i :class="option.icon" />
+          </Button>
+        </div>
       </div>
       <PopoverArrow class="fill-background stroke-border/50" />
     </PopoverContent>
@@ -54,56 +60,64 @@ interface AlignOption {
   label: string
 }
 
-const alignOptions: AlignOption[] = [
-  {
-    action: 'left',
-    label: 'g.alignLeft',
-    icon: 'icon-[lucide--align-start-vertical]'
-  },
-  {
-    action: 'center',
-    label: 'g.alignHorizontalCenters',
-    icon: 'icon-[lucide--align-center-vertical]'
-  },
-  {
-    action: 'right',
-    label: 'g.alignRight',
-    icon: 'icon-[lucide--align-end-vertical]'
-  },
-  {
-    action: 'top',
-    label: 'g.alignTop',
-    icon: 'icon-[lucide--align-start-horizontal]'
-  },
-  {
-    action: 'middle',
-    label: 'g.alignVerticalCenters',
-    icon: 'icon-[lucide--align-center-horizontal]'
-  },
-  {
-    action: 'bottom',
-    label: 'g.alignBottom',
-    icon: 'icon-[lucide--align-end-horizontal]'
-  },
-  {
-    action: 'distributeX',
-    label: 'g.distributeHorizontally',
-    icon: 'icon-[lucide--align-horizontal-space-between]'
-  },
-  {
-    action: 'distributeY',
-    label: 'g.distributeVertically',
-    icon: 'icon-[lucide--align-vertical-space-between]'
-  },
-  {
-    action: 'matchWidth',
-    label: 'g.matchWidth',
-    icon: 'icon-[lucide--unfold-horizontal]'
-  },
-  {
-    action: 'matchHeight',
-    label: 'g.matchHeight',
-    icon: 'icon-[lucide--unfold-vertical]'
-  }
-]
+const alignOptionGroups = {
+  horizontal: [
+    {
+      action: 'left',
+      label: 'g.alignLeft',
+      icon: 'icon-[lucide--align-start-vertical]'
+    },
+    {
+      action: 'center',
+      label: 'g.alignHorizontalCenters',
+      icon: 'icon-[lucide--align-center-vertical]'
+    },
+    {
+      action: 'right',
+      label: 'g.alignRight',
+      icon: 'icon-[lucide--align-end-vertical]'
+    }
+  ],
+  vertical: [
+    {
+      action: 'top',
+      label: 'g.alignTop',
+      icon: 'icon-[lucide--align-start-horizontal]'
+    },
+    {
+      action: 'middle',
+      label: 'g.alignVerticalCenters',
+      icon: 'icon-[lucide--align-center-horizontal]'
+    },
+    {
+      action: 'bottom',
+      label: 'g.alignBottom',
+      icon: 'icon-[lucide--align-end-horizontal]'
+    }
+  ],
+  distribution: [
+    {
+      action: 'distributeX',
+      label: 'g.distributeHorizontally',
+      icon: 'icon-[lucide--align-horizontal-space-between]'
+    },
+    {
+      action: 'distributeY',
+      label: 'g.distributeVertically',
+      icon: 'icon-[lucide--align-vertical-space-between]'
+    }
+  ],
+  size: [
+    {
+      action: 'matchWidth',
+      label: 'g.matchWidth',
+      icon: 'icon-[lucide--unfold-horizontal]'
+    },
+    {
+      action: 'matchHeight',
+      label: 'g.matchHeight',
+      icon: 'icon-[lucide--unfold-vertical]'
+    }
+  ]
+} satisfies Record<string, AlignOption[]>
 </script>

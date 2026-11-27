@@ -302,7 +302,6 @@ test.describe('Smart guides', { tag: ['@vue-nodes', '@canvas'] }, () => {
           exact: true
         })
 
-        await matchHeight.scrollIntoViewIfNeeded()
         await expect(matchHeight).toBeInViewport({ ratio: 1 })
         await matchHeight.click()
 
