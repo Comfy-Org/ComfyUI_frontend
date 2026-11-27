@@ -4378,6 +4378,7 @@
       "missingNodes": "{count} missing node | {count} missing nodes",
       "missingModels": "{count} missing model | {count} missing models",
       "more": "+{count} more",
+      "showLess": "Show less",
       "createCustomBuild": "Create a Custom Build",
       "switchBody": "Comfy Cloud is missing these. Switch to a deployment that has them and keep working from there.",
       "switch": "Switch"

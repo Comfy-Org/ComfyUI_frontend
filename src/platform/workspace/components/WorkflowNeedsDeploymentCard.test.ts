@@ -225,9 +225,33 @@ describe('WorkflowNeedsDeploymentCard', () => {
     expect(screen.getByTestId('custom-deployment-missing')).toHaveTextContent(
       "4 missing modelsSDXL/Tom's=a&b.safetensors+3 more"
     )
-    expect(screen.getByText('+3 more')).toHaveAttribute(
+    expect(screen.getByRole('button', { name: '+3 more' })).toHaveAttribute(
       'title',
       'SDXL/base.safetensors, SDXL/a&b.safetensors, SDXL/turbo.safetensors'
+    )
+  })
+
+  it('lists every missing name in the row when "+N more" is opened, and hides them again', async () => {
+    const user = renderCard({
+      models: [
+        checkpoint('SDXL/first.safetensors'),
+        checkpoint('SDXL/second.safetensors'),
+        checkpoint('SDXL/third.safetensors')
+      ]
+    })
+
+    await user.click(screen.getByRole('button', { name: '+2 more' }))
+
+    expect(screen.getByTestId('missing-items-names')).toHaveTextContent(
+      'SDXL/first.safetensors, SDXL/second.safetensors, SDXL/third.safetensors'
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Show less' }))
+
+    expect(screen.queryByTestId('missing-items-names')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '+2 more' })).toHaveAttribute(
+      'aria-expanded',
+      'false'
     )
   })
 
