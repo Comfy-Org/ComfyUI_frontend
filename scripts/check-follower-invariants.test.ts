@@ -519,14 +519,16 @@ onBeforeUnmount(() =>
   test('names the invariant and links the ADR in both halves', () => {
     const fixture = `<script setup lang="ts">
 const docOpMinter = attachDocOpMinter({})
-onBeforeUnmount(() => docOpMinter.detach())
+    onBeforeUnmount(() => docOpMinter.detach())
 </script>`
     const violations = checkOpProducersOutliveThePanel(PANEL_FILE, fixture)
-    expect(violations).toHaveLength(2)
-    for (const violation of violations)
-      expect(violation.message).toContain(
-        'CRDT-FOLLOWER-0052-the-workflow-document-owns-the-follower-session.md Stage 2'
-      )
+    const reference = expect.stringContaining(
+      'CRDT-FOLLOWER-0052-the-workflow-document-owns-the-follower-session.md Stage 2'
+    )
+    expect(violations.map(({ message }) => message)).toEqual([
+      reference,
+      reference
+    ])
   })
 })
 
