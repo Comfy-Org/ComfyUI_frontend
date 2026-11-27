@@ -60,7 +60,7 @@ export type ExecutionError = z.infer<typeof zExecutionError>
 /**
  * Raw job from API - uses passthrough to allow extra fields
  */
-const zRawJobListItem = z
+export const zRawJobListItem = z
   .object({
     id: z.string(),
     status: zJobStatus,
@@ -105,6 +105,11 @@ const zPaginationInfo = z.object({
 export const zJobsListResponse = z.object({
   jobs: z.array(zRawJobListItem),
   pagination: zPaginationInfo
+})
+
+/** Jobs list with each job left unvalidated, for per-job parsing. */
+export const zJobsListEnvelope = zJobsListResponse.extend({
+  jobs: z.array(z.unknown())
 })
 
 /**

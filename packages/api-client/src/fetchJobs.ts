@@ -21,7 +21,9 @@ import type {
 import {
   zJobAssetsResponse,
   zJobDetail,
+  zJobsListEnvelope,
   zJobsListResponse,
+  zRawJobListItem,
   zWorkflowContainer
 } from './jobTypes'
 
@@ -34,6 +36,28 @@ interface FetchJobsRawResult {
 }
 
 class JobsApiError extends Error {}
+
+function jobIdOf(job: unknown): string | undefined {
+  if (typeof job !== 'object' || job === null || !('id' in job)) return
+  return typeof job.id === 'string' ? job.id : undefined
+}
+
+function keepContractJobs(jobs: unknown[]): RawJobListItem[] {
+  const parsed = jobs.map((job) => zRawJobListItem.safeParse(job))
+  const droppedIds = jobs.flatMap((job, index) =>
+    parsed[index].success ? [] : [jobIdOf(job)]
+  )
+  if (droppedIds.length > 0) {
+    console.warn('[Jobs API] Dropped jobs outside the contract:', droppedIds)
+  }
+  return parsed.flatMap((result) => (result.success ? [result.data] : []))
+}
+
+function parseJobsList(body: unknown, strict: boolean) {
+  if (strict) return zJobsListResponse.parse(body)
+  const envelope = zJobsListEnvelope.parse(body)
+  return { ...envelope, jobs: keepContractJobs(envelope.jobs) }
+}
 
 interface FetchJobsOptions {
   throwOnError?: boolean
@@ -67,7 +91,7 @@ async function fetchJobsRaw(
     if (!res.ok) {
       throw new JobsApiError(`Failed to fetch jobs: ${res.status}`)
     }
-    const data = zJobsListResponse.parse(await res.json())
+    const data = parseJobsList(await res.json(), !!options?.throwOnError)
     return {
       jobs: data.jobs,
       total: data.pagination.total,
