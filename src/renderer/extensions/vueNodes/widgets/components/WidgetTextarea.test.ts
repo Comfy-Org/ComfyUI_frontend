@@ -11,6 +11,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import { i18n } from '@/i18n'
+import { usePromptEditorExperimentStore } from '@/renderer/extensions/textEditor/promptEditorExperimentStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetTextarea from './WidgetTextarea.vue'
@@ -457,6 +458,15 @@ describe('WidgetTextarea expand to editor', () => {
         within(actions).queryByRole('button', { name: 'textEditor.expand' })
       )
     ).toBe(shown)
+  })
+
+  it('reports the dialog arm as exposed when Expand opens the dialog', async () => {
+    const expose = vi.spyOn(usePromptEditorExperimentStore(), 'expose')
+    renderWithDialogHost()
+
+    await openEditor()
+
+    expect(expose).toHaveBeenCalledWith('control')
   })
 
   it.for([
