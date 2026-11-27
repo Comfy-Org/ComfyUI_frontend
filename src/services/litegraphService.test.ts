@@ -139,6 +139,7 @@ describe('useLitegraphService().registerSubgraphNodeDef ownership', () => {
       'visibleSlot',
       'visibleOnly'
     ])
+    expect(node.constructor.nodeData?.display_name).toBe('Visible subgraph')
     expect(node.properties.definitionOwner).toBe('visible')
 
     const backgroundNode = LiteGraph.createNode(subgraphId, undefined, {
@@ -152,6 +153,9 @@ describe('useLitegraphService().registerSubgraphNodeDef ownership', () => {
       'backgroundSlot',
       'backgroundOnly'
     ])
+    expect(backgroundNode.constructor.nodeData?.display_name).toBe(
+      'Background subgraph'
+    )
     expect(backgroundNode.properties.definitionOwner).toBe('background')
     expect(Object.hasOwn(backgroundNode, 'targetGraph')).toBe(false)
 
@@ -232,6 +236,13 @@ describe('useLitegraphService().registerSubgraphNodeDef ownership', () => {
       context: { subgraphId, rootGraphId: targetGraph.id },
       sentryMode: 'once_per_page'
     })
+
+    const Registered = LiteGraph.registered_node_types[subgraphId]
+    assert.exists(Registered)
+    Reflect.set(app, 'rootGraph', targetGraph)
+    expect(() => new Registered(subgraphId)).toThrow(
+      'Subgraph node type is missing from the target graph'
+    )
   })
 
   it('caps missing-target reports per root graph at 25 distinct definitions', () => {

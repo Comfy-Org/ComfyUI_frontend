@@ -948,7 +948,21 @@ export class GroupNodeHandler {
       const c = { ...nodeData }
       c.nodes = c.nodes.map((n) => ({ ...n, id: undefined }))
       const { createdNodes, nodesBySourceIndex } =
-        deserialiseIntoGraphWithSourceIndices(JSON.stringify(c), graph, [0, 0])
+        deserialiseIntoGraphWithSourceIndices(
+          JSON.stringify(c),
+          graph,
+          [0, 0],
+          {
+            requireAll: true
+          }
+        )
+
+      const refusedIndex = nodesBySourceIndex.findIndex((node) => node === null)
+      if (refusedIndex !== -1) {
+        return {
+          refused: nodeData.nodes.at(refusedIndex)?.type ?? '<unknown>'
+        }
+      }
 
       const [x, y] = node.pos
       let top: number | undefined
@@ -1051,7 +1065,14 @@ export class GroupNodeHandler {
     if (isVisible) canvas.emitBeforeChange()
     graph.beforeChange()
     try {
-      const { createdNodes, nodesBySourceIndex } = addInnerNodes()
+      const result = addInnerNodes()
+      if ('refused' in result) {
+        return {
+          refused: true,
+          memberType: result.refused ?? '<unknown>'
+        }
+      }
+      const { createdNodes, nodesBySourceIndex } = result
       reconnectInputs(nodesBySourceIndex)
       reconnectOutputs(nodesBySourceIndex)
       graph.remove(this.node)
@@ -1092,16 +1113,23 @@ export const replaceLegacySeparators = (nodes: ComfyNode[]): void => {
 
 function convertLoadedGroupNodes(graph: LGraph): {
   converted: number
-  retained: LGraphNode[]
+  retained: { node: LGraphNode; memberType: string }[]
 } {
   let converted = 0
   const failed = new Set<LGraphNode>()
-  const retained = new Set<LGraphNode>()
+  const retained = new Map<LGraphNode, string>()
   for (;;) {
     const node = graph.nodes.find(
       (n) => GroupNodeHandler.isGroupNode(n) && !failed.has(n)
     )
-    if (!node) return { converted, retained: [...retained] }
+    if (!node)
+      return {
+        converted,
+        retained: [...retained].map(([node, memberType]) => ({
+          node,
+          memberType
+        }))
+      }
     try {
       const handler = GroupNodeHandler.getHandler(node)
       if (!handler) {
@@ -1113,7 +1141,7 @@ function convertLoadedGroupNodes(graph: LGraph): {
       const result = handler.convertToNodes()
       if (result.refused) {
         failed.add(node)
-        retained.add(node)
+        retained.set(node, result.memberType)
         console.warn(
           'Leaving group node unconverted: a member type could not be created in this graph',
           result.memberType
@@ -1153,8 +1181,9 @@ function retainedGroupDefinitionNames(
     const name = type.slice(prefix.length)
     if (needed.has(name)) continue
     needed.add(name)
+    if (!Object.hasOwn(definitions, name)) continue
     const definition = definitions[name]
-    if (!definition) continue
+    if (!definition || !Array.isArray(definition.nodes)) continue
     pending.push(
       ...definition.nodes
         .map((node) => node.type)
@@ -1232,12 +1261,15 @@ export const groupNodeExtension: ComfyExtension = {
       }
     }
     const { converted, retained } = convertLoadedGroupNodes(graph)
+    for (const { node, memberType } of retained) {
+      missingNodeTypes.push({ type: memberType, nodeId: String(node.id) })
+    }
     if (converted > 0) {
       const definitions = graph.extra.groupNodes as
         | Record<string, GroupNodeWorkflowData>
         | undefined
       const neededGroups = retainedGroupDefinitionNames(
-        retained,
+        retained.map(({ node }) => node),
         definitions ?? {}
       )
       const kept = Object.fromEntries(

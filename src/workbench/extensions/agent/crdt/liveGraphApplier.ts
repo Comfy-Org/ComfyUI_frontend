@@ -1155,14 +1155,29 @@ function isResolvablePlaceholder(node: LGraphNode, graph: LGraph): boolean {
   return true
 }
 
-function missingNode(docNode: DocNode): LGraphNode {
+function missingNode(docNode: DocNode, graph: LGraph): LGraphNode {
   const node = new LGraphNode(
     docNode.serialised.title || docNode.type || 'Missing Node',
     docNode.type
   )
   node.has_errors = true
   constructorFallbackShells.add(node)
-  missingNodePlaceholders.add(node)
+  const registered = Object.hasOwn(
+    LiteGraph.registered_node_types,
+    docNode.type
+  )
+    ? LiteGraph.registered_node_types[docNode.type]
+    : undefined
+  if (!registered) missingNodePlaceholders.add(node)
+  else if (registered.prototype instanceof SubgraphNode) {
+    const graphAwareClass = registered as typeof LGraphNode & {
+      [NODE_CREATION_TARGET_SUBGRAPH_ID]?: string
+    }
+    const targetSubgraphId =
+      graphAwareClass[NODE_CREATION_TARGET_SUBGRAPH_ID] ?? docNode.type
+    if (!graph.rootGraph.subgraphs.has(targetSubgraphId))
+      missingNodePlaceholders.add(node)
+  }
   return node
 }
 
@@ -1516,12 +1531,9 @@ export class LiveGraphApplier {
     const docNode = this.readDocNode(doc, id)
     if (!docNode) return 'skipped'
     const live = graph.getNodeById(toNodeId(id))
-    const replacement =
-      live && isResolvablePlaceholder(live, graph)
-        ? LiteGraph.createNode(docNode.type, docNode.serialised.title, {
-            targetGraph: graph
-          })
-        : null
+    const replacement = live
+      ? this.createPlaceholderReplacement(graph, live, docNode)
+      : null
     if (live && live.type === docNode.type && !replacement) {
       this.updateLiveNode(live, docNode, mode)
       return 'updated'
@@ -1530,6 +1542,28 @@ export class LiveGraphApplier {
     if (live) graph.remove(live)
     this.createNode(graph, docNode, mode, context, preservedLayout, replacement)
     return live ? 'recreated' : 'created'
+  }
+
+  private createPlaceholderReplacement(
+    graph: LGraph,
+    live: LGraphNode,
+    docNode: DocNode
+  ): LGraphNode | null {
+    if (live.type !== docNode.type || !isResolvablePlaceholder(live, graph)) {
+      return null
+    }
+
+    let replacement: LGraphNode | null = null
+    try {
+      replacement = LiteGraph.createNode(
+        docNode.type,
+        docNode.serialised.title,
+        { targetGraph: graph }
+      )
+      return replacement
+    } finally {
+      if (!replacement) missingNodePlaceholders.delete(live)
+    }
   }
 
   private updateLiveNode(
@@ -1555,7 +1589,7 @@ export class LiveGraphApplier {
       LiteGraph.createNode(docNode.type, docNode.serialised.title, {
         targetGraph: graph
       }) ??
-      missingNode(docNode)
+      missingNode(docNode, graph)
     node.id = toNodeId(docNode.id)
     const info: ISerialisedNode = {
       ...docNode.serialised,

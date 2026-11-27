@@ -934,11 +934,6 @@
       "count": 1
     }
   },
-  "src/services/litegraphService.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 2
-    }
-  },
   "src/services/nodeHelpService.ts": {
     "comfy/no-new-error-throw": {
       "count": 3

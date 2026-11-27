@@ -127,6 +127,7 @@ const subgraphNodeRegistrations = new WeakMap<
   Subgraph,
   SubgraphNodeRegistration
 >()
+const subgraphNodeTypes = new WeakMap<Subgraph, typeof LGraphNode>()
 const missingSubgraphTargetReports = new WeakMap<LGraph, Set<string>>()
 const MAX_MISSING_SUBGRAPH_TARGET_REPORTS_PER_GRAPH = 25
 const subgraphConstructionContexts: SubgraphConstructionContext[] = []
@@ -520,7 +521,12 @@ export const useLitegraphService = () => {
         }
         subgraphConstructionContexts.push(context)
         try {
-          return new this(title, graph, ownedSubgraph)
+          const ownerNodeType = subgraphNodeTypes.get(ownedSubgraph)
+          const NodeType =
+            ownerNodeType && !(this.prototype instanceof ownerNodeType)
+              ? ownerNodeType
+              : this
+          return new NodeType(title) as SubgraphNode
         } finally {
           subgraphConstructionContexts.pop()
         }
@@ -544,8 +550,13 @@ export const useLitegraphService = () => {
             : (constructionContext?.graph ?? useApp().rootGraph)
         ownedSubgraph ??=
           constructionContext?.ownedSubgraph ??
-          targetGraph.rootGraph.subgraphs.get(subgraphId) ??
-          subgraph
+          targetGraph.rootGraph.subgraphs.get(subgraphId)
+        if (!ownedSubgraph) {
+          reportMissingSubgraphTarget(targetGraph.rootGraph, subgraphId)
+          throw new TypeError(
+            'Subgraph node type is missing from the target graph'
+          )
+        }
         const registration = subgraphNodeRegistration(ownedSubgraph)
         super(
           targetGraph,
@@ -658,6 +669,7 @@ export const useLitegraphService = () => {
     node.comfyClass = nodeDefV1.name
 
     node.nodeData = nodeDef
+    subgraphNodeTypes.set(subgraph, node)
     LiteGraph.registerNodeType(subgraph.id, node)
     // Note: Do not following assignments before `LiteGraph.registerNodeType`
     // because `registerNodeType` will overwrite the assignments.
@@ -1009,12 +1021,26 @@ export const useLitegraphService = () => {
           position: options.pos
         }
       )
-      if (!results) throw new Error('Failed to add subgraph blueprint')
+      if (!results) {
+        reportError(new Error('Failed to add subgraph blueprint'), {
+          errorType: 'failure_adding_subgraph_blueprint',
+          surface: 'graph'
+        })
+        return null
+      }
       const node = results.nodes.values().next().value
-      if (!node)
-        throw new Error(
-          'Subgraph blueprint was added, but failed to resolve a subgraph Node'
+      if (!node) {
+        reportError(
+          new Error(
+            'Subgraph blueprint was added, but failed to resolve a subgraph Node'
+          ),
+          {
+            errorType: 'failure_resolving_added_subgraph_blueprint',
+            surface: 'graph'
+          }
         )
+        return null
+      }
       if (addOptions?.ghost) {
         node.flags.ghost = true
         canvas.graph?.trigger('node:property:changed', {

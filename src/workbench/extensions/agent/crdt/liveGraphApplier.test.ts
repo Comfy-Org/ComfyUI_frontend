@@ -1212,6 +1212,46 @@ describe('LiveGraphApplier', () => {
     expect(graph.getNodeById(toNodeId(1))).toBe(placeholder)
   })
 
+  it('uses document layout when a placeholder changes to another type', () => {
+    const missingType = 'TestMissingBeforeTypeChange'
+    const { graph, doc, applyCollected, applyEdit } = setup({
+      nodes: [
+        {
+          id: 1,
+          type: missingType,
+          pos: [10, 20],
+          size: [210, 100]
+        }
+      ],
+      links: []
+    })
+
+    applyCollected()
+    const placeholder = graph.getNodeById(toNodeId(1))
+    assert.exists(placeholder)
+    placeholder.pos = [700, 800]
+    LiteGraph.registerNodeType(missingType, LGraphNode)
+
+    applyEdit(() => {
+      nodesMap(doc).set(
+        '1',
+        new Y.Map<unknown>(
+          Object.entries({
+            id: 1,
+            type: 'TestPlainWidgets',
+            pos: [30, 40],
+            size: [210, 100],
+            widgets_values: [7]
+          })
+        )
+      )
+    })
+
+    const replacement = graph.getNodeById(toNodeId(1))
+    expect(replacement).toBeInstanceOf(TestPlainWidgets)
+    expect(Array.from(replacement!.pos)).toEqual([30, 40])
+  })
+
   it('recovers an aliased subgraph placeholder when its target arrives', () => {
     const type = 'TestAliasedSubgraph'
     const targetId = '00000000-0000-4000-8000-00000000a11a'
@@ -1282,9 +1322,11 @@ describe('LiveGraphApplier', () => {
 
   it('keeps a placeholder when the replacement constructor throws', () => {
     const type = 'TestThrowingConstruction'
+    let constructionAttempts = 0
     class TestThrowingConstruction extends LGraphNode {
       constructor() {
         super('Throwing construction')
+        constructionAttempts++
         throw new Error('constructor failed')
       }
     }
@@ -1315,7 +1357,10 @@ describe('LiveGraphApplier', () => {
       )
     })
 
+    applyEdit(() => nodesMap(doc).get('1')?.set('pos', [40, 50]))
+
     expect(graph.getNodeById(toNodeId(1))).toBe(placeholder)
+    expect(constructionAttempts).toBe(1)
   })
 
   it('still reports a missing widget on a registered node flagged with errors', () => {

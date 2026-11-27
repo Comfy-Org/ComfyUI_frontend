@@ -12,31 +12,51 @@ export interface DeserialisedGraphNodes {
   nodesBySourceIndex: (LGraphNode | null)[]
 }
 
+function topLeftPosition(
+  nodes: readonly { pos: Readonly<Vector2> }[],
+  fallback: Readonly<Vector2>
+): Vector2 {
+  const topLeft: Vector2 = [Infinity, Infinity]
+  for (const { pos } of nodes) {
+    if (topLeft[0] > pos[0]) topLeft[0] = pos[0]
+    if (topLeft[1] > pos[1]) topLeft[1] = pos[1]
+  }
+  return Number.isFinite(topLeft[0]) && Number.isFinite(topLeft[1])
+    ? topLeft
+    : [fallback[0], fallback[1]]
+}
+
+function createUnconfiguredNodes(
+  nodes: readonly { type: string }[],
+  graph: LGraph
+): (LGraphNode | null)[] {
+  return nodes.map(({ type }) =>
+    LiteGraph.createNode(type, undefined, { targetGraph: graph })
+  )
+}
+
 /** Creates serialised nodes and links while retaining the source index of refused nodes. */
 export function deserialiseIntoGraphWithSourceIndices(
   data: string,
   graph: LGraph,
-  position: Readonly<Vector2>
+  position: Readonly<Vector2>,
+  options: { requireAll?: boolean } = {}
 ): DeserialisedGraphNodes {
   const deserialised = JSON.parse(data)
-
-  const topLeft = [Infinity, Infinity]
-  for (const { pos } of deserialised.nodes) {
-    if (topLeft[0] > pos[0]) topLeft[0] = pos[0]
-    if (topLeft[1] > pos[1]) topLeft[1] = pos[1]
+  const topLeft = topLeftPosition(deserialised.nodes, position)
+  const precreated = options.requireAll
+    ? createUnconfiguredNodes(deserialised.nodes, graph)
+    : undefined
+  if (precreated?.some((node) => node === null)) {
+    return { createdNodes: [], nodesBySourceIndex: precreated }
   }
+  const nodesBySourceIndex: (LGraphNode | null)[] = precreated ?? []
 
-  if (!Number.isFinite(topLeft[0]) || !Number.isFinite(topLeft[1])) {
-    topLeft[0] = position[0]
-    topLeft[1] = position[1]
-  }
-
-  const nodesBySourceIndex: (LGraphNode | null)[] = []
-  for (const info of deserialised.nodes) {
-    const node = LiteGraph.createNode(info.type, undefined, {
-      targetGraph: graph
-    })
-    nodesBySourceIndex.push(node)
+  for (const [index, info] of deserialised.nodes.entries()) {
+    const node = precreated
+      ? nodesBySourceIndex[index]
+      : LiteGraph.createNode(info.type, undefined, { targetGraph: graph })
+    if (!precreated) nodesBySourceIndex.push(node)
     if (!node) continue
 
     node.configure(info)

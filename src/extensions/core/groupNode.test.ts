@@ -975,6 +975,40 @@ describe('GroupNodeHandler.convertToNodes', () => {
     expect(receivingGraph.nodes).toEqual(created)
   })
 
+  it('keeps the group when a registered member constructor fails', () => {
+    const validType = `Valid${crypto.randomUUID()}`
+    const refusedType = `Refused${crypto.randomUUID()}`
+    class ValidMember extends LGraphNode {}
+    class RefusedMember extends LGraphNode {
+      constructor() {
+        super('Refused')
+        throw new Error('construction failed')
+      }
+    }
+    LiteGraph.registerNodeType(validType, ValidMember)
+    LiteGraph.registerNodeType(refusedType, RefusedMember)
+
+    const graph = new LGraph()
+    const group = new LGraphNode('Group')
+    graph.add(group)
+    const handler = new GroupNodeHandler(
+      group,
+      new GroupNodeConfig('refusedFactory', {
+        nodes: [
+          fromAny({ type: validType, pos: [0, 0] }),
+          fromAny({ type: refusedType, pos: [100, 0] })
+        ],
+        links: []
+      })
+    )
+
+    expect(handler.convertToNodes()).toEqual({
+      refused: true,
+      memberType: refusedType
+    })
+    expect(graph.nodes).toEqual([group])
+  })
+
   it('keeps definitions for refused groups while migrating a sibling group, using the real handler', async () => {
     await registerRealNodeDefs()
     const fixture = JSON.parse(
@@ -1001,6 +1035,7 @@ describe('GroupNodeHandler.convertToNodes', () => {
     const foreignSubgraph = definitionGraph.createSubgraph(foreign)
     useSubgraphService().registerNewSubgraph(foreignSubgraph, foreign)
     refusedData.nodes.push({ type: 'workflow>nested_group' })
+    refusedData.nodes.push({ type: 'workflow>constructor' })
     refusedData.nodes.push({ type: foreign.id })
 
     await new GroupNodeConfig(
@@ -1060,13 +1095,21 @@ describe('convertLoadedGroupNodes via groupNodeExtension.afterConfigureGraph', (
     graph.add(groupNode)
     const removeSpy = vi.spyOn(graph, 'remove')
 
-    await groupNodeExtension.afterConfigureGraph?.([], fromPartial({}), {
-      graph,
-      workflow: null
-    })
+    const missingNodeTypes: MissingNodeType[] = []
+    await groupNodeExtension.afterConfigureGraph?.(
+      missingNodeTypes,
+      fromPartial({}),
+      {
+        graph,
+        workflow: null
+      }
+    )
 
     expect(removeSpy).not.toHaveBeenCalled()
     expect(graph.nodes).toEqual([groupNode])
+    expect(missingNodeTypes).toEqual([
+      { type: 'some/subgraphId', nodeId: String(groupNode.id) }
+    ])
   })
 
   it('removes a group node when conversion fails for a reason other than refusal', async () => {
