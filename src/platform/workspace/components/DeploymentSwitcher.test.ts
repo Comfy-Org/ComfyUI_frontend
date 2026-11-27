@@ -460,7 +460,7 @@ describe('DeploymentSwitcher', () => {
 
     expect(
       await screen.findByTestId('deployment-switcher-build-name')
-    ).toHaveTextContent('Studio Build')
+    ).toHaveTextContent(/^Studio Build$/)
   })
 
   it('shows only the icon on Comfy Cloud', async () => {
@@ -2723,6 +2723,20 @@ describe('DeploymentSwitcher with Platform in the editor', () => {
       } satisfies FollowedBuild
     })
   }
+
+  it('drops the Build name while the spinner follows a build', async () => {
+    mockWorkspaceApi.listDeployments.mockResolvedValue({
+      ...listing,
+      picked_deployment_id: D1
+    })
+    following('building', null)
+    renderSwitcher()
+
+    await screen.findByTestId('deployment-switcher-building')
+    expect(
+      screen.queryByTestId('deployment-switcher-build-name')
+    ).not.toBeInTheDocument()
+  })
 
   it.for([
     {

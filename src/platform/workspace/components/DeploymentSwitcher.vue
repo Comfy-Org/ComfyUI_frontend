@@ -44,7 +44,7 @@
             />
           </span>
           <span
-            v-if="pickedRow"
+            v-if="pickedRow && !buildStatus"
             class="max-w-24 truncate text-sm"
             data-testid="deployment-switcher-build-name"
             >{{ pickedRow.title }}</span
