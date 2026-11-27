@@ -211,15 +211,16 @@ describe('CustomDeploymentCard', () => {
       missing: [
         {
           label: '2 missing node packs',
-          names: 'comfyui-birefnet, comfyui-rmbg'
+          name: 'comfyui-birefnet',
+          more: '+1 more'
         },
-        { label: '1 missing model', names: 'BiRefNet-general.safetensors' }
+        { label: '1 missing model', name: 'BiRefNet-general.safetensors' }
       ]
     })
 
     const missing = screen.getByTestId('custom-deployment-missing')
     expect(missing).toHaveTextContent(
-      '2 missing node packscomfyui-birefnet, comfyui-rmbg1 missing modelBiRefNet-general.safetensors'
+      '2 missing node packscomfyui-birefnet+1 more1 missing modelBiRefNet-general.safetensors'
     )
   })
 

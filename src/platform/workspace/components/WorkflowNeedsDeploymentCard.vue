@@ -47,8 +47,6 @@ const { entry = 'workflow_dialog' } = defineProps<{
   entry?: CustomDeploymentEntry
 }>()
 
-const NAMES_SHOWN = 3
-
 const { t } = useI18n()
 const { markFor } = useDeploymentCompatibility()
 const missingModelStore = useMissingModelStore()
@@ -71,21 +69,21 @@ const offer = workflowDeploymentOffer(
   openWorkflowForCheck(missingNodes)
 )
 
-function listed(names: readonly string[]): string {
-  const shown = names.slice(0, NAMES_SHOWN).join(', ')
-  const more = names.length - NAMES_SHOWN
-  return more > 0
-    ? t(
-        'deploymentSwitcher.workflowNeedsDeployment.andMore',
-        { names: shown, count: more },
-        { escapeParameter: false }
-      )
-    : shown
-}
-
 function row(key: string, names: readonly string[]): MissingItemsRow[] {
-  if (names.length === 0) return []
-  return [{ label: t(key, names.length), names: listed(names) }]
+  const [name, ...rest] = names
+  if (name === undefined) return []
+  return [
+    {
+      label: t(key, names.length),
+      name,
+      ...(rest.length > 0 && {
+        more: t('deploymentSwitcher.workflowNeedsDeployment.more', {
+          count: rest.length
+        }),
+        others: rest.join(', ')
+      })
+    }
+  ]
 }
 
 const missing = computed<MissingItemsRow[]>(() => [
@@ -105,18 +103,16 @@ const missing = computed<MissingItemsRow[]>(() => [
 
 const pitch = computed<CustomDeploymentPitch>(() => ({
   ...customDeploymentPitch(),
-  body: t('deploymentSwitcher.workflowNeedsDeployment.installBody'),
+  title: t('deploymentSwitcher.workflowNeedsDeployment.createTitle'),
+  body: t('deploymentSwitcher.workflowNeedsDeployment.createBody'),
+  points: [
+    t('deploymentSwitcher.customDeployment.pointNodes'),
+    t('deploymentSwitcher.customDeployment.pointGpu'),
+    t('deploymentSwitcher.workflowNeedsDeployment.pointBilling')
+  ],
   platformLabel: t(
     'deploymentSwitcher.workflowNeedsDeployment.createCustomBuild'
   ),
-  missing: missing.value,
-  ...(offer.kind === 'noneRunIt'
-    ? {
-        title: t(
-          'deploymentSwitcher.workflowNeedsDeployment.titleNoneRunItCustomBuild'
-        ),
-        note: t('deploymentSwitcher.workflowNeedsDeployment.noneRunIt')
-      }
-    : { title: t('deploymentSwitcher.workflowNeedsDeployment.installTitle') })
+  missing: missing.value
 }))
 </script>

@@ -65,3 +65,19 @@ export function isCreditTransitionNoticeShown(
   if (state === null || state.identity !== identity) return false
   return state.phase === 'armed' || state.phase === 'shown'
 }
+
+/**
+ * True when `identity`'s first observed scoped-funds read was `false`: a
+ * grant never held, not one that transitioned from held to exhausted.
+ */
+export function isInitialNoGrant(
+  state: CreditTransitionNoticeState | null,
+  identity: string
+): boolean {
+  return (
+    state !== null &&
+    state.identity === identity &&
+    state.phase === 'idle' &&
+    !state.scopedHasFunds
+  )
+}

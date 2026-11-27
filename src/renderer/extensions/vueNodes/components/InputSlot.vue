@@ -39,24 +39,30 @@
       @pointerdown="onPointerDown"
     />
 
-    <div class="flex h-full min-w-0 items-center" data-part="slot-label">
+    <template v-if="!effectiveDotOnly">
       <EditableText
-        v-if="!props.dotOnly && !hasNoLabel"
-        class="min-w-0"
-        :label-class="
-          cn('block truncate', hasError && 'font-medium text-destructive')
-        "
-        :is-editing
-        :model-value="
-          slotData.label ||
-          slotData.localized_name ||
-          (slotData.name ?? `Input ${index}`)
-        "
+        v-if="isEditing"
+        class="h-full min-w-0 content-center"
+        data-part="slot-label"
+        is-editing
+        :model-value="label"
         @cancel="isEditing = false"
-        @dblclick="isEditing = true"
         @edit="onEditLabel"
       />
-    </div>
+      <span
+        v-else
+        data-part="slot-label"
+        :class="
+          cn(
+            'block h-full min-w-0 content-center truncate',
+            hasError && 'font-medium text-destructive'
+          )
+        "
+        @dblclick="isEditing = true"
+      >
+        {{ label }}
+      </span>
+    </template>
   </div>
 </template>
 
@@ -100,6 +106,12 @@ const hasNoLabel = computed(
     props.slotData.name === ''
 )
 const effectiveDotOnly = computed(() => props.dotOnly || hasNoLabel.value)
+const label = computed(
+  () =>
+    props.slotData.label ||
+    props.slotData.localized_name ||
+    (props.slotData.name ?? `Input ${props.index}`)
+)
 const accessibleName = computed(
   () =>
     props.slotData.label ||
