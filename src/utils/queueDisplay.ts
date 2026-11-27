@@ -1,4 +1,4 @@
-import { zJobDeployment } from '@comfyorg/ingest-types/zod'
+import { z } from 'zod'
 
 import type { JobModelDownload } from '@/stores/jobModelDownloadStore'
 import type { TaskItemImpl } from '@/stores/queueStore'
@@ -66,10 +66,16 @@ const buildQueuedTime = (
   return formatClockTimeFn(ts, locale)
 }
 
+const zDeploymentNames = z.object({
+  build_name: z.string().nullish().catch(undefined),
+  name: z.string().nullish().catch(undefined)
+})
+
 const deploymentBuildName = (task: TaskItemImpl): string | undefined => {
-  const deployment = zJobDeployment.safeParse(task.job.deployment)
+  const deployment = zDeploymentNames.safeParse(task.job.deployment)
   if (!deployment.success) return undefined
-  return deployment.data.build_name ?? deployment.data.name
+  const { build_name, name } = deployment.data
+  return build_name?.trim() || name?.trim() || undefined
 }
 
 export const withDeploymentBuildName = (

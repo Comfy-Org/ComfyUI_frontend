@@ -327,6 +327,27 @@ describe('withDeploymentBuildName', () => {
     ).toBe('queue.onBuild(detail=en-US:1710000000000,build=production)')
   })
 
+  it.for([
+    ['a blank Build name', { build_name: '  ' }],
+    ['a null Build name', { build_name: null }],
+    ['a malformed release version', { build_name: null, release_version: 'v3' }]
+  ])('falls back to the deployment name for %s', ([, override]) => {
+    const task = createTask({
+      job: {
+        status: 'pending',
+        deployment: { ...onFluxStudio, ...(override as object) }
+      }
+    })
+
+    expect(
+      withDeploymentBuildName(
+        buildJobDisplay(task, 'pending', createCtx()).secondary,
+        task,
+        createCtx().t
+      )
+    ).toBe('queue.onBuild(detail=en-US:1710000000000,build=production)')
+  })
+
   it('leaves a Comfy Cloud job as it was', () => {
     const task = createTask({ job: { status: 'pending' } })
 
