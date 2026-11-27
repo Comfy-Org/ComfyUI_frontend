@@ -459,6 +459,18 @@ onBeforeUnmount(() =>
     ).toEqual(['op-producers-outlive-the-panel'])
   })
 
+  test('catches a producer detach bound to a name a disposal route is handed', () => {
+    const fixture = `
+      const releaseProducer = opSender.detach
+      onBeforeUnmount(releaseProducer)
+    `
+    expect(
+      checkOpProducersOutliveThePanel(FOLLOWER_FILE, fixture).map(
+        ({ rule }) => rule
+      )
+    ).toEqual(['op-producers-outlive-the-panel'])
+  })
+
   test('catches an optional-call detach', () => {
     const fixture = `onBeforeUnmount(() => opSender.detach?.())`
     expect(

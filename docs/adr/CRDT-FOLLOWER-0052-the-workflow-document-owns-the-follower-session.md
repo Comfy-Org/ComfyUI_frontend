@@ -624,6 +624,17 @@ What remains exposed is the interval between the identity change and that
 resubscribe resolving, during which ops may still mint under the previous
 actor against a document that actor did own.
 
+**This stage widens that exposure rather than creating it, which is why
+reverting Stage 2 would not retire it.** The freeze is a property of the
+_consumer record_, not of the producer: `useAgentCrdtFollower`'s cleanup clears
+`follower.value` and releases the lease but deliberately leaves
+`owner.consumer.value` installed, and the session reads `isTargetActive` and
+`userId` from that live record on every call. So since Stage 1b the
+page-retained session has already been answering with the last mounted panel's
+frozen identity after a close. Stage 2 adds minting to what that frozen answer
+gates. The fix is therefore owed by the resolver's move regardless of this
+stage, and the exposure should not be re-litigated as a Stage 2 regression.
+
 **The restore queue moved with the edit path, as this stage requires.** The
 delivery trigger was a panel watcher, so a reconnect completing with the panel
 closed would never release a held restore — the same defect in a narrower

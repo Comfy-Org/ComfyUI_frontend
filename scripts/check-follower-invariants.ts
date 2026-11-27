@@ -507,16 +507,12 @@ function namesReachedByAPanelCloseRoute(
   return reached
 }
 
-function enclosingFunctionName(node: ts.Node): string | undefined {
+function enclosingBoundName(node: ts.Node): string | undefined {
   let parent = node.parent as ts.Node | undefined
   while (parent !== undefined) {
     if (ts.isFunctionDeclaration(parent) && parent.name) return parent.name.text
-    if (
-      (ts.isFunctionExpression(parent) || ts.isArrowFunction(parent)) &&
-      ts.isVariableDeclaration(parent.parent) &&
-      ts.isIdentifier(parent.parent.name)
-    )
-      return parent.parent.name.text
+    if (ts.isVariableDeclaration(parent) && ts.isIdentifier(parent.name))
+      return parent.name.text
     parent = parent.parent
   }
 }
@@ -530,7 +526,7 @@ function insideAPanelCloseRoute(
     if (isPanelCloseRouteCall(parent)) return true
     parent = parent.parent
   }
-  const enclosing = enclosingFunctionName(node)
+  const enclosing = enclosingBoundName(node)
   return enclosing !== undefined && reachedNames.has(enclosing)
 }
 
